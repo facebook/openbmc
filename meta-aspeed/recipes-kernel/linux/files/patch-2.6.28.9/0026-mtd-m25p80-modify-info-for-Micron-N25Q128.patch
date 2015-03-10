@@ -1,0 +1,39 @@
+From c1fdbfe2f6ee26651b626603d47a1499c0fd87e8 Mon Sep 17 00:00:00 2001
+From: Liming Wang <walimisdev@gmail.com>
+Date: Thu, 22 Nov 2012 14:58:09 +0800
+Subject: [PATCH 26/27] mtd: m25p80: modify info for Micron N25Q128
+
+Micron N25Q128 has two types of flash:
+
+ - One is for 1.8v supply voltage, prefixed with "n25q128a11" and the jedec
+   code is 0x20bb18.
+
+ - Another is for 3v supply voltage, prefixed with "n25q128a13" and the jedec
+   code is 0x20ba18.
+
+So modify the original type info and add another type for Micron N25Q128.
+
+Signed-off-by: Liming Wang <walimisdev@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+(cherry picked from commit 98a9e2450667e497246449f96eab06eb3fb4d24b)
+---
+ drivers/mtd/devices/m25p80.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 380c368..19a4325 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -666,7 +666,8 @@ static struct flash_info __devinitdata m25p_data [] = {
+ 	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
+ 
+ 	/* Micron */
+-	{ "n25q128",  INFO(0x20ba18, 0, 64 * 1024, 256, 0) },
++	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024, 256, 0) },
++	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024, 256, 0) },
+ 	{ "n25q256a", INFO(0x20ba19, 0, 64 * 1024, 512, SECT_4K) },
+ 
+ 	/* Spansion -- single (large) sector size only, at least
+-- 
+1.8.1
+

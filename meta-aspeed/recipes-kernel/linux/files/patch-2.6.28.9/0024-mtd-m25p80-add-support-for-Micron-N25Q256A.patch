@@ -1,0 +1,35 @@
+From 53700b905d75a021dae896a592aac834ef403b40 Mon Sep 17 00:00:00 2001
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Tue, 14 Aug 2012 15:24:07 -0400
+Subject: [PATCH 24/27] mtd: m25p80: add support for Micron N25Q256A
+
+The manufacturer datasheet can be found on the Micron website,
+under the name n25q_256mb_3v_65nm.pdf:
+
+http://www.micron.com/search?source=ps&q=n25q_256mb_3v_65nm
+
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+(cherry picked from commit 8da28681eb1430fb6715c7aef67001acfbbbcba5)
+---
+ drivers/mtd/devices/m25p80.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 4d8519e..caacfb7 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -665,6 +665,9 @@ static struct flash_info __devinitdata m25p_data [] = {
+ 	{ "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
+ 	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
+ 
++	/* Micron */
++	{ "n25q256a", INFO(0x20ba19, 0, 64 * 1024, 512, SECT_4K) },
++
+ 	/* Spansion -- single (large) sector size only, at least
+ 	 * for the chips listed here (without boot sectors).
+ 	 */
+-- 
+1.8.1
+

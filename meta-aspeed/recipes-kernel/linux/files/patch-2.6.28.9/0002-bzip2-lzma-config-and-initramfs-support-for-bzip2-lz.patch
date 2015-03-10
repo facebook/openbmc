@@ -1,0 +1,585 @@
+From 46b4296ca3e989127c8646e5c115561f9a2f8fa3 Mon Sep 17 00:00:00 2001
+From: Alain Knaff <alain@knaff.lu>
+Date: Sun, 4 Jan 2009 22:46:17 +0100
+Subject: bzip2/lzma: config and initramfs support for bzip2/lzma decompression
+
+Impact: New code for initramfs decompression, new features
+
+This is the second part of the bzip2/lzma patch
+
+The bzip patch is based on an idea by Christian Ludwig, includes support for
+compressing the kernel with bzip2 or lzma rather than gzip. Both
+compressors give smaller sizes than gzip.  Lzma's decompresses faster
+than bzip2.
+
+It also supports ramdisks and initramfs' compressed using these two
+compressors.
+
+The functionality has been successfully used for a couple of years by
+the udpcast project
+
+This version applies to "tip" kernel 2.6.28
+
+This part contains:
+- support for new compressions (bzip2 and lzma) in initramfs and
+old-style ramdisk
+- config dialog for kernel compression (but new kernel compressions
+not yet supported)
+
+Signed-off-by: Alain Knaff <alain@knaff.lu>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ .../linux-aspeed-2.6.28.9/drivers/block/Kconfig    |  25 +++
+ .../linux/files/linux-aspeed-2.6.28.9/init/Kconfig |  50 ++++++
+ .../linux-aspeed-2.6.28.9/init/do_mounts_rd.c      | 182 ++++++++-------------
+ .../files/linux-aspeed-2.6.28.9/init/initramfs.c   | 123 +++++---------
+ .../linux/files/linux-aspeed-2.6.28.9/lib/Makefile |   3 +-
+ 5 files changed, 184 insertions(+), 199 deletions(-)
+
+diff --git a/drivers/block/Kconfig
+index 0344a8a..7955944 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -358,6 +358,31 @@ config BLK_DEV_XIP
+ 	  will prevent RAM block device backing store memory from being
+ 	  allocated from highmem (only a problem for highmem systems).
+ 
++config RD_BZIP2
++	bool "Initial ramdisk compressed using bzip2"
++	default n
++	depends on BLK_DEV_INITRD=y
++	help
++	  Support loading of a bzip2 encoded initial ramdisk or cpio buffer
++	  If unsure, say N.
++
++config RD_LZMA
++	bool "Initial ramdisk compressed using lzma"
++	default n
++	depends on BLK_DEV_INITRD=y
++	help
++	  Support loading of a lzma encoded initial ramdisk or cpio buffer
++	  If unsure, say N.
++
++config RD_GZIP
++	bool "Initial ramdisk compressed using gzip"
++	default y
++	depends on BLK_DEV_INITRD=y
++	select ZLIB_INFLATE
++	help
++	  Support loading of a gzip encoded initial ramdisk or cpio buffer.
++	  If unsure, say Y.
++
+ config CDROM_PKTCDVD
+ 	tristate "Packet writing on CD/DVD media"
+ 	depends on !UML
+diff --git a/init/Kconfig
+index 83b6905..d7f95fe 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -101,6 +101,56 @@ config LOCALVERSION_AUTO
+ 
+ 	  which is done within the script "scripts/setlocalversion".)
+ 
++choice
++        prompt "Kernel compression mode"
++        default KERNEL_GZIP
++        help
++	  The linux kernel is a kind of self-extracting executable.
++	  Several compression algorithms are available, which differ
++	  in efficiency, compression and decompression speed.
++	  Compression speed is only relevant when building a kernel.
++	  Decompression speed is relevant at each boot.
++
++	  If you have any problems with bzip2 or lzma compressed
++	  kernels, mail me (Alain Knaff) <alain@knaff.lu>. (An older
++	  version of this functionality (bzip2 only), for 2.4, was
++	  supplied by Christian Ludwig)
++
++	  High compression options are mostly useful for users, who
++	  are low on disk space (embedded systems), but for whom ram
++	  size matters less.
++
++	  If in doubt, select 'gzip'
++
++config KERNEL_GZIP
++       bool "Gzip"
++       help
++         The old and tried gzip compression. Its compression ratio is
++	 the poorest among the 3 choices; however its speed (both
++	 compression and decompression) is the fastest.
++
++config KERNEL_BZIP2
++	bool "Bzip2"
++	help
++	  Its compression ratio and speed is intermediate.
++	  Decompression speed is slowest among the 3.
++	  The kernel size is about 10 per cent smaller with bzip2,
++	  in comparison to gzip.
++	  Bzip2 uses a large amount of memory. For modern kernels
++	  you will need at least 8MB RAM or more for booting.
++
++config KERNEL_LZMA
++       bool "LZMA"
++       help
++         The most recent compression algorithm.
++	 Its ratio is best, decompression speed is between the other
++	 2. Compression is slowest.
++	 The kernel size is about 33 per cent smaller with lzma,
++	 in comparison to gzip.
++
++endchoice
++
++
+ config SWAP
+ 	bool "Support for paging of anonymous memory (swap)"
+ 	depends on MMU && BLOCK
+diff --git a/init/do_mounts_rd.c
+index a7c748f..dcaeb1f 100644
+--- a/init/do_mounts_rd.c
++++ b/init/do_mounts_rd.c
+@@ -10,6 +10,12 @@
+ 
+ #include "do_mounts.h"
+ 
++#include <linux/decompress/generic.h>
++
++#include <linux/decompress/bunzip2.h>
++#include <linux/decompress/unlzma.h>
++#include <linux/decompress/inflate.h>
++
+ int __initdata rd_prompt = 1;/* 1 = prompt for RAM disk, 0 = don't prompt */
+ 
+ static int __init prompt_ramdisk(char *str)
+@@ -28,7 +34,7 @@ static int __init ramdisk_start_setup(char *str)
+ }
+ __setup("ramdisk_start=", ramdisk_start_setup);
+ 
+-static int __init crd_load(int in_fd, int out_fd);
++static int __init crd_load(int in_fd, int out_fd, decompress_fn deco);
+ 
+ /*
+  * This routine tries to find a RAM disk image to load, and returns the
+@@ -44,7 +50,7 @@ static int __init crd_load(int in_fd, int out_fd);
+  * 	gzip
+  */
+ static int __init 
+-identify_ramdisk_image(int fd, int start_block)
++identify_ramdisk_image(int fd, int start_block, decompress_fn *decompressor)
+ {
+ 	const int size = 512;
+ 	struct minix_super_block *minixsb;
+@@ -70,6 +76,7 @@ identify_ramdisk_image(int fd, int start_block)
+ 	sys_lseek(fd, start_block * BLOCK_SIZE, 0);
+ 	sys_read(fd, buf, size);
+ 
++#ifdef CONFIG_RD_GZIP
+ 	/*
+ 	 * If it matches the gzip magic numbers, return 0
+ 	 */
+@@ -77,9 +84,39 @@ identify_ramdisk_image(int fd, int start_block)
+ 		printk(KERN_NOTICE
+ 		       "RAMDISK: Compressed image found at block %d\n",
+ 		       start_block);
++		*decompressor = gunzip;
++		nblocks = 0;
++		goto done;
++	}
++#endif
++
++#ifdef CONFIG_RD_BZIP2
++	/*
++	 * If it matches the bzip2 magic numbers, return -1
++	 */
++	if (buf[0] == 0x42 && (buf[1] == 0x5a)) {
++		printk(KERN_NOTICE
++		       "RAMDISK: Bzipped image found at block %d\n",
++		       start_block);
++		*decompressor = bunzip2;
++		nblocks = 0;
++		goto done;
++	}
++#endif
++
++#ifdef CONFIG_RD_LZMA
++	/*
++	 * If it matches the lzma magic numbers, return -1
++	 */
++	if (buf[0] == 0x5d && (buf[1] == 0x00)) {
++		printk(KERN_NOTICE
++		       "RAMDISK: Lzma image found at block %d\n",
++		       start_block);
++		*decompressor = unlzma;
+ 		nblocks = 0;
+ 		goto done;
+ 	}
++#endif
+ 
+ 	/* romfs is at block zero too */
+ 	if (romfsb->word0 == ROMSB_WORD0 &&
+@@ -143,6 +180,7 @@ int __init rd_load_image(char *from)
+ 	int nblocks, i, disk;
+ 	char *buf = NULL;
+ 	unsigned short rotate = 0;
++	decompress_fn decompressor = NULL;
+ #if !defined(CONFIG_S390) && !defined(CONFIG_PPC_ISERIES)
+ 	char rotator[4] = { '|' , '/' , '-' , '\\' };
+ #endif
+@@ -155,12 +193,12 @@ int __init rd_load_image(char *from)
+ 	if (in_fd < 0)
+ 		goto noclose_input;
+ 
+-	nblocks = identify_ramdisk_image(in_fd, rd_image_start);
++	nblocks = identify_ramdisk_image(in_fd, rd_image_start, &decompressor);
+ 	if (nblocks < 0)
+ 		goto done;
+ 
+ 	if (nblocks == 0) {
+-		if (crd_load(in_fd, out_fd) == 0)
++		if (crd_load(in_fd, out_fd, decompressor) == 0)
+ 			goto successful_load;
+ 		goto done;
+ 	}
+@@ -259,138 +297,48 @@ int __init rd_load_disk(int n)
+ 	return rd_load_image("/dev/root");
+ }
+ 
+-/*
+- * gzip declarations
+- */
+-
+-#define OF(args)  args
+-
+-#ifndef memzero
+-#define memzero(s, n)     memset ((s), 0, (n))
+-#endif
+-
+-typedef unsigned char  uch;
+-typedef unsigned short ush;
+-typedef unsigned long  ulg;
+-
+-#define INBUFSIZ 4096
+-#define WSIZE 0x8000    /* window size--must be a power of two, and */
+-			/*  at least 32K for zip's deflate method */
+-
+-static uch *inbuf;
+-static uch *window;
+-
+-static unsigned insize;  /* valid bytes in inbuf */
+-static unsigned inptr;   /* index of next byte to be processed in inbuf */
+-static unsigned outcnt;  /* bytes in output buffer */
+ static int exit_code;
+-static int unzip_error;
+-static long bytes_out;
++static int decompress_error;
+ static int crd_infd, crd_outfd;
+ 
+-#define get_byte()  (inptr < insize ? inbuf[inptr++] : fill_inbuf())
+-		
+-/* Diagnostic functions (stubbed out) */
+-#define Assert(cond,msg)
+-#define Trace(x)
+-#define Tracev(x)
+-#define Tracevv(x)
+-#define Tracec(c,x)
+-#define Tracecv(c,x)
+-
+-#define STATIC static
+-#define INIT __init
+-
+-static int  __init fill_inbuf(void);
+-static void __init flush_window(void);
+-static void __init error(char *m);
+-
+-#define NO_INFLATE_MALLOC
+-
+-#include "../lib/inflate.c"
+-
+-/* ===========================================================================
+- * Fill the input buffer. This is called only when the buffer is empty
+- * and at least one byte is really needed.
+- * Returning -1 does not guarantee that gunzip() will ever return.
+- */
+-static int __init fill_inbuf(void)
++static int __init compr_fill(void *buf, unsigned int len)
+ {
+-	if (exit_code) return -1;
+-	
+-	insize = sys_read(crd_infd, inbuf, INBUFSIZ);
+-	if (insize == 0) {
+-		error("RAMDISK: ran out of compressed data");
+-		return -1;
+-	}
+-
+-	inptr = 1;
+-
+-	return inbuf[0];
++	int r = sys_read(crd_infd, buf, len);
++	if (r < 0)
++		printk(KERN_ERR "RAMDISK: error while reading compressed data");
++	else if (r == 0)
++		printk(KERN_ERR "RAMDISK: EOF while reading compressed data");
++	return r;
+ }
+ 
+-/* ===========================================================================
+- * Write the output window window[0..outcnt-1] and update crc and bytes_out.
+- * (Used for the decompressed data only.)
+- */
+-static void __init flush_window(void)
++static int __init compr_flush(void *window, unsigned int outcnt)
+ {
+-    ulg c = crc;         /* temporary variable */
+-    unsigned n, written;
+-    uch *in, ch;
+-    
+-    written = sys_write(crd_outfd, window, outcnt);
+-    if (written != outcnt && unzip_error == 0) {
+-	printk(KERN_ERR "RAMDISK: incomplete write (%d != %d) %ld\n",
+-	       written, outcnt, bytes_out);
+-	unzip_error = 1;
+-    }
+-    in = window;
+-    for (n = 0; n < outcnt; n++) {
+-	    ch = *in++;
+-	    c = crc_32_tab[((int)c ^ ch) & 0xff] ^ (c >> 8);
+-    }
+-    crc = c;
+-    bytes_out += (ulg)outcnt;
+-    outcnt = 0;
++	int written = sys_write(crd_outfd, window, outcnt);
++	if (written != outcnt) {
++		if (decompress_error == 0)
++			printk(KERN_ERR
++			       "RAMDISK: incomplete write (%d != %d)\n",
++			       written, outcnt);
++		decompress_error = 1;
++		return -1;
++	}
++	return outcnt;
+ }
+ 
+ static void __init error(char *x)
+ {
+ 	printk(KERN_ERR "%s\n", x);
+ 	exit_code = 1;
+-	unzip_error = 1;
++	decompress_error = 1;
+ }
+ 
+-static int __init crd_load(int in_fd, int out_fd)
++static int __init crd_load(int in_fd, int out_fd, decompress_fn deco)
+ {
+ 	int result;
+-
+-	insize = 0;		/* valid bytes in inbuf */
+-	inptr = 0;		/* index of next byte to be processed in inbuf */
+-	outcnt = 0;		/* bytes in output buffer */
+-	exit_code = 0;
+-	bytes_out = 0;
+-	crc = (ulg)0xffffffffL; /* shift register contents */
+-
+ 	crd_infd = in_fd;
+ 	crd_outfd = out_fd;
+-	inbuf = kmalloc(INBUFSIZ, GFP_KERNEL);
+-	if (!inbuf) {
+-		printk(KERN_ERR "RAMDISK: Couldn't allocate gzip buffer\n");
+-		return -1;
+-	}
+-	window = kmalloc(WSIZE, GFP_KERNEL);
+-	if (!window) {
+-		printk(KERN_ERR "RAMDISK: Couldn't allocate gzip window\n");
+-		kfree(inbuf);
+-		return -1;
+-	}
+-	makecrc();
+-	result = gunzip();
+-	if (unzip_error)
++	result = deco(NULL, 0, compr_fill, compr_flush, NULL, NULL, error);
++	if (decompress_error)
+ 		result = 1;
+-	kfree(inbuf);
+-	kfree(window);
+ 	return result;
+ }
+diff --git a/init/initramfs.c
+index 4f5ba75..40bd4fb 100644
+--- a/init/initramfs.c
++++ b/init/initramfs.c
+@@ -389,11 +389,14 @@ static int __init write_buffer(char *buf, unsigned len)
+ 	return len - count;
+ }
+ 
+-static void __init flush_buffer(char *buf, unsigned len)
++
++static int __init flush_buffer(void *bufv, unsigned len)
+ {
++	char *buf = (char *) bufv;
+ 	int written;
++	int origLen = len;
+ 	if (message)
+-		return;
++		return -1;
+ 	while ((written = write_buffer(buf, len)) < len && !message) {
+ 		char c = buf[written];
+ 		if (c == '0') {
+@@ -407,73 +410,14 @@ static void __init flush_buffer(char *buf, unsigned len)
+ 		} else
+ 			error("junk in compressed archive");
+ 	}
++	return origLen;
+ }
+ 
+-/*
+- * gzip declarations
+- */
+-
+-#define OF(args)  args
+-
+-#ifndef memzero
+-#define memzero(s, n)     memset ((s), 0, (n))
+-#endif
+-
+-typedef unsigned char  uch;
+-typedef unsigned short ush;
+-typedef unsigned long  ulg;
+-
+-#define WSIZE 0x8000    /* window size--must be a power of two, and */
+-			/*  at least 32K for zip's deflate method */
+-
+-static uch *inbuf;
+-static uch *window;
+-
+-static unsigned insize;  /* valid bytes in inbuf */
+-static unsigned inptr;   /* index of next byte to be processed in inbuf */
+-static unsigned outcnt;  /* bytes in output buffer */
+-static long bytes_out;
+-
+-#define get_byte()  (inptr < insize ? inbuf[inptr++] : -1)
+-		
+-/* Diagnostic functions (stubbed out) */
+-#define Assert(cond,msg)
+-#define Trace(x)
+-#define Tracev(x)
+-#define Tracevv(x)
+-#define Tracec(c,x)
+-#define Tracecv(c,x)
+-
+-#define STATIC static
+-#define INIT __init
+-
+-static void __init flush_window(void);
+-static void __init error(char *m);
+-
+-#define NO_INFLATE_MALLOC
++static unsigned my_inptr;   /* index of next byte to be processed in inbuf */
+ 
+-#include "../lib/inflate.c"
+-
+-/* ===========================================================================
+- * Write the output window window[0..outcnt-1] and update crc and bytes_out.
+- * (Used for the decompressed data only.)
+- */
+-static void __init flush_window(void)
+-{
+-	ulg c = crc;         /* temporary variable */
+-	unsigned n;
+-	uch *in, ch;
+-
+-	flush_buffer(window, outcnt);
+-	in = window;
+-	for (n = 0; n < outcnt; n++) {
+-		ch = *in++;
+-		c = crc_32_tab[((int)c ^ ch) & 0xff] ^ (c >> 8);
+-	}
+-	crc = c;
+-	bytes_out += (ulg)outcnt;
+-	outcnt = 0;
+-}
++#include <linux/decompress/bunzip2.h>
++#include <linux/decompress/unlzma.h>
++#include <linux/decompress/inflate.h>
+ 
+ static char * __init unpack_to_rootfs(char *buf, unsigned len, int check_only)
+ {
+@@ -482,9 +426,10 @@ static char * __init unpack_to_rootfs(char *buf, unsigned len, int check_only)
+ 	header_buf = kmalloc(110, GFP_KERNEL);
+ 	symlink_buf = kmalloc(PATH_MAX + N_ALIGN(PATH_MAX) + 1, GFP_KERNEL);
+ 	name_buf = kmalloc(N_ALIGN(PATH_MAX), GFP_KERNEL);
+-	window = kmalloc(WSIZE, GFP_KERNEL);
+-	if (!window || !header_buf || !symlink_buf || !name_buf)
++
++	if (!header_buf || !symlink_buf || !name_buf)
+ 		panic("can't allocate buffers");
++
+ 	state = Start;
+ 	this_header = 0;
+ 	message = NULL;
+@@ -504,22 +449,38 @@ static char * __init unpack_to_rootfs(char *buf, unsigned len, int check_only)
+ 			continue;
+ 		}
+ 		this_header = 0;
+-		insize = len;
+-		inbuf = buf;
+-		inptr = 0;
+-		outcnt = 0;		/* bytes in output buffer */
+-		bytes_out = 0;
+-		crc = (ulg)0xffffffffL; /* shift register contents */
+-		makecrc();
+-		gunzip();
++		if (!gunzip(buf, len, NULL, flush_buffer, NULL,
++			    &my_inptr, error) &&
++		    message == NULL)
++			goto ok;
++
++#ifdef CONFIG_RD_BZIP2
++		message = NULL; /* Zero out message, or else cpio will
++				   think an error has already occured */
++		if (!bunzip2(buf, len, NULL, flush_buffer, NULL,
++			     &my_inptr, error) &&
++		    message == NULL) {
++			goto ok;
++		}
++#endif
++
++#ifdef CONFIG_RD_LZMA
++		message = NULL; /* Zero out message, or else cpio will
++				   think an error has already occured */
++		if (!unlzma(buf, len, NULL, flush_buffer, NULL,
++			    &my_inptr, error) &&
++		    message == NULL) {
++			goto ok;
++		}
++#endif
++ok:
+ 		if (state != Reset)
+-			error("junk in gzipped archive");
+-		this_header = saved_offset + inptr;
+-		buf += inptr;
+-		len -= inptr;
++			error("junk in compressed archive");
++		this_header = saved_offset + my_inptr;
++		buf += my_inptr;
++		len -= my_inptr;
+ 	}
+ 	dir_utime();
+-	kfree(window);
+ 	kfree(name_buf);
+ 	kfree(symlink_buf);
+ 	kfree(header_buf);
+diff --git a/lib/Makefile
+index 7cb65d8..867fd9e 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -11,7 +11,8 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 rbtree.o radix-tree.o dump_stack.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
+-	 proportions.o prio_heap.o ratelimit.o show_mem.o
++	 proportions.o prio_heap.o ratelimit.o show_mem.o \
++	 decompress_inflate.o decompress_bunzip2.o decompress_unlzma.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+-- 
+1.8.1
+

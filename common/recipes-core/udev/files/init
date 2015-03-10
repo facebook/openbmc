@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo "UDEV: no devtmpfs support. Skip udev"
+
+exit 0

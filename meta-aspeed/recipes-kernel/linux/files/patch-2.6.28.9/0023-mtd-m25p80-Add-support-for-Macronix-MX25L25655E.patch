@@ -1,0 +1,72 @@
+From 382791c9efc03015575bc1f5552ebb7004f1610f Mon Sep 17 00:00:00 2001
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Sat, 30 Oct 2010 21:11:04 -0700
+Subject: [PATCH 23/27] mtd: m25p80: Add support for Macronix MX25L25655E
+
+Untested, but expected to be compatible with MX25L25635E which I did
+test.
+
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+(cherry picked from commit ac622f583dccb025250becd2d4e60badaf571713)
+
+Conflicts:
+	drivers/mtd/devices/m25p80.c
+---
+ drivers/mtd/devices/m25p80.c | 39 +++++++++++++++++++++++++++++----------
+ 1 file changed, 29 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index a6a28fc..4d8519e 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -635,16 +635,35 @@ struct flash_info {
+ static struct flash_info __devinitdata m25p_data [] = {
+ 
+ 	/* Atmel -- some are (confusingly) marketed as "DataFlash" */
+-	{ "at25fs010",  0x1f6601, 0, 32 * 1024, 4, SECT_4K, },
+-	{ "at25fs040",  0x1f6604, 0, 64 * 1024, 8, SECT_4K, },
+-
+-	{ "at25df041a", 0x1f4401, 0, 64 * 1024, 8, SECT_4K, },
+-	{ "at25df641",  0x1f4800, 0, 64 * 1024, 128, SECT_4K, },
+-
+-	{ "at26f004",   0x1f0400, 0, 64 * 1024, 8, SECT_4K, },
+-	{ "at26df081a", 0x1f4501, 0, 64 * 1024, 16, SECT_4K, },
+-	{ "at26df161a", 0x1f4601, 0, 64 * 1024, 32, SECT_4K, },
+-	{ "at26df321",  0x1f4701, 0, 64 * 1024, 64, SECT_4K, },
++	{ "at25fs010",  INFO(0x1f6601, 0, 32 * 1024,   4, SECT_4K) },
++	{ "at25fs040",  INFO(0x1f6604, 0, 64 * 1024,   8, SECT_4K) },
++
++	{ "at25df041a", INFO(0x1f4401, 0, 64 * 1024,   8, SECT_4K) },
++	{ "at25df641",  INFO(0x1f4800, 0, 64 * 1024, 128, SECT_4K) },
++
++	{ "at26f004",   INFO(0x1f0400, 0, 64 * 1024,  8, SECT_4K) },
++	{ "at26df081a", INFO(0x1f4501, 0, 64 * 1024, 16, SECT_4K) },
++	{ "at26df161a", INFO(0x1f4601, 0, 64 * 1024, 32, SECT_4K) },
++	{ "at26df321",  INFO(0x1f4701, 0, 64 * 1024, 64, SECT_4K) },
++
++	/* EON -- en25pxx */
++	{ "en25p32", INFO(0x1c2016, 0, 64 * 1024,  64, 0) },
++	{ "en25p64", INFO(0x1c2017, 0, 64 * 1024, 128, 0) },
++
++	/* Intel/Numonyx -- xxxs33b */
++	{ "160s33b",  INFO(0x898911, 0, 64 * 1024,  32, 0) },
++	{ "320s33b",  INFO(0x898912, 0, 64 * 1024,  64, 0) },
++	{ "640s33b",  INFO(0x898913, 0, 64 * 1024, 128, 0) },
++
++	/* Macronix */
++	{ "mx25l4005a",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
++	{ "mx25l8005",   INFO(0xc22014, 0, 64 * 1024,  16, 0) },
++	{ "mx25l3205d",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
++	{ "mx25l6405d",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
++	{ "mx25l12805d", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
++	{ "mx25l12855e", INFO(0xc22618, 0, 64 * 1024, 256, 0) },
++	{ "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
++	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
+ 
+ 	/* Spansion -- single (large) sector size only, at least
+ 	 * for the chips listed here (without boot sectors).
+-- 
+1.8.1
+

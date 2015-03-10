@@ -1,0 +1,28 @@
+From ba11b987123391b8d74c6e640df22248f3404cb5 Mon Sep 17 00:00:00 2001
+From: Jan Luebbe <jlu@pengutronix.de>
+Date: Fri, 24 Aug 2012 18:23:50 +0200
+Subject: [PATCH 25/27] mtd: m25p80: add support for Micron N25Q128
+
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+(cherry picked from commit 3105875f6b8902628caee2fd7821af43707c6bde)
+---
+ drivers/mtd/devices/m25p80.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index caacfb7..380c368 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -666,6 +666,7 @@ static struct flash_info __devinitdata m25p_data [] = {
+ 	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
+ 
+ 	/* Micron */
++	{ "n25q128",  INFO(0x20ba18, 0, 64 * 1024, 256, 0) },
+ 	{ "n25q256a", INFO(0x20ba19, 0, 64 * 1024, 512, SECT_4K) },
+ 
+ 	/* Spansion -- single (large) sector size only, at least
+-- 
+1.8.1
+

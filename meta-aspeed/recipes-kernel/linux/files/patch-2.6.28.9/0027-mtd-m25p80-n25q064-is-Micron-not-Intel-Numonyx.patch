@@ -1,0 +1,29 @@
+From 865453236765126bc0751c35c0c0e5ea5b56f668 Mon Sep 17 00:00:00 2001
+From: Brian Norris <computersforpeace@gmail.com>
+Date: Fri, 22 Feb 2013 14:07:22 -0800
+Subject: [PATCH 27/27] mtd: m25p80: n25q064 is Micron, not Intel/Numonyx
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+(cherry picked from commit e66e280c36e09e4573089862e7dc2ade9e680088)
+---
+ drivers/mtd/devices/m25p80.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 19a4325..5659b62 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -666,6 +666,7 @@ static struct flash_info __devinitdata m25p_data [] = {
+ 	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
+ 
+ 	/* Micron */
++	{ "n25q064",  INFO(0x20ba17, 0, 64 * 1024, 128, 0) },
+ 	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024, 256, 0) },
+ 	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024, 256, 0) },
+ 	{ "n25q256a", INFO(0x20ba19, 0, 64 * 1024, 512, SECT_4K) },
+-- 
+1.8.1
+

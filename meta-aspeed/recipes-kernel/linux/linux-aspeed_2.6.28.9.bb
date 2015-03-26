@@ -25,6 +25,7 @@ SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
            file://patch-2.6.28.9/0028-ipv6-Plug-sk_buff-leak-in-ipv6_rcv-net-ipv6-ip6_inpu.patch \
            file://patch-2.6.28.9/0001-bzip2-lzma-library-support-for-gzip-bzip2-and-lzma-d.patch \
            file://patch-2.6.28.9/0002-bzip2-lzma-config-and-initramfs-support-for-bzip2-lz.patch \
+           file://patch-2.6.28.9/0029_fix_make_incompatibility.patch \
           "
 
 S = "${WORKDIR}/git"
@@ -32,7 +33,7 @@ S = "${WORKDIR}/git"
 LINUX_VERSION = "2.6.28.9"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 
-PR = "r1"
+PR = "r2"
 
 KERNEL_CONFIG_COMMAND = "oe_runmake wedge_defconfig && oe_runmake oldconfig"
 

@@ -1,0 +1,1 @@
+include lightning-image.inc

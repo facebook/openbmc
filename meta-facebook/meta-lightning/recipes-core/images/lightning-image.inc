@@ -54,7 +54,6 @@ IMAGE_INSTALL += " \
   ${NTP_PKGS} \
   iproute2 \
   dhcp-client \
-  inphi-phy \
   fruid \
   ipmbd \
   bic-cached \

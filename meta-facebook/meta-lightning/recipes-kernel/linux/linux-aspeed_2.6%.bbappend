@@ -1,5 +1,5 @@
-LINUX_VERSION_EXTENSION = "-lightning"
+LINUX_VERSION_EXTENSION = "-fbplatform1"
 
-COMPATIBLE_MACHINE = "lightning"
+COMPATIBLE_MACHINE = "fbplatform1"
 
-KERNEL_CONFIG_COMMAND = "oe_runmake lightning_defconfig && oe_runmake oldconfig"
+KERNEL_CONFIG_COMMAND = "oe_runmake fbplatform1_defconfig && oe_runmake oldconfig"

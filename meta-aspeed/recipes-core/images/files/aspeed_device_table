@@ -35,7 +35,6 @@
 /dev/urandom	c	644	root	root	1	9	-	-	-
 /dev/watchdog	c	660	root	root	10	130	-	-	-
 /dev/zero	c	644	root	root	1	5	-	-	-
-/dev/i2c- c 600 root root 89 0 0 1 10
-/dev/i2c- c 600 root root 89 11 11 1 2
+/dev/i2c- c 600 root root 89 0 0 1 13
 /dev/net d 755 root root 	-	-	-	-	-
 /dev/net/tun c 600 root root 10 200 - - -

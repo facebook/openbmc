@@ -16,9 +16,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+from __future__ import print_function
+
 
 import subprocess
 import time
+
 
 class Bcm5396MDIO:
     '''The class to access BCM5396 through MDIO intf'''
@@ -254,23 +257,35 @@ class Bcm5396SPI:
         except Exception as e:
             print(e)
 
+
 class Bcm5396:
     '''The class for BCM5396 Switch'''
 
     MDIO_ACCESS = 0
     SPI_ACCESS = 1
 
-    def __init__(self, access, **kwargs):
+    def __init__(self, access, verbose=False, **kwargs):
+        self.verbose = verbose
         if access == self.MDIO_ACCESS:
             self.access = Bcm5396MDIO(**kwargs)
         else:
             self.access = Bcm5396SPI(**kwargs)
 
     def write(self, page, reg, value, n_bytes):
+        if self.verbose:
+            print('WRITE {:2x} {:2x} {:2x} '.format(page, reg, n_bytes), end='')
+            bytes = '{:2x}'.format(value)
+            print([bytes[i:i+2] for i in range(0, len(bytes), 2)][-n_bytes:])
         return self.access.write(page, reg, value, n_bytes)
 
     def read(self, page, reg, n_bytes):
-        return self.access.read(page, reg, n_bytes)
+        if self.verbose:
+            print('READ {:2x} {:2x} {:2x} '.format(page, reg, n_bytes), end='')
+        result = self.access.read(page, reg, n_bytes)
+        if self.verbose:
+            bytes = '{:2x}'.format(result)
+            print([bytes[i:i+2] for i in range(0, len(bytes), 2)][-n_bytes:])
+        return result
 
     def __add_remove_vlan(self, add, vid, untag, fwd, spt):
         VLAN_PAGE = 0x5

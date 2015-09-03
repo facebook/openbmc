@@ -1,4 +1,19 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
 SUMMARY = "Rest API Daemon"
 DESCRIPTION = "Daemon to handle RESTful interface."
 SECTION = "base"
@@ -16,11 +31,13 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_gpios.py \
            file://rest_server.py \
            file://rest_sensors.py \
+           file://rest_modbus.py \
+           file://rest_slotid.py \
           "
 
 S = "${WORKDIR}"
 
-binfiles = "rest.py rest_bmc.py rest_fruid.py rest_gpios.py rest_server.py rest_sensors.py setup-rest-api.sh"
+binfiles = "rest.py rest_bmc.py rest_fruid.py rest_gpios.py rest_server.py rest_sensors.py rest_modbus.py rest_slotid.py setup-rest-api.sh"
 
 pkgdir = "rest-api"
 

@@ -39,12 +39,10 @@ def get_sensors():
             if (len(tdata) < 2):
                 continue
             sresult[tdata[0].strip()] = tdata[1].strip()
-            result.append(sresult)
-
+        result.append(sresult)
     fresult = {
                 "Information": result,
                 "Actions": [],
                 "Resources": [],
               }
-
     return fresult

@@ -15,8 +15,8 @@ do_install_bmc_issue () {
         dir=$(dirname $dir)
     done
 
-    if [ -d "$dir/meta-aspeed/.git" ]; then
-        srcdir="$dir/meta-aspeed"
+    if [ -d "$dir/meta-openbmc/.git" ]; then
+        srcdir="$dir/meta-openbmc"
         srcdir_git="${srcdir}/.git"
         version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --dirty 2> /dev/null)
     else

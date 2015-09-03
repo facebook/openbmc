@@ -22,7 +22,7 @@ usage() {
     echo "$0 <connect | disconnect>"
 }
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 if [ $# -ne 1 ]; then
     usage

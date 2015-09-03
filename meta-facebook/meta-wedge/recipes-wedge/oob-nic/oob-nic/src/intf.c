@@ -32,7 +32,7 @@
 #include <linux/if_tun.h>
 #include <linux/fib_rules.h>
 
-#include "facebook/log.h"
+#include "openbmc/log.h"
 #include "libnetlink.h"
 #include "ll_map.h"
 

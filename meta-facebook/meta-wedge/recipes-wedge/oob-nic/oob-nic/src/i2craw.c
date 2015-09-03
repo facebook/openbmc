@@ -27,7 +27,7 @@
 #include <stdint.h>
 
 #include "facebook/i2c-dev.h"
-#include "facebook/log.h"
+#include "openbmc/log.h"
 
 void usage(const char *prog) {
   printf("Usage: %s [options] <bus number> <slave address>\n", prog);

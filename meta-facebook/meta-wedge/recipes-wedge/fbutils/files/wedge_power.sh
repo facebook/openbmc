@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
@@ -43,31 +43,6 @@ usage() {
     echo
 }
 
-# Because the voltage leak from uS COM pins could cause uS to struck when transitting
-# from S5 to S0, we will need to explicitely pull down uS COM pins before powering off/reset
-# and restoring COM pins after
-
-pull_down_us_com() {
-    # set GPIOL6 and GPIOL7 low
-    devmem_clear_bit $(scu_addr 84) 22
-    devmem_clear_bit $(scu_addr 84) 23
-    gpio_set 94 0
-    gpio_set 95 0
-    # now, connect uart from BMC to the uS
-    gpio_set 32 1
-}
-
-restore_us_com() {
-    devmem_set_bit $(scu_addr 84) 22
-    devmem_set_bit $(scu_addr 84) 23
-    # if sol.sh is running, keep uart from uS connected with BMC
-    if ps | grep sol.sh > /dev/null 2>&1; then
-        gpio_set 32 1
-    else
-        gpio_set 32 0
-    fi
-}
-
 do_status() {
     echo -n "Microserver power is "
     if wedge_is_us_on; then
@@ -79,7 +54,7 @@ do_status() {
 }
 
 do_on() {
-    local force opt
+    local force opt pulse_us n retries
     force=0
     while getopts "f" opt; do
         case $opt in
@@ -103,14 +78,31 @@ do_on() {
     fi
     # first make sure, GPIOD1 (25) is high
     gpio_set 25 1
+    sleep 1
     # then, put GPIOP7 (127) to low
     gpio_set 127 0
-    # generate the power on pulse
-    gpio_set 25 0
-    sleep 1
-    gpio_set 25 1
-    sleep 1
-    restore_us_com
+    pulse_us=500000             # 500ms
+    retries=3
+    n=1
+    while true; do
+        # first make sure, GPIOD1 (25) is high
+        gpio_set 25 1
+        usleep $pulse_us
+        # generate the power on pulse
+        gpio_set 25 0
+        usleep $pulse_us
+        gpio_set 25 1
+        sleep 3
+        if wedge_is_us_on 1 '' 1; then
+            break
+        fi
+        n=$((n+1))
+        if [ $n -gt $retries ]; then
+            echo " Failed"
+            return 1
+        fi
+        echo -n "..."
+    done
     # Turn on the power LED (GPIOE5)
     /usr/local/bin/power_led.sh on
     echo " Done"
@@ -119,7 +111,6 @@ do_on() {
 
 do_off() {
     echo -n "Power off microserver ..."
-    pull_down_us_com
     # first make sure, GPIOD1 (25) is high
     gpio_set 25 1
     # then, put GPIOP7 (127) to low
@@ -158,14 +149,12 @@ do_reset() {
             return -1
         fi
         echo -n "Power reset microserver ..."
-        pull_down_us_com
         # then, put GPIOP7 (127) to low
         gpio_set 127 0
         gpio_set 17 0
         sleep 1
         gpio_set 17 1
         sleep 1
-        restore_us_com
     fi
     echo " Done"
     return 0

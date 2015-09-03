@@ -21,7 +21,7 @@
 # only care about 'eth0' and 'oob' intf
 [ "$IFACE" != "eth0" ] && [ "$IFACE" != "oob" ] && exit 0
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 board=$(wedge_board_type)
 

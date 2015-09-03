@@ -35,3 +35,11 @@ outlined on that page and do not file a public issue.
 ## Coding Style
 * 2 spaces for indentation rather than tabs
 * 80 character line length
+
+## License
+OpenBMC is made up of different packages. Each package contains recipe files
+that detail where to fetch source code from third party sources or local
+directories. The recipe files themselves are provided under the GPLv2
+license, but your use of the code fetched by each recipe file is subject to
+the licenses of each respective third party project or as defined in the local
+directory.

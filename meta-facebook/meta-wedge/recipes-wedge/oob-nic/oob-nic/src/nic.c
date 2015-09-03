@@ -17,6 +17,7 @@
  */
 #include "nic.h"
 
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -26,7 +27,9 @@
 #include <sys/types.h>
 
 #include "facebook/i2c-dev.h"
-#include "facebook/log.h"
+#include "openbmc/log.h"
+
+#define ETHERTYPE_LLDP 0x88cc
 
 struct oob_nic_t {
   int on_bus;
@@ -334,10 +337,23 @@ static int oob_nic_set_force_up(oob_nic *dev, int enable) {
 
 static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
   int rc;
-  int i;
   uint32_t cmd32;
   uint8_t buf[32];
   uint8_t *cmd;
+
+  /*
+   * There are 8 filters in total (MDEF0-MDEF7). Any filter that has a
+   * configuration will be applied. Any packet that matches any filter will
+   * be passed to OOB by the main NIC.
+   *
+   * Each filter has two sets of bits, MDEF and MDEF_EXT. Each bit in the
+   * filter represents a filter with its logical operation. For example,
+   * NIC_FILTER_MDEF_MAC_AND_OFFSET(0) represent MAC filter 0 using AND
+   * operation. So, in order to receive packets matching a specific MAC, MAC0
+   * filter (NIC_FILTER_MAC_NUM:NIC_FILTER_MAC_PAIR0) must be programmed
+   * with the specific MAC. Then set NIC_FILTER_MDEF_MAC_AND_OFFSET (for
+   * AND) or NIC_FILTER_MDEF_MAC_OR_OFFSET (for OR) in one of the filters.
+   */
 
   /*
    * Command to set MAC filter
@@ -351,9 +367,8 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
   cmd = buf;
   *cmd++ = NIC_FILTER_MAC_NUM;
   *cmd++ = NIC_FILTER_MAC_PAIR0; /* pair 0 */
-  for (i = 0; i < 6; i++) {
-    *cmd++ = mac[i];
-  }
+  memcpy(cmd, mac, 6);
+  cmd += 6;
   rc = i2c_smbus_write_block_data(dev->on_file, NIC_WRITE_FILTER_CMD,
                                   cmd - buf, buf);
   if (rc < 0) {
@@ -380,17 +395,15 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
   *cmd++ = NIC_FILTER_DECISION_EXT_NUM;
   *cmd++ = NIC_FILTER_MDEF0;
   /* enable filter for traffic from network and host */
-  cmd32 = NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_NET_EN_OFFSET)
-    | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_HOST_EN_OFFSET);
-  for (i = 0; i < sizeof(cmd32); i++) {
-    *cmd++ = (cmd32 >> (24 - 8 * i)) & 0xFF;
-  }
+  cmd32 = htonl(NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_NET_EN_OFFSET)
+                | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_HOST_EN_OFFSET));
+  memcpy(cmd, &cmd32, sizeof(cmd32));
+  cmd += sizeof(cmd32);
   /* enable mac pair 0 */
-  cmd32 = NIC_FILTER_MDEF_BIT_VAL(NIC_FILTER_MDEF_MAC_AND_OFFSET,
-                                  NIC_FILTER_MAC_PAIR0);
-  for (i = 0; i < sizeof(cmd32); i++) {
-    *cmd++ = (cmd32 >> (24 - 8 * i)) & 0xFF;
-  }
+  cmd32 = htonl(NIC_FILTER_MDEF_BIT_VAL(NIC_FILTER_MDEF_MAC_AND_OFFSET,
+                                        NIC_FILTER_MAC_PAIR0));
+  memcpy(cmd, &cmd32, sizeof(cmd32));
+  cmd += sizeof(cmd32);
   rc = i2c_smbus_write_block_data(dev->on_file, NIC_WRITE_FILTER_CMD,
                                   cmd - buf, buf);
   if (rc < 0) {
@@ -398,23 +411,41 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
     LOG_ERR(rc, "Failed to set MAC filter to MDEF 0");
     return -rc;
   }
-  /* enable ARP and ND on filter 1*/
+
+  /* Program EtherType0 to match LLDP */
+  cmd = buf;
+  *cmd++ = NIC_FILTER_ETHERTYPE_NUM;
+  *cmd++ = NIC_FILTER_ETHERTYPE0;
+  cmd32 = htonl(ETHERTYPE_LLDP);
+  memcpy(cmd, &cmd32, sizeof(cmd32));
+  cmd += sizeof(cmd32);
+  rc = i2c_smbus_write_block_data(dev->on_file, NIC_WRITE_FILTER_CMD,
+                                  cmd - buf, buf);
+  if (rc < 0) {
+    rc = errno;
+    LOG_ERR(rc, "Failed to program EtherType0 to match LLDP");
+    return -rc;
+  }
+
+  /* enable ARP, ND, and EtheryType0 (OR) on filter 1 */
   cmd = buf;
   *cmd++ = NIC_FILTER_DECISION_EXT_NUM;
   *cmd++ = NIC_FILTER_MDEF1;
-  /* enable filter for traffic from network and host */
-  cmd32 = NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_NET_EN_OFFSET)
-    | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_HOST_EN_OFFSET);
-  for (i = 0; i < sizeof(cmd32); i++) {
-    *cmd++ = (cmd32 >> (24 - 8 * i)) & 0xFF;
-  }
+  /* enable filter for traffic from network and host, matching ethertype0 */
+  cmd32 = htonl(NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_NET_EN_OFFSET)
+                | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_EXT_HOST_EN_OFFSET)
+                | NIC_FILTER_MDEF_BIT_VAL(
+                    NIC_FILTER_MDEF_EXT_ETHTYPE_OR_OFFSET,
+                    NIC_FILTER_ETHERTYPE0));
+  memcpy(cmd, &cmd32, sizeof(cmd32));
+  cmd += sizeof(cmd32);
+
   /* enable ARP and ND */
-  cmd32 = NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_ARP_REQ_OR_OFFSET)
-    | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_ARP_RES_OR_OFFSET)
-    | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_NBG_OR_OFFSET);
-  for (i = 0; i < sizeof(cmd32); i++) {
-    *cmd++ = (cmd32 >> (24 - 8 * i)) & 0xFF;
-  }
+  cmd32 = htonl(NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_ARP_REQ_OR_OFFSET)
+                | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_ARP_RES_OR_OFFSET)
+                | NIC_FILTER_MDEF_BIT(NIC_FILTER_MDEF_NBG_OR_OFFSET));
+  memcpy(cmd, &cmd32, sizeof(cmd32));
+  cmd += sizeof(cmd32);
   rc = i2c_smbus_write_block_data(dev->on_file, NIC_WRITE_FILTER_CMD,
                                   cmd - buf, buf);
   if (rc < 0) {
@@ -426,10 +457,9 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
   /* make filter 0, matching MAC, to be mng only */
   cmd = buf;
   *cmd++ = NIC_FILTER_MNG_ONLY_NUM;
-  cmd32 = NIC_FILTER_MNG_ONLY_FILTER0;
-  for (i = 0; i < sizeof(cmd32); i++) {
-    *cmd++ = (cmd32 >> (24 - 8 * i)) & 0xFF;
-  }
+  cmd32 = htonl(NIC_FILTER_MNG_ONLY_FILTER0);
+  memcpy(cmd, &cmd32, sizeof(cmd32));
+  cmd += sizeof(cmd32);
   rc = i2c_smbus_write_block_data(dev->on_file, NIC_WRITE_FILTER_CMD,
                                   cmd - buf, buf);
   if (rc < 0) {

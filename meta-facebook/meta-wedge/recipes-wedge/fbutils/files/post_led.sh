@@ -24,7 +24,7 @@ usage() {
     echo "Usage: $0 <value>"
 }
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 # Function to set the less significant hex digit
 display_lower() {  

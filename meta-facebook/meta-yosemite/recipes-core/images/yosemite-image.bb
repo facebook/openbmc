@@ -1,0 +1,1 @@
+include yosemite-image.inc

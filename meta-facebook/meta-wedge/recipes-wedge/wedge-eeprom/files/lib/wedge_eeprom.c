@@ -23,9 +23,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <facebook/log.h>
+#include <openbmc/log.h>
 
+#ifndef FBW_EEPROM_FILE
 #define FBW_EEPROM_FILE "/sys/class/i2c-adapter/i2c-6/6-0050/eeprom"
+#endif
 
 #define FBW_EEPROM_VERSION 0
 #define FBW_EEPROM_V0_SIZE 162

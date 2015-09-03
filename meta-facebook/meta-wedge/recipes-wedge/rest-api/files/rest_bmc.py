@@ -20,6 +20,7 @@
 
 
 from subprocess import *
+import re
 
 # Handler for FRUID resource endpoint
 def get_bmc():
@@ -51,6 +52,14 @@ def get_bmc():
     mem_usage = adata[0]
     cpu_usage = adata[1]
 
+    # Get OpenBMC version
+    version = ""
+    data = Popen('cat /etc/issue', \
+                        shell=True, stdout=PIPE).stdout.read()
+    ver = re.search(r'v([\w\d._-]*)\s', data)
+    if ver:
+        version = ver.group(1)
+
     result = {
                 "Information": {
                     "Description": "Wedge BMC",
@@ -58,6 +67,7 @@ def get_bmc():
                     "Uptime": uptime,
                     "Memory Usage": mem_usage,
                     "CPU Usage": cpu_usage,
+                    "OpenBMC Version": version,
                 },
                 "Actions": [],
                 "Resources": [],

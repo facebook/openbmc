@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -tt
 # Copyright 2004-present Facebook. All rights reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -29,9 +29,11 @@ def auto_int(x):
 def get_bcm(args):
     if args.spi:
         return Bcm5396(Bcm5396.SPI_ACCESS, cs=args.cs, clk=args.clk,
-                       mosi=args.mosi, miso=args.miso)
+                       mosi=args.mosi, miso=args.miso,
+                       verbose=args.verbose)
     else:
-        return Bcm5396(Bcm5396.MDIO_ACCESS, mdc=args.mdc, mdio=args.mdio)
+        return Bcm5396(Bcm5396.MDIO_ACCESS, mdc=args.mdc, mdio=args.mdio,
+                       verbose=args.verbose)
 
 
 def read_register(args):
@@ -249,6 +251,10 @@ def access_parser(ap):
 
 if __name__ == '__main__':
     ap = ArgumentParser()
+    ap.add_argument('-v', '--verbose', action='store_true',
+                    help='Dump the switch page, register, and value '
+                    'for each operation')
+
     access_parser(ap)
 
     subparsers = ap.add_subparsers()

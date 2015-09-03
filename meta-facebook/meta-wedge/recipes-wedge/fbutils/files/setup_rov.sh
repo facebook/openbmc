@@ -24,7 +24,7 @@
 # outgoing voltage on the first buck converter, and bring T2 up out of
 # reset.
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 # read the T2 ROV after the GPIOs are enabled
 t2_rov() {

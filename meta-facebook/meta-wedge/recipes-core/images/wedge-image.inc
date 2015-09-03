@@ -39,9 +39,8 @@ NTP_PKGS = " \
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   kernel-modules \
-  u-boot \
   u-boot-fw-utils \
-  fbutils \
+  openbmc-utils \
   fan-ctrl \
   rackmon \
   watchdog-ctrl \
@@ -49,6 +48,8 @@ IMAGE_INSTALL += " \
   sensor-setup \
   usb-console \
   oob-nic \
+  lldp-util \
+  bmc-log \
   lmsensors-sensors \
   wedge-eeprom \
   sms-kcsd \
@@ -61,6 +62,7 @@ IMAGE_INSTALL += " \
   ${NTP_PKGS} \
   iproute2 \
   dhcp-client \
+  spatula \
   "
 
 IMAGE_FEATURES += " \

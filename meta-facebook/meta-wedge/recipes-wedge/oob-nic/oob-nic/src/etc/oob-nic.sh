@@ -40,14 +40,12 @@ DESC="OOB NIC Driver"
 test -f $DAEMON || exit 0
 
 # enable the isolation buffer
-. /usr/local/fbpackages/utils/ast-functions
-wedge_iso_buf_enable
+. /usr/local/bin/openbmc-utils.sh
 
 fix_etc_interfaces() {
-    local intf_conf rev
-    intf_conf="/etc/network/interfaces"
-    rev=$(wedge_board_rev)
-    if [ $rev -lt 3 ]; then
+    local intf_conf board_rev board_type enable_oob
+    if wedge_should_enable_oob; then
+        intf_conf="/etc/network/interfaces"
         if ! grep oob $intf_conf > /dev/null 2>&1; then
             echo >> $intf_conf
             echo "auto oob" >> $intf_conf

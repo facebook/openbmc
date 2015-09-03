@@ -25,7 +25,7 @@
 # Default-Stop:
 # Short-Description: Power on micro-server
 ### END INIT INFO
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 

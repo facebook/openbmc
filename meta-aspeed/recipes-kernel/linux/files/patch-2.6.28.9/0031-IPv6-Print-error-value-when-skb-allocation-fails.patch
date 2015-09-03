@@ -1,0 +1,43 @@
+From 5777cee30776da63ecbe2b6d4929e01d82c7d72e Mon Sep 17 00:00:00 2001
+From: Brian Haley <brian.haley@hp.com>
+Date: Tue, 2 Jun 2009 00:20:26 -0700
+Subject: [PATCH] IPv6: Print error value when skb allocation fails
+
+Print-out the error value when sock_alloc_send_skb() fails in
+the IPv6 neighbor discovery code - can be useful for debugging.
+
+Signed-off-by: Brian Haley <brian.haley@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/ipv6/ndisc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
+index d0f54d1..45529b1 100644
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -483,8 +483,8 @@ static void __ndisc_send(struct net_device *dev,
+ 				  1, &err);
+ 	if (!skb) {
+ 		ND_PRINTK0(KERN_ERR
+-			   "ICMPv6 ND: %s() failed to allocate an skb.\n",
+-			   __func__);
++			   "ICMPv6 ND: %s() failed to allocate an skb, err=%d.\n",
++			   __func__, err);
+ 		dst_release(dst);
+ 		return;
+ 	}
+@@ -1533,8 +1533,8 @@ void ndisc_send_redirect(struct sk_buff *skb, struct neighbour *neigh,
+ 				   1, &err);
+ 	if (buff == NULL) {
+ 		ND_PRINTK0(KERN_ERR
+-			   "ICMPv6 Redirect: %s() failed to allocate an skb.\n",
+-			   __func__);
++			   "ICMPv6 Redirect: %s() failed to allocate an skb, err=%d.\n",
++			   __func__, err);
+ 		dst_release(dst);
+ 		return;
+ 	}
+-- 
+1.8.1
+

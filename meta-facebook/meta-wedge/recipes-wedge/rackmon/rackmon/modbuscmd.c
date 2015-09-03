@@ -16,51 +16,54 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <termios.h>
-#include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
+#include <getopt.h>
+#include <sched.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
-#include <getopt.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include "modbus.h"
-
-int verbose;
+#include "rackmond.h"
 
 void usage() {
   fprintf(stderr,
-      "modbuscmd [-v] [-t <tty>] [-g <gpio>] modbus_command\n"
-      "\ttty defaults to %s\n"
-      "\tgpio defaults to %d\n"
+      "modbuscmd [-v] [-t <timeout in ms>] [-x <expected response length>] modbus_command\n"
       "\tmodbus command should be specified in hex\n"
-      "\teg:\ta40300000008\n",
-      DEFAULT_TTY, DEFAULT_GPIO);
+      "\teg:\ta40300000008\n"
+      "\tif an expected response length is provided, modbuscmd will stop receving and check crc immediately "
+      "after receiving that many bytes\n");
   exit(1);
 }
 
+
 int main(int argc, char **argv) {
     int error = 0;
-    int fd;
-    struct termios tio;
-    char gpio_filename[255];
-    int gpio_fd = 0;
-    int gpio_n = DEFAULT_GPIO;
-    char *tty = DEFAULT_TTY;
     char *modbus_cmd = NULL;
     size_t cmd_len = 0;
+    int expected = 0;
+    uint32_t timeout = 0;
     verbose = 0;
+    rackmond_command *cmd = NULL;
+    char *response = NULL;
+    int clisock;
+    uint16_t response_len_actual;
+    struct sockaddr_un rackmond_addr;
 
     int opt;
-    while((opt = getopt(argc, argv, "t:g:v")) != -1) {
+    while((opt = getopt(argc, argv, "w:x:t:g:v")) != -1) {
       switch (opt) {
-      case 't':
-        tty = optarg;
+      case 'x':
+        expected = atoi(optarg);
         break;
-      case 'g':
-        gpio_n = atoi(optarg);
+      case 't':
+        timeout = atol(optarg);
         break;
       case 'v':
         verbose = 1;
@@ -77,29 +80,6 @@ int main(int argc, char **argv) {
       usage();
     }
 
-    if (verbose)
-      fprintf(stderr, "[*] Opening TTY\n");
-    fd = open(tty, O_RDWR | O_NOCTTY);
-    CHECK(fd);
-
-    if (verbose)
-      fprintf(stderr, "[*] Opening GPIO %d\n", gpio_n);
-    snprintf(gpio_filename, 255, "/sys/class/gpio/gpio%d/value", gpio_n);
-    gpio_fd = open(gpio_filename, O_WRONLY | O_SYNC);
-    CHECK(gpio_fd);
-
-    if (verbose)
-      fprintf(stderr, "[*] Setting TTY flags!\n");
-    memset(&tio, 0, sizeof(tio));
-    cfsetspeed(&tio,B19200);
-    tio.c_cflag |= PARENB;
-    tio.c_cflag |= CLOCAL;
-    tio.c_cflag |= CS8;
-    tio.c_iflag |= INPCK;
-    tio.c_cc[VMIN] = 1;
-    tio.c_cc[VTIME] = 0;
-    CHECK(tcsetattr(fd,TCSANOW,&tio));
-
     //convert hex to bytes
     cmd_len = strlen(modbus_cmd);
     if(cmd_len < 4) {
@@ -107,57 +87,45 @@ int main(int argc, char **argv) {
       exit(1);
     }
     decode_hex_in_place(modbus_cmd, &cmd_len);
-    append_modbus_crc16(modbus_cmd, &cmd_len);
-    // print command as sent
-    if (verbose)  {
-      fprintf(stderr, "Will send:  ");
-      print_hex(stderr, modbus_cmd, cmd_len);
-      fprintf(stderr, "\n");
-    }
+    cmd = malloc(sizeof(rackmond_command) + cmd_len);
+    cmd->type = COMMAND_TYPE_RAW_MODBUS;
+    cmd->raw_modbus.length = cmd_len;
+    cmd->raw_modbus.custom_timeout = timeout;
+    memcpy(cmd->raw_modbus.data, modbus_cmd, cmd_len);
+    cmd->raw_modbus.expected_response_length = expected;
+    response = malloc(expected ? expected : 1024);
+    uint16_t wire_cmd_len = sizeof(rackmond_command) + cmd_len;
 
-    if (verbose)
-      fprintf(stderr, "[*] Writing!\n");
-
-    // gpio on, write, wait, gpio off
-    gpio_on(gpio_fd);
-    write(fd, modbus_cmd, cmd_len);
-    waitfd(fd);
-    gpio_off(gpio_fd);
-
-    // Enable UART read
-    tio.c_cflag |= CREAD;
-    CHECK(tcsetattr(fd,TCSANOW,&tio));
-
-    if(verbose)
-      fprintf(stderr, "[*] reading any response...\n");
-    // Read back response
-    char modbus_buf[255];
-    size_t mb_pos = 0;
-    memset(modbus_buf, 0, sizeof(modbus_buf));
-    mb_pos = read_wait(fd, modbus_buf, sizeof(modbus_buf), 90000);
-    if(mb_pos >= 4) {
-      uint16_t crc = modbus_crc16(modbus_buf, mb_pos - 2);
-      if(verbose)
-        fprintf(stderr, "Modbus response CRC: %04X\n ", crc);
-      if((modbus_buf[mb_pos - 2] == (crc >> 8)) &&
-          (modbus_buf[mb_pos - 1] == (crc & 0x00FF))) {
-        if(verbose)
-          fprintf(stderr, "CRC OK!\n");
-        print_hex(stdout, modbus_buf, mb_pos);
-        printf("\n");
-      } else {
-        fprintf(stderr, "BAD CRC :(\n");
-        return 5;
-      }
-    } else {
-      fprintf(stderr, "No response :(\n");
-      return 4;
-    }
-
-cleanup:
-    if(error != 0) {
+    clisock = socket(AF_UNIX, SOCK_STREAM, 0);
+    CHECKP(socket, clisock);
+    rackmond_addr.sun_family = AF_UNIX;
+    strcpy(rackmond_addr.sun_path, "/var/run/rackmond.sock");
+    int addr_len = strlen(rackmond_addr.sun_path) + sizeof(rackmond_addr.sun_family);
+    CHECKP(connect, connect(clisock, (struct sockaddr*) &rackmond_addr, addr_len));
+    CHECKP(send, send(clisock, &wire_cmd_len, sizeof(wire_cmd_len), 0));
+    CHECKP(send, send(clisock, cmd, wire_cmd_len, 0));
+    CHECKP(recv, recv(clisock, &response_len_actual, sizeof(response_len_actual), 0));
+    if(response_len_actual == 0) {
+      uint16_t errcode = 0;
+      CHECKP(recv, recv(clisock, &errcode, sizeof(errcode), 0));
+      fprintf(stderr, "modbus error: %d (%s)\n", errcode, modbus_strerror(errcode));
       error = 1;
-      fprintf(stderr, "%s\n", strerror(errno));
+      goto cleanup;
+    }
+    CHECKP(recv, recv(clisock, response, response_len_actual, 0));
+    if(error == 0) {
+      printf("Response: ");
+      print_hex(stdout, response, response_len_actual);
+      printf("\n");
+    }
+cleanup:
+    free(cmd);
+    free(response);
+    if(error != 0) {
+      if(errno != 0) {
+        fprintf(stderr, "errno err: %s\n", strerror(errno));
+      }
+      error = 1;
     }
     return error;
 }

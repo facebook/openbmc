@@ -39,7 +39,7 @@
 # When defined, the system doesn't reboot cleanly.  We're still
 # investigating this.
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 # Set up to read the board revision pins, Y0, Y1, Y2
 devmem_set_bit $(scu_addr 70) 19
@@ -182,8 +182,8 @@ devmem_set_bit $(scu_addr 70) 13
 # GPIOQ5 is ISO_FLASH_HOLD, must be 1 to be out of reset
 # To use GPIOQ4 and GPIOQ5, SCU90[27] must be 0
 devmem_clear_bit $(scu_addr 90) 27
-gpio_set 134 1
-gpio_set 135 1
+gpio_set Q4 1
+gpio_set Q5 1
 # GPIOD6 is ISO_FL_PRG_SEL, set it to 0 so that BMC does not have control
 # on the EEPROM by default.
 # To use GPIOD6, SCU90[1] must be 0, SCU8C[21] must be 0, and Strap[21] must be 0
@@ -244,31 +244,139 @@ board_type=$(wedge_board_type)
 case "$board_type" in
     FC-LEFT|FC-RIGHT)
         # On FC
-        # FAB_SLOT_ID is GPIOU0
-        # PEER_FAB_PRSNT is GPIOU1
-        devmem_set_bit $(scu_addr a0) 8
-        devmem_set_bit $(scu_addr a0) 9
-        gpio_export U0
-        gpio_export U1
-        # T2_POWER_UP is GPIOT6
-        devmem_set_bit $(scu_addr a0) 6
-        gpio_export T6
-        # HS_FAULT_N is GPIOT7
-        devmem_set_bit $(scu_addr a0) 7
-        gpio_export T7
-        if [ "$board_type" = "FC-LEFT" ]; then
-            # GPIOE2 is CPU_EEPROM_SEL, on FC-LEFT
-            devmem_clear_bit $(scu_addr 80) 18
-            devmem_clear_bit $(scu_addr 8c) 13
-            devmem_clear_bit $(scu_addr 70) 22
-            gpio_export E2
-            # GPIOA6 and GPIOA7 are MAC2 MDIO pins, we use them as
-            # GPIO for bitbang driver
-            devmem_clear_bit $(scu_addr 90) 2
-            devmem_clear_bit $(scu_addr 80) 6
-            devmem_clear_bit $(scu_addr 80) 7
-            gpio_export A6
-            gpio_export A7
+        if [ $board_rev -lt 2 ]; then
+            # EVT board
+            # FAB_SLOT_ID is GPIOU0
+            # PEER_FAB_PRSNT is GPIOU1
+            devmem_set_bit $(scu_addr a0) 8
+            devmem_set_bit $(scu_addr a0) 9
+            gpio_export U0
+            gpio_export U1
+            # T2_POWER_UP is GPIOT6
+            devmem_set_bit $(scu_addr a0) 6
+            gpio_export T6 T2_POWER_UP
+            # HS_FAULT_N is GPIOT7
+            devmem_set_bit $(scu_addr a0) 7
+            gpio_export T7
+            if [ "$board_type" = "FC-LEFT" ]; then
+                # GPIOE2 is CPU_EEPROM_SEL, on FC-LEFT
+                devmem_clear_bit $(scu_addr 80) 18
+                devmem_clear_bit $(scu_addr 8c) 13
+                devmem_clear_bit $(scu_addr 70) 22
+                gpio_export E2
+                # GPIOA6 and GPIOA7 are MAC2 MDIO pins, we use them as
+                # GPIO for bitbang driver
+                devmem_clear_bit $(scu_addr 90) 2
+                devmem_clear_bit $(scu_addr 80) 6
+                devmem_clear_bit $(scu_addr 80) 7
+                gpio_export A6
+                gpio_export A7
+            fi
+        else
+            # DVT board
+            if [ "$board_type" = "FC-LEFT" ]; then # Left FC
+                # BMC_SW_RST is GPIOL0, 16p switch
+                # SCU84[16] must be 0
+                devmem_clear_bit $(scu_addr 84) 16
+                gpio_set L0 1
+
+                # MDC|MDIO_CONT are GPIOR6 and GPIOR7, 16p switch
+                # SCU88[30:31] must be 0
+                devmem_clear_bit $(scu_addr 88) 30
+                devmem_clear_bit $(scu_addr 88) 31
+                gpio_set R6 1
+                gpio_set R7 1
+
+                # SWITCH_EEPROM1_WRT is GPIOE2, 16p switch EEPROM (U61)
+                # SCU80[18], SCU8C[13], and SCU70[22] must be 0
+                devmem_clear_bit $(scu_addr 80) 18
+                devmem_clear_bit $(scu_addr 8C) 13
+                devmem_clear_bit $(scu_addr 70) 22
+                gpio_export E2
+
+                # SPI bus to 16p switch EEPROM
+                # GPIOI4 <--> BMC_EEPROM1_SPI_SS
+                # GPIOI5 <--> BMC_EEPROM1_SPI_SCK
+                # GPIOI6 <--> BMC_EEPROM1_SPI_MOSI
+                # GPIOI7 <--> BMC_EEPROM1_SPI_MISO
+                # The EEPROM SPI clk does not match with the BMC SPI master.
+                # Have to configure these pins as GPIO to use with
+                # SPI bitbang driver.
+                # SCU70[13:12,5] must be 0
+                devmem_clear_bit $(scu_addr 70) 5
+                devmem_clear_bit $(scu_addr 70) 12
+                devmem_clear_bit $(scu_addr 70) 13
+                gpio_export I4
+                gpio_export I5
+                gpio_export I6
+                gpio_export I7
+
+                # BMC_PHY_RST is GPIOT0, Front Panel Port PHY on the 16p switch
+                # SCUA0[0] must be 1
+                devmem_set_bit $(scu_addr a0) 0
+                gpio_set T0 1
+
+                # BMC_5PORTSW_RST is GPIOT1, 5p switch
+                # SCUA0[1] must be 1
+                devmem_set_bit $(scu_addr a0) 1
+                gpio_set T1 1
+
+                # ISO_SWITCH1_MDC|MDIO are GPIOT4 and GPIOT5, 5p switch
+                # SCUA0[4:5] must be 1
+                devmem_set_bit $(scu_addr a0) 4
+                devmem_set_bit $(scu_addr a0) 5
+                gpio_set T4 1
+                gpio_set T5 1
+
+                # ISO_SWITCH_EEPROM2_WRT is GPIOV0, 5p switch EEPROM (U114)
+                # SCUA0[16] must be 1
+                devmem_set_bit $(scu_addr a0) 16
+                gpio_export V0
+
+                # SPI bus to 5p switch EEPROM (U114)
+                # GPIOI0 <--> ISO_BMC_EEPROM2_SPI_SS
+                # GPIOI1 <--> ISO_BMC_EEPROM2_SPI_SCK
+                # GPIOI2 <--> ISO_BMC_EEPROM2_SPI_MOSI
+                # GPIOI3 <--> ISO_BMC_EEPROM2_SPI_MISO
+                # The EEPROM SPI clk does not match with the BMC SPI master.
+                # Have to configure these pins as GPIO to use with
+                # SPI bitbang driver.
+                # SCU70[13] must be 0, has already been set when
+                # preparing for GPIOI4-GPIOI7
+                gpio_export I0
+                gpio_export I1
+                gpio_export I2
+                gpio_export I3
+
+                # BMC_PHYL_RST is GPIOF0, Left BMC PHY
+                # SCU80[24] must be 0
+                devmem_clear_bit $(scu_addr 80) 24
+                gpio_set F0 1
+            else               # Right FC
+                # BMC_PHYR_RST is GPIOL1, Right BMC PHY
+                # SCU84[17] must be 0
+                devmem_clear_bit $(scu_addr 84) 17
+                gpio_set L1 1
+            fi
+            # T2_POWER_UP is GPIOU4
+            # SCUA0[12] must be 1
+            devmem_set_bit $(scu_addr a0) 12
+            gpio_export U4 T2_POWER_UP
+
+            # HS_FAULT_N is GPIOU5
+            # SCUA0[13] must be 1
+            devmem_set_bit $(scu_addr a0) 13
+            gpio_export U5
+
+            # FAB_SLOT_ID is GPIOU6
+            # SCUA0[14] must be 1
+            devmem_set_bit $(scu_addr a0) 14
+            gpio_export U6
+
+            # PEER_FAB_PRSNT is GPIOU7
+            # SCUA0[15] must be 1
+            devmem_set_bit $(scu_addr a0) 15
+            gpio_export U7
         fi
         ;;
     *)
@@ -289,7 +397,7 @@ case "$board_type" in
             gpio_export U3
             # T2_POWER_UP is GPIOT6
             devmem_set_bit $(scu_addr a0) 6
-            gpio_export T6
+            gpio_export T6 T2_POWER_UP
             # HS_FAULT_N is GPIOT7
             devmem_set_bit $(scu_addr a0) 7
             gpio_export T7
@@ -307,7 +415,7 @@ case "$board_type" in
             gpio_export V1
             # T2_POWER_UP is GPIOU4
             devmem_set_bit $(scu_addr a0) 12
-            gpio_export U4
+            gpio_export U4 T2_POWER_UP
             # HS_FAULT_N is GPIOU5
             devmem_set_bit $(scu_addr a0) 13
             gpio_export U5

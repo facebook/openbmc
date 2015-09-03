@@ -28,8 +28,6 @@
 #include <getopt.h>
 #include "modbus.h"
 
-int verbose = 0;
-
 void usage() {
   fprintf(stderr,
       "modbussim [-v] [-t <tty>] [-g <gpio>] modbus_request modbus_reply\n"

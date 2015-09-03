@@ -1,9 +1,6 @@
-
 # This revision corresponds to the tag "v2.6.28.9"
 # We use the revision in order to avoid having to fetch it from the repo during parse
 SRCREV = "1e85856853e24e9013d142adaad38c2adc7e48ac"
-
-PV = "2.6.28.9"
 
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git;protocol=https;branch=linux-2.6.28.y \
            file://patch-2.6.28.9/0000-linux-aspeed-064.patch \
@@ -25,14 +22,30 @@ SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
            file://patch-2.6.28.9/0028-ipv6-Plug-sk_buff-leak-in-ipv6_rcv-net-ipv6-ip6_inpu.patch \
            file://patch-2.6.28.9/0001-bzip2-lzma-library-support-for-gzip-bzip2-and-lzma-d.patch \
            file://patch-2.6.28.9/0002-bzip2-lzma-config-and-initramfs-support-for-bzip2-lz.patch \
+           file://patch-2.6.28.9/0032-Create-snapshot-of-OpenBMC.patch \
           "
 
 S = "${WORKDIR}/git"
 
-LINUX_VERSION = "2.6.28.9"
+LINUX_VERSION ?= "2.6.28.9"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 
 PR = "r1"
+PV = "${LINUX_VERSION}"
+
+include linux-aspeed.inc
+
+# Install bounds.h for external module install
+# The default install script handles this. However, it looks for bounds.h from
+# 'include/generated', which doesnot match 2.6.28, where the file is in
+# 'include/linux'.
+do_install[postfuncs] += "install_bounds_h"
+install_bounds_h() {
+	kerneldir=${D}${KERNEL_SRC_PATH}
+	if [ -f include/linux/bounds.h ]; then
+		cp -l include/linux/bounds.h $kerneldir/include/linux/bounds.h
+	fi
+}
 
 KERNEL_CONFIG_COMMAND = "oe_runmake wedge_defconfig && oe_runmake oldconfig"
 

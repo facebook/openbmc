@@ -24,7 +24,7 @@
 #include "nic.h"
 #include "intf.h"
 
-#include "facebook/log.h"
+#include "openbmc/log.h"
 #include "facebook/wedge_eeprom.h"
 
 #define WAIT4PACKET_TIMEOUT 10000        /* 10ms */
@@ -129,28 +129,40 @@ int main(int argc, const char **argv) {
 
   /* read EEPROM for the MAC */
   if (wedge_eeprom_parse(NULL, &eeprom) == 0) {
-    if (eeprom.fbw_mac_size <= 0) {
+    uint16_t carry;
+    int pos;
+    int adj;
+    /*
+     * OOB MAC comes from this range. We pick the last MAC from the range to
+     * use as OOB MAC.
+     */
+    if (eeprom.fbw_mac_size > 128) {
+      LOG_ERR(EFAULT, "Extended MAC size (%d) is too large.",
+              eeprom.fbw_mac_size);
+      carry = 128;
+    } else {
+      carry = eeprom.fbw_mac_size;
+    }
+
+    /*
+     * Due to various manufacture issues, some FC boards have MAC range overlap
+     * between LEFT and RIGHT sides. A SW workaround is done below to use the
+     * 8th (or 7th for right side FC) last MAC from the range for FC.
+     */
+    if (strncmp(eeprom.fbw_location, "LEFT", FBW_EEPROM_F_LOCATION) == 0) {
+      adj = 8;
+    } else if (strncmp(eeprom.fbw_location, "RIGHT", FBW_EEPROM_F_LOCATION)
+               == 0) {
+      adj = 7;
+    } else {
+      adj = 1;
+    }
+
+    if (carry < adj) {
       LOG_ERR(EFAULT, "Invalid extended MAC size: %d", eeprom.fbw_mac_size);
     } else {
-      uint16_t carry;
-      int pos;
-      /* use the last MAC address from the extended MAC range */
+      carry -= adj;
       memcpy(mac, eeprom.fbw_mac_base, sizeof(mac));
-      if (eeprom.fbw_mac_size > 128) {
-        LOG_ERR(EFAULT, "Extended MAC size (%d) is too large.",
-                eeprom.fbw_mac_size);
-        carry = 127;
-      } else {
-        /*
-         * hack around bug device which have the same MAC address on
-         * left and right.
-         */
-        if (strncmp(eeprom.fbw_location, "LEFT", FBW_EEPROM_F_LOCATION) == 0) {
-          carry = eeprom.fbw_mac_size - 2;
-        } else {
-          carry = eeprom.fbw_mac_size - 1;
-        }
-      }
       for (pos = sizeof(mac) - 1; pos >= 0 && carry; pos--) {
         uint16_t tmp = mac[pos] + carry;
         mac[pos] = tmp & 0xFF;

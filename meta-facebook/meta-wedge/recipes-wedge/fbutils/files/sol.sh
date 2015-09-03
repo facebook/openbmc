@@ -18,7 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 
-CONSOLE_SH=/usr/local/fbpackages/utils/us_console.sh
+CONSOLE_SH=/usr/local/bin/us_console.sh
+FILE=/etc/us_pseudo_tty
+TTY=/dev/ttyS1
+
+if [ -a $FILE ]
+  then
+    read -r TTY<$FILE
+fi
 
 $CONSOLE_SH connect
 
@@ -29,7 +36,7 @@ echo
 
 trap '"$CONSOLE_SH" disconnect' INT TERM QUIT EXIT
 
-/usr/bin/microcom -s 57600 /dev/ttyS1
+/usr/bin/microcom -s 57600 $TTY
 
 echo
 echo

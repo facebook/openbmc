@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 echo -n "Reset USB Switch ... "
 

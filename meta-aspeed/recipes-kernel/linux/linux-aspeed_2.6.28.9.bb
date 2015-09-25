@@ -33,8 +33,6 @@ LINUX_VERSION_EXTENSION ?= "-aspeed"
 PR = "r1"
 PV = "${LINUX_VERSION}"
 
-include linux-aspeed.inc
-
 # Install bounds.h for external module install
 # The default install script handles this. However, it looks for bounds.h from
 # 'include/generated', which doesnot match 2.6.28, where the file is in

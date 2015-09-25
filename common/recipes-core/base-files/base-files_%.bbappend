@@ -18,7 +18,7 @@ do_install_bmc_issue () {
     if [ -d "$dir/meta-openbmc/.git" ]; then
         srcdir="$dir/meta-openbmc"
         srcdir_git="${srcdir}/.git"
-        version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --dirty 2> /dev/null)
+        version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --dirty --always 2> /dev/null)
     else
         version=""
     fi

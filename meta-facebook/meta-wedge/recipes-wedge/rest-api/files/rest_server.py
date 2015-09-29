@@ -39,22 +39,22 @@ def get_server():
 def server_action(data):
     if data["action"] == 'power-on':
         ret = Popen('/usr/local/bin/wedge_power.sh status', \
-			        shell=True, stdout=PIPE).stdout.read()
+                    shell=True, stdout=PIPE).stdout.read()
         status = ret.rsplit()[-1]
         if status == 'on':
             res = 'failure'
             reason = 'already on'
         else:
             ret = Popen('/usr/local/bin/wedge_power.sh on', \
-			            shell=True, stdout=PIPE).stdout.read()
+                        shell=True, stdout=PIPE).stdout.read()
             res = "success"
     elif data["action"] == 'power-off':
         ret = Popen('/usr/local/bin/wedge_power.sh off', \
-			        shell=True, stdout=PIPE).stdout.read()
+                    shell=True, stdout=PIPE).stdout.read()
         res = "success"
     elif data["action"] == 'power-reset':
         ret = Popen('/usr/local/bin/wedge_power.sh reset', \
-			        shell=True, stdout=PIPE).stdout.read()
+                    shell=True, stdout=PIPE).stdout.read()
         res = "success"
     else:
         res = 'failure'

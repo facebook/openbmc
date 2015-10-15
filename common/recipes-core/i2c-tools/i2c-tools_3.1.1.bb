@@ -3,11 +3,10 @@ SECTION = "base"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
-SRCREV = "6235"
-SRC_URI = "svn://lm-sensors.org/svn/i2c-tools/branches/;protocol=http;module=i2c-tools-3.1 \
-          "
+SRCREV = "f216eca1c6ebab20473070dc411cc6cb927a77db"
+SRC_URI = "git://github.com/groeck/i2c-tools.git;protocol=https;branch=i2c-tools-3.1"
 
-S = "${WORKDIR}/i2c-tools-3.1"
+S = "${WORKDIR}/git"
 
 i2ctools = "i2cdetect \
             i2cdump \

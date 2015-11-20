@@ -17,9 +17,26 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import subprocess
 
-from rest_helper import get_wedge_slot
+def read_gpio_sysfs(gpio):    
+    try:
+        with open('/sys/class/gpio/gpio%d/value' % gpio, 'r') as f:
+            val_string = f.read()
+            if val_string == '1\n':
+                return 1
+            if val_string == '0\n':
+                return 0
+    except:
+        return None
 
-def get_slotid():
-    slot = get_wedge_slot()
-    return { 'slotid' : slot }
+def get_wedge_slot():
+    p = subprocess.Popen('source /usr/local/bin/openbmc-utils.sh;'
+                         'wedge_slot_id $(wedge_board_type)',
+                         shell=True, stdout=subprocess.PIPE)
+    out, err = p.communicate()
+    try:
+        slot = int(out.strip('\n'))
+    except:
+        slot = 0
+    return slot

@@ -37,6 +37,7 @@ import rest_modbus
 import rest_slotid
 import rest_psu_update
 import rest_usb2i2c_reset
+import rest_fcpresent
 
 CONSTANTS = {
     'certificate': '/usr/lib/ssl/certs/rest_server.pem',
@@ -114,7 +115,7 @@ def rest_sys():
 # Handler for sys/mb/fruid resource endpoint
 @bottle.route('/api/sys/mb/fruid')
 def rest_fruid_hdl():
-  return rest_fruid.get_fruid()
+    return rest_fruid.get_fruid()
 
 # Handler for sys/bmc resource endpoint
 @bottle.route('/api/sys/bmc')
@@ -135,12 +136,17 @@ def rest_server_act_hdl():
 # Handler for sensors resource endpoint
 @bottle.route('/api/sys/sensors')
 def rest_sensors_hdl():
-  return rest_sensors.get_sensors()
+    return rest_sensors.get_sensors()
 
-# Handler for sensors resource endpoint
+# Handler for gpios resource endpoint
 @bottle.route('/api/sys/gpios')
 def rest_gpios_hdl():
-  return rest_gpios.get_gpios()
+    return rest_gpios.get_gpios()
+
+# Handler for peer FC presence resource endpoint
+@bottle.route('/api/sys/fc_present')
+def rest_fcpresent_hdl():
+    return rest_fcpresent.get_fcpresent()
 
 @bottle.route('/api/sys/modbus_registers')
 def modbus_registers_hdl():
@@ -155,10 +161,10 @@ def psu_update_hdl():
     data = json.load(bottle.request.body)
     return rest_psu_update.begin_job(data)
 
-# Handler for sensors resource endpoint
+# Handler for get slotid from endpoint
 @bottle.route('/api/sys/slotid')
 def rest_slotid_hdl():
-  return rest_slotid.get_slotid()
+    return rest_slotid.get_slotid()
 
 # Handler to reset usb-to-i2c
 @bottle.route('/api/sys/usb2i2c_reset')

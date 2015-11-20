@@ -19,19 +19,9 @@
 #
 
 from rest_fruid import get_fruid
+from rest_helper import read_gpio_sysfs
 
 WEDGES = ["Wedge-AC-F", "Wedge-DC-F"]
-
-
-def read_gpio_sysfs(gpio):
-    with open('/sys/class/gpio/gpio%d/value' % gpio, 'r') as f:
-        val_string = f.read()
-        if val_string == '1\n':
-            return 1
-        if val_string == '0\n':
-            return 0
-    return None
-
 
 def read_wedge_back_ports():
     bhinfo = { "port_1": { "pin_1": read_gpio_sysfs(120),
@@ -46,7 +36,6 @@ def read_wedge_back_ports():
                            }
                }
     return bhinfo
-
 
 def get_gpios():
     fruinfo = get_fruid()

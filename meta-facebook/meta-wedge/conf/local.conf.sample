@@ -50,10 +50,10 @@ PACKAGE_CLASSES ?= "package_rpm"
 # Currently we do not enable anything extra here.
 #EXTRA_IMAGE_FEATURES = ""
 
-# We build on CentOS 6.3.
+# We build on CentOS 6.7.
 # Don't complain about it, even though it isn't in poky's default
 # list of supported distros.
-SANITY_TESTED_DISTROS_append ?= " CentOS-6.3 \n "
+SANITY_TESTED_DISTROS_append ?= " CentOS-6.7 \n "
 
 #
 # Additional image features
@@ -139,7 +139,5 @@ EXTRA_USERS_PARAMS = " \
   usermod -p '\$1\$UGMqyqdG\$FZiylVFmRRfl9Z0Ue8G7e/' root; \
   "
 
-OLDEST_KERNEL = "2.6.28"
-
 INHERIT += "blacklist"
-PNBLACKLIST[glibc] = "glibc 2.21 does not work with our kernel 2.6.28"
+PNBLACKLIST[eglibc] = "eglibc is only used with old kerenl 2.6.28"

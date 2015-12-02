@@ -99,6 +99,38 @@ static ssize_t i2c_dev_show_cpu_temp(struct device *dev,
   if (ret_val < 0) {
     return ret_val;
   }
+  // For lm_sensors multiply by 1000
+  ret_val *= 1000;
+  return scnprintf(buf, PAGE_SIZE, "%u\n", ret_val);
+}
+
+static ssize_t i2c_dev_show_mem_temp(struct device *dev,
+                                     struct device_attribute *attr,
+                                     char *buf)
+{
+  uint16_t ret_val;
+
+  // For memory temp follow : Module_EC_Function_Manual_050817.pdf
+  /*
+   * DIMM temperature is encoded in 16b as the following:
+   * b15-b12: TCRIT HIGH LOW SIGN
+   * b11-b08: 128 64 32 16
+   * b07-b04: 8 4 2 1
+   * b03-b00: 0.5 0.25 0.125 0.0625
+   */
+  ret_val = i2c_dev_read_word_bigendian(dev, attr);
+  if (ret_val < 0) {
+    return ret_val;
+  }
+
+  ret_val &= 0x1FFF ;
+  if ((ret_val & 0x1000)) {
+    /* signed */
+    ret_val = -((ret_val - 1) ^ 0x1FFF);
+  }
+  /*
+   * now val holds the value as a number of 1/16, times 1000 for lm-sensors */
+  ret_val *= 1000 / 16;
   return scnprintf(buf, PAGE_SIZE, "%u\n", ret_val);
 }
 
@@ -160,11 +192,18 @@ static ssize_t i2c_dev_show_voltage3(struct device *dev,
 
 static const i2c_dev_attr_st com_e_attr_table[] = {
   {
-    "temp1_input", // cpu_temp
+    "temp2_input", // cpu_temp
     NULL,
     i2c_dev_show_cpu_temp,
     NULL,
     0x0, 0, 8,
+  },
+  {
+    "temp1_input", // mem_temp : fand uses this temp
+    NULL,
+    i2c_dev_show_mem_temp,
+    NULL,
+    0x04, 0, 16,
   },
   {
     "version", // version_r,_e,_t
@@ -279,8 +318,15 @@ static const i2c_dev_attr_st com_e_attr_table[] = {
     0x0, 0, 0,
   },
   {
-    "temp1_label",
+    "temp2_label",
     "CPU Temp",
+    i2c_dev_show_label,
+    NULL,
+    0x0, 0, 0,
+  },
+  {
+    "temp1_label",
+    "Memory Temp",
     i2c_dev_show_label,
     NULL,
     0x0, 0, 0,

@@ -19,36 +19,33 @@
 #
 
 ### BEGIN INIT INFO
-# Provides:          setup-sensord
+# Provides:          setup-consoled
 # Required-Start:
 # Required-Stop:
 # Default-Start:     S
 # Default-Stop:
-# Short-Description: Setup sensor monitoring
+# Short-Description: Setup console history buffering
 ### END INIT INFO
 
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Setup gpio monitoring for yosemite... "
-
-# Check for the slots present and run sensord for those slots only.
-SLOTS=
-  if [ $(is_server_prsnt 1) == "1" ]; then
-    SLOTS="$SLOTS slot1"
+# TODO: check for the if slot/server is present before starting the daemon
+echo -n "Setup console  buffering..."
+  
+  if [ $(is_server_prsnt 1) == "1" ] ; then
+    /usr/local/bin/consoled slot1 --buffer
   fi
 
-  if [ $(is_server_prsnt 2) == "1" ]; then
-    SLOTS="$SLOTS slot2"
+  if [ $(is_server_prsnt 2) == "1" ] ; then
+    /usr/local/bin/consoled slot2 --buffer
   fi
 
-  if [ $(is_server_prsnt 3) == "1" ]; then
-    SLOTS="$SLOTS slot3"
+  if [ $(is_server_prsnt 3) == "1" ] ; then
+    /usr/local/bin/consoled slot3 --buffer
   fi
 
-  if [ $(is_server_prsnt 4) == "1" ]; then
-    SLOTS="$SLOTS slot4"
+  if [ $(is_server_prsnt 4) == "1" ] ; then
+    /usr/local/bin/consoled slot4 --buffer
   fi
-
-/usr/local/bin/gpiod $SLOTS
 
 echo "done."

@@ -49,21 +49,15 @@ IMAGE_INSTALL += " \
   lmsensors-sensors \
   rest-api \
   bottle \
-  ipmid \
   ${PYTHON_PKGS} \
   ${NTP_PKGS} \
   iproute2 \
   dhcp-client \
   fruid \
-  ipmbd \
-  bic-cached \
-  bic-util \
-  yosemite-sensors \
-  sensor-util \
-  sensor-mon \
-  gpiod \
-  front-paneld \
-  power-util \
+  log-util \
+  cherryPy \
+  lldp-util \
+  spatula \
   "
 
 IMAGE_FEATURES += " \

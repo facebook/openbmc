@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
+#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
@@ -51,6 +52,10 @@
 
 #define UNIT_DIV 1000
 
+#define MEZZ_SENSOR_I2CBUS        "11"
+#define MEZZ_SENSOR_I2C_BUS_ADDR  "0x1f"
+#define MEZZ_SENSOR_TEMP_REGISTER "0x01"
+
 #define BIC_SENSOR_READ_NA 0x20
 
 #define MAX_SENSOR_NUM 0xFF
@@ -77,6 +82,7 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_VCCIN_VR_CURR,
   BIC_SENSOR_VCCIN_VR_VOL,
   BIC_SENSOR_INA230_POWER,
+  BIC_SENSOR_INA230_VOL,
   BIC_SENSOR_SOC_PACKAGE_PWR,
   BIC_SENSOR_SOC_TJMAX,
   BIC_SENSOR_VDDR_VR_POUT,
@@ -88,6 +94,7 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_VCC_SCSUS_VR_POUT,
   BIC_SENSOR_VCC_GBE_VR_POUT,
   BIC_SENSOR_VCC_GBE_VR_VOL,
+  BIC_SENSOR_1V05_PCH_VR_POUT,
   BIC_SENSOR_1V05_PCH_VR_VOL,
   BIC_SENSOR_SOC_DIMMA0_TEMP,
   BIC_SENSOR_SOC_DIMMA1_TEMP,
@@ -101,22 +108,13 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_PV_BAT,
   BIC_SENSOR_PVDDR,
   BIC_SENSOR_PVCC_GBE,
+};
+
+const uint8_t bic_discrete_list[] = {
   /* Discrete sensors */
-  //BIC_SENSOR_SYSTEM_STATUS,
-  //BIC_SENSOR_SYS_BOOT_STAT,
-  //BIC_SENSOR_CPU_DIMM_HOT,
-  //BIC_SENSOR_PROC_FAIL,
-  //BIC_SENSOR_VR_HOT,
-  /* Event-only sensors */
-  //BIC_SENSOR_POST_ERR,
-  //BIC_SENSOR_SPS_FW_HLTH,
-  //BIC_SENSOR_POWER_THRESH_EVENT,
-  //BIC_SENSOR_MACHINE_CHK_ERR,
-  //BIC_SENSOR_PCIE_ERR,
-  //BIC_SENSOR_OTHER_IIO_ERR,
-  //BIC_SENSOR_PROC_HOT_EXT,
-  //BIC_SENSOR_POWER_ERR,
-  //BIC_SENSOR_CAT_ERR,
+  BIC_SENSOR_SYSTEM_STATUS,
+  BIC_SENSOR_VR_HOT,
+  BIC_SENSOR_CPU_DIMM_HOT,
 };
 
 // List of SPB sensors to be monitored
@@ -130,10 +128,10 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_P5V,
   SP_SENSOR_P12V,
   SP_SENSOR_P3V3_STBY,
-  SP_SENSOR_P12V_SLOT0,
   SP_SENSOR_P12V_SLOT1,
   SP_SENSOR_P12V_SLOT2,
   SP_SENSOR_P12V_SLOT3,
+  SP_SENSOR_P12V_SLOT4,
   SP_SENSOR_P3V3,
   SP_SENSOR_HSC_IN_VOLT,
   SP_SENSOR_HSC_OUT_CURR,
@@ -141,9 +139,62 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_HSC_IN_POWER,
 };
 
+// List of NIC sensors to be monitored
+const uint8_t nic_sensor_list[] = {
+  MEZZ_SENSOR_TEMP,
+};
+
+float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+
+static void
+sensor_thresh_array_init() {
+  static bool init_done = false;
+
+  if (init_done)
+    return;
+
+  spb_sensor_threshold[SP_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
+  spb_sensor_threshold[SP_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
+  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 10000;
+  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
+  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 10000;
+  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+  //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
+  spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.493;
+  spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.501;
+  spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.216;
+  spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.269;
+  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.625;
+  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 2.973;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.216;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.269;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.216;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.269;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.216;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.269;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.216;
+  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.269;
+  spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.625;
+  spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 2.973;
+  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.2;
+  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 10.8;
+  spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 47.705;
+  spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
+  spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 525;
+
+  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 80;
+
+  init_done = true;
+}
+
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 
+size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
+
 size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
+
+size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 
 enum {
   FAN0 = 0,
@@ -161,12 +212,7 @@ enum {
   ADC_PIN7,
 };
 
-static sensor_info_t g_sinfo1[MAX_SENSOR_NUM] = {0};
-static sensor_info_t g_sinfo2[MAX_SENSOR_NUM] = {0};
-static sensor_info_t g_sinfo3[MAX_SENSOR_NUM] = {0};
-static sensor_info_t g_sinfo4[MAX_SENSOR_NUM] = {0};
-static sensor_info_t g_sinfo_spb[MAX_SENSOR_NUM] = {0};
-static sensor_info_t g_sinfo_nic[MAX_SENSOR_NUM] = {0};
+static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 static int
 read_device(const char *device, int *value) {
@@ -177,7 +223,9 @@ read_device(const char *device, int *value) {
   if (!fp) {
     int err = errno;
 
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to open device %s", device);
+#endif
     return err;
   }
 
@@ -185,7 +233,9 @@ read_device(const char *device, int *value) {
   fclose(fp);
 
   if (rc != 1) {
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to read device %s", device);
+#endif
     return ENOENT;
   } else {
     return 0;
@@ -201,8 +251,9 @@ read_device_float(const char *device, float *value) {
   fp = fopen(device, "r");
   if (!fp) {
     int err = errno;
-
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to open device %s", device);
+#endif
     return err;
   }
 
@@ -210,7 +261,9 @@ read_device_float(const char *device, float *value) {
   fclose(fp);
 
   if (rc != 1) {
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to read device %s", device);
+#endif
     return ENOENT;
   }
 
@@ -271,46 +324,52 @@ read_hsc_value(const char *device, float *value) {
 }
 
 static int
-bic_read_sensor_wrapper(uint8_t slot_id, uint8_t sensor_num, void *value) {
+read_nic_temp(uint8_t snr_num, float *value) {
+  char command[64];
+  char tmp[8];
+
+  if (snr_num == MEZZ_SENSOR_TEMP) {
+    sprintf(command, "i2cget -y %s %s %s b", MEZZ_SENSOR_I2CBUS,
+        MEZZ_SENSOR_I2C_BUS_ADDR, MEZZ_SENSOR_TEMP_REGISTER);
+
+    FILE *fp = popen(command, "r");
+    fscanf(fp, "%s", tmp);
+    pclose(fp);
+
+    *value = (float) strtol(tmp, NULL, 16);
+  }
+
+  return 0;
+}
+
+static int
+bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
+    void *value) {
+
   int ret;
+  sdr_full_t *sdr;
   ipmi_sensor_reading_t sensor;
 
-  ret = bic_read_sensor(slot_id, sensor_num, &sensor);
+  ret = bic_read_sensor(fru, sensor_num, &sensor);
   if (ret) {
     return ret;
   }
 
   if (sensor.flags & BIC_SENSOR_READ_NA) {
+#ifdef DEBUG
     syslog(LOG_ERR, "bic_read_sensor_wrapper: Reading Not Available");
     syslog(LOG_ERR, "bic_read_sensor_wrapper: sensor_num: 0x%X, flag: 0x%X",
         sensor_num, sensor.flags);
+#endif
     return -1;
   }
 
-  if (sensor.status) {
-    //printf("bic_read_sensor_wrapper: Status Asserted: 0x%X\n", sensor.status);
+  if (discrete) {
+    *(float *) value = (float) sensor.status;
+    return 0;
   }
 
-  // Check SDR to convert raw value to actual
-  sdr_full_t *sdr;
-
-  switch (slot_id) {
-  case 1:
-    sdr = &g_sinfo1[sensor_num].sdr;
-    break;
-  case 2:
-    sdr = &g_sinfo2[sensor_num].sdr;
-    break;
-  case 3:
-    sdr = &g_sinfo3[sensor_num].sdr;
-    break;
-  case 4:
-    sdr = &g_sinfo4[sensor_num].sdr;
-    break;
-  default:
-    syslog(LOG_ALERT, "bic_read_sensor_wrapper: Wrong Slot ID\n");
-    return -1;
-  }
+  sdr = &g_sinfo[fru-1][sensor_num].sdr;
 
   // If the SDR is not type1, no need for conversion
   if (sdr->type !=1) {
@@ -350,106 +409,148 @@ bic_read_sensor_wrapper(uint8_t slot_id, uint8_t sensor_num, void *value) {
 
   * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
 
+  if ((sensor_num == BIC_SENSOR_SOC_THERM_MARGIN) && (* (float *) value > 0)) {
+   * (float *) value -= (float) THERMAL_CONSTANT;
+  }
+
   return 0;
 }
 
-/* Returns the all the SDRs for the particular fru# */
-static sensor_info_t *
-get_struct_sensor_info(uint8_t fru) {
-  sensor_info_t *sinfo;
-  switch(fru) {
+int
+yosemite_sensor_sdr_path(uint8_t fru, char *path) {
+
+char fru_name[16] = {0};
+
+switch(fru) {
   case FRU_SLOT1:
-    sinfo = g_sinfo1;
+    sprintf(fru_name, "%s", "slot1");
     break;
   case FRU_SLOT2:
-    sinfo = g_sinfo2;
+    sprintf(fru_name, "%s", "slot2");
     break;
   case FRU_SLOT3:
-    sinfo = g_sinfo3;
+    sprintf(fru_name, "%s", "slot3");
     break;
   case FRU_SLOT4:
-    sinfo = g_sinfo4;
+    sprintf(fru_name, "%s", "slot4");
     break;
   case FRU_SPB:
-    sinfo = g_sinfo_spb;
+    sprintf(fru_name, "%s", "spb");
     break;
   case FRU_NIC:
-    sinfo = g_sinfo_nic;
+    sprintf(fru_name, "%s", "nic");
     break;
   default:
-    syslog(LOG_ALERT, "yosemite_sdr_init: Wrong Slot ID\n");
-    return NULL;
+#ifdef DEBUG
+    syslog(LOG_WARNING, "yosemite_sensor_sdr_path: Wrong Slot ID\n");
+#endif
+    return -1;
+}
+
+sprintf(path, YOSEMITE_SDR_PATH, fru_name);
+
+if (access(path, F_OK) == -1) {
+  return -1;
+}
+
+return 0;
+}
+
+/* Populates all sensor_info_t struct using the path to SDR dump */
+int
+sdr_init(char *path, sensor_info_t *sinfo) {
+int fd;
+uint8_t buf[MAX_SDR_LEN] = {0};
+uint8_t bytes_rd = 0;
+uint8_t snr_num = 0;
+sdr_full_t *sdr;
+
+while (access(path, F_OK) == -1) {
+  sleep(5);
+}
+
+fd = open(path, O_RDONLY);
+if (fd < 0) {
+  syslog(LOG_ERR, "sdr_init: open failed for %s\n", path);
+  return -1;
+}
+
+while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
+  if (bytes_rd != sizeof(sdr_full_t)) {
+    syslog(LOG_ERR, "sdr_init: read returns %d bytes\n", bytes_rd);
+    return -1;
   }
-  return sinfo;
+
+  sdr = (sdr_full_t *) buf;
+  snr_num = sdr->sensor_num;
+  sinfo[snr_num].valid = true;
+  memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
+}
+
+return 0;
 }
 
 int
-get_fru_sdr_path(uint8_t fru, char *path) {
-
-  char fru_name[16] = {0};
+yosemite_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
+  int fd;
+  uint8_t buf[MAX_SDR_LEN] = {0};
+  uint8_t bytes_rd = 0;
+  uint8_t sn = 0;
+  char path[64] = {0};
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(fru_name, "%s", "slot1");
-      break;
     case FRU_SLOT2:
-      sprintf(fru_name, "%s", "slot2");
-      break;
     case FRU_SLOT3:
-      sprintf(fru_name, "%s", "slot3");
-      break;
     case FRU_SLOT4:
-      sprintf(fru_name, "%s", "slot4");
-      break;
-    case FRU_SPB:
-      sprintf(fru_name, "%s", "spb");
-      break;
-    case FRU_NIC:
-      sprintf(fru_name, "%s", "nic");
-      break;
-    default:
-      syslog(LOG_ALERT, "yosemite_sdr_init: Wrong Slot ID\n");
-      return -1;
-  }
+      if (yosemite_sensor_sdr_path(fru, path) < 0) {
+#ifdef DEBUG
+        syslog(LOG_WARNING, "yosemite_sensor_sdr_init: get_fru_sdr_path failed\n");
+#endif
+        return ERR_NOT_READY;
+      }
 
-  sprintf(path, YOSEMITE_SDR_PATH, fru_name);
+      if (sdr_init(path, sinfo) < 0) {
+#ifdef DEBUG
+        syslog(LOG_ERR, "yosemite_sensor_sdr_init: sdr_init failed for FRU %d", fru);
+#endif
+      }
+      break;
+
+    case FRU_SPB:
+    case FRU_NIC:
+      return -1;
+      break;
+  }
 
   return 0;
 }
 
 static int
 yosemite_sdr_init(uint8_t fru) {
-  int fd;
-  uint8_t buf[MAX_SDR_LEN] = {0};
-  uint8_t bytes_rd = 0;
-  uint8_t sn = 0;
-  char path[64] = {0};
-  sensor_info_t *sinfo;
 
-  if (get_fru_sdr_path(fru, path) < 0) {
-    syslog(LOG_ALERT, "yosemite_sdr_init: get_fru_sdr_path failed\n");
-    return -1;
-  }
-  sinfo = get_struct_sensor_info(fru);
-  if (sinfo == NULL) {
-    syslog(LOG_ALERT, "yosemite_sdr_init: get_struct_sensor_info failed\n");
-    return -1;
-  }
+  static bool init_done[MAX_NUM_FRUS] = {false};
 
-  if (sdr_init(path, sinfo) < 0) {
-    syslog(LOG_ERR, "yosemite_sdr_init: sdr_init failed for FRU %d", fru);
+  if (!init_done[fru - 1]) {
+
+    sensor_info_t *sinfo = g_sinfo[fru-1];
+
+    if (yosemite_sensor_sdr_init(fru, sinfo) < 0)
+      return ERR_NOT_READY;
+
+    init_done[fru - 1] = true;
   }
 
   return 0;
 }
 
 static bool
-is_server_prsnt(uint8_t slot_id) {
+is_server_prsnt(uint8_t fru) {
   uint8_t gpio;
   int val;
   char path[64] = {0};
 
-  switch(slot_id) {
+  switch(fru) {
   case 1:
     gpio = 61;
     break;
@@ -482,44 +583,21 @@ is_server_prsnt(uint8_t slot_id) {
 /* Get the units for the sensor */
 int
 yosemite_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
-  static bool init_done = false;
   uint8_t op, modifier;
   sensor_info_t *sinfo;
 
-  if (!init_done) {
-
-    if (is_server_prsnt(1) && (yosemite_sdr_init(FRU_SLOT1) != 0)) {
+    if (is_server_prsnt(fru) && (yosemite_sdr_init(fru) != 0)) {
       return -1;
     }
-    if (is_server_prsnt(2) && (yosemite_sdr_init(FRU_SLOT2) != 0)) {
-      return -1;
-    }
-    if (is_server_prsnt(3) && (yosemite_sdr_init(FRU_SLOT3) != 0)) {
-      return -1;
-    }
-    if (is_server_prsnt(4) && (yosemite_sdr_init(FRU_SLOT4) != 0)) {
-      return -1;
-    }
-    init_done = true;
-  }
 
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      sinfo = get_struct_sensor_info(fru);
-      if (sinfo == NULL) {
-        syslog(LOG_ALERT, "yosemite_sensor_units: get_struct_sensor_info failed\n");
-        return -1;
-      }
+      sprintf(units, "");
+      break;
 
-      if (sdr_get_sensor_units(&sinfo[sensor_num].sdr, &op, &modifier, units)) {
-        syslog(LOG_ALERT, "yosemite_sensor_units: FRU %d: num 0x%2X: reading units"
-            " from SDR failed.", fru, sensor_num);
-        return -1;
-      }
-    break;
     case FRU_SPB:
       switch(sensor_num) {
         case SP_SENSOR_INLET_TEMP:
@@ -549,16 +627,10 @@ yosemite_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case SP_SENSOR_P3V3_STBY:
           sprintf(units, "Volts");
           break;
-        case SP_SENSOR_P12V_SLOT0:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P12V_SLOT1:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P12V_SLOT2:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P12V_SLOT3:
+        case SP_SENSOR_P12V_SLOT4:
           sprintf(units, "Volts");
           break;
         case SP_SENSOR_P3V3:
@@ -579,8 +651,33 @@ yosemite_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
       }
       break;
     case FRU_NIC:
-      sprintf(units, "");
-    break;
+      switch(sensor_num) {
+        case MEZZ_SENSOR_TEMP:
+          sprintf(units, "C");
+          break;
+      }
+      break;
+  }
+  return 0;
+}
+
+int
+yosemite_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value) {
+
+  sensor_thresh_array_init();
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      break;
+    case FRU_SPB:
+      *value = spb_sensor_threshold[sensor_num][thresh];
+      break;
+    case FRU_NIC:
+      *value = nic_sensor_threshold[sensor_num][thresh];
+      break;
   }
   return 0;
 }
@@ -588,105 +685,98 @@ yosemite_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 /* Get the name for the sensor */
 int
 yosemite_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
-  static bool init_done = false;
-  uint8_t op, modifier;
-  sensor_info_t *sinfo;
-
-  if (!init_done) {
-
-    if (is_server_prsnt(1) && (yosemite_sdr_init(FRU_SLOT1) != 0)) {
-      return -1;
-    }
-    if (is_server_prsnt(2) && (yosemite_sdr_init(FRU_SLOT2) != 0)) {
-      return -1;
-    }
-    if (is_server_prsnt(3) && (yosemite_sdr_init(FRU_SLOT3) != 0)) {
-      return -1;
-    }
-    if (is_server_prsnt(4) && (yosemite_sdr_init(FRU_SLOT4) != 0)) {
-      return -1;
-    }
-    init_done = true;
-  }
 
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      sinfo = get_struct_sensor_info(fru);
-      if (sinfo == NULL) {
-        syslog(LOG_ALERT, "yosemite_sensor_name: get_struct_sensor_info failed\n");
-        return -1;
+      switch(sensor_num) {
+        case BIC_SENSOR_SYSTEM_STATUS:
+          sprintf(name, "SYSTEM_STATUS");
+          break;
+        case BIC_SENSOR_SYS_BOOT_STAT:
+          sprintf(name, "SYS_BOOT_STAT");
+          break;
+        case BIC_SENSOR_CPU_DIMM_HOT:
+          sprintf(name, "CPU_DIMM_HOT");
+          break;
+        case BIC_SENSOR_PROC_FAIL:
+          sprintf(name, "PROC_FAIL");
+          break;
+        case BIC_SENSOR_VR_HOT:
+          sprintf(name, "VR_HOT");
+          break;
+        default:
+          sprintf(name, "");
+          break;
       }
-
-      if (sdr_get_sensor_name(&sinfo[sensor_num].sdr, name)) {
-        syslog(LOG_ALERT, "yosemite_sensor_name: FRU %d: num 0x%2X: reading units"
-            " from SDR failed.", fru, sensor_num);
-        return -1;
-      }
-
       break;
+
     case FRU_SPB:
       switch(sensor_num) {
         case SP_SENSOR_INLET_TEMP:
-          sprintf(name, "SP_SENSOR_INLET_TEMP");
+          sprintf(name, "SP_INLET_TEMP");
           break;
         case SP_SENSOR_OUTLET_TEMP:
-          sprintf(name, "SP_SENSOR_OUTLET_TEMP");
+          sprintf(name, "SP_OUTLET_TEMP");
           break;
         case SP_SENSOR_MEZZ_TEMP:
-          sprintf(name, "SP_SENSOR_MEZZ_TEMP");
+          sprintf(name, "SP_MEZZ_TEMP");
           break;
         case SP_SENSOR_FAN0_TACH:
-          sprintf(name, "SP_SENSOR_FAN0_TACH");
+          sprintf(name, "SP_FAN0_TACH");
           break;
         case SP_SENSOR_FAN1_TACH:
-          sprintf(name, "SP_SENSOR_FAN1_TACH");
+          sprintf(name, "SP_FAN1_TACH");
           break;
         case SP_SENSOR_AIR_FLOW:
-          sprintf(name, "SP_SENSOR_AIR_FLOW");
+          sprintf(name, "SP_AIR_FLOW");
           break;
         case SP_SENSOR_P5V:
-          sprintf(name, "SP_SENSOR_P5V");
+          sprintf(name, "SP_P5V");
           break;
         case SP_SENSOR_P12V:
-          sprintf(name, "SP_SENSOR_P12V");
+          sprintf(name, "SP_P12V");
           break;
         case SP_SENSOR_P3V3_STBY:
-          sprintf(name, "SP_SENSOR_P3V3_STBY");
-          break;
-        case SP_SENSOR_P12V_SLOT0:
-          sprintf(name, "SP_SENSOR_P12V_SLOT0");
+          sprintf(name, "SP_P3V3_STBY");
           break;
         case SP_SENSOR_P12V_SLOT1:
-          sprintf(name, "SP_SENSOR_P12V_SLOT1");
+          sprintf(name, "SP_P12V_SLOT1");
           break;
         case SP_SENSOR_P12V_SLOT2:
-          sprintf(name, "SP_SENSOR_P12V_SLOT2");
+          sprintf(name, "SP_P12V_SLOT2");
           break;
         case SP_SENSOR_P12V_SLOT3:
-          sprintf(name, "SP_SENSOR_P12V_SLOT3");
+          sprintf(name, "SP_P12V_SLOT3");
+          break;
+        case SP_SENSOR_P12V_SLOT4:
+          sprintf(name, "SP_P12V_SLOT4");
           break;
         case SP_SENSOR_P3V3:
-          sprintf(name, "SP_SENSOR_P3V3");
+          sprintf(name, "SP_P3V3");
           break;
         case SP_SENSOR_HSC_IN_VOLT:
-          sprintf(name, "SP_SENSOR_HSC_IN_VOLT");
+          sprintf(name, "SP_HSC_IN_VOLT");
           break;
         case SP_SENSOR_HSC_OUT_CURR:
-          sprintf(name, "SP_SENSOR_HSC_OUT_CURR");
+          sprintf(name, "SP_HSC_OUT_CURR");
           break;
         case SP_SENSOR_HSC_TEMP:
-          sprintf(name, "SP_SENSOR_HSC_TEMP");
+          sprintf(name, "SP_HSC_TEMP");
           break;
         case SP_SENSOR_HSC_IN_POWER:
-          sprintf(name, "SP_SENSOR_HSC_IN_POWER");
+          sprintf(name, "SP_HSC_IN_POWER");
           break;
       }
       break;
     case FRU_NIC:
-      sprintf(name, "");
+      switch(sensor_num) {
+        case MEZZ_SENSOR_TEMP:
+          sprintf(name, "MEZZ_SENSOR_TEMP");
+          break;
+      }
       break;
   }
   return 0;
@@ -694,85 +784,100 @@ yosemite_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
 
 int
-yosemite_sensor_read(uint8_t slot_id, uint8_t sensor_num, void *value) {
-  static bool init_done = false;
+yosemite_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
+
   float volt;
   float curr;
+  int ret;
+  bool discrete;
+  int i;
 
-  if (!init_done) {
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
 
-    if (is_server_prsnt(1) && (yosemite_sdr_init(FRU_SLOT1) != 0)) {
-      return -1;
-    }
+      if (!(is_server_prsnt(fru))) {
+        return -1;
+      }
 
-    if (is_server_prsnt(2) && (yosemite_sdr_init(FRU_SLOT2) != 0)) {
-      return -1;
-    }
+      ret = yosemite_sdr_init(fru);
+      if (ret < 0) {
+        return ret;
+      }
 
-    if (is_server_prsnt(3) && (yosemite_sdr_init(FRU_SLOT3) != 0)) {
-      return -1;
-    }
+      discrete = false;
 
-    if (is_server_prsnt(4) && (yosemite_sdr_init(FRU_SLOT4) != 0)) {
-      return -1;
-    }
+      i = 0;
+      while (i < bic_discrete_cnt) {
+        if (sensor_num == bic_discrete_list[i++]) {
+          discrete = true;
+          break;
+        }
+      }
 
-    init_done = true;
-  }
+      return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
 
-  switch(sensor_num) {
-  // Inlet, Outlet Temp
+    case FRU_SPB:
+      switch(sensor_num) {
 
-  case SP_SENSOR_INLET_TEMP:
-    return read_temp(SP_INLET_TEMP_DEVICE, (float*) value);
-  case SP_SENSOR_OUTLET_TEMP:
-    return read_temp(SP_OUTLET_TEMP_DEVICE, (float*) value);
+        // Inlet, Outlet Temp
+        case SP_SENSOR_INLET_TEMP:
+          return read_temp(SP_INLET_TEMP_DEVICE, (float*) value);
+        case SP_SENSOR_OUTLET_TEMP:
+          return read_temp(SP_OUTLET_TEMP_DEVICE, (float*) value);
 
-  // Fan Tach Values
-  case SP_SENSOR_FAN0_TACH:
-    return read_fan_value(FAN0, FAN_TACH_RPM, (float*) value);
-  case SP_SENSOR_FAN1_TACH:
-    return read_fan_value(FAN1, FAN_TACH_RPM, (float*) value);
+        // Fan Tach Values
+        case SP_SENSOR_FAN0_TACH:
+          return read_fan_value(FAN0, FAN_TACH_RPM, (float*) value);
+        case SP_SENSOR_FAN1_TACH:
+          return read_fan_value(FAN1, FAN_TACH_RPM, (float*) value);
 
-  // Various Voltages
-  case SP_SENSOR_P5V:
-    return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
-  case SP_SENSOR_P12V:
-    return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
-  case SP_SENSOR_P3V3_STBY:
-    return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
-  case SP_SENSOR_P12V_SLOT0:
-    return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
-  case SP_SENSOR_P12V_SLOT1:
-    return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
-  case SP_SENSOR_P12V_SLOT2:
-    return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
-  case SP_SENSOR_P12V_SLOT3:
-    return read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
-  case SP_SENSOR_P3V3:
-    return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
+			  // Various Voltages
+			  case SP_SENSOR_P5V:
+ 			    return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
+ 			  case SP_SENSOR_P12V:
+ 			    return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
+ 			  case SP_SENSOR_P3V3_STBY:
+ 			    return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+ 			  case SP_SENSOR_P12V_SLOT1:
+ 			    return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+ 			  case SP_SENSOR_P12V_SLOT2:
+ 			    return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+ 			  case SP_SENSOR_P12V_SLOT3:
+          return read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P12V_SLOT4:
+          return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P3V3:
+          return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
 
-  // Hot Swap Controller
-  case SP_SENSOR_HSC_IN_VOLT:
-    return read_hsc_value(HSC_IN_VOLT, (float*) value);
-  case SP_SENSOR_HSC_OUT_CURR:
-    return read_hsc_value(HSC_OUT_CURR, (float*) value);
-  case SP_SENSOR_HSC_TEMP:
-    return read_hsc_value(HSC_TEMP, (float*) value);
-  case SP_SENSOR_HSC_IN_POWER:
-    if (read_hsc_value(HSC_IN_VOLT, &volt)) {
-      return -1;
-    }
+        // Hot Swap Controller
+        case SP_SENSOR_HSC_IN_VOLT:
+          return read_hsc_value(HSC_IN_VOLT, (float*) value);
+        case SP_SENSOR_HSC_OUT_CURR:
+          return read_hsc_value(HSC_OUT_CURR, (float*) value);
+        case SP_SENSOR_HSC_TEMP:
+          return read_hsc_value(HSC_TEMP, (float*) value);
+        case SP_SENSOR_HSC_IN_POWER:
+          if (read_hsc_value(HSC_IN_VOLT, &volt)) {
+            return -1;
+          }
+          if (read_hsc_value(HSC_OUT_CURR, &curr)) {
+            return -1;
+          }
+          * (float*) value = volt * curr;
+          return 0;
+      }
+      break;
 
-    if (read_hsc_value(HSC_OUT_CURR, &curr)) {
-      return -1;
-    }
-
-    * (float*) value = volt * curr;
-    return 0;
-  default:
-    // For all others we assume the sensors are on Monolake
-    return bic_read_sensor_wrapper(slot_id, sensor_num, value);
+    case FRU_NIC:
+      switch(sensor_num) {
+      // Mezz Temp
+        case MEZZ_SENSOR_TEMP:
+          return read_nic_temp(MEZZ_SENSOR_TEMP, (float*) value);
+      }
+      break;
   }
 }
 

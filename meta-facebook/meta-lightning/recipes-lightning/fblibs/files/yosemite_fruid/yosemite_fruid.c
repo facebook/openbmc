@@ -48,13 +48,42 @@ yosemite_get_fruid_path(uint8_t fru, char *path) {
       sprintf(fname, "nic");
       break;
     default:
-      syslog(LOG_ALERT, "yosemite_get_fruid_path: wrong fruid");
+#ifdef DEBUG
+      syslog(LOG_WARNING, "yosemite_get_fruid_path: wrong fruid");
+#endif
       return -1;
   }
 
   sprintf(path, YOSEMITE_FRU_PATH, fname);
   return 0;
 }
+
+int
+yosemite_get_fruid_eeprom_path(uint8_t fru, char *path) {
+  char fname[16] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      return -1;
+    case FRU_SPB:
+      sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
+      break;
+    case FRU_NIC:
+      sprintf(path, "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom");
+      break;
+    default:
+#ifdef DEBUG
+      syslog(LOG_WARNING, "yosemite_get_fruid_eeprom_path: wrong fruid");
+#endif
+      return -1;
+  }
+
+  return 0;
+}
+
 /* Populate char name[] with the path to the fru's name */
 int
 yosemite_get_fruid_name(uint8_t fru, char *name) {
@@ -79,7 +108,9 @@ yosemite_get_fruid_name(uint8_t fru, char *name) {
       sprintf(name, "CX4 NIC");
       break;
     default:
-      syslog(LOG_ALERT, "yosemite_get_fruid_name: wrong fruid");
+#ifdef DEBUG
+      syslog(LOG_WARNING, "yosemite_get_fruid_name: wrong fruid");
+#endif
       return -1;
   }
   return 0;

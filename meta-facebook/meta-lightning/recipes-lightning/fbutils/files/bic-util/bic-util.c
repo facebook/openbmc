@@ -55,6 +55,19 @@ util_get_device_id(uint8_t slot_id) {
   printf("Aux. FW Rev: 0x%X:0x%X:0x%X:0x%X\n", id.aux_fw_rev[0], id.aux_fw_rev[1],id.aux_fw_rev[2],id.aux_fw_rev[3]);
 }
 
+static void
+util_get_fw_ver(uint8_t slot_id) {
+  int i, j, ret;
+  uint8_t buf[16] = {0};
+  for (i = 1; i <= 8; i++) {
+    ret = bic_get_fw_ver(slot_id, i, buf);
+    printf("version of comp: %d is", i);
+    for (j = 0; j < 10; j++)
+      printf("%02X:", buf[j]);
+    printf("\n");
+  }
+}
+
 // Tests for reading GPIO values and configuration
 static void
 util_get_gpio(uint8_t slot_id) {
@@ -363,6 +376,9 @@ main(int argc, char **argv) {
 
   slot_id = atoi(argv[1]);
 
+  util_get_fw_ver(slot_id);
+
+#if 0
   util_get_device_id(slot_id);
 
   util_get_gpio(slot_id);
@@ -381,4 +397,5 @@ main(int argc, char **argv) {
   util_get_sdr_info(slot_id);
   util_get_sdr(slot_id);
   util_read_sensor(slot_id);
+#endif
 }

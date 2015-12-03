@@ -79,12 +79,6 @@ main(int argc, char **argv) {
   	printf("SP_SENSOR_P3V3_STBY: %.2f Volts\n", fvalue);
   }
 
-  if (yosemite_sensor_read(slot_id, SP_SENSOR_P12V_SLOT0, &fvalue)) {
-    printf("yosemite_sensor_read failed: SP_SENSOR_P12V_SLOT0\n");
-  } else {
-  	printf("SP_SENSOR_P12V_SLOT0: %.2f Volts\n", fvalue);
-  }
-
   if (yosemite_sensor_read(slot_id, SP_SENSOR_P12V_SLOT1, &fvalue)) {
     printf("yosemite_sensor_read failed: SP_SENSOR_P12V_SLOT1\n");
   } else {
@@ -101,6 +95,12 @@ main(int argc, char **argv) {
     printf("yosemite_sensor_read failed: SP_SENSOR_P12V_SLOT3\n");
   } else {
   	printf("SP_SENSOR_P12V_SLOT3: %.2f Volts\n", fvalue);
+  }
+
+  if (yosemite_sensor_read(slot_id, SP_SENSOR_P12V_SLOT4, &fvalue)) {
+    printf("yosemite_sensor_read failed: SP_SENSOR_P12V_SLOT4\n");
+  } else {
+  	printf("SP_SENSOR_P12V_SLOT4: %.2f Volts\n", fvalue);
   }
 
   if (yosemite_sensor_read(slot_id, SP_SENSOR_P3V3, &fvalue)) {

@@ -23,7 +23,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
            file://us_console.sh \
-           file://sol.sh \
+           file://sol-util \
            file://power_led.sh \
            file://power_util.py \
            file://post_led.sh \
@@ -52,7 +52,7 @@ pkgdir = "utils"
 
 S = "${WORKDIR}"
 
-binfiles = "us_console.sh sol.sh power_led.sh post_led.sh \
+binfiles = "us_console.sh sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py setup_rov.sh yosemite_power.sh wedge_us_mac.sh \
   bcm5396.py bcm5396_util.py setup_switch.py watch-fc.sh power_util.py"
 
@@ -83,7 +83,7 @@ do_install() {
   install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
   update-rc.d -r ${D} rc.early start 04 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 59 S .
+  update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   # create VLAN intf automatically
   #install -d ${D}/${sysconfdir}/network/if-up.d
   #install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
@@ -92,7 +92,7 @@ do_install() {
   #install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
   #update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  update-rc.d -r ${D} power-on.sh start 85 S .
+  update-rc.d -r ${D} power-on.sh start 85 5 .
   #install -m 755 fcswitcher.sh ${D}${sysconfdir}/init.d/fcswitcher.sh
   #update-rc.d -r ${D} fcswitcher.sh start 90 S .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local

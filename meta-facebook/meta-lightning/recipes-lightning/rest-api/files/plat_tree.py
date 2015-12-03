@@ -29,6 +29,7 @@ from node_bmc import get_node_bmc
 from node_server import get_node_server
 from node_fruid import get_node_fruid
 from node_sensors import get_node_sensors
+from node_config import get_node_config
 from tree import tree
 from pal import *
 
@@ -43,7 +44,9 @@ def populate_server_node(num):
 
     r_sensors = tree("sensors", data = get_node_sensors("slot" + repr(num)))
 
-    r_server.addChildren([r_fruid, r_sensors])
+    r_config = tree("config", data = get_node_config("slot" + repr(num)))
+
+    r_server.addChildren([r_fruid, r_sensors, r_config])
 
     return r_server
 

@@ -81,7 +81,7 @@ populate_mgmt_sensors(void) {
 
   // Add this sensor to the global table
   if (g_sensor_mgmt.num >= SENSOR_MGMT_MAX) {
-    syslog(LOG_ALERT, "populate_mgmt_sensors: num exceeded\n");
+    syslog(LOG_WARNING, "populate_mgmt_sensors: num exceeded\n");
     return;
   }
 
@@ -126,7 +126,7 @@ populate_disc_sensors(void) {
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
-    syslog(LOG_ALERT, "populate_disc_sensors: num exceeded\n");
+    syslog(LOG_WARNING, "populate_disc_sensors: num exceeded\n");
     return;
   }
 
@@ -166,7 +166,7 @@ populate_disc_sensors(void) {
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
-    syslog(LOG_ALERT, "populate_disc_sensors: num exceeded\n");
+    syslog(LOG_WARNING, "populate_disc_sensors: num exceeded\n");
     return;
   }
 
@@ -207,7 +207,7 @@ populate_disc_sensors(void) {
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
-    syslog(LOG_ALERT, "populate_disc_sensors: num exceeded\n");
+    syslog(LOG_WARNING, "populate_disc_sensors: num exceeded\n");
     return;
   }
 
@@ -245,7 +245,7 @@ populate_disc_sensors(void) {
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
-    syslog(LOG_ALERT, "populate_disc_sensors: num exceeded\n");
+    syslog(LOG_WARNING, "populate_disc_sensors: num exceeded\n");
     return;
   }
 
@@ -282,7 +282,7 @@ populate_disc_sensors(void) {
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
-    syslog(LOG_ALERT, "populate_disc_sensors: num exceeded\n");
+    syslog(LOG_WARNING, "populate_disc_sensors: num exceeded\n");
     return;
   }
 
@@ -323,7 +323,7 @@ populate_disc_sensors(void) {
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
-    syslog(LOG_ALERT, "populate_disc_sensors: num exceeded\n");
+    syslog(LOG_WARNING, "populate_disc_sensors: num exceeded\n");
     return;
   }
 

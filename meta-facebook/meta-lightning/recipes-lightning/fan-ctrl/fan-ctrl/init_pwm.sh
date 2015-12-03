@@ -38,7 +38,7 @@ echo 0 > $PWM_DIR/pwm_type_m_division_h
 echo 5 > $PWM_DIR/pwm_type_m_division_l
 echo 95 > $PWM_DIR/pwm_type_m_unit
 
-# On Yosemite, there are 2 fans connected.
+# On Lightning, there are 6 fans which are driven by Tacho0.
 # Each fan uses same PWM input and provide one tacho output.
 # Here is the mapping between the fan and PWN/Tacho,
 # staring from the one from the edge
@@ -46,19 +46,12 @@ echo 95 > $PWM_DIR/pwm_type_m_unit
 # Fan 1: PWM 0, Tacho1
 
 # For each fan, setting the type, and 100% initially
-for pwm in 0 1; do
-    echo 0 > $PWM_DIR/pwm${pwm}_type
-    echo 0 > $PWM_DIR/pwm${pwm}_rising
-    echo 0 > $PWM_DIR/pwm${pwm}_falling
-    echo 1 > $PWM_DIR/pwm${pwm}_en
-done
+echo 0 > $PWM_DIR/pwm0_type
+echo 0 > $PWM_DIR/pwm0_rising
+echo 0 > $PWM_DIR/pwm0_failing
+echo 1 > $PWM_DIR/pwm0_en
 
-# Enable Tach 0..1
+# Enable Tach 0
 echo 0 > $PWM_DIR/tacho0_source
-echo 1 > $PWM_DIR/tacho1_source
 
-t=0
-while [ $t -le 1 ]; do
-    echo 1 > $PWM_DIR/tacho${t}_en
-    t=$((t+1))
-done
+echo 1 > $PWM_DIR/tacho0_en

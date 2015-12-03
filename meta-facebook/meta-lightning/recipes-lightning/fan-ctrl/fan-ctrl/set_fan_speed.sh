@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 usage() {
-    echo "Usage: $0 <PERCENT (0..100)> <Fan Unit (0..1)> " >&2
+    echo "Usage: $0 <PERCENT (0..100)> " >&2
 }
 
 PWM_DIR=/sys/devices/platform/ast_pwm_tacho.0
@@ -37,20 +37,10 @@ fi
 # refer to the comments in init_pwn.sh regarding
 # the fan unit and PWM mapping
 if [ "$#" -eq 1 ]; then
-    PWMS="0:0 1:1"
+    PWMS="0:0"
 else
-    case "$2" in
-    "0")
-        PWMS="0:0"
-        ;;
-    "1")
-        PWMS="1:1"
-        ;;
-    *)
-        usage
-        exit 1
-        ;;
-    esac
+    usage
+    exit 1
 fi
 
 # Convert the percentage to our 1/96th unit.

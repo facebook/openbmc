@@ -25,6 +25,7 @@
 extern "C" {
 #endif
 
+#define MAX_NUM_FRUS 6
 enum {
   FRU_ALL   = 0,
   FRU_SLOT1 = 1,
@@ -35,7 +36,9 @@ enum {
   FRU_NIC   = 6,
 };
 
+int yosemite_common_fru_name(uint8_t fru, char *str);
 int yosemite_common_fru_id(char *str, uint8_t *fru);
+int yosemite_common_crashdump(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1,4 +1,4 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,35 +15,39 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libipmi libfruid update-rc.d-native"
-
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://setup-ipmid.sh \
-           file://sensor.c \
-           file://fruid.c \
-           file://lan.c \
-          "
+
+SRC_URI += "file://setup-consoled.sh \
+           "
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_YOSEMITE "
+
+pkgdir = "consoled"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"
   install -d $dst
   install -d $bin
-  install -m 755 ipmid ${dst}/ipmid
-  ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
+  for f in ${binfiles}; do
+    install -m 755 $f ${dst}/$f
+    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
+  done
+  for f in ${otherfiles}; do
+    install -m 644 $f ${dst}/$f
+  done
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
-  update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
+  install -m 755 setup-consoled.sh ${D}${sysconfdir}/init.d/setup-consoled.sh
+  update-rc.d -r ${D} setup-consoled.sh start 91 S .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
+FILES_${PN} = "${FBPACKAGEDIR}/consoled ${prefix}/local/bin ${sysconfdir} "
+
+# Inhibit complaints about .debug directories for the sensord binary:
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

@@ -66,6 +66,23 @@ enum {
   RESERVED_31,
 };
 
+enum {
+  FW_CPLD = 1,
+  FW_BIC,
+  FW_ME,
+  FW_PVCCIN_VR,
+  FW_DDRAB_VR,
+  FW_P1V05_VR,
+  FW_PVCCGBE_VR,
+  FW_PVCCSCSUS_VR,
+};
+
+enum {
+  UPDATE_BIOS = 0,
+  UPDATE_CPLD,
+  UPDATE_BIC_BOOT
+};
+
 // Bridge IC Spec
 typedef struct _bic_gpio_t {
   uint32_t pwrgood_cpu:1;
@@ -138,6 +155,7 @@ int bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len);
 
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path);
+int bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path);
 
 int bic_get_sel_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
 int bic_get_sel_rsv(uint8_t slot_id, uint16_t *rsv);
@@ -148,6 +166,13 @@ int bic_get_sdr_rsv(uint8_t slot_id, uint16_t *rsv);
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
 
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
+
+int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
+
+int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
+
+int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
+int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -34,12 +34,15 @@
 #include "fruid.h"
 
 #define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"
+#define EEPROM_NIC      "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom"
 
 #define BIN_SPB         "/tmp/fruid_spb.bin"
+#define BIN_NIC         "/tmp/fruid_nic.bin"
 
 #define NAME_SPB        "Side Plane Board"
+#define NAME_NIC        "Mezz Card"
 
-#define BUF_SIZE        1024
+#define FRUID_SIZE        256
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -54,7 +57,7 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 
   int eeprom;
   int bin;
-  uint64_t tmp[BUF_SIZE];
+  uint64_t tmp[FRUID_SIZE];
   ssize_t bytes_rd, bytes_wr;
 
   errno = 0;
@@ -75,13 +78,18 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
       return errno;
     }
 
-    while ((bytes_rd = read(eeprom, tmp, BUF_SIZE)) > 0) {
-      bytes_wr = write(bin, tmp, bytes_rd);
-      if (bytes_wr != bytes_rd) {
-        syslog(LOG_ERR, "copy_eeprom_to_bin: write to %s file failed: %s",
-            bin_file, strerror(errno));
-        return errno;
-      }
+    bytes_rd = read(eeprom, tmp, FRUID_SIZE);
+    if (bytes_rd != FRUID_SIZE) {
+      syslog(LOG_ERR, "copy_eeprom_to_bin: write to %s file failed: %s",
+          eeprom_file, strerror(errno));
+      return errno;
+    }
+
+    bytes_wr = write(bin, tmp, bytes_rd);
+    if (bytes_wr != bytes_rd) {
+      syslog(LOG_ERR, "copy_eeprom_to_bin: write to %s file failed: %s",
+          bin_file, strerror(errno));
+      return errno;
     }
 
     close(bin);
@@ -97,6 +105,7 @@ int plat_fruid_init(void) {
   int ret;
 
   ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
+  ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
 
   return ret;
 }

@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 int yosemite_get_fruid_path(uint8_t fru, char *path);
+int yosemite_get_fruid_eeprom_path(uint8_t fru, char *path);
 int yosemite_get_fruid_name(uint8_t fru, char *name);
 
 #ifdef __cplusplus

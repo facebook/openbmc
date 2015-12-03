@@ -102,12 +102,16 @@ yosemite_get_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
 
   //TODO: Add support for BMC GPIO pins
   if (fru < 1 || fru > 4) {
-    syslog(LOG_ALERT, "yosemite_get_gpio_name: Wrong fru %u", fru);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "yosemite_get_gpio_name: Wrong fru %u", fru);
+#endif
     return -1;
   }
 
   if (gpio < 0 || gpio > MAX_GPIO_PINS) {
-    syslog(LOG_ALERT, "yosemite_get_gpio_name: Wrong gpio pin %u", gpio);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "yosemite_get_gpio_name: Wrong gpio pin %u", gpio);
+#endif
     return -1;
   }
 

@@ -51,7 +51,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
-  update-rc.d -r ${D} setup-fan.sh start 91 S .
+  update-rc.d -r ${D} setup-fan.sh start 91 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

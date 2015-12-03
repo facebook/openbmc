@@ -34,9 +34,10 @@ SRC_URI += "file://setup-rest-api.sh \
            file://node_server.py \
            file://node_fruid.py \
            file://node_sensors.py \
+           file://node_config.py \
           "
 
-binfiles += "setup-rest-api.sh plat_tree.py node_api.py node_spb.py node_bmc.py node_server.py node_fruid.py node_sensors.py"
+binfiles += "setup-rest-api.sh plat_tree.py node_api.py node_spb.py node_bmc.py node_server.py node_fruid.py node_sensors.py node_config.py"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -53,7 +54,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
-  update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
+  update-rc.d -r ${D} setup-rest-api.sh start 95 5  .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

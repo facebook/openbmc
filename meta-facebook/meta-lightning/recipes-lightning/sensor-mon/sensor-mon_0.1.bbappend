@@ -22,11 +22,8 @@ SRC_URI += "file://setup-sensord.sh \
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_YOSEMITE "
 
-LDFLAGS_append = " -lyosemite_sensor "
-
-DEPENDS_append = "libyosemite-sensor update-rc.d-native"
+DEPENDS_append = "update-rc.d-native"
 
 pkgdir = "sensor-mon"
 
@@ -45,7 +42,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-sensord.sh ${D}${sysconfdir}/init.d/setup-sensord.sh
-  update-rc.d -r ${D} setup-sensord.sh start 91 S .
+  update-rc.d -r ${D} setup-sensord.sh start 91 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

@@ -43,10 +43,10 @@ check_por_config()
   TO_PWR_ON=-1
 
   # Check if the file/key doesn't exist
-  if [ ! -f "${KEYDIR}/pwr_server${1}_por_cfg" ]; then
+  if [ ! -f "${KEYDIR}/slot${1}_por_cfg" ]; then
     TO_PWR_ON=$DEF_PWR_ON
   else
-    POR=`cat ${KEYDIR}/pwr_server${1}_por_cfg`
+    POR=`cat ${KEYDIR}/slot${1}_por_cfg`
 
     # Case ON
     if [ $POR == "on" ]; then

@@ -399,3 +399,18 @@ gpio_export P2
 #devmem_set_bit $(scu_addr 80) 15
 #devmem_clear_bit $(scu_addr 90) 31
 #devmem_set_bit $(scu_addr 3c) 3
+
+
+## Lightning GPIO Pins ##
+
+# PWM0 pin is used for Fan Control
+# To use GPION0, SCU88[0] must be 1
+devmem_set_bit $(scu_addr 88) 0
+
+
+# BMC_HB LED: GPIOH1 (57)
+# To use GPIOH1, SCU90[6], SCU90[7] must be 0
+devmem_clear_bit $(scu_addr 90) 6
+devmem_clear_bit $(scu_addr 90) 7
+
+gpio_set H1 1

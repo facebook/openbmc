@@ -32,5 +32,5 @@
 echo -n "Setup fan speed... "
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/set_fan_speed.sh 50
-/usr/local/bin/fand
+#/usr/local/bin/fand
 echo "done."

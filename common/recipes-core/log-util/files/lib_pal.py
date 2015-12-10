@@ -22,10 +22,10 @@ from ctypes import *
 
 lpal_hndl = CDLL("libpal.so")
 
-def pal_get_fru_name(fru):
-    name = create_string_buffer(16)
-    ret = lpal_hndl.pal_get_fru_name(c_uint8(fru), name)
+def pal_get_fru_list():
+    frulist = create_string_buffer(128)
+    ret = lpal_hndl.pal_get_fru_list(frulist)
     if ret:
         return None
     else:
-        return name.value
+        return frulist.value

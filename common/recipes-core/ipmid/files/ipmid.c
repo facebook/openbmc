@@ -439,11 +439,12 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
  */
 
 static void
-storage_get_fruid_info(unsigned char *response, unsigned char *res_len)
+storage_get_fruid_info(unsigned char *request, unsigned char *response, unsigned char *res_len)
 {
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
-  int size = plat_fruid_size();
+  int size = plat_fruid_size(req->payload_id);
 
   res->cc = CC_SUCCESS;
 
@@ -467,7 +468,7 @@ storage_get_fruid_data(unsigned char *request, unsigned char *response,
   int offset = req->data[1] + (req->data[2] << 8);
   int count = req->data[3];
 
-  int ret = plat_fruid_data(offset, count, &(res->data[1]));
+  int ret = plat_fruid_data(req->payload_id, offset, count, &(res->data[1]));
   if (ret) {
     res->cc = CC_UNSPECIFIED_ERROR;
   } else {
@@ -815,7 +816,7 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
   switch (cmd)
   {
     case CMD_STORAGE_GET_FRUID_INFO:
-      storage_get_fruid_info (response, res_len);
+      storage_get_fruid_info (request, response, res_len);
       break;
     case CMD_STORAGE_READ_FRUID_DATA:
       storage_get_fruid_data (request, response, res_len);

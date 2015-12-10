@@ -38,9 +38,7 @@
 
 #define BIN_SPB         "/tmp/fruid_spb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"
-
-#define NAME_SPB        "Side Plane Board"
-#define NAME_NIC        "Mezz Card"
+#define BIN_SLOT        "/tmp/fruid_slot%d.bin"
 
 #define FRUID_SIZE        256
 
@@ -110,11 +108,51 @@ int plat_fruid_init(void) {
   return ret;
 }
 
-int plat_fruid_size(void) {
-  /* TODO: Not supported yet */
-  return 0;
+int plat_fruid_size(unsigned char payload_id) {
+  char fpath[64] = {0};
+  struct stat buf;
+  int ret;
+
+  // Fill the file path for a given slot
+  sprintf(fpath, BIN_SLOT, payload_id);
+
+  // check the size of the file and return size
+  ret = stat(fpath, &buf);
+  if (ret) {
+    return 0;
+  }
+
+  return buf.st_size;
 }
-int plat_fruid_data(int offset, int count, unsigned char *data) {
-  /* TODO: Not supported yet */
+
+int plat_fruid_data(unsigned char payload_id, int offset, int count, unsigned char *data) {
+  char fpath[64] = {0};
+  int fd;
+  int ret;
+
+  // Fill the file path for a given slot
+  sprintf(fpath, BIN_SLOT, payload_id);
+
+  // open file for read purpose
+  fd = open(fpath, O_RDONLY);
+  if (fd < 0) {
+    return fd;
+  }
+
+  // seek position based on given offset
+  ret = lseek(fd, offset, SEEK_SET);
+  if (ret < 0) {
+    close(fd);
+    return ret;
+  }
+
+  // read the file content
+  ret = read(fd, data, count);
+  if (ret != count) {
+    close(fd);
+    return -1;
+  }
+
+  close(fd);
   return 0;
 }

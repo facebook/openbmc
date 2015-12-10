@@ -21,8 +21,8 @@
 #ifndef __FRUID_H__
 #define __FRUID_H__
 
-int plat_fruid_size(void);
-int plat_fruid_data(int offset, int count, unsigned char *data);
+int plat_fruid_size(unsigned char payload_id);
+int plat_fruid_data(unsigned char payload_id, int offset, int count, unsigned char *data);
 int plat_fruid_init(void);
 
 #endif /* __FRUID_H__ */

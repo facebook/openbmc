@@ -22,6 +22,11 @@
 #include <facebook/wedge_eeprom.h>
 #include <openbmc/log.h>
 
+/*
+ * Following fruid info translates to thrift structures in Fboss
+ * and has a dependency in FBNet
+ */
+
 int main(int argc, const char *argv[])
 {
   const char *fn;

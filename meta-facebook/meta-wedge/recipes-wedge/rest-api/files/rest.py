@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import *
 import bottle
 from cherrypy.wsgiserver import CherryPyWSGIServer
 from cherrypy.wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
@@ -169,7 +168,6 @@ class SSLCherryPyServer(bottle.ServerAdapter):
             server.start()
         finally:
             server.stop()
-
 
 def log_after_request():
     try:

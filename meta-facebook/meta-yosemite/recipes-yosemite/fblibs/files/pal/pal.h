@@ -109,6 +109,7 @@ int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
+int pal_get_fru_list(char *list);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
 int pal_get_fru_name(uint8_t fru, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);

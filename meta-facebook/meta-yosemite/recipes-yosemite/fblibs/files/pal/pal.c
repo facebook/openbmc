@@ -1202,6 +1202,13 @@ write_kv(char *key, char *value) {
 }
 
 int
+pal_get_fru_list(char *list) {
+
+  strcpy(list, pal_fru_list);
+  return 0;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
 
   return yosemite_common_fru_id(str, fru);

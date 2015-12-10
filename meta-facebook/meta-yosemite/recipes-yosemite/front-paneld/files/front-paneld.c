@@ -264,7 +264,7 @@ pwr_btn_handler() {
     syslog(LOG_WARNING, "power button pressed\n");
 
     // Wait for the button to be released
-    for (i = 0; i < BTN_MAX_SAMPLES; i++) {
+    for (i = 0; i < BTN_POWER_OFF; i++) {
       ret = pal_get_pwr_btn(&btn);
       if (ret || btn ) {
         msleep(100);
@@ -274,11 +274,6 @@ pwr_btn_handler() {
       break;
     }
 
-    // handle error case
-    if (i == BTN_MAX_SAMPLES) {
-      syslog(LOG_WARNING, "Power button seems to stuck for long time\n");
-      goto pwr_btn_out;
-    }
 
     // Get the current power state (power on vs. power off)
     ret = pal_get_server_power(pos, &power);

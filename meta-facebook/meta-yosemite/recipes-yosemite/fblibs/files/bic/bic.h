@@ -75,6 +75,7 @@ enum {
   FW_P1V05_VR,
   FW_PVCCGBE_VR,
   FW_PVCCSCSUS_VR,
+  FW_BIC_BOOTLOADER,
 };
 
 enum {

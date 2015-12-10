@@ -56,6 +56,13 @@ print_fw_ver(uint8_t slot_id) {
 
   printf("Bridge-IC Version: v%x.%x\n", ver[0], ver[1]);
 
+  // Print Bridge-IC Bootloader Version
+  if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
+    return;
+  }
+
+  printf("Bridge-IC Bootloader Version: v%x.%x\n", ver[0], ver[1]);
+
   // Print ME Version
   if (bic_get_fw_ver(slot_id, FW_ME, ver)){
     return;

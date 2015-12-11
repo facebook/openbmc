@@ -20,47 +20,52 @@
 
 import re
 from datetime import datetime
-import argparse
+import sys
 import os
 from ctypes import *
 from lib_pal import *
 
 syslogfiles = ['/mnt/data/logfile.0', '/mnt/data/logfile']
+cmdlist = ['--print', '--clear']
 APPNAME = 'log-util'
+frulist = ''
 
-def print_usage(parser):
-    parser.print_help()
+def print_usage():
+    global frulist
+
+    print 'Usage: %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[0])
+    print '       %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[1])
 
 
 def log_main():
+
+    global frulist
 
     # Get the list of frus from PAL library
     frus = pal_get_fru_list()
     frulist = re.split(r',\s', frus)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--clear', action='store', dest='clearfru',
-            help='Clear the log of particular fru [%s]' % frus)
-    parser.add_argument('-p', '--print', action='store', dest='printfru',
-            help='Print the event logs for a particular fru [%s]' % frus)
-    args = parser.parse_args()
-
-    # Atleast one of the two command (print or clear) should be passed
-    if args.clearfru == None and args.printfru == None:
-        print_usage(parser)
+    if len(sys.argv) is not 3:
+        print_usage()
         return -1
 
-    # Both print and clear commands cannot co-exist
-    if args.clearfru != None and args.printfru != None:
-        print_usage(parser)
-        return -1
+    fru = sys.argv[1]
+    cmd = sys.argv[2]
 
     # Check if the fru passed in as argument exists in the fru list
-    if (args.clearfru in frulist) == (args.printfru in frulist):
-        print "Error: Fru not in the list [%s]" % frus
+    if fru not in frulist:
+        print "Error: Fru not in the list [ %s ] \n" % ' | '.join(frulist)
+        print_usage()
         return -1
 
-    if args.printfru is not None:
+    # Check if the cmd passed in as argument exists in the cmd list
+    if cmd not in cmdlist:
+        print "Unknown command: %s \n" % cmd
+        print_usage()
+        return -1
+
+    # Print cmd
+    if cmd == cmdlist[0]:
         print '%-4s %-8s %-22s %-16s %s' % (
             "FRU#",
             "FRU_NAME",
@@ -69,13 +74,14 @@ def log_main():
             "MESSAGE"
             )
 
-    for file in syslogfiles:
+    for logfile in syslogfiles:
 
-        fd = open(file, 'r')
+        fd = open(logfile, 'r')
         syslog = fd.readlines()
         fd.close()
 
-        if args.clearfru is not None:
+        # Clear cmd
+        if cmd == cmdlist[1]:
 
             newlog = ''
 
@@ -86,27 +92,31 @@ def log_main():
 
                 # Find the FRU number
                 if re.search(r'FRU: [0-9]{1,2}', log, re.IGNORECASE):
-                    fru = ''.join(re.findall(r'FRU: [0-9]{1,2}', log, re.IGNORECASE))
+                    fru_num = ''.join(re.findall(r'FRU: [0-9]{1,2}', log, re.IGNORECASE))
                     # FRU is in format "FRU: X"
-                    fru = fru[5]
-                    # FRU # is always aligned with indexing of fru list
-                    name = frulist[int(fru)]
+                    fru_num = fru_num[5]
+                else:
+                    fru_num = '0'
+
+                # FRU # is always aligned with indexing of fru list
+                fruname = frulist[int(fru_num)]
 
                 # Clear the log is the argument fru matches the log fru
-                if args.clearfru == 'all' or args.clearfru == name:
+                if fru == 'all' or fru == fruname:
                     # Drop this log line
                     continue
                 else:
                     newlog = newlog + log
 
             # Dump the new log in a tmp file
-            tmpfd = open('%s.tmp' % file, 'w')
+            tmpfd = open('%s.tmp' % logfile, 'w')
             tmpfd.write(newlog)
             tmpfd.close()
             # Rename the tmp file to original syslog file
-            os.rename('%s.tmp' % file, file)
+            os.rename('%s.tmp' % logfile, logfile)
 
-        if args.printfru is not None:
+        # Print cmd
+        if cmd == cmdlist[0]:
 
             for log in syslog:
                 # Print only critical logs
@@ -115,14 +125,17 @@ def log_main():
 
                 # Find the FRU number
                 if re.search(r'FRU: [0-9]{1,2}', log, re.IGNORECASE):
-                    fru = ''.join(re.findall(r'FRU: [0-9]{1,2}', log, re.IGNORECASE))
+                    fru_num = ''.join(re.findall(r'FRU: [0-9]{1,2}', log, re.IGNORECASE))
                     # FRU is in format "FRU: X"
-                    fru = fru[5]
+                    fru_num = fru_num[5]
+                else:
+                    fru_num = '0'
+
                     # FRU # is always aligned with indexing of fru list
-                    name = frulist[int(fru)]
+                fruname = frulist[int(fru_num)]
 
                 # Print only if the argument fru matches the log fru
-                if args.printfru != 'all' and args.printfru != name:
+                if fru != 'all' and fru != fruname:
                     continue
 
                 # Time format Sep 28 22:10:50
@@ -138,8 +151,8 @@ def log_main():
                 message = temp2[1]
 
                 print '%-4s %-8s %-22s %-16s %s' % (
-                    fru,
-                    name,
+                    fru_num,
+                    fruname,
                     time,
                     app,
                     message

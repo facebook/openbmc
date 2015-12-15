@@ -21,9 +21,12 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \
            file://sensor.c \
            file://fruid.c \
+           file://lan.c \
           "
 
 S = "${WORKDIR}"
+
+CFLAGS_prepend = " -DCONFIG_YOSEMITE "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -35,7 +38,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
-  update-rc.d -r ${D} setup-ipmid.sh start 64 S .
+  update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

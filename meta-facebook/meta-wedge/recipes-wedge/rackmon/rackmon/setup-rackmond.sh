@@ -16,5 +16,5 @@ echo -n "Starting rackmon background service..."
 echo "done."
 
 echo -n "Configuring rackmon service..."
-python /etc/rackmon-config.py
+PYTHONPATH=/etc python /etc/rackmon-config.py
 echo "done."

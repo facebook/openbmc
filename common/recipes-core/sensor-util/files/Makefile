@@ -3,7 +3,7 @@ all: sensor-util
 
 
 sensor-util: sensor-util.o
-	$(CC) $(CFLAGS) -lpal -lrt -lm -std=gnu99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lsdr -lpal -lrt -lm -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

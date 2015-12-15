@@ -41,24 +41,37 @@ lib_ipmi_handle(unsigned char *request, unsigned char req_len,
 
   int s, t, len;
   struct sockaddr_un remote;
+  struct timeval tv;
 
   // TODO: Need to update to reuse the socket instead of creating new
   if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-    syslog(LOG_ALERT, "lib_ipmi_handle: socket() failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "lib_ipmi_handle: socket() failed\n");
+#endif
     return;
   }
+
+  // setup timeout for receving on socket
+  tv.tv_sec = TIMEOUT_IPMI + 1;
+  tv.tv_usec = 0;
+
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
 
   remote.sun_family = AF_UNIX;
   strcpy(remote.sun_path, SOCK_PATH_IPMI);
   len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
   if (connect(s, (struct sockaddr *)&remote, len) == -1) {
-    syslog(LOG_ALERT, "lib_ipmi_handle: connect() failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "lib_ipmi_handle: connect() failed\n");
+#endif
     return;
   }
 
   if (send(s, request, req_len, 0) == -1) {
-    syslog(LOG_ALERT, "lib_ipmi_handle: send() failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "lib_ipmi_handle: send() failed\n");
+#endif
     return;
   }
 
@@ -66,7 +79,9 @@ lib_ipmi_handle(unsigned char *request, unsigned char req_len,
     *res_len = t;
   } else {
     if (t < 0) {
-      syslog(LOG_ALERT, "lib_ipmi_handle: recv() failed\n");
+#ifdef DEBUG
+      syslog(LOG_WARNING, "lib_ipmi_handle: recv() failed\n");
+#endif
     } else {
       printf("Server closed connection");
     }

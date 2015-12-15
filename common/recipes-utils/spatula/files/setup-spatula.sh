@@ -31,7 +31,7 @@
 . /etc/init.d/functions
 
 ACTION="$1"
-CMD="/usr/local/bin/spatula_wrapper.py"
+CMD="/usr/local/bin/spatula_wrapper.py --lldp"
 case "$ACTION" in
   start)
     echo -n "Setting up Spatula: "

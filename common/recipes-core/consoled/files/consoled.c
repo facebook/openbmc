@@ -49,7 +49,7 @@ write_data(int file, char *buf, int len, char *fname) {
       len -= wlen;
       tbuf = tbuf + wlen;
     } else {
-      syslog(LOG_ALERT, "write_data: write() failed to file %s | errno: %d",
+      syslog(LOG_WARNING, "write_data: write() failed to file %s | errno: %d",
           fname, errno);
       return;
     }
@@ -124,7 +124,7 @@ run_console(char* fru_name, int term) {
     (O_RDONLY | O_NOCTTY | O_NONBLOCK);
 
   if ((tty = open(devtty, flags)) < 0) {
-    syslog(LOG_ALERT, "Cannot open the file %s", devtty);
+    syslog(LOG_WARNING, "Cannot open the file %s", devtty);
     exit(-1);
   }
   fcntl(tty, F_SETFL, O_RDWR);
@@ -144,7 +144,7 @@ run_console(char* fru_name, int term) {
   sprintf(old_bfname, "/tmp/consoled_%s_log-old", fru_name);
   sprintf(bfname, "/tmp/consoled_%s_log", fru_name);
   if ((buf_fd = open(bfname, O_RDWR | O_APPEND | O_CREAT, 0666)) < 0) {
-    syslog(LOG_ALERT, "Cannot open the file %s", bfname);
+    syslog(LOG_WARNING, "Cannot open the file %s", bfname);
     exit(-1);
   }
 
@@ -213,7 +213,7 @@ run_console(char* fru_name, int term) {
         remove(old_bfname);
         rename(bfname, old_bfname);
         if ((buf_fd = open(bfname, O_RDWR | O_APPEND | O_CREAT, 0666)) < 0) {
-          syslog(LOG_ALERT, "Cannot open the file %s", bfname);
+          syslog(LOG_WARNING, "Cannot open the file %s", bfname);
           exit(-1);
         }
         nline = 0;

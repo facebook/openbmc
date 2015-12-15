@@ -1,0 +1,104 @@
+J21,GPIOB0_SALT1,In,PANTHER_I2C_ALERT_N,panther i2c alert_n
+J20,GPIOB1_SALT2,In,MSERV_NIC_SMBUS_ALERT_N,"micro server NIC SMBUS alert_n, active low"
+H18,GPIOB2_SALT3,In,DEBUG_PORT_UART_SEL_N,The DEBUG_PORT_UART_SEL_N is connected to a push button in the front panel. When Debug port select button in Front panel is pressed DEBUG_PORT_UART_SEL_N becomes low.
+E19,GPIOB4_LPCRST_N,Out,LPC_RST_N,Signal to reset LPC
+H19,GPIOB5_LPCPD_N_LPCSMI_N,Out,LED_POSTCODE_5,LED 7-segment code bit-5 for facebook debug header
+H20,GPIOB6_LPCPME_N,Out,LED_POSTCODE_6,LED 7-segment code bit-6 for facebook debug header
+E18,GPIOB7_EXTRST_N_SPICS1_N,Out,LED_POSTCODE_7,LED 7-segment code bit-7 for facebook debug header
+A2,GPIOC2_SD1DAT0_SCL11,Out,ISO_BUF_EN,"reserved for ISO_BUFFER control, in default serial resister is depop, use CPLD to control"
+A18,GPIOD0_SD2CLK,,BMC_PWR_BTN_IN_N,to emulate Microserver power button function using BMC
+D16,GPIOD1_SD2CMD,,BMC_PWR_BTN_OUT_N,
+B17,GPIOD2_SD2DAT0,Out,BMC_CPLD_RESET1,Spare Reset signal connected to CPLD
+A17,GPIOD3_SD2DAT1,Out,BMC_CPLD_RESET2,Spare Reset signal connected to CPLD
+C16,GPIOD4_SD2DAT2,Out,BMC_CPLD_RESET3,Spare Reset signal connected to CPLD (USB_BRDG RST function moved to CPLD)
+B16,GPIOD5_SD2DAT3,Out,BMC_CPLD_RESET4,Spare Reset signal connected to CPLD
+E15,GPIOD7_SD2WP_N,In,BMC_CPLD_QSFP_INT,Intrerrupt from CPLD to BMC for any QSFP events (USB RESET function moved to CPLD)
+D15,GPIOE0_NCTS3,Out,DEBUG_UART_SEL_0,FB debug connector UART select 0: BMC uART 1: microserver UART
+B15,GPIOE2_NDSR3,out,SWITCH_EEPROM1_WRT,"0: BCM5387 SPI interface connect to SPI EEPROM
+1: BCM5387 SPI interface connect to BMC SPI EEPROM interface
+this bit is used as BCM5387 straping configuration too"
+E14,GPIOE4_NDTR3,in,ISO_MICROSRV_PRSNT_N,"0: Microserver is present in PCIe slot
+1: microserver is not present in PCIe slot"
+D14,GPIOE5_NRTS3,out,LED_PWR_BLUE,"Power LED blue will be ON when LED_PWR_BLUE is high.
+Power LED blue will be off when LED_PWR_BLUE is low"
+D18,GPIOF0_NCTS4,Out,MSERVE_ISOBUF_EN,To enable  isolation buffer dedicated for microserver com port
+B19,GPIOF1_NDCD4_SIOPBI_N,Out,BMC_MAIN_RESET_N,BMC can request cpld to reset main power
+A20,GPIOF2_NDSR4_SIOPWRGD,Out,CPLD_JTAG_SEL,"SYSCPLD upgrade enable, 0: jtag header program, 1: BMC programming"
+B18,GPIOF4_NDTR4,Out,MSERV_POWERUP,To request cpld to turn on P12_uServer for microserver
+A19,GPIOF5_NRTS4_SIOSCI_N,Out,BMC_UART_4_RTS,BMC com port 4 rts to cpld
+E16,GPIOF6_TXD4,In,BMC_UART_4_TX,BMC com port  to cpld
+C17,GPIOF7_RXD4,Out,BMC_UART_4_RX,BMC com port  to cpld
+A14,GPIOG0_SGPSCK,Out,LED_POSTCODE_0,LED 7-segment code bit-0 for facebook debug header
+E13,GPIOG1_SGPSLD,Out,LED_POSTCODE_1,LED 7-segment code bit-1 for facebook debug header
+D13,GPIOG2_SGPSI0,Out,LED_POSTCODE_2,LED 7-segment code bit-2 for facebook debug header
+C13,GPIOG3_SGPSI1,Out,LED_POSTCODE_3,LED 7-segment code bit-3 for facebook debug header
+B13,GPIOG4_WDTRST1_OSCCLK,Out,BMC_WDTRST1,Watch dog timer reset1 output from BMC to CPLD
+Y21,GPIOG5_WDTRST2_USBCKI,Out,BMC_WDTRST2,Watch dog timer reset2 output from BMC to CPLD
+AA22,GPIOG6_FLBUSY_N,Out,BMC_COM_NIC_ISOBUF_EN,Active low signal to enable the isolation buffer for SMBUS to COMe
+U18,GPIOG7_FLWP_N,Out,BMC_COM_PANTHER_ISOBUF_EN,Active low signal to enable the isolation buffer for I2C BUS to COMe
+A7,GPIOH3_ROMD11_NRI6,In,QSFP_LED_POSITION,QSFP position select input
+D7,GPIOH4_ROMD12_NDTR6,In,PM_SM_ALERT_N,SM bus alert from power manager (also connected to CPLD)
+C22,GPIOI0_SYSCS_N,Out,BMC_TPM_SPI_CS_N,BMC SPI interface to SPI based TPM
+G18,GPIOI1_SYSCK,Out,BMC_TPM_SPI_CLK,BMC SPI interface to SPI based TPM
+D19,GPIOI2_SYSDO,Out,BMC_TPM_SPI_MOSI,BMC SPI interface to SPI based TPM
+C20,GPIOI3_SYSDI,In,BMC_TPM_SPI_MISO,BMC SPI interface to SPI based TPM
+B22,GPIOI4_SPICS0_N_VBCS_N,Out,BMC_EEPROM1_SPI_SS,"BMC SPI EEPROM interface connect to BCM5387 switch if SWITCH_EEPRM1_WRT is 1, "
+G19,GPIOI5_SPICK_VBCK,Out,BMC_EEPROM1_SPI_SCK,
+C18,GPIOI6_SPIDO_VBDO,Out,BMC_EEPROM1_SPI_MOSI,
+E20,GPIOI7_SPIDI_VBDI,In,BMC_EEPROM1_SPI_MISO,
+J5,GPIOJ0_SGPMCK,Bi,RCKMON_SPARE0,Spare gpios to rack mon card
+J4,GPIOJ1_SGPMLD,Bi,RCKMON_SPARE1,Spare gpios to rack mon card
+K5,GPIOJ2_SGPMO,Bi,RCKMON_SPARE2,Spare gpios to rack mon card
+J3,GPIOJ3_SGPMI,Bi,RCKMON_SPARE3,Spare gpios to rack mon card
+T4,VGAHS_GPIOJ4,,FANCARD_CPLD_TMS,"fancard CPLD JTAG upgrade interface, BMC output to CPLD TMS"
+U2,VGAVS_GPIOJ5,,FANCARD_CPLD_TCK,"fancard CPLD JTAG upgrade interface, BMC output to CPLD TCK"
+T2,DDCCLK_GPIOJ6,,FANCARD_CPLD_TDI,"fancard CPLD JTAG upgrade interface, BMC output to CPLD TDI"
+T1,DDCDAT_GPIOJ7,,FANCARD_CPLD_TDO,"fancard CPLD JTAG upgrade interface, BMC input to CPLD TDO"
+V2,GPIOL5_NRTS1_VPICLK,Out,BMC_UART_1_RTS,connect to SYSCPLD
+W1,GPIOL6_TXD1_VPIB0,Out,BMC_UART_TX_1,connect to SYSCPLD
+U5,GPIOL7_RXD1_VPIB1,In,BMC_UART_RX_1,connect to SYSCPLD
+V3,GPIOM0_NCTS2_VPIB2,Out,CPLD_UPD_EN,"fan_card CPLD upgrade enable, 0: jtag header programming, 1: BMC programming"
+W2,GPIOM1_NDCD2_VPIB3,In,SMB_ALERT,"Alert signal from cpld representing Alert from the power supplies(Vcore,vanlg,3.3)"
+V4,GPIOM3_NRI2_VPIB5,out,TH_POWERUP,"tomahawk power up enable, active high. Connect to CPLD, cpld will control pwr1014a"
+W3,GPIOM4_NDTR2_VPIB6,out,BMC_CPLD_TMS,"SYSCPLD CPLD JTAG upgrade interface, BMC output to SYSCPLD TMS"
+Y2,GPIOM5_NRTS2_VPIB7,out,BMC_CPLD_TDI,"SYSCPLD CPLD JTAG upgrade interface, BMC output to SYSCPLD TDI"
+AA1,GPIOM6_TXD2_VPIB8,out,BMC_CPLD_TCK,"SYSCPLD CPLD JTAG upgrade interface, BMC output to SYSCPLD TCK"
+V5,GPIOM7_RXD2_VPIB9,In,BMC_CPLD_TDO,"SYSCPLD CPLD JTAG upgrade interface, BMC output to SYSCPLD TDO"
+W4,GPION0_PWM0_VPIG0,In,ISO_COM_SUS_S3_N,s3 sleep signal from com(COME Signal)
+Y3,GPION1_PWM1_VPIG1,In,ISO_COM_SUS_S4_N,s4 sleep signal from com (COME Signal)
+AA2,GPION2_PWM2_VPIG2,In,ISO_COM_SUS_S5_N,s5 sleep signal from com (COME Signal)
+AB1,GPION3_PWM3_VPIG3,In,ISO_COM_SUS_STAT_N,suspend status signal from com (COME Signal)
+W5,GPION4_PWM4_VPIG4,In,ISO_COM_BRG_WDT,watch dog timer output from com(COME Signal)
+Y4,GPION5_PWM5_VPIG5,Out,BRG_COM_BIOS_DIS0_N,BMC can select the bootdevice of COM (COME Signal)
+AA3,GPION6_PWM6_VPIG6,Out,BRG_COM_BIOS_DIS1_N,BMC can select the bootdevice of COM (COME Signal)
+AB2,GPION7_PWM7_VPIG7,Out,ISO_COM_PWROK,com power ok signal from BMC (COME Signal)
+V6,GPIOO0_TACH0_VPIG8,Out,COM_SPI_SEL,"override signal from bmc to select bmc to upgrade com eeprom
+0:On board spi flash
+1:BMC can write into SPI flash"
+Y5,GPIOO1_TACH1_VPIG9,Out,COM6_BUF_EN,Active low signal to enable isolation buffer dedicated for com signals
+AA4,GPIOO2_TACH2_VPIR0,BI,RCKMON_SPARE4,RCKMON_SPARE[0:11] connect to fan_ctrl_rmon card connector
+AB3,GPIOO3_TACH3_VPIR1,BI,RCKMON_SPARE5,RCKMON_SPARE[0:11] connect to fan_ctrl_rmon card connector
+W6,GPIOO4_TACH4_VPIR2,Out,TPM_SPI_SEL,Signal from BMC  to select whether  BMC or COM SPI should go to TPM module. By default COM SPI is Selected. BMC can drive this signal high to select SPI from BMC
+AA5,GPIOO5_TACH5_VPIR3,Out,TPM_SPI_BUF_EN,Signal from BMC to enable or disable the MUX which selects BMC or COM SPI to TPM module. Default the MUX is enabled .BMC can drive high to disable it.
+AB4,GPIOO6_TACH6_VPIR4,In,ISO_BRG_THRMTRIP_N,"Active low Signal from COM to indicate processor over heating ,and com will go into s5 state (COME Signal)"
+V7,GPIOO7_TACH7_VPIR5,Out,ISO_BRG_THRM_N,Active low Signal from BMC to indicate overtemperature (COME Signal)
+Y6,GPIOP0_TACH8_VPIR6,In,RMON1_PF,"rack 1 monitor status, Power Failure, active low"
+AB5,GPIOP1_TACH9_VPIR7,In,RMON1_RF,"rack 1 monitor status, redudancy Failure, active low"
+W7,GPIOP2_TACH10_VPIR8,In,RMON2_PF,"rack 2 monitor status, Power Failure, active low"
+AA6,GPIOP3_TACH11_VPIR9,In,RMON2_RF,"rack 2 monitor status, redudancy Failure, active low"
+AB6,GPIOP4_TACH12,In,RMON3_PF,"rack 3 monitor status, Power Failure, active low"
+Y7,GPIOP5_TACH13,In,RMON3_RF,"rack 3 monitor status, redudancy Failure, active low"
+AA7,GPIOP6_TACH14_BMCINT,In,FANCARD_I2C_ALARM,"fan card alarm input, active low"
+AB7,GPIOP7_TACH15_FLACK,out,BMC_READY_N,"0: BMC is ready for service. 1: BMC is not ready, or during initialization"
+H4,GPIOQ4_SCL14,In,BMC_CPLD_POWER_INT,Intrerrupt from CPLD to BMC for any Power events
+H3,GPIOQ5_SDA14,,BMC_CPLD_SPARE7,Spare GPIOs to CPLD
+H2,GPIOQ6,out,USB_OCS_N1,over-current sense output to USB2513 hub
+H1,GPIOQ7,out,BMC_HEARTBEAT_N,BMC heatbeat output to onboard heartbeat LED
+V20,GPIOR0_ROMCS1_N,out,SPI_IBMC_BT_CS1_N_R,chip select to secondary boot SPI flash
+C6,GPIOR6_MDC1,BI,SWITCH_MDC,MDC/MDIO to GE Switch
+A5,GPIOR7_MDIO1,BI,SWITCH_MDIO,
+U21,ROMD4_GPIOS0_VPODE,Out,BMC_SPI_WP_N,Write protect for Secondary Boot Flash. Connected to CPLD. CPLD will drive it to the flash chip
+C21,GPIOY0_SIOS3_N,In,BOARD_REV_ID0,"Board ID input bit0, resister straping, connect to both BMC and CPLD"
+F20,GPIOY1_SIOS5_N,In,BOARD_REV_ID1,"Board ID input bit1, resister straping, connect to both BMC and CPLD"
+G20,GPIOY2_SIOPWREQ_N,In,BOARD_REV_ID2,"Board ID input bit2, resister straping, connect to both BMC and CPLD"
+K20,GPIOY3_SIOONCTRL_N,,LED_POSTCODE_4,LED 7-segment code bit-4 for facebook debug header

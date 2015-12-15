@@ -24,35 +24,81 @@ import os
 import subprocess
 import time
 import argparse
+import re
 
 SPATULA_FILE = '/etc/spatula/spatula'
+LLDP_UTIL = '/usr/bin/lldp-util'
 LOG_FORMAT = '[%(levelname)s] %(asctime)s: %(message)s'
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 DEFAULT_SLEEP = 900 # default sleep 15 mins
+DEFAULT_PORT = 8087
+DEFAULT_INTERFACE = 'usb0'
 
 class SpatulaWrapper(object):
     def __init__(self, address='fe80::2', interface='usb0',
-                    port=8087, ssl=False):
-        proto = 'http'
-        if ssl:
-            proto = 'https'
+            port=8087, tls=False, lldp=False):
+        self.interface = interface
+        self.lldp = lldp
+        self.port = port
+        self.proto = 'http'
+        if tls:
+            self.proto = 'https'
+        # not used if auto-discovering
         self.url = '{proto}://{address}%{iface}:{port}'.format(
-                proto = proto,
+                proto = self.proto,
                 address = address,
-                iface = interface,
-                port = port)
+                iface = self.interface,
+                port = self.port)
+
+    def _getLldpMessage(self):
+        try:
+            if os.path.exists(LLDP_UTIL):
+                # request a single packet and time out in 30 seconds
+                lldp = subprocess.Popen([LLDP_UTIL, '-n', '4', '-t', '30'],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE)
+                found = []
+                for line in lldp.stdout:
+                    # example (one line):
+                    # LLDP: local_port=eth0 \
+                    # remote_system=rsw1bz.19.snc1.facebook.com \
+                    # remote_port=00:90:fb:52:1a:49
+                    if line.startswith('LLDP: '):
+                        matches = re.findall(r'\w+=\S+', line.replace('LLDP: ', ''))
+                        matches = [m.split('=', 1) for m in matches]
+                        found.append(dict(matches))
+                if not found:
+                    raise Exception('timed out waiting for LLDP packet')
+                # dedupe before returning since we may get multiple packets
+                # from the same device
+                return [dict(t) for t in set([tuple(d.items()) for d in found])]
+            else:
+                raise Exception('missing lldp-util: {}'.format(LLDP_UTIL))
+        except Exception as err:
+            raise Exception('failed discovering management system via LLDP: {}'.format(err))
 
     def _getSpatula(self, endpoint='/spatula'):
         '''
         Get the executable spatula script from the host.
         '''
-        url = '{}{}'.format(self.url, endpoint)
-        try:
-            request = urllib2.Request(url)
-            response = urllib2.urlopen(request)
-            return response.read()
-        except Exception as err:
-            raise Exception('failed getting Spatula {}: {}'.format(url, err))
+        urls = []
+        urls.append('{}{}'.format(self.url, endpoint))
+        if self.lldp:
+            for lldp in self._getLldpMessage():
+                urls.append('{proto}://{address}%{iface}:{port}{endpoint}'.format(
+                    proto = self.proto,
+                    address = lldp['remote_system'],
+                    iface = lldp['local_port'],
+                    port = self.port,
+                    endpoint = endpoint))
+        for url in urls:
+            try:
+                request = urllib2.Request(url)
+                response = urllib2.urlopen(request)
+                return response.read()
+            except Exception as err:
+                continue
+        raise Exception('failed getting Spatula {}: {}'.format(urls, err))
 
     def _success(self, endpoint='/success'):
         '''
@@ -114,7 +160,18 @@ if __name__ == '__main__':
     args = argparse.ArgumentParser()
     args.add_argument('-s', '--sleep', default=DEFAULT_SLEEP,
             help='Sleep time between spatula runs (default=%(default)s)')
+    args.add_argument('--interface', '-i', default=DEFAULT_INTERFACE,
+            help='Interface to use for management system')
+    args.add_argument('--port', '-p', default=DEFAULT_PORT,
+            help='Port to contact on management system')
+    args.add_argument('--lldp', default=False, action="store_true",
+            help='Automatically discover management system with LLDP')
+    args.add_argument('--tls', default=False, action="store_true",
+            help='Connect to bmc_proxy using TLS')
     params = args.parse_args()
     logging.basicConfig(format=LOG_FORMAT, datefmt=DATE_FORMAT)
-    wrapper = SpatulaWrapper()
+    wrapper = SpatulaWrapper(interface=params.interface,
+        tls=params.tls,
+        port=params.port,
+        lldp=params.lldp)
     wrapper.run(params.sleep)

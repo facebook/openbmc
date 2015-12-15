@@ -11,11 +11,13 @@ EXTRA_IMAGEDEPENDS += "u-boot"
 # Uncomment the following line to enable the hard floating point abi. Note that
 # this breaks some binary libraries and 3D (neither of which ship with
 # meta-yocto). For maximum compatibility, leave this disabled.
-DEFAULTTUNE ?= "arm926ejs"
 require conf/machine/include/tune-arm926ejs.inc
 
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed"
 PREFERRED_VERSION_linux-aspeed ?= "2.6.28%"
+
+PREFERRED_VERSION_u-boot ?= "v2013.07"
+PREFERRED_VERSION_u-boot-fw-utils ?= "v2013.07"
 
 KERNEL_IMAGETYPE ?= "uImage"
 KERNEL_EXTRA_ARGS ?= "UIMAGE_LOADADDR=0x40008000"

@@ -22,10 +22,15 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <syslog.h>
 #include "bic.h"
 
 #define FRUID_READ_COUNT_MAX 0x30
+#define FRUID_WRITE_COUNT_MAX 0x30
+#define CPLD_WRITE_COUNT_MAX 0x50
 #define SDR_READ_COUNT_MAX 0x1A
+#define SIZE_SYS_GUID 16
+#define SIZE_IANA_ID 3
 
 enum {
   IPMB_BUS_SLOT1 = 3,
@@ -87,7 +92,9 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   ret = get_ipmb_bus_id(slot_id);
   if (ret < 0) {
-    printf("bic_ipmb_wrapper: Wrong Slot ID %d\n", slot_id);
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_ipmb_wrapper: Wrong Slot ID %d\n", slot_id);
+#endif
     return ret;
   }
 
@@ -114,8 +121,11 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   // Invoke IPMB library handler
   lib_ipmb_handle(bus_id, tbuf, tlen, &rbuf, &rlen);
+
   if (rlen == 0) {
-    printf("bic_ipmb_wrapper: Zero bytes received\n");
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received\n");
+#endif
     return -1;
   }
 
@@ -123,7 +133,9 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   res  = (ipmb_res_t*) rbuf;
 
   if (res->cc) {
-    printf("bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+#endif
     return -1;
   }
 
@@ -148,17 +160,23 @@ bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id) {
 // Get GPIO value and configuration
 int
 bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
+  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[7] = {0x00};
   uint8_t rlen = 0;
   int ret;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, NULL, 0, (uint8_t*) gpio, &rlen);
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 0x03, rbuf, &rlen);
+
+  // Ignore first 3 bytes of IANA ID
+  memcpy((uint8_t*) gpio, &rbuf[3], 4);
 
   return ret;
 }
 
 int
 bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
-  uint8_t tbuf[4] = {0};
+  uint8_t tbuf[7] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
   uint32_t pin;
@@ -166,73 +184,243 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
 
   pin = 1 << gpio;
 
-  tbuf[0] = pin & 0xFF;
-  tbuf[1] = (pin >> 8) & 0xFF;
-  tbuf[2] = (pin >> 16) & 0xFF;
-  tbuf[3] = (pin >> 24) & 0xFF;
+  tbuf[3] = pin & 0xFF;
+  tbuf[4] = (pin >> 8) & 0xFF;
+  tbuf[5] = (pin >> 16) & 0xFF;
+  tbuf[6] = (pin >> 24) & 0xFF;
 
-  tlen = 4;
+  tlen = 7;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, (uint8_t *) gpio_config, &rlen);
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
+
+  // Ignore IANA ID
+  *(uint8_t *) gpio_config = rbuf[3];
 
   return ret;
 }
 
 int
 bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
-  uint8_t tbuf[5] = {0};
+  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
   uint32_t pin;
-  uint8_t res;
   int ret;
 
   pin = 1 << gpio;
 
-  tbuf[0] = pin & 0xFF;
-  tbuf[1] = (pin >> 8) & 0xFF;
-  tbuf[2] = (pin >> 16) & 0xFF;
-  tbuf[3] = (pin >> 24) & 0xFF;
-  tbuf[4] = (*(uint8_t *) gpio_config) & 0x1F;
+  tbuf[3] = pin & 0xFF;
+  tbuf[4] = (pin >> 8) & 0xFF;
+  tbuf[5] = (pin >> 16) & 0xFF;
+  tbuf[6] = (pin >> 24) & 0xFF;
+  tbuf[7] = (*(uint8_t *) gpio_config) & 0x1F;
 
-  tlen = 5;
+  tlen = 8;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG,
-      tbuf, tlen, &res, &rlen);
+      tbuf, tlen, rbuf, &rlen);
   return ret;
 }
 
 // Get BIC Configuration
 int
 bic_get_config(uint8_t slot_id, bic_config_t *cfg) {
+  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   int ret;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_CONFIG,
-              NULL, 0x00, (uint8_t *) cfg, &rlen);
+              tbuf, 0x03, rbuf, &rlen);
+  // Ignore IANA ID
+  *(uint8_t *) cfg = rbuf[3];
+
   return ret;
 }
 
 // Set BIC Configuration
 int
 bic_set_config(uint8_t slot_id, bic_config_t *cfg) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rlen = 0;
   uint8_t rbuf[4] = {0};
   int ret;
 
+  tbuf[3] = *(uint8_t *) cfg;
+
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_CONFIG,
-              (uint8_t *) cfg, 1, rbuf, &rlen);
+              tbuf, 0x04, rbuf, &rlen);
   return ret;
 }
 
 // Read POST Buffer
 int
 bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len) {
+  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[255] = {0x00};
+  uint8_t rlen = 0;
   int ret;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, NULL, 0, buf, len);
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, tbuf, 0x03, rbuf, &rlen);
+
+  //Ignore IANA ID
+  memcpy(buf, &rbuf[3], rlen-3);
+
+  *len = rlen - 3;
 
   return ret;
+}
+
+// Read Firwmare Versions of various components
+int
+bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = comp;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 0x04, rbuf, &rlen);
+  // fw version has to be between 2 and 5 bytes based on component
+  if (ret || (rlen < 2+SIZE_IANA_ID) || (rlen > 5+SIZE_IANA_ID)) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_get_fw_ver: ret: %d, rlen: %d\n", ret, rlen);
+#endif
+    return -1;
+  }
+
+  //Ignore IANA ID
+  memcpy(ver, &rbuf[3], rlen-3);
+
+  return ret;
+}
+
+// Update firmware for various components
+static int
+_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf) {
+  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret;
+  int retries = 3;
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = target;
+
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >> 8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+
+  memcpy(&tbuf[10], buf, len);
+
+  printf("_update_fw: target: %d, offset: %d, len: %d\n", target, offset, len);
+
+  tlen = len + 10;
+
+bic_send:
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen);
+  if ((ret) && (retries--)) {
+    sleep(1);
+    printf("_update_fw: retrying..\n");
+    goto bic_send;
+  }
+
+  return ret;
+}
+
+int
+bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  int ret;
+  uint32_t offset;
+  uint16_t count;
+  uint8_t buf[256] = {0};
+  uint8_t len = 0;
+  uint8_t target;
+  int fd;
+
+  // Open the file exclusively for read
+  fd = open(path, O_RDONLY, 0666);
+  if (fd < 0) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
+#endif
+    goto error_exit;
+  }
+
+  // Write chunks of CPLD binary data in a loop
+  offset = 0;
+  while (1) {
+    // Read from file
+    count = read(fd, buf, CPLD_WRITE_COUNT_MAX);
+    if (count <= 0) {
+      break;
+    }
+
+    if (count == CPLD_WRITE_COUNT_MAX) {
+      target = comp;
+    } else {
+      target = comp | 0x80;
+    }
+
+    // Write to the CPLD
+    ret = _update_fw(slot_id, target, offset, count, buf);
+    if (ret) {
+      break;
+    }
+
+    // Update counter
+    offset += count;
+  }
+
+error_exit:
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+int
+bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
+  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[256] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret;
+
+  // Fill the interface number as ME
+  tbuf[3] = BIC_INTF_ME;
+
+  // Fill the data to be sent
+  memcpy(&tbuf[4], txbuf, txlen);
+
+  // Send data length includes IANA ID and interface number
+  tlen = txlen + 4;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
+  if (ret ) {
+    return -1;
+  }
+
+  // Make sure the received interface number is same
+  if (rbuf[3] != tbuf[3]) {
+    return -1;
+  }
+
+  // Copy the received data to caller skipping header
+  memcpy(rxbuf, &rbuf[7], rlen-7);
+
+  *rxlen = rlen-7;
+
+  return 0;
 }
 
 // Read 1S server's FRUID
@@ -279,19 +467,23 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
   // Open the file exclusively for write
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
-    printf("bic_read_fruid: open fails for path: %s\n", path);
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_read_fruid: open fails for path: %s\n", path);
+#endif
     goto error_exit;
   }
 
   // Read the FRUID information
   ret = bic_get_fruid_info(slot_id, fru_id, &info);
   if (ret) {
-    printf("bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
+#endif
     goto error_exit;
   }
 
   // Indicates the size of the FRUID
-  nread = (info.size_msb << 8) + (info.size_lsb);
+  nread = (info.size_msb << 6) + (info.size_lsb);
 
   // Read chunks of FRUID binary data in a loop
   offset = 0;
@@ -304,7 +496,9 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
 
     ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen);
     if (ret) {
-      printf("bic_read_fruid: ipmb_wrapper fails\n");
+#ifdef DEBUG
+      syslog(LOG_ERR, "bic_read_fruid: ipmb_wrapper fails\n");
+#endif
       goto error_exit;
     }
 
@@ -314,6 +508,79 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
     // Update offset
     offset += (rlen-1);
     nread -= (rlen-1);
+  }
+
+error_exit:
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+static int
+_write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *buf) {
+  int ret;
+  uint8_t tbuf[64] = {0};
+  uint8_t rbuf[4] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  tbuf[0] = fru_id;
+  tbuf[1] = offset & 0xFF;
+  tbuf[2] = (offset >> 8) & 0xFF;
+
+  memcpy(&tbuf[3], buf, count);
+  tlen = count + 3;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA, tbuf, tlen, rbuf, &rlen);
+
+  if (ret) {
+    return ret;
+  }
+
+  if (rbuf[0] != count) {
+    return -1;
+  }
+
+  return ret;
+}
+
+int
+bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
+  int ret;
+  uint32_t offset;
+  uint8_t count;
+  uint8_t buf[64] = {0};
+  uint8_t len = 0;
+  int fd;
+
+  // Open the file exclusively for read
+  fd = open(path, O_RDONLY, 0666);
+  if (fd < 0) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_write_fruid: open fails for path: %s\n", path);
+#endif
+    goto error_exit;
+  }
+
+  // Write chunks of FRUID binary data in a loop
+  offset = 0;
+  while (1) {
+    // Read from file
+    count = read(fd, buf, FRUID_WRITE_COUNT_MAX);
+    if (count <= 0) {
+      break;
+    }
+
+    // Write to the FRUID
+    ret = _write_fruid(slot_id, fru_id, offset, count, buf);
+    if (ret) {
+      break;
+    }
+
+    // Update counter
+    offset += count;
   }
 
 error_exit:
@@ -398,7 +665,9 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   // Get SDR reservation ID for the given record
   ret = _get_sdr_rsv(slot_id, &req->rsv_id);
   if (ret) {
-    printf("bic_read_sdr: _get_sdr_rsv returns %d\n", ret);
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_read_sdr: _get_sdr_rsv returns %d\n", ret);
+#endif
     return ret;
   }
 
@@ -411,7 +680,9 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
 
   ret = _get_sdr(slot_id, req, tbuf, &tlen);
   if (ret) {
-    printf("bic_read_sdr: _get_sdr returns %d\n", ret);
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
+#endif
     return ret;
   }
 
@@ -439,7 +710,9 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
 
     ret = _get_sdr(slot_id, req, tbuf, &tlen);
     if (ret) {
-      printf("bic_read_sdr: _get_sdr returns %d\n", ret);
+#ifdef DEBUG
+      syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
+#endif
       return ret;
     }
 
@@ -461,6 +734,22 @@ bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sens
   int rlen = 0;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, (uint8_t *)&sensor_num, 1, (uint8_t *)sensor, &rlen);
+
+  return ret;
+}
+
+int
+bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
+  int ret;
+  int rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, guid, &rlen);
+  if (rlen != SIZE_SYS_GUID) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_get_sys_guid: returned rlen of %d\n");
+#endif
+    return -1;
+  }
 
   return ret;
 }

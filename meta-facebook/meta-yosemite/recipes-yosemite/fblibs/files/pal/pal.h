@@ -30,12 +30,16 @@ extern "C" {
 #include <facebook/yosemite_fruid.h>
 #include <facebook/yosemite_sensor.h>
 
-#define MAX_NUM_FRUS 6
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   64
 
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
+
+#define SETBIT(x, y)        (x | (1 << y))
+#define GETBIT(x, y)        ((x & (1 << y)) > y)
+#define CLEARBIT(x, y)      (x & (~(1 << y)))
+#define GETMASK(y)          (1 << y)
 
 extern char * key_list[];
 extern const char pal_fru_list[];
@@ -47,10 +51,18 @@ enum {
 };
 
 enum {
+  USB_MUX_OFF,
+  USB_MUX_ON,
+};
+
+enum {
   SERVER_POWER_OFF,
   SERVER_POWER_ON,
   SERVER_POWER_CYCLE,
   SERVER_GRACEFUL_SHUTDOWN,
+  SERVER_12V_OFF,
+  SERVER_12V_ON,
+  SERVER_12V_CYCLE,
 };
 
 enum {
@@ -59,6 +71,22 @@ enum {
   HAND_SW_SERVER3,
   HAND_SW_SERVER4,
   HAND_SW_BMC
+};
+
+enum {
+  SYSTEM_EVENT = 0xE9,
+  THERM_THRESH_EVT = 0x7D,
+  BUTTON = 0xAA,
+  POWER_STATE = 0xAB,
+  CRITICAL_IRQ = 0xEA,
+  POST_ERROR = 0x2B,
+  MACHINE_CHK_ERR = 0x40,
+  PCIE_ERR = 0x41,
+  IIO_ERR = 0x43,
+  MEMORY_ECC_ERR = 0X63,
+  PROCHOT_EXT = 0X51,
+  PWR_ERR = 0X56,
+  CATERR= 0xEB,
 };
 
 int pal_get_platform_name(char *name);
@@ -79,17 +107,40 @@ int pal_get_pwr_btn(uint8_t *status);
 int pal_get_rst_btn(uint8_t *status);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);
+int pal_set_hb_led(uint8_t status);
+int pal_set_id_led(uint8_t slot, uint8_t status);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
+int pal_get_fru_name(uint8_t fru, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
+int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 int pal_get_fruid_name(uint8_t fru, char *name);
+int pal_get_fru_sdr_path(uint8_t fru, char *path);
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
+int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
+int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
+int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh,
+    void *value);
 int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
+int pal_set_def_key_value();
 void pal_dump_key_value(void);
 int pal_get_fru_devtty(uint8_t fru, char *devtty);
+int pal_get_last_pwr_state(uint8_t fru, char *state);
+int pal_set_last_pwr_state(uint8_t fru, char *state);
+int pal_get_sys_guid(uint8_t slot, char *guid);
+int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
+int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
+int pal_fruid_write(uint8_t slot, char *path);
+int pal_is_bmc_por(void);
+int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
+    uint8_t o_val, uint8_t n_val);
+int pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
+int pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
+    char *error_log);
+int pal_sel_handler(uint8_t fru, uint8_t snr_num);
 
 #ifdef __cplusplus
 } // extern "C"

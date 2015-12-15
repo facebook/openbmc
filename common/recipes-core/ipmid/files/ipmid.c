@@ -35,6 +35,11 @@
 #include <sys/un.h>
 #include <openbmc/ipmi.h>
 
+#define SIZE_IANA_ID 3
+#define SIZE_SYS_GUID 16
+
+extern void plat_lan_init(lan_config_t *lan);
+
 // TODO: Once data storage is finalized, the following structure needs
 // to be retrieved/updated from persistant backend storage
 static lan_config_t g_lan_config = { 0 };
@@ -245,6 +250,27 @@ app_get_device_guid (unsigned char *response, unsigned char *res_len)
   *res_len = data - &res->data[0];
 }
 
+// Get Device System GUID (IPMI/Section 22.14)
+static void
+app_get_device_sys_guid (unsigned char *request, unsigned char *response,
+                         unsigned char *res_len)
+{
+  int ret;
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  // Get the 16 bytes of System GUID from PAL library
+  ret = pal_get_sys_guid(req->payload_id, res->data);
+  if (ret) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+      *res_len = 0x00;
+  } else {
+      res->cc = CC_SUCCESS;
+      *res_len = SIZE_SYS_GUID;
+  }
+}
+
 // Get BMC Global Enables (IPMI/Section 22.2)
 static void
 app_get_global_enables (unsigned char *response, unsigned char *res_len)
@@ -255,7 +281,7 @@ app_get_global_enables (unsigned char *response, unsigned char *res_len)
 
   res->cc = CC_SUCCESS;
 
-  *data++ = 0x09;		// Global Enable
+  *data++ = 0x0D;		// Global Enable
 
   *res_len = data - &res->data[0];
 }
@@ -279,6 +305,7 @@ app_set_sys_info_params (unsigned char *request, unsigned char *response,
       break;
     case SYS_INFO_PARAM_SYSFW_VER:
       memcpy(g_sys_info_params.sysfw_ver, &req->data[1], SIZE_SYSFW_VER);
+      pal_set_sysfw_ver(req->payload_id, g_sys_info_params.sysfw_ver);
       break;
     case SYS_INFO_PARAM_SYS_NAME:
       memcpy(g_sys_info_params.sys_name, &req->data[1], SIZE_SYS_NAME);
@@ -327,6 +354,7 @@ app_get_sys_info_params (unsigned char *request, unsigned char *response,
       *data++ = g_sys_info_params.set_in_prog;
       break;
     case SYS_INFO_PARAM_SYSFW_VER:
+      pal_get_sysfw_ver(req->payload_id, g_sys_info_params.sysfw_ver);
       memcpy(data, g_sys_info_params.sysfw_ver, SIZE_SYSFW_VER);
       data += SIZE_SYSFW_VER;
       break;
@@ -385,11 +413,10 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       app_get_selftest_results (response, res_len);
       break;
     case CMD_APP_GET_DEVICE_GUID:
-    case CMD_APP_GET_SYSTEM_GUID:
-      // Get Device GUID and Get System GUID returns same data
-      // from IPMI stack. FYI, Get System GUID will have to be
-      // sent with in an IPMI session that includes session info
       app_get_device_guid (response, res_len);
+      break;
+    case CMD_APP_GET_SYSTEM_GUID:
+      app_get_device_sys_guid (request, response, res_len);
       break;
     case CMD_APP_GET_GLOBAL_ENABLES:
       app_get_global_enables (response, res_len);
@@ -558,8 +585,10 @@ storage_get_sdr (unsigned char *request, unsigned char *response,
 }
 
 static void
-storage_get_sel_info (unsigned char *response, unsigned char *res_len)
+storage_get_sel_info (unsigned char *request, unsigned char *response,
+                      unsigned char *res_len)
 {
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
   int num_entries;		// number of log entries
@@ -568,10 +597,10 @@ storage_get_sel_info (unsigned char *response, unsigned char *res_len)
   time_stamp_t ts_recent_erase;	// Recent Erasure Timestamp
 
   // Use platform APIs to get SEL information
-  num_entries = sel_num_entries ();
-  free_space = sel_free_space ();
-  sel_ts_recent_add (&ts_recent_add);
-  sel_ts_recent_erase (&ts_recent_erase);
+  num_entries = sel_num_entries (req->payload_id);
+  free_space = sel_free_space (req->payload_id);
+  sel_ts_recent_add (req->payload_id, &ts_recent_add);
+  sel_ts_recent_erase (req->payload_id, &ts_recent_erase);
 
   res->cc = CC_SUCCESS;
 
@@ -595,14 +624,16 @@ storage_get_sel_info (unsigned char *response, unsigned char *res_len)
 }
 
 static void
-storage_rsv_sel (unsigned char *response, unsigned char *res_len)
+storage_rsv_sel (unsigned char * request, unsigned char *response,
+                  unsigned char *res_len)
 {
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
   int rsv_id;			// SEL reservation ID
 
   // Use platform APIs to get a SEL reservation ID
-  rsv_id = sel_rsv_id ();
+  rsv_id = sel_rsv_id (req->payload_id);
   if (rsv_id < 0)
   {
       res->cc = CC_SEL_ERASE_PROG;
@@ -634,7 +665,7 @@ storage_get_sel (unsigned char *request, unsigned char *response,
   read_rec_id = (req->data[3] >> 8) | req->data[2];
 
   // Use platform API to read the record Id and get next ID
-  ret = sel_get_entry (read_rec_id, &entry, &next_rec_id);
+  ret = sel_get_entry (req->payload_id, read_rec_id, &entry, &next_rec_id);
   if (ret)
   {
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -670,7 +701,7 @@ storage_add_sel (unsigned char *request, unsigned char *response,
   memcpy(entry.msg, req->data, SIZE_SEL_REC);
 
   // Use platform APIs to add the new SEL entry
-  ret = sel_add_entry (&entry, &record_id);
+  ret = sel_add_entry (req->payload_id, &entry, &record_id);
   if (ret)
   {
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -711,11 +742,11 @@ storage_clr_sel (unsigned char *request, unsigned char *response,
   // Use platform APIs to clear or get status
   if (req->data[5] == IPMI_SEL_INIT_ERASE)
   {
-    ret = sel_erase (rsv_id);
+    ret = sel_erase (req->payload_id, rsv_id);
   }
   else if (req->data[5] == IPMI_SEL_ERASE_STAT)
   {
-    ret = sel_erase_status (rsv_id, &status);
+    ret = sel_erase_status (req->payload_id, rsv_id, &status);
   }
   else
   {
@@ -739,6 +770,37 @@ storage_clr_sel (unsigned char *request, unsigned char *response,
 }
 
 static void
+storage_get_sel_time (unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = CC_SUCCESS;
+
+  time_stamp_fill(res->data);
+
+  *res_len = SIZE_TIME_STAMP;
+
+  return;
+}
+
+static void
+storage_get_sel_utc (unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  res->cc = CC_SUCCESS;
+
+  // TODO: For now, the SEL time stamp is based on UTC time,
+  // so return 0x0000 as offset. Might need to change once
+  // supporting zones in SEL time stamps
+  *data++ = 0x00;
+  *data++ = 0x00;
+
+  *res_len = data - &res->data[0];
+}
+
+static void
 ipmi_handle_storage (unsigned char *request, unsigned char req_len,
 		     unsigned char *response, unsigned char *res_len)
 {
@@ -759,10 +821,10 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
       storage_get_fruid_data (request, response, res_len);
       break;
     case CMD_STORAGE_GET_SEL_INFO:
-      storage_get_sel_info (response, res_len);
+      storage_get_sel_info (request, response, res_len);
       break;
     case CMD_STORAGE_RSV_SEL:
-      storage_rsv_sel (response, res_len);
+      storage_rsv_sel (request, response, res_len);
       break;
     case CMD_STORAGE_ADD_SEL:
       storage_add_sel (request, response, res_len);
@@ -772,6 +834,12 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
       break;
     case CMD_STORAGE_CLR_SEL:
       storage_clr_sel (request, response, res_len);
+      break;
+    case CMD_STORAGE_GET_SEL_TIME:
+      storage_get_sel_time (response, res_len);
+      break;
+    case CMD_STORAGE_GET_SEL_UTC:
+      storage_get_sel_utc (response, res_len);
       break;
     case CMD_STORAGE_GET_SDR_INFO:
       storage_get_sdr_info (response, res_len);
@@ -871,6 +939,9 @@ transport_set_lan_config (unsigned char *request, unsigned char *response,
     case LAN_PARAM_DEST_ADDR:
       memcpy(g_lan_config.dest_addr, &req->data[2], SIZE_DEST_ADDR);
       break;
+    case LAN_PARAM_IP6_ADDR:
+      memcpy(g_lan_config.ip6_addr, &req->data[2], SIZE_IP6_ADDR);
+      break;
     default:
       res->cc = CC_INVALID_PARAM;
       break;
@@ -905,6 +976,7 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
       data += SIZE_AUTH_ENABLES;
       break;
     case LAN_PARAM_IP_ADDR:
+      plat_lan_init(&g_lan_config);
       memcpy(data, g_lan_config.ip_addr, SIZE_IP_ADDR);
       data += SIZE_IP_ADDR;
       break;
@@ -967,6 +1039,11 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
     case LAN_PARAM_DEST_ADDR:
       memcpy(data, g_lan_config.dest_addr, SIZE_DEST_ADDR);
       data += SIZE_DEST_ADDR;
+      break;
+    case LAN_PARAM_IP6_ADDR:
+      plat_lan_init(&g_lan_config);
+      memcpy(data, g_lan_config.ip6_addr, SIZE_IP6_ADDR);
+      data += SIZE_IP6_ADDR;
       break;
     default:
       res->cc = CC_INVALID_PARAM;
@@ -1070,6 +1147,42 @@ oem_set_post_end (unsigned char *request, unsigned char *response,
 }
 
 static void
+oem_get_slot_info(unsigned char *request, unsigned char *response,
+                  unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  int ret;
+  uint8_t pres  = 0x00;
+  uint8_t sinfo = 0x00;
+
+  // Slot info:
+  // Bit[7]: Not Present/Present (from pal)
+  // Bit[6]: Platform type (TODO from pal)
+  // Bit[5-0] : Slot# (payload_id indicates)
+  ret = pal_is_server_prsnt(req->payload_id, &pres);
+  if (ret) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }
+
+  // Populate the presence bit[7]
+  if (pres) {
+    sinfo = 0x80;
+  }
+
+  // Populate the slot number
+  sinfo |= req->payload_id;
+
+  // Prepare response buffer
+  res->cc = CC_SUCCESS;
+  res->data[0] = sinfo;
+  *res_len = 0x01;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
 		 unsigned char *response, unsigned char *res_len)
 {
@@ -1093,6 +1206,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
     case CMD_OEM_SET_POST_END:
       oem_set_post_end (request, response, res_len);
       break;
+    case CMD_OEM_GET_SLOT_INFO:
+      oem_get_slot_info (request, response, res_len);
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       break;
@@ -1114,21 +1230,22 @@ oem_1s_handle_ipmb_kcs(unsigned char *request, unsigned char req_len,
   // Add the payload id from the bridged command
   req_buf[0] = req->payload_id;
 
-  // Remove OEM IPMI Header + 1 byte for BIC interface
+  // Remove OEM IPMI Header (including 1 byte for interface type, 3 bytes for IANA ID)
   // The offset moves by one due to the payload ID
-  memcpy(&req_buf[1], &request[BIC_INTF_HDR_SIZE + 1], req_len - BIC_INTF_HDR_SIZE);
+  memcpy(&req_buf[1], &request[BIC_INTF_HDR_SIZE], req_len - BIC_INTF_HDR_SIZE + 1);
 
   // Send the bridged KCS command along with the payload ID
   // The offset moves by one due to the payload ID
   ipmi_handle(req_buf, req_len - BIC_INTF_HDR_SIZE + 1, res_buf, res_len);
 
-  // Copy the response back
-  memcpy(&res->data[1], res_buf, *res_len);
+  // Copy the response back (1 byte interface type, 3 bytes for IANA ID)
+  memcpy(&res->data[4], res_buf, *res_len);
 
   // Add the OEM command's response
   res->cc = CC_SUCCESS;
-  res->data[0] = req->data[0]; // Bridge-IC interface
-  *res_len += 1;
+  memcpy(res->data, &req->data, SIZE_IANA_ID); // IANA ID
+  res->data[3] = req->data[3]; // Bridge-IC interface
+  *res_len += 4; // Interface type + IANA ID
 }
 
 static void
@@ -1139,32 +1256,38 @@ oem_1s_handle_ipmb_req(unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   // handle based on Bridge-IC interface
-  switch(req->data[0]) {
+  switch(req->data[3]) {
     case BIC_INTF_ME:
       // TODO: Need to call ME command handler
+#ifdef DEBUG
       syslog(LOG_INFO, "oem_1s_handle_ipmb_req: Command received from ME for "
                   "payload#%d\n", req->payload_id);
-      res->data[0] = BIC_INTF_ME;
+#endif
+      memcpy(res->data, req->data, 4); //IANA ID + Interface type
       res->cc = CC_SUCCESS;
-      *res_len = 1;
+      *res_len = 4;
       break;
     case BIC_INTF_SOL:
       // TODO: Need to call Optional SoL message handler
+#ifdef DEBUG
       syslog(LOG_INFO, "oem_1s_handle_ipmb_req: Command received from SOL for "
                   "payload#%d\n", req->payload_id);
-      res->data[0] = BIC_INTF_SOL;
+#endif
+      memcpy(res->data, req->data, 4); //IANA ID + Interface type
       res->cc = CC_SUCCESS;
-      *res_len = 1;
+      *res_len = 4;
       break;
     case BIC_INTF_KCS:
+    case BIC_INTF_KCS_SMM:
       oem_1s_handle_ipmb_kcs(request, req_len, response, res_len);
       break;
     default:
       // TODO: Need to add additonal interface handler, if supported
-      syslog(LOG_ALERT, "oem_1s_handle_ipmb_req: Command received on intf#%d "
-                 "for payload#%d", req->data[0], req->payload_id);
+      syslog(LOG_WARNING, "oem_1s_handle_ipmb_req: Command received on intf#%d "
+                 "for payload#%d", req->data[3], req->payload_id);
+      memcpy(res->data, req->data, 4); //IANA ID + Interface type
       res->cc = CC_INVALID_PARAM;
-      *res_len = 0;
+      *res_len = 4;
       break;
   }
 }
@@ -1187,62 +1310,70 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_1S_INTR:
       syslog(LOG_INFO, "ipmi_handle_oem_1s: 1S server interrupt#%d received "
-                "for payload#%d\n", req->data[0], req->payload_id);
+                "for payload#%d\n", req->data[3], req->payload_id);
 
       res->cc = CC_SUCCESS;
-      *res_len = 0;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
       break;
     case CMD_OEM_1S_POST_BUF:
-      for (i = 1; i <= req->data[0]; i++) {
+      // Skip the first 3 bytes of IANA ID and one byte of length field
+      for (i = SIZE_IANA_ID+1; i <= req->data[3]; i++) {
         pal_post_handle(req->payload_id, req->data[i]);
       }
 
       res->cc = CC_SUCCESS;
-      *res_len = 0;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
       break;
     case CMD_OEM_1S_PLAT_DISC:
       syslog(LOG_INFO, "ipmi_handle_oem_1s: Platform Discovery received for "
                 "payload#%d\n", req->payload_id);
       res->cc = CC_SUCCESS;
-      *res_len = 0;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
       break;
     case CMD_OEM_1S_BIC_RESET:
       syslog(LOG_INFO, "ipmi_handle_oem_1s: BIC Reset received "
                 "for payload#%d\n", req->payload_id);
 
-      if (req->data[0] == 0x0) {
-         syslog(LOG_ALERT, "Cold Reset by Firmware Update\n");
+      if (req->data[3] == 0x0) {
+         syslog(LOG_WARNING, "Cold Reset by Firmware Update\n");
          res->cc = CC_SUCCESS;
-      } else if (req->data[1] == 0x01) {
-         syslog(LOG_ALERT, "WDT Reset\n");
+      } else if (req->data[3] == 0x01) {
+         syslog(LOG_WARNING, "WDT Reset\n");
          res->cc = CC_SUCCESS;
       } else {
-         syslog(LOG_ALERT, "Error\n");
+         syslog(LOG_WARNING, "Error\n");
          res->cc = CC_INVALID_PARAM;
       }
 
-      *res_len = 0;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
       break;
     case CMD_OEM_1S_BIC_UPDATE_MODE:
+#ifdef DEBUG
       syslog(LOG_INFO, "ipmi_handle_oem_1s: BIC Update Mode received "
                 "for payload#%d\n", req->payload_id);
-
-      if (req->data[0] == 0x0) {
+#endif
+      if (req->data[3] == 0x0) {
          syslog(LOG_INFO, "Normal Mode\n");
          res->cc = CC_SUCCESS;
-      } else if (req->data[1] == 0x0F) {
+      } else if (req->data[3] == 0x0F) {
          syslog(LOG_INFO, "Update Mode\n");
          res->cc = CC_SUCCESS;
       } else {
-         syslog(LOG_ALERT, "Error\n");
+         syslog(LOG_WARNING, "Error\n");
          res->cc = CC_INVALID_PARAM;
       }
 
-      *res_len = 0;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
       break;
     default:
       res->cc = CC_INVALID_CMD;
-      *res_len = 0;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
       break;
   }
   pthread_mutex_unlock(&m_oem_1s);
@@ -1306,26 +1437,37 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
 
 void
 *conn_handler(void *socket_desc) {
-  int sock = *(int*)socket_desc;
+  int *p_sock = (int*)socket_desc;
+  int sock = *p_sock;
   int n;
   unsigned char req_buf[MAX_IPMI_MSG_SIZE];
   unsigned char res_buf[MAX_IPMI_MSG_SIZE];
   unsigned char res_len = 0;
+  struct timeval tv;
+  int rc = 0;
+
+  // setup timeout for receving on socket
+  tv.tv_sec = TIMEOUT_IPMI;
+  tv.tv_usec = 0;
+
+  setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
 
   n = recv (sock, req_buf, sizeof(req_buf), 0);
+  rc = errno;
   if (n <= 0) {
-      syslog(LOG_ALERT, "ipmid: recv() failed with %d\n", n);
+      syslog(LOG_WARNING, "ipmid: recv() failed with %d, errno: %d\n", n, rc);
       goto conn_cleanup;
   }
 
   ipmi_handle(req_buf, n, res_buf, &res_len);
 
   if (send (sock, res_buf, res_len, 0) < 0) {
-    syslog(LOG_ALERT, "ipmid: send() failed\n");
+    syslog(LOG_WARNING, "ipmid: send() failed\n");
   }
 
 conn_cleanup:
   close(sock);
+  free(p_sock);
 
   pthread_exit(NULL);
   return 0;
@@ -1338,13 +1480,16 @@ main (void)
   int s, s2, t, len;
   struct sockaddr_un local, remote;
   pthread_t tid;
+  int *p_s2;
+  int rc = 0;
 
-  daemon(1, 0);
+  daemon(1, 1);
   openlog("ipmid", LOG_CONS, LOG_DAEMON);
 
 
   plat_fruid_init();
   plat_sensor_init();
+  plat_lan_init(&g_lan_config);
 
   sdr_init();
   sel_init();
@@ -1358,7 +1503,7 @@ main (void)
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
   {
-    syslog(LOG_ALERT, "ipmid: socket() failed\n");
+    syslog(LOG_WARNING, "ipmid: socket() failed\n");
     exit (1);
   }
 
@@ -1368,30 +1513,35 @@ main (void)
   len = strlen (local.sun_path) + sizeof (local.sun_family);
   if (bind (s, (struct sockaddr *) &local, len) == -1)
   {
-    syslog(LOG_ALERT, "ipmid: bind() failed\n");
+    syslog(LOG_WARNING, "ipmid: bind() failed\n");
     exit (1);
   }
 
   if (listen (s, 5) == -1)
   {
-    syslog(LOG_ALERT, "ipmid: listen() failed\n");
+    syslog(LOG_WARNING, "ipmid: listen() failed\n");
     exit (1);
   }
 
   while(1) {
     int n;
     t = sizeof (remote);
+    // TODO: seen accept() call fails and need further debug
     if ((s2 = accept (s, (struct sockaddr *) &remote, &t)) < 0) {
-      syslog(LOG_ALERT, "ipmid: accept() failed\n");
-      break;
+      rc = errno;
+      syslog(LOG_WARNING, "ipmid: accept() failed with ret: %x, errno: %x\n", s2, rc);
+      sleep(5);
+      continue;
     }
 
     // Creating a worker thread to handle the request
     // TODO: Need to monitor the server performance with higher load and
     // see if we need to create pre-defined number of workers and schedule
     // the requests among them.
-    if (pthread_create(&tid, NULL, conn_handler, (void*) &s2) < 0) {
-        syslog(LOG_ALERT, "ipmid: pthread_create failed\n");
+    p_s2 = malloc(sizeof(int));
+    *p_s2 = s2;
+    if (pthread_create(&tid, NULL, conn_handler, (void*) p_s2) < 0) {
+        syslog(LOG_WARNING, "ipmid: pthread_create failed\n");
         close(s2);
         continue;
     }

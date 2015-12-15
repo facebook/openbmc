@@ -1,0 +1,47 @@
+ __ieee754_sqrt{,f} are now inline functions and call out __slow versions
+
+
+Signed-off-by: chunrong guo <B40290@freescale.com>
+Upstream-Status: Pending
+
+diff -rNu libc-orig/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrt.c libc/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrt.c
+--- libc-orig/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrt.c	2014-04-08 04:39:58.487229887 -0500
++++ libc/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrt.c	2014-04-08 04:40:52.643069198 -0500
+@@ -41,10 +41,10 @@
+ 
+ #ifdef __STDC__
+ double
+-__ieee754_sqrt (double b)
++__slow_ieee754_sqrt (double b)
+ #else
+ double
+-__ieee754_sqrt (b)
++__slow_ieee754_sqrt (b)
+      double b;
+ #endif
+ {
+@@ -83,7 +83,7 @@
+ 
+           /* Handle small numbers by scaling.  */
+           if (__builtin_expect ((u.parts.msw & 0x7ff00000) <= 0x02000000, 0))
+-            return __ieee754_sqrt (b * two108) * twom54;
++            return __slow_ieee754_sqrt (b * two108) * twom54;
+ 
+ #define FMADD(a_, c_, b_)                                               \
+           ({ double __r;                                                \
+diff -rNu libc-orig/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrtf.c libc/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrtf.c
+--- libc-orig/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrtf.c	2014-04-08 04:39:58.487229887 -0500
++++ libc/sysdeps/powerpc/powerpc32/e6500/fpu/e_sqrtf.c	2014-04-08 04:41:26.017067682 -0500
+@@ -39,10 +39,10 @@
+ 
+ #ifdef __STDC__
+ float
+-__ieee754_sqrtf (float b)
++__slow_ieee754_sqrtf (float b)
+ #else
+ float
+-__ieee754_sqrtf (b)
++__slow_ieee754_sqrtf (b)
+      float b;
+ #endif
+ {

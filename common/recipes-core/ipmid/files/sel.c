@@ -31,9 +31,19 @@
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
+#include <stdint.h>
+#include <sys/types.h>
+
+
+#if defined(CONFIG_YOSEMITE)
+#define MAX_NODES 4
+#else
+#define MAX_NODES 1
+#endif
 
 // SEL File.
-#define SEL_LOG_FILE  "/mnt/data/sel.bin"
+#define SEL_LOG_FILE  "/mnt/data/sel%d.bin"
+#define SIZE_PATH_MAX 32
 
 // SEL Header magic number
 #define SEL_HDR_MAGIC 0xFBFBFBFB
@@ -75,24 +85,27 @@ typedef struct {
 } sel_hdr_t;
 
 // Keep track of last Reservation ID
-static int g_rsv_id = 0x01;
+static int g_rsv_id[MAX_NODES+1];
 
 // Cached version of SEL Header and data
-static sel_hdr_t g_sel_hdr;
-static sel_msg_t g_sel_data[SEL_ELEMS_MAX];
+static sel_hdr_t g_sel_hdr[MAX_NODES+1];
+static sel_msg_t g_sel_data[MAX_NODES+1][SEL_ELEMS_MAX];
 
 // Local helper functions to interact with file system
 static int
-file_get_sel_hdr(void) {
+file_get_sel_hdr(int node) {
   FILE *fp;
+  char fpath[SIZE_PATH_MAX] = {0};
 
-  fp = fopen(SEL_LOG_FILE, "r");
+  sprintf(fpath, SEL_LOG_FILE, node);
+
+  fp = fopen(fpath, "r");
   if (fp == NULL) {
     return -1;
   }
 
-  if (fread(&g_sel_hdr, sizeof(sel_hdr_t), 1, fp) <= 0) {
-    syslog(LOG_ALERT, "file_get_sel_hdr: fread\n");
+  if (fread(&g_sel_hdr[node], sizeof(sel_hdr_t), 1, fp) <= 0) {
+    syslog(LOG_WARNING, "file_get_sel_hdr: fread\n");
     fclose (fp);
     return -1;
   }
@@ -102,25 +115,28 @@ file_get_sel_hdr(void) {
 }
 
 static int
-file_get_sel_data(void) {
+file_get_sel_data(int node) {
   FILE *fp;
   int i, j;
+  char fpath[SIZE_PATH_MAX] = {0};
 
-  fp = fopen(SEL_LOG_FILE, "r");
+  sprintf(fpath, SEL_LOG_FILE, node);
+
+  fp = fopen(fpath, "r");
   if (fp == NULL) {
-    syslog(LOG_ALERT, "file_get_sel_data: fopen\n");
+    syslog(LOG_WARNING, "file_get_sel_data: fopen\n");
     return -1;
   }
 
   if (fseek(fp, SEL_DATA_OFFSET, SEEK_SET)) {
-    syslog(LOG_ALERT, "file_get_sel_data: fseek\n");
+    syslog(LOG_WARNING, "file_get_sel_data: fseek\n");
     fclose(fp);
     return -1;
   }
 
   unsigned char buf[SEL_ELEMS_MAX * 16];
   if (fread(buf, 1, SEL_ELEMS_MAX * sizeof(sel_msg_t), fp) <= 0) {
-    syslog(LOG_ALERT, "file_get_sel_data: fread\n");
+    syslog(LOG_WARNING, "file_get_sel_data: fread\n");
     fclose(fp);
     return -1;
   }
@@ -129,7 +145,7 @@ file_get_sel_data(void) {
 
   for (i = 0; i < SEL_ELEMS_MAX; i++) {
     for (j = 0; j < sizeof(sel_msg_t);j++) {
-      g_sel_data[i].msg[j] = buf[i*16 + j];
+      g_sel_data[node][i].msg[j] = buf[i*16 + j];
     }
   }
 
@@ -137,17 +153,20 @@ file_get_sel_data(void) {
 }
 
 static int
-file_store_sel_hdr(void) {
+file_store_sel_hdr(int node) {
   FILE *fp;
+  char fpath[SIZE_PATH_MAX] = {0};
 
-  fp = fopen(SEL_LOG_FILE, "r+");
+  sprintf(fpath, SEL_LOG_FILE, node);
+
+  fp = fopen(fpath, "r+");
   if (fp == NULL) {
-    syslog(LOG_ALERT, "file_store_sel_hdr: fopen\n");
+    syslog(LOG_WARNING, "file_store_sel_hdr: fopen\n");
     return -1;
   }
 
-  if (fwrite(&g_sel_hdr, sizeof(sel_hdr_t), 1, fp) <= 0) {
-    syslog(LOG_ALERT, "file_store_sel_hdr: fwrite\n");
+  if (fwrite(&g_sel_hdr[node], sizeof(sel_hdr_t), 1, fp) <= 0) {
+    syslog(LOG_WARNING, "file_store_sel_hdr: fwrite\n");
     fclose(fp);
     return -1;
   }
@@ -158,13 +177,16 @@ file_store_sel_hdr(void) {
 }
 
 static int
-file_store_sel_data(int recId, sel_msg_t *data) {
+file_store_sel_data(int node, int recId, sel_msg_t *data) {
   FILE *fp;
   int index;
+  char fpath[SIZE_PATH_MAX] = {0};
 
-  fp = fopen(SEL_LOG_FILE, "r+");
+  sprintf(fpath, SEL_LOG_FILE, node);
+
+  fp = fopen(fpath, "r+");
   if (fp == NULL) {
-    syslog(LOG_ALERT, "file_store_sel_data: fopen\n");
+    syslog(LOG_WARNING, "file_store_sel_data: fopen\n");
     return -1;
   }
 
@@ -172,13 +194,13 @@ file_store_sel_data(int recId, sel_msg_t *data) {
   index = (recId-1) * sizeof(sel_msg_t);
 
   if (fseek(fp, SEL_DATA_OFFSET+index, SEEK_SET)) {
-    syslog(LOG_ALERT, "file_store_sel_data: fseek\n");
+    syslog(LOG_WARNING, "file_store_sel_data: fseek\n");
     fclose(fp);
     return -1;
   }
 
   if (fwrite(data->msg, sizeof(sel_msg_t), 1, fp) <= 0) {
-    syslog(LOG_ALERT, "file_store_sel_data: fwrite\n");
+    syslog(LOG_WARNING, "file_store_sel_data: fwrite\n");
     fclose(fp);
     return -1;
   }
@@ -188,37 +210,103 @@ file_store_sel_data(int recId, sel_msg_t *data) {
   return 0;
 }
 
+static void
+dump_sel_syslog(int fru, sel_msg_t *data) {
+  int i = 0;
+  char temp_str[8]  = {0};
+  char str[128] = {0};
+
+  for (i = 0; i < 15; i++) {
+    sprintf(temp_str, "%02X:", data->msg[i]);
+    strcat(str, temp_str);
+  }
+  sprintf(temp_str, "%02X", data->msg[15]);
+  strcat(str, temp_str);
+
+  syslog(LOG_CRIT, "SEL Entry, FRU: %d, Content: %s\n", fru, str);
+}
+
+static void
+parse_sel(uint8_t fru, sel_msg_t *data) {
+  int i = 0;
+  uint32_t timestamp;
+  char *sel = data->msg;
+  uint8_t sensor_type;
+  uint8_t sensor_num;
+  uint8_t event_dir;
+  uint8_t type_num;
+  uint8_t event_data[3];
+  char sensor_name[32];
+  char error_log[64];
+  char error_type[64];
+  char status[16];
+  int ret;
+
+  //memcpy(timestamp, (uint8_t *) &sel[3], 4);
+  timestamp = 0;
+  timestamp |= sel[3];
+  timestamp |= sel[4] << 8;
+  timestamp |= sel[5] << 16;
+  timestamp |= sel[6] << 24;
+
+  sensor_type = (uint8_t) sel[10];
+  sensor_num = (uint8_t) sel[11];
+  event_dir = ((uint8_t) sel[12] & (1 << 7)) >> 7; /* Bit 7 of sel[12] */
+  type_num = (uint8_t) sel[12]; /* Bits 6:0 */
+  memcpy(event_data, (uint8_t *) &sel[13], 3);
+
+  sprintf(status, event_dir ? "DEASSERT" : "ASSERT");
+
+  if (type_num == 0x1) {
+    sprintf(error_type, "Threshold");
+  } else if (type_num >= 0x2 || type_num <= 0xC || type_num == 0x6F) {
+    sprintf(error_type, "Discrete");
+  } else if (type_num >= 0x70 || type_num <= 0x7F) {
+    sprintf(error_type, "OEM");
+  } else {
+    sprintf(error_type, "Unknown");
+  }
+
+  ret = pal_get_event_sensor_name(fru, sensor_num, sensor_name);
+  ret = pal_parse_sel(fru, sensor_num, event_data, error_log);
+  ret = pal_sel_handler(fru, sensor_num);
+
+  syslog(LOG_CRIT, "SEL Entry, %s: FRU: %d, Sensor: 0x%X, Name: %s,"
+      " Timestamp: %u, Event Type: %s, Event Data: %s",
+      status, fru, sensor_num, sensor_name, timestamp, error_type, error_log);
+}
+
 // Platform specific SEL API entry points
 // Retrieve time stamp for recent add operation
 void
-sel_ts_recent_add(time_stamp_t *ts) {
-  memcpy(ts->ts, g_sel_hdr.ts_add.ts, 0x04);
+sel_ts_recent_add(int node, time_stamp_t *ts) {
+  memcpy(ts->ts, g_sel_hdr[node].ts_add.ts, 0x04);
 }
 
 // Retrieve time stamp for recent erase operation
 void
-sel_ts_recent_erase(time_stamp_t *ts) {
-  memcpy(ts->ts, g_sel_hdr.ts_erase.ts, 0x04);
+sel_ts_recent_erase(int node, time_stamp_t *ts) {
+  memcpy(ts->ts, g_sel_hdr[node].ts_erase.ts, 0x04);
 }
 
 // Retrieve total number of entries in SEL log
 int
-sel_num_entries(void) {
-  if (g_sel_hdr.begin <= g_sel_hdr.end) {
-      return (g_sel_hdr.end - g_sel_hdr.begin);
+sel_num_entries(int node) {
+  if (g_sel_hdr[node].begin <= g_sel_hdr[node].end) {
+      return (g_sel_hdr[node].end - g_sel_hdr[node].begin);
   } else {
-    return (g_sel_hdr.end + (SEL_INDEX_MAX - g_sel_hdr.begin + 1));
+    return (g_sel_hdr[node].end + (SEL_INDEX_MAX - g_sel_hdr[node].begin + 1));
   }
 }
 
 // Retrieve total free space available in SEL log
 int
-sel_free_space(void) {
+sel_free_space(int node) {
   int total_space;
   int used_space;
 
   total_space = SEL_RECORDS_MAX * sizeof(sel_msg_t);
-  used_space = sel_num_entries() * sizeof(sel_msg_t);
+  used_space = sel_num_entries(node) * sizeof(sel_msg_t);
 
   return (total_space - used_space);
 }
@@ -226,28 +314,28 @@ sel_free_space(void) {
 // Reserve an ID that will be used in later operations
 // IPMI/Section 31.4
 int
-sel_rsv_id() {
+sel_rsv_id(int node) {
   // Increment the current reservation ID and return
-  if (g_rsv_id++ == SEL_RSVID_MAX) {
-    g_rsv_id = SEL_RSVID_MIN;
+  if (g_rsv_id[node]++ == SEL_RSVID_MAX) {
+    g_rsv_id[node] = SEL_RSVID_MIN;
   }
 
-  return g_rsv_id;
+  return g_rsv_id[node];
 }
 
 // Get the SEL entry for a given record ID
 // IPMI/Section 31.5
 int
-sel_get_entry(int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
+sel_get_entry(int node, int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
 
   int index;
 
   // Find the index in to array based on given index
   if (read_rec_id == SEL_RECID_FIRST) {
-    index = g_sel_hdr.begin;
+    index = g_sel_hdr[node].begin;
   } else if (read_rec_id == SEL_RECID_LAST) {
-    if (g_sel_hdr.end) {
-      index = g_sel_hdr.end - 1;
+    if (g_sel_hdr[node].end) {
+      index = g_sel_hdr[node].end - 1;
     } else {
       index = SEL_INDEX_MAX;
     }
@@ -256,34 +344,34 @@ sel_get_entry(int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
   }
 
   // If the log is empty return error
-  if (sel_num_entries() == 0) {
-    syslog(LOG_ALERT, "sel_get_entry: No entries\n");
+  if (sel_num_entries(node) == 0) {
+    syslog(LOG_WARNING, "sel_get_entry: No entries\n");
     return -1;
   }
 
   // Check for boundary conditions
   if ((index < SEL_INDEX_MIN) || (index > SEL_INDEX_MAX)) {
-    syslog(LOG_ALERT, "sel_get_entry: Invalid Record ID %d\n", read_rec_id);
+    syslog(LOG_WARNING, "sel_get_entry: Invalid Record ID %d\n", read_rec_id);
     return -1;
   }
 
   // If begin < end, check to make sure the given id falls between
-  if (g_sel_hdr.begin < g_sel_hdr.end) {
-    if (index < g_sel_hdr.begin || index >= g_sel_hdr.end) {
-      syslog(LOG_ALERT, "sel_get_entry: Wrong Record ID %d\n", read_rec_id);
+  if (g_sel_hdr[node].begin < g_sel_hdr[node].end) {
+    if (index < g_sel_hdr[node].begin || index >= g_sel_hdr[node].end) {
+      syslog(LOG_WARNING, "sel_get_entry: Wrong Record ID %d\n", read_rec_id);
       return -1;
     }
   }
 
   // If end < begin, check to make sure the given id is valid
-  if (g_sel_hdr.begin > g_sel_hdr.end) {
-    if (index >= g_sel_hdr.end && index < g_sel_hdr.begin) {
-      syslog(LOG_ALERT, "sel_get_entry: Wrong Record ID2 %d\n", read_rec_id);
+  if (g_sel_hdr[node].begin > g_sel_hdr[node].end) {
+    if (index >= g_sel_hdr[node].end && index < g_sel_hdr[node].begin) {
+      syslog(LOG_WARNING, "sel_get_entry: Wrong Record ID2 %d\n", read_rec_id);
       return -1;
     }
   }
 
-  memcpy(msg->msg, g_sel_data[index].msg, sizeof(sel_msg_t));
+  memcpy(msg->msg, g_sel_data[node][index].msg, sizeof(sel_msg_t));
 
   // Return the next record ID in the log
   *next_rec_id = read_rec_id++;
@@ -292,7 +380,7 @@ sel_get_entry(int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
   }
 
   // If this is the last entry in the log, return 0xFFFF
-  if (*next_rec_id == g_sel_hdr.end) {
+  if (*next_rec_id == g_sel_hdr[node].end) {
     *next_rec_id = SEL_RECID_LAST;
   }
 
@@ -302,13 +390,13 @@ sel_get_entry(int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
 // Add a new entry in to SEL log
 // IPMI/Section 31.6
 int
-sel_add_entry(sel_msg_t *msg, int *rec_id) {
+sel_add_entry(int node, sel_msg_t *msg, int *rec_id) {
   // If the SEL if full, roll over. To keep track of empty condition, use
   // one empty location less than the max records.
-  if (sel_num_entries() == SEL_RECORDS_MAX) {
-      syslog(LOG_ALERT, "sel_add_entry: SEL rollover\n");
-    if (++g_sel_hdr.begin > SEL_INDEX_MAX) {
-      g_sel_hdr.begin = SEL_INDEX_MIN;
+  if (sel_num_entries(node) == SEL_RECORDS_MAX) {
+      syslog(LOG_WARNING, "sel_add_entry: SEL rollover\n");
+    if (++g_sel_hdr[node].begin > SEL_INDEX_MAX) {
+      g_sel_hdr[node].begin = SEL_INDEX_MIN;
     }
   }
 
@@ -316,27 +404,33 @@ sel_add_entry(sel_msg_t *msg, int *rec_id) {
   time_stamp_fill(&msg->msg[3]);
 
   // Add the enry at end
-  memcpy(g_sel_data[g_sel_hdr.end].msg, msg->msg, sizeof(sel_msg_t));
+  memcpy(g_sel_data[node][g_sel_hdr[node].end].msg, msg->msg, sizeof(sel_msg_t));
 
   // Return the newly added record ID
-  *rec_id = g_sel_hdr.end+1;
+  *rec_id = g_sel_hdr[node].end+1;
 
-  if (file_store_sel_data(*rec_id, msg)) {
-    syslog(LOG_ALERT, "sel_add_entry: file_store_sel_data\n");
+  // Print the data in syslog
+  dump_sel_syslog(node, msg);
+
+  // Parse the SEL message
+  parse_sel((uint8_t) node, msg);
+
+  if (file_store_sel_data(node, *rec_id, msg)) {
+    syslog(LOG_WARNING, "sel_add_entry: file_store_sel_data\n");
     return -1;
   }
 
   // Increment the end pointer
-  if (++g_sel_hdr.end > SEL_INDEX_MAX) {
-    g_sel_hdr.end = SEL_INDEX_MIN;
+  if (++g_sel_hdr[node].end > SEL_INDEX_MAX) {
+    g_sel_hdr[node].end = SEL_INDEX_MIN;
   }
 
   // Update timestamp for add in header
-  time_stamp_fill(g_sel_hdr.ts_add.ts);
+  time_stamp_fill(g_sel_hdr[node].ts_add.ts);
 
   // Store the structure persistently
-  if (file_store_sel_hdr()) {
-    syslog(LOG_ALERT, "sel_add_entry: file_store_sel_hdr\n");
+  if (file_store_sel_hdr(node)) {
+    syslog(LOG_WARNING, "sel_add_entry: file_store_sel_hdr\n");
     return -1;
   }
 
@@ -347,21 +441,21 @@ sel_add_entry(sel_msg_t *msg, int *rec_id) {
 // IPMI/Section 31.9
 // Note: To reduce wear/tear, instead of erasing, manipulating the metadata
 int
-sel_erase(int rsv_id) {
-  if (rsv_id != g_rsv_id) {
+sel_erase(int node, int rsv_id) {
+  if (rsv_id != g_rsv_id[node]) {
     return -1;
   }
 
   // Erase SEL Logs
-  g_sel_hdr.begin = SEL_INDEX_MIN;
-  g_sel_hdr.end = SEL_INDEX_MIN;
+  g_sel_hdr[node].begin = SEL_INDEX_MIN;
+  g_sel_hdr[node].end = SEL_INDEX_MIN;
 
   // Update timestamp for erase in header
-  time_stamp_fill(g_sel_hdr.ts_erase.ts);
+  time_stamp_fill(g_sel_hdr[node].ts_erase.ts);
 
   // Store the structure persistently
-  if (file_store_sel_hdr()) {
-    syslog(LOG_ALERT, "sel_erase: file_store_sel_hdr\n");
+  if (file_store_sel_hdr(node)) {
+    syslog(LOG_WARNING, "sel_erase: file_store_sel_hdr\n");
     return -1;
   }
 
@@ -372,8 +466,8 @@ sel_erase(int rsv_id) {
 // IPMI/Section 31.2
 // Note: Since we are not doing offline erasing, need not return in-progress state
 int
-sel_erase_status(int rsv_id, sel_erase_stat_t *status) {
-  if (rsv_id != g_rsv_id) {
+sel_erase_status(int node, int rsv_id, sel_erase_stat_t *status) {
+  if (rsv_id != g_rsv_id[node]) {
     return -1;
   }
 
@@ -384,21 +478,24 @@ sel_erase_status(int rsv_id, sel_erase_stat_t *status) {
 }
 
 // Initialize SEL log file
-int
-sel_init(void) {
+static int
+sel_node_init(int node) {
   FILE *fp;
   int i;
+  char fpath[SIZE_PATH_MAX] = {0};
+
+  sprintf(fpath, SEL_LOG_FILE, node);
 
   // Check if the file exists or not
-  if (access(SEL_LOG_FILE, F_OK) == 0) {
+  if (access(fpath, F_OK) == 0) {
     // Since file is present, fetch all the contents to cache
-    if (file_get_sel_hdr()) {
-      syslog(LOG_ALERT, "init_sel: file_get_sel_hdr\n");
+    if (file_get_sel_hdr(node)) {
+      syslog(LOG_WARNING, "init_sel: file_get_sel_hdr\n");
       return -1;
     }
 
-    if (file_get_sel_data()) {
-      syslog(LOG_ALERT, "init_sel: file_get_sel_data\n");
+    if (file_get_sel_data(node)) {
+      syslog(LOG_WARNING, "init_sel: file_get_sel_data\n");
       return -1;
     }
 
@@ -406,35 +503,52 @@ sel_init(void) {
   }
 
   // File not present, so create the file
-  fp = fopen(SEL_LOG_FILE, "w+");
+  fp = fopen(fpath, "w+");
   if (fp == NULL) {
-    syslog(LOG_ALERT, "init_sel: fopen\n");
+    syslog(LOG_WARNING, "init_sel: fopen\n");
     return -1;
   }
 
   fclose (fp);
 
   // Populate SEL Header in to the file
-  g_sel_hdr.magic = SEL_HDR_MAGIC;
-  g_sel_hdr.version = SEL_HDR_VERSION;
-  g_sel_hdr.begin = SEL_INDEX_MIN;
-  g_sel_hdr.end = SEL_INDEX_MIN;
-  memset(g_sel_hdr.ts_add.ts, 0x0, 4);
-  memset(g_sel_hdr.ts_erase.ts, 0x0, 4);
+  g_sel_hdr[node].magic = SEL_HDR_MAGIC;
+  g_sel_hdr[node].version = SEL_HDR_VERSION;
+  g_sel_hdr[node].begin = SEL_INDEX_MIN;
+  g_sel_hdr[node].end = SEL_INDEX_MIN;
+  memset(g_sel_hdr[node].ts_add.ts, 0x0, 4);
+  memset(g_sel_hdr[node].ts_erase.ts, 0x0, 4);
 
-  if (file_store_sel_hdr()) {
-    syslog(LOG_ALERT, "init_sel: file_store_sel_hdr\n");
+  if (file_store_sel_hdr(node)) {
+    syslog(LOG_WARNING, "init_sel: file_store_sel_hdr\n");
     return -1;
   }
 
   // Populate SEL Data in to the file
   for (i = 1;  i <= SEL_RECORDS_MAX; i++) {
     sel_msg_t msg = {0};
-    if (file_store_sel_data(i, &msg)) {
-      syslog(LOG_ALERT, "init_sel: file_store_sel_data\n");
+    if (file_store_sel_data(node, i, &msg)) {
+      syslog(LOG_WARNING, "init_sel: file_store_sel_data\n");
       return -1;
     }
   }
 
+  g_rsv_id[node] = 0x01;
+
   return 0;
+}
+
+int
+sel_init(void) {
+  int ret;
+  int i;
+
+  for (i = 1; i < MAX_NODES+1; i++) {
+    ret = sel_node_init(i);
+    if (ret) {
+      return ret;
+    }
+  }
+
+  return ret;
 }

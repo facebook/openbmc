@@ -18,6 +18,7 @@
 
 
 from distutils.core import setup
+from setup_board import board_py_modules
 
 setup(
     name = 'openbmc-gpio',
@@ -31,6 +32,6 @@ setup(
                 'phymemory',
                 'soc_gpio',
                 'soc_gpio_table',
-                'board_gpio_table',
-    ],
+                'board_gpio_table', ]
+                + board_py_modules ,
 )

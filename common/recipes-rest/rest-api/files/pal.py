@@ -67,6 +67,14 @@ def pal_set_server_power(slot_id, command):
         cmd.value = 2
     elif command == 'graceful-shutdown':
         cmd.value = 3
+    elif command == '12v-off':
+        cmd.value = 4
+    elif command == '12v-on':
+        cmd.value = 5
+    elif command == '12v-cycle':
+        cmd.value = 6
+    else:
+        return -1
     ret = lpal_hndl.pal_set_server_power(slot_id, cmd)
     if ret:
         return -1

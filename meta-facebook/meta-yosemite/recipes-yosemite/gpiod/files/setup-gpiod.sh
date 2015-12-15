@@ -27,7 +27,28 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 
-# TODO: check for the if slot/server is present before starting the daemon
+. /usr/local/fbpackages/utils/ast-functions
+
 echo -n "Setup gpio monitoring for yosemite... "
-/usr/local/bin/gpiod slot1 slot2 slot3 slot4
+
+# Check for the slots present and run sensord for those slots only.
+SLOTS=
+  if [ $(is_server_prsnt 1) == "1" ]; then
+    SLOTS="$SLOTS slot1"
+  fi
+
+  if [ $(is_server_prsnt 2) == "1" ]; then
+    SLOTS="$SLOTS slot2"
+  fi
+
+  if [ $(is_server_prsnt 3) == "1" ]; then
+    SLOTS="$SLOTS slot3"
+  fi
+
+  if [ $(is_server_prsnt 4) == "1" ]; then
+    SLOTS="$SLOTS slot4"
+  fi
+
+/usr/local/bin/gpiod $SLOTS
+
 echo "done."

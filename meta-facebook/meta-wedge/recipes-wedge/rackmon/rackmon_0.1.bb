@@ -34,6 +34,7 @@ SRC_URI = "file://Makefile \
            file://rackmondata.c \
            file://setup-rackmond.sh \
            file://rackmon-config.py \
+           file://rackmond.py \
            file://psu-update-delta.py \
            file://hexfile.py \
           "
@@ -66,6 +67,7 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-rackmond.sh ${D}${sysconfdir}/init.d/setup-rackmond.sh
   install -m 755 rackmon-config.py ${D}${sysconfdir}/rackmon-config.py
+  install -m 755 rackmond.py ${D}${sysconfdir}/rackmond.py
   update-rc.d -r ${D} setup-rackmond.sh start 95 2 3 4 5  .
 }
 

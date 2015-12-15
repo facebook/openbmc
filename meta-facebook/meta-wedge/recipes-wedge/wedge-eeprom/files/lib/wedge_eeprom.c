@@ -29,8 +29,10 @@
 #define FBW_EEPROM_FILE "/sys/class/i2c-adapter/i2c-6/6-0050/eeprom"
 #endif
 
-#define FBW_EEPROM_VERSION 0
+#define FBW_EEPROM_VERSION0 0
 #define FBW_EEPROM_V0_SIZE 162
+#define FBW_EEPROM_VERSION1 1
+#define FBW_EEPROM_V1_SIZE 174
 
 /*
  * The eeprom size is 8K, we only use 157 bytes for v1 format.
@@ -225,12 +227,17 @@ static int fbw_parse_buffer(
 
   /* confirm the version number, only version is supported */
   fbw_copy_uint8(&eeprom->fbw_version, &cur, FBW_EEPROM_F_VERSION);
-  if (eeprom->fbw_version != FBW_EEPROM_VERSION) {
+  if ((eeprom->fbw_version != FBW_EEPROM_VERSION0) &&
+      (eeprom->fbw_version != FBW_EEPROM_VERSION1)) {
     rc = EFAULT;
     LOG_ERR(rc, "Unsupported version number %u", eeprom->fbw_version);
     goto out;
   } else {
-    crc_len = FBW_EEPROM_V0_SIZE;
+    if (eeprom->fbw_version == FBW_EEPROM_VERSION0) {
+      crc_len = FBW_EEPROM_V0_SIZE;
+    } else if (eeprom->fbw_version == FBW_EEPROM_VERSION1) {
+      crc_len = FBW_EEPROM_V1_SIZE;
+    }
     assert(crc_len <= len);
   }
 
@@ -257,20 +264,27 @@ static int fbw_parse_buffer(
                            sizeof(eeprom->fbw_assembly_number),
                            &cur, FBW_EEPROM_F_ASSEMBLY_NUMBER);
 
-  /* Facebook PCB Part Number: XXX-XXXXXXX-XX */
-  fbw_copy_facebook_pcb_part(eeprom->fbw_facebook_pcb_number,
-                             sizeof(eeprom->fbw_facebook_pcb_number),
-                             &cur, FBW_EEPROM_F_FACEBOOK_PCB_NUMBER);
+  /* Facebook PCBA Part Number: XXX-XXXXXXX-XX */
+  fbw_copy_facebook_pcb_part(eeprom->fbw_facebook_pcba_number,
+                             sizeof(eeprom->fbw_facebook_pcba_number),
+                             &cur, FBW_EEPROM_F_FACEBOOK_PCBA_NUMBER);
+
+  /* Facebook PCBA Part Number: XXX-XXXXXXX-XX */
+  if (eeprom->fbw_version >= FBW_EEPROM_VERSION1) {
+    fbw_copy_facebook_pcb_part(eeprom->fbw_facebook_pcb_number,
+                               sizeof(eeprom->fbw_facebook_pcb_number),
+                               &cur, FBW_EEPROM_F_FACEBOOK_PCB_NUMBER);
+  }
 
   /* ODM PCB Part Number: XXXXXXXXXXXX */
-  fbw_strcpy(eeprom->fbw_odm_pcb_number,
-             sizeof(eeprom->fbw_odm_pcb_number),
-             &cur, FBW_EEPROM_F_ODM_PCB_NUMBER);
+  fbw_strcpy(eeprom->fbw_odm_pcba_number,
+             sizeof(eeprom->fbw_odm_pcba_number),
+             &cur, FBW_EEPROM_F_ODM_PCBA_NUMBER);
 
   /* ODM PCB Serial Number: XXXXXXXXXXXX */
-  fbw_strcpy(eeprom->fbw_odm_pcb_serial,
-             sizeof(eeprom->fbw_odm_pcb_serial),
-             &cur, FBW_EEPROM_F_ODM_PCB_SERIAL);
+  fbw_strcpy(eeprom->fbw_odm_pcba_serial,
+             sizeof(eeprom->fbw_odm_pcba_serial),
+             &cur, FBW_EEPROM_F_ODM_PCBA_SERIAL);
 
   /* Product Production State */
   fbw_copy_uint8(&eeprom->fbw_production_state,

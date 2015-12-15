@@ -37,14 +37,14 @@ fi
 # refer to the comments in init_pwn.sh regarding
 # the fan unit and PWM mapping
 if [ "$#" -eq 1 ]; then
-    PWMS="0:0 1:0"
+    PWMS="0:0 1:1"
 else
     case "$2" in
     "0")
         PWMS="0:0"
         ;;
     "1")
-        PWMS="1:0"
+        PWMS="1:1"
         ;;
     *)
         usage

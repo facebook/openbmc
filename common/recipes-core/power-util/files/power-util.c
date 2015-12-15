@@ -32,8 +32,8 @@
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
 
-const char *pwr_option_list = "status, graceful-shutdown, off, on, cycle, 12V-off,"
-  "12V-on, 12V-cycle";
+const char *pwr_option_list = "status, graceful-shutdown, off, on, cycle, "
+  "12V-off, 12V-on, 12V-cycle";
 
 enum {
   PWR_STATUS = 1,
@@ -46,22 +46,6 @@ enum {
   PWR_12V_CYCLE,
   PWR_SLED_CYCLE
 };
-
-static int
-set_last_pwr_state(uint8_t fru, char * state) {
-
-  int ret;
-  char key[MAX_KEY_LEN] = {0};
-
-  sprintf(key, "pwr_server%d_last_state", (int) fru);
-
-  ret = pal_set_key_value(key, state);
-  if (ret < 0) {
-    syslog(LOG_ALERT, "set_last_pwr_state: pal_set_key_value failed for "
-        "fru %u", fru);
-  }
-  return ret;
-}
 
 static void
 print_usage() {
@@ -107,7 +91,7 @@ power_util(uint8_t fru, uint8_t opt) {
     case PWR_STATUS:
       ret = pal_get_server_power(fru, &status);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_get_server_power failed for fru %u\n", fru);
+        syslog(LOG_WARNING, "power_util: pal_get_server_power failed for fru %u\n", fru);
         return ret;
       }
       printf("Power status for fru %u : %s\n", fru, status?"ON":"OFF");
@@ -119,22 +103,24 @@ power_util(uint8_t fru, uint8_t opt) {
 
       ret = pal_set_server_power(fru, SERVER_GRACEFUL_SHUTDOWN);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_server_power failed for"
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
         return ret;
       } else if (ret == 1) {
         printf("fru %u is already powered OFF...\n", fru);
         return 0;
+      } else {
+        syslog(LOG_CRIT, "SERVER_GRACEFUL_SHUTDOWN successful for FRU: %d", fru);
       }
 
-      ret = set_last_pwr_state(fru, POWER_OFF_STR);
+      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
       if (ret < 0) {
         return ret;
       }
 
       ret = pal_set_led(fru, LED_STATE_OFF);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_led failed for fru %u", fru);
+        syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
       }
       break;
@@ -145,22 +131,24 @@ power_util(uint8_t fru, uint8_t opt) {
 
       ret = pal_set_server_power(fru, SERVER_POWER_OFF);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_server_power failed for"
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
         return ret;
       } else if (ret == 1) {
         printf("fru %u is already powered OFF...\n", fru);
         return 0;
+      } else {
+        syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d", fru);
       }
 
-      ret = set_last_pwr_state(fru, POWER_OFF_STR);
+      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
       if (ret < 0) {
         return ret;
       }
 
       ret = pal_set_led(fru, LED_STATE_OFF);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_led failed for fru %u", fru);
+        syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
       }
       break;
@@ -171,22 +159,24 @@ power_util(uint8_t fru, uint8_t opt) {
 
       ret = pal_set_server_power(fru, SERVER_POWER_ON);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_server_power failed for"
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
         return ret;
       } else if (ret == 1) {
         printf("fru %u is already powered ON...\n", fru);
         return 0;
+      } else {
+        syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", fru);
       }
 
-      ret = set_last_pwr_state(fru, POWER_ON_STR);
+      ret = pal_set_last_pwr_state(fru, POWER_ON_STR);
       if (ret < 0) {
         return ret;
       }
 
       ret = pal_set_led(fru, LED_STATE_ON);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_led failed for fru %u", fru);
+        syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
       }
       break;
@@ -197,41 +187,97 @@ power_util(uint8_t fru, uint8_t opt) {
 
       ret = pal_set_server_power(fru, SERVER_POWER_CYCLE);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_server_power failed for"
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
         return ret;
+      } else {
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d", fru);
       }
 
-      ret = set_last_pwr_state(fru, POWER_ON_STR);
+      ret = pal_set_last_pwr_state(fru, POWER_ON_STR);
       if (ret < 0) {
         return ret;
       }
 
       ret = pal_set_led(fru, LED_STATE_ON);
       if (ret < 0) {
-        syslog(LOG_ALERT, "power_util: pal_set_led failed for fru %u", fru);
+        syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
       }
       break;
 
     case PWR_12V_OFF:
-      ret = 0; // TODO: Need to add the API to support this power state setting
+
+      printf("12V Powering fru %u to OFF state...\n", fru);
+
+      ret = pal_set_server_power(fru, SERVER_12V_OFF);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
+          " fru %u", fru);
+        return ret;
+      } else {
+        syslog(LOG_CRIT, "SERVER_12V_OFF successful for FRU: %d", fru);
+      }
+
+      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
+      if (ret < 0) {
+        return ret;
+      }
+
+      ret = pal_set_led(fru, LED_STATE_OFF);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
+        return ret;
+      }
       break;
 
     case PWR_12V_ON:
-      ret = 0; // TODO: Need to add the API to support this power state setting
+
+      printf("12V Powering fru %u to ON state...\n", fru);
+
+      ret = pal_set_server_power(fru, SERVER_12V_ON);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
+          " fru %u", fru);
+        return ret;
+      } else {
+        syslog(LOG_CRIT, "SERVER_12V_ON successful for FRU: %d", fru);
+      }
       break;
 
     case PWR_12V_CYCLE:
-      ret = 0; // TODO: Need to add the API to support this power state setting
+
+      printf("12V Power cycling fru %u...\n", fru);
+
+      ret = pal_set_server_power(fru, SERVER_12V_CYCLE);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
+          " fru %u", fru);
+        return ret;
+      } else {
+        syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", fru);
+      }
+
+      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
+      if (ret < 0) {
+        return ret;
+      }
+
+      ret = pal_set_led(fru, LED_STATE_OFF);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
+        return ret;
+      }
       break;
 
     case PWR_SLED_CYCLE:
+      syslog(LOG_CRIT, "SLED_CYCLE successful");
+      sleep(1);
       pal_sled_cycle();
       break;
 
     default:
-      syslog(LOG_ALERT, "power_util: wrong option");
+      syslog(LOG_WARNING, "power_util: wrong option");
 
   }
 
@@ -292,4 +338,6 @@ main(int argc, char **argv) {
     print_usage();
     return ret;
   }
+
+  return ret;
 }

@@ -42,26 +42,39 @@ lib_ipmb_handle(unsigned char bus_id,
   int s, t, len;
   struct sockaddr_un remote;
   char sock_path[64] = {0};
+  struct timeval tv;
 
   sprintf(sock_path, "%s_%d", SOCK_PATH_IPMB, bus_id);
 
   // TODO: Need to update to reuse the socket instead of creating new
   if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-    syslog(LOG_ALERT, "lib_ipmb_handle: socket() failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "lib_ipmb_handle: socket() failed\n");
+#endif
     return;
   }
+
+  // setup timeout for receving on socket
+  tv.tv_sec = TIMEOUT_IPMB + 1;
+  tv.tv_usec = 0;
+
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
 
   remote.sun_family = AF_UNIX;
   strcpy(remote.sun_path, sock_path);
   len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
   if (connect(s, (struct sockaddr *)&remote, len) == -1) {
-    syslog(LOG_ALERT, "ipmb_handle: connect() failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "ipmb_handle: connect() failed\n");
+#endif
     goto clean_exit;
   }
 
   if (send(s, request, req_len, 0) == -1) {
-    syslog(LOG_ALERT, "ipmb_handle: send() failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "ipmb_handle: send() failed\n");
+#endif
     goto clean_exit;
   }
 
@@ -69,9 +82,13 @@ lib_ipmb_handle(unsigned char bus_id,
     *res_len = t;
   } else {
     if (t < 0) {
-      syslog(LOG_ALERT, "lib_ipmb_handle: recv() failed\n");
+#ifdef DEBUG
+      syslog(LOG_WARNING, "lib_ipmb_handle: recv() failed\n");
+#endif
     } else {
-      printf("Server closed connection\n");
+#ifdef DEBUG
+      syslog(LOG_DEBUG, "Server closed connection\n");
+#endif
     }
   }
 

@@ -56,7 +56,7 @@ class serverNode(node):
         else:
             res = 'success'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
@@ -64,6 +64,9 @@ def get_node_server(num):
     actions =  ["power-on",
                 "power-off",
                 "power-cycle",
-                "graceful-shutdown"
+                "graceful-shutdown",
+                "12v-on",
+                "12v-off",
+                "12v-cycle"
                 ]
     return serverNode(num = num, actions = actions)

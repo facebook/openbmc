@@ -65,7 +65,9 @@ static char * calculate_time(uint8_t * mfg_time)
 
   char * mfg_time_str = (char *) malloc(len);
   if (!mfg_time_str) {
-    syslog(LOG_ALERT, "fruid: malloc: memory allocation failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
+#endif
     return NULL;
   }
 
@@ -120,13 +122,17 @@ static char * get_chassis_type(uint8_t type_hex)
 
   /* If the type is not in the list defined.*/
   if (type > FRUID_CHASSIS_TYPECODE_MAX || type < FRUID_CHASSIS_TYPECODE_MIN) {
+#ifdef DEBUG
     syslog(LOG_INFO, "fruid: chassis area: invalid chassis type\n");
+#endif
     return NULL;
   }
 
   char * type_str = (char *) malloc(strlen(fruid_chassis_type[type]));
   if (!type_str) {
-    syslog(LOG_ALERT, "fruid: malloc: memory allocation failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
+#endif
     return NULL;
   }
 
@@ -179,7 +185,9 @@ static char * _fruid_area_field_read(uint8_t *offset)
   field_len_eff > 0 ? (field = (char *) malloc(field_len_eff + 1)) :
                       (field = (char *) malloc(strlen(FIELD_EMPTY)));
   if (!field) {
-    syslog(LOG_ALERT, "fruid: malloc: memory allocation failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
+#endif
     return NULL;
   }
 
@@ -327,7 +335,9 @@ int parse_fruid_area_product(uint8_t * product,
   /* Check if the format version is as per IPMI FRUID v1.0 format spec */
   fruid_product->format_ver = product[index++];
   if (fruid_product->format_ver != FRUID_FORMAT_VER) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: product_area: format version not supported");
+#endif
     return EPROTONOSUPPORT;
   }
 
@@ -339,7 +349,9 @@ int parse_fruid_area_product(uint8_t * product,
           fruid_product->area_len, fruid_product->chksum);
 
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: product_area: chksum not verified.");
+#endif
     return EBADF;
   }
 
@@ -401,7 +413,9 @@ int parse_fruid_area_board(uint8_t * board,
   /* Check if the format version is as per IPMI FRUID v1.0 format spec */
   fruid_board->format_ver = board[index++];
   if (fruid_board->format_ver != FRUID_FORMAT_VER) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: board_area: format version not supported");
+#endif
     return EPROTONOSUPPORT;
   }
   fruid_board->area_len = board[index++] * FRUID_AREA_LEN_MULTIPLIER;
@@ -412,7 +426,9 @@ int parse_fruid_area_board(uint8_t * board,
           fruid_board->area_len, fruid_board->chksum);
 
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: board_area: chksum not verified.");
+#endif
     return EBADF;
   }
 
@@ -471,7 +487,9 @@ int parse_fruid_area_chassis(uint8_t * chassis,
   /* Check if the format version is as per IPMI FRUID v1.0 format spec */
   fruid_chassis->format_ver = chassis[index++];
   if (fruid_chassis->format_ver != FRUID_FORMAT_VER) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: chassis_area: format version not supported");
+#endif
     return EPROTONOSUPPORT;
   }
 
@@ -482,7 +500,9 @@ int parse_fruid_area_chassis(uint8_t * chassis,
   ret = verify_chksum((uint8_t *) chassis,
           fruid_chassis->area_len, fruid_chassis->chksum);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: chassis_area: chksum not verified.");
+#endif
     return EBADF;
   }
 
@@ -540,7 +560,9 @@ int parse_fruid_header(uint8_t * eeprom, fruid_header_t * header)
   ret = verify_chksum((uint8_t *) header,
           sizeof(fruid_header_t), header->chksum);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: common_header: chksum not verified.");
+#endif
     return EBADF;
   }
 
@@ -634,7 +656,9 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
   /* Open the FRUID binary file */
   fruid_fd = fopen(bin, "rb");
   if (!fruid_fd) {
+#ifdef DEBUG
     syslog(LOG_ERR, "fruid: unable to open the file");
+#endif
     return ENOENT;
   }
 
@@ -646,7 +670,9 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
 
   eeprom = (uint8_t *) malloc(fruid_len);
   if (!eeprom) {
-    syslog(LOG_ALERT, "fruid: malloc: memory allocation failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
+#endif
     return ENOMEM;
   }
 

@@ -36,6 +36,7 @@ extern "C" {
 
 #define SIZE_AUTH_ENABLES 5
 #define SIZE_IP_ADDR  4
+#define SIZE_IP6_ADDR  16
 #define SIZE_MAC_ADDR 6
 #define SIZE_NET_MASK 4
 #define SIZE_IP_HDR 3
@@ -58,7 +59,8 @@ extern "C" {
 
 #define SIZE_SEL_REC 16
 
-#define BIC_INTF_HDR_SIZE 3
+// NetFn, Command, Checksum, IANAID(3 bytes), BIC Interface type
+#define BIC_INTF_HDR_SIZE 7
 
 #define LUN_OFFSET 2
 
@@ -75,6 +77,8 @@ extern "C" {
 #define TYPE_BCD_PLUS        1
 #define TYPE_ASCII_6BIT      2
 #define TYPE_ASCII_8BIT      3
+
+#define TIMEOUT_IPMI  5
 
 // IPMI request Structure (IPMI/Section 9.2)
 typedef struct
@@ -231,6 +235,7 @@ typedef struct
   unsigned char no_of_dest;
   unsigned char dest_type[SIZE_DEST_TYPE];
   unsigned char dest_addr[SIZE_DEST_ADDR];
+  unsigned char ip6_addr[SIZE_IP6_ADDR];
 } lan_config_t;
 
 // Structure to store Processor Information
@@ -322,6 +327,7 @@ enum
 {
   CMD_STORAGE_GET_FRUID_INFO = 0x10,
   CMD_STORAGE_READ_FRUID_DATA = 0x11,
+  CMD_STORAGE_WRITE_FRUID_DATA = 0x12,
   CMD_STORAGE_GET_SDR_INFO = 0x20,
   CMD_STORAGE_RSV_SDR = 0x22,
   CMD_STORAGE_GET_SDR = 0x23,
@@ -354,17 +360,21 @@ enum
   CMD_OEM_SET_DIMM_INFO = 0x1C,
   CMD_OEM_SET_POST_START = 0x73,
   CMD_OEM_SET_POST_END = 0x74,
+  CMD_OEM_GET_SLOT_INFO = 0x7E,
 };
 
 // OEM 1S Command Codes (Quanta/FB defined commands)
 enum
 {
   CMD_OEM_1S_MSG_IN = 0x1,
+  CMD_OEM_1S_MSG_OUT = 0x2,
   CMD_OEM_1S_GET_GPIO = 0x3,
   CMD_OEM_1S_GET_GPIO_CONFIG = 0x5,
   CMD_OEM_1S_SET_GPIO_CONFIG = 0x6,
   CMD_OEM_1S_INTR = 0x7,
   CMD_OEM_1S_POST_BUF = 0x8,
+  CMD_OEM_1S_UPDATE_FW = 0x9,
+  CMD_OEM_1S_GET_FW_VER = 0xB,
   CMD_OEM_1S_GET_CONFIG = 0xE,
   CMD_OEM_1S_PLAT_DISC = 0xF,
   CMD_OEM_1S_SET_CONFIG = 0x10,
@@ -408,6 +418,7 @@ enum
   LAN_PARAM_NO_OF_DEST,
   LAN_PARAM_DEST_TYPE,
   LAN_PARAM_DEST_ADDR,
+  LAN_PARAM_IP6_ADDR = 197, /* OEM parameter for IPv6 */
 };
 
 // Boot Option Parameters (IPMI/Table 28-14)
@@ -441,6 +452,7 @@ enum
   BIC_INTF_ME = 0x01,
   BIC_INTF_SOL = 0x02,
   BIC_INTF_KCS = 0x03,
+  BIC_INTF_KCS_SMM = 0x04,
 };
 
 void lib_ipmi_handle(unsigned char *request, unsigned char req_len,

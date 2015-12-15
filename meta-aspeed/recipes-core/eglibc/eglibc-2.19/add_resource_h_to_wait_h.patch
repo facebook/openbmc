@@ -1,0 +1,20 @@
+The older versions of perf still require sys/resource.h to be 
+present in this header, the newer version of perf in 3.2 and
+beyond directly include sys/resource.h
+
+Upstream-Status: Inapproriate [older kernel/perf specific]
+
+Signed-off-by: Saul Wold <sgw@linux.intel.com>
+
+Index: libc/posix/sys/wait.h
+===================================================================
+--- libc.orig/posix/sys/wait.h
++++ libc/posix/sys/wait.h
+@@ -28,6 +28,7 @@
+ __BEGIN_DECLS
+ 
+ #include <signal.h>
++#include <sys/resource.h>
+ 
+ /* These macros could also be defined in <stdlib.h>.  */
+ #if !defined _STDLIB_H || (!defined __USE_XOPEN && !defined __USE_XOPEN2K8)

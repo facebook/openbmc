@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <string.h>
 #include "sdr.h"
 
 #define FIELD_RATE_UNIT(x)  ((x & (0x07 << 3)) >> 3)
@@ -34,7 +35,9 @@
 #define FIELD_PERCENTAGE(x) (x & 0x01)
 
 #define FIELD_TYPE(x)       ((x & (0x03 << 6)) >> 6)
-#define FIELD_LEN(x)        (x & 0xF)
+#define FIELD_LEN(x)        (x & 0x1F)
+
+#define MAX_NAME_LEN        16
 
 /* Array for BCD Plus definition. */
 const char bcd_plus_array[] = "0123456789 -.XXX";
@@ -48,10 +51,11 @@ const char * ascii_6bit[4] = {
 };
 
 /* Get the units of the sensor from the SDR */
-int
-sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
+static int
+_sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
     char *units) {
 
+  int ret;
   uint8_t percent;
   uint8_t rate_idx;
   uint8_t base_idx;
@@ -88,10 +92,46 @@ sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
   return 0;
 }
 
+int
+sdr_get_sensor_units(uint8_t fru, uint8_t snr_num, char *units) {
+
+  int ret = 0;
+  uint8_t op;
+  uint8_t modifier;
+  sdr_full_t *sdr;
+
+  sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
+
+  if (pal_sensor_sdr_init(fru, sinfo) < 0) {
+    sdr = NULL;
+  } else {
+    sdr = &sinfo[snr_num].sdr;
+  }
+
+  if (sdr != NULL) {
+    ret = _sdr_get_sensor_units(sdr, &op, &modifier, units);
+    if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "_sdr_get_sensor_units failed for FRU: %d snr_num: %d",
+          fru, snr_num);
+#endif
+    }
+  } else {
+    ret = pal_get_sensor_units(fru, snr_num, units);
+    if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "pal_get_sensor_units failed for FRU: %d snr_num: %d",
+          fru, snr_num);
+#endif
+    }
+  }
+
+  return ret;
+}
 
 /* Get the name of the sensor from the SDR */
-int
-sdr_get_sensor_name(sdr_full_t *sdr, char *name) {
+static int
+_sdr_get_sensor_name(sdr_full_t *sdr, char *name) {
   int field_type, field_len;
   int idx, idx_eff, val;
   char *str;
@@ -105,9 +145,9 @@ sdr_get_sensor_name(sdr_full_t *sdr, char *name) {
 
   /* Case: length is zero */
   if (field_len == 1) {
-    syslog(LOG_ALERT, "get_sensor_name: str length is 0\n");
-    // TODO: Fix this hack later
-    sprintf(name, "%s", str);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "get_sensor_name: str length is 0\n");
+#endif
     return -1;
   }
 
@@ -174,37 +214,326 @@ sdr_get_sensor_name(sdr_full_t *sdr, char *name) {
   return 0;
 }
 
-/* Populates all sensor_info_t struct using the path to SDR dump */
 int
-sdr_init(char *path, sensor_info_t *sinfo) {
-  int fd;
-  uint8_t buf[MAX_SDR_LEN] = {0};
-  uint8_t bytes_rd = 0;
-  uint8_t snr_num = 0;
+sdr_get_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
+
+  int ret = 0;
   sdr_full_t *sdr;
 
-  while (access(path, F_OK) == -1) {
-    sleep(5);
+  sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
+
+  if (pal_sensor_sdr_init(fru, sinfo) < 0) {
+    sdr = NULL;
+  } else {
+    sdr = &sinfo[snr_num].sdr;
   }
 
-  fd = open(path, O_RDONLY);
-  if (fd < 0) {
-    syslog(LOG_ERR, "sdr_init: open failed for %s\n", path);
+  if (sdr != NULL) {
+    ret = _sdr_get_sensor_name(sdr, name);
+    if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "_sdr_get_sensor_name failed for FRU: %d snr_num: %d",
+          fru, snr_num);
+#endif
+    }
+  } else {
+    ret = pal_get_sensor_name(fru, snr_num, name);
+    if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "pal_get_sensor_name failed for FRU: %d snr_num: %d",
+          fru, snr_num);
+#endif
+    }
+  }
+
+  return ret;
+}
+
+/* Get the threshold values from the SDRs */
+static int
+get_sdr_thresh_val(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
+    uint8_t thresh, void *value) {
+
+  int ret;
+  uint8_t x;
+  uint8_t m_lsb, m_msb, m;
+  uint8_t b_lsb, b_msb, b;
+  int8_t b_exp, r_exp;
+  uint8_t thresh_val;
+
+  switch (thresh) {
+    case UCR_THRESH:
+      thresh_val = sdr->uc_thresh;
+      break;
+    case UNC_THRESH:
+      thresh_val = sdr->unc_thresh;
+      break;
+    case UNR_THRESH:
+      thresh_val = sdr->unr_thresh;
+      break;
+    case LCR_THRESH:
+      thresh_val = sdr->lc_thresh;
+      break;
+    case LNC_THRESH:
+      thresh_val = sdr->lnc_thresh;
+      break;
+    case LNR_THRESH:
+      thresh_val = sdr->lnr_thresh;
+      break;
+    case POS_HYST:
+      thresh_val = sdr->pos_hyst;
+      break;
+    case NEG_HYST:
+      thresh_val = sdr->neg_hyst;
+      break;
+    default:
+#ifdef DEBUG
+      syslog(LOG_ERR, "get_sdr_thresh_val: reading unknown threshold val");
+#endif
+      return -1;
+  }
+
+  // y = (mx + b * 10^b_exp) * 10^r_exp
+  x = thresh_val;
+
+  m_lsb = sdr->m_val;
+  m_msb = sdr->m_tolerance >> 6;
+  m = (m_msb << 8) | m_lsb;
+
+  b_lsb = sdr->b_val;
+  b_msb = sdr->b_accuracy >> 6;
+  b = (b_msb << 8) | b_lsb;
+
+  // exponents are 2's complement 4-bit number
+  b_exp = sdr->rb_exp & 0xF;
+  if (b_exp > 7) {
+    b_exp = (~b_exp + 1) & 0xF;
+    b_exp = -b_exp;
+  }
+  r_exp = (sdr->rb_exp >> 4) & 0xF;
+  if (r_exp > 7) {
+    r_exp = (~r_exp + 1) & 0xF;
+    r_exp = -r_exp;
+  }
+
+  * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
+
+  return 0;
+}
+
+
+
+/*
+ * Populate all fields of thresh_sensor_t struct for a particular sensor.
+ * Incase the threshold value is 0 mask the check for that threshvold
+ * value in flag field.
+ */
+static int
+_sdr_get_snr_thresh(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
+    uint8_t flag, thresh_sensor_t *snr) {
+
+  int ret;
+  int value;
+  float fvalue;
+  uint8_t op, modifier;
+
+  snr->flag = flag;
+  snr->curr_state = NORMAL_STATE;
+
+  if (_sdr_get_sensor_name(sdr, snr->name)) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "sdr_get_sensor_name: FRU %d: num: 0x%X: reading name"
+        " from SDR failed.", fru, snr_num);
+#endif
     return -1;
   }
 
-  while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
-    if (bytes_rd != sizeof(sdr_full_t)) {
-      syslog(LOG_ERR, "sdr_init: read returns %d bytes\n", bytes_rd);
-      return -1;
-    }
+  // TODO: Add support for modifier (Mostly modifier is zero)
+  if (_sdr_get_sensor_units(sdr, &op, &modifier, snr->units)) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "sdr_get_sensor_units: FRU %d: num 0x%X: reading units"
+        " from SDR failed.", fru, snr_num);
+#endif
+    return -1;
+  }
 
-    sdr = (sdr_full_t *) buf;
-    snr_num = sdr->sensor_num;
-    sinfo[snr_num].valid = true;
-    memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
+  if (get_sdr_thresh_val(fru, sdr, snr_num, UCR_THRESH, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, UCR_THRESH",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->ucr_thresh = fvalue;
+    if (!(fvalue)) {
+      snr->flag = CLEARBIT(snr->flag, UCR_THRESH);
+    }
+  }
+
+  if (get_sdr_thresh_val(fru, sdr, snr_num, UNC_THRESH, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, UNC_THRESH",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->unc_thresh = fvalue;
+    if (!(fvalue)) {
+      snr->flag = CLEARBIT(snr->flag, UNC_THRESH);
+    }
+  }
+
+  if (get_sdr_thresh_val(fru, sdr, snr_num, UNR_THRESH, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, UNR_THRESH",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->unr_thresh = fvalue;
+    if (!(fvalue)) {
+      snr->flag = CLEARBIT(snr->flag, UNR_THRESH);
+    }
+  }
+
+  if (get_sdr_thresh_val(fru, sdr, snr_num, LCR_THRESH, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, LCR_THRESH",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->lcr_thresh = fvalue;
+    if (!(fvalue)) {
+      snr->flag = CLEARBIT(snr->flag, LCR_THRESH);
+    }
+  }
+
+  if (get_sdr_thresh_val(fru, sdr, snr_num, LNC_THRESH, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, LNC_THRESH",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->lnc_thresh = fvalue;
+    if (!(fvalue)) {
+      snr->flag = CLEARBIT(snr->flag, LNC_THRESH);
+    }
+  }
+
+  if (get_sdr_thresh_val(fru, sdr, snr_num, LNR_THRESH, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, LNR_THRESH",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->lnr_thresh = fvalue;
+    if (!(fvalue)) {
+      snr->flag = CLEARBIT(snr->flag, LNR_THRESH);
+    }
+  }
+
+  if (get_sdr_thresh_val(fru, sdr, snr_num, POS_HYST, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, POS_HYST",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->pos_hyst = fvalue;
+  }
+
+  if (get_sdr_thresh_val(fru, sdr, snr_num, NEG_HYST, &fvalue)) {
+#ifdef DEBUG
+    syslog(LOG_ERR,
+        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, NEG_HYST",
+        fru, snr_num, snr->name);
+#endif
+  } else {
+    snr->neg_hyst = fvalue;
   }
 
   return 0;
 }
 
+int
+sdr_get_snr_thresh(uint8_t fru,uint8_t snr_num, uint8_t flag,
+    thresh_sensor_t *snr) {
+
+  int ret = 0;
+  sdr_full_t *sdr;
+#ifdef DEBUG
+  int cnt = 0;
+#endif /* DEBUG */
+  int retry = 0;
+
+  sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
+
+  ret = pal_sensor_sdr_init(fru, sinfo);
+
+  while (ret == ERR_NOT_READY) {
+
+    if (retry++ > MAX_RETRIES_SDR_INIT) {
+      syslog(LOG_INFO, "sdr_get_snr_thresh: failed for fru: %d", fru);
+      return -1;
+    }
+#ifdef DEBUG
+    syslog(LOG_INFO, "sdr_get_snr_thresh: fru: %d, ret: %d cnt: %d", fru, ret, cnt++);
+#endif /* DEBUG */
+    sleep(1);
+    ret = pal_sensor_sdr_init(fru, sinfo);
+  }
+
+
+  if (ret < 0) {
+    sdr = NULL;
+  } else {
+    sdr = &sinfo[snr_num].sdr;
+  }
+
+  if (sdr != NULL) {
+    ret = _sdr_get_snr_thresh(fru, sdr, snr_num, flag, snr);
+    if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "_sdr_get_snr_thresh failed for FRU: %d snr_num: %d",
+          fru, snr_num);
+#endif
+    }
+  } else {
+
+    snr->flag = flag;
+    ret = pal_get_sensor_name(fru, snr_num, snr->name);
+    ret = pal_get_sensor_units(fru, snr_num, snr->units);
+    ret = pal_get_sensor_threshold(fru, snr_num, UCR_THRESH, &(snr->ucr_thresh));
+    if (!(snr->ucr_thresh)) {
+      snr->flag = CLEARBIT(snr->flag, UCR_THRESH);
+    }
+    ret = pal_get_sensor_threshold(fru, snr_num, UNC_THRESH, &(snr->unc_thresh));
+    if (!(snr->unc_thresh)) {
+      snr->flag = CLEARBIT(snr->flag, UNC_THRESH);
+    }
+    ret = pal_get_sensor_threshold(fru, snr_num, UNR_THRESH, &(snr->unr_thresh));
+    if (!(snr->unr_thresh)) {
+      snr->flag = CLEARBIT(snr->flag, UNR_THRESH);
+    }
+    ret = pal_get_sensor_threshold(fru, snr_num, LCR_THRESH, &(snr->lcr_thresh));
+    if (!(snr->lcr_thresh)) {
+      snr->flag = CLEARBIT(snr->flag, LCR_THRESH);
+    }
+    ret = pal_get_sensor_threshold(fru, snr_num, LNC_THRESH, &(snr->lnc_thresh));
+    if (!(snr->lnc_thresh)) {
+      snr->flag = CLEARBIT(snr->flag, LNC_THRESH);
+    }
+    ret = pal_get_sensor_threshold(fru, snr_num, LNR_THRESH, &(snr->lnr_thresh));
+    if (!(snr->lnr_thresh)) {
+      snr->flag = CLEARBIT(snr->flag, LNR_THRESH);
+    }
+    ret = pal_get_sensor_threshold(fru, snr_num, POS_HYST, &(snr->pos_hyst));
+    ret = pal_get_sensor_threshold(fru, snr_num, NEG_HYST, &(snr->neg_hyst));
+
+  }
+
+  return ret;
+}

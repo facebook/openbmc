@@ -3,6 +3,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
            "
+DEPENDS_append = " fbutils "
 
 CFLAGS_prepend = " -DCONFIG_YOSEMITE"
 
@@ -16,7 +17,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-ipmbd.sh ${D}${sysconfdir}/init.d/setup-ipmbd.sh
-  update-rc.d -r ${D} setup-ipmbd.sh start 65 S .
+  update-rc.d -r ${D} setup-ipmbd.sh start 65 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

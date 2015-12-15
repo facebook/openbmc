@@ -18,11 +18,37 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <syslog.h>
+#include <string.h>
 #include <openbmc/fruid.h>
 #include <openbmc/pal.h>
 
+#define EEPROM_READ     0x1
+#define EEPROM_WRITE    0x2
+#define FRUID_SIZE      256
+
+/* To copy the bin files */
+static int
+copy_file(int out, int in, int bs) {
+
+  ssize_t bytes_rd, bytes_wr;
+  uint64_t tmp[FRUID_SIZE];
+
+  while ((bytes_rd = read(in, tmp, FRUID_SIZE)) > 0) {
+    bytes_wr = write(out, tmp, bytes_rd);
+    if (bytes_wr != bytes_rd) {
+      return errno;
+    }
+  }
+  return 0;
+}
+
 /* Print the FRUID in detail */
-void print_fruid_info(fruid_info_t *fruid, const char *name)
+static void
+print_fruid_info(fruid_info_t *fruid, const char *name)
 {
   /* Print format */
   printf("%-27s: %s", "\nFRU Information",
@@ -78,18 +104,27 @@ void get_fruid_info(uint8_t fru, char *path, char* name) {
 
 static int
 print_usage() {
-  printf("Usage: fruid-util [ %s ]\n", pal_fru_list);
+  printf("Usage: fruid-util [ %s ]\n"
+      "Usage: fruid-util [%s] [--dump | --write ] <file>\n",
+      pal_fru_list, pal_fru_list);
 }
 
 /* Utility to just print the FRUID */
 int main(int argc, char * argv[]) {
 
   int ret;
+  int rw = 0;
+  int fd_tmpbin;
+  int fd_newbin;
+  int fd_eeprom;
   uint8_t fru;
+  char *file_path = NULL;
   char path[64] = {0};
+  char eeprom_path[64] = {0};
   char name[64] = {0};
+  char command[128] = {0};
 
-  if (argc != 2) {
+  if (argc != 2 && argc != 4) {
     print_usage();
     exit(-1);
   }
@@ -100,8 +135,119 @@ int main(int argc, char * argv[]) {
     return ret;
   }
 
-  if (fru == 0) {
+  if (fru == 0 && argc > 2) {
+    print_usage();
+    exit(-1);
+  }
+
+  if (argc > 2) {
+    if (!strcmp(argv[2], "--dump")) {
+      rw = EEPROM_READ;
+      file_path = argv[3];
+    } else if (!strcmp(argv[2], "--write")) {
+      rw = EEPROM_WRITE;
+      file_path = argv[3];
+    }
+  }
+
+  // Check if the new eeprom binary file exits.
+  // TODO: Add file size check before adding to the eeprom
+  if (rw == EEPROM_WRITE && (access(file_path, F_OK) == -1)) {
+      print_usage();
+      exit(-1);
+  }
+
+  if (fru != 0) {
+    ret = pal_get_fruid_path(fru, path);
+    if (ret < 0) {
+      return ret;
+    }
+
+    errno = 0;
+
+    /* FRUID BINARY DUMP */
+    if (rw == EEPROM_READ) {
+      fd_tmpbin = open(path, O_RDONLY);
+      if (fd_tmpbin == -1) {
+        syslog(LOG_ERR, "Unable to open the %s file: %s", path, strerror(errno));
+        return errno;
+      }
+
+      fd_newbin = open(file_path, O_WRONLY | O_CREAT, 0644);
+      if (fd_newbin == -1) {
+        syslog(LOG_ERR, "Unable to create %s file: %s", file_path, strerror(errno));
+        return errno;
+      }
+
+      ret = copy_file(fd_newbin, fd_tmpbin, FRUID_SIZE);
+      if (ret < 0) {
+        syslog(LOG_ERR, "copy: write to %s file failed: %s",
+            file_path, strerror(errno));
+        return ret;
+      }
+
+      close(fd_newbin);
+      close(fd_tmpbin);
+
+    } else if (rw == EEPROM_WRITE) {
+
+    /* FRUID BINARY WRITE */
+
+      fd_tmpbin = open(path, O_WRONLY);
+      if (fd_tmpbin == -1) {
+        syslog(LOG_ERR, "Unable to open the %s file: %s", path, strerror(errno));
+        return errno;
+      }
+
+      fd_newbin = open(file_path, O_RDONLY);
+      if (fd_newbin == -1) {
+        syslog(LOG_ERR, "Unable to open the %s file: %s", file_path, strerror(errno));
+        return errno;
+      }
+
+      ret = pal_get_fruid_eeprom_path(fru, eeprom_path);
+      if (ret < 0) {
+        //Can not handle in common, so call pal libray for update
+        pal_fruid_write(fru, file_path);
+      } else {
+        if (access(eeprom_path, F_OK) == -1) {
+          syslog(LOG_ERR, "cannot access the eeprom file : %s for fru %d",
+              eeprom_path, fru);
+          close(fd_newbin);
+          close(fd_tmpbin);
+          return -1;
+        }
+        sprintf(command, "dd if=%s of=%s bs=%d count=1", file_path, eeprom_path, FRUID_SIZE);
+        system(command);
+      }
+
+      ret = copy_file(fd_tmpbin, fd_newbin, FRUID_SIZE);
+      if (ret < 0) {
+        syslog(LOG_ERR, "copy: write to %s file failed: %s",
+            path, strerror(errno));
+        return ret;
+      }
+
+      close(fd_newbin);
+      close(fd_tmpbin);
+
+    } else {
+      /* FRUID PRINT ONE FRU */
+
+      ret = pal_get_fruid_name(fru, name);
+      if (ret < 0) {
+        return ret;
+      }
+
+      get_fruid_info(fru, path, name);
+    }
+
+  } else if (fru == 0) {
+
+    /* FRUID PRINT ALL FRUs */
+
     fru = 1;
+
     while (fru <= MAX_NUM_FRUS) {
       ret = pal_get_fruid_path(fru, path);
       if (ret < 0) {
@@ -113,32 +259,10 @@ int main(int argc, char * argv[]) {
         return ret;
       }
 
-      if (fru == FRU_NIC) {
-        printf("fruid-util does not support nic\n");
-        exit(-1);
-      }
-
       get_fruid_info(fru, path, name);
 
       fru++;
     }
-  } else {
-    ret = pal_get_fruid_path(fru, path);
-    if (ret < 0) {
-      return ret;
-    }
-
-    ret = pal_get_fruid_name(fru, name);
-    if (ret < 0) {
-      return ret;
-    }
-
-    if (fru == FRU_NIC) {
-      printf("fruid-util does not support nic\n");
-      exit(-1);
-    }
-
-    get_fruid_info(fru, path, name);
   }
 
   return 0;

@@ -27,6 +27,7 @@
 #include <syslog.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <pthread.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -45,8 +46,11 @@
 #define GPIO_RST_BTN 144
 #define GPIO_PWR_BTN 24
 
+#define GPIO_HB_LED 135
+
 #define GPIO_USB_SW0 36
 #define GPIO_USB_SW1 37
+#define GPIO_USB_MUX_EN_N 147
 
 #define GPIO_UART_SEL0 32
 #define GPIO_UART_SEL1 33
@@ -68,20 +72,27 @@
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
 #define PIN_CTRL2_OFFSET 0x84
+#define AST_WDT_BASE 0x1e785000
+#define WDT_OFFSET 0x10
 
 #define UART1_TXD (1 << 22)
 #define UART2_TXD (1 << 30)
 #define UART3_TXD (1 << 22)
 #define UART4_TXD (1 << 30)
 
-#define BIT(v, i) ((v >> i) & 1)
 #define DELAY_GRACEFUL_SHUTDOWN 1
-#define DELAY_POWER_OFF 5
+#define DELAY_POWER_OFF 6
+#define DELAY_POWER_CYCLE 10
+#define DELAY_12V_CYCLE 5
 
-static uint8_t gpio_rst_btn[5] = { 0, 57, 56, 59, 58 };
-static uint8_t gpio_led[5] = { 0, 97, 96, 99, 98 };
-static uint8_t gpio_prsnt[5] = { 0, 61, 60, 63, 62 };
-static uint8_t gpio_power[5] = { 0, 27, 25, 31, 29 };
+#define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
+#define CRASHDUMP_FILE      "/mnt/data/crashdump_"
+const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
+const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
+const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
+const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
+const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
+const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
@@ -90,12 +101,45 @@ char * key_list[] = {
 "pwr_server2_last_state",
 "pwr_server3_last_state",
 "pwr_server4_last_state",
+"sysfw_ver_slot1",
+"sysfw_ver_slot2",
+"sysfw_ver_slot3",
+"sysfw_ver_slot4",
+"identify_sled",
+"identify_slot1",
+"identify_slot2",
+"identify_slot3",
+"identify_slot4",
+"timestamp_sled",
 "slot1_por_cfg",
 "slot2_por_cfg",
 "slot3_por_cfg",
 "slot4_por_cfg",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
+};
+
+char * def_val_list[] = {
+  "on", /* pwr_server1_last_state */
+  "on", /* pwr_server2_last_state */
+  "on", /* pwr_server3_last_state */
+  "on", /* pwr_server4_last_state */
+  "0", /* sysfw_ver_slot1 */
+  "0", /* sysfw_ver_slot2 */
+  "0", /* sysfw_ver_slot3 */
+  "0", /* sysfw_ver_slot4 */
+  "off", /* identify_sled */
+  "off", /* identify_slot1 */
+  "off", /* identify_slot2 */
+  "off", /* identify_slot3 */
+  "off", /* identify_slot4 */
+  "0", /* timestamp_sled */
+  "on", /* slot1_por_cfg */
+  "on", /* slot2_por_cfg */
+  "on", /* slot3_por_cfg */
+  "on", /* slot4_por_cfg */
+  /* Add more def values for the correspoding keys*/
+  LAST_KEY /* Same as last entry of the key_list */
 };
 
 // Helper Functions
@@ -107,15 +151,18 @@ read_device(const char *device, int *value) {
   fp = fopen(device, "r");
   if (!fp) {
     int err = errno;
-
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to open device %s", device);
+#endif
     return err;
   }
 
   rc = fscanf(fp, "%d", value);
   fclose(fp);
   if (rc != 1) {
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to read device %s", device);
+#endif
     return ENOENT;
   } else {
     return 0;
@@ -130,8 +177,9 @@ write_device(const char *device, const char *value) {
   fp = fopen(device, "w");
   if (!fp) {
     int err = errno;
-
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to open device for write %s", device);
+#endif
     return err;
   }
 
@@ -139,7 +187,9 @@ write_device(const char *device, const char *value) {
   fclose(fp);
 
   if (rc < 0) {
+#ifdef DEBUG
     syslog(LOG_INFO, "failed to write device %s", device);
+#endif
     return ENOENT;
   } else {
     return 0;
@@ -204,6 +254,42 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
   return 0;
 }
 
+// Control 12V to the server in a given slot
+static int
+server_12v_on(uint8_t slot_id) {
+  char vpath[64] = {0};
+
+  if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
+
+  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+
+  if (write_device(vpath, "1")) {
+    return -1;
+  }
+
+  return 0;
+}
+
+// Turn off 12V for the server in given slot
+static int
+server_12v_off(uint8_t slot_id) {
+  char vpath[64] = {0};
+
+  if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
+
+  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+
+  if (write_device(vpath, "0")) {
+    return -1;
+  }
+
+  return 0;
+}
+
 // Debug Card's UART and BMC/SoL port share UART port and need to enable only
 // one TXD i.e. either BMC's TXD or Debug Port's TXD.
 static int
@@ -216,7 +302,9 @@ control_sol_txd(uint8_t slot) {
 
   scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
   if (scu_fd < 0) {
-    syslog(LOG_ALERT, "control_sol_txd: open fails\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "control_sol_txd: open fails\n");
+#endif
     return -1;
   }
 
@@ -295,7 +383,9 @@ pal_post_display(uint8_t status) {
   int ret;
   char *val;
 
-  syslog(LOG_ALERT, "pal_post_display: status is %d\n", status);
+#ifdef DEBUG
+  syslog(LOG_WARNING, "pal_post_display: status is %d\n", status);
+#endif
 
   sprintf(path, GPIO_VAL, GPIO_POSTCODE_0);
 
@@ -396,7 +486,9 @@ pal_post_display(uint8_t status) {
 
 post_exit:
   if (ret) {
-    syslog(LOG_ALERT, "write_device failed for %s\n", path);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_device failed for %s\n", path);
+#endif
     return -1;
   } else {
     return 0;
@@ -453,11 +545,10 @@ pal_is_debug_card_prsnt(uint8_t *status) {
     return -1;
   }
 
-  // TODO: Logic is reversed until DVT board with h/w fix
   if (val == 0x0) {
-    *status = 0;
-  } else {
     *status = 1;
+  } else {
+    *status = 0;
   }
 
   return 0;
@@ -466,11 +557,19 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
+  char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
 
   ret = bic_get_gpio(slot_id, &gpio);
   if (ret) {
-    return ret;
+    // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
+    pal_get_last_pwr_state(slot_id, value);
+    if (!(strcmp(value, "off"))) {
+      *status = SERVER_POWER_OFF;
+      return 0;
+    } else {
+      return ret;
+    }
   }
 
   if (gpio.pwrgood_cpu) {
@@ -512,10 +611,18 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_POWER_CYCLE:
-      if (status == SERVER_POWER_ON)
-        return (server_power_off(slot_id, gs_flag) || server_power_on(slot_id));
-      else if (status == SERVER_POWER_OFF)
+      if (status == SERVER_POWER_ON) {
+        if (server_power_off(slot_id, gs_flag))
+          return -1;
+
+        sleep(DELAY_POWER_CYCLE);
+
+        return server_power_on(slot_id);
+
+      } else if (status == SERVER_POWER_OFF) {
+
         return (server_power_on(slot_id));
+      }
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
@@ -525,6 +632,23 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         gs_flag = true;
         return server_power_off(slot_id, gs_flag);
       break;
+
+    case SERVER_12V_ON:
+      return server_12v_on(slot_id);
+      break;
+
+    case SERVER_12V_OFF:
+      return server_12v_off(slot_id);
+      break;
+
+    case SERVER_12V_CYCLE:
+      if (server_12v_off(slot_id)) {
+        return -1;
+      }
+
+      sleep(DELAY_12V_CYCLE);
+
+      return (server_12v_on(slot_id));
     default:
       return -1;
   }
@@ -582,20 +706,20 @@ pal_get_hand_sw(uint8_t *pos) {
   loc = ((id8 << 3) | (id4 << 2) | (id2 << 1) | (id1));
 
   switch(loc) {
+  case 0:
+  case 5:
+    *pos = HAND_SW_SERVER1;
+    break;
   case 1:
   case 6:
-    *pos = HAND_SW_SERVER1;
+    *pos = HAND_SW_SERVER2;
     break;
   case 2:
   case 7:
-    *pos = HAND_SW_SERVER2;
+    *pos = HAND_SW_SERVER3;
     break;
   case 3:
   case 8:
-    *pos = HAND_SW_SERVER3;
-    break;
-  case 4:
-  case 9:
     *pos = HAND_SW_SERVER4;
     break;
   default:
@@ -657,9 +781,9 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
   }
 
   if (status) {
-    val = "0";
-  } else {
     val = "1";
+  } else {
+    val = "0";
   }
 
   sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
@@ -694,6 +818,81 @@ pal_set_led(uint8_t slot, uint8_t status) {
   return 0;
 }
 
+// Update Heartbeet LED
+int
+pal_set_hb_led(uint8_t status) {
+  char path[64] = {0};
+  char *val;
+
+  if (status) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  sprintf(path, GPIO_VAL, GPIO_HB_LED);
+  if (write_device(path, val)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+// Update the Identification LED for the given slot with the status
+int
+pal_set_id_led(uint8_t slot, uint8_t status) {
+  char path[64] = {0};
+  char *val;
+
+  if (slot < 1 || slot > 4) {
+    return -1;
+  }
+
+  if (status) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  sprintf(path, GPIO_VAL, gpio_id_led[slot]);
+  if (write_device(path, val)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+set_usb_mux(uint8_t state) {
+  int val;
+  char *new_state;
+  char path[64] = {0};
+
+  sprintf(path, GPIO_VAL, GPIO_USB_MUX_EN_N);
+
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  // This GPIO Pin is active low
+  if (!val == state)
+    return 0;
+
+  if (state)
+    new_state = "0";
+  else
+    new_state = "1";
+
+  if (write_device(path, new_state) < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_device failed for %s\n", path);
+#endif
+    return -1;
+  }
+
+  return 0;
+}
+
 // Update the USB Mux to the server at given slot
 int
 pal_switch_usb_mux(uint8_t slot) {
@@ -702,36 +901,49 @@ pal_switch_usb_mux(uint8_t slot) {
 
   // Based on the USB mux table in Schematics
   switch(slot) {
-  case 1:
+  case HAND_SW_SERVER1:
     gpio_sw0 = "1";
     gpio_sw1 = "0";
     break;
-  case 2:
+  case HAND_SW_SERVER2:
     gpio_sw0 = "0";
     gpio_sw1 = "0";
     break;
-  case 3:
+  case HAND_SW_SERVER3:
     gpio_sw0 = "1";
     gpio_sw1 = "1";
     break;
-  case 4:
+  case HAND_SW_SERVER4:
     gpio_sw0 = "0";
     gpio_sw1 = "1";
     break;
+  case HAND_SW_BMC:
+    // Disable the USB MUX
+    if (set_usb_mux(USB_MUX_OFF) < 0)
+      return -1;
+    else
+      return 0;
   default:
-    // Default is for BMC itself
     return 0;
   }
 
+  // Enable the USB MUX
+  if (set_usb_mux(USB_MUX_ON) < 0)
+    return -1;
+
   sprintf(path, GPIO_VAL, GPIO_USB_SW0);
   if (write_device(path, gpio_sw0) < 0) {
-    syslog(LOG_ALERT, "write_device failed for %s\n", path);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_device failed for %s\n", path);
+#endif
     return -1;
   }
 
   sprintf(path, GPIO_VAL, GPIO_USB_SW1);
   if (write_device(path, gpio_sw1) < 0) {
-    syslog(LOG_ALERT, "write_device failed for %s\n", path);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_device failed for %s\n", path);
+#endif
     return -1;
   }
 
@@ -750,25 +962,25 @@ pal_switch_uart_mux(uint8_t slot) {
 
   // Refer the UART select table in schematic
   switch(slot) {
-  case 1:
+  case HAND_SW_SERVER1:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "0";
     gpio_uart_sel0 = "1";
     gpio_uart_rx = "0";
     break;
-  case 2:
+  case HAND_SW_SERVER2:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "0";
     gpio_uart_sel0 = "0";
     gpio_uart_rx = "0";
     break;
-  case 3:
+  case HAND_SW_SERVER3:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "1";
     gpio_uart_sel0 = "1";
     gpio_uart_rx = "0";
     break;
-  case 4:
+  case HAND_SW_SERVER4:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "1";
     gpio_uart_sel0 = "0";
@@ -816,7 +1028,9 @@ pal_switch_uart_mux(uint8_t slot) {
 
 uart_exit:
   if (ret) {
-    syslog(LOG_ALERT, "pal_switch_uart_mux: write_device failed: %s\n", path);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_switch_uart_mux: write_device failed: %s\n", path);
+#endif
     return ret;
   } else {
     return 0;
@@ -833,7 +1047,9 @@ pal_post_enable(uint8_t slot) {
 
   ret = bic_get_config(slot, &config);
   if (ret) {
-    syslog(LOG_ALERT, "post_enable: bic_get_config failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "post_enable: bic_get_config failed for fru: %d\n", slot);
+#endif
     return ret;
   }
 
@@ -841,7 +1057,9 @@ pal_post_enable(uint8_t slot) {
 
   ret = bic_set_config(slot, &config);
   if (ret) {
-    syslog(LOG_ALERT, "post_enable: bic_set_config failed\n");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "post_enable: bic_set_config failed\n");
+#endif
     return ret;
   }
 
@@ -937,14 +1155,18 @@ read_kv(char *key, char *value) {
   fp = fopen(key, "r");
   if (!fp) {
     int err = errno;
-    syslog(LOG_ALERT, "read_kv: failed to open %s", key);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "read_kv: failed to open %s", key);
+#endif
     return err;
   }
 
   rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
   fclose(fp);
   if (rc <= 0) {
+#ifdef DEBUG
     syslog(LOG_INFO, "read_kv: failed to read %s", key);
+#endif
     return ENOENT;
   } else {
     return 0;
@@ -960,7 +1182,9 @@ write_kv(char *key, char *value) {
   fp = fopen(key, "w");
   if (!fp) {
     int err = errno;
-    syslog(LOG_ALERT, "write_kv: failed to open %s", key);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_kv: failed to open %s", key);
+#endif
     return err;
   }
 
@@ -968,7 +1192,9 @@ write_kv(char *key, char *value) {
   fclose(fp);
 
   if (rc < 0) {
-    syslog(LOG_ALERT, "write_kv: failed to write to %s", key);
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_kv: failed to write to %s", key);
+#endif
     return ENOENT;
   } else {
     return 0;
@@ -979,6 +1205,17 @@ int
 pal_get_fru_id(char *str, uint8_t *fru) {
 
   return yosemite_common_fru_id(str, fru);
+}
+
+int
+pal_get_fru_name(uint8_t fru, char *name) {
+
+  return yosemite_common_fru_name(fru, name);
+}
+
+int
+pal_get_fru_sdr_path(uint8_t fru, char *path) {
+  return yosemite_sensor_sdr_path(fru, path);
 }
 
 int
@@ -997,19 +1234,36 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *cnt = spb_sensor_cnt;
       break;
     case FRU_NIC:
-      *sensor_list = NULL; // (uint8_t *) nic_sensor_list;
-      *cnt = 0; //nic_sensor_cnt;
+      *sensor_list = (uint8_t *) nic_sensor_list;
+      *cnt = nic_sensor_cnt;
       break;
     default:
-      syslog(LOG_ALERT, "pal_get_fru_sensor_list: Wrong fru id %u", fru);
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_get_fru_sensor_list: Wrong fru id %u", fru);
+#endif
       return -1;
   }
     return 0;
 }
 
 int
+pal_fruid_write(uint8_t fru, char *path) {
+  return bic_write_fruid(fru, 0, path);
+}
+
+int
+pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
+  return yosemite_sensor_sdr_init(fru, sinfo);
+}
+
+int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   return yosemite_sensor_read(fru, sensor_num, value);
+}
+
+int
+pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
+  return yosemite_sensor_threshold(fru, sensor_num, thresh, value);
 }
 
 int
@@ -1025,6 +1279,11 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 int
 pal_get_fruid_path(uint8_t fru, char *path) {
   return yosemite_get_fruid_path(fru, path);
+}
+
+int
+pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
+  return yosemite_get_fruid_eeprom_path(fru, path);
 }
 
 int
@@ -1073,7 +1332,9 @@ pal_get_key_value(char *key, char *value) {
     if (!strcmp(key, key_list[i])) {
       // Key is valid
       if ((ret = get_key_value(key, value)) < 0 ) {
-        syslog(LOG_ALERT, "pal_get_key_value: get_key_value failed. %d", ret);
+#ifdef DEBUG
+        syslog(LOG_WARNING, "pal_get_key_value: get_key_value failed. %d", ret);
+#endif
         return ret;
       }
       return ret;
@@ -1082,6 +1343,31 @@ pal_get_key_value(char *key, char *value) {
   }
 
   return -1;
+}
+
+int
+pal_set_def_key_value() {
+
+  int ret;
+  int i;
+  char kpath[64] = {0};
+
+  i = 0;
+  while(strcmp(key_list[i], LAST_KEY)) {
+
+  sprintf(kpath, KV_STORE, key_list[i]);
+
+  if (access(kpath, F_OK) == -1) {
+      if ((ret = set_key_value(key_list[i], def_val_list[i])) < 0) {
+#ifdef DEBUG
+        syslog(LOG_WARNING, "pal_set_def_key_value: set_key_value failed. %d", ret);
+#endif
+      }
+    }
+    i++;
+  }
+
+  return 0;
 }
 
 int
@@ -1096,8 +1382,9 @@ pal_set_key_value(char *key, char *value) {
     if (!strcmp(key, key_list[i])) {
       // Key is valid
       if ((ret = set_key_value(key, value)) < 0) {
-        syslog(LOG_ALERT, "pal_set_key_value: set_key_value failed. %d", ret);
-        printf("pal_set_key_value: ret = %d\n", ret);
+#ifdef DEBUG
+        syslog(LOG_WARNING, "pal_set_key_value: set_key_value failed. %d", ret);
+#endif
         return ret;
       }
       return ret;
@@ -1125,7 +1412,9 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
       sprintf(devtty, "/dev/ttyS3");
       break;
     default:
-      syslog(LOG_ALERT, "pal_get_fru_devtty: Wrong fru id %u", fru);
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_get_fru_devtty: Wrong fru id %u", fru);
+#endif
       return -1;
   }
     return 0;
@@ -1148,4 +1437,517 @@ pal_dump_key_value(void) {
     i++;
     memset(value, 0, MAX_VALUE_LEN);
   }
+}
+
+int
+pal_set_last_pwr_state(uint8_t fru, char *state) {
+
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+
+  sprintf(key, "pwr_server%d_last_state", (int) fru);
+
+  ret = pal_set_key_value(key, state);
+  if (ret < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_set_last_pwr_state: pal_set_key_value failed for "
+        "fru %u", fru);
+#endif
+  }
+  return ret;
+}
+
+int
+pal_get_last_pwr_state(uint8_t fru, char *state) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+
+      sprintf(key, "pwr_server%d_last_state", (int) fru);
+
+      ret = pal_get_key_value(key, state);
+      if (ret < 0) {
+#ifdef DEBUG
+        syslog(LOG_WARNING, "pal_get_last_pwr_state: pal_get_key_value failed for "
+            "fru %u", fru);
+#endif
+      }
+      return ret;
+    case FRU_SPB:
+    case FRU_NIC:
+      sprintf(state, "on");
+      return 0;
+  }
+}
+
+int
+pal_get_sys_guid(uint8_t slot, char *guid) {
+  int ret;
+
+  return bic_get_sys_guid(slot, guid);
+}
+
+int
+pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+
+  sprintf(key, "sysfw_ver_slot%d", (int) slot);
+
+  for (i = 0; i < SIZE_SYSFW_VER; i++) {
+    sprintf(tstr, "%02x", ver[i]);
+    strcat(str, tstr);
+  }
+
+  return pal_set_key_value(key, str);
+}
+
+int
+pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i;
+  int j = 0;
+  int ret;
+  int msb, lsb;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  sprintf(key, "sysfw_ver_slot%d", (int) slot);
+
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    ver[j++] = (msb << 4) | lsb;
+  }
+
+  return 0;
+}
+
+int
+pal_is_bmc_por(void) {
+  uint32_t scu_fd;
+  uint32_t wdt;
+  void *scu_reg;
+  void *scu_wdt;
+
+  scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
+  if (scu_fd < 0) {
+    return 0;
+  }
+
+  scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
+             AST_WDT_BASE);
+  scu_wdt = (char*)scu_reg + WDT_OFFSET;
+
+  wdt = *(volatile uint32_t*) scu_wdt;
+
+  munmap(scu_reg, PAGE_SIZE);
+  close(scu_fd);
+
+  if (wdt & 0xff00) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
+int
+pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      *sensor_list = (uint8_t *) bic_discrete_list;
+      *cnt = bic_discrete_cnt;
+      break;
+    case FRU_SPB:
+    case FRU_NIC:
+      return -1;
+    default:
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_get_fru_discrete_list: Wrong fru id %u", fru);
+#endif
+      return -1;
+  }
+    return 0;
+}
+
+static void
+_print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
+    uint8_t val, char *event) {
+  if (val) {
+    syslog(LOG_CRIT, "ASSERT: %s discrete - raised - FRU: %d, num: 0x%X,"
+        " snr: %-16s val: %d", event, fru, snr_num, snr_name, val);
+  } else {
+    syslog(LOG_CRIT, "DEASSERT: %s discrete - settled - FRU: %d, num: 0x%X,"
+        " snr: %-16s val: %d", event, fru, snr_num, snr_name, val);
+  }
+}
+
+int
+pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
+    uint8_t o_val, uint8_t n_val) {
+
+  char name[32];
+  bool valid = false;
+  uint8_t diff = o_val ^ n_val;
+
+  if (GETBIT(diff, 0)) {
+    switch(snr_num) {
+      case BIC_SENSOR_SYSTEM_STATUS:
+        sprintf(name, "SOC_Thermal_Trip");
+        valid = true;
+        break;
+      case BIC_SENSOR_VR_HOT:
+        sprintf(name, "SOC_VR_Hot");
+        valid = true;
+        break;
+      case BIC_SENSOR_CPU_DIMM_HOT:
+        sprintf(name, "SOC_Hot");
+        valid = true;
+        break;
+    }
+    if (valid) {
+      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 0), name);
+      valid = false;
+    }
+  }
+
+  if (GETBIT(diff, 1)) {
+    switch(snr_num) {
+      case BIC_SENSOR_SYSTEM_STATUS:
+        sprintf(name, "SOC_FIVR_Fault");
+        valid = true;
+        break;
+      case BIC_SENSOR_VR_HOT:
+        sprintf(name, "SOC_DIMM_VR_Hot");
+        valid = true;
+        break;
+      case BIC_SENSOR_CPU_DIMM_HOT:
+        sprintf(name, "SOC_MEMHOT");
+        valid = true;
+        break;
+    }
+    if (valid) {
+      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 1), name);
+      valid = false;
+    }
+  }
+
+  if (GETBIT(diff, 2)) {
+    switch(snr_num) {
+      case BIC_SENSOR_SYSTEM_STATUS:
+        sprintf(name, "SOC_Throttle");
+        valid = true;
+        break;
+    }
+    if (valid) {
+      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 2), name);
+      valid = false;
+    }
+  }
+}
+
+static int
+pal_store_crashdump(uint8_t fru) {
+
+  return yosemite_common_crashdump(fru);
+}
+
+int
+pal_sel_handler(uint8_t fru, uint8_t snr_num) {
+
+  switch(snr_num) {
+    case CATERR:
+      pal_store_crashdump(fru);
+      break;
+  }
+
+  return 0;
+}
+
+int
+pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
+
+  switch(snr_num) {
+    case SYSTEM_EVENT:
+      sprintf(name, "SYSTEM_EVENT");
+      break;
+    case THERM_THRESH_EVT:
+      sprintf(name, "THERM_THRESH_EVT");
+      break;
+    case BUTTON:
+      sprintf(name, "BUTTON");
+      break;
+    case POWER_STATE:
+      sprintf(name, "POWER_STATE");
+      break;
+    case CRITICAL_IRQ:
+      sprintf(name, "CRITICAL_IRQ");
+      break;
+    case POST_ERROR:
+      sprintf(name, "POST_ERROR");
+      break;
+    case MACHINE_CHK_ERR:
+      sprintf(name, "MACHINE_CHK_ERR");
+      break;
+    case PCIE_ERR:
+      sprintf(name, "PCIE_ERR");
+      break;
+    case IIO_ERR:
+      sprintf(name, "IIO_ERR");
+      break;
+    case MEMORY_ECC_ERR:
+      sprintf(name, "MEMORY_ECC_ERR");
+      break;
+    case PROCHOT_EXT:
+      sprintf(name, "PROCHOT_EXT");
+      break;
+    case PWR_ERR:
+      sprintf(name, "PWR_ERR");
+      break;
+    case CATERR:
+      sprintf(name, "CATERR");
+      break;
+    default:
+      sprintf(name, "unknown");
+      break;
+  }
+
+  return 0;
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
+    char *error_log) {
+
+  char *ed = event_data;
+  char temp_log[128] = {0};
+  uint8_t temp;
+
+  switch(snr_num) {
+    case SYSTEM_EVENT:
+      sprintf(error_log, "SYSTEM_EVENT");
+      if (ed[0] == 0xE5) {
+        strcat(error_log, ": Cause of Time change");
+
+        if (ed[2] == 0x00)
+          strcat(error_log, ": NTP");
+        else if (ed[2] == 0x01)
+          strcat(error_log, ": Host RTL");
+        else if (ed[2] == 0x02)
+          strcat(error_log, ": Set SEL time cmd ");
+        else if (ed[2] == 0x03)
+          strcat(error_log, ": Set SEL time UTC offset cmd");
+        else
+          strcat(error_log, ": Unknown");
+
+        if (ed[1] == 0x00)
+          strcat(error_log, ": First Time");
+        else if(ed[1] == 0x80)
+          strcat(error_log, ": Second Time");
+
+      }
+      break;
+
+    case THERM_THRESH_EVT:
+      sprintf(error_log, "THERM_THRESH_EVT");
+      if (ed[0] == 0x1)
+        strcat(error_log, ": Limit Exceeded");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+    case BUTTON:
+      sprintf(error_log, "BUTTON");
+      if (ed[0] == 0x0)
+        strcat(error_log, ": Power button pressed");
+      else if (ed[0] == 0x2)
+        strcat(error_log, ": Reset button pressed");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+    case POWER_STATE:
+      sprintf(error_log, "POWER_STATE");
+      if (ed[0] == 0x0)
+        strcat(error_log, ": Transition to Running");
+      else if (ed[0] == 0x2)
+        strcat(error_log, ": Transition to Power Off");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+    case CRITICAL_IRQ:
+      sprintf(error_log, "CRITICAL_IRQ");
+      if (ed[0] == 0x0)
+        strcat(error_log, ": Diagnostic Interrupt");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+    case POST_ERROR:
+      sprintf(error_log, "POST_ERROR");
+      if ((ed[0] & 0x0F) == 0x0)
+        strcat(error_log, ": System Firmware Error");
+      else
+        strcat(error_log, ": Unknown");
+       if (((ed[0] >> 6) & 0x03) == 0x3) {
+         // TODO: Need to implement IPMI spec based Post Code
+         strcat(error_log, ": IPMI Post Code");
+       } else if (((ed[0] >> 6) & 0x03) == 0x2) {
+         sprintf(temp_log, "OEM Post Code: 0x%X 0x%X", ed[2], ed[1]);
+         strcat(error_log, temp_log);
+       }
+      break;
+
+    case MACHINE_CHK_ERR:
+      sprintf(error_log, "MACHINE_CHK_ERR");
+      if ((ed[0] & 0x0F) == 0x0B) {
+        strcat(error_log, ": Uncorrectable");
+      } else if ((ed[0] & 0x0F) == 0x0C) {
+        strcat(error_log, ": Correctable");
+      } else {
+        strcat(error_log, ": Unknown");
+      }
+
+      sprintf(temp_log, "Machine Check bank Number - %d ", ed[1]);
+      strcat(error_log, temp_log);
+      sprintf(temp_log, "CPU - %d, Core - %d ", ed[2] >> 5, ed[2] & 0x1F);
+      strcat(error_log, temp_log);
+
+      break;
+
+    case PCIE_ERR:
+      sprintf(error_log, "PCIE_ERR");
+      if ((ed[0] & 0xF) == 0x4)
+        strcat(error_log, ": PCI PERR");
+      else if ((ed[0] & 0xF) == 0x5)
+        strcat(error_log, ": PCI SERR");
+      else if ((ed[0] & 0xF) == 0x7)
+        strcat(error_log, ": Correctable");
+      else if ((ed[0] & 0xF) == 0x8)
+        strcat(error_log, ": Uncorrectable");
+      else if ((ed[0] & 0xF) == 0xA)
+        strcat(error_log, ": Bus Fatal");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+    case IIO_ERR:
+      sprintf(error_log, "IIO_ERR");
+      if ((ed[0] & 0xF) == 0) {
+
+        sprintf(temp_log, ": CPU - %d, Error ID - 0x%X", (ed[2] & 0xE0) >> 5,
+            ed[1]);
+        strcat(error_log, temp_log);
+
+        temp = ed[2] & 0x7;
+        if (temp == 0x0)
+          strcat(error_log, ": IRP0");
+        else if (temp == 0x1)
+          strcat(error_log, ": IRP1");
+        else if (temp == 0x2)
+          strcat(error_log, ": IIO-Core");
+        else if (temp == 0x3)
+          strcat(error_log, ": VT-d");
+        else if (temp == 0x4)
+          strcat(error_log, ": Intel Quick Data");
+        else if (temp == 0x5)
+          strcat(error_log, ": Misc");
+        else
+          strcat(error_log, ": Reserved");
+      }
+      break;
+
+    case MEMORY_ECC_ERR:
+      sprintf(error_log, "MEMORY_ECC_ERR");
+      if ((ed[0] & 0x0F) == 0x0)
+        strcat(error_log, ": Correctable");
+      else if ((ed[0] & 0x0F) == 0x1)
+        strcat(error_log, ": Uncorrectable");
+      else if ((ed[0] & 0x0F) == 0x5)
+        strcat(error_log, ": Correctable ECC error Logging Limit Reached");
+      else
+        strcat(error_log, ": Unknown");
+
+      if (((ed[1] & 0xC) >> 2) == 0x0) {
+        /* All Info Valid */
+        sprintf(temp_log, ": CPU# - %d, CHN# - %d, DIMM# - %d ",
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+        /* DIMM info not valid */
+        sprintf(temp_log, ": CPU# - %d, CHN# - %d",
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
+      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+        /* CHN info not valid */
+        sprintf(temp_log, ": CPU# - %d, DIMM# - %d ",
+            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
+      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+        /* CPU info not valid */
+        sprintf(temp_log, ": CHN# - %d, DIMM# - %d ",
+            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+      }
+      strcat(error_log, temp_log);
+
+      break;
+
+    case PROCHOT_EXT:
+      sprintf(error_log, "PROCHOT_EXT");
+      if ((ed[0] & 0xF) == 0xA)
+        strcat(error_log, ": Processor Thermal Throttling Offset");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+      if ((ed[1] & 0x3) == 0x1)
+        strcat(error_log, ": External (VR)");
+      else if ((ed[1] & 0x3) == 0x0)
+        strcat(error_log, ": Native");
+      break;
+
+      sprintf(temp_log, ": SOC ID - %d", (ed[2] & 0xE0) >> 5);
+      strcat(error_log, temp_log);
+
+    case PWR_ERR:
+      sprintf(error_log, "PWR_ERR");
+      if (ed[0] == 0x2)
+        strcat(error_log, ": PCH_PWROK failure");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+    case CATERR:
+      sprintf(error_log, "CATERR");
+      if (ed[0] == 0x0)
+        strcat(error_log, ": IERR");
+      else if (ed[0] == 0xB)
+        strcat(error_log, ": MCERR");
+      else
+        strcat(error_log, ": Unknown");
+      break;
+
+    default:
+      sprintf(error_log, "unknown");
+      break;
+  }
+
+  return 0;
 }

@@ -21,6 +21,7 @@ from __future__ import unicode_literals
 
 from soc_gpio import soc_get_register
 
+import openbmc_gpio
 import logging
 import os
 import sys
@@ -267,3 +268,36 @@ class BoardGPIO(object):
         self.gpio = gpio
         self.shadow = shadow
         self.value = value
+
+def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
+    soc = SocGPIOTable(soc_gpio_table)
+    gpio_configured = []
+    for gpio in board_gpio_table:
+        try:
+            soc.config_function(gpio.gpio, write_through=False)
+            gpio_configured.append(gpio.gpio)
+        except ConfigUnknownFunction as e:
+            # not multiple-function GPIO pin
+            pass
+        except NotSmartEnoughException as e:
+            logging.error('Failed to configure "%s" for "%s": %s'
+                          % (gpio.gpio, gpio.shadow, str(e)))
+
+    soc.write_to_hw()
+
+    if validate:
+        all_functions = set(soc.get_active_functions(refresh=True))
+        for gpio in gpio_configured:
+            if gpio not in all_functions:
+                raise Exception('Failed to configure function "%s"' % gpio)
+
+    for gpio in board_gpio_table:
+        openbmc_gpio.gpio_export(gpio.gpio, gpio.shadow)
+        if gpio.value == GPIO_INPUT:
+            continue
+        elif gpio.value == GPIO_OUT_HIGH:
+            openbmc_gpio.gpio_set(gpio.gpio, 1)
+        elif gpio.value == GPIO_OUT_LOW:
+            openbmc_gpio.gpio_set(gpio.gpio, 0)
+        else:
+            raise Exception('Invalid value "%s"' % gpio.value)

@@ -2,11 +2,15 @@
 from __future__ import print_function
 
 import os.path
+import os
+import fcntl
 import socket
 import struct
 import sys
 import argparse
 import traceback
+import json
+from tempfile import mkstemp
 
 import hexfile
 
@@ -18,8 +22,32 @@ def auto_int(x):
 parser = argparse.ArgumentParser()
 parser.add_argument('--addr', type=auto_int, required=True,
                     help="PSU Modbus Address")
+parser.add_argument('--statusfile', default=None,
+                    help="Write status to JSON file during process")
+parser.add_argument('--rmfwfile', action='store_true',
+                    help="Delete FW file after update completes")
 parser.add_argument('file', help="firmware file")
 
+status = {
+    'pid': os.getpid(),
+    'state': 'started'
+}
+
+statuspath = None
+
+def write_status():
+    global status
+    if statuspath is None:
+        return
+    tmppath = statuspath + '~'
+    with open(tmppath, 'wb') as tfh:
+        tfh.write(json.dumps(status))
+    os.rename(tmppath, statuspath)
+
+def status_state(state):
+    global status
+    status['state'] = state
+    write_status()
 
 class ModbusTimeout(Exception):
     pass
@@ -193,6 +221,7 @@ def write_data(addr, data):
 
 
 def send_image(addr, fwimg):
+    global statuspath
     total_chunks = sum([len(s) for s in fwimg.segments]) / 8
     sent_chunks = 0
     for s in fwimg.segments:
@@ -205,11 +234,15 @@ def send_image(addr, fwimg):
             if len(chunk) < 8:
                 chunk = chunk + ("\xFF" * (8 - len(chunk)))
             sent_chunks += 1
-            print("\r[%.2f%%] Sending chunk %d of %d..." %
-                  (sent_chunks * 100.0 / total_chunks,
-                   sent_chunks, total_chunks), end="")
+            # dont fill the restapi log with junk
+            if statuspath is None:
+                print("\r[%.2f%%] Sending chunk %d of %d..." %
+                      (sent_chunks * 100.0 / total_chunks,
+                       sent_chunks, total_chunks), end="")
             sys.stdout.flush()
             write_data(addr, str(bytearray(chunk)))
+            status['flash_progress_percent'] = sent_chunks * 100.0 / total_chunks
+            write_status()
         print("")
 
 
@@ -241,28 +274,45 @@ def erase_flash(addr):
 
 
 def update_psu(addr, filename):
+    status_state('pausing_monitoring')
     pause_monitoring()
+    status_state('parsing_fw_file')
     fwimg = hexfile.load(filename)
+    status_state('bootloader_handshake')
     enter_bootloader(addr)
     start_programming(addr)
     challenge = get_challenge(addr)
     send_key(addr, delta_seccalckey(challenge))
+    status_state('erase_flash')
     erase_flash(addr)
+    status_state('flashing')
     send_image(addr, fwimg)
+    status_state('verifying')
     verify_flash(addr)
+    status_state('resetting')
     reset_psu(addr)
+    status_state('done')
 
 
 def main():
     args = parser.parse_args()
+    global statuspath
+    statuspath = args.statusfile
+    print("statusfile %s" % statuspath)
     try:
         update_psu(args.addr, args.file)
-    except:
-        traceback.print_exc()
+    except Exception, e:
         print("Firmware update failed")
+        global status
+        status['exception'] = traceback.format_exc()
+        status_state('failed')
         resume_monitoring()
+        if args.rmfwfile:
+            os.remove(args.file)
         sys.exit(1)
     resume_monitoring()
+    if args.rmfwfile:
+        os.remove(args.file)
     sys.exit(0)
 
 if __name__ == "__main__":

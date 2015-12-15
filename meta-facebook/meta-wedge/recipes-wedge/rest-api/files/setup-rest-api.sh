@@ -27,6 +27,53 @@
 # Short-Description: Set REST API handler
 ### END INIT INFO
 
-echo -n "Setup REST API handler... "
-/usr/local/bin/rest.py > /tmp/rest.log 2>&1 &
-echo "done."
+# source function library
+. /etc/init.d/functions
+
+ACTION="$1"
+CMD="/usr/local/bin/rest.py"
+case "$ACTION" in
+  start)
+    echo -n "Setting up REST API handler: "
+    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    if [ $pid ]; then
+      echo "already running"
+    else
+      $CMD > /tmp/rest_start.log 2>&1 &
+      echo "done."
+    fi
+    ;;
+  stop)
+    echo -n "Stopping REST API handler: "
+    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    if [ $pid ]; then
+      kill $pid
+    fi
+    echo "done."
+    ;;
+  restart)
+    echo -n "Restarting REST API handler: "
+    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    if [ $pid ]; then
+      kill $pid
+    fi
+    sleep 1
+    $CMD > /tmp/rest_start.log 2>&1 &
+    echo "done."
+    ;;
+  status)
+    if [[ -n $(ps | grep -v grep | grep $CMD | awk '{print $1}') ]]; then
+      echo "REST API handler is running"
+    else
+      echo "REST API is stopped"
+    fi
+    ;;
+  *)
+    N=${0##*/}
+    N=${N#[SK]??}
+    echo "Usage: $N {start|stop|status|restart}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

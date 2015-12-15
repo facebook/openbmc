@@ -3,7 +3,7 @@
 SRCREV = "1e85856853e24e9013d142adaad38c2adc7e48ac"
 
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git;protocol=https;branch=linux-2.6.28.y \
-           file://patch-2.6.28.9/0000-linux-aspeed-064.patch \
+           file://patch-2.6.28.9/0000-linux-aspeed-064.patch;striplevel=1 \
            file://patch-2.6.28.9/0000-linux-openbmc.patch \
            file://patch-2.6.28.9/0001-MTD-fix-m25p80-64-bit-divisions.patch \
            file://patch-2.6.28.9/0005-mtd-Bug-in-m25p80.c-during-whole-chip-erase.patch \
@@ -23,9 +23,8 @@ SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
            file://patch-2.6.28.9/0001-bzip2-lzma-library-support-for-gzip-bzip2-and-lzma-d.patch \
            file://patch-2.6.28.9/0002-bzip2-lzma-config-and-initramfs-support-for-bzip2-lz.patch \
            file://patch-2.6.28.9/0032-Create-snapshot-of-OpenBMC.patch \
+           file://patch-2.6.28.9/0033-Linux-snapshot-of-OpenBMC-f926614.patch;striplevel=6 \
           "
-
-S = "${WORKDIR}/git"
 
 LINUX_VERSION ?= "2.6.28.9"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
@@ -33,18 +32,28 @@ LINUX_VERSION_EXTENSION ?= "-aspeed"
 PR = "r1"
 PV = "${LINUX_VERSION}"
 
+include linux-aspeed.inc
+
+S = "${WORKDIR}/git"
+
 # Install bounds.h for external module install
 # The default install script handles this. However, it looks for bounds.h from
 # 'include/generated', which doesnot match 2.6.28, where the file is in
 # 'include/linux'.
-do_install[postfuncs] += "install_bounds_h"
-install_bounds_h() {
-	kerneldir=${D}${KERNEL_SRC_PATH}
-	if [ -f include/linux/bounds.h ]; then
-		cp -l include/linux/bounds.h $kerneldir/include/linux/bounds.h
-	fi
+addtask create_generated after do_compile before do_shared_workdir
+do_create_generated() {
+    install -d ${B}/include/generated
+    cp -l ${B}/include/linux/bounds.h ${B}/include/generated/bounds.h
 }
 
-KERNEL_CONFIG_COMMAND = "oe_runmake wedge_defconfig && oe_runmake oldconfig"
+# With Fido, ${KERNEL_SRC} is set to ${STAGING_KERENL_DIR}, which is passed
+# to kernel module build. So, copy all .h files from the build direcory to
+# the ${STAGING_KERNEL_DIR}
+addtask copy_to_kernelsrc after do_shared_workdir before do_compile_kernelmodules
+do_copy_to_kernelsrc() {
+    kerneldir=${STAGING_KERNEL_DIR}/include/linux
+    install -d ${kerneldir}
+    cp -l ${B}/include/linux/* ${kerneldir}/
+}
 
-include linux-aspeed.inc
+KERNEL_CC += " --sysroot=${PKG_CONFIG_SYSROOT_DIR}"

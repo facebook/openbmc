@@ -40,7 +40,10 @@ extern "C" {
 // Slot#0 is on I2C Bus1
 #define IPMB_BUS_SLOT0 1
 
-#define TIMEOUT_IPMI 4
+// TODO: Some IPMB responses take about 5-6 seconds
+// Need to add a timeout parameter to IPMB request
+// For now changing global timeout to 8 seconds
+#define TIMEOUT_IPMB 8
 #define MAX_IPMB_RES_LEN 255
 
 typedef struct _ipmb_req_t {

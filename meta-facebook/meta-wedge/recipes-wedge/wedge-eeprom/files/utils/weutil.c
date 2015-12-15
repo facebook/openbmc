@@ -45,9 +45,10 @@ int main(int argc, const char *argv[])
   printf("Product Name: %s\n", eeprom.fbw_product_name);
   printf("Product Part Number: %s\n", eeprom.fbw_product_number);
   printf("System Assembly Part Number: %s\n", eeprom.fbw_assembly_number);
+  printf("Facebook PCBA Part Number: %s\n", eeprom.fbw_facebook_pcba_number);
   printf("Facebook PCB Part Number: %s\n", eeprom.fbw_facebook_pcb_number);
-  printf("ODM PCB Part Number: %s\n", eeprom.fbw_odm_pcb_number);
-  printf("ODM PCB Serial Number: %s\n", eeprom.fbw_odm_pcb_serial);
+  printf("ODM PCBA Part Number: %s\n", eeprom.fbw_odm_pcba_number);
+  printf("ODM PCBA Serial Number: %s\n", eeprom.fbw_odm_pcba_serial);
   printf("Product Production State: %d\n", eeprom.fbw_production_state);
   printf("Product Version: %d\n", eeprom.fbw_product_version);
   printf("Product Sub-Version: %d\n", eeprom.fbw_product_subversion);
@@ -58,11 +59,11 @@ int main(int argc, const char *argv[])
          eeprom.fbw_system_manufacturing_date);
   printf("PCB Manufacturer: %s\n", eeprom.fbw_pcb_manufacturer);
   printf("Assembled At: %s\n", eeprom.fbw_assembled);
-  printf("Local MAC: %X:%X:%X:%X:%X:%X\n",
+  printf("Local MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
          eeprom.fbw_local_mac[0], eeprom.fbw_local_mac[1],
          eeprom.fbw_local_mac[2], eeprom.fbw_local_mac[3],
          eeprom.fbw_local_mac[4], eeprom.fbw_local_mac[5]);
-  printf("Extended MAC Base: %X:%X:%X:%X:%X:%X\n",
+  printf("Extended MAC Base: %02X:%02X:%02X:%02X:%02X:%02X\n",
          eeprom.fbw_mac_base[0], eeprom.fbw_mac_base[1],
          eeprom.fbw_mac_base[2], eeprom.fbw_mac_base[3],
          eeprom.fbw_mac_base[4], eeprom.fbw_mac_base[5]);

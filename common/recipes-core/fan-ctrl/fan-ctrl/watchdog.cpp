@@ -100,7 +100,7 @@ int start_watchdog(const int auto_mode) {
     while ((status = write(watchdog_dev, WATCHDOG_START_KEY, 1)) == 0
            && errno == EINTR);
     pthread_mutex_unlock(&watchdog_lock);
-    syslog(LOG_ALERT, "system watchdog already started.\n");
+    syslog(LOG_WARNING, "system watchdog already started.\n");
     return 0;
   }
 
@@ -128,7 +128,7 @@ fail:
   }
 
   pthread_mutex_unlock(&watchdog_lock);
-  syslog(LOG_ALERT, "system watchdog failed to start!\n");
+  syslog(LOG_WARNING, "system watchdog failed to start!\n");
   return 0;
 }
 

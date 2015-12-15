@@ -54,7 +54,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
-  update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
+  update-rc.d -r ${D} setup-rest-api.sh start 95 5  .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

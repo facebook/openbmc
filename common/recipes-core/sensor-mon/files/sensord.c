@@ -32,73 +32,17 @@
 #include <facebook/bic.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/sdr.h>
-#ifdef CONFIG_YOSEMITE
-#include <facebook/yosemite_sensor.h>
-#endif /* CONFIG_YOSEMITE */
+#include <openbmc/pal.h>
 
-#define MAX_SENSOR_NUM      0xFF
-#define NORMAL_STATE        0x00
+#define DELAY 2
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
+static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
-
-
-/* Enum for type of Upper and Lower threshold values */
-enum {
-  UCR_THRESH = 0x01,
-  UNC_THRESH,
-  UNR_THRESH,
-  LCR_THRESH,
-  LNC_THRESH,
-  LNR_THRESH,
-  POS_HYST,
-  NEG_HYST,
-};
-
-/* To hold the sensor info and calculated threshold values from the SDR */
-typedef struct {
-  uint8_t flag;
-  float ucr_thresh;
-  float unc_thresh;
-  float unr_thresh;
-  float lcr_thresh;
-  float lnc_thresh;
-  float lnr_thresh;
-  float pos_hyst;
-  float neg_hyst;
-  int curr_state;
-  char name[23];
-  char units[64];
-
-} thresh_sensor_t;
-
-/* Function pointer to read sensor current value */
-static int (*read_snr_val)(uint8_t, uint8_t, void *);
-
-#ifdef CONFIG_YOSEMITE
-
-// TODO: Change to 6 after adding SPB and NIC
-#define MAX_NUM_FRUS      4
-#define YOSEMITE_SDR_PATH   "/tmp/sdr_%s.bin"
-
-static thresh_sensor_t snr_slot1[MAX_SENSOR_NUM] = {0};
-static thresh_sensor_t snr_slot2[MAX_SENSOR_NUM] = {0};
-static thresh_sensor_t snr_slot3[MAX_SENSOR_NUM] = {0};
-static thresh_sensor_t snr_slot4[MAX_SENSOR_NUM] = {0};
-static thresh_sensor_t snr_spb[MAX_SENSOR_NUM] = {0};
-static thresh_sensor_t snr_nic[MAX_SENSOR_NUM] = {0};
-
-static sensor_info_t sinfo_slot1[MAX_SENSOR_NUM] = {0};
-static sensor_info_t sinfo_slot2[MAX_SENSOR_NUM] = {0};
-static sensor_info_t sinfo_slot3[MAX_SENSOR_NUM] = {0};
-static sensor_info_t sinfo_slot4[MAX_SENSOR_NUM] = {0};
-static sensor_info_t sinfo_spb[MAX_SENSOR_NUM] = {0};
-static sensor_info_t sinfo_nic[MAX_SENSOR_NUM] = {0};
-#endif /* CONFIG_YOSEMITE */
-
+static void
+print_usage() {
+    printf("Usage: sensord <options>\n");
+    printf("Options: [ %s ]\n", pal_fru_list);
+}
 
 /*
  * Returns the pointer to the struct holding all sensor info and
@@ -109,501 +53,57 @@ get_struct_thresh_sensor(uint8_t fru) {
 
   thresh_sensor_t *snr;
 
-#ifdef CONFIG_YOSEMITE
-  switch (fru) {
-    case FRU_SLOT1:
-      snr = snr_slot1;
-      break;
-    case FRU_SLOT2:
-      snr = snr_slot2;
-      break;
-    case FRU_SLOT3:
-      snr = snr_slot3;
-      break;
-    case FRU_SLOT4:
-      snr = snr_slot4;
-      break;
-    case FRU_SPB:
-      snr = snr_spb;
-      break;
-    case FRU_NIC:
-      snr = snr_nic;
-      break;
-    default:
-      syslog(LOG_ALERT, "get_struct_thresh_sensor: Wrong FRU ID %d\n", fru);
-      return NULL;
+  if (fru < 1 || fru > MAX_NUM_FRUS) {
+    syslog(LOG_WARNING, "get_struct_thresh_sensor: Wrong FRU ID %d\n", fru);
+    return NULL;
   }
-#endif /* CONFIG_YOSEMITE */
-
+  snr = g_snr[fru-1];
   return snr;
 }
 
-
-/* Returns the all the SDRs for the particular fru# */
-static sensor_info_t *
-get_struct_sensor_info(uint8_t fru) {
-
-  sensor_info_t *sinfo;
-
-#ifdef CONFIG_YOSEMITE
-  switch (fru) {
-    case FRU_SLOT1:
-      sinfo = sinfo_slot1;
-      break;
-    case FRU_SLOT2:
-      sinfo = sinfo_slot2;
-      break;
-    case FRU_SLOT3:
-      sinfo = sinfo_slot3;
-      break;
-    case FRU_SLOT4:
-      sinfo = sinfo_slot4;
-      break;
-    case FRU_SPB:
-      sinfo = sinfo_spb;
-      break;
-    case FRU_NIC:
-      sinfo = sinfo_nic;
-      break;
-    default:
-      syslog(LOG_ALERT, "get_struct_sensor_info: Wrong FRU ID %d\n", fru);
-      return NULL;
-  }
-#endif /* CONFIG_YOSEMITE */
-
-  return sinfo;
-}
-
-
-/* Returns the SDR for a particular sensor of particular fru# */
-static sdr_full_t *
-get_struct_sdr(uint8_t fru, uint8_t snr_num) {
-
-  sdr_full_t *sdr;
-  sensor_info_t *sinfo;
-  sinfo = get_struct_sensor_info(fru);
-  if (sinfo == NULL) {
-    syslog(LOG_ALERT, "get_struct_sdr: get_struct_sensor_info failed\n");
-    return NULL;
-  }
-  sdr = &sinfo[snr_num].sdr;
-  return sdr;
-}
-
-/* Get the threshold values from the SDRs */
+/* Initialize all thresh_sensor_t structs for all the Yosemite sensors */
 static int
-get_sdr_thresh_val(uint8_t fru, uint8_t snr_num, uint8_t thresh, void *value) {
+init_fru_snr_thresh(uint8_t fru) {
 
+  int i;
   int ret;
-  uint8_t x;
-  uint8_t m_lsb, m_msb, m;
-  uint8_t b_lsb, b_msb, b;
-  int8_t b_exp, r_exp;
-  uint8_t thresh_val;
-  sdr_full_t *sdr;
-
-  sdr = get_struct_sdr(fru, snr_num);
-  if (sdr == NULL) {
-    syslog(LOG_ALERT, "get_sdr_thresh_val: get_struct_sdr failed\n");
-    return -1;
-  }
-
-  switch (thresh) {
-    case UCR_THRESH:
-      thresh_val = sdr->uc_thresh;
-      break;
-    case UNC_THRESH:
-      thresh_val = sdr->unc_thresh;
-      break;
-    case UNR_THRESH:
-      thresh_val = sdr->unr_thresh;
-      break;
-    case LCR_THRESH:
-      thresh_val = sdr->lc_thresh;
-      break;
-    case LNC_THRESH:
-      thresh_val = sdr->lnc_thresh;
-      break;
-    case LNR_THRESH:
-      thresh_val = sdr->lnr_thresh;
-      break;
-    case POS_HYST:
-      thresh_val = sdr->pos_hyst;
-      break;
-    case NEG_HYST:
-      thresh_val = sdr->neg_hyst;
-      break;
-    default:
-      syslog(LOG_ERR, "get_sdr_thresh_val: reading unknown threshold val");
-      return -1;
-  }
-
-  // y = (mx + b * 10^b_exp) * 10^r_exp
-  x = thresh_val;
-
-  m_lsb = sdr->m_val;
-  m_msb = sdr->m_tolerance >> 6;
-  m = (m_msb << 8) | m_lsb;
-
-  b_lsb = sdr->b_val;
-  b_msb = sdr->b_accuracy >> 6;
-  b = (b_msb << 8) | b_lsb;
-
-  // exponents are 2's complement 4-bit number
-  b_exp = sdr->rb_exp & 0xF;
-  if (b_exp > 7) {
-    b_exp = (~b_exp + 1) & 0xF;
-    b_exp = -b_exp;
-  }
-  r_exp = (sdr->rb_exp >> 4) & 0xF;
-  if (r_exp > 7) {
-    r_exp = (~r_exp + 1) & 0xF;
-    r_exp = -r_exp;
-  }
-
-  * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
-
-  return 0;
-}
-
-/*
- * Populate all fields of thresh_sensor_t struct for a particular sensor.
- * Incase the threshold value is 0 mask the check for that threshvold
- * value in flag field.
- */
-int
-init_snr_thresh(uint8_t fru, uint8_t snr_num, uint8_t flag) {
-
-  int value;
-  float fvalue;
-  uint8_t op, modifier;
+  uint8_t snr_num;
+  int sensor_cnt;
+  uint8_t *sensor_list;
   thresh_sensor_t *snr;
-
-  sdr_full_t *sdr;
-
-  sdr = get_struct_sdr(fru, snr_num);
-  if (sdr == NULL) {
-    syslog(LOG_ALERT, "init_snr_name: get_struct_sdr failed\n");
-    return -1;
-  }
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
-    syslog(LOG_ALERT, "init_snr_thresh: get_struct_thresh_sensor failed");
+#ifdef DEBUG
+    syslog(LOG_WARNING, "init_fru_snr_thresh: get_struct_thresh_sensor failed");
+#endif /* DEBUG */
     return -1;
   }
 
-  snr[snr_num].flag = flag;
-  snr[snr_num].curr_state = NORMAL_STATE;
-
-  if (sdr_get_sensor_name(sdr, snr[snr_num].name)) {
-    syslog(LOG_ALERT, "sdr_get_sensor_name: FRU %d: num: 0x%X: reading name"
-        " from SDR failed.", fru, snr_num);
-    return -1;
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    return ret;
   }
 
-  // TODO: Add support for modifier (Mostly modifier is zero)
-  if (sdr_get_sensor_units(sdr, &op, &modifier, snr[snr_num].units)) {
-    syslog(LOG_ALERT, "sdr_get_sensor_units: FRU %d: num 0x%X: reading units"
-        " from SDR failed.", fru, snr_num);
-    return -1;
-  }
-
-  if (get_sdr_thresh_val(fru, snr_num, UCR_THRESH, &fvalue)) {
-    syslog(LOG_ERR,
-        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, UCR_THRESH",
-        fru, snr_num, snr[snr_num].name);
-  } else {
-    snr[snr_num].ucr_thresh = fvalue;
-    if (!(fvalue)) {
-      snr[snr_num].flag = CLEARBIT(snr[snr_num].flag, UCR_THRESH);
-      syslog(LOG_ALERT,
-          "FRU: %d, num: 0x%X, %-16s, UCR_THRESH check disabled val->%.2f",
-          fru, snr_num, snr[snr_num].name, fvalue);
+  for (i < 0; i < sensor_cnt; i++) {
+    snr_num = sensor_list[i];
+    ret = sdr_get_snr_thresh(fru, snr_num,
+            GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH), &snr[snr_num]);
+    if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "init_fru_snr_thresh: sdr_get_snr_thresh for FRU: %d", fru);
+#endif /* DEBUG */
+      continue;
     }
   }
 
-  if (get_sdr_thresh_val(fru, snr_num, UNC_THRESH, &fvalue)) {
-    syslog(LOG_ERR,
-        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, UNC_THRESH",
-        fru, snr_num, snr[snr_num].name);
-  } else {
-    snr[snr_num].unc_thresh = fvalue;
-    if (!(fvalue)) {
-      snr[snr_num].flag = CLEARBIT(snr[snr_num].flag, UNC_THRESH);
-      syslog(LOG_ALERT,
-          "FRU: %d, num: 0x%X, %-16s, UNC_THRESH check disabled val->%.2f",
-          fru, snr_num, snr[snr_num].name, fvalue);
-    }
+  // TODO: This is a HACK. Need to add the pal_threshold_verify support
+  if (fru > 0 && fru < 5) {
+    snr[BIC_SENSOR_SOC_THERM_MARGIN].flag = SETBIT(snr[BIC_SENSOR_SOC_THERM_MARGIN].flag, UCR_THRESH);
   }
-
-  if (get_sdr_thresh_val(fru, snr_num, UNR_THRESH, &fvalue)) {
-    syslog(LOG_ERR,
-        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, UNR_THRESH",
-        fru, snr_num, snr[snr_num].name);
-  } else {
-    snr[snr_num].unr_thresh = fvalue;
-    if (!(fvalue)) {
-      snr[snr_num].flag = CLEARBIT(snr[snr_num].flag, UNR_THRESH);
-      syslog(LOG_ALERT,
-          "FRU: %d, num: 0x%X, %-16s, UNR_THRESH check disabled val->%.2f",
-          fru, snr_num, snr[snr_num].name, fvalue);
-    }
-  }
-
-  if (get_sdr_thresh_val(fru, snr_num, LCR_THRESH, &fvalue)) {
-    syslog(LOG_ERR,
-        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, LCR_THRESH",
-        fru, snr_num, snr[snr_num].name);
-  } else {
-    snr[snr_num].lcr_thresh = fvalue;
-    if (!(fvalue)) {
-      snr[snr_num].flag = CLEARBIT(snr[snr_num].flag, LCR_THRESH);
-      syslog(LOG_ALERT,
-          "FRU: %d, num: 0x%X, %-16s, LCR_THRESH check disabled val->%.2f",
-          fru, snr_num, snr[snr_num].name, fvalue);
-    }
-  }
-
-  if (get_sdr_thresh_val(fru, snr_num, LNC_THRESH, &fvalue)) {
-    syslog(LOG_ERR,
-        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, LNC_THRESH",
-        fru, snr_num, snr[snr_num].name);
-  } else {
-    snr[snr_num].lnc_thresh = fvalue;
-    if (!(fvalue)) {
-      snr[snr_num].flag = CLEARBIT(snr[snr_num].flag, LNC_THRESH);
-      syslog(LOG_ALERT,
-          "FRU: %d, num: 0x%X, %-16s, LNC_THRESH check disabled val->%.2f",
-          fru, snr_num, snr[snr_num].name, fvalue);
-    }
-  }
-
-  if (get_sdr_thresh_val(fru, snr_num, LNR_THRESH, &fvalue)) {
-    syslog(LOG_ERR,
-        "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, LNR_THRESH",
-        fru, snr_num, snr[snr_num].name);
-  } else {
-    snr[snr_num].lnr_thresh = fvalue;
-    if (!(fvalue)) {
-      snr[snr_num].flag = CLEARBIT(snr[snr_num].flag, LNR_THRESH);
-      syslog(LOG_ALERT,
-          "FRU: %d, num: 0x%X, %-16s, LNR_THRESH check disabled val->%.2f",
-          fru, snr_num, snr[snr_num].name, fvalue);
-    }
-  }
-
-  if (get_sdr_thresh_val(fru, snr_num, POS_HYST, &fvalue)) {
-    syslog(LOG_ERR, "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, POS_HYST",
-        fru, snr_num, snr[snr_num].name);
-  } else
-    snr[snr_num].pos_hyst = fvalue;
-
-  if (get_sdr_thresh_val(fru, snr_num, NEG_HYST, &fvalue)) {
-    syslog(LOG_ERR, "get_sdr_thresh_val: failed for FRU: %d, num: 0x%X, %-16s, NEG_HYST",
-        fru, snr_num, snr[snr_num].name);
-  } else
-    snr[snr_num].neg_hyst = fvalue;
 
   return 0;
 }
-
-#ifdef CONFIG_YOSEMITE
-/* Initialize all thresh_sensor_t structs for all the Yosemite sensors */
-static void
-init_yosemite_snr_thresh(uint8_t fru) {
-
-  int i;
-
-  switch (fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-
-      for (i < 0; i < bic_sensor_cnt; i++) {
-        init_snr_thresh(fru, bic_sensor_list[i], GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-      }
-      /*
-  		init_snr_thresh(fru, BIC_SENSOR_MB_OUTLET_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCCIN_VR_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_GBE_VR_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_1V05PCH_VR_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_MB_INLET_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_PCH_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_THERM_MARGIN, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VDDR_VR_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_GBE_VR_CURR, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_1V05_PCH_VR_CURR, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCCIN_VR_POUT, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCCIN_VR_CURR, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCCIN_VR_VOL,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_INA230_POWER, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_PACKAGE_PWR, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_TJMAX, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VDDR_VR_POUT, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VDDR_VR_CURR, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VDDR_VR_VOL,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_SCSUS_VR_CURR, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_SCSUS_VR_VOL,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_SCSUS_VR_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_SCSUS_VR_POUT, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_GBE_VR_POUT, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_VCC_GBE_VR_VOL,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_1V05_PCH_VR_VOL,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_DIMMA0_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_DIMMA1_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_DIMMB0_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_SOC_DIMMB1_TEMP, GETMASK(UCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_P3V3_MB,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_P12V_MB,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_P1V05_PCH,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_P3V3_STBY_MB,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_P5V_STBY_MB,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_PV_BAT,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_PVDDR,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-
-  		init_snr_thresh(fru, BIC_SENSOR_PVCC_GBE,
-      GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH));
-  // TODO: Add Support for Discrete sensors
-  //		init_snr_thresh(fru, BIC_SENSOR_POST_ERR, //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_SYSTEM_STATUS, //Discrete
-  //		init_snr_thresh(fru, BIC_SENSOR_SPS_FW_HLTH); //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_POWER_THRESH_EVENT, //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_MACHINE_CHK_ERR, //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_PCIE_ERR); //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_OTHER_IIO_ERR); //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_PROC_HOT_EXT); //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_POWER_ERR); //Event-only
-  //		init_snr_thresh(fru, , ); //Event-only
-  //		init_snr_thresh(fru, BIC_SENSOR_PROC_FAIL); //Discrete
-  //		init_snr_thresh(fru, BIC_SENSOR_SYS_BOOT_STAT ); //Discrete
-  //		init_snr_thresh(fru, BIC_SENSOR_VR_HOT); //Discrete
-  //		init_snr_thresh(fru, BIC_SENSOR_CPU_DIMM_HOT ); //Discrete
-  //		init_snr_thresh(fru, BIC_SENSOR_CAT_ERR,  //Event-only
-
-      */
-
-      break;
-
-    case FRU_SPB:
-  // TODO: Add support for threshold calculation for SP sensors
-  /*
-  		init_snr_thresh(fru, SP_SENSOR_INLET_TEMP, "SP_SENSOR_INLET_TEMP");
-  		init_snr_thresh(fru, SP_SENSOR_OUTLET_TEMP, "SP_SENSOR_OUTLET_TEMP");
-  		init_snr_thresh(fru, SP_SENSOR_MEZZ_TEMP, "SP_SENSOR_MEZZ_TEMP");
-  		init_snr_thresh(fru, SP_SENSOR_FAN0_TACH, "SP_SENSOR_FAN0_TACH");
-  		init_snr_thresh(fru, SP_SENSOR_FAN1_TACH, "SP_SENSOR_FAN1_TACH");
-  		init_snr_thresh(fru, SP_SENSOR_AIR_FLOW, "SP_SENSOR_AIR_FLOW");
-  		init_snr_thresh(fru, SP_SENSOR_P5V, "SP_SENSOR_P5V");
-  		init_snr_thresh(fru, SP_SENSOR_P12V, "SP_SENSOR_P12V");
-  		init_snr_thresh(fru, SP_SENSOR_P3V3_STBY, "SP_SENSOR_P3V3_STBY");
-  		init_snr_thresh(fru, SP_SENSOR_P12V_SLOT0, "SP_SENSOR_P12V_SLOT0");
-  		init_snr_thresh(fru, SP_SENSOR_P12V_SLOT1, "SP_SENSOR_P12V_SLOT1");
-  		init_snr_thresh(fru, SP_SENSOR_P12V_SLOT2, "SP_SENSOR_P12V_SLOT2");
-  		init_snr_thresh(fru, SP_SENSOR_P12V_SLOT3, "SP_SENSOR_P12V_SLOT3");
-  		init_snr_thresh(fru, SP_SENSOR_P3V3, "SP_SENSOR_P3V3");
-  		init_snr_thresh(fru, SP_SENSOR_HSC_IN_VOLT, "SP_SENSOR_HSC_IN_VOLT");
-  		init_snr_thresh(fru, SP_SENSOR_HSC_OUT_CURR, "SP_SENSOR_HSC_OUT_CURR");
-  		init_snr_thresh(fru, SP_SENSOR_HSC_TEMP, "SP_SENSOR_HSC_TEMP");
-  		init_snr_thresh(fru, SP_SENSOR_HSC_IN_POWER, "SP_SENSOR_HSC_IN_POWER");
-  */
-      break;
-
-    case FRU_NIC:
-      // TODO: Add support for NIC sensor threshold, if any.
-      break;
-
-    default:
-      syslog(LOG_ALERT, "init_yosemite_snr_thresh: wrong FRU ID");
-      exit(-1);
-  }
-}
-#endif /* CONFIG_YOSEMITE */
-
-/* Wrapper function to initialize all the platform sensors */
-static void
-init_all_snr_thresh() {
-  int fru;
-
-  char path[64] = {0};
-  sensor_info_t *sinfo;
-
-
-#ifdef CONFIG_YOSEMITE
-  for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_FRUS); fru++) {
-
-    if (get_fru_sdr_path(fru, path) < 0) {
-      syslog(LOG_ALERT, "yosemite_sdr_init: get_fru_sdr_path failed\n");
-      continue;
-    }
-#endif /* CONFIG_YOSEMITE */
-
-    sinfo = get_struct_sensor_info(fru);
-
-    if (sdr_init(path, sinfo) < 0)
-      syslog(LOG_ERR, "init_all_snr_thresh: sdr_init failed for FRU %d", fru);
-  }
-
-#ifdef CONFIG_YOSEMITE
-  for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_FRUS); fru++) {
-        init_yosemite_snr_thresh(fru);
-  }
-#endif /* CONFIG_YOSEMITE */
-}
-
-
-
 
 static float
 get_snr_thresh_val(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
@@ -633,7 +133,7 @@ get_snr_thresh_val(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
       val = snr[snr_num].lnr_thresh;
       break;
     default:
-      syslog(LOG_ALERT, "get_snr_thresh_val: wrong thresh enum value");
+      syslog(LOG_WARNING, "get_snr_thresh_val: wrong thresh enum value");
       exit(-1);
   }
 
@@ -662,7 +162,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   switch (thresh) {
     case UNC_THRESH:
-      if (curr_val <= thresh_val) {
+      if (curr_val < (thresh_val - snr[snr_num].pos_hyst)) {
         curr_state = ~(SETBIT(curr_state, UNR_THRESH) |
             SETBIT(curr_state, UCR_THRESH) |
             SETBIT(curr_state, UNC_THRESH));
@@ -671,7 +171,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       break;
 
     case UCR_THRESH:
-      if (curr_val <= thresh_val) {
+      if (curr_val < (thresh_val - snr[snr_num].pos_hyst)) {
         curr_state = ~(SETBIT(curr_state, UCR_THRESH) |
             SETBIT(curr_state, UNR_THRESH));
         sprintf(thresh_name, "Upper Critical");
@@ -679,14 +179,14 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       break;
 
     case UNR_THRESH:
-      if (curr_val <= thresh_val) {
+      if (curr_val < (thresh_val - snr[snr_num].pos_hyst)) {
         curr_state = ~(SETBIT(curr_state, UNR_THRESH));
         sprintf(thresh_name, "Upper Non Recoverable");
       }
       break;
 
     case LNC_THRESH:
-      if (curr_val >= thresh_val) {
+      if (curr_val > (thresh_val + snr[snr_num].neg_hyst)) {
         curr_state = ~(SETBIT(curr_state, LNR_THRESH) |
             SETBIT(curr_state, LCR_THRESH) |
             SETBIT(curr_state, LNC_THRESH));
@@ -695,7 +195,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       break;
 
     case LCR_THRESH:
-      if (curr_val >= thresh_val) {
+      if (curr_val > (thresh_val + snr[snr_num].neg_hyst)) {
         curr_state = ~(SETBIT(curr_state, LCR_THRESH) |
             SETBIT(curr_state, LNR_THRESH));
         sprintf(thresh_name, "Lower Critical");
@@ -703,23 +203,23 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       break;
 
     case LNR_THRESH:
-      if (curr_val >= thresh_val) {
+      if (curr_val > (thresh_val + snr[snr_num].neg_hyst)) {
         curr_state = ~(SETBIT(curr_state, LNR_THRESH));
         sprintf(thresh_name, "Lower Non Recoverable");
       }
       break;
 
     default:
-      syslog(LOG_ALERT, "get_snr_thresh_val: wrong thresh enum value");
+      syslog(LOG_WARNING, "get_snr_thresh_val: wrong thresh enum value");
       exit(-1);
   }
 
   if (curr_state) {
     snr[snr_num].curr_state &= curr_state;
-    syslog(LOG_CRIT, "DEASSERT: %s threshold raised - FRU: %d, num: 0x%X,"
-        " snr: %-16s,",thresh_name, fru, snr_num, snr[snr_num].name);
-    syslog(LOG_CRIT, "curr_val: %.2f %s, thresh_val: %.2f %s cf: %u",
-      curr_val, snr[snr_num].units, thresh_val, snr[snr_num].units, snr[snr_num].curr_state);
+    syslog(LOG_CRIT, "DEASSERT: %s threshold - settled - FRU: %d, num: 0x%X "
+        "curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s",thresh_name,
+        fru, snr_num,curr_val, snr[snr_num].units, thresh_val,
+        snr[snr_num].units, snr[snr_num].name);
   }
 }
 
@@ -794,17 +294,99 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       break;
 
     default:
-      syslog(LOG_ALERT, "get_snr_thresh_val: wrong thresh enum value");
+      syslog(LOG_WARNING, "get_snr_thresh_val: wrong thresh enum value");
       exit(-1);
   }
 
   if (curr_state) {
     curr_state &= snr[snr_num].flag;
     snr[snr_num].curr_state |= curr_state;
-    syslog(LOG_CRIT, "ASSERT: %s threshold raised - FRU: %d, num: 0x%X,"
-        " snr: %-16s,",thresh_name, fru, snr_num, snr[snr_num].name);
-    syslog(LOG_CRIT, "curr_val: %.2f %s, thresh_val: %.2f %s cf: %u",
-      curr_val, snr[snr_num].units, thresh_val, snr[snr_num].units, snr[snr_num].curr_state);
+    syslog(LOG_CRIT, "ASSERT: %s threshold - raised - FRU: %d, num: 0x%X"
+        " curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s", thresh_name,
+        fru, snr_num, curr_val, snr[snr_num].units, thresh_val,
+        snr[snr_num].units, snr[snr_num].name);
+  }
+}
+
+
+/*
+ * Starts monitoring all the sensors on a fru for all discrete sensors.
+ * Each pthread runs this monitoring for a different fru.
+ */
+static void *
+snr_discrete_monitor(void *arg) {
+
+#ifdef DEBUG2
+  char tmplog[1000];
+#endif /* DEBUG2 */
+  uint8_t fru = *(uint8_t *) arg;
+  int i, ret;
+  uint8_t discrete_cnt;
+  uint8_t snr_num;
+  //uint8_t *discrete_list;
+  thresh_sensor_t *snr;
+  float normal_val, curr_val;
+
+  // TODO: Need to resolve the SEGFAULT in the call below and replace HACK here.
+  /*
+  ret = pal_get_fru_discrete_list(fru, &discrete_list, &discrete_cnt);
+  if (ret < 0) {
+    return;
+  }
+  */
+  /* HACK */
+  uint8_t discrete_list[3];
+  if (fru != FRU_SPB && fru != FRU_NIC) {
+    discrete_list[0] = BIC_SENSOR_SYSTEM_STATUS;
+    discrete_list[1] = BIC_SENSOR_VR_HOT;
+    discrete_list[2] = BIC_SENSOR_CPU_DIMM_HOT;
+  } else {
+    return -1;
+  }
+
+  discrete_cnt = 3;
+
+  snr = get_struct_thresh_sensor(fru);
+  if (snr == NULL) {
+    syslog(LOG_WARNING, "snr_thresh_monitor: get_struct_thresh_sensor failed");
+    exit(-1);
+  }
+
+  for (i = 0; i < discrete_cnt; i++) {
+    snr_num = discrete_list[i];
+    pal_get_sensor_name(fru, snr_num, snr[snr_num].name);
+  }
+
+#if defined(TESTING) || defined(DEBUG)
+  int cnt = 0;
+#endif
+  while(1) {
+    for (i = 0; i < discrete_cnt; i++) {
+      snr_num = discrete_list[i];
+      ret = pal_sensor_read(fru, snr_num, &curr_val);
+
+#ifdef DEBUG2
+      sprintf(tmplog, "echo 0x%X %s %d >> /tmp/discretetest%d", snr_num, snr[snr_num].name, (int) curr_val, fru);
+      system(tmplog);
+#endif /* DEBUG2 */
+
+#if defined(TESTING) || defined(DEBUG)
+      if (cnt == 2 && snr_num == BIC_SENSOR_SYSTEM_STATUS) {
+        curr_val = ((int) curr_val) | 0x1;
+      } else if (cnt == 6 && snr_num == BIC_SENSOR_SYSTEM_STATUS) {
+        curr_val = ((int) curr_val) & 0x0;
+      }
+#endif
+      if ((snr[snr_num].curr_state != (int) curr_val) && !ret) {
+        pal_sensor_discrete_check(fru, snr_num, snr[snr_num].name,
+            snr[snr_num].curr_state, (int) curr_val);
+        snr[snr_num].curr_state = (int) curr_val;
+      }
+    }
+#if defined(TESTING) || defined(DEBUG)
+    cnt ++;
+#endif
+    sleep(DELAY);
   }
 }
 
@@ -813,23 +395,27 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
  * Each pthread runs this monitoring for a different fru.
  */
 static void *
-snr_monitor(void *arg) {
+snr_thresh_monitor(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   int f, ret, snr_num;
   float normal_val, curr_val;
   thresh_sensor_t *snr;
 
-#ifdef TESTING
+#if defined(TESTING) || defined(DEBUG)
   float temp_thresh;
   int cnt = 0;
 #endif /* TESTING */
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
-    syslog(LOG_ALERT, "snr_monitor: get_struct_thresh_sensor failed");
+    syslog(LOG_WARNING, "snr_thresh_monitor: get_struct_thresh_sensor failed");
     exit(-1);
   }
+
+#ifdef DEBUG2
+  char tmplog[1000];
+#endif /* DEBUG2 */
 
   while(1) {
 
@@ -840,8 +426,11 @@ snr_monitor(void *arg) {
     for (snr_num = 0; snr_num < MAX_SENSOR_NUM; snr_num++) {
       curr_val = 0;
       if (snr[snr_num].flag) {
-        if (!(ret = read_snr_val(fru, snr_num, &curr_val))) {
-
+        if (!(ret = pal_sensor_read(fru, snr_num, &curr_val))) {
+#ifdef DEBUG2
+          sprintf(tmplog, "echo 0x%X %s %.2f >> /tmp/analog%d", snr_num, snr[snr_num].name, curr_val, fru);
+      system(tmplog);
+#endif /* DEBUG2 */
 
 #ifdef TESTING
           /*
@@ -871,7 +460,6 @@ snr_monitor(void *arg) {
                 snr[snr_num].units);
           }
 #endif /* DEBUG */
-
           check_thresh_assert(fru, snr_num, UNR_THRESH, curr_val);
           check_thresh_assert(fru, snr_num, UCR_THRESH, curr_val);
           check_thresh_assert(fru, snr_num, UNC_THRESH, curr_val);
@@ -885,117 +473,149 @@ snr_monitor(void *arg) {
           check_thresh_deassert(fru, snr_num, LNC_THRESH, curr_val);
           check_thresh_deassert(fru, snr_num, LCR_THRESH, curr_val);
           check_thresh_deassert(fru, snr_num, LNR_THRESH, curr_val);
-
         } else {
           /*
-           * Incase the read_snr_val failed for a sensor,
+           * Incase the pal_sensor_read failed for a sensor,
            * disable all the threshold checks for that sensor
            * after logging an approciate syslog message.
            */
+          if (ret == ERR_NOT_READY) {
+            continue;
+          }
+
           if (ret) {
+#ifdef DEBUG
             syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
             fru, snr_num, snr[snr_num].name);
-            syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, check disabled",
-                fru, snr_num, snr[snr_num].name);
-            snr[snr_num].flag = 0;
-            //}
+#endif
+
+            /*
+             * Check if the fru is up and running before disabling the sensor.
+             * If the fru is powered down, DO NOT disable the sensor check.
+             */
+            char state[MAX_VALUE_LEN];
+
+            pal_get_last_pwr_state(fru, state);
+            if (!strcmp(state, "on")) {
+              snr[snr_num].flag = 0;
+              syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, check disabled",
+                  fru, snr_num, snr[snr_num].name);
+            }
           }
-        } /* read_snr_val return check */
+        } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */
-    sleep(5);
+    sleep(DELAY);
   } /* while loop*/
 } /* function definition */
-
-
-/* Spawns a pthread for each fru to monitor all the sensors on it */
-static void
-run_sensord(int argc, char **argv) {
-  int i, arg;
-
-  pthread_t thread_snr[MAX_NUM_FRUS];
-  int fru[MAX_NUM_FRUS] = {0};
-
-  for (arg = 1; arg < argc; arg ++) {
-#ifdef CONFIG_YOSEMITE
-    if (!(strcmp(argv[arg], "slot1")))
-      fru[FRU_SLOT1 - 1] =  FRU_SLOT1;
-    else if (!(strcmp(argv[arg], "slot2")))
-      fru[FRU_SLOT2 - 1] =  FRU_SLOT2;
-    else if (!(strcmp(argv[arg], "slot3")))
-      fru[FRU_SLOT3 - 1] =  FRU_SLOT3;
-    else if (!(strcmp(argv[arg], "slot4")))
-      fru[FRU_SLOT4 - 1] =  FRU_SLOT4;
-    else if (!(strcmp(argv[arg], "spb")))
-      fru[FRU_SPB - 1] =  FRU_SPB;
-    else if (!(strcmp(argv[arg], "nic")))
-      fru[FRU_NIC - 1] =  FRU_NIC;
-    else {
-      syslog(LOG_ALERT, "Wrong argument: %s", argv[arg]);
-      exit(1);
-    }
-#endif /* CONFIG_YOSEMITE */
-
-  }
-
-  for (i = 0; i < MAX_NUM_FRUS; i++) {
-    if (fru[i]) {
-      if (pthread_create(&thread_snr[i], NULL, snr_monitor,
-            (void*) &fru[i]) < 0) {
-        syslog(LOG_ALERT, "pthread_create for FRU %d failed\n", fru[i]);
-      }
-#ifdef DEBUG
-      else {
-        syslog(LOG_ALERT, "pthread_create for FRU %d succeed\n", fru[i]);
-      }
-#endif /* DEBUG */
-    }
-    sleep(1);
-  }
-
-  for (i = 0; i < MAX_NUM_FRUS; i++) {
-    if (fru[i])
-      pthread_join(thread_snr[i], NULL);
-  }
-}
-
 
 #ifdef DEBUG
 void print_snr_thread(uint8_t fru, thresh_sensor_t *snr)
 {
-  int i;
+  int i,j;
   float curr_val;
+  char tmplog[1000];
+  char print[1000];
 
-  for (i = 1; i <= MAX_SENSOR_NUM; i++) {
+  for (i = 0; i <= MAX_SENSOR_NUM; i++) {
     if (snr[i].flag) {
       curr_val = 0;
-      if(!(read_snr_val(fru, i, &curr_val))) {
-        printf("%-30s:\t%.2f %s\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
-        snr[i].name, curr_val,snr[i].units,
+      if(!(pal_sensor_read(fru, i, &curr_val))) {
+        sprintf(tmplog, "%-30s: %s  %.2f  %.2f  %.2f  %.2f\n",
+        snr[i].name, snr[i].units,
         snr[i].ucr_thresh,
-        snr[i].unc_thresh,
         snr[i].lcr_thresh,
-        snr[i].lnr_thresh,
         snr[i].pos_hyst,
         snr[i].neg_hyst);
-      } else
-        printf("Reading failed: %-16s\n", snr[i].name);
+        sprintf(print, "echo %s >> /tmp/print%d", tmplog, fru);
+        system(print);
+      }
     }
   }
 }
 #endif /* DEBUG */
+
+
+/* Spawns a pthread for each fru to monitor all the sensors on it */
+static int
+run_sensord(int argc, char **argv) {
+
+  int ret, arg;
+  uint8_t fru;
+  uint8_t fru_flag = 0;
+  pthread_t thread_snr[MAX_NUM_FRUS];
+  pthread_t discrete_snr[MAX_NUM_FRUS];
+
+  arg = 1;
+  while(arg < argc) {
+
+    ret = pal_get_fru_id(argv[arg], &fru);
+    if (ret < 0)
+      return ret;
+
+    fru_flag = SETBIT(fru_flag, fru);
+    arg++;
+  }
+
+  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+
+    if (GETBIT(fru_flag, fru)) {
+
+      if (init_fru_snr_thresh(fru))
+        return ret;
+
+      /* Threshold Sensors */
+      if (pthread_create(&thread_snr[fru-1], NULL, snr_thresh_monitor,
+          (void*) &fru) < 0) {
+        syslog(LOG_WARNING, "pthread_create for FRU %d failed\n", fru);
+      }
+#ifdef DEBUG
+      else {
+        syslog(LOG_WARNING, "pthread_create for FRU %d succeed\n", fru);
+      }
+#endif /* DEBUG */
+      sleep(1);
+
+      /* Discrete Sensors */
+      if (pthread_create(&discrete_snr[fru-1], NULL, snr_discrete_monitor,
+            (void*) &fru) < 0) {
+        syslog(LOG_WARNING, "pthread_create for FRU %d failed\n", fru);
+      }
+#ifdef DEBUG
+      else {
+        syslog(LOG_WARNING, "pthread_create for discrete FRU %d succeed\n", fru);
+      }
+#endif /* DEBUG */
+      sleep(1);
+    }
+  }
+
+#ifdef DEBUG
+    int i;
+    for (i = 1; i <= MAX_NUM_FRUS; i++)
+      print_snr_thread(i, g_snr[i-1]);
+#endif /* DEBUG */
+
+  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+
+    if (GETBIT(fru_flag, fru))
+      pthread_join(discrete_snr[fru-1], NULL);
+  }
+
+  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+
+    if (GETBIT(fru_flag, fru))
+      pthread_join(thread_snr[fru-1], NULL);
+  }
+}
+
 
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
 
   if (argc < 2) {
-    syslog(LOG_ALERT, "Usage: sensord <options>");
-    printf("Usage: sensord <options>\n");
-#ifdef CONFIG_YOSEMITE
-    syslog(LOG_ALERT, "Options: [slot1 | slot2 | slot3 | slot4 | spb | nic]");
-    printf("Options: [slot1 | slot2 | slot3 | slot4 | spb | nic]\n");
-#endif /* CONFIG_YOSEMITE */
+    print_usage();
     exit(1);
   }
 
@@ -1008,24 +628,15 @@ main(int argc, void **argv) {
     }
   } else {
 
-#ifdef CONFIG_YOSEMITE
-  read_snr_val = &yosemite_sensor_read;
-#endif /* CONFIG_YOSEMITE */
-
-    init_all_snr_thresh();
-
-#ifdef DEBUG
-    print_snr_thread(1, snr_slot1);
-    print_snr_thread(2, snr_slot2);
-    print_snr_thread(3, snr_slot3);
-    print_snr_thread(4, snr_slot4);
-#endif /* DEBUG */
-
     daemon(0,1);
     openlog("sensord", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "sensord: daemon started");
-    run_sensord(argc, (char **) argv);
-  }
 
+    rc = run_sensord(argc, (char **) argv);
+    if (rc < 0) {
+      print_usage();
+      return -1;
+    }
+  }
   return 0;
 }

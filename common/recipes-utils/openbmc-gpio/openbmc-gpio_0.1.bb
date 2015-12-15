@@ -25,12 +25,12 @@ SRC_URI = " \
     file://board_gpio_table.py \
     file://openbmc_gpio.py \
     file://openbmc_gpio_table.py \
-    file://openbmc_gpio_setup.py \
     file://openbmc_gpio_util.py \
     file://phymemory.py \
     file://setup.py \
     file://soc_gpio.py \
     file://soc_gpio_table.py \
+    file://setup_board.py \
     "
 
 S = "${WORKDIR}"
@@ -40,9 +40,6 @@ OPENBMC_GPIO_UTILS = " \
     "
 
 OPENBMC_GPIO_SOC_TABLE = "soc_gpio_table.py"
-
-# Change OPENBMC_GPIO_SETUP to "0" to exclude openbmc_gpio_setup.py from the image
-OPENBMC_GPIO_SETUP = "1"
 
 inherit distutils
 
@@ -63,13 +60,5 @@ do_install_append() {
     for f in ${OPENBMC_GPIO_UTILS}; do
         install -m 755 $f ${localbindir}/${f}
     done
-
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
-    if [ "${OPENBMC_GPIO_SETUP}" == "1" ]; then
-        install -m 755 openbmc_gpio_setup.py ${D}${sysconfdir}/init.d/openbmc_gpio_setup.py
-        update-rc.d -r ${D} openbmc_gpio_setup.py start 59 S .
-    fi
 }
 
-FILES_${PN} += "/usr/local/bin ${sysconfdir}"

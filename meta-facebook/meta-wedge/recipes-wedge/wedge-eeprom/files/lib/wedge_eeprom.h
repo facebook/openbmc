@@ -29,9 +29,10 @@ extern "C" {
 #define FBW_EEPROM_F_PRODUCT_NAME 12
 #define FBW_EEPROM_F_PRODUCT_NUMBER 8
 #define FBW_EEPROM_F_ASSEMBLY_NUMBER 12
+#define FBW_EEPROM_F_FACEBOOK_PCBA_NUMBER 12
 #define FBW_EEPROM_F_FACEBOOK_PCB_NUMBER 12
-#define FBW_EEPROM_F_ODM_PCB_NUMBER 13
-#define FBW_EEPROM_F_ODM_PCB_SERIAL 12
+#define FBW_EEPROM_F_ODM_PCBA_NUMBER 13
+#define FBW_EEPROM_F_ODM_PCBA_SERIAL 12
 #define FBW_EEPROM_F_PRODUCT_STATE 1
 #define FBW_EEPROM_F_PRODUCT_VERSION 1
 #define FBW_EEPROM_F_PRODUCT_SUBVERSION 1
@@ -60,14 +61,17 @@ struct wedge_eeprom_st {
   /* System Assembly Part Number XXX-XXXXXX-XX */
   char fbw_assembly_number[FBW_EEPROM_F_ASSEMBLY_NUMBER + 3];
 
+  /* Facebook PCBA Part Number: XXX-XXXXXXX-XX */
+  char fbw_facebook_pcba_number[FBW_EEPROM_F_FACEBOOK_PCBA_NUMBER + 3];
+
   /* Facebook PCB Part Number: XXX-XXXXXXX-XX */
   char fbw_facebook_pcb_number[FBW_EEPROM_F_FACEBOOK_PCB_NUMBER + 3];
 
   /* ODM PCB Part Number: XXXXXXXXXXXX */
-  char fbw_odm_pcb_number[FBW_EEPROM_F_ODM_PCB_NUMBER + 1];
+  char fbw_odm_pcba_number[FBW_EEPROM_F_ODM_PCBA_NUMBER + 1];
 
   /* ODM PCB Serial Number: XXXXXXXXXXXX */
-  char fbw_odm_pcb_serial[FBW_EEPROM_F_ODM_PCB_SERIAL + 1];
+  char fbw_odm_pcba_serial[FBW_EEPROM_F_ODM_PCBA_SERIAL + 1];
 
   /* Product Production State */
   uint8_t fbw_production_state;
@@ -88,7 +92,7 @@ struct wedge_eeprom_st {
   char fbw_system_manufacturer[FBW_EEPROM_F_SYSTEM_MANUFACTURER + 1];
 
   /* System Manufacturing Date: mm-dd-yy */
-  char fbw_system_manufacturing_date[10];
+  uint8_t fbw_system_manufacturing_date[10];
 
   /* PCB Manufacturer: XXXXXXXXX */
   char fbw_pcb_manufacturer[FBW_EEPROM_F_PCB_MANUFACTURER + 1];

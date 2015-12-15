@@ -23,21 +23,40 @@
 
 #include <stdbool.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/pal.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define MAX_SDR_LEN           64
-
+#define NORMAL_STATE        0x00
+#define MAX_SENSOR_NUM      0xFF
 
 #define MAX_SENSOR_RATE_UNIT  7
 #define MAX_SENSOR_BASE_UNIT  92
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
+#define SETBIT(x, y)        (x | (1 << y))
+#define GETBIT(x, y)        ((x & (1 << y)) > y)
+#define CLEARBIT(x, y)      (x & (~(1 << y)))
+#define GETMASK(y)          (1 << y)
+
+/* To hold the sensor info and calculated threshold values from the SDR */
+typedef struct {
+  uint8_t flag;
+  float ucr_thresh;
+  float unc_thresh;
+  float unr_thresh;
+  float lcr_thresh;
+  float lnc_thresh;
+  float lnr_thresh;
+  float pos_hyst;
+  float neg_hyst;
+  int curr_state;
+  char name[17];
+  char units[64];
+
+} thresh_sensor_t;
 
 /* List of all the Sensor Rate Units types. */
 const char * sensor_rate_units[] = {
@@ -150,11 +169,10 @@ const char * sensor_base_units[] = {
   "",						    /* 093 */
 };
 
-int sdr_init(char *path, sensor_info_t *sinfo);
-
-int sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
-    char *units);
-int sdr_get_sensor_name(sdr_full_t *sdr, char *name);
+int sdr_get_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
+int sdr_get_sensor_units(uint8_t fru, uint8_t snr_num, char *units);
+int sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, uint8_t flag,
+    thresh_sensor_t *snr);
 
 #ifdef __cplusplus
 } // extern "C"

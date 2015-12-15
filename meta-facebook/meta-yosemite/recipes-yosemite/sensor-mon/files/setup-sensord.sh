@@ -29,7 +29,27 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-# TODO: check for the if slot/server is present before starting the daemon
 echo -n "Setup sensor monitoring for yosemite... "
-/usr/local/bin/sensord slot1 slot2 slot3 slot4
+
+# Check for the slots present and run sensord for those slots only.
+SLOTS=
+  if [ $(is_server_prsnt 1) == "1" ]; then
+    SLOTS="$SLOTS slot1"
+  fi
+
+  if [ $(is_server_prsnt 2) == "1" ]; then
+    SLOTS="$SLOTS slot2"
+  fi
+
+  if [ $(is_server_prsnt 3) == "1" ]; then
+    SLOTS="$SLOTS slot3"
+  fi
+
+  if [ $(is_server_prsnt 4) == "1" ]; then
+    SLOTS="$SLOTS slot4"
+  fi
+
+SLOTS="$SLOTS spb nic"
+/usr/local/bin/sensord $SLOTS
+
 echo "done."

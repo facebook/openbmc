@@ -16,7 +16,7 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-DEPENDS += " libipmi "
+DEPENDS += " libipmi libpal "
 
 do_install() {
 	  install -d ${D}${libdir}

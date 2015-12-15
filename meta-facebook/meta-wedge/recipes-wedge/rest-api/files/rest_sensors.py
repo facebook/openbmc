@@ -18,15 +18,23 @@
 # Boston, MA 02110-1301 USA
 #
 
-
 import json
-import os
 import re
+import subprocess
+import bmc_command
 
 # Handler for sensors resource endpoint
 def get_sensors():
     result = []
-    data = os.popen('sensors').read()
+    proc = subprocess.Popen(['sensors'],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    try:
+        data, err = bmc_command.timed_communicate(proc)
+    except bmc_command.TimeoutError as ex:
+        data = ex.output
+        err = ex.error
+
     data = re.sub(r'\(.+?\)', '', data)
     for edata in data.split('\n\n'):
         adata = edata.split('\n', 1)
@@ -40,6 +48,7 @@ def get_sensors():
                 continue
             sresult[tdata[0].strip()] = tdata[1].strip()
         result.append(sresult)
+
     fresult = {
                 "Information": result,
                 "Actions": [],

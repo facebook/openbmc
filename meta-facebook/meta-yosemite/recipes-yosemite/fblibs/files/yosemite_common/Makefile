@@ -2,8 +2,8 @@
 lib: libyosemite_common.so
 
 libyosemite_common.so: yosemite_common.c
-	$(CC) $(CFLAGS) -fPIC -c -o yosemite_common.o yosemite_common.c
-	$(CC) -shared -o libyosemite_common.so yosemite_common.o -lc
+	$(CC) $(CFLAGS) -fPIC -pthread -c -o yosemite_common.o yosemite_common.c
+	$(CC) -lpthread -shared -o libyosemite_common.so yosemite_common.o -lc
 
 .PHONY: clean
 

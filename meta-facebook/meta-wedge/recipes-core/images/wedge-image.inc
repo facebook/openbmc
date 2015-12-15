@@ -39,6 +39,7 @@ NTP_PKGS = " \
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   kernel-modules \
+  u-boot \
   u-boot-fw-utils \
   openbmc-utils \
   fan-ctrl \
@@ -54,6 +55,7 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   sms-kcsd \
   rest-api \
+  cherryPy \
   bottle \
   ipmid \
   po-eeprom \

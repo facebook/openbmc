@@ -39,7 +39,9 @@ NTP_PKGS = " \
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   kernel-modules \
+  u-boot \
   u-boot-fw-utils \
+  healthd \
   fbutils \
   fan-ctrl \
   watchdog-ctrl \
@@ -66,6 +68,13 @@ IMAGE_INSTALL += " \
   power-util \
   consoled \
   cfg-util \
+  fw-util \
+  fpc-util \
+  me-util \
+  log-util \
+  cherryPy \
+  lldp-util \
+  spatula \
   "
 
 IMAGE_FEATURES += " \

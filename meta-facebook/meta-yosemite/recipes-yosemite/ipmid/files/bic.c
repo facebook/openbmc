@@ -42,7 +42,7 @@ lib_gpio_intr_handle(unsigned char *request, unsigned char req_len,
 
   // TODO: Need to update to reuse the socket instead of creating new
   if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-    syslog(LOG_ALERT, "lib_gpio_intr_handle: socket() failed\n");
+    syslog(LOG_WARNING, "lib_gpio_intr_handle: socket() failed\n");
     return;
   }
 
@@ -51,12 +51,12 @@ lib_gpio_intr_handle(unsigned char *request, unsigned char req_len,
   len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
   if (connect(sockfd, (struct sockaddr *)&remote, len) == -1) {
-    syslog(LOG_ALERT, "lib_gpio_intr_handle: connect() failed\n");
+    syslog(LOG_WARNING, "lib_gpio_intr_handle: connect() failed\n");
     return;
   }
 
   if (send(sockfd, request, req_len, 0) == -1) {
-    syslog(LOG_ALERT, "lib_gpio_intr_handle: send() failed\n");
+    syslog(LOG_WARNING, "lib_gpio_intr_handle: send() failed\n");
     return;
   }
 
@@ -64,9 +64,9 @@ lib_gpio_intr_handle(unsigned char *request, unsigned char req_len,
     *res_len = t;
   } else {
     if (t < 0) {
-      syslog(LOG_ALERT, "lib_gpio_intr_handle: recv() failed\n");
+      syslog(LOG_WARNING, "lib_gpio_intr_handle: recv() failed\n");
     } else {
-      printf("Server closed connection");
+      syslog(LOG_WARNING, "Server closed connection");
     }
 
     return;

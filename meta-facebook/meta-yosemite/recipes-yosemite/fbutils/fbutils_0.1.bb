@@ -83,7 +83,7 @@ do_install() {
   install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
   update-rc.d -r ${D} rc.early start 04 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 59 S .
+  update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   # create VLAN intf automatically
   #install -d ${D}/${sysconfdir}/network/if-up.d
   #install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
@@ -92,7 +92,7 @@ do_install() {
   #install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
   #update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  update-rc.d -r ${D} power-on.sh start 85 S .
+  update-rc.d -r ${D} power-on.sh start 85 5 .
   #install -m 755 fcswitcher.sh ${D}${sysconfdir}/init.d/fcswitcher.sh
   #update-rc.d -r ${D} fcswitcher.sh start 90 S .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local

@@ -1,0 +1,143 @@
+Its controlled by __OPTION_EGLIBC_RTLD_DEBUG
+so we should use GLRO_dl_debug_mask
+
+Singed-off-by: Khem Raj <raj.khem@gmail.com>
+
+Upstream-Status: Pending
+Index: libc/elf/dl-open.c
+===================================================================
+--- libc.orig/elf/dl-open.c	2012-10-25 10:18:12.000000000 -0700
++++ libc/elf/dl-open.c	2013-01-09 11:49:02.635577870 -0800
+@@ -155,7 +155,7 @@
+ 	  ns->_ns_main_searchlist->r_list[new_nlist++] = map;
+ 
+ 	  /* We modify the global scope.  Report this.  */
+-	  if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_SCOPES, 0))
++	  if (__builtin_expect (GLRO_dl_debug_mask & DL_DEBUG_SCOPES, 0))
+ 	    _dl_debug_printf ("\nadd %s [%lu] to global scope\n",
+ 			      map->l_name, map->l_ns);
+ 	}
+@@ -298,7 +298,7 @@
+   LIBC_PROBE (map_complete, 3, args->nsid, r, new);
+ 
+   /* Print scope information.  */
+-  if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_SCOPES, 0))
++  if (__builtin_expect (GLRO_dl_debug_mask & DL_DEBUG_SCOPES, 0))
+     _dl_show_scope (new, 0);
+ 
+   /* Only do lazy relocation if `LD_BIND_NOW' is not set.  */
+@@ -515,7 +515,7 @@
+ 	}
+ 
+       /* Print scope information.  */
+-      if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_SCOPES, 0))
++      if (__builtin_expect (GLRO_dl_debug_mask & DL_DEBUG_SCOPES, 0))
+ 	_dl_show_scope (imap, from_scope);
+     }
+ 
+Index: libc/ports/sysdeps/mips/dl-lookup.c
+===================================================================
+--- libc.orig/ports/sysdeps/mips/dl-lookup.c	2012-08-17 12:39:53.000000000 -0700
++++ libc/ports/sysdeps/mips/dl-lookup.c	2013-01-09 11:49:02.635577870 -0800
+@@ -111,7 +111,7 @@
+ 	continue;
+ 
+       /* Print some debugging info if wanted.  */
+-      if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_SYMBOLS, 0))
++      if (__builtin_expect (GLRO_dl_debug_mask & DL_DEBUG_SYMBOLS, 0))
+ 	_dl_debug_printf ("symbol=%s;  lookup in file=%s [%lu]\n",
+ 			  undef_name,
+ 			  map->l_name[0] ? map->l_name : rtld_progname,
+@@ -432,7 +432,7 @@
+ 		     hash table.  */
+ 		  if (__builtin_expect (tab->size, 0))
+ 		    {
+-		      assert (GLRO(dl_debug_mask) & DL_DEBUG_PRELINK);
++		      assert (GLRO_dl_debug_mask & DL_DEBUG_PRELINK);
+ 		      __rtld_lock_unlock_recursive (tab->lock);
+ 		      goto success;
+ 		    }
+@@ -681,7 +681,7 @@
+ 	}
+ 
+       /* Display information if we are debugging.  */
+-      if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_FILES, 0))
++      if (__builtin_expect (GLRO_dl_debug_mask & DL_DEBUG_FILES, 0))
+ 	_dl_debug_printf ("\
+ \nfile=%s [%lu];  needed by %s [%lu] (relocation dependency)\n\n",
+ 			  map->l_name[0] ? map->l_name : rtld_progname,
+@@ -788,7 +788,7 @@
+     {
+       if ((*ref == NULL || ELFW(ST_BIND) ((*ref)->st_info) != STB_WEAK)
+ 	  && skip_map == NULL
+-	  && !(GLRO(dl_debug_mask) & DL_DEBUG_UNUSED))
++	  && !(GLRO_dl_debug_mask & DL_DEBUG_UNUSED))
+ 	{
+ 	  /* We could find no value for a strong reference.  */
+ 	  const char *reference_name = undef_map ? undef_map->l_name : "";
+@@ -861,7 +861,7 @@
+   if (__builtin_expect (current_value.m->l_used == 0, 0))
+     current_value.m->l_used = 1;
+ 
+-  if (__builtin_expect (GLRO(dl_debug_mask)
++  if (__builtin_expect (GLRO_dl_debug_mask
+ 			& (DL_DEBUG_BINDINGS|DL_DEBUG_PRELINK), 0))
+     _dl_debug_bindings (undef_name, undef_map, ref,
+ 			&current_value, version, type_class, protected);
+@@ -926,7 +926,7 @@
+ {
+   const char *reference_name = undef_map->l_name;
+ 
+-  if (GLRO(dl_debug_mask) & DL_DEBUG_BINDINGS)
++  if (GLRO_dl_debug_mask & DL_DEBUG_BINDINGS)
+     {
+       _dl_debug_printf ("binding file %s [%lu] to %s [%lu]: %s symbol `%s'",
+ 			(reference_name[0]
+@@ -942,7 +942,7 @@
+ 	_dl_debug_printf_c ("\n");
+     }
+ #ifdef SHARED
+-  if (GLRO(dl_debug_mask) & DL_DEBUG_PRELINK)
++  if (GLRO_dl_debug_mask & DL_DEBUG_PRELINK)
+     {
+       int conflict = 0;
+       struct sym_val val = { NULL, NULL };
+Index: libc/elf/rtld.c
+===================================================================
+--- libc.orig/elf/rtld.c	2012-10-10 08:35:46.000000000 -0700
++++ libc/elf/rtld.c	2013-01-09 11:49:02.635577870 -0800
+@@ -2118,7 +2118,7 @@
+   GLRO(dl_init_all_dirs) = GL(dl_all_dirs);
+ 
+   /* Print scope information.  */
+-  if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_SCOPES, 0))
++  if (__builtin_expect (GLRO_dl_debug_mask & DL_DEBUG_SCOPES, 0))
+     {
+       _dl_debug_printf ("\nInitial object scopes\n");
+ 
+Index: libc/elf/dl-lookup.c
+===================================================================
+--- libc.orig/elf/dl-lookup.c	2012-08-17 12:39:53.000000000 -0700
++++ libc/elf/dl-lookup.c	2013-01-09 11:49:02.635577870 -0800
+@@ -771,7 +771,7 @@
+     {
+       if ((*ref == NULL || ELFW(ST_BIND) ((*ref)->st_info) != STB_WEAK)
+ 	  && skip_map == NULL
+-	  && !(GLRO(dl_debug_mask) & DL_DEBUG_UNUSED))
++	  && !(GLRO_dl_debug_mask & DL_DEBUG_UNUSED))
+ 	{
+ 	  /* We could find no value for a strong reference.  */
+ 	  const char *reference_name = undef_map ? undef_map->l_name : "";
+Index: libc/elf/get-dynamic-info.h
+===================================================================
+--- libc.orig/elf/get-dynamic-info.h	2012-12-02 13:11:45.000000000 -0800
++++ libc/elf/get-dynamic-info.h	2013-01-09 12:53:51.015657653 -0800
+@@ -157,7 +157,7 @@
+ 	 them. Therefore to avoid breaking existing applications the
+ 	 best we can do is add a warning during debugging with the
+ 	 intent of notifying the user of the problem.  */
+-      if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_FILES, 0)
++      if (__builtin_expect (GLRO_dl_debug_mask & DL_DEBUG_FILES, 0)
+ 	  && l->l_flags_1 & ~DT_1_SUPPORTED_MASK)
+ 	_dl_debug_printf ("\nWARNING: Unsupported flag value(s) of 0x%x in DT_FLAGS_1.\n",
+ 			  l->l_flags_1 & ~DT_1_SUPPORTED_MASK);

@@ -88,7 +88,7 @@ static int
 sdr_add_entry(sdr_rec_t *rec, int *rec_id) {
   // If SDR is full, return error
   if (sdr_num_entries() == SDR_RECORDS_MAX) {
-      syslog(LOG_ALERT, "sdr_add_entry: SDR full\n");
+      syslog(LOG_WARNING, "sdr_add_entry: SDR full\n");
       return -1;
   }
 
@@ -137,7 +137,7 @@ sdr_add_mgmt_rec(sensor_mgmt_t *p_rec) {
 
   // Add this record to SDR repo
   if (sdr_add_entry(&sdr, &rec_id)) {
-    syslog(LOG_ALERT, "sdr_add_mgmt_rec: sdr_add_entry failed\n");
+    syslog(LOG_WARNING, "sdr_add_mgmt_rec: sdr_add_entry failed\n");
     return -1;
   }
 
@@ -176,7 +176,7 @@ sdr_add_disc_rec(sensor_disc_t *p_rec) {
 
   // Add this record to SDR repo
   if (sdr_add_entry(&sdr, &rec_id)) {
-    syslog(LOG_ALERT, "sdr_add_disc_rec: sdr_add_entry failed\n");
+    syslog(LOG_WARNING, "sdr_add_disc_rec: sdr_add_entry failed\n");
     return -1;
   }
 
@@ -237,7 +237,7 @@ sdr_add_thresh_rec(sensor_thresh_t *p_rec) {
 
   // Add this record to SDR repo
   if (sdr_add_entry(&sdr, &rec_id)) {
-    syslog(LOG_ALERT, "sdr_add_thresh_rec: sdr_add_entry failed\n");
+    syslog(LOG_WARNING, "sdr_add_thresh_rec: sdr_add_entry failed\n");
     return -1;
   }
 
@@ -263,7 +263,7 @@ sdr_add_oem_rec(sensor_oem_t *p_rec) {
 
   // Add this record to SDR repo
   if (sdr_add_entry(&sdr, &rec_id)) {
-    syslog(LOG_ALERT, "sdr_add_oem_rec: sdr_add_entry failed\n");
+    syslog(LOG_WARNING, "sdr_add_oem_rec: sdr_add_entry failed\n");
     return -1;
   }
 
@@ -323,7 +323,7 @@ sdr_get_entry(int rsv_id, int read_rec_id, sdr_rec_t *rec,
 
   // Make sure the rsv_id matches
   if (rsv_id != g_rsv_id) {
-    syslog(LOG_ALERT, "sdr_get_entry: Reservation ID mismatch\n");
+    syslog(LOG_WARNING, "sdr_get_entry: Reservation ID mismatch\n");
     return -1;
   }
 
@@ -338,19 +338,19 @@ sdr_get_entry(int rsv_id, int read_rec_id, sdr_rec_t *rec,
 
   // If the SDR repo is empty return error
   if (sdr_num_entries() == 0) {
-    syslog(LOG_ALERT, "sdr_get_entry: No entries\n");
+    syslog(LOG_WARNING, "sdr_get_entry: No entries\n");
     return -1;
   }
 
   // Check for boundary conditions
   if ((index < SDR_INDEX_MIN) || (index > SDR_INDEX_MAX)) {
-    syslog(LOG_ALERT, "sdr_get_entry: Invalid Record ID %d\n", read_rec_id);
+    syslog(LOG_WARNING, "sdr_get_entry: Invalid Record ID %d\n", read_rec_id);
     return -1;
   }
 
   // Check to make sure the given id is valid
   if (index < g_sdr_hdr.begin || index >= g_sdr_hdr.end) {
-    syslog(LOG_ALERT, "sdr_get_entry: Wrong Record ID %d\n", read_rec_id);
+    syslog(LOG_WARNING, "sdr_get_entry: Wrong Record ID %d\n", read_rec_id);
     return -1;
   }
 

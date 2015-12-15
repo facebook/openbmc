@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-override CFLAGS+=-D_GNU_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=199309 -Wall -Werror -std=c99
+override CFLAGS+=-D_GNU_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=199309 -Wall -Werror -std=c99
 override LDFLAGS+=-pthread
 all: modbuscmd gpiowatch modbussim rackmond rackmondata
 

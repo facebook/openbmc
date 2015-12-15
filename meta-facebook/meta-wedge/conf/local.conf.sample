@@ -138,3 +138,8 @@ EXTRA_USERS_PARAMS = " \
   usermod -s /bin/bash root; \
   usermod -p '\$1\$UGMqyqdG\$FZiylVFmRRfl9Z0Ue8G7e/' root; \
   "
+
+OLDEST_KERNEL = "2.6.28"
+
+INHERIT += "blacklist"
+PNBLACKLIST[glibc] = "glibc 2.21 does not work with our kernel 2.6.28"

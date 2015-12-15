@@ -37,15 +37,15 @@ typedef struct {
   unsigned char msg[16];
 } sel_msg_t;
 
-void sel_ts_recent_add(time_stamp_t *ts);
-void sel_ts_recent_erase(time_stamp_t *ts);
-int sel_num_entries(void);
-int sel_free_space(void);
-int sel_rsv_id();
-int sel_get_entry(int read_rec_id, sel_msg_t *msg, int *next_rec_id);
-int sel_add_entry(sel_msg_t *msg, int *rec_id);
-int sel_erase(int rsv_id);
-int sel_erase_status(int rsv_id, sel_erase_stat_t *status);
+void sel_ts_recent_add(int node, time_stamp_t *ts);
+void sel_ts_recent_erase(int node, time_stamp_t *ts);
+int sel_num_entries(int node);
+int sel_free_space(int node);
+int sel_rsv_id(int node);
+int sel_get_entry(int node, int read_rec_id, sel_msg_t *msg, int *next_rec_id);
+int sel_add_entry(int node, sel_msg_t *msg, int *rec_id);
+int sel_erase(int node, int rsv_id);
+int sel_erase_status(int node, int rsv_id, sel_erase_stat_t *status);
 int sel_init(void);
 
 #endif /* __SEL_H__ */

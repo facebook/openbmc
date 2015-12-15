@@ -56,12 +56,19 @@ target_volts=$(( $target_volts * 1 ))  # normalize to decimal
 rmmod pmbus
 reload=$?
 
-# Get current voltage value
+# Get current voltage value.
+# The device here is NCP4200. It turns out the first i2c transaction to this
+# device always fails. The spec does not mention anything about NCP4200 i2c
+# engine start delay. However, each time, when the isolation buffer between the
+# BMC i2c controller and NCP4200 is disabled and re-enabled, the first i2c
+# transaction to NCP4200 always fails.
+# To workaround this issue, we are doing the first read twice.
+cur_volts=$(i2cget -y 1 0x60 0x8b w 2> /dev/null)
 cur_volts=$(i2cget -y 1 0x60 0x8b w)
 cur_volts=$(( $cur_volts * 1 ))  # normalize to decimal
 
 # Only bounce the T2 if we actually need to modify the voltage
-if [ $cur_volts -ne $target_volts ]; then 
+if [ $cur_volts -ne $target_volts ]; then
     # Set values before turning out output;  we're using "PCIE, then MCS"
     echo 1 > /sys/class/gpio/gpio42/value
     echo 1 > /sys/class/gpio/gpio43/value
@@ -71,7 +78,7 @@ if [ $cur_volts -ne $target_volts ]; then
     echo out > /sys/class/gpio/gpio16/direction
     # T2 is in reset;  note that this may cause NMI messages on the uServer,
     # which shouldn't be up anyway when this is first run.
-    
+
     # Set the requested value to the current value to avoid rapid shifts
     i2cset -y 1 0x60 0x21 $cur_volts w
     # Enable the requested voltage
@@ -81,7 +88,7 @@ if [ $cur_volts -ne $target_volts ]; then
 
     # Set the target voltage
     i2cset -y 1 0x60 0x21 $target_volts w
-    
+
     sleep 1
 
     # Let T2 come out of reset

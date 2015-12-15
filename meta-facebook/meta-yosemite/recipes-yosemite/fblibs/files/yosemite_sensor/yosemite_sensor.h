@@ -24,13 +24,36 @@
 #include <stdbool.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
-#include <openbmc/sdr.h>
 #include <facebook/bic.h>
 #include <facebook/yosemite_common.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define MAX_SDR_LEN           64
+#define MAX_SENSOR_NUM        0xFF
+#define MAX_SENSOR_THRESHOLD  8
+#define MAX_RETRIES_SDR_INIT  30
+#define THERMAL_CONSTANT      255
+#define ERR_NOT_READY         -2
+
+typedef struct _sensor_info_t {
+  bool valid;
+  sdr_full_t sdr;
+} sensor_info_t;
+
+/* Enum for type of Upper and Lower threshold values */
+enum {
+  UCR_THRESH = 0x01,
+  UNC_THRESH,
+  UNR_THRESH,
+  LCR_THRESH,
+  LNC_THRESH,
+  LNR_THRESH,
+  POS_HYST,
+  NEG_HYST,
+};
 
 // Sensors under Bridge IC
 enum {
@@ -51,6 +74,7 @@ enum {
   BIC_SENSOR_VCCIN_VR_CURR = 0x23,
   BIC_SENSOR_VCCIN_VR_VOL = 0x24,
   BIC_SENSOR_INA230_POWER = 0x29,
+  BIC_SENSOR_INA230_VOL = 0x2A,
   BIC_SENSOR_POST_ERR = 0x2B, //Event-only
   BIC_SENSOR_SOC_PACKAGE_PWR = 0x2C,
   BIC_SENSOR_SOC_TJMAX = 0x30,
@@ -63,9 +87,9 @@ enum {
   BIC_SENSOR_VCC_SCSUS_VR_POUT = 0x38,
   BIC_SENSOR_VCC_GBE_VR_POUT = 0x39,
   BIC_SENSOR_POWER_THRESH_EVENT = 0x3B, //Event-only
-  //BIC_SENSOR_1V05_PCH_VR_POUT = 0x40,
   BIC_SENSOR_MACHINE_CHK_ERR = 0x40, //Event-only
   BIC_SENSOR_PCIE_ERR = 0x41, //Event-only
+  BIC_SENSOR_1V05_PCH_VR_POUT = 0x42,
   BIC_SENSOR_OTHER_IIO_ERR = 0x43, //Event-only
   BIC_SENSOR_PROC_HOT_EXT = 0x51, //Event-only
   BIC_SENSOR_VCC_GBE_VR_VOL = 0x54,
@@ -102,10 +126,10 @@ enum {
   SP_SENSOR_P5V = 0xE0,
   SP_SENSOR_P12V = 0xE1,
   SP_SENSOR_P3V3_STBY = 0xE2,
-  SP_SENSOR_P12V_SLOT0 = 0xE3,
-  SP_SENSOR_P12V_SLOT1 = 0xE4,
-  SP_SENSOR_P12V_SLOT2 = 0xE5,
-  SP_SENSOR_P12V_SLOT3 = 0xE6,
+  SP_SENSOR_P12V_SLOT1 = 0xE3,
+  SP_SENSOR_P12V_SLOT2 = 0xE4,
+  SP_SENSOR_P12V_SLOT3 = 0xE5,
+  SP_SENSOR_P12V_SLOT4 = 0xE6,
   SP_SENSOR_P3V3 = 0xE7,
   SP_SENSOR_HSC_IN_VOLT = 0xC0,
   SP_SENSOR_HSC_OUT_CURR = 0xC1,
@@ -113,18 +137,36 @@ enum {
   SP_SENSOR_HSC_IN_POWER = 0xC3,
 };
 
+enum{
+  MEZZ_SENSOR_TEMP = 0x01,
+};
 extern const uint8_t bic_sensor_list[];
+
+extern const uint8_t bic_discrete_list[];
 
 extern const uint8_t spb_sensor_list[];
 
+extern const uint8_t nic_sensor_list[];
+
+//extern float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
+
+//extern float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
+
 extern size_t bic_sensor_cnt;
+
+extern size_t bic_discrete_cnt;
 
 extern size_t spb_sensor_cnt;
 
-int yosemite_sensor_read(uint8_t slot_id, uint8_t sensor_num, void *value);
+extern size_t nic_sensor_cnt;
+
+int yosemite_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
 int yosemite_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int yosemite_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
-int get_fru_sdr_path(uint8_t fru, char *path);
+int yosemite_sensor_sdr_path(uint8_t fru, char *path);
+int yosemite_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
+int yosemite_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
+
 
 #ifdef __cplusplus
 } // extern "C"

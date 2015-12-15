@@ -33,11 +33,13 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_sensors.py \
            file://rest_modbus.py \
            file://rest_slotid.py \
+           file://rest_psu_update.py \
+           file://bmc_command.py \
           "
 
 S = "${WORKDIR}"
 
-binfiles = "rest.py rest_bmc.py rest_fruid.py rest_gpios.py rest_server.py rest_sensors.py rest_modbus.py rest_slotid.py setup-rest-api.sh"
+binfiles = "rest.py rest_bmc.py rest_fruid.py rest_gpios.py rest_server.py rest_sensors.py bmc_command.py rest_modbus.py rest_slotid.py rest_psu_update.py setup-rest-api.sh"
 
 pkgdir = "rest-api"
 

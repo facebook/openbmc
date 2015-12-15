@@ -49,7 +49,7 @@ fruid_cache_init(uint8_t slot_id) {
 
   ret = bic_read_fruid(slot_id, 0, fruid_temp_path);
   if (ret) {
-    syslog(LOG_ALERT, "fruid_cache_init: bic_read_fruid returns %d\n", ret);
+    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid returns %d\n", ret);
   }
 
   rename(fruid_temp_path, fruid_path);
@@ -83,14 +83,14 @@ sdr_cache_init(uint8_t slot_id) {
   unlink(path);
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
-    syslog(LOG_ALERT, "sdr_cache_init: open fails for path: %s\n", path);
+    syslog(LOG_WARNING, "sdr_cache_init: open fails for path: %s\n", path);
     return;
   }
 
   while (1) {
     ret = bic_get_sdr(slot_id, &req, res, &rlen);
     if (ret) {
-      syslog(LOG_ALERT, "sdr_cache_init:bic_get_sdr returns %d\n", ret);
+      syslog(LOG_WARNING, "sdr_cache_init:bic_get_sdr returns %d\n", ret);
       continue;
     }
 

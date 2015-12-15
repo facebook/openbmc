@@ -18,11 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 
-
 from ctypes import *
-from bottle import route, run, template, request, response, ServerAdapter
-from bottle import abort
-from wsgiref.simple_server import make_server, WSGIRequestHandler, WSGIServer
+import bottle
+from cherrypy.wsgiserver import CherryPyWSGIServer
+from cherrypy.wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
+import datetime
+import logging
+import logging.config
 import json
 import ssl
 import socket
@@ -34,13 +36,43 @@ import rest_bmc
 import rest_gpios
 import rest_modbus
 import rest_slotid
+import rest_psu_update
 
 CONSTANTS = {
     'certificate': '/usr/lib/ssl/certs/rest_server.pem',
+    'key': '/usr/lib/ssl/private/rest_server_key.pem',
+}
+
+LOGGER_CONF = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '%(message)s'
+        },
+    },
+    'handlers': {
+        'file_handler': {
+            'level': 'INFO',
+            'formatter':'default',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename':'/tmp/rest.log',
+            'maxBytes': 1048576,
+            'backupCount': 3,
+            'encoding': 'utf8'
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['file_handler'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    }
 }
 
 # Handler for root resource endpoint
-@route('/api')
+@bottle.route('/api')
 def rest_api():
    result = {
                 "Information": {
@@ -53,7 +85,7 @@ def rest_api():
    return result
 
 # Handler for sys resource endpoint
-@route('/api/sys')
+@bottle.route('/api/sys')
 def rest_sys():
     result = {
                 "Information": {
@@ -67,7 +99,7 @@ def rest_sys():
     return result
 
 # Handler for sys/mb resource endpoint
-@route('/api/sys/mb')
+@bottle.route('/api/sys/mb')
 def rest_sys():
     result = {
                 "Information": {
@@ -80,73 +112,110 @@ def rest_sys():
     return result
 
 # Handler for sys/mb/fruid resource endpoint
-@route('/api/sys/mb/fruid')
+@bottle.route('/api/sys/mb/fruid')
 def rest_fruid_hdl():
   return rest_fruid.get_fruid()
 
 # Handler for sys/bmc resource endpoint
-@route('/api/sys/bmc')
+@bottle.route('/api/sys/bmc')
 def rest_bmc_hdl():
     return rest_bmc.get_bmc()
 
 # Handler for sys/server resource endpoint
-@route('/api/sys/server')
+@bottle.route('/api/sys/server')
 def rest_server_hdl():
     return rest_server.get_server()
 
 # Handler for uServer resource endpoint
-@route('/api/sys/server', method='POST')
+@bottle.route('/api/sys/server', method='POST')
 def rest_server_act_hdl():
     data = json.load(request.body)
     return rest_server.server_action(data)
 
 # Handler for sensors resource endpoint
-@route('/api/sys/sensors')
+@bottle.route('/api/sys/sensors')
 def rest_sensors_hdl():
   return rest_sensors.get_sensors()
 
 # Handler for sensors resource endpoint
-@route('/api/sys/gpios')
+@bottle.route('/api/sys/gpios')
 def rest_gpios_hdl():
   return rest_gpios.get_gpios()
 
-@route('/api/sys/modbus_registers')
+@bottle.route('/api/sys/modbus_registers')
 def modbus_registers_hdl():
     return rest_modbus.get_modbus_registers()
 
+@bottle.route('/api/sys/psu_update')
+def psu_update_hdl():
+    return rest_psu_update.get_jobs()
+
+@bottle.route('/api/sys/psu_update', method='POST')
+def psu_update_hdl():
+    data = json.load(request.body)
+    return rest_psu_update.begin_job(data)
+
 # Handler for sensors resource endpoint
-@route('/api/sys/slotid')
+@bottle.route('/api/sys/slotid')
 def rest_slotid_hdl():
   return rest_slotid.get_slotid()
 
-run(host = "::", port = 8080)
-
 # SSL Wrapper for Rest API
-class SSLWSGIRefServer(ServerAdapter):
+class SSLCherryPyServer(bottle.ServerAdapter):
     def run(self, handler):
-        if self.quiet:
-            class QuietHandler(WSGIRequestHandler):
-                def log_request(*args, **kw): pass
-            self.options['handler_class'] = QuietHandler
+        server = CherryPyWSGIServer((self.host, self.port), handler)
+        server.ssl_adapter = pyOpenSSLAdapter(CONSTANTS['certificate'], CONSTANTS['key'])
+        try:
+            server.start()
+        finally:
+            server.stop()
 
-        # IPv6 Support
-        server_cls = self.options.get('server_class', WSGIServer)
 
-        if ':' in self.host:
-            if getattr(server_cls, 'address_family') == socket.AF_INET:
-                class server_cls(server_cls):
-                    address_family = socket.AF_INET6
+def log_after_request():
+    try:
+        length = bottle.response.content_length
+    except:
+        try:
+            length = len(bottle.response.body)
+        except:
+            length = 0
 
-        srv = make_server(self.host, self.port, handler,
-                server_class=server_cls, **self.options)
-        srv.socket = ssl.wrap_socket (
-                srv.socket,
-                certfile=CONSTANTS['certificate'],
-                server_side=True)
-        srv.serve_forever()
+    logging.info('{} - - [{}] "{} {} {}" {} {}'.format(
+                  bottle.request.environ.get('REMOTE_ADDR'),
+                  datetime.datetime.now().strftime('%d/%b/%Y %H:%M:%S'),
+                  bottle.request.environ.get('REQUEST_METHOD'),
+                  bottle.request.environ.get('REQUEST_URI'),
+                  bottle.request.environ.get('SERVER_PROTOCOL'),
+                  bottle.response.status_code,
+                  length))
 
-# Use SSL if the certificate exists. Otherwise, run without SSL.
-if os.access(CONSTANTS['certificate'], os.R_OK):
-    run(server=SSLWSGIRefServer(host="::", port=8443))
+
+# Error logging to log file
+class ErrorLogging(object):
+    def write(self, err):
+        logging.error(err)
+
+
+# Middleware to log the requests
+class LogMiddleware(object):
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, e, h):
+        e['wsgi.errors'] = ErrorLogging()
+        ret_val = self.app(e, h)
+        log_after_request()
+        return ret_val
+
+# overwrite the stderr and stdout to log to the file
+bottle._stderr = logging.error
+bottle._stdout = logging.info
+logging.config.dictConfig(LOGGER_CONF)
+
+bottle_app = LogMiddleware(bottle.app())
+# Use SSL if the certificate and key exists. Otherwise, run without SSL.
+if (os.access(CONSTANTS['key'], os.R_OK) and
+    os.access(CONSTANTS['certificate'], os.R_OK)):
+    bottle.run(host = "::", port= 8443, server=SSLCherryPyServer, app=bottle_app)
 else:
-    run(host = "::", port = 8080)
+    bottle.run(host = "::", port = 8080, server='cherrypy', app=bottle_app)

@@ -19,6 +19,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://disable_watchdog.sh \
             file://board-utils.sh \
+            file://setup_board.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -50,6 +51,9 @@ do_install_board() {
     # for mac fixup should work
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
+
+    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    update-rc.d -r ${D} setup_board.sh start 80 S .
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .

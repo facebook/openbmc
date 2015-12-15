@@ -127,6 +127,71 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0xb, 4, 3,
   },
   {
+    "reset_reason",
+    "0x00: default state (unknown)\n"
+    "0x01: power domain standby reset\n"
+    "0x02: power domain main reset\n"
+    "0x03: front panel push button reset\n"
+    "0x04: on board debug push button reset\n"
+    "0x05: facebook debug header reset\n"
+    "0x10: SW reg 0x31_bit4 hot reset\n"
+    "0x11: SW reg 0x31_bit5 warm reset\n"
+    "0x12: SW reg 0x31_bit6 cold reset\n"
+    "0x13: SW reg 0x31_bit7 power reset\n"
+    "0x20: BMC request reset, BMC only\n"
+    "0x21: BMC request to reset tomahawk\n"
+    "0x22: BMC request to reset micro-server\n"
+    "0x23: BMC request to reset main power domain\n"
+    "0x24: BMC request to reset all board\n"
+    "0x25: BMC watchdog timer-1 reset\n"
+    "0x26: BMC watchdog timer-2 reset\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0xd, 0, 8,
+  },
+  {
+    "com-e_board_type",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x18, 0, 3,
+  },
+  {
+    "com-e_gbe_link_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x18, 3, 1,
+  },
+  {
+    "com-e_sus_stat_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x18, 4, 1,
+  },
+  {
+    "com-e_sus_s3_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x18, 5, 1,
+  },
+  {
+    "com-e_sus_s4_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x18, 6, 1,
+  },
+  {
+    "com-e_sus_s5_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x18, 7, 1,
+  },
+  {
     "uart_mux",
     "0x0: UART_SELECT_BMC\n0x1: UART_SELECT_DBG\n"
     "0x2: Force to select 0\n0x3: Force to select 1\n\n"
@@ -136,6 +201,86 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x26, 0, 2,
+  },
+  {
+    "tpm_lpc_rst_n",
+    "0: reset LPC TPM\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 0, 1,
+  },
+  {
+    "tpm_spi_rst_n",
+    "0: reset SPI TPM\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 1, 1,
+  },
+  {
+    "com-e_phy_rst_n",
+    "0: reset COM-E PHY\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 2, 1,
+  },
+  {
+    "lpc_rst_n",
+    "0: reset BMC LPC bus\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 3, 1,
+  },
+  {
+    "com-e_smbus_isobuf_en",
+    "0: disabled\n"
+    "1: enabled",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 4, 1,
+  },
+  {
+    "com-e_i2c_isobuf_en",
+    "0: disabled\n"
+    "1: enabled",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 5, 1,
+  },
+  {
+    "com-e_pwr_ok_en",
+    "0: disabled\n"
+    "1: enabled",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 6, 1,
+  },
+  {
+    "bmc_phy_wp",
+    "0: enable write of BMC PHY EEPROM\n"
+    "1: dsiable write of BMC PHY EEPROM",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x29, 0, 1,
+  },
+  {
+    "fp_phy_wp",
+    "0: enable write of front PHY EEPROM\n"
+    "1: dsiable write of front PHY EEPROM",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x29, 1, 1,
+  },
+  {
+    "com-e_spi_boot_wp_n",
+    "0: enable write of COMe BIOS flash\n"
+    "1: dsiable write of COMe BIOS flash",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x29, 2, 1,
   },
   {
     "heart_attach_en",

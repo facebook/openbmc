@@ -25,6 +25,7 @@ LIC_FILES_CHKSUM = "file://spatula_wrapper.py;beginline=5;endline=18;md5=0b1ee7d
 DEPENDS_append = " update-rc.d-native"
 
 SRC_URI = "file://setup-spatula.sh \
+           file://spatula.conf \
            file://spatula_wrapper.py \
           "
 
@@ -40,7 +41,9 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/default
   install -m 755 setup-spatula.sh ${D}${sysconfdir}/init.d/setup-spatula.sh
+  install -m 644 spatula.conf ${D}${sysconfdir}/default/spatula.conf
   update-rc.d -r ${D} setup-spatula.sh start 95 2 3 4 5  .
 }
 

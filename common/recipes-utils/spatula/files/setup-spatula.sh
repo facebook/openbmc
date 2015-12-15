@@ -30,8 +30,10 @@
 # source function library
 . /etc/init.d/functions
 
+. /etc/default/spatula.conf
+
 ACTION="$1"
-CMD="/usr/local/bin/spatula_wrapper.py --lldp"
+CMD="/usr/local/bin/spatula_wrapper.py ${SPATULA_ARGS}"
 case "$ACTION" in
   start)
     echo -n "Setting up Spatula: "

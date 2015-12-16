@@ -79,6 +79,8 @@
 
 #define I2C_RETRIES_MAX 3
 
+#define IPMB_PKT_MIN_SIZE 6
+
 // Structure for i2c file descriptor and socket
 typedef struct _ipmb_sfd_t {
   int fd;
@@ -138,6 +140,20 @@ get_payload_id(uint8_t bus_id) {
   return payload_id;
 }
 #endif
+
+
+// Calculate checksum
+static inline uint8_t
+calc_cksum(uint8_t *buf, uint8_t len) {
+  uint8_t i = 0;
+  uint8_t cksum = 0;
+
+  for (i = 0; i < len; i++) {
+    cksum += buf[i];
+  }
+
+  return (ZERO_CKSUM_CONST - cksum);
+}
 
 // Returns an unused seq# from all possible seq#
 static int8_t
@@ -430,7 +446,6 @@ ipmb_res_handler(void *bus_num) {
   ipmb_res_t *p_res;
   uint8_t index;
   char mq_ipmb_res[64] = {0};
-  uint8_t hack = 0;
 
   sprintf(mq_ipmb_res, "%s_%d", MQ_IPMB_RES, *bnum);
 
@@ -454,27 +469,12 @@ ipmb_res_handler(void *bus_num) {
     // Check the seq# of response
     index = p_res->seq_lun >> LUN_OFFSET;
 
-    // TODO: observed the IPMB packets with missing slave address at first byte;
-    // detect and correct them for now, but need fix in i2c driver
-    hack = 0;
-    if ((p_res->res_slave_addr != (BRIDGE_SLAVE_ADDR << 1)) ||
-        (p_res->res_slave_addr == p_res->hdr_cksum)) {
-      index = p_res->res_slave_addr >> LUN_OFFSET;
-      hack = 1;
-    }
     // Check if the response is being waited for
     pthread_mutex_lock(&m_seq);
     if (g_seq.seq[index].in_use) {
       // Copy the response to the requester's buffer
-      if (hack) {
-        // TODO: hack to correct the packet with missing slave address for now
-        *(g_seq.seq[index].p_buf) = (BMC_SLAVE_ADDR << 1);
-        memcpy(g_seq.seq[index].p_buf+1, buf, len);
-        g_seq.seq[index].len = len+1;
-      } else {
-        memcpy(g_seq.seq[index].p_buf, buf, len);
-        g_seq.seq[index].len = len;
-      }
+      memcpy(g_seq.seq[index].p_buf, buf, len);
+      g_seq.seq[index].len = len;
 
       // Wake up the worker thread to receive the response
       sem_post(&g_seq.seq[index].s_seq);
@@ -508,6 +508,8 @@ ipmb_rx_handler(void *bus_num) {
   struct timespec rem;
   char mq_ipmb_req[64] = {0};
   char mq_ipmb_res[64] = {0};
+  uint8_t tbuf[MAX_BYTES] = { 0 };
+  uint8_t fbyte;
 
   // Setup wait time
   req.tv_sec = 0;
@@ -541,6 +543,56 @@ ipmb_rx_handler(void *bus_num) {
     // Read messages from i2c driver
     if (i2c_slave_read(fd, buf, &len) < 0) {
       nanosleep(&req, &rem);
+      continue;
+    }
+
+    // TODO: HACK: Due to i2cdriver issues, we are seeing two different type of packet corruptions
+    // 1. The firstbyte(BMC's slave address) byte is same as second byte
+    //    Workaround: Replace the first byte with correct slave address
+    // 2. The missing slave address as first byte
+    //    Workaround: move the buffer by one byte and add the correct slave address
+    // Verify the IPMB hdr cksum: first two bytes are hdr and 3-rd byte cksum
+
+    if (len < IPMB_PKT_MIN_SIZE) {
+      syslog(LOG_WARNING, "bus: %d, IPMB Packet invalid size %d", g_bus_id, len);
+      continue;
+    }
+
+    if (buf[2] != calc_cksum(buf, 2)) {
+      //handle wrong slave address
+      if (buf[0] != BMC_SLAVE_ADDR<<1) {
+        // Store the first byte
+        fbyte = buf[0];
+        // Update the first byte with correct slave address
+        buf[0] = BMC_SLAVE_ADDR<<1;
+        // Check again if the cksum passes
+        if (buf[2] != calc_cksum(buf,2)) {
+          //handle missing slave address
+          // restore the first byte
+          buf[0] = fbyte;
+          //copy the buffer to temporary
+          memcpy(tbuf, buf, len);
+          // correct the slave address
+          buf[0] = BMC_SLAVE_ADDR<<1;
+          // copy back from temp buffer
+          memcpy(&buf[1], tbuf, len);
+          // increase length as we added slave address byte
+          len++;
+          // Check if the above hacks corrected the header
+          if (buf[2] != calc_cksum(buf,2)) {
+            syslog(LOG_WARNING, "bus: %d, IPMB Header cksum error after correcting slave address\n", g_bus_id);
+            continue;
+          }
+        }
+      } else {
+          syslog(LOG_WARNING, "bus: %d, IPMB Header cksum does not match\n", g_bus_id);
+          continue;
+      }
+    }
+
+    // Verify the IPMB data cksum: data starts from 4-th byte
+    if (buf[len-1] != calc_cksum(&buf[3], len-4)) {
+      syslog(LOG_WARNING, "bus: %d, IPMB Data cksum does not match\n", g_bus_id);
       continue;
     }
 
@@ -691,6 +743,7 @@ ipmb_lib_handler(void *bus_num) {
   uint8_t *bnum = (uint8_t*) bus_num;
   char sock_path[20] = {0};
   int rc = 0;
+  pthread_attr_t attr;
 
   // Open the i2c bus for sending request
   fd = i2c_open(*bnum);
@@ -706,6 +759,9 @@ ipmb_lib_handler(void *bus_num) {
     sem_init(&g_seq.seq[i].s_seq, 0, 0);
     g_seq.seq[i].len = 0;
   }
+
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
   // Initialize mutex to access global structure
   pthread_mutex_init(&m_seq, NULL);
@@ -752,17 +808,17 @@ ipmb_lib_handler(void *bus_num) {
     sfd = (ipmb_sfd_t *) malloc(sizeof(ipmb_sfd_t));
     sfd->fd = fd;
     sfd->sock = s2;
-    if (pthread_create(&tid, NULL, conn_handler, (void*) sfd) < 0) {
+    if (pthread_create(&tid, &attr, conn_handler, (void*) sfd) < 0) {
         syslog(LOG_WARNING, "ipmbd: pthread_create failed\n");
         close(s2);
         continue;
     }
 
-    pthread_detach(tid);
   }
 
   close(s);
   pthread_mutex_destroy(&m_seq);
+  pthread_attr_destroy(&attr);
 
   return 0;
 }

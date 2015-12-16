@@ -105,12 +105,12 @@
 #define PWM_UNIT_MAX 31
 
 #define LM75_DIR "/sys/bus/i2c/drivers/lm75/"
-#define PANTHER_PLUS_DIR "/sys/bus/i2c/drivers/panther_plus/"
+#define COM_E_DIR "/sys/bus/i2c/drivers/com_e_driver/"
 
 #define INTAKE_TEMP_DEVICE LM75_DIR "3-0048"
 #define CHIP_TEMP_DEVICE LM75_DIR "3-004b"
 #define EXHAUST_TEMP_DEVICE LM75_DIR "3-0048"
-#define USERVER_TEMP_DEVICE PANTHER_PLUS_DIR "4-0040"
+#define USERVER_TEMP_DEVICE COM_E_DIR "4-0033"
 
 #define FAN_READ_RPM_FORMAT "fan%d_input"
 

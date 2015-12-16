@@ -32,7 +32,7 @@
 static void
 print_usage_help(void) {
   printf("Usage: fpc-util <slot1|slot2|slot3|slot4> --usb\n");
-  printf("       fpc-util <slot1|slot2|slot3|slot4|all> --identify <on/off>\n");
+  printf("       fpc-util <slot1|slot2|slot3|slot4|all|sled> --identify <on/off>\n");
 }
 
 int
@@ -55,6 +55,8 @@ main(int argc, char **argv) {
     slot_id = 4;
   } else if (!strcmp(argv[1] , "all")) {
     slot_id = 0;
+  } else if (!strcmp(argv[1] , "sled")) {
+    slot_id = 0;
   } else {
     goto err_exit;
   }
@@ -66,7 +68,7 @@ main(int argc, char **argv) {
     if (argc != 4) {
       goto err_exit;
     }
-    printf("fpc-util: identication for %s is %s\n", argv[1], argv[3]);
+    printf("fpc-util: identification for %s is %s\n", argv[1], argv[3]);
     if (slot_id == 0) {
       sprintf(tstr, "identify_sled");
     } else {

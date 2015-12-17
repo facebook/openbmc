@@ -223,7 +223,7 @@ dump_sel_syslog(int fru, sel_msg_t *data) {
   sprintf(temp_str, "%02X", data->msg[15]);
   strcat(str, temp_str);
 
-  syslog(LOG_CRIT, "SEL Entry, FRU: %d, Content: %s\n", fru, str);
+  syslog(LOG_WARNING, "SEL Entry, FRU: %d, Content: %s\n", fru, str);
 }
 
 static void

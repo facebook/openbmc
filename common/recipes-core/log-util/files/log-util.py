@@ -76,9 +76,12 @@ def log_main():
 
     for logfile in syslogfiles:
 
-        fd = open(logfile, 'r')
-        syslog = fd.readlines()
-        fd.close()
+        try:
+            fd = open(logfile, 'r')
+            syslog = fd.readlines()
+            fd.close()
+        except IOError:
+            continue
 
         # Clear cmd
         if cmd == cmdlist[1]:

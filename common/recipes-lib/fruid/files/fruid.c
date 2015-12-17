@@ -269,7 +269,9 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->chassis.type_str);
     free(fruid->chassis.part);
     free(fruid->chassis.serial);
-    free(fruid->chassis.custom);
+    free(fruid->chassis.custom1);
+    free(fruid->chassis.custom2);
+    free(fruid->chassis.custom3);
   }
 
   if (fruid->board.flag) {
@@ -279,10 +281,12 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->board.serial);
     free(fruid->board.part);
     free(fruid->board.fruid);
+    free(fruid->board.custom1);
+    free(fruid->board.custom2);
+    free(fruid->board.custom3);
   }
 
   if (fruid->product.flag) {
-    free(fruid->board.custom);
     free(fruid->product.mfg);
     free(fruid->product.name);
     free(fruid->product.part);
@@ -290,7 +294,9 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->product.serial);
     free(fruid->product.asset_tag);
     free(fruid->product.fruid);
-    free(fruid->product.custom);
+    free(fruid->product.custom1);
+    free(fruid->product.custom2);
+    free(fruid->product.custom3);
   }
 }
 
@@ -303,14 +309,18 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->chassis.type_str = NULL;
   fruid->chassis.part = NULL;
   fruid->chassis.serial = NULL;
-  fruid->chassis.custom = NULL;
+  fruid->chassis.custom1 = NULL;
+  fruid->chassis.custom2 = NULL;
+  fruid->chassis.custom3 = NULL;
   fruid->board.mfg_time_str = NULL;
   fruid->board.mfg = NULL;
   fruid->board.name = NULL;
   fruid->board.serial = NULL;
   fruid->board.part = NULL;
   fruid->board.fruid = NULL;
-  fruid->board.custom = NULL;
+  fruid->board.custom1 = NULL;
+  fruid->board.custom2 = NULL;
+  fruid->board.custom3 = NULL;
   fruid->product.mfg = NULL;
   fruid->product.name = NULL;
   fruid->product.part = NULL;
@@ -318,7 +328,9 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->product.serial = NULL;
   fruid->product.asset_tag = NULL;
   fruid->product.fruid = NULL;
-  fruid->product.custom = NULL;
+  fruid->product.custom1 = NULL;
+  fruid->product.custom2 = NULL;
+  fruid->product.custom3 = NULL;
 }
 
 /* Parse the Product area data */
@@ -390,8 +402,18 @@ int parse_fruid_area_product(uint8_t * product,
     return ENOMEM;
   index += FIELD_LEN(product[index]) + 1;
 
-  fruid_product->custom = _fruid_area_field_read(&product[index]);
-  if (fruid_product->custom == NULL)
+  fruid_product->custom1 = _fruid_area_field_read(&product[index]);
+  if (fruid_product->custom1 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(product[index]) + 1;
+
+  fruid_product->custom2 = _fruid_area_field_read(&product[index]);
+  if (fruid_product->custom2 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(product[index]) + 1;
+
+  fruid_product->custom3 = _fruid_area_field_read(&product[index]);
+  if (fruid_product->custom3 == NULL)
     return ENOMEM;
   index += FIELD_LEN(product[index]) + 1;
 
@@ -465,8 +487,18 @@ int parse_fruid_area_board(uint8_t * board,
     return ENOMEM;
   index += FIELD_LEN(board[index]) + 1;
 
-  fruid_board->custom = _fruid_area_field_read(&board[index]);
-  if (fruid_board->custom == NULL)
+  fruid_board->custom1 = _fruid_area_field_read(&board[index]);
+  if (fruid_board->custom1 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(board[index]) + 1;
+
+  fruid_board->custom2 = _fruid_area_field_read(&board[index]);
+  if (fruid_board->custom2 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(board[index]) + 1;
+
+  fruid_board->custom3 = _fruid_area_field_read(&board[index]);
+  if (fruid_board->custom3 == NULL)
     return ENOMEM;
   index += FIELD_LEN(board[index]) + 1;
 
@@ -520,8 +552,18 @@ int parse_fruid_area_chassis(uint8_t * chassis,
     return ENOMEM;
   index += FIELD_LEN(chassis[index]) + 1;
 
-  fruid_chassis->custom = _fruid_area_field_read(&chassis[index]);
-  if (fruid_chassis->custom == NULL)
+  fruid_chassis->custom1 = _fruid_area_field_read(&chassis[index]);
+  if (fruid_chassis->custom1 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(chassis[index]) + 1;
+
+  fruid_chassis->custom2 = _fruid_area_field_read(&chassis[index]);
+  if (fruid_chassis->custom2 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(chassis[index]) + 1;
+
+  fruid_chassis->custom3 = _fruid_area_field_read(&chassis[index]);
+  if (fruid_chassis->custom3 == NULL)
     return ENOMEM;
   index += FIELD_LEN(chassis[index]) + 1;
 
@@ -587,7 +629,9 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->chassis.type_str = fruid_chassis.type_str;
       fruid->chassis.part = fruid_chassis.part;
       fruid->chassis.serial = fruid_chassis.serial;
-      fruid->chassis.custom = fruid_chassis.custom;
+      fruid->chassis.custom1 = fruid_chassis.custom1;
+      fruid->chassis.custom2 = fruid_chassis.custom2;
+      fruid->chassis.custom3 = fruid_chassis.custom3;
     } else
       return ret;
   }
@@ -603,7 +647,9 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->board.serial = fruid_board.serial;
       fruid->board.part = fruid_board.part;
       fruid->board.fruid = fruid_board.fruid;
-      fruid->board.custom = fruid_board.custom;
+      fruid->board.custom1 = fruid_board.custom1;
+      fruid->board.custom2 = fruid_board.custom2;
+      fruid->board.custom3 = fruid_board.custom3;
     } else
       return ret;
   }
@@ -620,7 +666,9 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->product.serial = fruid_product.serial;
       fruid->product.asset_tag = fruid_product.asset_tag;
       fruid->product.fruid = fruid_product.fruid;
-      fruid->product.custom = fruid_product.custom;
+      fruid->product.custom1 = fruid_product.custom1;
+      fruid->product.custom2 = fruid_product.custom2;
+      fruid->product.custom3 = fruid_product.custom3;
     } else
       return ret;
   }

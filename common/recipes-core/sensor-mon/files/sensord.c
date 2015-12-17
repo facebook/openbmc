@@ -474,34 +474,10 @@ snr_thresh_monitor(void *arg) {
           check_thresh_deassert(fru, snr_num, LCR_THRESH, curr_val);
           check_thresh_deassert(fru, snr_num, LNR_THRESH, curr_val);
         } else {
-          /*
-           * Incase the pal_sensor_read failed for a sensor,
-           * disable all the threshold checks for that sensor
-           * after logging an approciate syslog message.
-           */
-          if (ret == ERR_NOT_READY) {
-            continue;
-          }
-
-          if (ret) {
 #ifdef DEBUG
-            syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
-            fru, snr_num, snr[snr_num].name);
+          syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
+              fru, snr_num, snr[snr_num].name);
 #endif
-
-            /*
-             * Check if the fru is up and running before disabling the sensor.
-             * If the fru is powered down, DO NOT disable the sensor check.
-             */
-            char state[MAX_VALUE_LEN];
-
-            pal_get_last_pwr_state(fru, state);
-            if (!strcmp(state, "on")) {
-              snr[snr_num].flag = 0;
-              syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, check disabled",
-                  fru, snr_num, snr[snr_num].name);
-            }
-          }
         } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */

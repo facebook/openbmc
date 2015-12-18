@@ -1958,3 +1958,17 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
   return 0;
 }
+
+// Helper function for msleep
+void
+msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
+  }
+}
+

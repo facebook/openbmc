@@ -31,6 +31,7 @@
 #define SDR_READ_COUNT_MAX 0x1A
 #define SIZE_SYS_GUID 16
 #define SIZE_IANA_ID 3
+#define GPIO_MAX 31
 
 enum {
   IPMB_BUS_SLOT1 = 3,
@@ -169,6 +170,56 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
 
   // Ignore first 3 bytes of IANA ID
   memcpy((uint8_t*) gpio, &rbuf[3], 4);
+
+  return ret;
+}
+
+int
+bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
+  uint8_t tbuf[11] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[3] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  // Check for boundary conditions
+  if (gpio > GPIO_MAX) {
+    return -1;
+  }
+
+  // Create the mask bytes for the given GPIO#
+  if (gpio < 7) {
+    tbuf[3] = 1 << gpio;
+    tbuf[4] = 0x00;
+    tbuf[5] = 0x00;
+    tbuf[6] = 0x00;
+  } else if (gpio < 15) {
+    gpio -= 8;
+    tbuf[3] = 0x00;
+    tbuf[4] = 1 << gpio;
+    tbuf[5] = 0x00;
+    tbuf[6] = 0x00;
+  } else if (gpio < 23) {
+    gpio -= 16;
+    tbuf[3] = 0x00;
+    tbuf[4] = 0x00;
+    tbuf[5] = 1 << gpio;
+    tbuf[6] = 0x00;
+  } else {
+    gpio -= 24;
+    tbuf[3] = 0x00;
+    tbuf[4] = 0x00;
+    tbuf[5] = 0x00;
+    tbuf[6] = 1 << gpio;
+  }
+
+  // Fill the value
+  if (value) {
+    memset(&tbuf[7], 0xFF, 4);
+  } else {
+    memset(&tbuf[7] , 0x00, 4);
+  }
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO, tbuf, 11, rbuf, &rlen);
 
   return ret;
 }

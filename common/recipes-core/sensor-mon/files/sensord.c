@@ -35,7 +35,7 @@
 #include <openbmc/pal.h>
 
 #define DELAY 2
-
+#define MAX_SENSOR_CHECK_RETRY 3
 static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 static void
@@ -144,13 +144,15 @@ get_snr_thresh_val(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
  * Check the curr sensor values against the threshold and
  * if the curr val has deasserted, log it.
  */
-static void
+static int
 check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
-  float curr_val) {
+  float *curr_val) {
   uint8_t curr_state = 0;
   float thresh_val;
   char thresh_name[100];
   thresh_sensor_t *snr;
+  uint8_t retry = 0;
+  int ret;
 
   snr = get_struct_thresh_sensor(fru);
 
@@ -160,53 +162,69 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   thresh_val = get_snr_thresh_val(fru, snr_num, thresh);
 
+  while (retry < MAX_SENSOR_CHECK_RETRY) {
+    switch (thresh) {
+
+      case UNR_THRESH:
+      case UCR_THRESH:
+      case UNC_THRESH:
+        if (*curr_val < (thresh_val - snr[snr_num].pos_hyst))
+          retry++;
+         else
+          return 0;
+        break;
+
+      case LNR_THRESH:
+      case LCR_THRESH:
+      case LNC_THRESH:
+        if (*curr_val > (thresh_val + snr[snr_num].neg_hyst))
+          retry++;
+        else
+          return 0;
+        break;
+    }
+
+    msleep(50);
+    ret = pal_sensor_read(fru, snr_num, curr_val);
+    if (ret < 0)
+      return -1;
+  }
+
   switch (thresh) {
     case UNC_THRESH:
-      if (curr_val < (thresh_val - snr[snr_num].pos_hyst)) {
         curr_state = ~(SETBIT(curr_state, UNR_THRESH) |
             SETBIT(curr_state, UCR_THRESH) |
             SETBIT(curr_state, UNC_THRESH));
         sprintf(thresh_name, "Upper Non Critical");
-      }
       break;
 
     case UCR_THRESH:
-      if (curr_val < (thresh_val - snr[snr_num].pos_hyst)) {
         curr_state = ~(SETBIT(curr_state, UCR_THRESH) |
             SETBIT(curr_state, UNR_THRESH));
         sprintf(thresh_name, "Upper Critical");
-      }
       break;
 
     case UNR_THRESH:
-      if (curr_val < (thresh_val - snr[snr_num].pos_hyst)) {
         curr_state = ~(SETBIT(curr_state, UNR_THRESH));
         sprintf(thresh_name, "Upper Non Recoverable");
-      }
       break;
 
     case LNC_THRESH:
-      if (curr_val > (thresh_val + snr[snr_num].neg_hyst)) {
         curr_state = ~(SETBIT(curr_state, LNR_THRESH) |
             SETBIT(curr_state, LCR_THRESH) |
             SETBIT(curr_state, LNC_THRESH));
         sprintf(thresh_name, "Lower Non Critical");
-      }
       break;
 
     case LCR_THRESH:
-      if (curr_val > (thresh_val + snr[snr_num].neg_hyst)) {
         curr_state = ~(SETBIT(curr_state, LCR_THRESH) |
             SETBIT(curr_state, LNR_THRESH));
         sprintf(thresh_name, "Lower Critical");
-      }
       break;
 
     case LNR_THRESH:
-      if (curr_val > (thresh_val + snr[snr_num].neg_hyst)) {
         curr_state = ~(SETBIT(curr_state, LNR_THRESH));
         sprintf(thresh_name, "Lower Non Recoverable");
-      }
       break;
 
     default:
@@ -218,9 +236,11 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
     snr[snr_num].curr_state &= curr_state;
     syslog(LOG_CRIT, "DEASSERT: %s threshold - settled - FRU: %d, num: 0x%X "
         "curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s",thresh_name,
-        fru, snr_num,curr_val, snr[snr_num].units, thresh_val,
+        fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
   }
+
+  return 0;
 }
 
 
@@ -228,69 +248,87 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
  * Check the curr sensor values against the threshold and
  * if the curr val has asserted, log it.
  */
-static void
+static int
 check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
-  float curr_val) {
+  float *curr_val) {
   uint8_t curr_state = 0;
   float thresh_val;
   char thresh_name[100];
   thresh_sensor_t *snr;
+  uint8_t retry = 0;
+  int ret;
 
   snr = get_struct_thresh_sensor(fru);
 
   if (!GETBIT(snr[snr_num].flag, thresh) ||
       GETBIT(snr[snr_num].curr_state, thresh))
-    return;
+    return 0;
 
   thresh_val = get_snr_thresh_val(fru, snr_num, thresh);
 
+  while (retry < MAX_SENSOR_CHECK_RETRY) {
+    switch (thresh) {
+      case UNR_THRESH:
+      case UCR_THRESH:
+      case UNC_THRESH:
+        if (*curr_val >= thresh_val) {
+          retry++;
+        } else {
+          return 0;
+        }
+        break;
+      case LNR_THRESH:
+      case LCR_THRESH:
+      case LNC_THRESH:
+        if (*curr_val <= thresh_val) {
+          retry++;
+        } else {
+          return 0;
+        }
+        break;
+    }
+
+    msleep(50);
+    ret = pal_sensor_read(fru, snr_num, curr_val);
+    if (ret < 0)
+      return -1;
+  }
+
   switch (thresh) {
     case UNR_THRESH:
-      if (curr_val >= thresh_val) {
         curr_state = (SETBIT(curr_state, UNR_THRESH) |
             SETBIT(curr_state, UCR_THRESH) |
             SETBIT(curr_state, UNC_THRESH));
         sprintf(thresh_name, "Upper Non Recoverable");
-      }
       break;
 
     case UCR_THRESH:
-      if (curr_val >= thresh_val) {
         curr_state = (SETBIT(curr_state, UCR_THRESH) |
             SETBIT(curr_state, UNC_THRESH));
         sprintf(thresh_name, "Upper Critical");
-      }
       break;
 
     case UNC_THRESH:
-      if (curr_val >= thresh_val) {
         curr_state = (SETBIT(curr_state, UNC_THRESH));
         sprintf(thresh_name, "Upper Non Critical");
-      }
       break;
 
     case LNR_THRESH:
-      if (curr_val <= thresh_val) {
         curr_state = (SETBIT(curr_state, LNR_THRESH) |
             SETBIT(curr_state, LCR_THRESH) |
             SETBIT(curr_state, LNC_THRESH));
         sprintf(thresh_name, "Lower Non Recoverable");
-      }
       break;
 
     case LCR_THRESH:
-      if (curr_val <= thresh_val) {
         curr_state = (SETBIT(curr_state, LCR_THRESH) |
             SETBIT(curr_state, LNC_THRESH));
         sprintf(thresh_name, "Lower Critical");
-      }
       break;
 
     case LNC_THRESH:
-      if (curr_val <= thresh_val) {
         curr_state = (SETBIT(curr_state, LNC_THRESH));
         sprintf(thresh_name, "Lower Non Critical");
-      }
       break;
 
     default:
@@ -303,9 +341,11 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
     snr[snr_num].curr_state |= curr_state;
     syslog(LOG_CRIT, "ASSERT: %s threshold - raised - FRU: %d, num: 0x%X"
         " curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s", thresh_name,
-        fru, snr_num, curr_val, snr[snr_num].units, thresh_val,
+        fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
   }
+
+  return 0;
 }
 
 
@@ -460,19 +500,20 @@ snr_thresh_monitor(void *arg) {
                 snr[snr_num].units);
           }
 #endif /* DEBUG */
-          check_thresh_assert(fru, snr_num, UNR_THRESH, curr_val);
-          check_thresh_assert(fru, snr_num, UCR_THRESH, curr_val);
-          check_thresh_assert(fru, snr_num, UNC_THRESH, curr_val);
-          check_thresh_assert(fru, snr_num, LNR_THRESH, curr_val);
-          check_thresh_assert(fru, snr_num, LCR_THRESH, curr_val);
-          check_thresh_assert(fru, snr_num, LNC_THRESH, curr_val);
 
-          check_thresh_deassert(fru, snr_num, UNC_THRESH, curr_val);
-          check_thresh_deassert(fru, snr_num, UCR_THRESH, curr_val);
-          check_thresh_deassert(fru, snr_num, UNR_THRESH, curr_val);
-          check_thresh_deassert(fru, snr_num, LNC_THRESH, curr_val);
-          check_thresh_deassert(fru, snr_num, LCR_THRESH, curr_val);
-          check_thresh_deassert(fru, snr_num, LNR_THRESH, curr_val);
+          check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LNR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LNC_THRESH, &curr_val);
+
+          check_thresh_deassert(fru, snr_num, UNC_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, UCR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, UNR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
         } else {
 #ifdef DEBUG
           syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",

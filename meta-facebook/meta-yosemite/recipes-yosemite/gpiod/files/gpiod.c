@@ -44,6 +44,8 @@
 #define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
+#define GPIO_BMC_READY_N    28
+
 /* To hold the gpio info and status */
 typedef struct {
   uint8_t flag;
@@ -214,6 +216,9 @@ gpio_monitor_poll(uint8_t fru_flag) {
     if (GETBIT(fru_flag, fru) == 0)
       continue;
 
+    // Inform BIOS that BMC is ready
+    bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
+
     ret = bic_get_gpio(fru, &gpio);
     if (ret) {
 #ifdef DEBUG
@@ -304,6 +309,9 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
             syslog(LOG_CRIT, "ASSERT: fru: %u, num: %d, gpio pin: %-20s",
                 fru, i, gpios[i].name);
+
+            // Inform BIOS that BMC is ready
+            bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
           } else {
 
             if (!(strcmp(pwr_state, "off")))

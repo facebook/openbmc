@@ -586,6 +586,7 @@ led_sync_handler() {
     for (slot = 1; slot <= 4; slot++) {
       g_sync_led[slot] = 0;
     }
+    msleep(200);
   }
 }
 

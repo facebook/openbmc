@@ -32,7 +32,7 @@
 static void
 print_usage_help(void) {
   printf("Usage: fpc-util <slot1|slot2|slot3|slot4> --usb\n");
-  printf("       fpc-util <slot1|slot2|slot3|slot4|all|sled> --identify <on/off>\n");
+  printf("       fpc-util <slot1|slot2|slot3|slot4|sled> --identify <on/off>\n");
 }
 
 int
@@ -53,8 +53,6 @@ main(int argc, char **argv) {
     slot_id = 3;
   } else if (!strcmp(argv[1] , "slot4")) {
     slot_id = 4;
-  } else if (!strcmp(argv[1] , "all")) {
-    slot_id = 0;
   } else if (!strcmp(argv[1] , "sled")) {
     slot_id = 0;
   } else {

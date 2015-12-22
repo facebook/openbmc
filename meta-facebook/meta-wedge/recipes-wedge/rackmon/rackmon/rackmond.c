@@ -16,8 +16,10 @@
 #include <syslog.h>
 #include <signal.h>
 
-#define MAX_ACTIVE_ADDRS 12
+#define MAX_ACTIVE_ADDRS 24
 #define REGISTER_PSU_STATUS 0x68
+
+#define READ_ERROR_RESPONSE -2
 
 struct _lock_holder {
   pthread_mutex_t *lock;
@@ -153,6 +155,12 @@ int read_registers(rs485_dev *dev, int timeout, uint8_t addr, uint16_t begin, ui
   if (response[0] != addr) {
     log("Got response for addr %02x when expected %02x\n", response[0], addr);
     error = -1;
+    goto cleanup;
+  }
+  if (response[1] != MODBUS_READ_HOLDING_REGISTERS) {
+    // got an error response instead of a read regsiters response
+    // likely because the requested registers aren't available on this model (e.g. stingray)
+    error = READ_ERROR_RESPONSE;
     goto cleanup;
   }
   if (response[2] != (num * 2)) {
@@ -329,8 +337,10 @@ int fetch_monitored_data() {
       int err = read_registers(&world.rs485,
           world.modbus_timeout, addr, i->begin, i->len, regs);
       if (err) {
-        log("Error %d reading %02x registers at %02x from %02x\n",
-            err, i->len, i->begin, addr);
+        if (err != READ_ERROR_RESPONSE) {
+          log("Error %d reading %02x registers at %02x from %02x\n",
+              err, i->len, i->begin, addr);
+        }
         continue;
       }
       struct timespec ts;

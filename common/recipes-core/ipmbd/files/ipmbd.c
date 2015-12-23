@@ -699,8 +699,8 @@ void
   int sock = p_sfd->sock;
   int fd = p_sfd->fd;
   int n;
-  unsigned char req_buf[MAX_IPMI_MSG_SIZE];
-  unsigned char res_buf[MAX_IPMI_MSG_SIZE];
+  unsigned char req_buf[MAX_IPMB_RES_LEN];
+  unsigned char res_buf[MAX_IPMB_RES_LEN];
   unsigned char res_len = 0;
   struct timeval tv;
 

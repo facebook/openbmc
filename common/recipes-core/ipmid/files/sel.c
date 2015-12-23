@@ -33,6 +33,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <time.h>
 
 
 #if defined(CONFIG_YOSEMITE)
@@ -226,54 +227,73 @@ dump_sel_syslog(int fru, sel_msg_t *data) {
   syslog(LOG_WARNING, "SEL Entry, FRU: %d, Content: %s\n", fru, str);
 }
 
+/* Parse SEL Log based on IPMI v2.0 Section 32.1 & 32.2*/
 static void
 parse_sel(uint8_t fru, sel_msg_t *data) {
   int i = 0;
   uint32_t timestamp;
   char *sel = data->msg;
-  uint8_t sensor_type;
   uint8_t sensor_num;
-  uint8_t event_dir;
-  uint8_t type_num;
+  uint8_t record_type;
   uint8_t event_data[3];
   char sensor_name[32];
   char error_log[64];
   char error_type[64];
-  char status[16];
+  char oem_data[16];
+  char mfg_id[16];
   int ret;
+  struct tm ts;
+  char time[64];
 
-  //memcpy(timestamp, (uint8_t *) &sel[3], 4);
+  /* Convert Timestamp from Unix time (Byte 6:3) to Human readable format */
   timestamp = 0;
   timestamp |= sel[3];
   timestamp |= sel[4] << 8;
   timestamp |= sel[5] << 16;
   timestamp |= sel[6] << 24;
+  sprintf(time, "%u", timestamp);
+  memset(&ts, 0, sizeof(struct tm));
+  strptime(time, "%s", &ts);
+  memset(&time, 0, sizeof(time));
+  strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &ts);
 
-  sensor_type = (uint8_t) sel[10];
+  /* OEM Data (Byte 10:15) */
+  sprintf(oem_data, "%02X%02X%02X%02X%02X%02X", sel[10], sel[11], sel[12], sel[13],
+      sel[14], sel[15]);
+
+  /* Manufacturer ID (Byte 9:7) */
+  sprintf(mfg_id, "%02X%02X%02X", sel[9], sel[8], sel[7]);
+
+  /* Sensor num (Byte 11) */
   sensor_num = (uint8_t) sel[11];
-  event_dir = ((uint8_t) sel[12] & (1 << 7)) >> 7; /* Bit 7 of sel[12] */
-  type_num = (uint8_t) sel[12]; /* Bits 6:0 */
-  memcpy(event_data, (uint8_t *) &sel[13], 3);
+  ret = pal_get_event_sensor_name(fru, sensor_num, sensor_name);
 
-  sprintf(status, event_dir ? "DEASSERT" : "ASSERT");
-
-  if (type_num == 0x1) {
-    sprintf(error_type, "Threshold");
-  } else if (type_num >= 0x2 || type_num <= 0xC || type_num == 0x6F) {
-    sprintf(error_type, "Discrete");
-  } else if (type_num >= 0x70 || type_num <= 0x7F) {
+  /* Record Type (Byte 2) */
+  record_type = (uint8_t) sel[2];
+  if (record_type == 0x02) {
+    sprintf(error_type, "System Event Record");
+  } else if (record_type >= 0xC0 && record_type <= 0xDF) {
     sprintf(error_type, "OEM");
+  } else if (record_type >= 0xE0 && record_type <= 0xFF) {
+    sprintf(error_type, "OEM non-timestamped");
   } else {
     sprintf(error_type, "Unknown");
   }
 
-  ret = pal_get_event_sensor_name(fru, sensor_num, sensor_name);
+  /* Event Data (Byte 13:15) */
+  memcpy(event_data, (uint8_t *) &sel[13], 3);
   ret = pal_parse_sel(fru, sensor_num, event_data, error_log);
+
+  /* Check if action needs to be taken based on the SEL message */
   ret = pal_sel_handler(fru, sensor_num);
 
-  syslog(LOG_CRIT, "SEL Entry, %s: FRU: %d, Sensor: 0x%X, Name: %s,"
-      " Timestamp: %u, Event Type: %s, Event Data: %s",
-      status, fru, sensor_num, sensor_name, timestamp, error_type, error_log);
+  syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
+      "Sensor: %s (0x%02X), OEM data: (%s) %s ",
+      fru,
+      error_type, record_type,
+      time,
+      sensor_name, sensor_num,
+      oem_data, error_log);
 }
 
 // Platform specific SEL API entry points

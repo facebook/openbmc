@@ -115,6 +115,10 @@ char * key_list[] = {
 "slot2_por_cfg",
 "slot3_por_cfg",
 "slot4_por_cfg",
+"slot1_sensor_health",
+"slot2_sensor_health",
+"slot3_sensor_health",
+"slot4_sensor_health",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -138,6 +142,10 @@ char * def_val_list[] = {
   "on", /* slot2_por_cfg */
   "on", /* slot3_por_cfg */
   "on", /* slot4_por_cfg */
+  "0", /* slot1_sensor_health */
+  "0", /* slot2_sensor_health */
+  "0", /* slot3_sensor_health */
+  "0", /* slot4_sensor_health */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -1993,4 +2001,66 @@ msleep(int msec) {
   while(nanosleep(&req, &req) == -1 && errno == EINTR) {
     continue;
   }
+}
+
+int
+pal_set_sensor_health(uint8_t fru, uint8_t value) {
+
+  char kpath[64] = {0};
+  char key[64] = {0};
+  char cvalue[64] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_sensor_health", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(kpath, KV_STORE, key);
+
+  if (access(KV_STORE_PATH, F_OK) == -1) {
+    mkdir(KV_STORE_PATH, 0777);
+  }
+
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
+  return write_kv(kpath, cvalue);
+}
+
+int
+pal_get_sensor_health(uint8_t fru, uint8_t *value) {
+
+  char cvalue[64] = {0};
+  char kpath[64] = {0};
+  char key[64] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_sensor_health", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(kpath, KV_STORE, key);
+
+  if (access(KV_STORE_PATH, F_OK) == -1) {
+    mkdir(KV_STORE_PATH, 0777);
+  }
+
+  ret = read_kv(kpath, cvalue);
+  *value = atoi(cvalue);
+
+  return 0;
 }

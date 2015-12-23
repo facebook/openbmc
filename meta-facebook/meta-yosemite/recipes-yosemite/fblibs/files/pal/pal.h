@@ -144,6 +144,8 @@ int pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
     char *error_log);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num);
 void msleep(int msec);
+int pal_set_sensor_health(uint8_t fru, uint8_t value);
+int pal_get_sensor_health(uint8_t fru, uint8_t *value);
 
 #ifdef __cplusplus
 } // extern "C"

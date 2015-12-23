@@ -307,8 +307,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
             if (!(strcmp(pwr_state, "on")))
               pal_set_last_pwr_state(fru, "off");
 
-            syslog(LOG_CRIT, "ASSERT: fru: %u, num: %d, gpio pin: %-20s",
-                fru, i, gpios[i].name);
+            syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
 
             // Inform BIOS that BMC is ready
             bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
@@ -317,8 +316,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
             if (!(strcmp(pwr_state, "off")))
               pal_set_last_pwr_state(fru, "on");
 
-            syslog(LOG_CRIT, "DEASSERT: fru: %u, num: %d, gpio pin: %-20s",
-                  fru, i, gpios[i].name);
+            syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           }
         }
       }

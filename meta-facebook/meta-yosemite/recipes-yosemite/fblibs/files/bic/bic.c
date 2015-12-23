@@ -27,7 +27,8 @@
 
 #define FRUID_READ_COUNT_MAX 0x30
 #define FRUID_WRITE_COUNT_MAX 0x30
-#define CPLD_WRITE_COUNT_MAX 0x50
+#define IPMB_WRITE_COUNT_MAX 224
+#define BIOS_ERASE_PKT_SIZE (64*1024)
 #define SDR_READ_COUNT_MAX 0x1A
 #define SIZE_SYS_GUID 16
 #define SIZE_IANA_ID 3
@@ -349,6 +350,44 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   return ret;
 }
 
+// Read checksum of various components
+int
+bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset, uint32_t len, uint8_t *ver) {
+  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = comp;
+
+  // Fill the offset
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >> 8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  // Fill the length
+  tbuf[8] = (len) & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+  tbuf[10] = (len >> 16) & 0xFF;
+  tbuf[11] = (len >> 24) & 0xFF;
+
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_CKSUM, tbuf, 12, rbuf, &rlen);
+  // checksum has to be 4 bytes
+  if (ret || (rlen != 4+SIZE_IANA_ID)) {
+    syslog(LOG_ERR, "bic_get_fw_cksum: ret: %d, rlen: %d\n", ret, rlen);
+    return -1;
+  }
+
+  printf("cksum returns: %x:%x:%x::%x:%x:%x:%x\n", rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5], rbuf[6]);
+  //Ignore IANA ID
+  memcpy(ver, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
+
+  return ret;
+}
+
 // Update firmware for various components
 static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf) {
@@ -391,11 +430,12 @@ int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   int ret;
   uint32_t offset;
-  uint16_t count;
+  volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
   uint8_t len = 0;
   uint8_t target;
   int fd;
+  int i;
 
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
@@ -406,22 +446,32 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     goto error_exit;
   }
 
-  // Write chunks of CPLD binary data in a loop
+  // Write chunks of binary data in a loop
   offset = 0;
+  i = 1;
   while (1) {
+    // For BIOS, send packets in blocks of 64K
+    if (comp == UPDATE_BIOS && ((offset+IPMB_WRITE_COUNT_MAX) > (i * BIOS_ERASE_PKT_SIZE))) {
+      read_count = (i * BIOS_ERASE_PKT_SIZE) - offset;
+      i++;
+    } else {
+      read_count = IPMB_WRITE_COUNT_MAX;
+    }
+
     // Read from file
-    count = read(fd, buf, CPLD_WRITE_COUNT_MAX);
+    count = read(fd, buf, read_count);
     if (count <= 0) {
       break;
     }
 
-    if (count == CPLD_WRITE_COUNT_MAX) {
-      target = comp;
-    } else {
+    // For non-BIOS update, the last packet is indicated by extra flag
+    if ((comp != UPDATE_BIOS) && (count < read_count)) {
       target = comp | 0x80;
+    } else {
+      target = comp;
     }
 
-    // Write to the CPLD
+    // Send data to Bridge-IC
     ret = _update_fw(slot_id, target, offset, count, buf);
     if (ret) {
       break;
@@ -430,6 +480,41 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     // Update counter
     offset += count;
   }
+
+// TODO: The checksum verifiction does not seem to work, so
+// commenting out for now
+#if 0
+
+  // checksum comparision for BIOS image
+  if (comp != UPDATE_BIOS) {
+    goto error_exit;
+  }
+
+  // Calculate checksum of file
+  lseek(fd, 0, SEEK_SET);
+  uint32_t tcksum = 0;
+  uint32_t gcksum = 0;
+  uint8_t tbuf = 0;
+  for (i = 0; i < offset; i++) {
+    read(fd, &tbuf, 1);
+    tcksum += tbuf;
+  }
+
+  // Get the checksum of binary image
+  ret = bic_get_fw_cksum(slot_id, comp, 0, offset, &gcksum);
+  if (ret) {
+    printf("fw_cksum failed\n");
+    goto error_exit;
+  }
+
+  // Compare both and see if they match or not
+  if (gcksum != tcksum) {
+    printf("checksum does not match 0x%x:0x%x\n", tcksum, gcksum);
+  } else  {
+    printf("checksum does match 0x%x:0x%x\n", tcksum, gcksum);
+  }
+
+#endif
 
 error_exit:
   if (fd > 0 ) {

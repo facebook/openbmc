@@ -87,19 +87,16 @@ init_fru_snr_thresh(uint8_t fru) {
 
   for (i < 0; i < sensor_cnt; i++) {
     snr_num = sensor_list[i];
+
     ret = sdr_get_snr_thresh(fru, snr_num,
-            GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH), &snr[snr_num]);
+        GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH), &snr[snr_num]);
     if (ret < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "init_fru_snr_thresh: sdr_get_snr_thresh for FRU: %d", fru);
 #endif /* DEBUG */
       continue;
     }
-  }
-
-  // TODO: This is a HACK. Need to add the pal_threshold_verify support
-  if (fru > 0 && fru < 5) {
-    snr[BIC_SENSOR_SOC_THERM_MARGIN].flag = SETBIT(snr[BIC_SENSOR_SOC_THERM_MARGIN].flag, UCR_THRESH);
+    pal_sensor_threshold_flag(fru, snr_num, &snr[snr_num].flag);
   }
 
   return 0;

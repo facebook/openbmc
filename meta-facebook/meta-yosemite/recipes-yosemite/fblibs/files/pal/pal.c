@@ -1765,7 +1765,7 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
       sprintf(name, "CATERR");
       break;
     default:
-      sprintf(name, "unknown");
+      sprintf(name, "Unknown");
       break;
   }
 
@@ -1782,165 +1782,148 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
   switch(snr_num) {
     case SYSTEM_EVENT:
-      sprintf(error_log, "SYSTEM_EVENT");
+      sprintf(error_log, "");
       if (ed[0] == 0xE5) {
-        strcat(error_log, ": Cause of Time change");
+        strcat(error_log, "Cause of Time change - ");
 
         if (ed[2] == 0x00)
-          strcat(error_log, ": NTP");
+          strcat(error_log, "NTP");
         else if (ed[2] == 0x01)
-          strcat(error_log, ": Host RTL");
+          strcat(error_log, "Host RTL");
         else if (ed[2] == 0x02)
-          strcat(error_log, ": Set SEL time cmd ");
+          strcat(error_log, "Set SEL time cmd ");
         else if (ed[2] == 0x03)
-          strcat(error_log, ": Set SEL time UTC offset cmd");
+          strcat(error_log, "Set SEL time UTC offset cmd");
         else
-          strcat(error_log, ": Unknown");
+          strcat(error_log, "Unknown");
 
         if (ed[1] == 0x00)
-          strcat(error_log, ": First Time");
+          strcat(error_log, " - First Time");
         else if(ed[1] == 0x80)
-          strcat(error_log, ": Second Time");
+          strcat(error_log, " - Second Time");
 
       }
       break;
 
     case THERM_THRESH_EVT:
-      sprintf(error_log, "THERM_THRESH_EVT");
+      sprintf(error_log, "");
       if (ed[0] == 0x1)
-        strcat(error_log, ": Limit Exceeded");
+        strcat(error_log, "Limit Exceeded");
       else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case BUTTON:
-      sprintf(error_log, "BUTTON");
-      if (ed[0] == 0x0)
-        strcat(error_log, ": Power button pressed");
-      else if (ed[0] == 0x2)
-        strcat(error_log, ": Reset button pressed");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case POWER_STATE:
-      sprintf(error_log, "POWER_STATE");
-      if (ed[0] == 0x0)
-        strcat(error_log, ": Transition to Running");
-      else if (ed[0] == 0x2)
-        strcat(error_log, ": Transition to Power Off");
-      else
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
       break;
 
     case CRITICAL_IRQ:
-      sprintf(error_log, "CRITICAL_IRQ");
+      sprintf(error_log, "");
       if (ed[0] == 0x0)
-        strcat(error_log, ": Diagnostic Interrupt");
+        strcat(error_log, "NMI / Diagnostic Interrupt");
+      else if (ed[0] == 0x03)
+        strcat(error_log, "Software NMI");
       else
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
       break;
 
     case POST_ERROR:
-      sprintf(error_log, "POST_ERROR");
+      sprintf(error_log, "");
       if ((ed[0] & 0x0F) == 0x0)
-        strcat(error_log, ": System Firmware Error");
+        strcat(error_log, "System Firmware Error");
       else
-        strcat(error_log, ": Unknown");
-       if (((ed[0] >> 6) & 0x03) == 0x3) {
-         // TODO: Need to implement IPMI spec based Post Code
-         strcat(error_log, ": IPMI Post Code");
+        strcat(error_log, "Unknown");
+      if (((ed[0] >> 6) & 0x03) == 0x3) {
+        // TODO: Need to implement IPMI spec based Post Code
+        strcat(error_log, ", IPMI Post Code");
        } else if (((ed[0] >> 6) & 0x03) == 0x2) {
-         sprintf(temp_log, "OEM Post Code: 0x%X 0x%X", ed[2], ed[1]);
+         sprintf(temp_log, ", OEM Post Code 0x%X 0x%X", ed[2], ed[1]);
          strcat(error_log, temp_log);
        }
       break;
 
     case MACHINE_CHK_ERR:
-      sprintf(error_log, "MACHINE_CHK_ERR");
+      sprintf(error_log, "");
       if ((ed[0] & 0x0F) == 0x0B) {
-        strcat(error_log, ": Uncorrectable");
+        strcat(error_log, "Uncorrectable");
       } else if ((ed[0] & 0x0F) == 0x0C) {
-        strcat(error_log, ": Correctable");
+        strcat(error_log, "Correctable");
       } else {
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
       }
 
-      sprintf(temp_log, "Machine Check bank Number - %d ", ed[1]);
+      sprintf(temp_log, ", Machine Check bank Number %d ", ed[1]);
       strcat(error_log, temp_log);
-      sprintf(temp_log, "CPU - %d, Core - %d ", ed[2] >> 5, ed[2] & 0x1F);
+      sprintf(temp_log, ", CPU %d, Core %d ", ed[2] >> 5, ed[2] & 0x1F);
       strcat(error_log, temp_log);
 
       break;
 
     case PCIE_ERR:
-      sprintf(error_log, "PCIE_ERR");
+      sprintf(error_log, "");
       if ((ed[0] & 0xF) == 0x4)
-        strcat(error_log, ": PCI PERR");
+        strcat(error_log, "PCI PERR");
       else if ((ed[0] & 0xF) == 0x5)
-        strcat(error_log, ": PCI SERR");
+        strcat(error_log, "PCI SERR");
       else if ((ed[0] & 0xF) == 0x7)
-        strcat(error_log, ": Correctable");
+        strcat(error_log, "Correctable");
       else if ((ed[0] & 0xF) == 0x8)
-        strcat(error_log, ": Uncorrectable");
+        strcat(error_log, "Uncorrectable");
       else if ((ed[0] & 0xF) == 0xA)
-        strcat(error_log, ": Bus Fatal");
+        strcat(error_log, "Bus Fatal");
       else
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
       break;
 
     case IIO_ERR:
-      sprintf(error_log, "IIO_ERR");
+      sprintf(error_log, "");
       if ((ed[0] & 0xF) == 0) {
 
-        sprintf(temp_log, ": CPU - %d, Error ID - 0x%X", (ed[2] & 0xE0) >> 5,
+        sprintf(temp_log, "CPU %d, Error ID 0x%X", (ed[2] & 0xE0) >> 5,
             ed[1]);
         strcat(error_log, temp_log);
 
         temp = ed[2] & 0x7;
         if (temp == 0x0)
-          strcat(error_log, ": IRP0");
+          strcat(error_log, " - IRP0");
         else if (temp == 0x1)
-          strcat(error_log, ": IRP1");
+          strcat(error_log, " - IRP1");
         else if (temp == 0x2)
-          strcat(error_log, ": IIO-Core");
+          strcat(error_log, " - IIO-Core");
         else if (temp == 0x3)
-          strcat(error_log, ": VT-d");
+          strcat(error_log, " - VT-d");
         else if (temp == 0x4)
-          strcat(error_log, ": Intel Quick Data");
+          strcat(error_log, " - Intel Quick Data");
         else if (temp == 0x5)
-          strcat(error_log, ": Misc");
+          strcat(error_log, " - Misc");
         else
-          strcat(error_log, ": Reserved");
-      }
+          strcat(error_log, " - Reserved");
+      } else
+        strcat(error_log, "Unknown");
       break;
 
     case MEMORY_ECC_ERR:
-      sprintf(error_log, "MEMORY_ECC_ERR");
+      sprintf(error_log, "");
       if ((ed[0] & 0x0F) == 0x0)
-        strcat(error_log, ": Correctable");
+        strcat(error_log, "Correctable");
       else if ((ed[0] & 0x0F) == 0x1)
-        strcat(error_log, ": Uncorrectable");
+        strcat(error_log, "Uncorrectable");
       else if ((ed[0] & 0x0F) == 0x5)
-        strcat(error_log, ": Correctable ECC error Logging Limit Reached");
+        strcat(error_log, "Correctable ECC error Logging Limit Reached");
       else
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
 
       if (((ed[1] & 0xC) >> 2) == 0x0) {
         /* All Info Valid */
-        sprintf(temp_log, ": CPU# - %d, CHN# - %d, DIMM# - %d ",
+        sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
             (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
       } else if (((ed[1] & 0xC) >> 2) == 0x1) {
         /* DIMM info not valid */
-        sprintf(temp_log, ": CPU# - %d, CHN# - %d",
+        sprintf(temp_log, " (CPU# %d, CHN# %d)",
             (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
       } else if (((ed[1] & 0xC) >> 2) == 0x2) {
         /* CHN info not valid */
-        sprintf(temp_log, ": CPU# - %d, DIMM# - %d ",
+        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
             (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
       } else if (((ed[1] & 0xC) >> 2) == 0x3) {
         /* CPU info not valid */
-        sprintf(temp_log, ": CHN# - %d, DIMM# - %d ",
+        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
             (ed[2] & 0x18) >> 3, ed[2] & 0x7);
       }
       strcat(error_log, temp_log);
@@ -1948,42 +1931,42 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
       break;
 
     case PROCHOT_EXT:
-      sprintf(error_log, "PROCHOT_EXT");
+      sprintf(error_log, "");
       if ((ed[0] & 0xF) == 0xA)
-        strcat(error_log, ": Processor Thermal Throttling Offset");
+        strcat(error_log, "Processor Thermal Throttling Offset");
       else
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
       break;
 
       if ((ed[1] & 0x3) == 0x1)
-        strcat(error_log, ": External (VR)");
+        strcat(error_log, " - External (VR)");
       else if ((ed[1] & 0x3) == 0x0)
-        strcat(error_log, ": Native");
+        strcat(error_log, " - Native");
       break;
 
-      sprintf(temp_log, ": SOC ID - %d", (ed[2] & 0xE0) >> 5);
+      sprintf(temp_log, " (SOC ID - %d)", (ed[2] & 0xE0) >> 5);
       strcat(error_log, temp_log);
 
     case PWR_ERR:
-      sprintf(error_log, "PWR_ERR");
+      sprintf(error_log, "");
       if (ed[0] == 0x2)
-        strcat(error_log, ": PCH_PWROK failure");
+        strcat(error_log, "PCH_PWROK failure");
       else
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
       break;
 
     case CATERR:
-      sprintf(error_log, "CATERR");
+      sprintf(error_log, "");
       if (ed[0] == 0x0)
-        strcat(error_log, ": IERR");
+        strcat(error_log, "IERR");
       else if (ed[0] == 0xB)
-        strcat(error_log, ": MCERR");
+        strcat(error_log, "MCERR");
       else
-        strcat(error_log, ": Unknown");
+        strcat(error_log, "Unknown");
       break;
 
     default:
-      sprintf(error_log, "unknown");
+      sprintf(error_log, "Unknown");
       break;
   }
 

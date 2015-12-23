@@ -30,6 +30,15 @@
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 
+#define STATUS_OK   "ok"
+#define STATUS_NS   "ns"
+#define STATUS_UNC  "unc"
+#define STATUS_UCR  "ucr"
+#define STATUS_UNR  "unr"
+#define STATUS_LNC  "lnc"
+#define STATUS_LCR  "lcr"
+#define STATUS_LNR  "lnr"
+
 static int
 print_usage() {
   printf("Usage: sensor-util [ %s ] <--threshold> <sensor num>\n",
@@ -37,17 +46,18 @@ print_usage() {
 }
 
 static void
-print_sensor_reading(float fvalue, thresh_sensor_t *thresh, bool threshold) {
+print_sensor_reading(float fvalue, uint8_t snr_num, thresh_sensor_t *thresh,
+    bool threshold, char *status) {
 
+  printf("%-18s (0x%X) : %.2f %-5s | (%s)",
+      thresh->name, snr_num, fvalue, thresh->units, status);
   if (threshold) {
-  	printf("%-23s: Curr: %.2f %-8s\t"
-        "   UCR: %.2f "
-        "   UNC: %.2f "
-        "   UNR: %.2f "
-        "   LCR: %.2f "
-        "   LNC: %.2f "
-        "   LNR: %.2f \n",
-        thresh->name, fvalue, thresh->units,
+    printf("| UCR: %.2f "
+        "| UNC: %.2f "
+        "| UNR: %.2f "
+        "| LCR: %.2f "
+        "| LNC: %.2f "
+        "| LNR: %.2f \n",
         thresh->ucr_thresh,
         thresh->unc_thresh,
         thresh->unr_thresh,
@@ -55,18 +65,41 @@ print_sensor_reading(float fvalue, thresh_sensor_t *thresh, bool threshold) {
         thresh->lnc_thresh,
         thresh->lnr_thresh);
   } else {
-    printf("%-23s: %.2f %s\n", thresh->name, fvalue, thresh->units);
+    printf("\n");
   }
-
 }
 
 static void
-calculate_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, bool threshold) {
+get_sensor_status(float fvalue, thresh_sensor_t *thresh, char *status) {
+
+  if (thresh->flag == 0)
+    sprintf(status, STATUS_NS);
+  else
+    sprintf(status, STATUS_OK);
+
+  if (GETBIT(thresh->flag, UNC_THRESH) && (fvalue >= thresh->unc_thresh))
+    sprintf(status, STATUS_UNC);
+  if (GETBIT(thresh->flag, UCR_THRESH) && (fvalue >= thresh->ucr_thresh))
+    sprintf(status, STATUS_UCR);
+  if (GETBIT(thresh->flag, UNR_THRESH) && (fvalue >= thresh->unr_thresh))
+    sprintf(status, STATUS_UNR);
+  if (GETBIT(thresh->flag, LNC_THRESH) && (fvalue <= thresh->lnc_thresh))
+    sprintf(status, STATUS_LNC);
+  if (GETBIT(thresh->flag, LCR_THRESH) && (fvalue <= thresh->lcr_thresh))
+    sprintf(status, STATUS_LCR);
+  if (GETBIT(thresh->flag, LNR_THRESH) && (fvalue <= thresh->lnr_thresh))
+    sprintf(status, STATUS_LNR);
+}
+
+static void
+get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
+    bool threshold) {
 
   int i;
   uint8_t snr_num;
   float fvalue;
   char path[64];
+  char status[8];
   thresh_sensor_t thresh;
 
   for (i = 0; i < sensor_cnt; i++) {
@@ -78,22 +111,20 @@ calculate_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int 
       continue;
     }
 
-    if (threshold) {
-      if (sdr_get_snr_thresh(fru, snr_num, 0, &thresh))
-        syslog(LOG_ERR, "sdr_init_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
-    } else {
-      sdr_get_sensor_name(fru, sensor_list[i], thresh.name);
-      sdr_get_sensor_units(fru, sensor_list[i], thresh.units);
-    }
+    if (sdr_get_snr_thresh(fru, snr_num,
+          GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH), &thresh))
+      syslog(LOG_ERR, "sdr_init_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+
+    pal_sensor_threshold_flag(fru, snr_num, &thresh.flag);
 
     usleep(50);
 
     if (pal_sensor_read(fru, snr_num, &fvalue) < 0) {
-      printf("pal_sensor_read failed: FRU: %d num: 0x%X name: %-23s\n",
-          fru, sensor_list[i], thresh.name, thresh.units);
+      printf("%-18s (0x%X) : NA | (na)\n", thresh.name, sensor_list[i]);
       continue;
-    }   else {
-      print_sensor_reading(fvalue, &thresh, threshold);
+    } else {
+      get_sensor_status(fvalue, &thresh, status);
+      print_sensor_reading(fvalue, snr_num, &thresh, threshold, status);
     }
   }
 }
@@ -145,7 +176,7 @@ main(int argc, char **argv) {
         return ret;
       }
 
-      calculate_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
+      get_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
 
       fru++;
       printf("\n");
@@ -157,7 +188,7 @@ main(int argc, char **argv) {
       return ret;
     }
 
-    calculate_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
+    get_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
   }
 
   return 0;

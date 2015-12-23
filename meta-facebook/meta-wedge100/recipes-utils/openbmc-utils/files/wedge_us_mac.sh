@@ -27,7 +27,7 @@ if ! wedge_is_us_on; then
     exit -2
 fi
 
-mac=$(i2cdump -f -y 0x4 0x33 b 2> /dev/null | grep '^50: '| awk '{ printf "%s:%s:%s:%s:%s:%s\n", $2, $3, $4, $5, $6, $7 }')
+mac=$(cat /sys/class/i2c-adapter/i2c-4/4-0033/mac)
 
 if [ -n "$mac" -a "${mac/X/}" = "${mac}" ]; then
     echo $mac

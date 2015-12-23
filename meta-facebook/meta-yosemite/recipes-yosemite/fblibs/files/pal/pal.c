@@ -1269,6 +1269,29 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 }
 
 int
+pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
+        *flag = GETMASK(UCR_THRESH);
+      else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
+        *flag = 0;
+      else if (snr_num == BIC_SENSOR_SOC_TJMAX)
+        *flag = 0;
+      break;
+    case FRU_SPB:
+    case FRU_NIC:
+      break;
+  }
+
+  return 0;
+}
+
+int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   return yosemite_sensor_threshold(fru, sensor_num, thresh, value);
 }
@@ -1971,4 +1994,3 @@ msleep(int msec) {
     continue;
   }
 }
-

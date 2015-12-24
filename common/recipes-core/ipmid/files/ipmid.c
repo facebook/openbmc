@@ -672,8 +672,18 @@ storage_get_sel (unsigned char *request, unsigned char *response,
   int next_rec_id;		//record ID for the next msg
   sel_msg_t entry;		// SEL log entry
   int ret;
+  unsigned char offset = req->data[4];
+  unsigned char len = req->data[5];
 
-  read_rec_id = (req->data[3] >> 8) | req->data[2];
+  if (len == 0xFF) {  // FFh means read entire record
+    offset = 0;
+    len = SIZE_SEL_REC;
+  } else if ((offset >= SIZE_SEL_REC) || (len > SIZE_SEL_REC) || ((offset+len) > SIZE_SEL_REC)) {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    return;
+  }
+
+  read_rec_id = (req->data[3] << 8) | req->data[2];
 
   // Use platform API to read the record Id and get next ID
   ret = sel_get_entry (req->payload_id, read_rec_id, &entry, &next_rec_id);
@@ -687,8 +697,8 @@ storage_get_sel (unsigned char *request, unsigned char *response,
   *data++ = next_rec_id & 0xFF;	// next record ID
   *data++ = (next_rec_id >> 8) & 0xFF;
 
-  memcpy(data, entry.msg, SIZE_SEL_REC);
-  data += SIZE_SEL_REC;
+  memcpy(data, &entry.msg[offset], len);
+  data += len;
 
   *res_len = data - &res->data[0];
 

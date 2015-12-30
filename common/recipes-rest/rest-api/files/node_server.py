@@ -51,7 +51,7 @@ class serverNode(node):
         return info
 
     def doAction(self, data):
-        if pal_set_server_power(self.num, data["action"]) == -1:
+        if pal_server_action(self.num, data["action"]) == -1:
             res = 'failure'
         else:
             res = 'success'
@@ -65,8 +65,10 @@ def get_node_server(num):
                 "power-off",
                 "power-cycle",
                 "graceful-shutdown",
-                "12v-on",
-                "12v-off",
-                "12v-cycle"
+                "12V-on",
+                "12V-off",
+                "12V-cycle",
+                "identify-on",
+                "identify-off",
                 ]
     return serverNode(num = num, actions = actions)

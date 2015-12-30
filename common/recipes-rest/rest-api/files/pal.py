@@ -19,6 +19,7 @@
 #
 
 from ctypes import *
+from subprocess import *
 
 lpal_hndl = CDLL("libpal.so")
 
@@ -57,36 +58,46 @@ def pal_get_server_power(slot_id):
     else:
         return status.value
 
-def pal_set_server_power(slot_id, command):
-    cmd = c_ubyte()
+def pal_server_action(slot_id, command):
+    sid = str(slot_id)
     if command == 'power-off':
-        cmd.value = 0
+        cmd = '/usr/local/bin/power-util slot'+sid+' off'
     elif command == 'power-on':
-        cmd.value = 1
+        cmd = '/usr/local/bin/power-util slot'+sid+' on'
     elif command == 'power-cycle':
-        cmd.value = 2
+        cmd = '/usr/local/bin/power-util slot'+sid+' cycle'
     elif command == 'graceful-shutdown':
-        cmd.value = 3
-    elif command == '12v-off':
-        cmd.value = 4
-    elif command == '12v-on':
-        cmd.value = 5
-    elif command == '12v-cycle':
-        cmd.value = 6
+        cmd = '/usr/local/bin/power-util slot'+sid+' graceful-shutdown'
+    elif command == '12V-off':
+        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-off'
+    elif command == '12V-on':
+        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-on'
+    elif command == '12V-cycle':
+        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-cycle'
+    elif command == 'identify-on':
+        cmd = '/usr/bin/fpc-util slot'+sid+' --identify on'
+    elif command == 'identify-off':
+        cmd = '/usr/bin/fpc-util slot'+sid+' --identify off'
     else:
         return -1
-    ret = lpal_hndl.pal_set_server_power(slot_id, cmd)
-    if ret:
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    if ret.startswith( 'Usage' ):
         return -1
     else:
         return 0
 
-def pal_sled_cycle(command):
-    if command != 'sled-cycle':
+def pal_sled_action(command):
+    if command == 'sled-cycle':
+        cmd = '/usr/local/bin/power-util sled-cycle'
+    elif command == 'sled-identify-on':
+        cmd = '/usr/bin/fpc-util sled --identify on'
+    elif command == 'sled-identify-off':
+        cmd = '/usr/bin/fpc-util sled --identify off'
+    else:
         return -1
 
-    ret = lpal_hndl.pal_sled_cycle()
-    if ret:
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    if ret.startswith( 'Usage' ):
         return -1
     else:
         return 0

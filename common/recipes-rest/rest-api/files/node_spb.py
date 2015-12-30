@@ -33,7 +33,7 @@ class spbNode(node):
             self.actions = actions
 
     def doAction(self, data):
-        if pal_sled_cycle(data["action"]) == -1:
+        if pal_sled_action(data["action"]) == -1:
             res = 'failure'
         else:
             res = 'success'
@@ -48,5 +48,8 @@ def get_node_spb():
             "Description": name + " Side Plane",
            }
 
-    actions = [ "sled-cycle" ]
+    actions = [ "sled-cycle",
+                "sled-identify-on",
+                "sled-identify-off",
+              ]
     return spbNode(info, actions)

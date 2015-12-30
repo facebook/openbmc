@@ -23,6 +23,7 @@ from subprocess import *
 import re
 from node import node
 from pal import *
+from uuid import getnode as get_mac
 
 class bmcNode(node):
     def __init__(self, info = None, actions = None):
@@ -38,6 +39,10 @@ class bmcNode(node):
     def getInformation(self):
         # Get Platform Name
         name = pal_get_platform_name()
+
+        # Get MAC Address
+        mac=get_mac()
+        mac_addr=':'.join(("%012X" % mac)[i:i+2] for i in range(0, 12, 2))
 
         # Get BMC Reset Reason
         wdt_counter = Popen('devmem 0x1e785010', \
@@ -82,6 +87,7 @@ class bmcNode(node):
 
         info = {
             "Description": name + " BMC",
+            "MAC Addr": mac_addr,
             "Reset Reason": reset_reason,
             "Uptime": uptime,
             "Memory Usage": mem_usage,

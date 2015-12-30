@@ -36,6 +36,7 @@
 
 #define DELAY 2
 #define MAX_SENSOR_CHECK_RETRY 3
+
 static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 static void
@@ -155,7 +156,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   if (!GETBIT(snr[snr_num].flag, thresh) ||
       !GETBIT(snr[snr_num].curr_state, thresh))
-    return;
+    return 0;
 
   thresh_val = get_snr_thresh_val(fru, snr_num, thresh);
 
@@ -378,7 +379,7 @@ snr_discrete_monitor(void *arg) {
     discrete_list[1] = BIC_SENSOR_VR_HOT;
     discrete_list[2] = BIC_SENSOR_CPU_DIMM_HOT;
   } else {
-    return -1;
+    return;
   }
 
   discrete_cnt = 3;
@@ -550,6 +551,42 @@ void print_snr_thread(uint8_t fru, thresh_sensor_t *snr)
 #endif /* DEBUG */
 
 
+static void *
+snr_health_monitor() {
+
+  int fru;
+  thresh_sensor_t *snr;
+  uint8_t value = 0;
+  int num;
+
+  while (1) {
+    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+
+      value = 0;
+
+      snr = get_struct_thresh_sensor(fru);
+      if (snr == NULL) {
+        syslog(LOG_WARNING, "snr_health_monitor: get_struct_thresh_sensor failed");
+         exit(-1);
+      }
+
+      for (num = 0; num <= MAX_SENSOR_NUM; num++) {
+        value |= snr[num].curr_state;
+      }
+
+      value = (value > 0) ? 1: 0;
+
+      pal_set_sensor_health(fru, value);
+
+      pal_get_sensor_health(fru, &value);
+
+      syslog(LOG_WARNING, "fru %d : health %d", fru, value);
+
+    } /* for loop for frus*/
+    sleep(DELAY);
+  } /* while loop */
+}
+
 /* Spawns a pthread for each fru to monitor all the sensors on it */
 static int
 run_sensord(int argc, char **argv) {
@@ -559,6 +596,7 @@ run_sensord(int argc, char **argv) {
   uint8_t fru_flag = 0;
   pthread_t thread_snr[MAX_NUM_FRUS];
   pthread_t discrete_snr[MAX_NUM_FRUS];
+  pthread_t sensor_health;
 
   arg = 1;
   while(arg < argc) {
@@ -601,14 +639,26 @@ run_sensord(int argc, char **argv) {
       }
 #endif /* DEBUG */
       sleep(1);
+
     }
   }
+  /* Sensor Health */
+  if (pthread_create(&sensor_health, NULL, snr_health_monitor, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for sensor health failed\n");
+  }
+#ifdef DEBUG
+  else {
+    syslog(LOG_WARNING, "pthread_create for sensor health succeed\n");
+  }
+#endif /* DEBUG */
 
 #ifdef DEBUG
     int i;
     for (i = 1; i <= MAX_NUM_FRUS; i++)
       print_snr_thread(i, g_snr[i-1]);
 #endif /* DEBUG */
+
+  pthread_join(sensor_health, NULL);
 
   for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
 

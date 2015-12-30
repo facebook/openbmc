@@ -25,6 +25,7 @@ import socket
 import os
 from node_api import get_node_api
 from node_spb import get_node_spb
+from node_mezz import get_node_mezz
 from node_bmc import get_node_bmc
 from node_server import get_node_server
 from node_fruid import get_node_fruid
@@ -60,6 +61,10 @@ def init_plat_tree():
     r_spb = tree("spb", data = get_node_spb())
     r_api.addChild(r_spb)
 
+    # Add /api/mezz to represent Network Mezzaine card
+    r_mezz = tree("mezz", data = get_node_mezz())
+    r_api.addChild(r_mezz)
+
     # Add servers /api/server[1-max]
     num = pal_get_num_slots()
     for i in range(1, num+1):
@@ -67,7 +72,6 @@ def init_plat_tree():
         if r_server:
             r_api.addChild(r_server)
 
-    # TODO: Need to add /api/nic to represent NIC Mezz Card
 
     # Add /api/spb/fruid end point
     r_temp = tree("fruid", data = get_node_fruid("spb"))
@@ -80,5 +84,13 @@ def init_plat_tree():
     # /api/spb/sensors end point
     r_temp = tree("sensors", data = get_node_sensors("spb"))
     r_spb.addChild(r_temp)
+
+    # Add /api/mezz/fruid end point
+    r_temp = tree("fruid", data = get_node_fruid("nic"))
+    r_mezz.addChild(r_temp)
+
+    # /api/mezz/sensors end point
+    r_temp = tree("sensors", data = get_node_sensors("nic"))
+    r_mezz.addChild(r_temp)
 
     return r_api

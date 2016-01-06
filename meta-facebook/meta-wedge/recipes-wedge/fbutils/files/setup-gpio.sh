@@ -212,6 +212,12 @@ devmem_clear_bit $(scu_addr 80) 29
 echo 45 > /sys/class/gpio/export
 gpio_set 45 0
 
+# USB_BRDG_RST , GPIO D4
+devmem_clear_bit $(scu_addr 90 ) 1
+devmem_clear_bit $(scu_addr 8c ) 10
+devmem_clear_bit $(scu_addr 70 ) 21
+gpio_export D4 USB_BRDG_RST
+
 # Bloodhound GPIOs, P0-6, G4, J1-3, Y3
 # Make sure GPIOP0,1,2,3,6 are enabled.
 for i in {16..19} 22; do

@@ -36,6 +36,7 @@ import rest_gpios
 import rest_modbus
 import rest_slotid
 import rest_psu_update
+import rest_usb2i2c_reset
 
 CONSTANTS = {
     'certificate': '/usr/lib/ssl/certs/rest_server.pem',
@@ -158,6 +159,11 @@ def psu_update_hdl():
 @bottle.route('/api/sys/slotid')
 def rest_slotid_hdl():
   return rest_slotid.get_slotid()
+
+# Handler to reset usb-to-i2c
+@bottle.route('/api/sys/usb2i2c_reset')
+def rest_usb2i2c_reset_hdl():
+  return rest_usb2i2c_reset.set_usb2i2c()
 
 # SSL Wrapper for Rest API
 class SSLCherryPyServer(bottle.ServerAdapter):

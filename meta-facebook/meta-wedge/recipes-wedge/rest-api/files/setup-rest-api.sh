@@ -32,6 +32,8 @@
 
 ACTION="$1"
 CMD="/usr/local/bin/rest.py"
+LOOP_CMD="/usr/local/bin/loop_rest_server.sh"
+
 case "$ACTION" in
   start)
     echo -n "Setting up REST API handler: "
@@ -39,13 +41,17 @@ case "$ACTION" in
     if [ $pid ]; then
       echo "already running"
     else
-      $CMD > /tmp/rest_start.log 2>&1 &
+      $LOOP_CMD > /dev/null 2>&1 &
       echo "done."
     fi
     ;;
   stop)
     echo -n "Stopping REST API handler: "
     pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    looppid=$(ps | grep -v grep | grep $LOOP_CMD | awk '{print $1}')
+    if [ $looppid ]; then
+      kill $looppid
+    fi
     if [ $pid ]; then
       kill $pid
     fi
@@ -54,11 +60,15 @@ case "$ACTION" in
   restart)
     echo -n "Restarting REST API handler: "
     pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    looppid=$(ps | grep -v grep | grep $LOOP_CMD | awk '{print $1}')
+    if [ $looppid ]; then
+      kill $looppid
+    fi
     if [ $pid ]; then
       kill $pid
     fi
     sleep 1
-    $CMD > /tmp/rest_start.log 2>&1 &
+    $LOOP_CMD > /dev/null 2>&1 &
     echo "done."
     ;;
   status)

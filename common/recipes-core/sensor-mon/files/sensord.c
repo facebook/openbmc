@@ -182,10 +182,12 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
         break;
     }
 
-    msleep(50);
-    ret = pal_sensor_read(fru, snr_num, curr_val);
-    if (ret < 0)
-      return -1;
+    if (retry < MAX_SENSOR_CHECK_RETRY) {
+      msleep(50);
+      ret = pal_sensor_read(fru, snr_num, curr_val);
+      if (ret < 0)
+        return -1;
+    }
   }
 
   switch (thresh) {
@@ -287,9 +289,11 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
     }
 
     msleep(50);
-    ret = pal_sensor_read(fru, snr_num, curr_val);
-    if (ret < 0)
-      return -1;
+    if (retry < MAX_SENSOR_CHECK_RETRY) {
+      ret = pal_sensor_read(fru, snr_num, curr_val);
+      if (ret < 0)
+        return -1;
+    }
   }
 
   switch (thresh) {

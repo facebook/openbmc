@@ -387,6 +387,7 @@ led_handler(void *num) {
   char tstr[64] = {0};
   int power_led_on_time = 500;
   int power_led_off_time = 500;
+  uint8_t hlth = 0;
 
   uint8_t slot = (*(int*) num) + 1;
 
@@ -408,11 +409,15 @@ led_handler(void *num) {
       continue;
     }
 
-    // TODO: Turn OFF ID LED(Yellow) until we add health status support
-    pal_set_id_led(slot, ID_LED_OFF);
-
     // Get power status for this slot
     ret = pal_get_server_power(slot, &power);
+    if (ret) {
+      sleep(1);
+      continue;
+    }
+
+    // Get health status for this slot
+    ret = pal_get_sensor_health(slot, &hlth);
     if (ret) {
       sleep(1);
       continue;
@@ -432,9 +437,21 @@ led_handler(void *num) {
       led_blink = 0;
     }
 
+    //If no identify: Set LEDs based on power and hlth status
     if (!led_blink) {
-      // Set the led state based on power state
-      pal_set_led(slot, power);
+      if (!power) {
+        pal_set_led(slot, LED_OFF);
+        pal_set_id_led(slot, ID_LED_OFF);
+        goto led_handler_out;
+      }
+
+      if (hlth) {
+        pal_set_led(slot, LED_ON);
+        pal_set_id_led(slot, ID_LED_OFF);
+      } else {
+        pal_set_led(slot, LED_OFF);
+        pal_set_id_led(slot, ID_LED_ON);
+      }
       goto led_handler_out;
     }
 
@@ -448,16 +465,18 @@ led_handler(void *num) {
     }
 
     // Start blinking the LED
-    ret = pal_set_led(slot, LED_ON);
-    if (ret) {
-      goto led_handler_out;
+    if (hlth) {
+      pal_set_led(slot, LED_ON);
+    } else {
+      pal_set_id_led(slot, ID_LED_ON);
     }
 
     msleep(led_on_time);
 
-    ret = pal_set_led(slot, LED_OFF);
-    if (ret) {
-      goto led_handler_out;
+    if (hlth) {
+      pal_set_led(slot, LED_OFF);
+    } else {
+      pal_set_id_led(slot, ID_LED_OFF);
     }
 
     msleep(led_off_time);

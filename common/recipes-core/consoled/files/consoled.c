@@ -29,12 +29,14 @@
 #include <poll.h>
 #include <termios.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include <openbmc/pal.h>
 
 #define BAUDRATE      B57600
 #define CTRL_X        0x18
 #define ASCII_ENTER   0x0D
-
+#define MAX_LOGFILE_LINES 600 // Maximum lines based on carriage returns or new line
+#define MAX_LOGFILE_SIZE 51200 // 50KB size => 600 lines of 80 characters each = ~48000B
 static sig_atomic_t sigexit = 0;
 
 static void
@@ -94,6 +96,8 @@ run_console(char* fru_name, int term) {
   int stdo; // STDOUT_FILENO
   struct termios ostditio, nstditio;  // For STDIN_FILENO
   struct termios ostdotio, nstdotio;  // For STDOUT_FILENO
+
+  struct stat buf_stat;
 
   struct pollfd pfd[2];
 
@@ -195,7 +199,7 @@ run_console(char* fru_name, int term) {
       blen = read(tty, buf, sizeof(buf));
       if (blen > 0) {
         for (i = 0; i < blen; i++) {
-          if (buf[i] == 0xD)
+          if (buf[i] == 0xD || buf[i] == 0xA)
             nline++;
         }
         write_data(buf_fd, buf, blen, bfname);
@@ -207,8 +211,12 @@ run_console(char* fru_name, int term) {
         raise(SIGHUP);
       }
 
-      /* Log Rotation */
-      if (nline >= 300) {
+      // Get File stat information
+      memset(&buf_stat, 0, sizeof(struct stat));
+      fstat(buf_fd, &buf_stat);
+
+      /* Log Rotation based on max number of lines or max file size */
+      if (nline >= MAX_LOGFILE_LINES || buf_stat.st_size >= MAX_LOGFILE_SIZE) {
         close(buf_fd);
         remove(old_bfname);
         rename(bfname, old_bfname);

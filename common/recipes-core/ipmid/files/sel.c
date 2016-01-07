@@ -288,7 +288,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   ret = pal_sel_handler(fru, sensor_num);
 
   syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-      "Sensor: %s (0x%02X), OEM data: (%s) %s ",
+      "Sensor: %s (0x%02X), Raw data: (%s) %s ",
       fru,
       error_type, record_type,
       time,

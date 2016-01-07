@@ -574,13 +574,15 @@ snr_health_monitor() {
         value |= snr[num].curr_state;
       }
 
-      value = (value > 0) ? 1: 0;
+      value = (value > 0) ? 0: 1; // 0->not-healthy, 1-healthy
 
       pal_set_sensor_health(fru, value);
 
       pal_get_sensor_health(fru, &value);
 
+#ifdef DEBUG
       syslog(LOG_WARNING, "fru %d : health %d", fru, value);
+#endif
 
     } /* for loop for frus*/
     sleep(DELAY);

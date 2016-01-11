@@ -394,8 +394,7 @@ gpio_export P3
 devmem_clear_bit $(scu_addr 88) 18
 gpio_export P2
 
-# TODO: Enable this pin after the HW issue is fixed
 # Enable the the EXTRST functionality of GPIOB7
-#devmem_set_bit $(scu_addr 80) 15
-#devmem_clear_bit $(scu_addr 90) 31
-#devmem_set_bit $(scu_addr 3c) 3
+devmem_set_bit $(scu_addr 80) 15
+devmem_clear_bit $(scu_addr 90) 31
+devmem_set_bit $(scu_addr 3c) 3

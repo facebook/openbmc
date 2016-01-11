@@ -43,10 +43,10 @@
 /* XXX:  Both CONFIG_WEDGE and CONFIG_WEDGE100 are defined for Wedge100 */
 
 #if !defined(CONFIG_YOSEMITE) && !defined(CONFIG_WEDGE) && \
-    !defined(CONFIG_WEDGE100)
+    !defined(CONFIG_WEDGE100) && !defined(CONFIG_LIGHTNING)
 #error "No hardware platform defined!"
 #endif
-#if defined(CONFIG_YOSEMITE) && defined(CONFIG_WEDGE)
+#if defined(CONFIG_YOSEMITE) && defined(CONFIG_WEDGE) && defined(CONFIG_LIGHTNING)
 #error "Two hardware platforms defined!"
 #endif
 
@@ -68,6 +68,7 @@
 
 #include "watchdog.h"
 
+#if !defined(CONFIG_LIGHTNING)
 /* Sensor definitions */
 
 #if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
@@ -829,8 +830,14 @@ void fand_interrupt(int sig)
   exit(3);
 }
 
+#endif
+
 int main(int argc, char **argv) {
   /* Sensor values */
+
+#if defined(CONFIG_LIGHTNING)
+  return 0;
+#else
 
 #if defined(CONFIG_WEDGE)
   int intake_temp;
@@ -1231,4 +1238,5 @@ int main(int argc, char **argv) {
      * to reboot after the watchdog timeout. */
     kick_watchdog();
   }
+#endif
 }

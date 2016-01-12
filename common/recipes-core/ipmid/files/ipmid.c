@@ -203,6 +203,14 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
   *res_len = data - &res->data[0];
 }
 
+// Cold Reset (IPMI/Section 20.2)
+static void
+app_cold_reset(void)
+{
+  system("/sbin/reboot");
+}
+
+
 // Get Self Test Results (IPMI/Section 20.4)
 static void
 app_get_selftest_results (unsigned char *response, unsigned char *res_len)
@@ -250,7 +258,6 @@ app_get_device_guid (unsigned char *response, unsigned char *res_len)
   *res_len = data - &res->data[0];
 }
 
-// Get Device System GUID (IPMI/Section 22.14)
 static void
 app_get_device_sys_guid (unsigned char *request, unsigned char *response,
                          unsigned char *res_len)
@@ -408,6 +415,9 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
   {
     case CMD_APP_GET_DEVICE_ID:
       app_get_device_id (response, res_len);
+      break;
+    case CMD_APP_COLD_RESET:
+      app_cold_reset ();
       break;
     case CMD_APP_GET_SELFTEST_RESULTS:
       app_get_selftest_results (response, res_len);

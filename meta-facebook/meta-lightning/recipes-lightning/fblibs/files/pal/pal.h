@@ -25,10 +25,9 @@
 extern "C" {
 #endif
 
-#include <facebook/bic.h>
-#include <facebook/yosemite_common.h>
-#include <facebook/yosemite_fruid.h>
-#include <facebook/yosemite_sensor.h>
+#include <facebook/lightning_common.h>
+#include <facebook/lightning_fruid.h>
+#include <facebook/lightning_sensor.h>
 
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   64
@@ -109,6 +108,7 @@ int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
+int pal_get_fru_list(char *list);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
 int pal_get_fru_name(uint8_t fru, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
@@ -120,6 +120,7 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
+int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh,
     void *value);
@@ -141,6 +142,9 @@ int pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
     char *error_log);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num);
+void msleep(int msec);
+int pal_set_sensor_health(uint8_t fru, uint8_t value);
+int pal_get_sensor_health(uint8_t fru, uint8_t *value);
 
 #ifdef __cplusplus
 } // extern "C"

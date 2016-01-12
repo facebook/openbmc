@@ -106,24 +106,10 @@ devmem_clear_bit $(scu_addr 80) 8
 
 gpio_export B0
 
-# Enable P3V3: GPIOS1(145)
-# To use GPIOS1 (145), SCU8C[1], SCU94[0], and SCU94[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 1
-devmem_clear_bit $(scu_addr 94) 0
-devmem_clear_bit $(scu_addr 94) 1
-
-gpio_set S1 1
-
-# PWRGD_P3V3: GPIOS2(146)
-# To use GPIOS2 (146), SCU8C[2], SCU94[0], and SCU94[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 2
-devmem_clear_bit $(scu_addr 94) 0
-devmem_clear_bit $(scu_addr 94) 1
-
 # Setup GPIOs to Mux Enable: GPIOS3(147), Channel Select: GPIOE4(36), GPIOE5(37)
-  
+
 # To use GPIOS3 (147), SCU8C[3], SCU94[0], and SCU94[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 3  
+devmem_clear_bit $(scu_addr 8C) 3
 devmem_clear_bit $(scu_addr 94) 0
 devmem_clear_bit $(scu_addr 94) 1
 
@@ -131,17 +117,17 @@ devmem_clear_bit $(scu_addr 94) 1
 devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
-  
+
 # To use GPIOE5 (37), SCU80[21], SCU8C[14], and SCU70[22] must be 0
-devmem_clear_bit $(scu_addr 80) 21  
+devmem_clear_bit $(scu_addr 80) 21
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_set S3 0
-gpio_set E4 1
-gpio_set E5 0
+gpio_export S3
+gpio_export E4
+gpio_export E5
 
-# BMC_HEARTBEAT_N, heartbeat LED, GPIO Q7(135)
+# BMC_HEARTBEAT_N, heartbeat LED, GPIO Q7
 devmem_clear_bit $(scu_addr 90) 28
 
 gpio_export Q7
@@ -194,7 +180,7 @@ devmem_clear_bit $(scu_addr a4) 11
 
 # Power LED for Slot#2:
 # To use GPIOM0 (96), SCU90[4], SCU90[5], and SCU84[24] must be 0
-devmem_clear_bit $(scu_addr 90) 4  
+devmem_clear_bit $(scu_addr 90) 4
 devmem_clear_bit $(scu_addr 90) 5
 devmem_clear_bit $(scu_addr 84) 24
 
@@ -217,34 +203,6 @@ gpio_set M2 1
 devmem_clear_bit $(scu_addr 84) 27
 
 gpio_set M3 1
-
-
-# Identify LED for Slot#2:
-# To use GPIOF0 (40), SCU80[24] must be 0
-devmem_clear_bit $(scu_addr 80) 24
-
-gpio_set F0 1
-
-# Identify LED for Slot#1:
-# To use GPIOF1 (41), SCU80[25], SCUA4[12], must be 0
-devmem_clear_bit $(scu_addr 80) 25
-devmem_clear_bit $(scu_addr A4) 12
-
-gpio_set F1 1
-
-# Identify LED for Slot#4:
-# To use GPIOF2 (42), SCU80[26], SCUA4[13],  must be 0
-devmem_clear_bit $(scu_addr 80) 26
-devmem_clear_bit $(scu_addr A4) 13
-
-gpio_set F2 1
-
-# Identify LED for Slot#3:
-# To use GPIOF3 (43), SCU80[27], SCUA4[14], must be 0
-devmem_clear_bit $(scu_addr 80) 27
-devmem_clear_bit $(scu_addr A4) 14
-
-gpio_set F3 1
 
 # Front Panel Hand Switch GPIO setup
 # HAND_SW_ID1: GPIOR2(138)
@@ -348,69 +306,3 @@ gpio_set H3 1
 # To use GPIOH2, SCU90[6], SCU90[7] must be 0
 gpio_set H2 1
 
-# 12V_STBY Enable for Slots
-
-# P12V_STBY_SLOT1_EN: GPIOO5 (117)
-# To use GPIOO5, SCU88[13] must be 0
-devmem_clear_bit $(scu_addr 88) 13
-
-gpio_set O5 1
-
-# P12V_STBY_SLOT2_EN: GPIOO4 (116)
-# To use GPIOO4, SCU88[12] must be 0
-devmem_clear_bit $(scu_addr 88) 12
-
-gpio_set O4 1
-
-# P12V_STBY_SLOT3_EN: GPIOO7 (119)
-# To use GPIOO7, SCU88[15] must be 0
-devmem_clear_bit $(scu_addr 88) 15
-
-gpio_set O7 1
-
-# P12V_STBY_SLOT4_EN: GPIOO6 (118)
-# To use GPIOO6, SCU88[13] must be 0
-devmem_clear_bit $(scu_addr 88) 14
-
-gpio_set O6 1
-
-# PWRGD_P12V_STBY_SLOT1: GPIOP1 (121)
-# To use GPIOP1, SCU88[17] must be 0
-devmem_clear_bit $(scu_addr 88) 17
-gpio_export P1
-
-# PWRGD_P12V_STBY_SLOT2: GPIOP0 (120)
-# To use GPIOP0, SCU88[16] must be 0
-devmem_clear_bit $(scu_addr 88) 16
-gpio_export P0
-
-# PWRGD_P12V_STBY_SLOT3: GPIOP3 (123)
-# To use GPIOP3, SCU88[19] must be 0
-devmem_clear_bit $(scu_addr 88) 19
-gpio_export P3
-
-# PWRGD_P12V_STBY_SLOT4: GPIOP2 (122)
-# To use GPIOP2, SCU88[18] must be 0
-devmem_clear_bit $(scu_addr 88) 18
-gpio_export P2
-
-# TODO: Enable this pin after the HW issue is fixed
-# Enable the the EXTRST functionality of GPIOB7
-#devmem_set_bit $(scu_addr 80) 15
-#devmem_clear_bit $(scu_addr 90) 31
-#devmem_set_bit $(scu_addr 3c) 3
-
-
-## Lightning GPIO Pins ##
-
-# PWM0 pin is used for Fan Control
-# To use GPION0, SCU88[0] must be 1
-devmem_set_bit $(scu_addr 88) 0
-
-
-# BMC_HB LED: GPIOH1 (57)
-# To use GPIOH1, SCU90[6], SCU90[7] must be 0
-devmem_clear_bit $(scu_addr 90) 6
-devmem_clear_bit $(scu_addr 90) 7
-
-gpio_set H1 1

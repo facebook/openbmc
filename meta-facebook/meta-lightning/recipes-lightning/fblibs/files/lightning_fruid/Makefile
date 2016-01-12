@@ -15,29 +15,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "Yosemite Fruid Library"
-DESCRIPTION = "library for reading all yosemite fruids"
-SECTION = "base"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://yosemite_fruid.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
+lib: liblightning_fruid.so
 
+liblightning_fruid.so: lightning_fruid.c
+	$(CC) $(CFLAGS) -fPIC -c -o lightning_fruid.o lightning_fruid.c
+	$(CC) -llightning_common -shared -o liblightning_fruid.so lightning_fruid.o -lc
 
-SRC_URI = "file://yosemite_fruid \
-          "
+.PHONY: clean
 
-DEPENDS += " libyosemite-common "
-
-S = "${WORKDIR}/yosemite_fruid"
-
-do_install() {
-	  install -d ${D}${libdir}
-    install -m 0644 libyosemite_fruid.so ${D}${libdir}/libyosemite_fruid.so
-
-    install -d ${D}${includedir}
-    install -d ${D}${includedir}/facebook
-    install -m 0644 yosemite_fruid.h ${D}${includedir}/facebook/yosemite_fruid.h
-}
-
-FILES_${PN} = "${libdir}/libyosemite_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/yosemite_fruid.h"
+clean:
+	rm -rf *.o liblightning_fruid.so

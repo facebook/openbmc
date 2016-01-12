@@ -29,7 +29,7 @@ PWM_UNIT_MAX=96
 
 set -e
 
-if [ "$#" -ne 2 ] && [ "$#" -ne 1 ]; then
+if [ "$#" -ne 1 ]; then
     usage
     exit 1
 fi

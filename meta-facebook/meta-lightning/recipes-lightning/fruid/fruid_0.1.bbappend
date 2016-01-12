@@ -18,7 +18,7 @@
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_YOSEMITE"
-LDFLAGS_append = " -lyosemite_fruid"
+CFLAGS_prepend = " -DCONFIG_LIGHTNING"
+LDFLAGS_append = " -llightning_fruid"
 
-DEPENDS_prepend = "libyosemite-fruid"
+DEPENDS_prepend = "liblightning-fruid"

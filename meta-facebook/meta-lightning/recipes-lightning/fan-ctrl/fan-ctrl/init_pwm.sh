@@ -43,15 +43,13 @@ echo 95 > $PWM_DIR/pwm_type_m_unit
 # Here is the mapping between the fan and PWN/Tacho,
 # staring from the one from the edge
 # Fan 0: PWM 0, Tacho0
-# Fan 1: PWM 0, Tacho1
 
 # For each fan, setting the type, and 100% initially
 echo 0 > $PWM_DIR/pwm0_type
 echo 0 > $PWM_DIR/pwm0_rising
-echo 0 > $PWM_DIR/pwm0_failing
+echo 0 > $PWM_DIR/pwm0_falling
 echo 1 > $PWM_DIR/pwm0_en
 
 # Enable Tach 0
 echo 0 > $PWM_DIR/tacho0_source
-
 echo 1 > $PWM_DIR/tacho0_en

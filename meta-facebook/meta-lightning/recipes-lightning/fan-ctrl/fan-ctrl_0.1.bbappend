@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "update-rc.d-native libyosemite-sensor"
+DEPENDS_append = "update-rc.d-native liblightning-sensor"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://get_fan_speed.sh \
@@ -31,8 +31,8 @@ binfiles += "get_fan_speed.sh \
             set_fan_speed.sh \
            "
 
-CXXFLAGS_prepend = "-DCONFIG_YOSEMITE "
-LDFLAGS_append = " -lyosemite_sensor"
+CXXFLAGS_prepend = "-DCONFIG_LIGHTNING "
+LDFLAGS_append = " -llightning_sensor"
 
 pkgdir = "fan_ctrl"
 

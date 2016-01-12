@@ -16,23 +16,23 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __YOSEMITE_FRUID_H__
-#define __YOSEMITE_FRUID_H__
+#ifndef __LIGHTNING_FRUID_H__
+#define __LIGHTNING_FRUID_H__
 
-#include <facebook/yosemite_common.h>
+#include <facebook/lightning_common.h>
 
-#define YOSEMITE_FRU_PATH "/tmp/fruid_%s.bin"
+#define LIGHTNING_FRU_PATH "/tmp/fruid_%s.bin"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int yosemite_get_fruid_path(uint8_t fru, char *path);
-int yosemite_get_fruid_eeprom_path(uint8_t fru, char *path);
-int yosemite_get_fruid_name(uint8_t fru, char *name);
+int lightning_get_fruid_path(uint8_t fru, char *path);
+int lightning_get_fruid_eeprom_path(uint8_t fru, char *path);
+int lightning_get_fruid_name(uint8_t fru, char *name);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif /* __YOSEMITE_FRUID_H__ */
+#endif /* __LIGHTNING_FRUID_H__ */

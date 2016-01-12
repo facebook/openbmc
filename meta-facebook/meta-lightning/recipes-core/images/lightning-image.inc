@@ -42,10 +42,12 @@ IMAGE_INSTALL += " \
   u-boot-fw-utils \
   fbutils \
   fan-ctrl \
+  ipmid \
   watchdog-ctrl \
   i2c-tools \
   sensor-setup \
   usb-console \
+  sensor-util \
   lmsensors-sensors \
   rest-api \
   bottle \

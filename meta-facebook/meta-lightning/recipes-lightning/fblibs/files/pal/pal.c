@@ -32,9 +32,9 @@
 
 #define BIT(value, index) ((value >> index) & 1)
 
-#define YOSEMITE_PLATFORM_NAME "Yosemite"
+#define LIGHTNING_PLATFORM_NAME "Lightning"
 #define LAST_KEY "last_key"
-#define YOSEMITE_MAX_NUM_SLOTS 4
+#define LIGHTNING_MAX_NUM_SLOTS 0
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
@@ -93,7 +93,7 @@ const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
 const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
 const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
-const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
+const char pal_fru_list[] = "all, peb, pdpb, fcb";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 char * key_list[] = {
@@ -106,15 +106,7 @@ char * key_list[] = {
 "sysfw_ver_slot3",
 "sysfw_ver_slot4",
 "identify_sled",
-"identify_slot1",
-"identify_slot2",
-"identify_slot3",
-"identify_slot4",
 "timestamp_sled",
-"slot1_por_cfg",
-"slot2_por_cfg",
-"slot3_por_cfg",
-"slot4_por_cfg",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -129,15 +121,7 @@ char * def_val_list[] = {
   "0", /* sysfw_ver_slot3 */
   "0", /* sysfw_ver_slot4 */
   "off", /* identify_sled */
-  "off", /* identify_slot1 */
-  "off", /* identify_slot2 */
-  "off", /* identify_slot3 */
-  "off", /* identify_slot4 */
   "0", /* timestamp_sled */
-  "on", /* slot1_por_cfg */
-  "on", /* slot2_por_cfg */
-  "on", /* slot3_por_cfg */
-  "on", /* slot4_por_cfg */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -498,14 +482,14 @@ post_exit:
 // Platform Abstraction Layer (PAL) Functions
 int
 pal_get_platform_name(char *name) {
-  strcpy(name, YOSEMITE_PLATFORM_NAME);
+  strcpy(name, LIGHTNING_PLATFORM_NAME);
 
   return 0;
 }
 
 int
 pal_get_num_slots(uint8_t *num) {
-  *num = YOSEMITE_MAX_NUM_SLOTS;
+  *num = LIGHTNING_MAX_NUM_SLOTS;
 
   return 0;
 }
@@ -556,27 +540,6 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
-  int ret;
-  char value[MAX_VALUE_LEN];
-  bic_gpio_t gpio;
-
-  ret = bic_get_gpio(slot_id, &gpio);
-  if (ret) {
-    // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
-    pal_get_last_pwr_state(slot_id, value);
-    if (!(strcmp(value, "off"))) {
-      *status = SERVER_POWER_OFF;
-      return 0;
-    } else {
-      return ret;
-    }
-  }
-
-  if (gpio.pwrgood_cpu) {
-    *status = SERVER_POWER_ON;
-  } else {
-    *status = SERVER_POWER_OFF;
-  }
 
   return 0;
 }
@@ -584,85 +547,12 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
-  uint8_t status;
-  bool gs_flag = false;
-
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
-  if (pal_get_server_power(slot_id, &status) < 0) {
-    return -1;
-  }
-
-  switch(cmd) {
-    case SERVER_POWER_ON:
-      if (status == SERVER_POWER_ON)
-        return 1;
-      else
-        return server_power_on(slot_id);
-      break;
-
-    case SERVER_POWER_OFF:
-      if (status == SERVER_POWER_OFF)
-        return 1;
-      else
-        return server_power_off(slot_id, gs_flag);
-      break;
-
-    case SERVER_POWER_CYCLE:
-      if (status == SERVER_POWER_ON) {
-        if (server_power_off(slot_id, gs_flag))
-          return -1;
-
-        sleep(DELAY_POWER_CYCLE);
-
-        return server_power_on(slot_id);
-
-      } else if (status == SERVER_POWER_OFF) {
-
-        return (server_power_on(slot_id));
-      }
-      break;
-
-    case SERVER_GRACEFUL_SHUTDOWN:
-      if (status == SERVER_POWER_OFF)
-        return 1;
-      else
-        gs_flag = true;
-        return server_power_off(slot_id, gs_flag);
-      break;
-
-    case SERVER_12V_ON:
-      return server_12v_on(slot_id);
-      break;
-
-    case SERVER_12V_OFF:
-      return server_12v_off(slot_id);
-      break;
-
-    case SERVER_12V_CYCLE:
-      if (server_12v_off(slot_id)) {
-        return -1;
-      }
-
-      sleep(DELAY_12V_CYCLE);
-
-      return (server_12v_on(slot_id));
-    default:
-      return -1;
-  }
 
   return 0;
 }
 
 int
 pal_sled_cycle(void) {
-  // Remove the adm1275 module as the HSC device is busy
-  system("rmmod adm1275");
-
-  // Send command to HSC power cycle
-  system("i2cset -y 10 0x40 0xd9 c");
 
   return 0;
 }
@@ -670,62 +560,6 @@ pal_sled_cycle(void) {
 // Read the Front Panel Hand Switch and return the position
 int
 pal_get_hand_sw(uint8_t *pos) {
-  char path[64] = {0};
-  int id1, id2, id4, id8;
-  uint8_t loc;
-  // Read 4 GPIOs to read the current position
-  // id1: GPIOR2(138)
-  // id2: GPIOR3(139)
-  // id4: GPIOR4(140)
-  // id8: GPIOR5(141)
-
-  // Read ID1
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID1);
-  if (read_device(path, &id1)) {
-    return -1;
-  }
-
-  // Read ID2
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID2);
-  if (read_device(path, &id2)) {
-    return -1;
-  }
-
-  // Read ID4
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID4);
-  if (read_device(path, &id4)) {
-    return -1;
-  }
-
-  // Read ID8
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID8);
-  if (read_device(path, &id8)) {
-    return -1;
-  }
-
-  loc = ((id8 << 3) | (id4 << 2) | (id2 << 1) | (id1));
-
-  switch(loc) {
-  case 0:
-  case 5:
-    *pos = HAND_SW_SERVER1;
-    break;
-  case 1:
-  case 6:
-    *pos = HAND_SW_SERVER2;
-    break;
-  case 2:
-  case 7:
-    *pos = HAND_SW_SERVER3;
-    break;
-  case 3:
-  case 8:
-    *pos = HAND_SW_SERVER4;
-    break;
-  default:
-    *pos = HAND_SW_BMC;
-    break;
-  }
 
   return 0;
 }
@@ -733,19 +567,6 @@ pal_get_hand_sw(uint8_t *pos) {
 // Return the Front panel Power Button
 int
 pal_get_pwr_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_PWR_BTN);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  if (val) {
-    *status = 0x0;
-  } else {
-    *status = 0x1;
-  }
 
   return 0;
 }
@@ -753,19 +574,6 @@ pal_get_pwr_btn(uint8_t *status) {
 // Return the front panel's Reset Button status
 int
 pal_get_rst_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_RST_BTN);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  if (val) {
-    *status = 0x0;
-  } else {
-    *status = 0x1;
-  }
 
   return 0;
 }
@@ -773,23 +581,6 @@ pal_get_rst_btn(uint8_t *status) {
 // Update the Reset button input to the server at given slot
 int
 pal_set_rst_btn(uint8_t slot, uint8_t status) {
-  char path[64] = {0};
-  char *val;
-
-  if (slot < 1 || slot > 4) {
-    return -1;
-  }
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
-  if (write_device(path, val)) {
-    return -1;
-  }
 
   return 0;
 }
@@ -797,23 +588,6 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 // Update the LED for the given slot with the status
 int
 pal_set_led(uint8_t slot, uint8_t status) {
-  char path[64] = {0};
-  char *val;
-
-  if (slot < 1 || slot > 4) {
-    return -1;
-  }
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, gpio_led[slot]);
-  if (write_device(path, val)) {
-    return -1;
-  }
 
   return 0;
 }
@@ -864,31 +638,6 @@ pal_set_id_led(uint8_t slot, uint8_t status) {
 
 static int
 set_usb_mux(uint8_t state) {
-  int val;
-  char *new_state;
-  char path[64] = {0};
-
-  sprintf(path, GPIO_VAL, GPIO_USB_MUX_EN_N);
-
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  // This GPIO Pin is active low
-  if (!val == state)
-    return 0;
-
-  if (state)
-    new_state = "0";
-  else
-    new_state = "1";
-
-  if (write_device(path, new_state) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  }
 
   return 0;
 }
@@ -896,195 +645,6 @@ set_usb_mux(uint8_t state) {
 // Update the USB Mux to the server at given slot
 int
 pal_switch_usb_mux(uint8_t slot) {
-  char *gpio_sw0, *gpio_sw1;
-  char path[64] = {0};
-
-  // Based on the USB mux table in Schematics
-  switch(slot) {
-  case HAND_SW_SERVER1:
-    gpio_sw0 = "1";
-    gpio_sw1 = "0";
-    break;
-  case HAND_SW_SERVER2:
-    gpio_sw0 = "0";
-    gpio_sw1 = "0";
-    break;
-  case HAND_SW_SERVER3:
-    gpio_sw0 = "1";
-    gpio_sw1 = "1";
-    break;
-  case HAND_SW_SERVER4:
-    gpio_sw0 = "0";
-    gpio_sw1 = "1";
-    break;
-  case HAND_SW_BMC:
-    // Disable the USB MUX
-    if (set_usb_mux(USB_MUX_OFF) < 0)
-      return -1;
-    else
-      return 0;
-  default:
-    return 0;
-  }
-
-  // Enable the USB MUX
-  if (set_usb_mux(USB_MUX_ON) < 0)
-    return -1;
-
-  sprintf(path, GPIO_VAL, GPIO_USB_SW0);
-  if (write_device(path, gpio_sw0) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_USB_SW1);
-  if (write_device(path, gpio_sw1) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  }
-
-  return 0;
-}
-
-// Switch the UART mux to the given slot
-int
-pal_switch_uart_mux(uint8_t slot) {
-  char * gpio_uart_sel0;
-  char * gpio_uart_sel1;
-  char * gpio_uart_sel2;
-  char * gpio_uart_rx;
-  char path[64] = {0};
-  int ret;
-
-  // Refer the UART select table in schematic
-  switch(slot) {
-  case HAND_SW_SERVER1:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "1";
-    gpio_uart_rx = "0";
-    break;
-  case HAND_SW_SERVER2:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "0";
-    gpio_uart_rx = "0";
-    break;
-  case HAND_SW_SERVER3:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "1";
-    gpio_uart_rx = "0";
-    break;
-  case HAND_SW_SERVER4:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "0";
-    gpio_uart_rx = "0";
-    break;
-  default:
-    // for all other cases, assume BMC
-    gpio_uart_sel2 = "1";
-    gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "0";
-    gpio_uart_rx = "1";
-    break;
-  }
-
-  //  Diable TXD path from BMC to avoid conflict with SoL
-  ret = control_sol_txd(slot);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  // Enable Debug card path
-  sprintf(path, GPIO_VAL, GPIO_UART_SEL2);
-  ret = write_device(path, gpio_uart_sel2);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_UART_SEL1);
-  ret = write_device(path, gpio_uart_sel1);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_UART_SEL0);
-  ret = write_device(path, gpio_uart_sel0);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_UART_RX);
-  ret = write_device(path, gpio_uart_rx);
-  if (ret) {
-    goto uart_exit;
-  }
-
-uart_exit:
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_switch_uart_mux: write_device failed: %s\n", path);
-#endif
-    return ret;
-  } else {
-    return 0;
-  }
-}
-
-// Enable POST buffer for the server in given slot
-int
-pal_post_enable(uint8_t slot) {
-  int ret;
-  int i;
-  bic_config_t config = {0};
-  bic_config_u *t = (bic_config_u *) &config;
-
-  ret = bic_get_config(slot, &config);
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "post_enable: bic_get_config failed for fru: %d\n", slot);
-#endif
-    return ret;
-  }
-
-  t->bits.post = 1;
-
-  ret = bic_set_config(slot, &config);
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "post_enable: bic_set_config failed\n");
-#endif
-    return ret;
-  }
-
-  return 0;
-}
-
-// Disable POST buffer for the server in given slot
-int
-pal_post_disable(uint8_t slot) {
-  int ret;
-  int i;
-  bic_config_t config = {0};
-  bic_config_u *t = (bic_config_u *) &config;
-
-  ret = bic_get_config(slot, &config);
-  if (ret) {
-    return ret;
-  }
-
-  t->bits.post = 0;
-
-  ret = bic_set_config(slot, &config);
-  if (ret) {
-    return ret;
-  }
 
   return 0;
 }
@@ -1092,18 +652,6 @@ pal_post_disable(uint8_t slot) {
 // Get the last post code of the given slot
 int
 pal_post_get_last(uint8_t slot, uint8_t *status) {
-  int ret;
-  uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
-  uint8_t len;
-  int i;
-
-  ret = bic_get_post_buf(slot, buf, &len);
-  if (ret) {
-    return ret;
-  }
-
-  // The post buffer is LIFO and the first byte gives the latest post code
-  *status = buf[0];
 
   return 0;
 }
@@ -1111,36 +659,6 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
 // Handle the received post code, for now display it on debug card
 int
 pal_post_handle(uint8_t slot, uint8_t status) {
-  uint8_t prsnt, pos;
-  int ret;
-
-  // Check for debug card presence
-  ret = pal_is_debug_card_prsnt(&prsnt);
-  if (ret) {
-    return ret;
-  }
-
-  // No debug card  present, return
-  if (!prsnt) {
-    return 0;
-  }
-
-  // Get the hand switch position
-  ret = pal_get_hand_sw(&pos);
-  if (ret) {
-    return ret;
-  }
-
-  // If the give server is not selected, return
-  if (pos != slot) {
-    return 0;
-  }
-
-  // Display the post code in the debug card
-  ret = pal_post_display(status);
-  if (ret) {
-    return ret;
-  }
 
   return 0;
 }
@@ -1204,38 +722,35 @@ write_kv(char *key, char *value) {
 int
 pal_get_fru_id(char *str, uint8_t *fru) {
 
-  return yosemite_common_fru_id(str, fru);
+  return lightning_common_fru_id(str, fru);
 }
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
 
-  return yosemite_common_fru_name(fru, name);
+  return lightning_common_fru_name(fru, name);
 }
 
 int
 pal_get_fru_sdr_path(uint8_t fru, char *path) {
-  return yosemite_sensor_sdr_path(fru, path);
+  return lightning_sensor_sdr_path(fru, path);
 }
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   switch(fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      *sensor_list = (uint8_t *) bic_sensor_list;
-      *cnt = bic_sensor_cnt;
+    case FRU_PEB:
+      *sensor_list = (uint8_t *) peb_sensor_list;
+      *cnt = peb_sensor_cnt;
       break;
-    case FRU_SPB:
-      *sensor_list = (uint8_t *) spb_sensor_list;
-      *cnt = spb_sensor_cnt;
+    case FRU_PDPB:
+      *sensor_list = (uint8_t *) pdpb_sensor_list;
+      *cnt = pdpb_sensor_cnt;
       break;
-    case FRU_NIC:
-      *sensor_list = (uint8_t *) nic_sensor_list;
-      *cnt = nic_sensor_cnt;
+    case FRU_FCB:
+      *sensor_list = (uint8_t *) fcb_sensor_list;
+      *cnt = fcb_sensor_cnt;
       break;
     default:
 #ifdef DEBUG
@@ -1246,51 +761,52 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     return 0;
 }
 
-int
-pal_fruid_write(uint8_t fru, char *path) {
-  return bic_write_fruid(fru, 0, path);
-}
 
 int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
-  return yosemite_sensor_sdr_init(fru, sinfo);
+  return lightning_sensor_sdr_init(fru, sinfo);
 }
 
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-  return yosemite_sensor_read(fru, sensor_num, value);
+  return lightning_sensor_read(fru, sensor_num, value);
 }
 
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
-  return yosemite_sensor_threshold(fru, sensor_num, thresh, value);
+  return lightning_sensor_threshold(fru, sensor_num, thresh, value);
 }
 
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
-  return yosemite_sensor_name(fru, sensor_num, name);
+  return lightning_sensor_name(fru, sensor_num, name);
 }
 
 int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
-  return yosemite_sensor_units(fru, sensor_num, units);
+  return lightning_sensor_units(fru, sensor_num, units);
 }
 
 int
 pal_get_fruid_path(uint8_t fru, char *path) {
-  return yosemite_get_fruid_path(fru, path);
+  return lightning_get_fruid_path(fru, path);
 }
 
 int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
-  return yosemite_get_fruid_eeprom_path(fru, path);
+  return lightning_get_fruid_eeprom_path(fru, path);
 }
 
 int
 pal_get_fruid_name(uint8_t fru, char *name) {
-  return yosemite_get_fruid_name(fru, name);
+  return lightning_get_fruid_name(fru, name);
 }
 
+int
+pal_fruid_write(uint8_t slot, char *path) {
+
+  return 0;
+}
 
 static int
 get_key_value(char* key, char *value) {
@@ -1398,26 +914,7 @@ pal_set_key_value(char *key, char *value) {
 int
 pal_get_fru_devtty(uint8_t fru, char *devtty) {
 
-  switch(fru) {
-    case FRU_SLOT1:
-      sprintf(devtty, "/dev/ttyS2");
-      break;
-    case FRU_SLOT2:
-      sprintf(devtty, "/dev/ttyS1");
-      break;
-    case FRU_SLOT3:
-      sprintf(devtty, "/dev/ttyS4");
-      break;
-    case FRU_SLOT4:
-      sprintf(devtty, "/dev/ttyS3");
-      break;
-    default:
-#ifdef DEBUG
-      syslog(LOG_WARNING, "pal_get_fru_devtty: Wrong fru id %u", fru);
-#endif
-      return -1;
-  }
-    return 0;
+  return 0;
 }
 
 void
@@ -1442,243 +939,61 @@ pal_dump_key_value(void) {
 int
 pal_set_last_pwr_state(uint8_t fru, char *state) {
 
-  int ret;
-  char key[MAX_KEY_LEN] = {0};
-
-  sprintf(key, "pwr_server%d_last_state", (int) fru);
-
-  ret = pal_set_key_value(key, state);
-  if (ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_set_last_pwr_state: pal_set_key_value failed for "
-        "fru %u", fru);
-#endif
-  }
-  return ret;
+  return 0;
 }
 
 int
 pal_get_last_pwr_state(uint8_t fru, char *state) {
-  int ret;
-  char key[MAX_KEY_LEN] = {0};
 
-  switch(fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-
-      sprintf(key, "pwr_server%d_last_state", (int) fru);
-
-      ret = pal_get_key_value(key, state);
-      if (ret < 0) {
-#ifdef DEBUG
-        syslog(LOG_WARNING, "pal_get_last_pwr_state: pal_get_key_value failed for "
-            "fru %u", fru);
-#endif
-      }
-      return ret;
-    case FRU_SPB:
-    case FRU_NIC:
-      sprintf(state, "on");
-      return 0;
-  }
+  return 0;
 }
 
 int
 pal_get_sys_guid(uint8_t slot, char *guid) {
   int ret;
 
-  return bic_get_sys_guid(slot, guid);
+  return 0;
 }
 
 int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i;
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  char tstr[10] = {0};
 
-  sprintf(key, "sysfw_ver_slot%d", (int) slot);
-
-  for (i = 0; i < SIZE_SYSFW_VER; i++) {
-    sprintf(tstr, "%02x", ver[i]);
-    strcat(str, tstr);
-  }
-
-  return pal_set_key_value(key, str);
+  return 0;
 }
 
 int
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i;
-  int j = 0;
-  int ret;
-  int msb, lsb;
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  char tstr[4] = {0};
-
-  sprintf(key, "sysfw_ver_slot%d", (int) slot);
-
-  ret = pal_get_key_value(key, str);
-  if (ret) {
-    return ret;
-  }
-
-  for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
-    sprintf(tstr, "%c\n", str[i]);
-    msb = strtol(tstr, NULL, 16);
-
-    sprintf(tstr, "%c\n", str[i+1]);
-    lsb = strtol(tstr, NULL, 16);
-    ver[j++] = (msb << 4) | lsb;
-  }
 
   return 0;
 }
 
 int
 pal_is_bmc_por(void) {
-  uint32_t scu_fd;
-  uint32_t wdt;
-  void *scu_reg;
-  void *scu_wdt;
 
-  scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (scu_fd < 0) {
-    return 0;
-  }
-
-  scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_WDT_BASE);
-  scu_wdt = (char*)scu_reg + WDT_OFFSET;
-
-  wdt = *(volatile uint32_t*) scu_wdt;
-
-  munmap(scu_reg, PAGE_SIZE);
-  close(scu_fd);
-
-  if (wdt & 0xff00) {
-    return 0;
-  } else {
-    return 1;
-  }
+  return 0;
 }
 
 int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
-  switch(fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      *sensor_list = (uint8_t *) bic_discrete_list;
-      *cnt = bic_discrete_cnt;
-      break;
-    case FRU_SPB:
-    case FRU_NIC:
-      return -1;
-    default:
-#ifdef DEBUG
-      syslog(LOG_WARNING, "pal_get_fru_discrete_list: Wrong fru id %u", fru);
-#endif
-      return -1;
-  }
-    return 0;
-}
-
-static void
-_print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
-    uint8_t val, char *event) {
-  if (val) {
-    syslog(LOG_CRIT, "ASSERT: %s discrete - raised - FRU: %d, num: 0x%X,"
-        " snr: %-16s val: %d", event, fru, snr_num, snr_name, val);
-  } else {
-    syslog(LOG_CRIT, "DEASSERT: %s discrete - settled - FRU: %d, num: 0x%X,"
-        " snr: %-16s val: %d", event, fru, snr_num, snr_name, val);
-  }
+  return 0;
 }
 
 int
 pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t o_val, uint8_t n_val) {
 
-  char name[32];
-  bool valid = false;
-  uint8_t diff = o_val ^ n_val;
-
-  if (GETBIT(diff, 0)) {
-    switch(snr_num) {
-      case BIC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SOC_Thermal_Trip");
-        valid = true;
-        break;
-      case BIC_SENSOR_VR_HOT:
-        sprintf(name, "SOC_VR_Hot");
-        valid = true;
-        break;
-      case BIC_SENSOR_CPU_DIMM_HOT:
-        sprintf(name, "SOC_Hot");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 0), name);
-      valid = false;
-    }
-  }
-
-  if (GETBIT(diff, 1)) {
-    switch(snr_num) {
-      case BIC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SOC_FIVR_Fault");
-        valid = true;
-        break;
-      case BIC_SENSOR_VR_HOT:
-        sprintf(name, "SOC_DIMM_VR_Hot");
-        valid = true;
-        break;
-      case BIC_SENSOR_CPU_DIMM_HOT:
-        sprintf(name, "SOC_MEMHOT");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 1), name);
-      valid = false;
-    }
-  }
-
-  if (GETBIT(diff, 2)) {
-    switch(snr_num) {
-      case BIC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SOC_Throttle");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 2), name);
-      valid = false;
-    }
-  }
+  return 0;
 }
 
 static int
 pal_store_crashdump(uint8_t fru) {
 
-  return yosemite_common_crashdump(fru);
+  return 0;
 }
 
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num) {
-
-  switch(snr_num) {
-    case CATERR:
-      pal_store_crashdump(fru);
-      break;
-  }
 
   return 0;
 }
@@ -1686,268 +1001,49 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
 int
 pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
 
-  switch(snr_num) {
-    case SYSTEM_EVENT:
-      sprintf(name, "SYSTEM_EVENT");
-      break;
-    case THERM_THRESH_EVT:
-      sprintf(name, "THERM_THRESH_EVT");
-      break;
-    case BUTTON:
-      sprintf(name, "BUTTON");
-      break;
-    case POWER_STATE:
-      sprintf(name, "POWER_STATE");
-      break;
-    case CRITICAL_IRQ:
-      sprintf(name, "CRITICAL_IRQ");
-      break;
-    case POST_ERROR:
-      sprintf(name, "POST_ERROR");
-      break;
-    case MACHINE_CHK_ERR:
-      sprintf(name, "MACHINE_CHK_ERR");
-      break;
-    case PCIE_ERR:
-      sprintf(name, "PCIE_ERR");
-      break;
-    case IIO_ERR:
-      sprintf(name, "IIO_ERR");
-      break;
-    case MEMORY_ECC_ERR:
-      sprintf(name, "MEMORY_ECC_ERR");
-      break;
-    case PROCHOT_EXT:
-      sprintf(name, "PROCHOT_EXT");
-      break;
-    case PWR_ERR:
-      sprintf(name, "PWR_ERR");
-      break;
-    case CATERR:
-      sprintf(name, "CATERR");
-      break;
-    default:
-      sprintf(name, "unknown");
-      break;
+  return 0;
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *error_log) {
+
+  return 0;
+}
+
+// Helper function for msleep
+void
+msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
   }
+}
+
+int
+pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   return 0;
 }
 
 int
-pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
-    char *error_log) {
+pal_get_sensor_health(uint8_t fru, uint8_t *value) {
 
-  char *ed = event_data;
-  char temp_log[128] = {0};
-  uint8_t temp;
+  return 0;
+}
 
-  switch(snr_num) {
-    case SYSTEM_EVENT:
-      sprintf(error_log, "SYSTEM_EVENT");
-      if (ed[0] == 0xE5) {
-        strcat(error_log, ": Cause of Time change");
+int
+pal_get_fru_list(char *list) {
 
-        if (ed[2] == 0x00)
-          strcat(error_log, ": NTP");
-        else if (ed[2] == 0x01)
-          strcat(error_log, ": Host RTL");
-        else if (ed[2] == 0x02)
-          strcat(error_log, ": Set SEL time cmd ");
-        else if (ed[2] == 0x03)
-          strcat(error_log, ": Set SEL time UTC offset cmd");
-        else
-          strcat(error_log, ": Unknown");
+  strcpy(list, pal_fru_list);
+  return 0;
+}
 
-        if (ed[1] == 0x00)
-          strcat(error_log, ": First Time");
-        else if(ed[1] == 0x80)
-          strcat(error_log, ": Second Time");
-
-      }
-      break;
-
-    case THERM_THRESH_EVT:
-      sprintf(error_log, "THERM_THRESH_EVT");
-      if (ed[0] == 0x1)
-        strcat(error_log, ": Limit Exceeded");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case BUTTON:
-      sprintf(error_log, "BUTTON");
-      if (ed[0] == 0x0)
-        strcat(error_log, ": Power button pressed");
-      else if (ed[0] == 0x2)
-        strcat(error_log, ": Reset button pressed");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case POWER_STATE:
-      sprintf(error_log, "POWER_STATE");
-      if (ed[0] == 0x0)
-        strcat(error_log, ": Transition to Running");
-      else if (ed[0] == 0x2)
-        strcat(error_log, ": Transition to Power Off");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case CRITICAL_IRQ:
-      sprintf(error_log, "CRITICAL_IRQ");
-      if (ed[0] == 0x0)
-        strcat(error_log, ": Diagnostic Interrupt");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case POST_ERROR:
-      sprintf(error_log, "POST_ERROR");
-      if ((ed[0] & 0x0F) == 0x0)
-        strcat(error_log, ": System Firmware Error");
-      else
-        strcat(error_log, ": Unknown");
-       if (((ed[0] >> 6) & 0x03) == 0x3) {
-         // TODO: Need to implement IPMI spec based Post Code
-         strcat(error_log, ": IPMI Post Code");
-       } else if (((ed[0] >> 6) & 0x03) == 0x2) {
-         sprintf(temp_log, "OEM Post Code: 0x%X 0x%X", ed[2], ed[1]);
-         strcat(error_log, temp_log);
-       }
-      break;
-
-    case MACHINE_CHK_ERR:
-      sprintf(error_log, "MACHINE_CHK_ERR");
-      if ((ed[0] & 0x0F) == 0x0B) {
-        strcat(error_log, ": Uncorrectable");
-      } else if ((ed[0] & 0x0F) == 0x0C) {
-        strcat(error_log, ": Correctable");
-      } else {
-        strcat(error_log, ": Unknown");
-      }
-
-      sprintf(temp_log, "Machine Check bank Number - %d ", ed[1]);
-      strcat(error_log, temp_log);
-      sprintf(temp_log, "CPU - %d, Core - %d ", ed[2] >> 5, ed[2] & 0x1F);
-      strcat(error_log, temp_log);
-
-      break;
-
-    case PCIE_ERR:
-      sprintf(error_log, "PCIE_ERR");
-      if ((ed[0] & 0xF) == 0x4)
-        strcat(error_log, ": PCI PERR");
-      else if ((ed[0] & 0xF) == 0x5)
-        strcat(error_log, ": PCI SERR");
-      else if ((ed[0] & 0xF) == 0x7)
-        strcat(error_log, ": Correctable");
-      else if ((ed[0] & 0xF) == 0x8)
-        strcat(error_log, ": Uncorrectable");
-      else if ((ed[0] & 0xF) == 0xA)
-        strcat(error_log, ": Bus Fatal");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case IIO_ERR:
-      sprintf(error_log, "IIO_ERR");
-      if ((ed[0] & 0xF) == 0) {
-
-        sprintf(temp_log, ": CPU - %d, Error ID - 0x%X", (ed[2] & 0xE0) >> 5,
-            ed[1]);
-        strcat(error_log, temp_log);
-
-        temp = ed[2] & 0x7;
-        if (temp == 0x0)
-          strcat(error_log, ": IRP0");
-        else if (temp == 0x1)
-          strcat(error_log, ": IRP1");
-        else if (temp == 0x2)
-          strcat(error_log, ": IIO-Core");
-        else if (temp == 0x3)
-          strcat(error_log, ": VT-d");
-        else if (temp == 0x4)
-          strcat(error_log, ": Intel Quick Data");
-        else if (temp == 0x5)
-          strcat(error_log, ": Misc");
-        else
-          strcat(error_log, ": Reserved");
-      }
-      break;
-
-    case MEMORY_ECC_ERR:
-      sprintf(error_log, "MEMORY_ECC_ERR");
-      if ((ed[0] & 0x0F) == 0x0)
-        strcat(error_log, ": Correctable");
-      else if ((ed[0] & 0x0F) == 0x1)
-        strcat(error_log, ": Uncorrectable");
-      else if ((ed[0] & 0x0F) == 0x5)
-        strcat(error_log, ": Correctable ECC error Logging Limit Reached");
-      else
-        strcat(error_log, ": Unknown");
-
-      if (((ed[1] & 0xC) >> 2) == 0x0) {
-        /* All Info Valid */
-        sprintf(temp_log, ": CPU# - %d, CHN# - %d, DIMM# - %d ",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
-      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
-        /* DIMM info not valid */
-        sprintf(temp_log, ": CPU# - %d, CHN# - %d",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
-      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
-        /* CHN info not valid */
-        sprintf(temp_log, ": CPU# - %d, DIMM# - %d ",
-            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
-      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
-        /* CPU info not valid */
-        sprintf(temp_log, ": CHN# - %d, DIMM# - %d ",
-            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
-      }
-      strcat(error_log, temp_log);
-
-      break;
-
-    case PROCHOT_EXT:
-      sprintf(error_log, "PROCHOT_EXT");
-      if ((ed[0] & 0xF) == 0xA)
-        strcat(error_log, ": Processor Thermal Throttling Offset");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-      if ((ed[1] & 0x3) == 0x1)
-        strcat(error_log, ": External (VR)");
-      else if ((ed[1] & 0x3) == 0x0)
-        strcat(error_log, ": Native");
-      break;
-
-      sprintf(temp_log, ": SOC ID - %d", (ed[2] & 0xE0) >> 5);
-      strcat(error_log, temp_log);
-
-    case PWR_ERR:
-      sprintf(error_log, "PWR_ERR");
-      if (ed[0] == 0x2)
-        strcat(error_log, ": PCH_PWROK failure");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    case CATERR:
-      sprintf(error_log, "CATERR");
-      if (ed[0] == 0x0)
-        strcat(error_log, ": IERR");
-      else if (ed[0] == 0xB)
-        strcat(error_log, ": MCERR");
-      else
-        strcat(error_log, ": Unknown");
-      break;
-
-    default:
-      sprintf(error_log, "unknown");
-      break;
-  }
+int
+pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
 
   return 0;
 }

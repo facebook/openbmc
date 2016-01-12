@@ -18,30 +18,26 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __YOSEMITE_COMMON_H__
-#define __YOSEMITE_COMMON_H__
+#ifndef __LIGHTNING_COMMON_H__
+#define __LIGHTNING_COMMON_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_NUM_FRUS 6
+#define MAX_NUM_FRUS 3
 enum {
   FRU_ALL   = 0,
-  FRU_SLOT1 = 1,
-  FRU_SLOT2 = 2,
-  FRU_SLOT3 = 3,
-  FRU_SLOT4 = 4,
-  FRU_SPB   = 5,
-  FRU_NIC   = 6,
+  FRU_PEB = 1,
+  FRU_PDPB = 2,
+  FRU_FCB = 3,
 };
 
-int yosemite_common_fru_name(uint8_t fru, char *str);
-int yosemite_common_fru_id(char *str, uint8_t *fru);
-int yosemite_common_crashdump(uint8_t fru);
+int lightning_common_fru_name(uint8_t fru, char *str);
+int lightning_common_fru_id(char *str, uint8_t *fru);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif /* __YOSEMITE_COMMON_H__ */
+#endif /* __LIGHTNING_COMMON_H__ */

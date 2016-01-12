@@ -21,62 +21,51 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <syslog.h>
-#include "yosemite_fruid.h"
+#include "lightning_fruid.h"
 
 /* Populate char path[] with the path to the fru's fruid binary dump */
 int
-yosemite_get_fruid_path(uint8_t fru, char *path) {
+lightning_get_fruid_path(uint8_t fru, char *path) {
   char fname[16] = {0};
 
   switch(fru) {
-    case FRU_SLOT1:
-      sprintf(fname, "slot1");
+    case FRU_PEB:
+      sprintf(fname, "peb");
       break;
-    case FRU_SLOT2:
-      sprintf(fname, "slot2");
+    case FRU_PDPB:
+      sprintf(fname, "pdpb");
       break;
-    case FRU_SLOT3:
-      sprintf(fname, "slot3");
-      break;
-    case FRU_SLOT4:
-      sprintf(fname, "slot4");
-      break;
-    case FRU_SPB:
-      sprintf(fname, "spb");
-      break;
-    case FRU_NIC:
-      sprintf(fname, "nic");
+    case FRU_FCB:
+      sprintf(fname, "fcb");
       break;
     default:
 #ifdef DEBUG
-      syslog(LOG_WARNING, "yosemite_get_fruid_path: wrong fruid");
+      syslog(LOG_WARNING, "lightning_get_fruid_path: wrong fruid");
 #endif
       return -1;
   }
 
-  sprintf(path, YOSEMITE_FRU_PATH, fname);
+  sprintf(path, LIGHTNING_FRU_PATH, fname);
   return 0;
 }
 
 int
-yosemite_get_fruid_eeprom_path(uint8_t fru, char *path) {
+lightning_get_fruid_eeprom_path(uint8_t fru, char *path) {
   char fname[16] = {0};
 
   switch(fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      return -1;
-    case FRU_SPB:
-      sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
+    case FRU_PEB:
+      sprintf(path, "/sys/class/i2c-adapter/i2c-4/4-0050/eeprom");
       break;
-    case FRU_NIC:
-      sprintf(path, "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom");
+    case FRU_PDPB:
+      sprintf(path, "/sys/class/i2c-adapter/i2c-6/6-0051/eeprom");
+      break;
+    case FRU_FCB:
+      sprintf(path, "/sys/class/i2c-adapter/i2c-5/5-0051/eeprom");
       break;
     default:
 #ifdef DEBUG
-      syslog(LOG_WARNING, "yosemite_get_fruid_eeprom_path: wrong fruid");
+      syslog(LOG_WARNING, "lightning_get_fruid_eeprom_path: wrong fruid");
 #endif
       return -1;
   }
@@ -86,30 +75,21 @@ yosemite_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
 /* Populate char name[] with the path to the fru's name */
 int
-yosemite_get_fruid_name(uint8_t fru, char *name) {
+lightning_get_fruid_name(uint8_t fru, char *name) {
 
   switch(fru) {
-    case FRU_SLOT1:
-      sprintf(name, "MonoLake Board 1");
+    case FRU_PEB:
+      sprintf(name, "PCIe Expander Board");
       break;
-    case FRU_SLOT2:
-      sprintf(name, "MonoLake Board 2");
+    case FRU_PDPB:
+      sprintf(name, "PCIe Drive Plane Board");
       break;
-    case FRU_SLOT3:
-      sprintf(name, "MonoLake Board 3");
-      break;
-    case FRU_SLOT4:
-      sprintf(name, "MonoLake Board 4");
-      break;
-    case FRU_SPB:
-      sprintf(name, "Side Plane Board");
-      break;
-    case FRU_NIC:
-      sprintf(name, "CX4 NIC");
+    case FRU_FCB:
+      sprintf(name, "Fan Control Board");
       break;
     default:
 #ifdef DEBUG
-      syslog(LOG_WARNING, "yosemite_get_fruid_name: wrong fruid");
+      syslog(LOG_WARNING, "lightning_get_fruid_name: wrong fruid");
 #endif
       return -1;
   }

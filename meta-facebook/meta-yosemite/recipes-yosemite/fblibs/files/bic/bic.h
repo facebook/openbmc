@@ -81,7 +81,7 @@ enum {
 enum {
   UPDATE_BIOS = 0,
   UPDATE_CPLD,
-  UPDATE_BIC_BOOT
+  UPDATE_BIC_BOOTLOADER,
 };
 
 // Bridge IC Spec

@@ -29,6 +29,7 @@
 #define FRUID_WRITE_COUNT_MAX 0x30
 #define IPMB_WRITE_COUNT_MAX 224
 #define BIOS_ERASE_PKT_SIZE (64*1024)
+#define BIOS_VERIFY_PKT_SIZE (32*1024)
 #define SDR_READ_COUNT_MAX 0x1A
 #define SIZE_SYS_GUID 16
 #define SIZE_IANA_ID 3
@@ -381,7 +382,10 @@ bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset, uint32_t len, u
     return -1;
   }
 
+#ifdef DEBUG
   printf("cksum returns: %x:%x:%x::%x:%x:%x:%x\n", rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5], rbuf[6]);
+#endif
+
   //Ignore IANA ID
   memcpy(ver, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
 
@@ -436,6 +440,9 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   uint8_t target;
   int fd;
   int i;
+  uint32_t tcksum;
+  uint32_t gcksum;
+  uint8_t *tbuf;
 
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
@@ -481,44 +488,52 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     offset += count;
   }
 
-// TODO: The checksum verifiction does not seem to work, so
-// commenting out for now
-#if 0
-
-  // checksum comparision for BIOS image
   if (comp != UPDATE_BIOS) {
+    goto update_done;
+  }
+
+  // Checksum calculation for BIOS image
+  tbuf = malloc(BIOS_VERIFY_PKT_SIZE * sizeof(uint8_t));
+  if (!tbuf) {
     goto error_exit;
   }
 
-  // Calculate checksum of file
   lseek(fd, 0, SEEK_SET);
-  uint32_t tcksum = 0;
-  uint32_t gcksum = 0;
-  uint8_t tbuf = 0;
-  for (i = 0; i < offset; i++) {
-    read(fd, &tbuf, 1);
-    tcksum += tbuf;
+  offset = 0;
+  while (1) {
+    count = read(fd, tbuf, BIOS_VERIFY_PKT_SIZE);
+    if (count <= 0) {
+      break;
+    }
+
+    tcksum = 0;
+    for (i = 0; i < BIOS_VERIFY_PKT_SIZE; i++) {
+      tcksum += tbuf[i];
+    }
+
+    // Get the checksum of binary image
+    ret = bic_get_fw_cksum(slot_id, comp, offset, BIOS_VERIFY_PKT_SIZE, &gcksum);
+    if (ret) {
+      goto error_exit;
+    }
+
+    // Compare both and see if they match or not
+    if (gcksum != tcksum) {
+      printf("checksum does not match offset:0x%x, 0x%x:0x%x\n", offset, tcksum, gcksum);
+      goto error_exit;
+    }
+
+    offset += BIOS_VERIFY_PKT_SIZE;
   }
 
-  // Get the checksum of binary image
-  ret = bic_get_fw_cksum(slot_id, comp, 0, offset, &gcksum);
-  if (ret) {
-    printf("fw_cksum failed\n");
-    goto error_exit;
-  }
-
-  // Compare both and see if they match or not
-  if (gcksum != tcksum) {
-    printf("checksum does not match 0x%x:0x%x\n", tcksum, gcksum);
-  } else  {
-    printf("checksum does match 0x%x:0x%x\n", tcksum, gcksum);
-  }
-
-#endif
-
+update_done:
 error_exit:
   if (fd > 0 ) {
     close(fd);
+  }
+
+  if (tbuf) {
+    free(tbuf);
   }
 
   return ret;

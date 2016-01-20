@@ -31,6 +31,7 @@ extern "C" {
 
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   64
+#define MAX_NUM_FAN     12
 
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
@@ -41,6 +42,8 @@ extern "C" {
 #define GETMASK(y)          (1 << y)
 
 extern char * key_list[];
+extern size_t pal_fan_cnt;
+extern const char pal_fan_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
@@ -86,6 +89,21 @@ enum {
   PROCHOT_EXT = 0X51,
   PWR_ERR = 0X56,
   CATERR= 0xEB,
+};
+
+enum {
+  FAN_1_FRONT = 0,
+  FAN_1_REAR,
+  FAN_2_FRONT,
+  FAN_2_REAR,
+  FAN_3_FRONT,
+  FAN_3_REAR,
+  FAN_4_FRONT,
+  FAN_4_REAR,
+  FAN_5_FRONT,
+  FAN_5_REAR,
+  FAN_6_FRONT,
+  FAN_6_REAR,
 };
 
 int pal_get_platform_name(char *name);
@@ -145,6 +163,8 @@ int pal_sel_handler(uint8_t fru, uint8_t snr_num);
 void msleep(int msec);
 int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_sensor_health(uint8_t fru, uint8_t *value);
+int pal_set_fan_speed(uint8_t fan, int value);
+int pal_get_fan_speed(uint8_t fan, int *rpm_val);
 
 #ifdef __cplusplus
 } // extern "C"

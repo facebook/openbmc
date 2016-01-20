@@ -138,7 +138,7 @@ enum {
 };
 
 enum{
-  MEZZ_SENSOR_TEMP = 0x01,
+  MEZZ_SENSOR_TEMP = 0x82,
 };
 extern const uint8_t bic_sensor_list[];
 

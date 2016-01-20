@@ -1377,16 +1377,18 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       syslog(LOG_INFO, "ipmi_handle_oem_1s: BIC Update Mode received "
                 "for payload#%d\n", req->payload_id);
 #endif
-      if (req->data[3] == 0x0) {
-         syslog(LOG_INFO, "Normal Mode\n");
+      if (req->data[3] == 0x1) {
+         syslog(LOG_INFO, "BIC Mode: Normal\n");
          res->cc = CC_SUCCESS;
       } else if (req->data[3] == 0x0F) {
-         syslog(LOG_INFO, "Update Mode\n");
+         syslog(LOG_INFO, "BIC Mode: Update\n");
          res->cc = CC_SUCCESS;
       } else {
          syslog(LOG_WARNING, "Error\n");
          res->cc = CC_INVALID_PARAM;
       }
+
+      pal_inform_bic_mode(req->payload_id, req->data[3]);
 
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
       *res_len = 3;

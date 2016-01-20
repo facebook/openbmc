@@ -36,6 +36,7 @@ NTP_PKGS = " \
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   kernel-modules \
+  u-boot \
   u-boot-fw-utils \
   fbutils \
   fan-ctrl \

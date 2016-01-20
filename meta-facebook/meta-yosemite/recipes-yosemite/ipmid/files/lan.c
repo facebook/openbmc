@@ -93,6 +93,9 @@ void plat_lan_init(lan_config_t *lan)
 
       // Get the MAC address
       sd = socket(PF_INET, SOCK_DGRAM, 0);
+      if (sd < 0) {
+        goto init_done;
+      }
       strcpy(ifr.ifr_name, ifa->ifa_name);
       if(ioctl(sd, SIOCGIFHWADDR, &ifr) != -1) {
         uint8_t* mac_addr = (uint8_t*)ifr.ifr_hwaddr.sa_data;
@@ -115,13 +118,18 @@ void plat_lan_init(lan_config_t *lan)
         }
       }
 
-      if (slaac_flag)
+      // close socket descriptor
+      close(sd);
+
+      if (slaac_flag) {
         continue;
+      }
 
       // copy the ip address from array with MSB first
       memcpy(lan->ip6_addr, ip6, SIZE_IP6_ADDR);
     }
   }
 
+init_done:
   freeifaddrs(ifaddr);
 }

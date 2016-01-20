@@ -68,6 +68,8 @@
 
 #define GPIO_DBG_CARD_PRSNT 137
 
+#define GPIO_BMC_READY_N    28
+
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
@@ -2046,4 +2048,21 @@ pal_get_sensor_health(uint8_t fru, uint8_t *value) {
   *value = atoi(cvalue);
 
   return 0;
+}
+
+void
+pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
+  switch(mode) {
+  case BIC_MODE_NORMAL:
+    // Bridge IC entered normal mode
+    // Inform BIOS that BMC is ready
+    bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
+    break;
+  case BIC_MODE_UPDATE:
+    // Bridge IC entered update mode
+    // TODO: Might need to handle in future
+    break;
+  default:
+    break;
+  }
 }

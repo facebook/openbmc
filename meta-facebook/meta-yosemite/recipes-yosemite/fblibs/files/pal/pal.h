@@ -89,6 +89,11 @@ enum {
   CATERR= 0xEB,
 };
 
+enum {
+  BIC_MODE_NORMAL = 0x01,
+  BIC_MODE_UPDATE = 0x0F,
+};
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_server_prsnt(uint8_t slot_id, uint8_t *status);
@@ -146,6 +151,7 @@ int pal_sel_handler(uint8_t fru, uint8_t snr_num);
 void msleep(int msec);
 int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_sensor_health(uint8_t fru, uint8_t *value);
+void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 
 #ifdef __cplusplus
 } // extern "C"

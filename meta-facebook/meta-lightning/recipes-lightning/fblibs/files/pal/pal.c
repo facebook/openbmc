@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <pthread.h>
+#include <facebook/i2c-dev.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -87,6 +88,16 @@
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
+
+#define I2C_DEV_FAN "/dev/i2c-5"
+#define I2C_ADDR_FAN 0x2d
+#define FAN_REGISTER_H 0x80
+#define FAN_REGISTER_L 0x81
+
+#define LARGEST_DEVICE_NAME 120
+#define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
+#define PWM_UNIT_MAX 96
+
 const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -94,6 +105,8 @@ const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
 const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
 const char pal_fru_list[] = "all, peb, pdpb, fcb";
+size_t pal_fan_cnt = 1;
+const char pal_fan_list[] = "0";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 char * key_list[] = {
@@ -1044,6 +1057,174 @@ pal_get_fru_list(char *list) {
 
 int
 pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
+
+  return 0;
+}
+
+int
+get_fan_name(uint8_t num, char *name) {
+
+  switch(num) {
+
+    case FAN_1_FRONT:
+      sprintf(name, "Fan 1 Front");
+      break;
+
+    case FAN_1_REAR:
+      sprintf(name, "Fan 1 Rear");
+      break;
+
+    case FAN_2_FRONT:
+      sprintf(name, "Fan 2 Front");
+      break;
+
+    case FAN_2_REAR:
+      sprintf(name, "Fan 2 Rear");
+      break;
+
+    case FAN_3_FRONT:
+      sprintf(name, "Fan 3 Front");
+      break;
+
+    case FAN_3_REAR:
+      sprintf(name, "Fan 3 Rear");
+      break;
+
+    case FAN_4_FRONT:
+      sprintf(name, "Fan 4 Front");
+      break;
+
+    case FAN_4_REAR:
+      sprintf(name, "Fan 4 Rear");
+      break;
+
+    case FAN_5_FRONT:
+      sprintf(name, "Fan 5 Front");
+      break;
+
+    case FAN_5_REAR:
+      sprintf(name, "Fan 5 Rear");
+      break;
+
+    case FAN_6_FRONT:
+      sprintf(name, "Fan 6 Front");
+      break;
+
+    case FAN_6_REAR:
+      sprintf(name, "Fan 6 Rear");
+      break;
+  }
+}
+
+static int
+write_fan_value(const int fan, const char *device, const int value) {
+  char full_name[LARGEST_DEVICE_NAME];
+  char device_name[LARGEST_DEVICE_NAME];
+  char output_value[LARGEST_DEVICE_NAME];
+
+  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+  snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
+  return write_device(full_name, output_value);
+}
+
+int
+pal_set_fan_speed(uint8_t fan, int value) {
+  int unit;
+  int ret;
+
+  if (fan < 0 || fan >= pal_fan_cnt) {
+    syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
+    return -1;
+  }
+
+  // Convert the percentage to our 1/96th unit.
+  unit = value * PWM_UNIT_MAX / 100;
+
+  // For 0%, turn off the PWM entirely
+  if (unit == 0) {
+    write_fan_value(fan, "pwm%d_en", 0);
+    if (ret < 0) {
+      syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+      return -1;
+    }
+
+  // For 100%, set falling and rising to the same value
+  } else if (unit == PWM_UNIT_MAX) {
+    unit = 0;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_type", 0);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_rising", 0);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_falling", unit);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_en", 1);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_get_fan_speed(uint8_t fan, int *rpm_val) {
+  int dev;
+  int ret;
+  int rpm_h;
+  int rpm_l;
+  int num;
+  int cnt;
+
+  if (fan < 0 || fan >= pal_fan_cnt) {
+    syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
+    return -1;
+  }
+
+  dev = open(I2C_DEV_FAN, O_RDWR);
+  if (dev < 0) {
+    syslog(LOG_ERR, "get_fan_speed: open() failed");
+    return -1;
+  }
+
+  /* Assign the i2c device address */
+  ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_FAN);
+  if (ret < 0) {
+    syslog(LOG_ERR, "get_fan_speed: ioctl() assigning i2c addr failed");
+  }
+
+  /* Get Fan Speed for all 12 Fan Tachs */
+  for (num = 0; num < MAX_NUM_FAN; num++) {
+
+    rpm_h = i2c_smbus_read_byte_data(dev,
+        FAN_REGISTER_H + (num * 2 /* offset */));
+    rpm_l = i2c_smbus_read_byte_data(dev,
+        FAN_REGISTER_L + (num * 2 /* offset */));
+    /*
+     * cnt[12:5] = 8 LSB bits from rpm_h
+     *  cnt[4:0] = 5 LSB bits from rpm_l
+     */
+    cnt = 0;
+    cnt = ((rpm_h & 0xFF) << 5) | (rpm_l & 0x1F);
+    if (cnt == 0x1fff || cnt == 0)
+      rpm_val[num] = 0;
+    else
+      rpm_val[num] = 1350000 / cnt;
+  }
 
   return 0;
 }

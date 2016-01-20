@@ -57,6 +57,7 @@ IMAGE_INSTALL += " \
   dhcp-client \
   fruid \
   log-util \
+  fan-util \
   cherryPy \
   lldp-util \
   spatula \

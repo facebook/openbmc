@@ -31,7 +31,6 @@ extern "C" {
 
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   64
-#define MAX_NUM_FAN     12
 
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
@@ -167,6 +166,7 @@ int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_sensor_health(uint8_t fru, uint8_t *value);
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
+int pal_get_fan_name(uint8_t num, char *name);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 
 #ifdef __cplusplus

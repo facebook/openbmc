@@ -1064,7 +1064,7 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
 }
 
 int
-get_fan_name(uint8_t num, char *name) {
+pal_get_fan_name(uint8_t num, char *name) {
 
   switch(num) {
 
@@ -1115,7 +1115,12 @@ get_fan_name(uint8_t num, char *name) {
     case FAN_6_REAR:
       sprintf(name, "Fan 6 Rear");
       break;
+
+    default:
+      return -1;
   }
+
+  return 0;
 }
 
 static int

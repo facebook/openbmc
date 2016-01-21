@@ -167,6 +167,7 @@ int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_sensor_health(uint8_t fru, uint8_t *value);
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
+void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 
 #ifdef __cplusplus
 } // extern "C"

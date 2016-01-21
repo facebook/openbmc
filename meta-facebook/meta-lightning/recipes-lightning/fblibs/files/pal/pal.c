@@ -1223,3 +1223,9 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 
   return 0;
 }
+
+void
+pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
+
+  return 0;
+}

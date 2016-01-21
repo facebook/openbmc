@@ -89,6 +89,11 @@
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
+
+#define LARGEST_DEVICE_NAME 120
+#define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
+#define PWM_UNIT_MAX 96
+
 const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -97,6 +102,11 @@ const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
+
+size_t pal_pwm_cnt = 2;
+size_t pal_tach_cnt = 2;
+const char pal_pwm_list[] = "0, 1";
+const char pal_tach_list[] = "0, 1";
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -2065,4 +2075,117 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
   default:
     break;
   }
+}
+
+int
+pal_get_fan_name(uint8_t num, char *name) {
+
+  switch(num) {
+
+    case FAN_0:
+      sprintf(name, "Fan 0");
+      break;
+
+    case FAN_1:
+      sprintf(name, "Fan 1");
+      break;
+
+    default:
+      return -1;
+  }
+
+  return 0;
+}
+
+static int
+read_fan_value(const int fan, const char *device, int *value) {
+  char device_name[LARGEST_DEVICE_NAME];
+  char output_value[LARGEST_DEVICE_NAME];
+  char full_name[LARGEST_DEVICE_NAME];
+
+  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR,device_name);
+  return read_device(full_name, value);
+}
+
+static int
+write_fan_value(const int fan, const char *device, const int value) {
+  char full_name[LARGEST_DEVICE_NAME];
+  char device_name[LARGEST_DEVICE_NAME];
+  char output_value[LARGEST_DEVICE_NAME];
+
+  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+  snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
+  return write_device(full_name, output_value);
+}
+
+
+int
+pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
+  int unit;
+  int ret;
+
+  if (fan >= pal_pwm_cnt) {
+    syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
+    return -1;
+  }
+
+  // Convert the percentage to our 1/96th unit.
+  unit = pwm * PWM_UNIT_MAX / 100;
+
+  // For 0%, turn off the PWM entirely
+  if (unit == 0) {
+    write_fan_value(fan, "pwm%d_en", 0);
+    if (ret < 0) {
+      syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+      return -1;
+    }
+
+  // For 100%, set falling and rising to the same value
+  } else if (unit == PWM_UNIT_MAX) {
+    unit = 0;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_type", 0);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_rising", 0);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_falling", unit);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  ret = write_fan_value(fan, "pwm%d_en", 1);
+  if (ret < 0) {
+    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_get_fan_speed(uint8_t fan, int *rpm) {
+  int dev;
+  int ret;
+  int rpm_h;
+  int rpm_l;
+  int cnt;
+
+  if (fan >= pal_tach_cnt) {
+    syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
+    return -1;
+  }
+
+  return read_fan_value(fan + 1, "fan%d_input", rpm);
 }

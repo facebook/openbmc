@@ -26,6 +26,8 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/fan-util ${bin}/fan-util
 }
 
+RDEPENDS_${PN} += "libpal"
+
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/fan-util ${prefix}/local/bin"

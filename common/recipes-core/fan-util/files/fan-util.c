@@ -106,9 +106,11 @@ main(int argc, char **argv) {
           continue;
 
       ret = pal_set_fan_speed(i, pwm);
-      if (!ret)
-        printf("Setting Fan speed to %d%\n", pwm);
-      else
+      if (!ret) {
+        memset(fan_name, 0, 32);
+        pal_get_fan_name(i, fan_name);
+        printf("Setting %s speed to %d%\n", fan_name, pwm);
+      } else
         printf("Error while setting fan speed for Fan %d\n", i);
     }
 
@@ -124,7 +126,7 @@ main(int argc, char **argv) {
       ret = pal_get_fan_speed(i, &rpm);
       if (!ret) {
         memset(fan_name, 0, 32);
-        get_fan_name(i, fan_name);
+        pal_get_fan_name(i, fan_name);
         printf("%s Speed: %d RPM\n", fan_name, rpm);
       } else {
         printf("Error while getting fan speed for Fan %d\n", i);

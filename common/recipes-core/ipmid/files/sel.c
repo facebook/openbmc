@@ -34,13 +34,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <time.h>
-
-
-#if defined(CONFIG_YOSEMITE)
-#define MAX_NODES 4
-#else
-#define MAX_NODES 1
-#endif
+#include <openbmc/pal.h>
 
 // SEL File.
 #define SEL_LOG_FILE  "/mnt/data/sel%d.bin"

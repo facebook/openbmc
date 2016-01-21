@@ -105,8 +105,10 @@ const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
 const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
 const char pal_fru_list[] = "all, peb, pdpb, fcb";
-size_t pal_fan_cnt = 1;
-const char pal_fan_list[] = "0";
+size_t pal_pwm_cnt = 1;
+size_t pal_tach_cnt = 12;
+const char pal_pwm_list[] = "0";
+const char pal_tach_list[] = "0...11";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 char * key_list[] = {
@@ -1129,17 +1131,17 @@ write_fan_value(const int fan, const char *device, const int value) {
 }
 
 int
-pal_set_fan_speed(uint8_t fan, int value) {
+pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   int unit;
   int ret;
 
-  if (fan < 0 || fan >= pal_fan_cnt) {
+  if (fan >= pal_pwm_cnt) {
     syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
     return -1;
   }
 
   // Convert the percentage to our 1/96th unit.
-  unit = value * PWM_UNIT_MAX / 100;
+  unit = pwm * PWM_UNIT_MAX / 100;
 
   // For 0%, turn off the PWM entirely
   if (unit == 0) {
@@ -1182,15 +1184,14 @@ pal_set_fan_speed(uint8_t fan, int value) {
 }
 
 int
-pal_get_fan_speed(uint8_t fan, int *rpm_val) {
+pal_get_fan_speed(uint8_t fan, int *rpm) {
   int dev;
   int ret;
   int rpm_h;
   int rpm_l;
-  int num;
   int cnt;
 
-  if (fan < 0 || fan >= pal_fan_cnt) {
+  if (fan >= pal_tach_cnt) {
     syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
     return -1;
   }
@@ -1207,24 +1208,18 @@ pal_get_fan_speed(uint8_t fan, int *rpm_val) {
     syslog(LOG_ERR, "get_fan_speed: ioctl() assigning i2c addr failed");
   }
 
-  /* Get Fan Speed for all 12 Fan Tachs */
-  for (num = 0; num < MAX_NUM_FAN; num++) {
-
-    rpm_h = i2c_smbus_read_byte_data(dev,
-        FAN_REGISTER_H + (num * 2 /* offset */));
-    rpm_l = i2c_smbus_read_byte_data(dev,
-        FAN_REGISTER_L + (num * 2 /* offset */));
-    /*
-     * cnt[12:5] = 8 LSB bits from rpm_h
-     *  cnt[4:0] = 5 LSB bits from rpm_l
-     */
-    cnt = 0;
-    cnt = ((rpm_h & 0xFF) << 5) | (rpm_l & 0x1F);
-    if (cnt == 0x1fff || cnt == 0)
-      rpm_val[num] = 0;
-    else
-      rpm_val[num] = 1350000 / cnt;
-  }
+  rpm_h = i2c_smbus_read_byte_data(dev, FAN_REGISTER_H + fan*2 /* offset */);
+  rpm_l = i2c_smbus_read_byte_data(dev, FAN_REGISTER_L + fan*2 /* offset */);
+  /*
+   * cnt[12:5] = 8 LSB bits from rpm_h
+   *  cnt[4:0] = 5 LSB bits from rpm_l
+   */
+  cnt = 0;
+  cnt = ((rpm_h & 0xFF) << 5) | (rpm_l & 0x1F);
+  if (cnt == 0x1fff || cnt == 0)
+    *rpm = 0;
+  else
+    *rpm = 1350000 / cnt;
 
   return 0;
 }

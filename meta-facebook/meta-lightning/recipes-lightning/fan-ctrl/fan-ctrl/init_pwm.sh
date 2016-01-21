@@ -18,6 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 PWM_DIR=/sys/devices/platform/ast_pwm_tacho.0
+TACH_BUS=5
+TACH_ADDR=0x2d
+TACH_REGISTER_L=0x24
+TACH_REGISTER_H=0x25
 
 set -e
 
@@ -51,5 +55,5 @@ echo 0 > $PWM_DIR/pwm0_falling
 echo 1 > $PWM_DIR/pwm0_en
 
 # Enable Tach 0
-echo 0 > $PWM_DIR/tacho0_source
-echo 1 > $PWM_DIR/tacho0_en
+i2cset -y $TACH_BUS $TACH_ADDR $TACH_REGISTER_L 0xFF b
+i2cset -y $TACH_BUS $TACH_ADDR $TACH_REGISTER_H 0x0F b

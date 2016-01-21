@@ -340,11 +340,59 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "usrv_rst_n",
-    "0: write 0 to trigger micro-server reset"
+    "0: write 0 to trigger micro-server reset\n"
     "1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x32, 0, 1,
+  },
+  {
+    "fan_rackmon_rst_n",
+    "0: write 0 to trigger FAN_RACKMON card reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x39, 0, 1,
+  },
+  {
+    "usb2cp2112_rst_n",
+    "0: write 0 to trigger USB bridge CP2112 reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x39, 1, 1,
+  },
+  {
+    "usb_hub_rst_n",
+    "0: write 0 to trigger USB hub reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x39, 2, 1,
+  },
+  {
+    "oob_bcm5387_rst_n",
+    "0: write 0 to trigger OOB switch BCM5387 reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x39, 3, 1,
+  },
+  {
+    "fp_phy_rst_n",
+    "0: write 0 to trigger front port PHY reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x39, 4, 1,
+  },
+  {
+    "ob_phy_rst_n",
+    "0: write 0 to trigger on board PHY reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x39, 5, 1,
   },
 };
 

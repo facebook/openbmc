@@ -42,8 +42,10 @@ extern "C" {
 #define GETMASK(y)          (1 << y)
 
 extern char * key_list[];
-extern size_t pal_fan_cnt;
-extern const char pal_fan_list[];
+extern size_t pal_pwm_cnt;
+extern size_t pal_tach_cnt;
+extern const char pal_pwm_list[];
+extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
@@ -163,8 +165,8 @@ int pal_sel_handler(uint8_t fru, uint8_t snr_num);
 void msleep(int msec);
 int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_sensor_health(uint8_t fru, uint8_t *value);
-int pal_set_fan_speed(uint8_t fan, int value);
-int pal_get_fan_speed(uint8_t fan, int *rpm_val);
+int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
+int pal_get_fan_speed(uint8_t fan, int *rpm);
 
 #ifdef __cplusplus
 } // extern "C"

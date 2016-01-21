@@ -74,6 +74,7 @@ IMAGE_INSTALL += " \
   log-util \
   cherryPy \
   lldp-util \
+  fan-util \
   spatula \
   "
 

@@ -30,6 +30,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/pal.h>
 
 // SDR Header magic number
 #define SDR_HDR_MAGIC 0xFBFBFBFB
@@ -77,7 +78,7 @@ typedef struct {
 } sdr_hdr_t;
 
 // Keep track of last Reservation ID
-static int g_rsv_id = 0x01;
+static int g_rsv_id[MAX_NODES+1];
 
 // SDR Header and data global structures
 static sdr_hdr_t g_sdr_hdr;
@@ -304,25 +305,25 @@ sdr_free_space(void) {
 // Reserve an ID that will be used in later operations
 // IPMI/Section 33.11
 int
-sdr_rsv_id() {
+sdr_rsv_id(int node) {
   // Increment the current reservation ID and return
-  if (g_rsv_id++ == SDR_RSVID_MAX) {
-    g_rsv_id = SDR_RSVID_MIN;
+  if (g_rsv_id[node]++ == SDR_RSVID_MAX) {
+    g_rsv_id[node] = SDR_RSVID_MIN;
   }
 
-  return g_rsv_id;
+  return g_rsv_id[node];
 }
 
 // Get the SDR entry for a given record ID
 // IPMI/Section 33.12
 int
-sdr_get_entry(int rsv_id, int read_rec_id, sdr_rec_t *rec,
+sdr_get_entry(int node, int rsv_id, int read_rec_id, sdr_rec_t *rec,
                    int *next_rec_id) {
 
   int index;
 
   // Make sure the rsv_id matches
-  if (rsv_id != g_rsv_id) {
+  if (rsv_id != g_rsv_id[node]) {
     syslog(LOG_WARNING, "sdr_get_entry: Reservation ID mismatch\n");
     return -1;
   }
@@ -408,6 +409,11 @@ sdr_init(void) {
   plat_sensor_oem_info(&num, &p_oem);
   for (i = 0; i < num; i++) {
     sdr_add_oem_rec(&p_oem[i]);
+  }
+
+  // Initialize the reservation IDs
+  for (i = 0; i < MAX_NODES; i++) {
+    g_rsv_id[i] = 0x01;
   }
 
   return 0;

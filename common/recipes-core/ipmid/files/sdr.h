@@ -64,8 +64,8 @@ void sdr_ts_recent_add(time_stamp_t *ts);
 void sdr_ts_recent_erase(time_stamp_t *ts);
 int sdr_num_entries(void);
 int sdr_free_space(void);
-int sdr_rsv_id();
-int sdr_get_entry(int rsv_id, int read_rec_id, sdr_rec_t *rec,
+int sdr_rsv_id(int node);
+int sdr_get_entry(int node, int rsv_id, int read_rec_id, sdr_rec_t *rec,
                        int *next_rec_id);
 int sdr_init(void);
 

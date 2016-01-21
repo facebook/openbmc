@@ -531,14 +531,15 @@ storage_get_sdr_info (unsigned char *response, unsigned char *res_len)
 }
 
 static void
-storage_rsv_sdr (unsigned char *response, unsigned char *res_len)
+storage_rsv_sdr (unsigned char *request, unsigned char *response, unsigned char *res_len)
 {
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
   int rsv_id;			// SDR reservation ID
 
   // Use platform APIs to get a SDR reservation ID
-  rsv_id = sdr_rsv_id ();
+  rsv_id = sdr_rsv_id(req->payload_id);
   if (rsv_id < 0)
   {
       res->cc = CC_UNSPECIFIED_ERROR;
@@ -576,7 +577,7 @@ storage_get_sdr (unsigned char *request, unsigned char *response,
   rec_bytes = req->data[5];
 
   // Use platform API to read the record Id and get next ID
-  ret = sdr_get_entry (rsv_id, read_rec_id, &entry, &next_rec_id);
+  ret = sdr_get_entry (req->payload_id, rsv_id, read_rec_id, &entry, &next_rec_id);
   if (ret)
   {
       res->cc = CC_UNSPECIFIED_ERROR;
@@ -866,7 +867,7 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
       storage_get_sdr_info (response, res_len);
       break;
     case CMD_STORAGE_RSV_SDR:
-      storage_rsv_sdr (response, res_len);
+      storage_rsv_sdr (request, response, res_len);
       break;
     case CMD_STORAGE_GET_SDR:
       storage_get_sdr (request, response, res_len);

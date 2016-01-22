@@ -32,6 +32,6 @@ intf="${IFACE}.${vlan}"
 slot=$(wedge_slot_id $board)
 
 vconfig add $IFACE $vlan
-ifconfig $intf up "fe80::$(printf "%x" $slot):1/64"
+ifconfig $intf up "fe80::$(printf "%d" $slot):1/64"
 
 exit 0

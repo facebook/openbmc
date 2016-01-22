@@ -97,7 +97,7 @@ wedge_board_type() {
 
 wedge_slot_id() {
     local type slot id3 id2 id1 id0 FC_CARD_BASE board_rev
-    FC_CARD_BASE=65
+    FC_CARD_BASE=100
     # need to check the board rev
     board_rev=$(wedge_board_rev)
     case "$1" in
@@ -110,10 +110,10 @@ wedge_slot_id() {
             fi
             if [ "$1" = "FC-LEFT" ]; then
                 # fabric card left
-                slot=$((FC_CARD_BASE + slot * 2))
+                slot=$((FC_CARD_BASE * (slot + 1) + 1))
             else
                 # fabric card right
-                slot=$((FC_CARD_BASE + slot * 2 + 1))
+                slot=$((FC_CARD_BASE * (slot + 1) + 2))
             fi
             ;;
         *)

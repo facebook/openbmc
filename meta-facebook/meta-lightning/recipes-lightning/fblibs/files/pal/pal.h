@@ -40,6 +40,8 @@ extern "C" {
 #define CLEARBIT(x, y)      (x & (~(1 << y)))
 #define GETMASK(y)          (1 << y)
 
+#define MAX_NODES 1
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

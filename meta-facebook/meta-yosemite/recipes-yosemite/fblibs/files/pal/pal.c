@@ -131,6 +131,8 @@ char * key_list[] = {
 "slot2_sensor_health",
 "slot3_sensor_health",
 "slot4_sensor_health",
+"spb_sensor_health",
+"nic_sensor_health",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -154,10 +156,12 @@ char * def_val_list[] = {
   "on", /* slot2_por_cfg */
   "on", /* slot3_por_cfg */
   "on", /* slot4_por_cfg */
-  "0", /* slot1_sensor_health */
-  "0", /* slot2_sensor_health */
-  "0", /* slot3_sensor_health */
-  "0", /* slot4_sensor_health */
+  "1", /* slot1_sensor_health */
+  "1", /* slot2_sensor_health */
+  "1", /* slot3_sensor_health */
+  "1", /* slot4_sensor_health */
+  "1", /* spb_sensor_health */
+  "1", /* nic_sensor_health */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -2012,6 +2016,12 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
     case FRU_SLOT4:
       sprintf(key, "slot%d_sensor_health", fru);
       break;
+    case FRU_SPB:
+      sprintf(key, "spb_sensor_health");
+      break;
+    case FRU_NIC:
+      sprintf(key, "nic_sensor_health");
+      break;
 
     default:
       return -1;
@@ -2042,6 +2052,12 @@ pal_get_sensor_health(uint8_t fru, uint8_t *value) {
     case FRU_SLOT3:
     case FRU_SLOT4:
       sprintf(key, "slot%d_sensor_health", fru);
+      break;
+    case FRU_SPB:
+      sprintf(key, "spb_sensor_health");
+      break;
+    case FRU_NIC:
+      sprintf(key, "nic_sensor_health");
       break;
 
     default:

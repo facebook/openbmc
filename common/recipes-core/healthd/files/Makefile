@@ -15,10 +15,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-all: healthd 
+all: healthd  
 
-healthd: healthd.c 
-	$(CC) $(CFLAGS) -pthread -lm -std=c99 -o $@ $^ $(LDFLAGS)
+healthd: healthd.c watchdog.c 
+	$(CC) $(CFLAGS) -pthread -lm -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

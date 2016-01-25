@@ -24,6 +24,7 @@ PYTHON_PKGS = " \
   python-pickle \
   python-misc \
   python-netserver \
+  python-syslog \
   "
 
 NTP_PKGS = " \
@@ -41,6 +42,8 @@ IMAGE_INSTALL += " \
   healthd \
   fbutils \
   fan-ctrl \
+  fan-util \
+  fscd \
   watchdog-ctrl \
   i2c-tools \
   sensor-setup \

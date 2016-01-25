@@ -47,7 +47,7 @@
 #define GPIO_RST_BTN 144
 #define GPIO_PWR_BTN 24
 
-#define GPIO_HB_LED 135
+#define GPIO_HB_LED 57
 
 #define GPIO_USB_SW0 36
 #define GPIO_USB_SW1 37

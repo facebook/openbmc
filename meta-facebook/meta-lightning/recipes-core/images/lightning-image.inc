@@ -41,6 +41,7 @@ IMAGE_INSTALL += " \
   fbutils \
   fan-ctrl \
   ipmid \
+  healthd \
   watchdog-ctrl \
   i2c-tools \
   sensor-setup \

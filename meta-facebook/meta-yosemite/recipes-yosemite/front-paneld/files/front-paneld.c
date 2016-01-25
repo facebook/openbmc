@@ -331,11 +331,6 @@ hb_handler() {
 
 
   while (1) {
-    // Toggle HB LED
-    pal_set_hb_led(1);
-    msleep(500);
-    pal_set_hb_led(0);
-    msleep(500);
 
     // Make sure the time is initialized properly
     // Since there is no battery backup, the time could be reset to build time
@@ -445,7 +440,7 @@ led_handler(void *num) {
         goto led_handler_out;
       }
 
-      if (hlth) {
+      if (hlth == FRU_STATUS_GOOD) {
         pal_set_led(slot, LED_ON);
         pal_set_id_led(slot, ID_LED_OFF);
       } else {
@@ -465,7 +460,7 @@ led_handler(void *num) {
     }
 
     // Start blinking the LED
-    if (hlth) {
+    if (hlth == FRU_STATUS_GOOD) {
       pal_set_led(slot, LED_ON);
     } else {
       pal_set_id_led(slot, ID_LED_ON);
@@ -473,7 +468,7 @@ led_handler(void *num) {
 
     msleep(led_on_time);
 
-    if (hlth) {
+    if (hlth == FRU_STATUS_GOOD) {
       pal_set_led(slot, LED_OFF);
     } else {
       pal_set_id_led(slot, ID_LED_OFF);

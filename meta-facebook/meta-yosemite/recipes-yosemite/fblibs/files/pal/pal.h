@@ -34,6 +34,9 @@ extern "C" {
 #define MAX_VALUE_LEN   64
 #define MAX_NUM_FAN     2
 
+#define FRU_STATUS_GOOD   1
+#define FRU_STATUS_BAD    0
+
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
 

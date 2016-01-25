@@ -29,10 +29,6 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-# Disable Watch Dog Timer
-/usr/local/bin/watchdog_ctrl.sh off
-
-
 KEYDIR=/mnt/data/kv_store
 DEF_PWR_ON=1
 TO_PWR_ON=

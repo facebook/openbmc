@@ -39,6 +39,9 @@ IMAGE_INSTALL += " \
   u-boot \
   u-boot-fw-utils \
   openbmc-utils \
+  at93cx6-util \
+  bcm5396-util \
+  ast-mdio \
   watchdog-ctrl \
   i2c-tools \
   lldp-util \

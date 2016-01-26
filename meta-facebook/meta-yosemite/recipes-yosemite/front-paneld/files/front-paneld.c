@@ -306,9 +306,9 @@ pwr_btn_out:
   }
 }
 
-// Thread to handle Heart Beat LED and monitor SLED Cycles
+// Thread to monitor SLED Cycles by using time stamp
 static void *
-hb_handler() {
+ts_handler() {
   int count = 0;
   struct timespec ts;
   struct timespec mts;
@@ -329,7 +329,6 @@ hb_handler() {
     syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
   }
 
-
   while (1) {
 
     // Make sure the time is initialized properly
@@ -339,7 +338,7 @@ hb_handler() {
       clock_gettime(CLOCK_REALTIME, &ts);
 
       if (ts.tv_sec < time_sled_off) {
-        continue;
+        goto loop_cont;
       }
 
       // If current time is more than the stored time, the date is correct
@@ -365,6 +364,9 @@ hb_handler() {
       pal_set_key_value("timestamp_sled", tstr);
       count = 0;
     }
+
+loop_cont:
+    sleep(1);
   }
 }
 
@@ -610,7 +612,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
   pthread_t tid_rst_btn;
   pthread_t tid_pwr_btn;
-  pthread_t tid_hb;
+  pthread_t tid_ts;
   pthread_t tid_sync_led;
   pthread_t tid_leds[MAX_NUM_SLOTS];
   int i;
@@ -650,8 +652,8 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (pthread_create(&tid_hb, NULL, hb_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for heart beat error\n");
+  if (pthread_create(&tid_ts, NULL, ts_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for time stamp error\n");
     exit(1);
   }
 
@@ -672,7 +674,7 @@ main (int argc, char * const argv[]) {
   pthread_join(tid_hand_sw, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
-  pthread_join(tid_hb, NULL);
+  pthread_join(tid_ts, NULL);
   pthread_join(tid_sync_led, NULL);
   for (i = 0;  i < MAX_NUM_SLOTS; i++) {
     pthread_join(tid_leds[i], NULL);

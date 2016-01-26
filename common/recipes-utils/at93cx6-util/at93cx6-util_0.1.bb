@@ -1,4 +1,4 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,25 +14,36 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-SUMMARY = "Device driver using GPIO bitbang"
-DESCRIPTION = "Various device driver using GPIO bitbang"
-SECTION = "base"
-PR = "r1"
+
+SUMMARY = "Utilities for AT93Cx6 EEPROM"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://bitbang.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://src \
-          "
+SRC_URI = " \
+    file://COPYING \
+    file://at93cx6.py \
+    file://at93cx6_util.py \
+    "
 
-DEPENDS += "openbmc-utils libgpio"
-RDEPENDS_${PN} = "libgpio"
+SCRIPTS = " \
+    at93cx6.py \
+    at93cx6_util.py \
+    "
 
-S = "${WORKDIR}/src"
+S = "${WORKDIR}"
 
 do_install() {
-  install -d ${D}${bindir}
-  install -m 755 spi-bb ${D}${bindir}/spi-bb
-  install -m 755 mdio-bb ${D}${bindir}/mdio-bb
+    pkgdir="/usr/local/packages/utils"
+    dstdir="${D}${pkgdir}"
+    install -d $dstdir
+    localbindir="${D}/usr/local/bin"
+    install -d ${localbindir}
+    for f in ${SCRIPTS}; do
+        install -m 755 $f ${dstdir}/${f}
+        ln -s ${pkgdir}/${f} ${localbindir}
+    done
 }
 
-FILES_${PN} = "${bindir}"
+RDEPENDS_${PN} = "bitbang python"
+
+FILES_${PN} += "/usr/local"

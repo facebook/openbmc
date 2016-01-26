@@ -41,7 +41,6 @@ IMAGE_INSTALL += " \
   u-boot-fw-utils \
   healthd \
   fbutils \
-  fan-ctrl \
   fan-util \
   fscd \
   watchdog-ctrl \

@@ -25,11 +25,6 @@ SRC_URI += "file://board-utils.sh \
            file://reset_usb.sh \
            file://setup-gpio.sh \
            file://setup_rov.sh \
-           file://mdio.py \
-           file://bcm5396.py \
-           file://bcm5396_util.py \
-           file://at93cx6.py \
-           file://at93cx6_util.py \
            file://mount_data0.sh \
            file://eth0_mac_fixup.sh \
            file://wedge_power.sh \
@@ -46,9 +41,8 @@ SRC_URI += "file://board-utils.sh \
 
 OPENBMC_UTILS_FILES += " \
   board-utils.sh us_console.sh sol.sh power_led.sh post_led.sh \
-  reset_usb.sh mdio.py setup_rov.sh wedge_power.sh wedge_us_mac.sh \
-  bcm5396.py bcm5396_util.py setup_switch.py us_monitor.sh \
-  at93cx6.py at93cx6_util.py \
+  reset_usb.sh setup_rov.sh wedge_power.sh wedge_us_mac.sh \
+  setup_switch.py us_monitor.sh \
   "
 
 DEPENDS_append = "update-rc.d-native"

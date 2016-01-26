@@ -42,6 +42,9 @@ IMAGE_INSTALL += " \
   u-boot \
   u-boot-fw-utils \
   openbmc-utils \
+  at93cx6-util \
+  bcm5396-util \
+  ast-mdio \
   fan-ctrl \
   rackmon \
   watchdog-ctrl \

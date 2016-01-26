@@ -105,6 +105,16 @@ generate_dump(void *arg) {
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
   char fruname[16];
+  int tmpf;
+  int rc;
+
+  tmpf = open("/var/lock/crashdump", O_CREAT | O_RDWR, 0666);
+  if (tmpf < 0) {
+    syslog(LOG_INFO, "generate_dump: could open the file /var/lock/crashdump");
+    return;
+  }
+
+  rc = flock(tmpf, LOCK_EX);
 
   yosemite_common_fru_name(fru, fruname);
 
@@ -126,6 +136,10 @@ generate_dump(void *arg) {
   system(cmd);
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
+
+  rc = flock(tmpf, LOCK_UN);
+
+  close(tmpf);
 }
 
 int

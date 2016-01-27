@@ -414,7 +414,7 @@ led_handler(void *num) {
     }
 
     // Get health status for this slot
-    ret = pal_get_sensor_health(slot, &hlth);
+    ret = pal_get_fru_health(slot, &hlth);
     if (ret) {
       sleep(1);
       continue;

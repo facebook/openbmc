@@ -133,6 +133,10 @@ char * key_list[] = {
 "slot4_sensor_health",
 "spb_sensor_health",
 "nic_sensor_health",
+"slot1_sel_error",
+"slot2_sel_error",
+"slot3_sel_error",
+"slot4_sel_error",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -162,6 +166,10 @@ char * def_val_list[] = {
   "1", /* slot4_sensor_health */
   "1", /* spb_sensor_health */
   "1", /* nic_sensor_health */
+  "1", /* slot1_sel_error */
+  "1", /* slot2_sel_error */
+  "1", /* slot3_sel_error */
+  "1", /* slot4_sel_error */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -1404,10 +1412,15 @@ pal_set_def_key_value() {
 
   int ret;
   int i;
+  int fru;
+  char key[64] = {0};
   char kpath[64] = {0};
 
   i = 0;
   while(strcmp(key_list[i], LAST_KEY)) {
+
+  memset(key, 0, 64);
+  memset(kpath, 0, 64);
 
   sprintf(kpath, KV_STORE, key_list[i]);
 
@@ -1419,6 +1432,75 @@ pal_set_def_key_value() {
       }
     }
     i++;
+  }
+
+  /* Actions to be taken on Power On Reset */
+  if (pal_is_bmc_por()) {
+
+    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+
+      /* Clear all the SEL errors */
+      memset(key, 0, 64);
+      memset(kpath, 0, 64);
+
+      switch(fru) {
+        case FRU_SLOT1:
+        case FRU_SLOT2:
+        case FRU_SLOT3:
+        case FRU_SLOT4:
+          sprintf(key, "slot%d_sel_error", fru);
+        break;
+
+        case FRU_SPB:
+          continue;
+
+        case FRU_NIC:
+          continue;
+
+        default:
+          return -1;
+      }
+
+      sprintf(kpath, KV_STORE, key);
+
+      if (access(KV_STORE_PATH, F_OK) == -1) {
+        mkdir(KV_STORE_PATH, 0777);
+      }
+
+      /* Write the value "1" which means FRU_STATUS_GOOD */
+      ret = write_kv(kpath, "1");
+
+      /* Clear all the sensor health files*/
+      memset(key, 0, 64);
+      memset(kpath, 0, 64);
+
+      switch(fru) {
+        case FRU_SLOT1:
+        case FRU_SLOT2:
+        case FRU_SLOT3:
+        case FRU_SLOT4:
+          sprintf(key, "slot%d_sensor_health", fru);
+        break;
+
+        case FRU_SPB:
+          continue;
+
+        case FRU_NIC:
+          continue;
+
+        default:
+          return -1;
+      }
+
+      sprintf(kpath, KV_STORE, key);
+
+      if (access(KV_STORE_PATH, F_OK) == -1) {
+        mkdir(KV_STORE_PATH, 0777);
+      }
+
+      /* Write the value "1" which means FRU_STATUS_GOOD */
+      ret = write_kv(kpath, "1");
+    }
   }
 
   return 0;
@@ -1728,13 +1810,41 @@ pal_store_crashdump(uint8_t fru) {
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num) {
 
-  switch(snr_num) {
-    case CATERR:
-      pal_store_crashdump(fru);
+  char kpath[64] = {0};
+  char key[64] = {0};
+  char cvalue[64] = {0};
+
+  /* For every SEL event received from the BIC, set the critical LED on */
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      switch(snr_num) {
+        case CATERR:
+          pal_store_crashdump(fru);
+        }
+      sprintf(key, "slot%d_sel_error", fru);
       break;
+
+    case FRU_SPB:
+      return 0;
+
+    case FRU_NIC:
+      return 0;
+
+    default:
+      return -1;
   }
 
-  return 0;
+  sprintf(kpath, KV_STORE, key);
+
+  if (access(KV_STORE_PATH, F_OK) == -1) {
+    mkdir(KV_STORE_PATH, 0777);
+  }
+
+  /* Write the value "0" which means FRU_STATUS_BAD */
+  return write_kv(kpath, "0");
 }
 
 int
@@ -2039,7 +2149,7 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 }
 
 int
-pal_get_sensor_health(uint8_t fru, uint8_t *value) {
+pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   char cvalue[64] = {0};
   char kpath[64] = {0};
@@ -2073,6 +2183,35 @@ pal_get_sensor_health(uint8_t fru, uint8_t *value) {
   ret = read_kv(kpath, cvalue);
   *value = atoi(cvalue);
 
+  memset(key, 0, 64);
+  memset(kpath, 0, 64);
+  memset(cvalue, 0, 64);
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_sel_error", fru);
+      break;
+    case FRU_SPB:
+      return 0;
+
+    case FRU_NIC:
+      return 0;
+
+    default:
+      return -1;
+  }
+
+  sprintf(kpath, KV_STORE, key);
+
+  if (access(KV_STORE_PATH, F_OK) == -1) {
+    mkdir(KV_STORE_PATH, 0777);
+  }
+
+  ret = read_kv(kpath, cvalue);
+  *value = *value & atoi(cvalue);
   return 0;
 }
 

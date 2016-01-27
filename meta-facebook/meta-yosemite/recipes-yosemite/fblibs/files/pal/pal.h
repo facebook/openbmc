@@ -165,7 +165,7 @@ int pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 int pal_sel_handler(uint8_t fru, uint8_t snr_num);
 void msleep(int msec);
 int pal_set_sensor_health(uint8_t fru, uint8_t value);
-int pal_get_sensor_health(uint8_t fru, uint8_t *value);
+int pal_get_fru_health(uint8_t fru, uint8_t *value);
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_fan_name(uint8_t num, char *name);

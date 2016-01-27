@@ -31,6 +31,6 @@
 
 echo -n "Setup fan speed... "
 /usr/local/bin/init_pwm.sh
-/usr/local/bin/set_fan_speed.sh 50
+/usr/local/bin/fan-util --set 50
 /usr/local/bin/fscd.py > /dev/null 2>&1 &
 echo "done."

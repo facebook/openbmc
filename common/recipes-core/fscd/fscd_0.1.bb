@@ -23,7 +23,6 @@ LIC_FILES_CHKSUM = "file://fscd.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa
 
 SRC_URI = "file://fscd.py \
            file://fsc_control.py \
-           file://config.json \
           "
 
 S = "${WORKDIR}"
@@ -44,7 +43,6 @@ do_install() {
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
   done
-  install -m 644 config.json ${D}${sysconfdir}/fsc-config.json
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

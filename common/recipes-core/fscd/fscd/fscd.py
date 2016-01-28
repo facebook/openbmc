@@ -70,6 +70,16 @@ def bmc_sensor_read(fru):
         if line.find("failed") != -1:
             continue
 
+        if line.find(" NA "):
+            print("NA? " + line)
+            m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+.\s+\((.+)\)$", line)
+            if m is not None:
+                sid = int(m.group(2), 16)
+                name = m.group(1).strip()
+                value = None
+                status = m.group(4)
+                result[sid] = SensorValue(sid, name, value, None, status)
+                continue
         m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line)
         if m is not None:
             sid = int(m.group(2), 16)
@@ -171,7 +181,14 @@ class Zone:
     def run(self, sensors, dt):
         outs = []
         for i in self.inputs:
+            if i.sensor['id'] not in sensors[i.sensor['board']]:
+                warn('Unable to read sensor %s on board %s'
+                        % (i.sensor['id'], i.sensor['board']))
+                return boost
             sensor = sensors[i.sensor['board']][i.sensor['id']]
+            if sensor.status == 'na':
+                print("%s: NA, %s: -" % (sensor.name, i.profile))
+                continue
             out = i.controller.run(sensor.value, dt)
             if out:
                 out = clamp(out, 0, 100)
@@ -184,7 +201,8 @@ class Zone:
                 warn('Sensor %s reporting status %s' % (sensor.name, sensor.status))
                 return boost
         if len(outs) == 0:
-            return transitional
+            # no sensors could be read
+            return boost
         return max(outs)
 
 def main():

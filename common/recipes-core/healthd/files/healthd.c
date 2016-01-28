@@ -56,7 +56,6 @@ watchdog_handler() {
 
   /* Start watchdog in manual mode */
   start_watchdog(0);
-  syslog(LOG_INFO, "start WD");
 
   /* Set watchdog to persistent mode so timer expiry will happen independent
    * of this process's liveliness.
@@ -67,12 +66,12 @@ watchdog_handler() {
 
     sleep(5);
 
-    /* Restart the watchdog countdown. If this process is terminated,
+    /*
+     * Restart the watchdog countdown. If this process is terminated,
      * the persistent watchdog setting will cause the system to reboot after
-     * he watchdog timeout.
+     * the watchdog timeout.
      */
     kick_watchdog();
-    syslog(LOG_INFO, "kick WD");
   }
 }
 

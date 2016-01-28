@@ -20,6 +20,7 @@ DEPENDS_append = "update-rc.d-native"
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
+            file://config.json \
            "
 
 S = "${WORKDIR}"
@@ -43,6 +44,7 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -m 644 config.json ${D}${sysconfdir}/fsc-config.json
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
   update-rc.d -r ${D} setup-fan.sh start 91 5 .
 }

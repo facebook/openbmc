@@ -96,7 +96,7 @@ def bmc_read_speed():
     sdata = data.split('\n')
     result = {}
     for line in sdata:
-        m = re.match(r"^Fan (\d+) RPM:\s+(\d+)\s*$", line)
+        m = re.match(r"Fan (\d+)\sSpeed:\s+(\d+)\s", line)
         if m is not None:
             result[int(m.group(1))] = int(m.group(2))
     return result

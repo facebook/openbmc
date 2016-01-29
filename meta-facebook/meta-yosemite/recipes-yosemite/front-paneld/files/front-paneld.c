@@ -48,6 +48,9 @@
 #define LED_ON_TIME_IDENTIFY 200
 #define LED_OFF_TIME_IDENTIFY 200
 
+#define LED_ON_TIME_HEALTH 900
+#define LED_OFF_TIME_HEALTH 100
+
 #define LED_ON_TIME_BMC_SELECT 500
 #define LED_OFF_TIME_BMC_SELECT 500
 
@@ -495,6 +498,8 @@ led_sync_handler() {
   char tstr[64] = {0};
   char id_arr[5] = {0};
   uint8_t slot;
+  uint8_t spb_hlth = 0;
+  uint8_t nic_hlth = 0;
 
 #ifdef DEBUG
   syslog(LOG_INFO, "led_handler for slot %d\n", slot);
@@ -522,6 +527,40 @@ led_sync_handler() {
         pal_set_id_led(slot, ID_LED_OFF);
       }
       msleep(LED_OFF_TIME_IDENTIFY);
+      continue;
+    }
+
+    // Handle Sled level health condition
+    ret = pal_get_fru_health(FRU_SPB, &spb_hlth);
+    if (ret) {
+      sleep(1);
+      continue;
+    }
+
+    ret = pal_get_fru_health(FRU_NIC, &nic_hlth);
+    if (ret) {
+      sleep(1);
+      continue;
+    }
+
+    if (spb_hlth == FRU_STATUS_BAD || nic_hlth == FRU_STATUS_BAD) {
+      // Turn OFF Blue LED
+      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
+        g_sync_led[slot] = 1;
+        pal_set_led(slot, LED_OFF);
+      }
+
+      // Start blinking the Yellow/ID LED
+      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
+        pal_set_id_led(slot, ID_LED_ON);
+      }
+
+      msleep(LED_ON_TIME_HEALTH);
+
+      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
+        pal_set_id_led(slot, ID_LED_OFF);
+      }
+      msleep(LED_OFF_TIME_HEALTH);
       continue;
     }
 

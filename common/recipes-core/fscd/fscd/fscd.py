@@ -37,6 +37,7 @@ RAMFS_CONFIG = '/etc/fsc-config.json'
 
 boost = 100
 transitional = 70
+ramp_rate = 10
 
 SensorValue = namedtuple('SensorValue', ['id','name','value','unit','status'])
 
@@ -71,7 +72,6 @@ def bmc_sensor_read(fru):
             continue
 
         if line.find(" NA "):
-            print("NA? " + line)
             m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+.\s+\((.+)\)$", line)
             if m is not None:
                 sid = int(m.group(2), 16)
@@ -153,8 +153,8 @@ def make_controller(profile):
                 profile['kp'],
                 profile['ki'],
                 profile['kd'],
-                profile['min'],
-                profile['max'])
+                profile['negative_hysteresis'],
+                profile['positive_hysteresis'])
         return controller
     err = "Don't understand profile type '%s'" % (profile['type'])
     error(err)
@@ -173,6 +173,7 @@ class Zone:
     def __init__(self, pwm_output):
         self.pwm_output = pwm_output
         self.inputs = []
+        self.last_pwm = 100
 
     def add_input(self, config, data):
         controller = make_controller(config['profiles'][data['profile']])
@@ -209,6 +210,7 @@ def main():
     global transitional
     global boost
     global wdfile
+    global ramp_rate
     syslog.openlog("fscd")
     info("starting")
     machine.set_all_pwm(transitional)
@@ -225,6 +227,8 @@ def main():
     transitional = config['pwm_transition_value']
     boost = config['pwm_boost_value']
     watchdog = config['watchdog']
+    if 'ramp_rate' in config:
+        ramp_rate = config['ramp_rate']
     wdfile = None
     if watchdog:
         info("watchdog pinging enabled")
@@ -266,6 +270,12 @@ def main():
         for zone in zones:
             print("PWM: %s" % (json.dumps(zone.pwm_output)))
             pwmval = zone.run(sensors, dt)
+            if abs(zone.last_pwm - pwmval) > ramp_rate:
+                if pwmval < zone.last_pwm:
+                    pwmval = zone.last_pwm - ramp_rate
+                else:
+                    pwmval = zone.last_pwm + ramp_rate
+            zone.last_pwm = pwmval
             if fan_fail:
                 pwmval = boost
             if hasattr(zone.pwm_output, '__iter__'):

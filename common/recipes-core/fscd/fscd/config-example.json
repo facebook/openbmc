@@ -45,11 +45,11 @@
     "pid_margin": {
       "type": "pid",
       "setpoint": -20,
-      "min": -25,
-      "max": -7,
-      "kp": 1000,
-      "ki": 50,
-      "kd": 500
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 2,
+      "kp": -1,
+      "ki": -0.05,
+      "kd": -0.5
     }
   },
   "zones": {

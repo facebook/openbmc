@@ -1,28 +1,30 @@
 class PID:
-    def __init__(self, setpoint, kp=0.0, ki=0.0, kd=0.0, minval=0.0, maxval=100.0):
+    def __init__(self, setpoint, kp=0.0, ki=0.0, kd=0.0, neg_hyst=0.0, pos_hyst=0.0):
         self.last_error = 0
         self.I = 0
-        self.setpoint = setpoint
         self.kp = kp
         self.ki = ki
         self.kd = kd
-        self.minval = minval
-        self.maxval = maxval
+        self.minval = setpoint - neg_hyst
+        self.maxval = setpoint + pos_hyst
+        self.last_out = None
 
     def run(self, value, dt):
-        # don't accumulate into I term outside of operating range
+        # don't accumulate into I term below min hysteresis
         if value < self.minval:
             self.I = 0
-            return None
+            self.last_out = None
+        # calculate PID values above max hysteresis
         if value > self.maxval:
-            self.I = 0
-            return None
-        error = self.setpoint - value
-        self.I = self.I + error*dt
-        D = (error - self.last_error) / dt
-        out = self.kp * error + self.ki * self.I + self.kd * D
-        self.last_error = error
-        return out
+            error = self.maxval - value
+            self.I = self.I + error*dt
+            D = (error - self.last_error) / dt
+            out = self.kp * error + self.ki * self.I + self.kd * D
+            self.last_out = out
+            self.last_error = error
+            return out
+        # use most recently calc'd PWM value
+        return self.last_out
 
 
 # Threshold table

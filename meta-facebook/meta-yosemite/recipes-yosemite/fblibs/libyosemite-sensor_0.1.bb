@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://yosemite_sensor.c;beginline=8;endline=20;md5=da359787
 
 SRC_URI = "file://yosemite_sensor \
           "
-DEPENDS =+ " libipmi libipmb libbic libyosemite-common "
+DEPENDS =+ " libipmi libipmb libbic libyosemite-common fbutils "
 
 S = "${WORKDIR}/yosemite_sensor"
 

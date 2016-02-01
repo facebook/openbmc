@@ -29,7 +29,6 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/file.h>
-#include <facebook/bic.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/sdr.h>
 #include <openbmc/pal.h>
@@ -365,19 +364,14 @@ snr_discrete_monitor(void *arg) {
   int i, ret;
   uint8_t discrete_cnt;
   uint8_t snr_num;
-  //uint8_t *discrete_list;
   thresh_sensor_t *snr;
   float normal_val, curr_val;
 
-  // TODO: Need to resolve the SEGFAULT in the call below and replace HACK here.
-  /*
-  ret = pal_get_fru_discrete_list(fru, &discrete_list, &discrete_cnt);
-  if (ret < 0) {
-    return;
-  }
-  */
   /* HACK */
+  // TODO: Need to resolve the SEGFAULT in the call below and replace HACK here.
+#ifdef CONFIG_YOSEMITE
   uint8_t discrete_list[3];
+  discrete_cnt = 3;
   if (fru != FRU_SPB && fru != FRU_NIC) {
     discrete_list[0] = BIC_SENSOR_SYSTEM_STATUS;
     discrete_list[1] = BIC_SENSOR_VR_HOT;
@@ -385,8 +379,13 @@ snr_discrete_monitor(void *arg) {
   } else {
     return;
   }
-
-  discrete_cnt = 3;
+#else
+  uint8_t *discrete_list;
+  ret = pal_get_fru_discrete_list(fru, &discrete_list, &discrete_cnt);
+  if (ret < 0) {
+    return;
+  }
+#endif /* CONFIG_YOSEMITE */
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {

@@ -15,29 +15,27 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "Yosemite GPIO Pin Library"
-DESCRIPTION = "library for all gpio pins in yosemite"
+SUMMARY = "Lightning Flash Management Library"
+DESCRIPTION = "library for information on the sideband of the flash"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://yosemite_gpio.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://lightning_flash.c;beginline=3;endline=15;md5=da35978751a9d71b73679307c4d296ec"
 
 
-SRC_URI = "file://yosemite_gpio \
+SRC_URI = "file://lightning_flash \
           "
 
-DEPENDS += "libbic "
-
-S = "${WORKDIR}/yosemite_gpio"
+S = "${WORKDIR}/lightning_flash"
 
 do_install() {
 	  install -d ${D}${libdir}
-    install -m 0644 libyosemite_gpio.so ${D}${libdir}/libyosemite_gpio.so
+    install -m 0644 liblightning_flash.so ${D}${libdir}/liblightning_flash.so
 
     install -d ${D}${includedir}
     install -d ${D}${includedir}/facebook
-    install -m 0644 yosemite_gpio.h ${D}${includedir}/facebook/yosemite_gpio.h
+    install -m 0644 lightning_flash.h ${D}${includedir}/facebook/lightning_flash.h
 }
 
-FILES_${PN} = "${libdir}/libyosemite_gpio.so"
-FILES_${PN}-dev = "${includedir}/facebook/yosemite_gpio.h"
+FILES_${PN} = "${libdir}/liblightning_flash.so"
+FILES_${PN}-dev = "${includedir}/facebook/lightning_flash.h"

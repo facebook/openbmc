@@ -1,4 +1,4 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2016-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,13 +15,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-lib: libyosemite_gpio.so
+lib: liblightning_flash.so
 
-libyosemite_gpio.so: yosemite_gpio.c
-	$(CC) $(CFLAGS) -fPIC -c -o yosemite_gpio.o yosemite_gpio.c
-	$(CC) -shared -o libyosemite_gpio.so yosemite_gpio.o -lc
+liblightning_flash.so: lightning_flash.c
+	$(CC) $(CFLAGS) -fPIC -c -o lightning_flash.o lightning_flash.c
+	$(CC) -shared -o liblightning_flash.so lightning_flash.o -lc
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o libyosemite_gpio.so
+	rm -rf *.o liblightning_flash.so

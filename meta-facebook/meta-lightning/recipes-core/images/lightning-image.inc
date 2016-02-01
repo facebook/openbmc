@@ -44,9 +44,9 @@ IMAGE_INSTALL += " \
   healthd \
   watchdog-ctrl \
   i2c-tools \
-  sensor-setup \
   usb-console \
   sensor-util \
+  sensor-mon \
   lmsensors-sensors \
   rest-api \
   bottle \

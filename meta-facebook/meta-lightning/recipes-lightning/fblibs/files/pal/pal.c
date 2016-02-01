@@ -752,7 +752,7 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 }
 
 int
-pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, uint8_t *cnt) {
 
   switch(fru) {
     case FRU_PEB:
@@ -784,6 +784,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
+  int ret;
   return lightning_sensor_read(fru, sensor_num, value);
 }
 
@@ -989,7 +990,7 @@ pal_is_bmc_por(void) {
 }
 
 int
-pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, uint8_t *cnt) {
 
   return 0;
 }
@@ -1045,7 +1046,7 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 }
 
 int
-pal_get_sensor_health(uint8_t fru, uint8_t *value) {
+pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   return 0;
 }
@@ -1204,6 +1205,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   dev = open(I2C_DEV_FAN, O_RDWR);
   if (dev < 0) {
     syslog(LOG_ERR, "get_fan_speed: open() failed");
+    close(dev);
     return -1;
   }
 
@@ -1211,7 +1213,11 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_FAN);
   if (ret < 0) {
     syslog(LOG_ERR, "get_fan_speed: ioctl() assigning i2c addr failed");
+    close(dev);
+    return -1;
   }
+
+  close(dev);
 
   rpm_h = i2c_smbus_read_byte_data(dev, FAN_REGISTER_H + fan*2 /* offset */);
   rpm_l = i2c_smbus_read_byte_data(dev, FAN_REGISTER_L + fan*2 /* offset */);

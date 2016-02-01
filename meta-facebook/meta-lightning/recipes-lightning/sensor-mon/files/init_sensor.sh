@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2016-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,18 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-### BEGIN INIT INFO
-# Provides:          setup-sensord
-# Required-Start:
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description: Setup sensor monitoring
-### END INIT INFO
+I2C_BUS_FCB=5
 
-. /usr/local/fbpackages/utils/ast-functions
+# NCT7904 is the fan controller on the FCB board
+I2C_ADDR_NCT7904=0x2d
 
-echo -n "Setup sensor monitoring for Lightning... "
-/usr/local/bin/init_sensor.sh
-#/usr/local/bin/sensord peb pdpb fcb
-echo "done."
+# Enable the Pins to sense the Temperature VSEN23_MD and VSEN45_MD
+i2cset -y $I2C_BUS_FCB $I2C_ADDR_NCT7904 0x2E 0x5 b

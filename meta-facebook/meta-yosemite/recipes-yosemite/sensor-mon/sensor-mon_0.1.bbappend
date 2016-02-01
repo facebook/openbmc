@@ -22,6 +22,7 @@ SRC_URI += "file://setup-sensord.sh \
 
 S = "${WORKDIR}"
 
+CXXFLAGS_prepend = "-DCONFIG_YOSEMITE "
 
 DEPENDS_append = "update-rc.d-native"
 

@@ -173,7 +173,7 @@ class Zone:
     def __init__(self, pwm_output):
         self.pwm_output = pwm_output
         self.inputs = []
-        self.last_pwm = 100
+        self.last_pwm = transitional
 
     def add_input(self, config, data):
         controller = make_controller(config['profiles'][data['profile']])

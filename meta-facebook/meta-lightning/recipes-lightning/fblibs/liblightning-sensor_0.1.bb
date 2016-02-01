@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://lightning_sensor.c;beginline=8;endline=20;md5=da35978
 
 SRC_URI = "file://lightning_sensor \
           "
-DEPENDS =+ " libipmi liblightning-common "
+DEPENDS =+ " libipmi liblightning-common liblightning-flash"
 
 S = "${WORKDIR}/lightning_sensor"
 

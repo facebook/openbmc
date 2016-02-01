@@ -21,6 +21,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
             file://config.json \
+            file://run-fscd.sh \
            "
 
 S = "${WORKDIR}"
@@ -44,16 +45,14 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/fscd
   install -m 644 config.json ${D}${sysconfdir}/fsc-config.json
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
+  install -m 755 run-fscd.sh ${D}${sysconfdir}/sv/fscd/run
   update-rc.d -r ${D} setup-fan.sh start 91 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/fscd ${prefix}/local/bin ${sysconfdir} "
-
-# Inhibit complaints about .debug directories for the fand binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

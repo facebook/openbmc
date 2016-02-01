@@ -15,15 +15,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+DEPENDS_append = "update-rc.d-native"
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://setup-sensord.sh \
+SRC_URI += "file://init_sensor.sh \
+            file://setup-sensord.sh \
            "
 
 S = "${WORKDIR}"
 
-
-DEPENDS_append = "update-rc.d-native"
+binfiles += "init_sensor.sh \
+            "
 
 pkgdir = "sensor-mon"
 

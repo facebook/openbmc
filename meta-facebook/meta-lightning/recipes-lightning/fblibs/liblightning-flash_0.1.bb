@@ -26,6 +26,8 @@ LIC_FILES_CHKSUM = "file://lightning_flash.c;beginline=3;endline=15;md5=da359787
 SRC_URI = "file://lightning_flash \
           "
 
+DEPENDS =+ " fbutils"
+
 S = "${WORKDIR}/lightning_flash"
 
 do_install() {

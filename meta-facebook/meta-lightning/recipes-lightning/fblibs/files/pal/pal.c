@@ -1217,10 +1217,11 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
     return -1;
   }
 
-  close(dev);
-
   rpm_h = i2c_smbus_read_byte_data(dev, FAN_REGISTER_H + fan*2 /* offset */);
   rpm_l = i2c_smbus_read_byte_data(dev, FAN_REGISTER_L + fan*2 /* offset */);
+
+  close(dev);
+
   /*
    * cnt[12:5] = 8 LSB bits from rpm_h
    *  cnt[4:0] = 5 LSB bits from rpm_l

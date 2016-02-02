@@ -29,7 +29,8 @@ from tempfile import mkstemp
 from bottle import HTTPError
 
 UPDATE_JOB_DIR = '/var/rackmond/update_jobs'
-UPDATERS = {'delta': '/usr/local/bin/psu-update-delta.py'}
+UPDATERS = {'delta': '/usr/local/bin/psu-update-delta.py',
+            'belpower': '/usr/local/bin/psu-update-bel.py'}
 
 def get_jobs():
     jobs = []

@@ -42,7 +42,6 @@ IMAGE_INSTALL += " \
   u-boot \
   u-boot-fw-utils \
   fbutils \
-  fan-ctrl \
   ipmid \
   healthd \
   watchdog-ctrl \
@@ -60,6 +59,7 @@ IMAGE_INSTALL += " \
   fruid \
   log-util \
   fan-util \
+  fscd \
   cherryPy \
   lldp-util \
   spatula \

@@ -306,3 +306,9 @@ gpio_set H3 1
 # To use GPIOH2, SCU90[6], SCU90[7] must be 0
 gpio_set H2 1
 
+# PEER_1B_2B_HB: GPIOO0 (112)
+# To use GPIOO0, SCU88[8] must be 0
+devmem_clear_bit $(scu_addr 88) 8
+
+gpio_set O0 1
+

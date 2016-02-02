@@ -15,26 +15,19 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "update-rc.d-native liblightning-sensor"
+DEPENDS_append = "update-rc.d-native"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
-SRC_URI += "file://get_fan_speed.sh \
-            file://init_pwm.sh \
-            file://set_fan_speed.sh \
+SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
            "
 
 S = "${WORKDIR}"
 
-binfiles += "get_fan_speed.sh \
-            init_pwm.sh \
-            set_fan_speed.sh \
-           "
+binfiles += "init_pwm.sh \
+            "
 
-CXXFLAGS_prepend = "-DCONFIG_LIGHTNING "
-LDFLAGS_append = " -llightning_sensor"
-
-pkgdir = "fan_ctrl"
+pkgdir = "fscd"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -56,7 +49,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/fan_ctrl ${prefix}/local/bin ${sysconfdir} "
+FILES_${PN} = "${FBPACKAGEDIR}/fscd ${prefix}/local/bin ${sysconfdir} "
 
 # Inhibit complaints about .debug directories for the fand binary:
 

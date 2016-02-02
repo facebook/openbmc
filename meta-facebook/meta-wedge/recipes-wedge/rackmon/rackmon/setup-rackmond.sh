@@ -11,10 +11,5 @@
 # Short-Description: Start Rackmon service
 ### END INIT INFO
 
-echo -n "Starting rackmon background service..."
-/usr/local/bin/rackmond
-echo "done."
-
-echo -n "Configuring rackmon service..."
-PYTHONPATH=/etc python /etc/rackmon-config.py
-echo "done."
+runsv /etc/sv/rackmond > /dev/null 2>&1 &
+sv $1 rackmond

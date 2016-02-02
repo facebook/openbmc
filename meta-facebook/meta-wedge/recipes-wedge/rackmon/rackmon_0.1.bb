@@ -33,6 +33,7 @@ SRC_URI = "file://Makefile \
            file://rackmond.h \
            file://rackmondata.c \
            file://setup-rackmond.sh \
+           file://run-rackmond.sh \
            file://rackmon-config.py \
            file://rackmond.py \
            file://psu-update-delta.py \
@@ -65,10 +66,13 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 setup-rackmond.sh ${D}${sysconfdir}/init.d/setup-rackmond.sh
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/rackmond
+  install -m 755 run-rackmond.sh ${D}${sysconfdir}/sv/rackmond/run
+  install -m 755 setup-rackmond.sh ${D}${sysconfdir}/init.d/rackmond
   install -m 755 rackmon-config.py ${D}${sysconfdir}/rackmon-config.py
   install -m 755 rackmond.py ${D}${sysconfdir}/rackmond.py
-  update-rc.d -r ${D} setup-rackmond.sh start 95 2 3 4 5  .
+  update-rc.d -r ${D} rackmond start 95 2 3 4 5  .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

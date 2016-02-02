@@ -37,6 +37,7 @@ SRC_URI = "file://Makefile \
            file://rackmon-config.py \
            file://rackmond.py \
            file://psu-update-delta.py \
+           file://psu-update-bel.py \
            file://hexfile.py \
           "
 
@@ -48,6 +49,7 @@ binfiles = "modbuscmd \
             rackmond \
             rackmondata \
             psu-update-delta.py \
+            psu-update-bel.py \
             hexfile.py \
            "
 

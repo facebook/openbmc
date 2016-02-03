@@ -24,14 +24,22 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = " \
     file://COPYING \
+    file://mount_data0.sh \
     file://openbmc-utils.sh \
+    file://rc.early \
+    file://rc.local \
     "
 
 OPENBMC_UTILS_FILES = " \
+    mount_data0.sh \
     openbmc-utils.sh \
+    rc.early \
+    rc.local \
     "
 
 S = "${WORKDIR}"
+
+DEPENDS = "update-rc.d-native"
 
 do_install() {
     pkgdir="/usr/local/packages/utils"
@@ -43,6 +51,19 @@ do_install() {
         install -m 755 $f ${dstdir}/${f}
         ln -s ${pkgdir}/${f} ${localbindir}
     done
+
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+
+    # the script to mount /mnt/data, after udev (level 4) is started
+    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+    update-rc.d -r ${D} mount_data0.sh start 05 S .
+
+    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+    update-rc.d -r ${D} rc.early start 06 S .
+
+    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }
 
 FILES_${PN} += "/usr/local"

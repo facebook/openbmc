@@ -156,10 +156,10 @@ char * def_val_list[] = {
   "off", /* identify_slot3 */
   "off", /* identify_slot4 */
   "0", /* timestamp_sled */
-  "on", /* slot1_por_cfg */
-  "on", /* slot2_por_cfg */
-  "on", /* slot3_por_cfg */
-  "on", /* slot4_por_cfg */
+  "lps", /* slot1_por_cfg */
+  "lps", /* slot2_por_cfg */
+  "lps", /* slot3_por_cfg */
+  "lps", /* slot4_por_cfg */
   "1", /* slot1_sensor_health */
   "1", /* slot2_sensor_health */
   "1", /* slot3_sensor_health */

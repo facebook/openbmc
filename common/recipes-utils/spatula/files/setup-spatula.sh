@@ -37,7 +37,7 @@ CMD="/usr/local/bin/spatula_wrapper.py ${SPATULA_ARGS}"
 case "$ACTION" in
   start)
     echo -n "Setting up Spatula: "
-    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    pid=$(ps | grep -v grep | grep "$CMD" | awk '{print $1}')
     if [ $pid ]; then
       echo "already running"
     else
@@ -47,7 +47,7 @@ case "$ACTION" in
     ;;
   stop)
     echo -n "Stopping Spatula: "
-    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    pid=$(ps | grep -v grep | grep "$CMD" | awk '{print $1}')
     if [ $pid ]; then
       kill $pid
     fi
@@ -55,7 +55,7 @@ case "$ACTION" in
     ;;
   restart)
     echo -n "Restarting Spatula: "
-    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
+    pid=$(ps | grep -v grep | grep "$CMD" | awk '{print $1}')
     if [ $pid ]; then
       kill $pid
     fi
@@ -64,7 +64,7 @@ case "$ACTION" in
     echo "done."
     ;;
   status)
-    if [[ -n $(ps | grep -v grep | grep $CMD | awk '{print $1}') ]]; then
+    if [[ -n $(ps | grep -v grep | grep "$CMD" | awk '{print $1}') ]]; then
       echo "Spatula is running"
     else
       echo "Spatula is stopped"

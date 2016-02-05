@@ -628,8 +628,8 @@ CONFIG_MTD_CMDLINE_PARTS=y
 #
 # User Modules And Translation Layers
 #
-# CONFIG_MTD_BLOCK is not set
-# CONFIG_MTD_BLOCK_RO is not set
+CONFIG_MTD_BLKDEVS=y
+CONFIG_MTD_BLOCK=y
 # CONFIG_FTL is not set
 # CONFIG_NFTL is not set
 # CONFIG_INFTL is not set

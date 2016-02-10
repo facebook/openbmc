@@ -129,7 +129,7 @@ def rest_server_hdl():
 # Handler for uServer resource endpoint
 @bottle.route('/api/sys/server', method='POST')
 def rest_server_act_hdl():
-    data = json.load(request.body)
+    data = json.load(bottle.request.body)
     return rest_server.server_action(data)
 
 # Handler for sensors resource endpoint
@@ -152,7 +152,7 @@ def psu_update_hdl():
 
 @bottle.route('/api/sys/psu_update', method='POST')
 def psu_update_hdl():
-    data = json.load(request.body)
+    data = json.load(bottle.request.body)
     return rest_psu_update.begin_job(data)
 
 # Handler for sensors resource endpoint

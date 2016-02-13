@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <openbmc/gpio.h>
 uint16_t modbus_crc16(char* buffer, size_t length);
 
 #define DEFAULT_TTY "/dev/ttyS3"
@@ -46,9 +47,7 @@ extern int verbose;
     goto cleanup; \
 }
 
-int waitfd(int fd);
-void gpio_on(int fd);
-void gpio_off(int fd);
+int waitfd(int fd, int gpio);
 void decode_hex_in_place(char* buf, size_t* len);
 void append_modbus_crc16(char* buf, size_t* len);
 void print_hex(FILE* f, char* buf, size_t len);
@@ -59,7 +58,7 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us);
 
 typedef struct _modbus_req {
   int tty_fd;
-  int gpio_fd;
+  gpio_st* gpio;
   const char *modbus_cmd;
   size_t cmd_len;
   int timeout;

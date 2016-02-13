@@ -33,9 +33,9 @@
 int verbose = 0;
 
 #define TIOCSERWAITTEMT 0x5499
-int waitfd(int fd) {
+int waitfd(int fd, int gpio) {
   int loops = 0;
-  ioctl(fd, TIOCSERWAITTEMT, DEFAULT_GPIO);
+  ioctl(fd, TIOCSERWAITTEMT, gpio);
   while(1) {
     int lsr;
     int ret = ioctl(fd, TIOCSERGETLSR, &lsr);
@@ -48,16 +48,6 @@ int waitfd(int fd) {
     loops++;
   }
   return loops;
-}
-
-void gpio_on(int fd) {
-  lseek(fd, 0, SEEK_SET);
-  write(fd, "1", 1);
-}
-
-void gpio_off(int fd) {
-  lseek(fd, 0, SEEK_SET);
-  write(fd, "0", 1);
 }
 
 void decode_hex_in_place(char* buf, size_t* len) {
@@ -242,7 +232,7 @@ int modbuscmd(modbus_req *req) {
     int policy = SCHED_FIFO;
     CHECKP(sched, pthread_setschedparam(pthread_self(), policy, &sp));
     // gpio on, write, wait, gpio off
-    gpio_on(req->gpio_fd);
+    gpio_write(req->gpio, GPIO_VALUE_HIGH);
     struct timespec write_begin;
     struct timespec wait_begin;
     struct timespec wait_end;
@@ -250,9 +240,9 @@ int modbuscmd(modbus_req *req) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &write_begin);
     write(req->tty_fd, modbus_cmd, cmd_len);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_begin);
-    int waitloops = waitfd(req->tty_fd);
+    int waitloops = waitfd(req->tty_fd, req->gpio->gs_gpio);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_end);
-    gpio_off(req->gpio_fd);
+    gpio_write(req->gpio, GPIO_VALUE_LOW);
     sp.sched_priority = 0;
     // Enable UART read
     tio.c_cflag |= CREAD;

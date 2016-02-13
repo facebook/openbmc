@@ -49,7 +49,7 @@ typedef struct _rs485_dev {
   // hold this for the duration of a command
   pthread_mutex_t lock;
   int tty_fd;
-  int gpio_fd;
+  gpio_st gpio;
 } rs485_dev;
 
 typedef struct _register_req {
@@ -104,7 +104,7 @@ int modbus_command(rs485_dev* dev, int timeout, char* command, size_t len, char*
   lock_holder(devlock, &dev->lock);
   modbus_req req;
   req.tty_fd = dev->tty_fd;
-  req.gpio_fd = dev->gpio_fd;
+  req.gpio = &dev->gpio;
   req.modbus_cmd = command;
   req.cmd_len = len;
   req.dest_buf = destbuf;
@@ -404,19 +404,17 @@ void* monitoring_loop(void* arg) {
 
 int open_rs485_dev(const char* tty_filename, int gpio_num, rs485_dev *dev) {
   int error = 0;
-  int tty_fd, gpio_fd;
-  char gpio_filename[128];
+  int tty_fd;
   dbg("[*] Opening TTY\n");
   tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
   CHECK(tty_fd);
 
   dbg("[*] Opening GPIO %d\n", gpio_num);
-  snprintf(gpio_filename, sizeof(gpio_filename), "/sys/class/gpio/gpio%d/value", gpio_num);
-  gpio_fd = open(gpio_filename, O_WRONLY | O_SYNC);
-  CHECK(gpio_fd);
+  gpio_open(&dev->gpio, gpio_num);
+  dbg("[*] Set GPIO %d dir to out\n", gpio_num);
+  gpio_change_direction(&dev->gpio, GPIO_DIRECTION_OUT);
 
   dev->tty_fd = tty_fd;
-  dev->gpio_fd = gpio_fd;
   pthread_mutex_init(&dev->lock, NULL);
 cleanup:
   return error;

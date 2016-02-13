@@ -43,8 +43,7 @@ int main(int argc, char **argv) {
     int error = 0;
     int fd;
     struct termios tio;
-    char gpio_filename[255];
-    int gpio_fd = 0;
+    gpio_st gs;
     int gpio_n = DEFAULT_GPIO;
     char *tty = DEFAULT_TTY;
     char *modbus_cmd = NULL;
@@ -86,9 +85,7 @@ int main(int argc, char **argv) {
 
     if (verbose)
       fprintf(stderr, "[*] Opening GPIO %d\n", gpio_n);
-    snprintf(gpio_filename, 255, "/sys/class/gpio/gpio%d/value", gpio_n);
-    gpio_fd = open(gpio_filename, O_WRONLY | O_SYNC);
-    CHECK(gpio_fd);
+    CHECK(gpio_open(&gs, gpio_n));
 
     if (verbose)
       fprintf(stderr, "[*] Setting TTY flags!\n");
@@ -128,7 +125,7 @@ int main(int argc, char **argv) {
     // Enable UART read
     tio.c_cflag |= CREAD;
     CHECK(tcsetattr(fd,TCSANOW,&tio));
-    gpio_off(gpio_fd);
+    gpio_write(&gs, GPIO_VALUE_LOW);
 
     if(verbose)
       fprintf(stderr, "[*] Wait for matching command...\n");
@@ -167,10 +164,10 @@ wait_for_command:
     tio.c_cflag &= ~CREAD;
     CHECK(tcsetattr(fd,TCSANOW,&tio));
     // gpio on, write, wait, gpio off
-    gpio_on(gpio_fd);
+    gpio_write(&gs, GPIO_VALUE_HIGH);
     write(fd, modbus_reply, reply_len);
-    waitfd(fd);
-    gpio_off(gpio_fd);
+    waitfd(fd, gs.gs_gpio);
+    gpio_write(&gs, GPIO_VALUE_LOW);
 
 cleanup:
     if(error != 0) {

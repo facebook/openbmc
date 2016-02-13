@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 override CFLAGS+=-D_GNU_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=199309 -Wall -Werror -std=c99
-override LDFLAGS+=-pthread
+override LDFLAGS+=-pthread -lgpio
 all: modbuscmd gpiowatch modbussim rackmond rackmondata
 
 rackmondata: rackmondata.c modbus.c

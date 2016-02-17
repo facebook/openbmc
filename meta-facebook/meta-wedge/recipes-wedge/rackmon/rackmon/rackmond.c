@@ -281,7 +281,7 @@ int check_active_psus() {
   world.num_active_addrs = 0;
 
   scanning = 1;
-  //fprintf(stderr, "Begin presence check: ");
+  syslog(LOG_INFO, "Searching for PSUs...");
   for(int rack = 0; rack < 3; rack++) {
     for(int shelf = 0; shelf < 2; shelf++) {
       for(int psu = 0; psu < 3; psu++) {
@@ -292,6 +292,7 @@ int check_active_psus() {
           world.active_addrs[world.num_active_addrs] = addr;
           world.num_active_addrs++;
           //fprintf(stderr, "%02x - active (%04x) ", addr, status);
+          syslog(LOG_INFO, "Found PSU at address %02x", addr);
         } else {
           dbg("%02x - %d; ", addr, err);
         }

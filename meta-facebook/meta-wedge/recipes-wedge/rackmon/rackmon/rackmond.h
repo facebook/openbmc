@@ -36,6 +36,8 @@ typedef struct set_config_command {
 #define COMMAND_TYPE_DUMP_DATA_JSON     0x03
 #define COMMAND_TYPE_PAUSE_MONITORING   0x04
 #define COMMAND_TYPE_START_MONITORING   0x05
+#define COMMAND_TYPE_DUMP_STATUS        0x06
+#define COMMAND_TYPE_FORCE_SCAN         0x07
 
 typedef struct rackmond_command {
   uint16_t type;

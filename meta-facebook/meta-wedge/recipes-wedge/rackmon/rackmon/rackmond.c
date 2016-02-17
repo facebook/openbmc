@@ -90,6 +90,95 @@ typedef struct _rackmond_data {
   rs485_dev rs485;
 } rackmond_data;
 
+typedef struct _write_buffer {
+  char* buffer;
+  size_t len;
+  size_t pos;
+  int fd;
+} write_buffer;
+
+int buf_open(write_buffer* buf, int fd, size_t len) {
+  int error = 0;
+  char* bufmem = malloc(len);
+  if(!bufmem) {
+    BAIL("Couldn't allocate write buffer of len %d for fd %d", len, fd);
+  }
+  buf->buffer = bufmem;
+  buf->pos = 0;
+  buf->len = len;
+  buf->fd = fd;
+cleanup:
+  return error;
+}
+
+ssize_t buf_flush(write_buffer* buf) {
+  int ret;
+  ret = write(buf->fd, buf->buffer, buf->pos);
+  if(ret > 0) {
+    memmove(buf->buffer, buf->buffer + ret, buf->pos - ret);
+    buf->pos -= ret;
+  }
+  return ret;
+}
+
+ssize_t buf_write(write_buffer* buf, void* from, size_t len) {
+  int ret;
+  // write will not fill buffer, only memcpy
+  if((buf->pos + len) < buf->len) {
+    memcpy(buf->buffer + buf->pos, from, len);
+    buf->pos += len;
+    return len;
+  }
+
+  // write would exceed buffer, flush first
+  ret = buf_flush(buf);
+  if (buf->pos != 0) {
+    if(ret < 0) {
+      return ret;
+    }
+    // write() was interrupted but partially succeeded -- the buffer partially
+    // flushed but no bytes of the requested buf_write went through
+    return 0;
+  }
+
+  if(len > buf->len) {
+    // write is larger than buffer, skip buffer
+    return write(buf->fd, from, len);
+  } else {
+    return buf_write(buf, from, len);
+  }
+}
+
+int bprintf(write_buffer* buf, const char* format, ...) {
+  // eh.
+  char tmpbuf[512];
+  int error = 0;
+  int ret;
+  va_list args;
+  va_start(args, format);
+  ret = vsnprintf(tmpbuf, sizeof(tmpbuf), format, args);
+  CHECK(ret);
+  if(ret > sizeof(tmpbuf)) {
+    BAIL("truncated bprintf (%d bytes truncated to %d)", ret, sizeof(tmpbuf));
+  }
+  CHECK(buf_write(buf, tmpbuf, ret));
+cleanup:
+  va_end(args);
+  return error;
+}
+
+int buf_close(write_buffer* buf) {
+  int error = 0;
+  int fret = buf_flush(buf);
+  int cret = close(buf->fd);
+  free(buf->buffer);
+  buf->buffer = NULL;
+  CHECK(fret);
+  CHECKP(close, cret);
+cleanup:
+  return error;
+}
+
 rackmond_data world;
 
 char psu_address(int rack, int shelf, int psu) {
@@ -422,6 +511,9 @@ cleanup:
 
 int do_command(int sock, rackmond_command* cmd) {
   int error = 0;
+  write_buffer wb;
+  //128k write buffer
+  buf_open(&wb, sock, 128*1000);
   lock_holder(worldlock, &world.lock);
   switch(cmd->type) {
     case COMMAND_TYPE_RAW_MODBUS:
@@ -444,12 +536,12 @@ int do_command(int sock, rackmond_command* cmd) {
         if(response_len < 0) {
           uint16_t error = -response_len;
           response_len_wire = 0;
-          send(sock, &response_len_wire, sizeof(uint16_t), 0);
-          send(sock, &error, sizeof(uint16_t), 0);
+          buf_write(&wb, &response_len_wire, sizeof(uint16_t));
+          buf_write(&wb, &error, sizeof(uint16_t));
           break;
         }
-        send(sock, &response_len_wire, sizeof(uint16_t), 0);
-        send(sock, response, response_len, 0);
+        buf_write(&wb, &response_len_wire, sizeof(uint16_t));
+        buf_write(&wb, response, response_len);
         break;
       }
     case COMMAND_TYPE_SET_CONFIG:
@@ -470,53 +562,53 @@ int do_command(int sock, rackmond_command* cmd) {
       {
         lock_take(worldlock);
         if (world.config == NULL) {
-          send(sock, "[]", 2, 0);
+          buf_write(&wb, "[]", 2);
         } else {
           struct timespec ts;
           clock_gettime(CLOCK_REALTIME, &ts);
           uint32_t now = ts.tv_sec;
-          send(sock, "[", 1, 0);
+          buf_write(&wb, "[", 1);
           int data_pos = 0;
           while(world.stored_data[data_pos] != NULL && data_pos < MAX_ACTIVE_ADDRS) {
-            dprintf(sock, "{\"addr\":%d,\"now\":%d,\"ranges\":[",
+            bprintf(&wb, "{\"addr\":%d,\"now\":%d,\"ranges\":[",
                     world.stored_data[data_pos]->addr, now);
             for(int i = 0; i < world.config->num_intervals; i++) {
               uint32_t time;
               register_range_data *rd = &world.stored_data[data_pos]->range_data[i];
               char* mem_pos = rd->mem_begin;
-              dprintf(sock,"{\"begin\":%d,\"readings\":[", rd->i->begin);
+              bprintf(&wb,"{\"begin\":%d,\"readings\":[", rd->i->begin);
               // want to cut the list off early just before
               // the first entry with time == 0
               memcpy(&time, mem_pos, sizeof(time));
               for(int j = 0; j < rd->i->keep && time != 0; j++) {
                 mem_pos += sizeof(time);
-                dprintf(sock, "{\"time\":%d,\"data\":\"", time);
+                bprintf(&wb, "{\"time\":%d,\"data\":\"", time);
                 for(int c = 0; c < rd->i->len * 2; c++) {
-                  dprintf(sock, "%02x", *mem_pos);
+                  bprintf(&wb, "%02x", *mem_pos);
                   mem_pos++;
                 }
-                send(sock, "\"}", 2, 0);
+                buf_write(&wb, "\"}", 2);
                 memcpy(&time, mem_pos, sizeof(time));
                 if (time == 0) {
                   break;
                 }
                 if ((j+1) < rd->i->keep) {
-                  send(sock, ",", 1, 0);
+                  buf_write(&wb, ",", 1);
                 }
               }
-              send(sock, "]}", 2, 0);
+              buf_write(&wb, "]}", 2);
               if ((i+1) < world.config->num_intervals) {
-                send(sock, ",", 1, 0);
+                buf_write(&wb, ",", 1);
               }
             }
             data_pos++;
             if (data_pos < MAX_ACTIVE_ADDRS && world.stored_data[data_pos] != NULL) {
-              send(sock, "]},", 3, 0);
+              buf_write(&wb, "]},", 3);
             } else {
-              send(sock, "]}", 2, 0);
+              buf_write(&wb, "]}", 2);
             }
           }
-          send(sock, "]", 1, 0);
+          buf_write(&wb, "]", 1);
         }
         lock_release(worldlock);
         break;
@@ -526,7 +618,7 @@ int do_command(int sock, rackmond_command* cmd) {
         lock_take(worldlock);
         uint8_t was_paused = world.paused;
         world.paused = 1;
-        send(sock, &was_paused, sizeof(was_paused), 0);
+        buf_write(&wb, &was_paused, sizeof(was_paused));
         lock_release(worldlock);
         break;
       }
@@ -535,7 +627,7 @@ int do_command(int sock, rackmond_command* cmd) {
         lock_take(worldlock);
         uint8_t was_started = !world.paused;
         world.paused = 0;
-        send(sock, &was_started, sizeof(was_started), 0);
+        buf_write(&wb, &was_started, sizeof(was_started));
         lock_release(worldlock);
         break;
       }
@@ -544,6 +636,7 @@ int do_command(int sock, rackmond_command* cmd) {
   }
 cleanup:
   lock_release(worldlock);
+  buf_close(&wb);
   return error;
 }
 

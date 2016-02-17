@@ -472,19 +472,20 @@ cleanup:
   return error;
 }
 
-// check for new psus every N rounds of sensor reads
-#define SEARCH_PSUS_EVERY 200
+// check for new psus every N seconds
+#define SEARCH_PSUS_EVERY 120
 void* monitoring_loop(void* arg) {
   (void) arg;
-  int until_search = 0;
+  int search_at = 0;
   world.status_log = fopen("/var/log/psu-status.log", "a+");
   while(1) {
-    if (until_search == 0) {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    if (search_at < ts.tv_sec) {
       check_active_psus();
       alloc_monitoring_datas();
-      until_search = SEARCH_PSUS_EVERY;
-    } else {
-      until_search--;
+      clock_gettime(CLOCK_REALTIME, &ts);
+      search_at = ts.tv_sec + SEARCH_PSUS_EVERY;
     }
     fetch_monitored_data();
   }

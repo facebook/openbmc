@@ -65,10 +65,15 @@ def begin_job(jobdesc):
               'state': 'fetching' }
     with open(statusfilepath, 'wb') as sfh:
         sfh.write(json.dumps(status))
-    fwdata = urllib2.urlopen(jobdesc['fw_url'])
-    with os.fdopen(fwfd, 'wb') as fwfile:
-        fwfile.write(fwdata.read())
-        fwfile.flush()
+    try:
+        fwdata = urllib2.urlopen(jobdesc['fw_url'])
+        with os.fdopen(fwfd, 'wb') as fwfile:
+            fwfile.write(fwdata.read())
+            fwfile.flush()
+    except:
+        os.remove(statusfilepath)
+        raise
+
     updater = UPDATERS[jobdesc.get('updater', 'delta')]
     updater_process = Popen([updater,
                '--addr', str(jobdesc['address']),

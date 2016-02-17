@@ -571,8 +571,8 @@ storage_get_sdr (unsigned char *request, unsigned char *response,
   sdr_rec_t entry;		// SDR record entry
   int ret;
 
-  rsv_id = (req->data[1] >> 8) | req->data[0];
-  read_rec_id = (req->data[3] >> 8) | req->data[2];
+  rsv_id = (req->data[1] << 8) | req->data[0];
+  read_rec_id = (req->data[3] << 8) | req->data[2];
   rec_offset = req->data[4];
   rec_bytes = req->data[5];
 

@@ -30,10 +30,39 @@
 int main(int argc, char **argv) {
     int error = 0;
     rackmond_command cmd;
+    cmd.type = 0;
     int clisock;
     uint16_t wire_cmd_len = sizeof(cmd);
     struct sockaddr_un rackmond_addr;
-    cmd.type = COMMAND_TYPE_DUMP_DATA_JSON;
+    char *callname = argv[0];
+    char *s;
+
+    for (s = callname; *s != '\0';) {
+      if (*s++ == '/')
+        callname = s;
+    }
+    if (strcmp("rackmondata", callname) == 0) {
+      cmd.type = COMMAND_TYPE_DUMP_DATA_JSON;
+    }
+    if (strcmp("rackmonstatus", callname) == 0) {
+      cmd.type = COMMAND_TYPE_DUMP_STATUS;
+    }
+    if (strcmp("rackmonscan", callname) == 0) {
+      cmd.type = COMMAND_TYPE_FORCE_SCAN;
+    }
+    if (argc > 1 && (strcmp("data", argv[1]) == 0)) {
+      cmd.type = COMMAND_TYPE_DUMP_DATA_JSON;
+    }
+    if (argc > 1 && (strcmp("status", argv[1]) == 0)) {
+      cmd.type = COMMAND_TYPE_DUMP_STATUS;
+    }
+    if (argc > 1 && (strcmp("force_scan", argv[1]) == 0)) {
+      cmd.type = COMMAND_TYPE_FORCE_SCAN;
+    }
+    if(cmd.type == 0) {
+      fprintf(stderr, "Usage: %s { status | data | force_scan }\n", callname);
+      exit(1);
+    }
     clisock = socket(AF_UNIX, SOCK_STREAM, 0);
     CHECKP(socket, clisock);
     rackmond_addr.sun_family = AF_UNIX;
@@ -42,7 +71,7 @@ int main(int argc, char **argv) {
     CHECKP(connect, connect(clisock, (struct sockaddr*) &rackmond_addr, addr_len));
     CHECKP(send, send(clisock, &wire_cmd_len, sizeof(wire_cmd_len), 0));
     CHECKP(send, send(clisock, &cmd, wire_cmd_len, 0));
-    char readbuf[256];
+    char readbuf[1024];
     ssize_t n_read;
     while((n_read = read(clisock, readbuf, sizeof(readbuf))) > 0) {
       write(1, readbuf, n_read);

@@ -103,7 +103,7 @@ int buf_open(write_buffer* buf, int fd, size_t len) {
   int error = 0;
   char* bufmem = malloc(len);
   if(!bufmem) {
-    BAIL("Couldn't allocate write buffer of len %d for fd %d", len, fd);
+    BAIL("Couldn't allocate write buffer of len %d for fd %d\n", len, fd);
   }
   buf->buffer = bufmem;
   buf->pos = 0;
@@ -360,6 +360,8 @@ int sub_storeptrs(const void* va, const void *vb) {
 
 int alloc_monitoring_datas() {
   int error = 0;
+  lock_holder(worldlock, &world.lock);
+  lock_take(worldlock);
   if (world.config == NULL) {
     goto cleanup;
   }
@@ -389,6 +391,7 @@ int alloc_monitoring_datas() {
     BAIL("shouldn't get here!\n");
   }
 cleanup:
+  lock_release(worldlock);
   return error;
 }
 
@@ -483,10 +486,10 @@ cleanup:
 }
 
 // check for new psus every N seconds
+static int search_at = 0;
 #define SEARCH_PSUS_EVERY 120
 void* monitoring_loop(void* arg) {
   (void) arg;
-  int search_at = 0;
   world.status_log = fopen("/var/log/psu-status.log", "a+");
   while(1) {
     struct timespec ts;
@@ -569,6 +572,49 @@ int do_command(int sock, rackmond_command* cmd) {
         lock_release(worldlock);
         break;
       }
+    case COMMAND_TYPE_DUMP_STATUS:
+      {
+        lock_take(worldlock);
+        if (world.config == NULL) {
+          bprintf(&wb, "Unconfigured\n");
+        } else {
+          struct timespec ts;
+          clock_gettime(CLOCK_REALTIME, &ts);
+          uint32_t now = ts.tv_sec;
+          int data_pos = 0;
+          bprintf(&wb, "Monitored PSUs:\n");
+          while(world.stored_data[data_pos] != NULL && data_pos < MAX_ACTIVE_ADDRS) {
+            bprintf(&wb, "PSU addr %02x - crc errors: %d, timeouts: %d\n",
+                world.stored_data[data_pos]->addr,
+                world.stored_data[data_pos]->crc_errors,
+                world.stored_data[data_pos]->timeout_errors);
+            data_pos++;
+          }
+          bprintf(&wb, "Active on last scan: ");
+          for(int i = 0; i < world.num_active_addrs; i++) {
+            bprintf(&wb, "%02x ", world.active_addrs[i]);
+          }
+          bprintf(&wb, "\n");
+          bprintf(&wb, "Next scan in %d seconds.\n", search_at - now);
+        }
+        lock_release(worldlock);
+        break;
+      }
+    case COMMAND_TYPE_FORCE_SCAN:
+      {
+        lock_take(worldlock);
+        if (world.config == NULL) {
+          bprintf(&wb, "Unconfigured\n");
+        } else {
+          struct timespec ts;
+          clock_gettime(CLOCK_REALTIME, &ts);
+          uint32_t now = ts.tv_sec;
+          search_at = now;
+          bprintf(&wb, "Triggering PSU scan...\n");
+        }
+        lock_release(worldlock);
+        break;
+      }
     case COMMAND_TYPE_DUMP_DATA_JSON:
       {
         lock_take(worldlock);
@@ -646,7 +692,7 @@ int do_command(int sock, rackmond_command* cmd) {
         break;
       }
     default:
-      CHECK(-1);
+      BAIL("Unknown command type %d\n", cmd->type);
   }
 cleanup:
   lock_release(worldlock);

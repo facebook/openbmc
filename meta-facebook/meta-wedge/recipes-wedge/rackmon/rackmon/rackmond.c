@@ -65,6 +65,8 @@ typedef struct register_range_data {
 
 typedef struct monitoring_data {
   uint8_t addr;
+  uint32_t crc_errors;
+  uint32_t timeout_errors;
   register_range_data range_data[1];
 } monitoring_data;
 
@@ -291,7 +293,6 @@ int check_active_psus() {
         if (err == 0) {
           world.active_addrs[world.num_active_addrs] = addr;
           world.num_active_addrs++;
-          //fprintf(stderr, "%02x - active (%04x) ", addr, status);
           syslog(LOG_INFO, "Found PSU at address %02x", addr);
         } else {
           dbg("%02x - %d; ", addr, err);
@@ -323,6 +324,8 @@ monitoring_data* alloc_monitoring_data(uint8_t addr) {
     return NULL;
   }
   d->addr = addr;
+  d->crc_errors = 0;
+  d->timeout_errors = 0;
   void* mem = d;
   mem = mem + (sizeof(monitoring_data) +
     sizeof(register_range_data) * world.config->num_intervals);
@@ -430,6 +433,12 @@ int fetch_monitored_data() {
         if (err != READ_ERROR_RESPONSE) {
           log("Error %d reading %02x registers at %02x from %02x\n",
               err, i->len, i->begin, addr);
+          if(err == MODBUS_BAD_CRC) {
+            world.stored_data[data_pos]->crc_errors++;
+          }
+          if(err == MODBUS_RESPONSE_TIMEOUT) {
+            world.stored_data[data_pos]->timeout_errors++;
+          }
         }
         continue;
       }
@@ -572,8 +581,11 @@ int do_command(int sock, rackmond_command* cmd) {
           buf_write(&wb, "[", 1);
           int data_pos = 0;
           while(world.stored_data[data_pos] != NULL && data_pos < MAX_ACTIVE_ADDRS) {
-            bprintf(&wb, "{\"addr\":%d,\"now\":%d,\"ranges\":[",
-                    world.stored_data[data_pos]->addr, now);
+            bprintf(&wb, "{\"addr\":%d,\"crc_fails\":%d,\"timeouts\":%d,"
+                         "\"now\":%d,\"ranges\":[",
+                    world.stored_data[data_pos]->addr,
+                    world.stored_data[data_pos]->crc_errors,
+                    world.stored_data[data_pos]->timeout_errors, now);
             for(int i = 0; i < world.config->num_intervals; i++) {
               uint32_t time;
               register_range_data *rd = &world.stored_data[data_pos]->range_data[i];

@@ -224,9 +224,9 @@ int read_registers(rs485_dev *dev, int timeout, uint8_t addr, uint16_t begin, ui
   char response[sizeof(addr) + 1 + 1 + (2 * num) + 2];
   command[0] = addr;
   command[1] = MODBUS_READ_HOLDING_REGISTERS;
-  command[2] = begin << 8;
+  command[2] = begin >> 8;
   command[3] = begin & 0xFF;
-  command[4] = num << 8;
+  command[4] = num >> 8;
   command[5] = num & 0xFF;
 
   int dest_len =

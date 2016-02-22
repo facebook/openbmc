@@ -69,6 +69,16 @@ gpio_export() {
     fi
 }
 
+gpio_export_out() {
+    local gpio
+    gpio=$(gpio_name2value $1)
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+        echo out > ${dir}/direction
+    fi
+}
+
 gpio_set() {
     local gpio
     local val

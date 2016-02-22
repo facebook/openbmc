@@ -102,6 +102,8 @@ def bmc_read_speed():
     return result
 
 class BMCMachine:
+    def __init__(self):
+        self.frus = set()
     def set_pwm(self, pwm, pct):
         print("Set pwm %d to %d" % (pwm, pct))
         cmd = ('/usr/local/bin/fan-util --set %d %d' % (pct, pwm))
@@ -118,7 +120,7 @@ class BMCMachine:
         return bmc_read_speed()
     def read_sensors(self):
         sensors = {}
-        for fru in ['spb', 'slot1', 'slot2', 'slot3', 'slot4']:
+        for fru in self.frus:
             sensors[fru] = bmc_sensor_read(fru)
         return sensors
 
@@ -177,6 +179,8 @@ class Zone:
 
     def add_input(self, config, data):
         controller = make_controller(config['profiles'][data['profile']])
+        if hasattr(machine, 'frus') and 'board' in data['sensor']:
+            machine.frus.add(data['sensor']['board'])
         self.inputs.append(Input(controller, data['sensor'], data['profile']))
 
     def run(self, sensors, dt):

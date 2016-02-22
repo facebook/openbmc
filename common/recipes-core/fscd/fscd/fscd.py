@@ -252,7 +252,9 @@ def main():
     info("Read %d zones" % (len(zones),))
     interval = config['sample_interval_ms'] / 1000.0
     last = time.time()
+    dead_fans = set()
     while True:
+        last_dead_fans = dead_fans.copy()
         if wdfile:
             wdfile.write('V')
             wdfile.flush()
@@ -269,8 +271,15 @@ def main():
         for fan, rpms in speeds.items():
             print("Fan %d speed: %d RPM" % (fan, rpms))
             if rpms < config['min_rpm']:
-                warn("Fan %d below min speed, PWM at boost value" % (fan,))
-                fan_fail = True
+                dead_fans.add(fan)
+            else:
+                dead_fans.discard(fan)
+        recovered_fans = last_dead_fans - dead_fans
+        newly_dead_fans = dead_fans - last_dead_fans
+        if len(newly_dead_fans) > 0:
+            crit("%d fans failed" % (len(dead_fans),))
+        for fan in recovered_fans:
+            crit("Fan %d has recovered" % (fan,))
         for zone in zones:
             print("PWM: %s" % (json.dumps(zone.pwm_output)))
             pwmval = zone.run(sensors, dt)
@@ -280,7 +289,9 @@ def main():
                 else:
                     pwmval = zone.last_pwm + ramp_rate
             zone.last_pwm = pwmval
-            if fan_fail:
+            if dead_fans:
+                print("Failed fans: %s" %
+                      (', '.join([str(i) for i in dead_fans],)))
                 pwmval = boost
             if hasattr(zone.pwm_output, '__iter__'):
                 for output in zone.pwm_output:

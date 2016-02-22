@@ -9,6 +9,27 @@
   "watchdog": true,
   "min_rpm": 800,
   "profiles": {
+    "linear_dimm": {
+      "type": "linear",
+      "data": [
+        [65, 18],
+        [67, 25],
+        [70, 30],
+        [72, 35],
+        [74, 40],
+        [76, 50]
+      ]
+    },
+    "linear_mezz": {
+      "type": "linear",
+      "data": [
+        [85, 18],
+        [87, 35],
+        [90, 40],
+        [92, 50],
+        [94, 60]
+      ]
+    },
     "linear_inlet": {
       "type": "linear",
       "data": [
@@ -25,48 +46,58 @@
         [ 45, 28 ]
       ]
     },
-    "linear_margin": {
+    "linear_cpu_margin": {
       "type": "linear",
       "data": [
-        [-32, 10],
-        [-30, 16],
-        [-28, 20],
-        [-26, 22],
-        [-24, 23],
-        [-22, 24],
-        [-20, 25],
-        [-18, 26],
-        [-6, 80],
-        [-5, 90],
-        [-4, 100]
+        [ -30, 18 ],
+        [ -28, 20 ],
+        [ -26, 22 ],
+        [ -24, 23 ],
+        [ -22, 24 ],
+        [ -20, 25 ],
+        [ -18, 26 ]
       ]
     },
-    "pid_margin": {
+    "pid_cpu_margin": {
       "type": "pid",
-      "setpoint": -20,
-      "negative_hysteresis": 2,
-      "positive_hysteresis": 2,
-      "kp": -1,
-      "ki": -0.05,
-      "kd": -0.5
+      "setpoint": -14,
+      "negative_hysteresis": 1,
+      "positive_hysteresis": 1,
+      "kp": -5,
+      "ki": -0.04,
+      "kd": 0
     }
   },
   "zones": {
     "zone_1": {
       "pwm_output": [0, 1],
       "inputs": [
-        {
-          "profile": "linear_inlet",
-          "sensor": { "id": 129, "board": "spb" }
-        },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot1" } },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot2" } },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot3" } },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot4" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot1" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot2" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot3" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot4" } }
+        { "profile": "linear_inlet", "sensor": { "id": 129, "board": "spb" } },
+        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot1" } },
+        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot2" } },
+        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot3" } },
+        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot4" } },
+        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot1" } },
+        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot2" } },
+        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot3" } },
+        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot4" } },
+        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot1" } },
+        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot1" } },
+        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot1" } },
+        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot1" } },
+        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot2" } },
+        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot2" } },
+        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot2" } },
+        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot2" } },
+        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot3" } },
+        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot3" } },
+        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot3" } },
+        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot3" } },
+        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot4" } },
+        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot4" } },
+        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot4" } },
+        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot4" } },
+        { "profile": "linear_mezz", "sensor": {"id": 130, "board": "nic" } }
       ]
     }
   }

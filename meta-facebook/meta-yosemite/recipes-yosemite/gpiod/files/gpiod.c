@@ -248,11 +248,6 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
       if (gpios[i].status)
         o_pin_val[fru] = SETBIT(o_pin_val[fru], i);
-
-      if (gpios[i].status == gpios[i].ass_val) {
-          syslog(LOG_CRIT, "ASSERT: fru: %u, num: %d, gpio pin: %-20s",
-              fru, i, gpios[i].name);
-      }
     }
   }
 

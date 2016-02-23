@@ -184,7 +184,7 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
   spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 525;
 
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 80;
+  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
 
   init_done = true;
 }

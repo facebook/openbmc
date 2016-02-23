@@ -19,6 +19,7 @@
 #ifndef __LIGHTNING_FRUID_H__
 #define __LIGHTNING_FRUID_H__
 
+#include <stdint.h>
 #include <facebook/lightning_common.h>
 
 #define LIGHTNING_FRU_PATH "/tmp/fruid_%s.bin"

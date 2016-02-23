@@ -44,50 +44,11 @@
 #define GPIO_HAND_SW_ID4 140
 #define GPIO_HAND_SW_ID8 141
 
-#define GPIO_RST_BTN 144
-#define GPIO_PWR_BTN 24
+#define GPIO_DEBUG_RST_BTN 54
+#define GPIO_DEBUG_UART_COUNT 125
+#define GPIO_BMC_UART_SWITCH 123
 
-#define GPIO_HB_LED 57
-
-#define GPIO_USB_SW0 36
-#define GPIO_USB_SW1 37
-#define GPIO_USB_MUX_EN_N 147
-
-#define GPIO_UART_SEL0 32
-#define GPIO_UART_SEL1 33
-#define GPIO_UART_SEL2 34
-#define GPIO_UART_RX 35
-
-#define GPIO_POSTCODE_0 48
-#define GPIO_POSTCODE_1 49
-#define GPIO_POSTCODE_2 50
-#define GPIO_POSTCODE_3 51
-#define GPIO_POSTCODE_4 124
-#define GPIO_POSTCODE_5 125
-#define GPIO_POSTCODE_6 126
-#define GPIO_POSTCODE_7 127
-
-#define GPIO_DBG_CARD_PRSNT 137
-
-#define PAGE_SIZE  0x1000
-#define AST_SCU_BASE 0x1e6e2000
-#define PIN_CTRL1_OFFSET 0x80
-#define PIN_CTRL2_OFFSET 0x84
-#define AST_WDT_BASE 0x1e785000
-#define WDT_OFFSET 0x10
-
-#define UART1_TXD (1 << 22)
-#define UART2_TXD (1 << 30)
-#define UART3_TXD (1 << 22)
-#define UART4_TXD (1 << 30)
-
-#define DELAY_GRACEFUL_SHUTDOWN 1
-#define DELAY_POWER_OFF 6
-#define DELAY_POWER_CYCLE 10
-#define DELAY_12V_CYCLE 5
-
-#define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
-#define CRASHDUMP_FILE      "/mnt/data/crashdump_"
+#define GPIO_HB_LED 115
 
 #define I2C_DEV_FAN "/dev/i2c-5"
 #define I2C_ADDR_FAN 0x2d
@@ -98,45 +59,20 @@
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
 
-const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
-const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
-const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
-const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
-const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
-const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
 const char pal_fru_list[] = "all, peb, pdpb, fcb";
 size_t pal_pwm_cnt = 1;
 size_t pal_tach_cnt = 12;
 const char pal_pwm_list[] = "0";
 const char pal_tach_list[] = "0...11";
-const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 char * key_list[] = {
-"pwr_server1_last_state",
-"pwr_server2_last_state",
-"pwr_server3_last_state",
-"pwr_server4_last_state",
-"sysfw_ver_slot1",
-"sysfw_ver_slot2",
-"sysfw_ver_slot3",
-"sysfw_ver_slot4",
-"identify_sled",
-"timestamp_sled",
+"test", // TODO: test kv store
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
 
 char * def_val_list[] = {
-  "on", /* pwr_server1_last_state */
-  "on", /* pwr_server2_last_state */
-  "on", /* pwr_server3_last_state */
-  "on", /* pwr_server4_last_state */
-  "0", /* sysfw_ver_slot1 */
-  "0", /* sysfw_ver_slot2 */
-  "0", /* sysfw_ver_slot3 */
-  "0", /* sysfw_ver_slot4 */
-  "off", /* identify_sled */
-  "0", /* timestamp_sled */
+  "0", /* test */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -195,305 +131,6 @@ write_device(const char *device, const char *value) {
   }
 }
 
-// Power On the server in a given slot
-static int
-server_power_on(uint8_t slot_id) {
-  char vpath[64] = {0};
-
-  sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  if (write_device(vpath, "0")) {
-    return -1;
-  }
-
-  sleep(1);
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  return 0;
-}
-
-// Power Off the server in given slot
-static int
-server_power_off(uint8_t slot_id, bool gs_flag) {
-  char vpath[64] = {0};
-
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
-  sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  sleep(1);
-
-  if (write_device(vpath, "0")) {
-    return -1;
-  }
-
-  if (gs_flag) {
-    sleep(DELAY_GRACEFUL_SHUTDOWN);
-  } else {
-    sleep(DELAY_POWER_OFF);
-  }
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  return 0;
-}
-
-// Control 12V to the server in a given slot
-static int
-server_12v_on(uint8_t slot_id) {
-  char vpath[64] = {0};
-
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
-  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  return 0;
-}
-
-// Turn off 12V for the server in given slot
-static int
-server_12v_off(uint8_t slot_id) {
-  char vpath[64] = {0};
-
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
-  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-
-  if (write_device(vpath, "0")) {
-    return -1;
-  }
-
-  return 0;
-}
-
-// Debug Card's UART and BMC/SoL port share UART port and need to enable only
-// one TXD i.e. either BMC's TXD or Debug Port's TXD.
-static int
-control_sol_txd(uint8_t slot) {
-  uint32_t scu_fd;
-  uint32_t ctrl;
-  void *scu_reg;
-  void *scu_pin_ctrl1;
-  void *scu_pin_ctrl2;
-
-  scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (scu_fd < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "control_sol_txd: open fails\n");
-#endif
-    return -1;
-  }
-
-  scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_SCU_BASE);
-  scu_pin_ctrl1 = (char*)scu_reg + PIN_CTRL1_OFFSET;
-  scu_pin_ctrl2 = (char*)scu_reg + PIN_CTRL2_OFFSET;
-
-  switch(slot) {
-  case 1:
-    // Disable UART2's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD;
-    ctrl &= (~UART2_TXD); //Disable
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 2:
-    // Disable UART1's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl &= (~UART1_TXD); // Disable
-    ctrl |= UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 3:
-    // Disable UART4's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD;
-    ctrl &= (~UART4_TXD); // Disable
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 4:
-    // Disable UART3's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl &= (~UART3_TXD); // Disable
-    ctrl |= UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  default:
-    // Any other slots we need to enable all TXDs
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  }
-
-  munmap(scu_reg, PAGE_SIZE);
-  close(scu_fd);
-
-  return 0;
-}
-
-// Display the given POST code using GPIO port
-static int
-pal_post_display(uint8_t status) {
-  char path[64] = {0};
-  int ret;
-  char *val;
-
-#ifdef DEBUG
-  syslog(LOG_WARNING, "pal_post_display: status is %d\n", status);
-#endif
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_0);
-
-  if (BIT(status, 0)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_1);
-  if (BIT(status, 1)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_2);
-  if (BIT(status, 2)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_3);
-  if (BIT(status, 3)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_4);
-  if (BIT(status, 4)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_5);
-  if (BIT(status, 5)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_6);
-  if (BIT(status, 6)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_7);
-  if (BIT(status, 7)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-post_exit:
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  } else {
-    return 0;
-  }
-}
-
 // Platform Abstraction Layer (PAL) Functions
 int
 pal_get_platform_name(char *name) {
@@ -511,45 +148,11 @@ pal_get_num_slots(uint8_t *num) {
 
 int
 pal_is_server_prsnt(uint8_t slot_id, uint8_t *status) {
-  int val;
-  char path[64] = {0};
-
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
-  sprintf(path, GPIO_VAL, gpio_prsnt[slot_id]);
-
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  if (val == 0x0) {
-    *status = 1;
-  } else {
-    *status = 0;
-  }
-
   return 0;
 }
 
 int
 pal_is_debug_card_prsnt(uint8_t *status) {
-  int val;
-  char path[64] = {0};
-
-  sprintf(path, GPIO_VAL, GPIO_DBG_CARD_PRSNT);
-
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  if (val == 0x0) {
-    *status = 1;
-  } else {
-    *status = 0;
-  }
-
   return 0;
 }
 
@@ -586,9 +189,66 @@ pal_get_pwr_btn(uint8_t *status) {
   return 0;
 }
 
-// Return the front panel's Reset Button status
+// Return the DEBUGCARD's UART Channel Button Status
+int
+pal_get_uart_chan_btn(uint8_t *status) {
+
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_DEBUG_UART_COUNT);
+  if (read_device(path, &val))
+    return -1;
+
+  *status = (uint8_t) val;
+
+  return 0;
+}
+
+// Return the current uart position
+int
+pal_get_uart_chan(uint8_t *status) {
+
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_BMC_UART_SWITCH);
+  if (read_device(path, &val))
+    return -1;
+
+  *status = (uint8_t) val;
+
+  return 0;
+}
+
+// Set the UART Channel
+int
+pal_set_uart_chan(uint8_t status) {
+
+  char path[64] = {0};
+  char *val;
+
+  val = (status == 0) ? "0": "1";
+
+  sprintf(path, GPIO_VAL, GPIO_BMC_UART_SWITCH);
+  if (write_device(path, val))
+    return -1;
+
+  return 0;
+}
+
+// Return the DEBUGCARD's Reset Button status
 int
 pal_get_rst_btn(uint8_t *status) {
+
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_DEBUG_RST_BTN);
+  if (read_device(path, &val))
+    return -1;
+
+  *status = (uint8_t) val;
 
   return 0;
 }
@@ -630,30 +290,6 @@ pal_set_hb_led(uint8_t status) {
 // Update the Identification LED for the given slot with the status
 int
 pal_set_id_led(uint8_t slot, uint8_t status) {
-  char path[64] = {0};
-  char *val;
-
-  if (slot < 1 || slot > 4) {
-    return -1;
-  }
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, gpio_id_led[slot]);
-  if (write_device(path, val)) {
-    return -1;
-  }
-
-  return 0;
-}
-
-static int
-set_usb_mux(uint8_t state) {
-
   return 0;
 }
 
@@ -1002,12 +638,6 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
   return 0;
 }
 
-static int
-pal_store_crashdump(uint8_t fru) {
-
-  return 0;
-}
-
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num) {
 
@@ -1238,6 +868,4 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 
 void
 pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
-
-  return 0;
 }

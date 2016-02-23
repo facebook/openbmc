@@ -75,11 +75,8 @@ enum {
 };
 
 enum {
-  HAND_SW_SERVER1 = 1,
-  HAND_SW_SERVER2,
-  HAND_SW_SERVER3,
-  HAND_SW_SERVER4,
-  HAND_SW_BMC
+  UART_POS_BMC = 0,
+  UART_POS_PCIE_SW,
 };
 
 enum {
@@ -174,6 +171,10 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_fan_name(uint8_t num, char *name);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
+int pal_get_uart_chan_btn(uint8_t *status);
+int pal_get_uart_chan(uint8_t *status);
+int pal_set_uart_chan(uint8_t status);
+
 
 #ifdef __cplusplus
 } // extern "C"

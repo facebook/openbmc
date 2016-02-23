@@ -25,3 +25,6 @@ I2C_ADDR_NCT7904=0x2d
 
 # Enable the Pins to sense the Temperature VSEN23_MD and VSEN45_MD
 i2cset -y $I2C_BUS_FCB $I2C_ADDR_NCT7904 0x2E 0x5 b
+
+#Enable the ADC controller for ADC0~ADC7
+devmem 0x1E6E9000 32 0x00FF000F

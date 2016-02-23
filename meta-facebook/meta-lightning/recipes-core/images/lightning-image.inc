@@ -59,6 +59,8 @@ IMAGE_INSTALL += " \
   fruid \
   log-util \
   fan-util \
+  front-paneld \
+  fpc-util \
   fscd \
   cherryPy \
   lldp-util \

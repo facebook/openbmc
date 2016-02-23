@@ -96,14 +96,20 @@ int i2c_dev_read_nbytes(struct device *dev,
   i2c_sysfs_attr_st *i2c_attr = TO_I2C_SYSFS_ATTR(attr);
   const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
   int i;
+  int ret_val;
 
   mutex_lock(&data->idd_lock);
   for (i = 0; i < nbytes; ++i) {
-    values[i] = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + i);
-    if (values[i] < 0) {
+    ret_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + i);
+    if (ret_val < 0) {
       mutex_unlock(&data->idd_lock);
-      return values[i];
+      return ret_val;
     }
+    if (ret_val > 255) {
+      mutex_unlock(&data->idd_lock);
+      return EFAULT;
+    }
+    values[i] = ret_val;
   }
   mutex_unlock(&data->idd_lock);
   return nbytes;
@@ -334,7 +340,6 @@ int i2c_dev_sysfs_data_init(struct i2c_client *client,
   }
 
   PP_DEBUG("i2c device sysfs init data done");
-
   return 0;
 
  exit_cleanup:

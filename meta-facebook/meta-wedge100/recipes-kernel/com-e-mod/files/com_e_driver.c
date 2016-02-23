@@ -108,7 +108,7 @@ static ssize_t i2c_dev_show_mem_temp(struct device *dev,
                                      struct device_attribute *attr,
                                      char *buf)
 {
-  uint16_t ret_val;
+  int ret_val;
 
   // For memory temp follow : Module_EC_Function_Manual_050817.pdf
   /*

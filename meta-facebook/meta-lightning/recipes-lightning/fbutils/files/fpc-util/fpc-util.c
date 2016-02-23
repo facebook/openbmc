@@ -24,56 +24,56 @@
 #include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
-#include <pthread.h>
-#include <facebook/bic.h>
 #include <openbmc/pal.h>
-#include <openbmc/ipmi.h>
 
 static void
 print_usage_help(void) {
-  printf("Usage: fpc-util <slot1|slot2|slot3|slot4> --usb\n");
-  printf("       fpc-util <slot1|slot2|slot3|slot4|all> --identify <on/off>\n");
+  printf("Usage: fpc-util [ bmc, switch ] --uart\n");
 }
 
 int
 main(int argc, char **argv) {
 
-  uint8_t slot_id;
+  uint8_t pos;
   char tstr[64] = {0};
 
   if (argc < 3) {
     goto err_exit;
   }
 
-  if (!strcmp(argv[1], "slot1")) {
-    slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = 2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = 3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = 4;
-  } else if (!strcmp(argv[1] , "all")) {
-    slot_id = 0;
+  if (!strcmp(argv[1], "bmc")) {
+    pos = UART_POS_BMC;
+  } else if (!strcmp(argv[1] , "switch")) {
+    pos = UART_POS_PCIE_SW;
   } else {
     goto err_exit;
   }
 
-  if (!strcmp(argv[2], "--usb")) {
-    printf("fpc-util: switching USB channel to slot%d\n", slot_id);
-    return pal_switch_usb_mux(slot_id);
-  } else if (!strcmp(argv[2], "--identify")) {
-    if (argc != 4) {
-      goto err_exit;
-    }
-    printf("fpc-util: identication for %s is %s\n", argv[1], argv[3]);
-    if (slot_id == 0) {
-      sprintf(tstr, "identify_sled");
-    } else {
-      sprintf(tstr, "identify_slot%d", slot_id);
-    }
+  uint8_t curr;
+  int ret;
 
-    return pal_set_key_value(tstr, argv[3]);
+  if (!strcmp(argv[2], "--uart")) {
+    // Check for the current uart channel position
+    ret = pal_get_uart_chan(&curr);
+    if (ret)
+      goto err_exit;
+
+    if (curr == pos) {
+       printf("UART channel already connected to %s console\n",
+          (pos == UART_POS_BMC)? "BMC": "SWITCH");
+
+    } else {
+      printf("Moving UART channel to %s console\n",
+          (pos == UART_POS_BMC)? "BMC": "SWITCH");
+      // Set the UART channel to requested position
+      ret = pal_set_uart_chan(pos);
+      if (ret) {
+        printf("Operation failed.");
+        return -1;
+      }
+    }
+    return 0;
+
   } else {
     goto err_exit;
   }

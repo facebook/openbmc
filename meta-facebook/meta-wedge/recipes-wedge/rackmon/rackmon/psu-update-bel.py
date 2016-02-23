@@ -317,8 +317,8 @@ def main():
         status_state('failed')
         traceback.print_exc()
         sys.exit(1)
-    status_state('done')
     resume_monitoring()
+    status_state('done')
     if args.rmfwfile:
         os.remove(args.file)
     print('\nDone')

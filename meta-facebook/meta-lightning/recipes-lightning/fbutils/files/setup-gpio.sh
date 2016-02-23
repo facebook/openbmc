@@ -306,9 +306,29 @@ gpio_set H3 1
 # To use GPIOH2, SCU90[6], SCU90[7] must be 0
 gpio_set H2 1
 
-# PEER_1B_2B_HB: GPIOO0 (112)
-# To use GPIOO0, SCU88[8] must be 0
-devmem_clear_bit $(scu_addr 88) 8
+# HB_OUT_BMC: GPIOO3 (115)
+# To use GPIOO3, SCU88[11] must be 0
+devmem_clear_bit $(scu_addr 88) 11
 
-gpio_set O0 1
+gpio_set O3 1
 
+# BMC_ENCLOSURE_LED : GPIOP7 (127)
+# To use GPIOP7, SCU88[23] must be 0
+devmem_clear_bit $(scu_addr 88) 23
+
+gpio_set P7 1
+
+# UART_COUNT : GPIOP5 (125)
+gpio_get P5
+
+# DP_RST_N : GPIOG6 (54)
+# To use GPIOG6, SCU84[6] must be 0
+devmem_clear_bit $(scu_addr 84) 6
+
+gpio_get G6
+
+# BMC_UART_SWITCH : GPIOP3 (123)
+# To use GPIOP3, SCU88[19] must be 0 
+devmem_clear_bit $(scu_addr 88) 19
+
+gpio_set P3 0;

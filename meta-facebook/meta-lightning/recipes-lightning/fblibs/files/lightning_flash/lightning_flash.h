@@ -23,19 +23,12 @@
 extern "C" {
 #endif
 
-enum i2c_mux_enable_bits {
-  I2C_MUX_CH0_EN = 1,
-  I2C_MUX_CH1_EN = 2,
-};
-
 enum i2c_mux_list {
-  I2C_MUX_ROOT = 0,
   I2C_MUX_FLASH1,
   I2C_MUX_FLASH2,
 };
 
 enum i2c_mux_addr {
-  I2C_MUX_ROOT_ADDR = 0x70,
   I2C_MUX_FLASH1_ADDR = 0x71,
   I2C_MUX_FLASH2_ADDR = 0x72,
 };
@@ -54,14 +47,14 @@ enum i2c_flash_map {
   I2C_MAP_FLASH4 = 01,
   I2C_MAP_FLASH5 = 13,
   I2C_MAP_FLASH6 = 15,
-  I2C_MAP_FLASH7 = 02,
-  I2C_MAP_FLASH8 = 04,
-  I2C_MAP_FLASH9 = 06,
+  I2C_MAP_FLASH7 = 17,
+  I2C_MAP_FLASH8 = 03,
+  I2C_MAP_FLASH9 = 05,
   I2C_MAP_FLASH10 = 14,
   I2C_MAP_FLASH11 = 16,
-  I2C_MAP_FLASH12 = 03,
-  I2C_MAP_FLASH13 = 05,
-  I2C_MAP_FLASH14 = 07,
+  I2C_MAP_FLASH12 = 02,
+  I2C_MAP_FLASH13 = 04,
+  I2C_MAP_FLASH14 = 06,
 };
 
 

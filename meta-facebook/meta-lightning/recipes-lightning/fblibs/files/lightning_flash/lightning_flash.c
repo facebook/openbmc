@@ -24,7 +24,8 @@
 #include <facebook/i2c-dev.h>
 #include "lightning_flash.h"
 
-#define I2C_DEV_FLASH "/dev/i2c-10"
+#define I2C_DEV_FLASH1 "/dev/i2c-7"
+#define I2C_DEV_FLASH2 "/dev/i2c-8"
 #define I2C_FLASH_ADDR 0x6A
 #define NVME_STATUS_CMD 0x0
 
@@ -57,25 +58,23 @@ lightning_flash_status_read(uint8_t i2c_map, uint8_t *status) {
   int ret;
   uint8_t mux;
   uint8_t chan;
+  char bus[32];
 
   mux = i2c_map / 10;
   chan = i2c_map % 10;
 
-  // TODO: Just for Prototype
-  ret = lightning_flash_mux_sel_chan(I2C_MUX_ROOT, mux);
-  if(ret < 0) {
-    syslog(LOG_ERR, "lightning_flash_status_read: lightning_flash_mux_sel_chan on root failed");
-    return -1;
-  }
-
-
-  ret = lightning_flash_mux_sel_chan(mux + 1 /* TODO: Someone just for */, chan);
+  ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
     syslog(LOG_ERR, "lightning_flash_status_read: lightning_flash_mux_sel_chan on Mux %d failed", mux);
     return -1;
   }
 
-  dev = open(I2C_DEV_FLASH, O_RDWR);
+  if (mux == I2C_MUX_FLASH1)
+    sprintf(bus, "%s", I2C_DEV_FLASH1);
+  else if (mux == I2C_MUX_FLASH2)
+    sprintf(bus, "%s", I2C_DEV_FLASH2);
+
+  dev = open(bus, O_RDWR);
   if (dev < 0) {
     syslog(LOG_ERR, "lightning_flash_status_read: open() failed");
     return -1;
@@ -137,19 +136,20 @@ lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel) {
   int ret;
   uint8_t addr;
   uint8_t chan_en;
+  char bus[32];
 
-  dev = open(I2C_DEV_FLASH, O_RDWR);
+  if (mux == I2C_MUX_FLASH1)
+    sprintf(bus, "%s", I2C_DEV_FLASH1);
+  else if (mux == I2C_MUX_FLASH2)
+    sprintf(bus, "%s", I2C_DEV_FLASH2);
+
+  dev = open(bus, O_RDWR);
   if (dev < 0) {
     syslog(LOG_ERR, "lightning_flash_mux_sel_chan: open() failed");
     return -1;
   }
 
   switch(mux) {
-    case I2C_MUX_ROOT:
-      addr = I2C_MUX_ROOT_ADDR,
-      chan_en = (1 << channel);
-      break;
-
     case I2C_MUX_FLASH1:
       addr = I2C_MUX_FLASH1_ADDR,
       chan_en = (1 << 3) | channel;

@@ -25,6 +25,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 #define MAX_NUM_FRUS 3
 enum {
   FRU_ALL   = 0,

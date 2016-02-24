@@ -347,6 +347,22 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0x32, 0, 1,
   },
   {
+    "th_sys_rst_n",
+    "0: write 0 to trigger tomahawk system reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x32, 1, 1,
+  },
+  {
+    "th_pcie_rst_n",
+    "0: write 0 to trigger tomahawk pcie reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x32, 2, 1,
+  },
+  {
     "fan_rackmon_rst_n",
     "0: write 0 to trigger FAN_RACKMON card reset\n"
     "1: normal",

@@ -69,6 +69,7 @@ IMAGE_INSTALL += " \
   jbi \
   flashrom \
   cherryPy \
+  spatula \
   "
 
 IMAGE_FEATURES += " \

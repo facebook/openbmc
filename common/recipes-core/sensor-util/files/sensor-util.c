@@ -135,6 +135,7 @@ main(int argc, char **argv) {
   int i;
   int ret;
   int sensor_cnt;
+  uint8_t status;
   uint8_t *sensor_list;
   uint8_t fru;
   uint8_t num = 0;
@@ -171,6 +172,18 @@ main(int argc, char **argv) {
     fru = 1;
     while (fru <= MAX_NUM_FRUS) {
 
+      ret = pal_is_fru_prsnt(fru, &status);
+      if (ret < 0) {
+        printf("pal_is_server_fru failed for fru: %d\n", fru);
+        print_usage();
+        exit(-1);
+      }
+      if (status == 0) {
+        printf("%s is empty!\n", argv[1]);
+        print_usage();
+        exit(-1);
+      }
+
       ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
       if (ret < 0) {
         return ret;
@@ -182,6 +195,18 @@ main(int argc, char **argv) {
       printf("\n");
     }
   } else {
+
+    ret = pal_is_fru_prsnt(fru, &status);
+    if (ret < 0) {
+      printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
+      print_usage();
+      exit(-1);
+    }
+    if (status == 0) {
+      printf("%s is empty!\n", argv[1]);
+      print_usage();
+      exit(-1);
+    }
 
     ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
     if (ret < 0) {

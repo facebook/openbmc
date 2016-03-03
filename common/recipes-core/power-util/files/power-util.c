@@ -94,7 +94,20 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_WARNING, "power_util: pal_get_server_power failed for fru %u\n", fru);
         return ret;
       }
-      printf("Power status for fru %u : %s\n", fru, status?"ON":"OFF");
+      //printf("Power status for fru %u : %s\n", fru, status?"ON":"OFF");
+      printf("Power status for fru %u : ", fru);
+      switch(status) {
+        case SERVER_POWER_ON:
+          printf("ON\n");
+          break;
+        case SERVER_POWER_OFF:
+          printf("OFF\n");
+          break;
+        case SERVER_12V_OFF:
+          printf("OFF (12V-OFF)\n");
+          break;
+      }
+
       break;
 
     case PWR_GRACEFUL_SHUTDOWN:
@@ -215,6 +228,9 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
         return ret;
+      } else if (ret == 1) {
+        printf("fru %u is already powered 12V-OFF...\n", fru);
+        return 0;
       } else {
         syslog(LOG_CRIT, "SERVER_12V_OFF successful for FRU: %d", fru);
       }
@@ -240,6 +256,9 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
         return ret;
+      } else if (ret == 1) {
+        printf("fru %u is already powered 12V-ON...\n", fru);
+        return 0;
       } else {
         syslog(LOG_CRIT, "SERVER_12V_ON successful for FRU: %d", fru);
       }
@@ -320,9 +339,9 @@ main(int argc, char **argv) {
   }
 
   if (argc > 2) {
-    ret = pal_is_server_prsnt(fru, &status);
+    ret = pal_is_fru_prsnt(fru, &status);
     if (ret < 0) {
-      printf("pal_is_server_prsnt failed for fru: %d\n", fru);
+      printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
       print_usage();
       exit(-1);
     }

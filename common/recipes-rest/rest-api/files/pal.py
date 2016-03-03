@@ -40,10 +40,10 @@ def pal_get_num_slots():
     else:
         return num.value
 
-def pal_is_server_prsnt(slot_id):
+def pal_is_fru_prsnt(slot_id):
     status = c_ubyte()
     p_status = pointer(status)
-    ret = lpal_hndl.pal_is_server_prsnt(slot_id, p_status)
+    ret = lpal_hndl.pal_is_fru_prsnt(slot_id, p_status)
     if ret:
         return None
     else:

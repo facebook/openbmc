@@ -120,7 +120,7 @@ debug_card_handler() {
       }
 
       // Make sure the server at selected position is present
-      ret = pal_is_server_prsnt(pos, &prsnt);
+      ret = pal_is_fru_prsnt(pos, &prsnt);
       if (ret || !prsnt) {
         goto debug_card_done;
       }
@@ -395,7 +395,7 @@ led_handler(void *num) {
   syslog(LOG_INFO, "led_handler for slot %d\n", slot);
 #endif
 
-  ret = pal_is_server_prsnt(slot, &prsnt);
+  ret = pal_is_fru_prsnt(slot, &prsnt);
   if (ret || !prsnt) {
     // Turn off led and exit
     ret = pal_set_led(slot, 0);

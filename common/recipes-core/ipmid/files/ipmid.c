@@ -1183,7 +1183,7 @@ oem_get_slot_info(unsigned char *request, unsigned char *response,
   // Bit[7]: Not Present/Present (from pal)
   // Bit[6]: Platform type (TODO from pal)
   // Bit[5-0] : Slot# (payload_id indicates)
-  ret = pal_is_server_prsnt(req->payload_id, &pres);
+  ret = pal_is_fru_prsnt(req->payload_id, &pres);
   if (ret) {
     res->cc = CC_UNSPECIFIED_ERROR;
     *res_len = 0x00;

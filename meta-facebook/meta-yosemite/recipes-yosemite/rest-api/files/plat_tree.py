@@ -36,7 +36,7 @@ from tree import tree
 from pal import *
 
 def populate_server_node(num):
-    prsnt = pal_is_server_prsnt(num)
+    prsnt = pal_is_fru_prsnt(num)
     if prsnt == None or prsnt == 0:
         return None
 

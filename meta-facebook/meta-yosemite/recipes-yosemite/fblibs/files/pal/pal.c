@@ -543,7 +543,41 @@ pal_get_num_slots(uint8_t *num) {
 }
 
 int
-pal_is_server_prsnt(uint8_t slot_id, uint8_t *status) {
+pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+  int val;
+  char path[64] = {0};
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(path, GPIO_VAL, gpio_prsnt[fru]);
+
+      if (read_device(path, &val)) {
+        return -1;
+      }
+
+      if (val == 0x0) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    case FRU_SPB:
+    case FRU_NIC:
+      *status = 1;
+      break;
+    default:
+      return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
+
   int val;
   char path[64] = {0};
 
@@ -551,13 +585,13 @@ pal_is_server_prsnt(uint8_t slot_id, uint8_t *status) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, gpio_prsnt[slot_id]);
+  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
 
   if (read_device(path, &val)) {
     return -1;
   }
 
-  if (val == 0x0) {
+  if (val == 0x1) {
     *status = 1;
   } else {
     *status = 0;
@@ -592,16 +626,34 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
 
+  /* Check whether the system is 12V off or on */
+  ret = pal_is_server_12v_on(slot_id, status);
+  if (ret < 0) {
+    syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+    return -1;
+  }
+
+  /* If 12V-off, return */
+  if (!(*status)) {
+    *status = SERVER_12V_OFF;
+    return 0;
+  }
+
+  /* If 12V-on, check if the CPU is turned on or not */
   ret = bic_get_gpio(slot_id, &gpio);
   if (ret) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
+    syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
+        "reading the kv_store for last power state  for fru %d", slot_id);
     pal_get_last_pwr_state(slot_id, value);
     if (!(strcmp(value, "off"))) {
       *status = SERVER_POWER_OFF;
-      return 0;
+    } else if (!(strcmp(value, "on"))) {
+      *status = SERVER_POWER_ON;
     } else {
       return ret;
     }
+    return 0;
   }
 
   if (gpio.pwrgood_cpu) {
@@ -666,11 +718,17 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_12V_ON:
-      return server_12v_on(slot_id);
+      if (status == SERVER_12V_ON)
+        return 1;
+      else
+        return server_12v_on(slot_id);
       break;
 
     case SERVER_12V_OFF:
-      return server_12v_off(slot_id);
+      if (status == SERVER_12V_OFF)
+        return 1;
+      else
+        return server_12v_off(slot_id);
       break;
 
     case SERVER_12V_CYCLE:
@@ -1292,12 +1350,55 @@ pal_fruid_write(uint8_t fru, char *path) {
 
 int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
-  return yosemite_sensor_sdr_init(fru, sinfo);
+  uint8_t status;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      pal_is_fru_prsnt(fru, &status);
+      if (status) {
+        pal_is_server_12v_on(fru, &status);
+      }
+      break;
+    case FRU_SPB:
+    case FRU_NIC:
+      status = 1;
+      break;
+  }
+
+  if (status)
+    return yosemite_sensor_sdr_init(fru, sinfo);
+  else
+    return -1;
 }
 
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-  return yosemite_sensor_read(fru, sensor_num, value);
+
+  uint8_t status;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      pal_is_fru_prsnt(fru, &status);
+      if (status) {
+        pal_is_server_12v_on(fru, &status);
+      }
+      break;
+    case FRU_SPB:
+    case FRU_NIC:
+      status = 1;
+      break;
+  }
+
+  if (status)
+    return yosemite_sensor_read(fru, sensor_num, value);
+  else
+    return -1;
 }
 
 int

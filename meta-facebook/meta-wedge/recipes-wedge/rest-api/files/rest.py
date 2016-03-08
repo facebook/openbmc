@@ -38,11 +38,7 @@ import rest_slotid
 import rest_psu_update
 import rest_usb2i2c_reset
 import rest_fcpresent
-
-CONSTANTS = {
-    'certificate': '/usr/lib/ssl/certs/rest_server.pem',
-    'key': '/usr/lib/ssl/private/rest_server_key.pem',
-}
+from rest_config import RestConfig
 
 LOGGER_CONF = {
     'version': 1,
@@ -175,7 +171,9 @@ def rest_usb2i2c_reset_hdl():
 class SSLCherryPyServer(bottle.ServerAdapter):
     def run(self, handler):
         server = CherryPyWSGIServer((self.host, self.port), handler)
-        server.ssl_adapter = pyOpenSSLAdapter(CONSTANTS['certificate'], CONSTANTS['key'])
+        server.ssl_adapter = \
+                pyOpenSSLAdapter(RestConfig.get('ssl','certificate'),
+                                 RestConfig.get('ssl', 'key'))
         try:
             server.start()
         finally:
@@ -224,8 +222,8 @@ logging.config.dictConfig(LOGGER_CONF)
 
 bottle_app = LogMiddleware(bottle.app())
 # Use SSL if the certificate and key exists. Otherwise, run without SSL.
-if (os.access(CONSTANTS['key'], os.R_OK) and
-    os.access(CONSTANTS['certificate'], os.R_OK)):
-    bottle.run(host = "::", port= 8443, server=SSLCherryPyServer, app=bottle_app)
+if (RestConfig.getboolean('listen', 'ssl')):
+    bottle.run(host = "::", port=RestConfig.getint('listen', 'port'),
+               server=SSLCherryPyServer, app=bottle_app)
 else:
-    bottle.run(host = "::", port = 8080, server='cherrypy', app=bottle_app)
+    bottle.run(host = "::", port = RestConfig.getint('listen', 'port'), server='cherrypy', app=bottle_app)

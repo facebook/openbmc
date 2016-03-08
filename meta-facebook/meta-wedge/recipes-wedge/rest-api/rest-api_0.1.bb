@@ -36,14 +36,18 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_psu_update.py \
            file://bmc_command.py \
            file://rest_usb2i2c_reset.py \
-           file://loop_rest_server.sh \
            file://rest_fcpresent.py \
            file://rest_helper.py \
+           file://rest_watchdog.py \
+           file://rest_config.py \
+           file://run_rest \
+           file://run_watchdog \
+           file://rest.cfg \
           "
 
 S = "${WORKDIR}"
 
-binfiles = "rest.py rest_bmc.py rest_fruid.py rest_gpios.py rest_server.py rest_sensors.py bmc_command.py rest_modbus.py rest_slotid.py rest_psu_update.py rest_usb2i2c_reset.py setup-rest-api.sh loop_rest_server.sh rest_fcpresent.py rest_helper.py"
+binfiles = "rest.py rest_bmc.py rest_fruid.py rest_gpios.py rest_server.py rest_sensors.py bmc_command.py rest_modbus.py rest_slotid.py rest_psu_update.py rest_usb2i2c_reset.py setup-rest-api.sh rest_fcpresent.py rest_helper.py rest_watchdog.py rest_config.py"
 
 pkgdir = "rest-api"
 
@@ -59,8 +63,14 @@ do_install() {
   for f in ${otherfiles}; do
     install -m 644 $f ${dst}/$f
   done
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/restapi
+  install -m 755 run_rest ${D}${sysconfdir}/sv/restapi/run
+  install -d ${D}${sysconfdir}/sv/restwatchdog
+  install -m 755 run_watchdog ${D}${sysconfdir}/sv/restwatchdog/run
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -m 644 rest.cfg ${D}${sysconfdir}/rest.cfg
   install -m 755 setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
   update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
 }

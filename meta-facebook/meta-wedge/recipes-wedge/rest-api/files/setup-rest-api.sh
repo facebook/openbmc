@@ -27,63 +27,8 @@
 # Short-Description: Set REST API handler
 ### END INIT INFO
 
-# source function library
-. /etc/init.d/functions
+runsv /etc/sv/restapi >/dev/null 2>&1 &
+runsv /etc/sv/restwatchdog >/dev/null 2>&1 &
 
-ACTION="$1"
-CMD="/usr/local/bin/rest.py"
-LOOP_CMD="/usr/local/bin/loop_rest_server.sh"
-
-case "$ACTION" in
-  start)
-    echo -n "Setting up REST API handler: "
-    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
-    if [ $pid ]; then
-      echo "already running"
-    else
-      $LOOP_CMD > /dev/null 2>&1 &
-      echo "done."
-    fi
-    ;;
-  stop)
-    echo -n "Stopping REST API handler: "
-    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
-    looppid=$(ps | grep -v grep | grep $LOOP_CMD | awk '{print $1}')
-    if [ $looppid ]; then
-      kill $looppid
-    fi
-    if [ $pid ]; then
-      kill $pid
-    fi
-    echo "done."
-    ;;
-  restart)
-    echo -n "Restarting REST API handler: "
-    pid=$(ps | grep -v grep | grep $CMD | awk '{print $1}')
-    looppid=$(ps | grep -v grep | grep $LOOP_CMD | awk '{print $1}')
-    if [ $looppid ]; then
-      kill $looppid
-    fi
-    if [ $pid ]; then
-      kill $pid
-    fi
-    sleep 1
-    $LOOP_CMD > /dev/null 2>&1 &
-    echo "done."
-    ;;
-  status)
-    if [[ -n $(ps | grep -v grep | grep $CMD | awk '{print $1}') ]]; then
-      echo "REST API handler is running"
-    else
-      echo "REST API is stopped"
-    fi
-    ;;
-  *)
-    N=${0##*/}
-    N=${N#[SK]??}
-    echo "Usage: $N {start|stop|status|restart}" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+sv "$1" restapi
+sv "$1" restwatchdog

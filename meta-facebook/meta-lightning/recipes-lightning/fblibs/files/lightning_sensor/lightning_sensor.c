@@ -377,12 +377,7 @@ read_device_float(const char *device, float *value) {
 static int
 read_flash_temp(uint8_t flash_num, float *value) {
 
-  int ret;
-  uint8_t temp;
-  ret = lightning_flash_temp_read(lightning_flash_list[flash_num], &temp);
-  *value = (float) temp;
-
-  return ret;
+  return lightning_flash_temp_read(lightning_flash_list[flash_num], value);
 }
 
 static int
@@ -417,7 +412,7 @@ read_tmp75_value(char *device, uint8_t addr, uint8_t type, float *value) {
 
   int dev;
   int ret;
-  uint16_t res;
+  int32_t res;
 
   dev = open(device, O_RDWR);
   if (dev < 0) {
@@ -435,9 +430,13 @@ read_tmp75_value(char *device, uint8_t addr, uint8_t type, float *value) {
 
   /* Read the Temperature Register result based on whether it is internal or external sensor */
   res = i2c_smbus_read_word_data(dev, type);
+  if (res < 0) {
+    close(dev);
+    syslog(LOG_ERR, "read_tmp75_value: i2c_smbus_read_word_data failed");
+    return -1;
+  }
 
   close(dev);
-
   /* Result is read as MSB byte first and LSB byte second.
    * Result is 12bit with res[11:4]  == MSB[7:0] and res[3:0] = LSB */
   res = ((res & 0x0FF) << 4) | ((res & 0xF000) >> 12);
@@ -542,8 +541,8 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
 
   int dev;
   int ret;
-  uint16_t config;
-  uint16_t res;
+  int32_t config;
+  int32_t res;
 
   dev = open(device, O_RDWR);
   if (dev < 0) {
@@ -589,10 +588,19 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
   if (!(config & (1 << 15))) {
     close(dev);
     return -1;
+  } else if (config < 0) {
+    close(dev);
+    syslog(LOG_ERR, "read_ads1015_value: i2c_smbus_read_word_data failed");
+    return -1;
   }
 
   /* Read the CONVERSION result */
   res = i2c_smbus_read_word_data(dev, ADS1015_CONVERSION);
+  if (res < 0) {
+    close(dev);
+    syslog(LOG_ERR, "read_ads1015_value: i2c_smbus_read_word_data failed");
+    return -1;
+  }
 
   close(dev);
 

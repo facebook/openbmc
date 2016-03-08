@@ -63,8 +63,7 @@ extern const uint8_t lightning_flash_list[];
 extern size_t lightning_flash_cnt;
 
 int lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel);
-int lightning_flash_status_read(uint8_t i2c_map, uint8_t *status);
-int lightning_flash_temp_read(uint8_t i2c_map, uint8_t *temp);
+int lightning_flash_temp_read(uint8_t i2c_map, float *temp);
 
 #ifdef __cplusplus
 } // extern "C"

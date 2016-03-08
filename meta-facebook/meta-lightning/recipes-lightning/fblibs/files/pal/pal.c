@@ -147,7 +147,17 @@ pal_get_num_slots(uint8_t *num) {
 }
 
 int
-pal_is_server_prsnt(uint8_t slot_id, uint8_t *status) {
+pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+
+  switch(fru) {
+    case FRU_PEB:
+    case FRU_PDPB:
+    case FRU_FCB:
+      *status = 1;
+      break;
+    default:
+      return -1;
+  }
   return 0;
 }
 

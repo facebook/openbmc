@@ -26,8 +26,8 @@
 
 #define I2C_DEV_FLASH1 "/dev/i2c-7"
 #define I2C_DEV_FLASH2 "/dev/i2c-8"
-#define I2C_FLASH_ADDR 0x6A
-#define NVME_STATUS_CMD 0x0
+#define I2C_FLASH_ADDR 0x1b
+#define NVME_STATUS_CMD 0x5
 
 /* List of information of I2C mapping for mux and channel */
 const uint8_t lightning_flash_list[] = {
@@ -50,12 +50,16 @@ const uint8_t lightning_flash_list[] = {
 
 size_t lightning_flash_cnt = sizeof(lightning_flash_list) / sizeof(uint8_t);
 
+// TODO: Need to change the lightning_flash_status_read to read SSD status
+// data and not just Temperature Data.
+
 /* To read NVMe Management Spec Based Status information */
 int
-lightning_flash_status_read(uint8_t i2c_map, uint8_t *status) {
+lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
 
   int dev;
   int ret;
+  int32_t res;
   uint8_t mux;
   uint8_t chan;
   char bus[32];
@@ -89,41 +93,47 @@ lightning_flash_status_read(uint8_t i2c_map, uint8_t *status) {
   }
 
   /* Read the Status from the NVMe device */
-  ret = i2c_smbus_read_block_data(dev, NVME_STATUS_CMD, status);
-  if (ret < 0) {
-    syslog(LOG_ERR, "lightning_flash_status_read: i2c_smbus_read_block_data failed");
+  res = i2c_smbus_read_word_data(dev, NVME_STATUS_CMD);
+  if (res < 0) {
     close(dev);
+    syslog(LOG_ERR, "lightning_flash_status_read: i2c_smbus_read_block_data failed");
     return -1;
   }
 
-  close(dev);
+  // Return only the word
+  *status = (res & 0xFF00) >> 8 | (res & 0xFF) << 8;
 
-#ifdef DEBUG
-  int i;
-  char str[1024];
-  sprintf(str, "\nStatus for %d: ", i2c_map);
-  for (i=0; i<32; i++)
-    strcat(str, "[%d] 0x%X - ", i, status[i]);
-  syslog(LOG_INFO, "%s", str);
-#endif
+  close(dev);
 
   return 0;
 }
 
 /* To read NVMe Management Spec Based device Temperature */
 int
-lightning_flash_temp_read(uint8_t i2c_map, uint8_t *temp) {
+lightning_flash_temp_read(uint8_t i2c_map, float *temp) {
 
   int ret;
-  uint8_t status[32];
+  uint16_t status;
 
-  ret = lightning_flash_status_read(i2c_map, status);
+  ret = lightning_flash_status_read(i2c_map, &status);
   if(ret < 0) {
     syslog(LOG_ERR, "lightning_flash_temp_read: lightning_flash_status_read failed");
     return -1;
   }
 
-  *temp = status[3];
+  *temp = (status & 0x0FF0) >> 4;
+
+  // Check is the temperature is negative
+  if (status & (1 << 12))
+    *temp *= -1;
+
+  // Decimal value of temperature
+  *temp += (status & 0x000F) * 0.125;
+
+  if (*temp == 0xFF) {
+    syslog(LOG_INFO, "lightning_flash_temp_read: flash not reachable or not present");
+    return -1;
+  }
 
   return 0;
 }

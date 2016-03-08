@@ -25,8 +25,8 @@ import re
 # Handler for FRUID resource endpoint
 def get_bmc():
     # Get BMC Reset Reason
-    wdt_counter = Popen('devmem 0x1e785010', \
-                        shell=True, stdout=PIPE).stdout.read()
+    (wdt_counter, _) = Popen('devmem 0x1e785010', \
+                             shell=True, stdout=PIPE).communicate()
     wdt_counter = int(wdt_counter, 0)
 
     wdt_counter &= 0xff00
@@ -42,20 +42,20 @@ def get_bmc():
         reset_reason = "User Initiated Reset or WDT Reset"
 
     # Get BMC's Up Time
-    uptime = Popen('uptime', \
-                        shell=True, stdout=PIPE).stdout.read()
+    (uptime, _) = Popen('uptime', \
+                        shell=True, stdout=PIPE).communicate()
 
     # Get Usage information
-    data = Popen('top -b n1', \
-                        shell=True, stdout=PIPE).stdout.read()
+    (data, _) = Popen('top -b n1', \
+                        shell=True, stdout=PIPE).communicate()
     adata = data.split('\n')
     mem_usage = adata[0]
     cpu_usage = adata[1]
 
     # Get OpenBMC version
     version = ""
-    data = Popen('cat /etc/issue', \
-                        shell=True, stdout=PIPE).stdout.read()
+    (data, _) = Popen('cat /etc/issue', \
+                        shell=True, stdout=PIPE).communicate()
     ver = re.search(r'v([\w\d._-]*)\s', data)
     if ver:
         version = ver.group(1)

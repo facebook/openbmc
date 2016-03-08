@@ -178,32 +178,6 @@ gpio_set E3 1
 # Enable GPIOY3: BoardId(Yosemite or Test system)
 devmem_clear_bit $(scu_addr a4) 11
 
-# Power LED for Slot#2:
-# To use GPIOM0 (96), SCU90[4], SCU90[5], and SCU84[24] must be 0
-devmem_clear_bit $(scu_addr 90) 4
-devmem_clear_bit $(scu_addr 90) 5
-devmem_clear_bit $(scu_addr 84) 24
-
-gpio_set M0 1
-
-# Power LED for Slot#1:
-# To use GPIOM1 (97), SCU90[4], SCU90[5], and SCU84[25] must be 0
-devmem_clear_bit $(scu_addr 84) 25
-
-gpio_set M1 1
-
-# Power LED for Slot#4:
-# To use GPIOM2 (98), SCU90[4], SCU90[5], and SCU84[26] must be 0
-devmem_clear_bit $(scu_addr 84) 26
-
-gpio_set M2 1
-
-# Power LED for Slot#3:
-# To use GPIOM3 (99), SCU90[4], SCU90[5], and SCU84[27] must be 0
-devmem_clear_bit $(scu_addr 84) 27
-
-gpio_set M3 1
-
 # Front Panel Hand Switch GPIO setup
 # HAND_SW_ID1: GPIOR2(138)
 # To use GPIOR2, SCU88[26] must be 0
@@ -332,3 +306,99 @@ gpio_get G6
 devmem_clear_bit $(scu_addr 88) 19
 
 gpio_set P3 0;
+
+# BMC_SSD_RST#0 - GPIOM1 (97) 
+# To use GPIOM1 (97), SCU90[4], SCU90[5], and SCU84[25] must be 0
+devmem_clear_bit $(scu_addr 90) 4
+devmem_clear_bit $(scu_addr 90) 5
+devmem_clear_bit $(scu_addr 84) 25
+
+gpio_set M1 1
+
+# BMC_SSD_RST#1 - GPIOM2 (98) 
+# To use GPIOM2 (98), SCU90[4], SCU90[5], and SCU84[26] must be 0
+devmem_clear_bit $(scu_addr 84) 26
+
+gpio_set M2 1
+
+# BMC_SSD_RST#2 - GPIOM3 (99) 
+# To use GPIOM3 (99), SCU90[4], SCU90[5], and SCU84[27] must be 0
+devmem_clear_bit $(scu_addr 84) 27
+
+gpio_set M3 1
+
+# BMC_SSD_RST#3 - GPIOM4 (100) 
+# To use GPIOM4 (100), SCU90[4], SCU90[5], and SCU84[28] must be 0
+devmem_clear_bit $(scu_addr 84) 28
+
+gpio_set M4 1
+
+# BMC_SSD_RST#4 - GPIOM5 (101) 
+# To use GPIOM5 (101), SCU90[4], SCU90[5], and SCU84[29] must be 0
+devmem_clear_bit $(scu_addr 84) 29
+
+gpio_set M5 1
+
+# BMC_SSD_RST#5 - GPIOM6 (102) 
+# To use GPIOM6 (102), SCU90[4], SCU90[5], and SCU84[30] must be 0
+devmem_clear_bit $(scu_addr 84) 30
+
+gpio_set M6 1
+
+# BMC_SSD_RST#6 - GPIOM7 (103)
+# To use GPIOM7 (103), SCU90[4], SCU90[5], and SCU84[31] must be 0
+devmem_clear_bit $(scu_addr 84) 31
+
+gpio_set M7 1
+
+# BMC_SSD_RST#7 - GPIOF0 (40)
+# To use GPIOF0 (40), SCU80[24] must be 0
+devmem_clear_bit $(scu_addr 80) 24
+
+gpio_set F0 1
+
+# BMC_SSD_RST#8 - GPIOF1 (41)
+# To use GPIOF1 (41), SCU80[25] and SCUA4[12] must be 0
+devmem_clear_bit $(scu_addr 80) 25
+devmem_clear_bit $(scu_addr A4) 12 
+
+gpio_set F1 1
+
+# BMC_SSD_RST#9 - GPIOF2 (42)
+# To use GPIOF2 (42), SCU80[26] and SCUA4[13] must be 0
+devmem_clear_bit $(scu_addr 80) 26
+devmem_clear_bit $(scu_addr A4) 13 
+
+gpio_set F2 1
+
+# BMC_SSD_RST#10 - GPIOF3 (43)
+# To use GPIOF3 (43), SCU80[27] and SCUA4[14] must be 0
+devmem_clear_bit $(scu_addr 80) 27
+devmem_clear_bit $(scu_addr A4) 14 
+
+gpio_set F3 1
+
+# BMC_SSD_RST#11 - GPIOF4 (44)
+# To use GPIOF4 (44), SCU80[28] must be 0
+devmem_clear_bit $(scu_addr 80) 28
+
+gpio_set F4 1
+
+# BMC_SSD_RST#12 - GPIOF5 (45)
+# To use GPIOF5 (45), SCU80[29] and SCUA4[15] must be 0
+devmem_clear_bit $(scu_addr 80) 29
+devmem_clear_bit $(scu_addr A4) 15 
+
+gpio_set F5 1
+
+# BMC_SSD_RST#13 - GPIOF6 (46)
+# To use GPIOF6 (46), SCU80[30] must be 0
+devmem_clear_bit $(scu_addr 80) 30
+
+gpio_set F6 1
+
+# BMC_SSD_RST#14 - GPIOF7 (47)
+# To use GPIOF7 (47), SCU80[31] must be 0
+devmem_clear_bit $(scu_addr 80) 31
+
+gpio_set F7 1

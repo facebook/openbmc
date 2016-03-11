@@ -283,7 +283,6 @@ int check_active_psus() {
   world.num_active_addrs = 0;
 
   scanning = 1;
-  syslog(LOG_INFO, "Searching for PSUs...");
   for(int rack = 0; rack < 3; rack++) {
     for(int shelf = 0; shelf < 2; shelf++) {
       for(int psu = 0; psu < 3; psu++) {
@@ -293,7 +292,6 @@ int check_active_psus() {
         if (err == 0) {
           world.active_addrs[world.num_active_addrs] = addr;
           world.num_active_addrs++;
-          syslog(LOG_INFO, "Found PSU at address %02x", addr);
         } else {
           dbg("%02x - %d; ", addr, err);
         }
@@ -376,7 +374,8 @@ int alloc_monitoring_datas() {
     }
     if (world.stored_data[data_pos] == NULL) {
       log("Detected PSU at address 0x%02x\n", addr);
-      //syslog(LOG_INFO, "Detected PSU at address 0x%02x", addr);
+      // this will only be logged once per address
+      syslog(LOG_INFO, "Detected PSU at address 0x%02x", addr);
       world.stored_data[data_pos] = alloc_monitoring_data(addr);
       if (world.stored_data[data_pos] == NULL) {
         BAIL("allocation failed\n");
@@ -569,6 +568,10 @@ int do_command(int sock, rackmond_command* cmd) {
         world.config = calloc(1, config_size);
         memcpy(world.config, &cmd->set_config.config, config_size);
         syslog(LOG_INFO, "got configuration");
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        uint32_t now = ts.tv_sec;
+        search_at = now;
         lock_release(worldlock);
         break;
       }

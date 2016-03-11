@@ -27,6 +27,7 @@ PYTHON_PKGS = " \
   python-pickle \
   python-misc \
   python-netserver \
+  python-syslog \
   "
 
 NTP_PKGS = " \
@@ -70,6 +71,7 @@ IMAGE_INSTALL += " \
   flashrom \
   cherryPy \
   spatula \
+  psumuxmon \
   "
 
 IMAGE_FEATURES += " \

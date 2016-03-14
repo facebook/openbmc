@@ -1836,6 +1836,7 @@ _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
     syslog(LOG_CRIT, "DEASSERT: %s discrete - settled - FRU: %d, num: 0x%X,"
         " snr: %-16s val: %d", event, fru, snr_num, snr_name, val);
   }
+  pal_update_ts_sled();
 }
 
 int
@@ -2445,4 +2446,14 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   }
 
   return read_fan_value(fan + 1, "fan%d_input", rpm);
+}
+
+void
+pal_update_ts_sled()
+{
+  char tstr[64] = {0};
+  struct timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  sprintf(tstr, "%d", ts.tv_sec);
+  pal_set_key_value("timestamp_sled", tstr);
 }

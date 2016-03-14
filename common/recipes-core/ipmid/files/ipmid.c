@@ -34,6 +34,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/pal.h>
 
 #define SIZE_IANA_ID 3
 #define SIZE_SYS_GUID 16
@@ -1161,6 +1162,7 @@ oem_set_post_end (unsigned char *request, unsigned char *response,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
+  pal_update_ts_sled();
   // TODO: For now logging the event, need to find usage for this info
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", req->payload_id);
 

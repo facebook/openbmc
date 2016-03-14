@@ -233,6 +233,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   if (curr_state) {
     snr[snr_num].curr_state &= curr_state;
+    pal_update_ts_sled();
     syslog(LOG_CRIT, "DEASSERT: %s threshold - settled - FRU: %d, num: 0x%X "
         "curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s",thresh_name,
         fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
@@ -340,6 +341,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
   if (curr_state) {
     curr_state &= snr[snr_num].flag;
     snr[snr_num].curr_state |= curr_state;
+    pal_update_ts_sled();
     syslog(LOG_CRIT, "ASSERT: %s threshold - raised - FRU: %d, num: 0x%X"
         " curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s", thresh_name,
         fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,

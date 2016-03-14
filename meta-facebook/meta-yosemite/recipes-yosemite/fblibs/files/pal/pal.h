@@ -170,6 +170,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_fan_name(uint8_t num, char *name);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
+void pal_update_ts_sled();
 
 #ifdef __cplusplus
 } // extern "C"

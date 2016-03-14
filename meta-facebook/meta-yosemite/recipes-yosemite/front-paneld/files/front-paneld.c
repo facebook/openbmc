@@ -37,7 +37,8 @@
 #define BTN_MAX_SAMPLES   200
 #define BTN_POWER_OFF     40
 #define MAX_NUM_SLOTS 4
-#define HB_TIMESTAMP_COUNT (60 * 60)
+#define HB_SLEEP_TIME (5 * 60)
+#define HB_TIMESTAMP_COUNT (60 * 60 / HB_SLEEP_TIME)
 
 #define LED_ON 1
 #define LED_OFF 0
@@ -228,6 +229,7 @@ rst_btn_handler() {
         msleep(100);
         continue;
       }
+      pal_update_ts_sled();
       syslog(LOG_WARNING, "Reset button released\n");
       syslog(LOG_CRIT, "Reset Button pressed for FRU: %d\n", pos);
       ret = pal_set_rst_btn(pos, 1);
@@ -236,6 +238,7 @@ rst_btn_handler() {
 
     // handle error case
     if (i == BTN_MAX_SAMPLES) {
+      pal_update_ts_sled();
       syslog(LOG_WARNING, "Reset button seems to stuck for long time\n");
       goto rst_btn_out;
     }
@@ -291,6 +294,7 @@ pwr_btn_handler() {
 
     // To determine long button press
     if (i >= BTN_POWER_OFF) {
+      pal_update_ts_sled();
       syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
     } else {
 
@@ -299,6 +303,7 @@ pwr_btn_handler() {
       if (power == SERVER_POWER_ON)
         cmd = SERVER_GRACEFUL_SHUTDOWN;
 
+      pal_update_ts_sled();
       syslog(LOG_CRIT, "Power Button Press for FRU: %d\n", pos);
     }
 
@@ -341,12 +346,12 @@ ts_handler() {
       clock_gettime(CLOCK_REALTIME, &ts);
 
       if (ts.tv_sec < time_sled_off) {
-        goto loop_cont;
+        sleep(1);
+        continue;
       }
 
       // If current time is more than the stored time, the date is correct
       time_init = 1;
-
       // Need to log SLED ON event, if this is Power-On-Reset
       if (pal_is_bmc_por()) {
         // Get uptime
@@ -362,14 +367,11 @@ ts_handler() {
 
     // Store timestamp every one hour to keep track of SLED power
     if (count++ == HB_TIMESTAMP_COUNT) {
-      clock_gettime(CLOCK_REALTIME, &ts);
-      sprintf(tstr, "%d", ts.tv_sec);
-      pal_set_key_value("timestamp_sled", tstr);
+      pal_update_ts_sled();
       count = 0;
     }
 
-loop_cont:
-    sleep(1);
+    sleep(HB_SLEEP_TIME);
   }
 }
 

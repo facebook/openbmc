@@ -72,6 +72,7 @@ IMAGE_INSTALL += " \
   cherryPy \
   spatula \
   psumuxmon \
+  mTerm \
   "
 
 IMAGE_FEATURES += " \

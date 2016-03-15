@@ -710,7 +710,6 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
         case PEB_SENSOR_LEFT_CONN_TEMP:
         case PEB_SENSOR_RIGHT_CONN_TEMP:
         case PEB_SENSOR_BMC_TEMP:
-        case PEB_SENSOR_HSC_TEMP:
 
           *flag = GETMASK(UCR_THRESH | UNC_THRESH | LNC_THRESH | LCR_THRESH);
           break;

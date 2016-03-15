@@ -359,39 +359,25 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 static void *
 snr_discrete_monitor(void *arg) {
 
-#ifdef DEBUG2
-  char tmplog[1000];
-#endif /* DEBUG2 */
   uint8_t fru = *(uint8_t *) arg;
   int i, ret;
-  uint8_t discrete_cnt;
+  int discrete_cnt;
   uint8_t snr_num;
   thresh_sensor_t *snr;
   float normal_val, curr_val;
 
-  /* HACK */
-  // TODO: Need to resolve the SEGFAULT in the call below and replace HACK here.
-#ifdef CONFIG_YOSEMITE
-  uint8_t discrete_list[3];
-  discrete_cnt = 3;
-  if (fru != FRU_SPB && fru != FRU_NIC) {
-    discrete_list[0] = BIC_SENSOR_SYSTEM_STATUS;
-    discrete_list[1] = BIC_SENSOR_VR_HOT;
-    discrete_list[2] = BIC_SENSOR_CPU_DIMM_HOT;
-  } else {
-    return;
-  }
-#else
   uint8_t *discrete_list;
   ret = pal_get_fru_discrete_list(fru, &discrete_list, &discrete_cnt);
   if (ret < 0) {
     return;
   }
-#endif /* CONFIG_YOSEMITE */
+
+  if (discrete_cnt == 0)
+    return;
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
-    syslog(LOG_WARNING, "snr_thresh_monitor: get_struct_thresh_sensor failed");
+    syslog(LOG_WARNING, "snr_discrete_monitor: get_struct_thresh_sensor failed");
     exit(-1);
   }
 
@@ -400,35 +386,17 @@ snr_discrete_monitor(void *arg) {
     pal_get_sensor_name(fru, snr_num, snr[snr_num].name);
   }
 
-#if defined(TESTING) || defined(DEBUG)
-  int cnt = 0;
-#endif
   while(1) {
     for (i = 0; i < discrete_cnt; i++) {
       snr_num = discrete_list[i];
       ret = pal_sensor_read(fru, snr_num, &curr_val);
 
-#ifdef DEBUG2
-      sprintf(tmplog, "echo 0x%X %s %d >> /tmp/discretetest%d", snr_num, snr[snr_num].name, (int) curr_val, fru);
-      system(tmplog);
-#endif /* DEBUG2 */
-
-#if defined(TESTING) || defined(DEBUG)
-      if (cnt == 2 && snr_num == BIC_SENSOR_SYSTEM_STATUS) {
-        curr_val = ((int) curr_val) | 0x1;
-      } else if (cnt == 6 && snr_num == BIC_SENSOR_SYSTEM_STATUS) {
-        curr_val = ((int) curr_val) & 0x0;
-      }
-#endif
       if ((snr[snr_num].curr_state != (int) curr_val) && !ret) {
         pal_sensor_discrete_check(fru, snr_num, snr[snr_num].name,
             snr[snr_num].curr_state, (int) curr_val);
         snr[snr_num].curr_state = (int) curr_val;
       }
     }
-#if defined(TESTING) || defined(DEBUG)
-    cnt ++;
-#endif
     sleep(DELAY);
   }
 }
@@ -441,14 +409,18 @@ static void *
 snr_thresh_monitor(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
-  int f, ret, snr_num;
+  int i, ret, snr_num, sensor_cnt;
   float normal_val, curr_val;
+  uint8_t *sensor_list;
   thresh_sensor_t *snr;
 
-#if defined(TESTING) || defined(DEBUG)
-  float temp_thresh;
-  int cnt = 0;
-#endif /* TESTING */
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    return ret;
+  }
+
+  if (sensor_cnt == 0)
+    return;
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
@@ -456,53 +428,14 @@ snr_thresh_monitor(void *arg) {
     exit(-1);
   }
 
-#ifdef DEBUG2
-  char tmplog[1000];
-#endif /* DEBUG2 */
 
   while(1) {
 
-#ifdef TESTING
-    cnt++;
-#endif /* TESTING */
-
-    for (snr_num = 0; snr_num < MAX_SENSOR_NUM; snr_num++) {
+    for (i = 0; i < sensor_cnt; i++) {
+      snr_num = sensor_list[i];
       curr_val = 0;
       if (snr[snr_num].flag) {
         if (!(ret = pal_sensor_read(fru, snr_num, &curr_val))) {
-#ifdef DEBUG2
-          sprintf(tmplog, "echo 0x%X %s %.2f >> /tmp/analog%d", snr_num, snr[snr_num].name, curr_val, fru);
-      system(tmplog);
-#endif /* DEBUG2 */
-
-#ifdef TESTING
-          /*
-           * The curr_val crosses UCR and then return to a state
-           * where UNC < curr_val < UCR and then eventually back to normal.
-           */
-          if (cnt == 5 && snr_num == BIC_SENSOR_MB_INLET_TEMP) {
-            snr[snr_num].flag |= SETBIT(snr[snr_num].flag, UNC_THRESH);
-            temp_thresh = snr[snr_num].ucr_thresh;
-            snr[snr_num].ucr_thresh = 20.0;
-            snr[snr_num].unc_thresh = 10.0;
-          } else if (cnt == 8 && snr_num == BIC_SENSOR_MB_INLET_TEMP) {
-            snr[snr_num].ucr_thresh = temp_thresh;
-          } else if (cnt == 10 && snr_num == BIC_SENSOR_MB_INLET_TEMP) {
-            snr[snr_num].unc_thresh = 50.0;
-          } else if (cnt == 11 && snr_num == BIC_SENSOR_MB_INLET_TEMP) {
-            snr[snr_num].unc_thresh = 0.0;
-            snr[snr_num].flag &= CLEARBIT(snr[snr_num].flag, UNC_THRESH);
-
-          }
-#endif /* TESTING */
-
-#ifdef DEBUG
-          if (cnt == 2) {
-            syslog(LOG_INFO, "pthread %d, cnt: %d, num: 0x%X name: %-16s"
-                " units:%s", fru, cnt, snr_num, snr[snr_num].name,
-                snr[snr_num].units);
-          }
-#endif /* DEBUG */
 
           check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
@@ -517,44 +450,17 @@ snr_thresh_monitor(void *arg) {
           check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
-        } else {
 #ifdef DEBUG
+        } else {
           syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
               fru, snr_num, snr[snr_num].name);
-#endif
+#endif /* DEBUG */
         } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */
     sleep(DELAY);
   } /* while loop*/
 } /* function definition */
-
-#ifdef DEBUG
-void print_snr_thread(uint8_t fru, thresh_sensor_t *snr)
-{
-  int i,j;
-  float curr_val;
-  char tmplog[1000];
-  char print[1000];
-
-  for (i = 0; i <= MAX_SENSOR_NUM; i++) {
-    if (snr[i].flag) {
-      curr_val = 0;
-      if(!(pal_sensor_read(fru, i, &curr_val))) {
-        sprintf(tmplog, "%-30s: %s  %.2f  %.2f  %.2f  %.2f\n",
-        snr[i].name, snr[i].units,
-        snr[i].ucr_thresh,
-        snr[i].lcr_thresh,
-        snr[i].pos_hyst,
-        snr[i].neg_hyst);
-        sprintf(print, "echo %s >> /tmp/print%d", tmplog, fru);
-        system(print);
-      }
-    }
-  }
-}
-#endif /* DEBUG */
-
 
 static void *
 snr_health_monitor() {
@@ -583,12 +489,7 @@ snr_health_monitor() {
 
       pal_set_sensor_health(fru, value);
 
-#ifdef DEBUG
-      pal_get_sensor_health(fru, &value);
-      syslog(LOG_WARNING, "fru %d : health %d", fru, value);
-#endif
-
-    } /* for loop for frus*/
+    } /* for loop for frus */
     sleep(DELAY);
   } /* while loop */
 }
@@ -619,50 +520,37 @@ run_sensord(int argc, char **argv) {
 
     if (GETBIT(fru_flag, fru)) {
 
-      if (init_fru_snr_thresh(fru))
-        return ret;
+      if (init_fru_snr_thresh(fru) < 0)
+        return -1;
 
       /* Threshold Sensors */
       if (pthread_create(&thread_snr[fru-1], NULL, snr_thresh_monitor,
           (void*) &fru) < 0) {
-        syslog(LOG_WARNING, "pthread_create for FRU %d failed\n", fru);
-      }
+        syslog(LOG_WARNING, "pthread_create for Threshold Sensors for FRU %d failed\n", fru);
 #ifdef DEBUG
-      else {
-        syslog(LOG_WARNING, "pthread_create for FRU %d succeed\n", fru);
-      }
+      } else {
+        syslog(LOG_WARNING, "pthread_create for Threshold Sensors for FRU %d succeed\n", fru);
 #endif /* DEBUG */
+      }
       sleep(1);
 
       /* Discrete Sensors */
       if (pthread_create(&discrete_snr[fru-1], NULL, snr_discrete_monitor,
             (void*) &fru) < 0) {
-        syslog(LOG_WARNING, "pthread_create for FRU %d failed\n", fru);
-      }
+        syslog(LOG_WARNING, "pthread_create for discrete sensors for FRU %d failed\n", fru);
 #ifdef DEBUG
-      else {
-        syslog(LOG_WARNING, "pthread_create for discrete FRU %d succeed\n", fru);
-      }
+      } else {
+        syslog(LOG_WARNING, "pthread_create for discrete sensors for FRU %d succeed\n", fru);
 #endif /* DEBUG */
+      }
       sleep(1);
-
     }
   }
+
   /* Sensor Health */
   if (pthread_create(&sensor_health, NULL, snr_health_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for sensor health failed\n");
   }
-#ifdef DEBUG
-  else {
-    syslog(LOG_WARNING, "pthread_create for sensor health succeed\n");
-  }
-#endif /* DEBUG */
-
-#ifdef DEBUG
-    int i;
-    for (i = 1; i <= MAX_NUM_FRUS; i++)
-      print_snr_thread(i, g_snr[i-1]);
-#endif /* DEBUG */
 
   pthread_join(sensor_health, NULL);
 

@@ -62,11 +62,7 @@
 
 #define TPM75_TEMP_RESOLUTION 0.0625
 
-#define ADS1015_DEF_PGA       2
-#define ADS1015_DEF_DATA_RATE 4
-#define ADS1015_DEF_COMP_MODE 3
-#define ADS1015_DEF_MODE      1
-#define ADS1015_DEF_OS        1
+#define ADS1015_DEFAULT_CONFIG 0xe383
 
 #define MAX_SENSOR_NUM 0xFF
 #define ALL_BYTES 0xFF
@@ -559,18 +555,12 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
   }
 
   /*
-   * config -> 1       100            010       1
-   *           OS[15]  CHANNEL[14:12] PGA[11:9] MODE[8]
-   *           100     00011
-   *           DR[7:5] COMPARATOR[4:0]
+   * config
+   * Byte 0: OS[7]  CHANNEL[6:4] PGA[3:1] MODE [0]
+   * Byte 1: Data Rate[7:5] COMPARATOR[4:0]
    */
-  config = 0;
-  config |= (ADS1015_DEF_OS & 0x1) << 15;
-  config |= (channel & 0x7) << 12;
-  config |= (ADS1015_DEF_PGA & 0x7) << 9;
-  config |= (ADS1015_DEF_MODE & 0x1) << 8;
-  config |= (ADS1015_DEF_DATA_RATE & 0x7) << 5;
-  config |= (ADS1015_DEF_COMP_MODE & 0x1F);
+  config = ADS1015_DEFAULT_CONFIG;
+  config |= (channel & 0x7) << 4;
 
   /* Write the config in the CONFIG register */
   ret = i2c_smbus_write_word_data(dev, ADS1015_CONFIG, config);
@@ -579,7 +569,6 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
     close(dev);
     return -1;
   }
-
   /* Wait for the conversion to finish */
   msleep(5);
 
@@ -608,10 +597,10 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
   res = ((res & 0x0FF) << 8) | ((res & 0xFF00) >> 8);
 
   /*
-   * Based on the default PGA, COMP MODE, DATA RATE,
-   * divide the register result by 16  to get the result in mv.
+   * Based on the config PGA, COMP MODE, DATA RATE value,
+   * Voltage in Volts = res [15:4] * Reference volt / 2048
    */
-  *value = (float) (res >> 4) / UNIT_DIV;
+  *value = (float) (res >> 4) * (4.096 / 2048);
 
   return 0;
 }
@@ -978,13 +967,23 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
         // Voltage
         case PDPB_SENSOR_P12V:
-          return read_ads1015_value(ADS1015_CHANNEL4, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value);
+          if (read_ads1015_value(ADS1015_CHANNEL4, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value) < 0) {
+            return -1;
+          }
+          *((float *) value) = *((float *) value) * ((10 + 2) / 2); // Voltage Divider Circuit
+          return 0;
+
         case PDPB_SENSOR_P3V3:
           return read_ads1015_value(ADS1015_CHANNEL5, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value);
         case PDPB_SENSOR_P2V5:
           return read_ads1015_value(ADS1015_CHANNEL6, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value);
         case PDPB_SENSOR_P12V_SSD:
-          return read_ads1015_value(ADS1015_CHANNEL7, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value);
+          if (read_ads1015_value(ADS1015_CHANNEL7, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value) < 0) {
+            return -1;
+          }
+          *((float *) value) = *((float *) value) * ((10 + 2) / 2); // Voltage Divider Circuit
+          return 0;
+
         default:
           return -1;
 

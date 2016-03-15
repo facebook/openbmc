@@ -398,7 +398,7 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 }
 
 int
-pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, uint8_t *cnt) {
+pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   switch(fru) {
     case FRU_PEB:
@@ -636,7 +636,7 @@ pal_is_bmc_por(void) {
 }
 
 int
-pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, uint8_t *cnt) {
+pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   return 0;
 }
@@ -700,6 +700,61 @@ pal_get_fru_list(char *list) {
 
 int
 pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
+  switch (fru) {
+    case FRU_PEB:
+
+      switch (snr_num) {
+        case PEB_SENSOR_PCIE_SW_TEMP:
+        case PEB_SENSOR_PCIE_SW_FRONT_TEMP:
+        case PEB_SENSOR_PCIE_SW_REAR_TEMP:
+        case PEB_SENSOR_LEFT_CONN_TEMP:
+        case PEB_SENSOR_RIGHT_CONN_TEMP:
+        case PEB_SENSOR_BMC_TEMP:
+        case PEB_SENSOR_HSC_TEMP:
+
+          *flag = GETMASK(UCR_THRESH | UNC_THRESH | LNC_THRESH | LCR_THRESH);
+          break;
+      }
+      break;
+
+    case FRU_PDPB:
+      switch (snr_num) {
+        case PDPB_SENSOR_LEFT_REAR_TEMP:
+        case PDPB_SENSOR_LEFT_FRONT_TEMP:
+        case PDPB_SENSOR_RIGHT_REAR_TEMP:
+        case PDPB_SENSOR_RIGHT_FRONT_TEMP:
+        case PDPB_SENSOR_FLASH_TEMP_0:
+        case PDPB_SENSOR_FLASH_TEMP_1:
+        case PDPB_SENSOR_FLASH_TEMP_2:
+        case PDPB_SENSOR_FLASH_TEMP_3:
+        case PDPB_SENSOR_FLASH_TEMP_4:
+        case PDPB_SENSOR_FLASH_TEMP_5:
+        case PDPB_SENSOR_FLASH_TEMP_6:
+        case PDPB_SENSOR_FLASH_TEMP_7:
+        case PDPB_SENSOR_FLASH_TEMP_8:
+        case PDPB_SENSOR_FLASH_TEMP_9:
+        case PDPB_SENSOR_FLASH_TEMP_10:
+        case PDPB_SENSOR_FLASH_TEMP_11:
+        case PDPB_SENSOR_FLASH_TEMP_12:
+        case PDPB_SENSOR_FLASH_TEMP_13:
+        case PDPB_SENSOR_FLASH_TEMP_14:
+
+          *flag = GETMASK(UCR_THRESH | UNC_THRESH | LNC_THRESH | LCR_THRESH);
+          break;
+      }
+      break;
+
+    case FRU_FCB:
+      switch (snr_num) {
+        case FCB_SENSOR_BJT_TEMP_1:
+        case FCB_SENSOR_BJT_TEMP_2:
+
+          *flag = GETMASK(UCR_THRESH | UNC_THRESH | LNC_THRESH | LCR_THRESH);
+          break;
+
+      }
+      break;
+  }
 
   return 0;
 }
@@ -878,4 +933,8 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 
 void
 pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
+}
+
+void
+pal_update_ts_sled() {
 }

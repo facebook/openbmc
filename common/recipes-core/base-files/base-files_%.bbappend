@@ -18,13 +18,13 @@ do_install_bmc_issue () {
     if [ -d "$dir/meta-openbmc/.git" ]; then
         srcdir="$dir/meta-openbmc"
         srcdir_git="${srcdir}/.git"
-        version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --dirty --always 2> /dev/null)
+        version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --tags --dirty --always 2> /dev/null)
     else
         version=""
     fi
 
-    echo "Open BMC Release ${version} \\n \\l" > ${D}${sysconfdir}/issue
+    echo "OpenBMC Release ${version}" > ${D}${sysconfdir}/issue
     echo >> ${D}${sysconfdir}/issue
-    echo "Open BMC Release ${version} %h" > ${D}${sysconfdir}/issue.net
+    echo "OpenBMC Release ${version} %h" > ${D}${sysconfdir}/issue.net
     echo >> ${D}${sysconfdir}/issue.net
 }

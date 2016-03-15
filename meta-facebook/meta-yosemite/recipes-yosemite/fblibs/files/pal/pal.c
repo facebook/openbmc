@@ -1816,6 +1816,8 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       break;
     case FRU_SPB:
     case FRU_NIC:
+      *sensor_list = NULL;
+      *cnt = 0;
       return -1;
     default:
 #ifdef DEBUG

@@ -31,5 +31,5 @@
 
 echo -n "Setup sensor monitoring for Lightning... "
 /usr/local/bin/init_sensor.sh
-#/usr/local/bin/sensord peb pdpb fcb
+/usr/local/bin/sensord peb pdpb fcb
 echo "done."

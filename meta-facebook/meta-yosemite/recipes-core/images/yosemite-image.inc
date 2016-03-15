@@ -78,6 +78,7 @@ IMAGE_INSTALL += " \
   lldp-util \
   fan-util \
   spatula \
+  passwd-util \
   "
 
 IMAGE_FEATURES += " \

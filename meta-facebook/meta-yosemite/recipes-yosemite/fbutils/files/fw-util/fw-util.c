@@ -32,7 +32,7 @@
 static void
 print_usage_help(void) {
   printf("Usage: fw_util <slot1|slot2|slot3|slot4> <--version>\n");
-  printf("       fw_util <slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bicbl> <path>\n");
+  printf("       fw_util <slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 }
 
 // TODO: Need to confirm the interpretation of firmware version for print
@@ -155,6 +155,8 @@ main(int argc, char **argv) {
       return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
     } else if (!strcmp(argv[3], "--bios")) {
       return bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
+    } else if (!strcmp(argv[3], "--bic")) {
+      return bic_update_fw(slot_id, UPDATE_BIC, argv[4]);
     } else if (!strcmp(argv[3], "--bicbl")) {
       return bic_update_fw(slot_id, UPDATE_BIC_BOOTLOADER, argv[4]);
     } else {

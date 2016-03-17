@@ -398,3 +398,13 @@ gpio_export P2
 devmem_set_bit $(scu_addr 80) 15
 devmem_clear_bit $(scu_addr 90) 31
 devmem_set_bit $(scu_addr 3c) 3
+
+# Enable GPIO pins: I2C_SLOTx_ALERT_N pins for BIC firmware update
+devmem_clear_bit $(scu_addr 88) 2
+gpio_export N2
+devmem_clear_bit $(scu_addr 88) 3
+gpio_export N3
+devmem_clear_bit $(scu_addr 88) 4
+gpio_export N4
+devmem_clear_bit $(scu_addr 88) 5
+gpio_export N5

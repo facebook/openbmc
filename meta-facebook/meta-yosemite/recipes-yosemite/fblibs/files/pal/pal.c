@@ -1859,10 +1859,6 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
         sprintf(name, "SOC_VR_Hot");
         valid = true;
         break;
-      case BIC_SENSOR_CPU_DIMM_HOT:
-        sprintf(name, "SOC_Hot");
-        valid = true;
-        break;
     }
     if (valid) {
       _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 0), name);
@@ -1961,12 +1957,6 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
     case THERM_THRESH_EVT:
       sprintf(name, "THERM_THRESH_EVT");
       break;
-    case BUTTON:
-      sprintf(name, "BUTTON");
-      break;
-    case POWER_STATE:
-      sprintf(name, "POWER_STATE");
-      break;
     case CRITICAL_IRQ:
       sprintf(name, "CRITICAL_IRQ");
       break;
@@ -1985,14 +1975,14 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
     case MEMORY_ECC_ERR:
       sprintf(name, "MEMORY_ECC_ERR");
       break;
-    case PROCHOT_EXT:
-      sprintf(name, "PROCHOT_EXT");
-      break;
     case PWR_ERR:
       sprintf(name, "PWR_ERR");
       break;
     case CATERR:
       sprintf(name, "CATERR");
+      break;
+    case CPU_DIMM_HOT:
+      sprintf(name, "CPU_DIMM_HOT");
       break;
     default:
       sprintf(name, "Unknown");
@@ -2160,23 +2150,6 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
       break;
 
-    case PROCHOT_EXT:
-      sprintf(error_log, "");
-      if ((ed[0] & 0xF) == 0xA)
-        strcat(error_log, "Processor Thermal Throttling Offset");
-      else
-        strcat(error_log, "Unknown");
-      break;
-
-      if ((ed[1] & 0x3) == 0x1)
-        strcat(error_log, " - External (VR)");
-      else if ((ed[1] & 0x3) == 0x0)
-        strcat(error_log, " - Native");
-      break;
-
-      sprintf(temp_log, " (SOC ID - %d)", (ed[2] & 0xE0) >> 5);
-      strcat(error_log, temp_log);
-
     case PWR_ERR:
       sprintf(error_log, "");
       if (ed[0] == 0x2)
@@ -2191,6 +2164,14 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         strcat(error_log, "IERR");
       else if (ed[0] == 0xB)
         strcat(error_log, "MCERR");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case CPU_DIMM_HOT:
+      sprintf(error_log, "");
+      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
+        strcat(error_log, "SOC MEMHOT");
       else
         strcat(error_log, "Unknown");
       break;

@@ -34,6 +34,13 @@
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
 
+struct threadinfo {
+  uint8_t is_running;
+  pthread_t pt;
+};
+
+static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
+
 int
 yosemite_common_fru_name(uint8_t fru, char *str) {
 
@@ -108,13 +115,11 @@ generate_dump(void *arg) {
   int tmpf;
   int rc;
 
-  tmpf = open("/var/lock/crashdump", O_CREAT | O_RDWR, 0666);
-  if (tmpf < 0) {
-    syslog(LOG_INFO, "generate_dump: could open the file /var/lock/crashdump");
-    return;
-  }
 
-  rc = flock(tmpf, LOCK_EX);
+  // Usually the pthread cancel state are enable by default but
+  // here we explicitly would like to enable them
+  rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  rc = pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
 
   yosemite_common_fru_name(fru, fruname);
 
@@ -137,26 +142,43 @@ generate_dump(void *arg) {
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
 
-  rc = flock(tmpf, LOCK_UN);
-
-  close(tmpf);
+  t_dump[fru-1].is_running = 0;
 }
+
 
 int
 yosemite_common_crashdump(uint8_t fru) {
 
+  int ret;
+
+  // Check if the crashdump script exist
   if (access(CRASHDUMP_BIN, F_OK) == -1) {
     syslog(LOG_CRIT, "Crashdump for FRU: %d failed : "
         "crashdump binary is not preset", fru);
     return 0;
   }
 
-  pthread_t t_dump;
+  // Check if a crashdump for that fru is already running.
+  // If yes, kill that thread and start a new one.
+  if (t_dump[fru-1].is_running) {
+    ret = pthread_cancel(t_dump[fru-1].pt);
+    if (ret == ESRCH) {
+      syslog(LOG_INFO, "yosemite_common_crashdump: No Crashdump pthread exists");
+#ifdef DEBUG
+    } else {
+      syslog(LOG_INFO, "yosemite_common_crashdump: Previous crashdump thread is cancelled");
+#endif
+    }
+  }
 
-  if (pthread_create(&t_dump, NULL, generate_dump, (void*) &fru) < 0) {
+  // Start a thread to generate the crashdump
+  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) &fru) < 0) {
     syslog(LOG_WARNING, "pal_store_crashdump: pthread_create for"
         " FRU %d failed\n", fru);
+    return -1;
   }
+
+  t_dump[fru-1].is_running = 1;
 
   syslog(LOG_INFO, "Crashdump for FRU: %d is being generated.", fru);
 

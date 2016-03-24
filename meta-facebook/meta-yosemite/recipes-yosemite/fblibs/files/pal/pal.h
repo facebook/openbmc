@@ -96,7 +96,8 @@ enum {
   MEMORY_ECC_ERR = 0X63,
   PROCHOT_EXT = 0X51,
   PWR_ERR = 0X56,
-  CATERR= 0xEB,
+  CATERR = 0xEB,
+  CPU_DIMM_HOT = 0xB3,
 };
 
 enum {

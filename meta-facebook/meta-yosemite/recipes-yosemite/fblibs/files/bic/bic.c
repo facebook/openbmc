@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include "bic.h"
 #include "facebook/i2c-dev.h"
 
@@ -573,15 +574,14 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
 
   memcpy(&tbuf[10], buf, len);
 
-  printf("_update_fw: target: %d, offset: %d, len: %d\n", target, offset, len);
-
   tlen = len + 10;
 
 bic_send:
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen);
   if ((ret) && (retries--)) {
     sleep(1);
-    printf("_update_fw: retrying..\n");
+    printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\
+           \n",    slot_id, target, offset, len);
     goto bic_send;
   }
 
@@ -816,19 +816,23 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   uint32_t offset;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
+  char    cmd[100] = {0};
+  char    temp[8];
   uint8_t len = 0;
   uint8_t target;
   int fd;
   int i;
   uint32_t tcksum;
   uint32_t gcksum;
-  uint8_t *tbuf;
+  uint8_t *tbuf = NULL;
 
   // Handle Bridge IC firmware separately as the process differs significantly from others
   if (comp == UPDATE_BIC) {
    return  _update_bic_main(slot_id, path);
   }
 
+  uint32_t dsize, last_offset;
+  struct stat st;
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -838,8 +842,26 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     goto error_exit;
   }
 
+  // Kill sendor daemon for this slot
+  if (comp == UPDATE_BIOS ) {
+    system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
+           xargs kill");
+    printf("killed sensord for this slot.\n");
+    strcpy(cmd, "/usr/local/bin/sensord");
+    for(i = 1; i < 5; i++){
+      if(slot_id == i)
+        continue;
+      sprintf(temp, " slot%d",i);
+      strcat(cmd, temp);
+    }
+    strcat(cmd, " spb nic");
+    system(cmd);
+  }
+  stat(path, &st);
+  dsize = st.st_size/100;
   // Write chunks of binary data in a loop
   offset = 0;
+  last_offset = 0;
   i = 1;
   while (1) {
     // For BIOS, send packets in blocks of 64K
@@ -871,6 +893,10 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
     // Update counter
     offset += count;
+    if((last_offset + dsize) <= offset) {
+       printf("updated fw: %d %%\n", offset/dsize);
+       last_offset += dsize;
+    }
   }
 
   if (comp != UPDATE_BIOS) {
@@ -920,7 +946,11 @@ error_exit:
   if (tbuf) {
     free(tbuf);
   }
-
+  if (comp == UPDATE_BIOS ) {
+    system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
+           xargs kill");
+    system("/usr/local/bin/sensord slot1 slot2 slot3 slot4 spb nic");
+  }
   return ret;
 }
 

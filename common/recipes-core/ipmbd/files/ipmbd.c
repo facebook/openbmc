@@ -61,7 +61,7 @@
 #include <stdint.h>
 #include <mqueue.h>
 #include <semaphore.h>
-
+#include <signal.h>
 #include "facebook/i2c-dev.h"
 #include "openbmc/ipmi.h"
 #include "openbmc/ipmb.h"
@@ -77,7 +77,7 @@
 
 #define SEQ_NUM_MAX 64
 
-#define I2C_RETRIES_MAX 3
+#define I2C_RETRIES_MAX 6
 
 #define IPMB_PKT_MIN_SIZE 6
 
@@ -111,6 +111,13 @@ pthread_mutex_t m_seq;
 pthread_mutex_t m_i2c;
 
 static int g_bus_id = 0; // store the i2c bus ID for debug print
+
+static sem_t event_sem;
+
+void sig_handler_event1(int sig)
+{
+   sem_post(&event_sem);
+}
 
 #ifdef CONFIG_YOSEMITE
 // Returns the payload ID from IPMB bus routing
@@ -221,6 +228,8 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
   struct i2c_msg msg;
   int rc;
   int i;
+  struct timespec req;
+  struct timespec rem;
 
   memset(&msg, 0, sizeof(msg));
 
@@ -232,12 +241,16 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
   data.msgs = &msg;
   data.nmsgs = 1;
 
+  // Setup wait time
+  req.tv_sec = 0;
+  req.tv_nsec = 10000000;//10mSec
+
   pthread_mutex_lock(&m_i2c);
 
   for (i = 0; i < I2C_RETRIES_MAX; i++) {
     rc = ioctl(fd, I2C_RDWR, &data);
     if (rc < 0) {
-      sleep(1);
+      nanosleep(&req, &rem);
       continue;
     } else {
       break;
@@ -537,12 +550,24 @@ ipmb_rx_handler(void *bus_num) {
     syslog(LOG_WARNING, "mq_open res fails\n");
     goto cleanup;
   }
+  sem_init(&event_sem, 0, 0);
 
+  struct sigaction usr_action;
+  int pid;
+  struct timespec ts;
+  usr_action.sa_handler = sig_handler_event1;
+  sigemptyset(&usr_action.sa_mask);
+  usr_action.sa_flags = 0;
+  sigaction (SIGUSR1, &usr_action, NULL);
+  pid = getpid();
   // Loop that retrieves messages
   while (1) {
     // Read messages from i2c driver
-    if (i2c_slave_read(fd, buf, &len) < 0) {
-      nanosleep(&req, &rem);
+     *((int *)buf) = pid;
+     if (i2c_slave_read(fd, buf, &len) < 0) {
+      clock_gettime(CLOCK_REALTIME, &ts);
+      ts.tv_nsec += 10000000;
+      sem_timedwait(&event_sem, &ts);
       continue;
     }
 

@@ -71,34 +71,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0, 1],
-      "inputs": [
-        { "profile": "linear_inlet", "sensor": { "id": 129, "board": "spb" } },
-        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot1" } },
-        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot2" } },
-        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot3" } },
-        { "profile": "linear_cpu_margin", "sensor": {"id": 9, "board": "slot4" } },
-        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot1" } },
-        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot2" } },
-        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot3" } },
-        { "profile": "pid_cpu_margin", "sensor": {"id": 9, "board": "slot4" } },
-        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot1" } },
-        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot1" } },
-        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot1" } },
-        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot1" } },
-        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot2" } },
-        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot2" } },
-        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot2" } },
-        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot2" } },
-        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot3" } },
-        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot3" } },
-        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot3" } },
-        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot3" } },
-        { "profile": "linear_dimm", "sensor": {"id": 180, "board": "slot4" } },
-        { "profile": "linear_dimm", "sensor": {"id": 181, "board": "slot4" } },
-        { "profile": "linear_dimm", "sensor": {"id": 182, "board": "slot4" } },
-        { "profile": "linear_dimm", "sensor": {"id": 183, "board": "slot4" } },
-        { "profile": "linear_mezz", "sensor": {"id": 130, "board": "nic" } }
-      ]
+      "expr_file": "zone1.fsc"
     }
   }
 }

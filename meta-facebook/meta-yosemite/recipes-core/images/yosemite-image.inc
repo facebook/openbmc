@@ -25,6 +25,7 @@ PYTHON_PKGS = " \
   python-misc \
   python-netserver \
   python-syslog \
+  python-ply \
   "
 
 NTP_PKGS = " \

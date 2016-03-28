@@ -30,31 +30,20 @@ import re
 import signal
 
 from fsc_control import PID, TTable
+import fsc_expr
 
-
-PERSISTENT_CONFIG = '/mnt/data/etc/fsc-config.json'
 RAMFS_CONFIG = '/etc/fsc-config.json'
+CONFIG_DIR = '/etc/fsc'
 
 boost = 100
 transitional = 70
 ramp_rate = 10
+verbose = "-v" in sys.argv
 
 SensorValue = namedtuple('SensorValue', ['id','name','value','unit','status'])
 
-class FakeMachine:
-    def set_pwm(self, pwm, pct):
-        print("Set pwm %d to %d" % (pwm, pct))
-    def set_all_pwm(self, pct):
-        print("Set all pwm to %d" % (pct))
-    def read_speed(self):
-        return {0: 4000, 1: 4000}
-    def read_sensors(self):
-        return {'spb': {129: SensorValue(id=129, name='SP_INLET_TEMP', value=21.0, unit='C', status='ok')},
-                'slot1': {9: SensorValue(id=9, name='SOC Therm Margin', value=-60.0, unit='C', status='ok')},
-                'slot2': {9: SensorValue(id=9, name='SOC Therm Margin', value=-60.0, unit='C', status='ok')},
-                'slot3': {9: SensorValue(id=9, name='SOC Therm Margin', value=-60.0, unit='C', status='ok')},
-                'slot4': {9: SensorValue(id=9, name='SOC Therm Margin', value=-60.0, unit='C', status='ok')}}
-
+def bmc_symbolize_sensorname(name):
+    return name.lower().replace(" ", "_")
 
 # BAD. Lifted from REST API and patched up a bit
 # TODO: add a --json to sensor-util
@@ -78,7 +67,8 @@ def bmc_sensor_read(fru):
                 name = m.group(1).strip()
                 value = None
                 status = m.group(4)
-                result[sid] = SensorValue(sid, name, value, None, status)
+                symname = bmc_symbolize_sensorname(name)
+                result[symname] = SensorValue(sid, name, value, None, status)
                 continue
         m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line)
         if m is not None:
@@ -87,7 +77,8 @@ def bmc_sensor_read(fru):
             value = float(m.group(3))
             unit = m.group(4)
             status = m.group(5)
-            result[sid] = SensorValue(sid, name, value, unit, status)
+            symname = bmc_symbolize_sensorname(name)
+            result[symname] = SensorValue(sid, name, value, unit, status)
     return result
 
 def bmc_read_speed():
@@ -124,7 +115,6 @@ class BMCMachine:
             sensors[fru] = bmc_sensor_read(fru)
         return sensors
 
-#machine = FakeMachine()
 machine = BMCMachine()
 def info(msg):
     print("INFO: " + msg)
@@ -169,46 +159,39 @@ def clamp(v, minv, maxv):
         return maxv
     return v
 
-Input = namedtuple('Input', ['controller', 'sensor', 'profile'])
-
 class Zone:
-    def __init__(self, pwm_output):
+    def __init__(self, pwm_output, expr, expr_meta):
         self.pwm_output = pwm_output
-        self.inputs = []
         self.last_pwm = transitional
-
-    def add_input(self, config, data):
-        controller = make_controller(config['profiles'][data['profile']])
-        if hasattr(machine, 'frus') and 'board' in data['sensor']:
-            machine.frus.add(data['sensor']['board'])
-        self.inputs.append(Input(controller, data['sensor'], data['profile']))
+        self.expr = expr
+        self.expr_meta = expr_meta
+        self.expr_str = str(expr)
 
     def run(self, sensors, dt):
-        outs = []
-        for i in self.inputs:
-            if i.sensor['id'] not in sensors[i.sensor['board']]:
-                warn('Unable to read sensor %s on board %s'
-                        % (i.sensor['id'], i.sensor['board']))
-                return boost
-            sensor = sensors[i.sensor['board']][i.sensor['id']]
-            if sensor.status == 'na':
-                print("%s: NA, %s: -" % (sensor.name, i.profile))
-                continue
-            out = i.controller.run(sensor.value, dt)
-            if out:
-                out = clamp(out, 0, 100)
-                outs.append(out)
-            else:
-                out = "-"
-            print("%s: %.02f %s, %s: %s" %
-                  (sensor.name, sensor.value, sensor.unit, i.profile, str(out)))
+        ctx = {'dt': dt}
+        out = None
+        for v in self.expr_meta['ext_vars']:
+            board, sname = v.split(":")
+            sensor = sensors[board][sname]
             if sensor.status in ['ucr', 'unr', 'lnr', 'lcr']:
                 warn('Sensor %s reporting status %s' % (sensor.name, sensor.status))
-                return boost
-        if len(outs) == 0:
-            # no sensors could be read
-            return boost
-        return max(outs)
+                out = transitional
+            ctx[v] = sensor.value
+        if out:
+            return out
+
+        if verbose:
+            (exprout, dxstr) = self.expr.dbgeval(ctx)
+            exprout = clamp(exprout, 0, 100)
+            print(dxstr + " = " + str(exprout))
+        else:
+            exprout = self.expr.eval(ctx)
+            exprout = clamp(exprout, 0, 100)
+            print(self.expr_str + " = " + str(exprout))
+        return exprout
+
+def profile_constructor(data):
+    return lambda: make_controller(data)
 
 def main():
     global transitional
@@ -221,9 +204,7 @@ def main():
     configfile = "config.json"
     config = None
     zones = []
-    if os.path.isfile(PERSISTENT_CONFIG):
-        configfile = PERSISTENT_CONFIG
-    elif os.path.isfile(RAMFS_CONFIG):
+    if os.path.isfile(RAMFS_CONFIG):
         configfile = RAMFS_CONFIG
     info("Started, reading configuration from %s" % (configfile,))
     with open(configfile, 'r') as f:
@@ -244,13 +225,28 @@ def main():
             wdfile.flush()
 
     machine.set_all_pwm(transitional)
+    profile_constructors = {}
+    for name, pdata in config['profiles'].items():
+        profile_constructors[name] = profile_constructor(pdata)
+
+    print("Available profiles: " + ", ".join(profile_constructors.keys()))
+
     for name, data in config['zones'].items():
-        zone = Zone(data['pwm_output'])
-        for idata in data['inputs']:
-            zone.add_input(config, idata)
-        zones.append(zone)
+        filename = data['expr_file']
+        with open(os.path.join(CONFIG_DIR, filename), 'r') as exf:
+            source = exf.read()
+            print("Compiling FSC expression for zone:")
+            print(source)
+            (expr, inf) = fsc_expr.make_eval_tree(source, profile_constructors)
+            for name in inf['ext_vars']:
+                board, sname = name.split(':')
+                machine.frus.add(board)
+            zone = Zone(data['pwm_output'], expr, inf)
+            zones.append(zone)
     info("Read %d zones" % (len(zones),))
+    info("Including sensors from: " + ", ".join(machine.frus))
     interval = config['sample_interval_ms'] / 1000.0
+
     last = time.time()
     dead_fans = set()
     while True:

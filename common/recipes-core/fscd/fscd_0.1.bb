@@ -23,12 +23,16 @@ LIC_FILES_CHKSUM = "file://fscd.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa
 
 SRC_URI = "file://fscd.py \
            file://fsc_control.py \
+           file://fsc_expr.py \
+           file://fsc_parser.py \
           "
 
 S = "${WORKDIR}"
 
 binfiles = "fscd.py \
             fsc_control.py \
+            fsc_expr.py \
+            fsc_parser.py \
            "
 
 pkgdir = "fscd"

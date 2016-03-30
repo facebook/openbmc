@@ -53,6 +53,7 @@ static sys_info_param_t g_sys_info_params;
 // TODO: Based on performance testing results, might need fine grained locks
 // Since the global data is specific to a NetFunction, adding locs at NetFn level
 static pthread_mutex_t m_chassis;
+static pthread_mutex_t m_sensor;
 static pthread_mutex_t m_app;
 static pthread_mutex_t m_storage;
 static pthread_mutex_t m_transport;
@@ -169,6 +170,57 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
       break;
   }
   pthread_mutex_unlock(&m_chassis);
+}
+
+/*
+ * Function(s) to handle IPMI messages with NetFn: Sensor
+ */
+// Platform Event Message (IPMI/Section 29.3)
+static void
+sensor_plat_event_msg(unsigned char *request, unsigned char req_len,
+                      unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int record_id;		// Record ID for added entry
+  int ret;
+
+  sel_msg_t entry;
+
+  // Platform event provides only last 7 bytes of SEL's 16-byte entry
+  memcpy(&entry.msg[9], req->data, 7);
+
+  // Use platform APIs to add the new SEL entry
+  ret = sel_add_entry (req->payload_id, &entry, &record_id);
+  if (ret)
+  {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+}
+
+// Handle Sensor/Event Commands (IPMI/Section 29)
+static void
+ipmi_handle_sensor(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char cmd = req->cmd;
+
+  pthread_mutex_lock(&m_sensor);
+  switch (cmd)
+  {
+    case CMD_SENSOR_PLAT_EVENT_MSG:
+      sensor_plat_event_msg(request, req_len, response, res_len);
+      break;
+    default:
+      res->cc = CC_INVALID_CMD;
+      break;
+  }
+  pthread_mutex_unlock(&m_sensor);
 }
 
 /*
@@ -1104,9 +1156,37 @@ ipmi_handle_transport (unsigned char *request, unsigned char req_len,
 }
 
 /*
+ * Function(s) to handle IPMI messages with NetFn: DCMI
+ */
+static void
+ipmi_handle_dcmi(unsigned char *request, unsigned char req_len,
+		 unsigned char *response, unsigned char *res_len)
+{
+  int ret;
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  // If there is no command to process return
+  if (req->cmd == 0x0) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
+
+  // Since DCMI handling is specific to platform, call PAL to process
+  ret = pal_handle_dcmi(req->payload_id, &request[1], req_len-1, res->data, res_len);
+  if (ret < 0) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+}
+
+/*
  * Function(s) to handle IPMI messages with NetFn: OEM
  */
-
 static void
 oem_set_proc_info (unsigned char *request, unsigned char *response,
 		   unsigned char *res_len)
@@ -1282,14 +1362,12 @@ oem_1s_handle_ipmb_req(unsigned char *request, unsigned char req_len,
   // handle based on Bridge-IC interface
   switch(req->data[3]) {
     case BIC_INTF_ME:
-      // TODO: Need to call ME command handler
 #ifdef DEBUG
       syslog(LOG_INFO, "oem_1s_handle_ipmb_req: Command received from ME for "
                   "payload#%d\n", req->payload_id);
 #endif
-      memcpy(res->data, req->data, 4); //IANA ID + Interface type
-      res->cc = CC_SUCCESS;
-      *res_len = 4;
+      oem_1s_handle_ipmb_kcs(request, req_len, response, res_len);
+
       break;
     case BIC_INTF_SOL:
       // TODO: Need to call Optional SoL message handler
@@ -1430,6 +1508,10 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
       res->netfn_lun = NETFN_CHASSIS_RES << 2;
       ipmi_handle_chassis (request, req_len, response, res_len);
       break;
+    case NETFN_SENSOR_REQ:
+      res->netfn_lun = NETFN_SENSOR_RES << 2;
+      ipmi_handle_sensor (request, req_len, response, res_len);
+      break;
     case NETFN_APP_REQ:
       res->netfn_lun = NETFN_APP_RES << 2;
       ipmi_handle_app (request, req_len, response, res_len);
@@ -1441,6 +1523,10 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
     case NETFN_TRANSPORT_REQ:
       res->netfn_lun = NETFN_TRANSPORT_RES << 2;
       ipmi_handle_transport (request, req_len, response, res_len);
+      break;
+    case NETFN_DCMI_REQ:
+      res->netfn_lun = NETFN_DCMI_RES << 2;
+      ipmi_handle_dcmi(request, req_len, response, res_len);
       break;
     case NETFN_OEM_REQ:
       res->netfn_lun = NETFN_OEM_RES << 2;
@@ -1521,6 +1607,7 @@ main (void)
   sel_init();
 
   pthread_mutex_init(&m_chassis, NULL);
+  pthread_mutex_init(&m_sensor, NULL);
   pthread_mutex_init(&m_app, NULL);
   pthread_mutex_init(&m_storage, NULL);
   pthread_mutex_init(&m_transport, NULL);
@@ -1578,6 +1665,7 @@ main (void)
   close(s);
 
   pthread_mutex_destroy(&m_chassis);
+  pthread_mutex_destroy(&m_sensor);
   pthread_mutex_destroy(&m_app);
   pthread_mutex_destroy(&m_storage);
   pthread_mutex_destroy(&m_transport);

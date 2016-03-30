@@ -228,6 +228,47 @@ write_device(const char *device, const char *value) {
   }
 }
 
+static int
+pal_key_check(char *key) {
+
+  int ret;
+  int i;
+
+  i = 0;
+  while(strcmp(key_list[i], LAST_KEY)) {
+
+    // If Key is valid, return success
+    if (!strcmp(key, key_list[i]))
+      return 0;
+
+    i++;
+  }
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "pal_key_check: invalid key - %s", key);
+#endif
+  return -1;
+}
+
+int
+pal_get_key_value(char *key, char *value) {
+
+  // Check is key is defined and valid
+  if (pal_key_check(key))
+    return -1;
+
+  return kv_get(key, value);
+}
+int
+pal_set_key_value(char *key, char *value) {
+
+  // Check is key is defined and valid
+  if (pal_key_check(key))
+    return -1;
+
+  return kv_set(key, value);
+}
+
 // Power On the server in a given slot
 static int
 server_power_on(uint8_t slot_id) {
@@ -1235,62 +1276,6 @@ pal_post_handle(uint8_t slot, uint8_t status) {
   return 0;
 }
 
-
-static int
-read_kv(char *key, char *value) {
-
-  FILE *fp;
-  int rc;
-
-  fp = fopen(key, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "read_kv: failed to open %s", key);
-#endif
-    return err;
-  }
-
-  rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
-  fclose(fp);
-  if (rc <= 0) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "read_kv: failed to read %s", key);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-static int
-write_kv(char *key, char *value) {
-
-  FILE *fp;
-  int rc;
-
-  fp = fopen(key, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_kv: failed to open %s", key);
-#endif
-    return err;
-  }
-
-  rc = fwrite(value, 1, strlen(value), fp);
-  fclose(fp);
-
-  if (rc < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_kv: failed to write to %s", key);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
 int
 pal_get_fru_list(char *list) {
 
@@ -1454,60 +1439,6 @@ pal_get_fruid_name(uint8_t fru, char *name) {
   return yosemite_get_fruid_name(fru, name);
 }
 
-
-static int
-get_key_value(char* key, char *value) {
-
-  char kpath[64] = {0};
-
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
-  }
-
-  return read_kv(kpath, value);
-}
-
-static int
-set_key_value(char *key, char *value) {
-
-  char kpath[64] = {0};
-
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
-  }
-
-  return write_kv(kpath, value);
-}
-
-int
-pal_get_key_value(char *key, char *value) {
-
-  int ret;
-  int i;
-
-  i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
-
-    if (!strcmp(key, key_list[i])) {
-      // Key is valid
-      if ((ret = get_key_value(key, value)) < 0 ) {
-#ifdef DEBUG
-        syslog(LOG_WARNING, "pal_get_key_value: get_key_value failed. %d", ret);
-#endif
-        return ret;
-      }
-      return ret;
-    }
-    i++;
-  }
-
-  return -1;
-}
-
 int
 pal_set_def_key_value() {
 
@@ -1515,22 +1446,14 @@ pal_set_def_key_value() {
   int i;
   int fru;
   char key[64] = {0};
-  char kpath[64] = {0};
 
   i = 0;
   while(strcmp(key_list[i], LAST_KEY)) {
 
-  memset(key, 0, 64);
-  memset(kpath, 0, 64);
-
-  sprintf(kpath, KV_STORE, key_list[i]);
-
-  if (access(kpath, F_OK) == -1) {
-      if ((ret = set_key_value(key_list[i], def_val_list[i])) < 0) {
+    if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
 #ifdef DEBUG
-        syslog(LOG_WARNING, "pal_set_def_key_value: set_key_value failed. %d", ret);
+        syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
-      }
     }
     i++;
   }
@@ -1542,7 +1465,6 @@ pal_set_def_key_value() {
 
       /* Clear all the SEL errors */
       memset(key, 0, 64);
-      memset(kpath, 0, 64);
 
       switch(fru) {
         case FRU_SLOT1:
@@ -1562,18 +1484,11 @@ pal_set_def_key_value() {
           return -1;
       }
 
-      sprintf(kpath, KV_STORE, key);
-
-      if (access(KV_STORE_PATH, F_OK) == -1) {
-        mkdir(KV_STORE_PATH, 0777);
-      }
-
       /* Write the value "1" which means FRU_STATUS_GOOD */
-      ret = write_kv(kpath, "1");
+      ret = pal_set_key_value(key, "1");
 
       /* Clear all the sensor health files*/
       memset(key, 0, 64);
-      memset(kpath, 0, 64);
 
       switch(fru) {
         case FRU_SLOT1:
@@ -1593,43 +1508,12 @@ pal_set_def_key_value() {
           return -1;
       }
 
-      sprintf(kpath, KV_STORE, key);
-
-      if (access(KV_STORE_PATH, F_OK) == -1) {
-        mkdir(KV_STORE_PATH, 0777);
-      }
-
       /* Write the value "1" which means FRU_STATUS_GOOD */
-      ret = write_kv(kpath, "1");
+      ret = pal_set_key_value(key, "1");
     }
   }
 
   return 0;
-}
-
-int
-pal_set_key_value(char *key, char *value) {
-
-  int ret;
-  int i;
-
-  i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
-
-    if (!strcmp(key, key_list[i])) {
-      // Key is valid
-      if ((ret = set_key_value(key, value)) < 0) {
-#ifdef DEBUG
-        syslog(LOG_WARNING, "pal_set_key_value: set_key_value failed. %d", ret);
-#endif
-        return ret;
-      }
-      return ret;
-    }
-    i++;
-  }
-
-  return -1;
 }
 
 int
@@ -1666,7 +1550,7 @@ pal_dump_key_value(void) {
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = get_key_value(key_list[i], value) < 0) {
+    if (ret = kv_get(key_list[i], value) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -1910,7 +1794,6 @@ pal_store_crashdump(uint8_t fru) {
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num) {
 
-  char kpath[64] = {0};
   char key[64] = {0};
   char cvalue[64] = {0};
 
@@ -1937,14 +1820,8 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
       return -1;
   }
 
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
-  }
-
   /* Write the value "0" which means FRU_STATUS_BAD */
-  return write_kv(kpath, "0");
+  return pal_set_key_value(key, "0");
 }
 
 int
@@ -2200,7 +2077,6 @@ msleep(int msec) {
 int
 pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
-  char kpath[64] = {0};
   char key[64] = {0};
   char cvalue[64] = {0};
 
@@ -2222,22 +2098,13 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
       return -1;
   }
 
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
-  }
-
-  sprintf(cvalue, (value > 0) ? "1": "0");
-
-  return write_kv(kpath, cvalue);
+  return pal_set_key_value(key, cvalue);
 }
 
 int
 pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   char cvalue[64] = {0};
-  char kpath[64] = {0};
   char key[64] = {0};
   int ret;
 
@@ -2259,17 +2126,10 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
       return -1;
   }
 
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
-  }
-
-  ret = read_kv(kpath, cvalue);
+  ret = pal_get_key_value(key, cvalue);
   *value = atoi(cvalue);
 
   memset(key, 0, 64);
-  memset(kpath, 0, 64);
   memset(cvalue, 0, 64);
 
   switch(fru) {
@@ -2289,13 +2149,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
       return -1;
   }
 
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
-  }
-
-  ret = read_kv(kpath, cvalue);
+  ret = pal_get_key_value(key, cvalue);
   *value = *value & atoi(cvalue);
   return 0;
 }
@@ -2434,11 +2288,16 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 void
 pal_update_ts_sled()
 {
+  char key[64] = {0};
   char tstr[64] = {0};
   struct timespec ts;
+
   clock_gettime(CLOCK_REALTIME, &ts);
   sprintf(tstr, "%d", ts.tv_sec);
-  pal_set_key_value("timestamp_sled", tstr);
+
+  sprintf(key, "timestamp_sled");
+
+  pal_set_key_value(key, tstr);
 }
 
 int

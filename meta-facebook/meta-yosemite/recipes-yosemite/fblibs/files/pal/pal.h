@@ -29,6 +29,7 @@ extern "C" {
 #include <facebook/yosemite_common.h>
 #include <facebook/yosemite_fruid.h>
 #include <facebook/yosemite_sensor.h>
+#include <openbmc/kv.h>
 
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   64

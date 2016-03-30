@@ -937,3 +937,7 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
 void
 pal_update_ts_sled() {
 }
+
+int
+pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen) {
+}

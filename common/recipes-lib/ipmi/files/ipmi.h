@@ -293,6 +293,8 @@ enum
   NETFN_STORAGE_RES,
   NETFN_TRANSPORT_REQ,
   NETFN_TRANSPORT_RES,
+  NETFN_DCMI_REQ = 0x2C,
+  NETFN_DCMI_RES = 0x2D,
   NETFN_OEM_REQ = 0x30,
   NETFN_OEM_RES = 0x31,
   NETFN_OEM_1S_REQ = 0x38,
@@ -306,6 +308,11 @@ enum
   CMD_CHASSIS_GET_BOOT_OPTIONS = 0x09,
 };
 
+// Sensor Command Codes (IPMI/Table H-1)
+enum
+{
+  CMD_SENSOR_PLAT_EVENT_MSG = 0x02,
+};
 
 // Application Command Codes (IPMI/Table H-1)
 enum

@@ -2440,3 +2440,8 @@ pal_update_ts_sled()
   sprintf(tstr, "%d", ts.tv_sec);
   pal_set_key_value("timestamp_sled", tstr);
 }
+
+int
+pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
+  return bic_me_xmit(fru, request, req_len, response, rlen);
+}

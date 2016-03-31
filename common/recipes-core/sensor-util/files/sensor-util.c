@@ -175,13 +175,12 @@ main(int argc, char **argv) {
       ret = pal_is_fru_prsnt(fru, &status);
       if (ret < 0) {
         printf("pal_is_server_fru failed for fru: %d\n", fru);
-        print_usage();
-        exit(-1);
       }
+
       if (status == 0) {
-        printf("%s is empty!\n", argv[1]);
-        print_usage();
-        exit(-1);
+        printf("%s is empty!\n\n", argv[1]);
+        fru++;
+        continue;
       }
 
       ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);

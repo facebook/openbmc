@@ -170,24 +170,36 @@ class Zone:
     def run(self, sensors, dt):
         ctx = {'dt': dt}
         out = None
+        missing = set()
         for v in self.expr_meta['ext_vars']:
             board, sname = v.split(":")
-            sensor = sensors[board][sname]
+            if sname in sensors[board]:
+                sensor = sensors[board][sname]
+                ctx[v] = sensor.value
+            else:
+                missing.add(v)
+                # evaluation tries to ignore the effects of None values
+                # (e.g. acts as 0 in max/+)
+                ctx[v] = None
             if sensor.status in ['ucr', 'unr', 'lnr', 'lcr']:
                 warn('Sensor %s reporting status %s' % (sensor.name, sensor.status))
                 out = transitional
-            ctx[v] = sensor.value
+        if missing:
+            warn('Missing sensors: %s' % (', '.join(missing),))
         if out:
             return out
-
         if verbose:
             (exprout, dxstr) = self.expr.dbgeval(ctx)
-            exprout = clamp(exprout, 0, 100)
             print(dxstr + " = " + str(exprout))
         else:
             exprout = self.expr.eval(ctx)
-            exprout = clamp(exprout, 0, 100)
             print(self.expr_str + " = " + str(exprout))
+        # If *all* sensors in the top level max() report None, the
+        # expression will report None
+        if not exprout:
+            crit('No sane fan speed could be calculated! Using transitional speed.')
+            exprout = transitional
+        exprout = clamp(exprout, 0, 100)
         return exprout
 
 def profile_constructor(data):

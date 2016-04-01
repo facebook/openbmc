@@ -26,6 +26,13 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 
+#define MAX_KEY_PATH_LEN  96
+#define MAX_KEY_LEN       64
+#define MAX_VALUE_LEN     64
+
+#define KV_STORE "/mnt/data/kv_store/%s"
+#define KV_STORE_PATH "/mnt/data/kv_store"
+
 int kv_get(char* key, char *value);
 int kv_set(char* key, char *value);
 

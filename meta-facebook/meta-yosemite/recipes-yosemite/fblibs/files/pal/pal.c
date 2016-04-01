@@ -1445,16 +1445,26 @@ pal_set_def_key_value() {
   int ret;
   int i;
   int fru;
-  char key[64] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char kpath[MAX_KEY_PATH_LEN] = {0};
 
   i = 0;
   while(strcmp(key_list[i], LAST_KEY)) {
 
-    if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
+    memset(key, 0, MAX_KEY_LEN);
+    memset(kpath, 0, MAX_KEY_PATH_LEN);
+
+    sprintf(kpath, KV_STORE, key_list[i]);
+
+    if (access(kpath, F_OK) == -1) {
+
+      if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
 #ifdef DEBUG
-        syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+          syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
+      }
     }
+
     i++;
   }
 
@@ -1464,7 +1474,7 @@ pal_set_def_key_value() {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
 
       /* Clear all the SEL errors */
-      memset(key, 0, 64);
+      memset(key, 0, MAX_KEY_LEN);
 
       switch(fru) {
         case FRU_SLOT1:
@@ -1488,7 +1498,7 @@ pal_set_def_key_value() {
       ret = pal_set_key_value(key, "1");
 
       /* Clear all the sensor health files*/
-      memset(key, 0, 64);
+      memset(key, 0, MAX_KEY_LEN);
 
       switch(fru) {
         case FRU_SLOT1:
@@ -1794,8 +1804,8 @@ pal_store_crashdump(uint8_t fru) {
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num) {
 
-  char key[64] = {0};
-  char cvalue[64] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
 
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
@@ -2077,8 +2087,8 @@ msleep(int msec) {
 int
 pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
-  char key[64] = {0};
-  char cvalue[64] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2098,14 +2108,16 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
       return -1;
   }
 
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
   return pal_set_key_value(key, cvalue);
 }
 
 int
 pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
-  char cvalue[64] = {0};
-  char key[64] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
   int ret;
 
   switch(fru) {
@@ -2129,8 +2141,8 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   ret = pal_get_key_value(key, cvalue);
   *value = atoi(cvalue);
 
-  memset(key, 0, 64);
-  memset(cvalue, 0, 64);
+  memset(key, 0, MAX_KEY_LEN);
+  memset(cvalue, 0, MAX_VALUE_LEN);
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2278,7 +2290,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   int cnt;
 
   if (fan >= pal_tach_cnt) {
-    syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
+    syslog(LOG_INFO, "pal_get_fan_speed: fan number is invalid - %d", fan);
     return -1;
   }
 
@@ -2288,8 +2300,8 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 void
 pal_update_ts_sled()
 {
-  char key[64] = {0};
-  char tstr[64] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char tstr[MAX_VALUE_LEN] = {0};
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);

@@ -76,7 +76,7 @@ static int readFromStdin(int clientfd, int stdi) {
     return 1;
   }
 
-  if((mode == EOL) && (c == ASCII_ESC)) {
+  if((mode == EOL) && (c == ASCII_CTRL_L)) {
     mode = ESC;
     return 1;
   } else if (mode == ESC) {

@@ -21,7 +21,8 @@
 
 #define ASCII_DELETE  0177
 #define ESC_CHAR_HELP '?'
-#define ASCII_ESC 27 // ctrl + [
+//#define ASCII_ESC 27 // ctrl + [
+#define ASCII_CTRL_L 12 // ctrl + L
 #define ASCII_CTRL_X 24 // ctrl + X
 #define ASCII_COLON 58 // :
 #define ASCII_CARAT 94 // ^
@@ -61,5 +62,5 @@ bufStore* createBuffer(const char *dev, int fsize);
 void closeBuffer(bufStore* buf);
 long int bufferGetLines(char* fname, int clientfd, int n, long int curr);
 void writeToBuffer(bufStore *buf, char* data, int len);
-// tx 
+// tx
 int sendTlv(int fd, uint16_t type, void* value, uint16_t valLen);

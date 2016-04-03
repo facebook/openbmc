@@ -27,9 +27,9 @@
 
 void escHelp(void) {
   printf("\r\n------------------TERMINAL MULTIPLEXER---------------------\r\n");
-  printf("  ESC ? - Display help message.\r\n");
-  printf("  ESC DELETE / CTRL+X - Terminate the connection.\r\n");
-  printf("  ESC :N - For reading last N lines from end of buffer.\r\n");
+  printf("  CTRL-L ? - Display help message.\r\n");
+  printf("  CTRL-L DELETE / CTRL-X - Terminate the connection.\r\n");
+  printf("  CTRL-L :N - For reading last N lines from end of buffer.\r\n");
   printf("\r\n-----------------------------------------------------------\r\n");
   return;
 }
@@ -86,7 +86,7 @@ int escSend(int clientfd, char c, escMode* mode) {
   static int rbuf_len = 0;
 
   if (c == ASCII_CR) {
-    sendTlv(clientfd, ASCII_ESC, rbuf, rbuf_len);
+    sendTlv(clientfd, ASCII_CTRL_L, rbuf, rbuf_len);
     *mode = EOL;
 
     //reset buf and length

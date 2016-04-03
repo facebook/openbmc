@@ -113,7 +113,7 @@ static void processClient(fd_set* master, int clientFd , int solFd,
     closeClient(master, clientFd);
   } else if (nbytes < sizeof(TlvHeader)) {
     /* TODO: Potentially we should use a per-client buffer, for now close
-     Client connection */ 
+     Client connection */
     syslog(LOG_ERR, "mTerm_server: Error on read fd=%d\n", clientFd);
     closeClient(master, clientFd);
   } else if (header.length > (nbytes - sizeof(header))) {
@@ -121,7 +121,7 @@ static void processClient(fd_set* master, int clientFd , int solFd,
     closeClient(master, clientFd);
   } else {
     switch (header.type) {
-      case ASCII_ESC:
+      case ASCII_CTRL_L:
         /* TODO: Server should store client pointers for last reference of
          buffer read per client, thus subsequent reads can be based on the
          last reference

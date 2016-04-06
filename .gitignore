@@ -1,0 +1,10 @@
+# Auto-built markdown
+README.html
+
+# OS artifacts
+.DS_Store
+
+# Editors
+*~
+\#*\#
+*.swp

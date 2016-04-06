@@ -17,28 +17,46 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 CONSOLE_SH=/usr/local/bin/us_console.sh
 FILE=/etc/us_pseudo_tty
 TTY=/dev/ttyS1
 
-if [ -a $FILE ]
-  then
-    read -r TTY<$FILE
+mTerm_server_running() {
+  pid=$(ps | grep -v grep | grep '/usr/local/bin/mTerm_server' -m 1 |
+      awk '{print $1}')
+  if [ $pid ] ; then
+    return 0
+  fi
+  return 1
+}
+
+start_sol_session() {
+  if [ -a $FILE ]
+    then
+      read -r TTY<$FILE
+  fi
+  $CONSOLE_SH connect
+
+  echo "You are in SOL session."
+  echo "Use ctrl-x to quit."
+  echo "-----------------------"
+  echo
+
+  trap '"$CONSOLE_SH" disconnect' INT TERM QUIT EXIT
+
+  /usr/bin/microcom -s 57600 $TTY
+
+  echo
+  echo
+  echo "-----------------------"
+  echo "Exit from SOL session."
+}
+
+# if mTerm server is running use mTerm_client to connect to userver
+# otherwise fallback to the old method
+
+if mTerm_server_running; then
+  /usr/local/bin/mTerm_client.sh
+else
+  start_sol_session
 fi
-
-$CONSOLE_SH connect
-
-echo "You are in SOL session."
-echo "Use ctrl-x to quit."
-echo "-----------------------"
-echo
-
-trap '"$CONSOLE_SH" disconnect' INT TERM QUIT EXIT
-
-/usr/bin/microcom -s 57600 $TTY
-
-echo
-echo
-echo "-----------------------"
-echo "Exit from SOL session."

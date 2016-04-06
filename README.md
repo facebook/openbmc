@@ -25,30 +25,30 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
 1. Set up the build environment based on the Yocto Project's [Quick Start Guide](http://www.yoctoproject.org/docs/1.6.1/yocto-project-qs/yocto-project-qs.html).
 
 2. Clone Yocto repository:
-```bash
-$ git clone -b fido https://git.yoctoproject.org/git/poky
-```
+ ```bash
+ $ git clone -b fido https://git.yoctoproject.org/git/poky
+ ```
 
 3. Clone OpenEmbedded and OpenBMC repositories, in the new created `poky` directory:
-```bash
-$ cd poky
-$ git clone -b fido https://github.com/openembedded/meta-openembedded.git
-$ git clone https://github.com/facebook/openbmc.git meta-openbmc
-```
+ ```bash
+ $ cd poky
+ $ git clone -b fido https://github.com/openembedded/meta-openembedded.git
+ $ git clone https://github.com/facebook/openbmc.git meta-openbmc
+ ```
  Note that this project does not use Yocto release branch names.
 
 4. Initialize a build directory. In the `poky` directory:
-```bash
-$ export TEMPLATECONF=meta-openbmc/meta-facebook/meta-wedge/conf
-$ source oe-init-build-env
-```
+ ```bash
+ $ export TEMPLATECONF=meta-openbmc/meta-facebook/meta-wedge/conf
+ $ source oe-init-build-env
+ ```
  Choose between `meta-wedge`, `meta-wedge100`, and `meta-yosemite`.
  After this step, you will be dropped into a build directory, `poky/build`.
 
 5. Start the build within the build directory:
-```bash
-$ bitbake wedge-image
-```
+ ```bash
+ $ bitbake wedge-image
+ ```
 
 The build process automatically fetches all necessary packages and builds the complete image. The final build results are in `poky/build/tmp/deploy/images/wedge`. The root password will be `0penBmc`, you may change this in the local configuration.
 

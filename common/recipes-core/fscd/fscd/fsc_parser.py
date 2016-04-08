@@ -16,7 +16,9 @@ tokens = (
     "PAR_END",
     "LIST_OPEN",
     "LIST_END",
-    "LIST_SEP"
+    "LIST_SEP",
+    "EQUAL",
+    "SEMICOLON",
 )
 
 t_SYM = r"[A-Za-z_][:A-Za-z0-9_]*"
@@ -32,6 +34,8 @@ t_PAR_END = r"\)"
 t_LIST_OPEN = r"\["
 t_LIST_END = r"\]"
 t_LIST_SEP = r","
+t_EQUAL = r"="
+t_SEMICOLON = r";"
 
 t_ignore  = ' \t\n'
 
@@ -51,6 +55,14 @@ def p_list_elements(p):
 def p_list_elements_tail(p):
     "list_elements : expression"
     p[0] = [p[1]]
+
+def p_expression_binding(p):
+    "expression : SYM EQUAL expression SEMICOLON expression"
+    p[0] = {'type': 'bind',
+            'name': p[1],
+            'bound': p[3],
+            'inner': p[5]
+    }
 
 def p_expression_list(p):
     "expression : LIST_OPEN list_elements LIST_END"

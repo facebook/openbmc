@@ -41,6 +41,30 @@ class ListNode():
     def __str__(self):
         return "[" + ", ".join([str(i) for i in self.inners]) + "]"
 
+class BindNode():
+    def __init__(self, name, bindnode, innernode):
+        self.name = name
+        self.bindnode = bindnode
+        self.innernode = innernode
+
+    def eval(self, ctx):
+        innerctx = ctx.copy()
+        innerctx[self.name] = self.bindnode.eval(ctx)
+        return self.innernode.eval(innerctx)
+
+    def dbgeval(self, ctx):
+        innerctx = ctx.copy()
+        (bfv, bdt) = self.bindnode.dbgeval(ctx)
+        innerctx[self.name] = bfv
+        (ifv, idt) = self.innernode.dbgeval(innerctx)
+        return (ifv, "{}[{}] = {};\n{}".format(self.name, bfv, bdt, idt))
+
+    def __str__(self):
+        return "{} = {};\n{}".format(
+                self.name,
+                str(self.bindnode),
+                str(self.innernode))
+
 class IdentNode():
     def __init__(self, name):
         self.name = name
@@ -54,6 +78,21 @@ class IdentNode():
 
     def __str__(self):
         return self.name
+
+
+class ConstNode():
+    def __init__(self, value):
+        self.value = value
+
+    def eval(self, ctx):
+        return self.value
+
+    def dbgeval(self, ctx):
+        return self.value
+
+    def __str__(self):
+        return str(self.value)
+
 
 class ApplyNode():
     def __init__(self, name, op, inner):
@@ -111,6 +150,17 @@ def make_ident_node(ast_node, info, profiles):
     info['ext_vars'].add(ast_node['name'])
     return IdentNode(ast_node['name'])
 
+def make_bind_node(ast_node, info, profiles):
+    name = ast_node['name']
+    bindnode = make_eval_node(ast_node['bound'], info, profiles)
+    innernode = make_eval_node(ast_node['inner'], info, profiles)
+    if name in info['ext_vars']:
+        info['ext_vars'].remove(name)
+    return BindNode(name, bindnode, innernode)
+
+def make_const_node(ast_node, info, profiles):
+    return ConstNode(ast_node['value'])
+
 def make_list_node(ast_node, info, profiles):
     return ListNode([make_eval_node(n, info, profiles) for n in ast_node['content']])
 
@@ -119,7 +169,9 @@ def make_eval_node(ast_node, info, profiles):
         'infix': make_infix_node,
         'apply': make_apply_node,
         'ident': make_ident_node,
+        'bind': make_bind_node,
         'list': make_list_node,
+        'const': make_const_node,
     }
     maker = makers.get(ast_node['type'])
     return maker(ast_node, info, profiles)

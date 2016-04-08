@@ -86,10 +86,12 @@ def bmc_read_speed():
     data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     sdata = data.split('\n')
     result = {}
+    fan_n = 1
     for line in sdata:
-        m = re.match(r"Fan (\d+)\sSpeed:\s+(\d+)\s", line)
+        m = re.match(r"Fan .*\sSpeed:\s+(\d+)\s", line)
         if m is not None:
-            result[int(m.group(1))] = int(m.group(2))
+            result[fan_n] = int(m.group(1))
+            fan_n += 1
     return result
 
 class BMCMachine:

@@ -20,6 +20,7 @@ SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://fscd.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
+RDEPENDS_${PN} += "python-syslog python-ply "
 
 SRC_URI = "file://fscd.py \
            file://fsc_control.py \

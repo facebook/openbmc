@@ -113,10 +113,26 @@ pthread_mutex_t m_i2c;
 static int g_bus_id = 0; // store the i2c bus ID for debug print
 
 static sem_t event_sem;
+static int i2c_slave_read(int fd, uint8_t *buf, uint8_t *len);
+static int i2c_slave_open(uint8_t bus_num);
 
-void sig_handler_event1(int sig)
+void sig_handler_term(int sig)
 {
-   sem_post(&event_sem);
+  int fd;
+  uint8_t buf[MAX_BYTES] = { 0 };
+  uint8_t len;
+  fd = i2c_slave_open(g_bus_id);
+  if (fd < 0) {
+      syslog(LOG_WARNING, "i2c_slave_open fails\n");
+      return;
+  }
+  *((int *)buf) = -0xdeca;
+  i2c_slave_read(fd, buf, &len);
+  exit(0);
+}
+void sig_handler_user(int sig)
+{
+  sem_post(&event_sem);
 }
 
 #ifdef CONFIG_YOSEMITE
@@ -555,9 +571,11 @@ ipmb_rx_handler(void *bus_num) {
   struct sigaction usr_action;
   int pid;
   struct timespec ts;
-  usr_action.sa_handler = sig_handler_event1;
   sigemptyset(&usr_action.sa_mask);
   usr_action.sa_flags = 0;
+  usr_action.sa_handler = sig_handler_term;
+  sigaction (SIGTERM, &usr_action, NULL);
+  usr_action.sa_handler = sig_handler_user;
   sigaction (SIGUSR1, &usr_action, NULL);
   pid = getpid();
   // Loop that retrieves messages

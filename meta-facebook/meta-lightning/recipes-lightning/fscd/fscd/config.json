@@ -9,66 +9,89 @@
   "watchdog": true,
   "min_rpm": 800,
   "profiles": {
-    "linear_inlet": {
+    "linear_ambient": {
       "type": "linear",
       "data": [
-        [ 25, 18 ],
-        [ 27, 19 ],
-        [ 29, 20 ],
-        [ 31, 21 ],
-        [ 33, 22 ],
-        [ 35, 23 ],
-        [ 37, 24 ],
-        [ 39, 25 ],
-        [ 41, 26 ],
-        [ 43, 27 ],
-        [ 45, 28 ]
+        [1 , 12],
+        [15, 12],
+        [16, 13],
+        [17, 13],
+        [18, 14],
+        [19, 14],
+        [20, 15],
+        [21, 16],
+        [22, 17],
+        [23, 18],
+        [24, 19],
+        [25, 20],
+        [26, 21],
+        [27, 22],
+        [28, 23],
+        [29, 24],
+        [30, 25],
+        [31, 26],
+        [32, 27],
+        [33, 28],
+        [34, 29],
+        [35, 30],
+        [36, 31],
+        [37, 32],
+        [38, 33],
+        [39, 34],
+        [40, 35]
       ]
     },
-    "linear_margin": {
+    "linear_ssd": {
       "type": "linear",
       "data": [
-        [-36, 9],
-        [-34, 10],
-        [-32, 11],
-        [-30, 12],
-        [-27, 13],
-        [-26, 14],
-        [-25, 15],
-        [-24, 16],
-        [-7, 30],
-        [-5, 40],
-        [-3, 50],
-        [-1, 100]
+        [1 , 12],
+        [37, 12],
+        [38, 14],
+        [39, 16],
+        [40, 18],
+        [41, 20],
+        [42, 22],
+        [43, 24],
+        [44, 26],
+        [45, 28],
+        [46, 30],
+        [47, 32],
+        [48, 35],
+        [49, 38],
+        [50, 41],
+        [51, 44],
+        [52, 47],
+        [53, 50],
+        [54, 53],
+        [55, 56],
+        [56, 59],
+        [57, 62],
+        [58, 65],
+        [59, 68],
+        [60, 71],
+        [61, 74],
+        [62, 77],
+        [63, 78],
+        [64, 79],
+        [65, 80],
+        [66, 81],
+        [67, 82]
       ]
     },
-    "pid_margin": {
+    "pid_ssd": {
       "type": "pid",
-      "setpoint": -20,
-      "min": -22,
-      "max": -7,
-      "kp": -1,
-      "ki": -0.05,
-      "kd": -0.5 
+      "setpoint": 70,
+      "negative_hysteresis": 0,
+      "positive_hysteresis": 0,
+      "kp": 0,
+      "ki": 0,
+      "kd": 0
     }
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 1],
-      "inputs": [
-        {
-          "profile": "linear_inlet",
-          "sensor": { "id": 129, "board": "spb" }
-        },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot1" } },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot2" } },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot3" } },
-        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot4" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot1" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot2" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot3" } },
-        { "profile": "pid_margin", "sensor": {"id": 9, "board": "slot4" } }
-      ]
+      "pwm_output": [0],
+      "expr_file": "zone1.fsc"
     }
   }
 }

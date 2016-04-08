@@ -7,15 +7,11 @@ DEPENDS = "mtd-utils"
 # This revision corresponds to the tag "v2013.07"
 # We use the revision in order to avoid having to fetch it from the
 # repo during parse
-SRCREV = "62c175fbb8a0f9a926c88294ea9f7e88eb898f6c"
+SRCREV = "bf4d49ba06ed6449b1050aaaa96ef153c6745ffc"
 
-PV = "v2013.07"
+PV = "v2013.07-openbmc"
 
-SRC_URI = "git://git.denx.de/u-boot.git;branch=master;protocol=git \
-           file://patch-2013.07/0000-u-boot-aspeed-064.patch \
-           file://patch-2013.07/0001-u-boot-openbmc.patch \
-           file://patch-2013.07/0002-Create-snapshot-of-OpenBMC.patch;striplevel=6 \
-           file://patch-2013.07/0003-u-boot-snapshot-of-OpenBMC-f926614.patch;striplevel=6 \
+SRC_URI = "git://github.com/theopolis/u-boot-openbmc.git;branch=${PV};protocol=git \
           "
 
 S = "${WORKDIR}/git"

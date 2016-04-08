@@ -24,12 +24,13 @@ SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
            file://patch-2.6.28.9/0002-bzip2-lzma-config-and-initramfs-support-for-bzip2-lz.patch \
            file://patch-2.6.28.9/0032-Create-snapshot-of-OpenBMC.patch \
            file://patch-2.6.28.9/0033-Linux-snapshot-of-OpenBMC-f926614.patch;striplevel=6 \
+           file://patch-2.6.28.9/0034_fix_make_incompatibility.patch \
           "
 
 LINUX_VERSION ?= "2.6.28.9"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 
-PR = "r1"
+PR = "r2"
 PV = "${LINUX_VERSION}"
 
 include linux-aspeed.inc

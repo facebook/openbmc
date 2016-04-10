@@ -47,7 +47,7 @@ do_create_generated() {
     cp -l ${B}/include/linux/bounds.h ${B}/include/generated/bounds.h
 }
 
-# With Fido, ${KERNEL_SRC} is set to ${STAGING_KERENL_DIR}, which is passed
+# With Fido, ${KERNEL_SRC} is set to ${STAGING_KERNEL_DIR}, which is passed
 # to kernel module build. So, copy all .h files from the build direcory to
 # the ${STAGING_KERNEL_DIR}
 addtask copy_to_kernelsrc after do_shared_workdir before do_compile_kernelmodules

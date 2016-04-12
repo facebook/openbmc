@@ -23,17 +23,25 @@ I2C_BUS_FCB=5
 I2C_BUS_PEB=4
 
 # NCT7904 is the fan controller on the FCB board
-I2C_ADDR_NCT7904=0x2d
+I2C_ADDR_FCB_NCT7904=0x2d
+
+# ADM1276 is the HSC on FCB board
+I2C_ADDR_FCB_HSC=0x22
 
 # ADM1278 is the HSC on PEB board
 I2C_ADDR_PEB_HSC=0x11
 
 # Enable the Pins to sense the Temperature VSEN23_MD and VSEN45_MD
-i2cset -y $I2C_BUS_FCB $I2C_ADDR_NCT7904 0x2E 0x5 b
+i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_NCT7904 0x2e 0x5 b
+
+# Enable the Power IN averaging setting
+i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_HSC 0xd4 0xaf b
+
+# Enable the Power IN averaging setting
+i2cset -y $I2C_BUS_PEB $I2C_ADDR_PEB_HSC 0xd4 0x3f1c w
 
 # Enable the PEB HSC
-i2cset -y $I2C_BUS_PEB $I2C_ADDR_PEB_HSC 0xD4 0x071C w
-i2cset -y $I2C_BUS_PEB $I2C_ADDR_PEB_HSC 0xD3 0x01 w
+i2cset -y $I2C_BUS_PEB $I2C_ADDR_PEB_HSC 0xd3 0x01 w
 
 #Enable the ADC controller for ADC0~ADC7
-devmem 0x1E6E9000 32 0x00FF000F
+devmem 0x1e6e9000 32 0x00ff000f

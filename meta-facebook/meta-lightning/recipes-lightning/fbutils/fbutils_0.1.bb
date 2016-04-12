@@ -36,9 +36,7 @@ pkgdir = "utils"
 
 S = "${WORKDIR}"
 
-binfiles = "us_console.sh sol-util power_led.sh post_led.sh \
-  reset_usb.sh mdio.py setup_rov.sh yosemite_power.sh wedge_us_mac.sh \
-  bcm5396.py bcm5396_util.py setup_switch.py watch-fc.sh power_util.py"
+binfiles = "power_led.sh post_led.sh"
 
 DEPENDS_append = "update-rc.d-native"
 
@@ -68,17 +66,6 @@ do_install() {
   update-rc.d -r ${D} rc.early start 04 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
-  # create VLAN intf automatically
-  #install -d ${D}/${sysconfdir}/network/if-up.d
-  #install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
-  # networking is done after rcS, any start level within rcS
-  # for mac fixup should work
-  #install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
-  #update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
-  install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  update-rc.d -r ${D} power-on.sh start 85 5 .
-  #install -m 755 fcswitcher.sh ${D}${sysconfdir}/init.d/fcswitcher.sh
-  #update-rc.d -r ${D} fcswitcher.sh start 90 S .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }

@@ -82,6 +82,7 @@ enum nct7904_registers {
   NCT7904_VSEN7 = 0x4C,
   NCT7904_VSEN9 = 0x50,
   NCT7904_3VDD = 0x5C,
+  NCT7904_BANK_SEL = 0xFF,
 };
 
 enum hsc_controllers {
@@ -536,8 +537,9 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
 
   int dev;
   int ret;
-  uint8_t res_h;
-  uint8_t res_l;
+  int res_h;
+  int res_l;
+  int bank;
   uint16_t res;
   float multipler;
 
@@ -551,6 +553,17 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   ret = ioctl(dev, I2C_SLAVE, addr);
   if (ret < 0) {
     syslog(LOG_ERR, "read_nct7904_value: ioctl() assigning i2c addr failed");
+  }
+
+  /* Read the Bank Register and set it to 0 */
+  bank = i2c_smbus_read_byte_data(dev, NCT7904_BANK_SEL);
+  if (bank != 0x0) {
+    syslog(LOG_INFO, "read_nct7904_value: Bank Register set to %d", bank);
+    if (i2c_smbus_write_byte_data(dev, NCT7904_BANK_SEL, 0) < 0) {
+      syslog(LOG_ERR, "read_nct7904_value: i2c_smbus_write_byte_data: "
+          "selecting Bank 0 failed");
+      return -1;
+    }
   }
 
   /* Read the MSB byte for the value */

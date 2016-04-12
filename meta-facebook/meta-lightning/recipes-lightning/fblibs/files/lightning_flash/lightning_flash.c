@@ -187,4 +187,7 @@ lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel) {
     return -1;
   }
 
+  close(dev);
+
+  return 0;
 }

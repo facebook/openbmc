@@ -889,6 +889,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   int ret;
   int rpm_h;
   int rpm_l;
+  int bank;
   int cnt;
 
   if (fan >= pal_tach_cnt) {
@@ -909,6 +910,17 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
     syslog(LOG_ERR, "get_fan_speed: ioctl() assigning i2c addr failed");
     close(dev);
     return -1;
+  }
+
+  /* Read the Bank Register and set it to 0 */
+  bank = i2c_smbus_read_byte_data(dev, 0xFF);
+  if (bank != 0x0) {
+    syslog(LOG_INFO, "read_nct7904_value: Bank Register set to %d", bank);
+    if (i2c_smbus_write_byte_data(dev, 0xFF, 0) < 0) {
+      syslog(LOG_ERR, "read_nct7904_value: i2c_smbus_write_byte_data: "
+          "selecting Bank 0 failed");
+      return -1;
+    }
   }
 
   rpm_h = i2c_smbus_read_byte_data(dev, FAN_REGISTER_H + fan*2 /* offset */);

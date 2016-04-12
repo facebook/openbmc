@@ -851,6 +851,8 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
       return -1;
     }
 
+    return 0;
+
   // For 100%, set falling and rising to the same value
   } else if (unit == PWM_UNIT_MAX) {
     unit = 0;

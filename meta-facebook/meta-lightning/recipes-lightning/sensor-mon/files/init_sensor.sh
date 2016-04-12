@@ -18,6 +18,21 @@
 # Boston, MA 02110-1301 USA
 #
 
+modprobe lm75
+modprobe pmbus
+
+# Enable the ADC inputs;  adc0 - adc7 are connected to various voltage sensors
+
+echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc1_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc2_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc3_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc4_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc5_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc6_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc7_en
+
+
 I2C_BUS_FCB=5
 
 I2C_BUS_PEB=4

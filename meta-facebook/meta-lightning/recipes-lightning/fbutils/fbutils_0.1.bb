@@ -22,26 +22,10 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
-           file://us_console.sh \
-           file://sol-util \
            file://power_led.sh \
-           file://power_util.py \
            file://post_led.sh \
-           file://reset_usb.sh \
            file://setup-gpio.sh \
-           file://setup_rov.sh \
-           file://mdio.py \
-           file://bcm5396.py \
-           file://bcm5396_util.py \
            file://mount_data0.sh \
-           file://eth0_mac_fixup.sh \
-           file://yosemite_power.sh \
-           file://power-on.sh \
-           file://wedge_us_mac.sh \
-           file://setup_switch.py \
-           file://create_vlan_intf \
-           file://watch-fc.sh \
-           file://fcswitcher.sh \
            file://rc.early \
            file://rc.local \
            file://src \

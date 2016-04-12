@@ -46,9 +46,6 @@ IMAGE_INSTALL += " \
   usb-console \
   sensor-util \
   sensor-mon \
-  lmsensors-sensors \
-  rest-api \
-  bottle \
   ${PYTHON_PKGS} \
   ${NTP_PKGS} \
   iproute2 \
@@ -59,7 +56,6 @@ IMAGE_INSTALL += " \
   front-paneld \
   fpc-util \
   fscd \
-  cherryPy \
   lldp-util \
   spatula \
   "

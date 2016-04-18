@@ -330,14 +330,13 @@ get_sdr_thresh_val(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
  */
 static int
 _sdr_get_snr_thresh(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
-    uint8_t flag, thresh_sensor_t *snr) {
+    thresh_sensor_t *snr) {
 
   int ret;
   int value;
   float fvalue;
   uint8_t op, modifier;
 
-  snr->flag = flag;
   snr->curr_state = NORMAL_STATE;
 
   if (_sdr_get_sensor_name(sdr, snr->name)) {
@@ -459,8 +458,7 @@ _sdr_get_snr_thresh(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
 }
 
 int
-sdr_get_snr_thresh(uint8_t fru,uint8_t snr_num, uint8_t flag,
-    thresh_sensor_t *snr) {
+sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
 
   int ret = 0;
   sdr_full_t *sdr;
@@ -486,15 +484,19 @@ sdr_get_snr_thresh(uint8_t fru,uint8_t snr_num, uint8_t flag,
     ret = pal_sensor_sdr_init(fru, sinfo);
   }
 
-
   if (ret < 0) {
     sdr = NULL;
   } else {
     sdr = &sinfo[snr_num].sdr;
   }
 
+  /* Set all the threshold options set in the flag */
+  snr->flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH) |
+    GETMASK(UNC_THRESH) | GETMASK(UNR_THRESH) | GETMASK(LCR_THRESH) |
+    GETMASK(LNC_THRESH) | GETMASK(LNR_THRESH);
+
   if (sdr != NULL) {
-    ret = _sdr_get_snr_thresh(fru, sdr, snr_num, flag, snr);
+    ret = _sdr_get_snr_thresh(fru, sdr, snr_num, snr);
     if (ret < 0) {
 #ifdef DEBUG
       syslog(LOG_ERR, "_sdr_get_snr_thresh failed for FRU: %d snr_num: %d",
@@ -503,7 +505,6 @@ sdr_get_snr_thresh(uint8_t fru,uint8_t snr_num, uint8_t flag,
     }
   } else {
 
-    snr->flag = flag;
     ret = pal_get_sensor_name(fru, snr_num, snr->name);
     ret = pal_get_sensor_units(fru, snr_num, snr->units);
     ret = pal_get_sensor_threshold(fru, snr_num, UCR_THRESH, &(snr->ucr_thresh));

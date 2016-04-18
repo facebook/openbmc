@@ -43,7 +43,7 @@ extern "C" {
 
 /* To hold the sensor info and calculated threshold values from the SDR */
 typedef struct {
-  uint8_t flag;
+  uint16_t flag;
   float ucr_thresh;
   float unc_thresh;
   float unr_thresh;
@@ -171,8 +171,7 @@ const char * sensor_base_units[] = {
 
 int sdr_get_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int sdr_get_sensor_units(uint8_t fru, uint8_t snr_num, char *units);
-int sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, uint8_t flag,
-    thresh_sensor_t *snr);
+int sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr);
 
 #ifdef __cplusplus
 } // extern "C"

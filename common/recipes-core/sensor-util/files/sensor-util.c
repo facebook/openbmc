@@ -111,8 +111,7 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
       continue;
     }
 
-    if (sdr_get_snr_thresh(fru, snr_num,
-          GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH), &thresh))
+    if (sdr_get_snr_thresh(fru, snr_num, &thresh))
       syslog(LOG_ERR, "sdr_init_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
 
     pal_sensor_threshold_flag(fru, snr_num, &thresh.flag);

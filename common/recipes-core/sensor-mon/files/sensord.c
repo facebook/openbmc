@@ -88,8 +88,7 @@ init_fru_snr_thresh(uint8_t fru) {
   for (i < 0; i < sensor_cnt; i++) {
     snr_num = sensor_list[i];
 
-    ret = sdr_get_snr_thresh(fru, snr_num,
-        GETMASK(UCR_THRESH) | GETMASK(LCR_THRESH), &snr[snr_num]);
+    ret = sdr_get_snr_thresh(fru, snr_num, &snr[snr_num]);
     if (ret < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "init_fru_snr_thresh: sdr_get_snr_thresh for FRU: %d", fru);
@@ -427,7 +426,6 @@ snr_thresh_monitor(void *arg) {
     syslog(LOG_WARNING, "snr_thresh_monitor: get_struct_thresh_sensor failed");
     exit(-1);
   }
-
 
   while(1) {
 

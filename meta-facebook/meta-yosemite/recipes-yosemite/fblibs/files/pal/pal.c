@@ -1387,7 +1387,7 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 }
 
 int
-pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
+pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1395,11 +1395,11 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint8_t *flag) {
     case FRU_SLOT3:
     case FRU_SLOT4:
       if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
-        *flag = GETMASK(UCR_THRESH);
+        *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
       else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
-        *flag = 0;
+        *flag = GETMASK(SENSOR_VALID);
       else if (snr_num == BIC_SENSOR_SOC_TJMAX)
-        *flag = 0;
+        *flag = GETMASK(SENSOR_VALID);
       break;
     case FRU_SPB:
     case FRU_NIC:

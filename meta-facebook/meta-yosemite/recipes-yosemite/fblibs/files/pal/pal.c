@@ -1362,28 +1362,86 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
-  uint8_t status;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  int ret;
 
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      pal_is_fru_prsnt(fru, &status);
-      if (status) {
-        pal_is_server_12v_on(fru, &status);
-      }
+      sprintf(key, "slot%d_sensor%d", fru, sensor_num);
       break;
     case FRU_SPB:
+      sprintf(key, "spb_sensor%d", sensor_num);
+      break;
     case FRU_NIC:
-      status = 1;
+      sprintf(key, "nic_sensor%d", sensor_num);
       break;
   }
 
-  if (status)
-    return yosemite_sensor_read(fru, sensor_num, value);
-  else
+  ret = edb_cache_get(key, str);
+  if(ret < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_sensor_read: cache_get %s failed.", key);
+#endif
+    return ret;
+  }
+  if(strcmp(str, "NA") == 0)
     return -1;
+  *((float*)value) = atof(str);
+  return ret;
+}
+int
+pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
+
+  uint8_t status;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_sensor%d", fru, sensor_num);
+      if(pal_is_fru_prsnt(fru, &status) < 0)
+         return -1;
+      if (!status) {
+         return -1;
+      }
+      break;
+    case FRU_SPB:
+      sprintf(key, "spb_sensor%d", sensor_num);
+      break;
+    case FRU_NIC:
+      sprintf(key, "nic_sensor%d", sensor_num);
+      break;
+  }
+
+  ret = yosemite_sensor_read(fru, sensor_num, value);
+  if(ret < 0) {
+    if(fru == FRU_SPB || fru == FRU_NIC)
+      return -1;
+    if(pal_get_server_power(fru, &status) < 0)
+      return -1;
+    if(status == SERVER_POWER_ON)
+      return -1;
+    strcpy(str, "NA");
+  }
+  else
+    sprintf(str, "%.2f",*((float*)value));
+  if(edb_cache_set(key, str) < 0) {
+#ifdef DEBUG
+     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
+#endif
+    return -1;
+  }
+  else {
+    return 0;
+  }
 }
 
 int

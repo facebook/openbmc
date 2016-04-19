@@ -25,6 +25,8 @@ extern "C" {
 
 #define EDB_CACHE_PATH "/tmp/cache.db"
 #define EDB_FLASH_PATH "/mnt/data/flash.db"
+#define CACHE_LOCK_PATH "/tmp/cachedb.lock"
+#define FLASH_LOCK_PATH "/tmp/flashdb.lock"
 
 int edb_cache_get(char* key, char *value);
 int edb_cache_set(char* key, char *value);

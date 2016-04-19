@@ -35,22 +35,33 @@ edb_set(char *path, char *key, char *value) {
   int rc;
 
   /* Open our database */
-  rc = unqlite_open(&pDb, path, UNQLITE_OPEN_CREATE);
-  if( rc != UNQLITE_OK ){
-    syslog(LOG_WARNING, "db_get: unqlite_open failed with rc: %d\n", rc);
-    return -1;
-  }
-
-  rc = unqlite_kv_store(pDb, key, -1, value, MAX_BUF);
-  if( rc != UNQLITE_OK ){
-    syslog(LOG_WARNING, "db_get: unqlite_kv_store failed with rc: %d\n", rc);
-    return -1;
-  }
-
-  /* Auto-commit the transaction and close our database */
+  while (1) {
+    rc = unqlite_open(&pDb, path, UNQLITE_OPEN_CREATE);
+    if( rc != UNQLITE_OK ){
+      syslog(LOG_WARNING, "db_set: unqlite_open failed with rc: %d\n", rc);
+      rc = -1;
+      break;
+    }
+    rc = unqlite_kv_store(pDb, key, -1, value, MAX_BUF);
+    if( rc != UNQLITE_OK ){
+      if( rc != UNQLITE_BUSY ){
+#ifdef DEBUG
+        syslog(LOG_WARNING, "db_set: unqlite_kv_store failed with rc: %d\n", rc);
+#endif
+        rc = -1;
+        break;
+      } else {
+        unqlite_close(pDb);
+        continue;
+      }
+   } else {
+   /* Auto-commit the transaction and close our database */
+    rc = 0;
+    break;
+   }
+ }
   unqlite_close(pDb);
-
-  return 0;
+  return rc;
 }
 
 static int
@@ -65,6 +76,7 @@ edb_get(char *path, char *key, char *value) {
     rc = unqlite_open(&pDb, path, UNQLITE_OPEN_READONLY|UNQLITE_OPEN_MMAP);
     if( rc != UNQLITE_OK ) {
       syslog(LOG_WARNING, "db_get: unqlite_open fails with rc: %d\n", rc);
+      unqlite_close(pDb);
       return -1;
     }
 
@@ -74,10 +86,15 @@ edb_get(char *path, char *key, char *value) {
     rc = unqlite_kv_fetch(pDb, key, -1, value, &nBytes);
     if( rc != UNQLITE_OK ){
       if (rc == UNQLITE_NOTFOUND) {
+#ifdef DEBUG
         syslog(LOG_WARNING, "db_get: can not find the key\n");
+#endif
+        unqlite_close(pDb);
         return -1;
       } else {
+#ifdef DEBUG
         syslog(LOG_WARNING, "db_get: unqlite_key_fetch returns %d\n", rc);
+#endif
         /* Auto-commit the transaction and close our database */
         unqlite_close(pDb);
         continue;
@@ -94,7 +111,37 @@ edb_get(char *path, char *key, char *value) {
 
 int
 edb_cache_set(char *key, char *value) {
-  return edb_set(EDB_CACHE_PATH, key, value);
+  int rc;
+  FILE *fp;
+
+  fp = fopen(CACHE_LOCK_PATH, "w");
+  if (!fp) {
+#ifdef DEBUG
+     syslog(LOG_WARNING, "edb_set: failed to open lock file");
+#endif
+     return -1;
+  }
+
+  rc = flock(fileno(fp), LOCK_EX);
+  if (rc < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "edb_cache_set: failed to flock on lock file, err %d",rc);
+#endif
+    fclose(fp);
+    return rc;
+  }
+
+  rc = edb_set(EDB_CACHE_PATH, key, value);
+
+  if ( flock(fileno(fp), LOCK_UN) < 0 ) {
+#ifdef DEBUG
+     syslog(LOG_WARNING, "edb_cache_set: failed to unlock flock on lock file");
+#endif
+     fclose(fp);
+     return -1;
+  }
+  fclose(fp);
+  return rc;
 }
 
 int

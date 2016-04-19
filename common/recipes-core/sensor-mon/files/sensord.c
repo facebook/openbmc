@@ -182,7 +182,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
     if (retry < MAX_SENSOR_CHECK_RETRY) {
       msleep(50);
-      ret = pal_sensor_read(fru, snr_num, curr_val);
+      ret = pal_sensor_read_raw(fru, snr_num, curr_val);
       if (ret < 0)
         return -1;
     }
@@ -289,7 +289,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
     msleep(50);
     if (retry < MAX_SENSOR_CHECK_RETRY) {
-      ret = pal_sensor_read(fru, snr_num, curr_val);
+      ret = pal_sensor_read_raw(fru, snr_num, curr_val);
       if (ret < 0)
         return -1;
     }
@@ -388,7 +388,7 @@ snr_discrete_monitor(void *arg) {
   while(1) {
     for (i = 0; i < discrete_cnt; i++) {
       snr_num = discrete_list[i];
-      ret = pal_sensor_read(fru, snr_num, &curr_val);
+      ret = pal_sensor_read_raw(fru, snr_num, &curr_val);
 
       if ((snr[snr_num].curr_state != (int) curr_val) && !ret) {
         pal_sensor_discrete_check(fru, snr_num, snr[snr_num].name,
@@ -433,7 +433,7 @@ snr_thresh_monitor(void *arg) {
       snr_num = sensor_list[i];
       curr_val = 0;
       if (snr[snr_num].flag) {
-        if (!(ret = pal_sensor_read(fru, snr_num, &curr_val))) {
+        if (!(ret = pal_sensor_read_raw(fru, snr_num, &curr_val))) {
 
           check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);

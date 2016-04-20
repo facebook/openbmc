@@ -19,6 +19,15 @@
 #
 
 modprobe g_cdc host_addr=02:00:00:00:00:02 dev_addr=02:00:00:00:00:01
+# For g-ether interface, if the remote side brings down the interface, BMC side
+# still treats it as up. In this case, all packets through usb0 (i.e. NDP) will
+# be queued in the kernel for this interface. Ether interface has the default
+# TX queue length as 1000, which means there could be up to 1000 package queued
+# in kernel for that. In our case, kmalloc-192 is exhausted when 298 packets
+# are queued.
+# To solve this issue, we change the TX queue length for usb0 to 64 to avoid
+# memory exhaust.
+ifconfig usb0 txqueuelen 64
 while true; do
     getty /dev/ttyGS0 57600
     sleep 1

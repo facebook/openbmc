@@ -41,12 +41,12 @@ class fruidNode(node):
         sdata = data.split('\n')
         for line in sdata:
             # skip lines with --- or startin with FRU
-            if line.find("FRU") != -1:
+            if line.startswith("FRU"):
                 continue
-            if line.find("-----") != -1:
+            if line.startswith("-----"):
                 continue
 
-            kv = line.split(':')
+            kv = line.split(':', 1)
             if (len(kv) < 2):
                 continue
 

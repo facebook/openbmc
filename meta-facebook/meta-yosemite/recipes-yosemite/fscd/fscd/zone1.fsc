@@ -22,5 +22,9 @@ max([
     slot4:soc_dimma1_temp,
     slot4:soc_dimmb0_temp,
     slot4:soc_dimmb1_temp])),
-  linear_mezz(nic:mezz_sensor_temp)
+  linear_mezz(nic:mezz_sensor_temp),
+  linear_mb_outlet(slot1:mb_outlet_temp) + pid_mb_outlet(slot1:mb_outlet_temp),
+  linear_mb_outlet(slot2:mb_outlet_temp) + pid_mb_outlet(slot2:mb_outlet_temp),
+  linear_mb_outlet(slot3:mb_outlet_temp) + pid_mb_outlet(slot3:mb_outlet_temp),
+  linear_mb_outlet(slot4:mb_outlet_temp) + pid_mb_outlet(slot4:mb_outlet_temp)
 ])

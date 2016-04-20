@@ -157,9 +157,9 @@ sensor_thresh_array_init() {
 
   spb_sensor_threshold[SP_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   spb_sensor_threshold[SP_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
-  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 10000;
+  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11000;
   spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 10000;
+  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11000;
   spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
   //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
   spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.493;

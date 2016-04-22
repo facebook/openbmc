@@ -59,7 +59,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
     printf("%-27s: %s", "\nChassis Type",fruid->chassis.type_str);
     printf("%-27s: %s", "\nChassis Part Number",fruid->chassis.part);
     printf("%-27s: %s", "\nChassis Serial Number",fruid->chassis.serial);
-    printf("%-27s: %s", "\nChassis Custom Data 1",fruid->chassis.custom1);
+    if (fruid->chassis.custom1 != NULL)
+      printf("%-27s: %s", "\nChassis Custom Data 1",fruid->chassis.custom1);
     if (fruid->chassis.custom2 != NULL)
       printf("%-27s: %s", "\nChassis Custom Data 2",fruid->chassis.custom2);
     if (fruid->chassis.custom3 != NULL)
@@ -73,7 +74,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
     printf("%-27s: %s", "\nBoard Serial",fruid->board.serial);
     printf("%-27s: %s", "\nBoard Part Number",fruid->board.part);
     printf("%-27s: %s", "\nBoard FRU ID",fruid->board.fruid);
-    printf("%-27s: %s", "\nBoard Custom Data 1",fruid->board.custom1);
+    if (fruid->board.custom1 != NULL)
+      printf("%-27s: %s", "\nBoard Custom Data 1",fruid->board.custom1);
     if (fruid->board.custom2 != NULL)
       printf("%-27s: %s", "\nBoard Custom Data 2",fruid->board.custom2);
     if (fruid->board.custom3 != NULL)
@@ -88,7 +90,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
     printf("%-27s: %s", "\nProduct Serial",fruid->product.serial);
     printf("%-27s: %s", "\nProduct Asset Tag",fruid->product.asset_tag);
     printf("%-27s: %s", "\nProduct FRU ID",fruid->product.fruid);
-    printf("%-27s: %s", "\nProduct Custom Data 1",fruid->product.custom1);
+    if (fruid->product.custom1 != NULL)
+      printf("%-27s: %s", "\nProduct Custom Data 1",fruid->product.custom1);
     if (fruid->product.custom2 != NULL)
       printf("%-27s: %s", "\nProduct Custom Data 2",fruid->product.custom2);
     if (fruid->product.custom3 != NULL)

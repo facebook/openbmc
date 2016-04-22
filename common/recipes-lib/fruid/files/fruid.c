@@ -403,26 +403,28 @@ int parse_fruid_area_product(uint8_t * product,
     return ENOMEM;
   index += FIELD_LEN(product[index]) + 1;
 
+  /* Check if this field was last and there is no more custom data */
+  if (product[index] == NO_MORE_DATA_BYTE)
+    return 0;
   fruid_product->custom1 = _fruid_area_field_read(&product[index]);
   if (fruid_product->custom1 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(product[index]) + 1;
+
   /* Check if this field was last and there is no more custom data */
   if (product[index] == NO_MORE_DATA_BYTE)
     return 0;
-  index += FIELD_LEN(product[index]) + 1;
-
   fruid_product->custom2 = _fruid_area_field_read(&product[index]);
   if (fruid_product->custom2 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(product[index]) + 1;
+
   /* Check if this field was last and there is no more custom data */
   if (product[index] == NO_MORE_DATA_BYTE)
     return 0;
-  index += FIELD_LEN(product[index]) + 1;
-
   fruid_product->custom3 = _fruid_area_field_read(&product[index]);
   if (fruid_product->custom3 == NULL)
     return ENOMEM;
-  index += FIELD_LEN(product[index]) + 1;
 
   return 0;
 }
@@ -494,26 +496,28 @@ int parse_fruid_area_board(uint8_t * board,
     return ENOMEM;
   index += FIELD_LEN(board[index]) + 1;
 
+  /* Check if this field was last and there is no more custom data */
+  if (board[index] == NO_MORE_DATA_BYTE)
+    return 0;
   fruid_board->custom1 = _fruid_area_field_read(&board[index]);
   if (fruid_board->custom1 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(board[index]) + 1;
+
   /* Check if this field was last and there is no more custom data */
   if (board[index] == NO_MORE_DATA_BYTE)
     return 0;
-  index += FIELD_LEN(board[index]) + 1;
-
   fruid_board->custom2 = _fruid_area_field_read(&board[index]);
   if (fruid_board->custom2 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(board[index]) + 1;
+
   /* Check if this field was last and there is no more custom data */
   if (board[index] == NO_MORE_DATA_BYTE)
     return 0;
-  index += FIELD_LEN(board[index]) + 1;
-
   fruid_board->custom3 = _fruid_area_field_read(&board[index]);
   if (fruid_board->custom3 == NULL)
     return ENOMEM;
-  index += FIELD_LEN(board[index]) + 1;
 
   return 0;
 }
@@ -565,26 +569,28 @@ int parse_fruid_area_chassis(uint8_t * chassis,
     return ENOMEM;
   index += FIELD_LEN(chassis[index]) + 1;
 
+  /* Check if this field was last and there is no more custom data */
+  if (chassis[index] == NO_MORE_DATA_BYTE)
+    return 0;
   fruid_chassis->custom1 = _fruid_area_field_read(&chassis[index]);
   if (fruid_chassis->custom1 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(chassis[index]) + 1;
+
   /* Check if this field was last and there is no more custom data */
   if (chassis[index] == NO_MORE_DATA_BYTE)
     return 0;
-  index += FIELD_LEN(chassis[index]) + 1;
-
   fruid_chassis->custom2 = _fruid_area_field_read(&chassis[index]);
   if (fruid_chassis->custom2 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(chassis[index]) + 1;
+
   /* Check if this field was last and there is no more custom data */
   if (chassis[index] == NO_MORE_DATA_BYTE)
     return 0;
-  index += FIELD_LEN(chassis[index]) + 1;
-
   fruid_chassis->custom3 = _fruid_area_field_read(&chassis[index]);
   if (fruid_chassis->custom3 == NULL)
     return ENOMEM;
-  index += FIELD_LEN(chassis[index]) + 1;
 
   return 0;
 }

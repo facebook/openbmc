@@ -99,6 +99,10 @@ enum {
   PWR_ERR = 0X56,
   CATERR = 0xEB,
   CPU_DIMM_HOT = 0xB3,
+  CPU0_THERM_STATUS = 0x1C,
+  SPS_FW_HEALTH = 0x17,
+  NM_EXCEPTION = 0x8,
+  PWR_THRESH_EVT = 0x3B,
 };
 
 enum {

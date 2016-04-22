@@ -151,7 +151,7 @@ def log_main():
 
                 temp2 = re.split(r': ', temp[1], 1)
                 app = temp2[0]
-                message = temp2[1]
+                message = temp2[1].rstrip('\n')
 
                 print '%-4s %-8s %-22s %-16s %s' % (
                     fru_num,

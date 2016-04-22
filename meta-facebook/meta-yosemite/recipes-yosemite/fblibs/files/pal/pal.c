@@ -1929,6 +1929,18 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
     case CPU_DIMM_HOT:
       sprintf(name, "CPU_DIMM_HOT");
       break;
+    case CPU0_THERM_STATUS:
+      sprintf(name, "CPU0_THERM_STATUS");
+      break;
+    case SPS_FW_HEALTH:
+      sprintf(name, "SPS_FW_HEALTH");
+      break;
+    case NM_EXCEPTION:
+      sprintf(name, "NM_EXCEPTION");
+      break;
+    case PWR_THRESH_EVT:
+      sprintf(name, "PWR_THRESH_EVT");
+      break;
     default:
       sprintf(name, "Unknown");
       break;

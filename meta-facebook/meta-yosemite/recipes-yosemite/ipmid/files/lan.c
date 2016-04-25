@@ -55,11 +55,15 @@ void plat_lan_init(lan_config_t *lan)
   struct ifreq ifr;
   uint8_t mac_addr[6];
   uint8_t eui_64_addr[8] = {0x0};
-  bool slaac_flag = false;
   char test[64];
 
   if (getifaddrs(&ifaddr) == -1) {
     return;
+  }
+
+  sd = socket(PF_INET, SOCK_DGRAM, 0);
+  if (sd < 0) {
+    goto init_done;
   }
 
   for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
@@ -92,10 +96,6 @@ void plat_lan_init(lan_config_t *lan)
       }
 
       // Get the MAC address
-      sd = socket(PF_INET, SOCK_DGRAM, 0);
-      if (sd < 0) {
-        goto init_done;
-      }
       strcpy(ifr.ifr_name, ifa->ifa_name);
       if(ioctl(sd, SIOCGIFHWADDR, &ifr) != -1) {
         uint8_t* mac_addr = (uint8_t*)ifr.ifr_hwaddr.sa_data;
@@ -114,21 +114,17 @@ void plat_lan_init(lan_config_t *lan)
 
         // Check if the address is SLAAC address. If yes, skip it.
         if (!memcmp((void *)&ip6[8], (void *)eui_64_addr, 8)) {
-          slaac_flag = true;
+          continue;
         }
-      }
-
-      // close socket descriptor
-      close(sd);
-
-      if (slaac_flag) {
-        continue;
       }
 
       // copy the ip address from array with MSB first
       memcpy(lan->ip6_addr, ip6, SIZE_IP6_ADDR);
     }
   }
+
+  // close socket descriptor
+  close(sd);
 
 init_done:
   freeifaddrs(ifaddr);

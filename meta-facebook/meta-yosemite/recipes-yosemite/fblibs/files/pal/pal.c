@@ -2209,6 +2209,10 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   }
 
   ret = pal_get_key_value(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+
   *value = atoi(cvalue);
 
   memset(key, 0, MAX_KEY_LEN);
@@ -2232,6 +2236,10 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   }
 
   ret = pal_get_key_value(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+
   *value = *value & atoi(cvalue);
   return 0;
 }

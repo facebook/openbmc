@@ -33,7 +33,7 @@
 ACTION="$1"
 case "$ACTION" in
   start)
-    if [ /mnt/data/etc/shadow ]; then
+    if [ -e /mnt/data/etc/shadow ]; then
       echo -n "Retrieving Password.."
       cp /mnt/data/etc/shadow /etc/shadow
       echo "done."

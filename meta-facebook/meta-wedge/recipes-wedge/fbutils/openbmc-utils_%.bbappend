@@ -42,7 +42,7 @@ OPENBMC_UTILS_FILES += " \
   setup_switch.py us_monitor.sh \
   "
 
-DEPENDS_append = "update-rc.d-native"
+DEPENDS_append = " update-rc.d-native"
 
 do_install_board() {
   # for backward compatible, create /usr/local/fbpackages/utils/ast-functions

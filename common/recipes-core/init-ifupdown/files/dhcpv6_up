@@ -22,7 +22,9 @@
 [ "$IFACE" != "eth0" ] && [ "$IFACE" != "oob" ] && exit 0
 
 pid="/var/run/dhclient6.${IFACE}.pid"
+lease="/var/lib/dhcp/dhclient6.${IFACE}.lease"
 
-dhclient -6 -nw -pf ${pid} ${IFACE}
+rm -rf ${lease} 2> /dev/null
+dhclient -6 -nw -pf ${pid} -lf ${lease} ${IFACE}
 
 exit 0

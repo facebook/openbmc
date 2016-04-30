@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=1707d6db1d42237583f50183a5651ecb \
 
 # This revision corresponds to the tag "v2013.07"
 # We use the revision in order to avoid having to fetch it from the repo during parse
-SRCREV = "bf4d49ba06ed6449b1050aaaa96ef153c6745ffc"
+SRCREV = "9f881c00b376e1b56c6a661f34b32974738c04e0"
 
 PV = "v2013.07-openbmc"
 

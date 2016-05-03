@@ -178,14 +178,15 @@ class Zone:
             if sname in sensors[board]:
                 sensor = sensors[board][sname]
                 ctx[v] = sensor.value
+                if sensor.status in ['ucr', 'unr', 'lnr', 'lcr']:
+                    warn('Sensor %s reporting status %s' %
+                         (sensor.name, sensor.status))
+                    out = transitional
             else:
                 missing.add(v)
                 # evaluation tries to ignore the effects of None values
                 # (e.g. acts as 0 in max/+)
                 ctx[v] = None
-            if sensor.status in ['ucr', 'unr', 'lnr', 'lcr']:
-                warn('Sensor %s reporting status %s' % (sensor.name, sensor.status))
-                out = transitional
         if missing:
             warn('Missing sensors: %s' % (', '.join(missing),))
         if out:

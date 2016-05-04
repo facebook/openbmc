@@ -536,5 +536,7 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
 
   }
 
+  pal_sensor_threshold_flag(fru, snr_num, &(snr->flag));
+
   return ret;
 }

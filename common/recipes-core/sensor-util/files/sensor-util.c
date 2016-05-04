@@ -18,7 +18,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -52,21 +51,34 @@ print_sensor_reading(float fvalue, uint8_t snr_num, thresh_sensor_t *thresh,
   printf("%-18s (0x%X) : %.2f %-5s | (%s)",
       thresh->name, snr_num, fvalue, thresh->units, status);
   if (threshold) {
-    printf("| UCR: %.2f "
-        "| UNC: %.2f "
-        "| UNR: %.2f "
-        "| LCR: %.2f "
-        "| LNC: %.2f "
-        "| LNR: %.2f \n",
-        thresh->ucr_thresh,
-        thresh->unc_thresh,
-        thresh->unr_thresh,
-        thresh->lcr_thresh,
-        thresh->lnc_thresh,
-        thresh->lnr_thresh);
-  } else {
-    printf("\n");
+
+    printf(" | UCR: ");
+    thresh->flag & GETMASK(UCR_THRESH) ?
+      printf("%.2f", thresh->ucr_thresh) : printf("NA");
+
+    printf(" | UNC: ");
+    thresh->flag & GETMASK(UNC_THRESH) ?
+      printf("%.2f", thresh->unc_thresh) : printf("NA");
+
+    printf(" | UNR: ");
+    thresh->flag & GETMASK(UNR_THRESH) ?
+      printf("%.2f", thresh->unr_thresh) : printf("NA");
+
+    printf(" | LCR: ");
+    thresh->flag & GETMASK(LCR_THRESH) ?
+      printf("%.2f", thresh->lcr_thresh) : printf("NA");
+
+    printf(" | LNC: ");
+    thresh->flag & GETMASK(LNC_THRESH) ?
+      printf("%.2f", thresh->lnc_thresh) : printf("NA");
+
+    printf(" | LNR: ");
+    thresh->flag & GETMASK(LNR_THRESH) ?
+      printf("%.2f", thresh->lnr_thresh) : printf("NA");
+
   }
+
+  printf("\n");
 }
 
 static void
@@ -113,8 +125,6 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
 
     if (sdr_get_snr_thresh(fru, snr_num, &thresh))
       syslog(LOG_ERR, "sdr_init_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
-
-    pal_sensor_threshold_flag(fru, snr_num, &thresh.flag);
 
     usleep(50);
 

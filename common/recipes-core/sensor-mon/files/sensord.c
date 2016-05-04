@@ -95,7 +95,6 @@ init_fru_snr_thresh(uint8_t fru) {
 #endif /* DEBUG */
       continue;
     }
-    pal_sensor_threshold_flag(fru, snr_num, &snr[snr_num].flag);
   }
 
   return 0;

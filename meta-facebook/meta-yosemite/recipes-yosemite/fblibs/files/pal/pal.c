@@ -1427,12 +1427,15 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       return -1;
     if(pal_get_server_power(fru, &status) < 0)
       return -1;
+    // This check helps interpret the IPMI packet loss scenario
     if(status == SERVER_POWER_ON)
       return -1;
     strcpy(str, "NA");
   }
   else
+    // On successful sensor read
     sprintf(str, "%.2f",*((float*)value));
+
   if(edb_cache_set(key, str) < 0) {
 #ifdef DEBUG
      syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
@@ -1440,7 +1443,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     return -1;
   }
   else {
-    return 0;
+    return ret;
   }
 }
 

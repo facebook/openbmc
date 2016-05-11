@@ -430,7 +430,11 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-  int ret;
+  return lightning_sensor_read(fru, sensor_num, value);
+}
+
+int
+pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   return lightning_sensor_read(fru, sensor_num, value);
 }
 

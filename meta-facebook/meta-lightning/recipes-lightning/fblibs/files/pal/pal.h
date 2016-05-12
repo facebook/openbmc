@@ -29,6 +29,7 @@ extern "C" {
 #include <facebook/lightning_fruid.h>
 #include <facebook/lightning_sensor.h>
 #include <facebook/lightning_flash.h>
+#include <openbmc/kv.h>
 
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   128
@@ -110,6 +111,13 @@ enum {
   FAN_6_REAR,
 };
 
+enum {
+  LED_ENCLOSURE = 127, // GPIOP7
+  LED_HB = 115, //GPIOO3
+  LED_DR_LED1 = 106, // GPION2
+  LED_BMC_ID = 57, //GPIOH1
+};
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -127,7 +135,7 @@ int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_get_pwr_btn(uint8_t *status);
 int pal_get_rst_btn(uint8_t *status);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
-int pal_set_led(uint8_t slot, uint8_t status);
+int pal_set_led(uint8_t led, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
 int pal_get_fru_list(char *list);

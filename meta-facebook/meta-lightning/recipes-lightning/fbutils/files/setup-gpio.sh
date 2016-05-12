@@ -254,6 +254,12 @@ devmem_clear_bit $(scu_addr 84) 11
 
 gpio_set J3 0
 
+# BMC_ENCLOSURE_LED: GPIOP7 (127)
+# To use GPIOP7, SCU88[23] must be 0
+devmem_clear_bit $(scu_addr 88) 23
+
+gpio_set P7 1
+
 # BMC_READY_N: GPIOG6 (54)
 # To use GPIOG6, SCU84[6] must be 0
 devmem_clear_bit $(scu_addr 84) 6

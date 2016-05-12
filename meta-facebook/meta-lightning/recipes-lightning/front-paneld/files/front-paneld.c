@@ -37,6 +37,11 @@
 #define MAX_NUM_SLOTS 4
 #define HB_TIMESTAMP_COUNT (60 * 60)
 
+enum {
+  LED_ON = 0,
+  LED_OFF = 1,
+};
+
 // Helper function for msleep
 void
 msleep(int msec) {
@@ -50,6 +55,40 @@ msleep(int msec) {
   }
 }
 
+// Thread for handling the Enclosure LED
+static void *
+encl_led_handler() {
+
+  int ret;
+  uint8_t peb_hlth;
+  uint8_t pdpb_hlth;
+  uint8_t fcb_hlth;
+
+  while (1) {
+
+    // Get health status for all the fru and then update the ENCL_LED status
+    ret = pal_get_fru_health(FRU_PEB, &peb_hlth);
+    if (ret)
+      goto err;
+
+    ret = pal_get_fru_health(FRU_PDPB, &pdpb_hlth);
+    if (ret)
+      goto err;
+
+    ret = pal_get_fru_health(FRU_FCB, &fcb_hlth);
+    if (ret)
+      goto err;
+
+    if (!peb_hlth | !pdpb_hlth | !fcb_hlth)
+      pal_set_led(LED_ENCLOSURE, LED_ON);
+    else
+      pal_set_led(LED_ENCLOSURE, LED_OFF);
+
+err:
+    sleep(1);
+  }
+
+}
 // Thread for monitoring debug card hotswap
 static void *
 debug_card_handler() {
@@ -146,6 +185,7 @@ main (int argc, char * const argv[]) {
   int rc;
   int pid_file;
   pthread_t tid_debug_card;
+  pthread_t tid_encl_led;
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -159,13 +199,18 @@ main (int argc, char * const argv[]) {
    openlog("front-paneld", LOG_CONS, LOG_DAEMON);
   }
 
-
   if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for debug card error\n");
     exit(1);
   }
 
+  if (pthread_create(&tid_encl_led, NULL, encl_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for encl led error\n");
+    exit(1);
+  }
+
   pthread_join(tid_debug_card, NULL);
+  pthread_join(tid_encl_led, NULL);
 
   return 0;
 }

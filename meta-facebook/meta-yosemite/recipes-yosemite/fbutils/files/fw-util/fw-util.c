@@ -31,8 +31,8 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fw_util <slot1|slot2|slot3|slot4> <--version>\n");
-  printf("       fw_util <slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
+  printf("Usage: fw-util <slot1|slot2|slot3|slot4> <--version>\n");
+  printf("       fw-util <slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 }
 
 // TODO: Need to confirm the interpretation of firmware version for print

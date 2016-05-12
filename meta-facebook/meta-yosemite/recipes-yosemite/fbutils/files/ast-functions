@@ -107,9 +107,9 @@ gpio_get() {
 # Check to see if BMC power-on-reset
 is_bmc_por() {
     local val
-    # Read the Watch Dog Counter
-    val=$(devmem 0x1e785010 2>/dev/null)
-    if [ "$((val & 0xff00))" == "0" ]; then
+    # Read the Watch Dog Flag
+    val=$(devmem 0x1e6e203c 2>/dev/null)
+    if [ "$((val & 0x2))" == "0" ]; then
         # Power ON Reset
         echo 1
     else

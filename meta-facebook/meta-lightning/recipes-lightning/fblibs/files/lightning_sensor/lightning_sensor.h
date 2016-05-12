@@ -117,13 +117,17 @@ enum {
   FCB_SENSOR_BJT_TEMP_2 = 0x61,
 };
 
-extern const uint8_t peb_sensor_list[];
+extern const uint8_t peb_sensor_pmc_list[];
+
+extern const uint8_t peb_sensor_plx_list[];
 
 extern const uint8_t pdpb_sensor_list[];
 
 extern const uint8_t fcb_sensor_list[];
 
-extern size_t peb_sensor_cnt;
+extern size_t peb_sensor_pmc_cnt;
+
+extern size_t peb_sensor_plx_cnt;
 
 extern size_t pdpb_sensor_cnt;
 

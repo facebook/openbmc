@@ -225,6 +225,44 @@ float pdpb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float fcb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 static void
+assign_sensor_threshold(uint8_t fru, uint8_t snr_num, float ucr, float unc,
+    float unr, float lcr, float lnc, float lnr, float pos_hyst, float neg_hyst) {
+
+  switch(fru) {
+    case FRU_PEB:
+      peb_sensor_threshold[snr_num][UCR_THRESH] = ucr;
+      peb_sensor_threshold[snr_num][UNC_THRESH] = unc;
+      peb_sensor_threshold[snr_num][UNR_THRESH] = unr;
+      peb_sensor_threshold[snr_num][LCR_THRESH] = lcr;
+      peb_sensor_threshold[snr_num][LNC_THRESH] = lnc;
+      peb_sensor_threshold[snr_num][LNR_THRESH] = lnr;
+      peb_sensor_threshold[snr_num][POS_HYST] = pos_hyst;
+      peb_sensor_threshold[snr_num][NEG_HYST] = neg_hyst;
+      break;
+    case FRU_PDPB:
+      pdpb_sensor_threshold[snr_num][UCR_THRESH] = ucr;
+      pdpb_sensor_threshold[snr_num][UNC_THRESH] = unc;
+      pdpb_sensor_threshold[snr_num][UNR_THRESH] = unr;
+      pdpb_sensor_threshold[snr_num][LCR_THRESH] = lcr;
+      pdpb_sensor_threshold[snr_num][LNC_THRESH] = lnc;
+      pdpb_sensor_threshold[snr_num][LNR_THRESH] = lnr;
+      pdpb_sensor_threshold[snr_num][POS_HYST] = pos_hyst;
+      pdpb_sensor_threshold[snr_num][NEG_HYST] = neg_hyst;
+      break;
+    case FRU_FCB:
+      fcb_sensor_threshold[snr_num][UCR_THRESH] = ucr;
+      fcb_sensor_threshold[snr_num][UNC_THRESH] = unc;
+      fcb_sensor_threshold[snr_num][UNR_THRESH] = unr;
+      fcb_sensor_threshold[snr_num][LCR_THRESH] = lcr;
+      fcb_sensor_threshold[snr_num][LNC_THRESH] = lnc;
+      fcb_sensor_threshold[snr_num][LNR_THRESH] = lnr;
+      fcb_sensor_threshold[snr_num][POS_HYST] = pos_hyst;
+      fcb_sensor_threshold[snr_num][NEG_HYST] = neg_hyst;
+      break;
+  }
+}
+
+static void
 sensor_thresh_array_init() {
 
   static bool init_done = false;
@@ -234,104 +272,97 @@ sensor_thresh_array_init() {
 
   int i;
 
-  // PEB SENSOR
-  peb_sensor_threshold[PEB_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 14.34; // TODO: HACK Value
-  peb_sensor_threshold[PEB_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 10.5; // TODO: HACK Value
-  peb_sensor_threshold[PEB_SENSOR_HSC_TEMP][UCR_THRESH] = 50; // TODO: HACK value
-  peb_sensor_threshold[PEB_SENSOR_HSC_IN_POWER][UCR_THRESH] = 150; // TODO: HACK Value
-  peb_sensor_threshold[PEB_SENSOR_ADC_P12V][UCR_THRESH] = 16.25; // Abnormal
-  peb_sensor_threshold[PEB_SENSOR_ADC_P5V][UCR_THRESH] = 10.66; // Abnormal
-  peb_sensor_threshold[PEB_SENSOR_ADC_P3V3_STBY][UCR_THRESH] = 4.95; // Abnormal
-  peb_sensor_threshold[PEB_SENSOR_ADC_P1V8_STBY][UCR_THRESH] = 2.46; // Abnormal
-  peb_sensor_threshold[PEB_SENSOR_ADC_P1V53][UCR_THRESH] = 2.46; // Abnormal
-  peb_sensor_threshold[PEB_SENSOR_ADC_P0V9][UCR_THRESH] = 2.46; // Abnormal
-  peb_sensor_threshold[PEB_SENSOR_ADC_P0V9_E][UCR_THRESH] = 2.46; // Abnormal
-  peb_sensor_threshold[PEB_SENSOR_ADC_P1V26][UCR_THRESH] = 2.46; // Abnormal
+  // PEB HSC SENSORS
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_IN_VOLT,
+      13.2, 0, 0, 10.8, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_OUT_CURR,
+      8, 0, 0, 0, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_IN_POWER,
+      96, 0, 0, 0, 0, 0, 0, 0);
 
   // PEB TEMP SENSORS
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_TEMP][UCR_THRESH] = 100;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_FRONT_TEMP][UCR_THRESH] = 50;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_REAR_TEMP][UCR_THRESH] = 50;
-  peb_sensor_threshold[PEB_SENSOR_LEFT_CONN_TEMP][UCR_THRESH] = 50;
-  peb_sensor_threshold[PEB_SENSOR_RIGHT_CONN_TEMP][UCR_THRESH] = 50;
-  peb_sensor_threshold[PEB_SENSOR_BMC_TEMP][UCR_THRESH] = 50;
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_TEMP,
+      100, 95, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_FRONT_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_REAR_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_LEFT_CONN_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_RIGHT_CONN_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_BMC_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
 
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_TEMP][UNC_THRESH] = 95;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_FRONT_TEMP][UNC_THRESH] = 45;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_REAR_TEMP][UNC_THRESH] = 45;
-  peb_sensor_threshold[PEB_SENSOR_LEFT_CONN_TEMP][UNC_THRESH] = 45;
-  peb_sensor_threshold[PEB_SENSOR_RIGHT_CONN_TEMP][UNC_THRESH] = 45;
-  peb_sensor_threshold[PEB_SENSOR_BMC_TEMP][UNC_THRESH] = 45;
+  // PEB VOLT SENSORS
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P12V,
+      14.37, 13.75, 0, 10.62, 11.25, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P5V,
+      5.75, 5.5, 0, 4.25, 4.5, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P3V3_STBY,
+      3.795, 3.63, 0, 2.805, 2.97, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V8_STBY,
+      2.07, 1.98, 0, 1.53, 1.62, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V53,
+      1.76, 1.68, 0, 1.3, 1.377, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P0V9,
+      1.035, 0.99, 0, 0.765, 0.81, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P0V9_E,
+      1.035, 0.99, 0, 0.765, 0.81, 0, 0, 0);
+  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V26,
+      1.45, 1.386, 0, 1.071, 1.134, 0, 0, 0);
 
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_TEMP][LNC_THRESH] = 10;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_FRONT_TEMP][LNC_THRESH] = 10;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_REAR_TEMP][LNC_THRESH] = 10;
-  peb_sensor_threshold[PEB_SENSOR_LEFT_CONN_TEMP][LNC_THRESH] = 10;
-  peb_sensor_threshold[PEB_SENSOR_RIGHT_CONN_TEMP][LNC_THRESH] = 10;
-  peb_sensor_threshold[PEB_SENSOR_BMC_TEMP][LNC_THRESH] = 10;
-
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_TEMP][LCR_THRESH] = 5;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_FRONT_TEMP][LCR_THRESH] = 5;
-  peb_sensor_threshold[PEB_SENSOR_PCIE_SW_REAR_TEMP][LCR_THRESH] = 5;
-  peb_sensor_threshold[PEB_SENSOR_LEFT_CONN_TEMP][LCR_THRESH] = 5;
-  peb_sensor_threshold[PEB_SENSOR_RIGHT_CONN_TEMP][LCR_THRESH] = 5;
-  peb_sensor_threshold[PEB_SENSOR_BMC_TEMP][LCR_THRESH] = 5;
-
-  // PDPB SENSORS
-  pdpb_sensor_threshold[PDPB_SENSOR_P12V][UCR_THRESH] = 13.728;
-  pdpb_sensor_threshold[PDPB_SENSOR_P3V3][UCR_THRESH] = 4.192;
-  pdpb_sensor_threshold[PDPB_SENSOR_P2V5][UCR_THRESH] = 2.72;
-  pdpb_sensor_threshold[PDPB_SENSOR_P12V_SSD][UCR_THRESH] = 13.728;
+  // PDPB VOLT SENSORS
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P12V,
+      14.37, 13.75, 0, 10.62, 11.25, 0, 0, 0);
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P3V3,
+      3.795, 3.63, 0, 2.805, 2.97, 0, 0, 0);
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P2V5,
+      2.875, 2.75, 0, 2.125, 2.25, 0, 0, 0);
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P12V_SSD,
+      13.728, 0, 0, 11.232, 0, 0, 0, 0);
 
   // PDPB TEMP SENSORS
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_REAR_TEMP][UCR_THRESH] = 55;
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_FRONT_TEMP][UCR_THRESH] = 55;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_REAR_TEMP][UCR_THRESH] = 55;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_FRONT_TEMP][UCR_THRESH] = 55;
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_LEFT_REAR_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_LEFT_FRONT_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_RIGHT_REAR_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_RIGHT_FRONT_TEMP,
+      50, 45, 0, 5, 10, 0, 0, 0);
 
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_REAR_TEMP][UNC_THRESH] = 50;
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_FRONT_TEMP][UNC_THRESH] = 50;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_REAR_TEMP][UNC_THRESH] = 50;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_FRONT_TEMP][UNC_THRESH] = 50;
-
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_REAR_TEMP][LNC_THRESH] = 10;
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_FRONT_TEMP][LNC_THRESH] = 10;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_REAR_TEMP][LNC_THRESH] = 10;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_FRONT_TEMP][LNC_THRESH] = 10;
-
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_REAR_TEMP][LCR_THRESH] = 5;
-  pdpb_sensor_threshold[PDPB_SENSOR_LEFT_FRONT_TEMP][LCR_THRESH] = 5;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_REAR_TEMP][LCR_THRESH] = 5;
-  pdpb_sensor_threshold[PDPB_SENSOR_RIGHT_FRONT_TEMP][LCR_THRESH] = 5;
-
+  // PDPB SSD TEMP SENSORS
   for (i = 0; i < lightning_flash_cnt; i++) {
-    pdpb_sensor_threshold[PDPB_SENSOR_FLASH_TEMP_0 + i][UCR_THRESH] = 70;
-    pdpb_sensor_threshold[PDPB_SENSOR_FLASH_TEMP_0 + i][UNC_THRESH] = 65;
-    pdpb_sensor_threshold[PDPB_SENSOR_FLASH_TEMP_0 + i][LNC_THRESH] = 10;
-    pdpb_sensor_threshold[PDPB_SENSOR_FLASH_TEMP_0 + i][LCR_THRESH] = 5;
+    assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
+        70, 65, 0, 5, 10, 0, 0, 0);
   }
 
-  // FCB SENSORS
-  fcb_sensor_threshold[FCB_SENSOR_P12V_AUX][UCR_THRESH] = 13.75;
-  fcb_sensor_threshold[FCB_SENSOR_P12VL][UCR_THRESH] = 13.75;
-  fcb_sensor_threshold[FCB_SENSOR_P12VU][UCR_THRESH] = 13.75;
-  fcb_sensor_threshold[FCB_SENSOR_P3V3][UCR_THRESH] = 3.63;
-  fcb_sensor_threshold[FCB_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 100; // Missing
-  fcb_sensor_threshold[FCB_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 60;
-  fcb_sensor_threshold[FCB_SENSOR_HSC_IN_POWER][UCR_THRESH] = 1020;
+  // FCB Volt Sensors
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P12V_AUX,
+      14.37, 13.75, 0, 10.62, 11.25, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P12VL,
+      14.37, 13.75, 0, 10.62, 11.25, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P12VU,
+      14.37, 13.75, 0, 10.62, 11.25, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P3V3,
+      3.795, 3.63, 0, 2.805, 2.97, 0, 0, 0);
 
-  // FCB TEMP SENSORS
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_1][UCR_THRESH] = 55;
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_2][UCR_THRESH] = 55;
+  // FCB HSC Sensors
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_IN_VOLT,
+      13.75, 0, 0, 11.25, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_OUT_CURR,
+      60, 0, 0, 0, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_IN_POWER,
+      1020, 0, 0, 0, 0, 0, 0, 0);
 
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_1][UNC_THRESH] = 50;
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_2][UNC_THRESH] = 50;
-
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_1][LNC_THRESH] = 10;
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_2][LNC_THRESH] = 10;
-
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_1][LCR_THRESH] = 5;
-  fcb_sensor_threshold[FCB_SENSOR_BJT_TEMP_2][LCR_THRESH] = 5;
+  // FCB Temp Sensor
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_1,
+      55, 50, 0, 5, 10, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_2,
+      55, 50, 0, 5, 10, 0, 0, 0);
 
   init_done = true;
 }

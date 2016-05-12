@@ -400,10 +400,20 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
+  uint8_t sw = 0;
+
   switch(fru) {
     case FRU_PEB:
-      *sensor_list = (uint8_t *) peb_sensor_list;
-      *cnt = peb_sensor_cnt;
+      while (lightning_pcie_switch(fru, &sw) < 0);
+
+      if (sw == PCIE_SW_PMC) {
+        *sensor_list = (uint8_t *) peb_sensor_pmc_list;
+        *cnt = peb_sensor_pmc_cnt;
+      } else if (sw == PCIE_SW_PLX) {
+        *sensor_list = (uint8_t *) peb_sensor_plx_list;
+        *cnt = peb_sensor_plx_cnt;
+      } else
+        return -1;
       break;
     case FRU_PDPB:
       *sensor_list = (uint8_t *) pdpb_sensor_list;

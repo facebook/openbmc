@@ -136,8 +136,8 @@ enum adc_pins {
   ADC_PIN7,
 };
 
-// List of PEB sensors to be monitored
-const uint8_t peb_sensor_list[] = {
+// List of PEB sensors to be monitored (PMC)
+const uint8_t peb_sensor_pmc_list[] = {
   PEB_SENSOR_ADC_P12V,
   PEB_SENSOR_ADC_P5V,
   PEB_SENSOR_ADC_P3V3_STBY,
@@ -151,6 +151,26 @@ const uint8_t peb_sensor_list[] = {
   PEB_SENSOR_HSC_IN_POWER,
   PEB_SENSOR_PCIE_SW_TEMP,
   PEB_SENSOR_PCIE_SW_FRONT_TEMP,
+  PEB_SENSOR_PCIE_SW_REAR_TEMP,
+  PEB_SENSOR_LEFT_CONN_TEMP,
+  PEB_SENSOR_RIGHT_CONN_TEMP,
+  PEB_SENSOR_BMC_TEMP,
+  PEB_SENSOR_HSC_TEMP,
+};
+
+// List of PEB sensors to be monitored (PLX)
+const uint8_t peb_sensor_plx_list[] = {
+  PEB_SENSOR_ADC_P12V,
+  PEB_SENSOR_ADC_P5V,
+  PEB_SENSOR_ADC_P3V3_STBY,
+  PEB_SENSOR_ADC_P1V8_STBY,
+  PEB_SENSOR_ADC_P1V53,
+  PEB_SENSOR_ADC_P0V9,
+  PEB_SENSOR_ADC_P0V9_E,
+  PEB_SENSOR_ADC_P1V26,
+  PEB_SENSOR_HSC_IN_VOLT,
+  PEB_SENSOR_HSC_OUT_CURR,
+  PEB_SENSOR_HSC_IN_POWER,
   PEB_SENSOR_PCIE_SW_REAR_TEMP,
   PEB_SENSOR_LEFT_CONN_TEMP,
   PEB_SENSOR_RIGHT_CONN_TEMP,
@@ -316,7 +336,9 @@ sensor_thresh_array_init() {
   init_done = true;
 }
 
-size_t peb_sensor_cnt = sizeof(peb_sensor_list)/sizeof(uint8_t);
+size_t peb_sensor_pmc_cnt = sizeof(peb_sensor_pmc_list)/sizeof(uint8_t);
+
+size_t peb_sensor_plx_cnt = sizeof(peb_sensor_plx_list)/sizeof(uint8_t);
 
 size_t pdpb_sensor_cnt = sizeof(pdpb_sensor_list)/sizeof(uint8_t);
 

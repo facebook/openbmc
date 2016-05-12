@@ -37,6 +37,10 @@
 #define I2C_DEV_PDPB      "/dev/i2c-6"
 #define I2C_DEV_FCB       "/dev/i2c-5"
 
+#define I2C_BUS_PEB_DIR "/sys/class/i2c-adapter/i2c-4/"
+#define I2C_BUS_PDPB_DIR "/sys/class/i2c-adapter/i2c-6/"
+#define I2C_BUS_FCB_DIR "/sys/class/i2c-adapter/i2c-5/"
+
 #define I2C_ADDR_PEB_HSC 0x11
 
 #define I2C_ADDR_PDPB_ADC  0x48
@@ -56,6 +60,14 @@
 #define MAX_SENSOR_NUM 0xFF
 #define ALL_BYTES 0xFF
 #define LAST_REC_ID 0xFFFF
+
+#define PEB_TMP75_U136_DEVICE I2C_BUS_PEB_DIR "4-004d"
+#define PEB_TMP75_U134_DEVICE I2C_BUS_PEB_DIR "4-004a"
+
+#define PDPB_TMP75_U47_DEVICE I2C_BUS_PDPB_DIR "6-0049"
+#define PDPB_TMP75_U48_DEVICE I2C_BUS_PDPB_DIR "6-004a"
+#define PDPB_TMP75_U49_DEVICE I2C_BUS_PDPB_DIR "6-004b"
+#define PDPB_TMP75_U51_DEVICE I2C_BUS_PDPB_DIR "6-004c"
 
 enum temp_sensor_type {
   LOCAL_SENSOR = 0,
@@ -388,22 +400,6 @@ read_flash_temp(uint8_t flash_num, float *value) {
 }
 
 static int
-read_temp(const char *device, float *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
-  int tmp;
-
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
-  if (read_device(full_name, &tmp)) {
-    return -1;
-  }
-
-  *value = ((float)tmp)/UNIT_DIV;
-
-  return 0;
-}
-
-static int
 read_adc_value(const int pin, const char *device, float *value) {
   char device_name[LARGEST_DEVICE_NAME];
   char full_name[LARGEST_DEVICE_NAME];
@@ -413,9 +409,25 @@ read_adc_value(const int pin, const char *device, float *value) {
   return read_device_float(full_name, value);
 }
 
-
+/* Function to read the temp from the sysfs */
 static int
-read_tmp75_value(char *device, uint8_t addr, uint8_t type, float *value) {
+read_tmp75_temp_value(const char *device, float *value) {
+  char full_name[LARGEST_DEVICE_NAME + 1];
+  int tmp;
+
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
+  if (read_device(full_name, &tmp)) {
+    return -1;
+  }
+
+  *value = ((float)tmp)/UNIT_DIV;
+
+  return 0;
+}
+
+/* Function to read the temp directly from the i2c dev */
+static int
+read_temp_value(char *device, uint8_t addr, uint8_t type, float *value) {
 
   int dev;
   int ret;
@@ -423,14 +435,14 @@ read_tmp75_value(char *device, uint8_t addr, uint8_t type, float *value) {
 
   dev = open(device, O_RDWR);
   if (dev < 0) {
-    syslog(LOG_ERR, "read_tmp75_value: open() failed");
+    syslog(LOG_ERR, "read_temp_value: open() failed");
     return -1;
   }
 
   /* Assign the i2c device address */
   ret = ioctl(dev, I2C_SLAVE, addr);
   if (ret < 0) {
-    syslog(LOG_ERR, "read_tmp75_value: ioctl() assigning i2c addr failed");
+    syslog(LOG_ERR, "read_temp_value: ioctl() assigning i2c addr failed");
     close(dev);
     return -1;
   }
@@ -439,7 +451,7 @@ read_tmp75_value(char *device, uint8_t addr, uint8_t type, float *value) {
   res = i2c_smbus_read_word_data(dev, type);
   if (res < 0) {
     close(dev);
-    syslog(LOG_ERR, "read_tmp75_value: i2c_smbus_read_word_data failed");
+    syslog(LOG_ERR, "read_temp_value: i2c_smbus_read_word_data failed");
     return -1;
   }
 
@@ -457,9 +469,25 @@ read_tmp75_value(char *device, uint8_t addr, uint8_t type, float *value) {
     *value = (float) (0xFFF - res + 1) * (-1) * TPM75_TEMP_RESOLUTION;
   } else {
     /* Out of range [128C to -55C] */
-    syslog(LOG_WARNING, "read_tmp75_value: invalid res value = 0x%X", res);
+    syslog(LOG_WARNING, "read_temp_value: invalid res value = 0x%X", res);
     return -1;
   }
+
+  return 0;
+}
+
+static int
+read_temp(const char *device, float *value) {
+  char full_name[LARGEST_DEVICE_NAME + 1];
+  int tmp;
+
+  snprintf(
+      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
+  if (read_device(full_name, &tmp)) {
+    return -1;
+  }
+
+  *value = ((float)tmp)/UNIT_DIV;
 
   return 0;
 }
@@ -964,17 +992,19 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
         // Temperature Sensors
         case PEB_SENSOR_PCIE_SW_TEMP:
-          return read_tmp75_value(I2C_DEV_PEB, PEB_MAX6654_U4, REMOTE_SENSOR, (float*) value);
+          return read_temp_value(I2C_DEV_PEB, PEB_MAX6654_U4, REMOTE_SENSOR, (float*) value);
         case PEB_SENSOR_PCIE_SW_FRONT_TEMP:
-          return read_tmp75_value(I2C_DEV_PEB, PEB_MAX6654_U4, LOCAL_SENSOR, (float*) value);
+          return read_temp_value(I2C_DEV_PEB, PEB_MAX6654_U4, LOCAL_SENSOR, (float*) value);
         case PEB_SENSOR_PCIE_SW_REAR_TEMP:
-          return read_tmp75_value(I2C_DEV_PEB, PEB_TMP75_U136, LOCAL_SENSOR, (float*) value);
+          //return read_temp_value(I2C_DEV_PEB, PEB_TMP75_U136, LOCAL_SENSOR, (float*) value);
+          return read_tmp75_temp_value(PEB_TMP75_U136_DEVICE, (float*) value);
         case PEB_SENSOR_LEFT_CONN_TEMP:
-          return read_tmp75_value(I2C_DEV_PEB, PEB_TMP421_U15, REMOTE_SENSOR, (float*) value);
+          return read_temp_value(I2C_DEV_PEB, PEB_TMP421_U15, REMOTE_SENSOR, (float*) value);
         case PEB_SENSOR_RIGHT_CONN_TEMP:
-          return read_tmp75_value(I2C_DEV_PEB, PEB_TMP421_U15, LOCAL_SENSOR, (float*) value);
+          return read_temp_value(I2C_DEV_PEB, PEB_TMP421_U15, LOCAL_SENSOR, (float*) value);
         case PEB_SENSOR_BMC_TEMP:
-          return read_tmp75_value(I2C_DEV_PEB, PEB_TMP75_U134, LOCAL_SENSOR, (float*) value);
+          //return read_temp_value(I2C_DEV_PEB, PEB_TMP75_U134, LOCAL_SENSOR, (float*) value);
+          return read_tmp75_temp_value(PEB_TMP75_U134_DEVICE, (float*) value);
 
         // Hot Swap Controller
         case PEB_SENSOR_HSC_IN_VOLT:
@@ -1018,13 +1048,17 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
         // Temp
         case PDPB_SENSOR_LEFT_REAR_TEMP:
-          return read_tmp75_value(I2C_DEV_PDPB, PDPB_TMP75_U47, LOCAL_SENSOR, (float*) value);
+          //return read_temp_value(I2C_DEV_PDPB, PDPB_TMP75_U47, LOCAL_SENSOR, (float*) value);
+          return read_tmp75_temp_value(PDPB_TMP75_U47_DEVICE, (float*) value);
         case PDPB_SENSOR_LEFT_FRONT_TEMP:
-          return read_tmp75_value(I2C_DEV_PDPB, PDPB_TMP75_U49, LOCAL_SENSOR, (float*) value);
+          //return read_temp_value(I2C_DEV_PDPB, PDPB_TMP75_U49, LOCAL_SENSOR, (float*) value);
+          return read_tmp75_temp_value(PDPB_TMP75_U49_DEVICE, (float*) value);
         case PDPB_SENSOR_RIGHT_REAR_TEMP:
-          return read_tmp75_value(I2C_DEV_PDPB, PDPB_TMP75_U48, LOCAL_SENSOR, (float*) value);
+          //return read_temp_value(I2C_DEV_PDPB, PDPB_TMP75_U48, LOCAL_SENSOR, (float*) value);
+          return read_tmp75_temp_value(PDPB_TMP75_U48_DEVICE, (float*) value);
         case PDPB_SENSOR_RIGHT_FRONT_TEMP:
-          return read_tmp75_value(I2C_DEV_PDPB, PDPB_TMP75_U51, LOCAL_SENSOR, (float*) value);
+          //return read_temp_value(I2C_DEV_PDPB, PDPB_TMP75_U51, LOCAL_SENSOR, (float*) value);
+          return read_tmp75_temp_value(PDPB_TMP75_U51_DEVICE, (float*) value);
 
         // Voltage
         case PDPB_SENSOR_P12V:

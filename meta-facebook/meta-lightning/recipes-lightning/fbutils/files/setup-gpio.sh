@@ -230,23 +230,29 @@ devmem_clear_bit $(scu_addr 84) 3
 
 gpio_set G3 0
 
-# LED_POSTCODE_4: GPIOP4 (124)
-gpio_set P4 0
+# LED_POSTCODE_4: GPIOJ0 (72)
+# To use GPIOJ0, SCU84[8] must be 0
+devmem_clear_bit $(scu_addr 84) 8
 
-# LED_POSTCODE_5: GPIOP5 (125)
-gpio_set P5 0
+gpio_set J0 0
 
-# LED_POSTCODE_6: GPIOP6 (126)
-# To use GPIOP6, SCU88[22] must be 0
-devmem_clear_bit $(scu_addr 88) 22
+# LED_POSTCODE_5: GPIOJ1 (73)
+# To use GPIOJ1, SCU84[9] must be 0
+devmem_clear_bit $(scu_addr 84) 9
 
-gpio_set P6 0
+gpio_set J1 0
 
-# LED_POSTCODE_7: GPIOP7 (127)
-# To use GPIOP7, SCU88[23] must be 0
-devmem_clear_bit $(scu_addr 88) 23
+# LED_POSTCODE_6: GPIOJ2 (74)
+# To use GPIOJ2, SCU84[10] must be 0
+devmem_clear_bit $(scu_addr 84) 10
 
-gpio_set P7 0
+gpio_set J2 0
+
+# LED_POSTCODE_7: GPIOJ3 (75)
+# To use GPIOJ3, SCU84[11] must be 0
+devmem_clear_bit $(scu_addr 84) 11
+
+gpio_set J3 0
 
 # BMC_READY_N: GPIOG6 (54)
 # To use GPIOG6, SCU84[6] must be 0

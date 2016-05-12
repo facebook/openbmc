@@ -34,18 +34,18 @@ display_lower() {
     local bit3=$(expr $1 / 8 % 2)
     
     # Set the pins to the correct operating mode.
-    # The relevant pins are GPIOG[0...3].
-    # For GPIO bank G, SCU84[0..3] must be 0.
-    devmem_clear_bit $(scu_addr 84) 0
-    devmem_clear_bit $(scu_addr 84) 1
-    devmem_clear_bit $(scu_addr 84) 2
-    devmem_clear_bit $(scu_addr 84) 3
+    # The relevant pins are GPIOJ[0...3].
+    # For GPIO bank J, SCU84[8..11] must be 0.
+    devmem_clear_bit $(scu_addr 84) 8
+    devmem_clear_bit $(scu_addr 84) 9
+    devmem_clear_bit $(scu_addr 84) 10
+    devmem_clear_bit $(scu_addr 84) 11
 
     # Now set the GPIOs to the right binary values
-    gpio_set 48 $bit0
-    gpio_set 49 $bit1
-    gpio_set 50 $bit2
-    gpio_set 51 $bit3
+    gpio_set 72 $bit0
+    gpio_set 73 $bit1
+    gpio_set 74 $bit2
+    gpio_set 75 $bit3
 }
 
 # Function to set the more significant hex digit
@@ -56,21 +56,17 @@ display_upper() {
     local bit3=$(expr $1 / 8 % 2)
 
     # Set the pins to the correct operating mode.
-    # The relevant pins are GPIOB[4...7].
-    # GPIOB4: SCU80[12] = 0 and Strap[14] = 0
-    # GPIOB5: SCU80[13] = 0
-    # GPIOB6: SCU80[14] = 0
-    # GPIOB7: SCU80[15] = 0
-    devmem_clear_bit $(scu_addr 70) 14
-    devmem_clear_bit $(scu_addr 80) 12
-    devmem_clear_bit $(scu_addr 80) 13
-    devmem_clear_bit $(scu_addr 80) 14
-    devmem_clear_bit $(scu_addr 80) 15
+    # The relevant pins are GPIOG[0...3].
+    # For GPIO bank G, SCU84[0..3] must be 0.
+    devmem_clear_bit $(scu_addr 84) 0
+    devmem_clear_bit $(scu_addr 84) 1
+    devmem_clear_bit $(scu_addr 84) 2
+    devmem_clear_bit $(scu_addr 84) 3
 
-    gpio_set 12 $bit0
-    gpio_set 13 $bit1
-    gpio_set 14 $bit2
-    gpio_set 15 $bit3
+    gpio_set 48 $bit0
+    gpio_set 49 $bit1
+    gpio_set 50 $bit2
+    gpio_set 51 $bit3
 }
 
 # Check number of parameters

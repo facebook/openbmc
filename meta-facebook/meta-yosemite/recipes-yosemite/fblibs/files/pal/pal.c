@@ -74,8 +74,7 @@
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
 #define PIN_CTRL2_OFFSET 0x84
-#define AST_WDT_BASE 0x1e785000
-#define WDT_OFFSET 0x10
+#define WDT_OFFSET 0x3C
 
 #define UART1_TXD (1 << 22)
 #define UART2_TXD (1 << 30)
@@ -1743,7 +1742,7 @@ pal_is_bmc_por(void) {
   }
 
   scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_WDT_BASE);
+             AST_SCU_BASE);
   scu_wdt = (char*)scu_reg + WDT_OFFSET;
 
   wdt = *(volatile uint32_t*) scu_wdt;
@@ -1751,7 +1750,7 @@ pal_is_bmc_por(void) {
   munmap(scu_reg, PAGE_SIZE);
   close(scu_fd);
 
-  if (wdt & 0xff00) {
+  if (wdt & 0x2) {
     return 0;
   } else {
     return 1;

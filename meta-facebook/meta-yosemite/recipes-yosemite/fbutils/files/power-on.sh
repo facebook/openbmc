@@ -102,6 +102,9 @@ sync_date()
 # Check whether it is fresh power on reset
 if [ $(is_bmc_por) -eq 1 ]; then
 
+  # Disable clearing of PWM block on WDT SoC Reset
+  devmem_clear_bit $(scu_addr 9c) 17
+
   sync_date
 
   check_por_config 1

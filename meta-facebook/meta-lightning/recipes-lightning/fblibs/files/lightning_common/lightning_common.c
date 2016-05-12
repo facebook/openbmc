@@ -34,6 +34,8 @@
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
 
+#define PCIE_SW_FILE        "/tmp/pcie_switch_vendor"
+
 int
 lightning_common_fru_name(uint8_t fru, char *str) {
 
@@ -77,6 +79,45 @@ lightning_common_fru_id(char *str, uint8_t *fru) {
 #endif
     return -1;
   }
+
+  return 0;
+}
+
+int
+lightning_pcie_switch(uint8_t fru, uint8_t *pcie_sw) {
+
+  FILE *fp;
+  int rc;
+  char sw[8];
+
+  if (fru != FRU_PEB) {
+    syslog(LOG_INFO, "No PCIe switch on this fru: %d", fru);
+    return -1;
+  }
+
+  fp = fopen(PCIE_SW_FILE, "r");
+  if (!fp) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "lightning_pcie_switch: fopen failed for fru: %d", fru);
+#endif
+    return -1;
+  }
+
+  rc = (int) fread(sw, 1, 8, fp);
+  close(fp);
+  if (rc <= 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "lightning_pcie_switch: fread failed for fru: %d", fru);
+#endif
+    return -1;
+  }
+
+  if (strstr(sw, "PMC") != NULL)
+    *pcie_sw = PCIE_SW_PMC;
+  else if (strstr(sw, "PLX") != NULL)
+    *pcie_sw = PCIE_SW_PLX;
+  else
+    return -1;
 
   return 0;
 }

@@ -35,8 +35,14 @@ enum {
   FRU_FCB = 3,
 };
 
+enum {
+  PCIE_SW_PMC = 1,
+  PCIE_SW_PLX = 2,
+};
+
 int lightning_common_fru_name(uint8_t fru, char *str);
 int lightning_common_fru_id(char *str, uint8_t *fru);
+int lightning_pcie_switch(uint8_t fru, uint8_t *pcie_sw);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -26,6 +26,7 @@ SRC_URI = "file://ast-functions \
            file://post_led.sh \
            file://setup-gpio.sh \
            file://mount_data0.sh \
+           file://pcie_switch.py \
            file://rc.early \
            file://rc.local \
            file://src \
@@ -64,6 +65,8 @@ do_install() {
   update-rc.d -r ${D} mount_data0.sh start 03 S .
   install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
   update-rc.d -r ${D} rc.early start 04 S .
+  install -m 755 pcie_switch.py ${D}${sysconfdir}/init.d/pcie_switch.py
+  update-rc.d -r ${D} pcie_switch.py start 50 5 .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local

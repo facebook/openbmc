@@ -29,131 +29,114 @@
 
 #define MAX_BUF 80
 
-static int
-edb_set(char *path, char *key, char *value) {
-  unqlite *pDb;               /* Database handle */
+int
+edb_cache_set(char *key, char *value) {
+
+  FILE *fp;
   int rc;
+  char kpath[MAX_KEY_PATH_LEN] = {0};
 
-  /* Open our database */
-  while (1) {
-    rc = unqlite_open(&pDb, path, UNQLITE_OPEN_CREATE);
-    if( rc != UNQLITE_OK ){
-      syslog(LOG_WARNING, "db_set: unqlite_open failed with rc: %d\n", rc);
-      rc = -1;
-      break;
-    }
-    rc = unqlite_kv_store(pDb, key, -1, value, MAX_BUF);
-    if( rc != UNQLITE_OK ){
-      if( rc != UNQLITE_BUSY ){
-#ifdef DEBUG
-        syslog(LOG_WARNING, "db_set: unqlite_kv_store failed with rc: %d\n", rc);
-#endif
-        rc = -1;
-        break;
-      } else {
-        unqlite_close(pDb);
-        continue;
-      }
-   } else {
-   /* Auto-commit the transaction and close our database */
-    rc = 0;
-    break;
-   }
- }
-  unqlite_close(pDb);
-  return rc;
-}
+  sprintf(kpath, CACHE_STORE, key);
 
-static int
-edb_get(char *path, char *key, char *value) {
-  int rc;
-  unqlite *pDb;
-  size_t nBytes;      //Data length
-  char zBuf[MAX_BUF] = {0};
-
-  while (1) {
-    // Open our database;
-    rc = unqlite_open(&pDb, path, UNQLITE_OPEN_READONLY|UNQLITE_OPEN_MMAP);
-    if( rc != UNQLITE_OK ) {
-      syslog(LOG_WARNING, "db_get: unqlite_open fails with rc: %d\n", rc);
-      unqlite_close(pDb);
-      return -1;
-    }
-
-    //Extract record content
-    nBytes = MAX_BUF;
-    memset(zBuf, 0, MAX_BUF);
-    rc = unqlite_kv_fetch(pDb, key, -1, value, &nBytes);
-    if( rc != UNQLITE_OK ){
-      if (rc == UNQLITE_NOTFOUND) {
-#ifdef DEBUG
-        syslog(LOG_WARNING, "db_get: can not find the key\n");
-#endif
-        unqlite_close(pDb);
-        return -1;
-      } else {
-#ifdef DEBUG
-        syslog(LOG_WARNING, "db_get: unqlite_key_fetch returns %d\n", rc);
-#endif
-        /* Auto-commit the transaction and close our database */
-        unqlite_close(pDb);
-        continue;
-      }
-    } else {
-      /* Auto-commit the transaction and close our database */
-      unqlite_close(pDb);
-      return 0;
-    }
+  if (access(CACHE_STORE_PATH, F_OK) == -1) {
+        mkdir(CACHE_STORE_PATH, 0777);
   }
+
+  fp = fopen(kpath, "w");
+  if (!fp) {
+      int err = errno;
+#ifdef DEBUG
+      syslog(LOG_WARNING, "cache_set: failed to open %s", kpath);
+#endif
+      return err;
+  }
+
+  rc = flock(fileno(fp), LOCK_EX);
+  if (rc < 0) {
+     int err = errno;
+#ifdef DEBUG
+    syslog(LOG_WARNING, "cache_set: failed to flock on %s, err %d", kpath, err);
+#endif
+    fclose(fp);
+    return -1;
+  }
+
+  rc = fwrite(value, 1, strlen(value), fp);
+  if (rc < 0) {
+#ifdef DEBUG
+     syslog(LOG_WARNING, "cache_set: failed to write to %s", kpath;
+#endif
+     fclose(fp);
+     return ENOENT;
+  }
+
+  rc = flock(fileno(fp), LOCK_UN);
+  if (rc < 0) {
+     int err = errno;
+#ifdef DEBUG
+     syslog(LOG_WARNING, "cache_set: failed to unlock flock on %s, err %d", kpath, err);
+#endif
+     fclose(fp);
+     return -1;
+  }
+
+  fclose(fp);
 
   return 0;
 }
 
 int
-edb_cache_set(char *key, char *value) {
-  int rc;
-  FILE *fp;
+edb_cache_get(char *key, char *value) {
 
-  fp = fopen(CACHE_LOCK_PATH, "w");
+  FILE *fp;
+  int rc;
+  char kpath[MAX_KEY_PATH_LEN] = {0};
+
+  sprintf(kpath, CACHE_STORE, key);
+
+  if (access(CACHE_STORE_PATH, F_OK) == -1) {
+     mkdir(CACHE_STORE_PATH, 0777);
+  }
+
+  fp = fopen(kpath, "r");
   if (!fp) {
+     int err = errno;
 #ifdef DEBUG
-     syslog(LOG_WARNING, "edb_set: failed to open lock file");
+    syslog(LOG_WARNING, "cache_get: failed to open %s, err %d", kpath, err);
 #endif
-     return -1;
+    return -1;
   }
 
   rc = flock(fileno(fp), LOCK_EX);
   if (rc < 0) {
+     int err = errno;
 #ifdef DEBUG
-    syslog(LOG_WARNING, "edb_cache_set: failed to flock on lock file, err %d",rc);
+     syslog(LOG_WARNING, "cache_get: failed to flock %s, err %d", kpath, err);
 #endif
     fclose(fp);
-    return rc;
+    return -1;
   }
 
-  rc = edb_set(EDB_CACHE_PATH, key, value);
-
-  if ( flock(fileno(fp), LOCK_UN) < 0 ) {
+  rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
+  if (rc <= 0) {
 #ifdef DEBUG
-     syslog(LOG_WARNING, "edb_cache_set: failed to unlock flock on lock file");
+     syslog(LOG_INFO, "cache_get: failed to read %s", kpath);
 #endif
-     fclose(fp);
-     return -1;
+    fclose(fp);
+    return ENOENT;
   }
+
+  rc = flock(fileno(fp), LOCK_UN);
+  if (rc < 0) {
+     int err = errno;
+#ifdef DEBUG
+     syslog(LOG_WARNING, "cache_get: failed to unlock flock on %s, err %d", kpath, err);
+#endif
+    fclose(fp);
+    return -1;
+  }
+
   fclose(fp);
-  return rc;
-}
 
-int
-edb_cache_get(char *key, char *value) {
-  return edb_get(EDB_CACHE_PATH, key, value);
-}
-
-int
-edb_flash_set(char *key, char *value) {
-  return edb_set(EDB_FLASH_PATH, key, value);
-}
-int
-edb_flash_get(char *key, char *value) {
-  return edb_get(EDB_FLASH_PATH, key, value);
+  return 0;
 }

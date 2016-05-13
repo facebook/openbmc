@@ -23,15 +23,15 @@
 extern "C" {
 #endif
 
-#define EDB_CACHE_PATH "/tmp/cache.db"
-#define EDB_FLASH_PATH "/mnt/data/flash.db"
-#define CACHE_LOCK_PATH "/tmp/cachedb.lock"
-#define FLASH_LOCK_PATH "/tmp/flashdb.lock"
+#define MAX_KEY_PATH_LEN  96
+#define MAX_KEY_LEN       64
+#define MAX_VALUE_LEN     64
+
+#define CACHE_STORE "/tmp/cache_store/%s"
+#define CACHE_STORE_PATH "/tmp/cache_store"
 
 int edb_cache_get(char* key, char *value);
 int edb_cache_set(char* key, char *value);
-int edb_flash_get(char* key, char *value);
-int edb_flash_set(char* key, char *value);
 
 #ifdef __cplusplus
 }

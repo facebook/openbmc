@@ -24,7 +24,7 @@ import syslog
 pcard_vin = "/sys/class/i2c-adapter/i2c-7/7-006f/in1_input"
 mux_bus = 7
 mux_addr = 0x70
-check_interval = 60
+check_interval = 600
 
 
 def pcard_read(inp):

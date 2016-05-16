@@ -105,21 +105,17 @@ main(int argc, void **argv) {
 // For current platforms, we are using WDT from either fand or fscd
 // TODO: keeping this code until we make healthd as central daemon that
 //  monitors all the important daemons for the platforms.
-#ifdef WDT_HEALTHD
   if (pthread_create(&tid_watchdog, NULL, watchdog_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for watchdog error\n");
     exit(1);
   }
-#endif
 
   if (pthread_create(&tid_hb_led, NULL, hb_led_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for heartbeat error\n");
     exit(1);
   }
 
-#ifdef WDT_HEALTHD
   pthread_join(tid_watchdog, NULL);
-#endif
 
   pthread_join(tid_hb_led, NULL);
 

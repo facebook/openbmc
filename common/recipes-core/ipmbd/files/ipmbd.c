@@ -77,7 +77,7 @@
 
 #define SEQ_NUM_MAX 64
 
-#define I2C_RETRIES_MAX 6
+#define I2C_RETRIES_MAX 5
 
 #define IPMB_PKT_MIN_SIZE 6
 
@@ -240,7 +240,7 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
 
   // Setup wait time
   req.tv_sec = 0;
-  req.tv_nsec = 10000000;//10mSec
+  req.tv_nsec = 20000000;//20mSec
 
   pthread_mutex_lock(&m_i2c);
 

@@ -1463,6 +1463,17 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
         *flag = GETMASK(SENSOR_VALID);
       break;
     case FRU_SPB:
+      /*
+       * TODO: This is a HACK (t11229576)
+       */
+      switch(snr_num) {
+        case SP_SENSOR_P12V_SLOT1:
+        case SP_SENSOR_P12V_SLOT2:
+        case SP_SENSOR_P12V_SLOT3:
+        case SP_SENSOR_P12V_SLOT4:
+          *flag = GETMASK(SENSOR_VALID);
+          break;
+      }
     case FRU_NIC:
       break;
   }

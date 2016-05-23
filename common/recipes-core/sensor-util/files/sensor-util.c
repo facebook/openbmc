@@ -148,6 +148,7 @@ main(int argc, char **argv) {
   uint8_t *sensor_list;
   uint8_t fru;
   uint8_t num = 0;
+  char fruname[16];
   bool threshold = false;
 
   if (argc < 2 || argc > 4) {
@@ -187,7 +188,8 @@ main(int argc, char **argv) {
       }
 
       if (status == 0) {
-        printf("%s is empty!\n\n", argv[1]);
+        pal_get_fru_name(fru, fruname);
+        printf("%s is empty!\n\n", fruname);
         fru++;
         continue;
       }

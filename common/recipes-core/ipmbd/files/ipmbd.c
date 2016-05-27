@@ -114,6 +114,7 @@ static int g_bus_id = 0; // store the i2c bus ID for debug print
 
 static int i2c_slave_read(int fd, uint8_t *buf, uint8_t *len);
 static int i2c_slave_open(uint8_t bus_num);
+static int bic_up_flag = 0;
 
 
 #ifdef CONFIG_YOSEMITE
@@ -729,6 +730,12 @@ void
       goto conn_cleanup;
   }
 
+  if(bic_up_flag){
+      if(!((req_buf[1] == 0xe0) && (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE))){
+          goto conn_cleanup;
+	}
+  }
+
   ipmb_handle(fd, req_buf, n, res_buf, &res_len);
 
   if (send(sock, res_buf, res_len, MSG_NOSIGNAL) < 0) {
@@ -852,7 +859,7 @@ main(int argc, char * const argv[]) {
   daemon(1, 0);
   openlog("ipmbd", LOG_CONS, LOG_DAEMON);
 
-  if (argc != 2) {
+  if ((argc != 2) && (argc != 3)) {
     syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#>");
     exit(1);
   }
@@ -861,6 +868,12 @@ main(int argc, char * const argv[]) {
   g_bus_id = ipmb_bus_num;
 
   syslog(LOG_WARNING, "ipmbd: bus#:%d\n", ipmb_bus_num);
+
+  if( (argc == 3) && !(strcmp(argv[2] ,"bicup")) ){
+	bic_up_flag = 1;
+  }else{
+	bic_up_flag = 0;
+  }
 
   pthread_mutex_init(&m_i2c, NULL);
 
@@ -948,3 +961,4 @@ cleanup:
 
   return 0;
 }
+

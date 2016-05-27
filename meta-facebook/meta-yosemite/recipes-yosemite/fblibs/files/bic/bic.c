@@ -618,19 +618,29 @@ printf("size of file is %d bytes\n", size);
   // Open the i2c driver
   ifd = i2c_open(get_ipmb_bus_id(slot_id));
   if (ifd < 0) {
-printf("ifd error\n");
-    goto error_exit;
-  }
-
-  // Enable Bridge-IC update
-  if (!_is_bic_update_ready(slot_id)) {
-    if (_enable_bic_update(slot_id)) {
-      printf("enabel_bic_update failed\n");
-      goto error_exit;
-    }
+    printf("ifd error\n");
+    goto error_exit2;
   }
 
   // Kill ipmb daemon for this slot
+  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
+  system(cmd);
+  printf("killed ipmbd for this slot %x..\n",slot_id);
+
+  // Restart ipmb daemon with "bicup" for bic update
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "/usr/local/bin/ipmbd %d bicup", get_ipmb_bus_id(slot_id));
+  system(cmd);
+  printf("start ipmbd bicup for this slot %x..\n",slot_id);
+  sleep(1);
+
+  // Enable Bridge-IC update
+  if (!_is_bic_update_ready(slot_id)) {
+      _enable_bic_update(slot_id);
+  }
+
+  // Kill ipmb daemon "bicup" for this slot
+  memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
   system(cmd);
   printf("killed ipmbd for this slot..\n");
@@ -803,6 +813,7 @@ error_exit:
   sprintf(cmd, "/usr/local/bin/ipmbd %d", get_ipmb_bus_id(slot_id));
   system(cmd);
 
+error_exit2:
   if (fd > 0) {
     close(fd);
   }
@@ -1319,3 +1330,4 @@ bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
 
   return ret;
 }
+

@@ -282,19 +282,19 @@ sensor_thresh_array_init() {
 
   // PEB TEMP SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      60, 55, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_TEMP,
       100, 95, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_FRONT_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      70, 65, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_REAR_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      70, 65, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_LEFT_CONN_TEMP,
       50, 45, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_RIGHT_CONN_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      65, 60, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_BMC_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      60, 55, 0, 5, 10, 0, 0, 0);
 
   // PEB VOLT SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P12V,
@@ -326,18 +326,18 @@ sensor_thresh_array_init() {
 
   // PDPB TEMP SENSORS
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_LEFT_REAR_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_LEFT_FRONT_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_RIGHT_REAR_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_RIGHT_FRONT_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 5, 10, 0, 0, 0);
 
   // PDPB SSD TEMP SENSORS
   for (i = 0; i < lightning_flash_cnt; i++) {
     assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-        70, 65, 0, 5, 10, 0, 0, 0);
+        70, 67, 0, 5, 10, 0, 0, 0);
   }
 
   // FCB Volt Sensors
@@ -598,11 +598,13 @@ read_hsc_value(uint8_t reg, char *device, uint8_t addr, uint8_t cntlr, float *va
       } else if (cntlr == HSC_ADM1278) {
         *value = (1.0/12246) * ((res * 100) - 0);
       }
+        *value *= 0.99; // This is to compensate the controller reading offset value
       break;
     case HSC_TEMP:
       if (cntlr == HSC_ADM1278) {
         *value = (1.0/42) * ((res * 10) - 31880);
       }
+        *value *= 0.97; // This is to compensate the controller reading offset value
       break;
     default:
       syslog(LOG_ERR, "read_hsc_value: wrong param");

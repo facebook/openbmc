@@ -414,3 +414,9 @@ gpio_set F6 1
 devmem_clear_bit $(scu_addr 80) 31
 
 gpio_set F7 1
+
+# LED_DR_LED1 - GPION2 (106)
+# To use GPION2 (106), SCU88[2] must be 0
+devmem_clear_bit $(scu_addr 88) 2
+
+gpio_set N2 1

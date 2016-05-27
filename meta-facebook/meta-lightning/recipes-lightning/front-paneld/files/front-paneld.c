@@ -131,6 +131,7 @@ debug_card_handler() {
       if (pos == UART_POS_BMC) {
         // TODO: Add support to reset BMC
         syslog(LOG_CRIT, "Reset Button pressed for BMC");
+        system("reboot");
       } else {
         // TODO: Add support to reset PCIe SW
         syslog(LOG_CRIT, "Reset Button pressed for PCIe Switch");
@@ -143,7 +144,7 @@ debug_card_handler() {
       goto debug_card_out;
     }
     if (!btn) {
-      syslog(LOG_WARNING, "UART Channel button pressed\n");
+      syslog(LOG_CRIT, "UART Channel button pressed\n");
 
       // Wait for the button to be released
       for (i = 0; i < BTN_MAX_SAMPLES; i++) {
@@ -173,6 +174,11 @@ debug_card_handler() {
       if (ret) {
         goto debug_card_out;
       }
+
+      // Display Post code 0xFF for 1 secound on UART button press event
+      system("/usr/local/bin/post_led.sh 255");
+      msleep(1000);
+      system("/usr/local/bin/post_led.sh 0");
     }
 debug_card_out:
     msleep(500);

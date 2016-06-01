@@ -31,8 +31,8 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fw-util <slot1|slot2|slot3|slot4> <--version>\n");
-  printf("       fw-util <slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
+  printf("Usage: fw-util <all|slot1|slot2|slot3|slot4> <--version>\n");
+  printf("       fw-util <all|slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 }
 
 // TODO: Need to confirm the interpretation of firmware version for print
@@ -119,10 +119,50 @@ print_fw_ver(uint8_t slot_id) {
 }
 
 int
+fw_update_slot(char **argv, uint8_t slot_id) {
+
+  uint8_t status;
+  int ret;
+  char cmd[80];
+
+  ret = pal_is_fru_prsnt(slot_id, &status);
+  if (ret < 0) {
+     printf("pal_is_fru_prsnt failed for fru: %d\n", slot_id);
+     goto err_exit;
+  }
+  if (status == 0) {
+    printf("slot%d is empty!\n", slot_id);
+    goto err_exit;
+  }
+  if (!strcmp(argv[3], "--cpld")) {
+     return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
+  }
+  if (!strcmp(argv[3], "--bios")) {
+    sprintf(cmd, "power-util slot%u off", slot_id);
+    system(cmd);
+    ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
+    sprintf(cmd, "power-util slot%u on", slot_id);
+    system(cmd);
+    return ret;
+  }
+  if (!strcmp(argv[3], "--bic")) {
+    return bic_update_fw(slot_id, UPDATE_BIC, argv[4]);
+  }
+  if (!strcmp(argv[3], "--bicbl")) {
+    return bic_update_fw(slot_id, UPDATE_BIC_BOOTLOADER, argv[4]);
+  }
+
+err_exit:
+  print_usage_help();
+  return -1;
+}
+
+int
 main(int argc, char **argv) {
 
   uint8_t slot_id;
-
+  int ret = 0;
+  char cmd[80];
   // Check for border conditions
   if ((argc != 3) && (argc != 5)) {
     goto err_exit;
@@ -137,37 +177,45 @@ main(int argc, char **argv) {
     slot_id =3;
   } else if (!strcmp(argv[1] , "slot4")) {
     slot_id =4;
+  } else if (!strcmp(argv[1] , "all")) {
+    slot_id =5;
   } else {
       goto err_exit;
   }
-
   // check operation to perform
   if (!strcmp(argv[2], "--version")) {
-    // handle printing versions of f/w components
-    print_fw_ver(slot_id);
-  } else if (!strcmp(argv[2], "--update")) {
-    // handle firmware update
+     if (slot_id < 5) {
+       print_fw_ver(slot_id);
+       return 0;
+     }
+     for (slot_id = 1; slot_id < 5; slot_id++) {
+        printf("Get version info for slot%d\n", slot_id);
+        print_fw_ver(slot_id);;
+        printf("\n");
+     }
+     return 0;
+  }
+  if (!strcmp(argv[2], "--update")) {
     if (argc != 5) {
       goto err_exit;
     }
-
-    if (!strcmp(argv[3], "--cpld")) {
-      return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
-    } else if (!strcmp(argv[3], "--bios")) {
-      return bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
-    } else if (!strcmp(argv[3], "--bic")) {
-      return bic_update_fw(slot_id, UPDATE_BIC, argv[4]);
-    } else if (!strcmp(argv[3], "--bicbl")) {
-      return bic_update_fw(slot_id, UPDATE_BIC_BOOTLOADER, argv[4]);
-    } else {
-      goto err_exit;
+    if (slot_id < 5) {
+      return fw_update_slot(argv, slot_id);
     }
-  } else {
-    goto err_exit;
+    printf("Updating all slots....\n");
+    for (slot_id = 1; slot_id < 5; slot_id++) {
+       if (fw_update_slot(argv, slot_id)) {
+         printf("fw_util:  updating %s on slot %d failed!\n", argv[3], slot_id);
+         ret++;
+       }
+    }
+    if (ret) {
+      printf("fw_util:  updating all slots failed!\n");
+      return -1;
+    }
+    printf("fw_util: updated all slots successfully!\n");
+    return 0;
   }
-
-  return 0;
-
 err_exit:
   print_usage_help();
   return -1;

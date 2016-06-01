@@ -1762,7 +1762,7 @@ pal_is_bmc_por(void) {
   munmap(scu_reg, PAGE_SIZE);
   close(scu_fd);
 
-  if (wdt & 0x2) {
+  if (wdt & 0x6) {
     return 0;
   } else {
     return 1;

@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 4.1.13 Kernel Configuration
+# Linux/arm 4.1.15 Kernel Configuration
 #
 CONFIG_ARM=y
 CONFIG_MIGHT_HAVE_PCI=y
@@ -157,7 +157,6 @@ CONFIG_SLUB_DEBUG=y
 CONFIG_COMPAT_BRK=y
 # CONFIG_SLAB is not set
 CONFIG_SLUB=y
-# CONFIG_SLOB is not set
 # CONFIG_PROFILING is not set
 CONFIG_HAVE_OPROFILE=y
 # CONFIG_KPROBES is not set
@@ -313,6 +312,8 @@ CONFIG_WEDGE=y
 # CONFIG_WEDGE100 is not set
 # CONFIG_YOSEMITE is not set
 # CONFIG_FBPLATFORM1 is not set
+# CONFIG_CMM is not set
+CONFIG_AST_CONSOLE_UART_BASE=0x1e78e000
 CONFIG_PLAT_ASPEED=y
 
 #
@@ -615,8 +616,8 @@ CONFIG_ARM_AMBA=y
 #
 # Generic Driver Options
 #
-#CONFIG_UEVENT_HELPER=y
-#CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+CONFIG_UEVENT_HELPER=y
+CONFIG_UEVENT_HELPER_PATH=""
 CONFIG_DEVTMPFS=y
 CONFIG_DEVTMPFS_MOUNT=y
 CONFIG_STANDALONE=y
@@ -1126,7 +1127,7 @@ CONFIG_SPI_MASTER=y
 # SPI Master Controller Drivers
 #
 # CONFIG_SPI_AST is not set
-# CONFIG_SPI_FMC is not set
+CONFIG_SPI_FMC=y
 # CONFIG_SPI_ALTERA is not set
 # CONFIG_SPI_BITBANG is not set
 # CONFIG_SPI_CADENCE is not set
@@ -1171,6 +1172,7 @@ CONFIG_GPIOLIB=y
 CONFIG_GPIO_DEVRES=y
 # CONFIG_DEBUG_GPIO is not set
 CONFIG_GPIO_SYSFS=y
+CONFIG_GPIO_GENERIC=y
 
 #
 # Memory mapped GPIO drivers

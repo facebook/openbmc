@@ -9,6 +9,10 @@ include recipes-core/images/core-image-minimal.bb
 IMAGE_FSTYPES += "cpio.lzma.u-boot"
 UBOOT_IMAGE_ENTRYPOINT = "0x40800000"
 
+# The offset must match with the offsets defined in
+# dev-spi-wedge.c. Rootfs starts from 4.5M
+FLASH_ROOTFS_OFFSET = "4608"
+
 PYTHON_PKGS = " \
   python-core \
   python-io \
@@ -35,6 +39,8 @@ NTP_PKGS = " \
 
 # Include modules in rootfs
 IMAGE_INSTALL += " \
+  dbus \
+  dbus-glib \
   kernel-modules \
   u-boot \
   u-boot-fw-utils \

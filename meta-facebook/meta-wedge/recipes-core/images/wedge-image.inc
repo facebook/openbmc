@@ -40,7 +40,7 @@ NTP_PKGS = " \
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   dbus \
-  dbus-glib \
+  glib-2.0 \
   kernel-modules \
   u-boot \
   u-boot-fw-utils \

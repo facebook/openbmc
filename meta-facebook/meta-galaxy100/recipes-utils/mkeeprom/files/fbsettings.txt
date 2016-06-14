@@ -1,0 +1,26 @@
+########################################################################
+# Galaxy100 EEPROM settings text file
+########################################################################
+
+########################################################################
+magic_word 0xFBFB
+format_version 0
+product_name GALAXY100
+product_number 20-001189
+assembly_number 135-000011-01
+pcba_number 132-000016-01
+pcb_number 132-000016-01
+odm_pcb_number AE19034007
+odm_pcb_serial AE19034007
+production_state 0
+product_version 1
+product_subversion 1
+product_serial_number 201234567
+product_asset_tag FB123456
+system_manufacturer CEL
+system_manufacturing_date 2015-12-09
+pcb_manufacturer CEL
+assembled_location CEL
+local_mac_address 0E-0A-0C-01-02-03
+extended_mac_base 0E-0A-0C-01-02-04
+extended_mac_size 129

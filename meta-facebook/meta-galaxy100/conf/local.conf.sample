@@ -33,7 +33,6 @@ MACHINE ??= "galaxy100"
 # Build directory locationds.
 #
 #DL_DIR ?= "${TOPDIR}/downloads"
-DL_DIR ?= "/data/download_galaxy100"
 #SSTATE_DIR ?= "${TOPDIR}/sstate-cache"
 #TMPDIR = "${TOPDIR}/tmp"
 

@@ -23,7 +23,7 @@
 #include <linux/errno.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
-#include <linux/i2c_dev_sysfs.h>
+#include <i2c_dev_sysfs.h>
 
 #ifdef DEBUG
 

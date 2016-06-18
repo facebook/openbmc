@@ -20,7 +20,7 @@ DESCRIPTION = "i2c device sysfs attribute library"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
-inherit module
+inherit module kernel_extra_headers
 
 PR = "r0"
 PV = "0.1"
@@ -33,10 +33,4 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-do_install_append() {
-     kerneldir=${STAGING_KERNEL_DIR}/include/linux
-     install -d ${kerneldir}
-     install -m 0644 i2c_dev_sysfs.h ${kerneldir}/
-}
-
-FILES_${PN}-dev = "${kerneldir}/i2c_dev_sysfs.h"
+LINUX_EXTRA_HEADERS = "i2c_dev_sysfs.h"

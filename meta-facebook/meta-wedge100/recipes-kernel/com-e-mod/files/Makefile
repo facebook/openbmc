@@ -17,6 +17,8 @@
 
 obj-m := com_e_driver.o
 
+ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
+
 SRC := $(shell pwd)
 
 all:

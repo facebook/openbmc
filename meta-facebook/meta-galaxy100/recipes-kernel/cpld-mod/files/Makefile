@@ -10,7 +10,9 @@
 # for more details.
 #
 
-obj-m := i2c_dev_sysfs.o syscpld.o scmcpld.o
+obj-m := syscpld.o scmcpld.o
+
+ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 
 SRC := $(shell pwd)
 

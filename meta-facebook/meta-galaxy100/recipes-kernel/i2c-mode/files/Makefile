@@ -12,6 +12,8 @@
 
 obj-m := galaxy100_ec.o pwr1014a.o ir358x.o
 
+ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
+
 SRC := $(shell pwd)
 
 all:

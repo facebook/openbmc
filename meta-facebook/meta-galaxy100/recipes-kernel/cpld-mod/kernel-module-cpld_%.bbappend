@@ -15,14 +15,12 @@ LICENSE = "GPLv2"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
-inherit module
+inherit module kernel_extra_headers_export
 
 PR = "r0"
 PV = "0.1"
 
 SRC_URI = "file://Makefile \
-           file://i2c_dev_sysfs.c \
-           file://i2c_dev_sysfs.h \
            file://syscpld.c \
            file://scmcpld.c \
            file://COPYING \
@@ -30,7 +28,11 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-KERNEL_MODULE_AUTOLOAD = "                     \
+DEPENDS += "kernel-module-i2c-dev-sysfs"
+
+RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
+
+KERNEL_MODULE_AUTOLOAD += "                     \
  syscpld                                        \
  scmcpld                                        \
 "

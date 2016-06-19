@@ -14,7 +14,7 @@ SUMMARY = "Galaxy100 I2C module drivers"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
-inherit module
+inherit module kernel_extra_headers_export
 
 PR = "r0"
 PV = "0.1"
@@ -23,10 +23,13 @@ SRC_URI = "file://Makefile \
            file://galaxy100_ec.c \
            file://pwr1014a.c \
            file://ir358x.c \
-           file://i2c_dev_sysfs.h \
            file://COPYING \
           "
 
 S = "${WORKDIR}"
 
-KERNEL_MODULE_AUTOLOAD = "galaxy100_ec pwr1014a ir358x"
+DEPENDS += "kernel-module-i2c-dev-sysfs"
+
+RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
+
+KERNEL_MODULE_AUTOLOAD += "galaxy100_ec pwr1014a ir358x"

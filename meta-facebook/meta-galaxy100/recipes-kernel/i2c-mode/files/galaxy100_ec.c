@@ -25,7 +25,7 @@
 #include <linux/i2c.h>
 #include <linux/delay.h>
 
-#include "i2c_dev_sysfs.h"
+#include <i2c_dev_sysfs.h>
 
 #ifdef DEBUG
 #define EC_DEBUG(fmt, ...) do {                   \

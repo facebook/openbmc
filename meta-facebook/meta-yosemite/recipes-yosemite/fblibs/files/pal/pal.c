@@ -173,6 +173,55 @@ char * def_val_list[] = {
   LAST_KEY /* Same as last entry of the key_list */
 };
 
+struct power_coeff {
+  float ein;
+  float coeff;
+};
+/* Quanta BMC correction table */
+struct power_coeff power_table[] = {
+  {51.0,  0.98},
+  {115.0, 0.9775},
+  {178.0, 0.9755},
+  {228.0, 0.979},
+  {290.0, 0.98},
+  {353.0, 0.977},
+  {427.0, 0.977},
+  {476.0, 0.9765},
+  {526.0, 0.9745},
+  {598.0, 0.9745},
+  {0.0,   0.0}
+};
+
+/* Adjust power value */
+static void
+power_value_adjust(float *value)
+{
+    float x0, x1, y0, y1, x;
+    int i;
+    x = *value;
+    x0 = power_table[0].ein;
+    y0 = power_table[0].coeff;
+    if (x0 > *value) {
+      *value = x * y0;
+      return;
+    }
+    for (i = 0; power_table[i].ein > 0.0; i++) {
+       if (*value < power_table[i].ein)
+         break;
+      x0 = power_table[i].ein;
+      y0 = power_table[i].coeff;
+    }
+    if (power_table[i].ein <= 0.0) {
+      *value = x * y0;
+      return;
+    }
+   //if value is bwtween x0 and x1, use linear interpolation method.
+   x1 = power_table[i].ein;
+   y1 = power_table[i].coeff;
+   *value = (y0 + (((y1 - y0)/(x1 - x0)) * (x - x0))) * x;
+   return;
+}
+
 // Helper Functions
 static int
 read_device(const char *device, int *value) {
@@ -1432,9 +1481,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       return -1;
     strcpy(str, "NA");
   }
-  else
+  else {
     // On successful sensor read
+    if(fru == FRU_SPB && sensor_num == SP_SENSOR_HSC_IN_POWER) {
+      power_value_adjust(value);
+    }
     sprintf(str, "%.2f",*((float*)value));
+  }
 
   if(edb_cache_set(key, str) < 0) {
 #ifdef DEBUG

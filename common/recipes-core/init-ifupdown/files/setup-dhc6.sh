@@ -17,4 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-exit 0
+echo -n "Setup dhclient for IPv6... "
+runsv /etc/sv/dhc6 > /dev/null 2>&1 &
+echo "done."

@@ -67,13 +67,24 @@ if [ $# -lt 1 ]; then
   echo "Provide FAN or SYSCPLD path"
   exit -1
 fi
-command="$1"
-if [[ $command == *"FAN"* ]];
+
+jbcfile="$1"
+if [ ! -f $jbcfile ]; then
+    echo "$jbcfile does not exist"
+    exit -1
+fi
+
+if [ $jbcfile != *".jbc" ]; then
+    echo "Must pass in a .jbc file"
+    exit -1
+fi
+
+if [ $jbcfile == *"FAN"* ];
 then
-    upgrade_fancpld $command
-else if [[ $command == *"SYSCPLD"* ]];
+    upgrade_fancpld $jbcfile
+else if [ $jbcfile == *"SYSCPLD"* ];
 then
-    upgrade_syscpld $command
+    upgrade_syscpld $jbcfile
 else
   echo "Provide FAN or SYSCPLD path"
   exit -1

@@ -17,4 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-exit 0
+logger "run-dhc6.sh: dhclient -6 Started.."
+pid="/var/run/dhclient6.eth0.pid"
+exec dhclient -6 -d -pf ${pid} eth0 "$@"

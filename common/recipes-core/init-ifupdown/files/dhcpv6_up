@@ -17,14 +17,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
-# only care about 'eth0' and 'oob' intf
-[ "$IFACE" != "eth0" ] && [ "$IFACE" != "oob" ] && exit 0
-
-pid="/var/run/dhclient6.${IFACE}.pid"
-lease="/var/lib/dhcp/dhclient6.${IFACE}.lease"
-
-rm -rf ${lease} 2> /dev/null
-dhclient -6 -nw -pf ${pid} -lf ${lease} ${IFACE}
-
 exit 0

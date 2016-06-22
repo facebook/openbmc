@@ -138,6 +138,7 @@ int main(int argc, char * argv[]) {
   char eeprom_path[64] = {0};
   char name[64] = {0};
   char command[128] = {0};
+  uint8_t status;
 
   if (argc != 2 && argc != 4) {
     print_usage();
@@ -173,6 +174,22 @@ int main(int argc, char * argv[]) {
   }
 
   if (fru != 0) {
+    ret = pal_get_fruid_name(fru, name);
+    if (ret < 0) {
+       return ret;
+    }
+
+    ret = pal_is_fru_prsnt(fru, &status);
+    if (ret < 0) {
+       printf("pal_is_server_fru failed for fru: %d\n", fru);
+       return ret;
+    }
+
+    if (status == 0) {
+      printf("%s is empty!\n\n", name);
+      return ret;
+    }
+
     ret = pal_get_fruid_path(fru, path);
     if (ret < 0) {
       return ret;
@@ -249,11 +266,6 @@ int main(int argc, char * argv[]) {
     } else {
       /* FRUID PRINT ONE FRU */
 
-      ret = pal_get_fruid_name(fru, name);
-      if (ret < 0) {
-        return ret;
-      }
-
       get_fruid_info(fru, path, name);
     }
 
@@ -272,6 +284,19 @@ int main(int argc, char * argv[]) {
       ret = pal_get_fruid_name(fru, name);
       if (ret < 0) {
         return ret;
+      }
+
+      ret = pal_is_fru_prsnt(fru, &status);
+      if (ret < 0) {
+         printf("pal_is_server_fru failed for fru: %d\n", fru);
+         fru++;
+         continue;
+      }
+
+      if (status == 0) {
+         printf("\n%s is empty!\n\n", name);
+         fru++;
+         continue;
       }
 
       get_fruid_info(fru, path, name);

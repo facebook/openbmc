@@ -70,18 +70,18 @@
     "linear_mb_outlet": {
       "type": "linear",
       "data": [
-        [ 45, 18 ],
-        [ 47, 19 ],
-        [ 49, 21 ],
-        [ 51, 22 ]
+        [ 43, 18 ],
+        [ 45, 19 ],
+        [ 47, 21 ],
+        [ 49, 23 ]
       ]
     },
     "pid_mb_outlet": {
       "type": "pid",
       "setpoint": 53,
-      "negative_hysteresis": 1,
+      "negative_hysteresis": 3,
       "positive_hysteresis": 1,
-      "kp": -1,
+      "kp": -2,
       "ki": -0.025,
       "kd": 0
     }

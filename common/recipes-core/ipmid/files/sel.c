@@ -229,9 +229,8 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   char *sel = data->msg;
   uint8_t sensor_num;
   uint8_t record_type;
-  uint8_t event_data[3];
   char sensor_name[32];
-  char error_log[64];
+  char error_log[128];
   char error_type[64];
   char oem_data[16];
   char mfg_id[16];
@@ -275,8 +274,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   }
 
   /* Event Data (Byte 13:15) */
-  memcpy(event_data, (uint8_t *) &sel[13], 3);
-  ret = pal_parse_sel(fru, sensor_num, event_data, error_log);
+  ret = pal_parse_sel(fru, sensor_num, &sel[10], error_log);
 
   /* Check if action needs to be taken based on the SEL message */
   ret = pal_sel_handler(fru, sensor_num);

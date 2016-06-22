@@ -2020,9 +2020,10 @@ int
 pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
     char *error_log) {
 
-  char *ed = event_data;
+  char *ed = &event_data[3];
   char temp_log[128] = {0};
   uint8_t temp;
+  uint8_t sen_type = event_data[0];
 
   switch(snr_num) {
     case SYSTEM_EVENT:
@@ -2144,9 +2145,12 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
     case MEMORY_ECC_ERR:
       sprintf(error_log, "");
-      if ((ed[0] & 0x0F) == 0x0)
-        strcat(error_log, "Correctable");
-      else if ((ed[0] & 0x0F) == 0x1)
+      if ((ed[0] & 0x0F) == 0x0) {
+        if (sen_type == 0x0C)
+          strcat(error_log, "Correctable");
+        else if (sen_type == 0x10)
+          strcat(error_log, "Correctable ECC error Logging Disabled");
+      } else if ((ed[0] & 0x0F) == 0x1)
         strcat(error_log, "Uncorrectable");
       else if ((ed[0] & 0x0F) == 0x5)
         strcat(error_log, "Correctable ECC error Logging Limit Reached");

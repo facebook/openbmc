@@ -458,7 +458,7 @@ led_handler(void *num) {
     }
 
     // Set blink rate
-    if (power) {
+    if (power == SERVER_POWER_ON) {
       led_on_time = 900;
       led_off_time = 100;
     } else {

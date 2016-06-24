@@ -2,3 +2,7 @@
 	path = meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1
 	url = ssh://projects.git.vip.facebook.com/data/gitrepos/kernel/linux
 	branch = openbmc/helium/4.1
+[submodule "meta-aspeed/recipes-bsp/u-boot/files/u-boot-v2013.07"]
+	path = meta-aspeed/recipes-bsp/u-boot/files/u-boot-v2013.07
+	url = ssh://git.vip.facebook.com/data/gitrepos/u-boot.git
+	branch = openbmc/helium/v2013.07

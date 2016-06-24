@@ -27,6 +27,8 @@ SRC_URI = "file://CMakeLists.txt \
            file://dbus-cputest.sh \
            file://DBusLatencyTest.c \
            file://dbus-latencytest.sh \
+           file://DBusServerMemtest.c \
+           file://dbus-memtest.sh \
           "
 
 S = "${WORKDIR}"

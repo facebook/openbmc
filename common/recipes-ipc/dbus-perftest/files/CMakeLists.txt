@@ -22,5 +22,19 @@ target_link_libraries(dbus-testserver
   -lpthread
 )
 
-install(TARGETS dbus-testserver DESTINATION bin)
-install(FILES dbus-cputest.sh DESTINATION bin)
+project(dbus-latencytest)
+
+add_executable(dbus-latencytest
+  DBusLatencyTest.c
+)
+
+target_link_libraries(dbus-latencytest
+  ${GIO}
+  ${GLIB}
+  -lgobject-2.0
+  -lpthread
+  -lm
+)
+
+install(TARGETS dbus-testserver dbus-latencytest DESTINATION bin)
+install(FILES dbus-cputest.sh dbus-latencytest.sh DESTINATION bin)

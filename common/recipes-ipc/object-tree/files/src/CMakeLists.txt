@@ -29,7 +29,6 @@ if(BUILD_TESTS)
   )
 
   target_link_libraries(attribute-test
-    ${GLOG}
     ${GTEST}
     -lpthread
   )
@@ -39,5 +38,22 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS attribute-test DESTINATION bin)
+
+  add_executable(object-test
+    tests/ObjectTest.cpp
+    Object.cpp
+  )
+
+  target_link_libraries(object-test
+    ${GLOG}
+    ${GTEST}
+    -lpthread
+  )
+
+  add_test(ObjectTest
+    object-test
+  )
+
+  install(TARGETS object-test DESTINATION bin)
 endif ()
 

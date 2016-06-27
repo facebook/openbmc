@@ -19,10 +19,31 @@ set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
 find_library(GTEST gtest)
 find_library(GLOG glog)
 
+add_library(object-tree
+  ObjectTree.cpp
+  Object.cpp
+)
+
+target_link_libraries(object-tree
+  ${GLOG}
+  ${GTEST}
+  -lpthread
+)
+
+install(TARGETS object-tree DESTINATION lib)
+
+install(FILES
+  ObjectTree.h
+  Object.h
+  Attribute.h
+  DESTINATION include/object-tree
+)
+
 option(BUILD_TESTS "BUILD_TESTS" ON)
 
 if(BUILD_TESTS)
   enable_testing()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
   add_executable(attribute-test
     tests/AttributeTest.cpp
@@ -55,5 +76,23 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS object-test DESTINATION bin)
+
+  add_executable(object-tree-test
+    tests/ObjectTreeTest.cpp
+    ObjectTree.cpp
+    Object.cpp
+  )
+
+  target_link_libraries(object-tree-test
+    ${GLOG}
+    ${GTEST}
+    -lpthread
+  )
+
+  add_test(ObjectTreeTest
+    object-tree-test
+  )
+
+  install(TARGETS object-tree-test DESTINATION bin)
 endif ()
 

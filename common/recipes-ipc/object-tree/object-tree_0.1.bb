@@ -29,4 +29,4 @@ S = "${WORKDIR}/src"
 
 inherit cmake
 
-DEPENDS = "gtest glog"
+DEPENDS = "libipc gtest glog"

@@ -48,5 +48,25 @@ if(BUILD_TESTS)
 
   install(TARGETS dbus-interface-test DESTINATION bin)
   install(FILES tests/interface-test.sh DESTINATION bin)
+
+  add_executable(dbus-object-test
+    tests/DBusObjectTest.cpp
+    DBusObject.cpp
+  )
+
+  target_link_libraries(dbus-object-test
+    ${GTEST}
+    ${GLOG}
+    ${GIO}
+    ${GLIB}
+    -lpthread
+    -lgobject-2.0
+  )
+
+  add_test(DBusObjectTest
+    dbus-object-test
+  )
+
+  install(TARGETS dbus-object-test DESTINATION bin)
 endif ()
 

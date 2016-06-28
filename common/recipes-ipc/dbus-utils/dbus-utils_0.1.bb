@@ -32,7 +32,8 @@ export SLIB = "${STAGING_LIBDIR}"
 
 inherit cmake
 
-DEPENDS += " glib-2.0 \
+DEPENDS += " libipc \
+             glib-2.0 \
              glog \
              gtest \
            "

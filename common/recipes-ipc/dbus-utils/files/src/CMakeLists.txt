@@ -24,6 +24,31 @@ find_library(GLIB glib-2.0)
 find_library(GTEST gtest)
 find_library(GLOG glog)
 
+add_library(dbus-utils
+  DBus.cpp
+  DBusObject.cpp
+  DBusDefaultInterface.cpp
+)
+
+target_link_libraries(dbus-utils
+    ${GTEST}
+    ${GLOG}
+    ${GIO}
+    ${GLIB}
+    -lpthread
+    -lgobject-2.0
+)
+
+install(TARGETS dbus-utils DESTINATION lib)
+
+install(FILES
+  DBus.h
+  DBusObject.h
+  DBusInterfaceBase.h
+  DBusDefaultInterface.h
+  DESTINATION include/dbus-utils
+)
+
 option(BUILD_TESTS "BUILD_TESTS" ON)
 
 if(BUILD_TESTS)
@@ -68,5 +93,27 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS dbus-object-test DESTINATION bin)
+
+  add_executable(dbus-test
+    tests/DBusTest.cpp
+    DBus.cpp
+    DBusObject.cpp
+    DBusDefaultInterface.cpp
+  )
+
+  target_link_libraries(dbus-test
+    ${GTEST}
+    ${GLOG}
+    ${GIO}
+    ${GLIB}
+    -lpthread
+    -lgobject-2.0
+  )
+
+  add_test(DBusTest
+    dbus-test
+  )
+
+  install(TARGETS dbus-test DESTINATION bin)
 endif ()
 

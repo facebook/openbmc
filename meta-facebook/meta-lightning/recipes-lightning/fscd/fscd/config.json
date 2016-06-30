@@ -42,7 +42,7 @@
         [40, 40]
       ]
     },
-    "linear_sw_temp": {
+    "linear_pcie_sw": {
       "type": "linear",
       "data": [
         [1 , 12],

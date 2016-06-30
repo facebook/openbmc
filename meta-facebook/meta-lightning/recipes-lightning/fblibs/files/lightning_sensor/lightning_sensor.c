@@ -182,7 +182,6 @@ const uint8_t peb_sensor_plx_list[] = {
 const uint8_t pdpb_sensor_list[] = {
   PDPB_SENSOR_P12V,
   PDPB_SENSOR_P3V3,
-  PDPB_SENSOR_P2V5,
   PDPB_SENSOR_P12V_SSD,
   PDPB_SENSOR_LEFT_REAR_TEMP,
   PDPB_SENSOR_LEFT_FRONT_TEMP,
@@ -319,8 +318,6 @@ sensor_thresh_array_init() {
       14.37, 13.75, 0, 10.62, 11.25, 0, 0, 0);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P3V3,
       3.795, 3.63, 0, 2.805, 2.97, 0, 0, 0);
-  assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P2V5,
-      2.875, 2.75, 0, 2.125, 2.25, 0, 0, 0);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P12V_SSD,
       13.728, 0, 0, 11.232, 0, 0, 0, 0);
 
@@ -835,7 +832,6 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           break;
         case PDPB_SENSOR_P12V:
         case PDPB_SENSOR_P3V3:
-        case PDPB_SENSOR_P2V5:
         case PDPB_SENSOR_P12V_SSD:
           sprintf(units, "Volts");
           break;
@@ -989,9 +985,6 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case PDPB_SENSOR_P3V3:
           sprintf(name, "PDPB_P3V3");
           break;
-        case PDPB_SENSOR_P2V5:
-          sprintf(name, "PDPB_P2V5");
-          break;
         case PDPB_SENSOR_P12V_SSD:
           sprintf(name, "PDPB_P12V_SSD");
           break;
@@ -1124,11 +1117,14 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return 0;
 
         case PDPB_SENSOR_P3V3:
-          return read_ads1015_value(ADS1015_CHANNEL5, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value);
-        case PDPB_SENSOR_P2V5:
-          return read_ads1015_value(ADS1015_CHANNEL6, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value);
+          if (read_ads1015_value(ADS1015_CHANNEL6, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value) < 0) {
+            return -1;
+          }
+          *((float *) value) = *((float *) value) * ((1 + 1) / 1); // Voltage Divider Circuit
+          return 0;
+
         case PDPB_SENSOR_P12V_SSD:
-          if (read_ads1015_value(ADS1015_CHANNEL7, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value) < 0) {
+          if (read_ads1015_value(ADS1015_CHANNEL5, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value) < 0) {
             return -1;
           }
           *((float *) value) = *((float *) value) * ((10 + 2) / 2); // Voltage Divider Circuit

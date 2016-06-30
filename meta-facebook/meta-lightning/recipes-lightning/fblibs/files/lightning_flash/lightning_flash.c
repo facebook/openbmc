@@ -125,7 +125,7 @@ lightning_flash_temp_read(uint8_t i2c_map, float *temp) {
 
   // Check is the temperature is negative
   if (status & (1 << 12))
-    *temp *= -1;
+    *temp = (~((uint8_t) *temp) + 1) * -1; // Neg Temp is stored in Two's compliment form
 
   // Decimal value of temperature
   *temp += (status & 0x000F) * 0.125;

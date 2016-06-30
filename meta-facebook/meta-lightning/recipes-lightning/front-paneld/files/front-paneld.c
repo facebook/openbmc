@@ -37,9 +37,14 @@
 #define MAX_NUM_SLOTS 4
 #define HB_TIMESTAMP_COUNT (60 * 60)
 
-enum {
-  LED_ON = 0,
-  LED_OFF = 1,
+enum led_state {
+  LED_OFF = 0,
+  LED_ON = 1,
+};
+
+enum inverse_led_state {
+  LED_ON_N = 0,
+  LED_OFF_N = 1,
 };
 
 // Helper function for msleep
@@ -53,6 +58,44 @@ msleep(int msec) {
   while(nanosleep(&req, &req) == -1 && errno == EINTR) {
     continue;
   }
+}
+
+// Thread for handling the Power and System Identify LED
+static void *
+id_led_handler() {
+
+  int ret;
+  char state[8];
+
+  while (1) {
+
+    memset(state, 0, sizeof(state));
+    // Check if the user enabled system identify
+    ret = pal_get_key_value("system_identify", state);
+    if (ret)
+      goto err;
+
+    if (!strcmp(state, "on")) {
+
+      // 0.9s ON
+      pal_set_led(LED_DR_LED1, LED_ON);
+      msleep(900);
+
+      // 0.1s OFF
+      pal_set_led(LED_DR_LED1, LED_OFF);
+      msleep(100);
+      continue;
+
+    } else if (!strcmp(state, "off")) {
+
+      printf("on\n");
+      pal_set_led(LED_DR_LED1, LED_ON);
+    }
+
+err:
+    sleep(1);
+  }
+
 }
 
 // Thread for handling the Enclosure LED
@@ -192,6 +235,7 @@ main (int argc, char * const argv[]) {
   int pid_file;
   pthread_t tid_debug_card;
   pthread_t tid_encl_led;
+  pthread_t tid_id_led;
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -215,8 +259,14 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_id_led, NULL, id_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for system identify led error\n");
+    exit(1);
+  }
+
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_encl_led, NULL);
+  pthread_join(tid_id_led, NULL);
 
   return 0;
 }

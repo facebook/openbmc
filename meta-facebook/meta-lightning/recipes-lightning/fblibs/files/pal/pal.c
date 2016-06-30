@@ -69,6 +69,7 @@ char * key_list[] = {
 "peb_sensor_health",
 "pdpb_sensor_health",
 "fcb_sensor_health",
+"system_identify",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -77,6 +78,7 @@ char * def_val_list[] = {
   "1", /* peb_sensor_health */
   "1", /* pdbb_sensor_health */
   "1", /* fcb_sensor_health */
+  "off", /* "system_identify */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };

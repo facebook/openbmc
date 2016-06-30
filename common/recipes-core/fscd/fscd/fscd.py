@@ -171,7 +171,7 @@ class Zone:
 
     def run(self, sensors, dt):
         ctx = {'dt': dt}
-        out = None
+        outmin = 0
         missing = set()
         for v in self.expr_meta['ext_vars']:
             board, sname = v.split(":")
@@ -181,7 +181,7 @@ class Zone:
                 if sensor.status in ['ucr', 'unr', 'lnr', 'lcr']:
                     warn('Sensor %s reporting status %s' %
                          (sensor.name, sensor.status))
-                    out = transitional
+                    outmin = transitional
             else:
                 missing.add(v)
                 # evaluation tries to ignore the effects of None values
@@ -189,8 +189,6 @@ class Zone:
                 ctx[v] = None
         if missing:
             warn('Missing sensors: %s' % (', '.join(missing),))
-        if out:
-            return out
         if verbose:
             (exprout, dxstr) = self.expr.dbgeval(ctx)
             print(dxstr + " = " + str(exprout))
@@ -202,6 +200,8 @@ class Zone:
         if not exprout:
             crit('No sane fan speed could be calculated! Using transitional speed.')
             exprout = transitional
+        if exprout < outmin:
+            exprout = outmin
         exprout = clamp(exprout, 0, 100)
         return exprout
 

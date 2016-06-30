@@ -573,16 +573,16 @@ read_hsc_value(uint8_t reg, char *device, uint8_t addr, uint8_t cntlr, float *va
 
   close(dev);
 
-  // All Parameters use only bits [11:0]
-  res &= 0xFFF;
 
   switch(reg) {
     case HSC_IN_VOLT:
+      res &= 0xFFF; // This Parameter uses bits [11:0]
       if (cntlr == HSC_ADM1276 || cntlr == HSC_ADM1278) {
         *value = (1.0/19599) * ((res * 100) - 0);
       }
       break;
     case HSC_OUT_CURR:
+      res &= 0xFFF; // This Parameter uses bits [11:0]
       if (cntlr == HSC_ADM1276) {
         *value = ((res * 10) - 20475) / (807 * 0.1667);
       } else if (cntlr == HSC_ADM1278) {
@@ -590,6 +590,7 @@ read_hsc_value(uint8_t reg, char *device, uint8_t addr, uint8_t cntlr, float *va
       }
       break;
     case HSC_IN_POWER:
+      res &= 0xFFFF; // This Parameter uses bits [15:0]
       if (cntlr == HSC_ADM1276) {
         *value = ((res * 100) - 0) / (6043 * 0.1667);
       } else if (cntlr == HSC_ADM1278) {
@@ -598,6 +599,7 @@ read_hsc_value(uint8_t reg, char *device, uint8_t addr, uint8_t cntlr, float *va
         *value *= 0.99; // This is to compensate the controller reading offset value
       break;
     case HSC_TEMP:
+      res &= 0xFFF; // This Parameter uses bits [11:0]
       if (cntlr == HSC_ADM1278) {
         *value = (1.0/42) * ((res * 10) - 31880);
       }
@@ -692,7 +694,7 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
 
   int dev;
   int ret;
-  int32_t config;
+  int32_t config, config2;
   int32_t res;
 
   dev = open(device, O_RDWR);
@@ -743,6 +745,24 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
   if (res < 0) {
     close(dev);
     syslog(LOG_ERR, "read_ads1015_value: i2c_smbus_read_word_data failed");
+    return -1;
+  }
+
+  /* Read the CONFIG register to check if the conversion completed. */
+  config2 = i2c_smbus_read_word_data(dev, ADS1015_CONFIG);
+  if (config < 0) {
+    close(dev);
+    syslog(LOG_ERR, "read_ads1015_value: i2c_smbus_read_word_data failed");
+    return -1;
+  }
+
+  /*
+   * If the config register value changed after conversion result read,
+   * the result is invalid
+   */
+  if (config2 != config) {
+    close(dev);
+    syslog(LOG_ERR, "read_ads1015_value: config changed while conversion result read");
     return -1;
   }
 

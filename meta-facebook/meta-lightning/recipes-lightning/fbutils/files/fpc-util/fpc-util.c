@@ -29,13 +29,18 @@
 static void
 print_usage_help(void) {
   printf("Usage: fpc-util [ bmc, switch ] --uart\n");
+  printf("       fpc-util --identify [on, off]\n");
 }
 
 int
 main(int argc, char **argv) {
 
   uint8_t pos;
+  uint8_t id_led = 0;
   char tstr[64] = {0};
+  uint8_t curr;
+  int ret;
+
 
   if (argc < 3) {
     goto err_exit;
@@ -45,12 +50,11 @@ main(int argc, char **argv) {
     pos = UART_POS_BMC;
   } else if (!strcmp(argv[1] , "switch")) {
     pos = UART_POS_PCIE_SW;
+  } else if (!strcmp(argv[1] , "--identify")) {
+    id_led = 1;
   } else {
     goto err_exit;
   }
-
-  uint8_t curr;
-  int ret;
 
   if (!strcmp(argv[2], "--uart")) {
     // Check for the current uart channel position
@@ -74,6 +78,10 @@ main(int argc, char **argv) {
     }
     return 0;
 
+  // Set the system_identify key to on or off value
+  } else if (id_led &&
+      (!strcmp(argv[2], "on") || !strcmp(argv[2], "off"))) {
+    return pal_set_key_value("system_identify", argv[2]);
   } else {
     goto err_exit;
   }

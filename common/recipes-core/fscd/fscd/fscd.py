@@ -36,6 +36,7 @@ RAMFS_CONFIG = '/etc/fsc-config.json'
 CONFIG_DIR = '/etc/fsc'
 
 boost = 100
+boost_type = 'default'
 transitional = 70
 ramp_rate = 10
 verbose = "-v" in sys.argv
@@ -211,6 +212,7 @@ def profile_constructor(data):
 def main():
     global transitional
     global boost
+    global boost_type
     global wdfile
     global ramp_rate
     syslog.openlog("fscd")
@@ -226,6 +228,9 @@ def main():
         config = json.load(f)
     transitional = config['pwm_transition_value']
     boost = config['pwm_boost_value']
+    if 'boost' in config and 'progressive' in config['boost']:
+        if config['boost']['progressive']:
+            boost_type = 'progressive'
     watchdog = config['watchdog']
     if 'ramp_rate' in config:
         ramp_rate = config['ramp_rate']
@@ -300,10 +305,21 @@ def main():
                 else:
                     pwmval = zone.last_pwm + ramp_rate
             zone.last_pwm = pwmval
-            if dead_fans:
-                print("Failed fans: %s" %
+            if boost_type == 'progressive':
+                dead = len(dead_fans)
+                if dead > 0:
+                    print("Failed fans: %s" %
                       (', '.join([str(i) for i in dead_fans],)))
-                pwmval = boost
+                    if dead < 3:
+                        pwmval = clamp(pwmval + (10 * dead), 0, 100)
+                        print("Boosted PWM to %d" % pwmval)
+                    else:
+                        pwmval = boost
+            else:
+                if dead_fans:
+                    print("Failed fans: %s" %
+                          (', '.join([str(i) for i in dead_fans],)))
+                    pwmval = boost
             if hasattr(zone.pwm_output, '__iter__'):
                 for output in zone.pwm_output:
                     machine.set_pwm(output, pwmval)

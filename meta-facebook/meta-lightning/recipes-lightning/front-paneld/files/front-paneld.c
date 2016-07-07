@@ -123,9 +123,9 @@ encl_led_handler() {
       goto err;
 
     if (!peb_hlth | !pdpb_hlth | !fcb_hlth)
-      pal_set_led(LED_ENCLOSURE, LED_ON);
+      pal_set_led(LED_ENCLOSURE, LED_ON_N);
     else
-      pal_set_led(LED_ENCLOSURE, LED_OFF);
+      pal_set_led(LED_ENCLOSURE, LED_OFF_N);
 
 err:
     sleep(1);

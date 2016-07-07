@@ -33,4 +33,5 @@ do_install() {
   install -m 755 src/service.py ${dst}/service.py
   install -m 755 src/ipc.py ${dst}/ipc.py
   install -m 755 src/caller-cputest.py ${dst}/caller-cputest.py
+  install -m 755 src/caller-latencytest.py ${dst}/caller-latencytest.py
 }

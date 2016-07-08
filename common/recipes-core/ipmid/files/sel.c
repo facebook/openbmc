@@ -277,7 +277,8 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   ret = pal_parse_sel(fru, sensor_num, &sel[10], error_log);
 
   /* Check if action needs to be taken based on the SEL message */
-  ret = pal_sel_handler(fru, sensor_num);
+  if (!ret)
+     ret = pal_sel_handler(fru, sensor_num);
 
   pal_update_ts_sled();
   syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "

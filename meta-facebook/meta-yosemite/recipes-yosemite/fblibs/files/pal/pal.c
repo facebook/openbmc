@@ -2204,6 +2204,15 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         strcat(error_log, "Unknown");
       break;
 
+    case SPS_FW_HEALTH:
+      sprintf(error_log, "");
+      if (event_data[0] == 0xDC && ed[1] == 0x06) {
+        strcat(error_log, "FW UPDATE");
+        return 1;
+      } else
+         strcat(error_log, "Unknown");
+      break;
+
     default:
       sprintf(error_log, "Unknown");
       break;

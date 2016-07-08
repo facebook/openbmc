@@ -188,6 +188,7 @@ sensor_plat_event_msg(unsigned char *request, unsigned char req_len,
   sel_msg_t entry;
 
   // Platform event provides only last 7 bytes of SEL's 16-byte entry
+  entry.msg[2] = 0x02;  /* Set Record Type to be system event record.*/
   memcpy(&entry.msg[9], req->data, 7);
 
   // Use platform APIs to add the new SEL entry

@@ -34,4 +34,8 @@ do_install() {
   install -m 755 src/ipc.py ${dst}/ipc.py
   install -m 755 src/caller-cputest.py ${dst}/caller-cputest.py
   install -m 755 src/caller-latencytest.py ${dst}/caller-latencytest.py
+  install -m 755 src/caller-memorytest.py ${dst}/caller-memorytest.py
+  install -m 755 src/service-memorytest.py ${dst}/service-memorytest.py
+  install -m 755 src/ipc-memorytest.py ${dst}/ipc-memorytest.py
+  install -m 755 src/memorytest.sh ${dst}/memorytest.sh
 }

@@ -73,5 +73,19 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS dbus-obtree-testserver DESTINATION bin)
+
+  add_executable(sensor-attribute-test
+    tests/SensorAttributeTest.cpp
+  )
+
+  target_link_libraries(sensor-attribute-test
+    ${GTEST}
+    ${GLOG}
+    ${OBJECT-TREE}
+    -lpthread
+    -lgobject-2.0
+  )
+
+  install(TARGETS sensor-attribute-test DESTINATION bin)
 endif ()
 

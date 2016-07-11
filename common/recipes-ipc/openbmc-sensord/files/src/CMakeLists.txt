@@ -87,5 +87,21 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS sensor-attribute-test DESTINATION bin)
+
+  add_executable(sensor-object-test
+    tests/SensorObjectTest.cpp
+    SensorObject.cpp
+    SensorSysfsApi.cpp
+  )
+
+  target_link_libraries(sensor-object-test
+    ${GTEST}
+    ${GLOG}
+    ${OBJECT-TREE}
+    -lpthread
+    -lgobject-2.0
+  )
+
+  install(TARGETS sensor-object-test DESTINATION bin)
 endif ()
 

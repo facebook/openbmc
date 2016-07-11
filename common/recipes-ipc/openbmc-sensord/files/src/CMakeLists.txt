@@ -103,5 +103,26 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS sensor-object-test DESTINATION bin)
+
+  add_executable(sensor-reg-test
+    tests/DBusSensorRegTest.cpp
+    tests/DBusObjectTreeInterface.cpp
+    SensorObjectTree.cpp
+    SensorObject.cpp
+    SensorSysfsApi.cpp
+  )
+
+  target_link_libraries(sensor-reg-test
+    ${GTEST}
+    ${GLOG}
+    ${GIO}
+    ${GLIB}
+    ${DBUS-UTILS}
+    ${OBJECT-TREE}
+    -lpthread
+    -lgobject-2.0
+  )
+
+  install(TARGETS sensor-reg-test DESTINATION bin)
 endif ()
 

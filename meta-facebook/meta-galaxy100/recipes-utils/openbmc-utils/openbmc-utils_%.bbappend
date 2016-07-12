@@ -23,6 +23,7 @@ SRC_URI += "file://board-utils.sh \
 			file://at93cx6_util.sh \
 			file://galaxy100_bmc.py \
 			file://lsb_release \
+			file://seutil \
 			file://sensors_config_fix.sh \
            "
 
@@ -41,6 +42,7 @@ do_install_board() {
     install -m 0755 bcm5389.sh ${D}${localbindir}/bcm5389.sh
     install -m 0755 at93cx6_util.sh ${D}${localbindir}/at93cx6_util.sh
     install -m 0755 lsb_release ${D}${localbindir}/lsb_release
+    install -m 0755 seutil ${D}${localbindir}/seutil
     # common lib and include files
     install -d ${D}${includedir}/facebook
     install -m 0644 src/include/i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h

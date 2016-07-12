@@ -20,14 +20,48 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # transitting from S5 to S0, we will need to explicitely pull down uS COM
 # pins before powering off/reset and restoring COM pins after
 
+TH_SHUTDOWN_VOL=1339
+TH_RESTORE_VOL=1445
+th_shutdown=0
+
 restore_us_com() {
 	repeater_config
+	KR10G_repeater_config
 	wedge_power_on_board
 	i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
 }
 
+lm57_monitor() {
+	vol=$(cat /sys/devices/platform/ast_adc.0/in0_input 2> /dev/null)
+	vol=$(($vol / 2))
+	if [ $vol -le ${TH_SHUTDOWN_VOL} ] && [ $th_shutdown -eq 0 ] ; then
+		echo "Shut down TH power by LM57 over temperature..."
+		echo "ADC=$vol, standard=$TH_SHUTDOWN_VOL"
+		wedge_power_off_board
+		th_shutdown=1
+	fi
+	if [ $vol -ge ${TH_RESTORE_VOL} ] && [ $th_shutdown -eq 1 ] ; then
+		echo "restore TH power by LM57 temperature drop..."
+		echo "ADC=$vol, standard=$TH_RESTORE_VOL"
+		wedge_power_on_board
+		th_shutdown=0
+	fi
+	cpld_val=$(i2cget -f -y 12 0x31 0x15 2> /dev/null)
+	if [ $vol -ge ${TH_RESTORE_VOL} ] && [ "$cpld_val" = "0x11" ] ; then
+		echo "restore TH power which shutdown by CPLD..."
+		i2cset -f -y 12 0x31 0x15 0x0 2> /dev/null
+		wedge_power_on_board
+		th_shutdown=0
+	fi
+}
+
 val=0
 ret=0
+((card_val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
+if [ $card_val -lt 8 ]; then
+TH_SHUTDOWN_VOL=1296
+TH_RESTORE_VOL=1402
+fi
 while true; do
 	galaxy100_scm_is_present
 	ret=$?
@@ -37,5 +71,6 @@ while true; do
 		restore_us_com
 	fi
 	val=$ret
+	lm57_monitor
 	usleep 500000
 done

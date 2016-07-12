@@ -28,6 +28,7 @@ import json
 import socket
 import os
 import rest_fruid
+import rest_seutil
 import rest_server
 import rest_sensors
 import rest_bmc
@@ -71,7 +72,7 @@ def rest_sys():
                     "Description": "System Motherboard",
                     },
                 "Actions": [],
-                "Resources": [ "fruid"],
+                "Resources": [ "fruid", "seutil"],
              }
 
     return result
@@ -80,6 +81,11 @@ def rest_sys():
 @route('/api/sys/mb/fruid')
 def rest_fruid_hdl():
   return rest_fruid.get_fruid()
+
+# Handler for sys/mb/seutil resource endpoint
+@route('/api/sys/mb/seutil')
+def rest_seutil_hdl():
+  return rest_seutil.get_seutil()
 
 # Handler for sys/bmc resource endpoint
 @route('/api/sys/bmc')

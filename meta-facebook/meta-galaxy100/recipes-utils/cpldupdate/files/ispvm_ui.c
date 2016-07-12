@@ -1,17 +1,22 @@
-/*
- * Copyright 2014-present Facebook. All Rights Reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/**************************************************************
+*
+* Lattice Semiconductor Corp. Copyright 2008
+* 
+* ispVME Embedded allows programming of Lattice's suite of FPGA
+* devices on embedded systems through the JTAG port.  The software
+* is distributed in source code form and is open to re - distribution
+* and modification where applicable.
+*
+* ispVME Embedded C Source comprised with 3 modules:
+* ispvm_ui.c is the module provides input and output support.
+* ivm_core.c is the module interpret the VME file(s).
+* hardware.c is the module access the JTAG port of the device(s).                 
+*
+* The optional module cable.c is for supporting Lattice's parallel 
+* port ispDOWNLOAD cable on DOS and Windows 95/98 O/S. It can be 
+* requested from Lattice's ispVMSupport.
+*
+***************************************************************/
 
 /**************************************************************
 *

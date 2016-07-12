@@ -17,7 +17,7 @@ SECTION = "base"
 PR = "r1"
 
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://ispvm_ui.c;beginline=4;endline=13;md5=03e4e5ed5d6d17edb790a6bcab2eaf6a"
+LIC_FILES_CHKSUM = "file://ispvm_ui.c;beginline=5;endline=13;md5=2c3382680a7be213f70f172683fc93c4"
 
 SRC_URI = "file://ispvm_ui.c \
 		file://ivm_core.c \

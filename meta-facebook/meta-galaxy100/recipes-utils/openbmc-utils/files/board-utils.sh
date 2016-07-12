@@ -85,6 +85,12 @@ wedge_power_on_board() {
     fi
 }
 
+wedge_power_off_board() {
+    # power off main power, uServer power
+    echo 0 > $PWR_MAIN_SYSFS
+    sleep 2
+}
+
 repeater_config() {
 	((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
 	((left=$(i2cget -f -y 12 0x31 0x5 2> /dev/null | head -n 1)))
@@ -208,6 +214,84 @@ repeater_config() {
 		i2cset -f -y 0 0x58 0x1f 0x0 2> /dev/null
 		usleep 11000
 		i2cset -f -y 0 0x58 0x26 0x0 2> /dev/null
+		usleep 11000
+	fi
+}
+
+KR10G_repeater_config() {
+	((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
+	((left=$(i2cget -f -y 12 0x31 0x5 2> /dev/null | head -n 1)))
+	if [ $val -lt 8  -a $left -eq 0 ] || [ $val -ge 8 ]; then
+		i2cset -f -y 0 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x0f 0x01 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x11 0x82 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x23 0x04 2> /dev/null
+		usleep 11000
+
+		i2cset -f -y 0 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x16 0x0 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x18 0x82 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x2d 0x04 2> /dev/null
+		usleep 11000
+
+		i2cset -f -y 1 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x0f 0x02 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x11 0x82 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x23 0x04 2> /dev/null
+		usleep 11000
+
+		i2cset -f -y 1 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x16 0x04 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x18 0x82 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x2d 0x04 2> /dev/null
+		usleep 11000
+	else
+		i2cset -f -y 0 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x0f 0x01 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x11 0x84 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x23 0x04 2> /dev/null
+		usleep 11000
+
+		i2cset -f -y 0 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x16 0x0 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x18 0x84 2> /dev/null
+		usleep 11000
+		i2cset -f -y 0 0x59 0x2d 0x04 2> /dev/null
+		usleep 11000
+
+		i2cset -f -y 1 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x0f 0x02 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x11 0x82 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x23 0x04 2> /dev/null
+		usleep 11000
+
+		i2cset -f -y 1 0x59 0x06 0x18 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x16 0x0 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x18 0x82 2> /dev/null
+		usleep 11000
+		i2cset -f -y 1 0x59 0x2d 0x04 2> /dev/null
 		usleep 11000
 	fi
 }

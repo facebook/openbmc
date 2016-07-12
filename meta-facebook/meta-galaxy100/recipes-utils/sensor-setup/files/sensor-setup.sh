@@ -45,6 +45,7 @@ modprobe pmbus
 # Enable the ADC inputs;  adc3,4,8,9 should be connected to
 # 5V, 6.8V, 3.3V, and 2.5V.
 
+echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
 echo 1 > /sys/devices/platform/ast_adc.0/adc3_en
 echo 1 > /sys/devices/platform/ast_adc.0/adc4_en
 echo 1 > /sys/devices/platform/ast_adc.0/adc8_en

@@ -68,12 +68,12 @@ static ssize_t syscpld_slotid_show(struct device *dev,
   if(val_msb < 4) { /*LC*/
     /*val_lsb: 00->Left, 01->Right*/
 	val_lsb &= SYSCPLD_SWE_ID_MASK;
-	slot_id = (val_msb << 4) | val_lsb;
+	slot_id = ((val_msb + 1) << 8) + (val_lsb + 1);
   } else {
-    slot_id = val_msb;
+    slot_id = val_msb - 7;
   }
 
-  return scnprintf(buf, PAGE_SIZE, "%u\n", slot_id + 1);
+  return scnprintf(buf, PAGE_SIZE, "%u\n", slot_id);
 }
 
 

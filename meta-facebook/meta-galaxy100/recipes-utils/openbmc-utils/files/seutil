@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -10,12 +12,15 @@
 # for more details.
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://rest.py \
-			file://rest_bmc.py \
-			file://rest_fruid.py \
-			file://rest_seutil.py \
-			file://bmc_command.py \
-           "
-binfiles += "bmc_command.py rest_seutil.py"
+((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
+((left=$(i2cget -f -y 12 0x31 0x5 2> /dev/null | head -n 1)))
+if [ $val -lt 8  -a $left -eq 0 ] || [ $val -ge 8 ]; then
+	#left BMC and FAB
+	weutil /sys/class/i2c-adapter/i2c-0/0-0052/eeprom
+else
+	#right BMC
+	((slot_id=$(cat /sys/class/i2c-adapter/i2c-12/12-0031/slotid)))
+	slot_id=$(($slot_id - 1))
+	slot_id=$(echo $slot_id | awk '{printf "%x\n", $0}')
+	wget -qO- http://[fe80::${slot_id}:1%eth0.4088]:8080/api/sys/mb/seutil
+fi

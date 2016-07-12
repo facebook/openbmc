@@ -42,6 +42,7 @@ if galaxy100_scm_is_present && [ $soft_reboot -eq 0 ] ; then
 	# First power on TH, and if Panther+ is used,
 	# provide standby power to Panther+.
 	repeater_config
+	KR10G_repeater_config
 	wedge_power_on_board
 
 	echo -n "Checking microserver present status ... "

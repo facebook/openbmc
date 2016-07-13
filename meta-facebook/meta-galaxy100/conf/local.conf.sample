@@ -141,5 +141,7 @@ EXTRA_USERS_PARAMS = " \
 
 OLDEST_KERNEL = "2.6.28"
 
+DEFAULT_TIMEZONE = "America/Los_Angeles"
+
 INHERIT += "blacklist"
 PNBLACKLIST[glibc] = "glibc 2.21 does not work with our kernel 2.6.28"

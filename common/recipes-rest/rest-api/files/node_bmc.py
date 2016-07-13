@@ -78,9 +78,9 @@ class bmcNode(node):
                             shell=True, stdout=PIPE).stdout.read()
         #Version might start with 'v'(wedge) or 'V'(Yosemite)
         if name == 'Yosemite':
-            ver = re.search(r'V([\w\d._-]*)\s', data)
+            ver = re.search(r'[v|V]([\w\d._-]*)\s', data)
         else:
-            ver = re.search(r'v([\w\d._-]*)\s', data)
+            ver = re.search(r'[v|V]([\w\d._-]*)\s', data)
         if ver:
             version = ver.group(1)
 

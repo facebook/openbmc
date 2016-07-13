@@ -34,3 +34,8 @@ SRC_URI = "file://Makefile \
 S = "${WORKDIR}"
 
 LINUX_EXTRA_HEADERS = "i2c_dev_sysfs.h"
+
+do_install() {
+    module_do_install
+    kernel_extra_headers_do_install
+}

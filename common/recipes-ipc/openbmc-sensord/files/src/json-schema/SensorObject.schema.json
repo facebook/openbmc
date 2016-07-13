@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://org.openbmc/schemas/SensorObject.schema.json#",
+  "title": "SensorObject",
+  "description": "information of sensor object in openbmc-sensord",
+  "definitions": {
+    "genericSensorObject": {
+      "description": "SensorObject will not be allowed to have child objects (will not be parsed even if specified)",
+      "type": "object",
+      "properties": {
+        "objectName": {"type": "string"},
+        "attributes": {"$ref": "SensorAttribute.schema.json#/definitions/sensorAttrArray"}
+      },
+      "required": ["objectName"]
+    },
+    "sensorObject": {
+      "allOf": [
+        {"$ref": "#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorObject"]}
+          },
+          "required": ["objectType"]
+        }
+      ]
+    },
+    "sensorTemp": {
+      "allOf": [
+        {"$ref": "#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorTemp"]}
+          },
+          "required": ["objectType"]
+        }
+      ]
+    },
+    "sensorPower": {
+      "allOf": [
+        {"$ref": "#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorPower"]}
+          },
+          "required": ["objectType"]
+        }
+      ]
+    },
+    "sensorPwm": {
+      "allOf": [
+        {"$ref": "#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorPwm"]}
+          },
+          "required": ["objectType"]
+        }
+      ]
+    },
+    "sensorFan": {
+      "allOf": [
+        {"$ref": "#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorFan"]}
+          },
+          "required": ["objectType"]
+        }
+      ]
+    },
+    "sensorCurrent": {
+      "allOf": [
+        {"$ref": "#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorCurrent"]}
+          },
+          "required": ["objectType"]
+        }
+      ]
+    },
+    "sensorVoltage": {
+      "allOf": [
+        {"$ref": "#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorVoltage"]}
+          },
+          "required": ["objectType"]
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "anyOf": [
+    {"$ref": "#/definitions/genericSensorObject"},
+    {"$ref": "#/definitions/sensorObject"},
+    {"$ref": "#/definitions/sensorTemp"},
+    {"$ref": "#/definitions/sensorPower"},
+    {"$ref": "#/definitions/sensorPwm"},
+    {"$ref": "#/definitions/sensorFan"},
+    {"$ref": "#/definitions/sensorCurrent"},
+    {"$ref": "#/definitions/sensorVoltage"}
+  ]
+}

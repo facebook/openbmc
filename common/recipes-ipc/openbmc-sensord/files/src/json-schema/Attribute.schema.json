@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://org.openbmc/schemas/Attribute.schema.json#",
+  "title": "Attribute",
+  "description": "information of attribute for generic object in openbmc-sensord",
+  "definitions": {
+    "attribute": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "value": {
+          "description": "Value will only be written if modes is WO or RW.",
+          "type": "string"
+        },
+        "modes": {
+          "description": "Will be RO by default.",
+          "type": "string",
+          "enum": ["RO", "WO", "RW"]
+        }
+      },
+      "required": ["name"]
+    },
+    "attrArray": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/attribute"}
+    }
+  },
+  "type": "object",
+  "allOf": [
+    {"$ref": "#/definitions/attribute"}
+  ]
+}

@@ -25,10 +25,10 @@
 
 #ifdef DEBUG
 
-#define PP_DEBUG(fmt, ...) do {                   \
-  printk(KERN_DEBUG "%s:%d " fmt "\n",            \
-         __FUNCTION__, __LINE__, ##__VA_ARGS__);  \
-} while (0)
+#define PP_DEBUG(fmt, ...) do {                     \
+    printk(KERN_DEBUG "%s:%d " fmt "\n",            \
+           __FUNCTION__, __LINE__, ##__VA_ARGS__);  \
+  } while (0)
 
 #else /* !DEBUG */
 
@@ -39,8 +39,8 @@
 #define SYSCPLD_SWE_ID_MASK 	0x03
 
 static ssize_t syscpld_slotid_show(struct device *dev,
-                                    struct device_attribute *attr,
-                                    char *buf)
+                                   struct device_attribute *attr,
+                                   char *buf)
 {
   struct i2c_client *client = to_i2c_client(dev);
   i2c_dev_data_st *data = i2c_get_clientdata(client);
@@ -65,15 +65,15 @@ static ssize_t syscpld_slotid_show(struct device *dev,
 
   val_msb = (val_msb >> dev_attr->ida_bit_offset) & val_mask;
 
-  if(val_msb < 4) { /*LC*/
-    /*val_lsb: 00->Left, 01->Right*/
-	val_lsb &= SYSCPLD_SWE_ID_MASK;
-	slot_id = ((val_msb + 1) << 8) + (val_lsb + 1);
+  if (val_msb < 4) { /* LC */
+    /* val_lsb: 00->Left, 01->Right */
+    val_lsb &= SYSCPLD_SWE_ID_MASK;
+    slot_id = ((val_msb + 1) << 8) + (val_lsb + 1);
   } else {
     slot_id = val_msb - 7;
   }
 
-  return scnprintf(buf, PAGE_SIZE, "%u\n", slot_id);
+  return scnprintf(buf, PAGE_SIZE, "%x\n", slot_id);
 }
 
 

@@ -17,6 +17,8 @@
  */
 
 #include <string>
+#include <stdexcept>
+#include <system_error>
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 #include "../Object.h"
@@ -54,7 +56,7 @@ TEST(ConstructorTest, Constructor) {
   EXPECT_EQ(root.getTypeMap()->size(), 0);
 }
 
-TEST_F(ObjectTest, AttributeOperation) {
+TEST_F(ObjectTest, AttributeAddDelete) {
   EXPECT_EQ(obj_->getTypeMap()->size(), 0);
 
   ASSERT_TRUE(obj_->addAttribute("1_input", "temp") != nullptr);
@@ -92,6 +94,37 @@ TEST_F(ObjectTest, AttributeOperation) {
   EXPECT_TRUE(obj_->getAttribute("1_input", "temp") == nullptr);
   EXPECT_EQ(obj_->getTypeMap()->size(), 0);
   EXPECT_TRUE(obj_->getAttrMap("temp") == nullptr);
+}
+
+TEST_F(ObjectTest, AttributeReadWrite) {
+  Attribute* attr;
+  ASSERT_TRUE((attr = obj_->addAttribute("1_input", "temp")) != nullptr);
+
+  std::string value = "100";
+  attr->setValue(value);
+  EXPECT_STREQ(attr->getValue().c_str(), value.c_str());
+  EXPECT_STREQ(obj_->readAttrValue("1_input", "temp").c_str(), value.c_str());
+  EXPECT_THROW(obj_->readAttrValue("1_input", "t"), std::invalid_argument);
+  EXPECT_THROW(obj_->readAttrValue("1", "temp"), std::invalid_argument);
+  EXPECT_THROW(obj_->writeAttrValue("200", "1_input", "temp"),
+               std::system_error); // modes is RO. Write is not allowed.
+  EXPECT_STREQ(attr->getValue().c_str(), value.c_str());
+
+  attr->setModes(Attribute::WO);
+  // modes is WO. Read is not allowed.
+  EXPECT_THROW(obj_->readAttrValue("1_input", "temp"), std::system_error);
+  value = "200";
+  EXPECT_NO_THROW(obj_->writeAttrValue(value, "1_input", "temp"));
+  EXPECT_THROW(obj_->writeAttrValue(value, "1_input", "t"),
+               std::invalid_argument);
+  EXPECT_THROW(obj_->writeAttrValue(value, "1", "temp"),
+               std::invalid_argument);
+  EXPECT_STREQ(attr->getValue().c_str(), value.c_str());
+
+  attr->setModes(Attribute::RW);
+  value = "100";
+  EXPECT_NO_THROW(obj_->writeAttrValue(value, "1_input", "temp"));
+  EXPECT_STREQ(obj_->readAttrValue("1_input", "temp").c_str(), value.c_str());
 }
 
 TEST_F(ObjectTest, ChildOpertaion) {

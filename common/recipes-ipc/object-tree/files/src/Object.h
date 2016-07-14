@@ -141,6 +141,34 @@ class Object {
                                     const std::string &type) const;
 
     /**
+     * Read attribute value of the given name and type. It is a read
+     * function instead of get just to match the modes in Attribute.
+     *
+     * @param name of the attribute to be read
+     * @param type of the attribute to be read; "Generic" by default
+     * @return value of the attribute
+     * @throw std::invalid_argument if name not found
+     * @throw std::system_error EPERM if attr has no read modes
+     */
+    virtual const std::string& readAttrValue(const std::string &name,
+                                             const std::string &type
+                                               = "Generic") const;
+
+    /**
+     * Write attribute value of the given name and type. It is a write
+     * function instead of set just to match the modes in Attribute.
+     *
+     * @param value to be written to attribute
+     * @param name of the attribute to be written
+     * @param type of the attribute to be written; "Generic" by default
+     * @throw std::invalid_argument if name not found
+     * @throw std::system_error EPERM if attr has no read modes
+     */
+    virtual void writeAttrValue(const std::string &value,
+                                const std::string &name,
+                                const std::string &type = "Generic");
+
+    /**
      * Add attribute to the object. Create the corresponding AttrMap and
      * Attribute.  Here, the attribute will be added with default type
      * "Generic."

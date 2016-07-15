@@ -49,6 +49,8 @@ install(FILES
   DESTINATION include/dbus-utils
 )
 
+install(FILES tests/org.openbmc.Chassis.conf DESTINATION /etc/dbus-1/system.d)
+
 option(BUILD_TESTS "BUILD_TESTS" ON)
 
 if(BUILD_TESTS)
@@ -115,5 +117,6 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS dbus-test DESTINATION bin)
+  install(FILES tests/org.openbmc.Chassis.conf DESTINATION /etc/dbus-1/system.d)
 endif ()
 

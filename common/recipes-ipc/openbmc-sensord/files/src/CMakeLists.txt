@@ -126,5 +126,28 @@ if(BUILD_TESTS)
   )
 
   install(TARGETS sensor-reg-test DESTINATION bin)
+
+  add_executable(sensor-jsonparser-test
+    tests/SensorJsonParserTest.cpp
+    tests/DBusObjectTreeInterface.cpp
+    SensorJsonParser.cpp
+    SensorObjectTree.cpp
+    SensorObject.cpp
+    SensorDevice.cpp
+    SensorSysfsApi.cpp
+  )
+
+  target_link_libraries(sensor-jsonparser-test
+    ${GTEST}
+    ${GLOG}
+    ${GIO}
+    ${GLIB}
+    ${DBUS-UTILS}
+    ${OBJECT-TREE}
+    -lpthread
+    -lgobject-2.0
+  )
+
+  install(TARGETS sensor-jsonparser-test DESTINATION bin)
 endif ()
 

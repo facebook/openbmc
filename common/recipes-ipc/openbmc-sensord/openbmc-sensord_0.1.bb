@@ -32,4 +32,4 @@ export SLIB = "${STAGING_LIBDIR}"
 
 inherit cmake
 
-DEPENDS = "libipc object-tree dbus-utils gtest glog"
+DEPENDS = "nlohmann-json libipc object-tree dbus-utils gtest glog"

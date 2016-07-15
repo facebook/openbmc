@@ -66,7 +66,9 @@ void SensorDevice::writeAttrValue(const Object      &object,
     << object.getName() << "\"";
   DCHECK(attr.isWritable()) << "SensorAttribute \"" << attr.getName()
     << "\" is not writable";
-  sensorApi_.get()->writeValue(object, attr, value);
+  if (attr.isAccessible()) {
+    sensorApi_.get()->writeValue(object, attr, value);
+  }
   attr.setValue(value);
 }
 

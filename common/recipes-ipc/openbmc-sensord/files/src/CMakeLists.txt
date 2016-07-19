@@ -21,17 +21,46 @@ include_directories($ENV{SLIB}/glib-2.0/include)
 
 find_library(DBUS-UTILS dbus-utils)
 find_library(OBJECT-TREE object-tree)
+find_library(GFLAGS gflags)
 find_library(GTEST gtest)
 find_library(GLOG glog)
 find_library(GIO gio-2.0)
 find_library(GLIB glib-2.0)
 
+add_library(libsensord
+  SensorObjectTree.cpp
+  SensorDevice.cpp
+  SensorObject.cpp
+  SensorSysfsApi.cpp
+  SensorJsonParser.cpp
+)
+
+target_link_libraries(libsensord
+  ${DBUS-UTILS}
+  ${OBJECT-TREE}
+  ${GLOG}
+  ${GFLAGS}
+  ${GIO}
+  ${GLIB}
+  -lpthread
+  -lgobject-2.0
+)
+
+add_executable(openbmc-sensord
+  OpenbmcSensord.cpp
+)
+
+target_link_libraries(openbmc-sensord
+  libsensord
+)
+
+install(TARGETS openbmc-sensord DESTINATION bin)
+install(FILES org.openbmc.Sensord.conf DESTINATION /etc/dbus-1/system.d/)
 
 option(BUILD_TESTS "BUILD_TESTS" ON)
 
 if(BUILD_TESTS)
   enable_testing()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
   # test bridging object-tree and dbus-utils through ipc-interface
   add_executable(dbus-reg-test

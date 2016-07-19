@@ -20,7 +20,7 @@ DESCRIPTION = "This is a sensor daemon utilizing dbus-utils for IPC and object-t
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://tests/DBusObjectTreeInterface.cpp;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://OpenbmcSensord.cpp;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 SRC_URI = "file://src \
           "
@@ -32,4 +32,4 @@ export SLIB = "${STAGING_LIBDIR}"
 
 inherit cmake
 
-DEPENDS = "nlohmann-json libipc object-tree dbus-utils gtest glog"
+DEPENDS = "nlohmann-json libipc object-tree dbus-utils gtest glog gflags"

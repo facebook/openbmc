@@ -35,66 +35,83 @@ ObjectTree::ObjectTree(const std::shared_ptr<Ipc> &ipc,
   }
   ipc_ = ipc;
 
-  const std::string rootPath = ipc_.get()->getPath("", rootName);
-  if (!ipc_.get()->isPathAllowed(rootPath)) {
-    LOG(ERROR) << "Root path of " << rootPath
-      << "does not match the ipc rule.";
-    throw std::invalid_argument("Invalid object path");
-  }
+  const std::string rootPath = getPath("", rootName);
 
-  LOG(INFO) << "Adding root with name " << rootName;
+  LOG(INFO) << "Adding root \"" << rootName << "\"";
   std::unique_ptr<Object> upObj(new Object(rootName));
-  root_ = upObj.get();
-  ipc_.get()->registerObject(rootPath, root_);
-  objectMap_.insert(std::make_pair(rootPath, std::move(upObj)));
+  root_ = addObjectByPath(std::move(upObj), rootPath);
+
+  LOG(INFO) << "Setting up the callbacks";
+  ipc_.get()->onConnAcquired = onConnAcquiredCallBack;
+  ipc_.get()->onConnLost     = onConnLostCallBack;
 }
 
 Object* ObjectTree::addObject(const std::string &name,
                               const std::string &parentPath) {
+  LOG(INFO) << "Adding object \"" << name << "\" under path \""
+    << parentPath << "\"";
+  Object* parent = getParent(parentPath, name);
   const std::string path = ipc_.get()->getPath(parentPath, name);
-  if (!ipc_.get()->isPathAllowed(path)) {
-    LOG(ERROR) << "Object path of " << path << "does not match the ipc rule.";
-    throw std::invalid_argument("Invalid object path");
-  }
-
-  Object* parent = getObject(parentPath);
-  if (parent == nullptr) {
-    LOG(WARNING) << "Parent object not found at path " << parentPath;
-    return nullptr;
-  }
-  if (parent->getChildObject(name) != nullptr) {
-    LOG(WARNING) << "Parent object has a child with the same name as" << name;
-    return nullptr;
-  }
 
   std::unique_ptr<Object> upObj(new Object(name, parent));
-  Object* object = upObj.get();
-  ipc_.get()->registerObject(path, object);
-  objectMap_.insert(std::make_pair(path, std::move(upObj)));
-  return object;
+  return addObjectByPath(std::move(upObj), path);
+}
+
+Object* ObjectTree::addObject(std::unique_ptr<Object> &upObj,
+                              const std::string       &parentPath) {
+  if (!upObj) {
+    LOG(ERROR) << "Empty unique_ptr to the object";
+    throw std::invalid_argument("Empty object unique_ptr");
+  }
+  LOG(INFO) << "Adding object \"" << upObj.get()->getName()
+    << "\" under path \"" << parentPath << "\"";
+  if (upObj.get()->getChildCount() != 0) {
+    LOG(ERROR) << "Non-empty children of the object \""
+      << upObj.get()->getName() << "\"";
+    throw std::invalid_argument("Nonempty children");
+  }
+  const std::string &name = upObj.get()->getName();
+  const std::string path = ipc_.get()->getPath(parentPath, name);
+  Object* parent = getParent(parentPath, name);
+  parent->addChildObject(*(upObj.get()));
+  return addObjectByPath(std::move(upObj), path);
 }
 
 void ObjectTree::deleteObjectByPath(const std::string &path) {
   ObjectMap::const_iterator it;
   if ((it = objectMap_.find(path)) == objectMap_.end()) {
-    LOG(ERROR) << "Object to be deleted cannot be found at path "
-               << path;
-    return;
+    LOG(ERROR) << "Object to be deleted cannot be found at path \""
+      << path << "\"";
+    throw std::invalid_argument("Object not found");
   }
   Object* object = it->second.get();
   if (object == root_) {
-    LOG(ERROR) << "Cannot delete root.";
-    return;
+    LOG(ERROR) << "Cannot delete root \"" << root_->getName() << "\"";
+    throw std::invalid_argument("Error deleting root");
   }
   Object* parent = object->getParent();
   object = parent->removeChildObject(object->getName());
   if (object == nullptr) {
-    // may not be removed since the child object could have children
-    LOG(ERROR) << "Failed to delete the object with path " << path;
-    return;
+    LOG(ERROR) << "Failed to delete the object at \"" << path << "\"";
+    throw std::invalid_argument("Error deleting object");
   }
-  ipc_.get()->unregisterObject(path);
   objectMap_.erase(it);
+  ipc_.get()->unregisterObject(path);
+}
+
+Object* ObjectTree::getParent(const std::string &parentPath,
+                              const std::string &name) const {
+  Object* parent = getObject(parentPath);
+  if (parent == nullptr) {
+    LOG(ERROR) << "Parent object not found at \"" << parentPath << "\"";
+    throw std::invalid_argument("Parent not found");
+  }
+  if (parent->getChildObject(name) != nullptr) {
+    LOG(ERROR) << "Parent object has a child with the same name as \""
+      << name << "\"";
+    throw std::invalid_argument("Duplicated object name");
+  }
+  return parent;
 }
 
 } // namespace ipc

@@ -16,8 +16,10 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <iostream>
 #include <string>
 #include <gtest/gtest.h>
+#include <glog/logging.h>
 #include "../Attribute.h"
 
 using namespace openbmc::ipc;
@@ -28,7 +30,7 @@ using namespace openbmc::ipc;
 class AttributeTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    a_ = new Attribute("testName", "testType");
+    a_ = new Attribute("testName");
   }
 
   virtual void TearDown() {
@@ -39,21 +41,12 @@ class AttributeTest : public ::testing::Test {
 };
 
 TEST(ConstructorTest, Constructor) {
-  EXPECT_ANY_THROW(Attribute attr1(NULL, " "));
-  EXPECT_ANY_THROW(Attribute attr2(" ", NULL));
-  EXPECT_ANY_THROW(Attribute attr3(NULL, NULL));
+  EXPECT_ANY_THROW(Attribute attr1(NULL));
 
   Attribute gattr("genericAttr");
   EXPECT_STREQ(gattr.getName().c_str(), "genericAttr");
-  EXPECT_STREQ(gattr.getType().c_str(), "Generic");
   EXPECT_STREQ(gattr.getValue().c_str(), "");
   EXPECT_EQ(gattr.getModes(), Attribute::RO);
-
-  Attribute attr("testName", "testType");
-  EXPECT_STREQ(attr.getName().c_str(), "testName");
-  EXPECT_STREQ(attr.getType().c_str(), "testType");
-  EXPECT_STREQ(attr.getValue().c_str(), "");
-  EXPECT_EQ(attr.getModes(), Attribute::RO);
 }
 
 TEST_F(AttributeTest, SetValue) {
@@ -90,8 +83,24 @@ TEST_F(AttributeTest, IsReadableWritable) {
   EXPECT_TRUE(a_->isWritable());
 }
 
+TEST_F(AttributeTest, Dump) {
+  a_->setValue("100");
+  a_->setModes(Attribute::RW);
+  nlohmann::json attrInfo = a_->dumpToJson();
+
+  std::cout << attrInfo.dump(2) << std::endl;
+
+  const std::string &name = attrInfo.at("name");
+  const std::string &value = attrInfo.at("value");
+  const std::string &modes = attrInfo.at("modes");
+  EXPECT_STREQ(name.c_str(), "testName");
+  EXPECT_STREQ(value.c_str(), "100");
+  EXPECT_STREQ(modes.c_str(), "RW");
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
+  ::google::InitGoogleLogging(argv[0]);
 
   return RUN_ALL_TESTS();
 }

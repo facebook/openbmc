@@ -52,8 +52,7 @@ TEST(ConstructorTest, Constructor) {
   Object* root = objTree.getRoot();
   EXPECT_STREQ(root->getName().c_str(), "root");
   EXPECT_TRUE(root->getParent() == nullptr);
-  EXPECT_EQ(root->getChildMap()->size(), 0);
-  EXPECT_EQ(root->getTypeMap()->size(), 0);
+  EXPECT_EQ(root->getChildMap().size(), 0);
 }
 
 TEST_F(ObjectTreeTest, ObjectOperation) {
@@ -69,10 +68,11 @@ TEST_F(ObjectTreeTest, ObjectOperation) {
   EXPECT_STREQ(obj->getName().c_str(), "openbmc");
   ASSERT_TRUE(obj->getParent() != nullptr);
   ASSERT_TRUE(obj->getParent() == objTree_->getRoot());
-  EXPECT_EQ(objTree_->getRoot()->getChildMap()->size(), 1);
+  EXPECT_EQ(objTree_->getRoot()->getChildMap().size(), 1);
 
-  EXPECT_TRUE(objTree_->addObject("Chassis", "/openbmc") == nullptr);
-  // wrong path
+  // wrong parent path
+  EXPECT_THROW(objTree_->addObject("Chassis", "/openbmc"),
+               std::invalid_argument);
   EXPECT_FALSE(objTree_->containObject("/openbmc/Chassis"));
   EXPECT_EQ(objTree_->getObjectCount(), 2);
 
@@ -83,15 +83,16 @@ TEST_F(ObjectTreeTest, ObjectOperation) {
               == obj);
   EXPECT_EQ(objTree_->getObjectCount(), 3);
 
-  objTree_->deleteObjectByPath("/org"); // cannot delete root
+  // cannot delete root
+  EXPECT_THROW(objTree_->deleteObjectByPath("/org"), std::invalid_argument);
   EXPECT_EQ(objTree_->getObjectCount(), 3);
   ASSERT_TRUE(objTree_->containObject("/org"));
 
-  objTree_->deleteObjectByName("openbmc", "/org"); // cannot delete object with children
-  EXPECT_EQ(objTree_->getObjectCount(), 3);
-  ASSERT_TRUE(objTree_->containObject("/org/openbmc"));
-
-  objTree_->deleteObjectByPath("/org/openbmc"); // cannot delete object with children
+  // cannot delete object with children
+  EXPECT_THROW(objTree_->deleteObjectByName("openbmc", "/org"),
+               std::invalid_argument);
+  EXPECT_THROW(objTree_->deleteObjectByPath("/org/openbmc"),
+               std::invalid_argument);
   EXPECT_EQ(objTree_->getObjectCount(), 3);
   ASSERT_TRUE(objTree_->containObject("/org/openbmc"));
 
@@ -99,13 +100,46 @@ TEST_F(ObjectTreeTest, ObjectOperation) {
   EXPECT_FALSE(objTree_->containObject("/org/openbmc/Chassis"));
   EXPECT_EQ(objTree_->getObjectCount(), 2);
 
-  objTree_->deleteObjectByName("openbmc", "/root"); // wrong name
-  objTree_->deleteObjectByPath("/root/openbmc"); //wrong path
+  // wrong name
+  EXPECT_ANY_THROW(objTree_->deleteObjectByName("openbmc", "/root"));
+  // wrong path
+  EXPECT_ANY_THROW(objTree_->deleteObjectByPath("/root/openbmc"));
   EXPECT_EQ(objTree_->getObjectCount(), 2);
 
   objTree_->deleteObjectByPath("/org/openbmc");
   EXPECT_FALSE(objTree_->containObject("/org/openbmc"));
   EXPECT_EQ(objTree_->getObjectCount(), 1);
+}
+
+TEST_F(ObjectTreeTest, AddObjectByUniquePtr) {
+  std::unique_ptr<Object> uObj(new Object("openbmc"));
+  // failed since parent path cannot be found
+  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/orgg"));
+  EXPECT_TRUE(uObj.get() != nullptr); // not moved
+
+  EXPECT_TRUE(objTree_->addObject(uObj, "/org") != nullptr);
+  EXPECT_FALSE(uObj.get() != nullptr); // successfully moved
+
+  // failed since uObj is empty
+  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
+
+  uObj = std::unique_ptr<Object>(new Object("openbmc"));
+  // failed since /org already has an object named openbmc
+  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
+  EXPECT_TRUE(uObj.get() != nullptr); // not moved
+
+  Object* root = objTree_->getRoot();
+  uObj = std::unique_ptr<Object>(new Object("Chassis", root));
+  ASSERT_TRUE(uObj.get()->getParent() != nullptr);
+  // failed since the object has non-null parent
+  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
+  EXPECT_TRUE(uObj.get() != nullptr); // not moved
+
+  uObj = std::unique_ptr<Object>(new Object("System"));
+  Object child("sqlite", uObj.get());
+  // failed since the object has non-empty children
+  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
+  EXPECT_TRUE(uObj.get() != nullptr); // not moved
 }
 
 int main (int argc, char* argv[]) {

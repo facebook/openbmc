@@ -28,31 +28,23 @@
 namespace openbmc {
 namespace ipc {
 
-Attribute* Object::getAttribute(const std::string &name,
-                                const std::string &type) const {
-  if (typeMap_.find(type) == typeMap_.end()) {
+Attribute* Object::getAttribute(const std::string &name) const {
+  AttrMap::const_iterator it;
+  if ((it = attrMap_.find(name)) == attrMap_.end()) {
     return nullptr;
   }
-  AttrMap* attrMap = typeMap_.find(type)->second.get();
-  if (attrMap->find(name) == attrMap->end()) {
-    return nullptr;
-  }
-  return attrMap->find(name)->second.get();
+  return it->second.get();
 }
 
-const std::string& Object::readAttrValue(const std::string &name,
-                                         const std::string &type) const {
-  LOG(INFO) << "Reading the value of Attribute name " << name << " type "
-    << type;
+const std::string& Object::readAttrValue(const std::string &name) const {
+  LOG(INFO) << "Reading the value of Attribute \n" << name << "\"";
   Attribute* attr;
-  if ((attr = getAttribute(name, type)) == nullptr) {
-    LOG(ERROR) << "Attribute of type " << type << " name " << name
-      << " not found";
+  if ((attr = getAttribute(name)) == nullptr) {
+    LOG(ERROR) << "Attribute \"" << name << "\" not found";
     throw std::invalid_argument("Attribute not found");
   }
   if (!attr->isReadable()) {
-    LOG(ERROR) << "Attribute of type " << type << " name " << name
-      << " does not support read in modes";
+    LOG(ERROR) << "Attribute \"" << name << "\" does not support read in modes";
     throw std::system_error(EPERM,
                             std::system_category(),
                             "Attribute read not supported");
@@ -60,20 +52,16 @@ const std::string& Object::readAttrValue(const std::string &name,
   return attr->getValue();
 }
 
-void Object::writeAttrValue(const std::string &value,
-                            const std::string &name,
-                            const std::string &type) {
-  LOG(INFO) << "Writing the value of Attribute name " << name << " type "
-    << type;
+void Object::writeAttrValue(const std::string &name,
+                            const std::string &value) {
+  LOG(INFO) << "Writing the value of Attribute \"" << name << "\"";
   Attribute* attr;
-  if ((attr = getAttribute(name, type)) == nullptr) {
-    LOG(ERROR) << "Attribute of type " << type << " name " << name
-      << " not found";
+  if ((attr = getAttribute(name)) == nullptr) {
+    LOG(ERROR) << "Attribute \"" << name << "\" not found";
     throw std::invalid_argument("Attribute not found");
   }
   if (!attr->isWritable()) {
-    LOG(ERROR) << "Attribute of type " << type << " name " << name
-      << " does not support write in modes";
+    LOG(ERROR) << "Attribute \"" << name << "\" does not support write in modes";
     throw std::system_error(EPERM,
                             std::system_category(),
                             "Attribute write not supported");
@@ -81,65 +69,97 @@ void Object::writeAttrValue(const std::string &value,
   attr->setValue(value);
 }
 
-Attribute* Object::addAttribute(const std::string &name,
-                                const std::string &type) {
-  if (getAttribute(name, type) != nullptr) {
-    LOG(ERROR) << "Adding duplicated attribute with name " << name
-               << " and type " << type;
-    return nullptr;
+Attribute* Object::addAttribute(const std::string &name) {
+  LOG(INFO) << "Adding Attribute \"" << name << "\" to object \"" << name_
+    << "\"";
+  if (getAttribute(name) != nullptr) {
+    LOG(ERROR) << "Adding duplicated Attribute \"" << name << "\"";
+    throw std::invalid_argument("Duplicated Attribute");
   }
-  if (typeMap_.find(type) == typeMap_.end()) {
-    std::unique_ptr<AttrMap> upAttrMap(new AttrMap());
-    typeMap_.insert(std::make_pair(type, std::move(upAttrMap)));
-  }
-  AttrMap* attrMap = typeMap_.find(type)->second.get();
-  std::unique_ptr<Attribute> upAttr(new Attribute(name, type));
+  std::unique_ptr<Attribute> upAttr(new Attribute(name));
   Attribute* attr = upAttr.get();
-  attrMap->insert(std::make_pair(name, std::move(upAttr)));
+  attrMap_.insert(std::make_pair(name, std::move(upAttr)));
   return attr;
 }
 
-void Object::deleteAttribute(const std::string &name, const std::string &type) {
-  const Attribute* attr = getAttribute(name, type);
+void Object::deleteAttribute(const std::string &name) {
+  const Attribute* attr = getAttribute(name);
+  LOG(INFO) << "Deleting Attribute \"" << name << "\" from object \n"
+    << name_ << "\n";
   if (attr == nullptr) {
-    LOG(ERROR) << "Attribute with name " << name << " and type " << type
-               << " not found";
-    return;
+    LOG(ERROR) << "Attribute \"" << name << "\" not found";
+    throw std::invalid_argument("Attribute not found");
   }
-  AttrMap* attrMap = typeMap_.find(type)->second.get();
-  attrMap->erase(name);
-  if (attrMap->size() == 0) {
-    typeMap_.erase(type);
-  }
+  attrMap_.erase(name);
 }
 
 void Object::addChildObject(Object &child) {
+  LOG(INFO) << "Adding child object \"" << child.getName() << "\"";
   if (getChildObject(child.getName()) != nullptr) {
     LOG(ERROR) << "Adding duplicated Child";
-    return;
+    throw std::invalid_argument("Duplicated child object");
   }
   if (child.getParent() != nullptr && child.getParent() != this) {
     LOG(ERROR) << "Child has a different parent";
-    return;
+    throw std::invalid_argument("Child has non-null parent");
   }
   childMap_.insert({child.getName(), &child});
   child.setParent(this);
 }
 
 Object* Object::removeChildObject(const std::string &name) {
+  LOG(INFO) << "Removing child object \"" << name << "\"";
   Object* child = getChildObject(name);
   if (child == nullptr) {
     LOG(ERROR) << "Object with name " << name << " not found";
-    return nullptr;
+    throw std::invalid_argument("Child object not found");
   }
-  if (child->getChildNumber() != 0) {
-    LOG(ERROR) << "Object to be deleted has nonempty children";
-    return nullptr;
+  if (child->getChildCount() != 0) {
+    LOG(ERROR) << "Object to be deleted has non-empty children";
+    throw std::invalid_argument("Object has non-empty children");
   }
   childMap_.erase(name);
   child->setParent(nullptr);
   return child;
 }
 
-} // namepsace openbmc
+nlohmann::json Object::dumpToJson() const {
+  LOG(INFO) << "Dump object with name " << name_ << " into json";
+  nlohmann::json dump = Object::dump();
+  for (auto cit = childMap_.begin(); cit != childMap_.end(); cit++) {
+    dump["childObjectNames"].push_back(cit->first);
+  }
+  dump["childObjectCount"] = getChildCount();
+  return dump;
+}
+
+nlohmann::json Object::dumpToJsonRecursive() const {
+  LOG(INFO) << "Dump object with name " << name_ << " into json";
+  nlohmann::json dump = Object::dump();
+  for (auto cit = childMap_.begin(); cit != childMap_.end(); cit++) {
+    dump["childObjects"].push_back(cit->second->dumpToJsonRecursive());
+  }
+  dump["childObjectCount"] = getChildCount();
+  return dump;
+}
+
+nlohmann::json Object::dump() const {
+  nlohmann::json dump;
+  dump["objectName"] = name_;
+  dump["objectType"] = "Generic";
+  if (parent_ == nullptr) {
+    dump["parentName"] = nullptr;
+  } else {
+    dump["parentName"] = parent_->getName();
+  }
+
+  for (auto &it : attrMap_) {
+    Attribute* attr = it.second.get();
+    dump["attributes"].push_back(attr->dumpToJson());
+  }
+  dump["attrCount"] = getAttrCount();
+  return dump;
+}
+
 } // namespace ipc
+} // namepsace openbmc

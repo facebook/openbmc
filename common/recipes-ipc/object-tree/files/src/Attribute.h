@@ -18,6 +18,8 @@
 
 #pragma once
 #include <string>
+#include <unordered_map>
+#include <nlohmann/json.hpp>
 
 namespace openbmc {
 namespace ipc {
@@ -29,10 +31,11 @@ class Attribute {
   public:
     // RO: read only; WO: write only; RW: read write
     enum Modes {RO, WO, RW};
+    // map enum to strings
+    static std::unordered_map<unsigned int, const std::string> modesMap;
 
   protected:
     std::string name_;
-    std::string type_{"Generic"};
     std::string value_{""};
     Modes       modes_{RO};
 
@@ -44,17 +47,10 @@ class Attribute {
       name_  = name;
     }
 
-    Attribute(const std::string &name, const std::string &type) {
-      name_  = name;
-      type_  = type;
-    }
+    virtual ~Attribute() {}
 
     const std::string& getName() const {
       return name_;
-    }
-
-    const std::string& getType() const {
-      return type_;
     }
 
     const std::string& getValue() const {
@@ -96,7 +92,19 @@ class Attribute {
     bool isWritable() const {
       return modes_ == WO || modes_ == RW;
     }
+
+    /**
+     * The dump function collects the info of the instance itself into the
+     * json format.
+     *
+     * @return nlohmann::json object with the following entries.
+     *
+     *         name: name of the attribute
+     *         value: value of the atribute
+     *         modes: modes in string of the attribute
+     */
+    virtual nlohmann::json dumpToJson() const;
 };
 
-} // namespace openbmc
 } // namespace ipc
+} // namespace openbmc

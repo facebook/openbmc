@@ -19,6 +19,7 @@
 #pragma once
 #include <string>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <glog/logging.h>
 #include <unordered_map>
 #include "Attribute.h"
@@ -27,16 +28,12 @@ namespace openbmc {
 namespace ipc {
 
 /**
- * Object contains a two-level map of attributes and
- * a map of children objects
+ * Object contains a map of attributes and a map of children objects
  */
 class Object {
   public:
-    // two-level maps from type to name to attribute
     // map from name to attr
     typedef std::unordered_map<std::string, std::unique_ptr<Attribute>> AttrMap;
-    // map from type to AttrMap
-    typedef std::unordered_map<std::string, std::unique_ptr<AttrMap>> TypeMap;
 
     // child object map from object name to object
     // The object itself does not have the ownership of the children. It
@@ -45,7 +42,7 @@ class Object {
 
   protected:
     std::string name_;
-    TypeMap     typeMap_;
+    AttrMap     attrMap_;
     Object*     parent_{nullptr};   // pointer to the parent object
     ChildMap    childMap_;
 
@@ -59,6 +56,7 @@ class Object {
     Object(const std::string &name, Object* parent = nullptr) {
       name_ = name;
       parent_ = parent;
+      LOG(INFO) << "Creating Object \"" << name << "\"";
       if (parent_ != nullptr) {
         parent_->addChildObject(*this);
       }
@@ -77,13 +75,12 @@ class Object {
       return parent_;
     }
 
-    int getChildNumber() const {
+    int getChildCount() const {
       return childMap_.size();
     }
 
-
-    const ChildMap* getChildMap() const {
-      return &childMap_;
+    const ChildMap& getChildMap() const {
+      return childMap_;
     }
 
     /**
@@ -93,128 +90,77 @@ class Object {
      * @return nullptr if not found; Object* otherwise
      */
     Object* getChildObject(const std::string &name) const {
-      if (childMap_.find(name) == childMap_.end()) {
+      ChildMap::const_iterator it;
+      if ((it = childMap_.find(name)) == childMap_.end()) {
         return nullptr;
       }
-      return childMap_.find(name)->second;
+      return it->second;
+    }
+
+    int getAttrCount() const {
+      return attrMap_.size();
+    }
+
+    const AttrMap& getAttrMap() const {
+      return attrMap_;
     }
 
     /**
-     * Return pointer to typeMap_. Provide the use of iterating through
-     * all the attributes.
-     */
-    const TypeMap* getTypeMap() const {
-      return &typeMap_;
-    }
-
-    /**
-     * Return AttrMap with the given type in typeMap_. Not
-     * transferring ownership.
-     *
-     * @return nullptr if not found; AttrMap otherwise.
-     */
-    const AttrMap* getAttrMap(const std::string &type) const {
-      if (typeMap_.find(type) == typeMap_.end()) {
-        return nullptr;
-      }
-      return typeMap_.find(type)->second.get();
-    }
-
-    /**
-     * Get attribute of the given name and type "Generic".
+     * Get attribute of the given name.
      *
      * @param number of the attribute
      * @return nullptr if not found; attribute otherwise
      */
-    virtual Attribute* getAttribute(const std::string &name) const {
-      return getAttribute(name, "Generic");
-    }
+    virtual Attribute* getAttribute(const std::string &name) const;
 
     /**
-     * Get attribute of the given name and type.
-     *
-     * @param number of the attribute
-     * @param type of the attribute
-     * @return nullptr if not found; attribute otherwise
-     */
-    virtual Attribute* getAttribute(const std::string &name,
-                                    const std::string &type) const;
-
-    /**
-     * Read attribute value of the given name and type. It is a read
-     * function instead of get just to match the modes in Attribute.
+     * Read attribute value of the given name. It is a read function
+     * instead of get just to match the modes in Attribute.
      *
      * @param name of the attribute to be read
-     * @param type of the attribute to be read; "Generic" by default
      * @return value of the attribute
      * @throw std::invalid_argument if name not found
      * @throw std::system_error EPERM if attr has no read modes
      */
-    virtual const std::string& readAttrValue(const std::string &name,
-                                             const std::string &type
-                                               = "Generic") const;
+    virtual const std::string& readAttrValue(const std::string &name) const;
 
     /**
-     * Write attribute value of the given name and type. It is a write
-     * function instead of set just to match the modes in Attribute.
+     * Write attribute value of the given name. It is a write function
+     * instead of set just to match the modes in Attribute.
      *
-     * @param value to be written to attribute
      * @param name of the attribute to be written
-     * @param type of the attribute to be written; "Generic" by default
+     * @param value to be written to attribute
      * @throw std::invalid_argument if name not found
      * @throw std::system_error EPERM if attr has no read modes
      */
-    virtual void writeAttrValue(const std::string &value,
-                                const std::string &name,
-                                const std::string &type = "Generic");
+    virtual void writeAttrValue(const std::string &name,
+                                const std::string &value);
 
     /**
-     * Add attribute to the object. Create the corresponding AttrMap and
-     * Attribute.  Here, the attribute will be added with default type
-     * "Generic."
+     * Add attribute to the object.
      *
      * @param name of attribute
+     * @throw std::invalid_argument if an attribute with the same name
+     *        has existed
      * @return nullptr if name conflict; Attribute pointer otherwise
      */
-    virtual Attribute* addAttribute(const std::string &name) {
-      return addAttribute(name, "Generic");
-    }
+    virtual Attribute* addAttribute(const std::string &name);
 
     /**
-     * Add attribute to the object but with type specified.
+     * Delete attribute from the object.
      *
      * @param name of attribute
-     * @param type of attribute
-     * @return nullptr if name conflict; Attribute pointer otherwise
+     * @throw std::invalid_argument if attribute not found
      */
-    virtual Attribute* addAttribute(const std::string &name,
-                                    const std::string &type);
-
-    /**
-     * Delete attribute from the object. Remove the AttrMap
-     * from the typeAttrMap if there are no attributes of the
-     * corresponding type. Default type is "Generic."
-     *
-     * @param name of attribute
-     */
-    virtual void deleteAttribute(const std::string &name) {
-      deleteAttribute(name, "Generic");
-    }
-
-    /**
-     * Delete attribute from the object with specified type.
-     *
-     * @param name of attribute
-     * @param type of attribute
-     */
-    virtual void deleteAttribute(const std::string &name,
-                                 const std::string &type);
+    virtual void deleteAttribute(const std::string &name);
 
     /**
      * Add child object to the childChildMap. Will also set the
      * parent of the child.
      *
      * @param child object
+     * @throw std::invalid_argument if the child already has a parent
+     *        or if this object already has a child with the same name
      */
     void addChildObject(Object &child);
 
@@ -224,16 +170,71 @@ class Object {
      * because the child object is not owned by the object class.
      *
      * @param child object
+     * @throw std::invalid_argument if child object not found or
+     *        if child object has non-empty children
      * @return nullptr if not found or child object has children;
      *         child object otherwise
      */
     Object* removeChildObject(const std::string &name);
 
+    /**
+     * Dump the object info including its attributes into json format.
+     * Will not iteratively dump the full info of the child objects.
+     * Instead, will only dump the names and number of them.
+     *
+     * @return nlohmann json object with the following entries.
+     *
+     *         objectName: name of object
+     *         objectType: type of object; "Generic" here
+     *         parentName: name of parent object; null if parent is nullptr
+     *         attrCount:  number of attributes in object
+     *         attributes: this array entry follows the sensor-info.schema.json
+     *                     and will contain the attribute dump
+     *         childObjectCount: number of child objects
+     *         childObjectNames: this entry contains an array of names of the
+     *                           child object
+     */
+    virtual nlohmann::json dumpToJson() const;
+
+    /**
+     * Dump the object info including its attributes into json format. The
+     * child objects will be recursively dumpped.
+     *
+     * @return nlohmann json object with the following entries.
+     *
+     *         objectName: name of object
+     *         objectType: type of object; "Generic" here
+     *         parentName: name of parent object; null if parent is nullptr
+     *         attrCount:  number of attributes in object
+     *         attributes: this array entry follows the sensor-info.schema.json
+     *                     and will contain the attribute dump
+     *         childObjectCount: number of child objects
+     *         childObjects: this entry contains an array of the child object
+     */
+    virtual nlohmann::json dumpToJsonRecursive() const;
+
   protected:
+
     void setParent(Object* parent) {
       parent_ = parent;
     }
+
+    /**
+     * Dump the object info into json format. This is a helper function for
+     * dumpToJson() and dumpToJsonIterative(). All the info is dumpped
+     * except the info regarding the child objects.
+     *
+     * @return nlohmann json object with the following entries.
+     *
+     *         objectName: name of object
+     *         objectType: type of object; "Generic" here
+     *         parentName: name of parent object; null if parent is nullptr
+     *         attrCount:  number of attributes in object
+     *         attributes: this array entry follows the sensor-info.schema.json
+     *                     and will contain the attribute dump
+     */
+    nlohmann::json dump() const;
 };
 
-} // namespace openbmc
 } // namespace ipc
+} // namespace openbmc

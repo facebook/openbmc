@@ -22,6 +22,7 @@ find_library(GLOG glog)
 add_library(object-tree
   ObjectTree.cpp
   Object.cpp
+  Attribute.cpp
 )
 
 target_link_libraries(object-tree
@@ -43,13 +44,14 @@ option(BUILD_TESTS "BUILD_TESTS" ON)
 
 if(BUILD_TESTS)
   enable_testing()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
   add_executable(attribute-test
     tests/AttributeTest.cpp
+    Attribute.cpp
   )
 
   target_link_libraries(attribute-test
+    ${GLOG}
     ${GTEST}
     -lpthread
   )
@@ -63,6 +65,7 @@ if(BUILD_TESTS)
   add_executable(object-test
     tests/ObjectTest.cpp
     Object.cpp
+    Attribute.cpp
   )
 
   target_link_libraries(object-test
@@ -81,6 +84,7 @@ if(BUILD_TESTS)
     tests/ObjectTreeTest.cpp
     ObjectTree.cpp
     Object.cpp
+    Attribute.cpp
   )
 
   target_link_libraries(object-tree-test

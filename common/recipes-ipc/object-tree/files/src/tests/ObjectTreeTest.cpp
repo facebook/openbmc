@@ -17,6 +17,7 @@
  */
 
 #include <memory>
+#include <stdexcept>
 #include <string.h>
 #include <gtest/gtest.h>
 #include <glog/logging.h>
@@ -41,6 +42,9 @@ class ObjectTreeTest : public ::testing::Test {
 };
 
 TEST(ConstructorTest, Constructor) {
+  std::shared_ptr<Ipc> emptyPtr;
+  EXPECT_THROW(ObjectTree ot(emptyPtr, "root"), std::invalid_argument);
+
   ObjectTree objTree(std::shared_ptr<Ipc>(new DummyIpc()), "root");
   EXPECT_EQ(objTree.getObjectCount(), 1);
   ASSERT_TRUE(objTree.getRoot() != nullptr);

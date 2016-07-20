@@ -51,6 +51,7 @@ class ObjectTree {
      * @param ipc interface
      * @param rootName name of the root object
      * @throw invalid_argument if rootName does not meet the ipc regex
+     *        or if ipc is nullptr
      */
     ObjectTree(const std::shared_ptr<Ipc> &ipc, const std::string &rootName);
 

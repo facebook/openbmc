@@ -29,7 +29,12 @@ namespace ipc {
 
 ObjectTree::ObjectTree(const std::shared_ptr<Ipc> &ipc,
                        const std::string          &rootName) {
+  if (ipc == nullptr) {
+    LOG(ERROR) << "ipc cannot be nullptr";
+    throw std::invalid_argument("Invalid ipc");
+  }
   ipc_ = ipc;
+
   const std::string rootPath = ipc_.get()->getPath("", rootName);
   if (!ipc_.get()->isPathAllowed(rootPath)) {
     LOG(ERROR) << "Root path of " << rootPath

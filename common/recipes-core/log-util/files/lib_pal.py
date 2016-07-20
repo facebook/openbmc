@@ -29,3 +29,7 @@ def pal_get_fru_list():
         return None
     else:
         return frulist.value
+
+def pal_set_key_value(key):
+    value = '1'
+    lpal_hndl.pal_set_key_value(key, value)

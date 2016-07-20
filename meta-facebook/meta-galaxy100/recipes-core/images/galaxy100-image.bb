@@ -43,12 +43,11 @@ IMAGE_INSTALL += " \
   u-boot-fw-utils \
   openbmc-utils \
   openbmc-gpio \
-  rackmon \
+  at93cx6-util \
   watchdog-ctrl \
   i2c-tools \
   sensor-setup \
   usb-console \
-  oob-nic \
   lldp-util \
   lmsensors-sensors \
   wedge-eeprom \

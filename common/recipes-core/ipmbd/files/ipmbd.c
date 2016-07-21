@@ -111,6 +111,7 @@ pthread_mutex_t m_seq;
 pthread_mutex_t m_i2c;
 
 static int g_bus_id = 0; // store the i2c bus ID for debug print
+static int g_slave_addr = 0 ; // store the IPMB slave address
 
 static int i2c_slave_read(int fd, uint8_t *buf, uint8_t *len);
 static int i2c_slave_open(uint8_t bus_num);
@@ -231,7 +232,7 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
 
   memset(&msg, 0, sizeof(msg));
 
-  msg.addr = BRIDGE_SLAVE_ADDR;
+  msg.addr = g_slave_addr;
   msg.flags = 0;
   msg.len = len;
   msg.buf = buf;
@@ -850,6 +851,7 @@ main(int argc, char * const argv[]) {
   pthread_t tid_res_handler;
   pthread_t tid_lib_handler;
   uint8_t ipmb_bus_num;
+  uint8_t ipmb_slave_addr;
   mqd_t mqd_req, mqd_res;
   struct mq_attr attr;
   char mq_ipmb_req[64] = {0};
@@ -859,17 +861,20 @@ main(int argc, char * const argv[]) {
   daemon(1, 0);
   openlog("ipmbd", LOG_CONS, LOG_DAEMON);
 
-  if ((argc != 2) && (argc != 3)) {
-    syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#>");
+  if ((argc != 2) && (argc != 3) && (argc != 4)) {
+    syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#> <slave_addr#>");
     exit(1);
   }
 
   ipmb_bus_num = atoi(argv[1]);
   g_bus_id = ipmb_bus_num;
 
-  syslog(LOG_WARNING, "ipmbd: bus#:%d\n", ipmb_bus_num);
+  ipmb_slave_addr = atoi(argv[2]);
+  g_slave_addr = ipmb_slave_addr;
 
-  if( (argc == 3) && !(strcmp(argv[2] ,"bicup")) ){
+  syslog(LOG_WARNING, "ipmbd: bus#:%d, slave_addr#: 0x%2X\n", ipmb_bus_num, ipmb_slave_addr);
+
+  if( (argc == 4) && !(strcmp(argv[3] ,"bicup")) ){
 	bic_up_flag = 1;
   }else{
 	bic_up_flag = 0;

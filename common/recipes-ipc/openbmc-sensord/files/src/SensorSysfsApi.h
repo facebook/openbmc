@@ -61,14 +61,31 @@ class SensorSysfsApi : public SensorApi {
      * Writes value to the path specified by object and attr. The path
      * will be constructed from fsPath_ and addr in attribute.
      *
-     * @param value to be written
      * @param object of Attribute to be written
      * @param attr of the value to be written
+     * @param value to be written
      * @throw errno if the file cannot be opened
      */
-    void writeValue(const std::string     &value,
-                    const SensorObject    &object,
-                    const SensorAttribute &attr) override;
+    void writeValue(const SensorObject    &object,
+                    const SensorAttribute &attr,
+                    const std::string     &value) override;
+
+    /**
+     * Dump the sensor api info into json format. The dump should
+     * contain info for the api and path.
+     *
+     * @return nlohmann::json object containing the following entries.
+     *
+     *         api: the api for accessing sensor attribute; "sysfs" here
+     *         path: the path to accessing sensor attribute; fsPath_ here
+     */
+    nlohmann::json dumpToJson() const override {
+      LOG(INFO) << "Dumping SensorSysfs into json";
+      nlohmann::json dump;
+      dump["api"] = "sysfs";
+      dump["path"] = fsPath_;
+      return dump;
+    }
 };
 } // namespace ipc
 } // namespace openbmc

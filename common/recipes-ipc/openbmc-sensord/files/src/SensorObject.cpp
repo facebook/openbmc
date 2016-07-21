@@ -27,72 +27,60 @@
 namespace openbmc {
 namespace ipc {
 
-SensorAttribute* SensorObject::addAttribute(const std::string &name,
-                                            const std::string &type) {
-  if (getAttribute(name, type) != nullptr) {
-    LOG(ERROR) << "Adding duplicated attribute with name " << name
-               << " and type " << type;
+SensorAttribute* SensorObject::addAttribute(const std::string &name) {
+  LOG(INFO) << "Adding Attribute \"" << name << "\" to object \"" << name_
+    << "\"";
+  if (getAttribute(name) != nullptr) {
+    LOG(ERROR) << "Adding duplicated Attribute \"" << name << "\"";
     return nullptr;
   }
-  if (typeMap_.find(type) == typeMap_.end()) {
-    std::unique_ptr<AttrMap> upAttrMap(new AttrMap());
-    typeMap_.insert(std::make_pair(type, std::move(upAttrMap)));
-  }
-  AttrMap* attrMap = typeMap_.find(type)->second.get();
-  std::unique_ptr<SensorAttribute> upAttr(new SensorAttribute(name, type));
+  std::unique_ptr<SensorAttribute> upAttr(new SensorAttribute(name));
   SensorAttribute* attr = upAttr.get();
-  attrMap->insert(std::make_pair(name, std::move(upAttr)));
+  attrMap_.insert(std::make_pair(name, std::move(upAttr)));
   return attr;
 }
 
 const std::string& SensorObject::readAttrValue(
-    const std::string &attrName,
-    const std::string &attrType) const {
-  LOG(INFO) << "Reading the value of Attribute name " << attrName << " type "
-    << attrType;
+                                   const std::string &attrName) const {
+  LOG(INFO) << "Reading the value of Attribute \"" << attrName << "\"";
   SensorAttribute* attr;
-  if ((attr = getSensorAttribute(attrName, attrType)) == nullptr) {
-    LOG(ERROR) << "Attribute of type " << attrType << " name " << attrName
-      << " not found";
+  if ((attr = getAttribute(attrName)) == nullptr) {
+    LOG(ERROR) << "Attribute \"" << attrName << "\" not found";
     throw std::invalid_argument("Attribute not found");
   }
   if (!attr->isReadable()) {
-    LOG(ERROR) << "Attribute of type " << attrType << " name " << attrName
-      << " does not support read in modes";
+    LOG(ERROR) << "Attribute \"" << attrName << "\" does not support read in modes";
     throw std::system_error(EPERM,
                             std::system_category(),
                             "Attribute read not supported");
   }
   if (attr->isAccessible()) {
-    LOG(INFO) << "Attribute name " << attrName << " type " << attrType
-      << " is accessible. Reading value through SensorApi.";
+    LOG(INFO) << "Attribute \"" << attrName << "\" is accessible. "
+      << "Reading value through SensorApi.";
     attr->setValue(sensorApi_.get()->readValue(*this, *attr));
   }
   return attr->getValue();
 }
 
-void SensorObject::writeAttrValue(const std::string &value,
-                                  const std::string &attrName,
-                                  const std::string &attrType) {
-  LOG(INFO) << "Writing the value of Attribute name " << attrName << " type "
-    << attrType;
+void SensorObject::writeAttrValue(const std::string &attrName,
+                                  const std::string &value) {
+  LOG(INFO) << "Writing the value of Attribute \"" << attrName << "\"";
   SensorAttribute* attr;
-  if ((attr = getSensorAttribute(attrName, attrType)) == nullptr) {
-    LOG(ERROR) << "Attribute of type " << attrType << " name " << attrName
-      << " not found";
+  if ((attr = getAttribute(attrName)) == nullptr) {
+    LOG(ERROR) << "Attribute \"" << attrName << "\" not found";
     throw std::invalid_argument("Attribute not found");
   }
   if (!attr->isWritable()) {
-    LOG(ERROR) << "Attribute of type " << attrType << " name " << attrName
-      << " does not support write in modes";
+    LOG(ERROR) << "Attribute \"" << attrName << "\" does not support write "
+      << "in modes";
     throw std::system_error(EPERM,
                             std::system_category(),
                             "Attribute write not supported");
   }
   if (attr->isAccessible()) {
-    LOG(INFO) << "Attribute name " << attrName << " type " << attrType
+    LOG(INFO) << "Attribute \"" << attrName << "\""
       << " is accessible. Writing value through SensorApi.";
-    sensorApi_.get()->writeValue(value, *this, *attr);
+    sensorApi_.get()->writeValue(*this, *attr, value);
   }
   attr->setValue(value);
 }

@@ -18,6 +18,7 @@
 
 #pragma once
 #include <string>
+#include <nlohmann/json.hpp>
 #include "SensorAttribute.h"
 
 namespace openbmc {
@@ -48,13 +49,18 @@ class SensorApi {
      * Writes value to the path specified by object and attr.
      * It's dummy here. The derived class should implement this function.
      *
-     * @param value to be written
      * @param object of Attribute to be written
      * @param attr of the value to be written
+     * @param value to be written
      */
-    virtual void writeValue(const std::string     &value,
-                            const SensorObject    &object,
-                            const SensorAttribute &attr) = 0;
+    virtual void writeValue(const SensorObject    &object,
+                            const SensorAttribute &attr,
+                            const std::string     &value) = 0;
+
+    /**
+     * Dump the sensor api info into json format.
+     */
+    virtual nlohmann::json dumpToJson() const = 0;
 };
 } // namespace ipc
 } // namespace openbmc

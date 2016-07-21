@@ -38,11 +38,7 @@ const char* DBusObjectTreeInterface::xml =
   "    <method name='getObjects'>"
   "      <arg type='as' name='object get' direction='out'/>"
   "    </method>"
-  "    <method name='getAllAttributes'>"
-  "      <arg type='a{sv}' name='attribute get' direction='out'/>"
-  "    </method>"
-  "    <method name='getAttributes'>"
-  "      <arg type='s' name='attribute type' direction='in'/>"
+  "    <method name='getAttrByObject'>"
   "      <arg type='as' name='attribute get' direction='out'/>"
   "    </method>"
   "  </interface>"
@@ -82,8 +78,8 @@ void DBusObjectTreeInterface::getObjects(GDBusMethodInvocation* invocation,
 
   GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
   Object* obj = static_cast<Object*>(arg);
-  const Object::ChildMap* childMap = obj->getChildMap();
-  LOG(INFO) << "geting array of child names of object " << obj->getName();
+  const Object::ChildMap* childMap = &(obj->getChildMap());
+  LOG(INFO) << "Listing array of child names of object " << obj->getName();
   for (auto it = childMap->begin(); it != childMap->end(); it++) {
     g_variant_builder_add(builder, "s", it->first.c_str());
   }
@@ -92,53 +88,17 @@ void DBusObjectTreeInterface::getObjects(GDBusMethodInvocation* invocation,
   g_variant_builder_unref(builder);
 }
 
-
-void DBusObjectTreeInterface::getAllAttributes(
+void DBusObjectTreeInterface::getAttrByObject(
                                       GDBusMethodInvocation* invocation,
                                       gpointer               arg) {
   if (arg == nullptr) return;
-
-  GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
-  Object* obj = static_cast<Object*>(arg);
-  const Object::TypeMap* typeMap = obj->getTypeMap();
-  LOG(INFO) << "geting array of attribute types and names of object "
-    << obj->getName();
-  for (auto i = typeMap->begin(); i != typeMap->end(); i++) {
-    GVariantBuilder *subBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-    const Object::AttrMap* attrMap = i->second.get();
-    // for each type, get the attributes
-    for (auto j = attrMap->begin(); j != attrMap->end(); j++) {
-      g_variant_builder_add(subBuilder, "s",
-                            j->second.get()->getName().c_str());
-    }
-    g_variant_builder_add(builder, "{sv}", i->first.c_str(),
-                          g_variant_new("(as)", subBuilder));
-  }
-  g_dbus_method_invocation_return_value(invocation,
-                                        g_variant_new("(a{sv})", builder));
-  g_variant_builder_unref(builder);
-}
-
-void DBusObjectTreeInterface::getAttributes(
-                                      GDBusMethodInvocation* invocation,
-                                      GVariant*              gvtype,
-                                      gpointer               arg) {
-  if (arg == nullptr) return;
-  const char* type;
-  g_variant_get(gvtype, "(&s)", &type);
 
   GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
   Object* obj = static_cast<Object*>(arg);
-  const Object::AttrMap* attrMap = obj->getAttrMap(type);
-  if (attrMap != nullptr) {
-    LOG(INFO) << "geting array of attribute names with type "
-      << type << " in object " << obj->getName();
-    for (auto j = attrMap->begin(); j != attrMap->end(); j++) {
-      g_variant_builder_add(builder, "s", j->first.c_str());
-    }
-  } else {
-    LOG(WARNING) << "Specified attribute type " << type << " does not "
-      << "exist in object " << obj->getName();
+  LOG(INFO) << "geting array of attribute types and names of object "
+    << obj->getName();
+  for (auto &it : obj->getAttrMap()) {
+    g_variant_builder_add(builder, "s", it.first.c_str());
   }
   g_dbus_method_invocation_return_value(invocation,
                                         g_variant_new("(as)", builder));
@@ -155,14 +115,13 @@ void DBusObjectTreeInterface::methodCallBack(
                                        GDBusMethodInvocation* invocation,
                                        gpointer               arg) {
 
-  if (g_strcmp0(methodName, "Ping") == 0)
+  if (g_strcmp0(methodName, "Ping") == 0) {
     ping(invocation);
-  else if (g_strcmp0(methodName, "getObjects") == 0)
+  } else if (g_strcmp0(methodName, "getObjects") == 0) {
     getObjects(invocation, arg);
-  else if (g_strcmp0(methodName, "getAllAttributes") == 0)
-    getAllAttributes(invocation, arg);
-  else if (g_strcmp0(methodName, "getAttributes") == 0)
-    getAttributes(invocation, parameters, arg);
+  } else if (g_strcmp0(methodName, "getAttrByObject") == 0) {
+    getAttrByObject(invocation, arg);
+  }
 }
 
 } // namespace ipc

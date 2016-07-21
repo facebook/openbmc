@@ -69,21 +69,8 @@ class DBusObjectTreeInterface: public DBusInterfaceBase {
      * @param invocation stands for the identity of the message
      * @param arg is the pointer to the specified object
      */
-    static void getAllAttributes(GDBusMethodInvocation* invocation,
-                                  gpointer               arg);
-
-    /**
-     * List all the attributes with the specified type of
-     * the specified object.
-     *
-     * @param invocation stands for the identity of the message
-     * @param gvtype is an input parameter from dbus-send
-     *        here it should be a string of attribute type
-     * @param arg is the pointer to the specified object
-     */
-    static void getAttributes(GDBusMethodInvocation* invocation,
-                               GVariant*              gvtype,
-                               gpointer               arg);
+    static void getAttrByObject(GDBusMethodInvocation* invocation,
+                                 gpointer               arg);
 
     /**
      * Handles the callback for managing dbus objects

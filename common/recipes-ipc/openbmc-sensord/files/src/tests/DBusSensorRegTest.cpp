@@ -80,13 +80,17 @@ TEST_F(DBusDefaultTest, DefaultObjectRegistration) {
   ASSERT_TRUE(dbus_->isObjectRegistered("/org/openbmc/Chassis", defaultInterface));
   EXPECT_TRUE(sensorTree.getObject("/org/openbmc/Chassis") != nullptr);
 
-  sensorTree.deleteObjectByPath("/org"); // failed since it is root
+  // failed since it is root
+  EXPECT_ANY_THROW(sensorTree.deleteObjectByPath("/org"));
   ASSERT_TRUE(dbus_->isObjectRegistered("/org", defaultInterface));
-  sensorTree.deleteObjectByName("openbmc", "/org"); // failed since it has children
+  // failed since it has children
+  EXPECT_ANY_THROW(sensorTree.deleteObjectByName("openbmc", "/org"));
   ASSERT_TRUE(dbus_->isObjectRegistered("/org/openbmc", defaultInterface));
-  sensorTree.deleteObjectByPath("/org/openbmc/Chassis"); // deletion successful
+  // deletion successful
+  EXPECT_NO_THROW(sensorTree.deleteObjectByPath("/org/openbmc/Chassis"));
   ASSERT_FALSE(dbus_->isObjectRegistered("/org/openbmc/Chassis", defaultInterface));
-  sensorTree.deleteObjectByName("openbmc", "/org"); // deletion successful
+  // deletion successful
+  EXPECT_NO_THROW(sensorTree.deleteObjectByName("openbmc", "/org"));
   ASSERT_FALSE(dbus_->isObjectRegistered("/org/openbmc", defaultInterface));
 }
 
@@ -163,28 +167,26 @@ TEST_F(DBusSensorObjectTreeTest, AttributeReadWriteTest) {
   sobject = static_cast<SensorObject*>(sensorTree.getObject(
       "/org/openbmc/CPU_sensor"));
   ASSERT_TRUE(sobject != nullptr);
-  SensorAttribute* sattr = sobject->addAttribute("CPU_temp", "temp");
+  SensorAttribute* sattr = sobject->addAttribute("CPU_temp");
   sattr->setAddr(fileName);
   EXPECT_STREQ(sattr->getValue().c_str(), "");
-  EXPECT_STREQ(sobject->readAttrValue("CPU_temp", "temp").c_str(),
-               value.c_str());
+  EXPECT_STREQ(sobject->readAttrValue("CPU_temp").c_str(), value.c_str());
   EXPECT_STREQ(sattr->getValue().c_str(), value.c_str());
 
   sattr->setModes(Attribute::RW);
   const std::string newValue = "1000";
-  sobject->writeAttrValue(newValue, "CPU_temp", "temp"); // write to file
+  sobject->writeAttrValue("CPU_temp", newValue); // write to file
   EXPECT_STREQ(sattr->getValue().c_str(), newValue.c_str());
-  EXPECT_STREQ(sobject->readAttrValue("CPU_temp", "temp").c_str(),
-               newValue.c_str());
+  EXPECT_STREQ(sobject->readAttrValue("CPU_temp").c_str(), newValue.c_str());
 
   // the generic object does not read from the file
   Object* object;
   EXPECT_TRUE((object = sensorTree.getObject("/org/openbmc")) != nullptr);
-  Attribute* attr = object->addAttribute("tag", "label");
+  Attribute* attr = object->addAttribute("tag");
   EXPECT_STREQ(attr->getValue().c_str(), "");
-  EXPECT_STREQ(object->readAttrValue("tag", "label").c_str(), "");
+  EXPECT_STREQ(object->readAttrValue("tag").c_str(), "");
   attr->setModes(Attribute::RW);
-  object->writeAttrValue(value, "tag", "label");
+  object->writeAttrValue("tag", value);
   EXPECT_STREQ(attr->getValue().c_str(), value.c_str());
 }
 

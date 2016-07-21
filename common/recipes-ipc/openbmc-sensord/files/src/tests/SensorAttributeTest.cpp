@@ -19,17 +19,23 @@
 #include <string>
 #include <gtest/gtest.h>
 #include <glog/logging.h>
+#include <nlohmann/json.hpp>
 #include "../SensorAttribute.h"
 using namespace openbmc::ipc;
 
 TEST(SensorAttributeTest, Accessibility) {
-  SensorAttribute attr("CPU_temp", "temp");
+  SensorAttribute attr("CPU_temp");
   EXPECT_STREQ(attr.getName().c_str(), "CPU_temp");
-  EXPECT_STREQ(attr.getType().c_str(), "temp");
   EXPECT_FALSE(attr.isAccessible());
   attr.setAddr("temp1_input");
   EXPECT_TRUE(attr.isAccessible());
   EXPECT_STREQ(attr.getAddr().c_str(), "temp1_input");
+
+  nlohmann::json dump = attr.dumpToJson();
+  bool isAccessible = dump.at("isAccessible");
+  EXPECT_TRUE(isAccessible);
+  const std::string &addr = dump["addr"];
+  EXPECT_STREQ(addr.c_str(), "temp1_input");
 }
 
 int main (int argc, char* argv[]) {

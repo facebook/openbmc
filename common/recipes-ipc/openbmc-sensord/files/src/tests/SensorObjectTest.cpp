@@ -23,6 +23,7 @@
 #include <gtest/gtest.h>
 #include <glog/logging.h>
 #include <gio/gio.h>
+#include <nlohmann/json.hpp>
 #include <object-tree/Attribute.h>
 #include "../SensorObject.h"
 #include "../SensorApi.h"
@@ -47,8 +48,8 @@ class ReadWriteTest : public ::testing::Test {
       std::string fsPath = "/sys/class/hwmon/hwmon1";
       std::unique_ptr<SensorSysfsApi> uSysfsApi(new SensorSysfsApi(fsPath));
       sobj_ = new SensorObject("sensor1", std::move(uSysfsApi));
-      sobj_->addAttribute("1_input", "temp"); // modes is by default RO
-      SensorAttribute* attrRW = sobj_->addAttribute("1_max", "temp");
+      sobj_->addAttribute("1_input"); // modes is by default RO
+      SensorAttribute* attrRW = sobj_->addAttribute("1_max");
       attrRW->setModes(Attribute::RW);
     }
 
@@ -60,15 +61,13 @@ class ReadWriteTest : public ::testing::Test {
 };
 
 TEST_F(ReadWriteTest, AttributeRead) {
-  // no Generic type attribute
-  EXPECT_THROW(sobj_->readAttrValue("1_input"), std::invalid_argument);
   std::string value;
-  ASSERT_NO_THROW(value = sobj_->readAttrValue("1_input", "temp"));
-  EXPECT_STREQ(value.c_str(), sobj_->getAttribute("1_input", "temp")
+  ASSERT_NO_THROW(value = sobj_->readAttrValue("1_input"));
+  EXPECT_STREQ(value.c_str(), sobj_->getAttribute("1_input")
                                    ->getValue().c_str());
 
   // set addr in SensorAttribute
-  SensorAttribute* attr = sobj_->getSensorAttribute("1_input", "temp");
+  SensorAttribute* attr = sobj_->getAttribute("1_input");
   ASSERT_TRUE(attr != nullptr);
   EXPECT_FALSE(attr->isAccessible());
   attr->setAddr("temp1_input");
@@ -78,14 +77,25 @@ TEST_F(ReadWriteTest, AttributeRead) {
 
 TEST_F(ReadWriteTest, AttributeWrite) {
   // cannot write with modes RO
-  EXPECT_THROW(sobj_->writeAttrValue("8000", "1_input", "temp"), std::system_error);
+  EXPECT_THROW(sobj_->writeAttrValue("8000", "1_input"), std::system_error);
   std::string origVal;
   const std::string newVal = "81000";
-  ASSERT_NO_THROW(origVal = sobj_->readAttrValue("1_max", "temp"));
-  ASSERT_NO_THROW(sobj_->writeAttrValue(newVal, "1_max", "temp"));
-  EXPECT_STREQ(sobj_->readAttrValue("1_max", "temp").c_str(), newVal.c_str());
-  ASSERT_NO_THROW(sobj_->writeAttrValue(origVal, "1_max", "temp"));
-  EXPECT_STREQ(sobj_->readAttrValue("1_max", "temp").c_str(), origVal.c_str());
+  ASSERT_NO_THROW(origVal = sobj_->readAttrValue("1_max"));
+  ASSERT_NO_THROW(sobj_->writeAttrValue(newVal, "1_max"));
+  EXPECT_STREQ(sobj_->readAttrValue("1_max").c_str(), newVal.c_str());
+  ASSERT_NO_THROW(sobj_->writeAttrValue(origVal, "1_max"));
+  EXPECT_STREQ(sobj_->readAttrValue("1_max").c_str(), origVal.c_str());
+}
+
+TEST_F(ReadWriteTest, Dump) {
+  Object* obj = sobj_;
+  nlohmann::json objectDump = obj->dumpToJson();
+  const std::string &objectType = objectDump["objectType"];
+  EXPECT_STREQ(objectType.c_str(), "Sensor");
+
+  ASSERT_TRUE(objectDump.find("access") != objectDump.end());
+  const std::string &api = objectDump["access"]["api"];
+  EXPECT_STREQ(api.c_str(), "sysfs");
 }
 
 int main (int argc, char* argv[]) {

@@ -61,12 +61,6 @@ int main (int argc, char* argv[]) {
   chassis->addAttribute("1_input");
   chassis->addAttribute("1_max");
   chassis->addAttribute("1_min");
-  chassis->addAttribute("1_input", "temp");
-  chassis->addAttribute("1_max", "temp");
-  chassis->addAttribute("1_min", "temp");
-  chassis->addAttribute("1_input", "power");
-  chassis->addAttribute("1_max", "power");
-  chassis->addAttribute("1_min", "power");
 
   t.join(); // let the event loop run forever
   g_main_loop_quit(loop);

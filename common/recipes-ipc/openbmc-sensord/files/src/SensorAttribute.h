@@ -18,6 +18,7 @@
 
 #pragma once
 #include <string>
+#include <nlohmann/json.hpp>
 #include <object-tree/Attribute.h>
 
 namespace openbmc {
@@ -49,6 +50,24 @@ class SensorAttribute : public Attribute {
      */
     bool isAccessible() const {
       return addr_.compare("") != 0;
+    }
+
+    /**
+     * Dump the sensor attribute info into json format. Apart
+     * from the entries dumped in Attribute::dumpToJson(). addr
+     * and isAccessible will also be dumped.
+     *
+     * @return nlohmann::json object with entries specified in
+     *         Attribute::dumpToJson() plus the following.
+     *
+     *         addr: string corresponding to addr_
+     *         isAccessible: bool corresponding to isAccessible
+     */
+    nlohmann::json dumpToJson() const override {
+      nlohmann::json dump = Attribute::dumpToJson();
+      dump["addr"] = addr_;
+      dump["isAccessible"] = isAccessible();
+      return dump;
     }
 };
 

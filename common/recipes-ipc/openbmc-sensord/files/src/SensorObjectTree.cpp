@@ -31,30 +31,13 @@ SensorObject* SensorObjectTree::addSensorObject(
                                       const std::string &name,
                                       const std::string &parentPath,
                                       std::unique_ptr<SensorApi> uSensorApi) {
-  const std::string path = ipc_.get()->getPath(parentPath, name);
-  if (!ipc_->isPathAllowed(path)) {
-    LOG(ERROR) << "Sensor Object name of " << name
-      << "does not match the ipc rule.";
-    throw std::invalid_argument("Invalid object name");
-  }
-
-  Object* parent = getObject(parentPath);
-  if (parent == nullptr) {
-    LOG(WARNING) << "Parent object not found at path " << parentPath;
-    return nullptr;
-  }
-  if (parent->getChildObject(name) != nullptr) {
-    LOG(WARNING) << "Parent object has a child with the same name as" << name;
-    return nullptr;
-  }
-
-  std::unique_ptr<SensorObject> upObj(new SensorObject(name,
-                                                       std::move(uSensorApi),
-                                                       parent));
-  SensorObject* object = upObj.get();
-  ipc_->registerObject(path, object);
-  objectMap_.insert(std::make_pair(path, std::move(upObj)));
-  return object;
+  LOG(INFO) << "Adding object \"" << name << "\" under path \""
+    << parentPath << "\"";
+  const std::string path = getPath(parentPath, name);
+  Object* parent = getParent(parentPath, name);
+  std::unique_ptr<SensorObject> upObj(
+      new SensorObject(name, std::move(uSensorApi), parent));
+  return static_cast<SensorObject*>(addObjectByPath(std::move(upObj), path));
 }
 
 } // namespace ipc

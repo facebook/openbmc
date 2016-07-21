@@ -20,8 +20,9 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
-#include <glog/logging.h>
 #include <unordered_map>
+#include <glog/logging.h>
+#include <nlohmann/json.hpp>
 #include <object-tree/Object.h>
 #include <object-tree/Attribute.h>
 #include "SensorApi.h"
@@ -53,14 +54,12 @@ class SensorObject : public Object {
                  std::unique_ptr<SensorApi> sensorApi,
                  Object*                    parent = nullptr)
         : Object(name, parent) {
-      LOG(INFO) << "Initializing SensorObject name " << name;
+      LOG(INFO) << "Initializing SensorObject \"" << name << "\"";
       sensorApi_ = std::move(sensorApi);
     }
 
-    SensorAttribute* getSensorAttribute(const std::string &name,
-                                        const std::string &type
-                                          = "Generic") const {
-      Attribute* attr = getAttribute(name, type);
+    SensorAttribute* getAttribute(const std::string &name) const override {
+      Attribute* attr = Object::getAttribute(name);
       if (attr == nullptr) {
         return nullptr;
       }
@@ -72,41 +71,66 @@ class SensorObject : public Object {
     }
 
     /**
-     * Adds sensor attribute to the sensor object but with type specified.
+     * Adds sensor attribute to the sensor object.
      * Overrides the addAttribute function in Object.h.
      *
      * @param name of attribute
-     * @param type of attribute
      * @return nullptr if name conflict; Attribute pointer otherwise
      */
-    SensorAttribute* addAttribute(const std::string &name,
-                                  const std::string &type) override;
+    SensorAttribute* addAttribute(const std::string &name) override;
 
     /**
      * Read the value of Attribute name with type through sensorApi_.
      *
      * @param name of the attribute to be read
-     * @param type of the attribute to be read; "Generic" by default
      * @return value of the attribute
      * @throw std::invalid_argument if name not found
      * @throw std::system_error EPERM if attr has no read modes
      */
-    const std::string& readAttrValue(const std::string &name,
-                                     const std::string &type
-                                       = "Generic") const override;
+    const std::string& readAttrValue(const std::string &name) const override;
 
     /**
      * Write the value of Attribute name with type through sensorApi_.
      *
      * @param value to be written to attribute through sensorApi_
      * @param name of attribute to be written
-     * @param type of attribute to be written; "Generic" by default
      * @throw std::invalid_argument if name not found
      * @throw std::system_error EPERM if attr has no write modes
      */
     void writeAttrValue(const std::string &value,
-                        const std::string &name,
-                        const std::string &type = "Generic") override;
+                        const std::string &name) override;
+
+    /**
+     * Dump the sensor object info into json format. It calls the
+     * Object::dumpToJson() but adds the access method and changes
+     * the objectType to "SensorApi".
+     *
+     * @return nlohmann::json object with entries specified in
+     *         Object::dumpToJson() plus the "access" entry for SensorApi.
+     */
+    nlohmann::json dumpToJson() const override {
+      LOG(INFO) << "Dumping SensorObject into json";
+      nlohmann::json dump = Object::dumpToJson();
+      dump["objectType"] = "Sensor";
+      dump["access"] = sensorApi_.get()->dumpToJson();
+      return dump;
+    }
+
+    /**
+     * Dump the sensor object info iteratively into json format. It calls the
+     * Object::dumpToJsonIterative() but adds the access method and changes
+     * the objectType to "SensorApi".
+     *
+     * @return nlohmann::json object with entries specified in
+     *         Object::dumpToJson() plus the "access" entry for SensorApi.
+     */
+    nlohmann::json dumpToJsonRecursive() const override {
+      LOG(INFO) << "Dumping SensorObject into json";
+      nlohmann::json dump = Object::dumpToJsonRecursive();
+      dump["objectType"] = "Sensor";
+      dump["access"] = sensorApi_.get()->dumpToJson();
+      return dump;
+    }
 };
 
 } // namespace ipc

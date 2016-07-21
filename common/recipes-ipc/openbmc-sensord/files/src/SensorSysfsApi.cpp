@@ -46,9 +46,9 @@ const std::string SensorSysfsApi::readValue(const SensorObject    &object,
   return str;
 }
 
-void SensorSysfsApi::writeValue(const std::string     &value,
-                                const SensorObject    &object,
-                                const SensorAttribute &attr) {
+void SensorSysfsApi::writeValue(const SensorObject    &object,
+                                const SensorAttribute &attr,
+                                const std::string     &value) {
   std::string path = fsPath_ + std::string("/") + attr.getAddr();
   std::fstream fs;
   LOG(INFO) << "Writing value " << value <<" to path " << path;

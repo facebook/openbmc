@@ -76,6 +76,8 @@ do_on() {
             return 1
         fi
     fi
+    # start with resetting T2
+    reset_brcm.sh
     # first make sure, GPIOD1 (25) is high
     gpio_set 25 1
     sleep 1
@@ -99,6 +101,7 @@ do_on() {
         n=$((n+1))
         if [ $n -gt $retries ]; then
             echo " Failed"
+            logger "Failed to power on micro-server"
             return 1
         fi
         echo -n "..."
@@ -106,6 +109,7 @@ do_on() {
     # Turn on the power LED (GPIOE5)
     /usr/local/bin/power_led.sh on
     echo " Done"
+    logger "Successfully power on micro-server"
     return 0
 }
 
@@ -121,6 +125,7 @@ do_off() {
     # Turn off the power LED (GPIOE5)
     /usr/local/bin/power_led.sh off
     echo " Done"
+    logger "Successfully power off micro-server"
     return 0
 }
 
@@ -139,7 +144,9 @@ do_reset() {
         esac
     done
     if [ $system -eq 1 ]; then
-        echo -n "Power reset whole system ..."
+        logger "Power reset the whole system ..."
+        echo -n "Power reset the whole system ..."
+        sleep 1             # give some time for the message to go out
         rmmod adm1275
         i2cset -y 12 0x10 0xd9 c
     else
@@ -148,6 +155,8 @@ do_reset() {
             echo "Use '$prog on' to power the microserver on"
             return -1
         fi
+        # reset T2 first
+        reset_brcm.sh
         echo -n "Power reset microserver ..."
         # then, put GPIOP7 (127) to low
         gpio_set 127 0
@@ -155,6 +164,7 @@ do_reset() {
         sleep 1
         gpio_set 17 1
         sleep 1
+        logger "Successfully power reset micro-server"
     fi
     echo " Done"
     return 0

@@ -27,6 +27,7 @@ prog="$0"
 PWR_BTN_GPIO="BMC_PWR_BTN_OUT_N"
 PWR_SYSTEM_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_cyc_all_n"
 PWR_USRV_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/usrv_rst_n"
+PWR_TH_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/th_sys_rst_n"
 
 usage() {
     echo "Usage: $prog <command> [command options]"
@@ -86,13 +87,17 @@ do_on() {
         fi
     fi
 
+    # reset TH
+    reset_brcm.sh
     # power on sequence
     do_on_com_e
     ret=$?
     if [ $ret -eq 0 ]; then
         echo " Done"
+	logger "Successfully power on micro-server"
     else
         echo " Failed"
+        logger "Failed to power on micro-server"
     fi
     return $ret
 }
@@ -131,7 +136,8 @@ do_reset() {
     done
     if [ $system -eq 1 ]; then
         pulse_us=100000             # 100ms
-        echo -n "Power reset whole system ..."
+        logger "Power reset the whole system ..."
+        echo -n "Power reset the whole system ..."
         sleep 1
         echo 0 > $PWR_SYSTEM_SYSFS
         # Echo 0 above should work already. However, after CPLD upgrade,
@@ -148,10 +154,13 @@ do_reset() {
             echo "Use '$prog on' to power the microserver on"
             return -1
         fi
+        # reset TH first
+        reset_brcm.sh
         echo -n "Power reset microserver ..."
         echo 0 > $PWR_USRV_RST_SYSFS
         sleep 1
         echo 1 > $PWR_USRV_RST_SYSFS
+        logger "Successfully power reset micro-server"
     fi
     echo " Done"
     return 0

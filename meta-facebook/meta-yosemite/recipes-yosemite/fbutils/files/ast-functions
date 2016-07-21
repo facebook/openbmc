@@ -145,6 +145,34 @@ is_server_prsnt() {
     echo 0
   fi
 }
+# Check to see if Bridge-IC is ready in given slot or not
+is_bic_ready() {
+  local ready
+
+  case $1 in
+   1)
+    ready=$(gpio_get N3)
+    ;;
+   2)
+    ready=$(gpio_get N2)
+    ;;
+   3)
+    ready=$(gpio_get N5)
+    ;;
+   4)
+    ready=$(gpio_get N4)
+    ;;
+   *)
+    ready="1"
+    ;;
+  esac
+
+  if [ $ready == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
 
 yosemite_is_server_on() {
     local curr_pwr_cpu

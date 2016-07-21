@@ -97,6 +97,7 @@ const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
 const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
+const static uint8_t gpio_bic_ready[] = { 0, 107, 106, 109, 108 };
 const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
@@ -658,6 +659,38 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       *status = 1;
       break;
     default:
+      return -1;
+  }
+
+  return 0;
+}
+int
+pal_is_fru_ready(uint8_t fru, uint8_t *status) {
+  int val;
+  char path[64] = {0};
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
+
+      if (read_device(path, &val)) {
+        return -1;
+      }
+
+      if (val == 0x0) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+   case FRU_SPB:
+   case FRU_NIC:
+     *status = 1;
+     break;
+   default:
       return -1;
   }
 
@@ -1392,9 +1425,6 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     case FRU_SLOT3:
     case FRU_SLOT4:
       pal_is_fru_prsnt(fru, &status);
-      if (status) {
-        pal_is_server_12v_on(fru, &status);
-      }
       break;
     case FRU_SPB:
     case FRU_NIC:

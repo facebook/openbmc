@@ -53,7 +53,7 @@ typedef struct {
   float pos_hyst;
   float neg_hyst;
   int curr_state;
-  char name[17];
+  char name[32];
   char units[64];
 
 } thresh_sensor_t;

@@ -48,7 +48,7 @@ static void
 print_sensor_reading(float fvalue, uint8_t snr_num, thresh_sensor_t *thresh,
     bool threshold, char *status) {
 
-  printf("%-18s (0x%X) : %.2f %-5s | (%s)",
+  printf("%-28s (0x%X) : %7.2f %-5s | (%s)",
       thresh->name, snr_num, fvalue, thresh->units, status);
   if (threshold) {
 
@@ -129,7 +129,7 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
     usleep(50);
 
     if (pal_sensor_read(fru, snr_num, &fvalue) < 0) {
-      printf("%-18s (0x%X) : NA | (na)\n", thresh.name, sensor_list[i]);
+      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_list[i]);
       continue;
     } else {
       get_sensor_status(fvalue, &thresh, status);

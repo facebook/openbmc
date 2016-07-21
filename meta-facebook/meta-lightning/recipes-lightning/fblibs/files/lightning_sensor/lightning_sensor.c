@@ -1140,7 +1140,8 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           if (read_ads1015_value(ADS1015_CHANNEL6, I2C_DEV_PDPB, I2C_ADDR_PDPB_ADC, (float*) value) < 0) {
             return -1;
           }
-          *((float *) value) = *((float *) value) * ((1 + 1) / 1); // Voltage Divider Circuit
+          // NOTE: DVT system has the Voltage Divider Circuit not populated
+          //*((float *) value) = *((float *) value) * ((1 + 1) / 1); // Voltage Divider Circuit
           return 0;
 
         case PDPB_SENSOR_P12V_SSD:

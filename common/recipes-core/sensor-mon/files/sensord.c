@@ -93,7 +93,7 @@ init_fru_snr_thresh(uint8_t fru) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "init_fru_snr_thresh: sdr_get_snr_thresh for FRU: %d", fru);
 #endif /* DEBUG */
-      continue;
+      return -1;
     }
   }
 
@@ -518,7 +518,7 @@ run_sensord(int argc, char **argv) {
     if (GETBIT(fru_flag, fru)) {
 
       if (init_fru_snr_thresh(fru) < 0)
-        return -1;
+        continue;
 
       /* Threshold Sensors */
       if (pthread_create(&thread_snr[fru-1], NULL, snr_thresh_monitor,

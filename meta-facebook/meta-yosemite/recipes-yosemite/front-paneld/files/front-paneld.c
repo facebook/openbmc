@@ -559,8 +559,13 @@ led_sync_handler() {
 
       msleep(LED_ON_TIME_HEALTH);
 
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        pal_set_id_led(slot, ID_LED_OFF);
+      ret = pal_get_hand_sw(&pos);
+      if ((ret) || (pos == HAND_SW_BMC)) {
+        for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
+           pal_set_id_led(slot, ID_LED_OFF);
+        }
+      } else {
+           pal_set_id_led(pos, ID_LED_OFF);
       }
       msleep(LED_OFF_TIME_HEALTH);
       continue;

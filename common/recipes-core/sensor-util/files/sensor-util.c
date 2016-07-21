@@ -188,10 +188,17 @@ main(int argc, char **argv) {
       }
 
       if (status == 0) {
-        pal_get_fru_name(fru, fruname);
+        if (pal_get_fru_name(fru, fruname))
+          fruname[0] = '\0';
         printf("%s is empty!\n\n", fruname);
         fru++;
         continue;
+      }
+
+      ret = pal_is_fru_ready(fru, &status);
+      if ((ret < 0) || (status == 0)) {
+         printf("%s is unavailable!\n", argv[1]);
+         return ret;
       }
 
       ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);

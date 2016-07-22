@@ -9,36 +9,12 @@ include recipes-core/images/core-image-minimal.bb
 IMAGE_FSTYPES += "cpio.lzma.u-boot"
 UBOOT_IMAGE_ENTRYPOINT = "0x40800000"
 
-PYTHON_PKGS = " \
-  python-core \
-  python-io \
-  python-json \
-  python-shell \
-  python-subprocess \
-  python-argparse \
-  python-ctypes \
-  python-datetime \
-  python-email \
-  python-threading \
-  python-mime \
-  python-pickle \
-  python-misc \
-  python-netserver \
-  python-syslog \
-  "
-
-NTP_PKGS = " \
-  ntp \
-  ntp-utils \
-  sntp \
-  ntpdate \
-  "
-
 # Include modules in rootfs
 IMAGE_INSTALL += " \
-  kernel-modules \
-  u-boot \
-  u-boot-fw-utils \
+  packagegroup-openbmc-base \
+  packagegroup-openbmc-net \
+  packagegroup-openbmc-python \
+  packagegroup-openbmc-rest \
   openbmc-utils \
   at93cx6-util \
   bcm5396-util \
@@ -47,27 +23,17 @@ IMAGE_INSTALL += " \
   fan-ctrl \
   rackmon \
   watchdog-ctrl \
-  i2c-tools \
   sensor-setup \
   usb-console \
   oob-nic \
   lldp-util \
-  lmsensors-sensors \
   wedge-eeprom \
   sms-kcsd \
-  rest-api \
-  bottle \
   ipmid \
   po-eeprom \
   bitbang \
-  ${PYTHON_PKGS} \
-  ${NTP_PKGS} \
-  iproute2 \
-  dhcp-client \
   jbi \
   flashrom \
-  cherryPy \
-  spatula \
   psumuxmon \
   mTerm \
   "

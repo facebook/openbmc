@@ -5,7 +5,7 @@ SRC_URI += " file://setup-ipmbd.sh \
            "
 DEPENDS_append = " plat-utils "
 
-CFLAGS_prepend = " -DCONFIG_YOSEMITE"
+CFLAGS_prepend = " -DCONFIG_FBTP"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

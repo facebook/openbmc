@@ -52,7 +52,7 @@ print_fw_ver(uint8_t fru_id) {
     printf("ME Version: NA\n");
   } else {
     printf("ME Version: SPS_%02X.%02X.%02X.%02X%X.%X\n", ver[0], ver[1]>>4, ver[1] & 0x0F,
-                    ver[2], ver[3]>>4, ver[3] & 0x0F);
+                    ver[3], ver[4]>>4, ver[4] & 0x0F);
   }
 
   // Print BIOS version
@@ -70,15 +70,15 @@ print_fw_ver(uint8_t fru_id) {
 
   // Print VR Version
   if (pal_get_vr_ver(VR_PCH_PVNN, ver)) {
-    printf("VR_PCH_PVNN Version: NA\n");
+    printf("VR_PCH_[PVNN, PV1V05] Version: NA\n");
   } else {
-    printf("VR_PCH_PVNN Version: %02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_PCH_[PVNN, PV1V05] Version: %02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
   }
 
   if (pal_get_vr_ver(VR_CPU0_VCCIN, ver)) {
-    printf("VR_CPU0_VCCIN Version: NA\n");
+    printf("VR_CPU0_[VCCIN, VSA] Version: NA\n");
   } else {
-    printf("VR_CPU0_VCCIN Version: %02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_CPU0_[VCCIN, VSA] Version: %02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
   }
 
   if (pal_get_vr_ver(VR_CPU0_VCCIO, ver)) {
@@ -100,9 +100,9 @@ print_fw_ver(uint8_t fru_id) {
   }
 
   if (pal_get_vr_ver(VR_CPU1_VCCIN, ver)) {
-    printf("VR_CPU1_VCCIN Version: NA\n");
+    printf("VR_CPU1_[VCCIN, VSA] Version: NA\n");
   } else {
-    printf("VR_CPU1_VCCIN Version: %02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_CPU1_[VCCIN, VSA] Version: %02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
   }
 
   if (pal_get_vr_ver(VR_CPU1_VCCIO, ver)) {

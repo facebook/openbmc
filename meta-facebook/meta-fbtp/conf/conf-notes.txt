@@ -1,0 +1,2 @@
+Common targets are:
+    fbtp-image

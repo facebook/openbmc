@@ -1,0 +1,4 @@
+max([
+  linear_inlet(mb:mb_inlet_temp),
+  linear_mezz(nic:mezz_sensor_temp)
+])

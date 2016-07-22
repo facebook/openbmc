@@ -7,6 +7,7 @@
     "sensor_fail": true
   },
   "watchdog": true,
+  "fanpower": false,
   "min_rpm": 800,
   "profiles": {
     "linear_inlet": {

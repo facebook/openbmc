@@ -95,6 +95,15 @@ def bmc_read_speed():
             fan_n += 1
     return result
 
+# TODO: Revisit this when another platform needs to check power status
+def bmc_read_power():
+    cmd = '/usr/local/bin/power-util mb status'
+    data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    if 'OFF' in data:
+        return 0
+    else:
+        return 1
+
 class BMCMachine:
     def __init__(self):
         self.frus = set()
@@ -112,6 +121,8 @@ class BMCMachine:
             raise Exception(response)
     def read_speed(self):
         return bmc_read_speed()
+    def read_power(self):
+        return bmc_read_power()
     def read_sensors(self):
         sensors = {}
         for fru in self.frus:
@@ -232,6 +243,10 @@ def main():
         if config['boost']['progressive']:
             boost_type = 'progressive'
     watchdog = config['watchdog']
+    if 'fanpower' in config:
+        fanpower = config['fanpower']
+    else:
+        fanpower = False
     if 'ramp_rate' in config:
         ramp_rate = config['ramp_rate']
     wdfile = None
@@ -276,6 +291,16 @@ def main():
             wdfile.flush()
 
         time.sleep(interval)
+        if fanpower:
+            pwr_status = True
+            status = machine.read_power()
+            if status == 0:
+                pwr_status = False
+                continue
+            else:
+                if pwr_status == False:
+                    time.sleep(interval)
+                    pwr_status = True
         sensors = machine.read_sensors()
         speeds = machine.read_speed()
         fan_fail = False
@@ -347,5 +372,5 @@ if __name__ == "__main__":
     except:
         machine.set_all_pwm(boost)
         (etype, e) = sys.exc_info()[:2]
-        crit("failed, exception: " + str(etype))
+        warn("failed, exception: " + str(etype))
         traceback.print_exc()

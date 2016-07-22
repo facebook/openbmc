@@ -41,7 +41,7 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-# Set up to read the board revision pins, D1, D3, D5
+# Set up to read the board revision pins, GPIOD1(25), GPIOD3 (27), GPIOD5 (29)
 devmem_clear_bit $(scu_addr 90) 1
 devmem_clear_bit $(scu_addr 70) 21
 
@@ -112,7 +112,7 @@ gpio_set H6 1
 # GPIOH7(63): SCU90[6], SCU90[7], SCU10[8] shall be 0
 gpio_set H7 1
 
-# FM_POST_CARD_PRES_BMC_N: GPIO Q6
+# FM_POST_CARD_PRES_BMC_N: GPIOQ6 (134)
 devmem_clear_bit $(scu_addr 90) 28
 
 gpio_export Q6
@@ -131,7 +131,7 @@ gpio_set U5 1
 #devmem_set_bit $(scu_addr 70) 13
 
 # Power LED for Server:
-# To use GPIOAA2 (210?), SCUA4[26],  must be 0
+# To use GPIOAA2 (210), SCUA4[26],  must be 0
 devmem_clear_bit $(scu_addr A4) 26
 
 gpio_set AA2 1
@@ -250,7 +250,18 @@ gpio_set AA2 1
 #devmem_clear_bit $(scu_addr 90) 31
 #devmem_set_bit $(scu_addr 3c) 3
 
+
 # Disable PWM reset during external reset
 devmem_clear_bit $(scu_addr 9c) 17
 # Disable PWM reset during WDT1 reset
 devmem_clear_bit 0x1e78501c 17
+
+# FM_BATTERY_SENSE_EN_N: GPIOF6 (46)
+# To use GJPIOF6, SCU80[30] must be 0
+devmem_clear_bit $(scu_addr 80) 30
+gpio_set F6 1
+
+# FM_BIOS_MRC_DEBUG_MSG_DIS_N: GPIOD0 (24)
+# To use GJPIOD0, SCU90[1] must be 0
+devmem_clear_bit $(scu_addr 90) 1
+gpio_set D0 1

@@ -50,6 +50,7 @@
 #define HSC_IN_VOLT "in1_input"
 #define HSC_OUT_CURR "curr1_input"
 #define HSC_TEMP "temp1_input"
+#define HSC_IN_POWER "power1_input"
 
 #define UNIT_DIV 1000
 
@@ -878,14 +879,7 @@ yosemite_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case SP_SENSOR_HSC_TEMP:
           return read_hsc_value(HSC_TEMP, (float*) value);
         case SP_SENSOR_HSC_IN_POWER:
-          if (read_hsc_value(HSC_IN_VOLT, &volt)) {
-            return -1;
-          }
-          if (read_hsc_value(HSC_OUT_CURR, &curr)) {
-            return -1;
-          }
-          * (float*) value = volt * curr;
-          return 0;
+          return read_hsc_value(HSC_IN_POWER, (float*) value);
       }
       break;
 

@@ -34,7 +34,7 @@
 
 #define BIT(value, index) ((value >> index) & 1)
 
-#define FBTP_PLATFORM_NAME "FBTP"
+#define FBTP_PLATFORM_NAME "fbtp"
 #define LAST_KEY "last_key"
 #define FBTP_MAX_NUM_SLOTS 1
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
@@ -60,7 +60,9 @@
 
 #define GPIO_DBG_CARD_PRSNT 134
 
-#define GPIO_BMC_READY_N    28
+#define GPIO_BMC_READY_N  28
+
+#define GPIO_BAT_SENSE_EN_N 46
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -119,15 +121,19 @@
 #define VR_BUS_ID 0x5
 
 #define VR_FW_PAGE 0x2f
-#define VR_TELEMETRY_PAGE 0x60
+#define VR_LOOP_PAGE_0 0x60
+#define VR_LOOP_PAGE_1 0x61
+#define VR_LOOP_PAGE_2 0x62
 
 #define VR_FW_REG1 0xC
 #define VR_FW_REG2 0xD
 
 #define VR_TELEMETRY_VOLT 0x1A
 #define VR_TELEMETRY_CURR 0x15
-#define VR_TELEMETRY_POWER 0x28
+#define VR_TELEMETRY_POWER 0x2D
 #define VR_TELEMETRY_TEMP 0x29
+
+#define READING_NA -2
 
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -191,6 +197,10 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_VR_CPU0_VCCIN_CURR,
   MB_SENSOR_VR_CPU0_VCCIN_VOLT,
   MB_SENSOR_VR_CPU0_VCCIN_POWER,
+  MB_SENSOR_VR_CPU0_VSA_TEMP,
+  MB_SENSOR_VR_CPU0_VSA_CURR,
+  MB_SENSOR_VR_CPU0_VSA_VOLT,
+  MB_SENSOR_VR_CPU0_VSA_POWER,
   MB_SENSOR_VR_CPU0_VCCIO_TEMP,
   MB_SENSOR_VR_CPU0_VCCIO_CURR,
   MB_SENSOR_VR_CPU0_VCCIO_VOLT,
@@ -207,6 +217,10 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_VR_CPU1_VCCIN_CURR,
   MB_SENSOR_VR_CPU1_VCCIN_VOLT,
   MB_SENSOR_VR_CPU1_VCCIN_POWER,
+  MB_SENSOR_VR_CPU1_VSA_TEMP,
+  MB_SENSOR_VR_CPU1_VSA_CURR,
+  MB_SENSOR_VR_CPU1_VSA_VOLT,
+  MB_SENSOR_VR_CPU1_VSA_POWER,
   MB_SENSOR_VR_CPU1_VCCIO_TEMP,
   MB_SENSOR_VR_CPU1_VCCIO_CURR,
   MB_SENSOR_VR_CPU1_VCCIO_VOLT,
@@ -223,6 +237,10 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_VR_PCH_PVNN_CURR,
   MB_SENSOR_VR_PCH_PVNN_VOLT,
   MB_SENSOR_VR_PCH_PVNN_POWER,
+  MB_SENSOR_VR_PCH_P1V05_TEMP,
+  MB_SENSOR_VR_PCH_P1V05_CURR,
+  MB_SENSOR_VR_PCH_P1V05_VOLT,
+  MB_SENSOR_VR_PCH_P1V05_POWER,
 };
 
 // List of NIC sensors to be monitored
@@ -244,7 +262,7 @@ sensor_thresh_array_init() {
     return;
 
   mb_sensor_threshold[MB_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
-  mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
+  mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 75;
   mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 11000;
   mb_sensor_threshold[MB_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
   mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 11000;
@@ -253,79 +271,96 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_P3V3][LCR_THRESH] = 2.975;
   mb_sensor_threshold[MB_SENSOR_P5V][UCR_THRESH] = 5.486;
   mb_sensor_threshold[MB_SENSOR_P5V][LCR_THRESH] = 4.524;
-  mb_sensor_threshold[MB_SENSOR_P12V][UCR_THRESH] = 13.040;
-  mb_sensor_threshold[MB_SENSOR_P12V][LCR_THRESH] = 10.77;
+  mb_sensor_threshold[MB_SENSOR_P12V][UCR_THRESH] = 13.23;
+  mb_sensor_threshold[MB_SENSOR_P12V][LCR_THRESH] = 10.773;
   mb_sensor_threshold[MB_SENSOR_P1V05][UCR_THRESH] = 1.155;
-  mb_sensor_threshold[MB_SENSOR_P1V05][LCR_THRESH] = 0.91;
-  mb_sensor_threshold[MB_SENSOR_PVNN_PCH_STBY][UCR_THRESH] = 1.162;
-  mb_sensor_threshold[MB_SENSOR_PVNN_PCH_STBY][LCR_THRESH] = 0.91;
+  mb_sensor_threshold[MB_SENSOR_P1V05][LCR_THRESH] = 0.945;
+  mb_sensor_threshold[MB_SENSOR_PVNN_PCH_STBY][UCR_THRESH] = 1.1;
+  mb_sensor_threshold[MB_SENSOR_PVNN_PCH_STBY][LCR_THRESH] = 0.765;
   mb_sensor_threshold[MB_SENSOR_P3V3_STBY][UCR_THRESH] = 3.621;
   mb_sensor_threshold[MB_SENSOR_P3V3_STBY][LCR_THRESH] = 2.975;
   mb_sensor_threshold[MB_SENSOR_P5V_STBY][UCR_THRESH] = 5.486;
   mb_sensor_threshold[MB_SENSOR_P5V_STBY][LCR_THRESH] = 4.524;
-  mb_sensor_threshold[MB_SENSOR_P3V_BAT][UCR_THRESH] = 3.73;
+  mb_sensor_threshold[MB_SENSOR_P3V_BAT][UCR_THRESH] = 3.738;
   mb_sensor_threshold[MB_SENSOR_P3V_BAT][LCR_THRESH] = 2.73;
   mb_sensor_threshold[MB_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.2;
   mb_sensor_threshold[MB_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 10.8;
   mb_sensor_threshold[MB_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 47.705;
   mb_sensor_threshold[MB_SENSOR_HSC_IN_POWER][UCR_THRESH] = 790.40;
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_CURR][UCR_THRESH] = 108;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_POWER][UCR_THRESH] = 290;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_VOLT][LCR_THRESH] = 1.6;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_VOLT][UCR_THRESH] = 1.970;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_CURR][UCR_THRESH] = 228;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_POWER][UCR_THRESH] = 414;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_VOLT][LCR_THRESH] = 1.5;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_VOLT][UCR_THRESH] = 2.0;
+
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_CURR][UCR_THRESH] = 20;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_POWER][UCR_THRESH] = 18;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_VOLT][LCR_THRESH] = 0.5;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_VOLT][UCR_THRESH] = 1.0;
 
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_CURR][UCR_THRESH] = 108;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_POWER][UCR_THRESH] = 290;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_CURR][UCR_THRESH] = 21;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_POWER][UCR_THRESH] = 22;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_VOLT][LCR_THRESH] = 0.8;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_VOLT][UCR_THRESH] = 1.120;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_VOLT][UCR_THRESH] = 1.1;
 
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR][UCR_THRESH] = 76;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_POWER][UCR_THRESH] = 290;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT][LCR_THRESH] = 1.080;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT][UCR_THRESH] = 1.320;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR][UCR_THRESH] = 72;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_POWER][UCR_THRESH] = 88;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT][LCR_THRESH] = 1.08;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT][UCR_THRESH] = 1.32;
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR][UCR_THRESH] = 76;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_POWER][UCR_THRESH] = 290;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT][LCR_THRESH] = 1.080;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT][UCR_THRESH] = 1.320;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR][UCR_THRESH] = 72;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_POWER][UCR_THRESH] = 88;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT][LCR_THRESH] = 1.08;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT][UCR_THRESH] = 1.32;
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_CURR][UCR_THRESH] = 108;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_POWER][UCR_THRESH] = 290;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_VOLT][LCR_THRESH] = 1.6;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_VOLT][UCR_THRESH] = 1.970;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_CURR][UCR_THRESH] = 228;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_POWER][UCR_THRESH] = 414;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_VOLT][LCR_THRESH] = 1.5;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_VOLT][UCR_THRESH] = 2.0;
 
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_CURR][UCR_THRESH] = 20;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_POWER][UCR_THRESH] = 18;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_VOLT][LCR_THRESH] = 0.5;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_VOLT][UCR_THRESH] = 1.0;
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_CURR][UCR_THRESH] = 108;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_POWER][UCR_THRESH] = 290;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_CURR][UCR_THRESH] = 21;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_POWER][UCR_THRESH] = 22;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_VOLT][LCR_THRESH] = 0.8;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_VOLT][UCR_THRESH] = 1.120;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_VOLT][UCR_THRESH] = 1.1;
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR][UCR_THRESH] = 76;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_POWER][UCR_THRESH] = 290;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT][LCR_THRESH] = 1.080;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT][UCR_THRESH] = 1.320;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR][UCR_THRESH] = 72;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_POWER][UCR_THRESH] = 88;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT][LCR_THRESH] = 1.08;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT][UCR_THRESH] = 1.32;
 
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR][UCR_THRESH] = 76;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_POWER][UCR_THRESH] = 290;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT][LCR_THRESH] = 1.080;
-  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT][UCR_THRESH] = 1.320;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR][UCR_THRESH] = 72;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_POWER][UCR_THRESH] = 88;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT][LCR_THRESH] = 1.08;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT][UCR_THRESH] = 1.32;
 
-  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_TEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_CURR][UCR_THRESH] = 108;
-  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_POWER][UCR_THRESH] = 290;
-  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_VOLT][LCR_THRESH] = 0.64;
-  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_VOLT][UCR_THRESH] = 1.120;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_CURR][UCR_THRESH] = 26;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_POWER][UCR_THRESH] = 26;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_VOLT][LCR_THRESH] = 0.76;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_VOLT][UCR_THRESH] = 1.1;
+
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_CURR][UCR_THRESH] = 20;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_POWER][UCR_THRESH] = 22;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][LCR_THRESH] = 0.94;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][UCR_THRESH] = 1.15;
 
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
 
@@ -531,10 +566,17 @@ static int
 read_fan_value_f(const int fan, const char *device, float *value) {
   char device_name[LARGEST_DEVICE_NAME];
   char full_name[LARGEST_DEVICE_NAME];
+  int ret;
 
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", TACH_DIR, device_name);
-  return read_device_float(full_name, value);
+  ret = read_device_float(full_name, value);
+  if (*value < 500) {
+    sleep(2);
+    ret = read_device_float(full_name, value);
+  }
+
+  return ret;
 }
 
 static int
@@ -590,7 +632,7 @@ read_hsc_value(const char *device, float *value) {
 }
 
 static int
-read_vr_volt(uint8_t vr, float *value) {
+read_vr_volt(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
   int ret;
@@ -607,7 +649,7 @@ read_vr_volt(uint8_t vr, float *value) {
 
   // Set the page to read Voltage
   tbuf[0] = 0x00;
-  tbuf[1] = VR_TELEMETRY_PAGE;
+  tbuf[1] = loop;
 
   tcount = 2;
   rcount = 0;
@@ -643,7 +685,7 @@ error_exit:
 }
 
 static int
-read_vr_curr(uint8_t vr, float *value) {
+read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
   int ret;
@@ -660,7 +702,7 @@ read_vr_curr(uint8_t vr, float *value) {
 
   // Set the page to read Voltage
   tbuf[0] = 0x00;
-  tbuf[1] = VR_TELEMETRY_PAGE;
+  tbuf[1] = loop;
 
   tcount = 2;
   rcount = 0;
@@ -687,6 +729,11 @@ read_vr_curr(uint8_t vr, float *value) {
   *value = ((rbuf[1] & 0x7F) * 256 + rbuf[0] ) * 62.5;
   *value /= 1000;
 
+  // Handle illegal values observed
+  if (*value > 1000) {
+    ret = -1;
+  }
+
 error_exit:
   if (fd > 0) {
     close(fd);
@@ -696,7 +743,7 @@ error_exit:
 }
 
 static int
-read_vr_power(uint8_t vr, float *value) {
+read_vr_power(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
   int ret;
@@ -713,7 +760,7 @@ read_vr_power(uint8_t vr, float *value) {
 
   // Set the page to read Power
   tbuf[0] = 0x00;
-  tbuf[1] = VR_TELEMETRY_PAGE;
+  tbuf[1] = loop;
 
   tcount = 2;
   rcount = 0;
@@ -748,7 +795,7 @@ error_exit:
 }
 
 static int
-read_vr_temp(uint8_t vr, float *value) {
+read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
   int ret;
@@ -765,7 +812,7 @@ read_vr_temp(uint8_t vr, float *value) {
 
   // Set the page to read Temperature
   tbuf[0] = 0x00;
-  tbuf[1] = VR_TELEMETRY_PAGE;
+  tbuf[1] = loop;
 
   tcount = 2;
   rcount = 0;
@@ -840,6 +887,23 @@ pal_set_key_value(char *key, char *value) {
   return kv_set(key, value);
 }
 
+// Set GPIO low or high
+static void
+gpio_set(uint8_t gpio, bool value ) {
+  char vpath[64] = {0};
+  char *val;
+
+  sprintf(vpath, GPIO_VAL, gpio);
+
+  if (value) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  write_device(vpath, val);
+}
+
 // Power On the server in a given slot
 static int
 server_power_on(void) {
@@ -861,6 +925,10 @@ server_power_on(void) {
     return -1;
   }
 
+  sleep(2);
+
+  system("/usr/bin/sv restart fscd >> /dev/null");
+
   return 0;
 }
 
@@ -870,6 +938,8 @@ server_power_off(bool gs_flag) {
   char vpath[64] = {0};
 
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
+
+  system("/usr/bin/sv stop fscd >> /dev/null");
 
   if (write_device(vpath, "1")) {
     return -1;
@@ -1122,6 +1192,23 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
 
   return 0;
 }
+
+static bool
+is_server_off(void) {
+  int ret;
+  uint8_t status;
+  ret = pal_get_server_power(FRU_MB, &status);
+  if (ret) {
+    return false;
+  }
+
+  if (status == SERVER_POWER_OFF) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 // Power Off, Power On, or Power Reset the server in given slot
 int
@@ -1508,176 +1595,268 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   switch(fru) {
   case FRU_MB:
     sprintf(key, "mb_sensor%d", sensor_num);
-    switch(sensor_num) {
-    // Temp. Sensors
-    case MB_SENSOR_INLET_TEMP:
-      ret = read_temp(MB_INLET_TEMP_DEVICE, (float*) value);
-      break;
-    case MB_SENSOR_OUTLET_TEMP:
-      ret = read_temp(MB_OUTLET_TEMP_DEVICE, (float*) value);
-      break;
-    // Fan Sensors
-    case MB_SENSOR_FAN0_TACH:
-      ret = read_fan_value_f(FAN0, FAN_TACH_RPM, (float*) value);
-      break;
-    case MB_SENSOR_FAN1_TACH:
-      ret = read_fan_value_f(FAN1, FAN_TACH_RPM, (float*) value);
-      break;
-    // Various Voltages
-    case MB_SENSOR_P3V3:
-      ret = read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
-      break;
-    case MB_SENSOR_P5V:
-      ret = read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
-      break;
-    case MB_SENSOR_P12V:
-      ret = read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
-      break;
-    case MB_SENSOR_P1V05:
-      ret = read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
-      break;
-    case MB_SENSOR_PVNN_PCH_STBY:
-      ret = read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
-      break;
-    case MB_SENSOR_P3V3_STBY:
-      ret = read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
-      break;
-    case MB_SENSOR_P5V_STBY:
-      ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
-      break;
-    case MB_SENSOR_P3V_BAT:
-      ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
-      break;
+    if (is_server_off()) {
+      // Power is OFF, so only some of the sensors can be read
+      switch(sensor_num) {
+      // Temp. Sensors
+      case MB_SENSOR_INLET_TEMP:
+        ret = read_temp(MB_INLET_TEMP_DEVICE, (float*) value);
+        break;
+      case MB_SENSOR_OUTLET_TEMP:
+        ret = read_temp(MB_OUTLET_TEMP_DEVICE, (float*) value);
+        break;
+      case MB_SENSOR_P12V:
+        ret = read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P1V05:
+        ret = read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_PVNN_PCH_STBY:
+        ret = read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P3V3_STBY:
+        ret = read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P5V_STBY:
+        ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P3V_BAT:
+        gpio_set(GPIO_BAT_SENSE_EN_N, 0);
+        msleep(1);
+        ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
+        gpio_set(GPIO_BAT_SENSE_EN_N, 1);
+        break;
 
-    // Hot Swap Controller
-    case MB_SENSOR_HSC_IN_VOLT:
-      ret = read_hsc_value(HSC_IN_VOLT, (float*) value);
-      break;
-    case MB_SENSOR_HSC_OUT_CURR:
-      ret = read_hsc_value(HSC_OUT_CURR, (float*) value);
-      break;
-    case MB_SENSOR_HSC_IN_POWER:
-      if (ret = read_hsc_value(HSC_IN_VOLT, &volt)) {
+      // Hot Swap Controller
+      case MB_SENSOR_HSC_IN_VOLT:
+        ret = read_hsc_value(HSC_IN_VOLT, (float*) value);
+        break;
+      case MB_SENSOR_HSC_OUT_CURR:
+        ret = read_hsc_value(HSC_OUT_CURR, (float*) value);
+        break;
+      case MB_SENSOR_HSC_IN_POWER:
+        if (ret = read_hsc_value(HSC_IN_VOLT, &volt)) {
+          return -1;
+        }
+        if (ret = read_hsc_value(HSC_OUT_CURR, &curr)) {
+          return -1;
+        }
+        * (float*) value = volt * curr;
+        break;
+      default:
+        ret = READING_NA;
+        break;
+      }
+    } else {
+      switch(sensor_num) {
+      // Temp. Sensors
+      case MB_SENSOR_INLET_TEMP:
+        ret = read_temp(MB_INLET_TEMP_DEVICE, (float*) value);
+        break;
+      case MB_SENSOR_OUTLET_TEMP:
+        ret = read_temp(MB_OUTLET_TEMP_DEVICE, (float*) value);
+        break;
+      // Fan Sensors
+      case MB_SENSOR_FAN0_TACH:
+        ret = read_fan_value_f(FAN0, FAN_TACH_RPM, (float*) value);
+        break;
+      case MB_SENSOR_FAN1_TACH:
+        ret = read_fan_value_f(FAN1, FAN_TACH_RPM, (float*) value);
+        break;
+      // Various Voltages
+      case MB_SENSOR_P3V3:
+        ret = read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P5V:
+        ret = read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P12V:
+        ret = read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P1V05:
+        ret = read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_PVNN_PCH_STBY:
+        ret = read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P3V3_STBY:
+        ret = read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P5V_STBY:
+        ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+        break;
+      case MB_SENSOR_P3V_BAT:
+        gpio_set(GPIO_BAT_SENSE_EN_N, 0);
+        msleep(1);
+        ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
+        gpio_set(GPIO_BAT_SENSE_EN_N, 1);
+        break;
+
+      // Hot Swap Controller
+      case MB_SENSOR_HSC_IN_VOLT:
+        ret = read_hsc_value(HSC_IN_VOLT, (float*) value);
+        break;
+      case MB_SENSOR_HSC_OUT_CURR:
+        ret = read_hsc_value(HSC_OUT_CURR, (float*) value);
+        break;
+      case MB_SENSOR_HSC_IN_POWER:
+        if (ret = read_hsc_value(HSC_IN_VOLT, &volt)) {
+          return -1;
+        }
+        if (ret = read_hsc_value(HSC_OUT_CURR, &curr)) {
+          return -1;
+        }
+        * (float*) value = volt * curr;
+        break;
+      //VR Sensors
+      case MB_SENSOR_VR_CPU0_VCCIN_TEMP:
+        ret = read_vr_temp(VR_CPU0_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VCCIN_CURR:
+        ret = read_vr_curr(VR_CPU0_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VCCIN_VOLT:
+        ret = read_vr_volt(VR_CPU0_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VCCIN_POWER:
+        ret = read_vr_power(VR_CPU0_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VSA_TEMP:
+        ret = read_vr_temp(VR_CPU0_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VSA_CURR:
+        ret = read_vr_curr(VR_CPU0_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VSA_VOLT:
+        ret = read_vr_volt(VR_CPU0_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VSA_POWER:
+        ret = read_vr_power(VR_CPU0_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VCCIO_TEMP:
+        ret = read_vr_temp(VR_CPU0_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VCCIO_CURR:
+        ret = read_vr_curr(VR_CPU0_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VCCIO_VOLT:
+        ret = read_vr_volt(VR_CPU0_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VCCIO_POWER:
+        ret = read_vr_power(VR_CPU0_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_ABC_TEMP:
+        ret = read_vr_temp(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR:
+        ret = read_vr_curr(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT:
+        ret = read_vr_volt(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_ABC_POWER:
+        ret = read_vr_power(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_DEF_TEMP:
+        ret = read_vr_temp(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR:
+        ret = read_vr_curr(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT:
+        ret = read_vr_volt(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU0_VDDQ_DEF_POWER:
+        ret = read_vr_power(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIN_TEMP:
+        ret = read_vr_temp(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIN_CURR:
+        ret = read_vr_curr(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIN_VOLT:
+        ret = read_vr_volt(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIN_POWER:
+        ret = read_vr_power(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VSA_TEMP:
+        ret = read_vr_temp(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VSA_CURR:
+        ret = read_vr_curr(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VSA_VOLT:
+        ret = read_vr_volt(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VSA_POWER:
+        ret = read_vr_power(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIO_TEMP:
+        ret = read_vr_temp(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIO_CURR:
+        ret = read_vr_curr(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIO_VOLT:
+        ret = read_vr_volt(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VCCIO_POWER:
+        ret = read_vr_power(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_GHJ_TEMP:
+        ret = read_vr_temp(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR:
+        ret = read_vr_curr(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT:
+        ret = read_vr_volt(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_GHJ_POWER:
+        ret = read_vr_power(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_KLM_TEMP:
+        ret = read_vr_temp(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR:
+        ret = read_vr_curr(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT:
+        ret = read_vr_volt(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_CPU1_VDDQ_KLM_POWER:
+        ret = read_vr_power(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_PVNN_TEMP:
+        ret = read_vr_temp(VR_PCH_PVNN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_PVNN_CURR:
+        ret = read_vr_curr(VR_PCH_PVNN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_PVNN_VOLT:
+        ret = read_vr_volt(VR_PCH_PVNN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_PVNN_POWER:
+        ret = read_vr_power(VR_PCH_PVNN, VR_LOOP_PAGE_0, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_P1V05_TEMP:
+        ret = read_vr_temp(VR_PCH_P1V05, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_P1V05_CURR:
+        ret = read_vr_curr(VR_PCH_P1V05, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_P1V05_VOLT:
+        ret = read_vr_volt(VR_PCH_P1V05, VR_LOOP_PAGE_1, (float*) value);
+        break;
+      case MB_SENSOR_VR_PCH_P1V05_POWER:
+        ret = read_vr_power(VR_PCH_P1V05, VR_LOOP_PAGE_1, (float*) value);
+        break;
+
+      default:
         return -1;
       }
-      if (ret = read_hsc_value(HSC_OUT_CURR, &curr)) {
-        return -1;
-      }
-      * (float*) value = volt * curr;
-      break;
-    //VR Sensors
-    case MB_SENSOR_VR_CPU0_VCCIN_TEMP:
-      ret = read_vr_temp(VR_CPU0_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VCCIN_CURR:
-      ret = read_vr_curr(VR_CPU0_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VCCIN_VOLT:
-      ret = read_vr_volt(VR_CPU0_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VCCIN_POWER:
-      ret = read_vr_power(VR_CPU0_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VCCIO_TEMP:
-      ret = read_vr_temp(VR_CPU0_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VCCIO_CURR:
-      ret = read_vr_curr(VR_CPU0_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VCCIO_VOLT:
-      ret = read_vr_volt(VR_CPU0_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VCCIO_POWER:
-      ret = read_vr_power(VR_CPU0_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_ABC_TEMP:
-      ret = read_vr_temp(VR_CPU0_VDDQ_ABC, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR:
-      ret = read_vr_curr(VR_CPU0_VDDQ_ABC, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT:
-      ret = read_vr_volt(VR_CPU0_VDDQ_ABC, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_ABC_POWER:
-      ret = read_vr_power(VR_CPU0_VDDQ_ABC, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_DEF_TEMP:
-      ret = read_vr_temp(VR_CPU0_VDDQ_DEF, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR:
-      ret = read_vr_curr(VR_CPU0_VDDQ_DEF, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT:
-      ret = read_vr_volt(VR_CPU0_VDDQ_DEF, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU0_VDDQ_DEF_POWER:
-      ret = read_vr_power(VR_CPU0_VDDQ_DEF, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIN_TEMP:
-      ret = read_vr_temp(VR_CPU1_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIN_CURR:
-      ret = read_vr_curr(VR_CPU1_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIN_VOLT:
-      ret = read_vr_volt(VR_CPU1_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIN_POWER:
-      ret = read_vr_power(VR_CPU1_VCCIN, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIO_TEMP:
-      ret = read_vr_temp(VR_CPU1_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIO_CURR:
-      ret = read_vr_curr(VR_CPU1_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIO_VOLT:
-      ret = read_vr_volt(VR_CPU1_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VCCIO_POWER:
-      ret = read_vr_power(VR_CPU1_VCCIO, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_GHJ_TEMP:
-      ret = read_vr_temp(VR_CPU1_VDDQ_GHJ, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR:
-      ret = read_vr_curr(VR_CPU1_VDDQ_GHJ, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT:
-      ret = read_vr_volt(VR_CPU1_VDDQ_GHJ, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_GHJ_POWER:
-      ret = read_vr_power(VR_CPU1_VDDQ_GHJ, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_KLM_TEMP:
-      ret = read_vr_temp(VR_CPU1_VDDQ_KLM, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR:
-      ret = read_vr_curr(VR_CPU1_VDDQ_KLM, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT:
-      ret = read_vr_volt(VR_CPU1_VDDQ_KLM, (float*) value);
-      break;
-    case MB_SENSOR_VR_CPU1_VDDQ_KLM_POWER:
-      ret = read_vr_power(VR_CPU1_VDDQ_KLM, (float*) value);
-      break;
-    case MB_SENSOR_VR_PCH_PVNN_TEMP:
-      ret = read_vr_temp(VR_PCH_PVNN, (float*) value);
-      break;
-    case MB_SENSOR_VR_PCH_PVNN_CURR:
-      ret = read_vr_curr(VR_PCH_PVNN, (float*) value);
-      break;
-    case MB_SENSOR_VR_PCH_PVNN_VOLT:
-      ret = read_vr_volt(VR_PCH_PVNN, (float*) value);
-      break;
-    case MB_SENSOR_VR_PCH_PVNN_POWER:
-      ret = read_vr_power(VR_PCH_PVNN, (float*) value);
-      break;
-
-    //TODO: M.2 Temperature sensors?
-    default:
-      return -1;
     }
     break;
   case FRU_NIC:
@@ -1695,10 +1874,14 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
 
   if (ret) {
-    return ret;
+    if (ret == READING_NA) {
+      strcpy(str, "NA");
+    } else {
+      return ret;
+    }
+  } else {
+    sprintf(str, "%.2f",*((float*)value));
   }
-
-  sprintf(str, "%.2f",*((float*)value));
 
   if(edb_cache_set(key, str) < 0) {
 #ifdef DEBUG
@@ -1799,6 +1982,18 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_VR_CPU0_VCCIN_POWER:
       sprintf(name, "MB_VR_CPU0_VCCIN_POWER");
       break;
+    case MB_SENSOR_VR_CPU0_VSA_TEMP:
+      sprintf(name, "MB_VR_CPU0_VSA_TEMP");
+      break;
+    case MB_SENSOR_VR_CPU0_VSA_CURR:
+      sprintf(name, "MB_VR_CPU0_VSA_CURR");
+      break;
+    case MB_SENSOR_VR_CPU0_VSA_VOLT:
+      sprintf(name, "MB_VR_CPU0_VSA_VOLT");
+      break;
+    case MB_SENSOR_VR_CPU0_VSA_POWER:
+      sprintf(name, "MB_VR_CPU0_VSA_POWER");
+      break;
     case MB_SENSOR_VR_CPU0_VCCIO_TEMP:
       sprintf(name, "MB_VR_CPU0_VCCIO_TEMP");
       break;
@@ -1846,6 +2041,18 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       break;
     case MB_SENSOR_VR_CPU1_VCCIN_POWER:
       sprintf(name, "MB_VR_CPU1_VCCIN_POWER");
+      break;
+    case MB_SENSOR_VR_CPU1_VSA_TEMP:
+      sprintf(name, "MB_VR_CPU1_VSA_TEMP");
+      break;
+    case MB_SENSOR_VR_CPU1_VSA_CURR:
+      sprintf(name, "MB_VR_CPU1_VSA_CURR");
+      break;
+    case MB_SENSOR_VR_CPU1_VSA_VOLT:
+      sprintf(name, "MB_VR_CPU1_VSA_VOLT");
+      break;
+    case MB_SENSOR_VR_CPU1_VSA_POWER:
+      sprintf(name, "MB_VR_CPU1_VSA_POWER");
       break;
     case MB_SENSOR_VR_CPU1_VCCIO_TEMP:
       sprintf(name, "MB_VR_CPU1_VCCIO_TEMP");
@@ -1895,6 +2102,18 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_VR_PCH_PVNN_POWER:
       sprintf(name, "MB_VR_PCH_PVNN_POWER");
       break;
+    case MB_SENSOR_VR_PCH_P1V05_TEMP:
+      sprintf(name, "MB_VR_PCH_P1V05_TEMP");
+      break;
+    case MB_SENSOR_VR_PCH_P1V05_CURR:
+      sprintf(name, "MB_VR_PCH_P1V05_CURR");
+      break;
+    case MB_SENSOR_VR_PCH_P1V05_VOLT:
+      sprintf(name, "MB_VR_PCH_P1V05_VOLT");
+      break;
+    case MB_SENSOR_VR_PCH_P1V05_POWER:
+      sprintf(name, "MB_VR_PCH_P1V05_POWER");
+      break;
     default:
       return -1;
     }
@@ -1922,14 +2141,17 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_INLET_TEMP:
     case MB_SENSOR_OUTLET_TEMP:
     case MB_SENSOR_VR_CPU0_VCCIN_TEMP:
+    case MB_SENSOR_VR_CPU0_VSA_TEMP:
     case MB_SENSOR_VR_CPU0_VCCIO_TEMP:
     case MB_SENSOR_VR_CPU0_VDDQ_ABC_TEMP:
     case MB_SENSOR_VR_CPU0_VDDQ_DEF_TEMP:
     case MB_SENSOR_VR_CPU1_VCCIN_TEMP:
+    case MB_SENSOR_VR_CPU1_VSA_TEMP:
     case MB_SENSOR_VR_CPU1_VCCIO_TEMP:
     case MB_SENSOR_VR_CPU1_VDDQ_GHJ_TEMP:
     case MB_SENSOR_VR_CPU1_VDDQ_KLM_TEMP:
     case MB_SENSOR_VR_PCH_PVNN_TEMP:
+    case MB_SENSOR_VR_PCH_P1V05_TEMP:
       sprintf(units, "C");
       break;
     case MB_SENSOR_FAN0_TACH:
@@ -1946,38 +2168,47 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_P3V_BAT:
     case MB_SENSOR_HSC_IN_VOLT:
     case MB_SENSOR_VR_CPU0_VCCIN_VOLT:
+    case MB_SENSOR_VR_CPU0_VSA_VOLT:
     case MB_SENSOR_VR_CPU0_VCCIO_VOLT:
     case MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT:
     case MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT:
     case MB_SENSOR_VR_CPU1_VCCIN_VOLT:
+    case MB_SENSOR_VR_CPU1_VSA_VOLT:
     case MB_SENSOR_VR_CPU1_VCCIO_VOLT:
     case MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT:
     case MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT:
     case MB_SENSOR_VR_PCH_PVNN_VOLT:
+    case MB_SENSOR_VR_PCH_P1V05_VOLT:
       sprintf(units, "Volts");
       break;
     case MB_SENSOR_HSC_OUT_CURR:
     case MB_SENSOR_VR_CPU0_VCCIN_CURR:
+    case MB_SENSOR_VR_CPU0_VSA_CURR:
     case MB_SENSOR_VR_CPU0_VCCIO_CURR:
     case MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR:
     case MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR:
     case MB_SENSOR_VR_CPU1_VCCIN_CURR:
+    case MB_SENSOR_VR_CPU1_VSA_CURR:
     case MB_SENSOR_VR_CPU1_VCCIO_CURR:
     case MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR:
     case MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR:
     case MB_SENSOR_VR_PCH_PVNN_CURR:
+    case MB_SENSOR_VR_PCH_P1V05_CURR:
       sprintf(units, "Amps");
       break;
     case MB_SENSOR_HSC_IN_POWER:
     case MB_SENSOR_VR_CPU0_VCCIN_POWER:
+    case MB_SENSOR_VR_CPU0_VSA_POWER:
     case MB_SENSOR_VR_CPU0_VCCIO_POWER:
     case MB_SENSOR_VR_CPU0_VDDQ_ABC_POWER:
     case MB_SENSOR_VR_CPU0_VDDQ_DEF_POWER:
     case MB_SENSOR_VR_CPU1_VCCIN_POWER:
+    case MB_SENSOR_VR_CPU1_VSA_POWER:
     case MB_SENSOR_VR_CPU1_VCCIO_POWER:
     case MB_SENSOR_VR_CPU1_VDDQ_GHJ_POWER:
     case MB_SENSOR_VR_CPU1_VDDQ_KLM_POWER:
     case MB_SENSOR_VR_PCH_PVNN_POWER:
+    case MB_SENSOR_VR_PCH_P1V05_POWER:
       sprintf(units, "Watts");
       break;
     default:
@@ -2579,6 +2810,14 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         strcat(error_log, "Unknown");
       break;
 
+    case SPS_FW_HEALTH:
+      sprintf(error_log, "");
+      if (event_data[0] == 0xDC && ed[1] == 0x06) {
+        strcat(error_log, "FW UPDATE");
+        return 1;
+      } else
+         strcat(error_log, "Unknown");
+      break;
     default:
       sprintf(error_log, "Unknown");
       break;

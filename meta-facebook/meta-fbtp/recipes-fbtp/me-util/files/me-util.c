@@ -88,7 +88,8 @@ main(int argc, char **argv) {
   }
 
   memset(log, 0, 128);
-  for (i = 0; i < rlen; i++) {
+  // Remove 7-bytes of IPMB header and last-byte of Checksum and print only data
+  for (i = 7; i < rlen-1; i++) {
     printf("%02X ", rbuf[i]);
     memset(temp, 0, 8);
     sprintf(temp, "%02X ", rbuf[i]);

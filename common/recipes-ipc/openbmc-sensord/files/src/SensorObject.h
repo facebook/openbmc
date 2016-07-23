@@ -18,87 +18,63 @@
 
 #pragma once
 #include <string>
-#include <stdexcept>
-#include <memory>
-#include <unordered_map>
 #include <glog/logging.h>
 #include <nlohmann/json.hpp>
 #include <object-tree/Object.h>
 #include <object-tree/Attribute.h>
-#include "SensorApi.h"
+#include "SensorDevice.h"
 #include "SensorAttribute.h"
 
 namespace openbmc {
 namespace ipc {
 
 /**
- * SensorObject is a derived class of Object in object-tree.
- * It is a factory for the SensorObject. In addition,
- * it contains the functions for reading and writing the
- * attribute values from sysfs or i2c through SensorApi.
+ * SensorObject is a derived class of Object in object-tree. It is a factory
+ * for the SensorAttribute. It should be always the child of a SensorDevice.
+ * It contains the functions for reading and writing the attribute values
+ * from sysfs or i2c through SensorApi which is provided by the parent
+ * SensorDevice instance.
  */
 class SensorObject : public Object {
-  private:
-    std::unique_ptr<SensorApi> sensorApi_;
-
   public:
-    /**
-     * Constructor with default parent as nullptr if not specified
-     *
-     * @param name of the object
-     * @param sensorApi provides api to read (write) attribute values.
-     *        It should be transferred by ownership here.
-     * @param parent of the object; not allowed to be nullptr
-     */
-    SensorObject(const std::string          &name,
-                 std::unique_ptr<SensorApi> sensorApi,
-                 Object*                    parent = nullptr)
-        : Object(name, parent) {
-      LOG(INFO) << "Initializing SensorObject \"" << name << "\"";
-      sensorApi_ = std::move(sensorApi);
-    }
+    using Object::Object; // inherit constructor
 
     SensorAttribute* getAttribute(const std::string &name) const override {
-      Attribute* attr = Object::getAttribute(name);
-      if (attr == nullptr) {
-        return nullptr;
-      }
-      return static_cast<SensorAttribute*>(attr);
-    }
-
-    SensorApi* getSensorApi() const {
-      return sensorApi_.get();
+      return static_cast<SensorAttribute*>(Object::getAttribute(name));
     }
 
     /**
      * Adds sensor attribute to the sensor object.
-     * Overrides the addAttribute function in Object.h.
      *
      * @param name of attribute
-     * @return nullptr if name conflict; Attribute pointer otherwise
+     * @throw std::invalid_argument if name conflicts
+     * @return Attribute pointer
      */
     SensorAttribute* addAttribute(const std::string &name) override;
 
     /**
      * Read the value of Attribute name with type through sensorApi_.
+     * Will call the readAttrValue function from SensorDevice.
      *
      * @param name of the attribute to be read
      * @return value of the attribute
      * @throw std::invalid_argument if name not found
      * @throw std::system_error EPERM if attr has no read modes
      */
-    const std::string& readAttrValue(const std::string &name) const override;
+    virtual const std::string& readAttrValue(const std::string &name)
+        const override;
 
     /**
      * Write the value of Attribute name with type through sensorApi_.
+     * Will call the writeAttrValue function from SensorDevice.
      *
-     * @param value to be written to attribute through sensorApi_
      * @param name of attribute to be written
+     * @param value to be written to attribute through sensorApi_
      * @throw std::invalid_argument if name not found
      * @throw std::system_error EPERM if attr has no write modes
      */
-    void writeAttrValue(const std::string &value,
-                        const std::string &name) override;
+    virtual void writeAttrValue(const std::string &name,
+                                const std::string &value) override;
 
     /**
      * Dump the sensor object info into json format. It calls the
@@ -108,11 +84,10 @@ class SensorObject : public Object {
      * @return nlohmann::json object with entries specified in
      *         Object::dumpToJson() plus the "access" entry for SensorApi.
      */
-    nlohmann::json dumpToJson() const override {
+    virtual nlohmann::json dumpToJson() const override {
       LOG(INFO) << "Dumping SensorObject into json";
       nlohmann::json dump = Object::dumpToJson();
-      dump["objectType"] = "Sensor";
-      dump["access"] = sensorApi_.get()->dumpToJson();
+      addDumpInfo(dump);
       return dump;
     }
 
@@ -124,12 +99,22 @@ class SensorObject : public Object {
      * @return nlohmann::json object with entries specified in
      *         Object::dumpToJson() plus the "access" entry for SensorApi.
      */
-    nlohmann::json dumpToJsonRecursive() const override {
-      LOG(INFO) << "Dumping SensorObject into json";
+    virtual nlohmann::json dumpToJsonRecursive() const override {
+      LOG(INFO) << "Dumping SensorObject recursively into json";
       nlohmann::json dump = Object::dumpToJsonRecursive();
-      dump["objectType"] = "Sensor";
-      dump["access"] = sensorApi_.get()->dumpToJson();
+      addDumpInfo(dump);
       return dump;
+    }
+
+  protected:
+
+    /**
+     * A helper function to add the object type entry to dump.
+     *
+     * @param dump to be added with type enty
+     */
+    virtual void addDumpInfo(nlohmann::json &dump) const {
+      dump["objectType"] = "SensorObject";
     }
 };
 

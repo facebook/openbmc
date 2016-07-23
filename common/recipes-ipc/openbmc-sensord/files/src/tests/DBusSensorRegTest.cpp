@@ -28,6 +28,7 @@
 #include <dbus-utils/DBus.h>
 #include <dbus-utils/DBusInterfaceBase.h>
 #include "../SensorObjectTree.h"
+#include "../SensorDevice.h"
 #include "../SensorObject.h"
 #include "../SensorApi.h"
 #include "../SensorSysfsApi.h"
@@ -77,8 +78,10 @@ TEST_F(DBusDefaultTest, DefaultObjectRegistration) {
   sensorTree.addObject("openbmc", "/org");
   ASSERT_TRUE(dbus_->isObjectRegistered("/org/openbmc", defaultInterface));
   sensorTree.addObject("Chassis", "/org/openbmc");
-  ASSERT_TRUE(dbus_->isObjectRegistered("/org/openbmc/Chassis", defaultInterface));
-  EXPECT_TRUE(sensorTree.getObject("/org/openbmc/Chassis") != nullptr);
+  ASSERT_TRUE(dbus_->isObjectRegistered("/org/openbmc/Chassis",
+              defaultInterface));
+  EXPECT_THROW(sensorTree.getSensorObject("/org/openbmc/Chassis"),
+               std::invalid_argument);
 
   // failed since it is root
   EXPECT_ANY_THROW(sensorTree.deleteObjectByPath("/org"));
@@ -118,6 +121,56 @@ class DBusSensorObjectTreeTest : public ::testing::Test {
     std::thread t;
 };
 
+TEST_F(DBusSensorObjectTreeTest, AddObjectByUniquePtr) {
+  const std::string fsPath = "/sys/class/hwmon/hwmon1";
+  SensorObjectTree sensorTree(sDbus_, "org");
+
+  std::unique_ptr<Object> uObj(new Object("openbmc"));
+  // successful
+  EXPECT_NO_THROW(sensorTree.addObject(std::move(uObj), "/org"));
+
+  std::unique_ptr<SensorSysfsApi> uSysfsApi(new SensorSysfsApi(fsPath));
+  std::unique_ptr<SensorDevice> uDev(new SensorDevice(
+      "CPU_sensor", std::move(uSysfsApi)));
+
+  // failed since parent path cannot be found
+  EXPECT_ANY_THROW(sensorTree.addObject(std::move(uDev), "/orgg"));
+
+  uSysfsApi = std::unique_ptr<SensorSysfsApi>(new SensorSysfsApi(fsPath));
+  uDev = std::unique_ptr<SensorDevice>(new SensorDevice(
+      "CPU_sensor", std::move(uSysfsApi)));
+  // successful
+  EXPECT_TRUE(sensorTree.addObject(std::move(uDev), "/org/openbmc")
+      != nullptr);
+  EXPECT_TRUE(sensorTree.containObject("/org/openbmc/CPU_sensor"));
+  Object* obj = nullptr;
+  EXPECT_TRUE((obj = sensorTree.getObject("/org/openbmc/CPU_sensor"))
+      != nullptr);
+  EXPECT_NO_THROW(sensorTree.getSensorDevice("/org/openbmc/CPU_sensor"));
+  EXPECT_TRUE(obj->getParent() == sensorTree.getObject("/org/openbmc"));
+  ASSERT_TRUE((obj = sensorTree.getObject("/org/openbmc")) != nullptr);
+  EXPECT_TRUE(obj->getChildObject("CPU_sensor") != nullptr);
+
+  std::unique_ptr<SensorObject> uSObj(new SensorObject("temp"));
+
+  // failed since parent is not SensorDevice
+  EXPECT_ANY_THROW(sensorTree.addObject(std::move(uSObj), "/org"));
+
+  uSObj = std::unique_ptr<SensorObject>(new SensorObject("temp"));
+  // successful
+  EXPECT_TRUE(sensorTree.addObject(std::move(uSObj), "/org/openbmc/CPU_sensor")
+      != nullptr);
+  EXPECT_TRUE(sensorTree.containObject("/org/openbmc/CPU_sensor/temp"));
+  obj = nullptr;
+  EXPECT_TRUE((obj = sensorTree.getObject("/org/openbmc/CPU_sensor/temp"))
+      != nullptr);
+  EXPECT_NO_THROW(sensorTree.getSensorObject("/org/openbmc/CPU_sensor/temp"));
+  EXPECT_TRUE(obj->getParent() ==
+      sensorTree.getObject("/org/openbmc/CPU_sensor"));
+  ASSERT_TRUE((obj = sensorTree.getObject("/org/openbmc/CPU_sensor")) != nullptr);
+  EXPECT_TRUE(obj->getChildObject("temp") != nullptr);
+}
+
 /**
  * Test the sensor tree for registering dbus with test interface.
  */
@@ -129,11 +182,11 @@ TEST_F(DBusSensorObjectTreeTest, SensorTreeInterfaceRegistration) {
   sensorTree.addObject("openbmc", "/org");
   sensorTree.addObject("Chassis", "/org/openbmc");
   std::unique_ptr<SensorSysfsApi> uSysfsApi(new SensorSysfsApi(fsPath));
-  SensorObject* obj = sensorTree.addSensorObject("CPU_sensor",
+  SensorDevice* dev = sensorTree.addSensorDevice("CPU_sensor",
                                                  "/org/openbmc/Chassis",
                                                  std::move(uSysfsApi));
-  EXPECT_TRUE(obj != nullptr);
-  SensorSysfsApi* sysfsApi = static_cast<SensorSysfsApi*>(obj->getSensorApi());
+  EXPECT_TRUE(dev != nullptr);
+  SensorSysfsApi* sysfsApi = static_cast<SensorSysfsApi*>(dev->getSensorApi());
   EXPECT_STREQ(sysfsApi->getFsPath().c_str(), fsPath.c_str());
 }
 
@@ -148,11 +201,16 @@ TEST_F(DBusSensorObjectTreeTest, AttributeReadWriteTest) {
   const std::string fsPath = "/tmp";
   SensorObjectTree sensorTree(sDbus_, "org");
   sensorTree.addObject("openbmc", "/org");
+  EXPECT_THROW(sensorTree.getSensorObject("/org/openbmc"),
+               std::invalid_argument); // not a SensorObject
+  EXPECT_THROW(sensorTree.getSensorDevice("/org/openbmc"),
+               std::invalid_argument); // not a SensorDevice
+
   std::unique_ptr<SensorSysfsApi> uSysfsApi(new SensorSysfsApi(fsPath));
-  SensorObject* obj = sensorTree.addSensorObject("CPU_sensor",
+  SensorDevice* dev = sensorTree.addSensorDevice("CPU_sensor",
                                                  "/org/openbmc",
                                                  std::move(uSysfsApi));
-  ASSERT_TRUE(obj != nullptr);
+  ASSERT_TRUE(dev != nullptr);
 
   // write to a file to test reading value
   const std::string fileName = "testfile";
@@ -162,22 +220,27 @@ TEST_F(DBusSensorObjectTreeTest, AttributeReadWriteTest) {
   outFile << "100";
   outFile.close();
 
+  // add temp Sen
+  SensorDevice* sDevice = nullptr;
+  EXPECT_THROW(sensorTree.getSensorObject("/org/openbmc/CPU_sensor"),
+               std::invalid_argument); // not a SensorObject
+  EXPECT_NO_THROW(sDevice =
+                    sensorTree.getSensorDevice("/org/openbmc/CPU_sensor"));
+  EXPECT_TRUE(sDevice != nullptr);
+
   // add a sensor attribute to test reading (writing) value from the file
-  SensorObject* sobject;
-  sobject = static_cast<SensorObject*>(sensorTree.getObject(
-      "/org/openbmc/CPU_sensor"));
-  ASSERT_TRUE(sobject != nullptr);
-  SensorAttribute* sattr = sobject->addAttribute("CPU_temp");
+  SensorAttribute* sattr = sDevice->addAttribute("CPU_temp");
   sattr->setAddr(fileName);
   EXPECT_STREQ(sattr->getValue().c_str(), "");
-  EXPECT_STREQ(sobject->readAttrValue("CPU_temp").c_str(), value.c_str());
+  EXPECT_STREQ(sDevice->readAttrValue("CPU_temp").c_str(),
+               value.c_str());
   EXPECT_STREQ(sattr->getValue().c_str(), value.c_str());
 
   sattr->setModes(Attribute::RW);
   const std::string newValue = "1000";
-  sobject->writeAttrValue("CPU_temp", newValue); // write to file
+  sDevice->writeAttrValue("CPU_temp", newValue); // write to file
   EXPECT_STREQ(sattr->getValue().c_str(), newValue.c_str());
-  EXPECT_STREQ(sobject->readAttrValue("CPU_temp").c_str(), newValue.c_str());
+  EXPECT_STREQ(sDevice->readAttrValue("CPU_temp").c_str(), newValue.c_str());
 
   // the generic object does not read from the file
   Object* object;

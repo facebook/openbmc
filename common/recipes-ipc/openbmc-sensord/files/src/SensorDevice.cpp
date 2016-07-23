@@ -17,16 +17,17 @@
  */
 
 #include <string>
-#include <stdexcept>
+#include <system_error>
 #include <glog/logging.h>
-#include "SensorObject.h"
+#include <object-tree/Attribute.h>
 #include "SensorDevice.h"
+#include "SensorApi.h"
 #include "SensorAttribute.h"
 
 namespace openbmc {
 namespace ipc {
 
-SensorAttribute* SensorObject::addAttribute(const std::string &name) {
+SensorAttribute* SensorDevice::addAttribute(const std::string &name) {
   LOG(INFO) << "Adding Attribute \"" << name << "\" to object \"" << name_
     << "\"";
   if (getAttribute(name) != nullptr) {
@@ -39,21 +40,44 @@ SensorAttribute* SensorObject::addAttribute(const std::string &name) {
   return attr;
 }
 
-const std::string& SensorObject::readAttrValue(const std::string &name)
-    const {
-  LOG(INFO) << "Reading the value of Attribute \n" << name << "\"";
-  SensorAttribute* attr =
-      static_cast<SensorAttribute*>(getReadableAttribute(name));
-  return static_cast<SensorDevice*>(parent_)->readAttrValue(*this, *attr);
+const std::string& SensorDevice::readAttrValue(const Object    &object,
+                                               SensorAttribute &attr) const {
+  LOG(INFO) << "SensorDevice \"" << name_ << "\" reading Attribute " << "\""
+    << attr.getName() << "\" value of Object \"" << object.getName() << "\"";
+  DCHECK(attr.isReadable()) << "SensorAttribute \"" << attr.getName()
+    << "\" is not readable";
+  attr.setValue(sensorApi_.get()->readValue(object, attr));
+  return attr.getValue();
 }
 
-void SensorObject::writeAttrValue(const std::string &name,
+const std::string& SensorDevice::readAttrValue(
+                                   const std::string &name) const {
+  LOG(INFO) << "Reading the value of Attribute \"" << name << "\"";
+  SensorAttribute* attr =
+      static_cast<SensorAttribute*>(getReadableAttribute(name));
+  return readAttrValue(*this, *attr);
+}
+
+void SensorDevice::writeAttrValue(const Object      &object,
+                                  SensorAttribute   &attr,
+                                  const std::string &value) {
+  LOG(INFO) << "SensorDevice \"" << name_ << "\" writing Attribute " << "\""
+    << attr.getName() << "\" value \"" << value << "\" of Object \""
+    << object.getName() << "\"";
+  DCHECK(attr.isWritable()) << "SensorAttribute \"" << attr.getName()
+    << "\" is not writable";
+  sensorApi_.get()->writeValue(object, attr, value);
+  attr.setValue(value);
+}
+
+void SensorDevice::writeAttrValue(const std::string &name,
                                   const std::string &value) {
   LOG(INFO) << "Writing the value of Attribute \"" << name << "\"";
   SensorAttribute* attr =
       static_cast<SensorAttribute*>(getWritableAttribute(name));
-  static_cast<SensorDevice*>(parent_)->writeAttrValue(*this, *attr, value);
+  writeAttrValue(*this, *attr, value);
 }
 
-} // namespace ipc
+
 } // namepsace openbmc
+} // namespace ipc

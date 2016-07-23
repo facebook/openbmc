@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <glog/logging.h>
+#include <object-tree/Object.h>
 #include "SensorAttribute.h"
 #include "SensorApi.h"
 
@@ -54,8 +55,8 @@ class SensorSysfsApi : public SensorApi {
      * @throw errno if the file cannot be opened
      * @return value read
      */
-    const std::string readValue(const SensorObject    &object,
-                                const SensorAttribute &attr) override;
+    const std::string readValue(const Object          &object,
+                                const SensorAttribute &attr) const override;
 
     /**
      * Writes value to the path specified by object and attr. The path
@@ -66,7 +67,7 @@ class SensorSysfsApi : public SensorApi {
      * @param value to be written
      * @throw errno if the file cannot be opened
      */
-    void writeValue(const SensorObject    &object,
+    void writeValue(const Object          &object,
                     const SensorAttribute &attr,
                     const std::string     &value) override;
 

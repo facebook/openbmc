@@ -90,6 +90,7 @@ if(BUILD_TESTS)
 
   add_executable(sensor-object-test
     tests/SensorObjectTest.cpp
+    SensorDevice.cpp
     SensorObject.cpp
     SensorSysfsApi.cpp
   )
@@ -108,6 +109,7 @@ if(BUILD_TESTS)
     tests/DBusSensorRegTest.cpp
     tests/DBusObjectTreeInterface.cpp
     SensorObjectTree.cpp
+    SensorDevice.cpp
     SensorObject.cpp
     SensorSysfsApi.cpp
   )

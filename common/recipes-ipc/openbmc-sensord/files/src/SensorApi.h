@@ -19,13 +19,11 @@
 #pragma once
 #include <string>
 #include <nlohmann/json.hpp>
+#include <object-tree/Object.h>
 #include "SensorAttribute.h"
 
 namespace openbmc {
 namespace ipc {
-
-// forward declaration to avoid mutual include
-class SensorObject;
 
 /**
  * Sensor API for reading and writing value of the attribute from the
@@ -42,8 +40,8 @@ class SensorApi {
      * @param attr of the value to be read
      * @return value read
      */
-    virtual const std::string readValue(const SensorObject    &object,
-                                        const SensorAttribute &attr) = 0;
+    virtual const std::string readValue(const Object          &object,
+                                        const SensorAttribute &attr) const = 0;
 
     /**
      * Writes value to the path specified by object and attr.
@@ -53,7 +51,7 @@ class SensorApi {
      * @param attr of the value to be written
      * @param value to be written
      */
-    virtual void writeValue(const SensorObject    &object,
+    virtual void writeValue(const Object          &object,
                             const SensorAttribute &attr,
                             const std::string     &value) = 0;
 

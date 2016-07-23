@@ -26,17 +26,52 @@
 namespace openbmc {
 namespace ipc {
 
+Object* SensorObjectTree::addObject(std::unique_ptr<Object> upObj,
+                                    const std::string       &parentPath) {
+  bool isSensorObject = false;
+  try {
+    getSensorObject(upObj.get());
+    isSensorObject = true;
+    LOG(INFO) << "Object \"" << upObj.get()->getName()
+      << "\" is of SensorObject type";
+  } catch (...) {
+    LOG(INFO) << "Object \"" << upObj.get()->getName()
+      << "\" is NOT of SensorObject type.";
+  }
 
-SensorObject* SensorObjectTree::addSensorObject(
-                                      const std::string &name,
-                                      const std::string &parentPath,
-                                      std::unique_ptr<SensorApi> uSensorApi) {
-  LOG(INFO) << "Adding object \"" << name << "\" under path \""
+  if (isSensorObject) {
+    LOG(INFO) << "Checking if parent is of SensorDevice type";
+    try {
+      getSensorDevice(parentPath); // throw if parent is not SensorDevice
+    } catch (...) {
+      // rethrow with the suitable message
+      throw std::invalid_argument("Invalid parent type");
+    }
+  }
+  return ObjectTree::addObject(std::move(upObj), parentPath);
+}
+
+SensorDevice* SensorObjectTree::addSensorDevice(
+    const std::string &name,
+    const std::string &parentPath,
+    std::unique_ptr<SensorApi> uSensorApi) {
+  LOG(INFO) << "Adding SensorDevice \"" << name << "\" under the path \""
     << parentPath << "\"";
   const std::string path = getPath(parentPath, name);
   Object* parent = getParent(parentPath, name);
-  std::unique_ptr<SensorObject> upObj(
-      new SensorObject(name, std::move(uSensorApi), parent));
+  std::unique_ptr<SensorDevice> upDev(
+      new SensorDevice(name, std::move(uSensorApi), parent));
+  return static_cast<SensorDevice*>(addObjectByPath(std::move(upDev), path));
+
+}
+
+SensorObject* SensorObjectTree::addSensorObject(const std::string &name,
+                                                const std::string &parentPath) {
+  LOG(INFO) << "Adding new SensorObject \"" << name << "\" under the path \""
+    << parentPath << "\"";
+  const std::string path = getPath(parentPath, name);
+  SensorDevice* parent = getSensorDevice(getParent(parentPath, name));
+  std::unique_ptr<SensorObject> upObj(new SensorObject(name, parent));
   return static_cast<SensorObject*>(addObjectByPath(std::move(upObj), path));
 }
 

@@ -25,21 +25,27 @@
 #include <gio/gio.h>
 #include <nlohmann/json.hpp>
 #include <object-tree/Attribute.h>
+#include "../SensorDevice.h"
 #include "../SensorObject.h"
 #include "../SensorApi.h"
 #include "../SensorSysfsApi.h"
 using namespace openbmc::ipc;
 
-TEST(SensorObjectTest, Constructor) {
+TEST(SensorDeviceObjectTest, Constructor) {
   std::string fsPath = "./test.txt";
   std::unique_ptr<SensorSysfsApi> uSysfsApi(new SensorSysfsApi(fsPath));
   EXPECT_STREQ(uSysfsApi.get()->getFsPath().c_str(), fsPath.c_str());
-  SensorObject parent("Card", std::move(uSysfsApi));
+  SensorDevice parent("Card", std::move(uSysfsApi));
   EXPECT_STREQ(parent.getName().c_str(), "Card");
+
   uSysfsApi = std::unique_ptr<SensorSysfsApi>(new SensorSysfsApi(fsPath));
-  SensorObject sobj("sensor1", std::move(uSysfsApi), &parent);
+  SensorDevice sDevice("sensor1", std::move(uSysfsApi), &parent);
+  EXPECT_TRUE(sDevice.getParent() == &parent);
+  EXPECT_TRUE(parent.getChildObject("sensor1") == &sDevice);
+
+  SensorObject sobj("sensor2", &parent);
   EXPECT_TRUE(sobj.getParent() == &parent);
-  EXPECT_TRUE(parent.getChildObject("sensor1") == &sobj);
+  EXPECT_TRUE(parent.getChildObject("sensor2") == &sobj);
 }
 
 class ReadWriteTest : public ::testing::Test {
@@ -47,27 +53,30 @@ class ReadWriteTest : public ::testing::Test {
     virtual void SetUp() {
       std::string fsPath = "/sys/class/hwmon/hwmon1";
       std::unique_ptr<SensorSysfsApi> uSysfsApi(new SensorSysfsApi(fsPath));
-      sobj_ = new SensorObject("sensor1", std::move(uSysfsApi));
-      sobj_->addAttribute("1_input"); // modes is by default RO
-      SensorAttribute* attrRW = sobj_->addAttribute("1_max");
+      sDevice_ = new SensorDevice("sensor1", std::move(uSysfsApi));
+      sObject_ = new SensorObject("temp", sDevice_);
+      sObject_->addAttribute("1_input"); // modes is by default RO
+      SensorAttribute* attrRW = sObject_->addAttribute("1_max");
       attrRW->setModes(Attribute::RW);
     }
 
     virtual void TearDown() {
-      delete sobj_;
+      delete sObject_;
+      delete sDevice_;
     }
 
-    SensorObject* sobj_;
+    SensorDevice* sDevice_;
+    SensorObject* sObject_;
 };
 
 TEST_F(ReadWriteTest, AttributeRead) {
   std::string value;
-  ASSERT_NO_THROW(value = sobj_->readAttrValue("1_input"));
-  EXPECT_STREQ(value.c_str(), sobj_->getAttribute("1_input")
-                                   ->getValue().c_str());
+  ASSERT_NO_THROW(value = sObject_->readAttrValue("1_input"));
+  EXPECT_STREQ(value.c_str(), sObject_->getAttribute("1_input")
+                                      ->getValue().c_str());
 
   // set addr in SensorAttribute
-  SensorAttribute* attr = sobj_->getAttribute("1_input");
+  SensorAttribute* attr = sObject_->getAttribute("1_input");
   ASSERT_TRUE(attr != nullptr);
   EXPECT_FALSE(attr->isAccessible());
   attr->setAddr("temp1_input");
@@ -77,24 +86,30 @@ TEST_F(ReadWriteTest, AttributeRead) {
 
 TEST_F(ReadWriteTest, AttributeWrite) {
   // cannot write with modes RO
-  EXPECT_THROW(sobj_->writeAttrValue("8000", "1_input"), std::system_error);
+  EXPECT_THROW(sObject_->writeAttrValue("8000", "1_input"), std::system_error);
   std::string origVal;
   const std::string newVal = "81000";
-  ASSERT_NO_THROW(origVal = sobj_->readAttrValue("1_max"));
-  ASSERT_NO_THROW(sobj_->writeAttrValue(newVal, "1_max"));
-  EXPECT_STREQ(sobj_->readAttrValue("1_max").c_str(), newVal.c_str());
-  ASSERT_NO_THROW(sobj_->writeAttrValue(origVal, "1_max"));
-  EXPECT_STREQ(sobj_->readAttrValue("1_max").c_str(), origVal.c_str());
+  ASSERT_NO_THROW(origVal = sObject_->readAttrValue("1_max"));
+  ASSERT_NO_THROW(sObject_->writeAttrValue(newVal, "1_max"));
+  EXPECT_STREQ(sObject_->readAttrValue("1_max").c_str(), newVal.c_str());
+  ASSERT_NO_THROW(sObject_->writeAttrValue(origVal, "1_max"));
+  EXPECT_STREQ(sObject_->readAttrValue("1_max").c_str(), origVal.c_str());
 }
 
 TEST_F(ReadWriteTest, Dump) {
-  Object* obj = sobj_;
-  nlohmann::json objectDump = obj->dumpToJson();
-  const std::string &objectType = objectDump["objectType"];
-  EXPECT_STREQ(objectType.c_str(), "Sensor");
+  nlohmann::json deviceDump = sDevice_->dumpToJson();
+  nlohmann::json objectDump = sObject_->dumpToJson();
+  std::string deviceType;
+  std::string objectType;
 
-  ASSERT_TRUE(objectDump.find("access") != objectDump.end());
-  const std::string &api = objectDump["access"]["api"];
+  deviceType = deviceDump["objectType"];
+  EXPECT_STREQ(deviceType.c_str(), "SensorDevice");
+  objectType = objectDump["objectType"];
+  EXPECT_STREQ(objectType.c_str(), "SensorObject");
+
+  EXPECT_TRUE(objectDump.find("access") == objectDump.end());
+  ASSERT_TRUE(deviceDump.find("access") != deviceDump.end());
+  const std::string &api = deviceDump["access"]["api"];
   EXPECT_STREQ(api.c_str(), "sysfs");
 }
 

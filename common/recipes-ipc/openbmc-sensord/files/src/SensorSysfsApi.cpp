@@ -30,8 +30,9 @@
 namespace openbmc {
 namespace ipc {
 
-const std::string SensorSysfsApi::readValue(const SensorObject    &object,
-                                            const SensorAttribute &attr) {
+const std::string SensorSysfsApi::readValue(const Object          &object,
+                                            const SensorAttribute &attr)
+    const {
   std::string path = fsPath_ + std::string("/") + attr.getAddr();
   std::fstream fs;
   LOG(INFO) << "Reading value from path " << path;
@@ -46,7 +47,7 @@ const std::string SensorSysfsApi::readValue(const SensorObject    &object,
   return str;
 }
 
-void SensorSysfsApi::writeValue(const SensorObject    &object,
+void SensorSysfsApi::writeValue(const Object          &object,
                                 const SensorAttribute &attr,
                                 const std::string     &value) {
   std::string path = fsPath_ + std::string("/") + attr.getAddr();

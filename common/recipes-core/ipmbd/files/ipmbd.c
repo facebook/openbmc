@@ -866,10 +866,10 @@ main(int argc, char * const argv[]) {
     exit(1);
   }
 
-  ipmb_bus_num = atoi(argv[1]);
+  ipmb_bus_num = (uint8_t)strtoul(argv[1], NULL, 0);
   g_bus_id = ipmb_bus_num;
 
-  ipmb_slave_addr = atoi(argv[2]);
+  ipmb_slave_addr = (uint8_t)strtoul(argv[2], NULL, 0);
   g_slave_addr = ipmb_slave_addr;
 
   syslog(LOG_WARNING, "ipmbd: bus#:%d, slave_addr#: 0x%2X\n", ipmb_bus_num, ipmb_slave_addr);

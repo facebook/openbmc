@@ -43,7 +43,7 @@ ACTION="$1"
 case "$ACTION" in
   start)
     echo -n "Starting $DESC: "
-    $DAEMON 4 > /dev/null 2>&1 &
+    $DAEMON 4 0x16 > /dev/null 2>&1 &
     echo "$NAME."
     ;;
   stop)

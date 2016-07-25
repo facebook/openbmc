@@ -30,6 +30,12 @@
 #include "../SensorObjectTree.h"
 #include "../SensorDevice.h"
 #include "../SensorObject.h"
+#include "../SensorTemp.h"
+#include "../SensorPower.h"
+#include "../SensorPwm.h"
+#include "../SensorVoltage.h"
+#include "../SensorCurrent.h"
+#include "../SensorFan.h"
 #include "../SensorApi.h"
 #include "../SensorSysfsApi.h"
 #include "DBusObjectTreeInterface.h"
@@ -95,6 +101,52 @@ TEST_F(DBusDefaultTest, DefaultObjectRegistration) {
   // deletion successful
   EXPECT_NO_THROW(sensorTree.deleteObjectByName("openbmc", "/org"));
   ASSERT_FALSE(dbus_->isObjectRegistered("/org/openbmc", defaultInterface));
+}
+
+/**
+ * Test adding the subtypes of SensorObject such as SensorTemp and so on.
+ */
+TEST_F(DBusDefaultTest, AddSensorObjectSubtypes) {
+  SensorObjectTree sensorTree(sDbus_, "org");
+  sensorTree.addObject("openbmc", "/org");
+  // SensorObject can only be the child of SensorDevice
+  EXPECT_THROW(sensorTree.addSensorObject("Sensor1_temp", "/org/openbmc"),
+               std::invalid_argument);
+  std::unique_ptr<SensorSysfsApi> uSysfsApi(new SensorSysfsApi("/"));
+  EXPECT_NO_THROW(sensorTree.addSensorDevice("Sensor1",
+                                             "/org/openbmc",
+                                             std::move(uSysfsApi)));
+
+  Object* sObject = nullptr;
+  std::unique_ptr<SensorObject> uObj(new SensorTemp("temp"));
+  sObject = sensorTree.addObject(std::move(uObj), "/org/openbmc/Sensor1");
+  EXPECT_TRUE(sObject != nullptr);
+  EXPECT_TRUE(dynamic_cast<SensorTemp*>(sObject) != nullptr);
+
+  uObj = std::unique_ptr<SensorObject>(new SensorFan("fan"));
+  sObject = sensorTree.addObject(std::move(uObj), "/org/openbmc/Sensor1");
+  EXPECT_TRUE(sObject != nullptr);
+  EXPECT_TRUE(dynamic_cast<SensorFan*>(sObject) != nullptr);
+
+  uObj = std::unique_ptr<SensorObject>(new SensorPower("power"));
+  sObject = sensorTree.addObject(std::move(uObj), "/org/openbmc/Sensor1");
+  EXPECT_TRUE(sObject != nullptr);
+  EXPECT_TRUE(dynamic_cast<SensorPower*>(sObject) != nullptr);
+
+  uObj = std::unique_ptr<SensorObject>(new SensorPwm("pwm"));
+  sObject = sensorTree.addObject(std::move(uObj), "/org/openbmc/Sensor1");
+  EXPECT_TRUE(sObject != nullptr);
+  EXPECT_TRUE(dynamic_cast<SensorPwm*>(sObject) != nullptr);
+
+  uObj = std::unique_ptr<SensorObject>(new SensorVoltage("voltage"));
+  sObject = sensorTree.addObject(std::move(uObj), "/org/openbmc/Sensor1");
+  EXPECT_TRUE(sObject != nullptr);
+  EXPECT_TRUE(dynamic_cast<SensorVoltage*>(sObject) != nullptr);
+
+  uObj = std::unique_ptr<SensorObject>(new SensorCurrent("current"));
+  sObject = sensorTree.addObject(std::move(uObj), "/org/openbmc/Sensor1");
+  EXPECT_TRUE(sObject != nullptr);
+  EXPECT_TRUE(dynamic_cast<SensorCurrent*>(sObject) != nullptr);
 }
 
 class DBusSensorObjectTreeTest : public ::testing::Test {

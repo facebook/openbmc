@@ -30,8 +30,8 @@ namespace openbmc {
 namespace ipc {
 
 /**
- * Tree structured object superclass that manages the sensor objects and
- * bridges them with the interprocess communicaton (IPC).
+ * Tree structured object superclass that manages the sensor devices and objects,
+ * and bridges them with the interprocess communicaton (IPC).
  */
 class SensorObjectTree : public ObjectTree {
   public:
@@ -77,7 +77,8 @@ class SensorObjectTree : public ObjectTree {
      * children objects. It's also assumed that the SensorObject can only be
      * added to SensorDevice as the parent. Otherwise, this function will
      * throw an exception. Note that this provides the interface for adding any
-     * derived class instances of SensorObject.
+     * derived class instances of SensorObject such as SensorTemp, SensorPower,
+     * and so on.
      *
      * @param unique_ptr to Object to be added
      * @param parentPath is the parent object path for the object
@@ -119,8 +120,8 @@ class SensorObjectTree : public ObjectTree {
      * @param parentPath is the parent object path for the object
      *        to be added at
      * @throw std::invalid_argument if parentPath not found, the parent is not
-     *        SensorDevice, or the object with the name has already existed
-     *        under the parent.
+     *        SensorDevice, the object with the name has already existed
+     *        under the parent, or the sensorType specified is not valid
      * @return pointer to the created SensorObject
      */
     SensorObject* addSensorObject(const std::string &name,

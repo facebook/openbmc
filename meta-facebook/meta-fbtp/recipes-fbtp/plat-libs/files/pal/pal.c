@@ -163,10 +163,6 @@ char * def_val_list[] = {
   "on", /* pwr_server_last_state */
   "0", /* sysfw_ver_server */
   "off", /* identify_sled */
-  "off", /* identify_slot1 */
-  "off", /* identify_slot2 */
-  "off", /* identify_slot3 */
-  "off", /* identify_slot4 */
   "0", /* timestamp_sled */
   "lps", /* server_por_cfg */
   "1", /* server_sensor_health */

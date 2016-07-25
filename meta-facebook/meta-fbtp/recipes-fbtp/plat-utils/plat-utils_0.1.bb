@@ -62,8 +62,8 @@ do_install() {
   # the script to mount /mnt/data
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
-  #install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  #update-rc.d -r ${D} power-on.sh start 96 5 .
+  install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+  update-rc.d -r ${D} power-on.sh start 96 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

@@ -82,6 +82,7 @@ static int acceptClient(int serverFd) {
     syslog(LOG_ERR, "mTerm_server: Server errror on accept()\n");
     return -1;
   }
+  syslog(LOG_INFO, "mTerm_server: Client socket %d created\n", fd);
   return fd;
 }
 
@@ -104,9 +105,10 @@ static void processClient(fd_set* master, int clientFd , int solFd,
 
   /* TODO: server should be able to handle data for a tlv over multiple reads */
   nbytes = readv(clientFd, vec, 2);
+
   if (nbytes <= 0) {
     if (nbytes == 0) {
-      syslog(LOG_INFO, "mTerm_server: Client socket %d hung up\n", clientFd);
+      syslog(LOG_ERR, "mTerm_server: Client socket %d hung up\n", clientFd);
     } else {
       syslog(LOG_ERR, "mTerm_server: Error on read fd=%d\n", clientFd);
     }
@@ -114,11 +116,17 @@ static void processClient(fd_set* master, int clientFd , int solFd,
   } else if (nbytes < sizeof(TlvHeader)) {
     /* TODO: Potentially we should use a per-client buffer, for now close
      Client connection */
-    syslog(LOG_ERR, "mTerm_server: Error on read fd=%d\n", clientFd);
+    syslog(LOG_ERR, "mTerm_server: Error on read fd=%d socket_nbytes=%d\n", clientFd, nbytes);
     closeClient(master, clientFd);
   } else if (header.length > (nbytes - sizeof(header))) {
-    syslog(LOG_ERR, "mTerm_server: Error on read fd=%d\n", clientFd);
-    closeClient(master, clientFd);
+    /*TODO: Observed when sending break to enter BIOS, mac's version of fn+DEL
+    translates to ^[3~ sequence. Key press event for 'fn' is not being sent to
+    the terminal and thus BREAK is not being traslated properly.
+    Alternately using ESC works. Since the number of bytes sent is more than
+    expected we were closing the connection. Lets log the error and drop
+    the message.*/
+    //closeClient(master, clientFd);
+    syslog(LOG_ERR, "mTerm_server: Received %d bytes for fd=%d dropping message.\n",nbytes, clientFd);
   } else {
     switch (header.type) {
       case ASCII_CTRL_L:
@@ -128,8 +136,8 @@ static void processClient(fd_set* master, int clientFd , int solFd,
         */
         bufferGetLines(buf->file, clientFd, atoi(vec[1].iov_base), 0);
         break;
-      case ASCII_DELETE:
-        syslog(LOG_INFO, "mTerm_server: Client socket %d hung up\n", clientFd);
+      case ASCII_CTRL_X:
+        syslog(LOG_INFO, "mTerm_server: Client socket %d closed\n", clientFd);
         closeClient(master, clientFd);
         break;
       case ASCII_CARAT:

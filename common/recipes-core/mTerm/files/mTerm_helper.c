@@ -27,15 +27,17 @@
 
 void escHelp(void) {
   printf("\r\n------------------TERMINAL MULTIPLEXER---------------------\r\n");
-  printf("  CTRL-L ? - Display help message.\r\n");
-  printf("  CTRL-L DELETE / CTRL-X - Terminate the connection.\r\n");
-  printf("  CTRL-L :N - For reading last N lines from end of buffer.\r\n");
+  printf("  CTRL-L ?  : Display help message.\r\n");
+  printf("  CTRL-X    : Terminate the connection.\r\n");
+  printf("  /var/log/mTerm_wedge.log : Log location\r\n");
+  /*TODO: Log file read from tool*/
+  //printf("  CTRL-L :N - For reading last N lines from end of buffer.\r\n");
   printf("\r\n-----------------------------------------------------------\r\n");
   return;
 }
 
 void escClose(int clientfd) {
-  sendTlv(clientfd, ASCII_DELETE, NULL , 0);
+  sendTlv(clientfd, ASCII_CTRL_X, NULL , 0);
   printf("Connection closed.\r\n");
  return;
 }
@@ -45,11 +47,6 @@ int processEscMode(int clientfd, char c, escMode* mode) {
     escHelp();
     *mode = EOL;
     return 1;
-  }
-  if (c == ASCII_DELETE) {
-    escClose(clientfd);
-    *mode = EOL;
-    return 0;
   }
   if (c == ASCII_COLON) {
     *mode = SEND;
@@ -70,6 +67,7 @@ int sendTlv(int fd, uint16_t type, void* value, uint16_t valLen) {
   int rc;
   vec[1].iov_base = value;
   vec[1].iov_len = valLen;
+
   rc = writev(fd, vec, 2);
 
   // TODO: Check the return code, and asynchronously retry later if

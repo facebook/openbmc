@@ -66,7 +66,7 @@ do_install_board() {
   install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
   update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
   install -m 755 start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
-  update-rc.d -r ${D} start_us_monitor.sh start 84 S .
+  update-rc.d -r ${D} start_us_monitor.sh start 83 S .
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 85 S .
 }

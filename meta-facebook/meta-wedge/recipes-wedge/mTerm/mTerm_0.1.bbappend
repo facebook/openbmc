@@ -30,12 +30,12 @@ CONS_BIN_FILES += " \
     mTerm_server.sh \
     "
 
-#do_install_append() {
-#  install -d ${D}${sysconfdir}/init.d
-#  install -d ${D}${sysconfdir}/rcS.d
-#  install -m 755 start_mTerm_server.sh ${D}${sysconfdir}/init.d/start_mTerm_server.sh
-#  update-rc.d -r ${D} start_mTerm_server.sh start 83 S .
-#}
+do_install_append() {
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  install -m 755 start_mTerm_server.sh ${D}${sysconfdir}/init.d/start_mTerm_server.sh
+  update-rc.d -r ${D} start_mTerm_server.sh start 84 S .
+}
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

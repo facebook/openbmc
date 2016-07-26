@@ -19,7 +19,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define ASCII_DELETE  0177
 #define ESC_CHAR_HELP '?'
 //#define ASCII_ESC 27 // ctrl + [
 #define ASCII_CTRL_L 12 // ctrl + L

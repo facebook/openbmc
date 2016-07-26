@@ -66,14 +66,14 @@ static int readFromStdin(int clientfd, int stdi) {
 
   nbytes = read(stdi, &c, 1);
   if (nbytes < 0) {
-    perror("mTerm_client: Client socket read error");
+    perror("mTerm_client: Client socket read error to mTerm_server");
     return 0;
   }
 
   if(c == ASCII_CTRL_X) {
     escClose(clientfd);
     mode = EOL;
-    return 1;
+    return 0;
   }
 
   if((mode == EOL) && (c == ASCII_CTRL_L)) {
@@ -98,7 +98,7 @@ static int writeToStdout(int clientfd, int stdo) {
 
   nbytes = read(clientfd, buf, sizeof(buf));
   if (nbytes < 0) {
-    perror("mTerm_client: Client socket read error");
+    perror("mTerm_client: Client socket read error to stdout");
     return 0;
   }
   writeData(stdo, buf, nbytes, "stdout");
@@ -193,5 +193,5 @@ int main(int argc, char **argv)
    }
    escHelp();
    connectClient(argv[1]);
-   return 0;
+   return sigexit;
 }

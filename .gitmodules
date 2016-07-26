@@ -1,4 +1,0 @@
-[submodule "meta-aspeed/recipes-bsp/u-boot/files/u-boot-v2013.07"]
-	path = meta-aspeed/recipes-bsp/u-boot/files/u-boot-v2013.07
-	url = ssh://git.vip.facebook.com/data/gitrepos/u-boot.git
-	branch = openbmc/fido/v2013.07

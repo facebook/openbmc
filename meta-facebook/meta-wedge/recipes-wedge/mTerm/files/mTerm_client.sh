@@ -17,12 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-CONSOLE_SH=/usr/local/bin/us_console.sh
-
 echo -n "Starting client to connect to microserver..."
 
-$CONSOLE_SH connect
-
-/usr/local/bin/mTerm_client wedge
+exec /usr/local/bin/mTerm_client wedge
 
 echo "Exit from session to microserver."

@@ -87,7 +87,7 @@ def bmc_read_speed():
     data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     sdata = data.split('\n')
     result = {}
-    fan_n = 1
+    fan_n = 0
     for line in sdata:
         m = re.match(r"Fan .*\sSpeed:\s+(\d+)\s", line)
         if m is not None:

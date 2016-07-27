@@ -35,15 +35,17 @@ do_install_board() {
     # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
     olddir="/usr/local/fbpackages/utils"
     localbindir="/usr/local/bin"
+    bindir="/usr/bin"
     install -d ${D}${olddir}
     install -d ${D}${localbindir}
+    install -d ${D}${bindir}
     ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
 
     install -m 0755 bios_flash.sh ${D}${localbindir}/bios_flash.sh
     install -m 0755 bcm5389.sh ${D}${localbindir}/bcm5389.sh
     install -m 0755 at93cx6_util.sh ${D}${localbindir}/at93cx6_util.sh
     install -m 0755 lsb_release ${D}${localbindir}/lsb_release
-    install -m 0755 seutil ${D}${localbindir}/seutil
+    install -m 0755 seutil ${D}${bindir}/seutil
     # common lib and include files
     install -d ${D}${includedir}/facebook
     install -m 0644 src/include/i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h

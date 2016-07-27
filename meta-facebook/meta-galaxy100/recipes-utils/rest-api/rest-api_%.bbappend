@@ -15,7 +15,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://rest.py \
 			file://rest_bmc.py \
 			file://rest_fruid.py \
+			file://rest_fruid_scm.py \
 			file://rest_seutil.py \
 			file://bmc_command.py \
            "
-binfiles += "bmc_command.py rest_seutil.py"
+binfiles += "bmc_command.py rest_seutil.py rest_fruid_scm.py"

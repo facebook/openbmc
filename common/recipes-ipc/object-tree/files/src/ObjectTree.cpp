@@ -51,27 +51,18 @@ Object* ObjectTree::addObject(const std::string &name,
   LOG(INFO) << "Adding object \"" << name << "\" under path \""
     << parentPath << "\"";
   Object* parent = getParent(parentPath, name);
-  const std::string path = ipc_.get()->getPath(parentPath, name);
-
+  const std::string path = getPath(parentPath, name);
   std::unique_ptr<Object> upObj(new Object(name, parent));
   return addObjectByPath(std::move(upObj), path);
 }
 
-Object* ObjectTree::addObject(std::unique_ptr<Object> &upObj,
+Object* ObjectTree::addObject(std::unique_ptr<Object> upObj,
                               const std::string       &parentPath) {
-  if (!upObj) {
-    LOG(ERROR) << "Empty unique_ptr to the object";
-    throw std::invalid_argument("Empty object unique_ptr");
-  }
-  LOG(INFO) << "Adding object \"" << upObj.get()->getName()
-    << "\" under path \"" << parentPath << "\"";
-  if (upObj.get()->getChildCount() != 0) {
-    LOG(ERROR) << "Non-empty children of the object \""
-      << upObj.get()->getName() << "\"";
-    throw std::invalid_argument("Nonempty children");
-  }
+  checkObject(upObj.get());
   const std::string &name = upObj.get()->getName();
-  const std::string path = ipc_.get()->getPath(parentPath, name);
+  const std::string path = getPath(parentPath, name);
+  LOG(INFO) << "Adding object \"" << name << "\" under path \""
+    << parentPath << "\"";
   Object* parent = getParent(parentPath, name);
   parent->addChildObject(*(upObj.get()));
   return addObjectByPath(std::move(upObj), path);
@@ -112,6 +103,19 @@ Object* ObjectTree::getParent(const std::string &parentPath,
     throw std::invalid_argument("Duplicated object name");
   }
   return parent;
+}
+
+void ObjectTree::checkObject(const Object* object) const {
+  LOG(INFO) << "Checking validality of Object";
+  if (object == nullptr) {
+    LOG(ERROR) << "Empty object";
+    throw std::invalid_argument("Empty object");
+  }
+  if (object->getChildCount() != 0) {
+    LOG(ERROR) << "Non-empty children of the object \""
+      << object->getName() << "\"";
+    throw std::invalid_argument("Nonempty children");
+  }
 }
 
 } // namespace ipc

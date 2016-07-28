@@ -114,32 +114,35 @@ TEST_F(ObjectTreeTest, ObjectOperation) {
 TEST_F(ObjectTreeTest, AddObjectByUniquePtr) {
   std::unique_ptr<Object> uObj(new Object("openbmc"));
   // failed since parent path cannot be found
-  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/orgg"));
-  EXPECT_TRUE(uObj.get() != nullptr); // not moved
+  EXPECT_ANY_THROW(objTree_->addObject(std::move(uObj), "/orgg"));
 
-  EXPECT_TRUE(objTree_->addObject(uObj, "/org") != nullptr);
-  EXPECT_FALSE(uObj.get() != nullptr); // successfully moved
+  uObj = std::unique_ptr<Object>(new Object("openbmc"));
+  // successful
+  EXPECT_TRUE(objTree_->addObject(std::move(uObj), "/org") != nullptr);
+  EXPECT_TRUE(objTree_->containObject("/org/openbmc"));
+  Object* obj = nullptr;
+  EXPECT_TRUE((obj = objTree_->getObject("/org/openbmc")) != nullptr);
+  EXPECT_TRUE(obj->getParent() == objTree_->getObject("/org"));
+  ASSERT_TRUE((obj = objTree_->getObject("/org")) != nullptr);
+  EXPECT_TRUE(obj->getChildObject("openbmc") != nullptr);
 
   // failed since uObj is empty
-  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
+  EXPECT_ANY_THROW(objTree_->addObject(std::move(uObj), "/org"));
 
   uObj = std::unique_ptr<Object>(new Object("openbmc"));
   // failed since /org already has an object named openbmc
-  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
-  EXPECT_TRUE(uObj.get() != nullptr); // not moved
+  EXPECT_ANY_THROW(objTree_->addObject(std::move(uObj), "/org"));
 
   Object* root = objTree_->getRoot();
   uObj = std::unique_ptr<Object>(new Object("Chassis", root));
   ASSERT_TRUE(uObj.get()->getParent() != nullptr);
   // failed since the object has non-null parent
-  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
-  EXPECT_TRUE(uObj.get() != nullptr); // not moved
+  EXPECT_ANY_THROW(objTree_->addObject(std::move(uObj), "/org"));
 
   uObj = std::unique_ptr<Object>(new Object("System"));
   Object child("sqlite", uObj.get());
   // failed since the object has non-empty children
-  EXPECT_ANY_THROW(objTree_->addObject(uObj, "/org"));
-  EXPECT_TRUE(uObj.get() != nullptr); // not moved
+  EXPECT_ANY_THROW(objTree_->addObject(std::move(uObj), "/org"));
 }
 
 int main (int argc, char* argv[]) {

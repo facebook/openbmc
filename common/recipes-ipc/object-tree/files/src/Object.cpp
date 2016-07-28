@@ -18,7 +18,6 @@
 
 #include <string>
 #include <stdexcept>
-#include <system_error>
 #include <unordered_map>
 #include <memory>
 #include <glog/logging.h>
@@ -38,34 +37,14 @@ Attribute* Object::getAttribute(const std::string &name) const {
 
 const std::string& Object::readAttrValue(const std::string &name) const {
   LOG(INFO) << "Reading the value of Attribute \n" << name << "\"";
-  Attribute* attr;
-  if ((attr = getAttribute(name)) == nullptr) {
-    LOG(ERROR) << "Attribute \"" << name << "\" not found";
-    throw std::invalid_argument("Attribute not found");
-  }
-  if (!attr->isReadable()) {
-    LOG(ERROR) << "Attribute \"" << name << "\" does not support read in modes";
-    throw std::system_error(EPERM,
-                            std::system_category(),
-                            "Attribute read not supported");
-  }
+  Attribute* attr = getReadableAttribute(name);
   return attr->getValue();
 }
 
 void Object::writeAttrValue(const std::string &name,
                             const std::string &value) {
   LOG(INFO) << "Writing the value of Attribute \"" << name << "\"";
-  Attribute* attr;
-  if ((attr = getAttribute(name)) == nullptr) {
-    LOG(ERROR) << "Attribute \"" << name << "\" not found";
-    throw std::invalid_argument("Attribute not found");
-  }
-  if (!attr->isWritable()) {
-    LOG(ERROR) << "Attribute \"" << name << "\" does not support write in modes";
-    throw std::system_error(EPERM,
-                            std::system_category(),
-                            "Attribute write not supported");
-  }
+  Attribute* attr = getWritableAttribute(name);
   attr->setValue(value);
 }
 

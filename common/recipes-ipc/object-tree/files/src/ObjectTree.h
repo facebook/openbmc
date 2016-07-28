@@ -64,6 +64,10 @@ class ObjectTree {
       }
     }
 
+    const Ipc* getIpc() const {
+      return ipc_.get();
+    }
+
     Object* getRoot() const {
       return root_;
     }
@@ -114,13 +118,12 @@ class ObjectTree {
     /**
      * Add the specified object to objectMap_ under the specified parent path.
      * It is assumed that the object should not have any parent nor children
-     * objects. Otherwise, this function will throw an exception and leave the
-     * unique_ptr unmoved.
+     * objects. Otherwise, this function will throw an exception.
      *
      * @param unique_ptr to the object to be added
      * @param parentPath is the parent object path for the object
      *        to be added at
-     * @throw std::invalid_argument and leave unique_ptr unmoved if
+     * @throw std::invalid_argument if
      *        * the unique_ptr to object is empty
      *        * object has non-empty children or non-null parent
      *        * parentPath not found
@@ -131,7 +134,7 @@ class ObjectTree {
      *         has already existed under the parent; otherwise,
      *         object is created and added
      */
-    virtual Object* addObject(std::unique_ptr<Object> &object,
+    virtual Object* addObject(std::unique_ptr<Object> object,
                               const std::string       &parentPath);
 
     /**
@@ -231,6 +234,15 @@ class ObjectTree {
      */
     Object* getParent(const std::string &parentPath,
                       const std::string &name) const;
+
+    /**
+     * A helper function to check if object passed in is valid.
+     *
+     * @param const ptr to Object
+     * @throw std::invalid_argument if object is nullptr or if the object
+     *        has non-empty children
+     */
+    void checkObject(const Object* object) const;
 };
 
 } // namespace ipc

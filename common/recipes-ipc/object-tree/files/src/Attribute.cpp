@@ -25,19 +25,26 @@
 namespace openbmc {
 namespace ipc {
 
-std::unordered_map<unsigned int, const std::string> Attribute::modesMap =
-{
-  {RO, "RO"},
-  {WO, "WO"},
-  {RW, "RW"}
-};
+std::unordered_map<unsigned int, const std::string> Attribute::modesStringMap =
+  {
+    {RO, "RO"},
+    {WO, "WO"},
+    {RW, "RW"}
+  };
+
+std::unordered_map<std::string, const unsigned int> Attribute::stringModesMap =
+  {
+    {"RO", RO},
+    {"WO", WO},
+    {"RW", RW}
+  };
 
 nlohmann::json Attribute::dumpToJson() const {
   LOG(INFO) << "Dumpping the info for Attribute \"" << name_ << "\"";
   nlohmann::json dump;
   dump["name"] = name_;
   dump["value"] = value_;
-  dump["modes"] = modesMap.at(modes_);
+  dump["modes"] = modesStringMap.at(modes_);
   return dump;
 }
 

@@ -18,6 +18,7 @@
 
 #pragma once
 #include <string>
+#include <system_error>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <glog/logging.h>
@@ -217,6 +218,60 @@ class Object {
 
     void setParent(Object* parent) {
       parent_ = parent;
+    }
+
+    /**
+     * Get attribute of the given name and ensure it exists.
+     *
+     * @param name of the attribute
+     * @throw std::system_error EPERM if attr is not readable
+     * @return pointer to the attribute
+     */
+    virtual Attribute* getNonNullAttribute(const std::string &name) const {
+      Attribute* attr;
+      if ((attr = getAttribute(name)) == nullptr) {
+        LOG(ERROR) << "Attribute \"" << name << "\" not found";
+        throw std::invalid_argument("Attribute not found");
+      }
+      return attr;
+    }
+
+    /**
+     * Get attribute of the given name and ensure it is readable.
+     *
+     * @param name of the attribute
+     * @throw std::invalid_argument if attribute not found
+     * @throw std::system_error EPERM if attr is not readable
+     * @return pointer to the attribute
+     */
+    virtual Attribute* getReadableAttribute(const std::string &name) const {
+      Attribute* attr = getNonNullAttribute(name);
+      if (!attr->isReadable()) {
+        LOG(ERROR) << "Attribute \"" << name
+          << "\" does not support read";
+        throw std::system_error(
+            EPERM, std::system_category(), "Attribute read not supported");
+      }
+      return attr;
+    }
+
+    /**
+     * Get attribute of the given name and ensure it is writable.
+     *
+     * @param name of the attribute
+     * @throw std::invalid_argument if attribute not found
+     * @throw std::system_error EPERM if attr is not writable
+     * @return pointer to the attribute
+     */
+    virtual Attribute* getWritableAttribute(const std::string &name) const {
+      Attribute* attr = getNonNullAttribute(name);
+      if (!attr->isWritable()) {
+        LOG(ERROR) << "Attribute \"" << name
+          << "\" does not support write";
+        throw std::system_error(
+            EPERM, std::system_category(), "Attribute write not supported");
+      }
+      return attr;
     }
 
     /**

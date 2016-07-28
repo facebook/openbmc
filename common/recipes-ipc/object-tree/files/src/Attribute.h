@@ -31,8 +31,10 @@ class Attribute {
   public:
     // RO: read only; WO: write only; RW: read write
     enum Modes {RO, WO, RW};
-    // map enum to strings
-    static std::unordered_map<unsigned int, const std::string> modesMap;
+    // map Modes to strings
+    static std::unordered_map<unsigned int, const std::string> modesStringMap;
+    // map strings to Modes
+    static std::unordered_map<std::string, const unsigned int> stringModesMap;
 
   protected:
     std::string name_;

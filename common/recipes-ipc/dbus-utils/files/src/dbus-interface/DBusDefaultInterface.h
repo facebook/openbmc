@@ -20,7 +20,7 @@
 #include <string>
 #include <stdexcept>
 #include <gio/gio.h>
-#include "DBusInterfaceBase.h"
+#include "../DBusInterfaceBase.h"
 
 namespace openbmc {
 namespace ipc {

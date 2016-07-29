@@ -20,7 +20,7 @@ DESCRIPTION = "This provides utiliy classes that allows getting connection to DB
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://DBusInterfaceBase.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://DBus.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 SRC_URI = "file://src \
           "
@@ -33,6 +33,7 @@ export SLIB = "${STAGING_LIBDIR}"
 inherit cmake
 
 DEPENDS += " libipc \
+             object-tree \
              glib-2.0 \
              glog \
              gtest \

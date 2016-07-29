@@ -20,7 +20,7 @@
 #include <gio/gio.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../DBusDefaultInterface.h"
+#include "../dbus-interface/DBusDefaultInterface.h"
 using namespace openbmc::ipc;
 
 static DBusDefaultInterface testInterface;

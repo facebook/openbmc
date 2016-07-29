@@ -26,7 +26,7 @@
 #include <gio/gio.h>
 #include <ipc-interface/Ipc.h>
 #include "DBusInterfaceBase.h"
-#include "DBusDefaultInterface.h"
+#include "dbus-interface/DBusDefaultInterface.h"
 #include "DBusObject.h"
 
 namespace openbmc {

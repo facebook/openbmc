@@ -19,6 +19,7 @@ set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
 include_directories($ENV{SINC}/glib-2.0)
 include_directories($ENV{SLIB}/glib-2.0/include)
 
+find_library(OBJECT_TREE object-tree)
 find_library(GIO gio-2.0)
 find_library(GLIB glib-2.0)
 find_library(GTEST gtest)
@@ -27,11 +28,12 @@ find_library(GLOG glog)
 add_library(dbus-utils
   DBus.cpp
   DBusObject.cpp
-  DBusDefaultInterface.cpp
+  dbus-interface/DBusDefaultInterface.cpp
+  dbus-interface/DBusObjectInterface.cpp
 )
 
 target_link_libraries(dbus-utils
-    ${GTEST}
+    ${OBJECT_TREE}
     ${GLOG}
     ${GIO}
     ${GLIB}
@@ -45,11 +47,14 @@ install(FILES
   DBus.h
   DBusObject.h
   DBusInterfaceBase.h
-  DBusDefaultInterface.h
   DESTINATION include/dbus-utils
 )
 
-install(FILES tests/org.openbmc.Chassis.conf DESTINATION /etc/dbus-1/system.d)
+install(FILES
+  dbus-interface/DBusDefaultInterface.h
+  dbus-interface/DBusObjectInterface.h
+  DESTINATION include/dbus-utils/dbus-interface
+)
 
 option(BUILD_TESTS "BUILD_TESTS" ON)
 
@@ -58,7 +63,7 @@ if(BUILD_TESTS)
 
   add_executable(dbus-interface-test
     tests/DBusInterfaceTest.cpp
-    DBusDefaultInterface.cpp
+    dbus-interface/DBusDefaultInterface.cpp
   )
 
   target_link_libraries(dbus-interface-test
@@ -100,7 +105,7 @@ if(BUILD_TESTS)
     tests/DBusTest.cpp
     DBus.cpp
     DBusObject.cpp
-    DBusDefaultInterface.cpp
+    dbus-interface/DBusDefaultInterface.cpp
   )
 
   target_link_libraries(dbus-test
@@ -118,5 +123,28 @@ if(BUILD_TESTS)
 
   install(TARGETS dbus-test DESTINATION bin)
   install(FILES tests/org.openbmc.Chassis.conf DESTINATION /etc/dbus-1/system.d)
+
+  add_executable(dbus-object-interface-test
+    tests/DBusObjectTestServer.cpp
+    DBus.cpp
+    DBusObject.cpp
+    dbus-interface/DBusDefaultInterface.cpp
+    dbus-interface/DBusObjectInterface.cpp
+  )
+
+  target_link_libraries(dbus-object-interface-test
+    ${OBJECT_TREE}
+    ${GLOG}
+    ${GIO}
+    ${GLIB}
+    -lpthread
+    -lgobject-2.0
+  )
+
+  add_test(DBusObjectInterfaceTest
+    dbus-object-interface-test
+  )
+
+  install(TARGETS dbus-object-interface-test DESTINATION bin)
 endif ()
 

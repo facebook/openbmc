@@ -13,19 +13,20 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://board-utils.sh \
-			file://power-on.sh \
-			file://wedge_power.sh \
-			file://us_monitor.sh \
-			file://us_console.sh \
-			file://disable_watchdog.sh \
-			file://bios_flash.sh \
-			file://bcm5389.sh \
-			file://at93cx6_util.sh \
-			file://galaxy100_bmc.py \
-			file://lsb_release \
-			file://seutil \
-			file://sensors_config_fix.sh \
-           "
+      file://power-on.sh \
+      file://wedge_power.sh \
+      file://us_monitor.sh \
+      file://us_console.sh \
+      file://disable_watchdog.sh \
+      file://bios_flash.sh \
+      file://bcm5389.sh \
+      file://at93cx6_util.sh \
+      file://galaxy100_bmc.py \
+      file://lsb_release \
+      file://seutil \
+      file://sensors_config_fix.sh \
+      file://fix_fru_eeprom.py \
+      "
 
 RDEPENDS_${PN} += " python bash"
 DEPENDS_append += " update-rc.d-native"
@@ -56,17 +57,17 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
-  # create VLAN intf automatically
-  install -d ${D}/${sysconfdir}/network/if-up.d
-  install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+    # create VLAN intf automatically
+    install -d ${D}/${sysconfdir}/network/if-up.d
+    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
-	install -m 755 start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
-	update-rc.d -r ${D} start_us_monitor.sh start 84 S .
+    install -m 755 start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
+    update-rc.d -r ${D} start_us_monitor.sh start 84 S .
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
@@ -77,7 +78,10 @@ do_install_board() {
     update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
 
     install -m 755 sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh
-	update-rc.d -r ${D} sensors_config_fix.sh start 100 2 3 4 5 .
+    update-rc.d -r ${D} sensors_config_fix.sh start 100 2 3 4 5 .
+
+    install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
+    update-rc.d -r ${D} fix_fru_eeprom.py start 56 S .
 }
 
 FILES_${PN} += "${sysconfdir}"

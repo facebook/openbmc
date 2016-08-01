@@ -24,6 +24,7 @@ find_library(GIO gio-2.0)
 find_library(GLIB glib-2.0)
 find_library(GTEST gtest)
 find_library(GLOG glog)
+find_library(GFLAGS gflags)
 
 add_library(dbus-utils
   DBus.cpp
@@ -55,6 +56,17 @@ install(FILES
   dbus-interface/DBusObjectInterface.h
   DESTINATION include/dbus-utils/dbus-interface
 )
+
+add_executable(dump-object
+  ObjectDumper.cpp
+)
+
+target_link_libraries(dump-object
+  dbus-utils
+  ${GFLAGS}
+)
+
+install(TARGETS dump-object DESTINATION bin)
 
 option(BUILD_TESTS "BUILD_TESTS" ON)
 

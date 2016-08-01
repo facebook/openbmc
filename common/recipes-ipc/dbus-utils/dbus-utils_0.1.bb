@@ -37,4 +37,5 @@ DEPENDS += " libipc \
              glib-2.0 \
              glog \
              gtest \
+             gflags \
            "

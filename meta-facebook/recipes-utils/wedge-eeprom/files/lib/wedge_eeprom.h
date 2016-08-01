@@ -33,10 +33,12 @@ extern "C" {
 #define FBW_EEPROM_F_FACEBOOK_PCB_NUMBER 12
 #define FBW_EEPROM_F_ODM_PCBA_NUMBER 13
 #define FBW_EEPROM_F_ODM_PCBA_SERIAL 12
+#define FBW_EEPROM_F_ODM_PCBA_SERIAL_V2 13
 #define FBW_EEPROM_F_PRODUCT_STATE 1
 #define FBW_EEPROM_F_PRODUCT_VERSION 1
 #define FBW_EEPROM_F_PRODUCT_SUBVERSION 1
 #define FBW_EEPROM_F_PRODUCT_SERIAL 12
+#define FBW_EEPROM_F_PRODUCT_SERIAL_V2 13
 #define FBW_EEPROM_F_PRODUCT_ASSET 12
 #define FBW_EEPROM_F_SYSTEM_MANUFACTURER 8
 #define FBW_EEPROM_F_SYSTEM_MANU_DATE 4
@@ -47,6 +49,8 @@ extern "C" {
 #define FBW_EEPROM_F_EXT_MAC_SIZE 2
 #define FBW_EEPROM_F_LOCATION 8
 #define FBW_EEPROM_F_CRC8 1
+
+#define __MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 struct wedge_eeprom_st {
   /* version number of the eeprom. Must be the first element */
@@ -67,11 +71,13 @@ struct wedge_eeprom_st {
   /* Facebook PCB Part Number: XXX-XXXXXXX-XX */
   char fbw_facebook_pcb_number[FBW_EEPROM_F_FACEBOOK_PCB_NUMBER + 3];
 
-  /* ODM PCB Part Number: XXXXXXXXXXXX */
+  /* ODM PCBA Part Number: XXXXXXXXXXXX */
   char fbw_odm_pcba_number[FBW_EEPROM_F_ODM_PCBA_NUMBER + 1];
 
-  /* ODM PCB Serial Number: XXXXXXXXXXXX */
-  char fbw_odm_pcba_serial[FBW_EEPROM_F_ODM_PCBA_SERIAL + 1];
+  /* ODM PCBA Serial Number: XXXXXXXXXXXX */
+  char fbw_odm_pcba_serial[__MAX(FBW_EEPROM_F_ODM_PCBA_SERIAL,
+                                 FBW_EEPROM_F_ODM_PCBA_SERIAL_V2)
+                           + 1];
 
   /* Product Production State */
   uint8_t fbw_production_state;
@@ -83,7 +89,9 @@ struct wedge_eeprom_st {
   uint8_t fbw_product_subversion;
 
   /* Product Serial Number: XXXXXXXX */
-  char fbw_product_serial[FBW_EEPROM_F_PRODUCT_SERIAL + 1];
+  char fbw_product_serial[__MAX(FBW_EEPROM_F_PRODUCT_SERIAL,
+                                FBW_EEPROM_F_PRODUCT_SERIAL_V2)
+                          + 1];
 
   /* Product Asset Tag: XXXXXXXX */
   char fbw_product_asset[FBW_EEPROM_F_PRODUCT_ASSET + 1];

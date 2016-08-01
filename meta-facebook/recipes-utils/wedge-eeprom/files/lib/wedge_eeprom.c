@@ -33,6 +33,8 @@
 #define FBW_EEPROM_V0_SIZE 162
 #define FBW_EEPROM_VERSION1 1
 #define FBW_EEPROM_V1_SIZE 174
+#define FBW_EEPROM_VERSION2 2
+#define FBW_EEPROM_V2_SIZE 176
 
 /*
  * The eeprom size is 8K, we only use 157 bytes for v1 format.
@@ -228,7 +230,8 @@ static int fbw_parse_buffer(
   /* confirm the version number, only version is supported */
   fbw_copy_uint8(&eeprom->fbw_version, &cur, FBW_EEPROM_F_VERSION);
   if ((eeprom->fbw_version != FBW_EEPROM_VERSION0) &&
-      (eeprom->fbw_version != FBW_EEPROM_VERSION1)) {
+      (eeprom->fbw_version != FBW_EEPROM_VERSION1) &&
+      (eeprom->fbw_version != FBW_EEPROM_VERSION2)) {
     rc = EFAULT;
     LOG_ERR(rc, "Unsupported version number %u", eeprom->fbw_version);
     goto out;
@@ -237,6 +240,8 @@ static int fbw_parse_buffer(
       crc_len = FBW_EEPROM_V0_SIZE;
     } else if (eeprom->fbw_version == FBW_EEPROM_VERSION1) {
       crc_len = FBW_EEPROM_V1_SIZE;
+    } else if (eeprom->fbw_version == FBW_EEPROM_VERSION2) {
+      crc_len = FBW_EEPROM_V2_SIZE;
     }
     assert(crc_len <= len);
   }
@@ -276,15 +281,18 @@ static int fbw_parse_buffer(
                                &cur, FBW_EEPROM_F_FACEBOOK_PCB_NUMBER);
   }
 
-  /* ODM PCB Part Number: XXXXXXXXXXXX */
+  /* ODM PCBA Part Number: XXXXXXXXXXXX */
   fbw_strcpy(eeprom->fbw_odm_pcba_number,
              sizeof(eeprom->fbw_odm_pcba_number),
              &cur, FBW_EEPROM_F_ODM_PCBA_NUMBER);
 
-  /* ODM PCB Serial Number: XXXXXXXXXXXX */
+  /* ODM PCBA Serial Number: XXXXXXXXXXXX */
   fbw_strcpy(eeprom->fbw_odm_pcba_serial,
              sizeof(eeprom->fbw_odm_pcba_serial),
-             &cur, FBW_EEPROM_F_ODM_PCBA_SERIAL);
+             &cur,
+             (eeprom->fbw_version >= FBW_EEPROM_VERSION2)
+             ? FBW_EEPROM_F_ODM_PCBA_SERIAL_V2
+             : FBW_EEPROM_F_ODM_PCBA_SERIAL);
 
   /* Product Production State */
   fbw_copy_uint8(&eeprom->fbw_production_state,
@@ -301,7 +309,10 @@ static int fbw_parse_buffer(
   /* Product Serial Number: XXXXXXXX */
   fbw_strcpy(eeprom->fbw_product_serial,
              sizeof(eeprom->fbw_product_serial),
-             &cur, FBW_EEPROM_F_PRODUCT_SERIAL);
+             &cur,
+             (eeprom->fbw_version >= FBW_EEPROM_VERSION2)
+             ? FBW_EEPROM_F_PRODUCT_SERIAL_V2
+             : FBW_EEPROM_F_PRODUCT_SERIAL);
 
   /* Product Assert Tag: XXXXXXXX */
   fbw_strcpy(eeprom->fbw_product_asset,

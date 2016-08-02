@@ -39,6 +39,7 @@ IMAGE_INSTALL += " \
   flashrom \
   psumuxmon \
   mTerm \
+  spatula \
   "
 
 IMAGE_FEATURES += " \

@@ -28,6 +28,7 @@
 #include <openbmc/me.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/cpld.h>
 
 static void
 print_usage_help(void) {
@@ -41,10 +42,19 @@ static void
 print_fw_ver(uint8_t fru_id) {
   int i;
   uint8_t ver[32] = {0};
+  uint8_t cpld_ver[4] = {0};
 
   if (fru_id != 1) {
     printf("Not Supported Operation\n");
     return;
+  }
+
+  // Print CPLD Version
+  if (cpld_get_ver((unsigned int *)&cpld_ver)) {
+    printf("Error reading CPLD version\n");
+  } else {
+    printf("CPLD Version: %02X %02X %02X %02X\n", cpld_ver[0], cpld_ver[1],
+		    cpld_ver[2], cpld_ver[3]);
   }
 
   // Print ME Version
@@ -194,11 +204,13 @@ main(int argc, char **argv) {
        print_fw_ver(fru_id);
        return 0;
      }
+
      for (fru_id = 1; fru_id < 3; fru_id++) {
         printf("Get version info for fru%d\n", fru_id);
         print_fw_ver(fru_id);;
         printf("\n");
      }
+
      return 0;
   }
 #if 0

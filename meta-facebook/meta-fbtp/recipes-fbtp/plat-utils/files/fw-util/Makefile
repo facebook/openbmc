@@ -1,8 +1,8 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 all: fw-util
 
-fw-util: fw-util.c 
-	$(CC) -pthread -lipmi -lipmb -lme -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+fw-util: fw-util.c
+	$(CC) -pthread -lipmi -lipmb -lme -lpal -lcpld -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

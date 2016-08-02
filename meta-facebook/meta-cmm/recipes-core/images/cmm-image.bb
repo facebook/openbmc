@@ -13,50 +13,19 @@ UBOOT_IMAGE_ENTRYPOINT = "0x80800000"
 # dev-spi-cmm.c. Rootfs starts from 4.5M
 FLASH_ROOTFS_OFFSET = "4608"
 
-PYTHON_PKGS = " \
-  python-core \
-  python-io \
-  python-json \
-  python-shell \
-  python-subprocess \
-  python-argparse \
-  python-ctypes \
-  python-datetime \
-  python-email \
-  python-threading \
-  python-mime \
-  python-pickle \
-  python-misc \
-  python-netserver \
-  "
-
-NTP_PKGS = " \
-  ntp \
-  ntp-utils \
-  sntp \
-  ntpdate \
-  "
-
 # Include modules in rootfs
 IMAGE_INSTALL += " \
-  kernel-modules \
-  u-boot \
-  u-boot-fw-utils \
+  packagegroup-openbmc-base \
+  packagegroup-openbmc-net \
+  packagegroup-openbmc-python \
   openbmc-utils \
+  ast-mdio \
   at93cx6-util \
   bcm5396-util \
-  ast-mdio \
-  watchdog-ctrl \
-  i2c-tools \
-  lldp-util \
-  lmsensors-sensors \
   bitbang \
-  ${PYTHON_PKGS} \
-  ${NTP_PKGS} \
-  iproute2 \
-  dhcp-client \
-  flashrom \
-  cherryPy \
+  lldp-util \
+  watchdog-ctrl \
+  wedge-eeprom \
   "
 
 IMAGE_FEATURES += " \

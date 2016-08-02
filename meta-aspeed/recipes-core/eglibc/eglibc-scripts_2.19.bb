@@ -1,1 +1,0 @@
-require eglibc-scripts.inc

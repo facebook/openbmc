@@ -1150,6 +1150,13 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 }
 
 int
+pal_is_fru_ready(uint8_t fru, uint8_t *status) {
+  *status = 1;
+
+  return 0;
+}
+
+int
 pal_is_debug_card_prsnt(uint8_t *status) {
   int val;
   char path[64] = {0};

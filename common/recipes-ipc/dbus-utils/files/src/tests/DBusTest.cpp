@@ -24,7 +24,7 @@
 #include "../DBus.h"
 #include "DBusTestInterface.h"
 #include "DBusDummyInterface.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 static DBusTestInterface testInterface;
 

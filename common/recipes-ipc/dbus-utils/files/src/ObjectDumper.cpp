@@ -25,7 +25,7 @@
 #include <gio/gio.h>
 #include <nlohmann/json.hpp>
 #include "DBus.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 // validator for dbus_name and interface_name
 static bool validateName(const char* flagname, const std::string &name) {

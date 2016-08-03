@@ -28,7 +28,7 @@
 #include "../DBus.h"
 #include "../DBusInterfaceBase.h"
 #include "../dbus-interface/DBusObjectInterface.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 static DBusObjectInterface interface;
 

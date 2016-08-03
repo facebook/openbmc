@@ -21,7 +21,7 @@
 #include "../DBusObject.h"
 #include "DBusTestInterface.h"
 #include "DBusDummyInterface.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 class DBusObjectTest : public ::testing::Test {
   protected:

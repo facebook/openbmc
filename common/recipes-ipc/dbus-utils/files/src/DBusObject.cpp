@@ -25,7 +25,7 @@
 #include "DBusInterfaceBase.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 void DBusObject::addInterface(DBusInterfaceBase &interface, void* userData) {
   if (!containInterface(interface.getName())) {
@@ -72,5 +72,5 @@ bool DBusObject::getId(const std::string &interfaceName,
   return true;
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

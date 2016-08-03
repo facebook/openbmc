@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../dbus-interface/DBusDefaultInterface.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 static DBusDefaultInterface testInterface;
 

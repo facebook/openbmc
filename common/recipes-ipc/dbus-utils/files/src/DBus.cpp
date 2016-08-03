@@ -31,7 +31,7 @@
 #include "DBusObject.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 std::regex DBus::dbusNameRegex =
     std::regex("^([A-Za-z0-9_\\-]+\\.)+[A-Za-z0-9_\\-]+$");
@@ -310,5 +310,5 @@ void DBus::onNameLost(GDBusConnection *connection,
   }
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

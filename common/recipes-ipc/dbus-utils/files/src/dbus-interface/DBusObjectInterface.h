@@ -23,7 +23,7 @@
 #include "../DBusInterfaceBase.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * DBus Object Interface that manages the generic Objects.
@@ -193,5 +193,5 @@ class DBusObjectInterface: public DBusInterfaceBase {
     }
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

@@ -23,7 +23,7 @@
 #include "../DBusInterfaceBase.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Default interface for DBus class. Will be used in DBus
@@ -83,5 +83,5 @@ class DBusDefaultInterface: public DBusInterfaceBase {
     }
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

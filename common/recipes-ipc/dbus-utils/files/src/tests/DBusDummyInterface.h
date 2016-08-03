@@ -21,7 +21,7 @@
 #include "../DBusInterfaceBase.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 class DBusDummyInterface: public DBusInterfaceBase {
   public:
@@ -57,5 +57,5 @@ class DBusDummyInterface: public DBusInterfaceBase {
                                 gpointer               arg) {}
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

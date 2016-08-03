@@ -30,7 +30,7 @@
 #include "DBusObject.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 typedef std::unordered_map<std::string,
                            std::unique_ptr<DBusObject>> DBusObjectMap;
@@ -272,5 +272,5 @@ class DBus : public Ipc {
                             gpointer         arg);
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

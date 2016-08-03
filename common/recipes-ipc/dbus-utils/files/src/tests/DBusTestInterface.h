@@ -22,7 +22,7 @@
 #include "../DBusInterfaceBase.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Test interface for DBus. The xml string specifies the method
@@ -66,5 +66,5 @@ class DBusTestInterface: public DBusInterfaceBase {
                                 gpointer               arg) {}
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

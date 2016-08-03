@@ -23,7 +23,7 @@
 #include "DBusDefaultInterface.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 const char* DBusDefaultInterface::xml =
   "<!DOCTYPE node PUBLIC"
@@ -58,5 +58,5 @@ void DBusDefaultInterface::ping(GDBusMethodInvocation* invocation) {
     g_variant_new ("(s)", response.c_str()));
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

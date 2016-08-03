@@ -23,7 +23,7 @@
 #include "DBusInterfaceBase.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * DBus object stores object information
@@ -133,5 +133,5 @@ class DBusObject {
     bool getId(const std::string &interfaceName, unsigned int &id) const;
 
 };
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

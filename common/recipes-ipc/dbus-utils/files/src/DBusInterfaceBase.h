@@ -21,7 +21,7 @@
 #include <string>
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * This is a DBus method call interface base class to be inherited by
@@ -59,5 +59,5 @@ class DBusInterfaceBase {
     }
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

@@ -17,12 +17,31 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://setup_adc.sh \
-           "
+SRC_URI += " \
+    file://eth0_mac_fixup.sh \
+    file://fix_fru_eeprom.py \
+    file://setup_adc.sh \
+    file://setup_i2c.sh \
+    "
 
 DEPENDS_append = " update-rc.d-native"
 
+RDEPENDS_${PN} += "python"
+
 do_install_append() {
+    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    update-rc.d -r ${D} setup_i2c.sh start 80  S .
+
+    # EEPROM is loaded in setup_i2c.sh
+    install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
+    update-rc.d -r ${D} fix_fru_eeprom.py start 81 S .
+
+
+    # networking is started after rcS, any start level within rcS after loading
+    # EEPROM should work
+    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    update-rc.d -r ${D} eth0_mac_fixup.sh start 99 S .
+
     install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
-    update-rc.d -r ${D} setup_adc.sh start 80 S .
+    update-rc.d -r ${D} setup_adc.sh start 80 2 3 5 .
 }

@@ -23,6 +23,7 @@ IMAGE_INSTALL += " \
   at93cx6-util \
   bcm5396-util \
   bitbang \
+  cpldupdate \
   lldp-util \
   watchdog-ctrl \
   wedge-eeprom \

@@ -21,7 +21,7 @@
 #include <functional>
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Ipc class provides a general interface for polymorphism over

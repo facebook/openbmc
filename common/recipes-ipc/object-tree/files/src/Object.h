@@ -26,7 +26,7 @@
 #include "Attribute.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Object contains a map of attributes and a map of children objects
@@ -291,5 +291,5 @@ class Object {
     nlohmann::json dump() const;
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

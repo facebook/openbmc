@@ -23,7 +23,7 @@
 #include "Attribute.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 std::unordered_map<unsigned int, const std::string> Attribute::modesStringMap =
   {
@@ -48,5 +48,5 @@ nlohmann::json Attribute::dumpToJson() const {
   return dump;
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

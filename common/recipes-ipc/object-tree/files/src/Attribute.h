@@ -22,7 +22,7 @@
 #include <nlohmann/json.hpp>
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Attribute for object
@@ -108,5 +108,5 @@ class Attribute {
     virtual nlohmann::json dumpToJson() const;
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

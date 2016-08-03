@@ -25,7 +25,7 @@
 #include "Object.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 ObjectTree::ObjectTree(const std::shared_ptr<Ipc> &ipc,
                        const std::string          &rootName) {
@@ -118,5 +118,5 @@ void ObjectTree::checkObject(const Object* object) const {
   }
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

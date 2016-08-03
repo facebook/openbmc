@@ -24,7 +24,7 @@
 #include "Object.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Tree structured object superclass that manages the objects and
@@ -245,5 +245,5 @@ class ObjectTree {
     void checkObject(const Object* object) const;
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

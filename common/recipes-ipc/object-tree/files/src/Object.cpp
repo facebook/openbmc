@@ -25,7 +25,7 @@
 #include "Object.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 Attribute* Object::getAttribute(const std::string &name) const {
   AttrMap::const_iterator it;
@@ -140,5 +140,5 @@ nlohmann::json Object::dump() const {
   return dump;
 }
 
-} // namespace ipc
+} // namespace qin
 } // namepsace openbmc

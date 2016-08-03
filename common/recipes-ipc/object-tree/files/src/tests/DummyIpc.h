@@ -21,7 +21,7 @@
 #include <ipc-interface/Ipc.h>
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * For testing ObjectTree.
@@ -47,5 +47,5 @@ class DummyIpc : public Ipc {
       return parentPath + "/" + name;
     }
 };
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

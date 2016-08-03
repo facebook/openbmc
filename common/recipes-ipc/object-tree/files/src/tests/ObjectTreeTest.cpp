@@ -26,7 +26,7 @@
 #include "../ObjectTree.h"
 #include "../Object.h"
 #include "../Attribute.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 class ObjectTreeTest : public ::testing::Test {
  protected:

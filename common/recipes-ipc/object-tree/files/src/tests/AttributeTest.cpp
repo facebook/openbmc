@@ -22,7 +22,7 @@
 #include <glog/logging.h>
 #include "../Attribute.h"
 
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 /**
  * Fixture for testing Attribute class

@@ -22,7 +22,7 @@
 #include <object-tree/Attribute.h>
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Attribute for sensor.
@@ -71,5 +71,5 @@ class SensorAttribute : public Attribute {
     }
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

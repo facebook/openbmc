@@ -25,7 +25,7 @@
 #include "SensorObject.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * SensorVoltage is a derived class of SensorObject. It is a factory
@@ -50,4 +50,4 @@ class SensorVoltage : public SensorObject {
 };
 
 } // namespace openbmc
-} // namespace ipc
+} // namespace qin

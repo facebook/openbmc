@@ -26,7 +26,7 @@
 #include "SensorApi.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Sensor API for reading and writing value of the attribute from the
@@ -88,5 +88,5 @@ class SensorSysfsApi : public SensorApi {
       return dump;
     }
 };
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

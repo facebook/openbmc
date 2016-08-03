@@ -29,7 +29,7 @@
 #include "../SensorObject.h"
 #include "../SensorApi.h"
 #include "../SensorSysfsApi.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 TEST(SensorDeviceObjectTest, Constructor) {
   std::string fsPath = "./test.txt";

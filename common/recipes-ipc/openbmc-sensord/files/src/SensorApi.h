@@ -23,7 +23,7 @@
 #include "SensorAttribute.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Sensor API for reading and writing value of the attribute from the
@@ -60,5 +60,5 @@ class SensorApi {
      */
     virtual nlohmann::json dumpToJson() const = 0;
 };
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

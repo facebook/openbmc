@@ -28,7 +28,7 @@
 #include <dbus-utils/dbus-interface/DBusObjectInterface.h>
 #include "SensorObjectTree.h"
 #include "SensorJsonParser.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 // validator for the json filename
 static bool validateFilename(const char* flagname,

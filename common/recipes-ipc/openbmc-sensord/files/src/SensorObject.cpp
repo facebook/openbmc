@@ -24,7 +24,7 @@
 #include "SensorAttribute.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 SensorAttribute* SensorObject::addAttribute(const std::string &name) {
   LOG(INFO) << "Adding Attribute \"" << name << "\" to object \"" << name_
@@ -55,5 +55,5 @@ void SensorObject::writeAttrValue(const std::string &name,
   static_cast<SensorDevice*>(parent_)->writeAttrValue(*this, *attr, value);
 }
 
-} // namespace ipc
+} // namespace qin
 } // namepsace openbmc

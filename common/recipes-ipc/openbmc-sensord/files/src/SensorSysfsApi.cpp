@@ -28,7 +28,7 @@
 #include "SensorObject.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 const std::string SensorSysfsApi::readValue(const Object          &object,
                                             const SensorAttribute &attr)
@@ -62,5 +62,5 @@ void SensorSysfsApi::writeValue(const Object          &object,
   fs.close();
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

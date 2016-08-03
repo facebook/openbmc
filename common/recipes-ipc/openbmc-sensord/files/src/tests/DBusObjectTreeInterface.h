@@ -22,7 +22,7 @@
 #include <dbus-utils/DBusInterfaceBase.h>
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * DBus Interface that manages the object-tree.
@@ -87,5 +87,5 @@ class DBusObjectTreeInterface: public DBusInterfaceBase {
                                 gpointer               arg);
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

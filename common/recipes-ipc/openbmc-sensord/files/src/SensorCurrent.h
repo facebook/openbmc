@@ -25,7 +25,7 @@
 #include "SensorObject.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * SensorCurrent is a derived class of SensorObject. It is a factory
@@ -50,4 +50,4 @@ class SensorCurrent : public SensorObject {
 };
 
 } // namespace openbmc
-} // namespace ipc
+} // namespace qin

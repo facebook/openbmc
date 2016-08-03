@@ -33,7 +33,7 @@
 #include "../SensorApi.h"
 #include "../SensorSysfsApi.h"
 #include "../SensorJsonParser.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 static DBusObjectInterface interface;
 

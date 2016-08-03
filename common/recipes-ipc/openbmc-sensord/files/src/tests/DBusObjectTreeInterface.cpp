@@ -24,7 +24,7 @@
 #include "DBusObjectTreeInterface.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 const char* DBusObjectTreeInterface::xml =
   "<!DOCTYPE node PUBLIC"
@@ -124,5 +124,5 @@ void DBusObjectTreeInterface::methodCallBack(
   }
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

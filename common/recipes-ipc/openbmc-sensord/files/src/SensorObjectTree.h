@@ -27,7 +27,7 @@
 #include "SensorApi.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Tree structured object superclass that manages the sensor devices and objects,
@@ -162,5 +162,5 @@ class SensorObjectTree : public ObjectTree {
     }
 };
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

@@ -28,7 +28,7 @@
 #include <object-tree/Object.h>
 #include <object-tree/Attribute.h>
 #include "DBusObjectTreeInterface.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 static DBusObjectTreeInterface testInterface;
 

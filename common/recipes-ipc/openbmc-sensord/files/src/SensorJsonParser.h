@@ -25,7 +25,7 @@
 #include "SensorObjectTree.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * Json parser to parse the json file containing the information for
@@ -276,4 +276,4 @@ class SensorJsonParser {
     }
 };
 } // namespace openbmc
-} // namespace ipc
+} // namespace qin

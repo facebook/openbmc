@@ -29,7 +29,7 @@
 #include "SensorAttribute.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 /**
  * SensorDevice is a derived class of Object in object-tree. It is a factory
@@ -166,4 +166,4 @@ class SensorDevice : public Object {
 };
 
 } // namespace openbmc
-} // namespace ipc
+} // namespace qin

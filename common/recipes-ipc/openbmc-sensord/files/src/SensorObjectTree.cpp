@@ -24,7 +24,7 @@
 #include "SensorObjectTree.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 Object* SensorObjectTree::addObject(std::unique_ptr<Object> upObj,
                                     const std::string       &parentPath) {
@@ -75,5 +75,5 @@ SensorObject* SensorObjectTree::addSensorObject(const std::string &name,
   return static_cast<SensorObject*>(addObjectByPath(std::move(upObj), path));
 }
 
-} // namespace ipc
+} // namespace qin
 } // namespace openbmc

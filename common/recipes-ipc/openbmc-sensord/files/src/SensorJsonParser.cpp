@@ -39,7 +39,7 @@
 #include "SensorJsonParser.h"
 
 namespace openbmc {
-namespace ipc {
+namespace qin {
 
 std::unordered_map<std::string, SensorJsonParser::ObjectParser>
     SensorJsonParser::objectParserMap =
@@ -291,4 +291,4 @@ void SensorJsonParser::parseSensorAttribute(const nlohmann::json &attributes,
 }
 
 } // namespace openbmc
-} // namespace ipc
+} // namespace qin

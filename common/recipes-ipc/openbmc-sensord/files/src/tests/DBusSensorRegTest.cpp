@@ -39,7 +39,7 @@
 #include "../SensorApi.h"
 #include "../SensorSysfsApi.h"
 #include "DBusObjectTreeInterface.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 static DBusObjectTreeInterface testInterface;
 

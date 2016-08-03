@@ -21,7 +21,7 @@
 #include <glog/logging.h>
 #include <nlohmann/json.hpp>
 #include "../SensorAttribute.h"
-using namespace openbmc::ipc;
+using namespace openbmc::qin;
 
 TEST(SensorAttributeTest, Accessibility) {
   SensorAttribute attr("CPU_temp");

@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,14 +15,19 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+obj-m := cmmcpld.o
 
-# EEPROM
-echo 24c64 0x51 > /sys/class/i2c-dev/i2c-6/device/new_device
+ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 
-# Two temperature sensors on CMM
-echo tmp75 0x48 > /sys/class/i2c-dev/i2c-3/device/new_device # inlet
-echo tmp75 0x49 > /sys/class/i2c-dev/i2c-3/device/new_device # outlet
+SRC := $(shell pwd)
 
-# CMM CPLD
-echo cmmcpld 0x3e > /sys/class/i2c-dev/i2c-13/device/new_device
+all:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC)
+
+modules_install:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
+
+clean:
+	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
+	rm -f Module.markers Module.symvers modules.order
+	rm -rf .tmp_versions Modules.symvers

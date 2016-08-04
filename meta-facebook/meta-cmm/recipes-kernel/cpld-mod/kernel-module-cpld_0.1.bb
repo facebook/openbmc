@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,14 +15,26 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+SUMMARY = "CMM CPLD drivers"
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
-# EEPROM
-echo 24c64 0x51 > /sys/class/i2c-dev/i2c-6/device/new_device
+inherit module kernel_extra_headers_export
 
-# Two temperature sensors on CMM
-echo tmp75 0x48 > /sys/class/i2c-dev/i2c-3/device/new_device # inlet
-echo tmp75 0x49 > /sys/class/i2c-dev/i2c-3/device/new_device # outlet
+PR = "r0"
+PV = "0.1"
 
-# CMM CPLD
-echo cmmcpld 0x3e > /sys/class/i2c-dev/i2c-13/device/new_device
+SRC_URI = "file://Makefile \
+           file://cmmcpld.c \
+           file://COPYING \
+          "
+
+S = "${WORKDIR}"
+
+DEPENDS += "kernel-module-i2c-dev-sysfs"
+
+RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
+
+KERNEL_MODULE_AUTOLOAD += "                     \
+ cmmcpld                                        \
+"

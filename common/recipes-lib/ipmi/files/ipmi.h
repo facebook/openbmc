@@ -359,6 +359,7 @@ enum
 {
   CMD_TRANSPORT_SET_LAN_CONFIG = 0x01,
   CMD_TRANSPORT_GET_LAN_CONFIG = 0x02,
+  CMD_TRANSPORT_GET_SOL_CONFIG = 0x22,
 };
 
 // OEM Command Codes (Quanta/FB defined commands)
@@ -433,8 +434,20 @@ enum
   LAN_PARAM_IP6_ADDR = 197, /* OEM parameter for IPv6 */
 };
 
-// Boot Option Parameters (IPMI/Table 28-14)
+// SOL Configuration parameters (IPMI/Table 26-5)
 enum
+{
+  SOL_PARAM_SET_IN_PROG,
+  SOL_PARAM_SOL_ENABLE,
+  SOL_PARAM_SOL_AUTH,
+  SOL_PARAM_SOL_THRESHOLD,
+  SOL_PARAM_SOL_RETRY,
+  SOL_PARAM_SOL_BITRATE,
+  SOL_PARAM_SOL_NV_BITRATE,
+};
+
+// Boot Option Parameters (IPMI/Table 28-14)
+  enum
 {
   PARAM_SET_IN_PROG = 0x00,
   PARAM_SVC_PART_SELECT,

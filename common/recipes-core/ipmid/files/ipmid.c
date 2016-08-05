@@ -1142,6 +1142,54 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
   }
 }
 
+// Get SoL Configuration (IPMI/Section 26.3)
+static void
+transport_get_sol_config (unsigned char *request, unsigned char *response,
+			  unsigned char *res_len)
+{
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  unsigned char param = req->data[1];
+
+  // Fill the response with default values
+  res->cc = CC_SUCCESS;
+  *data++ = 0x01;		// Parameter revision
+
+  switch (param)
+  {
+    case SOL_PARAM_SET_IN_PROG:
+      *data++ = 0x00;
+      break;
+    case SOL_PARAM_SOL_ENABLE:
+      *data++ = 0x01;
+      break;
+    case SOL_PARAM_SOL_AUTH:
+      *data++ = 0x02;
+      break;
+    case SOL_PARAM_SOL_THRESHOLD:
+      *data++ = 0x00;
+      *data++ = 0x01;
+      break;
+    case SOL_PARAM_SOL_RETRY:
+      *data++ = 0x00;
+      *data++ = 0x00;
+      break;
+    case SOL_PARAM_SOL_BITRATE:
+    case SOL_PARAM_SOL_NV_BITRATE:
+      *data++ = 0x09;
+      break;
+    default:
+      res->cc = CC_INVALID_PARAM;
+      break;
+  }
+
+  if (res->cc == CC_SUCCESS) {
+    *res_len = data - &res->data[0];
+  }
+}
+
 // Handle Transport Commands (IPMI/Section 23)
 static void
 ipmi_handle_transport (unsigned char *request, unsigned char req_len,
@@ -1159,6 +1207,9 @@ ipmi_handle_transport (unsigned char *request, unsigned char req_len,
       break;
     case CMD_TRANSPORT_GET_LAN_CONFIG:
       transport_get_lan_config (request, response, res_len);
+      break;
+    case CMD_TRANSPORT_GET_SOL_CONFIG:
+      transport_get_sol_config (request, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

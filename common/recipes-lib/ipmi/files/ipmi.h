@@ -70,7 +70,7 @@ extern "C" {
 // NetFn, Cmd, CC
 #define IPMI_RESP_HDR_SIZE 3
 
-#define MAX_IPMI_MSG_SIZE 100
+#define MAX_IPMI_MSG_SIZE 300
 
 // Type Definition
 #define TYPE_BINARY          0

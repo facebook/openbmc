@@ -69,7 +69,7 @@
 
 //#define DEBUG 0
 
-#define MAX_BYTES 255
+#define MAX_BYTES 300
 
 #define MQ_IPMB_REQ "/mq_ipmb_req"
 #define MQ_IPMB_RES "/mq_ipmb_res"

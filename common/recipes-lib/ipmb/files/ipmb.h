@@ -44,7 +44,7 @@ extern "C" {
 // Need to add a timeout parameter to IPMB request
 // For now changing global timeout to 8 seconds
 #define TIMEOUT_IPMB 8
-#define MAX_IPMB_RES_LEN 255
+#define MAX_IPMB_RES_LEN 300
 
 typedef struct _ipmb_req_t {
   uint8_t res_slave_addr;

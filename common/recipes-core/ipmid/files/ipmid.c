@@ -1299,6 +1299,56 @@ oem_get_slot_info(unsigned char *request, unsigned char *response,
 }
 
 static void
+oem_get_board_id(unsigned char *request, unsigned char *response,
+                  unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  int ret;
+  uint8_t platform_id  = 0x00;
+  uint8_t board_rev_id = 0x00;
+  uint8_t mb_slot_id = 0x00;
+  uint8_t raiser_card_slot_id = 0x00;
+
+  ret = pal_get_platform_id(&platform_id);
+  if (ret) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }
+
+  ret = pal_get_board_rev_id(&board_rev_id);
+  if (ret) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }
+
+  ret = pal_get_mb_slot_id(&mb_slot_id);
+  if (ret) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }
+
+  ret = pal_get_slot_cfg_id(&raiser_card_slot_id);
+  if (ret) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }
+
+  // Prepare response buffer
+  res->cc = CC_SUCCESS;
+  res->data[0] = platform_id;
+  res->data[1] = board_rev_id;
+  res->data[2] = mb_slot_id;
+  res->data[3] = raiser_card_slot_id;
+  *res_len = 0x04;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
 		 unsigned char *response, unsigned char *res_len)
 {
@@ -1324,6 +1374,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_SLOT_INFO:
       oem_get_slot_info (request, response, res_len);
+      break;
+    case CMD_OEM_GET_BOARD_ID:
+      oem_get_board_id (request, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

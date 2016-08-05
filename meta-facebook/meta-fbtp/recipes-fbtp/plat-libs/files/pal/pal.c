@@ -121,12 +121,17 @@
 #define VR_BUS_ID 0x5
 
 #define VR_FW_PAGE 0x2f
+#define VR_FW_PAGE_2 0x6F
+#define VR_FW_PAGE_3 0x4F
 #define VR_LOOP_PAGE_0 0x60
 #define VR_LOOP_PAGE_1 0x61
 #define VR_LOOP_PAGE_2 0x62
 
 #define VR_FW_REG1 0xC
 #define VR_FW_REG2 0xD
+#define VR_FW_REG3 0x3D
+#define VR_FW_REG4 0x3E
+#define VR_FW_REG5 0x32
 
 #define VR_TELEMETRY_VOLT 0x1A
 #define VR_TELEMETRY_CURR 0x15
@@ -2498,6 +2503,123 @@ error_exit:
   return ret;
 }
 
+int
+pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
+  int fd;
+  char fn[32];
+  int ret;
+  uint8_t tcount, rcount;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_open failed for bus#%x\n", VR_BUS_ID);
+    goto error_exit;
+  }
+
+  // Set the page to read FW checksum
+  tbuf[0] = 0x00;
+  tbuf[1] = VR_FW_PAGE_2;
+
+  tcount = 2;
+  rcount = 0;
+
+  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+  if (ret) {
+    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+    goto error_exit;
+  }
+
+  // Read 2 bytes from first register
+  tbuf[0] = VR_FW_REG4;
+
+  tcount = 1;
+  rcount = 2;
+
+  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+  if (ret) {
+    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+    goto error_exit;
+  }
+
+  checksum[0] = rbuf[1];
+  checksum[1] = rbuf[0];
+
+  tbuf[0] = VR_FW_REG3;
+
+  tcount = 1;
+  rcount = 2;
+
+  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+  if (ret) {
+    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+    goto error_exit;
+  }
+
+  checksum[2] = rbuf[1];
+  checksum[3] = rbuf[0];
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+int
+pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
+  int fd;
+  char fn[32];
+  int ret;
+  uint8_t tcount, rcount;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_open failed for bus#%x\n", VR_BUS_ID);
+    goto error_exit;
+  }
+
+  // Set the page to read FW deviceId
+  tbuf[0] = 0x00;
+  tbuf[1] = VR_FW_PAGE_3;
+
+  tcount = 2;
+  rcount = 0;
+
+  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+  if (ret) {
+    syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+    goto error_exit;
+  }
+
+  // Read 2 bytes from first register
+  tbuf[0] = VR_FW_REG5;
+
+  tcount = 1;
+  rcount = 2;
+
+  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+  if (ret) {
+    syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+    goto error_exit;
+  }
+
+  deviceId[0] = rbuf[1];
+  deviceId[1] = rbuf[0];
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  return ret;
+}
 
 int
 pal_is_bmc_por(void) {

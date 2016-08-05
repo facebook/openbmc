@@ -302,6 +302,8 @@ int pal_get_sys_guid(uint8_t slot, char *guid);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_vr_ver(uint8_t vr, uint8_t *ver);
+int pal_get_vr_checksum(uint8_t vr, uint8_t *checksum);
+int pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId);
 int pal_fruid_write(uint8_t slot, char *path);
 int pal_is_bmc_por(void);
 int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,

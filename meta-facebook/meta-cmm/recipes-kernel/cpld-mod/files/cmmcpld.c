@@ -110,7 +110,8 @@ static const i2c_dev_attr_st cmmcpld_attr_table[] = {
   },
   {
     "release_status",
-    NULL,
+    "0: not released\n"
+    "1: released",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     1, 6, 1,
@@ -603,7 +604,7 @@ static const struct i2c_device_id cmmcpld_id[] = {
 MODULE_DEVICE_TABLE(i2c, cmmcpld_id);
 
 /* Return 0 if detection is successful, -ENODEV otherwise */
-static int cmmcpld_detect(struct i2c_client *client, int kind,
+static int cmmcpld_detect(struct i2c_client *client,
                           struct i2c_board_info *info)
 {
   /*

@@ -64,6 +64,20 @@
 
 #define GPIO_BAT_SENSE_EN_N 46
 
+#define GPIO_BOARD_SKU_ID0 120
+#define GPIO_BOARD_SKU_ID1 121
+#define GPIO_BOARD_SKU_ID2 122
+#define GPIO_BOARD_SKU_ID3 123
+#define GPIO_BOARD_SKU_ID4 124
+#define GPIO_MB_SLOT_ID0 125
+#define GPIO_MB_SLOT_ID1 126
+#define GPIO_MB_SLOT_ID2 127
+#define GPIO_BOARD_REV_ID0 25
+#define GPIO_BOARD_REV_ID1 27
+#define GPIO_BOARD_REV_ID2 29
+#define GPIO_SLT_CFG0 142
+#define GPIO_SLT_CFG1 143
+
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
@@ -3110,4 +3124,115 @@ pal_update_ts_sled()
 int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   return 0;
+}
+
+nt
+pal_get_platform_id(uint8_t *id) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID0);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = val&0x01;
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID1);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<1);
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID2);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<2);
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID3);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<3);
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<4);
+
+  return 0;
+}
+
+int
+pal_get_board_rev_id(uint8_t *id) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID0);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = val&0x01;
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID1);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<1);
+
+  sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID2);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<2);
+
+  return 0;
+}
+
+int
+pal_get_mb_slot_id(uint8_t *id) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, GPIO_VAL, GPIO_MB_SLOT_ID0);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = val&0x01;
+
+  sprintf(path, GPIO_VAL, GPIO_MB_SLOT_ID1);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<1);
+
+  sprintf(path, GPIO_VAL, GPIO_MB_SLOT_ID2);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<2);
+
+  return 0;
+}
+
+
+int
+pal_get_slot_cfg_id(uint8_t *id) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, GPIO_VAL, GPIO_SLT_CFG0);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = val&0x01;
+
+  sprintf(path, GPIO_VAL, GPIO_SLT_CFG1);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  *id = *id | (val<<1);
+
+   return 0;
 }

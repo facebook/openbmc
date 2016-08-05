@@ -265,3 +265,26 @@ gpio_set F6 1
 # To use GJPIOD0, SCU90[1] must be 0
 devmem_clear_bit $(scu_addr 90) 1
 gpio_set D0 1
+
+# Platform ID check pin
+devmem_clear_bit $(scu_addr 88) 16
+devmem_clear_bit $(scu_addr 88) 17
+devmem_clear_bit $(scu_addr 88) 18
+devmem_clear_bit $(scu_addr 88) 19
+devmem_clear_bit $(scu_addr 88) 20
+devmem_clear_bit $(scu_addr 88) 21
+devmem_clear_bit $(scu_addr 88) 22
+devmem_clear_bit $(scu_addr 88) 23
+devmem_clear_bit $(scu_addr 88) 30
+devmem_clear_bit $(scu_addr 88) 31
+
+gpio_export P0
+gpio_export P1
+gpio_export P2
+gpio_export P3
+gpio_export P4
+gpio_export P5
+gpio_export P6
+gpio_export P7
+gpio_export R6
+gpio_export R7

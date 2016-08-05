@@ -3121,7 +3121,7 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
   return 0;
 }
 
-nt
+int
 pal_get_platform_id(uint8_t *id) {
   int val;
   char path[64] = {0};

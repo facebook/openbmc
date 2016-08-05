@@ -88,9 +88,12 @@
 #define AST_LPC_BASE 0x1e789000
 #define HICRA_OFFSET 0x9C
 #define HICRA_MASK_UART1 0x70000
+#define HICRA_MASK_UART2 0x380000
 #define HICRA_MASK_UART3 0x1C00000
 #define UART1_TO_UART3 0x5
+#define UART2_TO_UART3 0x6
 #define UART3_TO_UART1 0x5
+#define UART3_TO_UART2 0x4
 #define DEBUG_TO_UART1 0x0
 
 #define UART1_TXD (1 << 22)
@@ -1001,23 +1004,15 @@ control_sol_txd(uint8_t fru) {
 
   // Read HICRA register
   ctrl = *(volatile uint32_t*) lpc_hicr;
-  // Clear bits for UART1 and UART3 routing
-  ctrl &= (~HICRA_MASK_UART1);
+  // Clear bits for UART2 and UART3 routing
+  ctrl &= (~HICRA_MASK_UART2);
   ctrl &= (~HICRA_MASK_UART3);
 
-  // Route UART1 to UART3 for SoL purpose
-  ctrl |= (UART1_TO_UART3 << 22);
+  // Route UART2 to UART3 for SoL purpose
+  ctrl |= (UART2_TO_UART3 << 22);
 
-  switch(fru) {
-  case UART_TO_DEBUG:
-    // Route DEBUG to UART1 for TXD control
-    ctrl |= (DEBUG_TO_UART1 << 16);
-    break;
-  default:
-    // Route DEBUG to UART1 for TXD control
-    ctrl |= (UART3_TO_UART1 << 16);
-    break;
-  }
+  // Route DEBUG to UART1 for TXD control
+  ctrl |= (UART3_TO_UART2 << 19);
 
   *(volatile uint32_t*) lpc_hicr = ctrl;
 
@@ -2349,7 +2344,7 @@ pal_set_def_key_value() {
 
 int
 pal_get_fru_devtty(uint8_t fru, char *devtty) {
-  sprintf(devtty, "/dev/ttyS3");
+  sprintf(devtty, "/dev/ttyS1");
   return 0;
 }
 

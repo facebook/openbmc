@@ -18,10 +18,18 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
+    file://board-utils.sh \
+    file://create_vlan_intf \
     file://eth0_mac_fixup.sh \
     file://fix_fru_eeprom.py \
     file://setup_adc.sh \
     file://setup_i2c.sh \
+    file://set_fan_speed.sh \
+    "
+
+OPENBMC_UTILS_FILES += " \
+    board-utils.sh \
+    set_fan_speed.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -44,4 +52,8 @@ do_install_append() {
 
     install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
     update-rc.d -r ${D} setup_adc.sh start 80 2 3 5 .
+
+    # create VLAN intf automatically
+    install -d ${D}/${sysconfdir}/network/if-up.d
+    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 }

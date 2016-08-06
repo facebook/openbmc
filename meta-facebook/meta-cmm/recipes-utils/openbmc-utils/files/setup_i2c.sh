@@ -44,28 +44,42 @@ done
 # SCM-FAB1: 113 0x48, 114 0x49
 
 # FAB2: 122
-# SCm-FAB2:
+# SCM-FAB2: 129 0x48, 130 0x49
 
 # LC101: 42, 0x48-0x4b
 # LC102: 45, 0x48-0x4b
-# SCM-LC1:
+# SCM-LC1: 49 0x48, 50 0x49
 
 # LC201: 58
 # LC202: 61
+# SCM-LC2: 65 0x48, 66, 0x49
 
 # LC301: 74
 # LC302: 77
+# SCM-LC3: 81 0x48, 82, 0x49
 
 # LC401: 90
 # LC401: 93
+# SCM-LC4: 97 0x48, 98 0x49
 
 # FAB3: 138
+# SCM-FAB3: 145 0x48, 146 0x49
 
 # FAB4: 154
+# SCM-FAB4: 161 0x48, 162 0x49
+
+# Temperature sensors on LC/FC
 temp_busses="42 45 58 61 74 77 90 93 106 122 138 154"
 temp_addrs="0x48 0x49 0x4a 0x4b"
 for bus in ${temp_busses}; do
     for addr in ${temp_addrs}; do
         add_device tmp75 ${addr} ${bus}
     done
+done
+
+# Temperature sensors on SCM
+temp_busses="113 129 49 65 81 97 145 161"
+for bus in ${temp_busses}; do
+    add_device tmp75 0x48 ${bus}
+    add_device tmp75 0x49 $((bus + 1))
 done

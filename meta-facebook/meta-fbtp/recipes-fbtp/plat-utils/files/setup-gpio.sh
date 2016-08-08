@@ -212,11 +212,11 @@ gpio_set AA2 1
 
 #gpio_set P7 0
 
-# BMC_READY_N: GPIOG6 (54)
-# To use GPIOG6, SCU84[6] must be 0
-#devmem_clear_bit $(scu_addr 84) 6
+# BMC_READY_N: GPIOS1 (145)
+# To use GPIOS1, SCU8C[1] must be 0
+devmem_clear_bit $(scu_addr 8C) 1
 
-#gpio_set G6 0
+gpio_set S1 0
 
 # BMC_RST_BTN_IN_N: GPIOS0 (144)
 # To use GPIOS0, SCU8C[0]

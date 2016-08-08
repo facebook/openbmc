@@ -18,24 +18,25 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python \
   packagegroup-openbmc-rest \
-  openbmc-utils \
-  openbmc-gpio \
   at93cx6-util \
-  watchdog-ctrl \
-  sensor-setup \
-  usb-console \
-  lldp-util \
-  wedge-eeprom \
-  sms-kcsd \
-  ipmid \
-  po-eeprom \
   bitbang \
   cpldupdate \
-  mkeeprom  \
-  retimer  \
-  repeater  \
+  flashrom \
+  ipmid \
+  lldp-util \
   memtester  \
+  mkeeprom  \
+  openbmc-utils \
+  openbmc-gpio \
+  po-eeprom \
+  repeater  \
+  retimer  \
+  sensor-setup \
+  sms-kcsd \
   stress  \
+  usb-console \
+  watchdog-ctrl \
+  wedge-eeprom \
   "
 
 IMAGE_FEATURES += " \

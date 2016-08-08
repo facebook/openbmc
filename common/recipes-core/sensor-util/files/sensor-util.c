@@ -197,8 +197,11 @@ main(int argc, char **argv) {
 
       ret = pal_is_fru_ready(fru, &status);
       if ((ret < 0) || (status == 0)) {
-         printf("%s is unavailable!\n", argv[1]);
-         return ret;
+        if (pal_get_fru_name(fru, fruname))
+          fruname[0] = '\0';
+        printf("%s is unavailable!\n", fruname);
+        fru++;
+        continue;
       }
 
       ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);

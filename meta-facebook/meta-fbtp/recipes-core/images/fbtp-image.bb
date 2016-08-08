@@ -72,6 +72,7 @@ IMAGE_INSTALL += " \
   healthd \
   fpc-util \
   fw-util \
+  cfg-util \
   "
 
 IMAGE_FEATURES += " \

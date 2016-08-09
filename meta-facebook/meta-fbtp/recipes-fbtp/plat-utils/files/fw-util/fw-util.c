@@ -51,10 +51,10 @@ print_fw_ver(uint8_t fru_id) {
 
   // Print CPLD Version
   if (cpld_get_ver((unsigned int *)&cpld_ver)) {
-    printf("Error reading CPLD version\n");
+    printf("CPLD Version: NA\n");
   } else {
-    printf("CPLD Version: %02X %02X %02X %02X\n", cpld_ver[0], cpld_ver[1],
-		    cpld_ver[2], cpld_ver[3]);
+    printf("CPLD Version: %02X%02X%02X%02X\n", cpld_ver[3], cpld_ver[2],
+		    cpld_ver[1], cpld_ver[0]);
   }
 
   // Print ME Version

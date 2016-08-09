@@ -18,7 +18,7 @@ BB_GENERATE_MIRROR_TARBALLS = "1"
 # However, once you have downloaded the package you should check them into our
 # mirror repository so that other developers will always get it from the mirror
 # repo.
-BB_NO_NETWORK = "fb-only"
+INHERIT += "fb-only-network"
 
 # Parallelism Options
 #

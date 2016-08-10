@@ -1,7 +1,7 @@
 /**************************************************************
 *
 * Lattice Semiconductor Corp. Copyright 2008
-* 
+*
 * ispVME Embedded allows programming of Lattice's suite of FPGA
 * devices on embedded systems through the JTAG port.  The software
 * is distributed in source code form and is open to re - distribution
@@ -10,10 +10,10 @@
 * ispVME Embedded C Source comprised with 3 modules:
 * ispvm_ui.c is the module provides input and output support.
 * ivm_core.c is the module interpret the VME file(s).
-* hardware.c is the module access the JTAG port of the device(s).                 
+* hardware.c is the module access the JTAG port of the device(s).
 *
-* The optional module cable.c is for supporting Lattice's parallel 
-* port ispDOWNLOAD cable on DOS and Windows 95/98 O/S. It can be 
+* The optional module cable.c is for supporting Lattice's parallel
+* port ispDOWNLOAD cable on DOS and Windows 95/98 O/S. It can be
 * requested from Lattice's ispVMSupport.
 *
 ***************************************************************/
@@ -642,22 +642,12 @@ signed char ispVM( const char * a_pszFilename )
 *
 ***************************************************************/
 
-inline char *strlwr(char *str)
-{
-	char *orig = str;
-
-	for (; *str != '\0'; str++)
-		*str = tolower(*str);
-
-	return orig;
-}
-char *cpld_img = "cpld.vme";
+const char *cpld_img = "cpld.vme";
 #define CPLD_VERSION_REG 0x100
-int main( int argc, char * argv[] )
+int main( int argc, const char * const argv[] )
 {
 	unsigned short iCommandLineIndex  = 0;
 	short siRetCode                   = 0;
-	char szCommandLineArg[ 300 ]      = { 0 };
 	short sicalibrate                 = 1;
 	unsigned char set_freq		  = 0;
 	//08/28/08 NN Added Calculate checksum support.
@@ -669,24 +659,39 @@ int main( int argc, char * argv[] )
     vme_out_string( VME_VERSION_NUMBER );
     vme_out_string(" Copyright 1998-2011.\n");
 	vme_out_string( "\nFor daisy chain programming of all in-system programmable devices\n\n" );
-	for ( iCommandLineIndex = 1; iCommandLineIndex < argc; iCommandLineIndex++ ) {
-		strcpy( szCommandLineArg, argv[ iCommandLineIndex ] );
-		if ( !strcmp( strlwr( szCommandLineArg ), "-c" ) && ( iCommandLineIndex == 1 ) ) {
+	for ( iCommandLineIndex = 1; iCommandLineIndex < argc; ) {
+		if ( !strcasecmp( argv[iCommandLineIndex], "-c" )
+			  && ( iCommandLineIndex == 1 ) ) {
 			sicalibrate = 1;
+			iCommandLineIndex++;
 		}
-		else if ( !strcmp( strlwr( szCommandLineArg ), "-f" ) && ( iCommandLineIndex == 1 ) ) {
+		else if ( !strcasecmp( argv[iCommandLineIndex], "-f" )
+			  && ( iCommandLineIndex == 1 ) ) {
 			g_usCpu_Frequency = strtoul(argv[iCommandLineIndex+1],NULL,0);
+			iCommandLineIndex += 2;
 			set_freq = 1;
 			printf("CPU Freq set as %d MHZ\n", g_usCpu_Frequency);
 		}
-		else if ( !strcmp( strlwr( szCommandLineArg ), "syscpld" ) ) {
+		else if ( !strcasecmp( argv[iCommandLineIndex], "syscpld" ) ) {
 			cpld_img = argv[iCommandLineIndex + 1];
+			iCommandLineIndex += 2;
 			syscpld_update = 1;
+			use_dll = 0;
 		}
-		else if ( !strcmp( strlwr( szCommandLineArg ), "scmcpld" ) ||
-				!strcmp( strlwr( szCommandLineArg ), "qsfpcpld" )) {
+		else if ( !strcasecmp( argv[iCommandLineIndex], "scmcpld" ) ) {
 			cpld_img = argv[iCommandLineIndex + 1];
+			iCommandLineIndex += 2;
 			syscpld_update = 0;
+			use_dll = 0;
+		}
+		else if ( !strcasecmp( argv[iCommandLineIndex], "dll" )) {
+			dll_name = argv[iCommandLineIndex + 1];
+			cpld_img = argv[iCommandLineIndex + 2];
+			iCommandLineIndex += 3;
+			syscpld_update = 0;
+			use_dll = 1;
+		} else {
+			iCommandLineIndex ++;
 		}
 	}
 
@@ -697,6 +702,8 @@ int main( int argc, char * argv[] )
 		isp_gpio_config(CPLD_TMS_CONFIG, GPIO_OUT);
 		isp_gpio_config(CPLD_TDI_CONFIG, GPIO_OUT);
 		isp_gpio_config(CPLD_TDO_CONFIG, GPIO_IN);
+	} else if (use_dll) {
+		isp_dll_init(argc, argv);
 	} else {
 		isp_gpio_i2c_init();
 		isp_gpio_i2c_config(CPLD_TCK_I2C_CONFIG, GPIO_OUT);
@@ -746,4 +753,3 @@ int main( int argc, char * argv[] )
 #endif
 	return 1;
 }
-

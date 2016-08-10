@@ -17,7 +17,7 @@ OBJECTS += hardware.o ispvm_ui.o ivm_core.o
 .c.o:
 	$(CC) -c $(CFLAGS) $(INCPATH) -o $@ $<
 $(TARGET):$(OBJECTS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJECTS)
+	$(CC) $(LFLAGS) -o $(TARGET) $(OBJECTS) -lcpldupdate_dll_helper -ldl
 
 
 .PHONY: clean

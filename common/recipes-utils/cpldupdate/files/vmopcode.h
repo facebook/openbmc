@@ -236,6 +236,9 @@ typedef struct {
 
 #if defined(GALAXY100_PRJ)
 extern int syscpld_update;
+extern int use_dll;
+extern const char *dll_name;
+int isp_dll_init(int argc, const char * const argv[]);
 void isp_gpio_config( unsigned int gpio, int dir );
 void isp_gpio_i2c_config( unsigned int gpio, int dir );
 int isp_gpio_init(void);

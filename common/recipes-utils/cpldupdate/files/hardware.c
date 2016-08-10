@@ -20,6 +20,7 @@
 #include "vmopcode.h"
 #include <sys/io.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #if defined(GALAXY100_PRJ)
@@ -27,6 +28,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "i2c-dev.h"
+#include <openbmc/cpldupdate_dll.h>
 #endif
 
 //#define ISP_DEBUG
@@ -41,6 +43,9 @@
 *********************************************************************************/
 #ifdef GALAXY100_PRJ
 int syscpld_update = 1;
+int use_dll = 0;
+const char *dll_name = NULL;
+static struct cpldupdate_helper_st dll_helper;
 static volatile unsigned int *gpio_base;
 static volatile unsigned int *gpio_dir_base;
 static int mem_fd;
@@ -93,6 +98,8 @@ void sclock();
 void ispVMDelay( unsigned short a_usTimeDelay );
 void calibration(void);
 #ifdef GALAXY100_PRJ
+static void isp_dll_write(unsigned long pins, int value);
+static int isp_dll_read(cpldupdate_pin_en pin);
 static int isp_i2c_read(int bus, int addr, unsigned char reg);
 static int isp_i2c_write(int bus, int addr, unsigned char reg, unsigned value);
 static int open_i2c_dev(int i2cbus, char *filename, size_t size);
@@ -146,6 +153,8 @@ void writePort( unsigned long a_ucPins, unsigned char a_ucValue )
 	if(syscpld_update) {
 		*gpio_base = g_siIspPins;
 		while((*gpio_base & g_siIspPins) != g_siIspPins);
+	} else if (use_dll) {
+		isp_dll_write(a_ucPins, a_ucValue ? 1 : 0);
 	} else {
 		isp_i2c_write(I2C_CPLD_BUS, I2C_CPLD_ADDRESS, g_usOutPort, g_siIspPins | (0x1 << CPLD_I2C_ENABLE_OFFSET));
 	}
@@ -173,6 +182,8 @@ unsigned char readPort()
 				ucRet = 0x0;
 			}
 		}
+	} else if (use_dll) {
+		ucRet = isp_dll_read(CPLDUPDATE_PIN_TDO);
 	} else {
 		if (isp_i2c_read(I2C_CPLD_BUS, I2C_CPLD_ADDRESS, g_usInPort) & g_ucPinTDO) {
 			ucRet = 0x01;
@@ -319,6 +330,47 @@ void calibration(void)
 }
 
 #ifdef GALAXY100_PRJ
+int isp_dll_init(int argc, const char * const argv[]) {
+  int rc;
+
+  rc = cpldupdate_helper_open(dll_name, &dll_helper);
+  if (rc) {
+    goto out;
+  }
+
+  rc = cpldupdate_helper_init(&dll_helper, argc, argv);
+  if (rc) {
+    goto out;
+  }
+
+  g_ucPinTDI = 0x1 << CPLDUPDATE_PIN_TDI;
+  g_ucPinTCK = 0x1 << CPLDUPDATE_PIN_TCK;
+  g_ucPinTMS = 0x1 << CPLDUPDATE_PIN_TMS;
+  g_ucPinTDO = 0x1 << CPLDUPDATE_PIN_TDO;
+
+ out:
+  return rc;
+}
+
+void isp_dll_write(unsigned long pins, int value) {
+  cpldupdate_pin_en pin;
+  for (pin = 0; pin < sizeof(pins) * 8 && pin < CPLDUPDATE_PIN_MAX; pin++) {
+    if (!(pins & (0x1 << pin))) {
+      /* not set */
+      continue;
+    }
+    cpldupdate_helper_write_pin(
+        &dll_helper, pin,
+        value ? CPLDUPDATE_PIN_VALUE_HIGH : CPLDUPDATE_PIN_VALUE_LOW);
+  }
+}
+
+int isp_dll_read(cpldupdate_pin_en pin) {
+  cpldupdate_pin_value_en value = CPLDUPDATE_PIN_VALUE_LOW;
+  cpldupdate_helper_read_pin(&dll_helper, pin, &value);
+  return value;
+}
+
 int isp_gpio_i2c_init(void)
 {
 	unsigned char value;
@@ -427,12 +479,12 @@ static void *isp_gpio_map(unsigned int addr, int *fop)
 	fd = open("/dev/mem", O_RDWR | O_SYNC);
 	if(fd < 0) {
 		printf("open /dev/mem error!\n");
-		return -1;
+		return NULL;
 	}
 	base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr & ~MAP_MASK);
 	if(base == (void *)-1) {
 		printf("map base is NULL!\n");
-		return -1;
+		return NULL;
 	}
 	virt_addr = base + (addr & MAP_MASK);
 	*fop = fd;

@@ -34,3 +34,5 @@ do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 ispvm ${D}${bindir}/ispvm
 }
+
+DEPENDS += "libcpldupdate-dll-helper"

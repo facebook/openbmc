@@ -23,6 +23,7 @@ SRC_URI += " \
     file://eth0_mac_fixup.sh \
     file://fix_fru_eeprom.py \
     file://setup_adc.sh \
+    file://setup_gpio.sh \
     file://setup_i2c.sh \
     file://set_fan_speed.sh \
     "
@@ -44,7 +45,6 @@ do_install_append() {
     install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
     update-rc.d -r ${D} fix_fru_eeprom.py start 81 S .
 
-
     # networking is started after rcS, any start level within rcS after loading
     # EEPROM should work
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
@@ -52,6 +52,9 @@ do_install_append() {
 
     install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
     update-rc.d -r ${D} setup_adc.sh start 80 2 3 5 .
+
+    install -m 755 setup_gpio.sh ${D}${sysconfdir}/init.d/setup_gpio.sh
+    update-rc.d -r ${D} setup_gpio.sh start 80 2 3 5 .
 
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d

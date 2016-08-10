@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,26 +16,28 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
-usage() {
-    echo "Usage: $0 <PERCENT (0..100)>" >&2
-}
 
-set -e
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-if [ "$#" -ne 1 ]; then
-    usage
-    exit 1
-fi
+source /usr/local/bin/openbmc-utils.sh
 
-# Convert the percentage to our 1/32th unit (0-31).
-unit=$(( ( $1 * 31 ) / 100 ))
+# GPIOM0: BMC_CPLD_TMS
+# GPIOM1: BMC_CPLD_TDI
+# GPIOM2: BMC_CPLD_TCK
+# GPIOM3: BMC_CPLD_TDO
+# SCU84[24|25|26|27] must be 0
+devmem_clear_bit $(scu_addr 84) 24
+devmem_clear_bit $(scu_addr 84) 25
+devmem_clear_bit $(scu_addr 84) 26
+devmem_clear_bit $(scu_addr 84) 27
+gpio_export M0 BMC_CPLD_TMS
+gpio_export M1 BMC_CPLD_TDI
+gpio_export M2 BMC_CPLD_TCK
+gpio_export M3 BMC_CPLD_TDO
 
-busses="171 179 187 195"
-for bus in ${busses}; do
-    for id in 1 2 3; do
-        pwm="/sys/class/i2c-dev/i2c-${bus}/device/${bus}-0033/fantray${id}_pwm"
-        echo "$unit" > "${pwm}"
-    done
-done
-echo "Successfully set fans' speed to $1%"
+
+# GPIOF0: CPLD_JTAG_SEL (needs to be low)
+# SCU90[30] must 0 adn SCU80[24] must be 0
+devmem_clear_bit $(scu_addr 90) 30
+devmem_clear_bit $(scu_addr 80) 24
+gpio_export F0 CPLD_JTAG_SEL

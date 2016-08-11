@@ -60,7 +60,6 @@
   "0xa: connect with LC202 BMC UART\n"          \
   "0xb: connect with LC302 BMC UART\n"          \
   "0xc: connect with LC402 BMC UART\n"          \
-  "0xc: connect with LC402 BMC UART\n"          \
   "0xd: connect with peer BCM UART\n"           \
   "others: disconnect all\n"
 
@@ -117,7 +116,7 @@ static const i2c_dev_attr_st cmmcpld_attr_table[] = {
     1, 6, 1,
   },
   {
-    "cpld_sub_rev",
+    "cpld_sub_ver",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,

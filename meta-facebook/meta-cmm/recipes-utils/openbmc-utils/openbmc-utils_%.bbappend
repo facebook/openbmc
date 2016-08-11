@@ -19,18 +19,24 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://board-utils.sh \
+    file://cmmcpld_update.sh \
     file://create_vlan_intf \
     file://eth0_mac_fixup.sh \
+    file://fcbcpld_update.sh \
     file://fix_fru_eeprom.py \
     file://setup_adc.sh \
     file://setup_gpio.sh \
     file://setup_i2c.sh \
+    file://sol.sh \
     file://set_fan_speed.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
+    cmmcpld_update.sh \
+    fcbcpld_update.sh \
     set_fan_speed.sh \
+    sol.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

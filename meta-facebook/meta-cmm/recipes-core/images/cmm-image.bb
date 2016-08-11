@@ -18,13 +18,15 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python \
-  openbmc-utils \
-  ast-mdio \
   at93cx6-util \
+  ast-mdio \
   bcm5396-util \
   bitbang \
   cpldupdate \
+  libcpldupdate-dll-echo \
+  libcpldupdate-dll-gpio \
   lldp-util \
+  openbmc-utils \
   watchdog-ctrl \
   wedge-eeprom \
   "

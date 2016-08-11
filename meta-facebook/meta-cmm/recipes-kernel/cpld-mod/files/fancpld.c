@@ -233,7 +233,7 @@ static const i2c_dev_attr_st fancpld_attr_table[] = {
     1, 6, 1,
   },
   {
-    "cpld_sub_rev",
+    "cpld_sub_ver",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,

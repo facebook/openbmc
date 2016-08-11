@@ -83,3 +83,13 @@ for bus in ${temp_busses}; do
     add_device tmp75 0x48 ${bus}
     add_device tmp75 0x49 $((bus + 1))
 done
+
+# FCB PCA9534
+# GPIOs are allocated backwards.
+# So, list the bus list in reverse order,
+# so that GPIO numbers are increasing from FCB1-FCB4
+fcb_busses="196 188 180 172"
+for bus in ${fcb_busses}; do
+    add_device pca9534 0x22 ${bus}
+done
+

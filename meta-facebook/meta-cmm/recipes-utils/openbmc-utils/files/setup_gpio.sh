@@ -41,3 +41,28 @@ gpio_export M3 BMC_CPLD_TDO
 devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 24
 gpio_export F0 CPLD_JTAG_SEL
+
+
+# FCB1 GPIOs
+gpio_export 456 FCB1_CPLD_TMS
+gpio_export 457 FCB1_CPLD_TCK
+gpio_export 458 FCB1_CPLD_TDI
+gpio_export 459 FCB1_CPLD_TDO
+
+# FCB2 GPIOs
+gpio_export 464 FCB2_CPLD_TMS
+gpio_export 465 FCB2_CPLD_TCK
+gpio_export 466 FCB2_CPLD_TDI
+gpio_export 467 FCB2_CPLD_TDO
+
+# FCB3 GPIOs
+gpio_export 472 FCB3_CPLD_TMS
+gpio_export 473 FCB3_CPLD_TCK
+gpio_export 474 FCB3_CPLD_TDI
+gpio_export 475 FCB3_CPLD_TDO
+
+# FCB4 GPIOs
+gpio_export 480 FCB4_CPLD_TMS
+gpio_export 481 FCB4_CPLD_TCK
+gpio_export 482 FCB4_CPLD_TDI
+gpio_export 483 FCB4_CPLD_TDO

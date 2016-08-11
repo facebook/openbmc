@@ -71,6 +71,6 @@ while true; do
 		restore_us_com
 	fi
 	val=$ret
-	lm57_monitor
+	#lm57_monitor
 	usleep 500000
 done

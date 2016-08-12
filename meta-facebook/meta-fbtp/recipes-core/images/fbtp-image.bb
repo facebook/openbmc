@@ -1,4 +1,4 @@
-inherit aspeed_uboot_image
+inherit kernel_fitimage
 
 # Base this image on core-image-minimal
 include recipes-core/images/core-image-minimal.bb
@@ -6,8 +6,9 @@ include recipes-core/images/core-image-minimal.bb
 # Changing the image compression from gz to lzma achieves 30% saving (~3M).
 # However, the current u-boot does not have lzma enabled. Stick to gz
 # until we generate a new u-boot image.
-IMAGE_FSTYPES += "cpio.lzma.u-boot"
-UBOOT_IMAGE_ENTRYPOINT = "0x80800000"
+# UBOOT_IMAGE_LOADADDRESS = "0x80008000"
+# UBOOT_IMAGE_ENTRYPOINT = "0x80008000"
+UBOOT_RAMDISK_LOADADDRESS = "0x80800000"
 
 # The offset must match with the offsets defined in
 # dev-spi-cmm.c. Rootfs starts from 4.5M

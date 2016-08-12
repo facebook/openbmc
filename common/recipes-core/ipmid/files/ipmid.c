@@ -1607,8 +1607,8 @@ main (void)
   int *p_s2;
   int rc = 0;
 
-  daemon(1, 1);
-  openlog("ipmid", LOG_CONS, LOG_DAEMON);
+  //daemon(1, 1);
+  //openlog("ipmid", LOG_CONS, LOG_DAEMON);
 
 
   plat_fruid_init();

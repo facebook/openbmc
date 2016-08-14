@@ -74,7 +74,7 @@ if [ ! -f $jbcfile ]; then
     exit -1
 fi
 
-if [ $jbcfile != *".jbc" ]; then
+if [[ ${jbcfile: -4} != ".jbc" ]]; then
     echo "Must pass in a .jbc file"
     exit -1
 fi

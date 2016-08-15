@@ -74,6 +74,7 @@ IMAGE_INSTALL += " \
   fpc-util \
   fw-util \
   cfg-util \
+  ipmi-util \
   "
 
 IMAGE_FEATURES += " \

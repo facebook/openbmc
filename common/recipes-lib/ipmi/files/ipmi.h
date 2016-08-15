@@ -80,6 +80,8 @@ extern "C" {
 
 #define TIMEOUT_IPMI  5
 
+#define SIZE_BOOT_ORDER 6
+
 // IPMI request Structure (IPMI/Section 9.2)
 typedef struct
 {
@@ -368,6 +370,8 @@ enum
   CMD_OEM_SET_PROC_INFO = 0x1A,
   CMD_OEM_SET_DIMM_INFO = 0x1C,
   CMD_OEM_GET_BOARD_ID = 0x37,
+  CMD_OEM_SET_BOOT_ORDER = 0x52,
+  CMD_OEM_GET_BOOT_ORDER = 0x53,
   CMD_OEM_SET_POST_START = 0x73,
   CMD_OEM_SET_POST_END = 0x74,
   CMD_OEM_GET_SLOT_INFO = 0x7E,

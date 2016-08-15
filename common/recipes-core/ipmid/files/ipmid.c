@@ -1276,6 +1276,32 @@ oem_set_dimm_info (unsigned char *request, unsigned char *response,
 }
 
 static void
+oem_set_boot_order(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  pal_set_boot_order(req->payload_id, &req->data[1]);
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+static void
+oem_get_boot_order(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  pal_get_boot_order(req->payload_id, res->data);
+
+  res->cc = CC_SUCCESS;
+  *res_len = SIZE_BOOT_ORDER;
+}
+
+static void
 oem_set_post_start (unsigned char *request, unsigned char *response,
                   unsigned char *res_len)
 {
@@ -1407,6 +1433,12 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_DIMM_INFO:
       oem_set_dimm_info (request, response, res_len);
+      break;
+    case CMD_OEM_SET_BOOT_ORDER:
+      oem_set_boot_order(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_BOOT_ORDER:
+      oem_get_boot_order(request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_POST_START:
       oem_set_post_start (request, response, res_len);

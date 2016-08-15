@@ -307,12 +307,14 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_HSC_IN_POWER][UCR_THRESH] = 790.40;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_CURR][UCR_THRESH] = 228;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_POWER][UCR_THRESH] = 414;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_VOLT][LCR_THRESH] = 1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_VOLT][UCR_THRESH] = 2.0;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_CURR][UCR_THRESH] = 20;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_POWER][UCR_THRESH] = 18;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VSA_VOLT][LCR_THRESH] = 0.7;
@@ -320,6 +322,7 @@ sensor_thresh_array_init() {
 
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_CURR][UCR_THRESH] = 21;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_POWER][UCR_THRESH] = 22;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIO_VOLT][LCR_THRESH] = 0.8;
@@ -327,54 +330,63 @@ sensor_thresh_array_init() {
 
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR][UCR_THRESH] = 72;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_POWER][UCR_THRESH] = 88;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT][LCR_THRESH] = 1.08;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT][UCR_THRESH] = 1.32;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR][UCR_THRESH] = 72;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_POWER][UCR_THRESH] = 88;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT][LCR_THRESH] = 1.08;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT][UCR_THRESH] = 1.32;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_CURR][UCR_THRESH] = 228;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_POWER][UCR_THRESH] = 414;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_VOLT][LCR_THRESH] = 1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIN_VOLT][UCR_THRESH] = 2.0;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_CURR][UCR_THRESH] = 20;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_POWER][UCR_THRESH] = 18;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_VOLT][LCR_THRESH] = 0.7;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VSA_VOLT][UCR_THRESH] = 1.2;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_CURR][UCR_THRESH] = 21;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_POWER][UCR_THRESH] = 22;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_VOLT][LCR_THRESH] = 0.8;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VCCIO_VOLT][UCR_THRESH] = 1.1;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR][UCR_THRESH] = 72;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_POWER][UCR_THRESH] = 88;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT][LCR_THRESH] = 1.08;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT][UCR_THRESH] = 1.32;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_TEMP][UCR_THRESH] = 83;
+  mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR][UCR_THRESH] = 72;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_POWER][UCR_THRESH] = 88;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT][LCR_THRESH] = 1.08;
   mb_sensor_threshold[MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT][UCR_THRESH] = 1.32;
 
   mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_CURR][UCR_THRESH] = 26;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_POWER][UCR_THRESH] = 26;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_VOLT][LCR_THRESH] = 0.76;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_PVNN_VOLT][UCR_THRESH] = 1.1;
 
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_TEMP][UCR_THRESH] = 85;
+  mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_CURR][LCR_THRESH] = -1.5;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_CURR][UCR_THRESH] = 20;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_POWER][UCR_THRESH] = 22;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][LCR_THRESH] = 0.94;

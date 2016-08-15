@@ -77,7 +77,7 @@ populate_mgmt_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 0x09
   sensor.str_type_len = 0xC0 + 0x09;
-  strncpy(sensor.str, "Yosemite-BMC", 0x09);
+  strncpy(sensor.str, "FBTP-BMC ", 0x09);
 
   // Add this sensor to the global table
   if (g_sensor_mgmt.num >= SENSOR_MGMT_MAX) {

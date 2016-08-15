@@ -37,7 +37,7 @@
 #include <openbmc/pal.h>
 
 #define SIZE_IANA_ID 3
-#define SIZE_SYS_GUID 16
+#define SIZE_GUID 16
 
 extern void plat_lan_init(lan_config_t *lan);
 
@@ -295,32 +295,23 @@ app_get_selftest_results (unsigned char *response, unsigned char *res_len)
 
 // Get Device GUID (IPMI/Section 20.8)
 static void
-app_get_device_guid (unsigned char *response, unsigned char *res_len)
+app_get_device_guid (unsigned char *request, unsigned char *response,
+                     unsigned char *res_len)
 {
+  int ret;
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  unsigned char *data = &res->data[0];
 
-  res->cc = 0x00;
-
-  // TODO: Following data is Globaly Unique ID i.e. MAC Address..
-  *data++ = 0x0;
-  *data++ = 0x1;
-  *data++ = 0x2;
-  *data++ = 0x3;
-  *data++ = 0x4;
-  *data++ = 0x5;
-  *data++ = 0x6;
-  *data++ = 0x7;
-  *data++ = 0x8;
-  *data++ = 0x9;
-  *data++ = 0xa;
-  *data++ = 0xb;
-  *data++ = 0xc;
-  *data++ = 0xd;
-  *data++ = 0xe;
-  *data++ = 0xf;
-
-  *res_len = data - &res->data[0];
+  // Get the 16 bytes of Device GUID from PAL library
+  ret = pal_get_dev_guid(req->payload_id, res->data);
+  if (ret) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+      *res_len = 0x00;
+  } else {
+      res->cc = CC_SUCCESS;
+      *res_len = SIZE_GUID;
+  }
 }
 
 static void
@@ -339,7 +330,7 @@ app_get_device_sys_guid (unsigned char *request, unsigned char *response,
       *res_len = 0x00;
   } else {
       res->cc = CC_SUCCESS;
-      *res_len = SIZE_SYS_GUID;
+      *res_len = SIZE_GUID;
   }
 }
 
@@ -488,7 +479,7 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       app_get_selftest_results (response, res_len);
       break;
     case CMD_APP_GET_DEVICE_GUID:
-      app_get_device_guid (response, res_len);
+      app_get_device_guid (request, response, res_len);
       break;
     case CMD_APP_GET_SYSTEM_GUID:
       app_get_device_sys_guid (request, response, res_len);

@@ -184,6 +184,7 @@ char * key_list[] = {
 "server_sensor_health",
 "nic_sensor_health",
 "server_sel_error",
+"server_boot_order",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -197,6 +198,7 @@ char * def_val_list[] = {
   "1", /* server_sensor_health */
   "1", /* nic_sensor_health */
   "1", /* server_sel_error */
+  "0000000", /* server_boot_order */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -2675,6 +2677,52 @@ pal_get_sysfw_ver(uint8_t fru, uint8_t *ver) {
     sprintf(tstr, "%c\n", str[i+1]);
     lsb = strtol(tstr, NULL, 16);
     ver[j++] = (msb << 4) | lsb;
+  }
+
+  return 0;
+}
+
+int
+pal_set_boot_order(uint8_t fru, uint8_t *boot) {
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+
+  sprintf(key, "server_boot_order");
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    snprintf(tstr, 2, "%02x", boot[i]);
+    strncat(str, tstr, 2);
+  }
+
+  return pal_set_key_value(key, str);
+}
+
+int
+pal_get_boot_order(uint8_t fru, uint8_t *boot) {
+  int i;
+  int j = 0;
+  int ret;
+  int msb, lsb;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  sprintf(key, "server_boot_order");
+
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    boot[j++] = (msb << 4) | lsb;
   }
 
   return 0;

@@ -26,7 +26,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include "me.h"
-#include "facebook/i2c-dev.h"
 
 #define DEBUG
 

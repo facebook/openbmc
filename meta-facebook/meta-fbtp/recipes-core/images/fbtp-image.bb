@@ -75,6 +75,7 @@ IMAGE_INSTALL += " \
   fw-util \
   cfg-util \
   ipmi-util \
+  guid-util \
   "
 
 IMAGE_FEATURES += " \

@@ -43,6 +43,7 @@
 #define GPIO_POWER 35
 #define GPIO_POWER_GOOD 14
 #define GPIO_POWER_LED 210
+#define GPIO_POWER_RESET 33
 
 #define GPIO_RST_BTN 144
 #define GPIO_PWR_BTN 24
@@ -994,6 +995,32 @@ server_power_off(bool gs_flag) {
   return 0;
 }
 
+// Power reset the server in given slot
+static int
+server_power_reset(void) {
+  char vpath[64] = {0};
+
+  sprintf(vpath, GPIO_VAL, GPIO_POWER_RESET);
+
+  if (write_device(vpath, "1")) {
+    return -1;
+  }
+
+  sleep(1);
+
+  if (write_device(vpath, "0")) {
+    return -1;
+  }
+
+  sleep(1);
+
+  if (write_device(vpath, "1")) {
+    return -1;
+  }
+
+  return 0;
+}
+
 // Debug Card's UART and BMC/SoL port share UART port and need to enable only one
 static int
 control_sol_txd(uint8_t fru) {
@@ -1285,6 +1312,13 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       else
         gs_flag = true;
         return server_power_off(gs_flag);
+      break;
+
+   case SERVER_POWER_RESET:
+      if (status == SERVER_POWER_ON)
+        return server_power_reset();
+      else if (status == SERVER_POWER_OFF)
+        return 1;
       break;
 
     default:

@@ -333,3 +333,8 @@ gpio_export E6
 devmem_clear_bit $(scu_addr 80) 22
 
 gpio_export E7
+
+# RST_BMC_SYSRST_BTN_OUT_N, power reset to Server, on GPIO E1(33)
+devmem_clear_bit $(scu_addr 80) 17
+
+gpio_set E1 1

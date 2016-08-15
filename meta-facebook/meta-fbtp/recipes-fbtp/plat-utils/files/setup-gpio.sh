@@ -288,3 +288,48 @@ gpio_export P6
 gpio_export P7
 gpio_export R6
 gpio_export R7
+
+# HSC_SMBUS_SWITCH_EN: GPIOS3 (147)
+# To use GPIOS3, SCU8C[3] must be 0
+devmem_clear_bit $(scu_addr 8C) 3
+
+gpio_set S3 0
+
+# FM_FAST_PROCHOT_EN_N: GPIOV3 (171)
+# To use GPIOV3, SCUA0[19] must be 1
+devmem_set_bit $(scu_addr A0) 19
+
+gpio_set V3 0
+
+# UV_HIGH_SET: GPIOAA5(???)
+# To use GIOAA5, SCUA4[29] must be 0
+devmem_clear_bit $(scu_addr A4) 29
+
+gpio_set AA2 1
+
+# FM_PCH_BMC_THERMTRIP_N: GPIOG2 (50)
+# To use GPIOG2, SCU84[2] must be 0
+devmem_clear_bit $(scu_addr 84) 2
+
+gpio_export G2
+
+# FM_PMBUS_ALERT_BUF_EN_N: GPIOL5 (93)
+# To use GPIOG2, SCU84[21] and SCU90[5] must be 0
+devmem_clear_bit $(scu_addr 84) 21
+devmem_clear_bit $(scu_addr 90) 5
+
+gpio_export L5
+
+# FM_CPU0_PROCHOT_LVT3_ BMC_N, on GPIO E6(38)
+# To enable GPIOE6, SCU80[22], SCU8C[15], and SCU70[22] must be 0
+devmem_clear_bit $(scu_addr 80) 22
+devmem_clear_bit $(scu_addr 8C) 15
+devmem_clear_bit $(scu_addr 70) 22
+
+gpio_export E6
+
+# FM_CPU1_PROCHOT_LVT3_ BMC_N, on GPIO E7(39)
+# To enable GPIOE6, SCU80[23], SCU8C[15], and SCU70[22] must be 0
+devmem_clear_bit $(scu_addr 80) 22
+
+gpio_export E7

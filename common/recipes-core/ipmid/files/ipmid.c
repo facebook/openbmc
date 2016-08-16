@@ -238,7 +238,7 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
   int fv_major = 0x01, fv_minor = 0x03;
   char buffer[32];
 
-  fp = popen("cat /etc/issue","r");
+  fp = fopen("/etc/issue","r");
   if (fp != NULL)
   {
      if (fgets(buffer, sizeof(buffer), fp))

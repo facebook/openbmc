@@ -1282,7 +1282,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  pal_set_boot_order(req->payload_id, &req->data[1]);
+  pal_set_boot_order(req->payload_id, &req->data);
 
   res->cc = CC_SUCCESS;
   *res_len = 0;

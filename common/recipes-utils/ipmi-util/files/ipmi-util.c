@@ -62,7 +62,7 @@ main(int argc, char **argv) {
   }
 
   // Print the response
-  for (i = 0; i < rlen-1; i++) {
+  for (i = 0; i < rlen; i++) {
     printf("%02X ", rbuf[i]);
   }
   printf("\n");

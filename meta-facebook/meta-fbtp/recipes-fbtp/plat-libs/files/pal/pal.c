@@ -2692,8 +2692,8 @@ pal_set_boot_order(uint8_t fru, uint8_t *boot) {
   sprintf(key, "server_boot_order");
 
   for (i = 0; i < SIZE_BOOT_ORDER; i++) {
-    snprintf(tstr, 2, "%02x", boot[i]);
-    strncat(str, tstr, 2);
+    snprintf(tstr, 3, "%02x", boot[i]);
+    strncat(str, tstr, 3);
   }
 
   return pal_set_key_value(key, str);

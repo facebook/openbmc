@@ -35,6 +35,7 @@
 #include <sys/un.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
+#include <sys/reboot.h>
 
 #define SIZE_IANA_ID 3
 #define SIZE_GUID 16
@@ -272,7 +273,7 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
 static void
 app_cold_reset(void)
 {
-  system("/sbin/reboot");
+  reboot(RB_AUTOBOOT);
 }
 
 

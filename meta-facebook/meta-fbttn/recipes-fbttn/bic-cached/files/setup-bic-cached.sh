@@ -18,16 +18,16 @@ if [ $(is_server_prsnt 1) == "1" ]; then
   /usr/local/bin/bic-cached 1 > /dev/null 2>&1 &
 fi
 
-if [ $(is_server_prsnt 2) == "1" ]; then
-/usr/local/bin/bic-cached 2 > /dev/null 2>&1 &
-fi
+#if [ $(is_server_prsnt 2) == "1" ]; then
+#/usr/local/bin/bic-cached 2 > /dev/null 2>&1 &
+#fi
 
-if [ $(is_server_prsnt 3) == "1" ]; then
-/usr/local/bin/bic-cached 3 > /dev/null 2>&1 &
-fi
+#if [ $(is_server_prsnt 3) == "1" ]; then
+#/usr/local/bin/bic-cached 3 > /dev/null 2>&1 &
+#fi
 
-if [ $(is_server_prsnt 4) == "1" ]; then
-/usr/local/bin/bic-cached 4 > /dev/null 2>&1 &
-fi
+#if [ $(is_server_prsnt 4) == "1" ]; then
+#/usr/local/bin/bic-cached 4 > /dev/null 2>&1 &
+#fi
 
 echo "done."

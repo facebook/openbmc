@@ -32,7 +32,7 @@
 
 #define BIT(value, index) ((value >> index) & 1)
 
-#define FBTTN_PLATFORM_NAME "Yosemite"
+#define FBTTN_PLATFORM_NAME "FBTTN"
 #define LAST_KEY "last_key"
 #define FBTTN_MAX_NUM_SLOTS 4
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
@@ -100,8 +100,8 @@ const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
 const static uint8_t gpio_bic_ready[] = { 0, 107, 106, 109, 108 };
 const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
-const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
-const char pal_server_list[] = "slot1, slot2, slot3, slot4";
+const char pal_fru_list[] = "all, slot1, spb, nic";
+const char pal_server_list[] = "slot1";
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
@@ -399,7 +399,7 @@ static int
 server_12v_off(uint8_t slot_id) {
   char vpath[64] = {0};
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id < 1 || slot_id > 1) {
     return -1;
   }
 
@@ -447,39 +447,39 @@ control_sol_txd(uint8_t slot) {
     ctrl |= UART3_TXD | UART4_TXD;
     *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
-  case 2:
-    // Disable UART1's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl &= (~UART1_TXD); // Disable
-    ctrl |= UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
+  //case 2:
+    //// Disable UART1's TXD and enable others
+    //ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
+    //ctrl &= (~UART1_TXD); // Disable
+    //ctrl |= UART2_TXD;
+    //*(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 3:
-    // Disable UART4's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
+    //ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
+    //ctrl |= UART3_TXD | UART4_TXD;
+    //*(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
+    //break;
+  //case 3:
+    //// Disable UART4's TXD and enable others
+    //ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
+    //ctrl |= UART1_TXD | UART2_TXD;
+    //*(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD;
-    ctrl &= (~UART4_TXD); // Disable
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 4:
-    // Disable UART3's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
+    //ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
+    //ctrl |= UART3_TXD;
+    //ctrl &= (~UART4_TXD); // Disable
+    //*(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
+    //break;
+  //case 4:
+    //// Disable UART3's TXD and enable others
+    //ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
+    //ctrl |= UART1_TXD | UART2_TXD;
+    //*(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl &= (~UART3_TXD); // Disable
-    ctrl |= UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
+    //ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
+    //ctrl &= (~UART3_TXD); // Disable
+    //ctrl |= UART4_TXD;
+    //*(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
+    //break;
   default:
     // Any other slots we need to enable all TXDs
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
@@ -671,9 +671,9 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
+    //case FRU_SLOT2:
+    //case FRU_SLOT3:
+    //case FRU_SLOT4:
       sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
 
       if (read_device(path, &val)) {
@@ -703,7 +703,7 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
   int val;
   char path[64] = {0};
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id < 1 || slot_id > 1) {
     return -1;
   }
 
@@ -793,7 +793,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   uint8_t status;
   bool gs_flag = false;
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id < 1 || slot_id > 1) {
     return -1;
   }
 
@@ -923,18 +923,18 @@ pal_get_hand_sw(uint8_t *pos) {
   case 5:
     *pos = HAND_SW_SERVER1;
     break;
-  case 1:
-  case 6:
-    *pos = HAND_SW_SERVER2;
-    break;
-  case 2:
-  case 7:
-    *pos = HAND_SW_SERVER3;
-    break;
-  case 3:
-  case 8:
-    *pos = HAND_SW_SERVER4;
-    break;
+  //case 1:
+  //case 6:
+    //*pos = HAND_SW_SERVER2;
+    //break;
+  //case 2:
+  //case 7:
+    //*pos = HAND_SW_SERVER3;
+    //break;
+  //case 3:
+  //case 8:
+    //*pos = HAND_SW_SERVER4;
+    //break;
   default:
     *pos = HAND_SW_BMC;
     break;

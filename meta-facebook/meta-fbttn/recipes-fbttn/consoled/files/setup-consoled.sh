@@ -36,16 +36,16 @@ echo -n "Setup console  buffering..."
     /usr/local/bin/consoled slot1 --buffer
   fi
 
-  if [ $(is_server_prsnt 2) == "1" ] ; then
-    /usr/local/bin/consoled slot2 --buffer
-  fi
+  #if [ $(is_server_prsnt 2) == "1" ] ; then
+    #/usr/local/bin/consoled slot2 --buffer
+  #fi
 
-  if [ $(is_server_prsnt 3) == "1" ] ; then
-    /usr/local/bin/consoled slot3 --buffer
-  fi
+  #if [ $(is_server_prsnt 3) == "1" ] ; then
+    #/usr/local/bin/consoled slot3 --buffer
+  #fi
 
-  if [ $(is_server_prsnt 4) == "1" ] ; then
-    /usr/local/bin/consoled slot4 --buffer
-  fi
+  #if [ $(is_server_prsnt 4) == "1" ] ; then
+    #/usr/local/bin/consoled slot4 --buffer
+  #fi
 
 echo "done."

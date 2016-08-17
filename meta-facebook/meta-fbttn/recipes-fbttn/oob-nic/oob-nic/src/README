@@ -1,0 +1,10 @@
+
+TODO:
+
+1. Currently, we poll the SMbus instead of rely on the ALERT. The kernel does not handle the ALERT either other than just a print out.
+
+2. Maximum fragment is 32
+
+3. We use libnetlink for bring interface up and setting MAC. That increases the binary by about 50k and also we copied about 5 files from iproute2 here for that. We might be able to get away this by using some non-iproute2 API
+
+4. The dependency in the Makefile does not consider .h

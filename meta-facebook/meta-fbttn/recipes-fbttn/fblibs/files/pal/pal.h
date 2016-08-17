@@ -180,7 +180,10 @@ int pal_get_fan_name(uint8_t num, char *name);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 void pal_update_ts_sled();
 int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
-
+int pal_get_platform_id(uint8_t *id);
+int pal_get_board_rev_id(uint8_t *id);
+int pal_get_mb_slot_id(uint8_t *id);
+int pal_get_slot_cfg_id(uint8_t *id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

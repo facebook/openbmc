@@ -26,6 +26,7 @@
 #include <sys/types.h>
 
 #include "facebook/i2c-dev.h"
+#include "facebook/i2c.h"
 #include "facebook/log.h"
 
 struct oob_nic_t {

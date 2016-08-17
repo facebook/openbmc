@@ -29,7 +29,10 @@
 #include <errno.h>
 #include <syslog.h>
 #include <facebook/i2c-dev.h>
+#include <facebook/i2c.h>
 #include "fbttn_sensor.h"
+//For Kernel 2.6 -> 4.1
+#define MEZZ_TEMP_DEVICE "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*"
 
 #define LARGEST_DEVICE_NAME 120
 
@@ -326,37 +329,33 @@ read_hsc_value(const char *device, float *value) {
 }
 
 static int
-read_nic_temp(uint8_t snr_num, float *value) {
-  char command[64];
-  int dev;
-  int ret;
-  uint8_t tmp_val;
+read_nic_temp(const char *device, float *value) {
+  char full_name[LARGEST_DEVICE_NAME + 1];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
+  int tmp;
+  FILE *fp;
+  int size;
 
-  if (snr_num == MEZZ_SENSOR_TEMP) {
-    dev = open(I2C_DEV_NIC, O_RDWR);
-    if (dev < 0) {
-      syslog(LOG_ERR, "open() failed for read_nic_temp");
-      return -1;
-    }
-    /* Assign the i2c device address */
-    ret = ioctl(dev, I2C_SLAVE, I2C_NIC_ADDR);
-    if (ret < 0) {
-      syslog(LOG_ERR, "read_nic_temp: ioctl() assigning i2c addr failed");
-    }
+  // Get current working directory
+  snprintf(
+      full_name, LARGEST_DEVICE_NAME, "cd %s;pwd", device);
 
-    tmp_val = i2c_smbus_read_byte_data(dev, I2C_NIC_SENSOR_TEMP_REG);
+  fp = popen(full_name, "r");
+  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
+  pclose(fp);
 
-    close(dev);
+  // Remove the newline character at the end
+  size = strlen(dir_name);
+  dir_name[size-1] = '\0';
 
-    // TODO: This is a HACK till we find the actual root cause
-    // This condition implies that the I2C bus is busy
-    if (tmp_val == 0xFF) {
-      syslog(LOG_INFO, "read_nic_temp: value 0xFF - i2c bus is busy");
-      return -1;
-    }
+  snprintf(
+      full_name, LARGEST_DEVICE_NAME, "%s/temp2_input", dir_name);
 
-    *value = (float) tmp_val;
+  if (read_device(full_name, &tmp)) {
+    return -1;
   }
+
+  *value = ((float)tmp)/UNIT_DIV;
 
   return 0;
 }
@@ -887,7 +886,7 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
       // Mezz Temp
         case MEZZ_SENSOR_TEMP:
-          return read_nic_temp(MEZZ_SENSOR_TEMP, (float*) value);
+          return read_nic_temp(MEZZ_TEMP_DEVICE, (float*) value);
       }
       break;
   }

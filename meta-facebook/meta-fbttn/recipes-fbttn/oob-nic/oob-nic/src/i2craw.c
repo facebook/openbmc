@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "facebook/i2c-dev.h"
+#include "facebook/i2c.h"
 #include "facebook/log.h"
 
 void usage(const char *prog) {

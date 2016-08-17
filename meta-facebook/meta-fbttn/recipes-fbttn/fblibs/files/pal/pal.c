@@ -2504,3 +2504,25 @@ int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   return bic_me_xmit(fru, request, req_len, response, rlen);
 }
+//For Merge Yosemite and TP
+int
+pal_get_platform_id(uint8_t *id) {
+
+
+  return 0;
+}
+int
+pal_get_board_rev_id(uint8_t *id) {
+  
+  return 0;
+}
+int
+pal_get_mb_slot_id(uint8_t *id) {
+	
+  return 0;
+}
+int
+pal_get_slot_cfg_id(uint8_t *id) {
+  
+  return 0;
+}

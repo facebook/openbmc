@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include "bic.h"
 #include "facebook/i2c-dev.h"
+#include "facebook/i2c.h"
 
 #define FRUID_READ_COUNT_MAX 0x30
 #define FRUID_WRITE_COUNT_MAX 0x30

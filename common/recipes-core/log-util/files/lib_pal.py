@@ -30,6 +30,5 @@ def pal_get_fru_list():
     else:
         return frulist.value
 
-def pal_set_key_value(key):
-    value = '1'
-    lpal_hndl.pal_set_key_value(key, value)
+def pal_log_clear(fru):
+    lpal_hndl.pal_log_clear(fru)

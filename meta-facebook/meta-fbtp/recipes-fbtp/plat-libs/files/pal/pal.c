@@ -3513,3 +3513,17 @@ pal_get_slot_cfg_id(uint8_t *id) {
 
    return 0;
 }
+
+void
+pal_log_clear(char *fru) {
+  if (!strcmp(fru, "mb")) {
+    pal_set_key_value("server_sensor_health", "1");
+    pal_set_key_value("server_sel_error", "1");
+  } else if (!strcmp(fru, "nic")) {
+    pal_set_key_value("nic_sensor_health", "1");
+  } else if (!strcmp(fru, "all")) {
+    pal_set_key_value("server_sensor_health", "1");
+    pal_set_key_value("server_sel_error", "1");
+    pal_set_key_value("nic_sensor_health", "1");
+  }
+}

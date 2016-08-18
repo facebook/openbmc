@@ -175,6 +175,7 @@ size_t pal_tach_cnt = 2;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
 
+
 char * key_list[] = {
 "pwr_server_last_state",
 "sysfw_ver_server",
@@ -283,6 +284,29 @@ size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 
 uint8_t g_sys_guid[GUID_SIZE] = {0};
 uint8_t g_dev_guid[GUID_SIZE] = {0};
+
+static uint8_t g_board_rev_id = BOARD_REV_EVT;
+static uint8_t g_vr_cpu0_vddq_abc;
+static uint8_t g_vr_cpu0_vddq_def;
+static uint8_t g_vr_cpu1_vddq_ghj;
+static uint8_t g_vr_cpu1_vddq_klm;
+
+static void
+init_board_sensors(void) {
+  pal_get_board_rev_id(&g_board_rev_id);
+
+  if (g_board_rev_id == BOARD_REV_EVT) {
+    g_vr_cpu0_vddq_abc = VR_CPU0_VDDQ_ABC_EVT;
+    g_vr_cpu0_vddq_def = VR_CPU0_VDDQ_DEF_EVT;
+    g_vr_cpu1_vddq_ghj = VR_CPU1_VDDQ_GHJ_EVT;
+    g_vr_cpu1_vddq_klm = VR_CPU1_VDDQ_KLM_EVT;
+  } else {
+    g_vr_cpu0_vddq_abc = VR_CPU0_VDDQ_ABC;
+    g_vr_cpu0_vddq_def = VR_CPU0_VDDQ_DEF;
+    g_vr_cpu1_vddq_ghj = VR_CPU1_VDDQ_GHJ;
+    g_vr_cpu1_vddq_klm = VR_CPU1_VDDQ_KLM;
+  }
+}
 
 static void
 sensor_thresh_array_init() {
@@ -406,6 +430,7 @@ sensor_thresh_array_init() {
 
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
 
+  init_board_sensors();
   init_done = true;
 }
 
@@ -1820,28 +1845,28 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = read_vr_power(VR_CPU0_VCCIO, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_ABC_TEMP:
-        ret = read_vr_temp(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_temp(g_vr_cpu0_vddq_abc, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_ABC_CURR:
-        ret = read_vr_curr(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_curr(g_vr_cpu0_vddq_abc, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_ABC_VOLT:
-        ret = read_vr_volt(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_volt(g_vr_cpu0_vddq_abc, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_ABC_POWER:
-        ret = read_vr_power(VR_CPU0_VDDQ_ABC, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_power(g_vr_cpu0_vddq_abc, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_DEF_TEMP:
-        ret = read_vr_temp(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_temp(g_vr_cpu0_vddq_def, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_DEF_CURR:
-        ret = read_vr_curr(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_curr(g_vr_cpu0_vddq_def, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_DEF_VOLT:
-        ret = read_vr_volt(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_volt(g_vr_cpu0_vddq_def, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU0_VDDQ_DEF_POWER:
-        ret = read_vr_power(VR_CPU0_VDDQ_DEF, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_power(g_vr_cpu0_vddq_def, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VCCIN_TEMP:
         ret = read_vr_temp(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
@@ -1880,28 +1905,28 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = read_vr_power(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GHJ_TEMP:
-        ret = read_vr_temp(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_temp(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GHJ_CURR:
-        ret = read_vr_curr(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_curr(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GHJ_VOLT:
-        ret = read_vr_volt(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_volt(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GHJ_POWER:
-        ret = read_vr_power(VR_CPU1_VDDQ_GHJ, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_power(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_KLM_TEMP:
-        ret = read_vr_temp(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_temp(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_KLM_CURR:
-        ret = read_vr_curr(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_curr(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_KLM_VOLT:
-        ret = read_vr_volt(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_volt(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_KLM_POWER:
-        ret = read_vr_power(VR_CPU1_VDDQ_KLM, VR_LOOP_PAGE_0, (float*) value);
+        ret = read_vr_power(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_PCH_PVNN_TEMP:
         ret = read_vr_temp(VR_PCH_PVNN, VR_LOOP_PAGE_0, (float*) value);

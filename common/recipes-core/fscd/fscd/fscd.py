@@ -99,10 +99,10 @@ def bmc_read_speed():
 def bmc_read_power():
     cmd = '/usr/local/bin/power-util mb status'
     data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-    if 'OFF' in data:
-        return 0
-    else:
+    if 'ON' in data:
         return 1
+    else:
+        return 0
 
 class BMCMachine:
     def __init__(self):

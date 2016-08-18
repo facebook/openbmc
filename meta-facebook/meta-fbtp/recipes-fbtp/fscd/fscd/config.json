@@ -1,5 +1,5 @@
 {
-  "version": "fbtp-evt-v0.1",
+  "version": "fbtp-evt-v0.2",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -34,17 +34,9 @@
     "linear_inlet": {
       "type": "linear",
       "data": [
-        [ 25, 18 ],
-        [ 27, 19 ],
-        [ 29, 20 ],
-        [ 31, 21 ],
-        [ 33, 22 ],
-        [ 35, 23 ],
-        [ 37, 24 ],
-        [ 39, 25 ],
-        [ 41, 26 ],
-        [ 43, 27 ],
-        [ 45, 28 ]
+        [ 25, 40 ],
+        [ 30, 50 ]
+        [ 35, 60 ]
       ]
     },
     "linear_cpu_margin": {

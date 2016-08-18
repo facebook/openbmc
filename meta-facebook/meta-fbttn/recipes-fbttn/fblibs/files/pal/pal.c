@@ -2513,16 +2513,33 @@ pal_get_platform_id(uint8_t *id) {
 }
 int
 pal_get_board_rev_id(uint8_t *id) {
-  
+
   return 0;
 }
 int
 pal_get_mb_slot_id(uint8_t *id) {
-	
+
   return 0;
 }
 int
 pal_get_slot_cfg_id(uint8_t *id) {
-  
+
   return 0;
+}
+
+void
+pal_log_clear(char *fru) {
+  if (!strcmp(fru, "slot1")) {
+    pal_set_key_value("slot1_sensor_health", "1");
+    pal_set_key_value("slot1_sel_error", "1");
+  } else if (!strcmp(fru, "spb")) {
+    pal_set_key_value("spb_sensor_health", "1");
+  } else if (!strcmp(fru, "nic")) {
+    pal_set_key_value("nic_sensor_health", "1");
+  } else if (!strcmp(fru, "all")) {
+    pal_set_key_value("slot1_sensor_health", "1");
+    pal_set_key_value("slot1_sel_error", "1");
+    pal_set_key_value("spb_sensor_health", "1");
+    pal_set_key_value("nic_sensor_health", "1");
+  }
 }

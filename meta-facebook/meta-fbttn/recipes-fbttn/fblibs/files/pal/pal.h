@@ -184,6 +184,7 @@ int pal_get_platform_id(uint8_t *id);
 int pal_get_board_rev_id(uint8_t *id);
 int pal_get_mb_slot_id(uint8_t *id);
 int pal_get_slot_cfg_id(uint8_t *id);
+void pal_log_clear(char *fru);
 #ifdef __cplusplus
 } // extern "C"
 #endif

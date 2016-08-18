@@ -2504,3 +2504,35 @@ int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   return bic_me_xmit(fru, request, req_len, response, rlen);
 }
+
+void
+pal_log_clear(char *fru) {
+  char key[MAX_KEY_LEN] = {0};
+
+  if (!strcmp(fru, "slot1")) {
+    pal_set_key_value("slot1_sensor_health", "1");
+    pal_set_key_value("slot1_sel_error", "1");
+  } else if (!strcmp(fru, "slot2")) {
+    pal_set_key_value("slot2_sensor_health", "1");
+    pal_set_key_value("slot2_sel_error", "1");
+  } else if (!strcmp(fru, "slot3")) {
+    pal_set_key_value("slot3_sensor_health", "1");
+    pal_set_key_value("slot3_sel_error", "1");
+  } else if (!strcmp(fru, "slot4")) {
+    pal_set_key_value("slot4_sensor_health", "1");
+    pal_set_key_value("slot4_sel_error", "1");
+  } else if (!strcmp(fru, "spb")) {
+    pal_set_key_value("spb_sensor_health", "1");
+  } else if (!strcmp(fru, "nic")) {
+    pal_set_key_value("nic_sensor_health", "1");
+  } else if (!strcmp(fru, "all")) {
+    for (i = 1; i <= 4; i++) {
+      sprintf(key, "slot%d_sensor_health", i);
+      pal_set_key_value(key, "1");
+      sprintf(key, "slot%d_sel_error", i);
+      pal_set_key_value(key, "1");
+    }
+    pal_set_key_value("spb_sensor_health", "1");
+    pal_set_key_value("nic_sensor_health", "1");
+  }
+}

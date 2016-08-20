@@ -42,19 +42,11 @@ static void
 print_fw_ver(uint8_t fru_id) {
   int i;
   uint8_t ver[32] = {0};
-  uint8_t cpld_ver[4] = {0};
+  uint8_t cpld_var[4] = {0};
 
   if (fru_id != 1) {
     printf("Not Supported Operation\n");
     return;
-  }
-
-  // Print CPLD Version
-  if (cpld_get_ver((unsigned int *)&cpld_ver)) {
-    printf("CPLD Version: NA\n");
-  } else {
-    printf("CPLD Version: %02X%02X%02X%02X\n", cpld_ver[3], cpld_ver[2],
-		    cpld_ver[1], cpld_ver[0]);
   }
 
   // Print ME Version
@@ -76,6 +68,22 @@ print_fw_ver(uint8_t fru_id) {
       printf("%c", ver[i]);
     }
       printf("\n");
+  }
+
+  // Print CPLD Version
+  if (cpld_get_ver((unsigned int *)&cpld_var)) {
+    printf("CPLD Version: NAi, ");
+  } else {
+    printf("CPLD Version: %02X%02X%02X%02X, ", cpld_var[3], cpld_var[2],
+		    cpld_var[1], cpld_var[0]);
+  }
+
+  // Print CPLD Device ID
+  if (cpld_get_device_id((unsigned int *)&cpld_var)) {
+    printf("CPLD DeviceID: NA\n");
+  } else {
+    printf("CPLD DeviceID: %02X%02X%02X%02X\n", cpld_var[3], cpld_var[2],
+		    cpld_var[1], cpld_var[0]);
   }
 
   // Print VR Version

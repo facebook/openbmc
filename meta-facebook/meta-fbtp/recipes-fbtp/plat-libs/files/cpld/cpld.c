@@ -51,11 +51,55 @@ int cpld_get_ver(unsigned int *ver)
 		return -1;
 	}
 
-	ast_jtag_run_test_idle(jtag_fd, 1, 0, 0);
+	/*
+	 * Enable Flash Conf I/F (Transparent Mode)
+	 * Command 0x74, Operand 0x08 00 00
+	 */
+	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0x74080000);
 
-	ast_jtag_sir_xfer(jtag_fd, 0, LATTICE_INS_LENGTH, 0xC0);
-	sleep(1);
+	// Read USERCODE 0xC0, Operand 0x00 00 00
+	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xC0000000);
+
+        // Issue TDO for 32 bits
 	ast_jtag_tdo_xfer(jtag_fd, 0, 32, ver);
+
+	// Disable Conf IF 0x26, Operand 0x00 00
+	ast_jtag_sir_xfer(jtag_fd, 0, 24, 0x260000);
+
+	// Issue Bypass CMD 0xFF, Operand 0xFF FF FF
+	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xFFFFFFFF);
+
+	close(jtag_fd);
+
+	return 0;
+}
+
+
+int cpld_get_device_id(unsigned int *dev_id)
+{
+	int jtag_fd = open("/dev/ast-jtag", O_RDWR);
+	if(jtag_fd == -1) {
+		printf("Can't open /dev/ast-jtag, please install driver!! \n");
+		return -1;
+	}
+
+	/*
+	 * Enable Flash Conf I/F (Transparent Mode)
+	 * Command 0x74, Operand 0x08 00 00
+	 */
+	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0x74080000);
+
+	// Read Device ID Code 0xE0, Operand 0x00 00 00
+	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xE0000000);
+
+        // Issue TDO for 32 bits
+        ast_jtag_tdo_xfer(jtag_fd, 0, 32, dev_id);
+
+	// Disable Conf IF 0x26, Operand 0x00 00
+	ast_jtag_sir_xfer(jtag_fd, 0, 24, 0x260000);
+
+	// Issue Bypass CMD 0xFF, Operand 0xFF FF FF
+	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xFFFFFFFF);
 
 	close(jtag_fd);
 

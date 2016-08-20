@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 int cpld_get_ver(unsigned int *ver);
+int cpld_get_device_id(unsigned int *dev_id);
 
 #ifdef __cplusplus
 } // extern "C"

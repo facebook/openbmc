@@ -293,7 +293,7 @@ gpio_export R7
 # To use GPIOS3, SCU8C[3] must be 0
 devmem_clear_bit $(scu_addr 8C) 3
 
-gpio_set S3 0
+gpio_export S3
 
 # FM_FAST_PROCHOT_EN_N: GPIOV3 (171)
 # To use GPIOV3, SCUA0[19] must be 1

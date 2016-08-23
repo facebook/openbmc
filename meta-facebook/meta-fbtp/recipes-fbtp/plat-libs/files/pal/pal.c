@@ -221,6 +221,15 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_HSC_IN_VOLT,
   MB_SENSOR_HSC_OUT_CURR,
   MB_SENSOR_HSC_IN_POWER,
+  MB_SENSOR_CPU0_TEMP,
+  MB_SENSOR_CPU0_TJMAX,
+  MB_SENSOR_CPU1_TEMP,
+  MB_SENSOR_CPU1_TJMAX,
+  MB_SENSOR_PCH_TEMP,
+  MB_SENSOR_CPU0_DIMM_ABC_TEMP,
+  MB_SENSOR_CPU0_DIMM_DEF_TEMP,
+  MB_SENSOR_CPU1_DIMM_GHJ_TEMP,
+  MB_SENSOR_CPU1_DIMM_KLM_TEMP,
   MB_SENSOR_VR_CPU0_VCCIN_TEMP,
   MB_SENSOR_VR_CPU0_VCCIN_CURR,
   MB_SENSOR_VR_CPU0_VCCIN_VOLT,
@@ -311,6 +320,8 @@ init_board_sensors(void) {
 static void
 sensor_thresh_array_init() {
   static bool init_done = false;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
 
   if (init_done)
     return;
@@ -341,6 +352,24 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 10.8;
   mb_sensor_threshold[MB_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 47.705;
   mb_sensor_threshold[MB_SENSOR_HSC_IN_POWER][UCR_THRESH] = 790.40;
+  //Dynamic change CPU Temp threshold
+  sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
+  if( edb_cache_get(key,str) >= 0 ){
+    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
+  }else{
+	mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = 104;
+  }
+  sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
+  if( edb_cache_get(key,str) >= 0 ){
+    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
+  }else{
+    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = 104;
+  }
+  mb_sensor_threshold[MB_SENSOR_PCH_TEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_CPU0_DIMM_ABC_TEMP][UCR_THRESH] = 80;
+  mb_sensor_threshold[MB_SENSOR_CPU0_DIMM_DEF_TEMP][UCR_THRESH] = 80;
+  mb_sensor_threshold[MB_SENSOR_CPU1_DIMM_GHJ_TEMP][UCR_THRESH] = 80;
+  mb_sensor_threshold[MB_SENSOR_CPU1_DIMM_KLM_TEMP][UCR_THRESH] = 80;
 
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_TEMP][UCR_THRESH] = 85;
   mb_sensor_threshold[MB_SENSOR_VR_CPU0_VCCIN_CURR][LCR_THRESH] = -1.5;
@@ -694,6 +723,374 @@ read_hsc_value(const char *device, float *value) {
   }
 
   *value = ((float) tmp)/UNIT_DIV;
+
+  return 0;
+}
+
+static int
+read_hsc_current_value(float *value) {
+  uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  float hsc_b = 20475;
+  float Rsence;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  char path[64] = {0};
+  int val=0;
+
+  req = (ipmb_req_t*)tbuf;
+
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+
+  req->cmd = CMD_NM_SEND_RAW_PMBUS;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x86;
+  //HSC slave addr check for SS and DS
+  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
+  read_device(path, &val);
+  if (val){ //DS
+    req->data[4] = 0x8A;
+    Rsence = 0.265;
+  }else{    //SS
+    req->data[4] = 0x22;
+    Rsence = 0.505;
+  }
+  req->data[5] = 0x00;
+  req->data[6] = 0x00;
+  req->data[7] = 0x01;
+  req->data[8] = 0x02;
+  req->data[9] = 0x8C;
+  tlen = 16;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+
+  if (rlen == 0) {
+    syslog(LOG_DEBUG, "read_hsc_current_value: Zero bytes received\n");
+    return -1;
+  }
+  if (rbuf[6] == 0)
+  {
+    *value = ((float) (rbuf[11] << 8 | rbuf[10])*10-hsc_b )/(800*Rsence);
+  }
+  return 0;
+}
+
+static int
+read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
+  uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+
+  req = (ipmb_req_t*)tbuf;
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_SENSOR_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+  req->cmd = CMD_SENSOR_GET_SENSOR_READING;
+  req->data[0] = snr_num;
+  tlen = 7;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+
+  if (rlen == 0) {
+    syslog(LOG_DEBUG, "read_sensor_reading_from_ME: Zero bytes received\n");
+    return -1;
+  }
+  if (rbuf[6] == 0)
+  {
+    if (rbuf[8] & 0x20) {
+    //not available
+      return -1;
+    }else{
+      if(snr_num == MB_SENSOR_HSC_IN_POWER){
+        *value = (((float) rbuf[7])*0x20 + 0 )/10 ;
+      }else if(snr_num == MB_SENSOR_HSC_IN_VOLT){
+        *value = (((float) rbuf[7])*0x02 + (0x5e*10) )/100 ;
+      }else if(snr_num == MB_SENSOR_PCH_TEMP){
+        *value = (float) rbuf[7];
+      }
+    }
+  }
+  return 0;
+}
+
+static int
+read_cpu_dimm_temp(uint8_t snr_num, float *value) {
+  uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf1[256] = {0x00};
+  uint8_t rbuf2[256] = {0x00};
+  static uint8_t tjmax[2] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  uint8_t max_dimm = 0;
+  int i;
+  static uint8_t tjmax_flag = 0;
+
+  req = (ipmb_req_t*)tbuf;
+
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+
+  if( tjmax_flag == 0 ){
+    //Get CPU0/CPU1 Temp, CH0,CH1,CH2,CH3 DIMM Temp
+    req->cmd = CMD_NM_AGGREGATED_SEND_RAW_PECI;
+    req->data[0] = 0x57;
+    req->data[1] = 0x01;
+    req->data[2] = 0x00;
+    req->data[3] = 0x30;
+    req->data[4] = 0x05;
+    req->data[5] = 0x05;
+    req->data[6] = 0xa1;
+    req->data[7] = 0x00;
+    req->data[8] = 0x10;
+    req->data[9] = 0x00;
+    req->data[10] = 0x00;
+    req->data[11] = 0x31;
+    req->data[12] = 0x05;
+    req->data[13] = 0x05;
+    req->data[14] = 0xa1;
+    req->data[15] = 0x00;
+    req->data[16] = 0x10;
+    req->data[17] = 0x00;
+    req->data[18] = 0x00;
+    tlen = 25;
+
+    // Invoke IPMB library handler
+    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+    if (rlen == 0) {
+      syslog(LOG_DEBUG, "read_cpu_dimm_temp a: Zero bytes received\n");
+    }
+    if (rbuf1[6] == 0)
+    {
+      //Get CPU0 Tjmax
+      if ( (rbuf1[10] == 0x00 ) && (rbuf1[11] == 0x40 ) ) {
+        tjmax[0] = rbuf1[14];
+        sprintf(str, "%.2f",(float) tjmax[0]);
+        tjmax_flag = 1;
+      } else {
+        strcpy(str, "NA");
+      }
+      sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
+      if(edb_cache_set(key, str) < 0) {
+      #ifdef DEBUG
+        syslog(LOG_WARNING, "read_cpu_dimm_temp P0_tjmax: cache_set key = %s, str = %s failed.", key, str);
+      #endif
+      }
+      //Get CPU1 Tjmax
+      if ( (rbuf1[16] == 0x00 ) && (rbuf1[17] == 0x40 ) ) {
+        tjmax[1] = rbuf1[20];
+        sprintf(str, "%.2f",(float) tjmax[1]);
+	    } else {
+        strcpy(str, "NA");
+      }
+      sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
+      if(edb_cache_set(key, str) < 0) {
+      #ifdef DEBUG
+        syslog(LOG_WARNING, "read_cpu_dimm_temp P1_tjmax: cache_set key = %s, str = %s failed.", key, str);
+      #endif
+      }
+    }
+  }
+
+  rlen = 0;
+  memset( rbuf1,0x00,sizeof(rbuf1) );
+  //Get CPU0/CPU1 Temp, CH0,CH1,CH2,CH3 DIMM Temp
+  req->cmd = CMD_NM_GET_CPU_MEM_TEMP;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x03;
+  req->data[4] = 0x33;
+  req->data[5] = 0x33;
+  req->data[6] = 0x33;
+  req->data[7] = 0x33;
+  req->data[8] = 0x00;
+  req->data[9] = 0x00;
+  req->data[10] = 0x00;
+  req->data[11] = 0x00;
+  tlen = 18;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+
+  if (rlen == 0) {
+    syslog(LOG_DEBUG, "read_cpu_dimm_temp b: Zero bytes received\n");
+  }
+  if (rbuf1[6] == 0)
+  {
+    //CPU0 Temp
+    if ( (rbuf1[10] < 0xFD) && (rbuf1[10] != 0x00) ) {
+      *value = (float) (tjmax[0] - rbuf1[10]) ;
+      sprintf(str, "%.2f",*((float*)value));
+    } else {
+      strcpy(str, "NA");
+    }
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TEMP);
+    if(edb_cache_set(key, str) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "read_cpu_dimm_temp cpu0_temp: cache_set key = %s, str = %s failed.", key, str);
+#endif
+    }
+    //CPU1 Temp
+    if ( (rbuf1[11] < 0xFD) && (rbuf1[11] != 0x00)  ) {
+      sprintf(str, "%.2f",(float) (tjmax[1] - rbuf1[11]));
+    } else {
+      strcpy(str, "NA");
+    }
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TEMP);
+    if(edb_cache_set(key, str) < 0) {
+  #ifdef DEBUG
+      syslog(LOG_WARNING, "read_cpu_dimm_temp cpu1_temp: cache_set key = %s, str = %s failed.", key, str);
+  #endif
+    }
+
+    //MB_SENSOR_CPU0_DIMM_ABC_TEMP
+    if ( (rbuf1[12] >= 0xFD) && (rbuf1[13] >= 0xFD) && (rbuf1[14] >= 0xFD) && (rbuf1[15] >= 0xFD) && (rbuf1[16] >= 0xFD) && (rbuf1[17] >= 0xFD) ) {
+      strcpy(str, "NA");
+    } else {
+      for( i=12 ; i<18 ; i++){
+        if( rbuf1[i] < 0xFD ){
+          if( rbuf1[i] > max_dimm )
+            max_dimm = rbuf1[i];
+        }
+      }
+        sprintf(str, "%.2f",(float) max_dimm);
+    }
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_DIMM_ABC_TEMP);
+    if(edb_cache_set(key, str) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "read_cpu_dimm_temp DIMM_ABC_TEMP: cache_set key = %s, str = %s failed.", key, str);
+#endif
+    }
+
+    max_dimm = 0;
+    //MB_SENSOR_CPU1_DIMM_GHJ_TEMP
+    if ( (rbuf1[20] >= 0xFD) && (rbuf1[21] >= 0xFD) && (rbuf1[22] >= 0xFD) && (rbuf1[23] >= 0xFD) && (rbuf1[24] >= 0xFD) && (rbuf1[25] >= 0xFD) ) {
+        strcpy(str, "NA");
+    } else {
+      for( i=20 ; i<26 ; i++){
+        if( rbuf1[i] < 0xFD ){
+          if( rbuf1[i] > max_dimm )
+            max_dimm = rbuf1[i];
+        }
+      }
+      sprintf(str, "%.2f",(float) max_dimm);
+    }
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_DIMM_GHJ_TEMP);
+    if(edb_cache_set(key, str) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "read_cpu_dimm_temp DIMM_GHJ: cache_set key = %s, str = %s failed.", key, str);
+#endif
+    }
+  }
+
+  rlen = 0;
+  max_dimm = 0;
+  //Get CH4, CH5 DIMM Temp
+  req->cmd = CMD_NM_GET_CPU_MEM_TEMP;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x40;
+  req->data[4] = 0x33;
+  req->data[5] = 0x00;
+  req->data[6] = 0x33;
+  req->data[7] = 0x00;
+  req->data[8] = 0x00;
+  req->data[9] = 0x00;
+  req->data[10] = 0x00;
+  req->data[11] = 0x00;
+  tlen = 18;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf2, &rlen);
+
+  if (rlen == 0) {
+    syslog(LOG_DEBUG, "read_cpu_dimm_temp c: Zero bytes received\n");
+  }
+  if (rbuf2[6] == 0)
+  {
+    //MB_SENSOR_CPU0_DIMM_DEF_TEMP
+    if ( (rbuf1[18] >= 0xFD) && (rbuf1[19] >= 0xFD) && (rbuf2[10] >= 0xFD) && (rbuf2[11] >= 0xFD) && (rbuf2[12] >= 0xFD) && (rbuf2[13] >= 0xFD) ) {
+      strcpy(str, "NA");
+    } else {
+      for( i=18 ; i<20 ; i++){
+        if( rbuf1[i] < 0xFD ){
+          if( rbuf1[i] > max_dimm )
+            max_dimm = rbuf1[i];
+        }
+      }
+      for( i=10 ; i<14 ; i++){
+        if( rbuf2[i] < 0xFD ){
+          if( rbuf2[i] > max_dimm )
+            max_dimm = rbuf2[i];
+        }
+      }
+      sprintf(str, "%.2f",(float) max_dimm);
+    }
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_DIMM_DEF_TEMP);
+    if(edb_cache_set(key, str) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "read_cpu_dimm_temp DIMM_DEF: cache_set key = %s, str = %s failed.", key, str);
+#endif
+    }
+
+    max_dimm = 0;
+    //MB_SENSOR_CPU1_DIMM_KLM_TEMP
+    if ( (rbuf1[26] >= 0xFD) && (rbuf1[27] >= 0xFD) && (rbuf2[14] >= 0xFD) && (rbuf2[15] >= 0xFD) && (rbuf2[16] >= 0xFD) && (rbuf2[17] >= 0xFD) ) {
+      strcpy(str, "NA");
+    } else {
+      for( i=26 ; i<28 ; i++){
+        if( rbuf1[i] < 0xFD ){
+          if( rbuf1[i] > max_dimm )
+            max_dimm = rbuf1[i];
+        }
+      }
+      for( i=14 ; i<18 ; i++){
+        if( rbuf2[i] < 0xFD ){
+          if( rbuf2[i] > max_dimm )
+            max_dimm = rbuf2[i];
+        }
+      }
+      sprintf(str, "%.2f",(float) max_dimm);
+    }
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_DIMM_KLM_TEMP);
+    if(edb_cache_set(key, str) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "read_cpu_dimm_temp DIMM_KLM: cache_set key = %s, str = %s failed.", key, str);
+#endif
+     }
+  }
 
   return 0;
 }
@@ -1690,11 +2087,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   int ret;
   float volt, curr;
+  static uint8_t poweron_10s_flag = 0;
 
   switch(fru) {
   case FRU_MB:
     sprintf(key, "mb_sensor%d", sensor_num);
     if (is_server_off()) {
+      poweron_10s_flag = 0;
       // Power is OFF, so only some of the sensors can be read
       switch(sensor_num) {
       // Temp. Sensors
@@ -1728,25 +2127,27 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
       // Hot Swap Controller
       case MB_SENSOR_HSC_IN_VOLT:
-        ret = read_hsc_value(HSC_IN_VOLT, (float*) value);
+        ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_VOLT, (float*) value);
         break;
       case MB_SENSOR_HSC_OUT_CURR:
-        ret = read_hsc_value(HSC_OUT_CURR, (float*) value);
+        ret = read_hsc_current_value((float*) value);
         break;
       case MB_SENSOR_HSC_IN_POWER:
-        if (ret = read_hsc_value(HSC_IN_VOLT, &volt)) {
-          return -1;
-        }
-        if (ret = read_hsc_value(HSC_OUT_CURR, &curr)) {
-          return -1;
-        }
-        * (float*) value = volt * curr;
+        ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_POWER, (float*) value);
         break;
       default:
         ret = READING_NA;
         break;
       }
     } else {
+      if((poweron_10s_flag < 5) && ((sensor_num == MB_SENSOR_HSC_IN_VOLT)||
+         (sensor_num == MB_SENSOR_HSC_OUT_CURR)||(sensor_num == MB_SENSOR_HSC_IN_POWER))){
+        if(sensor_num == MB_SENSOR_HSC_IN_POWER){
+          poweron_10s_flag++;
+        }
+        ret = READING_NA;
+        break;
+      }
       switch(sensor_num) {
       // Temp. Sensors
       case MB_SENSOR_INLET_TEMP:
@@ -1793,19 +2194,26 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
       // Hot Swap Controller
       case MB_SENSOR_HSC_IN_VOLT:
-        ret = read_hsc_value(HSC_IN_VOLT, (float*) value);
+        ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_VOLT, (float*) value);
         break;
       case MB_SENSOR_HSC_OUT_CURR:
-        ret = read_hsc_value(HSC_OUT_CURR, (float*) value);
+        ret = read_hsc_current_value((float*) value);
         break;
       case MB_SENSOR_HSC_IN_POWER:
-        if (ret = read_hsc_value(HSC_IN_VOLT, &volt)) {
-          return -1;
-        }
-        if (ret = read_hsc_value(HSC_OUT_CURR, &curr)) {
-          return -1;
-        }
-        * (float*) value = volt * curr;
+        ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_POWER, (float*) value);
+        break;
+      //CPU, DIMM, PCH Temp
+      case MB_SENSOR_CPU0_TEMP:
+        ret = read_cpu_dimm_temp(MB_SENSOR_CPU0_TEMP, (float*) value);
+        break;
+      case MB_SENSOR_CPU1_TEMP:
+      case MB_SENSOR_CPU0_DIMM_ABC_TEMP:
+      case MB_SENSOR_CPU0_DIMM_DEF_TEMP:
+      case MB_SENSOR_CPU1_DIMM_GHJ_TEMP:
+      case MB_SENSOR_CPU1_DIMM_KLM_TEMP:
+        return 0;
+      case MB_SENSOR_PCH_TEMP:
+        ret = read_sensor_reading_from_ME(MB_SENSOR_PCH_TEMP, (float*) value);
         break;
       //VR Sensors
       case MB_SENSOR_VR_CPU0_VCCIN_TEMP:
@@ -2069,6 +2477,33 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_HSC_IN_POWER:
       sprintf(name, "MB_HSC_IN_POWER");
       break;
+    case MB_SENSOR_CPU0_TEMP:
+      sprintf(name, "MB_P0_TEMP");
+      break;
+    case MB_SENSOR_CPU0_TJMAX:
+      sprintf(name, "MB_P0_TJMAX");
+      break;
+    case MB_SENSOR_CPU1_TEMP:
+      sprintf(name, "MB_P1_TEMP");
+      break;
+    case MB_SENSOR_CPU1_TJMAX:
+      sprintf(name, "MB_P1_TJMAX");
+      break;
+    case MB_SENSOR_PCH_TEMP:
+      sprintf(name, "MB_PCH_TEMP");
+      break;
+    case MB_SENSOR_CPU0_DIMM_ABC_TEMP:
+      sprintf(name, "MB_P0_DIMM_ABC_TEMP");
+      break;
+    case MB_SENSOR_CPU0_DIMM_DEF_TEMP:
+      sprintf(name, "MB_P0_DIMM_DEF_TEMP");
+      break;
+    case MB_SENSOR_CPU1_DIMM_GHJ_TEMP:
+      sprintf(name, "MB_P1_DIMM_GHJ_TEMP");
+      break;
+    case MB_SENSOR_CPU1_DIMM_KLM_TEMP:
+      sprintf(name, "MB_P1_DIMM_KLM_TEMP");
+      break;
     case MB_SENSOR_VR_CPU0_VCCIN_TEMP:
       sprintf(name, "MB_VR_CPU0_VCCIN_TEMP");
       break;
@@ -2239,6 +2674,15 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     switch(sensor_num) {
     case MB_SENSOR_INLET_TEMP:
     case MB_SENSOR_OUTLET_TEMP:
+    case MB_SENSOR_CPU0_TEMP:
+    case MB_SENSOR_CPU0_TJMAX:
+    case MB_SENSOR_CPU1_TEMP:
+    case MB_SENSOR_CPU1_TJMAX:
+    case MB_SENSOR_PCH_TEMP:
+    case MB_SENSOR_CPU0_DIMM_ABC_TEMP:
+    case MB_SENSOR_CPU0_DIMM_DEF_TEMP:
+    case MB_SENSOR_CPU1_DIMM_GHJ_TEMP:
+    case MB_SENSOR_CPU1_DIMM_KLM_TEMP:
     case MB_SENSOR_VR_CPU0_VCCIN_TEMP:
     case MB_SENSOR_VR_CPU0_VSA_TEMP:
     case MB_SENSOR_VR_CPU0_VCCIO_TEMP:

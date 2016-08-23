@@ -3,7 +3,7 @@ lib: libpal.so
 
 libpal.so: pal.c
 	$(CC) $(CFLAGS) -fPIC -c -pthread -o pal.o pal.c
-	$(CC) -lkv -ledb -shared -o libpal.so pal.o -lc
+	$(CC) -lkv -ledb -lipmb -shared -o libpal.so pal.o -lc
 
 .PHONY: clean
 

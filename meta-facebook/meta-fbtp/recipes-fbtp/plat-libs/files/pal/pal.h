@@ -27,6 +27,7 @@ extern "C" {
 
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/ipmb.h>
 #include <stdbool.h>
 
 #define MAX_KEY_LEN     64
@@ -160,6 +161,15 @@ enum {
   MB_SENSOR_HSC_OUT_CURR = 0xC1,
   MB_SENSOR_HSC_TEMP = 0xC2,
   MB_SENSOR_HSC_IN_POWER = 0x29,
+  MB_SENSOR_CPU0_TEMP = 0xAA,
+  MB_SENSOR_CPU0_TJMAX = 0x30,
+  MB_SENSOR_CPU1_TEMP = 0xAB,
+  MB_SENSOR_CPU1_TJMAX = 0x31,
+  MB_SENSOR_PCH_TEMP = 0x08,
+  MB_SENSOR_CPU0_DIMM_ABC_TEMP = 0xAC,
+  MB_SENSOR_CPU0_DIMM_DEF_TEMP = 0xAD,
+  MB_SENSOR_CPU1_DIMM_GHJ_TEMP = 0xAE,
+  MB_SENSOR_CPU1_DIMM_KLM_TEMP = 0xAF,
 
   MB_SENSOR_VR_CPU0_VCCIN_VOLT = 0xB0,
   MB_SENSOR_VR_CPU0_VCCIN_TEMP = 0xB1,

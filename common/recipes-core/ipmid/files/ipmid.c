@@ -1123,6 +1123,10 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
       memcpy(data, g_lan_config.ip6_addr, SIZE_IP6_ADDR);
       data += SIZE_IP6_ADDR;
       break;
+    case LAN_PARAM_ADDR_ENABLES:
+      data[0] = 0x02; // Enable both IPv4 and IPv6
+      data ++;
+      break;
     default:
       res->cc = CC_INVALID_PARAM;
       break;

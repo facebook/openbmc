@@ -12,4 +12,5 @@ RDEPENDS_${PN} += " \
   tzdata \
   u-boot \
   u-boot-fw-utils \
+  rsyslog \
   "

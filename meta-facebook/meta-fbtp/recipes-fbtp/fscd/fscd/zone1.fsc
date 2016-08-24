@@ -1,3 +1,5 @@
 max([
-  linear_inlet(mb:mb_inlet_temp)
+  linear_inlet(mb:mb_inlet_temp),
+  linear_cpu_margin(mb:mb_cpu0_temp - mb:mb_cpu0_tjmax),
+  linear_cpu_margin(mb:mb_cpu1_temp - mb:mb_cpu1_tjmax)
 ])

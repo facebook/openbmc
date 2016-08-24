@@ -2478,31 +2478,31 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       sprintf(name, "MB_HSC_IN_POWER");
       break;
     case MB_SENSOR_CPU0_TEMP:
-      sprintf(name, "MB_P0_TEMP");
+      sprintf(name, "MB_CPU0_TEMP");
       break;
     case MB_SENSOR_CPU0_TJMAX:
-      sprintf(name, "MB_P0_TJMAX");
+      sprintf(name, "MB_CPU0_TJMAX");
       break;
     case MB_SENSOR_CPU1_TEMP:
-      sprintf(name, "MB_P1_TEMP");
+      sprintf(name, "MB_CPU1_TEMP");
       break;
     case MB_SENSOR_CPU1_TJMAX:
-      sprintf(name, "MB_P1_TJMAX");
+      sprintf(name, "MB_CPU1_TJMAX");
       break;
     case MB_SENSOR_PCH_TEMP:
       sprintf(name, "MB_PCH_TEMP");
       break;
     case MB_SENSOR_CPU0_DIMM_ABC_TEMP:
-      sprintf(name, "MB_P0_DIMM_ABC_TEMP");
+      sprintf(name, "MB_CPU0_DIMM_ABC_TEMP");
       break;
     case MB_SENSOR_CPU0_DIMM_DEF_TEMP:
-      sprintf(name, "MB_P0_DIMM_DEF_TEMP");
+      sprintf(name, "MB_CPU0_DIMM_DEF_TEMP");
       break;
     case MB_SENSOR_CPU1_DIMM_GHJ_TEMP:
-      sprintf(name, "MB_P1_DIMM_GHJ_TEMP");
+      sprintf(name, "MB_CPU1_DIMM_GHJ_TEMP");
       break;
     case MB_SENSOR_CPU1_DIMM_KLM_TEMP:
-      sprintf(name, "MB_P1_DIMM_KLM_TEMP");
+      sprintf(name, "MB_CPU1_DIMM_KLM_TEMP");
       break;
     case MB_SENSOR_VR_CPU0_VCCIN_TEMP:
       sprintf(name, "MB_VR_CPU0_VCCIN_TEMP");

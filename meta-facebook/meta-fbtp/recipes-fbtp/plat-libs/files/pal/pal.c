@@ -317,11 +317,59 @@ init_board_sensors(void) {
   }
 }
 
+//Dynamic change CPU Temp threshold
 static void
-sensor_thresh_array_init() {
+dyn_sensor_thresh_array_init() {
+  static bool init_cpu0 = false;
+  static bool init_cpu1 = false;
   static bool init_done = false;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
+
+  // Return if both cpu thresholds are initialized
+  if (init_done) {
+    return;
+  }
+
+  // Checkd if cpu0 threshold needs to be initialized
+  if (init_cpu0) {
+    goto dyn_cpu1_init;
+  }
+
+  sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
+  if( edb_cache_get(key,str) >= 0 ){
+    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
+    init_cpu0 = true;
+  }else{
+    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = 104;
+  }
+
+  // Check if cpu1 threshold needs to be initialized
+dyn_cpu1_init:
+  if (init_cpu1) {
+    goto dyn_thresh_exit;
+  }
+
+  sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
+  if( edb_cache_get(key,str) >= 0 ){
+    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
+    init_cpu1 = true;
+  }else{
+    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = 104;
+  }
+
+  // Mark init complete only if both thresholds are initialized
+dyn_thresh_exit:
+  if (init_cpu0 && init_cpu1) {
+    init_done = true;
+  }
+}
+
+static void
+sensor_thresh_array_init() {
+  static bool init_done = false;
+
+  dyn_sensor_thresh_array_init();
 
   if (init_done)
     return;
@@ -352,19 +400,6 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 10.8;
   mb_sensor_threshold[MB_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 47.705;
   mb_sensor_threshold[MB_SENSOR_HSC_IN_POWER][UCR_THRESH] = 790.40;
-  //Dynamic change CPU Temp threshold
-  sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-  if( edb_cache_get(key,str) >= 0 ){
-    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
-  }else{
-	mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = 104;
-  }
-  sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-  if( edb_cache_get(key,str) >= 0 ){
-    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
-  }else{
-    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = 104;
-  }
   mb_sensor_threshold[MB_SENSOR_PCH_TEMP][UCR_THRESH] = 95;
   mb_sensor_threshold[MB_SENSOR_CPU0_DIMM_ABC_TEMP][UCR_THRESH] = 80;
   mb_sensor_threshold[MB_SENSOR_CPU0_DIMM_DEF_TEMP][UCR_THRESH] = 80;
@@ -777,7 +812,9 @@ read_hsc_current_value(float *value) {
   lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
 
   if (rlen == 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "read_hsc_current_value: Zero bytes received\n");
+#endif
     return -1;
   }
   if (rbuf[6] == 0)

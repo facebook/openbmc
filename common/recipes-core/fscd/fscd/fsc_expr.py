@@ -119,6 +119,10 @@ def make_infix_node(ast_node, info, profiles):
     op = None
     if ast_node['op'] == '+':
         op = Sum()
+
+    if ast_node['op'] == '-':
+        op = Sub()
+
     if not op:
         raise InvalidExpression("Bad infix operator: %s" % (ast_node['op'],))
     lhs_e = make_eval_node(ast_node['left'], info, profiles)
@@ -230,4 +234,15 @@ class Sum():
     def __str__(self):
         return '+'
 
+class Sub():
+    identity = 0
+    def apply(self, in_l, in_r):
+        if in_l is not None and in_r is not None:
+            return in_l - in_r
+        if in_l is None and in_r is not None:
+            return in_r
+        if in_r is None and in_l is not None:
+            return in_l
 
+    def __str__(self):
+        return '-'

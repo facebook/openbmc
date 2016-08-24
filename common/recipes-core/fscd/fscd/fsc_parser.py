@@ -12,6 +12,7 @@ tokens = (
     "SYM",
     "NUM",
     "PLUS",
+    "MINUS",
     "PAR_OPEN",
     "PAR_END",
     "LIST_OPEN",
@@ -29,6 +30,7 @@ def t_NUM(t):
     return t
 
 t_PLUS = r"\+"
+t_MINUS = r"\-"
 t_PAR_OPEN = r"\("
 t_PAR_END = r"\)"
 t_LIST_OPEN = r"\["
@@ -45,7 +47,7 @@ def t_error(t):
 
 start = "expression"
 precedence = (
-    ("left", "PLUS"),
+    ("left", "PLUS", "MINUS"),
 )
 
 def p_list_elements(p):
@@ -77,6 +79,13 @@ def p_expression_apply(p):
 
 def p_expression_binop(p):
     "expression : expression PLUS expression"
+    p[0] = {'type': 'infix',
+            'op': p[2],
+            'left': p[1],
+            'right': p[3]}
+
+def p_expression_binop(p):
+    "expression : expression MINUS expression"
     p[0] = {'type': 'infix',
             'op': p[2],
             'left': p[1],

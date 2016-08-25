@@ -17,8 +17,8 @@
 
 all: gpiod 
 
-sensord: gpiod.c 
-	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -pthread -lm -std=c99 -o $@ $^ $(LDFLAGS)
+gpiod: gpiod.c 
+	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -lpal -lgpio -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -19,7 +19,7 @@
 #
 
 ### BEGIN INIT INFO
-# Provides:          setup-sensord
+# Provides:          setup-gpiod
 # Required-Start:
 # Required-Stop:
 # Default-Start:     S
@@ -29,26 +29,8 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Setup gpio monitoring for yosemite... "
+echo -n "Setup gpio monitoring for FBTP... "
 
-# Check for the slots present and run sensord for those slots only.
-SLOTS=
-  if [ $(is_server_prsnt 1) == "1" ]; then
-    SLOTS="$SLOTS slot1"
-  fi
-
-  if [ $(is_server_prsnt 2) == "1" ]; then
-    SLOTS="$SLOTS slot2"
-  fi
-
-  if [ $(is_server_prsnt 3) == "1" ]; then
-    SLOTS="$SLOTS slot3"
-  fi
-
-  if [ $(is_server_prsnt 4) == "1" ]; then
-    SLOTS="$SLOTS slot4"
-  fi
-
-/usr/local/bin/gpiod $SLOTS
+/usr/local/bin/gpiod
 
 echo "done."

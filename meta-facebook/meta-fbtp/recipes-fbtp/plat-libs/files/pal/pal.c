@@ -339,7 +339,7 @@ dyn_sensor_thresh_array_init() {
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-  if( edb_cache_get(key,str) >= 0 ){
+  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 4) > 0) {
     mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
     init_cpu0 = true;
   }else{
@@ -353,7 +353,7 @@ dyn_cpu1_init:
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-  if( edb_cache_get(key,str) >= 0 ){
+  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 4) > 0 ) {
     mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
     init_cpu1 = true;
   }else{
@@ -857,7 +857,9 @@ read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
   lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
 
   if (rlen == 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "read_sensor_reading_from_ME: Zero bytes received\n");
+#endif
     return -1;
   }
   if (rbuf[6] == 0)
@@ -894,6 +896,8 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
   uint8_t max_dimm = 0;
   int i;
   static uint8_t tjmax_flag = 0;
+  static float tjmax_cpu0 = 0.0;
+  static float tjmax_cpu1 = 0.0;
 
   req = (ipmb_req_t*)tbuf;
 
@@ -932,7 +936,9 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
     if (rlen == 0) {
+#ifdef DEBUG
       syslog(LOG_DEBUG, "read_cpu_dimm_temp a: Zero bytes received\n");
+#endif
     }
     if (rbuf1[6] == 0)
     {
@@ -940,6 +946,7 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
       if ( (rbuf1[10] == 0x00 ) && (rbuf1[11] == 0x40 ) ) {
         tjmax[0] = rbuf1[14];
         sprintf(str, "%.2f",(float) tjmax[0]);
+        tjmax_cpu0 = (float) tjmax[0];
         tjmax_flag = 1;
       } else {
         strcpy(str, "NA");
@@ -954,6 +961,7 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
       if ( (rbuf1[16] == 0x00 ) && (rbuf1[17] == 0x40 ) ) {
         tjmax[1] = rbuf1[20];
         sprintf(str, "%.2f",(float) tjmax[1]);
+        tjmax_cpu1 = (float) tjmax[1];
 	    } else {
         strcpy(str, "NA");
       }
@@ -964,6 +972,14 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
       #endif
       }
     }
+  } else {
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
+    sprintf(str, "%.2f", tjmax_cpu0);
+    edb_cache_set(key, str);
+
+    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
+    sprintf(str, "%.2f", tjmax_cpu1);
+    edb_cache_set(key, str);
   }
 
   rlen = 0;
@@ -988,7 +1004,9 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
   lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
 
   if (rlen == 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "read_cpu_dimm_temp b: Zero bytes received\n");
+#endif
   }
   if (rbuf1[6] == 0)
   {
@@ -1080,7 +1098,9 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
   lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf2, &rlen);
 
   if (rlen == 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "read_cpu_dimm_temp c: Zero bytes received\n");
+#endif
   }
   if (rbuf2[6] == 0)
   {
@@ -1164,7 +1184,9 @@ read_vr_volt(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_volt: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1176,7 +1198,9 @@ read_vr_volt(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_volt: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1217,7 +1241,9 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_curr: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1229,7 +1255,9 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_curr: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1275,7 +1303,9 @@ read_vr_power(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_power: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1287,7 +1317,9 @@ read_vr_power(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_power: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1327,7 +1359,9 @@ read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_temp: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1339,7 +1373,9 @@ read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_temp: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -1417,6 +1453,8 @@ static int
 server_power_on(void) {
   char vpath[64] = {0};
 
+  system("killall gpiod");
+
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
 
   if (write_device(vpath, "1")) {
@@ -1436,6 +1474,7 @@ server_power_on(void) {
   sleep(2);
 
   system("/usr/bin/sv restart fscd >> /dev/null");
+  system("/usr/local/bin/gpiod >> /dev/null");
 
   return 0;
 }
@@ -1448,6 +1487,7 @@ server_power_off(bool gs_flag) {
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
 
   system("/usr/bin/sv stop fscd >> /dev/null");
+  system("killall gpiod");
 
   if (write_device(vpath, "1")) {
     return -1;
@@ -1468,6 +1508,8 @@ server_power_off(bool gs_flag) {
   if (write_device(vpath, "1")) {
     return -1;
   }
+
+  system("/usr/local/bin/gpiod >> /dev/null");
 
   return 0;
 }
@@ -3266,7 +3308,9 @@ pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -3278,7 +3322,9 @@ pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -3292,7 +3338,9 @@ pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -3332,7 +3380,9 @@ pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -3344,7 +3394,9 @@ pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -3358,7 +3410,9 @@ pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -3398,7 +3452,9 @@ pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 
@@ -3410,7 +3466,9 @@ pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
 
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
+#ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+#endif
     goto error_exit;
   }
 

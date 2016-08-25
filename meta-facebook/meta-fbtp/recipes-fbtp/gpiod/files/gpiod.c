@@ -30,351 +30,200 @@
 #include <pthread.h>
 #include <sys/un.h>
 #include <sys/file.h>
-#include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
-#include <facebook/bic.h>
-#include <facebook/yosemite_gpio.h>
+#include <openbmc/gpio.h>
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
+#define POLL_TIMEOUT -1 /* Forever */
 
-#define MAX_NUM_SLOTS       4
-#define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
-#define SOCK_PATH_GPIO      "/tmp/gpio_socket"
-
-#define GPIO_BMC_READY_N    28
-
-/* To hold the gpio info and status */
-typedef struct {
-  uint8_t flag;
-  uint8_t status;
-  uint8_t ass_val;
-  char name[32];
-} gpio_pin_t;
-
-static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
-static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
-static gpio_pin_t gpio_slot3[MAX_GPIO_PINS] = {0};
-static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
-
-/* Returns the pointer to the struct holding all gpio info for the fru#. */
-static gpio_pin_t *
-get_struct_gpio_pin(uint8_t fru) {
-
-  gpio_pin_t *gpios;
-
-  switch (fru) {
-    case FRU_SLOT1:
-      gpios = gpio_slot1;
-      break;
-    case FRU_SLOT2:
-      gpios = gpio_slot2;
-      break;
-    case FRU_SLOT3:
-      gpios = gpio_slot3;
-      break;
-    case FRU_SLOT4:
-      gpios = gpio_slot4;
-      break;
-    default:
-      syslog(LOG_WARNING, "get_struct_gpio_pin: Wrong SLOT ID %d\n", fru);
-      return NULL;
-  }
-
-  return gpios;
-}
-
-int
-enable_gpio_intr_config(uint8_t fru, uint8_t gpio) {
-  int ret;
-
-  bic_gpio_config_t cfg = {0};
-  bic_gpio_config_t verify_cfg = {0};
-
-
-  ret =  bic_get_gpio_config(fru, gpio, &cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: bic_get_gpio_config failed"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  cfg.ie = 1;
-
-  ret = bic_set_gpio_config(fru, gpio, &cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: bic_set_gpio_config failed"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  ret =  bic_get_gpio_config(fru, gpio, &verify_cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: verification bic_get_gpio_config"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  if (verify_cfg.ie != cfg.ie) {
-    syslog(LOG_WARNING, "Slot_id: %u,Interrupt enabling FAILED for GPIO pin# %d",
-        fru, gpio);
-    return -1;
-  }
-
-  return 0;
-}
-
-/* Enable the interrupt mode for all the gpio sensors */
-static void
-enable_gpio_intr(uint8_t fru) {
-
-  int i, ret;
-  gpio_pin_t *gpios;
-
-  gpios = get_struct_gpio_pin(fru);
-  if (gpios == NULL) {
-    syslog(LOG_WARNING, "enable_gpio_intr: get_struct_gpio_pin failed.");
-    return;
-  }
-
-  for (i = 0; i < gpio_pin_cnt; i++) {
-
-    gpios[i].flag = 0;
-
-    ret = enable_gpio_intr_config(fru, gpio_pin_list[i]);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "enable_gpio_intr: Slot: %d, Pin %d interrupt enabling"
-          " failed", fru, gpio_pin_list[i]);
-      syslog(LOG_WARNING, "enable_gpio_intr: Disable check for Slot %d, Pin %d",
-          fru, gpio_pin_list[i]);
-    } else {
-      gpios[i].flag = 1;
-#ifdef DEBUG
-      syslog(LOG_WARNING, "enable_gpio_intr: Enabled check for Slot: %d, Pin %d",
-          fru, gpio_pin_list[i]);
-#endif /* DEBUG */
-    }
-  }
-}
-
-static void
-populate_gpio_pins(uint8_t fru) {
-
-  int i, ret;
-
-  gpio_pin_t *gpios;
-
-  gpios = get_struct_gpio_pin(fru);
-  if (gpios == NULL) {
-    syslog(LOG_WARNING, "populate_gpio_pins: get_struct_gpio_pin failed.");
-    return;
-  }
-
-  for(i = 0; i < gpio_pin_cnt; i++) {
-    // Only monitor the PWRGOOD_CPU pin
-    if (i == PWRGOOD_CPU)
-      gpios[gpio_pin_list[i]].flag = 1;
-  }
-
-
-  for(i = 0; i < MAX_GPIO_PINS; i++) {
-    if (gpios[i].flag) {
-      gpios[i].ass_val = GETBIT(gpio_ass_val, i);
-      ret = yosemite_get_gpio_name(fru, i, gpios[i].name);
-      if (ret < 0)
-        continue;
-    }
-  }
-}
-
-/* Wrapper function to configure and get all gpio info */
-static void
-init_gpio_pins() {
-  int fru;
-
-  for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
-        populate_gpio_pins(fru);
-  }
-}
-
-/* Monitor the gpio pins */
+// Return GPIO number from given string
+// e.g. GPIOA0 -> 0, GPIOB6->14, GPIOAA2->210
 static int
-gpio_monitor_poll(uint8_t fru_flag) {
-  int i, ret;
-  uint8_t fru;
-  uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
-  gpio_pin_t *gpios;
-  char pwr_state[MAX_VALUE_LEN];
+gpio_num(char *str)
+{
+  int base_2 = 0; // Starting GPIOA0
+  int base_3 = 208; // Starting @ GPIOAA0
+  int base = 0;
+  int len = strlen(str);
+  int ret = 0;
 
-  uint32_t status;
-  bic_gpio_t gpio = {0};
-
-  /* Check for initial Asserts */
-  for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
-    if (GETBIT(fru_flag, fru) == 0)
-      continue;
-
-    // Inform BIOS that BMC is ready
-    bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
-
-    ret = bic_get_gpio(fru, &gpio);
-    if (ret) {
-#ifdef DEBUG
-      syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-        " fru %u", fru);
-#endif
-      continue;
-    }
-
-    gpios = get_struct_gpio_pin(fru);
-    if  (gpios == NULL) {
-      syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-          " fru %u", fru);
-      continue;
-    }
-
-    memcpy(&status, (uint8_t *) &gpio, sizeof(status));
-
-    o_pin_val[fru] = 0;
-
-    for (i = 0; i < MAX_GPIO_PINS; i++) {
-
-      if (gpios[i].flag == 0)
-        continue;
-
-      gpios[i].status = GETBIT(status, i);
-
-      if (gpios[i].status)
-        o_pin_val[fru] = SETBIT(o_pin_val[fru], i);
-    }
+  if (len != 6 && len != 7) {
+    printf("len is %d\n", len);
+    return -1;
   }
 
-  /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
-  while(1) {
-    for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
-      if (!(GETBIT(fru_flag, fru))) {
-        usleep(DELAY_GPIOD_READ);
-        continue;
-      }
+  if (len == 6) {
+    base = base_2;
+  } else {
+    base = base_3;
+  }
 
-      gpios = get_struct_gpio_pin(fru);
-      if  (gpios == NULL) {
-        syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-            " fru %u", fru);
-        continue;
-      }
-
-      memset(pwr_state, 0, MAX_VALUE_LEN);
-      pal_get_last_pwr_state(fru, pwr_state);
-
-      /* Get the GPIO pins */
-      if ((ret = bic_get_gpio(fru, (bic_gpio_t *) &n_pin_val)) < 0) {
-        /* log the error message only when the CPU is on but not reachable. */
-        if (!(strcmp(pwr_state, "on"))) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-              " fru %u", fru);
-#endif
-        }
-        continue;
-      }
-
-      if (o_pin_val[fru] == n_pin_val) {
-        o_pin_val[fru] = n_pin_val;
-        usleep(DELAY_GPIOD_READ);
-        continue;
-      }
-
-      revised_pins = (n_pin_val ^ o_pin_val[fru]);
-
-      for (i = 0; i < MAX_GPIO_PINS; i++) {
-        if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
-          gpios[i].status = GETBIT(n_pin_val, i);
-
-          // Check if the new GPIO val is ASSERT
-          if (gpios[i].status == gpios[i].ass_val) {
-            /*
-             * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
-             * Raise an error and change the LPS from on to off or vice versa for deassert.
-             */
-            if (!(strcmp(pwr_state, "on")))
-              pal_set_last_pwr_state(fru, "off");
-
-            syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
-
-            // Inform BIOS that BMC is ready
-            bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
-          } else {
-
-            if (!(strcmp(pwr_state, "off")))
-              pal_set_last_pwr_state(fru, "on");
-
-            syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
-          }
-        }
-      }
-
-      o_pin_val[fru] = n_pin_val;
-      usleep(DELAY_GPIOD_READ);
-
-    } /* For Loop for each fru */
-  } /* while loop */
-} /* function definition*/
-
-static void
-print_usage() {
-  printf("Usage: gpiod [ %s ]\n", pal_server_list);
+  ret = (base + str[len-1] - '0' + ((str[len-2] - 'A') * 8));
+  return ret;
 }
 
-/* Spawns a pthread for each fru to monitor all the sensors on it */
-static void
-run_gpiod(int argc, void **argv) {
 
-  //gpio_monitor();
+// Generic Event Handler for GPIO changes
+static void gpio_event_handle(void *p)
+{
+  gpio_poll_st *gp = (gpio_poll_st*) p;
+  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+}
 
-  int i, ret;
-  uint8_t fru_flag, fru;
+// Generic Event Handler for GPIO changes, but only logs event when MB is ON
+static void gpio_event_handle_power(void *p)
+{
+  uint8_t status = 0;
+  gpio_poll_st *gp = (gpio_poll_st*) p;
 
-  /* Check for which fru do we need to monitor the gpio pins */
-  fru_flag = 0;
-  for (i = 1; i < argc; i++) {
-    ret = pal_get_fru_id(argv[i], &fru);
-    if (ret < 0) {
-      print_usage();
-      exit(-1);
-    }
-    fru_flag = SETBIT(fru_flag, fru);
+  pal_get_server_power(1, &status);
+  if (status != SERVER_POWER_ON) {
+    return;
   }
 
-  gpio_monitor_poll(fru_flag);
+  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+}
+
+// GPIO table to be monitored when MB is OFF
+static gpio_poll_st g_gpios_off[] = {
+  // {{gpio, fd}, gpioValue, call-back function, GPIO description}
+  {{0, 0}, 0, gpio_event_handle, "GPIOB6 - PWRGD_SYS_PWROK" },
+  {{0, 0}, 0, gpio_event_handle, "GPIOD2 - FM_SOL_UART_CH_SEL"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOE0 - RST_SYSTEM_BTN_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOE2 - FM_PWR_BTN_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOE4 - FP_NMI_BTN_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
+};
+
+// GPIO table to be monitored when MB is ON
+static gpio_poll_st g_gpios[] = {
+  // {{gpio, fd}, gpioValue, call-back function, GPIO description}
+  {{0, 0}, 0, gpio_event_handle, "GPIOB6 - PWRGD_SYS_PWROK" },
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOB7 - IRQ_PVDDQ_GHJ_VRHOT_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOD2 - FM_SOL_UART_CH_SEL"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOD4 - IRQ_DIMM_SAVE_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOD6 - FM_CPU_ERR0_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOD7 - FM_CPU_ERR1_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOE0 - RST_SYSTEM_BTN_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOE2 - FM_PWR_BTN_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOE4 - FP_NMI_BTN_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOE6 - FM_CPU0_PROCHOT_LVT3_ BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOE7 - FM_CPU1_PROCHOT_LVT3_ BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOF0 - IRQ_PVDDQ_ABC_VRHOT_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOF2 - IRQ_PVCCIN_CPU0_VRHOT_LVC3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOF3 - IRQ_PVCCIN_CPU1_VRHOT_LVC3_N"},
+  {{0, 0},0, gpio_event_handle_power, "GPIOF4 - IRQ_PVDDQ_KLM_VRHOT_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOG0 - FM_CPU_ERR2_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOG1 - FM_CPU_CATERR_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOG2 - FM_PCH_BMC_THERMTRIP_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOI0 - FM_CPU0_FIVR_FAULT_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOI1 - FM_CPU1_FIVR_FAULT_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOL0 - IRQ_UV_DETECT_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOL1 - IRQ_OC_DETECT_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOL4 - FM_MEM_THERM_EVENT_PCH_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOM0 - FM_CPU0_RC_ERROR_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOX4 - H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOX5 - H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOX6 - H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOX7 - H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOZ2 - IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOAB0 - IRQ_HSC_FAULT_N"},
+};
+
+static int g_count_off = sizeof(g_gpios_off) / sizeof(gpio_poll_st);
+static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
+
+// Initalize the gpio# using the helper function
+static void
+gpio_init_off(void) {
+  int i = 0;
+  // Initialize gpio numbers
+  g_gpios_off[i++].gs.gs_gpio = gpio_num("GPIOB6");
+  g_gpios_off[i++].gs.gs_gpio = gpio_num("GPIOD2");
+  g_gpios_off[i++].gs.gs_gpio = gpio_num("GPIOE0");
+  g_gpios_off[i++].gs.gs_gpio = gpio_num("GPIOE2");
+  g_gpios_off[i++].gs.gs_gpio = gpio_num("GPIOE4");
+  g_gpios_off[i++].gs.gs_gpio = gpio_num("GPIOQ6");
+}
+
+// Initalize the gpio# using the helper function
+static void
+gpio_init(void) {
+  int i = 0;
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB7");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD2");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD4");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD7");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE2");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE4");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE7");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF2");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF3");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF4");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG1");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG2");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOI0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOI1");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL1");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL4");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM1");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM4");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM5");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOQ6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX4");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX5");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX7");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOZ2");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAB0");
 }
 
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
-
-  if (argc < 2) {
-    print_usage();
-    exit(-1);
-  }
+  uint8_t status = 0;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
   if(rc) {
     if(EWOULDBLOCK == errno) {
-      printf("Another gpiod instance is running...\n");
+      syslog(LOG_ERR, "Another gpiod instance is running...\n");
       exit(-1);
     }
   } else {
 
-    init_gpio_pins();
-
     daemon(0,1);
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");
-    run_gpiod(argc, argv);
+
+    // Wait until the GPIO signal settle down
+    sleep(30);
+
+    // Check power status and start monitoring different set of GPIOs
+    pal_get_server_power(1, &status);
+
+    if (status == SERVER_POWER_ON) {
+      gpio_init();
+      gpio_poll_open(g_gpios, g_count);
+      gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
+      gpio_poll_close(g_gpios, g_count);
+    } else {
+      gpio_init_off();
+      gpio_poll_open(g_gpios_off, g_count_off);
+      gpio_poll(g_gpios_off, g_count_off, POLL_TIMEOUT);
+      gpio_poll_close(g_gpios_off, g_count_off);
+    }
   }
 
   return 0;

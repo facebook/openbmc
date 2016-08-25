@@ -15,8 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "GPIO Sensor Monitoring Daemon" 
-DESCRIPTION = "Daemon for monitoring the gpio sensors"
+SUMMARY = "GPIO Monitoring Daemon"
+DESCRIPTION = "Daemon for monitoring the gpio signals"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
@@ -31,10 +31,7 @@ S = "${WORKDIR}"
 
 binfiles = "gpiod \
            "
-
-CFLAGS += " -lpal "
-
-DEPENDS += " libpal "
+DEPENDS += " libgpio "
 
 pkgdir = "gpiod"
 
@@ -56,7 +53,6 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
-
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

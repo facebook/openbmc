@@ -338,3 +338,7 @@ gpio_export E7
 devmem_clear_bit $(scu_addr 80) 17
 
 gpio_set E1 1
+
+# Disable JTAG Engine
+devmem_clear_bit $(jtag_addr 08) 30
+devmem_clear_bit $(jtag_addr 08) 31

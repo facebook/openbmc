@@ -23,6 +23,10 @@ scu_addr() {
     echo $((0x1E6E2000 + 0x$1))
 }
 
+jtag_addr() {
+    echo $((0x1E6E4000 + 0x$1))
+}
+
 GPIODIR="/sys/class/gpio"
 GPIOEXPORT="$GPIODIR/export"
 

@@ -86,6 +86,9 @@ print_fw_ver(uint8_t fru_id) {
 		    cpld_var[1], cpld_var[0]);
   }
 
+  //Disable JTAG Engine after CPLD access
+  system("devmem 0x1e6e4008 32 0");
+
   // Print VR Version
   if (pal_get_vr_ver(VR_PCH_PVNN, ver)) {
     printf("VR_PCH_[PVNN, PV1V05] Version: NA");

@@ -22,6 +22,7 @@ SRC_URI += "file://setup-ipmid.sh \
            file://sensor.c \
            file://fruid.c \
            file://lan.c \
+           file://run-ipmid.sh \
           "
 
 S = "${WORKDIR}"
@@ -37,7 +38,11 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/ipmid
+  install -d ${D}${sysconfdir}/ipmid
   install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
+  install -m 755 run-ipmid.sh ${D}${sysconfdir}/sv/ipmid/run
   update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
 }
 

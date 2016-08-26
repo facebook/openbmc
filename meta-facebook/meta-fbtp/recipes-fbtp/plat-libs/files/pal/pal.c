@@ -165,6 +165,7 @@
 #define READING_NA -2
 
 #define NIC_MAX_TEMP 125
+#define PLAT_ID_SKU_MASK 0x80 // 0- Single Side, 1- Double Side
 
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -177,6 +178,7 @@ size_t pal_tach_cnt = 2;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
 
+static uint8_t g_plat_id = 0x0;
 
 char * key_list[] = {
 "pwr_server_last_state",
@@ -378,10 +380,19 @@ sensor_thresh_array_init() {
 
   mb_sensor_threshold[MB_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 11000;
+
+  // Assign UCT based on the system is Single Side or Double Side
+  if (!(pal_get_platform_id(&g_plat_id)) && !(g_plat_id & PLAT_ID_SKU_MASK)) {
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 9000;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 9000;
+  } else {
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 13500;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 13500;
+  }
+
   mb_sensor_threshold[MB_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-  mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 11000;
   mb_sensor_threshold[MB_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+
   mb_sensor_threshold[MB_SENSOR_P3V3][UCR_THRESH] = 3.621;
   mb_sensor_threshold[MB_SENSOR_P3V3][LCR_THRESH] = 2.975;
   mb_sensor_threshold[MB_SENSOR_P5V][UCR_THRESH] = 5.486;

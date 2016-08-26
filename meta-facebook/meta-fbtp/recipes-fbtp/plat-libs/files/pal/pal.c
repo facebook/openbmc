@@ -164,6 +164,8 @@
 
 #define READING_NA -2
 
+#define NIC_MAX_TEMP 125
+
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
 const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
@@ -679,6 +681,11 @@ read_nic_temp(const char *device, float *value) {
   }
 
   *value = ((float)tmp)/UNIT_DIV;
+
+  // Workaround: handle when NICs wrongly report higher temperatures
+  if (*value > NIC_MAX_TEMP) {
+    return -1;
+  }
 
   return 0;
 }

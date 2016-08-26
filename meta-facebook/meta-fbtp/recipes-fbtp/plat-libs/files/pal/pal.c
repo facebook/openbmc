@@ -3552,7 +3552,7 @@ int
 pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
     char *error_log) {
 
-  char *ed = event_data;
+  char *ed = &event_data[3];
   char temp_log[128] = {0};
   uint8_t temp;
 

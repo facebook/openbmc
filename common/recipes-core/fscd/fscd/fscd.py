@@ -353,7 +353,7 @@ def main():
 
 def handle_term(signum, frame):
     global wdfile
-    machine.set_all_pwm(boost)
+    machine.set_all_pwm(transitional)
     warn("killed by signal %d" % (signum,))
     if signum == signal.SIGQUIT and wdfile:
         info("Killed with SIGQUIT - stopping watchdog.")
@@ -370,7 +370,7 @@ if __name__ == "__main__":
         signal.signal(signal.SIGQUIT, handle_term)
         main()
     except:
-        machine.set_all_pwm(boost)
+        machine.set_all_pwm(transitional)
         (etype, e) = sys.exc_info()[:2]
         warn("failed, exception: " + str(etype))
         traceback.print_exc()

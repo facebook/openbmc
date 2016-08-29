@@ -45,8 +45,8 @@
     "linear_cpu_margin": {
       "type": "linear",
       "data": [
-        [ -5, 0 ],
-        [ -4, 70 ]
+        [ -6, 0 ],
+        [ -5, 70 ]
       ]
     },
     "pid_cpu_margin": {

@@ -24,12 +24,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/errno.h>
 
 #include <openbmc/log.h>
+
+#define MAX_PINS 64
 
 void gpio_init_default(gpio_st *g) {
   g->gs_gpio = -1;
@@ -104,4 +107,166 @@ int gpio_change_direction(gpio_st *g, gpio_direction_en dir)
     close(fd);
   }
   return -rc;
+}
+
+int gpio_change_edge(gpio_st *g, gpio_edge_en edge)
+{
+  char buf[128] = {0};
+  char str[16] = {0};
+  char *val;
+  int fd = -1;
+  int rc = 0;
+
+  snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/edge", g->gs_gpio);
+  fd = open(buf, O_WRONLY);
+  if (fd == -1) {
+    rc = errno;
+    LOG_ERR(rc, "Failed to open %s", buf);
+    return -rc;
+  }
+
+  switch(edge) {
+  case GPIO_EDGE_NONE:
+    snprintf(str, sizeof(str), "none");
+    break;
+  case GPIO_EDGE_RISING:
+    snprintf(str, sizeof(str), "rising");
+    break;
+  case GPIO_EDGE_FALLING:
+    snprintf(str, sizeof(str), "falling");
+    break;
+  case GPIO_EDGE_BOTH:
+    snprintf(str, sizeof(str), "both");
+    break;
+  default:
+    LOG_ERR(rc, "gpio_change_edge: Wrong Option %d", edge);
+    goto edge_exit;
+  }
+
+  write(fd, str, strlen(str) + 1);
+
+edge_exit:
+  close(fd);
+  return rc;
+}
+
+int gpio_export(int gpio)
+{
+  char buf[128] = {0};
+  char *val;
+  int fd = -1;
+  int rc = 0;
+  int len;
+
+  snprintf(buf, sizeof(buf), "/sys/class/gpio/export");
+  fd = open(buf, O_WRONLY);
+  if (fd == -1) {
+    rc = errno;
+    LOG_ERR(rc, "Failed to open %s", buf);
+    return -rc;
+  }
+
+  len = snprintf(buf, sizeof(buf), "%d", gpio);
+  write(fd, buf, len);
+  close(fd);
+
+  return rc;
+}
+
+int gpio_unexport(int gpio)
+{
+  char buf[128] = {0};
+  char *val;
+  int fd = -1;
+  int rc = 0;
+  int len;
+
+  snprintf(buf, sizeof(buf), "/sys/class/gpio/unexport");
+  fd = open(buf, O_WRONLY);
+  if (fd == -1) {
+    rc = errno;
+    LOG_ERR(rc, "Failed to open %s", buf);
+    return -rc;
+  }
+
+  len =  snprintf(buf, sizeof(buf), "%d", gpio);
+  write(fd, buf, len);
+  close(fd);
+
+  return rc;
+}
+
+int gpio_poll_open(gpio_poll_st *gpios, int count)
+{
+  int i = 0;
+  int rc = 0;
+
+  for ( i = 0; i < count; i++) {
+    gpio_export(gpios[i].gs.gs_gpio);
+    if (gpio_open(&gpios[i].gs, gpios[i].gs.gs_gpio)) {
+        rc = errno;
+        LOG_ERR(rc, "gpio_open for %d failed!", gpios[i].gs.gs_gpio);
+        continue;
+     }
+     gpio_change_direction(&gpios[i].gs,  GPIO_DIRECTION_IN);
+     gpio_change_edge(&gpios[i].gs, GPIO_EDGE_BOTH);
+  }
+}
+
+int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
+{
+  struct pollfd fdset[MAX_PINS];
+  int nfds = MAX_PINS;
+  int rc;
+  int len;
+  int i;
+
+  if (count > MAX_PINS) {
+    return -EINVAL;
+  }
+
+  while (1) {
+    memset((void *)fdset, 0, sizeof(fdset));
+
+    for (i = 0; i < count; i++) {
+      fdset[i].fd = gpios[i].gs.gs_fd;
+      fdset[i].events = POLLPRI;
+      gpios[i].value = gpio_read(&gpios[i].gs);
+    }
+
+    rc = poll(fdset, nfds, timeout);
+    if (rc < 0) {
+      if (errno == EINTR) {
+        continue;
+      } else {
+        rc = errno;
+        LOG_ERR(rc, "gpio_poll: poll() fails\n");
+        return -rc;
+      }
+    }
+
+    if (rc == 0) {
+      return rc;
+    }
+
+    for (i = 0; i < count; i++) {
+      if (fdset[i].revents & POLLPRI) {
+        gpios[i].value = gpio_read(&gpios[i].gs);
+        gpios[i].fp(&gpios[i]);
+      }
+    }
+  }
+
+  return 0;
+}
+
+int gpio_poll_close(gpio_poll_st *gpios, int count)
+{
+  int i = 0;
+
+  for ( i = 0; i < count; i++) {
+    gpio_change_edge(&gpios[i].gs, GPIO_EDGE_NONE);
+    gpio_unexport(gpios[i].gs.gs_gpio);
+    gpio_close(&gpios[i].gs);
+  }
 }

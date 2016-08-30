@@ -97,6 +97,7 @@ static gpio_poll_st g_gpios_off[] = {
 // GPIO table to be monitored when MB is ON
 static gpio_poll_st g_gpios[] = {
   // {{gpio, fd}, gpioValue, call-back function, GPIO description}
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOB0 - PWRGD_PCH_PWROK" },
   {{0, 0}, 0, gpio_event_handle, "GPIOB6 - PWRGD_SYS_PWROK" },
   {{0, 0}, 0, gpio_event_handle_power, "GPIOB7 - IRQ_PVDDQ_GHJ_VRHOT_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOD2 - FM_SOL_UART_CH_SEL"},
@@ -106,8 +107,8 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle, "GPIOE0 - RST_SYSTEM_BTN_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOE2 - FM_PWR_BTN_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOE4 - FP_NMI_BTN_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOE6 - FM_CPU0_PROCHOT_LVT3_ BMC_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOE7 - FM_CPU1_PROCHOT_LVT3_ BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOE6 - FM_CPU0_PROCHOT_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOE7 - FM_CPU1_PROCHOT_LVT3_BMC_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOF0 - IRQ_PVDDQ_ABC_VRHOT_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOF2 - IRQ_PVCCIN_CPU0_VRHOT_LVC3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOF3 - IRQ_PVCCIN_CPU1_VRHOT_LVC3_N"},
@@ -115,6 +116,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOG0 - FM_CPU_ERR2_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOG1 - FM_CPU_CATERR_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOG2 - FM_PCH_BMC_THERMTRIP_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOG3 - FM_CPU0_SKTOCC_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOI0 - FM_CPU0_FIVR_FAULT_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOI1 - FM_CPU1_FIVR_FAULT_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOL0 - IRQ_UV_DETECT_N"},
@@ -125,11 +127,15 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOS0 - FM_THROTTLE_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOX4 - H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOX5 - H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOX6 - H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOX7 - H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOY0 - FM_SLPS3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOY1 - FM_SLPS4_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOZ2 - IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOAA0 - FM_CPU1_SKTOCC_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOAB0 - IRQ_HSC_FAULT_N"},
 };
 
@@ -153,6 +159,7 @@ gpio_init_off(void) {
 static void
 gpio_init(void) {
   int i = 0;
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB6");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB7");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD2");
@@ -171,6 +178,7 @@ gpio_init(void) {
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG1");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG2");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG3");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOI0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOI1");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL0");
@@ -181,11 +189,15 @@ gpio_init(void) {
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM4");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM5");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOQ6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOS0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX4");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX5");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOY0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOY1");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX7");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOZ2");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAA0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAB0");
 }
 

@@ -308,7 +308,8 @@ static void
 init_board_sensors(void) {
   pal_get_board_rev_id(&g_board_rev_id);
 
-  if (g_board_rev_id == BOARD_REV_EVT) {
+  if (g_board_rev_id == BOARD_REV_POWERON ||
+      g_board_rev_id == BOARD_REV_EVT ) {
     g_vr_cpu0_vddq_abc = VR_CPU0_VDDQ_ABC_EVT;
     g_vr_cpu0_vddq_def = VR_CPU0_VDDQ_DEF_EVT;
     g_vr_cpu1_vddq_ghj = VR_CPU1_VDDQ_GHJ_EVT;

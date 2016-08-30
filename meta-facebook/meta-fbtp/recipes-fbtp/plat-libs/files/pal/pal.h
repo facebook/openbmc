@@ -261,6 +261,7 @@ enum {
 };
 
 enum {
+  BOARD_REV_POWERON,
   BOARD_REV_EVT,
   BOARD_REV_DVT,
   BOARD_REV_PVT,

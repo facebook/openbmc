@@ -1533,6 +1533,9 @@ server_power_reset(void) {
 
   sprintf(vpath, GPIO_VAL, GPIO_POWER_RESET);
 
+  system("killall gpiod");
+  system("/usr/bin/sv stop fscd >> /dev/null");
+
   if (write_device(vpath, "1")) {
     return -1;
   }
@@ -1548,6 +1551,9 @@ server_power_reset(void) {
   if (write_device(vpath, "1")) {
     return -1;
   }
+
+  system("/usr/bin/sv restart fscd >> /dev/null");
+  system("/usr/local/bin/gpiod >> /dev/null");
 
   return 0;
 }

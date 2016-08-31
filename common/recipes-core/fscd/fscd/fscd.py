@@ -292,7 +292,6 @@ def main():
 
         time.sleep(interval)
         if fanpower:
-            pwr_status = True
             status = machine.read_power()
             if status == 0:
                 pwr_status = False

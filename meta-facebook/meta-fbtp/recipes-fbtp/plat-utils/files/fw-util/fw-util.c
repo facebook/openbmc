@@ -30,11 +30,37 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/cpld.h>
 
+static uint8_t g_board_rev_id = BOARD_REV_EVT;
+static uint8_t g_vr_cpu0_vddq_abc;
+static uint8_t g_vr_cpu0_vddq_def;
+static uint8_t g_vr_cpu1_vddq_ghj;
+static uint8_t g_vr_cpu1_vddq_klm;
+
 static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|mb|nic> <--version>\n");
   printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic> <path>\n");
 }
+
+
+static void
+init_board_sensors(void) {
+  pal_get_board_rev_id(&g_board_rev_id);
+
+  if (g_board_rev_id == BOARD_REV_POWERON ||
+      g_board_rev_id == BOARD_REV_EVT ) {
+    g_vr_cpu0_vddq_abc = VR_CPU0_VDDQ_ABC_EVT;
+    g_vr_cpu0_vddq_def = VR_CPU0_VDDQ_DEF_EVT;
+    g_vr_cpu1_vddq_ghj = VR_CPU1_VDDQ_GHJ_EVT;
+    g_vr_cpu1_vddq_klm = VR_CPU1_VDDQ_KLM_EVT;
+  } else {
+    g_vr_cpu0_vddq_abc = VR_CPU0_VDDQ_ABC;
+    g_vr_cpu0_vddq_def = VR_CPU0_VDDQ_DEF;
+    g_vr_cpu1_vddq_ghj = VR_CPU1_VDDQ_GHJ;
+    g_vr_cpu1_vddq_klm = VR_CPU1_VDDQ_KLM;
+  }
+}
+
 
 // TODO: Need to confirm the interpretation of firmware version for print
 // Right now using decimal to print the versions
@@ -48,6 +74,8 @@ print_fw_ver(uint8_t fru_id) {
     printf("Not Supported Operation\n");
     return;
   }
+
+  init_board_sensors();
 
   // Print ME Version
   if (me_get_fw_ver(ver)){
@@ -144,37 +172,37 @@ print_fw_ver(uint8_t fru_id) {
     printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
   }
 
-  if (pal_get_vr_ver(VR_CPU0_VDDQ_ABC, ver)) {
+  if (pal_get_vr_ver(g_vr_cpu0_vddq_abc, ver)) {
     printf("VR_CPU0_VDDQ_ABC Version: NA");
   } else {
     printf("VR_CPU0_VDDQ_ABC Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_checksum(VR_CPU0_VDDQ_ABC, ver)) {
+  if (pal_get_vr_checksum(g_vr_cpu0_vddq_abc, ver)) {
     printf(", Checksum: NA");
   } else {
     printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_deviceId(VR_CPU0_VDDQ_ABC, ver)) {
+  if (pal_get_vr_deviceId(g_vr_cpu0_vddq_abc, ver)) {
     printf(", DeviceID: NA\n");
   } else {
     printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
   }
 
-  if (pal_get_vr_ver(VR_CPU0_VDDQ_DEF, ver)) {
+  if (pal_get_vr_ver(g_vr_cpu0_vddq_def, ver)) {
     printf("VR_CPU0_VDDQ_DEF Version: NA");
   } else {
     printf("VR_CPU0_VDDQ_DEF Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_checksum(VR_CPU0_VDDQ_DEF, ver)) {
+  if (pal_get_vr_checksum(g_vr_cpu0_vddq_def, ver)) {
     printf(", Checksum: NA");
   } else {
     printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_deviceId(VR_CPU0_VDDQ_DEF, ver)) {
+  if (pal_get_vr_deviceId(g_vr_cpu0_vddq_def, ver)) {
     printf(", DeviceID: NA\n");
   } else {
     printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
@@ -216,37 +244,37 @@ print_fw_ver(uint8_t fru_id) {
     printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
   }
 
-  if (pal_get_vr_ver(VR_CPU1_VDDQ_GHJ, ver)) {
+  if (pal_get_vr_ver(g_vr_cpu1_vddq_ghj, ver)) {
     printf("VR_CPU1_VDDQ_GHJ Version: NA");
   } else {
     printf("VR_CPU1_VDDQ_GHJ Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_checksum(VR_CPU1_VDDQ_GHJ, ver)) {
+  if (pal_get_vr_checksum(g_vr_cpu1_vddq_ghj, ver)) {
     printf(", Checksum: NA");
   } else {
     printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_deviceId(VR_CPU1_VDDQ_GHJ, ver)) {
+  if (pal_get_vr_deviceId(g_vr_cpu1_vddq_ghj, ver)) {
     printf(", DeviceID: NA\n");
   } else {
     printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
   }
 
-  if (pal_get_vr_ver(VR_CPU1_VDDQ_KLM, ver)) {
+  if (pal_get_vr_ver(g_vr_cpu1_vddq_klm, ver)) {
     printf("VR_CPU1_VDDQ_KLM Version: NA");
   } else {
     printf("VR_CPU1_VDDQ_KLM Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_checksum(VR_CPU1_VDDQ_KLM, ver)) {
+  if (pal_get_vr_checksum(g_vr_cpu1_vddq_klm, ver)) {
     printf(", Checksum: NA");
   } else {
     printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
   }
 
-  if (pal_get_vr_deviceId(VR_CPU1_VDDQ_KLM, ver)) {
+  if (pal_get_vr_deviceId(g_vr_cpu1_vddq_klm, ver)) {
     printf(", DeviceID: NA\n");
   } else {
     printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);

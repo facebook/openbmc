@@ -220,7 +220,7 @@ main(int argc, void **argv) {
     syslog(LOG_INFO, "gpiod: daemon started");
 
     // Wait until the GPIO signal settle down
-    sleep(30);
+    sleep(60);
 
     // Check power status and start monitoring different set of GPIOs
     pal_get_server_power(1, &status);

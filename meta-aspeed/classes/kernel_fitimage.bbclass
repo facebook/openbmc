@@ -18,6 +18,7 @@ UBOOT_RAMDISK_LOADADDRESS ?= "0x80800000"
 #   For kernel and rootfs: 16384
 #   For kernel only: 2690
 FLASH_SIZE ?= "16384"
+ROM_SIZE ?= "1024"
 FLASH_UBOOT_OFFSET ?= "0"
 FLASH_FIT_OFFSET ?= "512"
 
@@ -29,6 +30,15 @@ FIT_DESTINATION_LINK ?= "fit-${MACHINE}.itb"
 FLASH_IMAGE ?= "flash-${MACHINE}-${DATETIME}"
 FLASH_IMAGE_LINK ?= "flash-${MACHINE}"
 
+# ROM-based boot variables
+UBOOT_SPL_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-spl-${MACHINE}"
+UBOOT_FIT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-fit-${MACHINE}-${DATETIME}.its"
+UBOOT_FIT_SOURCE_LINK ?= "u-boot-fit-${MACHINE}.its"
+UBOOT_FIT_DESTINATION ?= "${DEPLOY_DIR_IMAGE}/u-boot-fit-${MACHINE}-${DATETIME}.itb"
+UBOOT_FIT_DESTINATION_LINK ?= "u-boot-fit-${MACHINE}.itb"
+ROM_IMAGE ?= "rom-${MACHINE}-${DATETIME}"
+ROM_IMAGE_LINK ?= "rom-${MACHINE}"
+
 IMAGE_PREPROCESS_COMMAND += " generate_data_mount_dir ; "
 IMAGE_POSTPROCESS_COMMAND += " flash_image_generate ; "
 
@@ -38,7 +48,7 @@ generate_data_mount_dir() {
 
 flash_image_generate() {
     BOOT_FILE="${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}"
-    FLASH_DESINTATION="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE}"
+    FLASH_DESTINATION="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE}"
 
     if [ ! -f $UBOOT_SOURCE ]; then
         echo "U-boot file ${UBOOT_SOURCE} does not exist"
@@ -50,15 +60,31 @@ flash_image_generate() {
         return 1
     fi
 
-    rm -rf $FLASH_DESINTATION
-    echo "dd if=/dev/zero of=${FLASH_DESINTATION} bs=1k count=${FLASH_SIZE}"
-    dd if=/dev/zero of=${FLASH_DESINTATION} bs=1k count=${FLASH_SIZE}
+    rm -rf $FLASH_DESTINATION
+    dd if=/dev/zero of=${FLASH_DESTINATION} bs=1k count=${FLASH_SIZE}
 
-    echo "dd if=${UBOOT_SOURCE} of=${FLASH_DESINTATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc"
-    dd if=${UBOOT_SOURCE} of=${FLASH_DESINTATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
+    if [ "x${ROM_BOOT}" != "x" ] ; then
+        # Write an intermediate FIT containing only U-Boot.
+        dd if=${UBOOT_FIT_DESTINATION} of=${FLASH_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
 
-    echo "dd if=${FIT_DESTINATION} of=${FLASH_DESINTATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc"
-    dd if=${FIT_DESTINATION} of=${FLASH_DESINTATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc
+        ln -sf ${UBOOT_FIT_SOURCE} ${UBOOT_FIT_SOURCE_LINK}
+        ln -sf ${UBOOT_FIT_DESTINATION} ${UBOOT_FIT_DESTINATION_LINK}
+    else
+        # Write U-Boot directly to the start of the flash.
+        dd if=${UBOOT_SOURCE} of=${FLASH_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
+    fi
+
+    dd if=${FIT_DESTINATION} of=${FLASH_DESTINATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc
+
+    if [ "x${ROM_BOOT}" != "x" ] ; then
+      ROM_DESTINATION="${DEPLOY_DIR_IMAGE}/${ROM_IMAGE}"
+      dd if=/dev/zero of=${ROM_DESTINATION} bs=1k count=${ROM_SIZE}
+
+      dd if=${UBOOT_SPL_SOURCE} of=${ROM_DESTINATION} bs=1k seek=0 conv=notrunc
+
+      DESTINATION_ROM_LINK="${DEPLOY_DIR_IMAGE}/${ROM_IMAGE_LINK}"
+      ln -sf ${ROM_IMAGE} ${DESTINATION_ROM_LINK}
+    fi
 
     DESTINATION_LINK="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}"
     ln -sf ${FLASH_IMAGE} ${DESTINATION_LINK}
@@ -67,6 +93,25 @@ flash_image_generate() {
 }
 
 oe_mkimage() {
+    if [ "x${ROM_BOOT}" != "x" ] ; then
+      rm -f ${UBOOT_FIT_SOURCE}
+      fitimage_emit_fit_header ${UBOOT_FIT_SOURCE}
+
+      # Step 1: Prepare a firmware image section
+      fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} imagestart
+      fitimage_emit_section_firmware ${UBOOT_FIT_SOURCE} 1 "${UBOOT_SOURCE}" \
+          "0x28008000" "0x28008000"
+      fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} sectend
+
+      # Step 2: Prepare a configurations section
+      fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} confstart
+      fitimage_emit_section_firmware_config ${UBOOT_FIT_SOURCE} 1
+      fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} sectend
+      fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} fitend
+
+      mkimage -f ${UBOOT_FIT_SOURCE} -E -p 0x8000 ${UBOOT_FIT_DESTINATION}
+    fi
+
     KERNEL_FILE="${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}"
     RAMDISK_FILE="${DEPLOY_DIR_IMAGE}/$1"
 

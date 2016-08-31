@@ -12,7 +12,8 @@
 # VERIFIED_BOOT_KEYS ??= "keys"
 # VERIFIED_BOOT_KEYNAME ?= "dev"
 #
-IMAGE_FEATURES[validitems] += " verified-boot verified-boot-sign "
+IMAGE_FEATURES[validitems] += "rom-boot verified-boot verified-boot-sign"
+ROM_BOOT = '${@bb.utils.contains("IMAGE_FEATURES", "rom-boot", "True", "", d)}'
 VERIFIED_BOOT = '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "True", "", d)}'
 VERIFIED_BOOT_SIGN = '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot-sign", "True", "", d)}'
 VERIFIED_BOOT_KEYS ??= '${@os.getenv("PWD", "/tmp")}/conf/keys'
@@ -21,12 +22,12 @@ VERIFIED_BOOT_KEYNAME ??= "dev"
 CERTIFICATE_STORE ?= "${DEPLOY_DIR_IMAGE}/certificate-store-${DATETIME}.dtb"
 CERTIFICATE_STORE_LINK ?= "${DEPLOY_DIR_IMAGE}/certificate-store.dtb"
 
-# Append OEMAKE flags for u-boot.
+# When verified-boot is used, build with signature information.
 # These Kbuild options tell u-boot to expect an 'embedded' DTB, we use this
 # to inject signing public keys into the u-boot firmware.
-EXTRA_OEMAKE_append_pn-u-boot = ' CONFIG_OF_EMBED=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "y", "", d)} '
-EXTRA_OEMAKE_append_pn-u-boot += ' CONFIG_OF_CONTROL=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "y", "", d)} '
-EXTRA_OEMAKE_append_pn-u-boot += ' EXT_DTB=${CERTIFICATE_STORE} '
+EXTRA_OEMAKE_append_pn-u-boot += 'CONFIG_OF_EMBED=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "y", "", d)}'
+EXTRA_OEMAKE_append_pn-u-boot += 'CONFIG_OF_CONTROL=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "y", "", d)}'
+EXTRA_OEMAKE_append_pn-u-boot += 'EXT_DTB=${CERTIFICATE_STORE}'
 
 # Use a placebo FIT for extracted public keys.
 VERIFIED_BOOT_PLACEBO ?= "placebo.its"
@@ -76,6 +77,39 @@ EOF
 EOF
     ;;
     esac
+}
+
+#
+# Emit the fitImage ITS firmware section
+#
+# $1 - FIT source
+# $2 - Image counter
+# $3 - Path to U-Boot image
+# $4 - Load address
+# $5 - Entry point
+fitimage_emit_section_firmware() {
+    HASH_ALGORITHM="sha1"
+    SOURCE=$1
+    IMAGE_COUNTER=$2
+    IMAGE_FIRMWARE=$3
+    LOAD_ADDRESS=$4
+    ENTRY_POINT=$5
+
+    cat << EOF >> ${SOURCE}
+        firmware@${IMAGE_COUNTER} {
+            description = "u-boot";
+            data = /incbin/("${IMAGE_FIRMWARE}");
+            type = "firmware";
+            arch = "${UBOOT_ARCH}";
+            os = "u-boot";
+            compression = "none";
+            load = <${LOAD_ADDRESS}>;
+            entry = <${ENTRY_POINT}>;
+            hash@1 {
+                algo = "${HASH_ALGORITHM}";
+            };
+        };
+EOF
 }
 
 #
@@ -139,6 +173,35 @@ fitimage_emit_section_ramdisk() {
             load = <${LOAD_ADDRESS}>;
             hash@1 {
                 algo = "${HASH_ALGORITHM}";
+            };
+        };
+EOF
+}
+
+#
+# Emit the fitImage ITS firmware configuration section
+#
+# $1 - FIT source
+# $2 - Firmware ID
+fitimage_emit_section_firmware_config() {
+    SOURCE=$1
+    conf_csum="sha1"
+    conf_desc="Boot U-Boot"
+
+    firmware_line="firmware = \"firmware@${2}\";"
+
+    cat << EOF >> ${SOURCE}
+        default = "conf@1";
+        conf@1 {
+            description = "${conf_desc}";
+            ${firmware_line}
+            hash@1 {
+                algo = "${conf_csum}";
+            };
+            signature@1 {
+                algo = "sha1,rsa2048";
+                key-name-hint = "${VERIFIED_BOOT_KEYNAME}";
+                sign-images = "kernel", "ramdisk";
             };
         };
 EOF

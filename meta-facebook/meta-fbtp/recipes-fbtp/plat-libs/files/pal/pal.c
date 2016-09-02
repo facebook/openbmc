@@ -985,13 +985,24 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
       }
     }
   } else {
-    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-    sprintf(str, "%.2f", tjmax_cpu0);
-    edb_cache_set(key, str);
-
-    sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-    sprintf(str, "%.2f", tjmax_cpu1);
-    edb_cache_set(key, str);
+    if ( tjmax_cpu0 != 0) {
+      sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
+      sprintf(str, "%.2f", tjmax_cpu0);
+      edb_cache_set(key, str);
+    } else {
+      strcpy(str, "NA");
+      sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
+      edb_cache_set(key, str);
+    }
+    if (tjmax_cpu1 != 0) {
+      sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
+      sprintf(str, "%.2f", tjmax_cpu1);
+      edb_cache_set(key, str);
+    } else {
+      strcpy(str, "NA");
+      sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
+      edb_cache_set(key, str);
+     }
   }
 
   rlen = 0;
@@ -2315,7 +2326,15 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_CPU0_DIMM_DEF_TEMP:
       case MB_SENSOR_CPU1_DIMM_GHJ_TEMP:
       case MB_SENSOR_CPU1_DIMM_KLM_TEMP:
-        return 0;
+        sprintf(key, "mb_sensor%d", sensor_num);
+        edb_cache_get(key, str);
+        if (strcmp(str, "NA") != 0) {
+          *(float*)value = strtof (str, NULL);
+          ret = 0;
+        } else {
+          ret = READING_NA;
+        }
+        break;
       case MB_SENSOR_PCH_TEMP:
         ret = read_sensor_reading_from_ME(MB_SENSOR_PCH_TEMP, (float*) value);
         break;

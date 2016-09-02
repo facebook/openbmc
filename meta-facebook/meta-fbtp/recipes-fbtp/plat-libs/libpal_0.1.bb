@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += " libkv libedb plat-utils libipmi"
+DEPENDS += " libkv libedb plat-utils libipmi libipmb"
 
 S = "${WORKDIR}/pal"
 
@@ -25,4 +25,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
-RDEPENDS_${PN} += " libkv libedb" 
+RDEPENDS_${PN} += " libkv libedb"

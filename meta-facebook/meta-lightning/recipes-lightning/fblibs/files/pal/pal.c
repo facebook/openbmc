@@ -60,6 +60,7 @@
 #define PWM_UNIT_MAX 96
 
 const char pal_fru_list[] = "all, peb, pdpb, fcb";
+const char pal_fru_list_wo_all[] = "peb, pdpb, fcb";
 size_t pal_pwm_cnt = 1;
 size_t pal_tach_cnt = 12;
 const char pal_pwm_list[] = "0";
@@ -447,12 +448,72 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-  return lightning_sensor_read(fru, sensor_num, value);
+  
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_PEB:
+      sprintf(key, "peb_sensor%d", sensor_num);
+      break;
+    case FRU_PDPB:
+      sprintf(key, "pdpb_sensor%d", sensor_num);
+      break;
+    case FRU_FCB:
+      sprintf(key, "fcb_sensor%d", sensor_num);
+      break;
+  }
+  ret = edb_cache_get(key, str);
+  if(ret < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_sensor_read: cache_get %s failed.", key);
+#endif
+    return ret;
+  }
+  if(strcmp(str, "NA") == 0)
+    return -1;
+  *((float*)value) = atof(str);
+  return ret;
 }
 
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
-  return lightning_sensor_read(fru, sensor_num, value);
+  
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_PEB:
+      sprintf(key, "peb_sensor%d", sensor_num);
+      break;
+    case FRU_PDPB:
+      sprintf(key, "pdpb_sensor%d", sensor_num);
+      break;
+    case FRU_FCB:
+      sprintf(key, "fcb_sensor%d", sensor_num);
+      break;
+  }
+
+  ret = lightning_sensor_read(fru, sensor_num, value);
+  if(ret < 0) {
+    strcpy(str, "NA");
+  }
+  else {
+    // On successful sensor read
+    sprintf(str, "%.2f", *((float*)value));
+  }
+
+  if(edb_cache_set(key, str) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
+#endif
+    return -1;
+  }
+  else {
+    return ret;
+  }
 }
 
 int

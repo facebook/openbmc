@@ -165,7 +165,7 @@
 #define READING_NA -2
 
 #define NIC_MAX_TEMP 125
-#define PLAT_ID_SKU_MASK 0x80 // 0- Single Side, 1- Double Side
+#define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };

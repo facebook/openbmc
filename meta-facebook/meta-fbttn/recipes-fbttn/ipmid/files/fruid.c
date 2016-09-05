@@ -33,10 +33,11 @@
 #include <stdint.h>
 #include "fruid.h"
 
-#define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"
+#define EEPROM_IOM      "/sys/class/i2c-adapter/i2c-0/0-0050/eeprom"
 #define EEPROM_NIC      "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom"
 
-#define BIN_SPB         "/tmp/fruid_spb.bin"
+#define BIN_IOM         "/tmp/fruid_iom.bin"
+#define BIN_DPB         "/tmp/fruid_dpb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"
 #define BIN_SLOT        "/tmp/fruid_slot%d.bin"
 
@@ -102,7 +103,7 @@ int plat_fruid_init(void) {
 
   int ret;
 
-  ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
+  ret = copy_eeprom_to_bin(EEPROM_IOM, BIN_IOM);
   ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
 
   return ret;

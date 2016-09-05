@@ -111,19 +111,4 @@ if [ $(is_bmc_por) -eq 1 ]; then
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] ; then
     power-util slot1 on
   fi
-
-  #check_por_config 2
-  #if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 2) == "1" ] ; then
-    #power-util slot2 on
-  #fi
-
-  #check_por_config 3
-  #if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 3) == "1" ] ; then
-    #power-util slot3 on
-  #fi
-
-  #check_por_config 4
-  #if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 4) == "1" ] ; then
-    #power-util slot4 on
-  #fi
 fi

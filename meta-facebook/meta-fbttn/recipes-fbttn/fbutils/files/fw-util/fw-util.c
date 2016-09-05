@@ -31,8 +31,8 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fw-util <all|slot1|slot2|slot3|slot4> <--version>\n");
-  printf("       fw-util <all|slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
+  printf("Usage: fw-util <all|slot1> <--version>\n");
+  printf("       fw-util <all|slot1> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 }
 
 // TODO: Need to confirm the interpretation of firmware version for print
@@ -171,24 +171,18 @@ main(int argc, char **argv) {
   // Derive slot_id from first parameter
   if (!strcmp(argv[1], "slot1")) {
     slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id =2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id =3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id =4;
   } else if (!strcmp(argv[1] , "all")) {
-    slot_id =5;
+    slot_id =2;
   } else {
       goto err_exit;
   }
   // check operation to perform
   if (!strcmp(argv[2], "--version")) {
-     if (slot_id < 5) {
+     if (slot_id < 2) {
        print_fw_ver(slot_id);
        return 0;
      }
-     for (slot_id = 1; slot_id < 5; slot_id++) {
+     for (slot_id = 1; slot_id < 2; slot_id++) {
         printf("Get version info for slot%d\n", slot_id);
         print_fw_ver(slot_id);;
         printf("\n");
@@ -199,11 +193,11 @@ main(int argc, char **argv) {
     if (argc != 5) {
       goto err_exit;
     }
-    if (slot_id < 5) {
+    if (slot_id < 2) {
       return fw_update_slot(argv, slot_id);
     }
     printf("Updating all slots....\n");
-    for (slot_id = 1; slot_id < 5; slot_id++) {
+    for (slot_id = 1; slot_id < 2; slot_id++) {
        if (fw_update_slot(argv, slot_id)) {
          printf("fw_util:  updating %s on slot %d failed!\n", argv[3], slot_id);
          ret++;

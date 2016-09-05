@@ -116,26 +116,40 @@ enum {
   BIC_SENSOR_CAT_ERR = 0xEB, //Event-only
 };
 
-// Sensors Under Side Plane
-enum {
-  SP_SENSOR_INLET_TEMP = 0x81,
-  SP_SENSOR_OUTLET_TEMP = 0x80,
-  SP_SENSOR_MEZZ_TEMP = 0x82,
-  SP_SENSOR_FAN0_TACH = 0x46,
-  SP_SENSOR_FAN1_TACH = 0x47,
-  SP_SENSOR_AIR_FLOW = 0x4A,
-  SP_SENSOR_P5V = 0xE0,
-  SP_SENSOR_P12V = 0xE1,
-  SP_SENSOR_P3V3_STBY = 0xE2,
-  SP_SENSOR_P12V_SLOT1 = 0xE3,
-  SP_SENSOR_P12V_SLOT2 = 0xE4,
-  SP_SENSOR_P12V_SLOT3 = 0xE5,
-  SP_SENSOR_P12V_SLOT4 = 0xE6,
-  SP_SENSOR_P3V3 = 0xE7,
-  SP_SENSOR_HSC_IN_VOLT = 0xC0,
-  SP_SENSOR_HSC_OUT_CURR = 0xC1,
-  SP_SENSOR_HSC_TEMP = 0xC2,
-  SP_SENSOR_HSC_IN_POWER = 0xC3,
+enum{
+  IOM_SENSOR_INTEL_TEMP = 0x81,
+  IOM_SENSOR_HSC_POWER = 0x83,
+  IOM_SENSOR_HSC_VOLT = 0x84,
+  IOM_SENSOR_HSC_CURR = 0x85,
+  IOM_SENSOR_M2_1_TEMP = 0x86,
+  IOM_SENSOR_M2_2_TEMP = 0x87,
+  IOM_SENSOR_ADC_12V = 0x88,
+  IOM_SENSOR_ADC_P5V_STBY = 0x89,
+  IOM_SENSOR_ADC_P3V3_STBY = 0x8A,
+  IOM_SENSOR_ADC_P1V8_STBY = 0x8B,
+  IOM_SENSOR_ADC_P2V5_STBY = 0x8C,
+  IOM_SENSOR_ADC_P1V2_STBY = 0x8D,
+  IOM_SENSOR_ADC_P1V15_STBY = 0X8E,
+  IOM_SENSOR_ADC_P3V3 = 0x8F,
+  IOM_SENSOR_ADC_P1V8 = 0x90,
+  IOM_SENSOR_ADC_P1V5 = 0x91,
+  IOM_SENSOR_ADC_P0V975 = 0x92,
+  IOM_SENSOR_ADC_P3V3_M2 = 0x93,
+};
+
+enum{
+  DPB_SENSOR_12V_POWER_CLIP = 0x94,
+  DPB_SENSOR_P12V_CLIP = 0x95,
+  DPB_SENSOR_12V_CURR_CLIP = 0x96,
+  DPB_SENSOR_FAN0_FRONT = 0x97,
+  DPB_SENSOR_FAN1_FRONT = 0x98,
+  DPB_SENSOR_FAN2_FRONT = 0x99,
+  DPB_SENSOR_FAN3_FRONT = 0x9A,
+  DPB_SENSOR_FAN0_REAR = 0x9B,
+  DPB_SENSOR_FAN1_REAR = 0x9C,
+  DPB_SENSOR_FAN2_REAR = 0x9D,
+  DPB_SENSOR_FAN3_REAR = 0x9E,
+  DPB_SENSOR_FAN_STATUS = 0x0A, //Discrete
 };
 
 enum{
@@ -145,11 +159,13 @@ extern const uint8_t bic_sensor_list[];
 
 extern const uint8_t bic_discrete_list[];
 
-extern const uint8_t spb_sensor_list[];
+extern const uint8_t iom_sensor_list[];
+
+extern const uint8_t dpb_sensor_list[];
+
+extern const uint8_t dpb_discrete_list[];
 
 extern const uint8_t nic_sensor_list[];
-
-//extern float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
 
 //extern float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
 
@@ -157,7 +173,11 @@ extern size_t bic_sensor_cnt;
 
 extern size_t bic_discrete_cnt;
 
-extern size_t spb_sensor_cnt;
+extern size_t iom_sensor_cnt;
+
+extern size_t dpb_sensor_cnt;
+
+extern size_t dpb_discrete_cnt;
 
 extern size_t nic_sensor_cnt;
 

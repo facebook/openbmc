@@ -37,102 +37,183 @@ main(int argc, char **argv) {
 
   slot_id = atoi(argv[1]);
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_INLET_TEMP, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_INLET_TEMP\n");
+  // IOM Type VII sensors
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_INTEL_TEMP, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_INTEL_TEMP\n");
   } else {
-  	printf("SP_SENSOR_INLET_TEMP: %.2f C\n", fvalue);
+    printf("IOM_SENSOR_INTEL_TEMP: %.2f C\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_OUTLET_TEMP, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_OUTLET_TEMP\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_HSC_POWER, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_HSC_POWER\n");
   } else {
-  	printf("SP_SENSOR_OUTLET_TEMP: %.2f C\n", fvalue);
+    printf("IOM_SENSOR_HSC_POWER: %.2f Watts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_FAN0_TACH, &value)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_FAN0_TACH\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_HSC_VOLT, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_HSC_VOLT\n");
   } else {
-  	printf("SP_SENSOR_FAN0_TACH: %d rpm\n", value);
+    printf("IOM_SENSOR_HSC_VOLT: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_FAN1_TACH, &value)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_FAN1_TACH\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_HSC_CURR, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_HSC_CURR\n");
   } else {
-  	printf("SP_SENSOR_FAN1_TACH: %d rpm\n", value);
+    printf("IOM_SENSOR_HSC_CURR: %.2f Amps\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P5V, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P5V\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_M2_1_TEMP, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_M2_1_TEMP\n");
   } else {
-  	printf("SP_SENSOR_P5V: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_M2_1_TEMP: %.2f C\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P12V, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P12V\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_M2_2_TEMP, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_M2_2_TEMP\n");
   } else {
-  	printf("SP_SENSOR_P12V: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_M2_2_TEMP: %.2f C\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P3V3_STBY, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P3V3_STBY\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_12V, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_12V\n");
   } else {
-  	printf("SP_SENSOR_P3V3_STBY: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_ADC_12V: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P12V_SLOT1, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P12V_SLOT1\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P5V_STBY, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P5V_STBY\n");
   } else {
-  	printf("SP_SENSOR_P12V_SLOT1: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_ADC_P5V_STBY: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P12V_SLOT2, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P12V_SLOT2\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P3V3_STBY, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P3V3_STBY\n");
   } else {
-  	printf("SP_SENSOR_P12V_SLOT2: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_ADC_P3V3_STBY: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P12V_SLOT3, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P12V_SLOT3\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P1V8_STBY, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P1V8_STBY\n");
   } else {
-  	printf("SP_SENSOR_P12V_SLOT3: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_ADC_P1V8_STBY: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P12V_SLOT4, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P12V_SLOT4\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P2V5_STBY, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P2V5_STBY\n");
   } else {
-  	printf("SP_SENSOR_P12V_SLOT4: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_ADC_P2V5_STBY: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_P3V3, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_P3V3\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P1V2_STBY, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P1V2_STBY\n");
   } else {
-  	printf("SP_SENSOR_P3V3: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_ADC_P1V2_STBY: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_HSC_IN_VOLT, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_HSC_IN_VOLT\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P1V15_STBY, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P1V15_STBY\n");
   } else {
-  	printf("SP_SENSOR_HSC_IN_VOLT: %.2f Volts\n", fvalue);
+    printf("IOM_SENSOR_ADC_P1V15_STBY: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_HSC_OUT_CURR, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_HSC_OUT_CURR\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P3V3, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P3V3\n");
   } else {
-  	printf("SP_SENSOR_HSC_OUT_CURR: %.2f Amps\n", fvalue);
+    printf("IOM_SENSOR_ADC_P3V3: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_HSC_TEMP, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_HSC_TEMP\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P1V8, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P1V8\n");
   } else {
-  	printf("SP_SENSOR_P3V3: %.2f C\n", fvalue);
+    printf("IOM_SENSOR_ADC_P1V8: %.2f Volts\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, SP_SENSOR_HSC_IN_POWER, &fvalue)) {
-    printf("fbttn_sensor_read failed: SP_SENSOR_HSC_IN_POWER\n");
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P1V5, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P1V5\n");
   } else {
-  	printf("SP_SENSOR_HSC_IN_POWER: %.2f Watts\n", fvalue);
+    printf("IOM_SENSOR_ADC_P1V5v: %.2f Volts\n", fvalue);
   }
 
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_P0V975, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P0V975\n");
+  } else {
+    printf("IOM_SENSOR_ADC_P0V975: %.2f Volts\n", fvalue);
+  }
+
+  // DPB sensors
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_12V_POWER_CLIP, &fvalue)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_12V_POWER_CLIP\n");
+  } else {
+    printf("DPB_SENSOR_12V_POWER_CLIP: %.2f Watts\n", fvalue);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_P12V_CLIP, &fvalue)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_P12V_CLIPv\n");
+  } else {
+    printf("DPB_SENSOR_P12V_CLIP: %.2f Volts\n", fvalue);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_12V_CURR_CLIP, &fvalue)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_12V_CURR_CLIP\n");
+  } else {
+    printf("DPB_SENSOR_12V_CURR_CLIP: %.2f Amps\n", fvalue);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN0_FRONT, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN0_FRONT\n");
+  } else {
+    printf("DPB_SENSOR_FAN0_FRONT: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN1_FRONT, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN1_FRONT\n");
+  } else {
+    printf("DPB_SENSOR_FAN1_FRONT: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN2_FRONT, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN2_FRONT\n");
+  } else {
+    printf("DPB_SENSOR_FAN2_FRONT: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN3_FRONT, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN3_FRONT\n");
+  } else {
+    printf("DPB_SENSOR_FAN3_FRONT: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN0_REAR, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN0_REAR\n");
+  } else {
+    printf("DPB_SENSOR_FAN0_REAR: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN1_REAR, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN1_REAR\n");
+  } else {
+    printf("DPB_SENSOR_FAN1_REAR: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN2_REAR, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN2_REAR\n");
+  } else {
+    printf("DPB_SENSOR_FAN2_REAR: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN3_REAR, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN3_REAR\n");
+  } else {
+    printf("DPB_SENSOR_FAN3_REAR: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN_STATUS, &fvalue)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN_STATUS\n");
+  } else {
+    printf("DPB_SENSOR_FAN_STATUS: 0x%X\n", value);
+  }
+
+  // BIC sensors
   if (fbttn_sensor_read(slot_id, BIC_SENSOR_MB_OUTLET_TEMP, &fvalue)) {
     printf("fbttn_sensor_read failed: BIC_SENSOR_MB_OUTLET_TEMP\n");
   } else {

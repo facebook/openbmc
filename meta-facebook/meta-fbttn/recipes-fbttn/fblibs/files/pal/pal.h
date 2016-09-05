@@ -46,7 +46,7 @@ extern "C" {
 #define CLEARBIT(x, y)      (x & (~(1 << y)))
 #define GETMASK(y)          (1 << y)
 
-#define MAX_NODES 4
+#define MAX_NODES 1
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
@@ -78,9 +78,6 @@ enum {
 
 enum {
   HAND_SW_SERVER1 = 1,
-  HAND_SW_SERVER2,
-  HAND_SW_SERVER3,
-  HAND_SW_SERVER4,
   HAND_SW_BMC
 };
 

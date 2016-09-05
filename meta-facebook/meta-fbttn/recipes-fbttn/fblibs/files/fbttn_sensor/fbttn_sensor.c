@@ -122,26 +122,47 @@ const uint8_t bic_discrete_list[] = {
   BIC_SENSOR_CPU_DIMM_HOT,
 };
 
-// List of SPB sensors to be monitored
-const uint8_t spb_sensor_list[] = {
-  SP_SENSOR_INLET_TEMP,
-  SP_SENSOR_OUTLET_TEMP,
-  //SP_SENSOR_MEZZ_TEMP
-  SP_SENSOR_FAN0_TACH,
-  SP_SENSOR_FAN1_TACH,
-  //SP_SENSOR_AIR_FLOW,
-  SP_SENSOR_P5V,
-  SP_SENSOR_P12V,
-  SP_SENSOR_P3V3_STBY,
-  SP_SENSOR_P12V_SLOT1,
-  SP_SENSOR_P12V_SLOT2,
-  SP_SENSOR_P12V_SLOT3,
-  SP_SENSOR_P12V_SLOT4,
-  SP_SENSOR_P3V3,
-  SP_SENSOR_HSC_IN_VOLT,
-  SP_SENSOR_HSC_OUT_CURR,
-  SP_SENSOR_HSC_TEMP,
-  SP_SENSOR_HSC_IN_POWER,
+// List of IOM Type VII sensors to be monitored
+const uint8_t iom_sensor_list[] = {
+  /* Threshold sensors */
+  IOM_SENSOR_INTEL_TEMP,
+  IOM_SENSOR_HSC_POWER,
+  IOM_SENSOR_HSC_VOLT,
+  IOM_SENSOR_HSC_CURR,
+  IOM_SENSOR_M2_1_TEMP,
+  IOM_SENSOR_M2_2_TEMP,
+  IOM_SENSOR_ADC_12V,
+  IOM_SENSOR_ADC_P5V_STBY,
+  IOM_SENSOR_ADC_P3V3_STBY,
+  IOM_SENSOR_ADC_P1V8_STBY,
+  IOM_SENSOR_ADC_P2V5_STBY,
+  IOM_SENSOR_ADC_P1V2_STBY,
+  IOM_SENSOR_ADC_P1V15_STBY,
+  IOM_SENSOR_ADC_P3V3,
+  IOM_SENSOR_ADC_P1V8,
+  IOM_SENSOR_ADC_P1V5,
+  IOM_SENSOR_ADC_P0V975,
+};
+
+// List of DPB sensors to be monitored
+const uint8_t dpb_sensor_list[] = {
+  /* Threshold sensors */
+  DPB_SENSOR_12V_POWER_CLIP,
+  DPB_SENSOR_P12V_CLIP,
+  DPB_SENSOR_12V_CURR_CLIP,
+  DPB_SENSOR_FAN0_FRONT,
+  DPB_SENSOR_FAN1_FRONT,
+  DPB_SENSOR_FAN2_FRONT,
+  DPB_SENSOR_FAN3_FRONT,
+  DPB_SENSOR_FAN0_REAR,
+  DPB_SENSOR_FAN1_REAR,
+  DPB_SENSOR_FAN2_REAR,
+  DPB_SENSOR_FAN3_REAR,
+};
+
+const uint8_t dpb_discrete_list[] = {
+  /* Discrete sensors */
+  DPB_SENSOR_FAN_STATUS,
 };
 
 // List of NIC sensors to be monitored
@@ -149,7 +170,8 @@ const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
 };
 
-float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float dpb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float iom_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 static void
@@ -158,35 +180,6 @@ sensor_thresh_array_init() {
 
   if (init_done)
     return;
-
-  spb_sensor_threshold[SP_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
-  spb_sensor_threshold[SP_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
-  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11000;
-  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11000;
-  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
-  //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
-  spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.493;
-  spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.501;
-  spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.216;
-  spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.269;
-  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.625;
-  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 2.973;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.216;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.269;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.216;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.269;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.216;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.269;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.216;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.269;
-  spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.625;
-  spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 2.973;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.2;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 10.8;
-  spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 47.705;
-  spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 525;
 
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
 
@@ -197,7 +190,11 @@ size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 
-size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
+size_t iom_sensor_cnt = sizeof(iom_sensor_list)/sizeof(uint8_t);
+
+size_t dpb_sensor_cnt = sizeof(dpb_sensor_list)/sizeof(uint8_t);
+
+size_t dpb_discrete_cnt = sizeof(dpb_discrete_list)/sizeof(uint8_t);
 
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 
@@ -443,17 +440,11 @@ switch(fru) {
   case FRU_SLOT1:
     sprintf(fru_name, "%s", "slot1");
     break;
-  case FRU_SLOT2:
-    sprintf(fru_name, "%s", "slot2");
+  case FRU_IOM:
+    sprintf(fru_name, "%s", "iom");
     break;
-  case FRU_SLOT3:
-    sprintf(fru_name, "%s", "slot3");
-    break;
-  case FRU_SLOT4:
-    sprintf(fru_name, "%s", "slot4");
-    break;
-  case FRU_SPB:
-    sprintf(fru_name, "%s", "spb");
+  case FRU_DPB:
+    sprintf(fru_name, "%s", "dpb");
     break;
   case FRU_NIC:
     sprintf(fru_name, "%s", "nic");
@@ -518,9 +509,6 @@ fbttn_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       if (fbttn_sensor_sdr_path(fru, path) < 0) {
 #ifdef DEBUG
         syslog(LOG_WARNING, "fbttn_sensor_sdr_init: get_fru_sdr_path failed\n");
@@ -535,7 +523,8 @@ fbttn_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
       }
       break;
 
-    case FRU_SPB:
+    case FRU_IOM:
+    case FRU_DPB:
     case FRU_NIC:
       return -1;
       break;
@@ -610,64 +599,109 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(units, "");
       break;
 
-    case FRU_SPB:
+    case FRU_IOM:
       switch(sensor_num) {
-        case SP_SENSOR_INLET_TEMP:
+        case IOM_SENSOR_INTEL_TEMP:
           sprintf(units, "C");
           break;
-        case SP_SENSOR_OUTLET_TEMP:
-          sprintf(units, "C");
+        case IOM_SENSOR_HSC_POWER:
+          sprintf(units, "Watts");
           break;
-        case SP_SENSOR_MEZZ_TEMP:
-          sprintf(units, "C");
-          break;
-        case SP_SENSOR_FAN0_TACH:
-          sprintf(units, "RPM");
-          break;
-        case SP_SENSOR_FAN1_TACH:
-          sprintf(units, "RPM");
-          break;
-        case SP_SENSOR_AIR_FLOW:
-          sprintf(units, "");
-          break;
-        case SP_SENSOR_P5V:
+        case IOM_SENSOR_HSC_VOLT:
           sprintf(units, "Volts");
           break;
-        case SP_SENSOR_P12V:
-          sprintf(units, "Volts");
-          break;
-        case SP_SENSOR_P3V3_STBY:
-          sprintf(units, "Volts");
-          break;
-        case SP_SENSOR_P12V_SLOT1:
-        case SP_SENSOR_P12V_SLOT2:
-        case SP_SENSOR_P12V_SLOT3:
-        case SP_SENSOR_P12V_SLOT4:
-          sprintf(units, "Volts");
-          break;
-        case SP_SENSOR_P3V3:
-          sprintf(units, "Volts");
-          break;
-        case SP_SENSOR_HSC_IN_VOLT:
-          sprintf(units, "Volts");
-          break;
-        case SP_SENSOR_HSC_OUT_CURR:
+        case IOM_SENSOR_HSC_CURR:
           sprintf(units, "Amps");
           break;
-        case SP_SENSOR_HSC_TEMP:
+        case IOM_SENSOR_M2_1_TEMP:
           sprintf(units, "C");
           break;
-        case SP_SENSOR_HSC_IN_POWER:
-          sprintf(units, "Watts");
+        case IOM_SENSOR_M2_2_TEMP:
+          sprintf(units, "C");
+          break;
+        case IOM_SENSOR_ADC_12V:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P5V_STBY:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P3V3_STBY:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P1V8_STBY:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P2V5_STBY:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P1V2_STBY:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P1V15_STBY:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P3V3:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P1V8:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P1V5:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P0V975:
+          sprintf(units, "Volts");
+          break;
+        case IOM_SENSOR_ADC_P3V3_M2:
+          sprintf(units, "Volts");
           break;
       }
       break;
+
+    case FRU_DPB:
+      switch(sensor_num) {
+        case DPB_SENSOR_12V_POWER_CLIP:
+          sprintf(units, "Watts");
+          break;
+        case DPB_SENSOR_P12V_CLIP:
+          sprintf(units, "Volts");
+          break;
+        case DPB_SENSOR_12V_CURR_CLIP:
+          sprintf(units, "Amps");
+          break;
+        case DPB_SENSOR_FAN0_FRONT:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN1_FRONT:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN2_FRONT:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN3_FRONT:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN0_REAR:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN1_REAR:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN2_REAR:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN3_REAR:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN_STATUS:
+          sprintf(units, "");
+          break;
+      }
+      break;
+
     case FRU_NIC:
       switch(sensor_num) {
         case MEZZ_SENSOR_TEMP:
@@ -686,12 +720,12 @@ fbttn_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *v
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       break;
-    case FRU_SPB:
-      *value = spb_sensor_threshold[sensor_num][thresh];
+    case FRU_IOM:
+      *value = iom_sensor_threshold[sensor_num][thresh];
+      break;
+    case FRU_DPB:
+      *value = dpb_sensor_threshold[sensor_num][thresh];
       break;
     case FRU_NIC:
       *value = nic_sensor_threshold[sensor_num][thresh];
@@ -706,9 +740,6 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(sensor_num) {
         case BIC_SENSOR_SYSTEM_STATUS:
           sprintf(name, "SYSTEM_STATUS");
@@ -731,64 +762,106 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       }
       break;
 
-    case FRU_SPB:
+    case FRU_IOM:
       switch(sensor_num) {
-        case SP_SENSOR_INLET_TEMP:
-          sprintf(name, "SP_INLET_TEMP");
+        case IOM_SENSOR_INTEL_TEMP:
+          sprintf(name, "IOM_INTEL_TEMP");
           break;
-        case SP_SENSOR_OUTLET_TEMP:
-          sprintf(name, "SP_OUTLET_TEMP");
+        case IOM_SENSOR_HSC_POWER:
+          sprintf(name, "IOM_HSC_POWER");
           break;
-        case SP_SENSOR_MEZZ_TEMP:
-          sprintf(name, "SP_MEZZ_TEMP");
+        case IOM_SENSOR_HSC_VOLT:
+          sprintf(name, "IOM_HSC_VOLT");
           break;
-        case SP_SENSOR_FAN0_TACH:
-          sprintf(name, "SP_FAN0_TACH");
+        case IOM_SENSOR_HSC_CURR:
+          sprintf(name, "IOM_HSC_CURR");
           break;
-        case SP_SENSOR_FAN1_TACH:
-          sprintf(name, "SP_FAN1_TACH");
+        case IOM_SENSOR_M2_1_TEMP:
+          sprintf(name, "M2_1_TEMP");
           break;
-        case SP_SENSOR_AIR_FLOW:
-          sprintf(name, "SP_AIR_FLOW");
+        case IOM_SENSOR_M2_2_TEMP:
+          sprintf(name, "M2_2_TEMP");
           break;
-        case SP_SENSOR_P5V:
-          sprintf(name, "SP_P5V");
+        case IOM_SENSOR_ADC_12V:
+          sprintf(name, "ADC_12V");
           break;
-        case SP_SENSOR_P12V:
-          sprintf(name, "SP_P12V");
+        case IOM_SENSOR_ADC_P5V_STBY:
+          sprintf(name, "ADC_P5V_STBY");
           break;
-        case SP_SENSOR_P3V3_STBY:
-          sprintf(name, "SP_P3V3_STBY");
+        case IOM_SENSOR_ADC_P3V3_STBY:
+          sprintf(name, "ADC_P3V3_STBY");
           break;
-        case SP_SENSOR_P12V_SLOT1:
-          sprintf(name, "SP_P12V_SLOT1");
+        case IOM_SENSOR_ADC_P1V8_STBY:
+          sprintf(name, "ADC_P1V8_STBY");
           break;
-        case SP_SENSOR_P12V_SLOT2:
-          sprintf(name, "SP_P12V_SLOT2");
+        case IOM_SENSOR_ADC_P2V5_STBY:
+          sprintf(name, "ADC_P2V5_STBY");
           break;
-        case SP_SENSOR_P12V_SLOT3:
-          sprintf(name, "SP_P12V_SLOT3");
+        case IOM_SENSOR_ADC_P1V2_STBY:
+          sprintf(name, "ADC_P1V2_STBY");
           break;
-        case SP_SENSOR_P12V_SLOT4:
-          sprintf(name, "SP_P12V_SLOT4");
+        case IOM_SENSOR_ADC_P1V15_STBY:
+          sprintf(name, "ADC_P1V15_STBY");
           break;
-        case SP_SENSOR_P3V3:
-          sprintf(name, "SP_P3V3");
+        case IOM_SENSOR_ADC_P3V3:
+          sprintf(name, "ADC_P3V3");
           break;
-        case SP_SENSOR_HSC_IN_VOLT:
-          sprintf(name, "SP_HSC_IN_VOLT");
+        case IOM_SENSOR_ADC_P1V8:
+          sprintf(name, "ADC_P1V8");
           break;
-        case SP_SENSOR_HSC_OUT_CURR:
-          sprintf(name, "SP_HSC_OUT_CURR");
+        case IOM_SENSOR_ADC_P1V5:
+          sprintf(name, "ADC_P1V5");
           break;
-        case SP_SENSOR_HSC_TEMP:
-          sprintf(name, "SP_HSC_TEMP");
+        case IOM_SENSOR_ADC_P0V975:
+          sprintf(name, "ADC_P0V975");
           break;
-        case SP_SENSOR_HSC_IN_POWER:
-          sprintf(name, "SP_HSC_IN_POWER");
+        case IOM_SENSOR_ADC_P3V3_M2:
+          sprintf(name, "ADC_P3V3_M2");
           break;
       }
       break;
+
+    case FRU_DPB:
+      switch(sensor_num) {
+        case DPB_SENSOR_12V_POWER_CLIP:
+          sprintf(name, "12V_POWER_CLIP");
+          break;
+        case DPB_SENSOR_P12V_CLIP:
+          sprintf(name, "P12V_CLIP");
+          break;
+        case DPB_SENSOR_12V_CURR_CLIP:
+          sprintf(name, "12V_CURR_CLIP");
+          break;
+        case DPB_SENSOR_FAN0_FRONT:
+          sprintf(name, "FAN0_FRONT");
+          break;
+        case DPB_SENSOR_FAN1_FRONT:
+          sprintf(name, "FAN1_FRONT");
+          break;
+        case DPB_SENSOR_FAN2_FRONT:
+          sprintf(name, "FAN2_FRONT");
+          break;
+        case DPB_SENSOR_FAN3_FRONT:
+          sprintf(name, "FAN3_FRONT");
+          break;
+        case DPB_SENSOR_FAN0_REAR:
+          sprintf(name, "FAN0_REAR");
+          break;
+        case DPB_SENSOR_FAN1_REAR:
+          sprintf(name, "FAN1_REAR");
+          break;
+        case DPB_SENSOR_FAN2_REAR:
+          sprintf(name, "FAN2_REAR");
+          break;
+        case DPB_SENSOR_FAN3_REAR:
+          sprintf(name, "FAN3_REAR");
+          break;
+        case DPB_SENSOR_FAN_STATUS:
+          sprintf(name, "FAN_STATUS");
+          break;
+      }
+      break;
+
     case FRU_NIC:
       switch(sensor_num) {
         case MEZZ_SENSOR_TEMP:
@@ -812,9 +885,6 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
   switch (fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
 
       if (!(is_server_prsnt(fru))) {
         return -1;
@@ -837,48 +907,48 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
       return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
 
-    case FRU_SPB:
+    // TODO: Add read functions for every Type VII sensors.
+    case FRU_IOM:
       switch(sensor_num) {
+        case IOM_SENSOR_INTEL_TEMP:
+        case IOM_SENSOR_HSC_POWER:
+        case IOM_SENSOR_HSC_VOLT:
+        case IOM_SENSOR_HSC_CURR:
+        case IOM_SENSOR_M2_1_TEMP:
+        case IOM_SENSOR_M2_2_TEMP:
+        case IOM_SENSOR_ADC_12V:
+        case IOM_SENSOR_ADC_P5V_STBY:
+        case IOM_SENSOR_ADC_P3V3_STBY:
+        case IOM_SENSOR_ADC_P1V8_STBY:
+        case IOM_SENSOR_ADC_P2V5_STBY:
+        case IOM_SENSOR_ADC_P1V2_STBY:
+        case IOM_SENSOR_ADC_P1V15_STBY:
+        case IOM_SENSOR_ADC_P3V3:
+        case IOM_SENSOR_ADC_P1V8:
+        case IOM_SENSOR_ADC_P1V5:
+        case IOM_SENSOR_ADC_P0V975:
+          *(float *) value = 0;
+          return 0;
+      }
+      break;
 
-        // Inlet, Outlet Temp
-        case SP_SENSOR_INLET_TEMP:
-          return read_temp(SP_INLET_TEMP_DEVICE, (float*) value);
-        case SP_SENSOR_OUTLET_TEMP:
-          return read_temp(SP_OUTLET_TEMP_DEVICE, (float*) value);
-
-        // Fan Tach Values
-        case SP_SENSOR_FAN0_TACH:
-          return read_fan_value(FAN0, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN1_TACH:
-          return read_fan_value(FAN1, FAN_TACH_RPM, (float*) value);
-
-			  // Various Voltages
-			  case SP_SENSOR_P5V:
- 			    return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V:
- 			    return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P3V3_STBY:
- 			    return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V_SLOT1:
- 			    return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V_SLOT2:
- 			    return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V_SLOT3:
-          return read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V_SLOT4:
-          return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P3V3:
-          return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
-
-        // Hot Swap Controller
-        case SP_SENSOR_HSC_IN_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, (float*) value);
-        case SP_SENSOR_HSC_OUT_CURR:
-          return read_hsc_value(HSC_OUT_CURR, (float*) value);
-        case SP_SENSOR_HSC_TEMP:
-          return read_hsc_value(HSC_TEMP, (float*) value);
-        case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_value(HSC_IN_POWER, (float*) value);
+    // TODO: Add read functions for every DPB sensors.
+    case FRU_DPB:
+      switch(sensor_num) {
+        case DPB_SENSOR_12V_POWER_CLIP:
+        case DPB_SENSOR_P12V_CLIP:
+        case DPB_SENSOR_12V_CURR_CLIP:
+        case DPB_SENSOR_FAN0_FRONT:
+        case DPB_SENSOR_FAN1_FRONT:
+        case DPB_SENSOR_FAN2_FRONT:
+        case DPB_SENSOR_FAN3_FRONT:
+        case DPB_SENSOR_FAN0_REAR:
+        case DPB_SENSOR_FAN1_REAR:
+        case DPB_SENSOR_FAN2_REAR:
+        case DPB_SENSOR_FAN3_REAR:
+        case DPB_SENSOR_FAN_STATUS:
+          *(float *) value = 0;
+          return 0;
       }
       break;
 

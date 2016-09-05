@@ -32,17 +32,11 @@ fbttn_get_fruid_path(uint8_t fru, char *path) {
     case FRU_SLOT1:
       sprintf(fname, "slot1");
       break;
-    case FRU_SLOT2:
-      sprintf(fname, "slot2");
+    case FRU_IOM:
+      sprintf(fname, "iom");
       break;
-    case FRU_SLOT3:
-      sprintf(fname, "slot3");
-      break;
-    case FRU_SLOT4:
-      sprintf(fname, "slot4");
-      break;
-    case FRU_SPB:
-      sprintf(fname, "spb");
+    case FRU_DPB:
+      sprintf(fname, "dpb");
       break;
     case FRU_NIC:
       sprintf(fname, "nic");
@@ -64,12 +58,10 @@ fbttn_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
+    case FRU_DPB:
       return -1;
-    case FRU_SPB:
-      sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
+    case FRU_IOM:
+      sprintf(path, "/sys/class/i2c-adapter/i2c-0/0-0050/eeprom");
       break;
     case FRU_NIC:
       sprintf(path, "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom");
@@ -92,20 +84,14 @@ fbttn_get_fruid_name(uint8_t fru, char *name) {
     case FRU_SLOT1:
       sprintf(name, "MonoLake Board 1");
       break;
-    case FRU_SLOT2:
-      sprintf(name, "MonoLake Board 2");
+    case FRU_IOM:
+      sprintf(name, "IO Module");
       break;
-    case FRU_SLOT3:
-      sprintf(name, "MonoLake Board 3");
-      break;
-    case FRU_SLOT4:
-      sprintf(name, "MonoLake Board 4");
-      break;
-    case FRU_SPB:
-      sprintf(name, "Side Plane Board");
+    case FRU_DPB:
+      sprintf(name, "Drive Plane Board");
       break;
     case FRU_NIC:
-      sprintf(name, "CX4 NIC");
+      sprintf(name, "NIC");
       break;
     default:
 #ifdef DEBUG

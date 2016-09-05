@@ -34,7 +34,7 @@
 
 #define FBTTN_PLATFORM_NAME "FBTTN"
 #define LAST_KEY "last_key"
-#define FBTTN_MAX_NUM_SLOTS 4
+#define FBTTN_MAX_NUM_SLOTS 1
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
@@ -100,7 +100,7 @@ const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
 const static uint8_t gpio_bic_ready[] = { 0, 107, 106, 109, 108 };
 const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
-const char pal_fru_list[] = "all, slot1, spb, nic";
+const char pal_fru_list[] = "all, slot1, iom, dpb, nic";
 const char pal_server_list[] = "slot1";
 
 size_t pal_pwm_cnt = 2;
@@ -110,66 +110,32 @@ const char pal_tach_list[] = "0, 1";
 
 char * key_list[] = {
 "pwr_server1_last_state",
-"pwr_server2_last_state",
-"pwr_server3_last_state",
-"pwr_server4_last_state",
 "sysfw_ver_slot1",
-"sysfw_ver_slot2",
-"sysfw_ver_slot3",
-"sysfw_ver_slot4",
 "identify_sled",
 "identify_slot1",
-"identify_slot2",
-"identify_slot3",
-"identify_slot4",
 "timestamp_sled",
 "slot1_por_cfg",
-"slot2_por_cfg",
-"slot3_por_cfg",
-"slot4_por_cfg",
 "slot1_sensor_health",
-"slot2_sensor_health",
-"slot3_sensor_health",
-"slot4_sensor_health",
-"spb_sensor_health",
+"iom_sensor_health",
+"dpb_sensor_health",
 "nic_sensor_health",
 "slot1_sel_error",
-"slot2_sel_error",
-"slot3_sel_error",
-"slot4_sel_error",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
 
 char * def_val_list[] = {
   "on", /* pwr_server1_last_state */
-  "on", /* pwr_server2_last_state */
-  "on", /* pwr_server3_last_state */
-  "on", /* pwr_server4_last_state */
   "0", /* sysfw_ver_slot1 */
-  "0", /* sysfw_ver_slot2 */
-  "0", /* sysfw_ver_slot3 */
-  "0", /* sysfw_ver_slot4 */
   "off", /* identify_sled */
   "off", /* identify_slot1 */
-  "off", /* identify_slot2 */
-  "off", /* identify_slot3 */
-  "off", /* identify_slot4 */
   "0", /* timestamp_sled */
   "lps", /* slot1_por_cfg */
-  "lps", /* slot2_por_cfg */
-  "lps", /* slot3_por_cfg */
-  "lps", /* slot4_por_cfg */
   "1", /* slot1_sensor_health */
-  "1", /* slot2_sensor_health */
-  "1", /* slot3_sensor_health */
-  "1", /* slot4_sensor_health */
-  "1", /* spb_sensor_health */
+  "1", /* iom_sensor_health */
+  "1", /* dpb_sensor_health */
   "1", /* nic_sensor_health */
   "1", /* slot1_sel_error */
-  "1", /* slot2_sel_error */
-  "1", /* slot3_sel_error */
-  "1", /* slot4_sel_error */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -639,9 +605,6 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(path, GPIO_VAL, gpio_prsnt[fru]);
 
       if (read_device(path, &val)) {
@@ -654,7 +617,8 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
         *status = 0;
       }
       break;
-    case FRU_SPB:
+    case FRU_IOM:
+    case FRU_DPB:
     case FRU_NIC:
       *status = 1;
       break;
@@ -671,9 +635,6 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-    //case FRU_SLOT2:
-    //case FRU_SLOT3:
-    //case FRU_SLOT4:
       sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
 
       if (read_device(path, &val)) {
@@ -686,7 +647,8 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
         *status = 0;
       }
       break;
-   case FRU_SPB:
+   case FRU_IOM:
+   case FRU_DPB:
    case FRU_NIC:
      *status = 1;
      break;
@@ -923,18 +885,6 @@ pal_get_hand_sw(uint8_t *pos) {
   case 5:
     *pos = HAND_SW_SERVER1;
     break;
-  //case 1:
-  //case 6:
-    //*pos = HAND_SW_SERVER2;
-    //break;
-  //case 2:
-  //case 7:
-    //*pos = HAND_SW_SERVER3;
-    //break;
-  //case 3:
-  //case 8:
-    //*pos = HAND_SW_SERVER4;
-    //break;
   default:
     *pos = HAND_SW_BMC;
     break;
@@ -1118,18 +1068,6 @@ pal_switch_usb_mux(uint8_t slot) {
     gpio_sw0 = "1";
     gpio_sw1 = "0";
     break;
-  case HAND_SW_SERVER2:
-    gpio_sw0 = "0";
-    gpio_sw1 = "0";
-    break;
-  case HAND_SW_SERVER3:
-    gpio_sw0 = "1";
-    gpio_sw1 = "1";
-    break;
-  case HAND_SW_SERVER4:
-    gpio_sw0 = "0";
-    gpio_sw1 = "1";
-    break;
   case HAND_SW_BMC:
     // Disable the USB MUX
     if (set_usb_mux(USB_MUX_OFF) < 0)
@@ -1179,24 +1117,6 @@ pal_switch_uart_mux(uint8_t slot) {
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "0";
     gpio_uart_sel0 = "1";
-    gpio_uart_rx = "0";
-    break;
-  case HAND_SW_SERVER2:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "0";
-    gpio_uart_rx = "0";
-    break;
-  case HAND_SW_SERVER3:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "1";
-    gpio_uart_rx = "0";
-    break;
-  case HAND_SW_SERVER4:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "0";
     gpio_uart_rx = "0";
     break;
   default:
@@ -1387,15 +1307,16 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       *sensor_list = (uint8_t *) bic_sensor_list;
       *cnt = bic_sensor_cnt;
       break;
-    case FRU_SPB:
-      *sensor_list = (uint8_t *) spb_sensor_list;
-      *cnt = spb_sensor_cnt;
+    case FRU_IOM:
+      *sensor_list = (uint8_t *) iom_sensor_list;
+      *cnt = iom_sensor_cnt;
+      break;
+    case FRU_DPB:
+      *sensor_list = (uint8_t *) dpb_sensor_list;
+      *cnt = dpb_sensor_cnt;
       break;
     case FRU_NIC:
       *sensor_list = (uint8_t *) nic_sensor_list;
@@ -1421,12 +1342,10 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       pal_is_fru_prsnt(fru, &status);
       break;
-    case FRU_SPB:
+    case FRU_IOM:
+    case FRU_DPB:
     case FRU_NIC:
       status = 1;
       break;
@@ -1447,13 +1366,13 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sensor%d", fru, sensor_num);
       break;
-    case FRU_SPB:
-      sprintf(key, "spb_sensor%d", sensor_num);
+    case FRU_IOM:
+      sprintf(key, "iom_sensor%d", sensor_num);
+      break;
+    case FRU_DPB:
+      sprintf(key, "dpb_sensor%d", sensor_num);
       break;
     case FRU_NIC:
       sprintf(key, "nic_sensor%d", sensor_num);
@@ -1482,9 +1401,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sensor%d", fru, sensor_num);
       if(pal_is_fru_prsnt(fru, &status) < 0)
          return -1;
@@ -1492,8 +1408,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
          return -1;
       }
       break;
-    case FRU_SPB:
-      sprintf(key, "spb_sensor%d", sensor_num);
+    case FRU_IOM:
+      sprintf(key, "iom_sensor%d", sensor_num);
+      break;
+    case FRU_DPB:
+      sprintf(key, "dpb_sensor%d", sensor_num);
       break;
     case FRU_NIC:
       sprintf(key, "nic_sensor%d", sensor_num);
@@ -1502,7 +1421,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   ret = fbttn_sensor_read(fru, sensor_num, value);
   if(ret < 0) {
-    if(fru == FRU_SPB || fru == FRU_NIC)
+    if(fru == FRU_IOM || fru == FRU_DPB || fru == FRU_NIC)
       return -1;
     if(pal_get_server_power(fru, &status) < 0)
       return -1;
@@ -1513,9 +1432,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
   else {
     // On successful sensor read
-    if(fru == FRU_SPB && sensor_num == SP_SENSOR_HSC_IN_POWER) {
-      power_value_adjust(value);
-    }
     sprintf(str, "%.2f",*((float*)value));
   }
 
@@ -1535,9 +1451,6 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
         *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
       else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
@@ -1545,18 +1458,8 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
       else if (snr_num == BIC_SENSOR_SOC_TJMAX)
         *flag = GETMASK(SENSOR_VALID);
       break;
-    case FRU_SPB:
-      /*
-       * TODO: This is a HACK (t11229576)
-       */
-      switch(snr_num) {
-        case SP_SENSOR_P12V_SLOT1:
-        case SP_SENSOR_P12V_SLOT2:
-        case SP_SENSOR_P12V_SLOT3:
-        case SP_SENSOR_P12V_SLOT4:
-          *flag = GETMASK(SENSOR_VALID);
-          break;
-      }
+    case FRU_IOM:
+    case FRU_DPB:
     case FRU_NIC:
       break;
   }
@@ -1633,13 +1536,13 @@ pal_set_def_key_value() {
 
       switch(fru) {
         case FRU_SLOT1:
-        case FRU_SLOT2:
-        case FRU_SLOT3:
-        case FRU_SLOT4:
           sprintf(key, "slot%d_sel_error", fru);
         break;
 
-        case FRU_SPB:
+        case FRU_IOM:
+          continue;
+
+        case FRU_DPB:
           continue;
 
         case FRU_NIC:
@@ -1657,13 +1560,13 @@ pal_set_def_key_value() {
 
       switch(fru) {
         case FRU_SLOT1:
-        case FRU_SLOT2:
-        case FRU_SLOT3:
-        case FRU_SLOT4:
           sprintf(key, "slot%d_sensor_health", fru);
         break;
 
-        case FRU_SPB:
+        case FRU_IOM:
+          continue;
+
+        case FRU_DPB:
           continue;
 
         case FRU_NIC:
@@ -1687,15 +1590,6 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
   switch(fru) {
     case FRU_SLOT1:
       sprintf(devtty, "/dev/ttyS2");
-      break;
-    case FRU_SLOT2:
-      sprintf(devtty, "/dev/ttyS1");
-      break;
-    case FRU_SLOT3:
-      sprintf(devtty, "/dev/ttyS4");
-      break;
-    case FRU_SLOT4:
-      sprintf(devtty, "/dev/ttyS3");
       break;
     default:
 #ifdef DEBUG
@@ -1750,9 +1644,6 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
 
       sprintf(key, "pwr_server%d_last_state", (int) fru);
 
@@ -1764,7 +1655,8 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 #endif
       }
       return ret;
-    case FRU_SPB:
+    case FRU_IOM:
+    case FRU_DPB:
     case FRU_NIC:
       sprintf(state, "on");
       return 0;
@@ -1857,13 +1749,14 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       *sensor_list = (uint8_t *) bic_discrete_list;
       *cnt = bic_discrete_cnt;
       break;
-    case FRU_SPB:
+    case FRU_DPB:
+      *sensor_list = (uint8_t *) dpb_discrete_list;
+      *cnt = dpb_discrete_cnt;
+      break;
+    case FRU_IOM:
     case FRU_NIC:
       *sensor_list = NULL;
       *cnt = 0;
@@ -1965,9 +1858,6 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(snr_num) {
         case CATERR:
           pal_store_crashdump(fru);
@@ -1975,7 +1865,10 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
       sprintf(key, "slot%d_sel_error", fru);
       break;
 
-    case FRU_SPB:
+    case FRU_IOM:
+      return 0;
+
+    case FRU_DPB:
       return 0;
 
     case FRU_NIC:
@@ -2272,13 +2165,13 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sensor_health", fru);
       break;
-    case FRU_SPB:
-      sprintf(key, "spb_sensor_health");
+    case FRU_IOM:
+      sprintf(key, "iom_sensor_health");
+      break;
+    case FRU_DPB:
+      sprintf(key, "dpb_sensor_health");
       break;
     case FRU_NIC:
       sprintf(key, "nic_sensor_health");
@@ -2302,13 +2195,13 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sensor_health", fru);
       break;
-    case FRU_SPB:
-      sprintf(key, "spb_sensor_health");
+    case FRU_IOM:
+      sprintf(key, "iom_sensor_health");
+      break;
+    case FRU_DPB:
+      sprintf(key, "dpb_sensor_health");
       break;
     case FRU_NIC:
       sprintf(key, "nic_sensor_health");
@@ -2330,12 +2223,13 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sel_error", fru);
       break;
-    case FRU_SPB:
+
+    case FRU_IOM:
+      return 0;
+
+    case FRU_DPB:
       return 0;
 
     case FRU_NIC:
@@ -2550,14 +2444,17 @@ pal_log_clear(char *fru) {
   if (!strcmp(fru, "slot1")) {
     pal_set_key_value("slot1_sensor_health", "1");
     pal_set_key_value("slot1_sel_error", "1");
-  } else if (!strcmp(fru, "spb")) {
-    pal_set_key_value("spb_sensor_health", "1");
+  } else if (!strcmp(fru, "iom")) {
+    pal_set_key_value("iom_sensor_health", "1");
+  } else if (!strcmp(fru, "dpb")) {
+    pal_set_key_value("dpb_sensor_health", "1");
   } else if (!strcmp(fru, "nic")) {
     pal_set_key_value("nic_sensor_health", "1");
   } else if (!strcmp(fru, "all")) {
     pal_set_key_value("slot1_sensor_health", "1");
     pal_set_key_value("slot1_sel_error", "1");
-    pal_set_key_value("spb_sensor_health", "1");
+    pal_set_key_value("iom_sensor_health", "1");
+    pal_set_key_value("dpb_sensor_health", "1");
     pal_set_key_value("nic_sensor_health", "1");
   }
 }

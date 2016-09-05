@@ -49,20 +49,12 @@ fbttn_common_fru_name(uint8_t fru, char *str) {
       sprintf(str, "slot1");
       break;
 
-    case FRU_SLOT2:
-      sprintf(str, "slot2");
+    case FRU_IOM:
+      sprintf(str, "iom");
       break;
 
-    case FRU_SLOT3:
-      sprintf(str, "slot3");
-      break;
-
-    case FRU_SLOT4:
-      sprintf(str, "slot4");
-      break;
-
-    case FRU_SPB:
-      sprintf(str, "spb");
+    case FRU_DPB:
+      sprintf(str, "dpb");
       break;
 
     case FRU_NIC:
@@ -81,19 +73,14 @@ fbttn_common_fru_name(uint8_t fru, char *str) {
 
 int
 fbttn_common_fru_id(char *str, uint8_t *fru) {
-system("echo TEST_fru");
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
   } else if (!strcmp(str, "slot1")) {
     *fru = FRU_SLOT1;
-  } else if (!strcmp(str, "slot2")) {
-    *fru = FRU_SLOT2;
-  } else if (!strcmp(str, "slot3")) {
-    *fru = FRU_SLOT3;
-  } else if (!strcmp(str, "slot4")) {
-    *fru = FRU_SLOT4;
-  } else if (!strcmp(str, "spb")) {
-    *fru = FRU_SPB;
+  } else if (!strcmp(str, "iom")) {
+    *fru = FRU_IOM;
+  } else if (!strcmp(str, "dpb")) {
+    *fru = FRU_DPB;
   } else if (!strcmp(str, "nic")) {
     *fru = FRU_NIC;
   } else {

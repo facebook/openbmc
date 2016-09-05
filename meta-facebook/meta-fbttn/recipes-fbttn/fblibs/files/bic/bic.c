@@ -59,9 +59,6 @@
 
 enum {
   IPMB_BUS_SLOT1 = 3,
-  IPMB_BUS_SLOT2 = 1,
-  IPMB_BUS_SLOT3 = 7,
-  IPMB_BUS_SLOT4 = 5,
 };
 
 #pragma pack(push, 1)
@@ -204,15 +201,6 @@ get_ipmb_bus_id(uint8_t slot_id) {
   switch(slot_id) {
   case 1:
     bus_id = IPMB_BUS_SLOT1;
-    break;
-  case 2:
-    bus_id = IPMB_BUS_SLOT2;
-    break;
-  case 3:
-    bus_id = IPMB_BUS_SLOT3;
-    break;
-  case 4:
-    bus_id = IPMB_BUS_SLOT4;
     break;
   default:
     bus_id = -1;
@@ -878,7 +866,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       sprintf(temp, " slot%d",i);
       strcat(cmd, temp);
     }
-    strcat(cmd, " spb nic");
+    strcat(cmd, " iom dpb nic");
     system(cmd);
   }
   stat(path, &st);
@@ -987,7 +975,7 @@ error_exit:
   if (comp == UPDATE_BIOS ) {
     system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
            xargs kill");
-    system("/usr/local/bin/sensord slot1 slot2 slot3 slot4 spb nic");
+    system("/usr/local/bin/sensord slot1 iom dpb nic");
   }
   return ret;
 }

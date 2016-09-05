@@ -25,15 +25,14 @@
 extern "C" {
 #endif
 
-#define MAX_NUM_FRUS 6
+#define MAX_NUM_FRUS 2
 enum {
   FRU_ALL   = 0,
   FRU_SLOT1 = 1,
-  FRU_SLOT2 = 2,
-  FRU_SLOT3 = 3,
-  FRU_SLOT4 = 4,
-  FRU_SPB   = 5,
-  FRU_NIC   = 6,
+  FRU_IOM   = 2,
+  FRU_DPB   = 3,
+  FRU_SCC   = 4,
+  FRU_NIC   = 5,
 };
 
 int fbttn_common_fru_name(uint8_t fru, char *str);

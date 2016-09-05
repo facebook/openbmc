@@ -55,9 +55,6 @@ typedef struct {
 } gpio_pin_t;
 
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
-static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
-static gpio_pin_t gpio_slot3[MAX_GPIO_PINS] = {0};
-static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
 
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
 static gpio_pin_t *
@@ -68,15 +65,6 @@ get_struct_gpio_pin(uint8_t fru) {
   switch (fru) {
     case FRU_SLOT1:
       gpios = gpio_slot1;
-      break;
-    case FRU_SLOT2:
-      gpios = gpio_slot2;
-      break;
-    case FRU_SLOT3:
-      gpios = gpio_slot3;
-      break;
-    case FRU_SLOT4:
-      gpios = gpio_slot4;
       break;
     default:
       syslog(LOG_WARNING, "get_struct_gpio_pin: Wrong SLOT ID %d\n", fru);

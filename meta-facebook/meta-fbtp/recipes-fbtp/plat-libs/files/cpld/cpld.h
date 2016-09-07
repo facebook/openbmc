@@ -25,8 +25,13 @@
 extern "C" {
 #endif
 
+int cpld_intf_open(void);
+int cpld_intf_close(void);
 int cpld_get_ver(unsigned int *ver);
 int cpld_get_device_id(unsigned int *dev_id);
+int cpld_erase(void);
+int cpld_program(void);
+int cpld_verify(void);
 
 #ifdef __cplusplus
 } // extern "C"

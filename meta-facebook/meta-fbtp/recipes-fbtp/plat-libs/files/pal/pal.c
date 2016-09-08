@@ -3824,9 +3824,9 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
     case CATERR:
       sprintf(error_log, "");
       if (ed[0] == 0x0)
-        strcat(error_log, "IERR");
+        strcat(error_log, "CATERR_N");
       else if (ed[0] == 0xB)
-        strcat(error_log, "MCERR");
+        strcat(error_log, "MSMI_N");
       else
         strcat(error_log, "Unknown");
       break;

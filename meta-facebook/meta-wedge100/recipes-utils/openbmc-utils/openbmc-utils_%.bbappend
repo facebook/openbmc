@@ -20,12 +20,14 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://disable_watchdog.sh \
             file://board-utils.sh \
             file://setup_board.sh \
+            file://cpld_rev.sh \
             file://cpld_upgrade.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     cpld_upgrade.sh \
+    cpld_rev.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

@@ -29,17 +29,12 @@
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/cpld.h>
-#include <openbmc/gpio.h>
-
-#define GPIO_SPI_FLASH       108
-#define GPIO_BMC_CTRL        109
 
 static uint8_t g_board_rev_id = BOARD_REV_EVT;
 static uint8_t g_vr_cpu0_vddq_abc;
 static uint8_t g_vr_cpu0_vddq_def;
 static uint8_t g_vr_cpu1_vddq_ghj;
 static uint8_t g_vr_cpu1_vddq_klm;
-
 
 static void
 print_usage_help(void) {
@@ -287,14 +282,13 @@ print_fw_ver(uint8_t fru_id) {
 
 }
 
+#if 0
 int
-fw_update_fru(char **argv, uint8_t slot_id) {
+fw_update_slot(char **argv, uint8_t slot_id) {
 
   uint8_t status;
   int ret;
   char cmd[80];
-  gpio_st bmc_ctrl_pin;
-  gpio_st spi_flash_pin;
 
   ret = pal_is_fru_prsnt(slot_id, &status);
   if (ret < 0) {
@@ -305,47 +299,30 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     printf("slot%d is empty!\n", slot_id);
     goto err_exit;
   }
-#if 0
   if (!strcmp(argv[3], "--cpld")) {
      return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
   }
-#endif
   if (!strcmp(argv[3], "--bios")) {
-    system("power-util mb off");
-    gpio_export(GPIO_SPI_FLASH);
-    gpio_export(GPIO_BMC_CTRL);
-    gpio_open(&spi_flash_pin, GPIO_SPI_FLASH);
-    gpio_open(&bmc_ctrl_pin,  GPIO_BMC_CTRL);
-    gpio_change_direction(&spi_flash_pin, GPIO_DIRECTION_OUT);
-    gpio_change_direction(&bmc_ctrl_pin, GPIO_DIRECTION_OUT);
-    gpio_write(&spi_flash_pin, GPIO_VALUE_HIGH);
-    gpio_write(&bmc_ctrl_pin, GPIO_VALUE_HIGH);
-    system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/bind");
-    sprintf(cmd, "flashcp -v %s /dev/mtd6", argv[4]);
+    sprintf(cmd, "power-util slot%u off", slot_id);
     system(cmd);
-    gpio_write(&spi_flash_pin, GPIO_VALUE_LOW);
-    gpio_write(&bmc_ctrl_pin, GPIO_VALUE_LOW);
-    gpio_close(&spi_flash_pin);
-    gpio_close(&bmc_ctrl_pin);
-    gpio_unexport(GPIO_SPI_FLASH);
-    gpio_unexport(GPIO_BMC_CTRL);
-    system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind");
-    system("power-util mb on");
-    return 0;
+    ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
+    sprintf(cmd, "power-util slot%u on", slot_id);
+    system(cmd);
+    return ret;
   }
-#if 0
   if (!strcmp(argv[3], "--bic")) {
     return bic_update_fw(slot_id, UPDATE_BIC, argv[4]);
   }
   if (!strcmp(argv[3], "--bicbl")) {
     return bic_update_fw(slot_id, UPDATE_BIC_BOOTLOADER, argv[4]);
   }
-#endif
+
 err_exit:
   print_usage_help();
   return -1;
 }
 
+#endif
 
 int
 main(int argc, char **argv) {
@@ -383,16 +360,18 @@ main(int argc, char **argv) {
 
      return 0;
   }
+#if 0
   if (!strcmp(argv[2], "--update")) {
     if (argc != 5) {
       goto err_exit;
     }
 
-    if (fru_id >= 2) {
+    if (fru_id > 2) {
       goto err_exit;
     }
     return fw_update_fru(argv, fru_id);
   }
+#endif
 
 err_exit:
   print_usage_help();

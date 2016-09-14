@@ -167,6 +167,8 @@
 #define NIC_MAX_TEMP 125
 #define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
+#define MAX_READ_RETRY 10
+
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
 const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
@@ -1186,16 +1188,25 @@ static int
 read_vr_volt(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
-  int ret;
+  int ret = -1;
+  unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "pal_get_vr_volt: i2c_open failed for bus#%x\n", VR_BUS_ID);
-    goto error_exit;
+  while (retry) {
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "pal_get_vr_volt: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Set the page to read Voltage
@@ -1205,12 +1216,21 @@ read_vr_volt(uint8_t vr, uint8_t loop, float *value) {
   tcount = 2;
   rcount = 0;
 
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  retry = MAX_READ_RETRY;
+  while (retry) {
+    ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_volt: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_get_vr_volt: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Read 2 bytes from Voltage register
@@ -1219,12 +1239,21 @@ read_vr_volt(uint8_t vr, uint8_t loop, float *value) {
   tcount = 1;
   rcount = 2;
 
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  retry = MAX_READ_RETRY;
+  while(retry) {
+    ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_volt: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_get_vr_volt: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if (retry == 0)
+      goto error_exit;
   }
 
   // Calculate Voltage
@@ -1243,16 +1272,25 @@ static int
 read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
-  int ret;
+  int ret = -1;
+  unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "pal_get_vr_curr: i2c_open failed for bus#%x\n", VR_BUS_ID);
-    goto error_exit;
+  while (retry) {
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "pal_get_vr_curr: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Set the page to read Voltage
@@ -1262,12 +1300,21 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   tcount = 2;
   rcount = 0;
 
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  retry = MAX_READ_RETRY;
+  while(retry) {
+    ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_curr: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_get_vr_curr: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if (retry == 0)
+      goto error_exit;
   }
 
   // Read 2 bytes from Voltage register
@@ -1276,12 +1323,21 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   tcount = 1;
   rcount = 2;
 
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  retry = MAX_READ_RETRY;
+  while(retry) {
+    ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_curr: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_get_vr_curr: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if (retry == 0)
+      goto error_exit;
   }
 
   // Calculate Current
@@ -1305,16 +1361,25 @@ static int
 read_vr_power(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
-  int ret;
+  int ret = -1;
+  unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "pal_get_vr_power: i2c_open failed for bus#%x\n", VR_BUS_ID);
-    goto error_exit;
+  while (retry) {
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "pal_get_vr_power: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Set the page to read Power
@@ -1324,12 +1389,21 @@ read_vr_power(uint8_t vr, uint8_t loop, float *value) {
   tcount = 2;
   rcount = 0;
 
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  retry = MAX_READ_RETRY;
+  while(retry) {
+    ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_power: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_get_vr_power: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if (retry == 0)
+      goto error_exit;
   }
 
   // Read 2 bytes from Power register
@@ -1338,12 +1412,21 @@ read_vr_power(uint8_t vr, uint8_t loop, float *value) {
   tcount = 1;
   rcount = 2;
 
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  retry = MAX_READ_RETRY;
+  while(retry) {
+    ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_power: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_get_vr_power: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if (retry == 0)
+      goto error_exit;
   }
 
   // Calculate Power
@@ -1361,16 +1444,25 @@ static int
 read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
-  int ret;
+  int ret = -1;
+  unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "pal_get_vr_temp: i2c_open failed for bus#%x\n", VR_BUS_ID);
-    goto error_exit;
+  while (retry) {
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "pal_get_vr_temp: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Set the page to read Temperature
@@ -1380,12 +1472,21 @@ read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
   tcount = 2;
   rcount = 0;
 
+  retry = MAX_READ_RETRY;
+  while (retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_temp: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Read 2 bytes from Power register
@@ -1394,12 +1495,21 @@ read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
   tcount = 1;
   rcount = 2;
 
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  retry = MAX_READ_RETRY;
+  while(retry) {
+    ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_temp: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_get_vr_temp: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Calculate Power
@@ -2208,6 +2318,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret;
   float volt, curr;
   static uint8_t poweron_10s_flag = 0;
+  uint8_t retry = MAX_READ_RETRY;
 
   switch(fru) {
   case FRU_MB:
@@ -2324,7 +2435,16 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       //CPU, DIMM, PCH Temp
       case MB_SENSOR_CPU0_TEMP:
-        ret = read_cpu_dimm_temp(MB_SENSOR_CPU0_TEMP, (float*) value);
+        while (retry) {
+          ret = read_cpu_dimm_temp(MB_SENSOR_CPU0_TEMP, (float*) value);
+	  if (*(float *)value != 0.0f) {
+            retry = 0;
+          } else {
+	    retry--;
+	    ret = READING_NA;
+	    msleep(50);
+	  }
+	}
         break;
       case MB_SENSOR_CPU1_TEMP:
       case MB_SENSOR_CPU0_DIMM_ABC_TEMP:
@@ -3329,16 +3449,25 @@ int
 pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
   int fd;
   char fn[32];
-  int ret;
+  int ret = -1;
+  unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "pal_get_vr_ver: i2c_open failed for bus#%x\n", VR_BUS_ID);
-    goto error_exit;
+  while (retry) {
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "pal_get_vr_ver: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Set the page to read FW Version
@@ -3348,12 +3477,21 @@ pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
   tcount = 2;
   rcount = 0;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Read 2 bytes from first register
@@ -3362,12 +3500,21 @@ pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
   tcount = 1;
   rcount = 2;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   ver[0] = rbuf[1];
@@ -3378,12 +3525,21 @@ pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
   tcount = 1;
   rcount = 2;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   ver[2] = rbuf[1];
@@ -3401,16 +3557,25 @@ int
 pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
   int fd;
   char fn[32];
-  int ret;
+  int ret = -1;
+  unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_open failed for bus#%x\n", VR_BUS_ID);
-    goto error_exit;
+  while (retry) {
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Set the page to read FW checksum
@@ -3420,12 +3585,21 @@ pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
   tcount = 2;
   rcount = 0;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Read 2 bytes from first register
@@ -3434,12 +3608,21 @@ pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
   tcount = 1;
   rcount = 2;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   checksum[0] = rbuf[1];
@@ -3450,12 +3633,21 @@ pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
   tcount = 1;
   rcount = 2;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   checksum[2] = rbuf[1];
@@ -3473,16 +3665,25 @@ int
 pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
   int fd;
   char fn[32];
-  int ret;
+  int ret = -1;
+  unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_open failed for bus#%x\n", VR_BUS_ID);
-    goto error_exit;
+  while (retry) {
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Set the page to read FW deviceId
@@ -3492,12 +3693,21 @@ pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
   tcount = 2;
   rcount = 0;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   // Read 2 bytes from first register
@@ -3506,12 +3716,21 @@ pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
   tcount = 1;
   rcount = 2;
 
+  retry = MAX_READ_RETRY;
+  while(retry) {
   ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-    goto error_exit;
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+
+    if(retry == 0)
+      goto error_exit;
   }
 
   deviceId[0] = rbuf[1];

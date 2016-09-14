@@ -34,31 +34,14 @@
 #include "ast-jtag.h"
 
 extern xfer_mode mode;
-int jtag_fd = -1;
 
 /*************************************************************************************/
 /*				AST JTAG LIB					*/
-int ast_jtag_open(void)
-{
-	jtag_fd = open("/dev/ast-jtag", O_RDWR);
-	if(jtag_fd == -1) {
-		perror("Can't open /dev/ast-jtag, please install driver!! \n");
-		return -1;
-	}
-
-	return 0;
-}
-
-void ast_jtag_close(void)
-{
-	close(jtag_fd);
-}
-
-unsigned int ast_get_jtag_freq(void)
+unsigned int ast_get_jtag_freq(int fd)
 {
 	int retval;
 	unsigned int freq = 0;
-	retval = ioctl(jtag_fd, AST_JTAG_GIOCFREQ, &freq);
+	retval = ioctl(fd, AST_JTAG_GIOCFREQ, &freq);
 	if (retval == -1) {
 		perror("ioctl JTAG run reset fail!\n");
 		return 0;
@@ -67,10 +50,10 @@ unsigned int ast_get_jtag_freq(void)
 	return freq;
 }
 
-int ast_set_jtag_freq(unsigned int freq)
+int ast_set_jtag_freq(int fd, unsigned int freq)
 {
 	int retval;
-	retval = ioctl(jtag_fd, AST_JTAG_SIOCFREQ, freq);
+	retval = ioctl(fd, AST_JTAG_SIOCFREQ, freq);
 	if (retval == -1) {
 		perror("ioctl JTAG run reset fail!\n");
 		return -1;
@@ -79,7 +62,8 @@ int ast_set_jtag_freq(unsigned int freq)
 	return 0;
 }
 
-int ast_jtag_run_test_idle(unsigned char reset, unsigned char end, unsigned char tck)
+int ast_jtag_run_test_idle(int fd, unsigned char reset, unsigned char end, unsigned char tck)
+
 {
 	int retval;
 	struct runtest_idle run_idle;
@@ -89,86 +73,86 @@ int ast_jtag_run_test_idle(unsigned char reset, unsigned char end, unsigned char
 	run_idle.reset = reset;
 	run_idle.tck = tck;
 
-	retval = ioctl(jtag_fd, AST_JTAG_IOCRUNTEST, &run_idle);
+	retval = ioctl(fd, AST_JTAG_IOCRUNTEST, &run_idle);
 	if (retval == -1) {
 			perror("ioctl JTAG run reset fail!\n");
 			return -1;
 	}
 
+//	if(end)
+//		usleep(3000);
+
 	return 0;
 }
 
-unsigned int ast_jtag_sir_xfer(unsigned char endir, unsigned int len, unsigned int tdi)
+unsigned int ast_jtag_sir_xfer(int fd, unsigned char endir, unsigned int len, unsigned int tdi)
 {
 	int 	retval;
 	struct sir_xfer	sir;
 
-	if(len > 32 || jtag_fd == -1) {
+	if(len > 32)
 		return -1;
-	}
 
 	sir.mode = mode;
 	sir.length = len;
 	sir.endir = endir;
 	sir.tdi = tdi;
 
-	retval = ioctl(jtag_fd, AST_JTAG_IOCSIR, &sir);
+	retval = ioctl(fd, AST_JTAG_IOCSIR, &sir);
 	if (retval == -1) {
 			perror("ioctl JTAG sir fail!\n");
 			return -1;
 	}
-
+//	if(endir)
+//		usleep(3000);
 	return sir.tdo;
 }
 
-int ast_jtag_tdi_xfer(unsigned char enddr, unsigned int len, unsigned int *tdio)
-{
-	/* write */
+int ast_jtag_tdi_xfer(int fd, unsigned char enddr, unsigned int len, unsigned int *tdio)
+{	//write
 	int retval;
 	struct sdr_xfer sdr;
 
-	if (jtag_fd == -1) {
-		return -1;
-	}
-
 	sdr.mode = mode;
+
 	sdr.direct = 1;
 	sdr.enddr = enddr;
 	sdr.length = len;
 	sdr.tdio = tdio;
 
-	retval = ioctl(jtag_fd, AST_JTAG_IOCSDR, &sdr);
+	retval = ioctl(fd, AST_JTAG_IOCSDR, &sdr);
 	if (retval == -1) {
 			perror("ioctl JTAG data xfer fail!\n");
 			return -1;
 	}
 
+//	if(enddr)
+//		usleep(3000);
 	return 0;
 }
 
-int ast_jtag_tdo_xfer(unsigned char enddr, unsigned int len, unsigned int *tdio)
-{
-	/* read */
+int ast_jtag_tdo_xfer(int fd, unsigned char enddr, unsigned int len, unsigned int *tdio)
+{	//read
 	int retval;
 
 	struct sdr_xfer sdr;
 
-	if (jtag_fd == -1) {
-		return -1;
-	}
-
 	sdr.mode = mode;
+
 	sdr.direct = 0;
 	sdr.enddr = enddr;
 	sdr.length = len;
 	sdr.tdio = tdio;
 
-	retval = ioctl(jtag_fd, AST_JTAG_IOCSDR, &sdr);
+	retval = ioctl(fd, AST_JTAG_IOCSDR, &sdr);
 	if (retval == -1) {
 			perror("ioctl JTAG data xfer fail!\n");
+			printf("ioctl JTAG data xfer fail!\n");
 			return -1;
 	}
 
+//	if(enddr)
+//		usleep(3000);
 	return 0;
 }
 

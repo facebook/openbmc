@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env python
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -17,18 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import bottle
+import rest_usb2i2c_reset
 
-### BEGIN INIT INFO
-# Provides:          setup-rest-api
-# Required-Start:
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description: Set REST API handler
-### END INIT INFO
+boardApp = bottle.Bottle()
 
-runsv /etc/sv/restapi >/dev/null 2>&1 &
-runsv /etc/sv/restwatchdog >/dev/null 2>&1 &
 
-sv "$1" restapi
-sv "$1" restwatchdog
+# Handler to reset usb-to-i2c
+@boardApp.route('/api/sys/usb2i2c_reset')
+def rest_usb2i2c_reset_hdl():
+    return rest_usb2i2c_reset.set_usb2i2c()

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -16,27 +14,12 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
-import subprocess
 
-def read_gpio_sysfs(gpio):    
-    try:
-        with open('/sys/class/gpio/gpio%d/value' % gpio, 'r') as f:
-            val_string = f.read()
-            if val_string == '1\n':
-                return 1
-            if val_string == '0\n':
-                return 0
-    except:
-        return None
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-def get_wedge_slot():
-    p = subprocess.Popen('source /usr/local/bin/openbmc-utils.sh;'
-                         'wedge_slot_id $(wedge_board_type)',
-                         shell=True, stdout=subprocess.PIPE)
-    out, err = p.communicate()
-    try:
-        slot = int(out.strip('\n'))
-    except:
-        slot = 0
-    return slot
+SRC_URI += "file://rest-api-1/rest_usb2i2c_reset.py \
+            file://rest-api-1/board_endpoint.py \
+          "
+
+binfiles += "rest_usb2i2c_reset.py \
+            board_endpoint.py"

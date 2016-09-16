@@ -113,6 +113,8 @@ def log_main():
 
             # Dump the new log in a tmp file
             tmpfd = open('%s.tmp' % logfile, 'w')
+            time = datetime.now()
+            newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + '\"' + fru + '\"' + ' logs\n'
             tmpfd.write(newlog)
             tmpfd.close()
             # Rename the tmp file to original syslog file

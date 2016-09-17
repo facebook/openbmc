@@ -38,36 +38,48 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
-#define GPIO_HAND_SW_ID1 138
-#define GPIO_HAND_SW_ID2 139
-#define GPIO_HAND_SW_ID4 140
-#define GPIO_HAND_SW_ID8 141
+/*For Triton with GPIO Table 0.3
+ * BMC_TO_EXP_RESET	    GPIOA2   2  //Reset EXP
+ * PWRBTN_OUT_N	        GPIOD2   26 //power button signal input
+ * COMP_PWR_BTN_N	    GPIOD3   27 //power button signal output
+ * RSTBTN_OUT_N	        GPIOD4   28  //input
+ * SYS_RESET_N_OUT	    GPIOD5   29  //output
+ * COMP_RST_BTN_N	    GPIOAA0 208 //Dedicate reset Mono Lake
+ * SCC_STBY_PWR_EN	    GPIOF4   44 //Enable SCC STBY pwr
+ * SCC_LOC_FULL_PWR_EN	GPIOF0   40 //For control SCC Power sequence
+ * SCC_RMT_FULL_PWR_EN	GPIOF1   41 //
+ * COMP_POWER_FAIL_N	GPIOO6   118
+ * COMP_PWR_EN	        GPIOO7   119
+ * P12V_A_PGOOD	        GPIOF6   46 //Whole system stby pwr good
+ * IOM_FULL_PWR_EN      GPIOAA7
+ * IOM_FULL_PGOOD	    GPIOAB2
+ * BMC_LOC_HEARTBEAT	GPIOO1   113
+ * BMC_UART_SEL	        GPIOS1   145 //0:cpu 1:bmc
+ * DB_PRSNT_BMC_N	    GPIOQ6   134
+ * SYS_PWR_LED	        GPIOA3   4
+ * */
 
-#define GPIO_RST_BTN 144
-#define GPIO_PWR_BTN 24
+//Update at 9/2/2016 for Triton
+#define GPIO_RST_BTN 28
+#define GPIO_PWR_BTN 26
+#define GPIO_PWR_BTN_N 27
 
-#define GPIO_HB_LED 135
+#define GPIO_HB_LED 113
+#define GPIO_PWR_LED 4
 
-#define GPIO_USB_SW0 36
-#define GPIO_USB_SW1 37
-#define GPIO_USB_MUX_EN_N 147
+#define GPIO_UART_SEL 145
 
-#define GPIO_UART_SEL0 32
-#define GPIO_UART_SEL1 33
-#define GPIO_UART_SEL2 34
-#define GPIO_UART_RX 35
+#define GPIO_POSTCODE_0 56
+#define GPIO_POSTCODE_1 57
+#define GPIO_POSTCODE_2 58
+#define GPIO_POSTCODE_3 59
+#define GPIO_POSTCODE_4 60
+#define GPIO_POSTCODE_5 61
+#define GPIO_POSTCODE_6 62
+#define GPIO_POSTCODE_7 63
 
-#define GPIO_POSTCODE_0 48
-#define GPIO_POSTCODE_1 49
-#define GPIO_POSTCODE_2 50
-#define GPIO_POSTCODE_3 51
-#define GPIO_POSTCODE_4 124
-#define GPIO_POSTCODE_5 125
-#define GPIO_POSTCODE_6 126
-#define GPIO_POSTCODE_7 127
-
-#define GPIO_DBG_CARD_PRSNT 137
-
+#define GPIO_DBG_CARD_PRSNT 134
+//??
 #define GPIO_BMC_READY_N    28
 
 #define PAGE_SIZE  0x1000
@@ -77,9 +89,6 @@
 #define WDT_OFFSET 0x3C
 
 #define UART1_TXD (1 << 22)
-#define UART2_TXD (1 << 30)
-#define UART3_TXD (1 << 22)
-#define UART4_TXD (1 << 30)
 
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_OFF 6
@@ -93,15 +102,27 @@
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
 
-const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
-const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
-const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
-const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
-const static uint8_t gpio_bic_ready[] = { 0, 107, 106, 109, 108 };
-const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
-const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
-const char pal_fru_list[] = "all, slot1, iom, dpb, nic";
-const char pal_server_list[] = "slot1";
+#define SYS_RESET_N_OUT 29
+
+ /*For Triton Power Sequence
+  * After BMC ready
+  *
+  * 1.       Output : SCC_STBY_PWR_EN
+  * //2. Check Input  : SCC_STBY_PWR_GOOD //OVER GPIO_EXP
+  * 3.       Output : SCC_LOC_FULL_PWR_EN
+  * //4. Check Input  : SCC_LOC_FULL_PWR_GOOD //OVER GPIO_EXP
+  *  5.      Output : IOM_FULL_PWR_EN
+  *  6.  Check Input  :IOM_FULL_PGOOD
+*/
+const static uint8_t gpio_rst_btn[] = { 0, GPIO_PWR_BTN_N };
+const static uint8_t gpio_led[] = { 0, GPIO_PWR_LED };
+const static uint8_t gpio_id_led[] = { 0, GPIO_PWR_LED };
+//const static uint8_t gpio_prsnt[] = { 0, 61 };
+//const static uint8_t gpio_bic_ready[] = { 0, 107 };
+const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };//done
+const static uint8_t gpio_12v[] = { 0, GPIO_PWR_BTN };//DONE
+const char pal_fru_list[] = "all, slot, iom, scc, dpb, nic";
+const char pal_server_list[] = "slot, iom, scc, scc_stb";
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
@@ -110,32 +131,32 @@ const char pal_tach_list[] = "0, 1";
 
 char * key_list[] = {
 "pwr_server1_last_state",
-"sysfw_ver_slot1",
+"sysfw_ver_slot",
 "identify_sled",
-"identify_slot1",
+"identify_slot",
 "timestamp_sled",
-"slot1_por_cfg",
-"slot1_sensor_health",
+"slot_por_cfg",
+"slot_sensor_health",
 "iom_sensor_health",
 "dpb_sensor_health",
 "nic_sensor_health",
-"slot1_sel_error",
+"slot_sel_error",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
 
 char * def_val_list[] = {
   "on", /* pwr_server1_last_state */
-  "0", /* sysfw_ver_slot1 */
+  "0", /* sysfw_ver_slot */
   "off", /* identify_sled */
-  "off", /* identify_slot1 */
+  "off", /* identify_slot */
   "0", /* timestamp_sled */
-  "lps", /* slot1_por_cfg */
-  "1", /* slot1_sensor_health */
+  "lps", /* slot_por_cfg */
+  "1", /* slot_sensor_health */
   "1", /* iom_sensor_health */
   "1", /* dpb_sensor_health */
   "1", /* nic_sensor_health */
-  "1", /* slot1_sel_error */
+  "1", /* slot_sel_error */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -403,58 +424,16 @@ control_sol_txd(uint8_t slot) {
 
   switch(slot) {
   case 1:
-    // Disable UART2's TXD and enable others
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
     ctrl |= UART1_TXD;
-    ctrl &= (~UART2_TXD); //Disable
     *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
-  //case 2:
-    //// Disable UART1's TXD and enable others
-    //ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    //ctrl &= (~UART1_TXD); // Disable
-    //ctrl |= UART2_TXD;
-    //*(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
-    //ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    //ctrl |= UART3_TXD | UART4_TXD;
-    //*(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    //break;
-  //case 3:
-    //// Disable UART4's TXD and enable others
-    //ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    //ctrl |= UART1_TXD | UART2_TXD;
-    //*(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    //ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    //ctrl |= UART3_TXD;
-    //ctrl &= (~UART4_TXD); // Disable
-    //*(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    //break;
-  //case 4:
-    //// Disable UART3's TXD and enable others
-    //ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    //ctrl |= UART1_TXD | UART2_TXD;
-    //*(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    //ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    //ctrl &= (~UART3_TXD); // Disable
-    //ctrl |= UART4_TXD;
-    //*(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    //break;
   default:
     // Any other slots we need to enable all TXDs
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
+    ctrl |= UART1_TXD;
     *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
   }
 
@@ -605,17 +584,8 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-      sprintf(path, GPIO_VAL, gpio_prsnt[fru]);
-
-      if (read_device(path, &val)) {
-        return -1;
-      }
-
-      if (val == 0x0) {
-        *status = 1;
-      } else {
-        *status = 0;
-      }
+    //only one slot; TBD,if there is a Mono Lake prsnt
+    *status = 1;
       break;
     case FRU_IOM:
     case FRU_DPB:
@@ -635,18 +605,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-      sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
-
-      if (read_device(path, &val)) {
-        return -1;
-      }
-
-      if (val == 0x0) {
-        *status = 1;
-      } else {
-        *status = 0;
-      }
-      break;
+    //TBD
    case FRU_IOM:
    case FRU_DPB:
    case FRU_NIC:
@@ -845,50 +804,6 @@ pal_sled_cycle(void) {
 // Read the Front Panel Hand Switch and return the position
 int
 pal_get_hand_sw(uint8_t *pos) {
-  char path[64] = {0};
-  int id1, id2, id4, id8;
-  uint8_t loc;
-  // Read 4 GPIOs to read the current position
-  // id1: GPIOR2(138)
-  // id2: GPIOR3(139)
-  // id4: GPIOR4(140)
-  // id8: GPIOR5(141)
-
-  // Read ID1
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID1);
-  if (read_device(path, &id1)) {
-    return -1;
-  }
-
-  // Read ID2
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID2);
-  if (read_device(path, &id2)) {
-    return -1;
-  }
-
-  // Read ID4
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID4);
-  if (read_device(path, &id4)) {
-    return -1;
-  }
-
-  // Read ID8
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID8);
-  if (read_device(path, &id8)) {
-    return -1;
-  }
-
-  loc = ((id8 << 3) | (id4 << 2) | (id2 << 1) | (id1));
-
-  switch(loc) {
-  case 0:
-  case 5:
-    *pos = HAND_SW_SERVER1;
-    break;
-  default:
-    *pos = HAND_SW_BMC;
-    break;
-  }
 
   return 0;
 }
@@ -1025,78 +940,10 @@ pal_set_id_led(uint8_t slot, uint8_t status) {
   return 0;
 }
 
-static int
-set_usb_mux(uint8_t state) {
-  int val;
-  char *new_state;
-  char path[64] = {0};
-
-  sprintf(path, GPIO_VAL, GPIO_USB_MUX_EN_N);
-
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  // This GPIO Pin is active low
-  if (!val == state)
-    return 0;
-
-  if (state)
-    new_state = "0";
-  else
-    new_state = "1";
-
-  if (write_device(path, new_state) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  }
-
-  return 0;
-}
-
 // Update the USB Mux to the server at given slot
+// In Triton, we don't need it
 int
 pal_switch_usb_mux(uint8_t slot) {
-  char *gpio_sw0, *gpio_sw1;
-  char path[64] = {0};
-
-  // Based on the USB mux table in Schematics
-  switch(slot) {
-  case HAND_SW_SERVER1:
-    gpio_sw0 = "1";
-    gpio_sw1 = "0";
-    break;
-  case HAND_SW_BMC:
-    // Disable the USB MUX
-    if (set_usb_mux(USB_MUX_OFF) < 0)
-      return -1;
-    else
-      return 0;
-  default:
-    return 0;
-  }
-
-  // Enable the USB MUX
-  if (set_usb_mux(USB_MUX_ON) < 0)
-    return -1;
-
-  sprintf(path, GPIO_VAL, GPIO_USB_SW0);
-  if (write_device(path, gpio_sw0) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_USB_SW1);
-  if (write_device(path, gpio_sw1) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  }
 
   return 0;
 }
@@ -1104,27 +951,18 @@ pal_switch_usb_mux(uint8_t slot) {
 // Switch the UART mux to the given slot
 int
 pal_switch_uart_mux(uint8_t slot) {
-  char * gpio_uart_sel0;
-  char * gpio_uart_sel1;
-  char * gpio_uart_sel2;
-  char * gpio_uart_rx;
+  char * gpio_uart_sel;
   char path[64] = {0};
   int ret;
 
   // Refer the UART select table in schematic
   switch(slot) {
   case HAND_SW_SERVER1:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "1";
-    gpio_uart_rx = "0";
+    gpio_uart_sel = "0";
     break;
   default:
     // for all other cases, assume BMC
-    gpio_uart_sel2 = "1";
-    gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "0";
-    gpio_uart_rx = "1";
+    gpio_uart_sel = "1";
     break;
   }
 
@@ -1135,26 +973,8 @@ pal_switch_uart_mux(uint8_t slot) {
   }
 
   // Enable Debug card path
-  sprintf(path, GPIO_VAL, GPIO_UART_SEL2);
-  ret = write_device(path, gpio_uart_sel2);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_UART_SEL1);
-  ret = write_device(path, gpio_uart_sel1);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_UART_SEL0);
-  ret = write_device(path, gpio_uart_sel0);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_UART_RX);
-  ret = write_device(path, gpio_uart_rx);
+  sprintf(path, GPIO_VAL, GPIO_UART_SEL);
+  ret = write_device(path, gpio_uart_sel);
   if (ret) {
     goto uart_exit;
   }
@@ -1256,12 +1076,6 @@ pal_post_handle(uint8_t slot, uint8_t status) {
   // No debug card  present, return
   if (!prsnt) {
     return 0;
-  }
-
-  // Get the hand switch position
-  ret = pal_get_hand_sw(&pos);
-  if (ret) {
-    return ret;
   }
 
   // If the give server is not selected, return
@@ -1589,7 +1403,8 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(devtty, "/dev/ttyS2");
+      /* Slot connect to BMC UART1(1-base) to ttyS0(0-base) */
+      sprintf(devtty, "/dev/ttyS0");
       break;
     default:
 #ifdef DEBUG
@@ -2247,14 +2062,14 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   *value = *value & atoi(cvalue);
   return 0;
 }
-
+// TBD
 void
 pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
   switch(mode) {
   case BIC_MODE_NORMAL:
     // Bridge IC entered normal mode
     // Inform BIOS that BMC is ready
-    bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
+    //bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
     break;
   case BIC_MODE_UPDATE:
     // Bridge IC entered update mode
@@ -2441,9 +2256,9 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 
 void
 pal_log_clear(char *fru) {
-  if (!strcmp(fru, "slot1")) {
-    pal_set_key_value("slot1_sensor_health", "1");
-    pal_set_key_value("slot1_sel_error", "1");
+  if (!strcmp(fru, "slot")) {
+    pal_set_key_value("slot_sensor_health", "1");
+    pal_set_key_value("slot_sel_error", "1");
   } else if (!strcmp(fru, "iom")) {
     pal_set_key_value("iom_sensor_health", "1");
   } else if (!strcmp(fru, "dpb")) {
@@ -2451,10 +2266,44 @@ pal_log_clear(char *fru) {
   } else if (!strcmp(fru, "nic")) {
     pal_set_key_value("nic_sensor_health", "1");
   } else if (!strcmp(fru, "all")) {
-    pal_set_key_value("slot1_sensor_health", "1");
-    pal_set_key_value("slot1_sel_error", "1");
+    pal_set_key_value("slot_sensor_health", "1");
+    pal_set_key_value("slot_sel_error", "1");
     pal_set_key_value("iom_sensor_health", "1");
     pal_set_key_value("dpb_sensor_health", "1");
     pal_set_key_value("nic_sensor_health", "1");
   }
+}
+
+int pal_get_sku(void){
+//To do: to get the platform sku, Type 5 or Type 7 TBD
+return 0;
+}
+int pal_get_locl(void){
+//To do: to get the BMC location;  * SLOTID_0	            GPIOG0    48   //SLOTID_[0:1]: 01=IOM_A ; 10=IOM_B
+// * SLOTID_1	            GPIOG1    49
+return 0;
+}
+int pal_is_scc_stb_pwrgood(void){
+//To do: to get SCC STB Power good from IO Exp via I2C
+return 0;
+}
+int pal_is_scc_full_pwrgood(void){
+//To do: to get SCC STB Power good from IO Exp via I2C
+return 0;
+}
+int pal_is_iom_full_pwrgood(void){
+//To do: to get IOM PWR GOOD IOM_FULL_PGOOD	    GPIOAB2
+return 0;
+}
+int pal_en_scc_stb_pwr(void){
+//To do: enable SCC STB PWR; SCC_STBY_PWR_EN	  GPIOF4   44
+return 0;
+}
+int pal_en_scc_full_pwr(void){
+//To do: ENABLE SCC STB PWR; SCC_LOC_FULL_PWR_EN	GPIOF0   40
+return 0;
+}
+int pal_en_iom_full_pwr(void){
+//To do: enable iom PWR  ;IOM_FULL_PWR_EN      GPIOAA7
+return 0;
 }

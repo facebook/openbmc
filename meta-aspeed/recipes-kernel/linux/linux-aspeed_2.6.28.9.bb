@@ -2,7 +2,7 @@ require linux-aspeed.inc
 
 # This revision corresponds to the tag "openbmc/fido/2.6.28"
 # We use the revision in order to avoid having to fetch it from the repo during parse
-SRCREV = "91b54cdffcedced1f315270150e63126cd16cafe"
+SRCREV = "d12c279debd6ea67510c719d5a1db213fcb7712a"
 SRCBRANCH = "openbmc/fido/2.6.28"
 
 SRC_URI = "git://github.com/theopolis/linux.git;branch=${SRCBRANCH};protocol=git \

@@ -185,12 +185,18 @@ void pal_log_clear(char *fru);
 int pal_get_dev_guid(uint8_t fru, char *guid);
 int pal_set_boot_order(uint8_t fru, uint8_t *boot);
 int pal_get_boot_order(uint8_t fru, uint8_t *boot);
+int pal_get_sku(void);
+int pal_get_locl(void);
 int pal_is_scc_stb_pwrgood(void);
 int pal_is_scc_full_pwrgood(void);
 int pal_is_iom_full_pwrgood(void);
 int pal_en_scc_stb_pwr(void);
 int pal_en_scc_full_pwr(void);
 int pal_en_iom_full_pwr(void);
+int pal_fault_led(uint8_t state, uint8_t mode);
+int pal_minisas_led(uint8_t port, uint8_t state);
+int pal_get_poss_pcie_config(uint8_t *pcie_config);
+int pal_get_plat_sku_id(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -48,17 +48,8 @@ case "$ACTION" in
       $DAEMON 3 0x20 > /dev/null 2>&1 &
     fi
     
-    #if [ $(is_server_prsnt 2) == "1" ]; then
-      #$DAEMON 1 0x20 > /dev/null 2>&1 &
-    #fi
-
-    #if [ $(is_server_prsnt 3) == "1" ]; then
-      #$DAEMON 7 0x20 > /dev/null 2>&1 &
-    #fi
-
-    #if [ $(is_server_prsnt 4) == "1" ]; then
-      #$DAEMON 5 0x20 > /dev/null 2>&1 &
-    #fi
+    echo "enable Expander IPMB on I2C 9"
+      $DAEMON 9 0x20 > /dev/null 2>&1 &
 
     echo "$NAME."
     ;;
@@ -74,18 +65,8 @@ case "$ACTION" in
     if [ $(is_server_prsnt 1) == "1" ]; then
       $DAEMON 3 0x20 > /dev/null 2>&1 &
     fi
-
-    #if [ $(is_server_prsnt 2) == "1" ]; then
-      #$DAEMON 1 0x20 > /dev/null 2>&1 &
-    #fi
-
-    #if [ $(is_server_prsnt 3) == "1" ]; then
-      #$DAEMON 7 0x20 > /dev/null 2>&1 &
-    #fi
-
-    #if [ $(is_server_prsnt 4) == "1" ]; then
-      #$DAEMON 5 0x20 > /dev/null 2>&1 &
-    #fi
+    echo "enable Expander IPMB on I2C 9"
+      $DAEMON 9 0x20 > /dev/null 2>&1 &
 
     echo "$NAME."
     ;;

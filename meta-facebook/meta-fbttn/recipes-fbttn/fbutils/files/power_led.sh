@@ -33,15 +33,9 @@ if [ $# != 2 ]; then
     usage $0
 fi
 
-# Slot#1: GPIOM1(97),Slot#2: GPIOM0(96),Slot#3: GPIOM3(99),Slot#4: GPIOM2(98)
+# Slot#1: GPIOA3(3)
 if [ $1 = "1" ]; then
-    gpio=M1
-elif [ $1 = "2" ]; then
-    gpio=M0
-elif [ $1 = "3" ]; then
-    gpio=M3
-elif [ $1 = "4" ]; then
-    gpio=M2
+    gpio=A3
 else
     usage $0
 fi

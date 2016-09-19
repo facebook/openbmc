@@ -75,7 +75,6 @@ do_on() {
                 usage
                 exit -1
                 ;;
-
         esac
     done
     echo -n "Power on slot#$slot server ..."
@@ -125,21 +124,12 @@ do_off() {
     return 0
 }
 
-# Slot1: GPIOD3(27), Slot2: GPIOD1(25), Slot3: GPIOD7(31), Slot4: GPIOD5(29)
+# Slot1: GPIOD3(27)
 slot=$1
 
 case $slot in
   1)
     gpio=D3
-    ;;
-  2)
-    gpio=D1
-    ;;
-  3)
-    gpio=D7
-    ;;
-  4)
-    gpio=D5
     ;;
   *)
     gpio=D3

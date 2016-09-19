@@ -82,6 +82,7 @@ IMAGE_INSTALL += " \
   fan-util \
   spatula \
   passwd-util \
+  openbmc-utils \
   "
 
 IMAGE_FEATURES += " \

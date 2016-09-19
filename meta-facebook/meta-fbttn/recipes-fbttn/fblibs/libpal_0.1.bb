@@ -12,6 +12,8 @@ SRC_URI = "file://pal \
 
 DEPENDS += "libbic libfbttn-common libfbttn-fruid libfbttn-sensor libkv libedb"
 
+CFLAGS_prepend = " -DCONFIG_FBTTN"
+
 S = "${WORKDIR}/pal"
 
 do_install() {

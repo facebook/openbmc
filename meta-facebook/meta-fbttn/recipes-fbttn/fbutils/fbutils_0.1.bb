@@ -48,6 +48,7 @@ SRC_URI = "file://ast-functions \
            file://rc.local \
            file://src \
            file://COPYING \
+           file://check_pal_sku.sh \
           "
 
 pkgdir = "utils"
@@ -56,7 +57,8 @@ S = "${WORKDIR}"
 
 binfiles = "us_console.sh sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py setup_rov.sh fbttn_power.sh wedge_us_mac.sh \
-  bcm5396.py bcm5396_util.py setup_switch.py watch-fc.sh power_util.py"
+  bcm5396.py bcm5396_util.py setup_switch.py watch-fc.sh power_util.py \
+  check_pal_sku.sh"
 
 DEPENDS_append = "update-rc.d-native"
 

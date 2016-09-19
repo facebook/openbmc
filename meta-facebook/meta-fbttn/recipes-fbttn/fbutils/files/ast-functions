@@ -23,6 +23,16 @@ scu_addr() {
     echo $((0x1E6E2000 + 0x$1))
 }
 
+#LPC Controller, Base Address = 0x1E78_9000
+lpc_addr() {
+    echo $((0x1E789000 + 0x$1))
+}
+
+#GPIO Controller, Base Address = 0x1E78_0000
+gpio_addr() {
+    echo $((0x1E780000 + 0x$1))
+}
+
 GPIODIR="/sys/class/gpio"
 GPIOEXPORT="$GPIODIR/export"
 
@@ -89,7 +99,7 @@ gpio_set() {
         echo $gpio > $GPIOEXPORT
     fi
     echo out > ${dir}/direction
-    echo $val > ${dir}/value
+    echo $val > ${dir}/value    
 }
 
 gpio_get() {
@@ -120,59 +130,22 @@ is_bmc_por() {
 # Check to see if server is present in given slot or not
 is_server_prsnt() {
   local prsnt
+  prsnt=`i2cget -y 5 0x24 0`
+  if [ $? -eq 0 ]; then
+      prsnt=$[16#`echo "${prsnt}" | cut -d 'x' -f2`]
+  else
+    # TODO: Record the error message
+         echo "TCA9555 transaction failed."
+  fi
+    prsnt=$[${prsnt}&1]
 
-  case $1 in
-    1)
-      prsnt=$(gpio_get H5)
-      ;;
-    2)
-      prsnt=$(gpio_get H4)
-      ;;
-    3)
-      prsnt=$(gpio_get H7)
-      ;;
-    4)
-      prsnt=$(gpio_get H6)
-      ;;
-    *)
-      prsnt=$(gpio_get H4)
-      ;;
-  esac
-
-  if [ $prsnt == "0" ]; then
+  if [ $prsnt == "1" ]; then
     echo 1
   else                                       
     echo 0
   fi
 }
-# Check to see if Bridge-IC is ready in given slot or not
-is_bic_ready() {
-  local ready
 
-  case $1 in
-   1)
-    ready=$(gpio_get N3)
-    ;;
-   2)
-    ready=$(gpio_get N2)
-    ;;
-   3)
-    ready=$(gpio_get N5)
-    ;;
-   4)
-    ready=$(gpio_get N4)
-    ;;
-   *)
-    ready="1"
-    ;;
-  esac
-
-  if [ $ready == "0" ]; then
-    echo 1
-  else
-    echo 0
-  fi
-}
 
 fbttn_is_server_on() {
     local curr_pwr_cpu

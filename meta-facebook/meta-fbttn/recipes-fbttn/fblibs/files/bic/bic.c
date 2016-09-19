@@ -866,7 +866,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       sprintf(temp, " slot%d",i);
       strcat(cmd, temp);
     }
-    strcat(cmd, " iom dpb nic");
+    strcat(cmd, " iom dpb scc nic");
     system(cmd);
   }
   stat(path, &st);
@@ -975,7 +975,7 @@ error_exit:
   if (comp == UPDATE_BIOS ) {
     system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
            xargs kill");
-    system("/usr/local/bin/sensord slot1 iom dpb nic");
+    system("/usr/local/bin/sensord slot1 iom dpb scc nic");
   }
   return ret;
 }

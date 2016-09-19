@@ -57,6 +57,10 @@ fbttn_common_fru_name(uint8_t fru, char *str) {
       sprintf(str, "dpb");
       break;
 
+    case FRU_SCC:
+      sprintf(str, "scc");
+      break;
+
     case FRU_NIC:
       sprintf(str, "nic");
       break;
@@ -81,6 +85,8 @@ fbttn_common_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_IOM;
   } else if (!strcmp(str, "dpb")) {
     *fru = FRU_DPB;
+  } else if (!strcmp(str, "scc")) {
+    *fru = FRU_SCC;
   } else if (!strcmp(str, "nic")) {
     *fru = FRU_NIC;
   } else {

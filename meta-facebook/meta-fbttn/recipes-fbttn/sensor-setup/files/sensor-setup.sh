@@ -42,7 +42,7 @@
 modprobe lm75
 modprobe pmbus
 
-# Enable the ADC inputs;  adc0 - adc7 are connected to various voltage sensors
+# Enable the ADC inputs;  adc0 - adc11 are connected to various voltage sensors
 
 echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
 echo 1 > /sys/devices/platform/ast_adc.0/adc1_en
@@ -52,3 +52,7 @@ echo 1 > /sys/devices/platform/ast_adc.0/adc4_en
 echo 1 > /sys/devices/platform/ast_adc.0/adc5_en
 echo 1 > /sys/devices/platform/ast_adc.0/adc6_en
 echo 1 > /sys/devices/platform/ast_adc.0/adc7_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc8_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc9_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc10_en
+echo 1 > /sys/devices/platform/ast_adc.0/adc11_en

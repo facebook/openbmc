@@ -38,6 +38,9 @@ fbttn_get_fruid_path(uint8_t fru, char *path) {
     case FRU_DPB:
       sprintf(fname, "dpb");
       break;
+    case FRU_SCC:
+      sprintf(fname, "scc");
+      break;
     case FRU_NIC:
       sprintf(fname, "nic");
       break;
@@ -58,13 +61,18 @@ fbttn_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_DPB:
       return -1;
     case FRU_IOM:
       sprintf(path, "/sys/class/i2c-adapter/i2c-0/0-0050/eeprom");
       break;
+    case FRU_DPB:
+      return -1;
+      break;
+    case FRU_SCC:
+      return -1;
+      break;
     case FRU_NIC:
-      sprintf(path, "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom");
+      sprintf(path, "/sys/class/i2c-adapter/i2c-4/12-0051/eeprom");
       break;
     default:
 #ifdef DEBUG
@@ -88,10 +96,13 @@ fbttn_get_fruid_name(uint8_t fru, char *name) {
       sprintf(name, "IO Module");
       break;
     case FRU_DPB:
-      sprintf(name, "Drive Plane Board");
+      sprintf(name, "Drive Plan Board");
+      break;
+    case FRU_SCC:
+      sprintf(name, "Storage Controller Card");
       break;
     case FRU_NIC:
-      sprintf(name, "NIC");
+      sprintf(name, "CX4 NIC");
       break;
     default:
 #ifdef DEBUG

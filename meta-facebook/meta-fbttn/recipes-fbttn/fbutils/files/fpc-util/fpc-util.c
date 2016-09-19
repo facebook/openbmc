@@ -31,8 +31,10 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fpc-util <slot1> --usb\n");
-  printf("       fpc-util <slot1|sled> --identify <on/off>\n");
+  printf("Usage: fpc-util <slot1> --ext1 <yellow/off>\n");
+  printf("Usage: fpc-util <slot1> --ext2 <yellow/off>\n");
+  printf("       fpc-util <sled> --fault <on/off/auto>\n");
+  printf("       fpc-util <slot1> --identify <on/off>\n");
 }
 
 int
@@ -52,20 +54,51 @@ main(int argc, char **argv) {
   } else {
     goto err_exit;
   }
-
-  if (!strcmp(argv[2], "--usb")) {
-    printf("fpc-util: switching USB channel to slot%d\n", slot_id);
-    return pal_switch_usb_mux(slot_id);
+  
+  if (!strcmp(argv[2], "--ext2")) {
+	  int LED = 0;
+    printf("fpc-util: Enable/Disable miniSAS2 Error LED\n");
+    if(!strcmp(argv[3], "yellow")){
+		LED = 1;
+		return pal_minisas_led(1,LED);
+	}else if(!strcmp(argv[3], "off")){
+		LED = 0;
+	    return pal_minisas_led(1,LED);
+	}
+    return -1;// to do pal_minisas_led()
+  }else  if (!strcmp(argv[2], "--ext1")) {
+	  int LED = 0;
+    printf("fpc-util: Enable/Disable miniSAS1 Error LED\n");
+    if(!strcmp(argv[3], "yellow")){
+		LED = 1;
+		return pal_minisas_led(0,LED);
+	}else if(!strcmp(argv[3], "off")){
+		LED = 0;
+	    return pal_minisas_led(0,LED);
+	}
+    return -1;// to do pal_minisas_led()
+  } else if (!strcmp(argv[2], "--fault")) {
+	  printf("fpc-util: Enable/Disable fault LED manually\n");
+		int mode  = 0;
+		if(!strcmp(argv[3], "on")){  
+			mode = 1;
+			return pal_fault_led(1,mode);
+	    }else if(!strcmp(argv[3], "off")){
+			mode = 1;
+			return pal_fault_led(0,mode);
+		}else if(!strcmp(argv[3], "auto")){
+			mode = 0;
+			return pal_fault_led(0,mode);
+		}
+        return -1;
   } else if (!strcmp(argv[2], "--identify")) {
     if (argc != 4) {
       goto err_exit;
-    }
+  }
     printf("fpc-util: identification for %s is %s\n", argv[1], argv[3]);
-    if (slot_id == 0) {
-      sprintf(tstr, "identify_sled");
-    } else {
-      sprintf(tstr, "identify_slot%d", slot_id);
-    }
+    if (slot_id == 1) {
+      sprintf(tstr, "identify_slot1");
+    } 
 
     return pal_set_key_value(tstr, argv[3]);
   } else {

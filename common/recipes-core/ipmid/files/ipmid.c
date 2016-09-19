@@ -1335,7 +1335,7 @@ oem_set_post_end (unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_get_slot_info(unsigned char *request, unsigned char *response,
+oem_get_plat_info(unsigned char *request, unsigned char *response,
                   unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -1343,12 +1343,13 @@ oem_get_slot_info(unsigned char *request, unsigned char *response,
 
   int ret;
   uint8_t pres  = 0x00;
-  uint8_t sinfo = 0x00;
+  uint8_t pinfo = 0x00;
 
-  // Slot info:
-  // Bit[7]: Not Present/Present (from pal)
-  // Bit[6]: Platform type (TODO from pal)
-  // Bit[5-0] : Slot# (payload_id indicates)
+  // Platform info:
+  // Bit[7]: Not Present:0/Present:1  (from pal)
+  // Bit[6]: Test Board:1, Non Test Board:0 (TODO from pal)
+  // Bit[5-3] : SKU ID:000:Yosemite, 010:Triton
+  // Bit[2:0] : Slot Index, 1 based
   ret = pal_is_fru_prsnt(req->payload_id, &pres);
   if (ret) {
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -1358,15 +1359,42 @@ oem_get_slot_info(unsigned char *request, unsigned char *response,
 
   // Populate the presence bit[7]
   if (pres) {
-    sinfo = 0x80;
+    pinfo = 0x80;
+    printf("pres\n");
   }
 
-  // Populate the slot number
-  sinfo |= req->payload_id;
+  // Get the SKU ID bit[5-3]
+  pinfo |= (pal_get_plat_sku_id() << 3);
+
+  // Populate the slot Index bit[2:0]
+  pinfo |= req->payload_id;
 
   // Prepare response buffer
   res->cc = CC_SUCCESS;
-  res->data[0] = sinfo;
+  res->data[0] = pinfo;
+  *res_len = 0x01;
+}
+
+static void
+oem_get_poss_pcie_config(unsigned char *request, unsigned char *response,
+                  unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  int ret;
+  uint8_t pcie_conf;
+
+  ret = pal_get_poss_pcie_config(&pcie_conf);
+  if (ret) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }
+  
+  // Prepare response buffer
+  res->cc = CC_SUCCESS;
+  res->data[0] = pcie_conf;
   *res_len = 0x01;
 }
 
@@ -1450,8 +1478,11 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
     case CMD_OEM_SET_POST_END:
       oem_set_post_end (request, response, res_len);
       break;
-    case CMD_OEM_GET_SLOT_INFO:
-      oem_get_slot_info (request, response, res_len);
+    case CMD_OEM_GET_PLAT_INFO:
+      oem_get_plat_info (request, response, res_len);
+      break;
+    case CMD_OEM_GET_POSS_PCIE_CONFIG:
+      oem_get_poss_pcie_config (request, response, res_len);
       break;
     case CMD_OEM_GET_BOARD_ID:
       oem_get_board_id (request, response, res_len);

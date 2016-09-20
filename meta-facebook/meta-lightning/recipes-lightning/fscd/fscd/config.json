@@ -12,6 +12,8 @@
   "profiles": {
     "linear_ambient": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
       "data": [
         [1 , 12],
         [15, 12],
@@ -44,6 +46,8 @@
     },
     "linear_pcie_sw": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
       "data": [
         [1 , 12],
         [64, 12],
@@ -74,6 +78,8 @@
     },
     "linear_ssd": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
       "data": [
         [1 , 12],
         [37, 12],

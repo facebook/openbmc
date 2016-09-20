@@ -46,6 +46,7 @@ extern "C" {
 #define GETMASK(y)          (1 << y)
 
 #define MAX_NODES 1
+#define MAX_FAN_LED_NUM 6
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
@@ -118,6 +119,25 @@ enum {
   LED_BMC_ID = 57, //GPIOH1
 };
 
+// FAN LED operation
+enum {
+  FAN_LED_ON = 0x00,
+  FAN_LED_OFF,
+  FAN_LED_BLINK_PWM0_RATE,
+  FAN_LED_BLINK_PWM1_RATE,
+};
+
+//FAN LED control regsiter
+enum {
+  REG_INPUT = 0x00,
+  REG_PSC0,
+  REG_PWM0,
+  REG_OSC1,
+  REG_PWM1,
+  REG_LS0,
+  REG_LS1,
+};
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -187,6 +207,10 @@ void pal_update_ts_sled();
 int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_reset_pcie_switch(uint8_t status);
+int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
+int pal_set_fan_led(uint8_t num, uint8_t operation);
+int pal_fan_dead_handle(int fan_num);
+int pal_fan_recovered_handle(int fan_num);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -69,6 +69,8 @@
 #define PDPB_TMP75_U49_DEVICE I2C_BUS_PDPB_DIR "6-004b"
 #define PDPB_TMP75_U51_DEVICE I2C_BUS_PDPB_DIR "6-004c"
 
+#define FAN_REGISTER 0x80
+
 enum temp_sensor_type {
   LOCAL_SENSOR = 0,
   REMOTE_SENSOR,
@@ -215,6 +217,18 @@ const uint8_t fcb_sensor_list[] = {
   FCB_SENSOR_HSC_IN_POWER,
   FCB_SENSOR_BJT_TEMP_1,
   FCB_SENSOR_BJT_TEMP_2,
+  FCB_SENSOR_FAN1_FRONT_SPEED,
+  FCB_SENSOR_FAN1_REAR_SPEED,
+  FCB_SENSOR_FAN2_FRONT_SPEED,
+  FCB_SENSOR_FAN2_REAR_SPEED,
+  FCB_SENSOR_FAN3_FRONT_SPEED,
+  FCB_SENSOR_FAN3_REAR_SPEED,
+  FCB_SENSOR_FAN4_FRONT_SPEED,
+  FCB_SENSOR_FAN4_REAR_SPEED,
+  FCB_SENSOR_FAN5_FRONT_SPEED,
+  FCB_SENSOR_FAN5_REAR_SPEED,
+  FCB_SENSOR_FAN6_FRONT_SPEED,
+  FCB_SENSOR_FAN6_REAR_SPEED,
 };
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -657,11 +671,19 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   close(dev);
 
   /*
-   * Result is 11 bits
+   * Fan speed reading is 13 bits
+   * res[12:5] = res_h[7:0]
+   * res[4:0]  = res_l[4:0]
+   *
+   * Other reading is 11 bits
    * res[10:3] = res_h[7:0]
    * res[2:0] = res_l[2:0]
    */
-  res = (res_h << 3) | (res_l & 0x7);
+  if (reg >= FAN_REGISTER && reg <= FAN_REGISTER+22) {
+    res = ((res_h & 0xFF) << 5) | (res_l & 0x1F);
+  } else {
+    res = ((res_h & 0xFF) << 3) | (res_l & 0x7);
+  }
 
   switch(reg) {
     case NCT7904_TEMP_CH1:
@@ -684,7 +706,15 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
       break;
   }
 
-  *value = (float) (res * multipler);
+  if (reg >= FAN_REGISTER && reg <= FAN_REGISTER+22) {
+    /* fan speed reading */
+    if (res == 0x1fff || res == 0)
+      *value = 0;
+    else
+      *value = (float) (1350000 / res);
+  } else {
+    *value = (float) (res * multipler);
+  }
 
   return 0;
 }
@@ -882,7 +912,20 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case FCB_SENSOR_BJT_TEMP_2:
           sprintf(units, "C");
           break;
-
+        case FCB_SENSOR_FAN1_FRONT_SPEED:
+        case FCB_SENSOR_FAN1_REAR_SPEED:
+        case FCB_SENSOR_FAN2_FRONT_SPEED:
+        case FCB_SENSOR_FAN2_REAR_SPEED:
+        case FCB_SENSOR_FAN3_FRONT_SPEED:
+        case FCB_SENSOR_FAN3_REAR_SPEED:
+        case FCB_SENSOR_FAN4_FRONT_SPEED:
+        case FCB_SENSOR_FAN4_REAR_SPEED:
+        case FCB_SENSOR_FAN5_FRONT_SPEED:
+        case FCB_SENSOR_FAN5_REAR_SPEED:
+        case FCB_SENSOR_FAN6_FRONT_SPEED:
+        case FCB_SENSOR_FAN6_REAR_SPEED:
+          sprintf(units, "RPM");
+          break;
         default:
           sprintf(units, "");
           break;
@@ -1043,6 +1086,42 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case FCB_SENSOR_BJT_TEMP_2:
           sprintf(name, "FCB_BJT_TEMP_2");
           break;
+        case FCB_SENSOR_FAN1_FRONT_SPEED:
+          sprintf(name, "FAN1_FRONT_SPEED");
+          break;
+        case FCB_SENSOR_FAN1_REAR_SPEED:
+          sprintf(name, "FAN1_REAR_SPEED");
+          break;
+        case FCB_SENSOR_FAN2_FRONT_SPEED:
+          sprintf(name, "FAN2_FRONT_SPEED");
+          break;
+        case FCB_SENSOR_FAN2_REAR_SPEED:
+          sprintf(name, "FAN2_REAR_SPEED");
+          break;
+        case FCB_SENSOR_FAN3_FRONT_SPEED:
+          sprintf(name, "FAN3_FRONT_SPEED");
+          break;
+        case FCB_SENSOR_FAN3_REAR_SPEED:
+          sprintf(name, "FAN3_REAR_SPEED");
+          break;
+        case FCB_SENSOR_FAN4_FRONT_SPEED:
+          sprintf(name, "FAN4_FRONT_SPEED");
+          break;
+        case FCB_SENSOR_FAN4_REAR_SPEED:
+          sprintf(name, "FAN4_REAR_SPEED");
+          break;
+        case FCB_SENSOR_FAN5_FRONT_SPEED:
+          sprintf(name, "FAN5_FRONT_SPEED");
+          break;
+        case FCB_SENSOR_FAN5_REAR_SPEED:
+          sprintf(name, "FAN5_REAR_SPEED");
+          break;
+        case FCB_SENSOR_FAN6_FRONT_SPEED:
+          sprintf(name, "FAN6_FRONT_SPEED");
+          break;
+        case FCB_SENSOR_FAN6_REAR_SPEED:
+          sprintf(name, "FAN6_REAR_SPEED");
+          break;
         default:
           sprintf(name, "");
           break;
@@ -1176,13 +1255,36 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_hsc_value(HSC_OUT_CURR, I2C_DEV_FCB, I2C_ADDR_FCB_HSC, HSC_ADM1276, (float*) value);
         case FCB_SENSOR_HSC_IN_POWER:
           return read_hsc_value(HSC_IN_POWER, I2C_DEV_FCB, I2C_ADDR_FCB_HSC, HSC_ADM1276, (float*) value);
-
         case FCB_SENSOR_BJT_TEMP_1:
           return read_nct7904_value(NCT7904_TEMP_CH1, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
-          break;
         case FCB_SENSOR_BJT_TEMP_2:
           return read_nct7904_value(NCT7904_TEMP_CH2, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
-          break;
+
+        // Fan Speed
+        case FCB_SENSOR_FAN6_FRONT_SPEED:
+          return read_nct7904_value(FAN_REGISTER, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN6_REAR_SPEED:
+          return read_nct7904_value(FAN_REGISTER+2, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN5_FRONT_SPEED:
+          return read_nct7904_value(FAN_REGISTER+4, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN5_REAR_SPEED:
+          return read_nct7904_value(FAN_REGISTER+6, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN4_FRONT_SPEED:
+          return read_nct7904_value(FAN_REGISTER+8, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN4_REAR_SPEED:
+          return read_nct7904_value(FAN_REGISTER+10, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN3_FRONT_SPEED:
+          return read_nct7904_value(FAN_REGISTER+12, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN3_REAR_SPEED:
+          return read_nct7904_value(FAN_REGISTER+14, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN2_FRONT_SPEED:
+          return read_nct7904_value(FAN_REGISTER+16, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN2_REAR_SPEED:
+          return read_nct7904_value(FAN_REGISTER+18, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN1_FRONT_SPEED:
+          return read_nct7904_value(FAN_REGISTER+20, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+        case FCB_SENSOR_FAN1_REAR_SPEED:
+          return read_nct7904_value(FAN_REGISTER+22, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
         default:
           return -1;
       }

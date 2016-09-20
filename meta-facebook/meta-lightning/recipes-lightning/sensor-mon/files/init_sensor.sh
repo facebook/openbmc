@@ -43,6 +43,9 @@ I2C_ADDR_FCB_NCT7904=0x2d
 # ADM1276 is the HSC on FCB board
 I2C_ADDR_FCB_HSC=0x22
 
+# PCA9551 is the LED controller on the FCB board
+I2C_ADDR_FCB_LED=0x60
+
 # ADM1278 is the HSC on PEB board
 I2C_ADDR_PEB_HSC=0x11
 
@@ -51,6 +54,10 @@ i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_NCT7904 0x2e 0x5 b
 
 # Enable the Power IN averaging setting
 i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_HSC 0xd4 0xaf b
+
+# Light on FCB LED(turn blue)
+i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_LED 0x05 0x00  #LED 0~3
+i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_LED 0x06 0x00  #LED 4~5
 
 # Enable the Power IN averaging setting
 i2cset -y $I2C_BUS_PEB $I2C_ADDR_PEB_HSC 0xd4 0x3f1c w

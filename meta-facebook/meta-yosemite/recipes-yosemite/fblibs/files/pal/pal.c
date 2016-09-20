@@ -2535,4 +2535,23 @@ pal_log_clear(char *fru) {
     pal_set_key_value("spb_sensor_health", "1");
     pal_set_key_value("nic_sensor_health", "1");
   }
+int
+pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
+
+  // TODO: Add support to display PWM in fan-util output (similar to lightning pal)
+  return 0;
+}
+
+int
+pal_fan_dead_handle(int fan_num) {
+
+  // TODO: Add action in case of fan dead
+  return 0;
+}
+
+int
+pal_fan_recovered_handle(int fan_num) {
+
+  // TODO: Add action in case of fan recovered
+  return 0;
 }

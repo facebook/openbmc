@@ -181,6 +181,9 @@ void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 void pal_update_ts_sled();
 int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
 void pal_log_clear(char *fru);
+int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
+int pal_fan_dead_handle(int fan_num);
+int pal_fan_recovered_handle(int fan_num);
 
 #ifdef __cplusplus
 } // extern "C"

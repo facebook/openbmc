@@ -2504,3 +2504,24 @@ int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   return bic_me_xmit(fru, request, req_len, response, rlen);
 }
+
+int
+pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
+
+  // TODO: Add support to display PWM in fan-util output (similar to lightning pal)
+  return 0;
+}
+
+int
+pal_fan_dead_handle(int fan_num) {
+
+  // TODO: Add action in case of fan dead
+  return 0;
+}
+
+int
+pal_fan_recovered_handle(int fan_num) {
+
+  // TODO: Add action in case of fan recovered
+  return 0;
+}

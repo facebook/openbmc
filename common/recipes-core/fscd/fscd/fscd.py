@@ -28,6 +28,7 @@ import time
 from subprocess import Popen, PIPE
 import re
 import signal
+from lib_pal import *
 
 from fsc_control import PID, TTable
 import fsc_expr
@@ -291,14 +292,18 @@ def main():
             print("Fan %d speed: %d RPM" % (fan, rpms))
             if rpms < config['min_rpm']:
                 dead_fans.add(fan)
+                pal_fan_dead_handle(fan)
             else:
                 dead_fans.discard(fan)
         recovered_fans = last_dead_fans - dead_fans
         newly_dead_fans = dead_fans - last_dead_fans
         if len(newly_dead_fans) > 0:
             crit("%d fans failed" % (len(dead_fans),))
+            for dead_fan_num in dead_fans:
+                crit("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
         for fan in recovered_fans:
             crit("Fan %d has recovered" % (fan,))
+            pal_fan_recovered_handle(fan)
         for zone in zones:
             print("PWM: %s" % (json.dumps(zone.pwm_output)))
             pwmval = zone.run(sensors, dt)

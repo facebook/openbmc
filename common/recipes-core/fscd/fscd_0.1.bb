@@ -26,6 +26,7 @@ SRC_URI = "file://fscd.py \
            file://fsc_control.py \
            file://fsc_expr.py \
            file://fsc_parser.py \
+           file://lib_pal.py \
           "
 
 S = "${WORKDIR}"
@@ -34,6 +35,7 @@ binfiles = "fscd.py \
             fsc_control.py \
             fsc_expr.py \
             fsc_parser.py \
+            lib_pal.py \
            "
 
 pkgdir = "fscd"

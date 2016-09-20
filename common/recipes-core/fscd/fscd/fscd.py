@@ -140,7 +140,10 @@ def crit(msg):
 
 def make_controller(profile):
     if profile['type'] == 'linear':
-        controller = TTable(profile['data'])
+        controller = TTable(
+                profile['data'],
+                profile.get('negative_hysteresis', 0),
+                profile.get('positive_hysteresis', 0))
         return controller
     if profile['type'] == 'pid':
         controller = PID(

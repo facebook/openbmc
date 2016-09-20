@@ -16,5 +16,3 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://rest_usb2i2c_reset.py \
-          "

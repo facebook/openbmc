@@ -151,7 +151,8 @@ int main(int argc, char * argv[]) {
     return ret;
   }
 
-  if (fru == 0 && argc > 2) {
+  if (fru == FRU_ALL && argc > 2) {
+    printf("Cannot dump/write FRUID for \"all\". Please use select individual FRU.\n");
     print_usage();
     exit(-1);
   }
@@ -173,7 +174,7 @@ int main(int argc, char * argv[]) {
       exit(-1);
   }
 
-  if (fru != 0) {
+  if (fru != FRU_ALL) {
     ret = pal_get_fruid_name(fru, name);
     if (ret < 0) {
        return ret;

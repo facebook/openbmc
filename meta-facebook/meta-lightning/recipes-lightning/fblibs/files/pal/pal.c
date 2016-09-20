@@ -48,6 +48,8 @@
 #define GPIO_DEBUG_UART_COUNT 125
 #define GPIO_BMC_UART_SWITCH 123
 
+#define GPIO_RESET_PCIE_SWITCH 8
+
 #define GPIO_HB_LED 115
 
 #define I2C_DEV_FAN "/dev/i2c-5"
@@ -1037,3 +1039,21 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   return 0;
 }
+
+// Reset PCIE Switch
+int
+pal_reset_pcie_switch(uint8_t status) {
+
+  char path[64] = {0};
+  char *val;
+
+  val = (status == 0) ? "0": "1";
+
+  sprintf(path, GPIO_VAL, GPIO_RESET_PCIE_SWITCH);
+  if (write_device(path, val))
+    return -1;
+
+  return 0;
+}
+
+

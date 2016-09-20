@@ -124,10 +124,16 @@ main(int argc, char **argv) {
 
       // Get the Fan Speed
       ret = pal_get_fan_speed(i, &rpm);
+      pwm = 0;
       if (!ret) {
         memset(fan_name, 0, 32);
         pal_get_fan_name(i, fan_name);
-        printf("%s Speed: %d RPM\n", fan_name, rpm);
+        if ((pal_get_pwm_value(i, &pwm)) == 0)
+          printf("%s Speed: %d RPM (%d%)\n", fan_name, rpm, pwm);
+        else {
+          printf("Error while getting fan PWM for Fan %d\n", i);
+          printf("%s Speed: %d RPM\n", fan_name, rpm);
+        }
       } else {
         printf("Error while getting fan speed for Fan %d\n", i);
       }

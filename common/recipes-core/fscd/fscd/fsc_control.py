@@ -1,3 +1,5 @@
+import math
+
 class PID:
     def __init__(self, setpoint, kp=0.0, ki=0.0, kd=0.0, neg_hyst=0.0, pos_hyst=0.0):
         self.last_error = 0
@@ -29,15 +31,33 @@ class PID:
 
 # Threshold table
 class TTable:
-    def __init__(self, table):
+    def __init__(self, table, neg_hyst=0.0, pos_hyst=0.0):
         self.table = sorted(table,
                             key=lambda (in_thr, out): in_thr,
                             reverse=True)
+        self.compare_fsc_value = 0
+        self.last_out = None
+        self.neghyst=neg_hyst
+        self.poshyst=pos_hyst
 
     def run(self, value, dt):
         mini = 0
+
+        if value >= self.compare_fsc_value:
+            if math.fabs(self.compare_fsc_value-value) <= self.poshyst:
+               return self.last_out
+
+        if value <= self.compare_fsc_value:
+            if math.fabs(self.compare_fsc_value-value) <= self.neghyst:
+               return self.last_out
+
         for (in_thr, out) in self.table:
             mini = out
             if value >= in_thr:
-                return out
+               self.compare_fsc_value=value
+               self.last_out = out
+               return out
+
+        self.compare_fsc_value=value
+        self.last_out = mini
         return mini

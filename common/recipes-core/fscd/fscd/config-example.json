@@ -12,6 +12,8 @@
   "profiles": {
     "linear_inlet": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
       "data": [
         [ 25, 18 ],
         [ 27, 19 ],
@@ -28,6 +30,8 @@
     },
     "linear_margin": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
       "data": [
         [-36, 9],
         [-34, 10],

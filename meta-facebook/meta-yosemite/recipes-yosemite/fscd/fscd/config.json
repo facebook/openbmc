@@ -11,6 +11,8 @@
   "profiles": {
     "linear_dimm": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
       "data": [
         [65, 18],
         [67, 25],
@@ -22,6 +24,8 @@
     },
     "linear_mezz": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
       "data": [
         [85, 18],
         [87, 35],
@@ -32,6 +36,8 @@
     },
     "linear_inlet": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
       "data": [
         [ 25, 18 ],
         [ 27, 19 ],
@@ -48,6 +54,8 @@
     },
     "linear_cpu_margin": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
       "data": [
         [ -30, 18 ],
         [ -28, 20 ],
@@ -69,6 +77,8 @@
     },
     "linear_mb_outlet": {
       "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
       "data": [
         [ 43, 18 ],
         [ 45, 19 ],

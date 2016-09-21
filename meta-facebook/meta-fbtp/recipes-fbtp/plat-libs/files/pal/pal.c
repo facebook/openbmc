@@ -4369,3 +4369,16 @@ pal_log_clear(char *fru) {
     pal_set_key_value("nic_sensor_health", "1");
   }
 }
+
+//For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e
+int
+pal_get_plat_sku_id(void) {
+
+  return 0;
+}
+
+int
+pal_get_poss_pcie_config(uint8_t *pcie_config){
+
+  return 0;
+}

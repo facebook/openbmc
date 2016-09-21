@@ -51,6 +51,8 @@
 #define GPIO_RESET_PCIE_SWITCH 8
 
 #define GPIO_HB_LED 115
+#define GPIO_BMC_SELF_TRAY 108
+#define GPIO_PEER_BMC_HB 117
 
 #define I2C_DEV_FAN "/dev/i2c-5"
 #define I2C_ADDR_FAN 0x2d
@@ -1180,4 +1182,32 @@ pal_reset_pcie_switch(uint8_t status) {
   return 0;
 }
 
+int
+pal_peer_tray_detection(uint8_t *value) {
 
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_PEER_BMC_HB);
+  if (read_device(path, &val))
+    return -1;
+
+  *value = (uint8_t) val;
+
+  return 0;
+}
+
+int
+pal_self_tray_location(uint8_t *value) {
+
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_BMC_SELF_TRAY);
+  if (read_device(path, &val))
+    return -1;
+
+  *value = (uint8_t) val;
+
+  return 0;
+}

@@ -59,6 +59,9 @@ i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_HSC 0xd4 0xaf b
 i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_LED 0x05 0x00  #LED 0~3
 i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_LED 0x06 0x00  #LED 4~5
 
+# Initialize the 7904 monitor_flag register
+i2cset -y $I2C_BUS_FCB $I2C_ADDR_FCB_NCT7904 0xba 0x00
+
 # Enable the Power IN averaging setting
 i2cset -y $I2C_BUS_PEB $I2C_ADDR_PEB_HSC 0xd4 0x3f1c w
 

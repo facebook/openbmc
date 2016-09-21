@@ -96,6 +96,7 @@ enum nct7904_registers {
   NCT7904_VSEN7 = 0x4C,
   NCT7904_VSEN9 = 0x50,
   NCT7904_3VDD = 0x5C,
+  NCT7904_MONITOR_FLAG = 0xBA,
   NCT7904_BANK_SEL = 0xFF,
 };
 
@@ -375,6 +376,32 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_2,
       55, 50, 0, 5, 10, 0, 0, 0);
 
+  // FCB Fan Speed
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN1_REAR_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN2_FRONT_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN2_REAR_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN3_FRONT_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN3_REAR_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN4_FRONT_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN4_REAR_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN5_FRONT_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN5_REAR_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN6_FRONT_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN6_REAR_SPEED,
+      0, 0, 0, 800, 0, 0, 0, 0);
+
   init_done = true;
 }
 
@@ -636,6 +663,10 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   int res_h;
   int res_l;
   int bank;
+  int retry;
+  uint8_t peer_tray_exist;
+  uint8_t location;
+  uint8_t monitor_flag;
   uint16_t res;
   float multipler;
 
@@ -658,7 +689,37 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     if (i2c_smbus_write_byte_data(dev, NCT7904_BANK_SEL, 0) < 0) {
       syslog(LOG_ERR, "read_nct7904_value: i2c_smbus_write_byte_data: "
           "selecting Bank 0 failed");
+      close(dev);
       return -1;
+    }
+  }
+
+  if (peer_tray_exist) {
+  /* Determine this tray located on upper or lower tray; 0:Upper, 1:Lower*/
+    ret = pal_self_tray_location(&location);
+    if(ret < 0) {
+      syslog(LOG_ERR, "read_nct7904_value: pal_self_tray_location failed");
+      return -1;
+    }
+    retry = 0;
+    while(retry < MAX_RETRY_TIMES) {
+      monitor_flag = i2c_smbus_read_byte_data(dev, NCT7904_MONITOR_FLAG);
+
+      if (UPPER_TRAY == location) {
+        /* BMC can query sensor only when peer BMC's queries are done. */
+        if (LOWER_TRAY_DONE == monitor_flag) {
+          break;
+        } else {
+          retry++;
+        }
+      } else if (LOWER_TRAY == location) {
+        if (UPPER_TRAY_DONE == monitor_flag) {
+          break;
+        } else {
+          retry++;
+        }
+      }
+      msleep(100);
     }
   }
 
@@ -667,6 +728,30 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
 
   /* Read the LSB byte for the value */
   res_l = i2c_smbus_read_byte_data(dev, reg + 1);
+
+  /* Modify the monitor_flag when the last sensor query finish in this query interval */
+  if (FAN_REGISTER+2 == reg) {
+
+    if (location == UPPER_TRAY) {
+
+      if (i2c_smbus_write_byte_data(dev, NCT7904_MONITOR_FLAG, UPPER_TRAY_DONE) < 0) {
+        syslog(LOG_ERR, "read_nct7904_value: i2c_smbus_write_byte_data: "
+            "upper tray monitor failed");
+        close(dev);
+        return -1;
+      }
+
+    } else {
+
+      if (i2c_smbus_write_byte_data(dev, NCT7904_MONITOR_FLAG, LOWER_TRAY_DONE) < 0) {
+        syslog(LOG_ERR, "read_nct7904_value: i2c_smbus_write_byte_data: "
+            "lower tray monitor failed");
+        close(dev);
+        return -1;
+      }
+
+    }
+  }
 
   close(dev);
 

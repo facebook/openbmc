@@ -37,6 +37,14 @@ extern "C" {
 #define THERMAL_CONSTANT      255
 #define ERR_NOT_READY         -2
 
+#define UPPER_TRAY 0x00
+#define LOWER_TRAY 0x01
+
+#define LOWER_TRAY_DONE 0x00
+#define UPPER_TRAY_DONE 0x01
+
+#define MAX_RETRY_TIMES 3
+
 typedef struct _sensor_info_t {
   bool valid;
   sdr_full_t sdr;

@@ -368,4 +368,10 @@ gpio_get L5
 gpio_get L6
 gpio_get L7
 
+# PEER_BMC_HB - GPIOO5
+# To use GPIOO5, SCU[88] must be 1
+devmem_clear_bit $(scu_addr 88) 13
+
+gpio_get O5
+
 exit 0

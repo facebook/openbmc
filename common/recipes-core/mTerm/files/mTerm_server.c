@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+#include <ctype.h>
 #include <sys/file.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -91,12 +91,18 @@ void closeClient(fd_set* master, int clientfd) {
   FD_CLR(clientfd, master);
 }
 
+void sendBreak(int clientFd, int solFd, char *c) {
+  syslog(LOG_INFO, "mTerm_server: Client socket %d send BREAK+%c\n", clientFd,*c);
+  tcsendbreak(solFd, 1);
+}
+
 static void processClient(fd_set* master, int clientFd , int solFd,
                           bufStore *buf) {
   char data[BUF_SIZE];
   int nbytes = 0;
   TlvHeader header;
   struct iovec vec[2];
+  char* tbuf;
 
   vec[0].iov_base = &header;
   vec[0].iov_len = sizeof(header);
@@ -127,7 +133,16 @@ static void processClient(fd_set* master, int clientFd , int solFd,
          buffer read per client, thus subsequent reads can be based on the
          last reference
         */
-        bufferGetLines(buf->file, clientFd, atoi(vec[1].iov_base), 0);
+        tbuf = vec[1].iov_base;
+        if (isalpha(*tbuf)) {
+          if (*tbuf == 'b') {
+            sendBreak(clientFd, solFd, tbuf);
+          } else {
+            syslog(LOG_ERR, "mTerm_server: Received incorrect break char");
+          }
+        } else {
+          bufferGetLines(buf->file, clientFd, atoi(vec[1].iov_base), 0);
+        }
         break;
       case ASCII_CTRL_X:
         syslog(LOG_INFO, "mTerm_server: Client socket %d closed\n", clientFd);

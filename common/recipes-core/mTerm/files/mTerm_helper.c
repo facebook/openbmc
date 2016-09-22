@@ -27,9 +27,10 @@
 
 void escHelp(void) {
   printf("\r\n------------------TERMINAL MULTIPLEXER---------------------\r\n");
-  printf("  CTRL-L ?  : Display help message.\r\n");
-  printf("  CTRL-X    : Terminate the connection.\r\n");
+  printf("  CTRL-L ?   : Display help message.\r\n");
+  printf("  CTRL-X     : Terminate the connection.\r\n");
   printf("  /var/log/mTerm_wedge.log : Log location\r\n");
+  printf("  CTRL-L + b : Send Break\r\n");
   /*TODO: Log file read from tool*/
   //printf("  CTRL-L :N - For reading last N lines from end of buffer.\r\n");
   printf("\r\n-----------------------------------------------------------\r\n");
@@ -52,6 +53,11 @@ int processEscMode(int clientfd, char c, escMode* mode) {
     *mode = SEND;
     return 1;
   }
+  if (isalpha(c) && (c == 'b')) {
+    printf("Warning: Send BREAK \r\n");
+    escSendBreak(clientfd, &c);
+  }
+  *mode = EOL;
   return 1;
 }
 
@@ -77,6 +83,11 @@ int sendTlv(int fd, uint16_t type, void* value, uint16_t valLen) {
     return -1;
   }
   return rc;
+}
+
+int escSendBreak(int clientfd, char *c) {
+  sendTlv(clientfd, ASCII_CTRL_L, c, 1);
+  return 1;
 }
 
 int escSend(int clientfd, char c, escMode* mode) {

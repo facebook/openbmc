@@ -63,3 +63,4 @@ long int bufferGetLines(char* fname, int clientfd, int n, long int curr);
 void writeToBuffer(bufStore *buf, char* data, int len);
 // tx
 int sendTlv(int fd, uint16_t type, void* value, uint16_t valLen);
+int escSendBreak(int clientfd, char *c);

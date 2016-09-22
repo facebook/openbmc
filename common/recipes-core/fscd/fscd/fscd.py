@@ -284,6 +284,7 @@ def main():
 
     last = time.time()
     dead_fans = set()
+    pwr_status = machine.read_power()
     while True:
         last_dead_fans = dead_fans.copy()
         if wdfile:

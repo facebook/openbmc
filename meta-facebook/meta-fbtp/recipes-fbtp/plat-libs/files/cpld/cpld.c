@@ -42,66 +42,90 @@ Please get the JEDEC file format before you read the code
 int debug = 0;
 struct cpld_dev_info *cur_dev;
 xfer_mode mode = HW_MODE;
+FILE *fp_in = NULL;
 
-int cpld_get_ver(unsigned int *ver)
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+int cpld_intf_open(void)
 {
-	int jtag_fd = open("/dev/ast-jtag", O_RDWR);
-	if(jtag_fd == -1) {
-		printf("Can't open /dev/ast-jtag, please install driver!! \n");
+	int i = 0;
+	unsigned int dev_id;
+
+	if (ast_jtag_open()) {
 		return -1;
 	}
 
-	/*
-	 * Enable Flash Conf I/F (Transparent Mode)
-	 * Command 0x74, Operand 0x08 00 00
-	 */
-	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0x74080000);
+	if (cpld_get_device_id(&dev_id)) {
+		ast_jtag_close();
+		return -1;
+	}
 
-	// Read USERCODE 0xC0, Operand 0x00 00 00
-	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xC0000000);
+	for (i = 0; i < ARRAY_SIZE(lattice_device_list); i++) {
+		if (dev_id == lattice_device_list[i].dev_id)
+			break;
+	}
 
-        // Issue TDO for 32 bits
-	ast_jtag_tdo_xfer(jtag_fd, 0, 32, ver);
-
-	// Disable Conf IF 0x26, Operand 0x00 00
-	ast_jtag_sir_xfer(jtag_fd, 0, 24, 0x260000);
-
-	// Issue Bypass CMD 0xFF, Operand 0xFF FF FF
-	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xFFFFFFFF);
-
-	close(jtag_fd);
+	if (i == ARRAY_SIZE(lattice_device_list)) {
+		//Unknow CPLD device
+		ast_jtag_close();
+		return -1;
+	} else {
+		//Found CPLD device
+		cur_dev = &lattice_device_list[i];
+	}
 
 	return 0;
 }
 
+int cpld_intf_close(void)
+{
+	ast_jtag_close();
+
+	return 0;
+}
+
+int cpld_get_ver(unsigned int *ver)
+{
+	if (cur_dev->cpld_flash_enable())
+		return -1;
+
+	cur_dev->cpld_ver(ver);
+
+	cur_dev->cpld_flash_disable();
+
+	return 0;
+}
 
 int cpld_get_device_id(unsigned int *dev_id)
 {
-	int jtag_fd = open("/dev/ast-jtag", O_RDWR);
-	if(jtag_fd == -1) {
-		printf("Can't open /dev/ast-jtag, please install driver!! \n");
-		return -1;
-	}
-
-	/*
-	 * Enable Flash Conf I/F (Transparent Mode)
-	 * Command 0x74, Operand 0x08 00 00
-	 */
-	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0x74080000);
-
-	// Read Device ID Code 0xE0, Operand 0x00 00 00
-	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xE0000000);
-
-        // Issue TDO for 32 bits
-        ast_jtag_tdo_xfer(jtag_fd, 0, 32, dev_id);
-
-	// Disable Conf IF 0x26, Operand 0x00 00
-	ast_jtag_sir_xfer(jtag_fd, 0, 24, 0x260000);
-
-	// Issue Bypass CMD 0xFF, Operand 0xFF FF FF
-	ast_jtag_sir_xfer(jtag_fd, 0, 32, 0xFFFFFFFF);
-
-	close(jtag_fd);
+	/* SIR 8 TDI (16); */
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, IDCODE_PUB);
+	ast_jtag_tdo_xfer(0, 32, dev_id);
 
 	return 0;
+}
+
+int cpld_verify(void)
+{
+	if (cur_dev == NULL || fp_in == NULL)
+		return -1;
+
+	return cur_dev->cpld_verify(fp_in);
+}
+
+int cpld_program(void)
+{
+	if (cur_dev == NULL || fp_in == NULL)
+		return -1;
+
+	return cur_dev->cpld_program(fp_in);
+}
+
+int cpld_erase(void)
+{
+	if (cur_dev == NULL)
+		return -1;
+
+	return cur_dev->cpld_erase();
+
 }

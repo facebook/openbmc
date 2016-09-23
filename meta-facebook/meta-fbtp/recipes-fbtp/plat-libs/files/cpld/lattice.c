@@ -139,10 +139,10 @@ int lcmxo2_2000hc_cpld_program(FILE *jed_fd)
 	memset(dr_data, 0xff, (424/32 + 1) * sizeof(unsigned int));
 	ast_jtag_tdi_xfer( 0, 424, dr_data);
 
-	//! Enable the Flash
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8 TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Enable the Flash (Transparent Mode)
+	//! Shift in ISC ENABLE X (0x74) instruction
+	//SIR 8 TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8 TDI  (00);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;
@@ -166,9 +166,9 @@ int lcmxo2_2000hc_cpld_program(FILE *jed_fd)
 	//		MASK (C0);
 	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
 
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8 TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Shift in ISC ENABLE X (0x74) instruction
+	//SIR 8 TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8 TDI  (08);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;
@@ -547,10 +547,10 @@ int lcmxo2_2000hc_cpld_flash_enable(void)
 	memset(dr_data, 0xff, ((424/32) + 1) * sizeof(unsigned int));
 	ast_jtag_tdi_xfer(0, 424, dr_data);
 
-	//! Enable the Flash
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8	TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Enable the Flash (Transparent Mode)
+	//! Shift in ISC ENABLE X(0x74) instruction
+	//SIR 8	TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8	TDI  (00);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;
@@ -574,9 +574,9 @@ int lcmxo2_2000hc_cpld_flash_enable(void)
 	//	MASK (C0);
 	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
 
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8	TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Shift in ISC ENABLE X (0x74) instruction
+	//SIR 8	TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8	TDI  (08);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;
@@ -709,10 +709,10 @@ int lcmxo2_2000hc_cpld_verify(FILE *jed_fd)
 	memset(dr_data, 0xff, ((424/32) + 1) * sizeof(unsigned int));
 	ast_jtag_tdi_xfer(0, 424, dr_data);
 
-	//! Enable the Flash
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8	TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Enable the Flash (Transparent Mode)
+	//! Shift in ISC ENABLE X (0x74) instruction
+	//SIR 8	TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8	TDI  (00);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;
@@ -736,9 +736,9 @@ int lcmxo2_2000hc_cpld_verify(FILE *jed_fd)
 	//	MASK (C0);
 	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
 
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8	TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Shift in ISC ENABLE X (0x74) instruction
+	//SIR 8	TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8	TDI  (08);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;
@@ -1058,10 +1058,10 @@ int lcmxo2_2000hc_cpld_erase(void)
 	ast_jtag_tdi_xfer( 0, 424, sdr_data);
 	free(sdr_data);
 
-	//! Enable the Flash
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8	TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Enable the Flash (Transparent Mode)
+	//! Shift in ISC ENABLE X (0x74) instruction
+	//SIR 8	TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8	TDI  (00);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;
@@ -1085,9 +1085,9 @@ int lcmxo2_2000hc_cpld_erase(void)
 	//		MASK (C0);
 	tdo = ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
 
-	//! Shift in ISC ENABLE(0xC6) instruction
-	//SIR 8	TDI  (C6);
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0xC6);
+	//! Shift in ISC ENABLE X (0x74) instruction
+	//SIR 8	TDI  (74);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, 0x74);
 
 	//SDR 8	TDI  (08);
 	//RUNTEST IDLE	2 TCK	1.00E-003 SEC;

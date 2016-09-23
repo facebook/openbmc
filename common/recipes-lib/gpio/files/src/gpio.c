@@ -34,6 +34,9 @@
 
 #define MAX_PINS 64
 
+#define GPIO_FM_CPU_CATERR_LVT3_N 49
+#define GPIO_FM_CPU_MSMI_LVT3_N 107
+
 void gpio_init_default(gpio_st *g) {
   g->gs_gpio = -1;
   g->gs_fd = -1;
@@ -209,7 +212,11 @@ int gpio_poll_open(gpio_poll_st *gpios, int count)
         continue;
      }
      gpio_change_direction(&gpios[i].gs,  GPIO_DIRECTION_IN);
-     gpio_change_edge(&gpios[i].gs, GPIO_EDGE_BOTH);
+
+     if ( gpios[i].gs.gs_gpio == GPIO_FM_CPU_MSMI_LVT3_N || gpios[i].gs.gs_gpio == GPIO_FM_CPU_CATERR_LVT3_N )
+       gpio_change_edge(&gpios[i].gs, GPIO_EDGE_FALLING);
+     else
+       gpio_change_edge(&gpios[i].gs, GPIO_EDGE_BOTH);
   }
 }
 

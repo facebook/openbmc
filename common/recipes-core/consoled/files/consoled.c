@@ -35,8 +35,8 @@
 #define BAUDRATE      B57600
 #define CTRL_X        0x18
 #define ASCII_ENTER   0x0D
-#define MAX_LOGFILE_LINES 600 // Maximum lines based on carriage returns or new line
-#define MAX_LOGFILE_SIZE 51200 // 50KB size => 600 lines of 80 characters each = ~48000B
+#define MAX_LOGFILE_LINES 1200 // Maximum lines based on carriage returns or new line
+#define MAX_LOGFILE_SIZE 102400 // 100KB size => 1200 lines of 80 characters each = ~108000B
 static sig_atomic_t sigexit = 0;
 
 static void

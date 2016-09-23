@@ -34,6 +34,8 @@
 #include <openbmc/gpio.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
+static uint8_t CATERR_irq = 0;
+static uint8_t MSMI_irq = 0;
 
 // Return GPIO number from given string
 // e.g. GPIOA0 -> 0, GPIOB6->14, GPIOAA2->210
@@ -80,7 +82,13 @@ static void gpio_event_handle_power(void *p)
     return;
   }
 
-  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+  if (gp->gs.gs_gpio == gpio_num("GPIOG1")) {
+    CATERR_irq++;
+  } else if (gp->gs.gs_gpio == gpio_num("GPION3")) {
+           MSMI_irq++;
+  } else {
+      syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+  }
 }
 
 // GPIO table to be monitored when MB is OFF
@@ -126,6 +134,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPION3 - FM_CPU_MSMI_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOS0 - FM_THROTTLE_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOX4 - H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N"},
@@ -188,6 +197,7 @@ gpio_init(void) {
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM1");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM4");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM5");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPION3");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOQ6");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOS0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX4");
@@ -201,10 +211,66 @@ gpio_init(void) {
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAB0");
 }
 
+// Thread for IERR/MCERR event detect
+static void *
+ierr_mcerr_event_handler() {
+  uint8_t CATERR_ierr_time_count = 0;
+  uint8_t MSMI_ierr_time_count = 0;
+  uint8_t status = 0;
+
+  while (1) {
+    if ( CATERR_irq > 0 ){
+      CATERR_ierr_time_count++;
+      if ( CATERR_ierr_time_count == 2 ){
+        if ( CATERR_irq == 1 ){
+          pal_get_CPU_CATERR(1, &status);
+          if (status == 0) {
+            syslog(LOG_CRIT, "ASSERT: IERR/CATERR\n");
+          } else {
+              syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
+          }
+            CATERR_irq--;
+            CATERR_ierr_time_count = 0;
+          } else if ( CATERR_irq > 1 ){
+                   while (CATERR_irq > 1){
+                        syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
+                        CATERR_irq = CATERR_irq - 1;
+                   }
+                   CATERR_ierr_time_count = 1;
+                 }
+        }
+    }
+
+    if ( MSMI_irq > 0 ){
+      MSMI_ierr_time_count++;
+      if ( MSMI_ierr_time_count == 2 ){
+        if ( MSMI_irq == 1 ){
+          pal_get_CPU_MSMI(1, &status);
+          if (status == 0) {
+            syslog(LOG_CRIT, "ASSERT: IERR/MSMI\n");
+          } else {
+              syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
+          }
+          MSMI_irq--;
+          MSMI_ierr_time_count = 0;
+        } else if ( MSMI_irq > 1 ){
+                 while (MSMI_irq > 1){
+                      syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
+                      MSMI_irq = MSMI_irq - 1;
+                 }
+                 MSMI_ierr_time_count = 1;
+               }
+       }
+    }
+    usleep(25000);
+   }
+}
+
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
   uint8_t status = 0;
+  pthread_t tid_ierr_mcerr_event;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -226,6 +292,12 @@ main(int argc, void **argv) {
     pal_get_server_power(1, &status);
 
     if (status == SERVER_POWER_ON) {
+      //Create thread for IERR/MCERR event detect
+      if (pthread_create(&tid_ierr_mcerr_event, NULL, ierr_mcerr_event_handler, NULL) < 0) {
+         syslog(LOG_WARNING, "pthread_create for ierr_mcerr_event_handler\n");
+         exit(1);
+       }
+
       gpio_init();
       gpio_poll_open(g_gpios, g_count);
       gpio_poll(g_gpios, g_count, POLL_TIMEOUT);

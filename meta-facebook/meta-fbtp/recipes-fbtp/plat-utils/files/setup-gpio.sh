@@ -342,3 +342,11 @@ gpio_set E1 1
 # Disable JTAG Engine
 devmem_clear_bit $(jtag_addr 08) 30
 devmem_clear_bit $(jtag_addr 08) 31
+
+# FM_CPU_MSMI_LVT3_N
+devmem_clear_bit $(scu_addr 88) 3
+gpio_export N3
+
+# FM_CPU_CATERR_LVT3_N
+devmem_clear_bit $(scu_addr 84) 1
+gpio_export G1

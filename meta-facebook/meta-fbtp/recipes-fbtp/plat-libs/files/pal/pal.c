@@ -79,6 +79,8 @@
 #define GPIO_BOARD_REV_ID2 29
 #define GPIO_SLT_CFG0 142
 #define GPIO_SLT_CFG1 143
+#define GPIO_FM_CPU_CATERR_LVT3_N 49
+#define GPIO_FM_CPU_MSMI_LVT3_N 107
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -1865,6 +1867,44 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   *status = 1;
 
   return 0;
+}
+int
+pal_get_CPU_CATERR(uint8_t fru, uint8_t *status) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, GPIO_VAL, GPIO_FM_CPU_CATERR_LVT3_N);
+
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (val == 0x0) {
+     *status = 0;
+  } else {
+     *status = 1;
+  }
+  return 0;
+}
+
+int
+pal_get_CPU_MSMI(uint8_t fru, uint8_t *status) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, GPIO_VAL, GPIO_FM_CPU_MSMI_LVT3_N);
+
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (val == 0x0) {
+    *status = 0;
+   } else {
+    *status = 1;
+   }
+
+   return 0;
 }
 
 int

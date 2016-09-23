@@ -113,15 +113,22 @@ void *kcs_thread(void) {
 }
 
 int
-main(void) {
+main(int argc, char * const argv[]) {
   pthread_t thread;
+  char cmd[256], device[256];
+  uint8_t kcs_channel_num = 2;
 
   daemon(1, 0);
   openlog("kcsd", LOG_CONS, LOG_DAEMON);
 
-  system("echo 1 > /sys/devices/platform/ast-kcs.2/enable");
+  if (argc > 1)
+    kcs_channel_num = (uint8_t)strtoul(argv[1], NULL, 0);
 
-  kcs_fd = open("/dev/ast-kcs.2", O_RDWR);
+  sprintf(cmd, "echo 1 > /sys/devices/platform/ast-kcs.%d/enable", kcs_channel_num);
+  system(cmd);
+
+  sprintf(device, "/dev/ast-kcs.%d", kcs_channel_num);
+  kcs_fd = open(device, O_RDWR);
   if (!kcs_fd) {
     syslog(LOG_WARNING, "kcsd: can not open kcs device\n");
     exit(-1);

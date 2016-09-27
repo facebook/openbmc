@@ -232,34 +232,10 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   char sensor_name[32];
   char error_log[128];
   char error_type[64];
-  char oem_data[16];
-  char mfg_id[16];
+  char oem_data[32];
   int ret;
   struct tm ts;
   char time[64];
-
-  /* Convert Timestamp from Unix time (Byte 6:3) to Human readable format */
-  timestamp = 0;
-  timestamp |= sel[3];
-  timestamp |= sel[4] << 8;
-  timestamp |= sel[5] << 16;
-  timestamp |= sel[6] << 24;
-  sprintf(time, "%u", timestamp);
-  memset(&ts, 0, sizeof(struct tm));
-  strptime(time, "%s", &ts);
-  memset(&time, 0, sizeof(time));
-  strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &ts);
-
-  /* OEM Data (Byte 10:15) */
-  sprintf(oem_data, "%02X%02X%02X%02X%02X%02X", sel[10], sel[11], sel[12], sel[13],
-      sel[14], sel[15]);
-
-  /* Manufacturer ID (Byte 9:7) */
-  sprintf(mfg_id, "%02X%02X%02X", sel[9], sel[8], sel[7]);
-
-  /* Sensor num (Byte 11) */
-  sensor_num = (uint8_t) sel[11];
-  ret = pal_get_event_sensor_name(fru, sensor_num, sensor_name);
 
   /* Record Type (Byte 2) */
   record_type = (uint8_t) sel[2];
@@ -273,21 +249,63 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
     sprintf(error_type, "Unknown");
   }
 
-  /* Event Data (Byte 13:15) */
-  ret = pal_parse_sel(fru, sensor_num, &sel[10], error_log);
+  if (record_type < 0xE0) {
+    /* Convert Timestamp from Unix time (Byte 6:3) to Human readable format */
+    timestamp = 0;
+    timestamp |= sel[3];
+    timestamp |= sel[4] << 8;
+    timestamp |= sel[5] << 16;
+    timestamp |= sel[6] << 24;
+    sprintf(time, "%u", timestamp);
+    memset(&ts, 0, sizeof(struct tm));
+    strptime(time, "%s", &ts);
+    memset(&time, 0, sizeof(time));
+    strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &ts);
 
-  /* Check if action needs to be taken based on the SEL message */
-  if (!ret)
-     ret = pal_sel_handler(fru, sensor_num);
+    /* OEM Data (Byte 10:15) */
+    sprintf(oem_data, "%02X%02X%02X%02X%02X%02X", sel[10], sel[11], sel[12], sel[13],
+        sel[14], sel[15]);
+  }
+
+  if (record_type < 0xC0) {
+    /* Sensor num (Byte 11) */
+    sensor_num = (uint8_t) sel[11];
+    ret = pal_get_event_sensor_name(fru, sensor_num, sensor_name);
+
+    /* Event Data (Byte 13:15) */
+    ret = pal_parse_sel(fru, sensor_num, &sel[10], error_log);
+
+    /* Check if action needs to be taken based on the SEL message */
+    if (!ret)
+      ret = pal_sel_handler(fru, sensor_num);
+
+    syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
+        "Sensor: %s (0x%02X), Raw data: (%s) %s ",
+        fru,
+        error_type, record_type,
+        time,
+        sensor_name, sensor_num,
+        oem_data, error_log);
+  } else if (record_type < 0xE0) {
+    syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
+        "Raw data: (%s) ",
+        fru,
+        error_type, record_type,
+        time,
+        oem_data);
+  } else {
+    /* OEM Data (Byte 3:15) */
+    sprintf(oem_data, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", sel[3], sel[4], sel[5],
+        sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
+
+    syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), "
+        "Raw data: (%s) ",
+        fru,
+        error_type, record_type,
+        oem_data);
+  }
 
   pal_update_ts_sled();
-  syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-      "Sensor: %s (0x%02X), Raw data: (%s) %s ",
-      fru,
-      error_type, record_type,
-      time,
-      sensor_name, sensor_num,
-      oem_data, error_log);
 }
 
 // Platform specific SEL API entry points
@@ -415,7 +433,8 @@ sel_add_entry(int node, sel_msg_t *msg, int *rec_id) {
   }
 
   // Update message's time stamp starting at byte 4
-  time_stamp_fill(&msg->msg[3]);
+  if (msg->msg[2] < 0xE0)
+    time_stamp_fill(&msg->msg[3]);
 
   // Add the enry at end
   memcpy(g_sel_data[node][g_sel_hdr[node].end].msg, msg->msg, sizeof(sel_msg_t));

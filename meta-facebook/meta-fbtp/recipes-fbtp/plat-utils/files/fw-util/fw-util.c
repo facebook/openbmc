@@ -316,6 +316,8 @@ fw_update_fru(char **argv, uint8_t slot_id) {
 #endif
   if (!strcmp(argv[3], "--bios")) {
     system("power-util mb off");
+    system("me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
+    sleep(1);
     gpio_export(GPIO_SPI_FLASH);
     gpio_export(GPIO_BMC_CTRL);
     gpio_open(&spi_flash_pin, GPIO_SPI_FLASH);
@@ -334,6 +336,8 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     gpio_unexport(GPIO_SPI_FLASH);
     gpio_unexport(GPIO_BMC_CTRL);
     system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind");
+    system("me-util 0x18 0x02");
+    sleep(1);
     system("power-util mb on");
     return 0;
   }

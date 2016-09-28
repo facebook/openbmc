@@ -4422,3 +4422,24 @@ pal_get_poss_pcie_config(uint8_t *pcie_config){
 
   return 0;
 }
+
+int
+pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
+
+  // TODO: Add support to display PWM in fan-util output (similar to lightning pal)
+  return 0;
+}
+
+int
+pal_fan_dead_handle(int fan_num) {
+
+  // TODO: Add action in case of fan dead
+  return 0;
+}
+
+int
+pal_fan_recovered_handle(int fan_num) {
+
+  // TODO: Add action in case of fan recovered
+  return 0;
+}

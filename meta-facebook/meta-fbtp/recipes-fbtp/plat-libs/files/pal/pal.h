@@ -353,6 +353,9 @@ int pal_get_slot_cfg_id(uint8_t *id);
 void pal_log_clear(char *fru);
 int pal_get_plat_sku_id(void);
 int pal_get_poss_pcie_config(uint8_t *pcie_config);
+int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
+int pal_fan_dead_handle(int fan_num);
+int pal_fan_recovered_handle(int fan_num);
 
 #ifdef __cplusplus
 } // extern "C"

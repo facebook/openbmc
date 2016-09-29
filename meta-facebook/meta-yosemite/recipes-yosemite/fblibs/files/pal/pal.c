@@ -93,6 +93,8 @@
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
 
+#define MAX_READ_RETRY 10
+
 const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -747,6 +749,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
   char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
+  uint8_t retry = MAX_READ_RETRY;
 
   /* Check whether the system is 12V off or on */
   ret = pal_is_server_12v_on(slot_id, status);
@@ -762,7 +765,13 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   }
 
   /* If 12V-on, check if the CPU is turned on or not */
-  ret = bic_get_gpio(slot_id, &gpio);
+  while (retry) {
+    ret = bic_get_gpio(slot_id, &gpio);
+    if (!ret)
+      break;
+    msleep(50);
+    retry--;
+  }
   if (ret) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
     syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
@@ -1479,6 +1488,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   int ret;
+  uint8_t retry = MAX_READ_RETRY;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1500,7 +1510,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
   }
 
-  ret = yosemite_sensor_read(fru, sensor_num, value);
+  while (retry) {
+    ret = yosemite_sensor_read(fru, sensor_num, value);
+    if(ret >= 0)
+      break;
+    msleep(50);
+    retry--;
+  }
   if(ret < 0) {
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;

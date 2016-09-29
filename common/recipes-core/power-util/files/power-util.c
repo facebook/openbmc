@@ -32,6 +32,8 @@
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
 
+#define MAX_RETRIES          10
+
 const char *pwr_option_list = "status, graceful-shutdown, off, on, cycle, "
   "12V-off, 12V-on, 12V-cycle";
 
@@ -86,6 +88,7 @@ power_util(uint8_t fru, uint8_t opt) {
 
   int ret;
   uint8_t status;
+  int retries;
 
   switch(opt) {
     case PWR_STATUS:
@@ -171,15 +174,23 @@ power_util(uint8_t fru, uint8_t opt) {
       printf("Powering fru %u to ON state...\n", fru);
 
       ret = pal_set_server_power(fru, SERVER_POWER_ON);
+      if (ret == 1) {
+        printf("fru %u is already powered ON...\n", fru);
+        return 0;
+      }
+      for (retries = 0; retries < MAX_RETRIES; retries++) {
+         sleep(3);
+         ret = pal_get_server_power(fru, &status);
+         if ((ret >= 0) && (status == SERVER_POWER_ON)) {
+           syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", fru);
+           break;
+         }
+         ret = pal_set_server_power(fru, SERVER_POWER_ON);
+      }
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
         return ret;
-      } else if (ret == 1) {
-        printf("fru %u is already powered ON...\n", fru);
-        return 0;
-      } else {
-        syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", fru);
       }
 
       ret = pal_set_last_pwr_state(fru, POWER_ON_STR);

@@ -112,9 +112,13 @@ def log_main():
                     newlog = newlog + log
 
             # Dump the new log in a tmp file
+            if fru == 'all':
+                temp = 'all'
+            else:
+                temp = 'FRU: ' + fru[4]
             tmpfd = open('%s.tmp' % logfile, 'w')
             time = datetime.now()
-            newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + '\"' + fru + '\"' + ' logs\n'
+            newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
             tmpfd.write(newlog)
             tmpfd.close()
             # Rename the tmp file to original syslog file
@@ -125,7 +129,7 @@ def log_main():
 
             for log in syslog:
                 # Print only critical logs
-                if not (re.search(r' bmc [a-z]*.crit ', log)):
+                if not (re.search(r' bmc [a-z]*.crit ', log) or re.search(r'log-util:', log)):
                     continue
 
                 # Find the FRU number
@@ -143,6 +147,9 @@ def log_main():
                 if fru != 'all' and fru != fruname:
                     continue
 
+                if re.search(r'log-util:', log):
+                    print (log)
+                    continue
                 # Time format Sep 28 22:10:50
                 temp = re.split(r' bmc [a-z]*.crit ', log)
                 ts = temp[0]

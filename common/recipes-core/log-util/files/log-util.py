@@ -172,10 +172,10 @@ def log_main():
 
     if cmd == cmdlist[1]:
         if fru == 'all':
-           for i in range (1, 7):
+           for i in range (1, len(frulist)):
                fruname = frulist[i] + '_sensor_health'
                pal_set_key_value(fruname)
-           for i in range (1, 5):
+           for i in range (1, len(frulist)):
                fruname = frulist[i] + '_sel_error'
                pal_set_key_value(fruname)
         else:

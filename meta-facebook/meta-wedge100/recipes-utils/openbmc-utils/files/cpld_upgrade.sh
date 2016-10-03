@@ -63,26 +63,31 @@ upgrade_fancpld() {
   fi
 }
 
+# Check the number of arguments provided, should get atleast 1 for file path
 if [ $# -lt 1 ]; then
   echo "Provide FAN or SYSCPLD path"
   exit -1
 fi
 
+# Check the file path provided is a valid one.
 jbcfile="$1"
 if [ ! -f $jbcfile ]; then
     echo "$jbcfile does not exist"
     exit -1
 fi
 
-if [[ ${jbcfile: -4} != ".jbc" ]]; then
+# Check the file path extension is .jbc
+filename="$(basename $jbcfile)"
+if [[ ${filename: -4} != ".jbc" ]]; then
     echo "Must pass in a .jbc file"
     exit -1
 fi
 
-if [ $jbcfile == *"FAN"* ];
+# Check the file name and upgrade accordingly
+if [[ $filename == *"FAN"* ]];
 then
     upgrade_fancpld $jbcfile
-else if [ $jbcfile == *"SYSCPLD"* ];
+else if [[ $filename == *"SYSCPLD"* ]];
 then
     upgrade_syscpld $jbcfile
 else

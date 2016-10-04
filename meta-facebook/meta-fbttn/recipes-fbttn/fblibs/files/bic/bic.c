@@ -975,7 +975,9 @@ error_exit:
   if (comp == UPDATE_BIOS ) {
     system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
            xargs kill");
-    system("/usr/local/bin/sensord slot1 iom dpb scc nic");
+
+    system("/etc/init.d/setup-sensord.sh");
+
   }
   return ret;
 }

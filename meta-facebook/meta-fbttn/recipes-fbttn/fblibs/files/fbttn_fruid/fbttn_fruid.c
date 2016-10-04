@@ -102,7 +102,7 @@ fbttn_get_fruid_name(uint8_t fru, char *name) {
       sprintf(name, "Storage Controller Card");
       break;
     case FRU_NIC:
-      sprintf(name, "CX4 NIC");
+      sprintf(name, "NIC");
       break;
     default:
 #ifdef DEBUG

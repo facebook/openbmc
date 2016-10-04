@@ -325,6 +325,38 @@ devmem_clear_bit $(scu_addr 84) 11
 
 gpio_export J3
 
+# IOM_TYPE0: J4 (76)
+# To use GPIOJ4, SCU84[12] must be 0
+# To use GPIOJ4, SCU94[8] must be 0
+devmem_clear_bit $(scu_addr 84) 12
+devmem_clear_bit $(scu_addr 94) 8
+
+gpio_export J4
+
+# IOM_TYPE1: J5 (77)
+# To use GPIOJ5, SCU84[13] must be 0
+# To use GPIOJ5, SCU94[8] must be 0
+devmem_clear_bit $(scu_addr 84) 13
+devmem_clear_bit $(scu_addr 94) 8
+
+gpio_export J5
+
+# IOM_TYPE2: J6 (78)
+# To use GPIOJ6, SCU84[14] must be 0
+# To use GPIOJ6, SCU94[9] must be 0
+devmem_clear_bit $(scu_addr 84) 14
+devmem_clear_bit $(scu_addr 94) 9
+
+gpio_export J6
+
+# IOM_TYPE3: J7 (79)
+# To use GPIOJ7, SCU84[15] must be 0
+# To use GPIOJ7, SCU94[9] must be 0
+devmem_clear_bit $(scu_addr 84) 15
+devmem_clear_bit $(scu_addr 94) 9
+
+gpio_export J7
+
 # BMC_RMT_HEARTBEAT(TACH): O0 (112)
 # To use GPIOO0, SCU88[8] must be 0
 devmem_clear_bit $(scu_addr 88) 8

@@ -81,22 +81,15 @@ main(int argc, char **argv) {
     }
     return 0;
 
-  // Set the system_identify key to on or off value
+  // Perform PCIe Switch Reset
   } else if ((pos == UART_POS_PCIE_SW) && (!strcmp(argv[2], "--reset"))) {
-    ret = pal_reset_pcie_switch(0);
+    ret = pal_reset_pcie_switch();
     if (ret) {
       printf("Operation failed.");
       return -1;
     }
 
-    msleep(100);
-
-    ret = pal_reset_pcie_switch(1);
-    if (ret) {
-      printf("Operation failed.");
-      return -1;
-    }
-
+  // Set the system_identify key to on or off value
   } else if (id_led &&
       (!strcmp(argv[2], "on") || !strcmp(argv[2], "off"))) {
     return pal_set_key_value("system_identify", argv[2]);

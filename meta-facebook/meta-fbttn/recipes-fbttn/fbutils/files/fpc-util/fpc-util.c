@@ -31,8 +31,8 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fpc-util <slot1> --ext1 <yellow/off>\n");
-  printf("Usage: fpc-util <slot1> --ext2 <yellow/off>\n");
+  printf("Usage: fpc-util <slot1> --ext1 <warning/off>\n");
+  printf("Usage: fpc-util <slot1> --ext2 <warning/off>\n");
   printf("       fpc-util <sled> --fault <on/off/auto>\n");
   printf("       fpc-util <slot1> --identify <on/off>\n");
 }

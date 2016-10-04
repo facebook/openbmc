@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-
 from subprocess import *
 import re
 from node import node
@@ -48,7 +47,6 @@ class bmcNode(node):
         wdt_counter = Popen('devmem 0x1e785010', \
                             shell=True, stdout=PIPE).stdout.read()
         wdt_counter = int(wdt_counter, 0)
-
         wdt_counter &= 0xff00
 
         if wdt_counter:
@@ -73,17 +71,33 @@ class bmcNode(node):
         cpu_usage = adata[1]
 
         # Get OpenBMC version
-        version = ""
+        obc_version = ""
         data = Popen('cat /etc/issue', \
                             shell=True, stdout=PIPE).stdout.read()
-        #Version might start with 'v'(wedge) or 'V'(Yosemite)
-        if name == 'Yosemite':
-            ver = re.search(r'[v|V]([\w\d._-]*)\s', data)
-        else:
-            ver = re.search(r'[v|V]([\w\d._-]*)\s', data)
-        if ver:
-            version = ver.group(1)
 
+        # OpenBMC Version
+        ver = re.search(r'[v|V]([\w\d._-]*)\s', data)
+        if ver:
+            obc_version = ver.group(1)
+
+        # Get U-boot Version
+        uboot_version = ""
+        data = Popen( 'strings /dev/mtd0 | grep U-Boot | grep 20', \
+                            shell=True, stdout=PIPE).stdout.read()
+
+        # U-boot Version
+        uboot_version = data.strip('\n')
+
+        # Get kernel release and kernel version
+        kernel_release = ""
+        data = Popen( 'uname -r', \
+                            shell=True, stdout=PIPE).stdout.read()
+        kernel_release = data.strip('\n')
+
+        kernel_version = ""
+        data = Popen( 'uname -v', \
+                            shell=True, stdout=PIPE).stdout.read()
+        kernel_version = data.strip('\n')
 
         info = {
             "Description": name + " BMC",
@@ -92,10 +106,12 @@ class bmcNode(node):
             "Uptime": uptime,
             "Memory Usage": mem_usage,
             "CPU Usage": cpu_usage,
-            "OpenBMC Version": version,
+            "OpenBMC Version": obc_version,
+            "u-boot version": uboot_version,
+            "kernel version": kernel_release + " " + kernel_version,
             }
 
-        return info;
+        return info
 
     def doAction(self, data):
         if (data["action"] != 'reboot'):

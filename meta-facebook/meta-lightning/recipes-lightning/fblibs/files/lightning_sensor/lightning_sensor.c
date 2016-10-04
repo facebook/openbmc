@@ -181,8 +181,8 @@ const uint8_t peb_sensor_plx_list[] = {
   PEB_SENSOR_HSC_TEMP,
 };
 
-// List of PDPB sensors to be monitored
-const uint8_t pdpb_sensor_list[] = {
+// List of U.2 SKU PDPB sensors to be monitored
+const uint8_t pdpb_u2_sensor_list[] = {
   PDPB_SENSOR_P12V,
   PDPB_SENSOR_P3V3,
   PDPB_SENSOR_P12V_SSD,
@@ -205,6 +205,47 @@ const uint8_t pdpb_sensor_list[] = {
   PDPB_SENSOR_FLASH_TEMP_12,
   PDPB_SENSOR_FLASH_TEMP_13,
   PDPB_SENSOR_FLASH_TEMP_14,
+};
+
+// List of M.2 SKU PDPB sensors to be monitored
+const uint8_t pdpb_m2_sensor_list[] = {
+  PDPB_SENSOR_P12V,
+  PDPB_SENSOR_P3V3,
+  PDPB_SENSOR_P12V_SSD,
+  PDPB_SENSOR_LEFT_REAR_TEMP,
+  PDPB_SENSOR_LEFT_FRONT_TEMP,
+  PDPB_SENSOR_RIGHT_REAR_TEMP,
+  PDPB_SENSOR_RIGHT_FRONT_TEMP,
+  PDPB_SENSOR_FLASH_TEMP_0,
+  PDPB_SENSOR_FLASH_TEMP_1,
+  PDPB_SENSOR_FLASH_TEMP_2,
+  PDPB_SENSOR_FLASH_TEMP_3,
+  PDPB_SENSOR_FLASH_TEMP_4,
+  PDPB_SENSOR_FLASH_TEMP_5,
+  PDPB_SENSOR_FLASH_TEMP_6,
+  PDPB_SENSOR_FLASH_TEMP_7,
+  PDPB_SENSOR_FLASH_TEMP_8,
+  PDPB_SENSOR_FLASH_TEMP_9,
+  PDPB_SENSOR_FLASH_TEMP_10,
+  PDPB_SENSOR_FLASH_TEMP_11,
+  PDPB_SENSOR_FLASH_TEMP_12,
+  PDPB_SENSOR_FLASH_TEMP_13,
+  PDPB_SENSOR_FLASH_TEMP_14,
+  PDPB_SENSOR_AMB_TEMP_0,
+  PDPB_SENSOR_AMB_TEMP_1,
+  PDPB_SENSOR_AMB_TEMP_2,
+  PDPB_SENSOR_AMB_TEMP_3,
+  PDPB_SENSOR_AMB_TEMP_4,
+  PDPB_SENSOR_AMB_TEMP_5,
+  PDPB_SENSOR_AMB_TEMP_6,
+  PDPB_SENSOR_AMB_TEMP_7,
+  PDPB_SENSOR_AMB_TEMP_8,
+  PDPB_SENSOR_AMB_TEMP_9,
+  PDPB_SENSOR_AMB_TEMP_10,
+  PDPB_SENSOR_AMB_TEMP_11,
+  PDPB_SENSOR_AMB_TEMP_12,
+  PDPB_SENSOR_AMB_TEMP_13,
+  PDPB_SENSOR_AMB_TEMP_14,
 };
 
 // List of NIC sensors to be monitored
@@ -346,10 +387,12 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_RIGHT_FRONT_TEMP,
       55, 50, 0, 5, 10, 0, 0, 0);
 
-  // PDPB SSD TEMP SENSORS
+  // PDPB SSD and AMBIENT TEMP SENSORS
   for (i = 0; i < lightning_flash_cnt; i++) {
     assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
         70, 67, 0, 5, 10, 0, 0, 0);
+    assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_AMB_TEMP_0 + i,
+        0, 0, 0, 0, 0, 0, 0, 0);
   }
 
   // FCB Volt Sensors
@@ -409,7 +452,9 @@ size_t peb_sensor_pmc_cnt = sizeof(peb_sensor_pmc_list)/sizeof(uint8_t);
 
 size_t peb_sensor_plx_cnt = sizeof(peb_sensor_plx_list)/sizeof(uint8_t);
 
-size_t pdpb_sensor_cnt = sizeof(pdpb_sensor_list)/sizeof(uint8_t);
+size_t pdpb_u2_sensor_cnt = sizeof(pdpb_u2_sensor_list)/sizeof(uint8_t);
+
+size_t pdpb_m2_sensor_cnt = sizeof(pdpb_m2_sensor_list)/sizeof(uint8_t);
 
 size_t fcb_sensor_cnt = sizeof(fcb_sensor_list)/sizeof(uint8_t);
 
@@ -487,7 +532,29 @@ read_device_float(const char *device, float *value) {
 static int
 read_flash_temp(uint8_t flash_num, float *value) {
 
-  return lightning_flash_temp_read(lightning_flash_list[flash_num], value);
+  uint8_t sku;
+  int ret;
+
+  ret = lightning_ssd_sku(&sku);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): lightning_ssd_sku failed", __func__);
+    return -1;
+  }
+  if (sku == U2_SKU) 
+    return lightning_flash_temp_read(lightning_flash_list[flash_num], value);
+  else if (sku == M2_SKU)
+    return lightning_m2_flash_temp_read(lightning_flash_list[flash_num], value);
+  else {
+    syslog(LOG_ERR, "%s(): unknown ssd sku", __func__);
+    return -1;
+  }
+}
+
+static int 
+read_m2_amb_temp(uint8_t flash_num, float *value) {
+
+  return lightning_m2_amb_temp_read(lightning_flash_list[flash_num], value);
 }
 
 static int
@@ -958,6 +1025,12 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         break;
       }
 
+      if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 &&
+          sensor_num < (PDPB_SENSOR_AMB_TEMP_0 + lightning_flash_cnt)) {
+        sprintf(units, "C");
+        break;
+      }
+
       switch(sensor_num) {
         case PDPB_SENSOR_LEFT_REAR_TEMP:
         case PDPB_SENSOR_LEFT_FRONT_TEMP:
@@ -1111,6 +1184,12 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       if (sensor_num >= PDPB_SENSOR_FLASH_TEMP_0 &&
           sensor_num < (PDPB_SENSOR_FLASH_TEMP_0 + lightning_flash_cnt)) {
         sprintf(name, "SSD_%d_TEMP", sensor_num - PDPB_SENSOR_FLASH_TEMP_0);
+        break;
+      }
+   
+      if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 && 
+          sensor_num < (PDPB_SENSOR_AMB_TEMP_0 + lightning_flash_cnt)) {
+        sprintf(name, "M.2_Amb_TEMP_%d", sensor_num - PDPB_SENSOR_AMB_TEMP_0);
         break;
       }
 
@@ -1275,6 +1354,11 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         if (sensor_num >= PDPB_SENSOR_FLASH_TEMP_0 &&
             sensor_num < (PDPB_SENSOR_FLASH_TEMP_0 + lightning_flash_cnt)) {
           return read_flash_temp(sensor_num - PDPB_SENSOR_FLASH_TEMP_0, (float*) value);
+        }
+
+if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 &&
+            sensor_num < (PDPB_SENSOR_AMB_TEMP_0 + lightning_flash_cnt)) {
+          return read_m2_amb_temp(sensor_num - PDPB_SENSOR_AMB_TEMP_0, (float*) value);
         }
 
       switch(sensor_num) {

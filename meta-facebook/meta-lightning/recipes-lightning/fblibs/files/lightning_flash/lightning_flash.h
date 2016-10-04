@@ -33,6 +33,11 @@ enum i2c_mux_addr {
   I2C_MUX_FLASH2_ADDR = 0x72,
 };
 
+enum m2_mux_channel {
+  M2_MUX_CHANNEL_0 = 0x01,
+  M2_MUX_CHANNEL_1 = 0x02,
+};
+
 /*
  * Map the flash i2c bus to i2c mux channels
  * If the assigned value is XY,
@@ -63,7 +68,12 @@ extern const uint8_t lightning_flash_list[];
 extern size_t lightning_flash_cnt;
 
 int lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel);
+int lightning_flash_sec_mux_sel_chan(uint8_t mux, uint8_t channel);
 int lightning_flash_temp_read(uint8_t i2c_map, float *temp);
+int lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp);
+int lightning_m2_flash_temp_read(uint8_t i2c_map, float *temp);
+int lightning_m2_temp_read(uint8_t i2c_map, uint8_t sec_chan, float *temp);
+
 
 #ifdef __cplusplus
 } // extern "C"

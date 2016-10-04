@@ -2486,22 +2486,17 @@ int pal_get_plat_sku_id(void){
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
 int pal_get_poss_pcie_config(uint8_t *pcie_config){
-  // To get the platform sku
-  // * SCC_RMT_TYPE_0  GPIOF7  47
-  char path[64] = {0};
-  int scc_rmt = 0;
+  
+  int sku = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_SCC_RMT_TYPE_0);
-  // 1: JBOD mode (Config-8, Type 7); 0: dual server mode (Config-6, Type 5)
-  if (read_device(path, &scc_rmt)) {
-    printf("Read GPIO failed: GPIO_SCC_RMT_TYPE_0\n");
-    return -1;
-  }
+  sku = pal_get_iom_type();
 
-  if(scc_rmt)
+  if(sku == 1)
+    *pcie_config = 0x6;
+  else if (sku == 2)
     *pcie_config = 0x8;
   else
-    *pcie_config = 0x6;
+    return -1;
 
   return 0;
 }

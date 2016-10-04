@@ -56,6 +56,8 @@ IMAGE_INSTALL += " \
   front-paneld \
   fpc-util \
   fscd \
+  rest-api \
+  bottle \
   lldp-util \
   spatula \
   "

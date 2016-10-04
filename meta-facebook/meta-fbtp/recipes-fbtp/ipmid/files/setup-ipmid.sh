@@ -28,5 +28,5 @@
 ### END INIT INFO
 
 echo -n "Setup IPMI message handler... "
-/usr/local/bin/ipmid
+runsv /etc/sv/ipmid > /dev/null 2>&1 &
 echo "done."

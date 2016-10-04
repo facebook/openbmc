@@ -1,5 +1,5 @@
 {
-  "pwm_transition_value": 100,
+  "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
   "boost": {
@@ -8,12 +8,12 @@
     "progressive": true
   },
   "watchdog": true,
-  "min_rpm": 800,
+  "min_rpm": 400,
   "profiles": {
     "linear_ambient": {
       "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 3,
+      "positive_hysteresis":0,
+      "negative_hysteresis":3, 
       "data": [
         [1 , 12],
         [15, 12],
@@ -46,15 +46,15 @@
     },
     "linear_pcie_sw": {
       "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 3,
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
       "data": [
         [1 , 12],
         [64, 12],
         [65, 13],
         [66, 14],
         [67, 15],
-        [68, 16],
+        [68, 16],  
         [69, 17],
         [70, 18],
         [71, 19],
@@ -65,61 +65,53 @@
         [76, 28],
         [77, 30],
         [78, 32],
-        [79, 34],
+        [79, 34],  
         [80, 36],
         [81, 38],
         [82, 40],
         [83, 41],
         [84, 42],
-        [85, 43],
+ [85, 43],
         [86, 44],
         [87, 45]
       ]
     },
     "linear_ssd": {
       "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 3,
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
       "data": [
         [1 , 12],
-        [37, 12],
-        [38, 14],
-        [39, 16],
-        [40, 18],
-        [41, 20],
-        [42, 22],
-        [43, 24],
-        [44, 26],
-        [45, 28],
-        [46, 30],
-        [47, 32],
-        [48, 35],
-        [49, 38],
-        [50, 41],
-        [51, 44],
-        [52, 47],
-        [53, 50],
-        [54, 53],
-        [55, 56],
-        [56, 59],
-        [57, 62],
-        [58, 65],
+        [31, 12],
+        [33, 16],
+        [35, 20],
+        [37, 24],
+        [39, 28],  
+        [41, 32],
+        [43, 36],
+        [45, 40],
+        [47, 44],
+        [49, 48],
+        [51, 52],
+        [53, 56],
+        [55, 60],
+        [57, 64],
         [59, 68],
-        [60, 71],
-        [61, 74],
-        [62, 77],
-        [63, 78],
-        [64, 79],
+        [61, 72],  
+        [63, 76],
         [65, 80],
-        [66, 81],
-        [67, 82]
+        [67, 84],
+        [69, 88],
+        [71, 92],
+ [73, 96],
+        [75, 100]
       ]
     },
     "pid_ssd": {
       "type": "pid",
-      "setpoint": 70,
-      "negative_hysteresis": 0,
-      "positive_hysteresis": 0,
+      "setpoint": 63,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 2,
       "kp": 0,
       "ki": 0,
       "kd": 0
@@ -128,7 +120,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "zone1.fsc"
+      "expr_file": "FSC_Lightning_DVT_Seagate_M2_1TB_v1_zone0.fsc"
     }
   }
 }

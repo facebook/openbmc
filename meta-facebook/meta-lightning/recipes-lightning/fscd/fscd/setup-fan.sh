@@ -29,6 +29,46 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+# Get SSD type and vender_device ID from cache
+default_fsc_config_path="/etc/fsc-config.json"
+
+# get from cache
+flash_type=`cat /tmp/ssd_sku_info`
+ssd_vendor=`cat /tmp/ssd_vendor`
+
+case "$flash_type" in
+   "U2")
+        case "$ssd_vendor" in
+           "intel") cp /etc/FSC_Lightning_DVT_Intel_U2_2TB_V1_config.json ${default_fsc_config_path}
+           ;;
+           "samsung") cp /etc/FSC_Lightning_DVT_Samsung_U2_2TB_V1_config.json ${default_fsc_config_path}
+           ;;
+           *) echo "Enter into transitional mode - Incorrect U.2 SSD vendor."
+              /usr/local/bin/init_pwm.sh
+              /usr/local/bin/fan-util --set 70
+              exit 1
+           ;;
+        esac
+   ;;
+   "M2")
+        case "$ssd_vendor" in
+           "seagate") cp /etc/FSC_Lightning_DVT_Seagete_M2_1TB_V1_config.json ${default_fsc_config_path}
+           ;;
+           *) echo "Enter into transitional mode - Incorrect M.2 SSD vendor."
+              /usr/local/bin/init_pwm.sh
+              /usr/local/bin/fan-util --set 70
+              exit 1
+           ;;
+         esac
+   ;;
+   *) echo "Enter into transitional mode - Incorrect flash type!"
+      /usr/local/bin/init_pwm.sh
+      /usr/local/bin/fan-util --set 70
+      exit 1
+   ;;
+esac
+
+
 echo -n "Setup fan speed... "
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50

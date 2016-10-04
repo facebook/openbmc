@@ -25,8 +25,10 @@ get_sku()
   SCC_RMT=`cat /sys/class/gpio/gpio47/value`
   get_locl
   SLOTID=$?
+  get_iom_type
+  IOM_TYPE=$?
  
-  PAL_SKU=$((($SCC_RMT << 2) | $SLOTID))
+  PAL_SKU=$((($SCC_RMT << 6) | ($SLOTID << 4) | $IOM_TYPE))
   return $PAL_SKU
 }
 
@@ -37,11 +39,31 @@ get_locl()
   # SLOTID_[0:1]: 01=IOM_A; 10=IOM_B
   SLOTID_0=`cat /sys/class/gpio/gpio48/value`
   SLOTID_1=`cat /sys/class/gpio/gpio49/value`
-  SLOTID=$((($SLOTID_1 << 1) | $SLOTID_0))
+  SLOTID=$((($SLOTID_0 << 1) | $SLOTID_1))
 
   return $SLOTID
 }
 
+get_iom_type()
+{
+  # * IOM_TYPE0  GPIOJ4  76
+  # * IOM_TYPE1  GPIOJ5  77
+  # * IOM_TYPE2  GPIOJ6  78
+  # * IOM_TYPE3  GPIOJ7  79
+  IOM_TYPE_0=`cat /sys/class/gpio/gpio76/value`
+  IOM_TYPE_1=`cat /sys/class/gpio/gpio77/value`
+  IOM_TYPE_2=`cat /sys/class/gpio/gpio78/value`
+  IOM_TYPE_3=`cat /sys/class/gpio/gpio79/value`
+  IOM_TYPE=$((($IOM_TYPE_0 << 3) | ($IOM_TYPE_1 << 2) | ($IOM_TYPE_2 << 1) | $IOM_TYPE_3))
+
+  return $IOM_TYPE
+}
+
 get_sku
-echo "Platform SKU: $?"
-echo "<SKU[2:0] = {SCC_RMT_TYPE_0, SLOTID_1, SLOTID_0}>"
+PAL_SKU=$?
+echo -n "Platform SKU: $PAL_SKU ("
+echo -n "obase=2;$PAL_SKU" | bc
+echo ")"
+echo "<SKU[6:0] = {SCC_RMT_TYPE_0, SLOTID_0, SLOTID_1, IOM_TYPE0, IOM_TYPE1, IOM_TYPE2, IOM_TYPE3}>"
+
+exit $PAL_SKU

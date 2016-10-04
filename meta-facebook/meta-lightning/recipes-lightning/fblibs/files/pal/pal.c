@@ -1175,17 +1175,20 @@ pal_fan_recovered_handle(int fan_num) {
   return 0;
 }
 
-// Reset PCIE Switch
+// Reset PCIe Switch
 int
-pal_reset_pcie_switch(uint8_t status) {
+pal_reset_pcie_switch() {
 
   char path[64] = {0};
-  char *val;
-
-  val = (status == 0) ? "0": "1";
 
   sprintf(path, GPIO_VAL, GPIO_RESET_PCIE_SWITCH);
-  if (write_device(path, val))
+
+  if (write_device(path, "0"))
+    return -1;
+
+  msleep(100);
+
+  if (write_device(path, "1"))
     return -1;
 
   return 0;

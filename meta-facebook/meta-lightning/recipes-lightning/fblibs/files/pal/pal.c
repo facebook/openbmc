@@ -86,7 +86,7 @@ char * def_val_list[] = {
   "1", /* peb_sensor_health */
   "1", /* pdbb_sensor_health */
   "1", /* fcb_sensor_health */
-  "off", /* "system_identify */
+  "off", /* system_identify */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -441,6 +441,7 @@ int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   uint8_t sw = 0;
+  uint8_t sku = 0;
 
   switch(fru) {
     case FRU_PEB:
@@ -456,8 +457,16 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
         return -1;
       break;
     case FRU_PDPB:
-      *sensor_list = (uint8_t *) pdpb_sensor_list;
-      *cnt = pdpb_sensor_cnt;
+      while (lightning_ssd_sku(&sku) < 0);
+
+      if (sku == U2_SKU) {
+        *sensor_list = (uint8_t *) pdpb_u2_sensor_list;
+        *cnt = pdpb_u2_sensor_cnt;
+      } else if (sku == M2_SKU) {
+        *sensor_list = (uint8_t *) pdpb_m2_sensor_list;
+        *cnt = pdpb_m2_sensor_cnt;
+      } else
+        return -1;
       break;
     case FRU_FCB:
       *sensor_list = (uint8_t *) fcb_sensor_list;

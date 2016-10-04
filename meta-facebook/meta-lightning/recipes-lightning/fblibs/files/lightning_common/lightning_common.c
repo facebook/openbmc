@@ -35,6 +35,7 @@
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
 
 #define PCIE_SW_FILE        "/tmp/pcie_switch_vendor"
+#define SSD_SDK_INFO        "/tmp/ssd_sku_info"
 
 int
 lightning_common_fru_name(uint8_t fru, char *str) {
@@ -104,7 +105,7 @@ lightning_pcie_switch(uint8_t fru, uint8_t *pcie_sw) {
   }
 
   rc = (int) fread(sw, 1, 8, fp);
-  close(fp);
+  fclose(fp);
   if (rc <= 0) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "lightning_pcie_switch: fread failed for fru: %d", fru);
@@ -121,3 +122,37 @@ lightning_pcie_switch(uint8_t fru, uint8_t *pcie_sw) {
 
   return 0;
 }
+
+int 
+lightning_ssd_sku(uint8_t *ssd_sku) {
+
+  FILE *fp;
+  char sku[8] = {0};
+  int rc;
+
+  fp = fopen(SSD_SDK_INFO, "r");
+  if(!fp) {
+    syslog(LOG_WARNING, "%s(): %s fopen failed", __func__, SSD_SDK_INFO);
+    return -1;
+  }
+
+  rc = (int) fread(sku, 1, 8, fp);
+  fclose(fp);
+
+  if(rc <= 0) {
+    syslog(LOG_WARNING, "%s(): %s fread failed", __func__, SSD_SDK_INFO);
+    return -1;
+  }
+
+  if (strstr(sku, "U2") != NULL)
+    *ssd_sku = U2_SKU;
+  else if (strstr(sku, "M2") != NULL)
+    *ssd_sku = M2_SKU;
+  else {
+    syslog(LOG_WARNING, "%s(): Cannot find corresponding SSD SKU", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+

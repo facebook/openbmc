@@ -1360,7 +1360,6 @@ oem_get_plat_info(unsigned char *request, unsigned char *response,
   // Populate the presence bit[7]
   if (pres) {
     pinfo = 0x80;
-    printf("pres\n");
   }
 
   // Get the SKU ID bit[5-3]
@@ -1481,7 +1480,7 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
     case CMD_OEM_GET_PLAT_INFO:
       oem_get_plat_info (request, response, res_len);
       break;
-    case CMD_OEM_GET_POSS_PCIE_CONFIG:
+    case CMD_OEM_GET_PCIE_CONFIG:
       oem_get_poss_pcie_config (request, response, res_len);
       break;
     case CMD_OEM_GET_BOARD_ID:

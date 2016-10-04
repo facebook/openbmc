@@ -386,7 +386,7 @@ enum
   CMD_OEM_SET_POST_START = 0x73,
   CMD_OEM_SET_POST_END = 0x74,
   CMD_OEM_GET_PLAT_INFO = 0x7E,
-  CMD_OEM_GET_POSS_PCIE_CONFIG = 0xF4,
+  CMD_OEM_GET_PCIE_CONFIG = 0xF4,
 };
 
 // OEM 1S Command Codes (Quanta/FB defined commands)

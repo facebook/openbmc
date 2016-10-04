@@ -38,7 +38,7 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
-/*For Triton with GPIO Table 0.4
+/*For Triton with GPIO Table 0.5
  * BMC_TO_EXP_RESET     GPIOA2   2  //Reset EXP
  * PWRBTN_OUT_N         GPIOD2   26 //power button signal input
  * COMP_PWR_BTN_N       GPIOD3   27 //power button signal output
@@ -59,6 +59,10 @@
  * DB_PRSNT_BMC_N       GPIOQ6   134
  * SYS_PWR_LED          GPIOA3   3
  * ENCL_FAULT_LED       GPIOO3   115
+ * IOM_TYPE0            GPIOJ4   76
+ * IOM_TYPE1            GPIOJ5   77
+ * IOM_TYPE2            GPIOJ6   78
+ * IOM_TYPE3            GPIOJ7   79
  * */
 
 //Update at 9/12/2016 for Triton
@@ -71,6 +75,10 @@
 #define GPIO_SCC_RMT_TYPE_0 47
 #define GPIO_SLOTID_0 48
 #define GPIO_SLOTID_1 49
+#define GPIO_IOM_TYPE0 76
+#define GPIO_IOM_TYPE1 77
+#define GPIO_IOM_TYPE2 78
+#define GPIO_IOM_TYPE3 79
 
 #define GPIO_HB_LED 113
 #define GPIO_PWR_LED 3
@@ -120,6 +128,8 @@
 #define LARGEST_DEVICE_NAME 120
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
+
+#define PLATFORM_FILE "/tmp/system.bin"
 
  /*For Triton Power Sequence
   * After BMC ready
@@ -2381,47 +2391,36 @@ pal_log_clear(char *fru) {
   }
 }
 
+// To get the platform sku
 int pal_get_sku(void){
-  // To get the platform sku
-  // * SCC_RMT_TYPE_0  GPIOF7  47
-  char path[64] = {0};
-  int scc_rmt = 0, slotid = 0,pal_sku = 0;
+  int pal_sku = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_SCC_RMT_TYPE_0);
-  // 1: JBOD mode (Type 7); 0: dual server mode (Type5)
-  if (read_device(path, &scc_rmt)) {
-    printf("Read GPIO failed: GPIO_SCC_RMT_TYPE_0\n");
+  // PAL_SKU[6:4] = {SCC_RMT_TYPE_0, SLOTID_0, SLOTID_1}
+  // PAL_SKU[3:0] = {IOM_TYPE0, IOM_TYPE1, IOM_TYPE2, IOM_TYPE3}
+  if (read_device(PLATFORM_FILE, &pal_sku)) {
+    printf("Get platform SKU failed\n");
     return -1;
   }
-
-  slotid = pal_get_locl();
-  pal_sku = ((scc_rmt << 2) | slotid);
 
   return pal_sku;
 }
+// To get the BMC location
 int pal_get_locl(void){
-  // To get the BMC location;
-  // * SLOTID_0  GPIOG0  48
-  // * SLOTID_1  GPIOG1  49
-  char path[64] = {0};
-  int slotid_0 = 0, slotid_1 = 0, slotid_out;
-
-  sprintf(path, GPIO_VAL, GPIO_SLOTID_0);
-  if (read_device(path, &slotid_0)) {
-    printf("Read GPIO failed: GPIO_SLOTID_0\n");
-    return -1;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_SLOTID_1);
-  if (read_device(path, &slotid_1)) {
-    printf("Read GPIO failed: GPIO_SLOTID_1\n");
-    return -1;
-  }
+  int pal_sku = 0, slotid = 0;
 
   // SLOTID_[0:1]: 01=IOM_A; 10=IOM_B
-  slotid_out = ((slotid_1 << 1) | slotid_0);
+  pal_sku = pal_get_sku();
+  slotid = ((pal_sku >> 4) & 0x03);
+  return slotid;
+}
+// To get the IOM type
+int pal_get_iom_type(void){
+  int pal_sku = 0, iom_type = 0;
 
-  return slotid_out;
+  // Type [0:3]: 0001=M.2 solution; 0010=IOC solution
+  pal_sku = pal_get_sku();
+  iom_type = (pal_sku & 0x0F);
+  return iom_type;
 }
 int pal_is_scc_stb_pwrgood(void){
 //To do: to get SCC STB Power good from IO Exp via I2C

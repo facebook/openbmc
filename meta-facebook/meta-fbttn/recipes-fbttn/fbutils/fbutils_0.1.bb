@@ -49,6 +49,7 @@ SRC_URI = "file://ast-functions \
            file://src \
            file://COPYING \
            file://check_pal_sku.sh \
+           file://setup-platform.sh \
           "
 
 pkgdir = "utils"
@@ -102,6 +103,8 @@ do_install() {
   #update-rc.d -r ${D} fcswitcher.sh start 90 S .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
+  install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
+  update-rc.d -r ${D} setup-platform.sh start 63 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

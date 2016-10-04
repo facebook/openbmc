@@ -187,6 +187,7 @@ int pal_set_boot_order(uint8_t fru, uint8_t *boot);
 int pal_get_boot_order(uint8_t fru, uint8_t *boot);
 int pal_get_sku(void);
 int pal_get_locl(void);
+int pal_get_iom_type(void);
 int pal_is_scc_stb_pwrgood(void);
 int pal_is_scc_full_pwrgood(void);
 int pal_is_iom_full_pwrgood(void);

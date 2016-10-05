@@ -272,9 +272,6 @@ devmem_clear_bit $(scu_addr 88) 17
 devmem_clear_bit $(scu_addr 88) 18
 devmem_clear_bit $(scu_addr 88) 19
 devmem_clear_bit $(scu_addr 88) 20
-devmem_clear_bit $(scu_addr 88) 21
-devmem_clear_bit $(scu_addr 88) 22
-devmem_clear_bit $(scu_addr 88) 23
 devmem_clear_bit $(scu_addr 88) 30
 devmem_clear_bit $(scu_addr 88) 31
 
@@ -283,9 +280,6 @@ gpio_export P1
 gpio_export P2
 gpio_export P3
 gpio_export P4
-gpio_export P5
-gpio_export P6
-gpio_export P7
 gpio_export R6
 gpio_export R7
 
@@ -350,3 +344,31 @@ gpio_export N3
 # FM_CPU_CATERR_LVT3_N
 devmem_clear_bit $(scu_addr 84) 1
 gpio_export G1
+
+# Intel remote BMC debug function pins
+# GPIOP5 BMC_PREQ_N
+devmem_clear_bit $(scu_addr 88) 21
+gpio_export P5
+# GPIOP6 BMC_PWR_DEBUG_N
+devmem_clear_bit $(scu_addr 88) 22
+gpio_export P6
+# GPIOP7 RST_RSMRST_N
+devmem_clear_bit $(scu_addr 88) 23
+gpio_export P7
+# GPIOB1 BMC_DEBUG_EN_N
+gpio_export B1
+# GPIOR2 BMC_TCK_MUX_SEL
+devmem_clear_bit $(scu_addr 88) 26
+gpio_export R2
+# GPIOR3 BMC_PRDY_N
+devmem_clear_bit $(scu_addr 88) 27
+gpio_export R3
+# GPIOR4 BMC_XDP_PRSNT_IN_N
+devmem_clear_bit $(scu_addr 88) 28
+gpio_export R4
+# GPIOR5 RST_BMC_PLTRST_BUF_N
+devmem_clear_bit $(scu_addr 88) 29
+gpio_export R5
+# GPIOY2 BMC_JTAG_SEL
+devmem_clear_bit $(scu_addr A4) 10
+gpio_export Y2

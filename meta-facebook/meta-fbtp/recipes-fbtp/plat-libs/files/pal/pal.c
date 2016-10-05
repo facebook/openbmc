@@ -3885,6 +3885,9 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
     case MEMORY_ECC_ERR:
       sprintf(name, "MEMORY_ECC_ERR");
       break;
+    case MEMORY_ERR_LOG_DIS:
+      sprintf(name, "MEMORY_ERR_LOG_DIS");
+      break;
     case PWR_ERR:
       sprintf(name, "PWR_ERR");
       break;
@@ -4011,6 +4014,9 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         strcat(error_log, "Bus Fatal");
       else
         strcat(error_log, "Unknown");
+
+      sprintf(temp_log, " (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+      strcat(error_log, temp_log);
       break;
 
     case IIO_ERR:
@@ -4041,34 +4047,46 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
       break;
 
     case MEMORY_ECC_ERR:
+    case MEMORY_ERR_LOG_DIS:
       sprintf(error_log, "");
-      if ((ed[0] & 0x0F) == 0x0)
-        strcat(error_log, "Correctable");
-      else if ((ed[0] & 0x0F) == 0x1)
-        strcat(error_log, "Uncorrectable");
-      else if ((ed[0] & 0x0F) == 0x5)
-        strcat(error_log, "Correctable ECC error Logging Limit Reached");
-      else
-        strcat(error_log, "Unknown");
-
-      if (((ed[1] & 0xC) >> 2) == 0x0) {
-        /* All Info Valid */
-        sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
-      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
-        /* DIMM info not valid */
-        sprintf(temp_log, " (CPU# %d, CHN# %d)",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
-      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
-        /* CHN info not valid */
-        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
-            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
-      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
-        /* CPU info not valid */
-        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
-            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+      if (snr_num == MEMORY_ERR_LOG_DIS) {
+        if ((ed[0] & 0x0F) == 0x0)
+          strcat(error_log, "Correctable Memory Error Logging Disabled");
+        else
+          strcat(error_log, "Unknown");
+      } else {
+        if ((ed[0] & 0x0F) == 0x0)
+          strcat(error_log, "Correctable");
+        else if ((ed[0] & 0x0F) == 0x1)
+          strcat(error_log, "Uncorrectable");
+        else if ((ed[0] & 0x0F) == 0x5)
+          strcat(error_log, "Correctable ECC error Logging Limit Reached");
+        else
+          strcat(error_log, "Unknown");
       }
+
+      sprintf(temp_log, " (DIMM %02X)", ed[2]);
       strcat(error_log, temp_log);
+
+      sprintf(temp_log, " Logical Rank %d", ed[1] & 0x03);
+      strcat(error_log, temp_log);
+
+      switch(ed[1] & 0x0C) {
+        case 0x00:
+          //Ignore when " All info available"
+          break;
+        case 0x01:
+          strcat(error_log, " DIMM info not valid");
+          break;
+        case 0x02:
+          strcat(error_log, " CHN info not valid");
+          break;
+        case 0x03:
+          strcat(error_log, " CPU info not valid");
+          break;
+        default:
+          strcat(error_log, " Unknown");
+      }
 
       break;
 

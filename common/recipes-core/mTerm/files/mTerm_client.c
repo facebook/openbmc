@@ -33,6 +33,11 @@ static int createClientSocket(const char *dev) {
     perror("mTerm_client: Socket create error");
     return -1;
   }
+  if (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0){
+    perror("mTerm_client: Socket could not be made non-blocking");
+    close(sockfd);
+    return -1;
+  }
   memset(&remote, 0, sizeof(remote));
   remote.sun_family = AF_UNIX;
 
@@ -55,40 +60,39 @@ static int createClientSocket(const char *dev) {
 }
 
 /* TODO: Enhance
-  - client should be able to send multiple bytes
   - escSend() to be error tolorent
   - handle sending esc sequence to tty
 */
 static int readFromStdin(int clientfd, int stdi) {
   static escMode mode = EOL;
-  char c;
+  char c[MAX_BYTE];
   int nbytes;
 
-  nbytes = read(stdi, &c, 1);
+  nbytes = read(stdi, &c, sizeof(c));
   if (nbytes < 0) {
     perror("mTerm_client: Client socket read error to mTerm_server");
     return 0;
   }
 
-  if(c == ASCII_CTRL_X) {
+  if (c[0] == ASCII_CTRL_X) {
     escClose(clientfd);
     mode = EOL;
     return 0;
   }
 
-  if((mode == EOL) && (c == ASCII_CTRL_L)) {
+  if((mode == EOL) && (c[0] == ASCII_CTRL_L)) {
     mode = ESC;
     return 1;
   } else if (mode == ESC) {
-    return ( processEscMode(clientfd, c , &mode));
-  } else if ( mode == SEND) {
-    if (escSend(clientfd, c , &mode) < 0) {
+    return (processEscMode(clientfd, c[0], &mode));
+  } else if (mode == SEND) {
+    if (escSend(clientfd, c[0] , &mode) < 0) {
       mode = EOL;
       perror("mTerm_client: Invalid input to read buffer");
     }
     return 1;
   }
-  charSend(clientfd, &c, 1);
+  charSend(clientfd, &c[0], nbytes);
   return 1;
 }
 

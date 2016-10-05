@@ -120,18 +120,11 @@ static void processClient(fd_set* master, int clientFd , int solFd,
     }
     closeClient(master, clientFd);
   } else if (nbytes < sizeof(TlvHeader)) {
-    /* TODO: Potentially we should use a per-client buffer, for now close
-     Client connection */
+    // TODO: Potentially we should use a per-client buffer, for now close
+    //  Client connection
     syslog(LOG_ERR, "mTerm_server: Error on read fd=%d socket_nbytes=%d\n", clientFd, nbytes);
     closeClient(master, clientFd);
   } else if (header.length > (nbytes - sizeof(header))) {
-    /*TODO: Observed when sending break to enter BIOS, mac's version of fn+DEL
-    translates to ^[3~ sequence. Key press event for 'fn' is not being sent to
-    the terminal and thus BREAK is not being traslated properly.
-    Alternately using ESC works. Since the number of bytes sent is more than
-    expected we were closing the connection. Lets log the error and drop
-    the message.*/
-    //closeClient(master, clientFd);
     syslog(LOG_ERR, "mTerm_server: Received %d bytes for fd=%d dropping message.\n",nbytes, clientFd);
   } else {
     switch (header.type) {

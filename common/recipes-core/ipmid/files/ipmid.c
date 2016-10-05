@@ -293,6 +293,28 @@ app_get_selftest_results (unsigned char *response, unsigned char *res_len)
   *res_len = data - &res->data[0];
 }
 
+// Manufacturing Test On (IPMI/Section 20.5)
+static void
+app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
+                           unsigned char *response, unsigned char *res_len)
+{
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  res->cc = CC_SUCCESS;
+
+  if ((!memcmp(req->data, "sled-cycle", strlen("sled-cycle"))) &&
+      (req_len - ((void*)req->data - (void*)req)) == strlen("sled-cycle")) {
+    system("/usr/local/bin/power-util sled-cycle");
+  } else {
+    res->cc = CC_INVALID_PARAM;
+  }
+
+  *res_len = data - &res->data[0];
+}
+
 // Get Device GUID (IPMI/Section 20.8)
 static void
 app_get_device_guid (unsigned char *request, unsigned char *response,
@@ -334,6 +356,22 @@ app_get_device_sys_guid (unsigned char *request, unsigned char *response,
   }
 }
 
+// Set BMC Global Enables (IPMI/Section 22.1)
+static void
+app_set_global_enables (unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  res->cc = CC_SUCCESS;
+
+  // Do nothing
+
+  *res_len = data - &res->data[0];
+}
+
 // Get BMC Global Enables (IPMI/Section 22.2)
 static void
 app_get_global_enables (unsigned char *response, unsigned char *res_len)
@@ -344,7 +382,23 @@ app_get_global_enables (unsigned char *response, unsigned char *res_len)
 
   res->cc = CC_SUCCESS;
 
-  *data++ = 0x0D;		// Global Enable
+  *data++ = 0x0C;		// Global Enable
+
+  *res_len = data - &res->data[0];
+}
+
+// Clear Message flags Command (IPMI/Section 22.3)
+static void
+app_clear_message_flags (unsigned char *request, unsigned char req_len,
+                         unsigned char *response, unsigned char *res_len)
+{
+
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  res->cc = CC_SUCCESS;
+
+  // Do nothing
 
   *res_len = data - &res->data[0];
 }
@@ -478,17 +532,26 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
     case CMD_APP_GET_SELFTEST_RESULTS:
       app_get_selftest_results (response, res_len);
       break;
+    case CMD_APP_MANUFACTURING_TEST_ON:
+      app_manufacturing_test_on (request, req_len, response, res_len);
+      break;
     case CMD_APP_GET_DEVICE_GUID:
       app_get_device_guid (request, response, res_len);
       break;
     case CMD_APP_GET_SYSTEM_GUID:
       app_get_device_sys_guid (request, response, res_len);
       break;
+    case CMD_APP_SET_GLOBAL_ENABLES:
+      app_set_global_enables (request, req_len, response, res_len);
+      break;
     case CMD_APP_GET_GLOBAL_ENABLES:
       app_get_global_enables (response, res_len);
       break;
     case CMD_APP_SET_SYS_INFO_PARAMS:
       app_set_sys_info_params (request, response, res_len);
+      break;
+    case CMD_APP_CLEAR_MESSAGE_FLAGS:
+      app_clear_message_flags (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_SYS_INFO_PARAMS:
       app_get_sys_info_params (request, response, res_len);
@@ -1390,7 +1453,7 @@ oem_get_poss_pcie_config(unsigned char *request, unsigned char *response,
     *res_len = 0x00;
     return;
   }
-  
+
   // Prepare response buffer
   res->cc = CC_SUCCESS;
   res->data[0] = pcie_conf;

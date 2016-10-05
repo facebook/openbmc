@@ -77,14 +77,14 @@ def p_expression_apply(p):
             'name': p[1],
             'inner': p[3]}
 
-def p_expression_binop(p):
+def p_expression_plus(p):
     "expression : expression PLUS expression"
     p[0] = {'type': 'infix',
             'op': p[2],
             'left': p[1],
             'right': p[3]}
 
-def p_expression_binop(p):
+def p_expression_minus(p):
     "expression : expression MINUS expression"
     p[0] = {'type': 'infix',
             'op': p[2],

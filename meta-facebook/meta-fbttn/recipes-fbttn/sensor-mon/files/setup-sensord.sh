@@ -37,7 +37,7 @@ SLOTS=
     SLOTS="$SLOTS slot1"
   fi
 
-SLOTS="$SLOTS iom dpb scc nic"
+SLOTS="$SLOTS iom nic"
 /usr/local/bin/sensord $SLOTS
 
 echo "done."

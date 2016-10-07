@@ -21,7 +21,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
             file://FSC_Lightning_DVT_Intel_U2_2TB_v1_config.json \
-            file://FSC_Lightning_DVT_Seagete_M2_1TB_v1_config.json \  
+            file://FSC_Lightning_DVT_Seagate_M2_1TB_v1_config.json \  
             file://FSC_Lightning_DVT_Samsung_U2_2TB_v1_config.json \ 
             file://FSC_Lightning_DVT_Intel_U2_2TB_v1_zone0.fsc \
             file://FSC_Lightning_DVT_Seagate_M2_1TB_v1_zone0.fsc \   
@@ -53,12 +53,12 @@ do_install() {
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/fscd
   install -d ${D}${sysconfdir}/fsc
-  install -m 644 FSC_Lightning_DVT_Intel_U2_2TB_V1_config.json ${D}${sysconfdir}/FSC_Lightning_DVT_Intel_U2_2TB_V1_config.json
-  install -m 644 FSC_Lightning_DVT_Seagete_M2_1TB_V1_config.json ${D}${sysconfdir}/FSC_Lightning_DVT_Seagete_M2_1TB_V1_config.json
-  install -m 644 FSC_Lightning_DVT_Samsung_U2_2TB_V1_config.json ${D}${sysconfdir}/FSC_Lightning_DVT_Samsung_U2_2TB_V1_config.json
-  install -m 644 FSC_Lightning_DVT_Intel_U2_2TB_V1_config.fsc ${D}${sysconfdir}/fsc/FSC_Lightning_DVT_Intel_U2_2TB_V1_config.fsc
-  install -m 644 FSC_Lightning_DVT_Seagate_M2_1TB_V1_config.fsc ${D}${sysconfdir}/fsc/FSC_Lightning_DVT_Seagate_M2_1TB_V1_config.fsc
-  install -m 644 FSC_Lightning_DVT_Samsung_U2_2TB_V1_config.fsc ${D}${sysconfdir}/fsc/FSC_Lightning_DVT_Sasung_U2_2TB_V1_config.fsc
+  install -m 644 FSC_Lightning_DVT_Intel_U2_2TB_v1_config.json ${D}${sysconfdir}/FSC_Lightning_DVT_Intel_U2_2TB_v1_config.json
+  install -m 644 FSC_Lightning_DVT_Seagate_M2_1TB_v1_config.json ${D}${sysconfdir}/FSC_Lightning_DVT_Seagate_M2_1TB_v1_config.json
+  install -m 644 FSC_Lightning_DVT_Samsung_U2_2TB_v1_config.json ${D}${sysconfdir}/FSC_Lightning_DVT_Samsung_U2_2TB_v1_config.json
+  install -m 644 FSC_Lightning_DVT_Intel_U2_2TB_v1_zone0.fsc ${D}${sysconfdir}/fsc/FSC_Lightning_DVT_Intel_U2_2TB_v1_zone0.fsc
+  install -m 644 FSC_Lightning_DVT_Seagate_M2_1TB_v1_zone0.fsc ${D}${sysconfdir}/fsc/FSC_Lightning_DVT_Seagate_M2_1TB_v1_zone0.fsc
+  install -m 644 FSC_Lightning_DVT_Samsung_U2_2TB_v1_zone0.fsc ${D}${sysconfdir}/fsc/FSC_Lightning_DVT_Sasung_U2_2TB_v1_zone0.fsc
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
   install -m 755 run-fscd.sh ${D}${sysconfdir}/sv/fscd/run
   update-rc.d -r ${D} setup-fan.sh start 91 5 .

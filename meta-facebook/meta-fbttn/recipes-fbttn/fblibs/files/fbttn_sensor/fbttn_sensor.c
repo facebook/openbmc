@@ -39,6 +39,8 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 #define I2C_BUS_0_DIR "/sys/class/i2c-adapter/i2c-0/"
+#define I2C_BUS_5_DIR "/sys/class/i2c-adapter/i2c-5/"
+#define I2C_BUS_6_DIR "/sys/class/i2c-adapter/i2c-6/"
 #define I2C_BUS_9_DIR "/sys/class/i2c-adapter/i2c-9/"
 #define I2C_BUS_10_DIR "/sys/class/i2c-adapter/i2c-10/"
 
@@ -48,7 +50,10 @@
 #define IOM_MEZZ_TEMP_DEVICE I2C_BUS_0_DIR "0-004a"
 #define IOM_M2_1_TEMP_DEVICE I2C_BUS_0_DIR "0-0048"
 #define IOM_M2_2_TEMP_DEVICE I2C_BUS_0_DIR "0-004c"
-#define HSC_DEVICE I2C_BUS_0_DIR "0-0010"
+#define HSC_DEVICE_IOM I2C_BUS_0_DIR "0-0010"
+
+#define HSC_DEVICE_DPB I2C_BUS_6_DIR "6-0010"
+#define HSC_DEVICE_ML  I2C_BUS_5_DIR "5-0011"
 
 #define FAN_TACH_RPM "tacho%d_rpm"
 #define ADC_VALUE "adc%d_value"
@@ -127,6 +132,9 @@ const uint8_t bic_discrete_list[] = {
 // List of IOM Type VII sensors to be monitored
 const uint8_t iom_sensor_list[] = {
   /* Threshold sensors */
+  ML_SENSOR_HSC_VOLT,
+  ML_SENSOR_HSC_CURR,
+  ML_SENSOR_HSC_PWR,
   IOM_SENSOR_MEZZ_TEMP,
   IOM_SENSOR_HSC_POWER,
   IOM_SENSOR_HSC_VOLT,
@@ -151,16 +159,62 @@ const uint8_t iom_sensor_list[] = {
 const uint8_t dpb_sensor_list[] = {
   /* Threshold sensors */
   DPB_SENSOR_FAN0_FRONT,
-  DPB_SENSOR_FAN1_FRONT,
-  DPB_SENSOR_FAN2_FRONT,
-  DPB_SENSOR_FAN3_FRONT,
   DPB_SENSOR_FAN0_REAR,
+  DPB_SENSOR_FAN1_FRONT,
   DPB_SENSOR_FAN1_REAR,
+  DPB_SENSOR_FAN2_FRONT,
   DPB_SENSOR_FAN2_REAR,
+  DPB_SENSOR_FAN3_FRONT,
   DPB_SENSOR_FAN3_REAR,
   DPB_SENSOR_HSC_POWER,
   DPB_SENSOR_HSC_VOLT,
   DPB_SENSOR_HSC_CURR,
+  P3V3_SENSE,
+  P5V_A_1_SENSE,
+  P5V_A_2_SENSE,
+  P5V_A_3_SENSE,
+  P5V_A_4_SENSE,
+  DPB_SENSOR_12V_POWER_CLIP,
+  DPB_SENSOR_P12V_CLIP,
+  DPB_SENSOR_12V_CURR_CLIP,
+  DPB_SENSOR_A_TEMP,
+  DPB_SENSOR_B_TEMP,
+  DPB_SENSOR_HDD_0,
+  DPB_SENSOR_HDD_1,
+  DPB_SENSOR_HDD_2,
+  DPB_SENSOR_HDD_3,
+  DPB_SENSOR_HDD_4,
+  DPB_SENSOR_HDD_5,
+  DPB_SENSOR_HDD_6,
+  DPB_SENSOR_HDD_7,
+  DPB_SENSOR_HDD_8,
+  DPB_SENSOR_HDD_9,
+  DPB_SENSOR_HDD_10,
+  DPB_SENSOR_HDD_11,
+  DPB_SENSOR_HDD_12,
+  DPB_SENSOR_HDD_13,
+  DPB_SENSOR_HDD_14,
+  DPB_SENSOR_HDD_15,
+  DPB_SENSOR_HDD_16,
+  DPB_SENSOR_HDD_17,
+  DPB_SENSOR_HDD_18,
+  DPB_SENSOR_HDD_19,
+  DPB_SENSOR_HDD_20,
+  DPB_SENSOR_HDD_21,
+  DPB_SENSOR_HDD_22,
+  DPB_SENSOR_HDD_23,
+  DPB_SENSOR_HDD_24,
+  DPB_SENSOR_HDD_25,
+  DPB_SENSOR_HDD_26,
+  DPB_SENSOR_HDD_27,
+  DPB_SENSOR_HDD_28,
+  DPB_SENSOR_HDD_29,
+  DPB_SENSOR_HDD_30,
+  DPB_SENSOR_HDD_31,
+  DPB_SENSOR_HDD_32,
+  DPB_SENSOR_HDD_33,
+  DPB_SENSOR_HDD_34,
+  DPB_SENSOR_HDD_35,
 };
 
 const uint8_t dpb_discrete_list[] = {
@@ -337,11 +391,11 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char *device, float *value) {
+read_hsc_value(const char *device, const char* hsc_device, float *value) {
   char full_name[LARGEST_DEVICE_NAME];
   int tmp;
 
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", HSC_DEVICE, device);
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", hsc_device, device);
   if(read_device(full_name, &tmp)) {
     return -1;
   }
@@ -634,6 +688,15 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
     case FRU_IOM:
       switch(sensor_num) {
+		case ML_SENSOR_HSC_PWR:
+          sprintf(units, "Watts");
+          break;
+        case ML_SENSOR_HSC_VOLT:
+          sprintf(units, "Volts");
+          break;
+        case ML_SENSOR_HSC_CURR:
+          sprintf(units, "Amps");
+          break;
         case IOM_SENSOR_MEZZ_TEMP:
           sprintf(units, "C");
           break;
@@ -692,6 +755,13 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
       break;
 
     case FRU_DPB:
+
+      if(sensor_num >= DPB_SENSOR_HDD_0 &&
+		 sensor_num <= DPB_SENSOR_HDD_35) {
+         sprintf(units, "C");
+        break;
+      }
+
       switch(sensor_num) {
         case DPB_SENSOR_FAN0_FRONT:
           sprintf(units, "RPM");
@@ -725,6 +795,36 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           break;
         case DPB_SENSOR_HSC_CURR:
           sprintf(units, "Amps");
+          break;
+        case P3V3_SENSE:
+          sprintf(units, "Volts");
+          break;
+        case P5V_A_1_SENSE:
+          sprintf(units, "Volts");
+          break;
+        case P5V_A_2_SENSE:
+          sprintf(units, "Volts");
+          break;
+        case P5V_A_3_SENSE:
+          sprintf(units, "Volts");
+          break;
+        case P5V_A_4_SENSE:
+          sprintf(units, "Volts");
+          break;
+        case DPB_SENSOR_12V_POWER_CLIP:
+          sprintf(units, "Watts");
+          break;
+        case DPB_SENSOR_P12V_CLIP:
+          sprintf(units, "Volts");
+          break;
+        case DPB_SENSOR_12V_CURR_CLIP:
+          sprintf(units, "Amps");
+          break;
+        case DPB_SENSOR_A_TEMP:
+          sprintf(units, "C");
+          break;
+        case DPB_SENSOR_B_TEMP:
+          sprintf(units, "C");
           break;
       }
       break;
@@ -893,6 +993,13 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       break;
 
     case FRU_DPB:
+
+      if(sensor_num >= DPB_SENSOR_HDD_0 &&
+		 sensor_num <= DPB_SENSOR_HDD_35) {
+        sprintf(name, "HDD_%d_TEMP", sensor_num - DPB_SENSOR_HDD_0);
+        break;
+      }
+
       switch(sensor_num) {
         case DPB_SENSOR_FAN0_FRONT:
           sprintf(name, "FAN0_FRONT");
@@ -926,6 +1033,36 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case DPB_SENSOR_HSC_CURR:
           sprintf(name, "DPB_HSC_CURR");
+          break;
+        case P3V3_SENSE:
+          sprintf(name, "P3V3_SENSE");
+          break;
+        case P5V_A_1_SENSE:
+          sprintf(name, "P5V_A_1_SENSE");
+          break;
+        case P5V_A_2_SENSE:
+          sprintf(name, "P5V_A_2_SENSE");
+          break;
+        case P5V_A_3_SENSE:
+          sprintf(name, "P5V_A_3_SENSE");
+          break;
+        case P5V_A_4_SENSE:
+          sprintf(name, "P5V_A_4_SENSE");
+          break;
+        case DPB_SENSOR_12V_POWER_CLIP:
+          sprintf(name, "DPB_12V_POWER_CLIP");
+          break;
+        case DPB_SENSOR_P12V_CLIP:
+          sprintf(name, "DPB_P12V_CLIP");
+          break;
+        case DPB_SENSOR_12V_CURR_CLIP:
+          sprintf(name, "DPB_12V_CURR_CLIP");
+          break;
+        case DPB_SENSOR_A_TEMP:
+          sprintf(name, "DPB_A_TEMP");
+          break;
+        case DPB_SENSOR_B_TEMP:
+          sprintf(name, "DPB_B_TEMP");
           break;
       }
       break;
@@ -1018,16 +1155,23 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
     case FRU_IOM:
       switch(sensor_num) {
+		//ML HSC
+		case ML_SENSOR_HSC_PWR:
+          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_ML, (float *) value);
+        case ML_SENSOR_HSC_VOLT:
+          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_ML, (float *) value);
+        case ML_SENSOR_HSC_CURR:
+          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_ML, (float *) value);
         // Behind NIC Card Temp
         case IOM_SENSOR_MEZZ_TEMP:
           return read_temp(IOM_MEZZ_TEMP_DEVICE, (float *) value);
         // Hot Swap Controller
         case IOM_SENSOR_HSC_POWER:
-          return read_hsc_value(HSC_IN_POWER, (float *) value);
+          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_IOM, (float *) value);
         case IOM_SENSOR_HSC_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, (float *) value);
+          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_IOM, (float *) value);
         case IOM_SENSOR_HSC_CURR:
-          return read_hsc_value(HSC_OUT_CURR, (float *) value);
+          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_IOM, (float *) value);
         // M.2 Ambient Temp
         case IOM_SENSOR_M2_1_TEMP:
           return read_temp(IOM_M2_1_TEMP_DEVICE, (float *) value);
@@ -1072,11 +1216,15 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case DPB_SENSOR_FAN1_REAR:
         case DPB_SENSOR_FAN2_REAR:
         case DPB_SENSOR_FAN3_REAR:
-        case DPB_SENSOR_HSC_POWER:
-        case DPB_SENSOR_HSC_VOLT:
-        case DPB_SENSOR_HSC_CURR:
           *(float *) value = 0;
-          return 0;
+        return 0;
+        case DPB_SENSOR_HSC_POWER:
+            return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_DPB, (float *) value);
+        case DPB_SENSOR_HSC_VOLT:
+            return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_DPB, (float *) value);
+        case DPB_SENSOR_HSC_CURR:
+            return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_DPB, (float *) value);
+
       }
       break;
 

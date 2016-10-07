@@ -400,11 +400,11 @@ sensor_thresh_array_init() {
   if (ret < 0) {
     syslog(LOG_DEBUG, "%s() get SSD vendor failed", __func__);
   }
-  
+
   for (i = 0; i < lightning_flash_cnt; i++) {
     if(ssd_sku == U2_SKU) {
       // Intel threshold
-      if (ssd_vendor == INTEL) 
+      if (ssd_vendor == INTEL)
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
             70, 68, 0, 5, 10, 0, 0, 0);
       // Samsung threshold
@@ -415,10 +415,10 @@ sensor_thresh_array_init() {
       else
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
             80, 78, 0, 5, 10, 0, 0, 0);
-      
+
     } else if (ssd_sku == M2_SKU) {
       // Seagate threshold
-      if(ssd_vendor == SEAGATE) 
+      if(ssd_vendor == SEAGATE)
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
             80, 78, 0, 5, 10, 0, 0, 0);
       // Default threshold
@@ -513,6 +513,11 @@ msleep(int msec) {
   }
 }
 
+int32_t signextend32(uint32_t val, int idx) {
+    uint8_t shift = 31 - idx;
+      return (int32_t)(val << shift) >> shift;
+}
+
 static int
 read_device(const char *device, int *value) {
   FILE *fp;
@@ -583,7 +588,7 @@ read_flash_temp(uint8_t flash_num, float *value) {
     syslog(LOG_DEBUG, "%s(): lightning_ssd_sku failed", __func__);
     return -1;
   }
-  if (sku == U2_SKU) 
+  if (sku == U2_SKU)
     return lightning_flash_temp_read(lightning_flash_list[flash_num], value);
   else if (sku == M2_SKU)
     return lightning_m2_flash_temp_read(lightning_flash_list[flash_num], value);
@@ -593,7 +598,7 @@ read_flash_temp(uint8_t flash_num, float *value) {
   }
 }
 
-static int 
+static int
 read_m2_amb_temp(uint8_t flash_num, float *value) {
 
   return lightning_m2_amb_temp_read(lightning_flash_list[flash_num], value);
@@ -842,7 +847,7 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     syslog(LOG_DEBUG, "%s() i2c_smbus_read_byte_data failed, high byte: 0x%x, low byte: 0x%x", __func__, res_h, res_l);
     return -1;
   }
-  
+
   /* Modify the monitor_flag when the last sensor query finish in this query interval */
   if (FAN_REGISTER+2 == reg) {
 
@@ -912,7 +917,14 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     else
       *value = (float) (1350000 / res);
   } else {
-    *value = (float) (res * multipler);
+    /* temp sensor reading */
+    if (reg == NCT7904_TEMP_CH1 || reg == NCT7904_TEMP_CH2) {
+
+      *value = signextend32(res, 10) * multipler;
+
+    /* other sensor reading */
+    } else
+      *value = (float) (res * multipler);
   }
 
   return 0;
@@ -1233,8 +1245,8 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         sprintf(name, "SSD_%d_TEMP", sensor_num - PDPB_SENSOR_FLASH_TEMP_0);
         break;
       }
-   
-      if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 && 
+
+      if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 &&
           sensor_num < (PDPB_SENSOR_AMB_TEMP_0 + lightning_flash_cnt)) {
         sprintf(name, "M.2_Amb_TEMP_%d", sensor_num - PDPB_SENSOR_AMB_TEMP_0);
         break;

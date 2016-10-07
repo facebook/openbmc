@@ -305,7 +305,7 @@ def main():
             else:
                 if pwr_status == False:
                     pwr_status = True
-                    contiune
+                    continue
         sensors = machine.read_sensors()
         fan_fail = False
         now = time.time()

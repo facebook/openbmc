@@ -98,13 +98,41 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   return 0;
 }
 
+
+int check_fru_is_empty(const char * bin_file)
+{
+  int ret = 0;
+  int bin;
+  unsigned char head_buf[8];
+  unsigned char empty_buf[8];
+  ssize_t bytes_rd;
+  memset(head_buf,0,8);
+  memset(empty_buf,0xff,8);
+  if (access(bin_file, F_OK) != -1) {
+
+    bin = open(bin_file, O_RDONLY);
+      if (bin == -1) {
+        syslog(LOG_CRIT, "check_fru_is_empty: unable to open the %s file",bin_file);
+      return errno;
+     }
+     bytes_rd = read(bin, head_buf, 8);
+     if(!memcmp(head_buf,empty_buf,8)) {
+	   syslog(LOG_CRIT, "FRU header %s is empty", bin_file);
+       return errno;
+     }
+  }
+  return 0;
+}    
+
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
 
   int ret;
 
   ret = copy_eeprom_to_bin(EEPROM_IOM, BIN_IOM);
+  check_fru_is_empty(BIN_IOM);
   ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
+  check_fru_is_empty(BIN_NIC);
 
   return ret;
 }

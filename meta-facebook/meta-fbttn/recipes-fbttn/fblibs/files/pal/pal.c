@@ -129,7 +129,14 @@
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
 
+#define TACH_RPM "/sys/devices/platform/ast_pwm_tacho.0/tacho%d_rpm"
+#define TACH_BMC_RMT_HB 0
+#define TACH_SCC_LOC_HB 4
+#define TACH_SCC_RMT_HB 5
+
 #define PLATFORM_FILE "/tmp/system.bin"
+
+unsigned char g_err_code[ERROR_CODE_NUM];
 
  /*For Triton Power Sequence
   * After BMC ready
@@ -149,7 +156,7 @@ const static uint8_t gpio_id_led[] = { 0, GPIO_ENCL_FAULT_LED };  // yellow
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };//done
 const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN };//DONE
 const char pal_fru_list[] = "all, slot1, iom, scc, dpb, nic";
-const char pal_server_list[] = "slot";
+const char pal_server_list[] = "slot1";
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
@@ -158,16 +165,18 @@ const char pal_tach_list[] = "0, 1";
 
 char * key_list[] = {
 "pwr_server1_last_state",
-"sysfw_ver_slot",
+"sysfw_ver_slot1",
 "identify_slot1",
 "timestamp_sled",
-"slot_por_cfg",
-"slot_sensor_health",
+"slot1_por_cfg",
+"slot1_sensor_health",
 "iom_sensor_health",
 "dpb_sensor_health",
 "scc_sensor_health",
 "nic_sensor_health",
-"slot_sel_error",
+"slot1_sel_error",
+"scc_sensor_timestamp",
+"dpb_sensor_timestamp",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -184,6 +193,8 @@ char * def_val_list[] = {
   "1", /* scc_sensor_health */
   "1", /* nic_sensor_health */
   "1", /* slot_sel_error */
+  "0", /* scc_sensor_timestamp */
+  "0", /* dpb_sensor_timestamp */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -2294,18 +2305,15 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
 int
 pal_get_fan_speed(uint8_t fan, int *rpm) {
-  int dev;
   int ret;
-  int rpm_h;
-  int rpm_l;
-  int cnt;
+  float value;
 
-  if (fan >= pal_tach_cnt) {
-    syslog(LOG_INFO, "pal_get_fan_speed: fan number is invalid - %d", fan);
-    return -1;
-  }
+  ret = pal_sensor_read(FRU_DPB, DPB_SENSOR_FAN0_FRONT + fan , &value);
 
-  return read_fan_value(fan + 1, "fan%d_input", rpm);
+  if (ret == 0)
+    *rpm = (int) value;
+
+  return ret;
 }
 
 void
@@ -2370,9 +2378,9 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 
 void
 pal_log_clear(char *fru) {
-  if (!strcmp(fru, "slot")) {
-    pal_set_key_value("slot_sensor_health", "1");
-    pal_set_key_value("slot_sel_error", "1");
+  if (!strcmp(fru, "slot1")) {
+    pal_set_key_value("slot1_sensor_health", "1");
+    pal_set_key_value("slot1_sel_error", "1");
   } else if (!strcmp(fru, "iom")) {
     pal_set_key_value("iom_sensor_health", "1");
   } else if (!strcmp(fru, "dpb")) {
@@ -2382,8 +2390,8 @@ pal_log_clear(char *fru) {
   }  else if (!strcmp(fru, "nic")) {
     pal_set_key_value("nic_sensor_health", "1");
   } else if (!strcmp(fru, "all")) {
-    pal_set_key_value("slot_sensor_health", "1");
-    pal_set_key_value("slot_sel_error", "1");
+    pal_set_key_value("slot1_sensor_health", "1");
+    pal_set_key_value("slot1_sel_error", "1");
     pal_set_key_value("iom_sensor_health", "1");
     pal_set_key_value("dpb_sensor_health", "1");
     pal_set_key_value("scc_sensor_health", "1");
@@ -2541,3 +2549,311 @@ pal_fan_recovered_handle(int fan_num) {
   // TODO: Add action in case of fan recovered
   return 0;
 }
+
+int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int timestamp, timestamp_flag = 0, current_time, tolerance = 0;
+  //clock_gettime parameters
+  char tstr[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  int sensor_cnt = 1; //default is single call, so just 1 sensor
+  uint8_t *sensor_list;
+
+  switch(fru) {
+    case FRU_DPB:
+      sprintf(key, "dpb_sensor_timestamp");
+      break;
+    case FRU_SCC:
+      sprintf(key, "scc_sensor_timestamp");
+      break;
+  }
+
+  ret = pal_get_key_value(key, cvalue);
+    if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_expander_sensor_check: pal_get_key_value failed for "
+          "fru %u", fru);
+#endif
+      return ret;
+    }
+
+  timestamp = atoi(cvalue);
+
+  clock_gettime(CLOCK_REALTIME, &ts);
+  sprintf(tstr, "%d", ts.tv_sec);
+  current_time = atoi(tstr);
+
+  //set 1 sec tolerance for Firsr Sensor Number, to avoid updating all FRU sensor when interval around 4.9999 second
+  if (sensor_num == DPB_FIRST_SENSOR_NUM || sensor_num == SCC_FIRST_SENSOR_NUM) {
+    tolerance = 1;
+    timestamp_flag = 1; //Update only after First sensor update
+    //Get FRU sensor list for update all sensor
+    ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+      if (ret < 0) {
+        return ret;
+    }
+  }
+
+  //timeout: 5 second, 1 second tolerance only for First sensor
+  if ( (current_time - timestamp) > (5 - tolerance) ) {
+    //SCC
+    switch(fru) {
+      case FRU_SCC:
+        ret = pal_exp_scc_read_sensor_wrapper(fru, sensor_list, sensor_cnt, sensor_num);
+        if (ret < 0) {
+          return ret;
+        }
+      break;
+      case FRU_DPB:
+      // DPB sensor number is over 50, needs twic ipmb commands
+        ret = pal_exp_dpb_read_sensor_wrapper(fru, sensor_list, MAX_EXP_IPMB_SENSOR_COUNT, sensor_num, 0);
+        if (ret < 0) {
+          return ret;
+        }
+        //DO the Second transaction only when sensor count is not 1
+        if (sensor_cnt != 1) {
+          ret = pal_exp_dpb_read_sensor_wrapper(fru, sensor_list, (sensor_cnt - MAX_EXP_IPMB_SENSOR_COUNT), sensor_num, 1);
+          if (ret < 0) {
+            return ret;
+          }
+        }
+      break;
+    }
+
+    if (timestamp_flag) {
+      //update timestamp after Updated Expander sensor
+      clock_gettime(CLOCK_REALTIME, &ts);
+      sprintf(tstr, "%d", ts.tv_sec);
+      pal_set_key_value(key, tstr);
+    }
+  }  
+  return 0;
+}
+
+int
+pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t sensor_num, int second_transaction) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret, i = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  uint8_t value;
+  char units[64];
+  int offset = 0; //sensor overload offset
+
+  if (second_transaction)
+    offset = MAX_EXP_IPMB_SENSOR_COUNT;
+
+  tbuf[0] = sensor_cnt; //sensor_count
+
+  //Fill up sensor number
+  if (sensor_num == DPB_FIRST_SENSOR_NUM) {
+    for( i = offset ; i < (sensor_cnt + offset); i++) {
+      tbuf[i+1] = sensor_list[i];  //feed sensor number to tbuf
+    }    
+  }
+  else {
+    tbuf[1] = sensor_num;
+  }
+
+  tlen = sensor_cnt + 1; 
+  
+  //TODO paste sensor_num to tbuf, to get spcific sensor data from exp
+  ret = expander_ipmb_wrapper(fru, NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
+  if (ret) {
+    #ifdef DEBUG
+       syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: expander_ipmb_wrapper failed.");
+    #endif
+    return ret;
+  }
+
+  if(rbuf[1] != sensor_cnt) //if the response counter is not equal to request counter
+    return -1;
+
+  for(i = 0; i < sensor_cnt; i++) {
+    // search the corresponding sensor table to fill up the raw data and statsu
+    // rbuf[5*i+2] sensor number
+    // rbuf[5*i+3] sensor raw data1 
+    // rbuf[5*i+4] sensor raw data2
+    // rbuf[5*i+5] sensor status
+    // rbuf[5*i+6] reserved
+    ret = fbttn_sensor_units(fru, rbuf[5*i+2], units);
+    if (ret) 
+        return ret;
+
+    if( strcmp(units,"C") == 0)    
+      value = rbuf[5*i+3];
+    else      
+      value = ( ((rbuf[5*i+3] << 8) + rbuf[5*i+4]) * 100 );
+      
+    //cache sensor reading
+    sprintf(key, "dpb_sensor%d");
+    sprintf(key, key, rbuf[5*i+2]);
+    sprintf(str, "%.2f",(float)value);
+    if(edb_cache_set(key, str) < 0) {
+    }
+  #ifdef DEBUG
+       syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+  #endif     
+  }   
+
+  return 0;
+}
+
+int
+pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t sensor_num) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret, i;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  uint8_t value;
+  char units[64];
+
+  tbuf[0] = sensor_cnt; //sensor_count
+  //Fill up sensor number
+  if (sensor_num ==  SCC_FIRST_SENSOR_NUM) {
+    for( i = 0 ; i < sensor_cnt; i++) {
+      tbuf[i+1] = sensor_list[i];  //feed sensor number to tbuf
+    }    
+  }
+  else {
+    tbuf[1] = sensor_num;
+  }  
+
+  tlen = sensor_cnt + 1; 
+  
+  //TODO paste sensor_num to tbuf, to get spcific sensor data from exp
+  ret = expander_ipmb_wrapper(fru, NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
+  if (ret) {
+    #ifdef DEBUG
+       syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: expander_ipmb_wrapper failed.");
+    #endif
+    return ret;
+  }
+
+  if(rbuf[1] != sensor_cnt) //if the response counter is not equal to request counter
+    return -1;
+
+  for(i = 0; i < sensor_cnt; i++) {
+    // search the corresponding sensor table to fill up the raw data and statsu
+    // rbuf[5*i+2] sensor number
+    // rbuf[5*i+3] sensor raw data1 
+    // rbuf[5*i+4] sensor raw data2
+    // rbuf[5*i+5] sensor status
+    // rbuf[5*i+6] reserved
+    ret = fbttn_sensor_units(fru, rbuf[5*i+2], units);
+    if (ret) 
+        return ret;
+    
+    if( strcmp(units,"C") == 0)    
+      value = rbuf[5*i+3];
+    else      
+      value = ( ((rbuf[5*i+3] << 8) + rbuf[5*i+4]) * 100 );
+      
+    //cache sensor reading
+    sprintf(key, "scc_sensor%d");
+    sprintf(key, key, rbuf[5*i+2]);
+    sprintf(str, "%.2f",(float)value);
+    if(edb_cache_set(key, str) < 0) {
+    }
+  #ifdef DEBUG
+       syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+  #endif     
+  }    
+
+  return 0;
+}
+
+int  pal_get_bmc_rmt_hb(void) {
+  int bmc_rmt_hb = 0;
+  char path[64] = {0};
+
+  sprintf(path, TACH_RPM, TACH_BMC_RMT_HB);
+
+  if (read_device(path, &bmc_rmt_hb)) {
+    return -1;
+  }
+
+  return bmc_rmt_hb;
+}
+
+int  pal_get_scc_loc_hb(void) {
+  int scc_loc_hb = 0;
+  char path[64] = {0};
+
+  sprintf(path, TACH_RPM, TACH_SCC_LOC_HB);
+
+  if (read_device(path, &scc_loc_hb)) {
+    return -1;
+  }
+
+  return scc_loc_hb;
+}
+
+int  pal_get_scc_rmt_hb(void) {
+  int scc_rmt_hb = 0;
+  char path[64] = {0};
+
+  sprintf(path, TACH_RPM, TACH_SCC_RMT_HB);
+
+  if (read_device(path, &scc_rmt_hb)) {
+    return -1;
+  }
+
+  return scc_rmt_hb;
+}
+
+void pal_err_code_enable(unsigned char num) {
+  int stat = 0;
+  int bit_stat = 0;
+
+  if(num <= 100) {
+    return;
+  }
+  stat = num / 8;
+  bit_stat = num % 8;
+  if(bit_stat!=0) {
+    g_err_code[stat] |= 1 << bit_stat;
+  }
+  else {
+    g_err_code[stat] |= 1;
+  }
+}
+
+void pal_err_code_disable(unsigned char num) {
+  int stat = 0;
+  int bit_stat = 0;
+  if(num <= 100) {
+    return;
+  }
+  stat = num / 8;
+  bit_stat = num % 8;
+  g_err_code[stat] &= (unsigned char)~(1 << bit_stat);
+}
+
+/*
+ * Calculate the sum of error code
+ * If Err happen, the sum does not equal to 0
+ *
+ */
+unsigned char pal_sum_error_code(void) {
+  unsigned char ret = 0;
+  int i = 0;
+
+  for(i = 1; i < ERROR_CODE_NUM; i++) {
+    if(g_err_code[i] != 0) {
+      ret = 1;
+      return ret;
+    }
+  }
+  return ret;
+}
+

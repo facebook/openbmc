@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 #include <facebook/bic.h>
+#include <facebook/exp.h>
 #include <facebook/fbttn_common.h>
 #include <facebook/fbttn_fruid.h>
 #include <facebook/fbttn_sensor.h>
@@ -48,6 +49,13 @@ extern "C" {
 
 #define MAX_NODES 1
 
+//Expander
+#define SCC_FIRST_SENSOR_NUM 96
+#define DPB_FIRST_SENSOR_NUM 105
+#define MAX_EXP_IPMB_SENSOR_COUNT 50 
+
+#define ERROR_CODE_NUM 155
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -55,6 +63,8 @@ extern const char pal_pwm_list[];
 extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
+
+extern unsigned char g_err_code[ERROR_CODE_NUM];
 
 enum {
   LED_STATE_OFF,
@@ -201,6 +211,15 @@ int pal_get_plat_sku_id(void);
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
+int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num);
+int pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t sensor_num);
+int pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t sensor_num, int second_transaction);
+int  pal_get_bmc_rmt_hb(void);
+int  pal_get_scc_loc_hb(void);
+int  pal_get_scc_rmt_hb(void);
+void pal_err_code_enable(unsigned char num);
+void pal_err_code_disable(unsigned char num);
+unsigned char pal_sum_error_code(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

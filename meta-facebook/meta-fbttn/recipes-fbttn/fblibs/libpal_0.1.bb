@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "libbic libfbttn-common libfbttn-fruid libfbttn-sensor libkv libedb"
+DEPENDS += "libbic libexp libfbttn-common libfbttn-fruid libfbttn-sensor libkv libedb"
 
 CFLAGS_prepend = " -DCONFIG_FBTTN"
 

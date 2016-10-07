@@ -55,8 +55,39 @@
 #define LED_ON_TIME_BMC_SELECT 500
 #define LED_OFF_TIME_BMC_SELECT 500
 
+#define IOM_TYPE5 1
+#define IOM_TYPE7 2
+#define PATH_HEARTBEAT_HEALTH "/tmp/heartbeat_health"
+#define BMC_RMT_HB_TIMEOUT_COUNT  1800
+#define SCC_LOC_HB_TIMEOUT_COUNT  1800
+#define SCC_RMT_HB_TIMEOUT_COUNT  1800
+#define BMC_RMT_HB_RPM_LIMIT  0
+#define SCC_LOC_HB_RPM_LIMIT  0
+#define SCC_RMT_HB_RPM_LIMIT  0
 
 uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
+unsigned char g_err_code[ERROR_CODE_NUM];
+
+int
+write_cache(const char *device, uint8_t value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "w");
+  if (!fp) {
+    int err = errno;
+    return err;
+  }
+
+  rc = fprintf(fp, "%d", value);
+  fclose(fp);
+
+  if (rc < 0) {
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
 
 // Thread for monitoring debug card hotswap
 static void *
@@ -502,42 +533,242 @@ led_sync_handler() {
 // Thread for handling the Enclosure LED
 static void *
 encl_led_handler() {
-  int ret;
   uint8_t slot1_hlth;
   uint8_t iom_hlth;
   uint8_t dpb_hlth;
   uint8_t scc_hlth;
   uint8_t nic_hlth;
+  int ret;
+  int i;
 
+  // Initial error code
+  memset(g_err_code, 0, sizeof(unsigned char) * ERROR_CODE_NUM);
   while (1) {
     // Get health status for all the fru and then update the ENCL_LED status
     ret = pal_get_fru_health(FRU_SLOT1, &slot1_hlth);
-    if (ret)
-      goto err;
+    if (ret) {
+      pal_err_code_enable(0xF7);
+    }
+    else {
+      if (!slot1_hlth) {
+        pal_err_code_enable(0xF7);
+      }
+      else {
+        pal_err_code_disable(0xF7);
+      }
+    }
 
     ret = pal_get_fru_health(FRU_IOM, &iom_hlth);
-    if (ret)
-      goto err;
+    if (ret) {
+      pal_err_code_enable(0xF8);
+    }
+    else {
+      if (!iom_hlth) {
+        pal_err_code_enable(0xF8);
+      }
+      else {
+        pal_err_code_disable(0xF8);
+      }
+    }
 
     ret = pal_get_fru_health(FRU_DPB, &dpb_hlth);
-    if (ret)
-      goto err;
+    if (ret) {
+      pal_err_code_enable(0xF9);
+    }
+    else {
+      if (!dpb_hlth) {
+        pal_err_code_enable(0xF9);
+      }
+      else {
+        pal_err_code_disable(0xF9);
+      }
+    }
 
     ret = pal_get_fru_health(FRU_SCC, &scc_hlth);
-    if (ret)
-      goto err;
+    if (ret) {
+      pal_err_code_enable(0xFA);
+    }
+    else {
+      if (!scc_hlth) {
+        pal_err_code_enable(0xFA);
+      }
+      else {
+        pal_err_code_disable(0xFA);
+      }
+    }
 
     ret = pal_get_fru_health(FRU_NIC, &nic_hlth);
-    if (ret)
-      goto err;
+    if (ret) {
+      pal_err_code_enable(0xFB);
+    }
+    else {
+      if (!nic_hlth) {
+        pal_err_code_enable(0xFB);
+      }
+      else {
+        pal_err_code_disable(0xFB);
+      }
+    }
 
-    if (!slot1_hlth | !iom_hlth | !dpb_hlth | !scc_hlth | !nic_hlth) {
+    if(pal_sum_error_code() == 1) {   // error occur
       pal_fault_led(ID_LED_ON, 0);
-    } else {
+    }
+    else {
       pal_fault_led(ID_LED_OFF, 0);
     }
-err:
     sleep(1);
+  }
+}
+
+// Thread for handling the BMC and SCC heartbeat stauts
+static void *
+hb_mon_handler() {
+  int bmc_rmt_hb_value = -1;
+  int scc_loc_hb_value = -1;
+  int scc_rmt_hb_value = -1;  
+  int count_bmc_rmt = 0;
+  int count_scc_loc = 0;
+  int count_scc_rmt = 0;
+  int curr_bmc_rmt_status = -1;
+  int curr_scc_loc_status = -1;
+  int curr_scc_rmt_status = -1;
+  int prev_bmc_rmt_status = -1;
+  int prev_scc_loc_status = -1;
+  int prev_scc_rmt_status = -1;
+  uint8_t iom_type = 0;
+  uint8_t scc_rmt_type = 0;
+  uint8_t hb_health = 0;
+
+  // Get remote SCC and IOM type to identify IOM is M.2 or IOC solution
+  iom_type = pal_get_iom_type();
+  scc_rmt_type = ((pal_get_sku() >> 6) & 0x1);
+  // Type 5
+  if (scc_rmt_type == 0) {
+    if (iom_type == IOM_TYPE7) {
+      syslog(LOG_CRIT, "The chassis type is type V, the IOM type is IOC solution. The IOM does not match in this chassis. Default monitor type V HB.");
+    }
+    else if (iom_type != IOM_TYPE5) {
+      syslog(LOG_CRIT, "The chassis type is type V, the IOM type is unable to identify. Default monitor type V HB.");
+    }
+    iom_type = IOM_TYPE5;
+    hb_health = (1 << 5) | (1 << 4);
+  }
+  // Type 7
+  else {
+    if (iom_type == IOM_TYPE5) {
+      syslog(LOG_CRIT, "The chassis type is type VII, the IOM type is M.2 solution. The IOM does not match in this chassis. Default monitor type VII HB.");
+    }
+    else if (iom_type != IOM_TYPE7) {
+      syslog(LOG_CRIT, "The chassis type is type VII, the IOM type is unable to identify. Default monitor type VII HB");
+    }
+    iom_type = IOM_TYPE7;
+    hb_health = (1 << 4) | (1 << 3);
+  }
+
+  // Update heartbeat present bits [5:3] = {BMC_RMT, SCC_LOC, SCC_RMT}
+  write_cache(PATH_HEARTBEAT_HEALTH, hb_health);
+ 
+  while(1) {
+    // Heartbeat health bits [2:0] = {BMC_RMT, SCC_LOC, SCC_RMT}
+    // Diagnosis flow:
+    //   1. Get heartbeat
+    //   2. Timeout detect: heartbeat has no response continuous 3 minutes. 1800 = 3 * 60 * 1000 / 100
+    //   3. Cache heartbeat health in /tmp
+    //   4. Update heartbeat status
+
+    // BMC remote heartbeat
+    if (iom_type == IOM_TYPE5) {
+      // Get heartbeat
+      bmc_rmt_hb_value = pal_get_bmc_rmt_hb();
+      if (bmc_rmt_hb_value <= BMC_RMT_HB_RPM_LIMIT) {
+        count_bmc_rmt++;
+      }
+      else {
+        count_bmc_rmt = 0;
+      }
+      // Timeout Detect
+      if (count_bmc_rmt > BMC_RMT_HB_TIMEOUT_COUNT) {
+        curr_bmc_rmt_status = 0;
+      }
+      else {
+        curr_bmc_rmt_status = 1;
+      }
+      // Cache heartbeat health in /tmp
+      if (curr_bmc_rmt_status == 0) {
+        hb_health = hb_health | (1 << 2);
+        if (curr_bmc_rmt_status != prev_bmc_rmt_status) {
+          syslog(LOG_CRIT, "BMC remote heartbeat is abnormal");
+        }
+        pal_err_code_enable(0xFC);
+      }
+      else {
+        hb_health = hb_health & (~(1 << 2));
+        pal_err_code_disable(0xFC);
+      }
+      // Update heartbeat status
+      prev_bmc_rmt_status = curr_bmc_rmt_status;
+    }
+
+    // SCC local heartbeat
+    if ((iom_type == IOM_TYPE5) || (iom_type == IOM_TYPE7)) {
+      scc_loc_hb_value = pal_get_scc_loc_hb();
+      if (scc_loc_hb_value <= SCC_LOC_HB_RPM_LIMIT) {
+        count_scc_loc++;
+      }
+      else {
+        count_scc_loc = 0;
+      }
+      if (count_scc_loc > SCC_LOC_HB_TIMEOUT_COUNT) {
+        curr_scc_loc_status = 0;
+      }
+      else {
+        curr_scc_loc_status = 1;
+      }
+      if (curr_scc_loc_status == 0) {
+        hb_health = hb_health | (1 << 1);
+        if (curr_scc_loc_status != prev_scc_loc_status) {
+          syslog(LOG_CRIT, "SCC local heartbeat is abnormal");
+        }
+        pal_err_code_enable(0xFD);
+      }
+      else {
+        hb_health = hb_health & (~(1 << 1));
+        pal_err_code_disable(0xFD);
+      }
+      prev_scc_loc_status = curr_scc_loc_status;
+    }
+
+    // SCC remote heartbeat
+    if (iom_type == IOM_TYPE7) {
+      scc_rmt_hb_value = pal_get_scc_rmt_hb();
+      if (scc_rmt_hb_value <= SCC_RMT_HB_RPM_LIMIT) {
+        count_scc_rmt++;
+      }
+      else {
+        count_scc_rmt = 0;
+      }
+      if (count_scc_rmt > SCC_RMT_HB_TIMEOUT_COUNT) {
+        curr_scc_rmt_status = 0;
+      }
+      else {
+        curr_scc_rmt_status = 1;
+      }
+      if (curr_scc_rmt_status == 0) {
+        hb_health = hb_health | (1 << 0);
+        if (curr_scc_rmt_status != prev_scc_rmt_status) {
+          syslog(LOG_CRIT, "SCC remote heartbeat is abnormal");
+        }
+        pal_err_code_enable(0xFE);
+      }
+      else {
+        hb_health = hb_health & (~(1 << 0));
+        pal_err_code_disable(0xFE);
+      }
+      prev_scc_rmt_status = curr_scc_rmt_status;
+    }
+    write_cache(PATH_HEARTBEAT_HEALTH, hb_health);
+ 
+    msleep(100);
   }
 }
 
@@ -550,6 +781,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_sync_led;
   pthread_t tid_leds[MAX_NUM_SLOTS];
   pthread_t tid_encl_led;
+  pthread_t tid_hb_mon;
   int i;
   int *ip;
   int rc;
@@ -607,6 +839,11 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_hb_mon, NULL, hb_mon_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for heartbeat error\n");
+    exit(1);
+  }
+
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
@@ -616,6 +853,7 @@ main (int argc, char * const argv[]) {
     pthread_join(tid_leds[i], NULL);
   }
   pthread_join(tid_encl_led, NULL);
+  pthread_join(tid_hb_mon, NULL);
 
   return 0;
 }

@@ -357,6 +357,8 @@ int pal_get_poss_pcie_config(uint8_t *pcie_config);
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
+static bool is_cpu0_socket_occupy(void);
+static bool is_cpu1_socket_occupy(void);
 
 #ifdef __cplusplus
 } // extern "C"

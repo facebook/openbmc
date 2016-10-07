@@ -188,12 +188,6 @@ gpio_set AA2 1
 
 #gpio_set G2 0
 
-# LED_POSTCODE_3: GPIOG3 (51)
-# To use GPIOG3, SCU84[3] must be 0
-#devmem_clear_bit $(scu_addr 84) 3
-
-#gpio_set G3 0
-
 # LED_POSTCODE_4: GPIOP4 (124)
 #gpio_set P4 0
 
@@ -372,3 +366,11 @@ gpio_export R5
 # GPIOY2 BMC_JTAG_SEL
 devmem_clear_bit $(scu_addr A4) 10
 gpio_export Y2
+
+# FM_CPU0_SKTOCC_LVT3_N
+devmem_clear_bit $(scu_addr 84) 3
+gpio_export G3
+
+# FM_CPU1_SKTOCC_LVT3_N
+devmem_clear_bit $(scu_addr A4) 24
+gpio_export AA0

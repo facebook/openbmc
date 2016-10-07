@@ -90,7 +90,7 @@ def log_main():
 
             for log in syslog:
                 # Print only critical logs
-                if not (re.search(r' bmc [a-z]*.crit ', log)):
+                if not (re.search(r' bmc [a-z]*.crit ', log) or re.search(r'log-util:', log)):
                     continue
 
                 # Find the FRU number
@@ -144,12 +144,14 @@ def log_main():
                 fruname = frulist[int(fru_num)]
 
                 # Print only if the argument fru matches the log fru
+                if re.search(r'log-util:', log):
+                   if re.search(r'all logs', log) or fru == fruname:
+                     print (log)
+                     continue
+
                 if fru != 'all' and fru != fruname:
                     continue
 
-                if re.search(r'log-util:', log):
-                    print (log)
-                    continue
                 # Time format Sep 28 22:10:50
                 temp = re.split(r' bmc [a-z]*.crit ', log)
                 ts = temp[0]

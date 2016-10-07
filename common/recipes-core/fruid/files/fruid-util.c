@@ -139,6 +139,7 @@ int main(int argc, char * argv[]) {
   char name[64] = {0};
   char command[128] = {0};
   uint8_t status;
+  fruid_info_t fruid;
 
   if (argc != 2 && argc != 4) {
     print_usage();
@@ -225,6 +226,13 @@ int main(int argc, char * argv[]) {
     } else if (rw == EEPROM_WRITE) {
 
     /* FRUID BINARY WRITE */
+
+      // Verify the checksum of the new binary
+      ret = fruid_parse(file_path, &fruid);
+      if(ret != 0){
+        syslog(LOG_CRIT, "New FRU data checksum is invalid");
+        return -1;
+      }
 
       fd_tmpbin = open(path, O_WRONLY);
       if (fd_tmpbin == -1) {

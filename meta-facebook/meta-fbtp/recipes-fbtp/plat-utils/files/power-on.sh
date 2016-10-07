@@ -74,9 +74,9 @@ check_por_config()
 sync_date()
 {
   # Use standard IPMI command 'get-sel-time' to read RTC time
-  output=$(/usr/local/bin/me-util slot$i 0x28 0x48)
-  # if the command fails, continue to next slot
-  [ $(echo $output | wc -c) != 12 ] && continue
+  output=$(/usr/local/bin/me-util 0x28 0x48)
+  # if the command fails, return
+  [ $(echo $output | wc -c) != 12 ] && return
   col1=$(echo $output | cut -d' ' -f1 | sed 's/^0*//')
   col2=$(echo $output | cut -d' ' -f2 | sed 's/^0*//')
   col3=$(echo $output | cut -d' ' -f3 | sed 's/^0*//')
@@ -96,7 +96,7 @@ sync_date()
 # Check whether it is fresh power on reset
 if [ $(is_bmc_por) -eq 1 ]; then
 
-  #sync_date
+  sync_date
 
   check_por_config
   if [ $TO_PWR_ON -eq 1 ] ; then

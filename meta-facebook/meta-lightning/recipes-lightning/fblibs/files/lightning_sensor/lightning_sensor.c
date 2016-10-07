@@ -283,6 +283,7 @@ static void
 assign_sensor_threshold(uint8_t fru, uint8_t snr_num, float ucr, float unc,
     float unr, float lcr, float lnc, float lnr, float pos_hyst, float neg_hyst) {
 
+  int ret;
   switch(fru) {
     case FRU_PEB:
       peb_sensor_threshold[snr_num][UCR_THRESH] = ucr;
@@ -321,6 +322,9 @@ static void
 sensor_thresh_array_init() {
 
   static bool init_done = false;
+  uint8_t ssd_sku = 0;
+  uint8_t ssd_vendor = 0;
+  int ret;
 
   if (init_done)
     return;
@@ -388,11 +392,49 @@ sensor_thresh_array_init() {
       55, 50, 0, 5, 10, 0, 0, 0);
 
   // PDPB SSD and AMBIENT TEMP SENSORS
+  ret = lightning_ssd_sku(&ssd_sku);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s() get SSD SKU failed", __func__);
+  }
+  ret = lightning_ssd_vendor(&ssd_vendor);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s() get SSD vendor failed", __func__);
+  }
+  
   for (i = 0; i < lightning_flash_cnt; i++) {
-    assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-        70, 67, 0, 5, 10, 0, 0, 0);
-    assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_AMB_TEMP_0 + i,
-        0, 0, 0, 0, 0, 0, 0, 0);
+    if(ssd_sku == U2_SKU) {
+      // Intel threshold
+      if (ssd_vendor == INTEL) 
+        assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
+            70, 68, 0, 5, 10, 0, 0, 0);
+      // Samsung threshold
+      else if(ssd_vendor == SAMSUNG)
+        assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
+            82, 78, 0, 5, 10, 0, 0, 0);
+      // Default threshold
+      else
+        assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
+            80, 78, 0, 5, 10, 0, 0, 0);
+      
+    } else if (ssd_sku == M2_SKU) {
+      // Seagate threshold
+      if(ssd_vendor == SEAGATE) 
+        assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
+            80, 78, 0, 5, 10, 0, 0, 0);
+      // Default threshold
+      else
+        assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
+            80, 78, 0, 5, 10, 0, 0, 0);
+
+      // AMBIENT SENSORS
+      assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_AMB_TEMP_0 + i,
+          65, 60, 0, 5, 10, 0, 0, 0);
+    } else {
+      // Default threshold
+      assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
+            80, 78, 0, 5, 10, 0, 0, 0);
+    }
+
   }
 
   // FCB Volt Sensors
@@ -421,29 +463,29 @@ sensor_thresh_array_init() {
 
   // FCB Fan Speed
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN1_REAR_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN2_FRONT_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN2_REAR_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN3_FRONT_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN3_REAR_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN4_FRONT_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN4_REAR_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN5_FRONT_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN5_REAR_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN6_FRONT_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN6_REAR_SPEED,
-      0, 0, 0, 800, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 0, 0);
 
   init_done = true;
 }
@@ -538,7 +580,7 @@ read_flash_temp(uint8_t flash_num, float *value) {
   ret = lightning_ssd_sku(&sku);
 
   if (ret < 0) {
-    syslog(LOG_ERR, "%s(): lightning_ssd_sku failed", __func__);
+    syslog(LOG_DEBUG, "%s(): lightning_ssd_sku failed", __func__);
     return -1;
   }
   if (sku == U2_SKU) 
@@ -546,7 +588,7 @@ read_flash_temp(uint8_t flash_num, float *value) {
   else if (sku == M2_SKU)
     return lightning_m2_flash_temp_read(lightning_flash_list[flash_num], value);
   else {
-    syslog(LOG_ERR, "%s(): unknown ssd sku", __func__);
+    syslog(LOG_DEBUG, "%s(): unknown ssd sku", __func__);
     return -1;
   }
 }
@@ -796,6 +838,11 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   /* Read the LSB byte for the value */
   res_l = i2c_smbus_read_byte_data(dev, reg + 1);
 
+  if((res_h == -1) || (res_l == -1)) {
+    syslog(LOG_DEBUG, "%s() i2c_smbus_read_byte_data failed, high byte: 0x%x, low byte: 0x%x", __func__, res_h, res_l);
+    return -1;
+  }
+  
   /* Modify the monitor_flag when the last sensor query finish in this query interval */
   if (FAN_REGISTER+2 == reg) {
 
@@ -1356,7 +1403,7 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_flash_temp(sensor_num - PDPB_SENSOR_FLASH_TEMP_0, (float*) value);
         }
 
-if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 &&
+ if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 &&
             sensor_num < (PDPB_SENSOR_AMB_TEMP_0 + lightning_flash_cnt)) {
           return read_m2_amb_temp(sensor_num - PDPB_SENSOR_AMB_TEMP_0, (float*) value);
         }

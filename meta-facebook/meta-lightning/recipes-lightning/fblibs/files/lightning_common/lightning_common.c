@@ -35,7 +35,9 @@
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
 
 #define PCIE_SW_FILE        "/tmp/pcie_switch_vendor"
-#define SSD_SDK_INFO        "/tmp/ssd_sku_info"
+#define SSD_SKU_INFO        "/tmp/ssd_sku_info"
+#define SSD_VENDOR_INFO     "/tmp/ssd_vendor"
+#define PATH_LENGTH         16
 
 int
 lightning_common_fru_name(uint8_t fru, char *str) {
@@ -127,20 +129,20 @@ int
 lightning_ssd_sku(uint8_t *ssd_sku) {
 
   FILE *fp;
-  char sku[8] = {0};
+  char sku[PATH_LENGTH] = {0};
   int rc;
 
-  fp = fopen(SSD_SDK_INFO, "r");
+  fp = fopen(SSD_SKU_INFO, "r");
   if(!fp) {
-    syslog(LOG_WARNING, "%s(): %s fopen failed", __func__, SSD_SDK_INFO);
+    syslog(LOG_DEBUG, "%s(): %s fopen failed", __func__, SSD_SKU_INFO);
     return -1;
   }
 
-  rc = (int) fread(sku, 1, 8, fp);
+  rc = (int) fread(sku, 1, sizeof(sku), fp);
   fclose(fp);
 
   if(rc <= 0) {
-    syslog(LOG_WARNING, "%s(): %s fread failed", __func__, SSD_SDK_INFO);
+    syslog(LOG_DEBUG, "%s(): %s fread failed", __func__, SSD_SKU_INFO);
     return -1;
   }
 
@@ -149,7 +151,42 @@ lightning_ssd_sku(uint8_t *ssd_sku) {
   else if (strstr(sku, "M2") != NULL)
     *ssd_sku = M2_SKU;
   else {
-    syslog(LOG_WARNING, "%s(): Cannot find corresponding SSD SKU", __func__);
+    syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD SKU", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+lightning_ssd_vendor(uint8_t *ssd_vendor) {
+
+  FILE *fp;
+  char vendor[PATH_LENGTH] = {0};
+  int rc;
+
+  fp = fopen(SSD_VENDOR_INFO, "r");
+  if(!fp) {
+    syslog(LOG_DEBUG, "%s(): %s fopen failed", __func__, SSD_VENDOR_INFO);
+    return -1;
+  }
+
+  rc = (int) fread(vendor, 1, sizeof(vendor), fp);
+  fclose(fp);
+
+  if(rc <= 0) {
+    syslog(LOG_DEBUG, "%s(): %s fread failed", __func__, SSD_VENDOR_INFO);
+    return -1;
+  }
+
+  if (strstr(vendor, "intel") != NULL)
+    *ssd_vendor = INTEL;
+  else if (strstr(vendor, "seagate") != NULL)
+    *ssd_vendor = SEAGATE;
+  else if (strstr(vendor, "samsung") != NULL)
+    *ssd_vendor = SAMSUNG;
+  else {
+    syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD vendor", __func__);
     return -1;
   }
 

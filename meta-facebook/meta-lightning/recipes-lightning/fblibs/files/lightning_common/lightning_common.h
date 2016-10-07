@@ -41,14 +41,21 @@ enum {
 };
 
 enum {
-  U2_SKU,
+  U2_SKU = 0x01,
   M2_SKU,
+};
+
+enum {
+  INTEL = 0x01,
+  SEAGATE,
+  SAMSUNG,
 };
 
 int lightning_common_fru_name(uint8_t fru, char *str);
 int lightning_common_fru_id(char *str, uint8_t *fru);
 int lightning_pcie_switch(uint8_t fru, uint8_t *pcie_sw);
 int lightning_ssd_sku(uint8_t *ssd_sku);
+int lightning_ssd_vendor(uint8_t *ssd_vendor);
 
 #ifdef __cplusplus
 } // extern "C"

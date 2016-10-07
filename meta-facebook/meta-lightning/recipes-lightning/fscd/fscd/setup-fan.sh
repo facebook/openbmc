@@ -39,9 +39,9 @@ ssd_vendor=`cat /tmp/ssd_vendor`
 case "$flash_type" in
    "U2")
         case "$ssd_vendor" in
-           "intel") cp /etc/FSC_Lightning_DVT_Intel_U2_2TB_V1_config.json ${default_fsc_config_path}
+           "intel") cp /etc/FSC_Lightning_DVT_Intel_U2_2TB_v1_config.json ${default_fsc_config_path}
            ;;
-           "samsung") cp /etc/FSC_Lightning_DVT_Samsung_U2_2TB_V1_config.json ${default_fsc_config_path}
+           "samsung") cp /etc/FSC_Lightning_DVT_Samsung_U2_2TB_v1_config.json ${default_fsc_config_path}
            ;;
            *) echo "Enter into transitional mode - Incorrect U.2 SSD vendor."
               /usr/local/bin/init_pwm.sh
@@ -52,7 +52,7 @@ case "$flash_type" in
    ;;
    "M2")
         case "$ssd_vendor" in
-           "seagate") cp /etc/FSC_Lightning_DVT_Seagete_M2_1TB_V1_config.json ${default_fsc_config_path}
+           "seagate") cp /etc/FSC_Lightning_DVT_Seagate_M2_1TB_v1_config.json ${default_fsc_config_path}
            ;;
            *) echo "Enter into transitional mode - Incorrect M.2 SSD vendor."
               /usr/local/bin/init_pwm.sh

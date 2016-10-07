@@ -29,6 +29,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-rest-api.sh \
             file://plat_tree.py \
             file://node_api.py \
+            file://node_bmc.py \
             file://node_fruid.py \
             file://node_sensors.py \
             file://node_logs.py \

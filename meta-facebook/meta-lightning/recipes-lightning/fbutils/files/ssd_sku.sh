@@ -11,7 +11,7 @@ M2_CHANNEL0=0x01
 M2_MUX_ADDR=$(echo $I2C_M2_MUX_ADDR | cut -c3-4)
 M2CARD_AMB_ADDR=$(echo $I2C_M2CARD_AMB_ADDR | cut -c3-4)
 
-for (( i=0; i<8; i++ ))
+for (( i=0; i<7; i++ ))
 do
         NUM=$(($MUX_BASE + $i))
         MUX=$(printf "0x%x" $NUM)
@@ -29,9 +29,9 @@ do
         fi
 done
 
-for (( i=0; i<7; i++ ))
+for (( i=0; i<8; i++ ))
 do
-MUM=$(($MUX_BASE + $i))
+        NUM=$(($MUX_BASE + $i))
         MUX=$(printf "0x%x" $NUM)
         i2cset -y 8 $I2C_8_MUX_ADDR $MUX
         i2c_scan8=$(i2cdetect -y 8)

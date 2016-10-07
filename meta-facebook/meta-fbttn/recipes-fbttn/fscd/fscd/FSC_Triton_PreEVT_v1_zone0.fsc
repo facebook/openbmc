@@ -1,0 +1,3 @@
+max([
+  linear_soc_temp(slot1:soc_temp)
+])

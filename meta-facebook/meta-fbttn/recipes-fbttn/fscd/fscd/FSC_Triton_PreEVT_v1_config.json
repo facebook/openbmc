@@ -1,0 +1,46 @@
+{
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "watchdog": false,
+  "min_rpm": 400,
+  "profiles": {
+    "linear_soc_temp": {
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [ 30, 30 ],
+        [ 35, 35 ],
+        [ 40, 40 ],
+        [ 45, 45 ],
+        [ 50, 50 ],
+        [ 55, 55 ],
+        [ 60, 60 ],
+        [ 65, 65 ],
+        [ 70, 70 ],
+        [ 75, 75 ],
+        [ 80, 80 ],
+        [ 85, 85 ],
+        [ 90, 90 ],
+        [ 95, 95 ],
+        [ 100, 100 ]
+      ]
+     }
+  },
+  "zones": {
+    "zone_0": {
+      "pwm_output": [0],
+      "expr_file": "FSC_Triton_PreEVT_v1_zone0.fsc"
+    },
+    "zone_1": {
+      "pwm_output": [1],
+      "expr_file": "FSC_Triton_PreEVT_v1_zone1.fsc"
+    }
+  }
+}
+

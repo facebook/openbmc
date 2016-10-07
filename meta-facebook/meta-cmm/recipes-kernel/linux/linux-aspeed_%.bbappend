@@ -4,6 +4,8 @@ COMPATIBLE_MACHINE = "cmm"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+# Only 4.1 will use this defconfig, the 4.7 defconfig is pulled from
+# kernel source tree
 SRC_URI += "file://defconfig \
            "
 

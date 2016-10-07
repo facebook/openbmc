@@ -1,0 +1,4 @@
+[submodule "meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.7"]
+	path = meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.7
+	url = ssh://projects.git.vip.facebook.com/data/gitrepos/kernel/linux
+	branch = openbmc/helium/4.7

@@ -20,8 +20,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # transitting from S5 to S0, we will need to explicitely pull down uS COM
 # pins before powering off/reset and restoring COM pins after
 
-TH_SHUTDOWN_VOL=1339
-TH_RESTORE_VOL=1445
+TH_SHUTDOWN_VOL=949
+TH_RESTORE_VOL=1028
 th_shutdown=0
 
 restore_us_com() {
@@ -57,8 +57,11 @@ lm57_monitor() {
 
 val=0
 ret=0
-((card_val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
-if [ $card_val -lt 8 ]; then
+echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
+((card_val=$(i2cget -f -y 12 0x31 0x0 2> /dev/null | head -n 1)))
+card_val=$(($card_val % 16))
+if [ $card_val -le 1 ]; then
+#EVT or DVT1 board
 TH_SHUTDOWN_VOL=1296
 TH_RESTORE_VOL=1402
 fi
@@ -71,6 +74,6 @@ while true; do
 		restore_us_com
 	fi
 	val=$ret
-	#lm57_monitor
+	lm57_monitor
 	usleep 500000
 done

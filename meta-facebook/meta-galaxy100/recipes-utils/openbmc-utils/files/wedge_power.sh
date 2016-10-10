@@ -85,6 +85,8 @@ do_on() {
     do_on_com_e
     ret=$?
     if [ $ret -eq 0 ]; then
+		#enable I2c buffer to EC
+		i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
         echo " Done"
     else
         echo " Failed"
@@ -94,13 +96,19 @@ do_on() {
 
 do_off_com_e() {
     #echo 0 > $PWR_USRV_SYSFS
+	i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+	sleep 15
 	i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+	sleep 10
     return $?
 }
 
 do_off() {
     local ret
-    echo -n "Power off microserver ..."
+	echo -n "Power off microserver(about 30s) ..."
+	#disable the I2C buffer to EC first
+	i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
+	sleep 1
     do_off_com_e
     ret=$?
     if [ $ret -eq 0 ]; then
@@ -146,6 +154,29 @@ do_reset() {
     return 0
 }
 
+do_recovery() {
+    local ret
+	echo -n "Power on microserver recovery(about 30s) ..."
+	#disable the I2C buffer to EC first
+	i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
+	sleep 1
+	i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+	usleep 11000
+	i2cset -f -y 0 0x3e 0x0b 0xff 2> /dev/null
+	sleep 15
+	i2cset -f -y 0 0x3e 0x0b 0xfe 2> /dev/null
+	usleep 11000
+	i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+	sleep 10
+	i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
+	usleep 11000
+	#enable I2c buffer to EC
+	i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
+
+    echo " Done"
+    return 0
+}
+
 if [ $# -lt 1 ]; then
     usage
     exit -1
@@ -166,6 +197,9 @@ case "$command" in
         ;;
     reset)
         do_reset $@
+        ;;
+    recovery)
+        do_recovery $@
         ;;
     *)
         usage

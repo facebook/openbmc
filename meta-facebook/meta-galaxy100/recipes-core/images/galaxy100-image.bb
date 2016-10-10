@@ -19,7 +19,9 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-python \
   packagegroup-openbmc-rest \
   at93cx6-util \
+  bcm5396-util \
   bitbang \
+  rackmon \
   cpldupdate \
   flashrom \
   ipmid \

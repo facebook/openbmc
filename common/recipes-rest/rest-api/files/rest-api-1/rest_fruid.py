@@ -24,9 +24,9 @@ import subprocess
 import bmc_command
 
 # Handler for FRUID resource endpoint
-def get_fruid():
+def get_fruid(cmd=['weutil']):
     result = {}
-    proc = subprocess.Popen(['weutil'],
+    proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     try:

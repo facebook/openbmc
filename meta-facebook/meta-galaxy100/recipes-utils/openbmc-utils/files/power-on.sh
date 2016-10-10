@@ -60,6 +60,6 @@ if galaxy100_scm_is_present && [ $soft_reboot -eq 0 ] ; then
 	    # Power on now
 	    wedge_power.sh on -f
 	fi
-else
+elif ! galaxy100_scm_is_present ; then
 	echo "SCM isn't present..."
 fi

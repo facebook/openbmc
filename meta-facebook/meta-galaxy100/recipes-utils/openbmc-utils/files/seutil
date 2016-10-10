@@ -14,7 +14,9 @@
 
 ((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
 ((left=$(i2cget -f -y 12 0x31 0x5 2> /dev/null | head -n 1)))
-if [ $val -lt 8  -a $left -eq 0 ] || [ $val -ge 8 ]; then
+((card_val=$(i2cget -f -y 12 0x31 0x0 2> /dev/null | head -n 1)))
+card_val=$(($card_val % 16))
+if [ $val -lt 8  -a $left -eq 0 ] || [ $val -ge 8 ] || [ $card_val -ge 2 ]; then
   # left BMC and FAB
   weutil /sys/class/i2c-adapter/i2c-0/0-0052/eeprom
 else

@@ -34,6 +34,7 @@ import rest_server
 import rest_sensors
 import rest_bmc
 import rest_slotid
+import rest_sol
 
 CONSTANTS = {
     'certificate': '/usr/lib/ssl/certs/rest_server.pem',
@@ -118,6 +119,12 @@ def rest_sensors_hdl():
 @route('/api/sys/slotid')
 def rest_slotid_hdl():
   return rest_slotid.get_slotid()
+
+# Handler for SOL resource endpoint
+@route('/api/sys/sol', method='POST')
+def rest_sol_act_hdl():
+    data = json.load(request.body)
+    return rest_sol.sol_action(data)
 
 run(host = "::", port = 8080)
 

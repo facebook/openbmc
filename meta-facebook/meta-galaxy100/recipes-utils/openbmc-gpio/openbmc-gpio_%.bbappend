@@ -12,4 +12,11 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+SRC_URI += "file://board_gpio_table_v2.py \
+			file://board_gpio_table_v1.py \
+		   "
+
 OPENBMC_GPIO_SOC_TABLE = "ast2400_gpio_table.py"
+
+S = "${WORKDIR}"
+

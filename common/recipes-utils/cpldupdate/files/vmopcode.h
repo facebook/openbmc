@@ -244,4 +244,7 @@ void isp_gpio_i2c_config( unsigned int gpio, int dir );
 int isp_gpio_init(void);
 int isp_gpio_i2c_init(void);
 void isp_gpio_uninit(void);
+int isp_vme_file_size_set(char *file_name);
+long isp_vme_file_size_get(void);
+int isp_print_progess_bar(long offset);
 #endif

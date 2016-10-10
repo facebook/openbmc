@@ -909,6 +909,8 @@ signed char ispVMCode()
 			***************************************************************/
 
 			ispVMComment( ( unsigned short ) ispVMDataSize() );
+			printf( "Warning! Don't power off......\n\n");
+			isp_print_progess_bar(0);
 			break;
 		case LVDS:
 

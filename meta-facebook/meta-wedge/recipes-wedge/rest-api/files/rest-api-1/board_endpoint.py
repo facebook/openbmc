@@ -22,8 +22,8 @@ import rest_usb2i2c_reset
 
 boardApp = bottle.Bottle()
 
-
+# Disable the endpoint in BMC until we root cause cp2112 issues.
 # Handler to reset usb-to-i2c
-@boardApp.route('/api/sys/usb2i2c_reset')
-def rest_usb2i2c_reset_hdl():
-    return rest_usb2i2c_reset.set_usb2i2c()
+#@boardApp.route('/api/sys/usb2i2c_reset')
+#def rest_usb2i2c_reset_hdl():
+#    return rest_usb2i2c_reset.set_usb2i2c()

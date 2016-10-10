@@ -141,6 +141,10 @@ const char * const g_szSupportedVersions[] = { "__VME2.0", "__VME3.0", "____12.0
 unsigned char GetByte()
 {
 	unsigned char ucData = 0;
+	static long offset = 0;
+	int pec = 0;
+	int file_size = isp_vme_file_size_get();
+	int bytes_pec = (file_size + 99) / 100;
 
 	if ( g_usDataType & HEAP_IN ) {
 
@@ -193,6 +197,11 @@ unsigned char GetByte()
 		***************************************************************/
 
 		ucData = (unsigned char)fgetc( g_pVMEFile );
+		pec = ++offset / bytes_pec;
+		if(offset <= (pec * bytes_pec))
+			isp_print_progess_bar(pec);
+		else if(offset >= (file_size - 2))
+			isp_print_progess_bar(100);
 
 		if ( feof( g_pVMEFile ) ) {
 
@@ -717,8 +726,8 @@ int main( int argc, const char * const argv[] )
 		vme_out_string ("calibration ....\n\n");
 		calibration();
 	}
-
-    printf( "Processing virtual machine file (%s)......\n\n", cpld_img);
+	isp_vme_file_size_set(cpld_img);
+    printf( "Processing virtual machine file (%s)......\n", cpld_img);
 	siRetCode = ispVM(cpld_img);
 	if ( siRetCode < 0 ) {
 		vme_out_string( "Failed due to ");

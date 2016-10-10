@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include "i2c-dev.h"
 #include <openbmc/cpldupdate_dll.h>
 #endif
@@ -50,6 +51,7 @@ static volatile unsigned int *gpio_base;
 static volatile unsigned int *gpio_dir_base;
 static int mem_fd;
 static int mem_dir_fd;
+static long vme_file_size = 0;
 unsigned long  g_siIspPins        = 0x00000000;   /*Keeper of JTAG pin state*/
 unsigned short g_usInPort         = PCA953X_INPUT;  /*Address of the TDO pin*/
 unsigned short g_usOutPort	  = PCA953X_OUTPUT;  /*Address of TDI, TMS, TCK pin*/
@@ -569,5 +571,41 @@ void isp_gpio_config(unsigned int gpio, int dir)
 	} else {
 		*(gpio_dir_base) |= (0x1 << gpio);
 	}
+}
+
+int isp_vme_file_size_set(char *file_name)
+{
+	struct stat statbuf;
+
+	stat(file_name, &statbuf);
+	vme_file_size = statbuf.st_size;
+
+	return 0;
+}
+
+long isp_vme_file_size_get(void)
+{
+	return vme_file_size;
+}
+int isp_print_progess_bar(long pec)
+{
+	int i = 0;
+
+	printf("\033[?251");
+	printf("\r");
+
+	for(i = 0; i < pec / 2; i++) {
+		printf("\033[;42m \033[0m");
+	}
+	for(i = pec / 2; i < 50; i++) {
+		printf("\033[47m \033[0m");
+	}
+	printf(" [%d%%]", pec);
+	fflush(stdout);
+	if(pec == 100) {
+		printf("\n");
+	}
+
+	return 0;
 }
 #endif

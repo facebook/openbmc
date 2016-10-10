@@ -932,6 +932,7 @@ read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
 
 static int
 read_cpu_dimm_temp(uint8_t snr_num, float *value) {
+  int ret = 0;
   uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf1[256] = {0x00};
@@ -996,6 +997,7 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
 #ifdef DEBUG
       syslog(LOG_DEBUG, "read_cpu_dimm_temp a: Zero bytes received\n");
 #endif
+      ret = -1;
     } else {
       if (rbuf1[6] == 0)
       {
@@ -1126,8 +1128,9 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
     if (rlen == 0) {
   //ME no response
 #ifdef DEBUG
-    syslog(LOG_DEBUG, "read_cpu_dimm_temp b: Zero bytes received\n");
+      syslog(LOG_DEBUG, "read_cpu_dimm_temp b: Zero bytes received\n");
 #endif
+      ret = -1;
     } else {
     if (rbuf1[6] == 0) {
       //CPU0 Temp
@@ -1272,9 +1275,9 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
     if (rlen == 0) {
   //ME no response
 #ifdef DEBUG
-    syslog(LOG_DEBUG, "read_cpu_dimm_temp c: Zero bytes received\n");
+      syslog(LOG_DEBUG, "read_cpu_dimm_temp c: Zero bytes received\n");
 #endif
-
+      ret = -1;
   } else {
     if (rbuf2[6] == 0) {
       //MB_SENSOR_CPU0_DIMM_GRPB_TEMP
@@ -1359,6 +1362,8 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
       }
     }
   }
+
+  return ret;
 }
 
 static int

@@ -1,4 +1,6 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+#!/usr/bin/env python
+#
+# Copyright 2016-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -10,15 +12,9 @@
 # for more details.
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+import rest_fruid
 
-SRC_URI += "file://rest.py \
-			file://rest_bmc.py \
-			file://rest_fruid.py \
-			file://rest_fruid_scm.py \
-			file://rest_seutil.py \
-			file://rest_sol.py \
-			file://rest_server.py \
-			file://bmc_command.py \
-           "
-binfiles += "bmc_command.py rest_seutil.py rest_fruid_scm.py rest_sol.py"
+
+# Handler for FRUID resource endpoint
+def get_seutil():
+    return rest_fruid.get_fruid(cmd=['seutil'])

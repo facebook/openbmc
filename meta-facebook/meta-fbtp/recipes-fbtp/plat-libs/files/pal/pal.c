@@ -1855,7 +1855,8 @@ server_power_reset(void) {
     return -1;
   }
 
-  system("/usr/bin/sv restart fscd >> /dev/null");
+  system("/etc/init.d/setup-fan.sh >> /dev/null");
+  system("/usr/bin/sv start fscd >> /dev/null");
   system("/usr/local/bin/gpiod >> /dev/null");
 
   return 0;

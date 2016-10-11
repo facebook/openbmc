@@ -22,7 +22,6 @@ SRC_URI += "file://disable_watchdog.sh \
             file://setup_board.sh \
             file://cpld_rev.sh \
             file://cpld_upgrade.sh \
-            file://reset_cp2112.sh \
             file://reset_qsfp_mux.sh \
            "
 
@@ -30,7 +29,6 @@ OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     cpld_upgrade.sh \
     cpld_rev.sh \
-    reset_cp2112.sh \
     reset_qsfp_mux.sh \
     "
 

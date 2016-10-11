@@ -73,13 +73,6 @@ static int readFromStdin(int clientfd, int stdi) {
     perror("mTerm_client: Client socket read error to mTerm_server");
     return 0;
   }
-
-  if (c[0] == ASCII_CTRL_X) {
-    escClose(clientfd);
-    mode = EOL;
-    return 0;
-  }
-
   if((mode == EOL) && (c[0] == ASCII_CTRL_L)) {
     mode = ESC;
     return 1;

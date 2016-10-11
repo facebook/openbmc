@@ -28,7 +28,7 @@
 void escHelp(void) {
   printf("\r\n------------------TERMINAL MULTIPLEXER---------------------\r\n");
   printf("  CTRL-L ?   : Display help message.\r\n");
-  printf("  CTRL-X     : Terminate the connection.\r\n");
+  printf("  CTRL-L DEL : Terminate the connection.\r\n");
   printf("  /var/log/mTerm_wedge.log : Log location\r\n");
   printf("  CTRL-L + b : Send Break\r\n");
   /*TODO: Log file read from tool*/
@@ -38,7 +38,7 @@ void escHelp(void) {
 }
 
 void escClose(int clientfd) {
-  sendTlv(clientfd, ASCII_CTRL_X, NULL , 0);
+  sendTlv(clientfd, ASCII_DELETE, NULL , 0);
   printf("Connection closed.\r\n");
  return;
 }
@@ -52,6 +52,11 @@ int processEscMode(int clientfd, char c, escMode* mode) {
   if (c == ASCII_COLON) {
     *mode = SEND;
     return 1;
+  }
+  if (c == ASCII_DELETE) {
+    escClose(clientfd);
+    *mode = EOL;
+    return 0;
   }
   if (isalpha(c) && (c == 'b')) {
     printf("Warning: Send BREAK \r\n");

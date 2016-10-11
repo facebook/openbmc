@@ -144,7 +144,7 @@ static void processClient(fd_set* master, int clientFd , int solFd,
           bufferGetLines(buf->file, clientFd, atoi(vec[1].iov_base), 0);
         }
         break;
-      case ASCII_CTRL_X:
+      case ASCII_DELETE:
         syslog(LOG_INFO, "mTerm_server: Client socket %d closed\n", clientFd);
         closeClient(master, clientFd);
         break;

@@ -203,9 +203,9 @@ gpio_init(void) {
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX4");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX5");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX6");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX7");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOY0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOY1");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX7");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOZ2");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAA0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAB0");

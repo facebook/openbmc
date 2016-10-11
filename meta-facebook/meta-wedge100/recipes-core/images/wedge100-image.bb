@@ -37,6 +37,7 @@ IMAGE_INSTALL += " \
   psumuxmon \
   mTerm \
   spatula \
+  tpm-tools \
   "
 
 IMAGE_FEATURES += " \

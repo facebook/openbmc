@@ -12,7 +12,9 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-openembedded/meta-oe \
   ##OEROOT##/meta-openembedded/meta-networking \
   ##OEROOT##/meta-openembedded/meta-python \
+  ##OEROOT##/meta-openembedded/meta-perl \
   ##OEROOT##/meta-openbmc \
+  ##OEROOT##/meta-security \
   ##OEROOT##/meta-openbmc/meta-aspeed \
   ##OEROOT##/meta-openbmc/meta-facebook \
   ##OEROOT##/meta-openbmc/meta-facebook/meta-wedge \

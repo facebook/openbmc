@@ -145,13 +145,16 @@ def log_main():
 
                 # Print only if the argument fru matches the log fru
                 if re.search(r'log-util:', log):
-                   if re.search(r'all logs', log) or fru == fruname:
+                   if re.search(r'all logs', log):
                      print (log)
                      continue
 
                 if fru != 'all' and fru != fruname:
                     continue
 
+                if re.search(r'log-util:', log):
+                     print (log)
+                     continue
                 # Time format Sep 28 22:10:50
                 temp = re.split(r' bmc [a-z]*.crit ', log)
                 ts = temp[0]

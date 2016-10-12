@@ -40,6 +40,7 @@ IMAGE_INSTALL += " \
   psumuxmon \
   mTerm \
   spatula \
+  trousers \
   tpm-tools \
   "
 

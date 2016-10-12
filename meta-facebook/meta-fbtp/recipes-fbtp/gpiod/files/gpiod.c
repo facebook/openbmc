@@ -143,6 +143,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOI1 - FM_CPU1_FIVR_FAULT_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOL0 - IRQ_UV_DETECT_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOL1 - IRQ_OC_DETECT_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOL2 - FM_HSC_TIMER_EXP_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOL4 - FM_MEM_THERM_EVENT_PCH_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOM0 - FM_CPU0_RC_ERROR_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
@@ -160,6 +161,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOY1 - FM_SLPS4_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOZ2 - IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOAA0 - FM_CPU1_SKTOCC_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle_power, "GPIOAA1 - IRQ_SML1_PMBUS_ALERT_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOAA7 - FM_BIOS_POST_CMPLT_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOAB0 - IRQ_HSC_FAULT_N"},
 };
@@ -207,6 +209,7 @@ gpio_init(void) {
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOI1");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL1");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL2");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL4");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM0");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM1");
@@ -224,6 +227,7 @@ gpio_init(void) {
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOY1");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOZ2");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAA0");
+  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAA1");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAA7");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAB0");
 }

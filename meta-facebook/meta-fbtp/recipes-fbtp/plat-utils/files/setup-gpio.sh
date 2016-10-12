@@ -339,6 +339,17 @@ gpio_export N3
 devmem_clear_bit $(scu_addr 84) 1
 gpio_export G1
 
+# FM_GLOBAL_RST_WARN_N
+devmem_set_bit $(scu_addr A4) 3
+# H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N
+devmem_set_bit $(scu_addr A4) 4
+# H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N
+devmem_set_bit $(scu_addr A4) 5
+# H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N
+devmem_set_bit $(scu_addr A4) 6
+# H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N
+devmem_set_bit $(scu_addr A4) 7
+
 # Intel remote BMC debug function pins
 # GPIOP5 BMC_PREQ_N
 devmem_clear_bit $(scu_addr 88) 21

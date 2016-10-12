@@ -327,11 +327,20 @@ def main():
         recovered_fans = last_dead_fans - dead_fans
         newly_dead_fans = dead_fans - last_dead_fans
         if len(newly_dead_fans) > 0:
-            crit("%d fans failed" % (len(dead_fans),))
+            if fanpower:
+                warn("%d fans failed" % (len(dead_fans),))
+            else:
+                crit("%d fans failed" % (len(dead_fans),))
             for dead_fan_num in dead_fans:
+            if fanpower:
+                warn("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
+            else:
                 crit("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
         for fan in recovered_fans:
-            crit("Fan %d has recovered" % (fan,))
+            if fanpower:
+                warn("Fan %d has recovered" % (fan,))
+            else:
+                crit("Fan %d has recovered" % (fan,))
             pal_fan_recovered_handle(fan)
         for zone in zones:
             print("PWM: %s" % (json.dumps(zone.pwm_output)))

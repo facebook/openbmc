@@ -176,21 +176,7 @@ def log_main():
                     )
 
     if cmd == cmdlist[1]:
-       pal_log_clear(fru)
-        if fru == 'all':
-           for i in range (1, len(frulist)):
-               fruname = frulist[i] + '_sensor_health'
-               pal_set_key_value(fruname)
-           for i in range (1, len(frulist)):
-               fruname = frulist[i] + '_sel_error'
-               pal_set_key_value(fruname)
-        else:
-           fruname = fru + '_sensor_health'
-           pal_set_key_value(fruname)
-           if fru != 'nic' and fru != 'spb':
-               fruname = fru + '_sel_error'
-               pal_set_key_value(fruname)
-
+        pal_log_clear(fru)
 
 if __name__ == '__main__':
     log_main()

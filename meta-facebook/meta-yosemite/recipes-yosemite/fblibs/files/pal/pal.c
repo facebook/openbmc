@@ -619,6 +619,31 @@ post_exit:
   }
 }
 
+static int
+read_device_hex(const char *device, int *value) {
+    FILE *fp;
+    int rc;
+
+    fp = fopen(device, "r");
+    if (!fp) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+      return errno;
+    }
+
+    rc = fscanf(fp, "%x", value);
+    fclose(fp);
+    if (rc != 1) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+      return ENOENT;
+    } else {
+      return 0;
+    }
+}
+
 // Platform Abstraction Layer (PAL) Functions
 int
 pal_get_platform_name(char *name) {
@@ -2523,9 +2548,43 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
 
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
+    char path[64] = {0};
+    char device_name[64] = {0};
+    int val = 0;
+    int pwm_enable = 0;
 
-  // TODO: Add support to display PWM in fan-util output (similar to lightning pal)
-  return 0;
+    if(fan_num >= 0 && fan_num < pal_pwm_cnt)
+      snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
+    else {
+      syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
+      return -1;
+    }
+
+    snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+
+    if (read_device_hex(path, &val)) {
+      syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
+      return -1;
+    }
+
+   // Need check pwmX_en to determine the PWM is 0 or 100.
+  if(val == 0) {
+    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
+    snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+    if (read_device(path, &pwm_enable)) {
+       syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
+       return -1;
+    }
+
+    if(pwm_enable)
+      *value = 100;
+    else
+      *value = 0;
+    } else {
+      *value = (100 * val) / PWM_UNIT_MAX;
+    }
+
+    return 0;
 }
 
 int

@@ -112,13 +112,14 @@ def log_main():
                     newlog = newlog + log
 
             # Dump the new log in a tmp file
-            if fru == 'all':
-                temp = 'all'
-            else:
-                temp = 'FRU: ' + fru_num
+            if logfile == syslogfiles[1]:
+               if fru == 'all':
+                  temp = 'all'
+               else:
+                  temp = 'FRU: ' + fru_num
+               time = datetime.now()
+               newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
             tmpfd = open('%s.tmp' % logfile, 'w')
-            time = datetime.now()
-            newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
             tmpfd.write(newlog)
             tmpfd.close()
             # Rename the tmp file to original syslog file

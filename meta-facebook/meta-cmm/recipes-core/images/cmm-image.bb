@@ -24,6 +24,7 @@ IMAGE_INSTALL += " \
   bcm5396-util \
   bitbang \
   cpldupdate \
+  fan-ctrl \
   libcpldupdate-dll-echo \
   libcpldupdate-dll-gpio \
   lldp-util \

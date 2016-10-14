@@ -24,17 +24,19 @@ SRC_URI += " \
     file://eth0_mac_fixup.sh \
     file://fcbcpld_update.sh \
     file://fix_fru_eeprom.py \
+    file://get_fan_speed.sh \
     file://setup_adc.sh \
     file://setup_gpio.sh \
     file://setup_i2c.sh \
-    file://sol.sh \
     file://set_fan_speed.sh \
+    file://sol.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     cmmcpld_update.sh \
     fcbcpld_update.sh \
+    get_fan_speed.sh \
     set_fan_speed.sh \
     sol.sh \
     "

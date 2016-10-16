@@ -17,4 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+# We initially noticed that, sometimes, "dhclient -6" disappeared.
+# To fix that, we put 'dhclient -6' under sv.
+#
+# Now, with 'dhclient -6' always there, if the interface link status
+# flaps, the 'dhclient -6' process started before the interface was up
+# does not do DHCPv6 request anymore.
+#
+# The approach here is to restart 'dhclient -6' when the interface is up.
+sv restart dhc6
+
 exit 0

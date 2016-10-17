@@ -25,7 +25,7 @@ LIC_FILES_CHKSUM = "file://cpldupdate_dll_echo.c;beginline=4;endline=16;md5=da35
 SRC_URI += "file://lib/echo \
            "
 
-S = "${WORKDIR}/echo"
+S = "${WORKDIR}/lib/echo"
 
 inherit cmake
 

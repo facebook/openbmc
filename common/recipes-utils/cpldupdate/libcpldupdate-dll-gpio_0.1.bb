@@ -25,7 +25,7 @@ LIC_FILES_CHKSUM = "file://cpldupdate_dll_gpio.c;beginline=4;endline=16;md5=da35
 SRC_URI += "file://lib/gpio \
            "
 
-S = "${WORKDIR}/gpio"
+S = "${WORKDIR}/lib/gpio"
 
 inherit cmake
 

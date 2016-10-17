@@ -25,6 +25,6 @@ LIC_FILES_CHKSUM = "file://cpldupdate_dll.h;beginline=4;endline=16;md5=da3597875
 SRC_URI += "file://lib/helper \
            "
 
-S = "${WORKDIR}/helper"
+S = "${WORKDIR}/lib/helper"
 
 inherit cmake

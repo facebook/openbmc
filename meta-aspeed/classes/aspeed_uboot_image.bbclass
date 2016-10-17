@@ -20,6 +20,7 @@ IMAGE_OVERHEAD_FACTOR = "1"
 IMAGE_PREPROCESS_COMMAND += " generate_data_mount_dir ; "
 IMAGE_POSTPROCESS_COMMAND += " flash_image_generate ; "
 
+FLASH_IMAGE_NAME[vardepsexclude] += "DATETIME"
 FLASH_IMAGE_NAME ?= "flash-${MACHINE}-${DATETIME}"
 FLASH_IMAGE_LINK ?= "flash-${MACHINE}"
 # 16M

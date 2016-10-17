@@ -23,19 +23,26 @@ FLASH_UBOOT_OFFSET ?= "0"
 FLASH_FIT_OFFSET ?= "512"
 
 UBOOT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-${MACHINE}.${UBOOT_SUFFIX}"
+FIT_SOURCE[vardepsexclude] += "DATETIME"
 FIT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/fit-${MACHINE}-${DATETIME}.its"
 FIT_SOURCE_LINK ?= "fit-${MACHINE}.its"
+FIT_DESTINATION[vardepsexclude] += "DATETIME"
 FIT_DESTINATION ?= "${DEPLOY_DIR_IMAGE}/fit-${MACHINE}-${DATETIME}.itb"
 FIT_DESTINATION_LINK ?= "fit-${MACHINE}.itb"
+
+FLASH_IMAGE[vardepsexclude] += "DATETIME"
 FLASH_IMAGE ?= "flash-${MACHINE}-${DATETIME}"
 FLASH_IMAGE_LINK ?= "flash-${MACHINE}"
 
 # ROM-based boot variables
 UBOOT_SPL_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-spl-${MACHINE}"
+UBOOT_FIT_SOURCE[vardepsexclude] += "DATETIME"
 UBOOT_FIT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-fit-${MACHINE}-${DATETIME}.its"
 UBOOT_FIT_SOURCE_LINK ?= "u-boot-fit-${MACHINE}.its"
+UBOOT_FIT_DESTINATION[vardepsexclude] += "DATETIME"
 UBOOT_FIT_DESTINATION ?= "${DEPLOY_DIR_IMAGE}/u-boot-fit-${MACHINE}-${DATETIME}.itb"
 UBOOT_FIT_DESTINATION_LINK ?= "u-boot-fit-${MACHINE}.itb"
+ROH_IMAGE[vardepsexclude] += "DATETIME"
 ROM_IMAGE ?= "rom-${MACHINE}-${DATETIME}"
 ROM_IMAGE_LINK ?= "rom-${MACHINE}"
 
@@ -46,6 +53,7 @@ generate_data_mount_dir() {
     mkdir -p "${IMAGE_ROOTFS}/mnt/data"
 }
 
+flash_image_generate[vardepsexclude] += "DATETIME"
 flash_image_generate() {
     BOOT_FILE="${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}"
     FLASH_DESTINATION="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE}"

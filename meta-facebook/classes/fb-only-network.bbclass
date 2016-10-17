@@ -7,7 +7,3 @@ python () {
     else:
         d.setVar('BB_ALLOWED_NETWORKS', '*.facebook.com')
 }
-
-# Workaround for sanity.conf checking before version set.
-# We never need to explicitly check for connectivity.
-CONNECTIVITY_CHECK_URIS = ""

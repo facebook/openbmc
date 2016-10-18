@@ -332,10 +332,10 @@ def main():
             else:
                 crit("%d fans failed" % (len(dead_fans),))
             for dead_fan_num in dead_fans:
-            if fanpower:
-                warn("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
-            else:
-                crit("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
+                if fanpower:
+                    warn("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
+                else:
+                    crit("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
         for fan in recovered_fans:
             if fanpower:
                 warn("Fan %d has recovered" % (fan,))

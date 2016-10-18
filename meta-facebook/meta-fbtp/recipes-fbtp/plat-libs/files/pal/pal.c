@@ -2790,6 +2790,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_VR_CPU1_VSA_POWER:
         if (is_cpu1_socket_occupy())
           ret = read_vr_power(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
+        else
+          ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIO_TEMP:
         if (is_cpu1_socket_occupy())

@@ -4166,8 +4166,14 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
     case CPU_DIMM_HOT:
       sprintf(name, "CPU_DIMM_HOT");
       break;
+    case SOFTWARE_NMI:
+      sprintf(name, "SOFTWARE_NMI");
+      break;
     case CPU0_THERM_STATUS:
       sprintf(name, "CPU0_THERM_STATUS");
+      break;
+    case CPU1_THERM_STATUS:
+      sprintf(name, "CPU1_THERM_STATUS");
       break;
     case SPS_FW_HEALTH:
       sprintf(name, "SPS_FW_HEALTH");
@@ -4395,6 +4401,14 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         strcat(error_log, "Unknown");
       break;
 
+    case SOFTWARE_NMI:
+      sprintf(error_log, "");
+      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x03FFFF)
+        strcat(error_log, "Software NMI");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
     case SPS_FW_HEALTH:
       sprintf(error_log, "");
       if (event_data[0] == 0xDC && ed[1] == 0x06) {
@@ -4403,6 +4417,20 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
       } else
          strcat(error_log, "Unknown");
       break;
+
+    case CPU0_THERM_STATUS:
+    case CPU1_THERM_STATUS:
+      sprintf(error_log, "");
+      if (ed[0] == 0x00)
+        strcat(error_log, "CPU Critical Temperature");
+      else if (ed[0] == 0x01)
+        strcat(error_log, "PROCHOT# Assertions");
+      else if (ed[0] == 0x02)
+        strcat(error_log, "TCC Activation");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
     default:
       sprintf(error_log, "Unknown");
       break;

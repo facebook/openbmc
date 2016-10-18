@@ -218,6 +218,8 @@ char * def_val_list[] = {
 const uint8_t mb_sensor_list[] = {
   MB_SENSOR_INLET_TEMP,
   MB_SENSOR_OUTLET_TEMP,
+  MB_SENSOR_INLET_REMOTE_TEMP,
+  MB_SENSOR_OUTLET_REMOTE_TEMP,
   MB_SENSOR_FAN0_TACH,
   MB_SENSOR_FAN1_TACH,
   MB_SENSOR_P3V3,
@@ -387,6 +389,8 @@ sensor_thresh_array_init() {
 
   mb_sensor_threshold[MB_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 75;
+  mb_sensor_threshold[MB_SENSOR_INLET_REMOTE_TEMP][UCR_THRESH] = 40;
+  mb_sensor_threshold[MB_SENSOR_OUTLET_REMOTE_TEMP][UCR_THRESH] = 75;
 
   // Assign UCT based on the system is Single Side or Double Side
   if (!(pal_get_platform_id(&g_plat_id)) && !(g_plat_id & PLAT_ID_SKU_MASK)) {
@@ -665,7 +669,7 @@ write_device(const char *device, const char *value) {
 }
 
 static int
-read_temp(const char *device, float *value) {
+read_temp_attr(const char *device, const char *attr, float *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
@@ -685,7 +689,7 @@ read_temp(const char *device, float *value) {
   dir_name[size-1] = '\0';
 
   snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", dir_name);
+      full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
 
   if (read_device(full_name, &tmp)) {
     return -1;
@@ -694,6 +698,11 @@ read_temp(const char *device, float *value) {
   *value = ((float)tmp)/UNIT_DIV;
 
   return 0;
+}
+
+static int
+read_temp(const char *device, float *value) {
+  return read_temp_attr(device, "temp1_input", value);
 }
 
 static int
@@ -2555,6 +2564,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_OUTLET_TEMP:
         ret = read_temp(MB_OUTLET_TEMP_DEVICE, (float*) value);
         break;
+      case MB_SENSOR_INLET_REMOTE_TEMP:
+        ret = read_temp_attr(MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        break;
+      case MB_SENSOR_OUTLET_REMOTE_TEMP:
+        ret = read_temp_attr(MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        break;
       case MB_SENSOR_P12V:
         ret = read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
         break;
@@ -2607,6 +2622,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       case MB_SENSOR_OUTLET_TEMP:
         ret = read_temp(MB_OUTLET_TEMP_DEVICE, (float*) value);
+        break;
+      case MB_SENSOR_INLET_REMOTE_TEMP:
+        ret = read_temp_attr(MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        break;
+      case MB_SENSOR_OUTLET_REMOTE_TEMP:
+        ret = read_temp_attr(MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
         break;
       // Fan Sensors
       case MB_SENSOR_FAN0_TACH:
@@ -2966,6 +2987,12 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_OUTLET_TEMP:
       sprintf(name, "MB_OUTLET_TEMP");
       break;
+    case MB_SENSOR_INLET_REMOTE_TEMP:
+      sprintf(name, "MB_INLET_REMOTE_TEMP");
+      break;
+    case MB_SENSOR_OUTLET_REMOTE_TEMP:
+      sprintf(name, "MB_OUTLET_REMOTE_TEMP");
+      break;
     case MB_SENSOR_FAN0_TACH:
       sprintf(name, "MB_FAN0_TACH");
       break;
@@ -3202,6 +3229,8 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     switch(sensor_num) {
     case MB_SENSOR_INLET_TEMP:
     case MB_SENSOR_OUTLET_TEMP:
+    case MB_SENSOR_INLET_REMOTE_TEMP:
+    case MB_SENSOR_OUTLET_REMOTE_TEMP:
     case MB_SENSOR_CPU0_TEMP:
     case MB_SENSOR_CPU0_TJMAX:
     case MB_SENSOR_CPU1_TEMP:

@@ -116,11 +116,6 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_CRIT, "SERVER_GRACEFUL_SHUTDOWN successful for FRU: %d", fru);
       }
 
-      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
-      if (ret < 0) {
-        return ret;
-      }
-
       ret = pal_set_led(fru, LED_STATE_OFF);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
@@ -142,11 +137,6 @@ power_util(uint8_t fru, uint8_t opt) {
         return 0;
       } else {
         syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d", fru);
-      }
-
-      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
-      if (ret < 0) {
-        return ret;
       }
 
       ret = pal_set_led(fru, LED_STATE_OFF);
@@ -172,11 +162,6 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", fru);
       }
 
-      ret = pal_set_last_pwr_state(fru, POWER_ON_STR);
-      if (ret < 0) {
-        return ret;
-      }
-
       ret = pal_set_led(fru, LED_STATE_ON);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
@@ -195,11 +180,6 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       } else {
         syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d", fru);
-      }
-
-      ret = pal_set_last_pwr_state(fru, POWER_ON_STR);
-      if (ret < 0) {
-        return ret;
       }
 
       ret = pal_set_led(fru, LED_STATE_ON);

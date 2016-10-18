@@ -1777,8 +1777,6 @@ static int
 server_power_on(void) {
   char vpath[64] = {0};
 
-  system("killall gpiod");
-
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
 
   if (write_device(vpath, "1")) {
@@ -1798,7 +1796,6 @@ server_power_on(void) {
   sleep(2);
 
   system("/usr/bin/sv restart fscd >> /dev/null");
-  system("/usr/local/bin/gpiod >> /dev/null");
 
   return 0;
 }
@@ -1811,7 +1808,6 @@ server_power_off(bool gs_flag) {
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
 
   system("/usr/bin/sv stop fscd >> /dev/null");
-  system("killall gpiod");
 
   if (write_device(vpath, "1")) {
     return -1;
@@ -1833,8 +1829,6 @@ server_power_off(bool gs_flag) {
     return -1;
   }
 
-  system("/usr/local/bin/gpiod >> /dev/null");
-
   return 0;
 }
 
@@ -1845,7 +1839,6 @@ server_power_reset(void) {
 
   sprintf(vpath, GPIO_VAL, GPIO_POWER_RESET);
 
-  system("killall gpiod");
   system("/usr/bin/sv stop fscd >> /dev/null");
 
   if (write_device(vpath, "1")) {
@@ -1866,7 +1859,6 @@ server_power_reset(void) {
 
   system("/etc/init.d/setup-fan.sh >> /dev/null");
   system("/usr/bin/sv start fscd >> /dev/null");
-  system("/usr/local/bin/gpiod >> /dev/null");
 
   return 0;
 }

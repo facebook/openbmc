@@ -103,16 +103,37 @@ static void gpio_filter_handle_power(void *p)
       gp->gs.gs_gpio == gpio_num("GPIOQ6")) { //FM_POST_CARD_PRES_BMC_N
     if (reset_sec < 20)
       return;
-  } else {
-    //GPIOE6 - FM_CPU0_PROCHOT_LVT3_BMC_N
-    //GPIOE7 - FM_CPU1_PROCHOT_LVT3_BMC_N
-    //GPIOS0 - FM_THROTTLE_N
-    //GPIOX4 - H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N
-    //GPIOX5 - H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N
-    //GPIOX6 - H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N
-    //GPIOX7 - H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N
-    //GPIOAA1 - IRQ_SML1_PMBUS_ALERT_N
+  } if (gp->gs.gs_gpio == gpio_num("GPIOD4") || //IRQ_DIMM_SAVE_LVT3_N
+        gp->gs.gs_gpio == gpio_num("GPIOD6") || //FM_CPU_ERR0_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOD7") || //FM_CPU_ERR1_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOG0") || //FM_CPU_ERR2_LVT3_N
+        gp->gs.gs_gpio == gpio_num("GPIOM0") || //FM_CPU0_RC_ERROR_N
+        gp->gs.gs_gpio == gpio_num("GPIOM1") ){ //FM_CPU1_RC_ERROR_N
+    if (power_on_sec < 3)
+      return;
+  } if (gp->gs.gs_gpio == gpio_num("GPIOG1") ){ //FM_CPU_CATERR_LVT3_N
+    if (power_on_sec < 3)
+      return;
+    CATERR_irq++;
+    return;
+  } if (gp->gs.gs_gpio == gpio_num("GPION3") ){ //FM_CPU_MSMI_LVT3_N
+    if (power_on_sec < 3)
+      return;
+    MSMI_irq++;
+    return;
+  } if (gp->gs.gs_gpio == gpio_num("GPIOE6") || //FM_CPU0_PROCHOT_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOE7") || //FM_CPU1_PROCHOT_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOS0") || //FM_THROTTLE_N
+        gp->gs.gs_gpio == gpio_num("GPIOX4") || //H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOX5") || //H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOX6") || //H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOX7") || //H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N
+        gp->gs.gs_gpio == gpio_num("GPIOAA1") ){ //IRQ_SML1_PMBUS_ALERT_N
     if (power_on_sec < 10)
+      return;
+  } if (gp->gs.gs_gpio == gpio_num("GPIOM4") || //FM_CPU0_THERMTRIP_LATCH_LVT3_N
+        gp->gs.gs_gpio == gpio_num("GPIOM5") ){ //FM_CPU1_THERMTRIP_LATCH_LVT3_N
+    if (power_on_sec < 30)
       return;
   }
 
@@ -150,13 +171,7 @@ static void gpio_event_handle_power(void *p)
     return;
   }
 
-  if (gp->gs.gs_gpio == gpio_num("GPIOG1")) {
-    CATERR_irq++;
-  } else if (gp->gs.gs_gpio == gpio_num("GPION3")) {
-    MSMI_irq++;
-  } else  {
-      syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
-  }
+  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
 }
 
 // GPIO table to be monitored when MB is ON
@@ -164,10 +179,9 @@ static gpio_poll_st g_gpios[] = {
   // {{gpio, fd}, gpioValue, call-back function, GPIO description}
   {{0, 0}, 0, gpio_event_handle, "GPIOB6 - PWRGD_SYS_PWROK" },
   {{0, 0}, 0, gpio_event_handle_power, "GPIOB7 - IRQ_PVDDQ_GHJ_VRHOT_LVT3_N"},
-  {{0, 0}, 0, gpio_event_handle, "GPIOD2 - FM_SOL_UART_CH_SEL"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOD4 - IRQ_DIMM_SAVE_LVT3_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOD6 - FM_CPU_ERR0_LVT3_BMC_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOD7 - FM_CPU_ERR1_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOD4 - IRQ_DIMM_SAVE_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOD6 - FM_CPU_ERR0_LVT3_BMC_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOD7 - FM_CPU_ERR1_LVT3_BMC_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOE0 - RST_SYSTEM_BTN_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOE2 - FM_PWR_BTN_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOE4 - FP_NMI_BTN_N"},
@@ -177,21 +191,21 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOF2 - IRQ_PVCCIN_CPU0_VRHOT_LVC3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOF3 - IRQ_PVCCIN_CPU1_VRHOT_LVC3_N"},
   {{0, 0},0, gpio_event_handle_power, "GPIOF4 - IRQ_PVDDQ_KLM_VRHOT_LVT3_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOG0 - FM_CPU_ERR2_LVT3_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOG1 - FM_CPU_CATERR_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOG0 - FM_CPU_ERR2_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOG1 - FM_CPU_CATERR_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOG2 - FM_PCH_BMC_THERMTRIP_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOG3 - FM_CPU0_SKTOCC_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOI0 - FM_CPU0_FIVR_FAULT_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOI1 - FM_CPU1_FIVR_FAULT_LVT3_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOL0 - IRQ_UV_DETECT_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOL1 - IRQ_OC_DETECT_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOL2 - FM_HSC_TIMER_EXP_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOL0 - IRQ_UV_DETECT_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOL1 - IRQ_OC_DETECT_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOL2 - FM_HSC_TIMER_EXP_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOL4 - FM_MEM_THERM_EVENT_PCH_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOM0 - FM_CPU0_RC_ERROR_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPION3 - FM_CPU_MSMI_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOM0 - FM_CPU0_RC_ERROR_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle_power, "GPION3 - FM_CPU_MSMI_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
   {{0, 0}, 0, platform_reset_event_handle, "GPIOR5 - RST_BMC_PLTRST_BUF_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOS0 - FM_THROTTLE_N"},
@@ -202,7 +216,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOZ2 - IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
   {{0, 0}, 0, gpio_event_handle_power, "GPIOAA0 - FM_CPU1_SKTOCC_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOAA1 - IRQ_SML1_PMBUS_ALERT_N"},
-  {{0, 0}, 0, gpio_event_handle_power, "GPIOAB0 - IRQ_HSC_FAULT_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOAB0 - IRQ_HSC_FAULT_N"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
@@ -214,7 +228,6 @@ gpio_init(void) {
   // Initialize gpio numbers
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB6");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB7");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD2");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD4");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD6");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD7");
@@ -261,9 +274,8 @@ gpio_timer() {
   uint8_t status = 0;
   uint8_t fru = 1;
   long int pot;
-
-  // Wait power-on.sh finished
-  sleep(10);
+  char str[MAX_VALUE_LEN] = {0};
+  int tread_time = 0 ;
 
   while (1) {
     sleep(1);
@@ -276,13 +288,24 @@ gpio_timer() {
       pot = decrease_timer(&power_on_sec);
     }
 
-    switch (pot) {
-      case 1:
-        pal_set_last_pwr_state(fru, POWER_ON_STR);
-        break;
-      case -2:
-        pal_set_last_pwr_state(fru, POWER_OFF_STR);
-        break;
+    // Wait power-on.sh finished, then update pwr_server_last_state
+    if (tread_time < 20) {
+      tread_time++;
+    } else {
+      if (pal_get_last_pwr_state(fru, str) < 0)
+        str[0] = '\0';
+      if (status == SERVER_POWER_ON) {
+        if (strncmp(str, POWER_ON_STR, strlen(POWER_ON_STR)) != 0) {
+          pal_set_last_pwr_state(fru, POWER_ON_STR);
+          syslog(LOG_INFO, "last pwr state updated to on\n");
+        }
+      } else {
+        // wait until PowerOnTime < -1 to make sure it's not AC lost
+        if (pot < -1 && strncmp(str, POWER_OFF_STR, strlen(POWER_OFF_STR)) != 0) {
+          pal_set_last_pwr_state(fru, POWER_OFF_STR);
+          syslog(LOG_INFO, "last pwr state updated to off\n");
+        }
+      }
     }
 
   }

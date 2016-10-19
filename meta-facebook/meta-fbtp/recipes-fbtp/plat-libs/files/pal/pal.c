@@ -3457,6 +3457,7 @@ pal_set_last_pwr_state(uint8_t fru, char *state) {
         "fru %u", fru);
 #endif
   }
+
   return ret;
 }
 
@@ -3465,7 +3466,17 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
   int ret;
   char key[MAX_KEY_LEN] = {0};
 
-  return 0;
+  sprintf(key, "%s", "pwr_server_last_state");
+
+  ret = pal_get_key_value(key, state);
+  if (ret < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_get_last_pwr_state: pal_get_key_value failed for "
+        "fru %u", fru);
+#endif
+  }
+
+  return ret;
 }
 
 // GUID for System and Device

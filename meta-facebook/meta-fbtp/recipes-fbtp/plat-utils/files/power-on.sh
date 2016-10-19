@@ -68,6 +68,7 @@ check_por_config()
       fi
     fi
   fi
+  logger -s "TO_PWR_ON:$TO_PWR_ON, POR:$POR, LS:$LS"
 }
 
 # Sync BMC's date with the server

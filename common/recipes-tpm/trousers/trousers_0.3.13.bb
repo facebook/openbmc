@@ -36,8 +36,8 @@ do_install_append() {
         install -d ${D}${systemd_unitdir}/system
         install -m 0644 ${WORKDIR}/tcsd.service ${D}${systemd_unitdir}/system/
         sed -i -e 's#@SBINDIR@#${sbindir}#g' ${D}${systemd_unitdir}/system/tcsd.service
-    fi        
-    chown -R root:root ${D}${sysconfdir}/tcsd.conf
+    fi
+    chown -R tss:tss ${D}${sysconfdir}/tcsd.conf
 }
 
 CONFFILES_${PN} += "${sysconfig}/tcsd.conf"

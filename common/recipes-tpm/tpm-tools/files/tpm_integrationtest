@@ -1,0 +1,26 @@
+#!/bin/sh
+
+DEVICE=/dev/tpm0
+
+# Check that the device is owned by root.
+PERMISSIONS=$(stat -c "%u %a" $DEVICE)
+EXPECTED="0 660"
+if [ "$PERMISSIONS" != "$EXPECTED" ]; then
+  echo "Failed: $DEVICE permission $PERMISSIONS do not match $EXPECTED"
+  exit 1
+fi
+
+TCSD=$(ps | grep tcsd | awk '{print $1}')
+if [ "$TCSD" == "" ]; then
+  echo "Failed: tcsd daemon is not running via /etc/init.d/trousers"
+  exit 1
+fi
+
+NVRAM_INDEXES=$(/usr/sbin/tpm_nvinfo | grep "NVRAM" | awk '{print $4}')
+EXPECTED=$(echo -e "0x30000001\n0x10000001\n0x1000f000")
+if [ "$NVRAM_INDEXES" != "$EXPECTED" ]; then
+  echo "Failed: NVRAM indexes do not match expected values"
+  echo "Expected indexes: \n$EXPECTED"
+  echo "Actual indexes: \n$NVRAM_INDEXES"
+  exit 1
+fi

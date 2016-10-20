@@ -16,7 +16,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/tcsd
 NAME=tcsd
 DESC="Trusted Computing daemon"
-USER="tss"
+USER="root"
 
 test -x "${DAEMON}" || exit 0
 

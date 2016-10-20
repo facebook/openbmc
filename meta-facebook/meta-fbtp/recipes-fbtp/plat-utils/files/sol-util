@@ -60,6 +60,7 @@ echo
 kill -9 -s TERM $PID 2>/dev/null
 
 if [[ "$2" == "--force" ]]; then
+  sleep 2
   PID=$(ps | grep -e $BIN_CONSOLED | grep -e $SLOT | awk '{print $1}')
   kill -9 -s TERM $PID 2>/dev/null
 fi

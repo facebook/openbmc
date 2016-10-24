@@ -17,7 +17,7 @@ class fansNode(node):
             self.actions = actions
 
     def getInformation(self):
-    result = {}
+        result = {}
         cmd = '/usr/local/bin/fan-util --get'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         sdata = data.split('\n')

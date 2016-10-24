@@ -29,7 +29,7 @@ class flashNode(node):
                             shell=True, stdout=PIPE).stdout.read()
         flash_type = data.strip('\n')
 
-    info = {
+        info = {
                 "flash type":flash_type,
                 "vendor name":vendor_name,
         }

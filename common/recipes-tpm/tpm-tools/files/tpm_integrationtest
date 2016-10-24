@@ -10,6 +10,10 @@ if [ "$PERMISSIONS" != "$EXPECTED" ]; then
   exit 1
 fi
 
+# Try to start tcsd if it wasn't started.
+/usr/sbin/tpm_startup || true
+/etc/init.d/trousers start
+
 TCSD=$(ps | grep tcsd | awk '{print $1}')
 if [ "$TCSD" == "" ]; then
   echo "Failed: tcsd daemon is not running via /etc/init.d/trousers"

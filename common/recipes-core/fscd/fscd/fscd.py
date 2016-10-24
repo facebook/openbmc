@@ -300,7 +300,7 @@ def main():
         if len(newly_dead_fans) > 0:
             crit("%d fans failed" % (len(dead_fans),))
             for dead_fan_num in dead_fans:
-                crit("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
+                crit("Fan %d dead, %d RPM" % (dead_fan_num, speeds[dead_fan_num]))
         for fan in recovered_fans:
             crit("Fan %d has recovered" % (fan,))
             pal_fan_recovered_handle(fan)

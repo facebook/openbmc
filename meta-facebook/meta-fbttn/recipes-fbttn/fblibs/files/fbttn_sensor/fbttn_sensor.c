@@ -158,6 +158,16 @@ const uint8_t iom_sensor_list[] = {
 // List of DPB sensors to be monitored
 const uint8_t dpb_sensor_list[] = {
   /* Threshold sensors */
+  P3V3_SENSE,
+  P5V_A_1_SENSE,
+  P5V_A_2_SENSE,
+  P5V_A_3_SENSE,
+  P5V_A_4_SENSE,
+  DPB_SENSOR_12V_POWER_CLIP,
+  DPB_SENSOR_P12V_CLIP,
+  DPB_SENSOR_12V_CURR_CLIP,
+  DPB_SENSOR_A_TEMP,
+  DPB_SENSOR_B_TEMP,
   DPB_SENSOR_FAN0_FRONT,
   DPB_SENSOR_FAN0_REAR,
   DPB_SENSOR_FAN1_FRONT,
@@ -169,16 +179,6 @@ const uint8_t dpb_sensor_list[] = {
   DPB_SENSOR_HSC_POWER,
   DPB_SENSOR_HSC_VOLT,
   DPB_SENSOR_HSC_CURR,
-  P3V3_SENSE,
-  P5V_A_1_SENSE,
-  P5V_A_2_SENSE,
-  P5V_A_3_SENSE,
-  P5V_A_4_SENSE,
-  DPB_SENSOR_12V_POWER_CLIP,
-  DPB_SENSOR_P12V_CLIP,
-  DPB_SENSOR_12V_CURR_CLIP,
-  DPB_SENSOR_A_TEMP,
-  DPB_SENSOR_B_TEMP,
   DPB_SENSOR_HDD_0,
   DPB_SENSOR_HDD_1,
   DPB_SENSOR_HDD_2,
@@ -675,82 +675,81 @@ is_server_prsnt(uint8_t fru) {
 int
 fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t op, modifier;
-  sensor_info_t *sinfo;
-
-    if (is_server_prsnt(fru) && (fbttn_sdr_init(fru) != 0)) {
-      return -1;
-    }
+  sensor_info_t *sinfo;    
 
   switch(fru) {
     case FRU_SLOT1:
+      if (is_server_prsnt(fru) && (fbttn_sdr_init(fru) != 0)) {
+        return -1;
+      }
       sprintf(units, "");
       break;
 
     case FRU_IOM:
       switch(sensor_num) {
-		case ML_SENSOR_HSC_PWR:
-          sprintf(units, "Watts");
-          break;
-        case ML_SENSOR_HSC_VOLT:
-          sprintf(units, "Volts");
-          break;
-        case ML_SENSOR_HSC_CURR:
-          sprintf(units, "Amps");
-          break;
-        case IOM_SENSOR_MEZZ_TEMP:
-          sprintf(units, "C");
-          break;
-        case IOM_SENSOR_HSC_POWER:
-          sprintf(units, "Watts");
-          break;
-        case IOM_SENSOR_HSC_VOLT:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_HSC_CURR:
-          sprintf(units, "Amps");
-          break;
-        case IOM_SENSOR_M2_1_TEMP:
-          sprintf(units, "C");
-          break;
-        case IOM_SENSOR_M2_2_TEMP:
-          sprintf(units, "C");
-          break;
-        case IOM_SENSOR_ADC_12V:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P5V_STBY:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P3V3_STBY:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P1V8_STBY:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P2V5_STBY:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P1V2_STBY:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P1V15_STBY:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P3V3:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P1V8:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P1V5:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P0V975:
-          sprintf(units, "Volts");
-          break;
-        case IOM_SENSOR_ADC_P3V3_M2:
-          sprintf(units, "Volts");
-          break;
+    		case ML_SENSOR_HSC_PWR:
+              sprintf(units, "Watts");
+              break;
+            case ML_SENSOR_HSC_VOLT:
+              sprintf(units, "Volts");
+              break;
+            case ML_SENSOR_HSC_CURR:
+              sprintf(units, "Amps");
+              break;
+            case IOM_SENSOR_MEZZ_TEMP:
+              sprintf(units, "C");
+              break;
+            case IOM_SENSOR_HSC_POWER:
+              sprintf(units, "Watts");
+              break;
+            case IOM_SENSOR_HSC_VOLT:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_HSC_CURR:
+              sprintf(units, "Amps");
+              break;
+            case IOM_SENSOR_M2_1_TEMP:
+              sprintf(units, "C");
+              break;
+            case IOM_SENSOR_M2_2_TEMP:
+              sprintf(units, "C");
+              break;
+            case IOM_SENSOR_ADC_12V:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P5V_STBY:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P3V3_STBY:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P1V8_STBY:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P2V5_STBY:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P1V2_STBY:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P1V15_STBY:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P3V3:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P1V8:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P1V5:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P0V975:
+              sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_ADC_P3V3_M2:
+              sprintf(units, "Volts");
+              break;
       }
       break;
 

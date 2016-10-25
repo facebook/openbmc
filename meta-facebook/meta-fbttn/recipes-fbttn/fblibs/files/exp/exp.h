@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-#define EXPANDER_SLAVE_ADDR 0x20
+#define EXPANDER_SLAVE_ADDR 0x13 
 #define CMD_EXP_GET_SENSOR_READING 0x2D
 
 int expander_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);

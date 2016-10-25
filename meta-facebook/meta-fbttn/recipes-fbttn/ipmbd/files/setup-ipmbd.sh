@@ -49,7 +49,7 @@ case "$ACTION" in
     fi
     
     echo "enable Expander IPMB on I2C 9"
-      $DAEMON 9 0x20 > /dev/null 2>&1 &
+      $DAEMON 9 0x13 > /dev/null 2>&1 &
 
     echo "$NAME."
     ;;

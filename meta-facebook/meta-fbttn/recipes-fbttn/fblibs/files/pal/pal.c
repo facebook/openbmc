@@ -1285,9 +1285,11 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       sprintf(key, "iom_sensor%d", sensor_num);
       break;
     case FRU_DPB:
+      pal_expander_sensor_check(fru, sensor_num);
       sprintf(key, "dpb_sensor%d", sensor_num);
       break;
     case FRU_SCC:
+      pal_expander_sensor_check(fru, sensor_num);
       sprintf(key, "scc_sensor%d", sensor_num);
       break;
     case FRU_NIC:
@@ -2608,7 +2610,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
         }
       break;
       case FRU_DPB:
-      // DPB sensor number is over 50, needs twic ipmb commands
+      // DPB sensors are too much, needs twice ipmb commands
         ret = pal_exp_dpb_read_sensor_wrapper(fru, sensor_list, MAX_EXP_IPMB_SENSOR_COUNT, sensor_num, 0);
         if (ret < 0) {
           return ret;
@@ -2642,26 +2644,26 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   int ret, i = 0;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  uint8_t value;
+  uint32_t value;
   char units[64];
   int offset = 0; //sensor overload offset
 
   if (second_transaction)
-    offset = MAX_EXP_IPMB_SENSOR_COUNT;
-
-  tbuf[0] = sensor_cnt; //sensor_count
+    offset = MAX_EXP_IPMB_SENSOR_COUNT;  
 
   //Fill up sensor number
   if (sensor_num == DPB_FIRST_SENSOR_NUM) {
-    for( i = offset ; i < (sensor_cnt + offset); i++) {
-      tbuf[i+1] = sensor_list[i];  //feed sensor number to tbuf
-    }    
+    tbuf[0] = sensor_cnt;
+     for( i = 0 ; i < sensor_cnt; i++) {
+      tbuf[i+1] = sensor_list[i + offset];  //feed sensor number to tbuf
+    }
+    tlen = sensor_cnt + 1;
   }
   else {
+    tbuf[0] = 1;
     tbuf[1] = sensor_num;
-  }
-
-  tlen = sensor_cnt + 1; 
+    tlen = 2;
+  }   
   
   //TODO paste sensor_num to tbuf, to get spcific sensor data from exp
   ret = expander_ipmb_wrapper(fru, NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
@@ -2672,28 +2674,27 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     return ret;
   }
 
-  if(rbuf[1] != sensor_cnt) //if the response counter is not equal to request counter
+  if(rbuf[0] != sensor_cnt) //if the response counter is not equal to request counter
     return -1;
 
   for(i = 0; i < sensor_cnt; i++) {
     // search the corresponding sensor table to fill up the raw data and statsu
-    // rbuf[5*i+2] sensor number
-    // rbuf[5*i+3] sensor raw data1 
-    // rbuf[5*i+4] sensor raw data2
-    // rbuf[5*i+5] sensor status
-    // rbuf[5*i+6] reserved
-    ret = fbttn_sensor_units(fru, rbuf[5*i+2], units);
-    if (ret) 
-        return ret;
+    // rbuf[5*i+1] sensor number
+    // rbuf[5*i+2] sensor raw data1 
+    // rbuf[5*i+3] sensor raw data2
+    // rbuf[5*i+4] sensor status
+    // rbuf[5*i+5] reserved
+    ret = fbttn_sensor_units(fru, rbuf[5*i+1], units);
+    if (ret)
+      return ret;
 
-    if( strcmp(units,"C") == 0)    
-      value = rbuf[5*i+3];
+    if( strcmp(units,"C") == 0 )    
+      value = rbuf[5*i+2];
     else      
-      value = ( ((rbuf[5*i+3] << 8) + rbuf[5*i+4]) * 100 );
+      value = ( ((rbuf[5*i+2] << 8) + rbuf[5*i+3]) * 100 );
       
     //cache sensor reading
-    sprintf(key, "dpb_sensor%d");
-    sprintf(key, key, rbuf[5*i+2]);
+    sprintf(key, "dpb_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
     if(edb_cache_set(key, str) < 0) {
     }
@@ -2714,7 +2715,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   int ret, i;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  uint8_t value;
+  uint32_t value;
   char units[64];
 
   tbuf[0] = sensor_cnt; //sensor_count
@@ -2739,28 +2740,27 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     return ret;
   }
 
-  if(rbuf[1] != sensor_cnt) //if the response counter is not equal to request counter
+  if(rbuf[0] != sensor_cnt) //if the response counter is not equal to request counter
     return -1;
 
   for(i = 0; i < sensor_cnt; i++) {
     // search the corresponding sensor table to fill up the raw data and statsu
-    // rbuf[5*i+2] sensor number
-    // rbuf[5*i+3] sensor raw data1 
-    // rbuf[5*i+4] sensor raw data2
-    // rbuf[5*i+5] sensor status
-    // rbuf[5*i+6] reserved
-    ret = fbttn_sensor_units(fru, rbuf[5*i+2], units);
+    // rbuf[5*i+1] sensor number
+    // rbuf[5*i+2] sensor raw data1 
+    // rbuf[5*i+3] sensor raw data2
+    // rbuf[5*i+4] sensor status
+    // rbuf[5*i+5] reserved
+    ret = fbttn_sensor_units(fru, rbuf[5*i+1], units);
     if (ret) 
         return ret;
     
-    if( strcmp(units,"C") == 0)    
-      value = rbuf[5*i+3];
+    if( strcmp(units,"C") == 0 )    
+      value = rbuf[5*i+2];
     else      
-      value = ( ((rbuf[5*i+3] << 8) + rbuf[5*i+4]) * 100 );
+      value = ( ((rbuf[5*i+2] << 8) + rbuf[5*i+3]) * 100 );
       
     //cache sensor reading
-    sprintf(key, "scc_sensor%d");
-    sprintf(key, key, rbuf[5*i+2]);
+    sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
     if(edb_cache_set(key, str) < 0) {
     }

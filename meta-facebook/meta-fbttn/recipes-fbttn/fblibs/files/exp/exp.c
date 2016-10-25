@@ -28,7 +28,7 @@
 #include "exp.h"
 
 enum {
-  IPMB_BUS_SLOT1 = 1,
+  IPMB_BUS_EXPANDER = 9,
 };
 
 // Common IPMB Wrapper function
@@ -39,7 +39,7 @@ get_ipmb_bus_id(uint8_t slot_id) {
   switch(slot_id) {
   case 3:
   case 4:
-    bus_id = IPMB_BUS_SLOT1;
+    bus_id = IPMB_BUS_EXPANDER;
     break;
   default:
     bus_id = -1;

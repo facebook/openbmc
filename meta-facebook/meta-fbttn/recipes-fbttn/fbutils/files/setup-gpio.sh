@@ -385,13 +385,13 @@ gpio_export_out O3
 # To use GPIOO4, SCU88[12] must be 0
 devmem_clear_bit $(scu_addr 88) 12
 
-gpio_export_out O4
+gpio_export O4
 
 # SCC_RMT_HEARTBEAT: O5 (117)
 # To use GPIOO5, SCU88[13] must be 0
 devmem_clear_bit $(scu_addr 88) 13
 
-gpio_export_out O5
+gpio_export O5
 
 # COMP_POWER_FAIL_N: O6 (118)
 # To use GPIOO6, SCU88[14] must be 0

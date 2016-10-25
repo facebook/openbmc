@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,10 +16,24 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+import subprocess
 
-SRC_URI += "file://rest-api-1/rest_i2cflush.py \
-          "
+# Endpoint for performing i2cflush to recover cp2112 on wedge100
 
-binfiles += "rest_i2cflush.py"
+
+def i2cflush():
+    p = subprocess.Popen(['cp2112_i2c_flush.sh'],
+                         shell=True,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    rc = p.returncode
+
+    if rc < 0:
+        status = ' failed with returncode = ' + str(rc) + ' and error ' + err
+    else:
+        status = ' done '
+
+    return {"status": 'i2c flush' + status}

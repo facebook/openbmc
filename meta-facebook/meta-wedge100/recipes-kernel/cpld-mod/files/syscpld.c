@@ -192,6 +192,20 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0x18, 7, 1,
   },
   {
+    "bb_scl_in_status",
+    "Requires CPLD version 6.96 and up",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x1F, 6, 1,
+  },
+  {
+    "bb_sda_in_status",
+    "Requires CPLD version 6.96 and up",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x1F, 7, 1,
+  },
+  {
     "uart_mux",
     "0x0: UART_SELECT_BMC\n0x1: UART_SELECT_DBG\n"
     "0x2: Force to select 0\n0x3: Force to select 1\n\n"
@@ -283,6 +297,43 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0x29, 2, 1,
   },
   {
+    "bb_scl_oe",
+    "Requires CPLD version 6.96 and up\n",
+    "0: bb_scl_out is not enabled to main_i2c_scl\n"
+    "1: bb_scl_out is enabled and drive main_i2c_scl",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x2C, 6, 1,
+  },
+  {
+    "bb_sda_oe",
+    "Requires CPLD version 6.96 and up\n",
+    "0: bb_sda_out is not enabled to main_i2c_scl\n"
+    "1: bb_sda_out is enabled and drive main_i2c_scl",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x2C, 7, 1,
+  },
+  {
+    "bb_scl_out",
+    "Requires CPLD version 6.96 and up\n",
+    "0: bb_scl_out is not enabled to main_i2c_scl\n"
+    "1: bb_scl_out is enabled and drive main_i2c_scl",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x2D, 6, 1,
+  },
+  {
+    "bb_sda_out",
+    "Requires CPLD version 6.96 and up\n",
+    "0: bb_scl_out is not enabled to main_i2c_scl\n"
+    "1: bb_scl_out is enabled and drive main_i2c_scl",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x2D, 7, 1,
+  },
+
+  {
     "heart_attach_en",
     "0: no fan tray fatal error attack\n"
     "1: fan-tray fatal error attack mode enabled",
@@ -363,6 +414,54 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0x32, 2, 1,
   },
   {
+    "i2c_mux0_rst_n",
+    "0: write 0 to trigger i2c mux0 reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x38, 0, 1,
+  },
+  {
+    "i2c_mux1_rst_n",
+    "0: write 0 to trigger i2c mux1 reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x38, 1, 1,
+  },
+  {
+    "i2c_mux2_rst_n",
+    "0: write 0 to trigger i2c mux2 reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x38, 2, 1,
+  },
+  {
+    "i2c_mux3_rst_n",
+    "0: write 0 to trigger i2c mux3 reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x38, 3, 1,
+  },
+  {
+    "i2c_mux_psu_rst_n",
+    "0: write 0 to trigger i2c mux psu reset\n"
+    "1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x38, 4, 1,
+  },
+  {
+    "i2c_flush_en",
+    "Requires CPLD version 6.96 and up\n",
+    "Write 1, then write 0 to this bit to trigger i2c flush function\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x38, 7, 1,
+  },
+  {
     "fan_rackmon_rst_n",
     "0: write 0 to trigger FAN_RACKMON card reset\n"
     "1: normal",
@@ -409,6 +508,57 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x39, 5, 1,
+  },
+  {
+    "th_led_clr",
+    "0: Tomahawk LED stream 0/1 normal\n"
+    "1: Tomahawk LED stream 0/1 reset clear",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3C, 0, 1,
+  },
+  {
+    "th_led_en",
+    "0: Tomahawk LED stream 0/1 disabled\n"
+    "1: Tomahawk LED stream 0/1 enabled",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3C, 1, 1,
+  },
+  {
+    "walk_test_en",
+    "0: LED walk test disabled\n"
+    "1: LED walk test enabled",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3C, 3, 1,
+  },
+  {
+    "th_led_steam",
+    "led number and color is decided by register 0x3d\n"
+    "00: stream-0 single led check\n"
+    "01: stream-1 single led check\n"
+    "10: stream-0 all led check\n"
+    "11: stream-1 all led check",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3C, 4, 2,
+  },
+  {
+    "led_test_blink_en",
+    "0: normal constant\n"
+    "1: blinking during LED test",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3C, 6, 1,
+  },
+  {
+    "led_test_mode_en",
+    "0: normal\n"
+    "1: port LED test mode enabled",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3C, 7, 1,
   },
 };
 

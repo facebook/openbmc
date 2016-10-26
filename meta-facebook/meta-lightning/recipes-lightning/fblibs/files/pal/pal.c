@@ -1223,3 +1223,9 @@ pal_self_tray_location(uint8_t *value) {
 
   return 0;
 }
+
+int
+pal_is_crashdump_ongoing(uint8_t slot)
+{
+  return 0;
+}

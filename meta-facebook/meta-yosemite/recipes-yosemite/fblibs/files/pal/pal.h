@@ -183,6 +183,7 @@ int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uin
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
+int pal_is_crashdump_ongoing(uint8_t slot);
 
 #ifdef __cplusplus
 } // extern "C"

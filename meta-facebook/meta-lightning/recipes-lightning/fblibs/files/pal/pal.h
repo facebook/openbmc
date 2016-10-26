@@ -213,6 +213,7 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 int pal_peer_tray_detection(uint8_t *value);
 int pal_self_tray_location(uint8_t *value);
+int pal_is_crashdump_ongoing(uint8_t slot);
 
 #ifdef __cplusplus
 } // extern "C"

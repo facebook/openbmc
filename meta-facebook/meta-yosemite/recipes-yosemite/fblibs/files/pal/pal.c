@@ -95,6 +95,8 @@
 
 #define MAX_READ_RETRY 10
 
+#define CRASHDUMP_KEY      "slot%d_crashdump"
+
 const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -2011,7 +2013,10 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
     case FRU_SLOT4:
       switch(snr_num) {
         case CATERR:
+          sprintf(key, CRASHDUMP_KEY, fru);
+          edb_cache_set(key, "1");
           pal_store_crashdump(fru);
+          edb_cache_set(key, "0");
         }
       sprintf(key, "slot%d_sel_error", fru);
       break;
@@ -2598,5 +2603,24 @@ int
 pal_fan_recovered_handle(int fan_num) {
 
   // TODO: Add action in case of fan recovered
+  return 0;
+}
+
+int
+pal_is_crashdump_ongoing(uint8_t slot)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  sprintf(key, CRASHDUMP_KEY, slot);
+  ret = edb_cache_get(key, value);
+  if (ret < 0) {
+#ifdef DEBUG
+     syslog(LOG_INFO, "pal_get_crashdumpe: failed");
+#endif
+     return 0;
+  }
+  if (atoi(value) > 0)
+     return 1;
   return 0;
 }

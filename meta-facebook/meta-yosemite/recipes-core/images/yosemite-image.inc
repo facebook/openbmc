@@ -80,6 +80,7 @@ IMAGE_INSTALL += " \
   fan-util \
   spatula \
   passwd-util \
+  logrotate \
   "
 
 IMAGE_FEATURES += " \

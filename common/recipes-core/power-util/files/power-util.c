@@ -114,6 +114,11 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_GRACEFUL_SHUTDOWN:
+      if (pal_is_crashdump_ongoing(fru) > 0) {
+         printf("Crashdump for fru %u is ongoing...\n", fru);
+         printf("Please wait for 10 minutes and try again\n");
+         return -1;
+      }
 
       printf("Shutting down fru %u gracefully...\n", fru);
 
@@ -142,6 +147,11 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_OFF:
+      if (pal_is_crashdump_ongoing(fru) > 0) {
+         printf("Crashdump for fru %u is ongoing...\n", fru);
+         printf("Please wait for 10 minutes and try again\n");
+         return -1;
+      }
 
       printf("Powering fru %u to OFF state...\n", fru);
 
@@ -206,7 +216,11 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_CYCLE:
-
+      if (pal_is_crashdump_ongoing(fru) > 0) {
+         printf("Crashdump for fru %u is ongoing...\n", fru);
+         printf("Please wait for 10 minutes and try again\n");
+         return -1;
+      }
       printf("Power cycling fru %u...\n", fru);
 
       ret = pal_set_server_power(fru, SERVER_POWER_CYCLE);
@@ -301,6 +315,11 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_SLED_CYCLE:
+      if (pal_is_crashdump_ongoing(fru) > 0) {
+         printf("Crashdump for fru %u is ongoing...\n", fru);
+         printf("Please wait for 10 minutes and try again\n");
+         return -1;
+      }
       syslog(LOG_CRIT, "SLED_CYCLE successful");
       sleep(1);
       pal_sled_cycle();

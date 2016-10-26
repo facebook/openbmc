@@ -273,6 +273,20 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
 static void
 app_cold_reset(void)
 {
+  uint8_t slot, num_slots;
+  int ret;
+  pal_get_num_slots(&num_slots);
+  for (slot = 1; slot <= num_slots; slot++) {
+     ret = pal_is_crashdump_ongoing(slot);
+     if (ret > 0) {
+       printf("Crashdump for fru %u is ongoing...\n", slot);
+       printf("Please wait for 10 minutes and try again\n");
+       return;
+    }else {
+       if (ret == -1)
+         printf("Eroor to get crashdump key for fru %u\n", slot);
+    }
+  }
   reboot(RB_AUTOBOOT);
 }
 

@@ -52,13 +52,13 @@ gpio_export A0
 devmem_clear_bit $(scu_addr 80) 2
 devmem_clear_bit $(scu_addr 80) 15
 
-gpio_export_out A2
+gpio_tolerance_fun A2
 
 # SYS_PWR_LED: A3 (3)
 # To use GPIOA3, SCU80[3] must be 0
 devmem_clear_bit $(scu_addr 80) 3
 
-gpio_export_out A3
+gpio_set A3 0
 
 # PWRBTN_OUT_N: D2 (26)
 # To use GPIOD2, SCU90[1], SCU8C[9], and SCU70[21] must be 0
@@ -76,7 +76,7 @@ devmem_clear_bit $(scu_addr 70) 21
 
 gpio_set D3 1
 # set GPIOD3 WDT reset tolerance
-devmem_set_bit $(gpio_addr 1C) 27
+gpio_tolerance_fun D3
 
 # RSTBTN_OUT_N: D4 (28)
 # To use GPIOD4, SCU90[1], SCU8C[10], and SCU70[21] must be 0
@@ -93,8 +93,6 @@ devmem_clear_bit $(scu_addr 8C) 10
 devmem_clear_bit $(scu_addr 70) 21
 
 gpio_set D5 1
-# set GPIOD3 WDT reset tolerance
-devmem_set_bit $(gpio_addr 1C) 29
 
 # M2_1_PRESENT_N: E0 (32)
 # To use GPIOE0, SCU80[16], SCU8C[12], and SCU70[22] must be 0
@@ -134,7 +132,7 @@ devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_export_out E4
+gpio_set E4 0
 
 # BMC_EXT1_LED_Y: E5 (37)
 # To use GPIOE5, SCU80[21], SCU8C[14], and SCU70[22] must be 0
@@ -142,7 +140,7 @@ devmem_clear_bit $(scu_addr 80) 21
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_export_out E5
+gpio_set E5 0
 
 # BMC_EXT2_LED_B: E6 (38)
 # To use GPIOE6, SCU80[22], SCU8C[15], and SCU70[22] must be 0
@@ -150,7 +148,7 @@ devmem_clear_bit $(scu_addr 80) 22
 devmem_clear_bit $(scu_addr 8C) 15
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_export_out E6
+gpio_set E6 0
 
 # BMC_EXT2_LED_Y: E7 (39)
 # To use GPIOE7, SCU80[23], SCU8C[15], and SCU70[22] must be 0
@@ -158,7 +156,7 @@ devmem_clear_bit $(scu_addr 80) 23
 devmem_clear_bit $(scu_addr 8C) 15
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_export_out E7
+gpio_set E7 0
 
 # SCC_LOC_FULL_PWR_EN: F0 (40), PS
 # To use GPIOF0, LHCR[0], SCU90[30], and SCU80[24] must be 0
@@ -166,9 +164,9 @@ devmem_clear_bit $(lpc_addr A0) 0
 devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 24
 
-gpio_set F0 1
+# SCC_LOC_FULL_PWR_EN F0
 # set GPIOF0 WDT reset tolerance
-devmem_set_bit $(gpio_addr 3C) 8
+gpio_tolerance_fun F0
 
 
 # SCC_RMT_FULL_PWR_EN: F1 (41)
@@ -177,7 +175,7 @@ devmem_clear_bit $(lpc_addr A0) 0
 devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 25
 
-gpio_export_out F1
+gpio_tolerance_fun F1
 
 # EXP_SPARE_0: F2 (42), EXP_SPARE_1: F3 (43)
 # To use GPIOF2, LHCR[0], SCU90[30], and SCU80[26] must be 0
@@ -201,7 +199,7 @@ devmem_clear_bit $(scu_addr 80) 28
 
 gpio_set F4 1
 # set GPIOF4 WDT reset tolerance
-devmem_set_bit $(gpio_addr 3C) 12
+gpio_tolerance_fun F4
 
 # DPB_MISC_ALERT: F5 (45)
 # To use GPIOF5, LHCR[0], SCU90[30], and SCU80[29] must be 0
@@ -257,54 +255,54 @@ gpio_export G7
 devmem_clear_bit $(scu_addr 94) 5
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H0
+gpio_set H0 0
 
 # LED_POSTCODE_1: H1 (57)
 # To use GPIOH1, SCU94[5], and SCU90[7] must be 0
 devmem_clear_bit $(scu_addr 94) 5
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H1
+gpio_set H1 0
 
 # LED_POSTCODE_2: H2 (58)
 # To use GPIOH2, SCU94[6], and SCU90[7] must be 0
 devmem_clear_bit $(scu_addr 94) 6
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H2
+gpio_set H2 0
 
 # LED_POSTCODE_3: H3 (59)
 # To use GPIOH3, SCU94[6], and SCU90[7] must be 0
 devmem_clear_bit $(scu_addr 94) 6
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H3
+gpio_set H3 0
 
 # LED_POSTCODE_4: H4 (60)
 # To use GPIOH4, SCU94[7], and SCU90[7] must be 0
 devmem_clear_bit $(scu_addr 94) 7
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H4
+gpio_set H4 0
 
 # LED_POSTCODE_5: H5 (61)
 # To use GPIOH5, SCU94[7], and SCU90[7] must be 0
 devmem_clear_bit $(scu_addr 94) 7
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H5
+gpio_set H5 0
 
 # LED_POSTCODE_6: H6 (62)
 # To use GPIOH6, SCU90[7] must be 0
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H6
+gpio_set H6 0
 
 # LED_POSTCODE_7: H7 (63)
 # To use GPIOH7, SCU90[7] must be 0
 devmem_clear_bit $(scu_addr 90) 7
 
-gpio_export_out H7
+gpio_set H7 0
 
 # BOARD_REV_0: J0 (72), BOARD_REV_1: J1 (73), BOARD_REV_2: J2 (74)
 # To use GPIOJ0, SCU84[8] must be 0
@@ -367,7 +365,7 @@ gpio_export O0
 # To use GPIOO1, SCU88[9] must be 0
 devmem_clear_bit $(scu_addr 88) 9
 
-gpio_export_out O1
+gpio_set O1 1
 
 # FLA0_WP_N: O2 (114)
 # To use GPIOO1, SCU88[10] must be 0
@@ -379,7 +377,7 @@ gpio_export O2
 # To use GPIOO1, SCU88[11] must be 0
 devmem_clear_bit $(scu_addr 88) 11
 
-gpio_export_out O3
+gpio_set O3 0
 
 # SCC_LOC_HEARTBEAT: O4 (116)
 # To use GPIOO4, SCU88[12] must be 0
@@ -403,9 +401,8 @@ gpio_export O6
 # To use GPIOO7, SCU88[15] must be 0
 devmem_clear_bit $(scu_addr 88) 15
 
-gpio_set O7 1
 # set GPIOO7 WDT reset tolerance
-devmem_set_bit $(gpio_addr FC) 23
+gpio_tolerance_fun O7
 
 # DEBUG_GPIO_BMC_6: P0 (120)
 # To use GPIOP0, SCU88[16] must be 0
@@ -417,7 +414,7 @@ gpio_export P0
 # To use GPIOP2, SCU88[18] must be 0
 devmem_clear_bit $(scu_addr 88) 18
 
-gpio_export_out P2
+gpio_set P2 0
 
 # DEBUG_GPIO_BMC_1: P3 (123)
 # To use GPIOP3, SCU88[19] must be 0
@@ -467,13 +464,13 @@ gpio_export Q6
 # To use GPIOS0, SCU8C[0] must be 0
 devmem_clear_bit $(scu_addr 8C) 0
 
-gpio_export_out S0
+gpio_set S0 0
 
 # BMC_UART_SEL: S1 (135)
 # To use GPIOS1, SCU8C[1] must be 0
 devmem_clear_bit $(scu_addr 8C) 1
 
-gpio_export_out S1
+gpio_tolerance_fun S1
 
 # DEBUG_HDR_UART_SEL: S2 (136)
 # To use GPIOS2, SCU8C[2] must be 0
@@ -544,7 +541,7 @@ gpio_export Z7
 # To use GPIOAA0, SCUA4[24] must be 0
 devmem_clear_bit $(scu_addr A4) 24
 
-gpio_export_out AA0
+gpio_set AA0 1
 
 # CONN_A_PRSNTA: AA1 (209)
 # To use GPIOAA1, SCUA4[25] must be 0
@@ -564,25 +561,24 @@ devmem_clear_bit $(scu_addr A4) 27
 
 gpio_export AA3
 
-# BMC_SELF_HW_RST: AA4 (212)
+# BMC_SELF_HW_RST: AA4 (212) For TPM; don't need to implement
 # To use GPIOAA4, SCUA4[28] must be 0
-devmem_clear_bit $(scu_addr A4) 28
+#devmem_clear_bit $(scu_addr A4) 28
 
-gpio_export_out AA4
+#gpio_export_out AA4
 
 # COMP_SPARE_1: AA5 (213)
 # To use GPIOAA5, SCUA4[29] must be 0
 devmem_clear_bit $(scu_addr A4) 29
 
-gpio_export_out AA5
+gpio_set AA5 0
 
 # IOM_FULL_PWR_EN: AA7 (215), PS
 # To use GPIOAA7, SCUA4[31] must be 0
 devmem_clear_bit $(scu_addr A4) 31
 
-gpio_set AA7 1
 # set GPIOAA7 WDT reset tolerance
-devmem_set_bit $(gpio_addr 18C) 23
+gpio_tolerance_fun AA7
 
 # IOM_LOC_INS_N: AB0 (216)
 # To use GPIOAB0, SCUA8[0] must be 0

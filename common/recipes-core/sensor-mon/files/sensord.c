@@ -456,8 +456,10 @@ snr_thresh_monitor(void *arg) {
       } /* flag check */
     } /* loop for all sensors */
 #ifdef DYN_THRESH_FRU1
-    // Hnadle dynamic threshold changes for FRU1
-    init_fru_snr_thresh(1);
+    // Handle dynamic threshold changes for FRU1
+    if (fru == 1) {
+      init_fru_snr_thresh(1);
+    }
 #endif
     sleep(DELAY);
   } /* while loop*/

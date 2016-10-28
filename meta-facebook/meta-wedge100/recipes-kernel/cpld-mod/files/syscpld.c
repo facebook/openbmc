@@ -298,7 +298,7 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "bb_scl_oe",
-    "Requires CPLD version 6.96 and up\n",
+    "Requires CPLD version 6.96 and up\n"
     "0: bb_scl_out is not enabled to main_i2c_scl\n"
     "1: bb_scl_out is enabled and drive main_i2c_scl",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -307,7 +307,7 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "bb_sda_oe",
-    "Requires CPLD version 6.96 and up\n",
+    "Requires CPLD version 6.96 and up\n"
     "0: bb_sda_out is not enabled to main_i2c_scl\n"
     "1: bb_sda_out is enabled and drive main_i2c_scl",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -316,7 +316,7 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "bb_scl_out",
-    "Requires CPLD version 6.96 and up\n",
+    "Requires CPLD version 6.96 and up\n"
     "0: bb_scl_out is not enabled to main_i2c_scl\n"
     "1: bb_scl_out is enabled and drive main_i2c_scl",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -325,7 +325,7 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "bb_sda_out",
-    "Requires CPLD version 6.96 and up\n",
+    "Requires CPLD version 6.96 and up\n"
     "0: bb_scl_out is not enabled to main_i2c_scl\n"
     "1: bb_scl_out is enabled and drive main_i2c_scl",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -455,7 +455,7 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "i2c_flush_en",
-    "Requires CPLD version 6.96 and up\n",
+    "Requires CPLD version 6.96 and up\n"
     "Write 1, then write 0 to this bit to trigger i2c flush function\n",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,

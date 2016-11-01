@@ -31,10 +31,30 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fw-util <all|slot1> <--version>\n");
+  printf("Usage: fw-util <all|slot1|scc> <--version>\n");
   printf("       fw-util <all|slot1> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 }
-
+static void
+print_fw_scc_ver(void) {
+	uint8_t ver[32] = {0};
+	int ret = 0;
+	
+	// Read Firwmare Versions of Expander from cache
+    // ID: exp is 0, ioc is 1
+	ret = read_fw_ver_cache(ver,0);
+	if( !ret )
+	  printf("Expander Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+	else
+	  printf("Get Expander FW Verion Fail...%d\n",ret);
+	
+	ret = read_fw_ver_cache(ver,1);
+	if( !ret )
+	  printf("SCC IOC  Version: 0x%02x%02x%02x%02x\n", ver[3], ver[2], ver[1], ver[0]);
+    else
+	  printf("Get Expander FW Verion Fail...%d\n",ret);
+	
+	return;
+}
 // TODO: Need to confirm the interpretation of firmware version for print
 // Right now using decimal to print the versions
 static void
@@ -171,8 +191,10 @@ main(int argc, char **argv) {
   // Derive slot_id from first parameter
   if (!strcmp(argv[1], "slot1")) {
     slot_id = 1;
-  } else if (!strcmp(argv[1] , "all")) {
-    slot_id =2;
+  } else if (!strcmp(argv[1] , "scc")) {
+    slot_id = 2;
+  }else if (!strcmp(argv[1] , "all")) {
+    slot_id = 3;
   } else {
       goto err_exit;
   }
@@ -182,11 +204,9 @@ main(int argc, char **argv) {
        print_fw_ver(slot_id);
        return 0;
      }
-     for (slot_id = 1; slot_id < 2; slot_id++) {
-        printf("Get version info for slot%d\n", slot_id);
-        print_fw_ver(slot_id);;
-        printf("\n");
-     }
+     
+     print_fw_ver(slot_id&0x1);
+     print_fw_scc_ver();
      return 0;
   }
   if (!strcmp(argv[2], "--update")) {

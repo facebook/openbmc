@@ -1143,7 +1143,7 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
     } else {
     if (rbuf1[6] == 0) {
       //CPU0 Temp
-      if ( (rbuf1[10] < 0xFD) && (rbuf1[10] != 0x00) ) {
+      if ( (rbuf1[10] < 0xFD) && (tjmax_cpu0 != 0x00) ) {
         *value = (float) (tjmax[0] - rbuf1[10]) ;
         sprintf(str, "%.2f",*((float*)value));
         sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TEMP);
@@ -1169,7 +1169,7 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
       }
 
       //CPU1 Temp
-      if ( (rbuf1[11] < 0xFD) && (rbuf1[11] != 0x00)  ) {
+      if ( (rbuf1[11] < 0xFD) && (tjmax_cpu1 != 0x00)  ) {
         sprintf(str, "%.2f",(float) (tjmax[1] - rbuf1[11]));
         sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TEMP);
         if(edb_cache_set(key, str) < 0) {

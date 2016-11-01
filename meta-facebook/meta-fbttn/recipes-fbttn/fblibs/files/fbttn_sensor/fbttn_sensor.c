@@ -637,38 +637,9 @@ fbttn_sdr_init(uint8_t fru) {
 
 static bool
 is_server_prsnt(uint8_t fru) {
-  uint8_t gpio;
-  int val;
-  char path[64] = {0};
-
-  switch(fru) {
-  case 1:
-    gpio = 61;
-    break;
-  case 2:
-    gpio = 60;
-    break;
-  case 3:
-    gpio = 63;
-    break;
-  case 4:
-    gpio = 62;
-    break;
-  default:
-    return 0;
-  }
-
-  sprintf(path, GPIO_VAL, gpio);
-
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  if (val == 0x0) {
-    return 1;
-  } else {
-    return 0;
-  }
+ //To do, after bring up. 
+ //we need to implement tca9555 gpio-exp driver for this
+ return 1;
 }
 
 /* Get the units for the sensor */

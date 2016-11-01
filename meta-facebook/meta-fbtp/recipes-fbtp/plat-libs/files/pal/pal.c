@@ -2599,8 +2599,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       }
     } else {
-      if((poweron_10s_flag < 5) && ((sensor_num == MB_SENSOR_HSC_IN_VOLT)||
-         (sensor_num == MB_SENSOR_HSC_OUT_CURR)||(sensor_num == MB_SENSOR_HSC_IN_POWER))){
+      if((poweron_10s_flag < 5) && ((sensor_num == MB_SENSOR_HSC_IN_VOLT) ||
+         (sensor_num == MB_SENSOR_HSC_OUT_CURR) || (sensor_num == MB_SENSOR_HSC_IN_POWER) ||
+         (sensor_num == MB_SENSOR_FAN0_TACH) || (sensor_num == MB_SENSOR_FAN1_TACH))) {
         if(sensor_num == MB_SENSOR_HSC_IN_POWER){
           poweron_10s_flag++;
         }

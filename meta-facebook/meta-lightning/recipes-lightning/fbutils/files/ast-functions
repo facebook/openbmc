@@ -1,5 +1,12 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
 DEVMEM=/sbin/devmem
+GPIO_Tolerant_AtoD=0x1e78001c
+GPIO_Tolerant_EtoH=0x1e78003c
+GPIO_Tolerant_ItoL=0x1e7800ac
+GPIO_Tolerant_MtoP=0x1e7800fc
+GPIO_Tolerant_QtoT=0x1e78012c
+GPIO_Tolerant_UtoX=0x1e78015c
+GPIO_Tolerant_YtoAB=0x1e78018c
 
 devmem_set_bit() {
     local addr
@@ -78,8 +85,8 @@ gpio_set() {
     if [ ! -d ${dir} ]; then
         echo $gpio > $GPIOEXPORT
     fi
-    echo out > ${dir}/direction
     echo $val > ${dir}/value
+    echo out > ${dir}/direction
 }
 
 gpio_get() {
@@ -143,5 +150,54 @@ yosemite_is_server_on() {
         echo 1
     else
         echo 0
+    fi
+}
+
+gpio_get_val() {
+    local gpio
+    local val
+    gpio=$(gpio_name2value $1)
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+    cat ${dir}/value
+}
+
+gpio_tolerance_fun() {
+    local gpio
+    offset=0
+    gpio=$(gpio_name2value $1)
+    offset=$((${gpio}/32))
+    case "${offset}" in
+    "0" ) 
+    offset=$GPIO_Tolerant_AtoD
+    ;;
+    "1" ) 
+    offset=$GPIO_Tolerant_EtoH
+    ;;
+    "2" ) 
+    offset=$GPIO_Tolerant_ItoL
+    ;;
+    "3" ) 
+    offset=$GPIO_Tolerant_MtoP
+    ;;
+    "4" ) 
+    offset=$GPIO_Tolerant_QtoT
+    ;;
+    "5" ) 
+    offset=$GPIO_Tolerant_UtoX
+    ;;
+    "6" ) 
+    offset=$GPIO_Tolerant_YtoAB
+    ;;
+    esac
+    set_bit=$((${gpio}%32))
+    devmem_set_bit $offset $set_bit
+    def_val=$(gpio_get_val $1)
+    if [ $def_val == 1 ]; then
+    gpio_set $1 1
+    else
+    gpio_set $1 0
     fi
 }

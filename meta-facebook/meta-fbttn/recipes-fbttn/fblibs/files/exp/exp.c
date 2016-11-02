@@ -27,32 +27,8 @@
 #include <sys/stat.h>
 #include "exp.h"
 
-enum {
-  IPMB_BUS_EXPANDER = 9,
-};
-
-// Common IPMB Wrapper function
-static int
-get_ipmb_bus_id(uint8_t slot_id) {
-  int bus_id;
-
-  switch(slot_id) {
-  case 3:
-  case 4:
-    bus_id = IPMB_BUS_EXPANDER;
-    break;
-  default:
-    bus_id = -1;
-    break;
-  }
-
-  return bus_id;
-}
-
 int
-expander_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
-                  uint8_t *txbuf, uint8_t txlen,
-                  uint8_t *rxbuf, uint8_t *rxlen) {
+expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
   ipmb_req_t *req;
   ipmb_res_t *res;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
@@ -62,17 +38,6 @@ expander_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   int count = 0;
   int i = 0;
   int ret;
-  uint8_t bus_id;
-
-  ret = get_ipmb_bus_id(slot_id);
-  if (ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_ERR, "expander_ipmb_wrapper: Wrong Slot ID %d\n", slot_id);
-#endif
-    return ret;
-  }
-
-  bus_id = (uint8_t) ret;
 
   req = (ipmb_req_t*)tbuf;
 
@@ -94,7 +59,7 @@ expander_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen, &rbuf, &rlen);
+  lib_ipmb_handle(EXPANDER_IPMB_BUS_NUM, tbuf, tlen, &rbuf, &rlen);
 
   if (rlen == 0) {
 #ifdef DEBUG

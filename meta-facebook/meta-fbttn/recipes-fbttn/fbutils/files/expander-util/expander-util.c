@@ -36,12 +36,11 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: expander-util <local|remote> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: expander-util <[0..n]data_bytes_to_send>\n");
 }
 
 int
 main(int argc, char **argv) {
-  uint8_t bus_id;
   ipmb_req_t *req;
   ipmb_res_t *res;
   uint8_t req_len = 0;
@@ -60,19 +59,12 @@ main(int argc, char **argv) {
   char log[128];
   char temp[8];
 
-  if (argc < 3) {
+  if (argc < 2) {
     goto err_exit;
   }
 
-  if (!strcmp(argv[1], "local")) {
-    bus_id = 9;
-  } else if (!strcmp(argv[1] ,"remote")) {
-    bus_id = 10;
-  } else {
-    goto err_exit;
-  }
-  netfn = (uint8_t)strtoul(argv[2], NULL, 0);
-  cmd = (uint8_t)strtoul(argv[3], NULL, 0);
+  netfn = (uint8_t)strtoul(argv[1], NULL, 0);
+  cmd = (uint8_t)strtoul(argv[2], NULL, 0);
 
   req = (ipmb_req_t*)tbuf;
 
@@ -86,13 +78,13 @@ main(int argc, char **argv) {
   req->seq_lun = 0x00;
   req->cmd = cmd;
 
-  for (i = 4; i < argc; i++) {
+  for (i = 3; i < argc; i++) {
     req->data[req_len++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
 
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + req_len;
 
-  lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
+  lib_ipmb_handle(EXPANDER_IPMB_BUS_NUM, tbuf, tlen, rbuf, &rlen);
   if (rlen == 0)
   {
     printf("IPMB Failed... Zero bytes received.\n");

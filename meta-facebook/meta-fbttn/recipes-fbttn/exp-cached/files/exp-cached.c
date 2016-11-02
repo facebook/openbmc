@@ -32,6 +32,10 @@
 #include <openbmc/ipmb.h>
 #include <facebook/exp.h>
 
+#define FRU_ID_DPB 3
+#define FRU_ID_SCC 4
+
+
 void
 fruid_cache_init(void) {
   // Initialize Slot0's fruid
@@ -40,17 +44,28 @@ fruid_cache_init(void) {
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
 
-  sprintf(fruid_temp_path, "/tmp/tfruid_exp.bin");
-  sprintf(fruid_path, "/tmp/fruid_exp.bin");
+  sprintf(fruid_temp_path, "/tmp/tfruid_scc.bin");
+  sprintf(fruid_path, "/tmp/fruid_scc.bin");
 
   // To do.. get exp fru info
-  ret = exp_read_fruid(fruid_temp_path);
+  ret = exp_read_fruid(fruid_temp_path, FRU_ID_SCC);
   if (ret) {
     syslog(LOG_WARNING, "fruid_cache_init: exp_read_fruid returns %d\n", ret);
   }
 
   rename(fruid_temp_path, fruid_path);
 
+
+  sprintf(fruid_temp_path, "/tmp/tfruid_dpb.bin");
+  sprintf(fruid_path, "/tmp/fruid_dpb.bin");
+
+  // To do.. get exp fru info
+  ret = exp_read_fruid(fruid_temp_path, FRU_ID_DPB);
+  if (ret) {
+    syslog(LOG_WARNING, "fruid_cache_init: exp_read_fruid returns %d\n", ret);
+  }
+
+  rename(fruid_temp_path, fruid_path);
   return;
 }
 

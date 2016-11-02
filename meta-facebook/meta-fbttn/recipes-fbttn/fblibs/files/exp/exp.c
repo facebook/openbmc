@@ -130,7 +130,7 @@ get_ioc_fw_ver(void) {
   if (ret) {
     syslog(LOG_WARNING, "get_ioc_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
     return -1;
-  }  
+  }
 
   memcpy(ver, rbuf, 4);
 
@@ -153,42 +153,54 @@ read_fw_ver_cache(uint8_t *ver, uint8_t id) {
     if (!fp) {
       syslog(LOG_WARNING, "read_exp_fw_ver_cache exp File open failed...\n");
       return -1;
-    }  
+    }
   }
   else if(id == 1) {
     fp = fopen(IOC_VERSION_CACHE, "r");
     if (!fp) {
       syslog(LOG_WARNING, "read_exp_fw_ver_cache ioc File open failed...\n");
       return -1;
-    }  
+    }
   }
-  
+
   fscanf(fp, "%02X %02X %02X %02X", ver, ver+1, ver+2, ver+3);
   fclose(fp);
   return 0;
 }
 
 int
-exp_read_fruid(const char *path) {
+exp_read_fruid(const char *path, unsigned char FRUID) {
   int fd;
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
+  uint8_t r1_buf[256] = {0x00};
+  uint8_t abuf[512] = {0x0};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
+  uint8_t l_rlen = 0;
   int ret;
   int i;
 
-  tbuf[0] = 3; //FRU Device ID
+  tbuf[0] = FRUID; //FRU Device ID
   tbuf[1] = 0; //FRU Inventory Offset to read, LS Byte
   tbuf[2] = 0; //FRU Inventory Offset to read, MS Byte
-  tbuf[3] = EXPANDER_FRUID_SIZE; //Count to read --- count is 1 based
+  tbuf[3] = EXPANDER_FRUID_SIZE + 2; //Count to read --- count is 1 based
   tlen = 4;
   ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, tlen, rbuf, &rlen);
+  memcpy( abuf, rbuf + 1, rlen-1);
+  l_rlen = rlen - 1;
+  memset(rbuf,0,512);
+
+  tbuf[1] = EXPANDER_FRUID_SIZE + 2; //FRU Inventory Offset to read, LS Byte
+  tbuf[2] = 0; //FRU Inventory Offset to read, MS Byte
+  ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, tlen, r1_buf, &rlen);
+  memcpy( abuf + l_rlen, r1_buf + 1, rlen - 1);
+
   if (ret) {
     syslog(LOG_WARNING, "exp_read_fruid: expander_ipmb_wrapper returns %d\n", ret);
     return -1;
   }
-  
+
   // Remove the file if exists already
   unlink(path);
 
@@ -201,8 +213,9 @@ exp_read_fruid(const char *path) {
     return -1;
   }
   // Ignore the first byte as it indicates length of response
-  write(fd, &rbuf[1], rlen-1);
-  close(fd);
+  write(fd, abuf, l_rlen + rlen - 2);
+
+  ilose(fd);
   return 0;
 }// Read Firwmare Versions of Expander via IPMB, and save to cache
 int
@@ -250,7 +263,7 @@ get_ioc_fw_ver(void) {
   if (ret) {
     syslog(LOG_WARNING, "get_ioc_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
     return -1;
-  }  
+  }
 
   memcpy(ver, rbuf, 4);
 
@@ -273,16 +286,16 @@ read_fw_ver_cache(uint8_t *ver, uint8_t id) {
     if (!fp) {
       syslog(LOG_WARNING, "read_exp_fw_ver_cache exp File open failed...\n");
       return -1;
-    }  
+    }
   }
   else if(id == 1) {
     fp = fopen(IOC_VERSION_CACHE, "r");
     if (!fp) {
       syslog(LOG_WARNING, "read_exp_fw_ver_cache ioc File open failed...\n");
       return -1;
-    }  
+    }
   }
-  
+
   fscanf(fp, "%02X %02X %02X %02X", ver, ver+1, ver+2, ver+3);
   fclose(fp);
   return 0;

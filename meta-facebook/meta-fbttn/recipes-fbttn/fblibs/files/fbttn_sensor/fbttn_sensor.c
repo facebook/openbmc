@@ -316,9 +316,9 @@ sensor_thresh_array_init() {
   iom_sensor_threshold[IOM_SENSOR_ADC_P1V8][UCR_THRESH] = 1.98;
   iom_sensor_threshold[IOM_SENSOR_ADC_P1V8][LCR_THRESH] = 1.62;
   iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][UCR_THRESH] = 1.65;
-  iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][LCR_THRESH] = 1.35;  
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][LCR_THRESH] = 1.35;
   iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][UCR_THRESH] = 1.0725;
-  iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][LCR_THRESH] = 0.8775;  
+  iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][LCR_THRESH] = 0.8775;
   iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_M2][UCR_THRESH] = 3.63;
   iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_M2][LCR_THRESH] = 2.97;
   iom_sensor_threshold[IOM_SENSOR_M2_AMBIENT_TEMP1][UCR_THRESH] = 70;
@@ -549,8 +549,8 @@ read_M2_temp(int device, float *value) {
   int ret;
   int dev;
   int32_t res;
-  char bus[32]; 
-  int gpio_value; 
+  char bus[32];
+  int gpio_value;
   char full_name[LARGEST_DEVICE_NAME + 1];
 
   if (device == 1) {
@@ -601,10 +601,10 @@ read_M2_temp(int device, float *value) {
     return -1;
   }
   *value = (float) res;
-  ***/ 
-  
+  ***/
+
   close(dev);
-  
+
   // TODO: HACK for now
   return -1;
 }
@@ -891,7 +891,7 @@ fbttn_sdr_init(uint8_t fru) {
 
 static bool
 is_server_prsnt(uint8_t fru) {
- //To do, after bring up. 
+ //To do, after bring up.
  //we need to implement tca9555 gpio-exp driver for this
  return 1;
 }
@@ -900,7 +900,7 @@ is_server_prsnt(uint8_t fru) {
 int
 fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t op, modifier;
-  sensor_info_t *sinfo;    
+  sensor_info_t *sinfo;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1233,7 +1233,7 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case IOM_SENSOR_M2_SMART_TEMP2:
           sprintf(name, "M.2_SMART_Temp_2");
-          break;  
+          break;
       }
       break;
 
@@ -1451,7 +1451,7 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case IOM_SENSOR_M2_SMART_TEMP1:
           return read_M2_temp(IOM_M2_1_TEMP_DEVICE, (float *) value);
         case IOM_SENSOR_M2_SMART_TEMP2:
-          return read_M2_temp(IOM_M2_2_TEMP_DEVICE, (float *) value); 
+          return read_M2_temp(IOM_M2_2_TEMP_DEVICE, (float *) value);
       }
       break;
 

@@ -43,7 +43,7 @@ int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t tx
 int get_exp_fw_ver(void);
 int get_ioc_fw_ver(void);
 int read_exp_fw_ver_cache(uint8_t *ver, uint8_t id);
-int exp_read_fruid(const char *path);
+int exp_read_fruid(const char *path, unsigned char FRUID);
 
 #ifdef __cplusplus
 } // extern "C"

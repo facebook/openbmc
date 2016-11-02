@@ -31,8 +31,15 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fpc-util <slot1> --ext1 <warning/off>\n");
-  printf("Usage: fpc-util <slot1> --ext2 <warning/off>\n");
+
+  int sku = 0;
+  sku = pal_get_iom_type();
+  //SKU : 2 type7
+  if (sku == 2) {
+    printf("Usage: fpc-util <slot1> --ext1 <warning/off>\n");
+    printf("Usage: fpc-util <slot1> --ext2 <warning/off>\n");
+  }
+  
   printf("       fpc-util <sled> --fault <on/off/auto>\n");
   printf("       fpc-util <slot1> --identify <on/off>\n");
 }
@@ -43,7 +50,7 @@ main(int argc, char **argv) {
   uint8_t slot_id;
   char tstr[64] = {0};
 
-  if (argc < 3) {
+  if (argc != 4 ) {
     goto err_exit;
   }
 
@@ -78,23 +85,26 @@ main(int argc, char **argv) {
 	}
     return -1;// to do pal_minisas_led()
   } else if (!strcmp(argv[2], "--fault")) {
-	  printf("fpc-util: Enable/Disable fault LED manually\n");
+	  if (strcmp(argv[1] , "sled"))
+	    goto err_exit;
+	    
 		int mode  = 0;
-		if(!strcmp(argv[3], "on")){  
+		if(!strcmp(argv[3], "on")){ 
+			printf("fpc-util: Enable fault LED manually\n"); 
 			mode = 1;
 			return pal_fault_led(1,mode);
 	    }else if(!strcmp(argv[3], "off")){
+			printf("fpc-util: Disable fault LED manually\n"); 
 			mode = 1;
 			return pal_fault_led(0,mode);
 		}else if(!strcmp(argv[3], "auto")){
+			printf("fpc-util: Auto Mode\n");
 			mode = 0;
 			return pal_fault_led(0,mode);
 		}
         return -1;
   } else if (!strcmp(argv[2], "--identify")) {
-    if (argc != 4) {
-      goto err_exit;
-  }
+
     printf("fpc-util: identification for %s is %s\n", argv[1], argv[3]);
     if (slot_id == 1) {
       sprintf(tstr, "identify_slot1");

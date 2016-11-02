@@ -40,11 +40,11 @@
 #define HB_SLEEP_TIME (5 * 60)
 #define HB_TIMESTAMP_COUNT (60 * 60 / HB_SLEEP_TIME)
 
-#define LED_ON 0
-#define LED_OFF 1
+#define LED_ON 1
+#define LED_OFF 0
 
-#define ID_LED_ON 0
-#define ID_LED_OFF 1
+#define ID_LED_ON  1
+#define ID_LED_OFF 0
 
 #define LED_ON_TIME_IDENTIFY 200
 #define LED_OFF_TIME_IDENTIFY 200
@@ -417,16 +417,7 @@ led_handler(void *num) {
 
     //If no identify: Set LEDs based on power and hlth status
     if (!led_blink) {
-      if (!power) {
-        pal_set_led(slot, LED_OFF);
-        goto led_handler_out;
-      }
-
-      if (hlth == FRU_STATUS_GOOD) {
-        pal_set_led(slot, LED_ON);
-      } else {
-        pal_set_led(slot, LED_OFF);
-      }
+		pal_set_led(slot, LED_ON);
       goto led_handler_out;
     }
 
@@ -470,7 +461,8 @@ led_sync_handler() {
 #ifdef DEBUG
   syslog(LOG_INFO, "led_handler for slot %d\n", slot);
 #endif
-
+  pal_set_led(slot, LED_ON);
+  
   while (1) {
     // Check if slot needs to be identified
     ident = 0;
@@ -522,6 +514,8 @@ encl_led_handler() {
 
   // Initial error code
   memset(g_err_code, 0, sizeof(unsigned char) * ERROR_CODE_NUM);
+  pal_fault_led(ID_LED_OFF, 0);
+  
   while (1) {
     // Get health status for all the fru and then update the ENCL_LED status
     ret = pal_get_fru_health(FRU_SLOT1, &slot1_hlth);
@@ -590,10 +584,10 @@ encl_led_handler() {
     }
 
     if(pal_sum_error_code() == 1) {   // error occur
-      pal_fault_led(ID_LED_ON, 0);
+      //pal_fault_led(ID_LED_ON, 0);
     }
     else {
-      pal_fault_led(ID_LED_OFF, 0);
+      //pal_fault_led(ID_LED_OFF, 0);
     }
     sleep(1);
   }

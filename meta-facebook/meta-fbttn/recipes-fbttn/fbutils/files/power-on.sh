@@ -75,7 +75,7 @@ sync_date()
 {
   for i in 1
   do
-    if [ $(is_server_prsnt $i) == "1" ] ; then
+    if [ $(is_server_prsnt) == "1" ] ; then
       # Use standard IPMI command 'get-sel-time' to read RTC time
       output=$(/usr/local/bin/me-util slot$i 0x28 0x48)
       # if the command fails, continue to next slot
@@ -151,7 +151,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
   gpio_set O7 1
 
           check_por_config 1
-          if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] ; then
+          if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
                 power-util slot1 on
           fi
   else
@@ -159,7 +159,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
   fi
 
   check_por_config 1
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] ; then
+  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
     power-util slot1 on
   fi
 fi

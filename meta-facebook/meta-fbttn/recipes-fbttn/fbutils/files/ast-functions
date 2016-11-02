@@ -133,21 +133,23 @@ is_bmc_por() {
 
 # Check to see if server is present in given slot or not
 is_server_prsnt() {
-  local prsnt
-  prsnt=`i2cget -y 5 0x24 0`
-  if [ $? -eq 0 ]; then
-      prsnt=$[16#`echo "${prsnt}" | cut -d 'x' -f2`]
-  else
+  #TODO: Add TCA9555 driver
+  echo 1
+  #local prsnt
+  #prsnt=`i2cget -y 5 0x24 0`
+  #if [ $? -eq 0 ]; then
+      #prsnt=$[16#`echo "${prsnt}" | cut -d 'x' -f2`]
+  #else
     # TODO: Record the error message
-         echo "TCA9555 transaction failed."
-  fi
-    prsnt=$[${prsnt}&1]
+         #echo "TCA9555 transaction failed."
+  #fi
+    #prsnt=$[(${prsnt})&1]
 
-  if [ $prsnt == "1" ]; then
-    echo 1
-  else                                       
-    echo 0
-  fi
+  #if [ $prsnt == "1" ]; then
+    #echo 1
+  #else                                       
+    #echo 0
+  #fi
 }
 
 

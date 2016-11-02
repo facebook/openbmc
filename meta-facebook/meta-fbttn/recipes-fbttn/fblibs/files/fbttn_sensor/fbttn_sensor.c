@@ -139,8 +139,6 @@ const uint8_t iom_sensor_list[] = {
   IOM_SENSOR_HSC_POWER,
   IOM_SENSOR_HSC_VOLT,
   IOM_SENSOR_HSC_CURR,
-  IOM_SENSOR_M2_1_TEMP,
-  IOM_SENSOR_M2_2_TEMP,
   IOM_SENSOR_ADC_12V,
   IOM_SENSOR_ADC_P5V_STBY,
   IOM_SENSOR_ADC_P3V3_STBY,
@@ -153,6 +151,8 @@ const uint8_t iom_sensor_list[] = {
   IOM_SENSOR_ADC_P1V5,
   IOM_SENSOR_ADC_P0V975,
   IOM_SENSOR_ADC_P3V3_M2,
+  IOM_SENSOR_M2_AMBIENT_TEMP1,
+  IOM_SENSOR_M2_AMBIENT_TEMP2,
 };
 
 // List of DPB sensors to be monitored
@@ -255,7 +255,123 @@ sensor_thresh_array_init() {
   if (init_done)
     return;
 
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
+  // IOM
+  iom_sensor_threshold[ML_SENSOR_HSC_VOLT][UCR_THRESH] = 12.84;
+  iom_sensor_threshold[ML_SENSOR_HSC_VOLT][LCR_THRESH] = 11.16;
+  iom_sensor_threshold[ML_SENSOR_HSC_CURR][UCR_THRESH] = 8;
+  iom_sensor_threshold[ML_SENSOR_HSC_PWR][UCR_THRESH] = 96;     // for Type V
+  iom_sensor_threshold[IOM_SENSOR_MEZZ_TEMP][UCR_THRESH] = 85;
+  iom_sensor_threshold[IOM_SENSOR_HSC_VOLT][UCR_THRESH] = 12.84;
+  iom_sensor_threshold[IOM_SENSOR_HSC_VOLT][LCR_THRESH] = 11.16;
+  iom_sensor_threshold[IOM_SENSOR_HSC_CURR][UCR_THRESH] = 9.7;    // for Type V
+  iom_sensor_threshold[IOM_SENSOR_HSC_POWER][UCR_THRESH] = 116.4; // for Type V
+  iom_sensor_threshold[IOM_SENSOR_ADC_12V][UCR_THRESH] = 12.84;
+  iom_sensor_threshold[IOM_SENSOR_ADC_12V][LCR_THRESH] = 11.16;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P5V_STBY][UCR_THRESH] = 5.5;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P5V_STBY][LCR_THRESH] = 4.5;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_STBY][UCR_THRESH] = 3.63;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_STBY][LCR_THRESH] = 2.97;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V8_STBY][UCR_THRESH] = 1.98;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V8_STBY][LCR_THRESH] = 1.62;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P2V5_STBY][UCR_THRESH] = 2.75;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P2V5_STBY][LCR_THRESH] = 2.25;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V2_STBY][UCR_THRESH] = 1.32;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V2_STBY][LCR_THRESH] = 1.08;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V15_STBY][UCR_THRESH] = 1.265;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V15_STBY][LCR_THRESH] = 1.035;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P3V3][UCR_THRESH] = 3.63;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P3V3][LCR_THRESH] = 2.97;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V8][UCR_THRESH] = 1.98;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V8][LCR_THRESH] = 1.62;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][UCR_THRESH] = 1.65;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][LCR_THRESH] = 1.35;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][UCR_THRESH] = 1.0725;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][LCR_THRESH] = 0.8775;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_M2][UCR_THRESH] = 3.63;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_M2][LCR_THRESH] = 2.97;
+  iom_sensor_threshold[IOM_SENSOR_M2_AMBIENT_TEMP1][UCR_THRESH] = 70;
+  iom_sensor_threshold[IOM_SENSOR_M2_AMBIENT_TEMP2][UCR_THRESH] = 70;
+
+  // DPB
+  dpb_sensor_threshold[DPB_SENSOR_12V_POWER_CLIP][UCR_THRESH] = 1825;
+  dpb_sensor_threshold[DPB_SENSOR_P12V_CLIP][UCR_THRESH] = 13.375;
+  dpb_sensor_threshold[DPB_SENSOR_P12V_CLIP][LCR_THRESH] = 11.625;
+  dpb_sensor_threshold[DPB_SENSOR_12V_CURR_CLIP][UCR_THRESH] = 146;
+  dpb_sensor_threshold[DPB_SENSOR_FAN0_FRONT][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_FAN0_REAR][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_FAN1_FRONT][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_FAN1_REAR][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_FAN2_FRONT][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_FAN2_REAR][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_FAN3_FRONT][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_FAN3_REAR][LCR_THRESH] = 400;
+  dpb_sensor_threshold[DPB_SENSOR_HSC_POWER][UCR_THRESH] = 885;
+  dpb_sensor_threshold[DPB_SENSOR_HSC_VOLT][UCR_THRESH] = 13.375;
+  dpb_sensor_threshold[DPB_SENSOR_HSC_VOLT][LCR_THRESH] = 11.625;
+  dpb_sensor_threshold[DPB_SENSOR_HSC_CURR][UCR_THRESH] = 70.8;
+  dpb_sensor_threshold[DPB_SENSOR_A_TEMP][UCR_THRESH] = 60;
+  dpb_sensor_threshold[DPB_SENSOR_B_TEMP][UCR_THRESH] = 60;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_0][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_1][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_2][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_3][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_4][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_5][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_6][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_7][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_8][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_9][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_10][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_11][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_12][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_13][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_14][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_15][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_16][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_17][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_18][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_19][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_20][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_21][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_22][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_23][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_24][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_25][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_26][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_27][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_28][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_29][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_30][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_31][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_32][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_33][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_34][UCR_THRESH] = 65;
+  dpb_sensor_threshold[DPB_SENSOR_HDD_35][UCR_THRESH] = 65;
+
+  // SCC
+  scc_sensor_threshold[SCC_SENSOR_P3V3_SENSE][UCR_THRESH] = 3.64;
+  scc_sensor_threshold[SCC_SENSOR_P3V3_SENSE][LCR_THRESH] = 2.97;
+  scc_sensor_threshold[SCC_SENSOR_P1V8_E_SENSE][UCR_THRESH] = 1.98;
+  scc_sensor_threshold[SCC_SENSOR_P1V8_E_SENSE][LCR_THRESH] = 1.62;
+  scc_sensor_threshold[SCC_SENSOR_P1V5_E_SENSE][UCR_THRESH] = 1.65;
+  scc_sensor_threshold[SCC_SENSOR_P1V5_E_SENSE][LCR_THRESH] = 1.35;
+  scc_sensor_threshold[SCC_SENSOR_P0V9_SENSE][UCR_THRESH] = 0.99;
+  scc_sensor_threshold[SCC_SENSOR_P0V9_SENSE][LCR_THRESH] = 0.81;
+  scc_sensor_threshold[SCC_SENSOR_P1V8_C_SENSE][UCR_THRESH] = 1.98;
+  scc_sensor_threshold[SCC_SENSOR_P1V8_C_SENSE][LCR_THRESH] = 1.62;
+  scc_sensor_threshold[SCC_SENSOR_P1V5_C_SENSE][UCR_THRESH] = 1.65;
+  scc_sensor_threshold[SCC_SENSOR_P1V5_C_SENSE][LCR_THRESH] = 1.35;
+  scc_sensor_threshold[SCC_SENSOR_P0V975_SENSE][UCR_THRESH] = 1.0725;
+  scc_sensor_threshold[SCC_SENSOR_P0V975_SENSE][LCR_THRESH] = 0.8775;
+  scc_sensor_threshold[SCC_SENSOR_EXPANDER_TEMP][UCR_THRESH] = 100;
+  scc_sensor_threshold[SCC_SENSOR_IOC_TEMP][UCR_THRESH] = 100;
+  scc_sensor_threshold[SCC_SENSOR_HSC_POWER][UCR_THRESH] = 78.12;
+  scc_sensor_threshold[SCC_SENSOR_HSC_CURR][UCR_THRESH] = 6.51;
+  scc_sensor_threshold[SCC_SENSOR_HSC_VOLT][UCR_THRESH] = 12.84;
+  scc_sensor_threshold[SCC_SENSOR_HSC_VOLT][LCR_THRESH] = 11.16;
+
+  // MEZZ
+  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 100;
 
   init_done = true;
 }
@@ -674,7 +790,7 @@ fbttn_sdr_init(uint8_t fru) {
 
 static bool
 is_server_prsnt(uint8_t fru) {
- //To do, after bring up. 
+ //To do, after bring up.
  //we need to implement tca9555 gpio-exp driver for this
  return 1;
 }
@@ -683,7 +799,7 @@ is_server_prsnt(uint8_t fru) {
 int
 fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t op, modifier;
-  sensor_info_t *sinfo;    
+  sensor_info_t *sinfo;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -715,12 +831,6 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
               break;
             case IOM_SENSOR_HSC_CURR:
               sprintf(units, "Amps");
-              break;
-            case IOM_SENSOR_M2_1_TEMP:
-              sprintf(units, "C");
-              break;
-            case IOM_SENSOR_M2_2_TEMP:
-              sprintf(units, "C");
               break;
             case IOM_SENSOR_ADC_12V:
               sprintf(units, "Volts");
@@ -757,6 +867,12 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
               break;
             case IOM_SENSOR_ADC_P3V3_M2:
               sprintf(units, "Volts");
+              break;
+            case IOM_SENSOR_M2_AMBIENT_TEMP1:
+              sprintf(units, "C");
+              break;
+            case IOM_SENSOR_M2_AMBIENT_TEMP2:
+              sprintf(units, "C");
               break;
       }
       break;
@@ -952,7 +1068,7 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "ML_SENSOR_HSC_PWR");
           break;
         case IOM_SENSOR_MEZZ_TEMP:
-          sprintf(name, "IOM_MEZZ_TEMP");
+          sprintf(name, "IOM_NIC_Ambient_Temp");
           break;
         case IOM_SENSOR_HSC_POWER:
           sprintf(name, "IOM_HSC_POWER");
@@ -962,12 +1078,6 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case IOM_SENSOR_HSC_CURR:
           sprintf(name, "IOM_HSC_CURR");
-          break;
-        case IOM_SENSOR_M2_1_TEMP:
-          sprintf(name, "M2_1_TEMP");
-          break;
-        case IOM_SENSOR_M2_2_TEMP:
-          sprintf(name, "M2_2_TEMP");
           break;
         case IOM_SENSOR_ADC_12V:
           sprintf(name, "ADC_12V");
@@ -1004,6 +1114,12 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case IOM_SENSOR_ADC_P3V3_M2:
           sprintf(name, "ADC_P3V3_M2");
+          break;
+        case IOM_SENSOR_M2_AMBIENT_TEMP1:
+          sprintf(name, "M.2_Ambient_Temp_1");
+          break;
+        case IOM_SENSOR_M2_AMBIENT_TEMP2:
+          sprintf(name, "M.2_Ambient_Temp_2");
           break;
       }
       break;
@@ -1075,10 +1191,10 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "DPB_12V_CURR_CLIP");
           break;
         case DPB_SENSOR_A_TEMP:
-          sprintf(name, "DPB_A_TEMP");
+          sprintf(name, "DPB_Inlet_Temp_1");
           break;
         case DPB_SENSOR_B_TEMP:
-          sprintf(name, "DPB_B_TEMP");
+          sprintf(name, "DPB_Inlet_Temp_2");
           break;
       }
       break;
@@ -1188,11 +1304,6 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_IOM, (float *) value);
         case IOM_SENSOR_HSC_CURR:
           return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_IOM, (float *) value);
-        // M.2 Ambient Temp
-        case IOM_SENSOR_M2_1_TEMP:
-          return read_temp(IOM_M2_1_TEMP_DEVICE, (float *) value);
-        case IOM_SENSOR_M2_2_TEMP:
-          return read_temp(IOM_M2_2_TEMP_DEVICE, (float *) value);
         // Various Voltages
         case IOM_SENSOR_ADC_12V:
           return read_adc_value(ADC_PIN0, ADC_VALUE, (float *) value);
@@ -1218,6 +1329,11 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_adc_value(ADC_PIN10, ADC_VALUE, (float *) value);
         case IOM_SENSOR_ADC_P3V3_M2:
           return read_adc_value(ADC_PIN11, ADC_VALUE, (float *) value);
+        // M.2 Ambient Temp
+        case IOM_SENSOR_M2_AMBIENT_TEMP1:
+          return read_temp(IOM_M2_AMBIENT_TEMP1_DEVICE, (float *) value);
+        case IOM_SENSOR_M2_AMBIENT_TEMP2:
+          return read_temp(IOM_M2_AMBIENT_TEMP2_DEVICE, (float *) value);
       }
       break;
 

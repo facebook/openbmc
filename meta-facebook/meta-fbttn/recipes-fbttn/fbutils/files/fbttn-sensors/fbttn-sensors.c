@@ -62,18 +62,6 @@ main(int argc, char **argv) {
     printf("IOM_SENSOR_HSC_CURR: %.2f Amps\n", fvalue);
   }
 
-  if (fbttn_sensor_read(slot_id, IOM_SENSOR_M2_1_TEMP, &fvalue)) {
-    printf("fbttn_sensor_read failed: IOM_SENSOR_M2_1_TEMP\n");
-  } else {
-    printf("IOM_SENSOR_M2_1_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (fbttn_sensor_read(slot_id, IOM_SENSOR_M2_2_TEMP, &fvalue)) {
-    printf("fbttn_sensor_read failed: IOM_SENSOR_M2_2_TEMP\n");
-  } else {
-    printf("IOM_SENSOR_M2_2_TEMP: %.2f C\n", fvalue);
-  }
-
   if (fbttn_sensor_read(slot_id, IOM_SENSOR_ADC_12V, &fvalue)) {
     printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_12V\n");
   } else {
@@ -144,6 +132,18 @@ main(int argc, char **argv) {
     printf("fbttn_sensor_read failed: IOM_SENSOR_ADC_P3V3_M2\n");
   } else {
     printf("IOM_SENSOR_ADC_P3V3_M2: %.2f Volts\n", fvalue);
+  }
+
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_M2_AMBIENT_TEMP1, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_M2_AMBIENT_TEMP1\n");
+  } else {
+    printf("IOM_SENSOR_M2_AMBIENT_TEMP1: %.2f C\n", fvalue);
+  }
+
+  if (fbttn_sensor_read(slot_id, IOM_SENSOR_M2_AMBIENT_TEMP2, &fvalue)) {
+    printf("fbttn_sensor_read failed: IOM_SENSOR_M2_AMBIENT_TEMP2\n");
+  } else {
+    printf("IOM_SENSOR_M2_AMBIENT_TEMP2: %.2f C\n", fvalue);
   }
 
   // DPB sensors

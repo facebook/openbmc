@@ -24,5 +24,5 @@ DEPENDS_append = " update-rc.d-native"
 
 do_install_append() {
     install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
-    update-rc.d -r ${D} setup_adc.sh start 80 S .
+    update-rc.d -r ${D} setup_adc.sh start 91 5 .
 }

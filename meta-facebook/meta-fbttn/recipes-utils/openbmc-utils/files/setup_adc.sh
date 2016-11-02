@@ -59,7 +59,7 @@ config_adc 8  330 1000 0
 
 # Detect GPIOF7 to recognize IOM type.
 IOM_SKU=`cat /sys/class/gpio/gpio47/value`
-if [ $IOM_SKU -eq 0 ]; then  # fbttn type V only
+if [ $IOM_SKU == "0" ]; then  # fbttn type V only
   config_adc 11 1400 1000 0
 else                        # fbttn type VII only
   config_adc 9     0 1000 0

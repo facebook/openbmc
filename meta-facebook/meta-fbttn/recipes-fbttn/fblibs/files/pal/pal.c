@@ -1254,9 +1254,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       sprintf(key, "iom_sensor%d", sensor_num);
       break;
     case FRU_DPB:
+      pal_expander_sensor_check(fru, sensor_num);
       sprintf(key, "dpb_sensor%d", sensor_num);
       break;
     case FRU_SCC:
+      pal_expander_sensor_check(fru, sensor_num);
       sprintf(key, "scc_sensor%d", sensor_num);
       break;
     case FRU_NIC:

@@ -31,8 +31,16 @@ extern "C" {
 #define EXPANDER_IPMB_BUS_NUM 9
 #define EXPANDER_SLAVE_ADDR 0x13 
 #define CMD_EXP_GET_SENSOR_READING 0x2D
+#define CMD_GET_EXP_VERSION 0x12
+#define CMD_GET_IOC_VERSION 0x56
+
+#define EXPANDER_VERSION_CACHE "/tmp/version_exp.bin"
+#define IOC_VERSION_CACHE "/tmp/version_ioc.bin"
 
 int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+int get_exp_fw_ver(void);
+int get_ioc_fw_ver(void);
+int read_exp_fw_ver_cache(uint8_t *ver, uint8_t id);
 
 #ifdef __cplusplus
 } // extern "C"

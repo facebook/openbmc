@@ -32,10 +32,6 @@
 #include <openbmc/ipmb.h>
 #include <facebook/exp.h>
 
-#define LAST_RECORD_ID 0xFFFF
-#define MAX_SENSOR_NUM 0xFF
-#define BYTES_ENTIRE_RECORD 0xFF
-
 void
 fruid_cache_init(void) {
   // Initialize Slot0's fruid
@@ -58,11 +54,27 @@ fruid_cache_init(void) {
   return;
 }
 
+void
+version_cache_init(void) {
+  // Initialize Expander's Version
+  int ret;
+
+  ret = get_exp_fw_ver();    
+  if (ret) {
+    syslog(LOG_WARNING, "version_cache_init: get_exp_fw_ver returns\n");
+  }
+
+  ret = get_ioc_fw_ver();    
+  if (ret) {
+    syslog(LOG_WARNING, "version_cache_init: get_ioc_fw_ver returns\n");
+  }
+  return;
+}
+
 int
 main (int argc, char * const argv[])
 {
-
   fruid_cache_init();
- 
+  version_cache_init(); 
   return 0;
 }

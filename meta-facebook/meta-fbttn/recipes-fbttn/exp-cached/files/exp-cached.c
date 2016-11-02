@@ -44,7 +44,7 @@ fruid_cache_init(void) {
   sprintf(fruid_path, "/tmp/fruid_exp.bin");
 
   // To do.. get exp fru info
-  //ret = exp_read_fruid(fruid_temp_path);
+  ret = exp_read_fruid(fruid_temp_path);
   if (ret) {
     syslog(LOG_WARNING, "fruid_cache_init: exp_read_fruid returns %d\n", ret);
   }
@@ -74,7 +74,7 @@ version_cache_init(void) {
 int
 main (int argc, char * const argv[])
 {
-  fruid_cache_init();
   version_cache_init(); 
+  fruid_cache_init();
   return 0;
 }

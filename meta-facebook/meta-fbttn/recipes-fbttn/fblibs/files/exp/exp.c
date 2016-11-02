@@ -124,7 +124,6 @@ get_ioc_fw_ver(void) {
   uint8_t rbuf[256] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
-  int fw_select_shift = 0;
   int ret;
 
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_GET_IOC_VERSION, tbuf, tlen, rbuf, &rlen);
@@ -168,7 +167,44 @@ read_fw_ver_cache(uint8_t *ver, uint8_t id) {
   fclose(fp);
   return 0;
 }
-// Read Firwmare Versions of Expander via IPMB, and save to cache
+
+int
+exp_read_fruid(const char *path) {
+  int fd;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret;
+  int i;
+
+  tbuf[0] = 3; //FRU Device ID
+  tbuf[1] = 0; //FRU Inventory Offset to read, LS Byte
+  tbuf[2] = 0; //FRU Inventory Offset to read, MS Byte
+  tbuf[3] = EXPANDER_FRUID_SIZE; //Count to read --- count is 1 based
+  tlen = 4;
+  ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, tlen, rbuf, &rlen);
+  if (ret) {
+    syslog(LOG_WARNING, "exp_read_fruid: expander_ipmb_wrapper returns %d\n", ret);
+    return -1;
+  }
+  
+  // Remove the file if exists already
+  unlink(path);
+
+  // Open the file exclusively for write
+  fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
+  if (fd < 0) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_read_fruid: open fails for path: %s\n", path);
+#endif
+    return -1;
+  }
+  // Ignore the first byte as it indicates length of response
+  write(fd, &rbuf[1], rlen-1);
+  close(fd);
+  return 0;
+}// Read Firwmare Versions of Expander via IPMB, and save to cache
 int
 get_exp_fw_ver(void) {
   FILE *fp;

@@ -40,12 +40,15 @@
 # investigating this.
 
 . /usr/local/fbpackages/utils/ast-functions
-
+#This PIN  GPIOA0 (MAC0 ISR ) will cause kernel error message
 # USB_OCS_N1: A0 (0)
 # To use GPIOA0, SCU80[0]
-devmem_clear_bit $(scu_addr 80) 0
+#devmem_clear_bit $(scu_addr 80) 0
 
-gpio_export A0
+#gpio_export A0
+
+# This is a workaround for MAC1LINK
+devmem 0x1e660050 w 0xA9D0F
 
 # BMC_TO_EXP_RESET: A2 (2)
 # To use GPIOA2, SCU80[2], and SCU80[15] must be 0
@@ -414,7 +417,7 @@ gpio_export P0
 # To use GPIOP2, SCU88[18] must be 0
 devmem_clear_bit $(scu_addr 88) 18
 
-gpio_set P2 0
+gpio_set P2 1
 
 # DEBUG_GPIO_BMC_1: P3 (123)
 # To use GPIOP3, SCU88[19] must be 0

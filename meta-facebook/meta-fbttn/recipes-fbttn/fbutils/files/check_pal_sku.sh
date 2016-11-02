@@ -73,7 +73,14 @@ get_iom_type()
 get_sku
 PAL_SKU=$?
 echo -n "Platform SKU: $PAL_SKU ("
-echo -n "obase=2;$PAL_SKU" | bc
+i=0
+while [ "${i}" -lt 8 ]
+do
+  tmp_sku_bit=$((($PAL_SKU >> i) & 1))
+  sku_bit=$tmp_sku_bit$sku_bit
+  i=$(($i+1))
+done
+  echo -n $sku_bit
 echo ")"
 echo "<SKU[6:0] = {SCC_RMT_TYPE_0, SLOTID_0, SLOTID_1, IOM_TYPE0, IOM_TYPE1, IOM_TYPE2, IOM_TYPE3}>"
 

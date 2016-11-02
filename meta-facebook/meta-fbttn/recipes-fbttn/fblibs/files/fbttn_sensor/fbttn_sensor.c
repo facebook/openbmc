@@ -32,28 +32,28 @@
 #include <facebook/i2c.h>
 #include "fbttn_sensor.h"
 //For Kernel 2.6 -> 4.1
-#define MEZZ_TEMP_DEVICE "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*"
+#define MEZZ_TEMP_DEVICE "/sys/devices/platform/ast-i2c.12/i2c-12/12-001f/hwmon/hwmon*"
 
 #define LARGEST_DEVICE_NAME 120
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
-#define I2C_BUS_0_DIR "/sys/class/i2c-adapter/i2c-0/"
-#define I2C_BUS_5_DIR "/sys/class/i2c-adapter/i2c-5/"
-#define I2C_BUS_6_DIR "/sys/class/i2c-adapter/i2c-6/"
-#define I2C_BUS_9_DIR "/sys/class/i2c-adapter/i2c-9/"
-#define I2C_BUS_10_DIR "/sys/class/i2c-adapter/i2c-10/"
+#define I2C_BUS_0_DIR "/sys/devices/platform/ast-i2c.0/i2c-0/"
+#define I2C_BUS_5_DIR "/sys/devices/platform/ast-i2c.5/i2c-5/"
+#define I2C_BUS_6_DIR "/sys/devices/platform/ast-i2c.6/i2c-6/"
+#define I2C_BUS_9_DIR "/sys/devices/platform/ast-i2c.9/i2c-9/"
+#define I2C_BUS_10_DIR "/sys/devices/platform/ast-i2c.10/i2c-10/"
 
 #define TACH_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
-#define IOM_MEZZ_TEMP_DEVICE I2C_BUS_0_DIR "0-004a"
-#define IOM_M2_1_TEMP_DEVICE I2C_BUS_0_DIR "0-0048"
-#define IOM_M2_2_TEMP_DEVICE I2C_BUS_0_DIR "0-004c"
-#define HSC_DEVICE_IOM I2C_BUS_0_DIR "0-0010"
+#define IOM_MEZZ_TEMP_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-004a/hwmon/hwmon*"
+#define IOM_M2_1_TEMP_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-0048/hwmon/hwmon*"
+#define IOM_M2_2_TEMP_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-004c/hwmon/hwmon*"
+#define HSC_DEVICE_IOM "/sys/devices/platform/ast-i2c.0/i2c-0/0-0010/hwmon/hwmon*"
 
-#define HSC_DEVICE_DPB I2C_BUS_6_DIR "6-0010"
-#define HSC_DEVICE_ML  I2C_BUS_5_DIR "5-0011"
+#define HSC_DEVICE_DPB "/sys/devices/platform/ast-i2c.6/i2c-6/6-0010/hwmon/hwmon*"
+#define HSC_DEVICE_ML  "/sys/devices/platform/ast-i2c.5/i2c-5/5-0010/hwmon/hwmon*"
 
 #define FAN_TACH_RPM "tacho%d_rpm"
 #define ADC_VALUE "adc%d_value"
@@ -355,12 +355,28 @@ read_device_float(const char *device, float *value) {
 }
 
 static int
-read_temp(const char *device, float *value) {
+read_temp_attr(const char *device, const char *attr, float *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
+  FILE *fp;
+  int size;
+
+  // Get current working directory
+  snprintf(
+      full_name, LARGEST_DEVICE_NAME, "cd %s;pwd", device);
+
+  fp = popen(full_name, "r");
+  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
+  pclose(fp);
+
+  // Remove the newline character at the end
+  size = strlen(dir_name);
+  dir_name[size-1] = '\0';
 
   snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
+      full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+
   if (read_device(full_name, &tmp)) {
     return -1;
   }
@@ -369,6 +385,12 @@ read_temp(const char *device, float *value) {
 
   return 0;
 }
+
+static int
+read_temp(const char *device, float *value) {
+  return read_temp_attr(device, "temp1_input", value);
+}
+
 
 static int
 read_fan_value(const int fan, const char *device, float *value) {
@@ -391,11 +413,26 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char *device, const char* hsc_device, float *value) {
+read_hsc_value(const char* att, const char *device, float *value) {
   char full_name[LARGEST_DEVICE_NAME];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
+  FILE *fp;
+  int size;
 
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", hsc_device, device);
+  // Get current working directory
+  snprintf(
+      full_name, LARGEST_DEVICE_NAME, "cd %s;pwd", device);
+
+  fp = popen(full_name, "r");
+  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
+  pclose(fp);
+
+  // Remove the newline character at the end
+  size = strlen(dir_name);
+  dir_name[size-1] = '\0';
+
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, att);
   if(read_device(full_name, &tmp)) {
     return -1;
   }
@@ -905,6 +942,15 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
     case FRU_IOM:
       switch(sensor_num) {
+		  case ML_SENSOR_HSC_VOLT:
+          sprintf(name, "ML_SENSOR_HSC_VOLT");
+          break;
+          case ML_SENSOR_HSC_CURR:
+          sprintf(name, "ML_SENSOR_HSC_CURR");
+          break;
+          case ML_SENSOR_HSC_PWR:
+          sprintf(name, "ML_SENSOR_HSC_PWR");
+          break;
         case IOM_SENSOR_MEZZ_TEMP:
           sprintf(name, "IOM_MEZZ_TEMP");
           break;

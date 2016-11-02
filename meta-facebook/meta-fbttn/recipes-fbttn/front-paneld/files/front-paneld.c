@@ -99,82 +99,62 @@ debug_card_handler() {
   uint8_t prev_pos = -1;
   uint8_t lpc;
   int i, ret;
+  uint8_t UART_OUT = 1;
+  int CURT = 0;
 
   while (1) {
     // Check if debug card present or not
+    #if 1
     ret = pal_is_debug_card_prsnt(&prsnt);
     if (ret) {
       goto debug_card_out;
     }
-
-    curr = prsnt;
-
-    // Check if Debug Card was either inserted or removed
-    if (curr != prev) {
-
-      if (!curr) {
-      // Debug Card was removed
-        syslog(LOG_WARNING, "Debug Card Extraction\n");
-        // Switch UART mux to BMC
-        ret = pal_switch_uart_mux(HAND_SW_BMC);
-        if (ret) {
-          goto debug_card_out;
-        }
-      } else {
-        // Debug Card was inserted
-        syslog(LOG_WARNING, "Debug Card Insertion\n");
-
-      }
-    }
+    #endif
+    curr = 1;
 
     // If Debug Card is present
-    if (curr) {
+    if (prsnt) {
       ret = pal_get_hand_sw(&pos);
       if (ret) {
         goto debug_card_out;
       }
-
-      if (pos == prev_pos && pos != HAND_SW_BMC & !prev) {
-        goto display_post;
-      }
-
-
-      // Switch UART mux based on hand switch
-      ret = pal_switch_uart_mux(pos);
-      if (ret) {
-        goto debug_card_out;
-      }
+      if(pos != prev_pos)
+      {
+         CURT++;
+         prev_pos = pos;
+         if( (CURT%2) == 0)
+	     {
+		    UART_OUT = !UART_OUT;
+		    ret = pal_switch_uart_mux(UART_OUT);
+	     }
+	  }
 
       // Enable POST code based on hand switch
-      if (pos == HAND_SW_BMC) {
+      if (UART_OUT == HAND_SW_BMC) {
         // For BMC, there is no need to have POST specific code
         goto debug_card_done;
       }
 
       // Make sure the server at selected position is present
-      ret = pal_is_fru_prsnt(pos, &prsnt);
+      ret = pal_is_fru_prsnt(1, &prsnt);
       if (ret || !prsnt) {
         goto debug_card_done;
       }
-
       // Enable POST codes for all slots
-      ret = pal_post_enable(pos);
+      ret = pal_post_enable(1);
       if (ret) {
         goto debug_card_out;
       }
 
-display_post:
       // Get last post code and display it
-      ret = pal_post_get_last(pos, &lpc);
+      ret = pal_post_get_last(FRU_SLOT1, &lpc);
       if (ret) {
         goto debug_card_out;
       }
-
-      ret = pal_post_handle(pos, lpc);
+      ret = pal_post_handle(FRU_SLOT1, lpc);
       if (ret) {
         goto debug_card_out;
       }
-
     }
 
 debug_card_done:
@@ -240,7 +220,7 @@ rst_btn_handler() {
 
     // Pass the reset button to the selected slot
     syslog(LOG_WARNING, "Reset button pressed\n");
-    ret = pal_set_rst_btn(pos, 0);
+    ret = pal_set_rst_btn(FRU_SLOT1, 0);
     if (ret) {
       goto rst_btn_out;
     }
@@ -255,7 +235,7 @@ rst_btn_handler() {
       pal_update_ts_sled();
       syslog(LOG_WARNING, "Reset button released\n");
       syslog(LOG_CRIT, "Reset Button pressed for FRU: %d\n", pos);
-      ret = pal_set_rst_btn(pos, 1);
+      ret = pal_set_rst_btn(FRU_SLOT1, 1);
       goto rst_btn_out;
     }
 
@@ -286,7 +266,6 @@ pwr_btn_handler() {
     }
 
     syslog(LOG_WARNING, "power button pressed\n");
-
     // Wait for the button to be released
     for (i = 0; i < BTN_POWER_OFF; i++) {
       ret = pal_get_pwr_btn(&btn);
@@ -300,7 +279,7 @@ pwr_btn_handler() {
 
 
     // Get the current power state (power on vs. power off)
-    ret = pal_get_server_power(pos, &power);
+    ret = pal_get_server_power(FRU_SLOT1, &power);
     if (ret) {
       goto pwr_btn_out;
     }
@@ -324,7 +303,7 @@ pwr_btn_handler() {
     }
 
     // Reverse the power state of the given server
-    ret = pal_set_server_power(pos, cmd);
+    ret = pal_set_server_power(FRU_SLOT1, cmd);
 pwr_btn_out:
     msleep(100);
   }
@@ -625,7 +604,7 @@ static void *
 hb_mon_handler() {
   int bmc_rmt_hb_value = -1;
   int scc_loc_hb_value = -1;
-  int scc_rmt_hb_value = -1;  
+  int scc_rmt_hb_value = -1;
   int count_bmc_rmt = 0;
   int count_scc_loc = 0;
   int count_scc_rmt = 0;
@@ -667,7 +646,7 @@ hb_mon_handler() {
 
   // Update heartbeat present bits [5:3] = {BMC_RMT, SCC_LOC, SCC_RMT}
   write_cache(PATH_HEARTBEAT_HEALTH, hb_health);
- 
+
   while(1) {
     // Heartbeat health bits [2:0] = {BMC_RMT, SCC_LOC, SCC_RMT}
     // Diagnosis flow:
@@ -767,7 +746,7 @@ hb_mon_handler() {
       prev_scc_rmt_status = curr_scc_rmt_status;
     }
     write_cache(PATH_HEARTBEAT_HEALTH, hb_health);
- 
+
     msleep(100);
   }
 }

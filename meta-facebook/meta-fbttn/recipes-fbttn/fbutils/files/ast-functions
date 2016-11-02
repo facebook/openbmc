@@ -215,4 +215,14 @@ gpio_tolerance_fun() {
     fi
 }
 
+is_bic_ready() {
+  local ready
+  ready=$(gpio_get G7)
+  
+  if [ $ready == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
 

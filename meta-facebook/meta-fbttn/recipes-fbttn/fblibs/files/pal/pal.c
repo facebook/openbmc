@@ -109,7 +109,7 @@
 #define PIN_CTRL2_OFFSET 0x84
 #define WDT_OFFSET 0x3C
 
-#define UART1_TXD (1 << 22)
+//#define UART1_TXD (1 << 22)
 
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_OFF 6
@@ -135,6 +135,8 @@
 #define TACH_SCC_RMT_HB 5
 
 #define PLATFORM_FILE "/tmp/system.bin"
+// SHIFT to 16
+#define UART1_TXD 0
 
 unsigned char g_err_code[ERROR_CODE_NUM];
 
@@ -149,12 +151,12 @@ unsigned char g_err_code[ERROR_CODE_NUM];
   *  6.  Check Input  :IOM_FULL_PGOOD
 */
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_SYS_RST_BTN };
-const static uint8_t gpio_led[] = { 0, GPIO_PWR_LED };            // blue
-const static uint8_t gpio_id_led[] = { 0, GPIO_ENCL_FAULT_LED };  // yellow
+const static uint8_t gpio_led[] = { 0, GPIO_PWR_LED };      // TODO: In DVT, Map to ML PWR LED
+const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED
 //const static uint8_t gpio_prsnt[] = { 0, 61 };
 //const static uint8_t gpio_bic_ready[] = { 0, 107 };
-const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };//done
-const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN };//DONE
+const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };
+const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN }i;
 const char pal_fru_list[] = "all, slot1, iom, scc, dpb, nic";
 const char pal_server_list[] = "slot1";
 
@@ -465,47 +467,12 @@ server_12v_off(uint8_t slot_id) {
 // Debug Card's UART and BMC/SoL port share UART port and need to enable only
 // one TXD i.e. either BMC's TXD or Debug Port's TXD.
 static int
-control_sol_txd(uint8_t slot) {
-  uint32_t scu_fd;
-  uint32_t ctrl;
-  void *scu_reg;
-  void *scu_pin_ctrl1;
-  void *scu_pin_ctrl2;
-
-  scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (scu_fd < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "control_sol_txd: open fails\n");
-#endif
-    return -1;
-  }
-
-  scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_SCU_BASE);
-  scu_pin_ctrl1 = (char*)scu_reg + PIN_CTRL1_OFFSET;
-  scu_pin_ctrl2 = (char*)scu_reg + PIN_CTRL2_OFFSET;
-
-  switch(slot) {
-  case 1:
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-    break;
-
-  default:
-    // Any other slots we need to enable all TXDs
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-    break;
-  }
-
-  munmap(scu_reg, PAGE_SIZE);
-  close(scu_fd);
-
+control_sol_txd(uint8_t fru) {
+  #if 0
+  // BMC IO1 <-> UART1 don't need to rout
+  #endif
   return 0;
 }
-
 // Display the given POST code using GPIO port
 static int
 pal_post_display(uint8_t status) {
@@ -724,7 +691,6 @@ pal_is_debug_card_prsnt(uint8_t *status) {
   } else {
     *status = 0;
   }
-
   return 0;
 }
 
@@ -1044,44 +1010,19 @@ pal_switch_usb_mux(uint8_t slot) {
 
 // Switch the UART mux to the given slot
 int
-pal_switch_uart_mux(uint8_t slot) {
+pal_switch_uart_mux(uint8_t fru) {
   char * gpio_uart_sel;
   char path[64] = {0};
   int ret;
 
-  // Refer the UART select table in schematic
-  switch(slot) {
-  case HAND_SW_SERVER1:
-    gpio_uart_sel = "0";
-    break;
-  default:
-    // for all other cases, assume BMC
-    gpio_uart_sel = "1";
-    break;
-  }
+	if(fru != 0)//BMC
+	  gpio_uart_sel = "1";
+	else
+	  gpio_uart_sel = "0";
 
-  //  Diable TXD path from BMC to avoid conflict with SoL
-  ret = control_sol_txd(slot);
-  if (ret) {
-    goto uart_exit;
-  }
-
-  // Enable Debug card path
   sprintf(path, GPIO_VAL, GPIO_UART_SEL);
   ret = write_device(path, gpio_uart_sel);
-  if (ret) {
-    goto uart_exit;
-  }
-
-uart_exit:
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_switch_uart_mux: write_device failed: %s\n", path);
-#endif
-    return ret;
-  } else {
-    return 0;
-  }
+  return ret;
 }
 
 // Enable POST buffer for the server in given slot
@@ -1160,22 +1101,6 @@ int
 pal_post_handle(uint8_t slot, uint8_t status) {
   uint8_t prsnt, pos;
   int ret;
-
-  // Check for debug card presence
-  ret = pal_is_debug_card_prsnt(&prsnt);
-  if (ret) {
-    return ret;
-  }
-
-  // No debug card  present, return
-  if (!prsnt) {
-    return 0;
-  }
-
-  // If the give server is not selected, return
-  if (pos != slot) {
-    return 0;
-  }
 
   // Display the post code in the debug card
   ret = pal_post_display(status);
@@ -1514,14 +1439,14 @@ pal_set_def_key_value() {
 
 int
 pal_get_fru_devtty(uint8_t fru, char *devtty) {
-
+syslog(LOG_CRIT, "pal_get_fru_devtty: Wrong fru id %u", fru);
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(devtty, "/dev/ttyS2");
+      sprintf(devtty, "/dev/ttyS1");
       break;
     default:
 #ifdef DEBUG
-      syslog(LOG_WARNING, "pal_get_fru_devtty: Wrong fru id %u", fru);
+      syslog(LOG_CRIT, "pal_get_fru_devtty: Wrong fru id %u", fru);
 #endif
       return -1;
   }
@@ -2496,7 +2421,7 @@ int pal_get_plat_sku_id(void){
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
 int pal_get_poss_pcie_config(uint8_t *pcie_config){
-  
+
   int sku = 0;
 
   sku = pal_get_iom_type();
@@ -2631,7 +2556,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
       sprintf(tstr, "%d", ts.tv_sec);
       pal_set_key_value(key, tstr);
     }
-  }  
+  }
   return 0;
 }
 
@@ -2649,7 +2574,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   int offset = 0; //sensor overload offset
 
   if (second_transaction)
-    offset = MAX_EXP_IPMB_SENSOR_COUNT;  
+    offset = MAX_EXP_IPMB_SENSOR_COUNT;
 
   //Fill up sensor number
   if (sensor_num == DPB_FIRST_SENSOR_NUM) {
@@ -2663,8 +2588,8 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     tbuf[0] = 1;
     tbuf[1] = sensor_num;
     tlen = 2;
-  }   
-  
+  }
+
   //TODO paste sensor_num to tbuf, to get spcific sensor data from exp
   ret = expander_ipmb_wrapper(fru, NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
   if (ret) {
@@ -2680,7 +2605,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   for(i = 0; i < sensor_cnt; i++) {
     // search the corresponding sensor table to fill up the raw data and statsu
     // rbuf[5*i+1] sensor number
-    // rbuf[5*i+2] sensor raw data1 
+    // rbuf[5*i+2] sensor raw data1
     // rbuf[5*i+3] sensor raw data2
     // rbuf[5*i+4] sensor status
     // rbuf[5*i+5] reserved
@@ -2688,11 +2613,11 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     if (ret)
       return ret;
 
-    if( strcmp(units,"C") == 0 )    
+    if( strcmp(units,"C") == 0 )
       value = rbuf[5*i+2];
-    else      
+    else
       value = ( ((rbuf[5*i+2] << 8) + rbuf[5*i+3]) * 100 );
-      
+
     //cache sensor reading
     sprintf(key, "dpb_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
@@ -2700,8 +2625,8 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     }
   #ifdef DEBUG
        syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
-  #endif     
-  }   
+  #endif
+  }
 
   return 0;
 }
@@ -2723,14 +2648,14 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   if (sensor_num ==  SCC_FIRST_SENSOR_NUM) {
     for( i = 0 ; i < sensor_cnt; i++) {
       tbuf[i+1] = sensor_list[i];  //feed sensor number to tbuf
-    }    
+    }
   }
   else {
     tbuf[1] = sensor_num;
-  }  
+  }
 
-  tlen = sensor_cnt + 1; 
-  
+  tlen = sensor_cnt + 1;
+
   //TODO paste sensor_num to tbuf, to get spcific sensor data from exp
   ret = expander_ipmb_wrapper(fru, NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
   if (ret) {
@@ -2746,19 +2671,19 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   for(i = 0; i < sensor_cnt; i++) {
     // search the corresponding sensor table to fill up the raw data and statsu
     // rbuf[5*i+1] sensor number
-    // rbuf[5*i+2] sensor raw data1 
+    // rbuf[5*i+2] sensor raw data1
     // rbuf[5*i+3] sensor raw data2
     // rbuf[5*i+4] sensor status
     // rbuf[5*i+5] reserved
     ret = fbttn_sensor_units(fru, rbuf[5*i+1], units);
-    if (ret) 
+    if (ret)
         return ret;
-    
-    if( strcmp(units,"C") == 0 )    
+
+    if( strcmp(units,"C") == 0 )
       value = rbuf[5*i+2];
-    else      
+    else
       value = ( ((rbuf[5*i+2] << 8) + rbuf[5*i+3]) * 100 );
-      
+
     //cache sensor reading
     sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
@@ -2766,8 +2691,8 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     }
   #ifdef DEBUG
        syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
-  #endif     
-  }    
+  #endif
+  }
 
   return 0;
 }

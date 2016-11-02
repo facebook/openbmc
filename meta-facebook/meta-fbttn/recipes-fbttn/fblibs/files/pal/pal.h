@@ -87,8 +87,8 @@ enum {
 };
 
 enum {
-  HAND_SW_SERVER1 = 1,
-  HAND_SW_BMC
+  HAND_SW_BMC = 0,
+  HAND_SW_SERVER1
 };
 
 enum {

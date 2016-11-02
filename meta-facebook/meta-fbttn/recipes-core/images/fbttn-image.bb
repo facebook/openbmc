@@ -84,6 +84,7 @@ IMAGE_INSTALL += " \
   passwd-util \
   openbmc-utils \
   libexp \
+  expander-util \
   "
 
 IMAGE_FEATURES += " \

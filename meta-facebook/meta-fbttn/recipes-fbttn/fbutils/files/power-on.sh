@@ -32,6 +32,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 KEYDIR=/mnt/data/kv_store
 DEF_PWR_ON=1
 TO_PWR_ON=
+IOM_FULL_GOOD=218
 
 check_por_config()
 {
@@ -146,7 +147,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
   fi
 
   # For Triton MonoLake PWR sequence
-  if [ $(gpio_get $IOM_FULL_GOOD) = 0 ]; then
+  if [ $(gpio_get $IOM_FULL_GOOD) == 1 ]; then
   #set ML board power en
   gpio_set O7 1
 

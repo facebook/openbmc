@@ -86,7 +86,7 @@ do_install() {
   # networking is done after rcS, any start level within rcS
   # for mac fixup should work
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  update-rc.d -r ${D} power-on.sh start 96 5 .
+  update-rc.d -r ${D} power-on.sh start 91 5 .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
   install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh

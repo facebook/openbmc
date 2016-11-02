@@ -138,6 +138,8 @@ enum{
   IOM_SENSOR_ADC_P3V3_M2 = 0x76,  // type V only
   IOM_SENSOR_M2_AMBIENT_TEMP1 = 0x85,
   IOM_SENSOR_M2_AMBIENT_TEMP2 = 0x86,
+  IOM_SENSOR_M2_SMART_TEMP1 = 0x48,
+  IOM_SENSOR_M2_SMART_TEMP2 = 0x49,
 };
 
 enum{
@@ -223,7 +225,9 @@ extern const uint8_t bic_sensor_list[];
 
 extern const uint8_t bic_discrete_list[];
 
-extern const uint8_t iom_sensor_list[];
+extern const uint8_t iom_sensor_list_type5[];
+
+extern const uint8_t iom_sensor_list_type7[];
 
 extern const uint8_t dpb_sensor_list[];
 
@@ -239,7 +243,9 @@ extern size_t bic_sensor_cnt;
 
 extern size_t bic_discrete_cnt;
 
-extern size_t iom_sensor_cnt;
+extern size_t iom_sensor_cnt_type5;
+
+extern size_t iom_sensor_cnt_type7;
 
 extern size_t dpb_sensor_cnt;
 

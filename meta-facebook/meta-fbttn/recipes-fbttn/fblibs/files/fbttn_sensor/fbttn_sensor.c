@@ -48,9 +48,18 @@
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
 #define IOM_MEZZ_TEMP_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-004a/hwmon/hwmon*"
-#define IOM_M2_1_TEMP_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-0048/hwmon/hwmon*"
-#define IOM_M2_2_TEMP_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-004c/hwmon/hwmon*"
+#define IOM_M2_AMBIENT_TEMP1_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-0048/hwmon/hwmon*"
+#define IOM_M2_AMBIENT_TEMP2_DEVICE "/sys/devices/platform/ast-i2c.0/i2c-0/0-004c/hwmon/hwmon*"
 #define HSC_DEVICE_IOM "/sys/devices/platform/ast-i2c.0/i2c-0/0-0010/hwmon/hwmon*"
+
+#define I2C_M2_1 "/dev/i2c-7"
+#define I2C_M2_2 "/dev/i2c-8"
+#define I2C_NVME_INTF_ADDR 0x6a
+#define M2_TEMP_REG 0x03
+#define M2_1_GPIO_PRESENT "/sys/class/gpio/gpio32/value"
+#define M2_2_GPIO_PRESENT "/sys/class/gpio/gpio33/value"
+#define IOM_M2_1_TEMP_DEVICE 1
+#define IOM_M2_2_TEMP_DEVICE 2
 
 #define HSC_DEVICE_DPB "/sys/devices/platform/ast-i2c.6/i2c-6/6-0010/hwmon/hwmon*"
 #define HSC_DEVICE_ML  "/sys/devices/platform/ast-i2c.5/i2c-5/5-0010/hwmon/hwmon*"
@@ -130,7 +139,33 @@ const uint8_t bic_discrete_list[] = {
 };
 
 // List of IOM Type VII sensors to be monitored
-const uint8_t iom_sensor_list[] = {
+const uint8_t iom_sensor_list_type5[] = {
+  /* Threshold sensors */
+  ML_SENSOR_HSC_VOLT,
+  ML_SENSOR_HSC_CURR,
+  ML_SENSOR_HSC_PWR,
+  IOM_SENSOR_MEZZ_TEMP,
+  IOM_SENSOR_HSC_POWER,
+  IOM_SENSOR_HSC_VOLT,
+  IOM_SENSOR_HSC_CURR,
+  IOM_SENSOR_ADC_12V,
+  IOM_SENSOR_ADC_P5V_STBY,
+  IOM_SENSOR_ADC_P3V3_STBY,
+  IOM_SENSOR_ADC_P1V8_STBY,
+  IOM_SENSOR_ADC_P2V5_STBY,
+  IOM_SENSOR_ADC_P1V2_STBY,
+  IOM_SENSOR_ADC_P1V15_STBY,
+  IOM_SENSOR_ADC_P3V3,
+  IOM_SENSOR_ADC_P1V8,
+  IOM_SENSOR_ADC_P3V3_M2,
+  IOM_SENSOR_M2_AMBIENT_TEMP1,
+  IOM_SENSOR_M2_AMBIENT_TEMP2,
+  IOM_SENSOR_M2_SMART_TEMP1,
+  IOM_SENSOR_M2_SMART_TEMP2,
+};
+
+// List of IOM Type VII sensors to be monitored
+const uint8_t iom_sensor_list_type7[] = {
   /* Threshold sensors */
   ML_SENSOR_HSC_VOLT,
   ML_SENSOR_HSC_CURR,
@@ -150,9 +185,6 @@ const uint8_t iom_sensor_list[] = {
   IOM_SENSOR_ADC_P1V8,
   IOM_SENSOR_ADC_P1V5,
   IOM_SENSOR_ADC_P0V975,
-  IOM_SENSOR_ADC_P3V3_M2,
-  IOM_SENSOR_M2_AMBIENT_TEMP1,
-  IOM_SENSOR_M2_AMBIENT_TEMP2,
 };
 
 // List of DPB sensors to be monitored
@@ -284,13 +316,15 @@ sensor_thresh_array_init() {
   iom_sensor_threshold[IOM_SENSOR_ADC_P1V8][UCR_THRESH] = 1.98;
   iom_sensor_threshold[IOM_SENSOR_ADC_P1V8][LCR_THRESH] = 1.62;
   iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][UCR_THRESH] = 1.65;
-  iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][LCR_THRESH] = 1.35;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P1V5][LCR_THRESH] = 1.35;  
   iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][UCR_THRESH] = 1.0725;
-  iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][LCR_THRESH] = 0.8775;
+  iom_sensor_threshold[IOM_SENSOR_ADC_P0V975][LCR_THRESH] = 0.8775;  
   iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_M2][UCR_THRESH] = 3.63;
   iom_sensor_threshold[IOM_SENSOR_ADC_P3V3_M2][LCR_THRESH] = 2.97;
   iom_sensor_threshold[IOM_SENSOR_M2_AMBIENT_TEMP1][UCR_THRESH] = 70;
   iom_sensor_threshold[IOM_SENSOR_M2_AMBIENT_TEMP2][UCR_THRESH] = 70;
+  iom_sensor_threshold[IOM_SENSOR_M2_SMART_TEMP1][UCR_THRESH] = 82;
+  iom_sensor_threshold[IOM_SENSOR_M2_SMART_TEMP2][UCR_THRESH] = 82;
 
   // DPB
   dpb_sensor_threshold[DPB_SENSOR_12V_POWER_CLIP][UCR_THRESH] = 1825;
@@ -380,7 +414,9 @@ size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 
-size_t iom_sensor_cnt = sizeof(iom_sensor_list)/sizeof(uint8_t);
+size_t iom_sensor_cnt_type5 = sizeof(iom_sensor_list_type5 )/sizeof(uint8_t);
+size_t iom_sensor_cnt_type7 = sizeof(iom_sensor_list_type7 )/sizeof(uint8_t);
+
 
 size_t dpb_sensor_cnt = sizeof(dpb_sensor_list)/sizeof(uint8_t);
 
@@ -507,6 +543,71 @@ read_temp(const char *device, float *value) {
   return read_temp_attr(device, "temp1_input", value);
 }
 
+
+static int
+read_M2_temp(int device, float *value) {
+  int ret;
+  int dev;
+  int32_t res;
+  char bus[32]; 
+  int gpio_value; 
+  char full_name[LARGEST_DEVICE_NAME + 1];
+
+  if (device == 1) {
+    snprintf(full_name, LARGEST_DEVICE_NAME, M2_1_GPIO_PRESENT);
+    if (read_device(full_name, &gpio_value)) {
+    return -1;
+    }
+    if (gpio_value) {
+    return -1;
+    }
+    sprintf(bus, "%s", I2C_M2_1);
+  }
+  else if (device == 2) {
+    snprintf(full_name, LARGEST_DEVICE_NAME, M2_2_GPIO_PRESENT);
+    if (read_device(full_name, &gpio_value)) {
+    return -1;
+    }
+    if (gpio_value) {
+    return -1;
+    }
+
+    sprintf(bus, "%s", I2C_M2_2);
+  }
+  else {
+    syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+    return -1;
+  }
+
+  dev = open(bus, O_RDWR);
+  if (dev < 0) {
+    syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+    return -1;
+  }
+
+  /* Assign the i2c device address */
+  ret = ioctl(dev, I2C_SLAVE, I2C_NVME_INTF_ADDR);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+    close(dev);
+    return -1;
+  }
+  //TODO fix it in the next relase
+  /***
+  res = i2c_smbus_read_byte_data(dev, M2_TEMP_REG);
+  if (res < 0) {
+    syslog(LOG_DEBUG, "%s(): i2c_smbus_read_byte_data failed", __func__);
+    close(dev);
+    return -1;
+  }
+  *value = (float) res;
+  ***/ 
+  
+  close(dev);
+  
+  // TODO: HACK for now
+  return -1;
+}
 
 static int
 read_fan_value(const int fan, const char *device, float *value) {
@@ -790,7 +891,7 @@ fbttn_sdr_init(uint8_t fru) {
 
 static bool
 is_server_prsnt(uint8_t fru) {
- //To do, after bring up.
+ //To do, after bring up. 
  //we need to implement tca9555 gpio-exp driver for this
  return 1;
 }
@@ -799,7 +900,7 @@ is_server_prsnt(uint8_t fru) {
 int
 fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t op, modifier;
-  sensor_info_t *sinfo;
+  sensor_info_t *sinfo;    
 
   switch(fru) {
     case FRU_SLOT1:
@@ -872,6 +973,12 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
               sprintf(units, "C");
               break;
             case IOM_SENSOR_M2_AMBIENT_TEMP2:
+              sprintf(units, "C");
+              break;
+            case IOM_SENSOR_M2_SMART_TEMP1:
+              sprintf(units, "C");
+              break;
+            case IOM_SENSOR_M2_SMART_TEMP2:
               sprintf(units, "C");
               break;
       }
@@ -1121,6 +1228,12 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case IOM_SENSOR_M2_AMBIENT_TEMP2:
           sprintf(name, "M.2_Ambient_Temp_2");
           break;
+        case IOM_SENSOR_M2_SMART_TEMP1:
+          sprintf(name, "M.2_SMART_Temp_1");
+          break;
+        case IOM_SENSOR_M2_SMART_TEMP2:
+          sprintf(name, "M.2_SMART_Temp_2");
+          break;  
       }
       break;
 
@@ -1334,6 +1447,11 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_temp(IOM_M2_AMBIENT_TEMP1_DEVICE, (float *) value);
         case IOM_SENSOR_M2_AMBIENT_TEMP2:
           return read_temp(IOM_M2_AMBIENT_TEMP2_DEVICE, (float *) value);
+        // M.2 SMART Temp
+        case IOM_SENSOR_M2_SMART_TEMP1:
+          return read_M2_temp(IOM_M2_1_TEMP_DEVICE, (float *) value);
+        case IOM_SENSOR_M2_SMART_TEMP2:
+          return read_M2_temp(IOM_M2_2_TEMP_DEVICE, (float *) value); 
       }
       break;
 

@@ -107,11 +107,9 @@ main(int argc, char **argv) {
 
       ret = pal_set_fan_speed(i, pwm);
       if (!ret) {
-        memset(fan_name, 0, 32);
-        pal_get_fan_name(i, fan_name);
-        printf("Setting %s speed to %d%\n", fan_name, pwm);
+        printf("Setting Zone %d speed to %d%\n", i, pwm);
       } else
-        printf("Error while setting fan speed for Fan %d\n", i);
+        printf("Error while setting fan speed for Zone %d\n", i);
     }
 
   } else if (cmd == CMD_GET_FAN) {

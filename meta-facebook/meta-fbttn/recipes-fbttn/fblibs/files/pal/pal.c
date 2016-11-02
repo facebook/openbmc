@@ -2623,6 +2623,11 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     //cache sensor reading
     sprintf(key, "dpb_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
+    
+    if(rbuf[5*i+4] != 0){
+	  sprintf(str, "NA");
+	}
+	
     if(edb_cache_set(key, str) < 0) {
     }
   #ifdef DEBUG
@@ -2691,6 +2696,11 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     //cache sensor reading
     sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
+    
+    if(rbuf[5*i+4] != 0){
+	  sprintf(str, "NA");
+	}
+    
     if(edb_cache_set(key, str) < 0) {
     }
   #ifdef DEBUG

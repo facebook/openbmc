@@ -486,7 +486,7 @@ led_sync_handler() {
     }
 
     // Handle BMC select condition when no slot is being identified
-    if (ident == 0) {
+    if (ident == 1) {
       // Start blinking Blue LED
       for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
         g_sync_led[slot] = 1;

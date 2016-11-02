@@ -58,7 +58,7 @@ main(int argc, char **argv) {
   if (!strcmp(argv[2], "--ext2")) {
 	  int LED = 0;
     printf("fpc-util: Enable/Disable miniSAS2 Error LED\n");
-    if(!strcmp(argv[3], "yellow")){
+    if(!strcmp(argv[3], "warning")){
 		LED = 1;
 		return pal_minisas_led(1,LED);
 	}else if(!strcmp(argv[3], "off")){
@@ -69,7 +69,7 @@ main(int argc, char **argv) {
   }else  if (!strcmp(argv[2], "--ext1")) {
 	  int LED = 0;
     printf("fpc-util: Enable/Disable miniSAS1 Error LED\n");
-    if(!strcmp(argv[3], "yellow")){
+    if(!strcmp(argv[3], "warning")){
 		LED = 1;
 		return pal_minisas_led(0,LED);
 	}else if(!strcmp(argv[3], "off")){

@@ -27,7 +27,18 @@ get_sku()
   SLOTID=$?
   get_iom_type
   IOM_TYPE=$?
- 
+   if [ $SCC_RMT -eq 0 ]; then
+    echo "System: Type5"
+    if [ $SLOTID -eq 1 ]; then
+      echo "Side: IOMA"
+    else
+      echo "Side: IOMB"
+    fi
+  else
+    echo "System: Type7"
+  fi
+  PAL_SKU=$((($SCC_RMT << 6) | ($SLOTID << 4) | $IOM_TYPE))
+
   PAL_SKU=$((($SCC_RMT << 6) | ($SLOTID << 4) | $IOM_TYPE))
   return $PAL_SKU
 }

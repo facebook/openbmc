@@ -119,7 +119,6 @@
 #ifdef CONFIG_FBTTN
 #define DELAY_FULL_POWER_DOWN 3
 #define RETRY_COUNT 5
-#define Triton_SKU_ID 0x2 //0x010b
 #endif
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
@@ -2414,8 +2413,27 @@ int pal_fault_led(uint8_t state, uint8_t mode) {
 
 //For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e
 int pal_get_plat_sku_id(void){
+  int sku = 0;
+  int location = 0;
   uint8_t platform_info;
-  platform_info = Triton_SKU_ID;
+
+  sku = pal_get_iom_type();
+  location = pal_get_locl();
+
+  if(sku == 1) {//type 5
+    if(location == 1) {
+      platform_info = 2; //Triton Type 5A
+    }
+    else if(location == 2) {
+      platform_info = 3; //Triton Type 5B
+    }
+  }
+  else if (sku == 2) {//type 7
+    platform_info = 4; //Triton 7SS
+  }
+  else
+    return -1;
+
   return platform_info;
 }
 

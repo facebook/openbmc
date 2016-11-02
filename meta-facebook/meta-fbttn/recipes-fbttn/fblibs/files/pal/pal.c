@@ -2441,14 +2441,14 @@ int pal_minisas_led(uint8_t port, uint8_t state) {
 
   // ENCL_FAULT_LED: GPIOO3 (115)
   if(port)
-sprintf(path, GPIO_VAL, BMC_EXT2_LED_Y);
+    sprintf(path, GPIO_VAL, BMC_EXT2_LED_Y);
   else
     sprintf(path, GPIO_VAL, BMC_EXT1_LED_Y);
-   if (state == 0) {           // LED off
+   if (state == 1) {           // LED on
       if (write_device(path, "1")) {
         return -1;
       }
-    } else {                    // LED on
+    } else {                    // LED off
       if (write_device(path, "0")) {
         return -1;
       }
@@ -2569,7 +2569,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   int ret, i = 0;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  uint32_t value;
+  float value;
   char units[64];
   int offset = 0; //sensor overload offset
 
@@ -2616,8 +2616,10 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     if( strcmp(units,"C") == 0 )
       value = rbuf[5*i+2];
     else
-      value = ( ((rbuf[5*i+2] << 8) + rbuf[5*i+3]) * 100 );
-
+    {
+      value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+      value = value/100;
+    }
     //cache sensor reading
     sprintf(key, "dpb_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
@@ -2640,7 +2642,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   int ret, i;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  uint32_t value;
+  float value;
   char units[64];
 
   tbuf[0] = sensor_cnt; //sensor_count
@@ -2682,8 +2684,10 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     if( strcmp(units,"C") == 0 )
       value = rbuf[5*i+2];
     else
-      value = ( ((rbuf[5*i+2] << 8) + rbuf[5*i+3]) * 100 );
-
+    {
+		 value = (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+         value = value/100;
+    }
     //cache sensor reading
     sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);

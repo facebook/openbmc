@@ -155,7 +155,7 @@ const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED
 //const static uint8_t gpio_prsnt[] = { 0, 61 };
 //const static uint8_t gpio_bic_ready[] = { 0, 107 };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };
-const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN }i;
+const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN };
 const char pal_fru_list[] = "all, slot1, iom, scc, dpb, nic";
 const char pal_server_list[] = "slot1";
 
@@ -635,7 +635,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-    //TBD
+    //TODO: is_SCC_ready needs to be implemented
    case FRU_IOM:
    case FRU_DPB:
    case FRU_SCC:
@@ -1137,14 +1137,22 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
+  int sku = 0;
+
   switch(fru) {
     case FRU_SLOT1:
       *sensor_list = (uint8_t *) bic_sensor_list;
       *cnt = bic_sensor_cnt;
       break;
     case FRU_IOM:
-      *sensor_list = (uint8_t *) iom_sensor_list;
-      *cnt = iom_sensor_cnt;
+      sku = pal_get_iom_type();
+      if (sku == 1) { // SKU: Type 5
+        *sensor_list = (uint8_t *) iom_sensor_list_type5;
+        *cnt = iom_sensor_cnt_type5;
+      } else {        // SKU: Type 7
+        *sensor_list = (uint8_t *) iom_sensor_list_type7;
+        *cnt = iom_sensor_cnt_type7;
+      }
       break;
     case FRU_DPB:
       *sensor_list = (uint8_t *) dpb_sensor_list;

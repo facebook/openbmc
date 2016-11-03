@@ -81,6 +81,7 @@ IMAGE_INSTALL += " \
   spatula \
   passwd-util \
   logrotate \
+  conf-util \
   "
 
 IMAGE_FEATURES += " \

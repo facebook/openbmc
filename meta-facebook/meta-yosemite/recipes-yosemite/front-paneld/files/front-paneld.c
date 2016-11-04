@@ -380,6 +380,7 @@ static void *
 led_handler(void *num) {
   int ret;
   uint8_t prsnt;
+  uint8_t ready;
   uint8_t power;
   uint8_t pos;
   uint8_t led_blink;
@@ -401,7 +402,6 @@ led_handler(void *num) {
   if (ret || !prsnt) {
     // Turn off led and exit
     ret = pal_set_led(slot, 0);
-    goto led_handler_exit;
   }
 
   while (1) {
@@ -412,10 +412,16 @@ led_handler(void *num) {
     }
 
     // Get power status for this slot
-    ret = pal_get_server_power(slot, &power);
-    if (ret) {
-      sleep(1);
-      continue;
+    ret = pal_is_fru_ready(slot, &ready);
+    if (!ret && ready) {
+      ret = pal_get_server_power(slot, &power);
+      if (ret) {
+        sleep(1);
+        continue;
+      }
+    }
+    else {
+      power = SERVER_POWER_OFF;
     }
 
     // Get health status for this slot
@@ -469,8 +475,10 @@ led_handler(void *num) {
     // Start blinking the LED
     if (hlth == FRU_STATUS_GOOD) {
       pal_set_led(slot, LED_ON);
+      pal_set_id_led(slot, ID_LED_OFF);
     } else {
-      pal_set_id_led(slot, ID_LED_ON);
+       pal_set_led(slot, LED_OFF);
+       pal_set_id_led(slot, ID_LED_ON);
     }
 
     msleep(led_on_time);
@@ -482,6 +490,7 @@ led_handler(void *num) {
     }
 
     msleep(led_off_time);
+    continue;
 led_handler_out:
     msleep(100);
   }

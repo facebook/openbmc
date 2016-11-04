@@ -25,6 +25,7 @@ SRC_URI += " \
     file://fcbcpld_update.sh \
     file://fix_fru_eeprom.py \
     file://get_fan_speed.sh \
+    file://presence_util.sh \
     file://setup_adc.sh \
     file://setup_gpio.sh \
     file://setup_i2c.sh \
@@ -37,6 +38,7 @@ OPENBMC_UTILS_FILES += " \
     cmmcpld_update.sh \
     fcbcpld_update.sh \
     get_fan_speed.sh \
+    presence_util.sh \
     set_fan_speed.sh \
     sol.sh \
     "

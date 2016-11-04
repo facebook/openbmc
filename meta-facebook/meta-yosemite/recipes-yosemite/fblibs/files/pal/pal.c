@@ -2017,7 +2017,11 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
           edb_cache_set(key, "1");
           pal_store_crashdump(fru);
           edb_cache_set(key, "0");
-        }
+          break;
+
+        case 0x00:  // don't care sensor number 00h
+          return 0;
+      }
       sprintf(key, "slot%d_sel_error", fru);
       break;
 

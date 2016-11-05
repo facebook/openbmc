@@ -23,13 +23,11 @@ IMAGE_POSTPROCESS_COMMAND += " flash_image_generate ; "
 FLASH_IMAGE_NAME[vardepsexclude] += "DATETIME"
 FLASH_IMAGE_NAME ?= "flash-${MACHINE}-${DATETIME}"
 FLASH_IMAGE_LINK ?= "flash-${MACHINE}"
-# 16M
-FLASH_SIZE ?= "16384"
-FLASH_UBOOT_OFFSET ?= "0"
+
 # 512k
 FLASH_KERNEL_OFFSET ?= "512"
-# 3M
-FLASH_ROOTFS_OFFSET ?= "3072"
+# 4.5M
+FLASH_ROOTFS_OFFSET ?= "4608"
 
 flash_image_generate() {
   kernelfile="${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}"
@@ -50,8 +48,7 @@ flash_image_generate() {
   fi
   dst="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_NAME}"
   rm -rf $dst
-  dd if=/dev/zero of=${dst} bs=1k count=${FLASH_SIZE}
-  dd if=${ubootfile} of=${dst} bs=1k seek=${FLASH_UBOOT_OFFSET}
+  dd if=${ubootfile} of=${dst} bs=1k
   dd if=${kernelfile} of=${dst} bs=1k seek=${FLASH_KERNEL_OFFSET}
   dd if=${rootfs} of=${dst} bs=1k seek=${FLASH_ROOTFS_OFFSET}
   dstlink="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}"

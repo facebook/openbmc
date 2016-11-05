@@ -57,7 +57,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <syslog.h>
-//#include "watchdog.h"
+#include "watchdog.h"
 #ifdef CONFIG_GALAXY100
 #include <fcntl.h>
 #include "i2c-dev.h"
@@ -1195,7 +1195,7 @@ static int system_shutdown(const char *why)
       return -1;
     }
   }
-  //stop_watchdog();
+  stop_watchdog();
 
   sleep(2);
   exit(2);
@@ -1265,7 +1265,7 @@ void fand_interrupt(int sig)
 
   syslog(LOG_WARNING, "Shutting down fand on signal %s", strsignal(sig));
   if (sig == SIGUSR1) {
-    //stop_watchdog();
+    stop_watchdog();
   }
   exit(3);
 }
@@ -1379,11 +1379,11 @@ int main(int argc, char **argv) {
   }
 
   /* Start watchdog in manual mode */
-  //start_watchdog(0);
+  start_watchdog(0);
 
   /* Set watchdog to persistent mode so timer expiry will happen independent
    * of this process's liveliness. */
-  //set_persistent_watchdog(WATCHDOG_SET_PERSISTENT);
+  set_persistent_watchdog(WATCHDOG_SET_PERSISTENT);
 
   sleep(5);  /* Give the fans time to come up to speed */
 
@@ -1394,7 +1394,7 @@ int main(int argc, char **argv) {
     /*if it is master, then run next*/
     if(galaxy100_cmm_is_master() != 1) {
       sleep(5);
-      //kick_watchdog();
+      kick_watchdog();
       continue;
     }
 
@@ -1588,6 +1588,6 @@ int main(int argc, char **argv) {
     /* if everything is fine, restart the watchdog countdown. If this process
      * is terminated, the persistent watchdog setting will cause the system
      * to reboot after the watchdog timeout. */
-    //kick_watchdog();
+    kick_watchdog();
   }
 }

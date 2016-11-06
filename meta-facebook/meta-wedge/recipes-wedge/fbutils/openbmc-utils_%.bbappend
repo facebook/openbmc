@@ -32,6 +32,7 @@ SRC_URI += "file://board-utils.sh \
            file://wedge_us_mac.sh \
            file://setup_switch.py \
            file://create_vlan_intf \
+           file://setup_i2c.sh \
            file://src \
            file://start_us_monitor.sh \
            file://us_monitor.sh \
@@ -58,6 +59,9 @@ do_install_board() {
   # init
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 S .
+  # setup i2c and sensors
+  install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+  update-rc.d -r ${D} setup_i2c.sh start 60 S .
   # create VLAN intf automatically
   install -d ${D}/${sysconfdir}/network/if-up.d
   install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf

@@ -147,8 +147,7 @@ do_reset() {
         logger "Power reset the whole system ..."
         echo -n "Power reset the whole system ..."
         sleep 1             # give some time for the message to go out
-        rmmod adm1275
-        i2cset -y 12 0x10 0xd9 c
+        i2cset -f -y 12 0x10 0xd9 c
     else
         if ! wedge_is_us_on; then
             echo "Power resetting microserver that is powered off has no effect."

@@ -127,6 +127,24 @@ gpio_get() {
     cat ${dir}/value
 }
 
+i2c_device_add() {
+    local bus
+    local addr
+    local device
+    bus=$"$1"
+    addr="$2"
+    device="$3"
+    echo ${device} ${addr} > /sys/class/i2c-dev/i2c-${bus}/device/new_device
+}
+
+i2c_device_delete() {
+    local bus
+    local addr
+    bus=$"$1"
+    addr="$2"
+    echo ${addr} > /sys/class/i2c-dev/i2c-${bus}/device/delete_device
+}
+
 if [ -f "/usr/local/bin/soc-utils.sh" ]; then
     source "/usr/local/bin/soc-utils.sh"
 fi

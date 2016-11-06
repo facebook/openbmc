@@ -18,3 +18,15 @@
 scu_addr() {
     echo $((0x1E6E2000 + 0x$1))
 }
+
+ast_config_adc() {
+    local ADC_PATH="/sys/devices/platform/ast_adc.0"
+    local channel=$1
+    local r1=$2
+    local r2=$3
+    local v2=$4
+    echo "$r1" > ${ADC_PATH}/adc${channel}_r1
+    echo "$r2" > ${ADC_PATH}/adc${channel}_r2
+    echo "$v2" > ${ADC_PATH}/adc${channel}_v2
+    echo 1 > ${ADC_PATH}/adc${channel}_en
+}

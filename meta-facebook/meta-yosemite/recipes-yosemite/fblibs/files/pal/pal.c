@@ -802,7 +802,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   if (ret) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
     syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
-        "reading the kv_store for last power state  for fru %d", slot_id);
+        " reading the kv_store for last power state  for fru %d", slot_id);
     pal_get_last_pwr_state(slot_id, value);
     if (!(strcmp(value, "off"))) {
       *status = SERVER_POWER_OFF;
@@ -826,6 +826,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
+  int ret;
   uint8_t status;
   bool gs_flag = false;
 
@@ -833,9 +834,16 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     return -1;
   }
 
-  if (pal_get_server_power(slot_id, &status) < 0) {
-    return -1;
-  }
+  if ((cmd != SERVER_12V_OFF) && (cmd != SERVER_12V_ON) && (cmd != SERVER_12V_CYCLE)) {
+    ret = pal_is_fru_ready(slot_id, &status); //Break out if fru is not ready
+    if ((ret < 0) || (status == 0)) {
+      return -2;
+    }
+
+    if (pal_get_server_power(slot_id, &status) < 0) {
+      return -1;
+    }
+   }
 
   switch(cmd) {
     case SERVER_POWER_ON:
@@ -876,18 +884,10 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_12V_ON:
-      if (status == SERVER_12V_ON)
-        return 1;
-      else
-        return server_12v_on(slot_id);
-      break;
+      return server_12v_on(slot_id);
 
     case SERVER_12V_OFF:
-      if (status == SERVER_12V_OFF)
-        return 1;
-      else
-        return server_12v_off(slot_id);
-      break;
+      return server_12v_off(slot_id);
 
     case SERVER_12V_CYCLE:
       if (server_12v_off(slot_id)) {

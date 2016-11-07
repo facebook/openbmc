@@ -119,6 +119,14 @@ void get_fruid_info(uint8_t fru, char *path, char* name) {
 
 static int
 print_usage() {
+  if (!strncmp(pal_fru_list, "all, ", strlen("all, "))) {
+    printf("Usage: fruid-util [ %s ]\n"
+        "Usage: fruid-util [ %s ] [--dump | --write ] <file>\n",
+        pal_fru_list, pal_fru_list + strlen("all, "));
+
+    return;
+  }
+
   printf("Usage: fruid-util [ %s ]\n"
       "Usage: fruid-util [%s] [--dump | --write ] <file>\n",
       pal_fru_list, pal_fru_list);

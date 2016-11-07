@@ -73,6 +73,10 @@ main(int argc, char **argv) {
       sprintf(tstr, "identify_slot%d", slot_id);
     }
 
+    if (strcmp(argv[3] , "on") && strcmp(argv[3] , "off")) {
+      goto err_exit;
+    }
+
     return pal_set_key_value(tstr, argv[3]);
   } else {
     goto err_exit;

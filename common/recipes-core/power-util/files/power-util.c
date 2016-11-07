@@ -188,6 +188,12 @@ power_util(uint8_t fru, uint8_t opt) {
         printf("fru %u is already powered ON...\n", fru);
         return 0;
       }
+      else if (ret == -2) {  //check if fru is not ready
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
+          " fru %u", fru);
+        return ret;
+      }
+
       for (retries = 0; retries < MAX_RETRIES; retries++) {
          sleep(3);
          ret = pal_get_server_power(fru, &status);

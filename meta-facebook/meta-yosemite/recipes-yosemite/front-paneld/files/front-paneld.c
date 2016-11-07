@@ -331,29 +331,26 @@ ts_handler() {
   pal_get_key_value("timestamp_sled", tstr);
   time_sled_off = (long) strtoul(tstr, NULL, 10);
 
-  // If this reset is due to Power-On-Reset, we detected SLED power OFF event
-  if (pal_is_bmc_por()) {
-    ctime_r(&time_sled_off, buf);
-    syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
-  }
-
   while (1) {
 
     // Make sure the time is initialized properly
     // Since there is no battery backup, the time could be reset to build time
-    if (time_init == 0) {
+    if (time_init < 100) {  // wait 100s at most, to prevent infinite waiting
       // Read current time
       clock_gettime(CLOCK_REALTIME, &ts);
 
-      if (ts.tv_sec < time_sled_off) {
+      if ((ts.tv_sec < time_sled_off) && (++time_init < 100)) {
         sleep(1);
         continue;
       }
 
       // If current time is more than the stored time, the date is correct
-      time_init = 1;
+      time_init = 100;
       // Need to log SLED ON event, if this is Power-On-Reset
       if (pal_is_bmc_por()) {
+        ctime_r(&time_sled_off, buf);
+        syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
+
         // Get uptime
         clock_gettime(CLOCK_MONOTONIC, &mts);
         // To find out when SLED was on, subtract the uptime from current time

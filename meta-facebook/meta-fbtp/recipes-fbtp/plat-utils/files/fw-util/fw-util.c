@@ -31,7 +31,6 @@
 #include <openbmc/cpld.h>
 #include <openbmc/gpio.h>
 
-#define GPIO_SPI_FLASH       108
 #define GPIO_BMC_CTRL        109
 
 static uint8_t g_board_rev_id = BOARD_REV_EVT;
@@ -298,7 +297,6 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   int ret;
   char cmd[80];
   gpio_st bmc_ctrl_pin;
-  gpio_st spi_flash_pin;
 
   ret = pal_is_fru_prsnt(slot_id, &status);
   if (ret < 0) {
@@ -318,27 +316,22 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     system("/usr/local/bin/power-util mb off");
     system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
     sleep(1);
-    gpio_export(GPIO_SPI_FLASH);
     gpio_export(GPIO_BMC_CTRL);
-    gpio_open(&spi_flash_pin, GPIO_SPI_FLASH);
     gpio_open(&bmc_ctrl_pin,  GPIO_BMC_CTRL);
-    gpio_change_direction(&spi_flash_pin, GPIO_DIRECTION_OUT);
     gpio_change_direction(&bmc_ctrl_pin, GPIO_DIRECTION_OUT);
-    gpio_write(&spi_flash_pin, GPIO_VALUE_HIGH);
     gpio_write(&bmc_ctrl_pin, GPIO_VALUE_HIGH);
     system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/bind");
     sprintf(cmd, "flashcp -v %s /dev/mtd6", argv[4]);
     system(cmd);
-    gpio_write(&spi_flash_pin, GPIO_VALUE_LOW);
-    gpio_write(&bmc_ctrl_pin, GPIO_VALUE_LOW);
-    gpio_close(&spi_flash_pin);
-    gpio_close(&bmc_ctrl_pin);
-    gpio_unexport(GPIO_SPI_FLASH);
-    gpio_unexport(GPIO_BMC_CTRL);
     system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind");
+    gpio_write(&bmc_ctrl_pin, GPIO_VALUE_LOW);
+    gpio_close(&bmc_ctrl_pin);
+    gpio_unexport(GPIO_BMC_CTRL);
     system("/usr/local/bin/me-util 0x18 0x02");
-    sleep(1);
+    sleep(3);
     system("/usr/local/bin/power-util mb on");
+    sleep(3);
+    system("/usr/local/bin/power-util mb cycle");
     return 0;
   }
 #if 0

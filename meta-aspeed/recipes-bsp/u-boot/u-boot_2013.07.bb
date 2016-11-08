@@ -7,13 +7,13 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=1707d6db1d42237583f50183a5651ecb \
 # This revision corresponds to the tag "openbmc/fido/v2013.07"
 # We use the revision in order to avoid having to fetch it from the repo during parse
 SRCREV = "46c7a01f577118ec04ded60126dd1d46744ec1b3"
+SRCBRANCH = "openbmc/fido/v2013.07"
 
-PV = "openbmc/fido/v2013.07"
-
-SRC_URI = "git://github.com/theopolis/u-boot.git;branch=${PV};protocol=git \
+SRC_URI = "git://github.com/theopolis/u-boot.git;branch=${SRCBRANCH};protocol=https \
            file://fw_env.config \
           "
 
+PV = "v2013.07"
 S = "${WORKDIR}/git"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"

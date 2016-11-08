@@ -5,7 +5,7 @@ require linux-aspeed.inc
 SRCREV = "d12c279debd6ea67510c719d5a1db213fcb7712a"
 SRCBRANCH = "openbmc/fido/2.6.28"
 
-SRC_URI = "git://github.com/theopolis/linux.git;branch=${SRCBRANCH};protocol=git \
+SRC_URI = "git://github.com/theopolis/linux.git;branch=${SRCBRANCH};protocol=https \
            file://patch-2.6.28.9/0001-MTD-fix-m25p80-64-bit-divisions.patch \
            file://patch-2.6.28.9/0005-mtd-Bug-in-m25p80.c-during-whole-chip-erase.patch \
            file://patch-2.6.28.9/0006-mtd-fix-timeout-in-M25P80-driver.patch \

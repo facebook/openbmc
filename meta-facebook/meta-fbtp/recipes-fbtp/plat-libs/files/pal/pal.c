@@ -3758,8 +3758,8 @@ pal_get_boot_order(uint8_t fru, uint8_t *boot) {
   return 0;
 }
 
-int
-pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
+static int
+pal_fetch_vr_ver(uint8_t vr, uint8_t *ver) {
   int fd;
   char fn[32];
   int ret = -1;
@@ -3866,8 +3866,8 @@ error_exit:
   return ret;
 }
 
-int
-pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
+static int
+pal_fetch_vr_checksum(uint8_t vr, uint8_t *checksum) {
   int fd;
   char fn[32];
   int ret = -1;
@@ -3974,8 +3974,8 @@ error_exit:
   return ret;
 }
 
-int
-pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
+static int
+pal_fetch_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
   int fd;
   char fn[32];
   int ret = -1;
@@ -4055,6 +4055,36 @@ error_exit:
   }
 
   return ret;
+}
+
+int
+pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
+  sprintf(key, "vr_%02Xh_ver", vr);
+  if (edb_cache_get(key, value) < 0)
+    return pal_fetch_vr_ver(vr, ver);
+  *(unsigned int*)ver = (unsigned int)strtoul(value, NULL, 16);
+  return 0;
+}
+
+int
+pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
+  sprintf(key, "vr_%02Xh_checksum", vr);
+  if (edb_cache_get(key, value) < 0)
+    return pal_fetch_vr_checksum(vr, checksum);
+  *(unsigned int*)checksum = (unsigned int)strtoul(value, NULL, 16);
+  return 0;
+}
+
+int
+pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
+  sprintf(key, "vr_%02Xh_deviceId", vr);
+  if (edb_cache_get(key, value) < 0)
+    return pal_fetch_vr_deviceId(vr, deviceId);
+  *(unsigned short*)deviceId = (unsigned short)strtoul(value, NULL, 16);
+  return 0;
 }
 
 int

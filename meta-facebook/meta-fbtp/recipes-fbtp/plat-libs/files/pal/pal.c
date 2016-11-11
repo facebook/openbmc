@@ -30,6 +30,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "pal.h"
+#include "vr.h"
 #include "facebook/i2c.h"
 #include "facebook/i2c-dev.h"
 
@@ -172,6 +173,10 @@
 #define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
 #define MAX_READ_RETRY 10
+
+#define VR_UPDATE_IN_PROGRESS "/tmp/stop_monitor_vr"
+#define MAX_VR_CHIPS 9
+#define VR_TIMEOUT 200
 
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -1379,11 +1384,29 @@ static int
 read_vr_volt(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
+  static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+
+  // The following block for detecting vr_update is in progress or not
+  if ( access(VR_UPDATE_IN_PROGRESS, F_OK) == 0 )
+  {
+    //Avoid sensord unmonitoring vr sensors due to unexpected condition happen during vr_update
+    if ( count > VR_TIMEOUT )
+    {
+      remove(VR_UPDATE_IN_PROGRESS);
+      count = 0;
+    }
+
+    syslog(LOG_WARNING, "[%d]Stop Monitor VR Volt due to VR update is in progress\n", count++);
+
+    return READING_NA;
+  }
+
+  count = 0;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
@@ -1463,11 +1486,29 @@ static int
 read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
+  static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+
+  // The following block for detecting vr_update is in progress or not
+  if ( access(VR_UPDATE_IN_PROGRESS, F_OK) == 0 )
+  {
+    // Avoid sensord unmonitoring vr sensors due to unexpected condition happen during vr_update
+    if ( count > VR_TIMEOUT )
+    {
+      remove(VR_UPDATE_IN_PROGRESS);
+      count = 0;
+    }
+
+    syslog(LOG_WARNING, "[%d]Stop Monitor VR Curr due to VR update is in progress\n", count++);
+
+    return READING_NA;
+  }
+
+  count = 0;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
@@ -1552,11 +1593,29 @@ static int
 read_vr_power(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
+  static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+
+  // The following block for detecting vr_update is in progress or not
+  if ( access(VR_UPDATE_IN_PROGRESS, F_OK) == 0 )
+  {
+    //avoid sensord unmonitoring vr sensors due to unexpected condition happen during vr_update
+    if ( count > VR_TIMEOUT )
+    {
+      remove(VR_UPDATE_IN_PROGRESS);
+      count = 0;
+    }
+
+    syslog(LOG_WARNING, "[%d]Stop Monitor VR Power due to VR update is in progress\n", count++);
+
+    return READING_NA;
+  }
+
+  count = 0;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
@@ -1635,11 +1694,29 @@ static int
 read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
   int fd;
   char fn[32];
+  static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+
+  // The following block for detecting vr_update is in progress or not
+  if ( access(VR_UPDATE_IN_PROGRESS, F_OK) == 0 )
+  {
+    // Avoid sensord unmonitoring vr sensors due to unexpected condition happen during vr_update
+    if ( count > VR_TIMEOUT )
+    {
+      remove(VR_UPDATE_IN_PROGRESS);
+      count = 0;
+    }
+
+    syslog(LOG_WARNING, "[%d]Stop Monitor VR Temp due to VR update is in progress\n", count++);
+
+    return READING_NA;
+  }
+
+  count = 0;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
@@ -4870,4 +4947,974 @@ is_cpu1_socket_occupy(void) {
     return true;
   }
 
+}
+
+static int
+pal_i2c_io_master_write(char *BusName, uint8_t addr, uint8_t *buf, uint8_t count) {
+  int fd;
+  int Retry = MAX_READ_RETRY;
+  int RetVal;
+
+  //open device
+  while ( Retry )
+  {
+    fd = open(BusName, O_RDWR);
+    if ( fd < 0 ) {
+      syslog(LOG_WARNING, "[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+      Retry--;
+      msleep(100);
+#ifdef VR_DEBUG
+      printf("[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+#endif
+    } else {
+      break;
+    }
+
+    if ( 0 == Retry ) {
+      syslog(LOG_WARNING, "[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+#ifdef VR_DEBUG
+      printf("[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+#endif
+      goto error_exit;
+    }
+  }
+
+  Retry = MAX_READ_RETRY;
+
+  //Retry transmission
+  while ( Retry )
+  {
+    RetVal = i2c_io(fd, addr, buf, count, NULL, 0);
+    if ( RetVal != 0 )
+    {
+      syslog(LOG_WARNING, "[%s] Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+      msleep(500);
+      Retry--;
+#ifdef VR_DEBUG
+      printf("[%s] Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+#endif
+    } else {
+      break;
+    }
+  }
+
+  if ( RetVal != 0  )
+  {
+    syslog(LOG_WARNING, "[%s] Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+#ifdef VR_DEBUG
+    printf("[%s] Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+#endif
+    goto error_exit;
+  }
+
+error_exit:
+
+  close(fd);
+
+  return RetVal;
+}
+
+static int
+pal_i2c_io_rw(char *BusName, uint8_t addr, uint8_t *txbuf, uint8_t txcount, uint8_t *rxbuf,
+              uint8_t rxcount)
+{
+  int fd;
+  int Retry = MAX_READ_RETRY;
+  int RetVal;
+
+  //open device
+  while ( Retry )
+  {
+    fd = open(BusName, O_RDWR);
+    if (fd < 0)
+    {
+      syslog(LOG_WARNING, "[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+      Retry--;
+      msleep(100);
+#ifdef VR_DEBUG
+      printf("[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+#endif
+    } else {
+        break;
+    }
+
+    if ( 0 == Retry )
+    {
+      syslog(LOG_WARNING, "[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+#ifdef VR_DEBUG
+      printf("[%s] i2c_open failed for bus#%x\n", __func__, VR_BUS_ID);
+#endif
+        goto error_exit;
+    }
+  }
+
+  Retry = MAX_READ_RETRY;
+
+  //Retry transmission
+  while ( Retry )
+  {
+      RetVal = i2c_io(fd, addr, txbuf, txcount, rxbuf, rxcount);
+      if ( RetVal != 0 )
+      {
+        Retry--;
+        syslog(LOG_WARNING, "[%s] Read/Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+#ifdef VR_DEBUG
+        printf("[%s] Read/Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+#endif
+        msleep(500);
+      } else {
+        break;
+      }
+  }
+
+  if ( RetVal != 0  )
+  {
+    syslog(LOG_WARNING, "[%s] Read/Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+#ifdef VR_DEBUG
+    printf("[%s] Read/Wrtie Bus#%x Slave address: %x failed.\n", __func__, VR_BUS_ID, addr);
+#endif
+  }
+
+error_exit:
+
+  close(fd);
+
+  return RetVal;
+}
+
+static int
+pal_check_integrity_of_vr_data(uint8_t SlaveAddr, uint8_t *ExpectedCRC, int StartIndex, int EndIndex, uint8_t *Data)
+{
+  int i = StartIndex;
+  uint32_t CurrentData = 0x0;
+  uint32_t CRC = 0x0;
+  uint32_t Dout = 0xffffffff;
+
+  for ( ; i < EndIndex; i = i + 4 )
+  {
+    //printf("[%d] %x %x %x %x\n", i, Data[i], Data[i+1], Data[i+2], Data[i+3]);
+
+    CurrentData = (CurrentData & 0x0) | Data[i+2];//low byte
+
+    CRC =  (VR_BIT0(Dout, CurrentData) & 0x1 ) + ((VR_BIT1(Dout, CurrentData) & 0x1 ) << 1 ) + ((VR_BIT2(Dout, CurrentData) & 0x1 ) << 2 ) + ((VR_BIT3(Dout, CurrentData) & 0x1 ) << 3 ) + ((VR_BIT4(Dout, CurrentData) & 0x1 ) << 4 ) + ((VR_BIT5(Dout, CurrentData) & 0x1 ) << 5 ) + ((VR_BIT6(Dout, CurrentData) & 0x1 ) << 6 ) + ((VR_BIT7(Dout, CurrentData) & 0x1 ) << 7 ) +
+    ((VR_BIT8(Dout, CurrentData) & 0x1 ) << 8 ) + ((VR_BIT9(Dout, CurrentData) & 0x1 ) << 9 ) + ((VR_BIT10(Dout, CurrentData) & 0x1 ) << 10 ) + ((VR_BIT11(Dout, CurrentData) & 0x1 ) << 11 ) + ((VR_BIT12(Dout, CurrentData) & 0x1 ) << 12 ) + ((VR_BIT13(Dout, CurrentData) & 0x1 ) << 13 ) + ((VR_BIT14(Dout, CurrentData) & 0x1 ) << 14 ) + ((VR_BIT15(Dout, CurrentData) & 0x1 ) << 15 ) +
+    ((VR_BIT16(Dout, CurrentData) & 0x1 ) << 16 ) + ((VR_BIT17(Dout, CurrentData) & 0x1 ) << 17 ) + ((VR_BIT18(Dout, CurrentData) & 0x1 ) << 18 ) + ((VR_BIT19(Dout, CurrentData) & 0x1 ) << 19 ) + ((VR_BIT20(Dout, CurrentData) & 0x1 ) << 20 ) + ((VR_BIT21(Dout, CurrentData) & 0x1 ) << 21 ) + ((VR_BIT22(Dout, CurrentData) & 0x1 ) << 22 ) + ((VR_BIT23(Dout, CurrentData) & 0x1 ) << 23 ) +
+    ((VR_BIT24(Dout, CurrentData) & 0x1 ) << 24 ) + ((VR_BIT25(Dout, CurrentData) & 0x1 ) << 25 ) + ((VR_BIT26(Dout, CurrentData) & 0x1 ) << 26 ) + ((VR_BIT27(Dout, CurrentData) & 0x1 ) << 27 ) + ((VR_BIT28(Dout, CurrentData) & 0x1 ) << 28 ) + ((VR_BIT29(Dout, CurrentData) & 0x1 ) << 29 ) + ((VR_BIT30(Dout, CurrentData) & 0x1 ) << 30 ) + ((VR_BIT31(Dout, CurrentData) & 0x1 ) << 31 );
+
+    Dout = CRC;
+
+    CurrentData = (CurrentData & 0x0) | Data[i+3];//high byte
+
+    CRC =  (VR_BIT0(Dout, CurrentData) & 0x1 ) + ((VR_BIT1(Dout, CurrentData) & 0x1 ) << 1 ) + ((VR_BIT2(Dout, CurrentData) & 0x1 ) << 2 ) + ((VR_BIT3(Dout, CurrentData) & 0x1 ) << 3 ) + ((VR_BIT4(Dout, CurrentData) & 0x1 ) << 4 ) + ((VR_BIT5(Dout, CurrentData) & 0x1 ) << 5 ) + ((VR_BIT6(Dout, CurrentData) & 0x1 ) << 6 ) + ((VR_BIT7(Dout, CurrentData) & 0x1 ) << 7 ) +
+    ((VR_BIT8(Dout, CurrentData) & 0x1 ) << 8 ) + ((VR_BIT9(Dout, CurrentData) & 0x1 ) << 9 ) + ((VR_BIT10(Dout, CurrentData) & 0x1 ) << 10 ) + ((VR_BIT11(Dout, CurrentData) & 0x1 ) << 11 ) + ((VR_BIT12(Dout, CurrentData) & 0x1 ) << 12 ) + ((VR_BIT13(Dout, CurrentData) & 0x1 ) << 13 ) + ((VR_BIT14(Dout, CurrentData) & 0x1 ) << 14 ) + ((VR_BIT15(Dout, CurrentData) & 0x1 ) << 15 ) +
+    ((VR_BIT16(Dout, CurrentData) & 0x1 ) << 16 ) + ((VR_BIT17(Dout, CurrentData) & 0x1 ) << 17 ) + ((VR_BIT18(Dout, CurrentData) & 0x1 ) << 18 ) + ((VR_BIT19(Dout, CurrentData) & 0x1 ) << 19 ) + ((VR_BIT20(Dout, CurrentData) & 0x1 ) << 20 ) + ((VR_BIT21(Dout, CurrentData) & 0x1 ) << 21 ) + ((VR_BIT22(Dout, CurrentData) & 0x1 ) << 22 ) + ((VR_BIT23(Dout, CurrentData) & 0x1 ) << 23 ) +
+    ((VR_BIT24(Dout, CurrentData) & 0x1 ) << 24 ) + ((VR_BIT25(Dout, CurrentData) & 0x1 ) << 25 ) + ((VR_BIT26(Dout, CurrentData) & 0x1 ) << 26 ) + ((VR_BIT27(Dout, CurrentData) & 0x1 ) << 27 ) + ((VR_BIT28(Dout, CurrentData) & 0x1 ) << 28 ) + ((VR_BIT29(Dout, CurrentData) & 0x1 ) << 29 ) + ((VR_BIT30(Dout, CurrentData) & 0x1 ) << 30 ) + ((VR_BIT31(Dout, CurrentData) & 0x1 ) << 31 );
+
+    Dout = CRC;
+  }
+
+  uint8_t ActualCRC32[4] = {0};
+
+  ActualCRC32[0] = ( CRC & 0xff );
+  ActualCRC32[1] = ( ( CRC >> 8 ) & 0xff );
+  ActualCRC32[2] = ( ( CRC >> 16 ) & 0xff );
+  ActualCRC32[3] = ( ( CRC >> 24 ) & 0xff );
+
+  if ( (ActualCRC32[3] != ExpectedCRC[0]) || (ActualCRC32[2] != ExpectedCRC[1]) || (ActualCRC32[1] != ExpectedCRC[2]) || (ActualCRC32[0] != ExpectedCRC[3]) )
+  {
+    syslog(LOG_WARNING, "[%s] Slave: %x CRC not match !\n", __func__, SlaveAddr);
+    syslog(LOG_WARNING, "[%s] Slave: %x CRC: %x %x %x %x!\n", __func__, SlaveAddr, ActualCRC32[0], ActualCRC32[1], ActualCRC32[2], ActualCRC32[3]);
+    syslog(LOG_WARNING, "[%s] Slave: %x Expected CRC: %x %x %x %x!\n", __func__, SlaveAddr, ExpectedCRC[0], ExpectedCRC[1], ExpectedCRC[2], ExpectedCRC[3]);
+
+    return -1;
+  }
+  else
+  {
+#ifdef VR_DEBUG
+    printf("[%s] Slave: %x CRC match !\n", __func__, SlaveAddr);
+#endif
+  }
+
+  return 0;
+}
+
+static int
+pal_unlock_vr_register(char *BusName, uint8_t SlaveAddr)
+{
+  int RetVal;
+  uint8_t TxBuf[3] = {0};
+
+  /********* Set Page***********/
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x3f;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] UnlockRegister: Change Register Page failed: 0x00 0x3f \n", __func__);
+    goto error_exit;
+  }
+
+  /*********Write unlock data to 0x27***********/
+  TxBuf[0] = 0x27;
+  TxBuf[1] = 0x7c;
+  TxBuf[2] = 0xb3;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 3);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Unlock register failed: 0x27 0x7c 0xb3 \n", __func__);
+    goto error_exit;
+  }
+
+
+  /*********Write unlock data to 0x2a***********/
+  TxBuf[0] = 0x2a;
+  TxBuf[1] = 0xb2;
+  TxBuf[2] = 0x8a;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 3);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Unlock register failed: 0x27, 0x7c, 0xb3 \n", __func__);
+    goto error_exit;
+  }
+
+error_exit:
+
+  return RetVal;
+}
+
+static int
+pal_check_vr_chip_remaining_times(char *BusName, uint8_t SlaveAddr)
+{
+  int RetVal;
+  int fd;
+  uint16_t ChipRemainTimes = 0;
+  uint8_t TxBuf[3] = {0};
+  uint8_t RxBuf[3] = {0};
+
+  //set page
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x50;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] set page to 0x00 0x50 failed\n", __func__);
+    goto error_exit;
+  }
+
+  //read two bytes from address 0x82
+  TxBuf[0] = 0x82;
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] CheckChipRemainingTimes: Read data from address 0x82 failed\n", __func__);
+    goto error_exit;
+  }
+
+  /*get bit 6 ~ bit 11*/
+  ChipRemainTimes = (RxBuf[1] << 8) + RxBuf[0];
+  ChipRemainTimes = (ChipRemainTimes >> 6 ) & 0x3f;
+
+  //set to page 20
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x20;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed[End]: 0x00 0x20 failed\n", __func__);
+    goto error_exit;
+  }
+
+  //the remaining time of chip is 0, we cannot flash vr
+  if ( ChipRemainTimes == 0 )
+  {
+    RetVal = -1;
+  }
+
+error_exit:
+
+  return RetVal;
+}
+
+static int
+pal_write_data_to_vr(char *BusName, uint8_t SlaveAddr, uint8_t *Data)
+{
+  int RetVal;
+  uint8_t RxBuf[3] = {0};
+  uint8_t TxBuf[3] = {0};
+
+#ifdef VR_DEBUG
+  printf("[%s] %x %x %x %x \n", __func__, Data[0], Data[1], Data[2], Data[3]);
+#endif
+  /***set Page***/
+  TxBuf[0] = 0x00;
+  TxBuf[1] = (Data[0] >> 1) & 0x3f;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2 );
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed: 0x00, 0x3f \n", __func__);
+    goto error_exit;
+  }
+
+#ifdef VR_DEBUG
+  //Check Page is changed or not
+  TxBuf[0] = 0x0;
+  RxBuf[0] = 0x0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Read page failed: 0x0\n", __func__);
+    goto error_exit;
+  }
+
+    /***set data to buf***/
+    //read data from the target address. just for debugging
+  TxBuf[0] = Data[1];
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Read failed: %x , %x, %x \n", __func__, Data[1], Data[2], Data[3]);
+    goto error_exit;
+  }
+
+    printf("[%s] [Write]Page %x, Addr %x ,low byte %x, high byte %x\n", __func__, (Data[0] >> 1) & 0x3f, Data[1], Data[2], Data[3]);
+#endif
+
+    //write data to register
+  TxBuf[0] = Data[1];//addr
+  TxBuf[1] = Data[2];//low byte
+  TxBuf[2] = Data[3];//high byte
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 3);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s]  Write failed: %x, %x, %x\n", __func__, TxBuf[0], TxBuf[1], TxBuf[2]);
+    goto error_exit;
+  }
+
+  //double check -- read the address again
+  TxBuf[0] = Data[1];
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Read failed: %x , %x, %x \n",__func__ ,Data[1], Data[2], Data[3]);
+    goto error_exit;
+  }
+
+  //printf("[Read2]Page %x, Addr %x ,low byte %x, high byte %x\n", page, TxBuf[0], RxBuf[0], RxBuf[1]);
+
+  if ( (RxBuf[0] != Data[2]) || (RxBuf[1] != Data[3]) )
+  {
+    syslog(LOG_WARNING, "[%s] The result between Read and Write is DIFFERENT!!!!\n",__func__);
+    syslog(LOG_WARNING, "[%s] Write: Page %x, Addr %x, LowByte %x, HighByte %x \n",__func__ ,(Data[0] >> 1) & 0x3f ,Data[0] ,Data[1], Data[2] );
+    syslog(LOG_WARNING, "[%s] Read:  Page %x, Addr %x, LowByte %x, HighByte %x \n",__func__ ,(Data[0] >> 1) & 0x3f ,TxBuf[0] ,RxBuf[0], RxBuf[1]);
+    RetVal = -1;
+
+      goto error_exit;
+  }
+
+error_exit:
+
+  return RetVal;
+}
+
+static int
+pal_write_vr_finish(char *BusName, uint8_t SlaveAddr)
+{
+  int RetVal;
+  uint8_t TxBuf[3] = {0};
+  uint8_t RxBuf[3] = {0};
+
+  /*********Set Page***********/
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x3f;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed: 0x00, 0x3f \n", __func__);
+    goto error_exit;
+  }
+
+#ifdef VR_DEBUG
+  //check page is changed or not
+  TxBuf[0] = 0x00;
+  RxBuf[0] = 0x00;
+
+  //check page
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check page failed: 0x3f \n",__func__);
+    goto error_exit;
+  }
+
+  printf("[%s] Check Page: %x \n",__func__, RxBuf[0]);
+#endif
+
+  TxBuf[0] = 0x2a;
+  TxBuf[1] = 0x00;
+  TxBuf[2] = 0x00;
+
+  //write word to the target address
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf,3);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Lock register failed: 0x2a, 0x00, 0x00 \n",__func__);
+    goto error_exit;
+  }
+
+  //check the writing data from the target address
+  TxBuf[0] = 0x2a;
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check data failed: 0x2a, 0x00, 0x00 \n",__func__);
+    goto error_exit;
+  }
+
+error_exit:
+
+  return RetVal;
+}
+
+static int
+pal_save_data_to_vr_NVM(char *BusName, uint8_t SlaveAddr)
+{
+  int RetVal;
+  uint8_t TxBuf[3] = {0};
+  uint8_t RxBuf[3] = {0};
+
+  /*********Set Page***********/
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x3f;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed: 0x00, 0x3f \n", __func__);
+    goto error_exit;
+  }
+
+  TxBuf[0] = 0x00;
+  RxBuf[0] = 0x00;
+
+  /****Check Page is changed or not****/
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check page failed: 0x3f \n", __func__);
+    goto error_exit;
+  }
+
+  /****lock - fill buf****/
+  TxBuf[0] = 0x29;
+  TxBuf[1] = 0xd7;
+  TxBuf[2] = 0xef;
+
+  /****lock - write to the address****/
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 3);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Lock register failed: 0x29, 0xd7, 0xef \n", __func__);
+    goto error_exit;
+  }
+
+  /****lock - check the data again****/
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check data failed: 0x29, 0xd7, 0xef \n", __func__);
+    goto error_exit;
+  }
+
+  /*********clear fault flag***********/
+
+  TxBuf[0] = 0x2c;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Clear fault failed: 0x2c \n",__func__);
+    goto error_exit;
+  }
+
+  /*********upload data to NVM***********/
+  //initiates an upload from the register to NVM
+  TxBuf[0] = 0x34;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Lock register failed: 0x34 \n", __func__);
+    goto error_exit;
+  }
+
+  /*********Set Page***********/
+  sleep(3);//avoid page failure
+
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x60;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed: 0x00, 0x60 \n", __func__);
+    goto error_exit;
+  }
+
+#ifdef VR_DEBUG
+  RxBuf[0] = 0;
+  TxBuf[0] = 0;
+
+  //check page
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check page failed: 0x60 \n", __func__);
+
+    goto error_exit;
+  }
+#endif
+
+  /*********Read Data***********/
+  //read word from reg 0x01 and 0x02
+  //read data from reg1
+  TxBuf[0] = 0x01;
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Read data from page 0x60  addr 0x01 failed \n",__func__);
+    goto error_exit;
+  }
+
+  //read data from reg2
+  TxBuf[0] = 0x02;
+
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Read data from page 0x60  addr 0x02 failed \n",__func__);
+    goto error_exit;
+  }
+
+  /*********Page***********/
+  sleep(1); //avoid page failure
+
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x3f;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed: 0x00, 0x3f \n",__func__);
+    goto error_exit;
+  }
+
+#ifdef VR_DEBUG
+  //check page
+  TxBuf[0] = 0x0;
+  RxBuf[0] = 0x0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check page failed: 0x3f \n",__func__);
+    goto error_exit;
+  }
+
+  //printf("[%s] Check Page: %x \n",__func__, RxBuf[0]);
+#endif
+
+  /*********End***********/
+  TxBuf[0] = 0x29;
+  TxBuf[1] = 0x00;
+  TxBuf[2] = 0x00;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 3);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Failed to write 0x29 0x00 0x00 \n",__func__);
+    goto error_exit;
+  }
+
+  sleep(2);
+
+#ifdef VR_DEBUG
+  TxBuf[0] = 0x29;
+
+  RxBuf[0] = 0x0;
+  RxBuf[1] = 0x0;
+
+  //check write data
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check data failed: 0x29 0x00 0x00 \n",__func__);
+    goto error_exit;
+  }
+#endif
+
+error_exit:
+
+  return RetVal;
+}
+
+static int
+pal_check_vr_CRC(char *BusName, uint8_t SlaveAddr, uint8_t *ExpectedCRC)
+{
+  int RetVal=0;
+  uint8_t TxBuf[3]={0};
+  uint8_t RxBuf[4]={0};
+
+  /****Set Page****/
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x3f;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed: 0x00, 0x3f \n", __func__);
+    goto error_exit;
+  }
+
+#ifdef VR_DEBUG
+  /****Check Page changed or not****/
+  TxBuf[0] = 0;
+  RxBuf[0] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] read page failed: 0x3f \n", __func__);
+    goto error_exit;
+  }
+#endif
+
+  sleep(1);//force sleep
+
+  /*********data***********/
+  TxBuf[0] = 0x27;
+  TxBuf[1] = 0x7c;
+  TxBuf[2] = 0xb3;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 3);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] set data failed: 0x27 0x7c 0xb3 \n", __func__);
+    goto error_exit;
+  }
+
+#ifdef VR_DEBUG
+  //check data
+  TxBuf[0] = 0x27;
+
+  RxBuf[0] = 0;
+  RxBuf[1] = 0;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check data failed: 0x27 0x7c 0xb3 \n", __func__);
+    goto error_exit;
+  }
+#endif
+
+  /*********data***********/
+  TxBuf[0] = 0x32;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] set data failed: 0x32  \n", __func__);
+    goto error_exit;
+  }
+
+
+  /*********Page***********/
+  TxBuf[0] = 0x00;
+  TxBuf[1] = 0x6f;
+
+  RetVal = pal_i2c_io_master_write(BusName, SlaveAddr, TxBuf, 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Change Register Page failed: 0x00, 0x6f \n", __func__);
+    goto error_exit;
+  }
+
+#ifdef VR_DEBUG
+  /*********Check page changed or not***********/
+  TxBuf[0] = 0x00;
+  RxBuf[0] = 0x00;
+
+  //check page
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, RxBuf, 1);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Check page failed: 0x6f \n", __func__);
+    goto error_exit;
+  }
+#endif
+
+  /********read data*************/
+  TxBuf[0] = 0x3d;
+
+  RxBuf[0] = 0x00;
+  RxBuf[1] = 0x00;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, &RxBuf[0], 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] read addr failed: 0x3d \n", __func__);
+    goto error_exit;
+  }
+
+  TxBuf[0] = 0x3e;
+  RxBuf[2] = 0x00;
+  RxBuf[3] = 0x00;
+
+  RetVal = pal_i2c_io_rw(BusName, SlaveAddr, TxBuf, 1, &RxBuf[2], 2);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] read addr failed: 0x3e \n",__func__);
+    goto error_exit;
+  }
+
+  //check CRC match
+  if ( (RxBuf[3] != ExpectedCRC[0]) || (RxBuf[2] != ExpectedCRC[1]) || (RxBuf[1] != ExpectedCRC[2]) || (RxBuf[0] != ExpectedCRC[3]))
+  {
+    syslog(LOG_WARNING, "[%s] CRC cannot MATCH!!\n",__func__);
+    syslog(LOG_WARNING, "[%s] Expected CRC: %x %x %x %x\n",__func__, ExpectedCRC[0], ExpectedCRC[1], ExpectedCRC[2], ExpectedCRC[3]);
+    syslog(LOG_WARNING, "[%s] Actual CRC: %x %x %x %x\n",__func__, RxBuf[3], RxBuf[2], RxBuf[1], RxBuf[0]);
+
+    RetVal = -1;
+
+    goto error_exit;
+  }
+
+error_exit:
+  return RetVal;
+}
+
+int pal_vr_fw_update(uint8_t *BinData)
+{
+  VRBasicInfo vr_data[MAX_VR_CHIPS];//there are nine vr chips
+  int VRDataLength = 0;
+  int VR_counts = sizeof(vr_data)/ sizeof(VRBasicInfo);
+  int i, j;
+  int fd;
+  int RetVal;
+  int TotalProgress = 0;
+  int CurrentProgress = 0;
+  char BusName[64];
+
+  //create a file to inform "read_vr function". do not send req to VR
+  fd = open(VR_UPDATE_IN_PROGRESS, O_WRONLY | O_CREAT | O_TRUNC, 0700);
+  if ( fd == -1 )
+  {
+    printf("[%s] Create %s file error",__func__, VR_UPDATE_IN_PROGRESS);
+    RetVal = -1;
+    goto error_exit;
+  }
+
+  close(fd);
+
+  //wait for the sensord monitor cycle end
+  sleep(3);
+
+  snprintf(BusName, sizeof(BusName), "/dev/i2c-%d", VR_BUS_ID);
+
+  //init vr array
+  memset(vr_data, 0, sizeof(vr_data));
+
+#ifdef VR_DEBUG
+    printf("[%s] VR Counts:%d, Data_Start_Addr: %d\n", __func__, VR_counts, DATA_START_ADDR);
+#endif
+
+  //before updating vr, we parse data first.
+  //DataLength = update data header + update data
+  for ( i = 0 ; i < VR_counts; i++ )
+  {
+    vr_data[i].DataLength = (BinData[ (2*i) ] << 8 ) + BinData[ (2*i) + 1 ];
+#ifdef VR_DEBUG
+    printf("[%s] DataLength: %d \n", __func__, vr_data[i].DataLength);
+#endif
+  }
+
+    //catch the basic info
+  for ( i = 0 ; i < VR_counts; i++ )
+  {
+    /*need to identify the first one. and set the start address*/
+    if ( 0 == i )
+    {
+      j = DATA_START_ADDR;
+
+      vr_data[i].IndexStartAddr = j + 5;
+      vr_data[i].SlaveAddr = BinData[j];
+
+      // copy crc
+      memcpy(vr_data[i].CRC, &BinData[j+1], 4);
+
+      VRDataLength = vr_data[ i ].DataLength + DATA_START_ADDR;
+
+      vr_data[i].IndexEndAddr = VRDataLength;
+
+#ifdef VR_DEBUG
+      printf("[%s]: SlaveAddr: %x\n", __func__, vr_data[i].SlaveAddr );
+      printf("[%s]: CRC %x %x %x %x\n", __func__, vr_data[i].CRC[0], vr_data[i].CRC[1], vr_data[i].CRC[2], vr_data[i].CRC[3]);
+#endif
+    }
+    else
+    {
+      j = VRDataLength;
+
+      vr_data[i].IndexStartAddr = j + 5;
+      vr_data[i].SlaveAddr = BinData[ j ];
+
+      //copy crc
+      memcpy(vr_data[i].CRC, &BinData[ j + 1 ], 4);
+
+      VRDataLength = vr_data[ i ].DataLength + VRDataLength;
+
+      vr_data[i].IndexEndAddr = VRDataLength;
+
+#ifdef VR_DEBUG
+      printf("[%s]: SlaveAddr: %x\n", __func__, vr_data[i].SlaveAddr );
+      printf("[%s]: CRC: %x %x %x %x\n", __func__, vr_data[i].CRC[0], vr_data[i].CRC[1], vr_data[i].CRC[2], vr_data[i].CRC[3]);
+#endif
+    }
+  }
+
+  //calculate the reality data length
+  for ( i = 0 ; i < VR_counts; i++ )
+  {
+    TotalProgress += (vr_data[i].IndexEndAddr - vr_data[i].IndexStartAddr);
+  }
+
+  /**Check Chip**/
+  printf("Check Data...");
+
+  //check the remaining times of flashing chip
+  for ( i = 0 ; i < VR_counts; i++ )
+  {
+    RetVal = pal_check_vr_chip_remaining_times( BusName, vr_data[i].SlaveAddr );
+    if ( RetVal < 0 )
+    {
+      //The Remaining Times of Chip is 0!
+      goto error_exit;
+    }
+  }
+
+  //check CRC
+  for ( i = 0 ; i < VR_counts; i++ )
+  {
+    RetVal = pal_check_integrity_of_vr_data(vr_data[i].SlaveAddr, vr_data[i].CRC, vr_data[i].IndexStartAddr, vr_data[i].IndexEndAddr, BinData);
+
+    if ( RetVal < 0 )
+    {
+      //the bin file is incomplete
+      goto error_exit;
+    }
+  }
+
+  /**Check Chip**/
+  printf("Done\n");
+
+  for ( i = 0; i < VR_counts; i++ )
+  {
+
+#ifdef VR_DEBUG
+    printf("[%s][%d]pal_vr_fw_update: UnlockRegister \n", __func__, i);
+#endif
+
+    RetVal = pal_unlock_vr_register( BusName, vr_data[i].SlaveAddr );
+    if ( RetVal < 0 )
+    {
+      //unlock register failed
+      syslog(LOG_WARNING, "[%s] Failed Occurred at Unlocking Register\n", __func__);
+      goto error_exit;
+    }
+
+    //the starting data index of the current vr
+    j = vr_data[i].IndexStartAddr;
+
+    //the end index of the current vr
+    int EndAddr = vr_data[i].IndexEndAddr;
+
+    for ( ; j < EndAddr; j = j + 4 )// 4 bytes
+    {
+      CurrentProgress += 4;
+
+      printf("Writing Data: %d/%d (%.2f%%) \r",(CurrentProgress), TotalProgress, (((CurrentProgress)/(float)TotalProgress)*100));
+
+      RetVal = pal_write_data_to_vr( BusName, vr_data[i].SlaveAddr, &BinData[j] );
+      if ( RetVal < 0 )
+      {
+        syslog(LOG_WARNING, "[%s] Failed Occurred at Writing Data\n", __func__);
+        goto error_exit;
+      }
+
+    }
+
+    //After writing data, we need to store it
+    RetVal = pal_write_vr_finish( BusName, vr_data[i].SlaveAddr );
+    if ( RetVal < 0 )
+    {
+      syslog(LOG_WARNING, "[%s] Error at Locking register\n", __func__);
+      goto error_exit;
+    }
+
+    RetVal = pal_save_data_to_vr_NVM( BusName, vr_data[i].SlaveAddr );
+    if ( RetVal < 0 )
+    {
+      syslog(LOG_WARNING, "[%s] Error at Saving Data\n", __func__);
+      goto error_exit;
+    }
+
+    RetVal = pal_check_vr_CRC ( BusName, vr_data[i].SlaveAddr, vr_data[i].CRC);
+    if ( RetVal < 0 )
+    {
+      syslog(LOG_WARNING, "[%s] Error at CRC value from the register\n", __func__);
+      goto error_exit;
+    }
+
+  }
+  printf("\n");
+
+  printf("Update VR Success!\n");
+
+error_exit:
+  if ( -1 == remove(VR_UPDATE_IN_PROGRESS) )
+  {
+    printf("[%s] Remove %s Error\n", __func__, VR_UPDATE_IN_PROGRESS);
+    RetVal = -1;
+  }
+  return RetVal;
 }

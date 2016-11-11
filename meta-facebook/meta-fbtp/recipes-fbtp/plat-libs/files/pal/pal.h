@@ -247,6 +247,31 @@ enum {
   ADC_PIN7,
 };
 
+//Used identify VR Chip info. there are 4 vr fw code in EVT3 and after
+enum
+{
+  SS_Fairchild = 0,
+    SS_IFX,
+    DS_Fairchild,
+    DS_IFX,
+};
+
+//Used identify VR Chip info before EVT3
+enum
+{
+  Fairchild = 0,
+    IFX,
+};
+
+//For VR FW code
+enum
+{
+  EVT1 = 0xe1,
+  EVT2 = 0xe2,
+  EVT3 = 0xe3,
+  DVT = 0xd1,
+};
+
 enum {
   VR_CPU0_VCCIN = 0x90,
   VR_CPU0_VSA = 0x90,
@@ -278,6 +303,21 @@ typedef struct _sensor_info_t {
   bool valid;
   sdr_full_t sdr;
 } sensor_info_t;
+
+//VR Chip info
+typedef struct
+{
+  uint8_t SlaveAddr;
+
+  uint8_t CRC[4];
+
+  int  DataLength;
+
+  int IndexStartAddr;
+
+  int IndexEndAddr;
+
+} VRBasicInfo;
 
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
@@ -363,6 +403,7 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 static bool is_cpu0_socket_occupy(void);
 static bool is_cpu1_socket_occupy(void);
+int pal_vr_fw_update();
 
 #ifdef __cplusplus
 } // extern "C"

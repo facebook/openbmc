@@ -236,6 +236,10 @@ def main():
         if config['boost']['progressive']:
             boost_type = 'progressive'
     watchdog = config['watchdog']
+    if 'chassis_intrusion' in config:
+        chassis_intrusion = config['chassis_intrusion']
+    else:
+        chassis_intrusion = False
     if 'ramp_rate' in config:
         ramp_rate = config['ramp_rate']
     wdfile = None
@@ -247,7 +251,6 @@ def main():
         else:
             wdfile.write('V')
             wdfile.flush()
-
     machine.set_all_pwm(transitional)
     profile_constructors = {}
     for name, pdata in config['profiles'].items():
@@ -278,7 +281,6 @@ def main():
         if wdfile:
             wdfile.write('V')
             wdfile.flush()
-
         time.sleep(interval)
         sensors = machine.read_sensors()
         speeds = machine.read_speed()
@@ -306,28 +308,41 @@ def main():
             pal_fan_recovered_handle(fan)
         for zone in zones:
             print("PWM: %s" % (json.dumps(zone.pwm_output)))
-            pwmval = zone.run(sensors, dt)
-            if abs(zone.last_pwm - pwmval) > ramp_rate:
-                if pwmval < zone.last_pwm:
-                    pwmval = zone.last_pwm - ramp_rate
-                else:
-                    pwmval = zone.last_pwm + ramp_rate
-            zone.last_pwm = pwmval
+
+            chassis_intrusion_boost_flag=0
+            if chassis_intrusion:
+               self_tray_pull_out = pal_fan_chassis_intrusion_handle()
+               if self_tray_pull_out == 1:
+                  chassis_intrusion_boost_flag = 1 
+
+            if  chassis_intrusion_boost_flag == 0:     
+                pwmval = zone.run(sensors, dt)
+            else:
+                pwmval = boost
+                       
             if boost_type == 'progressive':
                 dead = len(dead_fans)
                 if dead > 0:
                     print("Failed fans: %s" %
                       (', '.join([str(i) for i in dead_fans],)))
                     if dead < 3:
-                        pwmval = clamp(pwmval + (10 * dead), 0, 100)
-                        print("Boosted PWM to %d" % pwmval)
+                      pwmval = clamp(pwmval + (10 * dead), 0, 100)
+                      print("Boosted PWM to %d" % pwmval)
                     else:
-                        pwmval = boost
+                      pwmval = boost
             else:
                 if dead_fans:
                     print("Failed fans: %s" %
-                          (', '.join([str(i) for i in dead_fans],)))
+                      (', '.join([str(i) for i in dead_fans],)))
                     pwmval = boost
+
+            if abs(zone.last_pwm - pwmval) > ramp_rate:
+                if pwmval < zone.last_pwm:
+                   pwmval = zone.last_pwm - ramp_rate
+                else:
+                   pwmval = zone.last_pwm + ramp_rate
+            zone.last_pwm = pwmval
+                
             if hasattr(zone.pwm_output, '__iter__'):
                 for output in zone.pwm_output:
                     machine.set_pwm(output, pwmval)

@@ -1040,36 +1040,39 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   int val = 0;
   int pwm_enable = 0;
 
-  if(fan_num >= 0 && fan_num <= 11)
-    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fanid2pwmid_mapping[fan_num]);
-  else {
-    syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
-    return -1;
-  }
-
+  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fanid2pwmid_mapping[fan_num]);
   snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-
-  if (read_device_hex(path, &val)) {
+  if (read_device(path, &pwm_enable)) {
     syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
     return -1;
   }
 
-  // Need check pwmX_en to determine the PWM is 0 or 100.
-  if(val == 0) {
-    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fanid2pwmid_mapping[fan_num]);
+  // Check the PWM is enable or not
+  if(pwm_enable) {
+    // fan number should in this range
+    if(fan_num >= 0 && fan_num <= 11)
+      snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fanid2pwmid_mapping[fan_num]);
+    else {
+      syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
+      return -1;
+    }
+  
     snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-    if (read_device(path, &pwm_enable)) {
+
+    if (read_device_hex(path, &val)) {
       syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
       return -1;
     }
-
-    if(pwm_enable)
-      *value = 100;
+    if(val)
+      *value = (100 * val) / PWM_UNIT_MAX;
     else
-      *value = 0;
-  } else {
-    *value = (100 * val) / PWM_UNIT_MAX;
+      // 0 means duty cycle is 100%
+      *value = 100;
   }
+  else
+    //PWM is disable
+    *value = 0;
+
 
   return 0;
 }

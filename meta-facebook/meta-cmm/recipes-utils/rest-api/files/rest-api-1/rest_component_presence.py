@@ -24,7 +24,7 @@ import re
 
 def get_presence():
     result = {}
-    p = subprocess.Popen(['presence_util.sh'],
+    p = subprocess.Popen(['/usr/local/bin/presence_util.sh'],
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     data, err = p.communicate()

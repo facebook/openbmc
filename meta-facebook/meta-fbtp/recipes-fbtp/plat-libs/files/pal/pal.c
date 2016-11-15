@@ -5097,6 +5097,121 @@ error_exit:
   return RetVal;
 }
 
+/*
+ * Board specific version match verfication
+ *
+*/
+static int
+pal_check_vr_fw_code_match_MB(int startindex, int endindex, uint8_t *BinData, uint8_t BoardInfo)
+{
+  int RetVal = -1;
+  int j;
+  uint8_t BOARD_SKU_ID;
+  uint8_t FW_VersionUsed;
+  uint8_t FWCodeStage;
+  uint8_t BoardStage;
+  uint8_t VersionMapper[]=
+  {
+    EVT1,//evt1
+    EVT2,//evt2
+    EVT3,//evt3
+    DVT,   //dvt
+  };
+
+  //for evt3 and after version
+  uint8_t DevStageMapper[]=
+  {
+    DS_IFX,
+    SS_IFX,
+    DS_Fairchild,
+    SS_Fairchild,
+  };
+
+  //before evt3 version. evt1 and evt2
+  uint8_t EVTStageMapper[]=
+  {
+    IFX,
+    Fairchild,
+  };
+
+  //get board stage. evt1, evt2, evt3, or ...
+  RetVal = pal_get_board_rev_id(&BoardStage);
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] failed to get rev id!!\n", __func__);
+
+    return -1;
+  }
+
+  BoardStage = VersionMapper[BoardStage];
+
+  //only need to FM_BOARD_SKU_ID3/4
+  BOARD_SKU_ID = BoardInfo >> 3;
+
+  for ( j = startindex; j < endindex; j = j + 4 )// 4 bytes
+  {
+#ifdef VR_DEBUG
+    printf("[%s] %x %x %x %x\n", __func__, BinData[j], BinData[j+1], BinData[j+2], BinData[j+3]);
+#endif
+    //user data0 - 5e0c address. It represents that the vr fw code version
+    //we need to check the vr fw code is match MB or not
+    if ( ( 0x5e == BinData[j] ) && ( 0x0c == BinData[j+1] ) )
+    {
+      //it might to be 1,2,3, or 4
+      FW_VersionUsed = BinData[j+2];
+
+#ifdef VR_DEBUG
+      printf("[%s] FW_VersionUsed: %x \n", __func__, FW_VersionUsed);
+#endif
+      //its for EVT1, EVT2, or other?
+      FWCodeStage = BinData[j+3];
+
+#ifdef VR_DEBUG
+      printf("[%s] FWCodeStage: %x \n", __func__, FWCodeStage);
+#endif
+      break;
+    }
+  }
+
+  //identify stage is match or not
+  if ( BoardStage != FWCodeStage )
+  {
+    RetVal = -1;
+
+    goto error_exit;
+  }
+
+  //identify the version after EVT2
+  uint8_t SKUID;
+
+  if ( FWCodeStage > EVT2 )
+  {
+    SKUID = DevStageMapper[FW_VersionUsed-1];
+  }
+  else
+  {
+    SKUID = EVTStageMapper[FW_VersionUsed-1];
+
+    BOARD_SKU_ID = BOARD_SKU_ID & 0x1;
+  }
+
+  if ( SKUID == BOARD_SKU_ID )
+  {
+      return 0;
+  }
+  else
+  {
+    syslog(LOG_WARNING, "[%s] VR fw code does not match MB!\n", __func__);
+
+    RetVal = -1;
+
+    goto error_exit;
+  }
+
+error_exit:
+  return RetVal;
+}
+
 static int
 pal_check_integrity_of_vr_data(uint8_t SlaveAddr, uint8_t *ExpectedCRC, int StartIndex, int EndIndex, uint8_t *Data)
 {
@@ -5749,6 +5864,8 @@ int pal_vr_fw_update(uint8_t *BinData)
   int TotalProgress = 0;
   int CurrentProgress = 0;
   char BusName[64];
+  uint8_t BoardInfo;
+  uint8_t BOARD_SKU_ID0;
 
   //create a file to inform "read_vr function". do not send req to VR
   fd = open(VR_UPDATE_IN_PROGRESS, O_WRONLY | O_CREAT | O_TRUNC, 0700);
@@ -5847,11 +5964,30 @@ int pal_vr_fw_update(uint8_t *BinData)
     }
   }
 
+  //use FM_BOARD_SKU_ID0 to identify ODM#1 MB to initiate matching check
+  RetVal = pal_get_platform_id(&BoardInfo);
+  if ( RetVal < 0 )
+  {
+      syslog(LOG_WARNING, "[%s] Get PlatformID Error!\n", __func__);
+      goto error_exit;
+  }
+
+  BOARD_SKU_ID0 = BoardInfo & 0x1; //get FM_BOARD_SKU_ID0
+  if ( BOARD_SKU_ID0 )
+  {
+    //get 0x5e0c-userdata(version) data to compare the
+      RetVal = pal_check_vr_fw_code_match_MB(vr_data[0].IndexStartAddr, vr_data[0].IndexEndAddr, BinData, BoardInfo);
+      if ( RetVal < 0 )
+      {
+          syslog(LOG_WARNING, "[%s] Please Check vr fw code!\n", __func__);
+          goto error_exit;
+      }
+  }
+
   //check CRC
   for ( i = 0 ; i < VR_counts; i++ )
   {
     RetVal = pal_check_integrity_of_vr_data(vr_data[i].SlaveAddr, vr_data[i].CRC, vr_data[i].IndexStartAddr, vr_data[i].IndexEndAddr, BinData);
-
     if ( RetVal < 0 )
     {
       //the bin file is incomplete

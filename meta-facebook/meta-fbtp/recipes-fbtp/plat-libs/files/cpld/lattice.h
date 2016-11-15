@@ -60,5 +60,17 @@ static struct cpld_dev_info lattice_device_list[] = {
 		.cpld_erase = lcmxo2_2000hc_cpld_erase,
 		.cpld_program = lcmxo2_2000hc_cpld_program,
 		.cpld_verify = lcmxo2_2000hc_cpld_verify,
-	}
+  },
+  [1] = {
+    .name = "LC LCMXO2-4000HC",
+    .dev_id = 0x012BC043,
+    .dr_bits = 1272, // un-confirmed value
+    .row_num = 420, // un-confirmed value
+    .cpld_ver = lcmxo2_2000hc_cpld_ver,
+    .cpld_flash_enable = lcmxo2_2000hc_cpld_flash_enable,
+    .cpld_flash_disable = lcmxo2_2000hc_cpld_flash_disable,
+    .cpld_erase = lcmxo2_2000hc_cpld_erase,
+    .cpld_program = lcmxo2_2000hc_cpld_program,
+    .cpld_verify = lcmxo2_2000hc_cpld_verify,
+  }
 };

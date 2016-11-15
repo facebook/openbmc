@@ -86,7 +86,21 @@ gpio_num(char *str)
   return ret;
 }
 
-// Generic Event Handler for platform reset filter event
+// Generic Event Handler for GPIO changes with condition
+static void gpio_filter_handle(void *p)
+{
+  gpio_poll_st *gp = (gpio_poll_st*) p;
+
+  if (gp->gs.gs_gpio == gpio_num("GPIOM4") || //FM_CPU0_THERMTRIP_LATCH_LVT3_N
+      gp->gs.gs_gpio == gpio_num("GPIOM5") ){ //FM_CPU1_THERMTRIP_LATCH_LVT3_N
+    if (power_on_sec < 30)
+      return;
+  }
+
+  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+}
+
+// Generic Event Handler for GPIO changes with condition, only logs event when MB is ON
 static void gpio_filter_handle_power(void *p)
 {
   uint8_t status = 0;
@@ -130,10 +144,6 @@ static void gpio_filter_handle_power(void *p)
         gp->gs.gs_gpio == gpio_num("GPIOX7") || //H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N
         gp->gs.gs_gpio == gpio_num("GPIOAA1") ){ //IRQ_SML1_PMBUS_ALERT_N
     if (power_on_sec < 10)
-      return;
-  } if (gp->gs.gs_gpio == gpio_num("GPIOM4") || //FM_CPU0_THERMTRIP_LATCH_LVT3_N
-        gp->gs.gs_gpio == gpio_num("GPIOM5") ){ //FM_CPU1_THERMTRIP_LATCH_LVT3_N
-    if (power_on_sec < 30)
       return;
   }
 
@@ -203,8 +213,8 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOL4 - FM_MEM_THERM_EVENT_PCH_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOM0 - FM_CPU0_RC_ERROR_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
-  {{0, 0}, 0, gpio_filter_handle_power, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, 0, gpio_filter_handle_power, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_filter_handle, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPION3 - FM_CPU_MSMI_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
   {{0, 0}, 0, platform_reset_event_handle, "GPIOR5 - RST_BMC_PLTRST_BUF_N"},

@@ -3844,6 +3844,7 @@ pal_fetch_vr_ver(uint8_t vr, uint8_t *ver) {
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
@@ -3935,6 +3936,10 @@ pal_fetch_vr_ver(uint8_t vr, uint8_t *ver) {
   ver[2] = rbuf[1];
   ver[3] = rbuf[0];
 
+  sprintf(key, "vr_%02Xh_ver", vr);
+  sprintf(value, "%08X", *(unsigned int*)ver);
+  edb_cache_set(key, value);
+
 error_exit:
   if (fd > 0) {
     close(fd);
@@ -3952,6 +3957,7 @@ pal_fetch_vr_checksum(uint8_t vr, uint8_t *checksum) {
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
@@ -4043,6 +4049,10 @@ pal_fetch_vr_checksum(uint8_t vr, uint8_t *checksum) {
   checksum[2] = rbuf[1];
   checksum[3] = rbuf[0];
 
+  sprintf(key, "vr_%02Xh_checksum", vr);
+  sprintf(value, "%08X", *(unsigned int*)checksum);
+  edb_cache_set(key, value);
+
 error_exit:
   if (fd > 0) {
     close(fd);
@@ -4060,6 +4070,7 @@ pal_fetch_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
@@ -4125,6 +4136,10 @@ pal_fetch_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
 
   deviceId[0] = rbuf[1];
   deviceId[1] = rbuf[0];
+
+  sprintf(key, "vr_%02Xh_deviceId", vr);
+  sprintf(value, "%04X", *(unsigned short*)deviceId);
+  edb_cache_set(key, value);
 
 error_exit:
   if (fd > 0) {

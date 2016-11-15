@@ -39,6 +39,7 @@ IMAGE_INSTALL += " \
   usb-console \
   watchdog-ctrl \
   wedge-eeprom \
+  spatula \
   "
 
 IMAGE_FEATURES += " \

@@ -168,6 +168,7 @@
 #define FRU_EEPROM "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
 
 #define READING_NA -2
+#define READING_SKIP 1
 
 #define NIC_MAX_TEMP 125
 #define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
@@ -839,6 +840,8 @@ read_hsc_current_value(float *value) {
   ipmb_res_t *res;
   char path[64] = {0};
   int val=0;
+  int ret = 0;
+  static int retry = 0;
 
   req = (ipmb_req_t*)tbuf;
 
@@ -879,16 +882,23 @@ read_hsc_current_value(float *value) {
 #ifdef DEBUG
     syslog(LOG_DEBUG, "read_hsc_current_value: Zero bytes received\n");
 #endif
-    return READING_NA;
+    ret = READING_NA;
   }
   if (rbuf[6] == 0)
   {
     *value = ((float) (rbuf[11] << 8 | rbuf[10])*10-hsc_b )/(800*Rsence);
+    retry = 0;
   } else {
-    return READING_NA;
+    ret = READING_NA;
   }
 
-  return 0;
+  if (ret == READING_NA) {
+    retry++;
+    if (retry <= 3 )
+      ret = READING_SKIP;
+  }
+
+  return ret;
 }
 
 static int
@@ -900,6 +910,14 @@ read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
   uint8_t rlen = 0;
   ipmb_req_t *req;
   ipmb_res_t *res;
+  int ret = 0;
+  enum {
+    e_HSC_PIN,
+    e_HSC_VIN,
+    e_PCH_TEMP,
+    e_MAX,
+  };
+  static uint8_t retry[e_MAX] = {0};
 
   req = (ipmb_req_t*)tbuf;
   req->res_slave_addr = 0x2C; //ME's Slave Address
@@ -921,52 +939,78 @@ read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
 #ifdef DEBUG
     syslog(LOG_DEBUG, "read HSC %x from_ME: Zero bytes received\n", snr_num);
 #endif
-   return READING_NA;
+   ret = READING_NA;
   } else {
     if (rbuf[6] == 0)
     {
         if (rbuf[8] & 0x20) {
           //not available
-          return READING_NA;
-        } else {
-          if(snr_num == MB_SENSOR_HSC_IN_POWER) {
-            *value = (((float) rbuf[7])*0x20 + 0 )/10 ;
-          } else if(snr_num == MB_SENSOR_HSC_IN_VOLT) {
-            *value = (((float) rbuf[7])*0x02 + (0x5e*10) )/100 ;
-          } else if(snr_num == MB_SENSOR_PCH_TEMP) {
-            *value = (float) rbuf[7];
-          }
+          ret = READING_NA;
         }
     } else {
-      return READING_NA;
+      ret = READING_NA;
     }
   }
-  return 0;
+
+  if(snr_num == MB_SENSOR_HSC_IN_POWER) {
+    if (!ret) {
+      *value = (((float) rbuf[7])*0x20 + 0 )/10 ;
+      retry[e_HSC_PIN] = 0;
+    } else {
+      retry[e_HSC_PIN]++;
+      if (retry[e_HSC_PIN] <= 3)
+        ret = READING_SKIP;
+    }
+  } else if(snr_num == MB_SENSOR_HSC_IN_VOLT) {
+    if (!ret) {
+      *value = (((float) rbuf[7])*0x02 + (0x5e*10) )/100 ;
+      retry[e_HSC_VIN] = 0;
+    } else {
+      retry[e_HSC_VIN]++;
+      if (retry[e_HSC_VIN] <= 3)
+        ret = READING_SKIP;
+    }
+  } else if(snr_num == MB_SENSOR_PCH_TEMP) {
+    if (!ret) {
+      *value = (float) rbuf[7];
+      retry[e_PCH_TEMP] = 0;
+    } else {
+      retry[e_PCH_TEMP]++;
+      if (retry[e_PCH_TEMP] <= 3)
+        ret = READING_SKIP;
+    }
+  }
+  return ret;
 }
 
 static int
-read_cpu_dimm_temp(uint8_t snr_num, float *value) {
+read_cpu_temp(uint8_t snr_num, float *value) {
   int ret = 0;
   uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf1[256] = {0x00};
-  uint8_t rbuf2[256] = {0x00};
   static uint8_t tjmax[2] = {0x00};
+  static uint8_t tjmax_flag[2] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   ipmb_req_t *req;
   ipmb_res_t *res;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  uint8_t max_dimm = 0;
-  int i;
-  static uint8_t tjmax_flag = 0;
-  static float tjmax_cpu0 = 0.0;
-  static float tjmax_cpu1 = 0.0;
+  int cpu_index;
+  int16_t dts;
+  static uint8_t retry[2] = {0x00}; // CPU0 and CPU1
 
-  // cpu0_tjmax, cpu1_tjmax, cpu0_temp, cpu1_temp, CPU0_DIMM_GRPA_TEMP,
-  // CPU1_DIMM_GRPC_TEMP, CPU0_DIMM_GRPB_TEMP, CPU1_DIMM_GRPD_TEMP
-  static uint8_t ME_sensor_retry[8] = {0x00};
+  switch (snr_num) {
+    case MB_SENSOR_CPU0_TEMP:
+      cpu_index = 0;
+      break;
+    case MB_SENSOR_CPU1_TEMP:
+      cpu_index = 1;
+      break;
+    default:
+      return -1;
+  }
 
   req = (ipmb_req_t*)tbuf;
 
@@ -979,14 +1023,13 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
   req->req_slave_addr = 0x20;
   req->seq_lun = 0x00;
 
-  if( tjmax_flag == 0 ) { // First time to get CPU0/CPU1 Tjmax reading
+  if( tjmax_flag[cpu_index] == 0 ) { // First time to get CPU0/CPU1 Tjmax reading
     //Get CPU0/CPU1 Tjmax
-    req->cmd = CMD_NM_AGGREGATED_SEND_RAW_PECI;
+    req->cmd = CMD_NM_SEND_RAW_PECI;
     req->data[0] = 0x57;
     req->data[1] = 0x01;
-
     req->data[2] = 0x00;
-    req->data[3] = 0x30;
+    req->data[3] = 0x30 + cpu_index;
     req->data[4] = 0x05;
     req->data[5] = 0x05;
     req->data[6] = 0xa1;
@@ -994,387 +1037,187 @@ read_cpu_dimm_temp(uint8_t snr_num, float *value) {
     req->data[8] = 0x10;
     req->data[9] = 0x00;
     req->data[10] = 0x00;
-    req->data[11] = 0x31;
-    req->data[12] = 0x05;
-    req->data[13] = 0x05;
-    req->data[14] = 0xa1;
-    req->data[15] = 0x00;
-    req->data[16] = 0x10;
-    req->data[17] = 0x00;
-    req->data[18] = 0x00;
-    tlen = 25;
+    tlen = 17;
+    // Invoke IPMB library handler
+    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+    if (rlen == 0) {
+    //ME no response
+#ifdef DEBUG
+      syslog(LOG_DEBUG, "%s(%d): Zero bytes received\n", __func__, __LINE__);
+#endif
+    } else {
+      if (rbuf1[6] == 0)
+      {
+        // If PECI command successes and got a reasonable value
+        if ( (rbuf1[10] == 0x40) && rbuf1[10] > 50) {
+          tjmax[cpu_index] = rbuf1[13];
+          tjmax_flag[cpu_index] = 1;
+        }
+      }
+    }
+  }
+
+  //Updated CPU Tjmax cache
+  sprintf(key, "mb_sensor%d", (cpu_index?MB_SENSOR_CPU1_TJMAX:MB_SENSOR_CPU0_TJMAX));
+  if (tjmax_flag[cpu_index] != 0) {
+    sprintf(str, "%.2f",(float) tjmax[cpu_index]);
+  } else {
+    //ME no response or PECI command completion code error. Set "NA" in sensor cache.
+    strcpy(str, "NA");
+  }
+  edb_cache_set(key, str);
+
+  // Get CPU temp if BMC got TjMax
+  ret = READING_NA;
+  if (tjmax_flag[cpu_index] != 0) {
+    rlen = 0;
+    memset( rbuf1,0x00,sizeof(rbuf1) );
+    //Get CPU Temp
+    req->cmd = CMD_NM_SEND_RAW_PECI;
+    req->data[0] = 0x57;
+    req->data[1] = 0x01;
+    req->data[2] = 0x00;
+    req->data[3] = 0x30 + cpu_index;
+    req->data[4] = 0x05;
+    req->data[5] = 0x05;
+    req->data[6] = 0xa1;
+    req->data[7] = 0x00;
+    req->data[8] = 0x02;
+    req->data[9] = 0xff;
+    req->data[10] = 0x00;
+    tlen = 17;
+
+    // Invoke IPMB library handler
+    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+
+    if (rlen == 0) {
+      //ME no response
+#ifdef DEBUG
+      syslog(LOG_DEBUG, "%s(%d): Zero bytes received\n", __func__, __LINE__);
+#endif
+    } else {
+      if (rbuf1[6] == 0) { // ME Completion Code
+        if ( (rbuf1[10] == 0x40) ) { // PECI Completion Code
+          dts = (rbuf1[11] | rbuf1[12] << 8);
+          // Intel Doc#554767 p.58: Reserved Values 0x8000~0x81ff
+          if (dts <= -32257) {
+            ret = READING_NA;
+          } else {
+            // 16-bit, 2s complement [15]Sign Bit;[14:6]Integer Value;[5:0]Fractional Value
+            *value = (float) (tjmax[0] + (dts >> 6));
+            ret = 0;
+          }
+        }
+      }
+    }
+  }
+
+  if (ret != 0) {
+    retry[cpu_index]++;
+    if (retry[cpu_index] <= 3) {
+      ret = READING_SKIP;
+      return ret;
+    }
+  } else
+    retry[cpu_index] = 0;
+
+  return ret;
+}
+
+static int
+read_dimm_temp(uint8_t snr_num, float *value) {
+  int ret = READING_NA;
+  uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf1[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  int dimm_index, i;
+  int max = 0;
+  static uint8_t retry[4] = {0x00};
+
+  switch (snr_num) {
+    case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
+      dimm_index = 0;
+      break;
+    case MB_SENSOR_CPU0_DIMM_GRPB_TEMP:
+      dimm_index = 1;
+      break;
+    case MB_SENSOR_CPU1_DIMM_GRPC_TEMP:
+      dimm_index = 2;
+      break;
+    case MB_SENSOR_CPU1_DIMM_GRPD_TEMP:
+      dimm_index = 3;
+      break;
+    default:
+      return -1;
+  }
+
+  req = (ipmb_req_t*)tbuf;
+
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+
+  for (i=0; i<3; i++) { // Get 3 channel for each DIMM group
+    //Get DIMM Temp per channel
+    req->cmd = CMD_NM_SEND_RAW_PECI;
+    req->data[0] = 0x57;
+    req->data[1] = 0x01;
+    req->data[2] = 0x00;
+    req->data[3] = 0x30 + (dimm_index / 2);
+    req->data[4] = 0x05;
+    req->data[5] = 0x05;
+    req->data[6] = 0xa1;
+    req->data[7] = 0x00;
+    req->data[8] = 0x0e;
+    req->data[9] = 0x00 + (dimm_index % 2 * 3) + i;
+    req->data[10] = 0x00;
+    tlen = 17;
 
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
     if (rlen == 0) {
     //ME no response
 #ifdef DEBUG
-      syslog(LOG_DEBUG, "read_cpu_dimm_temp a: Zero bytes received\n");
+      syslog(LOG_DEBUG, "%s(%d): Zero bytes received\n", __func__, __LINE__);
 #endif
-      ret = -1;
     } else {
       if (rbuf1[6] == 0)
       {
-        //Get CPU0 Tjmax
-        if ( (rbuf1[10] == 0x00 ) && (rbuf1[11] == 0x40 ) ) {
-          tjmax[0] = rbuf1[14];
-          sprintf(str, "%.2f",(float) tjmax[0]);
-          tjmax_cpu0 = (float) tjmax[0];
-          tjmax_flag = 1;
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-            syslog(LOG_WARNING, "read_cpu_dimm_temp P0_tjmax: cache_set key = %s, str = %s failed.",
-                        key, str);
-#endif
-          }
-        } else {
-          ME_sensor_retry[0]++;
-          if(ME_sensor_retry[0] > 3)  {
-            strcpy(str, "NA");
-            ME_sensor_retry[0] = 0;
-            sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-            if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-              syslog(LOG_WARNING, "read_cpu_dimm_temp P0_tjmax: cache_set key = %s, str = %s failed.",
-                      key, str);
-#endif
-            }
-          }
-        }
-        //Get CPU1 Tjmax
-        if ( (rbuf1[16] == 0x00 ) && (rbuf1[17] == 0x40 ) ) {
-          tjmax[1] = rbuf1[20];
-          sprintf(str, "%.2f",(float) tjmax[1]);
-          tjmax_cpu1 = (float) tjmax[1];
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-            syslog(LOG_WARNING, "read_cpu_dimm_temp P0_tjmax: cache_set key = %s, str = %s failed.",
-                        key, str);
-#endif
-          }
-        } else {
-          ME_sensor_retry[1]++;
-          if(ME_sensor_retry[1] > 3)  {
-            strcpy(str, "NA");
-            ME_sensor_retry[1] = 0;
-            sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-            if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-              syslog(LOG_WARNING, "read_cpu_dimm_temp P0_tjmax: cache_set key = %s, str = %s failed.",
-                        key, str);
-#endif
-            }
-          }
-        }
-      }
-    }
-
-    //ME no response or PECI command completion code error. Set "NA" in sensor cache.
-    if (tjmax_flag == 0) {
-      ME_sensor_retry[0]++;
-      if(ME_sensor_retry[0] > 3)  {
-        strcpy(str, "NA");
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp P1_tjmax: cache_set key = %s, str = %s failed.",
-                        key, str);
-#endif
-        }
-      }
-
-      ME_sensor_retry[1]++;
-      if(ME_sensor_retry[1] > 3)  {
-        strcpy(str, "NA");
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp P1_tjmax: cache_set key = %s, str = %s failed.",
-                          key, str);
-#endif
-        }
-      }
-    }
-  } else {  //CPU Tjmax already get reading successfully
-    if ( tjmax_cpu0 != 0) {
-      sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-      sprintf(str, "%.2f", tjmax_cpu0);
-      edb_cache_set(key, str);
-     } else {
-       strcpy(str, "NA");
-       sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-       edb_cache_set(key, str);
-     }
-     if (tjmax_cpu1 != 0) {
-       sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-       sprintf(str, "%.2f", tjmax_cpu1);
-       edb_cache_set(key, str);
-      } else {
-        strcpy(str, "NA");
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-        edb_cache_set(key, str);
-    }
-  }
-
-    rlen = 0;
-    memset( rbuf1,0x00,sizeof(rbuf1) );
-  //Get all CPU and DIMM cmd (CPU0/CPU1 Temp, CH0,CH1,CH2,CH3 DIMM Temp)
-    req->cmd = CMD_NM_GET_CPU_MEM_TEMP;
-    req->data[0] = 0x57;
-    req->data[1] = 0x01;
-    req->data[2] = 0x00;
-    req->data[3] = 0x03;
-    req->data[4] = 0x33;
-    req->data[5] = 0x33;
-    req->data[6] = 0x33;
-    req->data[7] = 0x33;
-    req->data[8] = 0x00;
-    req->data[9] = 0x00;
-    req->data[10] = 0x00;
-    req->data[11] = 0x00;
-    tlen = 18;
-
-   // Invoke IPMB library handler
-    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
-
-    if (rlen == 0) {
-  //ME no response
-#ifdef DEBUG
-      syslog(LOG_DEBUG, "read_cpu_dimm_temp b: Zero bytes received\n");
-#endif
-      ret = -1;
-    } else {
-    if (rbuf1[6] == 0) {
-      //CPU0 Temp
-      if ( (rbuf1[10] < 0xFD) && (tjmax_cpu0 != 0x00) ) {
-        *value = (float) (tjmax[0] - rbuf1[10]) ;
-        sprintf(str, "%.2f",*((float*)value));
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TEMP);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp cpu0_temp: cache_set key = %s, str = %s failed.",
-                  key, str);
-#endif
-        }
-      } else {
-        ME_sensor_retry[2]++;
-        if(ME_sensor_retry[2] > 3)  {
-          strcpy(str, "NA");
-          ME_sensor_retry[2] = 0;
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TEMP);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-            syslog(LOG_WARNING, "read_cpu_dimm_temp cpu0_temp: cache_set key = %s, str = %s failed.",
-                    key, str);
-#endif
-          }
-        }
-      }
-
-      //CPU1 Temp
-      if ( (rbuf1[11] < 0xFD) && (tjmax_cpu1 != 0x00)  ) {
-        sprintf(str, "%.2f",(float) (tjmax[1] - rbuf1[11]));
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TEMP);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp cpu1_temp: cache_set key = %s, str = %s failed.",
-                  key, str);
-#endif
-         }
-      } else {
-        ME_sensor_retry[3]++;
-        if(ME_sensor_retry[3] > 3)  {
-          strcpy(str, "NA");
-          ME_sensor_retry[3] = 0;
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TEMP);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-            syslog(LOG_WARNING, "read_cpu_dimm_temp cpu1_temp: cache_set key = %s, str = %s failed.",
-                      key, str);
-#endif
-          }
-        }
-      }
-
-      //MB_SENSOR_CPU0_DIMM_GRPA_TEMP
-      if ( (rbuf1[12] >= 0xFD) && (rbuf1[13] >= 0xFD) && (rbuf1[14] >= 0xFD) && (rbuf1[15] >= 0xFD) &&
-              (rbuf1[16] >= 0xFD) && (rbuf1[17] >= 0xFD) ) {
-        ME_sensor_retry[4]++;
-        if(ME_sensor_retry[4] > 3) {
-          strcpy(str, "NA");
-          ME_sensor_retry[4] = 0;
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_DIMM_GRPA_TEMP);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-            syslog(LOG_WARNING, "read_cpu_dimm_temp CPU0_DIMM_GRPA_TEMP: cache_set key = %s,"
-                                "str = %s failed.", key, str);
-#endif
-          }
-        }
-      } else {
-        for( i=12 ; i<18 ; i++) {
-          if( rbuf1[i] < 0xFD ) {
-            if( rbuf1[i] > max_dimm )
-              max_dimm = rbuf1[i];
-          }
-        }
-        sprintf(str, "%.2f",(float) max_dimm);
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_DIMM_GRPA_TEMP);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-            syslog(LOG_WARNING, "read_cpu_dimm_temp CPU0_DIMM_GRPA_TEMP: cache_set key = %s, "
-                                "str = %s failed.", key, str);
-#endif
-        }
-      }
-
-      max_dimm = 0;
-      //MB_SENSOR_CPU1_DIMM_GRPC_TEMP
-      if ( (rbuf1[20] >= 0xFD) && (rbuf1[21] >= 0xFD) && (rbuf1[22] >= 0xFD) &&
-            (rbuf1[23] >= 0xFD) && (rbuf1[24] >= 0xFD) && (rbuf1[25] >= 0xFD) ) {
-        ME_sensor_retry[5]++;
-        if(ME_sensor_retry[5] > 3) {
-          strcpy(str, "NA");
-          ME_sensor_retry[5] = 0;
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_DIMM_GRPC_TEMP);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-            syslog(LOG_WARNING, "read_cpu_dimm_temp CPU1_DIMM_GRPC_TEMP: cache_set key = %s, "
-                                "str = %s failed.", key, str);
-#endif
-          }
-        }
-      } else {
-        for( i=20 ; i<26 ; i++) {
-          if( rbuf1[i] < 0xFD ) {
-            if( rbuf1[i] > max_dimm )
-              max_dimm = rbuf1[i];
-          }
-        }
-        sprintf(str, "%.2f",(float) max_dimm);
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_DIMM_GRPC_TEMP);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-        syslog(LOG_WARNING, "read_cpu_dimm_temp CPU1_DIMM_GRPC_TEMP: cache_set key = %s, "
-                            "str = %s failed.", key, str);
-#endif
+        // If PECI command successes
+        if ( (rbuf1[10] == 0x40)) {
+          if (rbuf1[11] > max)
+            max = rbuf1[11];
+          if (rbuf1[12] > max)
+            max = rbuf1[11];
         }
       }
     }
   }
+  if (max != 0)
+    ret = 0;
 
-   rlen = 0;
-    max_dimm = 0;
-    //Get CH4, CH5 DIMM Temp
-   req->cmd = CMD_NM_GET_CPU_MEM_TEMP;
-   req->data[0] = 0x57;
-   req->data[1] = 0x01;
-   req->data[2] = 0x00;
-   req->data[3] = 0x40;
-   req->data[4] = 0x33;
-   req->data[5] = 0x00;
-   req->data[6] = 0x33;
-   req->data[7] = 0x00;
-   req->data[8] = 0x00;
-   req->data[9] = 0x00;
-   req->data[10] = 0x00;
-   req->data[11] = 0x00;
-   tlen = 18;
-
-   // Invoke IPMB library handler
-    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf2, &rlen);
-
-    if (rlen == 0) {
-  //ME no response
-#ifdef DEBUG
-      syslog(LOG_DEBUG, "read_cpu_dimm_temp c: Zero bytes received\n");
-#endif
-      ret = -1;
-  } else {
-    if (rbuf2[6] == 0) {
-      //MB_SENSOR_CPU0_DIMM_GRPB_TEMP
-      if ( (rbuf1[18] >= 0xFD) && (rbuf1[19] >= 0xFD) && (rbuf2[10] >= 0xFD) &&
-            (rbuf2[11] >= 0xFD) && (rbuf2[12] >= 0xFD) && (rbuf2[13] >= 0xFD) ) {
-         ME_sensor_retry[6]++;
-        if(ME_sensor_retry[6] > 3) {
-          strcpy(str, "NA");
-          ME_sensor_retry[6] = 0;
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_DIMM_GRPB_TEMP);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp CPU0_DIMM_GRPB_TEMP: cache_set key = %s, "
-                              "str = %s failed.", key, str);
-#endif
-          }
-        }
-
-      } else {
-        for( i=18 ; i<20 ; i++){
-          if( rbuf1[i] < 0xFD ){
-            if( rbuf1[i] > max_dimm )
-              max_dimm = rbuf1[i];
-          }
-        }
-
-        for( i=10 ; i<14 ; i++){
-           if( rbuf2[i] < 0xFD ){
-            if( rbuf2[i] > max_dimm )
-              max_dimm = rbuf2[i];
-          }
-        }
-        sprintf(str, "%.2f",(float) max_dimm);
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_DIMM_GRPB_TEMP);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp CPU0_DIMM_GRPB_TEMP: cache_set key = %s, "
-                              "str = %s failed.", key, str);
-#endif
-      }
+  if (ret != 0) {
+    retry[dimm_index]++;
+    if (retry[dimm_index] <= 3) {
+      ret = READING_SKIP;
+      return ret;
     }
+  } else
+    retry[dimm_index] = 0;
 
-
-      max_dimm = 0;
-      //MB_SENSOR_CPU1_DIMM_GRPD_TEMP
-      if ( (rbuf1[26] >= 0xFD) && (rbuf1[27] >= 0xFD) && (rbuf2[14] >= 0xFD) &&
-            (rbuf2[15] >= 0xFD) && (rbuf2[16] >= 0xFD) && (rbuf2[17] >= 0xFD) ) {
-        ME_sensor_retry[7]++;
-        if(ME_sensor_retry[7] > 3) {
-          strcpy(str, "NA");
-          ME_sensor_retry[7] = 0;
-          sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_DIMM_GRPD_TEMP);
-          if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp CPU1_DIMM_GRPD_TEMP: cache_set key = %s, "
-                              "str = %s failed.", key, str);
-#endif
-          }
-        }
-
-     } else {
-        for( i=26 ; i<28 ; i++){
-          if( rbuf1[i] < 0xFD ){
-            if( rbuf1[i] > max_dimm )
-              max_dimm = rbuf1[i];
-          }
-        }
-        for( i=14 ; i<18 ; i++){
-          if( rbuf2[i] < 0xFD ){
-            if( rbuf2[i] > max_dimm )
-              max_dimm = rbuf2[i];
-          }
-        }
-        sprintf(str, "%.2f",(float) max_dimm);
-        sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_DIMM_GRPD_TEMP);
-        if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "read_cpu_dimm_temp CPU1_DIMM_GRPD_TEMP: cache_set key = %s, "
-                              "str = %s failed.", key, str);
-#endif
-        }
-      }
-    }
+  if (ret == 0) {
+    *value = (float)max;
   }
 
   return ret;
@@ -2747,30 +2590,14 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       //CPU, DIMM, PCH Temp
       case MB_SENSOR_CPU0_TEMP:
-        while (retry) {
-          ret = read_cpu_dimm_temp(MB_SENSOR_CPU0_TEMP, (float*) value);
-          if (*(float *)value != 0.0f) {
-            retry = 0;
-          } else {
-            retry--;
-            ret = READING_NA;
-            msleep(50);
-          }
-        }
-        break;
       case MB_SENSOR_CPU1_TEMP:
+        ret = read_cpu_temp(sensor_num, (float*) value);
+        break;
       case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
       case MB_SENSOR_CPU0_DIMM_GRPB_TEMP:
       case MB_SENSOR_CPU1_DIMM_GRPC_TEMP:
       case MB_SENSOR_CPU1_DIMM_GRPD_TEMP:
-        sprintf(key, "mb_sensor%d", sensor_num);
-        edb_cache_get(key, str);
-        if (strcmp(str, "NA") != 0) {
-          *(float*)value = strtof (str, NULL);
-          ret = 0;
-        } else {
-          ret = READING_NA;
-        }
+        ret = read_dimm_temp(sensor_num, (float*) value);
         break;
       case MB_SENSOR_PCH_TEMP:
         ret = read_sensor_reading_from_ME(MB_SENSOR_PCH_TEMP, (float*) value);

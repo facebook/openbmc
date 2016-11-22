@@ -53,7 +53,7 @@ do_status() {
 
 do_on_com_e() {
     #echo 1 > $PWR_USRV_SYSFS
-	i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
+    i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
     return $?
 }
 
@@ -85,36 +85,40 @@ do_on() {
     do_on_com_e
     ret=$?
     if [ $ret -eq 0 ]; then
-		#enable I2c buffer to EC
-		i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
+        #enable I2c buffer to EC
+        i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
         echo " Done"
+        logger "Successfully power on micro-server"
     else
         echo " Failed"
+        logger "Failed to power on micro-server"
     fi
     return $ret
 }
 
 do_off_com_e() {
     #echo 0 > $PWR_USRV_SYSFS
-	i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
-	sleep 15
-	i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
-	sleep 10
-    return $?
+    i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+    sleep 15
+    i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+    sleep 10
+    return 0
 }
 
 do_off() {
     local ret
-	echo -n "Power off microserver(about 30s) ..."
-	#disable the I2C buffer to EC first
-	i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
-	sleep 1
+    echo -n "Power off microserver(about 30s) ..."
+    #disable the I2C buffer to EC first
+    i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
+    sleep 1
     do_off_com_e
     ret=$?
     if [ $ret -eq 0 ]; then
         echo " Done"
+        logger "Successfully power off micro-server"
     else
         echo " Failed"
+        logger "Failed to power off micro-server"
     fi
     return $ret
 }
@@ -134,6 +138,7 @@ do_reset() {
         esac
     done
     if [ $system -eq 1 ]; then
+        logger "Power reset the whole system ..."
         echo -n "Power reset whole system ..."
         sleep 1
         echo 0 > $PWR_SYSTEM_SYSFS
@@ -145,10 +150,11 @@ do_reset() {
         fi
         echo -n "Power reset microserver ..."
         #echo 0 > $PWR_USRV_RST_SYSFS
-		i2cset -f -y 0 0x3e 0x11 0x0 2> /dev/null
+        i2cset -f -y 0 0x3e 0x11 0x0 2> /dev/null
         sleep 1
         #echo 1 > $PWR_USRV_RST_SYSFS
-		i2cset -f -y 0 0x3e 0x11 0x1 2> /dev/null
+        i2cset -f -y 0 0x3e 0x11 0x1 2> /dev/null
+        logger "Successfully power reset micro-server"
     fi
     echo " Done"
     return 0
@@ -156,24 +162,25 @@ do_reset() {
 
 do_recovery() {
     local ret
-	echo -n "Power on microserver recovery(about 30s) ..."
-	#disable the I2C buffer to EC first
-	i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
-	sleep 1
-	i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
-	usleep 11000
-	i2cset -f -y 0 0x3e 0x0b 0xff 2> /dev/null
-	sleep 15
-	i2cset -f -y 0 0x3e 0x0b 0xfe 2> /dev/null
-	usleep 11000
-	i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
-	sleep 10
-	i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
-	usleep 11000
-	#enable I2c buffer to EC
-	i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
+    echo -n "Power on microserver recovery(about 30s) ..."
+    #disable the I2C buffer to EC first
+    i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
+    sleep 1
+    i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+    usleep 11000
+    i2cset -f -y 0 0x3e 0x0b 0xff 2> /dev/null
+    sleep 15
+    i2cset -f -y 0 0x3e 0x0b 0xfe 2> /dev/null
+    usleep 11000
+    i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+    sleep 10
+    i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
+    usleep 11000
+    #enable I2c buffer to EC
+    i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
 
     echo " Done"
+    logger "Successfully power recover micro-server"
     return 0
 }
 

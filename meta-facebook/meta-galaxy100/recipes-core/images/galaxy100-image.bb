@@ -21,25 +21,26 @@ IMAGE_INSTALL += " \
   at93cx6-util \
   bcm5396-util \
   bitbang \
-  rackmon \
   cpldupdate \
   flashrom \
   ipmid \
   lldp-util \
+  mTerm \
   memtester  \
   mkeeprom  \
   openbmc-utils \
   openbmc-gpio \
   po-eeprom \
+  rackmon \
   repeater  \
   retimer  \
   sensor-setup \
   sms-kcsd \
+  spatula \
   stress  \
   usb-console \
   watchdog-ctrl \
   wedge-eeprom \
-  spatula \
   "
 
 IMAGE_FEATURES += " \

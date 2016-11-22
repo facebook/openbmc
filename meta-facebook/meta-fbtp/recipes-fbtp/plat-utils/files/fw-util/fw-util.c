@@ -338,11 +338,21 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     printf("slot%d is empty!\n", slot_id);
     goto err_exit;
   }
-#if 0
+
   if (!strcmp(argv[3], "--cpld")) {
-     return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
+    if ( !cpld_intf_open() ) {
+      ret = cpld_program(argv[4]);
+      cpld_intf_close();
+      if ( ret < 0 ) {
+        printf("Error Occur at updating CPLD FW!\n");
+        goto err_exit;
+      }
+    } else {
+      printf("Cannot open JTAG!\n");
+    }
+    return 0;
   }
-#endif
+
   if (!strcmp(argv[3], "--bios")) {
     system("/usr/local/bin/power-util mb off");
     system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");

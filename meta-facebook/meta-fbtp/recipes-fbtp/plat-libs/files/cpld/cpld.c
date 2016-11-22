@@ -86,12 +86,7 @@ int cpld_intf_close(void)
 
 int cpld_get_ver(unsigned int *ver)
 {
-	if (cur_dev->cpld_flash_enable())
-		return -1;
-
 	cur_dev->cpld_ver(ver);
-
-	cur_dev->cpld_flash_disable();
 
 	return 0;
 }
@@ -99,7 +94,7 @@ int cpld_get_ver(unsigned int *ver)
 int cpld_get_device_id(unsigned int *dev_id)
 {
 	/* SIR 8 TDI (16); */
-	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, IDCODE_PUB);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_IDCODE_PUB);
 	ast_jtag_tdo_xfer(0, 32, dev_id);
 
 	return 0;
@@ -113,10 +108,21 @@ int cpld_verify(void)
 	return cur_dev->cpld_verify(fp_in);
 }
 
-int cpld_program(void)
+int cpld_program(char *JEDFILE)
 {
-	if (cur_dev == NULL || fp_in == NULL)
-		return -1;
+  fp_in = fopen(JEDFILE,"r");
+  if ( NULL == cur_dev )
+  {
+      printf("[%s] Cannot get pointer from DEVICE!\n", __func__);
+
+      return -1;
+  }
+  else if ( NULL == fp_in )
+  {
+      printf("[%s] Cannot Open File!\n", __func__);
+
+      return -1;
+  }
 
 	return cur_dev->cpld_program(fp_in);
 }

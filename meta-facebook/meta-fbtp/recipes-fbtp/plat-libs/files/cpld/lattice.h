@@ -21,8 +21,21 @@
 #define	LSCC_PROGRAM_INCR_RTI		0x67
 
 #define	READ_STATUS			0xb2
-#define	IDCODE_PUB			0xE0
-#define	BYPASS				0xff
+/*LCMXO2 Programming Command*/
+#define LCMXO2_IDCODE_PUB          0xE0
+#define LCMXO2_ISC_ENABLE_X        0x74
+#define LCMXO2_LSC_CHECK_BUSY      0xF0
+#define LCMXO2_LSC_READ_STATUS     0x3C
+#define LCMXO2_ISC_ERASE           0x0E
+#define LCMXO2_LSC_INIT_ADDRESS    0x46
+#define LCMXO2_LSC_INIT_ADDR_UFM   0x47
+#define LCMXO2_LSC_PROG_INCR_NV    0x70
+#define LCMXO2_ISC_PROGRAM_USERCOD 0xC2
+#define LCMXO2_USERCODE            0xC0
+#define LCMXO2_LSC_READ_INCR_NV    0x73
+#define LCMXO2_ISC_PROGRAM_DONE    0x5E
+#define LCMXO2_ISC_DISABLE         0x26
+#define BYPASS                     0xFF
 
 /*************************************************************************************/
 /* LC LCMXO2-2000HC */
@@ -32,7 +45,9 @@ extern int lcmxo2_2000hc_cpld_flash_disable(void);
 extern int lcmxo2_2000hc_cpld_erase(void);
 extern int lcmxo2_2000hc_cpld_program(FILE *jed_fd);
 extern int lcmxo2_2000hc_cpld_verify(FILE *jed_fd);
-
+/*LCMXO2Family*/
+extern int LCMXO2Family_cpld_update(FILE *jed_fd);
+extern int LCMXO2Family_cpld_Get_Ver(unsigned int *ver);
 /*************************************************************************************/
 struct cpld_dev_info {
 	const char		*name;
@@ -52,25 +67,13 @@ static struct cpld_dev_info lattice_device_list[] = {
 	[0] = {
 		.name = "LC LCMXO2-2000HC",
 		.dev_id = 0x012BB043,
-		.dr_bits = 1272,
-		.row_num = 420,
-		.cpld_ver = lcmxo2_2000hc_cpld_ver,
-		.cpld_flash_enable = lcmxo2_2000hc_cpld_flash_enable,
-		.cpld_flash_disable = lcmxo2_2000hc_cpld_flash_disable,
-		.cpld_erase = lcmxo2_2000hc_cpld_erase,
-		.cpld_program = lcmxo2_2000hc_cpld_program,
-		.cpld_verify = lcmxo2_2000hc_cpld_verify,
+		.cpld_ver = LCMXO2Family_cpld_Get_Ver,
+		.cpld_program = LCMXO2Family_cpld_update,
   },
   [1] = {
     .name = "LC LCMXO2-4000HC",
     .dev_id = 0x012BC043,
-    .dr_bits = 1272, // un-confirmed value
-    .row_num = 420, // un-confirmed value
-    .cpld_ver = lcmxo2_2000hc_cpld_ver,
-    .cpld_flash_enable = lcmxo2_2000hc_cpld_flash_enable,
-    .cpld_flash_disable = lcmxo2_2000hc_cpld_flash_disable,
-    .cpld_erase = lcmxo2_2000hc_cpld_erase,
-    .cpld_program = lcmxo2_2000hc_cpld_program,
-    .cpld_verify = lcmxo2_2000hc_cpld_verify,
+    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
+    .cpld_program = LCMXO2Family_cpld_update,
   }
 };

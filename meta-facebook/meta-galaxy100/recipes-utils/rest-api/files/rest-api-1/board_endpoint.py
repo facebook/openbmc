@@ -22,6 +22,7 @@ import rest_fruid_scm
 import rest_seutil
 import rest_sol
 import rest_usb2i2c_reset
+import rest_firmware
 
 boardApp = bottle.Bottle()
 
@@ -49,3 +50,9 @@ def rest_sol_act_hdl():
 @boardApp.route('/api/sys/usb2i2c_reset')
 def rest_usb2i2c_reset_hdl():
     return rest_usb2i2c_reset.set_usb2i2c()
+
+
+# Handler to get firmware info
+@boardApp.route('/api/sys/firmware_info')
+def rest_firmware_info():
+    return rest_firmware.get_firmware_info()

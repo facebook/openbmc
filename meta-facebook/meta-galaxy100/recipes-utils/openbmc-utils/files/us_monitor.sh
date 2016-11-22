@@ -25,34 +25,38 @@ TH_RESTORE_VOL=1028
 th_shutdown=0
 
 restore_us_com() {
-	repeater_config
-	KR10G_repeater_config
-	wedge_power_on_board
-	i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
+    repeater_config
+    KR10G_repeater_config
+    wedge_power_on_board
+    i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
+    logger "Power on micro-server after inserting SCM"
 }
 
 lm57_monitor() {
-	vol=$(cat /sys/devices/platform/ast_adc.0/in0_input 2> /dev/null)
-	vol=$(($vol / 2))
-	if [ $vol -le ${TH_SHUTDOWN_VOL} ] && [ $th_shutdown -eq 0 ] ; then
-		echo "Shut down TH power by LM57 over temperature..."
-		echo "ADC=$vol, standard=$TH_SHUTDOWN_VOL"
-		wedge_power_off_board
-		th_shutdown=1
-	fi
-	if [ $vol -ge ${TH_RESTORE_VOL} ] && [ $th_shutdown -eq 1 ] ; then
-		echo "restore TH power by LM57 temperature drop..."
-		echo "ADC=$vol, standard=$TH_RESTORE_VOL"
-		wedge_power_on_board
-		th_shutdown=0
-	fi
-	cpld_val=$(i2cget -f -y 12 0x31 0x15 2> /dev/null)
-	if [ $vol -ge ${TH_RESTORE_VOL} ] && [ "$cpld_val" = "0x11" ] ; then
-		echo "restore TH power which shutdown by CPLD..."
-		i2cset -f -y 12 0x31 0x15 0x0 2> /dev/null
-		wedge_power_on_board
-		th_shutdown=0
-	fi
+    vol=$(cat /sys/devices/platform/ast_adc.0/in0_input 2> /dev/null)
+    vol=$(($vol / 2))
+    if [ $vol -le ${TH_SHUTDOWN_VOL} ] && [ $th_shutdown -eq 0 ] ; then
+        echo "Shut down TH power by LM57 over temperature..."
+        echo "ADC=$vol, standard=$TH_SHUTDOWN_VOL"
+        wedge_power_off_board
+        th_shutdown=1
+        logger "Power off micro-server due to LM57 over temperature (${vol} vs ${TH_SHUTDOWN_VOL})"
+    fi
+    if [ $vol -ge ${TH_RESTORE_VOL} ] && [ $th_shutdown -eq 1 ] ; then
+        echo "restore TH power by LM57 temperature drop..."
+        echo "ADC=$vol, standard=$TH_RESTORE_VOL"
+        wedge_power_on_board
+        th_shutdown=0
+        logger "Power on micro-server after LM57 temperature drop (${vol} vs ${TH_SHUTDOWN_VOL})"
+    fi
+    cpld_val=$(i2cget -f -y 12 0x31 0x15 2> /dev/null)
+    if [ $vol -ge ${TH_RESTORE_VOL} ] && [ "$cpld_val" = "0x11" ] ; then
+        echo "restore TH power which shutdown by CPLD..."
+        i2cset -f -y 12 0x31 0x15 0x0 2> /dev/null
+        wedge_power_on_board
+        th_shutdown=0
+        logger "Power on micro-server caused by CPLD (${cpld_val}, ${vol} vs ${TH_SHUTDOWN_VOL})"
+    fi
 }
 
 val=0
@@ -61,19 +65,19 @@ echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
 ((card_val=$(i2cget -f -y 12 0x31 0x0 2> /dev/null | head -n 1)))
 card_val=$(($card_val % 16))
 if [ $card_val -le 1 ]; then
-#EVT or DVT1 board
-TH_SHUTDOWN_VOL=1296
-TH_RESTORE_VOL=1402
+    #EVT or DVT1 board
+    TH_SHUTDOWN_VOL=1296
+    TH_RESTORE_VOL=1402
 fi
 while true; do
-	galaxy100_scm_is_present
-	ret=$?
-	if [ $ret -eq 0 ] && [ $val -eq 1 ]; then
-		echo "SCM is inserted, Power ON!"
-		sleep 15
-		restore_us_com
-	fi
-	val=$ret
-	lm57_monitor
-	usleep 500000
+    galaxy100_scm_is_present
+    ret=$?
+    if [ $ret -eq 0 ] && [ $val -eq 1 ]; then
+        echo "SCM is inserted, Power ON!"
+        sleep 15
+        restore_us_com
+    fi
+    val=$ret
+    lm57_monitor
+    usleep 500000
 done

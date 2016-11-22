@@ -303,6 +303,8 @@ enum
   NETFN_OEM_RES = 0x31,
   NETFN_OEM_1S_REQ = 0x38,
   NETFN_OEM_1S_RES = 0x39,
+  NETFN_OEM_USB_DBG_REQ = 0x3C,
+  NETFN_OEM_USB_DBG_RES = 0x3D,
 };
 
 // Chassis Command Codes (IPMI/Table H-1)
@@ -378,7 +380,7 @@ enum
   CMD_NM_SEND_RAW_PMBUS = 0xD9,
 };
 
-// OEM Command Codes (Quanta/FB defined commands)
+// OEM Command Codes for 1S/2S servers
 enum
 {
   CMD_OEM_SET_PROC_INFO = 0x1A,
@@ -392,7 +394,7 @@ enum
   CMD_OEM_GET_PCIE_CONFIG = 0xF4,
 };
 
-// OEM 1S Command Codes (Quanta/FB defined commands)
+// OEM Command Codes for 1S Server
 enum
 {
   CMD_OEM_1S_MSG_IN = 0x1,
@@ -415,6 +417,15 @@ enum
   CMD_OEM_1S_BIC_UPDATE_MODE = 0x13,
 };
 
+// OEM Command Codes for USB basded Debug Card
+enum
+{
+  CMD_OEM_USB_DBG_GET_FRAME_INFO = 0x1,
+  CMD_OEM_USB_DBG_GET_UPDATED_FRAMES = 0x2,
+  CMD_OEM_USB_DBG_GET_POST_DESC = 0x3,
+  CMD_OEM_USB_DBG_GET_GPIO_DESC = 0x4,
+  CMD_OEM_USB_DBG_GET_FRAME_DATA = 0x5,
+};
 
 // IPMI command Completion Codes (IPMI/Section 5.2)
 enum

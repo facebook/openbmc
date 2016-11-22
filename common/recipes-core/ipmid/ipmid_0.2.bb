@@ -33,6 +33,8 @@ SRC_URI = "file://Makefile \
            file://sdr.h \
            file://sensor.h \
            file://fruid.h \
+           file://usb-dbg.c \
+           file://usb-dbg.h \
           "
 
 DEPENDS += " libpal "

@@ -60,6 +60,7 @@ static pthread_mutex_t m_storage;
 static pthread_mutex_t m_transport;
 static pthread_mutex_t m_oem;
 static pthread_mutex_t m_oem_1s;
+static pthread_mutex_t m_oem_usb_dbg;
 
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
@@ -1720,6 +1721,194 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
   pthread_mutex_unlock(&m_oem_1s);
 }
 
+static void
+oem_usb_dbg_get_frame_info(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  uint8_t num_frames;
+  int ret;
+
+  ret = plat_udbg_get_frame_info(&num_frames);
+  if (ret) {
+    memcpy(res->data, req->data, 3); // IANA ID
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = SIZE_IANA_ID;
+    return;
+  }
+
+  memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+  res->data[3] = num_frames;
+  res->cc = CC_SUCCESS;
+  *res_len = SIZE_IANA_ID + 1;
+}
+
+static void
+oem_usb_dbg_get_updated_frames(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  uint8_t num_updates;
+  uint8_t updated_frames[256];
+  int ret;
+
+  ret = plat_udbg_get_updated_frames(&num_updates, updated_frames);
+  if (ret) {
+    memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = SIZE_IANA_ID;
+    return;
+  }
+
+  memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+  res->data[3] = num_updates;
+  memcpy(&res->data[4], updated_frames, num_updates);
+  res->cc = CC_SUCCESS;
+  *res_len = SIZE_IANA_ID + 1 + num_updates;
+}
+
+static void
+oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  uint8_t index;
+  uint8_t next;
+  uint8_t count;
+  uint8_t desc[256];
+  int ret;
+
+  index = req->data[3];
+
+  ret = plat_udbg_get_post_desc(index, &next, &count, desc);
+  if (ret) {
+    memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = SIZE_IANA_ID;
+    return;
+  }
+
+  memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+  res->data[3] = index;
+  res->data[4] = next;
+  res->data[5] = count;
+  memcpy(&res->data[6], desc, count);
+  res->cc = CC_SUCCESS;
+  *res_len = SIZE_IANA_ID + 3 + count;
+}
+
+static void
+oem_usb_dbg_get_gpio_desc(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  uint8_t index;
+  uint8_t next;
+  uint8_t level;
+  uint8_t in_out;
+  uint8_t count;
+  uint8_t desc[256];
+  int ret;
+
+  index = req->data[3];
+
+  ret = plat_udbg_get_gpio_desc(index, &next, &level, &in_out, &count, desc);
+  if (ret) {
+    memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = SIZE_IANA_ID;
+    return;
+  }
+
+  memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+  res->data[3] = index;
+  res->data[4] = next;
+  res->data[5] = level;
+  res->data[6] = in_out;
+  res->data[7] = count;
+  memcpy(&res->data[8], desc, count);
+  res->cc = CC_SUCCESS;
+  *res_len = SIZE_IANA_ID + 5 + count;
+}
+
+static void
+oem_usb_dbg_get_frame_data(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  uint8_t frame;
+  uint8_t page;
+  uint8_t next;
+  uint8_t count;
+  uint8_t data[256];
+  int ret;
+
+  frame = req->data[3];
+  page = req->data[4];
+
+  ret = plat_udbg_get_frame_data(frame, page, &next, &count, data);
+  if (ret) {
+    memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = SIZE_IANA_ID;
+    return;
+  }
+
+  memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+  req->data[3] = next;
+  req->data[4] = count;
+  memcpy(&res->data[6], data, count);
+  res->cc = CC_SUCCESS;
+  *res_len = SIZE_IANA_ID + 2 + count;
+}
+
+static void
+ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
+		 unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int i;
+
+  unsigned char cmd = req->cmd;
+
+  pthread_mutex_lock(&m_oem_usb_dbg);
+  switch (cmd)
+  {
+    case CMD_OEM_USB_DBG_GET_FRAME_INFO:
+      oem_usb_dbg_get_frame_info(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_USB_DBG_GET_UPDATED_FRAMES:
+      oem_usb_dbg_get_updated_frames(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_USB_DBG_GET_POST_DESC:
+      oem_usb_dbg_get_post_desc(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_USB_DBG_GET_GPIO_DESC:
+      oem_usb_dbg_get_gpio_desc(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_USB_DBG_GET_FRAME_DATA:
+      oem_usb_dbg_get_frame_data(request, req_len, response, res_len);
+      break;
+    default:
+      res->cc = CC_INVALID_CMD;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
+      break;
+  }
+  pthread_mutex_unlock(&m_oem_usb_dbg);
+}
+
 /*
  * Function to handle all IPMI messages
  */
@@ -1772,6 +1961,10 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
     case NETFN_OEM_1S_REQ:
       res->netfn_lun = NETFN_OEM_1S_RES << 2;
       ipmi_handle_oem_1s(request, req_len, response, res_len);
+      break;
+    case NETFN_OEM_USB_DBG_REQ:
+      res->netfn_lun = NETFN_OEM_USB_DBG_RES << 2;
+      ipmi_handle_oem_usb_dbg(request, req_len, response, res_len);
       break;
     default:
       res->netfn_lun = (netfn + 1) << 2;
@@ -1850,6 +2043,7 @@ main (void)
   pthread_mutex_init(&m_transport, NULL);
   pthread_mutex_init(&m_oem, NULL);
   pthread_mutex_init(&m_oem_1s, NULL);
+  pthread_mutex_init(&m_oem_usb_dbg, NULL);
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
   {
@@ -1908,6 +2102,7 @@ main (void)
   pthread_mutex_destroy(&m_transport);
   pthread_mutex_destroy(&m_oem);
   pthread_mutex_destroy(&m_oem_1s);
+  pthread_mutex_destroy(&m_oem_usb_dbg);
 
   return 0;
 }

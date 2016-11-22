@@ -16,10 +16,12 @@ SRC_URI += " \
     file://rest-api-1/rest_fruid_scm.py \
     file://rest-api-1/rest_seutil.py \
     file://rest-api-1/rest_sol.py \
+    file://rest-api-1/rest_firmware.py \
     "
 
 binfiles += " \
     rest_fruid_scm.py \
     rest_seutil.py \
     rest_sol.py \
+    rest_firmware.py \
     "

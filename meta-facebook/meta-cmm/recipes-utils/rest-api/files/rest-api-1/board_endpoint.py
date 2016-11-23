@@ -19,6 +19,7 @@
 #
 import bottle
 import rest_component_presence
+import rest_firmware
 
 boardApp = bottle.Bottle()
 
@@ -27,3 +28,10 @@ boardApp = bottle.Bottle()
 @boardApp.route('/api/sys/component_presence')
 def rest_comp_presence():
     return rest_component_presence.get_presence()
+
+
+# Handler to fetch firmware_info
+@boardApp.route('/api/sys/firmware_info')
+def rest_firmware_info():
+    return rest_firmware.get_firmware_info()
+

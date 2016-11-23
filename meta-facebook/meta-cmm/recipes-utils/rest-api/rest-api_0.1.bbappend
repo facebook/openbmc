@@ -19,8 +19,10 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " file://rest-api-1/board_endpoint.py \
              file://rest-api-1/rest_component_presence.py \
+             file://rest-api-1/rest_firmware.py \
           "
 
 binfiles += "board_endpoint.py \
             rest_component_presence.py \
+            rest_firmware.py \
             "

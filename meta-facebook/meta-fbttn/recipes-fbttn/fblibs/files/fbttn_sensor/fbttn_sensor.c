@@ -85,6 +85,13 @@
 
 #define FBTTN_SDR_PATH "/tmp/sdr_%s.bin"
 
+#define IOM_ADM1278_R_SENSE  2 /* R_sense resistor value in microohms   */
+#define ML_ADM1278_R_SENSE  1
+#define EXP_R_SENSE  1
+
+static int iom_hsc_r_sense = IOM_ADM1278_R_SENSE;
+static int ml_hsc_r_sense = ML_ADM1278_R_SENSE;
+
 // List of BIC sensors to be monitored
 const uint8_t bic_sensor_list[] = {
   /* Threshold sensors */
@@ -630,7 +637,7 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char* att, const char *device, float *value) {
+read_hsc_value(const char* att, const char *device, int r_sense, float *value) {
   char full_name[LARGEST_DEVICE_NAME];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
@@ -654,7 +661,12 @@ read_hsc_value(const char* att, const char *device, float *value) {
     return -1;
   }
 
-  *value = ((float) tmp)/UNIT_DIV;
+  if ((strcmp(att, HSC_OUT_CURR) == 0) || (strcmp(att, HSC_IN_POWER) == 0)) {
+    *value = ((float) tmp)/r_sense/UNIT_DIV;
+  }
+  else {
+    *value = ((float) tmp)/UNIT_DIV;
+  }
 
   return 0;
 }
@@ -1402,21 +1414,21 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
 		//ML HSC
 		case ML_SENSOR_HSC_PWR:
-          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_ML, (float *) value);
+          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_ML, ml_hsc_r_sense, (float *) value);
         case ML_SENSOR_HSC_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_ML, (float *) value);
+          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_ML, ml_hsc_r_sense, (float *) value);
         case ML_SENSOR_HSC_CURR:
-          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_ML, (float *) value);
+          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_ML, ml_hsc_r_sense, (float *) value);
         // Behind NIC Card Temp
         case IOM_SENSOR_MEZZ_TEMP:
           return read_temp(IOM_MEZZ_TEMP_DEVICE, (float *) value);
         // Hot Swap Controller
         case IOM_SENSOR_HSC_POWER:
-          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_IOM, (float *) value);
+          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_IOM, iom_hsc_r_sense, (float *) value);
         case IOM_SENSOR_HSC_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_IOM, (float *) value);
+          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_IOM, iom_hsc_r_sense, (float *) value);
         case IOM_SENSOR_HSC_CURR:
-          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_IOM, (float *) value);
+          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_IOM, iom_hsc_r_sense, (float *) value);
         // Various Voltages
         case IOM_SENSOR_ADC_12V:
           return read_adc_value(ADC_PIN0, ADC_VALUE, (float *) value);
@@ -1469,11 +1481,11 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           *(float *) value = 0;
         return 0;
         case DPB_SENSOR_HSC_POWER:
-            return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_DPB, (float *) value);
+            return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_DPB, EXP_R_SENSE, (float *) value);
         case DPB_SENSOR_HSC_VOLT:
-            return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_DPB, (float *) value);
+            return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_DPB, EXP_R_SENSE, (float *) value);
         case DPB_SENSOR_HSC_CURR:
-            return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_DPB, (float *) value);
+            return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE_DPB, EXP_R_SENSE, (float *) value);
 
       }
       break;

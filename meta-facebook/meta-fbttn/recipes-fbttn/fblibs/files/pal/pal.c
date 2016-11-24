@@ -2568,8 +2568,8 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
         if (ret < 0) {
           return ret;
         }
-        //DO the Second transaction only when sensor count is not 1
-        if (sensor_cnt != 1) {
+        //DO the Second transaction only when sensor number is the first in DPB sensor list
+        if (sensor_num == DPB_FIRST_SENSOR_NUM) {
           ret = pal_exp_dpb_read_sensor_wrapper(fru, sensor_list, (sensor_cnt - MAX_EXP_IPMB_SENSOR_COUNT), sensor_num, 1);
           if (ret < 0) {
             return ret;
@@ -2613,7 +2613,8 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     tlen = sensor_cnt + 1;
   }
   else {
-    tbuf[0] = 1;
+    sensor_cnt = 1;
+    tbuf[0] = sensor_cnt;
     tbuf[1] = sensor_num;
     tlen = 2;
   }

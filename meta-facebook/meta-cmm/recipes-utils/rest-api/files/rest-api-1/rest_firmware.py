@@ -18,10 +18,10 @@ def _get_version(version_file):
         return f.read()
 
 
-def _firmware_json(ver, sub_ver):
+def _firmware_json(ver, sub_ver, int_base=16):
     return {
-        'version' : ver,
-        'sub_version' : sub_ver
+        'version' : int(ver, int_base),
+        'sub_version' : int(sub_ver, int_base)
     }
 
 

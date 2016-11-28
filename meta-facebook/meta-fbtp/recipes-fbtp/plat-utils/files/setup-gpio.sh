@@ -385,3 +385,7 @@ gpio_export G3
 # FM_CPU1_SKTOCC_LVT3_N
 devmem_clear_bit $(scu_addr A4) 24
 gpio_export AA0
+
+# FM_BIOS_POST_CMPLT_N
+devmem_clear_bit $(scu_addr A4) 31
+gpio_export AA7

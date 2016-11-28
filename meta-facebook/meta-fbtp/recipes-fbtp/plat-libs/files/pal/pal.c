@@ -84,6 +84,7 @@
 #define GPIO_FM_CPU_MSMI_LVT3_N 107
 #define GPIO_FM_CPU0_SKTOCC_LVT3_N 51
 #define GPIO_FM_CPU1_SKTOCC_LVT3_N 208
+#define GPIO_FM_BIOS_POST_CMPLT_N 215
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -1139,6 +1140,14 @@ read_dimm_temp(uint8_t snr_num, float *value) {
   int dimm_index, i;
   int max = 0;
   static uint8_t retry[4] = {0x00};
+  int val;
+  char path[64] = {0};
+
+  // show NA if BIOS has not completed POST.
+  sprintf(path, GPIO_VAL, GPIO_FM_BIOS_POST_CMPLT_N);
+  if (read_device(path, &val) || val) {
+    return ret;
+  }
 
   switch (snr_num) {
     case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:

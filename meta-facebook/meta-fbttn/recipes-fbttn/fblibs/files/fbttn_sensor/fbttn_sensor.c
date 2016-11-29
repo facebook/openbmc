@@ -36,6 +36,7 @@
 #define LARGEST_DEVICE_NAME 120
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
+#define PCA9555_VAL "/sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio%d/value"
 
 #define I2C_BUS_0_DIR "/sys/devices/platform/ast-i2c.0/i2c-0/"
 #define I2C_BUS_5_DIR "/sys/devices/platform/ast-i2c.5/i2c-5/"
@@ -897,11 +898,58 @@ fbttn_sdr_init(uint8_t fru) {
   return 0;
 }
 
-static bool
+bool
 is_server_prsnt(uint8_t fru) {
- //To do, after bring up.
- //we need to implement tca9555 gpio-exp driver for this
- return 1;
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, PCA9555_VAL, SLOT_INS);
+
+  if (read_device(path, &val)) {
+    return false;
+  }
+
+  if (val == 0) {   // present
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool
+is_scc_prsnt(uint8_t scc_port) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, PCA9555_VAL, scc_port);
+
+  if (read_device(path, &val)) {
+    return false;
+  }
+
+  if (val == 0) {   // present
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool
+is_fan_prsnt(uint8_t fan_port) {
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, PCA9555_VAL, fan_port);
+
+  if (read_device(path, &val)) {
+    return false;
+  }
+
+  if (val == 0) {   // present
+    return true;
+  } else {
+    return false;
+  }
 }
 
 /* Get the units for the sensor */

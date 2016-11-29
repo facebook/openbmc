@@ -594,3 +594,12 @@ gpio_export AB0
 devmem_clear_bit $(scu_addr A8) 2
 
 gpio_export AB2
+
+# PCA9555 GPIO export; GPIO number 472~487
+pca9555_pin="472"
+while [ "$pca9555_pin" -lt "488" ]
+do
+	#echo "pca9555_pin: $pca9555_pin"
+	pca9555_gpio_export $pca9555_pin
+	pca9555_pin=$(($pca9555_pin+1))
+done

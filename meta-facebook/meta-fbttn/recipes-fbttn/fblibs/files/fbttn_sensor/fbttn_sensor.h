@@ -119,7 +119,7 @@ enum {
 enum{
   ML_SENSOR_HSC_VOLT = 0xC,
   ML_SENSOR_HSC_CURR = 0xD,
-  ML_SENSOR_HSC_PWR  = 0xE,	
+  ML_SENSOR_HSC_PWR  = 0xE,
   IOM_SENSOR_MEZZ_TEMP = 0x44,
   IOM_SENSOR_HSC_POWER = 0x58,
   IOM_SENSOR_HSC_VOLT = 0x46,
@@ -221,6 +221,27 @@ enum{
 enum{
   MEZZ_SENSOR_TEMP = 0x82,
 };
+
+// PCA9555 GPIO ports
+enum {
+  SLOT_INS = 472,
+  FAN_0_INS = 473,
+  FAN_1_INS = 474,
+  FAN_2_INS = 475,
+  FAN_3_INS = 476,
+  RMT_IOM_INS = 477,
+  SCC_A_INS = 478,
+  SCC_B_INS = 479,
+  SCC_TYPE_0 = 480,
+  SCC_TYPE_1 = 481,
+  SCC_TYPE_2 = 482,
+  SCC_TYPE_3 = 483,
+  SCC_STBY_PGOOD = 484,
+  SCC_FULL_PGOOD = 485,
+  SLOT_PGOOD = 486,
+  DRAWER_CLOSED = 487,
+};
+
 extern const uint8_t bic_sensor_list[];
 
 extern const uint8_t bic_discrete_list[];
@@ -261,6 +282,9 @@ int fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int fbttn_sensor_sdr_path(uint8_t fru, char *path);
 int fbttn_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
 int fbttn_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
+bool is_server_prsnt(uint8_t fru);
+bool is_scc_prsnt(uint8_t scc_port);
+bool is_fan_prsnt(uint8_t fan_port);
 
 
 #ifdef __cplusplus

@@ -89,6 +89,15 @@ gpio_export_out() {
     fi
 }
 
+pca9555_gpio_export() {
+    local gpio
+    gpio=$1
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+}
+
 gpio_set() {
     local gpio
     local val
@@ -133,25 +142,38 @@ is_bmc_por() {
 
 # Check to see if server is present in given slot or not
 is_server_prsnt() {
-  #TODO: Add TCA9555 driver
-  echo 1
-  #local prsnt
-  #prsnt=`i2cget -y 5 0x24 0`
-  #if [ $? -eq 0 ]; then
-      #prsnt=$[16#`echo "${prsnt}" | cut -d 'x' -f2`]
-  #else
-    # TODO: Record the error message
-         #echo "TCA9555 transaction failed."
-  #fi
-    #prsnt=$[(${prsnt})&1]
-
-  #if [ $prsnt == "1" ]; then
-    #echo 1
-  #else                                       
-    #echo 0
-  #fi
+  prsnt=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio472/value`
+  if [ $prsnt == "0" ]; then
+    # Server is prsent
+    echo 1
+  else                                       
+    echo 0
+  fi
 }
 
+is_scc_prsnt() {
+  local scc_port
+  scc_port=$1
+  prsnt=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio$scc_port/value`
+  if [ $prsnt == "0" ]; then
+    # SCC is prsent
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+is_fan_prsnt() {
+  local fan_port
+  fan_port=$1
+  prsnt=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio$fan_port/value`
+  if [ $prsnt == "0" ]; then
+    # Fan is prsent
+    echo 1
+  else
+    echo 0
+  fi
+}
 
 fbttn_is_server_on() {
     local curr_pwr_cpu

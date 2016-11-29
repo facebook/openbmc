@@ -614,8 +614,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-    //only one slot; TBD,if there is a Mono Lake prsnt
-    *status = 1;
+      *status = is_server_prsnt(fru);
       break;
     case FRU_IOM:
     case FRU_DPB:

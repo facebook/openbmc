@@ -2718,9 +2718,14 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
 
-    if(rbuf[5*i+4] != 0){
-	  sprintf(str, "NA");
-	}
+    //Ignore FAN stauts
+    //TODO: There is a bug in Expander FW,
+    //Expander can't check the tachometer hardware monitor status.
+    // We will remove this after expander finishes the tachometer hardware monitor function.
+    if( strcmp(units,"RPM") != 0 )
+      if(rbuf[5*i+4] != 0){
+	        sprintf(str, "NA");
+      }
 
     if(edb_cache_set(key, str) < 0) {
     }

@@ -43,11 +43,11 @@ hb_led_handler() {
   while(1) {
     /* Turn ON the HB Led*/
     pal_set_hb_led(1);
-    msleep(500);
+    msleep(50);
 
     /* Turn OFF the HB led */
     pal_set_hb_led(0);
-    msleep(500);
+    msleep(50);
   }
 }
 

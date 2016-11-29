@@ -1448,7 +1448,6 @@ pal_set_def_key_value() {
 
 int
 pal_get_fru_devtty(uint8_t fru, char *devtty) {
-syslog(LOG_CRIT, "pal_get_fru_devtty: Wrong fru id %u", fru);
   switch(fru) {
     case FRU_SLOT1:
       sprintf(devtty, "/dev/ttyS1");

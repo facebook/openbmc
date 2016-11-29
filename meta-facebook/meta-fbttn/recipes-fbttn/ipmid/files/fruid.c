@@ -112,7 +112,7 @@ int check_fru_is_empty(const char * bin_file)
 
     bin = open(bin_file, O_RDONLY);
       if (bin == -1) {
-        syslog(LOG_CRIT, "check_fru_is_empty: unable to open the %s file",bin_file);
+        syslog(LOG_WARNING, "check_fru_is_empty: unable to open the %s file",bin_file);
       return errno;
      }
      bytes_rd = read(bin, head_buf, 8);

@@ -54,7 +54,7 @@ extern "C" {
 #define DPB_FIRST_SENSOR_NUM 24 //P3V3_SENSE  0x18
 #define MAX_EXP_IPMB_SENSOR_COUNT 40 
 
-#define ERROR_CODE_NUM 155
+#define ERROR_CODE_NUM 32
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;

@@ -134,6 +134,7 @@
 #define TACH_SCC_RMT_HB 5
 
 #define PLATFORM_FILE "/tmp/system.bin"
+#define ERR_CODE_FILE "/tmp/error_code.bin"
 // SHIFT to 16
 #define UART1_TXD 0
 
@@ -2805,15 +2806,36 @@ void pal_err_code_disable(unsigned char num) {
  *
  */
 unsigned char pal_sum_error_code(void) {
+  FILE *fp = NULL;
   unsigned char ret = 0;
+  unsigned char file_prsnt = 0;
   int i = 0;
 
-  for(i = 1; i < ERROR_CODE_NUM; i++) {
+  fp = fopen(ERR_CODE_FILE, "w");
+  if (!fp) {
+      file_prsnt = 1;
+      int err = errno;
+  #ifdef DEBUG
+      syslog(LOG_INFO, "failed to open error code file for write %s", ERR_CODE_FILE);
+  #endif
+      return err;
+    }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  printf("\n");
+
+  for(i = 0; i < ERROR_CODE_NUM; i++) {
+    if (file_prsnt == 0) {    // Cache error code in /tmp
+      fprintf(fp, "%d ", g_err_code[i]);
+    }
     if(g_err_code[i] != 0) {
       ret = 1;
-      return ret;
     }
   }
+  fprintf(fp, "\n");
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+
   return ret;
 }
 

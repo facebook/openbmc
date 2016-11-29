@@ -86,6 +86,7 @@ IMAGE_INSTALL += " \
   libexp \
   expander-util \
   exp-cached \
+  enclosure-util \
   "
 
 IMAGE_FEATURES += " \

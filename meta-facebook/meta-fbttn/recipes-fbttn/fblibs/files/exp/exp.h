@@ -35,6 +35,8 @@ extern "C" {
 #define CMD_GET_IOC_VERSION 0x56
 #define CMD_GET_EXP_FRUID 0x11
 #define EXPANDER_FRUID_SIZE 0x7F
+#define EXPANDER_HDD_STATUS 0xC0
+#define EXPANDER_ERROR_CODE 0x11
 
 #define EXPANDER_VERSION_CACHE "/tmp/version_exp.bin"
 #define IOC_VERSION_CACHE "/tmp/version_ioc.bin"

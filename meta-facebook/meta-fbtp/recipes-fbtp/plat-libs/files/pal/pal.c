@@ -1119,7 +1119,7 @@ read_cpu_temp(uint8_t snr_num, float *value) {
       if (rbuf1[6] == 0)
       {
         // If PECI command successes and got a reasonable value
-        if ( (rbuf1[10] == 0x40) && rbuf1[10] > 50) {
+        if ( (rbuf1[10] == 0x40) && rbuf1[13] > 50) {
           tjmax[cpu_index] = rbuf1[13];
           tjmax_flag[cpu_index] = 1;
         }

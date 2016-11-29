@@ -574,7 +574,7 @@ read_flash_temp(uint8_t flash_num, float *value) {
     return -1;
   }
   if (sku == U2_SKU)
-    return lightning_flash_temp_read(lightning_flash_list[flash_num], value);
+    return lightning_u2_flash_temp_read(lightning_flash_list[flash_num], value);
   else if (sku == M2_SKU)
     return lightning_m2_flash_temp_read(lightning_flash_list[flash_num], value);
   else {

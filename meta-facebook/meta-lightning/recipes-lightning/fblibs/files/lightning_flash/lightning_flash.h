@@ -73,7 +73,8 @@ int lightning_flash_temp_read(uint8_t i2c_map, float *temp);
 int lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp);
 int lightning_m2_flash_temp_read(uint8_t i2c_map, float *temp);
 int lightning_m2_temp_read(uint8_t i2c_map, uint8_t sec_chan, float *temp);
-
+int lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp);
+int lightning_nvme_temp_read(uint8_t mux, float *temp);
 
 #ifdef __cplusplus
 } // extern "C"

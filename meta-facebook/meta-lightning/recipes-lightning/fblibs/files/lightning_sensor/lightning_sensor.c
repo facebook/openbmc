@@ -154,7 +154,6 @@ const uint8_t peb_sensor_pmc_list[] = {
   PEB_SENSOR_HSC_IN_POWER,
   PEB_SENSOR_PCIE_SW_TEMP,
   PEB_SENSOR_SYS_INLET_TEMP,
-  PEB_SENSOR_HSC_TEMP,
 };
 
 // List of PEB sensors to be monitored (PLX)
@@ -171,7 +170,6 @@ const uint8_t peb_sensor_plx_list[] = {
   PEB_SENSOR_HSC_OUT_CURR,
   PEB_SENSOR_HSC_IN_POWER,
   PEB_SENSOR_SYS_INLET_TEMP,
-  PEB_SENSOR_HSC_TEMP,
 };
 
 // List of U.2 SKU PDPB sensors to be monitored
@@ -331,8 +329,6 @@ sensor_thresh_array_init() {
       96, 0, 0, 0, 0, 0, 0, 0);
 
   // PEB TEMP SENSORS
-  assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_TEMP,
-      60, 55, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_TEMP,
       95, 93, 0, 5, 10, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_SYS_INLET_TEMP,
@@ -348,7 +344,7 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V8_STBY,
       1.98, 1.94, 0, 1.62, 1.66, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V53,
-      1.76, 1.68, 0, 1.3, 1.377, 0, 0, 0);
+      1.68, 1.65, 0, 1.4, 1.43, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P0V9,
       0.99, 0.97, 0, 0.81, 0.83, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P0V9_E,
@@ -1036,9 +1032,6 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case PEB_SENSOR_HSC_OUT_CURR:
           sprintf(units, "Amps");
           break;
-        case PEB_SENSOR_HSC_TEMP:
-          sprintf(units, "C");
-          break;
         case PEB_SENSOR_HSC_IN_POWER:
           sprintf(units, "Watts");
           break;
@@ -1170,9 +1163,6 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case PEB_SENSOR_HSC_OUT_CURR:
           sprintf(name, "PEB_HSC_OUT_CURR");
-          break;
-        case PEB_SENSOR_HSC_TEMP:
-          sprintf(name, "PEB_HSC_TEMP");
           break;
         case PEB_SENSOR_HSC_IN_POWER:
           sprintf(name, "PEB_HSC_IN_POWER");
@@ -1337,8 +1327,6 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_hsc_value(HSC_IN_VOLT, I2C_DEV_PEB, I2C_ADDR_PEB_HSC, HSC_ADM1278, (float*) value);
         case PEB_SENSOR_HSC_OUT_CURR:
           return read_hsc_value(HSC_OUT_CURR, I2C_DEV_PEB, I2C_ADDR_PEB_HSC, HSC_ADM1278, (float*) value);
-        case PEB_SENSOR_HSC_TEMP:
-          return read_hsc_value(HSC_TEMP, I2C_DEV_PEB, I2C_ADDR_PEB_HSC, HSC_ADM1278, (float*) value);
         case PEB_SENSOR_HSC_IN_POWER:
           return read_hsc_value(HSC_IN_POWER, I2C_DEV_PEB, I2C_ADDR_PEB_HSC, HSC_ADM1278, (float*) value);
 
@@ -1468,4 +1456,3 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
   }
 }
-

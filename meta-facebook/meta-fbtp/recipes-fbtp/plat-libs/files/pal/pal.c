@@ -4711,40 +4711,38 @@ pal_get_poss_pcie_config(uint8_t *pcie_config){
 
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
-  char path[64] = {0};
-  char device_name[64] = {0};
+  char path[LARGEST_DEVICE_NAME] = {0};
+  char device_name[LARGEST_DEVICE_NAME] = {0};
   int val = 0;
   int pwm_enable = 0;
 
-  if (fan_num >= pal_pwm_cnt) {
+  if (fan_num < 0 || fan_num >= pal_pwm_cnt) {
     syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
     return -1;
   }
 
-  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
-
+  // Need check pwmX_en to determine the PWM is 0 or 100.
+  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
   snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-
-  if (read_device_hex(path, &val)) {
+  if (read_device(path, &pwm_enable)) {
     syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
     return -1;
   }
 
-  // Need check pwmX_en to determine the PWM is 0 or 100.
-  if(val == 0) {
-    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
+  if(pwm_enable) {
+    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
     snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-    if (read_device(path, &pwm_enable)) {
+    if (read_device_hex(path, &val)) {
       syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
       return -1;
     }
 
-    if(pwm_enable)
+    if(val == 0)
       *value = 100;
     else
-      *value = 0;
+      *value = (100 * val + (PWM_UNIT_MAX-1)) / PWM_UNIT_MAX;
   } else {
-    *value = (100 * val) / PWM_UNIT_MAX;
+    *value = 0;
   }
 
   return 0;

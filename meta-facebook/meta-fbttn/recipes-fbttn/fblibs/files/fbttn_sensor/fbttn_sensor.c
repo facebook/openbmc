@@ -28,7 +28,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
-#include <facebook/i2c-dev.h>
 #include <facebook/i2c.h>
 #include "fbttn_sensor.h"
 //For Kernel 2.6 -> 4.1
@@ -582,7 +581,7 @@ read_M2_temp(int device, float *value) {
     sprintf(bus, "%s", I2C_M2_2);
   }
   else {
-    syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+    syslog(LOG_DEBUG, "%s(): unknown dev", __func__);
     return -1;
   }
 
@@ -599,8 +598,7 @@ read_M2_temp(int device, float *value) {
     close(dev);
     return -1;
   }
-  //TODO fix it in the next relase
-  /***
+
   res = i2c_smbus_read_byte_data(dev, M2_TEMP_REG);
   if (res < 0) {
     syslog(LOG_DEBUG, "%s(): i2c_smbus_read_byte_data failed", __func__);
@@ -608,12 +606,10 @@ read_M2_temp(int device, float *value) {
     return -1;
   }
   *value = (float) res;
-  ***/
 
   close(dev);
 
-  // TODO: HACK for now
-  return -1;
+  return 0;
 }
 
 static int

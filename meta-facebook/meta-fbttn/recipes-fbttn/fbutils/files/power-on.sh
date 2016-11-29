@@ -106,55 +106,21 @@ if [ $(is_bmc_por) -eq 1 ]; then
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
 
-  sync_date
-
-  # Get TCA9555 IO-EXP status i2c bus 5 0x24 (7bit)
-  #P14 SCC_A_STBY_PGOOD
-  #P15 SCC_A_FULL_PGOOD
-  # To read TCA955 port 2
-
-  # TODO: check sku (type 5/7)
-  # TODO: SCC STBY POWER Enable
-
-  # Read SCC STBY POWER good
-  pwr_sequence_status=0
-  pca9555=`i2cget -y 5 0x24 1`
-  if [ $? -eq 0 ]; then
-         pca9555=$[16#`echo "${pca9555}" | cut -d 'x' -f2`]
-
-         # TODO: Check if power good
-         scc_stby_good=$[$((${pca9555}))>>4]
-         scc_stby_good=$[${scc_stby_good}&1]
-  else
-         # TODO: Record the error message
-         pwr_sequence_status=$(($pwr_sequence_status+1))
-         echo "I2C transaction failed."
-  fi
-
-  if [ $pwr_sequence_status -eq 0 ]; then
-         pca9555=`i2cget -y 5 0x24 1`
-         if [ $? -eq 0 ]; then
-                # Read SCC FULL POWER good
-                pca9555=$[16#`echo "${pca9555}" | cut -d 'x' -f2`]
-
-                # TODO: Check if power good
-                scc_full_good=$[$((${pca9555}))>>5]
-                scc_full_good=$[${scc_full_good}&1]
-         else
-                # TODO: Record the error message
-                echo "I2C transaction failed."
-         fi
-  fi
+  # TODO: SCC power control
+  # Keep the SCC standby and full power good value
+  scc_stby_good=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio484/value`
+  scc_full_good=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio485/value`
 
   # For Triton MonoLake PWR sequence
   if [ $(gpio_get $IOM_FULL_GOOD) == 1 ]; then
-  #set ML board power en
-  gpio_set O7 1
-
-          check_por_config 1
-          if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
-                power-util slot1 on
-          fi
+    #set ML board power en
+    gpio_set O7 1
+    sleep 3  # waiting for ME ready
+    sync_date 
+    check_por_config 1
+    if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
+        power-util slot1 on
+    fi
   else
         echo "IOM PWR Fail"
   fi

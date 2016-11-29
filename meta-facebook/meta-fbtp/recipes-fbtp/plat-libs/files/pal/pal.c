@@ -599,7 +599,7 @@ i2c_io(int fd, uint8_t addr, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8
 
   rc = ioctl(fd, I2C_RDWR, &data);
   if (rc < 0) {
-    syslog(LOG_ERR, "Failed to do raw io");
+    // syslog(LOG_ERR, "Failed to do raw io");
     return -1;
   }
 

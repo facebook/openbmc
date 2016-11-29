@@ -828,7 +828,7 @@ pal_sled_cycle(void) {
   system("rmmod adm1275");
 
   // Send command to HSC power cycle
-  system("i2cset -y 6 0x20 0xd9 c");
+  system("i2cset -y 0 0x10 0xd9 c");
 
   return 0;
 }

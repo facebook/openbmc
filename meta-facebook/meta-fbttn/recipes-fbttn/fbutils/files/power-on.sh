@@ -82,9 +82,9 @@ sync_date()
       # if the command fails, continue to next slot
       [ $(echo $output | wc -c) != 12 ] && continue
       col1=$(echo $output | cut -d' ' -f1 | sed 's/^0*//')
-      #col2=$(echo $output | cut -d' ' -f2 | sed 's/^0*//')
-      #col3=$(echo $output | cut -d' ' -f3 | sed 's/^0*//')
-      #col4=$(echo $output | cut -d' ' -f4 | sed 's/^0*//')
+      col2=$(echo $output | cut -d' ' -f2 | sed 's/^0*//')
+      col3=$(echo $output | cut -d' ' -f3 | sed 's/^0*//')
+      col4=$(echo $output | cut -d' ' -f4 | sed 's/^0*//')
 
       # create the integer from the hex bytes returned
       val=$((0x$col4 << 24 | 0x$col3 << 16 | 0x$col2 << 8 | 0x$col1))

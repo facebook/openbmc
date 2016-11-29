@@ -818,16 +818,28 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     }
   }
 
-  /* Read the MSB byte for the value */
-  res_h = i2c_smbus_read_byte_data(dev, reg);
+  retry = 0;
+  while (retry < MAX_RETRY_TIMES) {
+    /* Read the MSB byte for the value */
+    res_h = i2c_smbus_read_byte_data(dev, reg);
 
-  /* Read the LSB byte for the value */
-  res_l = i2c_smbus_read_byte_data(dev, reg + 1);
+    /* Read the LSB byte for the value */
+    res_l = i2c_smbus_read_byte_data(dev, reg + 1);
 
-  if((res_h == -1) || (res_l == -1)) {
+    /* Read failed */
+    if ((res_h == -1) || (res_l == -1)) 
+      retry++;
+    else
+      break;
+    
+    msleep(100);
+  }
+
+  if ( (retry >= MAX_RETRY_TIMES) && ((res_h == -1) || (res_l == -1)) ) {
     syslog(LOG_DEBUG, "%s() i2c_smbus_read_byte_data failed, high byte: 0x%x, low byte: 0x%x", __func__, res_h, res_l);
     return -1;
   }
+  
 
   /* Modify the monitor_flag when the last sensor query finish in this query interval */
   if (FAN_REGISTER+2 == reg) {

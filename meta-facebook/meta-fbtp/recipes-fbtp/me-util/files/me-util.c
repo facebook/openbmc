@@ -84,11 +84,21 @@ main(int argc, char **argv) {
 
   if (rlen == 0) {
     syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received\n");
+    // Add ME no response error message
+    printf("ME no response!\n");
     return -1;
   }
 
   memset(log, 0, 128);
   // Remove 7-bytes of IPMB header and last-byte of Checksum and print only data
+  // Print completion code if it is not 0x00
+  if(rbuf[6] != 0){
+    printf("Com_code:%02X, ", rbuf[6]);
+    memset(temp, 0, 8);
+    sprintf(temp, "%02X, ", rbuf[6]);
+    strcat(log, temp);
+  }
+
   for (i = 7; i < rlen-1; i++) {
     printf("%02X ", rbuf[i]);
     memset(temp, 0, 8);

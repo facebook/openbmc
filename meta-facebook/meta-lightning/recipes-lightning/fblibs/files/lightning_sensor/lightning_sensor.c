@@ -1312,6 +1312,7 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
 int
 lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
+  int ret;
 
   switch (fru) {
     case FRU_PEB:
@@ -1356,12 +1357,28 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
         if (sensor_num >= PDPB_SENSOR_FLASH_TEMP_0 &&
             sensor_num < (PDPB_SENSOR_FLASH_TEMP_0 + lightning_flash_cnt)) {
-          return read_flash_temp(sensor_num - PDPB_SENSOR_FLASH_TEMP_0, (float*) value);
+          ret = read_flash_temp(sensor_num - PDPB_SENSOR_FLASH_TEMP_0, (float*) value);
+
+          if (ret < 0) {
+            if (pal_reset_ssd_switch() < 0) {
+              syslog(LOG_ERR, "lightning_sensor_read: pal_reset_ssd_switch failed");
+            }
+          }
+
+          return ret;
         }
 
         if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 &&
             sensor_num < (PDPB_SENSOR_AMB_TEMP_0 + lightning_flash_cnt)) {
-          return read_m2_amb_temp(sensor_num - PDPB_SENSOR_AMB_TEMP_0, (float*) value);
+          ret = read_m2_amb_temp(sensor_num - PDPB_SENSOR_AMB_TEMP_0, (float*) value);
+
+          if (ret < 0) {
+            if (pal_reset_ssd_switch() < 0) {
+              syslog(LOG_ERR, "lightning_sensor_read: pal_reset_ssd_switch failed");
+            }
+          }
+
+          return ret;
         }
 
       switch(sensor_num) {

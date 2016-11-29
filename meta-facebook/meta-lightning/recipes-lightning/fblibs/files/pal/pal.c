@@ -49,6 +49,7 @@
 #define GPIO_BMC_UART_SWITCH 123
 
 #define GPIO_RESET_PCIE_SWITCH 8
+#define GPIO_RESET_SSD_SWITCH 134
 
 #define GPIO_HB_LED 115
 #define GPIO_BMC_SELF_TRAY 108
@@ -1230,5 +1231,25 @@ pal_self_tray_location(uint8_t *value) {
 int
 pal_is_crashdump_ongoing(uint8_t slot)
 {
+  return 0;
+}
+
+// Reset SSD Switch
+int
+pal_reset_ssd_switch() {
+
+  char path[64] = {0};
+  sprintf(path, GPIO_VAL, GPIO_RESET_SSD_SWITCH);
+
+  if (write_device(path, "0"))
+    return -1;
+
+  msleep(100);
+
+  if (write_device(path, "1"))
+    return -1;
+
+  msleep(100);
+  
   return 0;
 }

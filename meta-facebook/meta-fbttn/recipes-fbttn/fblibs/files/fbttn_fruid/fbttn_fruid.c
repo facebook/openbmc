@@ -72,7 +72,7 @@ fbttn_get_fruid_eeprom_path(uint8_t fru, char *path) {
       return -1;
       break;
     case FRU_NIC:
-      sprintf(path, "/sys/class/i2c-adapter/i2c-4/12-0051/eeprom");
+      sprintf(path, "/sys/class/i2c-adapter/i2c-4/4-0051/eeprom");
       break;
     default:
 #ifdef DEBUG

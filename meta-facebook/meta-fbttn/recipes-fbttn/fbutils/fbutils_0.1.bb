@@ -41,7 +41,6 @@ SRC_URI = "file://ast-functions \
            file://COPYING \
            file://check_pal_sku.sh \
            file://setup-platform.sh \
-           file://enclosure-util.py \
           "
 
 pkgdir = "utils"
@@ -50,7 +49,7 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
   mdio.py setup_rov.sh fbttn_power.sh power_util.py \
-  check_pal_sku.sh enclosure-util.py"
+  check_pal_sku.sh"
 
 DEPENDS_append = "update-rc.d-native"
 

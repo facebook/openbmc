@@ -11,6 +11,7 @@ M2_CHANNEL0=0x01
 
 INTEL=0x8680
 SEAGATE=0xb11b
+SAMSUNG=0x4d14
 
 M2_MUX_ADDR=$(echo $I2C_M2_MUX_ADDR | cut -c3-4)
 M2CARD_AMB_ADDR=$(echo $I2C_M2CARD_AMB_ADDR | cut -c3-4)
@@ -29,12 +30,17 @@ do
         if([[ $VID == *$INTEL* ]])
         then
             echo -e "intel" > $FILE
-               exit 0
+            exit 0
         elif([[ $VID == *$SEAGATE* ]])
-      then
-                echo -e "seagate" > $FILE
-                exit 0
+        then
+            echo -e "seagate" > $FILE
+            exit 0
+        elif([[ $VID == *$SAMSUNG* ]])
+        then
+            echo -e "samsung" > $FILE
+            exit 0
         fi
+
 done
 
 for (( i=0; i<8; i++ ))
@@ -51,11 +57,15 @@ do
         if([[ $VID == *$INTEL* ]])
         then
             echo -e "intel" > $FILE
-               exit 0
+            exit 0
         elif([[ $VID == *$SEAGATE* ]])
-      then
-                echo -e "seagate" > $FILE
-                exit 0
+        then
+            echo -e "seagate" > $FILE
+            exit 0
+        elif([[ $VID == *$SAMSUNG* ]])
+        then
+            echo -e "samsung" > $FILE
+            exit 0
         fi
 done
 

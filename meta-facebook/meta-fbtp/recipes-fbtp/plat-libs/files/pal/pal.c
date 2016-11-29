@@ -163,6 +163,8 @@
 #define VR_TELEMETRY_POWER 0x2D
 #define VR_TELEMETRY_TEMP 0x29
 
+#define RISER_BUS_ID 0x1
+
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
@@ -297,6 +299,24 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_VR_PCH_P1V05_CURR,
   MB_SENSOR_VR_PCH_P1V05_VOLT,
   MB_SENSOR_VR_PCH_P1V05_POWER,
+  MB_SENSOR_C2_AVA_FTEMP,
+  MB_SENSOR_C2_AVA_RTEMP,
+  MB_SENSOR_C2_1_NVME_CTEMP,
+  MB_SENSOR_C2_2_NVME_CTEMP,
+  MB_SENSOR_C2_3_NVME_CTEMP,
+  MB_SENSOR_C2_4_NVME_CTEMP,
+  MB_SENSOR_C3_AVA_FTEMP,
+  MB_SENSOR_C3_AVA_RTEMP,
+  MB_SENSOR_C3_1_NVME_CTEMP,
+  MB_SENSOR_C3_2_NVME_CTEMP,
+  MB_SENSOR_C3_3_NVME_CTEMP,
+  MB_SENSOR_C3_4_NVME_CTEMP,
+  MB_SENSOR_C4_AVA_FTEMP,
+  MB_SENSOR_C4_AVA_RTEMP,
+  MB_SENSOR_C4_1_NVME_CTEMP,
+  MB_SENSOR_C4_2_NVME_CTEMP,
+  MB_SENSOR_C4_3_NVME_CTEMP,
+  MB_SENSOR_C4_4_NVME_CTEMP,
 };
 
 // List of NIC sensors to be monitored
@@ -523,6 +543,25 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][LCR_THRESH] = 0.94;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][UCR_THRESH] = 1.15;
 
+  mb_sensor_threshold[MB_SENSOR_C2_AVA_FTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C2_AVA_RTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C2_1_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C2_2_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C2_3_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C2_4_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C3_AVA_FTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C3_AVA_RTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C3_1_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C3_2_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C3_3_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C3_4_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C4_AVA_FTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C4_AVA_RTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C4_1_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C4_2_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C4_3_NVME_CTEMP][UCR_THRESH] = 95;
+  mb_sensor_threshold[MB_SENSOR_C4_4_NVME_CTEMP][UCR_THRESH] = 95;
+
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
 
   init_board_sensors();
@@ -565,6 +604,36 @@ i2c_io(int fd, uint8_t addr, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8
   }
 
   return 0;
+}
+
+static int
+pal_control_mux(int fd, uint8_t addr, uint8_t channel) {
+  uint8_t tcount = 1, rcount = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  // PCA9544A
+  if (channel < 4)
+    tbuf[0] = 0x04 + channel;
+  else
+    tbuf[0] = 0x00; // close all channels
+
+  return i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
+}
+
+static int
+pal_control_switch(int fd, uint8_t addr, uint8_t channel) {
+  uint8_t tcount = 1, rcount = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  // PCA9846
+  if (channel < 4)
+    tbuf[0] = 0x01 << channel;
+  else
+    tbuf[0] = 0x00; // close all channels
+
+  return i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
 }
 
 static int
@@ -1639,6 +1708,215 @@ error_exit:
   if (fd > 0) {
     close(fd);
   }
+
+  return ret;
+}
+
+static int
+read_ava_temp(uint8_t sensor_num, float *value) {
+  int fd;
+  char fn[32];
+  int ret = READING_NA;;
+  static unsigned int retry = 0;
+  uint8_t tcount, rcount, slot_cfg, addr, mux_chan, mux_addr = 0xe2;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  if (pal_get_slot_cfg_id(&slot_cfg) < 0)
+    slot_cfg = SLOT_CFG_EMPTY;
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_AVA_FTEMP:
+    case MB_SENSOR_C2_AVA_RTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY)
+        return READING_NA;
+      mux_chan = 0;
+      break;
+    case MB_SENSOR_C3_AVA_FTEMP:
+    case MB_SENSOR_C3_AVA_RTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY)
+        return READING_NA;
+      mux_chan = 1;
+      break;
+    case MB_SENSOR_C4_AVA_FTEMP:
+    case MB_SENSOR_C4_AVA_RTEMP:
+      if(slot_cfg != SLOT_CFG_SS_3x8)
+        return READING_NA;
+      mux_chan = 2;
+      break;
+    default:
+      return READING_NA;
+  }
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_AVA_FTEMP:
+    case MB_SENSOR_C3_AVA_FTEMP:
+    case MB_SENSOR_C4_AVA_FTEMP:
+      addr = 0x90;
+      break;
+    case MB_SENSOR_C2_AVA_RTEMP:
+    case MB_SENSOR_C3_AVA_RTEMP:
+    case MB_SENSOR_C4_AVA_RTEMP:
+      addr = 0x92;
+      break;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  // control multiplexer to target channel.
+  ret = pal_control_mux(fd, mux_addr, mux_chan);
+  if (ret < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  // Read 2 bytes from TMP75
+  tbuf[0] = 0x00;
+  tcount = 1;
+  rcount = 2;
+
+  ret = i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
+  if (ret < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+  ret = 0;
+  retry = 0;
+
+  // rbuf:MSB, LSB; 12-bit value on Bit[15:4], unit: 0.0625
+  *value = (float)(signed char)rbuf[0];
+
+error_exit:
+  if (fd > 0) {
+    pal_control_mux(fd, mux_addr, 0xff); // close
+    close(fd);
+  }
+
+  if (ret == READING_NA && ++retry <= 3)
+    ret = READING_SKIP;
+
+  return ret;
+}
+
+static int
+read_nvme_temp(uint8_t sensor_num, float *value) {
+  int fd;
+  char fn[32];
+  int ret = READING_NA;
+  static unsigned int retry = 0;
+  uint8_t tcount, rcount, slot_cfg, addr = 0xd4, mux_chan, mux_addr = 0xe2;
+  uint8_t switch_chan, switch_addr=0xe6;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  if (pal_get_slot_cfg_id(&slot_cfg) < 0)
+    slot_cfg = SLOT_CFG_EMPTY;
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_1_NVME_CTEMP:
+    case MB_SENSOR_C2_2_NVME_CTEMP:
+    case MB_SENSOR_C2_3_NVME_CTEMP:
+    case MB_SENSOR_C2_4_NVME_CTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY)
+        return READING_NA;
+      mux_chan = 0;
+      break;
+    case MB_SENSOR_C3_1_NVME_CTEMP:
+    case MB_SENSOR_C3_2_NVME_CTEMP:
+    case MB_SENSOR_C3_3_NVME_CTEMP:
+    case MB_SENSOR_C3_4_NVME_CTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY)
+        return READING_NA;
+      mux_chan = 1;
+      break;
+    case MB_SENSOR_C4_1_NVME_CTEMP:
+    case MB_SENSOR_C4_2_NVME_CTEMP:
+    case MB_SENSOR_C4_3_NVME_CTEMP:
+    case MB_SENSOR_C4_4_NVME_CTEMP:
+      if(slot_cfg != SLOT_CFG_SS_3x8)
+        return READING_NA;
+      mux_chan = 2;
+      break;
+    default:
+      return READING_NA;
+  }
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_1_NVME_CTEMP:
+    case MB_SENSOR_C3_1_NVME_CTEMP:
+    case MB_SENSOR_C4_1_NVME_CTEMP:
+      switch_chan = 0;
+      break;
+    case MB_SENSOR_C2_2_NVME_CTEMP:
+    case MB_SENSOR_C3_2_NVME_CTEMP:
+    case MB_SENSOR_C4_2_NVME_CTEMP:
+      switch_chan = 1;
+      break;
+    case MB_SENSOR_C2_3_NVME_CTEMP:
+    case MB_SENSOR_C3_3_NVME_CTEMP:
+    case MB_SENSOR_C4_3_NVME_CTEMP:
+      switch_chan = 2;
+      break;
+    case MB_SENSOR_C2_4_NVME_CTEMP:
+    case MB_SENSOR_C3_4_NVME_CTEMP:
+    case MB_SENSOR_C4_4_NVME_CTEMP:
+      switch_chan = 3;
+      break;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  // control I2C multiplexer to target channel.
+  ret = pal_control_mux(fd, mux_addr, mux_chan);
+  if (ret < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  // control I2C switch to target channel.
+  ret = pal_control_switch(fd, switch_addr, switch_chan);
+  // Report temp of PCIe card on MB_SENSOR_CX_1_NVME_CTEMP senosrs,
+  // no I2C Switch on PCIe Card
+  if (ret < 0 && switch_chan != 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  // Read 8 bytes from NVMe
+  tbuf[0] = 0x00;
+  tcount = 1;
+  rcount = 8;
+
+  ret = i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
+  if (ret < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+  ret = 0;
+  retry = 0;
+
+  // Cmd 0: length, SFLGS, SMART Warnings, CTemp, PDLU, Reserved, Reserved, PEC
+  *value = (float)(signed char)rbuf[3];
+
+error_exit:
+  if (fd > 0) {
+    pal_control_switch(fd, switch_addr, 0xff); // close
+    pal_control_mux(fd, mux_addr, 0xff); // close
+    close(fd);
+  }
+
+  if (ret == READING_NA && ++retry <= 3)
+    ret = READING_SKIP;
 
   return ret;
 }
@@ -2816,6 +3094,28 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_VR_PCH_P1V05_POWER:
         ret = read_vr_power(VR_PCH_P1V05, VR_LOOP_PAGE_1, (float*) value);
         break;
+      case MB_SENSOR_C2_AVA_FTEMP:
+      case MB_SENSOR_C2_AVA_RTEMP:
+      case MB_SENSOR_C3_AVA_FTEMP:
+      case MB_SENSOR_C3_AVA_RTEMP:
+      case MB_SENSOR_C4_AVA_FTEMP:
+      case MB_SENSOR_C4_AVA_RTEMP:
+        ret = read_ava_temp(sensor_num, (float*) value);
+        break;
+      case MB_SENSOR_C2_1_NVME_CTEMP:
+      case MB_SENSOR_C2_2_NVME_CTEMP:
+      case MB_SENSOR_C2_3_NVME_CTEMP:
+      case MB_SENSOR_C2_4_NVME_CTEMP:
+      case MB_SENSOR_C3_1_NVME_CTEMP:
+      case MB_SENSOR_C3_2_NVME_CTEMP:
+      case MB_SENSOR_C3_3_NVME_CTEMP:
+      case MB_SENSOR_C3_4_NVME_CTEMP:
+      case MB_SENSOR_C4_1_NVME_CTEMP:
+      case MB_SENSOR_C4_2_NVME_CTEMP:
+      case MB_SENSOR_C4_3_NVME_CTEMP:
+      case MB_SENSOR_C4_4_NVME_CTEMP:
+        ret = read_nvme_temp(sensor_num, (float*) value);
+        break;
 
       default:
         return -1;
@@ -3109,6 +3409,61 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_VR_PCH_P1V05_POWER:
       sprintf(name, "MB_VR_PCH_P1V05_POWER");
       break;
+    case MB_SENSOR_C2_AVA_FTEMP:
+      sprintf(name, "MB_C2_AVA_FTEMP");
+      break;
+    case MB_SENSOR_C2_AVA_RTEMP:
+      sprintf(name, "MB_C2_AVA_RTEMP");
+      break;
+    case MB_SENSOR_C2_1_NVME_CTEMP:
+      sprintf(name, "MB_C2_1_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C2_2_NVME_CTEMP:
+      sprintf(name, "MB_C2_2_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C2_3_NVME_CTEMP:
+      sprintf(name, "MB_C2_3_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C2_4_NVME_CTEMP:
+      sprintf(name, "MB_C2_4_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C3_AVA_FTEMP:
+      sprintf(name, "MB_C3_AVA_FTEMP");
+      break;
+    case MB_SENSOR_C3_AVA_RTEMP:
+      sprintf(name, "MB_C3_AVA_RTEMP");
+      break;
+    case MB_SENSOR_C3_1_NVME_CTEMP:
+      sprintf(name, "MB_C3_1_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C3_2_NVME_CTEMP:
+      sprintf(name, "MB_C3_2_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C3_3_NVME_CTEMP:
+      sprintf(name, "MB_C3_3_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C3_4_NVME_CTEMP:
+      sprintf(name, "MB_C3_4_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C4_AVA_FTEMP:
+      sprintf(name, "MB_C4_AVA_FTEMP");
+      break;
+    case MB_SENSOR_C4_AVA_RTEMP:
+      sprintf(name, "MB_C4_AVA_RTEMP");
+      break;
+    case MB_SENSOR_C4_1_NVME_CTEMP:
+      sprintf(name, "MB_C4_1_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C4_2_NVME_CTEMP:
+      sprintf(name, "MB_C4_2_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C4_3_NVME_CTEMP:
+      sprintf(name, "MB_C4_3_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C4_4_NVME_CTEMP:
+      sprintf(name, "MB_C4_4_NVME_CTEMP");
+      break;
+
     default:
       return -1;
     }
@@ -3158,6 +3513,24 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_VR_CPU1_VDDQ_GRPD_TEMP:
     case MB_SENSOR_VR_PCH_PVNN_TEMP:
     case MB_SENSOR_VR_PCH_P1V05_TEMP:
+    case MB_SENSOR_C2_AVA_FTEMP:
+    case MB_SENSOR_C2_AVA_RTEMP:
+    case MB_SENSOR_C2_1_NVME_CTEMP:
+    case MB_SENSOR_C2_2_NVME_CTEMP:
+    case MB_SENSOR_C2_3_NVME_CTEMP:
+    case MB_SENSOR_C2_4_NVME_CTEMP:
+    case MB_SENSOR_C3_AVA_FTEMP:
+    case MB_SENSOR_C3_AVA_RTEMP:
+    case MB_SENSOR_C3_1_NVME_CTEMP:
+    case MB_SENSOR_C3_2_NVME_CTEMP:
+    case MB_SENSOR_C3_3_NVME_CTEMP:
+    case MB_SENSOR_C3_4_NVME_CTEMP:
+    case MB_SENSOR_C4_AVA_FTEMP:
+    case MB_SENSOR_C4_AVA_RTEMP:
+    case MB_SENSOR_C4_1_NVME_CTEMP:
+    case MB_SENSOR_C4_2_NVME_CTEMP:
+    case MB_SENSOR_C4_3_NVME_CTEMP:
+    case MB_SENSOR_C4_4_NVME_CTEMP:
       sprintf(units, "C");
       break;
     case MB_SENSOR_FAN0_TACH:

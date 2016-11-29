@@ -160,9 +160,9 @@ const char pal_fru_list[] = "all, slot1, iom, scc, dpb, nic";
 const char pal_server_list[] = "slot1";
 
 size_t pal_pwm_cnt = 2;
-size_t pal_tach_cnt = 2;
+size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1";
-const char pal_tach_list[] = "0, 1";
+const char pal_tach_list[] = "0, 7";
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -2143,22 +2143,8 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
 
 int
 pal_get_fan_name(uint8_t num, char *name) {
-
-  switch(num) {
-
-    case FAN_0:
-      sprintf(name, "Fan 0");
-      break;
-
-    case FAN_1:
-      sprintf(name, "Fan 1");
-      break;
-
-    default:
-      return -1;
-  }
-
-  return 0;
+// Redirect fan to sensor
+  return pal_get_sensor_name(FRU_DPB, DPB_SENSOR_FAN0_FRONT + num, name);
 }
 
 static int
@@ -2243,7 +2229,7 @@ int
 pal_get_fan_speed(uint8_t fan, int *rpm) {
   int ret;
   float value;
-
+  // Redirect fan to sensor
   ret = pal_sensor_read(FRU_DPB, DPB_SENSOR_FAN0_FRONT + fan , &value);
 
   if (ret == 0)
@@ -2391,34 +2377,29 @@ int pal_en_iom_full_pwr(void){
 return 0;
 }
 int pal_fault_led(uint8_t state, uint8_t mode) {
+
+  // TODO: Need to implement 3 different modes for the fault LED.
+  // For now the default mode is the auto mode which is controlled by frontpaneld.
+  // ----------------------------------------------------------------------------
   // mode: 0 - 1 auto (BMC control); 1 - manual (user control); 2 - disable manual
-  static int run_mode = 0;  // run_mode: 0 - auto; 1 - manual
+  // static int run_mode = 0;  // run_mode: 0 - auto; 1 - manual
+  // ----------------------------------------------------------------------------
   char path[64] = {0};
 
   // ENCL_FAULT_LED: GPIOO3 (115)
   sprintf(path, GPIO_VAL, GPIO_ENCL_FAULT_LED);
 
-  if (run_mode == mode) {       // keep mode, set LED value
-    if (state == 0) {           // LED off
-      if (write_device(path, "1")) {
-        return -1;
+  if (state == 0) {           // LED off
+    if (write_device(path, "0")) {
+      return -1;
       }
-    } else {                    // LED on
-      if (write_device(path, "0")) {
-        return -1;
-      }
-    }
-  } else if (run_mode < mode){  // enable/disable manual control
-    if (mode != 2) {
-      run_mode = mode;
-    } else {
-      run_mode = 0;
-    }
+  }
+    else {                    // LED on
     if (write_device(path, "1")) {
       return -1;
     }
   }
-  return run_mode;
+  return 0;
 }
 
 //For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e
@@ -2644,7 +2625,12 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
 
     if( strcmp(units,"C") == 0 )
       value = rbuf[5*i+2];
-    else
+    else if( strcmp(units,"RPM") == 0 )
+    {
+	  value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+      value = value * 10;
+	}
+	else
     {
       value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
       value = value/100;
@@ -2656,6 +2642,12 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     if(rbuf[5*i+4] != 0){
 	  sprintf(str, "NA");
 	}
+
+    //Ignore FAN stauts
+    if( strcmp(units,"RPM") != 0 )
+      if(rbuf[5*i+4] != 0){
+	    sprintf(str, "NA");
+	  }
 
     if(edb_cache_set(key, str) < 0) {
     }

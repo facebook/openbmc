@@ -70,7 +70,7 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-const static uint8_t gpio_bic_update_ready[] = { 0, 107, 106, 109, 108 };
+const static uint8_t gpio_bic_update_ready[] = { 0, 55};
 
 // Helper Functions
 static void

@@ -619,7 +619,7 @@ printf("size of file is %d bytes\n", size);
 
   // Restart ipmb daemon with "bicup" for bic update
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d bicup", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20 bicup", get_ipmb_bus_id(slot_id));
   system(cmd);
   printf("start ipmbd bicup for this slot %x..\n",slot_id);
   sleep(1);
@@ -810,7 +810,7 @@ printf("i2c_io failed\n");
 error_exit:
   // Restart ipmbd daemon
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20", get_ipmb_bus_id(slot_id));
   system(cmd);
 
 error_exit2:

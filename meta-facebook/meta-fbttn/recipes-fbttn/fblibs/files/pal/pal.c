@@ -2533,7 +2533,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
   }
 
   //timeout: 5 second, 1 second tolerance only for First sensor
-  if ( (current_time - timestamp) > (5 - tolerance) ) {
+  if ( abs(current_time - timestamp) > (5 - tolerance) ) {
     //SCC
     switch(fru) {
       case FRU_SCC:

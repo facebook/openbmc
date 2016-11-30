@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,17 +16,15 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+import eeprom_utils
 
-SRC_URI += " file://rest-api-1/board_endpoint.py \
-             file://rest-api-1/rest_component_presence.py \
-             file://rest-api-1/rest_firmware.py \
-             file://rest-api-1/rest_chassis_eeprom.py \
-          "
 
-binfiles += "board_endpoint.py \
-            rest_component_presence.py \
-            rest_firmware.py \
-            rest_chassis_eeprom.py \
-            "
+def get_chassis_eeprom():
+    return eeprom_utils.get_eeprom_data('/usr/local/bin/ceutil')
+
+
+# For ease of debugging
+if __name__ == '__main__':
+    print(get_chassis_eeprom())

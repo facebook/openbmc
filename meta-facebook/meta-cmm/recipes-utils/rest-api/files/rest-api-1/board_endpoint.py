@@ -20,6 +20,7 @@
 import bottle
 import rest_component_presence
 import rest_firmware
+import rest_chassis_eeprom
 
 boardApp = bottle.Bottle()
 
@@ -35,3 +36,8 @@ def rest_comp_presence():
 def rest_firmware_info():
     return rest_firmware.get_firmware_info()
 
+
+# Handler to fetch chassis eeprom
+@boardApp.route('/api/sys/mb/chassis_eeprom')
+def rest_chassis_eeprom_hdl():
+    return rest_chassis_eeprom.get_chassis_eeprom()

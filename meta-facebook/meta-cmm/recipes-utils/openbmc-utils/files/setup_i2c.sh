@@ -26,6 +26,9 @@ add_device() {
 # EEPROM
 add_device 24c64 0x51 6
 
+#PCB EEPROM
+add_device 24c64 0x50 28
+
 # Two temperature sensors on CMM
 add_device tmp75 0x48 3         # inlet
 add_device tmp75 0x49 3         # outlet

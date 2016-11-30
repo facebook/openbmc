@@ -31,6 +31,7 @@ SRC_URI += " \
     file://setup_i2c.sh \
     file://set_fan_speed.sh \
     file://sol.sh \
+    file://ceutil \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -41,6 +42,7 @@ OPENBMC_UTILS_FILES += " \
     presence_util.sh \
     set_fan_speed.sh \
     sol.sh \
+    ceutil \
     "
 
 DEPENDS_append = " update-rc.d-native"

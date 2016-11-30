@@ -1377,13 +1377,13 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "IOC_TEMP");
           break;
         case SCC_SENSOR_HSC_POWER:
-          sprintf(name, "HSC_POWER");
+          sprintf(name, "SCC_HSC_POWER");
           break;
         case SCC_SENSOR_HSC_CURR:
-          sprintf(name, "HSC_CURR");
+          sprintf(name, "SCC_HSC_CURR");
           break;
         case SCC_SENSOR_HSC_VOLT:
-          sprintf(name, "HSC_VOLT");
+          sprintf(name, "SCC_HSC_VOLT");
           break;
         case SCC_SENSOR_P3V3_SENSE:
           sprintf(name, "P3V3_SENSE");

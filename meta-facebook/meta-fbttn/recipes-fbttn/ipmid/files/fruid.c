@@ -122,7 +122,7 @@ int check_fru_is_empty(const char * bin_file)
      }
   }
   return 0;
-}    
+}
 
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {

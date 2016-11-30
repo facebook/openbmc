@@ -28,6 +28,7 @@ modprobe g_cdc host_addr=02:00:00:00:00:02 dev_addr=02:00:00:00:00:01
 # To solve this issue, we change the TX queue length for usb0 to 64 to avoid
 # memory exhaust.
 ifconfig usb0 txqueuelen 64
+ifconfig usb0 up
 while true; do
     getty /dev/ttyGS0 57600
     sleep 1

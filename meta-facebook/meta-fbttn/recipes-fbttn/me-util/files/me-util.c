@@ -33,11 +33,337 @@
 #include <facebook/bic.h>
 #include <openbmc/ipmi.h>
 
+#define  MAX_PROC_ID 31
+#define  MAX_MC_IDX 19
+#define  MAX_RETRY 0
+#define  ME_COLD_RESET_DELAY 5
+
 #define LOGFILE "/tmp/me-util.log"
+#define CRUSH_DUMP_MSR_LOGFILE "/tmp/crush_dump_msr_%s.data"
+#define CRUSH_DUMP_COREID_LOGFILE "/tmp/crush_dump_coreid_%s.data"
+
+#define  IA32_MC_CTL_base 0x0400
+#define  IA32_MC_CTL2_base 0x0280
+#define  IA32_MC_STATUS_base 0x0401
+#define  IA32_MC_ADDR_base 0x0402
+#define  IA32_MC_MISC_base 0x0403
+#define  IA32_MCG_CAP 0x0179
+#define  IA32_MCG_STATUS 0x017A
+#define  IA32_MCG_CONTAIN 0x0178
 
 static void
 print_usage_help(void) {
   printf("Usage: me-util <slot1> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: me-util <slot1> 48 coreid\n");
+  printf("Usage: me-util <slot1> 48 msr\n");
+}
+
+int crush_dump_msr(void) {
+  FILE *fp = NULL;
+  int processorid = 0, retry = 0, response = 0, comp = 1,
+  mc_index = 0, msr_offset = 0;
+  uint16_t param, param0, param1, cmdout;
+  uint8_t slot_id = 1;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t check; //for check 4th response data
+  int i = 0;
+  
+  char time_buff[100];
+  time_t now = time (0);
+  char file_name[100];
+
+  strftime (time_buff, 100, "%Y-%m-%d-%H%M%S", localtime (&now));
+  sprintf(file_name, CRUSH_DUMP_MSR_LOGFILE, time_buff);
+
+  fp = fopen(file_name, "w");
+  if (!fp) {
+      printf("File open Fail\n");
+      return -1;
+    }
+  fprintf(fp, "\n");
+  fprintf(fp, "%s\n", "MSR DUMP:");
+  fprintf(fp, "%s\n", "=========");
+  fprintf(fp, "\n");
+
+  while( mc_index <= MAX_MC_IDX ) {
+    fprintf(fp, "********************************************************\n");
+    fprintf(fp, "*                    MC index %02d                       *\n", mc_index);
+    fprintf(fp, "********************************************************\n");
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    fprintf(fp, "   <<< IA32_MC%d_CTL, ProcessorID from 0 to %d >>> \n", mc_index, MAX_PROC_ID);
+    processorid = 0;
+    retry = 0;
+    while( processorid <= MAX_PROC_ID ) {
+      param = IA32_MC_CTL_base + msr_offset;
+      param0 = ( param & 0xFF );
+      param1 = ( param >> 8 );
+
+      tbuf[0] = 0xB8;
+      tbuf[1] = 0x40;
+      tbuf[2] = 0x57;
+      tbuf[3] = 0x01;
+      tbuf[4] = 0x00;
+      tbuf[5] = 0x30;
+      tbuf[6] = 0x05;
+      tbuf[7] = 0x09;
+      tbuf[8] = 0xb1;
+      tbuf[9] = 0x00;
+      tbuf[10] = processorid;
+      tbuf[11] = param0;
+      tbuf[12] = param1;
+      tlen = 13;
+      comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+      check = rbuf[3];
+      if( (( check == 0x80 ) || ( check = 0x81 ) || ( check == 0x81 ) || ( comp != 0 )) &&  ( retry < MAX_RETRY ) ) {
+        retry++;
+        sleep(1);
+      }
+      else {
+        for ( i = 0 ; i < rlen ; i ++ )
+          fprintf(fp, "%02X ", rbuf[i]);
+        fprintf(fp, "\n");
+        processorid++;
+        retry = 0;
+      }
+    }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    fprintf(fp, "   <<< IA32_MC%d_CTL2, ProcessorID from 0 to %d >>> \n", mc_index, MAX_PROC_ID);
+    processorid = 0;
+    retry = 0;
+    while( processorid <= MAX_PROC_ID ) {
+      param = IA32_MC_CTL2_base + mc_index;
+      param0 = ( param & 0xFF );
+      param1 = ( param >> 8 );
+
+      tbuf[10] = processorid;
+      tbuf[11] = param0;
+      tbuf[12] = param1;
+
+      comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+      check = rbuf[3];
+      if( (( check == 0x80 ) || ( check = 0x81 ) || ( check == 0x81 ) || ( comp != 0 )) &&  ( retry < MAX_RETRY ) ) {
+        retry++;
+        sleep(1);
+      }
+      else {
+        for ( i = 0 ; i < rlen ; i ++ )
+          fprintf(fp, "%02X ", rbuf[i]);
+        fprintf(fp, "\n");
+        processorid++;
+        retry = 0;
+      }
+    }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    fprintf(fp, "   <<< IA32_MC%d_STATUS, ProcessorID from 0 to %d >>> \n", mc_index, MAX_PROC_ID);
+    processorid = 0;
+    retry = 0;
+    while( processorid <= MAX_PROC_ID ) {
+      param = IA32_MC_STATUS_base + msr_offset;
+      param0 = ( param & 0xFF );
+      param1 = ( param >> 8 );
+
+      tbuf[10] = processorid;
+      tbuf[11] = param0;
+      tbuf[12] = param1;
+
+      comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+      check = rbuf[3];
+      if( (( check == 0x80 ) || ( check = 0x81 ) || ( check == 0x81 ) || ( comp != 0 )) &&  ( retry < MAX_RETRY ) ) {
+        retry++;
+        sleep(1);
+      }
+      else {
+        for ( i = 0 ; i < rlen ; i ++ )
+          fprintf(fp, "%02X ", rbuf[i]);
+        fprintf(fp, "\n");
+        processorid++;
+        retry = 0;
+      }
+    }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    fprintf(fp, "   <<< IA32_MC%d_ADDR, ProcessorID from 0 to %d >>> \n", mc_index, MAX_PROC_ID);
+    processorid = 0;
+    retry = 0;
+    while( processorid <= MAX_PROC_ID ) {
+      param = IA32_MC_ADDR_base + msr_offset;
+      param0 = ( param & 0xFF );
+      param1 = ( param >> 8 );
+
+      tbuf[10] = processorid;
+      tbuf[11] = param0;
+      tbuf[12] = param1;
+
+      comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+      check = rbuf[3];
+      if( (( check == 0x80 ) || ( check = 0x81 ) || ( check == 0x81 ) || ( comp != 0 )) &&  ( retry < MAX_RETRY ) ) {
+        retry++;
+        sleep(1);
+      }
+      else {
+        for ( i = 0 ; i < rlen ; i ++ )
+          fprintf(fp, "%02X ", rbuf[i]);
+        fprintf(fp, "\n");
+        processorid++;
+        retry = 0;
+      }
+    }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    fprintf(fp, "   <<< IA32_MC%d_MISC, ProcessorID from 0 to %d >>> \n", mc_index, MAX_PROC_ID);
+    processorid = 0;
+    retry = 0;
+    while( processorid <= MAX_PROC_ID ) {
+      param = IA32_MC_MISC_base + msr_offset;
+      param0 = ( param & 0xFF );
+      param1 = ( param >> 8 );
+
+      tbuf[10] = processorid;
+      tbuf[11] = param0;
+      tbuf[12] = param1;
+
+      comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+      check = rbuf[3];
+      if( (( check == 0x80 ) || ( check = 0x81 ) || ( check == 0x81 ) || ( comp != 0 )) &&  ( retry < MAX_RETRY ) ) {
+        retry++;
+        sleep(1);
+      }
+      else {
+        for ( i = 0 ; i < rlen ; i ++ )
+          fprintf(fp, "%02X ", rbuf[i]);
+        fprintf(fp, "\n");
+        processorid++;
+        retry = 0;
+      }
+    }
+
+    mc_index++;
+    msr_offset+4;
+  }
+
+  fclose(fp);
+  return 0;
+}
+
+int crush_dump_coreid(void) {
+  FILE *fp = NULL;
+  int processorid = 0, retry = 0, response = 0, comp = 1,
+  mc_index = 0, msr_offset = 0;
+  uint16_t param, param0, param1, cmdout;
+  uint8_t slot_id = 1;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t check; //for check 4th response data
+  int i = 0;
+
+  char time_buff[100];
+  time_t now = time (0);
+  char file_name[100];
+
+  strftime (time_buff, 100, "%Y-%m-%d-%H%M%S", localtime (&now));
+  sprintf(file_name, CRUSH_DUMP_COREID_LOGFILE, time_buff);
+
+  fp = fopen(file_name, "w");
+  if (!fp) {
+      printf("File Open Fail\n");
+      return -1;
+    }
+  fprintf(fp, "\n");
+  fprintf(fp, "%s\n", "CPU COREID DUMP:");
+  fprintf(fp, "%s\n", "================");
+  fprintf(fp, "\n");
+
+  //PECI RdPkgConfig() "CPUID Read"
+  fprintf(fp, "< CPUID Read >\n");
+  tbuf[0] = 0xB8;
+  tbuf[1] = 0x40;
+  tbuf[2] = 0x57;
+  tbuf[3] = 0x01;
+  tbuf[4] = 0x00;
+  tbuf[5] = 0x30;
+  tbuf[6] = 0x05;
+  tbuf[7] = 0x05;
+  tbuf[8] = 0xa1;
+  tbuf[9] = 0x00;
+  tbuf[10] = 0x00;
+  tbuf[11] = 0x00;
+  tbuf[12] = 0x00;
+  tlen = 13;
+  comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+  for ( i = 0 ; i < rlen ; i ++ )
+    fprintf(fp, "%02X ", rbuf[i]);
+  fprintf(fp, "\n");
+
+  //PECI RdPkgConfig() "CPU Microcode Update Revision Read"
+  fprintf(fp, "< CPU Microcode Update Revision Read >\n");
+  tbuf[11] = 0x04;
+  comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+  for ( i = 0 ; i < rlen ; i ++ )
+    fprintf(fp, "%02X ", rbuf[i]);
+  fprintf(fp, "\n");
+
+  //PECI RdPkgConfig() "MCA ERROR SOURCE LOG Read"
+  fprintf(fp, "< MCA ERROR SOURCE LOG Read -- The socket which MCA_ERR_SRC_LOG[30]=0 is the socket that asserted IERR first >\n");
+  tbuf[11] = 0x05;
+  comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+  for ( i = 0 ; i < rlen ; i ++ )
+    fprintf(fp, "%02X ", rbuf[i]);
+  fprintf(fp, "\n");
+
+  //PECI RdPkgConfig() "Core ID IERR"
+  //echo "< Core ID IERR -- determine whether a core in the failing socket asserted an IERR, completion data[3]=1 if a core caused the IERR, data[2:0] is the core ID, and save the value for matching purpose >"
+  //ipmitool -H $1 -U $user -P $passwd -b 6 -t 0x2c raw 0x2E 0x40 0x57 0x01 0x00 $2 0x05 0x05 0xa1 0x00 0x27 0x08 0x08
+
+  fprintf(fp, "********************************************************\n");
+  fprintf(fp, "*                   IERRLOGGINGREG                     *\n");
+  fprintf(fp, "********************************************************\n");
+  tbuf[0] = 0xB8;
+  tbuf[1] = 0x44;
+  tbuf[2] = 0x57;
+  tbuf[3] = 0x01;
+  tbuf[4] = 0x00;
+  tbuf[5] = 0x40;
+  tbuf[6] = 0xA4;
+  tbuf[7] = 0x50;
+  tbuf[8] = 0x18;
+  tbuf[9] = 0x00;
+  tbuf[10] = 0x03;
+  tlen = 11;
+  comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+  for ( i = 0 ; i < rlen ; i ++ )
+    fprintf(fp, "%02X ", rbuf[i]);
+  fprintf(fp, "\n");
+
+  fprintf(fp, "********************************************************\n");
+  fprintf(fp, "*                   MCERRLOGGINGREG                    *\n");
+  fprintf(fp, "********************************************************\n");
+  tbuf[0] = 0xB8;
+  tbuf[1] = 0x44;
+  tbuf[2] = 0x57;
+  tbuf[3] = 0x01;
+  tbuf[4] = 0x00;
+  tbuf[5] = 0x40;
+  tbuf[6] = 0xA8;
+  tbuf[7] = 0x50;
+  tbuf[8] = 0x18;
+  tbuf[9] = 0x00;
+  tbuf[10] = 0x03;
+  tlen = 11;
+  comp = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+  for ( i = 0 ; i < rlen ; i ++ )
+    fprintf(fp, "%02X ", rbuf[i]);
+  fprintf(fp, "\n");
+
+  fclose(fp);
+  return 0;
 }
 
 int
@@ -64,6 +390,17 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
+  if (!strcmp(argv[2], "48")) {
+    if (!strcmp(argv[3], "msr")) {    
+      ret = crush_dump_msr();
+      return ret;
+    }
+    else if (!strcmp(argv[3], "coreid")) {    
+      ret = crush_dump_coreid();
+      return ret;
+    }    
+  }
+
   for (i = 2; i < argc; i++) {
     tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
@@ -77,7 +414,6 @@ main(int argc, char **argv) {
 
   // memcpy(rbuf, tbuf, tlen);
   //rlen = tlen;
-
 
   memset(log, 0, 128);
   for (i = 0; i < rlen; i++) {

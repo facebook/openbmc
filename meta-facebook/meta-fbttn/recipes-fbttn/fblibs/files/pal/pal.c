@@ -350,6 +350,13 @@ static int
 server_power_on(uint8_t slot_id) {
   char vpath[64] = {0};
 
+  // M.2/IOC power-on
+  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
+  if (write_device(vpath, "1")) {
+    return -1;
+  }
+
+  // Mono Lake power-on
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
   if (write_device(vpath, "1")) {
@@ -1248,6 +1255,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   int ret;
+  int sku = 0;
+  bool check_server_power_status = false;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1287,7 +1296,29 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
   else {
     // On successful sensor read
-    sprintf(str, "%.2f",*((float*)value));
+    sku = pal_get_iom_type();
+    if (sku == 1) { // SKU: Type 5
+      if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
+       || (sensor_num == IOM_SENSOR_ADC_P3V3_M2)) {
+          check_server_power_status = true;
+      }
+    } else {        // SKU: Type 7
+      if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
+       || (sensor_num == IOM_SENSOR_ADC_P1V5) || (sensor_num == IOM_SENSOR_ADC_P0V975)) {
+          check_server_power_status = true;
+      }
+    }
+    if (check_server_power_status == true) {
+      pal_get_server_power(FRU_SLOT1, &status);
+      if (status != SERVER_POWER_ON) {
+        strcpy(str, "NA");
+        ret = -1;
+      } else {
+        sprintf(str, "%.2f",*((float*)value));
+      }
+    } else {
+      sprintf(str, "%.2f",*((float*)value));
+    }
   }
 
   if(edb_cache_set(key, str) < 0) {

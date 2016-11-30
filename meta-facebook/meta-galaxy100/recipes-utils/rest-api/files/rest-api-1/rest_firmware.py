@@ -12,6 +12,8 @@
 # for more details.
 #
 import os
+import subprocess
+import bmc_command
 
 def _get_version(version_file):
     with open(version_file) as f:
@@ -29,7 +31,7 @@ def _get_syscpld_info():
     SYS_CPLD_PATH = '/sys/class/i2c-adapter/i2c-12/12-0031'
     ver = _get_version(os.path.join(SYS_CPLD_PATH, 'cpld_rev'))
     sub_ver = _get_version(os.path.join(SYS_CPLD_PATH, 'cpld_sub_rev'))
-    return _firmware_json( ver, sub_ver)
+    return _firmware_json(ver, sub_ver)
 
 
 def _get_scm_cpld_info():
@@ -39,10 +41,26 @@ def _get_scm_cpld_info():
     return _firmware_json(ver, sub_ver)
 
 
+def _get_qsfp_cpld_info():
+    ver, sub_ver = 0, 0
+    proc = subprocess.Popen(['/usr/local/bin/qsfp_cpld_ver.sh'],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    try:
+        data, err = bmc_command.timed_communicate(proc)
+        ver, sub_ver = data.split(',')
+    except Exception as e:
+        syslog.syslog(syslog.LOG_ERR, 'Error getting QSFP CPLD versions : {}'
+                      .format(e))
+
+    return _firmware_json(ver, sub_ver)
+
+
 def get_firmware_info():
     return {
         'SYS_CPLD': _get_syscpld_info(),
-        'SCM_CPLD': _get_scm_cpld_info()
+        'SCM_CPLD': _get_scm_cpld_info(),
+        'QSFP_CPLD': _get_qsfp_cpld_info()
     }
 
 

@@ -66,10 +66,10 @@ main(int argc, char **argv) {
 	  int LED = 0;
     printf("fpc-util: Enable/Disable miniSAS2 Error LED\n");
     if(!strcmp(argv[3], "warning")){
-		LED = 1;
+		LED = 0;
 		return pal_minisas_led(1,LED);
 	}else if(!strcmp(argv[3], "off")){
-		LED = 0;
+		LED = 1;
 	    return pal_minisas_led(1,LED);
 	}
     return -1;// to do pal_minisas_led()
@@ -77,10 +77,10 @@ main(int argc, char **argv) {
 	  int LED = 0;
     printf("fpc-util: Enable/Disable miniSAS1 Error LED\n");
     if(!strcmp(argv[3], "warning")){
-		LED = 1;
+		LED = 0;
 		return pal_minisas_led(0,LED);
 	}else if(!strcmp(argv[3], "off")){
-		LED = 0;
+		LED = 1;
 	    return pal_minisas_led(0,LED);
 	}
     return -1;// to do pal_minisas_led()

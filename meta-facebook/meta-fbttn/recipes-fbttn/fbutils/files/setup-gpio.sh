@@ -143,7 +143,7 @@ devmem_clear_bit $(scu_addr 80) 21
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_set E5 0
+gpio_set E5 1
 
 # BMC_EXT2_LED_B: E6 (38)
 # To use GPIOE6, SCU80[22], SCU8C[15], and SCU70[22] must be 0
@@ -159,7 +159,7 @@ devmem_clear_bit $(scu_addr 80) 23
 devmem_clear_bit $(scu_addr 8C) 15
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_set E7 0
+gpio_set E7 1
 
 # SCC_LOC_FULL_PWR_EN: F0 (40), PS
 # To use GPIOF0, LHCR[0], SCU90[30], and SCU80[24] must be 0

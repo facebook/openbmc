@@ -1,5 +1,8 @@
 inherit aspeed_uboot_image
 
+# /dev
+require recipes-core/images/aspeed-dev.inc
+
 # Base this image on core-image-minimal
 include recipes-core/images/core-image-minimal.bb
 

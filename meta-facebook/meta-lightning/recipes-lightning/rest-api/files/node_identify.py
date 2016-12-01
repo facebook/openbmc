@@ -22,10 +22,10 @@ class identifyNode(node):
         data = Popen('cat /mnt/data/kv_store/system_identify', \
                             shell=True, stdout=PIPE).stdout.read()
         identify_status = data.strip('\n')
-    info = {
-           "Status of identify LED": identify_status
+        info = {
+                "Status of identify LED": identify_status
         }
-       
+               
         return info
 
     def doAction(self, data):

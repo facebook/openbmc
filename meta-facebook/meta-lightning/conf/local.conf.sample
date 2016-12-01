@@ -30,11 +30,6 @@ PARALLEL_MAKE ?= "-j ${@oe.utils.cpu_count()}"
 # Machine Selection
 MACHINE ??= "lightning"
 
-# U-Boot Selection
-PREFERRED_VERSION_u-boot = "v2013.07"
-PREFERRED_VERSION_u-boot-mkimage = "v2013.07"
-PREFERRED_VERSION_u-boot-fw-utils = "v2013.07"
-
 # Build directory locationds.
 #
 #DL_DIR ?= "${TOPDIR}/downloads"

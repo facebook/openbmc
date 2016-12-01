@@ -86,20 +86,6 @@ gpio_num(char *str)
   return ret;
 }
 
-// Generic Event Handler for GPIO changes with condition
-static void gpio_filter_handle(void *p)
-{
-  gpio_poll_st *gp = (gpio_poll_st*) p;
-
-  if (gp->gs.gs_gpio == gpio_num("GPIOM4") || //FM_CPU0_THERMTRIP_LATCH_LVT3_N
-      gp->gs.gs_gpio == gpio_num("GPIOM5") ){ //FM_CPU1_THERMTRIP_LATCH_LVT3_N
-    if (power_on_sec < 30)
-      return;
-  }
-
-  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
-}
-
 // Generic Event Handler for GPIO changes with condition, only logs event when MB is ON
 static void gpio_filter_handle_power(void *p)
 {
@@ -114,11 +100,9 @@ static void gpio_filter_handle_power(void *p)
   if (gp->gs.gs_gpio == gpio_num("GPIOG2") || //FM_PCH_BMC_THERMTRIP_N
       gp->gs.gs_gpio == gpio_num("GPIOI0") || //FM_CPU0_FIVR_FAULT_LVT3_N
       gp->gs.gs_gpio == gpio_num("GPIOI1") || //FM_CPU1_FIVR_FAULT_LVT3_N
-      gp->gs.gs_gpio == gpio_num("GPIOQ6")) { //FM_POST_CARD_PRES_BMC_N
     if (reset_sec < 20)
       return;
-  } if (gp->gs.gs_gpio == gpio_num("GPIOD4") || //IRQ_DIMM_SAVE_LVT3_N
-        gp->gs.gs_gpio == gpio_num("GPIOD6") || //FM_CPU_ERR0_LVT3_BMC_N
+  } if (gp->gs.gs_gpio == gpio_num("GPIOD6") || //FM_CPU_ERR0_LVT3_BMC_N
         gp->gs.gs_gpio == gpio_num("GPIOD7") || //FM_CPU_ERR1_LVT3_BMC_N
         gp->gs.gs_gpio == gpio_num("GPIOG0") || //FM_CPU_ERR2_LVT3_N
         gp->gs.gs_gpio == gpio_num("GPIOM0") || //FM_CPU0_RC_ERROR_N
@@ -189,7 +173,6 @@ static gpio_poll_st g_gpios[] = {
   // {{gpio, fd}, gpioValue, call-back function, GPIO description}
   {{0, 0}, 0, gpio_event_handle, "GPIOB6 - PWRGD_SYS_PWROK" },
   {{0, 0}, 0, gpio_event_handle_power, "GPIOB7 - IRQ_PVDDQ_GHJ_VRHOT_LVT3_N"},
-  {{0, 0}, 0, gpio_filter_handle_power, "GPIOD4 - IRQ_DIMM_SAVE_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOD6 - FM_CPU_ERR0_LVT3_BMC_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOD7 - FM_CPU_ERR1_LVT3_BMC_N"},
   {{0, 0}, 0, gpio_event_handle, "GPIOE0 - RST_SYSTEM_BTN_N"},
@@ -213,8 +196,8 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, 0, gpio_event_handle_power, "GPIOL4 - FM_MEM_THERM_EVENT_PCH_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOM0 - FM_CPU0_RC_ERROR_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
-  {{0, 0}, 0, gpio_filter_handle, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, 0, gpio_filter_handle, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, 0, gpio_event_handle, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPION3 - FM_CPU_MSMI_LVT3_N"},
   {{0, 0}, 0, gpio_filter_handle_power, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
   {{0, 0}, 0, platform_reset_event_handle, "GPIOR5 - RST_BMC_PLTRST_BUF_N"},

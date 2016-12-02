@@ -99,7 +99,7 @@ static void gpio_filter_handle_power(void *p)
 
   if (gp->gs.gs_gpio == gpio_num("GPIOG2") || //FM_PCH_BMC_THERMTRIP_N
       gp->gs.gs_gpio == gpio_num("GPIOI0") || //FM_CPU0_FIVR_FAULT_LVT3_N
-      gp->gs.gs_gpio == gpio_num("GPIOI1") || //FM_CPU1_FIVR_FAULT_LVT3_N
+      gp->gs.gs_gpio == gpio_num("GPIOI1")) { //FM_CPU1_FIVR_FAULT_LVT3_N
     if (reset_sec < 20)
       return;
   } if (gp->gs.gs_gpio == gpio_num("GPIOD6") || //FM_CPU_ERR0_LVT3_BMC_N

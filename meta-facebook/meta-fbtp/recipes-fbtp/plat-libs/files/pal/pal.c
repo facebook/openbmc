@@ -1494,8 +1494,18 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   }
 
   // Calculate Current
-  *value = ((rbuf[1] & 0x7F) * 256 + rbuf[0] ) * 62.5;
-  *value /= 1000;
+  if (rbuf[1] < 0x40) {
+    // Positive value (sign at bit6)
+    *value = ((rbuf[1] & 0x7F) * 256 + rbuf[0] ) * 62.5;
+    *value /= 1000;
+  } else {
+    // Negative value 2's complement
+    uint16_t temp = (rbuf[1] << 8) | rbuf[0];
+    temp = 0x7fff - temp + 1;
+
+    *value = (((temp >> 8) & 0x7F) * 256 + (temp & 0xFF) ) * -62.5;
+    *value /= 1000;
+  }
 
   // Handle illegal values observed
   if (*value > 1000) {
@@ -1701,8 +1711,17 @@ read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
       goto error_exit;
   }
 
-  // Calculate Power
-  *value = ((rbuf[1] & 0x0F) * 256 + rbuf[0] ) * 0.125;
+  // Calculate Temp
+  if (rbuf[1] < 0x40) {
+    // Positive value
+    *value = ((rbuf[1] & 0x0F) * 256 + rbuf[0] ) * 0.125;
+  } else {
+    // Negative value 2's complement
+    uint16_t temp = (rbuf[1] << 8) | rbuf[0];
+    temp = 0x7fff - temp + 1;
+
+    *value = (((temp >> 8) & 0x7F) * 256 + (temp & 0xFF) ) * -0.125;
+  }
 
 error_exit:
   if (fd > 0) {

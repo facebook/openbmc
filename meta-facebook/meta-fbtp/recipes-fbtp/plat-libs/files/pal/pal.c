@@ -244,8 +244,10 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_HSC_IN_POWER,
   MB_SENSOR_CPU0_TEMP,
   MB_SENSOR_CPU0_TJMAX,
+  MB_SENSOR_CPU0_PKG_POWER,
   MB_SENSOR_CPU1_TEMP,
   MB_SENSOR_CPU1_TJMAX,
+  MB_SENSOR_CPU1_PKG_POWER,
   MB_SENSOR_PCH_TEMP,
   MB_SENSOR_CPU0_DIMM_GRPA_TEMP,
   MB_SENSOR_CPU0_DIMM_GRPB_TEMP,
@@ -1297,6 +1299,140 @@ read_dimm_temp(uint8_t snr_num, float *value) {
   if (ret == 0) {
     *value = (float)max;
   }
+
+  return ret;
+}
+
+static int
+read_cpu_package_power(uint8_t snr_num, float *value) {
+  int ret = READING_NA;
+  uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf1[256] = {0x00};
+  // Energy units: Intel Doc#554767, p37, 2^(-ENERGY UNIT) J, ENERGY UNIT defalut is 14
+  // Run Time units: Intel Doc#554767, p33, msec
+  // 2^(-14)*1000 = 0.06103515625
+  float unit = 0.06103515625f;
+  static uint32_t last_pkg_energy[2] = {0}, last_run_time[2] = {0};
+  uint32_t pkg_energy, run_time, diff_energy, diff_time;
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  int cpu_index;
+  static uint8_t retry[2] = {0x00}; // CPU0 and CPU1
+
+  switch (snr_num) {
+    case MB_SENSOR_CPU0_PKG_POWER:
+      cpu_index = 0;
+      break;
+    case MB_SENSOR_CPU1_PKG_POWER:
+      cpu_index = 1;
+      break;
+    default:
+      return -1;
+  }
+
+  req = (ipmb_req_t*)tbuf;
+
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+
+  // Get CPU package power and run time
+  rlen = 0;
+  memset( rbuf1,0x00,sizeof(rbuf1) );
+  //Read Accumulated Energy Pkg and Accumulated Run Time
+  req->cmd = CMD_NM_AGGREGATED_SEND_RAW_PECI;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x30 + cpu_index;
+  req->data[4] = 0x05;
+  req->data[5] = 0x05;
+  req->data[6] = 0xa1;
+  req->data[7] = 0x00;
+  req->data[8] = 0x03;
+  req->data[9] = 0xff;
+  req->data[10] = 0x00;
+  req->data[11] = 0x30 + cpu_index;
+  req->data[12] = 0x05;
+  req->data[13] = 0x05;
+  req->data[14] = 0xa1;
+  req->data[15] = 0x00;
+  req->data[16] = 0x1F;
+  req->data[17] = 0x00;
+  req->data[18] = 0x00;
+  tlen = 25;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+
+  if (rlen == 0) {
+    //ME no response
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "%s(%d): Zero bytes received\n", __func__, __LINE__);
+#endif
+    goto error_exit;
+  } else {
+    if (rbuf1[6] == 0) { // ME Completion Code
+      if ( (rbuf1[10] == 0x00) && (rbuf1[11] == 0x40) && // 1st ME CC & PECI CC
+           (rbuf1[16] == 0x00) && (rbuf1[17] == 0x40) ){ // 2nd ME CC & PECI CC
+        pkg_energy = rbuf1[15];
+        pkg_energy = (pkg_energy << 8) | rbuf1[14];
+        pkg_energy = (pkg_energy << 8) | rbuf1[13];
+        pkg_energy = (pkg_energy << 8) | rbuf1[12];
+
+        run_time = rbuf1[21];
+        run_time = (run_time << 8) | rbuf1[20];
+        run_time = (run_time << 8) | rbuf1[19];
+        run_time = (run_time << 8) | rbuf1[18];
+
+        ret = 0;
+      }
+    }
+  }
+
+  // need at least 2 entries to calculate
+  if (last_pkg_energy[cpu_index] == 0 && last_run_time[cpu_index] == 0) {
+    last_pkg_energy[cpu_index] = pkg_energy;
+    last_run_time[cpu_index] = run_time;
+    ret = READING_NA;
+  }
+
+  if(!ret) {
+    if(pkg_energy >= last_pkg_energy[cpu_index])
+      diff_energy = pkg_energy - last_pkg_energy[cpu_index];
+    else
+      diff_energy = pkg_energy + (0xffffffff - last_pkg_energy[cpu_index] + 1);
+    last_pkg_energy[cpu_index] = pkg_energy;
+
+    if(run_time >= last_run_time[cpu_index])
+      diff_time = run_time - last_run_time[cpu_index];
+    else
+      diff_time = run_time + (0xffffffff - last_run_time[cpu_index] + 1);
+    last_run_time[cpu_index] = run_time;
+
+    if(diff_time == 0)
+      ret = READING_NA;
+    else
+      *value = ((float)diff_energy / (float)diff_time * unit);
+  }
+
+error_exit:
+  if (ret != 0) {
+    retry[cpu_index]++;
+    if (retry[cpu_index] <= 3) {
+      ret = READING_SKIP;
+      return ret;
+    }
+  } else
+    retry[cpu_index] = 0;
 
   return ret;
 }
@@ -2905,6 +3041,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_CPU1_DIMM_GRPD_TEMP:
         ret = read_dimm_temp(sensor_num, (float*) value);
         break;
+      case MB_SENSOR_CPU0_PKG_POWER:
+      case MB_SENSOR_CPU1_PKG_POWER:
+        ret = read_cpu_package_power(sensor_num, (float*) value);
+        break;
       case MB_SENSOR_PCH_TEMP:
         ret = read_sensor_reading_from_ME(MB_SENSOR_PCH_TEMP, (float*) value);
         break;
@@ -3263,11 +3403,17 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_CPU0_TJMAX:
       sprintf(name, "MB_CPU0_TJMAX");
       break;
+    case MB_SENSOR_CPU0_PKG_POWER:
+      sprintf(name, "MB_CPU0_PKG_POWER");
+      break;
     case MB_SENSOR_CPU1_TEMP:
       sprintf(name, "MB_CPU1_TEMP");
       break;
     case MB_SENSOR_CPU1_TJMAX:
       sprintf(name, "MB_CPU1_TJMAX");
+      break;
+    case MB_SENSOR_CPU1_PKG_POWER:
+      sprintf(name, "MB_CPU1_PKG_POWER");
       break;
     case MB_SENSOR_PCH_TEMP:
       sprintf(name, "MB_PCH_TEMP");
@@ -3607,6 +3753,8 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_VR_CPU1_VDDQ_GRPD_POWER:
     case MB_SENSOR_VR_PCH_PVNN_POWER:
     case MB_SENSOR_VR_PCH_P1V05_POWER:
+    case MB_SENSOR_CPU0_PKG_POWER:
+    case MB_SENSOR_CPU1_PKG_POWER:
       sprintf(units, "Watts");
       break;
     default:

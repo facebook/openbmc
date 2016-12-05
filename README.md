@@ -4,6 +4,13 @@ OpenBMC is an open software framework to build a complete Linux image for a Boar
 
 OpenBMC uses the [Yocto Project](https://www.yoctoproject.org) as the underlying building and distro generation framework.
 
+| Board | Status | Description |
+|-------|--------|-------------|
+[**Wedge100**](https://code.facebook.com/posts/1802489260027439/wedge-100-more-open-and-versatile-than-ever/) | [![Build Status](https://jenkins.osquery.io/job/openbmcMasterBuildWedge100/badge/icon)](https://jenkins.osquery.io/job/openbmcMasterBuildWedge100/) | A 32x100G TOR switch
+[**Lightning**](https://code.facebook.com/posts/989638804458007/introducing-lightning-a-flexible-nvme-jbof/) | [![Build Status](https://jenkins.osquery.io/job/openbmcMasterBuildLightning/badge/icon)](https://jenkins.osquery.io/job/openbmcMasterBuildLightning/) | A flexible NVMe JBOF
+[**Yosemite**](https://code.facebook.com/posts/1616052405274961/introducing-yosemite-the-first-open-source-modular-chassis-for-high-powered-microservers-) | [![Build Status](https://jenkins.osquery.io/job/openbmcMasterBuildYosemite/badge/icon)](https://jenkins.osquery.io/job/openbmcMasterBuildYosemite/) | An open source modular chassis for high-powered microservers
+[**Wedge**](https://code.facebook.com/posts/681382905244727/introducing-wedge-and-fboss-the-next-steps-toward-a-disaggregated-network/) | [![Build Status](https://jenkins.osquery.io/job/openbmcMasterBuildWedge/badge/icon)](https://jenkins.osquery.io/job/openbmcMasterBuildWedge/) | A 40G OS-agnostic TOR switch
+
 ## Contents
 
 This repository includes 3 set of layers:
@@ -33,6 +40,7 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
  ```bash
  $ cd poky
  $ git clone -b fido https://github.com/openembedded/meta-openembedded.git
+ $ git clone -b fido https://git.yoctoproject.org/git/meta-security
  $ git clone https://github.com/facebook/openbmc.git meta-openbmc
  ```
  Note that this project does not use Yocto release branch names.
@@ -94,38 +102,11 @@ BBLAYERS_NON_REMOVABLE ?= " \
 
 And finally the `./build/config/local.conf` will include important configuration options:
 ```
-SOURCE_MIRROR_URL ?= "file://${TOPDIR}/../meta-openbmc/source_mirror/"
-INHERIT += "own-mirrors"
-
-BB_GENERATE_MIRROR_TARBALLS = "1"
-BB_NO_NETWORK = "fb-only"
-
-BB_NUMBER_THREADS ?= "${@oe.utils.cpu_count()}"
-PARALLEL_MAKE ?= "-j ${@oe.utils.cpu_count()}"
-
+# Machine Selection
 MACHINE ??= "wedge"
-DISTRO ?= "poky"
-PACKAGE_CLASSES ?= "package_rpm"
-SANITY_TESTED_DISTROS_append ?= " CentOS-6.3 \n "
 
-USER_CLASSES ?= "buildstats image-mklibs image-prelink"
-PATCHRESOLVE = "noop"
-BB_DISKMON_DIRS = "\
-    STOPTASKS,${TMPDIR},1G,100K \
-    STOPTASKS,${DL_DIR},1G,100K \
-    STOPTASKS,${SSTATE_DIR},1G,100K \
-    ABORT,${TMPDIR},100M,1K \
-    ABORT,${DL_DIR},100M,1K \
-    ABORT,${SSTATE_DIR},100M,1K"
-
-INHERIT += "extrausers"
-EXTRA_USERS_PARAMS = " \
-  usermod -s /bin/bash root; \
-  usermod -p '\$1\$UGMqyqdG\$FZiylVFmRRfl9Z0Ue8G7e/' root; \
-  "
-OLDEST_KERNEL = "2.6.28"
-INHERIT += "blacklist"
-PNBLACKLIST[glibc] = "glibc 2.21 does not work with our kernel 2.6.28"
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb"
 ```
 
 # How can I contribute

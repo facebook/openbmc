@@ -17,7 +17,7 @@ binfiles = "me-util \
 
 pkgdir = "me-util"
 
-DEPENDS = " libipmb "
+DEPENDS = " libipmb libipmi "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

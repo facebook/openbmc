@@ -140,47 +140,6 @@ debug_card_handler() {
   uint8_t pos;
 
   while (1) {
-    // Check if reset button is pressed
-    ret = pal_get_rst_btn(&btn);
-    if (ret) {
-      goto debug_card_out;
-    }
-
-    if (!btn) {
-      syslog(LOG_WARNING, "Reset button pressed\n");
-
-      // Wait for the button to be released
-      for (i = 0; i < BTN_MAX_SAMPLES; i++) {
-        ret = pal_get_rst_btn(&btn);
-        if (ret || !btn) {
-          msleep(100);
-          continue;
-        }
-        syslog(LOG_WARNING, "Reset button released\n");
-        break;
-      }
-
-      // handle error case
-      if (i == BTN_MAX_SAMPLES) {
-        syslog(LOG_WARNING, "Reset button seems to stuck for long time\n");
-        goto debug_card_out;
-      }
-
-      // Get the position of the current UART
-      ret = pal_get_uart_chan(&pos);
-      if (ret)
-        goto debug_card_out;
-
-      if (pos == UART_POS_BMC) {
-        // TODO: Add support to reset BMC
-        syslog(LOG_CRIT, "Reset Button pressed for BMC");
-        system("reboot");
-      } else {
-        // TODO: Add support to reset PCIe SW
-        syslog(LOG_CRIT, "Reset Button pressed for PCIe Switch");
-      }
-    }
-
     // Check if UART channel button is pressed
     ret = pal_get_uart_chan_btn(&btn);
     if (ret) {

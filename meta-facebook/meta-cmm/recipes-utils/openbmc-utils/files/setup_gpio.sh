@@ -42,6 +42,11 @@ devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 24
 gpio_export F0 CPLD_JTAG_SEL
 
+# PSU PRESENCE GPIOs
+gpio_export 424 PSU1_PRESENT
+gpio_export 425 PSU2_PRESENT
+gpio_export 426 PSU3_PRESENT
+gpio_export 427 PSU4_PRESENT
 
 # FCB1 GPIOs
 gpio_export 456 FCB1_CPLD_TMS

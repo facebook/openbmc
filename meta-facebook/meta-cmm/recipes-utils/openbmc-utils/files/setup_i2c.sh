@@ -17,6 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+##### NOTE #########################################################
+# When adding new devices, always add to end of the list here
+# so any other dependencies that are hard coded with GPIO
+# will not break.
+####################################################################
+
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 add_device() {
@@ -96,3 +102,7 @@ for bus in ${fcb_busses}; do
     add_device pca9534 0x22 ${bus}
 done
 
+# PSU PRESENCE
+# Spec says pca9506 but this kernel version supports only 9505
+# which works for us
+add_device pca9505 0x20 29

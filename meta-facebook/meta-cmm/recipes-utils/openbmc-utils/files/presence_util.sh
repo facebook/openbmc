@@ -18,6 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+source /usr/local/bin/openbmc-utils.sh
+
 CMD='/sys/devices/platform/ast-i2c.13/i2c-13/13-003e/*present'
 FAN_CMD1='/sys/devices/platform/ast-i2c.8/i2c-8/i2c-32/i2c-171/171-0033/'
 FAN_CMD2='/sys/devices/platform/ast-i2c.8/i2c-8/i2c-33/i2c-179/179-0033/'
@@ -62,7 +66,23 @@ function get_fan_presence
   done
 }
 
-# Power supplies (todo)
+# Power supplies
+function get_psu_presence
+{
+  local num=1
+  while [ $num -lt 5 ]; do
+    key='psu'$num
+    cmd='gpio_get PSU'$num'_PRESENT'
+    val=$($cmd)
+    if [ $val -eq 0 ]; then
+      val=1
+    else
+      val=0
+    fi
+    echo $key ":" $val
+    (( num++ ))
+  done
+}
 
 # get all info
 echo "CARDS"
@@ -73,3 +93,6 @@ get_fan_presence $FAN_CMD1 1
 get_fan_presence $FAN_CMD2 2
 get_fan_presence $FAN_CMD3 3
 get_fan_presence $FAN_CMD4 4
+
+echo "POWER SUPPLIES"
+get_psu_presence

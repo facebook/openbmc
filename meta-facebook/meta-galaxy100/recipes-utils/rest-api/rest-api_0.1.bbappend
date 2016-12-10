@@ -13,15 +13,19 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
+    file://rest-api-1/eeprom_utils.py \
     file://rest-api-1/rest_fruid_scm.py \
     file://rest-api-1/rest_seutil.py \
     file://rest-api-1/rest_sol.py \
     file://rest-api-1/rest_firmware.py \
+    file://rest-api-1/rest_chassis_eeprom.py \
     "
 
 binfiles += " \
+    eeprom_utils.py \
     rest_fruid_scm.py \
     rest_seutil.py \
     rest_sol.py \
     rest_firmware.py \
+    rest_chassis_eeprom.py \
     "

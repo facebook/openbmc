@@ -12,16 +12,13 @@
 # for more details.
 #
 
-import bmc_command
 import eeprom_utils
 
 
-def get_fruid_scm():
-  weutil_data = eeprom_utils.get_eeprom_data('weutil')
-  seutil_data = eeprom_utils.get_eeprom_data('seutil')
+def get_chassis_eeprom():
+  return eeprom_utils.get_eeprom_data('/usr/local/bin/ceutil')
 
-  # Get location and BMC SN info from weutil, put in seutil data
-  seutil_data['Location on Fabric'] = weutil_data['Location on Fabric']
-  seutil_data['BMC Serial'] = weutil_data['Product Serial Number']
 
-  return seutil_data
+# For ease of debugging
+if __name__ == '__main__':
+    print(get_chassis_eeprom())

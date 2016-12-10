@@ -27,6 +27,7 @@ SRC_URI += "file://board-utils.sh \
       file://sensors_config_fix.sh \
       file://fix_fru_eeprom.py \
       file://qsfp_cpld_ver.sh \
+      file://ceutil.py \
       "
 
 RDEPENDS_${PN} += " python bash"
@@ -48,6 +49,7 @@ do_install_board() {
     install -m 0755 lsb_release ${D}${localbindir}/lsb_release
     install -m 0755 seutil ${D}${bindir}/seutil
     install -m 0755 qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
+    install -m 0755 ceutil.py ${D}${localbindir}/ceutil
     # common lib and include files
     install -d ${D}${includedir}/facebook
     install -m 0644 src/include/i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h

@@ -19,6 +19,7 @@
 #
 import bottle
 import rest_fruid_scm
+import rest_chassis_eeprom
 import rest_seutil
 import rest_sol
 import rest_usb2i2c_reset
@@ -31,6 +32,12 @@ boardApp = bottle.Bottle()
 @boardApp.route('/api/sys/mb/fruid_scm')
 def rest_fruid_scm_hdl():
   return rest_fruid_scm.get_fruid_scm()
+
+
+# Handler for sys/mb/seutil resource endpoint
+@boardApp.route('/api/sys/mb/chassis_eeprom')
+def rest_chassis_eeprom_hdl():
+  return rest_chassis_eeprom.get_chassis_eeprom()
 
 
 # Handler for sys/mb/seutil resource endpoint

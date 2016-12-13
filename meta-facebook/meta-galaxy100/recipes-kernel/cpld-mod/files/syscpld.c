@@ -88,8 +88,8 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   {
     "model_id",
     "0x0: Galaxy100 LC\n"
-    "0x1: Galaxy100 FC\n"
-    "0x3: Galaxy100 CMM\n",
+    "0x4: Galaxy100 FAB\n"
+    "0xc: Galaxy100 CMM",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x0, 4, 4,
@@ -103,7 +103,8 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "cpld_released",
-    NULL,
+    "0x0: not released\n"
+	"0x1: released after PVT",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x1, 6, 1,
@@ -131,42 +132,56 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "led_red",
-    NULL,
+    "0x0: off\n"
+	"0x1: on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 0, 1,
   },
   {
     "led_green",
-    NULL,
+    "0x0: off\n"
+	"0x1: on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 1, 1,
   },
   {
     "led_blue",
-    NULL,
+    "0x0: off\n"
+	"0x1: on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 2, 1,
   },
   {
     "led_blink",
-    NULL,
+    "0x0: no blink\n"
+	"0x1: blink",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    6, 3, 1,
+    0x6, 3, 1,
   },
   {
     "micro_srv_present",
-    NULL,
+    "0x0: present\n"
+	"0x1: not present",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x8, 0, 1,
   },
   {
-    "peer_con_present",
+    "scm_oir_record",
+    "0x0: write to clear\n"
+	"0x1: SCM OIR",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
+    0x8, 1, 1,
+  },
+  {
+    "peer_con_present",
+    "0x0: present\n"
+	"0x1: not present",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x9, 0, 4,
@@ -187,15 +202,16 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "pwr_cyc_all_n",
-    "0: power cycle all power\n"
-    "1: normal",
+    "0x0: power cycle all power\n"
+    "0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 0, 1,
   },
   {
     "pwr_main_n",
-    NULL,
+    "0x0: main power is off\n"
+	"0x1: main power is on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 1, 1,
@@ -209,154 +225,202 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "hot_rst_req",
-    NULL,
+    "0x0: trigger hot reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x11, 0, 1,
   },
   {
     "warm_rst_req",
-    NULL,
+    "0x0: trigger warm reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x11, 1, 1,
   },
   {
     "cold_rst_req",
-    NULL,
+    "0x0: trigger cold reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x11, 2, 1,
   },
   {
     "pwr_rst_req",
-    NULL,
+    "0x0: trigger power reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x11, 3, 1,
   },
   {
     "th_sys_rst_n",
-    NULL,
+    "0x0: trigger tomahawk system reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x12, 0, 1,
   },
   {
     "th_pcie_rst_n",
-    NULL,
+    "0x0: trigger tomahawk PCIe reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x12, 1, 1,
   },
   {
     "th_sys_rst_mask",
-    NULL,
+	"0x0: normal\n"
+    "0x1: mask CB_RESET_N from SCM card to TH_SYS_RST_N",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x12, 2, 1,
   },
   {
     "th_pcie_rst_mask",
-    NULL,
+	"0x0: normal\n"
+    "0x1: mask CB_RESET_N from SCM card to TH_PCIE_RST_N",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x12, 3, 1,
   },
   {
     "cp2112_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x14, 0, 1,
   },
   {
     "usb_hub_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x14, 1, 1,
   },
   {
     "bcm5389_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x14, 2, 1,
   },
   {
     "switch_phy_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x14, 3, 1,
   },
   {
     "bcm54616s_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x14, 4, 1,
   },
   {
+    "scm_cpld_i2c_slave_rst",
+    "0x0: reset\n"
+	"0x1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 5, 1,
+  },
+  {
+    "lpc_rst",
+    "0x0: reset\n"
+	"0x1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 6, 1,
+  },
+  {
     "hw_shutdown_rec",
-    NULL,
+    "0x0: normal status\n"
+	"0x11: hardware shutdown recorded",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x15, 0, 8,
   },
   {
+    "th_rst_rec",
+    "0x0: write to clear\n"
+	"0x11: power on reset TH\n"
+	"0x22: COMe CB_REST_N reset TH\n"
+	"0x33: register control reset TH",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x16, 0, 8,
+  },
+  {
     "bmc_main_rest_en",
-    NULL,
+    "0x0: BMC main reset request is disabled\n"
+	"0x1: BMC main reset request is enabled",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 0, 1,
   },
   {
     "bmc_rst1_en",
-    NULL,
+    "0x0: BMC reset1 request is disabled\n"
+	"0x1: BMC reset1 request is enabled",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 1, 1,
   },
   {
     "bmc_rst2_en",
-    NULL,
+    "0x0: BMC reset2 request is disabled\n"
+	"0x1: BMC reset2 request is enabled",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 2, 1,
   },
   {
     "bmc_rst3_en",
-    NULL,
+    "0x0: BMC reset3 request is disabled\n"
+	"0x1: BMC reset3 request is enabled",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 3, 1,
   },
   {
     "bmc_rst4_en",
-    NULL,
+    "0x0: BMC reset4 request is disabled\n"
+	"0x1: BMC reset4 request is enabled",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 4, 1,
   },
   {
     "bmc_wdt1_en",
-    NULL,
+    "0x0: WDT1 is disabled\n"
+	"0x1: WDT1 is enabled",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 5, 1,
   },
   {
     "bmc_wdt2_en",
-    NULL,
+    "0x0: WDT2 is disabled\n"
+	"0x1: WDT2 is enabled",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 6, 1,
   },
   {
     "bmc_rst",
-    NULL,
+    "0x0: trigger BMC reset\n"
+	"0x1: BMC reset normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x21, 0, 1,
@@ -370,12 +434,20 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "uart_mux",
-    "0: micro-server uart 0 connected to BMC\n"
-    "1: micro-server uart 2 connected to BMC\n",
-    "2: micro-server uart 2 connected to BMC",
+    "0x0: tomahawk uart 0 connected to BMC uart 2\n"
+    "0x1: tomahawk uart 2 connected to BMC uart 2\n"
+    "0x2: tomahawk uart 3 connected to BMC uart 2",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x30, 0, 2,
+  },
+  {
+    "sol_uart_sel",
+    "0x0: use uart 1\n"
+    "0x1: use uart 4",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x30, 2, 1,
   },
   {
     "rov_sta",
@@ -385,11 +457,36 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0x40, 0, 4,
   },
   {
-    "bd_pwr_sta",
-    NULL,
+    "ir3581_vrrdy1",
+    "0x0: power not OK\n"
+	"0x1: power OK",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x41, 0, 4,
+    0x41, 0, 1,
+  },
+  {
+    "ir3581_vrhot",
+    "0x0: over temperature is negative\n"
+	"0x1: over temperature is active",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x41, 1, 1,
+  },
+  {
+    "ir3584_vrrdy1",
+    "0x0: power not OK\n"
+	"0x1: power OK",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x41, 2, 1,
+  },
+  {
+    "ir3584_vrhot",
+    "0x0: over temperature is negative\n"
+	"0x1: over temperature is active",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x41, 3, 1,
   },
   {
     "cp2112_int",
@@ -414,105 +511,118 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
   },
   {
     "cmm1_sta",
-    NULL,
+    "0x0: CMM1 is master\n"
+	"0x1: CMM1 is slave",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x60, 2, 1,
   },
   {
     "cmm2_sta",
-    NULL,
+    "0x0: CMM2 is master\n"
+	"0x1: CMM2 is slave",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x60, 3, 1,
   },
   {
     "qsfp_cpld_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x70, 0, 1,
+    0x78, 0, 1,
   },
   {
     "pca9541_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x70, 1, 1,
+    0x78, 1, 1,
   },
   {
     "pca9548_rst1",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x70, 2, 1,
+    0x78, 2, 1,
   },
   {
     "pca9548_rst2",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x70, 3, 1,
+    0x78, 3, 1,
   },
   {
     "qsfp_cpld_rst_mask",
-    NULL,
+    "0x0: normal\n"
+	"0x1: mask",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x70, 4, 1,
+    0x78, 4, 1,
   },
   {
     "qsfp_cpld_mod_abs",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x71, 0, 1,
+    0x79, 0, 1,
   },
   {
     "qsfp_cpld_int_n",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x71, 1, 1,
+    0x79, 1, 1,
   },
   {
     "dual_boot_en",
-    NULL,
+    "0x0: single boot\n"
+	"0x1: dual boot",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x80, 0, 1,
   },
   {
     "2nd_flash_wp",
-    NULL,
+    "0x0: writable\n"
+	"0x1: write protected",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x80, 1, 1,
   },
   {
     "2nd_flash_wp_force",
-    NULL,
+    "0x0: normal mode\n"
+	"0x1: debug mode",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x80, 2, 1,
   },
   {
     "bcm56960_iso_buf_en",
-    NULL,
+    "0x0: disable\n"
+	"0x1: enable",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x80, 4, 1,
   },
   {
     "bmc_iso_buf_en",
-    NULL,
+    "0x0: disable\n"
+	"0x1: enable",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x80, 5, 1,
   },
   {
     "iso_buf_en_force",
-    NULL,
+    "0x0: BMC control\n"
+	"0x1: CPLD control",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x80, 6, 1,

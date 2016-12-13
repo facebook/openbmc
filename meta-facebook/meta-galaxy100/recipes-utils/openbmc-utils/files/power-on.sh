@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -28,6 +28,11 @@ devmem_clear_bit 0x1e6e2080 20
 devmem_clear_bit 0x1e6e208c 14
 
 i2cset -f -y 12 0x31 0x06 0x4 2>/dev/null #sysled light blue
+i2cset -f -y 0 0x3e 0x18 0x1 2>/dev/null #open EC buffer
+
+devmem 0x1e78a044 32 0x77776f05 #increase thDDAT
+
+/usr/local/bin/us_refresh.sh &
 
 val=$(i2cget -f -y 12 0x31 0x22 2> /dev/null)
 if [ "$val" = "0x11" ] ; then

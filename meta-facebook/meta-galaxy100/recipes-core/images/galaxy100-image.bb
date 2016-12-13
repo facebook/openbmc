@@ -31,7 +31,6 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   openbmc-gpio \
   po-eeprom \
-  rackmon \
   repeater  \
   retimer  \
   sensor-setup \

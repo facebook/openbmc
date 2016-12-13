@@ -46,11 +46,14 @@ static ssize_t ir358x_vout_show(struct device *dev,
   i2c_dev_data_st *data = i2c_get_clientdata(client);
   i2c_sysfs_attr_st *i2c_attr = TO_I2C_SYSFS_ATTR(attr);
   const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
-  int value;
+  int value = -1;
   int result;
+  int count = 10;
 
   mutex_lock(&data->idd_lock);
-  value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
+  while((value < 0 || value == 0xffff) && count--) {
+	value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
+  }
   mutex_unlock(&data->idd_lock);
 
   if (value < 0) {
@@ -59,7 +62,7 @@ static ssize_t ir358x_vout_show(struct device *dev,
     return -1;
   }
 
-  result = (value / 512) * 1000;
+  result = (value * 1000) / 512;
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
 }
@@ -72,11 +75,14 @@ static ssize_t ir358x_iout_show(struct device *dev,
   i2c_dev_data_st *data = i2c_get_clientdata(client);
   i2c_sysfs_attr_st *i2c_attr = TO_I2C_SYSFS_ATTR(attr);
   const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
-  int value;
+  int value = -1;
   int result;
+  int count = 10;
 
   mutex_lock(&data->idd_lock);
-  value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
+  while((value < 0 || value == 0xffff) && count--) {
+	value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
+  }
   mutex_unlock(&data->idd_lock);
 
   if (value < 0) {
@@ -85,7 +91,7 @@ static ssize_t ir358x_iout_show(struct device *dev,
     return -1;
   }
 
-  result = ((value & 0x7ff) / 4) * 1000;
+  result = ((value & 0x7ff) * 1000)/ 4;
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
 }
@@ -146,6 +152,8 @@ static int ir358x_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
   int n_attrs = sizeof(ir358x_attr_table) / sizeof(ir358x_attr_table[0]);
+
+  client->flags |= I2C_CLIENT_PEC;
   return i2c_dev_sysfs_data_init(client, &ir358x_data,
                                  ir358x_attr_table, n_attrs);
 }

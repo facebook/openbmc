@@ -44,6 +44,19 @@
 #define EC_CUST_NAME_LEN 3
 
 #define EC_DELAY 11 //ms
+
+static int i2c_smbus_read_byte_data_retry(struct i2c_client *client, unsigned char reg)
+{
+	int count = 10;
+	int ret = -1;
+
+	while((ret < 0 || ret == 0xff) && count--) {
+		ret = i2c_smbus_read_byte_data(client, reg);
+	}
+
+	return ret;
+}
+
 static ssize_t ec_mem_temp_show(struct device *dev,
                                     struct device_attribute *attr,
                                     char *buf)
@@ -57,9 +70,9 @@ static ssize_t ec_mem_temp_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
 
-  lsb_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  msb_val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   msleep(EC_DELAY);
-  msb_val = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x1));
+  lsb_val = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x1));
   mutex_unlock(&data->idd_lock);
 
   if (lsb_val < 0 || msb_val < 0) {
@@ -85,7 +98,7 @@ static ssize_t ec_wdt_cfg_show(struct device *dev,
   int val;
 
   mutex_lock(&data->idd_lock);
-  val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   mutex_unlock(&data->idd_lock);
 
   if (val < 0) {
@@ -108,7 +121,7 @@ static ssize_t ec_wdt_crm_show(struct device *dev,
   int val;
 
   mutex_lock(&data->idd_lock);
-  val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   mutex_unlock(&data->idd_lock);
 
   if (val < 0) {
@@ -131,7 +144,7 @@ static ssize_t ec_wdt_crs_show(struct device *dev,
   int val;
 
   mutex_lock(&data->idd_lock);
-  val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   mutex_unlock(&data->idd_lock);
 
   if (val < 0) {
@@ -154,7 +167,7 @@ static ssize_t ec_hw_monitor_cfg_show(struct device *dev,
   int val;
 
   mutex_lock(&data->idd_lock);
-  val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   mutex_unlock(&data->idd_lock);
 
   if (val < 0) {
@@ -178,11 +191,11 @@ static ssize_t ec_version_show(struct device *dev,
   int year, month, day;
 
   mutex_lock(&data->idd_lock);
-  val_r = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  val_r = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   msleep(EC_DELAY);
-  val_e = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x1));
+  val_e = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x1));
   msleep(EC_DELAY);
-  val_t = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x2));
+  val_t = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x2));
   mutex_unlock(&data->idd_lock);
 
   if (val_r < 0 || val_e < 0 || val_t < 0) {
@@ -192,12 +205,12 @@ static ssize_t ec_version_show(struct device *dev,
   }
   if(val_t >> 7) {
 	mutex_lock(&data->idd_lock);
-	year = i2c_smbus_read_byte_data(client, 0x2d);
+	year = i2c_smbus_read_byte_data_retry(client, 0x2d);
 	year &= 0x0f;
 	msleep(EC_DELAY);
-	month = i2c_smbus_read_byte_data(client, 0x2e);
+	month = i2c_smbus_read_byte_data_retry(client, 0x2e);
 	msleep(EC_DELAY);
-	day = i2c_smbus_read_byte_data(client, 0x2f);
+	day = i2c_smbus_read_byte_data_retry(client, 0x2f);
 	mutex_unlock(&data->idd_lock);
 	return scnprintf(buf, PAGE_SIZE, "%d%02x%02xT%02x\n", year, month, day, val_t & 0x0f);
   } else {
@@ -216,7 +229,7 @@ static ssize_t ec_gpio_dir_show(struct device *dev,
   int val;
 
   mutex_lock(&data->idd_lock);
-  val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   mutex_unlock(&data->idd_lock);
 
   if (val < 0) {
@@ -239,7 +252,7 @@ static ssize_t ec_gpio_data_show(struct device *dev,
   int val;
 
   mutex_lock(&data->idd_lock);
-  val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   mutex_unlock(&data->idd_lock);
 
   if (val < 0) {
@@ -262,21 +275,21 @@ static ssize_t ec_build_date_show(struct device *dev,
   int year, month, day;
 
   mutex_lock(&data->idd_lock);
-  year = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  year = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   if (year < 0) {
 	/* error case */
 	EC_DEBUG("I2C read 0x%x error!\n", dev_attr->ida_reg);
 	return -1;
   }
   msleep(EC_DELAY);
-  month = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + 1);
+  month = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg + 1);
   if (month < 0) {
 	/* error case */
 	EC_DEBUG("I2C read 0x%x error!\n", dev_attr->ida_reg + 1);
 	return -1;
   }
   msleep(EC_DELAY);
-  day = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + 2);
+  day = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg + 2);
   if (day < 0) {
 	/* error case */
 	EC_DEBUG("I2C read 0x%x error!\n", dev_attr->ida_reg + 2);
@@ -301,9 +314,9 @@ static ssize_t ec_cpu_vol_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
 
-  lsb_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  lsb_val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   msleep(EC_DELAY);
-  msb_val = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x1));
+  msb_val = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x1));
   mutex_unlock(&data->idd_lock);
 
   if (lsb_val < 0 || msb_val < 0) {
@@ -331,9 +344,9 @@ static ssize_t ec_3v_vol_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
 
-  lsb_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  lsb_val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   msleep(EC_DELAY);
-  msb_val = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x1));
+  msb_val = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x1));
   mutex_unlock(&data->idd_lock);
 
   if (lsb_val < 0 || msb_val < 0) {
@@ -361,9 +374,9 @@ static ssize_t ec_5v_vol_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
 
-  lsb_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  lsb_val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   msleep(EC_DELAY);
-  msb_val = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x1));
+  msb_val = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x1));
   mutex_unlock(&data->idd_lock);
 
   if (lsb_val < 0 || msb_val < 0) {
@@ -391,9 +404,9 @@ static ssize_t ec_12v_vol_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
 
-  lsb_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  lsb_val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   msleep(EC_DELAY);
-  msb_val = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x1));
+  msb_val = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x1));
   mutex_unlock(&data->idd_lock);
 
   if (lsb_val < 0 || msb_val < 0) {
@@ -421,9 +434,9 @@ static ssize_t ec_dimm_vol_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
 
-  lsb_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  lsb_val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
   msleep(EC_DELAY);
-  msb_val = i2c_smbus_read_byte_data(client, (dev_attr->ida_reg + 0x1));
+  msb_val = i2c_smbus_read_byte_data_retry(client, (dev_attr->ida_reg + 0x1));
   mutex_unlock(&data->idd_lock);
 
   if (lsb_val < 0 || msb_val < 0) {
@@ -451,7 +464,7 @@ static ssize_t ec_product_name_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
   for(i = 0; i < len; i++) {
-	result = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + i);
+	result = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg + i);
 	if (result < 0) {
 	  /* error case */
 	  EC_DEBUG("I2C read error!\n");
@@ -479,7 +492,7 @@ static ssize_t ec_customize_name_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
   for(i = 0; i < len; i++) {
-	result = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + i);
+	result = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg + i);
 	if (result < 0) {
 	  /* error case */
 	  EC_DEBUG("I2C read error!\n");
@@ -506,7 +519,7 @@ static ssize_t ec_mac_addr_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
   for(i = 0; i < len; i++) {
-    result = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + i);
+    result = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg + i);
     if (result < 0) {
       /* error case */
 	  EC_DEBUG("I2C read error!\n");
@@ -534,7 +547,7 @@ static ssize_t ec_serial_number_show(struct device *dev,
 
   mutex_lock(&data->idd_lock);
   for(i = 0; i < len; i++) {
-	  result = i2c_smbus_read_byte_data(client, dev_attr->ida_reg + i);
+	  result = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg + i);
 	  if (result < 0) {
 	    /* error case */
 		EC_DEBUG("I2C read error!\n");

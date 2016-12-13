@@ -163,22 +163,7 @@ do_reset() {
 do_recovery() {
     local ret
     echo -n "Power on microserver recovery(about 30s) ..."
-    #disable the I2C buffer to EC first
-    i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
-    sleep 1
-    i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
-    usleep 11000
-    i2cset -f -y 0 0x3e 0x0b 0xff 2> /dev/null
-    sleep 15
-    i2cset -f -y 0 0x3e 0x0b 0xfe 2> /dev/null
-    usleep 11000
-    i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
-    sleep 10
-    i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
-    usleep 11000
-    #enable I2c buffer to EC
-    i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
-
+    come_recovery
     echo " Done"
     logger "Successfully power recover micro-server"
     return 0

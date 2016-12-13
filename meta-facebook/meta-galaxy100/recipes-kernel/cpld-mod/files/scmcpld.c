@@ -53,7 +53,8 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "cpld_released",
-    NULL,
+    "0x0: not released\n"
+	"0x1: released after PVT",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x1, 6, 1,
@@ -81,42 +82,48 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "led_red",
-    NULL,
+    "0x0: off\n"
+	"0x1: on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 0, 1,
   },
   {
     "led_green",
-    NULL,
+    "0x0: off\n"
+	"0x1: on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 1, 1,
   },
   {
     "led_blue",
-    NULL,
+    "0x0: off\n"
+	"0x1: on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 2, 1,
   },
   {
     "led_blink",
-    NULL,
+    "0x0: no blink\n"
+	"0x1: blink",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 3, 1,
   },
   {
     "led_test_en",
-    NULL,
+    "0x0: led controled by hw\n"
+	"0x1: led controled by sw",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x6, 4, 1,
   },
   {
     "module_present",
-    NULL,
+    "0x0: present\n"
+	"0x1: not present",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x8, 0, 1,
@@ -137,28 +144,30 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "pwr_come_en",
-    NULL,
+    "0x0: off\n"
+	"0x1: on",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 0, 1,
   },
   {
     "pwr_come_force",
-    NULL,
+    "0x0: force power off COMe",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 1, 1,
   },
   {
     "pwr_syc_n",
-    NULL,
+    "0x0: trigger power cycling COMe",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 2, 1,
   },
   {
     "come_rst_n",
-    NULL,
+    "0x0: trigger COMe reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x11, 0, 1,
@@ -185,6 +194,16 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x13, 1, 1,
   },
   {
+    "come_pwr_off_rec",
+    "0x0: normal\n"
+    "0x11: LC/FAB remove to off\n"
+    "0x22: LC/FAB software control to off\n"
+    "0x33: write to clear",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 0, 8,
+  },
+  {
     "spi_sel",
     "0: spi flash accessed by COMe\n"
     "1: spi flash accessed by BMC",
@@ -194,42 +213,56 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "spi_buf_sel",
-    NULL,
+    "0x0: enable\n"
+	"0x1: disable",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x18, 0, 1,
   },
   {
     "smb_buf_en",
-    NULL,
+    "0x0: enable\n"
+	"0x1: disable",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x18, 1, 1,
   },
   {
     "i2c_buf_en",
-    NULL,
+    "0x0: enable\n"
+	"0x1: disable",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x18, 2, 1,
   },
   {
     "uart_mux_rst",
-    NULL,
+    "0x0: reset\n"
+	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x30, 0, 1,
   },
   {
+    "lpc_bridge_rst",
+    "0x0: reset\n"
+	"0x1: normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x31, 0, 1,
+  },
+  {
     "cmm1_sta",
-    NULL,
+    "0x0: CMM1 is master\n"
+	"0x1: CMM1 is slave",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x60, 0, 1,
   },
   {
     "cmm2_sta",
-    NULL,
+    "0x0: CMM2 is master\n"
+	"0x1: CMM2 is slave",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x60, 1, 1,
@@ -275,7 +308,6 @@ static int scmcpld_probe(struct i2c_client *client,
   int n_attrs = sizeof(scmcpld_attr_table) / sizeof(scmcpld_attr_table[0]);
   i2c_dev_sysfs_data_init(client, &scmcpld_data,
 					scmcpld_attr_table, n_attrs);
-  i2c_smbus_write_byte_data(client, 0x18, 0x01);
 }
 
 static int scmcpld_remove(struct i2c_client *client)

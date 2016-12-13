@@ -44,7 +44,7 @@ case "$ACTION" in
   start)
     echo -n "Starting $DESC: "
     $DAEMON 4 0x16 > /dev/null 2>&1 &
-    $DAEMON 10 0x30 > /dev/null 2>&1 &
+    $DAEMON 9 0x30 > /dev/null 2>&1 &
     echo "$NAME."
     ;;
   stop)
@@ -57,7 +57,7 @@ case "$ACTION" in
     start-stop-daemon --stop --quiet --exec $DAEMON
     sleep 1
     $DAEMON 4 > /dev/null 2>&1 &
-    $DAEMON 10 0x30 > /dev/null 2>&1 &
+    $DAEMON 9 0x30 > /dev/null 2>&1 &
     echo "$NAME."
     ;;
   status)

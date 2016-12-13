@@ -12,5 +12,5 @@
 # for more details.
 #
 
-SOFT_RELEASE_VERSION="V1.1.5"
+SOFT_RELEASE_VERSION="V1.2.0"
 echo "OpenBMC Release Version: $SOFT_RELEASE_VERSION"

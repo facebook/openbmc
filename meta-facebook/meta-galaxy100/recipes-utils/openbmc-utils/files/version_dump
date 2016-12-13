@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+# Copyright 2015-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+#BMC version
+/usr/local/bin/lsb_release
+
+#EC version
+#enable I2c buffer to EC
+i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
+ec_rev=$(cat /sys/class/i2c-adapter/i2c-0/0-0033/version | head -n 1)
+echo "EC Version: $ec_rev"
+
+#systemp CPLD version
+cpld_major_rev=$(cat /sys/class/i2c-adapter/i2c-12/12-0031/cpld_rev | head -n 1 | awk -F "0x" '{print $2}')
+#cpld_major_rev=$((16#${temp}))
+cpld_sub_rev=$(cat /sys/class/i2c-adapter/i2c-12/12-0031/cpld_sub_rev | head -n 1 | awk -F "0x" '{print $2}')
+printf "SYS CPLD Version: V%02dS%02d\n" ${cpld_major_rev} ${cpld_sub_rev}
+
+#SCM CPLD version
+scm_cpld_major_rev=$(cat /sys/class/i2c-adapter/i2c-0/0-003e/cpld_rev | head -n 1 | awk -F "0x" '{print $2}')
+scm_cpld_sub_rev=$(cat /sys/class/i2c-adapter/i2c-0/0-003e/cpld_sub_rev | head -n 1 | awk -F "0x" '{print $2}')
+printf "SCM CPLD Version: V%02dS%02d\n" ${scm_cpld_major_rev} ${scm_cpld_sub_rev}
+
+#QSFP CPLD version
+((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
+if [ $val -lt 8 ]; then
+	old=$((`i2cget -f -y 12 0x74 0x01`))
+	if [ $old -eq 9 ] || [ $old -eq 12 ] || [ $old -eq 13 ]; then
+		i2cset -f -y 12 0x74 0x01 0x0
+	elif [ $old -eq 10 ] || [ $old -eq 14 ] || [ $old -eq 15 ]; then
+		i2cset -f -y 12 0x74 0x01 0x1
+	elif [ $old -eq 0 ] || [ $old -eq 1 ] || [ $old -eq 5 ]; then
+		i2cset -f -y 12 0x74 0x01 0x4
+	elif [ $old -eq 2 ] || [ $old -eq 3 ] || [ $old -eq 6 ]; then
+		i2cset -f -y 12 0x74 0x01 0x5
+	fi
+	temp=$((`i2cget -f -y 12 0x39 0x01 2> /dev/null`))
+	qsfp_cpld_major_rev=$(($temp & 0x3f))
+	qsfp_cpld_sub_rev=$(i2cget -f -y 12 0x39 0x02 2> /dev/null | awk -F "0x" '{print $2}')
+	printf "QSFP CPLD Version: V%02xS%02d\n" ${qsfp_cpld_major_rev} ${qsfp_cpld_sub_rev}
+fi
+

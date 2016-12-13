@@ -16,6 +16,7 @@ SRC_URI += "file://board-utils.sh \
       file://power-on.sh \
       file://wedge_power.sh \
       file://us_monitor.sh \
+      file://us_refresh.sh \
       file://us_console.sh \
       file://disable_watchdog.sh \
       file://bios_flash.sh \
@@ -28,6 +29,9 @@ SRC_URI += "file://board-utils.sh \
       file://fix_fru_eeprom.py \
       file://qsfp_cpld_ver.sh \
       file://ceutil.py \
+      file://version_dump \
+      file://cpldupgrade \
+      file://repeater_verify.sh \
       "
 
 RDEPENDS_${PN} += " python bash"
@@ -47,7 +51,11 @@ do_install_board() {
     install -m 0755 bcm5389.sh ${D}${localbindir}/bcm5389.sh
     install -m 0755 at93cx6_util.sh ${D}${localbindir}/at93cx6_util.sh
     install -m 0755 lsb_release ${D}${localbindir}/lsb_release
+    install -m 0755 cpldupgrade ${D}${localbindir}/cpldupgrade
+    install -m 0755 us_refresh.sh ${D}${localbindir}/us_refresh.sh
+    install -m 0755 repeater_verify.sh ${D}${localbindir}/repeater_verify.sh
     install -m 0755 seutil ${D}${bindir}/seutil
+    install -m 0755 version_dump ${D}${bindir}/version_dump
     install -m 0755 qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
     install -m 0755 ceutil.py ${D}${localbindir}/ceutil
     # common lib and include files

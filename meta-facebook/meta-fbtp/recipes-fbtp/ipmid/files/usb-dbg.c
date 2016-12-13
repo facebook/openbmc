@@ -153,8 +153,8 @@ int
 plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   int i = 0;
 
-  // If the index is 0x00 or 0xFF: populate the next pointer with the first
-  if (index == 0x00 || index == 0xFF) {
+  // If the index is 0x00: populate the next pointer with the first
+  if (index == 0x00) {
     *next = pdesc[0].code;
     *count = 0;
     return 0;
@@ -187,14 +187,13 @@ plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *count, uint8_t *b
   return 0;
 }
 
-
 int
 plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *def,
                             uint8_t *count, uint8_t *buffer) {
   int i = 0;
 
-  // If the index is 0x00 or 0xFF: populate the next pointer with the first
-  if (index == 0x00 || index == 0xFF) {
+  // If the index is 0x00: populate the next pointer with the first
+  if (index == 0x00) {
     *next = gdesc[0].pin;
     *count = 0;
     return 0;

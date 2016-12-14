@@ -2572,10 +2572,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
 int
 pal_sled_cycle(void) {
-  uint8_t platform_id;
-  // Remove the adm1275 module as the HSC device is busy
-  system("rmmod adm1275");
-
   // Send command to HSC power cycle
   // Single Side
   system("i2cset -y 7 0x11 0xd9 c &> /dev/null");

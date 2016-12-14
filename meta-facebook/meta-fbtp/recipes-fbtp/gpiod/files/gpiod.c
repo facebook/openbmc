@@ -221,7 +221,6 @@ gpio_init(void) {
   // Initialize gpio numbers
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB6");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB7");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD4");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD6");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD7");
   g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE0");

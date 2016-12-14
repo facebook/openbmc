@@ -18,19 +18,12 @@ VERIFIED_BOOT = '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "True",
 VERIFIED_BOOT_SIGN = '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot-sign", "True", "", d)}'
 VERIFIED_BOOT_KEYS ??= '${@os.getenv("PWD", "/tmp")}/conf/keys'
 VERIFIED_BOOT_KEYNAME ??= "dev"
+VERIFIED_BOOT_ALGORITHM ??= "sha256,rsa4096"
 
-CERTIFICATE_STORE ?= "${DEPLOY_DIR_IMAGE}/certificate-store-${DATETIME}.dtb"
-CERTIFICATE_STORE_LINK ?= "${DEPLOY_DIR_IMAGE}/certificate-store.dtb"
+CERTIFICATE_STORE ?= "certificate-store.dtb"
 
-# When verified-boot is used, build with signature information.
-# These Kbuild options tell u-boot to expect an 'embedded' DTB, we use this
-# to inject signing public keys into the u-boot firmware.
-EXTRA_OEMAKE_append_pn-u-boot += 'CONFIG_OF_EMBED=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "y", "", d)}'
-EXTRA_OEMAKE_append_pn-u-boot += 'CONFIG_OF_CONTROL=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "y", "", d)}'
-EXTRA_OEMAKE_append_pn-u-boot += 'EXT_DTB=${CERTIFICATE_STORE}'
-
-# Use a placebo FIT for extracted public keys.
-VERIFIED_BOOT_PLACEBO ?= "placebo.its"
+# Append the key directory to the source files.
+SRC_URI_append += '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "file://${VERIFIED_BOOT_KEYS}", "", d)} '
 
 # Emit the fitImage ITS header
 # $1 - FIT source file
@@ -237,7 +230,7 @@ fitimage_emit_section_config() {
                 algo = "${conf_csum}";
             };
             signature@1 {
-                algo = "sha1,rsa2048";
+                algo = "${VERIFIED_BOOT_ALGORITHM}";
                 key-name-hint = "${VERIFIED_BOOT_KEYNAME}";
                 sign-images = "kernel", "ramdisk";
             };
@@ -246,6 +239,7 @@ EOF
 }
 
 fitimage_emit_placebo() {
+    VERIFIED_BOOT_PLACEBO=${1}
     rm -f ${VERIFIED_BOOT_PLACEBO}
     fitimage_emit_fit_header ${VERIFIED_BOOT_PLACEBO}
     fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} imagestart
@@ -256,4 +250,16 @@ fitimage_emit_placebo() {
     fitimage_emit_section_config ${VERIFIED_BOOT_PLACEBO} 1 1
     fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} sectend
     fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} fitend
+}
+
+uboot_option_on() {
+  OPTION=${1}
+  SOURCE=${2}
+  sed -i "s/^# ${OPTION}=/${OPTION}=/g" ${SOURCE}
+}
+
+uboot_option_off() {
+  OPTION=${1}
+  SOURCE=${2}
+  sed -i "s/^${OPTION}=/# ${OPTION}=/g" ${SOURCE}
 }

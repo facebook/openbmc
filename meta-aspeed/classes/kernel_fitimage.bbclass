@@ -4,7 +4,7 @@
 # Copyright (C) 2016-Present, Facebook, Inc.
 
 inherit image_types_uboot
-require recipes-bsp/verified-boot/verified-boot.inc
+require recipes-bsp/u-boot/verified-boot.inc
 
 # Changing the image compression from gz to lzma achieves 30% saving (~3M).
 # However, the current u-boot does not have lzma enabled. Stick to gz
@@ -23,12 +23,11 @@ FLASH_UBOOT_OFFSET ?= "0"
 FLASH_FIT_OFFSET ?= "512"
 
 UBOOT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-${MACHINE}.${UBOOT_SUFFIX}"
-FIT_SOURCE[vardepsexclude] += "DATETIME"
-FIT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/fit-${MACHINE}-${DATETIME}.its"
-FIT_SOURCE_LINK ?= "fit-${MACHINE}.its"
-FIT_DESTINATION[vardepsexclude] += "DATETIME"
-FIT_DESTINATION ?= "${DEPLOY_DIR_IMAGE}/fit-${MACHINE}-${DATETIME}.itb"
-FIT_DESTINATION_LINK ?= "fit-${MACHINE}.itb"
+FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/fit-${MACHINE}.its"
+
+FIT[vardepsexclude] = "DATETIME"
+FIT ?= "fit-${MACHINE}-${DATETIME}.itb"
+FIT_LINK ?= "fit-${MACHINE}.itb"
 
 FLASH_IMAGE[vardepsexclude] += "DATETIME"
 FLASH_IMAGE ?= "flash-${MACHINE}-${DATETIME}"
@@ -36,13 +35,13 @@ FLASH_IMAGE_LINK ?= "flash-${MACHINE}"
 
 # ROM-based boot variables
 UBOOT_SPL_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-spl-${MACHINE}"
-UBOOT_FIT_SOURCE[vardepsexclude] += "DATETIME"
-UBOOT_FIT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-fit-${MACHINE}-${DATETIME}.its"
-UBOOT_FIT_SOURCE_LINK ?= "u-boot-fit-${MACHINE}.its"
-UBOOT_FIT_DESTINATION[vardepsexclude] += "DATETIME"
-UBOOT_FIT_DESTINATION ?= "${DEPLOY_DIR_IMAGE}/u-boot-fit-${MACHINE}-${DATETIME}.itb"
-UBOOT_FIT_DESTINATION_LINK ?= "u-boot-fit-${MACHINE}.itb"
-ROH_IMAGE[vardepsexclude] += "DATETIME"
+UBOOT_FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/u-boot-fit-${MACHINE}.its"
+
+UBOOT_FIT[vardepsexclude] = "DATETIME"
+UBOOT_FIT ?= "u-boot-fit-${MACHINE}-${DATETIME}.itb"
+UBOOT_FIT_LINK ?= "u-boot-fit-${MACHINE}.itb"
+
+ROM_IMAGE[vardepsexclude] = "DATETIME"
 ROM_IMAGE ?= "rom-${MACHINE}-${DATETIME}"
 ROM_IMAGE_LINK ?= "rom-${MACHINE}"
 
@@ -53,10 +52,10 @@ generate_data_mount_dir() {
     mkdir -p "${IMAGE_ROOTFS}/mnt/data"
 }
 
-flash_image_generate[vardepsexclude] += "DATETIME"
 flash_image_generate() {
-    BOOT_FILE="${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}"
-    FLASH_DESTINATION="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE}"
+    FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${FIT}"
+    FLASH_IMAGE_DESTINATION="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE}"
+    UBOOT_FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${UBOOT_FIT}"
 
     if [ ! -f $UBOOT_SOURCE ]; then
         echo "U-boot file ${UBOOT_SOURCE} does not exist"
@@ -68,39 +67,36 @@ flash_image_generate() {
         return 1
     fi
 
-    rm -rf $FLASH_DESTINATION
-    dd if=/dev/zero of=${FLASH_DESTINATION} bs=1k count=${FLASH_SIZE}
+    rm -rf $FLASH_IMAGE_DESTINATION
+    dd if=/dev/zero of=${FLASH_IMAGE_DESTINATION} bs=1k count=${FLASH_SIZE}
 
     if [ "x${ROM_BOOT}" != "x" ] ; then
         # Write an intermediate FIT containing only U-Boot.
-        dd if=${UBOOT_FIT_DESTINATION} of=${FLASH_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
-
-        ln -sf ${UBOOT_FIT_SOURCE} ${UBOOT_FIT_SOURCE_LINK}
-        ln -sf ${UBOOT_FIT_DESTINATION} ${UBOOT_FIT_DESTINATION_LINK}
+        dd if=${UBOOT_FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
+        ln -sf ${UBOOT_FIT} ${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}
     else
         # Write U-Boot directly to the start of the flash.
-        dd if=${UBOOT_SOURCE} of=${FLASH_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
+        dd if=${UBOOT_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
     fi
 
-    dd if=${FIT_DESTINATION} of=${FLASH_DESTINATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc
+    dd if=${FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc
 
     if [ "x${ROM_BOOT}" != "x" ] ; then
-      ROM_DESTINATION="${DEPLOY_DIR_IMAGE}/${ROM_IMAGE}"
-      dd if=/dev/zero of=${ROM_DESTINATION} bs=1k count=${ROM_SIZE}
+      ROM_IMAGE_DESTINATION="${DEPLOY_DIR_IMAGE}/${ROM_IMAGE}"
+      dd if=/dev/zero of=${ROM_IMAGE_DESTINATION} bs=1k count=${ROM_SIZE}
 
-      dd if=${UBOOT_SPL_SOURCE} of=${ROM_DESTINATION} bs=1k seek=0 conv=notrunc
-
-      DESTINATION_ROM_LINK="${DEPLOY_DIR_IMAGE}/${ROM_IMAGE_LINK}"
-      ln -sf ${ROM_IMAGE} ${DESTINATION_ROM_LINK}
+      dd if=${UBOOT_SPL_SOURCE} of=${ROM_IMAGE_DESTINATION} bs=1k seek=0 conv=notrunc
+      ln -sf ${ROM_IMAGE} ${DEPLOY_DIR_IMAGE}/${ROM_IMAGE_LINK}
     fi
 
-    DESTINATION_LINK="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}"
-    ln -sf ${FLASH_IMAGE} ${DESTINATION_LINK}
-    ln -sf ${FIT_SOURCE} ${FIT_SOURCE_LINK}
-    ln -sf ${FIT_DESTINATION} ${FIT_DESTINATION_LINK}
+    ln -sf ${FLASH_IMAGE} ${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}
+    ln -sf ${FIT} ${DEPLOY_DIR_IMAGE}/${FIT_LINK}
 }
 
 oe_mkimage() {
+    FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${FIT}"
+    UBOOT_FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${UBOOT_FIT}"
+
     if [ "x${ROM_BOOT}" != "x" ] ; then
       rm -f ${UBOOT_FIT_SOURCE}
       fitimage_emit_fit_header ${UBOOT_FIT_SOURCE}

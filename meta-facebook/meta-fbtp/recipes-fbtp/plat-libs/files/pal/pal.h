@@ -276,22 +276,6 @@ enum
     DS_IFX,
 };
 
-//Used identify VR Chip info before EVT3
-enum
-{
-  Fairchild = 0,
-    IFX,
-};
-
-//For VR FW code
-enum
-{
-  EVT1 = 0xe1,
-  EVT2 = 0xe2,
-  EVT3 = 0xe3,
-  DVT = 0xd1,
-};
-
 enum {
   VR_CPU0_VCCIN = 0x90,
   VR_CPU0_VSA = 0x90,
@@ -430,7 +414,8 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 static bool is_cpu0_socket_occupy(void);
 static bool is_cpu1_socket_occupy(void);
-int pal_vr_fw_update();
+int pal_get_vr_update_data(char *update_file, uint8_t **BinData);
+int pal_vr_fw_update(uint8_t *BinData);
 
 #ifdef __cplusplus
 } // extern "C"

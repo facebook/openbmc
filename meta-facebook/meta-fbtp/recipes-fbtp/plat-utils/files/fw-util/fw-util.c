@@ -32,7 +32,6 @@
 #include <openbmc/gpio.h>
 
 #define GPIO_BMC_CTRL        109
-#define MAX_VR_BIN_SIZE 17079
 
 static uint8_t g_board_rev_id = BOARD_REV_EVT;
 static uint8_t g_vr_cpu0_vddq_abc;
@@ -291,37 +290,6 @@ print_fw_ver(uint8_t fru_id) {
 
 }
 
-static int
-get_vr_update_data(char *update_file, uint8_t *BinData)
-{
-  FILE *fp;
-
-  fp = fopen( update_file, "rb" );
-
-  //get file size
-  fseek(fp, 0L, SEEK_END);
-
-  int FileSize = ftell(fp);
-
-  //recovery the fp to the beginning
-  rewind(fp);
-
-  if ( fp )
-  {
-       fread(BinData, sizeof(char), FileSize, fp);
-  }
-  else
-  {
-    return -1;
-  }
-
-  fclose(fp);
-  printf("Data Size: %d bytes!\n", FileSize);
-
-  return 0;
-
-}
-
 int
 fw_update_fru(char **argv, uint8_t slot_id) {
   uint8_t status;
@@ -378,39 +346,28 @@ fw_update_fru(char **argv, uint8_t slot_id) {
 
   if ( !strcmp(argv[3], "--vr") ) {
     //call vr function
-    uint8_t BinData[MAX_VR_BIN_SIZE]={0};
+    uint8_t *BinData=NULL;
 
-    ret = get_vr_update_data(argv[4], BinData);
-    if ( ret < 0 ) {
+    ret = pal_get_vr_update_data(argv[4], &BinData);
+    if ( ret < 0 )
+    {
       printf("Cannot locate the file at: %s!\n", argv[4]);
-      return -1;
-    }
 
-#ifdef VR_DEBUG
-    //check data
-    int loop;
-    for ( loop = 0; loop < MAX_VR_BIN_SIZE; loop++ ) {
-      if ( (loop % 16 == 0) && (loop != 0) )
-      {
-        printf("%x ", BinData[loop]);
-        printf("\n");
-      } else {
-        printf("%x ", BinData[loop]);
-      }
+      //check data
+      goto err_exit;
     }
-#endif
 
     ret = pal_vr_fw_update(BinData);
-    if ( ret < 0 ) {
+    if ( ret < 0 )
+    {
       printf("Error Occur at updating VR FW!\n");
-      return -1;
+        goto err_exit;
     }
-    return 0;
   }
 
 err_exit:
   print_usage_help();
-  return -1;
+  return ret;
 }
 
 int

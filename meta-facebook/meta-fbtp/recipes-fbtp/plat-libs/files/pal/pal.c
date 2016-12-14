@@ -5477,16 +5477,8 @@ pal_check_vr_fw_code_match_MB(int startindex, int endindex, uint8_t *BinData, ui
   int RetVal = -1;
   int j;
   uint8_t BOARD_SKU_ID;
-  uint8_t FW_VersionUsed;
-  uint8_t FWCodeStage;
-  uint8_t BoardStage;
-  uint8_t VersionMapper[]=
-  {
-    EVT1,//evt1
-    EVT2,//evt2
-    EVT3,//evt3
-    DVT,   //dvt
-  };
+  uint8_t VR_SKUID; //identify the version which is suitable for MB or not
+  uint8_t VR_Type;
 
   //for evt3 and after version
   uint8_t DevStageMapper[]=
@@ -5497,27 +5489,12 @@ pal_check_vr_fw_code_match_MB(int startindex, int endindex, uint8_t *BinData, ui
     SS_Fairchild,
   };
 
-  //before evt3 version. evt1 and evt2
-  uint8_t EVTStageMapper[]=
-  {
-    IFX,
-    Fairchild,
-  };
-
-  //get board stage. evt1, evt2, evt3, or ...
-  RetVal = pal_get_board_rev_id(&BoardStage);
-  if ( RetVal < 0 )
-  {
-    syslog(LOG_WARNING, "[%s] failed to get rev id!!\n", __func__);
-
-    return -1;
-  }
-
-  BoardStage = VersionMapper[BoardStage];
-
   //only need to FM_BOARD_SKU_ID3/4
   BOARD_SKU_ID = BoardInfo >> 3;
 
+#ifdef VR_DEBUG
+  printf("[%s] BoardInfo:%x, BOARD_SKU_ID:%x\n", __func__, BoardInfo, BOARD_SKU_ID);
+#endif
   for ( j = startindex; j < endindex; j = j + 4 )// 4 bytes
   {
 #ifdef VR_DEBUG
@@ -5527,45 +5504,23 @@ pal_check_vr_fw_code_match_MB(int startindex, int endindex, uint8_t *BinData, ui
     //we need to check the vr fw code is match MB or not
     if ( ( 0x5e == BinData[j] ) && ( 0x0c == BinData[j+1] ) )
     {
-      //it might to be 1,2,3, or 4
-      FW_VersionUsed = BinData[j+2];
+      //it need to map to DevStageMapper or its unknown type!
+      VR_Type = BinData[j+3];
 
 #ifdef VR_DEBUG
-      printf("[%s] FW_VersionUsed: %x \n", __func__, FW_VersionUsed);
-#endif
-      //its for EVT1, EVT2, or other?
-      FWCodeStage = BinData[j+3];
-
-#ifdef VR_DEBUG
-      printf("[%s] FWCodeStage: %x \n", __func__, FWCodeStage);
+      printf("[%s] VR_Type: %x \n", __func__, VR_Type);
 #endif
       break;
     }
   }
 
-  //identify stage is match or not
-  if ( BoardStage != FWCodeStage )
-  {
-    RetVal = -1;
+  VR_SKUID = DevStageMapper[VR_Type];
 
-    goto error_exit;
-  }
+#ifdef VR_DEBUG
+  printf("[%s] DevStageMapper[%d]\n", __func__, VR_SKUID);
+#endif
 
-  //identify the version after EVT2
-  uint8_t SKUID;
-
-  if ( FWCodeStage > EVT2 )
-  {
-    SKUID = DevStageMapper[FW_VersionUsed-1];
-  }
-  else
-  {
-    SKUID = EVTStageMapper[FW_VersionUsed-1];
-
-    BOARD_SKU_ID = BOARD_SKU_ID & 0x1;
-  }
-
-  if ( SKUID == BOARD_SKU_ID )
+  if ( VR_SKUID == BOARD_SKU_ID )
   {
       return 0;
   }
@@ -5628,12 +5583,13 @@ pal_check_integrity_of_vr_data(uint8_t SlaveAddr, uint8_t *ExpectedCRC, int Star
 
     return -1;
   }
+
+#ifdef VR_DEBUG
   else
   {
-#ifdef VR_DEBUG
     printf("[%s] Slave: %x CRC match !\n", __func__, SlaveAddr);
-#endif
   }
+#endif
 
   return 0;
 }
@@ -6223,11 +6179,52 @@ error_exit:
   return RetVal;
 }
 
+int
+pal_get_vr_update_data(char *update_file, uint8_t **BinData)
+{
+    FILE *fp;
+    int FileSize = 0;
+    int RetVal = 0;
+    fp = fopen( update_file, "rb" );
+    if ( fp )
+    {
+        //get file size
+        fseek(fp, 0L, SEEK_END);
+        FileSize = ftell(fp);
+        *BinData = (uint8_t*) malloc( FileSize * sizeof(uint8_t));
+        //recovery the fp to the beginning
+        rewind(fp);
+        fread(*BinData, sizeof(uint8_t), FileSize, fp);
+        fclose(fp);
+#ifdef VR_DEBUG
+        int i;
+        for ( i = 0; i < FileSize; i++ )
+        {
+            if ( (i % 16 == 0) && (i != 0) )
+            {
+                printf("%x ", *BinData[i]);
+                printf("\n");
+            }
+            else
+            {
+                printf("%x ", *BinData[i]);
+            }
+        }
+#endif
+        printf("Data Size: %d bytes!\n", FileSize);
+    }
+    else
+    {
+        RetVal = -1;
+    }
+    return RetVal;
+}
+
 int pal_vr_fw_update(uint8_t *BinData)
 {
   VRBasicInfo vr_data[MAX_VR_CHIPS];//there are nine vr chips
   int VRDataLength = 0;
-  int VR_counts = sizeof(vr_data)/ sizeof(VRBasicInfo);
+  int VR_counts = MAX_VR_CHIPS;
   int i, j;
   int fd;
   int RetVal;
@@ -6239,7 +6236,7 @@ int pal_vr_fw_update(uint8_t *BinData)
 
   //create a file to inform "read_vr function". do not send req to VR
   fd = open(VR_UPDATE_IN_PROGRESS, O_WRONLY | O_CREAT | O_TRUNC, 0700);
-  if ( fd == -1 )
+  if ( -1 == fd )
   {
     printf("[%s] Create %s file error",__func__, VR_UPDATE_IN_PROGRESS);
     RetVal = -1;
@@ -6278,40 +6275,27 @@ int pal_vr_fw_update(uint8_t *BinData)
     {
       j = DATA_START_ADDR;
 
-      vr_data[i].IndexStartAddr = j + 5;
-      vr_data[i].SlaveAddr = BinData[j];
-
-      // copy crc
-      memcpy(vr_data[i].CRC, &BinData[j+1], 4);
-
       VRDataLength = vr_data[ i ].DataLength + DATA_START_ADDR;
 
-      vr_data[i].IndexEndAddr = VRDataLength;
-
-#ifdef VR_DEBUG
-      printf("[%s]: SlaveAddr: %x\n", __func__, vr_data[i].SlaveAddr );
-      printf("[%s]: CRC %x %x %x %x\n", __func__, vr_data[i].CRC[0], vr_data[i].CRC[1], vr_data[i].CRC[2], vr_data[i].CRC[3]);
-#endif
     }
     else
     {
       j = VRDataLength;
 
-      vr_data[i].IndexStartAddr = j + 5;
-      vr_data[i].SlaveAddr = BinData[ j ];
-
-      //copy crc
-      memcpy(vr_data[i].CRC, &BinData[ j + 1 ], 4);
-
       VRDataLength = vr_data[ i ].DataLength + VRDataLength;
-
-      vr_data[i].IndexEndAddr = VRDataLength;
-
-#ifdef VR_DEBUG
-      printf("[%s]: SlaveAddr: %x\n", __func__, vr_data[i].SlaveAddr );
-      printf("[%s]: CRC: %x %x %x %x\n", __func__, vr_data[i].CRC[0], vr_data[i].CRC[1], vr_data[i].CRC[2], vr_data[i].CRC[3]);
-#endif
     }
+
+    vr_data[i].SlaveAddr = BinData[ j ];
+    vr_data[i].IndexStartAddr = j + 5;
+    //copy crc
+    memcpy(vr_data[i].CRC, &BinData[ j + 1 ], 4);
+    vr_data[i].IndexEndAddr = VRDataLength;
+#ifdef VR_DEBUG
+    printf("[%s]: SlaveAddr: %x\n", __func__, vr_data[i].SlaveAddr );
+    printf("[%s]: CRC %x %x %x %x\n", __func__, vr_data[i].CRC[0], vr_data[i].CRC[1],
+          vr_data[i].CRC[2], vr_data[i].CRC[3]);
+#endif
+
   }
 
   //calculate the reality data length
@@ -6427,9 +6411,8 @@ int pal_vr_fw_update(uint8_t *BinData)
     }
 
   }
-  printf("\n");
 
-  printf("Update VR Success!\n");
+  printf("\nUpdate VR Success!\n");
 
 error_exit:
   if ( -1 == remove(VR_UPDATE_IN_PROGRESS) )

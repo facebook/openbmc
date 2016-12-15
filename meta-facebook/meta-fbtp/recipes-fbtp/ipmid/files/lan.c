@@ -50,7 +50,7 @@ void plat_lan_init(lan_config_t *lan)
   struct sockaddr_in6 *addr6;
   int family, s, n, i;
   unsigned long ip;
-  unsigned char *ip6;
+  unsigned char *ip6, *netmask6;
   int sd;
   struct ifreq ifr;
   uint8_t mac_addr[6];
@@ -120,6 +120,14 @@ void plat_lan_init(lan_config_t *lan)
 
       // copy the ip address from array with MSB first
       memcpy(lan->ip6_addr, ip6, SIZE_IP6_ADDR);
+
+      // calculate the Address Prefix Length
+      netmask6 = ((struct sockaddr_in6*)ifa->ifa_netmask)->sin6_addr.s6_addr;
+      for (i=0; i<SIZE_IP6_ADDR*8; i++) {
+        if (! ((netmask6[i/8] << (i%8)) & 0x80))
+          break;
+      }
+      lan->ip6_prefix = i;
     }
   }
 

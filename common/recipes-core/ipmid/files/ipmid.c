@@ -1104,7 +1104,7 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
 
   // Fill the response with default values
   res->cc = CC_SUCCESS;
-  *data++ = 0x01;		// Parameter revision
+  *data++ = 0x11;		// Parameter revision
 
   switch (param)
   {
@@ -1187,6 +1187,15 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
       plat_lan_init(&g_lan_config);
       memcpy(data, g_lan_config.ip6_addr, SIZE_IP6_ADDR);
       data += SIZE_IP6_ADDR;
+      break;
+   case LAN_PARAM_IP6_DYNAMIC_ADDR:
+      plat_lan_init(&g_lan_config);
+      data[0] = 0; // Selector
+      data[1] = 0x02; // DHCPv6
+      memcpy(&data[2], g_lan_config.ip6_addr, SIZE_IP6_ADDR);
+      data[18] = g_lan_config.ip6_prefix;
+      data[19] = 0x00; // Active
+      data += SIZE_IP6_ADDR + 4;
       break;
     case LAN_PARAM_ADDR_ENABLES:
       data[0] = 0x02; // Enable both IPv4 and IPv6

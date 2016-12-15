@@ -238,6 +238,7 @@ typedef struct
   unsigned char dest_type[SIZE_DEST_TYPE];
   unsigned char dest_addr[SIZE_DEST_ADDR];
   unsigned char ip6_addr[SIZE_IP6_ADDR];
+  unsigned char ip6_prefix;
 } lan_config_t;
 
 // Structure to store Processor Information
@@ -462,6 +463,7 @@ enum
   LAN_PARAM_DEST_TYPE,
   LAN_PARAM_DEST_ADDR,
   LAN_PARAM_ADDR_ENABLES = 51,
+  LAN_PARAM_IP6_DYNAMIC_ADDR = 59,
   LAN_PARAM_IP6_ADDR = 197, /* OEM parameter for IPv6 */
 };
 

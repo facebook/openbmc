@@ -64,10 +64,10 @@
 #define PEB_TMP75_U136_DEVICE I2C_BUS_PEB_DIR "4-004d"
 #define PEB_TMP75_U134_DEVICE I2C_BUS_PEB_DIR "4-004a"
 
-#define PDPB_TMP75_U47_DEVICE I2C_BUS_PDPB_DIR "6-0049"
-#define PDPB_TMP75_U48_DEVICE I2C_BUS_PDPB_DIR "6-004a"
-#define PDPB_TMP75_U49_DEVICE I2C_BUS_PDPB_DIR "6-004b"
-#define PDPB_TMP75_U51_DEVICE I2C_BUS_PDPB_DIR "6-004c"
+#define PDPB_TMP75_U47_DEVICE I2C_BUS_PDPB_DIR "6-0049/hwmon/hwmon4"
+#define PDPB_TMP75_U48_DEVICE I2C_BUS_PDPB_DIR "6-004a/hwmon/hwmon5"
+#define PDPB_TMP75_U49_DEVICE I2C_BUS_PDPB_DIR "6-004b/hwmon/hwmon6"
+#define PDPB_TMP75_U51_DEVICE I2C_BUS_PDPB_DIR "6-004c/hwmon/hwmon7"
 
 #define FAN_REGISTER 0x80
 
@@ -607,7 +607,7 @@ read_tmp75_temp_value(const char *device, float *value) {
   }
 
   *value = ((float)tmp)/UNIT_DIV;
-
+  
   return 0;
 }
 

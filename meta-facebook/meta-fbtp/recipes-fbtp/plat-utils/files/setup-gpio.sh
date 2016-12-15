@@ -115,6 +115,13 @@ gpio_set H7 1
 # FM_POST_CARD_PRES_BMC_N: GPIOQ6 (134)
 devmem_clear_bit $(scu_addr 90) 28
 
+# Set debounce timer #1 value to 0x12E1FC ~= 100ms
+$DEVMEM 0x1e780050 32 0x12E1FC
+
+# Select debounce timer #1 for GPIOQ6
+devmem_clear_bit 0x1e780130 6
+devmem_set_bit 0x1e780134 6
+
 gpio_export Q6
 
 # BMC_HEARTBEAT_N, heartbeat LED, GPIO U5(165)

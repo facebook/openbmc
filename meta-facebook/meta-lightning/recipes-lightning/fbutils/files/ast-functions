@@ -85,8 +85,12 @@ gpio_set() {
     if [ ! -d ${dir} ]; then
         echo $gpio > $GPIOEXPORT
     fi
-    echo $val > ${dir}/value
-    echo out > ${dir}/direction
+
+    if [ $val == 1 ]; then
+    echo high > ${dir}/direction
+    else 
+    echo low > ${dir}/direction
+    fi
 }
 
 gpio_get() {

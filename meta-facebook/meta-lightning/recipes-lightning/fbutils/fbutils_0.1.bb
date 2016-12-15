@@ -64,9 +64,9 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   # the script to mount /mnt/data
   install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-  update-rc.d -r ${D} mount_data0.sh start 03 S .
+  update-rc.d -r ${D} mount_data0.sh start 05 S .
   install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-  update-rc.d -r ${D} rc.early start 04 S .
+  update-rc.d -r ${D} rc.early start 06 S .
   install -m 755 pcie_switch.py ${D}${sysconfdir}/init.d/pcie_switch.py
   update-rc.d -r ${D} pcie_switch.py start 50 5 .
   install -m 755 ssd_sku.sh ${D}${sysconfdir}/init.d/ssd_sku.sh

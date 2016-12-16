@@ -2134,6 +2134,26 @@ gpio_set(uint8_t gpio, bool value ) {
   write_device(vpath, val);
 }
 
+// Power Button Override
+int
+pal_PBO(void) {
+  char vpath[64] = {0};
+
+  sprintf(vpath, GPIO_VAL, GPIO_POWER);
+
+  if (write_device(vpath, "1")) {
+    return -1;
+  }
+  if (write_device(vpath, "0")) {
+    return -1;
+  }
+  sleep(5);
+  if (write_device(vpath, "1")) {
+    return -1;
+  }
+  return 0;
+}
+
 // Power On the server in a given slot
 static int
 server_power_on(void) {

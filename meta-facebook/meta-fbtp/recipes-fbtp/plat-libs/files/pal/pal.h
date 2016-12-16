@@ -416,6 +416,7 @@ static bool is_cpu0_socket_occupy(void);
 static bool is_cpu1_socket_occupy(void);
 int pal_get_vr_update_data(char *update_file, uint8_t **BinData);
 int pal_vr_fw_update(uint8_t *BinData);
+int pal_PBO(void);
 
 #ifdef __cplusplus
 } // extern "C"

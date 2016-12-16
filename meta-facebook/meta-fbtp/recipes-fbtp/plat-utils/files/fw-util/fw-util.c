@@ -323,6 +323,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
 
   if (!strcmp(argv[3], "--bios")) {
     system("/usr/local/bin/power-util mb off");
+    sleep(10);
     system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
     sleep(1);
     gpio_export(GPIO_BMC_CTRL);
@@ -336,11 +337,10 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     gpio_write(&bmc_ctrl_pin, GPIO_VALUE_LOW);
     gpio_close(&bmc_ctrl_pin);
     gpio_unexport(GPIO_BMC_CTRL);
-    system("/usr/local/bin/me-util 0x18 0x02");
-    sleep(3);
+    sleep(1);
+    pal_PBO();
+    sleep(10);
     system("/usr/local/bin/power-util mb on");
-    sleep(3);
-    system("/usr/local/bin/power-util mb cycle");
     return 0;
   }
 

@@ -53,8 +53,6 @@ static post_desc_t pdesc[] = {
   { 0xCC, "CSR_FATAL" },
   { 0xCD, "PROC_MICROCODE" },
   { 0xCE, "BUS_NOSTACK" },
-  { 0xD0, "CACHE_TEST_FAIL" },
-  { 0xD1, "CFG_TEST_FAIL" },
 
   // PEI Phase
   { 0x10, "CORE_START" },
@@ -120,14 +118,14 @@ static post_desc_t pdesc[] = {
 };
 
 static gpio_desc_t gdesc[] = {
-  { 10, 0, 2, "FM_DBG_RST_BTN" },
-  { 11, 0, 1, "FM_PWR_BTN" },
-  { 12, 0, 0, "SYS_PWROK" },
-  { 13, 0, 0, "RST_PLTRST" },
-  { 14, 0, 0, "DSW_PWROK" },
-  { 15, 0, 0, "FM_CPU_CATERR" },
-  { 16, 0, 0, "FM_SLPS3" },
-  { 17, 0, 0, "FM_CPU_MSMI" },
+  { 0x10, 0, 2, "FM_DBG_RST_BTN" },
+  { 0x11, 0, 1, "FM_PWR_BTN" },
+  { 0x12, 0, 0, "SYS_PWROK" },
+  { 0x13, 0, 0, "RST_PLTRST" },
+  { 0x14, 0, 0, "DSW_PWROK" },
+  { 0x15, 0, 0, "FM_CPU_CATERR" },
+  { 0x16, 0, 0, "FM_SLPS3" },
+  { 0x17, 0, 0, "FM_CPU_MSMI" },
 };
 
 static uint8_t test_page1[128] = {0};
@@ -229,7 +227,7 @@ plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *d
 }
 
 int
-plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t buffer) {
+plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   static uint8_t once = 1;
   int i = 0;
 
@@ -241,7 +239,7 @@ plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
       test_page1[i] = 16+i;
     }
 
-    memcpy(&test_page1[127-16], "   Page 1 of 2   ", 15); // Last line
+    memcpy(&test_page1[128-16], "   Page 1 of 2   ", 15); // Last line
 
     // Initailize test page#2 (assuming 8 x 16 screen)
     memcpy(test_page2, "     Frame#1    ", 16); // First line
@@ -250,7 +248,7 @@ plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
       test_page2[i] = 16+i;
     }
 
-    memcpy(&test_page2[127-16], "   Page 2 of 2   ", 15); // Last line
+    memcpy(&test_page2[128-16], "   Page 2 of 2   ", 15); // Last line
   }
 
   // Test frame/page
@@ -258,14 +256,15 @@ plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
     return -1;
   }
 
-  // Set next to 0xFF to indicate this is last page
-  *next = 0xFF;
 
   *count = 128;
   if (page == 1) {
-    memcpy(test_page1, buffer, 128);
+    memcpy(buffer, test_page1, 128);
+    *next = 0x02;
   } else {
-    memcpy(test_page2, buffer, 128);
+    memcpy(buffer, test_page2, 128);
+    // Set next to 0xFF to indicate this is last page
+    *next = 0xFF;
   }
 
   return 0;

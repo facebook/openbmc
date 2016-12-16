@@ -514,7 +514,7 @@ enum
 };
 
 void lib_ipmi_handle(unsigned char *request, unsigned char req_len,
-                 unsigned char *response, unsigned char *res_len);
+                 unsigned char *response, unsigned short *res_len);
 
 #ifdef __cplusplus
 } // extern "C"

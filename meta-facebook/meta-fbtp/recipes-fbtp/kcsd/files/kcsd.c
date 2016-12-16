@@ -63,7 +63,7 @@
 #include "openbmc/ipmb.h"
 
 unsigned char req_buf[256];
-unsigned char res_buf[256];
+unsigned char res_buf[300];
 uint8_t debug = 0;
 int kcs_fd;
 
@@ -72,7 +72,8 @@ void *kcs_thread(void) {
   struct timespec req;
   struct timespec rem;
 
-  unsigned char req_len, res_len;
+  unsigned char req_len;
+  unsigned short res_len;
   int i = 0;
 
   // Setup wait time

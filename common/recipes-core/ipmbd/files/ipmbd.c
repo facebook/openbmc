@@ -357,7 +357,7 @@ ipmb_req_handler(void *bus_num) {
   p_ipmi_res = (ipmi_res_t*) tbuf;
 
   uint8_t rlen = 0;
-  uint8_t tlen = 0;
+  uint16_t tlen = 0;
 
   char mq_ipmb_req[64] = {0};
 

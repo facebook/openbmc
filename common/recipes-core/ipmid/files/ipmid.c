@@ -609,7 +609,7 @@ storage_get_fruid_data(unsigned char *request, unsigned char *response,
   }
 
   if (res->cc == CC_SUCCESS) {
-    *res_len = data - &res->data[0];
+    *(unsigned short*)res_len = data - &res->data[0];
   }
   return;
 }
@@ -1874,11 +1874,13 @@ oem_usb_dbg_get_frame_data(unsigned char *request, unsigned char req_len,
   }
 
   memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
-  req->data[3] = next;
-  req->data[4] = count;
-  memcpy(&res->data[6], data, count);
+  res->data[3] = frame;
+  res->data[4] = page;
+  res->data[5] = next;
+  res->data[6] = count;
+  memcpy(&res->data[7], data, count);
   res->cc = CC_SUCCESS;
-  *res_len = SIZE_IANA_ID + 2 + count;
+  *res_len = SIZE_IANA_ID + 4 + count;
 }
 
 static void
@@ -1935,7 +1937,7 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
   // Provide default values in the response message
   res->cmd = req->cmd;
   res->cc = 0xFF;		// Unspecified completion code
-  *res_len = 0;
+  *(unsigned short*)res_len = 0;
 
   switch (netfn)
   {
@@ -1981,7 +1983,7 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
   }
 
   // This header includes NetFunction, Command, and Completion Code
-  *res_len += IPMI_RESP_HDR_SIZE;
+  *(unsigned short*)res_len += IPMI_RESP_HDR_SIZE;
 
   return;
 }
@@ -1993,7 +1995,7 @@ void
   int n;
   unsigned char req_buf[MAX_IPMI_MSG_SIZE];
   unsigned char res_buf[MAX_IPMI_MSG_SIZE];
-  unsigned char res_len = 0;
+  unsigned short res_len = 0;
   struct timeval tv;
   int rc = 0;
 
@@ -2010,7 +2012,7 @@ void
       goto conn_cleanup;
   }
 
-  ipmi_handle(req_buf, n, res_buf, &res_len);
+  ipmi_handle(req_buf, n, res_buf, (unsigned char*)&res_len);
 
   if (send (sock, res_buf, res_len, 0) < 0) {
     syslog(LOG_WARNING, "ipmid: send() failed\n");

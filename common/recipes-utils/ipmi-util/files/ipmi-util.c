@@ -42,7 +42,7 @@ main(int argc, char **argv) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;
-  uint8_t rlen = 0;
+  uint16_t rlen = 0;
   int i;
 
   if (argc < 3) {

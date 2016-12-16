@@ -30,14 +30,14 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#define MAX_IPMI_RES_LEN 100
+#define MAX_IPMI_RES_LEN 300
 
 /*
  * Function to handle IPMI messages
  */
 void
 lib_ipmi_handle(unsigned char *request, unsigned char req_len,
-            unsigned char *response, unsigned char *res_len) {
+            unsigned char *response, unsigned short *res_len) {
 
   int s, t, len;
   struct sockaddr_un remote;

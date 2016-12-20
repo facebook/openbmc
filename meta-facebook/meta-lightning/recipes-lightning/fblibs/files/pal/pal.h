@@ -48,6 +48,8 @@ extern "C" {
 #define MAX_NODES 1
 #define MAX_FAN_LED_NUM 6
 
+#define HB_INTERVAL 500
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

@@ -106,10 +106,18 @@ if [ $(is_bmc_por) -eq 1 ]; then
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
 
-  # TODO: SCC power control
+  # TODO: SCC local power control by BMC depends on HW design
   # Keep the SCC standby and full power good value
   scc_stby_good=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio484/value`
   scc_full_good=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio485/value`
+
+  # For Triton remote SCC PWR sequence
+  sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
+  chassis_type=$(($(($? >> 6)) & 0x1))
+  if [ $chassis_type -eq 1 ]; then  # type 7, always power-on SCC B
+    gpio_set F1 1
+    gpio_tolerance_fun F1
+  fi
 
   # For Triton MonoLake PWR sequence
   if [ $(gpio_get $IOM_FULL_GOOD) == 1 ]; then
@@ -122,7 +130,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
         power-util slot1 on
     fi
   else
-        echo "IOM PWR Fail"
+    echo "IOM PWR Fail"
   fi
 
   check_por_config 1

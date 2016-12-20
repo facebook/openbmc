@@ -52,20 +52,20 @@ case "$flash_type" in
    ;;
    "M2")
         case "$ssd_vendor" in
-           "seagate") cp /etc/FSC_Lightning_PVT_Seagate_M2_2TB_v2_config.json ${default_fsc_config_path}
+           "seagate") cp /etc/FSC_Lightning_PVT_Seagate_M2_2TB_v3_config.json ${default_fsc_config_path}
            ;;
-           "samsung") cp /etc/FSC_Lightning_PVT_Samsung_M2_2TB_v2_config.json ${default_fsc_config_path}
+           "samsung") cp /etc/FSC_Lightning_PVT_Samsung_M2_2TB_v3_config.json ${default_fsc_config_path}
            ;;
            *) echo "Enter into transitional mode - Unexpected M.2 SSD vendor."
               /usr/local/bin/init_pwm.sh
-              /usr/local/bin/fan-util --set 100
+              /usr/local/bin/fan-util --set 70
               exit 1
            ;;
          esac
    ;;
    *) echo "Enter into transitional mode - Unexpected flash type!"
       /usr/local/bin/init_pwm.sh
-      /usr/local/bin/fan-util --set 100
+      /usr/local/bin/fan-util --set 70
       exit 1
    ;;
 esac

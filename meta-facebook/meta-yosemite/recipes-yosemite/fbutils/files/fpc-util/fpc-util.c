@@ -63,7 +63,8 @@ main(int argc, char **argv) {
     printf("fpc-util: switching USB channel to slot%d\n", slot_id);
     return pal_switch_usb_mux(slot_id);
   } else if (!strcmp(argv[2], "--identify")) {
-    if (argc != 4) {
+    if (argc != 4 ||
+        (strcmp(argv[3], "on") && strcmp(argv[3], "off"))) {
       goto err_exit;
     }
     printf("fpc-util: identification for %s is %s\n", argv[1], argv[3]);
@@ -72,11 +73,6 @@ main(int argc, char **argv) {
     } else {
       sprintf(tstr, "identify_slot%d", slot_id);
     }
-
-    if (strcmp(argv[3] , "on") && strcmp(argv[3] , "off")) {
-      goto err_exit;
-    }
-
     return pal_set_key_value(tstr, argv[3]);
   } else {
     goto err_exit;

@@ -324,7 +324,7 @@ sensor_thresh_array_init() {
 
   // PEB HSC SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_IN_VOLT,
-      13.2, 0, 0, 10.8, 0, 0, 0, 0);
+      13.63, 0, 0, 11.25, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_OUT_CURR,
       8, 0, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_IN_POWER,
@@ -432,7 +432,7 @@ sensor_thresh_array_init() {
 
   // FCB HSC Sensors
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_IN_VOLT,
-      13.75, 0, 0, 11.25, 0, 0, 0, 0);
+      13.63, 0, 0, 11.25, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_OUT_CURR,
       60, 0, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_IN_POWER,

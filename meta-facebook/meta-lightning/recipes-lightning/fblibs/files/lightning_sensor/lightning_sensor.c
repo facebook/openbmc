@@ -71,6 +71,8 @@
 
 #define FAN_REGISTER 0x80
 
+#define VOLT_SENSOR_READING_OFFSET 0.2
+
 enum temp_sensor_type {
   LOCAL_SENSOR = 0,
   REMOTE_SENSOR,
@@ -912,14 +914,17 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   } else {
     /* temp sensor reading */
     if (reg == NCT7904_TEMP_CH1 || reg == NCT7904_TEMP_CH2) {
-
       *value = signextend32(res, 10) * multipler;
       if (reg == NCT7904_TEMP_CH2) 
         *value = *value - 2;
+    /* add offset to sensor reading  */
+    } else if (reg == NCT7904_VSEN6 || reg == NCT7904_VSEN7 || reg == NCT7904_VSEN9) {
+      *value = (float) (res * multipler) + VOLT_SENSOR_READING_OFFSET;
     /* other sensor reading */
     } else
       *value = (float) (res * multipler);
   }
+
 
   return 0;
 }

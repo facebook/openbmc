@@ -18,6 +18,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://disable_watchdog.sh \
+            file://enable_watchdog_ext_signal.sh \
             file://board-utils.sh \
             file://setup_board.sh \
             file://cpld_rev.sh \
@@ -28,6 +29,7 @@ SRC_URI += "file://disable_watchdog.sh \
 
 OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
+    enable_watchdog_ext_signal.sh \
     cpld_upgrade.sh \
     cpld_rev.sh \
     cp2112_i2c_flush.sh \
@@ -71,6 +73,9 @@ do_install_board() {
 
     install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
     update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
+    
+    install -m 0755 ${WORKDIR}/enable_watchdog_ext_signal.sh ${D}${sysconfdir}/init.d/enable_watchdog_ext_signal.sh
+    update-rc.d -r ${D} enable_watchdog_ext_signal.sh start 99 2 3 4 5 .
 }
 
 FILES_${PN} += "${sysconfdir}"

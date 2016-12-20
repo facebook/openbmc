@@ -38,16 +38,23 @@ initilize_all_kv() {
 }
 
 static void *
-hb_led_handler() {
+hb_handler() {
+  int hb_interval;
+
+#ifdef HB_INTERVAL
+  hb_interval = HB_INTERVAL;
+#else
+  hb_interval = 500;
+#endif
 
   while(1) {
     /* Turn ON the HB Led*/
     pal_set_hb_led(1);
-    msleep(50);
+    msleep(hb_interval);
 
     /* Turn OFF the HB led */
     pal_set_hb_led(0);
-    msleep(50);
+    msleep(hb_interval);
   }
 }
 
@@ -110,7 +117,7 @@ main(int argc, void **argv) {
     exit(1);
   }
 
-  if (pthread_create(&tid_hb_led, NULL, hb_led_handler, NULL) < 0) {
+  if (pthread_create(&tid_hb_led, NULL, hb_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for heartbeat error\n");
     exit(1);
   }

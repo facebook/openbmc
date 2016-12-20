@@ -161,24 +161,20 @@ devmem_clear_bit $(scu_addr 70) 22
 
 gpio_set E7 1
 
+# Becasue SCC power sequence is controlled by HW on EVT.
+# So we just configure SCC PWR pins to GPIO and does not export their GPIO node.
+# SCC PWR pins: GPIOF0, GPIOF1, and GPIOF4
 # SCC_LOC_FULL_PWR_EN: F0 (40), PS
 # To use GPIOF0, LHCR[0], SCU90[30], and SCU80[24] must be 0
 devmem_clear_bit $(lpc_addr A0) 0
 devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 24
 
-# SCC_LOC_FULL_PWR_EN F0
-# set GPIOF0 WDT reset tolerance
-gpio_tolerance_fun F0
-
-
 # SCC_RMT_FULL_PWR_EN: F1 (41)
 # To use GPIOF0, LHCR[0], SCU90[30], and SCU80[25] must be 0
 devmem_clear_bit $(lpc_addr A0) 0
 devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 25
-
-gpio_tolerance_fun F1
 
 # EXP_SPARE_0: F2 (42), EXP_SPARE_1: F3 (43)
 # To use GPIOF2, LHCR[0], SCU90[30], and SCU80[26] must be 0
@@ -199,10 +195,6 @@ gpio_export F3
 devmem_clear_bit $(lpc_addr A0) 0
 devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 28
-
-gpio_set F4 1
-# set GPIOF4 WDT reset tolerance
-gpio_tolerance_fun F4
 
 # DPB_MISC_ALERT: F5 (45)
 # To use GPIOF5, LHCR[0], SCU90[30], and SCU80[29] must be 0

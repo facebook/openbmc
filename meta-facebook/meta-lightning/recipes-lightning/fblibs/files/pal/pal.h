@@ -215,6 +215,18 @@ int pal_peer_tray_detection(uint8_t *value);
 int pal_self_tray_location(uint8_t *value);
 int pal_is_crashdump_ongoing(uint8_t slot);
 int pal_reset_ssd_switch();
+void pal_log_clear(char *fru);
+
+// dummy definition
+int pal_get_platform_id(uint8_t *id);
+int pal_get_board_rev_id(uint8_t *id);
+int pal_get_mb_slot_id(uint8_t *id);
+int pal_get_slot_cfg_id(uint8_t *id);
+int pal_set_boot_order(uint8_t fru, uint8_t *boot);
+int pal_get_boot_order(uint8_t fru, uint8_t *boot);
+int pal_get_dev_guid(uint8_t fru, char *guid);
+int pal_get_poss_pcie_config(uint8_t *pcie_config);
+int pal_get_plat_sku_id(void);
 
 #ifdef __cplusplus
 } // extern "C"

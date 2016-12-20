@@ -27,8 +27,9 @@ SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
            file://mount_data0.sh \
            file://pcie_switch.py \
-   file://ssd_sku.sh \
-   file://ssd_vid.sh \
+           file://ssd_sku.sh \
+           file://ssd_vid.sh \
+           file://setup_adc.sh \
            file://rc.early \
            file://rc.local \
            file://src \
@@ -67,6 +68,9 @@ do_install() {
   update-rc.d -r ${D} mount_data0.sh start 05 S .
   install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
   update-rc.d -r ${D} rc.early start 06 S .
+  # the script to set ADC
+  install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
+  update-rc.d -r ${D} setup_adc.sh start 90 5 .
   install -m 755 pcie_switch.py ${D}${sysconfdir}/init.d/pcie_switch.py
   update-rc.d -r ${D} pcie_switch.py start 50 5 .
   install -m 755 ssd_sku.sh ${D}${sysconfdir}/init.d/ssd_sku.sh

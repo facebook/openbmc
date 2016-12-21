@@ -251,6 +251,10 @@ def main():
         fanpower = config['fanpower']
     else:
         fanpower = False
+    if 'chassis_intrusion' in config:
+        chassis_intrusion = config['chassis_intrusion']
+    else:
+        chassis_intrusion = False
     if 'ramp_rate' in config:
         ramp_rate = config['ramp_rate']
     wdfile = None
@@ -333,9 +337,9 @@ def main():
                 crit("%d fans failed" % (len(dead_fans),))
             for dead_fan_num in dead_fans:
                 if fanpower:
-                    warn("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
+                    warn("Fan %d dead, %d RPM" % (dead_fan_num, speeds[dead_fan_num]))
                 else:
-                    crit("Fan %d dead, %d RPM" % (dead_fan_num, rpms))
+                    crit("Fan %d dead, %d RPM" % (dead_fan_num, speeds[dead_fan_num]))
         for fan in recovered_fans:
             if fanpower:
                 warn("Fan %d has recovered" % (fan,))
@@ -344,13 +348,35 @@ def main():
             pal_fan_recovered_handle(fan)
         for zone in zones:
             print("PWM: %s" % (json.dumps(zone.pwm_output)))
-            pwmval = zone.run(sensors, dt)
-            if abs(zone.last_pwm - pwmval) > ramp_rate:
-                if pwmval < zone.last_pwm:
-                    pwmval = zone.last_pwm - ramp_rate
+
+            """
+            TODO: Need to change logic here.
+
+            # Platforms with chassis_intrusion mode enabled
+            if chassis_intrusion:
+                set the chassis_intrusion_boost_flag to 0
+                and then do necessary checks to set flag to 1
+                if chassis_intrusion_boost_flag:
+                    run boost mode
                 else:
-                    pwmval = zone.last_pwm + ramp_rate
-            zone.last_pwm = pwmval
+                    run normal mode
+            else
+                # Platforms WITHOUT chassis_intrusion mode
+                run normal mode
+
+            """
+            # Chassis intrusion
+            chassis_intrusion_boost_flag=0
+            if chassis_intrusion:
+               self_tray_pull_out = pal_fan_chassis_intrusion_handle()
+               if self_tray_pull_out == 1:
+                  chassis_intrusion_boost_flag = 1
+            if  chassis_intrusion_boost_flag == 0:
+                pwmval = zone.run(sensors, dt)
+            else:
+                pwmval = boost
+
+            # Fan dead progressive
             if boost_type == 'progressive':
                 dead = len(dead_fans)
                 if dead > 0:
@@ -366,6 +392,15 @@ def main():
                     print("Failed fans: %s" %
                           (', '.join([str(i) for i in dead_fans],)))
                     pwmval = boost
+
+            # Ramp rate
+            if abs(zone.last_pwm - pwmval) > ramp_rate:
+                if pwmval < zone.last_pwm:
+                   pwmval = zone.last_pwm - ramp_rate
+                else:
+                   pwmval = zone.last_pwm + ramp_rate
+            zone.last_pwm = pwmval
+
             if hasattr(zone.pwm_output, '__iter__'):
                 for output in zone.pwm_output:
                     machine.set_pwm(output, pwmval)

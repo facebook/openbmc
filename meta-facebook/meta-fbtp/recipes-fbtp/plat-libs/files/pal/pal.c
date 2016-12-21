@@ -1927,12 +1927,12 @@ read_ava_temp(uint8_t sensor_num, float *value) {
     case MB_SENSOR_C2_AVA_FTEMP:
     case MB_SENSOR_C3_AVA_FTEMP:
     case MB_SENSOR_C4_AVA_FTEMP:
-      addr = 0x90;
+      addr = 0x92;
       break;
     case MB_SENSOR_C2_AVA_RTEMP:
     case MB_SENSOR_C3_AVA_RTEMP:
     case MB_SENSOR_C4_AVA_RTEMP:
-      addr = 0x92;
+      addr = 0x90;
       break;
   }
 

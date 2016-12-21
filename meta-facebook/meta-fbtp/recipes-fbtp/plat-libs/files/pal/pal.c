@@ -4938,7 +4938,7 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
     case NM_EXCEPTION:
       sprintf(error_log, "");
-      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0xA80001) {
+      if (ed[0] == 0xA8) {
         strcat(error_log, "Policy Correction Time Exceeded");
         return 1;
       } else
@@ -4954,6 +4954,16 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         strcat(error_log, "PROCHOT# Assertions");
       else if (ed[0] == 0x02)
         strcat(error_log, "TCC Activation");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case PWR_THRESH_EVT:
+      sprintf(error_log, "");
+      if (ed[0]  == 0x00)
+        strcat(error_log, "Limit Not Exceeded");
+      else if (ed[0]  == 0x01)
+        strcat(error_log, "Limit Exceeded");
       else
         strcat(error_log, "Unknown");
       break;

@@ -180,7 +180,7 @@
 
 #define VR_UPDATE_IN_PROGRESS "/tmp/stop_monitor_vr"
 #define MAX_VR_CHIPS 9
-#define VR_TIMEOUT 200
+#define VR_TIMEOUT 400
 
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };

@@ -319,6 +319,18 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_C4_2_NVME_CTEMP,
   MB_SENSOR_C4_3_NVME_CTEMP,
   MB_SENSOR_C4_4_NVME_CTEMP,
+  MB_SENSOR_C2_P12V_INA230_VOL,
+  MB_SENSOR_C2_P12V_INA230_CURR,
+  MB_SENSOR_C2_P12V_INA230_PWR,
+  MB_SENSOR_C3_P12V_INA230_VOL,
+  MB_SENSOR_C3_P12V_INA230_CURR,
+  MB_SENSOR_C3_P12V_INA230_PWR,
+  MB_SENSOR_C4_P12V_INA230_VOL,
+  MB_SENSOR_C4_P12V_INA230_CURR,
+  MB_SENSOR_C4_P12V_INA230_PWR,
+  MB_SENSOR_CONN_P12V_INA230_VOL,
+  MB_SENSOR_CONN_P12V_INA230_CURR,
+  MB_SENSOR_CONN_P12V_INA230_PWR,
 };
 
 // List of NIC sensors to be monitored
@@ -1959,6 +1971,191 @@ error_exit:
 }
 
 static int
+read_INA230 (uint8_t sensor_num, float *value) {
+  int fd;
+  char fn[32];
+  int ret = READING_NA;;
+  static unsigned int retry = 0;
+  uint8_t tcount, rcount, slot_cfg, addr, mux_chan, mux_addr = 0xe2;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  int16_t temp;
+
+  if (pal_get_slot_cfg_id(&slot_cfg) < 0)
+    slot_cfg = SLOT_CFG_EMPTY;
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_P12V_INA230_VOL:
+    case MB_SENSOR_C2_P12V_INA230_CURR:
+    case MB_SENSOR_C2_P12V_INA230_PWR:
+    case MB_SENSOR_C3_P12V_INA230_VOL:
+    case MB_SENSOR_C3_P12V_INA230_CURR:
+    case MB_SENSOR_C3_P12V_INA230_PWR:
+    case MB_SENSOR_CONN_P12V_INA230_VOL:
+    case MB_SENSOR_CONN_P12V_INA230_CURR:
+    case MB_SENSOR_CONN_P12V_INA230_PWR:
+      if(slot_cfg == SLOT_CFG_EMPTY)
+        return READING_NA;
+      break;
+    case MB_SENSOR_C4_P12V_INA230_VOL:
+    case MB_SENSOR_C4_P12V_INA230_CURR:
+    case MB_SENSOR_C4_P12V_INA230_PWR:
+      if(slot_cfg != SLOT_CFG_SS_3x8)
+        return READING_NA;
+      break;
+    default:
+      return READING_NA;
+  }
+
+  //use channel 4
+  mux_chan = 0x3;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  //control multiplexer to target channel.
+  ret = pal_control_mux(fd, mux_addr, mux_chan);
+  if (ret < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_P12V_INA230_VOL:
+    case MB_SENSOR_C2_P12V_INA230_CURR:
+    case MB_SENSOR_C2_P12V_INA230_PWR:
+      addr = 0x80;
+      break;
+    case MB_SENSOR_C3_P12V_INA230_VOL:
+    case MB_SENSOR_C3_P12V_INA230_CURR:
+    case MB_SENSOR_C3_P12V_INA230_PWR:
+      addr = 0x82;
+      break;
+    case MB_SENSOR_C4_P12V_INA230_VOL:
+    case MB_SENSOR_C4_P12V_INA230_CURR:
+    case MB_SENSOR_C4_P12V_INA230_PWR:
+      addr = 0x88;
+      break;
+    case MB_SENSOR_CONN_P12V_INA230_VOL:
+    case MB_SENSOR_CONN_P12V_INA230_CURR:
+    case MB_SENSOR_CONN_P12V_INA230_PWR:
+      addr = 0x8A;
+      break;
+    default:
+        syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
+      break;
+    }
+
+  retry = MAX_READ_RETRY;
+  //Set Configuration register
+  tbuf[0] = 0x00, tbuf[1] = 0x49; tbuf[2] = 0x27;
+  while(retry)
+  {
+     ret = i2c_io(fd, addr, tbuf, 3, rbuf, 0);
+     retry--;
+     msleep(100);
+     if(retry == 0)
+       goto error_exit;
+     else break;
+   }
+
+  //Set Calibration register
+  retry = MAX_READ_RETRY;
+  tbuf[0] = 0x05, tbuf[1] = 0x9; tbuf[2] = 0xd9;
+  while(retry)
+  {
+     ret = i2c_io(fd, addr, tbuf, 3, rbuf, 0);
+     retry--;
+     msleep(100);
+     if(retry == 0)
+       goto error_exit;
+     else break;
+   }
+
+  tbuf[1] = 0x0; tbuf[2] = 0x0;
+  //Get registers data
+  switch(sensor_num) {
+    case MB_SENSOR_C2_P12V_INA230_VOL:
+    case MB_SENSOR_C3_P12V_INA230_VOL:
+    case MB_SENSOR_C4_P12V_INA230_VOL:
+    case MB_SENSOR_CONN_P12V_INA230_VOL:
+      tbuf[0] = 0x02;
+      break;
+    case MB_SENSOR_C2_P12V_INA230_CURR:
+    case MB_SENSOR_C3_P12V_INA230_CURR:
+    case MB_SENSOR_C4_P12V_INA230_CURR:
+    case MB_SENSOR_CONN_P12V_INA230_CURR:
+      tbuf[0] = 0x04;
+      break;
+    case MB_SENSOR_C2_P12V_INA230_PWR:
+    case MB_SENSOR_C3_P12V_INA230_PWR:
+    case MB_SENSOR_C4_P12V_INA230_PWR:
+    case MB_SENSOR_CONN_P12V_INA230_PWR:
+      tbuf[0] = 0x03;
+      break;
+    default:
+        syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
+      break;
+    }
+
+  retry = MAX_READ_RETRY;
+  while(retry)
+  {
+       ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2);
+       retry--;
+       msleep(100);
+       if(retry == 0)
+         goto error_exit;
+       else break;
+   }
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_P12V_INA230_VOL:
+    case MB_SENSOR_C3_P12V_INA230_VOL:
+    case MB_SENSOR_C4_P12V_INA230_VOL:
+    case MB_SENSOR_CONN_P12V_INA230_VOL:
+      *value = ((rbuf[1] + rbuf[0] *256) *0.00125) ;
+      break;
+    case MB_SENSOR_C2_P12V_INA230_CURR:
+    case MB_SENSOR_C3_P12V_INA230_CURR:
+    case MB_SENSOR_C4_P12V_INA230_CURR:
+    case MB_SENSOR_CONN_P12V_INA230_CURR:
+      temp = rbuf[0];
+      temp = (temp <<8) + rbuf[1];
+      *value = temp * 0.001;
+      break;
+    case MB_SENSOR_C2_P12V_INA230_PWR:
+    case MB_SENSOR_C3_P12V_INA230_PWR:
+    case MB_SENSOR_C4_P12V_INA230_PWR:
+    case MB_SENSOR_CONN_P12V_INA230_PWR:
+      *value = (rbuf[1] + rbuf[0] * 256)*0.025;
+      break;
+    default:
+        syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
+      break;
+    }
+  if(*value <0)
+    *value = 0;
+
+return ret;
+
+error_exit:
+  if (fd > 0) {
+    pal_control_mux(fd, mux_addr, 0xff); // close
+    close(fd);
+  }
+
+  if (ret == READING_NA && ++retry <= 3)
+    ret = READING_SKIP;
+
+  return ret;
+}
+
+static int
 read_nvme_temp(uint8_t sensor_num, float *value) {
   int fd;
   char fn[32];
@@ -3291,6 +3488,20 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_C4_4_NVME_CTEMP:
         ret = read_nvme_temp(sensor_num, (float*) value);
         break;
+      case MB_SENSOR_C2_P12V_INA230_VOL:
+      case MB_SENSOR_C3_P12V_INA230_VOL:
+      case MB_SENSOR_C4_P12V_INA230_VOL:
+      case MB_SENSOR_CONN_P12V_INA230_VOL:
+      case MB_SENSOR_C2_P12V_INA230_CURR:
+      case MB_SENSOR_C3_P12V_INA230_CURR:
+      case MB_SENSOR_C4_P12V_INA230_CURR:
+      case MB_SENSOR_CONN_P12V_INA230_CURR:
+      case MB_SENSOR_C2_P12V_INA230_PWR:
+      case MB_SENSOR_C3_P12V_INA230_PWR:
+      case MB_SENSOR_C4_P12V_INA230_PWR:
+      case MB_SENSOR_CONN_P12V_INA230_PWR:
+        ret = read_INA230 (sensor_num, (float*) value);
+        break;
 
       default:
         return -1;
@@ -3644,6 +3855,42 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_C4_4_NVME_CTEMP:
       sprintf(name, "MB_C4_4_NVME_CTEMP");
       break;
+    case MB_SENSOR_C2_P12V_INA230_VOL:
+      sprintf(name, "MB_C2_P12V_VOL");
+      break;
+    case MB_SENSOR_C2_P12V_INA230_CURR:
+      sprintf(name, "MB_C2_P12V_CURR");
+      break;
+    case MB_SENSOR_C2_P12V_INA230_PWR:
+      sprintf(name, "MB_C2_P12V_PWR");
+      break;
+    case MB_SENSOR_C3_P12V_INA230_VOL:
+      sprintf(name, "MB_C3_P12V_VOL");
+      break;
+    case MB_SENSOR_C3_P12V_INA230_CURR:
+      sprintf(name, "MB_C3_P12V_CURR");
+      break;
+    case MB_SENSOR_C3_P12V_INA230_PWR:
+      sprintf(name, "MB_C3_P12V_PWR");
+      break;
+    case MB_SENSOR_C4_P12V_INA230_VOL:
+      sprintf(name, "MB_C4_P12V_VOL");
+      break;
+    case MB_SENSOR_C4_P12V_INA230_CURR:
+      sprintf(name, "MB_C4_P12V_CURR");
+      break;
+    case MB_SENSOR_C4_P12V_INA230_PWR:
+      sprintf(name, "MB_C4_P12V_PWR");
+      break;
+    case MB_SENSOR_CONN_P12V_INA230_VOL:
+      sprintf(name, "MB_CONN_P12V_VOL");
+      break;
+    case MB_SENSOR_CONN_P12V_INA230_CURR:
+      sprintf(name, "MB_CONN_P12V_CURR");
+      break;
+    case MB_SENSOR_CONN_P12V_INA230_PWR:
+      sprintf(name, "MB_CONN_P12V_PWR");
+      break;
 
     default:
       return -1;
@@ -3739,6 +3986,10 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_VR_CPU1_VDDQ_GRPD_VOLT:
     case MB_SENSOR_VR_PCH_PVNN_VOLT:
     case MB_SENSOR_VR_PCH_P1V05_VOLT:
+    case MB_SENSOR_C2_P12V_INA230_VOL:
+    case MB_SENSOR_C3_P12V_INA230_VOL:
+    case MB_SENSOR_C4_P12V_INA230_VOL:
+    case MB_SENSOR_CONN_P12V_INA230_VOL:
       sprintf(units, "Volts");
       break;
     case MB_SENSOR_HSC_OUT_CURR:
@@ -3754,6 +4005,10 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_VR_CPU1_VDDQ_GRPD_CURR:
     case MB_SENSOR_VR_PCH_PVNN_CURR:
     case MB_SENSOR_VR_PCH_P1V05_CURR:
+    case MB_SENSOR_C2_P12V_INA230_CURR:
+    case MB_SENSOR_C3_P12V_INA230_CURR:
+    case MB_SENSOR_C4_P12V_INA230_CURR:
+    case MB_SENSOR_CONN_P12V_INA230_CURR:
       sprintf(units, "Amps");
       break;
     case MB_SENSOR_HSC_IN_POWER:
@@ -3771,6 +4026,10 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_VR_PCH_P1V05_POWER:
     case MB_SENSOR_CPU0_PKG_POWER:
     case MB_SENSOR_CPU1_PKG_POWER:
+    case MB_SENSOR_C2_P12V_INA230_PWR:
+    case MB_SENSOR_C3_P12V_INA230_PWR:
+    case MB_SENSOR_C4_P12V_INA230_PWR:
+    case MB_SENSOR_CONN_P12V_INA230_PWR:
       sprintf(units, "Watts");
       break;
     default:

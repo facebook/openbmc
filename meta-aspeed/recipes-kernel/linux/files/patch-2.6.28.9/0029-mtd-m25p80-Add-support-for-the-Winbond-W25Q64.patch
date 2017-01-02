@@ -1,0 +1,29 @@
+From d2ac467a108400ff1ae682a423c7d41265e62d47 Mon Sep 17 00:00:00 2001
+From: Thierry Reding <thierry.reding@avionic-design.de>
+Date: Mon, 30 Aug 2010 13:00:48 +0200
+Subject: [PATCH] mtd: m25p80: Add support for the Winbond W25Q64
+
+This patch adds support for the Winbond W25Q64 serial flash.
+
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+---
+ drivers/mtd/devices/m25p80.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 1f0f703..b6fd7c2 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -716,6 +716,7 @@ static const struct spi_device_id m25p_ids[] = {
+ 	{ "w25x32", INFO(0xef3016, 0, 64 * 1024,  64, SECT_4K) },
+ 	{ "w25q32", INFO(0xef4016, 0, 64 * 1024,  64, SECT_4K) },
+ 	{ "w25x64", INFO(0xef3017, 0, 64 * 1024, 128, SECT_4K) },
++	{ "w25q64", INFO(0xef4017, 0, 64 * 1024, 128, SECT_4K) },
+ 
+ 	/* Catalyst / On Semiconductor -- non-JEDEC */
+ 	{ "cat25c11", CAT25_INFO(  16, 8, 16, 1) },
+-- 
+1.8.5.6
+

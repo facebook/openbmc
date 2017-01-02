@@ -1,0 +1,63 @@
+From cd1a6de7d4a492bf3405a6c070075a4cb8c90262 Mon Sep 17 00:00:00 2001
+From: Peter Horton <zero@colonel-panic.org>
+Date: Fri, 8 May 2009 13:51:53 +0100
+Subject: [PATCH 06/16] mtd: fix timeout in M25P80 driver
+
+Extend erase timeout in M25P80 SPI Flash driver.
+
+The M25P80 drivers fails erasing sectors on a M25P128 because the ready
+wait timeout is too short. Change the timeout from a simple loop count to a
+suitable number of seconds.
+
+Signed-off-by: Peter Horton <zero@colonel-panic.org>
+Tested-by: Martin Michlmayr <tbm@cyrius.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+---
+ drivers/mtd/devices/m25p80.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index dfadef8..cc6369e 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -54,7 +54,7 @@
+ #define	SR_SRWD			0x80	/* SR write protect */
+ 
+ /* Define max times to check status register before we give up. */
+-#define	MAX_READY_WAIT_COUNT	1000000
++#define	MAX_READY_WAIT_JIFFIES	(10 * HZ)	/* eg. M25P128 specs 6s max sector erase */
+ #define	CMD_SIZE		4
+ 
+ #ifdef CONFIG_M25PXX_USE_FAST_READ
+@@ -139,20 +139,20 @@ static inline int write_enable(struct m25p *flash)
+  */
+ static int wait_till_ready(struct m25p *flash)
+ {
+-	int count;
++	unsigned long deadline;
+ 	int sr;
+ 
+-	/* one chip guarantees max 5 msec wait here after page writes,
+-	 * but potentially three seconds (!) after page erase.
+-	 */
+-	for (count = 0; count < MAX_READY_WAIT_COUNT; count++) {
++	deadline = jiffies + MAX_READY_WAIT_JIFFIES;
++
++	do {
+ 		if ((sr = read_sr(flash)) < 0)
+ 			break;
+ 		else if (!(sr & SR_WIP))
+ 			return 0;
+ 
+-		/* REVISIT sometimes sleeping would be best */
+-	}
++		cond_resched();
++
++	} while (!time_after_eq(jiffies, deadline));
+ 
+ 	return 1;
+ }
+-- 
+1.8.1
+

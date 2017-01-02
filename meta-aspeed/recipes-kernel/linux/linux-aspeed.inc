@@ -16,6 +16,7 @@ KERNEL_MODULE_AUTOLOAD += "                     \
  ads7828                                        \
  at24                                           \
  max127                                         \
+ rtc-pcf8563                                    \
  pcf8574                                        \
  pfe1100                                        \
  pmbus_core                                     \

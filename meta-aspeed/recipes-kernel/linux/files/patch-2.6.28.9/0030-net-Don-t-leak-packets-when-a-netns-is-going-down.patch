@@ -1,0 +1,56 @@
+From 0a36b345ab99d6b3c96999e7e3b79bd243cf9bf7 Mon Sep 17 00:00:00 2001
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Wed, 5 Nov 2008 16:00:24 -0800
+Subject: [PATCH] net: Don't leak packets when a netns is going down
+
+I have been tracking for a while a case where when the
+network namespace exits the cleanup gets stck in an
+endless precessess of:
+
+unregister_netdevice: waiting for lo to become free. Usage count = 3
+unregister_netdevice: waiting for lo to become free. Usage count = 3
+unregister_netdevice: waiting for lo to become free. Usage count = 3
+unregister_netdevice: waiting for lo to become free. Usage count = 3
+unregister_netdevice: waiting for lo to become free. Usage count = 3
+unregister_netdevice: waiting for lo to become free. Usage count = 3
+unregister_netdevice: waiting for lo to become free. Usage count = 3
+
+It turns out that if you listen on a multicast address an unsubscribe
+packet is sent when the network device goes down.   If you shutdown
+the network namespace without carefully cleaning up this can trigger
+the unsubscribe packet to be sent over the loopback interface while
+the network namespace is going down.
+
+All of which is fine except when we drop the packet and forget to
+free it leaking the skb and the dst entry attached to.  As it
+turns out the dst entry hold a reference to the idev which holds
+the dev and keeps everything from being cleaned up.  Yuck!
+
+By fixing my earlier thinko and add the needed kfree_skb and everything
+cleans up beautifully.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/core/dev.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 811507c..a0c60607 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2253,8 +2253,10 @@ int netif_receive_skb(struct sk_buff *skb)
+ 	rcu_read_lock();
+ 
+ 	/* Don't receive packets in an exiting network namespace */
+-	if (!net_alive(dev_net(skb->dev)))
++	if (!net_alive(dev_net(skb->dev))) {
++		kfree_skb(skb);
+ 		goto out;
++	}
+ 
+ #ifdef CONFIG_NET_CLS_ACT
+ 	if (skb->tc_verd & TC_NCLS) {
+-- 
+1.8.1
+

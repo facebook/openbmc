@@ -1,10 +1,11 @@
-# This revision corresponds to the tag "v2.6.28.9"
-# We use the revision in order to avoid having to fetch it from the repo during parse
-SRCREV = "1e85856853e24e9013d142adaad38c2adc7e48ac"
+require linux-aspeed.inc
 
-SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git;protocol=https;branch=linux-2.6.28.y \
-           file://patch-2.6.28.9/0000-linux-aspeed-064.patch;striplevel=1 \
-           file://patch-2.6.28.9/0000-linux-openbmc.patch \
+# This revision corresponds to the tag "openbmc/fido/2.6.28"
+# We use the revision in order to avoid having to fetch it from the repo during parse
+SRCREV = "91b54cdffcedced1f315270150e63126cd16cafe"
+SRCBRANCH = "openbmc/fido/2.6.28"
+
+SRC_URI = "git://github.com/theopolis/linux.git;branch=${SRCBRANCH};protocol=git \
            file://patch-2.6.28.9/0001-MTD-fix-m25p80-64-bit-divisions.patch \
            file://patch-2.6.28.9/0005-mtd-Bug-in-m25p80.c-during-whole-chip-erase.patch \
            file://patch-2.6.28.9/0006-mtd-fix-timeout-in-M25P80-driver.patch \
@@ -20,21 +21,20 @@ SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
            file://patch-2.6.28.9/0026-mtd-m25p80-modify-info-for-Micron-N25Q128.patch \
            file://patch-2.6.28.9/0027-mtd-m25p80-n25q064-is-Micron-not-Intel-Numonyx.patch \
            file://patch-2.6.28.9/0028-ipv6-Plug-sk_buff-leak-in-ipv6_rcv-net-ipv6-ip6_inpu.patch \
+           file://patch-2.6.28.9/0029-mtd-m25p80-Add-support-for-the-Winbond-W25Q64.patch \
+           file://patch-2.6.28.9/0030-net-Don-t-leak-packets-when-a-netns-is-going-down.patch \
+           file://patch-2.6.28.9/0031-IPv6-Print-error-value-when-skb-allocation-fails.patch \
            file://patch-2.6.28.9/0001-bzip2-lzma-library-support-for-gzip-bzip2-and-lzma-d.patch \
            file://patch-2.6.28.9/0002-bzip2-lzma-config-and-initramfs-support-for-bzip2-lz.patch \
-           file://patch-2.6.28.9/0032-Create-snapshot-of-OpenBMC.patch \
-           file://patch-2.6.28.9/0033-Linux-snapshot-of-OpenBMC-f926614.patch;striplevel=6 \
           "
+
+S = "${WORKDIR}/git"
 
 LINUX_VERSION ?= "2.6.28.9"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 
-PR = "r1"
+PR = "r2"
 PV = "${LINUX_VERSION}"
-
-include linux-aspeed.inc
-
-S = "${WORKDIR}/git"
 
 # Install bounds.h for external module install
 # The default install script handles this. However, it looks for bounds.h from

@@ -292,8 +292,9 @@ gpio_timer() {
           syslog(LOG_INFO, "last pwr state updated to on\n");
         }
       } else {
-        // wait until PowerOnTime < -1 to make sure it's not AC lost
-        if (pot < -1 && strncmp(str, POWER_OFF_STR, strlen(POWER_OFF_STR)) != 0) {
+        // wait until PowerOnTime < -2 to make sure it's not AC lost
+        // Handle corner case during sled-cycle due to BMC residual electricity (1.2sec)
+        if (pot < -2 && strncmp(str, POWER_OFF_STR, strlen(POWER_OFF_STR)) != 0) {
           pal_set_last_pwr_state(fru, POWER_OFF_STR);
           syslog(LOG_INFO, "last pwr state updated to off\n");
         }

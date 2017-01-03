@@ -2,10 +2,10 @@ require linux-aspeed.inc
 
 # This revision corresponds to the tag "openbmc/fido/2.6.28"
 # We use the revision in order to avoid having to fetch it from the repo during parse
-SRCREV = "91b54cdffcedced1f315270150e63126cd16cafe"
 SRCBRANCH = "openbmc/fido/2.6.28"
+SRCREV = "AUTOINC"
 
-SRC_URI = "git://github.com/theopolis/linux.git;branch=${SRCBRANCH};protocol=git \
+SRC_URI = "git://github.com/theopolis/linux.git;branch=${SRCBRANCH};protocol=https \
            file://patch-2.6.28.9/0001-MTD-fix-m25p80-64-bit-divisions.patch \
            file://patch-2.6.28.9/0005-mtd-Bug-in-m25p80.c-during-whole-chip-erase.patch \
            file://patch-2.6.28.9/0006-mtd-fix-timeout-in-M25P80-driver.patch \

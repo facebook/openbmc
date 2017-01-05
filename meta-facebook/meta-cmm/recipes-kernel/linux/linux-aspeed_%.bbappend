@@ -11,6 +11,8 @@ SRC_URI += "file://defconfig \
 
 KERNEL_MODULE_AUTOLOAD += " \
     ast_adc \
+    pmbus_core \
+    pfe3000 \
 "
 
 KERNEL_MODULE_PROBECONF += "                    \

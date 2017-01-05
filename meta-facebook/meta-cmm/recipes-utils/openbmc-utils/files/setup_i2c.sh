@@ -106,3 +106,9 @@ done
 # Spec says pca9506 but this kernel version supports only 9505
 # which works for us
 add_device pca9505 0x20 29
+
+# PFE modules
+add_device pfe3000 0x10 27 # psu1
+add_device pfe3000 0x10 26 # psu2
+add_device pfe3000 0x10 25 # psu3
+add_device pfe3000 0x10 24 # psu4

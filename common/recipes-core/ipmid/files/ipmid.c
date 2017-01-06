@@ -164,9 +164,6 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
     case CMD_CHASSIS_GET_STATUS:
       chassis_get_status (response, res_len);
       break;
-    case CMD_CHASSIS_GET_BOOT_OPTIONS:
-      chassis_get_boot_options (request, response, res_len);
-      break;
     default:
       res->cc = CC_INVALID_CMD;
       break;

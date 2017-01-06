@@ -360,10 +360,10 @@ devmem_set_bit $(scu_addr A4) 7
 # Intel remote BMC debug function pins
 # GPIOP5 BMC_PREQ_N
 devmem_clear_bit $(scu_addr 88) 21
-gpio_export P5
+gpio_set P5 1
 # GPIOP6 BMC_PWR_DEBUG_N
 devmem_clear_bit $(scu_addr 88) 22
-gpio_export P6
+gpio_set P6 1
 # GPIOP7 RST_RSMRST_N
 devmem_clear_bit $(scu_addr 88) 23
 gpio_export P7

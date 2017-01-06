@@ -575,7 +575,22 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_C4_2_NVME_CTEMP][UCR_THRESH] = 75;
   mb_sensor_threshold[MB_SENSOR_C4_3_NVME_CTEMP][UCR_THRESH] = 75;
   mb_sensor_threshold[MB_SENSOR_C4_4_NVME_CTEMP][UCR_THRESH] = 75;
-
+  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_PWR][UCR_THRESH] = 75;
+  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_PWR][UCR_THRESH] = 75;
+  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_PWR][UCR_THRESH] = 75;
+  mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_CURR][UCR_THRESH] = 20;
+  mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_PWR][UCR_THRESH] = 250;
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
 
   init_board_sensors();
@@ -3864,40 +3879,40 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       sprintf(name, "MB_C4_4_NVME_CTEMP");
       break;
     case MB_SENSOR_C2_P12V_INA230_VOL:
-      sprintf(name, "MB_C2_P12V_VOL");
+      sprintf(name, "MB_C2_P12V_INA230_VOL");
       break;
     case MB_SENSOR_C2_P12V_INA230_CURR:
-      sprintf(name, "MB_C2_P12V_CURR");
+      sprintf(name, "MB_C2_P12V_INA230_CURR");
       break;
     case MB_SENSOR_C2_P12V_INA230_PWR:
-      sprintf(name, "MB_C2_P12V_PWR");
+      sprintf(name, "MB_C2_P12V_INA230_PWR");
       break;
     case MB_SENSOR_C3_P12V_INA230_VOL:
-      sprintf(name, "MB_C3_P12V_VOL");
+      sprintf(name, "MB_C3_P12V_INA230_VOL");
       break;
     case MB_SENSOR_C3_P12V_INA230_CURR:
-      sprintf(name, "MB_C3_P12V_CURR");
+      sprintf(name, "MB_C3_P12V_INA230_CURR");
       break;
     case MB_SENSOR_C3_P12V_INA230_PWR:
-      sprintf(name, "MB_C3_P12V_PWR");
+      sprintf(name, "MB_C3_P12V_INA230_PWR");
       break;
     case MB_SENSOR_C4_P12V_INA230_VOL:
-      sprintf(name, "MB_C4_P12V_VOL");
+      sprintf(name, "MB_C4_P12V_INA230_VOL");
       break;
     case MB_SENSOR_C4_P12V_INA230_CURR:
-      sprintf(name, "MB_C4_P12V_CURR");
+      sprintf(name, "MB_C4_P12V_INA230_CURR");
       break;
     case MB_SENSOR_C4_P12V_INA230_PWR:
-      sprintf(name, "MB_C4_P12V_PWR");
+      sprintf(name, "MB_C4_P12V_INA230_PWR");
       break;
     case MB_SENSOR_CONN_P12V_INA230_VOL:
-      sprintf(name, "MB_CONN_P12V_VOL");
+      sprintf(name, "MB_CONN_P12V_INA230_VOL");
       break;
     case MB_SENSOR_CONN_P12V_INA230_CURR:
-      sprintf(name, "MB_CONN_P12V_CURR");
+      sprintf(name, "MB_CONN_P12V_INA230_CURR");
       break;
     case MB_SENSOR_CONN_P12V_INA230_PWR:
-      sprintf(name, "MB_CONN_P12V_PWR");
+      sprintf(name, "MB_CONN_P12V_INA230_PWR");
       break;
 
     default:

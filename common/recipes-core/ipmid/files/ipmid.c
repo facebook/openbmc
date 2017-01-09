@@ -74,17 +74,71 @@ chassis_get_status (unsigned char *response, unsigned char *res_len)
 {
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
+  char *buff[MAX_VALUE_LEN];
+  int policy = 3;
 
   res->cc = CC_SUCCESS;
 
   // TODO: Need to obtain current power state and last power event
   // from platform and return
-  *data++ = 0x01;		// Current Power State
+  if (pal_get_key_value("server_por_cfg", buff) == 0)
+  {
+    if (!memcmp(buff, "off", strlen("off")))
+      policy = 0;
+    else if (!memcmp(buff, "lps", strlen("lps")))
+      policy = 1;
+    else if (!memcmp(buff, "on", strlen("on")))
+      policy = 2;
+    else
+      policy = 3;
+  }
+  *data++ = 0x01 | (policy << 5);   // Current Power State
   *data++ = 0x00;		// Last Power Event
   *data++ = 0x40;		// Misc. Chassis Status
   *data++ = 0x00;		// Front Panel Button Disable
 
   res_len = data - &res->data[0];
+}
+
+// Set Power Restore Policy (IPMI/Section 28.8)
+static void
+chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
+                                 unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  unsigned char policy = req->data[0] & 0x07; // Power restore policy
+
+  // Fill response with default values
+  res->cc = CC_SUCCESS;
+  *data++ = 0x07;  // Power restore policy support(bitfield)
+
+  switch (policy)
+  {
+    case 0:
+      if (pal_set_key_value("server_por_cfg", "off") != 0)
+        res->cc = CC_UNSPECIFIED_ERROR;
+      break;
+    case 1:
+      if (pal_set_key_value("server_por_cfg", "lps") != 0)
+        res->cc = CC_UNSPECIFIED_ERROR;
+      break;
+    case 2:
+      if (pal_set_key_value("server_por_cfg", "on") != 0)
+        res->cc = CC_UNSPECIFIED_ERROR;
+      break;
+    case 3:
+      // no change (just get present policy support)
+      break;
+    default:
+      res->cc = CC_PARAM_OUT_OF_RANGE;
+      break;
+  }
+
+  if (res->cc == CC_SUCCESS) {
+    *res_len = data - &res->data[0];
+  }
 }
 
 // Get System Boot Options (IPMI/Section 28.12)
@@ -163,6 +217,9 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
   {
     case CMD_CHASSIS_GET_STATUS:
       chassis_get_status (response, res_len);
+      break;
+    case CMD_CHASSIS_SET_POWER_RESTORE_POLICY:
+      chassis_set_power_restore_policy(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

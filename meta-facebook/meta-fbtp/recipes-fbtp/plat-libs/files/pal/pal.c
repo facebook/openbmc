@@ -2402,12 +2402,21 @@ pal_get_key_value(char *key, char *value) {
 
   return kv_get(key, value);
 }
+
 int
 pal_set_key_value(char *key, char *value) {
-
+  char cmd[64];
   // Check is key is defined and valid
   if (pal_key_check(key))
     return -1;
+
+  if (!strcmp(key, "server_por_cfg")) {
+    snprintf(cmd, 64, "/sbin/fw_setenv por_policy %s", value);
+    system(cmd);
+  } else if (!strcmp(key, "pwr_server_last_state")) {
+    snprintf(cmd, 64, "/sbin/fw_setenv por_ls %s", value);
+    system(cmd);
+  }
 
   return kv_set(key, value);
 }
@@ -4205,6 +4214,8 @@ pal_set_def_key_value() {
   int fru;
   char key[MAX_KEY_LEN] = {0};
   char kpath[MAX_KEY_PATH_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  char cmd[MAX_VALUE_LEN] = {0};
 
   i = 0;
   while(strcmp(key_list[i], LAST_KEY)) {
@@ -4221,6 +4232,30 @@ pal_set_def_key_value() {
           syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
       }
+    }
+    if (!strcmp(key_list[i], "server_por_cfg")) {
+      kv_get(key_list[i], value);
+      // kv_get did not append '\0' now, compare the pattern
+      if (!memcmp(value, "lps", strlen("lps")))
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy lps");
+      else if (!memcmp(value, "on", strlen("on")))
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy on");
+      else if (!memcmp(value, "off", strlen("off")))
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy off");
+      else
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", def_val_list[i]);
+      system(cmd);
+    }
+    if (!strcmp(key_list[i], "pwr_server_last_state")) {
+      kv_get(key_list[i], value);
+      // kv_get did not append '\0' now, compare the pattern
+      if (!memcmp(value, "on", strlen("on")))
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls on");
+      else if (!memcmp(value, "off", strlen("off")))
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls off");
+      else
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", def_val_list[i]);
+      system(cmd);
     }
 
     i++;

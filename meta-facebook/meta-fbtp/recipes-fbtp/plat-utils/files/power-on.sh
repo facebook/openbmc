@@ -99,9 +99,10 @@ if [ $(is_bmc_por) -eq 1 ]; then
 
   sync_date
 
-  check_por_config
-  if [ $TO_PWR_ON -eq 1 ] ; then
-    power-util mb on
-  fi
+  ## Move por to U-boot
+  #check_por_config
+  #if [ $TO_PWR_ON -eq 1 ] ; then
+  #  power-util mb on
+  #fi
 
 fi

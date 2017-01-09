@@ -5052,10 +5052,22 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
       if (((ed[0] >> 6) & 0x03) == 0x3) {
         // TODO: Need to implement IPMI spec based Post Code
         strcat(error_log, ", IPMI Post Code");
-       } else if (((ed[0] >> 6) & 0x03) == 0x2) {
-         sprintf(temp_log, ", OEM Post Code 0x%X 0x%X", ed[2], ed[1]);
-         strcat(error_log, temp_log);
-       }
+      } else if (((ed[0] >> 6) & 0x03) == 0x2) {
+        sprintf(temp_log, ", OEM Post Code 0x%02X%02X", ed[2], ed[1]);
+        strcat(error_log, temp_log);
+        switch ((ed[2] << 8) | ed[1]) {
+          case 0xA105:
+            sprintf(temp_log, ", BMC Failed (No Response)");
+            strcat(error_log, temp_log);
+            break;
+          case 0xA106:
+            sprintf(temp_log, ", BMC Failed (Self Test Fail)");
+            strcat(error_log, temp_log);
+            break;
+          default:
+            break;
+        }
+      }
       break;
 
     case MACHINE_CHK_ERR:

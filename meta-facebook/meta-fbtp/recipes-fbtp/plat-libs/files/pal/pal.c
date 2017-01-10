@@ -1681,6 +1681,8 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   // Handle illegal values observed
   if (*value > 1000) {
     ret = -1;
+  } else if (*value < 0 ) {
+    *value = 0;
   }
 
 error_exit:
@@ -1783,6 +1785,11 @@ read_vr_power(uint8_t vr, uint8_t loop, float *value) {
 
   // Calculate Power
   *value = ((rbuf[1] & 0x3F) * 256 + rbuf[0] ) * 0.04;
+
+  // Ignore slight offset when no loading
+  if (*value < 1 ) {
+    *value = 0;
+  }
 
 error_exit:
   if (fd > 0) {
@@ -1904,16 +1911,32 @@ error_exit:
 
 static int
 read_ava_temp(uint8_t sensor_num, float *value) {
-  int fd;
+  int fd = 0;
   char fn[32];
   int ret = READING_NA;;
-  static unsigned int retry = 0;
+  static unsigned int retry[6] = {0};
+  uint8_t i_retry;
   uint8_t tcount, rcount, slot_cfg, addr, mux_chan, mux_addr = 0xe2;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
   if (pal_get_slot_cfg_id(&slot_cfg) < 0)
     slot_cfg = SLOT_CFG_EMPTY;
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_AVA_FTEMP:
+      i_retry = 0; break;
+    case MB_SENSOR_C2_AVA_RTEMP:
+      i_retry = 1; break;
+    case MB_SENSOR_C3_AVA_FTEMP:
+      i_retry = 2; break;
+    case MB_SENSOR_C3_AVA_RTEMP:
+      i_retry = 3; break;
+    case MB_SENSOR_C4_AVA_FTEMP:
+      i_retry = 4; break;
+    case MB_SENSOR_C4_AVA_RTEMP:
+      i_retry = 5; break;
+  }
 
   switch(sensor_num) {
     case MB_SENSOR_C2_AVA_FTEMP:
@@ -1976,7 +1999,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
     goto error_exit;
   }
   ret = 0;
-  retry = 0;
+  retry[i_retry] = 0;
 
   // rbuf:MSB, LSB; 12-bit value on Bit[15:4], unit: 0.0625
   *value = (float)(signed char)rbuf[0];
@@ -1987,18 +2010,19 @@ error_exit:
     close(fd);
   }
 
-  if (ret == READING_NA && ++retry <= 3)
+  if (ret == READING_NA && ++retry[i_retry] <= 3)
     ret = READING_SKIP;
 
   return ret;
 }
 
 static int
-read_INA230 (uint8_t sensor_num, float *value) {
-  int fd;
+read_INA230 (uint8_t sensor_num, float *value, int pot) {
+  int fd = 0;
   char fn[32];
   int ret = READING_NA;;
-  static unsigned int retry = 0;
+  static unsigned int retry[12] = {0}, initialized[4] = {0};
+  uint8_t i_retry;
   uint8_t tcount, rcount, slot_cfg, addr, mux_chan, mux_addr = 0xe2;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
@@ -2006,6 +2030,33 @@ read_INA230 (uint8_t sensor_num, float *value) {
 
   if (pal_get_slot_cfg_id(&slot_cfg) < 0)
     slot_cfg = SLOT_CFG_EMPTY;
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_P12V_INA230_VOL:
+      i_retry = 0; break;
+    case MB_SENSOR_C2_P12V_INA230_CURR:
+      i_retry = 1; break;
+    case MB_SENSOR_C2_P12V_INA230_PWR:
+      i_retry = 2; break;
+    case MB_SENSOR_C3_P12V_INA230_VOL:
+      i_retry = 3; break;
+    case MB_SENSOR_C3_P12V_INA230_CURR:
+      i_retry = 4; break;
+    case MB_SENSOR_C3_P12V_INA230_PWR:
+      i_retry = 5; break;
+    case MB_SENSOR_C4_P12V_INA230_VOL:
+      i_retry = 6; break;
+    case MB_SENSOR_C4_P12V_INA230_CURR:
+      i_retry = 7; break;
+    case MB_SENSOR_C4_P12V_INA230_PWR:
+      i_retry = 8; break;
+    case MB_SENSOR_CONN_P12V_INA230_VOL:
+      i_retry = 9; break;
+    case MB_SENSOR_CONN_P12V_INA230_CURR:
+      i_retry = 10; break;
+    case MB_SENSOR_CONN_P12V_INA230_PWR:
+      i_retry = 11; break;
+  }
 
   switch(sensor_num) {
     case MB_SENSOR_C2_P12V_INA230_VOL:
@@ -2029,6 +2080,10 @@ read_INA230 (uint8_t sensor_num, float *value) {
     default:
       return READING_NA;
   }
+
+  // If Power On Time == 1, re-initialize INA230
+  if (pot == 1 && (i_retry % 3) == 0)
+    initialized[i_retry/3] = 0;
 
   //use channel 4
   mux_chan = 0x3;
@@ -2073,33 +2128,25 @@ read_INA230 (uint8_t sensor_num, float *value) {
       break;
     }
 
-  retry = MAX_READ_RETRY;
-  //Set Configuration register
-  tbuf[0] = 0x00, tbuf[1] = 0x49; tbuf[2] = 0x27;
-  while(retry)
-  {
-     ret = i2c_io(fd, addr, tbuf, 3, rbuf, 0);
-     retry--;
-     msleep(100);
-     if(retry == 0)
-       goto error_exit;
-     else break;
-   }
+  if (initialized[i_retry/3] == 0) {
+    //Set Configuration register
+    tbuf[0] = 0x00, tbuf[1] = 0x49; tbuf[2] = 0x27;
+    ret = i2c_io(fd, addr, tbuf, 3, rbuf, 0);
+    if (ret < 0) {
+      ret = READING_NA;
+      goto error_exit;
+    }
 
-  //Set Calibration register
-  retry = MAX_READ_RETRY;
-  tbuf[0] = 0x05, tbuf[1] = 0x9; tbuf[2] = 0xd9;
-  while(retry)
-  {
-     ret = i2c_io(fd, addr, tbuf, 3, rbuf, 0);
-     retry--;
-     msleep(100);
-     if(retry == 0)
-       goto error_exit;
-     else break;
-   }
+    //Set Calibration register
+    tbuf[0] = 0x05, tbuf[1] = 0x9; tbuf[2] = 0xd9;
+    ret = i2c_io(fd, addr, tbuf, 3, rbuf, 0);
+    if (ret < 0) {
+      ret = READING_NA;
+      goto error_exit;
+    }
+    initialized[i_retry/3] = 1;
+  }
 
-  tbuf[1] = 0x0; tbuf[2] = 0x0;
   //Get registers data
   switch(sensor_num) {
     case MB_SENSOR_C2_P12V_INA230_VOL:
@@ -2125,16 +2172,13 @@ read_INA230 (uint8_t sensor_num, float *value) {
       break;
     }
 
-  retry = MAX_READ_RETRY;
-  while(retry)
-  {
-       ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2);
-       retry--;
-       msleep(100);
-       if(retry == 0)
-         goto error_exit;
-       else break;
-   }
+  tbuf[1] = 0x0; tbuf[2] = 0x0;
+
+  ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2);
+  if (ret < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
 
   switch(sensor_num) {
     case MB_SENSOR_C2_P12V_INA230_VOL:
@@ -2150,21 +2194,24 @@ read_INA230 (uint8_t sensor_num, float *value) {
       temp = rbuf[0];
       temp = (temp <<8) + rbuf[1];
       *value = temp * 0.001;
+      if(*value < 0)
+        *value = 0;
       break;
     case MB_SENSOR_C2_P12V_INA230_PWR:
     case MB_SENSOR_C3_P12V_INA230_PWR:
     case MB_SENSOR_C4_P12V_INA230_PWR:
     case MB_SENSOR_CONN_P12V_INA230_PWR:
       *value = (rbuf[1] + rbuf[0] * 256)*0.025;
+      if(*value < 1)
+        *value = 0;
       break;
     default:
         syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
       break;
     }
-  if(*value <0)
-    *value = 0;
 
-return ret;
+    ret = 0;
+    retry[i_retry] = 0;
 
 error_exit:
   if (fd > 0) {
@@ -2172,7 +2219,7 @@ error_exit:
     close(fd);
   }
 
-  if (ret == READING_NA && ++retry <= 3)
+  if (ret == READING_NA && ++retry[i_retry] <= 3)
     ret = READING_SKIP;
 
   return ret;
@@ -2180,10 +2227,11 @@ error_exit:
 
 static int
 read_nvme_temp(uint8_t sensor_num, float *value) {
-  int fd;
+  int fd = 0;
   char fn[32];
   int ret = READING_NA;
-  static unsigned int retry = 0;
+  static unsigned int retry[12] = {0};
+  uint8_t i_retry;
   uint8_t tcount, rcount, slot_cfg, addr = 0xd4, mux_chan, mux_addr = 0xe2;
   uint8_t switch_chan, switch_addr=0xe6;
   uint8_t tbuf[16] = {0};
@@ -2191,6 +2239,33 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
 
   if (pal_get_slot_cfg_id(&slot_cfg) < 0)
     slot_cfg = SLOT_CFG_EMPTY;
+
+  switch(sensor_num) {
+    case MB_SENSOR_C2_1_NVME_CTEMP:
+      i_retry = 0; break;
+    case MB_SENSOR_C2_2_NVME_CTEMP:
+      i_retry = 1; break;
+    case MB_SENSOR_C2_3_NVME_CTEMP:
+      i_retry = 2; break;
+    case MB_SENSOR_C2_4_NVME_CTEMP:
+      i_retry = 3; break;
+    case MB_SENSOR_C3_1_NVME_CTEMP:
+      i_retry = 4; break;
+    case MB_SENSOR_C3_2_NVME_CTEMP:
+      i_retry = 5; break;
+    case MB_SENSOR_C3_3_NVME_CTEMP:
+      i_retry = 6; break;
+    case MB_SENSOR_C3_4_NVME_CTEMP:
+      i_retry = 7; break;
+    case MB_SENSOR_C4_1_NVME_CTEMP:
+      i_retry = 8; break;
+    case MB_SENSOR_C4_2_NVME_CTEMP:
+      i_retry = 9; break;
+    case MB_SENSOR_C4_3_NVME_CTEMP:
+      i_retry = 10; break;
+    case MB_SENSOR_C4_4_NVME_CTEMP:
+      i_retry = 11; break;
+  }
 
   switch(sensor_num) {
     case MB_SENSOR_C2_1_NVME_CTEMP:
@@ -2278,7 +2353,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
     goto error_exit;
   }
   ret = 0;
-  retry = 0;
+  retry[i_retry] = 0;
 
   // Cmd 0: length, SFLGS, SMART Warnings, CTemp, PDLU, Reserved, Reserved, PEC
   *value = (float)(signed char)rbuf[3];
@@ -2290,7 +2365,7 @@ error_exit:
     close(fd);
   }
 
-  if (ret == READING_NA && ++retry <= 3)
+  if (ret == READING_NA && ++retry[i_retry] <= 3)
     ret = READING_SKIP;
 
   return ret;
@@ -3523,7 +3598,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_C3_P12V_INA230_PWR:
       case MB_SENSOR_C4_P12V_INA230_PWR:
       case MB_SENSOR_CONN_P12V_INA230_PWR:
-        ret = read_INA230 (sensor_num, (float*) value);
+        ret = read_INA230 (sensor_num, (float*) value, poweron_10s_flag);
         break;
 
       default:

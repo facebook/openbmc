@@ -22,5 +22,5 @@ DISTRO ?= "openbmc-fb"
 # is assumed to NOT be available within the burned-in ROM. A build host that
 # have privileged access to a signed key can override within local.
 #
-# EXTRA_IMAGE_FEATURES += " verified-boot verified-boot-sign "
+# IMAGE_FEATURES += " verified-boot "
 # VERIFIED_BOOT_KEYNAME = "openbmc-dev"

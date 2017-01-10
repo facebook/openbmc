@@ -14,13 +14,16 @@ UBOOT_IMAGE_LOADADDRESS ?= "0x80008000"
 UBOOT_IMAGE_ENTRYPOINT ?= "0x80008000"
 UBOOT_RAMDISK_LOADADDRESS ?= "0x80800000"
 
+# U-Boot is placed at an absolute position relative to the start of the first
+# U-Boot FIT. This value, like most others, depends on U-Boot machine
+# configurations.
+ROM_UBOOT_POSITION ?= "0x4000"
+ROM_UBOOT_LOADADDRESS ?= "0x28084000"
+
 # Set sizes and offsets in KB:
 #   For kernel and rootfs: 16384
 #   For kernel only: 2690
 FLASH_SIZE ?= "16384"
-ROM_SIZE ?= "1024"
-FLASH_UBOOT_OFFSET ?= "0"
-FLASH_FIT_OFFSET ?= "512"
 
 UBOOT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-${MACHINE}.${UBOOT_SUFFIX}"
 FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/fit-${MACHINE}.its"
@@ -34,16 +37,13 @@ FLASH_IMAGE ?= "flash-${MACHINE}-${DATETIME}"
 FLASH_IMAGE_LINK ?= "flash-${MACHINE}"
 
 # ROM-based boot variables
-UBOOT_SPL_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-spl-${MACHINE}"
+UBOOT_RECOVERY_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-recovery-${MACHINE}.${UBOOT_SUFFIX}"
+UBOOT_SPL_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-spl-${MACHINE}.${UBOOT_SUFFIX}"
 UBOOT_FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/u-boot-fit-${MACHINE}.its"
 
 UBOOT_FIT[vardepsexclude] = "DATETIME"
 UBOOT_FIT ?= "u-boot-fit-${MACHINE}-${DATETIME}.itb"
 UBOOT_FIT_LINK ?= "u-boot-fit-${MACHINE}.itb"
-
-ROM_IMAGE[vardepsexclude] = "DATETIME"
-ROM_IMAGE ?= "rom-${MACHINE}-${DATETIME}"
-ROM_IMAGE_LINK ?= "rom-${MACHINE}"
 
 IMAGE_PREPROCESS_COMMAND += " generate_data_mount_dir ; "
 IMAGE_POSTPROCESS_COMMAND += " flash_image_generate ; "
@@ -70,23 +70,29 @@ flash_image_generate() {
     rm -rf $FLASH_IMAGE_DESTINATION
     dd if=/dev/zero of=${FLASH_IMAGE_DESTINATION} bs=1k count=${FLASH_SIZE}
 
-    if [ "x${ROM_BOOT}" != "x" ] ; then
+    if [ "x${VERIFIED_BOOT}" != "x" ] ; then
+        FLASH_UBOOT_RECOVERY_OFFSET=64
+        FLASH_UBOOT_OFFSET=512
+        FLASH_FIT_OFFSET=896
+
+        # Write the recovery U-Boot.
+        dd if=${UBOOT_RECOVERY_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_RECOVERY_OFFSET} conv=notrunc
+
         # Write an intermediate FIT containing only U-Boot.
         dd if=${UBOOT_FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
         ln -sf ${UBOOT_FIT} ${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}
     else
+        FLASH_UBOOT_OFFSET=0
+        FLASH_FIT_OFFSET=512
+
         # Write U-Boot directly to the start of the flash.
         dd if=${UBOOT_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
     fi
 
     dd if=${FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc
 
-    if [ "x${ROM_BOOT}" != "x" ] ; then
-      ROM_IMAGE_DESTINATION="${DEPLOY_DIR_IMAGE}/${ROM_IMAGE}"
-      dd if=/dev/zero of=${ROM_IMAGE_DESTINATION} bs=1k count=${ROM_SIZE}
-
-      dd if=${UBOOT_SPL_SOURCE} of=${ROM_IMAGE_DESTINATION} bs=1k seek=0 conv=notrunc
-      ln -sf ${ROM_IMAGE} ${DEPLOY_DIR_IMAGE}/${ROM_IMAGE_LINK}
+    if [ "x${VERIFIED_BOOT}" != "x" ] ; then
+      dd if=${UBOOT_SPL_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=0 conv=notrunc
     fi
 
     ln -sf ${FLASH_IMAGE} ${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}
@@ -97,14 +103,14 @@ oe_mkimage() {
     FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${FIT}"
     UBOOT_FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${UBOOT_FIT}"
 
-    if [ "x${ROM_BOOT}" != "x" ] ; then
+    if [ "x${VERIFIED_BOOT}" != "x" ] ; then
       rm -f ${UBOOT_FIT_SOURCE}
       fitimage_emit_fit_header ${UBOOT_FIT_SOURCE}
 
       # Step 1: Prepare a firmware image section
       fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} imagestart
       fitimage_emit_section_firmware ${UBOOT_FIT_SOURCE} 1 "${UBOOT_SOURCE}" \
-          "0x28008000" "0x28008000"
+          ${ROM_UBOOT_LOADADDRESS} ${ROM_UBOOT_LOADADDRESS}
       fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} sectend
 
       # Step 2: Prepare a configurations section
@@ -113,7 +119,7 @@ oe_mkimage() {
       fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} sectend
       fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} fitend
 
-      mkimage -f ${UBOOT_FIT_SOURCE} -E -p 0x8000 ${UBOOT_FIT_DESTINATION}
+      mkimage -f ${UBOOT_FIT_SOURCE} -E -p ${ROM_UBOOT_POSITION} ${UBOOT_FIT_DESTINATION}
     fi
 
     KERNEL_FILE="${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}"
@@ -139,17 +145,5 @@ oe_mkimage() {
     fitimage_emit_section_maint ${FIT_SOURCE} fitend
 
     # Step 4: Assemble the image
-    if [ "x${VERIFIED_BOOT}" != "x" ]
-    then
-        # A feature could build the u-boot ROM
-        # (Every build can build the ROM), this feature can decide to
-        # add keys into the ROM
-
-        # A more 'intense' feature can on-line sign the output build.
-        # This can assume there are keys symlinked within your local
-        # configuration directory.
-        echo "You have not set up signing-keys."
-        # exit 78
-    fi
     mkimage -f ${FIT_SOURCE} ${FIT_DESTINATION}
 }

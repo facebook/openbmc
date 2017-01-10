@@ -45,6 +45,11 @@ UBOOT_BINARY ?= "u-boot.${UBOOT_SUFFIX}"
 UBOOT_SYMLINK ?= "u-boot-${MACHINE}.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
+# Recovery U-Boot is only built when using verified-boot.
+UBOOT_RECOVERY_BINARYNAME ?= "u-boot-recovery.${UBOOT_SUFFIX}"
+UBOOT_RECOVERY_IMAGE ?= "u-boot-recovery-${MACHINE}-${PV}-${PR}.${UBOOT_SUFFIX}"
+UBOOT_RECOVERY_SYMLINK ?= "u-boot-recovery-${MACHINE}.${UBOOT_SUFFIX}"
+
 # Output the ELF generated. Some platforms can use the ELF file and directly
 # load it (JTAG booting, QEMU) additionally the ELF can be used for debugging
 # purposes.
@@ -61,7 +66,7 @@ UBOOT_ELF_SYMLINK ?= "u-boot-${MACHINE}.${UBOOT_ELF_SUFFIX}"
 SPL_BINARY ?= "spl/u-boot-spl.${UBOOT_SUFFIX}"
 SPL_BINARYNAME ?= "u-boot-spl.${UBOOT_SUFFIX}"
 SPL_IMAGE ?= "u-boot-spl-${MACHINE}-${PV}-${PR}.${UBOOT_SUFFIX}"
-SPL_SYMLINK ?= "u-boot-spl-${MACHINE}"
+SPL_SYMLINK ?= "u-boot-spl-${MACHINE}.${UBOOT_SUFFIX}"
 
 # Additional environment variables or a script can be installed alongside
 # u-boot to be used automatically on boot.  This file, typically 'uEnv.txt'
@@ -75,29 +80,11 @@ UBOOT_ENV_IMAGE ?= "${UBOOT_ENV}-${MACHINE}-${PV}-${PR}.${UBOOT_ENV_SUFFIX}"
 UBOOT_ENV_SYMLINK ?= "${UBOOT_ENV}-${MACHINE}.${UBOOT_ENV_SUFFIX}"
 
 do_configure () {
-  if [ "x${VERIFIED_BOOT}" = "x" ]
+  if [ "x${VERIFIED_BOOT}" != "x" ]
   then
-      return
+      # Remove any artifacts from previous configure/compiles.
+      rm -f ${CERTIFICATE_STORE}
   fi
-
-  # Check that the required VERIFIED_BOOT_KEYNAME path exists.
-  if [ ! -d "${VERIFIED_BOOT_KEYS}" ]
-  then
-      echo "Cannot find VERIFIED_BOOT_KEYS directory: ${VERIFIED_BOOT_KEYS}"
-      echo "To use verified-boot, please configure a keydir and keypair."
-      exit 1
-  fi
-
-  KEYPAIR="${VERIFIED_BOOT_KEYS}/${VERIFIED_BOOT_KEYNAME}.key"
-  if [ ! -f "${KEYPAIR}" ]
-  then
-      echo "Cannot find configured keypair: ${KEYPAIR}"
-      echo "To use verified-boot please configure a keydir and keypair."
-      exit 1
-  fi
-
-  # Remove any artifacts from previous configure/compiles.
-  rm -f ${CERTIFICATE_STORE}
 }
 
 do_compile () {
@@ -117,26 +104,15 @@ do_compile () {
 
     if [ "x${VERIFIED_BOOT}" != "x" ]
     then
-        # Install the empty certificate store into the image output.
-        # This empty store will have public keys injected when the firmware is
-        # compiled (mkimage stage).
-        dtc ${WORKDIR}/certificate-store.dts -o ${CERTIFICATE_STORE} -O dtb
+        KEK_SOURCE=${WORKDIR}/certificate-store.dts
+        if [ "x${CERTIFICATE_STORE_SOURCE}" != "x" ]
+        then
+            KEK_SOURCE=${CERTIFICATE_STORE_SOURCE}
+        fi
 
-        # Create a 'placebo' FIT configuration and compile to a semi-blank FIT.
-        # This FIT will be signed, the keys will be extracted, and it will be deleted.
-        # If the u-boot mkimage tool could create DTBs will public keys this step
-        # would not be required.
-        touch ${WORKDIR}/placebo
-        fitimage_emit_placebo ${WORKDIR}/placebo.its
-        mkimage -f ${WORKDIR}/placebo.its ${WORKDIR}/placebo.fit
-
-        # Using the placebo FIT, which requested signing of from the configured key,
-        # extract the public keys into the DTB.
-        # This process could be improved with direct DTB writing.
-        mkimage -k "${VERIFIED_BOOT_KEYS}" -r -K ${CERTIFICATE_STORE} -F ${WORKDIR}/placebo.fit
-
-        # Clean up the resultant FIT.
-        rm -f ${WORKDIR}/placebo ${WORKDIR}/placebo.fit
+        # Compile the verified boot certificate store.
+        # This should contain the verified-boot platform public key.
+        dtc ${KEK_SOURCE} -o ${CERTIFICATE_STORE} -O dtb
     fi
 
     if [ "x${UBOOT_CONFIG}" != "x" ]
@@ -160,25 +136,31 @@ do_compile () {
         UBOOT_CONFIGNAME=${UBOOT_MACHINE}
         UBOOT_CONFIGNAME=$(echo ${UBOOT_CONFIGNAME} | sed -e 's/_config/_defconfig/')
 
-        if [ "x${ROM_BOOT}" != "x" ] ; then
-            uboot_option_on CONFIG_SPL configs/${UBOOT_CONFIGNAME}
-        else
-            uboot_option_off CONFIG_SPL configs/${UBOOT_CONFIGNAME}
-        fi
+        # Always turn off the recovery build.
+        uboot_option_off CONFIG_ASPEED_RECOVERY_BUILD configs/${UBOOT_CONFIGNAME}
 
         if [ "x${VERIFIED_BOOT}" != "x" ] ; then
+            uboot_option_on CONFIG_SPL configs/${UBOOT_CONFIGNAME}
             uboot_option_on CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
             uboot_option_on CONFIG_OF_CONTROL configs/${UBOOT_CONFIGNAME}
             uboot_option_on CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
-            UBOOT_EXTRA_MAKE="EXT_DTB=${CERTIFICATE_STORE}"
+            UBOOT_EXTRA_MAKE="EXT_DTB=../${CERTIFICATE_STORE}"
         else
+            uboot_option_off CONFIG_SPL configs/${UBOOT_CONFIGNAME}
             uboot_option_off CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
             uboot_option_off CONFIG_OF_CONTROL configs/${UBOOT_CONFIGNAME}
             uboot_option_off CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
         fi
 
-        oe_runmake ${UBOOT_EXTRA_MAKE} ${UBOOT_MACHINE}
-        oe_runmake ${UBOOT_EXTRA_MAKE} ${UBOOT_MAKE_TARGET}
+        oe_runmake O=default ${UBOOT_EXTRA_MAKE} ${UBOOT_MACHINE}
+        oe_runmake O=default ${UBOOT_EXTRA_MAKE} ${UBOOT_MAKE_TARGET}
+
+        # Finally, the verified-boot builds a second 'recovery' U-Boot.
+        if [ "x${VERIFIED_BOOT}" != "x" ] ; then
+            uboot_option_on CONFIG_ASPEED_RECOVERY_BUILD configs/${UBOOT_CONFIGNAME}
+            oe_runmake O=recovery ${UBOOT_EXTRA_MAKE} ${UBOOT_MACHINE}
+            oe_runmake O=recovery ${UBOOT_EXTRA_MAKE} ${UBOOT_MAKE_TARGET}
+        fi
     fi
 
 }
@@ -203,7 +185,7 @@ do_install () {
         unset  i
     else
         install -d ${D}/boot
-        install ${S}/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
+        install ${S}/default/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
         ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
     fi
 
@@ -226,7 +208,7 @@ do_install () {
             done
             unset i
         else
-            install ${S}/${UBOOT_ELF} ${D}/boot/${UBOOT_ELF_IMAGE}
+            install ${S}/default/${UBOOT_ELF} ${D}/boot/${UBOOT_ELF_IMAGE}
             ln -sf ${UBOOT_ELF_IMAGE} ${D}/boot/${UBOOT_ELF_BINARY}
         fi
     fi
@@ -254,9 +236,9 @@ do_install () {
                 unset  j
             done
             unset  i
-        elif [ "x${ROM_BOOT}" != "x" ] ; then
-            # Only install a SPL if ROM_BOOT is configured.
-            install ${S}/${SPL_BINARY} ${D}/boot/${SPL_IMAGE}
+        elif [ "x${VERIFIED_BOOT}" != "x" ] ; then
+            # Only install a SPL if VERIFIED_BOOT is configured.
+            install ${S}/default/${SPL_BINARY} ${D}/boot/${SPL_IMAGE}
             ln -sf ${SPL_IMAGE} ${D}/boot/${SPL_BINARYNAME}
         fi
     fi
@@ -293,7 +275,7 @@ do_deploy () {
         unset  i
     else
         install -d ${DEPLOYDIR}
-        install ${S}/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
+        install ${S}/default/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
         cd ${DEPLOYDIR}
         rm -f ${UBOOT_BINARY} ${UBOOT_SYMLINK}
         ln -sf ${UBOOT_IMAGE} ${UBOOT_SYMLINK}
@@ -321,7 +303,7 @@ do_deploy () {
             done
             unset i
         else
-            install ${S}/${UBOOT_ELF} ${DEPLOYDIR}/${UBOOT_ELF_IMAGE}
+            install ${S}/default/${UBOOT_ELF} ${DEPLOYDIR}/${UBOOT_ELF_IMAGE}
             ln -sf ${UBOOT_ELF_IMAGE} ${DEPLOYDIR}/${UBOOT_ELF_BINARY}
             ln -sf ${UBOOT_ELF_IMAGE} ${DEPLOYDIR}/${UBOOT_ELF_SYMLINK}
         fi
@@ -349,14 +331,20 @@ do_deploy () {
                  unset  j
              done
              unset  i
-         elif [ "x${ROM_BOOT}" != "x" ] ; then
-             install ${S}/${SPL_BINARY} ${DEPLOYDIR}/${SPL_IMAGE}
+         elif [ "x${VERIFIED_BOOT}" != "x" ] ; then
+             install ${S}/default/${SPL_BINARY} ${DEPLOYDIR}/${SPL_IMAGE}
              rm -f ${DEPLOYDIR}/${SPL_BINARYNAME} ${DEPLOYDIR}/${SPL_SYMLINK}
              ln -sf ${SPL_IMAGE} ${DEPLOYDIR}/${SPL_BINARYNAME}
              ln -sf ${SPL_IMAGE} ${DEPLOYDIR}/${SPL_SYMLINK}
          fi
      fi
 
+    if [ "x${VERIFIED_BOOT}" != "x" ]; then
+        install ${S}/recovery/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_RECOVERY_IMAGE}
+        rm -f ${DEPLOYDIR}/${UBOOT_RECOVERY_BINARYNAME} ${DEPLOYDIR}/${UBOOT_RECOVERY_SYMLINK}
+        ln -sf ${UBOOT_RECOVERY_IMAGE} ${DEPLOYDIR}/${UBOOT_RECOVERY_BINARYNAME}
+        ln -sf ${UBOOT_RECOVERY_IMAGE} ${DEPLOYDIR}/${UBOOT_RECOVERY_SYMLINK}
+    fi
 
     if [ "x${UBOOT_ENV}" != "x" ]
     then

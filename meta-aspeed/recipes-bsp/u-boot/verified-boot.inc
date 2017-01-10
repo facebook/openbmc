@@ -2,28 +2,18 @@
 #
 # Available IMAGE_FEATURES:
 #
-# - verified-boot      - Enables a verified boot in u-boot for the AST2400
-# - verified-boot-sign - Enables an online sign of the FIT
+# - verified-boot      - Enables a verified boot in u-boot for the AST2500
 #
-# For both of these features a public key is needed.
-# The public key should be configured within the build ./conf directory and
-# should be specified within the ./conf/local configuration.
-#
-# VERIFIED_BOOT_KEYS ??= "keys"
-# VERIFIED_BOOT_KEYNAME ?= "dev"
-#
-IMAGE_FEATURES[validitems] += "rom-boot verified-boot verified-boot-sign"
-ROM_BOOT = '${@bb.utils.contains("IMAGE_FEATURES", "rom-boot", "True", "", d)}'
+
+IMAGE_FEATURES[validitems] += "verified-boot"
+
 VERIFIED_BOOT = '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "True", "", d)}'
-VERIFIED_BOOT_SIGN = '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot-sign", "True", "", d)}'
-VERIFIED_BOOT_KEYS ??= '${@os.getenv("PWD", "/tmp")}/conf/keys'
-VERIFIED_BOOT_KEYNAME ??= "dev"
+
 VERIFIED_BOOT_ALGORITHM ??= "sha256,rsa4096"
-
+VERIFIED_BOOT_HASH_ALGORITHM ??= "sha256"
+VERIFIED_BOOT_KEYNAME ??= "subordinate"
+CERTIFICATE_STORE_SOURCE ??= ""
 CERTIFICATE_STORE ?= "certificate-store.dtb"
-
-# Append the key directory to the source files.
-SRC_URI_append += '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "file://${VERIFIED_BOOT_KEYS}", "", d)} '
 
 # Emit the fitImage ITS header
 # $1 - FIT source file
@@ -50,13 +40,13 @@ fitimage_emit_section_maint() {
     imagestart)
         cat << EOF >> ${SOURCE}
 
-        images {
+    images {
 EOF
     ;;
     confstart)
         cat << EOF >> ${SOURCE}
 
-        configurations {
+    configurations {
 EOF
     ;;
     sectend)
@@ -81,7 +71,6 @@ EOF
 # $4 - Load address
 # $5 - Entry point
 fitimage_emit_section_firmware() {
-    HASH_ALGORITHM="sha1"
     SOURCE=$1
     IMAGE_COUNTER=$2
     IMAGE_FIRMWARE=$3
@@ -99,7 +88,11 @@ fitimage_emit_section_firmware() {
             load = <${LOAD_ADDRESS}>;
             entry = <${ENTRY_POINT}>;
             hash@1 {
-                algo = "${HASH_ALGORITHM}";
+                algo = "${VERIFIED_BOOT_HASH_ALGORITHM}";
+            };
+            signature@1 {
+                algo = "${VERIFIED_BOOT_ALGORITHM}";
+                key-name-hint = "${VERIFIED_BOOT_KEYNAME}";
             };
         };
 EOF
@@ -115,7 +108,6 @@ EOF
 # $5 - Load address
 # $6 - Entry point
 fitimage_emit_section_kernel() {
-    HASH_ALGORITHM="sha1"
     SOURCE=$1
     IMAGE_COUNTER=$2
     IMAGE_KERNEL=$3
@@ -134,7 +126,7 @@ fitimage_emit_section_kernel() {
             load = <${LOAD_ADDRESS}>;
             entry = <${ENTRY_POINT}>;
             hash@1 {
-                algo = "${HASH_ALGORITHM}";
+                algo = "${VERIFIED_BOOT_HASH_ALGORITHM}";
             };
         };
 EOF
@@ -149,7 +141,6 @@ EOF
 # $4 - Compression type
 # $5 - Load address
 fitimage_emit_section_ramdisk() {
-    HASH_ALGORITHM="sha1"
     SOURCE=$1
     IMAGE_COUNTER=$2
     IMAGE_RAMDISK=$3
@@ -165,7 +156,7 @@ fitimage_emit_section_ramdisk() {
             compression = "${IMAGE_COMPRESSION}";
             load = <${LOAD_ADDRESS}>;
             hash@1 {
-                algo = "${HASH_ALGORITHM}";
+                algo = "${VERIFIED_BOOT_HASH_ALGORITHM}";
             };
         };
 EOF
@@ -188,14 +179,6 @@ fitimage_emit_section_firmware_config() {
         conf@1 {
             description = "${conf_desc}";
             ${firmware_line}
-            hash@1 {
-                algo = "${conf_csum}";
-            };
-            signature@1 {
-                algo = "sha1,rsa2048";
-                key-name-hint = "${VERIFIED_BOOT_KEYNAME}";
-                sign-images = "kernel", "ramdisk";
-            };
         };
 EOF
 }
@@ -208,7 +191,6 @@ EOF
 # $3 - Ramdisk image ID
 fitimage_emit_section_config() {
     SOURCE=$1
-    conf_csum="sha1"
 
     # Test if we have any DTBs at all
     if [ -z "${3}" ] ; then
@@ -226,9 +208,6 @@ fitimage_emit_section_config() {
             description = "${conf_desc}";
             ${kernel_line}
             ${ramdisk_line}
-            hash@1 {
-                algo = "${conf_csum}";
-            };
             signature@1 {
                 algo = "${VERIFIED_BOOT_ALGORITHM}";
                 key-name-hint = "${VERIFIED_BOOT_KEYNAME}";
@@ -236,20 +215,6 @@ fitimage_emit_section_config() {
             };
         };
 EOF
-}
-
-fitimage_emit_placebo() {
-    VERIFIED_BOOT_PLACEBO=${1}
-    rm -f ${VERIFIED_BOOT_PLACEBO}
-    fitimage_emit_fit_header ${VERIFIED_BOOT_PLACEBO}
-    fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} imagestart
-    fitimage_emit_section_kernel "${VERIFIED_BOOT_PLACEBO}" 1 "./placebo" "none" 0 0
-    fitimage_emit_section_ramdisk "${VERIFIED_BOOT_PLACEBO}" 1 "./placebo" "none" 0
-    fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} sectend
-    fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} confstart
-    fitimage_emit_section_config ${VERIFIED_BOOT_PLACEBO} 1 1
-    fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} sectend
-    fitimage_emit_section_maint ${VERIFIED_BOOT_PLACEBO} fitend
 }
 
 uboot_option_on() {

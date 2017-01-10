@@ -28,6 +28,8 @@
 #include <syslog.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 typedef struct _post_desc {
   uint8_t code;
@@ -41,21 +43,29 @@ typedef struct _gpio_desc {
   uint8_t desc[32];
 } gpio_desc_t;
 
+//These postcodes are defined in document "F08 BIOS Specification" Revision: 2A
 static post_desc_t pdesc[] = {
-  // SEC Phase
+  /*--------------------- SEC Phase - Start--------------------- */
+  { 0x00, "Not used" },
   { 0x01, "POWER_ON" },
   { 0x02, "MICROCODE" },
   { 0x03, "CACHE_ENABLED" },
   { 0x04, "SECSB_INIT" },
+  { 0x05, "OEM_INIT_ENTRY" },
   { 0x06, "CPU_EARLY_INIT" },
-  { 0xCA, "GENUINE_CPU" },
-  { 0xCB, "PNUI_VCU_FAIL" },
-  { 0xCC, "CSR_FATAL" },
-  { 0xCD, "PROC_MICROCODE" },
-  { 0xCE, "BUS_NOSTACK" },
+  { 0x07, "AP_INIT" },
+  { 0x08, "NB_INIT" },
+  { 0x09, "SB_INIT" },
+  { 0x0A, "OEM_INIT_END" },
+  { 0x0B, "CASHE_INIT" },
+  { 0x0C, "SEC_ERR" },
+  { 0x0D, "SEC_ERR" },
+  { 0x0E, "MICROC_N_FOUND" },
+  { 0x0F, "MICROC_N_LOAD" },
+  /*--------------------- SEC Phase - End--------------------- */
 
-  // PEI Phase
-  { 0x10, "CORE_START" },
+  /*--------------------- PEI Phase - Start--------------------- */
+  { 0x10, "PEI_CORE_START" },
   { 0x11, "PM_CPU_INITS" },
   { 0x12, "PM_CPU_INIT1" },
   { 0x13, "PM_CPU_INIT2" },
@@ -68,11 +78,28 @@ static post_desc_t pdesc[] = {
   { 0x1A, "PM_SB_INIT1" },
   { 0x1B, "PM_SB_INIT2" },
   { 0x1C, "PM_SB_INIT3" },
+  { 0x1D, "OEM_pMEM_INIT" },
+  { 0x1E, "OEM_pMEM_INIT" },
+  { 0x1F, "OEM_pMEM_INIT" },
+
+  { 0x20, "OEM_pMEM_INIT" },
+  { 0x21, "OEM_pMEM_INIT" },
+  { 0x22, "OEM_pMEM_INIT" },
+  { 0x23, "OEM_pMEM_INIT" },
+  { 0x24, "OEM_pMEM_INIT" },
+  { 0x25, "OEM_pMEM_INIT" },
+  { 0x26, "OEM_pMEM_INIT" },
+  { 0x27, "OEM_pMEM_INIT" },
+  { 0x28, "OEM_pMEM_INIT" },
+  { 0x29, "OEM_pMEM_INIT" },
+  { 0x2A, "OEM_pMEM_INIT" },
   { 0x2B, "MEM_INIT_SPD" },
   { 0x2C, "MEM_INIT_PRS" },
   { 0x2D, "MEM_INIT_PROG" },
   { 0x2E, "MEM_INIT_CFG" },
   { 0x2F, "MEM_INIT" },
+
+  { 0x30, "ASL_STATUS" },
   { 0x31, "MEM_INSTALLED" },
   { 0x32, "CPU_INITS" },
   { 0x33, "CPU_CACHE_INIT" },
@@ -87,7 +114,24 @@ static post_desc_t pdesc[] = {
   { 0x3C, "SB_INIT1" },
   { 0x3D, "SB_INIT2" },
   { 0x3E, "SB_INIT3" },
-  { 0x4F, "DXL_IPL" },
+  { 0x3F, "OEM_pMEM_INIT" },
+
+  { 0x41, "OEM_pMEM_INIT" },
+  { 0x42, "OEM_pMEM_INIT" },
+  { 0x43, "OEM_pMEM_INIT" },
+  { 0x44, "OEM_pMEM_INIT" },
+  { 0x45, "OEM_pMEM_INIT" },
+  { 0x46, "OEM_pMEM_INIT" },
+  { 0x47, "OEM_pMEM_INIT" },
+  { 0x48, "OEM_pMEM_INIT" },
+  { 0x49, "OEM_pMEM_INIT" },
+  { 0x4A, "OEM_pMEM_INIT" },
+  { 0x4B, "OEM_pMEM_INIT" },
+  { 0x4C, "OEM_pMEM_INIT" },
+  { 0x4D, "OEM_pMEM_INIT" },
+  { 0x4E, "OEM_pMEM_INIT" },
+  { 0x4F, "DXE_IPL_START" },
+
   { 0x50, "INVALID_MEM" },
   { 0x51, "SPD_READ_FAIL" },
   { 0x52, "INVALID_MEM_SIZE" },
@@ -98,23 +142,226 @@ static post_desc_t pdesc[] = {
   { 0x57, "CPU_MISMATCH" },
   { 0x58, "CPU_SELFTEST_FAIL" },
   { 0x59, "MICROCODE_FAIL" },
-  { 0x5A, "CPU_INT_ERROR" },
-  { 0x5B, "RESET_PPI_ERROR" },
+  { 0x5A, "CPU_INT_ERR" },
+  { 0x5B, "RESET_PPI_ERR" },
+  { 0x5C, "BMC_SELF_TEST_F" },
+  { 0x5D, "AMI_ERR_CODE" },
+  { 0x5E, "AMI_ERR_CODE" },
+  { 0x5F, "AMI_ERR_CODE" },
 
-  // DXE Phase
-  { 0xD0, "CPU_INIT_ERROR" },
-  { 0xD1, "NB_INIT_ERROR" },
-  { 0xD2, "SB_INIT_ERROR" },
-  { 0xD3, "ARCH_PROT_ERROR" },
-  { 0xD4, "PCI_ALLOC_ERROR" },
+  // S3 Resume Progress Code
+  { 0xE0, "S3_RESUME_START" },
+  { 0xE1, "S3_BOOT_SCRIPT_EXE" },
+  { 0xE2, "S3_VIDEO_REPOST" },
+  { 0xE3, "S3_OS_WAKE" },
+  { 0xE4, "AMI_PROG_CODE" },
+  { 0xE5, "AMI_PROG_CODE" },
+  { 0xE6, "AMI_PROG_CODE" },
+  { 0xE7, "AMI_PROG_CODE" },
+
+  // S3 Resume Error Code
+  { 0xE8, "S3_RESUME_FAIL" },
+  { 0xE9, "S3_PPI_NOT_FOUND" },
+  { 0xEA, "S3_BOOT_SCRIPT_ERR" },
+  { 0xEB, "S3_OS_WAKE_ERR" },
+  { 0xEC, "AMI_ERR_CODE" },
+  { 0xED, "AMI_ERR_CODE" },
+  { 0xEE, "AMI_ERR_CODE" },
+  { 0xEF, "AMI_ERR_CODE" },
+
+  //Recovery Progress Code
+  { 0xF0, "REC_BY_FW" },
+  { 0xF1, "REC_BY_USER" },
+  { 0xF2, "REC_STARTED" },
+  { 0xF3, "REC_FW_FOUNDED" },
+  { 0xF4, "REC_FW_LOADED" },
+  { 0xF5, "AMI_PROG_CODE" },
+  { 0xF6, "AMI_PROG_CODE" },
+  { 0xF7, "AMI_PROG_CODE" },
+
+  //Recovery Error code
+  { 0xF8, "RECOVERY_PPI_FAIL" },
+  { 0xFA, "RECOVERY_CAP_ERR" },
+  { 0xFB, "AMI_ERR_CODE" },
+  { 0xFC, "AMI_ERR_CODE" },
+  { 0xFD, "AMI_ERR_CODE" },
+  { 0xFE, "AMI_ERR_CODE" },
+  { 0xFF, "AMI_ERR_CODE" },
+  /*--------------------- PEI Phase - End--------------------- */
+
+  /*--------------------- MRC Phase - Start--------------------- */
+  { 0xB0, "STS_DIMM_DETECT" },
+  { 0xB1, "STS_CHECK_INIT" },
+  { 0xB2, "STS_SPD_DATA" },
+  { 0xB3, "STS_GLOBAL_EARILY" },
+  { 0xB4, "STS_RAKE_DETECT" },
+  { 0xB5, "STS_CHAN_EARILY" },
+  { 0xB6, "STS_DDRIO_INIT" },
+  { 0xB7, "STS_TRAIN_DRR" },
+  { 0xB8, "STS_INIT_THROTTLING" },
+  { 0xB9, "STS_MEMBIST" },
+  { 0xBA, "STS_MEMINIT" },
+  { 0xBB, "STS_DDR_M_INIT" },
+  { 0xBC, "STS_RAS_MEMMAP" },
+  { 0xBD, "STS_RAS_CONF" },
+  { 0xBE, "STS_GET_MARGINS" },
+  { 0xBF, "STS_MRC_DONE" },
+  /*--------------------- MRC Phase - End--------------------- */
+
+  //The following postcodes are after 0x4f
+
+  /*--------------------- ACPI/ASL Phase - Start--------------------- */
+  { 0x01, "S1_SLEEP_STATE" },
+  { 0x02, "S2_SLEEP_STATE" },
+  { 0x03, "S3_SLEEP_STATE" },
+  { 0x04, "S4_SLEEP_STATE" },
+  { 0x05, "S5_SLEEP_STATE" },
+  { 0x06, "S6_SLEEP_STATE" },
+  { 0x10, "WEAK_FROM_S1" },
+  { 0x20, "WEAK_FROM_S2" },
+  { 0x30, "WEAK_FROM_S3" },
+  { 0x40, "WEAK_FROM_S4" },
+  { 0xAC, "ACPI_PIC_MODE" },
+  { 0xAA, "ACPI_ACPI_MODE" },
+  /*--------------------- ACPI/ASL Phase - Start--------------------- */
+
+  /*--------------------- DXE Phase - Start--------------------- */
+  { 0x60, "DXE_CORE_START" },
+  { 0x61, "NVRAM_INIT" },
+  { 0x62, "INSTALL_SB_SERVICE" },
+  { 0x63, "CPU_DXE_STARTED" },
+  { 0x64, "CPU_DXE_INIT" },
+  { 0x65, "CPU_DXE_INIT" },
+  { 0x66, "CPU_DXE_INIT" },
+  { 0x67, "CPU_DXE_INIT" },
+  { 0x68, "PCI_BRIDEGE_INIT" },
+  { 0x69, "NB_DEX_INIT" },
+  { 0x6A, "NB_DEX_SMM_INIT" },
+  { 0x6B, "NB_DEX_BRI_START" },
+  { 0x6C, "NB_DEX_BRI_START" },
+  { 0x6D, "NB_DEX_BRI_START" },
+  { 0x6E, "NB_DEX_BRI_START" },
+  { 0x6F, "NB_DEX_BRI_START" },
+
+  { 0x70, "SB_DXE_START" },
+  { 0x71, "SB_DEX_SMM_INIT" },
+  { 0x72, "SB_DEX_DEV_START" },
+  { 0x73, "SB_DEX_BRI_START" },
+  { 0x74, "SB_DEX_BRI_START" },
+  { 0x75, "SB_DEX_BRI_START" },
+  { 0x76, "SB_DEX_BRI_START" },
+  { 0x77, "SB_DEX_BRI_START" },
+  { 0x78, "ACPI_INIT" },
+  { 0x79, "CSM_INIT" },
+  { 0x7A, "AMI_DXE_CODE" },
+  { 0x7B, "AMI_DXE_CODE" },
+  { 0x7C, "AMI_DXE_CODE" },
+  { 0x7D, "AMI_DXE_CODE" },
+  { 0x7E, "AMI_DXE_CODE" },
+  { 0x7F, "AMI_DXE_CODE" },
+
+  //OEM DXE INIT CODE
+  { 0x80, "OEM_DEX_INIT" },
+  { 0x81, "OEM_DEX_INIT" },
+  { 0x82, "OEM_DEX_INIT" },
+  { 0x83, "OEM_DEX_INIT" },
+  { 0x84, "OEM_DEX_INIT" },
+  { 0x85, "OEM_DEX_INIT" },
+  { 0x86, "OEM_DEX_INIT" },
+  { 0x87, "OEM_DEX_INIT" },
+  { 0x88, "OEM_DEX_INIT" },
+  { 0x89, "OEM_DEX_INIT" },
+  { 0x8A, "OEM_DEX_INIT" },
+  { 0x8B, "OEM_DEX_INIT" },
+  { 0x8C, "OEM_DEX_INIT" },
+  { 0x8D, "OEM_DEX_INIT" },
+  { 0x8E, "OEM_DEX_INIT" },
+  { 0x8F, "OEM_DEX_INIT" },
+
+  //BDS EXECUTION
+  { 0x90, "BDS_START" },
+  { 0x91, "DRIVER_CONN_START" },
+  { 0x92, "PCIB_INIT" },
+  { 0x93, "PCIB_HOT_PLUG_INIT" },
+  { 0x94, "PCIB_ENUMERATION" },
+  { 0x95, "PCIB_REQ_RESOURCE" },
+  { 0x96, "PCIB_ASS_RESOURCE" },
+  { 0x97, "CONSOLE_INPUT_CONN" },
+  { 0x98, "CONSOLE_OUTPUT_CONN" },
+  { 0x99, "SUPER_IO_INIT" },
+  { 0x9A, "USB_INIT" },
+  { 0x9B, "USB_RESET" },
+  { 0x9C, "USB_DETECT" },
+  { 0x9D, "USB_ENABLE" },
+  { 0x9E, "AMI_CODE" },
+  { 0x9F, "AMI_CODE" },
+
+  { 0xA0, "IDE_INIT" },
+  { 0xA1, "IDE_RESET" },
+  { 0xA2, "IDE_DETECT" },
+  { 0xA3, "IDE_ENABLE" },
+  { 0xA4, "SCSI_INIT" },
+  { 0xA5, "SCSI_RESET" },
+  { 0xA6, "SCSI_DETECT" },
+  { 0xA7, "SCSI_ENABLE" },
+  { 0xA8, "SETUP_VERIFY_PW" },
+  { 0xA9, "START_OF_SETUP" },
+  { 0xAB, "SETUP_INIT_WAIT" },
+  { 0xAD, "READY_TO_BOOT" },
+  { 0xAE, "LEGACY_BOOT_EVE" },
+  { 0xAF, "EXIT_BOOT_EVE" },
+
+  { 0xB0, "SET_VIR_ADDR_START" },
+  { 0xB1, "SET_VIR_ADDR_END" },
+  { 0xB2, "LEGACY_ROM_INIT" },
+  { 0xB3, "SYS_RESET" },
+  { 0xB4, "USB_HOT_PLUG" },
+  { 0xB5, "PCIB_HOT_PLUG" },
+  { 0xB6, "CLEAN_NVRAM" },
+  { 0xB7, "CONFIG_RESET" },
+  { 0xB8, "AMI_CODE" },
+  { 0xB9, "AMI_CODE" },
+  { 0xBA, "ASL_CODE" },
+  { 0xBB, "AMI_CODE" },
+  { 0xBC, "AMI_CODE" },
+  { 0xBD, "AMI_CODE" },
+  { 0xBE, "AMI_CODE" },
+  { 0xBF, "AMI_CODE" },
+
+  //OEM BDS Initialization Code
+  { 0xC0, "OEM_BDS_INIT" },
+  { 0xC1, "OEM_BDS_INIT" },
+  { 0xC2, "OEM_BDS_INIT" },
+  { 0xC3, "OEM_BDS_INIT" },
+  { 0xC4, "OEM_BDS_INIT" },
+  { 0xC5, "OEM_BDS_INIT" },
+  { 0xC6, "OEM_BDS_INIT" },
+  { 0xC7, "OEM_BDS_INIT" },
+  { 0xC8, "OEM_BDS_INIT" },
+  { 0xC9, "OEM_BDS_INIT" },
+  { 0xCA, "OEM_BDS_INIT" },
+  { 0xCB, "OEM_BDS_INIT" },
+  { 0xCC, "OEM_BDS_INIT" },
+  { 0xCD, "OEM_BDS_INIT" },
+  { 0xCE, "OEM_BDS_INIT" },
+  { 0xCF, "OEM_BDS_INIT" },
+
+  //DXE Phase
+  { 0xD0, "CPU_INIT_ERR" },
+  { 0xD1, "NB_INIT_ERR" },
+  { 0xD2, "SB_INIT_ERR" },
+  { 0xD3, "ARCH_PROT_ERR" },
+  { 0xD4, "PCI_ALLOC_ERR" },
   { 0xD5, "NO_SPACE_ROM" },
   { 0xD6, "NO_CONSOLE_OUT" },
   { 0xD7, "NO_CONSOLE_IN" },
-  { 0xD8, "INVALID_PASSWD" },
-  { 0xD9, "BOOT_OPT_ERROR" },
+  { 0xD8, "INVALID_PW" },
+  { 0xD9, "BOOT_OPT_ERR" },
   { 0xDA, "BOOT_OPT_FAIL" },
   { 0xDB, "FLASH_UPD_FAIL" },
   { 0xDC, "RST_PROT_NA" },
+  { 0xDD, "DEX_SELTEST_FAILs" }
+  /*--------------------- DXE Phase - End--------------------- */
 };
 
 static gpio_desc_t gdesc[] = {
@@ -127,9 +374,6 @@ static gpio_desc_t gdesc[] = {
   { 0x16, 0, 0, "FM_SLPS3" },
   { 0x17, 0, 0, "FM_CPU_MSMI" },
 };
-
-static uint8_t test_page1[128] = {0};
-static uint8_t test_page2[128] = {0};
 
 static int pdesc_count = sizeof(pdesc) / sizeof (post_desc_t);
 static int gdesc_count = sizeof(gdesc) / sizeof (gpio_desc_t);
@@ -148,15 +392,16 @@ plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
 }
 
 int
-plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *count, uint8_t *buffer) {
+plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *end, uint8_t *count, uint8_t *buffer) {
   int i = 0;
 
   // If the index is 0x00: populate the next pointer with the first
-  if (index == 0x00) {
+  /*if (index == 0x00) {
     *next = pdesc[0].code;
+    *end = 0x00;
     *count = 0;
     return 0;
-  }
+  }*/
 
   // Look for the index
   for (i = 0; i < pdesc_count; i++) {
@@ -178,8 +423,10 @@ plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *count, uint8_t *b
   // Populate the next index
   if (i == pdesc_count-1) { // last entry
     *next = 0xFF;
+    *end = 0x01;
   } else {
     *next = pdesc[i+1].code;
+    *end = 0x00;
   }
 
   return 0;
@@ -226,46 +473,100 @@ plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *d
   return 0;
 }
 
-int
-plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  static uint8_t once = 1;
-  int i = 0;
+#define LINE_PER_PAGE 7
+#define LEN_PER_LINE 16
+#define LEN_PER_PAGE (LEN_PER_LINE*LINE_PER_PAGE)
+#define MAX_PAGE 20
+#define MAX_LINE (MAX_PAGE*LINE_PER_PAGE)
+static int
+plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
+  static char frame_buff[MAX_PAGE * LEN_PER_PAGE];
+  static time_t mtime;
+  static int page_num = 1, line_num = 0;
+  int i, len, msg_line;
+  char line_buff[256], *ptr;
+  FILE *fp;
+  struct stat file_stat;
 
-  if (once) {
-    // Initailize test page#1 (assuming 8 x 16 screen)
-    memcpy(test_page1, "     Frame#1    ", 16); // First line
+  fp = fopen("/mnt/data/cri_sel", "r");
+  if (fp) {
+    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime > mtime)) {
+      mtime = file_stat.st_mtime;
+      memset(frame_buff, ' ', sizeof(frame_buff));
 
-    for (i = 16; i < (127-16); i++) {
-      test_page1[i] = 16+i;
+      line_num = 0;
+      while (fgets(line_buff, 256, fp)) {
+        // Remove newline
+        line_buff[strlen(line_buff)-1] = '\0';
+        ptr = line_buff;
+        // Find message
+        ptr = strstr(ptr, "local0.err");
+        if(ptr)
+          ptr = strstr(ptr, ":");
+        len = (ptr)?strlen(ptr):0;
+        if (len > 2) {
+          ptr+=2;
+          len-=2;
+        } else {
+          continue;
+        }
+
+        // line number of this 1 message
+        msg_line = (len/LEN_PER_LINE) + ((len%LEN_PER_LINE)?1:0);
+
+        // total line number after this message
+        if ((line_num + msg_line) < MAX_LINE)
+          line_num += msg_line;
+        else
+          line_num = MAX_LINE;
+
+        // Scroll message down
+        for(i = (line_num-1); (i-msg_line)>=0; i--)
+          memcpy(&frame_buff[LEN_PER_LINE*i], &frame_buff[LEN_PER_LINE*(i-msg_line)], LEN_PER_LINE);
+
+        // Write new message
+        memcpy(&frame_buff[0], ptr, len);
+        memset(&frame_buff[len], ' ', msg_line*LEN_PER_LINE-len);
+      }
     }
-
-    memcpy(&test_page1[128-16], "   Page 1 of 2   ", 15); // Last line
-
-    // Initailize test page#2 (assuming 8 x 16 screen)
-    memcpy(test_page2, "     Frame#1    ", 16); // First line
-
-    for (i = 127-16; i >= 16; i--) {
-      test_page2[i] = 16+i;
-    }
-
-    memcpy(&test_page2[128-16], "   Page 2 of 2   ", 15); // Last line
+    fclose(fp);
+    page_num = line_num/LINE_PER_PAGE + ((line_num%LINE_PER_PAGE)?1:0);
+  } else {
+    memset(frame_buff, ' ', sizeof(frame_buff));
+    page_num = 1;
+    line_num = 0;
   }
 
-  // Test frame/page
-  if (frame > 1 || page > 2) {
+  if (page > page_num) {
     return -1;
   }
 
+  // Frame Head
+  snprintf(line_buff, 17, "Cri SEL   P%2d/%2d", page, page_num);
+  memcpy(&buffer[0], line_buff, 16); // First line
+
+  // Frame Body
+  memcpy(&buffer[16], &frame_buff[(page-1)*LEN_PER_PAGE], LEN_PER_PAGE);
+
 
   *count = 128;
-  if (page == 1) {
-    memcpy(buffer, test_page1, 128);
-    *next = 0x02;
-  } else {
-    memcpy(buffer, test_page2, 128);
+  if (page == page_num) {
     // Set next to 0xFF to indicate this is last page
     *next = 0xFF;
+  } else {
+    *next = page+1;
   }
 
   return 0;
+}
+
+int
+plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
+
+  switch (frame) {
+    case 1: // critical SEL
+      return plat_udbg_get_cri_sel(frame, page, next, count, buffer);
+    default:
+      return -1;
+  }
 }

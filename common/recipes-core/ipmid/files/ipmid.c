@@ -1786,13 +1786,14 @@ oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
 
   uint8_t index;
   uint8_t next;
+  uint8_t end;
   uint8_t count;
   uint8_t desc[256];
   int ret;
 
   index = req->data[3];
 
-  ret = plat_udbg_get_post_desc(index, &next, &count, desc);
+  ret = plat_udbg_get_post_desc(index, &next, &end, &count, desc);
   if (ret) {
     memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -1803,10 +1804,11 @@ oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
   memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
   res->data[3] = index;
   res->data[4] = next;
-  res->data[5] = count;
-  memcpy(&res->data[6], desc, count);
+  res->data[5] = end;
+  res->data[6] = count;
+  memcpy(&res->data[7], desc, count);
   res->cc = CC_SUCCESS;
-  *res_len = SIZE_IANA_ID + 3 + count;
+  *res_len = SIZE_IANA_ID + 4 + count;
 }
 
 static void

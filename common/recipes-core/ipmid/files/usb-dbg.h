@@ -23,7 +23,7 @@
 
 int plat_udbg_get_frame_info(uint8_t *num);
 int plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer);
-int plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *count, uint8_t *buffer);
+int plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *end, uint8_t *count, uint8_t *buffer);
 int plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *def,
                             uint8_t *count, uint8_t *buffer);
 int plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t buffer);

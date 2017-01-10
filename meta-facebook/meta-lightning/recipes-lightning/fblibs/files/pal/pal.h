@@ -229,6 +229,8 @@ int pal_get_boot_order(uint8_t fru, uint8_t *boot);
 int pal_get_dev_guid(uint8_t fru, char *guid);
 int pal_get_poss_pcie_config(uint8_t *pcie_config);
 int pal_get_plat_sku_id(void);
+void pal_sensor_assert_handle(uint8_t snr_num, float val);
+void pal_sensor_deassert_handle(uint8_t snr_num, float val);
 
 #ifdef __cplusplus
 } // extern "C"

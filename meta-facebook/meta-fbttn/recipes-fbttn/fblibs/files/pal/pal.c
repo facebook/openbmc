@@ -2882,4 +2882,12 @@ unsigned char pal_sum_error_code(void) {
 
   return ret;
 }
+void
+pal_sensor_assert_handle(uint8_t snr_num, float val) {
+  return;
+}
 
+void
+pal_sensor_deassert_handle(uint8_t snr_num, float val) {
+  return;
+}

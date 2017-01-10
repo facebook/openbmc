@@ -86,11 +86,34 @@ gpio_num(char *str)
   return ret;
 }
 
+static int
+gpio_value(int gpio_number)
+{
+  FILE *fp;
+  int rc;
+  int val;
+  char path[64] = {0};
+
+  sprintf(path, "/sys/class/gpio/gpio%d/value", gpio_number);
+  if (fp = fopen(path, "r")) {
+    rc = fscanf(fp, "%d", &val);
+    fclose(fp);
+  }
+  if (!fp || rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", path);
+#endif
+    return -1;
+  }
+  return val;
+}
+
 // Generic Event Handler for GPIO changes with condition, only logs event when MB is ON
 static void gpio_filter_handle_power(void *p)
 {
   uint8_t status = 0;
   gpio_poll_st *gp = (gpio_poll_st*) p;
+  char cmd[128];
 
   pal_get_server_power(1, &status);
   if (status != SERVER_POWER_ON) {
@@ -132,6 +155,27 @@ static void gpio_filter_handle_power(void *p)
   }
 
   syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+
+  if (gp->gs.gs_gpio == gpio_num("GPIOE6") || gp->gs.gs_gpio == gpio_num("GPIOE7")) {
+    sprintf(cmd, "logger -p local0.err ");
+    if (gp->gs.gs_gpio == gpio_num("GPIOE6"))
+      strcat(cmd, "CPU0 FPH");
+    else
+      strcat(cmd, "CPU1 FPH");
+    if (gp->value)
+      strcat(cmd, " DEASSERT");
+    else
+      strcat(cmd, " by");
+    if (gpio_value(gpio_num("GPIOL0")) == 0)
+      strcat(cmd, " UV");
+    if (gpio_value(gpio_num("GPIOL1")) == 0)
+      strcat(cmd, " OC");
+    if (gpio_value(gpio_num("GPIOL2")) == 0)
+      strcat(cmd, " timer exp");
+    if (gpio_value(gpio_num("GPIOAA1")) == 0)
+      strcat(cmd, " PMBus alert");
+    system(cmd);
+  }
 }
 
 // Event Handler for GPIOR5 platform reset changes
@@ -324,6 +368,7 @@ ierr_mcerr_event_handler() {
           }
             CATERR_irq--;
             CATERR_ierr_time_count = 0;
+            system("logger -p local0.err \"CPU CATERR\"");
           } else if ( CATERR_irq > 1 ){
                    while (CATERR_irq > 1){
                         syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
@@ -346,6 +391,7 @@ ierr_mcerr_event_handler() {
           }
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
+          system("logger -p local0.err \"CPU MSMI\"");
         } else if ( MSMI_irq > 1 ){
                  while (MSMI_irq > 1){
                       syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");

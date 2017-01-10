@@ -1057,7 +1057,7 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
       syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
       return -1;
     }
-  
+
     snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
 
     if (read_device_hex(path, &val)) {
@@ -1250,7 +1250,7 @@ pal_reset_ssd_switch() {
     return -1;
 
   msleep(100);
-  
+
   return 0;
 }
 
@@ -1317,3 +1317,11 @@ int pal_get_plat_sku_id(void){
    return 0;
 }
 
+void
+pal_sensor_assert_handle(uint8_t snr_num, float val) {
+  return;
+}
+void
+pal_sensor_deassert_handle(uint8_t snr_num, float val) {
+  return;
+}

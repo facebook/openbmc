@@ -40,7 +40,7 @@ plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
 }
 
 int
-plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *count, uint8_t *buffer) {
+plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t *end, uint8_t *count, uint8_t *buffer) {
   return -1;
 }
 

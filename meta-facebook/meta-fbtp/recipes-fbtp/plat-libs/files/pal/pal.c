@@ -5179,6 +5179,8 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
       sprintf(temp_log, " (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       strcat(error_log, temp_log);
+      sprintf(temp_log, "logger -p local0.err \"PCIe err\"");
+      system(temp_log);
       break;
 
     case IIO_ERR:
@@ -5225,6 +5227,8 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
           strcat(error_log, "Correctable ECC error Logging Limit Reached");
         else
           strcat(error_log, "Unknown");
+        sprintf(temp_log, "logger -p local0.err \"DIMM%02X ECC err\"", ed[2]);
+        system(temp_log);
       }
 
       sprintf(temp_log, " (DIMM %02X)", ed[2]);
@@ -6820,4 +6824,30 @@ error_exit:
     RetVal = -1;
   }
   return RetVal;
+}
+
+void
+pal_sensor_assert_handle(uint8_t snr_num, float val) {
+  char cmd[128];
+  // log the events to a file for LCD debug card
+  if (snr_num == 0xAA) {
+    sprintf(cmd, "logger -p local0.err \"P0 Temp UCR %3.0f - ASSERT\"", val);
+    system(cmd);
+  } else if (snr_num == 0xAB) {
+    sprintf(cmd, "logger -p local0.err \"P1 Temp UCR %3.0f - ASSERT\"", val);
+    system(cmd);
+  }
+}
+
+void
+pal_sensor_deassert_handle(uint8_t snr_num, float val) {
+  char cmd[128];
+  // log the events to a file for LCD debug card
+  if (snr_num == 0xAA) {
+    sprintf(cmd, "logger -p local0.err \"P0 Temp UCR %3.0f - DEASSERT\"", val);
+    system(cmd);
+  } else if (snr_num == 0xAB) {
+    sprintf(cmd, "logger -p local0.err \"P1 Temp UCR %3.0f - DEASSERT\"", val);
+    system(cmd);
+  }
 }

@@ -437,6 +437,8 @@ static bool is_cpu1_socket_occupy(void);
 int pal_get_vr_update_data(char *update_file, uint8_t **BinData);
 int pal_vr_fw_update(uint8_t *BinData);
 int pal_PBO(void);
+void pal_sensor_assert_handle(uint8_t snr_num, float val);
+void pal_sensor_deassert_handle(uint8_t snr_num, float val);
 
 #ifdef __cplusplus
 } // extern "C"

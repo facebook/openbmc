@@ -116,6 +116,7 @@ def log_main():
                if fru == 'all':
                   temp = 'all'
                else:
+                  fru_num = str(frulist.index(fru))
                   temp = 'FRU: ' + fru_num
                time = datetime.now()
                newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'

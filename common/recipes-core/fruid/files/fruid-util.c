@@ -28,7 +28,7 @@
 
 #define EEPROM_READ     0x1
 #define EEPROM_WRITE    0x2
-#define FRUID_SIZE      256
+#define FRUID_SIZE      512
 
 /* To copy the bin files */
 static int

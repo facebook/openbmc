@@ -39,7 +39,7 @@
 #define BIN_MB         "/tmp/fruid_mb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"
 
-#define FRUID_SIZE        256
+#define FRUID_SIZE        512
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory

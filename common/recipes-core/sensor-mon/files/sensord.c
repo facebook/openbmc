@@ -34,7 +34,9 @@
 #include <openbmc/pal.h>
 
 #define DELAY 2
+#define STOP_PERIOD 10
 #define MAX_SENSOR_CHECK_RETRY 3
+#define MAX_ASSERT_CHECK_RETRY 1
 
 static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
@@ -95,6 +97,8 @@ init_fru_snr_thresh(uint8_t fru) {
 #endif /* DEBUG */
       return -1;
     }
+
+    pal_init_sensor_check(fru, snr_num, (void *)&snr[snr_num]);
   }
 
   return 0;
@@ -264,7 +268,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   thresh_val = get_snr_thresh_val(fru, snr_num, thresh);
 
-  while (retry < MAX_SENSOR_CHECK_RETRY) {
+  while (retry < MAX_ASSERT_CHECK_RETRY) {
     switch (thresh) {
       case UNR_THRESH:
       case UCR_THRESH:
@@ -286,8 +290,8 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
         break;
     }
 
-    msleep(50);
-    if (retry < MAX_SENSOR_CHECK_RETRY) {
+    if (retry < MAX_ASSERT_CHECK_RETRY) {
+      msleep(50);
       ret = pal_sensor_read_raw(fru, snr_num, curr_val);
       if (ret < 0)
         return -1;
@@ -351,31 +355,38 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
 
 /*
- * Starts monitoring all the sensors on a fru for all discrete sensors.
+ * Starts monitoring all the sensors on a fru for all the threshold/discrete values.
  * Each pthread runs this monitoring for a different fru.
  */
 static void *
-snr_discrete_monitor(void *arg) {
+snr_monitor(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
-  int i, ret;
-  int discrete_cnt;
-  uint8_t snr_num;
+  int i, ret, snr_num, sensor_cnt, discrete_cnt;
+  float curr_val;
+  uint8_t *sensor_list, *discrete_list;
   thresh_sensor_t *snr;
-  float normal_val, curr_val;
 
-  uint8_t *discrete_list;
-  ret = pal_get_fru_discrete_list(fru, &discrete_list, &discrete_cnt);
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
   if (ret < 0) {
-    return;
+    pthread_detach(pthread_self());
+    pthread_exit(NULL);
   }
 
-  if (discrete_cnt == 0)
-    return;
+  ret = pal_get_fru_discrete_list(fru, &discrete_list, &discrete_cnt);
+  if (ret < 0) {
+    pthread_detach(pthread_self());
+    pthread_exit(NULL);
+  }
+
+  if ((sensor_cnt == 0) && (discrete_cnt == 0)) {
+    pthread_detach(pthread_self());
+    pthread_exit(NULL);
+  }
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
-    syslog(LOG_WARNING, "snr_discrete_monitor: get_struct_thresh_sensor failed");
+    syslog(LOG_WARNING, "snr_monitor: get_struct_thresh_sensor failed");
     exit(-1);
   }
 
@@ -385,48 +396,11 @@ snr_discrete_monitor(void *arg) {
   }
 
   while(1) {
-    for (i = 0; i < discrete_cnt; i++) {
-      snr_num = discrete_list[i];
-      ret = pal_sensor_read_raw(fru, snr_num, &curr_val);
 
-      if ((snr[snr_num].curr_state != (int) curr_val) && !ret) {
-        pal_sensor_discrete_check(fru, snr_num, snr[snr_num].name,
-            snr[snr_num].curr_state, (int) curr_val);
-        snr[snr_num].curr_state = (int) curr_val;
-      }
+    if (pal_is_fw_update_ongoing(fru)) {
+      sleep(STOP_PERIOD);
+      continue;
     }
-    sleep(DELAY);
-  }
-}
-
-/*
- * Starts monitoring all the sensors on a fru for all the threshold values.
- * Each pthread runs this monitoring for a different fru.
- */
-static void *
-snr_thresh_monitor(void *arg) {
-
-  uint8_t fru = *(uint8_t *) arg;
-  int i, ret, snr_num, sensor_cnt;
-  float normal_val, curr_val;
-  uint8_t *sensor_list;
-  thresh_sensor_t *snr;
-
-  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
-  if (ret < 0) {
-    return ret;
-  }
-
-  if (sensor_cnt == 0)
-    return;
-
-  snr = get_struct_thresh_sensor(fru);
-  if (snr == NULL) {
-    syslog(LOG_WARNING, "snr_thresh_monitor: get_struct_thresh_sensor failed");
-    exit(-1);
-  }
-
-  while(1) {
 
     for (i = 0; i < sensor_cnt; i++) {
       snr_num = sensor_list[i];
@@ -455,6 +429,16 @@ snr_thresh_monitor(void *arg) {
         } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */
+
+    for (i = 0; i < discrete_cnt; i++) {
+      snr_num = discrete_list[i];
+      ret = pal_sensor_read_raw(fru, snr_num, &curr_val);
+      if (!ret && (snr[snr_num].curr_state != (int) curr_val)) {
+        pal_sensor_discrete_check(fru, snr_num, snr[snr_num].name,
+            snr[snr_num].curr_state, (int) curr_val);
+        snr[snr_num].curr_state = (int) curr_val;
+      }
+    }
     sleep(DELAY);
   } /* while loop*/
 } /* function definition */
@@ -499,7 +483,6 @@ run_sensord(int argc, char **argv) {
   uint8_t fru;
   uint8_t fru_flag = 0;
   pthread_t thread_snr[MAX_NUM_FRUS];
-  pthread_t discrete_snr[MAX_NUM_FRUS];
   pthread_t sensor_health;
 
   arg = 1;
@@ -521,23 +504,12 @@ run_sensord(int argc, char **argv) {
         continue;
 
       /* Threshold Sensors */
-      if (pthread_create(&thread_snr[fru-1], NULL, snr_thresh_monitor,
+      if (pthread_create(&thread_snr[fru-1], NULL, snr_monitor,
           (void*) &fru) < 0) {
         syslog(LOG_WARNING, "pthread_create for Threshold Sensors for FRU %d failed\n", fru);
 #ifdef DEBUG
       } else {
         syslog(LOG_WARNING, "pthread_create for Threshold Sensors for FRU %d succeed\n", fru);
-#endif /* DEBUG */
-      }
-      sleep(1);
-
-      /* Discrete Sensors */
-      if (pthread_create(&discrete_snr[fru-1], NULL, snr_discrete_monitor,
-            (void*) &fru) < 0) {
-        syslog(LOG_WARNING, "pthread_create for discrete sensors for FRU %d failed\n", fru);
-#ifdef DEBUG
-      } else {
-        syslog(LOG_WARNING, "pthread_create for discrete sensors for FRU %d succeed\n", fru);
 #endif /* DEBUG */
       }
       sleep(1);
@@ -550,12 +522,6 @@ run_sensord(int argc, char **argv) {
   }
 
   pthread_join(sensor_health, NULL);
-
-  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-
-    if (GETBIT(fru_flag, fru))
-      pthread_join(discrete_snr[fru-1], NULL);
-  }
 
   for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
 

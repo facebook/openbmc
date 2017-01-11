@@ -20,6 +20,8 @@ SRC_URI = "git://github.com/theopolis/u-boot.git;branch=${SRCBRANCH};protocol=ht
 PV = "v2016.07"
 S = "${WORKDIR}/git"
 
+FILES_${PN} = "${sysconfdir}"
+
 inherit uboot-config deploy
 require verified-boot.inc
 
@@ -137,19 +139,19 @@ do_compile () {
         UBOOT_CONFIGNAME=$(echo ${UBOOT_CONFIGNAME} | sed -e 's/_config/_defconfig/')
 
         # Always turn off the recovery build.
-        uboot_option_off CONFIG_ASPEED_RECOVERY_BUILD configs/${UBOOT_CONFIGNAME}
+        defconfig_option_off CONFIG_ASPEED_RECOVERY_BUILD configs/${UBOOT_CONFIGNAME}
 
         if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-            uboot_option_on CONFIG_SPL configs/${UBOOT_CONFIGNAME}
-            uboot_option_on CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
-            uboot_option_on CONFIG_OF_CONTROL configs/${UBOOT_CONFIGNAME}
-            uboot_option_on CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_SPL configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_OF_CONTROL configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
             UBOOT_EXTRA_MAKE="EXT_DTB=../${CERTIFICATE_STORE}"
         else
-            uboot_option_off CONFIG_SPL configs/${UBOOT_CONFIGNAME}
-            uboot_option_off CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
-            uboot_option_off CONFIG_OF_CONTROL configs/${UBOOT_CONFIGNAME}
-            uboot_option_off CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_SPL configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_OF_CONTROL configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
         fi
 
         oe_runmake O=default ${UBOOT_EXTRA_MAKE} ${UBOOT_MACHINE}
@@ -157,7 +159,7 @@ do_compile () {
 
         # Finally, the verified-boot builds a second 'recovery' U-Boot.
         if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-            uboot_option_on CONFIG_ASPEED_RECOVERY_BUILD configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_ASPEED_RECOVERY_BUILD configs/${UBOOT_CONFIGNAME}
             oe_runmake O=recovery ${UBOOT_EXTRA_MAKE} ${UBOOT_MACHINE}
             oe_runmake O=recovery ${UBOOT_EXTRA_MAKE} ${UBOOT_MAKE_TARGET}
         fi
@@ -166,91 +168,11 @@ do_compile () {
 }
 
 do_install () {
-    if [ "x${UBOOT_CONFIG}" != "x" ]
-    then
-        for config in ${UBOOT_MACHINE}; do
-            i=`expr $i + 1`;
-            for type in ${UBOOT_CONFIG}; do
-                j=`expr $j + 1`;
-                if [ $j -eq $i ]
-                then
-                    install -d ${D}/boot
-                    install ${S}/${config}/u-boot-${type}.${UBOOT_SUFFIX} ${D}/boot/u-boot-${type}-${PV}-${PR}.${UBOOT_SUFFIX}
-                    ln -sf u-boot-${type}-${PV}-${PR}.${UBOOT_SUFFIX} ${D}/boot/${UBOOT_BINARY}-${type}
-                    ln -sf u-boot-${type}-${PV}-${PR}.${UBOOT_SUFFIX} ${D}/boot/${UBOOT_BINARY}
-                fi
-            done
-            unset  j
-        done
-        unset  i
-    else
-        install -d ${D}/boot
-        install ${S}/default/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-        ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-    fi
-
-    if [ "x${UBOOT_ELF}" != "x" ]
-    then
-        if [ "x${UBOOT_CONFIG}" != "x" ]
-        then
-            for config in ${UBOOT_MACHINE}; do
-                i=`expr $i + 1`;
-                for type in ${UBOOT_CONFIG}; do
-                    j=`expr $j + 1`;
-                    if [ $j -eq $i ]
-                    then
-                        install ${S}/${config}/${UBOOT_ELF} ${D}/boot/u-boot-${type}-${PV}-${PR}.${UBOOT_ELF_SUFFIX}
-                        ln -sf u-boot-${type}-${PV}-${PR}.${UBOOT_ELF_SUFFIX} ${D}/boot/${UBOOT_BINARY}-${type}
-                        ln -sf u-boot-${type}-${PV}-${PR}.${UBOOT_ELF_SUFFIX} ${D}/boot/${UBOOT_BINARY}
-                    fi
-                done
-                unset j
-            done
-            unset i
-        else
-            install ${S}/default/${UBOOT_ELF} ${D}/boot/${UBOOT_ELF_IMAGE}
-            ln -sf ${UBOOT_ELF_IMAGE} ${D}/boot/${UBOOT_ELF_BINARY}
-        fi
-    fi
-
     if [ -e ${WORKDIR}/fw_env.config ] ; then
         install -d ${D}${sysconfdir}
         install -m 644 ${WORKDIR}/fw_env.config ${D}${sysconfdir}/fw_env.config
     fi
-
-    if [ "x${SPL_BINARY}" != "x" ]
-    then
-        if [ "x${UBOOT_CONFIG}" != "x" ]
-        then
-            for config in ${UBOOT_MACHINE}; do
-                i=`expr $i + 1`;
-                for type in ${UBOOT_CONFIG}; do
-                    j=`expr $j + 1`;
-                    if [ $j -eq $i ]
-                    then
-                         install ${S}/${config}/${SPL_BINARY} ${D}/boot/${SPL_IMAGE}-${type}-${PV}-${PR}
-                         ln -sf ${SPL_IMAGE}-${type}-${PV}-${PR} ${D}/boot/${SPL_BINARYNAME}-${type}
-                         ln -sf ${SPL_IMAGE}-${type}-${PV}-${PR} ${D}/boot/${SPL_BINARYNAME}
-                    fi
-                done
-                unset  j
-            done
-            unset  i
-        elif [ "x${VERIFIED_BOOT}" != "x" ] ; then
-            # Only install a SPL if VERIFIED_BOOT is configured.
-            install ${S}/default/${SPL_BINARY} ${D}/boot/${SPL_IMAGE}
-            ln -sf ${SPL_IMAGE} ${D}/boot/${SPL_BINARYNAME}
-        fi
-    fi
-
-    if [ "x${UBOOT_ENV}" != "x" ]
-    then
-        install ${WORKDIR}/${UBOOT_ENV_BINARY} ${D}/boot/${UBOOT_ENV_IMAGE}
-        ln -sf ${UBOOT_ENV_IMAGE} ${D}/boot/${UBOOT_ENV_BINARY}
-    fi
 }
-
-FILES_${PN} = "/boot ${sysconfdir}"
 
 do_deploy () {
     if [ "x${UBOOT_CONFIG}" != "x" ]

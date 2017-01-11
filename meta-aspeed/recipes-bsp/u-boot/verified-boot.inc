@@ -217,13 +217,14 @@ fitimage_emit_section_config() {
 EOF
 }
 
-uboot_option_on() {
+defconfig_option_on() {
   OPTION=${1}
   SOURCE=${2}
   sed -i "s/^# ${OPTION}=/${OPTION}=/g" ${SOURCE}
+  sed -i "s/^# ${OPTION} is not set/${OPTION}=y/g" ${SOURCE}
 }
 
-uboot_option_off() {
+defconfig_option_off() {
   OPTION=${1}
   SOURCE=${2}
   sed -i "s/^${OPTION}=/# ${OPTION}=/g" ${SOURCE}

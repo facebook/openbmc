@@ -897,6 +897,10 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       sleep(DELAY_12V_CYCLE);
 
       return (server_12v_on(slot_id));
+
+    case SERVER_GLOBAL_RESET:
+      return server_power_off(slot_id, false);
+
     default:
       return -1;
   }

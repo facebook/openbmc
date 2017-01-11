@@ -74,6 +74,7 @@ enum {
   SERVER_12V_OFF,
   SERVER_12V_ON,
   SERVER_12V_CYCLE,
+  SERVER_GLOBAL_RESET,
 };
 
 enum {

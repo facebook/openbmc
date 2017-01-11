@@ -1671,7 +1671,7 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
     *value /= 1000;
   } else {
     // Negative value 2's complement
-    uint16_t temp = (rbuf[1] << 8) | rbuf[0];
+    uint16_t temp = ((rbuf[1] & 0x7F) << 8) | rbuf[0];
     temp = 0x7fff - temp + 1;
 
     *value = (((temp >> 8) & 0x7F) * 256 + (temp & 0xFF) ) * -62.5;
@@ -1679,9 +1679,7 @@ read_vr_curr(uint8_t vr, uint8_t loop, float *value) {
   }
 
   // Handle illegal values observed
-  if (*value > 1000) {
-    ret = -1;
-  } else if (*value < 0 ) {
+  if ((*value < 0) && (*value >= -1.5)) {
     *value = 0;
   }
 

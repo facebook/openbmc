@@ -133,6 +133,7 @@ edb_cache_get(char *key, char *value) {
     fclose(fp);
     return ENOENT;
   }
+  value[(rc < MAX_VALUE_LEN)?(rc):(rc-1)] = 0;
 
   rc = flock(fileno(fp), LOCK_UN);
   if (rc < 0) {

@@ -185,6 +185,8 @@ int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 int pal_is_crashdump_ongoing(uint8_t slot);
+int pal_is_fw_update_ongoing(uint8_t fru);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 
 #ifdef __cplusplus
 } // extern "C"

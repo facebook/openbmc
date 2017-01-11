@@ -94,6 +94,7 @@
 #define PWM_UNIT_MAX 96
 
 #define MAX_READ_RETRY 10
+#define MAX_CHECK_RETRY 2
 
 #define CRASHDUMP_KEY      "slot%d_crashdump"
 
@@ -111,6 +112,29 @@ size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
+
+typedef struct {
+  uint16_t flag;
+  float ucr;
+  float unc;
+  float unr;
+  float lcr;
+  float lnc;
+  float lnr;
+
+} _sensor_thresh_t;
+
+typedef struct {
+  uint16_t flag;
+  float ucr;
+  float lcr;
+  uint8_t retry_cnt;
+  uint8_t val_valid;
+  float last_val;
+
+} sensor_check_t;
+
+static sensor_check_t m_snr_chk[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -1478,6 +1502,17 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     return -1;
 }
 
+static sensor_check_t *
+get_sensor_check(uint8_t fru, uint8_t snr_num) {
+
+  if (fru < 1 || fru > MAX_NUM_FRUS) {
+    syslog(LOG_WARNING, "get_sensor_check: Wrong FRU ID %d\n", fru);
+    return NULL;
+  }
+
+  return &m_snr_chk[fru-1][snr_num];
+}
+
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
@@ -1520,6 +1555,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   int ret;
   uint8_t retry = MAX_READ_RETRY;
+  sensor_check_t *snr_chk;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1539,7 +1575,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_NIC:
       sprintf(key, "nic_sensor%d", sensor_num);
       break;
+    default:
+      return -1;
   }
+  snr_chk = get_sensor_check(fru, sensor_num);
 
   while (retry) {
     ret = yosemite_sensor_read(fru, sensor_num, value);
@@ -1549,6 +1588,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     retry--;
   }
   if(ret < 0) {
+    snr_chk->val_valid = 0;
+
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;
     if(pal_get_server_power(fru, &status) < 0)
@@ -1563,6 +1604,22 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     if(fru == FRU_SPB && sensor_num == SP_SENSOR_HSC_IN_POWER) {
       power_value_adjust(value);
     }
+    if ((GETBIT(snr_chk->flag, UCR_THRESH) && (*((float*)value) >= snr_chk->ucr)) ||
+        (GETBIT(snr_chk->flag, LCR_THRESH) && (*((float*)value) <= snr_chk->lcr))) {
+      if (snr_chk->retry_cnt < MAX_CHECK_RETRY) {
+        snr_chk->retry_cnt++;
+        if (!snr_chk->val_valid)
+          return -1;
+
+        *((float*)value) = snr_chk->last_val;
+      }
+    }
+    else {
+      snr_chk->last_val = *((float*)value);
+      snr_chk->val_valid = 1;
+      snr_chk->retry_cnt = 0;
+    }
+
     sprintf(str, "%.2f",*((float*)value));
   }
 
@@ -1914,14 +1971,14 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_NIC:
       *sensor_list = NULL;
       *cnt = 0;
-      return -1;
+      break;
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_get_fru_discrete_list: Wrong fru id %u", fru);
 #endif
       return -1;
   }
-    return 0;
+  return 0;
 }
 
 static void
@@ -2628,5 +2685,55 @@ pal_is_crashdump_ongoing(uint8_t slot)
   }
   if (atoi(value) > 0)
      return 1;
+  return 0;
+}
+
+int
+pal_is_fw_update_ongoing(uint8_t fru) {
+
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  struct timespec ts;
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_fwupd", fru);
+      break;
+    case FRU_SPB:
+    case FRU_NIC:
+    default:
+      return 0;
+  }
+
+  ret = edb_cache_get(key, value);
+  if (ret < 0) {
+     return 0;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return 1;
+
+  return 0;
+}
+
+int
+pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+
+  sensor_check_t *snr_chk;
+  _sensor_thresh_t *psnr = (_sensor_thresh_t *)snr;
+
+  snr_chk = get_sensor_check(fru, snr_num);
+  snr_chk->flag = psnr->flag;
+  snr_chk->ucr = psnr->ucr;
+  snr_chk->lcr = psnr->lcr;
+  snr_chk->retry_cnt = 0;
+  snr_chk->val_valid = 0;
+  snr_chk->last_val = 0;
+
   return 0;
 }

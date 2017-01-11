@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
+#include <time.h>
 #include <sys/stat.h>
 #include "bic.h"
 #include "facebook/i2c-dev.h"
@@ -37,6 +38,9 @@
 #define SIZE_SYS_GUID 16
 #define SIZE_IANA_ID 3
 #define GPIO_MAX 31
+
+#define BIOS_VER_REGION_SIZE (4*1024*1024)
+#define BIOS_VER_STR "F20_"
 
 #define BIC_UPDATE_RETRIES 12
 #define BIC_UPDATE_TIMEOUT 500
@@ -832,15 +836,128 @@ error_exit2:
   return 0;
 }
 
+static int
+check_cpld_image(int fd, long size) {
+  int i, j, rcnt;
+  uint8_t *buf, data;
+  uint16_t crc_exp, crc_val = 0xffff;
+  uint32_t dword, crc_offs;
+
+  if (size < 52)
+    return -1;
+
+  buf = (uint8_t *)malloc(size);
+  if (!buf) {
+    return -1;
+  }
+
+  i = 0;
+  while (i < size) {
+    rcnt = read(fd, (buf + i), size);
+    if ((rcnt < 0) && (errno != EINTR)) {
+      free(buf);
+      return -1;
+    }
+    i += rcnt;
+  }
+
+  dword = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+  if ((dword != 0x4A414D00) && (dword != 0x4A414D01)) {
+    free(buf);
+    return -1;
+  }
+
+  i = 32 + (dword & 0x1) * 8;
+  crc_offs = (buf[i] << 24) | (buf[i+1] << 16) | (buf[i+2] << 8) | buf[i+3];
+  if ((crc_offs + sizeof(crc_exp)) > size) {
+    free(buf);
+    return -1;
+  }
+  crc_exp = (buf[crc_offs] << 8) | buf[crc_offs+1];
+
+  for (i = 0; i < crc_offs; i++) {
+    data = buf[i];
+    for (j = 0; j < 8; j++, data >>= 1) {
+      crc_val = ((data ^ crc_val) & 0x1) ? ((crc_val >> 1) ^ 0x8408) : (crc_val >> 1);
+    }
+  }
+  crc_val = ~crc_val;
+  free(buf);
+
+  if (crc_exp != crc_val)
+    return -1;
+
+  lseek(fd, 0, SEEK_SET);
+  return 0;
+}
+
+static int
+check_bios_image(int fd, long size) {
+  int i, rcnt, end;
+  uint8_t *buf;
+  uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
+
+  if (size < BIOS_VER_REGION_SIZE)
+    return -1;
+
+  buf = (uint8_t *)malloc(BIOS_VER_REGION_SIZE);
+  if (!buf) {
+    return -1;
+  }
+
+  lseek(fd, (size - BIOS_VER_REGION_SIZE), SEEK_SET);
+  i = 0;
+  while (i < BIOS_VER_REGION_SIZE) {
+    rcnt = read(fd, (buf + i), BIOS_ERASE_PKT_SIZE);
+    if ((rcnt < 0) && (errno != EINTR)) {
+      free(buf);
+      return -1;
+    }
+    i += rcnt;
+  }
+
+  end = BIOS_VER_REGION_SIZE - (sizeof(ver_sig) + strlen(BIOS_VER_STR));
+  for (i = 0; i < end; i++) {
+    if (!memcmp(buf+i, ver_sig, sizeof(ver_sig))) {
+      if (memcmp(buf+i+sizeof(ver_sig), BIOS_VER_STR, strlen(BIOS_VER_STR))) {
+        i = end;
+      }
+      break;
+    }
+  }
+  free(buf);
+
+  if (i >= end)
+    return -1;
+
+  lseek(fd, 0, SEEK_SET);
+  return 0;
+}
+
+static int
+set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[64];
+  char value[64];
+  struct timespec ts;
+
+  sprintf(key, "slot%d_fwupd", slot_id);
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%d", ts.tv_sec);
+
+  if (edb_cache_set(key, value) < 0) {
+     return -1;
+  }
+
+  return 0;
+}
+
 int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   int ret;
   uint32_t offset;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
-  char    cmd[100] = {0};
-  char    temp[8];
-  uint8_t len = 0;
   uint8_t target;
   int fd;
   int i;
@@ -865,25 +982,22 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     goto error_exit;
   }
 
-  // Kill sendor daemon for this slot
-  if (comp == UPDATE_BIOS ) {
-    system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
-           xargs kill");
-    printf("killed sensord for this slot.\n");
-    strcpy(cmd, "/usr/local/bin/sensord");
-    for(i = 1; i < 5; i++){
-      if(slot_id == i)
-        continue;
-      sprintf(temp, " slot%d",i);
-      strcat(cmd, temp);
-    }
-    strcat(cmd, " spb nic");
-    system(cmd);
-  }
   stat(path, &st);
   if (comp == UPDATE_BIOS) {
+    if (check_bios_image(fd, st.st_size) < 0) {
+      printf("invalid BIOS file!\n");
+      goto error_exit;
+    }
+
+    set_fw_update_ongoing(slot_id, 25);
     dsize = st.st_size/100;
   } else {
+    if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
+      printf("invalid CPLD file!\n");
+      goto error_exit;
+    }
+
+    set_fw_update_ongoing(slot_id, 20);
     dsize = st.st_size/20;
   }
   // Write chunks of binary data in a loop
@@ -923,6 +1037,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     if((last_offset + dsize) <= offset) {
        switch(comp) {
          case UPDATE_BIOS:
+           set_fw_update_ongoing(slot_id, 20);
            printf("updated bios: %d %%\n", offset/dsize);
            break;
          case UPDATE_CPLD:
@@ -939,6 +1054,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   if (comp != UPDATE_BIOS) {
     goto update_done;
   }
+  set_fw_update_ongoing(slot_id, 55);
 
   // Checksum calculation for BIOS image
   tbuf = malloc(BIOS_VERIFY_PKT_SIZE * sizeof(uint8_t));
@@ -982,11 +1098,6 @@ error_exit:
 
   if (tbuf) {
     free(tbuf);
-  }
-  if (comp == UPDATE_BIOS ) {
-    system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
-           xargs kill");
-    system("/usr/local/bin/sensord slot1 slot2 slot3 slot4 spb nic");
   }
   return ret;
 }

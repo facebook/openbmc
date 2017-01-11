@@ -130,14 +130,12 @@ generate_dump(void *arg) {
 
   // COREID dump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s 48 coreid >> %s%s", CRASHDUMP_BIN, fruname,
-      CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "%s %s coreid >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
   system(cmd);
 
   // MSR dump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s 48 msr >> %s%s", CRASHDUMP_BIN, fruname,
-      CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "%s %s msr >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
   system(cmd);
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);

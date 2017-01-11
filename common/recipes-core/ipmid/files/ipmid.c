@@ -40,6 +40,12 @@
 #define SIZE_IANA_ID 3
 #define SIZE_GUID 16
 
+//declare for clearing BIOS flag
+#define BIOS_Timeout 600
+#define CLEAR_BIOS_FLAG 0x7d
+static unsigned char IsTimerStart = false;
+
+
 extern void plat_lan_init(lan_config_t *lan);
 
 // TODO: Once data storage is finalized, the following structure needs
@@ -64,6 +70,51 @@ static pthread_mutex_t m_oem_usb_dbg;
 
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
+
+/*
+ **Function to handle with clearing BIOS flag
+ */
+void
+*clear_bios_data_timer(void *ptr)
+{
+  int timer = 0;
+  unsigned char boot[SIZE_BOOT_ORDER]={0};
+
+  pthread_detach(pthread_self());
+
+  while( timer <= BIOS_Timeout )
+  {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "[%s][%lu] Timer: %d\n", __func__, pthread_self(), timer);
+#endif
+    sleep(1);
+
+    timer++;
+  }
+
+  //get boot order setting
+  pal_get_boot_order(NULL, boot);
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s][%lu] Get: %x %x %x %x %x %x\n", __func__, pthread_self() ,boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
+#endif
+
+  //clear the bit due to timeout:
+  //bit7-boot valid flag
+  //bit1-clear CMOS flag
+  boot[0] = boot[0] & CLEAR_BIOS_FLAG;
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s][%lu] Set: %x %x %x %x %x %x\n", __func__, pthread_self() , boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
+#endif
+
+  //set data
+  pal_set_boot_order(NULL, boot);
+
+  IsTimerStart = false;
+
+  pthread_exit(0);
+}
 
 /*
  * Function(s) to handle IPMI messages with NetFn: Chassis
@@ -1414,9 +1465,36 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
+  int RetVal;
+  static pthread_t bios_timer_tid;
+
+  if ( IsTimerStart )
+  {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "[%s] Close the previous thread\n", __func__);
+#endif
+    pthread_cancel(bios_timer_tid);
+  }
+
+  /*Create timer thread*/
+  RetVal = pthread_create( &bios_timer_tid, NULL, clear_bios_data_timer, NULL );
+
+  if ( RetVal < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Create BIOS timer thread failed!\n", __func__);
+
+    res->cc = CC_NODE_BUSY;
+
+    goto error_exit;
+  }
+
+  IsTimerStart = true;
+
   pal_set_boot_order(req->payload_id, &req->data);
 
   res->cc = CC_SUCCESS;
+
+error_exit:
   *res_len = 0;
 }
 
@@ -1426,8 +1504,29 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char boot[SIZE_BOOT_ORDER] = {0};
 
   pal_get_boot_order(req->payload_id, res->data);
+
+
+  //get boot order setting
+  pal_get_boot_order(NULL, boot);
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s] Get: %x %x %x %x %x %x\n", __func__, boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
+#endif
+
+  //clear the bit due to timeout:
+  //bit1-clear CMOS flag
+  //bit7-clear boot valid bit
+  boot[0] = boot[0] & CLEAR_BIOS_FLAG;
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s] Set: %x %x %x %x %x %x\n", __func__, boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
+#endif
+
+  //set data
+  pal_set_boot_order(NULL, boot);
 
   res->cc = CC_SUCCESS;
   *res_len = SIZE_BOOT_ORDER;

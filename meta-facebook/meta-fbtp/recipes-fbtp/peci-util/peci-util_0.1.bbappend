@@ -46,5 +46,7 @@ do_install_append() {
   done
 }
 
+DEPENDS += " libgpio"
+
 FILES_${PN} += "${sysconfdir} "
 

@@ -396,3 +396,7 @@ gpio_export AA0
 # FM_BIOS_POST_CMPLT_N
 devmem_clear_bit $(scu_addr A4) 31
 gpio_export AA7
+
+# PECI_MUX_SELECT
+devmem_clear_bit $(scu_addr A8) 2
+gpio_set AB2 0

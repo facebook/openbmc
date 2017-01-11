@@ -369,6 +369,7 @@ ierr_mcerr_event_handler() {
             CATERR_irq--;
             CATERR_ierr_time_count = 0;
             system("logger -p local0.err \"CPU CATERR\"");
+            system("/usr/local/bin/autodump.sh &");
           } else if ( CATERR_irq > 1 ){
                    while (CATERR_irq > 1){
                         syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
@@ -392,6 +393,7 @@ ierr_mcerr_event_handler() {
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
           system("logger -p local0.err \"CPU MSMI\"");
+          system("/usr/local/bin/autodump.sh &");
         } else if ( MSMI_irq > 1 ){
                  while (MSMI_irq > 1){
                       syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");

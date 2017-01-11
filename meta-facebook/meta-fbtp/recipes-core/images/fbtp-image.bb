@@ -77,6 +77,7 @@ IMAGE_INSTALL += " \
   ipmi-util \
   guid-util \
   gpiod \
+  peci-util \
   "
 
 IMAGE_FEATURES += " \

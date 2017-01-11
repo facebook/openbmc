@@ -89,6 +89,7 @@ power_util(uint8_t fru, uint8_t opt) {
   int ret;
   uint8_t status;
   int retries;
+  char pwr_state[MAX_VALUE_LEN];
 
   switch(opt) {
     case PWR_STATUS:
@@ -297,6 +298,9 @@ power_util(uint8_t fru, uint8_t opt) {
 
     case PWR_12V_CYCLE:
 
+      memset(pwr_state, 0, sizeof(pwr_state));
+      pal_get_last_pwr_state(fru, pwr_state);
+
       printf("12V Power cycling fru %u...\n", fru);
 
       ret = pal_set_server_power(fru, SERVER_12V_CYCLE);
@@ -306,17 +310,11 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       } else {
         syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", fru);
-      }
 
-      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
-      if (ret < 0) {
-        return ret;
-      }
-
-      ret = pal_set_led(fru, LED_STATE_OFF);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
-        return ret;
+        if (!(strcmp(pwr_state, "on"))) {
+          sleep(3);
+          pal_set_server_power(fru, SERVER_POWER_ON);
+        }
       }
       break;
 

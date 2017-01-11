@@ -308,6 +308,28 @@ app_get_selftest_results (unsigned char *response, unsigned char *res_len)
   *res_len = data - &res->data[0];
 }
 
+// Manufacturing Test On (IPMI/Section 20.5)
+static void
+app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
+                           unsigned char *response, unsigned char *res_len)
+{
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  res->cc = CC_SUCCESS;
+
+  if ((!memcmp(req->data, "sled-cycle", strlen("sled-cycle"))) &&
+      (req_len - ((void*)req->data - (void*)req)) == strlen("sled-cycle")) {
+    system("/usr/local/bin/power-util sled-cycle");
+  } else {
+    res->cc = CC_INVALID_PARAM;
+  }
+
+  *res_len = data - &res->data[0];
+}
+
 // Get Device GUID (IPMI/Section 20.8)
 static void
 app_get_device_guid (unsigned char *response, unsigned char *res_len)
@@ -501,6 +523,9 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       break;
     case CMD_APP_GET_SELFTEST_RESULTS:
       app_get_selftest_results (response, res_len);
+      break;
+    case CMD_APP_MANUFACTURING_TEST_ON:
+      app_manufacturing_test_on (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_DEVICE_GUID:
       app_get_device_guid (response, res_len);
@@ -1450,7 +1475,8 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_1S_POST_BUF:
       // Skip the first 3 bytes of IANA ID and one byte of length field
-      for (i = SIZE_IANA_ID+1; i <= req->data[3]; i++) {
+      req->data[SIZE_IANA_ID] += SIZE_IANA_ID;
+      for (i = SIZE_IANA_ID+1; i <= req->data[SIZE_IANA_ID]; i++) {
         pal_post_handle(req->payload_id, req->data[i]);
       }
 

@@ -2061,10 +2061,11 @@ pal_store_crashdump(uint8_t fru) {
 }
 
 int
-pal_sel_handler(uint8_t fru, uint8_t snr_num) {
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};
+  static int assert_cnt[YOSEMITE_MAX_NUM_SLOTS] = {0};
 
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
@@ -2084,6 +2085,15 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
           return 0;
       }
       sprintf(key, "slot%d_sel_error", fru);
+
+      fru -= 1;
+      if ((event_data[0] & 0x80) == 0) {  // 0: Assertion,  1: Deassertion
+         assert_cnt[fru]++;
+      } else {
+        if (--assert_cnt[fru] < 0)
+           assert_cnt[fru] = 0;
+      }
+      sprintf(cvalue, "%s", (assert_cnt[fru] > 0) ? "0" : "1");
       break;
 
     case FRU_SPB:

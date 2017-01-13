@@ -63,26 +63,46 @@ static void *
 debug_card_handler() {
   int curr = -1;
   int prev = -1;
-  uint8_t prsnt;
-  uint8_t pos ;
-  uint8_t prev_pos = -1;
+  uint8_t prsnt = 0;
+  uint8_t pos;
+  uint8_t prev_pos = 0xff;
   uint8_t lpc;
-  int i, ret;
+  int ret;
 
   while (1) {
+    ret = pal_get_hand_sw(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    if (pos == prev_pos) {
+      goto debug_card_prs;
+    }
+
+    msleep(10);
+    ret = pal_get_hand_sw(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    ret = pal_switch_usb_mux(pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+
+debug_card_prs:
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
     if (ret) {
       goto debug_card_out;
     }
-
     curr = prsnt;
 
     // Check if Debug Card was either inserted or removed
     if (curr != prev) {
-
       if (!curr) {
-      // Debug Card was removed
+        // Debug Card was removed
         syslog(LOG_WARNING, "Debug Card Extraction\n");
         // Switch UART mux to BMC
         ret = pal_switch_uart_mux(HAND_SW_BMC);
@@ -92,21 +112,14 @@ debug_card_handler() {
       } else {
         // Debug Card was inserted
         syslog(LOG_WARNING, "Debug Card Insertion\n");
-
       }
     }
 
     // If Debug Card is present
     if (curr) {
-      ret = pal_get_hand_sw(&pos);
-      if (ret) {
+      if ((pos == prev_pos) && (curr == prev)) {
         goto debug_card_out;
       }
-
-      if (pos == prev_pos && pos != HAND_SW_BMC & !prev) {
-        goto display_post;
-      }
-
 
       // Switch UART mux based on hand switch
       ret = pal_switch_uart_mux(pos);
@@ -120,6 +133,7 @@ debug_card_handler() {
         goto debug_card_done;
       }
 
+
       // Make sure the server at selected position is present
       ret = pal_is_fru_prsnt(pos, &prsnt);
       if (ret || !prsnt) {
@@ -132,7 +146,6 @@ debug_card_handler() {
         goto debug_card_out;
       }
 
-display_post:
       // Get last post code and display it
       ret = pal_post_get_last(pos, &lpc);
       if (ret) {
@@ -143,52 +156,16 @@ display_post:
       if (ret) {
         goto debug_card_out;
       }
-
     }
 
 debug_card_done:
     prev = curr;
     prev_pos = pos;
 debug_card_out:
-    if (prsnt)
+    if (curr == 1)
       msleep(500);
     else
       sleep(1);
-  }
-}
-
-// Thread to monitor the hand switch
-static void *
-usb_handler() {
-  int curr = -1;
-  int prev = -1;
-  int ret;
-  uint8_t pos;
-  uint8_t prsnt;
-  uint8_t lpc;
-
-  while (1) {
-    // Get the current hand switch position
-    ret = pal_get_hand_sw(&pos);
-    if (ret) {
-      goto hand_sw_out;
-    }
-    curr = pos;
-    if (curr == prev) {
-      // No state change, continue;
-      goto hand_sw_out;
-    }
-
-    // Switch USB Mux to selected server
-    ret = pal_switch_usb_mux(pos);
-    if (ret) {
-      goto hand_sw_out;
-    }
-
-    prev = curr;
-hand_sw_out:
-    sleep(1);
-    continue;
   }
 }
 
@@ -205,7 +182,7 @@ rst_btn_handler() {
     ret = pal_get_hand_sw(&pos);
     if (ret || pos == HAND_SW_BMC) {
       // For BMC, no need to handle Reset Button
-      sleep (1);
+      sleep(1);
       continue;
     }
 
@@ -374,94 +351,63 @@ ts_handler() {
 
 // Thread to handle LED state of the server at given slot
 static void *
-led_handler(void *num) {
+led_handler() {
   int ret;
-  uint8_t prsnt;
-  uint8_t ready;
-  uint8_t power;
   uint8_t pos;
-  uint8_t led_blink;
-  uint8_t ident = 0;
+  uint8_t slot;
+  uint8_t ready;
+  uint8_t power[MAX_NUM_SLOTS+1] = {0};
+  uint8_t hlth[MAX_NUM_SLOTS+1] = {0};
   int led_on_time, led_off_time;
-  char identify[16] = {0};
-  char tstr[64] = {0};
-  int power_led_on_time = 500;
-  int power_led_off_time = 500;
-  uint8_t hlth = 0;
-
-  uint8_t slot = (*(int*) num) + 1;
-
-#ifdef DEBUG
-  syslog(LOG_INFO, "led_handler for slot %d\n", slot);
-#endif
-
-  ret = pal_is_fru_prsnt(slot, &prsnt);
-  if (ret || !prsnt) {
-    // Turn off led and exit
-    ret = pal_set_led(slot, 0);
-  }
 
   while (1) {
-    // Check if this LED is managed by sync_led thread
-    if (g_sync_led[slot]) {
-      sleep(1);
-      continue;
-    }
-
-    // Get power status for this slot
-    ret = pal_is_fru_ready(slot, &ready);
-    if (!ret && ready) {
-      ret = pal_get_server_power(slot, &power);
-      if (ret) {
-        sleep(1);
-        continue;
-      }
-    }
-    else {
-      power = SERVER_POWER_OFF;
-    }
-
-    // Get health status for this slot
-    ret = pal_get_fru_health(slot, &hlth);
-    if (ret) {
-      sleep(1);
-      continue;
-    }
-
     // Get hand switch position to see if this is selected server
     ret = pal_get_hand_sw(&pos);
-    if (ret) {
+    if (ret || (pos > MAX_NUM_SLOTS)) {
       sleep(1);
       continue;
     }
 
-    if (pos == slot) {
-      // This server is selcted one, set led_blink flag
-      led_blink = 1;
-    } else {
-      led_blink = 0;
-    }
-
-    //If no identify: Set LEDs based on power and hlth status
-    if (!led_blink) {
-      if (!power) {
-        pal_set_led(slot, LED_OFF);
-        pal_set_id_led(slot, ID_LED_OFF);
-        goto led_handler_out;
+    for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
+      // Check if this LED is managed by sync_led thread
+      if (g_sync_led[slot]) {
+        continue;
       }
 
-      if (hlth == FRU_STATUS_GOOD) {
-        pal_set_led(slot, LED_ON);
-        pal_set_id_led(slot, ID_LED_OFF);
+      ret = pal_is_fru_ready(slot, &ready);
+      if (!ret && ready) {
+        // Get power status for this slot
+        ret = pal_get_server_power(slot, &power[slot]);
+        if (ret) {
+          continue;
+        }
+
+        // Get health status for this slot
+        ret = pal_get_fru_health(slot, &hlth[slot]);
+        if (ret) {
+          continue;
+        }
+      } else {
+        power[slot] = SERVER_POWER_OFF;
+        hlth[slot] = FRU_STATUS_GOOD;
+      }
+
+      if ((pos == slot) || power[slot]) {
+        if (hlth[slot] == FRU_STATUS_GOOD) {
+          pal_set_led(slot, LED_ON);
+          pal_set_id_led(slot, ID_LED_OFF);
+        } else {
+          pal_set_led(slot, LED_OFF);
+          pal_set_id_led(slot, ID_LED_ON);
+        }
       } else {
         pal_set_led(slot, LED_OFF);
-        pal_set_id_led(slot, ID_LED_ON);
+        pal_set_id_led(slot, ID_LED_OFF);
       }
-      goto led_handler_out;
     }
 
     // Set blink rate
-    if (power == SERVER_POWER_ON) {
+    if (power[pos] == SERVER_POWER_ON) {
       led_on_time = 900;
       led_off_time = 100;
     } else {
@@ -469,31 +415,16 @@ led_handler(void *num) {
       led_off_time = 900;
     }
 
-    // Start blinking the LED
-    if (hlth == FRU_STATUS_GOOD) {
-      pal_set_led(slot, LED_ON);
-      pal_set_id_led(slot, ID_LED_OFF);
-    } else {
-       pal_set_led(slot, LED_OFF);
-       pal_set_id_led(slot, ID_LED_ON);
-    }
-
     msleep(led_on_time);
 
-    if (hlth == FRU_STATUS_GOOD) {
-      pal_set_led(slot, LED_OFF);
+    if (hlth[pos] == FRU_STATUS_GOOD) {
+      pal_set_led(pos, LED_OFF);
     } else {
-      pal_set_id_led(slot, ID_LED_OFF);
+      pal_set_id_led(pos, ID_LED_OFF);
     }
 
     msleep(led_off_time);
-    continue;
-led_handler_out:
-    msleep(100);
   }
-
-led_handler_exit:
-  free(num);
 }
 
 // Thread to handle LED state of the SLED
@@ -651,24 +582,22 @@ led_sync_handler() {
       msleep(LED_OFF_TIME_IDENTIFY);
       continue;
     }
+
     for (slot = 1; slot <= 4; slot++) {
       g_sync_led[slot] = 0;
     }
-    msleep(200);
+    msleep(500);
   }
 }
 
 int
 main (int argc, char * const argv[]) {
-  pthread_t tid_hand_sw;
   pthread_t tid_debug_card;
   pthread_t tid_rst_btn;
   pthread_t tid_pwr_btn;
   pthread_t tid_ts;
   pthread_t tid_sync_led;
-  pthread_t tid_leds[MAX_NUM_SLOTS];
-  int i;
-  int *ip;
+  pthread_t tid_led;
   int rc;
   int pid_file;
 
@@ -687,10 +616,6 @@ main (int argc, char * const argv[]) {
 
   if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for debug card error\n");
-    exit(1);
-  }
-  if (pthread_create(&tid_hand_sw, NULL, usb_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for hand switch error\n");
     exit(1);
   }
 
@@ -714,23 +639,17 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  for (i = 0; i < MAX_NUM_SLOTS; i++) {
-    ip = malloc(sizeof(int));
-    *ip = i;
-    if (pthread_create(&tid_leds[i], NULL, led_handler, (void*)ip) < 0) {
-      syslog(LOG_WARNING, "pthread_create for led error\n");
-      exit(1);
-    }
+  if (pthread_create(&tid_led, NULL, led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for led error\n");
+    exit(1);
   }
+
   pthread_join(tid_debug_card, NULL);
-  pthread_join(tid_hand_sw, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_ts, NULL);
   pthread_join(tid_sync_led, NULL);
-  for (i = 0;  i < MAX_NUM_SLOTS; i++) {
-    pthread_join(tid_leds[i], NULL);
-  }
+  pthread_join(tid_led, NULL);
 
   return 0;
 }

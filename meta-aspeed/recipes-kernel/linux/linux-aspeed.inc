@@ -9,21 +9,17 @@ COMPATIBLE_MACHINE = "aspeed"
 do_compile[depends] = "libgcc:do_populate_sysroot"
 
 inherit kernel
+require recipes-kernel/linux/linux.inc
+require recipes-kernel/linux/linux-yocto.inc
 require recipes-bsp/u-boot/verified-boot.inc
 
 do_configure[prefuncs] += "configure_spi_layout"
 configure_spi_layout() {
     # If the VERIFIED_BOOT flag is changed the state will need to be cleaned.
     if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-        defconfig_option_on CONFIG_AST_DUAL_FLASH ../defconfig
-        if [ -f ".config" ]; then
-            defconfig_option_on CONFIG_AST_DUAL_FLASH .config
-        fi
+      kernel_conf_variable AST_DUAL_FLASH y
     else
-        defconfig_option_off CONFIG_AST_DUAL_FLASH ../defconfig
-        if [ -f ".config" ]; then
-            defconfig_option_off CONFIG_AST_DUAL_FLASH .config
-        fi
+      kernel_conf_variable AST_DUAL_FLASH n
     fi
 }
 

@@ -771,7 +771,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 }
 
 int
-pal_sel_handler(uint8_t fru, uint8_t snr_num) {
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   return 0;
 }
@@ -1057,7 +1057,7 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
       syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
       return -1;
     }
-  
+
     snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
 
     if (read_device_hex(path, &val)) {
@@ -1250,6 +1250,6 @@ pal_reset_ssd_switch() {
     return -1;
 
   msleep(100);
-  
+
   return 0;
 }

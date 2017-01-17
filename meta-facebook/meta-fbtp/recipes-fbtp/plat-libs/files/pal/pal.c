@@ -1792,11 +1792,6 @@ read_vr_power(uint8_t vr, uint8_t loop, float *value) {
   // Calculate Power
   *value = ((rbuf[1] & 0x3F) * 256 + rbuf[0] ) * 0.04;
 
-  // Ignore slight offset when no loading
-  if (*value < 1 ) {
-    *value = 0;
-  }
-
 error_exit:
   if (fd > 0) {
     close(fd);

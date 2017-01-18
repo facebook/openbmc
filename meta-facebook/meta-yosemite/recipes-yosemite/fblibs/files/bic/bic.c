@@ -42,6 +42,9 @@
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_VER_STR "F20_"
 
+#define BIOS_VER_REGION_SIZE (4*1024*1024)
+#define BIOS_VER_STR "F20_"
+
 #define BIC_UPDATE_RETRIES 12
 #define BIC_UPDATE_TIMEOUT 500
 
@@ -608,6 +611,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   int ret;
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
+
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -617,14 +621,14 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   fstat(fd, &buf);
   size = buf.st_size;
-printf("size of file is %d bytes\n", size);
+  printf("size of file is %d bytes\n", size);
   dsize = size/20;
 
   // Open the i2c driver
   ifd = i2c_open(get_ipmb_bus_id(slot_id));
   if (ifd < 0) {
     printf("ifd error\n");
-    goto error_exit2;
+    goto error_exit;
   }
 
   // Kill ipmb daemon for this slot
@@ -636,21 +640,21 @@ printf("size of file is %d bytes\n", size);
 
   // Enable Bridge-IC update
   if (!_is_bic_update_ready(slot_id)) {
-      _enable_bic_update(slot_id);
+     _enable_bic_update(slot_id);
   }
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
     if (_is_bic_update_ready(slot_id)) {
-      printf("bic ready after %d tries\n", i);
+      printf("bic ready for update after %d tries\n", i);
       break;
     }
     msleep(BIC_UPDATE_TIMEOUT);
   }
 
   if (i == BIC_UPDATE_RETRIES) {
-    printf("bic is NOT ready\n");
-    goto error_exit;
+    printf("bic is NOT ready for update\n");
+    goto update_done;
   }
 
   sleep(1);
@@ -717,7 +721,7 @@ printf("size of file is %d bytes\n", size);
 
     ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
     if (ret) {
-printf("i2c_io failed\n");
+      printf("i2c_io failed\n");
       goto error_exit;
     }
 
@@ -811,18 +815,32 @@ printf("i2c_io failed\n");
     goto error_exit;
   }
 
+  // Wait for SMB_BMC_3v3SB_ALRT_N
+  for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
+    if (!_is_bic_update_ready(slot_id))
+      break;
+
+    msleep(BIC_UPDATE_TIMEOUT);
+  }
+  if (i == BIC_UPDATE_RETRIES) {
+    printf("bic is NOT ready\n");
+    goto error_exit;
+  }
+
+update_done:
+  // Restart ipmbd daemon
+  sleep(1);
+  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -12", get_ipmb_bus_id(slot_id));
+  system(cmd);
+
 error_exit:
   if (fd > 0) {
     close(fd);
   }
-  // Restart ipmbd daemon
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -12", get_ipmb_bus_id(slot_id));
-  system(cmd);
 
-error_exit2:
-  if (fd > 0) {
-    close(fd);
-  }
+  if (ifd > 0) {
+     close(ifd);
+   }
 
   return 0;
 }
@@ -959,7 +977,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   printf("updating fw on slot %d:\n", slot_id);
   // Handle Bridge IC firmware separately as the process differs significantly from others
   if (comp == UPDATE_BIC) {
-   return  _update_bic_main(slot_id, path);
+    set_fw_update_ongoing(slot_id, 25);
+    return  _update_bic_main(slot_id, path);
   }
 
   uint32_t dsize, last_offset;
@@ -1052,6 +1071,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   if (!tbuf) {
     goto error_exit;
   }
+  set_fw_update_ongoing(slot_id, 55);
 
   lseek(fd, 0, SEEK_SET);
   offset = 0;

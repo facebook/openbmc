@@ -616,7 +616,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
     syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
-    goto error_exit2;
+    goto error_exit;
   }
 
   fstat(fd, &buf);
@@ -1087,7 +1087,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
 
     // Get the checksum of binary image
-    ret = bic_get_fw_cksum(slot_id, comp, offset, BIOS_VERIFY_PKT_SIZE, &gcksum);
+    ret = bic_get_fw_cksum(slot_id, comp, offset, BIOS_VERIFY_PKT_SIZE, (uint8_t*)&gcksum);
     if (ret) {
       goto error_exit;
     }
@@ -1403,7 +1403,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   req->offset = 0;
   req->nbytes = sizeof(sdr_rec_hdr_t);
 
-  ret = _get_sdr(slot_id, req, tbuf, &tlen);
+  ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
@@ -1433,7 +1433,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
       req->nbytes = len;
     }
 
-    ret = _get_sdr(slot_id, req, tbuf, &tlen);
+    ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen);
     if (ret) {
 #ifdef DEBUG
       syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
@@ -1456,7 +1456,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
 int
 bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor) {
   int ret;
-  int rlen = 0;
+  uint8_t rlen = 0;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, (uint8_t *)&sensor_num, 1, (uint8_t *)sensor, &rlen);
 
@@ -1466,7 +1466,7 @@ bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sens
 int
 bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
   int ret;
-  int rlen = 0;
+  uint8_t rlen = 0;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, guid, &rlen);
   if (rlen != SIZE_SYS_GUID) {

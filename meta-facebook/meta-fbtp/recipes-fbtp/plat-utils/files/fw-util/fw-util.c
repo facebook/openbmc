@@ -32,6 +32,7 @@
 #include <openbmc/gpio.h>
 
 #define GPIO_BMC_CTRL        109
+#define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
 
 static uint8_t g_board_rev_id = BOARD_REV_EVT;
 static uint8_t g_vr_cpu0_vddq_abc;
@@ -44,8 +45,8 @@ static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|mb|nic> <--version>\n");
   printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic|--vr> <path>\n");
+  printf("       fw-util <mb> <--postcode>\n");
 }
-
 
 static void
 init_board_sensors(void) {
@@ -370,6 +371,41 @@ err_exit:
   return ret;
 }
 
+static int
+print_postcodes(uint8_t fru_id) {
+  FILE *fp=NULL;
+  int i;
+  unsigned char postcode;
+
+  if (fru_id != 1) {
+    fprintf(stderr, "Not Supported Operation\n");
+    return -1;
+  }
+
+  fp = fopen(POST_CODE_FILE, "r");
+  if (fp == NULL) {
+    fprintf(stderr, "Cannot open %s\n", POST_CODE_FILE);
+    return -1;
+  }
+
+  for (i=0; i<256; i++) {
+    // %hhx: unsigned char*
+    if (fscanf(fp, "%hhx", &postcode) == 1) {
+      printf("%02X ", postcode);
+    } else {
+      if (i%16 != 0)
+        printf("\n");
+      break;
+    }
+    if (i%16 == 15)
+      printf("\n");
+  }
+
+  fclose(fp);
+
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
   uint8_t fru_id;
@@ -414,6 +450,10 @@ main(int argc, char **argv) {
       goto err_exit;
     }
     return fw_update_fru(argv, fru_id);
+  }
+
+  if (!strcmp(argv[2], "--postcode")) {
+     return print_postcodes(fru_id);
   }
 
 err_exit:

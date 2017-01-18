@@ -29,6 +29,10 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+# Enable AST SNOOP DMA with default port 80
+echo 1 > /sys/devices/platform/ast-snoop-dma.0/enable
+
+
 # TODO: check for the if slot/server is present before starting the daemon
 echo -n "Setup console  buffering..."
 

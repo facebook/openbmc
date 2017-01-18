@@ -2087,7 +2087,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       sprintf(key, "slot%d_sel_error", fru);
 
       fru -= 1;
-      if ((event_data[0] & 0x80) == 0) {  // 0: Assertion,  1: Deassertion
+      if ((event_data[2] & 0x80) == 0) {  // 0: Assertion,  1: Deassertion
          assert_cnt[fru]++;
       } else {
         if (--assert_cnt[fru] < 0)
@@ -2107,7 +2107,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   }
 
   /* Write the value "0" which means FRU_STATUS_BAD */
-  return pal_set_key_value(key, "0");
+  return pal_set_key_value(key, cvalue);
 }
 
 int

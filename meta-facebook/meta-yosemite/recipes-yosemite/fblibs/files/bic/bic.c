@@ -595,7 +595,7 @@ bic_send:
 static int
 _update_bic_main(uint8_t slot_id, char *path) {
   int fd;
-  int ifd;
+  int ifd = -1;
   char cmd[100] = {0};
   struct stat buf;
   int size;
@@ -612,7 +612,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
     syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
-    goto error_exit;
+    goto error_exit2;
   }
 
   fstat(fd, &buf);
@@ -628,27 +628,16 @@ printf("size of file is %d bytes\n", size);
   }
 
   // Kill ipmb daemon for this slot
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -10", get_ipmb_bus_id(slot_id));
   system(cmd);
-  printf("killed ipmbd for this slot %x..\n",slot_id);
+  printf("stop ipmbd for slot %x..\n", slot_id);
 
-  // Restart ipmb daemon with "bicup" for bic update
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d bicup", get_ipmb_bus_id(slot_id));
-  system(cmd);
-  printf("start ipmbd bicup for this slot %x..\n",slot_id);
-  sleep(1);
+  sleep(2);
 
   // Enable Bridge-IC update
   if (!_is_bic_update_ready(slot_id)) {
       _enable_bic_update(slot_id);
   }
-
-  // Kill ipmb daemon "bicup" for this slot
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
-  system(cmd);
-  printf("killed ipmbd for this slot..\n");
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
@@ -823,9 +812,11 @@ printf("i2c_io failed\n");
   }
 
 error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
   // Restart ipmbd daemon
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -12", get_ipmb_bus_id(slot_id));
   system(cmd);
 
 error_exit2:

@@ -56,7 +56,17 @@
 #define LED_OFF_TIME_BMC_SELECT 500
 
 
-uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
+static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
+static uint8_t m_pos = 0xff;
+
+static int
+get_handsw_pos(uint8_t *pos) {
+  if ((m_pos > HAND_SW_BMC) || (m_pos < HAND_SW_SERVER1))
+    return -1;
+
+  *pos = m_pos;
+  return 0;
+}
 
 // Thread for monitoring debug card hotswap
 static void *
@@ -84,6 +94,7 @@ debug_card_handler() {
     if (ret) {
       goto debug_card_out;
     }
+    m_pos = pos;
 
     ret = pal_switch_usb_mux(pos);
     if (ret) {
@@ -134,6 +145,7 @@ debug_card_prs:
       }
 
 
+
       // Make sure the server at selected position is present
       ret = pal_is_fru_prsnt(pos, &prsnt);
       if (ret || !prsnt) {
@@ -179,7 +191,7 @@ rst_btn_handler() {
 
   while (1) {
     // Check the position of hand switch
-    ret = pal_get_hand_sw(&pos);
+    ret = get_handsw_pos(&pos);
     if (ret || pos == HAND_SW_BMC) {
       // For BMC, no need to handle Reset Button
       sleep(1);
@@ -234,7 +246,7 @@ pwr_btn_handler() {
 
   while (1) {
     // Check the position of hand switch
-    ret = pal_get_hand_sw(&pos);
+    ret = get_handsw_pos(&pos);
     if (ret || pos == HAND_SW_BMC) {
       sleep(1);
       continue;
@@ -362,7 +374,7 @@ led_handler() {
 
   while (1) {
     // Get hand switch position to see if this is selected server
-    ret = pal_get_hand_sw(&pos);
+    ret = get_handsw_pos(&pos);
     if (ret || (pos > MAX_NUM_SLOTS)) {
       sleep(1);
       continue;
@@ -496,7 +508,7 @@ led_sync_handler() {
 
       msleep(LED_ON_TIME_HEALTH);
 
-      ret = pal_get_hand_sw(&pos);
+      ret = get_handsw_pos(&pos);
       if ((ret) || (pos == HAND_SW_BMC)) {
         for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
            pal_set_id_led(slot, ID_LED_OFF);
@@ -522,7 +534,7 @@ led_sync_handler() {
     }
 
     // Get hand switch position to see if this is selected server
-    ret = pal_get_hand_sw(&pos);
+    ret = get_handsw_pos(&pos);
     if (ret) {
       sleep(1);
       continue;
@@ -530,14 +542,6 @@ led_sync_handler() {
 
     // Handle BMC select condition when no slot is being identified
     if ((pos == HAND_SW_BMC) && (ident == 0)) {
-       // Check hand sw position for bounce logic
-      msleep(100);
-      ret = pal_get_hand_sw(&pos);
-      if ((ret) || (pos != HAND_SW_BMC)) {
-        sleep(1);
-        continue;
-      }
-
       // Turn OFF Yellow LED
       for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
         g_sync_led[slot] = 1;

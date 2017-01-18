@@ -25,6 +25,7 @@
 #include <syslog.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <jansson.h>
 #include <openbmc/me.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
@@ -33,6 +34,7 @@
 
 #define GPIO_BMC_CTRL        109
 #define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
+#define FSC_CONFIG           "/etc/fsc-config.json"
 
 static uint8_t g_board_rev_id = BOARD_REV_EVT;
 static uint8_t g_vr_cpu0_vddq_abc;
@@ -66,6 +68,23 @@ init_board_sensors(void) {
   }
 }
 
+static void
+print_fsc_version(void) {
+  json_error_t error;
+  json_t *conf, *vers;
+
+  conf = json_load_file(FSC_CONFIG, 0, &error);
+  if(!conf) {
+    printf("Fan Speed Controller Version: NA\n");
+    return;
+  }
+  vers = json_object_get(conf, "version");
+  if(!vers || !json_is_string(vers)) {
+    printf("Fan Speed Controller Version: NA\n");
+  }
+  printf("Fan Speed Controller Version: %s\n", json_string_value(vers));
+  json_decref(conf);
+}
 
 // TODO: Need to confirm the interpretation of firmware version for print
 // Right now using decimal to print the versions
@@ -289,6 +308,7 @@ print_fw_ver(uint8_t fru_id) {
     printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
   }
 
+  print_fsc_version();
 }
 
 int

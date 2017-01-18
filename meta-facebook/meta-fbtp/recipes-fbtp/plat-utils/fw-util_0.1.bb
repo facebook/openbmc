@@ -16,6 +16,6 @@ do_install() {
     install -m 0755 fw-util ${D}${bindir}/fw-util
 }
 
-DEPENDS += " libgpio libme libpal libcpld"
+DEPENDS += " libgpio libme libpal libcpld jansson"
 
 FILES_${PN} = "${bindir}"

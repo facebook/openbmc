@@ -19,8 +19,10 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://soc-utils.sh \
+    file://vbs.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
     soc-utils.sh \
+    vbs.sh \
     "

@@ -62,6 +62,7 @@
 #include <mqueue.h>
 #include <semaphore.h>
 #include <poll.h>
+#include <signal.h>
 #include "facebook/i2c-dev.h"
 #include "openbmc/ipmi.h"
 #include "openbmc/ipmb.h"
@@ -77,7 +78,7 @@
 
 #define SEQ_NUM_MAX 64
 
-#define I2C_RETRIES_MAX 15
+#define I2C_RETRIES_MAX 20
 
 #define IPMB_PKT_MIN_SIZE 6
 
@@ -443,7 +444,9 @@ ipmb_req_handler(void *bus_num) {
 #endif
 
      // Send response back
-     i2c_write(fd, &txbuf[1], tlen+IPMB_HDR_SIZE-1);
+    if (!bic_up_flag) {
+      i2c_write(fd, &txbuf[1], tlen+IPMB_HDR_SIZE-1);
+    }
   }
 }
 
@@ -556,7 +559,7 @@ ipmb_rx_handler(void *bus_num) {
   while (1) {
     // Read messages from i2c driver
      if (i2c_slave_read(fd, buf, &len) < 0) {
-      poll(ufds, 1, 10);
+      poll(ufds, 1, 50);
       continue;
     }
 
@@ -730,10 +733,9 @@ void
       goto conn_cleanup;
   }
 
-  if(bic_up_flag){
-      if(!((req_buf[1] == 0xe0) && (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE))){
-          goto conn_cleanup;
-	}
+  if (bic_up_flag) {
+    if (!((req_buf[1] == 0xe0) && (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE)))
+      goto conn_cleanup;
   }
 
   ipmb_handle(fd, req_buf, n, res_buf, &res_len);
@@ -843,6 +845,11 @@ ipmb_lib_handler(void *bus_num) {
   return 0;
 }
 
+static void ipmbd_sig_hndlr(int sig)
+{
+  bic_up_flag = (sig == SIGUSR1)?1:0;
+}
+
 int
 main(int argc, char * const argv[]) {
   pthread_t tid_ipmb_rx;
@@ -855,6 +862,7 @@ main(int argc, char * const argv[]) {
   char mq_ipmb_req[64] = {0};
   char mq_ipmb_res[64] = {0};
   int rc = 0;
+  struct sigaction sa;
 
   daemon(1, 0);
   openlog("ipmbd", LOG_CONS, LOG_DAEMON);
@@ -876,6 +884,12 @@ main(int argc, char * const argv[]) {
   }
 
   pthread_mutex_init(&m_i2c, NULL);
+
+  sa.sa_handler = ipmbd_sig_hndlr;
+  sa.sa_flags = 0;
+  sigemptyset(&sa.sa_mask);
+  sigaction(SIGUSR1, &sa, NULL);
+  sigaction(SIGUSR2, &sa, NULL);
 
   // Create Message Queues for Request Messages and Response Messages
   attr.mq_flags = 0;

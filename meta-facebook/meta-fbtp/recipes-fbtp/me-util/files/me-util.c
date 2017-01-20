@@ -35,24 +35,22 @@
 
 #define LOGFILE "/tmp/me-util.log"
 
+#define MAX_ARG_NUM 64
+
 static void
 print_usage_help(void) {
   printf("Usage: me-util <[0..n]data_bytes_to_send>\n");
+  printf("Usage: me-util <--file> <path>\n");
 }
 
-int
-main(int argc, char **argv) {
+static int
+process_command(int argc, char **argv) {
   uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   int i;
-  int ret;
-  int logfd;
-  int len;
-  char log[128];
-  char temp[8];
   ipmb_req_t *req;
   ipmb_res_t *res;
 
@@ -63,7 +61,7 @@ main(int argc, char **argv) {
   req = (ipmb_req_t*)tbuf;
 
   req->res_slave_addr = 0x2C; //ME's Slave Address
-  req->netfn_lun = (uint8_t)strtoul(argv[1], NULL, 0);
+  req->netfn_lun = (uint8_t)strtoul(argv[0], NULL, 0);
   req->hdr_cksum = req->res_slave_addr +
                    req->netfn_lun;
   req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
@@ -71,11 +69,11 @@ main(int argc, char **argv) {
   req->req_slave_addr = 0x20;
   req->seq_lun = 0x00;
 
-  req->cmd = (uint8_t)strtoul(argv[2], NULL, 0);
+  req->cmd = (uint8_t)strtoul(argv[1], NULL, 0);
 
   tlen = 6;
 
-  for (i = 3; i < argc; i++) {
+  for (i = 2; i < argc; i++) {
     tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
 
@@ -83,49 +81,83 @@ main(int argc, char **argv) {
   lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
 
   if (rlen == 0) {
-    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received\n");
+    syslog(LOG_DEBUG, "me-util process_command: Zero bytes received\n");
     // Add ME no response error message
     printf("ME no response!\n");
     return -1;
   }
 
-  memset(log, 0, 128);
   // Remove 7-bytes of IPMB header and last-byte of Checksum and print only data
   // Print completion code if it is not 0x00
   if(rbuf[6] != 0){
     printf("Com_code:%02X, ", rbuf[6]);
-    memset(temp, 0, 8);
-    sprintf(temp, "%02X, ", rbuf[6]);
-    strcat(log, temp);
   }
 
   for (i = 7; i < rlen-1; i++) {
     printf("%02X ", rbuf[i]);
-    memset(temp, 0, 8);
-    sprintf(temp, "%02X ", rbuf[i]);
-    strcat(log, temp);
   }
   printf("\n");
-  sprintf(temp, "\n");
-  strcat(log, temp);
-
-  errno = 0;
-
-  logfd = open(LOGFILE, O_CREAT | O_WRONLY);
-  if (logfd < 0) {
-    syslog(LOG_WARNING, "Opening a tmp file failed. errno: %d", errno);
-    return -1;
-  }
-
-  len = write(logfd, log, strlen(log));
-  if (len != strlen(log)) {
-    syslog(LOG_WARNING, "Error writing the log to the file");
-    return -1;
-  }
-
-  close(logfd);
 
   return 0;
+err_exit:
+  print_usage_help();
+  return -1;
+}
+
+static int
+process_file(char *path) {
+  FILE *fp;
+  int argc, final_ret=0, ret;
+  char buf[1024];
+  char *str, *next, *del=" \n";
+  char *argv[MAX_ARG_NUM];
+
+  if (!(fp = fopen(path, "r"))) {
+    syslog(LOG_WARNING, "Failed to open %s", path);
+    return -1;
+  }
+
+  while (fgets(buf, sizeof(buf), fp) != NULL) {
+    str = strtok_r(buf, del, &next);
+    for (argc = 0; argc < MAX_ARG_NUM && str; argc++, str = strtok_r(NULL, del, &next)) {
+      if (str[0] == '#')
+        break;
+
+      if (!argc && !strcmp(str, "echo")) {
+        printf("%s", (*next) ? next : "\n");
+        break;
+      }
+      argv[argc] = str;
+    }
+    if (argc < 1)
+      continue;
+
+    ret = process_command(argc, argv);
+    // return failure if any command failed
+    if (ret)
+      final_ret = ret;
+  }
+  fclose(fp);
+
+  return final_ret;
+}
+
+int
+main(int argc, char **argv) {
+  if (argc < 2) {
+    goto err_exit;
+  }
+
+  if (!strcmp(argv[1], "--file")) {
+    if (argc < 3) {
+      goto err_exit;
+    }
+
+    return process_file(argv[2]);;
+  }
+
+  return process_command((argc - 1), (argv + 1));;
+
 err_exit:
   print_usage_help();
   return -1;

@@ -76,9 +76,13 @@ get_power_opt(char *option, uint8_t *opt) {
 
 static int
 power_util(uint8_t fru, uint8_t opt) {
-
   int ret;
   uint8_t status;
+
+  if (opt != PWR_STATUS && access("/var/run/autodump.pid", F_OK) == 0) {
+    printf("Auto Crash Dump is ongoing, block the power controling.\n");
+    exit(-1);
+  }
 
   switch(opt) {
     case PWR_STATUS:

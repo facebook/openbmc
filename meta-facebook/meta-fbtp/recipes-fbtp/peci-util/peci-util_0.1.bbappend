@@ -22,6 +22,7 @@ SRC_URI += "file://pal_peci-util.c \
             file://crashdump_p1_coreid \
             file://crashdump_p1_msr \
             file://crashdump_pcie \
+            file://crashdump_pcie_bus \
             file://autodump.sh \
            "
 
@@ -35,6 +36,7 @@ do_install_append() {
   install -m 644 crashdump_p1_coreid ${D}${sysconfdir}/peci/crashdump_p1_coreid
   install -m 644 crashdump_p1_msr ${D}${sysconfdir}/peci/crashdump_p1_msr
   install -m 644 crashdump_pcie ${D}${sysconfdir}/peci/crashdump_pcie
+  install -m 644 crashdump_pcie_bus ${D}${sysconfdir}/peci/crashdump_pcie_bus
   
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"

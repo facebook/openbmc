@@ -96,80 +96,48 @@ print_usage_help(void) {
   printf("    Display verbose information\n");
   printf("  --help, -h\n");
   printf("    Display this help messages\n");
-  printf("  --echo, -e <messages>...\n");
-  printf("    Used to echo lines to stdout in command file\n");
-  printf("  --input, -f <file>\n");
+  printf("  --file, -f <file>\n");
   printf("    Read commands from <file>\n");
 }
 
 #define MAX_ARG_NUM 64
-#define MAX_ARG_LENGTH 16
 static int
-process_file (int peci_fd, char* file_path) {
-  FILE *fp = NULL;
-  int ret, final_ret=0;
-  char buf[1024], *ptr;
-  int argc, i;
+process_file (int peci_fd, char* path) {
+  FILE *fp;
+  int argc, final_ret=0, ret;
+  char buf[1024];
+  char *str, *next, *del=" \n";
   char *argv[MAX_ARG_NUM];
-  char argv_buff[MAX_ARG_NUM][MAX_ARG_LENGTH];
 
-  for(i=0; i< MAX_ARG_NUM; i++) {
-    argv[i] = &argv_buff[i][0];
-  }
-
-  if (!(fp = fopen(file_path, "r"))) {
-    fprintf(stderr, "Failed to open %s\n", file_path);
+  if (!(fp = fopen(path, "r"))) {
+    syslog(LOG_WARNING, "Failed to open %s", path);
     return -1;
   }
 
-  while (fgets(buf, 1024, fp) != NULL) {
-    snprintf(argv[0], MAX_ARG_LENGTH, file_path);
-    argc = 1;
-    i = 0;
-    for (ptr = buf; *ptr != '\0'; ptr++) {
-      // Over length
-      if (i >= MAX_ARG_LENGTH-1) {
-        argv[argc++][i] = '\0';
-        i = 0;
-        while (*ptr != '\0' && !isspace(*ptr) )
-          ptr++;
-        if (*ptr == '\0')
-          break;
-      }
-      // Over arg number
-      if (argc >= MAX_ARG_NUM)
+  argv[0] = path;
+  while (fgets(buf, sizeof(buf), fp) != NULL) {
+    // getopt parse arguments from argv[1], we have to fill arg from 1.
+    str = strtok_r(buf, del, &next);
+    for (argc = 1; argc < MAX_ARG_NUM && str; argc++, str = strtok_r(NULL, del, &next)) {
+      if (str[0] == '#')
         break;
 
-      // space or newline
-      if (isspace(*ptr)) {
-        if (i != 0) {
-          argv[argc++][i] = '\0';
-          i = 0;
-        }
-        continue;
-      }
-      // comment
-      else if (*ptr == '#') {
-        if (i != 0) {
-          argv[argc++][i] = '\0';
-          i = 0;
-        }
+      if ((argc == 1) && !strcmp(str, "echo")) {
+        printf("%s", (*next) ? next : "\n");
         break;
       }
-      // Not space or '#'
-      else {
-        argv[argc][i++] = *ptr;
-      }
+      argv[argc] = str;
     }
-    if (argc > 1)
-      ret = process_command(peci_fd, argc, argv);
-    else
-      ret = 0;
-    if (ret != 0)
+    if (argc == 1)
+      continue;
+
+    ret = process_command(peci_fd, argc, argv);
+    // return failure if any command failed
+    if (ret)
       final_ret = ret;
   }
-
   fclose(fp);
+
   return final_ret;
 }
 
@@ -189,7 +157,7 @@ process_command (int peci_fd, int argc, char **argv) {
     {"awfcs", required_argument, 0, 'a'},
     {"retry", required_argument, 0, 'r'},
     {"interval", required_argument, 0, 'i'},
-    {"input", required_argument, 0, 'f'},
+    {"file", required_argument, 0, 'f'},
     {"verbose", no_argument, 0, 'v'},
     {"help", no_argument, 0, 'h'},
     {"echo", no_argument, 0, 'e'},

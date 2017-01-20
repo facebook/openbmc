@@ -186,7 +186,8 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 void pal_sensor_assert_handle(uint8_t snr_num, float val);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val);
-
+void pal_set_post_end(void);
+void pal_post_end_chk(uint8_t *post_end_chk);
 #ifdef __cplusplus
 } // extern "C"
 #endif

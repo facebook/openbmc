@@ -67,6 +67,7 @@ static pthread_mutex_t m_transport;
 static pthread_mutex_t m_oem;
 static pthread_mutex_t m_oem_1s;
 static pthread_mutex_t m_oem_usb_dbg;
+static pthread_mutex_t m_oem_q;
 
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
@@ -144,9 +145,9 @@ chassis_get_status (unsigned char *response, unsigned char *res_len)
       policy = 3;
   }
   *data++ = 0x01 | (policy << 5);   // Current Power State
-  *data++ = 0x00;		// Last Power Event
-  *data++ = 0x40;		// Misc. Chassis Status
-  *data++ = 0x00;		// Front Panel Button Disable
+  *data++ = 0x00;   // Last Power Event
+  *data++ = 0x40;   // Misc. Chassis Status
+  *data++ = 0x00;   // Front Panel Button Disable
 
   *res_len = data - &res->data[0];
 }
@@ -195,7 +196,7 @@ chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
 // Get System Boot Options (IPMI/Section 28.12)
 static void
 chassis_get_boot_options (unsigned char *request, unsigned char *response,
-			  unsigned char *res_len)
+        unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res= (ipmi_res_t *) response;
@@ -204,42 +205,42 @@ chassis_get_boot_options (unsigned char *request, unsigned char *response,
 
   // Fill response with default values
   res->cc = CC_SUCCESS;
-  *data++ = 0x01;		// Parameter Version
-  *data++ = req->data[0];	// Parameter
+  *data++ = 0x01;   // Parameter Version
+  *data++ = req->data[0]; // Parameter
 
   // TODO: Need to store user settings and return
   switch (param)
   {
     case PARAM_SET_IN_PROG:
-      *data++ = 0x00;	// Set In Progress
+      *data++ = 0x00; // Set In Progress
       break;
     case PARAM_SVC_PART_SELECT:
-      *data++ = 0x00;	// Service Partition Selector
+      *data++ = 0x00; // Service Partition Selector
       break;
     case PARAM_SVC_PART_SCAN:
-      *data++ = 0x00;	// Service Partition Scan
+      *data++ = 0x00; // Service Partition Scan
       break;
     case PARAM_BOOT_FLAG_CLR:
-      *data++ = 0x00;	// BMC Boot Flag Valid Bit Clear
+      *data++ = 0x00; // BMC Boot Flag Valid Bit Clear
       break;
     case PARAM_BOOT_INFO_ACK:
-      *data++ = 0x00;	// Write Mask
-      *data++ = 0x00;	// Boot Initiator Ack Data
+      *data++ = 0x00; // Write Mask
+      *data++ = 0x00; // Boot Initiator Ack Data
       break;
     case PARAM_BOOT_FLAGS:
-      *data++ = 0x00;	// Boot Flags
-      *data++ = 0x00;	// Boot Device Selector
-      *data++ = 0x00;	// Firmwaer Verbosity
-      *data++ = 0x00;	// BIOS Override
-      *data++ = 0x00;	// Device Instance Selector
+      *data++ = 0x00; // Boot Flags
+      *data++ = 0x00; // Boot Device Selector
+      *data++ = 0x00; // Firmwaer Verbosity
+      *data++ = 0x00; // BIOS Override
+      *data++ = 0x00; // Device Instance Selector
       break;
     case PARAM_BOOT_INIT_INFO:
-      *data++ = 0x00;	// Chanel Number
-      *data++ = 0x00;	// Session ID (4 bytes)
+      *data++ = 0x00; // Chanel Number
+      *data++ = 0x00; // Session ID (4 bytes)
       *data++ = 0x00;
       *data++ = 0x00;
       *data++ = 0x00;
-      *data++ = 0x00;	// Boot Info Timestamp (4 bytes)
+      *data++ = 0x00; // Boot Info Timestamp (4 bytes)
       *data++ = 0x00;
       *data++ = 0x00;
       *data++ = 0x00;
@@ -257,7 +258,7 @@ chassis_get_boot_options (unsigned char *request, unsigned char *response,
 // Handle Chassis Commands (IPMI/Section 28)
 static void
 ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
-		     unsigned char *response, unsigned char *res_len)
+         unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -289,7 +290,7 @@ sensor_plat_event_msg(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int record_id;		// Record ID for added entry
+  int record_id;    // Record ID for added entry
   int ret;
 
   sel_msg_t entry;
@@ -356,21 +357,21 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
   res->cc = CC_SUCCESS;
 
   //TODO: Following data needs to be updated based on platform
-  *data++ = 0x20;		// Device ID
-  *data++ = 0x81;		// Device Revision
+  *data++ = 0x20;   // Device ID
+  *data++ = 0x81;   // Device Revision
   *data++ = fv_major & 0x7f;      // Firmware Revision Major
   *data++ = ((fv_minor / 10) << 4) | (fv_minor % 10);      // Firmware Revision Minor
-  *data++ = 0x02;		// IPMI Version
-  *data++ = 0xBF;		// Additional Device Support
-  *data++ = 0x15;		// Manufacturer ID1
-  *data++ = 0xA0;		// Manufacturer ID2
-  *data++ = 0x00;		// Manufacturer ID3
-  *data++ = 0x46;		// Product ID1
-  *data++ = 0x31;		// Product ID2
-  *data++ = 0x00;		// Aux. Firmware Version1
-  *data++ = 0x00;		// Aux. Firmware Version2
-  *data++ = 0x00;		// Aux. Firmware Version3
-  *data++ = 0x00;		// Aux. Firmware Version4
+  *data++ = 0x02;   // IPMI Version
+  *data++ = 0xBF;   // Additional Device Support
+  *data++ = 0x15;   // Manufacturer ID1
+  *data++ = 0xA0;   // Manufacturer ID2
+  *data++ = 0x00;   // Manufacturer ID3
+  *data++ = 0x46;   // Product ID1
+  *data++ = 0x31;   // Product ID2
+  *data++ = 0x00;   // Aux. Firmware Version1
+  *data++ = 0x00;   // Aux. Firmware Version2
+  *data++ = 0x00;   // Aux. Firmware Version3
+  *data++ = 0x00;   // Aux. Firmware Version4
 
   *res_len = data - &res->data[0];
 }
@@ -394,8 +395,8 @@ app_get_selftest_results (unsigned char *response, unsigned char *res_len)
   res->cc = CC_SUCCESS;
 
   //TODO: Following data needs to be updated based on self-test results
-  *data++ = 0x55;		// Self-Test result
-  *data++ = 0x00;		// Extra error info in case of failure
+  *data++ = 0x55;   // Self-Test result
+  *data++ = 0x00;   // Extra error info in case of failure
 
   *res_len = data - &res->data[0];
 }
@@ -489,7 +490,7 @@ app_get_global_enables (unsigned char *response, unsigned char *res_len)
 
   res->cc = CC_SUCCESS;
 
-  *data++ = 0x0C;		// Global Enable
+  *data++ = 0x0C;   // Global Enable
 
   *res_len = data - &res->data[0];
 }
@@ -513,7 +514,7 @@ app_clear_message_flags (unsigned char *request, unsigned char req_len,
 // Set System Info Params (IPMI/Section 22.14a)
 static void
 app_set_sys_info_params (unsigned char *request, unsigned char *response,
-			 unsigned char *res_len)
+       unsigned char *res_len)
 {
 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -560,7 +561,7 @@ app_set_sys_info_params (unsigned char *request, unsigned char *response,
 // Get System Info Params (IPMI/Section 22.14b)
 static void
 app_get_sys_info_params (unsigned char *request, unsigned char *response,
-			 unsigned char *res_len)
+       unsigned char *res_len)
 {
 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -570,7 +571,7 @@ app_get_sys_info_params (unsigned char *request, unsigned char *response,
 
   // Fill default return values
   res->cc = CC_SUCCESS;
-  *data++ = 1;		// Parameter revision
+  *data++ = 1;    // Parameter revision
 
   switch (param)
   {
@@ -621,7 +622,7 @@ app_get_sys_info_params (unsigned char *request, unsigned char *response,
 // Handle Appliction Commands (IPMI/Section 20)
 static void
 ipmi_handle_app (unsigned char *request, unsigned char req_len,
-		 unsigned char *response, unsigned char *res_len)
+     unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -724,10 +725,10 @@ storage_get_sdr_info (unsigned char *response, unsigned char *res_len)
 {
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
-  int num_entries;		// number of sdr records
-  int free_space;		// free space in SDR device in bytes
-  time_stamp_t ts_recent_add;	// Recent Addition Timestamp
-  time_stamp_t ts_recent_erase;	// Recent Erasure Timestamp
+  int num_entries;    // number of sdr records
+  int free_space;   // free space in SDR device in bytes
+  time_stamp_t ts_recent_add; // Recent Addition Timestamp
+  time_stamp_t ts_recent_erase; // Recent Erasure Timestamp
 
   // Use platform APIs to get SDR information
   num_entries = sdr_num_entries ();
@@ -737,10 +738,10 @@ storage_get_sdr_info (unsigned char *response, unsigned char *res_len)
 
   res->cc = CC_SUCCESS;
 
-  *data++ = IPMI_SDR_VERSION;	// SDR version
-  *data++ = num_entries & 0xFF;	// number of sdr entries
+  *data++ = IPMI_SDR_VERSION; // SDR version
+  *data++ = num_entries & 0xFF; // number of sdr entries
   *data++ = (num_entries >> 8) & 0xFF;
-  *data++ = free_space & 0xFF;	// Free SDR Space
+  *data++ = free_space & 0xFF;  // Free SDR Space
   *data++ = (free_space >> 8) & 0xFF;
 
   memcpy(data, ts_recent_add.ts, SIZE_TIME_STAMP);
@@ -749,7 +750,7 @@ storage_get_sdr_info (unsigned char *response, unsigned char *res_len)
   memcpy(data, ts_recent_erase.ts, SIZE_TIME_STAMP);
   data += SIZE_TIME_STAMP;
 
-  *data++ = 0x02;		// Operations supported
+  *data++ = 0x02;   // Operations supported
 
   *res_len = data - &res->data[0];
 
@@ -762,7 +763,7 @@ storage_rsv_sdr (unsigned char *request, unsigned char *response, unsigned char 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
-  int rsv_id;			// SDR reservation ID
+  int rsv_id;     // SDR reservation ID
 
   // Use platform APIs to get a SDR reservation ID
   rsv_id = sdr_rsv_id(req->payload_id);
@@ -773,7 +774,7 @@ storage_rsv_sdr (unsigned char *request, unsigned char *response, unsigned char 
   }
 
   res->cc = CC_SUCCESS;
-  *data++ = rsv_id & 0xFF;	// Reservation ID
+  *data++ = rsv_id & 0xFF;  // Reservation ID
   *data++ = (rsv_id >> 8) & 0XFF;
 
   *res_len = data - &res->data[0];
@@ -783,18 +784,18 @@ storage_rsv_sdr (unsigned char *request, unsigned char *response, unsigned char 
 
 static void
 storage_get_sdr (unsigned char *request, unsigned char *response,
-		 unsigned char *res_len)
+     unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
 
-  int read_rec_id;		//record ID to be read
-  int next_rec_id;		//record ID for the next entry
-  int rsv_id;			// Reservation ID for the request
-  int rec_offset;		// Read offset into the record
-  int rec_bytes;		// Number of bytes to be read
-  sdr_rec_t entry;		// SDR record entry
+  int read_rec_id;    //record ID to be read
+  int next_rec_id;    //record ID for the next entry
+  int rsv_id;     // Reservation ID for the request
+  int rec_offset;   // Read offset into the record
+  int rec_bytes;    // Number of bytes to be read
+  sdr_rec_t entry;    // SDR record entry
   int ret;
 
   rsv_id = (req->data[1] << 8) | req->data[0];
@@ -811,7 +812,7 @@ storage_get_sdr (unsigned char *request, unsigned char *response,
   }
 
   res->cc = CC_SUCCESS;
-  *data++ = next_rec_id & 0xFF;	// next record ID
+  *data++ = next_rec_id & 0xFF; // next record ID
   *data++ = (next_rec_id >> 8) & 0xFF;
 
   memcpy (data, &entry.rec[rec_offset], rec_bytes);
@@ -829,10 +830,10 @@ storage_get_sel_info (unsigned char *request, unsigned char *response,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
-  int num_entries;		// number of log entries
-  int free_space;		// free space in SEL device in bytes
-  time_stamp_t ts_recent_add;	// Recent Addition Timestamp
-  time_stamp_t ts_recent_erase;	// Recent Erasure Timestamp
+  int num_entries;    // number of log entries
+  int free_space;   // free space in SEL device in bytes
+  time_stamp_t ts_recent_add; // Recent Addition Timestamp
+  time_stamp_t ts_recent_erase; // Recent Erasure Timestamp
 
   // Use platform APIs to get SEL information
   num_entries = sel_num_entries (req->payload_id);
@@ -842,10 +843,10 @@ storage_get_sel_info (unsigned char *request, unsigned char *response,
 
   res->cc = CC_SUCCESS;
 
-  *data++ = IPMI_SEL_VERSION;	// SEL version
-  *data++ = num_entries & 0xFF;	// number of log entries
+  *data++ = IPMI_SEL_VERSION; // SEL version
+  *data++ = num_entries & 0xFF; // number of log entries
   *data++ = (num_entries >> 8) & 0xFF;
-  *data++ = free_space & 0xFF;	// Free SEL Space
+  *data++ = free_space & 0xFF;  // Free SEL Space
   *data++ = (free_space >> 8) & 0xFF;
 
   memcpy(data, ts_recent_add.ts, SIZE_TIME_STAMP);
@@ -854,7 +855,7 @@ storage_get_sel_info (unsigned char *request, unsigned char *response,
   memcpy(data, ts_recent_erase.ts, SIZE_TIME_STAMP);
   data += SIZE_TIME_STAMP;
 
-  *data++ = 0x02;		// Operations supported
+  *data++ = 0x02;   // Operations supported
 
   *res_len = data - &res->data[0];
 
@@ -868,7 +869,7 @@ storage_rsv_sel (unsigned char * request, unsigned char *response,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
-  int rsv_id;			// SEL reservation ID
+  int rsv_id;     // SEL reservation ID
 
   // Use platform APIs to get a SEL reservation ID
   rsv_id = sel_rsv_id (req->payload_id);
@@ -879,7 +880,7 @@ storage_rsv_sel (unsigned char * request, unsigned char *response,
   }
 
   res->cc = CC_SUCCESS;
-  *data++ = rsv_id & 0xFF;	// Reservation ID
+  *data++ = rsv_id & 0xFF;  // Reservation ID
   *data++ = (rsv_id >> 8) & 0XFF;
 
   *res_len = data - &res->data[0];
@@ -889,15 +890,15 @@ storage_rsv_sel (unsigned char * request, unsigned char *response,
 
 static void
 storage_get_sel (unsigned char *request, unsigned char *response,
-		 unsigned char *res_len)
+     unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
 
-  int read_rec_id;		//record ID to be read
-  int next_rec_id;		//record ID for the next msg
-  sel_msg_t entry;		// SEL log entry
+  int read_rec_id;    //record ID to be read
+  int next_rec_id;    //record ID for the next msg
+  sel_msg_t entry;    // SEL log entry
   int ret;
   unsigned char offset = req->data[4];
   unsigned char len = req->data[5];
@@ -921,7 +922,7 @@ storage_get_sel (unsigned char *request, unsigned char *response,
   }
 
   res->cc = CC_SUCCESS;
-  *data++ = next_rec_id & 0xFF;	// next record ID
+  *data++ = next_rec_id & 0xFF; // next record ID
   *data++ = (next_rec_id >> 8) & 0xFF;
 
   memcpy(data, &entry.msg[offset], len);
@@ -934,14 +935,14 @@ storage_get_sel (unsigned char *request, unsigned char *response,
 
 static void
 storage_add_sel (unsigned char *request, unsigned char *response,
-		 unsigned char *res_len)
+     unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
 
 
-  int record_id;		// Record ID for added entry
+  int record_id;    // Record ID for added entry
   int ret;
 
   sel_msg_t entry;
@@ -967,7 +968,7 @@ storage_add_sel (unsigned char *request, unsigned char *response,
 
 static void
 storage_clr_sel (unsigned char *request, unsigned char *response,
-		 unsigned char *res_len)
+     unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -1050,7 +1051,7 @@ storage_get_sel_utc (unsigned char *response, unsigned char *res_len)
 
 static void
 ipmi_handle_storage (unsigned char *request, unsigned char req_len,
-		     unsigned char *response, unsigned char *res_len)
+         unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -1114,7 +1115,7 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
 // Set LAN Configuration (IPMI/Section 23.1)
 static void
 transport_set_lan_config (unsigned char *request, unsigned char *response,
-			  unsigned char *res_len)
+        unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -1199,7 +1200,7 @@ transport_set_lan_config (unsigned char *request, unsigned char *response,
 // Get LAN Configuration (IPMI/Section 23.2)
 static void
 transport_get_lan_config (unsigned char *request, unsigned char *response,
-			  unsigned char *res_len)
+        unsigned char *res_len)
 {
 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -1209,7 +1210,7 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
 
   // Fill the response with default values
   res->cc = CC_SUCCESS;
-  *data++ = 0x11;		// Parameter revision
+  *data++ = 0x11;   // Parameter revision
 
   switch (param)
   {
@@ -1319,7 +1320,7 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
 // Get SoL Configuration (IPMI/Section 26.3)
 static void
 transport_get_sol_config (unsigned char *request, unsigned char *response,
-			  unsigned char *res_len)
+        unsigned char *res_len)
 {
 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -1329,7 +1330,7 @@ transport_get_sol_config (unsigned char *request, unsigned char *response,
 
   // Fill the response with default values
   res->cc = CC_SUCCESS;
-  *data++ = 0x01;		// Parameter revision
+  *data++ = 0x01;   // Parameter revision
 
   switch (param)
   {
@@ -1367,7 +1368,7 @@ transport_get_sol_config (unsigned char *request, unsigned char *response,
 // Handle Transport Commands (IPMI/Section 23)
 static void
 ipmi_handle_transport (unsigned char *request, unsigned char req_len,
-		       unsigned char *response, unsigned char *res_len)
+           unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -1397,7 +1398,7 @@ ipmi_handle_transport (unsigned char *request, unsigned char req_len,
  */
 static void
 ipmi_handle_dcmi(unsigned char *request, unsigned char req_len,
-		 unsigned char *response, unsigned char *res_len)
+     unsigned char *response, unsigned char *res_len)
 {
   int ret;
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -1426,7 +1427,7 @@ ipmi_handle_dcmi(unsigned char *request, unsigned char req_len,
  */
 static void
 oem_set_proc_info (unsigned char *request, unsigned char *response,
-		   unsigned char *res_len)
+       unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -1441,7 +1442,7 @@ oem_set_proc_info (unsigned char *request, unsigned char *response,
 
 static void
 oem_set_dimm_info (unsigned char *request, unsigned char *response,
-		   unsigned char *res_len)
+       unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -1456,6 +1457,76 @@ oem_set_dimm_info (unsigned char *request, unsigned char *response,
 
   res->cc = CC_SUCCESS;
   *res_len = 0;
+}
+
+/*
+ * Function(s) to handle IPMI messages with NetFn: OEM 0x36
+ */
+static void
+oem_q_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+static void
+oem_q_get_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  *res_len = 0 ;
+  res->cc = CC_SUCCESS;
+}
+
+static void
+oem_q_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+static void
+oem_q_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  *res_len = 0;
+  res->cc = CC_SUCCESS;
+}
+
+static void
+oem_q_set_drive_info(unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+static void
+oem_q_get_drive_info(unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  *res_len = 0 ;
+  res->cc = CC_SUCCESS;
 }
 
 static void
@@ -1697,7 +1768,7 @@ oem_get_fw_info ( unsigned char *request, unsigned char req_len,
 
 static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
-		 unsigned char *response, unsigned char *res_len)
+     unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -1742,6 +1813,43 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
   }
   pthread_mutex_unlock(&m_oem);
+}
+
+static void
+ipmi_handle_oem_q (unsigned char *request, unsigned char req_len,
+     unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  unsigned char cmd = req->cmd;
+  syslog(LOG_WARNING, "cmd = %d", cmd);
+  pthread_mutex_lock(&m_oem_q);
+  switch (cmd)
+  {
+    case CMD_OEM_Q_SET_PROC_INFO:
+      oem_q_set_proc_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_GET_PROC_INFO:
+      oem_q_get_proc_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_SET_DIMM_INFO:
+      oem_q_set_dimm_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_GET_DIMM_INFO:
+      oem_q_get_dimm_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_SET_DRIVE_INFO:
+      oem_q_set_drive_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_GET_DRIVE_INFO:
+      oem_q_get_drive_info (request, req_len, response, res_len);
+      break;
+    default:
+      res->cc = CC_INVALID_CMD;
+      break;
+  }
+  pthread_mutex_unlock(&m_oem_q);
 }
 
 static void
@@ -1820,7 +1928,7 @@ oem_1s_handle_ipmb_req(unsigned char *request, unsigned char req_len,
 
 static void
 ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
-		 unsigned char *response, unsigned char *res_len)
+     unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -2067,7 +2175,7 @@ oem_usb_dbg_get_frame_data(unsigned char *request, unsigned char req_len,
 
 static void
 ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
-		 unsigned char *response, unsigned char *res_len)
+     unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -2107,7 +2215,7 @@ ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
  */
 static void
 ipmi_handle (unsigned char *request, unsigned char req_len,
-	     unsigned char *response, unsigned char *res_len)
+       unsigned char *response, unsigned char *res_len)
 {
 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2118,7 +2226,7 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
 
   // Provide default values in the response message
   res->cmd = req->cmd;
-  res->cc = 0xFF;		// Unspecified completion code
+  res->cc = 0xFF;   // Unspecified completion code
   *(unsigned short*)res_len = 0;
 
   switch (netfn)
@@ -2150,6 +2258,10 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
     case NETFN_OEM_REQ:
       res->netfn_lun = NETFN_OEM_RES << 2;
       ipmi_handle_oem (request, req_len, response, res_len);
+      break;
+    case NETFN_OEM_Q_REQ:
+      res->netfn_lun = NETFN_OEM_Q_RES << 2;
+      ipmi_handle_oem_q (request, req_len, response, res_len);
       break;
     case NETFN_OEM_1S_REQ:
       res->netfn_lun = NETFN_OEM_1S_RES << 2;
@@ -2237,6 +2349,7 @@ main (void)
   pthread_mutex_init(&m_oem, NULL);
   pthread_mutex_init(&m_oem_1s, NULL);
   pthread_mutex_init(&m_oem_usb_dbg, NULL);
+  pthread_mutex_init(&m_oem_q, NULL);
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
   {
@@ -2296,6 +2409,7 @@ main (void)
   pthread_mutex_destroy(&m_oem);
   pthread_mutex_destroy(&m_oem_1s);
   pthread_mutex_destroy(&m_oem_usb_dbg);
+  pthread_mutex_destroy(&m_oem_q);
 
   return 0;
 }

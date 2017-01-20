@@ -71,33 +71,10 @@ check_por_config()
   logger -s "TO_PWR_ON:$TO_PWR_ON, POR:$POR, LS:$LS"
 }
 
-# Sync BMC's date with the server
-sync_date()
-{
-  # Use standard IPMI command 'get-sel-time' to read RTC time
-  output=$(/usr/local/bin/me-util 0x28 0x48)
-  # if the command fails, return
-  [ $(echo $output | wc -c) != 12 ] && return
-  col1=$(echo $output | cut -d' ' -f1 | sed 's/^0*//')
-  col2=$(echo $output | cut -d' ' -f2 | sed 's/^0*//')
-  col3=$(echo $output | cut -d' ' -f3 | sed 's/^0*//')
-  col4=$(echo $output | cut -d' ' -f4 | sed 's/^0*//')
-
-  # create the integer from the hex bytes returned
-  val=$((0x$col4 << 24 | 0x$col3 << 16 | 0x$col2 << 8 | 0x$col1))
-
-  # create the timestamp required for busybox's date command
-  ts=$(date -d @$val +"%Y.%m.%d-%H:%M:%S")
-
-  # set the command
-  echo Syncing up BMC time with server...
-  date $ts
-}
-
 # Check whether it is fresh power on reset
 if [ $(is_bmc_por) -eq 1 ]; then
 
-  sync_date
+  /usr/local/bin/sync_date.sh
 
   ## Move por to U-boot
   #check_por_config

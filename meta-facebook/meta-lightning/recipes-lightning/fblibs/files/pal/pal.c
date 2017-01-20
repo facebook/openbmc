@@ -1323,3 +1323,13 @@ void
 pal_sensor_deassert_handle(uint8_t snr_num, float val) {
   return;
 }
+
+void
+pal_set_post_end(void) {
+  return;
+}
+
+void
+pal_post_end_chk(uint8_t *post_end_chk) {
+  return;
+}

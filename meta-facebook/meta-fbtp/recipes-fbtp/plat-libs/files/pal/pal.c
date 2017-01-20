@@ -6891,3 +6891,27 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val) {
     system(cmd);
   }
 }
+
+void
+pal_post_end_chk(uint8_t *post_end_chk) {
+  static uint8_t post_end = 1;
+  syslog(LOG_WARNING, "pal_post_end_chk: post_end_chk %d, post_end:%d", *post_end_chk,post_end);
+  if (*post_end_chk == 1) {
+    post_end = 1;
+  } else if (*post_end_chk == 0) {
+    *post_end_chk = post_end;
+    post_end = 0;
+  }
+}
+
+void
+pal_set_post_end()
+{
+  uint8_t post_end = 1;
+
+  //Set post end chk flag to update LCD info page
+  pal_post_end_chk(&post_end);
+
+  // Sync time with system
+  system("/usr/local/bin/sync_date.sh &");
+}

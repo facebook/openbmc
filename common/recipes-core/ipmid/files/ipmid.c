@@ -1556,6 +1556,7 @@ oem_set_post_end (unsigned char *request, unsigned char *response,
   pal_update_ts_sled();
   // TODO: For now logging the event, need to find usage for this info
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", req->payload_id);
+  pal_set_post_end();
 
   res->cc = CC_SUCCESS;
   *res_len = 0;
@@ -1943,13 +1944,15 @@ oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
   uint8_t index;
   uint8_t next;
   uint8_t end;
+  uint8_t phase;
   uint8_t count;
-  uint8_t desc[256];
+  uint8_t desc[256] = {0};
   int ret;
 
   index = req->data[3];
+  phase = req->data[4];
 
-  ret = plat_udbg_get_post_desc(index, &next, &end, &count, desc);
+  ret = plat_udbg_get_post_desc(index, &next, phase, &end, &count, desc);
   if (ret) {
     memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -1960,11 +1963,12 @@ oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
   memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
   res->data[3] = index;
   res->data[4] = next;
-  res->data[5] = end;
-  res->data[6] = count;
-  memcpy(&res->data[7], desc, count);
+  res->data[5] = phase;
+  res->data[6] = end;
+  res->data[7] = count;
+  memcpy(&res->data[8], desc, count);
   res->cc = CC_SUCCESS;
-  *res_len = SIZE_IANA_ID + 4 + count;
+  *res_len = SIZE_IANA_ID + 5 + count;
 }
 
 static void
@@ -2014,7 +2018,7 @@ oem_usb_dbg_get_frame_data(unsigned char *request, unsigned char req_len,
   uint8_t page;
   uint8_t next;
   uint8_t count;
-  uint8_t data[256];
+  uint8_t data[256] = {0};
   int ret;
 
   frame = req->data[3];

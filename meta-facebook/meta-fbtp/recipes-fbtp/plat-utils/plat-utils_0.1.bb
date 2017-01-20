@@ -26,6 +26,7 @@ SRC_URI = "file://ast-functions \
            file://power_led.sh \
            file://setup-gpio.sh \
            file://power-on.sh \
+           file://sync_date.sh \
            file://i2c.h \
            file://i2c-dev.h \
            file://COPYING \
@@ -35,7 +36,7 @@ pkgdir = "utils"
 
 S = "${WORKDIR}"
 
-binfiles = "power_led.sh sol-util \
+binfiles = "power_led.sh sync_date.sh sol-util \
   "
 
 DEPENDS_append = "update-rc.d-native"

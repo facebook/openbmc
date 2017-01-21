@@ -1946,7 +1946,7 @@ oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
   uint8_t end;
   uint8_t phase;
   uint8_t count;
-  uint8_t desc[256] = {0};
+  uint8_t desc[256] = {0};
   int ret;
 
   index = req->data[3];

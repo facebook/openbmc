@@ -47,7 +47,7 @@ extern "C" {
 #define CLEARBIT(x, y)      (x & (~(1 << y)))
 #define GETMASK(y)          (1 << y)
 
-#define MAX_NODES 1
+#define MAX_NODES 4
 
 //Expander
 #define SCC_FIRST_SENSOR_NUM 96 //Expander_TEMP 0x60

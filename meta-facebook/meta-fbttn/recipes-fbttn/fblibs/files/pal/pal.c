@@ -157,7 +157,7 @@ const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED
 //const static uint8_t gpio_bic_ready[] = { 0, 107 };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };
 const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN };
-const char pal_fru_list[] = "all, slot1, iom, scc, dpb, nic";
+const char pal_fru_list[] = "all, slot1, iom, dpb, scc, nic";
 const char pal_server_list[] = "slot1";
 
 size_t pal_pwm_cnt = 2;
@@ -1809,58 +1809,63 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
 
 int
 pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
-
-  switch(snr_num) {
-    case SYSTEM_EVENT:
-      sprintf(name, "SYSTEM_EVENT");
-      break;
-    case THERM_THRESH_EVT:
-      sprintf(name, "THERM_THRESH_EVT");
-      break;
-    case CRITICAL_IRQ:
-      sprintf(name, "CRITICAL_IRQ");
-      break;
-    case POST_ERROR:
-      sprintf(name, "POST_ERROR");
-      break;
-    case MACHINE_CHK_ERR:
-      sprintf(name, "MACHINE_CHK_ERR");
-      break;
-    case PCIE_ERR:
-      sprintf(name, "PCIE_ERR");
-      break;
-    case IIO_ERR:
-      sprintf(name, "IIO_ERR");
-      break;
-    case MEMORY_ECC_ERR:
-      sprintf(name, "MEMORY_ECC_ERR");
-      break;
-    case PWR_ERR:
-      sprintf(name, "PWR_ERR");
-      break;
-    case CATERR:
-      sprintf(name, "CATERR");
-      break;
-    case CPU_DIMM_HOT:
-      sprintf(name, "CPU_DIMM_HOT");
-      break;
-    case CPU0_THERM_STATUS:
-      sprintf(name, "CPU0_THERM_STATUS");
-      break;
-    case SPS_FW_HEALTH:
-      sprintf(name, "SPS_FW_HEALTH");
-      break;
-    case NM_EXCEPTION:
-      sprintf(name, "NM_EXCEPTION");
-      break;
-    case PWR_THRESH_EVT:
-      sprintf(name, "PWR_THRESH_EVT");
-      break;
-    default:
-      sprintf(name, "Unknown");
-      break;
+  
+  if(fru == FRU_SLOT1) {
+    switch(snr_num) {
+      case SYSTEM_EVENT:
+        sprintf(name, "SYSTEM_EVENT");
+        break;
+      case THERM_THRESH_EVT:
+        sprintf(name, "THERM_THRESH_EVT");
+        break;
+      case CRITICAL_IRQ:
+        sprintf(name, "CRITICAL_IRQ");
+        break;
+      case POST_ERROR:
+        sprintf(name, "POST_ERROR");
+        break;
+      case MACHINE_CHK_ERR:
+        sprintf(name, "MACHINE_CHK_ERR");
+        break;
+      case PCIE_ERR:
+        sprintf(name, "PCIE_ERR");
+        break;
+      case IIO_ERR:
+        sprintf(name, "IIO_ERR");
+        break;
+      case MEMORY_ECC_ERR:
+        sprintf(name, "MEMORY_ECC_ERR");
+        break;
+      case PWR_ERR:
+        sprintf(name, "PWR_ERR");
+        break;
+      case CATERR:
+        sprintf(name, "CATERR");
+        break;
+      case CPU_DIMM_HOT:
+        sprintf(name, "CPU_DIMM_HOT");
+        break;
+      case CPU0_THERM_STATUS:
+        sprintf(name, "CPU0_THERM_STATUS");
+        break;
+      case SPS_FW_HEALTH:
+        sprintf(name, "SPS_FW_HEALTH");
+        break;
+      case NM_EXCEPTION:
+        sprintf(name, "NM_EXCEPTION");
+        break;
+      case PWR_THRESH_EVT:
+        sprintf(name, "PWR_THRESH_EVT");
+        break;
+      default:
+        sprintf(name, "Unknown");
+        break;
+    }
   }
-
+  else if(fru == FRU_SCC) {
+    fbttn_sensor_name(fru, snr_num, name);
+    fbttn_sensor_name(fru-1, snr_num, name); // the fru is always 4, so we have to minus 1 for DPB sensors, since scc and dpb sensor all come from Expander
+  }
   return 0;
 }
 

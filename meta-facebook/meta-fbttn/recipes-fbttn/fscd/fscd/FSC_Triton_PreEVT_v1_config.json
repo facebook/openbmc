@@ -7,6 +7,7 @@
     "sensor_fail": true
   },
   "watchdog": true,
+  "chassis_intrusion": true,
   "min_rpm": 400,
   "profiles": {
     "linear_soc_temp": {

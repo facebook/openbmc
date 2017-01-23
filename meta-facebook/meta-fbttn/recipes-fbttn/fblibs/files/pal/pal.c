@@ -103,6 +103,8 @@
 //??
 #define GPIO_BMC_READY_N    28
 
+#define GPIO_CHASSIS_INTRUSION  487
+
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
@@ -2551,7 +2553,7 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
       syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
       return -1;
     }
-  
+
     snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
 
     if (read_device_hex(path, &val)) {
@@ -2987,7 +2989,7 @@ pal_post_end_chk(uint8_t *post_end_chk) {
 }
 
 int
-pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len){
+pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len) {
   if(target > TARGET_VR_PVCCSCUS_VER)
     return -1;
   if( target!= TARGET_BIOS_VER ) {
@@ -3004,4 +3006,19 @@ pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len
     return 0;
   }
   return -1;
+}
+
+int
+pal_self_tray_location(uint8_t *value) {
+
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_CHASSIS_INTRUSION);
+  if (read_device(path, &val))
+    return -1;
+
+  *value = (uint8_t) val;
+
+  return 0;
 }

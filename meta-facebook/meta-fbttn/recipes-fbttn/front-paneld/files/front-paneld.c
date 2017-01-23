@@ -584,10 +584,10 @@ encl_led_handler() {
     }
 
     if(pal_sum_error_code() == 1) {   // error occur
-      //pal_fault_led(ID_LED_ON, 0);
+      pal_fault_led(ID_LED_ON, 0);
     }
     else {
-      //pal_fault_led(ID_LED_OFF, 0);
+      pal_fault_led(ID_LED_OFF, 0);
     }
     sleep(1);
   }

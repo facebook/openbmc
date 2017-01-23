@@ -125,8 +125,8 @@ get_error_code() {
 	    #endif
   }
   else {
-    while (fscanf(fp, "%02X", error+count) != EOF && count!=32) {
-      count++;
+    while (fscanf(fp, "%d", error+count) != EOF && count!=32) {    
+      count++; 
     }
   }
 

@@ -6,7 +6,7 @@
     "fan_fail": true,
     "sensor_fail": true
   },
-  "watchdog": false,
+  "watchdog": true,
   "min_rpm": 400,
   "profiles": {
     "linear_soc_temp": {

@@ -1676,6 +1676,26 @@ oem_get_board_id(unsigned char *request, unsigned char *response,
 }
 
 static void
+oem_get_fw_info ( unsigned char *request, unsigned char req_len,
+                  unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+
+  ret = pal_get_fw_info(req->data[0], res->data, res_len);
+
+  if (ret != 0) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }
+
+  // Prepare response buffer
+  res->cc = CC_SUCCESS;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
 		 unsigned char *response, unsigned char *res_len)
 {
@@ -1713,6 +1733,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_BOARD_ID:
       oem_get_board_id (request, response, res_len);
+      break;
+    case CMD_OEM_GET_FW_INFO:
+      oem_get_fw_info (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

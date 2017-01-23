@@ -1286,12 +1286,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   ret = fbttn_sensor_read(fru, sensor_num, value);
   if(ret < 0) {
     if(fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC)
-      return -1;
+      ret = -1;
     if(pal_get_server_power(fru, &status) < 0)
-      return -1;
+      ret = -1;
     // This check helps interpret the IPMI packet loss scenario
     if(status == SERVER_POWER_ON)
-      return -1;
+      ret = -1;
     strcpy(str, "NA");
   }
   else {

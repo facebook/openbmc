@@ -56,6 +56,8 @@ extern "C" {
 
 #define ERROR_CODE_NUM 32
 
+#define HB_INTERVAL 50
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

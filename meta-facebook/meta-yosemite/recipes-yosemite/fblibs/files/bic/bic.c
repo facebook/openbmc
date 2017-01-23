@@ -42,9 +42,6 @@
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_VER_STR "F20_"
 
-#define BIOS_VER_REGION_SIZE (4*1024*1024)
-#define BIOS_VER_STR "F20_"
-
 #define BIC_UPDATE_RETRIES 12
 #define BIC_UPDATE_TIMEOUT 500
 
@@ -1071,7 +1068,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   if (!tbuf) {
     goto error_exit;
   }
-  set_fw_update_ongoing(slot_id, 55);
 
   lseek(fd, 0, SEEK_SET);
   offset = 0;

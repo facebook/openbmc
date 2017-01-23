@@ -2669,6 +2669,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
   return 0;
 }
 
+int
 pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t sensor_num, int second_transaction) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
@@ -2699,17 +2700,26 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     tlen = 2;
   }
 
-  //TODO paste sensor_num to tbuf, to get spcific sensor data from exp
+  //send tbuf with sensor count and numbers to get spcific sensor data from exp
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
   if (ret) {
     #ifdef DEBUG
-       syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: expander_ipmb_wrapper failed.");
+      syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: expander_ipmb_wrapper failed.");
     #endif
+
+    //if expander doesn't respond, set all sensors value to NA and save to cache
+    for(i = 0; i < sensor_cnt; i++) {
+      sprintf(key, "dpb_sensor%d", tbuf[i+1]);
+      sprintf(str, "NA");
+
+      if(edb_cache_set(key, str) < 0) {
+        #ifdef DEBUG
+          syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+        #endif
+      }
+    }
     return ret;
   }
-
-  if(rbuf[0] != sensor_cnt) //if the response counter is not equal to request counter
-    return -1;
 
   for(i = 0; i < sensor_cnt; i++) {
     // search the corresponding sensor table to fill up the raw data and statsu
@@ -2718,9 +2728,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     // rbuf[5*i+3] sensor raw data2
     // rbuf[5*i+4] sensor status
     // rbuf[5*i+5] reserved
-    ret = fbttn_sensor_units(fru, rbuf[5*i+1], units);
-    if (ret)
-      return ret;
+    fbttn_sensor_units(fru, rbuf[5*i+1], units);
 
     if( strcmp(units,"C") == 0 ) {
       value = rbuf[5*i+2];
@@ -2790,17 +2798,34 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
 
   tlen = sensor_cnt + 1;
 
-  //TODO paste sensor_num to tbuf, to get spcific sensor data from exp
+  //send tbuf with sensor count and numbers to get spcific sensor data from exp
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
   if (ret) {
     #ifdef DEBUG
-       syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: expander_ipmb_wrapper failed.");
+      syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: expander_ipmb_wrapper failed.");
     #endif
+
+    //if expander doesn't respond, set all sensors value to NA and save to cache
+    for(i = 0; i < sensor_cnt; i++) {
+      sprintf(key, "scc_sensor%d", tbuf[i+1]);
+      sprintf(str, "NA");
+
+      //SCC_IOC have to check if the server is on, if not shows "NA"
+      if (rbuf[5*i+1] == SCC_SENSOR_IOC_TEMP) {
+        pal_get_server_power(FRU_SLOT1, &status);
+        if (status != SERVER_POWER_ON) {
+          strcpy(str, "NA");
+        }
+      }
+
+      if(edb_cache_set(key, str) < 0) {
+        #ifdef DEBUG
+          syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+        #endif
+      }
+    }
     return ret;
   }
-
-  if(rbuf[0] != sensor_cnt) //if the response counter is not equal to request counter
-    return -1;
 
   for(i = 0; i < sensor_cnt; i++) {
     // search the corresponding sensor table to fill up the raw data and statsu
@@ -2809,9 +2834,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     // rbuf[5*i+3] sensor raw data2
     // rbuf[5*i+4] sensor status
     // rbuf[5*i+5] reserved
-    ret = fbttn_sensor_units(fru, rbuf[5*i+1], units);
-    if (ret)
-        return ret;
+    fbttn_sensor_units(fru, rbuf[5*i+1], units);
 
     if( strcmp(units,"C") == 0 ) {
       value = rbuf[5*i+2];
@@ -2827,20 +2850,12 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
 
-    //Ignore FAN stauts
-    //TODO: There is a bug in Expander FW,
-    //Expander can't check the tachometer hardware monitor status.
-    // We will remove this after expander finishes the tachometer hardware monitor function.
-    if( strcmp(units,"RPM") != 0 )
-      if(rbuf[5*i+4] != 0){
-	        sprintf(str, "NA");
-      }
-
     if(edb_cache_set(key, str) < 0) {
+      #ifdef DEBUG
+        syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+      #endif
+      return -1;
     }
-  #ifdef DEBUG
-       syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
-  #endif
   }
 
   return 0;

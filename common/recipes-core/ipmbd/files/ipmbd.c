@@ -146,6 +146,28 @@ get_payload_id(uint8_t bus_id) {
 
   return payload_id;
 }
+
+#elif CONFIG_FBTTN
+// Returns the payload ID from IPMB bus routing
+// Slot#1: bus#3, Expander: bus#9
+static uint8_t
+get_payload_id(uint8_t bus_id) {
+  uint8_t payload_id = 0xFF; // Invalid payload ID
+
+  switch(bus_id) {
+  case 3: //Slot#1
+    payload_id = 1;
+    break;
+  case 9: //Expander
+    payload_id = 4;
+    break;  
+  default:
+    syslog(LOG_WARNING, "get_payload_id: Wrong bus ID\n");
+    break;
+  }
+
+  return payload_id;
+}
 #endif
 
 
@@ -393,6 +415,8 @@ ipmb_req_handler(void *bus_num) {
 
     // Create IPMI request from IPMB data
 #ifdef CONFIG_YOSEMITE
+    p_ipmi_mn_req->payload_id = get_payload_id(*bnum);
+#elif CONFIG_FBTTN
     p_ipmi_mn_req->payload_id = get_payload_id(*bnum);
 #else
     // For single node systems use payload ID as 1

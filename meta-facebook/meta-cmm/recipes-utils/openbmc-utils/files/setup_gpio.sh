@@ -42,6 +42,20 @@ devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 24
 gpio_export F0 CPLD_JTAG_SEL
 
+# SYSTEM LED GPIOs
+gpio_export 400 SYS_LED_RED
+gpio_export 401 SYS_LED_GREEN
+gpio_export 402 SYS_LED_BLUE
+gpio_export 403 FAN_LED_RED
+gpio_export 404 FAN_LED_GREEN
+gpio_export 405 FAN_LED_BLUE
+gpio_export 406 PSU_LED_RED
+gpio_export 407 PSU_LED_GREEN
+gpio_export 408 PSU_LED_BLUE
+gpio_export 409 FAB_LED_RED
+gpio_export 410 FAB_LED_GREEN
+gpio_export 411 FAB_LED_BLUE
+
 # PSU PRESENCE GPIOs
 gpio_export 424 PSU4_PRESENT
 gpio_export 425 PSU3_PRESENT

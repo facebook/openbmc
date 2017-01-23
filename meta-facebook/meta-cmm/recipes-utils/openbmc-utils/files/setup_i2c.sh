@@ -112,3 +112,6 @@ add_device pfe3000 0x10 27 # psu1
 add_device pfe3000 0x10 26 # psu2
 add_device pfe3000 0x10 25 # psu3
 add_device pfe3000 0x10 24 # psu4
+
+# LEDs
+add_device pca9535 0x21 30

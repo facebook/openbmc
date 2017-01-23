@@ -163,7 +163,8 @@ const char pal_server_list[] = "slot1";
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1";
-const char pal_tach_list[] = "0, 7";
+const char pal_tach_list[] = "0...7";
+uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 1, 1, 1, 1};
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -276,6 +277,32 @@ read_device(const char *device, int *value) {
     return 0;
   }
 }
+
+static int
+read_device_hex(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return errno;
+  }
+
+  rc = fscanf(fp, "%x", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
 
 static int
 write_device(const char *device, const char *value) {
@@ -2498,8 +2525,45 @@ int pal_minisas_led(uint8_t port, uint8_t state) {
 
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
+  char path[64] = {0};
+  char device_name[64] = {0};
+  int val = 0;
+  int pwm_enable = 0;
 
-  // TODO: Add support to display PWM in fan-util output (similar to lightning pal)
+  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fanid2pwmid_mapping[fan_num]);
+  snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+  if (read_device(path, &pwm_enable)) {
+    syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
+    return -1;
+  }
+
+  // Check the PWM is enable or not
+  if(pwm_enable) {
+    // fan number should in this range
+    if(fan_num >= 0 && fan_num <= 11)
+      snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fanid2pwmid_mapping[fan_num]);
+    else {
+      syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
+      return -1;
+    }
+  
+    snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+
+    if (read_device_hex(path, &val)) {
+      syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
+      return -1;
+    }
+    if(val)
+      *value = (100 * val) / PWM_UNIT_MAX;
+    else
+      // 0 means duty cycle is 100%
+      *value = 100;
+  }
+  else
+    //PWM is disable
+    *value = 0;
+
+
   return 0;
 }
 

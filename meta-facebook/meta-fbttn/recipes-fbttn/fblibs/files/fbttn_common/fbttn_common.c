@@ -31,8 +31,8 @@
 #include <string.h>
 #include "fbttn_common.h"
 
-#define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
-#define CRASHDUMP_FILE      "/mnt/data/crashdump_"
+#define CRASHDUMP_BIN       "/usr/local/bin/me-util"
+#define CRASHDUMP_FILE "/mnt/data/crashdump_slot1"
 
 struct threadinfo {
   uint8_t is_running;
@@ -102,12 +102,11 @@ fbttn_common_fru_id(char *str, uint8_t *fru) {
 void *
 generate_dump(void *arg) {
 
-  uint8_t fru = *(uint8_t *) arg;
+  uint8_t fru = (uint8_t*) arg;
   char cmd[128];
   char fruname[16];
   int tmpf;
   int rc;
-
 
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
@@ -118,19 +117,17 @@ generate_dump(void *arg) {
 
   // HEADER LINE for the dump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s time > %s%s", CRASHDUMP_BIN, CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "date > %s", CRASHDUMP_FILE);
   system(cmd);
 
   // COREID dump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s 48 coreid >> %s%s", CRASHDUMP_BIN, fruname,
-      CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "%s %s 48 coreid", CRASHDUMP_BIN, fruname);
   system(cmd);
 
   // MSR dump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s 48 msr >> %s%s", CRASHDUMP_BIN, fruname,
-      CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "%s %s 48 msr", CRASHDUMP_BIN, fruname);
   system(cmd);
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
@@ -165,7 +162,7 @@ fbttn_common_crashdump(uint8_t fru) {
   }
 
   // Start a thread to generate the crashdump
-  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) &fru) < 0) {
+  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) fru) < 0) {
     syslog(LOG_WARNING, "pal_store_crashdump: pthread_create for"
         " FRU %d failed\n", fru);
     return -1;

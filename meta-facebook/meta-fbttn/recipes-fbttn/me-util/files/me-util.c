@@ -39,8 +39,7 @@
 #define  ME_COLD_RESET_DELAY 5
 
 #define LOGFILE "/tmp/me-util.log"
-#define CRUSH_DUMP_MSR_LOGFILE "/tmp/crush_dump_msr_%s.data"
-#define CRUSH_DUMP_COREID_LOGFILE "/tmp/crush_dump_coreid_%s.data"
+#define CRASHDUMP_FILE "/mnt/data/crashdump_slot1"
 
 #define  IA32_MC_CTL_base 0x0400
 #define  IA32_MC_CTL2_base 0x0280
@@ -58,7 +57,7 @@ print_usage_help(void) {
   printf("Usage: me-util <slot1> 48 msr\n");
 }
 
-int crush_dump_msr(void) {
+int crash_dump_msr(void) {
   FILE *fp = NULL;
   int processorid = 0, retry = 0, response = 0, comp = 1,
   mc_index = 0, msr_offset = 0;
@@ -70,15 +69,8 @@ int crush_dump_msr(void) {
   uint8_t rlen = 0;
   uint8_t check; //for check 4th response data
   int i = 0;
-  
-  char time_buff[100];
-  time_t now = time (0);
-  char file_name[100];
 
-  strftime (time_buff, 100, "%Y-%m-%d-%H%M%S", localtime (&now));
-  sprintf(file_name, CRUSH_DUMP_MSR_LOGFILE, time_buff);
-
-  fp = fopen(file_name, "w");
+  fp = fopen(CRASHDUMP_FILE, "a+");
   if (!fp) {
       printf("File open Fail\n");
       return -1;
@@ -251,7 +243,7 @@ int crush_dump_msr(void) {
   return 0;
 }
 
-int crush_dump_coreid(void) {
+int crash_dump_coreid(void) {
   FILE *fp = NULL;
   int processorid = 0, retry = 0, response = 0, comp = 1,
   mc_index = 0, msr_offset = 0;
@@ -264,14 +256,7 @@ int crush_dump_coreid(void) {
   uint8_t check; //for check 4th response data
   int i = 0;
 
-  char time_buff[100];
-  time_t now = time (0);
-  char file_name[100];
-
-  strftime (time_buff, 100, "%Y-%m-%d-%H%M%S", localtime (&now));
-  sprintf(file_name, CRUSH_DUMP_COREID_LOGFILE, time_buff);
-
-  fp = fopen(file_name, "w");
+  fp = fopen(CRASHDUMP_FILE, "a+");
   if (!fp) {
       printf("File Open Fail\n");
       return -1;
@@ -391,14 +376,17 @@ main(int argc, char **argv) {
   }
 
   if (!strcmp(argv[2], "48")) {
-    if (!strcmp(argv[3], "msr")) {    
-      ret = crush_dump_msr();
+    if (!strcmp(argv[3], "msr")) {
+      ret = crash_dump_msr();
       return ret;
     }
-    else if (!strcmp(argv[3], "coreid")) {    
-      ret = crush_dump_coreid();
+    else if (!strcmp(argv[3], "coreid")) {
+      ret = crash_dump_coreid();
       return ret;
-    }    
+    }
+    else {
+    goto err_exit;
+    }
   }
 
   for (i = 2; i < argc; i++) {

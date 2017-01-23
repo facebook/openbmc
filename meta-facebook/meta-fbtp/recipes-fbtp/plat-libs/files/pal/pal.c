@@ -6915,3 +6915,9 @@ pal_set_post_end()
   // Sync time with system
   system("/usr/local/bin/sync_date.sh &");
 }
+
+int
+pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+{
+  return -1;
+}

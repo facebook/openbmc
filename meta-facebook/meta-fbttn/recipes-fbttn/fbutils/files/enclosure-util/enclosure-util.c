@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <facebook/exp.h>
 #include <openbmc/ipmb.h>
+#include "enclosure.h"
 
 #define LOGFILE "/tmp/enclosure-util.log"
 
@@ -39,8 +40,8 @@ static int OEM_BITMAP_FUN(unsigned char* in_error,unsigned char* data);
 
 static void
 print_usage_help(void) {
-  printf("Usage: enclosure-util --hdd\n");
-  printf("Usage: enclosure-util --hdd <number 0~35>\n");
+  printf("Usage: enclosure-util --hdd-status\n");
+  printf("Usage: enclosure-util --hdd-status <number 0~35>\n");
   printf("Usage: enclosure-util --error\n");
 }
 
@@ -83,12 +84,12 @@ get_hdd_status(int hdd_number) {
         strcat(error, " ");
       }
     }
-    printf("GOOD HDD: %s\n", good);
-    printf("ERROR HDD: %s\n", error);
-    printf("MISSING HDD: %s\n", missing);
+    printf("Normal Drives: %s\n", good);
+    printf("Abnormal Drives: %s\n", error);
+    printf("Missing Drives: %s\n", missing);
   }
   else {
-      printf("HDD_%d Status: %02X %02X %02X %02X\n", hdd_number, rbuf[hdd_number*4], rbuf[hdd_number*4+1], rbuf[hdd_number*4+2], rbuf[hdd_number*4+3]);
+      printf("Drive_%d Status: %02X %02X %02X %02X\n", hdd_number, rbuf[hdd_number*4], rbuf[hdd_number*4+1], rbuf[hdd_number*4+2], rbuf[hdd_number*4+3]);
   }
 }
 
@@ -121,7 +122,7 @@ get_error_code() {
       printf("fopen Fail: %s,  Error Code: %d\n", strerror(errno), errno);
       #ifdef DEBUG
         syslog(LOG_WARNING, "enclosure-util get_error_code, BMC error code File open failed...\n");
-	  #endif
+	    #endif
   }
   else {
     while (fscanf(fp, "%02X", error+count) != EOF && count!=32) {
@@ -136,19 +137,25 @@ get_error_code() {
     p_ret = OEM_BITMAP_FUN(error, p_exp_error);
     printf("Error Counter: %d\n", p_ret);
     for (i = 0; i < p_ret; i++) {
-      printf("%d ", p_exp_error[i]);
+      printf("Error Code %d: ", p_exp_error[i]);
+      if ( p_exp_error[i] < 100 )
+        printf("%s", Error_Code_Description[p_exp_error[i]]);
+      printf("\n");
     }
     printf("\n");
   }
   else if(ret && fp) {
-	#ifdef DEBUG
+    #ifdef DEBUG
       syslog(LOG_WARNING,"Only showing BMC Error Code 100~255, there is something wrong with Expander Error Code...\n");
     #endif
     memset(p_exp_error,256,0);
     p_ret = OEM_BITMAP_FUN(error, p_exp_error);
     printf("Error Counter: %d\n", p_ret);
     for (i = 0; i < p_ret; i++) {
-      printf("%d ", p_exp_error[i]);
+      printf("Error Code %d: ", p_exp_error[i]);
+      if ( p_exp_error[i] < 100 )
+        printf("%s", Error_Code_Description[p_exp_error[i]]);
+      printf("\n");
     }
     printf("\n");
   }
@@ -160,14 +167,15 @@ get_error_code() {
     p_ret = OEM_BITMAP_FUN(exp_error, p_exp_error);
     printf("Error Counter: %d\n", p_ret);
     for (i = 0; i < p_ret; i++) {
-      printf("%d ", p_exp_error[i]);
+      printf("Error Code %d: ", p_exp_error[i]);
+      if ( p_exp_error[i] < 100 )
+        printf("%s", Error_Code_Description[p_exp_error[i]]);
+      printf("\n");
     }
     printf("\n");
   }
   else
      syslog(LOG_WARNING, "There is something wrong with the Error Codes...\n");
-
-  fclose(fp);
 }
 
 int
@@ -188,7 +196,7 @@ main(int argc, char **argv) {
   }
 
   // Get the command parameters.
-  if (!strcmp(argv[1], "--hdd"))
+  if (!strcmp(argv[1], "--hdd-status"))
     get_hdd_status(hdd_number);
   else if (!strcmp(argv[1], "--error"))
     get_error_code();
@@ -200,31 +208,28 @@ main(int argc, char **argv) {
 
 static int OEM_BITMAP_FUN(unsigned char* in_error,unsigned char* data)
 {
-	int ret = 0;
-	int ii=0;
-	int kk=0;
-	int NUM = 0;
-	if( data == NULL)
-	{
-		return 0;
-	}
-	for( ii = 0; ii < 32; ii++ )
-	{
+  int ret = 0;
+  int ii=0;
+  int kk=0;
+  int NUM = 0;
+  if( data == NULL)
+  {
+    return 0;
+  }
+  for( ii = 0; ii < 32; ii++ )
+  {
 
-		for( kk = 0; kk < 8; kk++ )
-		{
-				if((( in_error[ii] >> kk )&0x01 ) == 1)
-				{
-					if( (data + ret) == NULL)
-						return ret;
-					NUM = ii*8 + kk;
-					if(NUM < 100)
-						*(data + ret) = NUM/10 *16 + NUM%10;
-					else
-						*(data + ret) = NUM;
-					ret++;
-				}
-		}
-	}
-	return ret;
+    for( kk = 0; kk < 8; kk++ )
+    {
+        if((( in_error[ii] >> kk )&0x01 ) == 1)
+        {
+          if( (data + ret) == NULL)
+            return ret;
+          NUM = ii*8 + kk;
+            *(data + ret) = NUM;
+          ret++;
+        }
+    }
+  }
+  return ret;
 }

@@ -55,7 +55,7 @@ do_install() {
   install -m 644 FSC_Triton_PreEVT_v1_zone0.fsc ${D}${sysconfdir}/fsc/FSC_Triton_PreEVT_v1_zone0.fsc
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
   install -m 755 run-fscd.sh ${D}${sysconfdir}/sv/fscd/run
-  update-rc.d -r ${D} setup-fan.sh start 91 5 .
+  update-rc.d -r ${D} setup-fan.sh start 100 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

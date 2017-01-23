@@ -2901,3 +2901,23 @@ void
 pal_post_end_chk(uint8_t *post_end_chk) {
   return;
 }
+
+int
+pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len){
+  if(target > TARGET_VR_PVCCSCUS_VER)
+    return -1;
+  if( target!= TARGET_BIOS_VER ) {
+    bic_get_fw_ver(FRU_SLOT1, target, res);
+    if( target == TARGET_BIC_VER)
+      *res_len = 2;
+    else
+      *res_len = 4;
+    return 0;
+  }
+  if( target == TARGET_BIOS_VER ) {
+  pal_get_sysfw_ver(FRU_SLOT1, res);
+      *res_len = 2 + res[2];
+    return 0;
+  }
+  return -1;
+}

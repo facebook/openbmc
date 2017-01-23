@@ -77,6 +77,18 @@ enum {
 };
 
 enum {
+  TARGET_BIOS_VER = 0,
+  TARGET_CPLD_VER,
+  TARGET_BIC_VER,
+  TARGET_ME_VER,
+  TARGET_VR_PVCCIN_VER,
+  TARGET_VR_PVDDR_VER,
+  TARGET_VR_P1V05_VER,
+  TARGET_VR_PVCCGBE_VER,
+  TARGET_VR_PVCCSCUS_VER,
+};
+
+enum {
   SERVER_POWER_OFF,
   SERVER_POWER_ON,
   SERVER_POWER_CYCLE,
@@ -224,6 +236,7 @@ void pal_sensor_assert_handle(uint8_t snr_num, float val);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
+int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

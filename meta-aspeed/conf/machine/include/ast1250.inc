@@ -14,7 +14,7 @@ EXTRA_IMAGEDEPENDS += "u-boot"
 require conf/machine/include/tune-arm926ejs.inc
 
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed"
-PREFERRED_VERSION_linux-aspeed ?= "2.6.28%"
+PREFERRED_VERSION_linux-aspeed ?= "4.1.15"
 
 PREFERRED_VERSION_u-boot ?= "v2013.07"
 PREFERRED_VERSION_u-boot-fw-utils ?= "v2013.07"

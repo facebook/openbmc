@@ -23,38 +23,41 @@ vbs_addr() {
 
 main() {
   ROM_EXEC_ADDRESS=$(devmem $(vbs_addr 0x4) 32)
-  echo "ROM executed from:      $ROM_EXEC_ADDRESS"
-
-  UBOOT_EXEC_ADDRESS=$(devmem $(vbs_addr 0x0) 32)
-  echo "U-Boot executed from:   $UBOOT_EXEC_ADDRESS"
+  echo "ROM executed from:       $ROM_EXEC_ADDRESS"
 
   ROM_KEYS=$(devmem $(vbs_addr 0x8) 32)
-  echo "ROM KEK certificates:   $ROM_KEYS"
+  echo "ROM KEK certificates:    $ROM_KEYS"
+
+  ROM_HANDOFF=$(devmem $(vbs_addr 0x10) 32)
+  echo "ROM handoff marker:      $ROM_HANDOFF"
+
+  UBOOT_EXEC_ADDRESS=$(devmem $(vbs_addr 0x0) 32)
+  echo "U-Boot executed from:    $UBOOT_EXEC_ADDRESS"
 
   SUBORDINATE_KEYS=$(devmem $(vbs_addr 0xC) 32)
-  echo "U-Boot certificates:    $SUBORDINATE_KEYS"
+  echo "U-Boot certificates:     $SUBORDINATE_KEYS"
 
   # Flags
-  FORCE_RECOVERY=$(devmem $(vbs_addr 0x12) 8)
-  echo "Flags force_recovery:   $FORCE_RECOVERY"
+  FORCE_RECOVERY=$(devmem $(vbs_addr 0x14) 8)
+  echo "Flags force_recovery:    $FORCE_RECOVERY"
 
-  HARDWARE_ENFORCE=$(devmem $(vbs_addr 0x13) 8)
-  echo "Flags hardware_enforce: $HARDWARE_ENFORCE"
+  HARDWARE_ENFORCE=$(devmem $(vbs_addr 0x15) 8)
+  echo "Flags hardware_enforce:  $HARDWARE_ENFORCE"
 
-  SOFTWARE_ENFORCE=$(devmem $(vbs_addr 0x14) 8)
-  echo "Flags software_enforce: $SOFTWARE_ENFORCE"
+  SOFTWARE_ENFORCE=$(devmem $(vbs_addr 0x16) 8)
+  echo "Flags software_enforce:  $SOFTWARE_ENFORCE"
 
-  RECOVERY_BOOT=$(devmem $(vbs_addr 0x15) 8)
-  echo "Flags recovery_boot:    $RECOVERY_BOOT"
+  RECOVERY_BOOT=$(devmem $(vbs_addr 0x17) 8)
+  echo "Flags recovery_boot:     $RECOVERY_BOOT"
 
-  RECOVERY_RETRIES=$(devmem $(vbs_addr 0x16) 8)
-  echo "Flags recovery_retired: $RECOVERY_RETRIES"
+  RECOVERY_RETRIES=$(devmem $(vbs_addr 0x18) 8)
+  echo "Flags recovery_retried:  $RECOVERY_RETRIES"
 
   # Errors
-  ERROR_TYPE=$(devmem $(vbs_addr 0x17) 8)
-  ERROR_CODE=$(devmem $(vbs_addr 0x18) 8)
+  ERROR_TYPE=$(devmem $(vbs_addr 0x19) 8)
+  ERROR_CODE=$(devmem $(vbs_addr 0x1A) 8)
   echo ""
-  echo "Status type=$ERROR_TYPE code=$ERROR_CODE"
+  echo "Status type ($ERROR_TYPE) code ($ERROR_CODE)"
 }
 
 main

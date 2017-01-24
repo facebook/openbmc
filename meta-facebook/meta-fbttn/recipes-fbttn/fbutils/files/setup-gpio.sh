@@ -409,7 +409,8 @@ gpio_export P0
 # To use GPIOP2, SCU88[18] must be 0
 devmem_clear_bit $(scu_addr 88) 18
 
-gpio_set P2 1
+# TODO: Disable the CPU Throttle PIN to fix the leakage issue from BMC to ML
+gpio_export P2
 
 # DEBUG_GPIO_BMC_1: P3 (123)
 # To use GPIOP3, SCU88[19] must be 0

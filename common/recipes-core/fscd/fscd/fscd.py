@@ -178,12 +178,15 @@ def clamp(v, minv, maxv):
     return v
 
 class Zone:
-    def __init__(self, pwm_output, expr, expr_meta):
+    
+    def __init__(self, pwm_output, expr, expr_meta, counter):
         self.pwm_output = pwm_output
         self.last_pwm = transitional
         self.expr = expr
         self.expr_meta = expr_meta
         self.expr_str = str(expr)
+        self.counter = counter
+        self.transitional_assert_flag = False
 
     def run(self, sensors, dt):
         ctx = {'dt': dt}
@@ -214,9 +217,15 @@ class Zone:
         # If *all* sensors in the top level max() report None, the
         # expression will report None
         if not exprout:
-            crit('No sane fan speed could be calculated! Using transitional speed.')
+            if not self.transitional_assert_flag:
+                crit('ASSERT: Zone%d No sane fan speed could be calculated! Using transitional speed.' % (self.counter))
             exprout = transitional
-        if exprout < outmin:
+            self.transitional_assert_flag = True
+        else:
+            if self.transitional_assert_flag:
+                crit('DEASSERT: Zone%d No sane fan speed could be calculated! Using transitional speed.' % (self.counter))
+            self.transitional_assert_flag = False
+        if exprout < outmin:            
             exprout = outmin
         exprout = clamp(exprout, 0, 100)
         return exprout
@@ -273,7 +282,7 @@ def main():
         profile_constructors[name] = profile_constructor(pdata)
 
     print("Available profiles: " + ", ".join(profile_constructors.keys()))
-
+    counter = 0
     for name, data in config['zones'].items():
         filename = data['expr_file']
         with open(os.path.join(CONFIG_DIR, filename), 'r') as exf:
@@ -284,7 +293,8 @@ def main():
             for name in inf['ext_vars']:
                 board, sname = name.split(':')
                 machine.frus.add(board)
-            zone = Zone(data['pwm_output'], expr, inf)
+            zone = Zone(data['pwm_output'], expr, inf, counter)
+            counter += 1
             zones.append(zone)
     info("Read %d zones" % (len(zones),))
     info("Including sensors from: " + ", ".join(machine.frus))

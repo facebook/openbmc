@@ -41,6 +41,8 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+echo "Set up GPIO pins....."
+
 # Set up to read the board revision pins, Y0, Y1, Y2
 devmem_set_bit $(scu_addr 70) 19
 devmem_clear_bit $(scu_addr a4) 8
@@ -51,24 +53,23 @@ gpio_export Y0
 gpio_export Y1
 gpio_export Y2
 
-# SLOT1_PRSNT_N, GPIOH5 (61)
-# GPIOH5(61): SCU90[6], SCU90[7] shall be 0
-devmem_clear_bit $(scu_addr 90) 6
-devmem_clear_bit $(scu_addr 90) 7
+# SLOT1_PRSNT_N, GPIOAA1 (211)
+# GPIOH5(211): SCU90[31] shall be 0
+devmem_clear_bit $(scu_addr 90) 31
 
-gpio_export H5
+gpio_export AA1
 
-# SLOT2_PRSNT_N, GPIOH4 (60)
-# GPIOH4(60): SCU90[6], SCU90[7] shall be 0
-gpio_export H4
+# SLOT2_PRSNT_N, GPIOAA1 (210)
+# GPIOH4(210): SCU90[31] shall be 0
+gpio_export AA0
 
-# SLOT3_PRSNT_N, GPIOH7 (63)
-# GPIOH7(63): SCU90[6], SCU90[7] shall be 0
-gpio_export H7
+# SLOT3_PRSNT_N, GPIOAA3 (213)
+# GPIOH7(213): SCU90[31] shall be 0
+gpio_export AA3
 
-# SLOT4_PRSNT_N, GPIOH6 (62)
-# GPIOH6(62): SCU90[6], SCU90[7] shall be 0
-gpio_export H6
+# SLOT4_PRSNT_N, GPIOAA2 (212)
+# GPIOH6(212): SCU90[31] shall be 0
+gpio_export AA2
 
 # BMC_PWR_BTN_IN_N, uServer power button in, on GPIO D0(24)
 gpio_export D0
@@ -106,26 +107,22 @@ devmem_clear_bit $(scu_addr 80) 8
 
 gpio_export B0
 
-# Enable P3V3: GPIOS1(145)
-# To use GPIOS1 (145), SCU8C[1], SCU94[0], and SCU94[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 1
+# Enable P3V3: GPIOAB1(219)
+# To use GPIOAB1 (145), SCU90[31], SCU94[0], and SCU94[1] must be 0
+devmem_clear_bit $(scu_addr 90) 31
 devmem_clear_bit $(scu_addr 94) 0
 devmem_clear_bit $(scu_addr 94) 1
 
-gpio_set S1 1
+gpio_set AB1 1
 
-# PWRGD_P3V3: GPIOS2(146)
-# To use GPIOS2 (146), SCU8C[2], SCU94[0], and SCU94[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 2
-devmem_clear_bit $(scu_addr 94) 0
-devmem_clear_bit $(scu_addr 94) 1
+# PWRGD_P3V3: GPIOAB2(220)
+# To use GPIOAB2 (220) SCUA8[2] must be 0
+devmem_clear_bit $(scu_addr A8) 2
 
-# Setup GPIOs to Mux Enable: GPIOS3(147), Channel Select: GPIOE4(36), GPIOE5(37)
+# Setup GPIOs to Mux Enable: GPIOAB3(221), Channel Select: GPIOE4(36), GPIOE5(37)
   
-# To use GPIOS3 (147), SCU8C[3], SCU94[0], and SCU94[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 3  
-devmem_clear_bit $(scu_addr 94) 0
-devmem_clear_bit $(scu_addr 94) 1
+# To use GPIOAB3 (221), SCUA8[3] must be 0
+devmem_clear_bit $(scu_addr A8) 3
 
 # To use GPIOE4 (36), SCU80[20], SCU8C[14], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 20
@@ -137,14 +134,9 @@ devmem_clear_bit $(scu_addr 80) 21
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
 
-gpio_set S3 0
+gpio_set AB3 0
 gpio_set E4 1
 gpio_set E5 0
-
-# BMC_HEARTBEAT_N, heartbeat LED, GPIO Q7(135)
-devmem_clear_bit $(scu_addr 90) 28
-
-gpio_set Q7 0
 
 # USB_OC_N, resettable fuse tripped, GPIO Q6
 devmem_clear_bit $(scu_addr 90) 28
@@ -156,11 +148,11 @@ gpio_export Q6
 devmem_clear_bit $(scu_addr 70) 12
 devmem_set_bit $(scu_addr 70) 13
 
-# DEBUG_PORT_UART_SEL_BMC_N: GPIOR1(137)
-# To use GPIOR1, SCU88[25] must be 0
-devmem_clear_bit $(scu_addr 88) 25
+# DEBUG_PORT_UART_SEL_BMC_N: GPIOR3(139)
+# To use GPIOR3, SCU88[27] must be 0
+devmem_clear_bit $(scu_addr 88) 27
 
-gpio_export R1
+gpio_export R3
 
 # DEBUG UART Controls
 # 4 signals: DEBUG_UART_SEL_0/1/2 and DEBUG_UART_RX_SEL_N
@@ -179,10 +171,10 @@ devmem_clear_bit $(scu_addr 80) 17
 gpio_export_out E1
 
 # To enable GPIOE2, SCU80[18], SCU8C[13], and SCU70[22] must be 0
-devmem_clear_bit $(scu_addr 80) 18
-devmem_clear_bit $(scu_addr 8C) 13
+#devmem_clear_bit $(scu_addr 80) 18
+#devmem_clear_bit $(scu_addr 8C) 13
 
-gpio_export_out E2
+#gpio_export_out E2
 
 # To enable GPIOE3, SCU80[19], SCU8C[13], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 19
@@ -247,35 +239,40 @@ devmem_clear_bit $(scu_addr A4) 14
 gpio_set F3 1
 
 # Front Panel Hand Switch GPIO setup
-# HAND_SW_ID1: GPIOR2(138)
-# To use GPIOR2, SCU88[26] must be 0
-devmem_clear_bit $(scu_addr 88) 26
+# HAND_SW_ID1: GPIOAA4(214)
+# To use GPIOAA4, SCU90[31] and SCUA4[28]  must be 0
+devmem_clear_bit $(scu_addr 90) 31
+devmem_clear_bit $(scu_addr A4) 28
 
-gpio_export R2
+gpio_export AA4
 
-# HAND_SW_ID2: GPIOR3(139)
-# To use GPIOR3, SCU88[27] must be 0
-devmem_clear_bit $(scu_addr 88) 27
+# HAND_SW_ID2: GPIOAA5(215)
+# To use GPIOAA5, SCU90[31] and SCUA4[29]  must be 0
+devmem_clear_bit $(scu_addr 90) 31
+devmem_clear_bit $(scu_addr A4) 29
 
-gpio_export R3
-
-# HAND_SW_ID4: GPIOR4(140)
-# To use GPIOR4, SCU88[28] must be 0
-devmem_clear_bit $(scu_addr 88) 28
-
-gpio_export R4
+gpio_export AA5
 
 
-# HAND_SW_ID8: GPIOR5(141)
-# To use GPIOR5, SCU88[29] must be 0
-devmem_clear_bit $(scu_addr 88) 29
+# HAND_SW_ID4: GPIOAA6(216)
+# To use GPIOAA56, SCU90[31] and SCUA4[30]  must be 0
+devmem_clear_bit $(scu_addr 90) 31
+devmem_clear_bit $(scu_addr A4) 30
 
-gpio_export R5
+gpio_export AA6
+
+# HAND_SW_ID8: GPIOAA7(217)
+# To use GPIOAA7, SCU90[31] and SCUA4[31]  must be 0
+devmem_clear_bit $(scu_addr 90) 31
+devmem_clear_bit $(scu_addr A4) 31
+
+gpio_export AA7
 
 # LED POST CODES: 8 GPIO signals
 
 # LED_POSTCODE_0: GPIOG0 (48)
 # To use GPIOG0, SCU84[0] must be 0
+devmem_clear_bit $(scu_addr 90) 6
 devmem_clear_bit $(scu_addr 84) 0
 
 gpio_set G0 0
@@ -299,9 +296,12 @@ devmem_clear_bit $(scu_addr 84) 3
 gpio_set G3 0
 
 # LED_POSTCODE_4: GPIOP4 (124)
+devmem_clear_bit $(scu_addr 90) 28
+devmem_clear_bit $(scu_addr 88) 20
 gpio_set P4 0
 
 # LED_POSTCODE_5: GPIOP5 (125)
+devmem_clear_bit $(scu_addr 88) 21
 gpio_set P5 0
 
 # LED_POSTCODE_6: GPIOP6 (126)
@@ -316,37 +316,40 @@ devmem_clear_bit $(scu_addr 88) 23
 
 gpio_set P7 0
 
-# BMC_READY_N: GPIOG6 (54)
-# To use GPIOG6, SCU84[6] must be 0
-devmem_clear_bit $(scu_addr 84) 6
+# BMC_READY_N: GPIOA0 (0)
+# To use GPIOA-, SCU80[0] must be 0
+devmem_clear_bit $(scu_addr 80) 0
 
-gpio_set G6 0
+gpio_set A0 0
 
-# BMC_RST_BTN_IN_N: GPIOS0 (144)
-# To use GPIOS0, SCU8C[0]
-devmem_clear_bit $(scu_addr 8c) 0
+# BMC_RST_BTN_IN_N: GPIOAB0 (218)
+# To use GPIOAB0, SCU90[31] and SCUA8[0] must be 0.
+devmem_clear_bit $(scu_addr 90) 31
+devmem_clear_bit $(scu_addr A8) 0
 
-gpio_export S0
+gpio_export AB0
 
 # RESET for all Slots
-# RST_SLOT1_SYS_RESET_N: GPIOH1 (57)
-# To use GPIOH1, SCU90[6], SCU90[7] must be 0
-devmem_clear_bit $(scu_addr 90) 6
-devmem_clear_bit $(scu_addr 90) 7
+# RST_SLOT1_SYS_RESET_N: GPIOS1 (145)
+# To use GPIOS1, SCU8C[1] must be 0
+devmem_clear_bit $(scu_addr 8C) 1
 
-gpio_set H1 1
+gpio_set S1 1
 
-# RST_SLOT2_SYS_RESET_N: GPIOH0 (56)
-# To use GPIOH0, SCU90[6], SCU90[7] must be 0
-gpio_set H0 1
+# RST_SLOT2_SYS_RESET_N: GPIOS0 (144)
+# To use GPIOS0, SCU8C[0] must be 0
+devmem_clear_bit $(scu_addr 8C) 0
+gpio_set S0 1
 
-# RST_SLOT3_SYS_RESET_N: GPIOH3 (59)
-# To use GPIOH3, SCU90[6], SCU90[7] must be 0
-gpio_set H3 1
+# RST_SLOT3_SYS_RESET_N: GPIOS3 (147)
+# To use GPIOS3, SCU8C[3] must be 0
+devmem_clear_bit $(scu_addr 8C) 3
+gpio_set S3 1
 
-# RST_SLOT4_SYS_RESET_N: GPIOH2 (58)
-# To use GPIOH2, SCU90[6], SCU90[7] must be 0
-gpio_set H2 1
+# RST_SLOT4_SYS_RESET_N: GPIOS2 (146)
+# To use GPIOS2, SCU8C[2] must be 0
+devmem_clear_bit $(scu_addr 8C) 2
+gpio_set S2 1
 
 # 12V_STBY Enable for Slots
 
@@ -395,9 +398,9 @@ devmem_clear_bit $(scu_addr 88) 18
 gpio_export P2
 
 # Enable the the EXTRST functionality of GPIOB7
-devmem_set_bit $(scu_addr 80) 15
-devmem_clear_bit $(scu_addr 90) 31
-devmem_set_bit $(scu_addr 3c) 3
+#devmem_set_bit $(scu_addr 80) 15
+#devmem_clear_bit $(scu_addr 90) 31
+#devmem_set_bit $(scu_addr 3c) 3
 
 # Enable GPIO pins: I2C_SLOTx_ALERT_N pins for BIC firmware update
 devmem_clear_bit $(scu_addr 88) 2

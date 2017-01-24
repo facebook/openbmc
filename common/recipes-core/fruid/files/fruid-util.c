@@ -119,6 +119,13 @@ void get_fruid_info(uint8_t fru, char *path, char* name) {
 
 static int
 print_usage() {
+
+#ifdef CONFIG_FBTTN
+  // No NIC for FBTTN
+  // TODO: Remove NIC fruid option from main()
+  char pal_fru_list[] = "all, slot1, iom, dpb, scc";
+#endif /* CONFIG_FBTTN */
+
   if (!strncmp(pal_fru_list, "all, ", strlen("all, "))) {
     printf("Usage: fruid-util [ %s ]\n"
         "Usage: fruid-util [ %s ] [--dump | --write ] <file>\n",

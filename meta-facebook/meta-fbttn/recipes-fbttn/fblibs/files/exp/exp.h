@@ -38,13 +38,10 @@ extern "C" {
 #define EXPANDER_HDD_STATUS 0xC0
 #define EXPANDER_ERROR_CODE 0x11
 
-#define EXPANDER_VERSION_CACHE "/tmp/version_exp.bin"
-#define IOC_VERSION_CACHE "/tmp/version_ioc.bin"
 
 int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
-int get_exp_fw_ver(void);
-int get_ioc_fw_ver(void);
-int read_exp_fw_ver_cache(uint8_t *ver, uint8_t id);
+int exp_get_fw_ver(uint8_t *ver);
+int exp_get_ioc_fw_ver(uint8_t *ver);
 int exp_read_fruid(const char *path, unsigned char FRUID);
 
 #ifdef __cplusplus

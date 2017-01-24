@@ -39,15 +39,14 @@ print_fw_scc_ver(void) {
 	uint8_t ver[32] = {0};
 	int ret = 0;
 	
-	// Read Firwmare Versions of Expander from cache
-    // ID: exp is 0, ioc is 1
-	ret = read_fw_ver_cache(ver,0);
+	// Read Firwmare Versions of Expander via IPMB
+	ret = exp_get_fw_ver(ver);
 	if( !ret )
 	  printf("Expander Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 	else
 	  printf("Get Expander FW Verion Fail...%d\n",ret);
 	
-	ret = read_fw_ver_cache(ver,1);
+	ret = exp_get_ioc_fw_ver(ver);
 	if( !ret )
 	  printf("SCC IOC  Version: 0x%02x%02x%02x%02x\n", ver[3], ver[2], ver[1], ver[0]);
     else

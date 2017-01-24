@@ -87,9 +87,7 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
 
 // Read Firwmare Versions of Expander via IPMB, and save to cache
 int
-get_exp_fw_ver(void) {
-  FILE *fp;
-  uint8_t ver[4] = {0};
+exp_get_fw_ver(uint8_t *ver) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t rlen = 0;
@@ -99,7 +97,7 @@ get_exp_fw_ver(void) {
 
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_GET_EXP_VERSION, tbuf, tlen, rbuf, &rlen);
   if (ret) {
-    syslog(LOG_WARNING, "get_exp_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
+    syslog(LOG_WARNING, "exp_get_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
     return -1;
   }
   if(!rbuf[5]) //the 5th byte is FW 1 selecte byte, the 10th byte is backup FW select byte
@@ -107,19 +105,12 @@ get_exp_fw_ver(void) {
 
   memcpy(ver, &rbuf[6 + fw_select_shift], 4);
 
-  //put exp version info to bin file
-  fp = fopen(EXPANDER_VERSION_CACHE, "w");
-  fprintf(fp, "%02X %02X %02X %02X", ver[0], ver[1], ver[2], ver[3]);
-  fclose(fp);
-
   return 0;
 }
 
 // Read Firwmare Versions of IOC via IPMB, and save to cache
 int
-get_ioc_fw_ver(void) {
-  FILE *fp;
-  uint8_t ver[4] = {0};
+exp_get_ioc_fw_ver(uint8_t *ver) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t rlen = 0;
@@ -128,43 +119,12 @@ get_ioc_fw_ver(void) {
 
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_GET_IOC_VERSION, tbuf, tlen, rbuf, &rlen);
   if (ret) {
-    syslog(LOG_WARNING, "get_ioc_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
+    syslog(LOG_WARNING, "exp_get_ioc_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
     return -1;
   }
 
   memcpy(ver, rbuf, 4);
 
-  //put exp version info to bin file
-  fp = fopen(IOC_VERSION_CACHE, "w");
-  fprintf(fp, "%02X %02X %02X %02X", ver[0], ver[1], ver[2], ver[3]);
-  fclose(fp);
-
-  return 0;
-}
-
-// Read Firwmare Versions of Expander from cache
-// ID: exp is 0, ioc is 1
-int
-read_fw_ver_cache(uint8_t *ver, uint8_t id) {
-  FILE *fp;
-
-  if(id == 0) {
-    fp = fopen(EXPANDER_VERSION_CACHE, "r");
-    if (!fp) {
-      syslog(LOG_WARNING, "read_exp_fw_ver_cache exp File open failed...\n");
-      return -1;
-    }
-  }
-  else if(id == 1) {
-    fp = fopen(IOC_VERSION_CACHE, "r");
-    if (!fp) {
-      syslog(LOG_WARNING, "read_exp_fw_ver_cache ioc File open failed...\n");
-      return -1;
-    }
-  }
-
-  fscanf(fp, "%02X %02X %02X %02X", ver, ver+1, ver+2, ver+3);
-  fclose(fp);
   return 0;
 }
 

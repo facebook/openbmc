@@ -3,7 +3,7 @@ lib: libfbttn_sensor.so
 
 libfbttn_sensor.so: fbttn_sensor.c
 	$(CC) $(CFLAGS) -fPIC -c -o fbttn_sensor.o fbttn_sensor.c
-	$(CC) -lm -lbic -lipmi -lipmb -lfbttn_common -shared -o libfbttn_sensor.so fbttn_sensor.o -lc
+	$(CC) -lm -lbic -lmctp -lipmi -lipmb -lfbttn_common -shared -o libfbttn_sensor.so fbttn_sensor.o -lc
 
 .PHONY: clean
 

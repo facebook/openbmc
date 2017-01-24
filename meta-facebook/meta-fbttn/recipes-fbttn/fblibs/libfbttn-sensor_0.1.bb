@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://fbttn_sensor.c;beginline=8;endline=20;md5=da35978751a
 
 SRC_URI = "file://fbttn_sensor \
           "
-DEPENDS =+ " libipmi libipmb libbic libfbttn-common fbutils "
+DEPENDS =+ " libipmi libipmb libbic libmctp libfbttn-common fbutils "
 
 S = "${WORKDIR}/fbttn_sensor"
 

@@ -1333,7 +1333,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
     } else {        // SKU: Type 7
       if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
-       || (sensor_num == IOM_SENSOR_ADC_P1V5) || (sensor_num == IOM_SENSOR_ADC_P0V975)) {
+       || (sensor_num == IOM_SENSOR_ADC_P1V5) || (sensor_num == IOM_SENSOR_ADC_P0V975)
+       || (sensor_num == IOM_IOC_TEMP)) {
           check_server_power_status = true;
       }
     }
@@ -1811,7 +1812,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
 
 int
 pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
-  
+
   if(fru == FRU_SLOT1) {
     switch(snr_num) {
       case SYSTEM_EVENT:
@@ -2786,6 +2787,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   char str[MAX_VALUE_LEN] = {0};
   float value;
   char units[64];
+  uint8_t status;
 
   tbuf[0] = sensor_cnt; //sensor_count
   //Fill up sensor number
@@ -3021,4 +3023,9 @@ pal_self_tray_location(uint8_t *value) {
   *value = (uint8_t) val;
 
   return 0;
+}
+
+int
+pal_get_iom_ioc_ver(uint8_t *ver) {
+  return mctp_get_iom_ioc_ver(ver);
 }

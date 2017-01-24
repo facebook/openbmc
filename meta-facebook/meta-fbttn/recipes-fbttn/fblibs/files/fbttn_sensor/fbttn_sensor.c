@@ -192,6 +192,7 @@ const uint8_t iom_sensor_list_type7[] = {
   IOM_SENSOR_ADC_P1V8,
   IOM_SENSOR_ADC_P1V5,
   IOM_SENSOR_ADC_P0V975,
+  IOM_IOC_TEMP,
 };
 
 // List of DPB sensors to be monitored
@@ -332,6 +333,7 @@ sensor_thresh_array_init() {
   iom_sensor_threshold[IOM_SENSOR_M2_AMBIENT_TEMP2][UCR_THRESH] = 70;
   iom_sensor_threshold[IOM_SENSOR_M2_SMART_TEMP1][UCR_THRESH] = 82;
   iom_sensor_threshold[IOM_SENSOR_M2_SMART_TEMP2][UCR_THRESH] = 82;
+  iom_sensor_threshold[IOM_IOC_TEMP][UCR_THRESH] = 100;
 
   // DPB
   dpb_sensor_threshold[DPB_SENSOR_12V_POWER_CLIP][UCR_THRESH] = 1825;
@@ -1037,6 +1039,9 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
             case IOM_SENSOR_M2_SMART_TEMP2:
               sprintf(units, "C");
               break;
+            case IOM_IOC_TEMP:
+              sprintf(units, "C");
+              break;
       }
       break;
 
@@ -1290,6 +1295,9 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case IOM_SENSOR_M2_SMART_TEMP2:
           sprintf(name, "M.2_SMART_Temp_2");
           break;
+        case IOM_IOC_TEMP:
+          sprintf(name, "IOM_IOC_TEMP");
+          break;
       }
       break;
 
@@ -1508,6 +1516,8 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_M2_temp(IOM_M2_1_TEMP_DEVICE, (float *) value);
         case IOM_SENSOR_M2_SMART_TEMP2:
           return read_M2_temp(IOM_M2_2_TEMP_DEVICE, (float *) value);
+        case IOM_IOC_TEMP:
+          return mctp_get_iom_ioc_temp((float *) value);
       }
       break;
 

@@ -27,6 +27,7 @@ extern "C" {
 
 #include <facebook/bic.h>
 #include <facebook/exp.h>
+#include <facebook/mctp.h>
 #include <facebook/fbttn_common.h>
 #include <facebook/fbttn_fruid.h>
 #include <facebook/fbttn_sensor.h>
@@ -57,6 +58,9 @@ extern "C" {
 #define ERROR_CODE_NUM 32
 
 #define HB_INTERVAL 50
+
+//Type7 IOM IOC
+#define FRU_IOM_IOC 7
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;

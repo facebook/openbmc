@@ -31,29 +31,56 @@
 
 static void
 print_usage_help(void) {
+  uint8_t sku = 0;
+  sku = pal_get_iom_type();
+
+  //SKU : 2 type7
+  if (sku == 2)
+  printf("Usage: fw-util <all|slot1|scc|ioc2> <--version>\n");
+  else
   printf("Usage: fw-util <all|slot1|scc> <--version>\n");
+
   printf("       fw-util <all|slot1> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 }
+
 static void
 print_fw_scc_ver(void) {
-	uint8_t ver[32] = {0};
-	int ret = 0;
-	
-	// Read Firwmare Versions of Expander via IPMB
-	ret = exp_get_fw_ver(ver);
-	if( !ret )
-	  printf("Expander Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
-	else
-	  printf("Get Expander FW Verion Fail...%d\n",ret);
-	
-	ret = exp_get_ioc_fw_ver(ver);
-	if( !ret )
-	  printf("SCC IOC  Version: 0x%02x%02x%02x%02x\n", ver[3], ver[2], ver[1], ver[0]);
-    else
-	  printf("Get Expander FW Verion Fail...%d\n",ret);
-	
-	return;
+
+  uint8_t ver[32] = {0};
+  int ret = 0;
+
+  // Read Firwmare Versions of Expander via IPMB
+  // ID: exp is 0, ioc is 1
+  ret = exp_get_fw_ver(ver);
+  if( !ret )
+    printf("Expander Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+  else
+    printf("Get Expander FW Verion Fail...\n");
+
+  ret = exp_get_ioc_fw_ver(ver);
+  if( !ret )
+    printf("SCC IOC  Version: %x.%x.%x.%x\n", ver[3], ver[2], ver[1], ver[0]);
+  else
+    printf("Get Expander FW Verion Fail...\n");
+
+  return;
 }
+
+static void
+print_fw_ioc_ver(void) {
+  uint8_t ver[32] = {0};
+  int ret = 0;
+
+  // Read Firwmare Versions of IOM IOC viacd MCTP
+  ret = pal_get_iom_ioc_ver(ver);
+  if(!ret)
+    printf("IOM IOC Version: %x.%x.%x.%x\n", ver[3], ver[2], ver[1], ver[0]);
+  else
+    printf("Get IOM IOC FW Verion Fail...\n");
+
+  return;
+}
+
 // TODO: Need to confirm the interpretation of firmware version for print
 // Right now using decimal to print the versions
 static void
@@ -178,47 +205,65 @@ err_exit:
 
 int
 main(int argc, char **argv) {
-
-  uint8_t slot_id;
+  uint8_t fru;
   int ret = 0;
   char cmd[80];
+  uint8_t sku = 0;
+
+  sku = pal_get_iom_type();
+
   // Check for border conditions
   if ((argc != 3) && (argc != 5)) {
     goto err_exit;
   }
 
-  // Derive slot_id from first parameter
+  // Derive fru from first parameter
   if (!strcmp(argv[1], "slot1")) {
-    slot_id = 1;
+    fru = FRU_SLOT1;
   } else if (!strcmp(argv[1] , "scc")) {
-    slot_id = 2;
+    fru = FRU_SCC;
+  }else if (!strcmp(argv[1] , "ioc2")) {
+    fru = FRU_IOM_IOC;
   }else if (!strcmp(argv[1] , "all")) {
-    slot_id = 3;
+    fru = FRU_ALL;
   } else {
       goto err_exit;
   }
   // check operation to perform
   if (!strcmp(argv[2], "--version")) {
-     if (slot_id < 2) {
-       print_fw_ver(slot_id);
-       return 0;
-     }
-     
-     print_fw_ver(slot_id&0x1);
-     print_fw_scc_ver();
-     return 0;
+    switch(fru) {
+      case FRU_SLOT1:
+        print_fw_ver(FRU_SLOT1);
+        break;
+
+      case FRU_SCC:
+        print_fw_scc_ver();
+        break;
+
+      case FRU_IOM_IOC:
+        print_fw_ioc_ver();
+        break;
+
+      case FRU_ALL:
+        print_fw_ver(FRU_SLOT1);
+        print_fw_scc_ver();
+        if (sku == 2)
+        print_fw_ioc_ver();
+        break;
+    }
+    return 0;
   }
   if (!strcmp(argv[2], "--update")) {
     if (argc != 5) {
       goto err_exit;
     }
-    if (slot_id < 2) {
-      return fw_update_slot(argv, slot_id);
+    if (fru < 2) {
+      return fw_update_slot(argv, fru);
     }
     printf("Updating all slots....\n");
-    for (slot_id = 1; slot_id < 2; slot_id++) {
-       if (fw_update_slot(argv, slot_id)) {
-         printf("fw_util:  updating %s on slot %d failed!\n", argv[3], slot_id);
+    for (fru = 1; fru < 2; fru++) {
+       if (fw_update_slot(argv, fru)) {
+         printf("fw_util:  updating %s on slot %d failed!\n", argv[3], fru);
          ret++;
        }
     }

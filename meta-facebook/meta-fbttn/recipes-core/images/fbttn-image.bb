@@ -87,6 +87,7 @@ IMAGE_INSTALL += " \
   expander-util \
   exp-cached \
   enclosure-util \
+  libmctp \
   "
 
 IMAGE_FEATURES += " \

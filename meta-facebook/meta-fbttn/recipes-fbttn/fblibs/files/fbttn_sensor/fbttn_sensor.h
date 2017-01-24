@@ -25,6 +25,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <facebook/bic.h>
+#include <facebook/mctp.h>
 #include <facebook/fbttn_common.h>
 
 #ifdef __cplusplus
@@ -140,6 +141,7 @@ enum{
   IOM_SENSOR_M2_AMBIENT_TEMP2 = 0x86,
   IOM_SENSOR_M2_SMART_TEMP1 = 0x48,
   IOM_SENSOR_M2_SMART_TEMP2 = 0x49,
+  IOM_IOC_TEMP = 0x77, // type VII only
 };
 
 enum{

@@ -3,9 +3,9 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
            "
-DEPENDS_append = " fbutils "
+DEPENDS_append = " plat-utils "
 
-CFLAGS_prepend = " -DCONFIG_YOSEMITE"
+CFLAGS_prepend = " -DCONFIG_FBY2"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

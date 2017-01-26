@@ -27,7 +27,7 @@ SRC_URI += "file://setup-ipmid.sh \
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_YOSEMITE "
+CFLAGS_prepend = " -DCONFIG_FBY2 "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

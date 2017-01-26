@@ -15,10 +15,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+lib: libfby2_gpio.so
 
-S = "${WORKDIR}"
+libfby2_gpio.so: fby2_gpio.c
+	$(CC) $(CFLAGS) -fPIC -c -o fby2_gpio.o fby2_gpio.c
+	$(CC) -shared -o libfby2_gpio.so fby2_gpio.o -lc
 
-CFLAGS_prepend = " -DCONFIG_FBY2"
-LDFLAGS_append = " -lfby2_fruid"
+.PHONY: clean
 
-DEPENDS_prepend = "libfby2-fruid"
+clean:
+	rm -rf *.o libfby2_gpio.so

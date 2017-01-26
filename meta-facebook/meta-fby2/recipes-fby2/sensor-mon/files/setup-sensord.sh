@@ -29,7 +29,7 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Setup sensor monitoring for yosemite... "
+echo -n "Setup sensor monitoring for fby2... "
 
 # Check for the slots present and run sensord for those slots only.
 SLOTS=

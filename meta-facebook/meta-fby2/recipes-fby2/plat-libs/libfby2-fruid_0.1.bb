@@ -15,10 +15,29 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+SUMMARY = "FBY2 Fruid Library"
+DESCRIPTION = "library for reading all fby2 fruids"
+SECTION = "base"
+PR = "r1"
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://fby2_fruid.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_FBY2"
-LDFLAGS_append = " -lfby2_fruid"
+SRC_URI = "file://fby2_fruid \
+          "
 
-DEPENDS_prepend = "libfby2-fruid"
+DEPENDS += " libfby2-common "
+
+S = "${WORKDIR}/fby2_fruid"
+
+do_install() {
+	  install -d ${D}${libdir}
+    install -m 0644 libfby2_fruid.so ${D}${libdir}/libfby2_fruid.so
+
+    install -d ${D}${includedir}
+    install -d ${D}${includedir}/facebook
+    install -m 0644 fby2_fruid.h ${D}${includedir}/facebook/fby2_fruid.h
+}
+
+FILES_${PN} = "${libdir}/libfby2_fruid.so"
+FILES_${PN}-dev = "${includedir}/facebook/fby2_fruid.h"

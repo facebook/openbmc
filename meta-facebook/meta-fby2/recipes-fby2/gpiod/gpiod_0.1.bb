@@ -32,9 +32,9 @@ S = "${WORKDIR}"
 binfiles = "gpiod \
            "
 
-CFLAGS += " -lbic -lyosemite_gpio -lpal "
+CFLAGS += " -lbic -lfby2_gpio -lpal "
 
-DEPENDS += " libbic libyosemite-gpio libpal "
+DEPENDS += " libbic libfby2-gpio libpal "
 
 pkgdir = "gpiod"
 

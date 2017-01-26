@@ -33,7 +33,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
 #include <facebook/bic.h>
-#include <facebook/yosemite_gpio.h>
+#include <facebook/fby2_gpio.h>
 
 #define SETBIT(x, y)        (x | (1 << y))
 #define GETBIT(x, y)        ((x & (1 << y)) > y)
@@ -182,7 +182,7 @@ populate_gpio_pins(uint8_t fru) {
   for(i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GETBIT(gpio_ass_val, i);
-      ret = yosemite_get_gpio_name(fru, i, gpios[i].name);
+      ret = fby2_get_gpio_name(fru, i, gpios[i].name);
       if (ret < 0)
         continue;
     }

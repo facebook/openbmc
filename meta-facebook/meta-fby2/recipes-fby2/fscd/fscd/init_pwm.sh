@@ -38,7 +38,7 @@ echo 0 > $PWM_DIR/pwm_type_m_division_h
 echo 5 > $PWM_DIR/pwm_type_m_division_l
 echo 95 > $PWM_DIR/pwm_type_m_unit
 
-# On Yosemite, there are 2 fans connected.
+# On fby2, there are 2 fans connected.
 # Each fan uses same PWM input and provide one tacho output.
 # Here is the mapping between the fan and PWN/Tacho,
 # staring from the one from the edge

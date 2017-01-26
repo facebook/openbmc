@@ -15,10 +15,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+lib: libfby2_fruid.so
 
-S = "${WORKDIR}"
+libfby2_fruid.so: fby2_fruid.c
+	$(CC) $(CFLAGS) -fPIC -c -o fby2_fruid.o fby2_fruid.c
+	$(CC) -lfby2_common -shared -o libfby2_fruid.so fby2_fruid.o -lc
 
-CFLAGS_prepend = " -DCONFIG_FBY2"
-LDFLAGS_append = " -lfby2_fruid"
+.PHONY: clean
 
-DEPENDS_prepend = "libfby2-fruid"
+clean:
+	rm -rf *.o libfby2_fruid.so

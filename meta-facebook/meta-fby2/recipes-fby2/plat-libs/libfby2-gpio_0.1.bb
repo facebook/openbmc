@@ -15,10 +15,29 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+SUMMARY = "FBY2 GPIO Pin Library"
+DESCRIPTION = "library for all gpio pins in fby2"
+SECTION = "base"
+PR = "r1"
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://fby2_gpio.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_FBY2"
-LDFLAGS_append = " -lfby2_fruid"
+SRC_URI = "file://fby2_gpio \
+          "
 
-DEPENDS_prepend = "libfby2-fruid"
+DEPENDS += "libbic "
+
+S = "${WORKDIR}/fby2_gpio"
+
+do_install() {
+	  install -d ${D}${libdir}
+    install -m 0644 libfby2_gpio.so ${D}${libdir}/libfby2_gpio.so
+
+    install -d ${D}${includedir}
+    install -d ${D}${includedir}/facebook
+    install -m 0644 fby2_gpio.h ${D}${includedir}/facebook/fby2_gpio.h
+}
+
+FILES_${PN} = "${libdir}/libfby2_gpio.so"
+FILES_${PN}-dev = "${includedir}/facebook/fby2_gpio.h"

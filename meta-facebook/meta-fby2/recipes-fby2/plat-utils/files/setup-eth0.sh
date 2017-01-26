@@ -1,4 +1,6 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,11 +16,18 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
+### BEGIN INIT INFO
+# Provides:          setup-ipmid
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Set IPMI Message handler
+### END INIT INFO
 
-S = "${WORKDIR}"
-
-CFLAGS_prepend = " -DCONFIG_FBY2"
-LDFLAGS_append = " -lfby2_fruid"
-
-DEPENDS_prepend = "libfby2-fruid"
+echo -n "Workaround to setup etho "
+ifconfig eth0 down
+ifconfig eth0 up
+echo "Setup eth0 done."

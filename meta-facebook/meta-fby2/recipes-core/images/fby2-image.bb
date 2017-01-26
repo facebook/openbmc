@@ -46,7 +46,7 @@ IMAGE_INSTALL += " \
   u-boot \
   u-boot-fw-utils \
   healthd \
-  fbutils \
+  plat-utils \
   fan-util \
   fscd \
   watchdog-ctrl \
@@ -65,7 +65,7 @@ IMAGE_INSTALL += " \
   ipmbd \
   bic-cached \
   bic-util \
-  yosemite-sensors \
+  fby2-sensors \
   sensor-util \
   sensor-mon \
   gpiod \

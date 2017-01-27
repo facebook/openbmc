@@ -16,8 +16,8 @@ require conf/machine/include/tune-arm926ejs.inc
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed"
 PREFERRED_VERSION_linux-aspeed ?= "4.1.15"
 
-PREFERRED_VERSION_u-boot ?= "v2013.07"
-PREFERRED_VERSION_u-boot-fw-utils ?= "v2013.07"
+PREFERRED_VERSION_u-boot ?= "v2016.07"
+PREFERRED_VERSION_u-boot-fw-utils ?= "v2016.07"
 
 KERNEL_IMAGETYPE ?= "uImage"
 KERNEL_EXTRA_ARGS ?= "UIMAGE_LOADADDR=0x40008000"

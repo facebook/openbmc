@@ -1333,3 +1333,9 @@ void
 pal_post_end_chk(uint8_t *post_end_chk) {
   return;
 }
+
+int
+pal_get_fw_info(unsigned char target, unsigned char* res,
+                unsigned char* res_len) {
+  return -1;
+}

@@ -233,6 +233,8 @@ void pal_sensor_assert_handle(uint8_t snr_num, float val);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
+int pal_get_fw_info(unsigned char target, unsigned char* res,
+                    unsigned char* res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -56,6 +56,29 @@ static int i2c_smbus_read_byte_data_retry(struct i2c_client *client, unsigned ch
 
 	return ret;
 }
+static ssize_t ec_cpu_temp_show(struct device *dev,
+                                    struct device_attribute *attr,
+                                    char *buf)
+{
+  struct i2c_client *client = to_i2c_client(dev);
+  i2c_dev_data_st *data = i2c_get_clientdata(client);
+  i2c_sysfs_attr_st *i2c_attr = TO_I2C_SYSFS_ATTR(attr);
+  const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
+  int val;
+
+  mutex_lock(&data->idd_lock);
+
+  val = i2c_smbus_read_byte_data_retry(client, dev_attr->ida_reg);
+  mutex_unlock(&data->idd_lock);
+
+  if (val < 0) {
+    /* error case */
+    EC_DEBUG("I2C read error!\n");
+    return -1;
+  }
+
+  return scnprintf(buf, PAGE_SIZE, "%d\n", val * 10);
+}
 
 static ssize_t ec_mem_temp_show(struct device *dev,
                                     struct device_attribute *attr,
@@ -81,7 +104,7 @@ static ssize_t ec_mem_temp_show(struct device *dev,
     return -1;
   }
 
-  result = ((((msb_val << 8) + lsb_val) >> 4) & 0xff) + ((lsb_val >> 1) & 0x07);
+  result = ((((msb_val << 8) + lsb_val) >> 4) & 0xff) * 10 + (((lsb_val >> 1) & 0x07) * 10)/ 8;
 
 //return scnprintf(buf, PAGE_SIZE, "%d.%d C\n", result / 8, (((result % 8) * 10) / 8));
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -564,14 +587,14 @@ static ssize_t ec_serial_number_show(struct device *dev,
 
 static const i2c_dev_attr_st ec_attr_table[] = {
   {
-    "cpu_temp_input",
+    "temp1_input",
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
+    ec_cpu_temp_show,
     NULL,
     0, 0, 8,
   },
   {
-    "temp1_input",
+    "temp2_input",
     NULL,
     ec_mem_temp_show,
     NULL,

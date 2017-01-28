@@ -14,7 +14,7 @@ i2c_read() {
 		count=$(($count+1))
 		usleep 11000
 	done
-	return 1
+	return -1
 }
 
 #$1: bus
@@ -30,7 +30,7 @@ i2c_read_verify() {
 	temp=$?
 	printf "Verify bus:%d addr:0x%02x reg:0x%02x value:0x%02x (expect 0x%02x)   " $1 $2 $3 $(($temp&$mask)) $4
 	#echo -n "=$temp val=$val    "
-	if [ $temp -eq 1 ]; then
+	if [ $temp -eq 255 ]; then
 		echo -e "\033[41;37m[FAIL]\033[0m"
 		return 1
 	fi

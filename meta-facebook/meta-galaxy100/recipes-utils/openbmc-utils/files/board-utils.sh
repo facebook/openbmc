@@ -93,6 +93,10 @@ wedge_power_off_board() {
 }
 
 come_recovery() {
+	#repeater config
+	repeater_config
+	KR10G_repeater_config
+	wedge_power_on_board
 	#disable the I2C buffer to EC first
 	i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
 	sleep 1
@@ -116,6 +120,11 @@ restore_us_com() {
 	repeater_config
 	KR10G_repeater_config
 	wedge_power_on_board
+	#reset LPC bridge
+	i2cset -f -y 0 0x3e 0x31 0x0 2> /dev/null
+	usleep 10000
+	i2cset -f -y 0 0x3e 0x31 0x1 2> /dev/null
+
 	i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
 	#enable I2c buffer to EC
 	i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
@@ -138,7 +147,7 @@ i2c_write() {
 		count=$(($count+1))
 		usleep 11000
 	done
-	return 1
+	return -1
 }
 
 i2c_read() {
@@ -151,7 +160,7 @@ i2c_read() {
 		count=$(($count+1))
 		usleep 11000
 	done
-	return 1
+	return -1
 }
 #$1: bus
 #$2: addr
@@ -163,7 +172,7 @@ i2c_write_verify() {
 	while [ $count -lt 10 ]; do
 		#echo "i2c write $1 $2 $3 $4"
 		i2c_write $1 $2 $3 $4 2> /dev/null
-		if [ $? -eq 1 ]; then
+		if [ $? -eq 255 ]; then
 			count=$(($count+1))
 			continue
 		fi
@@ -173,7 +182,7 @@ i2c_write_verify() {
 		i2c_read $1 $2 $3 2> /dev/null
 		temp=$?
 		#echo -n "=$temp val=$val    "
-		if [ $temp -eq 1 ]; then
+		if [ $temp -eq 255 ]; then
 			count=$(($count+1))
 			continue
 		fi

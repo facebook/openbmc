@@ -48,6 +48,7 @@ print_fw_scc_ver(void) {
 
   uint8_t ver[32] = {0};
   int ret = 0;
+  uint8_t status;
 
   // Read Firwmare Versions of Expander via IPMB
   // ID: exp is 0, ioc is 1
@@ -57,26 +58,42 @@ print_fw_scc_ver(void) {
   else
     printf("Get Expander FW Verion Fail...\n");
 
-  ret = exp_get_ioc_fw_ver(ver);
-  if( !ret )
-    printf("SCC IOC  Version: %x.%x.%x.%x\n", ver[3], ver[2], ver[1], ver[0]);
-  else
-    printf("Get Expander FW Verion Fail...\n");
+  //Have to check HOST power, if is off, shows NA
+  pal_get_server_power(FRU_SLOT1, &status);
+  if (status != SERVER_POWER_ON) {
+    printf("SCC IOC Version: NA (HOST Power-off)\n");
+  }
+  else {
+    ret = exp_get_ioc_fw_ver(ver);
+    if( !ret )
+      printf("SCC IOC Version: %x.%x.%x.%x\n", ver[3], ver[2], ver[1], ver[0]);
+      else
+      printf("Get SCC IOC FW Version Fail...\n");
+  }
 
   return;
 }
 
 static void
 print_fw_ioc_ver(void) {
+
   uint8_t ver[32] = {0};
   int ret = 0;
+  uint8_t status;
 
-  // Read Firwmare Versions of IOM IOC viacd MCTP
-  ret = pal_get_iom_ioc_ver(ver);
-  if(!ret)
-    printf("IOM IOC Version: %x.%x.%x.%x\n", ver[3], ver[2], ver[1], ver[0]);
-  else
-    printf("Get IOM IOC FW Verion Fail...\n");
+  //Have to check HOST power, if is off, shows NA
+  pal_get_server_power(FRU_SLOT1, &status);
+  if (status != SERVER_POWER_ON) {
+    printf("IOM IOC Version: NA (HOST Power-off)\n");
+  }
+  else {
+    // Read Firwmare Versions of IOM IOC viacd MCTP
+    ret = pal_get_iom_ioc_ver(ver);
+    if(!ret)
+      printf("IOM IOC Version: %x.%x.%x.%x\n", ver[3], ver[2], ver[1], ver[0]);
+    else
+      printf("Get IOM IOC FW Version Fail...\n");
+  }
 
   return;
 }

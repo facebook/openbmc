@@ -2814,14 +2814,6 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
       sprintf(key, "scc_sensor%d", tbuf[i+1]);
       sprintf(str, "NA");
 
-      //SCC_IOC have to check if the server is on, if not shows "NA"
-      if (rbuf[5*i+1] == SCC_SENSOR_IOC_TEMP) {
-        pal_get_server_power(FRU_SLOT1, &status);
-        if (status != SERVER_POWER_ON) {
-          strcpy(str, "NA");
-        }
-      }
-
       if(edb_cache_set(key, str) < 0) {
         #ifdef DEBUG
           syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
@@ -2850,9 +2842,17 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
       value = (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
       value = value/100;
     }
-    //cache sensor reading
+    // cache sensor reading
     sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     sprintf(str, "%.2f",(float)value);
+
+    // SCC_IOC have to check if the server is on, if not shows "NA"
+    if (rbuf[5*i+1] == SCC_SENSOR_IOC_TEMP) {
+      pal_get_server_power(FRU_SLOT1, &status);
+      if (status != SERVER_POWER_ON) {
+        strcpy(str, "NA");
+      }
+    }
 
     if(edb_cache_set(key, str) < 0) {
       #ifdef DEBUG

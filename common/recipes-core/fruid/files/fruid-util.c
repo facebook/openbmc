@@ -299,7 +299,17 @@ int main(int argc, char * argv[]) {
 
     fru = 1;
 
+    // No NIC for FBTTN
+    // TODO: Remove NIC fruid option from main()
     while (fru <= MAX_NUM_FRUS) {
+
+      #ifdef CONFIG_FBTTN
+        if(fru == FRU_NIC) {
+          fru++;
+          continue;
+        }
+      #endif
+
       ret = pal_get_fruid_path(fru, path);
       if (ret < 0) {
         return ret;

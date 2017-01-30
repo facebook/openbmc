@@ -12,6 +12,9 @@
   "min_rpm": 800,
   "profiles": {
     "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "data": [
         [65, 18],
@@ -23,6 +26,9 @@
       ]
     },
     "linear_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "data": [
         [85, 18],
@@ -33,6 +39,9 @@
       ]
     },
     "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "data": [
         [25, 40],
@@ -44,6 +53,9 @@
       ]
     },
     "linear_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "data": [
         [-9, 0],
@@ -51,6 +63,9 @@
       ]
     },
     "pid_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "pid",
       "setpoint": -14,
       "negative_hysteresis": 1,
@@ -60,6 +75,9 @@
       "kd": 0
     },
     "linear_mb_outlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "data": [
         [ 45, 18 ],
@@ -69,6 +87,9 @@
       ]
     },
     "pid_mb_outlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "pid",
       "setpoint": 53,
       "negative_hysteresis": 1,
@@ -76,6 +97,24 @@
       "kp": -1,
       "ki": -0.025,
       "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
     }
   },
   "zones": {

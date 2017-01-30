@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,21 +14,20 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-### BEGIN INIT INFO
-# Provides:          setup-fan
-# Required-Start:    board-id
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description: Set fan speed
-### END INIT INFO
+FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
-. /usr/local/fbpackages/utils/ast-functions
+SRC_URI += "file://init_pwm.sh \
+            file://setup-fan.sh \
+            file://fsc-config.json \
+            file://zone1.fsc \
+            file://fsc_board.py \
+           "
 
-echo -n "Setup fan speed... "
-/usr/local/bin/init_pwm.sh
-/usr/local/bin/fan-util --set 50
-runsv /etc/sv/fscd > /dev/null 2>&1 &
-echo "done."
+FSC_BIN_FILES += "init_pwm.sh"
+
+FSC_CONFIG += "fsc-config.json"
+
+FSC_ZONE_CONFIG +="zone1.fsc"
+
+FSC_INIT_FILE += "setup-fan.sh"

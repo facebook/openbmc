@@ -1,5 +1,5 @@
 {
-  "pwm_transition_value": 100,
+  "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
   "boost": {
@@ -12,9 +12,12 @@
   "min_rpm": 400,
   "profiles": {
     "linear_ambient": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
-      "negative_hysteresis":3, 
+      "negative_hysteresis":3,
       "data": [
         [1 , 12],
         [15, 12],
@@ -52,10 +55,13 @@
         [47, 55],
         [48, 60],
         [49, 65],
-        [50, 70]	
+        [50, 70]
       ]
     },
     "linear_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -80,6 +86,9 @@
       ]
     },
     "linear_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -93,10 +102,13 @@
 				[75, 60],
 				[76, 70],
 				[77, 85],
-				[78, 100]					
+				[78, 100]
       ]
     },
     "pid_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "pid",
       "setpoint": 65,
       "negative_hysteresis": 3,
@@ -106,6 +118,9 @@
       "kd": 0
     },
 		"pid_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
 			"type": "pid",
 			"setpoint": 84,
 			"negative_hysteresis": 3,
@@ -115,10 +130,20 @@
 			"kd": 0
 		}
   },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
+    }
+  },
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "FSC_Lightning_PVT_Samsung_M2_2TB_v2_zone0.fsc"
+      "expr_file": "FSC_Lightning_PVT_Seagate_M2_2TB_v2_zone0.fsc"
     }
   }
 }

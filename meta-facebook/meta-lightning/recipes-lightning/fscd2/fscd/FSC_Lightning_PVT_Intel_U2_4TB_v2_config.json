@@ -12,9 +12,12 @@
   "min_rpm": 400,
   "profiles": {
     "linear_ambient": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
-      "negative_hysteresis":3, 
+      "negative_hysteresis":3,
       "data": [
         [1 , 12],
         [15, 12],
@@ -56,6 +59,9 @@
       ]
     },
     "linear_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type":"linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -65,7 +71,7 @@
         [65, 13],
         [66, 14],
         [67, 15],
-        [68, 16],	
+        [68, 16],
         [69, 17],
         [70, 18],
         [71, 19],
@@ -76,7 +82,7 @@
         [76, 28],
         [77, 30],
         [78, 32],
-        [79, 34],	
+        [79, 34],
         [80, 36],
         [81, 38],
         [82, 40],
@@ -85,7 +91,7 @@
 	      [85, 43],
         [86, 44],
         [87, 45],
-	      [88, 46],	
+	      [88, 46],
         [89, 47],
         [90, 48],
         [91, 50],
@@ -96,6 +102,9 @@
       ]
     },
     "linear_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -105,7 +114,7 @@
         [25, 12],
         [26, 13],
         [27, 14],
-        [28, 15],	
+        [28, 15],
         [29, 16],
         [30, 17],
         [31, 18],
@@ -116,7 +125,7 @@
         [36, 23],
         [37, 24],
         [38, 25],
-        [39, 26],	
+        [39, 26],
         [40, 27],
         [41, 28],
         [42, 29],
@@ -126,7 +135,7 @@
         [46, 33],
 	      [47, 34],
         [48, 35],
-        [49, 36],	
+        [49, 36],
         [50, 37],
         [51, 38],
         [52, 39],
@@ -138,7 +147,7 @@
         [58, 45],
 	      [59, 46],
         [60, 47],
-        [61, 48],	
+        [61, 48],
         [62, 49],
         [63, 50],
         [64, 51],
@@ -151,6 +160,9 @@
       ]
     },
     "pid_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "pid",
       "setpoint": 57,
       "negative_hysteresis": 3,
@@ -158,6 +170,16 @@
       "kp": -10,
       "ki": -0.07,
       "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
     }
   },
   "zones": {

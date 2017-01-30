@@ -27,8 +27,8 @@
 #include <syslog.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include "facebook/i2c-dev.h"
-#include "facebook/i2c.h"
+#include <facebook/i2c.h>
+#include <facebook/i2c-dev.h>
 #include "mctp.h"
 
 #define MAX_MCTP_RETRY_CNT  3

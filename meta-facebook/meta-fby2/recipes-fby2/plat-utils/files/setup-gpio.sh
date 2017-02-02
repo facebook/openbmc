@@ -316,40 +316,37 @@ devmem_clear_bit $(scu_addr 88) 23
 
 gpio_set P7 0
 
-# BMC_READY_N: GPIOA0 (0)
-# To use GPIOA-, SCU80[0] must be 0
-devmem_clear_bit $(scu_addr 80) 0
+# BMC_READY_N: GPIOG6 (54)
+# To use GPIOG6, SCU84[6] must be 0
+devmem_clear_bit $(scu_addr 84) 6
 
-gpio_set A0 0
+gpio_set G6 0
 
-# BMC_RST_BTN_IN_N: GPIOAB0 (218)
-# To use GPIOAB0, SCU90[31] and SCUA8[0] must be 0.
-devmem_clear_bit $(scu_addr 90) 31
-devmem_clear_bit $(scu_addr A8) 0
+# BMC_RST_BTN_IN_N: GPIOS0 (144)
+# To use GPIOS0, SCU8C[0]
+devmem_clear_bit $(scu_addr 8c) 0
 
-gpio_export AB0
+gpio_export S0
 
 # RESET for all Slots
-# RST_SLOT1_SYS_RESET_N: GPIOS1 (145)
-# To use GPIOS1, SCU8C[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 1
+# RST_SLOT1_SYS_RESET_N: GPIOH1 (57)
+# To use GPIOH1, SCU90[6], SCU90[7] must be 0
+devmem_clear_bit $(scu_addr 90) 6
+devmem_clear_bit $(scu_addr 90) 7
 
-gpio_set S1 1
+gpio_set H1 1
 
-# RST_SLOT2_SYS_RESET_N: GPIOS0 (144)
-# To use GPIOS0, SCU8C[0] must be 0
-devmem_clear_bit $(scu_addr 8C) 0
-gpio_set S0 1
+# RST_SLOT2_SYS_RESET_N: GPIOH0 (56)
+# To use GPIOH0, SCU90[6], SCU90[7] must be 0
+gpio_set H0 1
 
-# RST_SLOT3_SYS_RESET_N: GPIOS3 (147)
-# To use GPIOS3, SCU8C[3] must be 0
-devmem_clear_bit $(scu_addr 8C) 3
-gpio_set S3 1
+# RST_SLOT3_SYS_RESET_N: GPIOH3 (59)
+# To use GPIOH3, SCU90[6], SCU90[7] must be 0
+gpio_set H3 1
 
-# RST_SLOT4_SYS_RESET_N: GPIOS2 (146)
-# To use GPIOS2, SCU8C[2] must be 0
-devmem_clear_bit $(scu_addr 8C) 2
-gpio_set S2 1
+# RST_SLOT4_SYS_RESET_N: GPIOH2 (58)
+# To use GPIOH2, SCU90[6], SCU90[7] must be 0
+gpio_set H2 1
 
 # 12V_STBY Enable for Slots
 
@@ -359,7 +356,7 @@ devmem_clear_bit $(scu_addr 88) 13
 
 gpio_set O5 1
 
-# P12V_STBY_SLOT2_EN: GPIOO4 (116)
+# P12V_STBY_SLOT2_EN: GPIOO4 (116
 # To use GPIOO4, SCU88[12] must be 0
 devmem_clear_bit $(scu_addr 88) 12
 
@@ -398,9 +395,9 @@ devmem_clear_bit $(scu_addr 88) 18
 gpio_export P2
 
 # Enable the the EXTRST functionality of GPIOB7
-#devmem_set_bit $(scu_addr 80) 15
-#devmem_clear_bit $(scu_addr 90) 31
-#devmem_set_bit $(scu_addr 3c) 3
+devmem_set_bit $(scu_addr 80) 15
+devmem_clear_bit $(scu_addr 90) 31
+devmem_set_bit $(scu_addr 3c) 3
 
 # Enable GPIO pins: I2C_SLOTx_ALERT_N pins for BIC firmware update
 devmem_clear_bit $(scu_addr 88) 2

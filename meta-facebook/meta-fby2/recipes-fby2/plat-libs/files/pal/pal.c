@@ -38,10 +38,10 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
-#define GPIO_HAND_SW_ID1 138
-#define GPIO_HAND_SW_ID2 139
-#define GPIO_HAND_SW_ID4 140
-#define GPIO_HAND_SW_ID8 141
+#define GPIO_HAND_SW_ID1 212
+#define GPIO_HAND_SW_ID2 213
+#define GPIO_HAND_SW_ID4 214
+#define GPIO_HAND_SW_ID8 215
 
 #define GPIO_RST_BTN 144
 #define GPIO_PWR_BTN 24
@@ -66,7 +66,7 @@
 #define GPIO_POSTCODE_6 126
 #define GPIO_POSTCODE_7 127
 
-#define GPIO_DBG_CARD_PRSNT 137
+#define GPIO_DBG_CARD_PRSNT 139
 
 #define GPIO_BMC_READY_N    28
 

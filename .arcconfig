@@ -4,7 +4,7 @@
   "arc.feature.start.default" : "origin/helium",
   "arc.land.onto.default" : "helium",
   "phutil_libraries" : {
-     "facebook-bmc-arcanist" : "facebook/arcanist/"
+     "bmc-arcanist" : "facebook/arcanist/"
   },
   "lint_engine" : "FacebookBmcLintEngine",
   "git.default-relative-commit" : "HEAD^"

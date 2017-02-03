@@ -440,7 +440,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
 
 #ifdef CONFIG_FBTTN
   // When ML-CPU is made sure shutdown that is not power-cycle, we should power-off M.2/IOC by BMC.
-  if (cycle_flag == false) {
+  //if (cycle_flag == false) {
     do {
       if (pal_get_server_power(slot_id, &status) < 0) {
         return -1;
@@ -458,7 +458,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
     if (write_device(vpath, "0")) {
       return -1;
     }
-  }
+  //}
 #endif
 
   return 0;
@@ -493,6 +493,11 @@ server_12v_off(uint8_t slot_id) {
 
   sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
 
+  if (write_device(vpath, "0")) {
+    return -1;
+  }
+
+  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   if (write_device(vpath, "0")) {
     return -1;
   }

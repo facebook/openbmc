@@ -1,6 +1,8 @@
 {
   "project_id" : "yocto/poky/meta-aspeed",
   "conduit_uri" : "https://phabricator.fb.com/api/",
+  "arc.feature.start.default" : "origin/helium",
+  "arc.land.onto.default" : "helium",
   "phutil_libraries" : {
      "facebook-bmc-arcanist" : "facebook/arcanist/"
   },

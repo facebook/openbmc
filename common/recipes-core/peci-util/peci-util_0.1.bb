@@ -17,7 +17,7 @@ binfiles = "peci-util \
 
 pkgdir = "peci-util"
 
-DEPENDS = "update-rc.d-native"
+DEPENDS = "update-rc.d-native libpal"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

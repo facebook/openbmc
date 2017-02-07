@@ -6,7 +6,7 @@ C_OBJS := ${C_SRCS:.c=.o}
 all: peci-util
 
 peci-util: $(C_OBJS)
-	$(CC) $(CFLAGS) -pthread -lgpio --std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lgpio -lpal --std=c99 -o $@ $^ $(LDFLAGS)
  
 .PHONY: clean
 

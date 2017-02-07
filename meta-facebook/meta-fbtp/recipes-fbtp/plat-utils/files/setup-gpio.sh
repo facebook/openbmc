@@ -53,6 +53,8 @@ gpio_export D1
 gpio_export D3
 gpio_export D5
 
+BOARD_REV=$(( $(gpio_get D1) + ($(gpio_get D3)<<1) + ($(gpio_get D5)<<2) ))
+
 # FM_PWR_BTN_N, Server power button in, on GPIO E2(34)
 # To enable GPIOE2, SCU80[18], SCU8C[13], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 18
@@ -383,6 +385,7 @@ devmem_clear_bit $(scu_addr 88) 29
 gpio_export R5
 # GPIOY2 BMC_JTAG_SEL
 devmem_clear_bit $(scu_addr A4) 10
+devmem_clear_bit $(scu_addr 94) 1
 gpio_export Y2
 
 # FM_CPU0_SKTOCC_LVT3_N
@@ -398,5 +401,12 @@ devmem_clear_bit $(scu_addr A4) 31
 gpio_export AA7
 
 # PECI_MUX_SELECT
-devmem_clear_bit $(scu_addr A8) 2
-gpio_set AB2 0
+if [ $BOARD_REV -le 2 ]; then
+  # Power-On, EVT, preDVT
+  devmem_clear_bit $(scu_addr A8) 2
+  gpio_set AB2 0
+else
+  # DVT or newer
+  devmem_clear_bit $(scu_addr A4) 28
+  gpio_set AA4 0
+fi

@@ -44,6 +44,7 @@ def log_main():
     # Get the list of frus from PAL library
     frus = pal_get_fru_list()
     frulist = re.split(r',\s', frus)
+    frulist.append('sys')
 
     if len(sys.argv) is not 3:
         print_usage()
@@ -102,7 +103,10 @@ def log_main():
                     fru_num = '0'
 
                 # FRU # is always aligned with indexing of fru list
-                fruname = frulist[int(fru_num)]
+                if fru == 'sys' and fru_num == '0':
+                    fruname = 'sys'
+                else:
+                    fruname = frulist[int(fru_num)]
 
                 # Clear the log is the argument fru matches the log fru
                 if fru == 'all' or fru == fruname:
@@ -112,7 +116,7 @@ def log_main():
                     newlog = newlog + log
 
             # Dump the new log in a tmp file
-            if logfile == syslogfiles[1]:
+            if logfile == syslogfiles[1] and fru != 'sys':
                if fru == 'all':
                   temp = 'all'
                else:
@@ -142,8 +146,11 @@ def log_main():
                 else:
                     fru_num = '0'
 
-                    # FRU # is always aligned with indexing of fru list
-                fruname = frulist[int(fru_num)]
+                # FRU # is always aligned with indexing of fru list
+                if fru == 'sys' and fru_num == '0':
+                    fruname = 'sys'
+                else:
+                    fruname = frulist[int(fru_num)]
 
                 # Print only if the argument fru matches the log fru
                 if re.search(r'log-util:', log):

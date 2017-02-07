@@ -146,8 +146,8 @@ debug_card_prs:
 
 
 
-      // Make sure the server at selected position is present
-      ret = pal_is_fru_prsnt(pos, &prsnt);
+      // Make sure the server at selected position is ready
+      ret = pal_is_fru_ready(pos, &prsnt);
       if (ret || !prsnt) {
         goto debug_card_done;
       }
@@ -155,13 +155,13 @@ debug_card_prs:
       // Enable POST codes for all slots
       ret = pal_post_enable(pos);
       if (ret) {
-        goto debug_card_out;
+        goto debug_card_done;
       }
 
       // Get last post code and display it
       ret = pal_post_get_last(pos, &lpc);
       if (ret) {
-        goto debug_card_out;
+        goto debug_card_done;
       }
 
       ret = pal_post_handle(pos, lpc);

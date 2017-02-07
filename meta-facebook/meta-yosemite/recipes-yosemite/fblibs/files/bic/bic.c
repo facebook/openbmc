@@ -635,6 +635,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   sleep(2);
 
+  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
   // Enable Bridge-IC update
   if (!_is_bic_update_ready(slot_id)) {
      _enable_bic_update(slot_id);
@@ -651,6 +652,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   if (i == BIC_UPDATE_RETRIES) {
     printf("bic is NOT ready for update\n");
+    syslog(LOG_CRIT, "bic_update_fw: bic is NOT ready for update\n");
     goto update_done;
   }
 
@@ -831,6 +833,7 @@ update_done:
   system(cmd);
 
 error_exit:
+  syslog(LOG_CRIT, "bic_update_fw: updating firmware is exiting\n");
   if (fd > 0) {
     close(fd);
   }

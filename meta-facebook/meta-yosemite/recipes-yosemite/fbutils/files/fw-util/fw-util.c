@@ -157,8 +157,9 @@ fw_update_slot(char **argv, uint8_t slot_id) {
     system(cmd);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
     sleep(1);
-    pal_set_server_power(slot_id, SERVER_GLOBAL_RESET);
-    sleep(10);
+    sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-cycle", slot_id);
+    system(cmd);
+    sleep(5);
     sprintf(cmd, "/usr/local/bin/power-util slot%u on", slot_id);
     system(cmd);
     return ret;

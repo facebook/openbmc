@@ -2150,6 +2150,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       goto error_exit;
     }
     initialized[i_retry/3] = 1;
+    return READING_NA;
   }
 
   //Get registers data

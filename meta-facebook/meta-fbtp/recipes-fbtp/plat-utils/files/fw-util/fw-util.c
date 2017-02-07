@@ -20,12 +20,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <jansson.h>
+
+#include <sys/wait.h>
+
 #include <openbmc/me.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
@@ -46,7 +50,7 @@ static uint8_t g_vr_cpu1_vddq_klm;
 static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|mb|nic> <--version>\n");
-  printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic|--vr> <path>\n");
+  printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic|--vr|--rom|--bmc> <path>\n");
   printf("       fw-util <mb> <--postcode>\n");
 }
 
@@ -312,10 +316,40 @@ print_fw_ver(uint8_t fru_id) {
 }
 
 int
+get_mtd_name(const char* name, char* dev)
+{
+  FILE* partitions = fopen("/proc/mtd", "r");
+  char line[256];
+
+  memset((void*)dev, 0, 5);
+  while (fgets(line, sizeof(line), partitions)) {
+    if (!strncmp(&line[24], name, strlen(name))) {
+      strncpy(dev, line, 4);
+      fclose(partitions);
+      return 1;
+    }
+  }
+
+  fclose(partitions);
+  return 0;
+}
+
+int
+run_command(const char* cmd) {
+  int status = system(cmd);
+  if (status == -1) {
+    return 127;
+  }
+
+  return WEXITSTATUS(status);
+}
+
+int
 fw_update_fru(char **argv, uint8_t slot_id) {
   uint8_t status;
   int ret;
   char cmd[80];
+  char dev[5];
   gpio_st bmc_ctrl_pin;
 
   ret = pal_is_fru_prsnt(slot_id, &status);
@@ -326,6 +360,30 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   if (status == 0) {
     printf("slot%d is empty!\n", slot_id);
     goto err_exit;
+  }
+
+  if (!strcmp(argv[3], "--rom")) {
+    /* Need to match '"rom"' since there may be a 'romx'. */
+    if (!get_mtd_name("\"rom\"", dev)) {
+      printf("Error: Cannot find rom MTD partition in /proc/mtd\n");
+      goto err_exit;
+    }
+
+    snprintf(cmd, sizeof(cmd), "flashcp -v %s /dev/%s", argv[4], dev);
+    return run_command(cmd);
+  }
+
+  if (!strcmp(argv[3], "--bmc")) {
+    if (!get_mtd_name("\"flash1\"", dev)) {
+      printf("Note: Cannot find flash1 MTD partition in /proc/mtd\n");
+      if (!get_mtd_name("\"flash0\"", dev)) {
+        printf("Error: Cannot find flash0 MTD partition in /proc/mtd\n");
+        goto err_exit;
+      }
+    }
+
+    snprintf(cmd, sizeof(cmd), "flashcp -v %s /dev/%s", argv[4], dev);
+    return run_command(cmd);
   }
 
   if (!strcmp(argv[3], "--cpld")) {
@@ -343,6 +401,8 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   }
 
   if (!strcmp(argv[3], "--bios")) {
+    int exit_code;
+
     system("/usr/local/bin/power-util mb off");
     sleep(10);
     system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
@@ -351,9 +411,16 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     gpio_open(&bmc_ctrl_pin,  GPIO_BMC_CTRL);
     gpio_change_direction(&bmc_ctrl_pin, GPIO_DIRECTION_OUT);
     gpio_write(&bmc_ctrl_pin, GPIO_VALUE_HIGH);
+
     system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/bind");
-    sprintf(cmd, "flashcp -v %s /dev/mtd6", argv[4]);
-    system(cmd);
+    exit_code = 0;
+    if (!get_mtd_name("\"bios0\"", dev)) {
+      printf("Error: Cannot find bios0 MTD partition in /proc/mtd\n");
+    } else {
+      snprintf(cmd, sizeof(cmd), "flashcp -v %s /dev/%s", argv[4], dev);
+      exit_code = run_command(cmd);
+    }
+
     system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind");
     gpio_write(&bmc_ctrl_pin, GPIO_VALUE_LOW);
     gpio_close(&bmc_ctrl_pin);
@@ -362,7 +429,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     pal_PBO();
     sleep(10);
     system("/usr/local/bin/power-util mb on");
-    return 0;
+    return exit_code;
   }
 
   if ( !strcmp(argv[3], "--vr") ) {

@@ -124,11 +124,12 @@ def log_main():
                   temp = 'FRU: ' + fru_num
                time = datetime.now()
                newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
-            tmpfd = open('%s.tmp' % logfile, 'w')
+            curpid = os.getpid()
+            tmpfd = open('%s.tmp%d' % (logfile, curpid), 'w')
             tmpfd.write(newlog)
             tmpfd.close()
             # Rename the tmp file to original syslog file
-            os.rename('%s.tmp' % logfile, logfile)
+            os.rename('%s.tmp%d' % (logfile, curpid), logfile)
 
         # Print cmd
         if cmd == cmdlist[0]:

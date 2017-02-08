@@ -429,7 +429,7 @@ sensor_thresh_array_init() {
     return;
 
   mb_sensor_threshold[MB_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
-  mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 75;
+  mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 90;
   mb_sensor_threshold[MB_SENSOR_INLET_REMOTE_TEMP][UCR_THRESH] = 40;
   mb_sensor_threshold[MB_SENSOR_OUTLET_REMOTE_TEMP][UCR_THRESH] = 75;
 

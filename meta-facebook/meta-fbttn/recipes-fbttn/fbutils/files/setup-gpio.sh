@@ -48,7 +48,7 @@
 #gpio_export A0
 
 # This is a workaround for MAC1LINK
-devmem 0x1e660050 w 0xA9D0F
+devmem 0x1e660050 w 0xA954F
 
 # BMC_TO_EXP_RESET: A2 (2)
 # To use GPIOA2, SCU80[2], and SCU80[15] must be 0

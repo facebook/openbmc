@@ -222,7 +222,8 @@ int pal_is_iom_full_pwrgood(void);
 int pal_en_scc_stb_pwr(void);
 int pal_en_scc_full_pwr(void);
 int pal_en_iom_full_pwr(void);
-int pal_fault_led(uint8_t state, uint8_t mode);
+int pal_fault_led_mode(uint8_t state, uint8_t mode);
+int pal_fault_led_behavior(uint8_t state);
 int pal_minisas_led(uint8_t port, uint8_t state);
 int pal_get_poss_pcie_config(uint8_t *pcie_config);
 int pal_get_plat_sku_id(void);
@@ -244,6 +245,7 @@ void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_get_error_code(uint8_t* data, uint8_t* error_count);
+int pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

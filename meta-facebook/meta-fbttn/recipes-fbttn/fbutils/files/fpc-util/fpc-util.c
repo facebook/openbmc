@@ -39,8 +39,8 @@ print_usage_help(void) {
     printf("Usage: fpc-util <slot1> --ext1 <warning/off>\n");
     printf("Usage: fpc-util <slot1> --ext2 <warning/off>\n");
   }
-  
-  printf("       fpc-util <sled> --fault <on/off/auto>\n");
+
+  printf("       fpc-util <sled> --fault <on/off/blinking/auto/status>\n");
   printf("       fpc-util <slot1> --identify <on/off>\n");
 }
 
@@ -61,56 +61,86 @@ main(int argc, char **argv) {
   } else {
     goto err_exit;
   }
-  
+
   if (!strcmp(argv[2], "--ext2")) {
 	  int LED = 0;
     printf("fpc-util: Enable/Disable miniSAS2 Error LED\n");
-    if(!strcmp(argv[3], "warning")){
+    if (!strcmp(argv[3], "warning")) {
 		LED = 0;
 		return pal_minisas_led(1,LED);
-	}else if(!strcmp(argv[3], "off")){
+
+	} else if (!strcmp(argv[3], "off")) {
+
 		LED = 1;
 	    return pal_minisas_led(1,LED);
 	}
     return -1;// to do pal_minisas_led()
-  }else  if (!strcmp(argv[2], "--ext1")) {
+
+  } else if (!strcmp(argv[2], "--ext1")) {
+
 	  int LED = 0;
     printf("fpc-util: Enable/Disable miniSAS1 Error LED\n");
-    if(!strcmp(argv[3], "warning")){
+
+    if (!strcmp(argv[3], "warning")) {
 		LED = 0;
+
 		return pal_minisas_led(0,LED);
-	}else if(!strcmp(argv[3], "off")){
+
+	} else if (!strcmp(argv[3], "off")) {
 		LED = 1;
-	    return pal_minisas_led(0,LED);
+
+    return pal_minisas_led(0,LED);
 	}
     return -1;// to do pal_minisas_led()
+
   } else if (!strcmp(argv[2], "--fault")) {
-	  if (strcmp(argv[1] , "sled"))
+
+    if (strcmp(argv[1] , "sled"))
 	    goto err_exit;
-	    
+
 		int mode  = 0;
-		if(!strcmp(argv[3], "on")){ 
-			printf("fpc-util: Enable fault LED manually\n"); 
+
+		if (!strcmp(argv[3], "on")) {
+
+			printf("fpc-util: Enable fault LED manually\n");
 			mode = 1;
-			return pal_fault_led(1,mode);
-	    }else if(!strcmp(argv[3], "off")){
-			printf("fpc-util: Disable fault LED manually\n"); 
+			return pal_fault_led_mode(1,mode);
+
+    } else if (!strcmp(argv[3], "off")) {
+
+			printf("fpc-util: Disable fault LED manually\n");
 			mode = 1;
-			return pal_fault_led(0,mode);
-		}else if(!strcmp(argv[3], "auto")){
+			return pal_fault_led_mode(0,mode);
+
+		} else if (!strcmp(argv[3], "blinking")) {
+
+      printf("fpc-util: Enable fault LED Blinking\n");
+      mode = 1;
+      return pal_fault_led_mode(2,mode);
+
+    } else if (!strcmp(argv[3], "auto")) {
 			printf("fpc-util: Auto Mode\n");
-			mode = 0;
-			return pal_fault_led(0,mode);
-		}
-        return -1;
+			mode = 2;
+			return pal_fault_led_mode(0,mode);
+
+		} else if (!strcmp(argv[3], "status")) {
+
+      printf("Fault LED Status: %s\n", (pal_fault_led_mode(3,3) == 0) ? "auto":"manual" );
+      return 0;
+
+    }
+    return -1;
+
   } else if (!strcmp(argv[2], "--identify")) {
 
     printf("fpc-util: identification for %s is %s\n", argv[1], argv[3]);
+
     if (slot_id == 1) {
       sprintf(tstr, "identify_slot1");
-    } 
+    }
 
     return pal_set_key_value(tstr, argv[3]);
+
   } else {
     goto err_exit;
   }

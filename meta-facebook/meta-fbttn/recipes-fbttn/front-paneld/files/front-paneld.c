@@ -16,7 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -88,7 +87,30 @@ write_cache(const char *device, uint8_t value) {
     return 0;
   }
 }
+void cache_post_code(unsigned char* buffer,int buf_len){
+  FILE *fp;
+  fp = fopen("/tmp/post_code_buffer.bin", "w");
+  if (fp) {
+      lockf(fileno(fp),F_LOCK,0L);
+      while (buf_len) {
+      fprintf(fp, "%X ", buffer[buf_len-1]);
+      buf_len--;
+    }
+    fprintf(fp, "\n");
+  }
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+void check_cache_post_code(){
+  FILE *fp;
+  fp = fopen("/tmp/post_code_buffer.bin", "r");
 
+  if (fp) {
+      //exist
+      rename("/tmp/post_code_buffer.bin", "/tmp/last_post_code_buffer.bin");
+      fclose(fp);
+  }
+}
 // Thread for monitoring debug card hotswap
 static void *
 debug_card_handler() {
@@ -101,8 +123,26 @@ debug_card_handler() {
   uint8_t UART_OUT = 1;
   int CURT = 0;
   static uint8_t error[255], count_ret = 0, count_cur = 0, num;
+  uint8_t buffer[MAX_IPMB_RES_LEN], buf_len;
+  uint8_t status;
 
   while (1) {
+
+	ret = pal_is_fru_prsnt(FRU_SLOT1, &prsnt);
+    if (!ret && prsnt == 1) {
+		ret = pal_get_server_power(FRU_SLOT1, &status);
+		if(!ret && (status == SERVER_POWER_ON) ) {
+          ret = pal_post_enable(FRU_SLOT1);
+          if (!ret) {
+            ret = pal_post_get_buffer(buffer, &buf_len);
+            if (!ret) {
+              cache_post_code(buffer,buf_len);
+            }
+          }
+	    }
+	    else
+	      check_cache_post_code();
+    }
     // Check if debug card present or not
     #if 1
     ret = pal_is_debug_card_prsnt(&prsnt);
@@ -547,10 +587,14 @@ encl_led_handler() {
   uint8_t nic_hlth;
   int ret;
   int i;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int run_mode;
+  static int count = 0;
 
   // Initial error code
   memset(g_err_code, 0, sizeof(unsigned char) * ERROR_CODE_NUM);
-  pal_fault_led(ID_LED_OFF, 0);
+  pal_fault_led_mode(ID_LED_OFF, 0);
 
   while (1) {
     // Get health status for all the fru and then update the ENCL_LED status
@@ -620,11 +664,36 @@ encl_led_handler() {
     }
 
     if(pal_sum_error_code() == 1) {   // error occur
-      pal_fault_led(ID_LED_ON, 0);
+      pal_fault_led_mode(ID_LED_ON, 0);
     }
     else {
-      pal_fault_led(ID_LED_OFF, 0);
+      pal_fault_led_mode(ID_LED_OFF, 0);
     }
+
+    sprintf(key, "fault_led_state");
+    memset(cvalue, 0, sizeof(char)*MAX_VALUE_LEN);
+    ret = pal_get_key_value(key, cvalue);
+    run_mode = atoi(cvalue);
+    if (!ret) {
+      if(run_mode >= 20) {
+        ret = pal_fault_led_behavior( (!(count%5)) );
+        if(ret)
+          syslog(LOG_WARNING, "encl_led_handler: pal_fault_led_behavior blinking fail");
+        count++;
+      }
+      else if (run_mode >= 10) {
+        ret = pal_fault_led_behavior(ID_LED_ON);
+        if(ret)
+         syslog(LOG_WARNING, "encl_led_handler: pal_fault_led_behavior on fail");
+      }
+      else {
+        ret = pal_fault_led_behavior(ID_LED_OFF);
+        if(ret)
+          syslog(LOG_WARNING, "encl_led_handler: pal_fault_led_behavior off fail");
+      }
+    }
+    else
+      syslog(LOG_WARNING, "encl_led_handler: pal_get_key_value fail");
     sleep(1);
   }
 }

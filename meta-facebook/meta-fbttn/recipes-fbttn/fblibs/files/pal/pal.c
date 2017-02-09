@@ -182,6 +182,7 @@ char * key_list[] = {
 "slot1_sel_error",
 "scc_sensor_timestamp",
 "dpb_sensor_timestamp",
+"fault_led_state",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -200,6 +201,7 @@ char * def_val_list[] = {
   "1", /* slot_sel_error */
   "0", /* scc_sensor_timestamp */
   "0", /* dpb_sensor_timestamp */
+  "0", /* fault_led_state */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -2462,15 +2464,61 @@ int pal_en_iom_full_pwr(void){
 //To do: enable iom PWR  ;IOM_FULL_PWR_EN      GPIOAA7
 return 0;
 }
-int pal_fault_led(uint8_t state, uint8_t mode) {
+
+int pal_fault_led_mode(uint8_t state, uint8_t mode) {
 
   // TODO: Need to implement 3 different modes for the fault LED.
   // For now the default mode is the auto mode which is controlled by frontpaneld.
   // ----------------------------------------------------------------------------
-  // mode: 0 - 1 auto (BMC control); 1 - manual (user control); 2 - disable manual
-  // static int run_mode = 0;  // run_mode: 0 - auto; 1 - manual
+  // state: 0 - off; 1 - on; 2 - blinking
+  // mode: 0 - auto (BMC control); 1 - manual (user control); 2 - disable manual;
+  // static int run_mode = 0;
+  // run_mode 2 digits
+  //   digit 0 : 0 - auto; 1 - manual
+  //   digit 1 : 0 - off; 1 - on; 2 - blinking
+  // run_mode: 00: - auto off; 10 - auto on; 20 - auto blinking
+  //           01: - manual off; 11 - manual on; 21 - manual blinking
+  // when state and mode both 3, return run_mode state
   // ----------------------------------------------------------------------------
+  int run_mode;
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "fault_led_state");
+  ret = pal_get_key_value(key, cvalue);
+  if (ret < 0) {
+      syslog(LOG_WARNING, "pal_fault_led: pal_get_key_value failed");
+      return ret;
+  }
+  run_mode = atoi(cvalue);
+
+  if(state == 3 && mode == 3)
+    return run_mode%10; //run_mode%10, shows only 0 or 1; auto or manual
+
+  //if currently is manual mode, then keep it, only when set "fpc-util sled --fault auto" to change back to auto mode
+  if ( (run_mode%10) == 1 && mode == 0) {
+    return 0;
+  }
+
+  run_mode = state*10 + mode;
+
+  //when set "fpc-util sled --fault auto" to change back to auto mode
+  if (mode == 2)
+    run_mode = 0;
+
+  sprintf(cvalue, "%d", run_mode);
+  ret = pal_set_key_value(key, cvalue);
+  if (ret < 0) {
+      syslog(LOG_WARNING, "pal_fault_led: pal_set_key_value failed");
+      return ret;
+  }
+  return 0;
+}
+
+int pal_fault_led_behavior(uint8_t state) {
   char path[64] = {0};
+  int ret;
 
   // ENCL_FAULT_LED: GPIOO3 (115)
   sprintf(path, GPIO_VAL, GPIO_ENCL_FAULT_LED);
@@ -2478,9 +2526,9 @@ int pal_fault_led(uint8_t state, uint8_t mode) {
   if (state == 0) {           // LED off
     if (write_device(path, "0")) {
       return -1;
-      }
+    }
   }
-    else {                    // LED on
+  else {                    // LED on
     if (write_device(path, "1")) {
       return -1;
     }
@@ -3060,8 +3108,8 @@ pal_oem_bitmap(uint8_t* in_error,uint8_t* data) {
   {
     return 0;
   }
-  for(ii = 0; ii < 32; ii++) 
-  {    
+  for(ii = 0; ii < 32; ii++)
+  {
     for(kk = 0; kk < 8; kk++)
     {
       if(((in_error[ii] >> kk)&0x01) == 1)
@@ -3111,7 +3159,7 @@ pal_get_error_code(uint8_t* data, uint8_t* error_count) {
   }
   else {
     lockf(fileno(fp),F_LOCK,0L);
-    while (fscanf(fp, "%d", error+count) != EOF && count!=32) {    
+    while (fscanf(fp, "%d", error+count) != EOF && count!=32) {
       count++;
     }
   }
@@ -3123,5 +3171,23 @@ pal_get_error_code(uint8_t* data, uint8_t* error_count) {
   error[12] = ((error[12] & 0xF0) + (exp_error[12] & 0xF));
   memset(data,256,0);
   *error_count = pal_oem_bitmap(error, data);
+  return 0;
+}
+
+// Get the last post code of the given slot
+int
+pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len) {
+  int ret;
+  uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
+  uint8_t len;
+
+  ret = bic_get_post_buf(FRU_SLOT1, buf, &len);
+  if (ret)
+    return ret;
+
+  // The post buffer is LIFO and the first byte gives the latest post code
+  memcpy(buffer, buf, len);
+  *buf_len = len;
+
   return 0;
 }

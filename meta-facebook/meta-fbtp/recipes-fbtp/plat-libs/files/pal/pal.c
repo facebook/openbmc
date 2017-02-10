@@ -2031,10 +2031,6 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
   uint8_t rbuf[16] = {0};
   int16_t temp;
 
-  //power on delay 2s for INA230 sensor
-  if (pot <= 1)
-    return READING_NA;
-
   if (pal_get_slot_cfg_id(&slot_cfg) < 0)
     slot_cfg = SLOT_CFG_EMPTY;
 
@@ -2088,8 +2084,8 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       return READING_NA;
   }
 
-  // If Power On Time == 2, re-initialize INA230
-  if (pot == 2 && (i_retry % 3) == 0)
+  // If Power On Time == 1, re-initialize INA230
+  if (pot == 1 && (i_retry % 3) == 0)
     initialized[i_retry/3] = 0;
 
   //use channel 4
@@ -2152,7 +2148,12 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       goto error_exit;
     }
     initialized[i_retry/3] = 1;
-    return READING_NA;
+  }
+
+  // Delay for 2 cycles and check INA230 init done
+  if(pot < 3 || initialized[i_retry/3] == 0){
+    ret = READING_NA;
+    goto error_exit;
   }
 
   //Get registers data

@@ -1,0 +1,9 @@
+{
+  "project_id" : "yocto/poky/meta-aspeed",
+  "conduit_uri" : "https://phabricator.fb.com/api/",
+  "phutil_libraries" : {
+     "facebook-bmc-arcanist" : "facebook/arcanist/"
+  },
+  "lint_engine" : "FacebookBmcLintEngine",
+  "git.default-relative-commit" : "HEAD^"
+}

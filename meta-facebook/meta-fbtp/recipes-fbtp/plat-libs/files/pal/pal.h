@@ -290,10 +290,9 @@ enum {
 //Used identify VR Chip info. there are 4 vr fw code in EVT3 and after
 enum
 {
-  SS_Fairchild = 0,
-    SS_IFX,
-    DS_Fairchild,
-    DS_IFX,
+    SS_Mix = 0x1,
+    DS_Fairchild = 0x2,
+    DS_IFX = 0x3,
 };
 
 enum {

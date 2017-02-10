@@ -180,7 +180,7 @@
 
 #define VR_UPDATE_IN_PROGRESS "/tmp/stop_monitor_vr"
 #define MAX_VR_CHIPS 9
-#define VR_TIMEOUT 400
+#define VR_TIMEOUT 500
 
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -5926,18 +5926,28 @@ pal_check_vr_fw_code_match_MB(int startindex, int endindex, uint8_t *BinData, ui
   uint8_t BOARD_SKU_ID;
   uint8_t VR_SKUID; //identify the version which is suitable for MB or not
   uint8_t VR_Type;
+  uint8_t IsDoubleSideMB;
+  //Get the FM_BOARD_SKU_ID4 from BoardInfo since it can tell SS/DS
+  IsDoubleSideMB = BIT(BoardInfo, 4);
 
   //for evt3 and after version
   uint8_t DevStageMapper[]=
   {
     DS_IFX,
-    SS_IFX,
+    SS_Mix,
     DS_Fairchild,
-    SS_Fairchild,
   };
 
-  //only need to FM_BOARD_SKU_ID3/4
-  BOARD_SKU_ID = BoardInfo >> 3;
+  if ( IsDoubleSideMB )
+  {
+    //There is a need to identify DS type
+    BOARD_SKU_ID = BoardInfo >> 3;
+  }
+  else
+  {
+    //Only one type for SS
+    BOARD_SKU_ID = SS_Mix;
+  }
 
 #ifdef VR_DEBUG
   printf("[%s] BoardInfo:%x, BOARD_SKU_ID:%x\n", __func__, BoardInfo, BOARD_SKU_ID);

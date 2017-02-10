@@ -105,8 +105,8 @@ enum {
 };
 
 enum {
-  HAND_SW_BMC = 0,
-  HAND_SW_SERVER1
+  HAND_SW_SERVER1 = 0,
+  HAND_SW_BMC
 };
 
 enum {
@@ -243,6 +243,7 @@ void pal_sensor_deassert_handle(uint8_t snr_num, float val);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
+int pal_get_error_code(uint8_t* data, uint8_t* error_count);
 #ifdef __cplusplus
 } // extern "C"
 #endif

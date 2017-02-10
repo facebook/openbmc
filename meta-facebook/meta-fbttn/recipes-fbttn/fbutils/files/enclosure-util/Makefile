@@ -2,7 +2,7 @@
 all: enclosure-util
 
 enclosure-util: enclosure-util.o 
-	$(CC) $(CFLAGS) -pthread -lipmb -lexp -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lipmb -lexp -lpal -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

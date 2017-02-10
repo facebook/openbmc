@@ -97,10 +97,10 @@ debug_card_handler() {
   uint8_t prsnt;
   uint8_t pos ;
   uint8_t prev_pos = -1;
-  uint8_t lpc;
-  int i, ret;
+  int index = 0, ret, timer = 0;
   uint8_t UART_OUT = 1;
   int CURT = 0;
+  static uint8_t error[255], count_ret = 0, count_cur = 0, num;
 
   while (1) {
     // Check if debug card present or not
@@ -118,43 +118,79 @@ debug_card_handler() {
       if (ret) {
         goto debug_card_out;
       }
-      if(pos != prev_pos)
-      {
-         CURT++;
-         prev_pos = pos;
-         if( (CURT%2) == 0)
-	     {
-		    UART_OUT = !UART_OUT;
-		    ret = pal_switch_uart_mux(UART_OUT);
-	     }
-	  }
-
-      // Enable POST code based on hand switch
-      if (UART_OUT == HAND_SW_BMC) {
-        // For BMC, there is no need to have POST specific code
-        goto debug_card_done;
+      if(pos != prev_pos) {
+        CURT++;
+        prev_pos = pos;
+        if( (CURT%2) == 0) {
+          UART_OUT = !UART_OUT;
+          ret = pal_switch_uart_mux(UART_OUT);
+        }
       }
 
-      // Make sure the server at selected position is present
-      ret = pal_is_fru_prsnt(1, &prsnt);
-      if (ret || !prsnt) {
-        goto debug_card_done;
+      //Debug Card 7-Segment LED Display
+      //BMC Error Code Polling
+      if (timer == 0) {
+        pal_get_error_code(error, &count_ret);
       }
-      // Enable POST codes for all slots
-      ret = pal_post_enable(1);
+
+      //if Count is 0 means no error, shows 0
+      if(count_ret == 0) {
+        num = 0;
+      }
+      else {
+        if(count_ret < count_cur) {
+          index = 0;
+        }
+        count_cur = count_ret;
+        //Each number shows twice while loop is around 1 second
+        num = error[index/2];
+        //Expander error code shows in 0~99 decimal, bmc shows A0~FF hexadecimal
+        if(num < 100)
+          num = num/10*16+num%10;
+
+        index++;
+
+        //when count_cur reach count_cur*2, means all sensors have been shown, so set index=0 to get error code again
+        if(index >= count_cur*2)
+          index = 0;
+      }
+      timer++;
+      //while loop 6 times is around 3 seconds
+      if(timer == 7)
+        timer = 0;
+
+      //Determine what to display on Debug Card 7-Segment LED
+      //Only if UART Select is on Server, then get post code via bic and show it
+      if (UART_OUT == HAND_SW_SERVER1) {
+        // Make sure the server is present
+        ret = pal_is_fru_prsnt(FRU_SLOT1, &prsnt);
+        if (ret || !prsnt) {
+          goto debug_card_done;
+        }
+        // Enable POST codes for slot1
+        ret = pal_post_enable(FRU_SLOT1);
+        if (ret) {
+          goto debug_card_out;
+        }
+
+        // Get last post code and display it
+        ret = pal_post_get_last(FRU_SLOT1, &num);
+        if (ret) {
+          goto debug_card_out;
+        }
+      }
+
+      /*
+       * TODO: Change the first argument from FRU_SLOT1 to UART_OUT
+       * Handle whether it is server postcode or BMC error code in
+       * pal_post_handle() definition and display od USB debug card
+      */
+      ret = pal_post_handle(FRU_SLOT1, num);
       if (ret) {
         goto debug_card_out;
       }
 
-      // Get last post code and display it
-      ret = pal_post_get_last(FRU_SLOT1, &lpc);
-      if (ret) {
-        goto debug_card_out;
-      }
-      ret = pal_post_handle(FRU_SLOT1, lpc);
-      if (ret) {
-        goto debug_card_out;
-      }
+      goto debug_card_done;
     }
 
 debug_card_done:
@@ -462,7 +498,7 @@ led_sync_handler() {
   syslog(LOG_INFO, "led_handler for slot %d\n", slot);
 #endif
   pal_set_led(slot, LED_ON);
-  
+
   while (1) {
     // Check if slot needs to be identified
     ident = 0;
@@ -515,7 +551,7 @@ encl_led_handler() {
   // Initial error code
   memset(g_err_code, 0, sizeof(unsigned char) * ERROR_CODE_NUM);
   pal_fault_led(ID_LED_OFF, 0);
-  
+
   while (1) {
     // Get health status for all the fru and then update the ENCL_LED status
     ret = pal_get_fru_health(FRU_SLOT1, &slot1_hlth);

@@ -3049,3 +3049,79 @@ int
 pal_get_iom_ioc_ver(uint8_t *ver) {
   return mctp_get_iom_ioc_ver(ver);
 }
+
+int
+pal_oem_bitmap(uint8_t* in_error,uint8_t* data) {
+  int ret = 0;
+  int ii=0;
+  int kk=0;
+  int NUM = 0;
+  if(data == NULL)
+  {
+    return 0;
+  }
+  for(ii = 0; ii < 32; ii++) 
+  {    
+    for(kk = 0; kk < 8; kk++)
+    {
+      if(((in_error[ii] >> kk)&0x01) == 1)
+      {
+        if( (data + ret) == NULL)
+          return ret;
+          NUM = ii*8 + kk;
+          *(data + ret) = NUM;
+          ret++;
+      }
+    }
+  }
+  return ret;
+}
+
+int
+pal_get_error_code(uint8_t* data, uint8_t* error_count) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  FILE *fp;
+  uint8_t exp_error[13];
+  uint8_t error[32];
+  int ret, count = 0;
+
+ ret = expander_ipmb_wrapper(NETFN_OEM_REQ, EXPANDER_ERROR_CODE, tbuf, tlen, rbuf, &rlen);
+  if (ret) {
+    printf("Expander Error Code Query Fail...\n");
+    #ifdef DEBUG
+       syslog(LOG_WARNING, "enclosure-util: get_error_code, expander_ipmb_wrapper failed.");
+    #endif
+    memset(exp_error, 0, 13); //When Epander Fail, fill all data to 0
+  }
+  else
+    memcpy(exp_error, rbuf, rlen);
+
+  exp_error[0] &= ~(0x1); //Expander Error Code 1 is no Error, Ignore it.
+
+  fp = fopen("/tmp/error_code.bin", "r");
+  if (!fp) {
+    printf("fopen Fail: %s,  Error Code: %d\n", strerror(errno), errno);
+    #ifdef DEBUG
+      syslog(LOG_WARNING, "enclosure-util get_error_code, BMC error code File open failed...\n");
+    #endif
+    memset(error, 0, 32); //When BMC Error Code file Open Fail, fill all data to 0
+  }
+  else {
+    lockf(fileno(fp),F_LOCK,0L);
+    while (fscanf(fp, "%d", error+count) != EOF && count!=32) {    
+      count++;
+    }
+  }
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+
+  //Expander Error Code 0~99; BMC Error Code 100~255
+  memcpy(error, exp_error, rlen - 1); //Not the last one (12th)
+  error[12] = ((error[12] & 0xF0) + (exp_error[12] & 0xF));
+  memset(data,256,0);
+  *error_count = pal_oem_bitmap(error, data);
+  return 0;
+}

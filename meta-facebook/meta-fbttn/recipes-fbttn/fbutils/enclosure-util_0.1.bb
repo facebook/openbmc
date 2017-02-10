@@ -16,6 +16,6 @@ do_install() {
     install -m 0755 enclosure-util ${D}${bindir}/enclosure-util
 }
 
-DEPENDS += "libipmb libexp"
+DEPENDS += "libipmb libexp libpal"
 
 FILES_${PN} = "${bindir}"

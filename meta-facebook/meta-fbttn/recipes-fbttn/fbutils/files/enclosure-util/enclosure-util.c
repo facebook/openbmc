@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <facebook/exp.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/pal.h>
 #include "enclosure.h"
 
 #define LOGFILE "/tmp/enclosure-util.log"
@@ -93,89 +94,25 @@ get_hdd_status(int hdd_number) {
   }
 }
 
-void
-get_error_code() {
-  uint8_t tbuf[256] = {0x00};
-  uint8_t rbuf[256] = {0x00};
-  uint8_t p_exp_error[256];
-  uint8_t rlen = 0;
-  uint8_t tlen = 0;
-  int p_ret = 0;
-  FILE *fp;
-  uint8_t exp_error[13];
-  uint8_t error[32];
-  char index_tmp[8];
-  int ret, i, count = 0;
+void 
+show_error_code() {
+  uint8_t error[256], count = 0;
+  int i;
 
-  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, EXPANDER_ERROR_CODE, tbuf, tlen, rbuf, &rlen);
-  if (ret) {
-    printf("IPMB Query Error...\n");
-    #ifdef DEBUG
-       syslog(LOG_WARNING, "enclosure-util: get_error_code, expander_ipmb_wrapper failed.");
-    #endif
-  }
+  pal_get_error_code(error, &count);
+  
+  if (count != 0){
+    printf("Error Counter: %d\n", count);
 
-  memcpy(exp_error, rbuf, rlen);
-
-  fp = fopen("/tmp/error_code.bin", "r");
-    if (!fp) {
-      printf("fopen Fail: %s,  Error Code: %d\n", strerror(errno), errno);
-      #ifdef DEBUG
-        syslog(LOG_WARNING, "enclosure-util get_error_code, BMC error code File open failed...\n");
-	    #endif
-  }
-  else {
-    while (fscanf(fp, "%d", error+count) != EOF && count!=32) {    
-      count++; 
-    }
-  }
-
-  if(!ret && fp) {
-    memcpy(error, exp_error, rlen - 1); //Not the last one (12th)
-    error[12] = ((error[12] & 0xF0) + (exp_error[12] & 0xF));
-    memset(p_exp_error,256,0);
-    p_ret = OEM_BITMAP_FUN(error, p_exp_error);
-    printf("Error Counter: %d\n", p_ret);
-    for (i = 0; i < p_ret; i++) {
-      printf("Error Code %d: ", p_exp_error[i]);
-      if ( p_exp_error[i] < 100 )
-        printf("%s", Error_Code_Description[p_exp_error[i]]);
+    for (i = 0; i < count; i++) {
+      printf("Error Code %d: ", error[i]);
+      if ( error[i] < 100 ) //now only support Expander Error String 0~99
+        printf("%s", Error_Code_Description[error[i]]);
       printf("\n");
     }
-    printf("\n");
-  }
-  else if(ret && fp) {
-    #ifdef DEBUG
-      syslog(LOG_WARNING,"Only showing BMC Error Code 100~255, there is something wrong with Expander Error Code...\n");
-    #endif
-    memset(p_exp_error,256,0);
-    p_ret = OEM_BITMAP_FUN(error, p_exp_error);
-    printf("Error Counter: %d\n", p_ret);
-    for (i = 0; i < p_ret; i++) {
-      printf("Error Code %d: ", p_exp_error[i]);
-      if ( p_exp_error[i] < 100 )
-        printf("%s", Error_Code_Description[p_exp_error[i]]);
-      printf("\n");
-    }
-    printf("\n");
-  }
-  else if(!fp && !ret) {
-    #ifdef DEBUG
-      syslog(LOG_WARNING, "Only showing Expander Error Code 0~99, there is something wrong with BMC Error Code...\n");
-    #endif
-    memset(p_exp_error,256,0);
-    p_ret = OEM_BITMAP_FUN(exp_error, p_exp_error);
-    printf("Error Counter: %d\n", p_ret);
-    for (i = 0; i < p_ret; i++) {
-      printf("Error Code %d: ", p_exp_error[i]);
-      if ( p_exp_error[i] < 100 )
-        printf("%s", Error_Code_Description[p_exp_error[i]]);
-      printf("\n");
-    }
-    printf("\n");
   }
   else
-     syslog(LOG_WARNING, "There is something wrong with the Error Codes...\n");
+    printf("No Error!\n");
 }
 
 int
@@ -199,37 +136,9 @@ main(int argc, char **argv) {
   if (!strcmp(argv[1], "--hdd-status"))
     get_hdd_status(hdd_number);
   else if (!strcmp(argv[1], "--error"))
-    get_error_code();
+    show_error_code();
   else
     print_usage_help();
 
   return 0;
-}
-
-static int OEM_BITMAP_FUN(unsigned char* in_error,unsigned char* data)
-{
-  int ret = 0;
-  int ii=0;
-  int kk=0;
-  int NUM = 0;
-  if( data == NULL)
-  {
-    return 0;
-  }
-  for( ii = 0; ii < 32; ii++ )
-  {
-
-    for( kk = 0; kk < 8; kk++ )
-    {
-        if((( in_error[ii] >> kk )&0x01 ) == 1)
-        {
-          if( (data + ret) == NULL)
-            return ret;
-          NUM = ii*8 + kk;
-            *(data + ret) = NUM;
-          ret++;
-        }
-    }
-  }
-  return ret;
 }

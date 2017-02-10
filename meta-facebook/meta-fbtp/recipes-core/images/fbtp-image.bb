@@ -78,6 +78,7 @@ IMAGE_INSTALL += " \
   guid-util \
   gpiod \
   peci-util \
+  tzdata \
   "
 
 IMAGE_FEATURES += " \

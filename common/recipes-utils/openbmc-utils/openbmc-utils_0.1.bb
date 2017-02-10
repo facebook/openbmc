@@ -28,6 +28,7 @@ SRC_URI = " \
     file://openbmc-utils.sh \
     file://rc.early \
     file://rc.local \
+    file://dhclient-exit-hooks \
     "
 
 OPENBMC_UTILS_FILES = " \
@@ -54,6 +55,9 @@ do_install() {
 
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
+
+    # the script to process dhcp options
+    install -m 0755 ${WORKDIR}/dhclient-exit-hooks ${D}${sysconfdir}/dhclient-exit-hooks
 
     # the script to mount /mnt/data, after udev (level 4) is started
     install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh

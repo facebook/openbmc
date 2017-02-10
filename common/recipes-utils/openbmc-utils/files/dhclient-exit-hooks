@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -18,17 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin
-
-# Sync BMC's date with the server
-sync_date()
-{
-  # if no ntp peer has been declared the system peer
-  if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-    echo Syncing up BMC time with server...
-    # Use standard IPMI command 'get-sel-time' to read RTC time
-    date -s @$((16#$(/usr/local/bin/me-util 0x28 0x48 | awk '{print $4$3$2$1}')))
+RESTART_NTPD=0
+for ntp in $new_ntp_servers $new_dhcp6_sntp_servers; do
+  if [ ! -z "$ntp" ]; then
+    echo NTP Server: $ntp
+    if ! grep "^server.*$ntp" /etc/ntp.conf > /dev/null; then
+      echo "server $ntp" >> /etc/ntp.conf
+      RESTART_NTPD=1
+    fi
   fi
-}
+done
 
-sync_date
+[ $RESTART_NTPD -eq 1 ] && /etc/init.d/ntpd restart

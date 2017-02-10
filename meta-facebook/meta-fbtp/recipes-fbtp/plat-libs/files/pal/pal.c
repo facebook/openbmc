@@ -1327,7 +1327,9 @@ read_dimm_temp(uint8_t snr_num, float *value) {
       }
     }
   }
-  if (max != 0)
+
+  // Filter abnormal values
+  if (max != 0 && max != 0xFF)
     ret = 0;
 
   if (ret != 0) {

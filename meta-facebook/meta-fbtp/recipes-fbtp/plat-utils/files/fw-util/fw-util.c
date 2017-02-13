@@ -451,6 +451,8 @@ fw_update_fru(char **argv, uint8_t slot_id) {
       printf("Error Occur at updating VR FW!\n");
         goto err_exit;
     }
+
+    return 0;
   }
 
 err_exit:

@@ -94,8 +94,10 @@
 #define PWM_UNIT_MAX 96
 
 #define MAX_READ_RETRY 10
+#define MAX_CHECK_RETRY 2
 
 #define PLATFORM_FILE "/tmp/system.bin"
+#define CRASHDUMP_KEY      "slot%d_crashdump"
 
 const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
@@ -111,6 +113,29 @@ size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
+
+typedef struct {
+  uint16_t flag;
+  float ucr;
+  float unc;
+  float unr;
+  float lcr;
+  float lnc;
+  float lnr;
+
+} _sensor_thresh_t;
+
+typedef struct {
+  uint16_t flag;
+  float ucr;
+  float lcr;
+  uint8_t retry_cnt;
+  uint8_t val_valid;
+  float last_val;
+
+} sensor_check_t;
+
+static sensor_check_t m_snr_chk[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -621,6 +646,31 @@ post_exit:
   }
 }
 
+static int
+read_device_hex(const char *device, int *value) {
+    FILE *fp;
+    int rc;
+
+    fp = fopen(device, "r");
+    if (!fp) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+      return errno;
+    }
+
+    rc = fscanf(fp, "%x", value);
+    fclose(fp);
+    if (rc != 1) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+      return ENOENT;
+    } else {
+      return 0;
+    }
+}
+
 // Platform Abstraction Layer (PAL) Functions
 int
 pal_get_platform_name(char *name) {
@@ -777,7 +827,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   if (ret) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
     syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
-        "reading the kv_store for last power state  for fru %d", slot_id);
+        " reading the kv_store for last power state  for fru %d", slot_id);
     pal_get_last_pwr_state(slot_id, value);
     if (!(strcmp(value, "off"))) {
       *status = SERVER_POWER_OFF;
@@ -801,6 +851,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
+  int ret;
   uint8_t status;
   bool gs_flag = false;
 
@@ -808,9 +859,16 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     return -1;
   }
 
-  if (pal_get_server_power(slot_id, &status) < 0) {
-    return -1;
-  }
+  if ((cmd != SERVER_12V_OFF) && (cmd != SERVER_12V_ON) && (cmd != SERVER_12V_CYCLE)) {
+    ret = pal_is_fru_ready(slot_id, &status); //Break out if fru is not ready
+    if ((ret < 0) || (status == 0)) {
+      return -2;
+    }
+
+    if (pal_get_server_power(slot_id, &status) < 0) {
+      return -1;
+    }
+   }
 
   switch(cmd) {
     case SERVER_POWER_ON:
@@ -851,18 +909,10 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_12V_ON:
-      if (status == SERVER_12V_ON)
-        return 1;
-      else
-        return server_12v_on(slot_id);
-      break;
+      return server_12v_on(slot_id);
 
     case SERVER_12V_OFF:
-      if (status == SERVER_12V_OFF)
-        return 1;
-      else
-        return server_12v_off(slot_id);
-      break;
+      return server_12v_off(slot_id);
 
     case SERVER_12V_CYCLE:
       if (server_12v_off(slot_id)) {
@@ -872,6 +922,10 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       sleep(DELAY_12V_CYCLE);
 
       return (server_12v_on(slot_id));
+
+    case SERVER_GLOBAL_RESET:
+      return server_power_off(slot_id, false);
+
     default:
       return -1;
   }
@@ -1449,6 +1503,17 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     return -1;
 }
 
+static sensor_check_t *
+get_sensor_check(uint8_t fru, uint8_t snr_num) {
+
+  if (fru < 1 || fru > MAX_NUM_FRUS) {
+    syslog(LOG_WARNING, "get_sensor_check: Wrong FRU ID %d\n", fru);
+    return NULL;
+  }
+
+  return &m_snr_chk[fru-1][snr_num];
+}
+
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
@@ -1491,6 +1556,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   int ret;
   uint8_t retry = MAX_READ_RETRY;
+  sensor_check_t *snr_chk;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1510,7 +1576,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_NIC:
       sprintf(key, "nic_sensor%d", sensor_num);
       break;
+    default:
+      return -1;
   }
+  snr_chk = get_sensor_check(fru, sensor_num);
 
   while (retry) {
     ret = fby2_sensor_read(fru, sensor_num, value);
@@ -1520,6 +1589,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     retry--;
   }
   if(ret < 0) {
+    snr_chk->val_valid = 0;
+
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;
     if(pal_get_server_power(fru, &status) < 0)
@@ -1534,6 +1605,22 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     if(fru == FRU_SPB && sensor_num == SP_SENSOR_HSC_IN_POWER) {
       power_value_adjust(value);
     }
+    if ((GETBIT(snr_chk->flag, UCR_THRESH) && (*((float*)value) >= snr_chk->ucr)) ||
+        (GETBIT(snr_chk->flag, LCR_THRESH) && (*((float*)value) <= snr_chk->lcr))) {
+      if (snr_chk->retry_cnt < MAX_CHECK_RETRY) {
+        snr_chk->retry_cnt++;
+        if (!snr_chk->val_valid)
+          return -1;
+
+        *((float*)value) = snr_chk->last_val;
+      }
+    }
+    else {
+      snr_chk->last_val = *((float*)value);
+      snr_chk->val_valid = 1;
+      snr_chk->retry_cnt = 0;
+    }
+
     sprintf(str, "%.2f",*((float*)value));
   }
 
@@ -1885,14 +1972,14 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_NIC:
       *sensor_list = NULL;
       *cnt = 0;
-      return -1;
+      break;
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_get_fru_discrete_list: Wrong fru id %u", fru);
 #endif
       return -1;
   }
-    return 0;
+  return 0;
 }
 
 static void
@@ -1975,10 +2062,11 @@ pal_store_crashdump(uint8_t fru) {
 }
 
 int
-pal_sel_handler(uint8_t fru, uint8_t snr_num) {
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};
+  static int assert_cnt[FBY2_MAX_NUM_SLOTS] = {0};
 
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
@@ -1988,9 +2076,25 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
     case FRU_SLOT4:
       switch(snr_num) {
         case CATERR:
+          sprintf(key, CRASHDUMP_KEY, fru);
+          edb_cache_set(key, "1");
           pal_store_crashdump(fru);
-        }
+          edb_cache_set(key, "0");
+          break;
+
+        case 0x00:  // don't care sensor number 00h
+          return 0;
+      }
       sprintf(key, "slot%d_sel_error", fru);
+
+      fru -= 1;
+      if ((event_data[2] & 0x80) == 0) {  // 0: Assertion,  1: Deassertion
+         assert_cnt[fru]++;
+      } else {
+        if (--assert_cnt[fru] < 0)
+           assert_cnt[fru] = 0;
+      }
+      sprintf(cvalue, "%s", (assert_cnt[fru] > 0) ? "0" : "1");
       break;
 
     case FRU_SPB:
@@ -2004,7 +2108,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num) {
   }
 
   /* Write the value "0" which means FRU_STATUS_BAD */
-  return pal_set_key_value(key, "0");
+  return pal_set_key_value(key, cvalue);
 }
 
 int
@@ -2556,9 +2660,41 @@ pal_log_clear(char *fru) {
 }
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
+  char path[LARGEST_DEVICE_NAME] = {0};
+  char device_name[LARGEST_DEVICE_NAME] = {0};
+  int val = 0;
+  int pwm_enable = 0;
 
-  // TODO: Add support to display PWM in fan-util output (similar to lightning pal)
-  return 0;
+  if(fan_num < 0 || fan_num >= pal_pwm_cnt) {
+    syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
+    return -1;
+  }
+
+// Need check pwmX_en to determine the PWM is 0 or 100.
+ snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
+ snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+ if (read_device(path, &pwm_enable)) {
+    syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
+    return -1;
+  }
+
+  if(pwm_enable) {
+    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
+    snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+    if (read_device_hex(path, &val)) {
+      syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
+      return -1;
+    }
+
+    if(val == 0)
+      *value = 100;
+    else
+      *value = (100 * val + (PWM_UNIT_MAX-1)) / PWM_UNIT_MAX;
+    } else {
+    *value = 0;
+    }
+
+    return 0;
 }
 
 int
@@ -2660,4 +2796,73 @@ int
 pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
 {
     return -1;
+}
+
+int
+pal_is_crashdump_ongoing(uint8_t slot)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  sprintf(key, CRASHDUMP_KEY, slot);
+  ret = edb_cache_get(key, value);
+  if (ret < 0) {
+#ifdef DEBUG
+     syslog(LOG_INFO, "pal_get_crashdumpe: failed");
+#endif
+     return 0;
+  }
+  if (atoi(value) > 0)
+     return 1;
+  return 0;
+}
+
+int
+pal_is_fw_update_ongoing(uint8_t fru) {
+
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  struct timespec ts;
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_fwupd", fru);
+      break;
+    case FRU_SPB:
+    case FRU_NIC:
+    default:
+      return 0;
+  }
+
+  ret = edb_cache_get(key, value);
+  if (ret < 0) {
+     return 0;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return 1;
+
+  return 0;
+}
+
+int
+pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+
+  sensor_check_t *snr_chk;
+  _sensor_thresh_t *psnr = (_sensor_thresh_t *)snr;
+
+  snr_chk = get_sensor_check(fru, snr_num);
+  snr_chk->flag = psnr->flag;
+  snr_chk->ucr = psnr->ucr;
+  snr_chk->lcr = psnr->lcr;
+  snr_chk->retry_cnt = 0;
+  snr_chk->val_valid = 0;
+  snr_chk->last_val = 0;
+
+  return 0;
 }

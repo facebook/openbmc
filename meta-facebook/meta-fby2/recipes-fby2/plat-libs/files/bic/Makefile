@@ -3,7 +3,7 @@ lib: libbic.so
 
 libbic.so: bic.c
 	$(CC) $(CFLAGS) -fPIC -c -o bic.o bic.c
-	$(CC) -lipmb -shared -o libbic.so bic.o -lc
+	$(CC) -lipmb -ledb -shared -o libbic.so bic.o -lc
 
 .PHONY: clean
 

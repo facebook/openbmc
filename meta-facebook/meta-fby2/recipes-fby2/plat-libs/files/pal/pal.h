@@ -74,6 +74,7 @@ enum {
   SERVER_12V_OFF,
   SERVER_12V_ON,
   SERVER_12V_CYCLE,
+  SERVER_GLOBAL_RESET,
 };
 
 enum {
@@ -101,7 +102,7 @@ enum {
   CPU_DIMM_HOT = 0xB3,
   CPU0_THERM_STATUS = 0x1C,
   SPS_FW_HEALTH = 0x17,
-  NM_EXCEPTION = 0x8,
+  NM_EXCEPTION = 0x18,
   PWR_THRESH_EVT = 0x3B,
 };
 
@@ -170,7 +171,7 @@ int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 int pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
     char *error_log);
-int pal_sel_handler(uint8_t fru, uint8_t snr_num);
+int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void msleep(int msec);
 int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_fru_health(uint8_t fru, uint8_t *value);
@@ -189,6 +190,10 @@ void pal_sensor_deassert_handle(uint8_t snr_num, float val);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
+int pal_is_crashdump_ongoing(uint8_t slot);
+int pal_is_fw_update_ongoing(uint8_t fru);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

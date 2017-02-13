@@ -278,7 +278,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
 
     /* Check if action needs to be taken based on the SEL message */
     if (!ret)
-      ret = pal_sel_handler(fru, sensor_num);
+      ret = pal_sel_handler(fru, sensor_num, &sel[10]);
 
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
         "Sensor: %s (0x%02X), Raw data: (%s) %s ",

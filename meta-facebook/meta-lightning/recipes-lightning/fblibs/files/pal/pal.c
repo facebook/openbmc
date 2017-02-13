@@ -769,9 +769,8 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 
   return 0;
 }
-
 int
-pal_sel_handler(uint8_t fru, uint8_t snr_num) {
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   return 0;
 }

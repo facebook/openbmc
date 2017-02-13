@@ -5036,7 +5036,7 @@ pal_store_crashdump(uint8_t fru) {
 }
 
 int
-pal_sel_handler(uint8_t fru, uint8_t snr_num) {
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};

@@ -194,7 +194,7 @@ int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 int pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
     char *error_log);
-int pal_sel_handler(uint8_t fru, uint8_t snr_num);
+int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void msleep(int msec);
 int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_fru_health(uint8_t fru, uint8_t *value);

@@ -1256,6 +1256,16 @@ read_dimm_temp(uint8_t snr_num, float *value) {
   static uint8_t retry[4] = {0x00};
   int val;
   char path[64] = {0};
+  static int odm_id = -1;
+  uint8_t BoardInfo;
+
+  //Use FM_BOARD_SKU_ID0 to identify ODM to apply filter
+  if (odm_id == -1) {
+    ret = pal_get_platform_id(&BoardInfo);
+    if (ret == 0) {
+      odm_id = (int) (BoardInfo & 0x1);
+    }
+  }
 
   // show NA if BIOS has not completed POST.
   sprintf(path, GPIO_VAL, GPIO_FM_BIOS_POST_CMPLT_N);
@@ -1328,9 +1338,15 @@ read_dimm_temp(uint8_t snr_num, float *value) {
     }
   }
 
-  // Filter abnormal values
-  if (max != 0 && max != 0xFF)
-    ret = 0;
+  if (odm_id == 1) {
+    // Filter abnormal values: 0x0 and 0xFF
+    if (max != 0 && max != 0xFF)
+      ret = 0;
+  } else {
+    // Filter abnormal values: 0x0
+    if (max != 0)
+      ret = 0;
+  }
 
   if (ret != 0) {
     retry[dimm_index]++;

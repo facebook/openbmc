@@ -375,7 +375,7 @@ led_handler() {
   while (1) {
     // Get hand switch position to see if this is selected server
     ret = get_handsw_pos(&pos);
-    if (ret || (pos > MAX_NUM_SLOTS)) {
+    if (ret != 0) {
       sleep(1);
       continue;
     }
@@ -404,7 +404,7 @@ led_handler() {
         hlth[slot] = FRU_STATUS_GOOD;
       }
 
-      if ((pos == slot) || power[slot]) {
+      if ((pos == slot) || (power[slot] == SERVER_POWER_ON)) {
         if (hlth[slot] == FRU_STATUS_GOOD) {
           pal_set_led(slot, LED_ON);
           pal_set_id_led(slot, ID_LED_OFF);
@@ -416,6 +416,16 @@ led_handler() {
         pal_set_led(slot, LED_OFF);
         pal_set_id_led(slot, ID_LED_OFF);
       }
+    }
+
+    if (pos > MAX_NUM_SLOTS) {
+      sleep(1);
+      continue;
+    }
+
+    if (g_sync_led[pos]) {
+      sleep(1);
+      continue;
     }
 
     // Set blink rate
@@ -436,6 +446,14 @@ led_handler() {
     }
 
     msleep(led_off_time);
+
+    if (power[pos] == SERVER_POWER_ON) {
+      if (hlth[pos] == FRU_STATUS_GOOD) {
+        pal_set_led(pos, LED_ON);
+      } else {
+        pal_set_id_led(pos, ID_LED_ON);
+      }
+    }
   }
 }
 

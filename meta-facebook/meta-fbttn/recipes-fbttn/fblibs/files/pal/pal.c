@@ -379,7 +379,16 @@ static int
 server_power_on(uint8_t slot_id) {
   char vpath[64] = {0};
 
-  // M.2/IOC power-on
+  //Add 3v3 rail cycle before Power on
+  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
+  if (write_device(vpath, "1")) {
+    return -1;
+  }
+  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
+  if (write_device(vpath, "0")) {
+    return -1;
+  }
+  msleep(100);
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   if (write_device(vpath, "1")) {
     return -1;
@@ -443,11 +452,16 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   //if (cycle_flag == false) {
     do {
       if (pal_get_server_power(slot_id, &status) < 0) {
-        return -1;
+        #ifdef DEBUG
+        syslog(LOG_WARNING, "server_power_off: pal_get_server_power status is %d\n", status);
+        #endif
       }
       sleep(DELAY_FULL_POWER_DOWN);
       if (retry > RETRY_COUNT) {
-        return -1;
+        #ifdef DEBUG
+        syslog(LOG_WARNING, "server_power_off: retry fail\n");
+        #endif
+        break;
       }
       else {
         retry++;
@@ -737,7 +751,7 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
-  char value[MAX_VALUE_LEN];
+  char value[MAX_VALUE_LEN] = { 0 };
   bic_gpio_t gpio;
 
   /* Check whether the system is 12V off or on */

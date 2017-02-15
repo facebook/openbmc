@@ -50,17 +50,17 @@ kv_set(char *key, char *value) {
     return err;
   }
 
-  if (ftruncate(fileno(fp), 0) < 0) {  //truncate cache file after getting flock
-    fclose(fp);
-    return -1;
-  }
-
   rc = flock(fileno(fp), LOCK_EX);
   if (rc < 0) {
     int err = errno;
 #ifdef DEBUG
     syslog(LOG_WARNING, "kv_set: failed to flock on %s, err %d", kpath, err);
 #endif
+    fclose(fp);
+    return -1;
+  }
+
+  if (ftruncate(fileno(fp), 0) < 0) {  //truncate cache file after getting flock
     fclose(fp);
     return -1;
   }

@@ -119,7 +119,7 @@ generate_dump(void *arg) {
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
   rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  rc = pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
+  rc = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
   fby2_common_fru_name(fru, fruname);
 
@@ -130,14 +130,12 @@ generate_dump(void *arg) {
 
   // COREID dump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s 48 coreid >> %s%s", CRASHDUMP_BIN, fruname,
-      CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "%s %s coreid >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
   system(cmd);
 
   // MSR dump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s 48 msr >> %s%s", CRASHDUMP_BIN, fruname,
-      CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "%s %s msr >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
   system(cmd);
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
@@ -150,6 +148,7 @@ int
 fby2_common_crashdump(uint8_t fru) {
 
   int ret;
+  char cmd[100];
 
   // Check if the crashdump script exist
   if (access(CRASHDUMP_BIN, F_OK) == -1) {
@@ -164,8 +163,11 @@ fby2_common_crashdump(uint8_t fru) {
     ret = pthread_cancel(t_dump[fru-1].pt);
     if (ret == ESRCH) {
       syslog(LOG_INFO, "fby2_common_crashdump: No Crashdump pthread exists");
-#ifdef DEBUG
     } else {
+      pthread_join(t_dump[fru-1].pt, NULL);
+      sprintf(cmd, "ps | grep '{dump.sh}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
+      system(cmd);
+#ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_crashdump: Previous crashdump thread is cancelled");
 #endif
     }

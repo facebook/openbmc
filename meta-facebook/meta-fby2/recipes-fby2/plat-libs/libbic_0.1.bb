@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://bic.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 
 SRC_URI = "file://bic \
           "
-DEPENDS += "libipmi libipmb plat-utils"
+DEPENDS += "libipmi libipmb plat-utils libedb"
 
 S = "${WORKDIR}/bic"
 

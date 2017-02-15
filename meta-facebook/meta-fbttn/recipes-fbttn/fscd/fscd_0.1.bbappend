@@ -20,9 +20,9 @@ DEPENDS_append = "update-rc.d-native"
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
-            file://FSC_Triton_PreEVT_v1_config.json \
-            file://FSC_Triton_PreEVT_v1_zone0.fsc \
-            file://FSC_Triton_PreEVT_v1_zone1.fsc \
+            file://FSC_BC_EVT_v1_config.json \
+            file://FSC_BC_EVT_v1_zone0.fsc \
+            file://FSC_BC_EVT_v1_zone1.fsc \
             file://run-fscd.sh \
            "
 
@@ -50,9 +50,9 @@ do_install() {
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/fscd
   install -d ${D}${sysconfdir}/fsc
-  install -m 644 FSC_Triton_PreEVT_v1_config.json ${D}${sysconfdir}/fsc-config.json
-  install -m 644 FSC_Triton_PreEVT_v1_zone1.fsc ${D}${sysconfdir}/fsc/FSC_Triton_PreEVT_v1_zone1.fsc
-  install -m 644 FSC_Triton_PreEVT_v1_zone0.fsc ${D}${sysconfdir}/fsc/FSC_Triton_PreEVT_v1_zone0.fsc
+  install -m 644 FSC_BC_EVT_v1_config.json ${D}${sysconfdir}/fsc-config.json
+  install -m 644 FSC_BC_EVT_v1_zone0.fsc ${D}${sysconfdir}/fsc/FSC_BC_EVT_v1_zone0.fsc
+  install -m 644 FSC_BC_EVT_v1_zone1.fsc ${D}${sysconfdir}/fsc/FSC_BC_EVT_v1_zone1.fsc
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
   install -m 755 run-fscd.sh ${D}${sysconfdir}/sv/fscd/run
   update-rc.d -r ${D} setup-fan.sh start 100 5 .

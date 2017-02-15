@@ -616,27 +616,35 @@ read_M2_temp(int device, float *value) {
     sprintf(bus, "%s", I2C_M2_2);
   }
   else {
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): unknown dev", __func__);
+  #endif
     return -1;
   }
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+  #endif
     return -1;
   }
 
   /* Assign the i2c device address */
   ret = ioctl(dev, I2C_SLAVE, I2C_NVME_INTF_ADDR);
   if (ret < 0) {
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+  #endif
     close(dev);
     return -1;
   }
 
   res = i2c_smbus_read_byte_data(dev, M2_TEMP_REG);
   if (res < 0) {
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): i2c_smbus_read_byte_data failed", __func__);
+  #endif
     close(dev);
     return -1;
   }

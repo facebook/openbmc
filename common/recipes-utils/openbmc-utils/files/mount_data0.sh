@@ -38,9 +38,18 @@
 MOUNT_POINT="/mnt/data"
 DATA_CHAR_DEV=$(cat /proc/mtd | awk '{ if ($4 == "\"data0\"") print $1 }' |
   cut -d ':' -f 1 | awk '{ print "/dev/" $1 }')
+DATARO_CHAR_DEV=$(cat /proc/mtd | awk '{ if ($4 == "\"dataro\"") print $1 }' |
+  cut -d ':' -f 1 | awk '{ print "/dev/" $1 }')
+
+if [ -z "$DATA_CHAR_DEV" ]; then
+  if [ ! -z "$DATARO_CHAR_DEV" ]; then
+    DATA_CHAR_DEV=$DATARO_CHAR_DEV
+  fi
+fi
+
 if [ -z "$DATA_CHAR_DEV" ]
 then
-  echo "No data0 partition found. Not mounting anything to $MOUNT_POINT."
+  echo "No data0/dataro partition found. Not mounting anything to $MOUNT_POINT."
 else
   DEVICE_ID=$(echo $DATA_CHAR_DEV | tail -c 2)
   DATA_BLOCK_DEV=${DATA_CHAR_DEV/mtd/mtdblock}

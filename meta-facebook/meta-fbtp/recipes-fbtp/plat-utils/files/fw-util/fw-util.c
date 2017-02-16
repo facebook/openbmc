@@ -363,9 +363,8 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   }
 
   if (!strcmp(argv[3], "--rom")) {
-    /* Need to match '"rom"' since there may be a 'romx'. */
-    if (!get_mtd_name("\"rom\"", dev)) {
-      printf("Error: Cannot find rom MTD partition in /proc/mtd\n");
+    if (!get_mtd_name("\"flash0\"", dev)) {
+      printf("Error: Cannot find flash0 MTD partition in /proc/mtd\n");
       goto err_exit;
     }
 

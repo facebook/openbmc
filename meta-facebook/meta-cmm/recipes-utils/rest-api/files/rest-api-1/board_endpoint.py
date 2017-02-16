@@ -21,6 +21,7 @@ import bottle
 import rest_component_presence
 import rest_firmware
 import rest_chassis_eeprom
+import rest_chassis_all_serial_and_location
 
 boardApp = bottle.Bottle()
 
@@ -41,3 +42,9 @@ def rest_firmware_info():
 @boardApp.route('/api/sys/mb/chassis_eeprom')
 def rest_chassis_eeprom_hdl():
     return rest_chassis_eeprom.get_chassis_eeprom()
+
+
+# Handler to fetch SN and location for each card on chassis
+@boardApp.route('/api/sys/mb/chassis_all_serial_and_location')
+def rest_all_serial_and_location_hdl():
+    return rest_chassis_all_serial_and_location.get_all_serials_and_locations()

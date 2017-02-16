@@ -24,6 +24,7 @@ import rest_seutil
 import rest_sol
 import rest_usb2i2c_reset
 import rest_firmware
+import rest_chassis_all_serial_and_location
 
 boardApp = bottle.Bottle()
 
@@ -63,3 +64,9 @@ def rest_usb2i2c_reset_hdl():
 @boardApp.route('/api/sys/firmware_info')
 def rest_firmware_info():
     return rest_firmware.get_firmware_info()
+
+
+# Handler to get firmware info
+@boardApp.route('/api/sys/mb/chassis_all_serial_and_location')
+def rest_chassis_all_serial_and_location_hdl():
+    return rest_chassis_all_serial_and_location.get_all_serials_and_location()

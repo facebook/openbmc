@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <sys/mman.h>
+#include <sys/file.h>
 #include <string.h>
 #include <pthread.h>
 #include <facebook/i2c-dev.h>
@@ -53,6 +54,7 @@
 
 #define GPIO_HB_LED 115
 #define GPIO_BMC_SELF_TRAY 108
+#define GPIO_BMC_PEER_TRAY 0
 #define GPIO_PEER_BMC_HB 117
 
 #define I2C_DEV_FAN "/dev/i2c-5"
@@ -65,6 +67,25 @@
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
 
+#define I2C_MUX_FLASH1 0
+#define I2C_MUX_FLASH2 1
+#define I2C_DEV_FLASH1 "/dev/i2c-7"
+#define I2C_DEV_FLASH2 "/dev/i2c-8"
+#define MAX_SERIAL_NUM 20
+
+/* NVMe-MI Temperature Definition Code */
+#define TEMP_HIGHER_THAN_127 0x7F
+#define TEPM_LOWER_THAN_n60 0xC4
+#define TEMP_NO_UPDATE 0x80
+#define TEMP_SENSOR_FAIL 0x81
+
+/* NVMe-MI SSD Status Flag bit mask */
+#define NVME_SFLGS_MASK_BIT 0x2B  //Just check bit 0,1,3,5
+#define NVME_SFLGS_CHECK_VALUE 0x0B // normal - bit0,1,3=1, bit5 = 0
+
+/* NVMe-MI SSD SMART Critical Warning */
+#define NVME_SMART_WARNING_MASK_BIT 0x1F // Check bit 0~4
+
 const char pal_fru_list[] = "all, peb, pdpb, fcb";
 const char pal_fru_list_wo_all[] = "peb, pdpb, fcb";
 size_t pal_pwm_cnt = 1;
@@ -73,6 +94,26 @@ const char pal_pwm_list[] = "0";
 const char pal_tach_list[] = "0...11";
 /* A mapping tabel for fan id to pwm id.  */
 uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+const uint8_t sennum2errcode_mapping[MAX_SENSOR_NUM] = {
+//   0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F 
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x00 - 0x0F
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x10 - 0x1F
+  0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0xFF, 0xFF, 0xFF, 0xFF, // 0x20 - 0x2F
+  0xFF, 0xFF, 0xFF, 0xFF, 0x2F, 0x2F, 0x2F, 0x2F, 0x2F, 0x30, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x30 - 0x3F
+  0xFF, 0xFF, 0x2C, 0x2C, 0x2C, 0x2C, 0x2C, 0x2C, 0x2C, 0x2C, 0x2D, 0x2E, 0x2E, 0xFF, 0x2E, 0x20, // 0x40 - 0x4F
+  0x1F, 0x22, 0x21, 0x28, 0x27, 0xFF, 0x25, 0x26, 0x24, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x50 - 0x5F
+  0xFF, 0xFF, 0xFF, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, // 0x60 - 0x6F
+  0x3F, 0x40, 0xFF, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, // 0x70 - 0x7F
+  0x3F, 0x40, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x80 - 0x8F
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x90 - 0x9F
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xA0 - 0xAF
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xB0 - 0xBF
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xC0 - 0xCF
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xD0 - 0xDF
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xE0 - 0xEF
+  0x2C, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xF0 - 0xFF
+};
 
 char * key_list[] = {
 "peb_sensor_health",
@@ -525,6 +566,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   int ret;
+  FILE *fp = NULL;
+  int tmp = 0;
 
   switch(fru) {
     case FRU_PEB:
@@ -538,9 +581,38 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
   }
 
+  //if enclosure-util read SSD, skip SSD monitor
+  if ((access(SKIP_READ_SSD_TEMP, F_OK) == 0) &&
+      (((sensor_num >= PDPB_SENSOR_FLASH_TEMP_0) && (sensor_num <= PDPB_SENSOR_FLASH_TEMP_14)) ||
+      ((sensor_num >= PDPB_SENSOR_AMB_TEMP_0) && (sensor_num <= PDPB_SENSOR_AMB_TEMP_14)))) {
+    fp = fopen(SKIP_READ_SSD_TEMP, "r+");
+    if (!fp) {
+      return -1;
+    }
+
+    /* To avoid the flag file is not removed by enclosure-util */
+    fscanf(fp, "%d ", &tmp);
+    if (tmp < 1) {
+      fclose(fp);
+      remove(SKIP_READ_SSD_TEMP);
+      return -1;
+    }
+    else {
+      rewind(fp);
+      fprintf(fp, "%d ", tmp-1);
+    }
+
+    fclose(fp);
+    return -1;
+  }
+  
   ret = lightning_sensor_read(fru, sensor_num, value);
+
   if(ret < 0) {
     strcpy(str, "NA");
+  }
+  else if (ret == 1) { //case: skip monitoring due to enclosure-util running. but not return NA
+    return -1;
   }
   else {
     // On successful sensor read
@@ -1226,6 +1298,21 @@ pal_self_tray_location(uint8_t *value) {
 }
 
 int
+pal_peer_tray_location(uint8_t *value) {
+
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_BMC_PEER_TRAY);
+  if (read_device(path, &val))
+    return -1;
+
+  *value = (uint8_t) val;
+
+  return 0;
+}
+
+int
 pal_is_crashdump_ongoing(uint8_t slot)
 {
   return 0;
@@ -1338,4 +1425,469 @@ pal_get_fw_info(unsigned char target, unsigned char* res,
     unsigned char* res_len) {
 
     return 0;
+}
+
+void
+pal_err_code_enable(error_code *update) {
+  // error code distributed over 0~99
+  if (update->code < (ERROR_CODE_NUM * 8)) {
+    update->status = 1;
+    pal_write_error_code_file(update);
+  }
+  else
+    syslog(LOG_WARNING, "%s(): wrong error code number", __func__); 
+}
+
+void
+pal_err_code_disable(error_code *update) {
+  // error code distributed over 0~99
+  if (update->code < (ERROR_CODE_NUM * 8)) {
+    update->status = 0;
+    pal_write_error_code_file(update);
+  }
+  else
+    syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
+}
+
+/* init error code status about sensors*/
+void
+pal_error_code_array_init(const int count, const uint8_t *list, error_code *updateArray) {
+  int i;
+  updateArray[count].code = 0xFE;
+  for (i = 0; i < count; i++) {
+    updateArray[i].code = list[i];
+    updateArray[i].status = 0;
+  }
+}
+
+void
+pal_err_code_enable_by_sensor_num(uint8_t snr_num, error_code *updateArray) {
+  uint8_t error_num = sennum2errcode_mapping[snr_num];
+  int i, j, k;
+  error_code errorCode = {error_num, 1};
+
+  for (i = 0; i < MAX_SENSOR_NUM; i++) {
+    if (sennum2errcode_mapping[i] == error_num) {
+      for (j = 0; updateArray[j].code != 0xFE; j++) {
+        if (updateArray[j].code == snr_num)
+          k = j;
+        else if (updateArray[j].code == sennum2errcode_mapping[i])
+          errorCode.status |= updateArray[j].status;
+      }
+    }
+  }
+
+  updateArray[k].status = 1;
+
+  if (errorCode.status == updateArray[k].status)
+    pal_write_error_code_file(&errorCode);
+}
+
+void
+pal_err_code_disable_by_sensor_num(uint8_t snr_num, error_code *updateArray) {
+  uint8_t error_num = sennum2errcode_mapping[snr_num];
+  int i, j, k;
+  error_code errorCode = {error_num, 0};
+
+  for (i = 0; i < MAX_SENSOR_NUM; i++) {
+    if (sennum2errcode_mapping[i] == error_num) {
+      for (j = 0; updateArray[j].code != 0xFE; j++) {
+        if (updateArray[j].code == snr_num)
+          k = j;
+        else if (updateArray[j].code == sennum2errcode_mapping[i])
+          errorCode.status |= updateArray[j].status;
+      }
+    }
+  }
+
+  updateArray[k].status = 0;
+
+  if (errorCode.status == updateArray[k].status)
+    pal_write_error_code_file(&errorCode);
+}
+
+uint8_t
+pal_read_error_code_file(uint8_t *error_code_arrray) {
+  FILE *fp = NULL;
+  uint8_t ret = 0;
+  int i = 0;
+  int tmp = 0;
+  int retry_count = 0;
+
+  if (access(ERR_CODE_FILE, F_OK) == -1) {
+    for (i = 0; i < ERROR_CODE_NUM; i++)
+      error_code_arrray[i] = 0;
+    return 0;
+  }
+  else
+    fp = fopen(ERR_CODE_FILE, "r");
+  if (!fp)
+      return -1;
+
+  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    int err = errno;
+    syslog(LOG_WARNING, "%s(): failed to flock on %s, err %d", __func__, ERR_CODE_FILE, err);
+    fclose(fp);
+    return -1;
+  }
+
+  for (i = 0; fscanf(fp, "%X", &tmp) != EOF && i < ERROR_CODE_NUM; i++)
+    error_code_arrray[i] = (uint8_t) tmp;
+
+  flock(fileno(fp), LOCK_UN);
+  fclose(fp);
+  return 0;
+}
+
+uint8_t
+pal_write_error_code_file(error_code *update) {
+  FILE *fp = NULL;
+  uint8_t ret = 0;
+  int retry_count = 0;
+  int i = 0;
+  int stat = 0;
+  int bit_stat = 0;
+  uint8_t error_code_arrray[ERROR_CODE_NUM] = {0};
+
+  pal_read_error_code_file(error_code_arrray);
+
+  if (access(ERR_CODE_FILE, F_OK) == -1)
+    fp = fopen(ERR_CODE_FILE, "w");
+  else
+    fp = fopen(ERR_CODE_FILE, "r+");
+  if (!fp)
+      return -1;
+
+  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    int err = errno;
+    syslog(LOG_WARNING, "%s(): failed to flock on %s, err %d", __func__, ERR_CODE_FILE, err);
+    fclose(fp);
+    return -1;
+  }
+
+  stat = update->code / 8;
+  bit_stat = update->code % 8;
+
+  if (update->status)
+    error_code_arrray[stat] |= 1 << bit_stat;
+  else
+    error_code_arrray[stat] &= ~(1 << bit_stat);
+
+  for(i = 0; i < ERROR_CODE_NUM; i++) {
+    fprintf(fp, "%X ", error_code_arrray[i]);
+    if(error_code_arrray[i] != 0) {
+      ret = 1;
+    }
+  }
+
+  fprintf(fp, "\n");
+  flock(fileno(fp), LOCK_UN);
+  fclose(fp);
+
+  return ret;
+}
+
+int
+pal_drive_status(const char* dev) {
+  ssd_data ssd;
+  int i;
+  char tmp[MAX_SERIAL_NUM + 1];
+
+  if (nvme_serial_num_read(dev, ssd.serial_num, MAX_SERIAL_NUM))
+    printf("Read serial number fail\n");
+  else{
+    memcpy(tmp, ssd.serial_num, MAX_SERIAL_NUM);
+    tmp[MAX_SERIAL_NUM] = '\0';
+    printf("Serial Number: %s\n", tmp); 
+  }
+
+  if (nvme_temp_read(dev, &ssd.temp))
+    printf("Read temp fail\n");
+  else {
+    if (ssd.temp <= TEMP_HIGHER_THAN_127)
+      printf("Temperature: %d C\n", ssd.temp);
+    else if (ssd.temp >= TEPM_LOWER_THAN_n60)
+      printf("Temperature: %d C\n", ssd.temp - 0x100);
+    else if (ssd.temp == TEMP_NO_UPDATE)
+      printf("Temperature: no data or data is too old\n");
+    else if (ssd.temp == TEMP_SENSOR_FAIL)
+      printf("Temperature: sensor failure\n");
+  }
+
+  if (nvme_pdlu_read(dev, &ssd.pdlu))
+    printf("Read pdlu fail\n");
+  else
+    printf("PDLU: %d %%\n", ssd.pdlu);
+
+  if (nvme_smart_warning_read(dev, &ssd.warning))
+    printf("Read warning fail\n");
+  else {
+    printf("SMART Warning: %X\n", ssd.warning);
+    if ((ssd.warning & 0x01) == 0)
+      printf("  The spce follow the threshold: no\n");
+    else
+      printf("  The spce follow the threshold: yes\n");
+
+    if ((ssd.warning & 0x02) == 0)
+      printf("  Temperature: abnormal\n");
+    else
+      printf("  Temperature: normal\n");
+
+    if ((ssd.warning & 0x04) == 0)
+      printf("  NVM Subsystem Reliability: abnormal\n");
+    else
+      printf("  NVM Subsystem Reliability: normal\n");
+
+    if ((ssd.warning & 0x08) == 0)
+      printf("  Media: read only mode\n");
+    else
+      printf("  Media: normal\n");
+
+    if ((ssd.warning & 0x10) == 0)
+      printf("  Volatile Memory Backup: abnormal\n");
+    else
+      printf("  Volatile Memory Backup: normal\n");
+  }
+
+  if (nvme_sflgs_read(dev, &ssd.sflgs))
+    printf("Read status flags fail\n");
+  else {
+    printf("Status Flags: %X\n", ssd.sflgs);
+    if ((ssd.sflgs & 0x80) == 0)
+      printf("  SMBus Arbitration: loss\n");
+    else
+      printf("  SMBus Arbitration: win\n");
+
+    if ((ssd.sflgs & 0x40) == 0)
+      printf("  Drive Ready: ready\n");
+    else
+      printf("  Drive Ready: not ready\n");
+
+    if ((ssd.sflgs & 0x20) == 0)
+      printf("  Drive Functional: nonfunctional\n");
+    else
+      printf("  Drive Functional: functional\n");
+
+    if ((ssd.sflgs & 0x10) == 0)
+      printf("  Reset Required: required\n");
+    else
+      printf("  Reset Required: not required\n");
+
+    if ((ssd.sflgs & 0x08) == 0)
+      printf("  Port 0 PCIe Link Active: down\n");
+    else
+      printf("  Port 0 PCIe Link Active: up\n");
+
+    if ((ssd.sflgs & 0x04) == 0)
+      printf("  Port 1 PCIe Link Active: down\n");
+    else
+      printf("  Port 1 PCIe Link Active: up\n");
+
+    if ((ssd.sflgs & 0x03) == 0x03)
+      printf("  Bit 1 and Bit 2: normal\n");
+    else
+      printf("  Bit 1 and Bit 2: abnormal\n");
+  }
+  printf("\n");
+  return 0;
+}
+
+int
+pal_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
+  uint8_t sku;
+  int ret;
+
+  ret = lightning_ssd_sku(&sku);
+
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s(): lightning_ssd_sku failed", __func__);
+    return -1;
+  }
+  if (sku == U2_SKU) {
+    ret = pal_u2_flash_read_nvme_data(slot_num, cmd);
+    if (ret == 1)
+      return 1;
+    else
+      return 0;
+  }
+
+  else if (sku == M2_SKU) {
+    ret = pal_m2_flash_read_nvme_data(slot_num, cmd);
+    return ret;
+  }
+
+  else {
+    syslog(LOG_DEBUG, "%s(): unknown ssd sku", __func__);
+    return -1;
+  }
+}
+
+int 
+pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
+
+  int ret;
+  uint8_t mux;
+  uint8_t chan;
+  uint8_t vendor;
+  char bus[32];
+
+  mux = lightning_flash_list[slot_num] / 10;
+  chan = lightning_flash_list[slot_num] % 10;
+  
+  /* Set 1-level mux */
+  ret = lightning_flash_mux_sel_chan(mux, chan);
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
+    return -1;
+  }
+
+  if (mux == I2C_MUX_FLASH1)
+    sprintf(bus, "%s", I2C_DEV_FLASH1);
+  else if (mux == I2C_MUX_FLASH2)
+    sprintf(bus, "%s", I2C_DEV_FLASH2);
+  else {
+    syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+    return -1;
+  }
+
+  if (cmd == CMD_DRIVE_STATUS) {
+    printf("Slot%d:\n", slot_num);
+    ret = pal_drive_status(bus);
+  }
+
+  else if (cmd == CMD_DRIVE_HEALTH) {
+    ret = pal_drive_health(bus);
+    return ret;
+  }
+
+  else {
+    syslog(LOG_DEBUG, "%s(): unknown cmd", __func__);
+    return -1;
+  }
+
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): pal_drive_status failed", __func__);
+    return -1;
+  }
+
+  return 1;
+}
+
+int 
+pal_m2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
+  int ret1;
+  int ret2;
+
+  /* read the M.2 NVMe-MI data on channel 0 */
+  ret1 = pal_m2_read_nvme_data(slot_num, M2_MUX_CHANNEL_0, cmd);
+  if (ret1 < 0)
+    syslog(LOG_DEBUG, "%s(): pal_m2_read_nvme_data on channel 0 failed", __func__);
+
+  /* read the M.2 NVMe-MI data on channel 1 */
+  ret2 = pal_m2_read_nvme_data(slot_num, M2_MUX_CHANNEL_1, cmd);
+  if (ret2 < 0)
+    syslog(LOG_DEBUG, "%s(): pal_m2_read_nvme_data on channel 1 failed", __func__);
+
+  /*Drive status report
+    2: two drives are not health
+    3: only first drive is health
+    4: only second drive is health
+    5: two drives are health*/
+  if ((ret1 == 0) && (ret2 == 0))
+    return 5;
+  else if ((ret1 == 0) && (ret2 != 0))
+    return 3;
+  else if ((ret1 != 0) && (ret2 == 0))
+    return 4;
+  else
+    return 2;
+}
+
+int 
+pal_m2_read_nvme_data(uint8_t slot_num, uint8_t m2_mux_chan, uint8_t cmd) {
+
+  int ret;
+  uint8_t mux;
+  uint8_t chan;
+  char bus[32];
+
+  mux = lightning_flash_list[slot_num] / 10;
+  chan = lightning_flash_list[slot_num] % 10;
+
+  /* Set 1-level mux */
+  ret = lightning_flash_mux_sel_chan(mux, chan);
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
+    return -1;
+  }
+
+  /* Set 2-level mux */
+  ret = lightning_flash_sec_mux_sel_chan(mux, m2_mux_chan);
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): lightning_flash_sec_mux_sel_chan on Mux %d failed", __func__, mux);
+    return -1;
+  }
+
+  if (mux == I2C_MUX_FLASH1)
+    sprintf(bus, "%s", I2C_DEV_FLASH1);
+  else if (mux == I2C_MUX_FLASH2)
+    sprintf(bus, "%s", I2C_DEV_FLASH2);
+  else {
+    syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+    return -1;
+  }
+
+  if (cmd == CMD_DRIVE_STATUS) {
+    printf("Slot%d Drive%d\n", slot_num, m2_mux_chan);
+    ret = pal_drive_status(bus);
+  }
+
+  else if (cmd == CMD_DRIVE_HEALTH) {
+    ret = pal_drive_health(bus);
+    return ret;
+  }
+
+  else {
+    syslog(LOG_DEBUG, "%s(): unknown cmd", __func__);
+    return -1;
+  }
+  
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): pal_drive_status failed", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_drive_health(const char* dev) {
+  uint8_t sflgs;
+  uint8_t warning;
+
+  if (nvme_smart_warning_read(dev, &warning))
+    return -1;
+  else 
+    if ((warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
+      return -1;
+
+  if (nvme_sflgs_read(dev, &sflgs))
+    return -1;
+  else
+    if ((sflgs & NVME_SFLGS_MASK_BIT) != NVME_SFLGS_CHECK_VALUE)
+      return -1;
+
+  return 0;
 }

@@ -30,6 +30,7 @@ extern "C" {
 #include <facebook/lightning_sensor.h>
 #include <facebook/lightning_flash.h>
 #include <openbmc/kv.h>
+#include <openbmc/nvme-mi.h>
 
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   128
@@ -48,7 +49,23 @@ extern "C" {
 #define MAX_NODES 1
 #define MAX_FAN_LED_NUM 6
 
+#define MAX_SENSOR_NUM 256
+#define ERROR_CODE_NUM 13
+#define ERR_CODE_FILE "/tmp/error_code"
+#define SKIP_READ_SSD_TEMP "/tmp/skipSSD"
+
+#define CMD_DRIVE_STATUS 0
+#define CMD_DRIVE_HEALTH 1
+
+#define ERR_CODE_SELF_TRAY_PULL_OUT 0x5D
+#define ERR_CODE_PEER_TRAY_PULL_OUT 0x5E
+
 #define HB_INTERVAL 500
+
+typedef struct {
+  uint8_t code;
+  bool status;
+} error_code;
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
@@ -215,6 +232,7 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 int pal_peer_tray_detection(uint8_t *value);
 int pal_self_tray_location(uint8_t *value);
+int pal_peer_tray_location(uint8_t *value);
 int pal_is_crashdump_ongoing(uint8_t slot);
 int pal_reset_ssd_switch();
 void pal_log_clear(char *fru);
@@ -234,6 +252,20 @@ void pal_sensor_deassert_handle(uint8_t snr_num, float val);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
+void pal_err_code_enable(error_code *update);
+void pal_err_code_disable(error_code *update);
+void pal_error_code_array_init(const int count, const uint8_t *list, error_code *updateArray);
+void pal_error_code_refresh(const int sensor_cnt, error_code *updateArray);
+void pal_err_code_enable_by_sensor_num(uint8_t snr_num, error_code *updateArray);
+void pal_err_code_disable_by_sensor_num(uint8_t snr_num, error_code *updateArray);
+uint8_t pal_read_error_code_file(uint8_t *error_code_arrray);
+uint8_t pal_write_error_code_file(error_code *update);
+int pal_drive_status(const char* dev);
+int pal_read_nvme_data(uint8_t slot_num, uint8_t cmd);
+int pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd);
+int pal_m2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd);
+int pal_m2_read_nvme_data(uint8_t i2c_map, uint8_t m2_mux_chan, uint8_t cmd);
+int pal_drive_health(const char* dev);
 
 #ifdef __cplusplus
 } // extern "C"

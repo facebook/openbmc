@@ -36,6 +36,7 @@
 #define BTN_POWER_OFF     40
 #define MAX_NUM_SLOTS 4
 #define HB_TIMESTAMP_COUNT (60 * 60)
+#define POST_LED_DELAY_TIME 2
 
 enum led_state {
   LED_OFF = 0,
@@ -135,11 +136,59 @@ err:
 // Thread for monitoring debug card hotswap
 static void *
 debug_card_handler() {
-  int i, ret;
+  int i, bit_num, ret;
+  uint8_t tmp;
   uint8_t btn;
   uint8_t pos;
+  uint8_t err_num=0;
+  char display[50];
+  uint8_t error_code_assert[ERROR_CODE_NUM * 8];
+  FILE *fp = NULL;
+  uint8_t error_code_array[ERROR_CODE_NUM] = {0};
+  int errCount;
+  int displayCount=0;
+  error_code errorCode = {0, 0};
+
+  pal_write_error_code_file(&errorCode);
 
   while (1) {
+
+    /* Get self tray and peer tray location then set error code*/
+    tmp = 0;
+    if (!pal_self_tray_location(&tmp)) {
+      errorCode.code = ERR_CODE_SELF_TRAY_PULL_OUT;
+      if (tmp)
+        pal_err_code_enable(&errorCode);
+      else
+        pal_err_code_disable(&errorCode);
+    }
+    tmp = 0;
+    if (!pal_peer_tray_location(&tmp)) {
+      errorCode.code = ERR_CODE_PEER_TRAY_PULL_OUT;
+      if (tmp)
+        pal_err_code_enable(&errorCode);
+      else
+        pal_err_code_disable(&errorCode);
+    }
+
+    pal_read_error_code_file(error_code_array);
+
+    /* Read error code file for displaying error number on debug card*/
+    memset(error_code_assert, 0, ERROR_CODE_NUM * 8);
+    errCount = 0;
+    for(i = 0; i < ERROR_CODE_NUM; i++ ) {
+      for(bit_num = 0; bit_num < 8; bit_num++ ) {
+        if((( error_code_array[i] >> bit_num )&0x01 ) == 1) {
+          *(error_code_assert + errCount) = i * 8 + bit_num;
+          errCount++;
+        }
+      }
+    }
+    err_num = error_code_assert[displayCount];
+    displayCount++;
+    if(displayCount >= errCount)
+      displayCount = 0;
+
     // Check if UART channel button is pressed
     ret = pal_get_uart_chan_btn(&btn);
     if (ret) {
@@ -177,13 +226,15 @@ debug_card_handler() {
         goto debug_card_out;
       }
 
-      // Display Post code 0xFF for 1 secound on UART button press event
-      system("/usr/local/bin/post_led.sh 255");
-      msleep(1000);
-      system("/usr/local/bin/post_led.sh 0");
+      // Display Post code on UART button press event
+      sprintf(display, "/usr/local/bin/post_led.sh %d", pos);
+      system(display);
+      sleep(POST_LED_DELAY_TIME);
     }
+    sprintf(display, "/usr/local/bin/post_led.sh %d", err_num);
+    system(display);
 debug_card_out:
-    msleep(500);
+    sleep(POST_LED_DELAY_TIME);
   }
 }
 

@@ -63,6 +63,7 @@ IMAGE_INSTALL += " \
   bottle \
   lldp-util \
   spatula \
+  enclosure-util \
   "
 
 IMAGE_FEATURES += " \

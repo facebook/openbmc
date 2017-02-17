@@ -34,6 +34,8 @@
 
 #define M2CARD_AMB_TEMP_REG 0x00
 #define NVME_TEMP_REG 0x03
+
+#define SKIP_READ_SSD_TEMP "/tmp/skipSSD"
  
 /* List of information of I2C mapping for mux and channel */
 const uint8_t lightning_flash_list[] = {
@@ -73,6 +75,9 @@ lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
   mux = i2c_map / 10;
   chan = i2c_map % 10;
 
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
@@ -87,6 +92,10 @@ lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
     return -1;
   }
+
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
@@ -115,7 +124,7 @@ lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
 
   close(dev);
 
-  return 0;
+  return ret;
 }
 
 /* To read NVMe Management Spec Based device Temperature */
@@ -145,7 +154,7 @@ lightning_flash_temp_read(uint8_t i2c_map, float *temp) {
     return -1;
   }
 
-  return 0;
+  return ret;
 }
 
 int 
@@ -157,7 +166,11 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
   uint8_t vendor;
   mux = i2c_map / 10;
   chan = i2c_map % 10;
-  
+
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
+
   /* Set 1-level mux */
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
@@ -193,7 +206,7 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
     return -1;
   }
 
-  return 0;
+  return ret;
 }
 
 /* Enable the mux to select a particular channel */
@@ -311,6 +324,10 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
   mux = i2c_map / 10;
   chan = i2c_map % 10;
 
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
+
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
@@ -325,6 +342,10 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
     return -1;
   }
+
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
@@ -367,7 +388,7 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
     return -1;
   }
 
-  return 0;
+  return ret;
 }
 
 int 
@@ -393,7 +414,7 @@ lightning_m2_flash_temp_read(uint8_t i2c_map, float *temp) {
   /*  return the bigger temp reading */
   *temp = (temp1 > temp2)? temp1:temp2;
 
-  return 0;
+  return ret;
 }
 
 int 
@@ -407,12 +428,20 @@ lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
   mux = i2c_map / 10;
   chan = i2c_map % 10;
 
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
+
   /* Set 1-level mux */
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
     return -1;
   }
+
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
 
   /* Set 2-level mux */
   ret = lightning_flash_sec_mux_sel_chan(mux, m2_mux_chan);
@@ -428,7 +457,7 @@ lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
     return -1;
   }
 
-  return 0;
+  return ret;
 }
 
 int 
@@ -446,6 +475,10 @@ lightning_nvme_temp_read(uint8_t mux, float *temp) {
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
     return -1;
   }
+
+  //if enclosure-util read SSD, skip SSD monitor
+  if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
+    return 1;
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
@@ -472,5 +505,5 @@ lightning_nvme_temp_read(uint8_t mux, float *temp) {
   
   close(dev);
 
-  return 0;
+  return ret;
 }

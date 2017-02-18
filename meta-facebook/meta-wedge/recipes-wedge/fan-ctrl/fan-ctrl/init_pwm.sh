@@ -17,9 +17,27 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+. /usr/local/bin/openbmc-utils.sh
+
 PWM_DIR=/sys/devices/platform/ast_pwm_tacho.0
 
 set -e
+
+# Enable PWM 0, 1, 6, 7
+devmem_set_bit $(scu_addr 88) 0
+devmem_set_bit $(scu_addr 88) 1
+devmem_set_bit $(scu_addr 88) 6
+devmem_set_bit $(scu_addr 88) 7
+
+# Eable tacho 0-7
+devmem_clear_bit $(scu_addr 88) 8
+devmem_clear_bit $(scu_addr 88) 9
+devmem_clear_bit $(scu_addr 88) 10
+devmem_clear_bit $(scu_addr 88) 11
+devmem_clear_bit $(scu_addr 88) 12
+devmem_clear_bit $(scu_addr 88) 13
+devmem_clear_bit $(scu_addr 88) 14
+devmem_clear_bit $(scu_addr 88) 15
 
 # The PWM frequency is
 

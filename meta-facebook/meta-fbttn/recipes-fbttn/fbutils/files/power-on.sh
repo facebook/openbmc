@@ -137,4 +137,6 @@ if [ $(is_bmc_por) -eq 1 ]; then
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
     power-util slot1 on
   fi
+else
+  sync_date
 fi

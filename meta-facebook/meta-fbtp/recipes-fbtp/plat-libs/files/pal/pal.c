@@ -2909,7 +2909,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_ON)
         return server_power_reset();
       else if (status == SERVER_POWER_OFF)
-        return 1;
+        return server_power_on();
       break;
 
     default:

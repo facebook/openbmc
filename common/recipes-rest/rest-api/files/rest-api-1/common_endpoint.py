@@ -27,6 +27,7 @@ import rest_modbus
 import rest_slotid
 import rest_psu_update
 import rest_fcpresent
+import rest_mTerm
 import bottle
 
 commonApp = bottle.Bottle()
@@ -135,3 +136,8 @@ def psu_update_hdl_post():
 @commonApp.route('/api/sys/slotid')
 def rest_slotid_hdl():
     return rest_slotid.get_slotid()
+
+
+@commonApp.route('/api/sys/mTerm_status')
+def rest_mTerm_status():
+    return rest_mTerm.get_mTerm_status()

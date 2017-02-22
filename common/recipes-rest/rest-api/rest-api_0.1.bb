@@ -41,6 +41,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_modbus.py \
            file://rest-api-1/rest_slotid.py \
            file://rest-api-1/rest_psu_update.py \
+           file://rest-api-1/rest_mTerm.py \
            file://rest-api-1/bmc_command.py \
            file://rest-api-1/eeprom_utils.py \
            file://rest-api-1/rest_fcpresent.py \
@@ -66,7 +67,8 @@ binfiles = "rest.py \
             rest_slotid.py \
             rest_psu_update.py \
             rest_fcpresent.py \
-            rest_helper.py "
+            rest_helper.py \
+            rest_mTerm.py "
 
 pkgdir = "rest-api"
 

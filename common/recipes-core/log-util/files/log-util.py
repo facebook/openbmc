@@ -78,10 +78,11 @@ def log_main():
     for logfile in syslogfiles:
 
         try:
-            fd = open(logfile, 'r')
+            fd = open(logfile, 'a+')
             syslog = fd.readlines()
             fd.close()
-        except IOError:
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
             continue
 
         # Clear cmd

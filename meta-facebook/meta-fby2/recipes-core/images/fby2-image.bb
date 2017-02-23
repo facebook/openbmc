@@ -52,7 +52,6 @@ IMAGE_INSTALL += " \
   watchdog-ctrl \
   i2c-tools \
   sensor-setup \
-  usb-console \
   lmsensors-sensors \
   rest-api \
   bottle \

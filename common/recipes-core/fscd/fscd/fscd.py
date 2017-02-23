@@ -197,7 +197,7 @@ class Zone:
             if sname in sensors[board]:
                 sensor = sensors[board][sname]
                 ctx[v] = sensor.value
-                if sensor.status in ['ucr', 'unr', 'lnr', 'lcr']:
+                if sensor.status in ['ucr']:
                     warn('Sensor %s reporting status %s' %
                          (sensor.name, sensor.status))
                     outmin = transitional

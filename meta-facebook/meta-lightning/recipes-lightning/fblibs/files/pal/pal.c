@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <string.h>
 #include <errno.h>
 #include <syslog.h>
 #include <sys/mman.h>
@@ -95,8 +96,9 @@ const char pal_tach_list[] = "0...11";
 /* A mapping tabel for fan id to pwm id.  */
 uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+/* sensornum-errorcode mapping table */
 const uint8_t sennum2errcode_mapping[MAX_SENSOR_NUM] = {
-//   0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F 
+//   0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x00 - 0x0F
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x10 - 0x1F
   0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0xFF, 0xFF, 0xFF, 0xFF, // 0x20 - 0x2F
@@ -605,7 +607,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     fclose(fp);
     return -1;
   }
-  
+
   ret = lightning_sensor_read(fru, sensor_num, value);
 
   if(ret < 0) {
@@ -1403,11 +1405,108 @@ int pal_get_plat_sku_id(void){
 
 void
 pal_sensor_assert_handle(uint8_t snr_num, float val) {
-  return;
+  bool *sensorStatus = NULL;
+  uint8_t error_code_num = sennum2errcode_mapping[snr_num];
+  int fd, ret;
+  int retry_count = 0;
+  error_code errorCode = {error_code_num, ERR_ASSERT};
+
+  if (access(ERR_CODE_FILE, F_OK) == -1)
+    fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR | O_TRUNC, 00777);
+  else
+    fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR, 00777);
+  if (fd == -1) {
+    syslog(LOG_ERR, "%s(): Error opening file for reading", __func__);
+    return;
+  }
+  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
+  write(fd, "", 1);
+
+  ret = flock(fd, LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fd, LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
+    fclose(fd);
+    return -1;
+  }
+
+  sensorStatus = (bool*) mmap(NULL, (sizeof(bool) * MAX_SENSOR_NUM),
+                              PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  if (sensorStatus == MAP_FAILED){
+    syslog(LOG_ERR, "%s(): Error mmapping the file. %s", __func__, strerror(errno));
+    close(fd);
+    return;
+  }
+
+  sensorStatus[snr_num] = ERR_ASSERT;
+
+  pal_write_error_code_file(&errorCode);
+
+  munmap(sensorStatus, sizeof(bool) * MAX_SENSOR_NUM);
+  flock(fd, LOCK_UN);
+  close(fd);
 }
+
 void
 pal_sensor_deassert_handle(uint8_t snr_num, float val) {
-  return;
+  bool *sensorStatus = NULL;
+  uint8_t error_code_num = sennum2errcode_mapping[snr_num];
+  int i, fd, ret;
+  int retry_count = 0;
+  error_code errorCode = {error_code_num, ERR_DEASSERT};
+
+  if (access(ERR_CODE_FILE, F_OK) == -1)
+    fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR | O_TRUNC, 00777);
+  else
+    fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR, 00777);
+  if (fd == -1) {
+    syslog(LOG_ERR, "%s(): Error opening file for reading", __func__);
+    return;
+  }
+  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
+  write(fd, "", 1);
+
+  ret = flock(fd, LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fd, LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
+    fclose(fd);
+    return -1;
+  }
+
+  sensorStatus = (bool*) mmap(NULL, (sizeof(bool) * MAX_SENSOR_NUM),
+                              PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  if (sensorStatus == MAP_FAILED){
+      syslog(LOG_ERR, "%s(): Error mmapping the file. %s", __func__, strerror(errno));
+      close(fd);
+      return;
+  }
+
+  sensorStatus[snr_num] = ERR_DEASSERT;
+
+  for (i = 0; i < MAX_SENSOR_NUM; i++) {
+    if (sennum2errcode_mapping[i] == error_code_num) {
+      errorCode.status |= sensorStatus[i];
+    }
+  }
+
+  if (errorCode.status == ERR_DEASSERT){
+    pal_write_error_code_file(&errorCode);
+  }
+
+  munmap(sensorStatus, sizeof(bool) * MAX_SENSOR_NUM);
+  flock(fd, LOCK_UN);
+  close(fd);
 }
 
 void
@@ -1435,7 +1534,7 @@ pal_err_code_enable(error_code *update) {
     pal_write_error_code_file(update);
   }
   else
-    syslog(LOG_WARNING, "%s(): wrong error code number", __func__); 
+    syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
 }
 
 void
@@ -1449,63 +1548,6 @@ pal_err_code_disable(error_code *update) {
     syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
 }
 
-/* init error code status about sensors*/
-void
-pal_error_code_array_init(const int count, const uint8_t *list, error_code *updateArray) {
-  int i;
-  updateArray[count].code = 0xFE;
-  for (i = 0; i < count; i++) {
-    updateArray[i].code = list[i];
-    updateArray[i].status = 0;
-  }
-}
-
-void
-pal_err_code_enable_by_sensor_num(uint8_t snr_num, error_code *updateArray) {
-  uint8_t error_num = sennum2errcode_mapping[snr_num];
-  int i, j, k;
-  error_code errorCode = {error_num, 1};
-
-  for (i = 0; i < MAX_SENSOR_NUM; i++) {
-    if (sennum2errcode_mapping[i] == error_num) {
-      for (j = 0; updateArray[j].code != 0xFE; j++) {
-        if (updateArray[j].code == snr_num)
-          k = j;
-        else if (updateArray[j].code == sennum2errcode_mapping[i])
-          errorCode.status |= updateArray[j].status;
-      }
-    }
-  }
-
-  updateArray[k].status = 1;
-
-  if (errorCode.status == updateArray[k].status)
-    pal_write_error_code_file(&errorCode);
-}
-
-void
-pal_err_code_disable_by_sensor_num(uint8_t snr_num, error_code *updateArray) {
-  uint8_t error_num = sennum2errcode_mapping[snr_num];
-  int i, j, k;
-  error_code errorCode = {error_num, 0};
-
-  for (i = 0; i < MAX_SENSOR_NUM; i++) {
-    if (sennum2errcode_mapping[i] == error_num) {
-      for (j = 0; updateArray[j].code != 0xFE; j++) {
-        if (updateArray[j].code == snr_num)
-          k = j;
-        else if (updateArray[j].code == sennum2errcode_mapping[i])
-          errorCode.status |= updateArray[j].status;
-      }
-    }
-  }
-
-  updateArray[k].status = 0;
-
-  if (errorCode.status == updateArray[k].status)
-    pal_write_error_code_file(&errorCode);
-}
-
 uint8_t
 pal_read_error_code_file(uint8_t *error_code_array) {
   FILE *fp = NULL;
@@ -1515,12 +1557,12 @@ pal_read_error_code_file(uint8_t *error_code_array) {
   int retry_count = 0;
 
   if (access(ERR_CODE_FILE, F_OK) == -1) {
-    for (i = 0; i < ERROR_CODE_NUM; i++)
-      error_code_array[i] = 0;
+    memset(error_code_array, 0, ERROR_CODE_NUM);
     return 0;
   }
   else
     fp = fopen(ERR_CODE_FILE, "r");
+
   if (!fp)
       return -1;
 
@@ -1555,14 +1597,19 @@ pal_write_error_code_file(error_code *update) {
   int bit_stat = 0;
   uint8_t error_code_array[ERROR_CODE_NUM] = {0};
 
-  pal_read_error_code_file(error_code_array);
+  if (pal_read_error_code_file(error_code_array) != 0){
+    syslog(LOG_ERR, "%s(): pal_read_error_code_file() failed", __func__);
+    return -1;
+  }
 
   if (access(ERR_CODE_FILE, F_OK) == -1)
     fp = fopen(ERR_CODE_FILE, "w");
   else
     fp = fopen(ERR_CODE_FILE, "r+");
-  if (!fp)
-      return -1;
+  if (!fp){
+    syslog(LOG_ERR, "%s(): open %s failed. %s", __func__, ERR_CODE_FILE, strerror(errno));
+    return -1;
+  }
 
   ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
   while (ret && (retry_count < 3)) {
@@ -1571,8 +1618,7 @@ pal_write_error_code_file(error_code *update) {
     ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
   }
   if (ret) {
-    int err = errno;
-    syslog(LOG_WARNING, "%s(): failed to flock on %s, err %d", __func__, ERR_CODE_FILE, err);
+    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
     fclose(fp);
     return -1;
   }
@@ -1610,7 +1656,7 @@ pal_drive_status(const char* dev) {
   else{
     memcpy(tmp, ssd.serial_num, MAX_SERIAL_NUM);
     tmp[MAX_SERIAL_NUM] = '\0';
-    printf("Serial Number: %s\n", tmp); 
+    printf("Serial Number: %s\n", tmp);
   }
 
   if (nvme_temp_read(dev, &ssd.temp))
@@ -1730,7 +1776,7 @@ pal_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
   }
 }
 
-int 
+int
 pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
 
   int ret;
@@ -1741,7 +1787,7 @@ pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
 
   mux = lightning_flash_list[slot_num] / 10;
   chan = lightning_flash_list[slot_num] % 10;
-  
+
   /* Set 1-level mux */
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
@@ -1781,7 +1827,7 @@ pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
   return 1;
 }
 
-int 
+int
 pal_m2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
   int ret1;
   int ret2;
@@ -1811,7 +1857,7 @@ pal_m2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
     return 2;
 }
 
-int 
+int
 pal_m2_read_nvme_data(uint8_t slot_num, uint8_t m2_mux_chan, uint8_t cmd) {
 
   int ret;
@@ -1859,7 +1905,7 @@ pal_m2_read_nvme_data(uint8_t slot_num, uint8_t m2_mux_chan, uint8_t cmd) {
     syslog(LOG_DEBUG, "%s(): unknown cmd", __func__);
     return -1;
   }
-  
+
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): pal_drive_status failed", __func__);
     return -1;
@@ -1875,7 +1921,7 @@ pal_drive_health(const char* dev) {
 
   if (nvme_smart_warning_read(dev, &warning))
     return -1;
-  else 
+  else
     if ((warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
       return -1;
 

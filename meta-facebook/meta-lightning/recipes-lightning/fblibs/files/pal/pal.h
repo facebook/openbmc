@@ -52,6 +52,7 @@ extern "C" {
 #define MAX_SENSOR_NUM 256
 #define ERROR_CODE_NUM 13
 #define ERR_CODE_FILE "/tmp/error_code"
+#define SENSOR_STATUS_FILE "/tmp/share_sensor_status"
 #define SKIP_READ_SSD_TEMP "/tmp/skipSSD"
 
 #define CMD_DRIVE_STATUS 0
@@ -61,6 +62,9 @@ extern "C" {
 #define ERR_CODE_PEER_TRAY_PULL_OUT 0x5E
 
 #define HB_INTERVAL 500
+
+#define ERR_ASSERT 1
+#define ERR_DEASSERT 0
 
 typedef struct {
   uint8_t code;
@@ -254,10 +258,6 @@ void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_err_code_enable(error_code *update);
 void pal_err_code_disable(error_code *update);
-void pal_error_code_array_init(const int count, const uint8_t *list, error_code *updateArray);
-void pal_error_code_refresh(const int sensor_cnt, error_code *updateArray);
-void pal_err_code_enable_by_sensor_num(uint8_t snr_num, error_code *updateArray);
-void pal_err_code_disable_by_sensor_num(uint8_t snr_num, error_code *updateArray);
 uint8_t pal_read_error_code_file(uint8_t *error_code_arrray);
 uint8_t pal_write_error_code_file(error_code *update);
 int pal_drive_status(const char* dev);

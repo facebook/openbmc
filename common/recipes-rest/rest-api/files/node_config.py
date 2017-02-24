@@ -38,9 +38,10 @@ class configNode(node):
         cmd = '/usr/local/bin/cfg-util dump-all'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         sdata = data.split('\n');
+        altname = self.name.replace('slot', 'server')
         for line in sdata:
             # skip lines that does not start with name
-            if line.startswith(self.name):
+            if line.find(self.name) != -1 or line.find(altname) != -1:
                 kv = line.split(':')
                 result[kv[0].strip()] = kv[1].strip()
         return result
@@ -49,9 +50,10 @@ class configNode(node):
         res = "success"
         # Get the list of parameters to be updated
         params = data["update"]
+        altname = self.name.replace('slot', 'server')
         for key in params.keys():
             # update only if the key starts with the name
-            if key.startswith(self.name):
+            if key.find(self.name) != -1 or key.find(altname) != -1:
                 ret = pal_set_key_value(key, params[key])
                 if ret:
                     res = "failure"

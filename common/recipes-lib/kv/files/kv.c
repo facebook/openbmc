@@ -39,7 +39,9 @@ kv_set(char *key, char *value) {
     mkdir(KV_STORE_PATH, 0777);
   }
 
-  fp = fopen(kpath, "w");
+  fp = fopen(kpath, "r+");
+  if (!fp && (errno == ENOENT))
+    fp = fopen(kpath, "w");
   if (!fp) {
     int err = errno;
 #ifdef DEBUG
@@ -58,6 +60,11 @@ kv_set(char *key, char *value) {
     return -1;
   }
 
+  if (ftruncate(fileno(fp), 0) < 0) {  //truncate cache file after getting flock
+    fclose(fp);
+    return -1;
+  }
+
   rc = fwrite(value, 1, strlen(value), fp);
   if (rc < 0) {
 #ifdef DEBUG
@@ -66,6 +73,7 @@ kv_set(char *key, char *value) {
     fclose(fp);
     return ENOENT;
   }
+  fflush(fp);
 
   rc = flock(fileno(fp), LOCK_UN);
   if (rc < 0) {
@@ -123,6 +131,7 @@ kv_get(char *key, char *value) {
     fclose(fp);
     return ENOENT;
   }
+  value[(rc < MAX_VALUE_LEN)?(rc):(rc-1)] = 0;
 
   rc = flock(fileno(fp), LOCK_UN);
   if (rc < 0) {

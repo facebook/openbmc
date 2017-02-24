@@ -40,7 +40,30 @@ case "$ACTION" in
     fi
     ;;
   *)
-    /usr/bin/passwd $* || exit 1
+    stty -echo
+    read -p "New password: " firstpw
+    stty echo
+    echo ""
+    stty -echo
+    read -p "Retype password: " secondpw
+    stty echo
+    echo ""
+    if [ ${#firstpw} -lt 1 ] || [ ${#secondpw} -lt 1 ]; then
+      echo "Password is empty!"
+      exit 1
+    fi
+    if [ "$firstpw" != "$secondpw" ]; then
+      echo "Passwords don't match"
+      exit 1
+    fi
+    echo $firstpw > /var/tmppw.$$
+    echo $secondpw >> /var/tmppw.$$
+    /usr/bin/passwd $* < /var/tmppw.$$ >/dev/null
+    ret=$?
+    rm -f /var/tmppw.$$
+    if [ $ret -ne 0 ]; then
+      exit 1
+    fi
     echo -n "Storing Password.."
     cp /etc/shadow /mnt/data/etc/shadow
     echo "done."

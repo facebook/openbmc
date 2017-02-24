@@ -78,7 +78,7 @@
 
 #define SEQ_NUM_MAX 64
 
-#define I2C_RETRIES_MAX 5
+#define I2C_RETRIES_MAX 15
 
 #define IPMB_PKT_MIN_SIZE 6
 
@@ -280,7 +280,7 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
   }
 
   if (rc < 0) {
-    syslog(LOG_WARNING, "Failed to do raw io");
+    syslog(LOG_WARNING, "bus: %d, Failed to do raw io", g_bus_id);
     pthread_mutex_unlock(&m_i2c);
     return -1;
   }
@@ -717,7 +717,7 @@ ipmb_handle (int fd, unsigned char *request, unsigned char req_len,
   int ret;
   ret = sem_timedwait(&g_seq.seq[index].s_seq, &ts);
   if (ret == -1) {
-    syslog(LOG_DEBUG, "No response for sequence number: %d\n", index);
+    syslog(LOG_DEBUG, "bus: %d, No response for sequence number: %d\n", g_bus_id, index);
     *res_len = 0;
   }
 

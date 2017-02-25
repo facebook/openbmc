@@ -1084,9 +1084,12 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
     case CMD_STORAGE_CLR_SEL:
       storage_clr_sel (request, response, res_len);
       break;
+#if 0 // To avoid BIOS using this command to update RTC
+      // TBD: Respond only if BMC's time has synced with NTP
     case CMD_STORAGE_GET_SEL_TIME:
       storage_get_sel_time (response, res_len);
       break;
+#endif
     case CMD_STORAGE_GET_SEL_UTC:
       storage_get_sel_utc (response, res_len);
       break;

@@ -79,6 +79,7 @@ IMAGE_INSTALL += " \
   gpiod \
   peci-util \
   tzdata \
+  logrotate \
   "
 
 IMAGE_FEATURES += " \

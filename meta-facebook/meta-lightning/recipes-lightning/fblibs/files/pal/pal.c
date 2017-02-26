@@ -1507,7 +1507,7 @@ pal_err_code_disable_by_sensor_num(uint8_t snr_num, error_code *updateArray) {
 }
 
 uint8_t
-pal_read_error_code_file(uint8_t *error_code_arrray) {
+pal_read_error_code_file(uint8_t *error_code_array) {
   FILE *fp = NULL;
   uint8_t ret = 0;
   int i = 0;
@@ -1516,7 +1516,7 @@ pal_read_error_code_file(uint8_t *error_code_arrray) {
 
   if (access(ERR_CODE_FILE, F_OK) == -1) {
     for (i = 0; i < ERROR_CODE_NUM; i++)
-      error_code_arrray[i] = 0;
+      error_code_array[i] = 0;
     return 0;
   }
   else
@@ -1538,7 +1538,7 @@ pal_read_error_code_file(uint8_t *error_code_arrray) {
   }
 
   for (i = 0; fscanf(fp, "%X", &tmp) != EOF && i < ERROR_CODE_NUM; i++)
-    error_code_arrray[i] = (uint8_t) tmp;
+    error_code_array[i] = (uint8_t) tmp;
 
   flock(fileno(fp), LOCK_UN);
   fclose(fp);
@@ -1553,9 +1553,9 @@ pal_write_error_code_file(error_code *update) {
   int i = 0;
   int stat = 0;
   int bit_stat = 0;
-  uint8_t error_code_arrray[ERROR_CODE_NUM] = {0};
+  uint8_t error_code_array[ERROR_CODE_NUM] = {0};
 
-  pal_read_error_code_file(error_code_arrray);
+  pal_read_error_code_file(error_code_array);
 
   if (access(ERR_CODE_FILE, F_OK) == -1)
     fp = fopen(ERR_CODE_FILE, "w");
@@ -1581,13 +1581,13 @@ pal_write_error_code_file(error_code *update) {
   bit_stat = update->code % 8;
 
   if (update->status)
-    error_code_arrray[stat] |= 1 << bit_stat;
+    error_code_array[stat] |= 1 << bit_stat;
   else
-    error_code_arrray[stat] &= ~(1 << bit_stat);
+    error_code_array[stat] &= ~(1 << bit_stat);
 
   for(i = 0; i < ERROR_CODE_NUM; i++) {
-    fprintf(fp, "%X ", error_code_arrray[i]);
-    if(error_code_arrray[i] != 0) {
+    fprintf(fp, "%X ", error_code_array[i]);
+    if(error_code_array[i] != 0) {
       ret = 1;
     }
   }
@@ -1606,7 +1606,7 @@ pal_drive_status(const char* dev) {
   char tmp[MAX_SERIAL_NUM + 1];
 
   if (nvme_serial_num_read(dev, ssd.serial_num, MAX_SERIAL_NUM))
-    printf("Read serial number fail\n");
+    printf("Fail on reading Serial Number\n");
   else{
     memcpy(tmp, ssd.serial_num, MAX_SERIAL_NUM);
     tmp[MAX_SERIAL_NUM] = '\0';
@@ -1614,92 +1614,88 @@ pal_drive_status(const char* dev) {
   }
 
   if (nvme_temp_read(dev, &ssd.temp))
-    printf("Read temp fail\n");
+    printf("Fail on reading Composite Temperature\n");
   else {
     if (ssd.temp <= TEMP_HIGHER_THAN_127)
-      printf("Temperature: %d C\n", ssd.temp);
+      printf("Composite Temperature: %d C\n", ssd.temp);
     else if (ssd.temp >= TEPM_LOWER_THAN_n60)
-      printf("Temperature: %d C\n", ssd.temp - 0x100);
+      printf("Composite Temperature: %d C\n", ssd.temp - 0x100);
     else if (ssd.temp == TEMP_NO_UPDATE)
-      printf("Temperature: no data or data is too old\n");
+      printf("Composite Temperature: No data or data is too old\n");
     else if (ssd.temp == TEMP_SENSOR_FAIL)
-      printf("Temperature: sensor failure\n");
+      printf("Composite Temperature: Sensor failure\n");
   }
 
   if (nvme_pdlu_read(dev, &ssd.pdlu))
-    printf("Read pdlu fail\n");
+    printf("Fail on reading Percentage Drive Life Used\n");
   else
-    printf("PDLU: %d %%\n", ssd.pdlu);
-
-  if (nvme_smart_warning_read(dev, &ssd.warning))
-    printf("Read warning fail\n");
-  else {
-    printf("SMART Warning: %X\n", ssd.warning);
-    if ((ssd.warning & 0x01) == 0)
-      printf("  The spce follow the threshold: no\n");
-    else
-      printf("  The spce follow the threshold: yes\n");
-
-    if ((ssd.warning & 0x02) == 0)
-      printf("  Temperature: abnormal\n");
-    else
-      printf("  Temperature: normal\n");
-
-    if ((ssd.warning & 0x04) == 0)
-      printf("  NVM Subsystem Reliability: abnormal\n");
-    else
-      printf("  NVM Subsystem Reliability: normal\n");
-
-    if ((ssd.warning & 0x08) == 0)
-      printf("  Media: read only mode\n");
-    else
-      printf("  Media: normal\n");
-
-    if ((ssd.warning & 0x10) == 0)
-      printf("  Volatile Memory Backup: abnormal\n");
-    else
-      printf("  Volatile Memory Backup: normal\n");
-  }
+    printf("Percentage Drive Life Used: %d\n", ssd.pdlu);
 
   if (nvme_sflgs_read(dev, &ssd.sflgs))
-    printf("Read status flags fail\n");
+    printf("Fail on reading Status Flags\n");
   else {
-    printf("Status Flags: %X\n", ssd.sflgs);
+    printf("Status Flags: 0x%2X\n", ssd.sflgs);
     if ((ssd.sflgs & 0x80) == 0)
-      printf("  SMBus Arbitration: loss\n");
+      printf("    SMBUS block read complete: FAIL\n");
     else
-      printf("  SMBus Arbitration: win\n");
+      printf("    SMBUS block read complete: OK\n");
 
     if ((ssd.sflgs & 0x40) == 0)
-      printf("  Drive Ready: ready\n");
+      printf("    Drive Ready: Ready\n");
     else
-      printf("  Drive Ready: not ready\n");
+      printf("    Drive Ready: Not ready\n");
 
     if ((ssd.sflgs & 0x20) == 0)
-      printf("  Drive Functional: nonfunctional\n");
+      printf("    Drive Functional: Unrecoverable Failure\n");
     else
-      printf("  Drive Functional: functional\n");
+      printf("    Drive Functional: Functional\n");
 
     if ((ssd.sflgs & 0x10) == 0)
-      printf("  Reset Required: required\n");
+      printf("    Reset Required: Required\n");
     else
-      printf("  Reset Required: not required\n");
+      printf("    Reset Required: No\n");
 
     if ((ssd.sflgs & 0x08) == 0)
-      printf("  Port 0 PCIe Link Active: down\n");
+      printf("    Port 0 PCIe Link Active: Down\n");
     else
-      printf("  Port 0 PCIe Link Active: up\n");
+      printf("    Port 0 PCIe Link Active: Up\n");
 
     if ((ssd.sflgs & 0x04) == 0)
-      printf("  Port 1 PCIe Link Active: down\n");
+      printf("    Port 1 PCIe Link Active: Down\n");
     else
-      printf("  Port 1 PCIe Link Active: up\n");
-
-    if ((ssd.sflgs & 0x03) == 0x03)
-      printf("  Bit 1 and Bit 2: normal\n");
-    else
-      printf("  Bit 1 and Bit 2: abnormal\n");
+      printf("    Port 1 PCIe Link Active: Up\n");
   }
+
+  if (nvme_smart_warning_read(dev, &ssd.warning))
+    printf("Fail on reading SMART Critical Warning\n");
+  else {
+    printf("SMART Critical Warning: 0x%2X\n", ssd.warning);
+    if ((ssd.warning & 0x01) == 0)
+      printf("    Spare Space: Low\n");
+    else
+      printf("    Spare Space: Normal\n");
+
+    if ((ssd.warning & 0x02) == 0)
+      printf("    Temperature Warning: Abnormal\n");
+    else
+      printf("    Temperature Warning: Normal\n");
+
+    if ((ssd.warning & 0x04) == 0)
+      printf("    NVM Subsystem Reliability: Degraded\n");
+    else
+      printf("    NVM Subsystem Reliability: Normal\n");
+
+    if ((ssd.warning & 0x08) == 0)
+      printf("    Media Status: Read Only mode\n");
+    else
+      printf("    Media Status: Normal\n");
+
+    if ((ssd.warning & 0x10) == 0)
+      printf("    Volatile Memory Backup Device: Failed\n");
+    else
+      printf("    Volatile Memory Backup Device: Normal\n");
+  }
+
   printf("\n");
   return 0;
 }

@@ -319,19 +319,23 @@ int
 get_mtd_name(const char* name, char* dev)
 {
   FILE* partitions = fopen("/proc/mtd", "r");
-  char line[256];
+  char line[256], mnt_name[32];
+  unsigned int mtdno;
+  int found = 0;
 
-  memset((void*)dev, 0, 5);
+  dev[0] = '\0';
   while (fgets(line, sizeof(line), partitions)) {
-    if (!strncmp(&line[24], name, strlen(name))) {
-      strncpy(dev, line, 4);
-      fclose(partitions);
-      return 1;
+    if(sscanf(line, "mtd%d: %*0x %*0x %s",
+                 &mtdno, mnt_name) == 2) {
+      if(!strcmp(name, mnt_name)) {
+        sprintf(dev, "/dev/mtd%d", mtdno);
+        found = 1;
+        break;
+      }
     }
   }
-
   fclose(partitions);
-  return 0;
+  return found;
 }
 
 int
@@ -349,7 +353,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   uint8_t status;
   int ret;
   char cmd[80];
-  char dev[5];
+  char dev[12];
   gpio_st bmc_ctrl_pin;
 
   ret = pal_is_fru_prsnt(slot_id, &status);
@@ -368,7 +372,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
       goto err_exit;
     }
 
-    snprintf(cmd, sizeof(cmd), "flashcp -v %s /dev/%s", argv[4], dev);
+    snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
     return run_command(cmd);
   }
 
@@ -381,7 +385,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
       }
     }
 
-    snprintf(cmd, sizeof(cmd), "flashcp -v %s /dev/%s", argv[4], dev);
+    snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
     return run_command(cmd);
   }
 
@@ -416,7 +420,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     if (!get_mtd_name("\"bios0\"", dev)) {
       printf("Error: Cannot find bios0 MTD partition in /proc/mtd\n");
     } else {
-      snprintf(cmd, sizeof(cmd), "flashcp -v %s /dev/%s", argv[4], dev);
+      snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
       exit_code = run_command(cmd);
     }
 

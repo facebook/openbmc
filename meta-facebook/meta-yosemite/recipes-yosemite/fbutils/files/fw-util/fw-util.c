@@ -224,7 +224,11 @@ main(int argc, char **argv) {
         return -1;
       }
 
-      return fw_update_slot(argv, slot_id);
+      if (fw_update_slot(argv, slot_id)) {
+        printf("fw_util: updating %s on slot %d failed!\n", argv[3], slot_id);
+        return -1;
+      }
+      return 0;
     }
 
     for (slot_id = 1; slot_id < 5; slot_id++) {

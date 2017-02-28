@@ -605,7 +605,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   uint8_t rcount;
   volatile int xcount;
   int i = 0;
-  int ret;
+  int ret = -1, rc;
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
 
@@ -686,8 +686,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   rcount = 0;
 
-  ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
     printf("i2c_io failed download\n");
     goto error_exit;
   }
@@ -696,8 +696,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
   msleep(500);
   tcount = 0;
   rcount = 2;
-  ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
     printf("i2c_io failed download ack\n");
     goto error_exit;
   }
@@ -718,8 +718,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
     rcount = 5;
 
-    ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (ret) {
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
       printf("i2c_io failed\n");
       goto error_exit;
     }
@@ -737,8 +737,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
     tbuf[0] = 0xcc;
     tcount = 1;
     rcount = 0;
-    ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (ret) {
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
       printf("i2c_io failed, Send ACK\n");
       goto error_exit;
     }
@@ -774,8 +774,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
     tcount = tbuf[0];
     rcount = 2;
 
-    ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (ret) {
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
       printf("i2c_io error\n");
       goto error_exit;
     }
@@ -803,8 +803,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   rcount = 2;
 
-  ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
     printf("i2c_io failed for run\n");
     goto error_exit;
   }
@@ -827,6 +827,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
   }
 
 update_done:
+  // mark as successful
+  ret = 0;
   // Restart ipmbd daemon
   sleep(1);
   sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -12", get_ipmb_bus_id(slot_id));
@@ -842,7 +844,7 @@ error_exit:
      close(ifd);
    }
 
-  return 0;
+  return ret;
 }
 
 static int
@@ -963,7 +965,7 @@ set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
 
 int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
-  int ret;
+  int ret = -1, rc;
   uint32_t offset;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
@@ -1037,9 +1039,9 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
 
     // Send data to Bridge-IC
-    ret = _update_fw(slot_id, target, offset, count, buf);
-    if (ret) {
-      break;
+    rc = _update_fw(slot_id, target, offset, count, buf);
+    if (rc) {
+      goto error_exit;
     }
 
     // Update counter
@@ -1086,8 +1088,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
 
     // Get the checksum of binary image
-    ret = bic_get_fw_cksum(slot_id, comp, offset, BIOS_VERIFY_PKT_SIZE, (uint8_t*)&gcksum);
-    if (ret) {
+    rc = bic_get_fw_cksum(slot_id, comp, offset, BIOS_VERIFY_PKT_SIZE, (uint8_t*)&gcksum);
+    if (rc) {
       goto error_exit;
     }
 
@@ -1101,6 +1103,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   }
 
 update_done:
+  ret = 0;
 error_exit:
   if (fd > 0 ) {
     close(fd);
@@ -1108,6 +1111,10 @@ error_exit:
 
   if (tbuf) {
     free(tbuf);
+  }
+
+  if (ret) {
+    printf("updating fw on slot %d failed\n", slot_id);
   }
   return ret;
 }

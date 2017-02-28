@@ -3191,3 +3191,11 @@ pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len) {
 
   return 0;
 }
+
+int
+pal_is_crashdump_ongoing(uint8_t fru)
+{
+  // TODO: Need to implement check for ongoing crashdump
+  // Check the patch: [common] Merge bug fixes from Yosemite V2.4
+  return 0;
+}

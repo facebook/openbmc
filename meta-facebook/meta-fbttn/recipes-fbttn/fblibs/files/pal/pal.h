@@ -246,6 +246,8 @@ void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_get_error_code(uint8_t* data, uint8_t* error_count);
 int pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len);
+int pal_is_crashdump_ongoing(uint8_t slot);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

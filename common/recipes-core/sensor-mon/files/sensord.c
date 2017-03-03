@@ -236,7 +236,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
         "curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s",thresh_name,
         fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
-    pal_sensor_deassert_handle(snr_num, *curr_val);
+    pal_sensor_deassert_handle(snr_num, *curr_val, thresh);
   }
 
   return 0;
@@ -345,7 +345,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
         " curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s", thresh_name,
         fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
-    pal_sensor_assert_handle(snr_num, *curr_val);
+    pal_sensor_assert_handle(snr_num, *curr_val, thresh);
   }
 
   return 0;

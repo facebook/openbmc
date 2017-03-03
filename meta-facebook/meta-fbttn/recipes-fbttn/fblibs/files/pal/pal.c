@@ -3039,12 +3039,12 @@ unsigned char pal_sum_error_code(void) {
   return ret;
 }
 void
-pal_sensor_assert_handle(uint8_t snr_num, float val) {
+pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   return;
 }
 
 void
-pal_sensor_deassert_handle(uint8_t snr_num, float val) {
+pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   return;
 }
 
@@ -3199,3 +3199,10 @@ pal_is_crashdump_ongoing(uint8_t fru)
   // Check the patch: [common] Merge bug fixes from Yosemite V2.4
   return 0;
 }
+
+void pal_add_cri_sel(char *str)
+{
+
+}
+
+

@@ -239,14 +239,15 @@ int  pal_get_scc_rmt_hb(void);
 void pal_err_code_enable(unsigned char num);
 void pal_err_code_disable(unsigned char num);
 unsigned char pal_sum_error_code(void);
-void pal_sensor_assert_handle(uint8_t snr_num, float val);
-void pal_sensor_deassert_handle(uint8_t snr_num, float val);
+void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
+void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_get_error_code(uint8_t* data, uint8_t* error_count);
 int pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len);
 int pal_is_crashdump_ongoing(uint8_t slot);
+void pal_add_cri_sel(char *str);
 
 #ifdef __cplusplus
 } // extern "C"

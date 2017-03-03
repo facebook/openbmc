@@ -5239,8 +5239,8 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
       sprintf(temp_log, " (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       strcat(error_log, temp_log);
-      sprintf(temp_log, "logger -p local0.err \"PCIe err\"");
-      system(temp_log);
+      sprintf(temp_log, "PCIe err");
+      pal_add_cri_sel(temp_log);
       break;
 
     case IIO_ERR:
@@ -5279,16 +5279,19 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         else
           strcat(error_log, "Unknown");
       } else {
-        if ((ed[0] & 0x0F) == 0x0)
+        if ((ed[0] & 0x0F) == 0x0){
           strcat(error_log, "Correctable");
-        else if ((ed[0] & 0x0F) == 0x1)
+          sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+          pal_add_cri_sel(temp_log);
+        }else if ((ed[0] & 0x0F) == 0x1){
           strcat(error_log, "Uncorrectable");
-        else if ((ed[0] & 0x0F) == 0x5)
+          sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+          pal_add_cri_sel(temp_log);
+        }else if ((ed[0] & 0x0F) == 0x5){
           strcat(error_log, "Correctable ECC error Logging Limit Reached");
-        else
+        }else{
           strcat(error_log, "Unknown");
-        sprintf(temp_log, "logger -p local0.err \"DIMM%02X ECC err\"", ed[2]);
-        system(temp_log);
+        }
       }
 
       sprintf(temp_log, " (DIMM %02X)", ed[2]);
@@ -6897,35 +6900,143 @@ error_exit:
 }
 
 void
-pal_sensor_assert_handle(uint8_t snr_num, float val) {
+pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
-  // log the events to a file for LCD debug card
-  if (snr_num == 0xAA) {
-    sprintf(cmd, "logger -p local0.err \"P0 Temp UCR %3.0f - ASSERT\"", val);
-    system(cmd);
-  } else if (snr_num == 0xAB) {
-    sprintf(cmd, "logger -p local0.err \"P1 Temp UCR %3.0f - ASSERT\"", val);
-    system(cmd);
+  char thresh_name[10];
+
+  switch (thresh) {
+    case UNR_THRESH:
+        sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+        sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+        sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+        sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+        sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+        sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_sensor_assert_handle: wrong thresh enum value");
+      exit(-1);
   }
+
+  switch(snr_num) {
+    case MB_SENSOR_FAN0_TACH:
+      sprintf(cmd, "Fan0 %s %3.0fRPM - ASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_FAN1_TACH:
+      sprintf(cmd, "Fan1 %s %3.0fRPM - ASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_CPU0_TEMP:
+      sprintf(cmd, "P0 Temp %s %3.0f - ASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_CPU1_TEMP:
+      sprintf(cmd, "P1 Temp %s %3.0f - ASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_P3V_BAT:
+      sprintf(cmd, "P3V_BAT %s %3.0f - ASSERT", thresh_name, val);
+    case MB_SENSOR_P3V3:
+      sprintf(cmd, "P3V3 %s %3.0f - ASSERT", thresh_name, val);
+    case MB_SENSOR_P5V:
+      sprintf(cmd, "P5V %s %3.0f - ASSERT", thresh_name, val);
+    case MB_SENSOR_P12V:
+      sprintf(cmd, "P12V %s %3.0f - ASSERT", thresh_name, val);
+    case MB_SENSOR_P1V05:
+      sprintf(cmd, "P1V05 %s %3.0f - ASSERT", thresh_name, val);
+    case MB_SENSOR_PVNN_PCH_STBY:
+      sprintf(cmd, "PVNN_PCH_STBY %s %3.0f - ASSERT", thresh_name, val);
+    case MB_SENSOR_P3V3_STBY:
+      sprintf(cmd, "P3V3_STBY %s %3.0f - ASSERT", thresh_name, val);
+    case MB_SENSOR_P5V_STBY:
+      sprintf(cmd, "P5V_STBY %s %3.0f - ASSERT", thresh_name, val);
+
+    default:
+      printf("[%s] Undefine cri sensor %x \n", __func__, snr_num);
+      return;
+  }
+  pal_add_cri_sel(cmd);
+
 }
 
 void
-pal_sensor_deassert_handle(uint8_t snr_num, float val) {
+pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
-  // log the events to a file for LCD debug card
-  if (snr_num == 0xAA) {
-    sprintf(cmd, "logger -p local0.err \"P0 Temp UCR %3.0f - DEASSERT\"", val);
-    system(cmd);
-  } else if (snr_num == 0xAB) {
-    sprintf(cmd, "logger -p local0.err \"P1 Temp UCR %3.0f - DEASSERT\"", val);
-    system(cmd);
+  char thresh_name[10];
+
+  switch (thresh) {
+    case UNR_THRESH:
+        sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+        sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+        sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+        sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+        sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+        sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_sensor_assert_handle: wrong thresh enum value");
+      exit(-1);
   }
+
+  switch(snr_num) {
+    case MB_SENSOR_FAN0_TACH:
+      sprintf(cmd, "Fan0 %s %3.0fRPM - DEASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_FAN1_TACH:
+      sprintf(cmd, "Fan1 %s %3.0fRPM - DEASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_CPU0_TEMP:
+      sprintf(cmd, "P0 Temp %s %3.0f - DEASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_CPU1_TEMP:
+      sprintf(cmd, "P1 Temp %s %3.0f - DEASSERT", thresh_name, val);
+      break;
+    case MB_SENSOR_P3V_BAT:
+      sprintf(cmd, "P3V_BAT %s %3.0f - DEASSERT", thresh_name, val);
+    case MB_SENSOR_P3V3:
+      sprintf(cmd, "P3V3 %s %3.0f - DEASSERT", thresh_name, val);
+    case MB_SENSOR_P5V:
+      sprintf(cmd, "P5V %s %3.0f - DEASSERT", thresh_name, val);
+    case MB_SENSOR_P12V:
+      sprintf(cmd, "P12V %s %3.0f - DEASSERT", thresh_name, val);
+    case MB_SENSOR_P1V05:
+      sprintf(cmd, "P1V05 %s %3.0f - DEASSERT", thresh_name, val);
+    case MB_SENSOR_PVNN_PCH_STBY:
+      sprintf(cmd, "PVNN_PCH_STBY %s %3.0f - DEASSERT", thresh_name, val);
+    case MB_SENSOR_P3V3_STBY:
+      sprintf(cmd, "P3V3_STBY %s %3.0f - DEASSERT", thresh_name, val);
+    case MB_SENSOR_P5V_STBY:
+      sprintf(cmd, "P5V_STBY %s %3.0f - DEASSERT", thresh_name, val);
+
+    default:
+      printf("[%s] Undefine cri sensor %x \n", __func__, snr_num);
+      return;
+  }
+  pal_add_cri_sel(cmd);
+
 }
 
 void
 pal_post_end_chk(uint8_t *post_end_chk) {
   static uint8_t post_end = 1;
-  syslog(LOG_WARNING, "pal_post_end_chk: post_end_chk %d, post_end:%d", *post_end_chk,post_end);
+
   if (*post_end_chk == 1) {
     post_end = 1;
   } else if (*post_end_chk == 0) {
@@ -6951,3 +7062,13 @@ pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len
 {
   return -1;
 }
+
+void
+pal_add_cri_sel(char *str)
+{
+  char cmd[128];
+  snprintf(cmd, 128, "logger -p local0.err \"%s\"",str);
+  system(cmd);
+}
+
+

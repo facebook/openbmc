@@ -2571,3 +2571,20 @@ pal_fan_recovered_handle(int fan_num) {
   // TODO: Add action in case of fan recovered
   return 0;
 }
+
+
+void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh)
+{
+
+}
+
+void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh)
+{
+
+}
+
+void pal_add_cri_sel(char *str)
+{
+
+}
+

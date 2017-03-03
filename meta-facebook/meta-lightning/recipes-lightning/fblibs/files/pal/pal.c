@@ -1404,7 +1404,7 @@ int pal_get_plat_sku_id(void){
 }
 
 void
-pal_sensor_assert_handle(uint8_t snr_num, float val) {
+pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   bool *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int fd, ret;
@@ -1453,7 +1453,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val) {
 }
 
 void
-pal_sensor_deassert_handle(uint8_t snr_num, float val) {
+pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   bool *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int i, fd, ret;
@@ -1932,4 +1932,9 @@ pal_drive_health(const char* dev) {
       return -1;
 
   return 0;
+}
+
+void pal_add_cri_sel(char *str)
+{
+
 }

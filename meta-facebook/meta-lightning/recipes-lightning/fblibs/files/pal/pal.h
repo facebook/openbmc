@@ -251,8 +251,8 @@ int pal_get_boot_order(uint8_t fru, uint8_t *boot);
 int pal_get_dev_guid(uint8_t fru, char *guid);
 int pal_get_poss_pcie_config(uint8_t *pcie_config);
 int pal_get_plat_sku_id(void);
-void pal_sensor_assert_handle(uint8_t snr_num, float val);
-void pal_sensor_deassert_handle(uint8_t snr_num, float val);
+void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
+void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
@@ -266,6 +266,7 @@ int pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd);
 int pal_m2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd);
 int pal_m2_read_nvme_data(uint8_t i2c_map, uint8_t m2_mux_chan, uint8_t cmd);
 int pal_drive_health(const char* dev);
+void pal_add_cri_sel(char *str);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -692,6 +692,7 @@ ipmb_handle (int fd, unsigned char *request, unsigned char req_len,
   // Calculate/update dataCksum
   // Note: dataCkSum byte is last byte
   int i;
+  request[req_len-1] = 0;
   for (i = IPMB_DATA_OFFSET; i < req_len-1; i++) {
     request[req_len-1] += request[i];
   }

@@ -30,6 +30,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <openbmc/pal.h>
+#include <openbmc/fruid.h>
+#include <arpa/inet.h>
+
+#define ESCAPE "\x1B"
+
+extern void plat_lan_init(lan_config_t *lan);
 
 typedef struct _post_desc {
   uint8_t code;
@@ -410,8 +416,18 @@ static sensor_desc_c cri_sensor[]  =
     {"HSC_VOL:"        , MB_SENSOR_HSC_IN_VOLT      ,"V"},
     {"FAN0:"           , MB_SENSOR_FAN0_TACH        ,"RPM"},
     {"FAN1:"           , MB_SENSOR_FAN1_TACH        ,"RPM"},
+    {"Inlet_TEMP:"     , MB_SENSOR_INLET_TEMP       ,"C"},
+    {"P0_VR_TEMP:"   , MB_SENSOR_VR_CPU0_VCCIN_TEMP,"C"},
+    {"P1_VR_TEMP:"   , MB_SENSOR_VR_CPU1_VCCIN_TEMP,"C"},
+    {"P0_VR_Pwr:"    , MB_SENSOR_VR_CPU0_VCCIN_POWER,"W"},
+    {"P1_VR_Pwr:"    , MB_SENSOR_VR_CPU1_VCCIN_POWER,"W"},
+    {"DIMMA_TEMP:"   , MB_SENSOR_CPU0_DIMM_GRPA_TEMP,"C"},
+    {"DIMMB_TEMP:"   , MB_SENSOR_CPU0_DIMM_GRPB_TEMP,"C"},
+    {"DIMMC_TEMP:"   , MB_SENSOR_CPU1_DIMM_GRPC_TEMP,"C"},
+    {"DIMMD_TEMP:"   , MB_SENSOR_CPU1_DIMM_GRPD_TEMP,"C"},
     {"LAST_KEY",' ' ," " },
 };
+static int sensor_count = sizeof(cri_sensor) / sizeof(sensor_desc_c);
 
 #define LINE_PER_PAGE 7
 #define LEN_PER_LINE 16
@@ -467,7 +483,6 @@ plat_chk_cri_sel_update(uint8_t *cri_sel_up) {
 int
 plat_udbg_get_frame_info(uint8_t *num) {
   *num = 3;
-  syslog(LOG_WARNING, "mini test");
   return 0;
 }
 
@@ -476,29 +491,24 @@ plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
   uint8_t cri_sel_up;
   uint8_t info_page_up = 0;
 
-  syslog(LOG_WARNING, "plat_udbg_get_updated_frames");
   *count = 0;
+  //info page update
+  pal_post_end_chk(&info_page_up);
+  if(info_page_up == 1) {
+    *count += 1;
+    buffer[*count-1] = 1;
+  }
 
   //cri sel update
   plat_chk_cri_sel_update(&cri_sel_up);
   if(cri_sel_up == 1) {
     *count += 1;
-    buffer[*count-1] = 1;
+    buffer[*count-1] = 2;
   }
-  syslog(LOG_WARNING, "mini cri_sel_up:%d, *count:%d, buffer[*count-1]:%d", cri_sel_up,*count,buffer[*count-1]);
 
   //cri sensor update
   *count += 1;
-  buffer[*count-1] = 2;
-  syslog(LOG_WARNING, "mini  *count:%d, buffer[*count-1]:%d", *count,buffer[*count-1]);
-
-  //info page update
-  pal_post_end_chk(&info_page_up);
-  if(info_page_up == 1) {
-    *count += 1;
-    buffer[*count-1] = 3;
-  }
-  syslog(LOG_WARNING, "udbg_get_updated_frames: *count %d, buffer:%d %d", *count,buffer[0],buffer[1]);
+  buffer[*count-1] = 3;
 
   return 0;
 }
@@ -653,7 +663,7 @@ plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count
   }
 
   // Frame Head
-  snprintf(line_buff, 17, "Cri SEL   P%2d/%2d", page, page_num);
+  snprintf(line_buff, 17, "Cri SEL    %02d/%02d", page, page_num);
   memcpy(&buffer[0], line_buff, 16); // First line
 
   // Frame Body
@@ -674,73 +684,226 @@ plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count
 static int
 plat_udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   int page_num;
-  char page_buff[128], val[50] = {0}, str[16] = {0};
+  char val[16] = {0}, str[32] = {0};
   int LineOffset = 0 ;
   char FilePath [] = "/tmp/cache_store/mb_sensor", SensorFilePath [30];
+  int i;
+  int sensor_line = 0;
 
   //Each Page has seven sensors
   int SensorPerPage = 7;
   int SensorIndex = (page-1) * SensorPerPage;
-  memset(page_buff, ' ', sizeof(page_buff));
+  memset(buffer, ' ', 128);
 
   //Total page = (Total sensor - "LAST KEY") / sensor per page
-  if((sizeof(cri_sensor)-sizeof(cri_sensor[0])) % (sizeof(cri_sensor[0])*SensorPerPage))
-    page_num = (sizeof(cri_sensor)-sizeof(cri_sensor[0])) / (sizeof(cri_sensor[0])*SensorPerPage) + 1;
+  if((sensor_count-1) % SensorPerPage)
+    page_num = (sensor_count-1)/SensorPerPage + 1;
   else
-    page_num = (sizeof(cri_sensor)-sizeof(cri_sensor[0])) / (sizeof(cri_sensor[0])*SensorPerPage) ;
-
+    page_num = (sensor_count-1)/SensorPerPage;
   // Frame Head
-  snprintf(page_buff, 17, "CriSensor  P%d/%d", page, page_num);
-  memcpy(&buffer[LineOffset], page_buff, 16);
+  snprintf(str, 17, "CriSensor  %02d/%02d", page, page_num);
+  memcpy(&buffer[LineOffset], str, 16);
 
   // Frame Body
-  while(strcmp(cri_sensor[SensorIndex].name, "LAST_KEY")){
+  for( i=0; i<SensorPerPage ; i++){
+    if(!(strcmp(cri_sensor[SensorIndex].name, "LAST_KEY")))
+      break;
+
     LineOffset  += LEN_PER_LINE;
     memset(str,' ', sizeof(str));
     memcpy(&buffer[LineOffset], cri_sensor[SensorIndex].name, strlen(cri_sensor[SensorIndex].name));
+
     sprintf(SensorFilePath, "%s%d", FilePath, cri_sensor[SensorIndex].sensor_num);
-    if (read_device(SensorFilePath, val))
-      snprintf(str,LEN_PER_LINE, "Read failed");
-    else if(!strcmp(val, "NA") || strlen(val) == 0)
+    if (read_device(SensorFilePath, val)){
+      snprintf(str,LEN_PER_LINE, "fail");
+    }else if(!strcmp(val, "NA") || strlen(val) == 0){
       snprintf(str,LEN_PER_LINE, "NA");
-    else
+    }else{
+      *(strstr(val, ".")) = '\0';
       snprintf(str, LEN_PER_LINE, "%s%s", val, cri_sensor[SensorIndex].unit);
-    memcpy(&buffer[LineOffset + strlen(cri_sensor[SensorIndex].name)], str, strlen(str));
-    memset(&buffer[LineOffset + strlen(cri_sensor[SensorIndex].name) + strlen(str) ], ' ', LEN_PER_LINE - strlen(cri_sensor[SensorIndex].name) - strlen(str));
+    }
+
+    if(strlen(cri_sensor[SensorIndex].name)+strlen(str) > LEN_PER_LINE){
+      memcpy(&buffer[LineOffset + strlen(cri_sensor[SensorIndex].name)], str, (LEN_PER_LINE-strlen(cri_sensor[SensorIndex].name)));
+    } else {
+      memcpy(&buffer[LineOffset + strlen(cri_sensor[SensorIndex].name)], str, strlen(str));
+    }
     SensorIndex++;
   }
-  *count = 128;
 
-  int k;
-  for (k = 0; k < *count; k++)
-    if(buffer[k] == 0)
-      memset(&buffer[k], ' ', 1);
+  *count = 128;
 
   if (page == page_num)
     *next = 0xFF;    // Set the value of next to 0xFF to indicate this is the last page
   else
     *next = page+1;
+
   return 0;
 }
 
+static int
+plat_udbg_fill_frame (uint8_t *buffer, int max_line, int indent, char *string) {
+  int height, len, space_per_line;
+  char format[256];
+
+  space_per_line = LEN_PER_LINE - indent;
+  len = strlen(string);
+  height = (len/space_per_line) + ((len%space_per_line)?1:0);
+  if (height > max_line)
+    return 0;
+
+  while (len > 0) {
+    if (indent) {
+      sprintf(format, "%%%ds", indent);
+      sprintf(buffer, format, " ");
+    }
+    memcpy(buffer + indent, string, (len > space_per_line)?space_per_line:len);
+    buffer += LEN_PER_LINE;
+    string += space_per_line;
+    len -= space_per_line;
+  }
+
+  return height;
+}
 
 static int
 plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  syslog(LOG_WARNING, "mini udbg_get_info_page");
-  char page_buff[128];
-  int page_num;
-  int LineOffset = 0 ;
+  char frame_buff[MAX_PAGE * LEN_PER_PAGE];
+  int page_num = 1, line_num = 0;
+  int i, len, msg_line, ret;
+  char line_buff[256], *ptr;
+  FILE *fp;
+  fruid_info_t fruid;
+  lan_config_t lan_config = { 0 };
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  uint8_t byte;
 
-  page_num = 1;
-  memset(page_buff, ' ', sizeof(page_buff));
+  memset(frame_buff, ' ', sizeof(frame_buff));
+
+  line_num = 0;
+
+  // FRU
+  ret = fruid_parse("/tmp/fruid_mb.bin", &fruid);
+  if (! ret) {
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      0, "SN:");
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      1, fruid.board.serial);
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      0, "PN:");
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      1, fruid.board.part);
+    free_fruid_info(&fruid);
+  }
+
+  // LAN
+  plat_lan_init(&lan_config);
+/* IPv4
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    0, "BMC_IP:");
+  inet_ntop(AF_INET, lan_config.ip_addr, line_buff, 256);
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    1, line_buff);
+*/
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    0, "BMC_IPv6:");
+  inet_ntop(AF_INET6, lan_config.ip6_addr, line_buff, 256);
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    1, line_buff);
+
+  // BMC ver
+  fp = fopen("/etc/issue","r");
+  if (fp != NULL)
+  {
+     if (fgets(line_buff, sizeof(line_buff), fp)) {
+         if ((ret = sscanf(line_buff, "%*s %*s %s", line_buff)) == 1) {
+           line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+             0, "BMC_FW_ver:");
+           line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+             1, line_buff);
+         }
+     }
+     fclose(fp);
+  }
+
+  // BIOS ver
+  if (! pal_get_sysfw_ver(FRU_MB, line_buff)) {
+    // BIOS version response contains the length at offset 2 followed by ascii string
+    line_buff[3+line_buff[2]] = '\0';
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      0, "BIOS_FW_ver:");
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      1, &line_buff[3]);
+  }
+
+  // ME status
+  req = (ipmb_req_t*)line_buff;
+  res = (ipmb_res_t*)line_buff;
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_APP_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+
+  req->cmd = CMD_APP_GET_DEVICE_ID;
+  // Invoke IPMB library handler
+  len = 0;
+  lib_ipmb_handle(0x4, req, 7, &line_buff[0], &len);
+  if (len > 7 && res->cc == 0) {
+    if (res->data[2] & 0x80)
+      strcpy(line_buff, "recovery mode");
+    else
+      strcpy(line_buff, "operation mode");
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      0, "ME_status:");
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      1, line_buff);
+  }
+
+  // Board ID
+  if (!pal_get_platform_id(&byte)){
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      0, "Board_ID:");
+    sprintf(line_buff, "%d%d%d%d%d",
+      (byte & (1<<4))?1:0,
+      (byte & (1<<3))?1:0,
+      (byte & (1<<2))?1:0,
+      (byte & (1<<1))?1:0,
+      (byte & (1<<0))?1:0);
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      1, line_buff);
+  }
+
+  // Battery - Use [ESC]B as identifier of Battery percentage to MCU
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    0, "Battery:");
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    1, ESCAPE"B  %");
+
+  page_num = line_num/LINE_PER_PAGE + ((line_num%LINE_PER_PAGE)?1:0);
+
+  if (page > page_num) {
+    return -1;
+  }
+
   // Frame Head
-  snprintf(page_buff, 17, "info  P%d/%d", page, page_num);
-  memcpy(&buffer[LineOffset], page_buff, 16);
-  *count = 16;
-  if (page == page_num)
-    *next = 0xFF;    // Set the value of next to 0xFF to indicate this is the last page
-  else
+  snprintf(line_buff, 17, "SYS_Info   %02d/%02d", page, page_num);
+  memcpy(&buffer[0], line_buff, 16); // First line
+
+  // Frame Body
+  memcpy(&buffer[16], &frame_buff[(page-1)*LEN_PER_PAGE], LEN_PER_PAGE);
+
+
+  *count = 128;
+  if (page == page_num) {
+    // Set next to 0xFF to indicate this is last page
+    *next = 0xFF;
+  } else {
     *next = page+1;
+  }
 
   return 0;
 }
@@ -749,12 +912,12 @@ int
 plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
 
   switch (frame) {
-    case 1: // critical SEL
-      return plat_udbg_get_cri_sel(frame, page, next, count, buffer);
-    case 2: //critical Sensor
-      return plat_udbg_get_cri_sensor(frame, page, next, count, buffer);
-    case 3: //info_page
+    case 1: //info_page
       return plat_udbg_get_info_page(frame, page, next, count, buffer);
+    case 2: // critical SEL
+      return plat_udbg_get_cri_sel(frame, page, next, count, buffer);
+    case 3: //critical Sensor
+      return plat_udbg_get_cri_sensor(frame, page, next, count, buffer);
     default:
       return -1;
   }

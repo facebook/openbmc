@@ -185,14 +185,15 @@ void pal_log_clear(char *fru);
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
-void pal_sensor_assert_handle(uint8_t snr_num, float val);
-void pal_sensor_deassert_handle(uint8_t snr_num, float val);
+void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
+void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_is_crashdump_ongoing(uint8_t slot);
 int pal_is_fw_update_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
+void pal_add_cri_sel(char *str);
 
 #ifdef __cplusplus
 } // extern "C"

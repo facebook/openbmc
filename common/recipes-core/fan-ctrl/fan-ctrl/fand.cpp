@@ -57,6 +57,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <syslog.h>
+#include <dirent.h>
 #if defined(CONFIG_YOSEMITE)
 #include <openbmc/ipmi.h>
 #include <facebook/bic.h>
@@ -129,13 +130,14 @@
 #define USERVER_POWER "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_usrv_en"
 
 #elif defined(CONFIG_WEDGE)
-#define I2C_BUS_3_DIR "/sys/class/i2c-adapter/i2c-3/"
-#define I2C_BUS_4_DIR "/sys/class/i2c-adapter/i2c-4/"
 
-#define INTAKE_TEMP_DEVICE I2C_BUS_3_DIR "3-0048"
-#define CHIP_TEMP_DEVICE I2C_BUS_3_DIR "3-0049"
-#define EXHAUST_TEMP_DEVICE I2C_BUS_3_DIR "3-004a"
-#define USERVER_TEMP_DEVICE I2C_BUS_4_DIR "4-0040"
+#define LM75_DIR "/sys/bus/i2c/drivers/lm75/"
+#define PANTHER_PLUS_DIR "/sys/bus/i2c/drivers/fb_panther_plus/"
+
+#define INTAKE_TEMP_DEVICE LM75_DIR "3-0048"
+#define CHIP_TEMP_DEVICE LM75_DIR "3-0049"
+#define EXHAUST_TEMP_DEVICE LM75_DIR "3-004a"
+#define USERVER_TEMP_DEVICE PANTHER_PLUS_DIR "4-0040"
 
 
 #define FAN0_LED "/sys/class/gpio/gpio53/value"
@@ -451,14 +453,16 @@ void usage() {
 }
 
 /* We need to open the device each time to read a value */
-int read_device(const char *device, int *value) {
+int read_device_internal(const char *device, int *value, int log) {
   FILE *fp;
   int rc;
 
   fp = fopen(device, "r");
   if (!fp) {
     int err = errno;
-    syslog(LOG_INFO, "failed to open device %s", device);
+    if (log) {
+      syslog(LOG_INFO, "failed to open device %s", device);
+    }
     return err;
   }
 
@@ -466,11 +470,17 @@ int read_device(const char *device, int *value) {
   fclose(fp);
 
   if (rc != 1) {
-    syslog(LOG_INFO, "failed to read device %s", device);
+    if (log) {
+      syslog(LOG_INFO, "failed to read device %s", device);
+    }
     return ENOENT;
   } else {
     return 0;
   }
+}
+
+int read_device(const char *device, int *value) {
+  return read_device_internal(device, value, 1);
 }
 
 /* We need to open the device again each time to write a value */
@@ -507,12 +517,54 @@ int read_temp(const char *device, int *value) {
   snprintf(
       full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
 
-  int rc = read_device(full_name, value);
+  int rc = read_device_internal(full_name, value, 0);
+
+  /**
+   * In the latest Linux kernel, lm75 temperature sysfs file is moved from
+   * the device directory to device/hwmon/hwmon???. The ??? is the index of
+   * hwmon device created in the system, which depends on the order when the
+   * device is registered with hwmon.
+   * For temperature reported by Facebook kernel module, i.e. fb_panther_plus
+   * or cpld, we still keep the temperature sysfs directly under the device
+   * directory.
+   * This code will try to read from the sysfs directory first. If it fails
+   * with ENOENT, the code will try to probe device/hwmon/hwmon???.
+   */
+
+  if (rc == ENOENT) {
+    DIR *dir = NULL;
+    struct dirent *ent;
+    snprintf(full_name, sizeof(full_name), "%s/hwmon", device);
+    dir = opendir(full_name);
+    if (dir == NULL) {
+      goto close_dir_out;
+    }
+    while ((ent = readdir(dir)) != NULL) {
+      if (strstr(ent->d_name, "hwmon")) {
+        // found the correct 'hwmon??' directory
+        snprintf(full_name, sizeof(full_name), "%s/hwmon/%s/temp1_input",
+                 device, ent->d_name);
+        rc = read_device_internal(full_name, value, 0);
+        goto close_dir_out;
+      }
+    }
+
+ close_dir_out:
+    if (!dir) {
+      closedir(dir);
+    }
+  }
+
 #if defined(CONFIG_WEDGE100)
   if ((rc || *value > WEDGE100_COME_DIMM) && (strstr(device, COM_E_DIR))) {
     *value = BAD_TEMP;
   }
 #endif
+
+  if (rc) {
+    syslog(LOG_INFO, "failed to read temperature from %s", device);
+  }
+
   return rc;
 }
 #endif
@@ -798,6 +850,11 @@ int server_shutdown(const char *why) {
      * didn't manage to shut down the T2, cut power to the whole box,
      * using the PMBus OPERATION register.  This will require a power
      * cycle (removal of both power inputs) to recover.
+     *
+     * Note: When BMC drives T2_POWER_UP to high, MAX16050 will be disabled
+     * by its EN pin. Then output signal EN2 on MAX16050 will shut down power
+     * VDD3_3V which provides power to I2C_2464_S08, I2C_PCF8574 and pull-up
+     * resistors on this I2C bus 6. The FRU EEPROM is not accessible anymore.
      */
     syslog(LOG_EMERG, "T2 power off failed;  turning off via ADM1278");
     system("rmmod adm1275");

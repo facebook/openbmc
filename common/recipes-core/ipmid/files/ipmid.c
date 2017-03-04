@@ -42,7 +42,11 @@
 
 //declare for clearing BIOS flag
 #define BIOS_Timeout 600
-#define CLEAR_BIOS_FLAG 0x7d
+// Boot valid flag
+#define BIOS_BOOT_VALID_FLAG (1U << 7)
+#define CMOS_VALID_FLAG      (1U << 1)
+
+
 static unsigned char IsTimerStart = false;
 
 
@@ -100,10 +104,8 @@ void
   syslog(LOG_WARNING, "[%s][%lu] Get: %x %x %x %x %x %x\n", __func__, pthread_self() ,boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
 #endif
 
-  //clear the bit due to timeout:
-  //bit7-boot valid flag
-  //bit1-clear CMOS flag
-  boot[0] = boot[0] & CLEAR_BIOS_FLAG;
+  //clear boot-valid and cmos bits due to timeout:
+  boot[0] &= ~(BIOS_BOOT_VALID_FLAG | CMOS_VALID_FLAG);
 
 #ifdef DEBUG
   syslog(LOG_WARNING, "[%s][%lu] Set: %x %x %x %x %x %x\n", __func__, pthread_self() , boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
@@ -1590,10 +1592,8 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
   syslog(LOG_WARNING, "[%s] Get: %x %x %x %x %x %x\n", __func__, boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
 #endif
 
-  //clear the bit due to timeout:
-  //bit1-clear CMOS flag
-  //bit7-clear boot valid bit
-  boot[0] = boot[0] & CLEAR_BIOS_FLAG;
+  //clear the cmos bit.
+  boot[0] &= ~CMOS_VALID_FLAG;
 
 #ifdef DEBUG
   syslog(LOG_WARNING, "[%s] Set: %x %x %x %x %x %x\n", __func__, boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);

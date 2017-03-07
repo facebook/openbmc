@@ -443,6 +443,8 @@ void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_add_cri_sel(char *str);
+int pal_update_MCU(char *path);
+int pal_update_MCU_bl(char *path);
 
 #ifdef __cplusplus
 } // extern "C"

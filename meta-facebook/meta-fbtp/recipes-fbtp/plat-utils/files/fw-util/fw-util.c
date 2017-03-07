@@ -50,7 +50,8 @@ static uint8_t g_vr_cpu1_vddq_klm;
 static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|mb|nic> <--version>\n");
-  printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic|--vr|--rom|--bmc> <path>\n");
+  printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic|--vr|--rom|");
+  printf("--bmc|--MCU|--MCUbl> <path>\n");
   printf("       fw-util <mb> <--postcode>\n");
 }
 
@@ -467,7 +468,26 @@ fw_update_fru(char **argv, uint8_t slot_id) {
       printf("Error Occur at updating VR FW!\n");
         goto err_exit;
     }
+    return 0;
+  }
 
+  if (!strcmp(argv[3], "--MCU")) {
+    ret = pal_update_MCU(argv[4]);
+    if ( ret < 0 )
+    {
+      printf("Error Occur at updating MCU FW!\n");
+      return ret;
+    }
+    return 0;
+  }
+
+  if (!strcmp(argv[3], "--MCUbl")) {
+    ret = pal_update_MCU_bl(argv[4]);
+    if ( ret < 0 )
+    {
+      printf("Error Occur at updating MCU bootloader!\n");
+      return ret;
+    }
     return 0;
   }
 

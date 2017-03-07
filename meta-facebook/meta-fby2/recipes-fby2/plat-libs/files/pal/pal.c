@@ -1791,16 +1791,16 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(devtty, "/dev/ttyS2");
-      break;
-    case FRU_SLOT2:
       sprintf(devtty, "/dev/ttyS1");
       break;
+    case FRU_SLOT2:
+      sprintf(devtty, "/dev/ttyS2");
+      break;
     case FRU_SLOT3:
-      sprintf(devtty, "/dev/ttyS4");
+      sprintf(devtty, "/dev/ttyS3");
       break;
     case FRU_SLOT4:
-      sprintf(devtty, "/dev/ttyS3");
+      sprintf(devtty, "/dev/ttyS4");
       break;
     default:
 #ifdef DEBUG

@@ -90,6 +90,17 @@ print_fsc_version(void) {
   json_decref(conf);
 }
 
+static void
+print_bmc_version(void) {
+  char vers[128] = "NA";
+  FILE *fp = fopen("/etc/issue", "r");
+  if (fp) {
+    fscanf(fp, "OpenBMC Release %s\n", vers);
+    fclose(fp);
+  }
+  printf("BMC Version: %s\n", vers);
+}
+
 // TODO: Need to confirm the interpretation of firmware version for print
 // Right now using decimal to print the versions
 static void
@@ -104,6 +115,8 @@ print_fw_ver(uint8_t fru_id) {
   }
 
   init_board_sensors();
+
+  print_bmc_version();
 
   // Print ME Version
   if (me_get_fw_ver(ver)){

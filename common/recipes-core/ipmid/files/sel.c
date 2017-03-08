@@ -236,6 +236,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   int ret;
   struct tm ts;
   char time[64];
+  char mfg_id[16];
 
   /* Record Type (Byte 2) */
   record_type = (uint8_t) sel[2];
@@ -287,11 +288,14 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
         sensor_name, sensor_num,
         oem_data, error_log);
   } else if (record_type < 0xE0) {
+    /* Manufacturer ID (byte 9:7) */
+    sprintf(mfg_id, "%02x%02x%02x", sel[9], sel[8], sel[7]);
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-        "Raw data: (%s) ",
+        "MFG ID: %s, Raw data: (%s) ",
         fru,
         error_type, record_type,
         time,
+        mfg_id,
         oem_data);
   } else {
     /* OEM Data (Byte 3:15) */

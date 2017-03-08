@@ -31,9 +31,6 @@
 
 # TODO: check for the if slot/server is present before starting the daemon
 echo -n "Setup console  buffering..."
-# TODO: check UART1 controller is available, and it can be registered with ttyS1
-# Routing UART3 to IO1; IO1 to UART3 
-  devmem 0x1E78909C w 0x800002
   if [ $(is_server_prsnt 1) == "1" ] ; then
     /usr/local/bin/consoled slot1 --buffer
   fi

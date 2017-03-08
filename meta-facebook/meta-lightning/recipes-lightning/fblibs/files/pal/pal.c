@@ -570,6 +570,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret;
   FILE *fp = NULL;
   int tmp = 0;
+  bool isNegative = false;
+  int round_value_tmp = 0;
 
   switch(fru) {
     case FRU_PEB:
@@ -617,6 +619,20 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     return -1;
   }
   else {
+
+    // Round the current sensor value to the nearest hundredth before checking the threshold and cached key/val
+    if((*((float*)value)) < 0) {
+        isNegative = true;  
+        *((float*)value) = -(*((float*)value));
+    }
+ 
+    round_value_tmp = ((*((float*)value)) * 100) + 0.5;
+    *((float*)value) = round_value_tmp / (100*1.0);
+
+    if(isNegative) {
+        *((float*)value) = -(*((float*)value));
+    }
+  
     // On successful sensor read
     sprintf(str, "%.2f", *((float*)value));
   }

@@ -593,6 +593,12 @@ _update_bic_main(uint8_t slot_id, char *path) {
   int ret;
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
+  
+  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
+  // So reduce I2C bus 3 clock speed which is a workaround for BIC update.
+  printf("Set the I2C bus 3 clock to 100K\n");
+  system("devmem 0x1e78a104 w 0xFFF77304");
+
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -817,6 +823,10 @@ error_exit2:
   if (fd > 0) {
     close(fd);
   }
+
+  // Restore the I2C bus 3 clock to 1M.
+  printf("Set the I2C bus 3 clock to 1M\n");
+  system("devmem 0x1e78a104 w 0xFFF99300");
 
   return 0;
 }

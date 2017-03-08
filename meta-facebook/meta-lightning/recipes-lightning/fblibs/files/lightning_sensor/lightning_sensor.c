@@ -617,9 +617,11 @@ read_tmp75_temp_value(const char *device, float *value) {
 static int
 read_temp_value(char *device, uint8_t addr, uint8_t type, float *value) {
 
-  int dev;
-  int ret;
+  int dev,fan;
+  int ret,rc;
   int32_t res;
+  float rpm_avg = 0, rpm_sum = 0;
+  float rpm_val;
 
   dev = open(device, O_RDWR);
   if (dev < 0) {
@@ -659,6 +661,29 @@ read_temp_value(char *device, uint8_t addr, uint8_t type, float *value) {
     /* Out of range [128C to -55C] */
     syslog(LOG_WARNING, "read_temp_value: invalid res value = 0x%X", res);
     return -1;
+  }
+  
+  // Correction Factor for Inlet temperature sensor
+  if(addr == PEB_TMP421_U15){
+    // Calculate average RPM
+      for(fan = 0; fan < 12; fan++) {
+          rc = pal_sensor_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &rpm_val);
+          if(rc == -1) {
+            continue;
+           }
+       rpm_sum+=rpm_val;
+      }
+      rpm_avg = rpm_sum/12;
+
+      if(rpm_avg <= 1700){
+        *value = (*value) - 4;
+      }else if(rpm_avg <= 2200){
+        *value = (*value) - 3;
+      }else if(rpm_avg <= 2700){
+        *value = (*value) - 2;
+      }else if(rpm_avg <= 3300){
+        *value = (*value) - 1;
+      }
   }
 
   return 0;

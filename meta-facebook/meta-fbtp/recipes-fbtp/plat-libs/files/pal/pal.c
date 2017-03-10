@@ -5307,6 +5307,8 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
           strcat(error_log, "Uncorrectable");
           sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
           pal_add_cri_sel(temp_log);
+        }else if ((ed[0] & 0x0F) == 0x2){
+          strcat(error_log, "Parity");
         }else if ((ed[0] & 0x0F) == 0x5){
           strcat(error_log, "Correctable ECC error Logging Limit Reached");
         }else{

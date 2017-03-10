@@ -121,7 +121,7 @@ static void platform_reset_event_handle(void *p)
 static void gpio_event_handle(void *p)
 {
   gpio_poll_st *gp = (gpio_poll_st*) p;
-  char cmd[128];
+  char cmd[128] = {0};
 
   if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
     reset_timer(&power_on_sec);
@@ -149,7 +149,7 @@ static void gpio_event_handle_power(void *p)
 {
   uint8_t status = 0;
   gpio_poll_st *gp = (gpio_poll_st*) p;
-  char cmd[128];
+  char cmd[128] = {0};
 
   pal_get_server_power(1, &status);
   if (status != SERVER_POWER_ON) {

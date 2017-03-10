@@ -1826,7 +1826,6 @@ ipmi_handle_oem_q (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   unsigned char cmd = req->cmd;
-  syslog(LOG_WARNING, "cmd = %d", cmd);
   pthread_mutex_lock(&m_oem_q);
   switch (cmd)
   {

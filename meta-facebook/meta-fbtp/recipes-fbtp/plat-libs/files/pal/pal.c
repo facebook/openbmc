@@ -6963,23 +6963,29 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
       break;
     case MB_SENSOR_P3V_BAT:
       sprintf(cmd, "P3V_BAT %s %3.0f - ASSERT", thresh_name, val);
+      break;
     case MB_SENSOR_P3V3:
       sprintf(cmd, "P3V3 %s %3.0f - ASSERT", thresh_name, val);
+      break;
     case MB_SENSOR_P5V:
       sprintf(cmd, "P5V %s %3.0f - ASSERT", thresh_name, val);
+      break;
     case MB_SENSOR_P12V:
       sprintf(cmd, "P12V %s %3.0f - ASSERT", thresh_name, val);
+      break;
     case MB_SENSOR_P1V05:
       sprintf(cmd, "P1V05 %s %3.0f - ASSERT", thresh_name, val);
+      break;
     case MB_SENSOR_PVNN_PCH_STBY:
       sprintf(cmd, "PVNN_PCH_STBY %s %3.0f - ASSERT", thresh_name, val);
+      break;
     case MB_SENSOR_P3V3_STBY:
       sprintf(cmd, "P3V3_STBY %s %3.0f - ASSERT", thresh_name, val);
+      break;
     case MB_SENSOR_P5V_STBY:
       sprintf(cmd, "P5V_STBY %s %3.0f - ASSERT", thresh_name, val);
-
+      break;
     default:
-      printf("[%s] Undefine cri sensor %x \n", __func__, snr_num);
       return;
   }
   pal_add_cri_sel(cmd);

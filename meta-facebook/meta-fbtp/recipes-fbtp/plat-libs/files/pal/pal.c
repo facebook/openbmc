@@ -5388,6 +5388,9 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
       if (event_data[0] == 0xDC && ed[1] == 0x06) {
         strcat(error_log, "FW UPDATE");
         return 1;
+      } else if (ed[1] == 0x0D) {
+        strcat(error_log, "DMI interface error");
+        return 1;
       } else
          strcat(error_log, "Unknown");
       break;

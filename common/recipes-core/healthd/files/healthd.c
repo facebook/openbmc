@@ -28,9 +28,44 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/file.h>
+#include <sys/mman.h>
 #include <pthread.h>
 #include <openbmc/pal.h>
 #include "watchdog.h"
+
+
+// TODO: Remove macro once we plan to enable it for other platforms.
+
+#ifdef CONFIG_FBTTN
+#define I2C_BUS_NUM            14
+#define AST_I2C_BASE           0x1E78A000  /* I2C */
+#define I2C_CMD_REG            0x14
+#define AST_I2CD_SCL_LINE_STS  (0x1 << 18)
+#define AST_I2CD_SDA_LINE_STS  (0x1 << 17)
+#define AST_I2CD_BUS_BUSY_STS  (0x1 << 16)
+#define PAGE_SIZE              0x1000
+
+struct AST_I2C_DEV_OFFSET {
+  uint32_t offset;
+  char     *name;
+};
+struct AST_I2C_DEV_OFFSET ast_i2c_dev_offset[I2C_BUS_NUM] = {
+  {0x040,  "I2C DEV1 OFFSET"},
+  {0x080,  "I2C DEV2 OFFSET"},
+  {0x0C0,  "I2C DEV3 OFFSET"},
+  {0x100,  "I2C DEV4 OFFSET"},
+  {0x140,  "I2C DEV5 OFFSET"},
+  {0x180,  "I2C DEV6 OFFSET"},
+  {0x1C0,  "I2C DEV7 OFFSET"},
+  {0x300,  "I2C DEV8 OFFSET"},
+  {0x340,  "I2C DEV9 OFFSET"},
+  {0x380,  "I2C DEV10 OFFSET"},
+  {0x3C0,  "I2C DEV11 OFFSET"},
+  {0x400,  "I2C DEV12 OFFSET"},
+  {0x440,  "I2C DEV13 OFFSET"},
+  {0x480,  "I2C DEV14 OFFSET"},
+};
+#endif
 
 static void
 initilize_all_kv() {
@@ -82,11 +117,77 @@ watchdog_handler() {
   }
 }
 
+#ifdef CONFIG_FBTTN
+static void *
+i2c_mon_handler() {
+  uint32_t i2c_fd;
+  uint32_t i2c_cmd_sts[I2C_BUS_NUM];
+  void *i2c_reg;
+  void *i2c_cmd_reg;
+  bool is_error_occur[I2C_BUS_NUM] = {false};
+  char str_i2c_log[64];
+  int timeout;
+  int i;
+
+  while (1) {
+    i2c_fd = open("/dev/mem", O_RDWR | O_SYNC );
+    if (i2c_fd >= 0) {  
+      i2c_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, i2c_fd, AST_I2C_BASE);
+      for (i = 0; i < I2C_BUS_NUM; i++) {
+        i2c_cmd_reg = (char*)i2c_reg + ast_i2c_dev_offset[i].offset + I2C_CMD_REG;
+        i2c_cmd_sts[i] = *(volatile uint32_t*) i2c_cmd_reg;
+
+        timeout = 20;
+        if ((i2c_cmd_sts[i] & AST_I2CD_SDA_LINE_STS) && !(i2c_cmd_sts[i] & AST_I2CD_SCL_LINE_STS)) {
+          //if SDA == 1 and SCL == 0, it means the master is locking the bus.
+          if (is_error_occur[i] == false) {
+            while (i2c_cmd_sts[i] & AST_I2CD_BUS_BUSY_STS) {
+              i2c_cmd_reg = (char*)i2c_reg + ast_i2c_dev_offset[i].offset + I2C_CMD_REG;
+              i2c_cmd_sts[i] = *(volatile uint32_t*) i2c_cmd_reg;
+              if (timeout < 0) {
+                break;
+              }
+              timeout--;
+              msleep(10);
+            }
+            // If the bus is busy over 200 ms, means the I2C transaction is abnormal.
+            // To confirm the bus is not workable.
+            if (timeout < 0) {
+              // TODO: add the error code when the latest error code feature is ready.
+              //pal_err_code_enable(0xE9 + i);            
+              memset(str_i2c_log, 0, sizeof(char) * 64); 
+              sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed", i);          
+              syslog(LOG_CRIT, str_i2c_log);
+              is_error_occur[i] = true;
+            }
+          }
+        } else {
+          if (is_error_occur[i] == true) {
+            // TODO: add the error code when the latest error code feature is ready.
+            //pal_err_code_disable(0xE9 + i);
+            memset(str_i2c_log, 0, sizeof(char) * 64); 
+            sprintf(str_i2c_log, "DEASSERT: I2C bus %d crashed", i);          
+            syslog(LOG_CRIT, str_i2c_log);
+            is_error_occur[i] = false;
+          }
+        }
+      }
+      munmap(i2c_reg, PAGE_SIZE);
+      close(i2c_fd);
+    }
+    sleep(1);
+  }
+}
+#endif
+
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
   pthread_t tid_watchdog;
   pthread_t tid_hb_led;
+#ifdef CONFIG_FBTTN
+  pthread_t tid_i2c_mon;
+#endif
 
   if (argc > 1) {
     exit(1);
@@ -122,9 +223,21 @@ main(int argc, void **argv) {
     exit(1);
   }
 
+#ifdef CONFIG_FBTTN
+  // Add a thread for monitoring all I2C buses crash or not
+  if (pthread_create(&tid_i2c_mon, NULL, i2c_mon_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for I2C errorr\n");
+    exit(1);
+  }
+#endif
+
   pthread_join(tid_watchdog, NULL);
 
   pthread_join(tid_hb_led, NULL);
+
+#ifdef CONFIG_FBTTN
+  pthread_join(tid_i2c_mon, NULL);
+#endif
 
   return 0;
 }

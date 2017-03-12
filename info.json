@@ -1,0 +1,15 @@
+{
+    "_README_WHAT_IS_THIS_DIFF_": "This diff is temporary, and will be replaced once the \"convert-pull-request-to-internal-diff\" sandcastle job finishes. For more details, see https:\/\/fburl.com\/pr-import-on-sandcastle",
+    "repository": {
+        "fbid": 495086647335482,
+        "name": "facebook\/openbmc.wiwynn.lightning"
+    },
+    "pull_request": {
+        "fbid": 237313933343093,
+        "number": 198,
+        "name": "fbttn: Add support for Set\/Get BIOS boot options",
+        "author": "jmehta",
+        "initiator": "jmehta"
+    },
+    "head_sha": "0b1c2fdfd36e226d2ce021fec2cc39e5c1f85e8f"
+}

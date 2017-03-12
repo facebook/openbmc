@@ -74,15 +74,9 @@
 #define I2C_DEV_FLASH2 "/dev/i2c-8"
 #define MAX_SERIAL_NUM 20
 
-/* NVMe-MI Temperature Definition Code */
-#define TEMP_HIGHER_THAN_127 0x7F
-#define TEPM_LOWER_THAN_n60 0xC4
-#define TEMP_NO_UPDATE 0x80
-#define TEMP_SENSOR_FAIL 0x81
-
 /* NVMe-MI SSD Status Flag bit mask */
-#define NVME_SFLGS_MASK_BIT 0x2B  //Just check bit 0,1,3,5
-#define NVME_SFLGS_CHECK_VALUE 0x0B // normal - bit0,1,3=1, bit5 = 0
+#define NVME_SFLGS_MASK_BIT 0x28  //Just check bit 3,5
+#define NVME_SFLGS_CHECK_VALUE 0x28 // normal - bit 3,5 = 1
 
 /* NVMe-MI SSD SMART Critical Warning */
 #define NVME_SMART_WARNING_MASK_BIT 0x1F // Check bit 0~4
@@ -1435,8 +1429,6 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
     syslog(LOG_ERR, "%s(): Error opening file for reading", __func__);
     return;
   }
-  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
-  write(fd, "", 1);
 
   ret = flock(fd, LOCK_EX | LOCK_NB);
   while (ret && (retry_count < 3)) {
@@ -1449,6 +1441,9 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
     fclose(fd);
     return -1;
   }
+
+  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
+  write(fd, "", 1);
 
   sensorStatus = (bool*) mmap(NULL, (sizeof(bool) * MAX_SENSOR_NUM),
                               PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -1484,8 +1479,6 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
     syslog(LOG_ERR, "%s(): Error opening file for reading", __func__);
     return;
   }
-  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
-  write(fd, "", 1);
 
   ret = flock(fd, LOCK_EX | LOCK_NB);
   while (ret && (retry_count < 3)) {
@@ -1498,6 +1491,9 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
     fclose(fd);
     return -1;
   }
+
+  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
+  write(fd, "", 1);
 
   sensorStatus = (bool*) mmap(NULL, (sizeof(bool) * MAX_SENSOR_NUM),
                               PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -1564,7 +1560,7 @@ pal_err_code_disable(error_code *update) {
     syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
 }
 
-uint8_t
+int
 pal_read_error_code_file(uint8_t *error_code_array) {
   FILE *fp = NULL;
   uint8_t ret = 0;
@@ -1603,7 +1599,7 @@ pal_read_error_code_file(uint8_t *error_code_array) {
   return 0;
 }
 
-uint8_t
+int
 pal_write_error_code_file(error_code *update) {
   FILE *fp = NULL;
   uint8_t ret = 0;
@@ -1662,100 +1658,56 @@ pal_write_error_code_file(error_code *update) {
 }
 
 int
-pal_drive_status(const char* dev) {
+pal_drive_status(const char* i2c_bus) {
   ssd_data ssd;
-  int i;
-  char tmp[MAX_SERIAL_NUM + 1];
+  t_status_flags status_flag_decoding;
+  t_smart_warning smart_warning_decoding;
+  t_key_value_pair temp_decoding;
+  t_key_value_pair pdlu_decoding;
+  t_key_value_pair vendor_decoding;
+  t_key_value_pair sn_decoding;
 
-  if (nvme_serial_num_read(dev, ssd.serial_num, MAX_SERIAL_NUM))
+  if (nvme_vendor_read_decode(i2c_bus, &ssd.vendor, &vendor_decoding))
+    printf("Fail on reading Vendor ID\n");
+  else
+    printf("%s: %s\n", vendor_decoding.key, vendor_decoding.value);
+
+  if (nvme_serial_num_read_decode(i2c_bus, ssd.serial_num, MAX_SERIAL_NUM, &sn_decoding))
     printf("Fail on reading Serial Number\n");
-  else{
-    memcpy(tmp, ssd.serial_num, MAX_SERIAL_NUM);
-    tmp[MAX_SERIAL_NUM] = '\0';
-    printf("Serial Number: %s\n", tmp);
-  }
+  else
+    printf("%s: %s\n", sn_decoding.key, sn_decoding.value);
 
-  if (nvme_temp_read(dev, &ssd.temp))
+  if (nvme_temp_read_decode(i2c_bus, &ssd.temp, &temp_decoding))
     printf("Fail on reading Composite Temperature\n");
-  else {
-    if (ssd.temp <= TEMP_HIGHER_THAN_127)
-      printf("Composite Temperature: %d C\n", ssd.temp);
-    else if (ssd.temp >= TEPM_LOWER_THAN_n60)
-      printf("Composite Temperature: %d C\n", ssd.temp - 0x100);
-    else if (ssd.temp == TEMP_NO_UPDATE)
-      printf("Composite Temperature: No data or data is too old\n");
-    else if (ssd.temp == TEMP_SENSOR_FAIL)
-      printf("Composite Temperature: Sensor failure\n");
-  }
+  else
+    printf("%s: %s\n", temp_decoding.key, temp_decoding.value);
 
-  if (nvme_pdlu_read(dev, &ssd.pdlu))
+  if (nvme_pdlu_read_decode(i2c_bus, &ssd.pdlu, &pdlu_decoding))
     printf("Fail on reading Percentage Drive Life Used\n");
   else
-    printf("Percentage Drive Life Used: %d\n", ssd.pdlu);
+    printf("%s: %s\n", pdlu_decoding.key, pdlu_decoding.value);
 
-  if (nvme_sflgs_read(dev, &ssd.sflgs))
+  if (nvme_sflgs_read_decode(i2c_bus, &ssd.sflgs, &status_flag_decoding))
     printf("Fail on reading Status Flags\n");
   else {
-    printf("Status Flags: 0x%2X\n", ssd.sflgs);
-    if ((ssd.sflgs & 0x80) == 0)
-      printf("    SMBUS block read complete: FAIL\n");
-    else
-      printf("    SMBUS block read complete: OK\n");
-
-    if ((ssd.sflgs & 0x40) == 0)
-      printf("    Drive Ready: Ready\n");
-    else
-      printf("    Drive Ready: Not ready\n");
-
-    if ((ssd.sflgs & 0x20) == 0)
-      printf("    Drive Functional: Unrecoverable Failure\n");
-    else
-      printf("    Drive Functional: Functional\n");
-
-    if ((ssd.sflgs & 0x10) == 0)
-      printf("    Reset Required: Required\n");
-    else
-      printf("    Reset Required: No\n");
-
-    if ((ssd.sflgs & 0x08) == 0)
-      printf("    Port 0 PCIe Link Active: Down\n");
-    else
-      printf("    Port 0 PCIe Link Active: Up\n");
-
-    if ((ssd.sflgs & 0x04) == 0)
-      printf("    Port 1 PCIe Link Active: Down\n");
-    else
-      printf("    Port 1 PCIe Link Active: Up\n");
+    printf("%s: %s\n", status_flag_decoding.self.key, status_flag_decoding.self.value);
+    printf("    %s: %s\n", status_flag_decoding.read_complete.key, status_flag_decoding.read_complete.value);
+    printf("    %s: %s\n", status_flag_decoding.ready.key, status_flag_decoding.ready.value);
+    printf("    %s: %s\n", status_flag_decoding.functional.key, status_flag_decoding.functional.value);
+    printf("    %s: %s\n", status_flag_decoding.reset_required.key, status_flag_decoding.reset_required.value);
+    printf("    %s: %s\n", status_flag_decoding.port0_link.key, status_flag_decoding.port0_link.value);
+    printf("    %s: %s\n", status_flag_decoding.port1_link.key, status_flag_decoding.port1_link.value);
   }
 
-  if (nvme_smart_warning_read(dev, &ssd.warning))
+  if (nvme_smart_warning_read_decode(i2c_bus, &ssd.warning, &smart_warning_decoding))
     printf("Fail on reading SMART Critical Warning\n");
   else {
-    printf("SMART Critical Warning: 0x%2X\n", ssd.warning);
-    if ((ssd.warning & 0x01) == 0)
-      printf("    Spare Space: Low\n");
-    else
-      printf("    Spare Space: Normal\n");
-
-    if ((ssd.warning & 0x02) == 0)
-      printf("    Temperature Warning: Abnormal\n");
-    else
-      printf("    Temperature Warning: Normal\n");
-
-    if ((ssd.warning & 0x04) == 0)
-      printf("    NVM Subsystem Reliability: Degraded\n");
-    else
-      printf("    NVM Subsystem Reliability: Normal\n");
-
-    if ((ssd.warning & 0x08) == 0)
-      printf("    Media Status: Read Only mode\n");
-    else
-      printf("    Media Status: Normal\n");
-
-    if ((ssd.warning & 0x10) == 0)
-      printf("    Volatile Memory Backup Device: Failed\n");
-    else
-      printf("    Volatile Memory Backup Device: Normal\n");
+    printf("%s: %s\n", smart_warning_decoding.self.key, smart_warning_decoding.self.value);
+    printf("    %s: %s\n", smart_warning_decoding.spare_space.key, smart_warning_decoding.spare_space.value);
+    printf("    %s: %s\n", smart_warning_decoding.temp_warning.key, smart_warning_decoding.temp_warning.value);
+    printf("    %s: %s\n", smart_warning_decoding.reliability.key, smart_warning_decoding.reliability.value);
+    printf("    %s: %s\n", smart_warning_decoding.media_status.key, smart_warning_decoding.media_status.value);
+    printf("    %s: %s\n", smart_warning_decoding.backup_device.key, smart_warning_decoding.backup_device.value);
   }
 
   printf("\n");

@@ -45,7 +45,10 @@ static void
 print_usage_help(void) {
   printf("Usage: enclosure-util --error\n");
   printf("       enclosure-util --switch-status --set [assert, deassert] [1, 90, 91]\n");
-  printf("       (1: %s, 90: %s, 91: %s)\n", Error_Code_Description[1], Error_Code_Description[90], Error_Code_Description[91]);
+  printf("           Note:\n");
+  printf("           1 : %s\n", Error_Code_Description[1]);
+  printf("           90: %s\n", Error_Code_Description[90]);
+  printf("           91: %s\n", Error_Code_Description[91]);
   printf("       enclosure-util --switch-status --get\n");
   printf("       enclosure-util --drive-status <slot number [0~14], --all>\n");
   printf("       enclosure-util --drive-health\n");

@@ -90,6 +90,9 @@ do_on() {
     # TODO: State the power state change
     echo "on $(date +%s)" > $LPS_PATH
 
+    # disable GPIOD pass-though function
+    devmem_set_bit $(scu_addr 7c) 21
+
     # first make sure, GPIO is high
     gpio_set $gpio 1
     # generate the power on pulse
@@ -99,6 +102,10 @@ do_on() {
     sleep 1
     # Turn on the power LED
     /usr/local/bin/power_led.sh $slot on
+
+    # enable GPIOD pass-though function
+    devmem_set_bit $(scu_addr 70) 21
+
     echo " Done"
     return 0
 }
@@ -113,6 +120,9 @@ do_off() {
     #TODO: State the power state change
     echo "off $(date +%s)" > $LPS_PATH
 
+    # disable GPIOD pass-though function
+    devmem_set_bit $(scu_addr 7c) 21
+
     # first make sure, GPIO is high
     gpio_set $gpio 1
     sleep 1
@@ -121,28 +131,32 @@ do_off() {
     gpio_set $gpio 1
     # Turn off the power LED
     /usr/local/bin/power_led.sh $slot off
+
+    # enable GPIOD pass-though function
+    devmem_set_bit $(scu_addr 70) 21
+
     echo " Done"
     return 0
 }
 
-# Slot1: GPIOD3(27), Slot2: GPIOD1(25), Slot3: GPIOD7(31), Slot4: GPIOD5(29)
+# Slot1: GPIOD3(25), Slot2: GPIOD1(27), Slot3: GPIOD7(29), Slot4: GPIOD5(31)
 slot=$1
 
 case $slot in
   1)
-    gpio=D3
-    ;;
-  2)
     gpio=D1
     ;;
-  3)
-    gpio=D7
+  2)
+    gpio=D3
     ;;
-  4)
+  3)
     gpio=D5
     ;;
+  4)
+    gpio=D7
+    ;;
   *)
-    gpio=D3
+    gpio=D1
     ;;
 esac
 

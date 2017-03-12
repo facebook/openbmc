@@ -37,25 +37,41 @@
 #define FBY2_MAX_NUM_SLOTS 4
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
+#define GPIO_PWR_BTN 24
+#define GPIO_PWR_SLOT1_BTN_N 25
+#define GPIO_PWR_SLOT2_BTN_N 27
+#define GPIO_PWR_SLOT3_BTN_N 29
+#define GPIO_PWR_SLOT4_BTN_N 31
+#define GPIO_RST_BTN 216
+#define GPIO_RST_SLOT1_SYS_RESET_N 144
+#define GPIO_RST_SLOT2_SYS_RESET_N 145
+#define GPIO_RST_SLOT3_SYS_RESET_N 146
+#define GPIO_RST_SLOT4_SYS_RESET_N 147
 
+#define GPIO_P12V_STBY_SLOT1_EN 116
+#define GPIO_P12V_STBY_SLOT2_EN 117
+#define GPIO_P12V_STBY_SLOT3_EN 118
+#define GPIO_P12V_STBY_SLOT4_EN 119
+
+#define GPIO_PWR1_LED 96
+#define GPIO_PWR2_LED 97
+#define GPIO_PWR3_LED 98
+#define GPIO_PWR4_LED 99
+#define GPIO_SYSTEM_ID1_LED_N 40
+#define GPIO_SYSTEM_ID2_LED_N 41
+#define GPIO_SYSTEM_ID3_LED_N 42
+#define GPIO_SYSTEM_ID4_LED_N 43
+
+#define GPIO_SLOT1_PRSNT_N 208
+#define GPIO_SLOT2_PRSNT_N 209
+#define GPIO_SLOT3_PRSNT_N 210
+#define GPIO_SLOT4_PRSNT_N 211
 #define GPIO_HAND_SW_ID1 212
 #define GPIO_HAND_SW_ID2 213
 #define GPIO_HAND_SW_ID4 214
 #define GPIO_HAND_SW_ID8 215
 
-#define GPIO_RST_BTN 144
-#define GPIO_PWR_BTN 24
-
 #define GPIO_HB_LED 135
-
-#define GPIO_USB_SW0 36
-#define GPIO_USB_SW1 37
-#define GPIO_USB_MUX_EN_N 147
-
-#define GPIO_UART_SEL0 32
-#define GPIO_UART_SEL1 33
-#define GPIO_UART_SEL2 34
-#define GPIO_UART_RX 35
 
 #define GPIO_POSTCODE_0 48
 #define GPIO_POSTCODE_1 49
@@ -66,9 +82,17 @@
 #define GPIO_POSTCODE_6 126
 #define GPIO_POSTCODE_7 127
 
-#define GPIO_DBG_CARD_PRSNT 139
+#define GPIO_UART_SEL0 32
+#define GPIO_UART_SEL1 33
+#define GPIO_UART_SEL2 34
+#define GPIO_UART_RX 35
 
-#define GPIO_BMC_READY_N    28
+#define GPIO_DBG_CARD_PRSNT 139
+#define GPIO_BMC_READY_N    0
+
+#define GPIO_USB_SW0 36
+#define GPIO_USB_SW1 37
+#define GPIO_USB_MUX_EN_N 219
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -99,13 +123,14 @@
 #define PLATFORM_FILE "/tmp/system.bin"
 #define CRASHDUMP_KEY      "slot%d_crashdump"
 
-const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
-const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
-const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
-const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
-const static uint8_t gpio_bic_ready[] = { 0, 107, 106, 109, 108 };
-const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
-const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
+const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
+const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
+const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID2_LED_N, GPIO_SYSTEM_ID3_LED_N, GPIO_SYSTEM_ID4_LED_N };  // Identify LED
+const static uint8_t gpio_prsnt[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N };
+const static uint8_t gpio_bic_ready[] = { 0, 107 };
+const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
+const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
@@ -352,22 +377,34 @@ static int
 server_power_on(uint8_t slot_id) {
   char vpath[64] = {0};
 
+  // Disable GPIOD pass-through function
+  system("devmem 0x1e6e207c w 0x600000");
+
+  // Server board power-on
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
   if (write_device(vpath, "1")) {
+    // Enable GPIOD pass-through function
+    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
   if (write_device(vpath, "0")) {
+    // Enable GPIOD pass-through function
+    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
   sleep(1);
 
   if (write_device(vpath, "1")) {
+    // Enable GPIOD pass-through function
+    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
+  // Enable GPIOD pass-through function
+  system("devmem 0x1e6e2070 w 0xF12AE206");
   return 0;
 }
 
@@ -952,10 +989,10 @@ pal_get_hand_sw(uint8_t *pos) {
   int id1, id2, id4, id8;
   uint8_t loc;
   // Read 4 GPIOs to read the current position
-  // id1: GPIOR2(138)
-  // id2: GPIOR3(139)
-  // id4: GPIOR4(140)
-  // id8: GPIOR5(141)
+  // id1: GPIOAA4(GPIO_HAND_SW_ID1)
+  // id2: GPIOAA5(GPIO_HAND_SW_ID2)
+  // id4: GPIOAA6(GPIO_HAND_SW_ID3)
+  // id8: GPIOAA7(GPIO_HAND_SW_ID4)
 
   // Read ID1
   sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID1);
@@ -1243,25 +1280,25 @@ pal_switch_uart_mux(uint8_t slot) {
   case HAND_SW_SERVER1:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "1";
+    gpio_uart_sel0 = "0";
     gpio_uart_rx = "0";
     break;
   case HAND_SW_SERVER2:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "0";
+    gpio_uart_sel0 = "1";
     gpio_uart_rx = "0";
     break;
   case HAND_SW_SERVER3:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "1";
+    gpio_uart_sel0 = "0";
     gpio_uart_rx = "0";
     break;
   case HAND_SW_SERVER4:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "0";
+    gpio_uart_sel0 = "1";
     gpio_uart_rx = "0";
     break;
   default:

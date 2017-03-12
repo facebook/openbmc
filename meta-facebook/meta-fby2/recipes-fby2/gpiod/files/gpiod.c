@@ -44,7 +44,7 @@
 #define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
-#define GPIO_BMC_READY_N    28
+#define GPIO_BMC_READY_N    0
 
 /* To hold the gpio info and status */
 typedef struct {

@@ -32,7 +32,6 @@ extern "C" {
 #include <openbmc/kv.h>
 
 #define MAX_KEY_LEN     64
-#define MAX_VALUE_LEN   128
 #define MAX_NUM_FAN     2
 
 #define FRU_STATUS_GOOD   1

@@ -23,6 +23,16 @@ scu_addr() {
     echo $((0x1E6E2000 + 0x$1))
 }
 
+#LPC Controller, Base Address = 0x1E78_9000
+lpc_addr() {
+    echo $((0x1E789000 + 0x$1))
+}
+
+#GPIO Controller, Base Address = 0x1E78_0000
+gpio_addr() {
+    echo $((0x1E780000 + 0x$1))
+}
+
 GPIODIR="/sys/class/gpio"
 GPIOEXPORT="$GPIODIR/export"
 
@@ -79,6 +89,15 @@ gpio_export_out() {
     fi
 }
 
+pca9555_gpio_export() {
+    local gpio
+    gpio=$1
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+}
+
 gpio_set() {
     local gpio
     local val
@@ -88,8 +107,12 @@ gpio_set() {
     if [ ! -d ${dir} ]; then
         echo $gpio > $GPIOEXPORT
     fi
-    echo out > ${dir}/direction
-    echo $val > ${dir}/value
+
+    if [ $val == 1 ]; then
+      echo high > ${dir}/direction
+    else
+      echo low > ${dir}/direction
+    fi
 }
 
 gpio_get() {
@@ -123,25 +146,25 @@ is_server_prsnt() {
 
   case $1 in
     1)
-      prsnt=$(gpio_get H5)
+      prsnt=$(gpio_get AA0)
       ;;
     2)
-      prsnt=$(gpio_get H4)
+      prsnt=$(gpio_get AA1)
       ;;
     3)
-      prsnt=$(gpio_get H7)
+      prsnt=$(gpio_get AA2)
       ;;
     4)
-      prsnt=$(gpio_get H6)
+      prsnt=$(gpio_get AA3)
       ;;
     *)
-      prsnt=$(gpio_get H4)
+      prsnt=$(gpio_get AA3)
       ;;
   esac
 
   if [ $prsnt == "0" ]; then
     echo 1
-  else                                       
+  else
     echo 0
   fi
 }
@@ -151,16 +174,16 @@ is_bic_ready() {
 
   case $1 in
    1)
-    ready=$(gpio_get N3)
-    ;;
-   2)
     ready=$(gpio_get N2)
     ;;
+   2)
+    ready=$(gpio_get N3)
+    ;;
    3)
-    ready=$(gpio_get N5)
+    ready=$(gpio_get N4)
     ;;
    4)
-    ready=$(gpio_get N4)
+    ready=$(gpio_get N5)
     ;;
    *)
     ready="1"
@@ -182,4 +205,15 @@ fby2_is_server_on() {
     else
         echo 0
     fi
+}
+
+gpio_get_val() {
+    local gpio
+    local val
+    gpio=$(gpio_name2value $1)
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+    cat ${dir}/value
 }

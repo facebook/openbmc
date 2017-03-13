@@ -882,6 +882,16 @@ plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
     0, "Battery:");
   line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
     1, ESCAPE"B  %");
+    
+  // MCU Version
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    0, "MCUbl_ver:");
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    1, ESCAPE"U");
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    0, "MCU_ver:");
+  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+    1, ESCAPE"R");
 
   page_num = line_num/LINE_PER_PAGE + ((line_num%LINE_PER_PAGE)?1:0);
 

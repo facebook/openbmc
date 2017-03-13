@@ -398,12 +398,12 @@ static post_desc_t pdesc_phase2[] = {
 static gpio_desc_t gdesc[] = {
   { 0x10, 0, 2, "FM_DBG_RST_BTN" },
   { 0x11, 0, 1, "FM_PWR_BTN" },
-  { 0x12, 0, 0, "SYS_PWROK" },
+  { 0x12, 1, 0, "SYS_PWROK" },
   { 0x13, 0, 0, "RST_PLTRST" },
-  { 0x14, 0, 0, "DSW_PWROK" },
-  { 0x15, 0, 0, "FM_CPU_CATERR" },
+  { 0x14, 1, 0, "DSW_PWROK" },
+  { 0x15, 0, 0, "FM_CATERR_MSMI" },
   { 0x16, 0, 0, "FM_SLPS3" },
-  { 0x17, 0, 0, "FM_CPU_MSMI" },
+  { 0x17, 0, 3, "FM_UART_SWITCH" },
 };
 
 static int gdesc_count = sizeof(gdesc) / sizeof (gpio_desc_t);

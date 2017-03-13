@@ -19,7 +19,7 @@ lib: libgpio.so
 
 libgpio.so: gpio.c
 	$(CC) $(CFLAGS) -fPIC -c -o gpio.o gpio.c
-	$(CC) -shared -o libgpio.so gpio.o -lc
+	$(CC) -shared -o libgpio.so gpio.o -lc -pthread
 
 .PHONY: clean
 

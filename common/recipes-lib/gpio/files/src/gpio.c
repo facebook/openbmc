@@ -220,17 +220,13 @@ int gpio_poll_open(gpio_poll_st *gpios, int count)
   }
 }
 
-int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
+static void *gpio_poll_pin(void *arg)
 {
-  struct pollfd fdset[MAX_PINS];
-  int nfds = MAX_PINS;
+  gpio_poll_st *gpios = (gpio_poll_st *)arg;
+  int count = 1;
+  struct pollfd fdset[count];
   int rc;
-  int len;
   int i;
-
-  if (count > MAX_PINS) {
-    return -EINVAL;
-  }
 
   while (1) {
     memset((void *)fdset, 0, sizeof(fdset));
@@ -241,19 +237,20 @@ int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
       gpios[i].value = gpio_read(&gpios[i].gs);
     }
 
-    rc = poll(fdset, nfds, timeout);
+    rc = poll(fdset, count, -1); /* -1 : Forever */
     if (rc < 0) {
       if (errno == EINTR) {
         continue;
       } else {
-        rc = errno;
-        LOG_ERR(rc, "gpio_poll: poll() fails\n");
-        return -rc;
+        rc = -errno;
+        LOG_ERR(rc, "gpio_poll: %s poll() fails\n", gpios[0].desc);
+        pthread_exit(&rc);
       }
     }
 
     if (rc == 0) {
-      return rc;
+      LOG_ERR(rc, "gpio_poll: %s poll() timeout\n", gpios[0].desc);
+      pthread_exit(&rc);
     }
 
     for (i = 0; i < count; i++) {
@@ -261,6 +258,33 @@ int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
         gpios[i].value = gpio_read(&gpios[i].gs);
         gpios[i].fp(&gpios[i]);
       }
+    }
+  }
+
+  pthread_exit(&rc);
+}
+
+int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
+{
+  pthread_t thread_ids[count];
+  int rc, ret;
+  int i;
+
+  if (count > MAX_PINS) {
+    return -EINVAL;
+  }
+
+  for ( i = 0; i < count; i++) {
+    // TODO pass timeout value into thread
+    if ((ret = pthread_create(&thread_ids[i], NULL, gpio_poll_pin, &gpios[i])) < 0) {
+      LOG_ERR(ret, "pthread_create failed for %s\n", gpios[i].desc);
+      return ret;
+    }
+  }
+
+  for ( i = 0; i < count; i++) {
+    if ((ret = pthread_join(&thread_ids[i], NULL, gpio_poll_pin, &rc) < 0)) {
+      LOG_ERR(ret, "pthread_join failed for %s\n", gpios[i].desc);
     }
   }
 

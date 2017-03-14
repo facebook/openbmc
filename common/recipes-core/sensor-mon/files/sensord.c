@@ -474,6 +474,15 @@ snr_health_monitor() {
   thresh_sensor_t *snr;
   uint8_t value = 0;
   int num;
+  int ret = 0;
+  int fru_health_last_state[MAX_NUM_FRUS+1] = {0};
+  int fru_health_kv_state[MAX_NUM_FRUS+1] = {0};
+
+  // Initial fru health, default value is good.
+  for (num = 0; num<=MAX_NUM_FRUS; num++){
+      fru_health_last_state[num] = 1;
+      fru_health_kv_state[num] = 1;
+  }
 
   while (1) {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
@@ -486,12 +495,30 @@ snr_health_monitor() {
          exit(-1);
       }
 
+      // get current health status from kv_store
+      ret = pal_get_fru_health(fru, &fru_health_kv_state[fru]);
+      if (ret){
+        syslog(LOG_ERR, " %s - kv get health status failed",__func__);
+        continue;
+      }
+
       for (num = 0; num <= MAX_SENSOR_NUM; num++) {
         value |= snr[num].curr_state;
       }
 
       value = (value > 0) ? FRU_STATUS_BAD: FRU_STATUS_GOOD;
 
+      // If log-util clear the fru, cleaning sensor status (After doing it, sensord will regenerate assert)
+      if ( (fru_health_kv_state[fru] != fru_health_last_state[fru]) && (fru_health_kv_state[fru] == 1)) {
+        for (num = 0; num <= MAX_SENSOR_NUM; num++) {
+           snr[num].curr_state = 0;
+        }
+      } 
+
+      // keep last status
+      fru_health_last_state[fru] = value;
+
+      // set value to kv_store
       pal_set_sensor_health(fru, value);
 
     } /* for loop for frus */

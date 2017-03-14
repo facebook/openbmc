@@ -50,7 +50,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-gpiod.sh ${D}${sysconfdir}/init.d/setup-gpiod.sh
-  update-rc.d -r ${D} setup-gpiod.sh start 91 5 .
+  update-rc.d -r ${D} setup-gpiod.sh start 96 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

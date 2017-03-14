@@ -140,3 +140,8 @@ if [ $(is_bmc_por) -eq 1 ]; then
 else
   sync_date
 fi
+
+if [ $(is_server_prsnt) == "0" ]; then
+  echo "The Mono Lake is absent, turn off Mono Lake HSC 12V."
+  gpio_set O7 0
+fi

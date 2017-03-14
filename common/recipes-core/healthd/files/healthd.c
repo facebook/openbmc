@@ -153,8 +153,7 @@ i2c_mon_handler() {
             // If the bus is busy over 200 ms, means the I2C transaction is abnormal.
             // To confirm the bus is not workable.
             if (timeout < 0) {
-              // TODO: add the error code when the latest error code feature is ready.
-              //pal_err_code_enable(0xE9 + i);            
+              pal_err_code_enable(0xE9 + i);            
               memset(str_i2c_log, 0, sizeof(char) * 64); 
               sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed", i);          
               syslog(LOG_CRIT, str_i2c_log);
@@ -163,8 +162,7 @@ i2c_mon_handler() {
           }
         } else {
           if (is_error_occur[i] == true) {
-            // TODO: add the error code when the latest error code feature is ready.
-            //pal_err_code_disable(0xE9 + i);
+            pal_err_code_disable(0xE9 + i);
             memset(str_i2c_log, 0, sizeof(char) * 64); 
             sprintf(str_i2c_log, "DEASSERT: I2C bus %d crashed", i);          
             syslog(LOG_CRIT, str_i2c_log);

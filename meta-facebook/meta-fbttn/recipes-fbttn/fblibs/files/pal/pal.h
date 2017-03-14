@@ -62,6 +62,11 @@ extern "C" {
 //Type7 IOM IOC
 #define FRU_IOM_IOC 7
 
+typedef struct {
+  uint8_t code;
+  bool status;
+} error_code;
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -238,6 +243,8 @@ int  pal_get_scc_loc_hb(void);
 int  pal_get_scc_rmt_hb(void);
 void pal_err_code_enable(unsigned char num);
 void pal_err_code_disable(unsigned char num);
+uint8_t pal_read_error_code_file(uint8_t *error_code_arrray);
+uint8_t pal_write_error_code_file(error_code *update);
 unsigned char pal_sum_error_code(void);
 void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);

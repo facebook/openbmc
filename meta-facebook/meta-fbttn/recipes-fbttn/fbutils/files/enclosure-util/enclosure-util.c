@@ -105,9 +105,13 @@ show_error_code() {
     printf("Error Counter: %d\n", count);
 
     for (i = 0; i < count; i++) {
-      printf("Error Code %d: ", error[i]);
-      if ( error[i] < 100 ) //now only support Expander Error String 0~99
-        printf("%s", Error_Code_Description[error[i]]);
+      if ( error[i] < EXP_ERROR_CODE_NUM ) { //now only support Expander Error String 0~99
+        printf("Error Code %d: ", error[i]);
+        printf("%s", Expander_Error_Code_Description[error[i]]);
+      } else if ( error[i] >= BMC_ERROR_CODE_START ) {
+        printf("Error Code %x: ", error[i]);
+        printf("%s", BMC_Error_Code_Description[error[i] - BMC_ERROR_CODE_START]);
+      }
       printf("\n");
     }
   }

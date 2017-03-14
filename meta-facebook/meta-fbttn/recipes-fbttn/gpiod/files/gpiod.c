@@ -45,6 +45,12 @@
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
 #define GPIO_BMC_READY_N    28
+#define GPIO_ML_INS         472
+#define GPIO_LOC_SCC_INS    478
+#define GPIO_RMT_SCC_INS    479
+#define GPIO_NIC_INS        209
+#define GPIO_COMP_PWR_EN    119   // Mono Lake 12V
+#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 /* To hold the gpio info and status */
 typedef struct {
@@ -55,6 +61,59 @@ typedef struct {
 } gpio_pin_t;
 
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
+
+char *fru_prsnt_log_string[2 * MAX_NUM_FRUS] = {
+  // slot1, iom, dpb, scc, nic
+ "ASSERT: Mono Lake missing", "", "", "ASSERT: SCC missing", "ASSERT: NIC is plugged out",
+ "DEASSERT: Mono Lake missing", "", "", "DEASSERT: SCC missing", "DEASSERT: NIC is plugged out",
+};
+
+/* To get Mono Lake, SCC, and NIC present status */
+int get_fru_prsnt(int chassis_type, uint8_t fru) {
+  FILE *fp = NULL;
+  char path[64] = {0};
+  int gpio_num;
+  int rc;
+  int val;
+  int i;
+
+  for (i = 0; i <= chassis_type; i++) {
+    switch(fru) {
+      case FRU_SLOT1:
+        gpio_num = GPIO_ML_INS;
+        break;
+      case FRU_SCC:
+        if ( i == 0 ) {
+          gpio_num = GPIO_LOC_SCC_INS;
+        } else {
+          gpio_num = GPIO_RMT_SCC_INS;
+        }
+        break;
+      case FRU_NIC:
+        gpio_num = GPIO_NIC_INS;
+        break;
+      default:
+        return -2;
+    }
+    
+    sprintf(path, GPIO_VAL, gpio_num);  
+
+    fp = fopen(path, "r");
+    if (!fp) {
+      return errno;
+    }
+
+    rc = fscanf(fp, "%d", &val);
+    fclose(fp);
+    if (rc != 1) {
+      val = ENOENT;
+    }
+    if ((fru != FRU_SCC) || ((fru == FRU_SCC) && (val != 0))) {
+      break;
+    }
+  }
+  return val;
+}
 
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
 static gpio_pin_t *
@@ -199,6 +258,14 @@ gpio_monitor_poll(uint8_t fru_flag) {
   uint32_t status;
   bic_gpio_t gpio = {0};
 
+  int chassis_type = 0;
+  bool is_fru_prsnt[MAX_NUM_FRUS] = {false};
+  char vpath[64] = {0};
+  int val;
+  int fru_health_last_state = 1;
+  int fru_health_kv_state = 1;
+  char tmp_health[MAX_VALUE_LEN];
+
   /* Check for initial Asserts */
   for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
     if (GETBIT(fru_flag, fru) == 0)
@@ -239,77 +306,154 @@ gpio_monitor_poll(uint8_t fru_flag) {
     }
   }
 
+  chassis_type = (pal_get_sku() >> 6) & 0x1;
+
   /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
   while(1) {
-    for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
-      if (!(GETBIT(fru_flag, fru))) {
-        usleep(DELAY_GPIOD_READ);
-        continue;
+    // get current health status from kv_store
+    memset(tmp_health, 0, MAX_VALUE_LEN);
+    ret = pal_get_key_value("fru_prsnt_health", tmp_health);
+    if (ret){
+      syslog(LOG_ERR, " %s - kv get fru_prsnt_health status failed", __func__);
+    }
+    fru_health_kv_state = atoi(tmp_health);
+
+    // To detect Mono Lake, SCC, and NIC is present or not
+    if (get_fru_prsnt(chassis_type, FRU_SLOT1) == 1) {   // absent
+      sprintf(vpath, GPIO_VAL, GPIO_COMP_PWR_EN);
+      if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
+        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SLOT1 - 1]);
+        is_fru_prsnt[FRU_SLOT1 - 1] = true;
+        // Turn off HSC 12V when Mono Lake was hot plugged
+        write_device(vpath, "0");
       }
-
-      gpios = get_struct_gpio_pin(fru);
-      if  (gpios == NULL) {
-        syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-            " fru %u", fru);
-        continue;
+      read_device(vpath, &val);
+      if (val != 0) {
+        write_device(vpath, "0");
       }
+      pal_err_code_enable(0xE4);
+      pal_set_key_value("fru_prsnt_health", "0");
+    } else {
+      if (is_fru_prsnt[FRU_SLOT1 - 1] == true) {        
+        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1 - 1]);
+        is_fru_prsnt[FRU_SLOT1 - 1] = false;
+      }
+      pal_err_code_disable(0xE4);
+    }
+    if (get_fru_prsnt(chassis_type, FRU_SCC) == 1) {   // absent
+      if (is_fru_prsnt[FRU_SCC - 1] == false) {
+        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SCC - 1]);
+        is_fru_prsnt[FRU_SCC - 1] = true;
+      }
+      pal_err_code_enable(0xE7);
+      pal_set_key_value("fru_prsnt_health", "0");
+      pal_set_key_value("scc_sensor_health", "0");
+    } else {
+      if (is_fru_prsnt[FRU_SCC - 1] == true) {
+        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC - 1]);
+        is_fru_prsnt[FRU_SCC - 1] = false;
+      }
+      pal_err_code_disable(0xE7);
+    }
+    if (get_fru_prsnt(chassis_type, FRU_NIC) == 0) {   // absent
+      if (is_fru_prsnt[FRU_NIC - 1] == false) {
+        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_NIC - 1]);
+        is_fru_prsnt[FRU_NIC - 1] = true;
+      }
+      pal_err_code_enable(0xE8);
+      pal_set_key_value("fru_prsnt_health", "0");
+    } else {
+      if (is_fru_prsnt[FRU_NIC - 1] == true) {
+        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_NIC - 1]);
+        is_fru_prsnt[FRU_NIC - 1] = false;
+      }
+      pal_err_code_disable(0xE8);
+    } 
 
-      memset(pwr_state, 0, MAX_VALUE_LEN);
-      pal_get_last_pwr_state(fru, pwr_state);
-
-      /* Get the GPIO pins */
-      if ((ret = bic_get_gpio(fru, (bic_gpio_t *) &n_pin_val)) < 0) {
-        /* log the error message only when the CPU is on but not reachable. */
-        if (!(strcmp(pwr_state, "on"))) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-              " fru %u", fru);
-#endif
+    // If Mono Lake is present, monitor its gpio status.
+    if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
+      for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
+        if (!(GETBIT(fru_flag, fru))) {
+          usleep(DELAY_GPIOD_READ);
+          continue;
         }
-        continue;
-      }
 
-      if (o_pin_val[fru] == n_pin_val) {
-        o_pin_val[fru] = n_pin_val;
-        usleep(DELAY_GPIOD_READ);
-        continue;
-      }
+        gpios = get_struct_gpio_pin(fru);
+        if  (gpios == NULL) {
+          syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
+              " fru %u", fru);
+          continue;
+        }
 
-      revised_pins = (n_pin_val ^ o_pin_val[fru]);
+        memset(pwr_state, 0, MAX_VALUE_LEN);
+        pal_get_last_pwr_state(fru, pwr_state);
 
-      for (i = 0; i < MAX_GPIO_PINS; i++) {
-        if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
-          gpios[i].status = GETBIT(n_pin_val, i);
+        /* Get the GPIO pins */
+        if ((ret = bic_get_gpio(fru, (bic_gpio_t *) &n_pin_val)) < 0) {
+          /* log the error message only when the CPU is on but not reachable. */
+          if (!(strcmp(pwr_state, "on"))) {
+  #ifdef DEBUG
+            syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
+                " fru %u", fru);
+  #endif
+          }
+          continue;
+        }
 
-          // Check if the new GPIO val is ASSERT
-          if (gpios[i].status == gpios[i].ass_val) {
-            /*
-             * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
-             * Raise an error and change the LPS from on to off or vice versa for deassert.
-             */
-            if (!(strcmp(pwr_state, "on")))
-              pal_set_last_pwr_state(fru, "off");
+        if (o_pin_val[fru] == n_pin_val) {
+          o_pin_val[fru] = n_pin_val;
+          usleep(DELAY_GPIOD_READ);
+          continue;
+        }
 
-            syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+        revised_pins = (n_pin_val ^ o_pin_val[fru]);
 
-            // Inform BIOS that BMC is ready
-            bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
-          } else {
+        for (i = 0; i < MAX_GPIO_PINS; i++) {
+          if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
+            gpios[i].status = GETBIT(n_pin_val, i);
 
-            if (!(strcmp(pwr_state, "off")))
-              pal_set_last_pwr_state(fru, "on");
+            // Check if the new GPIO val is ASSERT
+            if (gpios[i].status == gpios[i].ass_val) {
+              /*
+               * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
+               * Raise an error and change the LPS from on to off or vice versa for deassert.
+               */
+              if (!(strcmp(pwr_state, "on")))
+                pal_set_last_pwr_state(fru, "off");
 
-            syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+              syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+
+              // Inform BIOS that BMC is ready
+              bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
+            } else {
+
+              if (!(strcmp(pwr_state, "off")))
+                pal_set_last_pwr_state(fru, "on");
+
+              syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+            }
           }
         }
-      }
 
-      o_pin_val[fru] = n_pin_val;
+        o_pin_val[fru] = n_pin_val;
+        usleep(DELAY_GPIOD_READ);
+
+      } /* For Loop for each fru */
+    } else {
       usleep(DELAY_GPIOD_READ);
+    }
 
-    } /* For Loop for each fru */
+    // If log-util clear all fru, cleaning ML, SCC, and NIC present status
+    // After doing it, gpiod will regenerate assert
+    if ((fru_health_kv_state != fru_health_last_state) && (fru_health_kv_state == 1)) {
+      is_fru_prsnt[FRU_SLOT1 - 1] = false;
+      is_fru_prsnt[FRU_SCC - 1] = false;
+      is_fru_prsnt[FRU_NIC - 1] = false;
+    }
+    fru_health_last_state = fru_health_kv_state;
   } /* while loop */
 } /* function definition*/
+
 
 static void
 print_usage() {

@@ -55,7 +55,7 @@ do_install() {
   install -m 644 FSC_BC_EVT_v1_zone1.fsc ${D}${sysconfdir}/fsc/FSC_BC_EVT_v1_zone1.fsc
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
   install -m 755 run-fscd.sh ${D}${sysconfdir}/sv/fscd/run
-  update-rc.d -r ${D} setup-fan.sh start 100 5 .
+  update-rc.d -r ${D} setup-fan.sh start 98 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

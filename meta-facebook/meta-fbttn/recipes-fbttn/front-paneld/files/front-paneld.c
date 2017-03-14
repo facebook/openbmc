@@ -716,6 +716,10 @@ hb_mon_handler() {
   uint8_t iom_type = 0;
   uint8_t scc_rmt_type = 0;
   uint8_t hb_health = 0;
+  int fru_health_last_state = 1;
+  int fru_health_kv_state = 1;
+  int ret = 0;
+  char tmp_health[MAX_VALUE_LEN];
 
   // Get remote SCC and IOM type to identify IOM is M.2 or IOC solution
   iom_type = pal_get_iom_type();
@@ -747,6 +751,14 @@ hb_mon_handler() {
   write_cache(PATH_HEARTBEAT_HEALTH, hb_health);
 
   while(1) {
+    // get current health status from kv_store
+    memset(tmp_health, 0, MAX_VALUE_LEN);
+    ret = pal_get_key_value("heartbeat_health", tmp_health);
+    if (ret){
+      syslog(LOG_ERR, " %s - kv get heartbeat_health status failed", __func__);
+    }
+    fru_health_kv_state = atoi(tmp_health);
+
     // Heartbeat health bits [2:0] = {BMC_RMT, SCC_LOC, SCC_RMT}
     // Diagnosis flow:
     //   1. Get heartbeat
@@ -778,6 +790,7 @@ hb_mon_handler() {
           syslog(LOG_CRIT, "BMC remote heartbeat is abnormal");
         }
         pal_err_code_enable(0xFC);
+        pal_set_key_value("heartbeat_health", "0");
       }
       else {
         hb_health = hb_health & (~(1 << 2));
@@ -808,6 +821,7 @@ hb_mon_handler() {
           syslog(LOG_CRIT, "SCC local heartbeat is abnormal");
         }
         pal_err_code_enable(0xFD);
+        pal_set_key_value("heartbeat_health", "0");
       }
       else {
         hb_health = hb_health & (~(1 << 1));
@@ -837,6 +851,7 @@ hb_mon_handler() {
           syslog(LOG_CRIT, "SCC remote heartbeat is abnormal");
         }
         pal_err_code_enable(0xFE);
+        pal_set_key_value("heartbeat_health", "0");
       }
       else {
         hb_health = hb_health & (~(1 << 0));
@@ -847,6 +862,15 @@ hb_mon_handler() {
     write_cache(PATH_HEARTBEAT_HEALTH, hb_health);
 
     msleep(100);
+
+    // If log-util clear all fru, cleaning heartbeat detection count
+    // After doing it, front-paneld will regenerate assert
+    if ((fru_health_kv_state != fru_health_last_state) && (fru_health_kv_state == 1)) {
+      count_bmc_rmt = 0;
+      count_scc_loc = 0;
+      count_scc_rmt = 0;
+    }
+    fru_health_last_state = fru_health_kv_state;
   }
 }
 

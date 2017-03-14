@@ -179,6 +179,8 @@ char * key_list[] = {
 "dpb_sensor_health",
 "scc_sensor_health",
 "nic_sensor_health",
+"heartbeat_health",
+"fru_prsnt_health",
 "slot1_sel_error",
 "scc_sensor_timestamp",
 "dpb_sensor_timestamp",
@@ -198,6 +200,8 @@ char * def_val_list[] = {
   "1", /* dpb_sensor_health */
   "1", /* scc_sensor_health */
   "1", /* nic_sensor_health */
+  "1", /* heartbeat_health */
+  "1", /* fru_prsnt_health */
   "1", /* slot_sel_error */
   "0", /* scc_sensor_timestamp */
   "0", /* dpb_sensor_timestamp */
@@ -256,7 +260,7 @@ power_value_adjust(float *value)
 }
 
 // Helper Functions
-static int
+int
 read_device(const char *device, int *value) {
   FILE *fp;
   int rc;
@@ -308,7 +312,7 @@ read_device_hex(const char *device, int *value) {
 }
 
 
-static int
+int
 write_device(const char *device, const char *value) {
   FILE *fp;
   int rc;
@@ -2406,6 +2410,8 @@ pal_log_clear(char *fru) {
     pal_set_key_value("dpb_sensor_health", "1");
     pal_set_key_value("scc_sensor_health", "1");
     pal_set_key_value("nic_sensor_health", "1");
+    pal_set_key_value("heartbeat_health", "1");
+    pal_set_key_value("fru_prsnt_health", "1");
   }
 }
 
@@ -2973,31 +2979,136 @@ int  pal_get_scc_rmt_hb(void) {
 }
 
 void pal_err_code_enable(unsigned char num) {
-  int stat = 0;
-  int bit_stat = 0;
+  error_code errorCode = {0, 0};
 
-  if(num <= 100) {
+  if(num <= 100) {  // It's used for expander.
     return;
   }
-  stat = num / 8;
-  bit_stat = num % 8;
-  if(bit_stat!=0) {
-    g_err_code[stat] |= 1 << bit_stat;
-  }
-  else {
-    g_err_code[stat] |= 1;
+
+  errorCode.code = num;
+  if (errorCode.code < (ERROR_CODE_NUM * 8)) {
+    errorCode.status = 1;
+    pal_write_error_code_file(&errorCode);
+  } else {
+    syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
   }
 }
 
 void pal_err_code_disable(unsigned char num) {
-  int stat = 0;
-  int bit_stat = 0;
+  error_code errorCode = {0, 0};
+
   if(num <= 100) {
     return;
   }
-  stat = num / 8;
-  bit_stat = num % 8;
-  g_err_code[stat] &= (unsigned char)~(1 << bit_stat);
+
+  errorCode.code = num;
+  if (errorCode.code < (ERROR_CODE_NUM * 8)) {
+    errorCode.status = 0;
+    pal_write_error_code_file(&errorCode);
+  } else {
+    syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
+  }
+}
+
+uint8_t
+pal_read_error_code_file(uint8_t *error_code_array) {
+  FILE *fp = NULL;
+  uint8_t ret = 0;
+  int i = 0;
+  int tmp = 0;
+  int retry_count = 0;
+
+  if (access(ERR_CODE_FILE, F_OK) == -1) {
+    memset(error_code_array, 0, ERROR_CODE_NUM);
+    return 0;
+  } else {
+    fp = fopen(ERR_CODE_FILE, "r");
+  }
+
+  if (!fp) {
+    return -1;
+  }
+
+  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    int err = errno;
+    syslog(LOG_WARNING, "%s(): failed to flock on %s, err %d", __func__, ERR_CODE_FILE, err);
+    fclose(fp);
+    return -1;
+  }
+
+  for (i = 0; fscanf(fp, "%X", &tmp) != EOF && i < ERROR_CODE_NUM; i++) {
+    error_code_array[i] = (uint8_t) tmp;
+  }
+
+  flock(fileno(fp), LOCK_UN);
+  fclose(fp);
+  return 0;
+}
+
+uint8_t
+pal_write_error_code_file(error_code *update) {
+  FILE *fp = NULL;
+  uint8_t ret = 0;
+  int retry_count = 0;
+  int i = 0;
+  int stat = 0;
+  int bit_stat = 0;
+  uint8_t error_code_array[ERROR_CODE_NUM] = {0};
+
+  if (pal_read_error_code_file(error_code_array) != 0) {
+    syslog(LOG_ERR, "%s(): pal_read_error_code_file() failed", __func__);
+    return -1;
+  }
+
+  if (access(ERR_CODE_FILE, F_OK) == -1) {
+    fp = fopen(ERR_CODE_FILE, "w");
+  } else {
+    fp = fopen(ERR_CODE_FILE, "r+");
+  }
+  if (!fp) {
+    syslog(LOG_ERR, "%s(): open %s failed. %s", __func__, ERR_CODE_FILE, strerror(errno));
+    return -1;
+  }
+
+  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
+    fclose(fp);
+    return -1;
+  }
+
+  stat = update->code / 8;
+  bit_stat = update->code % 8;
+
+  if (update->status) {
+    error_code_array[stat] |= 1 << bit_stat;
+  } else {
+    error_code_array[stat] &= ~(1 << bit_stat);
+  }
+
+  for (i = 0; i < ERROR_CODE_NUM; i++) {
+    fprintf(fp, "%X ", error_code_array[i]);
+    if(error_code_array[i] != 0) {
+      ret = 1;
+    }
+  }
+
+  fprintf(fp, "\n");
+  flock(fileno(fp), LOCK_UN);
+  fclose(fp);
+
+  return ret;
 }
 
 /*
@@ -3006,37 +3117,20 @@ void pal_err_code_disable(unsigned char num) {
  *
  */
 unsigned char pal_sum_error_code(void) {
-  FILE *fp = NULL;
-  unsigned char ret = 0;
-  unsigned char file_prsnt = 0;
-  int i = 0;
+  uint8_t error_code_array[ERROR_CODE_NUM] = {0};
+  int i;
 
-  fp = fopen(ERR_CODE_FILE, "w");
-  if (!fp) {
-      file_prsnt = 1;
-      int err = errno;
-  #ifdef DEBUG
-      syslog(LOG_INFO, "failed to open error code file for write %s", ERR_CODE_FILE);
-  #endif
-      return err;
-    }
-  lockf(fileno(fp),F_LOCK,0L);
-
-  printf("\n");
-
-  for(i = 0; i < ERROR_CODE_NUM; i++) {
-    if (file_prsnt == 0) {    // Cache error code in /tmp
-      fprintf(fp, "%d ", g_err_code[i]);
-    }
-    if(g_err_code[i] != 0) {
-      ret = 1;
+  if (pal_read_error_code_file(error_code_array) != 0) {
+    syslog(LOG_ERR, "%s(): pal_read_error_code_file() failed", __func__);
+    return -1;
+  }
+  for (i = 0; i < ERROR_CODE_NUM; i++) {
+    if (error_code_array[i] != 0) {
+      return 1;
     }
   }
-  fprintf(fp, "\n");
-  lockf(fileno(fp),F_ULOCK,0L);
-  fclose(fp);
 
-  return ret;
+  return 0;
 }
 void
 pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
@@ -3159,12 +3253,12 @@ pal_get_error_code(uint8_t* data, uint8_t* error_count) {
   }
   else {
     lockf(fileno(fp),F_LOCK,0L);
-    while (fscanf(fp, "%d", error+count) != EOF && count!=32) {
+    while (fscanf(fp, "%X", error+count) != EOF && count!=32) {
       count++;
     }
+    lockf(fileno(fp),F_ULOCK,0L);
+    fclose(fp);
   }
-  lockf(fileno(fp),F_ULOCK,0L);
-  fclose(fp);
 
   //Expander Error Code 0~99; BMC Error Code 100~255
   memcpy(error, exp_error, rlen - 1); //Not the last one (12th)

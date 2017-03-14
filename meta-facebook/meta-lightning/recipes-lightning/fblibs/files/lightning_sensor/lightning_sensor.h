@@ -144,6 +144,7 @@ enum {
   FCB_SENSOR_HSC_IN_POWER = 0x3A,
   FCB_SENSOR_BJT_TEMP_1 = 0x60,
   FCB_SENSOR_BJT_TEMP_2 = 0x61,
+  FCB_SENSOR_AIRFLOW = 0x2C,
 };
 
 extern const uint8_t peb_sensor_pmc_list[];

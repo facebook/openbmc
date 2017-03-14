@@ -1365,6 +1365,54 @@ pal_log_clear(char *fru) {
   }
 }
 
+int pal_get_airflow(float *airflow_cfm)
+{
+  uint8_t ssd_sku = 0;
+  float rpm_avg = 0, rpm_sum = 0, value;
+  int fan=0;
+  char sku[16] = {0};
+  int ret,rc;
+
+  if (airflow_cfm == NULL){
+    syslog(LOG_ERR, "%s() Invalid memory address", __func__);
+    return -1;
+  }
+
+  // Calculate average RPM
+  for (fan = 0; fan < pal_tach_cnt; fan++) {
+    rc = pal_sensor_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &value);
+    if(rc == -1) {
+      continue;
+    }
+    rpm_sum+=value;
+  }
+
+  rpm_avg = rpm_sum/pal_tach_cnt;
+
+  ret = lightning_ssd_sku(&ssd_sku);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s() get SSD SKU failed", __func__); 
+    return -1;
+  }
+
+  if (ssd_sku == U2_SKU) {
+     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0208*(rpm_avg)) - 7.8821);
+  }
+  else if (ssd_sku == M2_SKU) {
+     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0198*(rpm_avg)) - 13.115);
+  }
+  else {
+    syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD SKU", __func__);
+    return -1;
+  }
+
+  if(*airflow_cfm < 0) {
+    *airflow_cfm = 0;
+  }
+
+  return 0;
+}
+
 //For Merge Yosemite and TP
 int
 pal_get_platform_id(uint8_t *id) {

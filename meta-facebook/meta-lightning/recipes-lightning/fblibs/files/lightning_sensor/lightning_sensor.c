@@ -262,6 +262,7 @@ const uint8_t fcb_sensor_list[] = {
   FCB_SENSOR_FAN5_REAR_SPEED,
   FCB_SENSOR_FAN6_FRONT_SPEED,
   FCB_SENSOR_FAN6_REAR_SPEED,
+  FCB_SENSOR_AIRFLOW,
 };
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -443,6 +444,10 @@ sensor_thresh_array_init() {
       55, 50, 0, 5, 10, 0, 0, 2);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_2,
       55, 50, 0, 5, 10, 0, 0, 2);
+
+  //FCB Airflow
+  assign_sensor_threshold(FRU_FCB, FCB_SENSOR_AIRFLOW,
+      0, 0, 0, 0, 0, 0, 0, 0);
 
   // FCB Fan Speed
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED,
@@ -1159,6 +1164,9 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case FCB_SENSOR_FAN6_REAR_SPEED:
           sprintf(units, "RPM");
           break;
+        case FCB_SENSOR_AIRFLOW:
+          sprintf(units, "CFM");
+          break;
         default:
           sprintf(units, "");
           break;
@@ -1343,6 +1351,9 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case FCB_SENSOR_FAN6_REAR_SPEED:
           sprintf(name, "FAN6_REAR_SPEED");
           break;
+        case FCB_SENSOR_AIRFLOW:
+          sprintf(name, "AIRFLOW");
+          break;
         default:
           sprintf(name, "");
           break;
@@ -1509,6 +1520,11 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_nct7904_value(FAN_REGISTER+20, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
         case FCB_SENSOR_FAN1_REAR_SPEED:
           return read_nct7904_value(FAN_REGISTER+22, I2C_DEV_FCB, I2C_ADDR_NCT7904, (float*) value);
+
+        // Airflow
+        case FCB_SENSOR_AIRFLOW:
+          return pal_get_airflow((float*) value);
+          
         default:
           return -1;
       }

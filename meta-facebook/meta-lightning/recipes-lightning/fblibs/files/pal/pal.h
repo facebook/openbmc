@@ -235,6 +235,7 @@ int pal_peer_tray_location(uint8_t *value);
 int pal_is_crashdump_ongoing(uint8_t slot);
 int pal_reset_ssd_switch();
 void pal_log_clear(char *fru);
+int pal_get_airflow(float *airflow_cfm);
 
 // dummy definition
 int pal_get_platform_id(uint8_t *id);

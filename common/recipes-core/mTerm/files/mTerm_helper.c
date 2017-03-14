@@ -29,7 +29,11 @@ void escHelp(void) {
   printf("\r\n------------------TERMINAL MULTIPLEXER---------------------\r\n");
   printf("  CTRL-L ?   : Display help message.\r\n");
   printf("  CTRL-L DEL : Terminate the connection.\r\n");
+  #ifdef CONFIG_FBTTN
+  printf("  /var/log/mTerm_fbttn.log : Log location\r\n");
+  #else
   printf("  /var/log/mTerm_wedge.log : Log location\r\n");
+  #endif 
   printf("  CTRL-L + b : Send Break\r\n");
   /*TODO: Log file read from tool*/
   //printf("  CTRL-L :N - For reading last N lines from end of buffer.\r\n");

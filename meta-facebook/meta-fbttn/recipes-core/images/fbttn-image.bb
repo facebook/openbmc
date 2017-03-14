@@ -71,7 +71,6 @@ IMAGE_INSTALL += " \
   gpiod \
   front-paneld \
   power-util \
-  consoled \
   cfg-util \
   fw-util \
   fpc-util \
@@ -88,6 +87,7 @@ IMAGE_INSTALL += " \
   exp-cached \
   enclosure-util \
   libmctp \
+  mTerm \
   "
 
 IMAGE_FEATURES += " \

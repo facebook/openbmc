@@ -177,8 +177,12 @@ static void connectClient(const char *dev) {
 }
 
 static void
-print_usage() {
-  printf("Usage example: /usr/local/bin/mTerm_client wedge \n");
+print_usage() {  
+  #ifdef CONFIG_FBTTN
+    printf("Usage example: /usr/local/bin/mTerm_client fbttn \n");
+  #else
+    printf("Usage example: /usr/local/bin/mTerm_client wedge \n");
+  #endif  
 }
 
 int main(int argc, char **argv)

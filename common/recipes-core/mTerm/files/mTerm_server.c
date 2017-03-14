@@ -264,7 +264,11 @@ static void connectServer(const char *stty, const char *dev) {
 
 static void
 print_usage() {
-  printf("Usage example: /usr/local/bin/mTerm_server wedge /dev/ttyS1\n");
+  #ifdef CONFIG_FBTTN
+    printf("Usage example: /usr/local/bin/mTerm_server fbttn /dev/ttyS1\n");
+  #else
+    printf("Usage example: /usr/local/bin/mTerm_server wedge /dev/ttyS1\n");
+  #endif  
 }
 
 int main(int argc, char **argv) {

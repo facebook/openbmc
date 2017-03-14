@@ -34,9 +34,9 @@
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/cpld.h>
+#include <openbmc/bios.h>
 #include <openbmc/gpio.h>
 
-#define GPIO_BMC_CTRL        109
 #define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
 #define FSC_CONFIG           "/etc/fsc-config.json"
 
@@ -128,16 +128,10 @@ print_fw_ver(uint8_t fru_id) {
   }
 
   // Print BIOS version
-  if (pal_get_sysfw_ver(fru_id, ver)) {
-    printf("BIOS Version: ");
+  if (bios_get_ver(fru_id, ver)) {
+    printf("BIOS Version: NA\n");
   } else {
-
-    // BIOS version response contains the length at offset 2 followed by ascii string
-    printf("BIOS Version: ");
-    for (i = 3; i < 3+ver[2]; i++) {
-      printf("%c", ver[i]);
-    }
-      printf("\n");
+    printf("BIOS Version: %s\n", (char *)ver);
   }
 
   if (!cpld_intf_open()) {
@@ -368,7 +362,6 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   int ret;
   char cmd[80];
   char dev[12];
-  gpio_st bmc_ctrl_pin;
 
   ret = pal_is_fru_prsnt(slot_id, &status);
   if (ret < 0) {
@@ -418,35 +411,12 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   }
 
   if (!strcmp(argv[3], "--bios")) {
-    int exit_code;
-
-    system("/usr/local/bin/power-util mb off");
-    sleep(10);
-    system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
-    sleep(1);
-    gpio_export(GPIO_BMC_CTRL);
-    gpio_open(&bmc_ctrl_pin,  GPIO_BMC_CTRL);
-    gpio_change_direction(&bmc_ctrl_pin, GPIO_DIRECTION_OUT);
-    gpio_write(&bmc_ctrl_pin, GPIO_VALUE_HIGH);
-
-    system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/bind");
-    exit_code = 0;
-    if (!get_mtd_name("\"bios0\"", dev)) {
-      printf("Error: Cannot find bios0 MTD partition in /proc/mtd\n");
-    } else {
-      snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
-      exit_code = run_command(cmd);
+    ret = bios_program(slot_id, argv[4]);
+    if (ret < 0) {
+      printf("ERROR: BIOS Program failed\n");
+      goto err_exit;
     }
-
-    system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind");
-    gpio_write(&bmc_ctrl_pin, GPIO_VALUE_LOW);
-    gpio_close(&bmc_ctrl_pin);
-    gpio_unexport(GPIO_BMC_CTRL);
-    sleep(1);
-    pal_PBO();
-    sleep(10);
-    system("/usr/local/bin/power-util mb on");
-    return exit_code;
+    return 0;
   }
 
   if ( !strcmp(argv[3], "--vr") ) {
@@ -560,7 +530,7 @@ main(int argc, char **argv) {
 
      for (fru_id = 1; fru_id < 3; fru_id++) {
         printf("Get version info for fru%d\n", fru_id);
-        print_fw_ver(fru_id);;
+        print_fw_ver(fru_id);
         printf("\n");
      }
 

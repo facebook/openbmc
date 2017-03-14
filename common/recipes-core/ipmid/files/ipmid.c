@@ -76,6 +76,18 @@ static pthread_mutex_t m_oem_q;
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
 
+static int length_check(unsigned char cmd_len, unsigned char req_len, unsigned char *response, unsigned char *res_len)
+{  
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  // req_len = cmd_len + 3 (payload_id, cmd and netfn)
+  if( req_len != (cmd_len + 3) ){
+    res->cc = CC_INVALID_LENGTH;
+    *res_len = 1;   
+    return 1;
+  }
+  return 0;
+}
+
 /*
  **Function to handle with clearing BIOS flag
  */
@@ -339,7 +351,8 @@ ipmi_handle_sensor(unsigned char *request, unsigned char req_len,
  */
 // Get Device ID (IPMI/Section 20.1)
 static void
-app_get_device_id (unsigned char *response, unsigned char *res_len)
+app_get_device_id (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
 {
 
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -347,6 +360,11 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
   FILE *fp=NULL;
   int fv_major = 0x01, fv_minor = 0x03;
   char buffer[32];
+
+  if(length_check(0, req_len, response, res_len))
+  {
+    return;
+  }
 
   fp = fopen("/etc/issue","r");
   if (fp != NULL)
@@ -380,7 +398,8 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
 
 // Cold Reset (IPMI/Section 20.2)
 static void
-app_cold_reset(void)
+app_cold_reset(unsigned char *request, unsigned char req_len,
+              unsigned char *response, unsigned char *res_len)
 {
   reboot(RB_AUTOBOOT);
 }
@@ -388,7 +407,8 @@ app_cold_reset(void)
 
 // Get Self Test Results (IPMI/Section 20.4)
 static void
-app_get_selftest_results (unsigned char *response, unsigned char *res_len)
+app_get_selftest_results (unsigned char *request, unsigned char req_len,
+              unsigned char *response, unsigned char *res_len)
 {
 
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -427,8 +447,8 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
 
 // Get Device GUID (IPMI/Section 20.8)
 static void
-app_get_device_guid (unsigned char *request, unsigned char *response,
-                     unsigned char *res_len)
+app_get_device_guid (unsigned char *request, unsigned char req_len,
+                    unsigned char *response, unsigned char *res_len)
 {
   int ret;
 
@@ -447,8 +467,8 @@ app_get_device_guid (unsigned char *request, unsigned char *response,
 }
 
 static void
-app_get_device_sys_guid (unsigned char *request, unsigned char *response,
-                         unsigned char *res_len)
+app_get_device_sys_guid (unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
 {
   int ret;
 
@@ -484,7 +504,8 @@ app_set_global_enables (unsigned char *request, unsigned char req_len,
 
 // Get BMC Global Enables (IPMI/Section 22.2)
 static void
-app_get_global_enables (unsigned char *response, unsigned char *res_len)
+app_get_global_enables (unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
 {
 
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -515,8 +536,8 @@ app_clear_message_flags (unsigned char *request, unsigned char req_len,
 
 // Set System Info Params (IPMI/Section 22.14a)
 static void
-app_set_sys_info_params (unsigned char *request, unsigned char *response,
-       unsigned char *res_len)
+app_set_sys_info_params (unsigned char *request, unsigned char req_len,
+                         unsigned char *response, unsigned char *res_len)
 {
 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -552,6 +573,32 @@ app_set_sys_info_params (unsigned char *request, unsigned char *response,
     case SYS_INFO_PARAM_OS_HV_URL:
       memcpy(g_sys_info_params.os_hv_url, &req->data[1], SIZE_OS_HV_URL);
       break;
+
+    #ifdef CONFIG_FBTTN
+      case SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST:
+        memcpy(g_sys_info_params.bios_current_boot_list, &req->data[1], req_len-4); // boot list length = req_len-4 (payload_id, cmd, netfn, param)
+        pal_set_bios_current_boot_list(req->payload_id, g_sys_info_params.bios_current_boot_list, req_len-4, &res->cc);
+        break;
+      case SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE:
+        if(length_check(SIZE_BIOS_FIXED_BOOT_DEVICE+1, req_len, response, res_len))
+          break;
+        memcpy(g_sys_info_params.bios_fixed_boot_device, &req->data[1], SIZE_BIOS_FIXED_BOOT_DEVICE);
+        pal_set_bios_fixed_boot_device(req->payload_id, g_sys_info_params.bios_fixed_boot_device);
+        break;
+      case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
+        if(length_check(SIZE_BIOS_RESTORES_DEFAULT_SETTING+1, req_len, response, res_len))
+          break;
+        memcpy(g_sys_info_params.bios_restores_default_setting, &req->data[1], SIZE_BIOS_RESTORES_DEFAULT_SETTING); 
+        pal_set_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting);
+        break;
+      case SYS_INFO_PARAM_LAST_BOOT_TIME:
+        if(length_check(SIZE_LAST_BOOT_TIME+1, req_len, response, res_len))
+          break;
+        memcpy(g_sys_info_params.last_boot_time, &req->data[1], SIZE_LAST_BOOT_TIME); 
+        pal_set_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time);
+        break;
+    #endif
+
     default:
       res->cc = CC_INVALID_PARAM;
       break;
@@ -562,8 +609,8 @@ app_set_sys_info_params (unsigned char *request, unsigned char *response,
 
 // Get System Info Params (IPMI/Section 22.14b)
 static void
-app_get_sys_info_params (unsigned char *request, unsigned char *response,
-       unsigned char *res_len)
+app_get_sys_info_params (unsigned char *request, unsigned char req_len,
+                         unsigned char *response, unsigned char *res_len)
 {
 
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -573,45 +620,87 @@ app_get_sys_info_params (unsigned char *request, unsigned char *response,
 
   // Fill default return values
   res->cc = CC_SUCCESS;
-  *data++ = 1;    // Parameter revision
-
-  switch (param)
+  *data++ = 1;		// Parameter revision
+  if(!length_check(4, req_len, response, res_len))
   {
-    case SYS_INFO_PARAM_SET_IN_PROG:
-      *data++ = g_sys_info_params.set_in_prog;
-      break;
-    case SYS_INFO_PARAM_SYSFW_VER:
-      pal_get_sysfw_ver(req->payload_id, g_sys_info_params.sysfw_ver);
-      memcpy(data, g_sys_info_params.sysfw_ver, SIZE_SYSFW_VER);
-      data += SIZE_SYSFW_VER;
-      break;
-    case SYS_INFO_PARAM_SYS_NAME:
-      memcpy(data, g_sys_info_params.sys_name, SIZE_SYS_NAME);
-      data += SIZE_SYS_NAME;
-      break;
-    case SYS_INFO_PARAM_PRI_OS_NAME:
-      memcpy(data, g_sys_info_params.pri_os_name, SIZE_OS_NAME);
-      data += SIZE_OS_NAME;
-      break;
-    case SYS_INFO_PARAM_PRESENT_OS_NAME:
-      memcpy(data, g_sys_info_params.present_os_name, SIZE_OS_NAME);
-      data += SIZE_OS_NAME;
-      break;
-    case SYS_INFO_PARAM_PRESENT_OS_VER:
-      memcpy(data, g_sys_info_params.present_os_ver, SIZE_OS_VER);
-      data += SIZE_OS_VER;
-      break;
-    case SYS_INFO_PARAM_BMC_URL:
-      memcpy(data, g_sys_info_params.bmc_url, SIZE_BMC_URL);
-      data += SIZE_BMC_URL;
-      break;
-    case SYS_INFO_PARAM_OS_HV_URL:
-      memcpy(data, g_sys_info_params.os_hv_url, SIZE_OS_HV_URL);
-      data += SIZE_OS_HV_URL;
-      break;
-    default:
-      res->cc = CC_INVALID_PARAM;
-      break;
+    switch (param)
+    {
+      case SYS_INFO_PARAM_SET_IN_PROG:
+        *data++ = g_sys_info_params.set_in_prog;
+        break;
+      case SYS_INFO_PARAM_SYSFW_VER:
+        pal_get_sysfw_ver(req->payload_id, g_sys_info_params.sysfw_ver);
+        memcpy(data, g_sys_info_params.sysfw_ver, SIZE_SYSFW_VER);
+        data += SIZE_SYSFW_VER;
+        break;
+      case SYS_INFO_PARAM_SYS_NAME:
+        memcpy(data, g_sys_info_params.sys_name, SIZE_SYS_NAME);
+        data += SIZE_SYS_NAME;
+        break;
+      case SYS_INFO_PARAM_PRI_OS_NAME:
+        memcpy(data, g_sys_info_params.pri_os_name, SIZE_OS_NAME);
+        data += SIZE_OS_NAME;
+        break;
+      case SYS_INFO_PARAM_PRESENT_OS_NAME:
+        memcpy(data, g_sys_info_params.present_os_name, SIZE_OS_NAME);
+        data += SIZE_OS_NAME;
+        break;
+      case SYS_INFO_PARAM_PRESENT_OS_VER:
+        memcpy(data, g_sys_info_params.present_os_ver, SIZE_OS_VER);
+        data += SIZE_OS_VER;
+        break;
+      case SYS_INFO_PARAM_BMC_URL:
+        memcpy(data, g_sys_info_params.bmc_url, SIZE_BMC_URL);
+        data += SIZE_BMC_URL;
+        break;
+      case SYS_INFO_PARAM_OS_HV_URL:
+        memcpy(data, g_sys_info_params.os_hv_url, SIZE_OS_HV_URL);
+        data += SIZE_OS_HV_URL;
+        break;
+
+      #ifdef CONFIG_FBTTN
+        case SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST:
+          if(pal_get_bios_current_boot_list(req->payload_id, g_sys_info_params.bios_current_boot_list, res_len))
+          {
+            res->cc = CC_UNSPECIFIED_ERROR;
+            break;
+          }
+          memcpy(data, g_sys_info_params.bios_current_boot_list, *res_len);
+          data += *res_len;
+          break;
+        case SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE:
+          if(pal_get_bios_fixed_boot_device(req->payload_id, g_sys_info_params.bios_fixed_boot_device))
+          {
+            res->cc = CC_UNSPECIFIED_ERROR;
+            break;
+          }
+          memcpy(data, g_sys_info_params.bios_fixed_boot_device, SIZE_BIOS_FIXED_BOOT_DEVICE);
+          data += SIZE_BIOS_FIXED_BOOT_DEVICE;
+          break;
+        case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
+          if(pal_get_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting))
+          {
+            res->cc = CC_UNSPECIFIED_ERROR;
+            break;
+          }
+          memcpy(data, g_sys_info_params.bios_restores_default_setting, SIZE_BIOS_RESTORES_DEFAULT_SETTING);
+          data += SIZE_BIOS_RESTORES_DEFAULT_SETTING;
+          break;
+        case SYS_INFO_PARAM_LAST_BOOT_TIME:
+          if(pal_get_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time))
+          {
+            res->cc = CC_UNSPECIFIED_ERROR;
+            break;
+          }
+          memcpy(data, g_sys_info_params.last_boot_time, SIZE_LAST_BOOT_TIME);
+          data += SIZE_LAST_BOOT_TIME;
+          break;
+      #endif
+
+      default:
+        res->cc = CC_INVALID_PARAM;
+        break;
+    }
   }
 
   if (res->cc == CC_SUCCESS) {
@@ -624,7 +713,7 @@ app_get_sys_info_params (unsigned char *request, unsigned char *response,
 // Handle Appliction Commands (IPMI/Section 20)
 static void
 ipmi_handle_app (unsigned char *request, unsigned char req_len,
-     unsigned char *response, unsigned char *res_len)
+                unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -634,37 +723,37 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
   switch (cmd)
   {
     case CMD_APP_GET_DEVICE_ID:
-      app_get_device_id (response, res_len);
+      app_get_device_id (request, req_len, response, res_len);
       break;
     case CMD_APP_COLD_RESET:
-      app_cold_reset ();
+      app_cold_reset (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_SELFTEST_RESULTS:
-      app_get_selftest_results (response, res_len);
+      app_get_selftest_results (request, req_len, response, res_len);
       break;
     case CMD_APP_MANUFACTURING_TEST_ON:
       app_manufacturing_test_on (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_DEVICE_GUID:
-      app_get_device_guid (request, response, res_len);
+      app_get_device_guid (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_SYSTEM_GUID:
-      app_get_device_sys_guid (request, response, res_len);
+      app_get_device_sys_guid (request, req_len, response, res_len);
       break;
     case CMD_APP_SET_GLOBAL_ENABLES:
       app_set_global_enables (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_GLOBAL_ENABLES:
-      app_get_global_enables (response, res_len);
+      app_get_global_enables (request, req_len, response, res_len);
       break;
     case CMD_APP_SET_SYS_INFO_PARAMS:
-      app_set_sys_info_params (request, response, res_len);
+      app_set_sys_info_params (request, req_len, response, res_len);
       break;
     case CMD_APP_CLEAR_MESSAGE_FLAGS:
       app_clear_message_flags (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_SYS_INFO_PARAMS:
-      app_get_sys_info_params (request, response, res_len);
+      app_get_sys_info_params (request,  req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;
@@ -2223,12 +2312,12 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char netfn;
-
   netfn = req->netfn_lun >> 2;
 
   // Provide default values in the response message
   res->cmd = req->cmd;
   res->cc = 0xFF;   // Unspecified completion code
+  printf("ipmi_handle netfn %x cmd %x len %d\n", netfn, req->cmd, req_len);
   *(unsigned short*)res_len = 0;
 
   switch (netfn)

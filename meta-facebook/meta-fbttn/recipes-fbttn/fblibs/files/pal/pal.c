@@ -137,6 +137,10 @@
 
 #define PLATFORM_FILE "/tmp/system.bin"
 #define ERR_CODE_FILE "/tmp/error_code.bin"
+#define BOOT_LIST_FILE "/tmp/boot_list.bin"
+#define FIXED_BOOT_DEVICE_FILE "/tmp/fixed_boot_device.bin"
+#define BIOS_DEFAULT_SETTING_FILE "/tmp/bios_default_setting.bin"
+#define LAST_BOOT_TIME "/tmp/last_boot_time.bin"
 // SHIFT to 16
 #define UART1_TXD 0
 
@@ -167,6 +171,8 @@ size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0...7";
 uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 1, 1, 1, 1};
+
+static uint8_t bios_default_setting_timer_flag = 0;
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -1573,8 +1579,13 @@ pal_set_last_pwr_state(uint8_t fru, char *state) {
 
   int ret;
   char key[MAX_KEY_LEN] = {0};
+  uint8_t last_boot_time[4] = {0};
 
   sprintf(key, "pwr_server%d_last_state", (int) fru);
+
+  //If the OS state is "off", clear the last boot time to 0 0 0 0
+  if(!strcmp(state, "off"))
+    pal_set_last_boot_time(1, last_boot_time);
 
   ret = pal_set_key_value(key, state);
   if (ret < 0) {
@@ -3308,4 +3319,269 @@ pal_i2c_crash_assert_handle(int i2c_bus_num) {
 void
 pal_i2c_crash_deassert_handle(int i2c_bus_num) {
 
+}
+
+int
+pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc) {
+  FILE *fp;
+  int i;
+
+  if(*boot_list != 1) {
+    *cc = CC_INVALID_PARAM;
+    return -1;
+  }
+
+  fp = fopen(BOOT_LIST_FILE, "w");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", BOOT_LIST_FILE);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  for(i = 0; i < list_length; i++) {
+    fprintf(fp, "%02X ", *(boot_list+i));
+  }
+  fprintf(fp, "\n");
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+
+int
+pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length) {
+  FILE *fp;
+  uint8_t count=0;
+
+  fp = fopen(BOOT_LIST_FILE, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", BOOT_LIST_FILE);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  while (fscanf(fp, "%X", boot_list+count) != EOF) {
+      count++;
+  }
+  *list_length = count;
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+
+int
+pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
+  FILE *fp;
+
+  fp = fopen(FIXED_BOOT_DEVICE_FILE, "w");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", FIXED_BOOT_DEVICE_FILE);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  fprintf(fp, "%02X ", *fixed_boot_device);
+  fprintf(fp, "\n");
+
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+
+int pal_clear_bios_default_setting_timer_handler(){
+  uint8_t default_setting;
+
+  bios_default_setting_timer_flag = 0;
+
+  sleep(200);
+
+  pal_get_bios_restores_default_setting(1, &default_setting);
+  if(default_setting != 0) {
+    default_setting = 0;
+    pal_set_bios_restores_default_setting(1, &default_setting);
+  }
+}
+
+int
+pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
+  FILE *fp;
+  pthread_t tid_clear_bios_default_setting_timer;
+
+  fp = fopen(BIOS_DEFAULT_SETTING_FILE, "w");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", BIOS_DEFAULT_SETTING_FILE);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  fprintf(fp, "%02X ", *default_setting);
+  fprintf(fp, "\n");
+
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+
+  //Hack a thread wait a certain time then clear the setting, when userA didn't reboot the System, and userB doesn't know about the setting.
+  if(!bios_default_setting_timer_flag) {
+    if (pthread_create(&tid_clear_bios_default_setting_timer, NULL, pal_clear_bios_default_setting_timer_handler, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for clear default setting timer error\n");
+      exit(1);
+    }
+    else
+      bios_default_setting_timer_flag = 1;
+  }
+}
+
+int
+pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
+  FILE *fp;
+
+  fp = fopen(BIOS_DEFAULT_SETTING_FILE, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", BIOS_DEFAULT_SETTING_FILE);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  fscanf(fp, "%X", default_setting);
+
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+
+int
+pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
+  FILE *fp;
+  int i;
+
+  fp = fopen(LAST_BOOT_TIME, "w");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", LAST_BOOT_TIME);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  for(i = 0; i < 4; i++) {
+    fprintf(fp, "%02X ", *(last_boot_time+i));
+  }
+  fprintf(fp, "\n");
+
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+
+int
+pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
+  FILE *fp;
+  int i;
+
+  fp = fopen(LAST_BOOT_TIME, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", LAST_BOOT_TIME);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  for(i = 0; i < 4; i++) {
+    fscanf(fp, "%X", last_boot_time+i);
+  }
+
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+
+int
+pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
+  FILE *fp;
+
+  fp = fopen(FIXED_BOOT_DEVICE_FILE, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", FIXED_BOOT_DEVICE_FILE);
+#endif
+    return err;
+  }
+  lockf(fileno(fp),F_LOCK,0L);
+
+  fscanf(fp, "%X", fixed_boot_device);
+
+  lockf(fileno(fp),F_ULOCK,0L);
+  fclose(fp);
+}
+
+unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
+unsigned char option_size[]   = {1,1,1,1,2,5,9 ,17,127};
+
+void
+pal_save_boot_option(unsigned char* buff)
+{
+  int fp = 0;
+  fp = open("/tmp/boot.in", O_WRONLY|O_CREAT);
+  if(fp > 0 )
+  {
+	write(fp,buff,256);
+    close(fp);
+  }
+}
+
+int
+pal_load_boot_option(unsigned char* buff)
+{
+  int fp = 0;
+  fp = open("/tmp/boot.in", O_RDONLY);
+  if(fp > 0 )
+  {
+    read(fp,buff,256);
+    close(fp);
+    return 0;
+  }
+  else
+    return -1;
+}
+
+  void
+pal_set_boot_option(unsigned char para,unsigned char* pbuff)
+{
+  unsigned char buff[256] = { 0 };
+  unsigned char offset = option_offset[para];
+  unsigned char size   = option_size[para];
+  pal_load_boot_option(buff);
+  memcpy(buff + offset, pbuff, size);
+  pal_save_boot_option(buff);
+}
+
+
+int
+pal_get_boot_option(unsigned char para,unsigned char* pbuff)
+{
+  if(para > 10)
+  return 0;
+  int ii = 0;
+  unsigned char buff[256] = { 0 };
+  int ret = 0;
+  unsigned char offset = option_offset[para];
+  unsigned char size   = option_size[para];
+  ret = pal_load_boot_option(buff);
+  if (!ret){
+    memcpy(pbuff,(buff + offset), size);
+  } else
+    memcpy(pbuff,buff,size);
+  return size;
 }

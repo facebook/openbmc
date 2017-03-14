@@ -1848,6 +1848,7 @@ read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+  int16_t temp;
 
   // The following block for detecting vr_update is in progress or not
   if ( access(VR_UPDATE_IN_PROGRESS, F_OK) == 0 )
@@ -1928,18 +1929,12 @@ read_vr_temp(uint8_t vr, uint8_t loop, float *value) {
       goto error_exit;
   }
 
+  // AN-E1610B-034B: temp[11:0]
   // Calculate Temp
-  if (rbuf[1] < 0x40) {
-    // Positive value
-    *value = ((rbuf[1] & 0x0F) * 256 + rbuf[0] ) * 0.125;
-  } else {
-    // Negative value 2's complement
-    uint16_t temp = (rbuf[1] << 8) | rbuf[0];
-    temp = 0x7fff - temp + 1;
-
-    *value = (((temp >> 8) & 0x7F) * 256 + (temp & 0xFF) ) * -0.125;
-  }
-
+  temp = (rbuf[1] << 8) | rbuf[0];
+  if ((rbuf[1] & 0x08))
+    temp |= 0xF000; // If negative, sign extend temp.
+  *value = (float)temp * 0.125;
 error_exit:
   if (fd > 0) {
     close(fd);

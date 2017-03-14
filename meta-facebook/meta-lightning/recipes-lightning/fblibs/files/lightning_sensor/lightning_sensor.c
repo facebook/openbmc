@@ -332,9 +332,9 @@ sensor_thresh_array_init() {
 
   // PEB TEMP SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_TEMP,
-      95, 93, 0, 5, 10, 0, 0, 0);
+      95, 93, 0, 0, 0, 0, 0, 2);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_SYS_INLET_TEMP,
-      50, 45, 0, 5, 10, 0, 0, 0);
+      50, 45, 0, 0, 0, 0, 0, 2);
 
   // PEB VOLT SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P12V,
@@ -362,13 +362,13 @@ sensor_thresh_array_init() {
 
   // PDPB TEMP SENSORS
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_LEFT_REAR_TEMP,
-      55, 50, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 0, 0, 0, 0, 2);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_LEFT_FRONT_TEMP,
-      55, 50, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 0, 0, 0, 0, 2);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_RIGHT_REAR_TEMP,
-      55, 50, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 0, 0, 0, 0, 2);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_RIGHT_FRONT_TEMP,
-      55, 50, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 0, 0, 0, 0, 2);
 
   // PDPB SSD and AMBIENT TEMP SENSORS
   ret = lightning_ssd_sku(&ssd_sku);
@@ -385,37 +385,37 @@ sensor_thresh_array_init() {
       // Intel U.2 threshold
       if (ssd_vendor == INTEL)
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-            66, 64, 0, 5, 10, 0, 0, 0);
+            75, 73, 0, 0, 0, 0, 0, 2);
       // Samsung U.2 threshold
       else if(ssd_vendor == SAMSUNG)
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-            78, 76, 0, 5, 10, 0, 0, 0);
+            75, 73, 0, 0, 0, 0, 0, 2);
       // Default threshold
       else
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-            78, 76, 0, 5, 10, 0, 0, 0);
+            75, 73, 0, 0, 0, 0, 0, 2);
 
     } else if (ssd_sku == M2_SKU) {
       // Seagate M.2 threshold
       if(ssd_vendor == SEAGATE)
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-            78, 76, 0, 5, 10, 0, 0, 0);
+            75, 73, 0, 0, 0, 0, 0, 2);
       // Samsung M.2 threshold
       else if (ssd_vendor == SAMSUNG)
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-            78, 76, 0, 5, 10, 0, 0, 0);
+            75, 73, 0, 0, 0, 0, 0, 2);
       // Default threshold
       else
         assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-            78, 76, 0, 5, 10, 0, 0, 0);
+            75, 73, 0, 0, 0, 0, 0, 2);
 
       // AMBIENT SENSORS
       assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_AMB_TEMP_0 + i,
-            65, 60, 0, 5, 10, 0, 0, 0);
+            65, 60, 0, 0, 0, 0, 0, 2);
     } else {
       // Default threshold
       assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,
-            78, 76, 0, 5, 10, 0, 0, 0);
+            75, 73, 0, 0, 0, 0, 0, 2);
     }
 
   }
@@ -440,35 +440,35 @@ sensor_thresh_array_init() {
 
   // FCB Temp Sensor
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_1,
-      55, 50, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 5, 10, 0, 0, 2);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_2,
-      55, 50, 0, 5, 10, 0, 0, 0);
+      55, 50, 0, 5, 10, 0, 0, 2);
 
   // FCB Fan Speed
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN1_REAR_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN2_FRONT_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN2_REAR_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN3_FRONT_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN3_REAR_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN4_FRONT_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN4_REAR_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN5_FRONT_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN5_REAR_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN6_FRONT_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_FAN6_REAR_SPEED,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 400, 0, 0, 50, 0);
 
   init_done = true;
 }

@@ -30,6 +30,7 @@ SRC_URI = "file://ast-functions \
            file://ssd_sku.sh \
            file://ssd_vid.sh \
            file://setup_adc.sh \
+           file://disable_wdt2.sh\
            file://rc.early \
            file://rc.local \
            file://src \
@@ -79,6 +80,8 @@ do_install() {
   update-rc.d -r ${D} ssd_vid.sh start 52 5 .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  install -m 755 disable_wdt2.sh ${D}${sysconfdir}/init.d/disable_wdt2.sh
+  update-rc.d -r ${D} disable_wdt2.sh start 60 5 .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }

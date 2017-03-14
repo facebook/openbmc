@@ -147,28 +147,25 @@ debug_card_handler() {
   uint8_t error_code_array[ERROR_CODE_NUM] = {0};
   int errCount;
   int displayCount=0;
-  error_code errorCode = {0, 0};
 
-  pal_write_error_code_file(&errorCode);
+  pal_write_error_code_file(0, ERR_DEASSERT);
 
   while (1) {
 
     /* Get self tray and peer tray location then set error code*/
     tmp = 0;
     if (!pal_self_tray_location(&tmp)) {
-      errorCode.code = ERR_CODE_SELF_TRAY_PULL_OUT;
       if (tmp)
-        pal_err_code_enable(&errorCode);
+        pal_err_code_enable(ERR_CODE_SELF_TRAY_PULL_OUT);
       else
-        pal_err_code_disable(&errorCode);
+        pal_err_code_disable(ERR_CODE_SELF_TRAY_PULL_OUT);
     }
     tmp = 0;
     if (!pal_peer_tray_location(&tmp)) {
-      errorCode.code = ERR_CODE_PEER_TRAY_PULL_OUT;
       if (tmp)
-        pal_err_code_enable(&errorCode);
+        pal_err_code_enable(ERR_CODE_PEER_TRAY_PULL_OUT);
       else
-        pal_err_code_disable(&errorCode);
+        pal_err_code_disable(ERR_CODE_PEER_TRAY_PULL_OUT);
     }
 
     pal_read_error_code_file(error_code_array);

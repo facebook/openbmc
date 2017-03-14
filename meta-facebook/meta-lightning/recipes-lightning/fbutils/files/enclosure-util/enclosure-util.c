@@ -123,16 +123,14 @@ get_switch_status() {
 
 void drive_status(int num) {
   int ret;
-  error_code errorCode;
   ssd_monitor_critical_section();
-  errorCode.code = ERROR_CODE_SSD_FAULT_BASE + num;
   
   /* read NVMe-MI data */
   ret = pal_read_nvme_data(num, CMD_DRIVE_STATUS);
   if (ret == 1 || ret ==5)
-    pal_err_code_disable(&errorCode);
+    pal_err_code_disable(ERROR_CODE_SSD_FAULT_BASE + num);
   else {
-    pal_err_code_enable(&errorCode);
+    pal_err_code_enable(ERROR_CODE_SSD_FAULT_BASE + num);
     if(ret == -1)
       printf("Read slot%d data fail.\n", num);
   }
@@ -147,18 +145,16 @@ void drive_health() {
   int count = 0;
   int tmp = 0;
   int i;
-  error_code errorCode;
 
   ssd_monitor_critical_section();
 
   /* read NVMe-MI data */
   for (i = 0; i < MAX_SLOT_NUM; i++) {
-    errorCode.code = ERROR_CODE_SSD_FAULT_BASE + i;
     drive[i] = pal_read_nvme_data(i, CMD_DRIVE_HEALTH);
     if (drive[i] == 1 || drive[i] == 5 )
-      pal_err_code_disable(&errorCode);
+      pal_err_code_disable(ERROR_CODE_SSD_FAULT_BASE + i);
     else
-      pal_err_code_enable(&errorCode);
+      pal_err_code_enable(ERROR_CODE_SSD_FAULT_BASE + i);
   }
 
   remove(SKIP_READ_SSD_TEMP);
@@ -221,14 +217,12 @@ main(int argc, char **argv) {
     if ((argc == 5) && !strcmp(argv[2], "--set")) {
       if (!strcmp(argv[4], "1") || !strcmp(argv[4], "90") || !strcmp(argv[4], "91")) {
         if (!strcmp(argv[3], "assert")) {
-          error_code errorCode = {atoi(argv[4]), 1};
-          pal_err_code_enable(&errorCode);
+          pal_err_code_enable(atoi(argv[4]));
           printf("%s: assert\n", Error_Code_Description[atoi(argv[4])]);
         }
 
         else if (!strcmp(argv[3], "deassert")) {
-          error_code errorCode = {atoi(argv[4]), 0};
-          pal_err_code_disable(&errorCode);
+          pal_err_code_disable(atoi(argv[4]));
           printf("%s: deassert\n", Error_Code_Description[atoi(argv[4])]);
         }
 

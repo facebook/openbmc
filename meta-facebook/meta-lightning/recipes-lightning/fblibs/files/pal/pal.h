@@ -66,11 +66,6 @@ extern "C" {
 #define ERR_ASSERT 1
 #define ERR_DEASSERT 0
 
-typedef struct {
-  uint8_t code;
-  bool status;
-} error_code;
-
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -256,11 +251,11 @@ void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
-void pal_err_code_enable(error_code *update);
-void pal_err_code_disable(error_code *update);
+void pal_err_code_enable(const uint8_t error_num);
+void pal_err_code_disable(const uint8_t error_num);
 int pal_read_error_code_file(uint8_t *error_code_arrray);
-int pal_write_error_code_file(error_code *update);
-int pal_drive_status(const char* i2c_bus);
+int pal_write_error_code_file(const uint8_t error_num, const bool status);
+int pal_drive_status(const char* dev);
 int pal_read_nvme_data(uint8_t slot_num, uint8_t cmd);
 int pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd);
 int pal_m2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd);

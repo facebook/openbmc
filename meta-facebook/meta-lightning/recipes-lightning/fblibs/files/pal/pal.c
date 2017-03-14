@@ -616,17 +616,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
     // Round the current sensor value to the nearest hundredth before checking the threshold and cached key/val
     if((*((float*)value)) < 0) {
-        isNegative = true;  
+        isNegative = true;
         *((float*)value) = -(*((float*)value));
     }
- 
+
     round_value_tmp = ((*((float*)value)) * 100) + 0.5;
     *((float*)value) = round_value_tmp / (100*1.0);
 
     if(isNegative) {
         *((float*)value) = -(*((float*)value));
     }
-  
+
     // On successful sensor read
     sprintf(str, "%.2f", *((float*)value));
   }
@@ -1419,7 +1419,6 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int fd, ret;
   int retry_count = 0;
-  error_code errorCode = {error_code_num, ERR_ASSERT};
 
   if (access(ERR_CODE_FILE, F_OK) == -1)
     fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR | O_TRUNC, 00777);
@@ -1456,7 +1455,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 
   sensorStatus[snr_num] = ERR_ASSERT;
 
-  pal_write_error_code_file(&errorCode);
+  pal_write_error_code_file(error_code_num, ERR_ASSERT);
 
   munmap(sensorStatus, sizeof(bool) * MAX_SENSOR_NUM);
   flock(fd, LOCK_UN);
@@ -1468,8 +1467,8 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   bool *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int i, fd, ret;
+  bool tmp = 0;
   int retry_count = 0;
-  error_code errorCode = {error_code_num, ERR_DEASSERT};
 
   if (access(ERR_CODE_FILE, F_OK) == -1)
     fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR | O_TRUNC, 00777);
@@ -1508,12 +1507,12 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 
   for (i = 0; i < MAX_SENSOR_NUM; i++) {
     if (sennum2errcode_mapping[i] == error_code_num) {
-      errorCode.status |= sensorStatus[i];
+      tmp |= sensorStatus[i];
     }
   }
 
-  if (errorCode.status == ERR_DEASSERT){
-    pal_write_error_code_file(&errorCode);
+  if (tmp == ERR_DEASSERT){
+    pal_write_error_code_file(error_code_num, ERR_DEASSERT);
   }
 
   munmap(sensorStatus, sizeof(bool) * MAX_SENSOR_NUM);
@@ -1539,23 +1538,19 @@ pal_get_fw_info(unsigned char target, unsigned char* res,
 }
 
 void
-pal_err_code_enable(error_code *update) {
+pal_err_code_enable(const uint8_t error_num) {
   // error code distributed over 0~99
-  if (update->code < (ERROR_CODE_NUM * 8)) {
-    update->status = 1;
-    pal_write_error_code_file(update);
-  }
+  if (error_num  < (ERROR_CODE_NUM * 8))
+    pal_write_error_code_file(error_num, ERR_ASSERT);
   else
     syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
 }
 
 void
-pal_err_code_disable(error_code *update) {
+pal_err_code_disable(const uint8_t error_num) {
   // error code distributed over 0~99
-  if (update->code < (ERROR_CODE_NUM * 8)) {
-    update->status = 0;
-    pal_write_error_code_file(update);
-  }
+  if (error_num < (ERROR_CODE_NUM * 8))
+    pal_write_error_code_file(error_num, ERR_DEASSERT);
   else
     syslog(LOG_WARNING, "%s(): wrong error code number", __func__);
 }
@@ -1600,7 +1595,7 @@ pal_read_error_code_file(uint8_t *error_code_array) {
 }
 
 int
-pal_write_error_code_file(error_code *update) {
+pal_write_error_code_file(const uint8_t error_num, const bool status) {
   FILE *fp = NULL;
   uint8_t ret = 0;
   int retry_count = 0;
@@ -1635,10 +1630,10 @@ pal_write_error_code_file(error_code *update) {
     return -1;
   }
 
-  stat = update->code / 8;
-  bit_stat = update->code % 8;
+  stat = error_num / 8;
+  bit_stat = error_num % 8;
 
-  if (update->status)
+  if (status)
     error_code_array[stat] |= 1 << bit_stat;
   else
     error_code_array[stat] &= ~(1 << bit_stat);
@@ -1727,7 +1722,10 @@ pal_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
   }
   if (sku == U2_SKU) {
     ret = pal_u2_flash_read_nvme_data(slot_num, cmd);
-    if (ret == 1)
+    /*Drive status report
+    0: drive is not health
+    1: drive is health*/
+    if (ret == 0)
       return 1;
     else
       return 0;
@@ -1775,6 +1773,13 @@ pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
   if (cmd == CMD_DRIVE_STATUS) {
     printf("Slot%d:\n", slot_num);
     ret = pal_drive_status(bus);
+    if(ret < 0) {
+      syslog(LOG_DEBUG, "%s(): pal_drive_status failed", __func__);
+      return -1;
+    }
+
+    ret = pal_drive_health(bus);
+    return ret;
   }
 
   else if (cmd == CMD_DRIVE_HEALTH) {
@@ -1786,13 +1791,6 @@ pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
     syslog(LOG_DEBUG, "%s(): unknown cmd", __func__);
     return -1;
   }
-
-  if(ret < 0) {
-    syslog(LOG_DEBUG, "%s(): pal_drive_status failed", __func__);
-    return -1;
-  }
-
-  return 1;
 }
 
 int
@@ -1862,6 +1860,13 @@ pal_m2_read_nvme_data(uint8_t slot_num, uint8_t m2_mux_chan, uint8_t cmd) {
   if (cmd == CMD_DRIVE_STATUS) {
     printf("Slot%d Drive%d\n", slot_num, m2_mux_chan);
     ret = pal_drive_status(bus);
+    if(ret < 0) {
+      syslog(LOG_DEBUG, "%s(): pal_drive_status failed", __func__);
+      return ret;
+    }
+
+    ret = pal_drive_health(bus);
+    return ret;
   }
 
   else if (cmd == CMD_DRIVE_HEALTH) {
@@ -1873,13 +1878,6 @@ pal_m2_read_nvme_data(uint8_t slot_num, uint8_t m2_mux_chan, uint8_t cmd) {
     syslog(LOG_DEBUG, "%s(): unknown cmd", __func__);
     return -1;
   }
-
-  if(ret < 0) {
-    syslog(LOG_DEBUG, "%s(): pal_drive_status failed", __func__);
-    return -1;
-  }
-
-  return 0;
 }
 
 int
@@ -1902,7 +1900,10 @@ pal_drive_health(const char* dev) {
   return 0;
 }
 
-void pal_add_cri_sel(char *str)
+void
+pal_add_cri_sel(char *str)
 {
 
 }
+
+

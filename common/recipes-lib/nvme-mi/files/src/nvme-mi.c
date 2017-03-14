@@ -26,22 +26,35 @@
 #include "nvme-mi.h"
 
 #define I2C_NVME_INTF_ADDR 0x6A
+
 #define NVME_SFLGS_REG 0x01
-#define NVME_WARN_REG 0x02
+#define NVME_WARNING_REG 0x02
 #define NVME_TEMP_REG 0x03
 #define NVME_PDLU_REG 0x04
+#define NVME_VENDOR_REG 0x09
 #define NVME_SERIAL_NUM_REG 0x0B
 #define SERIAL_NUM_SIZE 20
 
+/* NVMe-MI Temperature Definition Code */
+#define TEMP_HIGHER_THAN_127 0x7F
+#define TEPM_LOWER_THAN_n60 0xC4
+#define TEMP_NO_UPDATE 0x80
+#define TEMP_SENSOR_FAIL 0x81
+
+/* NVMe-MI Vendor ID Code */
+#define VENDOR_ID_INTEL 0x8086
+#define VENDOR_ID_SEAGATE 0x1BB1
+#define VENDOR_ID_SAMSUNG 0x144D
+
 /* Read a byte from NVMe-MI 0x6A. Need to give a bus and a byte address for reading. */
 int
-nvme_read_byte(const char *device, uint8_t item, uint8_t *value) {
+nvme_read_byte(const char *i2c_bus_device, uint8_t item, uint8_t *value) {
   int dev;
   int ret;
   int32_t res;
   int retry = 0;
 
-  dev = open(device, O_RDWR);
+  dev = open(i2c_bus_device, O_RDWR);
   if (dev < 0) {
     syslog(LOG_DEBUG, "%s(): open() failed", __func__);
     return -1;
@@ -54,15 +67,15 @@ nvme_read_byte(const char *device, uint8_t item, uint8_t *value) {
     return -1;
   }
 
+  res = i2c_smbus_read_byte_data(dev, item);
   retry = 0;
-  while (retry < 5) {
+  while ((retry < 5) && (res < 0)) {
+    msleep(100);
     res = i2c_smbus_read_byte_data(dev, item);
     if (res < 0)
       retry++;
     else
       break;
-
-    msleep(100);
   }
 
   if (res < 0) {
@@ -78,12 +91,57 @@ nvme_read_byte(const char *device, uint8_t item, uint8_t *value) {
   return 0;
 }
 
-/* Read NVMe-MI SFLGS. Need to give a bus for reading. */
+/* Read a word from NVMe-MI 0x6A. Need to give a bus and a byte address for reading. */
 int
-nvme_sflgs_read(const char *device, uint8_t *value) {
+nvme_read_word(const char *i2c_bus_device, uint8_t item, uint16_t *value) {
+  int dev;
+  int ret;
+  int32_t res;
+  int retry = 0;
+
+  dev = open(i2c_bus_device, O_RDWR);
+  if (dev < 0) {
+    syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+    return -1;
+  }
+
+  ret = ioctl(dev, I2C_SLAVE, I2C_NVME_INTF_ADDR);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+    close(dev);
+    return -1;
+  }
+
+  res = i2c_smbus_read_word_data(dev, item);
+  retry = 0;
+  while ((retry < 5) && (res < 0)) {
+    msleep(100);
+    res = i2c_smbus_read_word_data(dev, item);
+    if (res < 0)
+      retry++;
+    else
+      break;
+  }
+
+  if (res < 0) {
+    syslog(LOG_DEBUG, "%s(): i2c_smbus_read_byte_data failed", __func__);
+    close(dev);
+    return -1;
+  }
+
+  *value = (uint16_t) res;
+
+  close(dev);
+
+  return 0;
+}
+
+/* Read NVMe-MI Status Flags. Need to give a bus for reading. */
+int
+nvme_sflgs_read(const char *i2c_bus_device, uint8_t *value) {
   int ret;
 
-  ret = nvme_read_byte(device, NVME_SFLGS_REG, value);
+  ret = nvme_read_byte(i2c_bus_device, NVME_SFLGS_REG, value);
 
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): nvme_read_byte failed", __func__);
@@ -95,10 +153,10 @@ nvme_sflgs_read(const char *device, uint8_t *value) {
 
 /* Read NVMe-MI SMART Warnings. Need to give a bus for reading. */
 int
-nvme_smart_warning_read(const char *device, uint8_t *value) {
+nvme_smart_warning_read(const char *i2c_bus_device, uint8_t *value) {
   int ret;
 
-  ret = nvme_read_byte(device, NVME_WARN_REG, value);
+  ret = nvme_read_byte(i2c_bus_device, NVME_WARNING_REG, value);
 
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): nvme_read_byte failed", __func__);
@@ -110,10 +168,10 @@ nvme_smart_warning_read(const char *device, uint8_t *value) {
 
 /* Read NVMe-MI Composite Temperature. Need to give a bus for reading. */
 int
-nvme_temp_read(const char *device, uint8_t *value) {
+nvme_temp_read(const char *i2c_bus_device, uint8_t *value) {
   int ret;
 
-  ret = nvme_read_byte(device, NVME_TEMP_REG, value);
+  ret = nvme_read_byte(i2c_bus_device, NVME_TEMP_REG, value);
 
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): nvme_read_byte failed", __func__);
@@ -123,24 +181,41 @@ nvme_temp_read(const char *device, uint8_t *value) {
   return 0;
 }
 
-/* Read NVMe-MI PDLU. Need to give a bus for reading. */
+/* Read NVMe-MI Percentage Drive Life Used. Need to give a bus for reading. */
 int
-nvme_pdlu_read(const char *device, uint8_t *value) {
+nvme_pdlu_read(const char *i2c_bus_device, uint8_t *value) {
   int ret;
 
-  ret = nvme_read_byte(device, NVME_PDLU_REG, value);
+  ret = nvme_read_byte(i2c_bus_device, NVME_PDLU_REG, value);
 
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): nvme_read_byte failed", __func__);
     return -1;
   }
+
+  return 0;
+}
+
+/* Read NVMe-MI Vendor ID. Need to give a bus for reading. */
+int
+nvme_vendor_read(const char *i2c_bus_device, uint16_t *value) {
+  int ret;
+
+  ret = nvme_read_word(i2c_bus_device, NVME_VENDOR_REG, value);
+
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): nvme_read_byte failed", __func__);
+    return -1;
+  }
+
+  *value = (*value & 0xFF00) >> 8 | (*value & 0xFF) << 8;
 
   return 0;
 }
 
 /* Read NVMe-MI Serial Number. Need to give a bus for reading. */
 int
-nvme_serial_num_read(const char *device, uint8_t *value, int size) {
+nvme_serial_num_read(const char *i2c_bus_device, uint8_t *value, int size) {
   int ret;
   uint8_t reg = NVME_SERIAL_NUM_REG;
   int count;
@@ -151,7 +226,7 @@ nvme_serial_num_read(const char *device, uint8_t *value, int size) {
   }
 
   for(count = 0; count < SERIAL_NUM_SIZE; count++) {
-    ret = nvme_read_byte(device, reg + count, value + count);
+    ret = nvme_read_byte(i2c_bus_device, reg + count, value + count);
     if(ret < 0) {
       syslog(LOG_DEBUG, "%s(): nvme_read_byte failed", __func__);
       return -1;
@@ -159,3 +234,216 @@ nvme_serial_num_read(const char *device, uint8_t *value, int size) {
   }
   return 0;
 }
+
+/* Read NVMe-MI Status Flags and decode it. */
+int
+nvme_sflgs_read_decode(const char *i2c_bus_device, uint8_t *value, t_status_flags *status_flag_decoding) {
+  
+  if ((i2c_bus_device == NULL) | (value == NULL) | (status_flag_decoding == NULL)) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(status_flag_decoding->self.key, "Status Flags");
+  if (nvme_sflgs_read(i2c_bus_device, value)) {
+    syslog(LOG_DEBUG, "%s(): nvme_sflgs_read failed", __func__);
+    sprintf(status_flag_decoding->self.value, "Fail on reading");
+    return -1;
+  }
+  else {
+    sprintf(status_flag_decoding->self.value, "0x%02X", *value);
+
+    sprintf(status_flag_decoding->read_complete.key, "SMBUS block read complete");
+    if ((*value & 0x80) == 0)
+      sprintf(status_flag_decoding->read_complete.value, "FAIL");
+    else
+      sprintf(status_flag_decoding->read_complete.value, "OK");
+
+    sprintf(status_flag_decoding->ready.key, "Drive Ready");
+    if ((*value & 0x40) == 0)
+      sprintf(status_flag_decoding->ready.value, "Ready");
+    else
+      sprintf(status_flag_decoding->ready.value, "Not ready");
+
+    sprintf(status_flag_decoding->functional.key, "Drive Functional");
+    if ((*value & 0x20) == 0)
+      sprintf(status_flag_decoding->functional.value, "Unrecoverable Failure");
+    else
+      sprintf(status_flag_decoding->functional.value, "Functional");
+
+    sprintf(status_flag_decoding->reset_required.key, "Reset Required");
+    if ((*value & 0x10) == 0)
+      sprintf(status_flag_decoding->reset_required.value, "Required");
+    else
+      sprintf(status_flag_decoding->reset_required.value, "No");
+
+    sprintf(status_flag_decoding->port0_link.key, "Port 0 PCIe Link Active");
+    if ((*value & 0x08) == 0)
+      sprintf(status_flag_decoding->port0_link.value, "Down");
+    else
+      sprintf(status_flag_decoding->port0_link.value, "Up");
+
+    sprintf(status_flag_decoding->port1_link.key, "Port 1 PCIe Link Active");
+    if ((*value & 0x04) == 0)
+      sprintf(status_flag_decoding->port1_link.value, "Down");
+    else
+      sprintf(status_flag_decoding->port1_link.value, "Up");
+  }
+
+  return 0;
+}
+
+/* Read NVMe-MI SMART Warnings and decode it. */
+int
+nvme_smart_warning_read_decode(const char *i2c_bus_device, uint8_t *value, t_smart_warning *smart_warning_decoding) { 
+
+  if ((i2c_bus_device == NULL) | (value == NULL) | (smart_warning_decoding == NULL)) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(smart_warning_decoding->self.key, "SMART Critical Warning");
+  if (nvme_smart_warning_read(i2c_bus_device, value)) {
+    syslog(LOG_DEBUG, "%s(): nvme_smart_warning_read failed", __func__);
+    sprintf(smart_warning_decoding->self.value, "Fail on reading");
+    return -1;
+  }
+  else {
+    sprintf(smart_warning_decoding->self.value, "0x%02X", *value);
+
+    sprintf(smart_warning_decoding->spare_space.key, "Spare Space");
+    if ((*value & 0x01) == 0)
+      sprintf(smart_warning_decoding->spare_space.value, "Low");
+    else
+      sprintf(smart_warning_decoding->spare_space.value, "Normal");
+
+    sprintf(smart_warning_decoding->temp_warning.key, "Temperature Warning");
+    if ((*value & 0x02) == 0)
+      sprintf(smart_warning_decoding->temp_warning.value, "Abnormal");
+    else
+      sprintf(smart_warning_decoding->temp_warning.value, "Normal");
+
+    sprintf(smart_warning_decoding->reliability.key, "NVM Subsystem Reliability");
+    if ((*value & 0x04) == 0)
+      sprintf(smart_warning_decoding->reliability.value, "Degraded");
+    else
+      sprintf(smart_warning_decoding->reliability.value, "Normal");
+
+    sprintf(smart_warning_decoding->media_status.key, "Media Status");
+    if ((*value & 0x08) == 0)
+      sprintf(smart_warning_decoding->media_status.value, "Read Only mode");
+    else
+      sprintf(smart_warning_decoding->media_status.value, "Normal");
+
+    sprintf(smart_warning_decoding->backup_device.key, "Volatile Memory Backup Device");
+    if ((*value & 0x10) == 0)
+      sprintf(smart_warning_decoding->backup_device.value, "Failed");
+    else
+      sprintf(smart_warning_decoding->backup_device.value, "Normal");
+  }
+
+  return 0;
+}
+
+/* Read NVMe-MI Composite Temperature and decode it. */
+int
+nvme_temp_read_decode(const char *i2c_bus_device, uint8_t *value, t_key_value_pair *temp_decoding) {
+
+  if ((i2c_bus_device == NULL) | (value == NULL) | (temp_decoding == NULL)) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(temp_decoding->key, "Composite Temperature");
+  if (nvme_temp_read(i2c_bus_device, value)) {
+    syslog(LOG_DEBUG, "%s(): nvme_temp_read failed", __func__);
+    sprintf(temp_decoding->value, "Fail on reading");
+    return -1;
+  }
+  else {
+    if (*value <= TEMP_HIGHER_THAN_127)
+      sprintf(temp_decoding->value, "%d C", *value);
+    else if (*value >= TEPM_LOWER_THAN_n60)
+      sprintf(temp_decoding->value, "%d C", (*value - 0x100));
+    else if (*value == TEMP_NO_UPDATE)
+      sprintf(temp_decoding->value, "No data or data is too old");
+    else if (*value == TEMP_SENSOR_FAIL)
+      sprintf(temp_decoding->value, "Sensor failure");
+  }
+
+  return 0;
+}
+
+/* Read NVMe-MI Percentage Drive Life Used and decode it. */
+int
+nvme_pdlu_read_decode(const char *i2c_bus_device, uint8_t *value, t_key_value_pair *pdlu_decoding) {
+
+  if ((i2c_bus_device == NULL) | (value == NULL) | (pdlu_decoding == NULL)) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(pdlu_decoding->key, "Percentage Drive Life Used");
+  if (nvme_pdlu_read(i2c_bus_device, value)) {
+    syslog(LOG_DEBUG, "%s(): nvme_pdlu_read failed", __func__);
+    sprintf(pdlu_decoding->value, "Fail on reading");
+    return -1;
+  }
+  else
+    sprintf(pdlu_decoding->value, "%d", *value);
+
+  return 0;
+}
+
+/* Read NVMe-MI Vendor ID and decode it. */
+int
+nvme_vendor_read_decode(const char *i2c_bus_device, uint16_t *value, t_key_value_pair *vendor_decoding) {
+
+  if ((i2c_bus_device == NULL) | (value == NULL) | (vendor_decoding == NULL)) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(vendor_decoding->key, "Vendor");
+  if (nvme_vendor_read(i2c_bus_device, value)) {
+    syslog(LOG_DEBUG, "%s(): nvme_vendor_read failed", __func__);
+    sprintf(vendor_decoding->value, "Fail on reading");
+    return -1;
+  }
+  else{
+    if (*value == VENDOR_ID_INTEL)
+      sprintf(vendor_decoding->value, "Intel(0x%04X)", *value);
+    else if (*value == VENDOR_ID_SEAGATE)
+      sprintf(vendor_decoding->value, "Seagate(0x%04X)", *value);
+    else if (*value == VENDOR_ID_SAMSUNG)
+      sprintf(vendor_decoding->value, "Samsung(0x%04X)", *value);
+    else
+      sprintf(vendor_decoding->value, "Unknown(0x%04X)", *value);
+  }
+
+  return 0;
+}
+
+/* Read NVMe-MI Serial Number and decode it. */
+int
+nvme_serial_num_read_decode(const char *i2c_bus_device, uint8_t *value, int size, t_key_value_pair *sn_decoding) {
+
+  if ((i2c_bus_device == NULL) | (value == NULL) | (sn_decoding == NULL)) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(sn_decoding->key, "Serial Number");
+  if (nvme_serial_num_read(i2c_bus_device, value, SERIAL_NUM_SIZE)) {
+    syslog(LOG_DEBUG, "%s(): nvme_serial_num_read failed", __func__);
+    sprintf(sn_decoding->value, "Fail on reading");
+    return -1;
+  }
+  else{
+    memcpy(sn_decoding->value, value, SERIAL_NUM_SIZE);
+    sn_decoding->value[SERIAL_NUM_SIZE] = '\0';
+  }
+
+  return 0;
+}
+

@@ -36,7 +36,7 @@
 
 // TODO: Remove macro once we plan to enable it for other platforms.
 
-#ifdef CONFIG_FBTTN
+#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
 #define I2C_BUS_NUM            14
 #define AST_I2C_BASE           0x1E78A000  /* I2C */
 #define I2C_CMD_REG            0x14
@@ -117,7 +117,7 @@ watchdog_handler() {
   }
 }
 
-#ifdef CONFIG_FBTTN
+#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
 static void *
 i2c_mon_handler() {
   uint32_t i2c_fd;
@@ -158,6 +158,7 @@ i2c_mon_handler() {
               sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed", i);          
               syslog(LOG_CRIT, str_i2c_log);
               is_error_occur[i] = true;
+              pal_i2c_crash_assert_handle(i);
             }
           }
         } else {
@@ -167,6 +168,7 @@ i2c_mon_handler() {
             sprintf(str_i2c_log, "DEASSERT: I2C bus %d crashed", i);          
             syslog(LOG_CRIT, str_i2c_log);
             is_error_occur[i] = false;
+            pal_i2c_crash_deassert_handle(i);
           }
         }
       }
@@ -183,7 +185,7 @@ main(int argc, void **argv) {
   int dev, rc, pid_file;
   pthread_t tid_watchdog;
   pthread_t tid_hb_led;
-#ifdef CONFIG_FBTTN
+#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
   pthread_t tid_i2c_mon;
 #endif
 
@@ -221,7 +223,7 @@ main(int argc, void **argv) {
     exit(1);
   }
 
-#ifdef CONFIG_FBTTN
+#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
   // Add a thread for monitoring all I2C buses crash or not
   if (pthread_create(&tid_i2c_mon, NULL, i2c_mon_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for I2C errorr\n");
@@ -233,7 +235,7 @@ main(int argc, void **argv) {
 
   pthread_join(tid_hb_led, NULL);
 
-#ifdef CONFIG_FBTTN
+#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
   pthread_join(tid_i2c_mon, NULL);
 #endif
 

@@ -3294,9 +3294,18 @@ pal_is_crashdump_ongoing(uint8_t fru)
   return 0;
 }
 
-void pal_add_cri_sel(char *str)
+void
+pal_add_cri_sel(char *str)
 {
 
 }
 
+void
+pal_i2c_crash_assert_handle(int i2c_bus_num) {
 
+}
+
+void
+pal_i2c_crash_deassert_handle(int i2c_bus_num) {
+
+}

@@ -41,7 +41,7 @@ case "$flash_type" in
         case "$ssd_vendor" in
            "intel") cp /etc/FSC_Lightning_PVT_Intel_U2_4TB_v2_config.json ${default_fsc_config_path}
            ;;
-           "samsung") cp /etc/FSC_Lightning_PVT_Samsung_U2_4TB_v2_config.json ${default_fsc_config_path}
+           "samsung") cp /etc/FSC_Lightning_PVT_Samsung_U2_4TB_v3_config.json ${default_fsc_config_path}
            ;;
            *) echo "Enter into transitional mode - Unexpected U.2 SSD vendor."
               /usr/local/bin/init_pwm.sh

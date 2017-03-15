@@ -140,6 +140,7 @@ do_reset() {
     if [ $system -eq 1 ]; then
         logger "Power reset the whole system ..."
         echo -n "Power reset whole system ..."
+        do_off
         sleep 1
         echo 0 > $PWR_SYSTEM_SYSFS
     else

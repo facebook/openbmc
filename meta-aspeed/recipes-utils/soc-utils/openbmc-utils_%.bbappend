@@ -19,10 +19,10 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://soc-utils.sh \
-    file://vbs.sh \
+    file://vboot-util \
     "
 
 OPENBMC_UTILS_FILES += " \
     soc-utils.sh \
-    vbs.sh \
+    vboot-util \
     "

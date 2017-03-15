@@ -1,0 +1,4 @@
+FSCD config attribute help:
+
+chassis_intrusion :
+Useful for hot swappable chassis type of nodes that needs actions to be performed when a tray is out.

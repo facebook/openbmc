@@ -4,9 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from ply import lex, yacc
-import json
-import sys
-import logging
 
 tokens = (
     "SYM",

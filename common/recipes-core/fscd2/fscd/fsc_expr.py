@@ -4,8 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import fsc_parser
-import json
-import sys
+
 
 class InfixNode():
     def __init__(self, op, lhs, rhs):
@@ -25,6 +24,7 @@ class InfixNode():
     def __str__(self):
         return str(self.lhs) + " " + str(self.op) + " " + str(self.rhs)
 
+
 class ListNode():
     def __init__(self, inners):
         self.inners = inners
@@ -40,6 +40,7 @@ class ListNode():
 
     def __str__(self):
         return "[" + ", ".join([str(i) for i in self.inners]) + "]"
+
 
 class BindNode():
     def __init__(self, name, bindnode, innernode):
@@ -61,9 +62,10 @@ class BindNode():
 
     def __str__(self):
         return "{} = {};\n{}".format(
-                self.name,
-                str(self.bindnode),
-                str(self.innernode))
+            self.name,
+            str(self.bindnode),
+            str(self.innernode))
+
 
 class IdentNode():
     def __init__(self, name):
@@ -115,6 +117,7 @@ class ApplyNode():
     def __str__(self):
         return self.name + "(" + str(self.inner) + ")"
 
+
 def make_infix_node(ast_node, info, profiles):
     op = None
     if ast_node['op'] == '+':
@@ -130,6 +133,7 @@ def make_infix_node(ast_node, info, profiles):
     node = InfixNode(op, lhs_e, rhs_e)
     return node
 
+
 def make_apply_node(ast_node, info, profiles):
     name = ast_node['name']
     inner_e = make_eval_node(ast_node['inner'], info, profiles)
@@ -144,15 +148,17 @@ def make_apply_node(ast_node, info, profiles):
         # check for profile?
         if name not in profiles:
             raise InvalidExpression(
-                    "Not a built-in function or profile name: '%s'" \
+                    "Not a built-in function or profile name: '%s'"
                     % (ast_node['name'],))
         controller = profiles[name]()
         op = ApplyProfile(name, controller)
     return ApplyNode(name, op, inner_e)
 
+
 def make_ident_node(ast_node, info, profiles):
     info['ext_vars'].add(ast_node['name'])
     return IdentNode(ast_node['name'])
+
 
 def make_bind_node(ast_node, info, profiles):
     name = ast_node['name']
@@ -162,11 +168,15 @@ def make_bind_node(ast_node, info, profiles):
         info['ext_vars'].remove(name)
     return BindNode(name, bindnode, innernode)
 
+
 def make_const_node(ast_node, info, profiles):
     return ConstNode(ast_node['value'])
 
+
 def make_list_node(ast_node, info, profiles):
-    return ListNode([make_eval_node(n, info, profiles) for n in ast_node['content']])
+    return ListNode([make_eval_node(n, info, profiles)
+                    for n in ast_node['content']])
+
 
 def make_eval_node(ast_node, info, profiles):
     makers = {
@@ -180,21 +190,26 @@ def make_eval_node(ast_node, info, profiles):
     maker = makers.get(ast_node['type'])
     return maker(ast_node, info, profiles)
 
+
 def make_eval_tree(source, profiles):
     root_ast_node = fsc_parser.parse_expr(source)
     info = {'profiles': set(), 'ext_vars': set()}
     eval_root = make_eval_node(root_ast_node, info, profiles)
     return (eval_root, info)
 
+
 class InvalidExpression(Exception):
     pass
+
 
 class Hold():
     """If no data is available, returns last known sample"""
     def __init__(self):
         self.last = None
+
     def dbgapply(self, inp, ctx):
         return (self.apply(inp), "hold[held={}]".format(self.last))
+
     def apply(self, inp, ctx):
         if inp is not None:
             self.last = inp
@@ -202,14 +217,17 @@ class Hold():
         else:
             return self.last
 
+
 class Max():
     identity = 0
+
     def apply(self, inp, ctx):
         m = None
         for i in inp:
             if not m or i > m:
                 m = i
         return m
+
 
 class ApplyProfile():
     def __init__(self, profile, controller):
@@ -221,8 +239,10 @@ class ApplyProfile():
             out = self.controller.run(inp, ctx['dt'])
             return out
 
+
 class Sum():
     identity = 0
+
     def apply(self, in_l, in_r):
         if in_l is not None and in_r is not None:
             return in_l + in_r
@@ -233,6 +253,7 @@ class Sum():
 
     def __str__(self):
         return '+'
+
 
 class Sub():
     identity = 0

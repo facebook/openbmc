@@ -31,7 +31,7 @@ S = "${WORKDIR}"
 
 binfiles = "gpiod \
            "
-DEPENDS += " libgpio libpal "
+DEPENDS += " libgpio libpal libusb_dbg "
 
 pkgdir = "gpiod"
 

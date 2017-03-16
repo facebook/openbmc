@@ -32,88 +32,18 @@
 #include <sys/file.h>
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
+#include <openbmc/usb_dbg.h>
 #include "facebook/i2c.h"
 #include "facebook/i2c-dev.h"
 
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
 
-#define MCU_BUS_ID   0x9
-#define PCA9555_addr 0x4E
-
 #define POLL_TIMEOUT -1 /* Forever */
 static uint8_t CATERR_irq = 0;
 static uint8_t MSMI_irq = 0;
 static long int reset_sec = 0, power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-// Helper Functions. TODO Move to common lib
-static int
-i2c_io(int fd, uint8_t addr, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
-  struct i2c_rdwr_ioctl_data data;
-  struct i2c_msg msg[2];
-  int n_msg = 0;
-  int rc;
-
-  memset(&msg, 0, sizeof(msg));
-
-  if (tcount) {
-    msg[n_msg].addr = addr >> 1;
-    msg[n_msg].flags = 0;
-    msg[n_msg].len = tcount;
-    msg[n_msg].buf = tbuf;
-    n_msg++;
-  }
-
-  if (rcount) {
-    msg[n_msg].addr = addr >> 1;
-    msg[n_msg].flags = I2C_M_RD;
-    msg[n_msg].len = rcount;
-    msg[n_msg].buf = rbuf;
-    n_msg++;
-  }
-
-  data.msgs = msg;
-  data.nmsgs = n_msg;
-
-  rc = ioctl(fd, I2C_RDWR, &data);
-  if (rc < 0) {
-    // syslog(LOG_ERR, "Failed to do raw io");
-    return -1;
-  }
-
-  return 0;
-}
-
-
-
-/* Functionality to reset debug card. TODO Move to common library */
-void
-pal_reset_PCA9555(void) {
-  int fd = 0;
-  char fn[32];
-  uint8_t tbuf[2] = {0};
-  uint8_t rbuf[2] = {0};
-  int ret;
-
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", MCU_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_ERR, "%s(%d) : open fails for path: %s\n", __func__, __LINE__, fn);
-    goto error_exit;
-  }
-  //Set Configuration register
-  tbuf[0] = 0x06; tbuf[1] = 0xFF; tbuf[2] = 0xFF;
-  ret = i2c_io(fd, PCA9555_addr, tbuf, 3, rbuf, 0);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s(%d) : reset_PCA9555 fail.\n", __func__, __LINE__ );
-    goto error_exit;
-  }
-error_exit:
-  if (fd > 0 ) {
-    close(fd);
-  }
-}
 
 static inline long int reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
@@ -204,7 +134,7 @@ static void gpio_event_handle(void *p)
 
   if (gp->gs.gs_gpio == gpio_num("GPIOQ6")) { // FM_POST_CARD_PRES_BMC_N
     if(gp->value == 1)
-      pal_reset_PCA9555();
+      usb_dbg_reset();
   }
 
   //LCD debug card critical SEL support

@@ -36,6 +36,7 @@
 #include <openbmc/cpld.h>
 #include <openbmc/bios.h>
 #include <openbmc/gpio.h>
+#include <openbmc/usb_dbg.h>
 
 #define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
 #define FSC_CONFIG           "/etc/fsc-config.json"
@@ -51,7 +52,7 @@ static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|mb|nic> <--version>\n");
   printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic|--vr|--rom|");
-  printf("--bmc|--MCU|--MCUbl> <path>\n");
+  printf("--bmc|--usbdbgfw|--usbdbgbl> <path>\n");
   printf("       fw-util <mb> <--postcode>\n");
 }
 
@@ -441,21 +442,21 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     return 0;
   }
 
-  if (!strcmp(argv[3], "--MCU")) {
-    ret = pal_update_MCU(argv[4]);
+  if (!strcmp(argv[3], "--usbdbgfw")) {
+    ret = usb_dbg_update_fw(argv[4]);
     if ( ret < 0 )
     {
-      printf("Error Occur at updating MCU FW!\n");
+      printf("Error Occur at updating USB DBG FW!\n");
       return ret;
     }
     return 0;
   }
 
-  if (!strcmp(argv[3], "--MCUbl")) {
-    ret = pal_update_MCU_bl(argv[4]);
+  if (!strcmp(argv[3], "--usbdbgbl")) {
+    ret = usb_dbg_update_boot_loader(argv[4]);
     if ( ret < 0 )
     {
-      printf("Error Occur at updating MCU bootloader!\n");
+      printf("Error Occur at updating USB DBG bootloader!\n");
       return ret;
     }
     return 0;

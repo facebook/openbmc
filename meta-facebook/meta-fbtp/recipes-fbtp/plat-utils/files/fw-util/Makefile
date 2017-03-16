@@ -2,7 +2,7 @@
 all: fw-util
 
 fw-util: fw-util.c
-	$(CC) -pthread -lipmi -lipmb -lme -lgpio -lpal -lcpld -lbios -ljansson -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread -lipmi -lipmb -lme -lgpio -lpal -lcpld -lbios -lusb_dbg -ljansson -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

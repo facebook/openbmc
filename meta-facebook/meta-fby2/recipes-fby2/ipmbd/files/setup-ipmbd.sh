@@ -45,19 +45,19 @@ case "$ACTION" in
     echo -n "Starting $DESC: "
 
     if [ $(is_server_prsnt 1) == "1" ]; then
-      $DAEMON 3 0x20 > /dev/null 2>&1 &
-    fi
-
-    if [ $(is_server_prsnt 2) == "1" ]; then
       $DAEMON 1 0x20 > /dev/null 2>&1 &
     fi
 
+    if [ $(is_server_prsnt 2) == "1" ]; then
+      $DAEMON 3 0x20 > /dev/null 2>&1 &
+    fi
+
     if [ $(is_server_prsnt 3) == "1" ]; then
-      $DAEMON 7 0x20 > /dev/null 2>&1 &
+      $DAEMON 5 0x20 > /dev/null 2>&1 &
     fi
 
     if [ $(is_server_prsnt 4) == "1" ]; then
-      $DAEMON 5 0x20 > /dev/null 2>&1 &
+      $DAEMON 7 0x20 > /dev/null 2>&1 &
     fi
 
     echo "$NAME."
@@ -72,19 +72,19 @@ case "$ACTION" in
     start-stop-daemon --stop --quiet --exec $DAEMON
     sleep 1
     if [ $(is_server_prsnt 1) == "1" ]; then
-      $DAEMON 3 0x20 > /dev/null 2>&1 &
-    fi
-
-    if [ $(is_server_prsnt 2) == "1" ]; then
       $DAEMON 1 0x20 > /dev/null 2>&1 &
     fi
 
+    if [ $(is_server_prsnt 2) == "1" ]; then
+      $DAEMON 3 0x20 > /dev/null 2>&1 &
+    fi
+
     if [ $(is_server_prsnt 3) == "1" ]; then
-      $DAEMON 7 0x20 > /dev/null 2>&1 &
+      $DAEMON 5 0x20 > /dev/null 2>&1 &
     fi
 
     if [ $(is_server_prsnt 4) == "1" ]; then
-      $DAEMON 5 0x20 > /dev/null 2>&1 &
+      $DAEMON 7 0x20 > /dev/null 2>&1 &
     fi
 
     echo "$NAME."

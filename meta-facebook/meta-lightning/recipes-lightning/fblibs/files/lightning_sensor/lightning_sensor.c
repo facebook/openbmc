@@ -325,7 +325,7 @@ sensor_thresh_array_init() {
 
   // PEB HSC SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_IN_VOLT,
-      13.63, 0, 0, 11.25, 0, 0, 0, 0);
+      13.63, 0, 0, 11.25, 0, 0, 0.63, 0.63);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_OUT_CURR,
       8, 0, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_HSC_IN_POWER,
@@ -339,27 +339,27 @@ sensor_thresh_array_init() {
 
   // PEB VOLT SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P12V,
-      13.63, 13.38, 0, 11.25, 11.50, 0, 0, 0);
+      13.63, 13.38, 0, 11.25, 11.50, 0, 0.63, 0.63);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P5V,
-      5.5, 5.4, 0, 4.5, 4.6, 0, 0, 0);
+      5.5, 5.4, 0, 4.5, 4.6, 0, 0.25, 0.25);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P3V3_STBY,
-      3.63, 3.56, 0, 3.02, 3.09, 0, 0, 0);
+      3.63, 3.56, 0, 3.02, 3.09, 0, 0.17, 0.17);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V8_STBY,
-      1.98, 1.94, 0, 1.62, 1.66, 0, 0, 0);
+      1.98, 1.94, 0, 1.62, 1.66, 0, 0.09, 0.09);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V53,
-      1.68, 1.65, 0, 1.4, 1.43, 0, 0, 0);
+      1.68, 1.65, 0, 1.4, 1.43, 0, 0.08, 0.08);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P0V9,
-      0.99, 0.97, 0, 0.81, 0.83, 0, 0, 0);
+      0.99, 0.97, 0, 0.81, 0.83, 0, 0.05, 0.05);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P0V9_E,
-      0.99, 0.97, 0, 0.81, 0.83, 0, 0, 0);
+      0.99, 0.97, 0, 0.81, 0.83, 0, 0.05, 0.05);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_ADC_P1V26,
-      1.39, 1.36, 0, 1.13, 1.16, 0, 0, 0);
+      1.39, 1.36, 0, 1.13, 1.16, 0, 0.06, 0.06);
 
   // PDPB VOLT SENSORS
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P12V,
-      13.63, 13.38, 0, 11.25, 11.5, 0, 0, 0);
+      13.63, 13.38, 0, 11.25, 11.5, 0, 0.63, 0.63);
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_P3V3,
-      3.63, 3.56, 0, 2.98, 3.05, 0, 0, 0);
+      3.63, 3.56, 0, 2.98, 3.05, 0, 0.17, 0.17);
 
   // PDPB TEMP SENSORS
   assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_LEFT_REAR_TEMP,
@@ -423,17 +423,17 @@ sensor_thresh_array_init() {
 
   // FCB Volt Sensors
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P12V_AUX,
-      13.63, 13.38, 0, 11.25, 11.5, 0, 0, 0);
+      13.63, 13.38, 0, 11.25, 11.5, 0, 0.63, 0.63);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P12VL,
-      13.63, 13.38, 0, 11.25, 11.5, 0, 0, 0);
+      13.63, 13.38, 0, 11.25, 11.5, 0, 0.63, 0.63);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P12VU,
-      13.63, 13.38, 0, 11.25, 11.5, 0, 0, 0);
+      13.63, 13.38, 0, 11.25, 11.5, 0, 0.63, 0.63);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_P3V3,
-      3.63, 3.56, 0, 3.1, 3.16, 0, 0, 0);
+      3.63, 3.56, 0, 3.1, 3.16, 0, 0.17, 0.17);
 
   // FCB HSC Sensors
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_IN_VOLT,
-      13.63, 0, 0, 11.25, 0, 0, 0, 0);
+      13.63, 0, 0, 11.25, 0, 0, 0.63, 0.63);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_OUT_CURR,
       60, 0, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_IN_POWER,

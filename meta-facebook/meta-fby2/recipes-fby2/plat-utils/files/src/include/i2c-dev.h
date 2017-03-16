@@ -118,9 +118,11 @@ union i2c_smbus_large_data {
 #define I2C_FUNCS	0x0705	/* Get the adapter functionality mask */
 
 #define I2C_RDWR	0x0707	/* Combined R/W transfer (one STOP only) */
-#define I2C_SLAVE_RDWR	0x0709	/* Slave Read/Write */
 
 #define I2C_PEC		0x0708	/* != 0 to use PEC with SMBus */
+#define I2C_SLAVE_RD    0x0710 /* Slave Read */
+#define I2C_SLAVE_WR    0x0711 /* Slave /Write */
+#define I2C_SLAVE_RDWR  0x0712 /* Slave Read/Write */
 #define I2C_SMBUS	0x0720	/* SMBus transfer */
 
 

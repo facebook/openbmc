@@ -61,10 +61,10 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 enum {
-  IPMB_BUS_SLOT1 = 3,
-  IPMB_BUS_SLOT2 = 1,
-  IPMB_BUS_SLOT3 = 7,
-  IPMB_BUS_SLOT4 = 5,
+  IPMB_BUS_SLOT1 = 1,
+  IPMB_BUS_SLOT2 = 3,
+  IPMB_BUS_SLOT3 = 5,
+  IPMB_BUS_SLOT4 = 7,
 };
 
 #pragma pack(push, 1)
@@ -1477,4 +1477,3 @@ bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
 
   return ret;
 }
-

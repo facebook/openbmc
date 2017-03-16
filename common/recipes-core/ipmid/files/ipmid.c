@@ -1681,16 +1681,6 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
   syslog(LOG_WARNING, "[%s] Get: %x %x %x %x %x %x\n", __func__, boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
 #endif
 
-  //clear the cmos bit.
-  boot[0] &= ~CMOS_VALID_FLAG;
-
-#ifdef DEBUG
-  syslog(LOG_WARNING, "[%s] Set: %x %x %x %x %x %x\n", __func__, boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
-#endif
-
-  //set data
-  pal_set_boot_order(NULL, boot);
-
   res->cc = CC_SUCCESS;
   *res_len = SIZE_BOOT_ORDER;
 }

@@ -56,8 +56,8 @@ gpio_export Y0
 gpio_export Y1
 gpio_export Y2
 
-# SLOT1_PRSNT_N, GPIOAA1 (208)
-# GPIOH5(208): SCU90[31], SCUA4[24] shall be 0
+# SLOT1_PRSNT_N, GPIOAA0 (208)
+# GPIOAA0(208): SCU90[31], SCUA4[24] shall be 0
 devmem_clear_bit $(scu_addr 90) 31
 devmem_clear_bit $(scu_addr a4) 24
 
@@ -82,11 +82,10 @@ gpio_export AA3
 gpio_export D0
 
 # PWR_SLOT1_BTN_N, 1S Server power out, on GPIO D1
-# GPIOD3(25): SCU90[1], SCU8C[8], and SCU70[21] shall be 0
+# GPIOD1(25): SCU90[1], SCU8C[8], SCU70[21] shall be 0
 devmem_clear_bit $(scu_addr 90) 1
 devmem_clear_bit $(scu_addr 8c) 8
 devmem_clear_bit $(scu_addr 70) 21
-
 gpio_set D1 1
 
 # PWR_SLOT2_BTN_N, 1S Server power out, on GPIO D3
@@ -121,7 +120,7 @@ gpio_export B3
 # Enable P3V3: GPIOAB1(217)
 # To use GPIOAB1 (217), SCU90[31]=0, (SCUA8[1] or SCU94[1:0]) must be 0
 devmem_clear_bit $(scu_addr a8) 1
-vmem_clear_bit $(scu_addr 94) 0
+devmem_clear_bit $(scu_addr 94) 0
 devmem_clear_bit $(scu_addr 94) 1
 
 gpio_set AB1 1
@@ -136,7 +135,7 @@ devmem_clear_bit $(scu_addr a8) 2
 # To use GPIOAB3 (219), SCUA8[3] must be 0
 devmem_clear_bit $(scu_addr a8) 3
 
-# To use GPIOE4 (36), SCU80[20], SCU8C[14], and SCU70[22] must be 0
+#To use GPIOE4 (36), SCU80[20], SCU8C[14], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
@@ -150,7 +149,6 @@ gpio_set AB3 0
 gpio_set E4 0
 gpio_set E5 0
 #========================================================================================================#
-
 
 # USB_OC_N, resettable fuse tripped, GPIO Q6
 devmem_clear_bit $(scu_addr 90) 28
@@ -178,7 +176,6 @@ devmem_clear_bit $(scu_addr 8C) 12
 devmem_clear_bit $(scu_addr 70) 22
 
 gpio_set E0 0
-
 
 # To enable GPIOE1, SCU80[17], SCU8C[12], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 17
@@ -226,7 +223,6 @@ devmem_clear_bit $(scu_addr 84) 27
 
 gpio_set M3 1
 
-
 # Identify LED for Slot#2:
 # To use GPIOF0 (40), SCU80[24], SCU90[30] must be 0
 devmem_clear_bit $(scu_addr 80) 24
@@ -237,21 +233,16 @@ gpio_set F0 1
 # Identify LED for Slot#1:
 # To use GPIOF1 (41), SCU80[25], SCU90[30], must be 0
 devmem_clear_bit $(scu_addr 80) 25
-
 gpio_set F1 1
 
 # Identify LED for Slot#4:
 # To use GPIOF2 (42), SCU80[26], SCU90[30],  must be 0
 devmem_clear_bit $(scu_addr 80) 26
-
-
 gpio_set F2 1
 
 # Identify LED for Slot#3:
 # To use GPIOF3 (43), SCU80[27], SCU90[30], must be 0
 devmem_clear_bit $(scu_addr 80) 27
-
-
 gpio_set F3 1
 
 # Front Panel Hand Switch GPIO setup
@@ -399,7 +390,6 @@ gpio_export P2
 devmem_clear_bit $(scu_addr 88) 19
 gpio_export P3
 
-
 # Enable GPIO pins: I2C_SLOTx_ALERT_N pins for BIC firmware update
 devmem_clear_bit $(scu_addr 88) 2
 gpio_export N2
@@ -411,24 +401,23 @@ devmem_clear_bit $(scu_addr 88) 5
 gpio_export N5
 
 
- # PE_BUFF_OE_0_N: GPIOB4 (12)
- # To use GPIOB4, SCU70[23] must be 0
- devmem_clear_bit $(scu_addr 70) 23
- gpio_export B4
- gpio_set B4 0
+# PE_BUFF_OE_0_N: GPIOB4 (12)
+# To use GPIOB4, SCU70[23] must be 0
+devmem_clear_bit $(scu_addr 70) 23
+gpio_export B4
+gpio_set B4 0
 
- # PE_BUFF_OE_1_N: GPIOB4 (13)
- #To use GPIOB5, SCU80[13] must be 0
- devmem_clear_bit $(scu_addr 80) 13
- gpio_export B5
- gpio_set B5 0
+# PE_BUFF_OE_1_N: GPIOB4 (13)
+#To use GPIOB5, SCU80[13] must be 0
+devmem_clear_bit $(scu_addr 80) 13
+gpio_export B5
+gpio_set B5 0
 
- # PE_BUFF_OE_2_N: GPIOB4 (14)
- devmem_clear_bit $(scu_addr 80) 14
- gpio_export B6
- gpio_set B6 0
+# PE_BUFF_OE_2_N: GPIOB4 (14)
+devmem_clear_bit $(scu_addr 80) 14
+gpio_export B6
+gpio_set B6 0
 
- # PE_BUFF_OE_3_N: GPIOB4 (15)
- gpio_export B7
- gpio_set B7 0
- 
+# PE_BUFF_OE_3_N: GPIOB4 (15)
+gpio_export B7
+gpio_set B7 0

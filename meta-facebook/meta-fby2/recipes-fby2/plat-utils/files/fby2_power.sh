@@ -139,7 +139,7 @@ do_off() {
     return 0
 }
 
-# Slot1: GPIOD3(25), Slot2: GPIOD1(27), Slot3: GPIOD7(29), Slot4: GPIOD5(31)
+# Slot1: GPIOD1(25), Slot2: GPIOD3(27), Slot3: GPIOD5(29), Slot4: GPIOD7(31)
 slot=$1
 
 case $slot in

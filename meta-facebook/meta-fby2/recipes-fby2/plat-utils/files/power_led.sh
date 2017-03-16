@@ -33,7 +33,7 @@ if [ $# != 2 ]; then
     usage $0
 fi
 
-# Slot#1: GPIOM1(96),Slot#2: GPIOM0(97),Slot#3: GPIOM3(98),Slot#4: GPIOM2(99)
+# Slot#1: GPIOM0(96),Slot#2: GPIOM1(97),Slot#3: GPIOM2(98),Slot#4: GPIOM3(99)
 if [ $1 = "1" ]; then
     gpio=M0
 elif [ $1 = "2" ]; then

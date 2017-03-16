@@ -416,16 +416,21 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
-
+  // Disable GPIOD pass-through function
+  system("devmem 0x1e6e207c w 0x600000");
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
   if (write_device(vpath, "1")) {
+    // Enable GPIOD pass-through function
+    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
   sleep(1);
 
   if (write_device(vpath, "0")) {
+    // Enable GPIOD pass-through function
+    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
@@ -436,8 +441,13 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
   }
 
   if (write_device(vpath, "1")) {
+    // Enable GPIOD pass-through function
+    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
+
+  // Enable GPIOD pass-through function
+  system("devmem 0x1e6e2070 w 0xF12AE206");
 
   return 0;
 }

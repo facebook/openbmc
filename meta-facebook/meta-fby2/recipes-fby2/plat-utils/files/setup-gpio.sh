@@ -421,3 +421,9 @@ gpio_set B6 0
 # PE_BUFF_OE_3_N: GPIOB4 (15)
 gpio_export B7
 gpio_set B7 0
+
+# enable I2C ctrl reg (SCUA4),
+devmem_set_bit $(scu_addr A4) 12 #SCL1 en
+devmem_set_bit $(scu_addr A4) 13 #SDA1
+devmem_set_bit $(scu_addr A4) 14 #SCL2
+devmem_set_bit $(scu_addr A4) 15 #SDA2

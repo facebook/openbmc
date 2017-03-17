@@ -9,6 +9,8 @@ LIC_FILES_CHKSUM = "file://usb_dbg.c;beginline=5;endline=17;md5=da35978751a9d71b
 
 SRC_URI = "file://Makefile \
            file://usb_dbg.c \
+           file://i2c.h \
+           file://i2c-dev.h \
            file://usb_dbg.h \
           "
 

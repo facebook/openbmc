@@ -32,8 +32,8 @@
 #include <sys/ioctl.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/ipmi.h>
-#include "facebook/i2c.h"
-#include "facebook/i2c-dev.h"
+#include "i2c.h"
+#include "i2c-dev.h"
 
 
 #define MCU_BUS_ID 0x9

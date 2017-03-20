@@ -32,32 +32,33 @@ class Logger(object):
 
     @staticmethod
     def info(msg):
-        print("INFO: " + msg)
+        # print("INFO: " + msg)
         syslog.syslog(syslog.LOG_INFO, msg)
         logging.info(msg)
 
     @staticmethod
     def debug(msg):
-        print("DEBUG: " + msg)
+        # print("DEBUG: " + msg)
+        syslog.syslog(syslog.LOG_DEBUG, msg)
 
     @staticmethod
     def warn(msg):
-        print("WARNING: " + msg)
+        # print("WARNING: " + msg)
         syslog.syslog(syslog.LOG_WARNING, msg)
 
     @staticmethod
     def error(msg):
-        print("ERROR: " + msg)
+        # print("ERROR: " + msg)
         syslog.syslog(syslog.LOG_ERR, msg)
 
     @staticmethod
     def crit(msg):
-        print("CRITICAL: " + msg)
+        # print("CRITICAL: " + msg)
         syslog.syslog(syslog.LOG_CRIT, msg)
 
     @staticmethod
     def usbdbg(msg):
-        print("USBDBG: " + msg)
+        # print("USBDBG: " + msg)
         syslog.syslog((syslog.LOG_LOCAL0 | syslog.LOG_ERR), msg)
 
     @staticmethod

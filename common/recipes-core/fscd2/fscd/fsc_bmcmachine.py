@@ -17,7 +17,7 @@
 #
 import re
 from collections import namedtuple
-from fsc_sensor import FscSensorSourceUtil
+from fsc_sensor import FscSensorSourceUtil, FscSensorSourceSysfs
 from fsc_util import Logger
 
 SensorValue = namedtuple(
@@ -26,7 +26,8 @@ SensorValue = namedtuple(
                  'name',
                  'value',
                  'unit',
-                 'status'])
+                 'status',
+                 'read_fail_counter'])
 
 
 class BMCMachine(object):
@@ -64,10 +65,15 @@ class BMCMachine(object):
         Logger.debug("Read all fan speeds")
         result = {}
         for key, value in fans.items():
-            if isinstance(fans[key].source, FscSensorSourceUtil):
+            if isinstance(value.source, FscSensorSourceUtil):
                 result = parse_all_fans_util(
                     fans[key].source.read())
                 break  # Hack: util will read all fans
+            elif isinstance(fans[key].source, FscSensorSourceSysfs):
+                fan_key, tuple = get_fan_tuple_sysfs(
+                                    key,
+                                    fans[key].source.read())
+                result[fan_key] = tuple
             else:
                 Logger.crit("Unknown source type")
         return result
@@ -98,8 +104,9 @@ class BMCMachine(object):
             N/A
         '''
         Logger.debug("Set all pwm to %d" % (pct))
-        for key, value in fans.items():
+        for key, _value in fans.items():
             self.set_pwm(fans[key], pct)
+
 
 def get_sensor_tuples(fru_name, sensor_sources):
     '''
@@ -114,13 +121,51 @@ def get_sensor_tuples(fru_name, sensor_sources):
     '''
     result = {}
     for key, value in sensor_sources.items():
-        if isinstance(sensor_sources.get(key).source, FscSensorSourceUtil):
+        if isinstance(value.source, FscSensorSourceUtil):
             result = parse_all_sensors_util(
                 sensor_sources[key].source.read(fru=fru_name))
             break  # Hack: util reads all sensors
+        elif isinstance(sensor_sources.get(key).source, FscSensorSourceSysfs):
+            symbolized_key, tuple = get_sensor_tuple_sysfs(
+                                        key,
+                                        sensor_sources[key].source.read(),
+                                        sensor_sources[key].source.read_source_fail_counter)
+            result[symbolized_key] = tuple
         else:
             Logger.crit("Unknown source type")
     return result
+
+
+def get_sensor_tuple_sysfs(key, sensor_data, read_fail_counter=0):
+    '''
+    Build a sensor tuple from sensor key and data read
+
+    Arguments:
+        sensor_data: data read from sysfs
+
+    Returns:
+        SensorValue tuple
+    '''
+    if sensor_data:
+        data = int(sensor_data.split('\n')[-2]) / 1000
+    else:
+        data = -1
+
+    return(symbolize_sensorname_sysfs(key),
+           SensorValue(None,
+                       str(key),
+                       data,
+                       None,
+                       None,
+                       read_fail_counter))
+
+
+def symbolize_sensorname_sysfs(name):
+    '''
+    Helper method to normalize the sensor name
+    Eg : userver -> userver_temp
+    '''
+    return name.split('_')[1] + "_temp"
 
 
 def parse_all_sensors_util(sensor_data):
@@ -142,7 +187,6 @@ def parse_all_sensors_util(sensor_data):
             continue
         if line.find("failed") != -1:
             continue
-
         if line.find(" NA "):
             m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+.\s+\((.+)\)$", line)
             if m is not None:
@@ -155,17 +199,18 @@ def parse_all_sensors_util(sensor_data):
                                               name,
                                               value,
                                               None,
-                                              status)
+                                              status,
+                                              0)
                 continue
-        m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line)
-        if m is not None:
-            sid = int(m.group(2), 16)
-            name = m.group(1).strip()
-            value = float(m.group(3))
-            unit = m.group(4)
-            status = m.group(5)
-            symname = symbolize_sensorname(name)
-            result[symname] = SensorValue(sid, name, value, unit, status)
+            m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line)
+            if m is not None:
+                sid = int(m.group(2), 16)
+                name = m.group(1).strip()
+                value = float(m.group(3))
+                unit = m.group(4)
+                status = m.group(5)
+                symname = symbolize_sensorname(name)
+                result[symname] = SensorValue(sid, name, value, unit, status, 0)
     return result
 
 
@@ -175,6 +220,20 @@ def symbolize_sensorname(name):
     Eg : SOC Therm Margin -> soc_therm_margin
     '''
     return name.lower().replace(" ", "_")
+
+
+def get_fan_tuple_sysfs(key, sensor_data):
+    '''
+    Build a fan tuple from sensor key and data read
+
+    Arguments:
+        sensor_data: data read from sysfs
+
+    Returns:
+        fan tuple
+    '''
+    return(int(key), int(sensor_data))
+
 
 def parse_all_fans_util(fan_data):
     '''

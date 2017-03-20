@@ -29,11 +29,15 @@ class Fan(object):
     def __init__(self, fan_name, pTable):
         try:
             if 'sysfs' in pTable['read_source']:
-                self.source = FscSensorSourceSysfs(
-                    name=fan_name,
-                    read_source=pTable['read_source']['sysfs'],
-                    write_source=pTable['write_source']['sysfs'])
-
+                if 'write_source' in pTable:
+                    self.source = FscSensorSourceSysfs(
+                        name=fan_name,
+                        read_source=pTable['read_source']['sysfs'],
+                        write_source=pTable['write_source']['sysfs'])
+                else:
+                    self.source = FscSensorSourceSysfs(
+                        name=fan_name,
+                        read_source=pTable['read_source']['sysfs'])
             if 'util' in pTable['read_source']:
                 self.source = FscSensorSourceUtil(
                     name=fan_name,
@@ -78,19 +82,19 @@ class Zone:
                         if self.fail_sensor_type['standby_sensor_fail'] == True:
                             if sensor.status in ['na']:
                                 if re.match(r'SOC', sensor.name) != None:
-                                    if 'server_sensor_fail' in self.fail_sensor_type.keys(): 
+                                    if 'server_sensor_fail' in self.fail_sensor_type.keys():
                                         if self.fail_sensor_type['server_sensor_fail'] == True:
                                             ret = fsc_board.get_power_status(board)
                                             if ret:
-                                                print("Server Sensor Fail")
+                                                Logger.debug("Server Sensor Fail")
                                                 outmin = self.boost
                                                 break
                                 elif re.match(r'SSD', sensor.name) != None:
                                     if 'SSD_sensor_fail' in self.fail_sensor_type.keys():
-                                        if self.fail_sensor_type['SSD_sensor_fail'] == True:                              
+                                        if self.fail_sensor_type['SSD_sensor_fail'] == True:
                                             fail_ssd_count = fail_ssd_count + 1
                                 else:
-                                    print("Standby Sensor Fail")
+                                    Logger.debug("Standby Sensor Fail")
                                     outmin = self.boost
                                     break
             else:
@@ -102,10 +106,10 @@ class Zone:
             Logger.warn('Missing sensors: %s' % (', '.join(missing),))
         if verbose:
             (exprout, dxstr) = self.expr.dbgeval(ctx)
-            print(dxstr + " = " + str(exprout))
+            Logger.info(dxstr + " = " + str(exprout))
         else:
             exprout = self.expr.eval(ctx)
-            print(self.expr_str + " = " + str(exprout))
+            Logger.info(self.expr_str + " = " + str(exprout))
         # If *all* sensors in the top level max() report None, the
         # expression will report None
         if not exprout:
@@ -134,7 +138,7 @@ class Zone:
                                         break
                                     else:
                                         if list_index == len(self.ssd_progressive_algorithm['offset_algorithm']):
-                                            outmin = self.boost                    
+                                            outmin = self.boost
 
         if exprout < outmin:
             exprout = outmin

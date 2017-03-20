@@ -15,7 +15,7 @@
   "profiles": {
     "linear_dimm": {
       "read_source" : {
-        "util" : "cat ./test-data/sensor-util-test-data"
+        "util" : "./test-data/get_sensor_data_util.sh sensor-util-test-data"
       },
       "type": "linear",
       "data": [
@@ -44,7 +44,7 @@
     },
     "pid_cpu_margin": {
       "read_source" : {
-        "util" : "cat ./test-data/sensor-util-test-data"
+        "util" : "./test-data/get_sensor_data_util.sh sensor-util-test-data"
       },
       "type": "pid",
       "setpoint": -14,
@@ -56,7 +56,7 @@
     },
     "linear_mb_outlet": {
       "read_source" : {
-        "util" : "cat ./test-data/sensor-util-test-data"
+        "util" : "./test-data/get_sensor_data_util.sh sensor-util-test-data"
       },
       "type": "linear",
       "data": [
@@ -68,7 +68,7 @@
     },
     "pid_mb_outlet": {
       "read_source" : {
-        "util" : "cat ./test-data/sensor-util-test-data"
+        "util" : "./test-data/get_sensor_data_util.sh sensor-util-test-data"
       },
       "type": "pid",
       "setpoint": 53,
@@ -82,26 +82,26 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "cat ./test-data/fan-dead-test-data"
+        "util" : "./test-data/get_sensor_data_util.sh fan-dead-test-data"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "./test-data/set_sensor_data_util.sh"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "cat ./test-data/fan-dead-test-data"
+        "util" : "./test-data/get_sensor_data_util.sh fan-dead-test-data"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "./test-data/set_sensor_data_util.sh"
       }
     },
     "2": {
       "read_source" : {
-        "util" : "cat ./test-data/fan-dead-test-data"
+        "util" : "./test-data/get_sensor_data_util.sh fan-dead-test-data"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "./test-data/set_sensor_data_util.sh"
       }
     }
   },

@@ -38,6 +38,8 @@ class BaseFscdUnitTest(unittest.TestCase):
         # class level that will avoid running them for each test.
         self.define_fscd()
         self.define_logger()
+        # Comment out this log if you want to see more logs from tests
+        logging.disable(logging.CRITICAL)
 
     def tearDown(self):
         '''

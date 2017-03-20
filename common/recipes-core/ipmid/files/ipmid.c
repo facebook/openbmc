@@ -259,7 +259,7 @@ chassis_get_boot_options (unsigned char *request, unsigned char *response,
       *data++ = 0x00;
       *data++ = 0x00;
       break;
-    deault:
+    default:
       res->cc = CC_PARAM_OUT_OF_RANGE;
       break;
   }

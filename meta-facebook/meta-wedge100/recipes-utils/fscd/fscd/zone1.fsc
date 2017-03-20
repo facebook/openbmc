@@ -1,0 +1,6 @@
+max([
+  linear_intake(wedge100:intake_temp),
+  linear_switch(wedge100:switch_temp),
+  linear_exhaust(wedge100:exhaust_temp),
+  linear_userver(wedge100:userver_temp)
+])

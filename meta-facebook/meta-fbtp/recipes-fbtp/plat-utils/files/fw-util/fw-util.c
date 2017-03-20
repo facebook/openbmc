@@ -36,7 +36,7 @@
 #include <openbmc/cpld.h>
 #include <openbmc/bios.h>
 #include <openbmc/gpio.h>
-#include <openbmc/usb_dbg.h>
+#include <openbmc/ocp-dbg-lcd.h>
 
 #define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
 #define FSC_CONFIG           "/etc/fsc-config.json"

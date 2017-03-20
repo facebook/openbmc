@@ -32,7 +32,7 @@
 #include <sys/file.h>
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
-#include <openbmc/usb_dbg.h>
+#include <openbmc/ocp-dbg-lcd.h>
 #include "facebook/i2c.h"
 #include "facebook/i2c-dev.h"
 

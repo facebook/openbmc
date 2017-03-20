@@ -16,6 +16,6 @@ do_install() {
     install -m 0755 fw-util ${D}${bindir}/fw-util
 }
 
-DEPENDS += " libgpio libme libpal libcpld libbios libusb_dbg jansson"
+DEPENDS += " libgpio libme libpal libcpld libbios libocp-dbg-lcd jansson"
 
 FILES_${PN} = "${bindir}"

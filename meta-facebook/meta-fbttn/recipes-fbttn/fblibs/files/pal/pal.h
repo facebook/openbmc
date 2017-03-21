@@ -62,6 +62,8 @@ extern "C" {
 //Type7 IOM IOC
 #define FRU_IOM_IOC 7
 
+#define NIC_TEMP_RETRY 3
+
 typedef struct {
   uint8_t code;
   bool status;
@@ -265,6 +267,7 @@ int pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting
 int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
 int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
+int pal_nic_otp(int fru, int snr_num, float thresh_val);
 
 #ifdef __cplusplus
 } // extern "C"

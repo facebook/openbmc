@@ -3145,11 +3145,19 @@ unsigned char pal_sum_error_code(void) {
 }
 void
 pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+  if ((snr_num == MEZZ_SENSOR_TEMP) && (thresh == UNR_THRESH)) {
+    pal_nic_otp(FRU_NIC, snr_num, nic_sensor_threshold[snr_num][UNR_THRESH]);
+  }
   return;
 }
 
 void
 pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+  if ((snr_num == MEZZ_SENSOR_TEMP) && (thresh == UNC_THRESH)) {
+    // power on Mono Lake 12V HSC
+    syslog(LOG_CRIT, "Due to NIC temp UNC deassert. Power On Server 12V. (val = %.2f)", val);
+    server_12v_on(FRU_SLOT1);
+  }
   return;
 }
 
@@ -3584,4 +3592,28 @@ pal_get_boot_option(unsigned char para,unsigned char* pbuff)
   } else
     memcpy(pbuff,buff,size);
   return size;
+}
+
+int pal_nic_otp(int fru, int snr_num, float thresh_val) {
+  int retry = 0;
+  int ret = 0;
+  float curr_val = 0;
+
+  while (retry < NIC_TEMP_RETRY) {
+    ret = pal_sensor_read_raw(fru, snr_num, &curr_val);
+    if (ret < 0) {
+      return -1;
+    }
+    if (curr_val >= thresh_val) {
+      retry++;
+    } else {
+      return 0;
+    }
+    msleep(200);
+  }
+  
+  // power off Mono Lake 12V HSC
+  syslog(LOG_CRIT, "Powering Off Server due to NIC temp UNR reached. (val = %.2f)", curr_val);
+  server_12v_off(FRU_SLOT1);
+  return 0;
 }

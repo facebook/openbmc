@@ -477,7 +477,7 @@ sensor_thresh_array_init() {
   // MEZZ
   //MEZZ TEMP
   assign_sensor_threshold(FRU_NIC, MEZZ_SENSOR_TEMP,
-      100, 0, 0, 0, 0, 0, 0, 0);
+      95, 85, 105, 0, 0, 0, 0, 0);
 
   init_done = true;
 }

@@ -32,7 +32,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 sensor-setup.sh ${D}${sysconfdir}/init.d/sensor-setup.sh
-  update-rc.d -r ${D} sensor-setup.sh start 90 S .
+  update-rc.d -r ${D} sensor-setup.sh start 60 S .
 }
 
 FILES_${PN} = " ${sysconfdir} "

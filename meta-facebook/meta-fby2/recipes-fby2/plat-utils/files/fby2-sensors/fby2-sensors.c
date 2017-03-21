@@ -109,6 +109,30 @@ main(int argc, char **argv) {
   	printf("SP_SENSOR_P3V3: %.2f Volts\n", fvalue);
   }
 
+  if (fby2_sensor_read(slot_id, SP_SENSOR_P1V15_BMC_STBY, &fvalue)) {
+    printf("fby2_sensor_read failed: SP_SENSOR_P1V15_BMC_STBY\n");
+  } else {
+    printf("SP_SENSOR_P1V15_BMC_STBY: %.2f Volts\n", fvalue);
+  }
+
+  if (fby2_sensor_read(slot_id, SP_SENSOR_P1V2_BMC_STBY, &fvalue)) {
+    printf("fby2_sensor_read failed: SP_SENSOR_P1V2_BMC_STBY\n");
+  } else {
+    printf("SP_SENSOR_P1V2_BMC_STBY: %.2f Volts\n", fvalue);
+  }
+
+  if (fby2_sensor_read(slot_id, SP_SENSOR_P2V5_BMC_STBY, &fvalue)) {
+    printf("fby2_sensor_read failed: SP_SENSOR_P2V5_BMC_STBY\n");
+  } else {
+    printf("SP_SENSOR_P2V5_BMC_STBY: %.2f Volts\n", fvalue);
+  }
+
+  if (fby2_sensor_read(slot_id, SP_P1V8_STBY, &fvalue)) {
+    printf("fby2_sensor_read failed: SP_P1V8_STBY\n");
+  } else {
+    printf("SP_P1V8_STBY: %.2f Volts\n", fvalue);
+  }
+
   if (fby2_sensor_read(slot_id, SP_SENSOR_HSC_IN_VOLT, &fvalue)) {
     printf("fby2_sensor_read failed: SP_SENSOR_HSC_IN_VOLT\n");
   } else {

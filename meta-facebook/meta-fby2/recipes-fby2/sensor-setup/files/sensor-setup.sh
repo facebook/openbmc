@@ -42,13 +42,56 @@
 modprobe lm75
 modprobe pmbus
 
-# Enable the ADC inputs;  adc0 - adc7 are connected to various voltage sensors
+# Enable the ADC inputs;  adc0 - adc11 are connected to various voltage sensors
 
-echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc1_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc2_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc3_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc4_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc5_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc6_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc7_en
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+# setup ADC channels
+
+ADC_PATH="/sys/devices/platform/ast_adc.0"
+# For FBY2 tyep V:
+# channel 0:  r1:  5.36K; r2:  2.0K; v2: 0mv
+# channel 1:  r1:  15.8K; r2:  2.0K; v2: 0mv
+# channel 2:  r1:  2.87K; r2:  2.0K; v2: 0mv
+# channel 3:  r1:  15.8K; r2:  2.0K; v2: 0mv
+# channel 4:  r1:  15.8K; r2:  2.0K; v2: 0mv
+# channel 5:  r1:  15.8K; r2:  2.0K; v2: 0mv
+# channel 6:  r1:  15.8K; r2:  2.0K; v2: 0mv
+# channel 7:  r1:  2.87K; r2:  2.0K; v2: 0mv
+# channel 8:  r1:     1K; r2:  0.0K; v2: 0mv
+# channel 9:  r1:     1K; r2:  0.0K; v2: 0mv
+# channel 10: r1:  1.69K; r2:  2.0K; v2: 0mv
+# channel 11: r1:    665; r2:  2.0K; v2: 0mv
+# channel 12: r1:     1K; r2:    0K; v2: 0mv
+# channel 13: r1:     1K; r2:    0K; v2: 0mv
+# channel 14: r1:     1K; r2:    0K; v2: 0mv
+# channel 15: r1:     1K; r2:    0K; v2: 0mv
+
+config_adc() {
+    channel=$1
+    r1=$2
+    r2=$3
+    v2=$4
+    echo $r1 > ${ADC_PATH}/adc${channel}_r1
+    echo $r2 > ${ADC_PATH}/adc${channel}_r2
+    echo $v2 > ${ADC_PATH}/adc${channel}_v2
+    echo 1 > ${ADC_PATH}/adc${channel}_en
+}
+
+config_adc 0  5360  2000 0
+config_adc 1 15800  2000 0
+config_adc 2  2870  2000 0
+config_adc 3 15800  2000 0
+config_adc 4 15800  2000 0
+config_adc 5 15800  2000 0
+config_adc 6 15800  2000 0
+config_adc 7  2870  2000 0
+config_adc 8  	 0  1000 0
+config_adc 9  	 0  1000 0
+config_adc 10 1690  2000 0
+config_adc 11  665  2000 0
+
+
+i2cset -y -f 10 0x40 0xd4 0x071c w
+rmmod adm1275
+modprobe adm1275

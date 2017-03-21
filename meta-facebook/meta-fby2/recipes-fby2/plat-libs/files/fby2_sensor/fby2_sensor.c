@@ -33,18 +33,23 @@
 
 #define LARGEST_DEVICE_NAME 120
 
+#define MEZZ_TEMP_DEVICE "/sys/class/i2c-adapter/i2c-11/11-001f/hwmon/hwmon*"
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
+#define I2C_BUS_1_DIR "/sys/class/i2c-adapter/i2c-1/"
+#define I2C_BUS_3_DIR "/sys/class/i2c-adapter/i2c-3/"
+#define I2C_BUS_5_DIR "/sys/class/i2c-adapter/i2c-5/"
 #define I2C_BUS_9_DIR "/sys/class/i2c-adapter/i2c-9/"
 #define I2C_BUS_10_DIR "/sys/class/i2c-adapter/i2c-10/"
 
 #define TACH_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
-#define SP_INLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004e"
-#define SP_OUTLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004f"
-#define HSC_DEVICE I2C_BUS_10_DIR "10-0040"
+#define SP_INLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004e/hwmon/hwmon*"
+#define SP_OUTLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004f/hwmon/hwmon*"
+#define HSC_DEVICE I2C_BUS_10_DIR "10-0040/hwmon/hwmon*"
 
+#define HSC_DEVICE I2C_BUS_10_DIR "10-0040/hwmon/hwmon*"
 #define FAN_TACH_RPM "tacho%d_rpm"
 #define ADC_VALUE "adc%d_value"
 #define HSC_IN_VOLT "in1_input"
@@ -65,6 +70,9 @@
 #define LAST_REC_ID 0xFFFF
 
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
+#define ML_ADM1278_R_SENSE  1
+
+static int ml_hsc_r_sense = ML_ADM1278_R_SENSE;
 
 // List of BIC sensors to be monitored
 const uint8_t bic_sensor_list[] = {
@@ -135,6 +143,10 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_P12V_SLOT3,
   SP_SENSOR_P12V_SLOT4,
   SP_SENSOR_P3V3,
+  SP_SENSOR_P1V15_BMC_STBY,
+  SP_SENSOR_P1V2_BMC_STBY,
+  SP_SENSOR_P2V5_BMC_STBY,
+  SP_P1V8_STBY,
   SP_SENSOR_HSC_IN_VOLT,
   SP_SENSOR_HSC_OUT_CURR,
   SP_SENSOR_HSC_TEMP,
@@ -185,7 +197,8 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
   spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 525;
 
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
+  // MEZZ
+  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 100;
 
   init_done = true;
 }
@@ -212,6 +225,10 @@ enum {
   ADC_PIN5,
   ADC_PIN6,
   ADC_PIN7,
+  ADC_PIN8,
+  ADC_PIN9,
+  ADC_PIN10,
+  ADC_PIN11,
 };
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -275,19 +292,60 @@ read_device_float(const char *device, float *value) {
 }
 
 static int
-read_temp(const char *device, float *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
+get_current_dir(const char *device, char *dir_name) {
+  char cmd[LARGEST_DEVICE_NAME + 1];
+  FILE *fp;
+  int ret=-1;
+  int size;
+
+  // Get current working directory
+  snprintf(
+      cmd, LARGEST_DEVICE_NAME, "cd %s;pwd", device);
+
+  fp = popen(cmd, "r");
+  if(NULL == fp)
+     return -1;
+  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
+
+  ret = pclose(fp);
+  if(-1 == ret)
+     syslog(LOG_ERR, "$s pclose() fail ", __func__);
+
+  // Remove the newline character at the end
+  size = strlen(dir_name);
+  dir_name[size-1] = '\0';
+
+  return 0;
+}
+
+
+static int
+read_temp_attr(const char *device, const char *attr, float *value) {
+  char full_dir_name[LARGEST_DEVICE_NAME + 1];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
-  if (read_device(full_name, &tmp)) {
+  // Get current working directory
+  if (get_current_dir(device, dir_name))
+  {
     return -1;
+  }
+  snprintf(
+      full_dir_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+
+
+  if (read_device(full_dir_name, &tmp)) {
+     return -1;
   }
 
   *value = ((float)tmp)/UNIT_DIV;
 
   return 0;
+}
+
+static int
+read_temp(const char *device, float *value) {
+  return read_temp_attr(device, "temp1_input", value);
 }
 
 static int
@@ -311,52 +369,53 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char *device, float *value) {
-  char full_name[LARGEST_DEVICE_NAME];
+read_hsc_value(const char* attr, const char *device, int r_sense, float *value) {
+  char full_dir_name[LARGEST_DEVICE_NAME];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", HSC_DEVICE, device);
-  if(read_device(full_name, &tmp)) {
+  // Get current working directory
+  if (get_current_dir(device, dir_name))
+  {
+    return -1;
+  }
+  snprintf(
+      full_dir_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+
+  if(read_device(full_dir_name, &tmp)) {
     return -1;
   }
 
-  *value = ((float) tmp)/UNIT_DIV;
+  if ((strcmp(attr, HSC_OUT_CURR) == 0) || (strcmp(attr, HSC_IN_POWER) == 0)) {
+    *value = ((float) tmp)/r_sense/UNIT_DIV;
+  }
+  else {
+    *value = ((float) tmp)/UNIT_DIV;
+  }
 
   return 0;
 }
 
 static int
-read_nic_temp(uint8_t snr_num, float *value) {
-  char command[64];
-  int dev;
-  int ret;
-  uint8_t tmp_val;
+read_nic_temp(const char *device, float *value) {
+  char cmd[LARGEST_DEVICE_NAME + 1];
+  char full_dir_name[LARGEST_DEVICE_NAME + 1];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
+  int tmp;
 
-  if (snr_num == MEZZ_SENSOR_TEMP) {
-    dev = open(I2C_DEV_NIC, O_RDWR);
-    if (dev < 0) {
-      syslog(LOG_ERR, "open() failed for read_nic_temp");
-      return -1;
-    }
-    /* Assign the i2c device address */
-    ret = ioctl(dev, I2C_SLAVE, I2C_NIC_ADDR);
-    if (ret < 0) {
-      syslog(LOG_ERR, "read_nic_temp: ioctl() assigning i2c addr failed");
-    }
-
-    tmp_val = i2c_smbus_read_byte_data(dev, I2C_NIC_SENSOR_TEMP_REG);
-
-    close(dev);
-
-    // TODO: This is a HACK till we find the actual root cause
-    // This condition implies that the I2C bus is busy
-    if (tmp_val == 0xFF) {
-      syslog(LOG_INFO, "read_nic_temp: value 0xFF - i2c bus is busy");
-      return -1;
-    }
-
-    *value = (float) tmp_val;
+  // Get current working directory
+  if (get_current_dir(device, dir_name))
+  {
+    return -1;
   }
+  snprintf(
+      full_dir_name, LARGEST_DEVICE_NAME, "%s/temp2_input", dir_name);
+
+  if (read_device(full_dir_name, &tmp)) {
+    return -1;
+  }
+
+  *value = ((float)tmp)/UNIT_DIV;
 
   return 0;
 }
@@ -665,6 +724,18 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case SP_SENSOR_P3V3:
           sprintf(units, "Volts");
           break;
+        case SP_SENSOR_P1V15_BMC_STBY:
+          sprintf(units, "Volts");
+          break;
+        case SP_SENSOR_P1V2_BMC_STBY:
+          sprintf(units, "Volts");
+          break;
+        case SP_SENSOR_P2V5_BMC_STBY:
+          sprintf(units, "Volts");
+          break;
+       case SP_P1V8_STBY:
+          sprintf(units, "Volts");
+          break;
         case SP_SENSOR_HSC_IN_VOLT:
           sprintf(units, "Volts");
           break;
@@ -700,6 +771,7 @@ fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *va
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+      *value = spb_sensor_threshold[sensor_num][thresh];
       break;
     case FRU_SPB:
       *value = spb_sensor_threshold[sensor_num][thresh];
@@ -786,6 +858,18 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case SP_SENSOR_P3V3:
           sprintf(name, "SP_P3V3");
           break;
+        case SP_SENSOR_P1V15_BMC_STBY:
+          sprintf(name, "SP_SENSOR_P1V15_BMC_STBY");
+          break;
+        case SP_SENSOR_P1V2_BMC_STBY:
+          sprintf(name, "SP_SENSOR_P1V2_BMC_STBY");
+          break;
+        case SP_SENSOR_P2V5_BMC_STBY:
+          sprintf(name, "SP_SENSOR_P2V5_BMC_STBY");
+          break;
+        case SP_P1V8_STBY:
+          sprintf(name, "SP_P1V8_STBY");
+          break;
         case SP_SENSOR_HSC_IN_VOLT:
           sprintf(name, "SP_HSC_IN_VOLT");
           break;
@@ -863,42 +947,50 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case SP_SENSOR_FAN1_TACH:
           return read_fan_value(FAN1, FAN_TACH_RPM, (float*) value);
 
-			  // Various Voltages
-			  case SP_SENSOR_P5V:
- 			    return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V:
- 			    return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P3V3_STBY:
- 			    return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V_SLOT1:
- 			    return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V_SLOT2:
- 			    return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
- 			  case SP_SENSOR_P12V_SLOT3:
+        // Various Voltages
+        case SP_SENSOR_P5V:
+          return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P12V:
+          return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P3V3_STBY:
+          return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P12V_SLOT1:
+          return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P12V_SLOT2:
+          return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P12V_SLOT3:
           return read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
         case SP_SENSOR_P12V_SLOT4:
           return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
         case SP_SENSOR_P3V3:
           return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P1V15_BMC_STBY:
+          return read_adc_value(ADC_PIN8, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P1V2_BMC_STBY:
+          return read_adc_value(ADC_PIN9, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P2V5_BMC_STBY:
+          return read_adc_value(ADC_PIN10, ADC_VALUE, (float*) value);
+        case SP_P1V8_STBY:
+          return read_adc_value(ADC_PIN11, ADC_VALUE, (float*) value);
 
         // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, (float*) value);
+          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE, ml_hsc_r_sense, (float *) value);
         case SP_SENSOR_HSC_OUT_CURR:
-          return read_hsc_value(HSC_OUT_CURR, (float*) value);
+          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE, ml_hsc_r_sense, (float *) value);
         case SP_SENSOR_HSC_TEMP:
-          return read_hsc_value(HSC_TEMP, (float*) value);
+          return read_hsc_value(HSC_TEMP, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
         case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_value(HSC_IN_POWER, (float*) value);
+          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE, ml_hsc_r_sense, (float *) value);
       }
       break;
 
-    case FRU_NIC:
-      switch(sensor_num) {
-      // Mezz Temp
-        case MEZZ_SENSOR_TEMP:
-          return read_nic_temp(MEZZ_SENSOR_TEMP, (float*) value);
-      }
+      case FRU_NIC:
+       	  switch(sensor_num) {
+       	    // Mezz Temp
+       		  case MEZZ_SENSOR_TEMP:
+              return read_nic_temp(MEZZ_TEMP_DEVICE, (float*) value);
+       	  }
       break;
   }
 }

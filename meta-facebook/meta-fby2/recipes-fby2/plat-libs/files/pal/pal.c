@@ -37,62 +37,6 @@
 #define FBY2_MAX_NUM_SLOTS 4
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
-#define GPIO_PWR_BTN 24
-#define GPIO_PWR_SLOT1_BTN_N 25
-#define GPIO_PWR_SLOT2_BTN_N 27
-#define GPIO_PWR_SLOT3_BTN_N 29
-#define GPIO_PWR_SLOT4_BTN_N 31
-#define GPIO_RST_BTN 216
-#define GPIO_RST_SLOT1_SYS_RESET_N 144
-#define GPIO_RST_SLOT2_SYS_RESET_N 145
-#define GPIO_RST_SLOT3_SYS_RESET_N 146
-#define GPIO_RST_SLOT4_SYS_RESET_N 147
-
-#define GPIO_P12V_STBY_SLOT1_EN 116
-#define GPIO_P12V_STBY_SLOT2_EN 117
-#define GPIO_P12V_STBY_SLOT3_EN 118
-#define GPIO_P12V_STBY_SLOT4_EN 119
-
-#define GPIO_PWR1_LED 96
-#define GPIO_PWR2_LED 97
-#define GPIO_PWR3_LED 98
-#define GPIO_PWR4_LED 99
-#define GPIO_SYSTEM_ID1_LED_N 40
-#define GPIO_SYSTEM_ID2_LED_N 41
-#define GPIO_SYSTEM_ID3_LED_N 42
-#define GPIO_SYSTEM_ID4_LED_N 43
-
-#define GPIO_SLOT1_PRSNT_N 208
-#define GPIO_SLOT2_PRSNT_N 209
-#define GPIO_SLOT3_PRSNT_N 210
-#define GPIO_SLOT4_PRSNT_N 211
-#define GPIO_HAND_SW_ID1 212
-#define GPIO_HAND_SW_ID2 213
-#define GPIO_HAND_SW_ID4 214
-#define GPIO_HAND_SW_ID8 215
-
-#define GPIO_HB_LED 135
-
-#define GPIO_POSTCODE_0 48
-#define GPIO_POSTCODE_1 49
-#define GPIO_POSTCODE_2 50
-#define GPIO_POSTCODE_3 51
-#define GPIO_POSTCODE_4 124
-#define GPIO_POSTCODE_5 125
-#define GPIO_POSTCODE_6 126
-#define GPIO_POSTCODE_7 127
-
-#define GPIO_UART_SEL0 32
-#define GPIO_UART_SEL1 33
-#define GPIO_UART_SEL2 34
-#define GPIO_UART_RX 35
-
-#define GPIO_DBG_CARD_PRSNT 139
-#define GPIO_BMC_READY_N    0
-
-#define GPIO_USB_SW0 36
-#define GPIO_USB_SW1 37
-#define GPIO_USB_MUX_EN_N 219
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -126,8 +70,9 @@
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
 const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID2_LED_N, GPIO_SYSTEM_ID3_LED_N, GPIO_SYSTEM_ID4_LED_N };  // Identify LED
-const static uint8_t gpio_prsnt[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N };
-const static uint8_t gpio_bic_ready[] = { 0, 107 };
+const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N };
+const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
+const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 
@@ -735,7 +680,7 @@ pal_get_num_slots(uint8_t *num) {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  int val;
+  int val, val_prim, val_ext;
   char path[64] = {0};
 
   switch (fru) {
@@ -743,11 +688,17 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      sprintf(path, GPIO_VAL, gpio_prsnt[fru]);
-
-      if (read_device(path, &val)) {
+      sprintf(path, GPIO_VAL, gpio_prsnt_prim[fru]);
+      if (read_device(path, &val_prim)) {
         return -1;
       }
+      sprintf(path, GPIO_VAL, gpio_prsnt_ext[fru]);
+
+      if (read_device(path, &val_ext)) {
+        return -1;
+      }
+
+      val = (val_prim || val_ext);
 
       if (val == 0x0) {
         *status = 1;

@@ -565,32 +565,42 @@ fby2_sdr_init(uint8_t fru) {
 
 static bool
 is_server_prsnt(uint8_t fru) {
-  uint8_t gpio;
-  int val;
+  uint8_t gpio_prim, gpio_ext;
+  int val, val_prim, val_ext;
   char path[64] = {0};
 
   switch(fru) {
   case 1:
-    gpio = 61;
+    gpio_prim = GPIO_SLOT1_PRSNT_N;
+    gpio_ext = GPIO_SLOT1_PRSNT_B_N;
     break;
   case 2:
-    gpio = 60;
+    gpio_prim = GPIO_SLOT2_PRSNT_N;
+    gpio_ext = GPIO_SLOT2_PRSNT_B_N;
     break;
   case 3:
-    gpio = 63;
+    gpio_prim = GPIO_SLOT3_PRSNT_N;
+    gpio_ext = GPIO_SLOT3_PRSNT_B_N;
     break;
   case 4:
-    gpio = 62;
+    gpio_prim = GPIO_SLOT4_PRSNT_N;
+    gpio_ext = GPIO_SLOT4_PRSNT_B_N;
     break;
   default:
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio);
-
-  if (read_device(path, &val)) {
+  sprintf(path, GPIO_VAL, gpio_prim);
+  if (read_device(path, &val_prim)) {
     return -1;
   }
+
+  sprintf(path, GPIO_VAL, gpio_ext);
+  if (read_device(path, &val_ext)) {
+    return -1;
+  }
+
+  val = (val_prim || val_ext);
 
   if (val == 0x0) {
     return 1;
@@ -892,4 +902,3 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
   }
 }
-

@@ -146,19 +146,19 @@ is_server_prsnt() {
 
   case $1 in
     1)
-      prsnt=$(gpio_get AA0)
+      prsnt=$[ $(gpio_get AA0) || $(gpio_get Z0) ]
       ;;
     2)
-      prsnt=$(gpio_get AA1)
+      prsnt=$[ $(gpio_get AA1) || $(gpio_get Z1) ]
       ;;
     3)
-      prsnt=$(gpio_get AA2)
+      prsnt=$[ $(gpio_get AA2) || $(gpio_get Z2) ]
       ;;
     4)
-      prsnt=$(gpio_get AA3)
+      prsnt=$[ $(gpio_get AA3) || $(gpio_get Z3) ]
       ;;
     *)
-      prsnt=$(gpio_get AA3)
+      prsnt=$[ $(gpio_get AA3) || $(gpio_get Z3) ]
       ;;
   esac
 

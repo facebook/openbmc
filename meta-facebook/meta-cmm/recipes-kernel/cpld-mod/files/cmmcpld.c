@@ -589,7 +589,6 @@ static i2c_dev_data_st cmmcpld_data;
 
 /*
  * CMMCPLD i2c addresses.
- * normal_i2c is used in I2C_CLIENT_INSMOD_1()
  */
 static const unsigned short normal_i2c[] = {
   0x3e, I2C_CLIENT_END

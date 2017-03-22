@@ -337,27 +337,21 @@ static i2c_dev_data_st com_e_data;
 
 /*
  * COMe i2c addresses.
- * normal_i2c is used in I2C_CLIENT_INSMOD_1()
  */
 static const unsigned short normal_i2c[] = {
   0x33, I2C_CLIENT_END
 };
 
-/*
- * Insmod parameters
- */
-I2C_CLIENT_INSMOD_1(com_e);
-
 /* COMe id */
 static const struct i2c_device_id com_e_id[] = {
-  { "com_e_driver", com_e_id },
+  { "com_e_driver", 0 },
   { },
 };
 MODULE_DEVICE_TABLE(i2c, com_e_id);
 
 /* Return 0 if detection is successful, -ENODEV otherwise */
-static int com_e_detect(struct i2c_client *client, int kind,
-                          struct i2c_board_info *info)
+static int com_e_detect(struct i2c_client *client,
+                        struct i2c_board_info *info)
 {
   /*
    * We don't currently do any detection of the COMe
@@ -389,8 +383,7 @@ static struct i2c_driver com_e_driver = {
   .remove   = com_e_remove,
   .id_table = com_e_id,
   .detect   = com_e_detect,
-  /* addr_data is defined through I2C_CLIENT_INSMOD_1() */
-  .address_data = &addr_data,
+  .address_list = normal_i2c,
 };
 
 static int __init com_e_mod_init(void)

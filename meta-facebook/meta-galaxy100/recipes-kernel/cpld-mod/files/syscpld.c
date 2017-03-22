@@ -633,26 +633,20 @@ static i2c_dev_data_st syscpld_data;
 
 /*
  * SYSCPLD i2c addresses.
- * normal_i2c is used in I2C_CLIENT_INSMOD_1()
  */
 static const unsigned short normal_i2c[] = {
   0x31, I2C_CLIENT_END
 };
 
-/*
- * Insmod parameters
- */
-I2C_CLIENT_INSMOD_1(syscpld);
-
 /* SYSCPLD id */
 static const struct i2c_device_id syscpld_id[] = {
-  { "syscpld", syscpld },
+  { "syscpld", 0 },
   { },
 };
 MODULE_DEVICE_TABLE(i2c, syscpld_id);
 
 /* Return 0 if detection is successful, -ENODEV otherwise */
-static int syscpld_detect(struct i2c_client *client, int kind,
+static int syscpld_detect(struct i2c_client *client,
                           struct i2c_board_info *info)
 {
   /*
@@ -685,8 +679,7 @@ static struct i2c_driver syscpld_driver = {
   .remove   = syscpld_remove,
   .id_table = syscpld_id,
   .detect   = syscpld_detect,
-  /* addr_data is defined through I2C_CLIENT_INSMOD_1() */
-  .address_data = &addr_data,
+  .address_list = normal_i2c,
 };
 
 static int __init syscpld_mod_init(void)

@@ -381,7 +381,7 @@ static ssize_t ec_3v_vol_show(struct device *dev,
   result = ((msb_val << 8) + lsb_val) * 2;
 
   //scnprintf(buf, PAGE_SIZE, "%d.%d V\n", result / 341, (((result % 341) * 10) / 341));
-  scnprintf(buf, PAGE_SIZE, "%d\n", result);
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
 }
 
 static ssize_t ec_5v_vol_show(struct device *dev,
@@ -411,7 +411,7 @@ static ssize_t ec_5v_vol_show(struct device *dev,
   result = ((msb_val << 8) + lsb_val) * 16;
 
   //scnprintf(buf, PAGE_SIZE, "%d.%d V\n", result / 1705, (((result % 1705) * 10) / 1705));
-  scnprintf(buf, PAGE_SIZE, "%d\n", result);
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
 }
 
 static ssize_t ec_12v_vol_show(struct device *dev,
@@ -441,7 +441,7 @@ static ssize_t ec_12v_vol_show(struct device *dev,
   result = ((msb_val << 8) + lsb_val) * 33;
 
   //scnprintf(buf, PAGE_SIZE, "%d.%d V\n", result / 1705, (((result % 1705) * 10) / 1705));
-  scnprintf(buf, PAGE_SIZE, "%d\n", result);
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
 }
 
 static ssize_t ec_dimm_vol_show(struct device *dev,
@@ -471,7 +471,7 @@ static ssize_t ec_dimm_vol_show(struct device *dev,
   result = (msb_val << 8) + lsb_val;
 
   //scnprintf(buf, PAGE_SIZE, "%d.%d V\n", result / 341, (((result % 341) * 10) / 341));
-  scnprintf(buf, PAGE_SIZE, "%d\n", result);
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
 }
 
 static ssize_t ec_product_name_show(struct device *dev,
@@ -725,26 +725,20 @@ static i2c_dev_data_st ec_data;
 
 /*
  * EC i2c addresses.
- * normal_i2c is used in I2C_CLIENT_INSMOD_1()
  */
 static const unsigned short normal_i2c[] = {
   0x33, I2C_CLIENT_END
 };
 
-/*
- * Insmod parameters
- */
-I2C_CLIENT_INSMOD_1(galaxy100_ec);
-
 /* EC id */
 static const struct i2c_device_id ec_id[] = {
-  {"galaxy100_ec", galaxy100_ec},
+  {"galaxy100_ec", 0},
   { },
 };
 MODULE_DEVICE_TABLE(i2c, ec_id);
 
 /* Return 0 if detection is successful, -ENODEV otherwise */
-static int ec_detect(struct i2c_client *client, int kind,
+static int ec_detect(struct i2c_client *client,
                           struct i2c_board_info *info)
 {
   /*
@@ -777,8 +771,7 @@ static struct i2c_driver ec_driver = {
   .remove   = ec_remove,
   .id_table = ec_id,
   .detect   = ec_detect,
-  /* addr_data is defined through I2C_CLIENT_INSMOD_1() */
-  .address_data = &addr_data,
+  .address_list = normal_i2c,
 };
 
 static int __init ec_mod_init(void)

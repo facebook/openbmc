@@ -273,26 +273,20 @@ static i2c_dev_data_st scmcpld_data;
 
 /*
  * SCMCPLD i2c addresses.
- * normal_i2c is used in I2C_CLIENT_INSMOD_1()
  */
 static const unsigned short normal_i2c[] = {
   0x3e, I2C_CLIENT_END
 };
 
-/*
- * Insmod parameters
- */
-I2C_CLIENT_INSMOD_1(scmcpld);
-
 /* SCMCPLD id */
 static const struct i2c_device_id scmcpld_id[] = {
-  { "scmcpld", scmcpld },
+  { "scmcpld", 0 },
   { },
 };
 MODULE_DEVICE_TABLE(i2c, scmcpld_id);
 
 /* Return 0 if detection is successful, -ENODEV otherwise */
-static int scmcpld_detect(struct i2c_client *client, int kind,
+static int scmcpld_detect(struct i2c_client *client,
                           struct i2c_board_info *info)
 {
   /*
@@ -325,8 +319,7 @@ static struct i2c_driver scmcpld_driver = {
   .remove   = scmcpld_remove,
   .id_table = scmcpld_id,
   .detect   = scmcpld_detect,
-  /* addr_data is defined through I2C_CLIENT_INSMOD_1() */
-  .address_data = &addr_data,
+  .address_list = normal_i2c,
 };
 
 static int __init scmcpld_mod_init(void)

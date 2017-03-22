@@ -118,16 +118,15 @@ static i2c_dev_data_st ir358x_data;
 
 /*
  * IR358x i2c addresses.
- * normal_i2c is used in I2C_CLIENT_INSMOD_1()
  */
 static const unsigned short normal_i2c[] = {
   0x70, 0x72, I2C_CLIENT_END
 };
 
-/*
- * Insmod parameters
- */
-I2C_CLIENT_INSMOD_2(IR3581, IR3584);
+enum {
+  IR3581,
+  IR3584,
+};
 
 /* IR358X id */
 static const struct i2c_device_id ir358x_id[] = {
@@ -138,8 +137,8 @@ static const struct i2c_device_id ir358x_id[] = {
 MODULE_DEVICE_TABLE(i2c, ir358x_id);
 
 /* Return 0 if detection is successful, -ENODEV otherwise */
-static int ir358x_detect(struct i2c_client *client, int kind,
-                          struct i2c_board_info *info)
+static int ir358x_detect(struct i2c_client *client,
+                         struct i2c_board_info *info)
 {
   /*
    * We don't currently do any detection of the driver
@@ -173,8 +172,7 @@ static struct i2c_driver ir358x_driver = {
   .remove   = ir358x_remove,
   .id_table = ir358x_id,
   .detect   = ir358x_detect,
-  /* addr_data is defined through I2C_CLIENT_INSMOD_1() */
-  .address_data = &addr_data,
+  .address_list = normal_i2c,
 };
 
 static int __init ir358x_mod_init(void)

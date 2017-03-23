@@ -33,7 +33,6 @@ SRC_URI = "file://ast-functions \
            file://mdio.py \
            file://bcm5396.py \
            file://bcm5396_util.py \
-           file://mount_data0.sh \
            file://eth0_mac_fixup.sh \
            file://fby2_power.sh \
            file://power-on.sh \
@@ -80,9 +79,6 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  # the script to mount /mnt/data
-  install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-  update-rc.d -r ${D} mount_data0.sh start 03 S .
   install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
   update-rc.d -r ${D} rc.early start 04 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh

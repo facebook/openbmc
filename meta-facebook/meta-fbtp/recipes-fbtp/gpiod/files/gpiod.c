@@ -135,6 +135,9 @@ static void gpio_event_handle(void *p)
   if (gp->gs.gs_gpio == gpio_num("GPIOQ6")) { // FM_POST_CARD_PRES_BMC_N
     if(gp->value == 1)
       usb_dbg_reset();
+  } else if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
+    if(gp->value == 0)
+      usb_dbg_reset();
   }
 
   //LCD debug card critical SEL support

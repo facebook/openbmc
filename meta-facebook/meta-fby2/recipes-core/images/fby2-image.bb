@@ -82,6 +82,7 @@ IMAGE_INSTALL += " \
   spatula \
   passwd-util \
   openbmc-utils \
+  ipmi-util \
   "
 
 IMAGE_FEATURES += " \

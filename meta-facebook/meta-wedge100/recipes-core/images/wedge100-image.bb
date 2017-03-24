@@ -25,7 +25,6 @@ IMAGE_INSTALL += " \
   watchdog-ctrl \
   sensor-setup \
   usb-console \
-  oob-nic \
   lldp-util \
   wedge-eeprom \
   sms-kcsd \

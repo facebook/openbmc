@@ -5388,7 +5388,7 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
       if (ed[0] == 0x00)
         strcat(error_log, "CPU Critical Temperature");
       else if (ed[0] == 0x01)
-        strcat(error_log, "PROCHOT# Assertions");
+        strcat(error_log, "PROCHOT#");
       else if (ed[0] == 0x02)
         strcat(error_log, "TCC Activation");
       else
@@ -5409,7 +5409,13 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
       sprintf(error_log, "Unknown");
       break;
   }
-
+  if (((event_data[2] & 0x80) >> 7) == 0) {
+    sprintf(temp_log, " Assertion");
+    strcat(error_log, temp_log);
+  } else {
+    sprintf(temp_log, " Deassertion");
+    strcat(error_log, temp_log);
+  }
   return 0;
 }
 

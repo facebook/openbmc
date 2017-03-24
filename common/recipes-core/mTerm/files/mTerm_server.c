@@ -98,7 +98,7 @@ void sendBreak(int clientFd, int solFd, char *c) {
 
 static void processClient(fd_set* master, int clientFd , int solFd,
                           bufStore *buf) {
-  char data[BUF_SIZE];
+  char data[SEND_SIZE];
   int nbytes = 0;
   TlvHeader header;
   struct iovec vec[2];
@@ -107,7 +107,7 @@ static void processClient(fd_set* master, int clientFd , int solFd,
   vec[0].iov_base = &header;
   vec[0].iov_len = sizeof(header);
   vec[1].iov_base = &data;
-  vec[1].iov_len = BUF_SIZE;
+  vec[1].iov_len = SEND_SIZE;
 
   /* TODO: server should be able to handle data for a tlv over multiple reads */
   nbytes = readv(clientFd, vec, 2);

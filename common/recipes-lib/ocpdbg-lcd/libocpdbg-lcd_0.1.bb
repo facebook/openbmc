@@ -16,7 +16,7 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-DEPENDS = " libipmb "
+DEPENDS = " libipmb libipmi "
 
 do_install() {
 	  install -d ${D}${libdir}

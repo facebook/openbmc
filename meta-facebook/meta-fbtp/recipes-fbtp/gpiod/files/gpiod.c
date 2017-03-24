@@ -112,6 +112,28 @@ gpio_value(int gpio_number)
   return val;
 }
 
+struct delayed_log {
+  useconds_t usec;
+  char msg[256];
+};
+// Thread for delay event
+static void *
+delay_log(void *arg)
+{
+  struct delayed_log* log = (struct delayed_log*)arg;
+
+  pthread_detach(pthread_self());
+
+  if (arg) {
+    usleep(log->usec);
+    syslog(LOG_CRIT, log->msg);
+
+    free(arg);
+  }
+
+  pthread_exit(NULL);
+}
+
 // Event Handler for GPIOR5 platform reset changes
 static void platform_reset_event_handle(void *p)
 {
@@ -126,10 +148,24 @@ static void gpio_event_handle(void *p)
 {
   gpio_poll_st *gp = (gpio_poll_st*) p;
   char cmd[128] = {0};
+  pthread_t tid_delay_log;
+  struct delayed_log *log;
 
   if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
     reset_timer(&power_on_sec);
   }
+  else if (gp->gs.gs_gpio == gpio_num("GPIOL0")) { // IRQ_UV_DETECT_N
+    log = (struct delayed_log*)malloc(sizeof(struct delayed_log));
+    if (log) {
+      log->usec = 20*1000; // 20ms
+      snprintf(log->msg, 256, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+      if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log) < 0) {
+        syslog(LOG_WARNING, "pthread_create failed for delay_log\n");
+      }
+      return;
+    }
+  }
+
   syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
 
   if (gp->gs.gs_gpio == gpio_num("GPIOQ6")) { // FM_POST_CARD_PRES_BMC_N

@@ -33,15 +33,15 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
 
 2. Clone Yocto repository:
  ```bash
- $ git clone -b fido https://git.yoctoproject.org/git/poky
+ $ git clone -b krogoth https://git.yoctoproject.org/git/poky
  ```
 
 3. Clone OpenEmbedded and OpenBMC repositories, in the new created `poky` directory:
  ```bash
  $ cd poky
- $ git clone -b fido https://github.com/openembedded/meta-openembedded.git
- $ git clone -b fido https://git.yoctoproject.org/git/meta-security
- $ git clone https://github.com/facebook/openbmc.git meta-openbmc
+ $ git clone -b krogoth https://github.com/openembedded/meta-openembedded.git
+ $ git clone -b krogoth https://git.yoctoproject.org/git/meta-security
+ $ git clone -b helium https://github.com/facebook/openbmc.git meta-openbmc
  ```
  Note that this project does not use Yocto release branch names.
 
@@ -50,7 +50,7 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
  $ export TEMPLATECONF=meta-openbmc/meta-facebook/meta-wedge/conf
  $ source oe-init-build-env
  ```
- Choose between `meta-wedge`, `meta-wedge100`, and `meta-yosemite`.
+ Choose between `meta-wedge`, `meta-wedge100`, `meta-yosemite`, or any of the other platforms listed in the meta-openbmc/meta-facebook directory.
  After this step, you will be dropped into a build directory, `poky/build`.
 
 5. Start the build within the build directory:

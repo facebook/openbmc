@@ -5437,7 +5437,7 @@ pal_get_sensor_health_key(uint8_t fru, char *key)
 {
   switch (fru) {
     case FRU_MB:
-      sprintf(key, "server_sernsor_health");
+      sprintf(key, "server_sensor_health");
       break;
     case FRU_NIC:
       sprintf(key, "nic_sensor_health");

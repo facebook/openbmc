@@ -46,6 +46,8 @@ SRC_URI = "file://ast-functions \
            file://rc.local \
            file://src \
            file://COPYING \
+           file://check_slot_type.sh \
+           file://setup-platform.sh \
           "
 
 pkgdir = "utils"
@@ -54,7 +56,8 @@ S = "${WORKDIR}"
 
 binfiles = "us_console.sh sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py setup_rov.sh fby2_power.sh wedge_us_mac.sh \
-  bcm5396.py bcm5396_util.py setup_switch.py watch-fc.sh power_util.py"
+  bcm5396.py bcm5396_util.py setup_switch.py watch-fc.sh power_util.py \
+  check_slot_type.sh"
 
 DEPENDS_append = "update-rc.d-native"
 
@@ -98,6 +101,8 @@ do_install() {
   update-rc.d -r ${D} setup-eth0.sh start 97 5 .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
+  install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
+  update-rc.d -r ${D} setup-platform.sh start 91 S .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

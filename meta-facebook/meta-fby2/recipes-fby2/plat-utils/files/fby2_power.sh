@@ -48,6 +48,11 @@ do_status() {
       return 0
     fi
 
+    if [[ $(get_slot_type $slot) == "1" || $(get_slot_type $slot) == "2" ]]; then
+      echo "The given slot type is not server"
+      return 0
+    fi
+
     echo -n "1S Server power for slot#$slot is "
     if [ $(fby2_is_server_on $slot) -eq 1 ] ; then
         echo "on"
@@ -61,6 +66,11 @@ do_on() {
 
     if [ $(is_server_prsnt $slot) == "0" ]; then
       echo "The given slot is Empty"
+      return 0
+    fi
+
+    if [[ $(get_slot_type $slot) == "1" || $(get_slot_type $slot) == "2" ]]; then
+      echo "The given slot type is not server"
       return 0
     fi
 
@@ -115,6 +125,12 @@ do_off() {
       echo "The given slot is Empty"
       return 0
     fi
+
+    if [[ $(get_slot_type $slot) == "1" || $(get_slot_type $slot) == "2" ]]; then
+      echo "The given slot type is no server"
+      return 0
+    fi
+
     echo -n "Power off slot#$slot server ..."
 
     #TODO: State the power state change

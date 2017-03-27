@@ -66,6 +66,7 @@
 
 #define PLATFORM_FILE "/tmp/system.bin"
 #define CRASHDUMP_KEY      "slot%d_crashdump"
+#define SLOT_FILE "/tmp/slot.bin"
 
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
@@ -716,26 +717,39 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   return 0;
 }
+
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   int val;
   char path[64] = {0};
+  int ret=-1;
 
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+          sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
 
-      if (read_device(path, &val)) {
-        return -1;
-      }
+          if (read_device(path, &val)) {
+            return -1;
+          }
 
-      if (val == 0x0) {
-        *status = 1;
-      } else {
-        *status = 0;
+          if (val == 0x0) {
+            *status = 1;
+          } else {
+            *status = 0;
+          }
+          break;
+	       case SLOT_TYPE_CF:
+	       case SLOT_TYPE_GP:
+           ret = pal_is_fru_prsnt(fru,status);
+           if(ret < 0)
+              return -1;
+           break;
       }
       break;
    case FRU_SPB:
@@ -1453,8 +1467,23 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *sensor_list = (uint8_t *) bic_sensor_list;
-      *cnt = bic_sensor_cnt;
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+            *sensor_list = (uint8_t *) bic_sensor_list;
+            *cnt = bic_sensor_cnt;
+            break;
+        case SLOT_TYPE_CF:
+            //To do
+            break;
+        case SLOT_TYPE_GP:
+            *sensor_list = (uint8_t *) dc_sensor_list;
+            *cnt = dc_sensor_cnt;
+            break;
+        default:
+            return -1;
+            break;
+      }
       break;
     case FRU_SPB:
       *sensor_list = (uint8_t *) spb_sensor_list;

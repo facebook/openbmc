@@ -32,21 +32,55 @@
 echo -n "Setup sensor monitoring for fby2... "
 
 # Check for the slots present and run sensord for those slots only.
+# check is_bic_ready for Server Cards only, remove this check for DC
 SLOTS=
-  if [ $(is_server_prsnt 1) == "1" ] && [ $(is_bic_ready 1) == "1" ]; then
-    SLOTS="$SLOTS slot1"
+  ret=0
+  if [ $(is_server_prsnt 1) == "1" ]; then
+    if [ $(get_slot_type 1) == "0" ]; then
+      ret=$(is_bic_ready 1);
+    else
+      ret=1;
+    fi
+
+    if [ $ret == "1" ]; then
+      SLOTS="$SLOTS slot1"
+    fi
   fi
 
-  if [ $(is_server_prsnt 2) == "1" ] && [ $(is_bic_ready 2) == "1" ]; then
-    SLOTS="$SLOTS slot2"
+  if [ $(is_server_prsnt 2) == "1" ]; then
+    if [ $(get_slot_type 2) == "0" ]; then
+      ret=$(is_bic_ready 2);
+    else
+      ret=1;
+    fi
+
+    if [ $ret == "1" ]; then
+      SLOTS="$SLOTS slot2"
+    fi
   fi
 
-  if [ $(is_server_prsnt 3) == "1" ] && [ $(is_bic_ready 3) == "1" ]; then
-    SLOTS="$SLOTS slot3"
+  if [ $(is_server_prsnt 3) == "1" ]; then
+    if [ $(get_slot_type 3) == "0" ]; then
+      ret=$(is_bic_ready 3);
+    else
+      ret=1;
+    fi
+
+    if [ $ret == "1" ]; then
+      SLOTS="$SLOTS slot3"
+    fi
   fi
 
-  if [ $(is_server_prsnt 4) == "1" ] && [ $(is_bic_ready 4) == "1" ]; then
-    SLOTS="$SLOTS slot4"
+  if [ $(is_server_prsnt 4) == "1" ]; then
+    if [ $(get_slot_type 4) == "0" ]; then
+      ret=$(is_bic_ready 4);
+    else
+      ret=1;
+    fi
+
+    if [ $ret == "1" ]; then
+      SLOTS="$SLOTS slot4"
+    fi
   fi
 
 SLOTS="$SLOTS spb nic"

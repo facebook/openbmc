@@ -40,7 +40,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-consoled.sh ${D}${sysconfdir}/init.d/setup-consoled.sh
-  update-rc.d -r ${D} setup-consoled.sh start 91 S .
+  update-rc.d -r ${D} setup-consoled.sh start 92 S .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

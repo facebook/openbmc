@@ -42,7 +42,8 @@
 modprobe lm75
 modprobe pmbus
 
-# Enable the ADC inputs;  adc0 - adc11 are connected to various voltage sensors
+# Enable the ADC inputs;  adc0 - adc15 are connected to various voltage sensors
+# adc12 - adc15 are for SLOT_TYPE
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
@@ -90,6 +91,10 @@ config_adc 8  	 0  1000 0
 config_adc 9  	 0  1000 0
 config_adc 10 1690  2000 0
 config_adc 11  665  2000 0
+config_adc 12    0  1000 0
+config_adc 13    0  1000 0
+config_adc 14    0  1000 0
+config_adc 15    0  1000 0
 
 
 i2cset -y -f 10 0x40 0xd4 0x071c w

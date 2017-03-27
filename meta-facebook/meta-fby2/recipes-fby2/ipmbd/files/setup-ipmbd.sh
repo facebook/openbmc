@@ -44,19 +44,24 @@ case "$ACTION" in
   start)
     echo -n "Starting $DESC: "
 
-    if [ $(is_server_prsnt 1) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) == "0" ]]; then
       $DAEMON 1 0x20 > /dev/null 2>&1 &
     fi
-
-    if [ $(is_server_prsnt 2) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 2) == "1" && $(get_slot_type 2) == "0" ]]; then
       $DAEMON 3 0x20 > /dev/null 2>&1 &
     fi
-
-    if [ $(is_server_prsnt 3) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) == "0" ]]; then
       $DAEMON 5 0x20 > /dev/null 2>&1 &
     fi
-
-    if [ $(is_server_prsnt 4) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 4) == "1" && $(get_slot_type 4) == "0" ]]; then
       $DAEMON 7 0x20 > /dev/null 2>&1 &
     fi
 
@@ -71,19 +76,24 @@ case "$ACTION" in
     echo -n "Restarting $DESC: "
     start-stop-daemon --stop --quiet --exec $DAEMON
     sleep 1
-    if [ $(is_server_prsnt 1) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) == "0" ]]; then
       $DAEMON 1 0x20 > /dev/null 2>&1 &
     fi
-
-    if [ $(is_server_prsnt 2) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 2) == "1" && $(get_slot_type 2) == "0" ]]; then
       $DAEMON 3 0x20 > /dev/null 2>&1 &
     fi
-
-    if [ $(is_server_prsnt 3) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) == "0" ]]; then
       $DAEMON 5 0x20 > /dev/null 2>&1 &
     fi
-
-    if [ $(is_server_prsnt 4) == "1" ]; then
+    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+    #get_slot_type is to get slot type to check if the slot type is server
+    if [[ $(is_server_prsnt 4) == "1" && $(get_slot_type 4) == "0" ]]; then
       $DAEMON 7 0x20 > /dev/null 2>&1 &
     fi
 

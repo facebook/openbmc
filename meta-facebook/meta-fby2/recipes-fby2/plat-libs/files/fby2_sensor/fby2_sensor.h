@@ -142,12 +142,28 @@ enum {
   SP_SENSOR_HSC_IN_POWER = 0xC3,
 };
 
+//Glacier Point
+enum {
+  DC_SENSOR_OUTLET_TEMP = 0x84,
+  DC_SENSOR_INLET_TEMP = 0x85,
+  DC_SENSOR_INA230_VOLT = 0x86,
+  DC_SENSOR_INA230_POWER = 0x87,
+  DC_SENSOR_NVMe1_CTEMP = 0x8A,
+  DC_SENSOR_NVMe2_CTEMP = 0x8B,
+  DC_SENSOR_NVMe3_CTEMP = 0x8C,
+  DC_SENSOR_NVMe4_CTEMP = 0x8D,
+  DC_SENSOR_NVMe5_CTEMP = 0x8E,
+  DC_SENSOR_NVMe6_CTEMP = 0x8F,
+};
+
 enum{
   MEZZ_SENSOR_TEMP = 0x82,
 };
 extern const uint8_t bic_sensor_list[];
 
 extern const uint8_t bic_discrete_list[];
+
+extern const uint8_t dc_sensor_list[];
 
 extern const uint8_t spb_sensor_list[];
 
@@ -158,6 +174,8 @@ extern const uint8_t nic_sensor_list[];
 //extern float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
 
 extern size_t bic_sensor_cnt;
+
+extern size_t dc_sensor_cnt;
 
 extern size_t bic_discrete_cnt;
 
@@ -171,6 +189,7 @@ int fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int fby2_sensor_sdr_path(uint8_t fru, char *path);
 int fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
 int fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
+int fby2_get_slot_type(uint8_t fru);
 
 
 #ifdef __cplusplus

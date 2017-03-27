@@ -49,6 +49,12 @@
 #define SP_OUTLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004f/hwmon/hwmon*"
 #define HSC_DEVICE I2C_BUS_10_DIR "10-0040/hwmon/hwmon*"
 
+#define DC_SLOT1_INLET_TEMP_DEVICE I2C_BUS_1_DIR "1-004d/hwmon/hwmon*"
+#define DC_SLOT1_OUTLET_TEMP_DEVICE I2C_BUS_1_DIR "1-004e/hwmon/hwmon*"
+
+#define DC_SLOT3_INLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004d/hwmon/hwmon*"
+#define DC_SLOT3_OUTLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004e/hwmon/hwmon*"
+
 #define HSC_DEVICE I2C_BUS_10_DIR "10-0040/hwmon/hwmon*"
 #define FAN_TACH_RPM "tacho%d_rpm"
 #define ADC_VALUE "adc%d_value"
@@ -58,6 +64,10 @@
 #define HSC_IN_POWER "power1_input"
 
 #define UNIT_DIV 1000
+
+#define I2C_DEV_DC_1 "/dev/i2c-1"
+#define I2C_DEV_DC_3 "/dev/i2c-5"
+#define I2C_DC_INA_ADDR 0x40
 
 #define I2C_DEV_NIC "/dev/i2c-11"
 #define I2C_NIC_ADDR 0x1f
@@ -70,6 +80,7 @@
 #define LAST_REC_ID 0xFFFF
 
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
+#define SLOT_FILE "/tmp/slot.bin"
 #define ML_ADM1278_R_SENSE  1
 
 static int ml_hsc_r_sense = ML_ADM1278_R_SENSE;
@@ -153,12 +164,26 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_HSC_IN_POWER,
 };
 
+const uint8_t dc_sensor_list[] = {
+  DC_SENSOR_OUTLET_TEMP,
+  DC_SENSOR_INLET_TEMP,
+  DC_SENSOR_INA230_VOLT,
+  DC_SENSOR_INA230_POWER,
+  DC_SENSOR_NVMe1_CTEMP,
+  DC_SENSOR_NVMe2_CTEMP,
+  DC_SENSOR_NVMe3_CTEMP,
+  DC_SENSOR_NVMe4_CTEMP,
+  DC_SENSOR_NVMe5_CTEMP,
+  DC_SENSOR_NVMe6_CTEMP,
+};
+
 // List of NIC sensors to be monitored
 const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
 };
 
 float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float dc_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 static void
@@ -205,6 +230,20 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
   spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 525;
 
+  //DC
+  dc_sensor_threshold[DC_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
+  dc_sensor_threshold[DC_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
+  dc_sensor_threshold[DC_SENSOR_INA230_VOLT][UCR_THRESH] = 13.272;
+  dc_sensor_threshold[DC_SENSOR_INA230_VOLT][LCR_THRESH] = 10.744;
+  dc_sensor_threshold[DC_SENSOR_INA230_POWER][UCR_THRESH] = 110;
+  dc_sensor_threshold[DC_SENSOR_NVMe1_CTEMP][UCR_THRESH] = 95;
+  dc_sensor_threshold[DC_SENSOR_NVMe2_CTEMP][UCR_THRESH] = 95;
+  dc_sensor_threshold[DC_SENSOR_NVMe3_CTEMP][UCR_THRESH] = 95;
+  dc_sensor_threshold[DC_SENSOR_NVMe4_CTEMP][UCR_THRESH] = 95;
+  dc_sensor_threshold[DC_SENSOR_NVMe5_CTEMP][UCR_THRESH] = 95;
+  dc_sensor_threshold[DC_SENSOR_NVMe6_CTEMP][UCR_THRESH] = 95;
+
+
   // MEZZ
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 100;
 
@@ -218,6 +257,8 @@ size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
 
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
+
+size_t dc_sensor_cnt = sizeof(dc_sensor_list)/sizeof(uint8_t);
 
 enum {
   FAN0 = 0,
@@ -237,6 +278,11 @@ enum {
   ADC_PIN9,
   ADC_PIN10,
   ADC_PIN11,
+};
+
+enum ina_register {
+  INA230_VOLT = 0x02,
+  INA230_POWER = 0x03,
 };
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -400,6 +446,50 @@ read_hsc_value(const char* attr, const char *device, int r_sense, float *value) 
   else {
     *value = ((float) tmp)/UNIT_DIV;
   }
+
+  return 0;
+}
+
+static int
+read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
+  int dev;
+  int ret;
+  int32_t res;
+
+  dev = open(device, O_RDWR);
+  if (dev < 0) {
+    syslog(LOG_ERR, "%s: open() failed", __func__);
+    return -1;
+  }
+
+  /* Assign the i2c device address */
+  ret = ioctl(dev, I2C_SLAVE, addr);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: ioctl() assigning i2c addr failed", __func__);
+    close(dev);
+    return -1;
+  }
+
+  res = i2c_smbus_read_word_data(dev, reg);
+  if (res < 0) {
+    close(dev);
+    syslog(LOG_ERR, "%s: i2c_smbus_read_word_data failed", __func__);
+    return -1;
+  }
+
+  switch (reg) {
+    case INA230_VOLT:
+      res = ((res & 0x00FF) << 8) | ((res & 0x7F00) >> 8);
+      *value = res / 800;
+      break;
+    case INA230_POWER:
+      res = ((res & 0x00FF) << 8) | ((res & 0xFF00) >> 8);
+      *value = res / 40;
+      break;
+
+  }
+
+  close(dev);
 
   return 0;
 }
@@ -589,17 +679,26 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (fby2_sensor_sdr_path(fru, path) < 0) {
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+              if (fby2_sensor_sdr_path(fru, path) < 0) {
 #ifdef DEBUG
-        syslog(LOG_WARNING, "fby2_sensor_sdr_init: get_fru_sdr_path failed\n");
+                syslog(LOG_WARNING, "fby2_sensor_sdr_init: get_fru_sdr_path failed\n");
 #endif
-        return ERR_NOT_READY;
-      }
+                return ERR_NOT_READY;
+            }
 
-      if (sdr_init(path, sinfo) < 0) {
+            if (sdr_init(path, sinfo) < 0) {
 #ifdef DEBUG
-        syslog(LOG_ERR, "fby2_sensor_sdr_init: sdr_init failed for FRU %d", fru);
+               syslog(LOG_ERR, "fby2_sensor_sdr_init: sdr_init failed for FRU %d", fru);
 #endif
+              }
+        break;
+        case SLOT_TYPE_CF:
+        case SLOT_TYPE_GP:
+            return -1;
+        break;
       }
       break;
 
@@ -676,24 +775,82 @@ is_server_prsnt(uint8_t fru) {
   }
 }
 
+int
+fby2_get_slot_type(uint8_t fru) {
+  int type;
+
+  // PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+  // PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+  // PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+  // PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+  if (read_device(SLOT_FILE, &type)) {
+    printf("Get slot type failed\n");
+    return -1;
+  }
+
+  switch(fru)
+  {
+    case 1:
+      type = (type & (0x3 << 0)) >> 0;
+    break;
+    case 2:
+      type = (type & (0x3 << 2)) >> 2;
+    break;
+    case 3:
+      type = (type & (0x3 << 4)) >> 4;
+    break;
+    case 4:
+      type = (type & (0x3 << 6)) >> 6;
+    break;
+  }
+
+  return type;
+}
+
 /* Get the units for the sensor */
 int
 fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t op, modifier;
   sensor_info_t *sinfo;
 
-    if (is_server_prsnt(fru) && (fby2_sdr_init(fru) != 0)) {
-      return -1;
-    }
-
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      sprintf(units, "");
+      switch(fby2_get_slot_type(fru))
+      {
+         case SLOT_TYPE_SERVER:
+           if (is_server_prsnt(fru) && (fby2_sdr_init(fru) != 0)) {
+              return -1;
+           }
+           sprintf(units, "");
+           break;
+         case SLOT_TYPE_CF: //To do
+           sprintf(units, "");
+           break;
+         case SLOT_TYPE_GP:
+           switch(sensor_num) {
+             case DC_SENSOR_OUTLET_TEMP:
+             case DC_SENSOR_INLET_TEMP:
+             case DC_SENSOR_NVMe1_CTEMP:
+             case DC_SENSOR_NVMe2_CTEMP:
+             case DC_SENSOR_NVMe3_CTEMP:
+             case DC_SENSOR_NVMe4_CTEMP:
+             case DC_SENSOR_NVMe5_CTEMP:
+             case DC_SENSOR_NVMe6_CTEMP:
+               sprintf(units, "C");
+               break;
+             case DC_SENSOR_INA230_VOLT:
+               sprintf(units, "Volts");
+               break;
+             case DC_SENSOR_INA230_POWER:
+               sprintf(units, "Watts");
+               break;
+           }
+           break;
+      }
       break;
-
     case FRU_SPB:
       switch(sensor_num) {
         case SP_SENSOR_INLET_TEMP:
@@ -779,7 +936,16 @@ fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *va
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *value = spb_sensor_threshold[sensor_num][thresh];
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+           break;
+        case SLOT_TYPE_CF: //To do
+           break;
+        case SLOT_TYPE_GP:
+           *value = dc_sensor_threshold[sensor_num][thresh];
+           break;
+      }
       break;
     case FRU_SPB:
       *value = spb_sensor_threshold[sensor_num][thresh];
@@ -800,28 +966,71 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      switch(sensor_num) {
-        case BIC_SENSOR_SYSTEM_STATUS:
-          sprintf(name, "SYSTEM_STATUS");
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+          switch(sensor_num) {
+            case BIC_SENSOR_SYSTEM_STATUS:
+              sprintf(name, "SYSTEM_STATUS");
+              break;
+            case BIC_SENSOR_SYS_BOOT_STAT:
+              sprintf(name, "SYS_BOOT_STAT");
+              break;
+            case BIC_SENSOR_CPU_DIMM_HOT:
+              sprintf(name, "CPU_DIMM_HOT");
+              break;
+            case BIC_SENSOR_PROC_FAIL:
+              sprintf(name, "PROC_FAIL");
+              break;
+            case BIC_SENSOR_VR_HOT:
+              sprintf(name, "VR_HOT");
+              break;
+            default:
+              sprintf(name, "");
+              break;
+          }
           break;
-        case BIC_SENSOR_SYS_BOOT_STAT:
-          sprintf(name, "SYS_BOOT_STAT");
-          break;
-        case BIC_SENSOR_CPU_DIMM_HOT:
-          sprintf(name, "CPU_DIMM_HOT");
-          break;
-        case BIC_SENSOR_PROC_FAIL:
-          sprintf(name, "PROC_FAIL");
-          break;
-        case BIC_SENSOR_VR_HOT:
-          sprintf(name, "VR_HOT");
-          break;
-        default:
+      case SLOT_TYPE_CF: //To do
           sprintf(name, "");
           break;
+      case SLOT_TYPE_GP:
+          switch(sensor_num) {
+            case DC_SENSOR_OUTLET_TEMP:
+              sprintf(name, "DC_OUTLET_TEMP");
+              break;
+            case DC_SENSOR_INLET_TEMP:
+              sprintf(name, "DC_INLET_TEMP");
+              break;
+            case DC_SENSOR_INA230_VOLT:
+              sprintf(name, "DC_INA230_VOLT");
+              break;
+            case DC_SENSOR_INA230_POWER:
+              sprintf(name, "DC_INA230_POWER");
+              break;
+            case DC_SENSOR_NVMe1_CTEMP:
+              sprintf(name, "DC_NVMe1_CTEMP");
+              break;
+            case DC_SENSOR_NVMe2_CTEMP:
+              sprintf(name, "DC_NVMe2_CTEMP");
+              break;
+            case DC_SENSOR_NVMe3_CTEMP:
+              sprintf(name, "DC_NVMe3_CTEMP");
+              break;
+            case DC_SENSOR_NVMe4_CTEMP:
+              sprintf(name, "DC_NVMe4_CTEMP");
+              break;
+            case DC_SENSOR_NVMe5_CTEMP:
+              sprintf(name, "DC_NVMe5_CTEMP");
+              break;
+            case DC_SENSOR_NVMe6_CTEMP:
+              sprintf(name, "DC_NVMe6_CTEMP");
+              break;
+            default:
+              sprintf(name, "");
+              break;
+          }
       }
       break;
-
     case FRU_SPB:
       switch(sensor_num) {
         case SP_SENSOR_INLET_TEMP:
@@ -912,34 +1121,81 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret;
   bool discrete;
   int i;
+  char path[LARGEST_DEVICE_NAME];
 
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+          if (!(is_server_prsnt(fru))) {
+            return -1;
+          }
 
-      if (!(is_server_prsnt(fru))) {
-        return -1;
-      }
+          ret = fby2_sdr_init(fru);
+          if (ret < 0) {
+            return ret;
+          }
 
-      ret = fby2_sdr_init(fru);
-      if (ret < 0) {
-        return ret;
-      }
+          discrete = false;
 
-      discrete = false;
+          i = 0;
+          while (i < bic_discrete_cnt) {
+            if (sensor_num == bic_discrete_list[i++]) {
+              discrete = true;
+              break;
+            }
+          }
 
-      i = 0;
-      while (i < bic_discrete_cnt) {
-        if (sensor_num == bic_discrete_list[i++]) {
-          discrete = true;
+          return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
+        case SLOT_TYPE_CF: //To do
+          //
           break;
+        case SLOT_TYPE_GP:
+          //Glacier Point
+          switch(sensor_num) {
+            case DC_SENSOR_OUTLET_TEMP:
+              if(fru == FRU_SLOT1)
+                return read_temp(DC_SLOT1_OUTLET_TEMP_DEVICE, (float*) value);
+              else
+                return read_temp(DC_SLOT3_OUTLET_TEMP_DEVICE, (float*) value);
+            case DC_SENSOR_INLET_TEMP:
+              if(fru == FRU_SLOT1)
+                return read_temp(DC_SLOT1_INLET_TEMP_DEVICE, (float*) value);
+              else
+                return read_temp(DC_SLOT3_INLET_TEMP_DEVICE, (float*) value);
+            case DC_SENSOR_INA230_VOLT:
+              if (fru == FRU_SLOT1)
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_1);
+              else
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_3);
+              return read_ina230_value(INA230_VOLT, path, I2C_DC_INA_ADDR, (float*) value);
+            case DC_SENSOR_INA230_POWER:
+              if (fru == FRU_SLOT1)
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_1);
+              else
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_3);
+              return read_ina230_value(INA230_POWER, path, I2C_DC_INA_ADDR, (float*) value);
+            case DC_SENSOR_NVMe1_CTEMP:
+              return 0;
+            case DC_SENSOR_NVMe2_CTEMP:
+              return 0;
+            case DC_SENSOR_NVMe3_CTEMP:
+              return 0;
+            case DC_SENSOR_NVMe4_CTEMP:
+              return 0;
+            case DC_SENSOR_NVMe5_CTEMP:
+              return 0;
+            case DC_SENSOR_NVMe6_CTEMP:
+              return 0;
+            default:
+              return -1;
         }
       }
-
-      return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
-
+      break;
     case FRU_SPB:
       switch(sensor_num) {
 

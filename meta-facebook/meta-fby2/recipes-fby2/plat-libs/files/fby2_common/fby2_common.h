@@ -36,6 +36,12 @@ enum {
   FRU_NIC   = 6,
 };
 
+enum {
+  SLOT_TYPE_SERVER = 0,
+  SLOT_TYPE_CF     = 1,
+  SLOT_TYPE_GP     = 2,
+};
+
 //GPIO definition
 #define GPIO_BMC_READY_N                   0
 #define GPIO_PWR_BTN                      24

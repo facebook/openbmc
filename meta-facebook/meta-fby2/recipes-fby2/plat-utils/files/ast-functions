@@ -168,6 +168,17 @@ is_server_prsnt() {
     echo 0
   fi
 }
+
+# Get slot type (00:TwinLakes, 01:Crace Flat, 10:Glacier Point)
+get_slot_type() {
+  slot_num=$1
+  slot_bin=`cat /tmp/slot.bin`
+
+  type=$(($(($slot_bin >> $(($(($slot_num*2)) - 2)))) & 3))
+
+  echo $type
+}
+
 # Check to see if Bridge-IC is ready in given slot or not
 is_bic_ready() {
   local ready

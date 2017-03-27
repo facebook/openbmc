@@ -20,6 +20,7 @@ SRC_URI += " \
     file://rest-api-1/rest_firmware.py \
     file://rest-api-1/rest_chassis_eeprom.py \
     file://rest-api-1/rest_chassis_all_serial_and_location.py \
+    file://rest-api-1/rest_scm_led.py \
     "
 
 binfiles += " \
@@ -30,4 +31,5 @@ binfiles += " \
     rest_firmware.py \
     rest_chassis_eeprom.py \
     rest_chassis_all_serial_and_location.py \
+    rest_scm_led.py \
     "

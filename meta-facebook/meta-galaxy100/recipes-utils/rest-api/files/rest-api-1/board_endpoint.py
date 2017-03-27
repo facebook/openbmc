@@ -25,6 +25,7 @@ import rest_sol
 import rest_usb2i2c_reset
 import rest_firmware
 import rest_chassis_all_serial_and_location
+import rest_scm_led
 
 boardApp = bottle.Bottle()
 
@@ -70,3 +71,15 @@ def rest_firmware_info():
 @boardApp.route('/api/sys/mb/chassis_all_serial_and_location')
 def rest_chassis_all_serial_and_location_hdl():
     return rest_chassis_all_serial_and_location.get_all_serials_and_location()
+
+
+# Handler to set SCM LED BLUE
+@boardApp.route('/api/sys/scm_led_blue')
+def rest_scm_led_blue():
+    return rest_scm_led.set_led(color='blue')
+
+
+# Handler to set SCM LED GREEN
+@boardApp.route('/api/sys/scm_led_green')
+def rest_scm_led_green():
+    return rest_scm_led.set_led(color='green')

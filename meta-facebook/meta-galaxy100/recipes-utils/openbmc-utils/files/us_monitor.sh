@@ -24,14 +24,6 @@ TH_SHUTDOWN_VOL=949
 TH_RESTORE_VOL=1028
 th_shutdown=0
 
-restore_us_com() {
-    repeater_config
-    KR10G_repeater_config
-    wedge_power_on_board
-    i2cset -f -y 0 0x3e 0x10 0xff 2> /dev/null
-    logger "Power on micro-server after inserting SCM"
-}
-
 lm57_monitor() {
     vol=$(cat /sys/devices/platform/ast_adc.0/in0_input 2> /dev/null)
     vol=$(($vol / 2))

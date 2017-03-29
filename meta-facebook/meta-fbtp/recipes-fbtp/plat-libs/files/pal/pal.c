@@ -3157,6 +3157,10 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "nic")) {
     *fru = FRU_NIC;
+  } else if (!strncmp(str, "fru", 3)) {
+    *fru = atoi(&str[3]);
+    if (*fru <= FRU_NIC || *fru > MAX_NUM_FRUS)
+      return -1;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -3167,6 +3171,19 @@ pal_get_fru_id(char *str, uint8_t *fru) {
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
+  switch(fru) {
+    case FRU_MB:
+      strcpy(name, "mb");
+      break;
+    case FRU_NIC:
+      strcpy(name, "nic");
+      break;
+    default:
+      if (fru > MAX_NUM_FRUS)
+        return -1;
+      sprintf(name, "fru%d", fru);
+      break;
+  }
   return 0;
 }
 
@@ -3192,7 +3209,11 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *cnt = nic_sensor_cnt;
     break;
   default:
-    return -1;
+    if (fru > MAX_NUM_FRUS)
+      return -1;
+    // Nothing to read yet.
+    *sensor_list = NULL;
+    *cnt = 0;
   }
 
   return 0;

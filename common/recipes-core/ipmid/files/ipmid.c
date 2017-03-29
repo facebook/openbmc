@@ -44,8 +44,7 @@
 #define BIOS_Timeout 600
 // Boot valid flag
 #define BIOS_BOOT_VALID_FLAG (1U << 7)
-#define CMOS_VALID_FLAG      (1U << 1)
-
+#define CMOS_VALID_FLAG      (2U << 1)
 
 static unsigned char IsTimerStart = false;
 
@@ -60,6 +59,47 @@ static dimm_info_t g_dimm_info[MAX_NUM_DIMMS] = { 0 };
 
 // TODO: Need to store this info after identifying proper storage
 static sys_info_param_t g_sys_info_params;
+
+// IPMI Watchdog Timer Structure
+static struct watchdog_data {
+  pthread_mutex_t mutex;
+  uint8_t valid;
+  uint8_t run;
+  uint8_t no_log;
+  uint8_t use;
+  uint8_t pre_action;
+  uint8_t action;
+  uint8_t pre_interval;
+  uint8_t expiration;
+  uint16_t init_count_down;
+  uint16_t present_count_down;
+} g_wdt = {
+  .mutex = PTHREAD_MUTEX_INITIALIZER,
+  .valid = 0,
+  .pre_interval = 1,
+};
+
+static char* wdt_use_name[8] = {
+  "reserved",
+  "BIOS FRB2",
+  "BIOS/POST",
+  "OS Load",
+  "SMS/OS",
+  "OEM",
+  "reserved",
+  "reserved",
+};
+
+static char* wdt_action_name[8] = {
+  "Timer expired",
+  "Hard Reset",
+  "Power Down",
+  "Power Cycle",
+  "reserved",
+  "reserved",
+  "reserved",
+  "reserved",
+};
 
 // TODO: Based on performance testing results, might need fine grained locks
 // Since the global data is specific to a NetFunction, adding locs at NetFn level
@@ -77,12 +117,12 @@ static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
 
 static int length_check(unsigned char cmd_len, unsigned char req_len, unsigned char *response, unsigned char *res_len)
-{  
+{
   ipmi_res_t *res = (ipmi_res_t *) response;
   // req_len = cmd_len + 3 (payload_id, cmd and netfn)
   if( req_len != (cmd_len + 3) ){
     res->cc = CC_INVALID_LENGTH;
-    *res_len = 1;   
+    *res_len = 1;
     return 1;
   }
   return 0;
@@ -486,6 +526,90 @@ app_get_device_sys_guid (unsigned char *request, unsigned char req_len,
   }
 }
 
+// Reset Watchdog Timer (IPMI/Section 27.5)
+static void
+app_reset_watchdog_timer (unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  pthread_mutex_lock(&g_wdt.mutex);
+  if (g_wdt.valid) {
+    res->cc = CC_SUCCESS;
+    g_wdt.present_count_down = g_wdt.init_count_down;
+    g_wdt.run = 1;
+  }
+  else
+    res->cc = 0x80; // un-initialized watchdog
+  pthread_mutex_unlock(&g_wdt.mutex);
+
+  *res_len = data - &res->data[0];
+}
+
+// Set Watchdog Timer (IPMI/Section 27.6)
+static void
+app_set_watchdog_timer (unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t*) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  // no support pre-itmeout interrupt
+  if (req->data[1] & 0xF0) {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  pthread_mutex_lock(&g_wdt.mutex);
+  g_wdt.no_log = req->data[0] >> 7;
+  g_wdt.use = req->data[0] & 0x7;
+  g_wdt.pre_action = 0; // no support
+  g_wdt.action = req->data[1] & 0x7;
+  g_wdt.pre_interval = req->data[2];
+  g_wdt.expiration &= ~(req->data[3]);
+  g_wdt.init_count_down = (req->data[5]<<8 | req->data[4]);
+  g_wdt.present_count_down = g_wdt.init_count_down;
+  if (!(req->data[0] & 0x40)) // 'do not stop timer' bit
+    g_wdt.run = 0;
+  g_wdt.valid = 1;
+  pthread_mutex_unlock(&g_wdt.mutex);
+  res->cc = CC_SUCCESS;
+
+  *res_len = data - &res->data[0];
+}
+
+// Get Watchdog Timer (IPMI/Section 27.7)
+static void
+app_get_watchdog_timer (unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  unsigned char byte;
+
+  pthread_mutex_lock(&g_wdt.mutex);
+  byte = g_wdt.use;
+  if (g_wdt.no_log)
+    byte |= 0x80;
+  if (g_wdt.run)
+    byte |= 0x40;
+  *data++ = byte;
+  *data++ = (g_wdt.pre_action << 4 | g_wdt.action);
+  *data++ = g_wdt.pre_interval;
+  *data++ = g_wdt.expiration;
+  *data++ = g_wdt.init_count_down & 0xFF;
+  *data++ = (g_wdt.init_count_down >> 8) & 0xFF;
+  *data++ = g_wdt.present_count_down & 0xFF;
+  *data++ = (g_wdt.present_count_down >> 8) & 0xFF;
+  pthread_mutex_unlock(&g_wdt.mutex);
+  res->cc = CC_SUCCESS;
+
+  *res_len = data - &res->data[0];
+}
+
 // Set BMC Global Enables (IPMI/Section 22.1)
 static void
 app_set_global_enables (unsigned char *request, unsigned char req_len,
@@ -588,13 +712,13 @@ app_set_sys_info_params (unsigned char *request, unsigned char req_len,
       case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
         if(length_check(SIZE_BIOS_RESTORES_DEFAULT_SETTING+1, req_len, response, res_len))
           break;
-        memcpy(g_sys_info_params.bios_restores_default_setting, &req->data[1], SIZE_BIOS_RESTORES_DEFAULT_SETTING); 
+        memcpy(g_sys_info_params.bios_restores_default_setting, &req->data[1], SIZE_BIOS_RESTORES_DEFAULT_SETTING);
         pal_set_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting);
         break;
       case SYS_INFO_PARAM_LAST_BOOT_TIME:
         if(length_check(SIZE_LAST_BOOT_TIME+1, req_len, response, res_len))
           break;
-        memcpy(g_sys_info_params.last_boot_time, &req->data[1], SIZE_LAST_BOOT_TIME); 
+        memcpy(g_sys_info_params.last_boot_time, &req->data[1], SIZE_LAST_BOOT_TIME);
         pal_set_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time);
         break;
     #endif
@@ -739,6 +863,15 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       break;
     case CMD_APP_GET_SYSTEM_GUID:
       app_get_device_sys_guid (request, req_len, response, res_len);
+      break;
+    case CMD_APP_RESET_WDT:
+      app_reset_watchdog_timer (request, req_len, response, res_len);
+      break;
+    case CMD_APP_SET_WDT:
+      app_set_watchdog_timer (request, req_len, response, res_len);
+      break;
+    case CMD_APP_GET_WDT:
+      app_get_watchdog_timer (request, req_len, response, res_len);
       break;
     case CMD_APP_SET_GLOBAL_ENABLES:
       app_set_global_enables (request, req_len, response, res_len);
@@ -2402,6 +2535,81 @@ conn_cleanup:
 }
 
 
+void *
+wdt_timer (void *arg) {
+  int ret;
+  uint8_t status;
+  char timer_use[32];
+  int action = 0;
+
+  while (1) {
+    usleep(100*1000);
+    pthread_mutex_lock(&g_wdt.mutex);
+    if (g_wdt.valid && g_wdt.run) {
+
+      // Check if power off
+      ret = pal_get_server_power(FRU_MB, &status);
+      if ((ret >= 0) && (status == SERVER_POWER_OFF)) {
+        g_wdt.run = 0;
+        pthread_mutex_unlock(&g_wdt.mutex);
+        continue;
+      }
+
+      // count down; counter 0 and run associated timer events occur immediately
+      if (g_wdt.present_count_down)
+        g_wdt.present_count_down--;
+
+      // Pre-timeout no support
+      /*
+      if (g_wdt.present_count_down == g_wdt.pre_interval*10) {
+      }
+      */
+
+      // Timeout
+      if (g_wdt.present_count_down == 0) {
+        g_wdt.expiration |= g_wdt.use;
+
+        // Execute actin out of mutex
+        action = g_wdt.action;
+
+        if (g_wdt.no_log) {
+          g_wdt.no_log = 0;
+        }
+        else {
+          syslog(LOG_CRIT, "%s Watchdog %s",
+            wdt_use_name[g_wdt.use & 0x7],
+            wdt_action_name[action & 0x7]);
+        }
+
+        g_wdt.run = 0;
+      } /* End of Timeout Action*/
+    } /* End of Valid and Run */
+    pthread_mutex_unlock(&g_wdt.mutex);
+
+    // Execute actin out of mutex
+    if (action) {
+      switch (action) {
+      case 1: // Hard Reset
+        pal_set_server_power(FRU_MB, SERVER_POWER_RESET);
+        break;
+      case 2: // Power Down
+        pal_set_server_power(FRU_MB, SERVER_POWER_OFF);
+        break;
+      case 3: // Power Cycle
+        pal_set_server_power(FRU_MB, SERVER_POWER_CYCLE);
+        break;
+      case 0: // no action
+      default:
+        break;
+      }
+      action = 0;
+    }
+
+  } /* Forever while */
+
+  pthread_exit(NULL);
+}
+
 int
 main (void)
 {
@@ -2431,6 +2639,9 @@ main (void)
   pthread_mutex_init(&m_oem_1s, NULL);
   pthread_mutex_init(&m_oem_usb_dbg, NULL);
   pthread_mutex_init(&m_oem_q, NULL);
+
+  pthread_create(&tid, NULL, wdt_timer, NULL);
+  pthread_detach(tid);
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
   {

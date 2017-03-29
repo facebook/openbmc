@@ -1819,6 +1819,240 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_ppr (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int selector = req->data[0],  i =1 , para, size = 0, offset;
+  char temp[20]= {0}, file_path[45];
+  unsigned char data[350];
+  FILE *fp;
+
+  if (access("/mnt/data/ppr/", F_OK) == -1)
+     mkdir("/mnt/data/ppr/", 0777);
+
+  *res_len = 0;
+  res->cc = CC_SUCCESS;
+  switch(selector) {
+    case 1:
+      para =  req->data[1] & 0x7f;
+      if( para != soft_ppr && para != hard_ppr  && para != test_mode && para != enable_ppr) {
+        res->cc = CC_INVALID_DATA_FIELD;
+        return;
+      }
+      fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
+      if (!fp) {
+        res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+        return;
+      }
+      fread(res->data, 1, 1, fp);
+      if(res->data[0] == 0) {
+        fclose(fp);
+        res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+        return;
+      }
+      fclose(fp);
+      sprintf(temp, "%c", req->data[1]);
+      fp = fopen("/mnt/data/ppr/ppr_action", "w");
+      if(fp != NULL)
+        fwrite(temp, sizeof(char), 1, fp);
+      break;
+    case 2:
+      if(req->data[1]>100) {
+      res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      else
+      {
+        sprintf(temp, "%c", req->data[1]);
+        fp = fopen("/mnt/data/ppr/ppr_row_count", "w");
+        if(fp != NULL)
+          fwrite(temp, sizeof(char), 1, fp);
+      }
+      break;
+    case 3:
+      if(req->data[1] < 0 || req->data[1] >100) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      if(req_len != 12) {
+        res->cc = CC_INVALID_LENGTH;
+        return;
+      }
+      fp = fopen("/mnt/data/ppr/ppr_row_addr", "a+");
+      fseek(fp, 0, SEEK_END);
+      size = ftell(fp);
+      fseek(fp, 0, SEEK_SET);
+      if(size >= 50 * 8) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        fclose(fp);
+        return;
+      }
+      offset = 0;
+      if(size != 0) {
+        while(fread(temp, 1, 8, fp)) {
+          offset = ftell(fp);
+           if(temp[0] == req->data[1]) {
+           fclose(fp);
+           fp = fopen("/mnt/data/ppr/ppr_row_addr", "w+");
+             offset =  ftell(fp) - 8;
+             if (offset < 0)
+               offset = 0;
+             break;
+           }
+        }
+      }
+      fseek(fp, offset , SEEK_SET);
+      i = 1;
+      while( i <= req_len - 4) {
+        sprintf(temp, "%c", req->data[i]);
+        fwrite(temp, sizeof(char), 1, fp);
+        i++;
+      }
+    break;
+    case 4:
+      if(req->data[1] < 0 || req->data[1] >100) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      if(req_len != 21) {
+        res->cc = CC_INVALID_LENGTH;
+        return;
+      }
+      fp = fopen("/mnt/data/ppr/ppr_history_data", "a+");
+      fseek(fp, 0, SEEK_END);
+      size = ftell(fp);
+      fseek(fp, 0, SEEK_SET);
+      if(size >= 50 * 17) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        fclose(fp);
+        return;
+      }
+      offset = 0;
+      if(size != 0) {
+        while(fread(temp, 1, 17, fp)) {
+          offset = ftell(fp);
+          if(temp[0] == req->data[1]) {
+            fclose(fp);
+            fp = fopen("/mnt/data/ppr/ppr_history_data", "w+");
+            offset =  ftell(fp) - 17;
+            if (offset < 0)
+              offset = 0;
+            break;
+          }
+        }
+      }
+      fseek(fp, offset , SEEK_SET);
+      i=1;
+      while( i <= req_len - 4) {
+        sprintf(temp, "%c", req->data[i]);
+        fwrite(temp, sizeof(char), 1, fp);
+        i++;
+      }
+      break;
+    default:
+      res->cc = CC_INVALID_PARAM;
+      break;
+    }
+   fclose(fp);
+
+}
+
+static void
+oem_get_ppr (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int selector = req->data[0], i = 0, para=0;;
+  FILE *fp;
+  char temp[20], kpath[20], file_path[45];
+  int temp_value;
+
+  sprintf(kpath, "%s", "/mnt/data/ppr");
+  if (access(kpath, F_OK) == -1)
+    mkdir(kpath, 0777);
+
+  res->cc = CC_SUCCESS;
+  switch(selector) {
+    case 1:
+      fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
+      if (!fp) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      fread(res->data, 1, 1, fp);
+      if(res->data[0] != 0 ) {
+        fclose(fp);
+        fp = fopen("/mnt/data/ppr/ppr_action", "r");
+        fread(res->data, 1, 1, fp);
+        if((res->data[0] & 0x80) ==0 )
+          res->data[0] = 0;
+      }
+      *res_len = 1;
+      break;
+    case 2:
+      fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
+      if (!fp) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      fread(res->data, 1, 1, fp);
+      *res_len = 1;
+      break;
+    case 3:
+      if(req->data[1] < 0 || req->data[1] >100) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+
+      fp = fopen("/mnt/data/ppr/ppr_row_addr", "r+");
+      if (!fp) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      while(fread(res->data, 1, 8, fp)) {
+        if(res->data[0] == req->data[1]) {
+          i = 1;
+          break;
+        }
+      }
+      if(i!=1)
+        *res_len = 0;
+      else
+        *res_len = 8;
+      break;
+    case 4:
+      if(req->data[1] < 0 || req->data[1] >100) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      fp = fopen("/mnt/data/ppr/ppr_history_data", "r+");
+      if (!fp) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        return;
+      }
+      while(fread(res->data, 1, 17, fp)) {
+        if(res->data[0] == req->data[1]) {
+          i = 1;
+          break;
+        }
+      }
+      if(i!=1)
+        *res_len = 0;
+      else
+        *res_len = 17;
+      break;
+    default:
+      res->cc = CC_INVALID_PARAM;
+      break;
+  }
+  fclose(fp);
+
+}
+
+static void
 oem_set_post_start (unsigned char *request, unsigned char *response,
                   unsigned char *res_len)
 {
@@ -2004,6 +2238,12 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_BOOT_ORDER:
       oem_get_boot_order(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_PPR:
+      oem_set_ppr (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_PPR:
+      oem_get_ppr (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_POST_START:
       oem_set_post_start (request, response, res_len);

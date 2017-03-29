@@ -405,6 +405,8 @@ enum
   CMD_OEM_GET_BOARD_ID = 0x37,
   CMD_OEM_SET_BOOT_ORDER = 0x52,
   CMD_OEM_GET_BOOT_ORDER = 0x53,
+  CMD_OEM_SET_PPR = 0x6E,
+  CMD_OEM_GET_PPR = 0x6F,
   CMD_OEM_SET_POST_START = 0x73,
   CMD_OEM_SET_POST_END = 0x74,
   CMD_OEM_GET_PLAT_INFO = 0x7E,
@@ -466,6 +468,8 @@ enum
   CC_INVALID_CMD = 0xC1,
   CC_INVALID_LENGTH = 0xC7,
   CC_PARAM_OUT_OF_RANGE = 0xC9,
+  CC_INVALID_DATA_FIELD = 0xCC,
+  CC_NOT_SUPP_IN_CURR_STATE = 0xD5,
   CC_UNSPECIFIED_ERROR = 0xFF,
 };
 
@@ -547,6 +551,15 @@ enum
   BIC_INTF_SOL = 0x02,
   BIC_INTF_KCS = 0x03,
   BIC_INTF_KCS_SMM = 0x04,
+};
+
+//PPR Action
+enum
+{
+  enable_ppr = 0x0,
+  soft_ppr = 0x1,
+  hard_ppr = 0x2,
+  test_mode = 0x7c,
 };
 
 void lib_ipmi_handle(unsigned char *request, unsigned char req_len,

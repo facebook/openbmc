@@ -115,6 +115,7 @@ char * key_list[] = {
 "peb_sensor_health",
 "pdpb_sensor_health",
 "fcb_sensor_health",
+"bmc_health",
 "system_identify",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
@@ -124,6 +125,7 @@ char * def_val_list[] = {
   "1", /* peb_sensor_health */
   "1", /* pdbb_sensor_health */
   "1", /* fcb_sensor_health */
+  "1", /* bmc_health */
   "off", /* system_identify */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
@@ -900,6 +902,9 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
     case FRU_FCB:
       sprintf(key, "fcb_sensor_health");
       break;
+    case BMC_HEALTH:
+      sprintf(key, "bmc_health");
+      break;
 
     default:
       return -1;
@@ -928,6 +933,9 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
       break;
     case FRU_FCB:
       sprintf(key, "fcb_sensor_health");
+      break;
+    case BMC_HEALTH:
+      sprintf(key, "bmc_health");
       break;
 
     default:
@@ -1949,8 +1957,7 @@ pal_drive_health(const char* dev) {
 }
 
 void
-pal_add_cri_sel(char *str)
-{
+pal_add_cri_sel(char *str) {
 
 }
 
@@ -1971,3 +1978,18 @@ pal_i2c_crash_deassert_handle(int i2c_bus_num) {
   else
     syslog(LOG_WARNING, "%s(): wrong I2C bus number", __func__);
 }
+
+int
+pal_bmc_err_enable() {
+  pal_err_code_enable(ERR_CODE_BMC_ERR);
+  pal_set_sensor_health(BMC_HEALTH, FRU_STATUS_BAD);
+  return 0;
+}
+
+int
+pal_bmc_err_disable() {
+  pal_err_code_disable(ERR_CODE_BMC_ERR);
+  pal_set_sensor_health(BMC_HEALTH, FRU_STATUS_GOOD);
+  return 0;
+}
+

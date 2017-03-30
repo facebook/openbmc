@@ -107,6 +107,7 @@ encl_led_handler() {
   uint8_t peb_hlth;
   uint8_t pdpb_hlth;
   uint8_t fcb_hlth;
+  uint8_t bmc_hlth;
 
   while (1) {
 
@@ -123,7 +124,11 @@ encl_led_handler() {
     if (ret)
       goto err;
 
-    if (!peb_hlth | !pdpb_hlth | !fcb_hlth)
+    ret = pal_get_fru_health(BMC_HEALTH, &bmc_hlth);
+    if (ret)
+      goto err;
+
+    if (!peb_hlth | !pdpb_hlth | !fcb_hlth | !bmc_hlth)
       pal_set_led(LED_ENCLOSURE, LED_ON_N);
     else
       pal_set_led(LED_ENCLOSURE, LED_OFF_N);

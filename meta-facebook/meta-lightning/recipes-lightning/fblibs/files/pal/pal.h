@@ -61,18 +61,16 @@ extern "C" {
 #define ERR_CODE_I2C_CRASH_BASE 0x02
 #define ERR_CODE_SELF_TRAY_PULL_OUT 0x5D
 #define ERR_CODE_PEER_TRAY_PULL_OUT 0x5E
+#define ERR_CODE_BMC_ERR 0x60
 
 #define HB_INTERVAL 500
 
 #define ERR_ASSERT 1
 #define ERR_DEASSERT 0
 
-typedef struct {
-  uint8_t code;
-  bool status;
-} error_code;
-
 #define I2C_BUS_MAX_NUMBER 14
+
+#define BMC_HEALTH 4      // for bmc_health key 
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
@@ -273,9 +271,12 @@ int pal_drive_health(const char* dev);
 void pal_add_cri_sel(char *str);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
+int pal_bmc_err_enable(void);
+int pal_bmc_err_disable(void);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
 #endif /* __PAL_H__ */
+

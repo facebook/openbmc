@@ -7134,4 +7134,14 @@ pal_add_cri_sel(char *str)
   snprintf(cmd, 128, "logger -p local0.err \"%s\"",str);
 }
 
+int
+pal_bmc_err_enable() {
+  // dummy function
+  return 0;
+}
 
+int
+pal_bmc_err_disable() {
+  // dummy function
+  return 0;
+}

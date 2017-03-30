@@ -31,6 +31,7 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include <openbmc/pal.h>
+#include <sys/sysinfo.h>
 #include "watchdog.h"
 
 
@@ -67,9 +68,82 @@ struct AST_I2C_DEV_OFFSET ast_i2c_dev_offset[I2C_BUS_NUM] = {
 };
 #endif
 
+#define CPU_INFO_PATH "/proc/stat"
+#define CPU_THRESHOLD_PATH "/mnt/data/bmc_cpu_threshold"
+#define MEM_THRESHOLD_PATH "/mnt/data/bmc_mem_threshold"
+#define CPU_NAME_LENGTH 10
+#define SLIDING_WINDOW_SIZE 120
+#define MONITOR_INTERVAL 1
+#define DEFAULT_CPU_THRESHOLD 70
+#define DEFAULT_MEM_THRESHOLD 70
+#define MAX_RETRY 10
+
+static int cpu_over_threshold = 0, mem_over_threshold = 0;
+
+enum {
+  CPU = 0,
+  MEM,
+};
+
 static void
 initilize_all_kv() {
   pal_set_def_key_value();
+}
+
+int
+get_threshold(uint8_t name, float *threshold) {
+  char threshold_path[MAX_KEY_LEN], str[MAX_KEY_LEN];
+  int file_non_exist = 0, rc;
+  FILE *fp;
+
+  switch (name) {
+    case CPU:
+      *threshold = DEFAULT_CPU_THRESHOLD;
+      sprintf(threshold_path, "%s", CPU_THRESHOLD_PATH);
+      break;
+
+    case MEM:
+      *threshold = DEFAULT_MEM_THRESHOLD;
+      sprintf(threshold_path, "%s", MEM_THRESHOLD_PATH);
+      break;
+
+    default:
+      return -1;
+  }
+  
+  
+  fp = fopen(threshold_path, "r");
+  if (!fp && (errno == ENOENT)) {
+    fp = fopen(threshold_path, "w");
+    file_non_exist = 1;
+  }
+  if (!fp) {
+    syslog(LOG_WARNING, "%s: failed to open %s", __func__, threshold_path);
+    return -1;
+  }
+
+  // If there is no file can get threshold, we use the default value
+  if (file_non_exist) {
+    sprintf(str, "%.2f", *threshold);
+    rc = fwrite(str, 1, sizeof(float), fp);
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s: failed to write threshold to %s",__func__, threshold_path);
+      fclose(fp);
+      return -1;
+    }
+  } else {
+    // Get threshold from file
+    rc = fread(str, 1, sizeof(float), fp);
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s: failed to read threshold from %s",__func__, threshold_path);
+      fclose(fp);
+      return -1;
+    }
+    *threshold = atof(str);
+  }
+  fclose(fp);
+  
+  return 0;
 }
 
 static void *
@@ -180,6 +254,165 @@ i2c_mon_handler() {
 }
 #endif
 
+static void *
+CPU_usage_monitor() {
+  unsigned long long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
+  unsigned long long total_diff, idle_diff, non_idle, idle_time = 0, total = 0, pre_total = 0, pre_idle = 0;
+  char cpu[CPU_NAME_LENGTH] = {0};
+  int i, ready_flag = 0, timer = 0, rc, retry = 0;
+  float cpu_threshold = 0;
+  static float cpu_util_avg, cpu_util_total;
+  static float cpu_utilization[SLIDING_WINDOW_SIZE] = {0};
+  FILE *fp;
+
+  rc = get_threshold(CPU, &cpu_threshold);
+  if (rc < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get CPU threshold\n", __func__);
+    cpu_threshold = DEFAULT_CPU_THRESHOLD;
+  }
+
+  if (cpu_threshold > 90)
+    cpu_threshold = 90;
+
+  while (1) {
+
+    if (retry > MAX_RETRY) {
+      syslog(LOG_CRIT, "Cannot get CPU statistics. Stop %s\n", __func__);
+      return -1;
+    }
+
+    // Get CPU statistics. Time unit: jiffies
+    fp = fopen(CPU_INFO_PATH, "r");
+    if(!fp) {
+      syslog(LOG_WARNING, "Failed to get CPU statistics.\n");
+      retry++;
+      continue;
+    }    
+    retry = 0; 
+    
+    fscanf(fp, "%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu", 
+                cpu, &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal, &guest, &guest_nice);
+
+    fclose(fp);
+
+    timer %= SLIDING_WINDOW_SIZE;
+
+    // Need more data to cacluate the avg. utilization. We average 60 records here.
+    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
+      ready_flag = 1;
+    
+
+    // guset and guest_nice are already accounted in user and nice so they are not included in total caculation
+    idle_time = idle + iowait;
+    non_idle = user + nice + system + irq + softirq + steal;
+    total = idle_time + non_idle;
+
+    // For runtime caculation, we need to take into account previous value. 
+    total_diff = total - pre_total;
+    idle_diff = idle_time - pre_idle;
+
+    // These records are used to caculate the avg. utilization.
+    cpu_utilization[timer] = (float) (total_diff - idle_diff)/total_diff;
+
+    // Start to average the cpu utilization
+    if (ready_flag) {
+      cpu_util_total = 0;
+      for (i=0; i<SLIDING_WINDOW_SIZE; i++) {
+        cpu_util_total += cpu_utilization[i];
+      }
+      cpu_util_avg = cpu_util_total/SLIDING_WINDOW_SIZE;
+      
+      if (((cpu_util_avg*100) >= cpu_threshold) && !cpu_over_threshold)  {
+        syslog(LOG_CRIT, "ASSERT: CPU utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
+        cpu_over_threshold = 1;
+        pal_bmc_err_enable();
+      } else if (((cpu_util_avg*100) < cpu_threshold) && cpu_over_threshold)  {
+        syslog(LOG_CRIT, "DEASSERT: CPU utilization (%.2f%%) is under the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
+        cpu_over_threshold = 0;
+        // We can only disable BMC error code when both CPU and memory are fine.
+        if (!mem_over_threshold)
+          pal_bmc_err_disable();
+      }
+    }
+
+    // Record current value for next caculation
+    pre_total = total;
+    pre_idle  = idle_time;
+
+    timer++;
+    sleep(MONITOR_INTERVAL);
+  }
+}
+
+static void *
+memory_usage_monitor() {
+  struct sysinfo s_info;
+  int i, error, timer = 0, ready_flag = 0, rc, retry = 0;
+  float mem_threshold = 0;
+  static float mem_util_avg, mem_util_total;
+  static float mem_utilization[SLIDING_WINDOW_SIZE];
+
+  rc = get_threshold(MEM, &mem_threshold);
+  if (rc < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get memory threshold\n", __func__);
+    mem_threshold = DEFAULT_MEM_THRESHOLD;
+  }
+
+  if (mem_threshold > 90)
+    mem_threshold = 90;
+
+  while (1) {
+
+    if (retry > MAX_RETRY) {
+      syslog(LOG_CRIT, "Cannot get sysinfo. Stop the %s\n", __func__);
+      return -1;  
+    }
+
+    timer %= SLIDING_WINDOW_SIZE;
+
+    // Need more data to cacluate the avg. utilization. We average 60 records here.
+    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
+      ready_flag = 1;
+
+    // Get sys info
+    error = sysinfo(&s_info);
+    if (error) {
+      syslog(LOG_WARNING, "%s Failed to get sys info. Error: %d\n", __func__, error);
+      retry++;
+      continue;
+    }
+    retry = 0;
+
+    // These records are used to caculate the avg. utilization.
+    mem_utilization[timer] = (float) (s_info.totalram - s_info.freeram)/s_info.totalram;
+
+    // Start to average the memory utilization
+    if (ready_flag) {
+      mem_util_total = 0;
+      for (i=0; i<SLIDING_WINDOW_SIZE; i++)
+        mem_util_total += mem_utilization[i];
+
+      mem_util_avg = mem_util_total/SLIDING_WINDOW_SIZE;
+      
+      if (((mem_util_avg*100) >= mem_threshold) && !mem_over_threshold) {
+        syslog(LOG_CRIT, "ASSERT: Memory utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", mem_util_avg*100, mem_threshold);
+        mem_over_threshold = 1;
+        pal_bmc_err_enable();
+      } else if ((mem_util_avg*100) < mem_threshold && mem_over_threshold) {
+        syslog(LOG_CRIT, "DEASSERT: Memory utilization (%.2f%%) is under the threshold (%.2f%%).\n", mem_util_avg*100, mem_threshold);
+        mem_over_threshold = 0;
+        // We can only disable BMC error code when both CPU and memory are fine.
+        if (!cpu_over_threshold)
+          pal_bmc_err_disable();
+      }
+    }
+
+    timer++;
+    sleep(MONITOR_INTERVAL);
+  }
+
+}
+
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
@@ -188,27 +421,15 @@ main(int argc, void **argv) {
 #if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
   pthread_t tid_i2c_mon;
 #endif
+  pthread_t tid_cpu_monitor;
+  pthread_t tid_mem_monitor;
 
   if (argc > 1) {
     exit(1);
   }
 
-  pid_file = open("/var/run/healthd.pid", O_CREAT | O_RDWR, 0666);
-  rc = flock(pid_file, LOCK_EX | LOCK_NB);
-  if(rc) {
-    if(EWOULDBLOCK == errno) {
-      printf("Another healthd instance is running...\n");
-      exit(-1);
-    }
-  } else {
-
-    daemon(1,1);
-
-    openlog("healthd", LOG_CONS, LOG_DAEMON);
-    syslog(LOG_INFO, "healthd: daemon started");
-  }
-
   initilize_all_kv();
+
 
 // For current platforms, we are using WDT from either fand or fscd
 // TODO: keeping this code until we make healthd as central daemon that
@@ -220,6 +441,16 @@ main(int argc, void **argv) {
 
   if (pthread_create(&tid_hb_led, NULL, hb_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for heartbeat error\n");
+    exit(1);
+  }
+  
+  if (pthread_create(&tid_hb_led, NULL, CPU_usage_monitor, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for monitor CPU usage\n");
+    exit(1);
+  }
+
+  if (pthread_create(&tid_hb_led, NULL, memory_usage_monitor, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for monitor memory usage\n");
     exit(1);
   }
 
@@ -238,6 +469,9 @@ main(int argc, void **argv) {
 #if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
   pthread_join(tid_i2c_mon, NULL);
 #endif
+  pthread_join(tid_cpu_monitor, NULL);
+
+  pthread_join(tid_mem_monitor, NULL);
 
   return 0;
 }

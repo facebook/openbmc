@@ -2898,3 +2898,16 @@ void pal_add_cri_sel(char *str)
 {
 
 }
+
+int
+pal_bmc_err_enable() {
+  // dummy function
+  return 0;
+}
+
+int
+pal_bmc_err_disable() {
+  // dummy function
+  return 0;
+}
+

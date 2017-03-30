@@ -193,6 +193,8 @@ int pal_is_crashdump_ongoing(uint8_t slot);
 int pal_is_fw_update_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 void pal_add_cri_sel(char *str);
+int pal_bmc_err_enable(void);
+int pal_bmc_err_disable(void);
 
 #ifdef __cplusplus
 } // extern "C"

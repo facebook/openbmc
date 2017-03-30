@@ -445,6 +445,8 @@ int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res
 void pal_add_cri_sel(char *str);
 int pal_update_MCU(char *path);
 int pal_update_MCU_bl(char *path);
+int pal_bmc_err_enable(void);
+int pal_bmc_err_disable(void);
 
 #ifdef __cplusplus
 } // extern "C"

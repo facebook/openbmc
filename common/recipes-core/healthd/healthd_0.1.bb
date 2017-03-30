@@ -11,6 +11,7 @@ SRC_URI = "file://Makefile \
            file://watchdog.c \
            file://healthd.c \
            file://setup-healthd.sh \
+           file://run-healthd.sh \
           "
 S = "${WORKDIR}"
 
@@ -32,7 +33,11 @@ do_install() {
 
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/healthd
+  install -d ${D}${sysconfdir}/healthd
   install -m 755 setup-healthd.sh ${D}${sysconfdir}/init.d/setup-healthd.sh
+  install -m 755 run-healthd.sh ${D}${sysconfdir}/sv/healthd/run
   update-rc.d -r ${D} setup-healthd.sh start 91 5 .
 }
 

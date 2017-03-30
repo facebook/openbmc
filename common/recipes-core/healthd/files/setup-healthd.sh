@@ -29,6 +29,6 @@
 
 echo -n "Setup healthd for BMC "
 
-/usr/local/bin/healthd
+runsv /etc/sv/healthd > /dev/null 2>&1 &
 
 echo "done."

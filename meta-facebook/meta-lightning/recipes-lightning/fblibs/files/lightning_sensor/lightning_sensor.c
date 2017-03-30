@@ -441,9 +441,9 @@ sensor_thresh_array_init() {
 
   // FCB Temp Sensor
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_1,
-      55, 50, 0, 5, 10, 0, 0, 2);
+      60, 55, 0, 0, 0, 0, 0, 2);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_2,
-      55, 50, 0, 5, 10, 0, 0, 2);
+      60, 55, 0, 0, 0, 0, 0, 2);
 
   //FCB Airflow
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_AIRFLOW,

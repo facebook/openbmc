@@ -532,7 +532,7 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  int ret;
+  int ret, retry = 0;
 
   switch(fru) {
     case FRU_PEB:
@@ -545,7 +545,16 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       sprintf(key, "fcb_sensor%d", sensor_num);
       break;
   }
-  ret = edb_cache_get(key, str);
+
+  // Add retry to avoid N/A which caused by open cache file collision
+  while (retry < MAX_RETRY) {
+    ret = edb_cache_get(key, str);
+    
+    if (!ret)
+      break;
+    retry++;
+  }
+
   if(ret < 0) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_sensor_read: cache_get %s failed.", key);
@@ -563,7 +572,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  int ret;
+  int ret, retry = 0;
   FILE *fp = NULL;
   int tmp = 0;
   bool isNegative = false;
@@ -606,7 +615,14 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     return -1;
   }
 
-  ret = lightning_sensor_read(fru, sensor_num, value);
+  // Add retry to avoid N/A which caused by sesnor reading collision
+  while (retry < MAX_RETRY) {
+    ret = lightning_sensor_read(fru, sensor_num, value);
+    
+    if (!ret)
+      break;
+    retry++;
+  }
 
   if(ret < 0) {
     strcpy(str, "NA");

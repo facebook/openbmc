@@ -85,7 +85,7 @@ init_fru_snr_thresh(uint8_t fru) {
     return ret;
   }
 
-  for (i < 0; i < sensor_cnt; i++) {
+  for (i = 0; i < sensor_cnt; i++) {
     snr_num = sensor_list[i];
 
     ret = sdr_get_snr_thresh(fru, snr_num, &snr[snr_num]);

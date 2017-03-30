@@ -28,6 +28,7 @@
 #include "edb.h"
 
 #define MAX_BUF 80
+#define MAX_RETRY 5
 
 int
 edb_cache_set(char *key, char *value) {
@@ -97,7 +98,7 @@ int
 edb_cache_get(char *key, char *value) {
 
   FILE *fp;
-  int rc;
+  int rc, retry = 0;
   char kpath[MAX_KEY_PATH_LEN] = {0};
 
   sprintf(kpath, CACHE_STORE, key);
@@ -106,7 +107,12 @@ edb_cache_get(char *key, char *value) {
      mkdir(CACHE_STORE_PATH, 0777);
   }
 
-  fp = fopen(kpath, "r");
+  while (retry < MAX_RETRY) {
+    fp = fopen(kpath, "r");
+    if (fp != NULL)
+      break;
+    retry++;
+  }
   if (!fp) {
      int err = errno;
 #ifdef DEBUG

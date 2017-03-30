@@ -111,6 +111,13 @@ enum {
   SERVER_12V_CYCLE,
 };
 
+//: fixme fixme fixme fixme
+//
+//  Temp remap of  SERVER_POWER_RESET  to  power cycle for ipmid watchdog
+//  Need to remove once pal.c adds  SERVER_POWER_RESET support
+#define SERVER_POWER_RESET  SERVER_POWER_CYCLE
+
+
 enum {
   HAND_SW_SERVER1 = 0,
   HAND_SW_BMC

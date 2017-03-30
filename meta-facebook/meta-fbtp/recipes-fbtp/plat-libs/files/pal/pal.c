@@ -196,32 +196,35 @@ const char pal_tach_list[] = "0, 1";
 
 static uint8_t g_plat_id = 0x0;
 
-char * key_list[] = {
-"pwr_server_last_state",
-"sysfw_ver_server",
-"identify_sled",
-"timestamp_sled",
-"server_por_cfg",
-"server_sensor_health",
-"nic_sensor_health",
-"server_sel_error",
-"server_boot_order",
-/* Add more Keys here */
-LAST_KEY /* This is the last key of the list */
+static int key_func_por_policy (int event, void *arg);
+static int key_func_lps (int event, void *arg);
+static int key_func_ntp (int event, void *arg);
+static int key_func_tz (int event, void *arg);
+
+enum key_event {
+  KEY_BEFORE_SET,
+  KEY_AFTER_INI,
 };
 
-char * def_val_list[] = {
-  "on", /* pwr_server_last_state */
-  "0", /* sysfw_ver_server */
-  "off", /* identify_sled */
-  "0", /* timestamp_sled */
-  "lps", /* server_por_cfg */
-  "1", /* server_sensor_health */
-  "1", /* nic_sensor_health */
-  "1", /* server_sel_error */
-  "0000000", /* server_boot_order */
-  /* Add more def values for the correspoding keys*/
-  LAST_KEY /* Same as last entry of the key_list */
+struct pal_key_cfg {
+  char *name;
+  char *def_val;
+  int (*function)(int, void*);
+} key_cfg[] = {
+  /* name, default value, function */
+  {"pwr_server_last_state", "on", key_func_lps},
+  {"sysfw_ver_server", "0", NULL},
+  {"identify_sled", "off", NULL},
+  {"timestamp_sled", "0", NULL},
+  {"server_por_cfg", "lps", key_func_por_policy},
+  {"server_sensor_health", "1", NULL},
+  {"nic_sensor_health", "1", NULL},
+  {"server_sel_error", "1", NULL},
+  {"server_boot_order", "0000000", NULL},
+  {"ntp_server", "", key_func_ntp},
+  {"time_zone", "UTC", key_func_tz},
+  /* Add more Keys here */
+  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
 // List of MB sensors to be monitored
@@ -2393,32 +2396,33 @@ error_exit:
 }
 
 static int
-pal_key_check(char *key) {
+pal_key_index(char *key) {
 
   int ret;
   int i;
 
   i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
+  while(strcmp(key_cfg[i].name, LAST_KEY)) {
 
     // If Key is valid, return success
-    if (!strcmp(key, key_list[i]))
-      return 0;
+    if (!strcmp(key, key_cfg[i].name))
+      return i;
 
     i++;
   }
 
 #ifdef DEBUG
-  syslog(LOG_WARNING, "pal_key_check: invalid key - %s", key);
+  syslog(LOG_WARNING, "pal_key_index: invalid key - %s", key);
 #endif
   return -1;
 }
 
 int
 pal_get_key_value(char *key, char *value) {
+  int index;
 
   // Check is key is defined and valid
-  if (pal_key_check(key))
+  if ((index = pal_key_index(key)) < 0)
     return -1;
 
   return kv_get(key, value);
@@ -2426,20 +2430,122 @@ pal_get_key_value(char *key, char *value) {
 
 int
 pal_set_key_value(char *key, char *value) {
+  int index, ret;
   char cmd[64];
   // Check is key is defined and valid
-  if (pal_key_check(key))
+  if ((index = pal_key_index(key)) < 0)
     return -1;
 
-  if (!strcmp(key, "server_por_cfg")) {
-    snprintf(cmd, 64, "/sbin/fw_setenv por_policy %s", value);
-    system(cmd);
-  } else if (!strcmp(key, "pwr_server_last_state")) {
-    snprintf(cmd, 64, "/sbin/fw_setenv por_ls %s", value);
-    system(cmd);
+  if (key_cfg[index].function) {
+    ret = key_cfg[index].function(KEY_BEFORE_SET, value);
+    if (ret < 0)
+      return ret;
   }
 
   return kv_set(key, value);
+}
+
+static int
+key_func_por_policy (int event, void *arg)
+{
+  char cmd[MAX_VALUE_LEN];
+  char value[MAX_VALUE_LEN];
+
+  switch (event) {
+    case KEY_BEFORE_SET:
+      // sync to env
+      snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", (char *)arg);
+      system(cmd);
+      break;
+    case KEY_AFTER_INI:
+      // sync to env
+      kv_get("server_por_cfg", value);
+      snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", value);
+      system(cmd);
+      break;
+  }
+
+  return 0;
+}
+
+static int
+key_func_lps (int event, void *arg)
+{
+  char cmd[MAX_VALUE_LEN];
+  char value[MAX_VALUE_LEN];
+
+  switch (event) {
+    case KEY_BEFORE_SET:
+      snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", (char *)arg);
+      system(cmd);
+      break;
+    case KEY_AFTER_INI:
+      kv_get("pwr_server_last_state", value);
+      snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", value);
+      system(cmd);
+      break;
+  }
+
+  return 0;
+}
+
+static int
+key_func_ntp (int event, void *arg)
+{
+  char cmd[MAX_VALUE_LEN];
+  char ntp_server_new[MAX_VALUE_LEN];
+  char ntp_server_old[MAX_VALUE_LEN];
+
+  switch (event) {
+    case KEY_BEFORE_SET:
+      // Remove old NTP server
+      kv_get("ntp_server", ntp_server_old);
+      if (strlen(ntp_server_old) > 2) {
+        snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+        system(cmd);
+      }
+      // Add new NTP server
+      snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", (char *)arg);
+      if (strlen(ntp_server_new) > 2) {
+        snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
+        system(cmd);
+      }
+      // Restart NTP server
+      snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
+      system(cmd);
+      break;
+    case KEY_AFTER_INI:
+      break;
+  }
+
+  return 0;
+}
+
+static int
+key_func_tz (int event, void *arg)
+{
+  char cmd[MAX_VALUE_LEN];
+  char timezone[MAX_VALUE_LEN];
+  char path[MAX_VALUE_LEN];
+
+  switch (event) {
+    case KEY_BEFORE_SET:
+      snprintf(timezone, MAX_VALUE_LEN, "%s", (char *)arg);
+      snprintf(path, MAX_VALUE_LEN, "/usr/share/zoneinfo/%s", (char *)arg);
+      if( access(path, F_OK) != -1 ) {
+        snprintf(cmd, MAX_VALUE_LEN, "echo %s > /etc/timezone", timezone);
+        system(cmd);
+        snprintf(cmd, MAX_VALUE_LEN, "ln -fs %s /etc/localtime", path);
+        system(cmd);
+      } else {
+        return -1;
+      }
+      break;
+    case KEY_AFTER_INI:
+      break;
+  }
+
+  return 0;
 }
 
 // Set GPIO low or high
@@ -4260,44 +4366,24 @@ pal_set_def_key_value() {
   char cmd[MAX_VALUE_LEN] = {0};
 
   i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
+  while(strcmp(key_cfg[i].name, LAST_KEY)) {
 
     memset(key, 0, MAX_KEY_LEN);
     memset(kpath, 0, MAX_KEY_PATH_LEN);
 
-    sprintf(kpath, KV_STORE, key_list[i]);
+    sprintf(kpath, KV_STORE, key_cfg[i].name);
 
     if (access(kpath, F_OK) == -1) {
 
-      if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
+      if ((ret = kv_set(key_cfg[i].name, key_cfg[i].def_val)) < 0) {
 #ifdef DEBUG
           syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
       }
     }
-    if (!strcmp(key_list[i], "server_por_cfg")) {
-      kv_get(key_list[i], value);
-      // kv_get did not append '\0' now, compare the pattern
-      if (!memcmp(value, "lps", strlen("lps")))
-        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy lps");
-      else if (!memcmp(value, "on", strlen("on")))
-        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy on");
-      else if (!memcmp(value, "off", strlen("off")))
-        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy off");
-      else
-        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", def_val_list[i]);
-      system(cmd);
-    }
-    if (!strcmp(key_list[i], "pwr_server_last_state")) {
-      kv_get(key_list[i], value);
-      // kv_get did not append '\0' now, compare the pattern
-      if (!memcmp(value, "on", strlen("on")))
-        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls on");
-      else if (!memcmp(value, "off", strlen("off")))
-        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls off");
-      else
-        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", def_val_list[i]);
-      system(cmd);
+
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
     }
 
     i++;
@@ -4334,9 +4420,9 @@ pal_dump_key_value(void) {
 
   char value[MAX_VALUE_LEN] = {0x0};
 
-  while (strcmp(key_list[i], LAST_KEY)) {
-    printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value) < 0) {
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+    printf("%s:", key_cfg[i].name);
+    if (ret = kv_get(key_cfg[i].name, value) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);

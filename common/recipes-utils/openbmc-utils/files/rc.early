@@ -17,6 +17,27 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+# Set Time Zone from kv_store/time_zone
+if [ -r /mnt/data/kv_store/time_zone ]; then
+  TIME_ZONE=$(cat /mnt/data/kv_store/time_zone)
+fi
+if [ ! -f /usr/share/zoneinfo/${TIME_ZONE} ]; then
+  TIME_ZONE=UTC
+fi
+echo ${TIME_ZONE} > /etc/timezone
+ln -fs /usr/share/zoneinfo/${TIME_ZONE} /etc/localtime
+unset TIME_ZONE
+
+# Set NTP server from kv_store/ntp_server
+if [ -r /mnt/data/kv_store/ntp_server ]; then
+  NTP_SERVER=$(cat /mnt/data/kv_store/ntp_server)
+fi
+if [ ! -z "${NTP_SERVER}" ]; then
+  echo "server ${NTP_SERVER}" >> /etc/ntp.conf
+fi
+unset NTP_SERVER
+
 # This script will be executed at rcS S04 level, which is right after mount /mnt/data
 # and before almost anything else.
 

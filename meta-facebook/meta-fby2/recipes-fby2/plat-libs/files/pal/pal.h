@@ -115,6 +115,19 @@ enum {
   FAN_1,
 };
 
+//: fixme fixme fixme fixme
+//
+//  fby2 build broken due to this WDT change in ipmid
+//  https://phabricator.intern.facebook.com/D4796139
+//
+//  Temp remap of FRU_MB  and SERVER_POWER_RESET  to slot1/slow1 power cycle
+//  to get fby2 to build
+//  Will remove once ipmid WDT supports 4 slots
+#define FRU_MB  FRU_SLOT1
+#define SERVER_POWER_RESET  SERVER_POWER_CYCLE
+
+
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);

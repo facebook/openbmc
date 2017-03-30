@@ -76,7 +76,7 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-const static uint8_t gpio_bic_update_ready[] = { 0, 107, 106, 109, 108 };
+const static uint8_t gpio_bic_update_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 
 // Helper Functions
 static void
@@ -205,16 +205,16 @@ get_ipmb_bus_id(uint8_t slot_id) {
   int bus_id;
 
   switch(slot_id) {
-  case 1:
+  case FRU_SLOT1:
     bus_id = IPMB_BUS_SLOT1;
     break;
-  case 2:
+  case FRU_SLOT2:
     bus_id = IPMB_BUS_SLOT2;
     break;
-  case 3:
+  case FRU_SLOT3:
     bus_id = IPMB_BUS_SLOT3;
     break;
-  case 4:
+  case FRU_SLOT4:
     bus_id = IPMB_BUS_SLOT4;
     break;
   default:
@@ -609,6 +609,27 @@ _update_bic_main(uint8_t slot_id, char *path) {
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
 
+  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
+  // So reduce I2C bus clock speed which is a workaround for BIC update.
+  switch(slot_id)
+  {
+     case FRU_SLOT1:
+       system("devmem 0x1e78a084 w 0xFFF77304");
+       break;
+     case FRU_SLOT2:
+       system("devmem 0x1e78a104 w 0xFFF77304");
+       break;
+     case FRU_SLOT3:
+       system("devmem 0x1e78a184 w 0xFFF77304");
+       break;
+     case FRU_SLOT4:
+       system("devmem 0x1e78a304 w 0xFFF77304");
+       break;
+     default:
+       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
+       goto error_exit;
+       break;
+  }
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -633,6 +654,12 @@ _update_bic_main(uint8_t slot_id, char *path) {
   system(cmd);
   printf("stop ipmbd for slot %x..\n", slot_id);
 
+  // Restart ipmb daemon with "bicup" for bic update
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20 bicup", get_ipmb_bus_id(slot_id));
+  system(cmd);
+  printf("start ipmbd bicup for this slot %x..\n",slot_id);
+
   sleep(2);
 
   syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
@@ -640,6 +667,12 @@ _update_bic_main(uint8_t slot_id, char *path) {
   if (!_is_bic_update_ready(slot_id)) {
      _enable_bic_update(slot_id);
   }
+
+  // Kill ipmb daemon "bicup" for this slot
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
+  system(cmd);
+  printf("stop ipmbd for slot %x..\n", slot_id);
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
@@ -829,7 +862,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
 update_done:
   // Restart ipmbd daemon
   sleep(1);
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -12", get_ipmb_bus_id(slot_id));
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20", get_ipmb_bus_id(slot_id));
   system(cmd);
 
 error_exit:
@@ -840,7 +874,32 @@ error_exit:
 
   if (ifd > 0) {
      close(ifd);
-   }
+  }
+
+  // Restore the I2C bus clock to 1M.
+  switch(slot_id)
+  {
+     case FRU_SLOT1:
+       system("devmem 0x1e78a084 w 0xFFF44302");
+       break;
+     case FRU_SLOT2:
+       system("devmem 0x1e78a104 w 0xFFF44302");
+       break;
+     case FRU_SLOT3:
+       system("devmem 0x1e78a184 w 0xFFF44302");
+       break;
+     case FRU_SLOT4:
+       system("devmem 0x1e78a304 w 0xFFF44302");
+       break;
+     default:
+       syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
+       break;
+  }
+
+  //Unlock fw-util
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
+  system(cmd);
 
   return 0;
 }
@@ -967,6 +1026,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   uint32_t offset;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
+  char    cmd[100] = {0};
   uint8_t target;
   int fd;
   int i;
@@ -1109,6 +1169,11 @@ error_exit:
   if (tbuf) {
     free(tbuf);
   }
+
+  //Unlock fw-util
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
+  system(cmd);
   return ret;
 }
 

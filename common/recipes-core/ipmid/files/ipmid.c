@@ -2781,6 +2781,7 @@ wdt_timer (void *arg) {
   uint8_t status;
   char timer_use[32];
   int action = 0;
+  int slot_id = *(int *)arg;
 
   while (1) {
     usleep(100*1000);
@@ -2788,7 +2789,7 @@ wdt_timer (void *arg) {
     if (g_wdt.valid && g_wdt.run) {
 
       // Check if power off
-      ret = pal_get_server_power(FRU_MB, &status);
+      ret = pal_get_server_power(slot_id, &status);
       if ((ret >= 0) && (status == SERVER_POWER_OFF)) {
         g_wdt.run = 0;
         pthread_mutex_unlock(&g_wdt.mutex);
@@ -2830,13 +2831,13 @@ wdt_timer (void *arg) {
     if (action) {
       switch (action) {
       case 1: // Hard Reset
-        pal_set_server_power(FRU_MB, SERVER_POWER_RESET);
+        pal_set_server_power(slot_id, SERVER_POWER_RESET);
         break;
       case 2: // Power Down
-        pal_set_server_power(FRU_MB, SERVER_POWER_OFF);
+        pal_set_server_power(slot_id, SERVER_POWER_OFF);
         break;
       case 3: // Power Cycle
-        pal_set_server_power(FRU_MB, SERVER_POWER_CYCLE);
+        pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
         break;
       case 0: // no action
       default:
@@ -2880,7 +2881,7 @@ main (void)
   pthread_mutex_init(&m_oem_usb_dbg, NULL);
   pthread_mutex_init(&m_oem_q, NULL);
 
-  pthread_create(&tid, NULL, wdt_timer, NULL);
+  pthread_create(&tid, NULL, wdt_timer, (void *)1);
   pthread_detach(tid);
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)

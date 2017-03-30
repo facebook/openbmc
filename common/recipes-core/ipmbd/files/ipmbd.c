@@ -161,6 +161,9 @@ get_payload_id(uint8_t bus_id) {
   case 9: //Expander
     payload_id = 4;
     break;
+  case 11: //DEBUG CARD
+    payload_id = 11;
+    break;
   default:
     syslog(LOG_WARNING, "get_payload_id: Wrong bus ID\n");
     break;

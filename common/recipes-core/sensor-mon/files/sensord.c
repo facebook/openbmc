@@ -491,14 +491,14 @@ snr_health_monitor() {
 
       snr = get_struct_thresh_sensor(fru);
       if (snr == NULL) {
-        syslog(LOG_WARNING, "snr_health_monitor: get_struct_thresh_sensor failed");
+         syslog(LOG_WARNING, "snr_health_monitor: get_struct_thresh_sensor failed, fru %d", fru);
          exit(-1);
       }
 
       // get current health status from kv_store
       ret = pal_get_fru_health(fru, &fru_health_kv_state[fru]);
       if (ret){
-        syslog(LOG_ERR, " %s - kv get health status failed",__func__);
+        syslog(LOG_ERR, " %s - kv get health status failed, fru %d",__func__, fru);
         continue;
       }
 
@@ -513,7 +513,7 @@ snr_health_monitor() {
         for (num = 0; num <= MAX_SENSOR_NUM; num++) {
            snr[num].curr_state = 0;
         }
-      } 
+      }
 
       // keep last status
       fru_health_last_state[fru] = value;

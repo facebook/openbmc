@@ -117,7 +117,7 @@ class FscSensorSourceUtil(FscSensorBase):
         Return:
             N/A
         '''
-        cmd = self.write_source + " " + str(value) + " " + self.name
+        cmd = self.write_source + " " + str(int(value)) + " " + self.name
         Logger.debug("Setting value using cmd=%s" % cmd)
         try:
             response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()

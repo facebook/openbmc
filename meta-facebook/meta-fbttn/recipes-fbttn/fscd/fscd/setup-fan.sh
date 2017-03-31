@@ -29,11 +29,11 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Setup fan speed..."
+default_fsc_config_path="/etc/fsc-config.json"
+cp /etc/FSC_BC_EVT_v1_config.json ${default_fsc_config_path}
+
+echo -n "Setup fan speed... "
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50
-#Hack for log timing incorret
-#fscd needs to wait for sensord ready
-sleep 10
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

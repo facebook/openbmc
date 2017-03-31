@@ -7,13 +7,26 @@
     "sensor_fail": true,
     "progressive": true
   },
+  "fail_sensor_type": {
+      "standby_sensor_fail": true,
+      "SSD_sensor_fail":true,
+      "poweron_sensor_fail":false
+  },
+  "ssd_progressive_algorithm":{
+    "offset_algorithm":[
+      [14,25]
+    ]
+  },
   "watchdog": true,
   "min_rpm": 400,
   "profiles": {
     "linear_ambient": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
-      "negative_hysteresis":3, 
+      "negative_hysteresis":3,
       "data": [
         [1 , 12],
         [15, 12],
@@ -45,6 +58,9 @@
       ]
     },
     "linear_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -54,7 +70,7 @@
         [65, 13],
         [66, 14],
         [67, 15],
-        [68, 16],  
+        [68, 16],
         [69, 17],
         [70, 18],
         [71, 19],
@@ -65,7 +81,7 @@
         [76, 28],
         [77, 30],
         [78, 32],
-        [79, 34],  
+        [79, 34],
         [80, 36],
         [81, 38],
         [82, 40],
@@ -77,6 +93,9 @@
       ]
     },
     "linear_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -86,11 +105,14 @@
         [71, 11],
         [72, 12],
         [73, 13],
-        [74, 14],  
+        [74, 14],
         [75, 15]
       ]
     },
     "pid_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "pid",
       "setpoint": 63,
       "negative_hysteresis": 2,
@@ -98,6 +120,16 @@
       "kp": -8,
       "ki": -0.1,
       "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
     }
   },
   "zones": {

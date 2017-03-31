@@ -31,13 +31,16 @@ def board_fan_actions(fan, action='None'):
     - handling dead fan
     - handling fan led
     '''
-    Logger.warn("Fan %d needs action %s" % fan, action)
     if action in 'dead':
-        return pal_fan_dead_handle(fan)
+       # TODO: Why not do return pal_fan_dead_handle(fan)
+        pal_fan_dead_handle(fan)
     elif action in 'recover':
-        return pal_fan_recovered_handle(fan)
+       # TODO: Why not do return pal_fan_recovered_handle(fan)
+        pal_fan_recovered_handle(fan)
     else:
         Logger.warn("Fan %d needs action %s" % (fan, str(action),))
+    pass
+
 
 def board_host_actions(action='None', cause='None'):
     '''
@@ -46,7 +49,6 @@ def board_host_actions(action='None', cause='None'):
     - alarming/syslogging criticals
     '''
     pass
-
 
 def board_callout(callout='None', **kwargs):
     '''
@@ -89,7 +91,6 @@ def pal_fan_chassis_intrusion_handle():
     self_tray_pull_out = c_uint(1)
     self_tray_pull_out_point = pointer(self_tray_pull_out)
     ret = lpal_hndl.pal_self_tray_location(self_tray_pull_out_point)
-    Logger.warn("In pal_fan_chassis_intrusion_handle ret=%d" % int(ret))
     if ret:
         return None
     else:

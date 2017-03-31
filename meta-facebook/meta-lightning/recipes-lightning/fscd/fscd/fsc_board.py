@@ -31,7 +31,6 @@ def board_fan_actions(fan, action='None'):
     - handling dead fan
     - handling fan led
     '''
-    Logger.warn("Fan %d needs action %s" % fan, action)
     if action in 'dead':
         return pal_fan_dead_handle(fan)
     elif action in 'recover':

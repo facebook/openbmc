@@ -11,6 +11,9 @@
   "min_rpm": 400,
   "profiles": {
     "linear_soc_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
@@ -32,7 +35,6 @@
         [ 100, 100 ]
       ]
      },
-   
 	  "linear_mezz_sensor_temp": {
       "type": "linear",
       "positive_hysteresis": 0,
@@ -55,6 +57,24 @@
         ]
     }
   },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
+    }
+  },
   "zones": {
     "zone_0": {
       "pwm_output": [0],
@@ -66,16 +86,3 @@
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

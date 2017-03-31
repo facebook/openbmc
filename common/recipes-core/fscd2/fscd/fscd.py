@@ -52,6 +52,8 @@ class Fscd(object):
         self.boost_type = self.DEFAULT_BOOST_TYPE
         self.transitional = self.DEFAULT_TRANSITIONAL
         self.ramp_rate = self.DEFAULT_RAMP_RATE
+        self.ssd_progressive_algorithm = None
+        self.fail_sensor_type = None
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -67,6 +69,13 @@ class Fscd(object):
         if 'boost' in self.fsc_config and 'progressive' in self.fsc_config['boost']:
                 if self.fsc_config['boost']['progressive']:
                     self.boost_type = 'progressive'
+        if 'boost' in self.fsc_config and 'sensor_fail' in self.fsc_config['boost']:
+                if self.fsc_config['boost']['sensor_fail']:
+                    if 'fail_sensor_type' in self.fsc_config:
+                        self.fail_sensor_type = self.fsc_config['fail_sensor_type']
+                    if 'ssd_progressive_algorithm' in self.fsc_config:
+                        self.ssd_progressive_algorithm = self.fsc_config['ssd_progressive_algorithm']
+
         self.watchdog = self.fsc_config['watchdog']
         if 'fanpower' in self.fsc_config:
             self.fanpower = self.fsc_config['fanpower']
@@ -116,8 +125,9 @@ class Fscd(object):
                 for name in inf['ext_vars']:
                     board, sname = name.split(':')
                     self.machine.frus.add(board)
+
                 zone = Zone(data['pwm_output'], expr, inf, self.transitional,
-                            counter)
+                            counter, self.boost, self.fail_sensor_type, self.ssd_progressive_algorithm)
                 counter += 1
                 self.zones.append(zone)
 

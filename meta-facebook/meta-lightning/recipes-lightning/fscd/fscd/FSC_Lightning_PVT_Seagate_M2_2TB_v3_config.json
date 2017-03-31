@@ -7,14 +7,28 @@
     "sensor_fail": true,
     "progressive": true
   },
+  // TODO: Add these to fscd README
+  "fail_sensor_type": {
+      "standby_sensor_fail": true,
+      "SSD_sensor_fail":true,
+      "poweron_sensor_fail":false
+  },
+  "ssd_progressive_algorithm":{
+    "offset_algorithm":[
+      [14,25]
+    ]
+  },
   "watchdog": true,
   "chassis_intrusion": true,
   "min_rpm": 400,
   "profiles": {
     "linear_ambient": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
-      "negative_hysteresis":3, 
+      "negative_hysteresis":3,
       "data": [
         [1 , 12],
         [15, 12],
@@ -52,10 +66,13 @@
         [47, 55],
         [48, 60],
         [49, 65],
-        [50, 70]	
+        [50, 70]
       ]
     },
     "linear_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -80,6 +97,9 @@
       ]
     },
     "linear_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis":0,
       "negative_hysteresis":3,
@@ -93,10 +113,13 @@
 				[75, 60],
 				[76, 70],
 				[77, 85],
-				[78, 100]					
+				[78, 100]
       ]
     },
     "pid_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "pid",
       "setpoint": 65,
       "negative_hysteresis": 3,
@@ -106,6 +129,9 @@
       "kd": 0
     },
 		"pid_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
 			"type": "pid",
 			"setpoint": 84,
 			"negative_hysteresis": 3,
@@ -114,6 +140,16 @@
 			"ki": -0.03,
 			"kd": 0
 		}
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set"
+      }
+    }
   },
   "zones": {
     "zone_1": {

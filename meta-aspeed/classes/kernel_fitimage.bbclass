@@ -71,7 +71,7 @@ flash_image_generate() {
     dd if=/dev/zero of=${FLASH_IMAGE_DESTINATION} bs=1k count=${FLASH_SIZE}
 
     if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-        FLASH_UBOOT_RECOVERY_OFFSET=64
+        FLASH_UBOOT_RECOVERY_OFFSET=84
         FLASH_UBOOT_OFFSET=512
         FLASH_FIT_OFFSET=896
 

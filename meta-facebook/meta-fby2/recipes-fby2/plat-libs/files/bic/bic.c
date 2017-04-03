@@ -1542,3 +1542,14 @@ bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
 
   return ret;
 }
+
+int
+bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
+  int ret;
+  uint8_t rlen = 0;
+  uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ, CMD_OEM_SET_SYSTEM_GUID, guid, SIZE_SYS_GUID, rbuf, &rlen);
+
+  return ret;
+}

@@ -171,6 +171,7 @@ int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *re
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
+int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
 
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 

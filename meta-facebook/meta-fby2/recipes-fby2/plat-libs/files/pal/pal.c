@@ -61,6 +61,8 @@
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
 
+#define GUID_SIZE 16
+
 #define MAX_READ_RETRY 10
 #define MAX_CHECK_RETRY 2
 
@@ -761,6 +763,22 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   }
 
   return 0;
+}
+
+int
+pal_is_slot_server(uint8_t fru)
+{
+  switch(fby2_get_slot_type(fru))
+  {
+    case SLOT_TYPE_SERVER:
+      break;
+    case SLOT_TYPE_CF:
+    case SLOT_TYPE_GP:
+      return 0;
+      break;
+  }
+
+  return 1;
 }
 
 int
@@ -1903,6 +1921,91 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
   }
 }
 
+// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
+static void
+pal_populate_guid(uint8_t *guid, uint8_t *str) {
+  unsigned int secs;
+  unsigned int usecs;
+  struct timeval tv;
+  uint8_t count;
+  uint8_t lsb, msb;
+  int i, r;
+
+  // Populate time
+  gettimeofday(&tv, NULL);
+
+  secs = tv.tv_sec;
+  usecs = tv.tv_usec;
+  guid[0] = usecs & 0xFF;
+  guid[1] = (usecs >> 8) & 0xFF;
+  guid[2] = (usecs >> 16) & 0xFF;
+  guid[3] = (usecs >> 24) & 0xFF;
+  guid[4] = secs & 0xFF;
+  guid[5] = (secs >> 8) & 0xFF;
+  guid[6] = (secs >> 16) & 0xFF;
+  guid[7] = (secs >> 24) & 0x0F;
+
+  // Populate version
+  guid[7] |= 0x10;
+
+  // Populate clock seq with randmom number
+  //getrandom(&guid[8], 2, 0);
+  srand(time(NULL));
+  //memcpy(&guid[8], rand(), 2);
+  r = rand();
+  guid[8] = r & 0xFF;
+  guid[9] = (r>>8) & 0xFF;
+
+  // Use string to populate 6 bytes unique
+  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
+  count = 0;
+  for (i = strlen(str)-1; i >= 0; i--) {
+    if (count == 6) {
+      break;
+    }
+
+    // If alphabet use the character as is
+    if (isalpha(str[i])) {
+      guid[15-count] = str[i];
+      count++;
+      continue;
+    }
+
+    // If it is 0-9, use two numbers as BCD
+    lsb = str[i] - '0';
+    if (i > 0) {
+      i--;
+      if (isalpha(str[i])) {
+        i++;
+        msb = 0;
+      } else {
+        msb = str[i] - '0';
+      }
+    } else {
+      msb = 0;
+    }
+    guid[15-count] = (msb << 4) | lsb;
+    count++;
+  }
+
+  // zero the remaining bytes, if any
+  if (count != 6) {
+    memset(&guid[10], 0, 6-count);
+  }
+
+}
+
+int
+pal_set_sys_guid(uint8_t slot, char *str) {
+  int ret;
+  int i=0;
+  uint8_t guid[GUID_SIZE] = {0x00};
+
+  pal_populate_guid(&guid, str);
+
+  return bic_set_sys_guid(slot, &guid);
+}
+
 int
 pal_get_sys_guid(uint8_t slot, char *guid) {
   int ret;
@@ -2767,6 +2870,12 @@ pal_set_boot_order(uint8_t fru, uint8_t *boot) {
 }
 
 int
+pal_set_dev_guid(uint8_t slot, char *guid) {
+
+      return 0;
+}
+
+int
 pal_get_dev_guid(uint8_t fru, char *guid) {
 
       return 0;
@@ -2910,4 +3019,3 @@ pal_bmc_err_disable() {
   // dummy function
   return 0;
 }
-

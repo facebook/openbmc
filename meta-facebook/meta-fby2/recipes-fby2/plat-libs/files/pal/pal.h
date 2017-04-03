@@ -117,7 +117,7 @@ enum {
 
 //: fixme fixme fixme fixme
 //
-//  Temp remap of  SERVER_POWER_RESET  to  power cycle for ipmid watchdog 
+//  Temp remap of  SERVER_POWER_RESET  to  power cycle for ipmid watchdog
 //  Need to remove once pal.c adds  SERVER_POWER_RESET support
 #define SERVER_POWER_RESET  SERVER_POWER_CYCLE
 
@@ -127,6 +127,7 @@ int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
+int pal_is_slot_server(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_sled_cycle(void);
@@ -168,7 +169,10 @@ void pal_dump_key_value(void);
 int pal_get_fru_devtty(uint8_t fru, char *devtty);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
+int pal_get_dev_guid(uint8_t slot, char *guid);
+int pal_set_dev_guid(uint8_t slot, char *str);
 int pal_get_sys_guid(uint8_t slot, char *guid);
+int pal_set_sys_guid(uint8_t slot, char *str);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_fruid_write(uint8_t slot, char *path);

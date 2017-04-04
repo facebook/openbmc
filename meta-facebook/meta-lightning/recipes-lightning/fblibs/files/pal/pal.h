@@ -163,6 +163,12 @@ enum {
   REG_LS1,
 };
 
+//: fixme fixme fixme fixme
+//
+//  Temp remap of  SERVER_POWER_RESET  to  power cycle for ipmid watchdog
+//  Need to remove once pal.c adds  SERVER_POWER_RESET support
+#define SERVER_POWER_RESET  SERVER_POWER_CYCLE
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);

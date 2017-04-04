@@ -271,10 +271,10 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   if (record_type < 0xC0) {
     /* Sensor num (Byte 11) */
     sensor_num = (uint8_t) sel[11];
-    ret = pal_get_event_sensor_name(fru, sensor_num, sensor_name);
+    ret = pal_get_event_sensor_name(fru, sel, sensor_name);
 
     /* Event Data (Byte 13:15) */
-    ret = pal_parse_sel(fru, sensor_num, &sel[10], error_log);
+    ret = pal_parse_sel(fru, sel, error_log);
 
     /* Check if action needs to be taken based on the SEL message */
     if (!ret)

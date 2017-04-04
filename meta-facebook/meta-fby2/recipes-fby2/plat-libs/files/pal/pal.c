@@ -2242,7 +2242,16 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 }
 
 int
-pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return 0;
+  }
 
   switch(snr_num) {
     case SYSTEM_EVENT:
@@ -2299,13 +2308,38 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
 }
 
 int
-pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
-    char *error_log) {
-
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+  char *event_data = &sel[10];
   char *ed = &event_data[3];
   char temp_log[128] = {0};
   uint8_t temp;
   uint8_t sen_type = event_data[0];
+
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(error_log, "");
+      switch (ed[0] & 0xF) {
+        case 0x07:
+          strcat(error_log, "Base OS/Hypervisor Installation started");
+          break;
+        case 0x08:
+          strcat(error_log, "Base OS/Hypervisor Installation completed");
+          break;
+        case 0x09:
+          strcat(error_log, "Base OS/Hypervisor Installation aborted");
+          break;
+        case 0x0A:
+          strcat(error_log, "Base OS/Hypervisor Installation failed");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      return 0;
+  }
 
   switch(snr_num) {
     case SYSTEM_EVENT:

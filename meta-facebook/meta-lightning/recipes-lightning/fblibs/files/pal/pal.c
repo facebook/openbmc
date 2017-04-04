@@ -878,13 +878,13 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 }
 
 int
-pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
   return 0;
 }
 
 int
-pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *error_log) {
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
   return 0;
 }

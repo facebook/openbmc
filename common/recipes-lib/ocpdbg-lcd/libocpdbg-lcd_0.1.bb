@@ -9,8 +9,6 @@ LIC_FILES_CHKSUM = "file://ocp-dbg-lcd.c;beginline=5;endline=17;md5=da35978751a9
 
 SRC_URI = "file://Makefile \
            file://ocp-dbg-lcd.c \
-           file://i2c.h \
-           file://i2c-dev.h \
            file://ocp-dbg-lcd.h \
           "
 

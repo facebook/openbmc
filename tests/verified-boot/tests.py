@@ -28,7 +28,7 @@ def run(args):
 def test_success_state():
     cmd = "%s %s %s%s %s%s" % (
         QEMU, QEMU_OPTS,
-        QEMU_DRIVE, "/opt/spl-automate/content/flash0",
+        QEMU_DRIVE, "/opt/spl-automate/content/flash0.signed",
         QEMU_DRIVE, "/opt/spl-automate/content/flash1.signed"
     )
     c = run(cmd)
@@ -44,7 +44,7 @@ def test_success_state():
 def test_corrupted_uboot():
     cmd = "%s %s %s%s %s%s" % (
         QEMU, QEMU_OPTS,
-        QEMU_DRIVE, "/opt/spl-automate/content/flash0",
+        QEMU_DRIVE, "/opt/spl-automate/content/flash0.signed",
         QEMU_DRIVE, "/opt/spl-automate/content/flash1.corrupted-uboot"
     )
     c = run(cmd)
@@ -61,7 +61,7 @@ def test_corrupted_uboot():
 def test_fake_subordinate():
     cmd = "%s %s %s%s %s%s" % (
         QEMU, QEMU_OPTS,
-        QEMU_DRIVE, "/opt/spl-automate/content/flash0",
+        QEMU_DRIVE, "/opt/spl-automate/content/flash0.signed",
         QEMU_DRIVE, "/opt/spl-automate/content/flash1.fake-subordinate"
     )
     c = run(cmd)
@@ -75,7 +75,7 @@ def test_fake_subordinate():
 def test_fake_signature():
     cmd = "%s %s %s%s %s%s" % (
         QEMU, QEMU_OPTS,
-        QEMU_DRIVE, "/opt/spl-automate/content/flash0",
+        QEMU_DRIVE, "/opt/spl-automate/content/flash0.signed",
         QEMU_DRIVE, "/opt/spl-automate/content/flash1.fake-signature"
     )
     c = run(cmd)
@@ -89,7 +89,7 @@ def test_fake_signature():
 def test_corrupted_fit():
     cmd = "%s %s %s%s %s%s" % (
         QEMU, QEMU_OPTS,
-        QEMU_DRIVE, "/opt/spl-automate/content/flash0",
+        QEMU_DRIVE, "/opt/spl-automate/content/flash0.signed",
         QEMU_DRIVE, "/opt/spl-automate/content/flash1.corrupted-fit"
     )
     c = run(cmd)
@@ -103,7 +103,7 @@ def test_corrupted_fit():
 def test_missing_flash1():
     """In QEMU the second SPI chip will exists without content."""
     cmd = "%s %s %s%s" % (
-        QEMU, QEMU_OPTS, QEMU_DRIVE, "/opt/spl-automate/content/flash0"
+        QEMU, QEMU_OPTS, QEMU_DRIVE, "/opt/spl-automate/content/flash0.signed"
     )
     c = run(cmd)
     c.expect('\n=> ')

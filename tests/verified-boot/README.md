@@ -20,6 +20,62 @@ Run the build:
 
 A return code == 0 is success, otherwise check stdout/stderr for the inconsistent expectation.
 
+### Signing example
+
+The scripts in `./signing` can be used to correctly-sign the firmware.
+
+Requirements:
+- Ubuntu: `pip install -U pip && pip install jinja2 pycrypto`
+- CentOS: `yum install python-jinja2 python-crypto`
+
+We also assume you have built an OpenBMC firmware, for example `fbtp`.
+Set an environment variable for your poky build directory:
+```
+export POKY_BUILD=~/poky/build
+```
+
+First create two pairs of public/private keys:
+```
+mkdir -p /tmp/kek
+openssl genrsa -F4 -out /tmp/kek/kek.key 4096
+openssl rsa -in /tmp/kek/kek.key -pubout > /tmp/kek/kek.pub
+
+mkdir -p /tmp/subordinate
+openssl genrsa -F4 -out /tmp/subordinate/subordinate.key 4096
+openssl rsa -in /tmp/subordinate/subordinate.key -pubout > /tmp/subordinate/subordinate.pub
+```
+
+Create the ROM's key-enrollment-key compiled DTB:
+```
+./fit-cs --template ./store.dts.in \
+  /tmp/kek /tmp/kek/kek.dtb
+```
+
+Create the rarely-signed subordinate-key compiled DTB:
+```
+./fit-cs --template ./store.dts.in \
+  --subordinate --subtemplate ./sub.dts.in \
+  /tmp/subordinate /tmp/subordinate/subordinate.dtb
+```
+
+Sign the subordinate-key compiled DTB:
+```
+./fit-signsub \
+  --mkimage $POKY_BUILD/sysroots/x86_64-linux/usr/bin/mkimage \
+  --keydir /tmp/kek \
+  /tmp/subordinate/subordinate.dtb /tmp/subordinate/subordinate.dtb.signed
+```
+
+Sign the firmware and add the KEK store, and signed subordinate store:
+```
+./fit-sign \
+  --mkimage $POKY_BUILD/sysroots/x86_64-linux/usr/bin/mkimage \
+  --kek /tmp/kek/kek.dtb \
+  --signed-subordinate /tmp/subordinate/subordinate.dtb.signed \
+  --keydir /tmp/subordinate \
+  $POKY_BUILD/tmp/deploy/images/fbtp/flash-fbtp $POKY_BUILD/tmp/deploy/images/fbtp/flash-fbtp.signed
+```
+
 ### TODO
 
 - Include another `Dockerfile` that stands up recovery infrastructure.

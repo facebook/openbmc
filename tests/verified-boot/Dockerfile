@@ -55,7 +55,7 @@ RUN openssl rsa -in /opt/spl-automate/kek/kek.key -pubout > /opt/spl-automate/ke
 ENV ROM_STORE=/opt/spl-automate/content/rom-store.dtb
 RUN /opt/spl-automate/fit-certificate-store/fit-cs.py \
   --template /opt/spl-automate/fit-certificate-store/store.dts.in \
-  --required-node image /opt/spl-automate/kek $ROM_STORE
+  /opt/spl-automate/kek $ROM_STORE
 
 # Small patch to build U-Boot for verified-boot outside of Poky and for QEMU.
 COPY qemu-rom.patch /opt/spl-automate/qemu-rom.patch
@@ -73,7 +73,7 @@ ENV CONFIG=fbtp_config
 
 # The Normal U-Boot will contain the ROM-store but will not use it in practice.
 RUN (cd /opt/spl-automate/u-boot; $AMAKE O=$NORMAL -s $CONFIG)
-RUN (cd /opt/spl-automate/u-boot; $AMAKE O=$NORMAL EXT_DTB=$ROM_STORE)
+RUN (cd /opt/spl-automate/u-boot; $AMAKE DTC_FLAGS="-S 3200" O=$NORMAL)
 
 # Define a "Recovery" U-Boot build.
 ENV RECOVERY=/opt/spl-automate/u-boot/build-recovery
@@ -82,17 +82,13 @@ RUN mkdir -p $RECOVERY
 # Now build the Recovery U-Boot.
 RUN (cd /opt/spl-automate/u-boot; $AMAKE O=$RECOVERY -s $CONFIG)
 RUN echo "CONFIG_ASPEED_RECOVERY_BUILD=y" >> $RECOVERY/.config
-RUN (cd /opt/spl-automate/u-boot; $AMAKE O=$RECOVERY EXT_DTB=$ROM_STORE)
+RUN (cd /opt/spl-automate/u-boot; $AMAKE DTC_FLAGS="-S 3200" O=$RECOVERY)
 
 # We now need a subordinate key that will be signed by the KEK.
 # This is copying a pre-generated key.
 RUN mkdir -p /opt/spl-automate/subordinate
 RUN openssl genrsa -F4 -out /opt/spl-automate/subordinate/subordinate.key 4096
 RUN openssl rsa -in /opt/spl-automate/subordinate/subordinate.key -pubout > /opt/spl-automate/subordinate/subordinate.pub
-#  mkdir -p subordinate
-#  openssl genrsa -F4 -out subordinate/subordinate.key 4096
-#  openssl rsa -in subordinate/subordinate.key -pubout > subordinate/subordinate.pub
-# COPY subordinate /opt/spl-automate/subordinate
 
 # Bring in a customized DTS describing the Normal U-Boot as a target.
 COPY u-boot.dts /opt/spl-automate/u-boot.dts
@@ -100,42 +96,41 @@ COPY u-boot.dts /opt/spl-automate/u-boot.dts
 # Build an image that starts with a FIT, with signature data.
 RUN $NORMAL/tools/mkimage \
   -f /opt/spl-automate/u-boot.dts \
-  -k /opt/spl-automate/subordinate \
   -E -p 0x4000 -r $NORMAL/u-boot.img;
 
 # Construct the firmware image (the RO and RW are symmetrical).
 RUN dd if=/dev/zero of=/opt/spl-automate/content/flash0 bs=1k count=32768
 RUN dd if=$RECOVERY/spl/u-boot-spl.bin of=/opt/spl-automate/content/flash0 conv=notrunc
-RUN dd if=$RECOVERY/u-boot.bin of=/opt/spl-automate/content/flash0 bs=1k seek=64 conv=notrunc
+RUN dd if=$RECOVERY/u-boot.bin of=/opt/spl-automate/content/flash0 bs=1k seek=84 conv=notrunc
 RUN dd if=$NORMAL/u-boot.img of=/opt/spl-automate/content/flash0 bs=1k seek=512 conv=notrunc
+# Copy the summetrical flash0 (RO) to flash1 (RW)
 RUN cp /opt/spl-automate/content/flash0 /opt/spl-automate/content/flash1
 
 # Generate a subordinate key store for our subordinate keys.
 # This is usually a 1-time operation performed offline when the KEK is available.
 ENV SUBORDINATE_STORE=/opt/spl-automate/content/subordinate-store.dtb
-ENV SUBORDINATE_STORE_SOURCE=/opt/spl-automate/content/subordinate-store.dts
 ENV SUBORDINATE_STORE_SIGNED=/opt/spl-automate/content/subordinate-store.dtb.signed
 RUN /opt/spl-automate/fit-certificate-store/fit-cs.py \
   --template /opt/spl-automate/fit-certificate-store/store.dts.in \
-  --required-node image \
   --subordinate --subtemplate /opt/spl-automate/fit-certificate-store/sub.dts.in \
   /opt/spl-automate/subordinate $SUBORDINATE_STORE
 
 # This is the second part of the 1-time operation, signing the subordinate store
 # using the KEK private key.
-RUN dtc -I dtb -O dts $SUBORDINATE_STORE -o $SUBORDINATE_STORE_SOURCE
-RUN $NORMAL/tools/mkimage \
-  -f $SUBORDINATE_STORE_SOURCE \
-  -k /opt/spl-automate/kek -r $SUBORDINATE_STORE_SIGNED
+RUN /opt/spl-automate/fit-certificate-store/fit-signsub.py \
+  --mkimage $NORMAL/tools/mkimage \
+  --keydir /opt/spl-automate/kek \
+  $SUBORDINATE_STORE $SUBORDINATE_STORE_SIGNED
 
 # The second RW image needs the subordinate public key placed into the FIT.
 # It also needs a signature of those keys, signed by the KEK.
 RUN /opt/spl-automate/fit-certificate-store/fit-sign.py \
-  --mkimage $NORMAL/tools/mkimage /opt/spl-automate/content/flash1 \
-  --subordinate $SUBORDINATE_STORE_SIGNED \
-  --keydir /opt/spl-automate/subordinate /opt/spl-automate/content/firmware.signed
-RUN cp /opt/spl-automate/content/flash1 /opt/spl-automate/content/flash1.signed
-RUN dd if=/opt/spl-automate/content/firmware.signed of=/opt/spl-automate/content/flash1.signed bs=1k conv=notrunc
+  --mkimage $NORMAL/tools/mkimage \
+  --kek $ROM_STORE \
+  --signed-subordinate $SUBORDINATE_STORE_SIGNED \
+  --keydir /opt/spl-automate/subordinate \
+  /opt/spl-automate/content/flash0 /opt/spl-automate/content/flash0.signed
+RUN cp /opt/spl-automate/content/flash0.signed /opt/spl-automate/content/flash1.signed
 
 # Aside from the last few lines related to running the test harness, the following
 # construct various forms of invalid/incorrect/missing data to test error cases.
@@ -151,6 +146,7 @@ RUN dd if=/dev/zero of=/opt/spl-automate/content/flash1.corrupted-uboot bs=1k se
 # Construct another signed U-Boot without the subordinate information.
 RUN /opt/spl-automate/fit-certificate-store/fit-sign.py \
   --mkimage $NORMAL/tools/mkimage /opt/spl-automate/content/flash1 \
+  --kek $ROM_STORE \
   --keydir /opt/spl-automate/subordinate /opt/spl-automate/content/firmware.missing-subordinate
 RUN cp /opt/spl-automate/content/flash1 /opt/spl-automate/content/flash1.missing-subordinate
 RUN dd if=/opt/spl-automate/content/firmware.missing-subordinate of=/opt/spl-automate/content/flash1.missing-subordinate bs=1k conv=notrunc
@@ -163,19 +159,18 @@ RUN openssl rsa -in /opt/spl-automate/fake/subordinate/subordinate.key -pubout >
 # Create a fake or invalid intermediate store.
 RUN /opt/spl-automate/fit-certificate-store/fit-cs.py \
   --template /opt/spl-automate/fit-certificate-store/store.dts.in \
-  --required-node image \
   --subordinate --subtemplate /opt/spl-automate/fit-certificate-store/sub.dts.in \
   /opt/spl-automate/fake/subordinate /opt/spl-automate/content/subordinate-store.fake.dtb
-RUN dtc -I dtb -O dts /opt/spl-automate/content/subordinate-store.fake.dtb \
-  -o /opt/spl-automate/content/subordinate-store.fake.dts
-RUN $NORMAL/tools/mkimage \
-  -f /opt/spl-automate/content/subordinate-store.fake.dts \
-  -k /opt/spl-automate/subordinate -r /opt/spl-automate/content/subordinate-store.fake.dtb.signed
+RUN /opt/spl-automate/fit-certificate-store/fit-signsub.py \
+  --mkimage $NORMAL/tools/mkimage \
+  --keydir /opt/spl-automate/subordinate \
+  /opt/spl-automate/content/subordinate-store.fake.dtb /opt/spl-automate/content/subordinate-store.fake.dtb.signed
 
 # Sign the flash content with a real subordinate, but attach an different subordinate store.
 RUN /opt/spl-automate/fit-certificate-store/fit-sign.py \
   --mkimage $NORMAL/tools/mkimage /opt/spl-automate/content/flash1 \
-  --subordinate /opt/spl-automate/content/subordinate-store.fake.dtb.signed \
+  --kek $ROM_STORE \
+  --signed-subordinate /opt/spl-automate/content/subordinate-store.fake.dtb.signed \
   --keydir /opt/spl-automate/fake/subordinate /opt/spl-automate/content/firmware.fake-subordinate
 RUN cp /opt/spl-automate/content/flash1 /opt/spl-automate/content/flash1.fake-subordinate
 RUN dd if=/opt/spl-automate/content/firmware.fake-subordinate of=/opt/spl-automate/content/flash1.fake-subordinate bs=1k conv=notrunc
@@ -183,7 +178,8 @@ RUN dd if=/opt/spl-automate/content/firmware.fake-subordinate of=/opt/spl-automa
 # Sign the flash content with a fake subordinate, but attach the correct subordinate store.
 RUN /opt/spl-automate/fit-certificate-store/fit-sign.py \
   --mkimage $NORMAL/tools/mkimage /opt/spl-automate/content/flash1 \
-  --subordinate $SUBORDINATE_STORE_SIGNED \
+  --kek $ROM_STORE \
+  --signed-subordinate $SUBORDINATE_STORE_SIGNED \
   --keydir /opt/spl-automate/fake/subordinate /opt/spl-automate/content/firmware.fake-signature
 RUN cp /opt/spl-automate/content/flash1 /opt/spl-automate/content/flash1.fake-signature
 RUN dd if=/opt/spl-automate/content/firmware.fake-signature of=/opt/spl-automate/content/flash1.fake-signature bs=1k conv=notrunc
@@ -192,7 +188,7 @@ RUN dd if=/opt/spl-automate/content/firmware.fake-signature of=/opt/spl-automate
 RUN pip install pexpect
 
 # Need several additional debugging utils.
-RUN apt-get update && apt-get install -y -f bsdmainutils
+RUN apt-get install -y -f bsdmainutils
 
 # Copy in a debug helper and the test harness.
 COPY tests.py /opt/spl-automate/tests.py

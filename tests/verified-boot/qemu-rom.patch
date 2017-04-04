@@ -11,21 +11,4 @@ index b77d589..22909c2 100644
  PLATFORM_LDFLAGS :=
  LDFLAGS :=
  LDFLAGS_FINAL :=
-diff --git a/configs/fbtp_defconfig b/configs/fbtp_defconfig
-index 59463a4..790fbfc 100644
---- a/configs/fbtp_defconfig
-+++ b/configs/fbtp_defconfig
-@@ -13,9 +13,9 @@ CONFIG_FIT=y
- CONFIG_FIT_VERBOSE=y
- CONFIG_FIT_SIGNATURE=y
- CONFIG_DM=y
--# CONFIG_OF_CONTROL=y
--# CONFIG_OF_EMBED=y
--# CONFIG_SPL=y
-+CONFIG_OF_CONTROL=y
-+CONFIG_OF_EMBED=y
-+CONFIG_SPL=y
- CONFIG_SPL_FIT=y
- CONFIG_SPL_LOAD_FIT=y
- CONFIG_SPL_DM=y
 

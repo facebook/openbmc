@@ -32,6 +32,8 @@ SRC_URI += " \
     file://set_fan_speed.sh \
     file://sol.sh \
     file://ceutil \
+    file://system_monitor.sh \
+    file://setup_system_monitor.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -43,6 +45,8 @@ OPENBMC_UTILS_FILES += " \
     set_fan_speed.sh \
     sol.sh \
     ceutil \
+    system_monitor.sh \
+    setup_system_monitor.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -71,4 +75,7 @@ do_install_append() {
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
     install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+
+    install -m 755 setup_system_monitor.sh ${D}${sysconfdir}/init.d/setup_system_monitor.sh
+    update-rc.d -r ${D} setup_system_monitor.sh start 98 2 3 5 .
 }

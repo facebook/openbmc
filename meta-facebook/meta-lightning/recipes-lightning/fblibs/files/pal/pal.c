@@ -1559,7 +1559,7 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   }
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
-    fclose(fd);
+    close(fd);
     return -1;
   }
 

@@ -550,7 +550,7 @@ int read_temp(const char *device, int *value) {
     }
 
  close_dir_out:
-    if (!dir) {
+    if (dir) {
       closedir(dir);
     }
   }

@@ -62,8 +62,7 @@
 #include <mqueue.h>
 #include <semaphore.h>
 #include <poll.h>
-#include <facebook/i2c.h>
-#include <facebook/i2c-dev.h>
+#include <openbmc/obmc-i2c.h>
 #include "openbmc/ipmi.h"
 #include "openbmc/ipmb.h"
 

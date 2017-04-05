@@ -34,6 +34,7 @@ extern "C" {
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   128
 #define MAX_NUM_FAN     2
+#define MAX_DATA_NUM    2000
 
 #define FRU_STATUS_GOOD   1
 #define FRU_STATUS_BAD    0
@@ -55,6 +56,16 @@ extern const char pal_pwm_list[];
 extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
+
+typedef struct {
+  long log_time;
+  float value;
+} sensor_data_t;
+
+typedef struct {
+  int index;
+  sensor_data_t data[MAX_DATA_NUM];
+} sensor_shm_t;
 
 enum {
   LED_STATE_OFF,

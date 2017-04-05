@@ -1547,6 +1547,154 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   *((float*)value) = atof(str);
   return ret;
 }
+
+static int
+cache_get_history(char *key, float *min, float *average, float *max, int start_time) {
+
+  int fd;
+  int share_size = sizeof(sensor_shm_t);
+  void *ptr;
+  sensor_shm_t *snr_shm;
+  int16_t read_index;
+  uint16_t count = 0;
+  float read_val;
+  double total = 0;
+  char str[MAX_VALUE_LEN] = {0};
+
+  fd = shm_open(key, O_RDONLY, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "cache_get_history: shm_open %s failed, errno = %d", key, errno);
+#endif
+    return -1;
+  }
+
+  ptr = mmap(NULL, share_size, PROT_READ, MAP_SHARED, fd, 0);
+  if (ptr == MAP_FAILED) {
+    syslog(LOG_INFO, "cache_get_history: mmap %s failed, errno = %d", key, errno);
+    close(fd);
+    return -1;
+  }
+  close(fd);
+
+  snr_shm = (sensor_shm_t *)ptr;
+  read_index = snr_shm->index - 1;
+  if (read_index < 0) {
+    read_index += MAX_DATA_NUM;
+  }
+
+  read_val = snr_shm->data[read_index].value;
+  *min = read_val;
+  *max = read_val;
+
+  while ((snr_shm->data[read_index].log_time >= start_time) && (count < MAX_DATA_NUM)) {
+    read_val = snr_shm->data[read_index].value;
+    if (read_val > *max)
+      *max = read_val;
+    if (read_val < *min)
+      *min = read_val;
+
+    total += read_val;
+    count++;
+    if ((--read_index) < 0) {
+      read_index += MAX_DATA_NUM;
+    }
+  }
+
+  if (munmap(ptr, share_size) != 0) {
+    syslog(LOG_INFO, "cache_get_history: munmap %s failed, errno = %d", key, errno);
+    return -1;
+  }
+
+  if (!count) {
+    if (edb_cache_get(key, str) < 0)
+      return -1;
+
+    if (strcmp(str, "NA") == 0)
+      return -1;
+
+    read_val = atof(str);
+    *min = read_val;
+    *max = read_val;
+    total = read_val;
+    count = 1;
+  }
+
+  *average = total / count;
+
+  return 0;
+}
+
+static int
+cache_set_history(char *key, float *value) {
+
+  int fd;
+  int share_size = sizeof(sensor_shm_t);
+  void *ptr;
+  sensor_shm_t *snr_shm;
+
+  fd = shm_open(key, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "cache_set_history: shm_open %s failed, errno = %d", key, errno);
+#endif
+    return -1;
+  }
+  ftruncate(fd, share_size);
+
+  ptr = mmap(NULL, share_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (ptr == MAP_FAILED) {
+    syslog(LOG_INFO, "cache_set_history: mmap %s failed, errno = %d", key, errno);
+    close(fd);
+    return -1;
+  }
+  close(fd);
+
+  snr_shm = (sensor_shm_t *)ptr;
+  snr_shm->data[snr_shm->index].log_time = time(NULL);
+  snr_shm->data[snr_shm->index].value = *value;
+  snr_shm->index = (snr_shm->index + 1) % MAX_DATA_NUM;
+
+  if (munmap(ptr, share_size) != 0) {
+    syslog(LOG_INFO, "cache_set_history: munmap %s failed, errno = %d", key, errno);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_read_history(uint8_t fru, uint8_t sensor_num, float *min, float *average, float *max, int start_time) {
+
+  char key[MAX_KEY_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_sensor%d", fru, sensor_num);
+      break;
+    case FRU_SPB:
+      sprintf(key, "spb_sensor%d", sensor_num);
+      break;
+    case FRU_NIC:
+      sprintf(key, "nic_sensor%d", sensor_num);
+      break;
+  }
+
+  ret = cache_get_history(key, min, average, max, start_time);
+  if(ret < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_read_history: cache_get_history %s failed.", key);
+#endif
+    return ret;
+  }
+
+  return 0;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
@@ -1621,6 +1769,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     }
 
     sprintf(str, "%.2f",*((float*)value));
+
+    if (cache_set_history(key, value) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set_history key = %s, str = %s failed.", key, str);
+#endif
+    }
   }
 
   if(edb_cache_set(key, str) < 0) {
@@ -2175,6 +2329,7 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
   char temp_log[128] = {0};
   uint8_t temp;
   uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
 
   switch(snr_num) {
     case SYSTEM_EVENT:
@@ -2310,8 +2465,10 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
 
       if (((ed[1] & 0xC) >> 2) == 0x0) {
         /* All Info Valid */
-        sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+        chn_num = (ed[2] & 0x18) >> 3;
+        dimm_num = ed[2] & 0x7;
+        sprintf(temp_log, " DIMM %c%d (CPU# %d, CHN# %d, DIMM# %d)",
+            'A'+chn_num, dimm_num, (ed[2] & 0xE0) >> 5, chn_num, dimm_num);
       } else if (((ed[1] & 0xC) >> 2) == 0x1) {
         /* DIMM info not valid */
         sprintf(temp_log, " (CPU# %d, CHN# %d)",

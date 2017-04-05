@@ -38,10 +38,12 @@
 #define STATUS_LCR  "lcr"
 #define STATUS_LNR  "lnr"
 
+#define MAX_HISTORY_PERIOD  3600
+
 static int
 print_usage() {
-  printf("Usage: sensor-util [ %s ] <--threshold> <sensor num>\n",
-      pal_fru_list);
+  printf("Usage: sensor-util [ %s ] <--threshold> <sensor num>\n", pal_fru_list);
+  printf("Usage: sensor-util [ %s ] <--history> <period: 1 ~ %d (s)> <sensor num>\n", pal_fru_list, MAX_HISTORY_PERIOD);
 }
 
 static void
@@ -138,6 +140,36 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
   }
 }
 
+static void
+get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, int period) {
+
+  int start_time, i;
+  uint8_t snr_num;
+  float min, average, max;
+  thresh_sensor_t thresh;
+
+  start_time = time(NULL) - period;
+
+  for (i = 0; i < sensor_cnt; i++) {
+    snr_num = sensor_list[i];
+    if (num && snr_num != num) {
+      continue;
+    }
+
+    if (sdr_get_snr_thresh(fru, snr_num, &thresh) < 0) {
+      syslog(LOG_ERR, "sdr_get_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+      continue;
+    }
+
+    if (pal_read_history(fru, snr_num, &min, &average, &max, start_time) < 0) {
+      printf("%-18s (0x%X) min = NA, average = NA, max = NA\n", thresh.name, snr_num);
+      continue;
+    }
+
+    printf("%-18s (0x%X) min = %.2f, average = %.2f, max = %.2f\n", thresh.name, snr_num, min, average, max);
+  }
+}
+
 int
 main(int argc, char **argv) {
 
@@ -150,8 +182,10 @@ main(int argc, char **argv) {
   uint8_t num = 0;
   char fruname[16];
   bool threshold = false;
+  bool history = false;
+  long period = 60;
 
-  if (argc < 2 || argc > 4) {
+  if (argc < 2 || argc > 5) {
     print_usage();
     exit(-1);
   }
@@ -160,6 +194,17 @@ main(int argc, char **argv) {
   while (argc > 2 && i <= argc) {
     if (!(strcmp(argv[i-1], "--threshold"))) {
       threshold = true;
+    } else if (!strcmp(argv[i-1], "--history")) {
+      history = true;
+      if (argc > i) {
+        errno = 0;
+        period = strtol(argv[i], NULL, 0);
+        if (errno || (period <= 0) || (period > MAX_HISTORY_PERIOD)) {
+          print_usage();
+          exit(-1);
+        }
+        i++;
+      }
     } else {
       errno = 0;
       num = (uint8_t) strtol(argv[i-1], NULL, 0);
@@ -169,6 +214,11 @@ main(int argc, char **argv) {
       }
     }
     i++;
+  }
+
+  if (threshold && history) {
+    print_usage();
+    exit(-1);
   }
 
 
@@ -209,13 +259,16 @@ main(int argc, char **argv) {
         return ret;
       }
 
-      get_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
+      if (history) {
+        get_sensor_history(fru, sensor_list, sensor_cnt, num, period);
+      } else {
+        get_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
+      }
 
       fru++;
       printf("\n");
     }
   } else {
-
     ret = pal_is_fru_prsnt(fru, &status);
     if (ret < 0) {
       printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
@@ -237,6 +290,11 @@ main(int argc, char **argv) {
     ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
     if (ret < 0) {
       return ret;
+    }
+
+    if (history) {
+      get_sensor_history(fru, sensor_list, sensor_cnt, num, period);
+      return 0;
     }
 
     get_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);

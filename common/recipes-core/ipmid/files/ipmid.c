@@ -2130,7 +2130,7 @@ oem_get_poss_pcie_config(unsigned char *request, unsigned char *response,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   int ret;
-  uint8_t pcie_conf;
+  uint8_t pcie_conf = 0x00;
 
   ret = pal_get_poss_pcie_config(&pcie_conf);
   if (ret) {

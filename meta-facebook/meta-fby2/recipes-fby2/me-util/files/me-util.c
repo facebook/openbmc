@@ -36,6 +36,10 @@
 #define LOGFILE "/tmp/me-util.log"
 
 #define MAX_ARG_NUM 64
+#define MAX_CMD_RETRY 2
+#define MAX_TOTAL_RETRY 30
+
+static total_retry = 0;
 
 static void
 print_usage_help(void) {
@@ -45,7 +49,7 @@ print_usage_help(void) {
 
 static int
 process_command(uint8_t slot_id, int argc, char **argv) {
-  int i, ret;
+  int i, ret, retry = MAX_CMD_RETRY;
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;
@@ -57,8 +61,16 @@ process_command(uint8_t slot_id, int argc, char **argv) {
     tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
 
-  ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
   if (ret) {
+    printf("ME no response!\n");
     return ret;
   }
 
@@ -119,6 +131,11 @@ process_file(uint8_t slot_id, char *path) {
       continue;
 
     process_command(slot_id, argc, argv);
+    if (total_retry > MAX_TOTAL_RETRY) {
+      printf("Maximum retry count exceeded\n");
+      fclose(fp);
+      return -1;
+    }
   }
   fclose(fp);
 
@@ -154,8 +171,7 @@ main(int argc, char **argv) {
     return 0;
   }
 
-  process_command(slot_id, (argc - 2), (argv + 2));
-  return 0;
+  return process_command(slot_id, (argc - 2), (argv + 2));
 
 err_exit:
   print_usage_help();

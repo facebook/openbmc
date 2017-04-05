@@ -61,8 +61,10 @@ static dimm_info_t g_dimm_info[MAX_NUM_DIMMS] = { 0 };
 static sys_info_param_t g_sys_info_params;
 
 // IPMI Watchdog Timer Structure
-static struct watchdog_data {
+struct watchdog_data {
   pthread_mutex_t mutex;
+  pthread_t tid;
+  uint8_t slot;
   uint8_t valid;
   uint8_t run;
   uint8_t no_log;
@@ -73,11 +75,9 @@ static struct watchdog_data {
   uint8_t expiration;
   uint16_t init_count_down;
   uint16_t present_count_down;
-} g_wdt = {
-  .mutex = PTHREAD_MUTEX_INITIALIZER,
-  .valid = 0,
-  .pre_interval = 1,
 };
+
+static struct watchdog_data *g_wdt[MAX_NUM_FRUS];
 
 static char* wdt_use_name[8] = {
   "reserved",
@@ -115,6 +115,13 @@ static pthread_mutex_t m_oem_q;
 
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
+
+static struct watchdog_data *get_watchdog(int slot_id)
+{
+  if (slot_id > MAX_NUM_FRUS)
+    return NULL;
+  return g_wdt[slot_id - 1];
+}
 
 static int length_check(unsigned char cmd_len, unsigned char req_len, unsigned char *response, unsigned char *res_len)
 {
@@ -531,19 +538,26 @@ static void
 app_reset_watchdog_timer (unsigned char *request, unsigned char req_len,
                         unsigned char *response, unsigned char *res_len)
 {
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
+  struct watchdog_data *wdt = get_watchdog(req->payload_id);
 
-  pthread_mutex_lock(&g_wdt.mutex);
-  if (g_wdt.valid) {
+  if (!wdt) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
+
+  pthread_mutex_lock(&wdt->mutex);
+  if (wdt->valid) {
     res->cc = CC_SUCCESS;
-    g_wdt.present_count_down = g_wdt.init_count_down;
-    g_wdt.run = 1;
+    wdt->present_count_down = wdt->init_count_down;
+    wdt->run = 1;
   }
   else
-    res->cc = 0x80; // un-initialized watchdog
-  pthread_mutex_unlock(&g_wdt.mutex);
-
+    res->cc = CC_INVALID_PARAM; // un-initialized watchdog
+  pthread_mutex_unlock(&wdt->mutex);
   *res_len = data - &res->data[0];
 }
 
@@ -555,6 +569,13 @@ app_set_watchdog_timer (unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t*) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
+  struct watchdog_data *wdt = get_watchdog(req->payload_id);
+
+  if (!wdt) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
 
   // no support pre-itmeout interrupt
   if (req->data[1] & 0xF0) {
@@ -563,19 +584,19 @@ app_set_watchdog_timer (unsigned char *request, unsigned char req_len,
     return;
   }
 
-  pthread_mutex_lock(&g_wdt.mutex);
-  g_wdt.no_log = req->data[0] >> 7;
-  g_wdt.use = req->data[0] & 0x7;
-  g_wdt.pre_action = 0; // no support
-  g_wdt.action = req->data[1] & 0x7;
-  g_wdt.pre_interval = req->data[2];
-  g_wdt.expiration &= ~(req->data[3]);
-  g_wdt.init_count_down = (req->data[5]<<8 | req->data[4]);
-  g_wdt.present_count_down = g_wdt.init_count_down;
+  pthread_mutex_lock(&wdt->mutex);
+  wdt->no_log = req->data[0] >> 7;
+  wdt->use = req->data[0] & 0x7;
+  wdt->pre_action = 0; // no support
+  wdt->action = req->data[1] & 0x7;
+  wdt->pre_interval = req->data[2];
+  wdt->expiration &= ~(req->data[3]);
+  wdt->init_count_down = (req->data[5]<<8 | req->data[4]);
+  wdt->present_count_down = wdt->init_count_down;
   if (!(req->data[0] & 0x40)) // 'do not stop timer' bit
-    g_wdt.run = 0;
-  g_wdt.valid = 1;
-  pthread_mutex_unlock(&g_wdt.mutex);
+    wdt->run = 0;
+  wdt->valid = 1;
+  pthread_mutex_unlock(&wdt->mutex);
   res->cc = CC_SUCCESS;
 
   *res_len = data - &res->data[0];
@@ -586,25 +607,33 @@ static void
 app_get_watchdog_timer (unsigned char *request, unsigned char req_len,
                         unsigned char *response, unsigned char *res_len)
 {
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
   unsigned char byte;
+  struct watchdog_data *wdt = get_watchdog(req->payload_id);
 
-  pthread_mutex_lock(&g_wdt.mutex);
-  byte = g_wdt.use;
-  if (g_wdt.no_log)
+  if (!wdt) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
+
+  pthread_mutex_lock(&wdt->mutex);
+  byte = wdt->use;
+  if (wdt->no_log)
     byte |= 0x80;
-  if (g_wdt.run)
+  if (wdt->run)
     byte |= 0x40;
   *data++ = byte;
-  *data++ = (g_wdt.pre_action << 4 | g_wdt.action);
-  *data++ = g_wdt.pre_interval;
-  *data++ = g_wdt.expiration;
-  *data++ = g_wdt.init_count_down & 0xFF;
-  *data++ = (g_wdt.init_count_down >> 8) & 0xFF;
-  *data++ = g_wdt.present_count_down & 0xFF;
-  *data++ = (g_wdt.present_count_down >> 8) & 0xFF;
-  pthread_mutex_unlock(&g_wdt.mutex);
+  *data++ = (wdt->pre_action << 4 | wdt->action);
+  *data++ = wdt->pre_interval;
+  *data++ = wdt->expiration;
+  *data++ = wdt->init_count_down & 0xFF;
+  *data++ = (wdt->init_count_down >> 8) & 0xFF;
+  *data++ = wdt->present_count_down & 0xFF;
+  *data++ = (wdt->present_count_down >> 8) & 0xFF;
+  pthread_mutex_unlock(&wdt->mutex);
   res->cc = CC_SUCCESS;
 
   *res_len = data - &res->data[0];
@@ -2774,70 +2803,69 @@ conn_cleanup:
   return 0;
 }
 
-
 void *
 wdt_timer (void *arg) {
   int ret;
+  struct watchdog_data *wdt = (struct watchdog_data *)arg;
   uint8_t status;
   char timer_use[32];
   int action = 0;
-  int slot_id = *(int *)arg;
 
   while (1) {
     usleep(100*1000);
-    pthread_mutex_lock(&g_wdt.mutex);
-    if (g_wdt.valid && g_wdt.run) {
+    pthread_mutex_lock(&wdt->mutex);
+    if (wdt->valid && wdt->run) {
 
       // Check if power off
-      ret = pal_get_server_power(slot_id, &status);
+      ret = pal_get_server_power(wdt->slot, &status);
       if ((ret >= 0) && (status == SERVER_POWER_OFF)) {
-        g_wdt.run = 0;
-        pthread_mutex_unlock(&g_wdt.mutex);
+        wdt->run = 0;
+        pthread_mutex_unlock(&wdt->mutex);
         continue;
       }
 
       // count down; counter 0 and run associated timer events occur immediately
-      if (g_wdt.present_count_down)
-        g_wdt.present_count_down--;
+      if (wdt->present_count_down)
+        wdt->present_count_down--;
 
       // Pre-timeout no support
       /*
-      if (g_wdt.present_count_down == g_wdt.pre_interval*10) {
+      if (wdt->present_count_down == wdt->pre_interval*10) {
       }
       */
 
       // Timeout
-      if (g_wdt.present_count_down == 0) {
-        g_wdt.expiration |= g_wdt.use;
+      if (wdt->present_count_down == 0) {
+        wdt->expiration |= wdt->use;
 
         // Execute actin out of mutex
-        action = g_wdt.action;
+        action = wdt->action;
 
-        if (g_wdt.no_log) {
-          g_wdt.no_log = 0;
+        if (wdt->no_log) {
+          wdt->no_log = 0;
         }
         else {
           syslog(LOG_CRIT, "%s Watchdog %s",
-            wdt_use_name[g_wdt.use & 0x7],
+            wdt_use_name[wdt->use & 0x7],
             wdt_action_name[action & 0x7]);
         }
 
-        g_wdt.run = 0;
+        wdt->run = 0;
       } /* End of Timeout Action*/
     } /* End of Valid and Run */
-    pthread_mutex_unlock(&g_wdt.mutex);
+    pthread_mutex_unlock(&wdt->mutex);
 
     // Execute actin out of mutex
     if (action) {
       switch (action) {
       case 1: // Hard Reset
-        pal_set_server_power(slot_id, SERVER_POWER_RESET);
+        pal_set_server_power(wdt->slot, SERVER_POWER_RESET);
         break;
       case 2: // Power Down
-        pal_set_server_power(slot_id, SERVER_POWER_OFF);
+        pal_set_server_power(wdt->slot, SERVER_POWER_OFF);
         break;
       case 3: // Power Cycle
-        pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+        pal_set_server_power(wdt->slot, SERVER_POWER_CYCLE);
         break;
       case 0: // no action
       default:
@@ -2854,7 +2882,7 @@ wdt_timer (void *arg) {
 int
 main (void)
 {
-  int s, s2, t, len;
+  int s, s2, t, fru, len;
   struct sockaddr_un local, remote;
   pthread_t tid;
   int *p_s2;
@@ -2881,8 +2909,23 @@ main (void)
   pthread_mutex_init(&m_oem_usb_dbg, NULL);
   pthread_mutex_init(&m_oem_q, NULL);
 
-  pthread_create(&tid, NULL, wdt_timer, (void *)1);
-  pthread_detach(tid);
+  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+    if (pal_is_slot_server(fru)) {
+      struct watchdog_data *wdt_data = calloc(1, sizeof(struct watchdog_data));
+      if (!wdt_data) {
+        syslog(LOG_WARNING, "ipmid: allocation wdt info failed!\n");
+	continue;
+      }
+      wdt_data->slot = fru;
+      wdt_data->valid = 0;
+      wdt_data->pre_interval = 1;
+      pthread_mutex_init(&wdt_data->mutex, NULL);
+
+      g_wdt[fru - 1] = wdt_data;
+      pthread_create(&wdt_data->tid, NULL, wdt_timer, wdt_data);
+      pthread_detach(wdt_data->tid);
+    }
+  }
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
   {

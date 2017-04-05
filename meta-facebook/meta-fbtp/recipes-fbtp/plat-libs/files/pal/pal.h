@@ -358,6 +358,7 @@ int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
+int pal_is_slot_server(uint8_t fru);
 int pal_get_server_power(uint8_t fru, uint8_t *status);
 int pal_set_server_power(uint8_t fru, uint8_t cmd);
 int pal_sled_cycle(void);

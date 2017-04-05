@@ -237,6 +237,7 @@ int pal_set_uart_chan(uint8_t status);
 void pal_update_ts_sled();
 int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
+int pal_is_slot_server(uint8_t fru);
 int pal_reset_pcie_switch();
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_set_fan_led(uint8_t num, uint8_t operation);

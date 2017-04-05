@@ -717,6 +717,13 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 }
 
 int
+pal_is_slot_server(uint8_t fru) {
+  if (fru == FRU_SLOT1)
+    return 1;
+  return 0;
+}
+
+int
 pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
 
   int val;

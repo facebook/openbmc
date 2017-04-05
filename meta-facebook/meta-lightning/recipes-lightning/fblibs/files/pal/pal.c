@@ -1142,6 +1142,11 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 }
 
 int
+pal_is_slot_server(uint8_t fru) {
+  return 0;
+}
+
+int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   char path[64] = {0};
   char device_name[64] = {0};

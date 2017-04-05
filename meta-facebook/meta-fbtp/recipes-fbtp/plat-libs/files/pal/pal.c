@@ -31,8 +31,8 @@
 #include <unistd.h>
 #include "pal.h"
 #include "vr.h"
-#include "facebook/i2c.h"
-#include "facebook/i2c-dev.h"
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
 #include <sys/stat.h>
 
 #define BIT(value, index) ((value >> index) & 1)

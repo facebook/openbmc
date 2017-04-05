@@ -27,8 +27,6 @@ SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
            file://power-on.sh \
            file://sync_date.sh \
-           file://i2c.h \
-           file://i2c-dev.h \
            file://COPYING \
           "
 
@@ -51,11 +49,6 @@ do_install() {
       install -m 755 $f ${dst}/${f}
       ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
   done
-
-  # common lib and include files
-  install -d ${D}${includedir}/facebook
-  install -m 0644 i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h
-  install -m 0644 i2c.h ${D}${includedir}/facebook/i2c.h
 
   # init
   install -d ${D}${sysconfdir}/init.d

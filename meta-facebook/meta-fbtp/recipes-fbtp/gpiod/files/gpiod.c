@@ -33,8 +33,8 @@
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
 #include <openbmc/ocp-dbg-lcd.h>
-#include "facebook/i2c.h"
-#include "facebook/i2c-dev.h"
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
 
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"

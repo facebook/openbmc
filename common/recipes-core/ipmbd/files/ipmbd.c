@@ -74,7 +74,7 @@
 #define MQ_IPMB_REQ "/mq_ipmb_req"
 #define MQ_IPMB_RES "/mq_ipmb_res"
 #define MQ_MAX_MSG_SIZE MAX_BYTES
-#define MQ_MAX_NUM_MSGS 20
+#define MQ_MAX_NUM_MSGS 256
 
 #define SEQ_NUM_MAX 64
 

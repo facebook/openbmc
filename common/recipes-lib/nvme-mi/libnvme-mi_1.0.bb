@@ -24,9 +24,7 @@ LIC_FILES_CHKSUM = "file://nvme-mi.c;beginline=4;endline=16;md5=7783b537a8ff52cf
 SRC_URI = "file://src \
           "
 
-# TODO: Move i2c-dev.h and i2c.h to common layer as libi2c 
-# and then add libi2c as DEPENDS library
-DEPENDS += "liblog fbutils"
+DEPENDS += "liblog fbutils obmc-i2c"
 
 S = "${WORKDIR}/src"
 

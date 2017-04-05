@@ -22,7 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <facebook/i2c-dev.h>
+#include <openbmc/obmc-i2c.h>
 #include "nvme-mi.h"
 
 #define I2C_NVME_INTF_ADDR 0x6A

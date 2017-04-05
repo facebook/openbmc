@@ -497,8 +497,10 @@ snr_health_monitor() {
 
       // get current health status from kv_store
       ret = pal_get_fru_health(fru, &fru_health_kv_state[fru]);
-      if (ret){
-        syslog(LOG_ERR, " %s - kv get health status failed, fru %d",__func__, fru);
+      if (ret) {
+        // If the FRU is not ready, do not log error about errors in its health reporting
+        if (ret != ERR_NOT_READY)
+          syslog(LOG_ERR, " %s - kv get health status failed, fru %d",__func__, fru);
         continue;
       }
 

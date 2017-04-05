@@ -5612,8 +5612,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   int ret;
 
   if (pal_get_sensor_health_key(fru, key)) {
-    syslog(LOG_INFO, "pal_get_fru_health(%d): unsupported fru\n", fru);
-    return -1;
+    return ERR_NOT_READY;
   }
 
   ret = pal_get_key_value(key, cvalue);

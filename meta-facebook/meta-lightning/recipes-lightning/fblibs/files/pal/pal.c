@@ -30,7 +30,7 @@
 #include <sys/file.h>
 #include <string.h>
 #include <pthread.h>
-#include <facebook/i2c-dev.h>
+#include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)

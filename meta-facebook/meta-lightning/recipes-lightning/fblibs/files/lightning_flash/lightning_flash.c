@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <facebook/i2c-dev.h>
+#include <openbmc/obmc-i2c.h>
 #include "lightning_flash.h"
 
 #define I2C_DEV_FLASH1 "/dev/i2c-7"

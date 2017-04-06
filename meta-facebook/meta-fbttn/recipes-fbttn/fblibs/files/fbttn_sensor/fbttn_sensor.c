@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
-#include <facebook/i2c.h>
+#include <openbmc/obmc-i2c.h>
 #include "fbttn_sensor.h"
 //For Kernel 2.6 -> 4.1
 #define MEZZ_TEMP_DEVICE "/sys/devices/platform/ast-i2c.12/i2c-12/12-001f/hwmon/hwmon*"

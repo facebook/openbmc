@@ -31,8 +31,6 @@ SRC_URI = "file://ast-functions \
            file://mdio.py \
            file://fbttn_power.sh \
            file://power-on.sh \
-           file://i2c.h \
-           file://i2c-dev.h \
            file://create_vlan_intf \
            file://rc.early \
            file://rc.local \
@@ -67,8 +65,6 @@ do_install() {
   # common lib and include files
   install -d ${D}${includedir}/facebook
   install -m 0644 src/include/log.h ${D}${includedir}/facebook/log.h
-  install -m 0644 i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h
-  install -m 0644 i2c.h ${D}${includedir}/facebook/i2c.h
 
   # init
   install -d ${D}${sysconfdir}/init.d

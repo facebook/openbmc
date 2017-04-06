@@ -41,7 +41,6 @@ SRC_URI = "file://ast-functions \
            file://create_vlan_intf \
            file://watch-fc.sh \
            file://fcswitcher.sh \
-           file://setup-eth0.sh \
            file://rc.early \
            file://rc.local \
            file://src \
@@ -97,8 +96,6 @@ do_install() {
   update-rc.d -r ${D} power-on.sh start 96 5 .
   #install -m 755 fcswitcher.sh ${D}${sysconfdir}/init.d/fcswitcher.sh
   #update-rc.d -r ${D} fcswitcher.sh start 90 S .
-  install -m 755 setup-eth0.sh ${D}${sysconfdir}/init.d/setup-eth0.sh
-  update-rc.d -r ${D} setup-eth0.sh start 97 5 .
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
   install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh

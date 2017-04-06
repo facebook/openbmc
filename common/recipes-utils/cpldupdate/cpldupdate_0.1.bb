@@ -23,7 +23,6 @@ SRC_URI = "file://ispvm_ui.c \
 		file://ivm_core.c \
 		file://hardware.c \
 		file://vmopcode.h \
-		file://i2c-dev.h \
 		file://Makefile \
 		file://COPYING \
           "
@@ -35,4 +34,4 @@ do_install() {
 	install -m 0755 ispvm ${D}${bindir}/ispvm
 }
 
-DEPENDS += "libcpldupdate-dll-helper"
+DEPENDS += "libcpldupdate-dll-helper obmc-i2c"

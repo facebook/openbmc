@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include "i2c-dev.h"
+#include <openbmc/obmc-i2c.h>
 #include <openbmc/cpldupdate_dll.h>
 #endif
 

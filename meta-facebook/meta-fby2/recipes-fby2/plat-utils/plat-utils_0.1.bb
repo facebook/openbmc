@@ -74,9 +74,6 @@ do_install() {
   # common lib and include files
   install -d ${D}${includedir}/facebook
   install -m 0644 src/include/log.h ${D}${includedir}/facebook/log.h
-  install -m 0644 src/include/i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h
-  install -m 0644 src/include/i2c.h ${D}${includedir}/facebook/i2c.h
-
 
   # init
   install -d ${D}${sysconfdir}/init.d

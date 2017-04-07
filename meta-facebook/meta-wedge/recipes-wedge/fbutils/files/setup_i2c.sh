@@ -56,7 +56,7 @@ i2c_device_add 8 0x60 ncp4200
 i2c_device_add 12 0x10 adm1278
 
 # setup ADC channels
-
+modprobe ast_adc
 # channel 5: r1:  1.0K; r2:  1.0K; v2: 1000mv
 # channel 6: r1:  1.0K; r2:  1.0K; v2: 1000mv
 # channel 7: r1:  1.0K; r2:  1.0K; v2: 0mv

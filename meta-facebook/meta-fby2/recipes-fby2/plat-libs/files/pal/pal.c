@@ -461,20 +461,9 @@ control_sol_txd(uint8_t slot) {
 
   switch(slot) {
   case 1:
-    // Disable UART2's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD;
-    ctrl &= (~UART2_TXD); //Disable
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 2:
     // Disable UART1's TXD and enable others
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl &= (~UART1_TXD); // Disable
+    ctrl &= (~UART1_TXD); //Disable
     ctrl |= UART2_TXD;
     *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
@@ -482,18 +471,18 @@ control_sol_txd(uint8_t slot) {
     ctrl |= UART3_TXD | UART4_TXD;
     *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
-  case 3:
-    // Disable UART4's TXD and enable others
+  case 2:
+    // Disable UART2's TXD and enable others
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
+    ctrl |= UART1_TXD;
+    ctrl &= (~UART2_TXD); // Disable
     *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
     ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD;
-    ctrl &= (~UART4_TXD); // Disable
+    ctrl |= UART3_TXD | UART4_TXD;
     *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
-  case 4:
+  case 3:
     // Disable UART3's TXD and enable others
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
     ctrl |= UART1_TXD | UART2_TXD;
@@ -502,6 +491,17 @@ control_sol_txd(uint8_t slot) {
     ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
     ctrl &= (~UART3_TXD); // Disable
     ctrl |= UART4_TXD;
+    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
+    break;
+  case 4:
+    // Disable UART4's TXD and enable others
+    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
+    ctrl |= UART1_TXD | UART2_TXD;
+    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
+
+    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
+    ctrl |= UART3_TXD;
+    ctrl &= (~UART4_TXD); // Disable
     *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
   default:
@@ -2931,7 +2931,7 @@ int pal_get_sku(void){
 
 //For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e
 int pal_get_plat_sku_id(void){
-  return 0;
+  return 0x01; // Yosemite V2
 }
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4

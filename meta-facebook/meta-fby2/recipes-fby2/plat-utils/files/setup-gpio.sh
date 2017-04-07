@@ -405,22 +405,22 @@ gpio_export N5
 # To use GPIOB4, SCU70[23] must be 0
 devmem_clear_bit $(scu_addr 70) 23
 gpio_export B4
-gpio_set B4 0
+gpio_set B4 1
 
 # PE_BUFF_OE_1_N: GPIOB4 (13)
 #To use GPIOB5, SCU80[13] must be 0
 devmem_clear_bit $(scu_addr 80) 13
 gpio_export B5
-gpio_set B5 0
+gpio_set B5 1
 
 # PE_BUFF_OE_2_N: GPIOB4 (14)
 devmem_clear_bit $(scu_addr 80) 14
 gpio_export B6
-gpio_set B6 0
+gpio_set B6 1
 
 # PE_BUFF_OE_3_N: GPIOB4 (15)
 gpio_export B7
-gpio_set B7 0
+gpio_set B7 1
 
 # enable I2C ctrl reg (SCUA4),
 devmem_set_bit $(scu_addr A4) 12 #SCL1 en

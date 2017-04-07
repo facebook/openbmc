@@ -25,6 +25,7 @@ SRC_URI += "file://disable_watchdog.sh \
             file://cpld_upgrade.sh \
             file://cp2112_i2c_flush.sh \
             file://reset_qsfp_mux.sh \
+            file://setup_i2c.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -57,6 +58,9 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
+    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    update-rc.d -r ${D} setup_i2c.sh start 60 S .
+
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
@@ -73,7 +77,7 @@ do_install_board() {
 
     install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
     update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
-    
+
     install -m 0755 ${WORKDIR}/enable_watchdog_ext_signal.sh ${D}${sysconfdir}/init.d/enable_watchdog_ext_signal.sh
     update-rc.d -r ${D} enable_watchdog_ext_signal.sh start 99 2 3 4 5 .
 }

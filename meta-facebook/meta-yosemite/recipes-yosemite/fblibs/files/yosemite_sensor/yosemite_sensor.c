@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
-#include <facebook/i2c-dev.h>
+#include <openbmc/obmc-i2c.h>
 #include "yosemite_sensor.h"
 
 #define LARGEST_DEVICE_NAME 120

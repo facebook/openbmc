@@ -2757,18 +2757,16 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
 int
 pal_get_fan_speed(uint8_t fan, int *rpm) {
-  int dev;
-  int ret;
-  int rpm_h;
-  int rpm_l;
-  int cnt;
+   int ret;
+   float value;
 
-  if (fan >= pal_tach_cnt) {
-    syslog(LOG_INFO, "pal_get_fan_speed: fan number is invalid - %d", fan);
-    return -1;
-  }
+   // Redirect FAN to sensor cache
+   ret = pal_sensor_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
+   
+   if (0 == ret)
+      *rpm = (int) value;
 
-  return read_fan_value(fan + 1, "fan%d_input", rpm);
+   return ret;
 }
 
 void

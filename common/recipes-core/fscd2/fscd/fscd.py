@@ -34,6 +34,7 @@ from fsc_board import board_fan_actions, board_host_actions, board_callout
 RAMFS_CONFIG = '/etc/fsc-config.json'
 CONFIG_DIR = '/etc/fsc'
 DEFAULT_INIT_BOOST = 100
+DEFAULT_INIT_TRANSITIONAL = 70
 
 
 class Fscd(object):
@@ -265,11 +266,8 @@ class Fscd(object):
         Method invokes board action to determine fan power status.
         If not applicable returns True.
         '''
-        if self.fanpower:
-            if board_callout(callout='read_power'):
-                return True
-        else:
-                return True
+        if board_callout(callout='read_power'):
+            return True
         return False
 
     def run(self):
@@ -295,8 +293,9 @@ class Fscd(object):
 
             time.sleep(self.interval)
 
-            if not self.get_fan_power_status():
-                continue
+            if self.fanpower:
+                if not self.get_fan_power_status():
+                    continue
 
             # Get dead fans for determining speed
             dead_fans = self.update_dead_fans(dead_fans)
@@ -311,7 +310,7 @@ class Fscd(object):
 
 def handle_term(signum, frame):
     global wdfile
-    board_callout(callout='init_fans', boost=DEFAULT_INIT_BOOST)
+    board_callout(callout='init_fans', boost=DEFAULT_INIT_TRANSITIONAL)
     Logger.warn("killed by signal %d" % (signum,))
     if signum == signal.SIGQUIT and wdfile:
         Logger.info("Killed with SIGQUIT - stopping watchdog.")
@@ -330,7 +329,7 @@ if __name__ == "__main__":
         fscd = Fscd()
         fscd.run()
     except Exception:
-        board_callout(callout='init_fans', boost=DEFAULT_INIT_BOOST)
+        board_callout(callout='init_fans', boost=DEFAULT_INIT_TRANSITIONAL)
         (etype, e) = sys.exc_info()[:2]
         Logger.crit("failed, exception: " + str(etype))
         traceback.print_exc()

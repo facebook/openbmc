@@ -47,7 +47,6 @@ IMAGE_INSTALL += " \
   watchdog-ctrl \
   i2c-tools \
   sensor-setup \
-  usb-console \
   lmsensors-sensors \
   rest-api \
   bottle \
@@ -77,6 +76,8 @@ IMAGE_INSTALL += " \
   fan-util \
   spatula \
   passwd-util \
+  logrotate \
+  conf-util \
   "
 
 IMAGE_FEATURES += " \

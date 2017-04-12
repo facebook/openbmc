@@ -35,24 +35,116 @@
 
 #define LOGFILE "/tmp/me-util.log"
 
+#define MAX_ARG_NUM 64
+#define MAX_CMD_RETRY 2
+#define MAX_TOTAL_RETRY 30
+
+static total_retry = 0;
+
 static void
 print_usage_help(void) {
   printf("Usage: me-util <slot1|slot2|slot3|slot4> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: me-util <slot1|slot2|slot3|slot4> <--file> <path>\n");
+}
+
+static int
+process_command(uint8_t slot_id, int argc, char **argv) {
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  //int logfd, len;
+  //char log[256];
+
+  for (i = 0; i < argc; i++) {
+    tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
+  }
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return ret;
+  }
+
+  //log[0] = 0;
+  for (i = 0; i < rlen; i++) {
+    printf("%02X ", rbuf[i]);
+    //sprintf(log, "%s%02X ", log, rbuf[i]);
+  }
+  printf("\n");
+
+#if 0
+  sprintf(log, "%s\n", log);
+
+  logfd = open(LOGFILE, O_CREAT | O_WRONLY);
+  if (logfd < 0) {
+    syslog(LOG_WARNING, "Opening a tmp file failed. errno: %d", errno);
+    return -1;
+  }
+
+  len = write(logfd, log, strlen(log));
+  if (len != strlen(log)) {
+    syslog(LOG_WARNING, "Error writing the log to the file");
+    close(logfd);
+    return -1;
+  }
+  close(logfd);
+#endif
+
+  return 0;
+}
+
+static int
+process_file(uint8_t slot_id, char *path) {
+  FILE *fp;
+  int argc;
+  char buf[1024];
+  char *str, *next, *del=" \n";
+  char *argv[MAX_ARG_NUM];
+
+  if (!(fp = fopen(path, "r"))) {
+    syslog(LOG_WARNING, "Failed to open %s", path);
+    return -1;
+  }
+
+  while (fgets(buf, sizeof(buf), fp) != NULL) {
+    str = strtok_r(buf, del, &next);
+    for (argc = 0; argc < MAX_ARG_NUM && str; argc++, str = strtok_r(NULL, del, &next)) {
+      if (str[0] == '#')
+        break;
+
+      if (!argc && !strcmp(str, "echo")) {
+        printf("%s", (*next) ? next : "\n");
+        break;
+      }
+      argv[argc] = str;
+    }
+    if (argc < 1)
+      continue;
+
+    process_command(slot_id, argc, argv);
+    if (total_retry > MAX_TOTAL_RETRY) {
+      printf("Maximum retry count exceeded\n");
+      fclose(fp);      
+      return -1;
+    }
+  }
+  fclose(fp);
+
+  return 0;
 }
 
 int
 main(int argc, char **argv) {
   uint8_t slot_id;
-  uint8_t tbuf[256] = {0x00};
-  uint8_t rbuf[256] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int i;
-  int ret;
-  int logfd;
-  int len;
-  char log[128];
-  char temp[8];
 
   if (argc < 3) {
     goto err_exit;
@@ -70,49 +162,17 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  for (i = 2; i < argc; i++) {
-    tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
+  if (!strcmp(argv[2], "--file")) {
+    if (argc < 4) {
+      goto err_exit;
+    }
+
+    process_file(slot_id, argv[3]);
+    return 0;
   }
 
-#if 1
-  ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
-  if (ret) {
-    return ret;
-  }
-#endif
+  return process_command(slot_id, (argc - 2), (argv + 2));
 
-  // memcpy(rbuf, tbuf, tlen);
-  //rlen = tlen;
-
-
-  memset(log, 0, 128);
-  for (i = 0; i < rlen; i++) {
-    printf("%02X ", rbuf[i]);
-    memset(temp, 0, 8);
-    sprintf(temp, "%02X ", rbuf[i]);
-    strcat(log, temp);
-  }
-  printf("\n");
-  sprintf(temp, "\n");
-  strcat(log, temp);
-
-  errno = 0;
-
-  logfd = open(LOGFILE, O_CREAT | O_WRONLY);
-  if (logfd < 0) {
-    syslog(LOG_WARNING, "Opening a tmp file failed. errno: %d", errno);
-    return -1;
-  }
-
-  len = write(logfd, log, strlen(log));
-  if (len != strlen(log)) {
-    syslog(LOG_WARNING, "Error writing the log to the file");
-    return -1;
-  }
-
-  close(logfd);
-
-  return 0;
 err_exit:
   print_usage_help();
   return -1;

@@ -25,6 +25,7 @@
 #include <syslog.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <sys/file.h>
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
@@ -118,6 +119,20 @@ print_fw_ver(uint8_t slot_id) {
     printf("\n");
 }
 
+static int
+check_dup_process(uint8_t slot_id) {
+  int pid_file;
+  char path[64];
+
+  sprintf(path, "/var/run/fw-util_%d.lock", slot_id);
+  pid_file = open(path, O_CREAT | O_RDWR, 0666);
+  if (flock(pid_file, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
+    return -1;
+  }
+
+  return 0;
+}
+
 int
 fw_update_slot(char **argv, uint8_t slot_id) {
 
@@ -138,10 +153,14 @@ fw_update_slot(char **argv, uint8_t slot_id) {
      return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
   }
   if (!strcmp(argv[3], "--bios")) {
-    sprintf(cmd, "power-util slot%u off", slot_id);
+    sprintf(cmd, "/usr/local/bin/power-util slot%u off", slot_id);
     system(cmd);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
-    sprintf(cmd, "power-util slot%u on", slot_id);
+    sleep(1);
+    sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-cycle", slot_id);
+    system(cmd);
+    sleep(5);
+    sprintf(cmd, "/usr/local/bin/power-util slot%u on", slot_id);
     system(cmd);
     return ret;
   }
@@ -200,17 +219,34 @@ main(int argc, char **argv) {
       goto err_exit;
     }
     if (slot_id < 5) {
-      return fw_update_slot(argv, slot_id);
+      if (check_dup_process(slot_id) < 0) {
+        printf("fw_util: another instance is running...\n");
+        return -1;
+      }
+
+      if (fw_update_slot(argv, slot_id)) {
+        printf("fw_util: updating %s on slot %d failed!\n", argv[3], slot_id);
+        return -1;
+      }
+      return 0;
     }
+
+    for (slot_id = 1; slot_id < 5; slot_id++) {
+      if (check_dup_process(slot_id) < 0) {
+        printf("fw_util: another instance is running...\n");
+        return -1;
+      }
+    }
+
     printf("Updating all slots....\n");
     for (slot_id = 1; slot_id < 5; slot_id++) {
        if (fw_update_slot(argv, slot_id)) {
-         printf("fw_util:  updating %s on slot %d failed!\n", argv[3], slot_id);
+         printf("fw_util: updating %s on slot %d failed!\n", argv[3], slot_id);
          ret++;
        }
     }
     if (ret) {
-      printf("fw_util:  updating all slots failed!\n");
+      printf("fw_util: updating all slots failed!\n");
       return -1;
     }
     printf("fw_util: updated all slots successfully!\n");

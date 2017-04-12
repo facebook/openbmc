@@ -44,6 +44,7 @@ SRC_URI = "file://ast-functions \
            file://fcswitcher.sh \
            file://rc.early \
            file://rc.local \
+           file://fw_env_config.sh \
            file://src \
            file://COPYING \
           "
@@ -81,6 +82,8 @@ do_install() {
   update-rc.d -r ${D} mount_data0.sh start 03 S .
   install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
   update-rc.d -r ${D} rc.early start 04 S .
+  install -m 0755 ${WORKDIR}/fw_env_config.sh ${D}${sysconfdir}/init.d/fw_env_config.sh
+  update-rc.d -r ${D} fw_env_config.sh start 05 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   # create VLAN intf automatically

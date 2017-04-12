@@ -34,6 +34,7 @@ extern "C" {
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   128
 #define MAX_NUM_FAN     2
+#define MAX_DATA_NUM    2000
 
 #define FRU_STATUS_GOOD   1
 #define FRU_STATUS_BAD    0
@@ -56,6 +57,16 @@ extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
+typedef struct {
+  long log_time;
+  float value;
+} sensor_data_t;
+
+typedef struct {
+  int index;
+  sensor_data_t data[MAX_DATA_NUM];
+} sensor_shm_t;
+
 enum {
   LED_STATE_OFF,
   LED_STATE_ON,
@@ -74,6 +85,7 @@ enum {
   SERVER_12V_OFF,
   SERVER_12V_ON,
   SERVER_12V_CYCLE,
+  SERVER_GLOBAL_RESET,
 };
 
 enum {
@@ -105,7 +117,7 @@ enum {
   CPU_DIMM_HOT = 0xB3,
   CPU0_THERM_STATUS = 0x1C,
   SPS_FW_HEALTH = 0x17,
-  NM_EXCEPTION = 0x8,
+  NM_EXCEPTION = 0x18,
   PWR_THRESH_EVT = 0x3B,
 };
 
@@ -119,10 +131,17 @@ enum {
   FAN_1,
 };
 
+//: fixme fixme fixme fixme
+//
+//  Temp remap of  SERVER_POWER_RESET  to  power cycle for ipmid watchdog
+//  Need to remove once pal.c adds  SERVER_POWER_RESET support
+#define SERVER_POWER_RESET  SERVER_POWER_CYCLE
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
+int pal_is_slot_server(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_sled_cycle(void);
@@ -164,7 +183,10 @@ void pal_dump_key_value(void);
 int pal_get_fru_devtty(uint8_t fru, char *devtty);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
+int pal_get_dev_guid(uint8_t slot, char *guid);
+int pal_set_dev_guid(uint8_t slot, char *str);
 int pal_get_sys_guid(uint8_t slot, char *guid);
+int pal_set_sys_guid(uint8_t slot, char *str);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_fruid_write(uint8_t slot, char *path);
@@ -174,7 +196,7 @@ int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
 int pal_parse_sel(uint8_t fru, uint8_t *sel,
     char *error_log);
-int pal_sel_handler(uint8_t fru, uint8_t snr_num);
+int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void msleep(int msec);
 int pal_set_sensor_health(uint8_t fru, uint8_t value);
 int pal_get_fru_health(uint8_t fru, uint8_t *value);
@@ -190,7 +212,15 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
+void pal_set_post_end(void);
+void pal_post_end_chk(uint8_t *post_end_chk);
+int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
+int pal_is_crashdump_ongoing(uint8_t slot);
+int pal_is_fw_update_ongoing(uint8_t fru);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 void pal_add_cri_sel(char *str);
+int pal_bmc_err_enable(void);
+int pal_bmc_err_disable(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -101,8 +101,12 @@ class FscSensorSourceUtil(FscSensorBase):
         if 'fru' in kwargs:
             cmd = cmd + " " + kwargs['fru']
         Logger.debug("Reading data with cmd=%s" % cmd)
+        data=''
         try:
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        except SystemExit:
+            Logger.debug("SystemExit from sensor read")
+            raise
         except:
             Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
         return data
@@ -119,9 +123,13 @@ class FscSensorSourceUtil(FscSensorBase):
         '''
         cmd = self.write_source + " " + str(int(value)) + " " + self.name
         Logger.debug("Setting value using cmd=%s" % cmd)
+        response=''
         try:
             response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
             if response.find("Setting") == -1:
                 raise Exception("Write failed with response=%s" % response)
+        except SystemExit:
+            Logger.debug("SystemExit from sensor write")
+            raise
         except:
             Logger.crit("Exception with cmd=%s response=%s" % (cmd, response))

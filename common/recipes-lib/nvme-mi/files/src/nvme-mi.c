@@ -42,9 +42,14 @@
 #define TEMP_SENSOR_FAIL 0x81
 
 /* NVMe-MI Vendor ID Code */
+#define VENDOR_ID_HGST 0x1C58
+#define VENDOR_ID_HYNIX 0x1C5C
 #define VENDOR_ID_INTEL 0x8086
-#define VENDOR_ID_SEAGATE 0x1BB1
+#define VENDOR_ID_LITEON 0x14A4
+#define VENDOR_ID_MICRON 0x1344
 #define VENDOR_ID_SAMSUNG 0x144D
+#define VENDOR_ID_SEAGATE 0x1BB1
+#define VENDOR_ID_TOSHIBA 0x1179
 
 /* Read a byte from NVMe-MI 0x6A. Need to give a bus and a byte address for reading. */
 int
@@ -411,14 +416,34 @@ nvme_vendor_read_decode(const char *i2c_bus_device, uint16_t *value, t_key_value
     return -1;
   }
   else{
-    if (*value == VENDOR_ID_INTEL)
+    switch (*value) {
+    case VENDOR_ID_HGST:
+      sprintf(vendor_decoding->value, "HGST(0x%04X)", *value);
+      break;
+    case VENDOR_ID_HYNIX:
+      sprintf(vendor_decoding->value, "Hynix(0x%04X)", *value);
+      break;
+    case VENDOR_ID_INTEL:
       sprintf(vendor_decoding->value, "Intel(0x%04X)", *value);
-    else if (*value == VENDOR_ID_SEAGATE)
-      sprintf(vendor_decoding->value, "Seagate(0x%04X)", *value);
-    else if (*value == VENDOR_ID_SAMSUNG)
+      break;
+    case VENDOR_ID_LITEON:
+      sprintf(vendor_decoding->value, "Lite-on(0x%04X)", *value);
+      break;
+    case VENDOR_ID_MICRON:
+      sprintf(vendor_decoding->value, "Micron(0x%04X)", *value);
+      break;
+    case VENDOR_ID_SAMSUNG:
       sprintf(vendor_decoding->value, "Samsung(0x%04X)", *value);
-    else
+      break;
+    case VENDOR_ID_SEAGATE:
+      sprintf(vendor_decoding->value, "Seagate(0x%04X)", *value);
+      break;
+    case VENDOR_ID_TOSHIBA:
+      sprintf(vendor_decoding->value, "Toshiba(0x%04X)", *value);
+      break;
+    default:
       sprintf(vendor_decoding->value, "Unknown(0x%04X)", *value);
+    }
   }
 
   return 0;

@@ -26,6 +26,7 @@
 # does not do DHCPv6 request anymore.
 #
 # The approach here is to restart 'dhclient -6' when the interface is up.
+sv status dhc6 &>/dev/null &&\
 sv restart dhc6
 
 exit 0

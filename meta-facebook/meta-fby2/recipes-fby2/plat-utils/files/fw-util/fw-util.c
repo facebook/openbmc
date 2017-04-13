@@ -71,12 +71,26 @@ print_fw_ver(uint8_t slot_id) {
 
   printf("ME Version: %x.%x.%x.%x%x\n", ver[0], ver[1], ver[2], ver[3], ver[4]);
 
+  // Print PVCCIO VR Version
+  if (bic_get_fw_ver(slot_id, FW_PVCCIO_VR, ver)){
+    return;
+  }
+
+  printf("PVCCIO VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+
   // Print PVCCIN VR Version
   if (bic_get_fw_ver(slot_id, FW_PVCCIN_VR, ver)){
     return;
   }
 
   printf("PVCCIN VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+
+  // Print PVCCSA VR Version
+  if (bic_get_fw_ver(slot_id, FW_PVCCIN_VR, ver)){
+    return;
+  }
+
+  printf("PVCCSA VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print DDRAB VR Version
   if (bic_get_fw_ver(slot_id, FW_DDRAB_VR, ver)){
@@ -85,26 +99,26 @@ print_fw_ver(uint8_t slot_id) {
 
   printf("DDRAB VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
+  // Print DDRDE VR Version
+  if (bic_get_fw_ver(slot_id, FW_DDRDE_VR, ver)){
+    return;
+  }
+
+  printf("DDRDE VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+
+  // Print PVNNPCH VR Version
+  if (bic_get_fw_ver(slot_id, FW_PVNNPCH_VR, ver)){
+    return;
+  }
+
+  printf("PVNNPCH VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+
   // Print P1V05 VR Version
   if (bic_get_fw_ver(slot_id, FW_P1V05_VR, ver)){
     return;
   }
 
   printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
-
-  // Print PVCCGBE VR Version
-  if (bic_get_fw_ver(slot_id, FW_PVCCGBE_VR, ver)){
-    return;
-  }
-
-  printf("PVCCGBE VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
-
-  // Print PVCCSCSUS VR Version
-  if (bic_get_fw_ver(slot_id, FW_PVCCSCSUS_VR, ver)){
-    return;
-  }
-
-  printf("PVCCSCSUS VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print BIOS version
   if (pal_get_sysfw_ver(slot_id, ver)) {

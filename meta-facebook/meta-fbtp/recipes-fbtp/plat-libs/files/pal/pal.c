@@ -357,6 +357,51 @@ static uint8_t g_vr_cpu0_vddq_def;
 static uint8_t g_vr_cpu1_vddq_ghj;
 static uint8_t g_vr_cpu1_vddq_klm;
 
+
+typedef struct _inlet_corr_t {
+  uint8_t duty;
+  int8_t delta_t;
+} inlet_corr_t;
+
+static inlet_corr_t g_ict[] = {
+  { 10, 7 },
+  { 12, 6 },
+  { 14, 5 },
+  { 18, 4 },
+  { 20, 3 },
+  { 24, 2 },
+  { 32, 1 },
+  { 41, 0 },
+};
+
+static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
+
+static void apply_inlet_correction(float *value) {
+  static int8_t dt = 0;
+  int i;
+  uint8_t pwm[2] = {0};
+
+  // Get PWM value
+  if (pal_get_pwm_value(0, &pwm[0]) || pal_get_pwm_value(1, &pwm[1])) {
+    // If error reading PWM value, use the previous deltaT
+    *value -= dt;
+    return;
+  }
+  pwm[0] = (pwm[0] + pwm[1]) /2;
+
+  // Scan through the correction table to get correction value for given PWM
+  dt=g_ict[0].delta_t;
+  for (i=0; i< g_ict_count; i++) {
+    if (pwm[0] >= g_ict[i].duty)
+      dt = g_ict[i].delta_t;
+    else
+      break;
+  }
+
+  // Apply correction for the sensor
+  *(float*)value -= dt;
+}
+
 static void
 init_board_sensors(void) {
   pal_get_board_rev_id(&g_board_rev_id);
@@ -3396,6 +3441,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
         ret = read_temp_attr(MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        if (!ret)
+          apply_inlet_correction((float *) value);
         break;
       case MB_SENSOR_OUTLET_REMOTE_TEMP:
         ret = read_temp_attr(MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);

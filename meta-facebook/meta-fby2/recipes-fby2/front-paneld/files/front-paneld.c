@@ -96,6 +96,11 @@ debug_card_handler() {
     }
     m_pos = pos;
 
+    ret = pal_switch_vga_mux(pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
     ret = pal_switch_usb_mux(pos);
     if (ret) {
       goto debug_card_out;

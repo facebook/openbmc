@@ -137,6 +137,7 @@ int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_hand_sw(uint8_t *pos);
+int pal_switch_vga_mux(uint8_t slot);
 int pal_switch_usb_mux(uint8_t slot);
 int pal_switch_uart_mux(uint8_t slot);
 int pal_post_enable(uint8_t slot);

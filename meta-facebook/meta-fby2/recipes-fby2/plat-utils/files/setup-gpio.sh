@@ -43,11 +43,8 @@
 
 echo "Set up GPIO pins....."
 
-# This is a workaround for MAC1LINK
-devmem 0x1e660050 w 0xA9D0F
-
 # Set up to read the board revision pins, Y0, Y1, Y2
-devmem_set_bit $(scu_addr 70) 19
+devmem_clear_scu70_bit 19
 devmem_clear_bit $(scu_addr a4) 8
 devmem_clear_bit $(scu_addr a4) 9
 devmem_clear_bit $(scu_addr a4) 10
@@ -85,7 +82,7 @@ gpio_export D0
 # GPIOD1(25): SCU90[1], SCU8C[8], SCU70[21] shall be 0
 devmem_clear_bit $(scu_addr 90) 1
 devmem_clear_bit $(scu_addr 8c) 8
-devmem_clear_bit $(scu_addr 70) 21
+devmem_clear_scu70_bit 21
 gpio_set D1 1
 
 # PWR_SLOT2_BTN_N, 1S Server power out, on GPIO D3
@@ -129,6 +126,15 @@ gpio_set AB1 1
 # To use GPIOAB2 (218), SCUA8[2] must be 0
 devmem_clear_bit $(scu_addr a8) 2
 
+# VGA Mux
+# To use GPIOJ2 (74), SCU84[10] must be 0
+devmem_clear_bit $(scu_addr 84) 10
+# To use GPIOJ3 (75), SCU84[11] must be 0
+devmem_clear_bit $(scu_addr 84) 11
+
+gpio_set J2 0
+gpio_set J3 0
+
 #========================================================================================================#
 # Setup GPIOs to Mux Enable: GPIOAB3(219), Channel Select: GPIOE4(36), GPIOE5(37)
 
@@ -138,12 +144,12 @@ devmem_clear_bit $(scu_addr a8) 3
 #To use GPIOE4 (36), SCU80[20], SCU8C[14], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
-devmem_clear_bit $(scu_addr 70) 22
+devmem_clear_scu70_bit 22
 
 # To use GPIOE5 (37), SCU80[21], SCU8C[14], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 21
 devmem_clear_bit $(scu_addr 8C) 14
-devmem_clear_bit $(scu_addr 70) 22
+devmem_clear_scu70_bit 22
 
 gpio_set AB3 0
 gpio_set E4 0
@@ -151,14 +157,9 @@ gpio_set E5 0
 #========================================================================================================#
 
 # USB_OC_N, resettable fuse tripped, GPIO Q6
-devmem_clear_bit $(scu_addr 90) 28
+devmem_clear_bit $(scu_addr 2c) 1
 
 gpio_export Q6
-
-# System SPI
-# Strap 12 must be 0 and Strape 13 must be 1
-devmem_clear_bit $(scu_addr 70) 12
-devmem_set_bit $(scu_addr 70) 13
 
 # DEBUG_PORT_UART_SEL_BMC_N: GPIOR3(139)
 # To use GPIOR3, SCU88[27] must be 0
@@ -173,7 +174,7 @@ gpio_export R3
 # To enable GPIOE0, SCU80[16], SCU8C[12], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 16
 devmem_clear_bit $(scu_addr 8C) 12
-devmem_clear_bit $(scu_addr 70) 22
+devmem_clear_scu70_bit 22
 
 gpio_set E0 0
 
@@ -409,7 +410,7 @@ gpio_export N5
 
 # PE_BUFF_OE_0_N: GPIOB4 (12)
 # To use GPIOB4, SCU70[23] must be 0
-devmem_clear_bit $(scu_addr 70) 23
+devmem_clear_scu70_bit 23
 gpio_export B4
 gpio_set B4 1
 

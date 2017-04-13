@@ -325,34 +325,25 @@ static int
 server_power_on(uint8_t slot_id) {
   char vpath[64] = {0};
 
-  // Disable GPIOD pass-through function
-  system("devmem 0x1e6e207c w 0x600000");
-
-  // Server board power-on
+  if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
   if (write_device(vpath, "1")) {
-    // Enable GPIOD pass-through function
-    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
   if (write_device(vpath, "0")) {
-    // Enable GPIOD pass-through function
-    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
   sleep(1);
 
   if (write_device(vpath, "1")) {
-    // Enable GPIOD pass-through function
-    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
-  // Enable GPIOD pass-through function
-  system("devmem 0x1e6e2070 w 0xF12AE206");
   return 0;
 }
 
@@ -364,21 +355,15 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
-  // Disable GPIOD pass-through function
-  system("devmem 0x1e6e207c w 0x600000");
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
   if (write_device(vpath, "1")) {
-    // Enable GPIOD pass-through function
-    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
   sleep(1);
 
   if (write_device(vpath, "0")) {
-    // Enable GPIOD pass-through function
-    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
@@ -389,13 +374,8 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
   }
 
   if (write_device(vpath, "1")) {
-    // Enable GPIOD pass-through function
-    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
-
-  // Enable GPIOD pass-through function
-  system("devmem 0x1e6e2070 w 0xF12AE206");
 
   return 0;
 }
@@ -1192,6 +1172,53 @@ set_usb_mux(uint8_t state) {
     new_state = "1";
 
   if (write_device(path, new_state) < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_device failed for %s\n", path);
+#endif
+    return -1;
+  }
+
+  return 0;
+}
+
+// Update the VGA Mux to the server at given slot
+int
+pal_switch_vga_mux(uint8_t slot) {
+  char *gpio_sw0, *gpio_sw1;
+  char path[64] = {0};
+
+  // Based on the VGA mux table in Schematics
+  switch(slot) {
+  case HAND_SW_SERVER1:
+    gpio_sw0 = "0";
+    gpio_sw1 = "0";
+    break;
+  case HAND_SW_SERVER2:
+    gpio_sw0 = "0";
+    gpio_sw1 = "1";
+    break;
+  case HAND_SW_SERVER3:
+    gpio_sw0 = "1";
+    gpio_sw1 = "0";
+    break;
+  case HAND_SW_SERVER4:
+    gpio_sw0 = "1";
+    gpio_sw1 = "1";
+    break;
+  default:
+    return 0;
+  }
+
+  sprintf(path, GPIO_VAL, GPIO_VGA_SW0);
+  if (write_device(path, gpio_sw0) < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "write_device failed for %s\n", path);
+#endif
+    return -1;
+  }
+
+  sprintf(path, GPIO_VAL, GPIO_VGA_SW1);
+  if (write_device(path, gpio_sw1) < 0) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "write_device failed for %s\n", path);
 #endif
@@ -2646,7 +2673,7 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
   case BIC_MODE_NORMAL:
     // Bridge IC entered normal mode
     // Inform BIOS that BMC is ready
-    bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
+    bic_set_gpio(fru, BMC_READY_N, 0);
     break;
   case BIC_MODE_UPDATE:
     // Bridge IC entered update mode

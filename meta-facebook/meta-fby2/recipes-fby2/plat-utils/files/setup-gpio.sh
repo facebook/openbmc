@@ -390,6 +390,12 @@ gpio_export P2
 devmem_clear_bit $(scu_addr 88) 19
 gpio_export P3
 
+# FAN_LATCH_DETECT : GPIOH5 (61)
+# To use GPIOH5, SCU94[7] and SCU90[7] must be 0
+devmem_clear_bit $(scu_addr 90) 7
+devmem_clear_bit $(scu_addr 94) 7
+gpio_export H5
+
 # Enable GPIO pins: I2C_SLOTx_ALERT_N pins for BIC firmware update
 devmem_clear_bit $(scu_addr 88) 2
 gpio_export N2

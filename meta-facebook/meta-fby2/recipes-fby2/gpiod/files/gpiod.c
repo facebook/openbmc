@@ -46,6 +46,8 @@
 
 #define GPIO_BMC_READY_N    0
 
+#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
+
 /* To hold the gpio info and status */
 typedef struct {
   uint8_t flag;
@@ -54,10 +56,67 @@ typedef struct {
   char name[32];
 } gpio_pin_t;
 
+/* For set spb gpio default configuration */
+typedef struct {
+  int num;
+  uint8_t flag;
+  uint8_t ass_val;
+  char name[32];
+} gpio_spb_init_t;
+
+typedef struct {
+  uint8_t flag;
+  uint8_t status;
+  uint8_t ass_val;
+  char name[32];
+} gpio_spb_t;
+
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot3[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
+
+// SPB gpio default configuration
+static gpio_spb_init_t gpio_spb_init[] = { { GPIO_FAN_LATCH_DETECT,             1, 1, "GPIO_FAN_LATCH_DETECT"           },
+                                           { GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, 1, 0, "GPIO_SLOT1_EJECTOR_LATCH_DETECT" },
+                                           { GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, 1, 0, "GPIO_SLOT2_EJECTOR_LATCH_DETECT" },
+                                           { GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, 1, 0, "GPIO_SLOT3_EJECTOR_LATCH_DETECT" },
+                                           { GPIO_SLOT4_EJECTOR_LATCH_DETECT_N, 1, 0, "GPIO_SLOT4_EJECTOR_LATCH_DETECT" },
+                                         };
+
+static gpio_spb_t gpio_spb[MAX_SPB_GPIO_NUM] = {0};
+
+char *fru_prsnt_log_string[2 * MAX_NUM_FRUS] = {
+  // slot1, slot2, slot3, slot4
+ "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal",
+ "", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion",
+};
+
+static int
+read_device(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return err;
+  }
+
+  rc = fscanf(fp, "%d", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
 
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
 static gpio_pin_t *
@@ -189,6 +248,62 @@ populate_gpio_pins(uint8_t fru) {
   }
 }
 
+// GPIO SPB Action
+int gpio_spb_action(int gpio_num, int n_pin_val)
+{
+    char cmd[80];
+
+    switch(gpio_num)
+    {
+        case GPIO_FAN_LATCH_DETECT:
+            if (n_pin_val == gpio_spb[gpio_num].ass_val) {
+                syslog(LOG_CRIT, "SLED is pulled out");
+                memset(cmd, 0, sizeof(cmd));
+                sprintf(cmd, "sv stop fscd | usr/local/bin/fan-util --set 100");
+                system(cmd);
+            }
+            else if (n_pin_val != gpio_spb[gpio_num].ass_val) {
+                syslog(LOG_CRIT, "SLED is pulled in");
+                memset(cmd, 0, sizeof(cmd));
+                sprintf(cmd, "sv start fscd");
+                system(cmd);
+            }
+            break;
+        case GPIO_SLOT1_EJECTOR_LATCH_DETECT_N:
+            if (n_pin_val == gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "ASSERT : SLOT1 12V is off");
+            }
+            else if (n_pin_val != gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "DEASSERT : SLOT1 12V is on");
+            }
+            break;
+        case GPIO_SLOT2_EJECTOR_LATCH_DETECT_N:
+            if (n_pin_val == gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "ASSERT : SLOT2 12V is off");
+            }
+            else if (n_pin_val != gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "DEASSERT : SLOT2 12V is on");
+            }
+            break;
+        case GPIO_SLOT3_EJECTOR_LATCH_DETECT_N:
+            if (n_pin_val == gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "ASSERT : SLOT3 12V is off");
+            }
+            else if (n_pin_val != gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "DEASSERT : SLOT3 12V is on");
+            }
+            break;
+        case GPIO_SLOT4_EJECTOR_LATCH_DETECT_N:
+            if (n_pin_val == gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "ASSERT : SLOT4 12V is off");
+            }
+            else if (n_pin_val != gpio_spb[gpio_num].ass_val) {
+                //syslog(LOG_CRIT, "DEASSERT : SLOT4 12V is on");
+            }
+            break;
+    }
+}
+
 /* Wrapper function to configure and get all gpio info */
 static void
 init_gpio_pins() {
@@ -196,6 +311,106 @@ init_gpio_pins() {
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
         populate_gpio_pins(fru);
+  }
+
+}
+
+/* Detect SPB GPIO status */
+static void
+monitor_spb_gpio_sts() {
+  int slot_id, gpio_num;
+  int ret;
+  int i;
+  uint8_t val;
+  uint8_t n_pin_val;
+  char str[256];
+  char cmd[80];
+  char vpath[64] = {0};
+
+  static int o_pin_val_slot[MAX_NUM_SLOTS + 1] = {0};
+  static int o_pin_val_spb[MAX_SPB_GPIO_NUM] = {0};
+  static bool init_spb_flag = false;
+  static bool init_slot_flag = false;
+
+  // Init SPB GPIO
+  if (!init_spb_flag) {
+
+        for(i=0; i < sizeof(gpio_spb_init)/sizeof(gpio_spb_init_t); i++) {
+            // flag
+            gpio_spb[gpio_spb_init[i].num].flag = gpio_spb_init[i].flag;
+
+            // status
+            sprintf(vpath, GPIO_VAL, gpio_spb_init[i].num);
+            read_device(vpath, &val);
+            gpio_spb[gpio_spb_init[i].num].status = val;
+            o_pin_val_spb[gpio_spb_init[i].num] = val;
+
+            // ass_val
+            gpio_spb[gpio_spb_init[i].num].ass_val = gpio_spb_init[i].ass_val;
+
+            // name
+            strcpy(gpio_spb[gpio_spb_init[i].num].name, gpio_spb_init[i].name);
+        }
+        init_spb_flag = true;
+  }
+
+  // SPB GPIO detect
+  // Currently just only detect GPIO_FAN_LATCH_DETECT
+  for(gpio_num=0; gpio_num < sizeof(gpio_spb)/sizeof(gpio_spb_t); gpio_num++) {
+
+	if(!gpio_spb[gpio_num].flag)
+            continue;
+
+	sprintf(vpath, GPIO_VAL, gpio_num);
+	read_device(vpath, &n_pin_val);
+	gpio_spb[gpio_num].status = n_pin_val;
+
+	// Currently only detect GPIO FAN_LATCH_DETECT
+	if (o_pin_val_spb[gpio_num]^n_pin_val)
+	    gpio_spb_action(gpio_num, n_pin_val);
+
+        o_pin_val_spb[gpio_num] = n_pin_val;
+  }
+
+  // Detect SLOT Removal/Insertion
+  // It`s with 2 PRSNT PIN for SLOT present, so we could use pal_is_fru_prsnt directly.
+  for(slot_id = FRU_SLOT1; slot_id < (FRU_SLOT1 + MAX_NUM_SLOTS); slot_id++) {
+    ret = pal_is_fru_prsnt(slot_id, &n_pin_val);
+    if (ret < 0)
+        printf("%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
+
+    if (!init_slot_flag) { // Init old pin value, just init this one time
+        o_pin_val_slot[slot_id] = n_pin_val;
+        init_slot_flag = true;
+        continue;
+    }
+
+    // HOT SERVER event would be detected when SLED is pulled out
+    if(gpio_spb[GPIO_FAN_LATCH_DETECT].status) {
+
+        if (o_pin_val_slot[slot_id]^n_pin_val) {
+
+            if (n_pin_val) { // SLOT Removal
+                if (gpio_spb[GPIO_SLOT1_EJECTOR_LATCH_DETECT_N + (slot_id-1)].status) {
+                    // Log SLOT Removal
+      	            sprintf(str, "%s without 12V off, Action : 12V off to slot%u", fru_prsnt_log_string[slot_id],slot_id);
+                    syslog(LOG_CRIT, str);
+
+                    // Active 12V off to protect server/device board
+                    sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-off", slot_id);
+                    system(cmd);
+                }
+                else {
+                    syslog(LOG_CRIT, fru_prsnt_log_string[slot_id]);
+                }
+            }
+            else {          // SLOT Insertion
+                syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + slot_id]);
+            }
+
+            o_pin_val_slot[slot_id] = n_pin_val;
+        }
+    }
   }
 }
 
@@ -253,6 +468,10 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
   /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
   while(1) {
+
+    // Detect SPB GPIO status
+    monitor_spb_gpio_sts();
+
     for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
       if (!(GETBIT(fru_flag, fru))) {
         usleep(DELAY_GPIOD_READ);

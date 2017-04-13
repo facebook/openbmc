@@ -2578,7 +2578,7 @@ pal_PBO(void) {
   if (write_device(vpath, "0")) {
     return -1;
   }
-  sleep(5);
+  sleep(6);
   if (write_device(vpath, "1")) {
     return -1;
   }

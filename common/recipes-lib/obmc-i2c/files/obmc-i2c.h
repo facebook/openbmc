@@ -21,6 +21,12 @@
  */
 #ifndef _OPENBMC_I2C_DEV_H_
 #define _OPENBMC_I2C_DEV_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <sys/ioctl.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
@@ -215,5 +221,9 @@ static inline __s32 i2c_smbus_block_process_call(int file, __u8 command,
 }
 
 #undef _I2C_MIN
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -2913,6 +2913,39 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
       return 0;
 }
 
+uint8_t
+pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {        
+	
+	uint8_t completion_code;
+	char key[MAX_KEY_LEN] = {0};
+	sprintf(key, "slot%d_por_cfg", slot);
+	completion_code = CC_SUCCESS;   // Fill response with default values
+	unsigned char policy = *pwr_policy & 0x07;  // Power restore policy
+		
+	switch (policy)
+	{
+	  case 0:
+	    if (pal_set_key_value(key, "off") != 0)
+	      completion_code = CC_UNSPECIFIED_ERROR;
+	    break;
+	  case 1:
+	    if (pal_set_key_value(key, "lps") != 0)
+	      completion_code = CC_UNSPECIFIED_ERROR;
+	    break;
+	  case 2:
+	    if (pal_set_key_value(key, "on") != 0)
+	      completion_code = CC_UNSPECIFIED_ERROR;
+	    break;
+	  case 3:
+		// no change (just get present policy support)
+	    break;
+	  default:
+	      completion_code = CC_PARAM_OUT_OF_RANGE;
+	    break;
+	}
+	return completion_code;			
+}
+
 // To get the platform sku
 int pal_get_sku(void){
   int pal_sku = 0;

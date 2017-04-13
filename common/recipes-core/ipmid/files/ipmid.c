@@ -2435,7 +2435,7 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_1S_POST_BUF:
       // Skip the first 3 bytes of IANA ID and one byte of length field
-      for (i = SIZE_IANA_ID+1; i <= req->data[3]; i++) {
+      for (i = SIZE_IANA_ID+1; i <= req->data[SIZE_IANA_ID]+SIZE_IANA_ID; i++) {
         pal_post_handle(req->payload_id, req->data[i]);
       }
 

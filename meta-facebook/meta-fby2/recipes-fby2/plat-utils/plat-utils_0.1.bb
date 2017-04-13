@@ -29,6 +29,7 @@ SRC_URI = "file://ast-functions \
            file://post_led.sh \
            file://reset_usb.sh \
            file://setup-gpio.sh \
+           file://setup-sysconfig.sh \
            file://setup_rov.sh \
            file://mdio.py \
            file://bcm5396.py \
@@ -82,6 +83,8 @@ do_install() {
   update-rc.d -r ${D} rc.early start 04 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  install -m 755 setup-sysconfig.sh ${D}${sysconfdir}/init.d/setup-sysconfig.sh
+  update-rc.d -r ${D} setup-sysconfig.sh start 60 5 .
   # create VLAN intf automatically
   #install -d ${D}/${sysconfdir}/network/if-up.d
   #install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf

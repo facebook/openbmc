@@ -31,9 +31,9 @@ S = "${WORKDIR}"
 binfiles = "sensord \
            "
 
-CFLAGS += " -lsdr -lpal "
+CFLAGS += " -lsdr -lpal -lobmc-sensor "
 
-DEPENDS += " libpal libsdr "
+DEPENDS += " libpal libsdr libobmc-sensor "
 
 pkgdir = "sensor-mon"
 

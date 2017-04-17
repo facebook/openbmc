@@ -19,13 +19,12 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 LIC_FILES_CHKSUM = "file://fand.cpp;beginline=4;endline=16;md5=77b71fafe1f586d89f0450eb5585d656"
 
-SRC_URI += "file://i2c-dev.h \
-            file://setup-fan.sh \
+SRC_URI += "file://setup-fan.sh \
            "
 
 CXXFLAGS_prepend = "-DCONFIG_GALAXY100 "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS_append = " update-rc.d-native obmc-i2c"
 
 do_install_append() {
   install -d ${D}${sysconfdir}/init.d

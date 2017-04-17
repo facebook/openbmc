@@ -60,7 +60,7 @@
 #include "watchdog.h"
 #ifdef CONFIG_GALAXY100
 #include <fcntl.h>
-#include "i2c-dev.h"
+#include <openbmc/obmc-i2c.h>
 #endif
 
 /* Sensor definitions */

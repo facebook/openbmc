@@ -33,7 +33,6 @@ SRC_URI += "file://board-utils.sh \
            file://setup_switch.py \
            file://create_vlan_intf \
            file://setup_i2c.sh \
-           file://src \
            file://start_us_monitor.sh \
            file://us_monitor.sh \
           "
@@ -51,10 +50,6 @@ do_install_board() {
   olddir="/usr/local/fbpackages/utils"
   install -d ${D}${olddir}
   ln -s "/usr/local/bin/openbmc-utils.sh" ${D}${olddir}/ast-functions
-
-  # common lib and include files
-  install -d ${D}${includedir}/facebook
-  install -m 0644 src/include/i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h
 
   # init
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh

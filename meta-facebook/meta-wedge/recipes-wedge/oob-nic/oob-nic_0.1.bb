@@ -27,7 +27,7 @@ SRC_URI = "file://src \
 
 S = "${WORKDIR}/src"
 
-DEPENDS += "openbmc-utils liblog libwedge-eeprom"
+DEPENDS += "openbmc-utils liblog libwedge-eeprom obmc-i2c"
 
 RDEPENDS_${PN} += "libwedge-eeprom"
 

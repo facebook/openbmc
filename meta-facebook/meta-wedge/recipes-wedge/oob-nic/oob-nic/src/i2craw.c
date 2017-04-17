@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
-#include "facebook/i2c-dev.h"
+#include <openbmc/obmc-i2c.h>
 #include "openbmc/log.h"
 
 void usage(const char *prog) {

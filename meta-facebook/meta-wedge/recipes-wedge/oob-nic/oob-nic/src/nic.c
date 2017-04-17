@@ -26,10 +26,27 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "facebook/i2c-dev.h"
+#include <openbmc/obmc-i2c.h>
 #include "openbmc/log.h"
 
 #define ETHERTYPE_LLDP 0x88cc
+
+/* Addendum support for large data blocks */
+#define I2C_SMBUS_BLOCK_LARGE_MAX       240 /* Large data transfer */
+/* SMBus transaction types (size parameter in the above function) addendum
+ *  * support for large data (XXX Unused?) */
+#define I2C_SMBUS_BLOCK_LARGE_DATA      9
+
+#define _I2C_MIN(a, b) (((a) <= (b)) ? (a) : (b))
+
+/*
+* Data for Large SMBus Messages
+*/
+union i2c_smbus_large_data {
+ union i2c_smbus_data data;
+ __u8 block[I2C_SMBUS_BLOCK_LARGE_MAX + 2]; /* block[0] is used for length */
+                                            /* and one more for PEC */
+};
 
 struct oob_nic_t {
   int on_bus;
@@ -37,6 +54,36 @@ struct oob_nic_t {
   int on_file;                  /* the file descriptor */
   uint8_t on_mac[6];            /* the mac address assigned to this NIC */
 };
+
+static inline __s32 i2c_smbus_read_block_large_data(int file, __u8 command,
+                                                    __u8 *values)
+{
+  union i2c_smbus_large_data data;
+  if (i2c_smbus_access(file, I2C_SMBUS_READ, command,
+                       I2C_SMBUS_BLOCK_LARGE_DATA,
+                       (union i2c_smbus_data *)&data)) {
+    return -1;
+  } else {
+    /* the first byte is the length which is not copied */
+    memcpy(values, &data.block[1], _I2C_MIN(data.block[0], I2C_SMBUS_BLOCK_LARGE_MAX));
+    return data.block[0];
+  }
+}
+
+static inline __s32 i2c_smbus_write_block_large_data(int file, __u8 command,
+                                                     __u8 length,
+                                                     const __u8 *values)
+{
+  union i2c_smbus_large_data data;
+  if (length > I2C_SMBUS_BLOCK_LARGE_MAX) {
+    length = I2C_SMBUS_BLOCK_LARGE_MAX;
+  }
+  data.block[0] = length;
+  memcpy(&data.block[1], values, length);
+  return i2c_smbus_access(file, I2C_SMBUS_WRITE, command,
+                          I2C_SMBUS_BLOCK_LARGE_DATA,
+                          (union i2c_smbus_data *)&data);
+}
 
 oob_nic* oob_nic_open(int bus, uint8_t addr) {
   oob_nic *dev = NULL;

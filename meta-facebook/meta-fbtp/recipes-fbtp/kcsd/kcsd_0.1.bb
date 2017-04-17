@@ -13,7 +13,7 @@ SRC_URI = "file://Makefile \
           "
 
 S = "${WORKDIR}"
-DEPENDS += "libipmi"
+DEPENDS += "libipmi libgpio"
 
 binfiles = "kcsd"
 

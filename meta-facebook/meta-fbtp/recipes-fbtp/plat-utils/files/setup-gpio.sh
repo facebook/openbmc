@@ -219,7 +219,9 @@ gpio_set AA2 1
 # To use GPIOS1, SCU8C[1] must be 0
 devmem_clear_bit $(scu_addr 8C) 1
 
-gpio_set S1 0
+# Disable GPIO and enable it from
+# KCS
+gpio_set S1 1
 
 # BMC_RST_BTN_IN_N: GPIOS0 (144)
 # To use GPIOS0, SCU8C[0]

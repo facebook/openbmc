@@ -2,7 +2,7 @@
 all: kcsd
 
 kcsd: kcsd.o
-	$(CC) $(CFLAGS) -pthread -lrt -lipmi -std=gnu99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lrt -lipmi -lgpio -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

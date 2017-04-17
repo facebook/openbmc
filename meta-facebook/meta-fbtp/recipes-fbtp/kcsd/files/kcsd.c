@@ -59,6 +59,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <signal.h>
+#include <openbmc/gpio.h>
 #include "openbmc/ipmi.h"
 #include "openbmc/ipmb.h"
 
@@ -67,6 +68,19 @@ unsigned char res_buf[300];
 uint8_t debug = 0;
 int kcs_fd;
 
+#define FM_BMC_READY_N 145
+
+void set_bmc_ready(bool ready)
+{
+  gpio_st gpio;
+  gpio_open(&gpio, FM_BMC_READY_N);
+  /* Active low */
+  if (ready)
+    gpio_write(&gpio, GPIO_VALUE_LOW);
+  else
+    gpio_write(&gpio, GPIO_VALUE_HIGH);
+  gpio_close(&gpio);
+}
 
 void *kcs_thread(void) {
   struct timespec req;
@@ -75,6 +89,8 @@ void *kcs_thread(void) {
   unsigned char req_len;
   unsigned short res_len;
   int i = 0;
+
+  set_bmc_ready(true);
 
   // Setup wait time
   req.tv_sec = 0;

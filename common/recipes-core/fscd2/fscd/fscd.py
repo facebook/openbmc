@@ -175,11 +175,13 @@ class Fscd(object):
                 else:
                     Logger.crit("Fan %d dead, %d RPM" % (dead_fan_num,
                                 speeds[dead_fan_num]))
+                Logger.usbdbg("fan%d fail" % (dead_fan_num))
         for fan in recovered_fans:
             if self.fanpower:
                 Logger.warn("Fan %d has recovered" % (fan,))
             else:
                 Logger.crit("Fan %d has recovered" % (fan,))
+            Logger.usbdbg("fan%d recovered" % (fan))
             self.fsc_fan_action(fan, action='recover')
         return dead_fans
 

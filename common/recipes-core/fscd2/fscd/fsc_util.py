@@ -56,5 +56,10 @@ class Logger(object):
         syslog.syslog(syslog.LOG_CRIT, msg)
 
     @staticmethod
+    def usbdbg(msg):
+        print("USBDBG: " + msg)
+        syslog.syslog((syslog.LOG_LOCAL0 | syslog.LOG_ERR), msg)
+
+    @staticmethod
     def start(name):
         syslog.openlog(name)

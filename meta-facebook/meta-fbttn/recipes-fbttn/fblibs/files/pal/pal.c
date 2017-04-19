@@ -3671,8 +3671,44 @@ pal_bmc_err_disable() {
   return 0;
 }
 
+uint8_t
+pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
+
+  uint8_t completion_code;
+  completion_code = CC_SUCCESS;  // Fill response with default values
+  unsigned char policy = *pwr_policy & 0x07;  // Power restore policy
+
+  switch (policy)
+  {
+      case 0:
+        if (pal_set_key_value("server_por_cfg", "off") != 0)
+          completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      case 1:
+        if (pal_set_key_value("server_por_cfg", "lps") != 0)
+          completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      case 2:
+        if (pal_set_key_value("server_por_cfg", "on") != 0)
+          completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      case 3:
+        // no change (just get present policy support)
+        break;
+      default:
+        completion_code = CC_PARAM_OUT_OF_RANGE;
+        break;
+  }
+  return completion_code;
+}
+
 int
 pal_is_fw_update_ongoing(uint8_t fru) {
 
+  return 0;
+}
+
+int
+pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   return 0;
 }

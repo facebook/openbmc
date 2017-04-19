@@ -282,7 +282,9 @@ int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 int pal_nic_otp(int fru, int snr_num, float thresh_val);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
+uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_is_fw_update_ongoing(uint8_t fru);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 
 #ifdef __cplusplus
 } // extern "C"

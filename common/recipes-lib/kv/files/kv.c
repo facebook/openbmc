@@ -124,7 +124,7 @@ kv_get(char *key, char *value) {
   }
 
   rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
-  if (rc <= 0) {
+  if (rc < 0 || ferror(fp)) {
 #ifdef DEBUG
     syslog(LOG_INFO, "kv_get: failed to read %s", kpath);
 #endif

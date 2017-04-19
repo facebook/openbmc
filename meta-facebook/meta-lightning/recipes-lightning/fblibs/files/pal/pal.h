@@ -281,7 +281,9 @@ void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
+uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_is_fw_update_ongoing(uint8_t fru);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 
 
 #ifdef __cplusplus

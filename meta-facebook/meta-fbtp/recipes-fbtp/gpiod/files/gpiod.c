@@ -203,16 +203,31 @@ static void gpio_event_handle_power(void *p)
   if (status != SERVER_POWER_ON) {
     return;
   }
+
+  //Additional filter condition
+  if (gp->gs.gs_gpio == gpio_num("GPIOS0") ){ //FM_THROTTLE_N filter for ME limitation
+    if (power_on_sec < 5)
+      return;
+  }
+  if (gp->gs.gs_gpio == gpio_num("GPIOD6") || //FM_CPU_ERR0_LVT3_BMC_N
+      gp->gs.gs_gpio == gpio_num("GPIOD7") || //FM_CPU_ERR1_LVT3_BMC_N
+      gp->gs.gs_gpio == gpio_num("GPIOG0") || //FM_CPU_ERR2_LVT3_N
+      gp->gs.gs_gpio == gpio_num("GPION3") || //FM_CPU_MSMI_LVT3_N
+      gp->gs.gs_gpio == gpio_num("GPIOG1") || //FM_CPU_CATERR_LVT3_N
+      gp->gs.gs_gpio == gpio_num("GPIOE6") || //FM_CPU0_PROCHOT_LVT3_BMC_N
+      gp->gs.gs_gpio == gpio_num("GPIOE7") ){ //FM_CPU1_PROCHOT_LVT3_BMC_N
+    if (power_on_sec < 3)
+      return;
+  }
+
   //Special handle for some GPIO pin
   if (gp->gs.gs_gpio == gpio_num("GPIOG1") ){ //FM_CPU_CATERR_LVT3_N
     CATERR_irq++;
     return;
-  } if (gp->gs.gs_gpio == gpio_num("GPION3") ){ //FM_CPU_MSMI_LVT3_N
+  }
+  if (gp->gs.gs_gpio == gpio_num("GPION3") ){ //FM_CPU_MSMI_LVT3_N
     MSMI_irq++;
     return;
-  } if (gp->gs.gs_gpio == gpio_num("GPIOS0") ){ //FM_THROTTLE_N filter for ME limitation
-    if (power_on_sec < 5)
-      return;
   }
 
   syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);

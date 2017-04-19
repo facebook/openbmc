@@ -376,7 +376,7 @@ sel_get_entry(int node, int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
       index = SEL_INDEX_MAX;
     }
   } else {
-    index = read_rec_id - 1;
+    index = read_rec_id;
   }
 
   // If the log is empty return error
@@ -410,7 +410,7 @@ sel_get_entry(int node, int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
   memcpy(msg->msg, g_sel_data[node][index].msg, sizeof(sel_msg_t));
 
   // Return the next record ID in the log
-  *next_rec_id = read_rec_id++;
+  *next_rec_id = ++read_rec_id;
   if (*next_rec_id > SEL_INDEX_MAX) {
     *next_rec_id = SEL_INDEX_MIN;
   }

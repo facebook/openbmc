@@ -88,7 +88,6 @@ def pal_fan_chassis_intrusion_handle():
     self_tray_pull_out = c_uint(1)
     self_tray_pull_out_point = pointer(self_tray_pull_out)
     ret = lpal_hndl.pal_self_tray_location(self_tray_pull_out_point)
-    Logger.warn("In pal_fan_chassis_intrusion_handle ret=%d" % int(ret))
     if ret:
         return None
     else:

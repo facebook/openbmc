@@ -213,6 +213,14 @@ void pal_add_cri_sel(char *str);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
+int pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc);
+int pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length);
+int pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
+int pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
+int pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
+int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
+int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
+int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 
 #ifdef __cplusplus
 } // extern "C"

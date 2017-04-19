@@ -206,6 +206,7 @@ enum{
 };
 
 enum{
+  SCC_Drawer = 0x0, //discrete for Drawer Pull Out and Push In
   SCC_SENSOR_EXPANDER_TEMP = 0x60,
   SCC_SENSOR_IOC_TEMP = 0x61,
   SCC_SENSOR_HSC_POWER = 0x62,

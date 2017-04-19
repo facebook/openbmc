@@ -148,6 +148,18 @@ enum {
   PWR_THRESH_EVT = 0x3B,
 };
 
+//Event/Reading Type Code Ranges
+enum {
+  GENERIC = 0x5,
+  SENSOR_SPECIFIC = 0x6F,
+};
+
+//Generic Event/Reading Type Codes
+enum {
+  DIGITAL_DISCRETE = 0x5,
+};
+
+
 enum {
   BIC_MODE_NORMAL = 0x01,
   BIC_MODE_UPDATE = 0x0F,

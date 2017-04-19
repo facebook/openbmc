@@ -1449,6 +1449,9 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
     case FRU_SCC:
       switch(sensor_num) {
+        case SCC_Drawer:
+          sprintf(name, "Drawer");
+          break;
         case SCC_SENSOR_EXPANDER_TEMP:
           sprintf(name, "EXPANDER_TEMP");
           break;

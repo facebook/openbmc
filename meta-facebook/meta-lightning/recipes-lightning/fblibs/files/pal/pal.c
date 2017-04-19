@@ -549,7 +549,7 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   // Add retry to avoid N/A which caused by open cache file collision
   while (retry < MAX_RETRY) {
     ret = edb_cache_get(key, str);
-    
+
     if (!ret)
       break;
     retry++;
@@ -618,7 +618,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   // Add retry to avoid N/A which caused by sesnor reading collision
   while (retry < MAX_RETRY) {
     ret = lightning_sensor_read(fru, sensor_num, value);
-    
+
     if (!ret)
       break;
     retry++;
@@ -2014,3 +2014,8 @@ pal_bmc_err_disable() {
   return 0;
 }
 
+int
+pal_is_fw_update_ongoing(uint8_t fru) {
+
+  return 0;
+}

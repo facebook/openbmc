@@ -71,7 +71,7 @@ extern "C" {
 
 #define I2C_BUS_MAX_NUMBER 14
 
-#define BMC_HEALTH 4      // for bmc_health key 
+#define BMC_HEALTH 4      // for bmc_health key
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
@@ -281,10 +281,11 @@ void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
+int pal_is_fw_update_ongoing(uint8_t fru);
+
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
 #endif /* __PAL_H__ */
-

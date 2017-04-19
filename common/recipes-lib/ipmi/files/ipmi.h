@@ -56,13 +56,10 @@ extern "C" {
 #define SIZE_OS_VER 17
 #define SIZE_BMC_URL  17
 #define SIZE_OS_HV_URL  17
-#ifdef CONFIG_FBTTN
-  #define SIZE_BIOS_CURRENT_BOOT_LIST  250
-  #define SIZE_BIOS_FIXED_BOOT_DEVICE 1
-  #define SIZE_BIOS_RESTORES_DEFAULT_SETTING 1
-  #define SIZE_LAST_BOOT_TIME 4
-#endif
-
+#define SIZE_BIOS_CURRENT_BOOT_LIST  250
+#define SIZE_BIOS_FIXED_BOOT_DEVICE 1
+#define SIZE_BIOS_RESTORES_DEFAULT_SETTING 1
+#define SIZE_LAST_BOOT_TIME 4
 
 #define SIZE_SEL_REC 16
 
@@ -275,12 +272,11 @@ typedef struct
   unsigned char present_os_ver[SIZE_OS_VER];
   unsigned char bmc_url[SIZE_BMC_URL];
   unsigned char os_hv_url[SIZE_OS_HV_URL];
-  #ifdef CONFIG_FBTTN
-    unsigned char bios_current_boot_list[SIZE_BIOS_CURRENT_BOOT_LIST];
-    unsigned char bios_fixed_boot_device[SIZE_BIOS_FIXED_BOOT_DEVICE];
-    unsigned char bios_restores_default_setting[SIZE_BIOS_RESTORES_DEFAULT_SETTING];
-    unsigned char last_boot_time[SIZE_LAST_BOOT_TIME];
-  #endif
+  unsigned char bios_current_boot_list[SIZE_BIOS_CURRENT_BOOT_LIST];
+  unsigned char bios_fixed_boot_device[SIZE_BIOS_FIXED_BOOT_DEVICE];
+  unsigned char bios_restores_default_setting[SIZE_BIOS_RESTORES_DEFAULT_SETTING];
+  unsigned char last_boot_time[SIZE_LAST_BOOT_TIME];      
+
 } sys_info_param_t;
 
 // Structure for Sensor Reading (IPMI/Section 35.14)
@@ -537,12 +533,10 @@ enum
   SYS_INFO_PARAM_PRESENT_OS_VER,
   SYS_INFO_PARAM_BMC_URL,
   SYS_INFO_PARAM_OS_HV_URL,
-  #ifdef CONFIG_FBTTN
-    SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST = 0xC1,
-    SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE = 0xC2,
-    SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING = 0xC3,
-    SYS_INFO_PARAM_LAST_BOOT_TIME = 0xC4,
-  #endif
+  SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST = 0xC1,
+  SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE = 0xC2,
+  SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING = 0xC3,
+  SYS_INFO_PARAM_LAST_BOOT_TIME = 0xC4,
 };
 
 // Bridge-IC interface on which this command initiated

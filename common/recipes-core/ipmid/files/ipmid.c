@@ -726,32 +726,28 @@ app_set_sys_info_params (unsigned char *request, unsigned char req_len,
     case SYS_INFO_PARAM_OS_HV_URL:
       memcpy(g_sys_info_params.os_hv_url, &req->data[1], SIZE_OS_HV_URL);
       break;
-
-    #ifdef CONFIG_FBTTN
-      case SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST:
-        memcpy(g_sys_info_params.bios_current_boot_list, &req->data[1], req_len-4); // boot list length = req_len-4 (payload_id, cmd, netfn, param)
-        pal_set_bios_current_boot_list(req->payload_id, g_sys_info_params.bios_current_boot_list, req_len-4, &res->cc);
+    case SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST:
+      memcpy(g_sys_info_params.bios_current_boot_list, &req->data[1], req_len-4); // boot list length = req_len-4 (payload_id, cmd, netfn, param)
+      pal_set_bios_current_boot_list(req->payload_id, g_sys_info_params.bios_current_boot_list, req_len-4, &res->cc);
+      break;
+    case SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE:
+      if(length_check(SIZE_BIOS_FIXED_BOOT_DEVICE+1, req_len, response, res_len))
         break;
-      case SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE:
-        if(length_check(SIZE_BIOS_FIXED_BOOT_DEVICE+1, req_len, response, res_len))
-          break;
-        memcpy(g_sys_info_params.bios_fixed_boot_device, &req->data[1], SIZE_BIOS_FIXED_BOOT_DEVICE);
-        pal_set_bios_fixed_boot_device(req->payload_id, g_sys_info_params.bios_fixed_boot_device);
+      memcpy(g_sys_info_params.bios_fixed_boot_device, &req->data[1], SIZE_BIOS_FIXED_BOOT_DEVICE);
+      pal_set_bios_fixed_boot_device(req->payload_id, g_sys_info_params.bios_fixed_boot_device);
+      break;
+    case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
+      if(length_check(SIZE_BIOS_RESTORES_DEFAULT_SETTING+1, req_len, response, res_len))
         break;
-      case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
-        if(length_check(SIZE_BIOS_RESTORES_DEFAULT_SETTING+1, req_len, response, res_len))
-          break;
-        memcpy(g_sys_info_params.bios_restores_default_setting, &req->data[1], SIZE_BIOS_RESTORES_DEFAULT_SETTING);
-        pal_set_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting);
+      memcpy(g_sys_info_params.bios_restores_default_setting, &req->data[1], SIZE_BIOS_RESTORES_DEFAULT_SETTING); 
+      pal_set_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting);
+      break;
+    case SYS_INFO_PARAM_LAST_BOOT_TIME:
+      if(length_check(SIZE_LAST_BOOT_TIME+1, req_len, response, res_len))
         break;
-      case SYS_INFO_PARAM_LAST_BOOT_TIME:
-        if(length_check(SIZE_LAST_BOOT_TIME+1, req_len, response, res_len))
-          break;
-        memcpy(g_sys_info_params.last_boot_time, &req->data[1], SIZE_LAST_BOOT_TIME);
-        pal_set_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time);
-        break;
-    #endif
-
+      memcpy(g_sys_info_params.last_boot_time, &req->data[1], SIZE_LAST_BOOT_TIME); 
+      pal_set_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time);
+      break;
     default:
       res->cc = CC_INVALID_PARAM;
       break;
@@ -810,46 +806,42 @@ app_get_sys_info_params (unsigned char *request, unsigned char req_len,
         memcpy(data, g_sys_info_params.os_hv_url, SIZE_OS_HV_URL);
         data += SIZE_OS_HV_URL;
         break;
-
-      #ifdef CONFIG_FBTTN
-        case SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST:
-          if(pal_get_bios_current_boot_list(req->payload_id, g_sys_info_params.bios_current_boot_list, res_len))
-          {
-            res->cc = CC_UNSPECIFIED_ERROR;
-            break;
-          }
-          memcpy(data, g_sys_info_params.bios_current_boot_list, *res_len);
-          data += *res_len;
+      case SYS_INFO_PARAM_BIOS_CURRENT_BOOT_LIST:
+        if(pal_get_bios_current_boot_list(req->payload_id, g_sys_info_params.bios_current_boot_list, res_len))
+        {
+          res->cc = CC_UNSPECIFIED_ERROR;
           break;
-        case SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE:
-          if(pal_get_bios_fixed_boot_device(req->payload_id, g_sys_info_params.bios_fixed_boot_device))
-          {
-            res->cc = CC_UNSPECIFIED_ERROR;
-            break;
-          }
-          memcpy(data, g_sys_info_params.bios_fixed_boot_device, SIZE_BIOS_FIXED_BOOT_DEVICE);
-          data += SIZE_BIOS_FIXED_BOOT_DEVICE;
+        }
+        memcpy(data, g_sys_info_params.bios_current_boot_list, *res_len);
+        data += *res_len;
+        break;
+      case SYS_INFO_PARAM_BIOS_FIXED_BOOT_DEVICE:
+        if(pal_get_bios_fixed_boot_device(req->payload_id, g_sys_info_params.bios_fixed_boot_device))
+        {
+          res->cc = CC_UNSPECIFIED_ERROR;
           break;
-        case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
-          if(pal_get_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting))
-          {
-            res->cc = CC_UNSPECIFIED_ERROR;
-            break;
-          }
-          memcpy(data, g_sys_info_params.bios_restores_default_setting, SIZE_BIOS_RESTORES_DEFAULT_SETTING);
-          data += SIZE_BIOS_RESTORES_DEFAULT_SETTING;
+        }
+        memcpy(data, g_sys_info_params.bios_fixed_boot_device, SIZE_BIOS_FIXED_BOOT_DEVICE);
+        data += SIZE_BIOS_FIXED_BOOT_DEVICE;
+        break;
+      case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
+        if(pal_get_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting))
+        {
+          res->cc = CC_UNSPECIFIED_ERROR;
           break;
-        case SYS_INFO_PARAM_LAST_BOOT_TIME:
-          if(pal_get_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time))
-          {
-            res->cc = CC_UNSPECIFIED_ERROR;
-            break;
-          }
-          memcpy(data, g_sys_info_params.last_boot_time, SIZE_LAST_BOOT_TIME);
-          data += SIZE_LAST_BOOT_TIME;
+        }
+        memcpy(data, g_sys_info_params.bios_restores_default_setting, SIZE_BIOS_RESTORES_DEFAULT_SETTING);
+        data += SIZE_BIOS_RESTORES_DEFAULT_SETTING;
+        break;
+      case SYS_INFO_PARAM_LAST_BOOT_TIME:
+        if(pal_get_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time))
+        {
+          res->cc = CC_UNSPECIFIED_ERROR;
           break;
-      #endif
-
+        }
+        memcpy(data, g_sys_info_params.last_boot_time, SIZE_LAST_BOOT_TIME);
+        data += SIZE_LAST_BOOT_TIME;
+        break;
       default:
         res->cc = CC_INVALID_PARAM;
         break;

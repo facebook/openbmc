@@ -58,9 +58,6 @@ do_install_board() {
     install -m 0755 version_dump ${D}${bindir}/version_dump
     install -m 0755 qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
     install -m 0755 ceutil.py ${D}${localbindir}/ceutil
-    # common lib and include files
-    install -d ${D}${includedir}/facebook
-    install -m 0644 src/include/i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h
 
     # init
     install -d ${D}${sysconfdir}/init.d

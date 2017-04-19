@@ -45,10 +45,6 @@ do_install_board() {
     install -d ${D}${olddir}
     ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
 
-    # common lib and include files
-    install -d ${D}${includedir}/facebook
-    install -m 0644 src/include/i2c-dev.h ${D}${includedir}/facebook/i2c-dev.h
-
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d

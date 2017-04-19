@@ -452,6 +452,7 @@ int pal_update_MCU(char *path);
 int pal_update_MCU_bl(char *path);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
+int pal_is_fw_update_ongoing(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -7320,3 +7320,11 @@ pal_bmc_err_enable() {
   // dummy function
   return 0;
 }
+
+
+
+int
+pal_is_fw_update_ongoing(uint8_t fru) {
+
+  return 0;
+}

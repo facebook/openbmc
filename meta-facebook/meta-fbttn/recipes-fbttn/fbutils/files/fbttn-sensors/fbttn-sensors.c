@@ -147,12 +147,6 @@ main(int argc, char **argv) {
   }
 
   // DPB sensors
-  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN0_FRONT, &value)) {
-    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN0_FRONT\n");
-  } else {
-    printf("DPB_SENSOR_FAN0_FRONT: %d rpm\n", value);
-  }
-
   if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN1_FRONT, &value)) {
     printf("fbttn_sensor_read failed: DPB_SENSOR_FAN1_FRONT\n");
   } else {
@@ -171,10 +165,10 @@ main(int argc, char **argv) {
     printf("DPB_SENSOR_FAN3_FRONT: %d rpm\n", value);
   }
 
-  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN0_REAR, &value)) {
-    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN0_REAR\n");
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN4_FRONT, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN4_FRONT\n");
   } else {
-    printf("DPB_SENSOR_FAN0_REAR: %d rpm\n", value);
+    printf("DPB_SENSOR_FAN4_FRONT: %d rpm\n", value);
   }
 
   if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN1_REAR, &value)) {
@@ -193,6 +187,12 @@ main(int argc, char **argv) {
     printf("fbttn_sensor_read failed: DPB_SENSOR_FAN3_REAR\n");
   } else {
     printf("DPB_SENSOR_FAN3_REAR: %d rpm\n", value);
+  }
+
+  if (fbttn_sensor_read(slot_id, DPB_SENSOR_FAN4_REAR, &value)) {
+    printf("fbttn_sensor_read failed: DPB_SENSOR_FAN4_REAR\n");
+  } else {
+    printf("DPB_SENSOR_FAN4_REAR: %d rpm\n", value);
   }
 
   if (fbttn_sensor_read(slot_id, DPB_SENSOR_HSC_POWER, &fvalue)) {

@@ -2288,7 +2288,7 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
 int
 pal_get_fan_name(uint8_t num, char *name) {
 // Redirect fan to sensor
-  return pal_get_sensor_name(FRU_DPB, DPB_SENSOR_FAN0_FRONT + num, name);
+  return pal_get_sensor_name(FRU_DPB, DPB_SENSOR_FAN1_FRONT + num, name);
 }
 
 static int
@@ -2374,7 +2374,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   int ret;
   float value;
   // Redirect fan to sensor
-  ret = pal_sensor_read(FRU_DPB, DPB_SENSOR_FAN0_FRONT + fan , &value);
+  ret = pal_sensor_read(FRU_DPB, DPB_SENSOR_FAN1_FRONT + fan , &value);
 
   if (ret == 0)
     *rpm = (int) value;
@@ -2862,7 +2862,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     if( strcmp(units,"C") == 0 ) {
       value = rbuf[5*i+2];
     }
-    else if( rbuf[5*i+1] >= DPB_SENSOR_FAN0_FRONT && rbuf[5*i+1] <= DPB_SENSOR_FAN3_REAR ) {
+    else if( rbuf[5*i+1] >= DPB_SENSOR_FAN1_FRONT && rbuf[5*i+1] <= DPB_SENSOR_FAN4_REAR ) {
       value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
       value = value * 10;
     }
@@ -2881,7 +2881,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     //Ignore FAN stauts
     //For EVT Expander workaround
     //If Expander can handle fan's status; This should be removed.
-    if( !(rbuf[5*i+1] >= DPB_SENSOR_FAN0_FRONT && rbuf[5*i+1] <= DPB_SENSOR_FAN3_REAR) )
+    if( !(rbuf[5*i+1] >= DPB_SENSOR_FAN1_FRONT && rbuf[5*i+1] <= DPB_SENSOR_FAN4_REAR) )
       if(rbuf[5*i+4] != 0){
       sprintf(str, "NA");
     }

@@ -208,14 +208,14 @@ const uint8_t dpb_sensor_list[] = {
   DPB_SENSOR_12V_CURR_CLIP,
   DPB_SENSOR_A_TEMP,
   DPB_SENSOR_B_TEMP,
-  DPB_SENSOR_FAN0_FRONT,
-  DPB_SENSOR_FAN0_REAR,
   DPB_SENSOR_FAN1_FRONT,
   DPB_SENSOR_FAN1_REAR,
   DPB_SENSOR_FAN2_FRONT,
   DPB_SENSOR_FAN2_REAR,
   DPB_SENSOR_FAN3_FRONT,
   DPB_SENSOR_FAN3_REAR,
+  DPB_SENSOR_FAN4_FRONT,
+  DPB_SENSOR_FAN4_REAR,
   DPB_SENSOR_HSC_POWER,
   DPB_SENSOR_HSC_VOLT,
   DPB_SENSOR_HSC_CURR,
@@ -410,10 +410,6 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_12V_CURR_CLIP,
       150, 0, 0, 0, 0, 0, 0, 0);
   //DPB FAN
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN0_FRONT,
-      0, 0, 0, 400, 0, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN0_REAR,
-      0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_FRONT,
       0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_REAR,
@@ -425,6 +421,10 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_FRONT,
       0, 0, 0, 400, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_REAR,
+      0, 0, 0, 400, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_FRONT,
+      0, 0, 0, 400, 0, 0, 0, 0);
+  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_REAR,
       0, 0, 0, 400, 0, 0, 0, 0);
   //DPB HSC
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_HSC_POWER,
@@ -1125,9 +1125,6 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
       }
 
       switch(sensor_num) {
-        case DPB_SENSOR_FAN0_FRONT:
-          sprintf(units, "RPM");
-          break;
         case DPB_SENSOR_FAN1_FRONT:
           sprintf(units, "RPM");
           break;
@@ -1137,7 +1134,7 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case DPB_SENSOR_FAN3_FRONT:
           sprintf(units, "RPM");
           break;
-        case DPB_SENSOR_FAN0_REAR:
+        case DPB_SENSOR_FAN4_FRONT:
           sprintf(units, "RPM");
           break;
         case DPB_SENSOR_FAN1_REAR:
@@ -1147,6 +1144,9 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           sprintf(units, "RPM");
           break;
         case DPB_SENSOR_FAN3_REAR:
+          sprintf(units, "RPM");
+          break;
+        case DPB_SENSOR_FAN4_REAR:
           sprintf(units, "RPM");
           break;
         case DPB_SENSOR_HSC_POWER:
@@ -1381,9 +1381,6 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       }
 
       switch(sensor_num) {
-        case DPB_SENSOR_FAN0_FRONT:
-          sprintf(name, "FAN0_FRONT");
-          break;
         case DPB_SENSOR_FAN1_FRONT:
           sprintf(name, "FAN1_FRONT");
           break;
@@ -1393,8 +1390,8 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case DPB_SENSOR_FAN3_FRONT:
           sprintf(name, "FAN3_FRONT");
           break;
-        case DPB_SENSOR_FAN0_REAR:
-          sprintf(name, "FAN0_REAR");
+        case DPB_SENSOR_FAN4_FRONT:
+          sprintf(name, "FAN4_FRONT");
           break;
         case DPB_SENSOR_FAN1_REAR:
           sprintf(name, "FAN1_REAR");
@@ -1404,6 +1401,9 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case DPB_SENSOR_FAN3_REAR:
           sprintf(name, "FAN3_REAR");
+          break;
+        case DPB_SENSOR_FAN4_REAR:
+          sprintf(name, "FAN4_REAR");
           break;
         case DPB_SENSOR_HSC_POWER:
           sprintf(name, "DPB_HSC_POWER");
@@ -1595,14 +1595,14 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
     // TODO: Add read functions for every DPB sensors.
     case FRU_DPB:
       switch(sensor_num) {
-        case DPB_SENSOR_FAN0_FRONT:
         case DPB_SENSOR_FAN1_FRONT:
         case DPB_SENSOR_FAN2_FRONT:
         case DPB_SENSOR_FAN3_FRONT:
-        case DPB_SENSOR_FAN0_REAR:
+        case DPB_SENSOR_FAN4_FRONT:
         case DPB_SENSOR_FAN1_REAR:
         case DPB_SENSOR_FAN2_REAR:
         case DPB_SENSOR_FAN3_REAR:
+        case DPB_SENSOR_FAN4_REAR:
           *(float *) value = 0;
         return 0;
         case DPB_SENSOR_HSC_POWER:

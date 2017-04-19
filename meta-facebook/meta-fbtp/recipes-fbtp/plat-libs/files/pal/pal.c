@@ -5672,7 +5672,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   ret = pal_get_key_value(key, cvalue);
   if (ret) {
-    syslog(LOG_INFO, "pal_get_fru_health(%s): getting value for %s failed\n", fru, key);
+    syslog(LOG_INFO, "pal_get_fru_health(%d): getting value for %s failed\n", fru, key);
     return ret;
   }
 
@@ -5687,7 +5687,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   ret = pal_get_key_value(key, cvalue);
   if (ret) {
-    syslog(LOG_INFO, "pal_get_fru_health(%s): getting value for %s failed\n", fru, key);
+    syslog(LOG_INFO, "pal_get_fru_health(%d): getting value for %s failed\n", fru, key);
     return ret;
   }
 
@@ -7320,4 +7320,3 @@ pal_bmc_err_enable() {
   // dummy function
   return 0;
 }
-

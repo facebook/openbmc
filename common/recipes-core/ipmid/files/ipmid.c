@@ -1889,7 +1889,7 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
       break;
     case 2:
       if(req->data[1]>100) {
-      res->cc = CC_PARAM_OUT_OF_RANGE;
+        res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
       else
@@ -2008,15 +2008,26 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
     case 1:
       fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
       if (!fp) {
-        res->cc = CC_PARAM_OUT_OF_RANGE;
+        fp = fopen("/mnt/data/ppr/ppr_row_count", "w");
+        sprintf(temp, "%c",0);
+        fwrite(temp, sizeof(char), 1, fp);
+      }
+      else
+        fread(res->data, 1, 1, fp);
+      fclose(fp);
+      fp = fopen("/mnt/data/ppr/ppr_action", "r");
+      if (!fp) {
+        fp = fopen("/mnt/data/ppr/ppr_action", "w");
+        sprintf(temp, "%c",0);
+        fwrite(temp, sizeof(char), 1, fp);
+        fclose(fp);
+        res->data[0] = 0;
+        *res_len = 1;
         return;
       }
-      fread(res->data, 1, 1, fp);
-      if(res->data[0] != 0 ) {
-        fclose(fp);
-        fp = fopen("/mnt/data/ppr/ppr_action", "r");
+      if (res->data[0] != 0 ) {
         fread(res->data, 1, 1, fp);
-        if((res->data[0] & 0x80) ==0 )
+        if((res->data[0] & 0x80) == 0 )
           res->data[0] = 0;
       }
       *res_len = 1;
@@ -2024,10 +2035,13 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
     case 2:
       fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
       if (!fp) {
-        res->cc = CC_PARAM_OUT_OF_RANGE;
-        return;
+        fp = fopen("/mnt/data/ppr/ppr_row_count", "w");
+        sprintf(temp, "%c",0);
+        fwrite(temp, sizeof(char), 1, fp);
+        res->data[0] = 0;
       }
-      fread(res->data, 1, 1, fp);
+      else
+        fread(res->data, 1, 1, fp);
       *res_len = 1;
       break;
     case 3:
@@ -2078,7 +2092,6 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
       break;
   }
   fclose(fp);
-
 }
 
 static void

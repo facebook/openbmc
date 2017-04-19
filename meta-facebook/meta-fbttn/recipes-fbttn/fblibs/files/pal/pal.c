@@ -433,7 +433,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   uint8_t status;
   int retry = 0;
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id =! FRU_SLOT1) {
     return -1;
   }
 
@@ -495,7 +495,7 @@ static int
 server_12v_on(uint8_t slot_id) {
   char vpath[64] = {0};
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id =! FRU_SLOT1) {
     return -1;
   }
 
@@ -513,7 +513,7 @@ static int
 server_12v_off(uint8_t slot_id) {
   char vpath[64] = {0};
 
-  if (slot_id < 1 || slot_id > 1) {
+  if (slot_id =! FRU_SLOT1) {
     return -1;
   }
 
@@ -729,7 +729,7 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
   int val;
   char path[64] = {0};
 
-  if (slot_id < 1 || slot_id > 1) {
+  if (slot_id =! FRU_SLOT1) {
     return -1;
   }
 
@@ -819,7 +819,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   bool gs_flag = false;
   bool cycle_flag = false;
 
-  if (slot_id < 1 || slot_id > 1) {
+  if (slot_id =! FRU_SLOT1) {
     return -1;
   }
 
@@ -3675,18 +3675,22 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   completion_code = CC_SUCCESS;  // Fill response with default values
   unsigned char policy = *pwr_policy & 0x07;  // Power restore policy
 
+  if (slot_id =! FRU_SLOT1) {
+    return -1;
+  }
+
   switch (policy)
   {
       case 0:
-        if (pal_set_key_value("server_por_cfg", "off") != 0)
+        if (pal_set_key_value("slot1_por_cfg", "off") != 0)
           completion_code = CC_UNSPECIFIED_ERROR;
         break;
       case 1:
-        if (pal_set_key_value("server_por_cfg", "lps") != 0)
+        if (pal_set_key_value("slot1_por_cfg", "lps") != 0)
           completion_code = CC_UNSPECIFIED_ERROR;
         break;
       case 2:
-        if (pal_set_key_value("server_por_cfg", "on") != 0)
+        if (pal_set_key_value("slot1_por_cfg", "on") != 0)
           completion_code = CC_UNSPECIFIED_ERROR;
         break;
       case 3:

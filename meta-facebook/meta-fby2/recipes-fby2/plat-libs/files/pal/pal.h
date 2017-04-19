@@ -221,6 +221,8 @@ int pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting
 int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
 int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
+void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
+int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
 
 #ifdef __cplusplus
 } // extern "C"

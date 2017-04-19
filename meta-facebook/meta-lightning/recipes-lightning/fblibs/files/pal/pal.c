@@ -2014,7 +2014,6 @@ pal_bmc_err_disable() {
   return 0;
 }
 
-
 uint8_t
 pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
 
@@ -2094,4 +2093,21 @@ pal_is_fw_update_ongoing(uint8_t fru) {
 int
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   return 0;
+}
+
+unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
+unsigned char option_size[]   = {1,1,1,1,2,5,9,17,127};
+
+void
+pal_set_boot_option(unsigned char para,unsigned char* pbuff)
+{
+  return;
+}
+
+int
+pal_get_boot_option(unsigned char para,unsigned char* pbuff)
+{
+  unsigned char size = option_size[para];
+  memset(pbuff, 0, size);
+  return size;
 }

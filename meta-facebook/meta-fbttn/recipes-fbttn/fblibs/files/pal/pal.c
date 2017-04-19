@@ -3576,7 +3576,7 @@ pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
 }
 
 unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
-unsigned char option_size[]   = {1,1,1,1,2,5,9 ,17,127};
+unsigned char option_size[]   = {1,1,1,1,2,5,9,17,127};
 
 void
 pal_save_boot_option(unsigned char* buff)
@@ -3605,7 +3605,7 @@ pal_load_boot_option(unsigned char* buff)
     return -1;
 }
 
-  void
+void
 pal_set_boot_option(unsigned char para,unsigned char* pbuff)
 {
   unsigned char buff[256] = { 0 };
@@ -3620,9 +3620,6 @@ pal_set_boot_option(unsigned char para,unsigned char* pbuff)
 int
 pal_get_boot_option(unsigned char para,unsigned char* pbuff)
 {
-  if(para > 10)
-  return 0;
-  int ii = 0;
   unsigned char buff[256] = { 0 };
   int ret = 0;
   unsigned char offset = option_offset[para];

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 #  Copyright (c) 2014-present, Facebook, Inc.
 #  All rights reserved.
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         sys.exit(1)
     requested_key_name = os.path.basename(args.keydir)
     sub_image.strings = [requested_key_name]
-    
+
     subordinate_source = fdt.to_dts()
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(subordinate_source)

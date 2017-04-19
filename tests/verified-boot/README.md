@@ -30,12 +30,14 @@ Requirements:
 
 We also assume you have built an OpenBMC firmware, for example `fbtp`.
 Set an environment variable for your poky build directory:
-```
+```sh
 export POKY_BUILD=~/poky/build
 ```
 
+**The following steps are 1-time setup commands**
+
 First create two pairs of public/private keys:
-```
+```sh
 mkdir -p /tmp/kek
 openssl genrsa -F4 -out /tmp/kek/kek.key 4096
 openssl rsa -in /tmp/kek/kek.key -pubout > /tmp/kek/kek.pub
@@ -45,31 +47,38 @@ openssl genrsa -F4 -out /tmp/subordinate/subordinate.key 4096
 openssl rsa -in /tmp/subordinate/subordinate.key -pubout > /tmp/subordinate/subordinate.pub
 ```
 
-Create the ROM's key-enrollment-key compiled DTB:
+From the `signing` directory:
+```sh
+cd ./signing
 ```
+
+Create the ROM's key-enrollment-key compiled DTB:
+```sh
 ./fit-cs --template ./store.dts.in \
   /tmp/kek /tmp/kek/kek.dtb
 ```
 
 Create the rarely-signed subordinate-key compiled DTB:
-```
+```sh
 ./fit-cs --template ./store.dts.in \
   --subordinate --subtemplate ./sub.dts.in \
   /tmp/subordinate /tmp/subordinate/subordinate.dtb
 ```
 
 Sign the subordinate-key compiled DTB:
-```
+```sh
 ./fit-signsub \
-  --mkimage $POKY_BUILD/sysroots/x86_64-linux/usr/bin/mkimage \
+  --mkimage $POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage \
   --keydir /tmp/kek \
   /tmp/subordinate/subordinate.dtb /tmp/subordinate/subordinate.dtb.signed
 ```
 
+**This last step should be run for each new flash image**
+
 Sign the firmware and add the KEK store, and signed subordinate store:
-```
+```sh
 ./fit-sign \
-  --mkimage $POKY_BUILD/sysroots/x86_64-linux/usr/bin/mkimage \
+  --mkimage $POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage \
   --kek /tmp/kek/kek.dtb \
   --signed-subordinate /tmp/subordinate/subordinate.dtb.signed \
   --keydir /tmp/subordinate \
@@ -78,7 +87,6 @@ Sign the firmware and add the KEK store, and signed subordinate store:
 
 ### TODO
 
-- Include another `Dockerfile` that stands up recovery infrastructure.
 - Write the R/W flash environment to enforce verified-boot in software-mode.
 - Include another EDK model to enforce verified-boot in hardware-mode.
 - Allow the model to reboot and inspect SRAM for retries.

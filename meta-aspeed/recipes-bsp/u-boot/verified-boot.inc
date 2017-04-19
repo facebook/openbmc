@@ -12,8 +12,6 @@ VERIFIED_BOOT = '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "True",
 VERIFIED_BOOT_ALGORITHM ??= "sha256,rsa4096"
 VERIFIED_BOOT_HASH_ALGORITHM ??= "sha256"
 VERIFIED_BOOT_KEYNAME ??= "subordinate"
-CERTIFICATE_STORE_SOURCE ??= ""
-CERTIFICATE_STORE ?= "certificate-store.dtb"
 
 # Emit the fitImage ITS header
 # $1 - FIT source file
@@ -85,14 +83,8 @@ fitimage_emit_section_firmware() {
             arch = "${UBOOT_ARCH}";
             os = "u-boot";
             compression = "none";
-            load = <${LOAD_ADDRESS}>;
-            entry = <${ENTRY_POINT}>;
             hash@1 {
                 algo = "${VERIFIED_BOOT_HASH_ALGORITHM}";
-            };
-            signature@1 {
-                algo = "${VERIFIED_BOOT_ALGORITHM}";
-                key-name-hint = "${VERIFIED_BOOT_KEYNAME}";
             };
         };
 EOF
@@ -179,6 +171,10 @@ fitimage_emit_section_firmware_config() {
         conf@1 {
             description = "${conf_desc}";
             ${firmware_line}
+            signature@1 {
+                algo = "${VERIFIED_BOOT_ALGORITHM}";
+                key-name-hint = "${VERIFIED_BOOT_KEYNAME}";
+            };
         };
 EOF
 }

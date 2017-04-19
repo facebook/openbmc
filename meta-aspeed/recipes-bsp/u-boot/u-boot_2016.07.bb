@@ -14,7 +14,6 @@ SRCREV = "AUTOINC"
 SRC_URI = "git://github.com/theopolis/u-boot.git;branch=${SRCBRANCH};protocol=https \
            file://fw_env.config \
            file://fw_env.config.full \
-           file://certificate-store.dts \
           "
 
 PV = "v2016.07"
@@ -81,14 +80,6 @@ UBOOT_ENV_BINARY ?= "${UBOOT_ENV}.${UBOOT_ENV_SUFFIX}"
 UBOOT_ENV_IMAGE ?= "${UBOOT_ENV}-${MACHINE}-${PV}-${PR}.${UBOOT_ENV_SUFFIX}"
 UBOOT_ENV_SYMLINK ?= "${UBOOT_ENV}-${MACHINE}.${UBOOT_ENV_SUFFIX}"
 
-do_configure () {
-  if [ "x${VERIFIED_BOOT}" != "x" ]
-  then
-      # Remove any artifacts from previous configure/compiles.
-      rm -f ${CERTIFICATE_STORE}
-  fi
-}
-
 do_compile () {
     if [ "${@bb.utils.contains('DISTRO_FEATURES', 'ld-is-gold', 'ld-is-gold', '', d)}" = "ld-is-gold" ] ; then
         sed -i 's/$(CROSS_COMPILE)ld$/$(CROSS_COMPILE)ld.bfd/g' config.mk
@@ -102,19 +93,6 @@ do_compile () {
     then
         echo ${UBOOT_LOCALVERSION} > ${B}/.scmversion
         echo ${UBOOT_LOCALVERSION} > ${S}/.scmversion
-    fi
-
-    if [ "x${VERIFIED_BOOT}" != "x" ]
-    then
-        KEK_SOURCE=${WORKDIR}/certificate-store.dts
-        if [ "x${CERTIFICATE_STORE_SOURCE}" != "x" ]
-        then
-            KEK_SOURCE=${CERTIFICATE_STORE_SOURCE}
-        fi
-
-        # Compile the verified boot certificate store.
-        # This should contain the verified-boot platform public key.
-        dtc ${KEK_SOURCE} -o ${CERTIFICATE_STORE} -O dtb
     fi
 
     if [ "x${UBOOT_CONFIG}" != "x" ]
@@ -134,7 +112,6 @@ do_compile () {
         done
         unset  i
     else
-        UBOOT_EXTRA_MAKE=""
         UBOOT_CONFIGNAME=${UBOOT_MACHINE}
         UBOOT_CONFIGNAME=$(echo ${UBOOT_CONFIGNAME} | sed -e 's/_config/_defconfig/')
 
@@ -146,7 +123,6 @@ do_compile () {
             defconfig_option_on CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
             defconfig_option_on CONFIG_OF_CONTROL configs/${UBOOT_CONFIGNAME}
             defconfig_option_on CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
-            UBOOT_EXTRA_MAKE="EXT_DTB=../${CERTIFICATE_STORE}"
         else
             defconfig_option_off CONFIG_SPL configs/${UBOOT_CONFIGNAME}
             defconfig_option_off CONFIG_SPL_FIT_SIGNATURE configs/${UBOOT_CONFIGNAME}
@@ -154,14 +130,14 @@ do_compile () {
             defconfig_option_off CONFIG_OF_EMBED configs/${UBOOT_CONFIGNAME}
         fi
 
-        oe_runmake O=default ${UBOOT_EXTRA_MAKE} ${UBOOT_MACHINE}
-        oe_runmake O=default ${UBOOT_EXTRA_MAKE} ${UBOOT_MAKE_TARGET}
+        oe_runmake O=default ${UBOOT_MACHINE}
+        DTC_FLAGS="-S 3200" oe_runmake O=default ${UBOOT_MAKE_TARGET}
 
         # Finally, the verified-boot builds a second 'recovery' U-Boot.
         if [ "x${VERIFIED_BOOT}" != "x" ] ; then
             defconfig_option_on CONFIG_ASPEED_RECOVERY_BUILD configs/${UBOOT_CONFIGNAME}
-            oe_runmake O=recovery ${UBOOT_EXTRA_MAKE} ${UBOOT_MACHINE}
-            oe_runmake O=recovery ${UBOOT_EXTRA_MAKE} ${UBOOT_MAKE_TARGET}
+            oe_runmake O=recovery ${UBOOT_MACHINE}
+            oe_runmake O=recovery ${UBOOT_MAKE_TARGET}
         fi
     fi
 

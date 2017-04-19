@@ -1046,6 +1046,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
+    printf("ERROR: invalid file path!\n");
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
 #endif

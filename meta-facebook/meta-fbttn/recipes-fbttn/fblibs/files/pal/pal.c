@@ -473,7 +473,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
         #ifdef DEBUG
         syslog(LOG_WARNING, "server_power_off: retry fail\n");
         #endif
-        break;
+        return -1;
       }
       else {
         retry++;

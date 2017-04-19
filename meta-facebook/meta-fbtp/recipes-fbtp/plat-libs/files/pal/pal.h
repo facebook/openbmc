@@ -453,6 +453,8 @@ int pal_update_MCU_bl(char *path);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
 int pal_is_fw_update_ongoing(uint8_t fru);
+void set_fw_update_ongoing(uint8_t fru, uint16_t tmout);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 
 #ifdef __cplusplus
 } // extern "C"

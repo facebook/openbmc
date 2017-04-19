@@ -174,6 +174,7 @@ int bios_program(uint8_t slot_id, const char *file)
   }
   system("/usr/local/bin/power-util mb off");
   sleep(10);
+  set_fw_update_ongoing(FRU_MB, 30);
   system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
   sleep(1);
   gpio_export(GPIO_BMC_CTRL);

@@ -2353,8 +2353,46 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
 
 int
 pal_get_fan_name(uint8_t num, char *name) {
-// Redirect fan to sensor
-  return pal_get_sensor_name(FRU_DPB, DPB_SENSOR_FAN1_FRONT + num, name);
+
+  switch(DPB_SENSOR_FAN1_FRONT+num) {
+
+    case DPB_SENSOR_FAN1_FRONT:
+      sprintf(name, "Fan 1 Front");
+      break;
+
+    case DPB_SENSOR_FAN1_REAR:
+      sprintf(name, "Fan 1 Rear");
+      break;
+
+    case DPB_SENSOR_FAN2_FRONT:
+      sprintf(name, "Fan 2 Front");
+      break;
+
+    case DPB_SENSOR_FAN2_REAR:
+      sprintf(name, "Fan 2 Rear");
+      break;
+
+    case DPB_SENSOR_FAN3_FRONT:
+      sprintf(name, "Fan 3 Front");
+      break;
+
+    case DPB_SENSOR_FAN3_REAR:
+      sprintf(name, "Fan 3 Rear");
+      break;
+
+    case DPB_SENSOR_FAN4_FRONT:
+      sprintf(name, "Fan 4 Front");
+      break;
+
+    case DPB_SENSOR_FAN4_REAR:
+      sprintf(name, "Fan 4 Rear");
+      break;
+
+    default:
+      return -1;
+  }
+
+  return 0;
 }
 
 static int

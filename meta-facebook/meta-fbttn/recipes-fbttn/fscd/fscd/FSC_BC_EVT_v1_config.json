@@ -4,8 +4,13 @@
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
-    "sensor_fail": true
-  },
+    "sensor_fail": true,
+    "progressive": true
+  },  
+  "fan_dead_boost": [
+    [1,0],
+    [2,100]
+  ],
   "fail_sensor_type": {
     "standby_sensor_fail": true,
     "SSD_sensor_fail":false,

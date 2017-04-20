@@ -195,7 +195,7 @@ watchdog_handler() {
 static void *
 i2c_mon_handler() {
   uint32_t i2c_fd;
-  uint32_t i2c_cmd_sts[I2C_BUS_NUM];
+  uint32_t i2c_cmd_sts[I2C_BUS_NUM] = {false};
   void *i2c_reg;
   void *i2c_cmd_reg;
   bool is_error_occur[I2C_BUS_NUM] = {false};
@@ -211,7 +211,7 @@ i2c_mon_handler() {
         i2c_cmd_reg = (char*)i2c_reg + ast_i2c_dev_offset[i].offset + I2C_CMD_REG;
         i2c_cmd_sts[i] = *(volatile uint32_t*) i2c_cmd_reg;
 
-        timeout = 20;
+        timeout = 3000;
         if ((i2c_cmd_sts[i] & AST_I2CD_SDA_LINE_STS) && !(i2c_cmd_sts[i] & AST_I2CD_SCL_LINE_STS)) {
           //if SDA == 1 and SCL == 0, it means the master is locking the bus.
           if (is_error_occur[i] == false) {
@@ -222,7 +222,7 @@ i2c_mon_handler() {
                 break;
               }
               timeout--;
-              msleep(10);
+              usleep(10);
             }
             // If the bus is busy over 200 ms, means the I2C transaction is abnormal.
             // To confirm the bus is not workable.

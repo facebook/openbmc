@@ -403,7 +403,9 @@ gpio_tolerance_fun O7
 # To use GPIOP0, SCU88[16] must be 0
 devmem_clear_bit $(scu_addr 88) 16
 
-gpio_export P0
+gpio_set P0 1
+# set GPIOP0 WDT reset tolerance
+gpio_tolerance_fun P0
 
 # COMP_FAST_THROTTLE_N: P2 (122)
 # To use GPIOP2, SCU88[18] must be 0

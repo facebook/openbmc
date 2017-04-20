@@ -104,8 +104,9 @@
 #define GPIO_BMC_READY_N    28
 
 #define GPIO_CHASSIS_INTRUSION  487
+
 // It's a transition period from EVT to DVT
-#define GPIO_BOARD_REV_2 74
+#define GPIO_BOARD_REV_2    74
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -404,21 +405,11 @@ static int
 server_power_on(uint8_t slot_id) {
   char vpath[64] = {0};
 
-  //Add 3v3 rail cycle before Power on
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   if (write_device(vpath, "1")) {
     return -1;
   }
-  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
-  if (write_device(vpath, "0")) {
-    return -1;
-  }
-  msleep(100);
-  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
+  sleep(2);
   // Mono Lake power-on
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
@@ -443,8 +434,10 @@ server_power_on(uint8_t slot_id) {
 static int
 server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   char vpath[64] = {0};
+  char vpath_board_ver[64] = {0};
   uint8_t status;
   int retry = 0;
+  int val;
 
   if (slot_id != FRU_SLOT1) {
     return -1;
@@ -471,8 +464,12 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   if (write_device(vpath, "1")) {
     return -1;
   }
-
+  
+// TODO: Workaround for EVT only. Remove after PVT.
 #ifdef CONFIG_FBTTN
+  sprintf(vpath_board_ver, GPIO_VAL,GPIO_BOARD_REV_2);
+  read_device(vpath_board_ver, &val);
+  if(val == 0) { // EVT only
   // When ML-CPU is made sure shutdown that is not power-cycle, we should power-off M.2/IOC by BMC.
   //if (cycle_flag == false) {
     do {
@@ -486,7 +483,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
         #ifdef DEBUG
         syslog(LOG_WARNING, "server_power_off: retry fail\n");
         #endif
-        return -1;
+        break;
       }
       else {
         retry++;
@@ -498,6 +495,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
       return -1;
     }
   //}
+  }
 #endif
 
   return 0;
@@ -532,11 +530,6 @@ server_12v_off(uint8_t slot_id) {
 
   sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
 
-  if (write_device(vpath, "0")) {
-    return -1;
-  }
-
-  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   if (write_device(vpath, "0")) {
     return -1;
   }
@@ -832,7 +825,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   bool gs_flag = false;
   bool cycle_flag = false;
 
-  if (slot_id =! FRU_SLOT1) {
+  if (slot_id != FRU_SLOT1) {
     return -1;
   }
 

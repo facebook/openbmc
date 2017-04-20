@@ -511,6 +511,12 @@ devmem_clear_bit $(scu_addr 70) 19
 
 gpio_export Z0
 
+# BMC_GPIOZ3: Z3 (203)
+# To use GPIOZ3, SCUA4[19] must be 0
+devmem_clear_bit $(scu_addr A4) 19
+
+gpio_export Z3
+
 # BMC_GPIOZ4: Z4 (204)
 # To use GPIOZ4, SCUA4[20] must be 0
 devmem_clear_bit $(scu_addr A4) 20

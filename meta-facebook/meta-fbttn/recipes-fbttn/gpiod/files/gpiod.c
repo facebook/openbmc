@@ -50,7 +50,9 @@
 #define GPIO_SCC_B_INS      479
 #define GPIO_NIC_INS        209
 #define GPIO_COMP_PWR_EN    119   // Mono Lake 12V
-#define GPIO_IOM_FULL_PWR_EN 215 
+#define GPIO_PE_RESET        203
+#define GPIO_IOM_FULL_PWR_EN 215
+#define GPIO_BOARD_REV_2     74
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 /* To hold the gpio info and status */
@@ -514,10 +516,72 @@ run_gpiod(int argc, void **argv) {
   gpio_monitor_poll(fru_flag);
 }
 
+void pcie_power_cycle(void) {
+  char vpath[64] = {0};
+  
+  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
+  write_device(vpath, "1");
+  write_device(vpath, "0");
+  write_device(vpath, "1");
+}
+
+void pcie_3v3_off(void) {
+  char vpath[64] = {0};
+	
+  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
+  write_device(vpath, "0");
+}
+
+int get_pe_status (void) {
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_PE_RESET);
+  if (read_device(path, &val))
+    return -1;
+
+  return val;
+}
+
+void 
+*OEM_PE_MON (void *ptr) {
+  int value = 1;
+  int flag  = 0;
+  int cnt   = 0;
+  while (1) {
+    //get PE value
+    value = get_pe_status();	 
+    if(!value && flag != 1) {
+      msleep(200);
+      //get PE value
+      value = get_pe_status();
+      if(!value) {
+        flag = 1;
+        //3V3 cycle
+        pcie_power_cycle();
+      }
+    } else {
+      if(!value) {  
+        cnt ++;
+        if(cnt > 40) {
+          cnt = 0;
+          pcie_3v3_off();
+        }
+      } else {
+        cnt = 0;
+        flag = 0;
+      }
+    }
+    msleep(500);
+  }
+}
+
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
-
+  char vpath[64] = {0};
+  int val;
+  
   if (argc < 2) {
     print_usage();
     exit(-1);
@@ -535,6 +599,18 @@ main(int argc, void **argv) {
     init_gpio_pins();
 
     daemon(0,1);
+
+    // It's a transition period from EVT to DVT
+    // Support PERST monitor on DVT stage or later
+    sprintf(vpath, GPIO_VAL, GPIO_BOARD_REV_2);
+    read_device(vpath, &val);
+    if(val != 0) { // except EVT
+      pthread_t PE_RESET_MON_ID;
+      if(pthread_create(&PE_RESET_MON_ID,NULL,OEM_PE_MON,NULL) != 0) {
+        printf("Error creating thread \n");
+      }
+    }
+
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");
     run_gpiod(argc, argv);

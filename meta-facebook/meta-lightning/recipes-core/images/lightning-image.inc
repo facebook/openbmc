@@ -41,6 +41,7 @@ IMAGE_INSTALL += " \
   kernel-modules \
   u-boot \
   u-boot-fw-utils \
+  openbmc-utils \
   fbutils \
   ipmid \
   healthd \

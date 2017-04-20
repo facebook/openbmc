@@ -3097,7 +3097,7 @@ int  pal_get_scc_rmt_hb(void) {
 void pal_err_code_enable(unsigned char num) {
   error_code errorCode = {0, 0};
 
-  if(num <= 100) {  // It's used for expander.
+  if(num < 100) {  // It's used for expander (0~99).
     return;
   }
 
@@ -3113,7 +3113,7 @@ void pal_err_code_enable(unsigned char num) {
 void pal_err_code_disable(unsigned char num) {
   error_code errorCode = {0, 0};
 
-  if(num <= 100) {
+  if(num < 100) {
     return;
   }
 
@@ -3426,12 +3426,22 @@ pal_add_cri_sel(char *str)
 
 void
 pal_i2c_crash_assert_handle(int i2c_bus_num) {
-
+  // I2C bus number: 0~13
+  if (i2c_bus_num < I2C_BUS_MAX_NUMBER) {
+    pal_err_code_enable(ERR_CODE_I2C_CRASH_BASE + i2c_bus_num);
+  } else {
+    syslog(LOG_WARNING, "%s(): wrong I2C bus number", __func__);
+  }
 }
 
 void
 pal_i2c_crash_deassert_handle(int i2c_bus_num) {
-
+  // I2C bus number: 0~13
+  if (i2c_bus_num < I2C_BUS_MAX_NUMBER) {
+    pal_err_code_disable(ERR_CODE_I2C_CRASH_BASE + i2c_bus_num);
+  } else {
+    syslog(LOG_WARNING, "%s(): wrong I2C bus number", __func__);
+  }
 }
 
 int

@@ -65,6 +65,10 @@ extern "C" {
 
 #define NIC_TEMP_RETRY 3
 
+// For I2C bus crash error code
+#define I2C_BUS_MAX_NUMBER 14
+#define ERR_CODE_I2C_CRASH_BASE 0xE9
+
 typedef struct {
   uint8_t code;
   bool status;

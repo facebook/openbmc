@@ -190,6 +190,7 @@ char * key_list[] = {
 "nic_sensor_health",
 "heartbeat_health",
 "fru_prsnt_health",
+"ecc_health",
 "slot1_sel_error",
 "scc_sensor_timestamp",
 "dpb_sensor_timestamp",
@@ -212,6 +213,7 @@ char * def_val_list[] = {
   "1", /* nic_sensor_health */
   "1", /* heartbeat_health */
   "1", /* fru_prsnt_health */
+  "1", /* ecc_health */
   "1", /* slot_sel_error */
   "0", /* scc_sensor_timestamp */
   "0", /* dpb_sensor_timestamp */
@@ -2595,6 +2597,7 @@ pal_log_clear(char *fru) {
     pal_set_key_value("nic_sensor_health", "1");
     pal_set_key_value("heartbeat_health", "1");
     pal_set_key_value("fru_prsnt_health", "1");
+    pal_set_key_value("ecc_health", "1");
   }
 }
 

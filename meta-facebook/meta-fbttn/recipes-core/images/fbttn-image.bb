@@ -88,6 +88,7 @@ IMAGE_INSTALL += " \
   enclosure-util \
   libmctp \
   mTerm \
+  ecc-mond \
   "
 
 IMAGE_FEATURES += " \

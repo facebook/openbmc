@@ -1755,12 +1755,12 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_NIC:
       *sensor_list = NULL;
       *cnt = 0;
-      return -1;
+      break;
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_get_fru_discrete_list: Wrong fru id %u", fru);
 #endif
-      return -1;
+      break;
   }
     return 0;
 }
@@ -3775,6 +3775,7 @@ pal_is_fw_update_ongoing(uint8_t fru) {
 
 int
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+
   return 0;
 }
 

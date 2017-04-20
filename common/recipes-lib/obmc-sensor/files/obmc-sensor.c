@@ -106,19 +106,11 @@ sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
   char str[MAX_VALUE_LEN];
   int ret;
 
-  if (sensor_key_get(fru, sensor_num, key))
-    return ERR_UNKNOWN_FRU;
-
-  ret = edb_cache_get(key, str);
+  ret = pal_sensor_read(fru, sensor_num, value);
   if (ret < 0) {
     DEBUG_STR("sensor_cache_read: cache_get %s failed.\n", key);
     return ERR_FAILURE;
   }
-
-  if (strcmp(str, "NA") == 0)
-    return ERR_SENSOR_NA;
-
-  *value = atof(str);
   return 0;
 }
 

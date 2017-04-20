@@ -34,7 +34,7 @@
 
 #define MAX_RETRIES          10
 
-const char *pwr_option_list = "status, graceful-shutdown, off, on, cycle, "
+const char *pwr_option_list = "status, graceful-shutdown, off, on, reset, cycle, "
   "12V-off, 12V-on, 12V-cycle";
 
 enum {
@@ -42,6 +42,7 @@ enum {
   PWR_GRACEFUL_SHUTDOWN,
   PWR_OFF,
   PWR_ON,
+  PWR_RESET,
   PWR_CYCLE,
   PWR_12V_OFF,
   PWR_12V_ON,
@@ -66,6 +67,8 @@ get_power_opt(char *option, uint8_t *opt) {
     *opt = PWR_OFF;
   } else if (!strcmp(option, "on")) {
     *opt = PWR_ON;
+  } else if (!strcmp(option, "reset")) {
+    *opt = PWR_RESET;
   } else if (!strcmp(option, "cycle")) {
     *opt = PWR_CYCLE;
   } else if (!strcmp(option, "12V-off")) {
@@ -220,6 +223,23 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
       }
+      break;
+    case PWR_RESET:
+      printf("Power reset fru %u...\n", fru);
+      ret = pal_set_rst_btn(fru, 0);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"
+          " fru %u", fru);
+        return ret;
+      }
+      ret = pal_set_rst_btn(fru, 1);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"
+          " fru %u", fru);
+        return ret;
+      }
+
+      syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", fru);
       break;
 
     case PWR_CYCLE:

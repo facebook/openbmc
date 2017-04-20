@@ -256,8 +256,30 @@ chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
 
 // Get System Boot Options (IPMI/Section 28.12)
 static void
-chassis_get_boot_options (unsigned char *request, unsigned char *response,
-        unsigned char *res_len)
+chassis_get_boot_options (unsigned char *request, unsigned char req_len,
+                          unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  unsigned char param = req->data[0];
+
+  if(param >= 8) {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    return;
+  }
+
+  // Fill response with default values
+  res->cc = CC_SUCCESS;
+  *data++ = 0x01;   // Parameter Version
+  *data++ = req->data[0]; // Parameter  
+
+  *res_len = pal_get_boot_option(param, data) + 2;
+}
+
+static void
+chassis_set_boot_options (unsigned char *request, unsigned char req_len,
+                          unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res= (ipmi_res_t *) response;
@@ -265,55 +287,16 @@ chassis_get_boot_options (unsigned char *request, unsigned char *response,
   unsigned char param = req->data[0];
 
   // Fill response with default values
+  if(param >= 8) {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    return;
+  }
+
   res->cc = CC_SUCCESS;
-  *data++ = 0x01;   // Parameter Version
-  *data++ = req->data[0]; // Parameter
 
-  // TODO: Need to store user settings and return
-  switch (param)
-  {
-    case PARAM_SET_IN_PROG:
-      *data++ = 0x00; // Set In Progress
-      break;
-    case PARAM_SVC_PART_SELECT:
-      *data++ = 0x00; // Service Partition Selector
-      break;
-    case PARAM_SVC_PART_SCAN:
-      *data++ = 0x00; // Service Partition Scan
-      break;
-    case PARAM_BOOT_FLAG_CLR:
-      *data++ = 0x00; // BMC Boot Flag Valid Bit Clear
-      break;
-    case PARAM_BOOT_INFO_ACK:
-      *data++ = 0x00; // Write Mask
-      *data++ = 0x00; // Boot Initiator Ack Data
-      break;
-    case PARAM_BOOT_FLAGS:
-      *data++ = 0x00; // Boot Flags
-      *data++ = 0x00; // Boot Device Selector
-      *data++ = 0x00; // Firmwaer Verbosity
-      *data++ = 0x00; // BIOS Override
-      *data++ = 0x00; // Device Instance Selector
-      break;
-    case PARAM_BOOT_INIT_INFO:
-      *data++ = 0x00; // Chanel Number
-      *data++ = 0x00; // Session ID (4 bytes)
-      *data++ = 0x00;
-      *data++ = 0x00;
-      *data++ = 0x00;
-      *data++ = 0x00; // Boot Info Timestamp (4 bytes)
-      *data++ = 0x00;
-      *data++ = 0x00;
-      *data++ = 0x00;
-      break;
-    default:
-      res->cc = CC_PARAM_OUT_OF_RANGE;
-      break;
-  }
-
-  if (res->cc == CC_SUCCESS) {
-    *res_len = data - &res->data[0];
-  }
+  pal_set_boot_option(param,req->data+1);
+  
+  *res_len = data - &res->data[0];
 }
 
 // Handle Chassis Commands (IPMI/Section 28)
@@ -333,6 +316,12 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
       break;
     case CMD_CHASSIS_SET_POWER_RESTORE_POLICY:
       chassis_set_power_restore_policy(request, req_len, response, res_len);
+      break;
+    case CMD_CHASSIS_SET_BOOT_OPTIONS:
+      chassis_set_boot_options(request, req_len, response, res_len);
+      break;
+    case CMD_CHASSIS_GET_BOOT_OPTIONS:
+      chassis_get_boot_options(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

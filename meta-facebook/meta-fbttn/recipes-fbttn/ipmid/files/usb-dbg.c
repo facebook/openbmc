@@ -508,14 +508,14 @@ static sensor_desc_c cri_sensor[]  =
     {"HSC_PWR:"       , DPB_SENSOR_HSC_POWER,"W"},
     {"HSC_VOL:"       , DPB_SENSOR_HSC_VOLT,"V"},
     {"HSC_CUR:"       , DPB_SENSOR_HSC_CURR,"Amps"},
-    {"FAN0_F:"        , DPB_SENSOR_FAN0_FRONT       ,"RPM"},
-    {"FAN0_R:"        , DPB_SENSOR_FAN0_REAR        ,"RPM"},
     {"FAN1_F:"        , DPB_SENSOR_FAN1_FRONT       ,"RPM"},
     {"FAN1_R:"        , DPB_SENSOR_FAN1_REAR        ,"RPM"},
     {"FAN2_F:"        , DPB_SENSOR_FAN2_FRONT       ,"RPM"},
     {"FAN2_R:"        , DPB_SENSOR_FAN2_REAR        ,"RPM"},
     {"FAN3_F:"        , DPB_SENSOR_FAN3_FRONT       ,"RPM"},
-    {"FAN3_R:"        , DPB_SENSOR_FAN3_REAR        ,"RPM"},//15
+    {"FAN3_R:"        , DPB_SENSOR_FAN3_REAR        ,"RPM"},
+    {"FAN4_F:"        , DPB_SENSOR_FAN4_FRONT       ,"RPM"},
+    {"FAN4_R:"        , DPB_SENSOR_FAN4_REAR        ,"RPM"},//15
     {"NIC Temp:"      , MEZZ_SENSOR_TEMP        ,"C"},
     {"LAST_KEY",' ' ," " },
 };

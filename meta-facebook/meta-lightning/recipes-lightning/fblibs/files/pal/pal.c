@@ -1492,7 +1492,7 @@ int pal_get_plat_sku_id(void){
 
 void
 pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
-  bool *sensorStatus = NULL;
+  uint8_t *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int fd, ret;
   int retry_count = 0;
@@ -1515,13 +1515,13 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
     fclose(fd);
-    return -1;
+    return;
   }
 
-  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
+  lseek(fd, (sizeof(uint8_t) * MAX_SENSOR_NUM) - 1, SEEK_SET);
   write(fd, "", 1);
 
-  sensorStatus = (bool*) mmap(NULL, (sizeof(bool) * MAX_SENSOR_NUM),
+  sensorStatus = (uint8_t*) mmap(NULL, (sizeof(uint8_t) * MAX_SENSOR_NUM),
                               PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
   if (sensorStatus == MAP_FAILED){
@@ -1530,7 +1530,29 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
     return;
   }
 
-  sensorStatus[snr_num] = ERR_ASSERT;
+  switch (thresh) {
+  case UNC_THRESH:
+    sensorStatus[snr_num] = SETBIT(sensorStatus[snr_num], UNC_THRESH);
+    break;
+  case UCR_THRESH:
+    sensorStatus[snr_num] = SETBIT(sensorStatus[snr_num], UCR_THRESH);
+    break;
+  case UNR_THRESH:
+    sensorStatus[snr_num] = SETBIT(sensorStatus[snr_num], UNR_THRESH);
+    break;
+  case LNC_THRESH:
+    sensorStatus[snr_num] = SETBIT(sensorStatus[snr_num], LNC_THRESH);
+    break;
+  case LCR_THRESH:
+    sensorStatus[snr_num] = SETBIT(sensorStatus[snr_num], LCR_THRESH);
+    break;
+  case LNR_THRESH:
+    sensorStatus[snr_num] = SETBIT(sensorStatus[snr_num], LNR_THRESH);
+    break;
+  default:
+    syslog(LOG_ERR, "%s(): wrong threshold value", __func__);
+    return;
+  }
 
   pal_write_error_code_file(error_code_num, ERR_ASSERT);
 
@@ -1541,7 +1563,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 
 void
 pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
-  bool *sensorStatus = NULL;
+  uint8_t *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int i, fd, ret;
   bool tmp = 0;
@@ -1565,22 +1587,42 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
     close(fd);
-    return -1;
+    return;
   }
 
-  lseek(fd, (sizeof(bool) * MAX_SENSOR_NUM) - 1, SEEK_SET);
+  lseek(fd, (sizeof(uint8_t) * MAX_SENSOR_NUM) - 1, SEEK_SET);
   write(fd, "", 1);
 
-  sensorStatus = (bool*) mmap(NULL, (sizeof(bool) * MAX_SENSOR_NUM),
+  sensorStatus = (uint8_t*) mmap(NULL, (sizeof(uint8_t) * MAX_SENSOR_NUM),
                               PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
   if (sensorStatus == MAP_FAILED){
-      syslog(LOG_ERR, "%s(): Error mmapping the file. %s", __func__, strerror(errno));
-      close(fd);
-      return;
+    syslog(LOG_ERR, "%s(): Error mmapping the file. %s", __func__, strerror(errno));
+    close(fd);
+    return;
   }
 
-  sensorStatus[snr_num] = ERR_DEASSERT;
+  switch (thresh) {
+  case UNC_THRESH:
+    sensorStatus[snr_num] = CLEARBIT(sensorStatus[snr_num], UNC_THRESH);
+  case UCR_THRESH:
+    sensorStatus[snr_num] = CLEARBIT(sensorStatus[snr_num], UCR_THRESH);
+  case UNR_THRESH:
+    sensorStatus[snr_num] = CLEARBIT(sensorStatus[snr_num], UNR_THRESH);
+    break;
+
+  case LNC_THRESH:
+    sensorStatus[snr_num] = CLEARBIT(sensorStatus[snr_num], LNC_THRESH);
+  case LCR_THRESH:
+    sensorStatus[snr_num] = CLEARBIT(sensorStatus[snr_num], LCR_THRESH);
+  case LNR_THRESH:
+    sensorStatus[snr_num] = CLEARBIT(sensorStatus[snr_num], LNR_THRESH);
+    break;
+
+  default:
+    syslog(LOG_ERR, "%s(): wrong threshold value", __func__);
+    return;
+  }
 
   for (i = 0; i < MAX_SENSOR_NUM; i++) {
     if (sennum2errcode_mapping[i] == error_code_num) {

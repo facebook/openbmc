@@ -149,7 +149,7 @@ const uint8_t bic_discrete_list[] = {
   BIC_SENSOR_CPU_DIMM_HOT,
 };
 
-// List of IOM Type VII sensors to be monitored
+// List of IOM Type V sensors to be monitored
 const uint8_t iom_sensor_list_type5[] = {
   /* Threshold sensors */
   ML_SENSOR_HSC_VOLT,
@@ -168,6 +168,33 @@ const uint8_t iom_sensor_list_type5[] = {
   IOM_SENSOR_ADC_P1V15_STBY,
   IOM_SENSOR_ADC_P3V3,
   IOM_SENSOR_ADC_P1V8,
+  IOM_SENSOR_ADC_P3V3_M2,
+  IOM_SENSOR_M2_AMBIENT_TEMP1,
+  IOM_SENSOR_M2_AMBIENT_TEMP2,
+  IOM_SENSOR_M2_SMART_TEMP1,
+  IOM_SENSOR_M2_SMART_TEMP2,
+};
+
+// TODO: Remove iom_sensor_list_type5_dvt in PVT phase
+// It's a transition period from EVT to DVT
+// List of DVT IOM Type V sensors to be monitored
+const uint8_t iom_sensor_list_type5_dvt[] = {
+  /* Threshold sensors */
+  ML_SENSOR_HSC_VOLT,
+  ML_SENSOR_HSC_CURR,
+  ML_SENSOR_HSC_PWR,
+  IOM_SENSOR_MEZZ_TEMP,
+  IOM_SENSOR_HSC_POWER,
+  IOM_SENSOR_HSC_VOLT,
+  IOM_SENSOR_HSC_CURR,
+  IOM_SENSOR_ADC_12V,
+  IOM_SENSOR_ADC_P5V_STBY,
+  IOM_SENSOR_ADC_P3V3_STBY,
+  IOM_SENSOR_ADC_P1V8_STBY,
+  IOM_SENSOR_ADC_P2V5_STBY,
+  IOM_SENSOR_ADC_P1V2_STBY,
+  IOM_SENSOR_ADC_P1V15_STBY,
+  IOM_SENSOR_ADC_P3V3,
   IOM_SENSOR_ADC_P3V3_M2,
   IOM_SENSOR_M2_AMBIENT_TEMP1,
   IOM_SENSOR_M2_AMBIENT_TEMP2,
@@ -491,6 +518,7 @@ size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 
 size_t iom_sensor_cnt_type5 = sizeof(iom_sensor_list_type5 )/sizeof(uint8_t);
+size_t iom_sensor_cnt_type5_dvt = sizeof(iom_sensor_list_type5_dvt )/sizeof(uint8_t);
 size_t iom_sensor_cnt_type7 = sizeof(iom_sensor_list_type7 )/sizeof(uint8_t);
 
 

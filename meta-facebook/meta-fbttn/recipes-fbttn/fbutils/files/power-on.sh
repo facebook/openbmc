@@ -32,7 +32,16 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 KEYDIR=/mnt/data/kv_store
 DEF_PWR_ON=1
 TO_PWR_ON=
-IOM_FULL_GOOD=218
+
+# It's a transition period from EVT to DVT
+BOARD_ID=`cat /sys/class/gpio/gpio74/value`
+if [ $BOARD_ID -eq 0  ]; then   # EVT
+  echo "For EVT IOM Setting..."
+  IOM_FULL_GOOD=218
+elif [ $BOARD_ID -eq 1  ]; then # DVT
+  echo "For DVT IOM Setting..."
+  IOM_FULL_GOOD=217
+fi
 
 check_por_config()
 {

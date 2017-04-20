@@ -251,6 +251,8 @@ extern const uint8_t bic_discrete_list[];
 
 extern const uint8_t iom_sensor_list_type5[];
 
+extern const uint8_t iom_sensor_list_type5_dvt[];
+
 extern const uint8_t iom_sensor_list_type7[];
 
 extern const uint8_t dpb_sensor_list[];
@@ -268,6 +270,8 @@ extern size_t bic_sensor_cnt;
 extern size_t bic_discrete_cnt;
 
 extern size_t iom_sensor_cnt_type5;
+
+extern size_t iom_sensor_cnt_type5_dvt;
 
 extern size_t iom_sensor_cnt_type7;
 

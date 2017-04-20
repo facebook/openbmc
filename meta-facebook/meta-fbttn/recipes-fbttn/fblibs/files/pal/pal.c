@@ -52,7 +52,7 @@
  * COMP_PWR_EN          GPIOO7   119
  * P12V_A_PGOOD         GPIOF6   46 //Whole system stby pwr good
  * IOM_FULL_PWR_EN      GPIOAA7  215
- * IOM_FULL_PGOOD       GPIOAB2  218
+ * IOM_FULL_PGOOD       GPIOAB1  217 // EVT: GPIOAB2(218); DVT: GPIOAB1(217)
  * BMC_LOC_HEARTBEAT    GPIOO1   113
  * BMC_UART_SEL         GPIOS1   145 // output; 0:cpu 1:bmc
  * DEBUG_HDR_UART_SEL   GPIOS2   146 // input
@@ -104,6 +104,8 @@
 #define GPIO_BMC_READY_N    28
 
 #define GPIO_CHASSIS_INTRUSION  487
+// It's a transition period from EVT to DVT
+#define GPIO_BOARD_REV_2 74
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -1221,6 +1223,8 @@ int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   int sku = 0;
+  int val;
+  char path[64] = {0};
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1230,8 +1234,16 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_IOM:
       sku = pal_get_iom_type();
       if (sku == 1) { // SKU: Type 5
-        *sensor_list = (uint8_t *) iom_sensor_list_type5;
-        *cnt = iom_sensor_cnt_type5;
+        // It's a transition period from EVT to DVT
+        sprintf(path, GPIO_VAL, GPIO_BOARD_REV_2);
+        read_device(path, &val);
+        if (val == 0) {         // EVT
+          *sensor_list = (uint8_t *) iom_sensor_list_type5;
+          *cnt = iom_sensor_cnt_type5;
+        } else if (val == 1) {  // DVT
+          *sensor_list = (uint8_t *) iom_sensor_list_type5_dvt;
+          *cnt = iom_sensor_cnt_type5_dvt;
+        }        
       } else {        // SKU: Type 7
         *sensor_list = (uint8_t *) iom_sensor_list_type7;
         *cnt = iom_sensor_cnt_type7;

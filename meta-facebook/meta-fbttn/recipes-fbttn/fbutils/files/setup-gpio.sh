@@ -584,11 +584,11 @@ devmem_clear_bit $(scu_addr A8) 0
 
 gpio_export AB0
 
-# IOM_FULL_PGOOD: AB2 (218)
-# To use GPIOAB2, SCUA8[2] must be 0
-devmem_clear_bit $(scu_addr A8) 2
+# IOM_FULL_PGOOD: AB1 (217)
+# To use GPIOAB1, SCUA8[1] must be 0
+devmem_clear_bit $(scu_addr A8) 1
 
-gpio_export AB2
+gpio_export AB1
 
 # PCA9555 GPIO export; GPIO number 472~487
 pca9555_pin="472"

@@ -55,6 +55,7 @@ class Fscd(object):
         self.ramp_rate = self.DEFAULT_RAMP_RATE
         self.ssd_progressive_algorithm = None
         self.fail_sensor_type = None
+        self.fan_dead_boost = None
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -70,6 +71,8 @@ class Fscd(object):
         if 'boost' in self.fsc_config and 'progressive' in self.fsc_config['boost']:
                 if self.fsc_config['boost']['progressive']:
                     self.boost_type = 'progressive'
+                if 'fan_dead_boost' in self.fsc_config:
+                    self.fan_dead_boost = self.fsc_config['fan_dead_boost']             
         if 'boost' in self.fsc_config and 'sensor_fail' in self.fsc_config['boost']:
                 if self.fsc_config['boost']['sensor_fail']:
                     if 'fail_sensor_type' in self.fsc_config:
@@ -218,14 +221,15 @@ class Fscd(object):
             else:
                 pwmval = self.boost
 
-            if self.boost_type == 'progressive':
-                dead = len(dead_fans)
+            if self.boost_type == 'progressive' and self.fan_dead_boost:
+                dead = len(dead_fans)                
                 if dead > 0:
                     print("Failed fans: %s" %
                           (', '.join([str(i) for i in dead_fans],)))
-                    if dead < 3:
-                        pwmval = clamp(pwmval + (10 * dead), 0, 100)
-                        print("Boosted PWM to %d" % pwmval)
+                    for fan_count, rate in self.fan_dead_boost:
+                        if dead <= fan_count:
+                            pwmval = clamp(pwmval + (dead * rate), 0, 100)
+                            break;
                     else:
                         pwmval = self.boost
             else:

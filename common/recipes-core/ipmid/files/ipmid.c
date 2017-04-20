@@ -208,39 +208,14 @@ chassis_get_status (unsigned char *response, unsigned char *res_len)
 // Set Power Restore Policy (IPMI/Section 28.8)
 static void
 chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
-                                 unsigned char *response, unsigned char *res_len)
+                                 unsigned char *response, unsigned char *res_len)          
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res= (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
-  unsigned char policy = req->data[0] & 0x07; // Power restore policy
-
-  // Fill response with default values
-  res->cc = CC_SUCCESS;
   *data++ = 0x07;  // Power restore policy support(bitfield)
 
-  switch (policy)
-  {
-    case 0:
-      if (pal_set_key_value("server_por_cfg", "off") != 0)
-        res->cc = CC_UNSPECIFIED_ERROR;
-      break;
-    case 1:
-      if (pal_set_key_value("server_por_cfg", "lps") != 0)
-        res->cc = CC_UNSPECIFIED_ERROR;
-      break;
-    case 2:
-      if (pal_set_key_value("server_por_cfg", "on") != 0)
-        res->cc = CC_UNSPECIFIED_ERROR;
-      break;
-    case 3:
-      // no change (just get present policy support)
-      break;
-    default:
-      res->cc = CC_PARAM_OUT_OF_RANGE;
-      break;
-  }
-
+  res->cc = pal_set_power_restore_policy(req->payload_id, req->data, res->data); 
   if (res->cc == CC_SUCCESS) {
     *res_len = data - &res->data[0];
   }

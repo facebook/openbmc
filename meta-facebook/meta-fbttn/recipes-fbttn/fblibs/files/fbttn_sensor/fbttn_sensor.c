@@ -89,6 +89,10 @@
 #define ML_ADM1278_R_SENSE  1
 #define EXP_R_SENSE  1
 
+#define NIC_MAX_TEMP 110
+#define READING_NA -2
+#define READING_SKIP 1
+
 static int iom_hsc_r_sense = IOM_ADM1278_R_SENSE;
 static int ml_hsc_r_sense = ML_ADM1278_R_SENSE;
 
@@ -748,6 +752,8 @@ read_nic_temp(const char *device, float *value) {
   int tmp;
   FILE *fp;
   int size;
+  int ret = 0;
+  static unsigned int retry = 0;
 
   // Get current working directory
   snprintf(
@@ -770,7 +776,18 @@ read_nic_temp(const char *device, float *value) {
 
   *value = ((float)tmp)/UNIT_DIV;
 
-  return 0;
+  // Workaround: handle when NICs wrongly report higher temperatures
+  if (*value > NIC_MAX_TEMP) {
+    ret = READING_NA;
+  } else {
+    retry = 0;
+  }
+
+  if ((ret == READING_NA) && (++retry <= 3)) {
+    ret = READING_SKIP;
+  }
+
+  return ret;
 }
 
 static int

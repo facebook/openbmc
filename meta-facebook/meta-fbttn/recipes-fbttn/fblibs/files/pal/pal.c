@@ -1360,16 +1360,21 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
 
   ret = fbttn_sensor_read(fru, sensor_num, value);
-  if(ret < 0) {
-    if(fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC)
-      ret = -1;
-    else if(pal_get_server_power(fru, &status) < 0)
-      ret = -1;
-    // This check helps interpret the IPMI packet loss scenario
-    else if(status == SERVER_POWER_ON)
-      ret = -1;
+  if (ret) {
+    if(ret < 0) {
+      if(fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC)
+        ret = -1;
+      else if(pal_get_server_power(fru, &status) < 0)
+        ret = -1;
+      // This check helps interpret the IPMI packet loss scenario
+      else if(status == SERVER_POWER_ON)
+        ret = -1;
 
-    strcpy(str, "NA");
+      strcpy(str, "NA");
+    } else {
+      // If ret = READING_SKIP, doesn't update sensor reading and keep the previous value
+      return ret;
+    }
   }
   else {
     // On successful sensor read

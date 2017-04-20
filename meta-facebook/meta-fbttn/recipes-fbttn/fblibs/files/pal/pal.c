@@ -193,6 +193,7 @@ char * key_list[] = {
 "scc_sensor_timestamp",
 "dpb_sensor_timestamp",
 "fault_led_state",
+"slot1_boot_order",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -214,6 +215,7 @@ char * def_val_list[] = {
   "0", /* scc_sensor_timestamp */
   "0", /* dpb_sensor_timestamp */
   "0", /* fault_led_state */
+  "0000000", /* slot1_boot_order */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -2490,14 +2492,48 @@ pal_get_slot_cfg_id(uint8_t *id) {
 
 int
 pal_get_boot_order(uint8_t fru, uint8_t *boot) {
+  int i;
+  int j = 0;
+  int ret;
+  int msb, lsb;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  sprintf(key, "slot1_boot_order");
+
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    boot[j++] = (msb << 4) | lsb;
+  }
 
   return 0;
 }
 
 int
 pal_set_boot_order(uint8_t fru, uint8_t *boot) {
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
 
-  return 0;
+  sprintf(key, "slot1_boot_order");
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    snprintf(tstr, 3, "%02x", boot[i]);
+    strncat(str, tstr, 3);
+  }
+
+  return pal_set_key_value(key, str);
 }
 
 int

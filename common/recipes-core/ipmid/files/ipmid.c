@@ -188,24 +188,16 @@ chassis_get_status (unsigned char *response, unsigned char *res_len)
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
   char *buff[MAX_VALUE_LEN];
+  char str_server_por_cfg[64];
   int policy = 3;
+  int ret;
+  unsigned char status;
 
   res->cc = CC_SUCCESS;
 
-  // TODO: Need to obtain current power state and last power event
-  // from platform and return
-  if (pal_get_key_value("server_por_cfg", buff) == 0)
-  {
-    if (!memcmp(buff, "off", strlen("off")))
-      policy = 0;
-    else if (!memcmp(buff, "lps", strlen("lps")))
-      policy = 1;
-    else if (!memcmp(buff, "on", strlen("on")))
-      policy = 2;
-    else
-      policy = 3;
-  }
-  *data++ = 0x01 | (policy << 5);   // Current Power State
+  //To get Power Policy, and Current Power State
+  *data++ = pal_get_status();
+
   *data++ = 0x00;   // Last Power Event
   *data++ = 0x40;   // Misc. Chassis Status
   *data++ = 0x00;   // Front Panel Button Disable
@@ -275,8 +267,13 @@ chassis_get_boot_options (unsigned char *request, unsigned char req_len,
   *data++ = req->data[0]; // Parameter  
 
   *res_len = pal_get_boot_option(param, data) + 2;
+
+  if (res->cc == CC_SUCCESS) {
+    *res_len = data - &res->data[0];
+  }
 }
 
+// Set System Boot Options (IPMI/Section 28)
 static void
 chassis_set_boot_options (unsigned char *request, unsigned char req_len,
                           unsigned char *response, unsigned char *res_len)

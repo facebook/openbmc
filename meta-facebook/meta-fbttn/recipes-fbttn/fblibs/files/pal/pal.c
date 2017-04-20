@@ -235,6 +235,15 @@ struct power_coeff power_table[] = {
   {0.0,   0.0}
 };
 
+/* NVMe-MI SSD Status Flag bit mask */
+#define NVME_SFLGS_MASK_BIT 0x28  //Just check bit 3,5
+#define NVME_SFLGS_CHECK_VALUE 0x28 // normal - bit 3,5 = 1
+
+/* NVMe-MI SSD SMART Critical Warning */
+#define NVME_SMART_WARNING_MASK_BIT 0x1F // Check bit 0~4
+
+#define MAX_SERIAL_NUM 20
+
 /* Adjust power value */
 static void
 power_value_adjust(float *value)
@@ -3749,5 +3758,82 @@ pal_is_fw_update_ongoing(uint8_t fru) {
 
 int
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+  return 0;
+}
+
+int
+pal_drive_status(const char* i2c_bus) {
+  ssd_data ssd;
+  t_status_flags status_flag_decoding;
+  t_smart_warning smart_warning_decoding;
+  t_key_value_pair temp_decoding;
+  t_key_value_pair pdlu_decoding;
+  t_key_value_pair vendor_decoding;
+  t_key_value_pair sn_decoding;
+
+  if (nvme_vendor_read_decode(i2c_bus, &ssd.vendor, &vendor_decoding))
+    printf("Fail on reading Vendor ID\n");
+  else
+    printf("%s: %s\n", vendor_decoding.key, vendor_decoding.value);
+
+  if (nvme_serial_num_read_decode(i2c_bus, ssd.serial_num, MAX_SERIAL_NUM, &sn_decoding))
+    printf("Fail on reading Serial Number\n");
+  else
+    printf("%s: %s\n", sn_decoding.key, sn_decoding.value);
+
+  if (nvme_temp_read_decode(i2c_bus, &ssd.temp, &temp_decoding))
+    printf("Fail on reading Composite Temperature\n");
+  else
+    printf("%s: %s\n", temp_decoding.key, temp_decoding.value);
+
+  if (nvme_pdlu_read_decode(i2c_bus, &ssd.pdlu, &pdlu_decoding))
+    printf("Fail on reading Percentage Drive Life Used\n");
+  else
+    printf("%s: %s\n", pdlu_decoding.key, pdlu_decoding.value);
+
+  if (nvme_sflgs_read_decode(i2c_bus, &ssd.sflgs, &status_flag_decoding))
+    printf("Fail on reading Status Flags\n");
+  else {
+    printf("%s: %s\n", status_flag_decoding.self.key, status_flag_decoding.self.value);
+    printf("    %s: %s\n", status_flag_decoding.read_complete.key, status_flag_decoding.read_complete.value);
+    printf("    %s: %s\n", status_flag_decoding.ready.key, status_flag_decoding.ready.value);
+    printf("    %s: %s\n", status_flag_decoding.functional.key, status_flag_decoding.functional.value);
+    printf("    %s: %s\n", status_flag_decoding.reset_required.key, status_flag_decoding.reset_required.value);
+    printf("    %s: %s\n", status_flag_decoding.port0_link.key, status_flag_decoding.port0_link.value);
+    printf("    %s: %s\n", status_flag_decoding.port1_link.key, status_flag_decoding.port1_link.value);
+  }
+
+  if (nvme_smart_warning_read_decode(i2c_bus, &ssd.warning, &smart_warning_decoding))
+    printf("Fail on reading SMART Critical Warning\n");
+  else {
+    printf("%s: %s\n", smart_warning_decoding.self.key, smart_warning_decoding.self.value);
+    printf("    %s: %s\n", smart_warning_decoding.spare_space.key, smart_warning_decoding.spare_space.value);
+    printf("    %s: %s\n", smart_warning_decoding.temp_warning.key, smart_warning_decoding.temp_warning.value);
+    printf("    %s: %s\n", smart_warning_decoding.reliability.key, smart_warning_decoding.reliability.value);
+    printf("    %s: %s\n", smart_warning_decoding.media_status.key, smart_warning_decoding.media_status.value);
+    printf("    %s: %s\n", smart_warning_decoding.backup_device.key, smart_warning_decoding.backup_device.value);
+  }
+
+  printf("\n");
+  return 0;
+}
+
+int
+pal_drive_health(const char* dev) {
+  uint8_t sflgs;
+  uint8_t warning;
+
+  if (nvme_smart_warning_read(dev, &warning))
+    return -1;
+  else
+    if ((warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
+      return -1;
+
+  if (nvme_sflgs_read(dev, &sflgs))
+    return -1;
+  else
+    if ((sflgs & NVME_SFLGS_MASK_BIT) != NVME_SFLGS_CHECK_VALUE)
+      return -1;
+
   return 0;
 }

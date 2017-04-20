@@ -39,11 +39,22 @@
 
 static int OEM_BITMAP_FUN(unsigned char* in_error,unsigned char* data);
 
+#define I2C_DEV_FLASH7 "/dev/i2c-7"
+#define I2C_DEV_FLASH8 "/dev/i2c-8"
+
 static void
 print_usage_help(void) {
+  int sku = 0;
+  sku = pal_get_iom_type();
+
   printf("Usage: enclosure-util --hdd-status\n");
   printf("Usage: enclosure-util --hdd-status <number 0~35>\n");
   printf("Usage: enclosure-util --error\n");
+  //SKU : 1 type5
+  if (sku == 1) {
+    printf("Usage: enclosure-util --M.2-health\n");
+    printf("Usage: enclosure-util --M.2-status\n");
+  }
 }
 
 void
@@ -119,6 +130,46 @@ show_error_code() {
     printf("No Error!\n");
 }
 
+void 
+show_drive_health() {
+  char bus[32];
+  int ret;
+  
+  /* read NVMe-MI data */  
+  ret = pal_drive_health(I2C_DEV_FLASH7);
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): bus7, pal_drive_health failed", __func__);
+  }
+  printf("M.2_1: %s\n", (ret == 0) ? "Normal":"Abnormal");
+
+  /* read NVMe-MI data */  
+  ret = pal_drive_health(I2C_DEV_FLASH8);
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): bus8, pal_drive_health failed 8", __func__);
+  }
+  printf("M.2_2: %s\n", (ret == 0) ? "Normal":"Abnormal");
+}
+
+void 
+show_drive_status() {
+  char bus[32];
+  int ret;
+
+  /* read NVMe-MI data */
+  printf("M.2_1:\n");
+  ret = pal_drive_status(I2C_DEV_FLASH7);
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): pal_drive_status failed 7", __func__);
+  }
+
+  /* read NVMe-MI data */
+  printf("M.2_2:\n");
+  ret = pal_drive_status(I2C_DEV_FLASH8);
+  if(ret < 0) {
+    syslog(LOG_DEBUG, "%s(): pal_drive_status failed 8", __func__);
+  }
+}
+
 int
 main(int argc, char **argv) {
   int hdd_number = -1;
@@ -141,6 +192,10 @@ main(int argc, char **argv) {
     get_hdd_status(hdd_number);
   else if (!strcmp(argv[1], "--error"))
     show_error_code();
+  else if (!strcmp(argv[1], "--M.2-health"))
+    show_drive_health();
+  else if (!strcmp(argv[1], "--M.2-status"))
+    show_drive_status();
   else
     print_usage_help();
 

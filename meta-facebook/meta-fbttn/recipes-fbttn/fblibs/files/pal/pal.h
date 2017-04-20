@@ -32,6 +32,7 @@ extern "C" {
 #include <facebook/fbttn_fruid.h>
 #include <facebook/fbttn_sensor.h>
 #include <openbmc/kv.h>
+#include <openbmc/nvme-mi.h>
 
 #define MAX_KEY_LEN     64
 #define MAX_VALUE_LEN   128

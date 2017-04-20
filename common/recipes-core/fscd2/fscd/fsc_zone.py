@@ -19,6 +19,7 @@ import sys
 import re
 from fsc_util import Logger, clamp
 from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
+import fsc_board
 
 
 verbose = "-v" in sys.argv
@@ -76,13 +77,22 @@ class Zone:
                     if 'standby_sensor_fail' in self.fail_sensor_type.keys():
                         if self.fail_sensor_type['standby_sensor_fail'] == True:
                             if sensor.status in ['na']:
-                                if re.match(r'SSD', sensor.name) == None:
+                                if re.match(r'SOC', sensor.name) != None:
+                                    if 'server_sensor_fail' in self.fail_sensor_type.keys(): 
+                                        if self.fail_sensor_type['server_sensor_fail'] == True:
+                                            ret = fsc_board.get_power_status(board)
+                                            if ret:
+                                                print("Server Sensor Fail")
+                                                outmin = self.boost
+                                                break
+                                elif re.match(r'SSD', sensor.name) != None:
+                                    if 'SSD_sensor_fail' in self.fail_sensor_type.keys():
+                                        if self.fail_sensor_type['SSD_sensor_fail'] == True:                              
+                                            fail_ssd_count = fail_ssd_count + 1
+                                else:
+                                    print("Standby Sensor Fail")
                                     outmin = self.boost
                                     break
-                                else:
-                                    if 'SSD_sensor_fail' in self.fail_sensor_type.keys():
-                                        if self.fail_sensor_type['SSD_sensor_fail'] ==True:
-                                            fail_ssd_count = fail_ssd_count + 1
             else:
                 missing.add(v)
                 # evaluation tries to ignore the effects of None values

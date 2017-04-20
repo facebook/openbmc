@@ -61,7 +61,7 @@ gpio_tolerance_fun A2
 # To use GPIOA3, SCU80[3] must be 0
 devmem_clear_bit $(scu_addr 80) 3
 
-gpio_set A3 0
+gpio_set A3 1
 
 # PWRBTN_OUT_N: D2 (26)
 # To use GPIOD2, SCU90[1], SCU8C[9], and SCU70[21] must be 0

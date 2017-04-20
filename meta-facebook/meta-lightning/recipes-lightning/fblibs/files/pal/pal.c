@@ -2070,6 +2070,12 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   return 0;
 }
 
+uint8_t
+pal_get_status(void) {
+
+  return 0; // CC_SUCCESS
+}
+
 unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
 unsigned char option_size[]   = {1,1,1,1,2,5,9,17,127};
 

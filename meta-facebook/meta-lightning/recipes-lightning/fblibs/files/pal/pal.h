@@ -292,6 +292,7 @@ int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_is_fw_update_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
+uint8_t pal_get_status(void);
 void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
 int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
 

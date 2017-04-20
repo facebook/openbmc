@@ -3761,6 +3761,43 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   return 0;
 }
 
+uint8_t
+pal_get_status(void) {
+  char str_server_por_cfg[64];
+  char *buff[MAX_VALUE_LEN];
+  int policy = 3;
+  uint8_t status, data, ret;
+
+  // Platform Power Policy
+  memset(str_server_por_cfg, 0 , sizeof(char) * 64);
+  sprintf(str_server_por_cfg, "%s", "slot1_por_cfg");
+
+  if (pal_get_key_value(str_server_por_cfg, buff) == 0)
+  {
+    if (!memcmp(buff, "off", strlen("off")))
+      policy = 0;
+    else if (!memcmp(buff, "lps", strlen("lps")))
+      policy = 1;
+    else if (!memcmp(buff, "on", strlen("on")))
+      policy = 2;
+    else
+      policy = 3;
+  }
+
+  // Current Power State
+  ret = pal_get_server_power(FRU_SLOT1, &status);
+  if (ret >= 0) {
+    data = status | (policy << 5);
+  } else {
+    // load default
+    syslog(LOG_WARNING, "ipmid: pal_get_server_power failed for slot1\n");
+    data = 0x00 | (policy << 5);
+  }
+
+  return data;
+
+}
+
 int
 pal_drive_status(const char* i2c_bus) {
   ssd_data ssd;

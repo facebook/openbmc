@@ -3152,6 +3152,36 @@ pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
   return 0;
 }
 
+// TODO: Extend pal_get_status to support multiple servers
+// For now just, return the value of 'slot1_por_cfg' for all servers
+uint8_t
+pal_get_status(void) {
+  char str_server_por_cfg[64];
+  char *buff[MAX_VALUE_LEN];
+  int policy = 3;
+  uint8_t status, data, ret;
+
+  // Platform Power Policy
+  memset(str_server_por_cfg, 0 , sizeof(char) * 64);
+  sprintf(str_server_por_cfg, "%s", "slot1_por_cfg");
+
+  if (pal_get_key_value(str_server_por_cfg, buff) == 0)
+  {
+    if (!memcmp(buff, "off", strlen("off")))
+      policy = 0;
+    else if (!memcmp(buff, "lps", strlen("lps")))
+      policy = 1;
+    else if (!memcmp(buff, "on", strlen("on")))
+      policy = 2;
+    else
+      policy = 3;
+  }
+
+  data = 0x01 | (policy << 5);
+
+  return data;
+}
+
 unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
 unsigned char option_size[]   = {1,1,1,1,2,5,9,17,127};
 

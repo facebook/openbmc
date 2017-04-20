@@ -46,8 +46,8 @@
 
 #define GPIO_BMC_READY_N    28
 #define GPIO_ML_INS         472
-#define GPIO_LOC_SCC_INS    478
-#define GPIO_RMT_SCC_INS    479
+#define GPIO_SCC_A_INS      478
+#define GPIO_SCC_B_INS      479
 #define GPIO_NIC_INS        209
 #define GPIO_COMP_PWR_EN    119   // Mono Lake 12V
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
@@ -83,10 +83,17 @@ int get_fru_prsnt(int chassis_type, uint8_t fru) {
         gpio_num = GPIO_ML_INS;
         break;
       case FRU_SCC:
-        if ( i == 0 ) {
-          gpio_num = GPIO_LOC_SCC_INS;
-        } else {
-          gpio_num = GPIO_RMT_SCC_INS;
+        // Type 5 need to recognize BMC is in which side
+        if ( i == 0 ) {  // Type 5 
+          if (pal_get_locl() == 1) {          // IOMA
+            gpio_num = GPIO_SCC_A_INS;
+          } else if (pal_get_locl() == 2) {   // IOMB
+            gpio_num = GPIO_SCC_B_INS;
+          } else {
+            gpio_num = GPIO_SCC_A_INS;
+          }
+        } else {    // Type7 only
+          gpio_num = GPIO_SCC_B_INS;
         }
         break;
       case FRU_NIC:

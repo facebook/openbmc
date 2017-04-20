@@ -21,8 +21,8 @@ SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
             file://FSC_Lightning_PVT_Intel_U2_4TB_v2_config.json \
             file://FSC_Lightning_PVT_Samsung_U2_4TB_v3_config.json \
-            file://FSC_Lightning_PVT_Seagate_M2_2TB_v2_config.json \
-            file://FSC_Lightning_PVT_Samsung_M2_2TB_v2_config.json \
+            file://FSC_Lightning_PVT_Seagate_M2_2TB_v3_config.json \
+            file://FSC_Lightning_PVT_Samsung_M2_2TB_v3_config.json \
             file://FSC_Lightning_PVT_Intel_U2_4TB_v2_zone0.fsc \
             file://FSC_Lightning_PVT_Samsung_U2_4TB_v3_zone0.fsc \
             file://FSC_Lightning_PVT_Seagate_M2_2TB_v2_zone0.fsc \
@@ -35,8 +35,8 @@ FSC_BIN_FILES += "init_pwm.sh \
 
 FSC_CONFIG += "FSC_Lightning_PVT_Intel_U2_4TB_v2_config.json \
                FSC_Lightning_PVT_Samsung_U2_4TB_v3_config.json \
-               FSC_Lightning_PVT_Seagate_M2_2TB_v2_config.json \
-               FSC_Lightning_PVT_Samsung_M2_2TB_v2_config.json \
+               FSC_Lightning_PVT_Seagate_M2_2TB_v3_config.json \
+               FSC_Lightning_PVT_Samsung_M2_2TB_v3_config.json \
               "
 
 FSC_ZONE_CONFIG += "FSC_Lightning_PVT_Intel_U2_4TB_v2_zone0.fsc \

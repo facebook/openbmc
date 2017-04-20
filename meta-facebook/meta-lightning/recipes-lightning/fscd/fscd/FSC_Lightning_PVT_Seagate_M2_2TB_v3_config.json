@@ -7,11 +7,13 @@
     "sensor_fail": true,
     "progressive": true
   },
-  // TODO: Add these to fscd README
+  "fan_dead_boost": [
+    [2,10]
+  ],
   "fail_sensor_type": {
-      "standby_sensor_fail": true,
-      "SSD_sensor_fail":true,
-      "poweron_sensor_fail":false
+    "standby_sensor_fail": true,
+    "SSD_sensor_fail":true,
+    "server_sensor_fail":false
   },
   "ssd_progressive_algorithm":{
     "offset_algorithm":[

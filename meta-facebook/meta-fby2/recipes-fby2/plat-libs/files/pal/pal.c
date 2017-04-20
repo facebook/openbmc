@@ -2789,7 +2789,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 
    // Redirect FAN to sensor cache
    ret = pal_sensor_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
-   
+
    if (0 == ret)
       *rpm = (int) value;
 
@@ -2941,14 +2941,14 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 }
 
 uint8_t
-pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {        
-	
+pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
+
 	uint8_t completion_code;
 	char key[MAX_KEY_LEN] = {0};
 	sprintf(key, "slot%d_por_cfg", slot);
 	completion_code = CC_SUCCESS;   // Fill response with default values
 	unsigned char policy = *pwr_policy & 0x07;  // Power restore policy
-		
+
 	switch (policy)
 	{
 	  case 0:
@@ -2970,7 +2970,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 	      completion_code = CC_PARAM_OUT_OF_RANGE;
 	    break;
 	}
-	return completion_code;			
+	return completion_code;
 }
 
 // To get the platform sku
@@ -3139,16 +3139,6 @@ pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
 
 int
 pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
-  return 0;
-}
-
-int
-pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
-  return 0;
-}
-
-int
-pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
   return 0;
 }
 

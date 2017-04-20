@@ -464,7 +464,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   if (write_device(vpath, "1")) {
     return -1;
   }
-  
+
 // TODO: Workaround for EVT only. Remove after PVT.
 #ifdef CONFIG_FBTTN
   sprintf(vpath_board_ver, GPIO_VAL,GPIO_BOARD_REV_2);
@@ -1238,7 +1238,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
         } else if (val == 1) {  // DVT
           *sensor_list = (uint8_t *) iom_sensor_list_type5_dvt;
           *cnt = iom_sensor_cnt_type5_dvt;
-        }        
+        }
       } else {        // SKU: Type 7
         *sensor_list = (uint8_t *) iom_sensor_list_type7;
         *cnt = iom_sensor_cnt_type7;
@@ -2196,7 +2196,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
               break;
           }
           break;
-      
+
         case GENERIC:
           if (ed[0] & 0x0F)
             sprintf(error_log, "ASSERT, Limit Exceeded");
@@ -3842,18 +3842,6 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
         break;
   }
   return completion_code;
-}
-
-int
-pal_is_fw_update_ongoing(uint8_t fru) {
-
-  return 0;
-}
-
-int
-pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
-
-  return 0;
 }
 
 uint8_t

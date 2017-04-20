@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "libbic libfby2-common libfby2-fruid libfby2-sensor libkv libedb"
+DEPENDS += "libbic libfby2-common libfby2-fruid libfby2-sensor libkv libedb obmc-pal"
 
 S = "${WORKDIR}/pal"
 
@@ -27,4 +27,3 @@ FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
 RDEPENDS_${PN} += " libfby2-common libkv"
 RDEPENDS_${PN} += " libfby2-common libedb"
-

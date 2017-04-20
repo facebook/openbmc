@@ -2050,26 +2050,6 @@ pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
   return 0;
 }
 
-int
-pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
-  return 0;
-}
-
-int
-pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
-  return 0;
-}
-
-int
-pal_is_fw_update_ongoing(uint8_t fru) { 
-  return 0;
-}
-
-int
-pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
-  return 0;
-}
-
 uint8_t
 pal_get_status(void) {
 

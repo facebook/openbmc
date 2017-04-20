@@ -21,6 +21,8 @@
 #ifndef __PAL_H__
 #define __PAL_H__
 
+#include <openbmc/obmc-pal.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -207,8 +209,6 @@ void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_is_crashdump_ongoing(uint8_t slot);
-int pal_is_fw_update_ongoing(uint8_t fru);
-int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 void pal_add_cri_sel(char *str);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
@@ -219,8 +219,6 @@ int pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
 int pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
 int pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
 int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
-int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
-int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 uint8_t pal_get_status(void);
 void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
 int pal_get_boot_option(unsigned char para,unsigned char* pbuff);

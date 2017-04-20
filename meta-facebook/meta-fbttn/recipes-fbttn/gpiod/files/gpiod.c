@@ -50,6 +50,7 @@
 #define GPIO_SCC_B_INS      479
 #define GPIO_NIC_INS        209
 #define GPIO_COMP_PWR_EN    119   // Mono Lake 12V
+#define GPIO_IOM_FULL_PWR_EN 215 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 /* To hold the gpio info and status */
@@ -84,6 +85,7 @@ int get_fru_prsnt(int chassis_type, uint8_t fru) {
         break;
       case FRU_SCC:
         // Type 5 need to recognize BMC is in which side
+
         if ( i == 0 ) {  // Type 5 
           if (pal_get_locl() == 1) {          // IOMA
             gpio_num = GPIO_SCC_A_INS;
@@ -92,7 +94,7 @@ int get_fru_prsnt(int chassis_type, uint8_t fru) {
           } else {
             gpio_num = GPIO_SCC_A_INS;
           }
-        } else {    // Type7 only
+        } else {    // Type 7 only
           gpio_num = GPIO_SCC_B_INS;
         }
         break;
@@ -267,7 +269,8 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
   int chassis_type = 0;
   bool is_fru_prsnt[MAX_NUM_FRUS] = {false};
-  char vpath[64] = {0};
+  char vpath_comp_pwr_en[64] = {0};
+  char vpath_iom_full_pwr_en[64] = {0};
   int val;
   int fru_health_last_state = 1;
   int fru_health_kv_state = 1;
@@ -314,6 +317,8 @@ gpio_monitor_poll(uint8_t fru_flag) {
   }
 
   chassis_type = (pal_get_sku() >> 6) & 0x1;
+  sprintf(vpath_comp_pwr_en, GPIO_VAL, GPIO_COMP_PWR_EN);
+  sprintf(vpath_iom_full_pwr_en, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
 
   /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
   while(1) {
@@ -327,16 +332,16 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
     // To detect Mono Lake, SCC, and NIC is present or not
     if (get_fru_prsnt(chassis_type, FRU_SLOT1) == 1) {   // absent
-      sprintf(vpath, GPIO_VAL, GPIO_COMP_PWR_EN);
       if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
         syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SLOT1 - 1]);
         is_fru_prsnt[FRU_SLOT1 - 1] = true;
-        // Turn off HSC 12V when Mono Lake was hot plugged
-        write_device(vpath, "0");
       }
-      read_device(vpath, &val);
+      // Turn off ML HSC 12V and IOM 3V3 when Mono Lake was hot plugged
+      read_device(vpath_comp_pwr_en, &val);
       if (val != 0) {
-        write_device(vpath, "0");
+        syslog(LOG_CRIT, "Powering Off Server due to server is absent."); 
+        server_12v_off(FRU_SLOT1);
+        write_device(vpath_iom_full_pwr_en, "0");
       }
       pal_err_code_enable(0xE4);
       pal_set_key_value("fru_prsnt_health", "0");
@@ -351,6 +356,15 @@ gpio_monitor_poll(uint8_t fru_flag) {
       if (is_fru_prsnt[FRU_SCC - 1] == false) {
         syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SCC - 1]);
         is_fru_prsnt[FRU_SCC - 1] = true;
+      }
+      if (get_fru_prsnt(0, FRU_SCC) == 1) { // SCC of current side is absent
+        // Turn off ML HSC 12V and IOM 3V3 when SCC was hot plugged
+        read_device(vpath_comp_pwr_en, &val);
+        if (val != 0) {
+          syslog(LOG_CRIT, "Powering Off Server due to SCC is absent."); 
+          server_12v_off(FRU_SLOT1);
+          write_device(vpath_iom_full_pwr_en, "0");
+        }
       }
       pal_err_code_enable(0xE7);
       pal_set_key_value("fru_prsnt_health", "0");
@@ -376,6 +390,16 @@ gpio_monitor_poll(uint8_t fru_flag) {
       }
       pal_err_code_disable(0xE8);
     } 
+
+    // Turn on ML HSC 12V and IOM 3V3 when Mono Lake and SCC were pushed in
+    if ((get_fru_prsnt(chassis_type, FRU_SLOT1) == 0) && (get_fru_prsnt(0, FRU_SCC) == 0)) {
+      read_device(vpath_comp_pwr_en, &val);
+      if (val != 1) {
+        syslog(LOG_CRIT, "Due to Mono Lake and SCC were pushed in. Power On Server 12V.");
+        server_12v_on(FRU_SLOT1);
+        write_device(vpath_iom_full_pwr_en, "1");
+      }
+    }
 
     // If Mono Lake is present, monitor its gpio status.
     if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {

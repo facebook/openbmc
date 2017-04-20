@@ -502,7 +502,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
 }
 
 // Control 12V to the server in a given slot
-static int
+int
 server_12v_on(uint8_t slot_id) {
   char vpath[64] = {0};
 
@@ -520,7 +520,7 @@ server_12v_on(uint8_t slot_id) {
 }
 
 // Turn off 12V for the server in given slot
-static int
+int
 server_12v_off(uint8_t slot_id) {
   char vpath[64] = {0};
 

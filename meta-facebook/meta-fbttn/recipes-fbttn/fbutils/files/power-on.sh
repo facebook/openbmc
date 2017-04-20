@@ -109,8 +109,45 @@ sync_date()
   done
 }
 
+# TODO: Add comments for each and every step
+# Check Mono Lake and SCC is present or not
+is_server_12v_off="1"
+if [ $(is_server_prsnt) == "0" ]; then
+  echo "The Mono Lake is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+  gpio_set O7 0
+  gpio_set AA7 0
+  is_server_12v_off="0"
+else
+  sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
+  chassis_type=$(($(($? >> 6)) & 0x1))
+  if [ $chassis_type -eq 0 ]; then  # type 5
+    sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
+    iom_local=$(($(($? >> 4)) & 0x3))
+    # IOMA
+    if [ $iom_local -eq 1 ] && [ $(is_scc_prsnt 478) == "0" ]; then
+      echo "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+      gpio_set O7 0
+      gpio_set AA7 0
+      is_server_12v_off="0"
+    #IOMB
+    elif [ $iom_local -eq 2 ] && [ $(is_scc_prsnt 479) == "0" ]; then
+      echo "The SCCB is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+      gpio_set O7 0
+      gpio_set AA7 0
+      is_server_12v_off="0"
+    fi
+  else  # type 7, only check SCCA
+    if [ $iom_local -eq 1 ] && [ $(is_scc_prsnt 478) == "0" ]; then
+      echo "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+      gpio_set O7 0
+      gpio_set AA7 0
+      is_server_12v_off="0"
+    fi
+  fi
+fi
+
 # Check whether it is fresh power on reset
-if [ $(is_bmc_por) -eq 1 ]; then
+if [ $(is_bmc_por) -eq 1 ] && [ $is_server_12v_off -eq 1 ]; then
 
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
@@ -148,9 +185,4 @@ if [ $(is_bmc_por) -eq 1 ]; then
   fi
 else
   sync_date
-fi
-
-if [ $(is_server_prsnt) == "0" ]; then
-  echo "The Mono Lake is absent, turn off Mono Lake HSC 12V."
-  gpio_set O7 0
 fi

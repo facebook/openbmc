@@ -6,6 +6,11 @@
     "fan_fail": true,
     "sensor_fail": true
   },
+  "fail_sensor_type": {
+    "standby_sensor_fail": true,
+    "SSD_sensor_fail":false,
+    "server_sensor_fail":true
+  },
   "watchdog": true,
   "chassis_intrusion": true,
   "min_rpm": 400,

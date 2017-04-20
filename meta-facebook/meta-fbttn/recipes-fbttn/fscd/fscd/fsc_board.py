@@ -20,6 +20,7 @@
 from fsc_util import Logger
 from ctypes import *
 from subprocess import Popen, PIPE
+from re import match
 
 
 lpal_hndl = CDLL("libpal.so")
@@ -95,3 +96,20 @@ def pal_fan_chassis_intrusion_handle():
         return None
     else:
         return self_tray_pull_out.value
+
+def get_power_status(fru):
+    cmd = "/usr/local/bin/power-util %s status" % fru
+    data=''
+    try:
+        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        result=data.split(": ")
+        if match(r'ON', result[1]) != None:
+            return 1
+        else:
+            return 0
+    except SystemExit:
+        Logger.debug("SystemExit from sensor read")
+        raise
+    except:
+        Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
+    return -1

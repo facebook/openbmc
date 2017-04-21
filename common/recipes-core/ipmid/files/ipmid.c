@@ -44,9 +44,9 @@
 #define BIOS_Timeout 600
 // Boot valid flag
 #define BIOS_BOOT_VALID_FLAG (1U << 7)
-#define CMOS_VALID_FLAG      (2U << 1)
+#define CMOS_VALID_FLAG      (1U << 1)
 
-static unsigned char IsTimerStart = false;
+static unsigned char IsTimerStart[MAX_NODES] = {0};
 
 
 extern void plat_lan_init(lan_config_t *lan);
@@ -143,7 +143,8 @@ void
 {
   int timer = 0;
   unsigned char boot[SIZE_BOOT_ORDER]={0};
-
+  unsigned char slot_id = *(uint8_t *)ptr;
+  unsigned char res_len;
   pthread_detach(pthread_self());
 
   while( timer <= BIOS_Timeout )
@@ -157,7 +158,7 @@ void
   }
 
   //get boot order setting
-  pal_get_boot_order(NULL, boot);
+  pal_get_boot_order(slot_id, NULL, boot, &res_len);
 
 #ifdef DEBUG
   syslog(LOG_WARNING, "[%s][%lu] Get: %x %x %x %x %x %x\n", __func__, pthread_self() ,boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
@@ -171,9 +172,9 @@ void
 #endif
 
   //set data
-  pal_set_boot_order(NULL, boot);
+  pal_set_boot_order(slot_id, boot, NULL, &res_len);
 
-  IsTimerStart = false;
+  IsTimerStart[slot_id - 1] = false;
 
   pthread_exit(0);
 }
@@ -1746,36 +1747,41 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   int RetVal;
-  static pthread_t bios_timer_tid;
+  int ret;
+  static pthread_t bios_timer_tid[MAX_NODES];
 
-  if ( IsTimerStart )
+  if ( IsTimerStart[req->payload_id - 1] )
   {
 #ifdef DEBUG
     syslog(LOG_WARNING, "[%s] Close the previous thread\n", __func__);
 #endif
-    pthread_cancel(bios_timer_tid);
+    pthread_cancel(bios_timer_tid[req->payload_id - 1]);
   }
 
   /*Create timer thread*/
-  RetVal = pthread_create( &bios_timer_tid, NULL, clear_bios_data_timer, NULL );
+  RetVal = pthread_create( &bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, &req->payload_id );
 
   if ( RetVal < 0 )
   {
     syslog(LOG_WARNING, "[%s] Create BIOS timer thread failed!\n", __func__);
 
     res->cc = CC_NODE_BUSY;
-
-    goto error_exit;
+    *res_len = 0;
+    return;
   }
+   
+  IsTimerStart[req->payload_id - 1] = true;
 
-  IsTimerStart = true;
+  ret = pal_set_boot_order(req->payload_id, req->data, res->data, res_len);
 
-  pal_set_boot_order(req->payload_id, &req->data);
-
-  res->cc = CC_SUCCESS;
-
-error_exit:
-  *res_len = 0;
+  if(ret == 0)
+  {
+	res->cc = CC_SUCCESS;
+  }
+  else
+  {
+	res->cc = CC_INVALID_PARAM;
+  }  
 }
 
 static void
@@ -1784,20 +1790,21 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  unsigned char boot[SIZE_BOOT_ORDER] = {0};
+  int RetVal;
 
-  pal_get_boot_order(req->payload_id, res->data);
-
-
-  //get boot order setting
-  pal_get_boot_order(NULL, boot);
+  RetVal = pal_get_boot_order(req->payload_id, req->data, res->data, res_len);
 
 #ifdef DEBUG
-  syslog(LOG_WARNING, "[%s] Get: %x %x %x %x %x %x\n", __func__, boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
+  syslog(LOG_WARNING, "[%s] Get: %x %x %x %x %x %x\n", __func__, res->data[0], res->data[1], res->data[2], res->data[3], res->data[4], res->data[5]);
 #endif
-
-  res->cc = CC_SUCCESS;
-  *res_len = SIZE_BOOT_ORDER;
+  if(RetVal == 0)
+  {
+	res->cc = CC_SUCCESS;
+  }
+  else
+  {
+	res->cc = CC_INVALID_PARAM;
+  }
 }
 
 static void

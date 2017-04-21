@@ -446,7 +446,6 @@ int pal_vr_fw_update(uint8_t *BinData);
 int pal_PBO(void);
 void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
-void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_add_cri_sel(char *str);

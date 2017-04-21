@@ -4711,18 +4711,18 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 }
 
 void
-pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {         
-         
+pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+
    char str_server_por_cfg[64];
    char *buff[MAX_VALUE_LEN];
    int policy = 3;
    uint8_t status, ret;
    unsigned char *data = res_data;
-   
+
    // Platform Power Policy
    memset(str_server_por_cfg, 0 , sizeof(char) * 64);
    sprintf(str_server_por_cfg, "%s", "server_por_cfg");
-   
+
    if (pal_get_key_value(str_server_por_cfg, buff) == 0)
    {
      if (!memcmp(buff, "off", strlen("off")))
@@ -7317,9 +7317,11 @@ pal_post_end_chk(uint8_t *post_end_chk) {
 }
 
 void
-pal_set_post_end()
+pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {
   uint8_t post_end = 1;
+
+  *res_len = 0;
 
   //Set post end chk flag to update LCD info page
   pal_post_end_chk(&post_end);

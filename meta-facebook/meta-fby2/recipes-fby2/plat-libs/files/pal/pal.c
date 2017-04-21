@@ -89,7 +89,7 @@ size_t pal_tach_cnt = 2;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
 
-uint8_t g_dev_guid[GUID_SIZE] = {0}; 
+uint8_t g_dev_guid[GUID_SIZE] = {0};
 
 typedef struct {
   uint16_t flag;
@@ -143,8 +143,8 @@ char * key_list[] = {
 "slot2_sel_error",
 "slot3_sel_error",
 "slot4_sel_error",
-"slot1_boot_order",   
-"slot2_boot_order",   
+"slot1_boot_order",
+"slot2_boot_order",
 "slot3_boot_order",
 "slot4_boot_order",
 /* Add more Keys here */
@@ -180,7 +180,7 @@ char * def_val_list[] = {
   "1", /* slot2_sel_error */
   "1", /* slot3_sel_error */
   "1", /* slot4_sel_error */
-  "0000000", /* slot1_boot_order */  
+  "0000000", /* slot1_boot_order */
   "0000000", /* slot2_boot_order */
   "0000000", /* slot3_boot_order */
   "0000000", /* slot4_boot_order */
@@ -2188,7 +2188,7 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
 int
 pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-    
+
     int ret;
     int completion_code=CC_UNSPECIFIED_ERROR;
     // Send command to get 80 port record from Bridge IC
@@ -3051,7 +3051,7 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
       for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
 	     sprintf(tstr, "%c\n", str[i]);
 	     msb = strtol(tstr, NULL, 16);
-  
+
 	     sprintf(tstr, "%c\n", str[i+1]);
 	     lsb = strtol(tstr, NULL, 16);
 	     boot[j++] = (msb << 4) | lsb;
@@ -3073,7 +3073,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
 	    snprintf(tstr, 3, "%02x", boot[i]);
    	    strncat(str, tstr, 3);
       }
-	 
+
       return pal_set_key_value(key, str);
 }
 
@@ -3093,15 +3093,15 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 }
 
 void
-pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {         
-         
+pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+
   char key[MAX_KEY_LEN] = {0};
   sprintf(key, "slot%d_por_cfg", slot);
   char *buff[MAX_VALUE_LEN];
   int policy = 3;
   uint8_t status, ret;
   unsigned char *data = res_data;
-	
+
   // Platform Power Policy
   if (pal_get_key_value(key, buff) == 0)
   {
@@ -3199,10 +3199,6 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 
 void
 pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
-  return;
-}
-void
-pal_set_post_end(void) {
   return;
 }
 

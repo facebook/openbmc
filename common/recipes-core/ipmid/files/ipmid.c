@@ -2054,11 +2054,9 @@ oem_set_post_start (unsigned char *request, unsigned char *response,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  // TODO: For now logging the event, need to find usage for this info
-  syslog (LOG_INFO, "POST Start Event for Payload#%d\n", req->payload_id);
+  pal_set_post_start(req->payload_id, req->data, res->data, res_len);
 
   res->cc = CC_SUCCESS;
-  *res_len = 0;
 }
 
 static void
@@ -2069,12 +2067,9 @@ oem_set_post_end (unsigned char *request, unsigned char *response,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   pal_update_ts_sled();
-  // TODO: For now logging the event, need to find usage for this info
-  syslog (LOG_INFO, "POST End Event for Payload#%d\n", req->payload_id);
-  pal_set_post_end();
+  pal_set_post_end(req->payload_id, req->data, res->data, res_len);
 
   res->cc = CC_SUCCESS;
-  *res_len = 0;
 }
 
 static void

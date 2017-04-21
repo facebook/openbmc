@@ -4757,12 +4757,12 @@ pal_get_sysfw_ver(uint8_t fru, uint8_t *ver) {
 }
 
 int
-pal_set_boot_order(uint8_t fru, uint8_t *boot) {
+pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
   int i;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char tstr[10] = {0};
-
+  *res_len = 0;
   sprintf(key, "server_boot_order");
 
   for (i = 0; i < SIZE_BOOT_ORDER; i++) {
@@ -4774,7 +4774,7 @@ pal_set_boot_order(uint8_t fru, uint8_t *boot) {
 }
 
 int
-pal_get_boot_order(uint8_t fru, uint8_t *boot) {
+pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
   int i;
   int j = 0;
   int ret;
@@ -4787,6 +4787,7 @@ pal_get_boot_order(uint8_t fru, uint8_t *boot) {
 
   ret = pal_get_key_value(key, str);
   if (ret) {
+    *res_len = 0;
     return ret;
   }
 
@@ -4798,7 +4799,7 @@ pal_get_boot_order(uint8_t fru, uint8_t *boot) {
     lsb = strtol(tstr, NULL, 16);
     boot[j++] = (msb << 4) | lsb;
   }
-
+  *res_len = SIZE_BOOT_ORDER;
   return 0;
 }
 

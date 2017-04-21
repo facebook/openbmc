@@ -265,7 +265,6 @@ int pal_get_poss_pcie_config(uint8_t *pcie_config);
 int pal_get_plat_sku_id(void);
 void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
-void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_err_code_enable(const uint8_t error_num);

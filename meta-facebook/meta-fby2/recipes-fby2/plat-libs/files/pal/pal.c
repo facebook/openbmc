@@ -62,6 +62,8 @@
 #define PWM_UNIT_MAX 96
 
 #define GUID_SIZE 16
+#define OFFSET_DEV_GUID 0x1800
+#define FRU_EEPROM "/sys/devices/platform/ast-i2c.8/i2c-8/8-0051/eeprom"
 
 #define MAX_READ_RETRY 10
 #define MAX_CHECK_RETRY 2
@@ -86,6 +88,8 @@ size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
+
+uint8_t g_dev_guid[GUID_SIZE] = {0}; 
 
 typedef struct {
   uint16_t flag;
@@ -1955,6 +1959,87 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
   }
 }
 
+// Write GUID into EEPROM
+static int
+pal_set_guid(uint16_t offset, char *guid) {
+  int fd = 0;
+  uint64_t tmp[GUID_SIZE];
+  ssize_t bytes_wr;
+  int i = 0;
+
+  errno = 0;
+
+  // Check for file presence
+  if (access(FRU_EEPROM, F_OK) == -1) {
+      syslog(LOG_ERR, "pal_set_guid: unable to access the %s file: %s",
+          FRU_EEPROM, strerror(errno));
+      return errno;
+  }
+
+  // Open file
+  fd = open(FRU_EEPROM, O_WRONLY);
+  if (fd == -1) {
+    syslog(LOG_ERR, "pal_set_guid: unable to open the %s file: %s",
+        FRU_EEPROM, strerror(errno));
+    return errno;
+  }
+
+  // Seek the offset
+  lseek(fd, offset, SEEK_SET);
+
+  // Write GUID data
+  bytes_wr = write(fd, guid, GUID_SIZE);
+  if (bytes_wr != GUID_SIZE) {
+    syslog(LOG_ERR, "pal_set_guid: write to %s file failed: %s",
+        FRU_EEPROM, strerror(errno));
+    goto err_exit;
+  }
+
+err_exit:
+  close(fd);
+  return errno;
+}
+
+// Read GUID from EEPROM
+static int
+pal_get_guid(uint16_t offset, char *guid) {
+  int fd = 0;
+  uint64_t tmp[GUID_SIZE];
+  ssize_t bytes_rd;
+
+  errno = 0;
+
+  // Check if file is present
+  if (access(FRU_EEPROM, F_OK) == -1) {
+      syslog(LOG_ERR, "pal_get_guid: unable to access the %s file: %s",
+          FRU_EEPROM, strerror(errno));
+      return errno;
+  }
+
+  // Open the file
+  fd = open(FRU_EEPROM, O_RDONLY);
+  if (fd == -1) {
+    syslog(LOG_ERR, "pal_get_guid: unable to open the %s file: %s",
+        FRU_EEPROM, strerror(errno));
+    return errno;
+  }
+
+  // seek to the offset
+  lseek(fd, offset, SEEK_SET);
+
+  // Read bytes from location
+  bytes_rd = read(fd, guid, GUID_SIZE);
+  if (bytes_rd != GUID_SIZE) {
+    syslog(LOG_ERR, "pal_get_guid: read to %s file failed: %s",
+        FRU_EEPROM, strerror(errno));
+    goto err_exit;
+  }
+
+err_exit:
+  close(fd);
+  return errno;
+}
+
 // GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
 static void
 pal_populate_guid(uint8_t *guid, uint8_t *str) {
@@ -2937,12 +3022,15 @@ pal_set_boot_order(uint8_t fru, uint8_t *boot) {
 
 int
 pal_set_dev_guid(uint8_t slot, char *guid) {
+      pal_populate_guid(g_dev_guid, guid);
 
-      return 0;
+      return pal_set_guid(OFFSET_DEV_GUID + (slot - 1)*GUID_SIZE, g_dev_guid);
 }
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {
+      pal_get_guid(OFFSET_DEV_GUID + (fru - 1)*GUID_SIZE, g_dev_guid);
+      memcpy(guid, g_dev_guid, GUID_SIZE);
 
       return 0;
 }

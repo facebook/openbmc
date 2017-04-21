@@ -464,7 +464,7 @@ uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t 
 uint8_t pal_get_status(void);
 void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
 int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
-
+void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

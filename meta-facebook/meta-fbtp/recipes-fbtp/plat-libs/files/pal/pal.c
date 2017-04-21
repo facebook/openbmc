@@ -4710,6 +4710,37 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
   return 0;
 }
 
+void
+pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {         
+         
+   char str_server_por_cfg[64];
+   char *buff[MAX_VALUE_LEN];
+   int policy = 3;
+   uint8_t status, ret;
+   unsigned char *data = res_data;
+   
+   // Platform Power Policy
+   memset(str_server_por_cfg, 0 , sizeof(char) * 64);
+   sprintf(str_server_por_cfg, "%s", "server_por_cfg");
+   
+   if (pal_get_key_value(str_server_por_cfg, buff) == 0)
+   {
+     if (!memcmp(buff, "off", strlen("off")))
+       policy = 0;
+     else if (!memcmp(buff, "lps", strlen("lps")))
+       policy = 1;
+     else if (!memcmp(buff, "on", strlen("on")))
+       policy = 2;
+     else
+       policy = 3;
+   }
+   *data++ = 0x01 | (policy << 5);
+   *data++ = 0x00;   // Last Power Event
+   *data++ = 0x40;   // Misc. Chassis Status
+   *data++ = 0x00;   // Front Panel Button Disable
+   *res_len = data - res_data;
+}
+
 int
 pal_set_sysfw_ver(uint8_t fru, uint8_t *ver) {
   int i;

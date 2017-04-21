@@ -184,39 +184,27 @@ void
  */
 // Get Chassis Status (IPMI/Section 28.2)
 static void
-chassis_get_status (unsigned char *response, unsigned char *res_len)
+chassis_get_status (unsigned char *request, unsigned char *response, unsigned char *res_len)
 {
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  unsigned char *data = &res->data[0];
-  char *buff[MAX_VALUE_LEN];
-  char str_server_por_cfg[64];
-  int policy = 3;
-  int ret;
-  unsigned char status;
 
   res->cc = CC_SUCCESS;
 
-  //To get Power Policy, and Current Power State
-  *data++ = pal_get_status();
-
-  *data++ = 0x00;   // Last Power Event
-  *data++ = 0x40;   // Misc. Chassis Status
-  *data++ = 0x00;   // Front Panel Button Disable
-
-  *res_len = data - &res->data[0];
+  pal_get_chassis_status(req->payload_id, req->data, res->data, res_len);
 }
 
 // Set Power Restore Policy (IPMI/Section 28.8)
 static void
 chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
-                                 unsigned char *response, unsigned char *res_len)          
+                                 unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res= (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
   *data++ = 0x07;  // Power restore policy support(bitfield)
 
-  res->cc = pal_set_power_restore_policy(req->payload_id, req->data, res->data); 
+  res->cc = pal_set_power_restore_policy(req->payload_id, req->data, res->data);
   if (res->cc == CC_SUCCESS) {
     *res_len = data - &res->data[0];
   }
@@ -240,7 +228,7 @@ chassis_get_boot_options (unsigned char *request, unsigned char req_len,
   // Fill response with default values
   res->cc = CC_SUCCESS;
   *data++ = 0x01;   // Parameter Version
-  *data++ = req->data[0]; // Parameter  
+  *data++ = req->data[0]; // Parameter
 
   *res_len = pal_get_boot_option(param, data) + 2;
 
@@ -268,7 +256,7 @@ chassis_set_boot_options (unsigned char *request, unsigned char req_len,
   res->cc = CC_SUCCESS;
 
   pal_set_boot_option(param,req->data+1);
-  
+
   *res_len = data - &res->data[0];
 }
 
@@ -285,7 +273,7 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
   switch (cmd)
   {
     case CMD_CHASSIS_GET_STATUS:
-      chassis_get_status (response, res_len);
+      chassis_get_status (request, response, res_len);
       break;
     case CMD_CHASSIS_SET_POWER_RESTORE_POLICY:
       chassis_set_power_restore_policy(request, req_len, response, res_len);
@@ -701,13 +689,13 @@ app_set_sys_info_params (unsigned char *request, unsigned char req_len,
     case SYS_INFO_PARAM_BIOS_RESTORES_DEFAULT_SETTING:
       if(length_check(SIZE_BIOS_RESTORES_DEFAULT_SETTING+1, req_len, response, res_len))
         break;
-      memcpy(g_sys_info_params.bios_restores_default_setting, &req->data[1], SIZE_BIOS_RESTORES_DEFAULT_SETTING); 
+      memcpy(g_sys_info_params.bios_restores_default_setting, &req->data[1], SIZE_BIOS_RESTORES_DEFAULT_SETTING);
       pal_set_bios_restores_default_setting(req->payload_id, g_sys_info_params.bios_restores_default_setting);
       break;
     case SYS_INFO_PARAM_LAST_BOOT_TIME:
       if(length_check(SIZE_LAST_BOOT_TIME+1, req_len, response, res_len))
         break;
-      memcpy(g_sys_info_params.last_boot_time, &req->data[1], SIZE_LAST_BOOT_TIME); 
+      memcpy(g_sys_info_params.last_boot_time, &req->data[1], SIZE_LAST_BOOT_TIME);
       pal_set_last_boot_time(req->payload_id, g_sys_info_params.last_boot_time);
       break;
     default:
@@ -1769,7 +1757,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
     *res_len = 0;
     return;
   }
-   
+
   IsTimerStart[req->payload_id - 1] = true;
 
   ret = pal_set_boot_order(req->payload_id, req->data, res->data, res_len);
@@ -1781,7 +1769,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   else
   {
 	res->cc = CC_INVALID_PARAM;
-  }  
+  }
 }
 
 static void
@@ -2198,7 +2186,7 @@ oem_get_80port_record ( unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int ret;  
+  int ret;
 
   res->cc = pal_get_80port_record (req->payload_id, req->data, req_len, res->data, res_len);
 

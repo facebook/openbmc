@@ -1463,16 +1463,6 @@ pal_get_slot_cfg_id(uint8_t *id) {
   // dummy definition
   return 0;
 }
-int
-pal_get_boot_order(uint8_t fru, uint8_t *boot) {
-  // dummy definition
-  return 0;
-}
-int
-pal_set_boot_order(uint8_t fru, uint8_t *boot) {
-  // dummy definition
-  return 0;
-}
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {

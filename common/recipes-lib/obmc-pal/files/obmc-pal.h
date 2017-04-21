@@ -39,6 +39,13 @@ int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 
+void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+int pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
+int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
+void pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+void pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+
 #ifdef __cplusplus
 }
 #endif

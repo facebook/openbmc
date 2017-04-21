@@ -16,6 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include "obmc-pal.h"
+#include <syslog.h>
 
 int __attribute__((weak))
 pal_is_fw_update_ongoing(uint8_t fru)
@@ -45,4 +46,46 @@ int __attribute__((weak))
 pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time)
 {
   return PAL_ENOTSUP;
+}
+
+void __attribute__((weak))
+pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
+{
+  *res_len = 0;
+  return;
+}
+
+int __attribute__((weak))
+pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+
+void __attribute__((weak))
+pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
+{
+// TODO: For now logging the event, need to find usage for this info
+  syslog (LOG_INFO, "POST Start Event for Payload#%d\n", slot);
+  *res_len = 0;
+  return;
+}
+
+void __attribute__((weak))
+pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
+{
+// TODO: For now logging the event, need to find usage for this info
+  syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
+  *res_len = 0;
 }

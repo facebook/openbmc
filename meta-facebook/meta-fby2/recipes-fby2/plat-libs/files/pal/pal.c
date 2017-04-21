@@ -2187,6 +2187,20 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 }
 
 int
+pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+    
+    int ret;
+    int completion_code=CC_UNSPECIFIED_ERROR;
+    // Send command to get 80 port record from Bridge IC
+    ret = bic_request_post_buffer_data(slot, res_data, res_len);
+
+    if(0 == ret)
+       completion_code = CC_SUCCESS;
+
+    return completion_code;
+}
+
+int
 pal_is_bmc_por(void) {
   uint32_t scu_fd;
   uint32_t wdt;

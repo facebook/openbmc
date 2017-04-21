@@ -1554,3 +1554,23 @@ bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
 
   return ret;
 }
+
+int 
+bic_request_post_buffer_data(uint8_t slot_id, uint8_t *port_buff, uint8_t *len) {
+  int ret;
+  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID 
+  uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
+  uint8_t rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, tbuf, 0x03, rbuf, &rlen);
+  
+  if(0 != ret)
+    goto exit_done;
+  
+  // Ignore first 3 bytes of IANA ID
+  memcpy(port_buff, &rbuf[3], rlen - 3);
+  *len = rlen - 3;
+
+exit_done:
+  return ret;
+}

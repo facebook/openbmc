@@ -277,6 +277,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
   int fru_health_last_state = 1;
   int fru_health_kv_state = 1;
   char tmp_health[MAX_VALUE_LEN];
+  int is_fru_missing[2] = {0};
 
   /* Check for initial Asserts */
   for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
@@ -347,6 +348,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       }
       pal_err_code_enable(0xE4);
       pal_set_key_value("fru_prsnt_health", "0");
+      is_fru_missing[0] = 1;
     } else {
       if (is_fru_prsnt[FRU_SLOT1 - 1] == true) {        
         syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1 - 1]);
@@ -371,6 +373,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       pal_err_code_enable(0xE7);
       pal_set_key_value("fru_prsnt_health", "0");
       pal_set_key_value("scc_sensor_health", "0");
+      is_fru_missing[1] = 1;
     } else {
       if (is_fru_prsnt[FRU_SCC - 1] == true) {
         syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC - 1]);
@@ -396,11 +399,13 @@ gpio_monitor_poll(uint8_t fru_flag) {
     // Turn on ML HSC 12V and IOM 3V3 when Mono Lake and SCC were pushed in
     if ((get_fru_prsnt(chassis_type, FRU_SLOT1) == 0) && (get_fru_prsnt(0, FRU_SCC) == 0)) {
       read_device(vpath_comp_pwr_en, &val);
-      if (val != 1) {
+      if ((val != 1) && ((is_fru_missing[0] == 1) || (is_fru_missing[1] == 1))) {
         syslog(LOG_CRIT, "Due to Mono Lake and SCC were pushed in. Power On Server 12V.");
         server_12v_on(FRU_SLOT1);
         write_device(vpath_iom_full_pwr_en, "1");
       }
+      is_fru_missing[0] = 0;
+      is_fru_missing[1] = 0;
     }
 
     // If Mono Lake is present, monitor its gpio status.

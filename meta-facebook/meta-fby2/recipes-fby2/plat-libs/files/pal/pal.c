@@ -1074,11 +1074,18 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
     val = "0";
   }
 
+  // Disable GPIOD pass-through function
+  system("devmem 0x1e6e207c w 0x600000");
+
   sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
   if (write_device(path, val)) {
+    // Enable GPIOD pass-through function
+    system("devmem 0x1e6e2070 w 0xF12AE206");
     return -1;
   }
 
+  // Enable GPIOD pass-through function
+  system("devmem 0x1e6e2070 w 0xF12AE206");
   return 0;
 }
 

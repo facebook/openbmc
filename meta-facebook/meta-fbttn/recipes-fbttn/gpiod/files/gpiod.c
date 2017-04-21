@@ -522,6 +522,7 @@ void pcie_power_cycle(void) {
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   write_device(vpath, "1");
   write_device(vpath, "0");
+  msleep(120);
   write_device(vpath, "1");
 }
 

@@ -3819,7 +3819,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   completion_code = CC_SUCCESS;  // Fill response with default values
   unsigned char policy = *pwr_policy & 0x07;  // Power restore policy
 
-  if (slot =! FRU_SLOT1) {
+  if (slot != FRU_SLOT1) {
     return -1;
   }
 

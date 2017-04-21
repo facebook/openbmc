@@ -222,7 +222,8 @@ int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting
 uint8_t pal_get_status(void);
 void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
 int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
-
+int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
+int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

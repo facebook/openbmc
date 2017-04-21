@@ -2186,6 +2186,19 @@ oem_get_board_id(unsigned char *request, unsigned char *response,
 }
 
 static void
+oem_get_80port_record ( unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;  
+
+  res->cc = pal_get_80port_record (req->payload_id, req->data, req_len, res->data, res_len);
+
+  return;
+}
+
+static void
 oem_get_fw_info ( unsigned char *request, unsigned char req_len,
                   unsigned char *response, unsigned char *res_len)
 {
@@ -2249,6 +2262,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_BOARD_ID:
       oem_get_board_id (request, response, res_len);
+      break;
+    case CMD_OEM_GET_80PORT_RECORD:
+      oem_get_80port_record (request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_FW_INFO:
       oem_get_fw_info (request, req_len, response, res_len);

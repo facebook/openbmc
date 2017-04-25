@@ -247,7 +247,12 @@ def main():
     offset = fdt.resolve_path('/images/firmware@1/data-position')
     position = int(offset[0])
     offset = fdt.resolve_path('/images/firmware@1/data-size')
+
+    # Assure size is mod(4).
     size = int(offset[0])
+    size = size + (4 - (size % 4))
+    offset.words[0] = size
+
     if position <= 0 or size <= 0:
         print("Firmware U-Boot position is unknown /images/firmware@1")
         sys.exit(1)

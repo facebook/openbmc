@@ -50,7 +50,6 @@ board_gpio_table_v2 = [
     BoardGPIO('GPIOF1', 'BMC_MAIN_RESET_N'),
     BoardGPIO('GPIOF2', 'CPLD_JTAG_SEL'),
     BoardGPIO('GPIOF4', 'MSERV_POWERUP'),
-    BoardGPIO('GPIOF5', 'BMC_UART_4_RTS'),
     BoardGPIO('GPIOG0', 'LED_POSTCODE_0'),
     BoardGPIO('GPIOG1', 'LED_POSTCODE_1'),
     BoardGPIO('GPIOG2', 'LED_POSTCODE_2'),

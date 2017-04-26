@@ -25,7 +25,6 @@ D18,GPIOF0_NCTS4,Out,MSERVE_ISOBUF_EN,To enable  isolation buffer dedicated for 
 B19,GPIOF1_NDCD4_SIOPBI_N,Out,BMC_MAIN_RESET_N,BMC can request cpld to reset main power
 A20,GPIOF2_NDSR4_SIOPWRGD,Out,CPLD_JTAG_SEL,"SYSCPLD upgrade enable, 0: jtag header program, 1: BMC programming"
 B18,GPIOF4_NDTR4,Out,MSERV_POWERUP,To request cpld to turn on P12_uServer for microserver
-A19,GPIOF5_NRTS4,Out,RCKMON_RS485_DE,RS485 Drive Enable (TX/RX Toggle) pin for rackmon
 A14,GPIOG0_SGPSCK,Out,LED_POSTCODE_0,LED 7-segment code bit-0 for facebook debug header
 E13,GPIOG1_SGPSLD,Out,LED_POSTCODE_1,LED 7-segment code bit-1 for facebook debug header
 D13,GPIOG2_SGPSI0,Out,LED_POSTCODE_2,LED 7-segment code bit-2 for facebook debug header

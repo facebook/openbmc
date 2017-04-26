@@ -1,4 +1,5 @@
 {
+  "version": "fby2-evt-v0.1",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -83,7 +84,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -14,
+      "setpoint": -10,
       "negative_hysteresis": 1,
       "positive_hysteresis": 1,
       "kp": -1.25,
@@ -105,6 +106,70 @@
       ]
     },
     "pid_mb_outlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 53,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 1,
+      "kp": -2,
+      "ki": -0.025,
+      "kd": 0
+    },
+    "pid_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 53,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 1,
+      "kp": -2,
+      "ki": -0.025,
+      "kd": 0
+    },
+    "linear_mb_m2_boot": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 43, 18 ],
+        [ 45, 19 ],
+        [ 47, 21 ],
+        [ 49, 23 ]
+      ]
+    },
+    "pid_mb_m2_boot": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 53,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 1,
+      "kp": -2,
+      "ki": -0.025,
+      "kd": 0
+    },
+    "linear_gp_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 43, 18 ],
+        [ 45, 19 ],
+        [ 47, 21 ],
+        [ 49, 23 ]
+      ]
+    },
+    "pid_gp_m2": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

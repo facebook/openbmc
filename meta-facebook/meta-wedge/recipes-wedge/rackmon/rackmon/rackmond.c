@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/ioctl.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,6 +16,7 @@
 #include <stdarg.h>
 #include <syslog.h>
 #include <signal.h>
+#include <linux/serial.h>
 
 #define MAX_ACTIVE_ADDRS 24
 #define REGISTER_PSU_STATUS 0x68
@@ -49,7 +51,6 @@ typedef struct _rs485_dev {
   // hold this for the duration of a command
   pthread_mutex_t lock;
   int tty_fd;
-  gpio_st gpio;
 } rs485_dev;
 
 typedef struct _register_req {
@@ -195,7 +196,6 @@ int modbus_command(rs485_dev* dev, int timeout, char* command, size_t len, char*
   lock_holder(devlock, &dev->lock);
   modbus_req req;
   req.tty_fd = dev->tty_fd;
-  req.gpio = &dev->gpio;
   req.modbus_cmd = command;
   req.cmd_len = len;
   req.dest_buf = destbuf;
@@ -504,17 +504,22 @@ void* monitoring_loop(void* arg) {
   return NULL;
 }
 
-int open_rs485_dev(const char* tty_filename, int gpio_num, rs485_dev *dev) {
+int open_rs485_dev(const char* tty_filename, rs485_dev *dev) {
   int error = 0;
   int tty_fd;
   dbg("[*] Opening TTY\n");
   tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
   CHECK(tty_fd);
 
-  dbg("[*] Opening GPIO %d\n", gpio_num);
-  gpio_open(&dev->gpio, gpio_num);
-  dbg("[*] Set GPIO %d dir to out\n", gpio_num);
-  gpio_change_direction(&dev->gpio, GPIO_DIRECTION_OUT);
+  struct serial_rs485 rs485conf = {};
+  rs485conf.flags |= SER_RS485_ENABLED;
+  dbg("[*] Putting TTY in RS485 mode\n");
+  error = ioctl(tty_fd, TIOCSRS485, &rs485conf);
+  if (error < 0) {
+    fprintf(stderr, "FATAL: could not set TTY to RS485 mode: %d %s\n",
+        error, strerror(error));
+    goto cleanup;
+  }
 
   dev->tty_fd = tty_fd;
   pthread_mutex_init(&dev->lock, NULL);
@@ -774,7 +779,7 @@ int main(int argc, char** argv) {
   verbose = getenv("RACKMOND_VERBOSE") != NULL ? 1 : 0;
   openlog("rackmond", 0, LOG_USER);
   syslog(LOG_INFO, "rackmon/modbus service starting");
-  CHECK(open_rs485_dev(DEFAULT_TTY, DEFAULT_GPIO, &world.rs485));
+  CHECK(open_rs485_dev(DEFAULT_TTY, &world.rs485));
   pthread_t monitoring_thread;
   pthread_create(&monitoring_thread, NULL, monitoring_loop, NULL);
   struct sockaddr_un local, client;

@@ -32,19 +32,17 @@
 
 int verbose = 0;
 
-#define TIOCSERWAITTEMT 0x5499
-int waitfd(int fd, int gpio) {
+int waitfd(int fd) {
   int loops = 0;
-  ioctl(fd, TIOCSERWAITTEMT, gpio);
   while(1) {
     int lsr;
     int ret = ioctl(fd, TIOCSERGETLSR, &lsr);
     if(ret == -1) {
-      fprintf(stderr, "Error checking ioctl: %s\n", strerror(errno));
+      fprintf(stderr, "Error checking LSR: %s\n", strerror(errno));
       break;
     }
     if(lsr & TIOCSER_TEMT) break;
-    // never should hit this with new ioctl
+    // never should hit this if kernel supports RS485 mode
     loops++;
   }
   return loops;
@@ -231,8 +229,6 @@ int modbuscmd(modbus_req *req) {
     sp.sched_priority = 50;
     int policy = SCHED_FIFO;
     CHECKP(sched, pthread_setschedparam(pthread_self(), policy, &sp));
-    // gpio on, write, wait, gpio off
-    gpio_write(req->gpio, GPIO_VALUE_HIGH);
     struct timespec write_begin;
     struct timespec wait_begin;
     struct timespec wait_end;
@@ -240,9 +236,8 @@ int modbuscmd(modbus_req *req) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &write_begin);
     write(req->tty_fd, modbus_cmd, cmd_len);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_begin);
-    int waitloops = waitfd(req->tty_fd, req->gpio->gs_gpio);
+    int waitloops = waitfd(req->tty_fd);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_end);
-    gpio_write(req->gpio, GPIO_VALUE_LOW);
     sp.sched_priority = 0;
     // Enable UART read
     tio.c_cflag |= CREAD;

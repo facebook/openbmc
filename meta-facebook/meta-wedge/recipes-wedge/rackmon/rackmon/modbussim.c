@@ -26,16 +26,16 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <getopt.h>
+#include <linux/serial.h>
 #include "modbus.h"
 
 void usage() {
   fprintf(stderr,
-      "modbussim [-v] [-t <tty>] [-g <gpio>] modbus_request modbus_reply\n"
+      "modbussim [-v] [-t <tty>] modbus_request modbus_reply\n"
       "\ttty defaults to %s\n"
-      "\tgpio defaults to %d\n"
       "\tmodbus request/reply should be specified in hex\n"
       "\teg:\ta40300000008\n",
-      DEFAULT_TTY, DEFAULT_GPIO);
+      DEFAULT_TTY);
   exit(1);
 }
 
@@ -43,8 +43,6 @@ int main(int argc, char **argv) {
     int error = 0;
     int fd;
     struct termios tio;
-    gpio_st gs;
-    int gpio_n = DEFAULT_GPIO;
     char *tty = DEFAULT_TTY;
     char *modbus_cmd = NULL;
     char *modbus_reply = NULL;
@@ -58,9 +56,6 @@ int main(int argc, char **argv) {
       switch (opt) {
       case 't':
         tty = optarg;
-        break;
-      case 'g':
-        gpio_n = atoi(optarg);
         break;
       case 'v':
         verbose = 1;
@@ -83,9 +78,16 @@ int main(int argc, char **argv) {
     fd = open(tty, O_RDWR | O_NOCTTY);
     CHECK(fd);
 
+    struct serial_rs485 rs485conf = {};
+    rs485conf.flags |= SER_RS485_ENABLED;
     if (verbose)
-      fprintf(stderr, "[*] Opening GPIO %d\n", gpio_n);
-    CHECK(gpio_open(&gs, gpio_n));
+      fprintf(stderr, "[*] Putting TTY in RS485 mode\n");
+    error = ioctl(fd, TIOCSRS485, &rs485conf);
+    if (error < 0) {
+      fprintf(stderr, "FATAL: could not set TTY to RS485 mode: %d %s\n",
+          error, strerror(error));
+      goto cleanup;
+    }
 
     if (verbose)
       fprintf(stderr, "[*] Setting TTY flags!\n");
@@ -125,7 +127,6 @@ int main(int argc, char **argv) {
     // Enable UART read
     tio.c_cflag |= CREAD;
     CHECK(tcsetattr(fd,TCSANOW,&tio));
-    gpio_write(&gs, GPIO_VALUE_LOW);
 
     if(verbose)
       fprintf(stderr, "[*] Wait for matching command...\n");
@@ -163,11 +164,8 @@ wait_for_command:
     // Disable UART read
     tio.c_cflag &= ~CREAD;
     CHECK(tcsetattr(fd,TCSANOW,&tio));
-    // gpio on, write, wait, gpio off
-    gpio_write(&gs, GPIO_VALUE_HIGH);
     write(fd, modbus_reply, reply_len);
-    waitfd(fd, gs.gs_gpio);
-    gpio_write(&gs, GPIO_VALUE_LOW);
+    waitfd(fd);
 
 cleanup:
     if(error != 0) {

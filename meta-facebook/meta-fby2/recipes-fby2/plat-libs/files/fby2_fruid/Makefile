@@ -19,7 +19,7 @@ lib: libfby2_fruid.so
 
 libfby2_fruid.so: fby2_fruid.c
 	$(CC) $(CFLAGS) -fPIC -c -o fby2_fruid.o fby2_fruid.c
-	$(CC) -lfby2_common -shared -o libfby2_fruid.so fby2_fruid.o -lc
+	$(CC) -lfby2_common -lfby2_sensor -shared -o libfby2_fruid.so fby2_fruid.o -lc
 
 .PHONY: clean
 

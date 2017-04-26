@@ -32,7 +32,9 @@
 #include <string.h>
 #include <stdint.h>
 #include "fruid.h"
+#include <facebook/fby2_common.h>
 
+#define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
 #define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"
 #define EEPROM_NIC      "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom"
 
@@ -41,6 +43,102 @@
 #define BIN_SLOT        "/tmp/fruid_slot%d.bin"
 
 #define FRUID_SIZE        256
+
+#define SLOT_FILE       "/tmp/slot.bin"
+
+enum {
+  IPMB_BUS_SLOT1 = 1,
+  IPMB_BUS_SLOT2 = 3,
+  IPMB_BUS_SLOT3 = 5,
+  IPMB_BUS_SLOT4 = 7,
+};
+
+// Helper Functions
+static int
+read_device(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return err;
+  }
+
+  rc = fscanf(fp, "%d", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+/*
+ * Get SLOT type
+ * PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+ * PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+ * PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+ * PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+ */
+int
+plat_get_slot_type(uint8_t fru) {
+  int type;
+
+  if (read_device(SLOT_FILE, &type)) {
+    printf("Get slot type failed\n");
+    return -1;
+  }
+
+  switch(fru)
+  {
+    case 1:
+      type = (type & (0x3 << 0)) >> 0;
+    break;
+    case 2:
+      type = (type & (0x3 << 2)) >> 2;
+    break;
+    case 3:
+      type = (type & (0x3 << 4)) >> 4;
+    break;
+    case 4:
+      type = (type & (0x3 << 6)) >> 6;
+    break;
+  }
+
+  return type;
+}
+
+static int
+plat_get_ipmb_bus_id(uint8_t slot_id) {
+  int bus_id;
+
+  switch(slot_id) {
+  case FRU_SLOT1:
+    bus_id = IPMB_BUS_SLOT1;
+    break;
+  case FRU_SLOT2:
+    bus_id = IPMB_BUS_SLOT2;
+    break;
+  case FRU_SLOT3:
+    bus_id = IPMB_BUS_SLOT3;
+    break;
+  case FRU_SLOT4:
+    bus_id = IPMB_BUS_SLOT4;
+    break;
+  default:
+    bus_id = -1;
+    break;
+  }
+
+  return bus_id;
+}
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -97,13 +195,43 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   return 0;
 }
 
-/* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
 
   int ret;
+  int fru=0;
+  char path[128] = {0};
+  char fpath[64] = {0};
 
-  ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
-  ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
+  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+
+    switch(fru) {
+      case FRU_SLOT1:
+      case FRU_SLOT2:
+      case FRU_SLOT3:
+      case FRU_SLOT4:
+        switch(plat_get_slot_type(fru))
+        {
+           case SLOT_TYPE_SERVER:
+             // Do not access EEPROM
+             break;
+           case SLOT_TYPE_CF:
+           case SLOT_TYPE_GP:
+             sprintf(path, EEPROM_DC, plat_get_ipmb_bus_id(fru), plat_get_ipmb_bus_id(fru));
+             sprintf(fpath, BIN_SLOT, fru);
+             ret = copy_eeprom_to_bin(path, fpath);
+             break;
+        }
+        break;
+      case FRU_SPB:
+        ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
+        break;
+      case FRU_NIC:
+        ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
+        break;
+      default:
+        break;
+    }  
+  }
 
   return ret;
 }

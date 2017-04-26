@@ -101,32 +101,3 @@ i2cset -y -f 10 0x40 0xd4 0x071c w
 rmmod adm1275
 modprobe adm1275
 
-
-# create devices on I2C bus 1 and bus 5
-# Bus1,  Glacier Point
-# EEPROM, 0xA2
-echo 24c128 0x51 > /sys/class/i2c-dev/i2c-1/device/new_device
-# Inlet temp sensor, 0x9A
-echo tmp75 0x4d > /sys/class/i2c-dev/i2c-1/device/new_device
-# outlet temp sensor, 0x9C
-echo tmp75 0x4e > /sys/class/i2c-dev/i2c-1/device/new_device
-# I2C mux, 0xE2
-echo pca9551 0x71 > /sys/class/i2c-dev/i2c-1/device/new_device
-# I2C GPIO, 0x40
-echo pca9551 0x20 > /sys/class/i2c-dev/i2c-1/device/new_device
-# Voltage sensor, 0x80
-echo ina230 0x40 > /sys/class/i2c-dev/i2c-1/device/new_device
-
-# Bus5,  Glacier Point
-# EEPROM, 0xA2
-echo 24c128 0x51 > /sys/class/i2c-dev/i2c-5/device/new_device
-# Inlet temp sensor, 0x9A
-echo tmp75 0x4d > /sys/class/i2c-dev/i2c-5/device/new_device
-# outlet temp sensor, 0x9C
-echo tmp75 0x4e > /sys/class/i2c-dev/i2c-5/device/new_device
-# I2C mux, 0xE2
-echo pca9551 0x71 > /sys/class/i2c-dev/i2c-5/device/new_device
-# I2C GPIO, 0x40
-echo pca9551 0x20 > /sys/class/i2c-dev/i2c-5/device/new_device
-# Voltage sensor, 0x80
-echo ina230 0x40 > /sys/class/i2c-dev/i2c-5/device/new_device

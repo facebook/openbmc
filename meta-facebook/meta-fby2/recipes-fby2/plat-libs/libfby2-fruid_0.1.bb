@@ -26,7 +26,7 @@ LIC_FILES_CHKSUM = "file://fby2_fruid.c;beginline=6;endline=18;md5=da35978751a9d
 SRC_URI = "file://fby2_fruid \
           "
 
-DEPENDS += " libfby2-common "
+DEPENDS += " libfby2-common libfby2-sensor "
 
 S = "${WORKDIR}/fby2_fruid"
 

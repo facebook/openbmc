@@ -23,6 +23,40 @@
 #include <syslog.h>
 #include "fby2_fruid.h"
 
+enum {
+  IPMB_BUS_SLOT1 = 1,
+  IPMB_BUS_SLOT2 = 3,
+  IPMB_BUS_SLOT3 = 5,
+  IPMB_BUS_SLOT4 = 7,
+};
+
+// Common IPMB Wrapper function
+
+static int
+plat_get_ipmb_bus_id(uint8_t slot_id) {
+  int bus_id;
+
+  switch(slot_id) {
+  case FRU_SLOT1:
+    bus_id = IPMB_BUS_SLOT1;
+    break;
+  case FRU_SLOT2:
+    bus_id = IPMB_BUS_SLOT2;
+    break;
+  case FRU_SLOT3:
+    bus_id = IPMB_BUS_SLOT3;
+    break;
+  case FRU_SLOT4:
+    bus_id = IPMB_BUS_SLOT4;
+    break;
+  default:
+    bus_id = -1;
+    break;
+  }
+
+  return bus_id;
+}
+
 /* Populate char path[] with the path to the fru's fruid binary dump */
 int
 fby2_get_fruid_path(uint8_t fru, char *path) {
@@ -67,7 +101,17 @@ fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      return -1;
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+          return -1;
+          break;
+        case SLOT_TYPE_CF:
+        case SLOT_TYPE_GP:
+          sprintf(path, "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom",plat_get_ipmb_bus_id(fru),plat_get_ipmb_bus_id(fru));
+          break;
+      }
+      break;
     case FRU_SPB:
       sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
       break;
@@ -90,16 +134,21 @@ fby2_get_fruid_name(uint8_t fru, char *name) {
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(name, "MonoLake Board 1");
-      break;
     case FRU_SLOT2:
-      sprintf(name, "MonoLake Board 2");
-      break;
     case FRU_SLOT3:
-      sprintf(name, "MonoLake Board 3");
-      break;
     case FRU_SLOT4:
-      sprintf(name, "MonoLake Board 4");
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+          sprintf(name, "Server Board %d",fru);
+          break;
+        case SLOT_TYPE_CF:
+          sprintf(name, "Crane Flat %d",fru);
+          break;
+        case SLOT_TYPE_GP:
+          sprintf(name, "Glacier Point %d",fru);
+          break;
+      }
       break;
     case FRU_SPB:
       sprintf(name, "Side Plane Board");

@@ -20,6 +20,7 @@
 #define __FBY2_FRUID_H__
 
 #include <facebook/fby2_common.h>
+#include <facebook/fby2_sensor.h>
 
 #define FBY2_FRU_PATH "/tmp/fruid_%s.bin"
 

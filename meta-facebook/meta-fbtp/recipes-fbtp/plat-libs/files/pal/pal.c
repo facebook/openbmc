@@ -3503,6 +3503,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
         ret = read_temp_attr(MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        if (!ret)
+          apply_inlet_correction((float *) value);
         break;
       case MB_SENSOR_OUTLET_REMOTE_TEMP:
         ret = read_temp_attr(MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);

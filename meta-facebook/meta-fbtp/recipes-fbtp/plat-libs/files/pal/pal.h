@@ -30,6 +30,7 @@ extern "C" {
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/me.h>
 #include <stdbool.h>
 
 #define MAX_KEY_LEN     64

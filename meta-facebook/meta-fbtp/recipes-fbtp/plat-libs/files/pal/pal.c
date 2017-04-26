@@ -5837,7 +5837,7 @@ pal_update_ts_sled()
 
 int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
-  return 0;
+  return me_xmit(request, req_len, response, rlen);
 }
 
 int

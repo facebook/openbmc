@@ -478,3 +478,13 @@ me_get_sys_guid(uint8_t *guid) {
 
   return ret;
 }
+
+int
+me_xmit(uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
+  ipmi_req_t *req = (ipmi_req_t*) txbuf;
+  uint8_t netfn = req->netfn_lun >> 2;
+  uint8_t cmd = req->cmd;
+  uint8_t tlen = txlen-2; //Discarding netfn, cmd bytes
+
+  return me_ipmb_wrapper(netfn, cmd, req->data, tlen, rxbuf, rxlen);
+}

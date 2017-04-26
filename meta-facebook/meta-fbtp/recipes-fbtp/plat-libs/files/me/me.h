@@ -47,6 +47,8 @@ int me_read_sensor(uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 
 int me_get_sys_guid(uint8_t *guid);
 
+int me_xmit(uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

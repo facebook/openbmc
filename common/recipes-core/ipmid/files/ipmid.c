@@ -2816,7 +2816,7 @@ wdt_timer (void *arg) {
 
       // Timeout
       if (wdt->present_count_down == 0) {
-        wdt->expiration |= wdt->use;
+        wdt->expiration |= (1 << wdt->use);
 
         // Execute actin out of mutex
         action = wdt->action;

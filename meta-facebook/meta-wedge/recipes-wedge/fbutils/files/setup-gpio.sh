@@ -209,11 +209,6 @@ devmem_clear_bit $(scu_addr 70) 22
 echo 32 > /sys/class/gpio/export
 # output
 
-# RS485 transceiver TX/RX toggle (RTS) pin, GPIOF5
-devmem_clear_bit $(scu_addr 80) 29
-echo 45 > /sys/class/gpio/export
-gpio_set 45 0
-
 # USB_BRDG_RST , GPIO D4
 devmem_clear_bit $(scu_addr 90 ) 1
 devmem_clear_bit $(scu_addr 8c ) 10

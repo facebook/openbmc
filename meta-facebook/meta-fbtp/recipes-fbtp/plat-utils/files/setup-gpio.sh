@@ -300,6 +300,12 @@ devmem_set_bit $(scu_addr A0) 19
 
 gpio_set V3 0
 
+# FM_OC_DETECT_EN_N: GPIOM3 (99)
+# To use GPIOM3, SCU84[27] must be 0
+devmem_clear_bit $(scu_addr 84) 27
+
+gpio_set M3 0
+
 # UV_HIGH_SET: GPIOAA5(???)
 # To use GIOAA5, SCUA4[29] must be 0
 devmem_clear_bit $(scu_addr A4) 29

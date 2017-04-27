@@ -89,3 +89,9 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
   *res_len = 0;
 }
+
+int __attribute__((weak))
+pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+	return PAL_EOK;
+}

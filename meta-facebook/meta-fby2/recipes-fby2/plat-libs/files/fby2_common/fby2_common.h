@@ -94,6 +94,10 @@ enum {
 #define GPIO_RST_SLOT2_SYS_RESET_N        145
 #define GPIO_RST_SLOT3_SYS_RESET_N        146
 #define GPIO_RST_SLOT4_SYS_RESET_N        147
+#define GPIO_BOARD_REV_ID0                192
+#define GPIO_BOARD_REV_ID1                193
+#define GPIO_BOARD_REV_ID2                194
+#define GPIO_BOARD_ID                     195
 #define GPIO_SLOT1_PRSNT_B_N              200
 #define GPIO_SLOT2_PRSNT_B_N              201
 #define GPIO_SLOT3_PRSNT_B_N              202

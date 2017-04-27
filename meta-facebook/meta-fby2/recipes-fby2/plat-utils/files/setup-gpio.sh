@@ -198,6 +198,8 @@ gpio_set E3 1
 devmem_clear_bit $(scu_addr a4) 11
 devmem_clear_bit $(scu_addr 94) 11
 
+gpio_export Y3
+
 # Power LED for Slot#2:
 # To use GPIOM0 (96), SCU90[4], SCU90[5], and SCU84[24] must be 0
 devmem_clear_bit $(scu_addr 90) 4

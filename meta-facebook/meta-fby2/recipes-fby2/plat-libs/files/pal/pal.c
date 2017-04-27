@@ -3014,6 +3014,65 @@ pal_fan_recovered_handle(int fan_num) {
   return 0;
 }
 
+int 
+pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+	int BOARD_ID, BOARD_REV_ID0, BOARD_REV_ID1, BOARD_REV_ID2, SLOT_TYPE;
+	char path[64] = {0};
+	unsigned char *data = res_data;
+	int completion_code = CC_UNSPECIFIED_ERROR;
+	
+	sprintf(path, GPIO_VAL, GPIO_BOARD_ID);
+	if (read_device(path, &BOARD_ID)) {
+		*res_len = 0;
+		return completion_code;
+	}
+	
+	sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID0);
+	if (read_device(path, &BOARD_REV_ID0)) {
+		*res_len = 0;
+		return completion_code;
+	}
+	
+	sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID1);
+	if (read_device(path, &BOARD_REV_ID1)) {
+		*res_len = 0;
+		return completion_code;
+	}
+	
+	sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID2);
+	if (read_device(path, &BOARD_REV_ID2)) {
+		*res_len = 0;
+		return completion_code;
+	}
+	
+	
+	switch(fby2_get_slot_type(slot))
+	{
+		case SLOT_TYPE_SERVER:
+			SLOT_TYPE = 0x00;
+			break;
+		case SLOT_TYPE_CF:
+			SLOT_TYPE = 0x02;
+			break;
+		case SLOT_TYPE_GP:
+			SLOT_TYPE = 0x01;
+			break;
+		default :
+			*res_len = 0;
+			return completion_code;
+	}
+	 
+	*data++ = BOARD_ID;
+	*data++ = (BOARD_REV_ID2 << 2) | (BOARD_REV_ID1 << 1) | BOARD_REV_ID1;
+	*data++ = slot;
+	*data++ = SLOT_TYPE;
+	*res_len = data - res_data;
+	completion_code = CC_SUCCESS;
+	
+	return completion_code;
+}
+
 int
 pal_get_board_rev_id(uint8_t *id) {
 

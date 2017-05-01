@@ -2498,6 +2498,8 @@ key_func_por_policy (int event, void *arg)
 
   switch (event) {
     case KEY_BEFORE_SET:
+      if (pal_is_fw_update_ongoing(FRU_MB))
+        return -1;
       // sync to env
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", (char *)arg);
       system(cmd);
@@ -2521,6 +2523,8 @@ key_func_lps (int event, void *arg)
 
   switch (event) {
     case KEY_BEFORE_SET:
+      if (pal_is_fw_update_ongoing(FRU_MB))
+        return -1;
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", (char *)arg);
       system(cmd);
       break;
@@ -7441,6 +7445,10 @@ pal_is_fw_update_ongoing(uint8_t fru) {
 
   if (fru != FRU_MB)
     return 0;
+
+  ret = system("pidof flashcp &> /dev/null");
+  if (WIFEXITED(ret) && WEXITSTATUS(ret) == 0)
+    return 1;
 
   strcpy(key, "mb_fwupd");
   ret = edb_cache_get(key, value);

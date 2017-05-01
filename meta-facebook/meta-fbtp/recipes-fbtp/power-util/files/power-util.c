@@ -84,6 +84,11 @@ power_util(uint8_t fru, uint8_t opt) {
     exit(-1);
   }
 
+  if (opt != PWR_STATUS && pal_is_fw_update_ongoing(FRU_MB)){
+    printf("FW update is ongoing, block the power controling.\n");
+    exit(-1);
+  }
+
   switch(opt) {
     case PWR_STATUS:
       ret = pal_get_server_power(fru, &status);

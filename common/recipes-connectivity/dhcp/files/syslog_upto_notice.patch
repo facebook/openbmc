@@ -1,0 +1,13 @@
+diff --git a/client/dhclient.c b/client/dhclient.c
+index 8d71705..eec1e83 100644
+--- a/client/dhclient.c
++++ b/client/dhclient.c
+@@ -246,7 +246,7 @@ main(int argc, char **argv) {
+ 	openlog(isc_file_basename(progname), DHCP_LOG_OPTIONS, LOG_DAEMON);
+ 
+ #if !(defined(DEBUG) || defined(__CYGWIN32__))
+-	setlogmask(LOG_UPTO(LOG_INFO));
++	setlogmask(LOG_UPTO(LOG_NOTICE));
+ #endif
+ 
+ 	/* Parse arguments changing no_daemon */

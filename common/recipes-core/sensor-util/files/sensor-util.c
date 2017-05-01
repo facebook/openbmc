@@ -26,6 +26,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <time.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 #include <openbmc/obmc-sensor.h>
@@ -173,17 +174,55 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
   }
 }
 
+static int
+print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, long period) {
+  int ret;
+  uint8_t status;
+  int sensor_cnt;
+  uint8_t *sensor_list;
+  char fruname[16] = {0};
+  
+  if (pal_get_fru_name(fru, fruname)) {
+    sprintf(fruname, "fru%d", fru);
+  }
+
+  ret = pal_is_fru_prsnt(fru, &status);
+  if (ret < 0) {
+    printf("pal_is_fru_prsnt failed for fru: %s\n", fruname);
+    return ret;
+  }
+  if (status == 0) {
+    printf("%s is empty!\n", fruname);
+    return -1;
+  }
+
+  ret = pal_is_fru_ready(fru, &status);
+  if ((ret < 0) || (status == 0)) {
+    printf("%s is unavailable!\n", fruname);
+    return ret;
+  }
+
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    printf("%s get sensor list failed!\n", fruname);
+    return ret;
+  }
+
+  if (history) {
+    get_sensor_history(fru, sensor_list, sensor_cnt, sensor_num, period);
+  } else {
+    get_sensor_reading(fru, sensor_list, sensor_cnt, sensor_num, threshold);
+  }
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
 
   int i;
   int ret;
-  int sensor_cnt;
-  uint8_t status;
-  uint8_t *sensor_list;
   uint8_t fru;
   uint8_t num = 0;
-  char fruname[16];
   bool threshold = false;
   bool history = false;
   long period = 60;
@@ -231,77 +270,11 @@ main(int argc, char **argv) {
   }
 
   if (fru == 0) {
-    fru = 1;
-    while (fru <= MAX_NUM_FRUS) {
-
-      ret = pal_is_fru_prsnt(fru, &status);
-      if (ret < 0) {
-        printf("pal_is_server_fru failed for fru: %d\n", fru);
-      }
-
-      if (status == 0) {
-        if (pal_get_fru_name(fru, fruname))
-          fruname[0] = '\0';
-        printf("%s is empty!\n\n", fruname);
-        fru++;
-        continue;
-      }
-
-      ret = pal_is_fru_ready(fru, &status);
-      if ((ret < 0) || (status == 0)) {
-        if (pal_get_fru_name(fru, fruname))
-          fruname[0] = '\0';
-        printf("%s is unavailable!\n", fruname);
-        fru++;
-        continue;
-      }
-
-      ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
-      if (ret < 0) {
-        return ret;
-      }
-
-      if (history) {
-        get_sensor_history(fru, sensor_list, sensor_cnt, num, period);
-      } else {
-        get_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
-      }
- 
-      fru++;
-      printf("\n");
+    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+      ret |= print_sensor(fru, num, history, threshold, period);
     }
   } else {
-
-    ret = pal_is_fru_prsnt(fru, &status);
-    if (ret < 0) {
-      printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
-      print_usage();
-      exit(-1);
-    }
-    if (status == 0) {
-      printf("%s is empty!\n", argv[1]);
-      print_usage();
-      exit(-1);
-    }
-
-    ret = pal_is_fru_ready(fru, &status);
-    if ((ret < 0) || (status == 0)) {
-      printf("%s is unavailable!\n", argv[1]);
-      return ret;
-    }
-
-    ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
-    if (ret < 0) {
-      return ret;
-    }
-
-    if (history) {
-      get_sensor_history(fru, sensor_list, sensor_cnt, num, period);
-      return 0;
-    }
- 
-    get_sensor_reading(fru, sensor_list, sensor_cnt, num, threshold);
+    ret = print_sensor(fru, num, history, threshold, period);
   }
-
-  return 0;
+  return ret;
 }

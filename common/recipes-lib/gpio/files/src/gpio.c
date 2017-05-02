@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <poll.h>
+#include <string.h>
+#include <ctype.h>
+#include <pthread.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,13 +37,22 @@
 
 #define MAX_PINS 64
 
-#define GPIO_FM_CPU_CATERR_LVT3_N 49
-#define GPIO_FM_CPU_MSMI_LVT3_N 107
+static void strip(char *str) {
+  while(*str != '\0') {
+    if (!isalnum(*str)) {
+      *str = '\0';
+      break;
+    }
+    str++;
+  }
+}
 
 void gpio_init_default(gpio_st *g) {
   g->gs_gpio = -1;
   g->gs_fd = -1;
 }
+
+
 
 int gpio_open(gpio_st *g, int gpio)
 {
@@ -112,6 +124,33 @@ int gpio_change_direction(gpio_st *g, gpio_direction_en dir)
   return -rc;
 }
 
+int gpio_current_direction(gpio_st *g, gpio_direction_en *dir)
+{
+  char buf[128] = {0};
+  int fd = -1;
+  int rc = 0;
+
+  snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%u/direction", g->gs_gpio);
+  fd = open(buf, O_RDONLY);
+  if (fd == -1) {
+    rc = errno;
+    LOG_ERR(rc, "Failed to open %s", buf);
+    return -rc;
+  }
+
+  read(fd, buf, sizeof(buf));
+  strip(buf);
+  if (!strcmp(buf, "in")) {
+    *dir = GPIO_DIRECTION_IN;
+  } else if (!strcmp(buf, "out")) {
+    *dir = GPIO_DIRECTION_OUT;
+  } else {
+    rc = -1;
+  }
+  close(fd);
+  return rc;
+}
+
 int gpio_change_edge(gpio_st *g, gpio_edge_en edge)
 {
   char buf[128] = {0};
@@ -149,6 +188,38 @@ int gpio_change_edge(gpio_st *g, gpio_edge_en edge)
   write(fd, str, strlen(str) + 1);
 
 edge_exit:
+  close(fd);
+  return rc;
+}
+
+int gpio_current_edge(gpio_st *g, gpio_edge_en *edge)
+{
+  char buf[128] = {0};
+  int fd = -1;
+  int rc = 0;
+
+  snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/edge", g->gs_gpio);
+  fd = open(buf, O_RDONLY);
+  if (fd == -1) {
+    rc = errno;
+    LOG_ERR(rc, "Failed to open %s", buf);
+    return -rc;
+  }
+
+  read(fd, buf, sizeof(buf));
+  strip(buf);
+
+  if (!strcmp(buf, "none")) {
+    *edge = GPIO_EDGE_NONE;
+  } else if (!strcmp(buf, "rising")) {
+    *edge = GPIO_EDGE_RISING;
+  } else if (!strcmp(buf, "falling")) {
+    *edge = GPIO_EDGE_FALLING;
+  } else if (!strcmp(buf, "both")) {
+    *edge = GPIO_EDGE_BOTH;
+  } else {
+    rc = -1;
+  }
   close(fd);
   return rc;
 }
@@ -199,6 +270,31 @@ int gpio_unexport(int gpio)
   return rc;
 }
 
+gpio_value_en gpio_get(int gpio)
+{
+  gpio_st g;
+  gpio_value_en ret;
+
+  if (gpio_open(&g, gpio))
+    return GPIO_VALUE_INVALID;
+  ret = gpio_read(&g);
+  gpio_close(&g);
+  return ret;
+}
+
+int gpio_set(int gpio, gpio_value_en val)
+{
+  gpio_st g;
+  gpio_value_en read_val;
+
+  if (gpio_open(&g, gpio))
+    return GPIO_VALUE_INVALID;
+  gpio_write(&g, val);
+  read_val = gpio_read(&g);
+  gpio_close(&g);
+  return val == read_val ? 0 : -1;
+}
+
 int gpio_poll_open(gpio_poll_st *gpios, int count)
 {
   int i = 0;
@@ -212,32 +308,24 @@ int gpio_poll_open(gpio_poll_st *gpios, int count)
         continue;
      }
      gpio_change_direction(&gpios[i].gs,  GPIO_DIRECTION_IN);
-
-     if ( gpios[i].gs.gs_gpio == GPIO_FM_CPU_MSMI_LVT3_N || gpios[i].gs.gs_gpio == GPIO_FM_CPU_CATERR_LVT3_N )
-       gpio_change_edge(&gpios[i].gs, GPIO_EDGE_FALLING);
-     else
-       gpio_change_edge(&gpios[i].gs, GPIO_EDGE_BOTH);
+     gpio_change_edge(&gpios[i].gs, gpios[i].edge);
   }
 }
 
 static void *gpio_poll_pin(void *arg)
 {
   gpio_poll_st *gpios = (gpio_poll_st *)arg;
-  int count = 1;
-  struct pollfd fdset[count];
+  struct pollfd fdset;
   int rc;
   int i;
 
   while (1) {
-    memset((void *)fdset, 0, sizeof(fdset));
+    memset((void *)&fdset, 0, sizeof(fdset));
+    fdset.fd = gpios->gs.gs_fd;
+    fdset.events = POLLPRI;
+    gpios->value = gpio_read(&gpios->gs);
 
-    for (i = 0; i < count; i++) {
-      fdset[i].fd = gpios[i].gs.gs_fd;
-      fdset[i].events = POLLPRI;
-      gpios[i].value = gpio_read(&gpios[i].gs);
-    }
-
-    rc = poll(fdset, count, -1); /* -1 : Forever */
+    rc = poll(&fdset, 1, -1); /* -1 : Forever */
     if (rc < 0) {
       if (errno == EINTR) {
         continue;
@@ -253,11 +341,9 @@ static void *gpio_poll_pin(void *arg)
       pthread_exit(&rc);
     }
 
-    for (i = 0; i < count; i++) {
-      if (fdset[i].revents & POLLPRI) {
-        gpios[i].value = gpio_read(&gpios[i].gs);
-        gpios[i].fp(&gpios[i]);
-      }
+    if (fdset.revents & POLLPRI) {
+      gpios->value = gpio_read(&gpios->gs);
+      gpios->fp(gpios);
     }
   }
 
@@ -283,7 +369,7 @@ int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
   }
 
   for ( i = 0; i < count; i++) {
-    if ((ret = pthread_join(&thread_ids[i], NULL, gpio_poll_pin, &rc) < 0)) {
+    if ((ret = pthread_join(thread_ids[i], NULL) < 0)) {
       LOG_ERR(ret, "pthread_join failed for %s\n", gpios[i].desc);
     }
   }
@@ -296,8 +382,9 @@ int gpio_poll_close(gpio_poll_st *gpios, int count)
   int i = 0;
 
   for ( i = 0; i < count; i++) {
+    int gpio = gpios[i].gs.gs_gpio;
     gpio_change_edge(&gpios[i].gs, GPIO_EDGE_NONE);
-    gpio_unexport(gpios[i].gs.gs_gpio);
     gpio_close(&gpios[i].gs);
+    gpio_unexport(gpio);
   }
 }

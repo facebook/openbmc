@@ -418,3 +418,7 @@ else
   devmem_clear_bit $(scu_addr A4) 28
   gpio_set AA4 0
 fi
+
+# BMC_CPLD_FPGA_SEL: GPIOA0
+devmem_clear_bit $(scu_addr 80) 0
+gpio_set A0 1

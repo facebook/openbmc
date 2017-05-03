@@ -19,15 +19,21 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
-            file://fsc-config.json \
-            file://zone1.fsc \
+            file://FSC_FBY2_EVT_4TL_config.json \
+            file://FSC_FBY2_EVT_4TL_zone1.fsc \
+            file://FSC_FBY2_EVT_2GP_2TL_config.json \
+            file://FSC_FBY2_EVT_2GP_2TL_zone1.fsc \
             file://fsc_board.py \
            "
 
 FSC_BIN_FILES += "init_pwm.sh"
 
-FSC_CONFIG += "fsc-config.json"
+FSC_CONFIG += "FSC_FBY2_EVT_4TL_config.json \
+               FSC_FBY2_EVT_2GP_2TL_config.json \
+              "
 
-FSC_ZONE_CONFIG +="zone1.fsc"
+FSC_ZONE_CONFIG +="FSC_FBY2_EVT_4TL_zone1.fsc \
+                   FSC_FBY2_EVT_2GP_2TL_zone1.fsc \
+                  "
 
 FSC_INIT_FILE += "setup-fan.sh"

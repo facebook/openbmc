@@ -29,7 +29,41 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Setup fan speed... "
+default_fsc_config_path="/etc/fsc-config.json"
+sku_type=`cat /tmp/slot.bin`
+full_config=1
+
+echo "Setup fan speed... "
+
+#for i in `seq 1 1 4`
+#do
+#   if [ $(is_server_prsnt $i) == "0" ]; then
+#     echo "slot$i is empty"
+#     full_config=0
+#   fi
+#done
+
+#if [ $full_config -eq 0 ]; then
+#   echo "Enter into transitional mode - Unexpected sku type (system is not full config)!"
+#   /usr/local/bin/init_pwm.sh
+#   /usr/local/bin/fan-util --set 70
+#   exit 1
+#fi
+
+case "$sku_type" in
+   "0")
+       echo "Run FSC 4 TLs Config"
+       cp /etc/FSC_FBY2_EVT_4TL_config.json ${default_fsc_config_path}
+   ;;
+   "34")
+       echo "Run FSC 2 GPs and 2 TLs Config"
+       cp /etc/FSC_FBY2_EVT_2GP_2TL_config.json ${default_fsc_config_path}
+   ;;
+   *)  echo "Unexpected sku type! Use default config"
+       cp /etc/FSC_FBY2_EVT_4ML_config.json ${default_fsc_config_path}
+   ;;
+esac
+
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50
 runsv /etc/sv/fscd > /dev/null 2>&1 &

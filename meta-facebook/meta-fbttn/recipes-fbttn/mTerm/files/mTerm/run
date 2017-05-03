@@ -17,8 +17,5 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-echo -n "Starting client to connect to microserver..."
+exec /usr/local/bin/mTerm_server fbttn /dev/ttyS1
 
-exec /usr/local/bin/mTerm_client fbttn
-
-echo "Exit from session to microserver."

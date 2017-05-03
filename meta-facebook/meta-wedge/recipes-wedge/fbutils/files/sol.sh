@@ -56,7 +56,7 @@ start_sol_session() {
 # otherwise fallback to the old method
 
 if mTerm_server_running; then
-  exec /usr/local/bin/mTerm_client.sh
+  exec /usr/local/bin/mTerm_client wedge
 else
   start_sol_session
 fi

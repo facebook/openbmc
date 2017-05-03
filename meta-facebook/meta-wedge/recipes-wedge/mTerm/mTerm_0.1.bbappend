@@ -17,31 +17,10 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://start_mTerm_server.sh \
-            file://mTerm_client.sh \
-            file://mTerm_server.sh \
+SRC_URI += "file://mTerm/run \
            "
 
 S = "${WORKDIR}"
 
-CONS_BIN_FILES += " \
-    start_mTerm_server.sh \
-    mTerm_client.sh \
-    mTerm_server.sh \
-    "
-
-do_install_append() {
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 start_mTerm_server.sh ${D}${sysconfdir}/init.d/start_mTerm_server.sh
-  update-rc.d -r ${D} start_mTerm_server.sh start 84 S .
-}
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-
-FILES_${PN} = "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir} "
-
-# Inhibit complaints about .debug directories for the fand binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"
+# Go with default names of mTerm for MTERM_SERVICES
+# since we have just one console.

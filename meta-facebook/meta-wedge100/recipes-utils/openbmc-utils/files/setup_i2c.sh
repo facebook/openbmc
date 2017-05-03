@@ -39,14 +39,15 @@ i2c_device_add 6 0x51 24c64
 i2c_device_add 7 0x50 24c02         # BMC PHY EEPROM
 i2c_device_add 7 0x51 24c64         # PFE1100 power supply EEPROM
 i2c_device_add 7 0x52 24c64         # PFE1100 power supply EEPROM
-i2c_device_add 7 0x59 pfe1100       # PFE1100 power supply driver
-i2c_device_add 7 0x5a pfe1100       # PFE1100 power supply driver
 i2c_device_add 7 0x6f ltc4151
 
 # Bus 8
 i2c_device_add 8 0x33 fancpld
 i2c_device_add 8 0x48 tmp75
 i2c_device_add 8 0x49 tmp75
+
+# Bus 9
+i2c_device_add 9 0x20 tpm_i2c_infineon
 
 # Bus 12
 i2c_device_add 12 0x31 syscpld

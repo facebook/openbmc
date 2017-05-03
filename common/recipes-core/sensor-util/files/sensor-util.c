@@ -213,6 +213,8 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, long
   } else {
     get_sensor_reading(fru, sensor_list, sensor_cnt, sensor_num, threshold);
   }
+  if (sensor_cnt > 0)
+    printf("\n");
   return 0;
 }
 

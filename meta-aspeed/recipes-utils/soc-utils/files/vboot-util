@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-VBS="0x1E720100"
+VBS="0x1E720200"
 
 ERROR[0]="OpenBMC was verified correctly"
 ERROR[10]="FMC SPI0.1 (CS1) is not populated"

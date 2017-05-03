@@ -24,6 +24,7 @@ LIC_FILES_CHKSUM = "file://fruid-util.c;beginline=4;endline=16;md5=da35978751a9d
 
 LDFLAGS = " -lfruid -lpal "
 DEPENDS = "libfruid libpal "
+RDEPENDS_${PN} = "libfruid libpal"
 
 SRC_URI = "file://Makefile \
            file://fruid-util.c \

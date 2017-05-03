@@ -34,6 +34,7 @@ binfiles = "sensord \
 CFLAGS += " -lsdr -lpal -lobmc-sensor "
 
 DEPENDS += " libpal libsdr libobmc-sensor "
+RDEPENDS_${PN} += "libpal libsdr libobmc-sensor"
 
 pkgdir = "sensor-mon"
 
@@ -52,7 +53,3 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin"
 
-# Inhibit complaints about .debug directories for the sensord binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

@@ -17,7 +17,8 @@ binfiles = "peci-util \
 
 pkgdir = "peci-util"
 
-DEPENDS = "update-rc.d-native libpal"
+DEPENDS = "update-rc.d-native libpal libgpio"
+RDEPENDS_${PN} = "libpal libgpio bash"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

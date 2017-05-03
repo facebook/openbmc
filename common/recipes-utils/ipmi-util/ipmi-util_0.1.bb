@@ -34,5 +34,7 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/ipmi-util ${prefix}/local/bin"
 
+RDEPENDS_${PN} = "libipmi"
+
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

@@ -13,6 +13,7 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 DEPENDS += "libipmi libipmb obmc-i2c"
+RDEPENDS_${PN} = "libipmi"
 
 binfiles = "ipmbd"
 

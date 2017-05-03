@@ -14,6 +14,7 @@ S = "${WORKDIR}"
 LDFLAGS =+ " -lpal "
 
 DEPENDS =+ " libpal "
+RDEPENDS_${PN} =+ "libpal"
 
 binfiles = "consoled"
 

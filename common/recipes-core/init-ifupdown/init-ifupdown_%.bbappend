@@ -27,3 +27,4 @@ do_install_append() {
 FILES_${PN} += "${sysconfdir}/network/if-up.d/dhcpv6_up \
                 ${sysconfdir}/network/if-down.d/dhcpv6_down \
                "
+RDEPENDS_${PN} += "bash"

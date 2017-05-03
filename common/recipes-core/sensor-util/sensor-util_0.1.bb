@@ -14,6 +14,7 @@ S = "${WORKDIR}"
 binfiles = "sensor-util"
 
 DEPENDS =+ " libsdr libpal libobmc-sensor "
+RDEPENDS_${PN} =+ "libsdr libpal libobmc-sensor"
 
 pkgdir = "sensor-util"
 
@@ -29,6 +30,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/sensor-util ${prefix}/local/bin"
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

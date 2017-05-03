@@ -14,6 +14,7 @@ S = "${WORKDIR}"
 LDFLAGS =+ " -lpal "
 
 DEPENDS =+ " libpal "
+RDEPENDS_${PN} =+ "libpal"
 
 binfiles = "power-util"
 
@@ -31,6 +32,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/power-util ${prefix}/local/bin"
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

@@ -38,6 +38,7 @@ SRC_URI = "file://Makefile \
           "
 
 DEPENDS += " libpal "
+RDEPENDS_${PN} += " libpal "
 
 binfiles = "ipmid"
 

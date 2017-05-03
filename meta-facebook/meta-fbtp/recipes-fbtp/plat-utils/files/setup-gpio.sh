@@ -334,8 +334,8 @@ devmem_clear_bit $(scu_addr 70) 22
 gpio_export E6
 
 # FM_CPU1_PROCHOT_LVT3_ BMC_N, on GPIO E7(39)
-# To enable GPIOE6, SCU80[23], SCU8C[15], and SCU70[22] must be 0
-devmem_clear_bit $(scu_addr 80) 22
+# To enable GPIOE7, SCU80[23], SCU8C[15], and SCU70[22] must be 0
+devmem_clear_bit $(scu_addr 80) 23
 
 gpio_export E7
 

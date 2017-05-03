@@ -292,7 +292,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
         break;
     }
 
-    if (retry < MAX_ASSERT_CHECK_RETRY) {
+    if (retry <= MAX_ASSERT_CHECK_RETRY) {
       msleep(50);
       ret = sensor_raw_read(fru, snr_num, curr_val);
       if (ret < 0)

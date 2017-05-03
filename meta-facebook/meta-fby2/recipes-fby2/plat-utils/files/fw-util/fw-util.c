@@ -176,7 +176,7 @@ print_slot_version(uint8_t slot_id) {
     
   // Print BIOS version
   if (pal_get_sysfw_ver(slot_id, ver)) {
-    printf("BIOS Version: NA");
+    printf("BIOS Version: NA\n");
   } 
   else {
     // BIOS version response contains the length at offset 2 followed by ascii string
@@ -192,7 +192,7 @@ static void
 print_nic_version(uint8_t slot_id) {
   // TODO: Need to read nic card firmware version for print
   // There are 2 nic card vendors, BCRM and MEZZ 
-  printf("NIC Card Version: NA");
+  printf("NIC Card Version: NA\n");
 }
 
 // TODO: Need to confirm the interpretation of firmware version for print
@@ -403,14 +403,14 @@ main(int argc, char **argv) {
   // check operation to perform
   if (!strcmp(argv[2], "--version")) {
      
-     // Print BMC Version
-     print_bmc_version();
-     printf("\n");    
- 
      if (slot_id < OPT_ALL) {
        print_fw_ver(slot_id);
        return 0;
      }
+
+     // Print BMC Version
+     print_bmc_version();
+     printf("\n");
      for (slot_id = OPT_SLOT1; slot_id < MAX_NUM_OPTIONS; slot_id++) {
         print_fw_ver(slot_id);
         printf("\n");

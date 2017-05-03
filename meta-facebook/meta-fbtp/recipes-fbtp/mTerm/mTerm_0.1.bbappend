@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,26 +14,14 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+SRC_URI += "file://mTerm/run \
+           "
 
+S = "${WORKDIR}"
 
-if [ "$1" == "mb" ]
-then
-  SLOT=$1 
-else
-  echo "Usage: sol-util [ mb ]"
-  echo "       sol-util [ mb ] --force"
-  echo "       sol-util [ mb ] --history"
-  exit -1
-fi
+# Go with default names of mTerm for MTERM_SERVICES
+# since we have just one console.
 
-if [ $# -gt 1 ]; then
-  if [[ "$2" == "--history" ]]; then
-    LOGFILE="/var/log/mTerm_mb.log"
-    cat $LOGFILE 2>/dev/null
-    exit 0
-  fi
-fi
-exec /usr/local/bin/mTerm_client mb

@@ -29,13 +29,21 @@ SRC_URI = "file://mTerm_server.c \
            file://mTerm_helper.h \
            file://tty_helper.c \
            file://tty_helper.h \
-	         file://Makefile \
+           file://Makefile \
+           file://mTerm/run \
+           file://mTerm-service-setup.sh \
           "
 
 S = "${WORKDIR}"
 
 CONS_BIN_FILES = "mTerm_server \
                   mTerm_client \
+                 "
+# If the target system has more than one service, 
+# It may override this variable in it's bbappend
+# file. Also the platform must provide those in
+# its appended package.
+MTERM_SERVICES = "mTerm \
                  "
 pkgdir = "mTerm"
 
@@ -48,13 +56,19 @@ do_install() {
      install -m 755 $f ${dst}/$f
      ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
   done
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  for svc in ${MTERM_SERVICES}; do
+    install -d ${D}${sysconfdir}/sv/${svc}
+    install -d ${D}${sysconfdir}/${svc}
+    install -m 755 ${svc}/run ${D}${sysconfdir}/sv/${svc}/run
+  done
+  install -m 755 mTerm-service-setup.sh ${D}${sysconfdir}/init.d/mTerm-service-setup.sh
+  update-rc.d -r ${D} mTerm-service-setup.sh start 84 S .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin"
+FILES_${PN} = "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir}"
 
-# Inhibit complaints about .debug directories for the fand binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

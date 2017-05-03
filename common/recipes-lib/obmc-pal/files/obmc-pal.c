@@ -93,5 +93,13 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
 int __attribute__((weak))
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
-	return PAL_EOK;
+  return PAL_EOK;
 }
+
+int __attribute__((weak))
+pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  error_log[0] = '\0';
+  return 0;
+}
+

@@ -5470,8 +5470,6 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
       sprintf(temp_log, " (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       strcat(error_log, temp_log);
-      sprintf(temp_log, "PCIe err");
-      pal_add_cri_sel(temp_log);
       break;
 
     case IIO_ERR:
@@ -7561,4 +7559,23 @@ pal_get_boot_option(unsigned char para,unsigned char* pbuff)
   unsigned char size = option_size[para];
   memset(pbuff, 0, size);
   return size;
+}
+
+int
+pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  char str[128];
+  uint8_t record_type = (uint8_t) sel[2];
+  uint32_t mfg_id;
+  error_log[0] = '\0';
+
+  /* Manufacturer ID (byte 9:7) */
+  mfg_id = (*(uint32_t*)&sel[7]) & 0xFFFFFF;
+
+  if (record_type == 0xc0 && mfg_id == 0x1c4c) {
+    snprintf(str, sizeof(str), "Slot %d PCIe err", sel[14]);
+    pal_add_cri_sel(str);
+  }
+
+  return 0;
 }

@@ -288,25 +288,29 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
         sensor_name, sensor_num,
         oem_data, error_log);
   } else if (record_type < 0xE0) {
+    ret = pal_parse_oem_sel(fru, sel, error_log);
+
     /* Manufacturer ID (byte 9:7) */
     sprintf(mfg_id, "%02x%02x%02x", sel[9], sel[8], sel[7]);
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-        "MFG ID: %s, Raw data: (%s) ",
+        "MFG ID: %s, Raw data: (%s) %s ",
         fru,
         error_type, record_type,
         time,
         mfg_id,
-        oem_data);
+        oem_data, error_log);
   } else {
+    ret = pal_parse_oem_sel(fru, sel, error_log);
+
     /* OEM Data (Byte 3:15) */
     sprintf(oem_data, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", sel[3], sel[4], sel[5],
         sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
 
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), "
-        "Raw data: (%s) ",
+        "Raw data: (%s) %s ",
         fru,
         error_type, record_type,
-        oem_data);
+        oem_data, error_log);
   }
 
   pal_update_ts_sled();

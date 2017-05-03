@@ -36,5 +36,7 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/kcsd ${prefix}/local/bin ${sysconfdir} "
 
+RDEPENDS_${PN} = "libipmi libgpio"
+
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

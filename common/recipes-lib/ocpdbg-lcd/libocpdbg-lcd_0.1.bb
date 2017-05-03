@@ -18,13 +18,12 @@ DEPENDS = " libipmb libipmi "
 
 do_install() {
 	  install -d ${D}${libdir}
-    install -m 0644 libocp-dbg-lcd.so ${D}${libdir}/libocp-dbg-lcd.so
+    install -m 0644 libocpdbg-lcd.so ${D}${libdir}/libocpdbg-lcd.so
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 ocp-dbg-lcd.h ${D}${includedir}/openbmc/ocp-dbg-lcd.h
 }
 
-FILES_${PN} = "${libdir}/libocp-dbg-lcd.so"
+FILES_${PN} = "${libdir}/libocpdbg-lcd.so"
 FILES_${PN}-dev = "${includedir}/openbmc/ocp-dbg-lcd.h"
-
-PROVIDES = "libocp-dbg-lcd"
+RDEPENDS_${PN} = "libipmb libipmi"

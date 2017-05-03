@@ -61,3 +61,5 @@ do_install() {
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"
+
+RDEPENDS_${PN} = "bash"

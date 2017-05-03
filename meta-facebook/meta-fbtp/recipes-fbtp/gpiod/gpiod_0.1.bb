@@ -31,7 +31,7 @@ S = "${WORKDIR}"
 
 binfiles = "gpiod \
            "
-DEPENDS += " libgpio libpal libocp-dbg-lcd "
+DEPENDS += " libgpio libpal libocpdbg-lcd "
 
 pkgdir = "gpiod"
 
@@ -54,5 +54,5 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
 
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"
+RDEPENDS_${PN} = "libpal libgpio libocpdbg-lcd"
+

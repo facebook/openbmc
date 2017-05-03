@@ -32,7 +32,6 @@
 
 #include <openbmc/me.h>
 #include <openbmc/pal.h>
-#include <openbmc/ipmi.h>
 #include <openbmc/cpld.h>
 #include <openbmc/bios.h>
 #include <openbmc/gpio.h>

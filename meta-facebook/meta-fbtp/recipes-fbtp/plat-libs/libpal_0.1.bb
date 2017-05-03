@@ -25,4 +25,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
-RDEPENDS_${PN} += " libkv libedb libme"
+RDEPENDS_${PN} += " libkv libedb libme libipmb"

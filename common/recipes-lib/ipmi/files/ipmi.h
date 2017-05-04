@@ -86,6 +86,8 @@ extern "C" {
 
 #define SIZE_BOOT_ORDER 6
 
+#define SIZE_CPU_PPIN 8
+
 // IPMI request Structure (IPMI/Section 9.2)
 typedef struct
 {
@@ -407,6 +409,7 @@ enum
   CMD_OEM_GET_PPR = 0x6F,
   CMD_OEM_SET_POST_START = 0x73,
   CMD_OEM_SET_POST_END = 0x74,
+  CMD_OEM_SET_PPIN_INFO = 0x77,
   CMD_OEM_GET_PLAT_INFO = 0x7E,
   CMD_OEM_SET_SYSTEM_GUID = 0xEF,
   CMD_OEM_GET_FW_INFO = 0xF2,

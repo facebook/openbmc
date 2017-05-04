@@ -5315,6 +5315,9 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
     case CPU1_THERM_STATUS:
       sprintf(name, "CPU1_THERM_STATUS");
       break;
+    case ME_POWER_STATE:
+      sprintf(name, "ME_POWER_STATE");
+      break;
     case SPS_FW_HEALTH:
       sprintf(name, "SPS_FW_HEALTH");
       break;

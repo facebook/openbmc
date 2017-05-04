@@ -147,6 +147,10 @@ char * key_list[] = {
 "slot2_boot_order",
 "slot3_boot_order",
 "slot4_boot_order",
+"slot1_cpu_ppin",
+"slot2_cpu_ppin",
+"slot3_cpu_ppin",
+"slot4_cpu_ppin",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -184,6 +188,10 @@ char * def_val_list[] = {
   "0000000", /* slot2_boot_order */
   "0000000", /* slot3_boot_order */
   "0000000", /* slot4_boot_order */
+  "0", /* slot1_cpu_ppin */
+  "0", /* slot2_cpu_ppin */
+  "0", /* slot3_cpu_ppin */
+  "0", /* slot4_cpu_ppin */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -3219,6 +3227,30 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 	      completion_code = CC_PARAM_OUT_OF_RANGE;
 	    break;
 	}
+	return completion_code;
+}
+
+int 
+pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+	char key[MAX_KEY_LEN] = {0};
+	char str[MAX_VALUE_LEN] = {0};
+	char tstr[10] = {0};
+	int i;
+	int completion_code = CC_UNSPECIFIED_ERROR;	
+	*res_len = 0;
+	sprintf(key, "slot%d_cpu_ppin", slot);
+	
+	for (i = 0; i < SIZE_CPU_PPIN; i++) {
+		sprintf(tstr, "%02x", req_data[i]);
+		strcat(str, tstr);
+	}
+	 
+	if (pal_set_key_value(key, str) != 0)
+		return completion_code;
+		
+	completion_code = CC_SUCCESS;
+	
 	return completion_code;
 }
 

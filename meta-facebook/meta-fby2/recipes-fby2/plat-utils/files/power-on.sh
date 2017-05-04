@@ -105,13 +105,6 @@ if [ $(is_bmc_por) -eq 1 ]; then
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
 
-  # For FBY2 server board PWR sequence
-  #set ML board power enable
-  gpio_set O4 1
-  gpio_set O5 1
-  gpio_set O6 1
-  gpio_set O7 1
-  sleep 3  # waiting for ME ready
   sync_date
   check_por_config 1
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) == "0" ] ; then

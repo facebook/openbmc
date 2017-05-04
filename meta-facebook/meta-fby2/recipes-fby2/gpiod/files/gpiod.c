@@ -86,7 +86,7 @@ static gpio_spb_t gpio_spb[MAX_SPB_GPIO_NUM] = {0};
 
 char *fru_prsnt_log_string[2 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
- "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal",
+ "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal", "",
  "", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion",
 };
 
@@ -257,7 +257,7 @@ int gpio_spb_action(int gpio_num, int n_pin_val)
             if (n_pin_val == gpio_spb[gpio_num].ass_val) {
                 syslog(LOG_CRIT, "SLED is pulled out");
                 memset(cmd, 0, sizeof(cmd));
-                sprintf(cmd, "sv stop fscd | usr/local/bin/fan-util --set 100");
+                sprintf(cmd, "sv stop fscd ; /usr/local/bin/fan-util --set 100");
                 system(cmd);
             }
             else if (n_pin_val != gpio_spb[gpio_num].ass_val) {
@@ -328,7 +328,7 @@ monitor_spb_gpio_sts() {
   static int o_pin_val_slot[MAX_NUM_SLOTS + 1] = {0};
   static int o_pin_val_spb[MAX_SPB_GPIO_NUM] = {0};
   static bool init_spb_flag = false;
-  static bool init_slot_flag = false;
+  static bool init_slot_flag[MAX_NUM_SLOTS + 1] = {0};
 
   // Init SPB GPIO
   if (!init_spb_flag) {
@@ -349,6 +349,11 @@ monitor_spb_gpio_sts() {
             // name
             strcpy(gpio_spb[gpio_spb_init[i].num].name, gpio_spb_init[i].name);
         }
+
+        if (gpio_spb[GPIO_FAN_LATCH_DETECT].status == gpio_spb[GPIO_FAN_LATCH_DETECT].ass_val) {
+            system("sv stop fscd ; /usr/local/bin/fan-util --set 100");
+        }
+
         init_spb_flag = true;
   }
 
@@ -377,9 +382,9 @@ monitor_spb_gpio_sts() {
     if (ret < 0)
         printf("%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
 
-    if (!init_slot_flag) { // Init old pin value, just init this one time
+    if (!init_slot_flag[slot_id]) { // Init old pin value, just init this one time
         o_pin_val_slot[slot_id] = n_pin_val;
-        init_slot_flag = true;
+        init_slot_flag[slot_id] = true;
         continue;
     }
 
@@ -388,7 +393,8 @@ monitor_spb_gpio_sts() {
 
         if (o_pin_val_slot[slot_id]^n_pin_val) {
 
-            if (n_pin_val) { // SLOT Removal
+            if (!n_pin_val) { // SLOT Removal
+#if 0
                 if (gpio_spb[GPIO_SLOT1_EJECTOR_LATCH_DETECT_N + (slot_id-1)].status) {
                     // Log SLOT Removal
       	            sprintf(str, "%s without 12V off, Action : 12V off to slot%u", fru_prsnt_log_string[slot_id],slot_id);
@@ -401,6 +407,9 @@ monitor_spb_gpio_sts() {
                 else {
                     syslog(LOG_CRIT, fru_prsnt_log_string[slot_id]);
                 }
+#else
+                syslog(LOG_CRIT, fru_prsnt_log_string[slot_id]);
+#endif
             }
             else {          // SLOT Insertion
                 syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + slot_id]);

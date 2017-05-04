@@ -106,41 +106,58 @@ ecc_mon_handler() {
     ecc_unrecoverable_error_counter = (mcr50 >> 12) & 0xF;
 
     // Check ECC recoverable error counter
-    if (ecc_recoverable_error_counter >= THRES1_ECC_RECOVERABLE_ERROR_COUNTER) {
+    if (ecc_recoverable_error_counter > 0) {
       if (is_ecc_occurred[0] == 0) {
-        syslog(LOG_CRIT, "ECC occurred (over 50%%): Recoverable Error "
+        syslog(LOG_CRIT, "ECC occurred (over 0%%): Recoverable Error "
             "Counter = %d Address of last recoverable ECC error = 0x%x",
             ecc_recoverable_error_counter, (mcr5c >> 4) & 0xFFFFFFFF);
         is_ecc_occurred[0] = 1;
       }
       if (ecc_recoverable_error_counter >=
-          THRES2_ECC_RECOVERABLE_ERROR_COUNTER) {
+          THRES1_ECC_RECOVERABLE_ERROR_COUNTER) {
         if (is_ecc_occurred[0] == 1) {
-          syslog(LOG_CRIT, "ECC occurred (over 90%%): Recoverable Error "
+          syslog(LOG_CRIT, "ECC occurred (over 50%%): Recoverable Error "
               "Counter = %d Address of last recoverable ECC error = 0x%x",
               ecc_recoverable_error_counter, (mcr5c >> 4) & 0xFFFFFFFF);
           is_ecc_occurred[0] = 2;
+        }
+        if (ecc_recoverable_error_counter >=
+            THRES2_ECC_RECOVERABLE_ERROR_COUNTER) {
+          if (is_ecc_occurred[0] == 2) {
+            syslog(LOG_CRIT, "ECC occurred (over 90%%): Recoverable Error "
+                "Counter = %d Address of last recoverable ECC error = 0x%x",
+                ecc_recoverable_error_counter, (mcr5c >> 4) & 0xFFFFFFFF);
+            is_ecc_occurred[0] = 3;
+          }
         }
       }
       pal_set_key_value("ecc_health", "0");
     }
 
     // Check ECC un-recoverable error counter
-    if (ecc_unrecoverable_error_counter >=
-        THRES1_ECC_UNRECOVERABLE_ERROR_COUNTER) {
+    if (ecc_unrecoverable_error_counter > 0) {
       if (is_ecc_occurred[1] == 0) {
-        syslog(LOG_CRIT, "ECC occurred (over 50%%): Un-recoverable Error "
+        syslog(LOG_CRIT, "ECC occurred (over 0%%): Un-recoverable Error "
             "Counter = %d Address of first un-recoverable ECC error = 0x%x",
             ecc_unrecoverable_error_counter, (mcr58 >> 4) & 0xFFFFFFFF);
         is_ecc_occurred[1] = 1;
       }
       if (ecc_unrecoverable_error_counter >=
-          THRES2_ECC_UNRECOVERABLE_ERROR_COUNTER) {
+          THRES1_ECC_UNRECOVERABLE_ERROR_COUNTER) {
         if (is_ecc_occurred[1] == 1) {
-          syslog(LOG_CRIT, "ECC occurred (over 90%%): Un-recoverable Error "
+          syslog(LOG_CRIT, "ECC occurred (over 50%%): Un-recoverable Error "
               "Counter = %d Address of first un-recoverable ECC error = 0x%x",
               ecc_unrecoverable_error_counter, (mcr58 >> 4) & 0xFFFFFFFF);
           is_ecc_occurred[1] = 2;
+        }
+        if (ecc_unrecoverable_error_counter >=
+            THRES2_ECC_UNRECOVERABLE_ERROR_COUNTER) {
+          if (is_ecc_occurred[1] == 2) {
+            syslog(LOG_CRIT, "ECC occurred (over 90%%): Un-recoverable Error "
+                "Counter = %d Address of first un-recoverable ECC error = 0x%x",
+                ecc_unrecoverable_error_counter, (mcr58 >> 4) & 0xFFFFFFFF);
+            is_ecc_occurred[1] = 3;
+          }
         }
       }
       pal_set_key_value("ecc_health", "0");

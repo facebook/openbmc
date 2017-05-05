@@ -1,0 +1,120 @@
+#!/bin/sh
+
+#  Copyright (c) 2014-present, Facebook, Inc.
+#  All rights reserved.
+#
+#  This source code is licensed under the BSD-style license found in the
+#  LICENSE file in the root directory of this source tree. An additional grant
+#  of patent rights can be found in the PATENTS file in the same directory.
+
+# Default: POKY_BUILD is the pwd & keys is the place sign.sh is stored.
+POKY_BUILD=`pwd`
+KEYS=$(dirname "$0")
+SETUP=NO
+HELP=NO
+
+PYTHON=/usr/local/bin/python
+if [ ! -x $PYTHON ]; then
+  PYTHON=/usr/bin/python
+fi
+
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -k|--keys)
+    KEYS="$2"
+    shift # past argument
+    ;;
+    -b|--build)
+    POKY_BUILD="$2"
+    shift # past argument
+    ;;
+    -p|--python)
+    PYTHON=$2
+    shift;
+    ;;
+    -s|--setup)
+    SETUP=YES
+    ;;
+    --help)
+    HELP=YES
+    ;;
+    *)
+            # unknown option
+    ;;
+esac
+shift # past argument or value
+done
+
+if [ "$HELP" == "YES" ]; then
+	echo "USAGE: $0 [OPTIONS]"
+	echo "OPTIONS: "
+  echo "--help"
+  echo "    Print this message"
+  echo "-k|--keys KEYS_DIR"
+  echo "    Set Keys directory to KEYS_DIR, else the path of this script will be used"
+  echo "-b|--build BUILD_DIR"
+  echo "    Set the build directory to BUILD_DIR. Else the current working directory will be used"
+  echo "-s|--setup"
+  echo "    Generate the keys in KEYS_DIR (See above for default path)"
+  exit 0
+fi
+
+POKY_DIR=$(dirname $POKY_BUILD)
+SIGN_SCRIPT_HOME=$POKY_DIR/meta-openbmc/tests/verified-boot/signing
+CURRENT_DIR=`pwd`
+IMAGES_DIR=$POKY_BUILD/tmp/deploy/images
+if [ ! -d $IMAGES_DIR ]; then
+  echo "$POKY_BUILD is not a valid build directory!"
+  exit -1
+fi
+IMAGE_NAME=$(ls $IMAGES_DIR)
+if [ "$IMAGE_NAME" == "" ]; then
+  echo "Could not find any images in $IMAGE_DIR"
+  exit -1;
+fi
+echo "POKY_BUILD=$POKY_BUILD"
+echo "POKY_DIR=$POKY_DIR"
+echo "KEYS_DIR=$KEYS"
+echo "IMAGE_NAME=$IMAGE_NAME"
+
+cd $SIGN_SCRIPT_HOME
+
+if [ "$SETUP" == "YES" ]; then
+  if [ ! -d $KEYS ]; then
+    mkdir $KEYS
+  fi
+  if [ ! -d $KEYS/kek ]; then
+    mkdir $KEYS/kek
+  fi
+  if [ ! -d $KEYS/subordinate ]; then
+    mkdir $KEYS/subordinate
+  fi
+  openssl genrsa -F4 -out $KEYS/kek/kek.key 4096
+  openssl rsa -in $KEYS/kek/kek.key -pubout > $KEYS/kek/kek.pub
+  openssl genrsa -F4 -out $KEYS/subordinate/subordinate.key 4096
+  openssl rsa -in $KEYS/subordinate/subordinate.key -pubout > $KEYS/subordinate/subordinate.pub
+  $PYTHON ./fit-cs --template ./store.dts.in $KEYS/kek $KEYS/kek/kek.dtb
+  $PYTHON ./fit-cs --template ./store.dts.in --subordinate --subtemplate ./sub.dts.in $KEYS/subordinate $KEYS/subordinate/subordinate.dtb
+  $PYTHON ./fit-signsub --mkimage $POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage --keydir $KEYS/kek $KEYS/subordinate/subordinate.dtb $KEYS/subordinate/subordinate.dtb.signed
+  echo "Keys are generated in $KEYS"
+  exit 0
+fi
+
+if [ ! -d $KEYS ]; then
+  echo "keys directory $KEYS does not exist!"
+  exit -1
+fi
+
+$PYTHON ./fit-sign --mkimage $POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage \
+                  --kek $KEYS/kek/kek.dtb \
+                  --signed-subordinate $KEYS/subordinate/subordinate.dtb.signed \
+                  --keydir $KEYS/subordinate \
+                  $POKY_BUILD/tmp/deploy/images/$IMAGE_NAME/flash-$IMAGE_NAME \
+                  $POKY_BUILD/tmp/deploy/images/$IMAGE_NAME/flash-${IMAGE_NAME}.signed
+# Go back
+cd $CURRENT_DIR
+
+

@@ -376,6 +376,9 @@ static inlet_corr_t g_ict[] = {
 
 static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 
+static bool is_cpu0_socket_occupy(void);
+static bool is_cpu1_socket_occupy(void);
+
 static void apply_inlet_correction(float *value) {
   static int8_t dt = 0;
   int i;

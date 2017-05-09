@@ -19,7 +19,7 @@ VBS="0x1E720200"
 
 ERROR[0]="OpenBMC was verified correctly"
 ERROR[10]="FMC SPI0.1 (CS1) is not populated"
-ERROR[11]="U-Boot on FMC SPI0.1 did not execute properly"
+ERROR[11]="U-Boot on FMC SPI0.1 (CS1) did not execute properly"
 ERROR[20]="FMC SPI0.1 (CS1) PROM status invalid or invalid read-mode"
 ERROR[30]="Invalid FDT magic number for U-Boot FIT at 0x28080000"
 ERROR[31]="U-Boot FIT did not contain the /images node"
@@ -36,7 +36,7 @@ ERROR[42]="U-Boot could not be verified using the intermediate keys"
 ERROR[43]="U-Boot was not verified using the intermediate keys"
 ERROR[50]="Recovery boot was forced using the force_recovery environment variable"
 ERROR[60]="The rootfs and kernel FIT is invalid"
-ERROR[70]="There is a general TPM or TPM H/W setup error"
+ERROR[70]="There is a general TPM or TPM hardware setup error"
 ERROR[71]="There is a general TPM API failure"
 ERROR[72]="The TPM is not asserting physical presence"
 ERROR[73]="The TPM physical presence configuration is invalid"
@@ -99,8 +99,15 @@ main() {
   ERROR_TYPE=$((16#${ERROR_TYPE:2:2}))
   ERROR_CODE=$(devmem $(vbs_addr 0x1A) 8)
   ERROR_CODE=$((16#${ERROR_CODE:2:2}))
+  ERROR_TPM=$(devmem $(vbs_addr 0x1B) 8)
+  ERROR_TPM=$((16#${ERROR_TPM:2:2}))
+
+  # CRC
+  CRC=$(devmem $(vbs_addr 0x1C) 16)
 
   echo ""
+  echo "Status CRC: $CRC"
+  echo "TPM status  ($ERROR_TPM)"
   echo "Status type ($ERROR_TYPE) code ($ERROR_CODE)"
   test "${ERROR[$ERROR_CODE]}" && echo ${ERROR[$ERROR_CODE]} || echo "The error code is unknown"
 }

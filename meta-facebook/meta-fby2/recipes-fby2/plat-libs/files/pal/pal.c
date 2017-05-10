@@ -2511,6 +2511,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   char temp_log[128] = {0};
   uint8_t temp;
   uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
 
   switch (snr_type) {
     case OS_BOOT:
@@ -2668,22 +2669,28 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       else
         strcat(error_log, "Unknown");
 
+      // DIMM number (ed[2]):
+      // Bit[7:5]: Socket number  (Range: 0-7)
+      // Bit[4:2]: Channel number (Range: 0-7)
+      // Bit[1:0]: DIMM number    (Range: 0-3)
       if (((ed[1] & 0xC) >> 2) == 0x0) {
         /* All Info Valid */
-        sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+        chn_num = (ed[2] & 0x1C) >> 2;
+        dimm_num = ed[2] & 0x3;
+        sprintf(temp_log, " DIMM %c%d (CPU# %d, CHN# %d, DIMM# %d)",
+            'A'+chn_num, dimm_num, (ed[2] & 0xE0) >> 5, chn_num, dimm_num);
       } else if (((ed[1] & 0xC) >> 2) == 0x1) {
         /* DIMM info not valid */
         sprintf(temp_log, " (CPU# %d, CHN# %d)",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2);
       } else if (((ed[1] & 0xC) >> 2) == 0x2) {
         /* CHN info not valid */
         sprintf(temp_log, " (CPU# %d, DIMM# %d)",
-            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
+            (ed[2] & 0xE0) >> 5, ed[2] & 0x3);
       } else if (((ed[1] & 0xC) >> 2) == 0x3) {
         /* CPU info not valid */
         sprintf(temp_log, " (CHN# %d, DIMM# %d)",
-            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+            (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
       }
       strcat(error_log, temp_log);
 
@@ -3118,7 +3125,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 	}
 	 
 	*data++ = BOARD_ID;
-	*data++ = (BOARD_REV_ID2 << 2) | (BOARD_REV_ID1 << 1) | BOARD_REV_ID1;
+	*data++ = (BOARD_REV_ID2 << 2) | (BOARD_REV_ID1 << 1) | BOARD_REV_ID0;
 	*data++ = slot;
 	*data++ = SLOT_TYPE;
 	*res_len = data - res_data;

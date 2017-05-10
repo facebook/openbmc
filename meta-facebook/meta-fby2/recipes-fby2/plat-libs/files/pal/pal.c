@@ -1264,12 +1264,12 @@ pal_switch_vga_mux(uint8_t slot) {
     gpio_sw1 = "0";
     break;
   case HAND_SW_SERVER2:
-    gpio_sw0 = "0";
-    gpio_sw1 = "1";
-    break;
-  case HAND_SW_SERVER3:
     gpio_sw0 = "1";
     gpio_sw1 = "0";
+    break;
+  case HAND_SW_SERVER3:
+    gpio_sw0 = "0";
+    gpio_sw1 = "1";
     break;
   case HAND_SW_SERVER4:
     gpio_sw0 = "1";
@@ -1311,12 +1311,12 @@ pal_switch_usb_mux(uint8_t slot) {
     gpio_sw1 = "0";
     break;
   case HAND_SW_SERVER2:
-    gpio_sw0 = "0";
-    gpio_sw1 = "1";
-    break;
-  case HAND_SW_SERVER3:
     gpio_sw0 = "1";
     gpio_sw1 = "0";
+    break;
+  case HAND_SW_SERVER3:
+    gpio_sw0 = "0";
+    gpio_sw1 = "1";
     break;
   case HAND_SW_SERVER4:
     gpio_sw0 = "1";

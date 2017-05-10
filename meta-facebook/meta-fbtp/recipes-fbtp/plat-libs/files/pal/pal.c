@@ -4127,16 +4127,16 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       sprintf(name, "MB_C2_AVA_RTEMP");
       break;
     case MB_SENSOR_C2_1_NVME_CTEMP:
-      sprintf(name, "MB_C2_1_NVME_CTEMP");
+      sprintf(name, "MB_C2_0_NVME_CTEMP");
       break;
     case MB_SENSOR_C2_2_NVME_CTEMP:
-      sprintf(name, "MB_C2_2_NVME_CTEMP");
+      sprintf(name, "MB_C2_1_NVME_CTEMP");
       break;
     case MB_SENSOR_C2_3_NVME_CTEMP:
-      sprintf(name, "MB_C2_3_NVME_CTEMP");
+      sprintf(name, "MB_C2_2_NVME_CTEMP");
       break;
     case MB_SENSOR_C2_4_NVME_CTEMP:
-      sprintf(name, "MB_C2_4_NVME_CTEMP");
+      sprintf(name, "MB_C2_3_NVME_CTEMP");
       break;
     case MB_SENSOR_C3_AVA_FTEMP:
       sprintf(name, "MB_C3_AVA_FTEMP");
@@ -4145,16 +4145,16 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       sprintf(name, "MB_C3_AVA_RTEMP");
       break;
     case MB_SENSOR_C3_1_NVME_CTEMP:
-      sprintf(name, "MB_C3_1_NVME_CTEMP");
+      sprintf(name, "MB_C3_0_NVME_CTEMP");
       break;
     case MB_SENSOR_C3_2_NVME_CTEMP:
-      sprintf(name, "MB_C3_2_NVME_CTEMP");
+      sprintf(name, "MB_C3_1_NVME_CTEMP");
       break;
     case MB_SENSOR_C3_3_NVME_CTEMP:
-      sprintf(name, "MB_C3_3_NVME_CTEMP");
+      sprintf(name, "MB_C3_2_NVME_CTEMP");
       break;
     case MB_SENSOR_C3_4_NVME_CTEMP:
-      sprintf(name, "MB_C3_4_NVME_CTEMP");
+      sprintf(name, "MB_C3_3_NVME_CTEMP");
       break;
     case MB_SENSOR_C4_AVA_FTEMP:
       sprintf(name, "MB_C4_AVA_FTEMP");
@@ -4163,16 +4163,16 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       sprintf(name, "MB_C4_AVA_RTEMP");
       break;
     case MB_SENSOR_C4_1_NVME_CTEMP:
-      sprintf(name, "MB_C4_1_NVME_CTEMP");
+      sprintf(name, "MB_C4_0_NVME_CTEMP");
       break;
     case MB_SENSOR_C4_2_NVME_CTEMP:
-      sprintf(name, "MB_C4_2_NVME_CTEMP");
+      sprintf(name, "MB_C4_1_NVME_CTEMP");
       break;
     case MB_SENSOR_C4_3_NVME_CTEMP:
-      sprintf(name, "MB_C4_3_NVME_CTEMP");
+      sprintf(name, "MB_C4_2_NVME_CTEMP");
       break;
     case MB_SENSOR_C4_4_NVME_CTEMP:
-      sprintf(name, "MB_C4_4_NVME_CTEMP");
+      sprintf(name, "MB_C4_3_NVME_CTEMP");
       break;
     case MB_SENSOR_C2_P12V_INA230_VOL:
       sprintf(name, "MB_C2_P12V_INA230_VOL");

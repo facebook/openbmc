@@ -220,6 +220,43 @@ static inline __s32 i2c_smbus_block_process_call(int file, __u8 command,
 	}
 }
 
+static inline int i2c_rdwr_msg_transfer(int file, __u8 addr, __u8 *tbuf, 
+                                        __u8 tcount, __u8 *rbuf, __u8 rcount)
+{
+  struct i2c_rdwr_ioctl_data data;
+  struct i2c_msg msg[2];
+  int n_msg = 0;
+  int rc;
+
+  memset(&msg, 0, sizeof(msg));
+
+  if (tcount) {
+    msg[n_msg].addr = addr >> 1;
+    msg[n_msg].flags = 0;
+    msg[n_msg].len = tcount;
+    msg[n_msg].buf = tbuf;
+    n_msg++;
+  }
+
+  if (rcount) {
+    msg[n_msg].addr = addr >> 1;
+    msg[n_msg].flags = I2C_M_RD;
+    msg[n_msg].len = rcount;
+    msg[n_msg].buf = rbuf;
+    n_msg++;
+  }
+
+  data.msgs = msg;
+  data.nmsgs = n_msg;
+
+  rc = ioctl(file, I2C_RDWR, &data);
+  if (rc < 0) {
+    // syslog(LOG_ERR, "Failed to do raw io");
+    return -1;
+  }
+  return 0;
+}
+
 #undef _I2C_MIN
 
 #ifdef __cplusplus

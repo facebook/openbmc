@@ -32,9 +32,7 @@
 #include <sys/ioctl.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/ipmi.h>
-#include <linux/i2c.h>
-#include <linux/i2c-dev.h>
-
+#include <openbmc/obmc-i2c.h>
 
 #define MCU_BUS_ID 0x9
 #define MCU_UPDATE_RETRIES 12
@@ -67,46 +65,6 @@ msleep(int msec) {
   while(nanosleep(&req, &req) == -1 && errno == EINTR) {
     continue;
   }
-}
-
-
-
-// Helper Functions
-static int
-i2c_io(int fd, uint8_t addr, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount)
-{
-  struct i2c_rdwr_ioctl_data data;
-  struct i2c_msg msg[2];
-  int n_msg = 0;
-  int rc;
-
-  memset(&msg, 0, sizeof(msg));
-
-  if (tcount) {
-    msg[n_msg].addr = addr >> 1;
-    msg[n_msg].flags = 0;
-    msg[n_msg].len = tcount;
-    msg[n_msg].buf = tbuf;
-    n_msg++;
-  }
-
-  if (rcount) {
-    msg[n_msg].addr = addr >> 1;
-    msg[n_msg].flags = I2C_M_RD;
-    msg[n_msg].len = rcount;
-    msg[n_msg].buf = rbuf;
-    n_msg++;
-  }
-
-  data.msgs = msg;
-  data.nmsgs = n_msg;
-
-  rc = ioctl(fd, I2C_RDWR, &data);
-  if (rc < 0) {
-    // syslog(LOG_ERR, "Failed to do raw io");
-    return -1;
-  }
-  return 0;
 }
 
 static int
@@ -231,9 +189,9 @@ usb_dbg_update_fw(char *path)
 
   rcount = 0;
 
-  ret = i2c_io(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
+  ret = i2c_rdwr_msg_transfer(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
   if (ret) {
-    printf("i2c_io failed download\n");
+    printf("i2c_rdwr_msg_transfer failed download\n");
     goto error_exit;
   }
 
@@ -241,9 +199,9 @@ usb_dbg_update_fw(char *path)
   msleep(500);
   tcount = 0;
   rcount = 2;
-  ret = i2c_io(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
+  ret = i2c_rdwr_msg_transfer(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
   if (ret) {
-    printf("i2c_io failed download ack\n");
+    printf("i2c_rdwr_msg_transfer failed download ack\n");
     goto error_exit;
   }
 
@@ -263,9 +221,9 @@ usb_dbg_update_fw(char *path)
 
     rcount = 5;
 
-    ret = i2c_io(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
+    ret = i2c_rdwr_msg_transfer(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
     if (ret) {
-      printf("i2c_io failed - MCU_CMD_STATUS\n");
+      printf("i2c_rdwr_msg_transfer failed - MCU_CMD_STATUS\n");
       goto error_exit;
     }
 
@@ -282,9 +240,9 @@ usb_dbg_update_fw(char *path)
     tbuf[0] = 0xcc;
     tcount = 1;
     rcount = 0;
-    ret = i2c_io(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
+    ret = i2c_rdwr_msg_transfer(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
     if (ret) {
-      printf("i2c_io failed, Send ACK\n");
+      printf("i2c_rdwr_msg_transfer failed, Send ACK\n");
       goto error_exit;
     }
 
@@ -319,9 +277,9 @@ usb_dbg_update_fw(char *path)
     tcount = tbuf[0];
     rcount = 2;
 
-    ret = i2c_io(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
+    ret = i2c_rdwr_msg_transfer(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
     if (ret) {
-      printf("i2c_io error\n");
+      printf("i2c_rdwr_msg_transfer error\n");
       goto error_exit;
     }
 
@@ -348,9 +306,9 @@ usb_dbg_update_fw(char *path)
 
   rcount = 2;
 
-  ret = i2c_io(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
+  ret = i2c_rdwr_msg_transfer(ifd, MCU_addr, tbuf, tcount, rbuf, rcount);
   if (ret) {
-    printf("i2c_io failed for run\n");
+    printf("i2c_rdwr_msg_transfer failed for run\n");
     goto error_exit;
   }
 
@@ -430,7 +388,7 @@ bic_send:
 int
 usb_dbg_update_boot_loader(char *path)
 {
-  int ret;
+  int ret = -1;
   uint32_t offset;
   uint16_t count, read_count;
   uint8_t buf[256] = {0};
@@ -495,7 +453,7 @@ usb_dbg_reset(void)
 {
   int fd = 0;
   char fn[32];
-  uint8_t tbuf[2] = {0};
+  uint8_t tbuf[3] = {0};
   uint8_t rbuf[2] = {0};
   int ret;
 
@@ -507,7 +465,7 @@ usb_dbg_reset(void)
   }
   //Set Configuration register
   tbuf[0] = 0x06; tbuf[1] = 0xFF; tbuf[2] = 0xFF;
-  ret = i2c_io(fd, PCA9555_addr, tbuf, 3, rbuf, 0);
+  ret = i2c_rdwr_msg_transfer(fd, PCA9555_addr, tbuf, 3, rbuf, 0);
   if (ret < 0) {
     syslog(LOG_ERR, "%s(%d) : reset_PCA9555 fail.\n", __func__, __LINE__ );
     goto error_exit;

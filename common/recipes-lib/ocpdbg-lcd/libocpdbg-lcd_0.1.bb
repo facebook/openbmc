@@ -14,7 +14,7 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-DEPENDS = " libipmb libipmi "
+DEPENDS = " libipmb libipmi obmc-i2c"
 
 do_install() {
 	  install -d ${D}${libdir}

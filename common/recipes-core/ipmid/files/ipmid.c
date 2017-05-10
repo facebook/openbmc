@@ -231,10 +231,6 @@ chassis_get_boot_options (unsigned char *request, unsigned char req_len,
   *data++ = req->data[0]; // Parameter
 
   *res_len = pal_get_boot_option(param, data) + 2;
-
-  if (res->cc == CC_SUCCESS) {
-    *res_len = data - &res->data[0];
-  }
 }
 
 // Set System Boot Options (IPMI/Section 28)

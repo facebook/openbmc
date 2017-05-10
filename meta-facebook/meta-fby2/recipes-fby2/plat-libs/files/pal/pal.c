@@ -3201,12 +3201,12 @@ int
 pal_set_dev_guid(uint8_t slot, char *guid) {
       pal_populate_guid(g_dev_guid, guid);
 
-      return pal_set_guid(OFFSET_DEV_GUID + (slot - 1)*GUID_SIZE, g_dev_guid);
+      return pal_set_guid(OFFSET_DEV_GUID, g_dev_guid);
 }
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {
-      pal_get_guid(OFFSET_DEV_GUID + (fru - 1)*GUID_SIZE, g_dev_guid);
+      pal_get_guid(OFFSET_DEV_GUID, g_dev_guid);
       memcpy(guid, g_dev_guid, GUID_SIZE);
 
       return 0;

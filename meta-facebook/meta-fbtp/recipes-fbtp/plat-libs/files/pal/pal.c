@@ -4844,21 +4844,22 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
 }
 
 static int
-pal_fetch_vr_ver(uint8_t vr, uint8_t *ver) {
+pal_fetch_vr_info(uint8_t vr, uint8_t *key, uint8_t page,
+  uint8_t reg1, uint8_t reg2, uint8_t *info) {
   int fd;
   char fn[32];
   int ret = -1;
-  unsigned int retry = MAX_READ_RETRY;
+  unsigned int retry = MAX_READ_RETRY, retry_page = MAX_READ_RETRY;
   uint8_t tcount, rcount;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
-  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
   while (retry) {
     fd = open(fn, O_RDWR);
     if (fd < 0) {
-      syslog(LOG_WARNING, "pal_get_vr_ver: i2c_open failed for bus#%x\n", VR_BUS_ID);
+      syslog(LOG_WARNING, "pal_fetch_vr_info: i2c_open failed for bus#%x\n", VR_BUS_ID);
       retry--;
       msleep(100);
     } else {
@@ -4869,284 +4870,130 @@ pal_fetch_vr_ver(uint8_t vr, uint8_t *ver) {
       goto error_exit;
   }
 
-  // Set the page to read FW Version
-  tbuf[0] = 0x00;
-  tbuf[1] = VR_FW_PAGE;
+  retry_page = MAX_READ_RETRY;
+  while(retry_page) {
+    // Set the page to read FW Info
+    tbuf[0] = 0x00;
+    tbuf[1] = page;
 
-  tcount = 2;
-  rcount = 0;
+    tcount = 2;
+    rcount = 0;
 
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+    retry = MAX_READ_RETRY;
+    while(retry) {
+      ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+      if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_fetch_vr_info: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-      retry--;
-      msleep(100);
-    } else {
-      break;
+        retry--;
+        msleep(100);
+      } else {
+        break;
+      }
+
+      if(retry == 0)
+        goto error_exit;
     }
 
-    if(retry == 0)
-      goto error_exit;
-  }
+    // Read 2 bytes from first register
+    tbuf[0] = reg1;
 
-  // Read 2 bytes from first register
-  tbuf[0] = VR_FW_REG1;
+    tcount = 1;
+    rcount = 2;
 
-  tcount = 1;
-  rcount = 2;
-
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+    retry = MAX_READ_RETRY;
+    while(retry) {
+      ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+      // Treat data 0xFF as failed and return -1
+    if (ret || rbuf[0] == 0xff || rbuf[1] == 0xff) {
+      ret = (ret)?ret:-1;
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_fetch_vr_info: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-      retry--;
-      msleep(100);
-    } else {
-      break;
+        retry--;
+        msleep(100);
+      } else {
+        break;
+      }
+
+      if(retry == 0)
+        goto error_exit;
     }
 
-    if(retry == 0)
-      goto error_exit;
-  }
+    info[0] = rbuf[1];
+    info[1] = rbuf[0];
 
-  ver[0] = rbuf[1];
-  ver[1] = rbuf[0];
+    if (reg2) {
+      tbuf[0] = reg2;
 
-  tbuf[0] = VR_FW_REG2;
+      tcount = 1;
+      rcount = 2;
 
-  tcount = 1;
-  rcount = 2;
-
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+      retry = MAX_READ_RETRY;
+      while(retry) {
+        ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+        // Treat data 0xFF as failed and return -1
+      if (ret || rbuf[0] == 0xff || rbuf[1] == 0xff) {
+        ret = (ret)?ret:-1;
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_ver: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+        syslog(LOG_WARNING, "pal_fetch_vr_info: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-      retry--;
-      msleep(100);
-    } else {
-      break;
+          retry--;
+          msleep(100);
+        } else {
+          break;
+        }
+
+        if(retry == 0)
+          goto error_exit;
+      }
+
+      info[2] = rbuf[1];
+      info[3] = rbuf[0];
     }
 
-    if(retry == 0)
-      goto error_exit;
-  }
+    // Get the page to confirm if page is switched by other program
+    tbuf[0] = 0x00;
 
-  ver[2] = rbuf[1];
-  ver[3] = rbuf[0];
+    tcount = 1;
+    rcount = 1;
 
-  sprintf(key, "vr_%02Xh_ver", vr);
-  sprintf(value, "%08X", *(unsigned int*)ver);
-  edb_cache_set(key, value);
-
-error_exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
-  return ret;
-}
-
-static int
-pal_fetch_vr_checksum(uint8_t vr, uint8_t *checksum) {
-  int fd;
-  char fn[32];
-  int ret = -1;
-  unsigned int retry = MAX_READ_RETRY;
-  uint8_t tcount, rcount;
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
-
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  while (retry) {
-    fd = open(fn, O_RDWR);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_open failed for bus#%x\n", VR_BUS_ID);
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
-  }
-
-  // Set the page to read FW checksum
-  tbuf[0] = 0x00;
-  tbuf[1] = VR_FW_PAGE_2;
-
-  tcount = 2;
-  rcount = 0;
-
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+    retry = MAX_READ_RETRY;
+    while(retry) {
+      ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
+      if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+        syslog(LOG_WARNING, "pal_fetch_vr_info: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-      retry--;
-      msleep(100);
-    } else {
-      break;
+        retry--;
+        msleep(100);
+      } else {
+        break;
+      }
+
+      if(retry == 0)
+        goto error_exit;
     }
 
-    if(retry == 0)
-      goto error_exit;
-  }
-
-  // Read 2 bytes from first register
-  tbuf[0] = VR_FW_REG4;
-
-  tcount = 1;
-  rcount = 2;
-
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
+    // page is incorrect, previous data might be wrong
+    if (rbuf[0] != page) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
+      syslog(LOG_WARNING, "pal_fetch_vr_info: incorrect page for bus#%x, dev#%x\n", VR_BUS_ID, vr);
 #endif
-      retry--;
-      msleep(100);
+      retry_page--;
     } else {
       break;
     }
 
-    if(retry == 0)
+    if (retry_page == 0)
       goto error_exit;
   }
 
-  checksum[0] = rbuf[1];
-  checksum[1] = rbuf[0];
-
-  tbuf[0] = VR_FW_REG3;
-
-  tcount = 1;
-  rcount = 2;
-
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_checksum: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
-#endif
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
-  }
-
-  checksum[2] = rbuf[1];
-  checksum[3] = rbuf[0];
-
-  sprintf(key, "vr_%02Xh_checksum", vr);
-  sprintf(value, "%08X", *(unsigned int*)checksum);
-  edb_cache_set(key, value);
-
-error_exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
-  return ret;
-}
-
-static int
-pal_fetch_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
-  int fd;
-  char fn[32];
-  int ret = -1;
-  unsigned int retry = MAX_READ_RETRY;
-  uint8_t tcount, rcount;
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
-
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  while (retry) {
-    fd = open(fn, O_RDWR);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_open failed for bus#%x\n", VR_BUS_ID);
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
-  }
-
-  // Set the page to read FW deviceId
-  tbuf[0] = 0x00;
-  tbuf[1] = VR_FW_PAGE_3;
-
-  tcount = 2;
-  rcount = 0;
-
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
-#endif
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
-  }
-
-  // Read 2 bytes from first register
-  tbuf[0] = VR_FW_REG5;
-
-  tcount = 1;
-  rcount = 2;
-
-  retry = MAX_READ_RETRY;
-  while(retry) {
-  ret = i2c_io(fd, vr, tbuf, tcount, rbuf, rcount);
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_vr_deviceId: i2c_io failed for bus#%x, dev#%x\n", VR_BUS_ID, vr);
-#endif
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
-  }
-
-  deviceId[0] = rbuf[1];
-  deviceId[1] = rbuf[0];
-
-  sprintf(key, "vr_%02Xh_deviceId", vr);
-  sprintf(value, "%04X", *(unsigned short*)deviceId);
+  if (reg2)
+    sprintf(value, "%08X", *(unsigned int*)info);
+  else
+    sprintf(value, "%04X", *(unsigned int*)info);
   edb_cache_set(key, value);
 
 error_exit:
@@ -5162,7 +5009,7 @@ pal_get_vr_ver(uint8_t vr, uint8_t *ver) {
   char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
   sprintf(key, "vr_%02Xh_ver", vr);
   if (edb_cache_get(key, value) < 0)
-    return pal_fetch_vr_ver(vr, ver);
+    return pal_fetch_vr_info(vr, key, VR_FW_PAGE, VR_FW_REG1, VR_FW_REG2, ver);
   *(unsigned int*)ver = (unsigned int)strtoul(value, NULL, 16);
   return 0;
 }
@@ -5172,7 +5019,7 @@ pal_get_vr_checksum(uint8_t vr, uint8_t *checksum) {
   char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
   sprintf(key, "vr_%02Xh_checksum", vr);
   if (edb_cache_get(key, value) < 0)
-    return pal_fetch_vr_checksum(vr, checksum);
+    return pal_fetch_vr_info(vr, key, VR_FW_PAGE_2, VR_FW_REG4, VR_FW_REG3, checksum);
   *(unsigned int*)checksum = (unsigned int)strtoul(value, NULL, 16);
   return 0;
 }
@@ -5182,7 +5029,7 @@ pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
   char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
   sprintf(key, "vr_%02Xh_deviceId", vr);
   if (edb_cache_get(key, value) < 0)
-    return pal_fetch_vr_deviceId(vr, deviceId);
+    return pal_fetch_vr_info(vr, key, VR_FW_PAGE_3, VR_FW_REG5, 0, deviceId);
   *(unsigned short*)deviceId = (unsigned short)strtoul(value, NULL, 16);
   return 0;
 }
@@ -5848,7 +5695,7 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
   return me_xmit(request, req_len, response, rlen);
 }
 
-int 
+int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
   int ret;
@@ -5857,7 +5704,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   uint8_t mb_slot_id = 0x00;
   uint8_t raiser_card_slot_id = 0x00;
   int completion_code=CC_UNSPECIFIED_ERROR;
-  
+
   ret = pal_get_platform_id(&platform_id);
   if (ret) {
     *res_len = 0x00;
@@ -5889,7 +5736,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   res_data[2] = mb_slot_id;
   res_data[3] = raiser_card_slot_id;
   *res_len = 0x04;
-  
+
   return completion_code;
 }
 

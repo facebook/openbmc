@@ -3431,11 +3431,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   float volt, curr;
   static uint8_t poweron_10s_flag = 0;
   uint8_t retry = MAX_READ_RETRY;
+  bool server_off;
 
   switch(fru) {
   case FRU_MB:
     sprintf(key, "mb_sensor%d", sensor_num);
-    if (is_server_off()) {
+    server_off = is_server_off();
+    if (server_off) {
       poweron_10s_flag = 0;
       // Power is OFF, so only some of the sensors can be read
       switch(sensor_num) {
@@ -3825,6 +3827,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       default:
         return -1;
       }
+    }
+    if (is_server_off() != server_off) {
+      /* server power status changed while we were reading the sensor.
+       * this sensor is potentially NA. */
+      return pal_sensor_read_raw(fru, sensor_num, value);
     }
     break;
   case FRU_NIC:

@@ -92,27 +92,30 @@ enum {
 typedef struct _bic_gpio_t {
   uint32_t pwrgood_cpu:1;
   uint32_t pwrgd_pch_pwrok:1;
-  uint32_t pvddr_vrhot_n:1;
+  uint32_t pvddr_ab_vrhot_n:1;
+  uint32_t pvddr_de_vrhot_n:1;
   uint32_t pvccin_vrhot_n:1;
-  uint32_t fm_fast_prochot_n:1;
-  uint32_t pchhot_cpu_n:1;
-  uint32_t fm_cpld_cpu_dimm_event_c0_n:1;
-  uint32_t fm_cpld_bdxde_thermtrip_n:1;
-  uint32_t thermtrip_pch_n:1;
+  uint32_t fm_throttle_n:1;
+  uint32_t fm_pch_bmc_thermtrip_n:1;
+  uint32_t h_memhot_co_n:1;
+  uint32_t fm_cpu_thermtrip_lvt3_n:1;
+  uint32_t cpld_pch_thermtrip:1;
   uint32_t fm_cpld_fivr_fault:1;
-  uint32_t fm_bdxde_caterr_lvt3_n:1;
-  uint32_t fm_bdxde_err_lvt3_n:3;
-  uint32_t slp_s4_n:1;
+  uint32_t fm_bdxde_caterr_n:1;
+  uint32_t fm_cpu_error:3;
+  uint32_t fm_bdxde_slp4_n:1;
   uint32_t fm_nmi_event_bmc_n:1;
   uint32_t fm_smi_bmc_n:1;
-  uint32_t rst_pltrst_bmc_n:1;
-  uint32_t fp_rst_btn_buf_n:1;
-  uint32_t bmc_rst_btn_out_n:1;
-  uint32_t fm_bde_post_cmplt_n:1;
+  uint32_t pltrst_n:1;
+  uint32_t fp_rst_btn_n:1;
+  uint32_t rst_btn_bmc_out_n:1;
+  uint32_t fm_bios_post_compt_n:1;
   uint32_t fm_bdxde_slp3_n:1;
-  uint32_t fm_pwr_led_n:1;
   uint32_t pwrgd_pvccin:1;
-  uint32_t svr_id:4;
+  uint32_t fm_backup_bios_sel_n:1;
+  uint32_t fm_ejector_latch_detect_n:1;
+  uint32_t bmc_reset:1;
+  uint32_t fm_jtag_bic_tck_mux_sel_n:1;
   uint32_t bmc_ready_n:1;
   uint32_t bmc_com_sw_n:1;
   uint32_t rsvd:2;
@@ -138,15 +141,15 @@ typedef union _bic_gpio_config_u {
 typedef struct _bic_config_t {
   uint8_t sol:1;
   uint8_t post:1;
-  uint8_t kcs:1;
-  uint8_t ipmb:1;
-  uint8_t rsvd:4;
+  uint8_t rsvd:6;
 } bic_config_t;
 
 typedef union _bic_config_u {
   uint8_t config;
   bic_config_t bits;
 } bic_config_u;
+
+int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *id);
 
@@ -157,6 +160,7 @@ int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
+int bic_get_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len);
 
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);

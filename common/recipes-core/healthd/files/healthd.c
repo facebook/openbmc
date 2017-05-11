@@ -228,7 +228,7 @@ i2c_mon_handler() {
             // To confirm the bus is not workable.
             if (timeout < 0) {
               memset(str_i2c_log, 0, sizeof(char) * 64); 
-              sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed", i);          
+              sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed (I2C bus index base 0)", i); 
               syslog(LOG_CRIT, str_i2c_log);
               is_error_occur[i] = true;
               pal_i2c_crash_assert_handle(i);
@@ -237,7 +237,7 @@ i2c_mon_handler() {
         } else {
           if (is_error_occur[i] == true) {
             memset(str_i2c_log, 0, sizeof(char) * 64); 
-            sprintf(str_i2c_log, "DEASSERT: I2C bus %d crashed", i);          
+            sprintf(str_i2c_log, "DEASSERT: I2C bus %d crashed (I2C bus index base 0)", i);
             syslog(LOG_CRIT, str_i2c_log);
             is_error_occur[i] = false;
             pal_i2c_crash_deassert_handle(i);

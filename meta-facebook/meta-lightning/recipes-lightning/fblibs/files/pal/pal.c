@@ -1428,7 +1428,7 @@ int pal_get_airflow(float *airflow_cfm)
      *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0208*(rpm_avg)) - 7.8821);
   }
   else if (ssd_sku == M2_SKU) {
-     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0198*(rpm_avg)) - 13.115);
+     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0211*(rpm_avg)) - 10.585);
   }
   else {
     syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD SKU", __func__);

@@ -1264,7 +1264,7 @@ pal_fan_dead_handle(int fan_num) {
   int ret;
 
   /* Because two fans map to one LED, and fan ID start at 1 */
-  ret = pal_set_fan_led( (fan_num / 2), FAN_LED_OFF);
+  ret = pal_set_fan_led( ((fan_num - FAN_INDEX_BASE) / 2), FAN_LED_OFF);
 
   if(ret < 0) {
     syslog(LOG_ERR, "%s: pal_set_fan_led failed\n", __func__);
@@ -1279,7 +1279,7 @@ pal_fan_recovered_handle(int fan_num) {
   int ret;
 
   /* Because two fans map to one LED, and fan ID start at 1 */
-  ret = pal_set_fan_led( (fan_num / 2), FAN_LED_ON);
+  ret = pal_set_fan_led( ((fan_num - FAN_INDEX_BASE) / 2), FAN_LED_ON);
 
   if(ret < 0) {
     syslog(LOG_ERR, "%s: pal_set_fan_led failed\n", __func__);

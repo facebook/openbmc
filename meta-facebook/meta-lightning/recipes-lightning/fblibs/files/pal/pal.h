@@ -51,6 +51,7 @@ extern "C" {
 
 #define MAX_NODES 1
 #define MAX_FAN_LED_NUM 6
+#define FAN_INDEX_BASE 1
 
 #define MAX_SENSOR_NUM 256
 #define ERROR_CODE_NUM 13

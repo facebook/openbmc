@@ -117,7 +117,6 @@ int gpio_change_direction(gpio_st *g, gpio_direction_en dir)
 
   LOG_VER("change gpio=%d direction=%s", g->gs_gpio, val);
 
- out:
   if (fd != -1) {
     close(fd);
   }
@@ -155,7 +154,6 @@ int gpio_change_edge(gpio_st *g, gpio_edge_en edge)
 {
   char buf[128] = {0};
   char str[16] = {0};
-  char *val;
   int fd = -1;
   int rc = 0;
 
@@ -227,7 +225,6 @@ int gpio_current_edge(gpio_st *g, gpio_edge_en *edge)
 int gpio_export(int gpio)
 {
   char buf[128] = {0};
-  char *val;
   int fd = -1;
   int rc = 0;
   int len;
@@ -250,7 +247,6 @@ int gpio_export(int gpio)
 int gpio_unexport(int gpio)
 {
   char buf[128] = {0};
-  char *val;
   int fd = -1;
   int rc = 0;
   int len;
@@ -301,6 +297,14 @@ int gpio_poll_open(gpio_poll_st *gpios, int count)
   int rc = 0;
 
   for ( i = 0; i < count; i++) {
+    /* If name is provided, use it to calculated the GPIO num,
+     * else assume that the number is provided */
+    if (gpios[i].name[0] != '\0') {
+      gpios[i].gs.gs_gpio = gpio_num(gpios[i].name);
+      if (gpios[i].gs.gs_gpio < 0) {
+        return -1;
+      }
+    }
     gpio_export(gpios[i].gs.gs_gpio);
     if (gpio_open(&gpios[i].gs, gpios[i].gs.gs_gpio)) {
         rc = errno;
@@ -310,6 +314,7 @@ int gpio_poll_open(gpio_poll_st *gpios, int count)
      gpio_change_direction(&gpios[i].gs,  GPIO_DIRECTION_IN);
      gpio_change_edge(&gpios[i].gs, gpios[i].edge);
   }
+  return 0;
 }
 
 static void *gpio_poll_pin(void *arg)
@@ -317,7 +322,6 @@ static void *gpio_poll_pin(void *arg)
   gpio_poll_st *gpios = (gpio_poll_st *)arg;
   struct pollfd fdset;
   int rc;
-  int i;
 
   while (1) {
     memset((void *)&fdset, 0, sizeof(fdset));
@@ -353,7 +357,7 @@ static void *gpio_poll_pin(void *arg)
 int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
 {
   pthread_t thread_ids[count];
-  int rc, ret;
+  int ret;
   int i;
 
   if (count > MAX_PINS) {
@@ -387,4 +391,5 @@ int gpio_poll_close(gpio_poll_st *gpios, int count)
     gpio_close(&gpios[i].gs);
     gpio_unexport(gpio);
   }
+  return 0;
 }

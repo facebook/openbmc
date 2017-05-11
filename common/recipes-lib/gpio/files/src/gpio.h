@@ -41,13 +41,17 @@ typedef enum {
   GPIO_EDGE_BOTH,
 } gpio_edge_en;
 
-typedef struct {
+struct gpio_poll_s;
+typedef struct gpio_poll_s gpio_poll_st;
+
+struct gpio_poll_s {
   gpio_st gs;
   gpio_edge_en edge;
   int value;
-  void (*fp)(void*);
+  void (*fp)(gpio_poll_st *);
+  char name[32];
   char desc[64];
-} gpio_poll_st;
+};
 
 /* Operations for extended gpio operations */
 int gpio_open(gpio_st* g, int gpio);

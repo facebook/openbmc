@@ -86,6 +86,27 @@ delay_log(void *arg)
   pthread_exit(NULL);
 }
 
+static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
+{
+  if (log_delay == 0) {
+    syslog(LOG_CRIT, "%s: %s - %s\n", gp->value ? "DEASSERT": "ASSERT", gp->name, gp->desc);
+  } else {
+    pthread_t tid_delay_log;
+    struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
+    if (log) {
+      log->usec = log_delay;
+      snprintf(log->msg, 256, "%s: %s - %s\n", gp->value ? "DEASSERT" : "ASSERT", gp->name, gp->value);
+      if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log)) {
+        free(log);
+        log = NULL;
+      }
+    }
+    if (!log) {
+      syslog(LOG_CRIT, "%s: %s - %s\n", gp->value ? "DEASSERT": "ASSERT", gp->name, gp->desc);
+    }
+  }
+}
+
 // Event Handler for GPIOR5 platform reset changes
 static void platform_reset_event_handle(void *p)
 {
@@ -100,25 +121,16 @@ static void gpio_event_handle(void *p)
 {
   gpio_poll_st *gp = (gpio_poll_st*) p;
   char cmd[128] = {0};
-  pthread_t tid_delay_log;
-  struct delayed_log *log;
 
   if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
     reset_timer(&power_on_sec);
   }
   else if (gp->gs.gs_gpio == gpio_num("GPIOL0")) { // IRQ_UV_DETECT_N
-    log = (struct delayed_log*)malloc(sizeof(struct delayed_log));
-    if (log) {
-      log->usec = 20*1000; // 20ms
-      snprintf(log->msg, 256, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
-      if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log) < 0) {
-        syslog(LOG_WARNING, "pthread_create failed for delay_log\n");
-      }
-      return;
-    }
+    log_gpio_change(gp, 20*1000);
+    return;
   }
 
-  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+  log_gpio_change(gp, 0);
 
   if (gp->gs.gs_gpio == gpio_num("GPIOQ6")) { // FM_POST_CARD_PRES_BMC_N
     if(gp->value == 1)
@@ -182,7 +194,7 @@ static void gpio_event_handle_power(void *p)
     return;
   }
 
-  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+  log_gpio_change(gp, 0);
 
   //LCD debug card critical SEL support
   if (gp->gs.gs_gpio == gpio_num("GPIOE6") || gp->gs.gs_gpio == gpio_num("GPIOE7")) {
@@ -247,100 +259,54 @@ static void gpio_event_handle_PLTRST(void *p)
       return;
   }
 
-  syslog(LOG_CRIT, "%s: %s\n", (gp->value?"DEASSERT":"ASSERT"), gp->desc);
+  log_gpio_change(gp, 0);
 }
 
 // GPIO table to be monitored when MB is ON
 static gpio_poll_st g_gpios[] = {
   // {{gpio, fd}, edge, gpioValue, call-back function, GPIO description}
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOB6 - PWRGD_SYS_PWROK" },
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOB7 - IRQ_PVDDQ_GHJ_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD6 - FM_CPU_ERR0_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD7 - FM_CPU_ERR1_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE0 - RST_SYSTEM_BTN_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE2 - FM_PWR_BTN_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE4 - FP_NMI_BTN_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOE6 - FM_CPU0_PROCHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOE7 - FM_CPU1_PROCHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF0 - IRQ_PVDDQ_ABC_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF2 - IRQ_PVCCIN_CPU0_VRHOT_LVC3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF3 - IRQ_PVCCIN_CPU1_VRHOT_LVC3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF4 - IRQ_PVDDQ_KLM_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG0 - FM_CPU_ERR2_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPIOG1 - FM_CPU_CATERR_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOG2 - FM_PCH_BMC_THERMTRIP_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG3 - FM_CPU0_SKTOCC_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI0 - FM_CPU0_FIVR_FAULT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI1 - FM_CPU1_FIVR_FAULT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL0 - IRQ_UV_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL1 - IRQ_OC_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL2 - FM_HSC_TIMER_EXP_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOL4 - FM_MEM_THERM_EVENT_PCH_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOM0 - FM_CPU0_RC_ERROR_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOM1 - FM_CPU1_RC_ERROR_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOM4 - FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOM5 - FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPION3 - FM_CPU_MSMI_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOQ6 - FM_POST_CARD_PRES_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, platform_reset_event_handle, "GPIOR5 - RST_BMC_PLTRST_BUF_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOS0 - FM_THROTTLE_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX4 - H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX5 - H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX6 - H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX7 - H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOZ2 - IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOAA0 - FM_CPU1_SKTOCC_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA1 - IRQ_SML1_PMBUS_ALERT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAB0 - IRQ_HSC_FAULT_N"},
+  {{1, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOB6", "PWRGD_SYS_PWROK" },
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOB7", "IRQ_PVDDQ_GHJ_VRHOT_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD6", "FM_CPU_ERR0_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD7", "FM_CPU_ERR1_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE0", "RST_SYSTEM_BTN_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE2", "FM_PWR_BTN_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE4", "FP_NMI_BTN_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOE6", "FM_CPU0_PROCHOT_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOE7", "FM_CPU1_PROCHOT_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF0", "IRQ_PVDDQ_ABC_VRHOT_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF2", "IRQ_PVCCIN_CPU0_VRHOT_LVC3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF3", "IRQ_PVCCIN_CPU1_VRHOT_LVC3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF4", "IRQ_PVDDQ_KLM_VRHOT_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG0", "FM_CPU_ERR2_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPIOG1", "FM_CPU_CATERR_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOG2", "FM_PCH_BMC_THERMTRIP_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG3", "FM_CPU0_SKTOCC_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI0", "FM_CPU0_FIVR_FAULT_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI1", "FM_CPU1_FIVR_FAULT_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL0", "IRQ_UV_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL1", "IRQ_OC_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL2", "FM_HSC_TIMER_EXP_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOL4", "FM_MEM_THERM_EVENT_PCH_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOM0", "FM_CPU0_RC_ERROR_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOM1", "FM_CPU1_RC_ERROR_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOM4", "FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOM5", "FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPION3", "FM_CPU_MSMI_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOQ6", "FM_POST_CARD_PRES_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, platform_reset_event_handle, "GPIOR5", "RST_BMC_PLTRST_BUF_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOS0", "FM_THROTTLE_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX4", "H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX5", "H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX6", "H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX7", "H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOZ2", "IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOAA0", "FM_CPU1_SKTOCC_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA1", "IRQ_SML1_PMBUS_ALERT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAB0", "IRQ_HSC_FAULT_N"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
-
-// Initalize the gpio# using the helper function
-static void
-gpio_init(void) {
-  int i = 0;
-  // Initialize gpio numbers
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB6");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOB7");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD6");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOD7");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE2");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE4");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE6");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOE7");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF2");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF3");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOF4");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG1");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG2");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOG3");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOI0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOI1");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL1");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL2");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOL4");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM1");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM4");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOM5");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPION3");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOQ6");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOR5");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOS0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX4");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX5");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX6");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOX7");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOZ2");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAA0");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAA1");
-  g_gpios[i++].gs.gs_gpio = gpio_num("GPIOAB0");
-}
 
 // Thread for gpio timer
 static void *
@@ -481,7 +447,6 @@ main(int argc, void **argv) {
       exit(1);
     }
 
-    gpio_init();
     gpio_poll_open(g_gpios, g_count);
     gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
     gpio_poll_close(g_gpios, g_count);

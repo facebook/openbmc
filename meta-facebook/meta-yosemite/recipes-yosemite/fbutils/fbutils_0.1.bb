@@ -45,7 +45,6 @@ SRC_URI = "file://ast-functions \
            file://rc.early \
            file://rc.local \
            file://fw_env_config.sh \
-           file://src \
            file://COPYING \
           "
 
@@ -69,10 +68,6 @@ do_install() {
       install -m 755 $f ${dst}/${f}
       ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
   done
-
-  # common lib and include files
-  install -d ${D}${includedir}/facebook
-  install -m 0644 src/include/log.h ${D}${includedir}/facebook/log.h
 
   # init
   install -d ${D}${sysconfdir}/init.d

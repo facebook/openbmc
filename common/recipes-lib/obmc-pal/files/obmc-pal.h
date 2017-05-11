@@ -48,6 +48,18 @@ void pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_bmc_err_enable(void);
+int pal_bmc_err_disable(void);
+int pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc);
+int pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length);
+int pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
+int pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
+int pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
+int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
+uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
+void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
+int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
+
 #ifdef __cplusplus
 }
 #endif

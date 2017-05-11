@@ -287,19 +287,8 @@ int pal_is_crashdump_ongoing(uint8_t slot);
 void pal_add_cri_sel(char *str);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
-int pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc);
-int pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length);
-int pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
-int pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
-int pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
-int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
 int pal_nic_otp(int fru, int snr_num, float thresh_val);
-int pal_bmc_err_enable(void);
-int pal_bmc_err_disable(void);
-uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 uint8_t pal_get_status(void);
-void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
-int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
 
 #ifdef __cplusplus
 } // extern "C"

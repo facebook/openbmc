@@ -2042,42 +2042,6 @@ pal_bmc_err_disable() {
 }
 
 uint8_t
-pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
-
-  return 0; // CC_SUCCESS
-}
-
-int
-pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc) {
-  return 0;
-}
-
-int
-pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length) {
-  return 0;
-}
-
-int
-pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
-  return 0;
-}
-
-int
-pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
-  return 0;
-}
-
-int
-pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
-  return 0;
-}
-
-int
-pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
-  return 0;
-}
-
-uint8_t
 pal_get_status(void) {
 
   return 0; // CC_SUCCESS
@@ -2085,12 +2049,6 @@ pal_get_status(void) {
 
 unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
 unsigned char option_size[]   = {1,1,1,1,2,5,9,17,127};
-
-void
-pal_set_boot_option(unsigned char para,unsigned char* pbuff)
-{
-  return;
-}
 
 int
 pal_get_boot_option(unsigned char para,unsigned char* pbuff)

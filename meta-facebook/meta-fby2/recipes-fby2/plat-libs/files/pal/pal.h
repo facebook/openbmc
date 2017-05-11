@@ -209,24 +209,7 @@ void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_is_crashdump_ongoing(uint8_t slot);
 void pal_add_cri_sel(char *str);
-int pal_bmc_err_enable(void);
-int pal_bmc_err_disable(void);
-uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
-int pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc);
-int pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length);
-int pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
-int pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device);
-int pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
-int pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting);
 uint8_t pal_get_status(void);
-void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
-int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
-int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
-int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
-int pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
-void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
-int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
-int pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

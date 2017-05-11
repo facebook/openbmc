@@ -74,6 +74,64 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
 }
 
 void __attribute__((weak))
+pal_set_boot_option(unsigned char para,unsigned char* pbuff)
+{
+  return;
+}
+
+int __attribute__((weak))
+pal_get_boot_option(unsigned char para,unsigned char* pbuff)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc) {
+  return 0;
+}
+
+int __attribute__((weak))
+pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length) {
+  return 0;
+}
+
+int __attribute__((weak))
+pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
+  return 0;
+}
+
+int __attribute__((weak))
+pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
+  return 0;
+}
+
+int __attribute__((weak))
+pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
+  return 0;
+}
+
+int __attribute__((weak))
+pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
+  return 0;
+}
+
+uint8_t __attribute__((weak))
+pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
+  return 0;
+}
+
+int __attribute__((weak))
+pal_bmc_err_disable(void) {
+  // dummy function
+  return 0;
+}
+int __attribute__((weak))
+pal_bmc_err_enable() {
+  // dummy function
+  return 0;
+}
+
+void __attribute__((weak))
 pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {
 // TODO: For now logging the event, need to find usage for this info

@@ -7261,47 +7261,6 @@ pal_add_cri_sel(char *str)
 }
 
 int
-pal_bmc_err_disable(void) {
-  // dummy function
-  return 0;
-}
-int
-pal_bmc_err_enable() {
-  // dummy function
-  return 0;
-}
-
-int
-pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_length, uint8_t *cc) {
-  return 0;
-}
-
-int
-pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_length) {
-  return 0;
-}
-
-int
-pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
-  return 0;
-}
-
-int
-pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
-  return 0;
-}
-
-int
-pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
-  return 0;
-}
-
-int
-pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
-  return 0;
-}
-
-int
 pal_is_fw_update_ongoing(uint8_t fru) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};

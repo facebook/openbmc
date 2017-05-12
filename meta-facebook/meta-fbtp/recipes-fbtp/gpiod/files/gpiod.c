@@ -336,6 +336,7 @@ gpio_pre_check() {
   int i, j;
   uint8_t status = 0;
 
+  pthread_detach(pthread_self());
   for ( i = 0; i < chk_table_count; i++) {
     for ( j = 0 ; j < g_count ; j++ ) {
       if( gpio_num(pre_check_table[i].gpio_name) == g_gpios[j].gs.gs_gpio ) {

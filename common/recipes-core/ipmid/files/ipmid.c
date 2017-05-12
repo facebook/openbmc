@@ -2116,26 +2116,15 @@ oem_get_plat_info(unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_get_poss_pcie_config(unsigned char *request, unsigned char *response,
-                  unsigned char *res_len)
+oem_get_poss_pcie_config(unsigned char *request, unsigned char req_len, 
+			  unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  int ret;
-  uint8_t pcie_conf = 0x00;
+  res->cc = pal_get_poss_pcie_config(req->payload_id, req->data, req_len, res->data, res_len);
 
-  ret = pal_get_poss_pcie_config(&pcie_conf);
-  if (ret) {
-    res->cc = CC_UNSPECIFIED_ERROR;
-    *res_len = 0x00;
-    return;
-  }
-
-  // Prepare response buffer
-  res->cc = CC_SUCCESS;
-  res->data[0] = pcie_conf;
-  *res_len = 0x01;
+  return;
 }
 
 static void
@@ -2226,7 +2215,7 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       oem_get_plat_info (request, response, res_len);
       break;
     case CMD_OEM_GET_PCIE_CONFIG:
-      oem_get_poss_pcie_config (request, response, res_len);
+      oem_get_poss_pcie_config (request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_BOARD_ID:
       oem_get_board_id (request, req_len, response, res_len);

@@ -25,6 +25,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include <sys/file.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -260,6 +261,7 @@ pwr_btn_out:
     msleep(100);
   }
 }
+#endif
 
 // Thread to monitor SLED Cycles by using time stamp
 static void *
@@ -322,6 +324,7 @@ ts_handler() {
   }
 }
 
+#if 0
 // Thread to handle LED state of the server at given slot
 static void *
 led_handler(void *num) {
@@ -633,11 +636,11 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+#endif
   if (pthread_create(&tid_ts, NULL, ts_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for time stamp error\n");
     exit(1);
   }
-#endif
 
   if (pthread_create(&tid_sync_led, NULL, led_sync_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for led sync error\n");
@@ -656,11 +659,11 @@ main (int argc, char * const argv[]) {
 #endif
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_sync_led, NULL);
+  pthread_join(tid_ts, NULL);
 #if 0
   pthread_join(tid_hand_sw, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
-  pthread_join(tid_ts, NULL);
   for (i = 0;  i < MAX_NUM_SLOTS; i++) {
     pthread_join(tid_leds[i], NULL);
   }

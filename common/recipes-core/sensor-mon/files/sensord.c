@@ -162,26 +162,21 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   thresh_val = get_snr_thresh_val(fru, snr_num, thresh);
 
-  while (retry < MAX_SENSOR_CHECK_RETRY) {
+  while (retry <= MAX_SENSOR_CHECK_RETRY) {
     switch (thresh) {
 
       case UNR_THRESH:
       case UCR_THRESH:
       case UNC_THRESH:
-        if (*curr_val < (thresh_val - snr[snr_num].pos_hyst))
-          retry++;
-         else
+        if (*curr_val >= (thresh_val - snr[snr_num].pos_hyst))
           return 0;
         break;
 
       case LNR_THRESH:
       case LCR_THRESH:
       case LNC_THRESH:
-        if (*curr_val > (thresh_val + snr[snr_num].neg_hyst))
-          retry++;
-        else
+        if (*curr_val <= (thresh_val + snr[snr_num].neg_hyst))
           return 0;
-        break;
     }
 
     if (retry < MAX_SENSOR_CHECK_RETRY) {
@@ -190,6 +185,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       if (ret < 0)
         return -1;
     }
+    retry++;
   }
 
   switch (thresh) {
@@ -270,34 +266,31 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   thresh_val = get_snr_thresh_val(fru, snr_num, thresh);
 
-  while (retry < MAX_ASSERT_CHECK_RETRY) {
+  while (retry <= MAX_ASSERT_CHECK_RETRY) {
     switch (thresh) {
       case UNR_THRESH:
       case UCR_THRESH:
       case UNC_THRESH:
-        if (*curr_val >= thresh_val) {
-          retry++;
-        } else {
+        if (*curr_val < thresh_val) {
           return 0;
         }
         break;
       case LNR_THRESH:
       case LCR_THRESH:
       case LNC_THRESH:
-        if (*curr_val <= thresh_val) {
-          retry++;
-        } else {
+        if (*curr_val > thresh_val) {
           return 0;
         }
         break;
     }
 
-    if (retry <= MAX_ASSERT_CHECK_RETRY) {
+    if (retry < MAX_ASSERT_CHECK_RETRY) {
       msleep(50);
       ret = sensor_raw_read(fru, snr_num, curr_val);
       if (ret < 0)
         return -1;
     }
+    retry++;
   }
 
   switch (thresh) {

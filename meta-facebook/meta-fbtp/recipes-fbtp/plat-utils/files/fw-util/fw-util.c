@@ -33,6 +33,7 @@
 #include <openbmc/me.h>
 #include <openbmc/pal.h>
 #include <openbmc/cpld.h>
+#include <openbmc/vr.h>
 #include <openbmc/bios.h>
 #include <openbmc/gpio.h>
 #include <openbmc/ocp-dbg-lcd.h>
@@ -107,7 +108,7 @@ print_bmc_version(void) {
 static void
 print_fw_ver(uint8_t fru_id) {
   int i;
-  uint8_t ver[32] = {0};
+  uint8_t ver[128] = {0};
   uint8_t cpld_var[4] = {0};
 
   if (fru_id != 1) {
@@ -158,166 +159,58 @@ print_fw_ver(uint8_t fru_id) {
   system("devmem 0x1e6e4008 32 0");
 
   // Print VR Version
-  if (pal_get_vr_ver(VR_PCH_PVNN, ver)) {
-    printf("VR_PCH_[PVNN, PV1V05] Version: NA");
+  if (vr_fw_version(VR_PCH_PVNN, ver)) {
+    printf("VR_PCH_[PVNN, PV1V05] Version: NA Checksum: NA, DeviceID: NA\n");
   } else {
-    printf("VR_PCH_[PVNN, PV1V05] Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_PCH_[PVNN, PV1V05] %s\n", ver);
   }
 
-  if (pal_get_vr_checksum(VR_PCH_PVNN, ver)) {
-    printf(", Checksum: NA");
+  if (vr_fw_version(VR_CPU0_VCCIN, ver)) {
+    printf("VR_CPU0_[VCCIN, VSA] Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_CPU0_[VCCIN, VSA] %s\n", ver);
   }
 
-  if (pal_get_vr_deviceId(VR_PCH_PVNN, ver)) {
-    printf(", DeviceID: NA\n");
+  if (vr_fw_version(VR_CPU0_VCCIO, ver)) {
+    printf("VR_CPU0_VCCIO Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
+    printf("VR_CPU0_VCCIO %s\n", ver);
   }
 
-  if (pal_get_vr_ver(VR_CPU0_VCCIN, ver)) {
-    printf("VR_CPU0_[VCCIN, VSA] Version: NA");
+  if (vr_fw_version(g_vr_cpu0_vddq_abc, ver)) {
+    printf("VR_CPU0_VDDQ_ABC Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf("VR_CPU0_[VCCIN, VSA] Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_CPU0_VDDQ_ABC %s\n", ver);
   }
 
-  if (pal_get_vr_checksum(VR_CPU0_VCCIN, ver)) {
-    printf(", Checksum: NA");
+  if (vr_fw_version(g_vr_cpu0_vddq_def, ver)) {
+    printf("VR_CPU0_VDDQ_DEF Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_CPU0_VDDQ_DEF %s\n", ver);
   }
 
-  if (pal_get_vr_deviceId(VR_CPU0_VCCIN, ver)) {
-    printf(", DeviceID: NA\n");
+  if (vr_fw_version(VR_CPU1_VCCIN, ver)) {
+    printf("VR_CPU1_[VCCIN, VSA] Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
+    printf("VR_CPU1_[VCCIN, VSA] %s\n", ver);
   }
 
-  if (pal_get_vr_ver(VR_CPU0_VCCIO, ver)) {
-    printf("VR_CPU0_VCCIO Version: NA");
+  if (vr_fw_version(VR_CPU1_VCCIO, ver)) {
+    printf("VR_CPU1_VCCIO Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf("VR_CPU0_VCCIO Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_CPU1_VCCIO %s\n", ver);
   }
 
-  if (pal_get_vr_checksum(VR_CPU0_VCCIO, ver)) {
-    printf(", Checksum: NA");
+  if (vr_fw_version(g_vr_cpu1_vddq_ghj, ver)) {
+    printf("VR_CPU1_VDDQ_GHJ Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
+    printf("VR_CPU1_VDDQ_GHJ %s\n", ver);
   }
 
-  if (pal_get_vr_deviceId(VR_CPU0_VCCIO, ver)) {
-    printf(", DeviceID: NA\n");
+  if (vr_fw_version(g_vr_cpu1_vddq_klm, ver)) {
+    printf("VR_CPU1_VDDQ_KLM Version: NA, Checksum: NA, DeviceID: NA\n");
   } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
-  }
-
-  if (pal_get_vr_ver(g_vr_cpu0_vddq_abc, ver)) {
-    printf("VR_CPU0_VDDQ_ABC Version: NA");
-  } else {
-    printf("VR_CPU0_VDDQ_ABC Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_checksum(g_vr_cpu0_vddq_abc, ver)) {
-    printf(", Checksum: NA");
-  } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_deviceId(g_vr_cpu0_vddq_abc, ver)) {
-    printf(", DeviceID: NA\n");
-  } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
-  }
-
-  if (pal_get_vr_ver(g_vr_cpu0_vddq_def, ver)) {
-    printf("VR_CPU0_VDDQ_DEF Version: NA");
-  } else {
-    printf("VR_CPU0_VDDQ_DEF Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_checksum(g_vr_cpu0_vddq_def, ver)) {
-    printf(", Checksum: NA");
-  } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_deviceId(g_vr_cpu0_vddq_def, ver)) {
-    printf(", DeviceID: NA\n");
-  } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
-  }
-
-  if (pal_get_vr_ver(VR_CPU1_VCCIN, ver)) {
-    printf("VR_CPU1_[VCCIN, VSA] Version: NA");
-  } else {
-    printf("VR_CPU1_[VCCIN, VSA] Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_checksum(VR_CPU1_VCCIN, ver)) {
-    printf(", Checksum: NA");
-  } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_deviceId(VR_CPU1_VCCIN, ver)) {
-    printf(", DeviceID: NA\n");
-  } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
-  }
-
-  if (pal_get_vr_ver(VR_CPU1_VCCIO, ver)) {
-    printf("VR_CPU1_VCCIO Version: NA");
-  } else {
-    printf("VR_CPU1_VCCIO Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_checksum(VR_CPU1_VCCIO, ver)) {
-    printf(", Checksum: NA");
-  } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_deviceId(VR_CPU1_VCCIO, ver)) {
-    printf(", DeviceID: NA\n");
-  } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
-  }
-
-  if (pal_get_vr_ver(g_vr_cpu1_vddq_ghj, ver)) {
-    printf("VR_CPU1_VDDQ_GHJ Version: NA");
-  } else {
-    printf("VR_CPU1_VDDQ_GHJ Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_checksum(g_vr_cpu1_vddq_ghj, ver)) {
-    printf(", Checksum: NA");
-  } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_deviceId(g_vr_cpu1_vddq_ghj, ver)) {
-    printf(", DeviceID: NA\n");
-  } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
-  }
-
-  if (pal_get_vr_ver(g_vr_cpu1_vddq_klm, ver)) {
-    printf("VR_CPU1_VDDQ_KLM Version: NA");
-  } else {
-    printf("VR_CPU1_VDDQ_KLM Version: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_checksum(g_vr_cpu1_vddq_klm, ver)) {
-    printf(", Checksum: NA");
-  } else {
-    printf(", Checksum: %02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
-  }
-
-  if (pal_get_vr_deviceId(g_vr_cpu1_vddq_klm, ver)) {
-    printf(", DeviceID: NA\n");
-  } else {
-    printf(", DeviceID: %02X%02X\n", ver[0], ver[1]);
+    printf("VR_CPU1_VDDQ_KLM %s\n", ver);
   }
 
   print_fsc_version();
@@ -420,23 +313,16 @@ fw_update_fru(char **argv, uint8_t slot_id) {
   }
 
   if ( !strcmp(argv[3], "--vr") ) {
-    //call vr function
-    uint8_t *BinData=NULL;
-
-    ret = pal_get_vr_update_data(argv[4], &BinData);
-    if ( ret < 0 )
-    {
-      printf("Cannot locate the file at: %s!\n", argv[4]);
-
-      //check data
+    uint8_t board_info;
+    if (pal_get_platform_id(&board_info) < 0) {
+      printf("Get PlatformID failed!\n");
       goto err_exit;
     }
-
-    ret = pal_vr_fw_update(BinData);
-    if ( ret < 0 )
-    {
-      printf("Error Occur at updating VR FW!\n");
-        goto err_exit;
+    //call vr function
+    ret = vr_fw_update(slot_id, board_info, argv[4]);
+    if (ret < 0) {
+      printf("ERROR: VR Firmware update failed!\n");
+      goto err_exit;
     }
     return 0;
   }

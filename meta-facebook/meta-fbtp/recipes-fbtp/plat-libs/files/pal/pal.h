@@ -295,33 +295,6 @@ enum {
   ADC_PIN7,
 };
 
-//Used identify VR Chip info. there are 4 vr fw code in EVT3 and after
-enum
-{
-    SS_Mix = 0x1,
-    DS_Fairchild = 0x2,
-    DS_IFX = 0x3,
-};
-
-enum {
-  VR_CPU0_VCCIN = 0x90,
-  VR_CPU0_VSA = 0x90,
-  VR_CPU0_VCCIO = 0x94,
-  VR_CPU0_VDDQ_ABC = 0xE0,
-  VR_CPU0_VDDQ_DEF = 0xE4,
-  VR_CPU0_VDDQ_ABC_EVT = 0x1C,
-  VR_CPU0_VDDQ_DEF_EVT= 0x14,
-  VR_CPU1_VCCIN = 0xB0,
-  VR_CPU1_VSA = 0xB0,
-  VR_CPU1_VCCIO = 0xB4,
-  VR_CPU1_VDDQ_GHJ = 0xA0,
-  VR_CPU1_VDDQ_KLM = 0xA4,
-  VR_CPU1_VDDQ_GHJ_EVT = 0x0C,
-  VR_CPU1_VDDQ_KLM_EVT = 0x04,
-  VR_PCH_PVNN = 0xD0,
-  VR_PCH_P1V05 = 0xD0,
-};
-
 enum {
   BOARD_REV_POWERON,
   BOARD_REV_EVT,
@@ -342,21 +315,6 @@ typedef struct _sensor_info_t {
   bool valid;
   sdr_full_t sdr;
 } sensor_info_t;
-
-//VR Chip info
-typedef struct
-{
-  uint8_t SlaveAddr;
-
-  uint8_t CRC[4];
-
-  int  DataLength;
-
-  int IndexStartAddr;
-
-  int IndexEndAddr;
-
-} VRBasicInfo;
 
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
@@ -412,9 +370,6 @@ int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
-int pal_get_vr_ver(uint8_t vr, uint8_t *ver);
-int pal_get_vr_checksum(uint8_t vr, uint8_t *checksum);
-int pal_get_vr_deviceId(uint8_t vr, uint8_t *deviceId);
 int pal_fruid_write(uint8_t slot, char *path);
 int pal_is_bmc_por(void);
 int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
@@ -441,8 +396,6 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
-int pal_get_vr_update_data(char *update_file, uint8_t **BinData);
-int pal_vr_fw_update(uint8_t *BinData);
 int pal_PBO(void);
 void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);

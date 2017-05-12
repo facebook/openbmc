@@ -400,7 +400,6 @@ ierr_mcerr_event_handler() {
           }
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
-          pal_add_cri_sel("CPU MSMI");
           system("/usr/local/bin/autodump.sh &");
         } else if ( MSMI_irq > 1 ){
                  while (MSMI_irq > 1){

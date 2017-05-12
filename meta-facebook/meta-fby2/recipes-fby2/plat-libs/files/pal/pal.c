@@ -3327,8 +3327,40 @@ int pal_get_plat_sku_id(void){
 }
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
-int pal_get_poss_pcie_config(uint8_t *pcie_config){
-   return 0;
+int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+
+   uint8_t pcie_conf = 0x00;
+   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+   unsigned char *data = res_data;
+   int pcie_type = 0;
+   
+   if (read_device(SLOT_FILE, &pcie_type)) {              //Retrieve PCIe configuration type
+     printf("Get slot type failed\n");
+     *res_len = 0;
+     return completion_code;
+   } 
+   
+   switch(pcie_type)
+   {
+      	case PCIE_CONFIG_4xTL:       //For the configuration of 4x Twin Lakes
+	  pcie_conf = 0x00;
+	break;
+	case PCIE_CONFIG_2xCF_2xTL:  //For the configuration of 2x CF + 2x Twin Lakes
+	  pcie_conf = 0x0f;
+	break;
+	case PCIE_CONFIG_2xGP_2xTL:   //For the configuration of 2x GP + 2x Twin Lakes
+	  pcie_conf = 0x01;
+	break;
+	default :                     //Unknown configuration
+	  *res_len = 0;
+	  return completion_code;
+   }
+     
+   *data++ = pcie_conf;
+   *res_len = data - res_data;
+   completion_code = CC_SUCCESS;
+   
+   return completion_code;
 }
 
 int

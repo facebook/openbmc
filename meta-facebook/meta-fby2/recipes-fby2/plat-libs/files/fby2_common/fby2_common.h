@@ -42,6 +42,12 @@ enum {
   SLOT_TYPE_GP     = 2,
 };
 
+enum {
+  PCIE_CONFIG_4xTL      = 0x00,
+  PCIE_CONFIG_2xCF_2xTL = 0x11,
+  PCIE_CONFIG_2xGP_2xTL = 0x22,
+};
+
 //GPIO definition
 #define MAX_SPB_GPIO_NUM                  256
 

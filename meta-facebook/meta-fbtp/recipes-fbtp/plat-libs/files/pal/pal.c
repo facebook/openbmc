@@ -3473,7 +3473,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       case MB_SENSOR_P3V_BAT:
         gpio_set(GPIO_BAT_SENSE_EN_N, 0);
-        msleep(1);
+        msleep(10);
         ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
         gpio_set(GPIO_BAT_SENSE_EN_N, 1);
         break;
@@ -3549,7 +3549,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       case MB_SENSOR_P3V_BAT:
         gpio_set(GPIO_BAT_SENSE_EN_N, 0);
-        msleep(1);
+        msleep(10);
         ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
         gpio_set(GPIO_BAT_SENSE_EN_N, 1);
         break;

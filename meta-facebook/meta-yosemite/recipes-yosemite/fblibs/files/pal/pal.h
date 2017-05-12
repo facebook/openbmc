@@ -21,6 +21,8 @@
 #ifndef __PAL_H__
 #define __PAL_H__
 
+#include <openbmc/obmc-pal.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,16 +58,6 @@ extern const char pal_pwm_list[];
 extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
-
-typedef struct {
-  long log_time;
-  float value;
-} sensor_data_t;
-
-typedef struct {
-  int index;
-  sensor_data_t data[MAX_DATA_NUM];
-} sensor_shm_t;
 
 enum {
   LED_STATE_OFF,
@@ -212,12 +204,9 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
-void pal_set_post_end(void);
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_is_crashdump_ongoing(uint8_t slot);
-int pal_is_fw_update_ongoing(uint8_t fru);
-int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 void pal_add_cri_sel(char *str);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);

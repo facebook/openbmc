@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "libbic libyosemite-common libyosemite-fruid libyosemite-sensor libkv libedb"
+DEPENDS += "libbic libyosemite-common libyosemite-fruid libyosemite-sensor libkv libedb obmc-pal"
 
 S = "${WORKDIR}/pal"
 

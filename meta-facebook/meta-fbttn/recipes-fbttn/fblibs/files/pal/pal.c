@@ -2790,20 +2790,26 @@ int pal_get_plat_sku_id(void){
 }
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
-int pal_get_poss_pcie_config(uint8_t *pcie_config){
+int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
 
   int sku = 0;
-
+  uint8_t pcie_conf = 0x00;
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  unsigned char *data = res_data;
   sku = pal_get_iom_type();
 
   if(sku == 1)
-    *pcie_config = 0x6;
+    pcie_conf = 0x6;
   else if (sku == 2)
-    *pcie_config = 0x8;
+    pcie_conf = 0x8;
   else
-    return -1;
-
-  return 0;
+    return completion_code;
+  
+  *data++ = pcie_conf;
+  *res_len = data - res_data;
+  completion_code = CC_SUCCESS;
+  
+  return completion_code;
 }
 
 int pal_minisas_led(uint8_t port, uint8_t state) {

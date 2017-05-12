@@ -592,6 +592,29 @@ bic_send:
   return ret;
 }
 
+// Get CPLD update progress
+static int
+_get_cpld_update_progress(uint8_t slot_id, uint8_t *progress) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+  int retries = 3;
+
+bic_send:
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_CPLD_UPDATE_PROGRESS, tbuf, 3, rbuf, &rlen);
+  if ((ret) && (retries--)) {
+    sleep(1);
+    printf("_get_cpld_update_progress: slot: %d, retrying..\n", slot_id);
+    goto bic_send;
+  }
+
+  // Ignore IANA ID
+  memcpy(progress, &rbuf[3], 1);
+
+  return ret;
+}
+
 static int
 _update_bic_main(uint8_t slot_id, char *path) {
   int fd;
@@ -908,53 +931,16 @@ error_exit:
 
 static int
 check_cpld_image(int fd, long size) {
-  int i, j, rcnt;
-  uint8_t *buf, data;
-  uint16_t crc_exp, crc_val = 0xffff;
-  uint32_t dword, crc_offs;
+  uint8_t buf[32];
+  uint8_t hdr[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
 
-  if (size < 52)
+  if (size < 32)
     return -1;
 
-  buf = (uint8_t *)malloc(size);
-  if (!buf) {
+  if (read(fd, buf, sizeof(hdr)) != sizeof(hdr))
     return -1;
-  }
 
-  i = 0;
-  while (i < size) {
-    rcnt = read(fd, (buf + i), size);
-    if ((rcnt < 0) && (errno != EINTR)) {
-      free(buf);
-      return -1;
-    }
-    i += rcnt;
-  }
-
-  dword = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-  if ((dword != 0x4A414D00) && (dword != 0x4A414D01)) {
-    free(buf);
-    return -1;
-  }
-
-  i = 32 + (dword & 0x1) * 8;
-  crc_offs = (buf[i] << 24) | (buf[i+1] << 16) | (buf[i+2] << 8) | buf[i+3];
-  if ((crc_offs + sizeof(crc_exp)) > size) {
-    free(buf);
-    return -1;
-  }
-  crc_exp = (buf[crc_offs] << 8) | buf[crc_offs+1];
-
-  for (i = 0; i < crc_offs; i++) {
-    data = buf[i];
-    for (j = 0; j < 8; j++, data >>= 1) {
-      crc_val = ((data ^ crc_val) & 0x1) ? ((crc_val >> 1) ^ 0x8408) : (crc_val >> 1);
-    }
-  }
-  crc_val = ~crc_val;
-  free(buf);
-
-  if (crc_exp != crc_val)
+  if (memcmp(buf, hdr, sizeof(hdr)))
     return -1;
 
   lseek(fd, 0, SEEK_SET);
@@ -1115,13 +1101,30 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
            printf("updated bios: %d %%\n", offset/dsize);
            break;
          case UPDATE_CPLD:
-           printf("updated cpld: %d %%\n", offset/dsize*5);
+           printf("uploaded cpld: %d %%\n", offset/dsize*5);
            break;
          default:
            printf("updated bic boot loader: %d %%\n", offset/dsize*5);
            break;
        }
        last_offset += dsize;
+    }
+  }
+
+  if (comp == UPDATE_CPLD) {
+    set_fw_update_ongoing(slot_id, 30);
+    for (i = 0; i < 60; i++) {  // wait 60s at most
+      ret = _get_cpld_update_progress(slot_id, buf);
+      if (ret) {
+        break;
+      }
+
+      printf("updated cpld: %d %%\n", buf[0]);
+      buf[0] %= 101;
+      if (buf[0] == 100)
+        break;
+
+      sleep(2);
     }
   }
 

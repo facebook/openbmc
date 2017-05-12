@@ -448,6 +448,7 @@ enum
   CMD_OEM_1S_BIC_RESET = 0x11,
   CMD_OEM_1S_GET_POST_BUF = 0x12,
   CMD_OEM_1S_BIC_UPDATE_MODE = 0x13,
+  CMD_OEM_1S_GET_CPLD_UPDATE_PROGRESS = 0x1A,
 };
 
 // OEM Command Codes for USB basded Debug Card

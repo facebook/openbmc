@@ -42,6 +42,9 @@ int sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value);
 int sensor_read_history(uint8_t fru, uint8_t sensor_num, float *min,
                float *average, float *max, int start_time);
 
+/* Clear the sensor history */
+int sensor_clear_history(uint8_t fru, uint8_t sensor_num);
+
 /* Read sensor directly from the hardware. Note, this function does not
  * protect the caller from other readers. The caller should ensure 
  * exclusivity. The simplest method being limiting all calls to this

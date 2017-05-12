@@ -42,12 +42,14 @@
 
 #define MAX_HISTORY_PERIOD  3600
 
-static int
+static void
 print_usage() {
   printf("Usage: sensor-util [ %s ] <--threshold> <sensor num>\n",
       pal_fru_list);
   printf("Usage: sensor-util [ %s ] <--history> <period: 1 ~ %d (s)> <sensor num>\n",
       pal_fru_list, MAX_HISTORY_PERIOD);
+  printf("Usage: sensor-util [ %s ] <--history-clear> <sensor num>\n",
+      pal_fru_list);
 }
 
 static void
@@ -116,7 +118,6 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
   int i;
   uint8_t snr_num;
   float fvalue;
-  char path[64];
   char status[8];
   thresh_sensor_t thresh;
 
@@ -174,8 +175,23 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
   }
 }
 
+static void clear_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num) {
+  int i;
+  uint8_t snr_num;
+
+  for (i = 0; i < sensor_cnt; i++) {
+    snr_num = sensor_list[i];
+    if (num && snr_num != num) {
+      continue;
+    }
+    if (sensor_clear_history(fru, snr_num)) {
+      printf("Clearing fru:%u sensor[%u] failed!\n", fru, snr_num);
+    }
+  }
+}
+
 static int
-print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, long period) {
+print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool history_clear, long period) {
   int ret;
   uint8_t status;
   int sensor_cnt;
@@ -208,7 +224,9 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, long
     return ret;
   }
 
-  if (history) {
+  if (history_clear) {
+    clear_sensor_history(fru, sensor_list, sensor_cnt, sensor_num);
+  } else if (history) {
     get_sensor_history(fru, sensor_list, sensor_cnt, sensor_num, period);
   } else {
     get_sensor_reading(fru, sensor_list, sensor_cnt, sensor_num, threshold);
@@ -227,6 +245,7 @@ main(int argc, char **argv) {
   uint8_t num = 0;
   bool threshold = false;
   bool history = false;
+  bool history_clear = false;
   long period = 60;
 
   if (argc < 2 || argc > 5) {
@@ -249,6 +268,8 @@ main(int argc, char **argv) {
         }
         i++;
       }
+    } else if (!(strcmp(argv[i-1], "--history-clear"))) {
+      history_clear = true;
     } else {
       errno = 0;
       num = (uint8_t) strtol(argv[i-1], NULL, 0);
@@ -273,10 +294,10 @@ main(int argc, char **argv) {
 
   if (fru == 0) {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-      ret |= print_sensor(fru, num, history, threshold, period);
+      ret |= print_sensor(fru, num, history, threshold, history_clear, period);
     }
   } else {
-    ret = print_sensor(fru, num, history, threshold, period);
+    ret = print_sensor(fru, num, history, threshold, history_clear, period);
   }
   return ret;
 }

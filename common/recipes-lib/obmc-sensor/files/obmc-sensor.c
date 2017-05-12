@@ -24,6 +24,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -69,21 +70,26 @@ cache_set_history(char *key, float value) {
   int share_size = sizeof(sensor_shm_t);
   void *ptr;
   sensor_shm_t *snr_shm;
+  int ret = ERR_FAILURE;
 
   fd = shm_open(key, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   if (fd < 0) {
     DEBUG_STR("cache_set_history: shm_open %s failed, errno = %d", key, errno);
     return -1;
   }
+
+  if (flock(fd, LOCK_EX) < 0) {
+    syslog(LOG_INFO, "%s: file-lock %s failed errno = %d\n", __FUNCTION__, key, errno);
+    goto close_bail;
+  }
+
   ftruncate(fd, share_size);
 
   ptr = mmap(NULL, share_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (ptr == MAP_FAILED) {
     syslog(LOG_INFO, "cache_set_history: mmap %s failed, errno = %d", key, errno);
-    close(fd);
-    return -1;
+    goto unlock_bail;
   }
-  close(fd);
 
   snr_shm = (sensor_shm_t *)ptr;
   snr_shm->data[snr_shm->index].log_time = time(NULL);
@@ -92,9 +98,18 @@ cache_set_history(char *key, float value) {
 
   if (munmap(ptr, share_size) != 0) {
     syslog(LOG_INFO, "cache_set_history: munmap %s failed, errno = %d", key, errno);
-    return -1;
+    goto unlock_bail;
   }
-  return 0;
+  ret = 0;
+
+unlock_bail:
+  if (flock(fd, LOCK_UN) < 0) {
+    syslog(LOG_INFO, "%s: file-unlock %s failed errno = %d\n", __FUNCTION__, key, errno);
+    ret = -1;
+  }
+close_bail:
+  close(fd);
+  return ret;
 }
 
 
@@ -102,8 +117,6 @@ cache_set_history(char *key, float value) {
 int
 sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
 {
-  char key[MAX_KEY_LEN];
-  char str[MAX_VALUE_LEN];
   int ret;
 
   ret = pal_sensor_read(fru, sensor_num, value);
@@ -160,8 +173,7 @@ sensor_read_history(uint8_t fru, uint8_t sensor_num, float *min, float *average,
   uint16_t count = 0;
   float read_val;
   double total = 0;
-  char str[MAX_VALUE_LEN] = {0};
-  int ret;
+  int ret = ERR_FAILURE;
 
   if (sensor_key_get(fru, sensor_num, key))
     return ERR_UNKNOWN_FRU;
@@ -172,13 +184,16 @@ sensor_read_history(uint8_t fru, uint8_t sensor_num, float *min, float *average,
     return ERR_FAILURE;
   }
 
+  if (flock(fd, LOCK_EX) < 0) {
+    syslog(LOG_INFO, "%s: file-lock %s failed errno = %d\n", __FUNCTION__, key, errno);
+    goto close_bail;
+  }
+
   ptr = mmap(NULL, share_size, PROT_READ, MAP_SHARED, fd, 0);
   if (ptr == MAP_FAILED) {
     syslog(LOG_INFO, "cache_get_history: mmap %s failed, errno = %d", key, errno);
-    close(fd);
-    return ERR_FAILURE;
+    goto unlock_bail;
   }
-  close(fd);
 
   snr_shm = (sensor_shm_t *)ptr;
   read_index = snr_shm->index - 1;
@@ -206,7 +221,7 @@ sensor_read_history(uint8_t fru, uint8_t sensor_num, float *min, float *average,
 
   if (munmap(ptr, share_size) != 0) {
     syslog(LOG_INFO, "cache_get_history: munmap %s failed, errno = %d", key, errno);
-    return ERR_FAILURE;
+    goto unlock_bail;
   }
 
   /* If none found in history, just return the cached value */
@@ -220,7 +235,57 @@ sensor_read_history(uint8_t fru, uint8_t sensor_num, float *min, float *average,
   }
 
   *average = total / count;
-
-  return 0;
+  ret = 0;
+unlock_bail:
+  if (flock(fd, LOCK_UN) < 0) {
+    syslog(LOG_INFO, "%s: file-unlock %s failed errno = %d\n", __FUNCTION__, key, errno);
+    ret = -1;
+  }
+close_bail:
+  close(fd);
+  return ret;
 }
 
+int sensor_clear_history(uint8_t fru, uint8_t sensor_num)
+{
+  sensor_shm_t *snr_shm;
+  int share_size = sizeof(sensor_shm_t);
+  int fd;
+  char key[MAX_KEY_LEN] = {0};
+  int ret = ERR_FAILURE;
+
+  if (sensor_key_get(fru, sensor_num, key))
+    return ERR_UNKNOWN_FRU;
+
+  fd = shm_open(key, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return ERR_FAILURE;
+  }
+  if (flock(fd, LOCK_EX) < 0) {
+    syslog(LOG_INFO, "%s: file-lock %s failed errno = %d\n", __FUNCTION__, key, errno);
+    goto close_bail;
+  }
+
+  ftruncate(fd, share_size);
+
+  snr_shm = (sensor_shm_t *)mmap(NULL, share_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (snr_shm == MAP_FAILED) {
+    syslog(LOG_INFO, "cache_set_history: mmap %s failed, errno = %d", key, errno);
+    goto unlock_bail;
+  }
+
+  memset(snr_shm, 0, share_size);
+  if (munmap(snr_shm, share_size) != 0) {
+    syslog(LOG_INFO, "cache_set_history: munmap %s failed, errno = %d", key, errno);
+    goto unlock_bail;
+  }
+  ret = 0;
+unlock_bail:
+  if (flock(fd, LOCK_UN) < 0) {
+    syslog(LOG_INFO, "%s: file-unlock %s failed errno = %d\n", __FUNCTION__, key, errno);
+    ret = -1;
+  }
+close_bail:
+  close(fd);
+  return ret;
+}

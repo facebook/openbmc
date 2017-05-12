@@ -40,7 +40,7 @@
 #define GPIO_MAX 31
 
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
-#define BIOS_VER_STR "F20_"
+#define BIOS_VER_STR "F09_"
 
 #define BIC_UPDATE_RETRIES 12
 #define BIC_UPDATE_TIMEOUT 500
@@ -1057,7 +1057,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   if (comp == UPDATE_BIOS) {
     if (check_bios_image(fd, st.st_size) < 0) {
       printf("invalid BIOS file!\n");
-      goto error_exit;
+      lseek(fd, 0, SEEK_SET);
+      //goto error_exit;
     }
 
     set_fw_update_ongoing(slot_id, 25);

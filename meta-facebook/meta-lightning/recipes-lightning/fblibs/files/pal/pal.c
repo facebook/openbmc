@@ -1470,7 +1470,7 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
   return 0;
 }
 
-int pal_get_poss_pcie_config(uint8_t *pcie_config){
+int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
    // dummy definition
    return 0;
 }

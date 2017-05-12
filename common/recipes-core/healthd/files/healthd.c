@@ -321,11 +321,11 @@ CPU_usage_monitor() {
       cpu_util_avg = cpu_util_total/SLIDING_WINDOW_SIZE;
       
       if (((cpu_util_avg*100) >= cpu_threshold) && !cpu_over_threshold)  {
-        syslog(LOG_CRIT, "ASSERT: BMC CPU utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
+        syslog(LOG_WARNING, "ASSERT: BMC CPU utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
         cpu_over_threshold = 1;
         pal_bmc_err_enable();
       } else if (((cpu_util_avg*100) < cpu_threshold) && cpu_over_threshold)  {
-        syslog(LOG_CRIT, "DEASSERT: BMC CPU utilization (%.2f%%) is under the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
+        syslog(LOG_WARNING, "DEASSERT: BMC CPU utilization (%.2f%%) is under the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
         cpu_over_threshold = 0;
         // We can only disable BMC error code when both CPU and memory are fine.
         if (!mem_over_threshold)

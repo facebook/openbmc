@@ -5459,8 +5459,50 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       if (event_data[0] == 0xDC && ed[1] == 0x06) {
         strcat(error_log, "FW UPDATE");
         return 1;
+      } else if (ed[1] == 0x01) {
+        strcat(error_log, "Image execution failed");
+        return 1;
+      } else if (ed[1] == 0x02) {
+        strcat(error_log, "Flash erase error");
+        return 1;
+      } else if (ed[1] == 0x03) {
+        strcat(error_log, "Flash state information");
+        return 1;
+      } else if (ed[1] == 0x04) {
+        strcat(error_log, "Internal error");
+        return 1;
+      } else if (ed[1] == 0x05) {
+        strcat(error_log, "BMC did not respond");
+        return 1;
+      } else if (ed[1] == 0x07) {
+        strcat(error_log, "Manufacturing error");
+        return 1;
+      } else if (ed[1] == 0x08) {
+        strcat(error_log, "Automatic Restore to Factory Presets");
+        return 1;
+      } else if (ed[1] == 0x09) {
+        strcat(error_log, "Firmware Exception");
+        return 1;
+      } else if (ed[1] == 0x0A) {
+        strcat(error_log, "Flash Wear-Out Protection Warning");
+        return 1;
       } else if (ed[1] == 0x0D) {
         strcat(error_log, "DMI interface error");
+        return 1;
+      } else if (ed[1] == 0x0E) {
+        strcat(error_log, "MCTP interface error");
+        return 1;
+      } else if (ed[1] == 0x0F) {
+        strcat(error_log, "Auto-configuration finished");
+        return 1;
+      } else if (ed[1] == 0x10) {
+        strcat(error_log, "Unsupported Segment Defined Feature");
+        return 1;
+      } else if (ed[1] == 0x12) {
+        strcat(error_log, "CPU Debug Capability Disabled");
+        return 1;
+      } else if (ed[1] == 0x13) {
+        strcat(error_log, "UMA operation error");
         return 1;
       } else
          strcat(error_log, "Unknown");

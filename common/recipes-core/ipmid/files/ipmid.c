@@ -48,6 +48,7 @@
 
 static unsigned char IsTimerStart[MAX_NODES] = {0};
 
+static unsigned char bmc_global_enable_setting[] = {0x0c,0x0c,0x0c,0x0c};
 
 extern void plat_lan_init(lan_config_t *lan);
 
@@ -590,15 +591,15 @@ static void
 app_set_global_enables (unsigned char *request, unsigned char req_len,
                         unsigned char *response, unsigned char *res_len)
 {
-
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  unsigned char *data = &res->data[0];
+  bmc_global_enable_setting[req->payload_id - 1] = req->data[0];
 
   res->cc = CC_SUCCESS;
 
   // Do nothing
 
-  *res_len = data - &res->data[0];
+  *res_len = 0;
 }
 
 // Get BMC Global Enables (IPMI/Section 22.2)
@@ -606,13 +607,13 @@ static void
 app_get_global_enables (unsigned char *request, unsigned char req_len,
                         unsigned char *response, unsigned char *res_len)
 {
-
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
 
   res->cc = CC_SUCCESS;
 
-  *data++ = 0x0C;   // Global Enable
+  *data++ = bmc_global_enable_setting[req->payload_id - 1];    // Global Enable
 
   *res_len = data - &res->data[0];
 }

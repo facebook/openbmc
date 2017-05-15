@@ -55,6 +55,22 @@ start_sol_session() {
 # if mTerm server is running use mTerm_client to connect to userver
 # otherwise fallback to the old method
 
+if [ "$1" == "slot1" ]
+then
+  SLOT=$1 
+else
+  echo "Usage: sol-util [ slot1 ]"
+  echo "       sol-util [ slot1 ] --history"
+  exit -1
+fi
+
+if [ $# -gt 1 ]; then
+  if [[ "$2" == "--history" ]]; then
+    LOGFILE="/var/log/mTerm_fbttn.log"
+    cat $LOGFILE 2>/dev/null
+    exit 0
+  fi
+fi
 if mTerm_server_running; then
   exec /usr/local/bin/mTerm_client fbttn
 else

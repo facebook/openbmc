@@ -232,6 +232,9 @@ power_util(uint8_t fru, uint8_t opt) {
           " fru %u", fru);
         return ret;
       }
+
+      msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
+
       ret = pal_set_rst_btn(fru, 1);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"

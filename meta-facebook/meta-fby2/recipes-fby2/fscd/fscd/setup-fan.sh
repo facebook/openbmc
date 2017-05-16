@@ -60,7 +60,7 @@ case "$sku_type" in
        cp /etc/FSC_FBY2_EVT_2GP_2TL_config.json ${default_fsc_config_path}
    ;;
    *)  echo "Unexpected sku type! Use default config"
-       cp /etc/FSC_FBY2_EVT_4ML_config.json ${default_fsc_config_path}
+       cp /etc/FSC_FBY2_EVT_4TL_config.json ${default_fsc_config_path}
    ;;
 esac
 

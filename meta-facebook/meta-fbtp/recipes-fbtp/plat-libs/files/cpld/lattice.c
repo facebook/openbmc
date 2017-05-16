@@ -154,7 +154,7 @@ LCMXO2Family_Check_Device_Status(int mode)
 
           do
           {
-            usleep(3000);
+            usleep(1000);
 
             buf[0] = 0;
 
@@ -188,7 +188,7 @@ LCMXO2Family_Check_Device_Status(int mode)
           ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_LSC_READ_STATUS);
           do
           {
-            usleep(3000);
+            usleep(1000);
 
             buf[0] = 0;
 
@@ -248,7 +248,7 @@ LCMXO2Family_SendCFdata(CPLDInfo *dev_info)
     //send data
     ast_jtag_tdi_xfer(0, LATTICE_COL_SIZE, &dev_info->CF[CurrentAddr]);
 
-    usleep(1000);
+    //usleep(1000);
 
     RetVal = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
 
@@ -256,6 +256,7 @@ LCMXO2Family_SendCFdata(CPLDInfo *dev_info)
     {
       printf("[%s]Write CF Error\n", __func__);
     }
+
   }
 
   printf("\n");
@@ -284,7 +285,7 @@ LCMXO2Family_SendUFMdata(CPLDInfo *dev_info)
     //send data
     ast_jtag_tdi_xfer(0, LATTICE_COL_SIZE, &dev_info->UFM[CurrentAddr]);
 
-    usleep(1000);
+    //usleep(1000);
 
     RetVal = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
 
@@ -292,6 +293,7 @@ LCMXO2Family_SendUFMdata(CPLDInfo *dev_info)
     {
       printf("[%s]Write UFM Error\n", __func__);
     }
+
   }
 
   return RetVal;
@@ -618,11 +620,11 @@ LCMXO2Family_cpld_verify(CPLDInfo *dev_info)
 
   buff[0] = 0x04;
   ast_jtag_tdi_xfer( 0, LATTICE_INS_LENGTH, &buff[0]);
-  usleep(3000);
+  usleep(1000);
 
   ast_jtag_run_test_idle( 0, 0, 3);
   ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_LSC_READ_INCR_NV);
-  usleep(3000);
+  usleep(1000);
 
 #ifdef CPLD_DEBUG
   printf("[%s] dev_info->CF_Line: %d\n", __func__, dev_info->CF_Line);
@@ -647,7 +649,7 @@ LCMXO2Family_cpld_verify(CPLDInfo *dev_info)
       break;
     }
 
-    usleep(3000);
+    //usleep(3000);
   }
 
   printf("\n");
@@ -680,7 +682,7 @@ LCMXO2Family_cpld_Start()
   ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_ISC_ENABLE_X);
   dr_data[0] = 0x08;
   ast_jtag_tdi_xfer(0, LATTICE_INS_LENGTH, dr_data);
-  usleep(3000);
+  //usleep(3000);
 
   //LSC_CHECK_BUSY(0xF0) instruction
   dr_data[0] = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
@@ -690,7 +692,7 @@ LCMXO2Family_cpld_Start()
     printf("[%s] Device Busy\n", __func__);
   }
 
-  usleep(3000);
+  //usleep(3000);
 
 #ifdef CPLD_DEBUG
   printf("[%s] READ_STATUS(0x3C)!\n", __func__);

@@ -133,8 +133,8 @@ print_slot_version(uint8_t slot_id) {
   }
 
   // Print PVCCSA VR Version
-  if (bic_get_fw_ver(slot_id, FW_PVCCIN_VR, ver)){
-    printf("PVCCSA VR Version: NA\n");    
+  if (bic_get_fw_ver(slot_id, FW_PVCCSA_VR, ver)){
+    printf("PVCCSA VR Version: NA\n");
   }
   else {
     printf("PVCCSA VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
@@ -163,8 +163,6 @@ print_slot_version(uint8_t slot_id) {
   else {
     printf("PVNNPCH VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
   }
-
-  printf("PVNNPCH VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print P1V05 VR Version
   if (bic_get_fw_ver(slot_id, FW_P1V05_VR, ver)){

@@ -36,6 +36,7 @@
 
 struct threadinfo {
   uint8_t is_running;
+  uint8_t fru;
   pthread_t pt;
 };
 
@@ -141,6 +142,9 @@ generate_dump(void *arg) {
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
 
   t_dump[fru-1].is_running = 0;
+
+  sprintf(cmd, CRASHDUMP_KEY, fru);
+  edb_cache_set(cmd, "0");
 }
 
 
@@ -174,7 +178,8 @@ fby2_common_crashdump(uint8_t fru) {
   }
 
   // Start a thread to generate the crashdump
-  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) &fru) < 0) {
+  t_dump[fru-1].fru = fru;
+  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) &t_dump[fru-1].fru) < 0) {
     syslog(LOG_WARNING, "pal_store_crashdump: pthread_create for"
         " FRU %d failed\n", fru);
     return -1;

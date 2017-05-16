@@ -48,6 +48,8 @@ enum {
   PCIE_CONFIG_2xGP_2xTL = 0x22,
 };
 
+#define CRASHDUMP_KEY "slot%d_crashdump"
+
 //GPIO definition
 #define MAX_SPB_GPIO_NUM                  256
 

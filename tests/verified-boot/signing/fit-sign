@@ -276,6 +276,7 @@ def main():
         return 1
 
     if args.sign_os:
+        print("Signing OS kernel and rootfs")
         os_fit = data[args.os:]
         fdt = get_fdt(os_fit)
 

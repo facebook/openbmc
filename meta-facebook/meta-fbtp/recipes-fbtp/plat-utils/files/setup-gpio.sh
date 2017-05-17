@@ -310,7 +310,7 @@ gpio_set M3 0
 # To use GIOAA5, SCUA4[29] must be 0
 devmem_clear_bit $(scu_addr A4) 29
 
-gpio_set AA5 1
+gpio_set AA5 0
 
 # FM_PCH_BMC_THERMTRIP_N: GPIOG2 (50)
 # To use GPIOG2, SCU84[2] must be 0

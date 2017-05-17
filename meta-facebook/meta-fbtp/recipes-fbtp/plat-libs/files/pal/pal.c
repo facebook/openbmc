@@ -4817,6 +4817,20 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         strcat(error_log, "Unknown");
       break;
 
+    case ME_POWER_STATE:
+      sprintf(error_log, "");
+      switch (ed[0]) {
+        case 0:
+          sprintf(error_log, "RUNNING");
+          break;
+        case 2:
+          sprintf(error_log, "POWER_OFF");
+          break;
+        default:
+          sprintf(error_log, "Unknown[%d]", ed[0]);
+          break;
+      }
+      break;
     case SPS_FW_HEALTH:
       sprintf(error_log, "");
       if (event_data[0] == 0xDC && ed[1] == 0x06) {

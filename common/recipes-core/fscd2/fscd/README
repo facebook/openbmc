@@ -11,6 +11,8 @@ FSCD config attribute help:
 
 "boost":
   List the boost type.
+  "fan_fail": true/false
+    This label is for determining whether to count, log, and act for fan fail.
   "sensor_fail": true/false
     This label is for specifing fail_sensor_type is used or not.
     The detail of fail_sensor_type is shown below.

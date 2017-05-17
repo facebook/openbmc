@@ -56,6 +56,7 @@ class Fscd(object):
         self.ssd_progressive_algorithm = None
         self.fail_sensor_type = None
         self.fan_dead_boost = None
+        self.fan_fail = None
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -68,6 +69,8 @@ class Fscd(object):
     def get_config_params(self):
         self.transitional = self.fsc_config['pwm_transition_value']
         self.boost = self.fsc_config['pwm_boost_value']
+        if 'boost' in self.fsc_config and 'fan_fail' in self.fsc_config['boost']:
+                self.fan_fail = self.fsc_config['boost']['fan_fail']
         if 'boost' in self.fsc_config and 'progressive' in self.fsc_config['boost']:
                 if self.fsc_config['boost']['progressive']:
                     self.boost_type = 'progressive'
@@ -221,22 +224,23 @@ class Fscd(object):
             else:
                 pwmval = self.boost
 
-            if self.boost_type == 'progressive' and self.fan_dead_boost:
-                dead = len(dead_fans)                
-                if dead > 0:
-                    print("Failed fans: %s" %
-                          (', '.join([str(i) for i in dead_fans],)))
-                    for fan_count, rate in self.fan_dead_boost:
-                        if dead <= fan_count:
-                            pwmval = clamp(pwmval + (dead * rate), 0, 100)
-                            break;
-                    else:
+            if self.fan_fail:
+                if self.boost_type == 'progressive' and self.fan_dead_boost:
+                    dead = len(dead_fans)                
+                    if dead > 0:
+                        print("Failed fans: %s" %
+                              (', '.join([str(i) for i in dead_fans],)))
+                        for fan_count, rate in self.fan_dead_boost:
+                            if dead <= fan_count:
+                                pwmval = clamp(pwmval + (dead * rate), 0, 100)
+                                break;
+                        else:
+                            pwmval = self.boost
+                else:
+                    if dead_fans:
+                        print("Failed fans: %s" % (
+                            ', '.join([str(i) for i in dead_fans],)))
                         pwmval = self.boost
-            else:
-                if dead_fans:
-                    print("Failed fans: %s" % (
-                        ', '.join([str(i) for i in dead_fans],)))
-                    pwmval = self.boost
 
             if abs(zone.last_pwm - pwmval) > self.ramp_rate:
                 if pwmval < zone.last_pwm:
@@ -302,9 +306,9 @@ class Fscd(object):
             if self.fanpower:
                 if not self.get_fan_power_status():
                     continue
-
-            # Get dead fans for determining speed
-            dead_fans = self.update_dead_fans(dead_fans)
+            if self.fan_fail:
+                # Get dead fans for determining speed
+                dead_fans = self.update_dead_fans(dead_fans)
 
             now = time.time()
             time_difference = now - last

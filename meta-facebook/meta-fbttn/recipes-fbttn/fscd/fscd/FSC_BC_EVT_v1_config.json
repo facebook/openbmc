@@ -3,7 +3,7 @@
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
   "boost": {
-    "fan_fail": true,
+    "fan_fail": false,
     "sensor_fail": true,
     "progressive": true
   },  

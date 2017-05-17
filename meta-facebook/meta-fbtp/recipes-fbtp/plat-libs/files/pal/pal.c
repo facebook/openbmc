@@ -4544,6 +4544,9 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
     case PWR_THRESH_EVT:
       sprintf(name, "PWR_THRESH_EVT");
       break;
+    case HPR_WARNING:
+      sprintf(name, "HPR_WARNING");
+      break;
     default:
       sprintf(name, "Unknown");
       break;
@@ -4898,6 +4901,19 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         strcat(error_log, "Limit Exceeded");
       else
         strcat(error_log, "Unknown");
+      break;
+
+    case HPR_WARNING:
+      sprintf(error_log, "");
+      if (ed[2]  == 0x01) {
+	 if (ed[1]  = 0xFF)
+          strcat(error_log, "Infinite Time");
+	 else
+           sprintf(temp_log, "%d minutes",ed[1]);
+           strcat(error_log, temp_log);
+      } else {
+        strcat(error_log, "Unknown");
+      }
       break;
 
     default:

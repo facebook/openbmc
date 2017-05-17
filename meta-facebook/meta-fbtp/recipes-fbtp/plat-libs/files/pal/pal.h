@@ -122,7 +122,8 @@ enum {
   SPS_FW_HEALTH = 0x17,
   NM_EXCEPTION = 0x18,
   PWR_THRESH_EVT = 0x3B,
-  MSMI = 0xE7
+  MSMI = 0xE7,
+  HPR_WARNING = 0xC5,
 };
 
 enum {

@@ -102,6 +102,38 @@ static char* wdt_action_name[8] = {
   "reserved",
 };
 
+static char *cpu_info_key[] =
+{
+  "",
+  "product_name",
+  "basic_info"
+};
+
+static char *dimm_info_key[] =
+{
+  "",
+  "location",
+  "type",
+  "speed",
+  "part_name",
+  "serial_num",
+  "manufacturer_id",
+  "status",
+  "present_bit"
+};
+
+static char *drive_info_key[] =
+{
+  "location",
+  "serial_num",
+  "model_name",
+  "fw_version",
+  "capacity",
+  "quantity",
+  "type",
+  "wwn"
+};
+
 // TODO: Based on performance testing results, might need fine grained locks
 // Since the global data is specific to a NetFunction, adding locs at NetFn level
 static pthread_mutex_t m_chassis;
@@ -1659,11 +1691,32 @@ oem_set_dimm_info (unsigned char *request, unsigned char *response,
  */
 static void
 oem_q_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
-       unsigned char *res_len)
+      unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  char payload[100] = {0};
+  int ret = 0;
+  int numOfParam = sizeof(cpu_info_key)/sizeof(char *);
 
+  if ((req->data[4] >= numOfParam) ||
+      (strlen(cpu_info_key[ (int) req->data[4]]) <= 0) )
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  sprintf(key, "sys_config/fru%d_cpu%d_%s", req->payload_id, req->data[3], cpu_info_key[req->data[4]]);
+
+  memcpy(payload, &req->data[5], req_len -8);
+  ret =  kv_set_bin(key, payload, req_len - 8);
+  if (ret != req_len - 8) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
 
   res->cc = CC_SUCCESS;
   *res_len = 0;
@@ -1671,13 +1724,34 @@ oem_q_set_proc_info (unsigned char *request, unsigned char req_len, unsigned cha
 
 static void
 oem_q_get_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
-       unsigned char *res_len)
+      unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  char payload[100] = {0};
+  int ret = 0;
+  int numOfParam = sizeof(cpu_info_key)/sizeof(char *);
 
-  *res_len = 0 ;
+  if ((req->data[4] >= numOfParam) ||
+      (strlen(cpu_info_key[ (int) req->data[4]]) <= 0) )
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  sprintf(key, "sys_config/fru%d_cpu%d_%s", req->payload_id, req->data[3], cpu_info_key[req->data[4]]);
+
+  ret = kv_get_bin(key, res->data);
+  if (ret < 0) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
+
   res->cc = CC_SUCCESS;
+  *res_len = ret;
 }
 
 static void
@@ -1686,6 +1760,28 @@ oem_q_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  char payload[100] = {0};
+  int ret = 0;
+  int numOfParam = sizeof(dimm_info_key)/sizeof(char *);
+
+  if ((req->data[4] >= numOfParam) ||
+      (strlen(dimm_info_key[ (int) req->data[4]]) <= 0) )
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  sprintf(key, "sys_config/fru%d_dimm%d_%s", req->payload_id, req->data[3], dimm_info_key[req->data[4]]);
+
+  memcpy(payload, &req->data[5], req_len -8);
+  ret =  kv_set_bin(key, payload, req_len - 8);
+  if (ret != req_len - 8) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
 
   res->cc = CC_SUCCESS;
   *res_len = 0;
@@ -1697,9 +1793,30 @@ oem_q_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  char payload[100] = {0};
+  int ret = 0;
+  int numOfParam = sizeof(dimm_info_key)/sizeof(char *);
 
-  *res_len = 0;
+  if ((req->data[4] >= numOfParam) ||
+      (strlen(dimm_info_key[ (int) req->data[4]]) <= 0) )
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  sprintf(key, "sys_config/fru%d_dimm%d_%s", req->payload_id, req->data[3], dimm_info_key[req->data[4]]);
+
+  ret = kv_get_bin(key, res->data);
+  if (ret < 0) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
+
   res->cc = CC_SUCCESS;
+  *res_len = ret;
 }
 
 static void
@@ -1708,6 +1825,39 @@ oem_q_set_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0}, cltrType;
+  char payload[100] = {0};
+  int ret = 0;
+  int numOfParam = sizeof(drive_info_key)/sizeof(char *);
+
+  if ((req->data[5] >= numOfParam) ||
+      (strlen(drive_info_key[ (int) req->data[5]]) <= 0) )
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  if( (req->data[3] & 0x0f) ==0x00)
+    cltrType = 'B'; // BIOS
+  else if ((req->data[3] & 0x0f) ==0x01)
+    cltrType = 'E'; // Expander
+  else if  ((req->data[3] & 0x0f) ==0x02)
+    cltrType = 'L'; // LSI
+  else {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+  sprintf(key, "sys_config/fru%d_%c_drive%d_%s", req->payload_id, cltrType, req->data[4], drive_info_key[req->data[5]]);
+
+  memcpy(payload, &req->data[6], req_len - 9);
+  ret =  kv_set_bin(key, payload, req_len - 9);
+  if (ret != req_len - 9) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
 
   res->cc = CC_SUCCESS;
   *res_len = 0;
@@ -1719,9 +1869,41 @@ oem_q_get_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0}, cltrType;
+  char payload[100] = {0};
+  int ret = 0;
+  int numOfParam = sizeof(drive_info_key)/sizeof(char *);
 
-  *res_len = 0 ;
+  if ((req->data[5] >= numOfParam) ||
+      (strlen(drive_info_key[ (int) req->data[5]]) <= 0) )
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  if( (req->data[3] & 0x0f) ==0x00)
+    cltrType = 'B'; // BIOS
+  else if ((req->data[3] & 0x0f) ==0x01)
+    cltrType = 'E'; // Expander
+  else if  ((req->data[3] & 0x0f) ==0x02)
+    cltrType = 'L'; // LSI
+  else {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+  sprintf(key, "sys_config/fru%d_%c_drive%d_%s", req->payload_id, cltrType, req->data[4], drive_info_key[req->data[5]]);
+
+  ret = kv_get_bin(key, res->data);
+  if (ret < 0) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
+
   res->cc = CC_SUCCESS;
+  *res_len = ret;
 }
 
 static void
@@ -2065,7 +2247,7 @@ oem_set_post_end (unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_set_ppin_info(unsigned char *request, unsigned char req_len, 
+oem_set_ppin_info(unsigned char *request, unsigned char req_len,
 		   unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2129,7 +2311,7 @@ oem_get_poss_pcie_config(unsigned char *request, unsigned char req_len,
 }
 
 static void
-oem_get_board_id(unsigned char *request, unsigned char req_len, 
+oem_get_board_id(unsigned char *request, unsigned char req_len,
 					unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2211,7 +2393,7 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_PPIN_INFO:
       oem_set_ppin_info (request, req_len, response, res_len);
-      break;  
+      break;
     case CMD_OEM_GET_PLAT_INFO:
       oem_get_plat_info (request, response, res_len);
       break;

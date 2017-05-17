@@ -35,6 +35,8 @@ extern "C" {
 
 int kv_get(char* key, char *value);
 int kv_set(char* key, char *value);
+int kv_get_bin(char* key, char *value);
+int kv_set_bin(char* key, char *value, unsigned char len);
 
 #ifdef __cplusplus
 }

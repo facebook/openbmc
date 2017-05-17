@@ -26,17 +26,26 @@
 #include <sys/file.h>
 #include "kv.h"
 
+/*
+*  set binary value
+*  retrun number of successfully write
+*/
 int
-kv_set(char *key, char *value) {
-
+kv_set_bin(char *key, char *value, unsigned char len) {
   FILE *fp;
-  int rc;
+  int rc, ret = 0;
   char kpath[MAX_KEY_PATH_LEN] = {0};
+  char *p;
 
   sprintf(kpath, KV_STORE, key);
 
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
+  p = &kpath[strlen(KV_STORE_PATH)-1];
+  while ((*p != '\0') && ((p = strchr(p+1, '/')) != NULL)) {
+    *p = '\0';
+    if (access(kpath, F_OK) == -1) {
+      mkdir(kpath, 0777);
+    }
+    *p = '/';
   }
 
   fp = fopen(kpath, "r+");
@@ -65,8 +74,8 @@ kv_set(char *key, char *value) {
     return -1;
   }
 
-  rc = fwrite(value, 1, strlen(value), fp);
-  if (rc < 0) {
+  ret = fwrite(value, 1, len, fp);
+  if (ret < 0) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "kv_set: failed to write to %s", kpath;
 #endif
@@ -87,21 +96,30 @@ kv_set(char *key, char *value) {
 
   fclose(fp);
 
-  return 0;
+  return ret;
 }
 
-
+/*
+*  get binary value
+*  retrun number of successfully read
+*/
 int
-kv_get(char *key, char *value) {
-
+kv_get_bin(char *key, char *value) {
   FILE *fp;
-  int rc;
+  int rc, ret=0;
   char kpath[MAX_KEY_PATH_LEN] = {0};
+  char *p;
 
   sprintf(kpath, KV_STORE, key);
 
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
+  p = &kpath[strlen(KV_STORE_PATH)-1];
+  while ((*p != '\0') && ((p = strchr(p+1, '/')) != NULL)) {
+    *p = '\0';
+    snprintf(kpath, MAX_KEY_PATH_LEN, KV_STORE, key);
+    if (access(kpath, F_OK) == -1) {
+      mkdir(kpath, 0777);
+    }
+    *p = '/';
   }
 
   fp = fopen(kpath, "r");
@@ -123,15 +141,14 @@ kv_get(char *key, char *value) {
     return -1;
   }
 
-  rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
-  if (rc < 0 || ferror(fp)) {
+  ret = (int) fread(value, 1, MAX_VALUE_LEN, fp);
+  if (ret < 0 || ferror(fp)) {
 #ifdef DEBUG
     syslog(LOG_INFO, "kv_get: failed to read %s", kpath);
 #endif
     fclose(fp);
-    return ENOENT;
+    return -1;
   }
-  value[(rc < MAX_VALUE_LEN)?(rc):(rc-1)] = 0;
 
   rc = flock(fileno(fp), LOCK_UN);
   if (rc < 0) {
@@ -144,6 +161,37 @@ kv_get(char *key, char *value) {
   }
 
   fclose(fp);
+
+  return ret;
+}
+
+/*
+*  set string value which is terminated by a null
+*  retrun 0 on success, else on failure
+*/
+int
+kv_set(char *key, char *value) {
+  int ret = kv_set_bin(key, value, strlen(value));
+
+  if (ret == strlen(value))
+    return 0;
+  else
+    return -1;
+}
+
+/*
+*  get string value which is terminated by a null
+*  retrun 0 on success, else on failure
+*/
+int
+kv_get(char *key, char *value) {
+  int ret = kv_get_bin(key, value);
+
+  if (ret >= 0)
+    value[(ret < MAX_VALUE_LEN)?(ret):(ret-1)] = '\0';
+
+  if (ret < 0)
+    return -1;
 
   return 0;
 }

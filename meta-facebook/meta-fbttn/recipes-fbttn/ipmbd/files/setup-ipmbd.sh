@@ -51,7 +51,7 @@ case "$ACTION" in
     echo "enable Expander IPMB on I2C 9"
       $DAEMON 9 0x13 > /dev/null 2>&1 &
 
-    echo "enable Expander IPMB on I2C 11"
+    echo "enable Debug Card IPMB on I2C 11"
       $DAEMON 11 0x30 > /dev/null 2>&1 &
 
     echo "$NAME."
@@ -70,7 +70,7 @@ case "$ACTION" in
     fi
     echo "enable Expander IPMB on I2C 9"
       $DAEMON 9 0x20 > /dev/null 2>&1 &
-    echo "enable Expander IPMB on I2C 11"
+    echo "enable Debug Card IPMB on I2C 11"
       $DAEMON 11 0x30 > /dev/null 2>&1 &
     echo "$NAME."
     ;;

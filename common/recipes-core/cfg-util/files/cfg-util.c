@@ -24,10 +24,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <openbmc/pal.h>
+#include <sys/reboot.h>
 
 static void
 print_usage(void) {
   printf("Usage: cfg-util <dump-all|key> <value>\n");
+  printf("       cfg-util --clear\n");
 }
 
 int
@@ -45,6 +47,16 @@ main(int argc, char **argv) {
   // Handle dump of key value data base
   if ((argc == 2) && (!strcmp(argv[1], "dump-all"))){
       pal_dump_key_value();
+      return 0;
+  }
+
+  // Handle Reset Default factory settings
+  if ((argc == 2) && (!strcmp(argv[1], "--clear"))){
+      printf("Reset BMC data to default factory settings and BMC will be reset...\n");
+      system("rm /mnt/data/ -rf > /dev/null 2>&1");
+      sync();
+      sleep(3);
+      reboot(RB_AUTOBOOT);
       return 0;
   }
 

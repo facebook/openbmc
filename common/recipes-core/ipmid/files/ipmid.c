@@ -1166,7 +1166,7 @@ storage_clr_sel (unsigned char *request, unsigned char *response,
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
 
-  sel_erase_stat_t status;
+  sel_erase_stat_t status = SEL_ERASE_DONE;
   int ret;
   int rsv_id;
 

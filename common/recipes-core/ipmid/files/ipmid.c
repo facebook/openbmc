@@ -83,7 +83,7 @@ chassis_get_status (unsigned char *response, unsigned char *res_len)
   *data++ = 0x40;		// Misc. Chassis Status
   *data++ = 0x00;		// Front Panel Button Disable
 
-  res_len = data - &res->data[0];
+  *res_len = data - &res->data[0];
 }
 
 // Get System Boot Options (IPMI/Section 28.12)

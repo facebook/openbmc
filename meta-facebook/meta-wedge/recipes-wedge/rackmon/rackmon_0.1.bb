@@ -38,11 +38,13 @@ SRC_URI = "file://Makefile \
            file://rackmonctl.c \
            file://setup-rackmond.sh \
            file://run-rackmond.sh \
+           file://run-rackmon-gpio.sh \
            file://rackmon-config.py \
            file://rackmond.py \
            file://psu-update-delta.py \
            file://psu-update-bel.py \
            file://hexfile.py \
+           file://rackmon-gpio-monitor.py \
           "
 
 S = "${WORKDIR}"
@@ -52,6 +54,7 @@ binfiles = "modbuscmd \
             gpiowatch \
             rackmond \
             rackmonctl \
+            rackmon-gpio-monitor.py \
             psu-update-delta.py \
             psu-update-bel.py \
             hexfile.py \
@@ -78,6 +81,8 @@ do_install() {
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/rackmond
   install -m 755 run-rackmond.sh ${D}${sysconfdir}/sv/rackmond/run
+  install -d ${D}${sysconfdir}/sv/rackmon-gpio
+  install -m 755 run-rackmon-gpio.sh ${D}${sysconfdir}/sv/rackmon-gpio/run
   install -m 755 setup-rackmond.sh ${D}${sysconfdir}/init.d/rackmond
   install -m 755 rackmon-config.py ${D}${sysconfdir}/rackmon-config.py
   install -m 755 rackmond.py ${D}${sysconfdir}/rackmond.py

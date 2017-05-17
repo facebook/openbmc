@@ -80,6 +80,8 @@ IMAGE_INSTALL += " \
   peci-util \
   tzdata \
   logrotate \
+  asd \
+  asd-test \
   "
 
 IMAGE_FEATURES += " \

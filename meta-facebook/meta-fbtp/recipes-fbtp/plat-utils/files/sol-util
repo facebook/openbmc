@@ -26,7 +26,6 @@ then
   SLOT=$1 
 else
   echo "Usage: sol-util [ mb ]"
-  echo "       sol-util [ mb ] --force"
   echo "       sol-util [ mb ] --history"
   exit -1
 fi

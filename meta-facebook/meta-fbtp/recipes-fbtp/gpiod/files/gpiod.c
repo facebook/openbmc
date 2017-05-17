@@ -95,7 +95,7 @@ static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
     struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
     if (log) {
       log->usec = log_delay;
-      snprintf(log->msg, 256, "%s: %s - %s\n", gp->value ? "DEASSERT" : "ASSERT", gp->name, gp->value);
+      snprintf(log->msg, 256, "%s: %s - %s\n", gp->value ? "DEASSERT" : "ASSERT", gp->name, gp->desc);
       if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log)) {
         free(log);
         log = NULL;
@@ -140,9 +140,9 @@ static void gpio_event_handle(void *p)
       usb_dbg_reset();
   }
 
-  //LCD debug card critical SEL support
-  if (gp->gs.gs_gpio == gpio_num("GPIOE4") || gp->gs.gs_gpio == gpio_num("GPIOE5")) {
-    if (gp->gs.gs_gpio == gpio_num("GPIOE4"))
+  //LCD debug card thermal trip critical SEL support
+  if (gp->gs.gs_gpio == gpio_num("GPIOM4") || gp->gs.gs_gpio == gpio_num("GPIOM5")) {
+    if (gp->gs.gs_gpio == gpio_num("GPIOM4"))
       strcat(cmd, "CPU0 ");
     else
       strcat(cmd, "CPU1 ");

@@ -19,6 +19,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://disable_watchdog.sh \
             file://enable_watchdog_ext_signal.sh \
+            file://ec_version.sh \
             file://board-utils.sh \
             file://setup_board.sh \
             file://cpld_rev.sh \
@@ -33,6 +34,7 @@ OPENBMC_UTILS_FILES += " \
     enable_watchdog_ext_signal.sh \
     cpld_upgrade.sh \
     cpld_rev.sh \
+    ec_version.sh \
     cp2112_i2c_flush.sh \
     reset_qsfp_mux.sh \
     "

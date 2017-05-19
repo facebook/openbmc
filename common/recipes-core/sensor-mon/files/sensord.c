@@ -96,7 +96,7 @@ init_fru_snr_thresh(uint8_t fru) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "init_fru_snr_thresh: sdr_get_snr_thresh for FRU: %d", fru);
 #endif /* DEBUG */
-      return -1;
+      continue;
     }
 
     pal_init_sensor_check(fru, snr_num, (void *)&snr[snr_num]);

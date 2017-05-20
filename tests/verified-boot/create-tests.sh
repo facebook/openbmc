@@ -102,11 +102,11 @@ openssl genrsa -F4 -out "$OUTPUT_DIR/kek/kek.key" 4096
 openssl rsa -in "$OUTPUT_DIR/kek/kek.key" -pubout > "$OUTPUT_DIR/kek/kek.pub"
 echo -e "\nCreated KEK (ROM key): $OUTPUT_DIR/kek/kek.{key,pub}\n"
 
-# Create the example subordinate (U-Boot, Kernel, rootfs signing key).
-mkdir -p "$OUTPUT_DIR/subordinate"
-openssl genrsa -F4 -out "$OUTPUT_DIR/subordinate/subordinate.key" 4096
-openssl rsa -in "$OUTPUT_DIR/subordinate/subordinate.key" -pubout > "$OUTPUT_DIR/subordinate/subordinate.pub"
-echo -e "\nCreated Subordinate key (used to signed U-Boot and Linux): $OUTPUT_DIR/subordinate/subordinate.{key,pub}\n"
+# Create the example ODM keypair (U-Boot, Kernel, rootfs signing key).
+mkdir -p "$OUTPUT_DIR/odm0"
+openssl genrsa -F4 -out "$OUTPUT_DIR/odm0/odm0.key" 4096
+openssl rsa -in "$OUTPUT_DIR/odm0/odm0.key" -pubout > "$OUTPUT_DIR/odm0/odm0.pub"
+echo -e "\nCreated ODM0 key (used to signed U-Boot and Linux): $OUTPUT_DIR/odm0/odm0.{key,pub}\n"
 
 mkdir -p "$OUTPUT_DIR/odm1"
 openssl genrsa -F4 -out "$OUTPUT_DIR/odm1/odm1.key" 4096
@@ -114,7 +114,7 @@ openssl rsa -in "$OUTPUT_DIR/odm1/odm1.key" -pubout > "$OUTPUT_DIR/odm1/odm1.pub
 echo -e "\nCreated (optional) ODM key (used to signed U-Boot and Linux): $OUTPUT_DIR/odm1/odm1.{key,pub}\n"
 
 mkdir -p "$OUTPUT_DIR/subordinates"
-cp "$OUTPUT_DIR/subordinate/subordinate.pub" "$OUTPUT_DIR/subordinates"
+cp "$OUTPUT_DIR/odm0/odm0.pub" "$OUTPUT_DIR/subordinates"
 cp "$OUTPUT_DIR/odm1/odm1.pub" "$OUTPUT_DIR/subordinates"
 
 # Create certificate stores and the signed subordinate store.
@@ -135,7 +135,7 @@ cp $INPUT_FLASH $FLASH_UNSIGNED
 $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
   --sign-os \
   --signed-subordinate $OUTPUT_DIR/subordinates/subordinates.dtb.signed \
-  --keydir $OUTPUT_DIR/subordinate $FLASH_UNSIGNED $FLASH_SIGNED
+  --keydir $OUTPUT_DIR/odm0 $FLASH_UNSIGNED $FLASH_SIGNED
 
 # Time to generate all test cases.
 FLASH_SIGNED=$INPUT_NAME.signed
@@ -215,14 +215,14 @@ openssl genrsa -F4 -out "$OUTPUT_DIR/error/kek/kek.key" 4096
 openssl rsa -in "$OUTPUT_DIR/error/kek/kek.key" -pubout > "$OUTPUT_DIR/error/kek/kek.pub"
 echo -e "\nCreated error-KEK (ROM key): $OUTPUT_DIR/error/kek/kek.{key,pub}\n"
 
-mkdir -p "$OUTPUT_DIR/error/subordinate"
+mkdir -p "$OUTPUT_DIR/error/subordinates"
 $SCRIPTS/fit-signsub --mkimage $MKIMAGE --keydir $OUTPUT_DIR/error/kek \
-  $OUTPUT_DIR/subordinate/subordinate.dtb $OUTPUT_DIR/error/subordinate/subordinate.dtb.signed
+  $OUTPUT_DIR/subordinates/subordinates.dtb $OUTPUT_DIR/error/subordinates/subordinates.dtb.signed
 
 echo "[+] Creating 4.40.1..."
 $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
-  --signed-subordinate $OUTPUT_DIR/error/subordinate/subordinate.dtb.signed \
-  --keydir $OUTPUT_DIR/subordinate $OUTPUT_DIR/flashes/$FLASH_UNSIGNED \
+  --signed-subordinate $OUTPUT_DIR/error/subordinates/subordinates.dtb.signed \
+  --keydir $OUTPUT_DIR/odm0 $OUTPUT_DIR/flashes/$FLASH_UNSIGNED \
   $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.40.1
 ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.4.40.1
 
@@ -236,42 +236,42 @@ MATCH=":a;N;\$!ba;s/${MATCH}/compression = \"none\";\\1value = "
 MATCH="${MATCH}<${BAD_HASH}>;\\n\\t\\t\\t\\talgo\\3/g"
 create_bad_fit "u-boot" "4.42.2" "$MATCH"
 
-create_bad_fit "u-boot" "4.42.3" 's/key-name-hint = "subordinate"/key-name-hint = "kek"/g'
-create_bad_fit "u-boot" "4.42.4" 's/key-name-hint = "subordinate"/key-name-hint = "odm1"/g'
+create_bad_fit "u-boot" "4.42.3" 's/key-name-hint = "odm0"/key-name-hint = "kek"/g'
+create_bad_fit "u-boot" "4.42.4" 's/key-name-hint = "odm0"/key-name-hint = "odm1"/g'
 create_bad_fit "u-boot" "4.42.5" 's/compression = "none";/compression = "none";\n\n\t\t\thash@2 { algo = "sha256"; };/g'
 
 # Test-tests
-# create_bad_fit "u-boot" "0.0.1" 's/key-name-hint = "subordinate"/key-name-hint = "subordinate"/g'
-# create_bad_fit "os" "0.0.2" 's/key-name-hint = "subordinate"/key-name-hint = "subordinate"/g'
+# create_bad_fit "u-boot" "0.0.1" 's/key-name-hint = "odm0"/key-name-hint = "odm0"/g'
+# create_bad_fit "os" "0.0.2" 's/key-name-hint = "odm0"/key-name-hint = "odm0"/g'
 
 echo "[+] Creating 4.43..."
 cp $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43
 dd if=/dev/random of=$OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43 bs=1 seek=540772 count=16 conv=notrunc
 ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.4.43
 
-create_bad_fit "os" "6.60.1" 's/key-name-hint = "subordinate"/key-name-hint = "bad"/g'
-create_bad_fit "os" "6.60.2" 's/key-name-hint = "subordinate"/key-name-hint = "odm1"/g'
+create_bad_fit "os" "6.60.1" 's/key-name-hint = "odm0"/key-name-hint = "bad"/g'
+create_bad_fit "os" "6.60.2" 's/key-name-hint = "odm0"/key-name-hint = "odm1"/g'
 create_bad_fit "os" "6.60.3" 's/timestamp = <\(.*\)>;/timestamp = <0x10>;/g'
 
-echo "[+] Creating ODM signed 0.0.3"
+echo "[+] Creating ODM1 signed 0.0.3"
 $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
-  --signed-subordinate $OUTPUT_DIR/subordinate/subordinate.dtb.signed \
+  --signed-subordinate $OUTPUT_DIR/subordinates/subordinates.dtb.signed \
   --keydir $OUTPUT_DIR/odm1 $OUTPUT_DIR/flashes/$FLASH_UNSIGNED \
   --sign-os \
   $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.0.0.3
 ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.0.0.3
 
-# Create a subordinate that does not include the ODM key.
+# Create a subordinate that does not include the ODM1 key.
 $SCRIPTS/fit-cs --template $SCRIPTS/store.dts.in --subordinate --subtemplate $SCRIPTS/sub.dts.in \
-  $OUTPUT_DIR/subordinate $OUTPUT_DIR/subordinate/subordinate.dtb
+  $OUTPUT_DIR/odm0 $OUTPUT_DIR/odm0/odm0.dtb
 $SCRIPTS/fit-signsub --mkimage $MKIMAGE --keydir $OUTPUT_DIR/kek \
-  $OUTPUT_DIR/subordinate/subordinate.dtb $OUTPUT_DIR/subordinate/subordinate.dtb.signed
+  $OUTPUT_DIR/odm0/odm0.dtb $OUTPUT_DIR/odm0/odm0.dtb.signed
 
-# Sign an image that does not include the ODM key at least 1s into the future.
+# Sign an image that does not include the ODM1 key at least 1s into the future.
 $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
   --sign-os \
-  --signed-subordinate $OUTPUT_DIR/subordinate/subordinate.dtb.signed \
-  --keydir $OUTPUT_DIR/subordinate \
+  --signed-subordinate $OUTPUT_DIR/odm0/odm0.dtb.signed \
+  --keydir $OUTPUT_DIR/odm0 \
   $OUTPUT_DIR/flashes/$INPUT_NAME.unsigned $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.future
 ln -s $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.future $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.future
 

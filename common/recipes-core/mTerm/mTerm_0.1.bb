@@ -70,5 +70,5 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir}"
-
+FILES_${PN}-dbg += "${FBPACKAGEDIR}/mTerm/.debug"
+FILES_${PN} += "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir}"

@@ -176,6 +176,8 @@ const char pal_tach_list[] = "0...7";
 uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 1, 1, 1, 1};
 
 static uint8_t bios_default_setting_timer_flag = 0;
+static uint8_t otp_server_12v_off_flag = 0;
+
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -3361,18 +3363,30 @@ unsigned char pal_sum_error_code(void) {
 }
 void
 pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+  uint8_t status;
+
   if ((snr_num == MEZZ_SENSOR_TEMP) && (thresh == UNR_THRESH)) {
-    pal_nic_otp(FRU_NIC, snr_num, nic_sensor_threshold[snr_num][UNR_THRESH]);
+    
+    pal_get_server_power(FRU_SLOT1, &status);
+    if (status != SERVER_12V_OFF) {
+      pal_nic_otp(FRU_NIC, snr_num, nic_sensor_threshold[snr_num][UNR_THRESH]);
+    }
   }
   return;
 }
 
 void
 pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+  uint8_t status;
+
   if ((snr_num == MEZZ_SENSOR_TEMP) && (thresh == UNC_THRESH)) {
-    // power on Mono Lake 12V HSC
-    syslog(LOG_CRIT, "Due to NIC temp UNC deassert. Power On Server 12V. (val = %.2f)", val);
-    server_12v_on(FRU_SLOT1);
+    pal_get_server_power(FRU_SLOT1, &status);
+    if ((status != SERVER_12V_ON) && (otp_server_12v_off_flag == 1)) {
+      // power on Mono Lake 12V HSC
+      syslog(LOG_CRIT, "Due to NIC temp UNC deassert. Power On Server 12V. (val = %.2f)", val);
+      server_12v_on(FRU_SLOT1);
+      otp_server_12v_off_flag = 0;
+    }
   }
   return;
 }
@@ -3833,6 +3847,7 @@ int pal_nic_otp(int fru, int snr_num, float thresh_val) {
   // power off Mono Lake 12V HSC
   syslog(LOG_CRIT, "Powering Off Server due to NIC temp UNR reached. (val = %.2f)", curr_val);
   server_12v_off(FRU_SLOT1);
+  otp_server_12v_off_flag = 1;
   return 0;
 }
 

@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <getopt.h>
+#include <openbmc/pal.h>
 
 /***********************************************************************/
 struct timing_negotiation {
@@ -287,7 +288,7 @@ main(int argc, char **argv) {
   int timeout = 5;
   int ret = -1;
 
-  if (access("/var/run/autodump.pid", F_OK) == 0) {
+  if (pal_is_crashdump_ongoing(1)) {
     printf("Auto Crash Dump is ongoing, block peci-util.\n");
     exit(-1);
   }

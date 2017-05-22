@@ -1,7 +1,9 @@
 #!/bin/bash
 
 PID=$$
-PID_FILE='/var/run/autodump.pid'
+# File format autodump<fru>.pid (See pal_is_crashdump_ongoing()
+# function definition)
+PID_FILE='/var/run/autodump1.pid'
 
 # check if running auto dump
 [ -r $PID_FILE ] && OLDPID=`cat $PID_FILE` || OLDPID=''

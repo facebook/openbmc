@@ -79,7 +79,7 @@ power_util(uint8_t fru, uint8_t opt) {
   int ret;
   uint8_t status;
 
-  if (opt != PWR_STATUS && access("/var/run/autodump.pid", F_OK) == 0) {
+  if (opt != PWR_STATUS && pal_is_crashdump_ongoing(FRU_MB)) {
     printf("Auto Crash Dump is ongoing, block the power controling.\n");
     exit(-1);
   }

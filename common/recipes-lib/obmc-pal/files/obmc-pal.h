@@ -34,6 +34,8 @@ enum {
 int pal_is_fw_update_ongoing(uint8_t fru);
 void set_fw_update_ongoing(uint8_t fru, uint16_t tmout);
 
+int pal_is_crashdump_ongoing(uint8_t fru);
+
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 
 int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);

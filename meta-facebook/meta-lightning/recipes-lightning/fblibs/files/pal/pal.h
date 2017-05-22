@@ -249,7 +249,6 @@ int pal_fan_recovered_handle(int fan_num);
 int pal_peer_tray_detection(uint8_t *value);
 int pal_self_tray_location(uint8_t *value);
 int pal_peer_tray_location(uint8_t *value);
-int pal_is_crashdump_ongoing(uint8_t slot);
 int pal_reset_ssd_switch();
 void pal_log_clear(char *fru);
 int pal_get_airflow(float *airflow_cfm);

@@ -21,7 +21,7 @@ ipmid: ipmid.c \
 	platform/timestamp.c platform/sel.c platform/sdr.c \
 	platform/wedge/sensor.c \
 	platform/wedge/fruid.c
-	$(CC) -pthread -lwedge_eeprom -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

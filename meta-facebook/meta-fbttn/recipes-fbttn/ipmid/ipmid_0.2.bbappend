@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS_append = "libipmi libfruid update-rc.d-native"
+LDFLAGS_append = "-lfruid -lipmb"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \

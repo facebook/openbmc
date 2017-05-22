@@ -17,6 +17,7 @@
 
 DEPENDS_append = "libipmi libipmb libfruid update-rc.d-native"
 RDEPENDS_${PN} += "libipmi libfruid libipmb "
+LDFLAGS_append = "-lfruid -lipmb"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \

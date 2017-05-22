@@ -115,7 +115,6 @@ kv_get_bin(char *key, char *value) {
   p = &kpath[strlen(KV_STORE_PATH)-1];
   while ((*p != '\0') && ((p = strchr(p+1, '/')) != NULL)) {
     *p = '\0';
-    snprintf(kpath, MAX_KEY_PATH_LEN, KV_STORE, key);
     if (access(kpath, F_OK) == -1) {
       mkdir(kpath, 0777);
     }

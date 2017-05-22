@@ -504,9 +504,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
       memcpy(data_buf, &tmp_buf[1], copy_size );
 
       dev_info->CheckSum = strtoul(data_buf, NULL, 16);
-#ifdef CPLD_DEBUG
-      printf("[ChkSUMStart]%x\n",dev_info->CheckSum);
-#endif
+      printf("[ChkSUM]%x\n",dev_info->CheckSum);
     }
     else if ( ROWStart )
     {

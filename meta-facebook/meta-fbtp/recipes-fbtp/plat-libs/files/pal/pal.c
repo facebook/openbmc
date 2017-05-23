@@ -4920,11 +4920,11 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     case HPR_WARNING:
       sprintf(error_log, "");
       if (ed[2]  == 0x01) {
-	 if (ed[1]  = 0xFF)
-          strcat(error_log, "Infinite Time");
-	 else
-           sprintf(temp_log, "%d minutes",ed[1]);
-           strcat(error_log, temp_log);
+        if (ed[1]  = 0xFF)
+          strcat(temp_log, "Infinite Time");
+        else
+          sprintf(temp_log, "%d minutes",ed[1]);
+        strcat(error_log, temp_log);
       } else {
         strcat(error_log, "Unknown");
       }

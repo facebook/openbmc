@@ -79,6 +79,12 @@ print_slot_version(uint8_t slot_id) {
     return;
   }
 
+  ret = pal_is_server_12v_on(slot_id, &status);
+  if(ret < 0 || 0 == status) {
+    printf("slot%d 12V is off\n", slot_id);
+    return;
+  }
+
   if(!pal_is_slot_server(slot_id)) {
     printf("slot%d is not server\n", slot_id);
     return;
@@ -243,6 +249,12 @@ fw_update_slot(char **argv, uint8_t slot_id) {
   }
   if (status == 0) {
     printf("slot%d is empty!\n", slot_id);
+    goto err_exit;
+  }
+
+  ret = pal_is_server_12v_on(slot_id, &status);
+  if(ret < 0 || 0 == status) {
+    printf("slot%d 12V is off\n", slot_id);
     goto err_exit;
   }
 

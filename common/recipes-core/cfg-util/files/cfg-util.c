@@ -53,7 +53,7 @@ main(int argc, char **argv) {
   // Handle Reset Default factory settings
   if ((argc == 2) && (!strcmp(argv[1], "--clear"))){
       printf("Reset BMC data to default factory settings and BMC will be reset...\n");
-      system("rm /mnt/data/ -rf > /dev/null 2>&1");
+      system("rm /mnt/data/* -rf > /dev/null 2>&1");
       sync();
       sleep(3);
       reboot(RB_AUTOBOOT);

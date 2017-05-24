@@ -701,10 +701,13 @@ get_key_value(char* key, char *value) {
 
   char kpath[64] = {0};
 
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
+  if (!strcmp(key, "system_identify")) {
+    sprintf(kpath, KV_STORE, key);
+    if (access(KV_STORE_PATH, F_OK) == -1) {
+      mkdir(KV_STORE_PATH, 0777);
+    }
+  } else {
+    sprintf(kpath, TMP_PATH, key);
   }
 
   return read_kv(kpath, value);
@@ -715,10 +718,13 @@ set_key_value(char *key, char *value) {
 
   char kpath[64] = {0};
 
-  sprintf(kpath, KV_STORE, key);
-
-  if (access(KV_STORE_PATH, F_OK) == -1) {
-    mkdir(KV_STORE_PATH, 0777);
+  if (!strcmp(key, "system_identify")) {
+    sprintf(kpath, KV_STORE, key);
+    if (access(KV_STORE_PATH, F_OK) == -1) {
+      mkdir(KV_STORE_PATH, 0777);
+    }
+  } else {
+    sprintf(kpath, TMP_PATH, key);
   }
 
   return write_kv(kpath, value);
@@ -739,11 +745,15 @@ pal_set_def_key_value() {
     memset(key, 0, MAX_KEY_LEN);
     memset(kpath, 0, MAX_KEY_PATH_LEN);
 
-    sprintf(kpath, KV_STORE, key_list[i]);
+    if (!strcmp(key_list[i], "system_identify")) {
+      sprintf(kpath, KV_STORE, key_list[i]);
+    } else {
+      sprintf(kpath, TMP_PATH, key_list[i]);
+    }
 
     if (access(kpath, F_OK) == -1) {
 
-      if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
+      if (write_kv(kpath, def_val_list[i])) {
 #ifdef DEBUG
           syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
@@ -784,7 +794,7 @@ pal_set_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_set(key, value);
+  return set_key_value(key, value);
 }
 
 int
@@ -794,7 +804,7 @@ pal_get_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_get(key, value);
+  return get_key_value(key, value);
 }
 
 int
@@ -910,16 +920,16 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   switch(fru) {
     case FRU_PEB:
-      sprintf(key, "peb_sensor_health");
+      sprintf(key, TMP_PATH, "peb_sensor_health");
       break;
     case FRU_PDPB:
-      sprintf(key, "pdpb_sensor_health");
+      sprintf(key, TMP_PATH, "pdpb_sensor_health");
       break;
     case FRU_FCB:
-      sprintf(key, "fcb_sensor_health");
+      sprintf(key, TMP_PATH, "fcb_sensor_health");
       break;
     case BMC_HEALTH:
-      sprintf(key, "bmc_health");
+      sprintf(key, TMP_PATH, "bmc_health");
       break;
 
     default:
@@ -928,7 +938,7 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   sprintf(cvalue, (value > 0) ? "1": "0");
 
-  return pal_set_key_value(key, cvalue);
+  return write_kv(key, cvalue);
 
   return 0;
 }
@@ -942,23 +952,23 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   switch(fru) {
     case FRU_PEB:
-      sprintf(key, "peb_sensor_health");
+      sprintf(key, TMP_PATH, "peb_sensor_health");
       break;
     case FRU_PDPB:
-      sprintf(key, "pdpb_sensor_health");
+      sprintf(key, TMP_PATH, "pdpb_sensor_health");
       break;
     case FRU_FCB:
-      sprintf(key, "fcb_sensor_health");
+      sprintf(key, TMP_PATH, "fcb_sensor_health");
       break;
     case BMC_HEALTH:
-      sprintf(key, "bmc_health");
+      sprintf(key, TMP_PATH, "bmc_health");
       break;
 
     default:
       return -1;
   }
 
-  ret = pal_get_key_value(key, cvalue);
+  ret = read_kv(key, cvalue);
   if (ret) {
     return ret;
   }

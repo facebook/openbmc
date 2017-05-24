@@ -43,6 +43,7 @@ extern "C" {
 
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
+#define TMP_PATH "/tmp/%s"
 
 #define SETBIT(x, y)        (x | (1 << y))
 #define GETBIT(x, y)        ((x & (1 << y)) > y)

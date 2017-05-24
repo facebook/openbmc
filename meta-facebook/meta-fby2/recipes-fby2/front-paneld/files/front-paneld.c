@@ -252,7 +252,7 @@ pwr_btn_handler() {
   while (1) {
     // Check the position of hand switch
     ret = get_handsw_pos(&pos);
-    if (ret || pos == HAND_SW_BMC) {
+    if (ret) {
       sleep(1);
       continue;
     }
@@ -278,18 +278,29 @@ pwr_btn_handler() {
 
 
     // Get the current power state (power on vs. power off)
-    ret = pal_get_server_power(pos, &power);
-    if (ret) {
-      goto pwr_btn_out;
+    if (pos != HAND_SW_BMC)
+    {
+      ret = pal_get_server_power(pos, &power);
+      if (ret) {
+        goto pwr_btn_out;
+      }
+      // Set power command should reverse of current power state
+      cmd = !power;
     }
-
-    // Set power command should reverse of current power state
-    cmd = !power;
 
     // To determine long button press
     if (i >= BTN_POWER_OFF) {
-      pal_update_ts_sled();
-      syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
+      // if long press (>4s) and hand-switch position == bmc, then initiate
+      // sled-cycle
+      if (pos == HAND_SW_BMC)
+      {
+        syslog(LOG_CRIT, "SLED_CYCLE using power button successful");
+        sleep(1);
+        pal_sled_cycle();
+      } else {
+        pal_update_ts_sled();
+        syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
+      }
     } else {
 
       // If current power state is ON and it is not a long press,
@@ -301,8 +312,10 @@ pwr_btn_handler() {
       syslog(LOG_CRIT, "Power Button Press for FRU: %d\n", pos);
     }
 
-    // Reverse the power state of the given server
-    ret = pal_set_server_power(pos, cmd);
+    if (pos != HAND_SW_BMC) {
+      // Reverse the power state of the given server
+      ret = pal_set_server_power(pos, cmd);
+    }
 pwr_btn_out:
     msleep(100);
   }

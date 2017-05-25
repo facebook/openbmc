@@ -2849,18 +2849,6 @@ void pal_add_cri_sel(char *str)
 }
 
 int
-pal_bmc_err_disable(void) {
-  // dummy function
-  return 0;
-}
-
-int
-pal_bmc_err_enable() {
-  // dummy function
-  return 0;
-}
-
-int
 pal_get_board_rev_id(uint8_t *id) {
 
       return 0;
@@ -2897,11 +2885,6 @@ int
 pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
 {
     return -1;
-}
-
-//Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
-int pal_get_poss_pcie_config(uint8_t *pcie_config){
-   return 0;
 }
 
 //For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e

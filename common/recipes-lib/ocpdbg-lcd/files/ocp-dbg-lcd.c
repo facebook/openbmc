@@ -154,9 +154,9 @@ usb_dbg_update_fw(char *path)
 
   // Kill ipmb daemon
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", MCU_BUS_ID);
+  sprintf(cmd, "sv stop ipmbd_%d", MCU_BUS_ID);
   system(cmd);
-  printf("killed ipmbd %x..\n",MCU_BUS_ID);
+  printf("Stopped ipmbd %x..\n",MCU_BUS_ID);
 
   //Waiting for MCU reset to bootloader for updating
   sleep(1);
@@ -320,7 +320,7 @@ usb_dbg_update_fw(char *path)
 error_exit:
   // Restart ipmbd daemon
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x30", MCU_BUS_ID);
+  sprintf(cmd, "sv start ipmbd_%d", MCU_BUS_ID);
   system(cmd);
 
 error_exit2:

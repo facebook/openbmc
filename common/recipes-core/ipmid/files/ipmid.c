@@ -842,6 +842,10 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char cmd = req->cmd;
+  int fw_update_flag;
+
+  //if fw_update_flag = 1 means BMC is Updating a Device FW  
+  fw_update_flag = pal_get_fw_update_flag();
 
   pthread_mutex_lock(&m_app);
   switch (cmd)
@@ -850,13 +854,19 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       app_get_device_id (request, req_len, response, res_len);
       break;
     case CMD_APP_COLD_RESET:
-      app_cold_reset (request, req_len, response, res_len);
+      if(fw_update_flag == 1)
+        res->cc = CC_NODE_BUSY;
+      else
+        app_cold_reset (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_SELFTEST_RESULTS:
       app_get_selftest_results (request, req_len, response, res_len);
       break;
     case CMD_APP_MANUFACTURING_TEST_ON:
-      app_manufacturing_test_on (request, req_len, response, res_len);
+      if(fw_update_flag == 1)
+        res->cc = CC_NODE_BUSY;
+      else
+        app_manufacturing_test_on (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_DEVICE_GUID:
       app_get_device_guid (request, req_len, response, res_len);

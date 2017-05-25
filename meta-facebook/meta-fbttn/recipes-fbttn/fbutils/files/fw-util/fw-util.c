@@ -281,10 +281,21 @@ run_command(const char* cmd) {
   return WEXITSTATUS(status);
 }
 
+void sig_handler(int signo) { 
+  //Catch SIGINT, SIGKILL, SIGTERM. If recived signal remove FW Update Flag File.
+  //Kill flashcp process if there is any.
+  if (signo == SIGINT || signo == SIGKILL || signo == SIGTERM) {
+    remove(FW_UPDATE_FLAG);
+    system("ps | grep -v 'grep' | grep 'flashcp' ; if [ $? -eq 0 ]; then `killall flashcp`; fi");
+    printf("Received signal, removed the FW Update Flag file...\n");
+    exit(0);
+  }
+}
+
 int
 main(int argc, char **argv) {
   uint8_t fru;
-  int ret = 0;
+  int ret = -2;
   char cmd[80];
   char dev[12];
   uint8_t sku = 0;
@@ -295,6 +306,11 @@ main(int argc, char **argv) {
   char dual_flash_mtd_name[32];
   char single_flash_mtd_name[32];
 
+  //Catch signals
+  signal(SIGINT, sig_handler);
+  signal(SIGKILL, sig_handler);
+  signal(SIGTERM, sig_handler);
+
   // TODO: Define and use enum for SKU type 
   // SKU: IOM_TYPE5, IOM_TYPE7
   // Update the SKUs in fblibs as well
@@ -302,7 +318,7 @@ main(int argc, char **argv) {
 
   // Check for border conditions
   if ((argc != 3) && (argc != 5)) {
-    goto err_exit;
+    goto exit;
   }
 
   // Derive fru from first parameter
@@ -317,7 +333,7 @@ main(int argc, char **argv) {
   }else if (!strcmp(argv[1] , "all")) {
     fru = FRU_ALL;
   } else {
-      goto err_exit;
+      goto exit;
   }
   // check operation to perform
   if (!strcmp(argv[2], "--version")) {
@@ -350,17 +366,27 @@ main(int argc, char **argv) {
   }
   if (!strcmp(argv[2], "--update")) {
     if (argc != 5) {
-      goto err_exit;
+      goto exit;
     }
+
+    //TODO: Change to use save flag in ks, when kv save value in RAMDisk function is avaliable.
+    ret = pal_open_fw_update_flag();
+    if (ret == -1) {
+      printf("Failed to create fw update file.\n");
+      goto exit;
+    }
+
     if (fru == FRU_SLOT1) {
-      return fw_update_slot(argv, fru);
+      ret =  fw_update_slot(argv, fru);
+      goto exit;
     }
     // TODO: This is a workaround to detect the correct flash (flash0/flash1)
     // We need to remove this once the mtd partition is fixed in the kernel code
     else if (fru == FRU_IOM) {
       wdt_fd = open("/dev/mem", O_RDWR | O_SYNC );
       if (wdt_fd < 0) {
-        return 0;
+        ret = wdt_fd;
+        goto exit;
       }
       wdt_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, wdt_fd,
              AST_WDT_BASE);
@@ -379,7 +405,8 @@ main(int argc, char **argv) {
         }
         if (!get_mtd_name(dual_flash_mtd_name, dev)) {
           printf("Error: Cannot find %s MTD partition in /proc/mtd\n", dual_flash_mtd_name);
-          goto err_exit;
+          ret = -1;
+          goto exit;
         }
 
         printf("Flashing to device: %s\n", dev);
@@ -391,7 +418,7 @@ main(int argc, char **argv) {
           sleep(1);
           ret = run_command("reboot");
         }
-        return ret;
+        goto exit;
       }
       else if (!strcmp(argv[3], "--bmc")) {
         if (((wdt30 >> 1) & 0x1) == 0) { 
@@ -406,7 +433,8 @@ main(int argc, char **argv) {
           printf("Note: Cannot find %s MTD partition in /proc/mtd\n", dual_flash_mtd_name);
           if (!get_mtd_name(single_flash_mtd_name, dev)) {
             printf("Error: Cannot find %s MTD partition in /proc/mtd\n", single_flash_mtd_name);
-            goto err_exit;
+            ret = -1;
+            goto exit;
           }
         }
 
@@ -419,11 +447,17 @@ main(int argc, char **argv) {
           sleep(1);
           ret = run_command("reboot");
         }
-        return ret;
+        goto exit;
       }
     }
   }
-err_exit:
-  print_usage_help();
-  return -1;
+
+exit:
+  if (ret == -2)
+    print_usage_help();
+  else
+    if (pal_remove_fw_update_flag()) {
+      printf("Failed to remove fw update file.\n");
+    }
+  return ret;
 }

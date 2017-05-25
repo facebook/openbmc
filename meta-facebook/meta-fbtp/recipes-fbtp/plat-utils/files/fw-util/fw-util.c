@@ -272,6 +272,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
       goto err_exit;
     }
 
+    printf("Flashing to device: %s\n", dev);
     snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
     return run_command(cmd);
   }
@@ -285,6 +286,7 @@ fw_update_fru(char **argv, uint8_t slot_id) {
       }
     }
 
+    printf("Flashing to device: %s\n", dev);
     snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
     return run_command(cmd);
   }

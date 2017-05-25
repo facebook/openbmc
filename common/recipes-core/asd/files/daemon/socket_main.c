@@ -201,7 +201,7 @@ typedef enum {
      SOCKET_READ_STATE_BUFFER,
 } SocketReadState;
 
-typedef uint8_t ClientAddrT[16];
+typedef struct sockaddr_in6 ClientAddrT;
 
 static int comm_fd = 0, host_fd = 0, event_fd = 0;
 static uint8_t prdy_timeout = 1;
@@ -845,7 +845,7 @@ static STATUS TargetHandlerCallback(eventTypes event, ASD_EVENT value) {
 }
 #endif
 
-STATUS on_client_connect(ClientAddrT cl_addr) {
+STATUS on_client_connect(struct sockaddr_in6 *cl_addr) {
     STATUS result = ST_OK;
     ASD_log(LogType_Debug, "Preparing for client connection");
 
@@ -932,7 +932,7 @@ void on_message_received(struct spi_message message, const int data_size) {
 
 int main(int argc, char **argv) {
     int pollfd_cnt = 2;
-    struct sockaddr_in host_addr = {0};
+    struct sockaddr_in6 host_addr = {0};
     struct pollfd poll_fds[3] = {{0}};
     struct spi_message s_message = {{0}};
     int opt = 1, data_size = 0;
@@ -992,7 +992,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    host_fd = socket(AF_INET, SOCK_STREAM, 0);
+    host_fd = socket(AF_INET6, SOCK_STREAM, 0);
     if (host_fd < 0) {
         ASD_log(LogType_Error, "Could not obtain the socket fd");
         if(s_message.buffer)
@@ -1000,11 +1000,13 @@ int main(int argc, char **argv) {
         exitAll();
         return 1;
     }
-    host_addr.sin_family = AF_INET;
-    host_addr.sin_addr.s_addr = INADDR_ANY;
-    host_addr.sin_port = htons(port_number);
 
+    setsockopt(host_fd, SOL_SOCKET, SO_REUSEADDR, &opt,sizeof(int));
     setsockopt(host_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(int));
+
+    host_addr.sin6_family = AF_INET6;
+    host_addr.sin6_addr   = in6addr_any;
+    host_addr.sin6_port = htons(port_number);
 
     if (bind(host_fd, (struct sockaddr *) &host_addr, sizeof(host_addr)) < 0) {
         ASD_log(LogType_Error, "Could not bind. Ensure that another client is "
@@ -1053,7 +1055,7 @@ int main(int argc, char **argv) {
             }
         }
         if (poll_fds[HOST_FD_INDEX].revents & POLLIN) {
-            struct sockaddr_in addr;
+            struct sockaddr_in6 addr;
             uint len = sizeof(addr);
             ASD_log(LogType_Debug, "Client Connecting.");
             int fd = accept(host_fd, (struct sockaddr *)&addr, &len);
@@ -1061,11 +1063,7 @@ int main(int argc, char **argv) {
                 ASD_log(LogType_Error, "Failed to accept incoming connection.");
                 continue;
             } else if (poll_fds[CLIENT_FD_INDEX].fd == 0) {
-                ClientAddrT cl_addr = {0};
-                int offset = sizeof(cl_addr) - sizeof(addr.sin_addr);
-
-                memcpy(&cl_addr[offset], &addr.sin_addr, sizeof(addr.sin_addr));
-                if (on_client_connect(cl_addr) != ST_OK) {
+                if (on_client_connect(&addr) != ST_OK) {
                     ASD_log(LogType_Error, "Connection attempt failed.");
                     if (on_client_disconnect() != ST_OK) {
                         ASD_log(LogType_Error, "Client disconnect cleanup failed.");

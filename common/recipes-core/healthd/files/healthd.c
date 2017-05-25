@@ -33,6 +33,7 @@
 #include <openbmc/pal.h>
 #include <sys/sysinfo.h>
 #include "watchdog.h"
+#include <openbmc/pal.h>
 
 
 // TODO: Remove macro once we plan to enable it for other platforms.
@@ -110,8 +111,8 @@ get_threshold(uint8_t name, float *threshold) {
     default:
       return -1;
   }
-  
-  
+
+
   fp = fopen(threshold_path, "r");
   if (!fp && (errno == ENOENT)) {
     fp = fopen(threshold_path, "w");
@@ -142,7 +143,7 @@ get_threshold(uint8_t name, float *threshold) {
     *threshold = atof(str);
   }
   fclose(fp);
-  
+
   return 0;
 }
 
@@ -205,7 +206,7 @@ i2c_mon_handler() {
 
   while (1) {
     i2c_fd = open("/dev/mem", O_RDWR | O_SYNC );
-    if (i2c_fd >= 0) {  
+    if (i2c_fd >= 0) {
       i2c_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, i2c_fd, AST_I2C_BASE);
       for (i = 0; i < I2C_BUS_NUM; i++) {
         i2c_cmd_reg = (char*)i2c_reg + ast_i2c_dev_offset[i].offset + I2C_CMD_REG;
@@ -227,8 +228,8 @@ i2c_mon_handler() {
             // If the bus is busy over 200 ms, means the I2C transaction is abnormal.
             // To confirm the bus is not workable.
             if (timeout < 0) {
-              memset(str_i2c_log, 0, sizeof(char) * 64); 
-              sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed (I2C bus index base 0)", i); 
+              memset(str_i2c_log, 0, sizeof(char) * 64);
+              sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed (I2C bus index base 0)", i);
               syslog(LOG_CRIT, str_i2c_log);
               is_error_occur[i] = true;
               pal_i2c_crash_assert_handle(i);
@@ -236,7 +237,7 @@ i2c_mon_handler() {
           }
         } else {
           if (is_error_occur[i] == true) {
-            memset(str_i2c_log, 0, sizeof(char) * 64); 
+            memset(str_i2c_log, 0, sizeof(char) * 64);
             sprintf(str_i2c_log, "DEASSERT: I2C bus %d crashed (I2C bus index base 0)", i);
             syslog(LOG_CRIT, str_i2c_log);
             is_error_occur[i] = false;
@@ -285,10 +286,10 @@ CPU_usage_monitor() {
       syslog(LOG_WARNING, "Failed to get CPU statistics.\n");
       retry++;
       continue;
-    }    
-    retry = 0; 
-    
-    fscanf(fp, "%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu", 
+    }
+    retry = 0;
+
+    fscanf(fp, "%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
                 cpu, &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal, &guest, &guest_nice);
 
     fclose(fp);
@@ -296,16 +297,16 @@ CPU_usage_monitor() {
     timer %= SLIDING_WINDOW_SIZE;
 
     // Need more data to cacluate the avg. utilization. We average 60 records here.
-    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
+    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag)
       ready_flag = 1;
-    
+
 
     // guset and guest_nice are already accounted in user and nice so they are not included in total caculation
     idle_time = idle + iowait;
     non_idle = user + nice + system + irq + softirq + steal;
     total = idle_time + non_idle;
 
-    // For runtime caculation, we need to take into account previous value. 
+    // For runtime caculation, we need to take into account previous value.
     total_diff = total - pre_total;
     idle_diff = idle_time - pre_idle;
 
@@ -319,7 +320,7 @@ CPU_usage_monitor() {
         cpu_util_total += cpu_utilization[i];
       }
       cpu_util_avg = cpu_util_total/SLIDING_WINDOW_SIZE;
-      
+
       if (((cpu_util_avg*100) >= cpu_threshold) && !cpu_over_threshold)  {
         syslog(LOG_WARNING, "ASSERT: BMC CPU utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
         cpu_over_threshold = 1;
@@ -363,13 +364,13 @@ memory_usage_monitor() {
 
     if (retry > MAX_RETRY) {
       syslog(LOG_CRIT, "Cannot get sysinfo. Stop the %s\n", __func__);
-      return -1;  
+      return -1;
     }
 
     timer %= SLIDING_WINDOW_SIZE;
 
     // Need more data to cacluate the avg. utilization. We average 60 records here.
-    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
+    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag)
       ready_flag = 1;
 
     // Get sys info
@@ -391,7 +392,7 @@ memory_usage_monitor() {
         mem_util_total += mem_utilization[i];
 
       mem_util_avg = mem_util_total/SLIDING_WINDOW_SIZE;
-      
+
       if (((mem_util_avg*100) >= mem_threshold) && !mem_over_threshold) {
         syslog(LOG_CRIT, "ASSERT: BMC Memory utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", mem_util_avg*100, mem_threshold);
         mem_over_threshold = 1;
@@ -411,6 +412,65 @@ memory_usage_monitor() {
 
 }
 
+void
+fw_update_ongoing(int update_status)
+{
+  // update_status = 1, it implies that fw update is on-going
+  if (update_status == 1) {
+    system("chmod 666 /usr/local/fbpackages/power-util/power-util");
+    system("chmod 666 /sbin/halt.sysvinit");
+    system("chmod 666 /sbin/shutdown.sysvinit");
+  }
+  else {
+    system("chmod 755 /usr/local/fbpackages/power-util/power-util");
+    system("chmod 4755 /sbin/halt.sysvinit");
+    system("chmod 4755 /sbin/shutdown.sysvinit");
+  }
+}
+
+static void *
+fw_update_monitor() {
+  static pthread_t tid_enable_timer;
+  int fw_update_flag, prev_val = 0;
+  int ret, counter=0, counter_is_start=false;
+
+  while(1) {
+    //TODO: Change to use save flag in kv,
+    //when kv save value in RAMDisk function is avaliable.
+
+    //if fw_update_flag = 1 means BMC is Updating a Device FW  
+    fw_update_flag = pal_get_fw_update_flag();
+    if (fw_update_flag != prev_val) {
+      if (fw_update_flag) {
+        fw_update_ongoing(1);
+        //Start Counter
+        counter_is_start = true;
+        counter = 0;
+      }
+      else {
+        fw_update_ongoing(0);
+
+        counter_is_start = false;
+      }
+    }
+    prev_val = fw_update_flag;
+    sleep(1);
+
+    //Timer Counter to enable permission
+    if (counter_is_start) {
+      // Wait for a maximum time of 3000 seconds before
+      // exiting the BMC FW update mode
+      if (counter < 3000) {
+        counter++;
+      } else {
+        if (pal_remove_fw_update_flag()) {
+          syslog(LOG_WARNING, "%s: failed to remove update flag", __func__);
+        }
+      }
+    }
+  }
+}
+
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
@@ -421,6 +481,7 @@ main(int argc, void **argv) {
 #endif
   pthread_t tid_cpu_monitor;
   pthread_t tid_mem_monitor;
+  pthread_t tid_fw_update_monitor;
 
   if (argc > 1) {
     exit(1);
@@ -441,7 +502,7 @@ main(int argc, void **argv) {
     syslog(LOG_WARNING, "pthread_create for heartbeat error\n");
     exit(1);
   }
-  
+
   if (pthread_create(&tid_hb_led, NULL, CPU_usage_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for monitor CPU usage\n");
     exit(1);
@@ -460,6 +521,11 @@ main(int argc, void **argv) {
   }
 #endif
 
+  if (pthread_create(&tid_fw_update_monitor, NULL, fw_update_monitor, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
+    exit(1);
+  }
+
   pthread_join(tid_watchdog, NULL);
 
   pthread_join(tid_hb_led, NULL);
@@ -470,6 +536,8 @@ main(int argc, void **argv) {
   pthread_join(tid_cpu_monitor, NULL);
 
   pthread_join(tid_mem_monitor, NULL);
+
+  pthread_join(tid_fw_update_monitor, NULL);
 
   return 0;
 }

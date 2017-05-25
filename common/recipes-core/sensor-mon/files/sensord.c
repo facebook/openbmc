@@ -582,8 +582,6 @@ main(int argc, void **argv) {
     }
   } else {
 
-    daemon(0,1);
-    openlog("sensord", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "sensord: daemon started");
 
     rc = run_sensord(argc, (char **) argv);

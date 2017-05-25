@@ -284,6 +284,8 @@ ts_handler() {
   if (pal_is_bmc_por()) {
     ctime_r(&time_sled_off, buf);
     syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
+  } else {
+    syslog(LOG_CRIT, "BMC Reboot detected");
   }
 
   while (1) {

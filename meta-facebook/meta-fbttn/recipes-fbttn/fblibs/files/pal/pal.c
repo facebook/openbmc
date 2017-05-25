@@ -4025,3 +4025,33 @@ pal_drive_health(const char* dev) {
 
   return 0;
 }
+
+int 
+pal_open_fw_update_flag(void) {
+    int fd;
+    //if fd = 0 means open successfully.
+    fd = open(FW_UPDATE_FLAG, O_CREAT);
+    if (!fd) {
+      close(fd);
+    }    
+    return fd;
+}
+
+int 
+pal_remove_fw_update_flag(void) {
+    int ret;
+    //if ret = 0 means remove successfully.
+    ret = remove(FW_UPDATE_FLAG);
+    return ret;
+}
+
+int 
+pal_get_fw_update_flag(void) {
+    int ret;
+    //if ret = 0 means BMC is Updating a Device FW, -1 means BMC is not Updating a Device FW
+    ret = access(FW_UPDATE_FLAG, F_OK);
+    return !ret;
+}
+
+
+

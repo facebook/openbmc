@@ -177,6 +177,9 @@ enum {
   FAN_1,
 };
 
+//fw-util FW Updating Flag File
+#define FW_UPDATE_FLAG "/tmp/fw_update_flag"
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -287,6 +290,9 @@ void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_nic_otp(int fru, int snr_num, float thresh_val);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+int pal_open_fw_update_flag(void);
+int pal_remove_fw_update_flag(void);
+int pal_get_fw_update_flag(void);
 
 #ifdef __cplusplus
 } // extern "C"

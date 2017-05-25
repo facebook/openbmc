@@ -379,7 +379,7 @@ sensor_thresh_array_init() {
   // IOM
   //IOM HSC SENSORS
   assign_sensor_threshold(FRU_IOM, ML_SENSOR_HSC_VOLT,
-      13.75, 13.38, 0, 11.25, 11.63, 0, 0, 0);
+      13.75, 13.38, 0, 11.3, 11.5, 0, 0, 0);
   assign_sensor_threshold(FRU_IOM, ML_SENSOR_HSC_CURR,
       12, 10.4, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_IOM, ML_SENSOR_HSC_PWR,
@@ -389,14 +389,14 @@ sensor_thresh_array_init() {
       85, 0, 0, 0, 0, 0, 0, 0);
   //IOM HSC SENSORS
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_HSC_VOLT,
-      13.75, 13.38, 0, 11.25, 11.63, 0, 0, 0);
+      13.75, 13.38, 0, 11.3, 11.5, 0, 0, 0);
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_HSC_CURR,
       4, 3, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_HSC_POWER,
       50, 37.5, 0, 0, 0, 0, 0, 0);
   //IOM ADCs
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_ADC_12V,
-      13.75, 13.38, 0, 11.25, 11.63, 0, 0, 0);
+      13.75, 13.38, 0, 11.3, 11.5, 0, 0, 0);
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_ADC_P5V_STBY,
       5.5, 5.35, 0, 4.5, 4.65, 0, 0, 0);
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_ADC_P3V3_STBY,

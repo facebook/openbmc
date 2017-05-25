@@ -283,7 +283,6 @@ hand_sw_out:
 static void *
 rst_btn_handler() {
   int ret;
-  uint8_t pos;
   int i;
   uint8_t btn;
 
@@ -310,7 +309,7 @@ rst_btn_handler() {
       }
       pal_update_ts_sled();
       syslog(LOG_WARNING, "Reset button released\n");
-      syslog(LOG_CRIT, "Reset Button pressed for FRU: %d\n", pos);
+      syslog(LOG_CRIT, "Reset Button pressed for FRU: %d\n", FRU_SLOT1);
       ret = pal_set_rst_btn(FRU_SLOT1, 1);
       goto rst_btn_out;
     }
@@ -330,7 +329,7 @@ rst_btn_out:
 static void *
 pwr_btn_handler() {
   int ret;
-  uint8_t pos, btn, cmd;
+  uint8_t btn, cmd;
   int i;
   uint8_t power;
 
@@ -366,7 +365,7 @@ pwr_btn_handler() {
     // To determine long button press
     if (i >= BTN_POWER_OFF) {
       pal_update_ts_sled();
-      syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
+      syslog(LOG_CRIT, "Power Button long pressed for FRU: %d\n", FRU_SLOT1);
     } else {
 
       // If current power state is ON and it is not a long press,
@@ -375,7 +374,7 @@ pwr_btn_handler() {
         cmd = SERVER_GRACEFUL_SHUTDOWN;
 
       pal_update_ts_sled();
-      syslog(LOG_CRIT, "Power Button Press for FRU: %d\n", pos);
+      syslog(LOG_CRIT, "Power Button pressed for FRU: %d\n", FRU_SLOT1);
     }
 
     // Reverse the power state of the given server

@@ -915,9 +915,6 @@ main(int argc, char * const argv[]) {
   char mq_ipmb_res[64] = {0};
   int rc = 0;
 
-  daemon(1, 0);
-  openlog("ipmbd", LOG_CONS, LOG_DAEMON);
-
   if ((argc != 2) && (argc != 3) && (argc != 4)) {
     syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#> <slave_addr#>");
     exit(1);

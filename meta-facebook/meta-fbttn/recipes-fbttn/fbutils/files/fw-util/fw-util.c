@@ -25,9 +25,16 @@
 #include <syslog.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
+
+#define PAGE_SIZE  0x1000
+#define AST_WDT_BASE 0x1e785000
+#define WDT2_TIMEOUT_OFFSET 0x30
 
 static void
 print_usage_help(void) {
@@ -35,12 +42,14 @@ print_usage_help(void) {
   sku = pal_get_iom_type();
 
   //SKU : 2 type7
-  if (sku == 2)
-  printf("Usage: fw-util <all|slot1|scc|ioc2> <--version>\n");
-  else
-  printf("Usage: fw-util <all|slot1|scc> <--version>\n");
+  if (sku == 2) {
+    printf("Usage: fw-util <all|slot1|iom|scc|ioc2> <--version>\n");
+  } else {
+    printf("Usage: fw-util <all|slot1|iom|scc> <--version>\n");
+  }
+  printf("       fw-util <slot1> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 
-  printf("       fw-util <all|slot1> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
+  printf("       fw-util <iom> <--update> <--rom|--bmc> <path>\n");
 }
 
 static void
@@ -93,6 +102,25 @@ print_fw_ioc_ver(void) {
       printf("IOM IOC Version: %x.%x.%x.%x\n", ver[3], ver[2], ver[1], ver[0]);
     else
       printf("Get IOM IOC FW Version Fail...\n");
+  }
+
+  return;
+}
+
+static void
+print_fw_bmc_ver(void) {
+  FILE *fp = NULL;
+  char str[32];
+
+  fp = fopen("/etc/issue", "r");
+  if (fp != NULL) {
+    fseek(fp, 16, SEEK_SET);
+    memset(str, 0, sizeof(char) * 32);
+    if (!fscanf(fp, "%s", &str)) {
+      strcpy(str, "NA");
+    }
+    fclose(fp);
+    printf("BMC Version: %s\n", str);
   }
 
   return;
@@ -221,12 +249,55 @@ err_exit:
 }
 
 int
+get_mtd_name(const char* name, char* dev)
+{
+  FILE* partitions = fopen("/proc/mtd", "r");
+  char line[256], mnt_name[32];
+  unsigned int mtdno;
+  int found = 0;
+
+  dev[0] = '\0';
+  while (fgets(line, sizeof(line), partitions)) {
+    if(sscanf(line, "mtd%d: %*0x %*0x %s",
+                 &mtdno, mnt_name) == 2) {
+      if(!strcmp(name, mnt_name)) {
+        sprintf(dev, "/dev/mtd%d", mtdno);
+        found = 1;
+        break;
+      }
+    }
+  }
+  fclose(partitions);
+  return found;
+}
+
+int
+run_command(const char* cmd) {
+  int status = system(cmd);
+  if (status == -1) {
+    return 127;
+  }
+
+  return WEXITSTATUS(status);
+}
+
+int
 main(int argc, char **argv) {
   uint8_t fru;
   int ret = 0;
   char cmd[80];
+  char dev[12];
   uint8_t sku = 0;
+  uint32_t wdt_fd;
+  uint32_t wdt30;
+  void *wdt_reg;
+  void *wdt30_reg;
+  char dual_flash_mtd_name[32];
+  char single_flash_mtd_name[32];
 
+  // TODO: Define and use enum for SKU type 
+  // SKU: IOM_TYPE5, IOM_TYPE7
+  // Update the SKUs in fblibs as well
   sku = pal_get_iom_type();
 
   // Check for border conditions
@@ -237,7 +308,9 @@ main(int argc, char **argv) {
   // Derive fru from first parameter
   if (!strcmp(argv[1], "slot1")) {
     fru = FRU_SLOT1;
-  } else if (!strcmp(argv[1] , "scc")) {
+  } else if (!strcmp(argv[1] , "iom")) {
+    fru = FRU_IOM;
+  }else if (!strcmp(argv[1] , "scc")) {
     fru = FRU_SCC;
   }else if (!strcmp(argv[1] , "ioc2")) {
     fru = FRU_IOM_IOC;
@@ -253,6 +326,10 @@ main(int argc, char **argv) {
         print_fw_ver(FRU_SLOT1);
         break;
 
+      case FRU_IOM:
+        print_fw_bmc_ver();
+        break;
+
       case FRU_SCC:
         print_fw_scc_ver();
         break;
@@ -263,6 +340,7 @@ main(int argc, char **argv) {
 
       case FRU_ALL:
         print_fw_ver(FRU_SLOT1);
+        print_fw_bmc_ver();
         print_fw_scc_ver();
         if (sku == 2)
         print_fw_ioc_ver();
@@ -274,22 +352,76 @@ main(int argc, char **argv) {
     if (argc != 5) {
       goto err_exit;
     }
-    if (fru < 2) {
+    if (fru == FRU_SLOT1) {
       return fw_update_slot(argv, fru);
     }
-    printf("Updating all slots....\n");
-    for (fru = 1; fru < 2; fru++) {
-       if (fw_update_slot(argv, fru)) {
-         printf("fw_util:  updating %s on slot %d failed!\n", argv[3], fru);
-         ret++;
+    // TODO: This is a workaround to detect the correct flash (flash0/flash1)
+    // We need to remove this once the mtd partition is fixed in the kernel code
+    else if (fru == FRU_IOM) {
+      wdt_fd = open("/dev/mem", O_RDWR | O_SYNC );
+      if (wdt_fd < 0) {
+        return 0;
+      }
+      wdt_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, wdt_fd,
+             AST_WDT_BASE);
+      wdt30_reg = (char*)wdt_reg + WDT2_TIMEOUT_OFFSET;
+
+      wdt30 = *(volatile uint32_t*) wdt30_reg;
+
+      munmap(wdt_reg, PAGE_SIZE);
+      close(wdt_fd);
+
+      if (!strcmp(argv[3], "--rom")) {
+        if (((wdt30 >> 1) & 0x1) == 0) {  // default boot: flash 0
+          sprintf(dual_flash_mtd_name, "\"flash0\"");
+        } else {                          // second boot: flash 1
+          sprintf(dual_flash_mtd_name, "\"flash1\"");
+        }
+        if (!get_mtd_name(dual_flash_mtd_name, dev)) {
+          printf("Error: Cannot find %s MTD partition in /proc/mtd\n", dual_flash_mtd_name);
+          goto err_exit;
+        }
+
+        printf("Flashing to device: %s\n", dev);
+        snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
+        ret = run_command(cmd);
+        if (ret == 0) {
+          syslog(LOG_CRIT, "RO BMC firmware update successfully");
+          printf("Updated RO BMC successfully, reboot BMC now.\n");
+          sleep(1);
+          ret = run_command("reboot");
+        }
+        return ret;
+      }
+      else if (!strcmp(argv[3], "--bmc")) {
+        if (((wdt30 >> 1) & 0x1) == 0) { 
+          sprintf(dual_flash_mtd_name, "\"flash1\"");
+          sprintf(single_flash_mtd_name, "\"flash0\"");
+        } else {
+          sprintf(dual_flash_mtd_name, "\"flash0\"");
+          sprintf(single_flash_mtd_name, "\"flash1\"");
        }
+
+        if (!get_mtd_name(dual_flash_mtd_name, dev)) {
+          printf("Note: Cannot find %s MTD partition in /proc/mtd\n", dual_flash_mtd_name);
+          if (!get_mtd_name(single_flash_mtd_name, dev)) {
+            printf("Error: Cannot find %s MTD partition in /proc/mtd\n", single_flash_mtd_name);
+            goto err_exit;
+          }
+        }
+
+        printf("Flashing to device: %s\n", dev);
+        snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
+        ret = run_command(cmd);
+        if (ret == 0) {
+          syslog(LOG_CRIT, "RW BMC firmware update successfully");
+          printf("Updated RW BMC successfully, reboot BMC now.\n");          
+          sleep(1);
+          ret = run_command("reboot");
+        }
+        return ret;
+      }
     }
-    if (ret) {
-      printf("fw_util:  updating all slots failed!\n");
-      return -1;
-    }
-    printf("fw_util: updated all slots successfully!\n");
-    return 0;
   }
 err_exit:
   print_usage_help();

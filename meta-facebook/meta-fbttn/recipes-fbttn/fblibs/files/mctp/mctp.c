@@ -197,7 +197,6 @@ int mctp_ioc_init(uint8_t tag) {
   return 0;
 }
 
-
 int mctp_get_iom_ioc_ver(uint8_t *value) {
   static uint8_t tag_num = 0;
   uint8_t pwrite_buf[72];
@@ -258,12 +257,18 @@ int mctp_get_iom_ioc_ver(uint8_t *value) {
         tag_num = tag_num + 1;
         if (tag_num == 0)
         tag_num = 1;
-        // TODO: Handle error return for mctp_ioc_init()
-        mctp_ioc_init(tag_num);
+        
+        ret = mctp_ioc_init(tag_num);
+        if (ret != 0) {
+          #ifdef DEBUG
+            syslog(LOG_WARNING, "IOC init failed for Get IOC version.");
+          #endif
+        }
       }
 
-      // TODO: Add ifdef DEBUG for next release fbttn-v0.7
-      syslog(LOG_WARNING, "GET IOC Version Failed. Retry: %d\n", retry);
+      #ifdef DEBUG
+        syslog(LOG_WARNING, "GET IOC Version Failed. Retry: %d\n", retry);
+      #endif
       continue;
     }
 
@@ -285,7 +290,7 @@ int mctp_get_iom_ioc_temp(float *value) {
 
   memset(pwrite_buf, 0, 72);
 
-  while(retry < MAX_MCTP_RETRY_CNT) {
+  while(retry <= MAX_MCTP_RETRY_CNT) {
     pwrite_buf[0] = 0xf;
     pwrite_buf[1] = 0x21;
     pwrite_buf[2] = 0x1;
@@ -340,12 +345,18 @@ int mctp_get_iom_ioc_temp(float *value) {
         tag_num = tag_num + 1;
         if (tag_num == 0)
         tag_num = 1;
-        // TODO: Handle error return for mctp_ioc_init()
-        mctp_ioc_init(tag_num);
+
+        ret = mctp_ioc_init(tag_num);
+        if ( ret != 0) {
+          #ifdef DEBUG
+            syslog(LOG_WARNING, "IOC init failed for Get IOC version.");
+          #endif
+        }
       }
 
-      // TODO: Add ifdef DEBUG for next release fbttn-v0.7
-      syslog(LOG_WARNING, "GET IOC Temp Failed. Retry: %d\n", retry);
+      #ifdef DEBUG
+        syslog(LOG_WARNING, "GET IOC Temp Failed. Retry: %d\n", retry);
+      #endif
       continue;
     }
 

@@ -21,6 +21,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://init_sensor.sh \
             file://setup-sensord.sh \
+            file://run-sensord.sh \
            "
 
 S = "${WORKDIR}"
@@ -44,7 +45,11 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/sensord
+  install -d ${D}${sysconfdir}/sensord
   install -m 755 setup-sensord.sh ${D}${sysconfdir}/init.d/setup-sensord.sh
+  install -m 755 run-sensord.sh ${D}${sysconfdir}/sv/sensord/run
   update-rc.d -r ${D} setup-sensord.sh start 91 5 .
 }
 

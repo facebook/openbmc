@@ -30,6 +30,5 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 echo -n "Setup sensor monitoring for Lightning... "
-/usr/local/bin/init_sensor.sh
-/usr/local/bin/sensord peb pdpb fcb
+runsv /etc/sv/sensord > /dev/null 2>&1 &
 echo "done."

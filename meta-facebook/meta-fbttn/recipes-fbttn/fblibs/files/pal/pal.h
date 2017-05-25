@@ -286,7 +286,7 @@ void pal_add_cri_sel(char *str);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_nic_otp(int fru, int snr_num, float thresh_val);
-uint8_t pal_get_status(void);
+void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 
 #ifdef __cplusplus
 } // extern "C"

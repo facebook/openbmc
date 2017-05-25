@@ -593,11 +593,6 @@ _update_bic_main(uint8_t slot_id, char *path) {
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
   
-  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
-  // So reduce I2C bus 3 clock speed which is a workaround for BIC update.
-  printf("Set the I2C bus 3 clock to 100K\n");
-  system("devmem 0x1e78a104 w 0xFFF77304");
-
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -621,6 +616,12 @@ printf("size of file is %d bytes\n", size);
   sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
   printf("Stopped ipmbd for this slot %x..\n",slot_id);
+
+  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
+  // So reduce I2C bus 3 clock speed which is a workaround for BIC update.
+  printf("Set the I2C bus 3 clock to 100K\n");
+  system("devmem 0x1e78a104 w 0xFFF77304");
+  sleep(1);
 
   // Restart ipmb daemon with "bicup" for bic update
   memset(cmd, 0, sizeof(cmd));
@@ -768,13 +769,21 @@ printf("i2c_io failed\n");
     for (i = 0; i < xcount; i++) {
       tbuf[1] += xbuf[i];
     }
-
+    // write data only
     tcount = tbuf[0];
-    rcount = 2;
-
+    rcount = 0;
     ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
     if (ret) {
-      printf("i2c_io error\n");
+      printf("i2c_io write error\n");
+      goto error_exit;
+    }
+    msleep(10); // Waiting for BIC flash data.
+    // read data only
+    tcount = 0;
+    rcount = 2;
+    ret = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (ret) {
+      printf("i2c_io read error\n");
       goto error_exit;
     }
 
@@ -783,6 +792,7 @@ printf("i2c_io failed\n");
       goto error_exit;
     }
   }
+  msleep(500);
 
   // Run the new image
   tbuf[0] = CMD_RUN_SIZE;
@@ -811,8 +821,13 @@ printf("i2c_io failed\n");
     printf("run response: %x:%x\n", rbuf[0], rbuf[1]);
     goto error_exit;
   }
+  msleep(500);
 
 error_exit:
+  // Restore the I2C bus 3 clock to 1M.
+  printf("Set the I2C bus 3 clock to 1M\n");
+  system("devmem 0x1e78a104 w 0xFFF99300");
+  sleep(1);
   // Restart ipmbd daemon
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
@@ -822,10 +837,6 @@ error_exit2:
   if (fd > 0) {
     close(fd);
   }
-
-  // Restore the I2C bus 3 clock to 1M.
-  printf("Set the I2C bus 3 clock to 1M\n");
-  system("devmem 0x1e78a104 w 0xFFF99300");
 
   return 0;
 }

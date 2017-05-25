@@ -29,10 +29,23 @@ import rest_psu_update
 import rest_fcpresent
 import rest_mTerm
 import bottle
+from board_endpoint import boardApp
 
 commonApp = bottle.Bottle()
+commonApp.merge(boardApp)
 
-
+#Function to get endpoints
+def get_endpoints(path):
+    endpoints = set()
+    splitpaths = {}
+    splitpaths = path.split('/')
+    position = len(splitpaths)
+    for route in commonApp.routes:
+        rest_route_path = route.rule.split('/')
+        if len(rest_route_path) > position and path in route.rule:
+            endpoints.add(rest_route_path[position])
+    return list(endpoints)
+ 
 # Handler for root resource endpoint
 @commonApp.route('/api')
 def rest_api():
@@ -41,7 +54,7 @@ def rest_api():
             "Description": "Wedge RESTful API Entry",
         },
         "Actions": [],
-        "Resources": ["sys"],
+        "Resources": get_endpoints('/api')
     }
     return result
 
@@ -54,8 +67,7 @@ def rest_sys():
             "Description": "Wedge System",
         },
         "Actions": [],
-        "Resources": ["mb", "bmc", "server", "sensors", "gpios",
-                      "modbus_registers", "slotid"],
+        "Resources": get_endpoints('/api/sys')
     }
     return result
 
@@ -68,7 +80,7 @@ def rest_mb_sys():
             "Description": "System Motherboard",
         },
         "Actions": [],
-        "Resources": ["fruid"],
+        "Resources": get_endpoints('/api/sys/mb')
     }
     return result
 

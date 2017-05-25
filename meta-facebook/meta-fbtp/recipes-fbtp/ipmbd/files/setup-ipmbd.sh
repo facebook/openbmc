@@ -29,47 +29,10 @@
 ### END INIT INFO
 
 . /usr/local/fbpackages/utils/ast-functions
+echo -n "Starting IPMB Rx/Tx Daemon.."
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-DAEMON=/usr/local/bin/ipmbd
-NAME=ipmbd
-DESC="IPMB Rx/Tx Daemon"
+runsv /etc/sv/ipmbd_4 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_9 > /dev/null 2>&1 &
 
-test -f $DAEMON || exit 0
+echo "done."
 
-STOPPER=
-ACTION="$1"
-
-case "$ACTION" in
-  start)
-    echo -n "Starting $DESC: "
-    $DAEMON 4 0x16 > /dev/null 2>&1 &
-    $DAEMON 9 0x30 > /dev/null 2>&1 &
-    echo "$NAME."
-    ;;
-  stop)
-    echo -n "Stopping $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    echo "$NAME."
-    ;;
-   restart|force-reload)
-    echo -n "Restarting $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    sleep 1
-    $DAEMON 4 > /dev/null 2>&1 &
-    $DAEMON 9 0x30 > /dev/null 2>&1 &
-    echo "$NAME."
-    ;;
-  status)
-    status $DAEMON
-    exit $?
-    ;;
-  *)
-    N=${0##*/}
-    N=${N#[SK]??}
-    echo "Usage: $N {start|stop|status|restart|force-reload}" >&2
-    exit 1
-    ;;
-esac
-
-exit 0

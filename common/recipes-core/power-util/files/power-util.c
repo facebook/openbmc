@@ -34,8 +34,12 @@
 
 #define MAX_RETRIES          10
 
-const char *pwr_option_list = "status, graceful-shutdown, off, on, reset, cycle, "
-  "12V-off, 12V-on, 12V-cycle";
+#ifndef PWR_OPTION_LIST
+#define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle, " \
+                        "12V-off, 12V-on, 12V-cycle"
+#endif
+
+const char *pwr_option_list = PWR_OPTION_LIST;
 
 enum {
   PWR_STATUS = 1,
@@ -56,8 +60,36 @@ print_usage() {
       pal_server_list, pwr_option_list);
 }
 
+static bool
+is_power_cmd_valid(char *option)
+{
+  char option_list[256];
+  char *pch;
+
+  /* All platforms support sled-cycle */
+  if (!strcmp(option, "sled-cycle")) {
+    return true;
+  }
+
+  /* strtok modifies the passed in string. We cannot
+   * pass a const string to it. So make a copy */
+  strcpy(option_list, pwr_option_list);
+  pch = strtok(option_list, ", ");
+  while (pch != NULL) {
+    if (!strcmp(pch, option)) {
+      return true;
+    }
+    pch = strtok(NULL, ", ");
+  }
+  return false;
+}
+
 static int
 get_power_opt(char *option, uint8_t *opt) {
+
+  if (!is_power_cmd_valid(option)) {
+    return -1;
+  }
 
   if (!strcmp(option, "status")) {
     *opt = PWR_STATUS;
@@ -94,6 +126,16 @@ power_util(uint8_t fru, uint8_t opt) {
   int retries;
   char pwr_state[MAX_VALUE_LEN];
 
+  if (opt != PWR_STATUS && pal_is_fw_update_ongoing(fru)) {
+    printf("FW update is ongoing, block the power controling.\n");
+    exit(-1);
+  }
+
+  if (opt != PWR_STATUS && pal_is_crashdump_ongoing(fru)) {
+    printf("Crashdump is ongoing, block the power controling.\n");
+    exit(-1);
+  }
+
   switch(opt) {
     case PWR_STATUS:
       ret = pal_get_server_power(fru, &status);
@@ -118,12 +160,6 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_GRACEFUL_SHUTDOWN:
-      if (pal_is_crashdump_ongoing(fru) > 0) {
-         printf("Crashdump for fru %u is ongoing...\n", fru);
-         printf("Please wait for 10 minutes and try again\n");
-         return -1;
-      }
-
       printf("Shutting down fru %u gracefully...\n", fru);
 
       ret = pal_set_server_power(fru, SERVER_GRACEFUL_SHUTDOWN);
@@ -151,12 +187,6 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_OFF:
-      if (pal_is_crashdump_ongoing(fru) > 0) {
-         printf("Crashdump for fru %u is ongoing...\n", fru);
-         printf("Please wait for 10 minutes and try again\n");
-         return -1;
-      }
-
       printf("Powering fru %u to OFF state...\n", fru);
 
       ret = pal_set_server_power(fru, SERVER_POWER_OFF);
@@ -246,11 +276,6 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_CYCLE:
-      if (pal_is_crashdump_ongoing(fru) > 0) {
-         printf("Crashdump for fru %u is ongoing...\n", fru);
-         printf("Please wait for 10 minutes and try again\n");
-         return -1;
-      }
       printf("Power cycling fru %u...\n", fru);
 
       ret = pal_set_server_power(fru, SERVER_POWER_CYCLE);
@@ -342,11 +367,6 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_SLED_CYCLE:
-      if (pal_is_crashdump_ongoing(fru) > 0) {
-         printf("Crashdump for fru %u is ongoing...\n", fru);
-         printf("Please wait for 10 minutes and try again\n");
-         return -1;
-      }
       syslog(LOG_CRIT, "SLED_CYCLE successful");
       sleep(1);
       pal_sled_cycle();

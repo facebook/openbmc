@@ -30,9 +30,5 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 echo -n "Setup gpio monitoring for fbttn... "
-
-SLOTS="$SLOTS slot1"
-
-/usr/local/bin/gpiod $SLOTS
-
+  runsv /etc/sv/gpiod > /dev/null 2>&1 &
 echo "done."

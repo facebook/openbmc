@@ -27,63 +27,17 @@
 # Short-Description: Provides ipmb message tx/rx service
 #
 ### END INIT INFO
-
 . /usr/local/fbpackages/utils/ast-functions
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-DAEMON=/usr/local/bin/ipmbd
-NAME=ipmbd
-DESC="IPMB Rx/Tx Daemon"
+echo "Starting IPMB Rx/Tx Daemon"
 
-test -f $DAEMON || exit 0
+if [ $(is_server_prsnt 1) == "1" ]; then
+  echo "enable Mono Lake IPMB on I2C 3"
+  runsv /etc/sv/ipmbd_3 > /dev/null 2>&1 &
+fi
 
-STOPPER=
-ACTION="$1"
+echo "enable Expander IPMB on I2C 9"
+  runsv /etc/sv/ipmbd_9 > /dev/null 2>&1 &
 
-case "$ACTION" in
-  start)
-    echo -n "Starting $DESC: "
-
-    if [ $(is_server_prsnt 1) == "1" ]; then
-      $DAEMON 3 0x20 > /dev/null 2>&1 &
-    fi
- 
-    echo "enable Expander IPMB on I2C 9"
-      $DAEMON 9 0x13 > /dev/null 2>&1 &
-
-    echo "enable Debug Card IPMB on I2C 11"
-      $DAEMON 11 0x30 > /dev/null 2>&1 &
-
-    echo "$NAME."
-    ;;
-  stop)
-    echo -n "Stopping $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    echo "$NAME."
-    ;;
-   restart|force-reload)
-    echo -n "Restarting $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    sleep 1
-    if [ $(is_server_prsnt 1) == "1" ]; then
-      $DAEMON 3 0x20 > /dev/null 2>&1 &
-    fi
-    echo "enable Expander IPMB on I2C 9"
-      $DAEMON 9 0x20 > /dev/null 2>&1 &
-    echo "enable Debug Card IPMB on I2C 11"
-      $DAEMON 11 0x30 > /dev/null 2>&1 &
-    echo "$NAME."
-    ;;
-  status)
-    status $DAEMON
-    exit $?
-    ;;
-  *)
-    N=${0##*/}
-    N=${N#[SK]??}
-    echo "Usage: $N {start|stop|status|restart|force-reload}" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+echo "enable Debug Card IPMB on I2C 11"
+  runsv /etc/sv/ipmbd_11 > /dev/null 2>&1 &

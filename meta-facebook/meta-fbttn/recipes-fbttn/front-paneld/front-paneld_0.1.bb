@@ -13,6 +13,7 @@ DEPENDS_append = "libpal libbic update-rc.d-native"
 SRC_URI = "file://Makefile \
            file://setup-front-paneld.sh \
            file://front-paneld.c \
+           file://run-front-paneld.sh \
           "
 
 S = "${WORKDIR}"
@@ -30,7 +31,11 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/front-paneld ${bin}/front-paneld
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/front-paneld
+  install -d ${D}${sysconfdir}/front-paneld
   install -m 755 setup-front-paneld.sh ${D}${sysconfdir}/init.d/setup-front-paneld.sh
+  install -m 755 run-front-paneld.sh ${D}${sysconfdir}/sv/front-paneld/run
   update-rc.d -r ${D} setup-front-paneld.sh start 96 5 .
 }
 

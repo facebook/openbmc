@@ -584,7 +584,6 @@ void
 
 int
 main(int argc, void **argv) {
-  int dev, rc, pid_file;
   char vpath[64] = {0};
   int val;
   
@@ -592,35 +591,21 @@ main(int argc, void **argv) {
     print_usage();
     exit(-1);
   }
+  
+  init_gpio_pins();
 
-  pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
-  rc = flock(pid_file, LOCK_EX | LOCK_NB);
-  if(rc) {
-    if(EWOULDBLOCK == errno) {
-      printf("Another gpiod instance is running...\n");
-      exit(-1);
+  // It's a transition period from EVT to DVT
+  // Support PERST monitor on DVT stage or later
+  sprintf(vpath, GPIO_VAL, GPIO_BOARD_REV_2);
+  read_device(vpath, &val);
+  if(val != 0) { // except EVT
+    pthread_t PE_RESET_MON_ID;
+    if(pthread_create(&PE_RESET_MON_ID,NULL,OEM_PE_MON,NULL) != 0) {
+      printf("Error creating thread \n");
     }
-  } else {
-
-    init_gpio_pins();
-
-    daemon(0,1);
-
-    // It's a transition period from EVT to DVT
-    // Support PERST monitor on DVT stage or later
-    sprintf(vpath, GPIO_VAL, GPIO_BOARD_REV_2);
-    read_device(vpath, &val);
-    if(val != 0) { // except EVT
-      pthread_t PE_RESET_MON_ID;
-      if(pthread_create(&PE_RESET_MON_ID,NULL,OEM_PE_MON,NULL) != 0) {
-        printf("Error creating thread \n");
-      }
-    }
-
-    openlog("gpiod", LOG_CONS, LOG_DAEMON);
-    syslog(LOG_INFO, "gpiod: daemon started");
-    run_gpiod(argc, argv);
   }
+
+  run_gpiod(argc, argv);
 
   return 0;
 }

@@ -618,13 +618,13 @@ printf("size of file is %d bytes\n", size);
   }
 
   // Kill ipmb daemon for this slot
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
-  printf("killed ipmbd for this slot %x..\n",slot_id);
+  printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
   // Restart ipmb daemon with "bicup" for bic update
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20 bicup", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20 bicup > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id));
   system(cmd);
   printf("start ipmbd bicup for this slot %x..\n",slot_id);
   sleep(1);
@@ -815,7 +815,7 @@ printf("i2c_io failed\n");
 error_exit:
   // Restart ipmbd daemon
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
 
 error_exit2:
@@ -865,18 +865,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
   // Kill sendor daemon for this slot
   if (comp == UPDATE_BIOS ) {
-    system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
-           xargs kill");
-    printf("killed sensord for this slot.\n");
-    strcpy(cmd, "/usr/local/bin/sensord");
-    for(i = 1; i < 5; i++){
-      if(slot_id == i)
-        continue;
-      sprintf(temp, " slot%d",i);
-      strcat(cmd, temp);
-    }
-    strcat(cmd, " iom dpb scc nic");
-    system(cmd);
+    system("sv stop sensord");
+    printf("Stopped sensord for this slot.\n");    
   }
   stat(path, &st);
   if (comp == UPDATE_BIOS) {
@@ -982,11 +972,7 @@ error_exit:
     free(tbuf);
   }
   if (comp == UPDATE_BIOS ) {
-    system("ps | grep -v 'grep' | grep 'sensord' |awk '{print $1}'|\
-           xargs kill");
-
-    system("/etc/init.d/setup-sensord.sh");
-
+    system("sv start sensord");
   }
   return ret;
 }

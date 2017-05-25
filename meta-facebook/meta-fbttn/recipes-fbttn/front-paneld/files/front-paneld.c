@@ -886,22 +886,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_hb_mon;
   int i;
   int *ip;
-  int rc;
-  int pid_file;
-
-  pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
-  rc = flock(pid_file, LOCK_EX | LOCK_NB);
-  if(rc) {
-    if(EWOULDBLOCK == errno) {
-      printf("Another front-paneld instance is running...\n");
-      exit(-1);
-    }
-  } else {
-   daemon(0, 1);
-   openlog("front-paneld", LOG_CONS, LOG_DAEMON);
-  }
-
-
+  
   if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for debug card error\n");
     exit(1);

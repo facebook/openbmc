@@ -775,6 +775,8 @@ plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
   FILE *fp;
   fruid_info_t fruid;
   lan_config_t lan_config = { 0 };
+  unsigned char zero_ip_addr[SIZE_IP_ADDR] = { 0 };
+  unsigned char zero_ip6_addr[SIZE_IP6_ADDR] = { 0 };
   ipmb_req_t *req;
   ipmb_res_t *res;
   uint8_t byte;
@@ -799,18 +801,20 @@ plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
 
   // LAN
   plat_lan_init(&lan_config);
-/* IPv4
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    0, "BMC_IP:");
-  inet_ntop(AF_INET, lan_config.ip_addr, line_buff, 256);
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    1, line_buff);
-*/
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    0, "BMC_IPv6:");
-  inet_ntop(AF_INET6, lan_config.ip6_addr, line_buff, 256);
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    1, line_buff);
+  if (memcmp(lan_config.ip_addr, zero_ip_addr, SIZE_IP_ADDR)) {
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      0, "BMC_IP:");
+    inet_ntop(AF_INET, lan_config.ip_addr, line_buff, 256);
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      1, line_buff);
+  }
+  if (memcmp(lan_config.ip6_addr, zero_ip6_addr, SIZE_IP6_ADDR)) {
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      0, "BMC_IPv6:");
+    inet_ntop(AF_INET6, lan_config.ip6_addr, line_buff, 256);
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
+      1, line_buff);
+  }
 
   // BMC ver
   fp = fopen("/etc/issue","r");

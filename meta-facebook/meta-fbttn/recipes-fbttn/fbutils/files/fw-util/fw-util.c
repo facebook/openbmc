@@ -229,11 +229,11 @@ fw_update_slot(char **argv, uint8_t slot_id) {
      return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
   }
   if (!strcmp(argv[3], "--bios")) {
-    sprintf(cmd, "power-util slot%u off", slot_id);
-    system(cmd);
+    pal_set_server_power(slot_id, SERVER_POWER_OFF);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
-    sprintf(cmd, "power-util slot%u on", slot_id);
-    system(cmd);
+    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+    sleep(3);
+    pal_set_server_power(slot_id, SERVER_POWER_ON);
     return ret;
   }
   if (!strcmp(argv[3], "--bic")) {

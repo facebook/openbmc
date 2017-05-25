@@ -27,6 +27,7 @@ LOG_ARCHIVE='/mnt/data/autodump.tar.gz'
 CPU0_SKTOCC_N="/sys/class/gpio/gpio51/value"
 CPU1_SKTOCC_N="/sys/class/gpio/gpio208/value"
 DELAY_SEC=30
+SENSOR_HISTORY=180
 
 if [ "$1" != "--now" ]; then
   echo "Auto Dump will start after ${DELAY_SEC}s..."
@@ -55,12 +56,16 @@ fi
 # PCIe
 $DUMP_SCRIPT pcie >> $LOG_FILE 2>&1
 
+# Sensors
+echo "Sensor state at dump:" >> $LOG_FILE 2>&1
+sensor-util all --history $SENSOR_HISTORY >> $LOG_FILE 2>&1
+
 echo -n "Auto Dump End at " >> $LOG_FILE
 date >> $LOG_FILE
 
 tar zcf $LOG_ARCHIVE -C `dirname $LOG_FILE` `basename $LOG_FILE` && \
 rm -rf $LOG_FILE && \
-logger -t "ipmid" -p daemon.crit "Crashdump for FRU: 1 is generated."
+logger -t "ipmid" -p daemon.crit "Crashdump for FRU: 1 is generated at $LOG_ARCHIVE"
 
 # Remove current pid file
 rm $PID_FILE

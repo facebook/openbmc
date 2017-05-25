@@ -675,14 +675,14 @@ _update_bic_main(uint8_t slot_id, char *path) {
   }
 
   // Kill ipmb daemon for this slot
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
-  printf("stop ipmbd for slot %x..\n", slot_id);
+  printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
   if (!_is_bic_update_ready(slot_id)) {
     // Restart ipmb daemon with "bicup" for bic update
     memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20 bicup", get_ipmb_bus_id(slot_id));
+    sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20 bicup > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id));
     system(cmd);
     printf("start ipmbd bicup for this slot %x..\n",slot_id);
 
@@ -888,7 +888,7 @@ update_done:
   // Restart ipmbd daemon
   sleep(1);
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
 
 error_exit:

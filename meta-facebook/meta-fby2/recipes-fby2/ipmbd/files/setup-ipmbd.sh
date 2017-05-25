@@ -30,85 +30,25 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-DAEMON=/usr/local/bin/ipmbd
-NAME=ipmbd
-DESC="IPMB Rx/Tx Daemon"
+echo "Starting IPMB Rx/Tx Daemon"
 
-test -f $DAEMON || exit 0
-
-STOPPER=
-ACTION="$1"
-
-case "$ACTION" in
-  start)
-    echo -n "Starting $DESC: "
-
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) == "0" ]]; then
-      $DAEMON 1 0x20 > /dev/null 2>&1 &
-    fi
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 2) == "1" && $(get_slot_type 2) == "0" ]]; then
-      $DAEMON 3 0x20 > /dev/null 2>&1 &
-    fi
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) == "0" ]]; then
-      $DAEMON 5 0x20 > /dev/null 2>&1 &
-    fi
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 4) == "1" && $(get_slot_type 4) == "0" ]]; then
-      $DAEMON 7 0x20 > /dev/null 2>&1 &
-    fi
-
-    echo "$NAME."
-    ;;
-  stop)
-    echo -n "Stopping $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    echo "$NAME."
-    ;;
-   restart|force-reload)
-    echo -n "Restarting $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    sleep 1
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) == "0" ]]; then
-      $DAEMON 1 0x20 > /dev/null 2>&1 &
-    fi
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 2) == "1" && $(get_slot_type 2) == "0" ]]; then
-      $DAEMON 3 0x20 > /dev/null 2>&1 &
-    fi
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) == "0" ]]; then
-      $DAEMON 5 0x20 > /dev/null 2>&1 &
-    fi
-    #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
-    #get_slot_type is to get slot type to check if the slot type is server
-    if [[ $(is_server_prsnt 4) == "1" && $(get_slot_type 4) == "0" ]]; then
-      $DAEMON 7 0x20 > /dev/null 2>&1 &
-    fi
-
-    echo "$NAME."
-    ;;
-  status)
-    status $DAEMON
-    exit $?
-    ;;
-  *)
-    N=${0##*/}
-    N=${N#[SK]??}
-    echo "Usage: $N {start|stop|status|restart|force-reload}" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+#Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+#get_slot_type is to get slot type to check if the slot type is server
+if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) == "0" ]]; then
+  runsv /etc/sv/ipmbd_1 > /dev/null 2>&1 &
+fi
+#Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+#get_slot_type is to get slot type to check if the slot type is server
+if [[ $(is_server_prsnt 2) == "1" && $(get_slot_type 2) == "0" ]]; then
+  runsv /etc/sv/ipmbd_3 > /dev/null 2>&1 &
+fi
+#Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+#get_slot_type is to get slot type to check if the slot type is server
+if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) == "0" ]]; then
+  runsv /etc/sv/ipmbd_5 > /dev/null 2>&1 &
+fi
+#Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+#get_slot_type is to get slot type to check if the slot type is server
+if [[ $(is_server_prsnt 4) == "1" && $(get_slot_type 4) == "0" ]]; then
+  runsv /etc/sv/ipmbd_7 > /dev/null 2>&1 &
+fi

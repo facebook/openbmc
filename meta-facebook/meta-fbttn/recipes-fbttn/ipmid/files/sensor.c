@@ -75,9 +75,9 @@ populate_mgmt_sensors(void) {
   sensor.dev_caps = 0x0F;
 
   // Device ID string
-  // Type - 0xC0: ASCII, Length - 0x09
-  sensor.str_type_len = 0xC0 + 0x09;
-  strncpy(sensor.str, "Yosemite-BMC", 0x09);
+  // Type - 0xC0: ASCII, Length - 0x0D
+  sensor.str_type_len = 0xC0 + 0x0D;
+  strncpy(sensor.str, "Bryce Canyon-BMC", 0x0D);
 
   // Add this sensor to the global table
   if (g_sensor_mgmt.num >= SENSOR_MGMT_MAX) {

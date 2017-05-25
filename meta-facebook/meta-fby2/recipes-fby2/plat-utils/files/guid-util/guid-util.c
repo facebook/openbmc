@@ -30,8 +30,8 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: guid-util <slot1|slot2|slot3|slot4> <dev|sys> <--get>\n");
-  printf("       guid-util <slot1|slot2|slot3|slot4> <dev|sys> <--set> <uid>\n");
+  printf("Usage: guid-util <slot1|slot2|slot3|slot4|spb> <dev|sys> <--get>\n");
+  printf("       guid-util <slot1|slot2|slot3|slot4|spb> <dev|sys> <--set> <uid>\n");
 }
 
 int
@@ -49,31 +49,51 @@ main(int argc, char **argv) {
 
   // Derive slot_id from first parameter
   if (!strcmp(argv[1], "slot1")) {
-    slot_id = 1;
+    slot_id = FRU_SLOT1;
   } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id =2;
+    slot_id = FRU_SLOT2;
   } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id =3;
+    slot_id = FRU_SLOT3;
   } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id =4;
+    slot_id = FRU_SLOT4;
+  } else if (!strcmp(argv[1] , "spb")) {
+    slot_id = FRU_SPB;
   } else {
     goto err_exit;
   }
 
-  // Check SLOT present and SLOT type
-  ret = pal_is_fru_prsnt(slot_id, &status);
-  if (ret < 0) {
-    printf("pal_is_fru_prsnt failed for fru: %d\n", slot_id);
-    goto err_exit;
-  }
-  if (status == 0) {
-    printf("slot%d is empty!\n", slot_id);
-    goto err_exit;
-  }
+  switch (slot_id) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      // Check SLOT present and SLOT type
+      ret = pal_is_fru_prsnt(slot_id, &status);
+      if (ret < 0) {
+        printf("pal_is_fru_prsnt failed for fru: %d\n", slot_id);
+        goto err_exit;
+      }
+      if (status == 0) {
+        printf("slot%d is empty!\n", slot_id);
+        goto err_exit;
+      }
 
-  if(!pal_is_slot_server(slot_id)) {
-      printf("slot%d is not server\n", slot_id);
-      goto err_exit;
+      if(!pal_is_slot_server(slot_id)) {
+        printf("slot%d is not server\n", slot_id);
+        goto err_exit;
+      }
+
+      if (!strcmp(argv[2], "dev")) {
+        printf("There is only system GUID on each slots.\n");
+        goto err_exit;
+      }      
+      break;
+    case FRU_SPB:
+      if (!strcmp(argv[2], "sys")) {
+        printf("There is only device GUID on spb.\n");
+        goto err_exit;
+      }
+      break;
   }
 
   // Handle GUID get condition

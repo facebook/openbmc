@@ -332,9 +332,13 @@ sdr_get_entry(int node, int rsv_id, int read_rec_id, sdr_rec_t *rec,
   if (read_rec_id == SDR_RECID_FIRST) {
     index = g_sdr_hdr.begin;
   } else if (read_rec_id == SDR_RECID_LAST) {
-    index = g_sdr_hdr.end - 1;
+    if (g_sdr_hdr.end) {
+      index = g_sdr_hdr.end - 1;
+    } else {
+      index = SDR_INDEX_MAX;
+    }
   } else {
-    index = read_rec_id - 1;
+    index = read_rec_id;
   }
 
   // If the SDR repo is empty return error

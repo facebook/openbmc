@@ -104,6 +104,7 @@
 #define GPIO_BMC_READY_N    28
 
 #define GPIO_CHASSIS_INTRUSION  487
+#define GPIO_PCIE_RESET 203
 
 // It's a transition period from EVT to DVT
 #define GPIO_BOARD_REV_2    74
@@ -1341,8 +1342,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   uint8_t status;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
+  char vpath_board_rev[64] = {0};
+  char vpath[64] = {0};
   int ret;
   int sku = 0;
+  int gpio_perst_val = 0;
+  int gpio_board_rev_val = 0;
   bool check_server_power_status = false;
 
   switch(fru) {
@@ -1370,6 +1375,21 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
   }
 
+  // It's a transition period from EVT to DVT
+	// In DVT systems, we added a new GPIO pin to detect power status
+  sprintf(vpath_board_rev, GPIO_VAL, GPIO_BOARD_REV_2);
+  read_device(vpath_board_rev, &gpio_board_rev_val);
+  
+  if (gpio_board_rev_val == 0) {    // EVT
+    // Check for the power status
+    pal_get_server_power(FRU_SLOT1, &status);
+  
+  } else {                         // DVT
+    // Check for power status via GPIO_PERST
+    sprintf(vpath, GPIO_VAL, GPIO_PCIE_RESET);
+    read_device(vpath, &gpio_perst_val);
+  }
+	
   ret = fbttn_sensor_read(fru, sensor_num, value);
   if (ret) {
     if(ret < 0) {
@@ -1403,14 +1423,44 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
     }
     if (check_server_power_status == true) {
-      pal_get_server_power(FRU_SLOT1, &status);
-      if (status != SERVER_POWER_ON) {
-        strcpy(str, "NA");
-        ret = -1;
-      } else {
-        sprintf(str, "%.2f",*((float*)value));
+      if (gpio_board_rev_val == 0) {    // EVT Systems
+			
+        // If server is powered off, ignore the read and write NA
+				if (status != SERVER_POWER_ON) {
+          strcpy(str, "NA");
+          ret = -1;
+        } 
+				else {
+          // double check power status, after reading the sensor
+          pal_get_server_power(FRU_SLOT1, &status);
+					
+          // If server is powered off, ignore the read and write NA
+          if (status != SERVER_POWER_ON) {
+            strcpy(str, "NA");
+            ret = -1;
+          } else {
+            sprintf(str, "%.2f",*((float*)value));
+          }
+        }
+      } else {    // DVT Systems
+        // If server is powered off, ignore the read and write NA
+        if (gpio_perst_val != SERVER_POWER_ON) {
+          strcpy(str, "NA");
+          ret = -1;
+        } else {
+          // double check power status, after reading the sensor
+          read_device(vpath, &gpio_perst_val);
+					
+          // If server is powered off, ignore the read and write NA
+          if (gpio_perst_val != SERVER_POWER_ON) {
+            strcpy(str, "NA");
+            ret = -1;
+          } else {
+            sprintf(str, "%.2f",*((float*)value));
+          }
+        }
       }
-    } else {
+    } else {    // check_server_power_status == false
       sprintf(str, "%.2f",*((float*)value));
     }
   }

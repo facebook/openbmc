@@ -31,6 +31,9 @@ enum {
   /* non system errors start from -256 downwards */
 };
 
+//TODO remove it when 
+//fw-util FW Updating Flag File
+
 int pal_is_fw_update_ongoing(uint8_t fru);
 void set_fw_update_ongoing(uint8_t fru, uint16_t tmout);
 
@@ -62,6 +65,9 @@ uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t 
 void pal_set_boot_option(unsigned char para,unsigned char* pbuff);
 int pal_get_boot_option(unsigned char para,unsigned char* pbuff);
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_open_fw_update_flag(void);
+int pal_remove_fw_update_flag(void);
+int pal_get_fw_update_flag(void);
 
 #ifdef __cplusplus
 }

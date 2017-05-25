@@ -186,3 +186,19 @@ pal_is_crashdump_ongoing(uint8_t fru)
   return 0;                     /* false */
 }
 
+int __attribute__((weak))
+pal_open_fw_update_flag(void) {
+  return -1;
+}
+
+int __attribute__((weak))
+pal_remove_fw_update_flag(void) {
+  return -1;
+}
+
+int __attribute__((weak))
+pal_get_fw_update_flag(void) 
+{
+  return -1;
+}
+

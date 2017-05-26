@@ -112,8 +112,14 @@ static void platform_reset_event_handle(void *p)
 {
   gpio_poll_st *gp = (gpio_poll_st*) p;
 
-  // Use GPIOR5 to filter some gpio logging
-  reset_timer(&reset_sec);
+  if (gp->gs.gs_gpio == gpio_num("GPIOR5")) 
+  {
+    // Use GPIOR5 to filter some gpio logging
+    reset_timer(&reset_sec);
+  }
+  
+  log_gpio_change(gp, 0);
+   
 }
 
 // Generic Event Handler for GPIO changes

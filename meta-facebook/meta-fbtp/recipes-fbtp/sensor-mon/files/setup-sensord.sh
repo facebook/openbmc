@@ -35,7 +35,6 @@ echo "Get MB FW version... "
 
 echo -n "Setup sensor monitoring for FBTP... "
 
-ARGS="mb nic"
-/usr/local/bin/sensord $ARGS
+runsv /etc/sv/sensord > /dev/null 2>&1 &
 
 echo "done."

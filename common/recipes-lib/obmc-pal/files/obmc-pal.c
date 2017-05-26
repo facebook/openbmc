@@ -199,6 +199,6 @@ pal_remove_fw_update_flag(void) {
 int __attribute__((weak))
 pal_get_fw_update_flag(void) 
 {
-  return -1;
+  return 0;
 }
 

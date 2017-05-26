@@ -772,12 +772,20 @@ _update_bic_main(uint8_t slot_id, char *path) {
     tbuf[2] = BIC_CMD_STATUS;
 
     tcount = CMD_STATUS_SIZE;
+    rcount = 0;
 
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      printf("i2c_io failed get status\n");
+      goto error_exit;
+    }
+
+    tcount = 0;
     rcount = 5;
 
     rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
     if (rc) {
-      printf("i2c_io failed\n");
+      printf("i2c_io failed get status ack\n");
       goto error_exit;
     }
 
@@ -796,7 +804,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
     rcount = 0;
     rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
     if (rc) {
-      printf("i2c_io failed, Send ACK\n");
+      printf("i2c_io failed send ack\n");
       goto error_exit;
     }
 
@@ -829,11 +837,21 @@ _update_bic_main(uint8_t slot_id, char *path) {
     }
 
     tcount = tbuf[0];
+    rcount = 0;
+
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      printf("i2c_io error send data\n");
+      goto error_exit;
+    }
+
+    msleep(10);
+    tcount = 0;
     rcount = 2;
 
     rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
     if (rc) {
-      printf("i2c_io error\n");
+      printf("i2c_io error send data ack\n");
       goto error_exit;
     }
 
@@ -857,12 +875,20 @@ _update_bic_main(uint8_t slot_id, char *path) {
   }
 
   tcount = CMD_RUN_SIZE;
+  rcount = 0;
 
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
+    printf("i2c_io failed run\n");
+    goto error_exit;
+  }
+
+  tcount = 0;
   rcount = 2;
 
   rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
   if (rc) {
-    printf("i2c_io failed for run\n");
+    printf("i2c_io failed run ack\n");
     goto error_exit;
   }
 

@@ -275,6 +275,9 @@ enum {
   MB_SENSOR_VR_CPU1_VDDQ_GRPC_VOLT = 0xFC,
   MB_SENSOR_VR_CPU1_VDDQ_GRPC_TEMP = 0xFD,
   MB_SENSOR_VR_CPU1_VDDQ_GRPC_CURR = 0xFE,
+
+//Discrete sensor
+  MB_SENSOR_POWER_FAIL = 0x9C,
 };
 
 enum{
@@ -311,6 +314,33 @@ enum {
   SLOT_CFG_DS_2x8   = 0x01,
   SLOT_CFG_SS_3x8   = 0x02,
   SLOT_CFG_EMPTY    = 0x03,
+};
+
+//CPLD power status register deifne
+enum {
+  MAIN_PWR_STS_REG = 0x00,
+  CPU0_PWR_STS_REG = 0x01,
+  CPU1_PWR_STS_REG = 0x02,
+  PWRDATA1_REG = 0x03,
+  PWRDATA2_REG = 0x04,
+  PWRDATA3_REG = 0x05,
+  PWRDATA4_REG = 0x06,
+  PWRDATA5_REG = 0x07,
+  SYSDATA1_REG = 0x08,
+  SYSDATA21_REG = 0x09,
+};
+//CPLD power status register normal value deifne
+enum {
+  MAIN_PWR_STS_VAL = 0x04,
+  CPU0_PWR_STS_VAL = 0x13,
+  CPU1_PWR_STS_VAL = 0x13,
+  PWRDATA1_VAL = 0xff,
+  PWRDATA2_VAL = 0xff,
+  PWRDATA3_VAL = 0xc0,
+  PWRDATA4_VAL = 0x00,
+  PWRDATA5_VAL = 0xff,
+  SYSDATA1_VAL = 0xf3,
+  SYSDATA21_VAL = 0x1f,
 };
 
 typedef struct _sensor_info_t {

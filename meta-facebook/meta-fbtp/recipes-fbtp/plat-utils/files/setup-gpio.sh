@@ -393,7 +393,7 @@ devmem_clear_bit $(scu_addr 88) 29
 gpio_export R5
 # GPIOY2 BMC_JTAG_SEL
 devmem_clear_bit $(scu_addr A4) 10
-devmem_clear_bit $(scu_addr 94) 1
+devmem_clear_bit $(scu_addr 94) 11
 gpio_set Y2 1
 
 # FM_CPU0_SKTOCC_LVT3_N
@@ -422,3 +422,8 @@ fi
 # BMC_CPLD_FPGA_SEL: GPIOA0
 devmem_clear_bit $(scu_addr 80) 0
 gpio_set A0 1
+
+# FM_SLPS4_N: GPIOY1
+devmem_clear_bit $(scu_addr A4) 9
+devmem_clear_bit $(scu_addr 94) 10
+gpio_export Y1

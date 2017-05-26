@@ -86,6 +86,7 @@
 #define GPIO_FM_CPU0_SKTOCC_LVT3_N 51
 #define GPIO_FM_CPU1_SKTOCC_LVT3_N 208
 #define GPIO_FM_BIOS_POST_CMPLT_N 215
+#define GPIO_FM_SLPS4_N 193
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -159,6 +160,9 @@
 
 #define MAX_READ_RETRY 10
 
+#define CPLD_BUS_ID 0x6
+#define CPLD_ADDR 0xA0
+
 static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
 const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
@@ -176,6 +180,8 @@ static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
 static int key_func_ntp (int event, void *arg);
 static int key_func_tz (int event, void *arg);
+
+static uint8_t power_fail_log = 0;
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -318,11 +324,17 @@ const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
 };
 
+// List of MB discrete sensors to be monitored
+const uint8_t mb_discrete_sensor_list[] = {
+  MB_SENSOR_POWER_FAIL,
+};
+
 float mb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
+size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
 
 uint8_t g_sys_guid[GUID_SIZE] = {0};
 uint8_t g_dev_guid[GUID_SIZE] = {0};
@@ -354,6 +366,8 @@ static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 
 static bool is_cpu0_socket_occupy(void);
 static bool is_cpu1_socket_occupy(void);
+static void _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
+    uint8_t val, char *event);
 
 static void apply_inlet_correction(float *value) {
   static int8_t dt = 0;
@@ -1994,6 +2008,171 @@ error_exit:
   return ret;
 }
 
+static void
+add_CPLD_event (uint8_t fru, uint8_t snr_num, uint8_t reg, uint8_t snr_val, uint8_t value) {
+  char sensor_name[32] = {0}, event_str[30] = {0};
+  pal_get_sensor_name(fru, snr_num, sensor_name);
+
+  sprintf(event_str, "");
+  switch(reg) {
+      case PWRDATA1_REG :
+	 if (value == 0x40)
+	   strcat(event_str, "FM_CTNR_PS_ON power rail fails");
+	 else if (value == 0x00)
+	   strcat(event_str, "PWRGD_P12V_MAIN power rail fails");
+	 else if (value == 0xc0)
+	   strcat(event_str, "PWRGD_P5V power rail fails");
+	 else if (value == 0xe0)
+	   strcat(event_str, "PWRGD_P3V3 power rail fails");
+	 else if (value == 0xf7)
+	   strcat(event_str, "PWRGD_PVPP_ABC power rail fails");
+	 else if (value == 0xfb)
+	   strcat(event_str, "PWRGD_PVPP_DEF power rail fails");
+	 else if (value == 0xfd)
+	   strcat(event_str, "PWRGD_PVPP_GHJ power rail fails");
+	 else if (value == 0xfe)
+	   strcat(event_str, "PWRGD_PVPP_KLM power rail fails");
+	 else
+	   strcat(event_str, "Unknown power rail fails(PWRDATA1)");
+        break;
+      case PWRDATA2_REG :
+	 if (value == 0x55)
+	   strcat(event_str, "PWRGD_PVTT_CPU0 power rail fails");
+	 else if (value == 0xaa)
+	   strcat(event_str, "PWRGD_PVTT_CPU1 power rail fails");
+	 else if (value == 0xd5)
+	   strcat(event_str, "PWRGD_PVCCIO_CPU0 power rail fails");
+	 else if (value == 0xea)
+	   strcat(event_str, "PWRGD_PVCCIO_CPU1 power rail fails");
+	 else if (value == 0xf7)
+	   strcat(event_str, "PWRGD_PVCCIN_CPU0 power rail fails");
+	 else if (value == 0xfb)
+	   strcat(event_str, "PWRGD_PVCCIN_CPU1 power rail fails");
+	 else if (value == 0xfd)
+	   strcat(event_str, "PWRGD_PVSA_CPU0 power rail fails");
+	 else if (value == 0xfe)
+	   strcat(event_str, "PWRGD_PVSA_CPU1 power rail fails");
+	 else
+	   strcat(event_str, "Unknown power rail fails(PWRDATA2)");
+        break;
+      case PWRDATA3_REG :
+	 if (value == 0x40)
+	   strcat(event_str, "PWRGD_CPUPWRGD power rail fails");
+	 else if (value == 0x80)
+	   strcat(event_str, "RST_PLTRST_N power rail fails");
+	 else
+	   strcat(event_str, "Unknown power rail fails(PWRDATA3)");
+        break;
+    }
+    if(power_fail_log == 0){
+      _print_sensor_discrete_log(fru, snr_num, sensor_name, reg, event_str);
+      pal_add_cri_sel(event_str);
+      power_fail_log = 1;
+    }
+}
+
+static int
+read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot) {
+  int fd = 0;
+  char fn[32];
+  int ret = READING_NA, i;
+  static unsigned int retry=0;
+  uint8_t tcount, rcount;
+  static uint8_t power_fail = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0}, data_chk;
+  uint8_t sensor_value;
+  int val;
+  char path[64] = {0};
+
+  //Check SLPS4 is high before start monitor CPLD power fail
+  sprintf(path, GPIO_VAL, GPIO_FM_SLPS4_N);
+  if (read_device(path, &val)) {
+    goto error_exit;
+  }
+  if (val == 0x0) {
+    power_fail = 0;
+    goto error_exit;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", CPLD_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto error_exit;
+  }
+
+  for(i=0;i<3;i++) {
+    switch(i) {
+      case MAIN_PWR_STS_REG :
+        data_chk = MAIN_PWR_STS_VAL;
+        break;
+      case CPU0_PWR_STS_REG :
+        data_chk = CPU0_PWR_STS_VAL;
+        break;
+      case CPU1_PWR_STS_REG :
+        data_chk = CPU1_PWR_STS_VAL;
+        break;
+    }
+
+    tbuf[0] = i;  
+    ret = i2c_io(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
+    if (ret < 0) {
+      ret = READING_NA;
+      goto error_exit;
+    }
+    if ( rbuf[0] != data_chk ) {
+      power_fail++;
+      break;
+    }
+  }
+
+  if(power_fail <= 3) {
+    ret = 0;
+    *value = 0;
+    power_fail_log = 0;
+  } else {
+    for(i=3;i<6;i++) {
+      switch(i) {
+        case PWRDATA1_REG :
+          data_chk = PWRDATA1_VAL;
+          break;
+        case PWRDATA2_REG :
+          data_chk = PWRDATA2_VAL;
+          break;
+        case PWRDATA3_REG :
+          data_chk = PWRDATA3_VAL;
+          break;
+      }
+      // Read 1 byte in offset 00h
+      tbuf[0] = i;
+      ret = i2c_io(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
+      if (ret < 0) {
+        ret = READING_NA;
+        goto error_exit;
+      }
+      if ( (rbuf[0] != data_chk) && (power_fail > 3)) {
+        sensor_value = 0x01<<i;
+        *value = sensor_value;
+        add_CPLD_event(fru, sensor_num, i , sensor_value, rbuf[0]);
+        break;
+      }
+    }
+  }
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+  if ((ret == READING_NA) && (retry < MAX_READ_RETRY)){
+    ret = READING_SKIP;
+    retry++;
+  } else {
+    retry = 0;
+  }
+
+  return ret;
+}
+
 static int
 pal_key_index(char *key) {
 
@@ -3039,6 +3218,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_HSC_IN_POWER:
         ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_POWER, (float*) value);
         break;
+      case MB_SENSOR_POWER_FAIL:
+        ret = read_CPLD_power_fail_sts (fru, sensor_num, (float*) value, poweron_10s_flag);
+        break;
       default:
         ret = READING_NA;
         break;
@@ -3373,6 +3555,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_C4_P12V_INA230_PWR:
       case MB_SENSOR_CONN_P12V_INA230_PWR:
         ret = read_INA230 (sensor_num, (float*) value, poweron_10s_flag);
+        break;
+      case MB_SENSOR_POWER_FAIL:
+        ret = read_CPLD_power_fail_sts (fru, sensor_num, (float*) value, poweron_10s_flag);
         break;
 
       default:
@@ -3767,6 +3952,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       break;
     case MB_SENSOR_CONN_P12V_INA230_PWR:
       sprintf(name, "MB_CONN_P12V_INA230_PWR");
+      break;
+    case MB_SENSOR_POWER_FAIL:
+      sprintf(name, "MB_POWER_FAIL");
       break;
 
     default:
@@ -4431,7 +4619,18 @@ pal_is_bmc_por(void) {
 
 int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-
+  switch(fru) {
+  case FRU_MB:
+    *sensor_list = (uint8_t *) mb_discrete_sensor_list;
+    *cnt = mb_discrete_sensor_cnt;
+    break;
+  default:
+    if (fru > MAX_NUM_FRUS)
+      return -1;
+    // Nothing to read yet.
+    *sensor_list = NULL;
+    *cnt = 0;
+  }
     return 0;
 }
 
@@ -4440,10 +4639,10 @@ _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t val, char *event) {
   if (val) {
     syslog(LOG_CRIT, "ASSERT: %s discrete - raised - FRU: %d, num: 0x%X,"
-        " snr: %-16s val: %d", event, fru, snr_num, snr_name, val);
+        " snr: %-16s val: 0x%X", event, fru, snr_num, snr_name, val);
   } else {
     syslog(LOG_CRIT, "DEASSERT: %s discrete - settled - FRU: %d, num: 0x%X,"
-        " snr: %-16s val: %d", event, fru, snr_num, snr_name, val);
+        " snr: %-16s val: 0x%X", event, fru, snr_num, snr_name, val);
   }
   pal_update_ts_sled();
 }

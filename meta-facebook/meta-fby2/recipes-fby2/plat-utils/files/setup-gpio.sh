@@ -350,25 +350,25 @@ gpio_set S3 1
 # To use GPIOO4, SCU88[12] must be 0
 devmem_clear_bit $(scu_addr 88) 12
 
-gpio_set O4 1
+gpio_export O4 
 
 #  P12V_STBY_SLOT2_EN: GPIOO5 (117)
 # To use GPIOO5, SCU88[13] must be 0
 devmem_clear_bit $(scu_addr 88) 13
 
-gpio_set O5 1
+gpio_export O5 
 
 # P12V_STBY_SLOT3_EN: GPIOO6 (118)
 # To use GPIOO6, SCU88[13] must be 0
 devmem_clear_bit $(scu_addr 88) 14
 
-gpio_set O6 1
+gpio_export O6 
 
 # P12V_STBY_SLOT4_EN: GPIOO7 (119)
 # To use GPIOO7, SCU88[15] must be 0
 devmem_clear_bit $(scu_addr 88) 15
 
-gpio_set O7 1
+gpio_export O7 
 
 #Wait for ME ready
 sleep 3

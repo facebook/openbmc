@@ -401,13 +401,28 @@ gpio_timer() {
 
   }
 }
+// The function for setting GPIO value
+static void set_gpio_value(uint8_t *pin, uint8_t value)
+{
+  int ret = -1;
+  uint8_t pin_number=0;
+  
+  pin_number = gpio_num(pin);
+
+  ret = gpio_set(pin_number, value);
+
+  if ( ret < 0 )
+  {
+      syslog(LOG_WARNING, "Fail to set the value %d to %s.\n", value, pin);
+  }
+}
 
 // Thread for IERR/MCERR event detect
 static void *
 ierr_mcerr_event_handler() {
   uint8_t CATERR_ierr_time_count = 0;
   uint8_t MSMI_ierr_time_count = 0;
-  uint8_t status = 0;
+  uint8_t status = 0; 
 
   while (1) {
     if ( CATERR_irq > 0 ){
@@ -424,6 +439,8 @@ ierr_mcerr_event_handler() {
           }
             CATERR_irq--;
             CATERR_ierr_time_count = 0;
+            //light up the fault LED
+            set_gpio_value("GPIOU5", GPIO_VALUE_LOW);   
             system("/usr/local/bin/autodump.sh &");
           } else if ( CATERR_irq > 1 ){
                    while (CATERR_irq > 1){
@@ -450,6 +467,8 @@ ierr_mcerr_event_handler() {
           }
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
+          //light up the fault LED
+          set_gpio_value("GPIOU5", GPIO_VALUE_LOW);
           system("/usr/local/bin/autodump.sh &");
         } else if ( MSMI_irq > 1 ){
                  while (MSMI_irq > 1){

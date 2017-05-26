@@ -84,6 +84,10 @@ extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
+#define CUSTOM_FRU_LIST 1
+extern const char pal_fru_list_print[];
+extern const char pal_fru_list_rw[];
+
 extern unsigned char g_err_code[ERROR_CODE_NUM];
 
 enum {

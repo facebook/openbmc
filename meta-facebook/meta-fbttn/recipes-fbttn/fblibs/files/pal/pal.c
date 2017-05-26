@@ -168,6 +168,8 @@ const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };
 const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN };
 const char pal_fru_list[] = "all, slot1, iom, dpb, scc, nic";
+const char pal_fru_list_print[] = "all, slot1, iom, dpb, scc"; // Cannot read fruid from "nic"
+const char pal_fru_list_rw[] = "slot1, iom"; // Cannot write fruid to "scc" and "dpb"
 const char pal_server_list[] = "slot1";
 
 size_t pal_pwm_cnt = 2;
@@ -1515,7 +1517,11 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
 int
 pal_get_fruid_path(uint8_t fru, char *path) {
-  return fbttn_get_fruid_path(fru, path);
+  //Return -1 when ask for NIC fruid path
+  if ( fru == FRU_NIC )
+    return -1;
+  else
+    return fbttn_get_fruid_path(fru, path);
 }
 
 int

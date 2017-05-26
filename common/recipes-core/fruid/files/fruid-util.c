@@ -30,6 +30,14 @@
 #define EEPROM_WRITE    0x2
 #define FRUID_SIZE      512
 
+#ifdef CUSTOM_FRU_LIST
+  static char * pal_fru_list_print_t =  pal_fru_list_print;
+  static char * pal_fru_list_rw_t =  pal_fru_list_rw;
+#else
+  static char * pal_fru_list_print_t =  pal_fru_list;
+  static char * pal_fru_list_rw_t =  pal_fru_list;
+#endif /* CUSTOM_FRU_LIST */
+
 /* To copy the bin files */
 static int
 copy_file(int out, int in, int bs) {
@@ -119,24 +127,14 @@ void get_fruid_info(uint8_t fru, char *path, char* name) {
 
 static int
 print_usage() {
-
-#ifdef CONFIG_FBTTN
-  // No NIC for FBTTN
-  // TODO: Remove NIC fruid option from main()
-  char pal_fru_list[] = "all, slot1, iom, dpb, scc";
-#endif /* CONFIG_FBTTN */
-
-  if (!strncmp(pal_fru_list, "all, ", strlen("all, "))) {
-    printf("Usage: fruid-util [ %s ]\n"
-        "Usage: fruid-util [ %s ] [--dump | --write ] <file>\n",
-        pal_fru_list, pal_fru_list + strlen("all, "));
-
-    return;
+  
+  if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
+    pal_fru_list_rw_t = pal_fru_list_rw_t + strlen("all, ");
   }
 
   printf("Usage: fruid-util [ %s ]\n"
-      "Usage: fruid-util [%s] [--dump | --write ] <file>\n",
-      pal_fru_list, pal_fru_list);
+      "Usage: fruid-util [ %s ] [--dump | --write ] <file>\n",
+      pal_fru_list_print_t, pal_fru_list_rw_t);
 }
 
 /* Utility to just print the FRUID */
@@ -155,6 +153,7 @@ int main(int argc, char * argv[]) {
   char command[128] = {0};
   uint8_t status;
   fruid_info_t fruid;
+  char* exist;
 
   if (argc != 2 && argc != 4) {
     print_usage();
@@ -167,6 +166,13 @@ int main(int argc, char * argv[]) {
     return ret;
   }
 
+  //Check if the input FRU is valid for print
+  exist = strstr(pal_fru_list_print_t, argv[1]);
+  if (exist == NULL) {
+    print_usage();
+    exit(-1);
+  }  
+
   if (fru == FRU_ALL && argc > 2) {
     printf("Cannot dump/write FRUID for \"all\". Please use select individual FRU.\n");
     print_usage();
@@ -174,6 +180,13 @@ int main(int argc, char * argv[]) {
   }
 
   if (argc > 2) {
+    exist = strstr(pal_fru_list_rw_t, argv[1]);
+    if (exist == NULL) {
+      printf("Cannot dump/write FRUID for %s\n", argv[1]);
+      print_usage();
+      exit(-1);
+    }
+
     if (!strcmp(argv[2], "--dump")) {
       rw = EEPROM_READ;
       file_path = argv[3];
@@ -181,6 +194,11 @@ int main(int argc, char * argv[]) {
       rw = EEPROM_WRITE;
       file_path = argv[3];
     }
+    else {
+      print_usage();
+      exit(-1);
+    }
+
   }
 
   // Check if the new eeprom binary file exits.
@@ -299,38 +317,30 @@ int main(int argc, char * argv[]) {
 
     fru = 1;
 
-    // No NIC for FBTTN
-    // TODO: Remove NIC fruid option from main()
-    while (fru <= MAX_NUM_FRUS) {
-
-      #ifdef CONFIG_FBTTN
-        if(fru == FRU_NIC) {
-          fru++;
-          continue;
-        }
-      #endif
-
+    while (fru <= MAX_NUM_FRUS) {    
       ret = pal_get_fruid_path(fru, path);
       if (ret < 0) {
-        return ret;
+        fru++;
+        continue;
       }
 
       ret = pal_get_fruid_name(fru, name);
       if (ret < 0) {
-        return ret;
+        fru++;
+        continue;
       }
 
       ret = pal_is_fru_prsnt(fru, &status);
       if (ret < 0) {
-         printf("pal_is_server_fru failed for fru: %d\n", fru);
-         fru++;
-         continue;
+        printf("pal_is_server_fru failed for fru: %d\n", fru);
+        fru++;
+        continue;
       }
 
       if (status == 0) {
-         printf("\n%s is empty!\n\n", name);
-         fru++;
-         continue;
+        printf("\n%s is empty!\n\n", name);
+        fru++;
+        continue;
       }
 
       get_fruid_info(fru, path, name);

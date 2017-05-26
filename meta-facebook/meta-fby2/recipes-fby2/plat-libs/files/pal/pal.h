@@ -173,6 +173,8 @@ int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
 int pal_set_def_key_value();
 void pal_dump_key_value(void);
+int pal_get_pair_slot_type(uint8_t fru);
+int pal_system_config_check(uint8_t slot_id);
 int pal_get_fru_devtty(uint8_t fru, char *devtty);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_last_pwr_state(uint8_t fru, char *state);

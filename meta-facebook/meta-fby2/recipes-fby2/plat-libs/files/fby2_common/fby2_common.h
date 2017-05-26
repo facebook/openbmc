@@ -40,12 +40,34 @@ enum {
   SLOT_TYPE_SERVER = 0,
   SLOT_TYPE_CF     = 1,
   SLOT_TYPE_GP     = 2,
+  SLOT_TYPE_NULL   = 3,
+};
+
+enum {
+  IPMB_BUS_SLOT1 = 1,
+  IPMB_BUS_SLOT2 = 3,
+  IPMB_BUS_SLOT3 = 5,
+  IPMB_BUS_SLOT4 = 7,
 };
 
 enum {
   PCIE_CONFIG_4xTL      = 0x00,
   PCIE_CONFIG_2xCF_2xTL = 0x11,
   PCIE_CONFIG_2xGP_2xTL = 0x22,
+};
+
+enum {
+  TYPE_SV_A_SV     = 0,
+  TYPE_CF_A_SV     = 1,
+  TYPE_GP_A_SV     = 2,
+  TYPE_SV_A_CF     = 4,
+  TYPE_CF_A_CF     = 5,
+  TYPE_GP_A_CF     = 6,
+  TYPE_SV_A_GP     = 8,
+  TYPE_CF_A_GP     = 9,
+  TYPE_GP_A_GP     = 10,
+  TYPE_CF_A_NULL   = 13,
+  TYPE_GP_A_NULL   = 14,
 };
 
 #define CRASHDUMP_KEY "slot%d_crashdump"

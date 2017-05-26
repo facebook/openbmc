@@ -60,13 +60,6 @@
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
-enum {
-  IPMB_BUS_SLOT1 = 1,
-  IPMB_BUS_SLOT2 = 3,
-  IPMB_BUS_SLOT3 = 5,
-  IPMB_BUS_SLOT4 = 7,
-};
-
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;

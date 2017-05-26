@@ -18,30 +18,44 @@
 # Boston, MA 02110-1301 USA
 #
 
+. /usr/local/fbpackages/utils/ast-functions
+
 ADC_VALUE=(adc12_value adc13_value adc14_value adc15_value)
+VOL_ENABLE=(O4 O5 O6 O7)
 
 get_sku()
 {
    i=0
-
+   sku=0
    while [ "${i}" -lt "${#ADC_VALUE[@]}" ]
    do
      SLOT_VOL=`cat /sys/devices/platform/ast_adc.0/"${ADC_VALUE[$i]}" | cut -d \  -f 1 | awk '{printf ("%.3f\n",$1)}'`
      y=$(($i*2+1))
      if [[ `awk -v a=1.9 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 &&  `awk -v a=$SLOT_VOL -v b=1.5 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
-        tmp_sku=10
+        tmp_sku=2
 	i2cset -y $y 0x40 0x5 0xa w
      elif [[ `awk -v a=1.4 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 && `awk -v a=$SLOT_VOL -v b=1.0 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
-        tmp_sku=01
+        tmp_sku=1
      else
-        tmp_sku=00
+        tmp_sku=0
      fi
 
-     sku=$tmp_sku$sku
+     if [ $(is_server_prsnt $(($i+1))) == "0" ]; then
+        tmp_sku=3
+     fi
+
+     # Do not replace slotX type when it is 12V off
+     if [ -f /tmp/slot.bin ]; then
+        if [ $(gpio_get_val ${VOL_ENABLE[$i]}) == "0" ]; then
+           tmp_sku=$(get_slot_type $(($i+1)))
+        fi
+     fi
+    
+     sku=$(($(($tmp_sku << $(($i * 2)))) + $sku))
      i=$(($i+1))
    done
 
-   return $((2#$sku))
+   return $sku
 }
 
 get_sku

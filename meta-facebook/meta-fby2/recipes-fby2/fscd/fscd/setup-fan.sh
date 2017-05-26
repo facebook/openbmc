@@ -67,4 +67,11 @@ esac
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50
 runsv /etc/sv/fscd > /dev/null 2>&1 &
+
+# Check SLED in/out 
+if [ $(gpio_get H5) = 1 ]; then
+   sv stop fscd
+   /usr/local/bin/fan-util --set 100
+fi
+
 echo "done."

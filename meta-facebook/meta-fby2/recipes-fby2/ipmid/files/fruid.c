@@ -46,13 +46,6 @@
 
 #define SLOT_FILE       "/tmp/slot.bin"
 
-enum {
-  IPMB_BUS_SLOT1 = 1,
-  IPMB_BUS_SLOT2 = 3,
-  IPMB_BUS_SLOT3 = 5,
-  IPMB_BUS_SLOT4 = 7,
-};
-
 // Helper Functions
 static int
 read_device(const char *device, int *value) {
@@ -82,10 +75,10 @@ read_device(const char *device, int *value) {
 
 /*
  * Get SLOT type
- * PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
- * PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
- * PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
- * PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+ * PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+ * PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+ * PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+ * PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
  */
 int
 plat_get_slot_type(uint8_t fru) {
@@ -219,6 +212,9 @@ int plat_fruid_init(void) {
              sprintf(path, EEPROM_DC, plat_get_ipmb_bus_id(fru), plat_get_ipmb_bus_id(fru));
              sprintf(fpath, BIN_SLOT, fru);
              ret = copy_eeprom_to_bin(path, fpath);
+             break;
+           case SLOT_TYPE_NULL:
+             // Do not access EEPROM
              break;
         }
         break;

@@ -301,6 +301,8 @@ enum ina_register {
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
+const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+
 static int
 read_device(const char *device, int *value) {
   FILE *fp;
@@ -355,6 +357,31 @@ read_device_float(const char *device, float *value) {
   }
 
   *value = atof(tmp);
+
+  return 0;
+}
+
+int
+fby2_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
+
+  uint8_t val;
+  char path[64] = {0};
+
+  if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
+
+  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
+
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (val == 0x1) {
+    *status = 1;
+  } else {
+    *status = 0;
+  }
 
   return 0;
 }
@@ -711,6 +738,7 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
         break;
         case SLOT_TYPE_CF:
         case SLOT_TYPE_GP:
+        case SLOT_TYPE_NULL:
             return -1;
         break;
       }
@@ -793,10 +821,10 @@ int
 fby2_get_slot_type(uint8_t fru) {
   int type;
 
-  // PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
-  // PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
-  // PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
-  // PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point)
+  // PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+  // PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+  // PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+  // PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
   if (read_device(SLOT_FILE, &type)) {
     printf("Get slot type failed\n");
     return -1;
@@ -804,16 +832,16 @@ fby2_get_slot_type(uint8_t fru) {
 
   switch(fru)
   {
-    case 1:
+    case FRU_SLOT1:
       type = (type & (0x3 << 0)) >> 0;
     break;
-    case 2:
+    case FRU_SLOT2:
       type = (type & (0x3 << 2)) >> 2;
     break;
-    case 3:
+    case FRU_SLOT3:
       type = (type & (0x3 << 4)) >> 4;
     break;
-    case 4:
+    case FRU_SLOT4:
       type = (type & (0x3 << 6)) >> 6;
     break;
   }
@@ -958,6 +986,8 @@ fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *va
            break;
         case SLOT_TYPE_GP:
            *value = dc_sensor_threshold[sensor_num][thresh];
+           break;
+        case SLOT_TYPE_NULL:
            break;
       }
       break;
@@ -1136,12 +1166,14 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   bool discrete;
   int i;
   char path[LARGEST_DEVICE_NAME];
+  uint8_t status;
 
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -1170,6 +1202,16 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           break;
         case SLOT_TYPE_GP:
           //Glacier Point
+          /* Check whether the system is 12V off or on */
+          ret = fby2_is_server_12v_on(fru, &status);
+          if (ret < 0) {
+            syslog(LOG_ERR, "fby2_get_server_power: fby2_is_server_12v_on failed");
+            return -1;
+          }
+
+          if (1 != status)
+            return -1;
+
           switch(sensor_num) {
             case DC_SENSOR_OUTLET_TEMP:
               if(fru == FRU_SLOT1)
@@ -1208,6 +1250,9 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
             default:
               return -1;
         }
+        case SLOT_TYPE_NULL: 
+          // do nothing
+          break;
       }
       break;
     case FRU_SPB:

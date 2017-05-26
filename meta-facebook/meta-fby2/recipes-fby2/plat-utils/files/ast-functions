@@ -175,7 +175,7 @@ is_server_prsnt() {
   fi
 }
 
-# Get slot type (00:TwinLakes, 01:Crace Flat, 10:Glacier Point)
+# Get slot type (00:TwinLakes, 01:Crace Flat, 10:Glacier Point, 11:Empty Slot)
 get_slot_type() {
   slot_num=$1
   slot_bin=`cat /tmp/slot.bin`
@@ -234,3 +234,43 @@ gpio_get_val() {
     fi
     cat ${dir}/value
 }
+
+get_slot_bus() {
+  local bus
+
+  case $1 in
+    1)
+      bus=1
+      ;;
+    2)
+      bus=3
+      ;;
+    3)
+      bus=5
+      ;;
+    4)
+      bus=7
+      ;;
+  esac
+
+  echo $bus
+}
+
+i2c_remove_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      I2C_DEV=`echo $DEV_SLAVE_ADDR | sed s/x/0/g`
+
+      if [ -d /sys/class/i2c-dev/i2c-$SLOT_BUS/device/$SLOT_BUS-$I2C_DEV ]; then
+         echo $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/delete_device
+      fi
+}
+
+i2c_add_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      DEV_NAME=$3
+
+      echo $DEV_NAME $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/new_device
+}
+

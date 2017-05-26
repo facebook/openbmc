@@ -23,13 +23,6 @@
 #include <syslog.h>
 #include "fby2_fruid.h"
 
-enum {
-  IPMB_BUS_SLOT1 = 1,
-  IPMB_BUS_SLOT2 = 3,
-  IPMB_BUS_SLOT3 = 5,
-  IPMB_BUS_SLOT4 = 7,
-};
-
 // Common IPMB Wrapper function
 
 static int
@@ -104,6 +97,7 @@ fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
+        case SLOT_TYPE_NULL:
           return -1;
           break;
         case SLOT_TYPE_CF:
@@ -147,6 +141,9 @@ fby2_get_fruid_name(uint8_t fru, char *name) {
           break;
         case SLOT_TYPE_GP:
           sprintf(name, "Glacier Point %d",fru);
+          break;
+        case SLOT_TYPE_NULL:
+          sprintf(name, "Empty SLOT %d",fru);
           break;
       }
       break;

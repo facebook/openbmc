@@ -431,6 +431,12 @@ gpio_set B6 1
 gpio_export B7
 gpio_set B7 1
 
+# Set debounce timer #1 value to 0x12E1FC ~= 2s
+$DEVMEM 0x1e780050 32 0x179A7B0
+
+# Select debounce timer #1 for GPIOZ0~GPIOZ3 and GPIOAA0~GPIOAA3
+$DEVMEM 0x1e780194 32 0xF0F00
+
 # enable I2C ctrl reg (SCUA4),
 devmem_set_bit $(scu_addr A4) 12 #SCL1 en
 devmem_set_bit $(scu_addr A4) 13 #SDA1

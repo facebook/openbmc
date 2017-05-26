@@ -68,11 +68,13 @@ IMAGE_INSTALL += " \
   sensor-util \
   sensor-mon \
   gpiod \
+  gpiointrd \
   front-paneld \
   power-util \
   consoled \
   cfg-util \
   fw-util \
+  hsvc-util \
   fpc-util \
   me-util \
   log-util \

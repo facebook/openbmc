@@ -48,6 +48,7 @@ SRC_URI = "file://ast-functions \
            file://COPYING \
            file://check_slot_type.sh \
            file://setup-platform.sh \
+           file://hotservice-reinit.sh \
           "
 
 pkgdir = "utils"
@@ -57,7 +58,7 @@ S = "${WORKDIR}"
 binfiles = "us_console.sh sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py setup_rov.sh fby2_power.sh wedge_us_mac.sh \
   bcm5396.py bcm5396_util.py setup_switch.py watch-fc.sh power_util.py \
-  check_slot_type.sh"
+  check_slot_type.sh hotservice-reinit.sh"
 
 DEPENDS_append = "update-rc.d-native"
 

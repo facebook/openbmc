@@ -31,22 +31,22 @@
 
 # TODO: check for the if slot/server is present before starting the daemon
 echo -n "Setup console  buffering..."
-  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point 3:Empty Slot)
   #get_slot_type is to get slot type to check if the slot type is server
   if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) == "0" ]] ; then
     /usr/local/bin/consoled slot1 --buffer
   fi
-  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point 3:Empty Slot)
   #get_slot_type is to get slot type to check if the slot type is server
   if [[ $(is_server_prsnt 2) == "1" && $(get_slot_type 2) == "0" ]] ; then
     /usr/local/bin/consoled slot2 --buffer
   fi
-  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point 3:Empty Slot)
   #get_slot_type is to get slot type to check if the slot type is server
   if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) == "0" ]] ; then
     /usr/local/bin/consoled slot3 --buffer
   fi
-  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point)
+  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point 3:Empty Slot)
   #get_slot_type is to get slot type to check if the slot type is server
   if [[ $(is_server_prsnt 4) == "1" && $(get_slot_type 4) == "0" ]] ; then
     /usr/local/bin/consoled slot4 --buffer

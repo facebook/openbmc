@@ -176,6 +176,373 @@ pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
 }
 
 int __attribute__((weak))
+pal_get_platform_name(char *name)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_num_slots(uint8_t *num)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_server_power(uint8_t slot_id, uint8_t *status)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_server_power(uint8_t slot_id, uint8_t cmd)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_sled_cycle(void)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_post_handle(uint8_t slot, uint8_t status)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_rst_btn(uint8_t slot, uint8_t status)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_led(uint8_t led, uint8_t status)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_hb_led(uint8_t status)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_list(char *list)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_id(char *str, uint8_t *fru)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_name(uint8_t fru, char *name)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fruid_path(uint8_t fru, char *path)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fruid_eeprom_path(uint8_t fru, char *path)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fruid_name(uint8_t fru, char *name)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_fruid_write(uint8_t slot, char *path)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_devtty(uint8_t fru, char *devtty)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_key_value(char *key, char *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_key_value(char *key, char *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_def_key_value(void)
+{
+  return PAL_EOK;
+}
+
+void __attribute__((weak))
+pal_dump_key_value(void)
+{
+  return;
+}
+
+int __attribute__((weak))
+pal_get_last_pwr_state(uint8_t fru, char *state)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_last_pwr_state(uint8_t fru, char *state)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_sys_guid(uint8_t slot, char *guid)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_sysfw_ver(uint8_t slot, uint8_t *ver)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_sysfw_ver(uint8_t slot, uint8_t *ver)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
+    uint8_t o_val, uint8_t n_val)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_sensor_health(uint8_t fru, uint8_t value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_health(uint8_t fru, uint8_t *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fan_name(uint8_t num, char *name)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fan_speed(uint8_t fan, int *rpm)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_fan_speed(uint8_t fan, uint8_t pwm)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_pwm_value(uint8_t fan_num, uint8_t *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_fan_dead_handle(int fan_num)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_fan_recovered_handle(int fan_num)
+{
+  return PAL_EOK;
+}
+
+void __attribute__((weak))
+pal_inform_bic_mode(uint8_t fru, uint8_t mode)
+{
+  return;
+}
+
+void __attribute__((weak))
+pal_update_ts_sled(void)
+{
+  return;
+}
+
+int __attribute__((weak))
+pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_is_fru_ready(uint8_t fru, uint8_t *status)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_is_slot_server(uint8_t fru)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_self_tray_location(uint8_t *value)
+{
+  return PAL_EOK;
+}
+
+void __attribute__((weak))
+pal_log_clear(char *fru)
+{
+  return;
+}
+
+int __attribute__((weak))
+pal_get_dev_guid(uint8_t fru, char *guid)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_plat_sku_id(void)
+{
+  return PAL_EOK;
+}
+
+void __attribute__((weak))
+pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh)
+{
+  return;
+}
+
+void __attribute__((weak))
+pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh)
+{
+  return;
+}
+
+int __attribute__((weak))
+pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+{
+  return PAL_EOK;
+}
+
+void __attribute__((weak))
+pal_i2c_crash_assert_handle(int i2c_bus_num)
+{
+  return;
+}
+
+void __attribute__((weak))
+pal_i2c_crash_deassert_handle(int i2c_bus_num)
+{
+  return;
+}
+
+int __attribute__((weak))
 pal_is_crashdump_ongoing(uint8_t fru)
 {
   char fname[128];
@@ -197,8 +564,7 @@ pal_remove_fw_update_flag(void) {
 }
 
 int __attribute__((weak))
-pal_get_fw_update_flag(void) 
+pal_get_fw_update_flag(void)
 {
   return 0;
 }
-

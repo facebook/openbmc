@@ -278,6 +278,7 @@ enum {
 
 //Discrete sensor
   MB_SENSOR_POWER_FAIL = 0x9C,
+  MB_SENSOR_MEMORY_LOOP_FAIL = 0x9D,
 };
 
 enum{
@@ -436,6 +437,7 @@ void pal_add_cri_sel(char *str);
 uint8_t pal_get_status(void);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+void pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh);
 #ifdef __cplusplus
 } // extern "C"
 #endif

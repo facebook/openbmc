@@ -410,8 +410,8 @@ static int gdesc_count = sizeof(gdesc) / sizeof (gpio_desc_t);
 
 static sensor_desc_c cri_sensor[]  =
 {
-    {"CPU0_TEMP:"      , MB_SENSOR_CPU0_TEMP        ,"C"},
-    {"CPU1_TEMP:"      , MB_SENSOR_CPU1_TEMP        ,"C"},
+    {"P0_TEMP:"      , MB_SENSOR_CPU0_TEMP        ,"C"},
+    {"P1_TEMP:"      , MB_SENSOR_CPU1_TEMP        ,"C"},
     {"HSC_PWR:"        , MB_SENSOR_HSC_IN_POWER     ,"W"},
     {"HSC_VOL:"        , MB_SENSOR_HSC_IN_VOLT      ,"V"},
     {"FAN0:"           , MB_SENSOR_FAN0_TACH        ,"RPM"},
@@ -436,7 +436,7 @@ static int sensor_count = sizeof(cri_sensor) / sizeof(sensor_desc_c);
 #define MAX_LINE (MAX_PAGE*LINE_PER_PAGE)
 
 static int
-read_device(const char *device,  char *value) {
+read_device(const char *device, char *value) {
   FILE *fp;
   int rc;
 
@@ -444,16 +444,17 @@ read_device(const char *device,  char *value) {
   if (!fp) {
     int err = errno;
 #ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device in usb-dbg.c %s", device);
+    syslog(LOG_INFO, "%s(%d):failed to open device %s", __func__, __LINE__, device);
 #endif
     return err;
   }
 
   rc = fscanf(fp, "%s", value);
   fclose(fp);
+
   if (rc != 1) {
 #ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device in usb-dbg.c %s", device);
+    syslog(LOG_INFO, "%s(%d):failed to read device %s", __func__, __LINE__, device);
 #endif
     return ENOENT;
   } else {
@@ -489,11 +490,11 @@ plat_udbg_get_frame_info(uint8_t *num) {
 int
 plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
   uint8_t cri_sel_up;
-  uint8_t info_page_up = 0;
+  uint8_t info_page_up = 1;
 
   *count = 0;
   //info page update
-  pal_post_end_chk(&info_page_up);
+  //pal_post_end_chk(&info_page_up);
   if(info_page_up == 1) {
     *count += 1;
     buffer[*count-1] = 1;
@@ -682,66 +683,6 @@ plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count
 }
 
 static int
-plat_udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  int page_num;
-  char val[16] = {0}, str[32] = {0};
-  int LineOffset = 0 ;
-  char FilePath [] = "/tmp/cache_store/mb_sensor", SensorFilePath [30];
-  int i;
-  int sensor_line = 0;
-
-  //Each Page has seven sensors
-  int SensorPerPage = 7;
-  int SensorIndex = (page-1) * SensorPerPage;
-  memset(buffer, ' ', 128);
-
-  //Total page = (Total sensor - "LAST KEY") / sensor per page
-  if((sensor_count-1) % SensorPerPage)
-    page_num = (sensor_count-1)/SensorPerPage + 1;
-  else
-    page_num = (sensor_count-1)/SensorPerPage;
-  // Frame Head
-  snprintf(str, 17, "CriSensor  %02d/%02d", page, page_num);
-  memcpy(&buffer[LineOffset], str, 16);
-
-  // Frame Body
-  for( i=0; i<SensorPerPage ; i++){
-    if(!(strcmp(cri_sensor[SensorIndex].name, "LAST_KEY")))
-      break;
-
-    LineOffset  += LEN_PER_LINE;
-    memset(str,' ', sizeof(str));
-    memcpy(&buffer[LineOffset], cri_sensor[SensorIndex].name, strlen(cri_sensor[SensorIndex].name));
-
-    sprintf(SensorFilePath, "%s%d", FilePath, cri_sensor[SensorIndex].sensor_num);
-    if (read_device(SensorFilePath, val)){
-      snprintf(str,LEN_PER_LINE, "fail");
-    }else if(!strcmp(val, "NA") || strlen(val) == 0){
-      snprintf(str,LEN_PER_LINE, "NA");
-    }else{
-      *(strstr(val, ".")) = '\0';
-      snprintf(str, LEN_PER_LINE, "%s%s", val, cri_sensor[SensorIndex].unit);
-    }
-
-    if(strlen(cri_sensor[SensorIndex].name)+strlen(str) > LEN_PER_LINE){
-      memcpy(&buffer[LineOffset + strlen(cri_sensor[SensorIndex].name)], str, (LEN_PER_LINE-strlen(cri_sensor[SensorIndex].name)));
-    } else {
-      memcpy(&buffer[LineOffset + strlen(cri_sensor[SensorIndex].name)], str, strlen(str));
-    }
-    SensorIndex++;
-  }
-
-  *count = 128;
-
-  if (page == page_num)
-    *next = 0xFF;    // Set the value of next to 0xFF to indicate this is the last page
-  else
-    *next = page+1;
-
-  return 0;
-}
-
-static int
 plat_udbg_fill_frame (uint8_t *buffer, int max_line, int indent, char *string) {
   int height, len, space_per_line;
   char format[256];
@@ -764,6 +705,73 @@ plat_udbg_fill_frame (uint8_t *buffer, int max_line, int indent, char *string) {
   }
 
   return height;
+}
+
+static int
+plat_udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
+  char frame_buff[MAX_PAGE * LEN_PER_PAGE];
+  int page_num;
+  char val[16] = {0}, str[32] = {0}, temp_val[16] = {0}, temp_thresh[5] = {0};
+  float sensor_reading;
+  char FilePath [] = "/tmp/cache_store/mb_sensor", SensorFilePath [50];
+  int i,ret;
+  uint8_t thresh;
+  int line_num = 0;
+
+  memset(frame_buff, ' ', sizeof(frame_buff));
+  for( i=0; i<(sensor_count-1) ; i++){
+    sprintf(SensorFilePath, "%s%d", FilePath, cri_sensor[i].sensor_num);
+    ret = read_device(SensorFilePath, val);
+    memset(temp_val,'\0', sizeof(temp_val));
+    memset(temp_thresh,'\0', sizeof(temp_thresh));
+    if (ret){
+      snprintf(temp_val,LEN_PER_LINE, "fail");
+    }else if(!strcmp(val, "NA") || strlen(val) == 0){
+      snprintf(temp_val,LEN_PER_LINE, "NA");
+    }else{
+      if(cri_sensor[i].sensor_num == MB_SENSOR_HSC_IN_VOLT)
+        *(strstr(val, ".")+3) = '\0';
+      else if(cri_sensor[i].sensor_num == MB_SENSOR_HSC_IN_POWER || cri_sensor[i].sensor_num == MB_SENSOR_VR_CPU0_VCCIN_POWER || cri_sensor[i].sensor_num == MB_SENSOR_VR_CPU1_VCCIN_POWER )
+        *(strstr(val, ".")+2) = '\0';
+      else
+        *(strstr(val, ".")) = '\0';
+      snprintf(temp_val, LEN_PER_LINE, "%s%s", val, cri_sensor[i].unit);
+
+      sensor_reading = atof(val);
+      pal_sensor_sts_check(cri_sensor[i].sensor_num,sensor_reading,&thresh);
+      switch (thresh) {
+        case UCR_THRESH:
+          snprintf(temp_thresh,5, "/UCT");
+          break;
+        case LCR_THRESH:
+          snprintf(temp_thresh,5, "/LCT");
+          break;
+        default:
+          break;
+      }
+    }
+    snprintf(str, 32, "%s%s%s", cri_sensor[i].name,temp_val,temp_thresh);
+    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num, 0, str);
+  }
+
+  page_num = line_num/LINE_PER_PAGE + ((line_num%LINE_PER_PAGE)?1:0);
+  if (page > page_num) {
+    return -1;
+  }
+  // Frame Head
+  snprintf(str, 17, "CriSensor  %02d/%02d", page, page_num);
+  memcpy(&buffer[0], str, 16); // First line
+
+  // Frame Body
+  memcpy(&buffer[16], &frame_buff[(page-1)*LEN_PER_PAGE], LEN_PER_PAGE);
+  *count = 128;
+
+  if (page == page_num)
+    *next = 0xFF;    // Set the value of next to 0xFF to indicate this is the last page
+  else
+    *next = page+1;
+
+  return 0;
 }
 
 static int

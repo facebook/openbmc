@@ -159,6 +159,7 @@
 #define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
 #define MAX_READ_RETRY 10
+#define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
 
 #define CPLD_BUS_ID 0x6
 #define CPLD_ADDR 0xA0
@@ -327,6 +328,7 @@ const uint8_t nic_sensor_list[] = {
 // List of MB discrete sensors to be monitored
 const uint8_t mb_discrete_sensor_list[] = {
   MB_SENSOR_POWER_FAIL,
+  MB_SENSOR_MEMORY_LOOP_FAIL,
 };
 
 float mb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -3038,6 +3040,123 @@ pal_post_handle(uint8_t slot, uint8_t status) {
   return 0;
 }
 
+static int
+check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
+  static int log_asserted = 0;
+  const int loop_threshold = 3;
+  const int longest_loop_code = 4;
+  FILE *fp=NULL;
+  int i, nearest_00, len, loop_count, check_until;
+  unsigned char postcode, buff[256];
+  uint8_t location, maj_err, min_err, mem_train_fail;
+  int ret = READING_NA;
+  static unsigned int retry=0;
+  char sensor_name[32] = {0};
+  char str[32] = {0};
+
+  if (fru_id != 1) {
+    syslog(LOG_ERR, "Not Supported Operation for fru %d", fru_id);
+    goto error_exit;
+  }
+
+  if (is_server_off()) {
+    log_asserted = 0;
+    goto error_exit;
+  }
+
+  fp = fopen(POST_CODE_FILE, "r");
+  if (fp == NULL) {
+    syslog(LOG_ERR, "Cannot open %s", POST_CODE_FILE);
+    goto error_exit;
+  }
+
+ for (i=0; i<256; i++) {
+    // %hhx: unsigned char*
+    if (fscanf(fp, "%hhx", &postcode) == 1) {
+      buff[i] = postcode;
+    } else {
+      // EOF
+      break;
+    }
+  }
+
+  len = i;
+  mem_train_fail = 0;
+  loop_count = 0;
+  check_until = len - (longest_loop_code * (loop_threshold+1) );
+  // Check post code from tail
+  for(i = len - 1; i >= 0 && i >= check_until; i--) {
+    if (buff[i] == 0x00) {
+      if (loop_count < loop_threshold) {
+        // found 00
+        loop_count++;
+        nearest_00 = i;
+        continue;
+      } else {
+        // found (loop_threshold+1)-th 00 from tail
+        if (!memcmp(&buff[i], &buff[nearest_00], len - nearest_00)) {
+          // PostCode looping over loop_threshold times
+          if ((nearest_00 - i) == 4) {
+            // Loop Convention1
+            mem_train_fail = 1;
+            location = buff[i+1];
+            maj_err = buff[i+2];
+            min_err = buff[i+3];
+          }
+          if ((nearest_00 - i) == 3) {
+            // Loop Convention2
+            mem_train_fail = 1;
+            location = 0x00;
+            maj_err = buff[i+1];
+            min_err = buff[i+2];
+          }
+        }
+        // break after 2nd 00
+        break;
+      }
+    }
+  }
+
+  if (mem_train_fail) {
+    if (!log_asserted) {
+      pal_get_sensor_name(fru_id, sensor_num, sensor_name);
+      if (location) {
+        snprintf(str, sizeof(str), "Location:%02X Err:%02X %02X",location, maj_err, min_err);
+        _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, 0x01, str);
+        snprintf(str, sizeof(str), "DIMM %02X initial fails",location);
+        pal_add_cri_sel(str);
+        //syslog(LOG_CRIT, "Memory training failure at %02X MajErr:%02X, MinErr:%02X", location, maj_err, min_err);
+      } else {
+        snprintf(str, sizeof(str), "Location Unknown Err:%02X %02X", maj_err, min_err);
+        _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, 0x01, str);
+        //syslog(LOG_CRIT, "Memory training failure MajErr:%02X, MinErr:%02X", maj_err, min_err);
+        snprintf(str, sizeof(str), "DIMM XX initial fails");
+        pal_add_cri_sel(str);
+      }
+    }
+    log_asserted = 1;
+  }
+  else
+  {
+    log_asserted = 0;
+  }
+  *value = (float)log_asserted;
+  ret = 0;
+
+error_exit:
+  if (fp > 0) {
+    close(fp);
+  }
+  if ((ret == READING_NA) && (retry < MAX_READ_RETRY)){
+    ret = READING_SKIP;
+    retry++;
+  } else {
+    retry = 0;
+  }
+
+  return ret;
+}
+
 int
 pal_get_fru_list(char *list) {
 
@@ -3559,6 +3678,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_POWER_FAIL:
         ret = read_CPLD_power_fail_sts (fru, sensor_num, (float*) value, poweron_10s_flag);
         break;
+      case MB_SENSOR_MEMORY_LOOP_FAIL:
+        ret = check_postcodes(FRU_MB, sensor_num, (float*) value);
+        break;
 
       default:
         return -1;
@@ -3616,7 +3738,6 @@ int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
   sensor_thresh_array_init();
-
   switch(fru) {
   case FRU_MB:
     *val = mb_sensor_threshold[sensor_num][thresh];
@@ -3955,6 +4076,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       break;
     case MB_SENSOR_POWER_FAIL:
       sprintf(name, "MB_POWER_FAIL");
+      break;
+    case MB_SENSOR_MEMORY_LOOP_FAIL:
+      sprintf(name, "MB_MEMORY_LOOP_FAIL");
       break;
 
     default:
@@ -5641,40 +5765,40 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 
   switch(snr_num) {
     case MB_SENSOR_FAN0_TACH:
-      sprintf(cmd, "Fan0 %s %3.0fRPM - ASSERT", thresh_name, val);
+      sprintf(cmd, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_FAN1_TACH:
-      sprintf(cmd, "Fan1 %s %3.0fRPM - ASSERT", thresh_name, val);
+      sprintf(cmd, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_CPU0_TEMP:
-      sprintf(cmd, "P0 Temp %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P0 Temp %s %.0f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_CPU1_TEMP:
-      sprintf(cmd, "P1 Temp %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P1 Temp %s %.0f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_P3V_BAT:
-      sprintf(cmd, "P3V_BAT %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P3V_BAT %s %.2f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_P3V3:
-      sprintf(cmd, "P3V3 %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P3V3 %s %.2f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_P5V:
-      sprintf(cmd, "P5V %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P5V %s %.2f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_P12V:
-      sprintf(cmd, "P12V %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P12V %s %.2f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_P1V05:
-      sprintf(cmd, "P1V05 %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P1V05 %s %.2f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_PVNN_PCH_STBY:
-      sprintf(cmd, "PVNN_PCH_STBY %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "PVNN_PCH_STBY %s %.2f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_P3V3_STBY:
-      sprintf(cmd, "P3V3_STBY %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P3V3_STBY %s %.2f - ASSERT", thresh_name, val);
       break;
     case MB_SENSOR_P5V_STBY:
-      sprintf(cmd, "P5V_STBY %s %3.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P5V_STBY %s %.2f - ASSERT", thresh_name, val);
       break;
     default:
       return;
@@ -5942,3 +6066,29 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 
   return 0;
 }
+
+void
+pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh) {
+  int ret;
+  int fru = 1;
+  float ucr_thresh_val,lcr_thresh_val;
+
+  ret = pal_get_sensor_threshold(fru, snr_num, UCR_THRESH, &ucr_thresh_val);
+  if (ret) {
+    syslog(LOG_WARNING, "get ucr fail:%f",lcr_thresh_val);
+  }
+
+  ret = pal_get_sensor_threshold(fru, snr_num, LCR_THRESH, &lcr_thresh_val);
+  if (ret) {
+    syslog(LOG_WARNING, "get lcr fail:%f",lcr_thresh_val);
+  }
+
+  if(val >= ucr_thresh_val)
+    *thresh = UCR_THRESH;
+  else if(val <= lcr_thresh_val)
+    *thresh = LCR_THRESH;
+  else
+    *thresh = 0;
+
+}
+

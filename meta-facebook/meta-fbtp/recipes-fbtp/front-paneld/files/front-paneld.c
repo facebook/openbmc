@@ -271,6 +271,7 @@ ts_handler() {
   struct timespec mts;
   char tstr[64] = {0};
   char buf[128] = {0};
+  char temp_log[28] = {0};
   uint8_t por = 0;
   uint8_t time_init = 0;
   long time_sled_on;
@@ -284,6 +285,8 @@ ts_handler() {
   if (pal_is_bmc_por()) {
     ctime_r(&time_sled_off, buf);
     syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
+    sprintf(temp_log, "AC lost");
+    pal_add_cri_sel(temp_log);
   } else {
     syslog(LOG_CRIT, "BMC Reboot detected");
   }

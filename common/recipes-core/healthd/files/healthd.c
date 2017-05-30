@@ -77,6 +77,8 @@ struct AST_I2C_DEV_OFFSET ast_i2c_dev_offset[I2C_BUS_NUM] = {
 #define MONITOR_INTERVAL 1
 #define DEFAULT_CPU_THRESHOLD 85
 #define DEFAULT_MEM_THRESHOLD 70
+#define CPU_NEG_HYSTERESIS 5
+#define MEM_NEG_HYSTERESIS 5
 #define MAX_RETRY 10
 
 static int cpu_over_threshold = 0, mem_over_threshold = 0;
@@ -325,7 +327,7 @@ CPU_usage_monitor() {
         syslog(LOG_WARNING, "ASSERT: BMC CPU utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
         cpu_over_threshold = 1;
         pal_bmc_err_enable();
-      } else if (((cpu_util_avg*100) < cpu_threshold) && cpu_over_threshold)  {
+      } else if (((cpu_util_avg*100) < (cpu_threshold-CPU_NEG_HYSTERESIS)) && cpu_over_threshold)  {
         syslog(LOG_WARNING, "DEASSERT: BMC CPU utilization (%.2f%%) is under the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
         cpu_over_threshold = 0;
         // We can only disable BMC error code when both CPU and memory are fine.
@@ -397,7 +399,7 @@ memory_usage_monitor() {
         syslog(LOG_CRIT, "ASSERT: BMC Memory utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", mem_util_avg*100, mem_threshold);
         mem_over_threshold = 1;
         pal_bmc_err_enable();
-      } else if ((mem_util_avg*100) < mem_threshold && mem_over_threshold) {
+      } else if (((mem_util_avg*100) < (mem_threshold-MEM_NEG_HYSTERESIS)) && mem_over_threshold) {
         syslog(LOG_CRIT, "DEASSERT: BMC Memory utilization (%.2f%%) is under the threshold (%.2f%%).\n", mem_util_avg*100, mem_threshold);
         mem_over_threshold = 0;
         // We can only disable BMC error code when both CPU and memory are fine.

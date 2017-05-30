@@ -337,15 +337,21 @@ static gpio_chk pre_check_table[] = {
 static int chk_table_count = sizeof(pre_check_table) / sizeof(gpio_chk);
 
 // Thread for gpio timer
-static void *
+static void
 gpio_pre_check() {
   int i, j;
   uint8_t status = 0;
+  int ret;
 
-  pthread_detach(pthread_self());
   for ( i = 0; i < chk_table_count; i++) {
     for ( j = 0 ; j < g_count ; j++ ) {
       if( gpio_num(pre_check_table[i].gpio_name) == g_gpios[j].gs.gs_gpio ) {
+        ret = gpio_get(gpio_num(pre_check_table[i].gpio_name));
+        if(ret == -1) {
+          syslog(LOG_WARNING, "gpio_pre_check:%s fail", pre_check_table[i].gpio_name);
+          continue;
+        }
+        g_gpios[j].value = ret;      
         if (pre_check_table[i].trigger_pwr_sts != DONT_CARE) {
           pal_get_server_power(1, &status);
           if ( (status == pre_check_table[i].trigger_pwr_sts) && ( gpio_read(&g_gpios[j].gs) == pre_check_table[i].trigger_val) ) {
@@ -496,7 +502,6 @@ main(int argc, void **argv) {
   uint8_t status = 0;
   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
-  pthread_t tid_gpio_pre_check;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -523,11 +528,8 @@ main(int argc, void **argv) {
     }
 
     gpio_poll_open(g_gpios, g_count);
-    //Create thread for GPIO status pre check
-    if (pthread_create(&tid_gpio_pre_check, NULL, gpio_pre_check, NULL) < 0) {
-      syslog(LOG_WARNING, "pthread_create for gpio_pre_check\n");
-      exit(1);
-    }
+    //GPIO status pre check
+    gpio_pre_check();
     gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
     gpio_poll_close(g_gpios, g_count);
   }

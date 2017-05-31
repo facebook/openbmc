@@ -169,7 +169,6 @@ extern size_t fcb_sensor_cnt;
 
 int lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
-int lightning_sensor_sdr_path(uint8_t fru, char *path);
 int lightning_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
 int lightning_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 

@@ -1051,11 +1051,6 @@ read_ads1015_value(uint8_t channel, char *device, uint8_t addr, float *value) {
 }
 
 int
-lightning_sensor_sdr_path(uint8_t fru, char *path) {
-  return 0;
-}
-
-int
 lightning_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   return -1;
 }

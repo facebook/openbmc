@@ -240,44 +240,6 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   return 0;
 }
 
-int
-pal_is_debug_card_prsnt(uint8_t *status) {
-  return 0;
-}
-
-int
-pal_get_server_power(uint8_t slot_id, uint8_t *status) {
-
-  return 0;
-}
-
-// Power Off, Power On, or Power Reset the server in given slot
-int
-pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
-
-  return 0;
-}
-
-int
-pal_sled_cycle(void) {
-
-  return 0;
-}
-
-// Read the Front Panel Hand Switch and return the position
-int
-pal_get_hand_sw(uint8_t *pos) {
-
-  return 0;
-}
-
-// Return the Front panel Power Button
-int
-pal_get_pwr_btn(uint8_t *status) {
-
-  return 0;
-}
-
 // Return the DEBUGCARD's UART Channel Button Status
 int
 pal_get_uart_chan_btn(uint8_t *status) {
@@ -342,13 +304,6 @@ pal_get_rst_btn(uint8_t *status) {
   return 0;
 }
 
-// Update the Reset button input to the server at given slot
-int
-pal_set_rst_btn(uint8_t slot, uint8_t status) {
-
-  return 0;
-}
-
 // Update the LED for the given slot with the status
 int
 pal_set_led(uint8_t led, uint8_t status) {
@@ -376,34 +331,6 @@ pal_set_hb_led(uint8_t status) {
 
   return pal_set_led(LED_HB, status);
 }
-
-// Update the Identification LED for the given slot with the status
-int
-pal_set_id_led(uint8_t slot, uint8_t status) {
-  return 0;
-}
-
-// Update the USB Mux to the server at given slot
-int
-pal_switch_usb_mux(uint8_t slot) {
-
-  return 0;
-}
-
-// Get the last post code of the given slot
-int
-pal_post_get_last(uint8_t slot, uint8_t *status) {
-
-  return 0;
-}
-
-// Handle the received post code, for now display it on debug card
-int
-pal_post_handle(uint8_t slot, uint8_t status) {
-
-  return 0;
-}
-
 
 static int
 read_kv(char *key, char *value) {
@@ -470,11 +397,6 @@ int
 pal_get_fru_name(uint8_t fru, char *name) {
 
   return lightning_common_fru_name(fru, name);
-}
-
-int
-pal_get_fru_sdr_path(uint8_t fru, char *path) {
-  return lightning_sensor_sdr_path(fru, path);
 }
 
 int
@@ -690,12 +612,6 @@ pal_get_fruid_name(uint8_t fru, char *name) {
   return lightning_get_fruid_name(fru, name);
 }
 
-int
-pal_fruid_write(uint8_t slot, char *path) {
-
-  return 0;
-}
-
 static int
 get_key_value(char* key, char *value) {
 
@@ -807,12 +723,6 @@ pal_get_key_value(char *key, char *value) {
   return get_key_value(key, value);
 }
 
-int
-pal_get_fru_devtty(uint8_t fru, char *devtty) {
-
-  return 0;
-}
-
 void
 pal_dump_key_value(void) {
   int i;
@@ -830,73 +740,6 @@ pal_dump_key_value(void) {
     i++;
     memset(value, 0, MAX_VALUE_LEN);
   }
-}
-
-int
-pal_set_last_pwr_state(uint8_t fru, char *state) {
-
-  return 0;
-}
-
-int
-pal_get_last_pwr_state(uint8_t fru, char *state) {
-
-  return 0;
-}
-
-int
-pal_get_sys_guid(uint8_t slot, char *guid) {
-  int ret;
-
-  return 0;
-}
-
-int
-pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
-
-  return 0;
-}
-
-int
-pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
-
-  return 0;
-}
-
-int
-pal_is_bmc_por(void) {
-
-  return 0;
-}
-
-int
-pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-
-  return 0;
-}
-
-int
-pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
-    uint8_t o_val, uint8_t n_val) {
-
-  return 0;
-}
-int
-pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
-
-  return 0;
-}
-
-int
-pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
-
-  return 0;
-}
-
-int
-pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
-
-  return 0;
 }
 
 // Helper function for msleep
@@ -982,12 +825,6 @@ int
 pal_get_fru_list(char *list) {
 
   strcpy(list, pal_fru_list);
-  return 0;
-}
-
-int
-pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
-
   return 0;
 }
 
@@ -1131,28 +968,11 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   return ret;
 }
 
-void
-pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
-}
-
-void
-pal_update_ts_sled() {
-}
-
-int
-pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen) {
-}
-
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   *status = 1;
 
-  return 0;
-}
-
-int
-pal_is_slot_server(uint8_t fru) {
   return 0;
 }
 
@@ -1446,44 +1266,6 @@ int pal_get_airflow(float *airflow_cfm)
   return 0;
 }
 
-//For Merge Yosemite and TP
-int
-pal_get_platform_id(uint8_t *id) {
-  // dummy definition
-  return 0;
-}
-int
-pal_get_board_rev_id(uint8_t *id) {
-  // dummy definition
-  return 0;
-}
-int
-pal_get_mb_slot_id(uint8_t *id) {
-  // dummy definition
-  return 0;
-}
-int
-pal_get_slot_cfg_id(uint8_t *id) {
-  // dummy definition
-  return 0;
-}
-
-int
-pal_get_dev_guid(uint8_t fru, char *guid) {
-  // dummy definition
-  return 0;
-}
-
-int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-   // dummy definition
-   return 0;
-}
-
-int pal_get_plat_sku_id(void){
-   // dummy definition
-   return 0;
-}
-
 void
 pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   uint8_t *sensorStatus = NULL;
@@ -1631,18 +1413,6 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   munmap(sensorStatus, sizeof(bool) * MAX_SENSOR_NUM);
   flock(fd, LOCK_UN);
   close(fd);
-}
-
-void
-pal_post_end_chk(uint8_t *post_end_chk) {
-  return;
-}
-
-int
-pal_get_fw_info(unsigned char target, unsigned char* res,
-    unsigned char* res_len) {
-
-    return 0;
 }
 
 void
@@ -2009,11 +1779,6 @@ pal_drive_health(const char* dev) {
 }
 
 void
-pal_add_cri_sel(char *str) {
-
-}
-
-void
 pal_i2c_crash_assert_handle(int i2c_bus_num) {
   // I2C bus number: 0~13
   if (i2c_bus_num < I2C_BUS_MAX_NUMBER)
@@ -2045,18 +1810,10 @@ pal_bmc_err_disable() {
   return 0;
 }
 
-uint8_t
-pal_get_status(void) {
-
-  return 0; // CC_SUCCESS
-}
-
-unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
-unsigned char option_size[]   = {1,1,1,1,2,5,9,17,127};
-
 int
 pal_get_boot_option(unsigned char para,unsigned char* pbuff)
 {
+  unsigned char option_size[]   = {1,1,1,1,2,5,9,17,127};
   unsigned char size = option_size[para];
   memset(pbuff, 0, size);
   return size;

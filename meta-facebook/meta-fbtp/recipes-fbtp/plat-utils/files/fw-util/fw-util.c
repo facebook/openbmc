@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +47,7 @@ static uint8_t g_vr_cpu0_vddq_def;
 static uint8_t g_vr_cpu1_vddq_ghj;
 static uint8_t g_vr_cpu1_vddq_klm;
 
+static int get_mtd_name(const char* name, char* dev);
 
 static void
 print_usage_help(void) {
@@ -103,6 +104,33 @@ print_bmc_version(void) {
   printf("BMC Version: %s\n", vers);
 }
 
+static void
+print_rom_version(void) {
+  char vers[128] = "NA";
+  char mtd[32];
+
+  if (get_mtd_name("\"rom\"", mtd)) {
+    char cmd[128];
+    FILE *fp;
+    sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd);
+    fp = popen(cmd, "r");
+    if (fp) {
+      char line[256];
+      char min[32];
+      while (fgets(line, sizeof(line), fp)) {
+        int ret;
+        ret = sscanf(line, "U-Boot 2016.07 (%*[^()]) fbtp-v%[^ \n]\n", min);
+        if (ret == 1) {
+          sprintf(vers, "fbtp-v%s", min);
+          break;
+        }
+      }
+      pclose(fp);
+    }
+  }
+  printf("ROM Version: %s\n", vers);
+}
+
 // TODO: Need to confirm the interpretation of firmware version for print
 // Right now using decimal to print the versions
 static void
@@ -119,6 +147,8 @@ print_fw_ver(uint8_t fru_id) {
   init_board_sensors();
 
   print_bmc_version();
+
+  print_rom_version();
 
   // Print ME Version
   if (me_get_fw_ver(ver)){

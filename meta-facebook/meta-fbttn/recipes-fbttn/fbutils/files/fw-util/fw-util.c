@@ -326,6 +326,7 @@ main(int argc, char **argv) {
   void *wdt30_reg;
   char dual_flash_mtd_name[32];
   char single_flash_mtd_name[32];
+  bool is_bmc_update_flag = false;
 
   //Catch signals
   signal(SIGINT, sig_handler);
@@ -436,8 +437,7 @@ main(int argc, char **argv) {
         if (ret == 0) {
           syslog(LOG_CRIT, "RO BMC firmware update successfully");
           printf("Updated RO BMC successfully, reboot BMC now.\n");
-          sleep(1);
-          ret = run_command("reboot");
+          is_bmc_update_flag = true;
         }
         goto exit;
       }
@@ -465,8 +465,7 @@ main(int argc, char **argv) {
         if (ret == 0) {
           syslog(LOG_CRIT, "RW BMC firmware update successfully");
           printf("Updated RW BMC successfully, reboot BMC now.\n");          
-          sleep(1);
-          ret = run_command("reboot");
+          is_bmc_update_flag = true;          
         }
         goto exit;
       }
@@ -476,9 +475,14 @@ main(int argc, char **argv) {
 exit:
   if (ret == -2)
     print_usage_help();
-  else
+  else {
     if (pal_remove_fw_update_flag()) {
       printf("Failed to remove fw update file.\n");
     }
+    if (is_bmc_update_flag) {
+      sleep(5);
+      run_command("reboot");
+    }
+  }
   return ret;
 }

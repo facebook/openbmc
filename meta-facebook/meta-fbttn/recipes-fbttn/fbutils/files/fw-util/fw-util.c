@@ -70,7 +70,7 @@ print_fw_scc_ver(void) {
   //Have to check HOST power, if is off, shows NA
   pal_get_server_power(FRU_SLOT1, &status);
   if (status != SERVER_POWER_ON) {
-    printf("SCC IOC Version: NA (HOST Power-off)\n");
+    printf("SCC IOC Version: NA (Server Power-off)\n");
   }
   else {
     ret = exp_get_ioc_fw_ver(ver);
@@ -93,7 +93,7 @@ print_fw_ioc_ver(void) {
   //Have to check HOST power, if is off, shows NA
   pal_get_server_power(FRU_SLOT1, &status);
   if (status != SERVER_POWER_ON) {
-    printf("IOM IOC Version: NA (HOST Power-off)\n");
+    printf("IOM IOC Version: NA (Server Power-off)\n");
   }
   else {
     // Read Firwmare Versions of IOM IOC viacd MCTP
@@ -132,6 +132,27 @@ static void
 print_fw_ver(uint8_t slot_id) {
   int i;
   uint8_t ver[32] = {0};
+  uint8_t status = 0;
+
+  //Check Fru Present
+  if (pal_is_fru_prsnt(slot_id, &status)) {
+    printf("pal_is_fru_prsnt failed for fru: %d\n", slot_id);
+    return;
+  }
+  if (status == 0) {
+    printf("Can't get Slot1 (MonoLake) FW version due to that Slot1 is not present!\n");
+    return;
+  } 
+
+  //Check Power Status
+  if (pal_get_server_power(slot_id, &status)) {
+    printf("Get Slot1 (MonoLake) power failed\n");
+    return;
+  }
+  if(status == SERVER_12V_OFF) {
+    printf("Can't get Slot1 (MonoLake) FW version due to that Server is 12V-off!\n");
+    return;
+  }
 
   // Print CPLD Version
   if (bic_get_fw_ver(slot_id, FW_CPLD, ver)) {
@@ -359,7 +380,7 @@ main(int argc, char **argv) {
         print_fw_bmc_ver();
         print_fw_scc_ver();
         if (sku == 2)
-        print_fw_ioc_ver();
+          print_fw_ioc_ver();
         break;
     }
     return 0;

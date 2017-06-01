@@ -75,7 +75,11 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   }
 
   //log[0] = 0;
-  for (i = 0; i < rlen; i++) {
+  if (rbuf[0] != 0x00) {
+    printf("Completion Code: %02X, ", rbuf[0]);
+  }
+
+  for (i = 1; i < rlen; i++) {
     printf("%02X ", rbuf[i]);
     //sprintf(log, "%s%02X ", log, rbuf[i]);
   }

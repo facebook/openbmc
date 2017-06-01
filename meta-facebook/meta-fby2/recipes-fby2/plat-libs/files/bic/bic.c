@@ -924,16 +924,16 @@ error_exit:
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF44302");
+       system("devmem 0x1e78a084 w 0xFFF99300");
        break;
      case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF44302");
+       system("devmem 0x1e78a104 w 0xFFF99300");
        break;
      case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF44302");
+       system("devmem 0x1e78a184 w 0xFFF99300");
        break;
      case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF44302");
+       system("devmem 0x1e78a304 w 0xFFF99300");
        break;
      default:
        syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
@@ -1232,9 +1232,9 @@ bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint
   }
 
   // Copy the received data to caller skipping header
-  memcpy(rxbuf, &rbuf[7], rlen-7);
+  memcpy(rxbuf, &rbuf[6], rlen-6);
 
-  *rxlen = rlen-7;
+  *rxlen = rlen-6;
 
   return 0;
 }

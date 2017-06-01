@@ -3473,7 +3473,22 @@ pal_update_ts_sled()
 
 int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
-  return bic_me_xmit(fru, request, req_len, response, rlen);
+  int ret;
+  uint8_t rbuf[256] = {0x00}, len = 0;
+
+  ret = bic_me_xmit(fru, request, req_len, rbuf, &len);
+  if (ret || (len < 1)) {
+    return -1;
+  }
+
+  if (rbuf[0] != 0x00) {
+    return -1;
+  }
+
+  *rlen = len - 1;
+  memcpy(response, &rbuf[1], *rlen);
+
+  return 0;
 }
 
 void

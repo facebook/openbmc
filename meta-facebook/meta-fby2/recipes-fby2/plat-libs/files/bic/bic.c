@@ -625,27 +625,6 @@ _update_bic_main(uint8_t slot_id, char *path) {
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
 
-  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
-  // So reduce I2C bus clock speed which is a workaround for BIC update.
-  switch(slot_id)
-  {
-     case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF77304");
-       break;
-     case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF77304");
-       break;
-     case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF77304");
-       break;
-     case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF77304");
-       break;
-     default:
-       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
-       goto error_exit;
-       break;
-  }
   syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
 
   // Open the file exclusively for read
@@ -670,6 +649,30 @@ _update_bic_main(uint8_t slot_id, char *path) {
   // Kill ipmb daemon for this slot
   sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
+  printf("stop ipmbd for slot %x..\n", slot_id);
+
+  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
+  // So reduce I2C bus clock speed which is a workaround for BIC update.
+  switch(slot_id)
+  {
+     case FRU_SLOT1:
+       system("devmem 0x1e78a084 w 0xFFF77304");
+       break;
+     case FRU_SLOT2:
+       system("devmem 0x1e78a104 w 0xFFF77304");
+       break;
+     case FRU_SLOT3:
+       system("devmem 0x1e78a184 w 0xFFF77304");
+       break;
+     case FRU_SLOT4:
+       system("devmem 0x1e78a304 w 0xFFF77304");
+       break;
+     default:
+       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
+       goto error_exit;
+       break;
+  }
+  sleep(1);
   printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
   if (!_is_bic_update_ready(slot_id)) {
@@ -853,6 +856,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
       goto error_exit;
     }
   }
+  msleep(500);
 
   // Run the new image
   tbuf[0] = CMD_RUN_SIZE;
@@ -889,6 +893,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
     printf("run response: %x:%x\n", rbuf[0], rbuf[1]);
     goto error_exit;
   }
+  msleep(500);
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
@@ -904,22 +909,6 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
 update_done:
   ret = 0;
-  // Restart ipmbd daemon
-  sleep(1);
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
-
-error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating firmware is exiting\n");
-  if (fd > 0) {
-    close(fd);
-  }
-
-  if (ifd > 0) {
-     close(ifd);
-  }
-
   // Restore the I2C bus clock to 1M.
   switch(slot_id)
   {
@@ -938,6 +927,22 @@ error_exit:
      default:
        syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
        break;
+  }
+
+  // Restart ipmbd daemon
+  sleep(1);
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
+  system(cmd);
+
+error_exit:
+  syslog(LOG_CRIT, "bic_update_fw: updating firmware is exiting\n");
+  if (fd > 0) {
+    close(fd);
+  }
+
+  if (ifd > 0) {
+     close(ifd);
   }
 
   //Unlock fw-util

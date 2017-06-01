@@ -176,6 +176,12 @@ pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
 }
 
 int __attribute__((weak))
+pal_set_cpu_mem_threshold(const char* threshold_path)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_platform_name(char *name)
 {
   return PAL_EOK;

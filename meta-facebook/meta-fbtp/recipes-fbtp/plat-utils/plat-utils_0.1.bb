@@ -61,6 +61,8 @@ do_install() {
   update-rc.d -r ${D} setup-snoopdma.sh start 82 S .
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 96 5 .
+  install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
+  update-rc.d -r ${D} sync_date.sh start 66 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

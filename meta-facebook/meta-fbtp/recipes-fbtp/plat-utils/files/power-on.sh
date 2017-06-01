@@ -71,8 +71,6 @@ check_por_config()
   logger -s "TO_PWR_ON:$TO_PWR_ON, POR:$POR, LS:$LS"
 }
 
-/usr/local/bin/sync_date.sh
-
 # Check whether it is fresh power on reset
 #if [ $(is_bmc_por) -eq 1 ]; then
   ## Move por to U-boot

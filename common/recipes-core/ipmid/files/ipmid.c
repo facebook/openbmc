@@ -307,12 +307,6 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
     case CMD_CHASSIS_SET_POWER_RESTORE_POLICY:
       chassis_set_power_restore_policy(request, req_len, response, res_len);
       break;
-    case CMD_CHASSIS_SET_BOOT_OPTIONS:
-      chassis_set_boot_options(request, req_len, response, res_len);
-      break;
-    case CMD_CHASSIS_GET_BOOT_OPTIONS:
-      chassis_get_boot_options(request, req_len, response, res_len);
-      break;
     default:
       res->cc = CC_INVALID_CMD;
       break;

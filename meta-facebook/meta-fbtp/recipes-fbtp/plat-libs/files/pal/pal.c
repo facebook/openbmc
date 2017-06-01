@@ -92,8 +92,7 @@
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
 #define PIN_CTRL2_OFFSET 0x84
-#define AST_WDT_BASE 0x1e785000
-#define WDT_OFFSET 0x10
+#define RST_STS_OFFSET 0x3c
 
 #define AST_LPC_BASE 0x1e789000
 #define HICRA_OFFSET 0x9C
@@ -2116,7 +2115,7 @@ read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot
         break;
     }
 
-    tbuf[0] = i;  
+    tbuf[0] = i;
     ret = i2c_io(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
     if (ret < 0) {
       ret = READING_NA;
@@ -4716,9 +4715,8 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
 int
 pal_is_bmc_por(void) {
   uint32_t scu_fd;
-  uint32_t wdt;
+  uint32_t rst_sts;
   void *scu_reg;
-  void *scu_wdt;
 
   scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
   if (scu_fd < 0) {
@@ -4726,15 +4724,15 @@ pal_is_bmc_por(void) {
   }
 
   scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_WDT_BASE);
-  scu_wdt = (char*)scu_reg + WDT_OFFSET;
+             AST_SCU_BASE);
 
-  wdt = *(volatile uint32_t*) scu_wdt;
+  rst_sts = *(volatile uint32_t*) (scu_reg + RST_STS_OFFSET);
 
   munmap(scu_reg, PAGE_SIZE);
   close(scu_fd);
 
-  if (wdt & 0xff00) {
+  // BIT 1: EXTRST; BIT 2: WDT1
+  if (rst_sts & 0x6) {
     return 0;
   } else {
     return 1;
@@ -6091,4 +6089,3 @@ pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh) {
     *thresh = 0;
 
 }
-

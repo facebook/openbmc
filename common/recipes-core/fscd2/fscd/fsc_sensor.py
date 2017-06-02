@@ -161,7 +161,7 @@ class FscSensorSourceUtil(FscSensorBase):
         response = ''
         try:
             response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-            if response.find("Setting") == -1:
+            if response.find("Error") != -1:
                 raise Exception("Write failed with response=%s" % response)
         except SystemExit:
             Logger.debug("SystemExit from sensor write")

@@ -28,10 +28,11 @@ extern "C" {
 enum {
   PAL_EOK = 0,
   PAL_ENOTSUP = -ENOTSUP,
+  PAL_ENOTREADY = -EAGAIN,
   /* non system errors start from -256 downwards */
 };
 
-//TODO remove it when 
+//TODO remove it when
 //fw-util FW Updating Flag File
 
 int pal_is_fw_update_ongoing(uint8_t fru);

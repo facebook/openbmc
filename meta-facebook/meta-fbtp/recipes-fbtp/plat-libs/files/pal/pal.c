@@ -5381,7 +5381,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
   // Do not allow setting fan when server is off.
   if (is_server_off()) {
-    return -1;
+    return PAL_ENOTREADY;
   }
 
   // Convert the percentage to our 1/96th unit.

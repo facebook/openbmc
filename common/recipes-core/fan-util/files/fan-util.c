@@ -127,8 +127,10 @@ main(int argc, char **argv) {
           continue;
 
       ret = pal_set_fan_speed(i, pwm);
-      if (!ret) {
-        printf("Setting Zone %d speed to %d%\n", i, pwm);
+      if (ret == PAL_ENOTREADY) {
+        printf("Blocked because host power is off\n");
+      } else if (!ret) {
+        printf("Setting Zone %d speed to %d%%\n", i, pwm);
       } else
         printf("Error while setting fan speed for Zone %d\n", i);
     }

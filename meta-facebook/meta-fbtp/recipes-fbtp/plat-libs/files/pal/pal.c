@@ -3144,7 +3144,7 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
 
 error_exit:
   if (fp > 0) {
-    close(fp);
+    fclose(fp);
   }
   if ((ret == READING_NA) && (retry < MAX_READ_RETRY)){
     ret = READING_SKIP;

@@ -36,6 +36,10 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
 #include <sys/reboot.h>
+#include <openbmc/obmc-i2c.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #define SIZE_IANA_ID 3
 #define SIZE_GUID 16
@@ -828,6 +832,59 @@ app_get_sys_info_params (unsigned char *request, unsigned char req_len,
   return;
 }
 
+static void
+app_master_write_read (unsigned char *request, unsigned char req_len,
+                         unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  uint8_t *ptr = req->data;
+  uint8_t writeCnt, readCnt;
+  uint8_t buf[42];
+  uint8_t bus_num, ret;
+  int fd;
+  char fn[32];
+
+  if( req_len < 6 ){
+    res->cc = CC_INVALID_LENGTH;
+    return;
+  }
+
+  readCnt = req->data[2];
+  writeCnt = req_len - 6;
+  if ( ptr[0] & 0x01 ) {
+    if ( (readCnt > 35) || (writeCnt > 36) ) {
+      res->cc = CC_INVALID_DATA_FIELD;
+      return;
+    } else {
+      memcpy(buf, &req->data[3], writeCnt);
+      bus_num = ((req->data[0] & 0x7E) >> 1); //extend bit[7:1] for bus ID
+      //ret = pal_i2c_write_read(bus_num, req->data[1], buf, writeCnt, res->data, readCnt);
+      snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus_num);
+
+      fd = open(fn, O_RDWR);
+      if (fd < 0) {
+        res->cc = CC_UNSPECIFIED_ERROR;
+        return;
+      }
+
+      ret = i2c_rdwr_msg_transfer(fd, req->data[1], buf, writeCnt, res->data, readCnt);
+      if(!ret) {
+         *res_len = readCnt;
+         res->cc = CC_SUCCESS;
+      } else {
+        syslog(LOG_WARNING, "app_master_write_read: master read fail, bus %d, addr %x", bus_num, req->data[1]);
+          res->cc = CC_UNSPECIFIED_ERROR;
+      }
+      close(fd);
+    }
+  }
+  else
+  {
+    res->cc = CC_INVALID_DATA_FIELD;
+  }
+}
+
 // Handle Appliction Commands (IPMI/Section 20)
 static void
 ipmi_handle_app (unsigned char *request, unsigned char req_len,
@@ -891,6 +948,9 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       break;
     case CMD_APP_GET_SYS_INFO_PARAMS:
       app_get_sys_info_params (request,  req_len, response, res_len);
+      break;
+    case CMD_APP_MASTER_WRITE_READ:
+      app_master_write_read (request,  req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

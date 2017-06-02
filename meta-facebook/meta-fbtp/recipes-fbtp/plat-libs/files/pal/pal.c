@@ -163,7 +163,7 @@
 #define CPLD_BUS_ID 0x6
 #define CPLD_ADDR 0xA0
 
-static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
+static uint8_t gpio_rst_btn[] = { 0, GPIO_POWER_RESET};
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
 const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
 const char pal_fru_list[] = "all, mb, nic";

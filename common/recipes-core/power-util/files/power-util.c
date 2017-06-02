@@ -368,6 +368,8 @@ power_util(uint8_t fru, uint8_t opt) {
 
     case PWR_SLED_CYCLE:
       syslog(LOG_CRIT, "SLED_CYCLE successful");
+      pal_update_ts_sled();
+      sync();
       sleep(1);
       pal_sled_cycle();
       break;

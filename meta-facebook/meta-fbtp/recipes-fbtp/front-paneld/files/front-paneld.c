@@ -317,6 +317,7 @@ ts_handler() {
         // Log an event if this is Power-On-Reset
         syslog(LOG_CRIT, "SLED Powered ON at %s", buf);
       }
+      pal_update_ts_sled();
     }
 
     // Store timestamp every one hour to keep track of SLED power

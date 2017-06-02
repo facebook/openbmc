@@ -1,0 +1,29 @@
+# Copyright 2017-present Facebook. All Rights Reserved.
+SUMMARY = "JTAG Interface library"
+DESCRIPTION = "Library which helps interfacing with the JTAG hardware"
+SECTION = "base"
+PR = "r1"
+LICENSE = "BSD"
+LIC_FILES_CHKSUM = "file://SoftwareJTAGHandler.c;beginline=5;endline=26;md5=4d3dd6a70786d475883b1542b0898219"
+
+SRC_URI = "file://interface/SoftwareJTAGHandler.c \
+           file://interface/SoftwareJTAGHandler.h \
+           file://interface/Makefile \
+           "
+
+DEPENDS += "libgpio libpal"
+
+S = "${WORKDIR}/interface"
+
+do_install() {
+  install -d ${D}${includedir}/asd
+  install -m 0644 SoftwareJTAGHandler.h ${D}${includedir}/asd/SoftwareJTAGHandler.h
+
+  install -d ${D}${libdir}
+  install -m 0644 libasd-jtagintf.so ${D}${libdir}/libasd-jtagintf.so
+}
+
+FILES_${PN} = "${libdir}/libasd-jtagintf.so"
+FILES_${PN}-dev = "${includedir}/asd"
+RDEPENDS_${PN} = "libgpio libpal"
+

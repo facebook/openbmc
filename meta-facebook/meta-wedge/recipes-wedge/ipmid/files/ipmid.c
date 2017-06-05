@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/reboot.h>
 
 #define SOCK_PATH "/tmp/ipmi_socket"
 
@@ -169,6 +170,8 @@ enum
 enum
 {
   CMD_APP_GET_DEVICE_ID = 0x01,
+  CMD_APP_COLD_RESET = 0x02,
+  CMD_APP_WARM_RESET = 0x03,
   CMD_APP_GET_SELFTEST_RESULTS = 0x04,
   CMD_APP_GET_DEVICE_GUID = 0x08,
   CMD_APP_RESET_WDT = 0x22,
@@ -433,6 +436,32 @@ app_get_device_id (unsigned char *response, unsigned char *res_len)
   *res_len = data - &res->data[0];
 }
 
+// Cold Reset (IPMI/Section 20.2)
+static void
+app_cold_reset (unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  //TODO: Shall be changed later, to support platform related self cold reset
+  //Reboot Open BMC FW
+  reboot (RB_AUTOBOOT);
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+// Warm Reset (IPMI/Section 20.3)
+static void
+app_warm_reset (unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  //Reboot Open BMC FW
+  reboot (RB_AUTOBOOT);
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
 // Get Self Test Results (IPMI/Section 20.4)
 static void
 app_get_selftest_results (unsigned char *response, unsigned char *res_len)
@@ -615,6 +644,12 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
   {
     case CMD_APP_GET_DEVICE_ID:
       app_get_device_id (response, res_len);
+      break;
+    case CMD_APP_COLD_RESET:
+      app_cold_reset (response, res_len);
+      break;
+    case CMD_APP_WARM_RESET:
+      app_warm_reset (response, res_len);
       break;
     case CMD_APP_GET_SELFTEST_RESULTS:
       app_get_selftest_results (response, res_len);

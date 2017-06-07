@@ -3,11 +3,14 @@ CFLAGS += -Wall -Werror
 
 lib: libasd-jtagintf.so
 
-libasd-jtagintf.so: SoftwareJTAGHandler.o
-	$(CC) -shared -o libasd-jtagintf.so SoftwareJTAGHandler.o -lc -lgpio -lpal -pthread
+libasd-jtagintf.so: SoftwareJTAGHandler.o pin_interface.o
+	$(CC) -shared -o libasd-jtagintf.so SoftwareJTAGHandler.o pin_interface.o -lc -lgpio -lpal -pthread
 
 SoftwareJTAGHandler.o: SoftwareJTAGHandler.c
 	$(CC) $(CFLAGS) -fPIC -c -o SoftwareJTAGHandler.o SoftwareJTAGHandler.c
+
+pin_interface.o: pin_interface.c
+	$(CC) $(CFLAGS) -fPIC -c -o pin_interface.o pin_interface.c
 
 .PHONY: clean
 

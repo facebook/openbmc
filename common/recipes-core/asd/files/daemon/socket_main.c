@@ -52,8 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 
 #include "asd/SoftwareJTAGHandler.h"
-#include <openbmc/pal.h>
-//#include "target_handler.h"
+#include "target_handler.h"
 #include "logging.h"
 
 //---------------------------------------------
@@ -142,26 +141,6 @@ typedef enum {
     DMA_TYPE
 } headerType;
 
-typedef enum {
-    READ_TYPE_MIN = -1,
-    READ_TYPE_PROBE = 0,
-    READ_TYPE_PIN,
-    READ_TYPE_MAX  // Insert new read cfg indices before READ_STATUS_INDEX_MAX
-} ReadType;
-
-// These values are based on the Interface.Pins definition in the OpenIPC config xml and the 5.1.4 of the At-Scale spec.
-typedef enum {
-    PIN_MIN = -1,
-    PIN_PWRGOOD = 0,
-    PIN_PREQ,
-    PIN_RESET_BUTTON,
-    PIN_POWER_BUTTON,
-    PIN_EARLY_BOOT_STALL,
-    PIN_MICROBREAK,
-    PIN_PRDY, // Probe mode request
-    PIN_MAX  // Insert before WRITE_PIN_MAX
-} Pin;
-
 // The protocol spec states the following:
 //    the status code that either contains 0x00 for successful completion
 //    of a command, or an error code from 0x01 to 0x7f
@@ -225,8 +204,7 @@ char* send_buffer;
 static pthread_mutex_t send_buffer_mutex;
 
 static JTAG_Handler* jtag_handler = NULL;
-// TODO Enable when dynamic events are supported (potentially gpio_poll_st)
-//static Target_Control_Handle* target_control_handle = NULL;
+static Target_Control_Handle* target_control_handle = NULL;
 
 int port_number = DEFAULT_PORT;
 uint8_t cpu_fru = DEFAULT_FRU;
@@ -307,13 +285,10 @@ void exitAll() {
         free(jtag_handler);
         jtag_handler = NULL;
     }
-    // TODO Enable when dynamic events are supported (potentially gpio_poll_close())
-#if 0
     if (target_control_handle) {
         free(target_control_handle);
         target_control_handle = NULL;
     }
-#endif
 }
 
 void send_error_message(int comm_fd, struct spi_message *input_message,
@@ -345,9 +320,6 @@ int get_message_size(struct spi_message *s_message) {
 
 STATUS write_event_config(const uint8_t data_byte) {
     STATUS status = ST_OK;
-    // TODO Enable when dynamic events are supported. Potentially a global
-    // bool array.
-#if 0
     // If bit 7 is set, then we will be enabling an event, otherwise disabling
     bool enable = (data_byte >> 7) == 1;
     // Bits 0 through 6 are an unsigned int indicating the event config register
@@ -361,7 +333,6 @@ STATUS write_event_config(const uint8_t data_byte) {
         ASD_log(LogType_Error, "Invalid or unsupported write event config register: "
                 "0x%02x", event_cfg_raw);
     }
-#endif
     return status;
 }
 
@@ -464,43 +435,12 @@ STATUS read_status(const ReadType index, uint8_t pin,
     STATUS status = ST_OK;
     *bytes_written = 0;
     bool pinAsserted = false;
-    uint8_t server_status;
-
     if (return_buffer_size < 2) {
         ASD_log(LogType_Error, "Failed to process READ_STATUS. Response buffer already full");
         status = ST_ERR;
     }
-    if (index == READ_TYPE_PROBE) {
-      status = ST_ERR;
-      // TODO Enable when target abstraction is implemented.
-      // pin == PRDY_EVENT_DETECTED
-      //status = target_read(target_control_handle, index, pin, &pinAsserted);
-    } else if (index == READ_TYPE_PIN) {
-      switch(pin) {
-        case PIN_PWRGOOD:
-        case PIN_POWER_BUTTON:
-          if (pal_get_server_power(cpu_fru, &server_status)) {
-            ASD_log(LogType_Error, "Getting server status failed");
-            status = ST_ERR;
-            break;
-          }
-          pinAsserted = server_status == 1;
-          break;
-        case PIN_RESET_BUTTON:
-          ASD_log(LogType_Debug, "Pin read: Reset Button Not Supported");
-          break;
-        case PIN_MICROBREAK:
-          ASD_log(LogType_Debug, "Pin read: MBR Not Supported");
-          break;
-        case PIN_PRDY: // TODO FBTP GPIOF7
-        case PIN_EARLY_BOOT_STALL: // TODO FBTP GPIOQ7
-        case PIN_PREQ: // TODO FBTP GPIOAA4
-          // TODO Enable when target abstraction is implemented.
-          //status = target_read(target_control_handle, index, pin, &pinAsserted);
-        default:
-          status = ST_ERR;
-          break;
-      }
+    if (status == ST_OK) {
+        status = target_read(target_control_handle, index, pin, &pinAsserted);
     }
     if (status == ST_OK) {
         out_msg.buffer[(*bytes_written)++] = READ_STATUS_MIN + index;
@@ -598,32 +538,14 @@ STATUS process_jtag_message(struct spi_message *s_message) {
             uint8_t data = (int)s_message->buffer[cnt];
             bool assert = (data >> 7) == 1;
             uint8_t index = data & WRITE_PIN_MASK;
-            switch(index) {
-                case PIN_POWER_BUTTON:
-                    if (pal_set_server_power(cpu_fru, assert ? 
-                          SERVER_POWER_ON : SERVER_POWER_OFF) < 0) {
-                        ASD_log(LogType_Error, "Setting server power of slot:%d to on:%d failed\n", cpu_fru, assert);
-                        status = ST_ERR;
-                        break;
-                    }
-                    ASD_log(LogType_Debug, "Power of FRU:%d set to %d\n", cpu_fru, assert);
-                    status = ST_OK;
-                    break;
-                case PIN_RESET_BUTTON:
-                    if (assert && pal_set_server_power(cpu_fru, SERVER_POWER_RESET) < 0) {
-                        ASD_log(LogType_Debug, "Power reset of FRU:%d failed!\n", cpu_fru);
-                        status = ST_ERR;
-                        break;
-                    }
-                    status = ST_OK;
-                    break;
-                // TODO
-                case PIN_EARLY_BOOT_STALL: // FBTP GPIO::CPU_PWR_DEBUG (GPIOQ7)
-                case PIN_PREQ:             // FBTP GPIO::CPU_PREQ (GPIOAA4)
-                default:
-                    ASD_log(LogType_Error, "Unsupported write-pin command %d received", index);
-                    status = ST_ERR;
-                    break;
+            if (index > PIN_MIN && index < PIN_MAX) {
+                Pin pin = (Pin)index;
+                status = target_write(target_control_handle, pin, assert);
+                cnt++;  // increment for the data byte
+            }
+            else {
+                ASD_log(LogType_Error, "Unexpected WRITE_PINS index: 0x%02x", index);
+                status = ST_ERR;
             }
         } else if (cmd >= READ_STATUS_MIN && cmd <= READ_STATUS_MAX) {
             int bytes_written = 0;
@@ -653,9 +575,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
             }
             cnt++;  // account for the number of cycles data byte
         } else if (cmd == WAIT_PRDY) {
-            // TODO Enable when dynamic events are supported
-            // status = target_wait_PRDY(target_control_handle, prdy_timeout);
-            status = ST_ERR;
+            status = target_wait_PRDY(target_control_handle, prdy_timeout);
         } else if (cmd == CLEAR_TIMEOUT) {
             // Command not yet implemented. This command does not apply to JTAG
             // so we will likely not implement it.
@@ -808,8 +728,6 @@ void process_message(int comm_fd, struct spi_message *s_message) {
     }
 }
 
-// TODO Enable when dynamic events are supported
-#if 0
 static STATUS sendPinEvent(ASD_EVENT value) {
     STATUS result = ST_OK;
     struct spi_message target_handler_msg = {{0}};
@@ -857,20 +775,16 @@ static STATUS TargetHandlerCallback(eventTypes event, ASD_EVENT value) {
     }
     return result;
 }
-#endif
 
 STATUS on_client_connect(struct sockaddr_in6 *cl_addr) {
     STATUS result = ST_OK;
     ASD_log(LogType_Debug, "Preparing for client connection");
 
-#if 0
-    // TODO Enable when dynamic events are supported
     // Initialize the pin control handler
-    if (target_initialize(target_control_handle, cl_addr) != ST_OK) {
+    if (target_initialize(target_control_handle) != ST_OK) {
         ASD_log(LogType_Error, "Failed to initialize the target_control_handle");
         result = ST_ERR;
     }
-#endif
 
     // Initialize the jtag handler
     if (result == ST_OK && JTAG_initialize(jtag_handler) != ST_OK) {
@@ -898,14 +812,11 @@ STATUS on_client_disconnect() {
         result = ST_ERR;
     }
 
-#if 0
-    // TODO Enable when dynamic events are supported
     // Deinitialize the pin control handler
     if (target_control_handle && target_deinitialize(target_control_handle) != ST_OK) {
         ASD_log(LogType_Error, "Failed to deinitialize the pin control handler");
         result = ST_ERR;
     }
-#endif
 
     return result;
 }
@@ -963,15 +874,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // TODO Enable when dynamic events are supported.
-#if 0
-    target_control_handle = TargetHandler(&TargetHandlerCallback);
+    target_control_handle = TargetHandler(cpu_fru, &TargetHandlerCallback);
     if (!target_control_handle) {
         ASD_log(LogType_Error, "Failed to create TargetHandler");
         exitAll();
         return 1;
     }
-#endif
     comm_fd = -1;
 
     out_msg.buffer = (unsigned char*) malloc(MAX_DATA_SIZE);

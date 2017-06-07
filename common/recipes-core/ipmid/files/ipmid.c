@@ -2420,6 +2420,19 @@ oem_get_fw_info ( unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_machine_config_info ( unsigned char *request, unsigned char req_len,
+                              unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  pal_set_machine_configuration(req->payload_id, req, req_len, response, res_len);
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -2472,6 +2485,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_FW_INFO:
       oem_get_fw_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_MACHINE_CONFIG_INFO:
+      oem_set_machine_config_info (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

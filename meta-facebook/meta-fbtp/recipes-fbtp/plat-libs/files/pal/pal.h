@@ -350,6 +350,23 @@ typedef struct _sensor_info_t {
   sdr_full_t sdr;
 } sensor_info_t;
 
+typedef struct
+{
+  uint8_t chassis_type;
+  uint8_t MB_type;
+  uint8_t processor_count;
+  uint8_t memory_count;
+  uint8_t hdd35_count;
+  uint8_t hdd25_count;
+  uint8_t riser_type;
+  uint8_t pcie_card_loc;
+  uint8_t slot1_pciecard_type;
+  uint8_t slot2_pciecard_type;
+  uint8_t slot3_pciecard_type;
+  uint8_t slot4_pciecard_type;
+  uint8_t AEP_mem_count;
+} machine_config_info;
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);

@@ -134,6 +134,7 @@ void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
 int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
+int pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 
 #ifdef __cplusplus
 }

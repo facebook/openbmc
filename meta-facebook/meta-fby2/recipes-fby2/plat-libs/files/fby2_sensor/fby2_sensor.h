@@ -35,7 +35,7 @@ extern "C" {
 #define MAX_SENSOR_NUM        0xFF
 #define MAX_SENSOR_THRESHOLD  8
 #define MAX_RETRIES_SDR_INIT  30
-#define THERMAL_CONSTANT      255
+#define THERMAL_CONSTANT      256
 #define ERR_NOT_READY         -2
 
 typedef struct _sensor_info_t {

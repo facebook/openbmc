@@ -34,6 +34,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <sys/stat.h>
+#include <openbmc/gpio.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -328,6 +329,7 @@ const uint8_t nic_sensor_list[] = {
 const uint8_t mb_discrete_sensor_list[] = {
   MB_SENSOR_POWER_FAIL,
   MB_SENSOR_MEMORY_LOOP_FAIL,
+  MB_SENSOR_PROCESSOR_FAIL,
 };
 
 float mb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -2331,23 +2333,6 @@ key_func_tz (int event, void *arg)
   return 0;
 }
 
-// Set GPIO low or high
-static void
-gpio_set(uint8_t gpio, bool value ) {
-  char vpath[64] = {0};
-  char *val;
-
-  sprintf(vpath, GPIO_VAL, gpio);
-
-  if (value) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  write_device(vpath, val);
-}
-
 // Power Button Override
 int
 pal_PBO(void) {
@@ -3044,11 +3029,10 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static int log_asserted = 0;
   const int loop_threshold = 3;
   const int longest_loop_code = 4;
-  FILE *fp=NULL;
   int i, nearest_00, len, loop_count, check_until;
-  unsigned char postcode, buff[256];
+  unsigned char buff[256];
   uint8_t location, maj_err, min_err, mem_train_fail;
-  int ret = READING_NA;
+  int ret = READING_NA, rc;
   static unsigned int retry=0;
   char sensor_name[32] = {0};
   char str[32] = {0};
@@ -3063,23 +3047,11 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
     goto error_exit;
   }
 
-  fp = fopen(POST_CODE_FILE, "r");
-  if (fp == NULL) {
-    syslog(LOG_ERR, "Cannot open %s", POST_CODE_FILE);
+  len = 0; // clear higher bits
+  rc = pal_get_80port_record(FRU_MB, NULL, 0, buff, (uint8_t *)&len);
+  if (rc != PAL_EOK)
     goto error_exit;
-  }
 
- for (i=0; i<256; i++) {
-    // %hhx: unsigned char*
-    if (fscanf(fp, "%hhx", &postcode) == 1) {
-      buff[i] = postcode;
-    } else {
-      // EOF
-      break;
-    }
-  }
-
-  len = i;
   mem_train_fail = 0;
   loop_count = 0;
   check_until = len - (longest_loop_code * (loop_threshold+1) );
@@ -3143,15 +3115,73 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   ret = 0;
 
 error_exit:
-  if (fp > 0) {
-    fclose(fp);
-  }
   if ((ret == READING_NA) && (retry < MAX_READ_RETRY)){
     ret = READING_SKIP;
     retry++;
   } else {
     retry = 0;
   }
+
+  return ret;
+}
+
+static int
+check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
+  static unsigned int retry = 0;
+  static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
+  static time_t rst_time = 0;
+  static char postcodes_last[256] = {0};
+  char postcodes[256] = {0};
+  struct stat file_stat;
+  int ret = READING_NA, rc, len;
+  char sensor_name[32] = {0};
+  char error[32] = {0};
+
+  if (fru_id != 1) {
+    syslog(LOG_ERR, "Not Supported Operation for fru %d", fru_id);
+    return READING_NA;
+  }
+
+  if (stat("/tmp/rst_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time) {
+    rst_time = file_stat.st_mtime;
+    // assume fail till we know it is not
+    frb3_fail = 0x10; // bit 4: FRB3 failure
+    retry = 0;
+    // cache current postcode buffer
+    memset(postcodes_last, 0, sizeof(postcodes_last));
+    pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+  }
+
+  if (frb3_fail) {
+    // KCS transaction
+    if (stat("/tmp/kcs_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time)
+      frb3_fail = 0;
+
+    // Port 80 updated
+    memset(postcodes, 0, sizeof(postcodes_last));
+    rc = pal_get_80port_record(FRU_MB, NULL, 0, postcodes, (uint8_t *)&len);
+    if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
+      frb3_fail = 0;
+    }
+
+    // BIOS POST COMPLT, in case BMC reboot when system idle in OS
+    if (gpio_get(GPIO_FM_BIOS_POST_CMPLT_N) == GPIO_VALUE_LOW)
+      frb3_fail = 0;
+  }
+
+  if (frb3_fail)
+    retry++;
+  else
+    retry = 0;
+
+  if (retry == MAX_READ_RETRY) {
+    pal_get_sensor_name(fru_id, sensor_num, sensor_name);
+    snprintf(error, sizeof(error), "FRB3 failure");
+    _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, frb3_fail, error);
+  }
+
+  *value = (float)frb3_fail;
+  ret = 0;
 
   return ret;
 }
@@ -3680,6 +3710,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_MEMORY_LOOP_FAIL:
         ret = check_postcodes(FRU_MB, sensor_num, (float*) value);
         break;
+      case MB_SENSOR_PROCESSOR_FAIL:
+        ret = check_frb3(FRU_MB, sensor_num, (float*) value);
+        break;
 
       default:
         return -1;
@@ -4078,6 +4111,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       break;
     case MB_SENSOR_MEMORY_LOOP_FAIL:
       sprintf(name, "MB_MEMORY_LOOP_FAIL");
+      break;
+    case MB_SENSOR_PROCESSOR_FAIL:
+      sprintf(name, "MB_PROCESSOR_FAIL");
       break;
 
     default:
@@ -6088,4 +6124,41 @@ pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh) {
   else
     *thresh = 0;
 
+}
+
+int
+pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  FILE *fp=NULL;
+  int i;
+  unsigned char postcode;
+
+  if (res_data == NULL)
+    return -1;
+
+  if (slot != FRU_MB) {
+    syslog(LOG_WARNING, "pal_get_80port_record: slot %d is not supported", slot);
+    return PAL_ENOTSUP;
+  }
+
+  fp = fopen(POST_CODE_FILE, "r");
+  if (fp == NULL) {
+    syslog(LOG_WARNING, "pal_get_80port_record: Cannot open %s", POST_CODE_FILE);
+    return PAL_ENOTSUP;
+  }
+
+  for (i=0; i<256; i++) {
+    // %hhx: unsigned char*
+    if (fscanf(fp, "%hhx", &postcode) == 1) {
+      res_data[i] = postcode;
+    } else {
+      break;
+    }
+  }
+  if (res_len)
+    *(unsigned short *)res_len = i;
+
+  fclose(fp);
+
+  return PAL_EOK;
 }

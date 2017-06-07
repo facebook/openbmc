@@ -279,6 +279,7 @@ enum {
 //Discrete sensor
   MB_SENSOR_POWER_FAIL = 0x9C,
   MB_SENSOR_MEMORY_LOOP_FAIL = 0x9D,
+  MB_SENSOR_PROCESSOR_FAIL = 0x65,
 };
 
 enum{

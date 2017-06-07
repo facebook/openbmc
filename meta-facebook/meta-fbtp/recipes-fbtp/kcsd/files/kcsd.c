@@ -69,6 +69,11 @@ uint8_t debug = 0;
 int kcs_fd;
 
 #define FM_BMC_READY_N 145
+#define TOUCH(path) \
+{\
+  int fd = creat(path, 0644);\
+  if (fd) close(fd);\
+}
 
 void set_bmc_ready(bool ready)
 {
@@ -113,6 +118,8 @@ void *kcs_thread(void) {
       }
 
       req_buf[0] = 0x01;
+
+      TOUCH("/tmp/kcs_touch");
 
     // Send to IPMI stack and get response
     // Additional byte as we are adding and passing payload ID for MN support

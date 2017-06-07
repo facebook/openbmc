@@ -386,35 +386,28 @@ err_exit:
 
 static int
 print_postcodes(uint8_t fru_id) {
-  FILE *fp=NULL;
-  int i;
-  unsigned char postcode;
+  int i, rc, len;
+  unsigned char postcodes[256];
 
   if (fru_id != 1) {
     fprintf(stderr, "Not Supported Operation\n");
     return -1;
   }
 
-  fp = fopen(POST_CODE_FILE, "r");
-  if (fp == NULL) {
-    fprintf(stderr, "Cannot open %s\n", POST_CODE_FILE);
+  len = 0; // clear higher bits
+  rc = pal_get_80port_record(fru_id, NULL, 0, postcodes, (uint8_t *)&len);
+  if (rc != PAL_EOK) {
+    fprintf(stderr, "Error while get 80 port: %d\n", rc);
     return -1;
   }
 
-  for (i=0; i<256; i++) {
-    // %hhx: unsigned char*
-    if (fscanf(fp, "%hhx", &postcode) == 1) {
-      printf("%02X ", postcode);
-    } else {
-      if (i%16 != 0)
-        printf("\n");
-      break;
-    }
+  for (i=0; i<len; i++) {
+    printf("%02X ", postcodes[i]);
     if (i%16 == 15)
       printf("\n");
   }
-
-  fclose(fp);
+  if (i%16 != 0)
+    printf("\n");
 
   return 0;
 }

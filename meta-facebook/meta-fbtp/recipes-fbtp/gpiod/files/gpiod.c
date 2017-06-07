@@ -39,6 +39,12 @@
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
 
+#define TOUCH(path) \
+{\
+  int fd = creat(path, 0644);\
+  if (fd) close(fd);\
+}
+
 #define POLL_TIMEOUT -1 /* Forever */
 static uint8_t CATERR_irq = 0;
 static uint8_t MSMI_irq = 0;
@@ -112,14 +118,15 @@ static void platform_reset_event_handle(void *p)
 {
   gpio_poll_st *gp = (gpio_poll_st*) p;
 
-  if (gp->gs.gs_gpio == gpio_num("GPIOR5")) 
+  if (gp->gs.gs_gpio == gpio_num("GPIOR5"))
   {
     // Use GPIOR5 to filter some gpio logging
     reset_timer(&reset_sec);
+    TOUCH("/tmp/rst_touch");
   }
-  
+
   log_gpio_change(gp, 0);
-   
+
 }
 
 // Generic Event Handler for GPIO changes
@@ -351,7 +358,7 @@ gpio_pre_check() {
           syslog(LOG_WARNING, "gpio_pre_check:%s fail", pre_check_table[i].gpio_name);
           continue;
         }
-        g_gpios[j].value = ret;      
+        g_gpios[j].value = ret;
         if (pre_check_table[i].trigger_pwr_sts != DONT_CARE) {
           pal_get_server_power(1, &status);
           if ( (status == pre_check_table[i].trigger_pwr_sts) && ( gpio_read(&g_gpios[j].gs) == pre_check_table[i].trigger_val) ) {
@@ -418,7 +425,7 @@ static void set_gpio_value(uint8_t *pin, uint8_t value)
 {
   int ret = -1;
   uint8_t pin_number=0;
-  
+
   pin_number = gpio_num(pin);
 
   ret = gpio_set(pin_number, value);
@@ -434,7 +441,7 @@ static void *
 ierr_mcerr_event_handler() {
   uint8_t CATERR_ierr_time_count = 0;
   uint8_t MSMI_ierr_time_count = 0;
-  uint8_t status = 0; 
+  uint8_t status = 0;
 
   while (1) {
     if ( CATERR_irq > 0 ){
@@ -452,7 +459,7 @@ ierr_mcerr_event_handler() {
             CATERR_irq--;
             CATERR_ierr_time_count = 0;
             //light up the fault LED
-            set_gpio_value("GPIOU5", GPIO_VALUE_LOW);   
+            set_gpio_value("GPIOU5", GPIO_VALUE_LOW);
             system("/usr/local/bin/autodump.sh &");
           } else if ( CATERR_irq > 1 ){
                    while (CATERR_irq > 1){

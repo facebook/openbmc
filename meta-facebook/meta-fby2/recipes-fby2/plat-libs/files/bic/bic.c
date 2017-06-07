@@ -1202,6 +1202,8 @@ error_exit:
     free(tbuf);
   }
 
+  set_fw_update_ongoing(slot_id, 0);
+
   //Unlock fw-util
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);

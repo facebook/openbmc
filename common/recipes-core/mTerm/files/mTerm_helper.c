@@ -33,10 +33,10 @@ void setFru(char *dev) {
 
 void escHelp(void) {
   printf("\r\n------------------TERMINAL MULTIPLEXER---------------------\r\n");
-  printf("  CTRL-L ?   : Display help message.\r\n");
-  printf("  CTRL-L DEL : Terminate the connection.\r\n");
+  printf("  CTRL-l ?   : Display help message.\r\n");
+  printf("  CTRL-l x : Terminate the connection.\r\n");
   printf("  /var/log/mTerm_%s.log : Log location\r\n", g_fru);
-  printf("  CTRL-L + b : Send Break\r\n");
+  printf("  CTRL-l + b : Send Break\r\n");
   /*TODO: Log file read from tool*/
   //printf("  CTRL-L :N - For reading last N lines from end of buffer.\r\n");
   printf("\r\n-----------------------------------------------------------\r\n");
@@ -44,7 +44,7 @@ void escHelp(void) {
 }
 
 void escClose(int clientfd) {
-  sendTlv(clientfd, ASCII_DELETE, NULL , 0);
+  sendTlv(clientfd, 'x', NULL , 0);
   printf("Connection closed.\r\n");
  return;
 }
@@ -59,7 +59,7 @@ int processEscMode(int clientfd, char c, escMode* mode) {
     *mode = SEND;
     return 1;
   }
-  if (c == ASCII_DELETE) {
+  if (c == 'x') {
     escClose(clientfd);
     *mode = EOL;
     return 0;

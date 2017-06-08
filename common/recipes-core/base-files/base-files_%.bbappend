@@ -27,9 +27,16 @@ do_install_bmc_issue () {
         version=""
     fi
 
-    echo "OpenBMC Release ${version}" > ${D}${sysconfdir}/issue
+    print_version="${MACHINE}"
+    if [[ $version == ${MACHINE}-v* ]]; then
+      print_version=${version}
+    else
+      sha=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} rev-parse --short HEAD)
+      print_version="${MACHINE}-${sha}"
+    fi
+    echo "OpenBMC Release ${print_version}" > ${D}${sysconfdir}/issue
     echo >> ${D}${sysconfdir}/issue
-    echo "OpenBMC Release ${version} %h" > ${D}${sysconfdir}/issue.net
+    echo "OpenBMC Release ${print_version} %h" > ${D}${sysconfdir}/issue.net
     echo >> ${D}${sysconfdir}/issue.net
 }
 

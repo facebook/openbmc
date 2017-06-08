@@ -621,7 +621,7 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
   return 0;
 }
 
-static int
+int
 pal_slot_pair_12V_off(uint8_t slot_id) {
   int slot_type=-1;
   int pair_slot_id;

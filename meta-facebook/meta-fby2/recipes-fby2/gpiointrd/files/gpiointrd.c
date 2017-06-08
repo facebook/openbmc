@@ -49,11 +49,14 @@
 #define HOTSERVICE_FILE "/tmp/slot%d_reinit"
 #define HSLOT_PID  "/tmp/slot%u_reinit.pid"
 
-char *fru_prsnt_log_string[2 * MAX_NUM_FRUS] = {
+char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
  "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal", "",
- "", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion",
+ "", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion", "",
+ "", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF", 
 };
+
+const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 
 typedef struct {
   char slot_key[32];
@@ -114,6 +117,33 @@ read_device(const char *device, int *value) {
   if (rc != 1) {
 #ifdef DEBUG
     syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+static int
+write_device(const char *device, const char *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "w");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device for write %s", device);
+#endif
+    return err;
+  }
+
+  rc = fputs(value, fp);
+  fclose(fp);
+
+  if (rc < 0) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to write device %s", device);
 #endif
     return ENOENT;
   } else {
@@ -245,9 +275,27 @@ static void gpio_event_handle(void *p)
            printf("Noise Interrupt (low to high)\n");
            return;
           }
-
-          syslog(LOG_CRIT, fru_prsnt_log_string[slot_id]);
-
+          else {
+           ret = pal_is_server_12v_on(slot_id, &value);    /* Check whether the system is 12V off or on */
+           if (ret < 0) {
+             syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+             return -1;
+           }
+           if (value) {
+             syslog(LOG_CRIT, fru_prsnt_log_string[2*MAX_NUM_FRUS + slot_id]);     //Card removal without 12V-off
+             memset(vpath, 0, sizeof(vpath));      
+             sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+             if (write_device(vpath, "0")) {        /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
+               return -1;
+             }
+             ret = pal_slot_pair_12V_off(slot_id);  /* Turn off 12V to pair of slots when Server/GP/CF be removed brutally with pair config */
+             if (0 != ret)
+               printf("pal_slot_pair_12V_off failed for fru: %d\n", slot_id);
+           }
+           else
+             syslog(LOG_CRIT, fru_prsnt_log_string[slot_id]);     //Card removal with 12V-off 
+          }
+         
           // Re-init kv list
           for(i=0; i < sizeof(slot_kv_list)/sizeof(slot_kv_st); i++) {
             memset(slot_kv, 0, sizeof(slot_kv));

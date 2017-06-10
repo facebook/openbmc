@@ -28,7 +28,6 @@
 #include <syslog.h>
 #include <sys/mman.h>
 #include <sys/file.h>
-#include <string.h>
 #include <pthread.h>
 #include <openbmc/obmc-i2c.h>
 #include "pal.h"
@@ -1290,7 +1289,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   }
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
-    fclose(fd);
+    close(fd);
     return;
   }
 
@@ -1817,4 +1816,58 @@ pal_get_boot_option(unsigned char para,unsigned char* pbuff)
   unsigned char size = option_size[para];
   memset(pbuff, 0, size);
   return size;
+}
+
+int
+pal_set_cpu_mem_threshold(const char* threshold_path) {
+  char str[MAX_KEY_LEN];
+  int threshold = 0;
+  int retry_count = 0;
+  int ret = 0;
+  FILE *fp;
+
+  memset(str, 0, sizeof(char) * MAX_KEY_LEN);
+  if (strcasestr(threshold_path, "CPU") != NULL) {
+    threshold = CPU_THRESHOLD;
+    sprintf(str, "%d", threshold);
+  } else if (strcasestr(threshold_path, "MEM") != NULL) {
+    threshold = MEM_THRESHOLD;
+    sprintf(str, "%d", threshold);
+  } else {
+    syslog(LOG_WARNING, "%s: setting threshold to error path: %s", __func__, threshold_path);
+    return -1;
+  }
+  if (access(threshold_path, F_OK) == -1) {
+    fp = fopen(threshold_path, "w");
+    if (!fp) {
+      syslog(LOG_WARNING, "%s: failed to open %s", __func__, threshold_path);
+      return -1;
+    }
+  } else {
+    return 0;
+  }
+
+  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, threshold_path, strerror(errno));
+    fclose(fp);
+    return -1;
+  }
+
+  ret = fwrite(str, sizeof(char), 3, fp);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: failed to write threshold to %s",__func__, threshold_path);
+    flock(fileno(fp), LOCK_UN);
+    fclose(fp);
+    return -1;
+  }
+
+  flock(fileno(fp), LOCK_UN);
+  fclose(fp);
+  return 0;
 }

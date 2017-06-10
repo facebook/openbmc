@@ -77,6 +77,9 @@ extern "C" {
 
 #define BMC_HEALTH 4      // for bmc_health key
 
+#define CPU_THRESHOLD 80
+#define MEM_THRESHOLD 70
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -234,6 +237,8 @@ int pal_m2_read_nvme_data(uint8_t i2c_map, uint8_t m2_mux_chan, uint8_t cmd);
 int pal_drive_health(const char* dev);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
+uint8_t pal_get_status(void);
+int pal_set_cpu_mem_threshold(const char* threshold_path);
 int pal_bmc_err_enable(void);
 int pal_bmc_err_disable(void);
 

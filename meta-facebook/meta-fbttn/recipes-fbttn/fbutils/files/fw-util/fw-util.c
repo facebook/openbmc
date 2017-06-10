@@ -41,14 +41,8 @@ print_usage_help(void) {
   uint8_t sku = 0;
   sku = pal_get_iom_type();
 
-  //SKU : 2 type7
-  if (sku == 2) {
-    printf("Usage: fw-util <all|slot1|iom|scc|ioc2> <--version>\n");
-  } else {
-    printf("Usage: fw-util <all|slot1|iom|scc> <--version>\n");
-  }
+  printf("Usage: fw-util <all|slot1|iom|scc> <--version>\n");
   printf("       fw-util <slot1> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
-
   printf("       fw-util <iom> <--update> <--rom|--bmc> <path>\n");
 }
 
@@ -333,9 +327,6 @@ main(int argc, char **argv) {
   signal(SIGKILL, sig_handler);
   signal(SIGTERM, sig_handler);
 
-  // TODO: Define and use enum for SKU type 
-  // SKU: IOM_TYPE5, IOM_TYPE7
-  // Update the SKUs in fblibs as well
   sku = pal_get_iom_type();
 
   // Check for border conditions
@@ -350,8 +341,6 @@ main(int argc, char **argv) {
     fru = FRU_IOM;
   }else if (!strcmp(argv[1] , "scc")) {
     fru = FRU_SCC;
-  }else if (!strcmp(argv[1] , "ioc2")) {
-    fru = FRU_IOM_IOC;
   }else if (!strcmp(argv[1] , "all")) {
     fru = FRU_ALL;
   } else {
@@ -366,22 +355,22 @@ main(int argc, char **argv) {
 
       case FRU_IOM:
         print_fw_bmc_ver();
+        if (sku == IOM_IOC) {
+          print_fw_ioc_ver();
+        }
         break;
 
       case FRU_SCC:
         print_fw_scc_ver();
         break;
 
-      case FRU_IOM_IOC:
-        print_fw_ioc_ver();
-        break;
-
       case FRU_ALL:
         print_fw_ver(FRU_SLOT1);
         print_fw_bmc_ver();
-        print_fw_scc_ver();
-        if (sku == 2)
+        if (sku == IOM_IOC) {
           print_fw_ioc_ver();
+        }
+        print_fw_scc_ver();
         break;
     }
     return 0;

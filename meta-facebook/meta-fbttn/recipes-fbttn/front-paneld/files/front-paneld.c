@@ -54,8 +54,6 @@
 #define LED_ON_TIME_BMC_SELECT 500
 #define LED_OFF_TIME_BMC_SELECT 500
 
-#define IOM_TYPE5 1
-#define IOM_TYPE7 2
 #define PATH_HEARTBEAT_HEALTH "/tmp/heartbeat_health"
 #define BMC_RMT_HB_TIMEOUT_COUNT  1800
 #define SCC_LOC_HB_TIMEOUT_COUNT  1800
@@ -725,24 +723,24 @@ hb_mon_handler() {
   scc_rmt_type = ((pal_get_sku() >> 6) & 0x1);
   // Type 5
   if (scc_rmt_type == 0) {
-    if (iom_type == IOM_TYPE7) {
+    if (iom_type == IOM_IOC) {
       syslog(LOG_CRIT, "The chassis type is type V, the IOM type is IOC solution. The IOM does not match in this chassis. Default monitor type V HB.");
     }
-    else if (iom_type != IOM_TYPE5) {
+    else if (iom_type != IOM_M2) {
       syslog(LOG_CRIT, "The chassis type is type V, the IOM type is unable to identify. Default monitor type V HB.");
     }
-    iom_type = IOM_TYPE5;
+    iom_type = IOM_M2;
     hb_health = (1 << 5) | (1 << 4);
   }
   // Type 7
   else {
-    if (iom_type == IOM_TYPE5) {
+    if (iom_type == IOM_M2) {
       syslog(LOG_CRIT, "The chassis type is type VII, the IOM type is M.2 solution. The IOM does not match in this chassis. Default monitor type VII HB.");
     }
-    else if (iom_type != IOM_TYPE7) {
+    else if (iom_type != IOM_IOC) {
       syslog(LOG_CRIT, "The chassis type is type VII, the IOM type is unable to identify. Default monitor type VII HB");
     }
-    iom_type = IOM_TYPE7;
+    iom_type = IOM_IOC;
     hb_health = (1 << 4) | (1 << 3);
   }
 
@@ -766,7 +764,7 @@ hb_mon_handler() {
     //   4. Update heartbeat status
 
     // BMC remote heartbeat
-    if (iom_type == IOM_TYPE5) {
+    if (iom_type == IOM_M2) {
       // Get heartbeat
       bmc_rmt_hb_value = pal_get_bmc_rmt_hb();
       if (bmc_rmt_hb_value <= BMC_RMT_HB_RPM_LIMIT) {
@@ -800,7 +798,7 @@ hb_mon_handler() {
     }
 
     // SCC local heartbeat
-    if ((iom_type == IOM_TYPE5) || (iom_type == IOM_TYPE7)) {
+    if ((iom_type == IOM_M2) || (iom_type == IOM_IOC)) {
       scc_loc_hb_value = pal_get_scc_loc_hb();
       if (scc_loc_hb_value <= SCC_LOC_HB_RPM_LIMIT) {
         count_scc_loc++;
@@ -830,7 +828,7 @@ hb_mon_handler() {
     }
 
     // SCC remote heartbeat
-    if (iom_type == IOM_TYPE7) {
+    if (iom_type == IOM_IOC) {
       scc_rmt_hb_value = pal_get_scc_rmt_hb();
       if (scc_rmt_hb_value <= SCC_RMT_HB_RPM_LIMIT) {
         count_scc_rmt++;

@@ -33,9 +33,9 @@ static void
 print_usage_help(void) {
 
   int sku = 0;
+
   sku = pal_get_iom_type();
-  //SKU : 2 type7
-  if (sku == 2) {
+  if (sku == IOM_IOC) {
     printf("Usage: fpc-util <slot1> --ext1 <warning/off>\n");
     printf("Usage: fpc-util <slot1> --ext2 <warning/off>\n");
   }

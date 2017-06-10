@@ -62,9 +62,6 @@ extern "C" {
 
 #define HB_INTERVAL 50
 
-//Type7 IOM IOC
-#define FRU_IOM_IOC 7
-
 #define NIC_TEMP_RETRY 3
 
 // For I2C bus crash error code
@@ -179,6 +176,27 @@ enum {
 enum {
   FAN_0 = 0,
   FAN_1,
+};
+
+enum {
+  IOM_M2 = 1,
+  IOM_IOC = 2,
+};
+
+enum {
+  IOM_SIDEA = 1,
+  IOM_SIDEB = 2,
+};
+
+enum {
+  PICE_CONFIG_TYPE5 = 0x6,
+  PICE_CONFIG_TYPE7 = 0x8,
+};
+
+enum {
+  PLAT_INFO_SKUID_TYPE5A = 3,
+  PLAT_INFO_SKUID_TYPE5B = 4,
+  PLAT_INFO_SKUID_TYPE7SS = 5,
 };
 
 //fw-util FW Updating Flag File

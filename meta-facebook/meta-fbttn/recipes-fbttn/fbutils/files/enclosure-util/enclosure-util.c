@@ -50,8 +50,7 @@ print_usage_help(void) {
   printf("Usage: enclosure-util --hdd-status\n");
   printf("Usage: enclosure-util --hdd-status <number 0~35>\n");
   printf("Usage: enclosure-util --error\n");
-  //SKU : 1 type5
-  if (sku == 1) {
+  if (sku == IOM_M2) {
     printf("Usage: enclosure-util --M.2-health\n");
     printf("Usage: enclosure-util --M.2-status\n");
   }

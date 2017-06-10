@@ -1235,7 +1235,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       break;
     case FRU_IOM:
       sku = pal_get_iom_type();
-      if (sku == 1) { // SKU: Type 5
+      if (sku == IOM_M2) {  // IOM type: M.2 solution
         // It's a transition period from EVT to DVT
         sprintf(path, GPIO_VAL, GPIO_BOARD_REV_2);
         read_device(path, &val);
@@ -1246,7 +1246,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
           *sensor_list = (uint8_t *) iom_sensor_list_type5_dvt;
           *cnt = iom_sensor_cnt_type5_dvt;
         }
-      } else {        // SKU: Type 7
+      } else {              // IOM type: IOC solution
         *sensor_list = (uint8_t *) iom_sensor_list_type7;
         *cnt = iom_sensor_cnt_type7;
       }
@@ -1412,12 +1412,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   else {
     // On successful sensor read
     sku = pal_get_iom_type();
-    if (sku == 1) { // SKU: Type 5
+    if (sku == IOM_M2) { // IOM type: M.2 solution
       if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
        || (sensor_num == IOM_SENSOR_ADC_P3V3_M2)) {
           check_server_power_status = true;
       }
-    } else {        // SKU: Type 7
+    } else {            // IOM type: IOC solution
       if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
        || (sensor_num == IOM_SENSOR_ADC_P1V5) || (sensor_num == IOM_SENSOR_ADC_P0V975)
        || (sensor_num == IOM_IOC_TEMP)) {
@@ -2839,16 +2839,16 @@ int pal_get_plat_sku_id(void){
   sku = pal_get_iom_type();
   location = pal_get_locl();
 
-  if(sku == 1) {//type 5
-    if(location == 1) {
-      platform_info = 2; //Triton Type 5A
+  if(sku == IOM_M2) {
+    if(location == IOM_SIDEA) {
+      platform_info = PLAT_INFO_SKUID_TYPE5A;
     }
-    else if(location == 2) {
-      platform_info = 3; //Triton Type 5B
+    else if(location == IOM_SIDEB) {
+      platform_info = PLAT_INFO_SKUID_TYPE5B;
     }
   }
-  else if (sku == 2) {//type 7
-    platform_info = 4; //Triton 7SS
+  else if (sku == IOM_IOC) {
+    platform_info = PLAT_INFO_SKUID_TYPE7SS; 
   }
   else
     return -1;
@@ -2865,10 +2865,10 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   unsigned char *data = res_data;
   sku = pal_get_iom_type();
 
-  if(sku == 1)
-    pcie_conf = 0x6;
-  else if (sku == 2)
-    pcie_conf = 0x8;
+  if(sku == IOM_M2)
+    pcie_conf = PICE_CONFIG_TYPE5;
+  else if (sku == IOM_IOC)
+    pcie_conf = PICE_CONFIG_TYPE7;
   else
     return completion_code;
   

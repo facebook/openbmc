@@ -31,7 +31,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-bic-cached.sh ${D}${sysconfdir}/init.d/setup-bic-cached.sh
-  update-rc.d -r ${D} setup-bic-cached.sh start 66 5 .
+  update-rc.d -r ${D} setup-bic-cached.sh start 71 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

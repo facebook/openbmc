@@ -2,7 +2,7 @@
 all: exp-cached
 
 exp-cached: exp-cached.c 
-	$(CC) -pthread -lexp -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread -lpal -lexp -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

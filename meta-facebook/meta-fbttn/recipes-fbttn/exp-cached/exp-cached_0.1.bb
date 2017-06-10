@@ -8,7 +8,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://exp-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libexp update-rc.d-native"
+DEPENDS_append = "libpal libexp update-rc.d-native"
 
 SRC_URI = "file://Makefile \
            file://setup-exp-cached.sh \
@@ -31,7 +31,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-exp-cached.sh ${D}${sysconfdir}/init.d/setup-exp-cached.sh
-  update-rc.d -r ${D} setup-exp-cached.sh start 66 5 .
+  update-rc.d -r ${D} setup-exp-cached.sh start 71 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

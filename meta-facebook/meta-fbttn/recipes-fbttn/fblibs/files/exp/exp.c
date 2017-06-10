@@ -63,7 +63,7 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
 
   if (rlen == 0) {
 #ifdef DEBUG
-    syslog(LOG_DEBUG, "expander_ipmb_wrapper: Zero bytes received\n");
+    syslog(LOG_DEBUG, "%s: Zero bytes received\n", __func__);
 #endif
     return -1;
   }
@@ -73,7 +73,7 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
 
   if (res->cc) {
 #ifdef DEBUG
-    syslog(LOG_ERR, "expander_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+    syslog(LOG_ERR, "%s: Completion Code: 0x%X\n", __func__, res->cc);
 #endif
     return -1;
   }
@@ -97,9 +97,10 @@ exp_get_fw_ver(uint8_t *ver) {
 
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_GET_EXP_VERSION, tbuf, tlen, rbuf, &rlen);
   if (ret) {
-    syslog(LOG_WARNING, "exp_get_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
+    syslog(LOG_ERR, "%s: expander_ipmb_wrapper failed...\n", __func__);
     return -1;
   }
+
   if(!rbuf[5]) //the 5th byte is FW 1 selecte byte, the 10th byte is backup FW select byte
     fw_select_shift = 5;
 
@@ -119,7 +120,7 @@ exp_get_ioc_fw_ver(uint8_t *ver) {
 
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_GET_IOC_VERSION, tbuf, tlen, rbuf, &rlen);
   if (ret) {
-    syslog(LOG_WARNING, "exp_get_ioc_fw_ver: expander_ipmb_wrapper returns %d\n", ret);
+    syslog(LOG_ERR, "%s: expander_ipmb_wrapper failed...\n", __func__);
     return -1;
   }
 
@@ -147,6 +148,11 @@ exp_read_fruid(const char *path, unsigned char FRUID) {
   tbuf[3] = EXPANDER_FRUID_SIZE + 2; //Count to read --- count is 1 based
   tlen = 4;
   ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, tlen, rbuf, &rlen);
+  if (ret) {
+    syslog(LOG_ERR, "%s: first half failed for fru:%d\n", __func__, FRUID);
+    return -1;
+  }
+
   memcpy( abuf, rbuf + 1, rlen-1);
   l_rlen = rlen - 1;
   memset(rbuf,0,512);
@@ -154,12 +160,12 @@ exp_read_fruid(const char *path, unsigned char FRUID) {
   tbuf[1] = EXPANDER_FRUID_SIZE + 2; //FRU Inventory Offset to read, LS Byte
   tbuf[2] = 0; //FRU Inventory Offset to read, MS Byte
   ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, tlen, r1_buf, &rlen);
-  memcpy( abuf + l_rlen, r1_buf + 1, rlen - 1);
-
   if (ret) {
-    syslog(LOG_WARNING, "exp_read_fruid: expander_ipmb_wrapper returns %d\n", ret);
+    syslog(LOG_ERR, "%s: second half failed for fru:%d\n", __func__, FRUID);
     return -1;
   }
+
+  memcpy( abuf + l_rlen, r1_buf + 1, rlen - 1);
 
   // Remove the file if exists already
   unlink(path);
@@ -168,7 +174,7 @@ exp_read_fruid(const char *path, unsigned char FRUID) {
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
 #ifdef DEBUG
-    syslog(LOG_ERR, "bic_read_fruid: open fails for path: %s\n", path);
+    syslog(LOG_ERR, "%s: open failed for path: %s\n", __func__, path);
 #endif
     return -1;
   }

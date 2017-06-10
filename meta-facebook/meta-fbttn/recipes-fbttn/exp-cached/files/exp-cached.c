@@ -30,11 +30,8 @@
 #include <sys/un.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/pal.h>
 #include <facebook/exp.h>
-
-#define FRU_ID_DPB 3
-#define FRU_ID_SCC 4
-
 
 void
 fruid_cache_init(void) {
@@ -47,22 +44,22 @@ fruid_cache_init(void) {
   sprintf(fruid_temp_path, "/tmp/tfruid_scc.bin");
   sprintf(fruid_path, "/tmp/fruid_scc.bin");
 
-  // To do.. get exp fru info
-  ret = exp_read_fruid(fruid_temp_path, FRU_ID_SCC);
+  ret = exp_read_fruid(fruid_temp_path, FRU_SCC);
   if (ret) {
-    syslog(LOG_WARNING, "fruid_cache_init: exp_read_fruid returns %d\n", ret);
+    syslog(LOG_ERR, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_SCC);
   }
 
   rename(fruid_temp_path, fruid_path);
 
-
   sprintf(fruid_temp_path, "/tmp/tfruid_dpb.bin");
   sprintf(fruid_path, "/tmp/fruid_dpb.bin");
 
-  // To do.. get exp fru info
-  ret = exp_read_fruid(fruid_temp_path, FRU_ID_DPB);
+  //delay 3 seconds betwenn for two continuous commands
+  sleep(3);
+
+  ret = exp_read_fruid(fruid_temp_path, FRU_DPB);
   if (ret) {
-    syslog(LOG_WARNING, "fruid_cache_init: exp_read_fruid returns %d\n", ret);
+    syslog(LOG_ERR, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_DPB);
   }
 
   rename(fruid_temp_path, fruid_path);

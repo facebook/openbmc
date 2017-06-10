@@ -95,18 +95,23 @@ initilize_all_kv() {
 
 int
 get_threshold(uint8_t name, float *threshold) {
-  char threshold_path[MAX_KEY_LEN], str[MAX_KEY_LEN];
-  int file_non_exist = 0, rc;
+  char threshold_path[MAX_KEY_LEN];
+  char str[MAX_KEY_LEN];
+  int def_threshold = 0;
+  int file_non_exist = 0;
+  int retry_count = 0;
+  int rc = 0;
   FILE *fp;
 
+  memset(threshold_path, 0, sizeof(char) * MAX_KEY_LEN);
   switch (name) {
     case CPU:
-      *threshold = DEFAULT_CPU_THRESHOLD;
+      def_threshold = DEFAULT_CPU_THRESHOLD;
       sprintf(threshold_path, "%s", CPU_THRESHOLD_PATH);
       break;
 
     case MEM:
-      *threshold = DEFAULT_MEM_THRESHOLD;
+      def_threshold = DEFAULT_MEM_THRESHOLD;
       sprintf(threshold_path, "%s", MEM_THRESHOLD_PATH);
       break;
 
@@ -114,6 +119,9 @@ get_threshold(uint8_t name, float *threshold) {
       return -1;
   }
 
+  if (pal_set_cpu_mem_threshold(threshold_path)) {
+    syslog(LOG_WARNING, "%s: Failed to set threshold %s\n", __func__, threshold_path);
+  }
 
   fp = fopen(threshold_path, "r");
   if (!fp && (errno == ENOENT)) {
@@ -125,25 +133,55 @@ get_threshold(uint8_t name, float *threshold) {
     return -1;
   }
 
+  rc = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  while (rc && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    rc = flock(fileno(fp), LOCK_EX | LOCK_NB);
+  }
+  if (rc) {
+    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, threshold_path, strerror(errno));
+    fclose(fp);
+    return -1;
+  }
+
   // If there is no file can get threshold, we use the default value
   if (file_non_exist) {
-    sprintf(str, "%.2f", *threshold);
-    rc = fwrite(str, 1, sizeof(float), fp);
+    *threshold = def_threshold;
+    sprintf(str, "%d", def_threshold);
+    rc = fwrite(str, sizeof(char), 3, fp);
     if (rc < 0) {
       syslog(LOG_WARNING, "%s: failed to write threshold to %s",__func__, threshold_path);
+      flock(fileno(fp), LOCK_UN);
       fclose(fp);
       return -1;
     }
   } else {
     // Get threshold from file
-    rc = fread(str, 1, sizeof(float), fp);
+    rc = fread(str, sizeof(char), 3, fp);
     if (rc < 0) {
       syslog(LOG_WARNING, "%s: failed to read threshold from %s",__func__, threshold_path);
+      flock(fileno(fp), LOCK_UN);
       fclose(fp);
       return -1;
     }
-    *threshold = atof(str);
+    *threshold = atoi(str);
   }
+
+  if (*threshold == 0) {
+    *threshold = def_threshold;
+    syslog(LOG_WARNING, "%s: user setting threshold %s is unreasonable and set threshold as default value: %d",
+           __func__, str, def_threshold);
+  } else if (*threshold > 90) {
+    *threshold = 90;
+    syslog(LOG_WARNING, "%s: user setting threshold %s is too high and set threshold as 90",__func__, str);
+  } else if (*threshold < 60) {
+    *threshold = 60;
+    syslog(LOG_WARNING, "%s: user setting threshold %s is too low and set threshold as 60",__func__, str);
+  }
+
+
+  flock(fileno(fp), LOCK_UN);
   fclose(fp);
 
   return 0;
@@ -227,7 +265,7 @@ i2c_mon_handler() {
               timeout--;
               usleep(10);
             }
-            // If the bus is busy over 200 ms, means the I2C transaction is abnormal.
+            // If the bus is busy over 30 ms, means the I2C transaction is abnormal.
             // To confirm the bus is not workable.
             if (timeout < 0) {
               memset(str_i2c_log, 0, sizeof(char) * 64);
@@ -272,9 +310,6 @@ CPU_usage_monitor() {
     cpu_threshold = DEFAULT_CPU_THRESHOLD;
   }
 
-  if (cpu_threshold > 90)
-    cpu_threshold = 90;
-
   while (1) {
 
     if (retry > MAX_RETRY) {
@@ -298,8 +333,8 @@ CPU_usage_monitor() {
 
     timer %= SLIDING_WINDOW_SIZE;
 
-    // Need more data to cacluate the avg. utilization. We average 60 records here.
-    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag)
+    // Need more data to cacluate the avg. utilization. We average 120 records here.
+    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
       ready_flag = 1;
 
 
@@ -359,9 +394,6 @@ memory_usage_monitor() {
     mem_threshold = DEFAULT_MEM_THRESHOLD;
   }
 
-  if (mem_threshold > 90)
-    mem_threshold = 90;
-
   while (1) {
 
     if (retry > MAX_RETRY) {
@@ -371,8 +403,8 @@ memory_usage_monitor() {
 
     timer %= SLIDING_WINDOW_SIZE;
 
-    // Need more data to cacluate the avg. utilization. We average 60 records here.
-    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag)
+    // Need more data to cacluate the avg. utilization. We average 120 records here.
+    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
       ready_flag = 1;
 
     // Get sys info

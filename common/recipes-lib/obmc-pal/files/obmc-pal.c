@@ -256,6 +256,7 @@ pal_get_fru_id(char *str, uint8_t *fru)
 int __attribute__((weak))
 pal_get_fru_name(uint8_t fru, char *name)
 {
+  sprintf(name, "fru%u", fru);
   return PAL_EOK;
 }
 

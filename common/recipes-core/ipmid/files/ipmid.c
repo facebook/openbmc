@@ -2433,6 +2433,80 @@ oem_set_machine_config_info ( unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_flash_info ( unsigned char *request, unsigned char req_len,
+                  unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  char fruname[32];
+  uint8_t mfg_id = 0;
+  uint16_t dev_id = 0;
+  uint16_t sts = 0;
+
+  *res_len = 0x0;
+  memcpy(&mfg_id, &req->data[3], 1);
+  memcpy(&dev_id, &req->data[4], 2);
+  memcpy(&sts, &req->data[6], 2);
+
+  if (pal_get_fru_name(req->payload_id, fruname)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+
+  sprintf(key, "%s_bios_flashinfo", fruname);
+  sprintf(value, "%u %u %u", mfg_id, dev_id, sts);
+
+  if (kv_set(key, value)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+  res->cc = CC_SUCCESS;
+}
+
+static void
+oem_get_flash_info ( unsigned char *request, unsigned char req_len,
+                  unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  char fruname[32];
+  uint8_t mfg_id = 0;
+  uint16_t dev_id = 0;
+  uint16_t sts = 0;
+
+  *res_len = 0;
+  
+  if (pal_get_fru_name(req->payload_id, fruname)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+
+  sprintf(key, "%s_bios_flashinfo", fruname);
+  if (kv_get(key, value)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+  if (sscanf(value, "%u %u %u", &mfg_id, &dev_id, &sts) != 3) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+
+  // Prepare response buffer
+  memcpy(&res->data[0], &mfg_id, 1);
+  (*res_len)++;
+  memcpy(&res->data[1], &dev_id, 2);
+  (*res_len) += 2;
+  memcpy(&res->data[3], &sts, 2);
+  (*res_len) += 2;
+  res->cc = CC_SUCCESS;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -2488,6 +2562,12 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_MACHINE_CONFIG_INFO:
       oem_set_machine_config_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_BIOS_FLASH_INFO:
+      oem_set_flash_info(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_BIOS_FLASH_INFO:
+      oem_get_flash_info(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

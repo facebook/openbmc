@@ -168,14 +168,14 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       case UNR_THRESH:
       case UCR_THRESH:
       case UNC_THRESH:
-        if (*curr_val >= (thresh_val - snr[snr_num].pos_hyst))
+        if (*curr_val >= (thresh_val - snr[snr_num].neg_hyst))
           return 0;
         break;
 
       case LNR_THRESH:
       case LCR_THRESH:
       case LNC_THRESH:
-        if (*curr_val <= (thresh_val + snr[snr_num].neg_hyst))
+        if (*curr_val <= (thresh_val + snr[snr_num].pos_hyst))
           return 0;
     }
 
@@ -404,19 +404,19 @@ snr_monitor(void *arg) {
       if (snr[snr_num].flag) {
         if (!(ret = sensor_raw_read(fru, snr_num, &curr_val))) {
 
-          check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
-          check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
-          check_thresh_assert(fru, snr_num, LNR_THRESH, &curr_val);
-          check_thresh_assert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, LNC_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LNR_THRESH, &curr_val);
 
-          check_thresh_deassert(fru, snr_num, UNC_THRESH, &curr_val);
-          check_thresh_deassert(fru, snr_num, UCR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, UNR_THRESH, &curr_val);
-          check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
-          check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, UCR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, UNC_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
 #ifdef DEBUG
         } else {
           syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",

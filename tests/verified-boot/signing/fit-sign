@@ -17,6 +17,7 @@ import time
 from distutils import spawn
 
 from pyfdt import pyfdt
+from pyfdt import pkcs11
 
 
 def write_content(offset, data):
@@ -96,12 +97,12 @@ def sign_firmware(dts):
         tmp.write(dts)
         tmp.flush()
         with tempfile.NamedTemporaryFile(delete=False) as tmp2:
-            print(" ".join([args.mkimage, "-f", tmp.name, "-E",
-                "-k", args.keydir,
-                "-p", "%08x" % args.size, "-r", tmp2.name]))
-            spawn.spawn(
-                [args.mkimage, "-f", tmp.name, "-E", "-k", args.keydir,
-                    "-p", "%08x" % args.size, "-r", tmp2.name])
+            cmd = [args.mkimage, "-f", tmp.name, "-E", "-k", args.keydir,
+                "-p", "%08x" % args.size, "-r", tmp2.name]
+            if args.token:
+                cmd += ['-N', 'pkcs11']
+            print(" ".join(cmd))
+            spawn.spawn(cmd)
             info = os.stat(tmp2.name)
             if info.st_size <= 0:
                 print("mkimage failed")
@@ -119,11 +120,12 @@ def sign_os(dts):
         tmp.write(dts)
         tmp.flush()
         with tempfile.NamedTemporaryFile(delete=False) as tmp2:
-            print(" ".join([args.mkimage, "-f", tmp.name,
-                "-k", args.keydir, "-r", tmp2.name]))
-            spawn.spawn(
-                [args.mkimage, "-f", tmp.name, "-k", args.keydir,
-                    "-r", tmp2.name])
+            cmd = [args.mkimage, "-f", tmp.name, "-k", args.keydir,
+                "-r", tmp2.name]
+            if args.token:
+                cmd += ['-N', 'pkcs11']
+            print(" ".join(cmd))
+            spawn.spawn(cmd)
             info = os.stat(tmp2.name)
             if info.st_size <= 0:
                 print("mkimage failed")
@@ -148,6 +150,9 @@ def set_hint(fdt, path):
 
     # The U-Boot FIT expects to be signed with the following key-name.
     # This will cause mkimage to file if the names do not match.
+    if args.token_hint is not None:
+        hint.strings = [args.token_hint]
+        return 0
     key_name = hint[0]
     requested_key_name = os.path.basename(args.keydir)
     if key_name != requested_key_name:
@@ -323,8 +328,6 @@ if __name__ == '__main__':
         help="Sign kernel and rootfs")
     parser.add_argument('--signed-subordinate', default=None, metavar="PATH",
         help="Optional path to signed subordinate certificate store (to add)")
-    parser.add_argument('--keydir', required=True, metavar="DIR",
-        help="Required path to directory containing '.key' private key")
     parser.add_argument('--mkimage', required=True, metavar="PATH",
         help="Required path to mkimage")
     parser.add_argument('--test-remove-timestamp', default=False,
@@ -333,14 +336,29 @@ if __name__ == '__main__':
     parser.add_argument('--test-change-timestamp', default=False,
         action='store_true',
         help='For testing, alter the timestamp node')
+    pkey = parser.add_mutually_exclusive_group(required=True)
+    pkey.add_argument('--keydir', metavar="DIR",
+        help="Path to directory containing '.key' private key")
+    pkey.add_argument('--token', metavar="SERIAL",
+        help="Hardware token serial identifier")
+    parser.add_argument('--token-hint', metavar="HINT")
     args = parser.parse_args()
 
-    if not os.path.isdir(args.keydir):
-        print("The --keydir must be a directory containing a '.key' key.")
-        sys.exit(1)
-    keyfile = os.path.join(args.keydir, os.path.basename(args.keydir) + ".key")
-    if not os.path.exists(keyfile):
-        print("Cannot find private key: %s" % (keyfile))
-        sys.exit(1)
+    if args.keydir is not None:
+        pkcs11.clear_environment()
+        if not os.path.isdir(args.keydir):
+            print("The --keydir must be a directory containing a '.key' key.")
+            sys.exit(1)
+        keyfile = os.path.join(args.keydir,
+            os.path.basename(args.keydir) + ".key")
+        if not os.path.exists(keyfile):
+            print("Cannot find private key: %s" % (keyfile))
+            sys.exit(1)
+    else:
+        pkcs11.enforce_environment()
+        args.keydir = pkcs11.get_url(args.token)
+        if args.token_hint is None:
+            print("Please include a --token-hint when using a token")
+            sys.exit(1)
 
     sys.exit(main())

@@ -11,6 +11,7 @@ import argparse
 import jinja2
 import os
 import sys
+import time
 import tempfile
 
 from Crypto.PublicKey import RSA
@@ -78,9 +79,10 @@ def compileSource(source, output, s=1):
 
 
 def buildKeySource(td, keys, output=None):
+    now = hex(int(time.time()))
     source = jinja2.Template(td).render(keys=keys,
         algorithm=args.algorithm, node=args.required_node,
-        extendable=args.allow_extending)
+        extendable=args.allow_extending, now=now)
     if output is None:
         return source
     compileSource(source, output, len(keys))
@@ -104,7 +106,7 @@ def main(args):
         with open(args.subtemplate, "rU") as fh:
             sub_template_data = fh.read()
 
-        with tempfile.NamedTemporaryFile() as tmp:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
             buildKeySource(template_data, keys, tmp.name)
             stores = [{"i": 1, "tempdata": tmp.name}]
             source = jinja2.Template(sub_template_data).render(stores=stores)

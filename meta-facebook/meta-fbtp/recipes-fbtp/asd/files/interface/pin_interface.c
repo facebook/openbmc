@@ -39,7 +39,7 @@ gpio_st debug_en_gpio;
 #define TCK_MUX_SEL_GPIO "GPIOR2"
 gpio_st tck_mux_sel_gpio;
 
-#define POWER_DEBUG_EN_GPIO "GPIOB6"
+#define POWER_DEBUG_EN_GPIO "GPIOP6"
 gpio_st power_debug_en_gpio;
 
 #define PREQ_GPIO "GPIOP5"
@@ -97,7 +97,7 @@ int pin_initialize(const int fru)
     gpio_write(&debug_en_gpio, GPIO_VALUE_LOW);
 
     /* In FBTP, POWER_DEBUG_EN Pin of the CPU is directly connected to the
-     * BMC GPIOB6 which needs to be set to 0 (active-low) to enable power-debugging
+     * BMC GPIOP6 which needs to be set to 0 (active-low) to enable power-debugging
      * needed to debug early-boot-stalls. */
     gpio = gpio_num(POWER_DEBUG_EN_GPIO);
     if (gpio_export(gpio) ||

@@ -8,14 +8,19 @@
 #  of patent rights can be found in the PATENTS file in the same directory.
 
 import pexpect
-import os
 import sys
 import argparse
 import subprocess
 
-
-QEMU_OPTS = "-nographic -M ast2500-edk -m 256M"
-QEMU_DRIVE = "-drive if=mtd,format=raw,file="
+TPM_SOCKET = '/var/run/tpm/tpmd_socket:0'
+QEMU_DRIVE = '-drive if=mtd,format=raw,file='
+QEMU_OPTS = [
+    '-nographic',
+    '-M ast2500-edk',
+    '-m 256M',
+    "-tpmdev passthrough,id=tpm0,cancel-path=/dev/null,path=%s" % (TPM_SOCKET),
+    '-device tpm-tis,id=tpm0,tpmdev=tpm0,address=0x20',
+]
 
 
 def expected(buffer, matches):
@@ -23,17 +28,20 @@ def expected(buffer, matches):
         if buffer.find(match) < 0:
             raise Exception('Cannot find: %s \n%s' % (match, buffer))
 
+
 def run(args):
     print "Using CMD %s" % (args)
     c = pexpect.spawn(args)
     c.logfile = sys.stdout
     return c
 
+
 def expect_close(proc):
     try:
         proc.close(force=True)
     except Exception as e:
         print("Could not close process: %s" % (str(e)))
+
 
 def expect_code(flash0, flash1, error_type, error_code):
     subprocess.call([
@@ -56,7 +64,7 @@ def expect_code(flash0, flash1, error_type, error_code):
     ])
 
     cmd = "%s %s %s%s %s%s" % (
-        QEMU, QEMU_OPTS,
+        QEMU, ' '.join(QEMU_OPTS),
         QEMU_DRIVE, "%s/flash.CS0.shell" % (OUTPUT),
         QEMU_DRIVE, "%s/flash.CS1.shell" % (OUTPUT),
     )
@@ -71,6 +79,7 @@ def expect_code(flash0, flash1, error_type, error_code):
     ])
     return c
 
+
 def test_success_state():
     c = expect_code('0.0', '0.0', 0, 0)
     expected(c.before, [
@@ -78,73 +87,91 @@ def test_success_state():
     ])
     expect_close(c)
 
+
 def test_bad_magic():
     c = expect_code('3.30', '3.30', 3, 30)
     expect_close(c)
+
 
 def test_no_images():
     c = expect_code('3.31', '3.31', 3, 31)
     expect_close(c)
 
+
 def test_no_firmware():
     c = expect_code('3.32', '3.32', 3, 32)
     expect_close(c)
+
 
 def test_no_config():
     c = expect_code('3.33', '3.33', 3, 33)
     expect_close(c)
 
+
 def test_no_keys():
     c = expect_code('3.35', '3.35', 3, 35)
     expect_close(c)
+
 
 def test_bad_keys():
     c = expect_code('3.36', '3.36', 3, 36)
     expect_close(c)
 
+
 def test_bad_firmware_missing_position():
     c = expect_code('3.37.1', '3.37.1', 3, 37)
     expect_close(c)
+
 
 def test_bad_firmware_missing_size():
     c = expect_code('3.37.2', '3.37.2', 3, 37)
     expect_close(c)
 
+
 def test_bad_firmware_huge_size():
     c = expect_code('3.37.3', '3.37.3', 3, 37)
     expect_close(c)
+
 
 def test_invalid_size():
     c = expect_code('3.38', '3.38', 3, 38)
     expect_close(c)
 
+
 def test_keys_invalid_different_kek():
     c = expect_code('4.40.1', '4.40.1', 4, 40)
     expect_close(c)
+
 
 def test_keys_invalid_bad_hint():
     c = expect_code('4.40.2', '4.40.2', 4, 40)
     expect_close(c)
 
+
 def test_keys_invalid_bad_data():
     c = expect_code('4.40.3', '4.40.3', 4, 40)
     expect_close(c)
+
 
 def test_firmware_invalid_bad_timestamp():
     c = expect_code('4.42.1', '4.42.1', 4, 42)
     expect_close(c)
 
+
 def test_firmware_invalid_bad_hash():
     c = expect_code('4.42.2', '4.42.2', 4, 42)
     expect_close(c)
+
 
 def test_firmware_invalid_bad_hint():
     c = expect_code('4.42.3', '4.42.3', 4, 42)
     expect_close(c)
 
+
 def test_firmware_invalid_duplicate_hash():
     c = expect_code('4.42.4', '4.42.4', 4, 42)
     expect_close(c)
+
 
 def test_firmware_unverified():
     c = expect_code('4.43', '4.43', 4, 43)
@@ -152,13 +179,17 @@ def test_firmware_unverified():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run verified-boot unit tests')
-    parser.add_argument("qemu", metavar="QEMU",
-        help="Location of QEMU binary")
-    parser.add_argument("output", metavar="TEST-DIR",
-        help="The output path used in create-tests")
-    parser.add_argument("flash_name", metavar="FLASH-NAME",
-        help="Name of the flash (flash-fbtp, flash0, etc) used in create-tests")
+    parser = argparse.ArgumentParser(
+        description='Run verified-boot unit tests')
+    parser.add_argument(
+        'qemu', metavar='QEMU',
+        help='Location of QEMU binary')
+    parser.add_argument(
+        'output', metavar='TEST-DIR',
+        help='The output path used in create-tests')
+    parser.add_argument(
+        'flash_name', metavar='FLASH-NAME',
+        help='Name of the flash (flash-fbtp, flash0) used in create-tests')
     args = parser.parse_args()
 
     QEMU = args.qemu

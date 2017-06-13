@@ -55,3 +55,87 @@ def get_sensors():
                 "Resources": [],
               }
     return fresult
+
+# Handler for sensors-full resource endpoint
+
+name_adapter_re = re.compile('(\S+)\nAdapter:\s*(\S.*?)\s*\n')
+label_re = re.compile('(\S.*):\n')
+value_re = re.compile('\s+(\S.*?):\s*(\S.*?)\s*\n')
+skipline_re = re.compile('.*\n?')
+
+def get_sensors_full():
+    proc = subprocess.Popen(['sensors', '-u'],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    try:
+        data, err = bmc_command.timed_communicate(proc)
+    except bmc_command.TimeoutError as ex:
+        data = ex.output
+        err = ex.error
+
+    # The output of sensors -u is a series of sections separated
+    # by blank lines.  Each section looks like this:
+    #   coretemp-isa-0000
+    #   Adapter: ISA adapter
+    #   Core 0:
+    #     temp2_input: 40.000
+    #     temp2_max: 110.000
+    #     temp2_crit: 110.000
+    #     temp2_crit_alarm: 0.000
+    #   Core 1:
+    #     temp3_input: 39.000
+    #     temp3_max: 110.000
+    #     temp3_crit: 110.000
+    #     temp3_crit_alarm: 0.000
+    #   ...
+    #
+    # We skip over malformed data silently.
+
+    result = []
+    pos = 0
+    while pos < len(data):
+        if data[pos] == '\n':
+            pos += 1
+            continue
+
+        sresult = {}
+
+        # match the first two lines of a section
+        m = name_adapter_re.match(data, pos)
+        if not m:
+            # bad input, skip a line and try again
+            pos = skipline_re.match(data, pos).end()
+            continue
+        sresult['name'] = m.group(1)
+        sresult['adapter'] = m.group(2)
+        pos = m.end()
+
+        # match the sensors
+        while True:
+            # each starts with a label line
+            m = label_re.match(data, pos)
+            if not m:
+                break
+            label = m.group(1)
+            pos = m.end()
+
+            # the following lines are name-value pairs
+            values = {}
+            while True:
+                m = value_re.match(data, pos)
+                if not m:
+                    break
+                values[m.group(1)] = m.group(2)
+                pos = m.end()
+
+            if len(values) > 0:
+                sresult[label] = values
+
+        result.append(sresult)
+
+    fresult = {
+                "Information": result,
+                "Actions": [],
+                "Resources": [],
+              }
+    return fresult

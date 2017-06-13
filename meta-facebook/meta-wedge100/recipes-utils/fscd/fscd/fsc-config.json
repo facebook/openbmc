@@ -125,6 +125,7 @@
   },
   "fans": {
     "1": {
+      "label" : "Fan 1 Front",
       "read_source" : {
         "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan1_input"
       },
@@ -133,11 +134,13 @@
       }
     },
     "2": {
+      "label" : "Fan 1 Rear",
       "read_source" : {
         "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan2_input"
       }
     },
     "3": {
+      "label" : "Fan 2 Front",
       "read_source" : {
         "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan3_input"
       },
@@ -146,11 +149,13 @@
       }
     },
     "4": {
+      "label" : "Fan 2 Rear",
       "read_source" : {
         "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan4_input"
       }
     },
    "5": {
+     "label" : "Fan 3 Front",
      "read_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan5_input"
      },
@@ -159,11 +164,13 @@
      }
    },
    "6": {
+     "label" : "Fan 3 Rear",
      "read_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan6_input"
      }
    },
    "7": {
+     "label" : "Fan 4 Front",
      "read_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan7_input"
      },
@@ -172,11 +179,13 @@
      }
    },
    "8": {
+     "label" : "Fan 4 Rear",
      "read_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan8_input"
      }
    },
    "9": {
+     "label" : "Fan 5 Front",
      "read_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan9_input"
      },
@@ -185,6 +194,7 @@
      }
    },
    "10": {
+     "label" : "Fan 5 Rear",
      "read_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-8/8-0033/fan10_input"
      }

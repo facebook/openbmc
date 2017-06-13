@@ -153,11 +153,78 @@
   },
   "fans": {
     "0": {
+      "label" : "Fan 1 Front",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get"
+        "util" : "/usr/local/bin/fan-util --get 0"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "label" : "Fan 1 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      }
+    },
+    "2": {
+      "label" : "Fan 2 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 2"
+      }
+    },
+    "3": {
+      "label" : "Fan 2 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 3"
+      }
+    },
+    "4": {
+      "label" : "Fan 3 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 4"
+      }
+    },
+    "5": {
+      "label" : "Fan 3 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 5"
+      }
+    },
+    "6": {
+      "label" : "Fan 4 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 6"
+      }
+    },
+    "7": {
+      "label" : "Fan 4 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 7"
+      }
+    },
+    "8": {
+      "label" : "Fan 5 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 8"
+      }
+    },
+    "9": {
+      "label" : "Fan 5 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 9"
+      }
+    },
+    "10": {
+      "label" : "Fan 6 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 10"
+      }
+    },
+    "11": {
+      "label" : "Fan 6 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 11"
       }
     }
   },

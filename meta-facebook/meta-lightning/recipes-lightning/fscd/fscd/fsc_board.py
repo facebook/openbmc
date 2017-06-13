@@ -24,7 +24,6 @@ from subprocess import Popen, PIPE
 
 lpal_hndl = CDLL("libpal.so")
 
-
 def board_fan_actions(fan, action='None'):
     '''
     Override the method to define fan specific actions like:
@@ -32,11 +31,11 @@ def board_fan_actions(fan, action='None'):
     - handling fan led
     '''
     if action in 'dead':
-        return pal_fan_dead_handle(fan)
+        return pal_fan_dead_handle(fan.fan_num + 1)
     elif action in 'recover':
-        return pal_fan_recovered_handle(fan)
+        return pal_fan_recovered_handle(fan.fan_num + 1)
     else:
-        Logger.warn("Fan %d needs action %s" % (fan, str(action),))
+        Logger.warn("%s needs action %s" % (fan.label, str(action),))
 
 def board_host_actions(action='None', cause='None'):
     '''

@@ -26,9 +26,9 @@ def board_fan_actions(fan, action='None'):
     - handling fan led
     '''
     if "led" in action:
-        set_fan_led(fan, color=action)
+        set_fan_led(fan.fan_num, color=action)
     else:
-        Logger.warn("Fan %d needs action %s" % (fan, str(action),))
+        Logger.warn("%s needs action %s" % (fan.label, str(action),))
     pass
 
 

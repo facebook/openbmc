@@ -10,8 +10,8 @@ DEFAULT_TRANSITIONAL = 70
 DEFAULT_BOOST = 100
 DEFAULT_RAMP_RATE = 10
 DEFAULT_SENSOR_UTIL = "/usr/local/bin/sensor-util"
-DEFAULT_FAN_UTIL = "/usr/local/bin/fan-util --get"
-DEFAULT_FAN_UTIL_SET = "/usr/local/bin/fan-util --set"
+DEFAULT_FAN_UTIL = "/usr/local/bin/fan-util --get 2"
+DEFAULT_FAN_UTIL_SET = "/usr/local/bin/fan-util --set %d 1"
 DEFAULT_CHASSIS_INTRUSION_STATE = False
 
 class FscdConfigUnitTest(BaseFscdUnitTest):

@@ -43,8 +43,11 @@ class FscdBmcMachineUnitTest(FscdBmcMachineUnitTest):
         tuples = self.fscd_tester.machine.read_fans(
             self.fscd_tester.fans)
         count = len(tuples)
-        self.assertEqual(count, 2, 'Incorrect fan tupple count')
-
+        self.assertEqual(count, 3, 'Incorrect fan tupple count')
+        for fan in tuples:
+            logging.info(fan.label)
+            expected_label = "Fan %d" % (fan.fan_num)
+            self.assertEqual(fan.label, expected_label, "Incorrect fan label")
 
 class FscdBmcMachineUnitTest2(FscdBmcMachineUnitTest):
     # This class picks a new config and tests sensor and fan read
@@ -75,11 +78,24 @@ class FscdBmcMachineUnitTest2(FscdBmcMachineUnitTest):
         'fan 2' has a source that reads a file and dumps data like from
         platform.
         '''
+        expected_names = [
+            "Fan 1 Front",
+            "Fan 1 Rear",
+            "Fan 2 Front",
+            "Fan 2 Rear",
+            "Fan 3 Front",
+            "Fan 3 Rear",
+            "Fan 4 Front",
+            "Fan 4 Rear"
+        ]
         tuples = self.fscd_tester.machine.read_fans(
             self.fscd_tester.fans)
         count = len(tuples)
-        logging.info(tuples)
         self.assertEqual(count, 8, 'Incorrect fan tupple count')
+        for fan in tuples:
+            logging.info(fan.label)
+            exp_name = expected_names[fan.fan_num]
+            self.assertEqual(fan.label, exp_name, "Incorrect fan label")
 
     def test_fan_write_all(self):
         '''

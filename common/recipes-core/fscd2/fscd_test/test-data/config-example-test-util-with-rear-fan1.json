@@ -69,19 +69,57 @@
   },
   "fans": {
     "0": {
+      "label": "Fan 1 Front",
       "read_source" : {
-        "util" : "./test-data/get_sensor_data_util.sh fan-util-with-rear-fans-test-data"
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 1"
       },
       "write_source" : {
-        "util" : "./test-data/set_sensor_data_util.sh"
+        "util" : "./test-data/set_sensor_data_util.sh %d 0"
       }
     },
     "1": {
+      "label": "Fan 1 Rear",
       "read_source" : {
-        "util" : "./test-data/get_sensor_data_util.sh fan-util-with-rear-fans-test-data"
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 2"
       },
       "write_source" : {
-        "util" : "./test-data/set_sensor_data_util.sh"
+        "util" : "./test-data/set_sensor_data_util.sh %d 1"
+      }
+    },
+    "2": {
+      "label": "Fan 2 Front",
+      "read_source" : {
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 3"
+      }
+    },
+    "3": {
+      "label": "Fan 2 Rear",
+      "read_source" : {
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 4"
+      }
+    },
+    "4": {
+      "label": "Fan 3 Front",
+      "read_source" : {
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 5"
+      }
+    },
+    "5": {
+      "label": "Fan 3 Rear",
+      "read_source" : {
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 6"
+      }
+    },
+    "6": {
+      "label": "Fan 4 Front",
+      "read_source" : {
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 7"
+      }
+    },
+    "7": {
+      "label": "Fan 4 Rear",
+      "read_source" : {
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-with-rear-fans-test-data 8"
       }
     }
   },

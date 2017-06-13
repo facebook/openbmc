@@ -21,7 +21,8 @@ class FscdOperationalTest(BaseFscdUnitTest):
         # "WARNING: Fan 1 needs action dead
         # WARNING: Fan 1 needs action led_red"
         fan_data = self.fscd_tester.update_dead_fans(dead_fans=set())
-        self.assertEqual(fan_data.pop(), 1, 'Incorrectly identified bad fan')
+        dead_fan = fan_data.pop()
+        self.assertEqual(dead_fan.fan_num, 0, "Incorrectly identified bad fan")
 
     def test_chassis_intrusion(self):
         self.assertEqual(self.fscd_tester.chassis_intrusion, True,

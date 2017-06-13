@@ -82,26 +82,26 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "./test-data/get_sensor_data_util.sh fan-dead-test-data"
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-dead-test-data 1"
       },
       "write_source" : {
-        "util" : "./test-data/set_sensor_data_util.sh"
+        "util" : "./test-data/set_sensor_data_util.sh %d 0"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "./test-data/get_sensor_data_util.sh fan-dead-test-data"
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-dead-test-data 2"
       },
       "write_source" : {
-        "util" : "./test-data/set_sensor_data_util.sh"
+        "util" : "./test-data/set_sensor_data_util.sh %d 1"
       }
     },
     "2": {
       "read_source" : {
-        "util" : "./test-data/get_sensor_data_util.sh fan-dead-test-data"
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-dead-test-data 3"
       },
       "write_source" : {
-        "util" : "./test-data/set_sensor_data_util.sh"
+        "util" : "./test-data/set_sensor_data_util.sh %d 2"
       }
     }
   },

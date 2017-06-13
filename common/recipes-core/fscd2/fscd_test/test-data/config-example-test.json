@@ -79,32 +79,32 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "./test-data/get_sensor_data_util.sh fan-util-test-data"
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-test-data 1"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "/usr/local/bin/fan-util --set %d 0"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "./test-data/get_sensor_data_util.sh fan-util-test-data"
+        "util" : "./test-data/get_fan_data_util.sh ./test-data/test-util-data/fan-util-test-data 2"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "/usr/local/bin/fan-util --set %d 1"
       }
     },
     "2": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get"
+        "util" : "/usr/local/bin/fan-util --get 2"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "/usr/local/bin/fan-util --set %d 2"
       }
     }
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 1, 2],
+      "pwm_output": [0, 1],
       "expr_file": "zone1-example-test.fsc"
     }
   }

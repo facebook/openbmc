@@ -66,14 +66,11 @@ class BMCMachine(object):
         result = {}
         for key, value in fans.items():
             if isinstance(value.source, FscSensorSourceUtil):
-                result = parse_all_fans_util(
+                result[fans[key]] = parse_fan_util(
                     fans[key].source.read())
-                break  # Hack: util will read all fans
             elif isinstance(fans[key].source, FscSensorSourceSysfs):
-                fan_key, tuple = get_fan_tuple_sysfs(
-                                    key,
+                result[fans[key]] = parse_fan_sysfs(
                                     fans[key].source.read())
-                result[fan_key] = tuple
             else:
                 Logger.crit("Unknown source type")
         return result
@@ -221,23 +218,22 @@ def symbolize_sensorname(name):
     '''
     return name.lower().replace(" ", "_")
 
-
-def get_fan_tuple_sysfs(key, sensor_data):
+def parse_fan_sysfs(sensor_data):
     '''
-    Build a fan tuple from sensor key and data read
+    Parse the data read from sysfs and return the PWM
 
     Arguments:
         sensor_data: data read from sysfs
 
     Returns:
-        fan tuple
+        PWM
     '''
-    return(int(key), int(sensor_data))
+    return int(sensor_data)
 
 
-def parse_all_fans_util(fan_data):
+def parse_fan_util(fan_data):
     '''
-    Parses all fan data from util
+    Parses fan data from util
 
     Arguments:
         fan_data: blob of fan speed data read from util provided
@@ -246,11 +242,8 @@ def parse_all_fans_util(fan_data):
         Fan speeds set
     '''
     sdata = fan_data.split('\n')
-    result = {}
-    fan_n = 1
     for line in sdata:
         m = re.match(r"Fan .*\sSpeed:\s+(\d+)\s", line)
         if m is not None:
-            result[fan_n] = int(m.group(1))
-            fan_n += 1
-    return result
+            return int(m.group(1))
+    return -1

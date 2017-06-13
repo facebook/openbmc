@@ -150,11 +150,11 @@ class Fscd(object):
         Method invokes board actions for a fan.
         '''
         if 'dead' in action:
-            board_fan_actions(int(fan), action='dead')
-            board_fan_actions(int(fan), action='led_red')
+            board_fan_actions(fan, action='dead')
+            board_fan_actions(fan, action='led_red')
         if 'recover' in action:
-            board_fan_actions(int(fan), action='recover')
-            board_fan_actions(int(fan), action='led_blue')
+            board_fan_actions(fan, action='recover')
+            board_fan_actions(fan, action='led_blue')
 
     def fsc_host_action(self, action, cause):
         if 'host_shutdown' in action:
@@ -163,7 +163,7 @@ class Fscd(object):
 
     def fsc_set_all_fan_led(self, color):
         for fan, _value in self.fans.items():
-            board_fan_actions(int(fan), action=color)
+            board_fan_actions(self.fans[fan], action=color)
 
     def fsc_safe_guards(self, sensors_tuples):
         '''
@@ -208,7 +208,7 @@ class Fscd(object):
         sys.stdout.flush()
 
         for fan, rpms in speeds.items():
-            Logger.info("Fan %d speed: %d RPM" % (fan, rpms))
+            Logger.info("%s speed: %d RPM" % (fan.label, rpms))
             if rpms < self.fsc_config['min_rpm']:
                 dead_fans.add(fan)
                 self.fsc_fan_action(fan, action='dead')
@@ -222,20 +222,20 @@ class Fscd(object):
                 Logger.warn("%d fans failed" % (len(dead_fans),))
             else:
                 Logger.crit("%d fans failed" % (len(dead_fans),))
-            for dead_fan_num in dead_fans:
+            for dead_fan in dead_fans:
                 if self.fanpower:
-                    Logger.warn("Fan %d dead, %d RPM" % (dead_fan_num,
-                                speeds[dead_fan_num]))
+                    Logger.warn("%s dead, %d RPM" % (dead_fan.label,
+                                speeds[dead_fan]))
                 else:
-                    Logger.crit("Fan %d dead, %d RPM" % (dead_fan_num,
-                                speeds[dead_fan_num]))
-                Logger.usbdbg("fan%d fail" % (dead_fan_num))
+                    Logger.crit("%s dead, %d RPM" % (dead_fan.label,
+                                speeds[dead_fan]))
+                Logger.usbdbg("%s fail" % (dead_fan.label))
         for fan in recovered_fans:
             if self.fanpower:
-                Logger.warn("Fan %d has recovered" % (fan,))
+                Logger.warn("%s has recovered" % (fan.label,))
             else:
-                Logger.crit("Fan %d has recovered" % (fan,))
-            Logger.usbdbg("fan%d recovered" % (fan))
+                Logger.crit("%s has recovered" % (fan.label,))
+            Logger.usbdbg("%s recovered" % (fan.label))
             self.fsc_fan_action(fan, action='recover')
         return dead_fans
 
@@ -278,7 +278,7 @@ class Fscd(object):
                     dead = len(dead_fans)
                     if dead > 0:
                         Logger.info("Failed fans: %s" %
-                              (', '.join([str(i) for i in dead_fans],)))
+                              (', '.join([str(i.label) for i in dead_fans],)))
                         for fan_count, rate in self.fan_dead_boost:
                             if dead <= fan_count:
                                 pwmval = clamp(pwmval + (dead * rate), 0, 100)
@@ -301,7 +301,7 @@ class Fscd(object):
                 else:
                     if dead_fans:
                         Logger.info("Failed fans: %s" % (
-                            ', '.join([str(i) for i in dead_fans],)))
+                            ', '.join([str(i.label) for i in dead_fans],)))
                         pwmval = self.boost
 
             if abs(zone.last_pwm - pwmval) > self.ramp_rate:

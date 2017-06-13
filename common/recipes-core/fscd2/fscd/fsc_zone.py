@@ -28,6 +28,12 @@ verbose = "-v" in sys.argv
 class Fan(object):
     def __init__(self, fan_name, pTable):
         try:
+            self.fan_num = int(fan_name)
+            if 'label' in pTable:
+                self.label = pTable['label']
+            else:
+                self.label = "Fan %d" % (self.fan_num)
+
             if 'sysfs' in pTable['read_source']:
                 if 'write_source' in pTable:
                     self.source = FscSensorSourceSysfs(
@@ -39,10 +45,15 @@ class Fan(object):
                         name=fan_name,
                         read_source=pTable['read_source']['sysfs'])
             if 'util' in pTable['read_source']:
-                self.source = FscSensorSourceUtil(
-                    name=fan_name,
-                    read_source=pTable['read_source']['util'],
-                    write_source=pTable['write_source']['util'])
+                if 'write_source' in pTable:
+                    self.source = FscSensorSourceUtil(
+                        name=fan_name,
+                        read_source=pTable['read_source']['util'],
+                        write_source=pTable['write_source']['util'])
+                else:
+                    self.source = FscSensorSourceUtil(
+                        name=fan_name,
+                        read_source=pTable['read_source']['util'])
         except Exception:
             Logger.error("Unknown Fan source type")
 

@@ -156,7 +156,7 @@ class FscSensorSourceUtil(FscSensorBase):
         '''
         if self.write_source is None:
             return
-        cmd = self.write_source + " " + str(int(value)) + " " + self.name
+        cmd = self.write_source % (int(value))
         Logger.debug("Setting value using cmd=%s" % cmd)
         response = ''
         try:

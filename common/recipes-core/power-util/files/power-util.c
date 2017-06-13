@@ -118,13 +118,42 @@ get_power_opt(char *option, uint8_t *opt) {
   return 0;
 }
 
+//check power policy and power state to power on/off server after AC power restore
+void
+power_policy_control(uint8_t fru) {
+  uint8_t chassis_status[5] = {0};
+  uint8_t chassis_status_length;
+  uint8_t power_policy = POWER_CFG_UKNOWN;
+  char pwr_state[MAX_VALUE_LEN] = {0};
+
+
+  //get power restore policy
+  //defined by IPMI Spec/Section 28.2.
+  pal_get_chassis_status(fru, NULL, chassis_status, &chassis_status_length);
+
+  //byte[1], bit[6:5]: power restore policy
+  power_policy = (*chassis_status >> 5);
+
+  //Check power policy and last power state
+  if(power_policy == POWER_CFG_LPS) {
+    pal_get_last_pwr_state(fru, pwr_state);
+    if (!(strcmp(pwr_state, "on"))) {
+      sleep(3);
+      pal_set_server_power(fru, SERVER_POWER_ON);
+    }
+  }
+  else if(power_policy == POWER_CFG_ON) {
+    sleep(3);
+    pal_set_server_power(fru, SERVER_POWER_ON);
+  }
+}
+
 static int
 power_util(uint8_t fru, uint8_t opt) {
-
   int ret;
   uint8_t status;
   int retries;
-  char pwr_state[MAX_VALUE_LEN];
+
 
   if (opt != PWR_STATUS && pal_is_fw_update_ongoing(fru)) {
     printf("FW update is ongoing, block the power controling.\n");
@@ -315,11 +344,6 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_CRIT, "SERVER_12V_OFF successful for FRU: %d", fru);
       }
 
-      ret = pal_set_last_pwr_state(fru, POWER_OFF_STR);
-      if (ret < 0) {
-        return ret;
-      }
-
       ret = pal_set_led(fru, LED_STATE_OFF);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
@@ -341,13 +365,12 @@ power_util(uint8_t fru, uint8_t opt) {
         return 0;
       } else {
         syslog(LOG_CRIT, "SERVER_12V_ON successful for FRU: %d", fru);
+
+        power_policy_control(fru);
       }
       break;
 
     case PWR_12V_CYCLE:
-
-      memset(pwr_state, 0, sizeof(pwr_state));
-      pal_get_last_pwr_state(fru, pwr_state);
 
       printf("12V Power cycling fru %u...\n", fru);
 
@@ -358,16 +381,13 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       } else {
         syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", fru);
-
-        if (!(strcmp(pwr_state, "on"))) {
-          sleep(3);
-          pal_set_server_power(fru, SERVER_POWER_ON);
-        }
+     
+        power_policy_control(fru);
       }
       break;
 
     case PWR_SLED_CYCLE:
-      syslog(LOG_CRIT, "SLED_CYCLE successful");
+      syslog(LOG_CRIT, "SLED_CYCLE starting...");
       pal_update_ts_sled();
       sync();
       sleep(1);

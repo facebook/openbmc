@@ -32,8 +32,13 @@ enum {
   /* non system errors start from -256 downwards */
 };
 
-//TODO remove it when
-//fw-util FW Updating Flag File
+//for power restore policy 
+enum {
+  POWER_CFG_OFF = 0,
+  POWER_CFG_LPS,
+  POWER_CFG_ON,
+  POWER_CFG_UKNOWN,
+};
 
 int pal_is_fw_update_ongoing(uint8_t fru);
 void set_fw_update_ongoing(uint8_t fru, uint16_t tmout);

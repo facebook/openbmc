@@ -2653,13 +2653,13 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
    if (pal_get_key_value(str_server_por_cfg, buff) == 0)
    {
      if (!memcmp(buff, "off", strlen("off")))
-       policy = 0;
+       policy = POWER_CFG_OFF;
      else if (!memcmp(buff, "lps", strlen("lps")))
-       policy = 1;
+       policy = POWER_CFG_LPS;
      else if (!memcmp(buff, "on", strlen("on")))
-       policy = 2;
+       policy = POWER_CFG_ON;
      else
-       policy = 3;
+       policy = POWER_CFG_UKNOWN;
    }
 
   // Current Power State

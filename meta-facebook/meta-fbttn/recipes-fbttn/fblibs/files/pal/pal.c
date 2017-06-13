@@ -2717,7 +2717,7 @@ int pal_get_sku(void){
   return pal_sku;
 }
 // To get the BMC location
-int pal_get_locl(void){
+int pal_get_iom_location(void){
   int pal_sku = 0, slotid = 0;
 
   // SLOTID_[0:1]: 01=IOM_A; 10=IOM_B
@@ -2837,7 +2837,7 @@ int pal_get_plat_sku_id(void){
   uint8_t platform_info;
 
   sku = pal_get_iom_type();
-  location = pal_get_locl();
+  location = pal_get_iom_location();
 
   if(sku == IOM_M2) {
     if(location == IOM_SIDEA) {
@@ -2846,6 +2846,8 @@ int pal_get_plat_sku_id(void){
     else if(location == IOM_SIDEB) {
       platform_info = PLAT_INFO_SKUID_TYPE5B;
     }
+    else
+      return -1;
   }
   else if (sku == IOM_IOC) {
     platform_info = PLAT_INFO_SKUID_TYPE7SS; 

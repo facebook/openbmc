@@ -275,7 +275,7 @@ int pal_get_slot_cfg_id(uint8_t *id);
 void pal_log_clear(char *fru);
 int pal_get_dev_guid(uint8_t fru, char *guid);
 int pal_get_sku(void);
-int pal_get_locl(void);
+int pal_get_iom_location(void);
 int pal_get_iom_type(void);
 int pal_is_scc_stb_pwrgood(void);
 int pal_is_scc_full_pwrgood(void);

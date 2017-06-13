@@ -2351,7 +2351,14 @@ oem_get_plat_info(unsigned char *request, unsigned char *response,
   }
 
   // Get the SKU ID bit[5-3]
-  pinfo |= (pal_get_plat_sku_id() << 3);
+  ret = pal_get_plat_sku_id();
+  if (ret == -1){
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0x00;
+    return;
+  }else{
+    pinfo |= (ret << 3);
+  }
 
   // Populate the slot Index bit[2:0]
   pinfo |= req->payload_id;

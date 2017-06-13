@@ -89,9 +89,9 @@ int get_fru_prsnt(int chassis_type, uint8_t fru) {
         // Type 5 need to recognize BMC is in which side
 
         if ( i == 0 ) {  // Type 5 
-          if (pal_get_locl() == 1) {          // IOMA
+          if (pal_get_iom_location() == IOM_SIDEA) {          // IOMA
             gpio_num = GPIO_SCC_A_INS;
-          } else if (pal_get_locl() == 2) {   // IOMB
+          } else if (pal_get_iom_location() == IOM_SIDEB) {   // IOMB
             gpio_num = GPIO_SCC_B_INS;
           } else {
             gpio_num = GPIO_SCC_A_INS;

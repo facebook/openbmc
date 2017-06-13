@@ -21,32 +21,37 @@
 get_sku()
 {
   # * SCC_RMT_TYPE_0  GPIOF7  47
-  # 1: JBOD mode (Type 7); 0: dual server mode (Type5)
+  # 1: single server mode (Type 7 Headnode) ; 0: dual server mode (Type5)
   SCC_RMT=`cat /sys/class/gpio/gpio47/value`
-  get_locl
+  get_iom_location
   SLOTID=$?
   get_iom_type
   IOM_TYPE=$?
-   if [ $SCC_RMT -eq 0 ]; then
+
+  if [ $IOM_TYPE -eq 1 ]; then
     echo "System: Type5"
     if [ $SLOTID -eq 1 ]; then
-      echo "Side: IOMA"
+      echo "IOM Location: Side A"
+    elif [ $SLOTID -eq 2 ]; then
+      echo "IOM Location: Side B"
     else
-      echo "Side: IOMB"
+      echo "IOM Location: Unknown"
     fi
-  else
+  elif [ $IOM_TYPE -eq 2 ]; then
     echo "System: Type7"
+  else
+    echo "System: Unknown"
   fi
-  PAL_SKU=$((($SCC_RMT << 6) | ($SLOTID << 4) | $IOM_TYPE))
 
   PAL_SKU=$((($SCC_RMT << 6) | ($SLOTID << 4) | $IOM_TYPE))
+
   return $PAL_SKU
 }
 
-get_locl()
+get_iom_location()
 {
-  # * SLOTID_0  GPIOG0  48
-  # * SLOTID_1  GPIOG1  49
+  # * SLOTID_0  GPIOG0  48 Strap pin for IOM location
+  # * SLOTID_1  GPIOG1  49 Strap pin for IOM location
   # SLOTID_[0:1]: 01=IOM_A; 10=IOM_B
   SLOTID_0=`cat /sys/class/gpio/gpio48/value`
   SLOTID_1=`cat /sys/class/gpio/gpio49/value`
@@ -82,6 +87,6 @@ do
 done
   echo -n $sku_bit
 echo ")"
-echo "<SKU[6:0] = {SCC_RMT_TYPE_0, SLOTID_0, SLOTID_1, IOM_TYPE0, IOM_TYPE1, IOM_TYPE2, IOM_TYPE3}>"
+echo "<SKU[6:0] = {SCC_RMT_TYPE_0, IOM_SLOTID0, IOM_SLOTID1, IOM_TYPE0, IOM_TYPE1, IOM_TYPE2, IOM_TYPE3}>"
 
 exit $PAL_SKU

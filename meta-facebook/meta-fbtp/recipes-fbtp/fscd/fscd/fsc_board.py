@@ -25,7 +25,7 @@ def board_fan_actions(fan, action='None'):
     - handling dead fan
     - handling fan led
     '''
-    Logger.warn("Fan %d needs action %s" % (fan, str(action),))
+    Logger.warn("%s needs action %s" % (fan.label, str(action),))
     pass
 
 

@@ -120,18 +120,18 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get"
+        "util" : "/usr/local/bin/fan-util --get 0"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "/usr/local/bin/fan-util --set %d 0"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get"
+        "util" : "/usr/local/bin/fan-util --get 1"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set"
+        "util" : "/usr/local/bin/fan-util --set %d 1"
       }
     }
   },

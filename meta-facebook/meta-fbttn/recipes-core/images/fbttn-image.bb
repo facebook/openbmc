@@ -89,6 +89,7 @@ IMAGE_INSTALL += " \
   libmctp \
   mTerm \
   ecc-mond \
+  ipmi-util \
   "
 
 IMAGE_FEATURES += " \

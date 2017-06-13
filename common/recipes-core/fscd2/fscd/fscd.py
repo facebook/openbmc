@@ -47,8 +47,9 @@ class Fscd(object):
     DEFAULT_TRANSITIONAL = 70
     DEFAULT_RAMP_RATE = 10
 
-    def __init__(self, config=RAMFS_CONFIG, zone_config=CONFIG_DIR):
-        Logger.start("fscd")
+    def __init__(self, config=RAMFS_CONFIG, zone_config=CONFIG_DIR,
+                 log_level='warning'):
+        Logger.start("fscd", log_level)
         Logger.info("Starting fscd")
         self.zone_config = zone_config
         self.fsc_config = self.get_fsc_config(config)  # json dump from config
@@ -399,7 +400,11 @@ if __name__ == "__main__":
         signal.signal(signal.SIGTERM, handle_term)
         signal.signal(signal.SIGINT, handle_term)
         signal.signal(signal.SIGQUIT, handle_term)
-        fscd = Fscd()
+        if len(sys.argv) > 1:
+            llevel = sys.argv[1]
+        else:
+            llevel = 'warning'
+        fscd = Fscd(log_level=llevel)
         fscd.run()
     except Exception:
         board_callout(callout='init_fans', boost=DEFAULT_INIT_TRANSITIONAL)

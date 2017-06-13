@@ -19,6 +19,13 @@
 import syslog
 import logging
 
+LOG_MAP = {
+        'debug': syslog.LOG_DEBUG,
+        'info': syslog.LOG_INFO,
+        'warning': syslog.LOG_WARNING,
+        'error': syslog.LOG_ERR,
+        'critical': syslog.LOG_CRIT
+        }
 
 def clamp(v, minv, maxv):
     if v <= minv:
@@ -62,5 +69,6 @@ class Logger(object):
         syslog.syslog((syslog.LOG_LOCAL0 | syslog.LOG_ERR), msg)
 
     @staticmethod
-    def start(name):
+    def start(name, log_level):
         syslog.openlog(name)
+        syslog.setlogmask(syslog.LOG_UPTO(LOG_MAP[log_level]))

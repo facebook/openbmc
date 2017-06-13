@@ -31,6 +31,6 @@
 
 echo -n "Setup gpio interrupt monitoring for FBY2... "
 
-/usr/local/bin/gpiointrd
+runsv /etc/sv/gpiointrd > /dev/null 2>&1 &
 
 echo "done."

@@ -649,7 +649,6 @@ main (int argc, char * const argv[]) {
       exit(-1);
     }
   } else {
-   daemon(0, 1);
    openlog("front-paneld", LOG_CONS, LOG_DAEMON);
   }
 

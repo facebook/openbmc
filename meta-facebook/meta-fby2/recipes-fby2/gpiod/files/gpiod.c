@@ -405,7 +405,6 @@ main(int argc, void **argv) {
 
     init_gpio_pins();
 
-    daemon(0,1);
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");
     run_gpiod(argc, argv);

@@ -144,21 +144,21 @@ case $OPTION in
       set_sysconfig $SLOT_NUM $SLOT_BUS
       
       # GPIO
-      ps | grep -v 'grep' | grep 'gpiod' |awk '{print $1}'| xargs kill
+      sv stop gpiod
 
       # IPMB
       sv stop ipmbd_$SLOT_BUS
 
       # Console
-      ps | grep -v 'grep' | grep 'consoled '$SLOT'' |awk '{print $1}'| xargs kill
+      sv stop mTerm$SLOT_NUM
 
       # Delay to wait for sv stop
       sleep 3
 
       # Restart Service for new device/server
-      echo "restart consoled for $SLOT $OPTION"
+      echo "restart mTerm for $SLOT $OPTION"
       if [[ $(is_server_prsnt $SLOT_NUM) == "1" && $(get_slot_type $SLOT_NUM) == "0" ]] ; then
-         /usr/local/bin/consoled slot$SLOT_NUM --buffer
+         sv start mTerm$SLOT_NUM
       fi
 
       echo "restart ipmbd for $SLOT $OPTION"
@@ -168,7 +168,7 @@ case $OPTION in
       fi
 
       echo "restart gpiod for $SLOT $OPTION"
-      /etc/init.d/setup-gpiod.sh
+      sv start gpiod
 
       echo "restart sensord for $SLOT $OPTION"
       sv start sensord 

@@ -300,7 +300,6 @@ int main(int argc, char **argv) {
       exit(1);
     }
   } else {
-    daemon(0,1);
     openlog("mTerm_log", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "mTerm: daemon started");
 

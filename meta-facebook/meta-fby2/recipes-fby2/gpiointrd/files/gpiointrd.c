@@ -407,8 +407,6 @@ main(int argc, void **argv) {
       exit(-1);
     }
   } else {
-
-    daemon(0,1);
     openlog("gpiointrd", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiointrd: daemon started");
 

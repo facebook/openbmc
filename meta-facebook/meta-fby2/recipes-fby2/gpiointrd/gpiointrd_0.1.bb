@@ -25,6 +25,7 @@ LIC_FILES_CHKSUM = "file://gpiointrd.c;beginline=4;endline=16;md5=b395943ba8a071
 SRC_URI = "file://Makefile \
            file://gpiointrd.c \
            file://setup-gpiointrd.sh \
+           file://run-gpiointrd.sh \
           "
 
 S = "${WORKDIR}"
@@ -49,7 +50,11 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/gpiointrd
+  install -d ${D}${sysconfdir}/gpiointrd
   install -m 755 setup-gpiointrd.sh ${D}${sysconfdir}/init.d/setup-gpiointrd.sh
+  install -m 755 run-gpiointrd.sh ${D}${sysconfdir}/sv/gpiointrd/run
   update-rc.d -r ${D} setup-gpiointrd.sh start 90 5 .
 }
 

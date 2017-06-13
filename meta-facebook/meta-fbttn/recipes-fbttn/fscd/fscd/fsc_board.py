@@ -25,7 +25,6 @@ from re import match
 
 lpal_hndl = CDLL("libpal.so")
 
-
 def board_fan_actions(fan, action='None'):
     '''
     Override the method to define fan specific actions like:
@@ -34,12 +33,12 @@ def board_fan_actions(fan, action='None'):
     '''
     if action in 'dead':
        # TODO: Why not do return pal_fan_dead_handle(fan)
-        pal_fan_dead_handle(fan)
+        pal_fan_dead_handle(fan.fan_num + 1)
     elif action in 'recover':
        # TODO: Why not do return pal_fan_recovered_handle(fan)
-        pal_fan_recovered_handle(fan)
+        pal_fan_recovered_handle(fan.fan_num + 1)
     else:
-        Logger.warn("Fan %d needs action %s" % (fan, str(action),))
+        Logger.warn("%s needs action %s" % (fan.label, str(action),))
     pass
 
 

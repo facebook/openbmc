@@ -31,6 +31,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <stdint.h>
+#include <sys/stat.h>
 #include "fruid.h"
 #include <facebook/fby2_common.h>
 
@@ -190,7 +191,7 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 
 int plat_fruid_init(void) {
 
-  int ret;
+  int ret = -1;
   int fru=0;
   char path[128] = {0};
   char fpath[64] = {0};

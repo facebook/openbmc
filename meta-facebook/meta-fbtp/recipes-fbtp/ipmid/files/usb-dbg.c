@@ -39,14 +39,14 @@ extern void plat_lan_init(lan_config_t *lan);
 
 typedef struct _post_desc {
   uint8_t code;
-  uint8_t desc[32];
+  char    desc[32];
 } post_desc_t;
 
 typedef struct _gpio_desc {
   uint8_t pin;
   uint8_t level;
   uint8_t def;
-  uint8_t desc[32];
+  char    desc[32];
 } gpio_desc_t;
 
 typedef struct _sensor_desc {
@@ -489,7 +489,7 @@ plat_udbg_get_frame_info(uint8_t *num) {
 
 int
 plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
-  uint8_t cri_sel_up;
+  uint8_t cri_sel_up = 0;
   uint8_t info_page_up = 1;
 
   *count = 0;
@@ -518,7 +518,6 @@ int
 plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t phase,  uint8_t *end, uint8_t *length, uint8_t *buffer) {
   int target, pdesc_size;
   post_desc_t *ptr;
-  post_desc_t arr[200];
 
   switch (phase){
     case 1:
@@ -683,7 +682,7 @@ plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count
 }
 
 static int
-plat_udbg_fill_frame (uint8_t *buffer, int max_line, int indent, char *string) {
+plat_udbg_fill_frame (char *buffer, int max_line, int indent, char *string) {
   int height, len, space_per_line;
   char format[256];
 
@@ -778,8 +777,9 @@ static int
 plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   char frame_buff[MAX_PAGE * LEN_PER_PAGE];
   int page_num = 1, line_num = 0;
-  int i, len, msg_line, ret;
-  char line_buff[256], *ptr;
+  unsigned char len;
+  int ret;
+  char line_buff[256];
   FILE *fp;
   fruid_info_t fruid;
   lan_config_t lan_config = { 0 };
@@ -840,7 +840,7 @@ plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
   }
 
   // BIOS ver
-  if (! pal_get_sysfw_ver(FRU_MB, line_buff)) {
+  if (! pal_get_sysfw_ver(FRU_MB, (uint8_t *)line_buff)) {
     // BIOS version response contains the length at offset 2 followed by ascii string
     line_buff[3+line_buff[2]] = '\0';
     line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
@@ -863,7 +863,7 @@ plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
   req->cmd = CMD_APP_GET_DEVICE_ID;
   // Invoke IPMB library handler
   len = 0;
-  lib_ipmb_handle(0x4, req, 7, &line_buff[0], &len);
+  lib_ipmb_handle(0x4, (uint8_t *)req, 7, (uint8_t *)&line_buff[0], &len);
   if (len > 7 && res->cc == 0) {
     if (res->data[2] & 0x80)
       strcpy(line_buff, "recovery mode");

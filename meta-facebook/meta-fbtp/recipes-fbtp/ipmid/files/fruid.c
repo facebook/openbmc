@@ -31,6 +31,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <stdint.h>
+#include <sys/stat.h>
 #include "fruid.h"
 
 #define EEPROM_NIC      "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"

@@ -48,15 +48,13 @@ void plat_lan_init(lan_config_t *lan)
   struct ifaddrs *ifaddr, *ifa;
   struct sockaddr_in *addr;
   struct sockaddr_in6 *addr6;
-  int family, s, n, i;
+  int family, n;
   unsigned long ip;
   unsigned char *ip6;
   int sd;
   struct ifreq ifr;
-  uint8_t mac_addr[6];
   uint8_t eui_64_addr[8] = {0x0};
   bool slaac_flag = false;
-  char test[64];
 
   if (getifaddrs(&ifaddr) == -1) {
     return;

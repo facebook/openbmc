@@ -116,6 +116,12 @@ def rest_sensors_hdl():
     return rest_sensors.get_sensors()
 
 
+# Handler for sensors-full resource endpoint
+@commonApp.route('/api/sys/sensors-full')
+def rest_sensors_full_hdl():
+    return rest_sensors.get_sensors_full()
+
+
 # Handler for gpios resource endpoint
 @commonApp.route('/api/sys/gpios')
 def rest_gpios_hdl():

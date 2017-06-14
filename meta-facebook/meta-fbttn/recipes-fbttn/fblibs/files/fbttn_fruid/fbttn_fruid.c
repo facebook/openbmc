@@ -30,7 +30,7 @@ fbttn_get_fruid_path(uint8_t fru, char *path) {
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(fname, "slot1");
+      sprintf(fname, "server");
       break;
     case FRU_IOM:
       sprintf(fname, "iom");

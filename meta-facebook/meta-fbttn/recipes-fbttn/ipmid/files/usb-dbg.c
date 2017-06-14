@@ -469,10 +469,10 @@ static post_desc_t pdesc_error[] = {
 	{94, "IOMA be plug out"},
 	{95, "IOMB be plug out"},
 	{99, "H/W Configuration/Type Not Match"}, //Error Code 99
-	{0xE4, "MonoLake Missing Missing"},// BMC error code
+	{0xE4, "Server board Missing"},// BMC error code
 	{0xE7, "SCC Missing"},
-	{0xE8, "NIC is plugged out"},
-	{0xF7, "Slot1 health ERR"},
+	{0xE8, "NIC Missing"},
+	{0xF7, "Server health ERR"},
 	{0xF8, "IOM health ERR"},
 	{0xF9, "DPB health ERR"},
 	{0xFA, "SCC health ERR"},
@@ -844,7 +844,7 @@ plat_udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *c
     memcpy(&buffer[LineOffset], cri_sensor[SensorIndex].name, strlen(cri_sensor[SensorIndex].name));
     
     if(SensorIndex < 5)
-      sprintf(FilePath,"%s","/tmp/cache_store/slot1_sensor");
+      sprintf(FilePath,"%s","/tmp/cache_store/server_sensor");
     else if(SensorIndex < 16)
       sprintf(FilePath,"%s","/tmp/cache_store/dpb_sensor");
     else

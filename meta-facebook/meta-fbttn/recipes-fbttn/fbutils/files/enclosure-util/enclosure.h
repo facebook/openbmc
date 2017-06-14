@@ -193,7 +193,7 @@ char *BMC_Error_Code_Description[BMC_ERROR_CODE_NUM] = {
 	"BMC I2C bus 11 hang",
 	"BMC I2C bus 12 hang",
 	"BMC I2C bus 13 hang",
-	"SLOT1 sensor health is bad",
+	"Server sensor health is bad",
 	"IOM sensor health is bad",
 	"DPB sensor health is bad",
 	"SCC sensor health is bad",

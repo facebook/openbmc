@@ -40,7 +40,7 @@
 #define BIN_IOM         "/tmp/fruid_iom.bin"
 #define BIN_DPB         "/tmp/fruid_dpb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"
-#define BIN_SLOT        "/tmp/fruid_slot%d.bin"
+#define BIN_SLOT        "/tmp/fruid_server.bin"
 
 #define FRUID_SIZE        256
 
@@ -143,7 +143,7 @@ int plat_fruid_size(unsigned char payload_id) {
   int ret;
 
   // Fill the file path for a given slot
-  sprintf(fpath, BIN_SLOT, payload_id);
+  sprintf(fpath, BIN_SLOT);
 
   // check the size of the file and return size
   ret = stat(fpath, &buf);
@@ -160,7 +160,7 @@ int plat_fruid_data(unsigned char payload_id, int offset, int count, unsigned ch
   int ret;
 
   // Fill the file path for a given slot
-  sprintf(fpath, BIN_SLOT, payload_id);
+  sprintf(fpath, BIN_SLOT);
 
   // open file for read purpose
   fd = open(fpath, O_RDONLY);

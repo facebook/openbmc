@@ -167,10 +167,10 @@ const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED
 //const static uint8_t gpio_bic_ready[] = { 0, 107 };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };
 const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN };
-const char pal_fru_list[] = "all, slot1, iom, dpb, scc, nic";
-const char pal_fru_list_print[] = "all, slot1, iom, dpb, scc"; // Cannot read fruid from "nic"
-const char pal_fru_list_rw[] = "slot1, iom"; // Cannot write fruid to "scc" and "dpb"
-const char pal_server_list[] = "slot1";
+const char pal_fru_list[] = "all, server, iom, dpb, scc, nic";
+const char pal_fru_list_print[] = "all, server, iom, dpb, scc"; // Cannot read fruid from "nic"
+const char pal_fru_list_rw[] = "server, iom"; // Cannot write fruid to "scc" and "dpb"
+const char pal_server_list[] = "server";
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 8;
@@ -1308,7 +1308,7 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(key, "slot%d_sensor%d", fru, sensor_num);
+      sprintf(key, "server_sensor%d", sensor_num);
       break;
     case FRU_IOM:
       sprintf(key, "iom_sensor%d", sensor_num);
@@ -1354,7 +1354,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(key, "slot%d_sensor%d", fru, sensor_num);
+      sprintf(key, "server_sensor%d", sensor_num);
       if(pal_is_fru_prsnt(fru, &status) < 0)
          return -1;
       if (!status) {
@@ -2679,7 +2679,7 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
 
 void
 pal_log_clear(char *fru) {
-  if (!strcmp(fru, "slot1")) {
+  if (!strcmp(fru, "server")) {
     pal_set_key_value("slot1_sensor_health", "1");
     pal_set_key_value("slot1_sel_error", "1");
   } else if (!strcmp(fru, "iom")) {

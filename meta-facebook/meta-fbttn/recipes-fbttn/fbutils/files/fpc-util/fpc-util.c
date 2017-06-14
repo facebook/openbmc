@@ -36,12 +36,12 @@ print_usage_help(void) {
 
   sku = pal_get_iom_type();
   if (sku == IOM_IOC) {
-    printf("Usage: fpc-util <slot1> --ext1 <warning/off>\n");
-    printf("Usage: fpc-util <slot1> --ext2 <warning/off>\n");
+    printf("Usage: fpc-util <server> --ext1 <warning/off>\n");
+    printf("Usage: fpc-util <server> --ext2 <warning/off>\n");
   }
 
   printf("       fpc-util <sled> --fault <on/off/blinking/auto/status>\n");
-  printf("       fpc-util <slot1> --identify <on/off>\n");
+  printf("       fpc-util <server> --identify <on/off>\n");
 }
 
 int
@@ -54,7 +54,7 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  if (!strcmp(argv[1], "slot1")) {
+  if (!strcmp(argv[1], "server")) {
     slot_id = 1;
   } else if (!strcmp(argv[1] , "sled")) {
     slot_id = 0;

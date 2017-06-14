@@ -32,7 +32,7 @@
 # TODO: check for the if slot/server is present before starting the daemon
 echo -n "Setup console  buffering..."
   if [ $(is_server_prsnt 1) == "1" ] ; then
-    /usr/local/bin/consoled slot1 --buffer
+    /usr/local/bin/consoled server --buffer
   fi
 
 echo "done."

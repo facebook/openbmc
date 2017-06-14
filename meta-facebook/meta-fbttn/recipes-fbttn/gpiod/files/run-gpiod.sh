@@ -1,3 +1,3 @@
 #!/bin/sh
-exec /usr/local/bin/gpiod slot1
+exec /usr/local/bin/gpiod server
 

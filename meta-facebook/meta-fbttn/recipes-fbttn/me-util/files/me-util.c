@@ -52,9 +52,9 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: me-util <slot1> <[0..n]data_bytes_to_send>\n");
-  printf("Usage: me-util <slot1> 48 coreid\n");
-  printf("Usage: me-util <slot1> 48 msr\n");
+  printf("Usage: me-util <server> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: me-util <server> 48 coreid\n");
+  printf("Usage: me-util <server> 48 msr\n");
 }
 
 int crash_dump_msr(void) {
@@ -369,7 +369,7 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  if (!strcmp(argv[1], "slot1")) {
+  if (!strcmp(argv[1], "server")) {
     slot_id = 1;
   } else {
     goto err_exit;

@@ -899,7 +899,7 @@ char fru_name[16] = {0};
 
 switch(fru) {
   case FRU_SLOT1:
-    sprintf(fru_name, "%s", "slot1");
+    sprintf(fru_name, "%s", "server");
     break;
   case FRU_IOM:
     sprintf(fru_name, "%s", "iom");

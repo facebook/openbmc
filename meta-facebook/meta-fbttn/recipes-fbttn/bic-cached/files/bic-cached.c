@@ -44,8 +44,8 @@ fruid_cache_init(uint8_t slot_id) {
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
 
-  sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
-  sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
+  sprintf(fruid_temp_path, "/tmp/tfruid_server.bin");
+  sprintf(fruid_path, "/tmp/fruid_server.bin");
 
   ret = bic_read_fruid(slot_id, 0, fruid_temp_path);
   if (ret) {
@@ -67,8 +67,8 @@ sdr_cache_init(uint8_t slot_id) {
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
 
-  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", slot_id);
-  sprintf(sdr_path, "/tmp/sdr_slot%d.bin", slot_id);
+  sprintf(sdr_temp_path, "/tmp/tsdr_server.bin");
+  sprintf(sdr_path, "/tmp/sdr_server.bin");
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;

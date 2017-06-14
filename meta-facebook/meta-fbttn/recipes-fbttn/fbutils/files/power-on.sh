@@ -173,7 +173,7 @@ if [ $(is_bmc_por) -eq 1 ] && [ $is_server_12v_off -eq 1 ]; then
     sync_date 
     check_por_config 1
     if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
-        power-util slot1 on
+        power-util server on
     fi
   else
     echo "IOM PWR Fail"
@@ -181,7 +181,7 @@ if [ $(is_bmc_por) -eq 1 ] && [ $is_server_12v_off -eq 1 ]; then
 
   check_por_config 1
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
-    power-util slot1 on
+    power-util server on
   fi
 else
   sync_date

@@ -30,14 +30,14 @@ class identifyNode(node):
 
     def doAction(self, data):
         if data["action"] == "on":
-            cmd = '/usr/bin/fpc-util slot1 --identify on'
+            cmd = '/usr/bin/fpc-util server --identify on'
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
             if data.startswith( 'Usage' ):
                 res = 'failure'
             else:
                 res = 'success'
         elif data["action"] == "off":
-            cmd = '/usr/bin/fpc-util slot1 --identify off'
+            cmd = '/usr/bin/fpc-util server --identify off'
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
             if data.startswith( 'Usage' ):
                 res = 'failure'

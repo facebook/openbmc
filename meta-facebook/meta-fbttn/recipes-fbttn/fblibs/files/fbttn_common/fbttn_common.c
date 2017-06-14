@@ -46,7 +46,7 @@ fbttn_common_fru_name(uint8_t fru, char *str) {
 
   switch(fru) {
     case FRU_SLOT1:
-      sprintf(str, "slot1");
+      sprintf(str, "server");
       break;
 
     case FRU_IOM:
@@ -79,7 +79,7 @@ int
 fbttn_common_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "slot1")) {
+  } else if (!strcmp(str, "server")) {
     *fru = FRU_SLOT1;
   } else if (!strcmp(str, "iom")) {
     *fru = FRU_IOM;

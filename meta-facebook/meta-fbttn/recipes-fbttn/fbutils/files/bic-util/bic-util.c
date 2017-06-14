@@ -212,7 +212,7 @@ util_read_fruid(uint8_t slot_id) {
   int i;
 
   char path[64] = {0};
-  sprintf(path, "/tmp/fruid_slot%d.bin", slot_id);
+  sprintf(path, "/tmp/fruid_server.bin");
 
   ret = bic_read_fruid(slot_id, 0, path);
   if (ret) {

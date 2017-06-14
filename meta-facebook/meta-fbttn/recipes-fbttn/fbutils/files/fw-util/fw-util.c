@@ -41,8 +41,8 @@ print_usage_help(void) {
   uint8_t sku = 0;
   sku = pal_get_iom_type();
 
-  printf("Usage: fw-util <all|slot1|iom|scc> <--version>\n");
-  printf("       fw-util <slot1> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
+  printf("Usage: fw-util <all|server|iom|scc> <--version>\n");
+  printf("       fw-util <server> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
   printf("       fw-util <iom> <--update> <--rom|--bmc> <path>\n");
 }
 
@@ -134,17 +134,17 @@ print_fw_ver(uint8_t slot_id) {
     return;
   }
   if (status == 0) {
-    printf("Can't get Slot1 (MonoLake) FW version due to that Slot1 is not present!\n");
+    printf("Can't get Server FW version due to that Server is not present!\n");
     return;
   } 
 
   //Check Power Status
   if (pal_get_server_power(slot_id, &status)) {
-    printf("Get Slot1 (MonoLake) power failed\n");
+    printf("Fail to get Server power status\n");
     return;
   }
   if(status == SERVER_12V_OFF) {
-    printf("Can't get Slot1 (MonoLake) FW version due to that Server is 12V-off!\n");
+    printf("Can't get Server FW version due to that Server is 12V-off!\n");
     return;
   }
 
@@ -237,7 +237,7 @@ fw_update_slot(char **argv, uint8_t slot_id) {
      goto err_exit;
   }
   if (status == 0) {
-    printf("slot%d is empty!\n", slot_id);
+    printf("Server board is not present!\n");
     goto err_exit;
   }
   if (!strcmp(argv[3], "--cpld")) {
@@ -335,7 +335,7 @@ main(int argc, char **argv) {
   }
 
   // Derive fru from first parameter
-  if (!strcmp(argv[1], "slot1")) {
+  if (!strcmp(argv[1], "server")) {
     fru = FRU_SLOT1;
   } else if (!strcmp(argv[1] , "iom")) {
     fru = FRU_IOM;

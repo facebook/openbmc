@@ -31,6 +31,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <stdint.h>
+#include <sys/stat.h>
 #include "fruid.h"
 
 #define EEPROM_IOM      "/sys/class/i2c-adapter/i2c-0/0-0050/eeprom"
@@ -101,7 +102,6 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 
 int check_fru_is_empty(const char * bin_file)
 {
-  int ret = 0;
   int bin;
   unsigned char head_buf[8];
   unsigned char empty_buf[8];
@@ -116,7 +116,7 @@ int check_fru_is_empty(const char * bin_file)
       return errno;
      }
      bytes_rd = read(bin, head_buf, 8);
-     if(!memcmp(head_buf,empty_buf,8)) {
+     if(bytes_rd != 8 || !memcmp(head_buf,empty_buf,8)) {
 	   syslog(LOG_CRIT, "FRU header %s is empty", bin_file);
        return errno;
      }

@@ -4,10 +4,9 @@ DESCRIPTION = "Util for communicating to Intel ME"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://me-util.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
+LIC_FILES_CHKSUM = "file://me-util;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-SRC_URI = "file://me-util.c \
-           file://Makefile \
+SRC_URI = "file://me-util \
           "
 
 S = "${WORKDIR}"
@@ -16,8 +15,6 @@ binfiles = "me-util \
            "
 
 pkgdir = "me-util"
-
-DEPENDS = " libipmb libipmi "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -34,4 +31,4 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/me-util ${prefix}/local/bin"
 
-RDEPENDS_${PN} = "libipmi libipmb bash"
+RDEPENDS_${PN} = "bash ipmb-util "

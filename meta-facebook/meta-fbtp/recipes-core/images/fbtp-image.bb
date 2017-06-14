@@ -68,6 +68,7 @@ IMAGE_INSTALL += " \
   sensor-mon \
   ipmbd \
   me-util \
+  ipmb-util \
   log-util \
   kcsd \
   healthd \

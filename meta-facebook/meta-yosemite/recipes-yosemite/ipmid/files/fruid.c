@@ -31,6 +31,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <stdint.h>
+#include <sys/stat.h>
 #include "fruid.h"
 
 #define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"

@@ -39,6 +39,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "sensor.h"
 
 
 #define SIZE_IANA_ID 3
@@ -49,6 +50,10 @@
 // Boot valid flag
 #define BIOS_BOOT_VALID_FLAG (1U << 7)
 #define CMOS_VALID_FLAG      (1U << 1)
+
+//#define CHASSIS_GET_BOOT_OPTION_SUPPORT
+//#define CHASSIS_SET_BOOT_OPTION_SUPPORT
+//#define STORAGE_GET_SEL_TIME
 
 static unsigned char IsTimerStart[MAX_NODES] = {0};
 
@@ -150,6 +155,13 @@ static pthread_mutex_t m_oem_1s;
 static pthread_mutex_t m_oem_usb_dbg;
 static pthread_mutex_t m_oem_q;
 
+extern int plat_udbg_get_frame_info(uint8_t *num);
+extern int plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer);
+extern int plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t phase,  uint8_t *end, uint8_t *length, uint8_t *buffer);
+extern int plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *def,
+                            uint8_t *count, uint8_t *buffer);
+extern int plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer);
+
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
 
@@ -247,6 +259,7 @@ chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
   }
 }
 
+#ifdef CHASSIS_GET_BOOT_OPTION_SUPPORT
 // Get System Boot Options (IPMI/Section 28.12)
 static void
 chassis_get_boot_options (unsigned char *request, unsigned char req_len,
@@ -269,7 +282,9 @@ chassis_get_boot_options (unsigned char *request, unsigned char req_len,
 
   *res_len = pal_get_boot_option(param, data) + 2;
 }
+#endif
 
+#ifdef CHASSIS_SET_BOOT_OPTION_SUPPORT
 // Set System Boot Options (IPMI/Section 28)
 static void
 chassis_set_boot_options (unsigned char *request, unsigned char req_len,
@@ -292,6 +307,7 @@ chassis_set_boot_options (unsigned char *request, unsigned char req_len,
 
   *res_len = data - &res->data[0];
 }
+#endif
 
 // Handle Chassis Commands (IPMI/Section 28)
 static void
@@ -480,7 +496,7 @@ app_get_device_guid (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   // Get the 16 bytes of Device GUID from PAL library
-  ret = pal_get_dev_guid(req->payload_id, res->data);
+  ret = pal_get_dev_guid(req->payload_id, (char *)res->data);
   if (ret) {
       res->cc = CC_UNSPECIFIED_ERROR;
       *res_len = 0x00;
@@ -500,7 +516,7 @@ app_get_device_sys_guid (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   // Get the 16 bytes of System GUID from PAL library
-  ret = pal_get_sys_guid(req->payload_id, res->data);
+  ret = pal_get_sys_guid(req->payload_id, (char *)res->data);
   if (ret) {
       res->cc = CC_UNSPECIFIED_ERROR;
       *res_len = 0x00;
@@ -1306,6 +1322,7 @@ storage_clr_sel (unsigned char *request, unsigned char *response,
   return;
 }
 
+#ifdef STORAGE_GET_SEL_TIME
 static void
 storage_get_sel_time (unsigned char *response, unsigned char *res_len)
 {
@@ -1319,6 +1336,7 @@ storage_get_sel_time (unsigned char *response, unsigned char *res_len)
 
   return;
 }
+#endif
 
 static void
 storage_get_sel_utc (unsigned char *response, unsigned char *res_len)
@@ -1793,7 +1811,6 @@ oem_q_get_proc_info (unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0};
-  char payload[100] = {0};
   int ret = 0;
   int numOfParam = sizeof(cpu_info_key)/sizeof(char *);
 
@@ -1807,7 +1824,7 @@ oem_q_get_proc_info (unsigned char *request, unsigned char req_len, unsigned cha
 
   sprintf(key, "sys_config/fru%d_cpu%d_%s", req->payload_id, req->data[3], cpu_info_key[req->data[4]]);
 
-  ret = kv_get_bin(key, res->data);
+  ret = kv_get_bin(key, (char *)res->data);
   if (ret < 0) {
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     *res_len = 0;
@@ -1858,7 +1875,6 @@ oem_q_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0};
-  char payload[100] = {0};
   int ret = 0;
   int numOfParam = sizeof(dimm_info_key)/sizeof(char *);
 
@@ -1872,7 +1888,7 @@ oem_q_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
 
   sprintf(key, "sys_config/fru%d_dimm%d_%s", req->payload_id, req->data[3], dimm_info_key[req->data[4]]);
 
-  ret = kv_get_bin(key, res->data);
+  ret = kv_get_bin(key, (char *)res->data);
   if (ret < 0) {
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     *res_len = 0;
@@ -1934,7 +1950,6 @@ oem_q_get_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0}, cltrType;
-  char payload[100] = {0};
   int ret = 0;
   int numOfParam = sizeof(drive_info_key)/sizeof(char *);
 
@@ -1959,7 +1974,7 @@ oem_q_get_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
   }
   sprintf(key, "sys_config/fru%d_%c_drive%d_%s", req->payload_id, cltrType, req->data[4], drive_info_key[req->data[5]]);
 
-  ret = kv_get_bin(key, res->data);
+  ret = kv_get_bin(key, (char *)res->data);
   if (ret < 0) {
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     *res_len = 0;
@@ -2045,9 +2060,8 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   int selector = req->data[0],  i =1 , para, size = 0, offset;
-  char temp[20]= {0}, file_path[45];
-  unsigned char data[350];
-  FILE *fp;
+  char temp[20]= {0};
+  FILE *fp = NULL;
 
   if (access("/mnt/data/ppr/", F_OK) == -1)
      mkdir("/mnt/data/ppr/", 0777);
@@ -2174,9 +2188,10 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
     default:
       res->cc = CC_INVALID_PARAM;
       break;
-    }
-   fclose(fp);
-
+  }
+  if (fp) {
+    fclose(fp);
+  }
 }
 
 static void
@@ -2185,10 +2200,9 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int selector = req->data[0], i = 0, para=0;;
-  FILE *fp;
-  char temp[20], kpath[20], file_path[45];
-  int temp_value;
+  int selector = req->data[0], i = 0;
+  FILE *fp = NULL;
+  char temp[20], kpath[20];
 
   sprintf(kpath, "%s", "/mnt/data/ppr");
   if (access(kpath, F_OK) == -1)
@@ -2282,7 +2296,9 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
       res->cc = CC_INVALID_PARAM;
       break;
   }
-  fclose(fp);
+  if (fp) {
+    fclose(fp);
+  }
 }
 
 static void
@@ -2399,7 +2415,6 @@ oem_get_80port_record ( unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int ret;
 
   res->cc = pal_get_80port_record (req->payload_id, req->data, req_len, res->data, res_len);
 
@@ -2433,7 +2448,7 @@ oem_set_machine_config_info ( unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  pal_set_machine_configuration(req->payload_id, req, req_len, response, res_len);
+  pal_set_machine_configuration(req->payload_id, req->data, req_len, response, res_len);
 
   res->cc = CC_SUCCESS;
   *res_len = 0;
@@ -2445,7 +2460,6 @@ oem_set_flash_info ( unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int ret;
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN];
   char fruname[32];
@@ -2482,9 +2496,9 @@ oem_get_flash_info ( unsigned char *request, unsigned char req_len,
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN];
   char fruname[32];
-  uint8_t mfg_id = 0;
-  uint16_t dev_id = 0;
-  uint16_t sts = 0;
+  unsigned int mfg_id = 0;
+  unsigned int dev_id = 0;
+  unsigned int sts = 0;
 
   *res_len = 0;
   
@@ -2954,7 +2968,6 @@ ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int i;
 
   unsigned char cmd = req->cmd;
 
@@ -3100,7 +3113,6 @@ wdt_timer (void *arg) {
   int ret;
   struct watchdog_data *wdt = (struct watchdog_data *)arg;
   uint8_t status;
-  char timer_use[32];
   int action = 0;
 
   while (1) {
@@ -3174,7 +3186,7 @@ wdt_timer (void *arg) {
 int
 main (void)
 {
-  int s, s2, t, fru, len;
+  int s, s2, fru, len;
   struct sockaddr_un local, remote;
   pthread_t tid;
   int *p_s2;
@@ -3242,8 +3254,7 @@ main (void)
   }
 
   while(1) {
-    int n;
-    t = sizeof (remote);
+    size_t t = sizeof (remote);
     // TODO: seen accept() call fails and need further debug
     if ((s2 = accept (s, (struct sockaddr *) &remote, &t)) < 0) {
       rc = errno;

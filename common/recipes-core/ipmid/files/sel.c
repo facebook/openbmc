@@ -23,6 +23,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _XOPEN_SOURCE
 #include "sel.h"
 #include "timestamp.h"
 #include <stdio.h>
@@ -224,9 +225,8 @@ dump_sel_syslog(int fru, sel_msg_t *data) {
 /* Parse SEL Log based on IPMI v2.0 Section 32.1 & 32.2*/
 static void
 parse_sel(uint8_t fru, sel_msg_t *data) {
-  int i = 0;
   uint32_t timestamp;
-  char *sel = data->msg;
+  uint8_t *sel = data->msg;
   uint8_t sensor_num;
   uint8_t record_type;
   char sensor_name[32];

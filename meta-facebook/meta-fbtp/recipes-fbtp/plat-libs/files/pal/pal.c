@@ -2740,6 +2740,7 @@ int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
   bool gs_flag = false;
+  uint8_t ret;
 
   if (pal_get_server_power(fru, &status) < 0) {
     return -1;
@@ -2784,9 +2785,15 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
    case SERVER_POWER_RESET:
-      if (status == SERVER_POWER_ON)
-        return server_power_reset();
-      else if (status == SERVER_POWER_OFF)
+      if (status == SERVER_POWER_ON) {
+        ret = pal_set_rst_btn(fru, 0);
+        if (ret < 0)
+          return ret;
+        msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
+        ret = pal_set_rst_btn(fru, 1);
+        if (ret < 0)
+          return ret;
+      } else if (status == SERVER_POWER_OFF)
         return server_power_on();
       break;
 

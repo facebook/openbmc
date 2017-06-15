@@ -285,22 +285,12 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
     case PWR_RESET:
       printf("Power reset fru %u...\n", fru);
-      ret = pal_set_rst_btn(fru, 0);
+      ret = pal_set_server_power(fru, SERVER_POWER_RESET);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"
           " fru %u", fru);
         return ret;
       }
-
-      msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
-
-      ret = pal_set_rst_btn(fru, 1);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"
-          " fru %u", fru);
-        return ret;
-      }
-
       syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", fru);
       break;
 

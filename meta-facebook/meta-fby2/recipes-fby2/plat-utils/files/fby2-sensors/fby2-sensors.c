@@ -169,16 +169,16 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_VCCIN_VR_TEMP: %.2f C\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_GBE_VR_TEMP, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_GBE_VR_TEMP\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_TEMP, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VCCSA_VR_TEMP\n");
   } else {
-  	printf("BIC_SENSOR_VCC_GBE_VR_TEMP: %.2f C\n", fvalue);
+  	printf("BIC_SENSOR_VCCSA_VR_TEMP: %.2f C\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_1V05PCH_VR_TEMP, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_1V05PCH_VR_TEMP\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_TEMP, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_TEMP\n");
   } else {
-  	printf("BIC_SENSOR_1V05PCH_VR_TEMP: %.2f C\n", fvalue);
+  	printf("BIC_SENSOR_1V05_PCH_VR_TEMP: %.2f C\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_SOC_TEMP, &fvalue)) {
@@ -223,10 +223,10 @@ main(int argc, char **argv) {
         printf("BIC_SENSOR_VDDR_AB_VR_TEMP: %.2f C\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_MB_INLET_TEMP_BOTTOM, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_MB_INLET_TEMP_BOTTOM\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM\n");
   } else {
-        printf("BIC_SENSOR_MB_INLET_TEMP_BOTTOM: %.2f C\n", fvalue);
+        printf("BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM: %.2f C\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_SOC_TJMAX, &fvalue)) {
@@ -235,10 +235,10 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_SOC_TJMAX: %.2f C\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_SCSUS_VR_TEMP, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_SCSUS_VR_TEMP\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_TEMP, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VCCIO_VR_TEMP\n");
   } else {
-  	printf("BIC_SENSOR_VCC_SCSUS_VR_TEMP: %.2f C\n", fvalue);
+  	printf("BIC_SENSOR_VCCIO_VR_TEMP: %.2f C\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_SOC_DIMMA0_TEMP, &fvalue)) {
@@ -290,16 +290,16 @@ main(int argc, char **argv) {
   }
 
   // Server Current Sensors
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_GBE_VR_CURR, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_GBE_VR_CURR\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_CURR, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VCCIO_VR_CURR\n");
   } else {
-  	printf("BIC_SENSOR_VCC_GBE_VR_CURR: %.2f Amps\n", fvalue);
+  	printf("BIC_SENSOR_VCCIO_VR_CURR: %.2f Amps\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_CURR, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_CURR\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VDDR_AB_VR_CURR, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VDDR_AB_VR_CURR\n");
   } else {
-  	printf("BIC_SENSOR_1V05_PCH_VR_CURR: %.2f Amps\n", fvalue);
+  	printf("BIC_SENSOR_VDDR_AB_VR_CURR: %.2f Amps\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCIN_VR_CURR, &fvalue)) {
@@ -320,16 +320,16 @@ main(int argc, char **argv) {
         printf("BIC_SENSOR_VNN_PCH_VR_CURR: %.2f Amps\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VDDR_VR_CURR, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VDDR_VR_CURR\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VDDR_DE_VR_CURR, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VDDR_DE_VR_CURR\n");
   } else {
-  	printf("BIC_SENSOR_VDDR_VR_CURR: %.2f Amps\n", fvalue);
+  	printf("BIC_SENSOR_VDDR_DE_VR_CURR: %.2f Amps\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_SCSUS_VR_CURR, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_SCSUS_VR_CURR\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_CURR, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_CURR\n");
   } else {
-  	printf("BIC_SENSOR_VCC_SCSUS_VR_CURR: %.2f Amps\n", fvalue);
+  	printf("BIC_SENSOR_1V05_PCH_VR_CURR: %.2f Amps\n", fvalue);
   }
 
   // Server Voltage Sensors
@@ -345,40 +345,34 @@ main(int argc, char **argv) {
         printf("BIC_SENSOR_INA230_VOL: %.2f Volts\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VDDR_VR_VOL, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VDDR_VR_VOL\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VDDR_DE_VR_VOL, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VDDR_DE_VR_VOL\n");
   } else {
-  	printf("BIC_SENSOR_VDDR_VR_VOL: %.2f Volts\n", fvalue);
-  }
-
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_SCSUS_VR_VOL, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_SCSUS_VR_VOL\n");
-  } else {
-  	printf("BIC_SENSOR_VCC_SCSUS_VR_VOL: %.2f Volts\n", fvalue);
-  }
-
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_VOUT, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCCSA_VR_VOUT\n");
-  } else {
-        printf("BIC_SENSOR_VCCSA_VR_VOUT: %.2f Volts\n", fvalue);
-  }
-
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VNN_PCH_VR_VOUT, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VNN_PCH_VR_VOUT\n");
-  } else {
-        printf("BIC_SENSOR_VNN_PCH_VR_VOUT: %.2f Volts\n", fvalue);
-  }
-
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_GBE_VR_VOL, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_GBE_VR_VOL\n");
-  } else {
-  	printf("BIC_SENSOR_VCC_GBE_VR_VOL: %.2f Volts\n", fvalue);
+  	printf("BIC_SENSOR_VDDR_DE_VR_VOL: %.2f Volts\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_VOL, &fvalue)) {
     printf("fby2_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_VOL\n");
   } else {
   	printf("BIC_SENSOR_1V05_PCH_VR_VOL: %.2f Volts\n", fvalue);
+  }
+
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_VOL, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VCCSA_VR_VOL\n");
+  } else {
+        printf("BIC_SENSOR_VCCSA_VR_VOL: %.2f Volts\n", fvalue);
+  }
+
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_VOL, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VCCIO_VR_VOL\n");
+  } else {
+  	printf("BIC_SENSOR_VCCIO_VR_VOL: %.2f Volts\n", fvalue);
+  }
+
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VDDR_AB_VR_VOL, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VDDR_AB_VR_VOL\n");
+  } else {
+  	printf("BIC_SENSOR_VDDR_AB_VR_VOL: %.2f Volts\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_P3V3_MB, &fvalue)) {
@@ -405,10 +399,10 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_P3V3_STBY_MB: %.2f Volts\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_P5V_STBY_MB, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_P5V_STBY_MB\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_PVDDR_DE, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_PVDDR_DE\n");
   } else {
-  	printf("BIC_SENSOR_P5V_STBY_MB: %.2f Volts\n", fvalue);
+  	printf("BIC_SENSOR_PVDDR_DE: %.2f Volts\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_PV_BAT, &fvalue)) {
@@ -417,16 +411,16 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_PV_BAT: %.2f Volts\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_PVDDR, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_PVDDR\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_PVDDR_AB, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_PVDDR_AB\n");
   } else {
-  	printf("BIC_SENSOR_PVDDR: %.2f Volts\n", fvalue);
+  	printf("BIC_SENSOR_PVDDR_AB: %.2f Volts\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_PVCC_GBE, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_PVCC_GBE\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_PVNN_PCH, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_PVNN_PCH\n");
   } else {
-  	printf("BIC_SENSOR_PVCC_GBE: %.2f Volts\n", fvalue);
+  	printf("BIC_SENSOR_PVNN_PCH: %.2f Volts\n", fvalue);
   }
 
   // Server Power Sensors
@@ -454,16 +448,16 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_VDDR_AB_VR_POUT: %.2f Watts\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_SCSUS_VR_POUT, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_SCSUS_VR_POUT\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_POUT, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VCCSA_VR_POUT\n");
   } else {
-  	printf("BIC_SENSOR_VCC_SCSUS_VR_POUT: %.2f Watts\n", fvalue);
+  	printf("BIC_SENSOR_VCCSA_VR_POUT: %.2f Watts\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCC_GBE_VR_POUT, &fvalue)) {
-    printf("fby2_sensor_read failed: BIC_SENSOR_VCC_GBE_VR_POUT\n");
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_POUT, &fvalue)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_VCCIO_VR_POUT\n");
   } else {
-        printf("BIC_SENSOR_VCC_GBE_VR_POUT: %.2f Watts\n", fvalue);
+        printf("BIC_SENSOR_VCCIO_VR_POUT: %.2f Watts\n", fvalue);
   }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_VDDR_DE_VR_POUT, &fvalue)) {

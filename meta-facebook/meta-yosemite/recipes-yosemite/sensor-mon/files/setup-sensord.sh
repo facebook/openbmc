@@ -50,6 +50,7 @@ SLOTS=
   fi
 
 SLOTS="$SLOTS spb nic"
-/usr/local/bin/sensord $SLOTS
+echo $SLOTS
+#/usr/local/bin/sensord $SLOTS
 
 echo "done."

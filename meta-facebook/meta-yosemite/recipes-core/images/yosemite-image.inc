@@ -1,4 +1,4 @@
-inherit aspeed_uboot_image
+inherit kernel_fitimage
 
 # Base this image on core-image-minimal
 include recipes-core/images/core-image-minimal.bb
@@ -7,7 +7,12 @@ include recipes-core/images/core-image-minimal.bb
 # However, the current u-boot does not have lzma enabled. Stick to gz
 # until we generate a new u-boot image.
 IMAGE_FSTYPES += "cpio.lzma.u-boot"
-UBOOT_IMAGE_ENTRYPOINT = "0x40800000"
+#UBOOT_IMAGE_ENTRYPOINT = "0x40800000"
+UBOOT_IMAGE_ENTRYPOINT = "0x40008000"
+UBOOT_RAMDISK_LOADADDRESS = "0x40800000"
+UBOOT_IMAGE_LOADADDRESS = "0x40008000"
+FLASH_ROOTFS_OFFSET = "4608"
+
 
 PYTHON_PKGS = " \
   python-core \

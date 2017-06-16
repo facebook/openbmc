@@ -318,6 +318,7 @@ enum
 enum
 {
   CMD_SENSOR_PLAT_EVENT_MSG = 0x02,
+  CMD_SENSOR_ALERT_IMMEDIATE_MSG = 0x16,
 };
 
 // Application Command Codes (IPMI/Table H-1)

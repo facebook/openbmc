@@ -362,6 +362,32 @@ sensor_plat_event_msg(unsigned char *request, unsigned char req_len,
   res->cc = CC_SUCCESS;
 }
 
+// Alert Immediate Command (IPMI/Section 30.7)
+static void
+sensor_alert_immediate_msg(unsigned char *request, unsigned char req_len,
+                      unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int record_id;    // Record ID for added entry
+  int ret;
+  sel_msg_t entry;
+
+  entry.msg[2] = 0x02;  /* Set Record Type to be system event record.*/
+  
+  memcpy(&entry.msg[10], &req->data[5], 6);
+  
+  // Use platform APIs to add the new SEL entry
+  ret = sel_add_entry (req->payload_id, &entry, &record_id);
+  if (ret)
+  {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+}
+
 // Handle Sensor/Event Commands (IPMI/Section 29)
 static void
 ipmi_handle_sensor(unsigned char *request, unsigned char req_len,
@@ -376,6 +402,9 @@ ipmi_handle_sensor(unsigned char *request, unsigned char req_len,
   {
     case CMD_SENSOR_PLAT_EVENT_MSG:
       sensor_plat_event_msg(request, req_len, response, res_len);
+      break;
+    case CMD_SENSOR_ALERT_IMMEDIATE_MSG:
+      sensor_alert_immediate_msg(request, req_len, response, res_len);      
       break;
     default:
       res->cc = CC_INVALID_CMD;

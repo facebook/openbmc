@@ -2,6 +2,7 @@
 
 / {
 	timestamp = <{{now}}>;
+	no-fallback;
 
 	signature {
 {% for key in keys %}

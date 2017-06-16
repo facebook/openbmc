@@ -4905,6 +4905,15 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
     case NM_EXCEPTION:
       sprintf(name, "NM_EXCEPTION");
       break;
+    case NM_HEALTH:
+      sprintf(name, "NM_HEALTH");
+      break;
+    case NM_CAPABILITIES:
+      sprintf(name, "NM_CAPABILITIES");
+      break;
+    case NM_THRESHOLD:
+      sprintf(name, "NM_THRESHOLD");
+      break;
     case PWR_THRESH_EVT:
       sprintf(name, "PWR_THRESH_EVT");
       break;
@@ -4928,6 +4937,17 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   char *ed = &event_data[3];
   char temp_log[128] = {0};
   uint8_t temp;
+  /*Used by decoding ME event*/
+  char *nm_capability_status[2] = {"Not Available", "Available"};
+  char *nm_domain_name[6] = {"Entire Platform", "CPU Subsystem", "Memory Subsystem", "HW Protection", "High Power I/O subsystem", "Unknown"};
+  char *nm_err_type[17] =
+                    {"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", 
+                     "Extended Telemetry Device Reading Failure", "Outlet Temperature Reading Failure",
+                     "Volumetric Airflow Reading Failure", "Policy Misconfiguration",
+                     "Power Sensor Reading Failure", "Inlet Temperature Reading Failure",
+                     "Host Communication Error", "Real-time Clock Synchronization Failure",
+                    "Platform Shutdown Initiated by Intel NM Policy", "Unknown"}; 
+  char *nm_health_type[4] = {"Unknown", "Unknown", "SensorIntelNM", "Unknown"};
 
   switch (snr_type) {
     case OS_BOOT:
@@ -5255,6 +5275,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
          strcat(error_log, "Unknown");
       break;
 
+    /*NM4.0 #550710, Revision 1.95, and turn to p.155*/
     case NM_EXCEPTION:
       sprintf(error_log, "");
       if (ed[0] == 0xA8) {
@@ -5263,7 +5284,62 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       } else
          strcat(error_log, "Unknown");
       break;
+    case NM_HEALTH:
+      sprintf(error_log, "");
+      {
+        uint8_t health_type_index = (ed[0] & 0xf);
+        uint8_t domain_index = (ed[1] & 0xf);
+        uint8_t err_type_index = ((ed[1] >> 4) & 0xf);
+        
+        sprintf(error_log, "%s,Domain:%s,ErrType:%s,Err:0x%x", nm_health_type[health_type_index], nm_domain_name[domain_index], nm_err_type[err_type_index], ed[2]);
+      }
+      return 1;
+      break;
+    
+    case NM_CAPABILITIES:
+      sprintf(error_log, "");
+      if (ed[0] & 0x7)//BIT1=policy, BIT2=monitoring, BIT3=pwr limit and the others are reserved
+      {
+        int capability_index = 0;
+        char *policy_capability = NULL;
+        char *monitoring_capability = NULL;
+        char *pwr_limit_capability = NULL;
 
+        capability_index = BIT(ed[0], 0);
+        policy_capability = nm_capability_status[ capability_index ];
+
+        capability_index = BIT(ed[0], 1);
+        monitoring_capability = nm_capability_status[ capability_index ];
+
+        capability_index = BIT(ed[0], 2);
+        pwr_limit_capability = nm_capability_status[ capability_index ];
+        
+        sprintf(error_log, "PolicyInterface:%s,Monitoring:%s,PowerLimit:%s", 
+          policy_capability, monitoring_capability, pwr_limit_capability);
+      }
+      else
+      {
+        strcat(error_log, "Unknown");
+      }
+
+      return 1; 
+      break;
+
+    case NM_THRESHOLD:
+      sprintf(error_log, "");
+      {
+        uint8_t threshold_number = (ed[0] & 0x3);
+        uint8_t domain_index = (ed[1] & 0xf);
+        uint8_t policy_id = ed[2];
+        uint8_t policy_event_index = BIT(ed[0], 3);
+        char *policy_event[2] = {"Threshold Exceeded", "Policy Correction Time Exceeded"};
+        
+        sprintf(error_log, "Threshold Number:%d-%s,Domain:%s,PolicyID:0x%x", 
+          threshold_number, policy_event[policy_event_index], nm_domain_name[domain_index], policy_id); 
+      }
+      return 1;
+      break;
+ 
     case CPU0_THERM_STATUS:
     case CPU1_THERM_STATUS:
       sprintf(error_log, "");

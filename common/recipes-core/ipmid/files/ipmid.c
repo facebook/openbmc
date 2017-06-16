@@ -64,8 +64,6 @@ extern void plat_lan_init(lan_config_t *lan);
 // TODO: Once data storage is finalized, the following structure needs
 // to be retrieved/updated from persistant backend storage
 static lan_config_t g_lan_config = { 0 };
-static proc_info_t g_proc_info = { 0 };
-static dimm_info_t g_dimm_info[MAX_NUM_DIMMS] = { 0 };
 
 // TODO: Need to store this info after identifying proper storage
 static sys_info_param_t g_sys_info_params;
@@ -1740,13 +1738,54 @@ oem_set_proc_info (unsigned char *request, unsigned char *response,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  unsigned int index = req->data[0];
+  int ret;
 
-  g_proc_info.type = req->data[1];
-  g_proc_info.freq[0] = req->data[2];
-  g_proc_info.freq[1] = req->data[3];
-
-  res->cc = CC_SUCCESS;
   *res_len = 0;
+  res->cc = CC_UNSPECIFIED_ERROR;
+
+  sprintf(key, "sys_config/fru%u_cpu%u_basic_info", req->payload_id, index);
+  value[0] = 1; // Num cores (Unknown?)
+  value[1] = 1; // Thread count (Unknown?)
+  value[2] = 0;
+  value[3] = req->data[2]; // Frequency
+  value[4] = req->data[3];
+  value[5] = req->data[1]; // Type stored as revision.
+  value[6] = 0;
+  ret = kv_set_bin(key, value, 7);
+  if (ret != 7)  {
+    return;
+  }
+  res->cc = CC_SUCCESS;
+}
+
+static void
+oem_get_proc_info (unsigned char *request, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  unsigned int index = req->data[0];
+  int ret;
+
+  *res_len = 0;
+  res->cc = CC_UNSPECIFIED_ERROR;
+
+  sprintf(key, "sys_config/fru%u_cpu%u_basic_info", req->payload_id, index);
+  ret = kv_get_bin(key, value);
+  if (ret < 7) {
+    return;
+  }
+  res->data[0] = value[5]; // Return Processor revision as Type
+  res->data[1] = value[3]; // Processor Frequency
+  res->data[2] = value[4];
+  res->data[3] = 0x1;      // Processor Present (0x1, 0xff Not present)
+  *res_len = 4;
+  res->cc = CC_SUCCESS;
 }
 
 static void
@@ -1755,17 +1794,60 @@ oem_set_dimm_info (unsigned char *request, unsigned char *response,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
   unsigned char index = req->data[0];
 
-  g_dimm_info[index].type = req->data[1];
-  g_dimm_info[index].speed[0] = req->data[2];
-  g_dimm_info[index].speed[1] = req->data[3];
-  g_dimm_info[index].size[0] = req->data[4];
-  g_dimm_info[index].size[1] = req->data[5];
-
-  res->cc = CC_SUCCESS;
   *res_len = 0;
+  res->cc = CC_UNSPECIFIED_ERROR;
+
+  sprintf(key, "sys_config/fru%d_dimm%d_type", req->payload_id, index);
+  ret = kv_set_bin(key, (char *)&req->data[1], 1);
+  if (ret != 1) {
+    return;
+  }
+  sprintf(key, "sys_config/fru%d_dimm%d_speed", req->payload_id, index);
+  memcpy(value, &req->data[2], 2);
+  memcpy(value + 2, &req->data[4], 4);
+  ret = kv_set_bin(key, (char *)value, 6);
+  if (ret != 6) {
+    return;
+  }
+  res->cc = CC_SUCCESS;
+}
+
+static void
+oem_get_dimm_info (unsigned char *request, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  unsigned char index = req->data[0];
+  int ret;
+
+  *res_len = 0;
+  res->cc = CC_UNSPECIFIED_ERROR;
+
+  sprintf(key, "sys_config/fru%d_dimm%d_type", req->payload_id, index);
+  ret = kv_get_bin(key, value);
+  if (ret < 1) {
+    return;
+  }
+  memcpy(&res->data[0], value, 1); // Type
+
+  sprintf(key, "sys_config/fru%d_dimm%d_speed", req->payload_id, index);
+  ret = kv_get_bin(key, value);
+  if (ret < 6) {
+    return;
+  }
+  memcpy(&res->data[1], value, 2); // speed
+  memcpy(&res->data[3], value + 2, 4); // size
+  res->data[7] = 0x2; // 0x2 DIMM Present, 0x3 DIMM not Present
+  *res_len = 8;
+  res->cc = CC_SUCCESS;
 }
 
 /*
@@ -2546,8 +2628,14 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
     case CMD_OEM_SET_PROC_INFO:
       oem_set_proc_info (request, response, res_len);
       break;
+    case CMD_OEM_GET_PROC_INFO:
+      oem_get_proc_info (request, response, res_len);
+      break;
     case CMD_OEM_SET_DIMM_INFO:
       oem_set_dimm_info (request, response, res_len);
+      break;
+    case CMD_OEM_GET_DIMM_INFO:
+      oem_get_dimm_info(request, response, res_len);
       break;
     case CMD_OEM_SET_BOOT_ORDER:
       oem_set_boot_order(request, req_len, response, res_len);

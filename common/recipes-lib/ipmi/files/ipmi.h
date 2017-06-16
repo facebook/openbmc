@@ -247,22 +247,6 @@ typedef struct
   unsigned char ip6_prefix;
 } lan_config_t;
 
-// Structure to store Processor Information
-typedef struct
-{
-  unsigned char type;
-  unsigned char freq[SIZE_PROC_FREQ];
-} proc_info_t;
-
-// Structure to store DIMM Information
-typedef struct
-{
-  unsigned char type;
-  unsigned char speed[SIZE_DIMM_SPEED];
-  unsigned char size[SIZE_DIMM_SIZE];
-} dimm_info_t;
-
-
 // Structure for System Info Params (IPMI/Section 22.14a)
 typedef struct
 {
@@ -401,7 +385,9 @@ enum
 enum
 {
   CMD_OEM_SET_PROC_INFO = 0x1A,
+  CMD_OEM_GET_PROC_INFO = 0x1B,
   CMD_OEM_SET_DIMM_INFO = 0x1C,
+  CMD_OEM_GET_DIMM_INFO = 0x1D,
   CMD_OEM_GET_BOARD_ID = 0x37,
   CMD_OEM_GET_80PORT_RECORD = 0x49, 
   CMD_OEM_SET_BOOT_ORDER = 0x52,

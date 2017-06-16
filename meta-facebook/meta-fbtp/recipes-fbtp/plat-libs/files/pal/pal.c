@@ -5043,20 +5043,26 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     case PCIE_ERR:
       sprintf(error_log, "");
       if ((ed[0] & 0xF) == 0x4)
-        strcat(error_log, "PCI PERR");
+        sprintf(error_log, "PCI PERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       else if ((ed[0] & 0xF) == 0x5)
-        strcat(error_log, "PCI SERR");
+        sprintf(error_log, "PCI SERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       else if ((ed[0] & 0xF) == 0x7)
-        strcat(error_log, "Correctable");
+        sprintf(error_log, "Correctable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       else if ((ed[0] & 0xF) == 0x8)
-        strcat(error_log, "Uncorrectable");
+        sprintf(error_log, "Uncorrectable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       else if ((ed[0] & 0xF) == 0xA)
-        strcat(error_log, "Bus Fatal");
-      else
+        sprintf(error_log, "Bus Fatal (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+      else if ((ed[0] & 0xF) == 0xD) {
+        unsigned int vendor_id = (unsigned int)ed[1] << 8 | (unsigned int)ed[2];
+        sprintf(error_log, "Vendor ID: 0x%4x", vendor_id);
+      } else if ((ed[0] & 0xF) == 0xE) {
+        unsigned int device_id = (unsigned int)ed[1] << 8 | (unsigned int)ed[2];
+        sprintf(error_log, "Device ID: 0x%4x", device_id);
+      } else if ((ed[0] & 0xF) == 0xF) {
+        sprintf(error_log, "Error ID from downstream: 0x%2x 0x%2x", ed[1], ed[2]);
+      } else {
         strcat(error_log, "Unknown");
-
-      sprintf(temp_log, " (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
-      strcat(error_log, temp_log);
+      }
       break;
 
     case IIO_ERR:

@@ -141,6 +141,12 @@ enum adc_pins {
   ADC_PIN7,
 };
 
+// NVMe temp status description code
+enum nvme_temp_status {
+  NVME_NO_TEMP_DATA = 0x80,
+  NVME_SENSOR_FAILURE = 0x81,
+};
+
 // List of PEB sensors to be monitored (PMC)
 const uint8_t peb_sensor_pmc_list[] = {
   PEB_SENSOR_ADC_P12V,
@@ -270,6 +276,10 @@ static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 float peb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float pdpb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float fcb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+
+/* flags to record which ssd is abnormal */
+uint8_t ssd_no_temp[NUM_SSD] = {0};
+uint8_t ssd_sensor_fail[NUM_SSD] = {0};
 
 static void
 assign_sensor_threshold(uint8_t fru, uint8_t snr_num, float ucr, float unc,
@@ -564,6 +574,30 @@ read_device_float(const char *device, float *value) {
   return 0;
 }
 
+int
+nvme_special_case_handling(uint8_t flash_num, float *value) {
+    if ( (uint8_t)(*value) == NVME_NO_TEMP_DATA ) {
+      if (!ssd_no_temp[flash_num])
+        syslog(LOG_WARNING, "%s(): SSD %d no temperature data or temperature data is more the 5 seconds old", __func__, flash_num);
+      ssd_no_temp[flash_num] = 1;
+      return -1;
+    } else if ( (uint8_t)(*value) == NVME_SENSOR_FAILURE ) {
+      if (!ssd_sensor_fail[flash_num])
+        syslog(LOG_CRIT, "%s(): SSD %d temperature sensor failure", __func__, flash_num);
+      ssd_sensor_fail[flash_num] = 1;
+      return -1;
+    } else {
+      if (ssd_no_temp[flash_num]) {
+        syslog(LOG_WARNING, "%s(): SSD %d can get temperature data now, %f C", __func__, flash_num, *value);
+        ssd_no_temp[flash_num] = 0;
+      } else if (ssd_sensor_fail[flash_num]) {
+        syslog(LOG_CRIT, "%s(): SSD %d temperature sensor is back from failure mode", __func__, flash_num);
+        ssd_sensor_fail[flash_num] = 0;
+      }
+      return 0;
+    }
+}
+
 static int
 read_flash_temp(uint8_t flash_num, float *value) {
 
@@ -576,11 +610,20 @@ read_flash_temp(uint8_t flash_num, float *value) {
     syslog(LOG_DEBUG, "%s(): lightning_ssd_sku failed", __func__);
     return -1;
   }
-  if (sku == U2_SKU)
-    return lightning_u2_flash_temp_read(lightning_flash_list[flash_num], value);
-  else if (sku == M2_SKU)
-    return lightning_m2_flash_temp_read(lightning_flash_list[flash_num], value);
-  else {
+
+  if (sku == U2_SKU) {
+    ret = lightning_u2_flash_temp_read(lightning_flash_list[flash_num], value);
+    if (ret < 0)
+      return ret;
+
+    return nvme_special_case_handling(flash_num, value);
+  } else if (sku == M2_SKU) {
+    ret = lightning_m2_flash_temp_read(lightning_flash_list[flash_num], value);
+    if (ret < 0)
+      return ret;
+
+    return nvme_special_case_handling(flash_num, value);
+  } else {
     syslog(LOG_DEBUG, "%s(): unknown ssd sku", __func__);
     return -1;
   }

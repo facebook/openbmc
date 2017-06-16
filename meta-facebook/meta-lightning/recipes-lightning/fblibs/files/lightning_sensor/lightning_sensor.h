@@ -45,6 +45,8 @@ extern "C" {
 
 #define MAX_RETRY_TIMES 3
 
+#define NUM_SSD 15
+
 typedef struct _sensor_info_t {
   bool valid;
   sdr_full_t sdr;

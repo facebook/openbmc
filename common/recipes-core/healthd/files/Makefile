@@ -17,6 +17,8 @@
 
 all: healthd  
 
+CFLAGS += -Wall -Werror
+
 healthd: healthd.c watchdog.c 
 	$(CC) $(CFLAGS) -pthread -lm -std=gnu99 -o $@ $^ $(LDFLAGS)
 

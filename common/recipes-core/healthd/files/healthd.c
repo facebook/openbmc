@@ -30,15 +30,14 @@
 #include <sys/file.h>
 #include <sys/mman.h>
 #include <pthread.h>
+#include <jansson.h>
+#include <stdbool.h>
 #include <openbmc/pal.h>
 #include <sys/sysinfo.h>
+#include <sys/reboot.h>
 #include "watchdog.h"
 #include <openbmc/pal.h>
 
-
-// TODO: Remove macro once we plan to enable it for other platforms.
-
-#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
 #define I2C_BUS_NUM            14
 #define AST_I2C_BASE           0x1E78A000  /* I2C */
 #define I2C_CMD_REG            0x14
@@ -46,157 +45,348 @@
 #define AST_I2CD_SDA_LINE_STS  (0x1 << 17)
 #define AST_I2CD_BUS_BUSY_STS  (0x1 << 16)
 #define PAGE_SIZE              0x1000
+#define MIN_THRESHOLD          60.0
+#define MAX_THRESHOLD          90.0
 
-struct AST_I2C_DEV_OFFSET {
+struct i2c_bus_s {
   uint32_t offset;
   char     *name;
+  bool     enabled;
 };
-struct AST_I2C_DEV_OFFSET ast_i2c_dev_offset[I2C_BUS_NUM] = {
-  {0x040,  "I2C DEV1 OFFSET"},
-  {0x080,  "I2C DEV2 OFFSET"},
-  {0x0C0,  "I2C DEV3 OFFSET"},
-  {0x100,  "I2C DEV4 OFFSET"},
-  {0x140,  "I2C DEV5 OFFSET"},
-  {0x180,  "I2C DEV6 OFFSET"},
-  {0x1C0,  "I2C DEV7 OFFSET"},
-  {0x300,  "I2C DEV8 OFFSET"},
-  {0x340,  "I2C DEV9 OFFSET"},
-  {0x380,  "I2C DEV10 OFFSET"},
-  {0x3C0,  "I2C DEV11 OFFSET"},
-  {0x400,  "I2C DEV12 OFFSET"},
-  {0x440,  "I2C DEV13 OFFSET"},
-  {0x480,  "I2C DEV14 OFFSET"},
+struct i2c_bus_s ast_i2c_dev_offset[I2C_BUS_NUM] = {
+  {0x040,  "I2C DEV1 OFFSET", false},
+  {0x080,  "I2C DEV2 OFFSET", false},
+  {0x0C0,  "I2C DEV3 OFFSET", false},
+  {0x100,  "I2C DEV4 OFFSET", false},
+  {0x140,  "I2C DEV5 OFFSET", false},
+  {0x180,  "I2C DEV6 OFFSET", false},
+  {0x1C0,  "I2C DEV7 OFFSET", false},
+  {0x300,  "I2C DEV8 OFFSET", false},
+  {0x340,  "I2C DEV9 OFFSET", false},
+  {0x380,  "I2C DEV10 OFFSET", false},
+  {0x3C0,  "I2C DEV11 OFFSET", false},
+  {0x400,  "I2C DEV12 OFFSET", false},
+  {0x440,  "I2C DEV13 OFFSET", false},
+  {0x480,  "I2C DEV14 OFFSET", false},
 };
-#endif
 
 #define CPU_INFO_PATH "/proc/stat"
-#define CPU_THRESHOLD_PATH "/mnt/data/bmc_cpu_threshold"
-#define MEM_THRESHOLD_PATH "/mnt/data/bmc_mem_threshold"
 #define CPU_NAME_LENGTH 10
-#define SLIDING_WINDOW_SIZE 120
-#define MONITOR_INTERVAL 1
-#define DEFAULT_CPU_THRESHOLD 85
-#define DEFAULT_MEM_THRESHOLD 70
-#define CPU_NEG_HYSTERESIS 5
-#define MEM_NEG_HYSTERESIS 5
-#define MAX_RETRY 10
+#define DEFAULT_WINDOW_SIZE 120
+#define DEFAULT_MONITOR_INTERVAL 1
+#define HEALTHD_MAX_RETRY 10
+#define CONFIG_PATH "/etc/healthd-config.json"
 
-static int cpu_over_threshold = 0, mem_over_threshold = 0;
-
-enum {
-  CPU = 0,
-  MEM,
+struct threshold_s {
+  float value;
+  float hysteresis;
+  bool asserted;
+  bool log;
+  int log_level;
+  bool reboot;
+  bool bmc_error_trigger;
 };
+
+/* Heartbeat configuration */
+static unsigned int hb_interval = 500;
+
+/* CPU configuration */
+static bool cpu_monitor_enabled = false;
+static unsigned int cpu_window_size = DEFAULT_WINDOW_SIZE;
+static unsigned int cpu_monitor_interval = DEFAULT_MONITOR_INTERVAL;
+static struct threshold_s *cpu_threshold;
+static size_t cpu_threshold_num = 0;
+
+/* Memory monitor enabled */
+static bool mem_monitor_enabled = false;
+static unsigned int mem_window_size = DEFAULT_WINDOW_SIZE;
+static unsigned int mem_monitor_interval = DEFAULT_MONITOR_INTERVAL;
+static struct threshold_s *mem_threshold;
+static size_t mem_threshold_num = 0;
+
+static pthread_mutex_t global_error_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int global_error_state = 0;
+
+/* I2C Monitor enabled */
+static bool i2c_monitor_enabled = false;
+
+static void
+initialize_threshold(json_t *thres, struct threshold_s *t) {
+  json_t *tmp;
+  size_t i;
+  size_t act_size;
+
+  tmp = json_object_get(thres, "value");
+  if (!tmp || !json_is_real(tmp)) {
+    return;
+  }
+  t->value = json_real_value(tmp);
+
+  /* Do not let the value exceed these safe ranges */
+  if (t->value > MAX_THRESHOLD) {
+    t->value = MAX_THRESHOLD;
+  }
+  if (t->value < MIN_THRESHOLD) {
+    t->value = MIN_THRESHOLD;
+  }
+
+  tmp = json_object_get(thres, "hysteresis");
+  if (tmp && json_is_real(tmp)) {
+    t->hysteresis = json_real_value(tmp);
+  }
+  tmp = json_object_get(thres, "action");
+  if (!tmp || !json_is_array(tmp)) {
+    return;
+  }
+  act_size = json_array_size(tmp);
+  for(i = 0; i < act_size; i++) {
+    const char *act;
+    json_t *act_o = json_array_get(tmp, i);
+    if (!act_o || !json_is_string(act_o)) {
+      continue;
+    }
+    act = json_string_value(act_o);
+    if (!strcmp(act, "log-warning")) {
+      t->log_level = LOG_WARNING;
+      t->log = true;
+    } else if(!strcmp(act, "log-critical")) {
+      t->log_level = LOG_CRIT;
+      t->log = true;
+    } else if (!strcmp(act, "reboot")) {
+      t->reboot = true;
+    } else if(!strcmp(act, "bmc-error-trigger")) {
+      t->bmc_error_trigger = true;
+    }
+  }
+
+  if (tmp && json_is_boolean(tmp)) {
+    t->reboot = json_is_true(tmp);
+  }
+}
+
+static void initialize_thresholds(json_t *array, struct threshold_s **out_arr, size_t *out_len) {
+  size_t size = json_array_size(array);
+  size_t i;
+  struct threshold_s *thres;
+
+  if (size == 0) {
+    return;
+  }
+  thres = *out_arr = calloc(size, sizeof(struct threshold_s));
+  if (!thres) {
+    return;
+  }
+  *out_len = size;
+
+  for(i = 0; i < size; i++) {
+    json_t *e = json_array_get(array, i);
+    if (!e) {
+      continue;
+    }
+    initialize_threshold(e, &thres[i]);
+  }
+}
+
+static void
+initialize_hb_config(json_t *conf) {
+  json_t *tmp;
+  
+  tmp = json_object_get(conf, "interval");
+  if (!tmp || !json_is_number(tmp)) {
+    return;
+  }
+  hb_interval = json_integer_value(tmp);
+}
+
+static void
+initialize_cpu_config(json_t *conf) {
+  json_t *tmp;
+
+  tmp = json_object_get(conf, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  cpu_monitor_enabled = json_is_true(tmp);
+  if (!cpu_monitor_enabled) {
+    return;
+  }
+  tmp = json_object_get(conf, "window_size");
+  if (tmp && json_is_number(tmp)) {
+    cpu_window_size = json_integer_value(tmp);
+  }
+  tmp = json_object_get(conf, "monitor_interval");
+  if (tmp && json_is_number(tmp)) {
+    cpu_monitor_interval = json_integer_value(tmp);
+  }
+  tmp = json_object_get(conf, "threshold");
+  if (!tmp || !json_is_array(tmp)) {
+    cpu_monitor_enabled = false;
+    return;
+  }
+  initialize_thresholds(tmp, &cpu_threshold, &cpu_threshold_num);
+}
+
+static void
+initialize_mem_config(json_t *conf) {
+  json_t *tmp;
+
+  tmp = json_object_get(conf, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  mem_monitor_enabled = json_is_true(tmp);
+  if (!mem_monitor_enabled) {
+    return;
+  }
+  tmp = json_object_get(conf, "window_size");
+  if (tmp && json_is_number(tmp)) {
+    mem_window_size = json_integer_value(tmp);
+  }
+  tmp = json_object_get(conf, "monitor_interval");
+  if (tmp && json_is_number(tmp)) {
+    mem_monitor_interval = json_integer_value(tmp);
+  }
+  tmp = json_object_get(conf, "threshold");
+  if (!tmp || !json_is_array(tmp)) {
+    mem_monitor_enabled = false;
+    return;
+  }
+  initialize_thresholds(tmp, &mem_threshold, &mem_threshold_num);
+}
+
+static void
+initialize_i2c_config(json_t *conf) {
+  json_t *tmp;
+  size_t i;
+  size_t i2c_num_busses;
+
+  tmp = json_object_get(conf, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  i2c_monitor_enabled = json_is_true(tmp);
+  if (!i2c_monitor_enabled) {
+    return;
+  }
+  tmp = json_object_get(conf, "busses");
+  if (!tmp || !json_is_array(tmp)) {
+    goto error_bail;
+  }
+  i2c_num_busses = json_array_size(tmp);
+  if (!i2c_num_busses) {
+    /* Nothing to monitor */
+    goto error_bail;
+  }
+  for(i = 0; i < i2c_num_busses; i++) {
+    size_t bus;
+    json_t *ind = json_array_get(tmp, i);
+    if (!ind || !json_is_number(ind)) {
+      goto error_bail;
+    }
+    bus = json_integer_value(ind);
+    if (bus >= I2C_BUS_NUM) {
+      syslog(LOG_CRIT, "HEALTHD: Warning: Ignoring unsupported I2C Bus:%u\n", (unsigned int)bus);
+      continue;
+    }
+    ast_i2c_dev_offset[bus].enabled = true;
+  }
+  return;
+error_bail:
+  i2c_monitor_enabled = false;
+}
+
+static int
+initialize_configuration(void) {
+  json_error_t error;
+  json_t *conf;
+  json_t *v;
+
+  conf = json_load_file(CONFIG_PATH, 0, &error);
+  if (!conf) {
+    syslog(LOG_CRIT, "HEALTHD configuration load failed");
+    return -1;
+  }
+  v = json_object_get(conf, "version");
+  if (v && json_is_string(v)) {
+    syslog(LOG_INFO, "Loaded configuration version: %s\n", json_string_value(v));
+  }
+  initialize_hb_config(json_object_get(conf, "heartbeat"));
+  initialize_cpu_config(json_object_get(conf, "bmc_cpu_utilization"));
+  initialize_mem_config(json_object_get(conf, "bmc_mem_utilization"));
+  initialize_i2c_config(json_object_get(conf, "i2c"));
+
+  json_decref(conf);
+
+  return 0;
+}
+
+static void threshold_assert_check(const char *target, float value, struct threshold_s *thres) {
+  if (!thres->asserted && value >= thres->value) {
+    thres->asserted = true;
+    if (thres->log) {
+      syslog(thres->log_level, "ASSERT: %s (%.2f%%) exceeds the threshold (%.2f%%).\n", target, value, thres->value);
+    }
+    if (thres->reboot) {
+      sleep(1);
+      reboot(RB_AUTOBOOT);
+    }
+    if (thres->bmc_error_trigger) {
+      bool trigger = false;
+      pthread_mutex_lock(&global_error_mutex);
+      global_error_state++;
+      if (global_error_state == 1) {
+        trigger = true;
+      }
+      pthread_mutex_unlock(&global_error_mutex);
+      if (trigger) {
+        pal_bmc_err_enable();
+      }
+    }
+  }
+}
+
+static void threshold_deassert_check(const char *target, float value, struct threshold_s *thres) {
+  if (thres->asserted && value < (thres->value - thres->hysteresis)) {
+    thres->asserted = false;
+    if (thres->log) {
+      syslog(thres->log_level, "DEASSERT: %s (%.2f%%) is under the threshold (%.2f%%).\n", target, value, thres->value);
+    }
+    if (thres->bmc_error_trigger) {
+      bool untrigger = false;
+      pthread_mutex_lock(&global_error_mutex);
+      global_error_state--;
+      if (global_error_state < 0) {
+        global_error_state = 0;
+        syslog(LOG_CRIT, "healthd: Abnormal global state corrected\n");
+      }
+      if (global_error_state == 0) {
+        untrigger = true;
+      }
+      pthread_mutex_unlock(&global_error_mutex);
+      if (untrigger) {
+        pal_bmc_err_disable();
+      }
+    }
+  }
+}
+
+static void
+threshold_check(const char *target, float value, struct threshold_s *thresholds, size_t num) {
+  size_t i;
+
+  for(i = 0; i < num; i++) {
+    threshold_assert_check(target, value, &thresholds[i]);
+    threshold_deassert_check(target, value, &thresholds[i]);
+  }
+}
 
 static void
 initilize_all_kv() {
   pal_set_def_key_value();
 }
 
-int
-get_threshold(uint8_t name, float *threshold) {
-  char threshold_path[MAX_KEY_LEN];
-  char str[MAX_KEY_LEN];
-  int def_threshold = 0;
-  int file_non_exist = 0;
-  int retry_count = 0;
-  int rc = 0;
-  FILE *fp;
-
-  memset(threshold_path, 0, sizeof(char) * MAX_KEY_LEN);
-  switch (name) {
-    case CPU:
-      def_threshold = DEFAULT_CPU_THRESHOLD;
-      sprintf(threshold_path, "%s", CPU_THRESHOLD_PATH);
-      break;
-
-    case MEM:
-      def_threshold = DEFAULT_MEM_THRESHOLD;
-      sprintf(threshold_path, "%s", MEM_THRESHOLD_PATH);
-      break;
-
-    default:
-      return -1;
-  }
-
-  if (pal_set_cpu_mem_threshold(threshold_path)) {
-    syslog(LOG_WARNING, "%s: Failed to set threshold %s\n", __func__, threshold_path);
-  }
-
-  fp = fopen(threshold_path, "r");
-  if (!fp && (errno == ENOENT)) {
-    fp = fopen(threshold_path, "w");
-    file_non_exist = 1;
-  }
-  if (!fp) {
-    syslog(LOG_WARNING, "%s: failed to open %s", __func__, threshold_path);
-    return -1;
-  }
-
-  rc = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  while (rc && (retry_count < 3)) {
-    retry_count++;
-    msleep(100);
-    rc = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  }
-  if (rc) {
-    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, threshold_path, strerror(errno));
-    fclose(fp);
-    return -1;
-  }
-
-  // If there is no file can get threshold, we use the default value
-  if (file_non_exist) {
-    *threshold = def_threshold;
-    sprintf(str, "%d", def_threshold);
-    rc = fwrite(str, sizeof(char), 3, fp);
-    if (rc < 0) {
-      syslog(LOG_WARNING, "%s: failed to write threshold to %s",__func__, threshold_path);
-      flock(fileno(fp), LOCK_UN);
-      fclose(fp);
-      return -1;
-    }
-  } else {
-    // Get threshold from file
-    rc = fread(str, sizeof(char), 3, fp);
-    if (rc < 0) {
-      syslog(LOG_WARNING, "%s: failed to read threshold from %s",__func__, threshold_path);
-      flock(fileno(fp), LOCK_UN);
-      fclose(fp);
-      return -1;
-    }
-    *threshold = atoi(str);
-  }
-
-  if (*threshold == 0) {
-    *threshold = def_threshold;
-    syslog(LOG_WARNING, "%s: user setting threshold %s is unreasonable and set threshold as default value: %d",
-           __func__, str, def_threshold);
-  } else if (*threshold > 90) {
-    *threshold = 90;
-    syslog(LOG_WARNING, "%s: user setting threshold %s is too high and set threshold as 90",__func__, str);
-  } else if (*threshold < 60) {
-    *threshold = 60;
-    syslog(LOG_WARNING, "%s: user setting threshold %s is too low and set threshold as 60",__func__, str);
-  }
-
-
-  flock(fileno(fp), LOCK_UN);
-  fclose(fp);
-
-  return 0;
-}
-
 static void *
 hb_handler() {
-  int hb_interval;
-
-#ifdef HB_INTERVAL
-  hb_interval = HB_INTERVAL;
-#else
-  hb_interval = 500;
-#endif
-
   while(1) {
     /* Turn ON the HB Led*/
     pal_set_hb_led(1);
@@ -206,6 +396,7 @@ hb_handler() {
     pal_set_hb_led(0);
     msleep(hb_interval);
   }
+  return NULL;
 }
 
 static void *
@@ -230,9 +421,9 @@ watchdog_handler() {
      */
     kick_watchdog();
   }
+  return NULL;
 }
 
-#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
 static void *
 i2c_mon_handler() {
   uint32_t i2c_fd;
@@ -249,6 +440,9 @@ i2c_mon_handler() {
     if (i2c_fd >= 0) {
       i2c_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, i2c_fd, AST_I2C_BASE);
       for (i = 0; i < I2C_BUS_NUM; i++) {
+        if (!ast_i2c_dev_offset[i].enabled) {
+          continue;
+        }
         i2c_cmd_reg = (char*)i2c_reg + ast_i2c_dev_offset[i].offset + I2C_CMD_REG;
         i2c_cmd_sts[i] = *(volatile uint32_t*) i2c_cmd_reg;
 
@@ -290,31 +484,26 @@ i2c_mon_handler() {
     }
     sleep(1);
   }
+  return NULL;
 }
-#endif
 
 static void *
 CPU_usage_monitor() {
   unsigned long long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
   unsigned long long total_diff, idle_diff, non_idle, idle_time = 0, total = 0, pre_total = 0, pre_idle = 0;
   char cpu[CPU_NAME_LENGTH] = {0};
-  int i, ready_flag = 0, timer = 0, rc, retry = 0;
-  float cpu_threshold = 0;
-  static float cpu_util_avg, cpu_util_total;
-  static float cpu_utilization[SLIDING_WINDOW_SIZE] = {0};
+  int i, ready_flag = 0, timer = 0, retry = 0;
+  float cpu_util_avg, cpu_util_total;
+  float cpu_utilization[cpu_window_size];
   FILE *fp;
 
-  rc = get_threshold(CPU, &cpu_threshold);
-  if (rc < 0) {
-    syslog(LOG_WARNING, "%s: Failed to get CPU threshold\n", __func__);
-    cpu_threshold = DEFAULT_CPU_THRESHOLD;
-  }
-
+  memset(cpu_utilization, 0, sizeof(float) * cpu_window_size);
+  
   while (1) {
 
-    if (retry > MAX_RETRY) {
+    if (retry > HEALTHD_MAX_RETRY) {
       syslog(LOG_CRIT, "Cannot get CPU statistics. Stop %s\n", __func__);
-      return -1;
+      return NULL;
     }
 
     // Get CPU statistics. Time unit: jiffies
@@ -331,10 +520,10 @@ CPU_usage_monitor() {
 
     fclose(fp);
 
-    timer %= SLIDING_WINDOW_SIZE;
+    timer %= cpu_window_size;
 
-    // Need more data to cacluate the avg. utilization. We average 120 records here.
-    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
+    // Need more data to cacluate the avg. utilization. We average 60 records here.
+    if (timer == (cpu_window_size-1) && !ready_flag)
       ready_flag = 1;
 
 
@@ -353,22 +542,11 @@ CPU_usage_monitor() {
     // Start to average the cpu utilization
     if (ready_flag) {
       cpu_util_total = 0;
-      for (i=0; i<SLIDING_WINDOW_SIZE; i++) {
+      for (i=0; i<cpu_window_size; i++) {
         cpu_util_total += cpu_utilization[i];
       }
-      cpu_util_avg = cpu_util_total/SLIDING_WINDOW_SIZE;
-
-      if (((cpu_util_avg*100) >= cpu_threshold) && !cpu_over_threshold)  {
-        syslog(LOG_WARNING, "ASSERT: BMC CPU utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
-        cpu_over_threshold = 1;
-        pal_bmc_err_enable();
-      } else if (((cpu_util_avg*100) < (cpu_threshold-CPU_NEG_HYSTERESIS)) && cpu_over_threshold)  {
-        syslog(LOG_WARNING, "DEASSERT: BMC CPU utilization (%.2f%%) is under the threshold (%.2f%%).\n", cpu_util_avg*100, cpu_threshold);
-        cpu_over_threshold = 0;
-        // We can only disable BMC error code when both CPU and memory are fine.
-        if (!mem_over_threshold)
-          pal_bmc_err_disable();
-      }
+      cpu_util_avg = (cpu_util_total/cpu_window_size) * 100.0;
+      threshold_check("BMC CPU utilization", cpu_util_avg, cpu_threshold, cpu_threshold_num);
     }
 
     // Record current value for next caculation
@@ -376,35 +554,31 @@ CPU_usage_monitor() {
     pre_idle  = idle_time;
 
     timer++;
-    sleep(MONITOR_INTERVAL);
+    sleep(cpu_monitor_interval);
   }
+  return NULL;
 }
 
 static void *
 memory_usage_monitor() {
   struct sysinfo s_info;
-  int i, error, timer = 0, ready_flag = 0, rc, retry = 0;
-  float mem_threshold = 0;
-  static float mem_util_avg, mem_util_total;
-  static float mem_utilization[SLIDING_WINDOW_SIZE];
+  int i, error, timer = 0, ready_flag = 0, retry = 0;
+  float mem_util_avg, mem_util_total;
+  float mem_utilization[mem_window_size];
 
-  rc = get_threshold(MEM, &mem_threshold);
-  if (rc < 0) {
-    syslog(LOG_WARNING, "%s: Failed to get memory threshold\n", __func__);
-    mem_threshold = DEFAULT_MEM_THRESHOLD;
-  }
+  memset(mem_utilization, 0, sizeof(float) * mem_window_size);
 
   while (1) {
 
-    if (retry > MAX_RETRY) {
+    if (retry > HEALTHD_MAX_RETRY) {
       syslog(LOG_CRIT, "Cannot get sysinfo. Stop the %s\n", __func__);
-      return -1;
+      return NULL;
     }
 
-    timer %= SLIDING_WINDOW_SIZE;
+    timer %= mem_window_size;
 
-    // Need more data to cacluate the avg. utilization. We average 120 records here.
-    if (timer == (SLIDING_WINDOW_SIZE-1) && !ready_flag) 
+    // Need more data to cacluate the avg. utilization. We average 60 records here.
+    if (timer == (mem_window_size-1) && !ready_flag)
       ready_flag = 1;
 
     // Get sys info
@@ -422,28 +596,18 @@ memory_usage_monitor() {
     // Start to average the memory utilization
     if (ready_flag) {
       mem_util_total = 0;
-      for (i=0; i<SLIDING_WINDOW_SIZE; i++)
+      for (i=0; i<mem_window_size; i++)
         mem_util_total += mem_utilization[i];
 
-      mem_util_avg = mem_util_total/SLIDING_WINDOW_SIZE;
+      mem_util_avg = (mem_util_total/mem_window_size) * 100.0;
 
-      if (((mem_util_avg*100) >= mem_threshold) && !mem_over_threshold) {
-        syslog(LOG_CRIT, "ASSERT: BMC Memory utilization (%.2f%%) exceeds the threshold (%.2f%%).\n", mem_util_avg*100, mem_threshold);
-        mem_over_threshold = 1;
-        pal_bmc_err_enable();
-      } else if (((mem_util_avg*100) < (mem_threshold-MEM_NEG_HYSTERESIS)) && mem_over_threshold) {
-        syslog(LOG_CRIT, "DEASSERT: BMC Memory utilization (%.2f%%) is under the threshold (%.2f%%).\n", mem_util_avg*100, mem_threshold);
-        mem_over_threshold = 0;
-        // We can only disable BMC error code when both CPU and memory are fine.
-        if (!cpu_over_threshold)
-          pal_bmc_err_disable();
-      }
+      threshold_check("BMC Memory utilization", mem_util_avg, mem_threshold, mem_threshold_num);
     }
 
     timer++;
-    sleep(MONITOR_INTERVAL);
+    sleep(mem_monitor_interval);
   }
-
+  return NULL;
 }
 
 void
@@ -464,9 +628,8 @@ fw_update_ongoing(int update_status)
 
 static void *
 fw_update_monitor() {
-  static pthread_t tid_enable_timer;
   int fw_update_flag, prev_val = 0;
-  int ret, counter=0, counter_is_start=false;
+  int counter=0, counter_is_start=false;
 
   while(1) {
     //TODO: Change to use save flag in kv,
@@ -503,16 +666,14 @@ fw_update_monitor() {
       }
     }
   }
+  return NULL;
 }
 
 int
-main(int argc, void **argv) {
-  int dev, rc, pid_file;
+main(int argc, char **argv) {
   pthread_t tid_watchdog;
   pthread_t tid_hb_led;
-#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
   pthread_t tid_i2c_mon;
-#endif
   pthread_t tid_cpu_monitor;
   pthread_t tid_mem_monitor;
   pthread_t tid_fw_update_monitor;
@@ -522,6 +683,8 @@ main(int argc, void **argv) {
   }
 
   initilize_all_kv();
+
+  initialize_configuration();
 
 
 // For current platforms, we are using WDT from either fand or fscd
@@ -537,23 +700,27 @@ main(int argc, void **argv) {
     exit(1);
   }
 
-  if (pthread_create(&tid_hb_led, NULL, CPU_usage_monitor, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for monitor CPU usage\n");
-    exit(1);
+  if (cpu_monitor_enabled) {
+    if (pthread_create(&tid_cpu_monitor, NULL, CPU_usage_monitor, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for monitor CPU usage\n");
+      exit(1);
+    }
   }
 
-  if (pthread_create(&tid_hb_led, NULL, memory_usage_monitor, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for monitor memory usage\n");
-    exit(1);
+  if (mem_monitor_enabled) {
+    if (pthread_create(&tid_mem_monitor, NULL, memory_usage_monitor, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for monitor memory usage\n");
+      exit(1);
+    }
   }
 
-#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
-  // Add a thread for monitoring all I2C buses crash or not
-  if (pthread_create(&tid_i2c_mon, NULL, i2c_mon_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for I2C errorr\n");
-    exit(1);
+  if (i2c_monitor_enabled) {
+    // Add a thread for monitoring all I2C buses crash or not
+    if (pthread_create(&tid_i2c_mon, NULL, i2c_mon_handler, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for I2C errorr\n");
+      exit(1);
+    }
   }
-#endif
 
   if (pthread_create(&tid_fw_update_monitor, NULL, fw_update_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
@@ -564,12 +731,16 @@ main(int argc, void **argv) {
 
   pthread_join(tid_hb_led, NULL);
 
-#if defined(CONFIG_FBTTN) || defined(CONFIG_LIGHTNING)
-  pthread_join(tid_i2c_mon, NULL);
-#endif
-  pthread_join(tid_cpu_monitor, NULL);
+  if (i2c_monitor_enabled) {
+    pthread_join(tid_i2c_mon, NULL);
+  }
+  if (cpu_monitor_enabled) {
+    pthread_join(tid_cpu_monitor, NULL);
+  }
 
-  pthread_join(tid_mem_monitor, NULL);
+  if (mem_monitor_enabled) {
+    pthread_join(tid_mem_monitor, NULL);
+  }
 
   pthread_join(tid_fw_update_monitor, NULL);
 

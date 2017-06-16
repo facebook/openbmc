@@ -2070,11 +2070,16 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
   res->cc = CC_SUCCESS;
   switch(selector) {
     case 1:
-      para =  req->data[1] & 0x7f;
-      if( para != soft_ppr && para != hard_ppr  && para != test_mode && para != enable_ppr) {
-        res->cc = CC_INVALID_DATA_FIELD;
-        return;
+      if( req->data[1] & 0x80) {
+        para = req->data[1] & 0x7f;
+        if( para != PPR_SOFT && para != PPR_HARD  && para != PPR_TEST_MODE) {
+          res->cc = CC_INVALID_DATA_FIELD;
+          return;
+        }
+        sprintf(temp, "%c", req->data[1]);
       }
+      else
+        sprintf(temp, "%c", 0);
       fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
       if (!fp) {
         res->cc = CC_NOT_SUPP_IN_CURR_STATE;
@@ -2087,7 +2092,6 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
         return;
       }
       fclose(fp);
-      sprintf(temp, "%c", req->data[1]);
       fp = fopen("/mnt/data/ppr/ppr_action", "w");
       if(fp != NULL)
         fwrite(temp, sizeof(char), 1, fp);

@@ -561,10 +561,9 @@ enum
 //PPR Action
 enum
 {
-  enable_ppr = 0x0,
-  soft_ppr = 0x1,
-  hard_ppr = 0x2,
-  test_mode = 0x7c,
+  PPR_SOFT = 0x1,
+  PPR_HARD = 0x2,
+  PPR_TEST_MODE = 0x7c,
 };
 
 void lib_ipmi_handle(unsigned char *request, unsigned char req_len,

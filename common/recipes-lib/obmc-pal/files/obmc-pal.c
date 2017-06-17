@@ -581,3 +581,9 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
 {
   return PAL_EOK;
 }
+
+int __attribute__((weak))
+pal_set_adr_trigger(uint8_t slot, bool trigger)
+{
+  return PAL_ENOTSUP;
+}

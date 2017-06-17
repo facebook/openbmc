@@ -19,6 +19,7 @@
 #define __OBMC_PAL_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <errno.h>
 
 #ifdef __cplusplus
@@ -140,6 +141,7 @@ int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_set_adr_trigger(uint8_t slot, bool trigger);
 
 #ifdef __cplusplus
 }

@@ -6193,8 +6193,24 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 int
 pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
-  machine_config_info *mach_config_info = &req_data[3];
+  machine_config_info *mc = &req_data[3];
+  int ret;
 
+  ret = kv_set_bin("mb_machine_config", (char *)mc, sizeof(machine_config_info));
+  if (ret < 0) {
+    return -1;
+  }
+  return 0;
+}
+
+int pal_get_machine_configuration(uint8_t slot, machine_config_info *info)
+{
+  char value[MAX_VALUE_LEN];
+  ret = kv_get_bin("mb_machine_config", (char *)info);
+  if (ret < sizeof(machine_config_info)) {
+    return -1;
+  }
+  memcpy(info, value, sizeof(machine_config_info));
   return 0;
 }
 

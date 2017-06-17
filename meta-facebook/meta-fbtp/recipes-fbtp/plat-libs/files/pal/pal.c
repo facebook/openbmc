@@ -6206,7 +6206,7 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
 int pal_get_machine_configuration(uint8_t slot, machine_config_info *info)
 {
   char value[MAX_VALUE_LEN];
-  ret = kv_get_bin("mb_machine_config", (char *)info);
+  int ret = kv_get_bin("mb_machine_config", (char *)info);
   if (ret < sizeof(machine_config_info)) {
     return -1;
   }

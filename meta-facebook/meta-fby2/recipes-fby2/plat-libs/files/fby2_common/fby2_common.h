@@ -63,9 +63,11 @@ enum {
   TYPE_SV_A_CF     = 4,
   TYPE_CF_A_CF     = 5,
   TYPE_GP_A_CF     = 6,
+  TYPE_NULL_A_CF   = 7,
   TYPE_SV_A_GP     = 8,
   TYPE_CF_A_GP     = 9,
   TYPE_GP_A_GP     = 10,
+  TYPE_NULL_A_GP   = 11,
   TYPE_CF_A_NULL   = 13,
   TYPE_GP_A_NULL   = 14,
 };

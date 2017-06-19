@@ -706,27 +706,37 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   else
     pair_slot_id = slot_id + 1;
 
-  // If pair slot is not present, donothing
-  ret = pal_is_fru_prsnt(pair_slot_id, &status);
-  if (ret < 0) {
-     printf("%s pal_is_fru_prsnt failed for fru: %d\n", __func__, pair_slot_id);
-     return -1;
-  }
-
-  if (!status)
-     return 0;
-
   slot_type = fby2_get_slot_type(slot_id);
   pair_set_type = pal_get_pair_slot_type(slot_id);
-
   switch(pair_set_type) {
      case TYPE_SV_A_SV:
+      //do nothing
+       break;
      case TYPE_SV_A_CF:
      case TYPE_SV_A_GP:
-       // donothing
+       if(slot_id == 2 || slot_id == 4)
+       {
+         /* Check whether the system is 12V off or on */
+         ret = pal_is_server_12v_on(slot_id, &status);
+         if (ret < 0) {
+           syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+           return -1;
+         }
+
+         // Need to 12V-off self slot
+         // Self slot should be 12V-off due to device card is on slot2 or slot4
+         if (status) {
+           sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+           if (write_device(vpath, "0")) {
+             return -1;
+           }
+         }
+       } 
        break;
      case TYPE_GP_A_NULL:
      case TYPE_CF_A_NULL:
+     case TYPE_NULL_A_GP:
+     case TYPE_NULL_A_CF:
        /* Check whether the system is 12V off or on */
        ret = pal_is_server_12v_on(slot_id, &status);
        if (ret < 0) {
@@ -747,7 +757,21 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
      case TYPE_CF_A_GP:
      case TYPE_GP_A_CF:
      case TYPE_GP_A_GP:
-       // donothing
+       /* Check whether the system is 12V off or on */
+       ret = pal_is_server_12v_on(slot_id, &status);
+       if (ret < 0) {
+         syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+         return -1;
+       }
+
+       // Need to 12V-off self slot
+       // Self slot should be 12V-off when couple of slots are all device card
+       if (status) {
+         sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+         if (write_device(vpath, "0")) {
+           return -1;
+         }
+       }
        break;
      case TYPE_CF_A_SV:
      case TYPE_GP_A_SV:

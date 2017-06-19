@@ -5,19 +5,29 @@ echo -n "Setup System Configuration .."
 
 . /usr/local/fbpackages/utils/ast-functions
 
-if [ $(is_server_prsnt 2) == "1" ] && [ $(get_slot_type 2) != "0" ] ; then
-     gpio_set O5 0
-     logger -p user.crit "Invalid configuration on SLOT2"
-
+if [ $(is_server_prsnt 2) == "1" ] ; then
+     if [ $(get_slot_type 2) != "0" ] ; then
+     	gpio_set O5 0
+     	logger -p user.crit "Invalid configuration on SLOT2"
+        if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
+          gpio_set O4 0
+        fi
+     fi
+else 
      if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
         gpio_set O4 0
      fi
 fi
 
-if [ $(is_server_prsnt 4) == "1" ] && [ $(get_slot_type 4) != "0" ] ; then
-     gpio_set O7 0
-     logger -p user.crit "Invalid configuration on SLOT4"
-
+if [ $(is_server_prsnt 4) == "1" ] ; then
+     if [ $(get_slot_type 4) != "0" ] ; then
+        gpio_set O7 0
+        logger -p user.crit "Invalid configuration on SLOT4"
+        if [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) != "0" ] ; then
+          gpio_set O6 0
+        fi
+     fi
+else
      if [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) != "0" ] ; then
         gpio_set O6 0
      fi

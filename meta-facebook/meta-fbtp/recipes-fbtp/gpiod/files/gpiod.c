@@ -92,6 +92,32 @@ delay_log(void *arg)
   pthread_exit(NULL);
 }
 
+// On some board versions, we need to reset the IO expander
+// as a software workaround for issues in the CPLD.
+static void usb_debug_card_check_hotfix(gpio_poll_st *gp)
+{
+  static uint8_t odm_id = 0xff;
+  static uint8_t board_rev = 0xff;
+
+  if (odm_id == 0xff) {
+    pal_get_platform_id(&odm_id);
+    odm_id = odm_id & 0x1;
+  }
+  if (board_rev == 0xff) {
+    pal_get_board_rev_id(&board_rev);
+  }
+
+  if (odm_id == 0 && board_rev <= BOARD_REV_DVT) {
+    if (gp->gs.gs_gpio == gpio_num("GPIOQ6")) { // FM_POST_CARD_PRES_BMC_N
+      if(gp->value == 1)
+        usb_dbg_reset();
+    } else if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
+      if(gp->value == 0)
+        usb_dbg_reset();
+    }
+  }
+}
+
 static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
 {
   if (log_delay == 0) {
@@ -145,13 +171,7 @@ static void gpio_event_handle(void *p)
 
   log_gpio_change(gp, 0);
 
-  if (gp->gs.gs_gpio == gpio_num("GPIOQ6")) { // FM_POST_CARD_PRES_BMC_N
-    if(gp->value == 1)
-      usb_dbg_reset();
-  } else if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
-    if(gp->value == 0)
-      usb_dbg_reset();
-  }
+  usb_debug_card_check_hotfix(gp);
 
   //LCD debug card thermal trip critical SEL support
   if (gp->gs.gs_gpio == gpio_num("GPIOM4") || gp->gs.gs_gpio == gpio_num("GPIOM5")) {

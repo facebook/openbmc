@@ -45,6 +45,9 @@
   if (fd) close(fd);\
 }
 
+extern int usleep(useconds_t usec);
+extern void daemon(int, int);
+
 #define POLL_TIMEOUT -1 /* Forever */
 static uint8_t CATERR_irq = 0;
 static uint8_t MSMI_irq = 0;
@@ -140,10 +143,8 @@ static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
 }
 
 // Event Handler for GPIOR5 platform reset changes
-static void platform_reset_event_handle(void *p)
+static void platform_reset_event_handle(gpio_poll_st *gp)
 {
-  gpio_poll_st *gp = (gpio_poll_st*) p;
-
   if (gp->gs.gs_gpio == gpio_num("GPIOR5"))
   {
     // Use GPIOR5 to filter some gpio logging
@@ -156,9 +157,8 @@ static void platform_reset_event_handle(void *p)
 }
 
 // Generic Event Handler for GPIO changes
-static void gpio_event_handle(void *p)
+static void gpio_event_handle(gpio_poll_st *gp)
 {
-  gpio_poll_st *gp = (gpio_poll_st*) p;
   char cmd[128] = {0};
 
   if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
@@ -190,10 +190,9 @@ static void gpio_event_handle(void *p)
 }
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON
-static void gpio_event_handle_power(void *p)
+static void gpio_event_handle_power(gpio_poll_st *gp)
 {
   uint8_t status = 0;
-  gpio_poll_st *gp = (gpio_poll_st*) p;
   char cmd[128] = {0};
 
   pal_get_server_power(1, &status);
@@ -255,10 +254,9 @@ static void gpio_event_handle_power(void *p)
 
 
 // Generic Event Handler for GPIO changes, but only logs event when PLTRST_N is high and power on
-static void gpio_event_handle_PLTRST(void *p)
+static void gpio_event_handle_PLTRST(gpio_poll_st *gp)
 {
   uint8_t status = 0;
-  gpio_poll_st *gp = (gpio_poll_st*) p;
   FILE *fp;
   int rc;
   int val;
@@ -266,7 +264,7 @@ static void gpio_event_handle_PLTRST(void *p)
 
   // check PLTRST
   sprintf(path, "/sys/class/gpio/gpio%d/value", gpio_num("GPIOR5"));
-  if (fp = fopen(path, "r")) {
+  if ((fp = fopen(path, "r")) != NULL) {
     rc = fscanf(fp, "%d", &val);
     fclose(fp);
   }
@@ -439,9 +437,10 @@ gpio_timer() {
     }
 
   }
+  return NULL;
 }
 // The function for setting GPIO value
-static void set_gpio_value(uint8_t *pin, uint8_t value)
+static void set_gpio_value(char *pin, uint8_t value)
 {
   int ret = -1;
   uint8_t pin_number=0;
@@ -461,15 +460,14 @@ static void *
 ierr_mcerr_event_handler() {
   uint8_t CATERR_ierr_time_count = 0;
   uint8_t MSMI_ierr_time_count = 0;
-  uint8_t status = 0;
 
   while (1) {
     if ( CATERR_irq > 0 ){
       CATERR_ierr_time_count++;
       if ( CATERR_ierr_time_count == 2 ){
         if ( CATERR_irq == 1 ){
-          pal_get_CPU_CATERR(1, &status);
-          if (status == 0) {
+          //FM_CPU_CATERR_LVT3_N
+          if (gpio_get(gpio_num("GPIOG1")) == GPIO_VALUE_LOW) {
             syslog(LOG_CRIT, "ASSERT: IERR/CATERR\n");
             pal_add_cri_sel("CPU IERR/CATERR");
           } else {
@@ -496,8 +494,8 @@ ierr_mcerr_event_handler() {
       MSMI_ierr_time_count++;
       if ( MSMI_ierr_time_count == 2 ){
         if ( MSMI_irq == 1 ){
-          pal_get_CPU_MSMI(1, &status);
-          if (status == 0) {
+          //FM_CPU_MSMI_LVT3_N
+          if (gpio_get(gpio_num("GPION3")) == GPIO_VALUE_LOW) {
             syslog(LOG_CRIT, "ASSERT: IERR/MSMI\n");
             pal_add_cri_sel("CPU IERR/MSMI");
           } else {
@@ -521,12 +519,12 @@ ierr_mcerr_event_handler() {
     }
     usleep(25000); //25ms
    }
+  return NULL;
 }
 
 int
-main(int argc, void **argv) {
-  int dev, rc, pid_file;
-  uint8_t status = 0;
+main(int argc, char **argv) {
+  int rc, pid_file;
   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
 

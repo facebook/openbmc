@@ -427,3 +427,9 @@ gpio_set A0 1
 devmem_clear_bit $(scu_addr A4) 9
 devmem_clear_bit $(scu_addr 94) 10
 gpio_export Y1
+
+# FW_UV_ADR_TRIGGER_EN: GPIOI3
+gpio_set I3 1
+
+# FW_FORCE_ADR_N: GPIOI2
+gpio_set I2 1

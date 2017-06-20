@@ -95,6 +95,60 @@ I2C Bus Monitoring
 enbled - Boolean, If set to false will disable I2C monitoring.
 busses - The array of I2C busses needing monitoring.
 
+ECC Monitoring
+------------------
+
+  "ecc_monitoring" : {
+    "enabled": true,
+    "log" : {
+      "ecc_address_log": false,
+      "regenerating_interval": 600
+    },
+    "monitor_interval": 2,
+    "recov_max_counter": 255,
+    "unrec_max_counter": 15,
+    "recov_threshold": [
+      {
+        "value": 0.0,
+        "action": ["log-critical", "bmc-error-trigger"]
+      },
+      {
+        "value": 50.0,
+       "action": ["log-critical"]
+      },
+      {
+        "value": 90.0,
+        "action": ["log-critical"]
+      }
+    ],
+    "unrec_threshold": [
+      {
+        "value": 0.0,
+        "action": ["log-critical", "bmc-error-trigger"]
+      },
+      {
+        "value": 50.0,
+        "action": ["log-critical"]
+      },
+      {
+        "value": 90.0,
+        "action": ["log-critical"]
+      }
+    ]
+  }
+
+enabled - Boolean. If set to false will disable Memory monitoring.
+log - config for syslog.
+  ecc_address_log - Boolean. If set to true will record the address which occurred ECC error in log.
+  regenerating_interval - The interval (monitor_interval * regenerating_interval seconds )between ECC log regenerating.
+monitor_interval - The interval (in seconds) when the Memory utilization will be sampled.
+recov_max_counter - The Max number of ECC recoverable error counter.
+unrec_max_counter - The Max number of ECC unrecoverable error counter.
+threshold - The Array of thresholds (Currently we support only "warning" or "error")
+  value - The threshold value.
+  hysteresis - The negative hysteresis. The utilization should drop to threshold-hysteresis for us to deassert.
+  action - see actions below on supported actions.
+
 Threshold Assert actions
 ------------------------
 The following actions are supported:

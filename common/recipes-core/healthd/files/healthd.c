@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _GNU_SOURCE
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,7 +26,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/file.h>
 #include <sys/mman.h>
@@ -87,10 +87,35 @@ struct threshold_s {
   bool bmc_error_trigger;
 };
 
+#define AST_MCR_BASE 0x1e6e0000 // Base Address of SDRAM Memory Controller
+#define INTR_CTRL_STS_OFFSET 0x50 // Interrupt Control/Status Register
+#define ADDR_FIRST_UNRECOVER_ECC_OFFSET 0x58 // Address of First Un-Recoverable ECC Error Addr
+#define ADDR_LAST_RECOVER_ECC_OFFSET 0x5c // Address of Last Recoverable ECC Error Addr
+#define MAX_ECC_RECOVERABLE_ERROR_COUNTER 255
+#define MAX_ECC_UNRECOVERABLE_ERROR_COUNTER 15
+
+struct ecc_log {
+  // to show the address of ecc error or not. supported chip: AST2500 serials
+  bool show_addr;
+  int regen_interval;
+};
+
+#define BMC_HEALTH_FILE "bmc_health"
+#define HEALTH "1"
+#define NOT_HEALTH "0"
+
+enum ASSERT_BIT {
+  BIT_CPU_OVER_THRESHOLD = 0,
+  BIT_MEM_OVER_THRESHOLD = 1,
+  BIT_RECOVERABLE_ECC    = 2,
+  BIT_UNRECOVERABLE_ECC  = 3,
+};
+
 /* Heartbeat configuration */
 static unsigned int hb_interval = 500;
 
 /* CPU configuration */
+static char *cpu_monitor_name = "BMC CPU utilization";
 static bool cpu_monitor_enabled = false;
 static unsigned int cpu_window_size = DEFAULT_WINDOW_SIZE;
 static unsigned int cpu_monitor_interval = DEFAULT_MONITOR_INTERVAL;
@@ -98,6 +123,7 @@ static struct threshold_s *cpu_threshold;
 static size_t cpu_threshold_num = 0;
 
 /* Memory monitor enabled */
+static char *mem_monitor_name = "BMC Memory utilization";
 static bool mem_monitor_enabled = false;
 static unsigned int mem_window_size = DEFAULT_WINDOW_SIZE;
 static unsigned int mem_monitor_interval = DEFAULT_MONITOR_INTERVAL;
@@ -105,13 +131,26 @@ static struct threshold_s *mem_threshold;
 static size_t mem_threshold_num = 0;
 
 static pthread_mutex_t global_error_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int global_error_state = 0;
+static int bmc_health = 0; // CPU/MEM/ECC error flag
 
 /* I2C Monitor enabled */
 static bool i2c_monitor_enabled = false;
 
+/* ECC configuration */
+static char *recoverable_ecc_name = "ECC Recoverable Error";
+static char *unrecoverable_ecc_name = "ECC Unrecoverable Error";
+static bool ecc_monitor_enabled = false;
+static unsigned int ecc_monitor_interval = DEFAULT_MONITOR_INTERVAL;
+static struct ecc_log ecc_log_setting = {false, 0};
+static struct threshold_s *recov_ecc_threshold;
+static size_t recov_ecc_threshold_num = 0;
+static struct threshold_s *unrec_ecc_threshold;
+static size_t unrec_ecc_threshold_num = 0;
+static unsigned int ecc_recov_max_counter = MAX_ECC_RECOVERABLE_ERROR_COUNTER;
+static unsigned int ecc_unrec_max_counter = MAX_ECC_UNRECOVERABLE_ERROR_COUNTER;
+
 static void
-initialize_threshold(json_t *thres, struct threshold_s *t) {
+initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
   json_t *tmp;
   size_t i;
   size_t act_size;
@@ -122,12 +161,21 @@ initialize_threshold(json_t *thres, struct threshold_s *t) {
   }
   t->value = json_real_value(tmp);
 
-  /* Do not let the value exceed these safe ranges */
-  if (t->value > MAX_THRESHOLD) {
-    t->value = MAX_THRESHOLD;
-  }
-  if (t->value < MIN_THRESHOLD) {
-    t->value = MIN_THRESHOLD;
+  /* Do not let the value (CPU/MEM thresholds) exceed these safe ranges */
+  if ((strcasestr(target, "CPU") != 0ULL) ||
+      (strcasestr(target, "MEM") != 0ULL)) {
+    if (t->value > MAX_THRESHOLD) {
+      syslog(LOG_WARNING,
+             "%s: user setting %s threshold %f is too high and set threshold as %f",
+             __func__, target, t->value, MAX_THRESHOLD);
+      t->value = MAX_THRESHOLD;
+    }
+    if (t->value < MIN_THRESHOLD) {
+      syslog(LOG_WARNING,
+             "%s: user setting %s threshold %f is too low and set threshold as %f",
+             __func__, target, t->value, MIN_THRESHOLD);
+      t->value = MIN_THRESHOLD;
+    }
   }
 
   tmp = json_object_get(thres, "hysteresis");
@@ -164,7 +212,7 @@ initialize_threshold(json_t *thres, struct threshold_s *t) {
   }
 }
 
-static void initialize_thresholds(json_t *array, struct threshold_s **out_arr, size_t *out_len) {
+static void initialize_thresholds(const char *target, json_t *array, struct threshold_s **out_arr, size_t *out_len) {
   size_t size = json_array_size(array);
   size_t i;
   struct threshold_s *thres;
@@ -183,7 +231,20 @@ static void initialize_thresholds(json_t *array, struct threshold_s **out_arr, s
     if (!e) {
       continue;
     }
-    initialize_threshold(e, &thres[i]);
+    initialize_threshold(target, e, &thres[i]);
+  }
+}
+
+static void initialize_ecc_log(json_t *conf, struct ecc_log *log_setting) {
+  json_t *tmp;
+
+  tmp = json_object_get(conf, "ecc_address_log");
+  if (tmp || json_is_boolean(tmp)) {
+    log_setting->show_addr = json_is_true(tmp);
+  }
+  tmp = json_object_get(conf, "regenerating_interval");
+  if (tmp || json_is_number(tmp)) {
+    log_setting->regen_interval = json_integer_value(tmp);
   }
 }
 
@@ -223,7 +284,7 @@ initialize_cpu_config(json_t *conf) {
     cpu_monitor_enabled = false;
     return;
   }
-  initialize_thresholds(tmp, &cpu_threshold, &cpu_threshold_num);
+  initialize_thresholds(cpu_monitor_name, tmp, &cpu_threshold, &cpu_threshold_num);
 }
 
 static void
@@ -251,7 +312,7 @@ initialize_mem_config(json_t *conf) {
     mem_monitor_enabled = false;
     return;
   }
-  initialize_thresholds(tmp, &mem_threshold, &mem_threshold_num);
+  initialize_thresholds(mem_monitor_name, tmp, &mem_threshold, &mem_threshold_num);
 }
 
 static void
@@ -295,6 +356,44 @@ error_bail:
   i2c_monitor_enabled = false;
 }
 
+static void
+initialize_ecc_config(json_t *conf) {
+  json_t *tmp;
+
+  tmp = json_object_get(conf, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  ecc_monitor_enabled = json_is_true(tmp);
+  if (!ecc_monitor_enabled) {
+    return;
+  }
+  tmp = json_object_get(conf, "log");
+  if (tmp || json_is_object(tmp)) {
+    initialize_ecc_log(tmp, &ecc_log_setting);
+  }
+  tmp = json_object_get(conf, "monitor_interval");
+  if (tmp && json_is_number(tmp)) {
+    ecc_monitor_interval = json_integer_value(tmp);
+  }
+  tmp = json_object_get(conf, "recov_max_counter");
+  if (tmp && json_is_number(tmp)) {
+    ecc_recov_max_counter = json_integer_value(tmp);
+  }
+  tmp = json_object_get(conf, "unrec_max_counter");
+  if (tmp && json_is_number(tmp)) {
+    ecc_unrec_max_counter = json_integer_value(tmp);
+  }
+  tmp = json_object_get(conf, "recov_threshold");
+  if (tmp || json_is_array(tmp)) {
+    initialize_thresholds(recoverable_ecc_name, tmp, &recov_ecc_threshold, &recov_ecc_threshold_num);
+  }
+  tmp = json_object_get(conf, "unrec_threshold");
+  if (tmp || json_is_array(tmp)) {
+    initialize_thresholds(unrecoverable_ecc_name, tmp, &unrec_ecc_threshold, &unrec_ecc_threshold_num);
+  }
+}
+
 static int
 initialize_configuration(void) {
   json_error_t error;
@@ -314,6 +413,7 @@ initialize_configuration(void) {
   initialize_cpu_config(json_object_get(conf, "bmc_cpu_utilization"));
   initialize_mem_config(json_object_get(conf, "bmc_mem_utilization"));
   initialize_i2c_config(json_object_get(conf, "i2c"));
+  initialize_ecc_config(json_object_get(conf, "ecc_monitoring"));
 
   json_decref(conf);
 
@@ -331,16 +431,20 @@ static void threshold_assert_check(const char *target, float value, struct thres
       reboot(RB_AUTOBOOT);
     }
     if (thres->bmc_error_trigger) {
-      bool trigger = false;
       pthread_mutex_lock(&global_error_mutex);
-      global_error_state++;
-      if (global_error_state == 1) {
-        trigger = true;
+      if (!bmc_health) { // assert bmc_health key only when not yet set
+        pal_set_key_value(BMC_HEALTH_FILE, NOT_HEALTH);
+      }
+      if (strcasestr(target, "CPU") != 0ULL) {
+        bmc_health = SETBIT(bmc_health, BIT_CPU_OVER_THRESHOLD);
+      } else if (strcasestr(target, "Mem") != 0ULL) {
+        bmc_health = SETBIT(bmc_health, BIT_MEM_OVER_THRESHOLD);
+      } else {
+        pthread_mutex_unlock(&global_error_mutex);
+        return;
       }
       pthread_mutex_unlock(&global_error_mutex);
-      if (trigger) {
-        pal_bmc_err_enable();
-      }
+      pal_bmc_err_enable(target);
     }
   }
 }
@@ -352,20 +456,20 @@ static void threshold_deassert_check(const char *target, float value, struct thr
       syslog(thres->log_level, "DEASSERT: %s (%.2f%%) is under the threshold (%.2f%%).\n", target, value, thres->value);
     }
     if (thres->bmc_error_trigger) {
-      bool untrigger = false;
       pthread_mutex_lock(&global_error_mutex);
-      global_error_state--;
-      if (global_error_state < 0) {
-        global_error_state = 0;
-        syslog(LOG_CRIT, "healthd: Abnormal global state corrected\n");
+      if (strcasestr(target, "CPU") != 0ULL) {
+        bmc_health = CLEARBIT(bmc_health, BIT_CPU_OVER_THRESHOLD);
+      } else if (strcasestr(target, "Mem") != 0ULL) {
+        bmc_health = CLEARBIT(bmc_health, BIT_MEM_OVER_THRESHOLD);
+      } else {
+        pthread_mutex_unlock(&global_error_mutex);
+        return;
       }
-      if (global_error_state == 0) {
-        untrigger = true;
+      if (!bmc_health) { // deassert bmc_health key if no any error bit assertion
+        pal_set_key_value(BMC_HEALTH_FILE, HEALTH);
       }
       pthread_mutex_unlock(&global_error_mutex);
-      if (untrigger) {
-        pal_bmc_err_disable();
-      }
+      pal_bmc_err_disable(target);
     }
   }
 }
@@ -377,6 +481,61 @@ threshold_check(const char *target, float value, struct threshold_s *thresholds,
   for(i = 0; i < num; i++) {
     threshold_assert_check(target, value, &thresholds[i]);
     threshold_deassert_check(target, value, &thresholds[i]);
+  }
+}
+
+static void ecc_threshold_assert_check(const char *target, int value,
+                                       struct threshold_s *thres, uint32_t ecc_err_addr) {
+  int thres_counter = 0;
+
+  if (strcasestr(target, "Unrecover") != 0ULL) {
+    thres_counter = (ecc_unrec_max_counter * thres->value / 100);
+  } else if (strcasestr(target, "Recover") != 0ULL) {
+    thres_counter = (ecc_recov_max_counter * thres->value / 100);
+  } else {
+    return;
+  }
+  if (!thres->asserted && value > thres_counter) {
+    thres->asserted = true;
+    if (thres->log) {
+      if (ecc_log_setting.show_addr) {
+        syslog(LOG_CRIT, "%s occurred (over %d%%) "
+            "Counter = %d Address of last recoverable ECC error = 0x%x",
+            target, (int)thres->value, value, (ecc_err_addr >> 4) & 0xFFFFFFFF);
+      } else {
+        syslog(LOG_CRIT, "ECC occurred (over %d%%): %s Counter = %d",
+            (int)thres->value, target, value);
+      }
+    }
+    if (thres->reboot) {
+      reboot(RB_AUTOBOOT);
+    }
+    if (thres->bmc_error_trigger) {
+      pthread_mutex_lock(&global_error_mutex);
+      if (!bmc_health) { // assert in bmc_health key only when not yet set
+        pal_set_key_value(BMC_HEALTH_FILE, NOT_HEALTH);
+      }
+      if (strcasestr(target, "Unrecover") != 0ULL) {
+        bmc_health = SETBIT(bmc_health, BIT_UNRECOVERABLE_ECC);
+      } else if (strcasestr(target, "Recover") != 0ULL) {
+        bmc_health = SETBIT(bmc_health, BIT_RECOVERABLE_ECC);
+      } else {
+        pthread_mutex_unlock(&global_error_mutex);
+        return;
+      }
+      pthread_mutex_unlock(&global_error_mutex);
+      pal_bmc_err_enable(target);
+    }
+  }
+}
+
+static void
+ecc_threshold_check(const char *target, int value, struct threshold_s *thresholds,
+                    size_t num, uint32_t ecc_err_addr) {
+  size_t i;
+
+  for(i = 0; i < num; i++) {
+    ecc_threshold_assert_check(target, value, &thresholds[i], ecc_err_addr);
   }
 }
 
@@ -546,7 +705,7 @@ CPU_usage_monitor() {
         cpu_util_total += cpu_utilization[i];
       }
       cpu_util_avg = (cpu_util_total/cpu_window_size) * 100.0;
-      threshold_check("BMC CPU utilization", cpu_util_avg, cpu_threshold, cpu_threshold_num);
+      threshold_check(cpu_monitor_name, cpu_util_avg, cpu_threshold, cpu_threshold_num);
     }
 
     // Record current value for next caculation
@@ -601,11 +760,97 @@ memory_usage_monitor() {
 
       mem_util_avg = (mem_util_total/mem_window_size) * 100.0;
 
-      threshold_check("BMC Memory utilization", mem_util_avg, mem_threshold, mem_threshold_num);
+      threshold_check(mem_monitor_name, mem_util_avg, mem_threshold, mem_threshold_num);
     }
 
     timer++;
     sleep(mem_monitor_interval);
+  }
+  return NULL;
+}
+
+// Thread to monitor the ECC counter
+static void *
+ecc_mon_handler() {
+  uint32_t mcr_fd = 0;
+  uint32_t ecc_status = 0;
+  uint32_t unrecover_ecc_err_addr = 0;
+  uint32_t recover_ecc_err_addr = 0;
+  uint16_t ecc_recoverable_error_counter = 0;
+  uint8_t ecc_unrecoverable_error_counter = 0;
+  void *mcr_base_addr;
+  void *mcr50_addr;
+  void *mcr58_addr;
+  void *mcr5c_addr;
+  int bmc_health_last_state = 1;
+  int bmc_health_kv_state = 1;
+  char tmp_health[MAX_VALUE_LEN];
+  int ret = 0;
+  int relog_counter = 0;
+  int retry_err = 0;
+
+  while (1) {
+    mcr_fd = open("/dev/mem", O_RDWR | O_SYNC );
+    if (mcr_fd < 0) {
+      // In case of error opening the file, sleep for 2 sec and retry.
+      // During continuous failures, log the error every 20 minutes.
+      sleep(2);
+      if (++retry_err >= 600) {
+        syslog(LOG_ERR, "%s - cannot open /dev/mem", __func__);
+        retry_err = 0;
+      }
+      continue;
+    }
+
+    retry_err = 0;
+
+    mcr_base_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mcr_fd,
+        AST_MCR_BASE);
+    mcr50_addr = (char*)mcr_base_addr + INTR_CTRL_STS_OFFSET;
+    ecc_status = *(volatile uint32_t*) mcr50_addr;
+    if (ecc_log_setting.show_addr) {
+      mcr58_addr = (char*)mcr_base_addr + ADDR_FIRST_UNRECOVER_ECC_OFFSET;
+      unrecover_ecc_err_addr = *(volatile uint32_t*) mcr58_addr;
+      mcr5c_addr = (char*)mcr_base_addr + ADDR_LAST_RECOVER_ECC_OFFSET;
+      recover_ecc_err_addr = *(volatile uint32_t*) mcr5c_addr;
+    }
+    munmap(mcr_base_addr, PAGE_SIZE);
+    close(mcr_fd);
+
+    // get current health status from kv_store
+    memset(tmp_health, 0, MAX_VALUE_LEN);
+    ret = pal_get_key_value(BMC_HEALTH_FILE, tmp_health);
+    if (ret){
+      syslog(LOG_ERR, " %s - kv get bmc_health status failed", __func__);
+    }
+
+    bmc_health_kv_state = atoi(tmp_health);
+
+    ecc_recoverable_error_counter = (ecc_status >> 16) & 0xFF;
+    ecc_unrecoverable_error_counter = (ecc_status >> 12) & 0xF;
+
+    // Check ECC recoverable error counter
+    ecc_threshold_check(recoverable_ecc_name, ecc_recoverable_error_counter,
+                        recov_ecc_threshold, recov_ecc_threshold_num, recover_ecc_err_addr);
+
+    // Check ECC un-recoverable error counter
+    ecc_threshold_check(unrecoverable_ecc_name, ecc_unrecoverable_error_counter,
+                        unrec_ecc_threshold, unrec_ecc_threshold_num, unrecover_ecc_err_addr);
+
+    // If log-util clear all fru, cleaning ECC error status
+    // After doing it, daemon will regenerate assert
+    // Generage a syslog every regen_interval loop counter
+    if (((ecc_log_setting.regen_interval > 0) &&
+         (relog_counter >= ecc_log_setting.regen_interval)) ||
+        ((bmc_health_kv_state != bmc_health_last_state) &&
+         (bmc_health_kv_state == 1))) {
+      bmc_health = CLEARBIT(bmc_health, BIT_RECOVERABLE_ECC);
+      bmc_health = CLEARBIT(bmc_health, BIT_UNRECOVERABLE_ECC);
+      relog_counter = 0;
+    }
+    bmc_health_last_state = bmc_health_kv_state;
+    relog_counter++;
+    sleep(ecc_monitor_interval);
   }
   return NULL;
 }
@@ -677,6 +922,7 @@ main(int argc, char **argv) {
   pthread_t tid_cpu_monitor;
   pthread_t tid_mem_monitor;
   pthread_t tid_fw_update_monitor;
+  pthread_t tid_ecc_monitor;
 
   if (argc > 1) {
     exit(1);
@@ -722,6 +968,13 @@ main(int argc, char **argv) {
     }
   }
 
+  if (ecc_monitor_enabled) {
+    if (pthread_create(&tid_ecc_monitor, NULL, ecc_mon_handler, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for ECC monitoring errorr\n");
+      exit(1);
+    }
+  }
+
   if (pthread_create(&tid_fw_update_monitor, NULL, fw_update_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
     exit(1);
@@ -740,6 +993,10 @@ main(int argc, char **argv) {
 
   if (mem_monitor_enabled) {
     pthread_join(tid_mem_monitor, NULL);
+  }
+
+  if (ecc_monitor_enabled) {
+    pthread_join(tid_ecc_monitor, NULL);
   }
 
   pthread_join(tid_fw_update_monitor, NULL);

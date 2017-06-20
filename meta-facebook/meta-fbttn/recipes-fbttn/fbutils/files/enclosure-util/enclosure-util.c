@@ -70,7 +70,7 @@ get_hdd_status(int hdd_number) {
 
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, EXPANDER_HDD_STATUS, tbuf, tlen, rbuf, &rlen);
   if (ret) {
-    printf("IPMB Query Error...\n");
+    printf("Error: IPMB Query Error...\n");
     #ifdef DEBUG
        syslog(LOG_WARNING, "enclosure-util: get_hdd_status failed.");
     #endif
@@ -126,7 +126,7 @@ show_error_code() {
     }
   }
   else
-    printf("No Error!\n");
+    printf("Error Counter: 0 (No Error)\n");
 }
 
 void 

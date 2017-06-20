@@ -3575,7 +3575,7 @@ pal_get_error_code(uint8_t* data, uint8_t* error_count) {
 
  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, EXPANDER_ERROR_CODE, tbuf, tlen, rbuf, &rlen);
   if (ret) {
-    printf("Expander Error Code Query Fail...\n");
+    printf("Error: Expander Error Code Query Fail...\n");
     #ifdef DEBUG
        syslog(LOG_WARNING, "enclosure-util: get_error_code, expander_ipmb_wrapper failed.");
     #endif
@@ -4000,27 +4000,27 @@ pal_drive_status(const char* i2c_bus) {
   t_key_value_pair sn_decoding;
 
   if (nvme_vendor_read_decode(i2c_bus, &ssd.vendor, &vendor_decoding))
-    printf("Fail on reading Vendor ID\n");
+    printf("%s: Fail on reading Vendor ID\n", vendor_decoding.key);
   else
     printf("%s: %s\n", vendor_decoding.key, vendor_decoding.value);
 
   if (nvme_serial_num_read_decode(i2c_bus, ssd.serial_num, MAX_SERIAL_NUM, &sn_decoding))
-    printf("Fail on reading Serial Number\n");
+    printf("%s: Fail on reading Serial Number\n", sn_decoding.key);
   else
     printf("%s: %s\n", sn_decoding.key, sn_decoding.value);
 
   if (nvme_temp_read_decode(i2c_bus, &ssd.temp, &temp_decoding))
-    printf("Fail on reading Composite Temperature\n");
+    printf("%s: Fail on reading Composite Temperature\n", temp_decoding.key);
   else
     printf("%s: %s\n", temp_decoding.key, temp_decoding.value);
 
   if (nvme_pdlu_read_decode(i2c_bus, &ssd.pdlu, &pdlu_decoding))
-    printf("Fail on reading Percentage Drive Life Used\n");
+    printf("%s: Fail on reading Percentage Drive Life Used\n", pdlu_decoding.key);
   else
     printf("%s: %s\n", pdlu_decoding.key, pdlu_decoding.value);
 
   if (nvme_sflgs_read_decode(i2c_bus, &ssd.sflgs, &status_flag_decoding))
-    printf("Fail on reading Status Flags\n");
+    printf("%s: Fail on reading Status Flags\n", status_flag_decoding.self.key);
   else {
     printf("%s: %s\n", status_flag_decoding.self.key, status_flag_decoding.self.value);
     printf("    %s: %s\n", status_flag_decoding.read_complete.key, status_flag_decoding.read_complete.value);
@@ -4032,7 +4032,7 @@ pal_drive_status(const char* i2c_bus) {
   }
 
   if (nvme_smart_warning_read_decode(i2c_bus, &ssd.warning, &smart_warning_decoding))
-    printf("Fail on reading SMART Critical Warning\n");
+    printf("%s: Fail on reading SMART Critical Warning\n", smart_warning_decoding.self.key);
   else {
     printf("%s: %s\n", smart_warning_decoding.self.key, smart_warning_decoding.self.value);
     printf("    %s: %s\n", smart_warning_decoding.spare_space.key, smart_warning_decoding.spare_space.value);

@@ -1,0 +1,258 @@
+#!/usr/bin/env python
+# Intended to compatible with both Python 2.7 and Python 3.x.
+
+# Copyright 2017-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+
+import hashlib
+import os
+import re
+import struct
+import sys
+
+# The typing module isn't installed on BMCs as of 2017-06-18 but it's only
+# needed when running mypy on a developer's machine.
+try:
+    from typing import Any, List
+except:
+    pass
+
+
+# A partition can be either backed by a file, which will be used to calculate
+# the md5sum, or for comparison purposes a partition can be initialized given a
+# known md5sum. The same image file, such as flash-yosemite or /dev/mtd5, can
+# be used by multiple Partitions with non-overlapping start and max_end.
+class Partition(object):
+    def __init__(self, name, start, max_end, image_file=None, md5sum=None,
+                 version=None):
+        # type: (str, int, int, Any, Any, Any) -> None
+        self.name = name
+        self.image_file = image_file
+        self.start = start
+        # If there is a U-Boot header to the partition and its size / end
+        # information is less than this maximum, the header value will be used
+        # for calculating md5sums.
+        self.max_end = max_end
+        self.fixed_md5sum = md5sum
+        self.version = version
+
+    def md5sum(self):
+        # type: () -> str
+        if self.fixed_md5sum:
+            return self.fixed_md5sum
+        # This code was tested against a u-boot parition without a header--just
+        # ARM (AArch32) instructions--and kernel and rootfs parititions with
+        # headers. As of 2016-06-18, we don't have the zlib module on the BMC
+        # to be able to run zlib.crc() on the data and compare it to the CRC
+        # recorded in the header. So just get the size out of the header and
+        # calculate an md5sum.
+        with open(self.image_file, 'rb') as image:
+            print('{}.seek({:x})'.format(self.image_file, self.start))
+            image.seek(self.start)
+            struct_format = b'>IIII'
+            print('{}.read({:x})'.format(self.image_file,
+                                         struct.calcsize(struct_format)))
+            (magic, _crc, _time, size) = struct.unpack(
+                struct_format, image.read(struct.calcsize(struct_format))
+            )
+            UBOOT_HEADER_MAGIC = 0x27051956
+            actual_end = self.start + size
+            if magic != UBOOT_HEADER_MAGIC or actual_end > self.max_end:
+                actual_end = self.max_end
+            print('{}.seek({:x})'.format(self.image_file, self.start))
+            image.seek(self.start)
+            BUFFER_SIZE = 4096
+            checksum = hashlib.md5()
+            foreword_size = self.start % BUFFER_SIZE
+            if foreword_size != 0:
+                print('{}.read(0x{:x})'.format(self.image_file, foreword_size))
+                checksum.update(self.image_file.read(foreword_size))
+            afterword_size = actual_end % BUFFER_SIZE
+            print('many {}.read(0x{:x})'.format(self.image_file, BUFFER_SIZE))
+            while image.tell() < actual_end - afterword_size:
+                checksum.update(image.read(BUFFER_SIZE))
+            if afterword_size != 0:
+                print('{}.read(0x{:x})'.format(self.image_file, afterword_size))
+                checksum.update(image.read(afterword_size))
+            position = image.tell()
+            short = actual_end - position
+            if short > 0:
+                print('{} ends at 0x{:x}, {} bytes short of 0x{:x}.'.format(
+                    self.image_file, position, short, actual_end
+                ))
+                return ''
+            return checksum.hexdigest()
+
+    def __repr__(self):
+        # type: () -> str
+        return '0x{:x}@0x{:x}({})'.format(
+            self.max_end - self.start, self.start, self.name
+        )
+
+
+# TODO move these definitions to a configuration file
+REFERENCE_UBOOT_PARTITIONS = [
+    # For version on filesystem, run
+    # `strings /dev/mtd0 | sed -n '/U-Boot /{p; q}'`. There's currently no way
+    # to know what ran, but in the future we could pass the version as a kernel
+    # parameter and
+    # `cat /proc/cmdline | sed -nr s/.*UBOOT_VERSION=(^[ ]+).*/\1/p`.
+    #
+    # fbpkg openbmc.fido.yosemite:3
+    # U-Boot 2013.07 (Apr 28 2016 - 17:15:14)
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              'e0d27bab1cd990f9b9fde7e8f7e5f977', 'v1.2'),
+    # fbpkg openbmc.fido.yosemite:2
+    # U-Boot 2013.07 (May 19 2016 - 10:01:23)
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              'e816edddc9ca673db5343fc551f7cc34', 'v1.3'),
+    # fbpkg openbmc.fido.yosemite:4
+    # U-Boot 2013.07 (Aug 16 2016 - 16:40:32) Yosemite v1.0
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              '53f32ead965c566d77c57b7eb65df790', 'v1.7.1'),
+    # No fbpkg; captured from the wild
+    # U-Boot 2013.07 (Oct 26 2016 - 14:18:16) Yosemite v1.0
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              '801b495e4ec3c3080c13c08d293ab400', 'v1.9'),
+    # fbpkg openbmc.fido.yosemite:5
+    # U-Boot 2013.07 (Nov 18 2016 - 09:32:12) Yosemite v1.0
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              '2be6219085cf5624ba53ae513e667ad3', 'v2.0'),
+    # fbpkg openbmc.fido.yosemite:7
+    # U-Boot 2013.07 (Feb 07 2017 - 11:13:36) Yosemite v1.0
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              '730270b9324ebf384e4b6d8a7a5d1f88', 'v2.3'),
+    # fbpkg openbmc.fido.yosemite:6
+    # U-Boot 2013.07 (Feb 15 2017 - 11:05:44) Yosemite v1.0
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              '22c8545cf9848578618da16a6ebddf29', 'v2.4'),
+    # No fbpkg; captured from the wild
+    # U-Boot 2013.07 (Apr 17 2017 - 23:26:19) Yosemite v1.0
+    Partition('u-boot', 0x00000000, 0x00060000, None,
+              '39a014b1618f6247de285f6e844ecdf1', 'v2.5'),
+]
+
+REFERENCE_KERNEL_PARTITIONS = [
+    # `uname -rv` will output the running version.
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              '61cf95ce4c826136e7a370147deef35d', 'v1.2'),
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              'c251937037261dc187615d38c41e4665', 'v1.3'),
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              '318cc1cf158a4ddac0b10c7fc8c051a1', 'v1.7.1'),
+    # 2.6.28.9 #1 Wed Oct 26 14:16:35 PDT 2016
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              '1c1abf71f5c2a8ab08a0bec293c9a228', 'v1.9'),
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              '7d213ad4ec9f8b24b561c8ceda1a702f', 'v2.0'),
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              'd8cc82c85ac6a3af3e95bc1538e3d0e5', 'v2.3'),
+    # 2.6.28.9 #1 Wed Feb 15 11:04:30 PST 2017
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              'c01f109d86798521d70e8c31480f01f4', 'v2.4'),
+    # 2.6.28.9 #1 Mon Apr 17 23:23:59 PDT 2017
+    Partition('kernel', 0x00080000, 0x00280000, None,
+              '11edcf76bcca26e00610673637691d88', 'v2.5'),
+]
+
+REFERENCE_ROOTFS_PARTITIONS = [
+    # `head -n 1 /etc/issue` will output the running version.
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              '3f2984443303d2aada9551af793d544e', 'v1.2'),
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              '409fd06c1b8f7716d8bb52971139e7ae', 'v1.3'),
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              'bd0f167cb5652730ac8e1bcd946c0198', 'v1.7.1'),
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              'cab3028d60841e9b13de12b82c0092ce', 'v1.9'),
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              '96b79473ac03d11b6a84cd3d897456e7', 'v2.0'),
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              '5a4f717eaffcd626ccf0e912ceb7f450', 'v2.3'),
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              'ade7334b25204a559d366d53e3bd0f7b', 'v2.4'),
+    Partition('rootfs', 0x300000, 0xf00000, None,
+              'a3f64631e0dfa7a13d95d69ac8d84dd6', 'v2.5'),
+]
+
+ALL_REFERENCE_PARTITIONS = [
+    REFERENCE_UBOOT_PARTITIONS,
+    REFERENCE_KERNEL_PARTITIONS,
+    REFERENCE_ROOTFS_PARTITIONS,
+]
+
+proc_mtd_regex = re.compile(
+    '^(?P<dev>mtd[0-9]+): (?P<size>[0-9a-f]+) [0-9a-f]+ "(?P<name>[^"]+)"$',
+    re.MULTILINE
+)
+
+
+def get_mtds():
+    # type: () -> List[Partition]
+    with open('/proc/mtd', 'r') as proc_mtd:
+        mtd_info = proc_mtd_regex.findall(proc_mtd.read())
+    return [Partition(name, 0, int(size, 16), '/dev/' + dev)
+            for (dev, size, name) in mtd_info]
+
+
+def safe_to_reboot(image_backed_partitions):
+    # type: (List[Partition]) -> bool
+    all_checksums_match = True
+    for reference_partitions in ALL_REFERENCE_PARTITIONS:
+        name = reference_partitions[0].name
+        print('Checking {} partition'.format(name))
+        for image_backed_partition in image_backed_partitions:
+            if image_backed_partition.name == name:
+                print('Got name match')
+                break
+        else:
+            print('Did not find image backed partition with matching name.')
+            image = image_backed_partitions[-1]
+            print('Treating {} as full image'.format(image))
+            start = reference_partitions[0].start
+            end = reference_partitions[0].max_end
+            image_backed_partition = Partition(name, start, end,
+                                               image.image_file)
+        print('Checking {} {}'.format(image_backed_partition.image_file,
+                                      image_backed_partition))
+        image_backed_partition_md5sum = image_backed_partition.md5sum()
+        for reference_partition in reference_partitions:
+            if image_backed_partition_md5sum == reference_partition.md5sum():
+                print(image_backed_partition, image_backed_partition_md5sum,
+                      reference_partition.version, 'OK')
+                break
+        else:
+            all_checksums_match = False
+            print(image_backed_partition, image_backed_partition_md5sum,
+                  'UNRECOGNIZED')
+    return all_checksums_match
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        partitions = [Partition(os.path.basename(f), 0, os.path.getsize(f), f)
+                      for f in sys.argv[1:]]
+    else:
+        partitions = get_mtds()
+    print(partitions)
+    if not safe_to_reboot(partitions):
+        sys.exit(1)

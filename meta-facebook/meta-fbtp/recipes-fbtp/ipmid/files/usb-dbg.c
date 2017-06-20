@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <openbmc/pal.h>
@@ -34,6 +35,350 @@
 #include <arpa/inet.h>
 
 #define ESCAPE "\x1B"
+#define ESC_BAT ESCAPE"B"
+#define ESC_MCU_BL_VER ESCAPE"U"
+#define ESC_MCU_RUN_VER ESCAPE"R"
+#define ESC_ALT ESCAPE"[5;7m"
+#define ESC_RST ESCAPE"[m"
+
+#define LINE_DELIMITER '\x1F'
+
+#define FRAME_BUFF_SIZE 4096
+
+struct frame {
+  char title[32];
+  size_t max_size;
+  size_t max_page;
+  char *buf;
+  uint16_t idx_head, idx_tail;
+  uint8_t line_per_page;
+  uint8_t line_width;
+  uint16_t lines, pages;
+  uint8_t esc_sts;
+  uint8_t overwrite;
+  time_t mtime;
+  int (*init)(struct frame *self, size_t size);
+  int (*append)(struct frame *self, char *string, int indent);
+  int (*insert)(struct frame *self, char *string, int indent);
+  int (*getPage)(struct frame *self, int page, char *page_buf, size_t page_buf_size);
+  int (*isFull)(struct frame *self);
+  int (*isEscSeq)(struct frame *self, char chr);
+  int (*parse)(struct frame *self, char *buf, size_t buf_size, char *input, int indent);
+};
+
+// return 0 on seccuess
+static int frame_init (struct frame *self, size_t size){
+  // Reset status
+  self->idx_head = self->idx_tail = 0;
+  self->pages = self->lines = 0;
+  self->esc_sts = 0;
+
+  if (self->buf != NULL && self->max_size == size) {
+    // reinit
+    return 0;
+  }
+
+  if (self->buf != NULL && self->max_size != size){
+    free(self->buf);
+  }
+  // Initialize Configuration
+  self->title[0] = '\0';
+  self->buf = malloc(size);
+  self->max_size = size;
+  self->max_page = size;
+  self->line_per_page = 7;
+  self->line_width = 16;
+  self->overwrite = 0;
+
+  if (self->buf)
+    return 0;
+  else
+    return -1;
+}
+
+// return 0 on seccuess
+static int frame_append (struct frame *self, char *string, int indent)
+{
+  const size_t buf_size = 64;
+  char buf[buf_size];
+  char *ptr;
+  int ret;
+
+  ret = self->parse(self, buf, buf_size, string, indent);
+
+  if (ret < 0)
+    return ret;
+
+  for (ptr = buf; *ptr != '\0'; ptr++) {
+    if (self->isFull(self)) {
+      if (self->overwrite) {
+        if (self->buf[self->idx_head] == LINE_DELIMITER)
+          self->lines--;
+        self->idx_head = (self->idx_head + 1) % self->max_size;
+      } else
+        return -1;
+    }
+
+    self->buf[self->idx_tail] = *ptr;
+    if (*ptr == LINE_DELIMITER)
+      self->lines++;
+
+    self->idx_tail = (self->idx_tail + 1) % self->max_size;
+  }
+
+  self->pages = (self->lines / self->line_per_page) +
+    ((self->lines % self->line_per_page)?1:0);
+
+  if (self->pages > self->max_page)
+    self->pages = self->max_page;
+
+  return 0;
+}
+
+// return 0 on seccuess
+static int frame_insert (struct frame *self, char *string, int indent)
+{
+  const size_t buf_size = 64;
+  char buf[buf_size];
+  char *ptr;
+  int ret;
+
+  ret = self->parse(self, buf, buf_size, string, indent);
+
+  if (ret < 0)
+    return ret;
+
+  for (ptr = &buf[strlen(buf)-1]; ptr != (buf - 1); ptr--) {
+    if (self->isFull(self)) {
+      if (self->overwrite) {
+        self->idx_tail = (self->idx_tail + self->max_size - 1) % self->max_size;
+        if (self->buf[self->idx_tail] == LINE_DELIMITER)
+          self->lines--;
+      } else
+        return -1;
+    }
+
+    self->idx_head = (self->idx_head + self->max_size - 1) % self->max_size;
+
+    self->buf[self->idx_head] = *ptr;
+    if (*ptr == LINE_DELIMITER)
+      self->lines++;
+  }
+
+  self->pages = (self->lines / self->line_per_page) +
+    ((self->lines % self->line_per_page)?1:0);
+
+  if (self->pages > self->max_page)
+    self->pages = self->max_page;
+
+  return 0;
+}
+
+// return page size
+static int frame_getPage (struct frame *self, int page, char *page_buf, size_t page_buf_size)
+{
+  uint16_t line = 0;
+  uint16_t idx, len;
+
+  if (self == NULL || self->buf == NULL)
+    return -1;
+
+  // 1-based page
+  if (page > self->pages || page < 1)
+    return -1;
+
+  if (page_buf == NULL || page_buf_size < 0)
+    return -1;
+
+  len = snprintf(page_buf, 17, "%-10s %02d/%02d", self->title, page, self->pages);
+  if (len < 0)
+    return -1;
+
+  line = 0;
+  idx = self->idx_head;
+  while (line < ((page-1) * self->line_per_page) && idx != self->idx_tail) {
+    if (self->buf[idx] == LINE_DELIMITER)
+      line++;
+    idx = (idx + 1) % self->max_size;
+  }
+
+  while (line < ((page) * self->line_per_page) && idx != self->idx_tail) {
+    if (self->buf[idx] == LINE_DELIMITER) {
+      line++;
+    } else {
+      page_buf[len++] = self->buf[idx];
+      if (len == page_buf_size)
+        break;
+    }
+    idx = (idx + 1) % self->max_size;
+  }
+
+  return len;
+}
+
+// return 1 for frame buffer full
+static int frame_isFull (struct frame *self)
+{
+  if (self == NULL || self->buf == NULL)
+    return -1;
+
+  if ((self->idx_tail + 1) % self->max_size == self->idx_head)
+    return 1;
+  else
+    return 0;
+}
+
+// return 1 for Escape Sequence
+static int frame_isEscSeq(struct frame *self, char chr) {
+  uint8_t curr_sts = self->esc_sts;
+
+  if (self == NULL)
+    return -1;
+
+  if (self->esc_sts == 0 && (chr == 0x1b))
+    self->esc_sts = 1; // Escape Sequence
+  else if (self->esc_sts == 1 && (chr == 0x5b))
+    self->esc_sts = 2; // Control Sequence Introducer(CSI)
+  else if (self->esc_sts == 1 && (chr != 0x5b))
+    self->esc_sts = 0;
+  else if (self->esc_sts == 2 && (chr>=0x40 && chr <=0x7e))
+    self->esc_sts = 0;
+
+  if (curr_sts || self->esc_sts)
+    return 1;
+  else
+    return 0;
+}
+
+// return 0 on seccuess
+static int frame_parse (struct frame *self, char *buf, size_t buf_size, char *input, int indent)
+{
+  uint8_t pos, esc;
+  int i;
+  char *in, *end;
+
+  if (self == NULL || self->buf == NULL || input == NULL)
+    return -1;
+
+  if (indent >= self->line_width || indent < 0)
+    return -1;
+
+  in = input;
+  end = in + strlen(input);
+  pos = 0;  // line position
+  esc = 0; // escape state
+  i = 0; // buf index
+  while (in != end) {
+    if (i >= buf_size)
+      break;
+
+    if (pos < indent) {
+      // fill indent
+      buf[i++] = ' ';
+      pos++;
+      continue;
+    }
+
+    esc = self->isEscSeq(self, *in);
+
+    if (!esc && pos == self->line_width) {
+      buf[i++] = LINE_DELIMITER;
+      pos = 0;
+      continue;
+    }
+
+    if (!esc)
+      pos++;
+
+    // fill input data
+    buf[i++] = *(in++);
+  }
+
+  // padding
+  while (pos <= self->line_width) {
+    if (i >= buf_size)
+      break;
+    if (pos < self->line_width)
+      buf[i++] = ' ';
+    else
+      buf[i++] = LINE_DELIMITER;
+    pos++;
+  }
+
+  // full
+  if (i >= buf_size)
+    return -1;
+
+  buf[i++] = '\0';
+
+  return 0;
+}
+
+#define FRAME_DECLARE(NAME) \
+struct frame NAME = {\
+  .buf = NULL,\
+  .pages = 0,\
+  .mtime = 0,\
+  .init = frame_init,\
+  .append = frame_append,\
+  .insert = frame_insert,\
+  .getPage = frame_getPage,\
+  .isFull = frame_isFull,\
+  .isEscSeq = frame_isEscSeq,\
+  .parse = frame_parse,\
+};
+
+static FRAME_DECLARE(frame_info);
+static FRAME_DECLARE(frame_sel);
+static FRAME_DECLARE(frame_snr);
+
+enum ENUM_PANEL {
+  PANEL_MAIN = 1,
+  PANEL_BOOT_ORDER = 2,
+  PANEL_POWER_POLICY = 3,
+};
+
+struct ctrl_panel {
+  uint8_t parent;
+  uint8_t item_num;
+  char item_str[8][32];
+  uint8_t (*select)(uint8_t item);
+};
+
+static uint8_t panel_main (uint8_t item);
+static uint8_t panel_boot_order (uint8_t item);
+static uint8_t panel_power_policy (uint8_t item);
+
+static struct ctrl_panel panels[] = {
+  { /* dummy entry for making other to 1-based */ },
+  {
+    .parent = PANEL_MAIN,
+    .item_num = 2,
+    .item_str = {
+      "User Setting",
+      ">Boot Order",
+      ">Power Policy",
+    },
+    .select = panel_main,
+  },
+  {
+    .parent = PANEL_MAIN,
+    .item_num = 0,
+    .item_str = {
+      "Boot Order",
+    },
+    .select = panel_boot_order,
+  },
+  {
+    .parent = PANEL_MAIN,
+    .item_num = 0,
+    .item_str = {
+      "Power Policy",
+    },
+    .select = panel_power_policy,
+  },
+};
+static int panelNum = (sizeof(panels)/sizeof(struct ctrl_panel)) - 1;
 
 extern void plat_lan_init(lan_config_t *lan);
 
@@ -429,12 +774,6 @@ static sensor_desc_c cri_sensor[]  =
 };
 static int sensor_count = sizeof(cri_sensor) / sizeof(sensor_desc_c);
 
-#define LINE_PER_PAGE 7
-#define LEN_PER_LINE 16
-#define LEN_PER_PAGE (LEN_PER_LINE*LINE_PER_PAGE)
-#define MAX_PAGE 20
-#define MAX_LINE (MAX_PAGE*LINE_PER_PAGE)
-
 static int
 read_device(const char *device, char *value) {
   FILE *fp;
@@ -464,14 +803,12 @@ read_device(const char *device, char *value) {
 
 static int
 plat_chk_cri_sel_update(uint8_t *cri_sel_up) {
-  static time_t mtime;
   FILE *fp;
   struct stat file_stat;
 
   fp = fopen("/mnt/data/cri_sel", "r");
   if (fp) {
-    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime > mtime)) {
-      mtime = file_stat.st_mtime;
+    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime > frame_sel.mtime)) {
       *cri_sel_up = 1;
     } else {
       *cri_sel_up = 0;
@@ -601,21 +938,21 @@ plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *d
 
 static int
 plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  static char frame_buff[MAX_PAGE * LEN_PER_PAGE];
-  static time_t mtime;
-  static int page_num = 1, line_num = 0;
-  int i, len, msg_line;
+  int len;
   char line_buff[256], *ptr;
   FILE *fp;
   struct stat file_stat;
 
   fp = fopen("/mnt/data/cri_sel", "r");
   if (fp) {
-    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime > mtime)) {
-      mtime = file_stat.st_mtime;
-      memset(frame_buff, ' ', sizeof(frame_buff));
+    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime > frame_sel.mtime)) {
+      // initialize and clear frame
+      frame_sel.init(&frame_sel, FRAME_BUFF_SIZE);
+      frame_sel.overwrite = 1;
+      frame_sel.max_page = 20;
+      frame_sel.mtime = file_stat.st_mtime;
+      snprintf(frame_sel.title, 32, "Cri SEL");
 
-      line_num = 0;
       while (fgets(line_buff, 256, fp)) {
         // Remove newline
         line_buff[strlen(line_buff)-1] = '\0';
@@ -627,159 +964,115 @@ plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count
         len = (ptr)?strlen(ptr):0;
         if (len > 2) {
           ptr+=2;
-          len-=2;
         } else {
           continue;
         }
 
-        // line number of this 1 message
-        msg_line = (len/LEN_PER_LINE) + ((len%LEN_PER_LINE)?1:0);
-
-        // total line number after this message
-        if ((line_num + msg_line) < MAX_LINE)
-          line_num += msg_line;
-        else
-          line_num = MAX_LINE;
-
-        // Scroll message down
-        for(i = (line_num-1); (i-msg_line)>=0; i--)
-          memcpy(&frame_buff[LEN_PER_LINE*i], &frame_buff[LEN_PER_LINE*(i-msg_line)], LEN_PER_LINE);
-
         // Write new message
-        memcpy(&frame_buff[0], ptr, len);
-        memset(&frame_buff[len], ' ', msg_line*LEN_PER_LINE-len);
+        frame_sel.insert(&frame_sel, ptr, 0);
       }
     }
     fclose(fp);
-    page_num = line_num/LINE_PER_PAGE + ((line_num%LINE_PER_PAGE)?1:0);
   } else {
-    memset(frame_buff, ' ', sizeof(frame_buff));
-    page_num = 1;
-    line_num = 0;
+    frame_sel.init(&frame_sel, FRAME_BUFF_SIZE);
+    snprintf(frame_sel.title, 32, "Cri SEL");
   }
 
-  if (page > page_num) {
+  if (page > frame_sel.pages) {
     return -1;
   }
 
-  // Frame Head
-  snprintf(line_buff, 17, "Cri SEL    %02d/%02d", page, page_num);
-  memcpy(&buffer[0], line_buff, 16); // First line
-
-  // Frame Body
-  memcpy(&buffer[16], &frame_buff[(page-1)*LEN_PER_PAGE], LEN_PER_PAGE);
-
-
-  *count = 128;
-  if (page == page_num) {
-    // Set next to 0xFF to indicate this is last page
-    *next = 0xFF;
-  } else {
-    *next = page+1;
+  *count = frame_sel.getPage(&frame_sel, page, (char *)buffer, 256);
+  if (*count < 0) {
+    *count = 0;
+    return -1;
   }
+
+  if (page < frame_sel.pages)
+    *next = page+1;
+  else
+    *next = 0xFF; // Set the value of next to 0xFF to indicate this is the last page
 
   return 0;
 }
 
 static int
-plat_udbg_fill_frame (char *buffer, int max_line, int indent, char *string) {
-  int height, len, space_per_line;
-  char format[256];
-
-  space_per_line = LEN_PER_LINE - indent;
-  len = strlen(string);
-  height = (len/space_per_line) + ((len%space_per_line)?1:0);
-  if (height > max_line)
-    return 0;
-
-  while (len > 0) {
-    if (indent) {
-      sprintf(format, "%%%ds", indent);
-      sprintf(buffer, format, " ");
-    }
-    memcpy(buffer + indent, string, (len > space_per_line)?space_per_line:len);
-    buffer += LEN_PER_LINE;
-    string += space_per_line;
-    len -= space_per_line;
-  }
-
-  return height;
-}
-
-static int
 plat_udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  char frame_buff[MAX_PAGE * LEN_PER_PAGE];
-  int page_num;
   char val[16] = {0}, str[32] = {0}, temp_val[16] = {0}, temp_thresh[5] = {0};
   float sensor_reading;
   char FilePath [] = "/tmp/cache_store/mb_sensor", SensorFilePath [50];
   int i,ret;
   uint8_t thresh;
-  int line_num = 0;
 
-  memset(frame_buff, ' ', sizeof(frame_buff));
-  for( i=0; i<(sensor_count-1) ; i++){
-    sprintf(SensorFilePath, "%s%d", FilePath, cri_sensor[i].sensor_num);
-    ret = read_device(SensorFilePath, val);
-    memset(temp_val,'\0', sizeof(temp_val));
-    memset(temp_thresh,'\0', sizeof(temp_thresh));
-    if (ret){
-      snprintf(temp_val,LEN_PER_LINE, "fail");
-    }else if(!strcmp(val, "NA") || strlen(val) == 0){
-      snprintf(temp_val,LEN_PER_LINE, "NA");
-    }else{
-      if(cri_sensor[i].sensor_num == MB_SENSOR_HSC_IN_VOLT)
-        *(strstr(val, ".")+3) = '\0';
-      else if(cri_sensor[i].sensor_num == MB_SENSOR_HSC_IN_POWER || cri_sensor[i].sensor_num == MB_SENSOR_VR_CPU0_VCCIN_POWER || cri_sensor[i].sensor_num == MB_SENSOR_VR_CPU1_VCCIN_POWER )
-        *(strstr(val, ".")+2) = '\0';
-      else
-        *(strstr(val, ".")) = '\0';
-      snprintf(temp_val, LEN_PER_LINE, "%s%s", val, cri_sensor[i].unit);
+  if (page == 1) {
+    // Only update frame data while getting page 1
 
-      sensor_reading = atof(val);
-      pal_sensor_sts_check(cri_sensor[i].sensor_num,sensor_reading,&thresh);
-      switch (thresh) {
-        case UCR_THRESH:
-          snprintf(temp_thresh,5, "/UCT");
-          break;
-        case LCR_THRESH:
-          snprintf(temp_thresh,5, "/LCT");
-          break;
-        default:
-          break;
+    // initialize and clear frame
+    frame_snr.init(&frame_snr, FRAME_BUFF_SIZE);
+    snprintf(frame_snr.title, 32, "CriSensor");
+
+    for( i=0; i<(sensor_count-1) ; i++){
+      sprintf(SensorFilePath, "%s%d", FilePath, cri_sensor[i].sensor_num);
+      ret = read_device(SensorFilePath, val);
+      memset(temp_val,'\0', sizeof(temp_val));
+      memset(temp_thresh,'\0', sizeof(temp_thresh));
+      if (ret){
+        snprintf(temp_val,16, "fail");
+      }else if(!strcmp(val, "NA") || strlen(val) == 0){
+        snprintf(temp_val,16, "NA");
+      }else{
+        if(cri_sensor[i].sensor_num == MB_SENSOR_HSC_IN_VOLT)
+          *(strstr(val, ".")+3) = '\0';
+        else if(cri_sensor[i].sensor_num == MB_SENSOR_HSC_IN_POWER || cri_sensor[i].sensor_num == MB_SENSOR_VR_CPU0_VCCIN_POWER || cri_sensor[i].sensor_num == MB_SENSOR_VR_CPU1_VCCIN_POWER )
+          *(strstr(val, ".")+2) = '\0';
+        else
+          *(strstr(val, ".")) = '\0';
+        snprintf(temp_val, 16, "%s%s", val, cri_sensor[i].unit);
+
+        sensor_reading = atof(val);
+        pal_sensor_sts_check(cri_sensor[i].sensor_num,sensor_reading,&thresh);
+        switch (thresh) {
+          case UCR_THRESH:
+            snprintf(temp_thresh,5, "/UCT");
+            break;
+          case LCR_THRESH:
+            snprintf(temp_thresh,5, "/LCT");
+            break;
+          default:
+            break;
+        }
       }
+      if (strlen(temp_thresh) > 0)
+        snprintf(str, 32, ESC_ALT"%s%s%s"ESC_RST, cri_sensor[i].name,temp_val,temp_thresh);
+      else
+        snprintf(str, 32, "%s%s", cri_sensor[i].name,temp_val);
+      frame_snr.append(&frame_snr, str, 0);
     }
-    snprintf(str, 32, "%s%s%s", cri_sensor[i].name,temp_val,temp_thresh);
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num, 0, str);
-  }
+  } // End of update frame
 
-  page_num = line_num/LINE_PER_PAGE + ((line_num%LINE_PER_PAGE)?1:0);
-  if (page > page_num) {
+  if (page > frame_snr.pages) {
     return -1;
   }
-  // Frame Head
-  snprintf(str, 17, "CriSensor  %02d/%02d", page, page_num);
-  memcpy(&buffer[0], str, 16); // First line
 
-  // Frame Body
-  memcpy(&buffer[16], &frame_buff[(page-1)*LEN_PER_PAGE], LEN_PER_PAGE);
-  *count = 128;
+  *count = frame_snr.getPage(&frame_snr, page, (char *)buffer, 256);
+  if (*count < 0) {
+    *count = 0;
+    return -1;
+  }
 
-  if (page == page_num)
-    *next = 0xFF;    // Set the value of next to 0xFF to indicate this is the last page
-  else
+  if (page < frame_snr.pages)
     *next = page+1;
+  else
+    *next = 0xFF; // Set the value of next to 0xFF to indicate this is the last page
 
   return 0;
 }
 
 static int
 plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  char frame_buff[MAX_PAGE * LEN_PER_PAGE];
-  int page_num = 1, line_num = 0;
-  unsigned char len;
   int ret;
-  char line_buff[256];
+  unsigned char len;
+  char line_buff[1000], *pres_dev = line_buff, *delim = "\n";
   FILE *fp;
   fruid_info_t fruid;
   lan_config_t lan_config = { 0 };
@@ -789,143 +1082,130 @@ plat_udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
   ipmb_res_t *res;
   uint8_t byte;
 
-  memset(frame_buff, ' ', sizeof(frame_buff));
+  if (page == 1) {
+    // Only update frame data while getting page 1
 
-  line_num = 0;
+    // initialize and clear frame
+    frame_info.init(&frame_info, FRAME_BUFF_SIZE);
+    snprintf(frame_info.title, 32, "SYS_Info");
 
-  // FRU
-  ret = fruid_parse("/tmp/fruid_mb.bin", &fruid);
-  if (! ret) {
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      0, "SN:");
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      1, fruid.board.serial);
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      0, "PN:");
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      1, fruid.board.part);
-    free_fruid_info(&fruid);
-  }
+    // FRU
+    ret = fruid_parse("/tmp/fruid_mb.bin", &fruid);
+    if (! ret) {
+      frame_info.append(&frame_info, "SN:", 0);
+      frame_info.append(&frame_info, fruid.board.serial, 1);
+      frame_info.append(&frame_info, "PN:", 0);
+      frame_info.append(&frame_info, fruid.board.part, 1);
+      free_fruid_info(&fruid);
+    }
 
-  // LAN
-  plat_lan_init(&lan_config);
-  if (memcmp(lan_config.ip_addr, zero_ip_addr, SIZE_IP_ADDR)) {
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      0, "BMC_IP:");
-    inet_ntop(AF_INET, lan_config.ip_addr, line_buff, 256);
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      1, line_buff);
-  }
-  if (memcmp(lan_config.ip6_addr, zero_ip6_addr, SIZE_IP6_ADDR)) {
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      0, "BMC_IPv6:");
-    inet_ntop(AF_INET6, lan_config.ip6_addr, line_buff, 256);
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      1, line_buff);
-  }
+    // LAN
+    plat_lan_init(&lan_config);
+    if (memcmp(lan_config.ip_addr, zero_ip_addr, SIZE_IP_ADDR)) {
+      inet_ntop(AF_INET, lan_config.ip_addr, line_buff, 256);
+      frame_info.append(&frame_info, "BMC_IP:", 0);
+      frame_info.append(&frame_info, line_buff, 1);
+    }
+    if (memcmp(lan_config.ip6_addr, zero_ip6_addr, SIZE_IP6_ADDR)) {
+      inet_ntop(AF_INET6, lan_config.ip6_addr, line_buff, 256);
+      frame_info.append(&frame_info, "BMC_IPv6:", 0);
+      frame_info.append(&frame_info, line_buff, 1);
+    }
 
-  // BMC ver
-  fp = fopen("/etc/issue","r");
-  if (fp != NULL)
-  {
-     if (fgets(line_buff, sizeof(line_buff), fp)) {
-         if ((ret = sscanf(line_buff, "%*s %*s %s", line_buff)) == 1) {
-           line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-             0, "BMC_FW_ver:");
-           line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-             1, line_buff);
-         }
-     }
-     fclose(fp);
-  }
+    // BMC ver
+    fp = fopen("/etc/issue","r");
+    if (fp != NULL)
+    {
+       if (fgets(line_buff, sizeof(line_buff), fp)) {
+           if ((ret = sscanf(line_buff, "%*s %*s %s", line_buff)) == 1) {
+             frame_info.append(&frame_info, "BMC_FW_ver:", 0);
+             frame_info.append(&frame_info, line_buff, 1);
+           }
+       }
+       fclose(fp);
+    }
 
-  // BIOS ver
-  if (! pal_get_sysfw_ver(FRU_MB, (uint8_t *)line_buff)) {
-    // BIOS version response contains the length at offset 2 followed by ascii string
-    line_buff[3+line_buff[2]] = '\0';
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      0, "BIOS_FW_ver:");
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      1, &line_buff[3]);
-  }
+    // BIOS ver
+    if (! pal_get_sysfw_ver(FRU_MB, (uint8_t *)line_buff)) {
+      // BIOS version response contains the length at offset 2 followed by ascii string
+      line_buff[3+line_buff[2]] = '\0';
+      frame_info.append(&frame_info, "BIOS_FW_ver:", 0);
+      frame_info.append(&frame_info, &line_buff[3], 1);
+    }
 
-  // ME status
-  req = (ipmb_req_t*)line_buff;
-  res = (ipmb_res_t*)line_buff;
-  req->res_slave_addr = 0x2C; //ME's Slave Address
-  req->netfn_lun = NETFN_APP_REQ<<2;
-  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
-  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+    // ME status
+    req = (ipmb_req_t*)line_buff;
+    res = (ipmb_res_t*)line_buff;
+    req->res_slave_addr = 0x2C; //ME's Slave Address
+    req->netfn_lun = NETFN_APP_REQ<<2;
+    req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+    req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
 
-  req->req_slave_addr = 0x20;
-  req->seq_lun = 0x00;
+    req->req_slave_addr = 0x20;
+    req->seq_lun = 0x00;
 
-  req->cmd = CMD_APP_GET_DEVICE_ID;
-  // Invoke IPMB library handler
-  len = 0;
-  lib_ipmb_handle(0x4, (uint8_t *)req, 7, (uint8_t *)&line_buff[0], &len);
-  if (len > 7 && res->cc == 0) {
-    if (res->data[2] & 0x80)
-      strcpy(line_buff, "recovery mode");
-    else
-      strcpy(line_buff, "operation mode");
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      0, "ME_status:");
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      1, line_buff);
-  }
+    req->cmd = CMD_APP_GET_DEVICE_ID;
+    // Invoke IPMB library handler
+    len = 0;
+    lib_ipmb_handle(0x4, (uint8_t *)req, 7, (uint8_t *)&line_buff[0], &len);
+    if (len > 7 && res->cc == 0) {
+      if (res->data[2] & 0x80)
+        strcpy(line_buff, "recovery mode");
+      else
+        strcpy(line_buff, "operation mode");
+      frame_info.append(&frame_info, "ME_status:", 0);
+      frame_info.append(&frame_info, line_buff, 1);
+    }
 
-  // Board ID
-  if (!pal_get_platform_id(&byte)){
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      0, "Board_ID:");
-    sprintf(line_buff, "%d%d%d%d%d",
-      (byte & (1<<4))?1:0,
-      (byte & (1<<3))?1:0,
-      (byte & (1<<2))?1:0,
-      (byte & (1<<1))?1:0,
-      (byte & (1<<0))?1:0);
-    line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-      1, line_buff);
-  }
+    // Board ID
+    if (!pal_get_platform_id(&byte)){
+      sprintf(line_buff, "%d%d%d%d%d",
+        (byte & (1<<4))?1:0,
+        (byte & (1<<3))?1:0,
+        (byte & (1<<2))?1:0,
+        (byte & (1<<1))?1:0,
+        (byte & (1<<0))?1:0);
+      frame_info.append(&frame_info, "Board_ID:", 0);
+      frame_info.append(&frame_info, line_buff, 1);
+    }
 
-  // Battery - Use [ESC]B as identifier of Battery percentage to MCU
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    0, "Battery:");
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    1, ESCAPE"B  %");
-    
-  // MCU Version
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    0, "MCUbl_ver:");
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    1, ESCAPE"U");
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    0, "MCU_ver:");
-  line_num += plat_udbg_fill_frame(&frame_buff[line_num * LEN_PER_LINE], MAX_LINE-line_num,
-    1, ESCAPE"R");
+    // Battery - Use Escape sequence
+    frame_info.append(&frame_info, "Battery:", 0);
+    frame_info.append(&frame_info, ESC_BAT"     ", 1);
 
-  page_num = line_num/LINE_PER_PAGE + ((line_num%LINE_PER_PAGE)?1:0);
+    // MCU Version - Use Escape sequence
+    frame_info.append(&frame_info, "MCUbl_ver:", 0);
+    frame_info.append(&frame_info, ESC_MCU_BL_VER, 1);
+    frame_info.append(&frame_info, "MCU_ver:", 0);
+    frame_info.append(&frame_info, ESC_MCU_RUN_VER, 1);
 
-  if (page > page_num) {
+    // Sys config present device
+    pres_dev = line_buff;
+    pal_get_syscfg_text(pres_dev);
+    pres_dev = strtok(pres_dev, delim);
+    if (pres_dev) {
+      frame_info.append(&frame_info, "Sys Conf. info:", 0);
+      do {
+        frame_info.append(&frame_info, pres_dev, 1);
+      } while ((pres_dev = strtok(NULL, delim)) != NULL);
+    }
+
+  } // End of update frame
+
+  if (page > frame_info.pages) {
     return -1;
   }
 
-  // Frame Head
-  snprintf(line_buff, 17, "SYS_Info   %02d/%02d", page, page_num);
-  memcpy(&buffer[0], line_buff, 16); // First line
-
-  // Frame Body
-  memcpy(&buffer[16], &frame_buff[(page-1)*LEN_PER_PAGE], LEN_PER_PAGE);
-
-
-  *count = 128;
-  if (page == page_num) {
-    // Set next to 0xFF to indicate this is last page
-    *next = 0xFF;
-  } else {
-    *next = page+1;
+  *count = frame_info.getPage(&frame_info, page, (char *)buffer, 256);
+  if (*count < 0) {
+    *count = 0;
+    return -1;
   }
+
+  if (page < frame_info.pages)
+    *next = page+1;
+  else
+    *next = 0xFF; // Set the value of next to 0xFF to indicate this is the last page
 
   return 0;
 }
@@ -943,4 +1223,147 @@ plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
     default:
       return -1;
   }
+}
+
+static uint8_t panel_main (uint8_t item) {
+  // Update item list when select item 0
+  switch (item) {
+    case 1:
+      return panels[PANEL_BOOT_ORDER].select(0);
+    case 2:
+      return panels[PANEL_POWER_POLICY].select(0);
+    default:
+      return PANEL_MAIN;
+  }
+}
+
+static uint8_t panel_boot_order (uint8_t item) {
+  int i;
+  unsigned char buff[MAX_VALUE_LEN], pickup, len;
+
+  if (pal_get_boot_order(FRU_MB, buff, buff, &len) == 0) {
+    if (item > 0 && item < SIZE_BOOT_ORDER) {
+      pickup = buff[item];
+      while (item > 1) {
+        buff[item] = buff[item -1];
+        item--;
+      }
+      buff[item] = pickup;
+      buff[0] |= 0x80;
+      pal_set_boot_order(FRU_MB, buff, buff, &len);
+
+      // refresh items
+      return panels[PANEL_BOOT_ORDER].select(0);
+    }
+
+    if (buff[0] & 0x80) { // boot flags valid; BIOS has not yet read
+      snprintf(panels[PANEL_BOOT_ORDER].item_str[0], 32,
+        "Boot Order*");
+    } else {
+      snprintf(panels[PANEL_BOOT_ORDER].item_str[0], 32,
+        "Boot Order");
+    }
+
+    for (i=1; i<SIZE_BOOT_ORDER; i++) {
+      switch (buff[i]) {
+        case 0x0:
+          snprintf(panels[PANEL_BOOT_ORDER].item_str[i], 32,
+            " USB device");
+          break;
+        case 0x1:
+          snprintf(panels[PANEL_BOOT_ORDER].item_str[i], 32,
+            " Network v4");
+          break;
+        case (0x1 | 0x8):
+          snprintf(panels[PANEL_BOOT_ORDER].item_str[i], 32,
+            " Network v6");
+          break;
+        case 0x2:
+          snprintf(panels[PANEL_BOOT_ORDER].item_str[i], 32,
+            " SATA HDD");
+          break;
+        case 0x3:
+          snprintf(panels[PANEL_BOOT_ORDER].item_str[i], 32,
+            " SATA-CDROM");
+          break;
+        case 0x4:
+          snprintf(panels[PANEL_BOOT_ORDER].item_str[i], 32,
+            " Other");
+          break;
+        default:
+          panels[PANEL_BOOT_ORDER].item_str[i][0] = '\0';
+          break;
+      }
+    }
+
+    // remove empty items
+    for (i--; strlen(panels[PANEL_BOOT_ORDER].item_str[i]) == 0; i--) ;
+
+    panels[PANEL_BOOT_ORDER].item_num = i;
+  }
+  return PANEL_BOOT_ORDER;
+}
+
+static uint8_t panel_power_policy (uint8_t item) {
+  char buff[MAX_VALUE_LEN];
+
+  switch (item) {
+    case 1:
+      pal_set_key_value("server_por_cfg", "on");
+      break;
+    case 2:
+      pal_set_key_value("server_por_cfg", "lps");
+      break;
+    case 3:
+      pal_set_key_value("server_por_cfg", "off");
+      break;
+    default:
+      break;
+  }
+
+  if (pal_get_key_value("server_por_cfg", buff) == 0) {
+    snprintf(panels[PANEL_POWER_POLICY].item_str[1], 32,
+      "%cPower Up", (strcmp(buff, "on") == 0)?'*':' ');
+    snprintf(panels[PANEL_POWER_POLICY].item_str[2], 32,
+      "%cRestore State", (strcmp(buff, "lps") == 0)?'*':' ');
+    snprintf(panels[PANEL_POWER_POLICY].item_str[3], 32,
+      "%cPower Off", (strcmp(buff, "off") == 0)?'*':' ');
+    panels[PANEL_POWER_POLICY].item_num = 3;
+  }
+
+  return PANEL_POWER_POLICY;
+}
+
+int
+plat_udbg_control_panel(uint8_t panel, uint8_t operation, uint8_t item, uint8_t *count, uint8_t *buffer) {
+
+  if (panel > panelNum || panel < PANEL_MAIN)
+    return CC_PARAM_OUT_OF_RANGE;
+
+  // No more item; End of item list
+  if (item > panels[panel].item_num)
+    return CC_PARAM_OUT_OF_RANGE;
+
+  switch (operation) {
+    case 0: // Get Description
+      break;
+    case 1: // Select item
+      panel = panels[panel].select(item);
+      item = 0;
+      break;
+    case 2: // Back
+      panel = panels[panel].parent;
+      item = 0;
+      break;
+    default:
+      return CC_PARAM_OUT_OF_RANGE;
+  }
+
+  buffer[0] = panel;
+  buffer[1] = item;
+  buffer[2] = strlen(panels[panel].item_str[item]);
+  if (buffer[2] > 0 && (buffer[2] + 3) < 256)
+    memcpy(&buffer[3], panels[panel].item_str[item], buffer[2]);
+  *count = buffer[2] + 3;
+  return CC_SUCCESS;
 }

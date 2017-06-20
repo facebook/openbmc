@@ -261,7 +261,7 @@ typedef struct
   unsigned char bios_current_boot_list[SIZE_BIOS_CURRENT_BOOT_LIST];
   unsigned char bios_fixed_boot_device[SIZE_BIOS_FIXED_BOOT_DEVICE];
   unsigned char bios_restores_default_setting[SIZE_BIOS_RESTORES_DEFAULT_SETTING];
-  unsigned char last_boot_time[SIZE_LAST_BOOT_TIME];      
+  unsigned char last_boot_time[SIZE_LAST_BOOT_TIME];
 
 } sys_info_param_t;
 
@@ -392,7 +392,7 @@ enum
   CMD_OEM_SET_DIMM_INFO = 0x1C,
   CMD_OEM_GET_DIMM_INFO = 0x1D,
   CMD_OEM_GET_BOARD_ID = 0x37,
-  CMD_OEM_GET_80PORT_RECORD = 0x49, 
+  CMD_OEM_GET_80PORT_RECORD = 0x49,
   CMD_OEM_SET_BOOT_ORDER = 0x52,
   CMD_OEM_GET_BOOT_ORDER = 0x53,
   CMD_OEM_SET_MACHINE_CONFIG_INFO = 0x6A,
@@ -459,6 +459,7 @@ enum
   CMD_OEM_USB_DBG_GET_POST_DESC = 0x3,
   CMD_OEM_USB_DBG_GET_GPIO_DESC = 0x4,
   CMD_OEM_USB_DBG_GET_FRAME_DATA = 0x5,
+  CMD_OEM_USB_DBG_CTRL_PANEL = 0x6,
 };
 
 // IPMI command Completion Codes (IPMI/Section 5.2)

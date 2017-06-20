@@ -346,6 +346,24 @@ static uint8_t g_vr_cpu0_vddq_def;
 static uint8_t g_vr_cpu1_vddq_ghj;
 static uint8_t g_vr_cpu1_vddq_klm;
 
+static char *dimm_label_SS_DVT[12] = {
+  "A0", "A1", "A2", "B0", "B1", "B2", "C0", "C1", "C2", "D0", "D1", "D2"};
+
+static char *dimm_label_SS_PVT[12] = {
+  "A0", "A1", "A2", "A3", "A4", "A5", "B0", "B1", "B2", "B3", "B4", "B5"};
+
+static char *dimm_label_DS_DVT[24] = {
+  "A0", "A3", "A1", "A4", "A2", "A5", "B0", "B3", "B1", "B4", "B2", "B5", \
+  "C0", "C3", "C1", "C4", "C2", "C5", "D0", "D3", "D1", "D4", "D2", "D5"};
+
+static char *dimm_label_DS_PVT[24] = {
+  "A0", "C0", "A1", "C1", "A2", "C2", "A3", "C3", "A4", "C4", "A5", "C5", \
+  "B0", "D0", "B1", "D1", "B2", "D2", "B3", "D3", "B4", "D4", "B5", "D5", };
+
+struct dimm_map {
+  unsigned char index;
+  char *label;
+};
 
 typedef struct _inlet_corr_t {
   uint8_t duty;
@@ -4900,12 +4918,12 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   char *nm_capability_status[2] = {"Not Available", "Available"};
   char *nm_domain_name[6] = {"Entire Platform", "CPU Subsystem", "Memory Subsystem", "HW Protection", "High Power I/O subsystem", "Unknown"};
   char *nm_err_type[17] =
-                    {"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", 
+                    {"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
                      "Extended Telemetry Device Reading Failure", "Outlet Temperature Reading Failure",
                      "Volumetric Airflow Reading Failure", "Policy Misconfiguration",
                      "Power Sensor Reading Failure", "Inlet Temperature Reading Failure",
                      "Host Communication Error", "Real-time Clock Synchronization Failure",
-                    "Platform Shutdown Initiated by Intel NM Policy", "Unknown"}; 
+                    "Platform Shutdown Initiated by Intel NM Policy", "Unknown"};
   char *nm_health_type[4] = {"Unknown", "Unknown", "SensorIntelNM", "Unknown"};
 
   switch (snr_type) {
@@ -5249,12 +5267,12 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         uint8_t health_type_index = (ed[0] & 0xf);
         uint8_t domain_index = (ed[1] & 0xf);
         uint8_t err_type_index = ((ed[1] >> 4) & 0xf);
-        
+
         sprintf(error_log, "%s,Domain:%s,ErrType:%s,Err:0x%x", nm_health_type[health_type_index], nm_domain_name[domain_index], nm_err_type[err_type_index], ed[2]);
       }
       return 1;
       break;
-    
+
     case NM_CAPABILITIES:
       sprintf(error_log, "");
       if (ed[0] & 0x7)//BIT1=policy, BIT2=monitoring, BIT3=pwr limit and the others are reserved
@@ -5272,8 +5290,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
         capability_index = BIT(ed[0], 2);
         pwr_limit_capability = nm_capability_status[ capability_index ];
-        
-        sprintf(error_log, "PolicyInterface:%s,Monitoring:%s,PowerLimit:%s", 
+
+        sprintf(error_log, "PolicyInterface:%s,Monitoring:%s,PowerLimit:%s",
           policy_capability, monitoring_capability, pwr_limit_capability);
       }
       else
@@ -5281,7 +5299,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         strcat(error_log, "Unknown");
       }
 
-      return 1; 
+      return 1;
       break;
 
     case NM_THRESHOLD:
@@ -5292,13 +5310,13 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         uint8_t policy_id = ed[2];
         uint8_t policy_event_index = BIT(ed[0], 3);
         char *policy_event[2] = {"Threshold Exceeded", "Policy Correction Time Exceeded"};
-        
-        sprintf(error_log, "Threshold Number:%d-%s,Domain:%s,PolicyID:0x%x", 
-          threshold_number, policy_event[policy_event_index], nm_domain_name[domain_index], policy_id); 
+
+        sprintf(error_log, "Threshold Number:%d-%s,Domain:%s,PolicyID:0x%x",
+          threshold_number, policy_event[policy_event_index], nm_domain_name[domain_index], policy_id);
       }
       return 1;
       break;
- 
+
     case CPU0_THERM_STATUS:
     case CPU1_THERM_STATUS:
       sprintf(error_log, "");
@@ -6088,7 +6106,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 uint8_t
 pal_get_status(void) {
   char str_server_por_cfg[64];
-  char *buff[MAX_VALUE_LEN];
+  char buff[MAX_VALUE_LEN];
   int policy = 3;
   uint8_t status, data, ret;
 
@@ -6258,3 +6276,171 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   return completion_code;
 }
 
+int
+pal_get_syscfg_text (char *text) {
+  unsigned char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
+  char *key_prefix = "sys_config/";
+  int num_fru =1, num_cpu=2, num_dimm, num_drive=14;
+  int index, ret, surface, bubble;
+  unsigned char board_id, revision_id;
+  char **dimm_labels;
+  struct dimm_map map[24], temp_map;
+
+  if (text == NULL)
+    return -1;
+
+  // Clear string buffer
+  text[0] = '\0';
+
+  // CPU information
+  for (index = 0; index < num_cpu; index++) {
+    switch (index) {
+      case 0:
+        if( !is_cpu0_socket_occupy())
+          continue;
+        break;
+      case 1:
+        if( !is_cpu1_socket_occupy())
+          continue;
+        break;
+    }
+    sprintf(entry, "CPU%d:", index);
+
+    // Processor#
+    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_product_name",
+      key_prefix, index);
+    ret = kv_get_bin(key, value);
+    if(ret >= 26) {
+      // Read 4 bytes Processor#
+      snprintf(&entry[strlen(entry)], 5, "%s", &value[22]);
+    }
+
+    // Frequency & Core Number
+    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_basic_info",
+      key_prefix, index);
+    ret = kv_get_bin(key, value);
+    if(ret >= 5) {
+      sprintf(&entry[strlen(entry)], "/%.1fG/%dc",
+        (float) (value[4] << 8 | value[3])/1000, value[0]);
+    }
+
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+  // prepare DIMM map
+  pal_get_platform_id(&board_id);
+  pal_get_board_rev_id(&revision_id);
+  if (board_id & PLAT_ID_SKU_MASK) {
+    // Double Side
+    num_dimm = 24;
+    if (revision_id < BOARD_REV_PVT)
+      dimm_labels = dimm_label_DS_DVT;
+    else
+      dimm_labels = dimm_label_DS_PVT;
+  } else {
+    // Single Side
+    num_dimm = 12;
+    if (revision_id < BOARD_REV_PVT)
+      dimm_labels = dimm_label_SS_DVT;
+    else
+      dimm_labels = dimm_label_SS_PVT;
+  }
+  // Initialize map
+  for (index = 0; index < num_dimm; index++) {
+    map[index].index = index;
+    map[index].label = dimm_labels[index];
+  }
+  // Bubble Sort the map according label string
+  surface = num_dimm;
+  for (surface = num_dimm; surface > 1;) {
+    bubble = 0;
+    for(index = 0; index < surface - 1; index++) {
+      if (strcmp(map[index].label, map[index+1].label) > 0) {
+        // Swap
+        temp_map = map[index+1];
+        map[index+1] = map[index];
+        map[index] = temp_map;
+
+        bubble = index + 1;
+      }
+    }
+    surface = bubble;
+  }
+  // DIMM information
+  for (index = 0; index < num_dimm; index++) {
+    sprintf(entry, "MEM%s:", map[index].label);
+
+    // Check Present
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_location",
+      key_prefix, map[index].index);
+    ret = kv_get_bin(key, value);
+    if(ret >= 1) {
+      // Skip if not present
+      if (value[0] != 0x01)
+        continue;
+    }
+
+    // Module Manufacturer ID
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_manufacturer_id",
+      key_prefix, map[index].index);
+    ret = kv_get_bin(key, value);
+    if(ret >= 2) {
+      switch (value[1]) {
+        case 0xce:
+          sprintf(&entry[strlen(entry)], "Samsung");
+          break;
+        case 0xad:
+          sprintf(&entry[strlen(entry)], "Hynix");
+          break;
+        case 0x2c:
+          sprintf(&entry[strlen(entry)], "Micron");
+          break;
+        default:
+          sprintf(&entry[strlen(entry)], "unknown");
+          break;
+      }
+    }
+
+    // Speed
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_speed",
+      key_prefix, map[index].index);
+    ret = kv_get_bin(key, value);
+    if(ret >= 6) {
+      sprintf(&entry[strlen(entry)], "/%dMhz/%dGB",
+        value[1]<<8 | value[0],
+        (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024 );
+    }
+
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+  // Drive information
+  for (index = 0; index < num_drive; index++) {
+    sprintf(entry, "HDD%d:", index);
+
+    // Check Present
+    snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_location",
+      key_prefix, index);
+    ret = kv_get_bin(key, value);
+    if(ret >= 3) {
+      // Skip if not present
+      if (value[2] == 0xff)
+        continue;
+    }
+
+    // Model name
+    snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_model_name",
+      key_prefix, index);
+    ret = kv_get_bin(key, value);
+    if(ret >= 1) {
+      sprintf(&entry[strlen(entry)], "%s", value);
+    }
+
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+  return 0;
+}

@@ -160,6 +160,7 @@ extern int plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t phase, 
 extern int plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *def,
                             uint8_t *count, uint8_t *buffer);
 extern int plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer);
+extern int plat_udbg_control_panel(uint8_t panel, uint8_t operation, uint8_t item, uint8_t *count, uint8_t *buffer);
 
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
@@ -375,9 +376,9 @@ sensor_alert_immediate_msg(unsigned char *request, unsigned char req_len,
   sel_msg_t entry;
 
   entry.msg[2] = 0x02;  /* Set Record Type to be system event record.*/
-  
+
   memcpy(&entry.msg[10], &req->data[5], 6);
-  
+
   // Use platform APIs to add the new SEL entry
   ret = sel_add_entry (req->payload_id, &entry, &record_id);
   if (ret)
@@ -405,7 +406,7 @@ ipmi_handle_sensor(unsigned char *request, unsigned char req_len,
       sensor_plat_event_msg(request, req_len, response, res_len);
       break;
     case CMD_SENSOR_ALERT_IMMEDIATE_MSG:
-      sensor_alert_immediate_msg(request, req_len, response, res_len);      
+      sensor_alert_immediate_msg(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;
@@ -939,7 +940,7 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
   unsigned char cmd = req->cmd;
   int fw_update_flag;
 
-  //if fw_update_flag = 1 means BMC is Updating a Device FW  
+  //if fw_update_flag = 1 means BMC is Updating a Device FW
   fw_update_flag = pal_get_fw_update_flag();
 
   pthread_mutex_lock(&m_app);
@@ -2524,7 +2525,7 @@ oem_get_plat_info(unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_get_poss_pcie_config(unsigned char *request, unsigned char req_len, 
+oem_get_poss_pcie_config(unsigned char *request, unsigned char req_len,
 			  unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2639,7 +2640,7 @@ oem_get_flash_info ( unsigned char *request, unsigned char req_len,
   unsigned int sts = 0;
 
   *res_len = 0;
-  
+
   if (pal_get_fru_name(req->payload_id, fruname)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     return;
@@ -3164,6 +3165,38 @@ oem_usb_dbg_get_frame_data(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_usb_dbg_control_panel(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  uint8_t panel;
+  uint8_t operation;
+  uint8_t item;
+  uint8_t count;
+  uint8_t data[256] = {0};
+  int ret;
+
+  panel = req->data[3];
+  operation = req->data[4];
+  item = req->data[5];
+
+  ret = plat_udbg_control_panel(panel, operation, item, &count, data);
+  if (ret) {
+    memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+    res->cc = ret;
+    *res_len = SIZE_IANA_ID;
+    return;
+  }
+
+  memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+  memcpy(&res->data[3], data, count);
+  res->cc = CC_SUCCESS;
+  *res_len = SIZE_IANA_ID + count;
+}
+
+static void
 ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3189,6 +3222,9 @@ ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_USB_DBG_GET_FRAME_DATA:
       oem_usb_dbg_get_frame_data(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_USB_DBG_CTRL_PANEL:
+      oem_usb_dbg_control_panel(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

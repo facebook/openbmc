@@ -55,3 +55,8 @@ int
 plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   return -1;
 }
+
+int
+plat_udbg_control_panel(uint8_t panel, uint8_t operation, uint8_t item, uint8_t *count, uint8_t *buffer) {
+  return -1;
+}

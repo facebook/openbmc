@@ -297,6 +297,8 @@ enum
   NETFN_NM_RES = 0x2F,
   NETFN_OEM_REQ = 0x30,
   NETFN_OEM_RES = 0x31,
+  NETFN_OEM_STORAGE_REQ = 0x32,
+  NETFN_OEM_STORAGE_RES = 0x33,
   NETFN_OEM_Q_REQ = 0x36,
   NETFN_OEM_Q_RES = 0x37,
   NETFN_OEM_1S_REQ = 0x38,
@@ -406,6 +408,12 @@ enum
   CMD_OEM_GET_PCIE_CONFIG = 0xF4,
   CMD_OEM_GET_BIOS_FLASH_INFO = 0x55,
   CMD_OEM_SET_BIOS_FLASH_INFO = 0x87,
+};
+
+// OEM Command Codes for Storage (netfn = 0x32/0x33)
+enum
+{
+  CMD_OEM_STOR_ADD_STRING_SEL = 0x30,
 };
 
 // OEM Command Codes for QC

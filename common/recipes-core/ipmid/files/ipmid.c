@@ -149,6 +149,7 @@ static pthread_mutex_t m_app;
 static pthread_mutex_t m_storage;
 static pthread_mutex_t m_transport;
 static pthread_mutex_t m_oem;
+static pthread_mutex_t m_oem_storage;
 static pthread_mutex_t m_oem_1s;
 static pthread_mutex_t m_oem_usb_dbg;
 static pthread_mutex_t m_oem_q;
@@ -2665,6 +2666,38 @@ oem_get_flash_info ( unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+  // Byte0        Reserved
+  // Byte1        String length
+  // Byte2~ByteN  Event log string (ASCII)
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  char string_log[248] = {0};
+  //Reserve byte[0:3] bytes for future implementation
+  uint8_t string_log_len = req->data[4];
+  *res_len = 0;
+
+  if (string_log_len >= sizeof(string_log)){
+    res->cc = CC_INVALID_LENGTH;
+    syslog(LOG_ERR, "%s(): max supported string length is %d, but got %d",
+                       __func__, sizeof(string_log)-1, string_log_len);
+    return;
+  }
+
+  snprintf(string_log, string_log_len+1, "%s", &req->data[5]);
+  syslog(LOG_CRIT, "%s", string_log);
+  if (!pal_handle_string_sel(string_log, string_log_len))
+    res->cc = CC_SUCCESS;
+  else
+    res->cc = CC_UNSPECIFIED_ERROR;
+
+  return;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -2741,6 +2774,28 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
   }
   pthread_mutex_unlock(&m_oem);
+}
+
+static void
+ipmi_handle_oem_storage (unsigned char *request, unsigned char req_len,
+     unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  unsigned char cmd = req->cmd;
+
+  pthread_mutex_lock(&m_oem_storage);
+  switch (cmd)
+  {
+    case CMD_OEM_STOR_ADD_STRING_SEL:
+      oem_stor_add_string_sel (request, req_len, response, res_len);
+      break;
+    default:
+      res->cc = CC_INVALID_CMD;
+      break;
+  }
+  pthread_mutex_unlock(&m_oem_storage);
 }
 
 static void
@@ -3192,6 +3247,10 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
     case NETFN_OEM_REQ:
       res->netfn_lun = NETFN_OEM_RES << 2;
       ipmi_handle_oem (request, req_len, response, res_len);
+      break;
+    case NETFN_OEM_STORAGE_REQ:
+      res->netfn_lun = NETFN_OEM_STORAGE_RES << 2;
+      ipmi_handle_oem_storage (request, req_len, response, res_len);
       break;
     case NETFN_OEM_Q_REQ:
       res->netfn_lun = NETFN_OEM_Q_RES << 2;

@@ -123,13 +123,12 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 }
 
 int __attribute__((weak))
-pal_bmc_err_disable(void) {
-  // dummy function
+pal_bmc_err_disable(const char *error_item) {
   return 0;
 }
+
 int __attribute__((weak))
-pal_bmc_err_enable() {
-  // dummy function
+pal_bmc_err_enable(const char *error_item) {
   return 0;
 }
 

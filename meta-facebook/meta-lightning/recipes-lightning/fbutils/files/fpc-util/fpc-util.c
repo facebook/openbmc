@@ -39,27 +39,24 @@ int
 main(int argc, char **argv) {
 
   uint8_t pos;
-  uint8_t id_led = 0;
   char tstr[64] = {0};
   uint8_t curr;
   int ret;
 
 
-  if (argc < 3) {
-    goto err_exit;
-  }
-
-  if (!strcmp(argv[1], "bmc")) {
-    pos = UART_POS_BMC;
-  } else if (!strcmp(argv[1] , "switch")) {
-    pos = UART_POS_PCIE_SW;
-  } else if (!strcmp(argv[1] , "--identify")) {
-    id_led = 1;
-  } else {
+  if (argc != 3) {
     goto err_exit;
   }
 
   if (!strcmp(argv[2], "--uart")) {
+    if (!strcmp(argv[1], "bmc")) {
+      pos = UART_POS_BMC;
+    } else if (!strcmp(argv[1] , "switch")) {
+      pos = UART_POS_PCIE_SW;
+    } else {
+      goto err_exit;
+    }
+
     // Check for the current uart channel position
     ret = pal_get_uart_chan(&curr);
     if (ret)
@@ -75,22 +72,22 @@ main(int argc, char **argv) {
       // Set the UART channel to requested position
       ret = pal_set_uart_chan(pos);
       if (ret) {
-        printf("Operation failed.");
+        printf("Operation failed.\n");
         return -1;
       }
     }
     return 0;
 
   // Perform PCIe Switch Reset
-  } else if ((pos == UART_POS_PCIE_SW) && (!strcmp(argv[2], "--reset"))) {
+  } else if ((!strcmp(argv[1] , "switch")) && (!strcmp(argv[2], "--reset"))) {
     ret = pal_reset_pcie_switch();
     if (ret) {
-      printf("Operation failed.");
+      printf("Operation failed.\n");
       return -1;
     }
 
   // Set the system_identify key to on or off value
-  } else if (id_led &&
+  } else if ((!strcmp(argv[1] , "--identify")) &&
       (!strcmp(argv[2], "on") || !strcmp(argv[2], "off"))) {
     return pal_set_key_value("system_identify", argv[2]);
   } else {

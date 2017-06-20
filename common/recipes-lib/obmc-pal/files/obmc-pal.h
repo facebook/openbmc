@@ -41,6 +41,17 @@ enum {
   POWER_CFG_UKNOWN,
 };
 
+enum LED_LOW_ACTIVE{
+  LED_N_ON = 0,
+  LED_N_OFF,
+};
+
+enum LED_HIGH_ACTIVE{
+  LED_OFF = 0,
+  LED_ON,
+};
+
+
 int pal_is_fw_update_ongoing(uint8_t fru);
 void set_fw_update_ongoing(uint8_t fru, uint16_t tmout);
 

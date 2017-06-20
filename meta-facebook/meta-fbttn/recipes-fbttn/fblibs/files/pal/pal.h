@@ -36,8 +36,6 @@ extern "C" {
 #include <openbmc/kv.h>
 #include <openbmc/nvme-mi.h>
 
-#define MAX_KEY_LEN     64
-#define MAX_VALUE_LEN   128
 #define MAX_NUM_FAN     2
 
 #define FRU_STATUS_GOOD   1
@@ -86,11 +84,6 @@ extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 
 extern unsigned char g_err_code[ERROR_CODE_NUM];
-
-enum {
-  LED_STATE_OFF,
-  LED_STATE_ON,
-};
 
 enum {
   USB_MUX_OFF,
@@ -199,6 +192,11 @@ enum {
   PLAT_INFO_SKUID_TYPE7SS = 5,
 };
 
+enum SAS_EXT_PORT{
+  SAS_EXT_PORT_1 = 0,
+  SAS_EXT_PORT_2,
+};
+
 //fw-util FW Updating Flag File
 #define FW_UPDATE_FLAG "/tmp/fw_update_flag"
 
@@ -285,7 +283,7 @@ int pal_en_scc_full_pwr(void);
 int pal_en_iom_full_pwr(void);
 int pal_fault_led_mode(uint8_t state, uint8_t mode);
 int pal_fault_led_behavior(uint8_t state);
-int pal_minisas_led(uint8_t port, uint8_t state);
+int pal_minisas_led(uint8_t port, uint8_t operation);
 int pal_get_plat_sku_id(void);
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
@@ -315,6 +313,7 @@ void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, 
 int pal_open_fw_update_flag(void);
 int pal_remove_fw_update_flag(void);
 int pal_get_fw_update_flag(void);
+int set_gpio_value(int gpio_num, uint8_t value);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -208,7 +208,7 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       }
 
-      ret = pal_set_led(fru, LED_STATE_OFF);
+      ret = pal_set_led(fru, LED_OFF);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
@@ -235,7 +235,7 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       }
 
-      ret = pal_set_led(fru, LED_STATE_OFF);
+      ret = pal_set_led(fru, LED_OFF);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
@@ -277,7 +277,7 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       }
 
-      ret = pal_set_led(fru, LED_STATE_ON);
+      ret = pal_set_led(fru, LED_ON);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
@@ -311,7 +311,7 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       }
 
-      ret = pal_set_led(fru, LED_STATE_ON);
+      ret = pal_set_led(fru, LED_ON);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
@@ -334,7 +334,7 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_CRIT, "SERVER_12V_OFF successful for FRU: %d", fru);
       }
 
-      ret = pal_set_led(fru, LED_STATE_OFF);
+      ret = pal_set_led(fru, LED_OFF);
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;

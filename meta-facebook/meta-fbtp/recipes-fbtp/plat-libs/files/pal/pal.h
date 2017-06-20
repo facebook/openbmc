@@ -70,11 +70,6 @@ extern const uint8_t nic_sensor_list[];
 //extern float nic_sensor_threshold[][];
 
 enum {
-  LED_STATE_OFF,
-  LED_STATE_ON,
-};
-
-enum {
   USB_MUX_OFF,
   USB_MUX_ON,
 };

@@ -84,8 +84,8 @@
 #define GPIO_PWR_LED 3
 #define GPIO_ENCL_FAULT_LED 115
 
-#define BMC_EXT1_LED_Y 37
-#define BMC_EXT2_LED_Y 39
+#define BMC_EXT1_LED_Y_N 37
+#define BMC_EXT2_LED_Y_N 39
 
 #define GPIO_UART_SEL 145
 #define GPIO_DEBUG_HDR_UART_SEL 146
@@ -2913,24 +2913,24 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   return completion_code;
 }
 
-int pal_minisas_led(uint8_t port, uint8_t state) {
-   char path[64] = {0};
+int pal_minisas_led(uint8_t port, uint8_t operation) {
+  //operation - 1: on, 0: off
 
-  // ENCL_FAULT_LED: GPIOO3 (115)
-  if(port)
-    sprintf(path, GPIO_VAL, BMC_EXT2_LED_Y);
-  else
-    sprintf(path, GPIO_VAL, BMC_EXT1_LED_Y);
-   if (state == 1) {           // LED on
-      if (write_device(path, "1")) {
-        return -1;
-      }
-    } else {                    // LED off
-      if (write_device(path, "0")) {
-        return -1;
-      }
-    }
-    return 0;
+  if (port == SAS_EXT_PORT_1) {
+    if (operation == LED_ON)
+      return set_gpio_value(BMC_EXT1_LED_Y_N, LED_N_ON);
+    else
+      return set_gpio_value(BMC_EXT1_LED_Y_N, LED_N_OFF);
+  } else if (port == SAS_EXT_PORT_2) {
+    if (operation == LED_ON)
+      return set_gpio_value(BMC_EXT2_LED_Y_N, LED_N_ON);
+    else
+      return set_gpio_value(BMC_EXT2_LED_Y_N, LED_N_OFF);
+  } else {
+    syslog(LOG_WARNING, "%s(): Unexpected mini sas port %d", __func__, port+1);
+  }
+
+  return 0;
 }
 
 int
@@ -4093,5 +4093,17 @@ pal_get_fw_update_flag(void) {
     return !ret;
 }
 
+// ex: set_gpio_value(GPIO_IOM_FULL_PWR_EN, 1);
+int
+set_gpio_value(int gpio_num, uint8_t value){
+  char vpath[64] = {0};
 
+  sprintf(vpath, GPIO_VAL, gpio_num);
 
+  if (value == 0)
+    return write_device(vpath, "0");
+  else if (value == 1)
+    return write_device(vpath, "1");
+  else
+    return -1;
+}

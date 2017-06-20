@@ -38,16 +38,6 @@
 #define HB_TIMESTAMP_COUNT (60 * 60)
 #define POST_LED_DELAY_TIME 2
 
-enum led_state {
-  LED_OFF = 0,
-  LED_ON = 1,
-};
-
-enum inverse_led_state {
-  LED_ON_N = 0,
-  LED_OFF_N = 1,
-};
-
 // Helper function for msleep
 void
 msleep(int msec) {
@@ -129,9 +119,9 @@ encl_led_handler() {
       goto err;
 
     if (!peb_hlth | !pdpb_hlth | !fcb_hlth | !bmc_hlth)
-      pal_set_led(LED_ENCLOSURE, LED_ON_N);
+      pal_set_led(LED_ENCLOSURE, LED_N_ON);
     else
-      pal_set_led(LED_ENCLOSURE, LED_OFF_N);
+      pal_set_led(LED_ENCLOSURE, LED_N_OFF);
 
 err:
     sleep(1);

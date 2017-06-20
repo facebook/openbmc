@@ -58,11 +58,6 @@ extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
 enum {
-  LED_STATE_OFF,
-  LED_STATE_ON,
-};
-
-enum {
   USB_MUX_OFF,
   USB_MUX_ON,
 };

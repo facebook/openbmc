@@ -53,9 +53,11 @@
 #define GPIO_RESET_SSD_SWITCH 134
 
 #define GPIO_HB_LED 115
-#define GPIO_BMC_SELF_TRAY 108
-#define GPIO_BMC_PEER_TRAY 0
+#define GPIO_BMC_SELF_TRAY_INTRU 108 // 0: tray pull-in, 1: tray pull-out
+#define GPIO_BMC_PEER_TRAY_INTRU 0   // 0: tray pull-in, 1: tray pull-out
 #define GPIO_PEER_BMC_HB 117
+#define GPIO_TRAY_LOCATION_ID 55 // 0: lower tray, 1: upper tray
+#define TRAY_LOCATION_FILE "/tmp/tray_location"
 
 #define I2C_DEV_FAN "/dev/i2c-5"
 #define I2C_ADDR_FAN 0x2d
@@ -1151,14 +1153,13 @@ pal_peer_tray_detection(uint8_t *value) {
 
   return 0;
 }
-
 int
 pal_self_tray_location(uint8_t *value) {
 
   char path[64] = {0};
   int val;
 
-  sprintf(path, GPIO_VAL, GPIO_BMC_SELF_TRAY);
+  sprintf(path, GPIO_VAL, GPIO_TRAY_LOCATION_ID);
   if (read_device(path, &val))
     return -1;
 
@@ -1168,17 +1169,69 @@ pal_self_tray_location(uint8_t *value) {
 }
 
 int
-pal_peer_tray_location(uint8_t *value) {
+pal_self_tray_insertion(uint8_t *value) {
 
   char path[64] = {0};
   int val;
 
-  sprintf(path, GPIO_VAL, GPIO_BMC_PEER_TRAY);
+  sprintf(path, GPIO_VAL, GPIO_BMC_SELF_TRAY_INTRU);
   if (read_device(path, &val))
     return -1;
 
   *value = (uint8_t) val;
 
+  return 0;
+}
+
+int
+pal_peer_tray_insertion(uint8_t *value) {
+
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_BMC_PEER_TRAY_INTRU);
+  if (read_device(path, &val))
+    return -1;
+
+  *value = (uint8_t) val;
+
+  return 0;
+}
+
+int
+pal_get_tray_location(char *self_tray_name, uint8_t self_len,
+                      char *peer_tray_name, uint8_t peer_len) {
+  char path[64] = {0};
+  int val = 0;
+
+  if ((self_tray_name == NULL) || (peer_tray_name == NULL)){
+    syslog(LOG_ERR, "%s(): Error - Null Pointer", __func__);
+  }
+
+  if (access(TRAY_LOCATION_FILE, F_OK) == 0)
+    return 0;
+
+  if (pal_self_tray_location(&val) == -1)
+    return -1;
+
+  if (val == 1) {
+    snprintf(self_tray_name, self_len, "Upper Tray");
+    snprintf(peer_tray_name, peer_len, "Lower Tray");
+  } else if (val == 0) {
+    snprintf(self_tray_name, self_len, "Lower Tray");
+    snprintf(peer_tray_name, peer_len, "Upper Tray");
+  } else {
+    syslog(LOG_WARNING, "%s(): invalid tray_location_id: %d", __func__, val);
+    return -1;
+  }
+
+  if (self_len > MAX_VALUE_LEN){
+    syslog(LOG_ERR, "%s(): Invalid Parameter. self_len:%d, max len:%d",
+                     __func__, self_len, MAX_VALUE_LEN);
+    return -1;
+  }
+
+  write_kv(TRAY_LOCATION_FILE, self_tray_name);
   return 0;
 }
 

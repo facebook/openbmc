@@ -864,6 +864,12 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     }
   }
 
+  ret = pal_peer_tray_detection(&peer_tray_exist);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: pal_peer_tray_detection() failed.", __func__);
+    return -1;
+  }
+
   if (peer_tray_exist) {
   /* Determine this tray located on upper or lower tray; 0:Upper, 1:Lower*/
     ret = pal_self_tray_location(&location);

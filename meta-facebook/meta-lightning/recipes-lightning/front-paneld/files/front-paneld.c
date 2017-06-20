@@ -38,6 +38,11 @@
 #define HB_TIMESTAMP_COUNT (60 * 60)
 #define POST_LED_DELAY_TIME 2
 
+struct _tray_last_status {
+  uint8_t self;
+  uint8_t peer;
+} tray_last_status;
+
 // Helper function for msleep
 void
 msleep(int msec) {
@@ -131,36 +136,61 @@ err:
 // Thread for monitoring debug card hotswap
 static void *
 debug_card_handler() {
-  int i, bit_num, ret;
-  uint8_t tmp;
-  uint8_t btn;
-  uint8_t pos;
-  uint8_t err_num=0;
-  char display[50];
+  int i = 0;
+  int bit_num = 0;
+  int ret = 0;
+  uint8_t current_tray_state = 0;
+  uint8_t btn = 0;
+  uint8_t pos = 0;
+  uint8_t err_num = 0;
+  char display[50] = "";
+  char self_tray_name[16] = "";
+  char peer_tray_name[16] = "";
   uint8_t error_code_assert[ERROR_CODE_NUM * 8];
   FILE *fp = NULL;
   uint8_t error_code_array[ERROR_CODE_NUM] = {0};
-  int errCount;
-  int displayCount=0;
+  int errCount = 0;
+  int displayCount = 0;
 
   pal_write_error_code_file(0, ERR_DEASSERT);
+  memset(&tray_last_status, 0, sizeof(tray_last_status));
+
+  /* Getting tray location information */
+  i = 0; //setting the retry limit to 3
+  while ((pal_get_tray_location(self_tray_name, sizeof(self_tray_name),
+                               peer_tray_name, sizeof(peer_tray_name)) == -1) && (i < 3)){
+    syslog(LOG_WARNING, "%s(): pal_get_tray_location() failed", __func__);
+    i++;
+  }
 
   while (1) {
 
-    /* Get self tray and peer tray location then set error code*/
-    tmp = 0;
-    if (!pal_self_tray_location(&tmp)) {
-      if (tmp)
-        pal_err_code_enable(ERR_CODE_SELF_TRAY_PULL_OUT);
-      else
-        pal_err_code_disable(ERR_CODE_SELF_TRAY_PULL_OUT);
+    /* Get self tray and peer tray location then set error code and record log.*/
+    current_tray_state = 0;
+    if (!pal_self_tray_insertion(&current_tray_state)) {
+      if (tray_last_status.self != current_tray_state) {
+        tray_last_status.self = current_tray_state;
+        if (current_tray_state) { 
+          pal_err_code_enable(ERR_CODE_SELF_TRAY_PULL_OUT);
+          syslog(LOG_CRIT, "ASSERT: Self Tray (%s) Pulled-out", self_tray_name);
+        } else {
+          pal_err_code_disable(ERR_CODE_SELF_TRAY_PULL_OUT);
+          syslog(LOG_CRIT, "DEASSERT: Self Tray (%s) Pulled-out", self_tray_name);
+        }
+      }
     }
-    tmp = 0;
-    if (!pal_peer_tray_location(&tmp)) {
-      if (tmp)
-        pal_err_code_enable(ERR_CODE_PEER_TRAY_PULL_OUT);
-      else
-        pal_err_code_disable(ERR_CODE_PEER_TRAY_PULL_OUT);
+    current_tray_state = 0;
+    if (!pal_peer_tray_insertion(&current_tray_state)) {
+      if (tray_last_status.peer != current_tray_state) {
+        tray_last_status.peer = current_tray_state;
+        if (current_tray_state) {
+          pal_err_code_enable(ERR_CODE_PEER_TRAY_PULL_OUT);
+          syslog(LOG_CRIT, "ASSERT: Peer Tray (%s) Pulled-out", peer_tray_name);
+        } else {
+          pal_err_code_disable(ERR_CODE_PEER_TRAY_PULL_OUT);
+          syslog(LOG_CRIT, "DEASSERT: Peer Tray (%s) Pulled-out", peer_tray_name);
+        }
+      }
     }
 
     pal_read_error_code_file(error_code_array);

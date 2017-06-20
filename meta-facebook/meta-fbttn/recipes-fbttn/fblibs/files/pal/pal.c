@@ -165,7 +165,7 @@ const static uint8_t gpio_led[] = { 0, GPIO_PWR_LED };      // TODO: In DVT, Map
 const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED
 //const static uint8_t gpio_prsnt[] = { 0, 61 };
 //const static uint8_t gpio_bic_ready[] = { 0, 107 };
-const static uint8_t gpio_power[] = { 0, GPIO_PWR_BTN_N };
+const static uint8_t gpio_power_btn[] = { 0, GPIO_PWR_BTN_N };
 const static uint8_t gpio_12v[] = { 0, GPIO_COMP_PWR_EN };
 const char pal_fru_list[] = "all, server, iom, dpb, scc, nic";
 const char pal_fru_list_print[] = "all, server, iom, dpb, scc"; // Cannot read fruid from "nic"
@@ -397,6 +397,7 @@ pal_get_key_value(char *key, char *value) {
 
   return kv_get(key, value);
 }
+
 int
 pal_set_key_value(char *key, char *value) {
 
@@ -407,19 +408,11 @@ pal_set_key_value(char *key, char *value) {
   return kv_set(key, value);
 }
 
-// Power On the server in a given slot
 static int
-server_power_on(uint8_t slot_id) {
+power_on_server_physically(uint8_t slot_id){
   char vpath[64] = {0};
 
-  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-  sleep(2);
-  // Mono Lake power-on
-  sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
-
+  sprintf(vpath, GPIO_VAL, gpio_power_btn[slot_id]);
   if (write_device(vpath, "1")) {
     return -1;
   }
@@ -432,6 +425,45 @@ server_power_on(uint8_t slot_id) {
 
   if (write_device(vpath, "1")) {
     return -1;
+  }
+
+  return 0;
+}
+
+// Power On the server in a given slot
+static int
+server_power_on(uint8_t slot_id) {
+  char vpath[64] = {0};
+  int val = 0;
+  int loop = 0;
+  int max_retry = 5;
+
+  //Enable IOM full power via GPIO_IOM_FULL_PWR_EN
+  sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
+  for (loop = 0; loop < max_retry; loop++){
+    write_device(vpath, "1");
+    sleep(2);
+    read_device(vpath, &val);
+    if (val == 1)
+      break;
+    syslog(LOG_WARNING, "%s(): GPIO_IOM_FULL_PWR_EN status is %d. Try %d time(s).\n", __func__, val, loop);
+
+    // Max retry case
+    if (loop == (max_retry-1))
+      syslog(LOG_CRIT, "%s(): Fail to enable GPIO_IOM_FULL_PWR_EN after %d tries.\n", __func__, val, max_retry);
+  }
+
+  // Power on server
+  for (loop = 0; loop < max_retry; loop++){
+    val = power_on_server_physically(slot_id);
+    if (val == 0)
+      break;
+    syslog(LOG_WARNING, "%s(): Power on server failed for %d time(s).\n", __func__, loop);
+    sleep(2);
+
+    // Max retry case
+    if (loop == (max_retry-1))
+      return -1;
   }
 
   return 0;
@@ -450,7 +482,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
     return -1;
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
+  sprintf(vpath, GPIO_VAL, gpio_power_btn[slot_id]);
 
   if (write_device(vpath, "1")) {
     return -1;

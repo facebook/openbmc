@@ -1267,6 +1267,7 @@ pal_log_clear(char *fru) {
     pal_set_key_value("peb_sensor_health", "1");
     pal_set_key_value("pdpb_sensor_health", "1");
     pal_set_key_value("fcb_sensor_health", "1");
+    pal_set_key_value("bmc_health", "1");
   }
 }
 
@@ -1849,16 +1850,36 @@ pal_i2c_crash_deassert_handle(int i2c_bus_num) {
 }
 
 int
-pal_bmc_err_enable() {
-  pal_err_code_enable(ERR_CODE_BMC_ERR);
-  pal_set_sensor_health(BMC_HEALTH, FRU_STATUS_BAD);
+pal_bmc_err_enable(const char *error_item) {
+  if (strcasestr(error_item, "CPU") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_CPU);
+  } else if (strcasestr(error_item, "Memory") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_MEM);
+  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_ECC_UNRECOVERABLE);
+  } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_ECC_RECOVERABLE);
+  } else {
+    syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
+    return -1;
+  }
   return 0;
 }
 
 int
-pal_bmc_err_disable() {
-  pal_err_code_disable(ERR_CODE_BMC_ERR);
-  pal_set_sensor_health(BMC_HEALTH, FRU_STATUS_GOOD);
+pal_bmc_err_disable(const char *error_item) {
+  if (strcasestr(error_item, "CPU") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_CPU);
+  } else if (strcasestr(error_item, "Memory") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_MEM);
+  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_ECC_UNRECOVERABLE);
+  } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_ECC_RECOVERABLE);
+  } else {
+    syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
+    return -1;
+  }
   return 0;
 }
 
@@ -1880,10 +1901,10 @@ pal_set_cpu_mem_threshold(const char* threshold_path) {
   FILE *fp;
 
   memset(str, 0, sizeof(char) * MAX_KEY_LEN);
-  if (strcasestr(threshold_path, "CPU") != NULL) {
+  if (strcasestr(threshold_path, "CPU") != 0ULL) {
     threshold = CPU_THRESHOLD;
     sprintf(str, "%d", threshold);
-  } else if (strcasestr(threshold_path, "MEM") != NULL) {
+  } else if (strcasestr(threshold_path, "MEM") != 0ULL) {
     threshold = MEM_THRESHOLD;
     sprintf(str, "%d", threshold);
   } else {

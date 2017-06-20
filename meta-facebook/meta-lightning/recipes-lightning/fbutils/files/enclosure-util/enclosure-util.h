@@ -95,9 +95,9 @@ char *Error_Code_Description[MAX_DESCRIPTION_NUM] = {
 	"Reserved",
 	"Self Tray Pulled-out",
 	"Peer Tray Pulled-out",
-	"Reserved",
-	"BMC Error",
-	"Reserved",
-	"Reserved",
+	"BMC CPU Utilization too high",
+	"BMC Memory Utilization too high",
+	"ECC Recoverable Error",
+	"ECC Uncecoverable Error",
 	"Firmware and hardware mismatch" //Error Code 99
 };

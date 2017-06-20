@@ -34,8 +34,6 @@ extern "C" {
 #include <openbmc/kv.h>
 #include <openbmc/nvme-mi.h>
 
-#define MAX_KEY_LEN     64
-#define MAX_VALUE_LEN   128
 #define MAX_RETRY       5
 
 #define FRU_STATUS_GOOD   1
@@ -66,7 +64,10 @@ extern "C" {
 #define ERR_CODE_I2C_CRASH_BASE 0x02
 #define ERR_CODE_SELF_TRAY_PULL_OUT 0x5D
 #define ERR_CODE_PEER_TRAY_PULL_OUT 0x5E
-#define ERR_CODE_BMC_ERR 0x60
+#define ERR_CODE_CPU 0x5F
+#define ERR_CODE_MEM 0x60
+#define ERR_CODE_ECC_RECOVERABLE 0x61
+#define ERR_CODE_ECC_UNRECOVERABLE 0x62
 
 #define HB_INTERVAL 500
 
@@ -236,8 +237,8 @@ void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 uint8_t pal_get_status(void);
 int pal_set_cpu_mem_threshold(const char* threshold_path);
-int pal_bmc_err_enable(void);
-int pal_bmc_err_disable(void);
+int pal_bmc_err_enable(const char *error_item);
+int pal_bmc_err_disable(const char *error_item);
 
 #ifdef __cplusplus
 } // extern "C"

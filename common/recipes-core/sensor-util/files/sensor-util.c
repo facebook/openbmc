@@ -46,7 +46,7 @@ static void
 print_usage() {
   printf("Usage: sensor-util [ %s ] <--threshold> <sensor num>\n",
       pal_fru_list);
-  printf("Usage: sensor-util [ %s ] <--history> <period: 1 ~ %d (s)> <sensor num>\n",
+  printf("Usage: sensor-util [ %s ] <--history [period: 1 ~ %d (s)]> <sensor num>\n",
       pal_fru_list, MAX_HISTORY_PERIOD);
   printf("Usage: sensor-util [ %s ] <--history-clear> <sensor num>\n",
       pal_fru_list);
@@ -273,15 +273,18 @@ main(int argc, char **argv) {
     } else {
       errno = 0;
       num = (uint8_t) strtol(argv[i-1], NULL, 0);
-      if (errno) {
+      if (errno || (num <=0)) { //return of strtol() for garbage string is 0
         print_usage();
         exit(-1);
       }
     }
+
     i++;
   }
 
-  if (threshold && history) {
+  if ((threshold && history)
+      || (threshold && history_clear)
+      || (history && history_clear)) {
     print_usage();
     exit(-1);
   }

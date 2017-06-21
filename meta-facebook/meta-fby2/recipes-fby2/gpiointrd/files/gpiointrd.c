@@ -49,6 +49,10 @@
 #define HOTSERVICE_FILE "/tmp/slot%d_reinit"
 #define HSLOT_PID  "/tmp/slot%u_reinit.pid"
 
+static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
+static void *hsvc_event_handler(void *ptr);
+static pthread_mutex_t hsvc_mutex[MAX_NODES + 1]; 
+
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
  "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal", "",
@@ -66,6 +70,16 @@ typedef struct {
 struct delayed_log {
   useconds_t usec;
   char msg[256];
+};
+
+typedef struct {
+  uint8_t slot_id;
+  uint8_t action;
+} hot_service_info;
+
+enum {
+  REMOVAl = 0,
+  INSERTION = 1,
 };
 
 slot_kv_st slot_kv_list[] = {
@@ -188,6 +202,8 @@ static void gpio_event_handle(void *p)
   char slot_kv[80] = {0};
   int i=0;
   static bool prsnt_assert[MAX_NODES + 1]={0};
+  static pthread_t hsvc_action_tid[MAX_NODES + 1];
+  hot_service_info hsvc_info[MAX_NODES + 1];  
 
   if (gp->gs.gs_gpio == gpio_num("GPIOH5")) { // GPIO_FAN_LATCH_DETECT
     if (gp->value == 1) { // low to high
@@ -264,114 +280,173 @@ static void gpio_event_handle(void *p)
        prsnt_assert[slot_id] = true;
        
        if (gp->value == 1) { // SLOT Removal
-         
-          ret = pal_is_fru_prsnt(slot_id, &value);
-          if (ret < 0) {
-           syslog(LOG_CRIT, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
-           return;
-          }
+          hsvc_info[slot_id].slot_id = slot_id;
+          hsvc_info[slot_id].action = REMOVAl;
 
-          if (value) {
-           printf("Noise Interrupt (low to high)\n");
-           return;
+          pthread_mutex_lock(&hsvc_mutex[slot_id]);
+          if ( IsHotServiceStart[slot_id] )
+          {
+#ifdef DEBUG
+            syslog(LOG_WARNING, "[%s] Close the previous thread for slot%x\n", __func__, slot_id);
+#endif
+            pthread_cancel(hsvc_action_tid[slot_id]);
           }
-          else {
-           ret = pal_is_server_12v_on(slot_id, &value);    /* Check whether the system is 12V off or on */
-           if (ret < 0) {
-             syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
-             return -1;
-           }
-           if (value) {
-             syslog(LOG_CRIT, fru_prsnt_log_string[2*MAX_NUM_FRUS + slot_id]);     //Card removal without 12V-off
-             memset(vpath, 0, sizeof(vpath));      
-             sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-             if (write_device(vpath, "0")) {        /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
-               return -1;
-             }
-             ret = pal_slot_pair_12V_off(slot_id);  /* Turn off 12V to pair of slots when Server/GP/CF be removed brutally with pair config */
-             if (0 != ret)
-               printf("pal_slot_pair_12V_off failed for fru: %d\n", slot_id);
-           }
-           else
-             syslog(LOG_CRIT, fru_prsnt_log_string[slot_id]);     //Card removal with 12V-off 
-          }
-         
-          // Re-init kv list
-          for(i=0; i < sizeof(slot_kv_list)/sizeof(slot_kv_st); i++) {
-            memset(slot_kv, 0, sizeof(slot_kv));
-            sprintf(slot_kv, slot_kv_list[i].slot_key, slot_id);
-            if ((ret = pal_set_key_value(slot_kv, slot_kv_list[i].slot_def_val)) < 0) {
-               syslog(LOG_WARNING, "%s pal_set_def_key_value: kv_set failed. %d", __func__, ret);
-            }
-          }
-
-          // Create file for 12V-on re-init
-          sprintf(hspath, HOTSERVICE_FILE, slot_id);
-          memset(cmd, 0, sizeof(cmd));
-          sprintf(cmd,"touch %s",hspath);
-          system(cmd);
    
-          // Assign slot type
-          sprintf(slotrcpath, SLOT_RECORD_FILE, slot_id);
-          memset(cmd, 0, sizeof(cmd));
-          sprintf(cmd, "echo %d > %s", fby2_get_slot_type(slot_id), slotrcpath);
-          system(cmd);
-
-       }
-       else { // SLOT INSERTION
-          ret = pal_is_fru_prsnt(slot_id, &value);
-          if (ret < 0) {
-            syslog(LOG_CRIT, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
-            return;
-          }
-
-          if (!value) {
-            printf("Noise Interrupt (high to low)\n");
-            return;
-          }
-
-          syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + slot_id]);
-
-          // Create file for 12V-on re-init
-          sprintf(hspath, HOTSERVICE_FILE, slot_id);
-          memset(cmd, 0, sizeof(cmd));
-          sprintf(cmd,"touch %s",hspath);
-          system(cmd);
-
-          // Assign slot type
-          sprintf(slotrcpath, SLOT_RECORD_FILE, slot_id);
-          memset(cmd, 0, sizeof(cmd));
-          sprintf(cmd, "echo %d > %s", fby2_get_slot_type(slot_id), slotrcpath);
-          system(cmd);
-
-          // Remove pid_file
-          memset(cmd, 0, sizeof(cmd));
-          sprintf(cmd,"rm -f %s",hslotpid);
-          system(cmd);
-
-          // Check if slot is present
-          ret = pal_is_fru_prsnt(slot_id, &value);
-          if (ret < 0) {
-            syslog(LOG_CRIT, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
-            return;
-          }
-          if (!value) {
-            return;
-          }
-
-          /* Check whether the system is 12V off or on */
-          ret = pal_is_server_12v_on(slot_id, &status);
-          if (ret < 0) {
-            syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+          //Create thread for hsvc event detect
+          if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
+            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread for slot%x\n",__func__, slot_id);
+            pthread_mutex_unlock(&hsvc_mutex[slot_id]);
             return -1;
           }
-          if (!status) {
-            sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-on &",slot_id);
-            system(cmd);
+          IsHotServiceStart[slot_id] = true;
+          pthread_mutex_unlock(&hsvc_mutex[slot_id]);
+       }
+       else { // SLOT INSERTION
+          hsvc_info[slot_id].slot_id = slot_id;
+          hsvc_info[slot_id].action = INSERTION;
+          
+          pthread_mutex_lock(&hsvc_mutex[slot_id]);
+          if ( IsHotServiceStart[slot_id] )
+          {
+#ifdef DEBUG
+            syslog(LOG_WARNING, "[%s] Close the previous thread for slot%x\n", __func__, slot_id);
+#endif
+            pthread_cancel(hsvc_action_tid[slot_id]);
           }
+
+          //Create thread for hsvc event detect
+          if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
+            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread for slot%x\n",__func__, slot_id);
+            pthread_mutex_unlock(&hsvc_mutex[slot_id]);
+            return -1;
+          }
+          IsHotServiceStart[slot_id] = true;
+          pthread_mutex_unlock(&hsvc_mutex[slot_id]);
        }
     }
   } // End of GPIO_SLOT1/2/3/4_PRSNT_B_N, GPIO_SLOT1/2/3/4_PRSNT_N
+}
+
+static void *
+hsvc_event_handler(void *ptr) {
+   
+  int ret=-1;
+  uint8_t value;
+  char vpath[80] = {0};
+  char hspath[80] = {0};
+  char cmd[128] = {0};
+  char slotrcpath[80] = {0};
+  char hslotpid[80] = {0};
+  int status;
+  char slot_kv[80] = {0};
+  int i=0;
+  hot_service_info *hsvc_info = (hot_service_info *)ptr;
+  pthread_detach(pthread_self());
+
+
+  switch(hsvc_info->action)
+  {
+    case REMOVAl :   
+      usleep(250000);   //Delay 250ms to wait for slot present pin status stable
+      ret = pal_is_fru_prsnt(hsvc_info->slot_id, &value);
+      if (ret < 0) {
+        syslog(LOG_CRIT, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, hsvc_info->slot_id);
+        break;
+      }
+      if (value) {
+        printf("Not remove entirely\n");
+      }
+      else {   //Card has been removed
+        ret = pal_is_server_12v_on(hsvc_info->slot_id, &value);    /* Check whether the system is 12V off or on */
+        if (ret < 0) {
+          syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+          break;
+        }
+        if (value) {
+          syslog(LOG_CRIT, fru_prsnt_log_string[2*MAX_NUM_FRUS + hsvc_info->slot_id]);     //Card removal without 12V-off
+          memset(vpath, 0, sizeof(vpath));
+          sprintf(vpath, GPIO_VAL, gpio_12v[hsvc_info->slot_id]);
+          if (write_device(vpath, "0")) {        /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
+            break;
+          }
+          ret = pal_slot_pair_12V_off(hsvc_info->slot_id);  /* Turn off 12V to pair of slots when Server/GP/CF be removed brutally with pair config */
+          if (0 != ret)
+            printf("pal_slot_pair_12V_off failed for fru: %d\n", hsvc_info->slot_id);
+        }
+        else
+          syslog(LOG_CRIT, fru_prsnt_log_string[hsvc_info->slot_id]);     //Card removal with 12V-off
+
+        // Re-init kv list
+        for(i=0; i < sizeof(slot_kv_list)/sizeof(slot_kv_st); i++) {
+          memset(slot_kv, 0, sizeof(slot_kv));
+          sprintf(slot_kv, slot_kv_list[i].slot_key, hsvc_info->slot_id);
+          if ((ret = pal_set_key_value(slot_kv, slot_kv_list[i].slot_def_val)) < 0) {
+            syslog(LOG_WARNING, "%s pal_set_def_key_value: kv_set failed. %d", __func__, ret);
+          }
+        }
+
+        // Create file for 12V-on re-init
+        sprintf(hspath, HOTSERVICE_FILE, hsvc_info->slot_id);
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd,"touch %s",hspath);
+        system(cmd);
+
+        // Assign slot type
+        sprintf(slotrcpath, SLOT_RECORD_FILE, hsvc_info->slot_id);
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo %d > %s", fby2_get_slot_type(hsvc_info->slot_id), slotrcpath);
+        system(cmd);
+      }
+      break; 
+    case INSERTION :   
+      sleep(5);   //Delay 5 seconds to wait for slot present pin status stable
+      ret = pal_is_fru_prsnt(hsvc_info->slot_id, &value);
+      if (ret < 0) {
+        syslog(LOG_CRIT, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, hsvc_info->slot_id);
+        break;
+      }
+      if (value) {      //Card has been inserted
+        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + hsvc_info->slot_id]);
+
+        // Create file for 12V-on re-init
+        sprintf(hspath, HOTSERVICE_FILE, hsvc_info->slot_id);
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd,"touch %s",hspath);
+        system(cmd);
+
+        // Assign slot type
+        sprintf(slotrcpath, SLOT_RECORD_FILE, hsvc_info->slot_id);
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo %d > %s", fby2_get_slot_type(hsvc_info->slot_id), slotrcpath);
+        system(cmd);
+
+        // Remove pid_file
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd,"rm -f %s",hslotpid);
+        system(cmd);
+
+        /* Check whether the system is 12V off or on */
+        ret = pal_is_server_12v_on(hsvc_info->slot_id, &status);
+        if (ret < 0) {
+          syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+          break;
+        }
+        if (!status) {
+          sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-on &",hsvc_info->slot_id);
+          system(cmd);
+        }
+      }
+      else {
+        printf("Not insert entirely\n");
+      }
+      break;
+  }
+ 
+  pthread_mutex_lock(&hsvc_mutex[hsvc_info->slot_id]); 
+  IsHotServiceStart[hsvc_info->slot_id] = false;
+  pthread_mutex_unlock(&hsvc_mutex[hsvc_info->slot_id]);
+
+  pthread_exit(0);
 }
 
 static gpio_poll_st g_gpios[] = {
@@ -399,6 +474,11 @@ main(int argc, void **argv) {
   uint8_t status = 0;
   int i;
 
+  for(i=1 ;i<MAX_NODES + 1; i++)
+  {
+    pthread_mutex_init(&hsvc_mutex[i], NULL);
+  }
+
   pid_file = open("/var/run/gpiointrd.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
   if(rc) {
@@ -413,6 +493,11 @@ main(int argc, void **argv) {
     gpio_poll_open(g_gpios, g_count);
     gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
     gpio_poll_close(g_gpios, g_count);
+  }
+
+  for(i=1; i<MAX_NODES + 1; i++)
+  {
+    pthread_mutex_destroy(&hsvc_mutex[i]);
   }
 
   return 0;

@@ -70,14 +70,14 @@ STATUS target_initialize(Target_Control_Handle* state)
     state->event_cfg.report_PLTRST = false;
     state->event_cfg.report_MBP = false;
 
-    if (checkXDPstate(state) != ST_OK) {
-        ASD_log(LogType_Error, "Failed check XDP state or XDP not available");
-        return ST_ERR;
-    }
-
     if (pin_initialize(state->fru) != ST_OK) {
       ASD_log(LogType_Error, "Failed to initialize pins");
       return ST_ERR;
+    }
+
+    if (checkXDPstate(state) != ST_OK) {
+        ASD_log(LogType_Error, "Failed check XDP state or XDP not available");
+        return ST_ERR;
     }
 
     if (pthread_mutex_init(&state->write_config_mutex, NULL) != 0) {
@@ -106,7 +106,7 @@ STATUS target_deinitialize(Target_Control_Handle* state)
         state->thread_started = false;
     }
 
-    return pin_initialize(state->fru);
+    return pin_deinitialize(state->fru);
 }
 
 void* worker_thread(void* args)
@@ -481,7 +481,7 @@ STATUS checkXDPstate(Target_Control_Handle* state)
         return result;
     }
 
-    if (!asserted) {
+    if (asserted) {
         // Probe is connected to the XDP and all pin's need to be set as
         //  inputs so that they do not interfere with the probe and the
         //  BMC JTAG interface needs to be set as a slave device

@@ -77,6 +77,8 @@ static gpio_st *xdp_present_gpio = &g_gpios[2].gs;
 int pin_initialize(const int fru)
 {
     int gpio;
+    static bool gpios_polling = false;
+
     if (fru != FRU_MB)
         return ST_ERR;
 
@@ -132,11 +134,21 @@ int pin_initialize(const int fru)
       return ST_ERR;
     }
 
-    if (gpio_poll_open(g_gpios, 3)) {
-      return ST_ERR;
-    }
+    /* Start the GPIO polling threads just once */
+    if (gpios_polling == false) {
+      if (gpio_poll_open(g_gpios, 3)) {
+        return ST_ERR;
+      }
 
-    pthread_create(&poll_thread, NULL, gpio_poll_thread, NULL);
+      pthread_create(&poll_thread, NULL, gpio_poll_thread, NULL);
+      gpios_polling = true;
+    } else {
+      pthread_mutex_lock(&triggered_mutex);
+      g_gpios_triggered[0] = false;
+      g_gpios_triggered[1] = false;
+      g_gpios_triggered[2] = false;
+      pthread_mutex_unlock(&triggered_mutex);
+    }
 
     return ST_OK;
 }
@@ -166,9 +178,10 @@ int pin_deinitialize(const int fru)
     }
     gpio_close(&preq_gpio);
 
-    gpio_poll_close(g_gpios, 3);
+    /* Leave the GPIO polling threads alone. */
+    //gpio_poll_close(g_gpios, 3);
 
-    pthread_join(poll_thread, NULL);
+    //pthread_join(poll_thread, NULL);
 
     return ST_OK;
 }

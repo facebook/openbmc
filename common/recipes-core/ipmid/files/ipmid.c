@@ -2725,9 +2725,11 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       oem_get_boot_order(request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_PPR:
+    case CMD_OEM_LEGACY_SET_PPR:
       oem_set_ppr (request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_PPR:
+    case CMD_OEM_LEGACY_GET_PPR:
       oem_get_ppr (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_POST_START:

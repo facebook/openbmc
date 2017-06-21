@@ -6407,7 +6407,7 @@ pal_get_syscfg_text (char *text) {
       key_prefix, index);
     ret = kv_get_bin(key, value);
     if(ret >= 1) {
-      sprintf(&entry[strlen(entry)], "%s", value);
+      snprintf(&entry[strlen(entry)], ret+1, "%s", value);
     }
 
     sprintf(&entry[strlen(entry)], "\n");

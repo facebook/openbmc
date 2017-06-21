@@ -70,8 +70,9 @@ struct frame {
 static int frame_init (struct frame *self, size_t size){
   // Reset status
   self->idx_head = self->idx_tail = 0;
-  self->pages = self->lines = 0;
+  self->lines = 0;
   self->esc_sts = 0;
+  self->pages = 1;
 
   if (self->buf != NULL && self->max_size == size) {
     // reinit
@@ -177,6 +178,7 @@ static int frame_insert (struct frame *self, char *string, int indent)
 // return page size
 static int frame_getPage (struct frame *self, int page, char *page_buf, size_t page_buf_size)
 {
+  int ret;
   uint16_t line = 0;
   uint16_t idx, len;
 
@@ -190,8 +192,9 @@ static int frame_getPage (struct frame *self, int page, char *page_buf, size_t p
   if (page_buf == NULL || page_buf_size < 0)
     return -1;
 
-  len = snprintf(page_buf, 17, "%-10s %02d/%02d", self->title, page, self->pages);
-  if (len < 0)
+  ret = snprintf(page_buf, 17, "%-10s %02d/%02d", self->title, page, self->pages);
+  len = strlen(page_buf);
+  if (ret < 0)
     return -1;
 
   line = 0;
@@ -808,12 +811,18 @@ plat_chk_cri_sel_update(uint8_t *cri_sel_up) {
 
   fp = fopen("/mnt/data/cri_sel", "r");
   if (fp) {
-    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime > frame_sel.mtime)) {
+    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime != frame_sel.mtime)) {
       *cri_sel_up = 1;
     } else {
       *cri_sel_up = 0;
     }
     fclose(fp);
+  } else {
+    if (frame_sel.buf == NULL || frame_sel.lines != 0) {
+      *cri_sel_up = 1;
+    } else {
+      *cri_sel_up = 0;
+    }
   }
   return 0;
 }
@@ -945,7 +954,7 @@ plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count
 
   fp = fopen("/mnt/data/cri_sel", "r");
   if (fp) {
-    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime > frame_sel.mtime)) {
+    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && (file_stat.st_mtime != frame_sel.mtime)) {
       // initialize and clear frame
       frame_sel.init(&frame_sel, FRAME_BUFF_SIZE);
       frame_sel.overwrite = 1;
@@ -974,8 +983,10 @@ plat_udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count
     }
     fclose(fp);
   } else {
+    // Title only
     frame_sel.init(&frame_sel, FRAME_BUFF_SIZE);
     snprintf(frame_sel.title, 32, "Cri SEL");
+    frame_sel.mtime = 0;
   }
 
   if (page > frame_sel.pages) {

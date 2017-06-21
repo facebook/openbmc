@@ -66,6 +66,12 @@ extern "C" {
 #define I2C_BUS_MAX_NUMBER 14
 #define ERR_CODE_I2C_CRASH_BASE 0xE9
 
+// For BMC health error code
+#define ERR_CODE_CPU 0xE0
+#define ERR_CODE_MEM 0xE1
+#define ERR_CODE_ECC_RECOVERABLE 0xE2
+#define ERR_CODE_ECC_UNRECOVERABLE 0xE3
+
 typedef struct {
   uint8_t code;
   bool status;
@@ -314,6 +320,8 @@ int pal_open_fw_update_flag(void);
 int pal_remove_fw_update_flag(void);
 int pal_get_fw_update_flag(void);
 int set_gpio_value(int gpio_num, uint8_t value);
+int pal_bmc_err_enable(const char *error_item);
+int pal_bmc_err_disable(const char *error_item);
 
 #ifdef __cplusplus
 } // extern "C"

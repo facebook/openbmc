@@ -195,7 +195,7 @@ char * key_list[] = {
 "nic_sensor_health",
 "heartbeat_health",
 "fru_prsnt_health",
-"ecc_health",
+"bmc_health",
 "slot1_sel_error",
 "scc_sensor_timestamp",
 "dpb_sensor_timestamp",
@@ -218,7 +218,7 @@ char * def_val_list[] = {
   "1", /* nic_sensor_health */
   "1", /* heartbeat_health */
   "1", /* fru_prsnt_health */
-  "1", /* ecc_health */
+  "1", /* bmc_health */
   "1", /* slot_sel_error */
   "0", /* scc_sensor_timestamp */
   "0", /* dpb_sensor_timestamp */
@@ -1413,17 +1413,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 	// In DVT systems, we added a new GPIO pin to detect power status
   sprintf(vpath_board_rev, GPIO_VAL, GPIO_BOARD_REV_2);
   read_device(vpath_board_rev, &gpio_board_rev_val);
-  
+
   if (gpio_board_rev_val == 0) {    // EVT
     // Check for the power status
     pal_get_server_power(FRU_SLOT1, &status);
-  
+
   } else {                         // DVT
     // Check for power status via GPIO_PERST
     sprintf(vpath, GPIO_VAL, GPIO_PCIE_RESET);
     read_device(vpath, &gpio_perst_val);
   }
-	
+
   ret = fbttn_sensor_read(fru, sensor_num, value);
   if (ret) {
     if(ret < 0) {
@@ -1458,16 +1458,16 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     }
     if (check_server_power_status == true) {
       if (gpio_board_rev_val == 0) {    // EVT Systems
-			
+
         // If server is powered off, ignore the read and write NA
 				if (status != SERVER_POWER_ON) {
           strcpy(str, "NA");
           ret = -1;
-        } 
+        }
 				else {
           // double check power status, after reading the sensor
           pal_get_server_power(FRU_SLOT1, &status);
-					
+
           // If server is powered off, ignore the read and write NA
           if (status != SERVER_POWER_ON) {
             strcpy(str, "NA");
@@ -1484,7 +1484,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         } else {
           // double check power status, after reading the sensor
           read_device(vpath, &gpio_perst_val);
-					
+
           // If server is powered off, ignore the read and write NA
           if (gpio_perst_val != SERVER_POWER_ON) {
             strcpy(str, "NA");
@@ -2731,7 +2731,7 @@ pal_log_clear(char *fru) {
     pal_set_key_value("nic_sensor_health", "1");
     pal_set_key_value("heartbeat_health", "1");
     pal_set_key_value("fru_prsnt_health", "1");
-    pal_set_key_value("ecc_health", "1");
+    pal_set_key_value("bmc_health", "1");
   }
 }
 
@@ -2882,7 +2882,7 @@ int pal_get_plat_sku_id(void){
       return -1;
   }
   else if (sku == IOM_IOC) {
-    platform_info = PLAT_INFO_SKUID_TYPE7SS; 
+    platform_info = PLAT_INFO_SKUID_TYPE7SS;
   }
   else
     return -1;
@@ -2905,11 +2905,11 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     pcie_conf = PICE_CONFIG_TYPE7;
   else
     return completion_code;
-  
+
   *data++ = pcie_conf;
   *res_len = data - res_data;
   completion_code = CC_SUCCESS;
-  
+
   return completion_code;
 }
 
@@ -3465,7 +3465,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
   uint8_t status;
 
   if ((snr_num == MEZZ_SENSOR_TEMP) && (thresh == UNR_THRESH)) {
-    
+
     pal_get_server_power(FRU_SLOT1, &status);
     if (status != SERVER_12V_OFF) {
       pal_nic_otp(FRU_NIC, snr_num, nic_sensor_threshold[snr_num][UNR_THRESH]);
@@ -3944,13 +3944,37 @@ int pal_nic_otp(int fru, int snr_num, float thresh_val) {
 
 int
 pal_bmc_err_enable(const char *error_item) {
-  // dummy function
+
+  if (strcasestr(error_item, "CPU") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_CPU);
+  } else if (strcasestr(error_item, "Memory") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_MEM);
+  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_ECC_UNRECOVERABLE);
+  } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
+    pal_err_code_enable(ERR_CODE_ECC_RECOVERABLE);
+  } else {
+    syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
+    return -1;
+  }
   return 0;
 }
 
 int
 pal_bmc_err_disable(const char *error_item) {
-  // dummy function
+
+  if (strcasestr(error_item, "CPU") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_CPU);
+  } else if (strcasestr(error_item, "Memory") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_MEM);
+  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_ECC_UNRECOVERABLE);
+  } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
+    pal_err_code_disable(ERR_CODE_ECC_RECOVERABLE);
+  } else {
+    syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
+    return -1;
+  }
   return 0;
 }
 
@@ -4066,18 +4090,18 @@ pal_drive_health(const char* dev) {
   return 0;
 }
 
-int 
+int
 pal_open_fw_update_flag(void) {
     int fd;
     //if fd = 0 means open successfully.
     fd = open(FW_UPDATE_FLAG, O_CREAT);
     if (!fd) {
       close(fd);
-    }    
+    }
     return fd;
 }
 
-int 
+int
 pal_remove_fw_update_flag(void) {
     int ret;
     //if ret = 0 means remove successfully.
@@ -4085,7 +4109,7 @@ pal_remove_fw_update_flag(void) {
     return ret;
 }
 
-int 
+int
 pal_get_fw_update_flag(void) {
     int ret;
     //if ret = 0 means BMC is Updating a Device FW, -1 means BMC is not Updating a Device FW

@@ -88,7 +88,6 @@ IMAGE_INSTALL += " \
   enclosure-util \
   libmctp \
   mTerm \
-  ecc-mond \
   ipmi-util \
   "
 

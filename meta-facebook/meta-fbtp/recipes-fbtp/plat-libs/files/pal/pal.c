@@ -6416,3 +6416,14 @@ pal_get_syscfg_text (char *text) {
 
   return 0;
 }
+
+int
+pal_set_adr_trigger(uint8_t slot, bool trigger) {
+  if (slot != FRU_MB) {
+    return -1;
+  }
+  if (trigger) {
+    FORCE_ADR();
+  }
+  return 0;
+}

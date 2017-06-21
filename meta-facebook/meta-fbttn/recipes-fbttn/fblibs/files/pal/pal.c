@@ -3943,13 +3943,13 @@ int pal_nic_otp(int fru, int snr_num, float thresh_val) {
 }
 
 int
-pal_bmc_err_enable() {
+pal_bmc_err_enable(const char *error_item) {
   // dummy function
   return 0;
 }
 
 int
-pal_bmc_err_disable() {
+pal_bmc_err_disable(const char *error_item) {
   // dummy function
   return 0;
 }

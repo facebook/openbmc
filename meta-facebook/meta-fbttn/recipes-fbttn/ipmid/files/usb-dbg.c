@@ -1062,3 +1062,10 @@ plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
       return -1;
   }
 }
+
+int
+plat_udbg_control_panel(uint8_t panel, uint8_t operation, uint8_t item, uint8_t *count, uint8_t *buffer) {
+  /* TODO This is currently under feature evaluation for FBTP. Once it is finalized this might 
+   * need to be implemented in BC */
+    return -1;
+}

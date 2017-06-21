@@ -731,7 +731,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
              return -1;
            }
          }
-       } 
+       }
        break;
      case TYPE_GP_A_NULL:
      case TYPE_CF_A_NULL:
@@ -751,7 +751,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          if (write_device(vpath, "0")) {
            return -1;
          }
-       }       
+       }
        break;
      case TYPE_CF_A_CF:
      case TYPE_CF_A_GP:
@@ -802,7 +802,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
           }
         }
        }
-       break;     
+       break;
   }
 
   return 0;
@@ -812,7 +812,7 @@ static void
 pal_hot_service_action(uint8_t slot_id) {
   uint8_t pair_slot_id;
   char cmd[128] = {0};
-  char hspath[80] = {0};  
+  char hspath[80] = {0};
   int ret=-1;
 
   if (0 == slot_id%2)
@@ -833,7 +833,7 @@ pal_hot_service_action(uint8_t slot_id) {
 
      if (0 != pal_fruid_init(slot_id))
         syslog(LOG_ERR, "%s: pal_fruid_init failed",__func__);
-  
+
      pal_system_config_check(slot_id);
   }
 
@@ -908,7 +908,7 @@ pal_system_config_check(uint8_t slot_id) {
     printf("Get last slot type failed\n");
     return -1;
   }
-  
+
   // 0(TwinLake), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   switch (last_slot_type) {
      case SLOT_TYPE_SERVER:
@@ -926,7 +926,7 @@ pal_system_config_check(uint8_t slot_id) {
      default:
        sprintf(last_slot_str,"Device is not in AVL");
        break;
-  }  
+  }
 
   sprintf(cmd, "rm -f %s",vpath);
   system(cmd);
@@ -934,7 +934,7 @@ pal_system_config_check(uint8_t slot_id) {
   if ( slot_type != last_slot_type) {
     syslog(LOG_CRIT, "Unexpected swap on SLOT%u from %s to %s",slot_id,last_slot_str,slot_str);
   }
- 
+
   return 0;
 }
 
@@ -947,7 +947,7 @@ server_12v_on(uint8_t slot_id) {
   uint8_t value;
   uint8_t slot_prsnt, slot_latch;
   int rc, pid_file;
-  
+
   // Check if another hotservice-reinit.sh instance of slotX is running
   while(1) {
     pid_file = open(HOTSERVICE_PID, O_CREAT | O_RDWR, 0666);
@@ -974,20 +974,20 @@ server_12v_on(uint8_t slot_id) {
   // Delay 2 seconds to check if slot is inserted entirely
   sleep(2);
 #if 0
-  sprintf(vpath, GPIO_VAL, gpio_slot_latch[slot_id]);  
+  sprintf(vpath, GPIO_VAL, gpio_slot_latch[slot_id]);
   if (read_device(vpath, &slot_latch)) {
     return -1;
   }
 #else
   slot_latch = 0;
 #endif
-  
+
   // Reject 12V-on action when SLOT is not present or SLOT ejector latch pin is high
   if ( (1 != slot_prsnt) || (slot_latch) )
     return -1;
 
   // Write 12V on
-  memset(vpath, 0, sizeof(vpath)); 
+  memset(vpath, 0, sizeof(vpath));
   sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
 
   if (write_device(vpath, "1")) {
@@ -996,7 +996,7 @@ server_12v_on(uint8_t slot_id) {
 
   pal_hot_service_action(slot_id);
 
-  rc = flock(pid_file, LOCK_UN); 
+  rc = flock(pid_file, LOCK_UN);
   close(pid_file);
 
   return 0;
@@ -3596,39 +3596,39 @@ pal_fan_recovered_handle(int fan_num) {
   return 0;
 }
 
-int 
+int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
 	int BOARD_ID, BOARD_REV_ID0, BOARD_REV_ID1, BOARD_REV_ID2, SLOT_TYPE;
 	char path[64] = {0};
 	unsigned char *data = res_data;
 	int completion_code = CC_UNSPECIFIED_ERROR;
-	
+
 	sprintf(path, GPIO_VAL, GPIO_BOARD_ID);
 	if (read_device(path, &BOARD_ID)) {
 		*res_len = 0;
 		return completion_code;
 	}
-	
+
 	sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID0);
 	if (read_device(path, &BOARD_REV_ID0)) {
 		*res_len = 0;
 		return completion_code;
 	}
-	
+
 	sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID1);
 	if (read_device(path, &BOARD_REV_ID1)) {
 		*res_len = 0;
 		return completion_code;
 	}
-	
+
 	sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID2);
 	if (read_device(path, &BOARD_REV_ID2)) {
 		*res_len = 0;
 		return completion_code;
 	}
-	
-	
+
+
 	switch(fby2_get_slot_type(slot))
 	{
 		case SLOT_TYPE_SERVER:
@@ -3644,14 +3644,14 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 			*res_len = 0;
 			return completion_code;
 	}
-	 
+
 	*data++ = BOARD_ID;
 	*data++ = (BOARD_REV_ID2 << 2) | (BOARD_REV_ID1 << 1) | BOARD_REV_ID0;
 	*data++ = slot;
 	*data++ = SLOT_TYPE;
 	*res_len = data - res_data;
 	completion_code = CC_SUCCESS;
-	
+
 	return completion_code;
 }
 
@@ -3804,27 +3804,27 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 	return completion_code;
 }
 
-int 
+int
 pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
 	char key[MAX_KEY_LEN] = {0};
 	char str[MAX_VALUE_LEN] = {0};
 	char tstr[10] = {0};
 	int i;
-	int completion_code = CC_UNSPECIFIED_ERROR;	
+	int completion_code = CC_UNSPECIFIED_ERROR;
 	*res_len = 0;
 	sprintf(key, "slot%d_cpu_ppin", slot);
-	
+
 	for (i = 0; i < SIZE_CPU_PPIN; i++) {
 		sprintf(tstr, "%02x", req_data[i]);
 		strcat(str, tstr);
 	}
-	 
+
 	if (pal_set_key_value(key, str) != 0)
 		return completion_code;
-		
+
 	completion_code = CC_SUCCESS;
-	
+
 	return completion_code;
 }
 
@@ -3854,13 +3854,13 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
    uint8_t completion_code = CC_UNSPECIFIED_ERROR;
    unsigned char *data = res_data;
    int pcie_type = 0;
-   
+
    if (read_device(SLOT_FILE, &pcie_type)) {              //Retrieve PCIe configuration type
      printf("Get slot type failed\n");
      *res_len = 0;
      return completion_code;
-   } 
-   
+   }
+
    switch(pcie_type)
    {
       	case PCIE_CONFIG_4xTL:       //For the configuration of 4x Twin Lakes
@@ -3876,11 +3876,11 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 	  *res_len = 0;
 	  return completion_code;
    }
-     
+
    *data++ = pcie_conf;
    *res_len = data - res_data;
    completion_code = CC_SUCCESS;
-   
+
    return completion_code;
 }
 
@@ -3928,7 +3928,7 @@ pal_is_crashdump_ongoing(uint8_t slot)
   return 0;
 }
 
-int
+bool
 pal_is_fw_update_ongoing(uint8_t fru) {
 
   char key[MAX_KEY_LEN];
@@ -3946,19 +3946,19 @@ pal_is_fw_update_ongoing(uint8_t fru) {
     case FRU_SPB:
     case FRU_NIC:
     default:
-      return 0;
+      return false;
   }
 
   ret = edb_cache_get(key, value);
   if (ret < 0) {
-     return 0;
+     return false;
   }
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return 1;
+     return true;
 
-  return 0;
+  return false;
 }
 
 int

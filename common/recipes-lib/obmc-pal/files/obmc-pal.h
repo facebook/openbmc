@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <sys/file.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +35,7 @@ enum {
   /* non system errors start from -256 downwards */
 };
 
-//for power restore policy 
+//for power restore policy
 enum {
   POWER_CFG_OFF = 0,
   POWER_CFG_LPS,
@@ -52,17 +53,11 @@ enum LED_HIGH_ACTIVE{
   LED_ON,
 };
 
-
-int pal_is_fw_update_ongoing(uint8_t fru);
-void set_fw_update_ongoing(uint8_t fru, uint16_t tmout);
-
+// Function Declarations
 int pal_is_crashdump_ongoing(uint8_t fru);
-
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
-
 int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
-
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
@@ -156,6 +151,10 @@ int pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_l
 int pal_handle_string_sel(char *log, uint8_t log_len);
 int pal_set_adr_trigger(uint8_t slot, bool trigger);
 int pal_flock_retry(int fd);
+int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);
+bool pal_is_fw_update_ongoing(uint8_t fruid);
+bool pal_is_fw_update_ongoing_system(void);
+int run_command(const char* cmd);
 
 #ifdef __cplusplus
 }

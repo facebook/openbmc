@@ -6040,52 +6040,6 @@ pal_add_cri_sel(char *str)
 }
 
 int
-pal_is_fw_update_ongoing(uint8_t fru) {
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  struct timespec ts;
-
-  if (fru != FRU_MB)
-    return 0;
-
-  ret = system("pidof flashcp &> /dev/null");
-  if (WIFEXITED(ret) && WEXITSTATUS(ret) == 0)
-    return 1;
-
-  strcpy(key, "mb_fwupd");
-  ret = edb_cache_get(key, value);
-  if (ret < 0) {
-     return 0;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return 1;
-
-  return 0;
-}
-
-void
-set_fw_update_ongoing(uint8_t fru, uint16_t tmout) {
-  char key[64];
-  char value[64];
-  struct timespec ts;
-
-  if (fru != FRU_MB)
-    return;
-
-  strcpy(key, "mb_fwupd");
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%d", ts.tv_sec);
-
-  if (edb_cache_set(key, value) < 0) {
-     return -1;
-  }
-}
-
-int
 pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
   return 0;
 }

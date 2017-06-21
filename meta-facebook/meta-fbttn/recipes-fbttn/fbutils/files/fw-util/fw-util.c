@@ -286,23 +286,44 @@ get_mtd_name(const char* name, char* dev)
   return found;
 }
 
-int
-run_command(const char* cmd) {
-  int status = system(cmd);
-  if (status == -1) {
-    return 127;
-  }
-
-  return WEXITSTATUS(status);
-}
-
 void sig_handler(int signo) { 
-  //Catch SIGINT, SIGKILL, SIGTERM. If recived signal remove FW Update Flag File.
+  //Catch SIGINT, SIGTERM. If recived signal remove FW Update Flag File.
   //Kill flashcp process if there is any.
-  if (signo == SIGINT || signo == SIGKILL || signo == SIGTERM) {
-    remove(FW_UPDATE_FLAG);
-    system("ps | grep -v 'grep' | grep 'flashcp' ; if [ $? -eq 0 ]; then `killall flashcp`; fi");
-    printf("Received signal, removed the FW Update Flag file...\n");
+  char singal[10]={0};
+  int retry = 3;
+  bool is_flashcp_running = false;
+
+  if (signo == SIGINT)
+    sprintf(singal, "SIGINT");
+  else if (signo == SIGTERM)
+    sprintf(singal, "SIGTERM");
+  else
+    sprintf(singal, "UNKNOWN");
+
+
+  if (signo == SIGINT || signo == SIGTERM) {
+
+    printf("Got signal %d(%s). Preparinging to stop fw update.\n", signo, singal);
+    syslog(LOG_WARNING, "Got signal %d(%s). Preparinging to stop fw update.\n", signo, singal);
+
+    //If there is flashcp process running, then kill it
+    do {
+      if (!run_command("pidof flashcp  &> /dev/null")){ // flashcp is running
+        is_flashcp_running = true;
+        run_command("killall flashcp");
+      }else // flashcp is not running
+        break;
+
+      retry--;
+      sleep(1);
+    } while (is_flashcp_running && (retry >= 0));
+
+    if ((retry == 0) && is_flashcp_running){
+      printf("Fail to kill flashcp...\n");
+      syslog(LOG_WARNING, "Fail to kill flashcp...\n");
+    }
+
+    pal_set_fw_update_ongoing(FRU_SLOT1, 0);
     exit(0);
   }
 }
@@ -346,6 +367,7 @@ main(int argc, char **argv) {
   } else {
       goto exit;
   }
+
   // check operation to perform
   if (!strcmp(argv[2], "--version")) {
     switch(fru) {
@@ -375,22 +397,20 @@ main(int argc, char **argv) {
     }
     return 0;
   }
+
+
   if (!strcmp(argv[2], "--update")) {
     if (argc != 5) {
       goto exit;
     }
 
-    //TODO: Change to use save flag in ks, when kv save value in RAMDisk function is avaliable.
-    ret = pal_open_fw_update_flag();
-    if (ret == -1) {
-      printf("Failed to create fw update file.\n");
-      goto exit;
-    }
+    pal_set_fw_update_ongoing(FRU_SLOT1, 2000);
 
     if (fru == FRU_SLOT1) {
       ret =  fw_update_slot(argv, fru);
       goto exit;
     }
+
     // TODO: This is a workaround to detect the correct flash (flash0/flash1)
     // We need to remove this once the mtd partition is fixed in the kernel code
     else if (fru == FRU_IOM) {
@@ -465,10 +485,12 @@ exit:
   if (ret == -2)
     print_usage_help();
   else {
-    if (pal_remove_fw_update_flag()) {
-      printf("Failed to remove fw update file.\n");
-    }
+    //clear fw update timer
+    pal_set_fw_update_ongoing(FRU_SLOT1, 0);
+
     if (is_bmc_update_flag) {
+      //clear the data partition after doing firmware update
+      run_command("rm -rf /mnt/data/*");
       sleep(5);
       run_command("reboot");
     }

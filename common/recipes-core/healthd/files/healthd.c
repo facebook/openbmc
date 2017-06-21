@@ -251,7 +251,7 @@ static void initialize_ecc_log(json_t *conf, struct ecc_log *log_setting) {
 static void
 initialize_hb_config(json_t *conf) {
   json_t *tmp;
-  
+
   tmp = json_object_get(conf, "interval");
   if (!tmp || !json_is_number(tmp)) {
     return;
@@ -657,7 +657,7 @@ CPU_usage_monitor() {
   FILE *fp;
 
   memset(cpu_utilization, 0, sizeof(float) * cpu_window_size);
-  
+
   while (1) {
 
     if (retry > HEALTHD_MAX_RETRY) {
@@ -856,60 +856,34 @@ ecc_mon_handler() {
 }
 
 void
-fw_update_ongoing(int update_status)
+fwupdate_ongoing_handle(bool is_fw_updating)
 {
-  // update_status = 1, it implies that fw update is on-going
-  if (update_status == 1) {
-    system("chmod 666 /usr/local/fbpackages/power-util/power-util");
-    system("chmod 666 /sbin/halt.sysvinit");
+  if (is_fw_updating) { // forbid the execution permission
     system("chmod 666 /sbin/shutdown.sysvinit");
+    system("chmod 666 /sbin/halt.sysvinit");
   }
   else {
-    system("chmod 755 /usr/local/fbpackages/power-util/power-util");
-    system("chmod 4755 /sbin/halt.sysvinit");
     system("chmod 4755 /sbin/shutdown.sysvinit");
+    system("chmod 4755 /sbin/halt.sysvinit");
   }
 }
 
+//Block reboot and shutdown commands in BMC during any FW updating
 static void *
 fw_update_monitor() {
-  int fw_update_flag, prev_val = 0;
-  int counter=0, counter_is_start=false;
+
+  bool is_fw_updating = false;
+  bool prev_flag = false;
 
   while(1) {
-    //TODO: Change to use save flag in kv,
-    //when kv save value in RAMDisk function is avaliable.
+    //is_fw_updating == true, means BMC is Updating a Device FW
+    is_fw_updating = pal_is_fw_update_ongoing_system();
 
-    //if fw_update_flag = 1 means BMC is Updating a Device FW  
-    fw_update_flag = pal_get_fw_update_flag();
-    if (fw_update_flag != prev_val) {
-      if (fw_update_flag) {
-        fw_update_ongoing(1);
-        //Start Counter
-        counter_is_start = true;
-        counter = 0;
-      }
-      else {
-        fw_update_ongoing(0);
-
-        counter_is_start = false;
-      }
+    if (is_fw_updating != prev_flag) {
+      fwupdate_ongoing_handle(is_fw_updating);
     }
-    prev_val = fw_update_flag;
+    prev_flag = is_fw_updating;
     sleep(1);
-
-    //Timer Counter to enable permission
-    if (counter_is_start) {
-      // Wait for a maximum time of 3000 seconds before
-      // exiting the BMC FW update mode
-      if (counter < 3000) {
-        counter++;
-      } else {
-        if (pal_remove_fw_update_flag()) {
-          syslog(LOG_WARNING, "%s: failed to remove update flag", __func__);
-        }
-      }
-    }
   }
   return NULL;
 }

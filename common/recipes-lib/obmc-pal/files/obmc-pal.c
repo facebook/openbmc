@@ -16,21 +16,17 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include "obmc-pal.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <syslog.h>
 #include <string.h>
 #include <unistd.h>
-
-int __attribute__((weak))
-pal_is_fw_update_ongoing(uint8_t fru)
-{
-  return 0;                     /* false */
-}
-
-void __attribute__((weak))
-set_fw_update_ongoing(uint8_t fru, uint16_t tmout)
-{
-  return;
-}
+#include <time.h>
+#include <sys/wait.h>
+#include <openbmc/edb.h>
 
 int __attribute__((weak))
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr)
@@ -610,4 +606,87 @@ pal_flock_retry(int fd)
   }
 
   return 0;
+}
+
+int __attribute__((weak))
+pal_slotid_to_fruid(int slotid)
+{
+  // This function is for mapping to fruid from slotid
+  // If the platform's slotid is different with fruid, need to rewrite
+  // this function in project layer.
+  return slotid;
+}
+
+int __attribute__((weak))
+pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
+  char key[64] = {0};
+  char value[64] = {0};
+  struct timespec ts;
+
+  sprintf(key, "fru%d_fwupd", fruid);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%d", ts.tv_sec);
+
+  if (edb_cache_set(key, value) < 0) {
+     return -1;
+  }
+
+  return 0;
+}
+
+bool __attribute__((weak))
+pal_is_fw_update_ongoing(uint8_t fruid) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  struct timespec ts;
+
+  ret = system("pidof flashcp &> /dev/null");
+  if (WIFEXITED(ret) && WEXITSTATUS(ret) == 0)
+    return true;
+
+  sprintf(key, "fru%d_fwupd", fruid);
+  ret = edb_cache_get(key, value);
+  if (ret < 0) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
+}
+
+bool __attribute__((weak))
+pal_is_fw_update_ongoing_system(void) {
+  //Base on fru number to sum up if fw update is onging.
+  uint8_t max_slot_num = 0;
+
+  pal_get_num_slots(&max_slot_num);
+
+  for(int i = 0; i <= max_slot_num; i++) { // 0 is reserved for BMC update
+    int fruid = pal_slotid_to_fruid(i);
+    if (pal_is_fw_update_ongoing(fruid) == true) //if any slot is true, then we can return true
+      return true;
+  }
+
+  return false;
+}
+
+int __attribute__((weak))
+run_command(const char* cmd) {
+  int status = system(cmd);
+  if (status == -1) { // system error or environment error
+    return 127;
+  }
+
+  // WIFEXITED(status): cmd is executed complete or not. return true for success.
+  // WEXITSTATUS(status): cmd exit code
+  if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
+    return 0;
+  else
+    return -1;
 }

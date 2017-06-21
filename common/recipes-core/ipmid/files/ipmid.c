@@ -937,10 +937,6 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char cmd = req->cmd;
-  int fw_update_flag;
-
-  //if fw_update_flag = 1 means BMC is Updating a Device FW
-  fw_update_flag = pal_get_fw_update_flag();
 
   pthread_mutex_lock(&m_app);
   switch (cmd)
@@ -949,7 +945,7 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       app_get_device_id (request, req_len, response, res_len);
       break;
     case CMD_APP_COLD_RESET:
-      if(fw_update_flag == 1)
+      if(pal_is_fw_update_ongoing_system())
         res->cc = CC_NODE_BUSY;
       else
         app_cold_reset (request, req_len, response, res_len);
@@ -958,7 +954,7 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       app_get_selftest_results (request, req_len, response, res_len);
       break;
     case CMD_APP_MANUFACTURING_TEST_ON:
-      if(fw_update_flag == 1)
+      if(pal_is_fw_update_ongoing_system())
         res->cc = CC_NODE_BUSY;
       else
         app_manufacturing_test_on (request, req_len, response, res_len);
@@ -1350,7 +1346,7 @@ storage_clr_sel (unsigned char *request, unsigned char *response,
   return;
 }
 
-#ifdef CONFIG_FBTTN 
+#ifdef CONFIG_FBTTN
 static void
 storage_get_sel_time (unsigned char *response, unsigned char *res_len)
 {

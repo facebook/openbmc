@@ -270,16 +270,6 @@ get_mtd_name(const char* name, char* dev)
 }
 
 int
-run_command(const char* cmd) {
-  int status = system(cmd);
-  if (status == -1) {
-    return 127;
-  }
-
-  return WEXITSTATUS(status);
-}
-
-int
 fw_update_fru(char **argv, uint8_t slot_id) {
   uint8_t status;
   int ret;

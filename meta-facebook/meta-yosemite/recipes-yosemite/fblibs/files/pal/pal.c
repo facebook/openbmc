@@ -2783,7 +2783,7 @@ pal_is_crashdump_ongoing(uint8_t slot)
   return 0;
 }
 
-int
+bool
 pal_is_fw_update_ongoing(uint8_t fru) {
 
   char key[MAX_KEY_LEN];
@@ -2801,19 +2801,19 @@ pal_is_fw_update_ongoing(uint8_t fru) {
     case FRU_SPB:
     case FRU_NIC:
     default:
-      return 0;
+      return false;
   }
 
   ret = edb_cache_get(key, value);
   if (ret < 0) {
-     return 0;
+     return false;
   }
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return 1;
+     return true;
 
-  return 0;
+  return false;
 }
 
 int

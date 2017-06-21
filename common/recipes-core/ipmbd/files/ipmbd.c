@@ -111,7 +111,6 @@ pthread_mutex_t m_seq;
 pthread_mutex_t m_i2c;
 
 static int g_bus_id = 0; // store the i2c bus ID for debug print
-static int g_slave_addr = 0 ; // store the IPMB slave address
 
 static int i2c_slave_read(int fd, uint8_t *buf, uint8_t *len);
 static int i2c_slave_open(uint8_t bus_num);
@@ -284,10 +283,10 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
 
   memset(&msg, 0, sizeof(msg));
 
-  msg.addr = g_slave_addr;
+  msg.addr = buf[0] >> 1;
   msg.flags = 0;
-  msg.len = len;
-  msg.buf = buf;
+  msg.len = len - 1; // 1st byte in addr
+  msg.buf = &buf[1];
 
   data.msgs = &msg;
   data.nmsgs = 1;
@@ -494,13 +493,13 @@ ipmb_req_handler(void *bus_num) {
 
 #ifdef DEBUG
     syslog(LOG_WARNING, "Sending Response of %d bytes\n", tlen+IPMB_HDR_SIZE-1);
-    for (i = 1; i < tlen+IPMB_HDR_SIZE; i++) {
+    for (i = 0; i < tlen+IPMB_HDR_SIZE; i++) {
       syslog(LOG_WARNING, "0x%X:", txbuf[i]);
     }
 #endif
 
      // Send response back
-     i2c_write(fd, &txbuf[1], tlen+IPMB_HDR_SIZE-1);
+     i2c_write(fd, txbuf, tlen+IPMB_HDR_SIZE);
   }
 }
 
@@ -736,8 +735,7 @@ ipmb_handle (int fd, unsigned char *request, unsigned char req_len,
   pthread_mutex_unlock(&m_seq);
 
   // Send request over i2c bus
-  // Note: Need not send first byte SlaveAddress automatically added by driver
-  if (i2c_write(fd, &request[1], req_len-1)) {
+  if (i2c_write(fd, request, req_len)) {
     goto ipmb_handle_out;
   }
 
@@ -908,25 +906,21 @@ main(int argc, char * const argv[]) {
   pthread_t tid_res_handler;
   pthread_t tid_lib_handler;
   uint8_t ipmb_bus_num;
-  uint8_t ipmb_slave_addr;
   mqd_t mqd_req, mqd_res;
   struct mq_attr attr;
   char mq_ipmb_req[64] = {0};
   char mq_ipmb_res[64] = {0};
   int rc = 0;
 
-  if ((argc != 2) && (argc != 3) && (argc != 4)) {
-    syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#> <slave_addr#>");
+  if (argc < 2) {
+    syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#>");
     exit(1);
   }
 
   ipmb_bus_num = (uint8_t)strtoul(argv[1], NULL, 0);
   g_bus_id = ipmb_bus_num;
 
-  ipmb_slave_addr = (uint8_t)strtoul(argv[2], NULL, 0);
-  g_slave_addr = ipmb_slave_addr;
-
-  syslog(LOG_WARNING, "ipmbd: bus#:%d, slave_addr#: 0x%2X\n", ipmb_bus_num, ipmb_slave_addr);
+  syslog(LOG_WARNING, "ipmbd: bus#:%d\n", ipmb_bus_num);
 
   if( (argc == 4) && !(strcmp(argv[3] ,"bicup")) ){
 	bic_up_flag = 1;

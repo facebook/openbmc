@@ -1335,12 +1335,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
     return;
   }
 
-  ret = flock(fd, LOCK_EX | LOCK_NB);
-  while (ret && (retry_count < 3)) {
-    retry_count++;
-    msleep(100);
-    ret = flock(fd, LOCK_EX | LOCK_NB);
-  }
+  ret = pal_flock_retry(fd);
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
     close(fd);
@@ -1355,6 +1350,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 
   if (sensorStatus == MAP_FAILED){
     syslog(LOG_ERR, "%s(): Error mmapping the file. %s", __func__, strerror(errno));
+    flock(fd, LOCK_UN);
     close(fd);
     return;
   }
@@ -1407,12 +1403,7 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
     return;
   }
 
-  ret = flock(fd, LOCK_EX | LOCK_NB);
-  while (ret && (retry_count < 3)) {
-    retry_count++;
-    msleep(100);
-    ret = flock(fd, LOCK_EX | LOCK_NB);
-  }
+  ret = pal_flock_retry(fd);
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
     close(fd);
@@ -1427,6 +1418,7 @@ pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 
   if (sensorStatus == MAP_FAILED){
     syslog(LOG_ERR, "%s(): Error mmapping the file. %s", __func__, strerror(errno));
+    flock(fd, LOCK_UN);
     close(fd);
     return;
   }
@@ -1504,12 +1496,7 @@ pal_read_error_code_file(uint8_t *error_code_array) {
   if (!fp)
       return -1;
 
-  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  while (ret && (retry_count < 3)) {
-    retry_count++;
-    msleep(100);
-    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  }
+  ret = pal_flock_retry(fileno(fp));
   if (ret) {
     int err = errno;
     syslog(LOG_WARNING, "%s(): failed to flock on %s, err %d", __func__, ERR_CODE_FILE, err);
@@ -1549,12 +1536,7 @@ pal_write_error_code_file(const uint8_t error_num, const bool status) {
     return -1;
   }
 
-  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  while (ret && (retry_count < 3)) {
-    retry_count++;
-    msleep(100);
-    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  }
+  ret = pal_flock_retry(fileno(fp));
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, ERR_CODE_FILE, strerror(errno));
     fclose(fp);
@@ -1921,12 +1903,7 @@ pal_set_cpu_mem_threshold(const char* threshold_path) {
     return 0;
   }
 
-  ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  while (ret && (retry_count < 3)) {
-    retry_count++;
-    msleep(100);
-    ret = flock(fileno(fp), LOCK_EX | LOCK_NB);
-  }
+  ret = pal_flock_retry(fileno(fp));
   if (ret) {
     syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, threshold_path, strerror(errno));
     fclose(fp);

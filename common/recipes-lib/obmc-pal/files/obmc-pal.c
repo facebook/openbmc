@@ -592,3 +592,22 @@ pal_set_adr_trigger(uint8_t slot, bool trigger)
 {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_flock_retry(int fd)
+{
+  int ret = 0;
+  int retry_count = 0;
+
+  ret = flock(fd, LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fd, LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
+}

@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <sys/file.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,6 +155,7 @@ void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_handle_string_sel(char *log, uint8_t log_len);
 int pal_set_adr_trigger(uint8_t slot, bool trigger);
+int pal_flock_retry(int fd);
 
 #ifdef __cplusplus
 }

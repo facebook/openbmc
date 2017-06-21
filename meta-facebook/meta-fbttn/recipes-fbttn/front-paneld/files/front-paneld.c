@@ -574,27 +574,23 @@ led_sync_handler() {
   }
 }
 
-// Thread for handling the Enclosure LED
+// Thread for handling the IOM LED
 static void *
-encl_led_handler() {
+iom_led_handler() {
   uint8_t slot1_hlth;
   uint8_t iom_hlth;
   uint8_t dpb_hlth;
   uint8_t scc_hlth;
   uint8_t nic_hlth;
   int ret;
-  int i;
-  char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
-  int run_mode;
   static int count = 0;
+  uint8_t power_status;
 
   // Initial error code
   memset(g_err_code, 0, sizeof(unsigned char) * ERROR_CODE_NUM);
-  pal_fault_led_mode(ID_LED_OFF, 0);
 
   while (1) {
-    // Get health status for all the fru and then update the ENCL_LED status
+    // Get health status for all the fru and then update the IOM LED status
     ret = pal_get_fru_health(FRU_SLOT1, &slot1_hlth);
     if (ret) {
       pal_err_code_enable(0xF7);
@@ -660,37 +656,35 @@ encl_led_handler() {
       }
     }
 
-    if(pal_sum_error_code() == 1) {   // error occur
-      pal_fault_led_mode(ID_LED_ON, 0);
+    //IOM LED Control Monitor
+    if(pal_sum_error_code()) {
+      //If there is any error code, make LED to solid Yellow
+      pal_iom_led_control(IOM_LED_YELLOW);
+      count = 0;
     }
     else {
-      pal_fault_led_mode(ID_LED_OFF, 0);
+      ret = pal_get_server_power(FRU_SLOT1, &power_status);
+      if (ret) {
+        // we don't change the LED indicator if fail to get power status
+        syslog(LOG_WARNING, "%s, failed to get server power status", __func__);
+      }
+      else{
+        if (power_status == SERVER_POWER_ON){
+          pal_iom_led_control(IOM_LED_BLUE);
+          count = 0;
+        }
+        else{
+          // Server Power is off. Blinking Yellow  1s on -> 4s off
+          if ((count%5) == 0)
+            pal_iom_led_control(IOM_LED_YELLOW);
+          else
+            pal_iom_led_control(IOM_LED_OFF);
+
+          count++;
+        }
+      }
     }
 
-    sprintf(key, "fault_led_state");
-    memset(cvalue, 0, sizeof(char)*MAX_VALUE_LEN);
-    ret = pal_get_key_value(key, cvalue);
-    run_mode = atoi(cvalue);
-    if (!ret) {
-      if(run_mode >= 20) {
-        ret = pal_fault_led_behavior( (!(count%5)) );
-        if(ret)
-          syslog(LOG_WARNING, "encl_led_handler: pal_fault_led_behavior blinking fail");
-        count++;
-      }
-      else if (run_mode >= 10) {
-        ret = pal_fault_led_behavior(ID_LED_ON);
-        if(ret)
-         syslog(LOG_WARNING, "encl_led_handler: pal_fault_led_behavior on fail");
-      }
-      else {
-        ret = pal_fault_led_behavior(ID_LED_OFF);
-        if(ret)
-          syslog(LOG_WARNING, "encl_led_handler: pal_fault_led_behavior off fail");
-      }
-    }
-    else
-      syslog(LOG_WARNING, "encl_led_handler: pal_get_key_value fail");
     sleep(1);
   }
 }
@@ -879,7 +873,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_ts;
   pthread_t tid_sync_led;
   pthread_t tid_leds[MAX_NUM_SLOTS];
-  pthread_t tid_encl_led;
+  pthread_t tid_iom_led;
   pthread_t tid_hb_mon;
   int i;
   int *ip;
@@ -918,8 +912,8 @@ main (int argc, char * const argv[]) {
     }
   }
 
-  if (pthread_create(&tid_encl_led, NULL, encl_led_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for encl led error\n");
+  if (pthread_create(&tid_iom_led, NULL, iom_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for iom led error\n");
     exit(1);
   }
 
@@ -936,7 +930,7 @@ main (int argc, char * const argv[]) {
   for (i = 0;  i < MAX_NUM_SLOTS; i++) {
     pthread_join(tid_leds[i], NULL);
   }
-  pthread_join(tid_encl_led, NULL);
+  pthread_join(tid_iom_led, NULL);
   pthread_join(tid_hb_mon, NULL);
 
   return 0;

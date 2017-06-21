@@ -70,7 +70,7 @@
 #define GPIO_PWR_BTN_N 27
 #define GPIO_RST_BTN 28
 #define GPIO_SYS_RST_BTN 29
-#define GPIO_COMP_PWR_EN 119
+#define GPIO_COMP_PWR_EN 119  // computer power enable. GPO. 1: enable
 #define GPIO_IOM_FULL_PWR_EN 215
 #define GPIO_SCC_RMT_TYPE_0 47
 #define GPIO_SLOTID_0 48
@@ -83,6 +83,8 @@
 #define GPIO_HB_LED 113
 #define GPIO_PWR_LED 3
 #define GPIO_ENCL_FAULT_LED 115
+#define GPIO_BMC_ML_PWR_YELLOW_LED_N 201
+#define GPIO_BMC_ML_PWR_BLUE_LED 202
 
 #define BMC_EXT1_LED_Y_N 37
 #define BMC_EXT2_LED_Y_N 39
@@ -199,7 +201,6 @@ char * key_list[] = {
 "slot1_sel_error",
 "scc_sensor_timestamp",
 "dpb_sensor_timestamp",
-"fault_led_state",
 "slot1_boot_order",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
@@ -222,7 +223,6 @@ char * def_val_list[] = {
   "1", /* slot_sel_error */
   "0", /* scc_sensor_timestamp */
   "0", /* dpb_sensor_timestamp */
-  "0", /* fault_led_state */
   "0000000", /* slot1_boot_order */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
@@ -2791,77 +2791,6 @@ int pal_en_iom_full_pwr(void){
 return 0;
 }
 
-int pal_fault_led_mode(uint8_t state, uint8_t mode) {
-
-  // TODO: Need to implement 3 different modes for the fault LED.
-  // For now the default mode is the auto mode which is controlled by frontpaneld.
-  // ----------------------------------------------------------------------------
-  // state: 0 - off; 1 - on; 2 - blinking
-  // mode: 0 - auto (BMC control); 1 - manual (user control); 2 - disable manual;
-  // static int run_mode = 0;
-  // run_mode 2 digits
-  //   digit 0 : 0 - auto; 1 - manual
-  //   digit 1 : 0 - off; 1 - on; 2 - blinking
-  // run_mode: 00: - auto off; 10 - auto on; 20 - auto blinking
-  //           01: - manual off; 11 - manual on; 21 - manual blinking
-  // when state and mode both 3, return run_mode state
-  // ----------------------------------------------------------------------------
-  int run_mode;
-  int ret;
-  char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
-
-  sprintf(key, "fault_led_state");
-  ret = pal_get_key_value(key, cvalue);
-  if (ret < 0) {
-      syslog(LOG_WARNING, "pal_fault_led: pal_get_key_value failed");
-      return ret;
-  }
-  run_mode = atoi(cvalue);
-
-  if(state == 3 && mode == 3)
-    return run_mode%10; //run_mode%10, shows only 0 or 1; auto or manual
-
-  //if currently is manual mode, then keep it, only when set "fpc-util sled --fault auto" to change back to auto mode
-  if ( (run_mode%10) == 1 && mode == 0) {
-    return 0;
-  }
-
-  run_mode = state*10 + mode;
-
-  //when set "fpc-util sled --fault auto" to change back to auto mode
-  if (mode == 2)
-    run_mode = 0;
-
-  sprintf(cvalue, "%d", run_mode);
-  ret = pal_set_key_value(key, cvalue);
-  if (ret < 0) {
-      syslog(LOG_WARNING, "pal_fault_led: pal_set_key_value failed");
-      return ret;
-  }
-  return 0;
-}
-
-int pal_fault_led_behavior(uint8_t state) {
-  char path[64] = {0};
-  int ret;
-
-  // ENCL_FAULT_LED: GPIOO3 (115)
-  sprintf(path, GPIO_VAL, GPIO_ENCL_FAULT_LED);
-
-  if (state == 0) {           // LED off
-    if (write_device(path, "0")) {
-      return -1;
-    }
-  }
-  else {                    // LED on
-    if (write_device(path, "1")) {
-      return -1;
-    }
-  }
-  return 0;
-}
-
 //For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e
 int pal_get_plat_sku_id(void){
   int sku = 0;
@@ -4117,9 +4046,44 @@ pal_get_fw_update_flag(void) {
     return !ret;
 }
 
+//To control iom led to yellow or blue color
+uint8_t
+pal_iom_led_control(uint8_t color) {
+  int ret = 0;
+
+  switch(color) {
+    case IOM_LED_OFF:
+      if(set_gpio_value(GPIO_BMC_ML_PWR_YELLOW_LED_N, LED_N_OFF))
+        break;
+      if(set_gpio_value(GPIO_BMC_ML_PWR_BLUE_LED, LED_OFF))
+        break;
+
+      return 0;
+    case IOM_LED_YELLOW:
+      if(set_gpio_value(GPIO_BMC_ML_PWR_YELLOW_LED_N, LED_N_ON))
+        break;
+      if(set_gpio_value(GPIO_BMC_ML_PWR_BLUE_LED, LED_OFF))
+        break;
+
+      return 0;
+    case IOM_LED_BLUE:
+      if(set_gpio_value(GPIO_BMC_ML_PWR_YELLOW_LED_N, LED_N_OFF))
+        break;
+      if(set_gpio_value(GPIO_BMC_ML_PWR_BLUE_LED, LED_ON))
+        break;
+
+      return 0;
+    default:
+      break;
+  }
+  syslog(LOG_WARNING, "%s, Failed to Control IOM LED...", __func__);
+
+  return -1;
+}
+
 // ex: set_gpio_value(GPIO_IOM_FULL_PWR_EN, 1);
 int
-set_gpio_value(int gpio_num, uint8_t value){
+set_gpio_value(int gpio_num, uint8_t value) {
   char vpath[64] = {0};
 
   sprintf(vpath, GPIO_VAL, gpio_num);

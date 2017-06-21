@@ -198,9 +198,15 @@ enum {
   PLAT_INFO_SKUID_TYPE7SS = 5,
 };
 
-enum SAS_EXT_PORT{
+enum SAS_EXT_PORT {
   SAS_EXT_PORT_1 = 0,
   SAS_EXT_PORT_2,
+};
+
+enum {
+  IOM_LED_OFF,
+  IOM_LED_YELLOW,
+  IOM_LED_BLUE,
 };
 
 //fw-util FW Updating Flag File
@@ -290,6 +296,7 @@ int pal_en_iom_full_pwr(void);
 int pal_fault_led_mode(uint8_t state, uint8_t mode);
 int pal_fault_led_behavior(uint8_t state);
 int pal_minisas_led(uint8_t port, uint8_t operation);
+int pal_minisas_led(uint8_t port, uint8_t state);
 int pal_get_plat_sku_id(void);
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
@@ -322,6 +329,7 @@ int pal_get_fw_update_flag(void);
 int set_gpio_value(int gpio_num, uint8_t value);
 int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);
+uint8_t pal_iom_led_control(uint8_t color);
 
 #ifdef __cplusplus
 } // extern "C"

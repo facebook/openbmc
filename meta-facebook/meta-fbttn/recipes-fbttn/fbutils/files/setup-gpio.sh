@@ -504,12 +504,20 @@ gpio_export S7
 # To use NOR Function, SCU90[31] must be 0
 devmem_clear_bit $(scu_addr 90) 31
 
-# DEBUG_RST_BTN_N: Z0 (200)
-# To use GPIOZ0, SCUA4[16], and SCU70[19] must be 0
-devmem_clear_bit $(scu_addr A4) 16
+#Z1 = 1, Z2 = 0 to make IOM LED defualt OFF
+# BMC_ML_PWR_YELLOW_LED: Z1 (201)
+# To use GPIOZ1, SCUA4[17], and SCU70[19] must be 0
+devmem_clear_bit $(scu_addr A4) 17
 devmem_clear_bit $(scu_addr 70) 19
 
-gpio_export Z0
+gpio_set Z1 1
+
+# BMC_ML_PWR_BLUE_LED: Z2 (202)
+# To use GPIOZ2, SCUA4[18], and SCU70[19] must be 0
+devmem_clear_bit $(scu_addr A4) 18
+devmem_clear_bit $(scu_addr 70) 19
+
+gpio_set Z2 0
 
 # BMC_GPIOZ3: Z3 (203)
 # To use GPIOZ3, SCUA4[19] must be 0

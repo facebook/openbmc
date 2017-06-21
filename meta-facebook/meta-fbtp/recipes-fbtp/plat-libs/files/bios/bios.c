@@ -174,7 +174,7 @@ int bios_program(uint8_t slot_id, const char *file)
   }
   system("/usr/local/bin/power-util mb off");
   sleep(10);
-  pal_set_fw_update_ongoing(FRU_MB, 30);
+  pal_set_fw_update_ongoing(FRU_MB, 60*15);
   system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
   sleep(1);
   gpio_export(GPIO_BMC_CTRL);
@@ -186,6 +186,7 @@ int bios_program(uint8_t slot_id, const char *file)
   exit_code = 0;
   if (!get_bios_mtd_name(mtddev)) {
     printf("ERROR: Could not get MTD device for the BIOS!\n");
+    pal_set_fw_update_ongoing(FRU_MB, 0);
     return -1;
   }
   snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", file, mtddev);
@@ -200,6 +201,7 @@ int bios_program(uint8_t slot_id, const char *file)
   pal_PBO();
   sleep(10);
   system("/usr/local/bin/power-util mb on");
+  pal_set_fw_update_ongoing(FRU_MB, 0);
   return exit_code;
 }
 

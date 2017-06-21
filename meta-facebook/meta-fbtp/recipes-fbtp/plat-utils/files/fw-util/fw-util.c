@@ -135,8 +135,7 @@ print_rom_version(void) {
 // Right now using decimal to print the versions
 static void
 print_fw_ver(uint8_t fru_id) {
-  int i;
-  uint8_t ver[128] = {0};
+  char ver[128] = {0};
   uint8_t cpld_var[4] = {0};
 
   if (fru_id != 1) {
@@ -151,7 +150,7 @@ print_fw_ver(uint8_t fru_id) {
   print_rom_version();
 
   // Print ME Version
-  if (me_get_fw_ver(ver)){
+  if (me_get_fw_ver((uint8_t *)ver)){
     printf("ME Version: NA\n");
   } else {
     printf("ME Version: SPS_%02X.%02X.%02X.%02X%X.%X\n", ver[0], ver[1]>>4, ver[1] & 0x0F,
@@ -256,7 +255,7 @@ get_mtd_name(const char* name, char* dev)
 
   dev[0] = '\0';
   while (fgets(line, sizeof(line), partitions)) {
-    if(sscanf(line, "mtd%d: %*0x %*0x %s",
+    if(sscanf(line, "mtd%d: %*x %*x %s",
                  &mtdno, mnt_name) == 2) {
       if(!strcmp(name, mnt_name)) {
         sprintf(dev, "/dev/mtd%d", mtdno);
@@ -286,91 +285,79 @@ fw_update_fru(char **argv, uint8_t slot_id) {
     goto err_exit;
   }
 
+  pal_set_fw_update_ongoing(FRU_MB, 60*10);
+
   if (!strcmp(argv[3], "--rom")) {
     if (!get_mtd_name("\"flash0\"", dev)) {
       printf("Error: Cannot find flash0 MTD partition in /proc/mtd\n");
-      goto err_exit;
+      goto fail_exit;
     }
 
     printf("Flashing to device: %s\n", dev);
     snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
-    return run_command(cmd);
-  }
-
-  if (!strcmp(argv[3], "--bmc")) {
+    ret = run_command(cmd);
+  } else if (!strcmp(argv[3], "--bmc")) {
     if (!get_mtd_name("\"flash1\"", dev)) {
       printf("Note: Cannot find flash1 MTD partition in /proc/mtd\n");
       if (!get_mtd_name("\"flash0\"", dev)) {
         printf("Error: Cannot find flash0 MTD partition in /proc/mtd\n");
-        goto err_exit;
+        goto fail_exit;
       }
     }
 
     printf("Flashing to device: %s\n", dev);
     snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", argv[4], dev);
-    return run_command(cmd);
-  }
-
-  if (!strcmp(argv[3], "--cpld")) {
+    ret = run_command(cmd);
+  } else if (!strcmp(argv[3], "--cpld")) {
     if ( !cpld_intf_open() ) {
       ret = cpld_program(argv[4]);
       cpld_intf_close();
       if ( ret < 0 ) {
         printf("Error Occur at updating CPLD FW!\n");
-        goto err_exit;
       }
     } else {
       printf("Cannot open JTAG!\n");
+      ret = -1;
     }
-    return 0;
-  }
-
-  if (!strcmp(argv[3], "--bios")) {
+  } else if (!strcmp(argv[3], "--bios")) {
     ret = bios_program(slot_id, argv[4]);
     if (ret < 0) {
       printf("ERROR: BIOS Program failed\n");
-      goto err_exit;
     }
-    return 0;
-  }
-
-  if ( !strcmp(argv[3], "--vr") ) {
+  } else if ( !strcmp(argv[3], "--vr") ) {
     uint8_t board_info;
     if (pal_get_platform_id(&board_info) < 0) {
       printf("Get PlatformID failed!\n");
-      goto err_exit;
+      ret = -1;
+    } else {
+      //call vr function
+      ret = vr_fw_update(slot_id, board_info, argv[4]);
+      if (ret < 0) {
+        printf("ERROR: VR Firmware update failed!\n");
+      }
     }
-    //call vr function
-    ret = vr_fw_update(slot_id, board_info, argv[4]);
-    if (ret < 0) {
-      printf("ERROR: VR Firmware update failed!\n");
-      goto err_exit;
-    }
-    return 0;
-  }
-
-  if (!strcmp(argv[3], "--usbdbgfw")) {
+  } else if (!strcmp(argv[3], "--usbdbgfw")) {
     ret = usb_dbg_update_fw(argv[4]);
     if ( ret < 0 )
     {
       printf("Error Occur at updating USB DBG FW!\n");
-      return ret;
     }
-    return 0;
-  }
-
-  if (!strcmp(argv[3], "--usbdbgbl")) {
+  } else if (!strcmp(argv[3], "--usbdbgbl")) {
     ret = usb_dbg_update_boot_loader(argv[4]);
     if ( ret < 0 )
     {
       printf("Error Occur at updating USB DBG bootloader!\n");
-      return ret;
     }
-    return 0;
+  } else {
+    printf("Uknown option: %s\n", argv[3]);
+    goto err_exit;
   }
-
+fail_exit:
+  pal_set_fw_update_ongoing(FRU_MB, 0);
+  return ret;
 err_exit:
   print_usage_help();
+  pal_set_fw_update_ongoing(FRU_MB, 0);
   return ret;
 }
 
@@ -405,8 +392,6 @@ print_postcodes(uint8_t fru_id) {
 int
 main(int argc, char **argv) {
   uint8_t fru_id;
-  int ret = 0;
-  char cmd[80];
   // Check for border conditions
   if ((argc != 3) && (argc != 5)) {
     goto err_exit;

@@ -226,8 +226,6 @@ static void gpio_event_handle_power(gpio_poll_st *gp)
     return;
   }
 
-  log_gpio_change(gp, 0);
-
   //LCD debug card critical SEL support
   if (gp->gs.gs_gpio == gpio_num("GPIOE6") || gp->gs.gs_gpio == gpio_num("GPIOE7")) {
     if (gp->gs.gs_gpio == gpio_num("GPIOE6"))
@@ -236,19 +234,28 @@ static void gpio_event_handle_power(gpio_poll_st *gp)
       strcat(cmd, "CPU1 FPH");
     if (gp->value) {
       strcat(cmd, " DEASSERT");
+      syslog(LOG_CRIT, "DEASSERT: %s - %s\n",
+        gp->name, gp->desc);
     } else {
-      strcat(cmd, " by");
+      char reason[32] = "";
+      strcat(cmd, " by ");
       if (gpio_get(gpio_num("GPIOL0")) == GPIO_VALUE_LOW)
-        strcat(cmd, " UV");
+        strcpy(reason, "UV");
       if (gpio_get(gpio_num("GPIOL1")) == GPIO_VALUE_LOW)
-        strcat(cmd, " OC");
+        strcpy(reason, "OC");
       if (gpio_get(gpio_num("GPIOL2")) == GPIO_VALUE_LOW)
-        strcat(cmd, " timer exp");
+        strcpy(reason, "timer exp");
       if (gpio_get(gpio_num("GPIOAA1")) == GPIO_VALUE_LOW)
-        strcat(cmd, " PMBus alert");
+        strcpy(reason, "PMBus alert");
+      strcat(cmd, reason);
+      syslog(LOG_CRIT, "ASSERT: %s - %s (reason: %s)\n",
+        gp->name, gp->desc, reason);
     }
     pal_add_cri_sel(cmd);
+    return;
   }
+
+  log_gpio_change(gp, 0);
 
 }
 

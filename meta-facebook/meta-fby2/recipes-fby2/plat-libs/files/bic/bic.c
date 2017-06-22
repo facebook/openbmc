@@ -1138,9 +1138,13 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   if (comp == UPDATE_CPLD) {
     set_fw_update_ongoing(slot_id, 30);
     for (i = 0; i < 60; i++) {  // wait 60s at most
-      ret = _get_cpld_update_progress(slot_id, buf);
-      if (ret) {
-        break;
+      rc = _get_cpld_update_progress(slot_id, buf);
+      if (rc) {
+        goto error_exit;
+      }
+
+      if (buf[0] == 0xFD) {  // error code
+        goto error_exit;
       }
 
       printf("updated cpld: %d %%\n", buf[0]);

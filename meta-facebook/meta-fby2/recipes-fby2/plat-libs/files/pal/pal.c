@@ -2855,7 +2855,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
         valid = true;
         break;
       case BIC_SENSOR_VR_HOT:
-        sprintf(name, "SOC_DIMM_VR_Hot");
+        sprintf(name, "SOC_DIMM_AB_VR_Hot");
         valid = true;
         break;
       case BIC_SENSOR_CPU_DIMM_HOT:
@@ -2873,6 +2873,10 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
     switch(snr_num) {
       case BIC_SENSOR_SYSTEM_STATUS:
         sprintf(name, "SOC_Throttle");
+        valid = true;
+        break;
+      case BIC_SENSOR_VR_HOT:
+        sprintf(name, "SOC_DIMM_DE_VR_Hot");
         valid = true;
         break;
     }

@@ -12,7 +12,10 @@ SRC_URI = "file://obmc-pal.h \
            file://obmc-pal.c \
            file://CMakeLists.txt \
           "
+DEPENDS += " libedb "
 
 inherit cmake
 
 S = "${WORKDIR}"
+
+RDEPENDS_${PN} += " libedb "

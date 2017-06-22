@@ -34,7 +34,6 @@
 
 #define BTN_MAX_SAMPLES   200
 #define BTN_POWER_OFF     40
-#define MAX_NUM_SLOTS 4
 #define HB_TIMESTAMP_COUNT (60 * 60)
 #define POST_LED_DELAY_TIME 2
 

@@ -36,7 +36,7 @@
 
 #define LIGHTNING_PLATFORM_NAME "Lightning"
 #define LAST_KEY "last_key"
-#define LIGHTNING_MAX_NUM_SLOTS 0
+
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
@@ -221,7 +221,7 @@ pal_get_platform_name(char *name) {
 
 int
 pal_get_num_slots(uint8_t *num) {
-  *num = LIGHTNING_MAX_NUM_SLOTS;
+  *num = MAX_NUM_SLOTS;
 
   return 0;
 }

@@ -81,6 +81,8 @@ extern "C" {
 #define CPU_THRESHOLD 80
 #define MEM_THRESHOLD 70
 
+#define MAX_NUM_SLOTS 0
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

@@ -65,6 +65,7 @@ IMAGE_INSTALL += " \
   lldp-util \
   spatula \
   enclosure-util \
+  fw-util \
   "
 
 IMAGE_FEATURES += " \

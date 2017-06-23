@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <facebook/bic.h>
+#include <facebook/fby2_gpio.h>
 #include <openbmc/ipmi.h>
 
 #define LAST_RECORD_ID 0xFFFF
@@ -106,7 +107,7 @@ util_get_gpio(uint8_t slot_id) {
   bic_gpio_u *t = (bic_gpio_u*) &gpio;
 
   // Print response
-  printf("PWRGD_COREPWR: %d\n", t->bits.pwrgood_cpu);
+  printf("PWRGOOD_CPU: %d\n", t->bits.pwrgood_cpu);
   printf("PWRGD_PCH_PWROK: %d\n", t->bits.pwrgd_pch_pwrok);
   printf("PVDDR_AB_VRHOT_N: %d\n", t->bits.pvddr_ab_vrhot_n);
   printf("PVDDR_DE_VRHOT_N: %d\n", t->bits.pvddr_de_vrhot_n);
@@ -114,19 +115,21 @@ util_get_gpio(uint8_t slot_id) {
   printf("FM_THROTTLE_N: %d\n", t->bits.fm_throttle_n);
   printf("FM_PCH_BMC_THERMTRIP_N: %d\n", t->bits.fm_pch_bmc_thermtrip_n);
   printf("H_MEMHOT_CO_N: %d\n", t->bits.h_memhot_co_n);
-  printf("FM_CPU0_THERMTRIP_LVT3_N: %d\n", t->bits.fm_cpu_thermtrip_lvt3_n);
+  printf("FM_CPU0_THERMTRIP_LVT3_N: %d\n", t->bits.fm_cpu0_thermtrip_lvt3_n);
   printf("CPLD_PCH_THERMTRIP: %d\n", t->bits.cpld_pch_thermtrip);
   printf("FM_CPLD_FIVR_FAULT: %d\n", t->bits.fm_cpld_fivr_fault);
-  printf("FM_BDXDE_CATERR_N: %d\n", t->bits.fm_bdxde_caterr_n);
-  printf("FM_CPU_ERROR: %d\n", t->bits.fm_cpu_error);
-  printf("FM_BDXDE_SLP4_N: %d\n", t->bits.fm_bdxde_slp4_n);
+  printf("FM_CPU_CATERR_N: %d\n", t->bits.fm_cpu_caterr_n);
+  printf("FM_CPU_ERROR2: %d\n", t->bits.fm_cpu_error2);
+  printf("FM_CPU_ERROR1: %d\n", t->bits.fm_cpu_error1);
+  printf("FM_CPU_ERROR0: %d\n", t->bits.fm_cpu_error0);
+  printf("FM_SLP4_N: %d\n", t->bits.fm_slp4_n);
   printf("FM_NMI_EVENT_BMC_N: %d\n", t->bits.fm_nmi_event_bmc_n);
   printf("FM_SMI_BMC_N: %d\n", t->bits.fm_smi_bmc_n);
   printf("PLTRST_N: %d\n", t->bits.pltrst_n);
   printf("FP_RST_BTN_N: %d\n", t->bits.fp_rst_btn_n);
   printf("RST_BTN_BMC_OUT_N: %d\n", t->bits.rst_btn_bmc_out_n);
   printf("FM_BIOS_POST_COMPT_N: %d\n", t->bits.fm_bios_post_compt_n);
-  printf("FM_BDXDE_SLP3_N: %d\n", t->bits.fm_bdxde_slp3_n);
+  printf("FM_SLP3_N: %d\n", t->bits.fm_slp3_n);
   printf("PWRGD_PVCCIN: %d\n", t->bits.pwrgd_pvccin);
   printf("FM_BACKUP_BIOS_SEL_N: %d\n", t->bits.fm_backup_bios_sel_n);
   printf("FM_EJECTOR_LATCH_DETECT_N: %d\n", t->bits.fm_ejector_latch_detect_n);
@@ -134,6 +137,10 @@ util_get_gpio(uint8_t slot_id) {
   printf("FM_JTAG_BIC_TCK_MUX_SEL_N: %d\n", t->bits.fm_jtag_bic_tck_mux_sel_n);
   printf("BMC_READY_N: %d\n", t->bits.bmc_ready_n);
   printf("BMC_COM_SW_N: %d\n", t->bits.bmc_com_sw_n);
+  printf("RST_I2C_MUX_N: %d\n", t->bits.rst_i2c_mux_n);
+  printf("XDP_BIC_PREQ_N: %d\n", t->bits.xdp_bic_preq_n);
+  printf("XDP_BIC_TRST: %d\n", t->bits.xdp_bic_trst);
+  printf("FM_SYS_THROTTLE_LVC3: %d\n", t->bits.fm_sys_throttle_lvc3);
   printf("rsvd: %d\n", t->bits.rsvd);
 }
 
@@ -143,26 +150,28 @@ util_get_gpio_config(uint8_t slot_id) {
   int i;
   bic_gpio_config_t gpio_config = {0};
   bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
+  char gpio_name[32];
+
 
   // Read configuration of all bits
-  for (i = 0;  i < MAX_GPIO_PINS; i++) {
+  for (i = 0;  i < gpio_pin_cnt; i++) {
     ret = bic_get_gpio_config(slot_id, i, &gpio_config);
     if (ret == -1) {
       continue;
     }
-
-    printf("gpio_config for pin#%d:\n", i);
-    printf("Direction: %s", t->bits.dir?"Output":"Input");
-    printf("Interrupt Enabled?: %s", t->bits.ie?"Enabled":"Disabled");
-    printf("Trigger Type: %s", t->bits.edge?"Level":"Edge");
+    fby2_get_gpio_name(slot_id, i, gpio_name);
+    printf("gpio_config for pin#%d (%s):\n", i, gpio_pin_name[i]);
+    printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
+    printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
+    printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");
     if (t->bits.trig == 0x0) {
-      printf("Trigger Edge: %s\n", "Falling Edge");
+      printf("Trigger,  Edge: %s\n", "Falling Edge");
     } else if (t->bits.trig == 0x1) {
-      printf("Trigger Edge: %s\n", "Falling Edge");
+      printf("Trigger,  Edge: %s\n", "Rising Edge");
     } else if (t->bits.trig == 0x2) {
-      printf("Trigger Edge: %s\n", "Both Edges");
+      printf("Trigger,  Edge: %s\n", "Both Edges");
     } else  {
-      printf("Trigger Edge: %s\n", "Reserved");
+      printf("Trigger, Edge: %s\n", "Reserved");
     }
   }
 }

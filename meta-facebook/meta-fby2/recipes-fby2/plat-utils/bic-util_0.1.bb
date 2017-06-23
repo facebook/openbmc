@@ -11,11 +11,15 @@ SRC_URI = "file://bic-util \
 
 S = "${WORKDIR}/bic-util"
 
+CFLAGS += " -lbic -lipmi -lipmb -lbic -lfby2_gpio -lpal "
+
+
 do_install() {
 	  install -d ${D}${bindir}
     install -m 0755 bic-util ${D}${bindir}/bic-util
 }
+DEPENDS += "libbic libfby2-gpio"
 
-DEPENDS += "libbic"
+
 
 FILES_${PN} = "${bindir}"

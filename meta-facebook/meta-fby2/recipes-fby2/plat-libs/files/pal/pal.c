@@ -207,52 +207,71 @@ char * def_val_list[] = {
 };
 
 struct power_coeff {
-  float ein;
+  float val;
   float coeff;
 };
-/* Quanta BMC correction table */
-struct power_coeff power_table[] = {
-  {51.0,  0.98},
-  {115.0, 0.9775},
-  {178.0, 0.9755},
-  {228.0, 0.979},
-  {290.0, 0.98},
-  {353.0, 0.977},
-  {427.0, 0.977},
-  {476.0, 0.9765},
-  {526.0, 0.9745},
-  {598.0, 0.9745},
-  {0.0,   0.0}
+
+static const struct power_coeff curr_cali_table[] = {
+  { 5.56,  0.924806 },
+  { 11.02, 0.924263 },
+  { 16.40, 0.926275 },
+  { 21.81, 0.926457 },
+  { 27.19, 0.926503 },
+  { 32.60, 0.926496 },
+  { 38.02, 0.925985 },
+  { 43.40, 0.929842 },
+  { 48.81, 0.930640 },
+  { 54.19, 0.930552 },
+  { 59.60, 0.932128 },
+  { 0.0,   0.0 }
 };
 
-/* Adjust power value */
+static const struct power_coeff pwr_cali_table[] = {
+  { 67.53,  0.924844 },
+  { 132.68, 0.924225 },
+  { 197.50, 0.926275 },
+  { 262.72, 0.926418 },
+  { 327.15, 0.926426 },
+  { 391.48, 0.926419 },
+  { 455.49, 0.925870 },
+  { 519.41, 0.929726 },
+  { 582.48, 0.930562 },
+  { 646.41, 0.930435 },
+  { 709.59, 0.931971 },
+  { 0.0,    0.0 }
+};
+
+/* curr/power calibration */
 static void
-power_value_adjust(float *value)
-{
-    float x0, x1, y0, y1, x;
-    int i;
-    x = *value;
-    x0 = power_table[0].ein;
-    y0 = power_table[0].coeff;
-    if (x0 > *value) {
-      *value = x * y0;
-      return;
-    }
-    for (i = 0; power_table[i].ein > 0.0; i++) {
-       if (*value < power_table[i].ein)
-         break;
-      x0 = power_table[i].ein;
-      y0 = power_table[i].coeff;
-    }
-    if (power_table[i].ein <= 0.0) {
-      *value = x * y0;
-      return;
-    }
-   //if value is bwtween x0 and x1, use linear interpolation method.
-   x1 = power_table[i].ein;
-   y1 = power_table[i].coeff;
-   *value = (y0 + (((y1 - y0)/(x1 - x0)) * (x - x0))) * x;
-   return;
+power_value_adjust(const struct power_coeff *table, float *value) {
+  float x0, x1, y0, y1, x;
+  int i;
+
+  x = *value;
+  x0 = table[0].val;
+  y0 = table[0].coeff;
+  if (x0 >= *value) {
+    *value = x * y0;
+    return;
+  }
+
+  for (i = 1; table[i].val > 0.0; i++) {
+    if (*value < table[i].val)
+      break;
+
+    x0 = table[i].val;
+    y0 = table[i].coeff;
+  }
+  if (table[i].val <= 0.0) {
+    *value = x * y0;
+    return;
+  }
+
+  // if value is bwtween x0 and x1, use linear interpolation method.
+  x1 = table[i].val;
+  y1 = table[i].coeff;
+  *value = (y0 + (((y1 - y0)/(x1 - x0)) * (x - x0))) * x;
+  return;
 }
 
 typedef struct _inlet_corr_t {
@@ -2247,11 +2266,16 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
   else {
     // On successful sensor read
-    if(fru == FRU_SPB && sensor_num == SP_SENSOR_HSC_IN_POWER) {
-      power_value_adjust(value);
-    }
-    if(fru == FRU_SPB && sensor_num == SP_SENSOR_INLET_TEMP) {
-      apply_inlet_correction((float *) value);
+    if (fru == FRU_SPB) {
+      if (sensor_num == SP_SENSOR_HSC_OUT_CURR) {
+        power_value_adjust(curr_cali_table, (float *)value);
+      }
+      if (sensor_num == SP_SENSOR_HSC_IN_POWER) {
+        power_value_adjust(pwr_cali_table, (float *)value);
+      }
+      if (sensor_num == SP_SENSOR_INLET_TEMP) {
+        apply_inlet_correction((float *)value);
+      }
     }
     if ((GETBIT(snr_chk->flag, UCR_THRESH) && (*((float*)value) >= snr_chk->ucr)) ||
         (GETBIT(snr_chk->flag, LCR_THRESH) && (*((float*)value) <= snr_chk->lcr))) {

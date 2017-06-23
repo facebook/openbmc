@@ -81,9 +81,9 @@
 
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
 #define SLOT_FILE "/tmp/slot.bin"
-#define ML_ADM1278_R_SENSE  1
+#define ML_ADM1278_R_SENSE  0.3
 
-static int ml_hsc_r_sense = ML_ADM1278_R_SENSE;
+static float ml_hsc_r_sense = ML_ADM1278_R_SENSE;
 
 // List of BIC sensors to be monitored
 const uint8_t bic_sensor_list[] = {
@@ -463,7 +463,7 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char* attr, const char *device, int r_sense, float *value) {
+read_hsc_value(const char* attr, const char *device, float r_sense, float *value) {
   char full_dir_name[LARGEST_DEVICE_NAME];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;

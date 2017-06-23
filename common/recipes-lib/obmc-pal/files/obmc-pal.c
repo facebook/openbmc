@@ -27,6 +27,7 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <openbmc/edb.h>
+#include <openbmc/kv.h>
 
 int __attribute__((weak))
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr)
@@ -689,4 +690,36 @@ run_command(const char* cmd) {
     return 0;
   else
     return -1;
+}
+
+int __attribute__((weak))
+pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  unsigned int cause;
+
+  sprintf(key, "fru%d_restart_cause", slot);
+
+  if (kv_get(key, value)) {
+    return -1;
+  }
+  if(sscanf(value, "%u", &cause) != 1) {
+    return -1;
+  }
+  *restart_cause = cause;
+  return 0;
+}
+
+int __attribute__((weak))
+pal_set_restart_cause(uint8_t slot, uint8_t restart_cause) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "fru%d_restart_cause", slot);
+  sprintf(value, "%d", restart_cause);
+
+  if (kv_set(key, value)) {
+    return -1;
+  }
+  return 0;
 }

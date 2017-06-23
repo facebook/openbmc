@@ -258,6 +258,23 @@ chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
   }
 }
 
+// Set Power Restore Policy (IPMI/Section 28.11)
+static void
+chassis_get_system_restart_cause(unsigned char *request, unsigned char req_len,
+                                 unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  *res_len = 0;
+  if (pal_get_restart_cause(req->payload_id, &data[0])) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+  }
+  data[1] = 0; // Channel number
+  res->cc = CC_SUCCESS;
+  *res_len = 2;
+}
+
 #ifdef CHASSIS_GET_BOOT_OPTION_SUPPORT
 // Get System Boot Options (IPMI/Section 28.12)
 static void
@@ -326,6 +343,19 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
     case CMD_CHASSIS_SET_POWER_RESTORE_POLICY:
       chassis_set_power_restore_policy(request, req_len, response, res_len);
       break;
+    case CMD_CHASSIS_GET_SYSTEM_RESTART_CAUSE:
+      chassis_get_system_restart_cause(request, req_len, response, res_len);
+      break;
+#ifdef CHASSIS_GET_BOOT_OPTION_SUPPORT
+    case CMD_CHASSIS_GET_BOOT_OPTIONS:
+      chassis_get_boot_options(request, req_len, response, res_len);
+      break;
+#endif
+#ifdef CHASSIS_SET_BOOT_OPTION_SUPPORT
+    case CMD_CHASSIS_SET_BOOT_OPTIONS:
+      chassis_set_boot_options(request, req_len, response, res_len);
+      break;
+#endif
     default:
       res->cc = CC_INVALID_CMD;
       break;
@@ -3400,6 +3430,7 @@ wdt_timer (void *arg) {
 
     // Execute actin out of mutex
     if (action) {
+      pal_set_restart_cause(wdt->slot, RESTART_CAUSE_WATCHDOG_EXPIRATION);
       switch (action) {
       case 1: // Hard Reset
         pal_set_server_power(wdt->slot, SERVER_POWER_RESET);
@@ -3433,8 +3464,7 @@ main (void)
 
   //daemon(1, 1);
   //openlog("ipmid", LOG_CONS, LOG_DAEMON);
-
-
+  
   plat_fruid_init();
   plat_sensor_init();
   plat_lan_init(&g_lan_config);
@@ -3454,10 +3484,11 @@ main (void)
 
   for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
     if (pal_is_slot_server(fru)) {
+      uint8_t cause;
       struct watchdog_data *wdt_data = calloc(1, sizeof(struct watchdog_data));
       if (!wdt_data) {
         syslog(LOG_WARNING, "ipmid: allocation wdt info failed!\n");
-	continue;
+        continue;
       }
       wdt_data->slot = fru;
       wdt_data->valid = 0;
@@ -3467,6 +3498,12 @@ main (void)
       g_wdt[fru - 1] = wdt_data;
       pthread_create(&wdt_data->tid, NULL, wdt_timer, wdt_data);
       pthread_detach(wdt_data->tid);
+      if (pal_get_restart_cause(fru, &cause)) {
+        // If no restart cause is set, set the default to be
+        // PWR_ON_PUSH_BUTTON since that is the most obvious cause
+        // since BMC has just booted up and started the ipmid.
+        pal_set_restart_cause(fru, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+      }
     }
   }
 

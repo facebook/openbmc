@@ -155,6 +155,8 @@ int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);
 bool pal_is_fw_update_ongoing(uint8_t fruid);
 bool pal_is_fw_update_ongoing_system(void);
 int run_command(const char* cmd);
+int pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause);
+int pal_set_restart_cause(uint8_t slot, uint8_t restart_cause);
 
 #ifdef __cplusplus
 }

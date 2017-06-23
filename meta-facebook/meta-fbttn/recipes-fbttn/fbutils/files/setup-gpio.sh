@@ -604,6 +604,12 @@ devmem_clear_bit $(scu_addr A8) 1
 
 gpio_export AB1
 
+# BMC_SELF_HW_RST: AB2 (218)
+# Set GPIOAB2 to funtion2:WDTRST1 , SCUA8[2] must be 1, and SCU94[1:0] must be 0
+devmem_set_bit $(scu_addr A8) 2
+devmem_clear_bit $(scu_addr 94) 0
+devmem_clear_bit $(scu_addr 94) 1
+
 # PCA9555 GPIO export; GPIO number 472~487
 pca9555_pin="472"
 while [ "$pca9555_pin" -lt "488" ]

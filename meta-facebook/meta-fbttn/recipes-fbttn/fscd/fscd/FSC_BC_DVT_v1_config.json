@@ -17,7 +17,7 @@
     "server_sensor_fail":true
   },
   "watchdog": true,
-  "chassis_intrusion": true,
+  "chassis_intrusion": false,
   "min_rpm": 400,
   "profiles": {
     "linear_soc_therm_margin": {

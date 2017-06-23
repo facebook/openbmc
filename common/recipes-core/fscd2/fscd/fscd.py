@@ -93,7 +93,7 @@ class Fscd(object):
         else:
             self.fanpower = False
         if 'chassis_intrusion' in self.fsc_config:
-            self.chassis_intrusion = True
+            self.chassis_intrusion = self.fsc_config['chassis_intrusion']
         else:
             self.chassis_intrusion = False
         if 'ramp_rate' in self.fsc_config:

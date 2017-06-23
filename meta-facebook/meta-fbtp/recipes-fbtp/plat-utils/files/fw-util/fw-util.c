@@ -119,9 +119,9 @@ print_rom_version(void) {
       char min[32];
       while (fgets(line, sizeof(line), fp)) {
         int ret;
-        ret = sscanf(line, "U-Boot 2016.07 (%*[^()]) fbtp-v%[^ \n]\n", min);
+        ret = sscanf(line, "U-Boot 2016.07%*[ ]fbtp-%[^ \n]%*[ ](%*[^)])\n", min);
         if (ret == 1) {
-          sprintf(vers, "fbtp-v%s", min);
+          sprintf(vers, "fbtp-%s", min);
           break;
         }
       }

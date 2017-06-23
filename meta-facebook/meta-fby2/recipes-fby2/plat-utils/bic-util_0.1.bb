@@ -11,7 +11,7 @@ SRC_URI = "file://bic-util \
 
 S = "${WORKDIR}/bic-util"
 
-CFLAGS += " -lbic -lipmi -lipmb -lbic -lfby2_gpio -lpal "
+CFLAGS += " -lbic -lipmi -lipmb -lbic -lfby2_gpio "
 
 
 do_install() {

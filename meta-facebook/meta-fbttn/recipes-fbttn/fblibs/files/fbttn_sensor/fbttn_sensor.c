@@ -230,10 +230,10 @@ const uint8_t iom_sensor_list_type7[] = {
 const uint8_t dpb_sensor_list[] = {
   /* Threshold sensors */
   P3V3_SENSE,
-  P5V_A_1_SENSE,
-  P5V_A_2_SENSE,
-  P5V_A_3_SENSE,
-  P5V_A_4_SENSE,
+  P5V_1_SENSE,
+  P5V_2_SENSE,
+  P5V_3_SENSE,
+  P5V_4_SENSE,
   DPB_SENSOR_12V_POWER_CLIP,
   DPB_SENSOR_P12V_CLIP,
   DPB_SENSOR_12V_CURR_CLIP,
@@ -1206,16 +1206,16 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case P3V3_SENSE:
           sprintf(units, "Volts");
           break;
-        case P5V_A_1_SENSE:
+        case P5V_1_SENSE:
           sprintf(units, "Volts");
           break;
-        case P5V_A_2_SENSE:
+        case P5V_2_SENSE:
           sprintf(units, "Volts");
           break;
-        case P5V_A_3_SENSE:
+        case P5V_3_SENSE:
           sprintf(units, "Volts");
           break;
-        case P5V_A_4_SENSE:
+        case P5V_4_SENSE:
           sprintf(units, "Volts");
           break;
         case DPB_SENSOR_12V_POWER_CLIP:
@@ -1462,17 +1462,17 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case P3V3_SENSE:
           sprintf(name, "P3V3_SENSE");
           break;
-        case P5V_A_1_SENSE:
-          sprintf(name, "P5V_A_1_SENSE");
+        case P5V_1_SENSE:
+          sprintf(name, "P5V_1_SENSE");
           break;
-        case P5V_A_2_SENSE:
-          sprintf(name, "P5V_A_2_SENSE");
+        case P5V_2_SENSE:
+          sprintf(name, "P5V_2_SENSE");
           break;
-        case P5V_A_3_SENSE:
-          sprintf(name, "P5V_A_3_SENSE");
+        case P5V_3_SENSE:
+          sprintf(name, "P5V_3_SENSE");
           break;
-        case P5V_A_4_SENSE:
-          sprintf(name, "P5V_A_4_SENSE");
+        case P5V_4_SENSE:
+          sprintf(name, "P5V_4_SENSE");
           break;
         case DPB_SENSOR_12V_POWER_CLIP:
           sprintf(name, "DPB_12V_POWER_CLIP");

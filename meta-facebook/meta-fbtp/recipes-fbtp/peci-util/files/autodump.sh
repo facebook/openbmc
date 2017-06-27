@@ -23,13 +23,37 @@ unset OLDPID
 DUMP_SCRIPT='/usr/local/bin/dump.sh'
 LOG_FILE='/tmp/autodump.log'
 LOG_ARCHIVE='/mnt/data/autodump.tar.gz'
+LOG_MSG_PREFIX=""
 
 CPU0_SKTOCC_N="/sys/class/gpio/gpio51/value"
 CPU1_SKTOCC_N="/sys/class/gpio/gpio208/value"
+DWR=0
 DELAY_SEC=30
 SENSOR_HISTORY=180
 
-if [ "$1" != "--now" ]; then
+while test $# -gt 0
+do
+  case "$1" in
+  --dwr)
+    DWR=1
+    ;;
+  --now)
+    DELAY_SEC=0
+    ;;
+  *)
+    echo "unknown argument $1"
+    ;;
+  esac
+  shift
+done
+
+if [ "$DWR" == "1" ]; then
+  LOG_ARCHIVE='/mnt/data/autodump_dwr.tar.gz'
+  LOG_MSG_PREFIX="DWR "
+  echo "Auto Dump after Demoted Warm Reset"
+fi
+
+if [ "$DELAY_SEC" != "0" ]; then
   echo "Auto Dump will start after ${DELAY_SEC}s..."
 
   sleep ${DELAY_SEC}
@@ -68,10 +92,10 @@ date >> $LOG_FILE
 
 tar zcf $LOG_ARCHIVE -C `dirname $LOG_FILE` `basename $LOG_FILE` && \
 rm -rf $LOG_FILE && \
-logger -t "ipmid" -p daemon.crit "Crashdump for FRU: 1 is generated at $LOG_ARCHIVE"
+logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: 1 is generated at $LOG_ARCHIVE"
 
 # Remove current pid file
 rm $PID_FILE
 
-echo "Auto Dump Stored in $LOG_ARCHIVE"
+echo "${LOG_MSG_PREFIX}Auto Dump Stored in $LOG_ARCHIVE"
 exit 0

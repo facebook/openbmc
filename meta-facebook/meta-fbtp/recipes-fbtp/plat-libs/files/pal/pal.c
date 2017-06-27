@@ -4822,14 +4822,83 @@ pal_store_crashdump(uint8_t fru) {
   return 0;
 }
 
+#define MAX_DUMP_TIME 10800 /* 3 hours */
+static pthread_t tid_dwr = -1;
+static void *dwr_handler(void *arg) {
+  int delay_reset_time = (int)arg;
+  int len, retry = 0;
+  uint8_t ipmb_buf[256];
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+
+  if (delay_reset_time < 0)
+    delay_reset_time = MAX_DUMP_TIME;
+
+  sleep(30);
+
+  while (delay_reset_time--) {
+    if (pal_is_crashdump_ongoing(FRU_MB) != 1) {
+      req = (ipmb_req_t*)ipmb_buf;
+      res = (ipmb_res_t*)ipmb_buf;
+      req->res_slave_addr = 0x2C; //ME's Slave Address
+      req->netfn_lun = NETFN_SENSOR_REQ<<2;
+      req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+      req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+      req->req_slave_addr = 0x20;
+      req->seq_lun = 0x00;
+
+      req->cmd = CMD_SENSOR_REARM_SENSOR_EVENTS;
+      req->data[0] = HPR_WARNING; // Sensor Number
+      req->data[1] = 0x00; // [7] 0b = re-arm all event status
+      // Invoke IPMB library handler
+      len = 0;
+      lib_ipmb_handle(0x4, req, 9, ipmb_buf, &len);
+      if (len > 7 && res->cc == 0) {
+        syslog(LOG_NOTICE, "Re-arm Host Reset Warning Sensor of ME success");
+        break;
+      } else {
+        syslog(LOG_WARNING, "Re-arm Host Reset Warning Sensor of ME failed");
+        if (retry++ > 2)
+          break;
+      }
+    }
+    sleep(1);
+  }
+
+  if (delay_reset_time <= 0) {
+    syslog(LOG_WARNING, "Autodump waitting for DWR timeout");
+  }
+
+  system("/usr/local/bin/autodump.sh --dwr &");
+
+  tid_dwr = -1;
+  pthread_exit(NULL);
+}
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
+  // Host Partition Reset Warning Sensor Message
+  uint8_t host_rst_warn_event[] = {0xDC, HPR_WARNING, 0x77};
+  int delay_reset_time;
 
-  char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
+  if (!memcmp(event_data, host_rst_warn_event, sizeof(host_rst_warn_event))) {
+    syslog(LOG_WARNING, "Host Partition Reset Warning Sensor Message from ME");
+    // Pre-Go_S1
+    if (event_data[4] == 0xFF)
+      delay_reset_time = -1;
+    else
+      delay_reset_time = event_data[4] * 60;
 
-  /* Write the value "0" which means FRU_STATUS_BAD */
-  return pal_set_key_value(key, "0");
+    if (tid_dwr != -1)
+      pthread_cancel(tid_dwr);
+
+    if (pthread_create(&tid_dwr, NULL, dwr_handler, (void *)delay_reset_time) == 0)
+      pthread_detach(tid_dwr);
+    else
+      tid_dwr = -1;
+  }
+
+  return 0;
 }
 
 int
@@ -5360,7 +5429,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     case HPR_WARNING:
       sprintf(error_log, "");
       if (ed[2]  == 0x01) {
-        if (ed[1]  = 0xFF)
+        if (ed[1] == 0xFF)
           strcat(temp_log, "Infinite Time");
         else
           sprintf(temp_log, "%d minutes",ed[1]);

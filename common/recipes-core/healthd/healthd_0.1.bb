@@ -11,12 +11,13 @@ SRC_URI = "file://Makefile \
            file://watchdog.c \
            file://healthd.c \
            file://setup-healthd.sh \
+           file://healthd-config.json \
           "
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpal "
+LDFLAGS =+ " -lpal -ljansson"
 
-DEPENDS =+ " libpal "
+DEPENDS =+ " libpal jansson"
 
 binfiles = "healthd"
 
@@ -32,11 +33,15 @@ do_install() {
 
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/healthd
+  install -d ${D}${sysconfdir}/healthd
+  install -m 644 healthd-config.json ${D}${sysconfdir}/healthd-config.json
   install -m 755 setup-healthd.sh ${D}${sysconfdir}/init.d/setup-healthd.sh
   update-rc.d -r ${D} setup-healthd.sh start 91 5 .
 }
 
-RDEPENDS_${PN} =+ " libpal "
+RDEPENDS_${PN} =+ " libpal jansson "
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

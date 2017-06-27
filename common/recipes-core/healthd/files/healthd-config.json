@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "heartbeat": {
+    "interval": 500
+  },
+  "bmc_mem_utilization" : {
+    "enabled": true,
+    "window_size": 120,
+    "monitor_interval": 1,
+    "threshold": [
+      {
+        "value": 70.0,
+        "hysteresis" : 5.0,
+        "action": ["log-warning"]
+      },
+      {
+        "value": 85.0,
+        "hysteresis" : 5.0,
+        "action": ["log-critical"]
+      }
+    ]
+  }
+}

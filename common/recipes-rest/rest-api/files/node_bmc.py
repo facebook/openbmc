@@ -40,8 +40,8 @@ class bmcNode(node):
         name = pal_get_platform_name()
 
         # Get MAC Address
-        mac=get_mac()
-        mac_addr=':'.join(("%012X" % mac)[i:i+2] for i in range(0, 12, 2))
+        mac = open('/sys/class/net/eth0/address').read()
+        mac_addr = mac[0:17].upper()
 
         # Get BMC Reset Reason
         wdt_counter = Popen('devmem 0x1e785010', \

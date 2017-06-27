@@ -6301,7 +6301,7 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   int i;
   int completion_code = CC_UNSPECIFIED_ERROR;
   *res_len = 0;
-  sprintf(key, "mb_cpu_ppin", slot);
+  sprintf(key, "mb_cpu_ppin");
 
   for (i = 0; i < SIZE_CPU_PPIN; i++) {
     sprintf(tstr, "%02x", req_data[i]);

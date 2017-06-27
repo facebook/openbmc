@@ -34,7 +34,7 @@
 
 #define FBTTN_PLATFORM_NAME "FBTTN"
 #define LAST_KEY "last_key"
-#define FBTTN_MAX_NUM_SLOTS 1
+#define MAX_NUM_SLOTS 1
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
@@ -69,7 +69,7 @@
 #define GPIO_PWR_BTN 26
 #define GPIO_PWR_BTN_N 27
 #define GPIO_RST_BTN 28
-#define GPIO_SYS_RST_BTN 29
+#define GPIO_SYS_RST_BTN 29   // active by low pulse
 #define GPIO_COMP_PWR_EN 119  // computer power enable. GPO. 1: enable
 #define GPIO_IOM_FULL_PWR_EN 215
 #define GPIO_SCC_RMT_TYPE_0 47
@@ -540,22 +540,32 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   return 0;
 }
 
+int
+server_power_reset(uint8_t slot_id) {
+  int ret = 0;
+
+  ret = pal_set_rst_btn(slot_id, GPIO_LOW);
+  if (ret < 0)
+    return ret;
+
+  msleep(100);
+
+  ret = pal_set_rst_btn(slot_id, GPIO_HIGH);
+  if (ret < 0)
+    return ret;
+
+  return 0;
+}
+
 // Control 12V to the server in a given slot
 int
 server_12v_on(uint8_t slot_id) {
-  char vpath[64] = {0};
 
   if (slot_id != FRU_SLOT1) {
     return -1;
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  return 0;
+  return set_gpio_value(gpio_12v[slot_id], CTRL_ENABLE);
 }
 
 // Turn off 12V for the server in given slot
@@ -714,7 +724,7 @@ pal_get_platform_name(char *name) {
 
 int
 pal_get_num_slots(uint8_t *num) {
-  *num = FBTTN_MAX_NUM_SLOTS;
+  *num = MAX_NUM_SLOTS;
 
   return 0;
 }
@@ -770,24 +780,21 @@ pal_is_slot_server(uint8_t fru) {
 
 int
 pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
-
-  int val;
-  char path[64] = {0};
+  int ret = -1;
+  uint8_t val = -1;
 
   if (slot_id != FRU_SLOT1) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
-
-  if (read_device(path, &val)) {
+  ret = get_gpio_value(gpio_12v[slot_id], &val);
+  if (ret != 0)
     return -1;
-  }
 
   if (val == 0x1) {
-    *status = 1;
+    *status = CTRL_ENABLE;
   } else {
-    *status = 0;
+    *status = CTRL_DISABLE;
   }
 
   return 0;
@@ -826,7 +833,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   }
 
   /* If 12V-off, return */
-  if (!(*status)) {
+  if (*status == CTRL_DISABLE) {
     *status = SERVER_12V_OFF;
     return 0;
   }
@@ -899,10 +906,17 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
       } else if (status == SERVER_POWER_OFF) {
 
-        return (server_power_on(slot_id));
+        return server_power_on(slot_id);
       }
       break;
-
+    case SERVER_POWER_RESET:
+      if (status == SERVER_POWER_OFF) {
+        syslog(LOG_WARNING, "%s: power reset has no effect while power is off", __func__);
+        return -1;
+      } else {
+        return server_power_reset(slot_id);
+      }
+      break;
     case SERVER_GRACEFUL_SHUTDOWN:
       if (status == SERVER_POWER_OFF)
         return 1;
@@ -912,7 +926,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_12V_ON:
-      if (status == SERVER_12V_ON)
+      if (status != SERVER_12V_OFF) // pal_get_server_power() doesn't provide status SERVER_12V_ON
         return 1;
       else
         return server_12v_on(slot_id);
@@ -932,7 +946,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
       sleep(DELAY_12V_CYCLE);
 
-      return (server_12v_on(slot_id));
+      return server_12v_on(slot_id);
     default:
       return -1;
   }
@@ -1029,25 +1043,12 @@ pal_get_rst_btn(uint8_t *status) {
 // Update the Reset button input to the server at given slot
 int
 pal_set_rst_btn(uint8_t slot, uint8_t status) {
-  char path[64] = {0};
-  char *val;
 
-  if (slot < 1 || slot > 4) {
+  if (slot < 1 || slot > MAX_NUM_SLOTS) {
     return -1;
   }
 
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
-  if (write_device(path, val)) {
-    return -1;
-  }
-
-  return 0;
+  return set_gpio_value(gpio_rst_btn[slot], status);
 }
 
 // Update the LED for the given slot with the status
@@ -4094,4 +4095,31 @@ set_gpio_value(int gpio_num, uint8_t value) {
     return write_device(vpath, "1");
   else
     return -1;
+}
+
+int
+get_gpio_value(int gpio_num, uint8_t *value){
+  char vpath[64] = {0};
+  FILE *fp = NULL;
+  int rc = 0;
+  int ret = 0;
+
+  sprintf(vpath, GPIO_VAL, gpio_num);
+
+  fp = fopen(vpath, "r");
+  if (!fp) {
+    syslog(LOG_ERR, "%s(): failed to open device %s (%s)",
+                     __func__, vpath, strerror(errno));
+    return errno;
+  }
+
+  rc = fscanf(fp, "%d", value);
+  if (rc != 1) {
+    syslog(LOG_ERR, "failed to read device %s (%s)", vpath, strerror(errno));
+    ret = errno;
+  }
+
+  fclose(fp);
+
+  return ret;
 }

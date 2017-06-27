@@ -112,18 +112,12 @@ enum {
   SERVER_POWER_OFF,
   SERVER_POWER_ON,
   SERVER_POWER_CYCLE,
+  SERVER_POWER_RESET,
   SERVER_GRACEFUL_SHUTDOWN,
   SERVER_12V_OFF,
   SERVER_12V_ON,
   SERVER_12V_CYCLE,
 };
-
-//: fixme fixme fixme fixme
-//
-//  Temp remap of  SERVER_POWER_RESET  to  power cycle for ipmid watchdog
-//  Need to remove once pal.c adds  SERVER_POWER_RESET support
-#define SERVER_POWER_RESET  SERVER_POWER_CYCLE
-
 
 enum {
   HAND_SW_SERVER1 = 0,
@@ -327,9 +321,11 @@ int pal_open_fw_update_flag(void);
 int pal_remove_fw_update_flag(void);
 int pal_get_fw_update_flag(void);
 int set_gpio_value(int gpio_num, uint8_t value);
+int get_gpio_value(int gpio_num, uint8_t *value);
 int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);
 uint8_t pal_iom_led_control(uint8_t color);
+int server_power_reset(uint8_t slot_id);
 
 #ifdef __cplusplus
 } // extern "C"

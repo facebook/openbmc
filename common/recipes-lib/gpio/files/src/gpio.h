@@ -18,6 +18,10 @@
 #ifndef GPIO_H
 #define GPIO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int gs_gpio;
   int gs_fd;
@@ -76,5 +80,9 @@ int gpio_unexport(int gpio);
 int gpio_poll_open(gpio_poll_st *gpios, int count);
 int gpio_poll(gpio_poll_st *gpios, int count, int timeout);
 int gpio_poll_close(gpio_poll_st *gpios, int count);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

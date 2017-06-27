@@ -108,16 +108,16 @@ static int validate_bios_image(const char *path) {
     i += rcnt;
   }
 
-  end = BIOS_VER_REGION_SIZE - 
+  end = BIOS_VER_REGION_SIZE -
             (sizeof(ver_sig) + strlen(exp_proj_tag));
   for(i = 0; i < end; i++) {
     if (!memcmp(buf + i, ver_sig, sizeof(ver_sig))) {
       char *project_tag = (char *)(buf + i + sizeof(ver_sig));
       if (memcmp(project_tag, exp_proj_tag, strlen(exp_proj_tag))) {
         // Temporary workaround TODO. Remove once no longer required.
-        // If BIOS is for SKU == 1, just make sure that the project 
+        // If BIOS is for SKU == 1, just make sure that the project
         // tag does not match sku == 0.
-        if (sku == 1 && memcmp(project_tag, bios_project_tags[0], 
+        if (sku == 1 && memcmp(project_tag, bios_project_tags[0],
                 strlen(bios_project_tags[0]))) {
           ret = 0;
           break;
@@ -172,7 +172,7 @@ int bios_program(uint8_t slot_id, const char *file)
     printf("ERROR: Invalid image: %s\n", file);
     return -1;
   }
-  system("/usr/local/bin/power-util mb off");
+  pal_set_server_power(slot_id, SERVER_POWER_OFF);
   sleep(10);
   pal_set_fw_update_ongoing(FRU_MB, 60*15);
   system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
@@ -200,8 +200,7 @@ int bios_program(uint8_t slot_id, const char *file)
   sleep(1);
   pal_PBO();
   sleep(10);
-  system("/usr/local/bin/power-util mb on");
+  pal_set_server_power(slot_id, SERVER_POWER_ON);
   pal_set_fw_update_ongoing(FRU_MB, 0);
   return exit_code;
 }
-

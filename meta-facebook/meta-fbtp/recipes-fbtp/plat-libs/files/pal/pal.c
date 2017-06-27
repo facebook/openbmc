@@ -2372,7 +2372,6 @@ pal_PBO(void) {
   char vpath[64] = {0};
 
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
-  FORCE_ADR();
   if (write_device(vpath, "1")) {
     return -1;
   }

@@ -44,6 +44,7 @@ static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|slot1|slot2|slot3|slot4|nic> <--version>\n");
   printf("       fw-util <all|slot1|slot2|slot3|slot4|nic> <--update> <--cpld|--bios|--bic|--bicbl|--nic|--vr> <path>\n");
+  printf("       fw-util <all|slot1|slot2|slot3|slot4> <--postcode>\n");
 }
 
 static void
@@ -382,6 +383,57 @@ print_update_result(int ret, uint8_t slot_id) {
   }
 }
 
+static int
+print_postcodes(uint8_t slot_id) {
+  int i, rc, len;
+  uint8_t status;
+  unsigned char postcodes[256];
+  int ret = 0;
+
+  if (slot_id < OPT_SLOT1 || slot_id > OPT_SLOT4) {
+    printf("Not Supported Operation\n");
+    return -1;
+  }
+
+  ret = pal_is_fru_prsnt(slot_id, &status);
+  if (ret < 0) {
+     printf("pal_is_fru_prsnt failed for fru: %d\n", slot_id);
+     return -1;
+  }
+  if (status == 0) {
+    printf("slot%d is empty!\n", slot_id);
+    return -1;
+  }
+
+  ret = pal_is_server_12v_on(slot_id, &status);
+  if(ret < 0 || 0 == status) {
+    printf("slot%d 12V is off\n", slot_id);
+    return -1;
+  }
+
+  if(!pal_is_slot_server(slot_id)) {
+    printf("slot%d is not server\n", slot_id);
+    return -1;
+  }
+
+  len = 0; // clear higher bits
+  rc = pal_get_80port_record(slot_id, NULL, 0, postcodes, (uint8_t *)&len);
+  if (rc != PAL_EOK) {
+    fprintf(stderr, "Error while get 80 port: %d\n", rc);
+    return -1;
+  }
+
+  printf("Get postcode for slot%d\n", slot_id);
+  for (i=0; i<len; i++) {
+    printf("%02X ", postcodes[i]);
+    if (i%16 == 15)
+      printf("\n");
+  }
+  if (i%16 != 0)
+    printf("\n");
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
 
@@ -427,6 +479,7 @@ main(int argc, char **argv) {
      }
      return 0;
   }
+
   if (!strcmp(argv[2], "--update")) {
     if (argc != 5) {
       goto err_exit;
@@ -437,6 +490,21 @@ main(int argc, char **argv) {
     print_update_result(ret, slot_id);
     return ret; 
   }
+
+  if (!strcmp(argv[2], "--postcode")) {
+     if (slot_id < OPT_ALL) {
+        print_postcodes(slot_id);
+        return 0;
+     }
+     
+     // Print all slots postcode
+     for (slot_id = OPT_SLOT1; slot_id <= OPT_SLOT4; slot_id++) {
+        print_postcodes(slot_id);
+        printf("\n");
+     }     
+     return 0;
+  }
+
 err_exit:
   print_usage_help();
   return -1;

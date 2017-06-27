@@ -25,11 +25,11 @@ ADC_PATH="/sys/devices/platform/ast_adc.0"
 # channel 0: r1: 2.87K; r2:  2.0K; v2: 0mv
 # channel 1: r1: 5.36K; r2:  2.0K; v2: 0mv
 # channel 2: r1: 15.8K; r2:  2.0K; v2: 0mv
-# channel 3: r1:  1.0K; r2:  0.0K; v2: 0mv
-# channel 4: r1:  1.0K; r2:  0.0K; v2: 0mv
+# channel 3: r1:  1.0K; r2:    NA; v2: 0mv # No voltage divider
+# channel 4: r1:  1.0K; r2:    NA; v2: 0mv # No voltage divider
 # channel 5: r1: 2.87K; r2:  2.0K; v2: 0mv
 # channel 6: r1: 5.36K; r2:  2.0K; v2: 0mv
-# channel 7: r1: 4.75K; r2:  0.0K; v2: 0mv
+# channel 7: r1:  200K; r2:  100K; v2: 0mv
 
 config_adc() {
     channel=$1
@@ -44,8 +44,8 @@ config_adc() {
 config_adc 0  287 200 0
 config_adc 1  536 200 0
 config_adc 2 1580 200 0
-config_adc 3   10 200 0
-config_adc 4   10 200 0
+config_adc 3    0   1 0
+config_adc 4    0   1 0
 config_adc 5  287 200 0
 config_adc 6  536 200 0
 config_adc 7  400 200 0

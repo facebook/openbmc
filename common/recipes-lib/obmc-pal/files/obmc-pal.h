@@ -53,6 +53,21 @@ enum LED_HIGH_ACTIVE{
   LED_ON,
 };
 
+enum GPIO_VALUE{
+  GPIO_LOW = 0,
+  GPIO_HIGH,
+};
+
+enum CTRL_HIGH_ACTIVE{
+  CTRL_ENABLE  = 1,
+  CTRL_DISABLE = 0,
+};
+
+enum CTRL_LOW_ACTIVE{
+  CTRL_N_ENABLE  = 0,
+  CTRL_N_DISABLE = 1,
+};
+
 // Function Declarations
 int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);

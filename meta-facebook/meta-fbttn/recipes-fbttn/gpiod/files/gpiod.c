@@ -400,7 +400,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
     if ((get_fru_prsnt(chassis_type, FRU_SLOT1) == 0) && (get_fru_prsnt(0, FRU_SCC) == 0)) {
       read_device(vpath_comp_pwr_en, &val);
       if ((val != 1) && ((is_fru_missing[0] == 1) || (is_fru_missing[1] == 1))) {
-        syslog(LOG_CRIT, "Due to Mono Lake and SCC were pushed in. Power On Server 12V.");
+        syslog(LOG_CRIT, "Due to Server board and SCC were pushed in. Power On Server board 12V power.");
         server_12v_on(FRU_SLOT1);
         write_device(vpath_iom_full_pwr_en, "1");
       }
@@ -459,7 +459,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
               if (!(strcmp(pwr_state, "on")))
                 pal_set_last_pwr_state(fru, "off");
 
-              syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+              syslog(LOG_CRIT, "FRU: %d, Server is powered off", fru);
 
               // Inform BIOS that BMC is ready
               bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
@@ -468,7 +468,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
               if (!(strcmp(pwr_state, "off")))
                 pal_set_last_pwr_state(fru, "on");
 
-              syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+              syslog(LOG_CRIT, "FRU: %d, Server is powered on", fru);
             }
           }
         }

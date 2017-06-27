@@ -6,7 +6,7 @@
     "fan_fail": true,
     "sensor_fail": true
   },
-  "watchdog": true,
+  "watchdog": false,
   "min_rpm": 800,
   "profiles": {
     "linear_dimm": {

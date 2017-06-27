@@ -425,12 +425,12 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_M2_AMBIENT_TEMP2,
       70, 0, 0, 0, 0, 0, 0, 0); // for Type V
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_M2_SMART_TEMP1,
-      82, 0, 0, 0, 0, 0, 0, 0); // for Type V
+      75, 0, 0, 0, 0, 0, 0, 0); // for Type V
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_M2_SMART_TEMP2,
-      82, 0, 0, 0, 0, 0, 0, 0); // for Type V
+      75, 0, 0, 0, 0, 0, 0, 0); // for Type V
   //IOM IOC Temp
   assign_sensor_threshold(FRU_IOM, IOM_IOC_TEMP,
-      100, 0, 0, 0, 0, 0, 0, 0); // for Type VII
+      95, 0, 0, 0, 0, 0, 0, 0); // for Type VII
 
   // DPB
   //DPB 12V HSC
@@ -466,7 +466,7 @@ sensor_thresh_array_init() {
       70.8, 0, 0, 0, 0, 0, 0, 0);
   //DPB Sensor Temp
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_A_TEMP,
-      60, 0, 0, 0, 0, 0, 0, 0);
+      45, 0, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_B_TEMP,
       60, 0, 0, 0, 0, 0, 0, 0);
   //DPB HDD Temp
@@ -493,10 +493,10 @@ sensor_thresh_array_init() {
       1.07, 0, 0, 0.88, 0, 0, 0, 0);
   //SCC Expander Temp
   assign_sensor_threshold(FRU_SCC, SCC_SENSOR_EXPANDER_TEMP,
-      100, 0, 0, 0, 0, 0, 0, 0);
+      95, 0, 0, 0, 0, 0, 0, 0);
   //SCC IOC TEMP
   assign_sensor_threshold(FRU_SCC, SCC_SENSOR_IOC_TEMP,
-      100, 0, 0, 0, 0, 0, 0, 0);
+      95, 0, 0, 0, 0, 0, 0, 0);
   //SCC HSC
   assign_sensor_threshold(FRU_SCC, SCC_SENSOR_HSC_POWER,
       78.12, 0, 0, 0, 0, 0, 0, 0);

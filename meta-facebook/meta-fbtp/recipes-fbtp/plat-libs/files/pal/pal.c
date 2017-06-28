@@ -6495,3 +6495,45 @@ pal_set_adr_trigger(uint8_t slot, bool trigger) {
   }
   return 0;
 }
+
+int 
+pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
+{
+  uint8_t bus_id = 0x4;
+  uint8_t tbuf[16] = {0x0};
+  uint8_t rbuf[16] = {0x0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = PAL_EOK;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+
+  /*create metadata*/
+  res = (ipmb_res_t*)rbuf;
+  req = (ipmb_req_t*)tbuf;
+  req->res_slave_addr = 0x2c;
+  req->netfn_lun = NETFN_APP_REQ << 2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x0;
+
+  /*Fill data*/
+  req->cmd = CMD_APP_GET_SELFTEST_RESULTS;
+  tlen = 6;
+
+  /*Invoke IPMB library handler*/
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+
+  if ( 0 == rlen )
+  {
+    ret = PAL_ENOTSUP;
+  }
+  else
+  {
+    //get the response data
+    memcpy(data, res->data, 2);
+  }
+
+  return ret;
+}

@@ -127,6 +127,8 @@
 #define TACH_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
+#define EEPROM_RISER     "/sys/devices/platform/ast-i2c.1/i2c-1/1-0050/eeprom"
+
 #define MB_INLET_TEMP_DEVICE "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*"
 #define MB_OUTLET_TEMP_DEVICE "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*"
 #define MEZZ_TEMP_DEVICE "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*"
@@ -166,7 +168,7 @@
 static uint8_t gpio_rst_btn[] = { 0, GPIO_POWER_RESET};
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
 const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
-const char pal_fru_list[] = "all, mb, nic";
+const char pal_fru_list[] = "all, mb, nic, riser_slot2, riser_slot3, riser_slot4";
 const char pal_server_list[] = "mb";
 
 size_t pal_pwm_cnt = 2;
@@ -3193,6 +3195,12 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "nic")) {
     *fru = FRU_NIC;
+  } else if (!strcmp(str, "riser_slot2")) {
+    *fru = FRU_RISER_SLOT2;
+  } else if (!strcmp(str, "riser_slot3")) {
+    *fru = FRU_RISER_SLOT3;
+  } else if (!strcmp(str, "riser_slot4")) {
+    *fru = FRU_RISER_SLOT4;
   } else if (!strncmp(str, "fru", 3)) {
     *fru = atoi(&str[3]);
     if (*fru <= FRU_NIC || *fru > MAX_NUM_FRUS)
@@ -3213,6 +3221,15 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_NIC:
       strcpy(name, "nic");
+      break;
+    case FRU_RISER_SLOT2:
+      strcpy(name, "riser_slot2");
+      break;
+    case FRU_RISER_SLOT3:
+      strcpy(name, "riser_slot3");
+      break;
+    case FRU_RISER_SLOT4:
+      strcpy(name, "riser_slot4");
       break;
     default:
       if (fru > MAX_NUM_FRUS)
@@ -3256,8 +3273,56 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 int
-pal_fruid_write(uint8_t fru, char *path) {
-  return 0;
+pal_fruid_write(uint8_t slot, char *path)
+{
+  int ret = 0;
+  int fru_size = 0;
+  char command[128]={0};
+  char device_name[16]={0};
+  uint8_t bus = 0;
+  uint8_t device_addr = 0;
+  uint8_t device_type = 0;
+  uint8_t acutal_riser_slot = 0;
+
+  switch (slot)
+  {
+    case FRU_RISER_SLOT2:
+    case FRU_RISER_SLOT3:
+    case FRU_RISER_SLOT4:
+      acutal_riser_slot = slot - FRU_RISER_SLOT2;//make the slot start from 0
+      if ( pal_is_ava_card( acutal_riser_slot ) )
+      {
+        fru_size = 512;
+        device_type = FOUND_AVA_DEVICE;
+        device_addr = 0x50;
+        bus = RISER_BUS_ID;
+        sprintf(device_name, "24c64");
+        sprintf(command, "dd if=%s of=%s bs=%d count=1", path, EEPROM_RISER, fru_size);
+      }
+    break;
+
+    default:
+      //if there is an unknown device on the slot, return
+#if DEBUG
+      syslog(LOG_WARNING, "[%s] Unknown device on the slot", __func__, slot);
+#endif
+      return PAL_ENOTSUP;
+    break;
+  }
+
+  switch (device_type)
+  {
+    case FOUND_AVA_DEVICE:
+      system("sv stop sensord");
+      pal_add_i2c_device(bus, device_name, device_addr);
+      system(command);
+      pal_del_i2c_device(bus, device_addr);
+      system("sv start sensord");
+    break;
+
+  }
+
+  return PAL_EOK;
 }
 
 int
@@ -4278,6 +4343,15 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   case FRU_NIC:
     sprintf(fname, "nic");
     break;
+  case FRU_RISER_SLOT2:
+    sprintf(fname, "riser_slot2");
+    break;
+  case FRU_RISER_SLOT3:
+    sprintf(fname, "riser_slot3");
+    break;
+  case FRU_RISER_SLOT4:
+    sprintf(fname, "riser_slot4");
+    break;
   default:
     return -1;
   }
@@ -4308,6 +4382,15 @@ pal_get_fruid_name(uint8_t fru, char *name) {
     break;
   case FRU_NIC:
     sprintf(name, "NIC Mezzanine");
+    break;
+  case FRU_RISER_SLOT2:
+    sprintf(name, "FRU content on the riser slot 2");
+    break;
+  case FRU_RISER_SLOT3:
+    sprintf(name, "FRU content on the riser slot 3");
+    break;
+  case FRU_RISER_SLOT4:
+    sprintf(name, "FRU content on the riser slot 4");
     break;
   default:
     return -1;
@@ -6528,6 +6611,93 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
     //get the response data
     memcpy(data, res->data, 2);
   }
+  return ret;
+}
 
+int pal_add_i2c_device(uint8_t bus, char *device_name, uint8_t slave_addr)
+{
+  uint8_t cmd[64] = {0};
+  int ret = 0;
+  const char *template_path="echo %s 0x%x > /sys/bus/i2c/devices/i2c-%d/new_device";
+
+  sprintf(cmd, template_path, device_name, slave_addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
+#endif
+
+  system(cmd);
+
+  return ret;
+}
+
+int pal_del_i2c_device(uint8_t bus, uint8_t slave_addr)
+{
+  uint8_t cmd[64] = {0};
+  int ret = 0;
+  const char *template_path="echo 0x%x > /sys/bus/i2c/devices/i2c-%d/delete_device";
+
+  sprintf(cmd, template_path, slave_addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
+#endif
+
+  system(cmd);
+
+  return ret;
+}
+
+bool
+pal_is_ava_card(uint8_t riser_slot)
+{
+  int fd = 0;
+  char fn[32];
+  bool ret;
+  uint8_t riser_mux_addr = 0xe2;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+
+  fd = open(fn, O_RDWR);
+  if ( fd < 0 ) {
+    ret = false;
+    goto error_exit;
+  }
+
+  // control I2C multiplexer to target channel.
+  ret = pal_control_mux(fd, riser_mux_addr, riser_slot);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
+    ret = false;
+    goto error_exit;
+  }
+
+  ret = true;
+
+error_exit:
+  if (fd > 0)
+  {
+    close(fd);
+  }
+
+  return ret;
+}
+
+int
+pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type )
+{
+  int ret = PAL_ENOTSUP;
+
+  if ( pal_is_ava_card(riser_slot) )
+  {
+    *device_type = FOUND_AVA_DEVICE;
+    ret = PAL_EOK;
+  }
+#if DEBUG
+  else
+  {
+    syslog(LOG_WARNING, "Unknown or no device on the riser slot %d", riser_slot+2);
+  }
+#endif
   return ret;
 }

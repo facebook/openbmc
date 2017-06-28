@@ -33,15 +33,17 @@
 #include <stdint.h>
 #include <sys/stat.h>
 #include "fruid.h"
+#include <openbmc/pal.h>
 
+#define EEPROM_RISER     "/sys/devices/platform/ast-i2c.1/i2c-1/1-0050/eeprom"
 #define EEPROM_NIC      "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"
 #define EEPROM_MB      "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
 
 #define BIN_MB         "/tmp/fruid_mb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"
+#define BIN_RISER        "/tmp/fruid_riser_slot%d.bin"
 
 #define FRUID_SIZE        512
-
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
  *
@@ -100,7 +102,59 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
 
+  int riser_slot;
   int ret;
+  uint8_t slot_cfg = 0;
+  uint8_t total_riser_slot = 0;
+  char device_name[16]={0};
+  uint8_t bus = 0;
+  uint8_t device_addr = 0;
+  uint8_t device_type = 0;
+  char path[64]={0};
+  enum
+  {
+    TWO_SLOT_RISER = 0x2,
+    THREE_SLOT_RISER = 0x3,
+  };
+
+  ret = pal_get_slot_cfg_id(&slot_cfg);
+  if ( (PAL_EOK == ret) && (SLOT_CFG_EMPTY != slot_cfg) )
+  {
+    total_riser_slot =  ( SLOT_CFG_SS_3x8 != slot_cfg )?TWO_SLOT_RISER:THREE_SLOT_RISER;
+
+    for ( riser_slot = 0; riser_slot < total_riser_slot; riser_slot++ )
+    {
+      //identify the device which contains fru or not
+      ret = pal_is_fru_on_riser_card( riser_slot, &device_type );
+      if ( ret < 0 )
+      {
+        continue;
+      }
+
+      if ( FOUND_AVA_DEVICE == device_type )
+      {
+        bus = 0x1;
+        sprintf(device_name, "24c64");
+        device_addr = 0x50;
+      }
+
+      pal_add_i2c_device(bus, device_name, device_addr);
+
+      //dump the binary. The riser slot id is start from 2
+      sprintf(path, BIN_RISER, (riser_slot+2) );
+
+      ret = copy_eeprom_to_bin(EEPROM_RISER, path);
+
+      //del the device
+      pal_del_i2c_device(bus, device_addr);
+    }
+  }
+#ifdef DEBUG
+  else
+  {
+    syslog(LOG_WARNING, "[%s]No Riser Card Detected",__func__);
+  }
+#endif
 
   ret = copy_eeprom_to_bin(EEPROM_MB, BIN_MB);
   ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);

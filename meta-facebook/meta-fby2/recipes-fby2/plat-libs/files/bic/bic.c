@@ -954,6 +954,26 @@ error_exit:
 }
 
 static int
+check_vr_image(int fd, long size) {
+  uint8_t buf[32];
+  uint8_t hdr[] = {0x00,0x01,0x4c,0x1c,0x00,0x46,0x30,0x39,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+
+  if (size < 32)
+    return -1;
+
+  lseek(fd, 1, SEEK_SET);
+
+  if (read(fd, buf, sizeof(hdr)) != sizeof(hdr))
+    return -1;
+
+  if (memcmp(buf, hdr, sizeof(hdr)))
+    return -1;
+
+  lseek(fd, 0, SEEK_SET);
+  return 0;
+}
+
+static int
 check_cpld_image(int fd, long size) {
   uint8_t buf[32];
   uint8_t hdr[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
@@ -1075,6 +1095,14 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
     set_fw_update_ongoing(slot_id, 25);
     dsize = st.st_size/100;
+  } else if (comp == UPDATE_VR) {
+    if (check_vr_image(fd, st.st_size) < 0) {
+      printf("invalid VR file!\n");
+      goto error_exit;
+    }
+
+    set_fw_update_ongoing(slot_id, 25);
+    dsize = st.st_size/5;
   } else {
     if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
       printf("invalid CPLD file!\n");
@@ -1126,6 +1154,9 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
            break;
          case UPDATE_CPLD:
            printf("uploaded cpld: %d %%\n", offset/dsize*5);
+           break;
+         case UPDATE_VR:
+           printf("updated vr: %d %%\n", offset/dsize*20);
            break;
          default:
            printf("updated bic boot loader: %d %%\n", offset/dsize*5);

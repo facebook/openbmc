@@ -286,8 +286,7 @@ fw_update_slot(char **argv, uint8_t slot_id) {
     return bic_update_fw(slot_id, UPDATE_BIC_BOOTLOADER, argv[4]);
   }
   if (!strcmp(argv[3], "--vr")) {
-    // TODO : Need to implement vr firmware update function
-    goto err_exit;
+    return bic_update_fw(slot_id, UPDATE_VR, argv[4]);
   }
 
 err_exit:

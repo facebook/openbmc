@@ -88,6 +88,7 @@ enum {
   UPDATE_CPLD,
   UPDATE_BIC_BOOTLOADER,
   UPDATE_BIC,
+  UPDATE_VR,
 };
 
 // Bridge IC Spec

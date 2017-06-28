@@ -625,7 +625,7 @@ printf("size of file is %d bytes\n", size);
 
   // Restart ipmb daemon with "bicup" for bic update
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d 0x20 bicup > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "/usr/local/bin/ipmbd %d %d bicup > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
   system(cmd);
   printf("start ipmbd bicup for this slot %x..\n",slot_id);
   sleep(1);

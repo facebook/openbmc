@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /usr/local/bin/ipmbd 7 0x20
+exec /usr/local/bin/ipmbd 7 4

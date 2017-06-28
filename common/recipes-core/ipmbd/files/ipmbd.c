@@ -111,93 +111,11 @@ pthread_mutex_t m_seq;
 pthread_mutex_t m_i2c;
 
 static int g_bus_id = 0; // store the i2c bus ID for debug print
+static int g_payload_id = 1; // Store the payload ID we need to use
 
 static int i2c_slave_read(int fd, uint8_t *buf, uint8_t *len);
 static int i2c_slave_open(uint8_t bus_num);
 static int bic_up_flag = 0;
-
-
-#ifdef CONFIG_YOSEMITE
-// Returns the payload ID from IPMB bus routing
-// Slot#1: bus#3, Slot#2: bus#1, Slot#3: bus#7, Slot#4: bus#5
-static uint8_t
-get_payload_id(uint8_t bus_id) {
-  uint8_t payload_id = 0xFF; // Invalid payload ID
-
-  switch(bus_id) {
-  case 1:
-    payload_id = 2;
-    break;
-  case 3:
-    payload_id = 1;
-    break;
-  case 5:
-    payload_id = 4;
-    break;
-  case 7:
-    payload_id = 3;
-    break;
-  default:
-    syslog(LOG_WARNING, "get_payload_id: Wrong bus ID\n");
-    break;
-  }
-
-  return payload_id;
-}
-
-#elif CONFIG_FBTTN
-// Returns the payload ID from IPMB bus routing
-// Slot#1: bus#3, Expander: bus#9
-static uint8_t
-get_payload_id(uint8_t bus_id) {
-  uint8_t payload_id = 0xFF; // Invalid payload ID
-
-  switch(bus_id) {
-  case 3: //Slot#1
-    payload_id = 1;
-    break;
-  case 9: //Expander
-    payload_id = 4;
-    break;
-  case 11: //DEBUG CARD
-    payload_id = 11;
-    break;
-  default:
-    syslog(LOG_WARNING, "get_payload_id: Wrong bus ID\n");
-    break;
-  }
-
-  return payload_id;
-}
-#elif CONFIG_FBY2
-// Returns the payload ID from IPMB bus routing
-// Slot#1: bus#1, Slot#2: bus#3, Slot#3: bus#5, Slot#4: bus#7
-static uint8_t
-get_payload_id(uint8_t bus_id) {
-  uint8_t payload_id = 0xFF; // Invalid payload ID
-
-  switch(bus_id) {
-    case 1:
-      payload_id = 1;
-    break;
-    case 3:
-      payload_id = 2;
-    break;
-    case 5:
-      payload_id = 3;
-    break;
-    case 7:
-      payload_id = 4;
-    break;
-    default:
-      syslog(LOG_WARNING, "get_payload_id: Wrong bus ID\n");
-    break;
-  }
-
-  return payload_id;
-}
-#endif
-
 
 // Calculate checksum
 static inline uint8_t
@@ -423,13 +341,13 @@ ipmb_req_handler(void *bus_num) {
   fd = i2c_open(*bnum);
   if (fd < 0) {
     syslog(LOG_WARNING, "i2c_open failure\n");
-    close(mq);
+    mq_close(mq);
     return NULL;
   }
 
   // Loop to process incoming requests
   while (1) {
-    if ((rlen = mq_receive(mq, rxbuf, MQ_MAX_MSG_SIZE, NULL)) <= 0) {
+    if ((rlen = mq_receive(mq, (char *)rxbuf, MQ_MAX_MSG_SIZE, NULL)) <= 0) {
       sleep(1);
       continue;
     }
@@ -442,16 +360,7 @@ ipmb_req_handler(void *bus_num) {
 #endif
 
     // Create IPMI request from IPMB data
-#ifdef CONFIG_YOSEMITE
-    p_ipmi_mn_req->payload_id = get_payload_id(*bnum);
-#elif CONFIG_FBTTN
-    p_ipmi_mn_req->payload_id = get_payload_id(*bnum);
-#elif CONFIG_FBY2
-    p_ipmi_mn_req->payload_id = get_payload_id(*bnum);
-#else
-    // For single node systems use payload ID as 1
-    p_ipmi_mn_req->payload_id = 0x1;
-#endif
+    p_ipmi_mn_req->payload_id = g_payload_id;
     p_ipmi_mn_req->netfn_lun = p_ipmb_req->netfn_lun;
     p_ipmi_mn_req->cmd = p_ipmb_req->cmd;
 
@@ -525,7 +434,7 @@ ipmb_res_handler(void *bus_num) {
 
   // Loop to wait for incomng response messages
   while (1) {
-    if ((len = mq_receive(mq, buf, MQ_MAX_MSG_SIZE, NULL)) <= 0) {
+    if ((len = mq_receive(mq, (char *)buf, MQ_MAX_MSG_SIZE, NULL)) <= 0) {
       sleep(1);
       continue;
     }
@@ -569,7 +478,7 @@ ipmb_rx_handler(void *bus_num) {
   uint8_t len;
   uint8_t tlun;
   uint8_t buf[MAX_BYTES] = { 0 };
-  mqd_t mq_req, mq_res, tmq;
+  mqd_t mq_req = (mqd_t)-1, mq_res, tmq;
   ipmb_req_t *p_req;
   struct timespec req;
   struct timespec rem;
@@ -676,7 +585,7 @@ ipmb_rx_handler(void *bus_num) {
       tmq = mq_req;
     }
     // Post message to approriate Queue for further processing
-    if (mq_timedsend(tmq, buf, len, 0, &req)) {
+    if (mq_timedsend(tmq, (char *)buf, len, 0, &req)) {
       //syslog(LOG_WARNING, "mq_send failed for queue %d\n", tmq);
       nanosleep(&req, &rem);
       continue;
@@ -689,12 +598,13 @@ cleanup:
   }
 
   if (mq_req > 0) {
-    close(mq_req);
+    mq_close(mq_req);
   }
 
   if (mq_res > 0) {
-    close(mq_req);
+    mq_close(mq_req);
   }
+  return NULL;
 }
 
 /*
@@ -705,7 +615,6 @@ ipmb_handle (int fd, unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len)
 {
   ipmb_req_t *req = (ipmb_req_t *) request;
-  ipmb_res_t *res = (ipmb_res_t *) response;
 
   int8_t index;
   struct timespec ts;
@@ -811,7 +720,8 @@ conn_cleanup:
 // Thread to receive the IPMB lib messages from various apps
 static void*
 ipmb_lib_handler(void *bus_num) {
-  int s, s2, t, len;
+  int s, s2, len;
+  size_t t;
   struct sockaddr_un local, remote;
   pthread_t tid;
   ipmb_sfd_t *sfd;
@@ -867,7 +777,6 @@ ipmb_lib_handler(void *bus_num) {
   }
 
   while(1) {
-    int n;
     t = sizeof (remote);
     // TODO: Seen accept() call failure and need further debug
     if ((s2 = accept (s, (struct sockaddr *) &remote, &t)) < 0) {
@@ -906,32 +815,28 @@ main(int argc, char * const argv[]) {
   pthread_t tid_res_handler;
   pthread_t tid_lib_handler;
   uint8_t ipmb_bus_num;
-  mqd_t mqd_req, mqd_res;
+  mqd_t mqd_req = (mqd_t)-1, mqd_res = (mqd_t)-1;
   struct mq_attr attr;
   char mq_ipmb_req[64] = {0};
   char mq_ipmb_res[64] = {0};
   int rc = 0;
 
-  if (argc < 2) {
-    syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#>");
+  if (argc < 3) {
+    syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#> <payload#> [bicup = allow bic updates]");
     exit(1);
   }
 
   ipmb_bus_num = (uint8_t)strtoul(argv[1], NULL, 0);
   g_bus_id = ipmb_bus_num;
 
-  syslog(LOG_WARNING, "ipmbd: bus#:%d\n", ipmb_bus_num);
+  g_payload_id = (uint8_t)strtoul(argv[2], NULL, 0);
 
-  if( (argc == 4) && !(strcmp(argv[3] ,"bicup")) ){
-	bic_up_flag = 1;
-  }else{
-	bic_up_flag = 0;
-  }
+  syslog(LOG_WARNING, "ipmbd: bus#:%d payload#:%u\n", ipmb_bus_num, g_payload_id);
 
-  if( (argc == 3) && !(strcmp(argv[2] ,"bicup")) ){
-	bic_up_flag = 1;
-  }else{
-	bic_up_flag = 0;
+  if( (argc >= 4) && !(strcmp(argv[3] ,"bicup")) ){
+    bic_up_flag = 1;
+  } else {
+    bic_up_flag = 0;
   }
 
   pthread_mutex_init(&m_i2c, NULL);

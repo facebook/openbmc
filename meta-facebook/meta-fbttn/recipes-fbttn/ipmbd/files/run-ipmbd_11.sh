@@ -1,4 +1,4 @@
 #!/bin/sh
-exec /usr/local/bin/ipmbd 11 0x30
+exec /usr/local/bin/ipmbd 11 11
 
 

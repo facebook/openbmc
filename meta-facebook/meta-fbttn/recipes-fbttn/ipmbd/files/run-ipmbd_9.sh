@@ -1,4 +1,4 @@
 #!/bin/sh
-exec /usr/local/bin/ipmbd 9 0x13
+exec /usr/local/bin/ipmbd 9 4
 
 

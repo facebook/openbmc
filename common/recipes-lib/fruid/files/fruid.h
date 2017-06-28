@@ -65,6 +65,7 @@ typedef struct fruid_area_chassis_t {
   char * custom1;
   char * custom2;
   char * custom3;
+  char * custom4;
   uint8_t chksum;
 } fruid_area_chassis_t;
 
@@ -83,6 +84,7 @@ typedef struct fruid_area_board_t {
   char * custom1;
   char * custom2;
   char * custom3;
+  char * custom4;
   uint8_t chksum;
 } fruid_area_board_t;
 
@@ -101,6 +103,7 @@ typedef struct fruid_area_product_t {
   char * custom1;
   char * custom2;
   char * custom3;
+  char * custom4;
   uint8_t chksum;
 } fruid_area_product_t;
 
@@ -121,6 +124,7 @@ typedef struct fruid_info_t {
     char * custom1;
     char * custom2;
     char * custom3;
+    char * custom4;
   } chassis;
   struct {
     uint8_t flag;
@@ -133,6 +137,7 @@ typedef struct fruid_info_t {
     char * custom1;
     char * custom2;
     char * custom3;
+    char * custom4;
   } board;
   struct {
     uint8_t flag;
@@ -146,6 +151,7 @@ typedef struct fruid_info_t {
     char * custom1;
     char * custom2;
     char * custom3;
+    char * custom4;
   } product;
 } fruid_info_t;
 

@@ -273,6 +273,7 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->chassis.custom1);
     free(fruid->chassis.custom2);
     free(fruid->chassis.custom3);
+    free(fruid->chassis.custom4);
   }
 
   if (fruid->board.flag) {
@@ -285,6 +286,7 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->board.custom1);
     free(fruid->board.custom2);
     free(fruid->board.custom3);
+    free(fruid->board.custom4);
   }
 
   if (fruid->product.flag) {
@@ -298,6 +300,7 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->product.custom1);
     free(fruid->product.custom2);
     free(fruid->product.custom3);
+    free(fruid->product.custom4);
   }
 }
 
@@ -313,6 +316,7 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->chassis.custom1 = NULL;
   fruid->chassis.custom2 = NULL;
   fruid->chassis.custom3 = NULL;
+  fruid->chassis.custom4 = NULL;
   fruid->board.mfg_time_str = NULL;
   fruid->board.mfg = NULL;
   fruid->board.name = NULL;
@@ -322,6 +326,7 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->board.custom1 = NULL;
   fruid->board.custom2 = NULL;
   fruid->board.custom3 = NULL;
+  fruid->board.custom4 = NULL;
   fruid->product.mfg = NULL;
   fruid->product.name = NULL;
   fruid->product.part = NULL;
@@ -332,6 +337,7 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->product.custom1 = NULL;
   fruid->product.custom2 = NULL;
   fruid->product.custom3 = NULL;
+  fruid->product.custom4 = NULL;
 }
 
 /* Parse the Product area data */
@@ -424,6 +430,14 @@ int parse_fruid_area_product(uint8_t * product,
     return 0;
   fruid_product->custom3 = _fruid_area_field_read(&product[index]);
   if (fruid_product->custom3 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(product[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  if (product[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_product->custom4 = _fruid_area_field_read(&product[index]);
+  if (fruid_product->custom4 == NULL)
     return ENOMEM;
 
   return 0;
@@ -518,6 +532,14 @@ int parse_fruid_area_board(uint8_t * board,
   fruid_board->custom3 = _fruid_area_field_read(&board[index]);
   if (fruid_board->custom3 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(board[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  if (board[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_board->custom4 = _fruid_area_field_read(&board[index]);
+  if (fruid_board->custom4 == NULL)
+    return ENOMEM;
 
   return 0;
 }
@@ -591,6 +613,14 @@ int parse_fruid_area_chassis(uint8_t * chassis,
   fruid_chassis->custom3 = _fruid_area_field_read(&chassis[index]);
   if (fruid_chassis->custom3 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(chassis[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  if (chassis[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_chassis->custom4 = _fruid_area_field_read(&chassis[index]);
+  if (fruid_chassis->custom4 == NULL)
+    return ENOMEM;
 
   return 0;
 }
@@ -657,6 +687,7 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->chassis.custom1 = fruid_chassis.custom1;
       fruid->chassis.custom2 = fruid_chassis.custom2;
       fruid->chassis.custom3 = fruid_chassis.custom3;
+      fruid->chassis.custom4 = fruid_chassis.custom4;
     } else
       return ret;
   }
@@ -675,6 +706,7 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->board.custom1 = fruid_board.custom1;
       fruid->board.custom2 = fruid_board.custom2;
       fruid->board.custom3 = fruid_board.custom3;
+      fruid->board.custom4 = fruid_board.custom4;
     } else
       return ret;
   }
@@ -694,6 +726,7 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->product.custom1 = fruid_product.custom1;
       fruid->product.custom2 = fruid_product.custom2;
       fruid->product.custom3 = fruid_product.custom3;
+      fruid->product.custom4 = fruid_product.custom4;
     } else
       return ret;
   }

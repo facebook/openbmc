@@ -6080,6 +6080,9 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
   //Set post end chk flag to update LCD info page
   pal_post_end_chk(&post_end);
 
+  // log the post end event
+  syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
+
   // Sync time with system
   system("/usr/local/bin/sync_date.sh &");
 }

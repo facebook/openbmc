@@ -723,3 +723,9 @@ pal_set_restart_cause(uint8_t slot, uint8_t restart_cause) {
   }
   return 0;
 }
+
+int __attribute__((weak))
+pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
+{
+  return PAL_ENOTSUP;
+}

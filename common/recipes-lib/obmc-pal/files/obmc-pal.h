@@ -123,8 +123,7 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
-int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh,
-    void *value);
+int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value);
 int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
 int pal_set_def_key_value(void);
@@ -134,8 +133,7 @@ int pal_set_last_pwr_state(uint8_t fru, char *state);
 int pal_get_sys_guid(uint8_t slot, char *guid);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
-int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
-    uint8_t o_val, uint8_t n_val);
+int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name, uint8_t o_val, uint8_t n_val);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
@@ -149,8 +147,7 @@ int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 void pal_update_ts_sled(void);
-int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf,
-	uint8_t *rlen);
+int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
 int pal_self_tray_location(uint8_t *value);
@@ -172,7 +169,7 @@ bool pal_is_fw_update_ongoing_system(void);
 int run_command(const char* cmd);
 int pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause);
 int pal_set_restart_cause(uint8_t slot, uint8_t restart_cause);
-
+int pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data);
 #ifdef __cplusplus
 }
 #endif

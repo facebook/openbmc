@@ -29,4 +29,3 @@ do_install() {
 FILES_${PN} = "${libdir}/libasd-jtagintf.so"
 FILES_${PN}-dev = "${includedir}/asd"
 RDEPENDS_${PN} = "libgpio libpal"
-

@@ -86,6 +86,8 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   ipmi-util \
   guid-util \
+  asd \
+  asd-test \
   "
 
 IMAGE_FEATURES += " \

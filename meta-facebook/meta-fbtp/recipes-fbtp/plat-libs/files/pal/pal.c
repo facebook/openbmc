@@ -57,15 +57,6 @@
 
 #define GPIO_HB_LED 165
 
-#define GPIO_POSTCODE_0 48
-#define GPIO_POSTCODE_1 49
-#define GPIO_POSTCODE_2 50
-#define GPIO_POSTCODE_3 51
-#define GPIO_POSTCODE_4 124
-#define GPIO_POSTCODE_5 125
-#define GPIO_POSTCODE_6 126
-#define GPIO_POSTCODE_7 127
-
 #define GPIO_DBG_CARD_PRSNT 134
 
 #define GPIO_BMC_READY_N  28
@@ -2408,125 +2399,6 @@ control_sol_txd(uint8_t fru) {
   return 0;
 }
 
-// Display the given POST code using GPIO port
-static int
-pal_post_display(uint8_t status) {
-  char path[64] = {0};
-  int ret;
-  char *val;
-
-#ifdef DEBUG
-  syslog(LOG_WARNING, "pal_post_display: status is %d\n", status);
-#endif
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_0);
-
-  if (BIT(status, 0)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_1);
-  if (BIT(status, 1)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_2);
-  if (BIT(status, 2)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_3);
-  if (BIT(status, 3)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_4);
-  if (BIT(status, 4)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_5);
-  if (BIT(status, 5)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_6);
-  if (BIT(status, 6)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_7);
-  if (BIT(status, 7)) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-post_exit:
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  } else {
-    return 0;
-  }
-}
-
 // Platform Abstraction Layer (PAL) Functions
 int
 pal_get_platform_name(char *name) {
@@ -2702,12 +2574,6 @@ pal_sled_cycle(void) {
   return 0;
 }
 
-// Read the Front Panel Hand Switch and return the position
-int
-pal_get_hand_sw(uint8_t *pos) {
-  return 0;
-}
-
 // Return the Front panel Power Button
 int
 pal_get_pwr_btn(uint8_t *status) {
@@ -2839,43 +2705,6 @@ pal_set_id_led(uint8_t fru, uint8_t status) {
 int
 pal_switch_uart_mux(uint8_t fru) {
   return control_sol_txd(fru);
-}
-
-// Handle the received post code, for now display it on debug card
-int
-pal_post_handle(uint8_t slot, uint8_t status) {
-  uint8_t prsnt, pos;
-  int ret;
-
-  // Check for debug card presence
-  ret = pal_is_debug_card_prsnt(&prsnt);
-  if (ret) {
-    return ret;
-  }
-
-  // No debug card  present, return
-  if (!prsnt) {
-    return 0;
-  }
-
-  // Get the hand switch position
-  ret = pal_get_hand_sw(&pos);
-  if (ret) {
-    return ret;
-  }
-
-  // If the give server is not selected, return
-  if (pos != slot) {
-    return 0;
-  }
-
-  // Display the post code in the debug card
-  ret = pal_post_display(status);
-  if (ret) {
-    return ret;
-  }
-
-  return 0;
 }
 
 static int

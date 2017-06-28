@@ -73,6 +73,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nChassis Custom Data 2",fruid->chassis.custom2);
     if (fruid->chassis.custom3 != NULL)
       printf("%-27s: %s", "\nChassis Custom Data 3",fruid->chassis.custom3);
+    if (fruid->chassis.custom4 != NULL)
+      printf("%-27s: %s", "\nChassis Custom Data 4",fruid->chassis.custom4);
   }
 
   if (fruid->board.flag) {
@@ -88,6 +90,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nBoard Custom Data 2",fruid->board.custom2);
     if (fruid->board.custom3 != NULL)
       printf("%-27s: %s", "\nBoard Custom Data 3",fruid->board.custom3);
+    if (fruid->board.custom4 != NULL)
+      printf("%-27s: %s", "\nBoard Custom Data 4",fruid->board.custom4);
   }
 
   if (fruid->product.flag) {
@@ -104,6 +108,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nProduct Custom Data 2",fruid->product.custom2);
     if (fruid->product.custom3 != NULL)
       printf("%-27s: %s", "\nProduct Custom Data 3",fruid->product.custom3);
+    if (fruid->product.custom4 != NULL)
+      printf("%-27s: %s", "\nProduct Custom Data 4",fruid->product.custom4);
   }
 
   printf("\n");
@@ -282,7 +288,12 @@ int main(int argc, char * argv[]) {
       ret = pal_get_fruid_eeprom_path(fru, eeprom_path);
       if (ret < 0) {
         //Can not handle in common, so call pal libray for update
-        pal_fruid_write(fru, file_path);
+        ret = pal_fruid_write(fru, file_path);
+
+        if ( ret < 0 )
+        {
+          syslog(LOG_WARNING, "[%s] Please check the fruid: %d", __func__, fru);
+        }
       } else {
         if (access(eeprom_path, F_OK) == -1) {
           syslog(LOG_ERR, "cannot access the eeprom file : %s for fru %d",
@@ -294,14 +305,12 @@ int main(int argc, char * argv[]) {
         sprintf(command, "dd if=%s of=%s bs=%d count=1", file_path, eeprom_path, FRUID_SIZE);
         system(command);
       }
-
       ret = copy_file(fd_tmpbin, fd_newbin, FRUID_SIZE);
       if (ret < 0) {
         syslog(LOG_ERR, "copy: write to %s file failed: %s",
             path, strerror(errno));
         return ret;
       }
-
       close(fd_newbin);
       close(fd_tmpbin);
 

@@ -1131,7 +1131,7 @@ read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
 
   if(snr_num == MB_SENSOR_HSC_IN_POWER) {
     if (!ret) {
-      *value = (((float) rbuf[7])*0x20 + 0 )/10 ;
+      *value = (((float) rbuf[7])*0x28 + 0 )/10 ;
       retry[e_HSC_PIN] = 0;
     } else {
       retry[e_HSC_PIN]++;

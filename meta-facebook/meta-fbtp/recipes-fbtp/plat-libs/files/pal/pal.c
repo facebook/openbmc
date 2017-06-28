@@ -27,14 +27,17 @@
 #include <syslog.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <ctype.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include "pal.h"
 #include <openbmc/vr.h>
-#include <linux/i2c.h>
-#include <linux/i2c-dev.h>
+#include <openbmc/obmc-i2c.h>
 #include <sys/stat.h>
 #include <openbmc/gpio.h>
+#include <openbmc/kv.h>
+#include <openbmc/edb.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -340,8 +343,8 @@ size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
 
-uint8_t g_sys_guid[GUID_SIZE] = {0};
-uint8_t g_dev_guid[GUID_SIZE] = {0};
+char g_sys_guid[GUID_SIZE] = {0};
+char g_dev_guid[GUID_SIZE] = {0};
 
 static uint8_t g_board_rev_id = BOARD_REV_EVT;
 static uint8_t g_vr_cpu0_vddq_abc;
@@ -669,44 +672,6 @@ sensor_thresh_array_init() {
   init_done = true;
 }
 
-// Helper Functions
-static int
-i2c_io(int fd, uint8_t addr, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
-  struct i2c_rdwr_ioctl_data data;
-  struct i2c_msg msg[2];
-  int n_msg = 0;
-  int rc;
-
-  memset(&msg, 0, sizeof(msg));
-
-  if (tcount) {
-    msg[n_msg].addr = addr >> 1;
-    msg[n_msg].flags = 0;
-    msg[n_msg].len = tcount;
-    msg[n_msg].buf = tbuf;
-    n_msg++;
-  }
-
-  if (rcount) {
-    msg[n_msg].addr = addr >> 1;
-    msg[n_msg].flags = I2C_M_RD;
-    msg[n_msg].len = rcount;
-    msg[n_msg].buf = rbuf;
-    n_msg++;
-  }
-
-  data.msgs = msg;
-  data.nmsgs = n_msg;
-
-  rc = ioctl(fd, I2C_RDWR, &data);
-  if (rc < 0) {
-    // syslog(LOG_ERR, "Failed to do raw io");
-    return -1;
-  }
-
-  return 0;
-}
-
 static int
 pal_control_mux(int fd, uint8_t addr, uint8_t channel) {
   uint8_t tcount = 1, rcount = 0;
@@ -719,7 +684,7 @@ pal_control_mux(int fd, uint8_t addr, uint8_t channel) {
   else
     tbuf[0] = 0x00; // close all channels
 
-  return i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
+  return i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
 }
 
 static int
@@ -734,7 +699,7 @@ pal_control_switch(int fd, uint8_t addr, uint8_t channel) {
   else
     tbuf[0] = 0x00; // close all channels
 
-  return i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
+  return i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
 }
 
 static int
@@ -977,36 +942,6 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char *device, float *value) {
-  char full_name[LARGEST_DEVICE_NAME];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
-  int tmp;
-  FILE *fp;
-  int size;
-
-  // Get current working directory
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "cd %s;pwd", HSC_DEVICE);
-
-  fp = popen(full_name, "r");
-  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
-  pclose(fp);
-
-  // Remove the newline character at the end
-  size = strlen(dir_name);
-  dir_name[size-1] = '\0';
-
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, device);
-  if(read_device(full_name, &tmp)) {
-    return -1;
-  }
-
-  *value = ((float) tmp)/UNIT_DIV;
-
-  return 0;
-}
-
-static int
 read_hsc_current_value(float *value) {
   uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
   uint8_t tbuf[256] = {0x00};
@@ -1016,7 +951,6 @@ read_hsc_current_value(float *value) {
   float hsc_b = 20475;
   float Rsence;
   ipmb_req_t *req;
-  ipmb_res_t *res;
   char path[64] = {0};
   int val=0;
   int ret = 0;
@@ -1055,7 +989,7 @@ read_hsc_current_value(float *value) {
   tlen = 16;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf, &rlen);
 
   if (rlen == 0) {
 #ifdef DEBUG
@@ -1088,7 +1022,6 @@ read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   ipmb_req_t *req;
-  ipmb_res_t *res;
   int ret = 0;
   enum {
     e_HSC_PIN,
@@ -1111,7 +1044,7 @@ read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
   tlen = 7;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf, &rlen);
 
   if (rlen == 0) {
   //ME no response
@@ -1173,7 +1106,6 @@ read_cpu_temp(uint8_t snr_num, float *value) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   ipmb_req_t *req;
-  ipmb_res_t *res;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   int cpu_index;
@@ -1218,7 +1150,7 @@ read_cpu_temp(uint8_t snr_num, float *value) {
     req->data[10] = 0x00;
     tlen = 17;
     // Invoke IPMB library handler
-    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+    lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf1, &rlen);
     if (rlen == 0) {
     //ME no response
 #ifdef DEBUG
@@ -1267,7 +1199,7 @@ read_cpu_temp(uint8_t snr_num, float *value) {
     tlen = 17;
 
     // Invoke IPMB library handler
-    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+    lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf1, &rlen);
 
     if (rlen == 0) {
       //ME no response
@@ -1312,9 +1244,6 @@ read_dimm_temp(uint8_t snr_num, float *value) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   ipmb_req_t *req;
-  ipmb_res_t *res;
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
   int dimm_index, i;
   int max = 0;
   static uint8_t retry[4] = {0x00};
@@ -1382,7 +1311,7 @@ read_dimm_temp(uint8_t snr_num, float *value) {
     tlen = 17;
 
     // Invoke IPMB library handler
-    lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+    lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf1, &rlen);
     if (rlen == 0) {
     //ME no response
 #ifdef DEBUG
@@ -1443,7 +1372,6 @@ read_cpu_package_power(uint8_t snr_num, float *value) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   ipmb_req_t *req;
-  ipmb_res_t *res;
   int cpu_index;
   static uint8_t retry[2] = {0x00}; // CPU0 and CPU1
 
@@ -1496,7 +1424,7 @@ read_cpu_package_power(uint8_t snr_num, float *value) {
   tlen = 25;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf1, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf1, &rlen);
 
   if (rlen == 0) {
     //ME no response
@@ -1525,8 +1453,10 @@ read_cpu_package_power(uint8_t snr_num, float *value) {
 
   // need at least 2 entries to calculate
   if (last_pkg_energy[cpu_index] == 0 && last_run_time[cpu_index] == 0) {
-    last_pkg_energy[cpu_index] = pkg_energy;
-    last_run_time[cpu_index] = run_time;
+    if (ret == 0) {
+      last_pkg_energy[cpu_index] = pkg_energy;
+      last_run_time[cpu_index] = run_time;
+    }
     ret = READING_NA;
   }
 
@@ -1589,6 +1519,8 @@ read_ava_temp(uint8_t sensor_num, float *value) {
       i_retry = 4; break;
     case MB_SENSOR_C4_AVA_RTEMP:
       i_retry = 5; break;
+    default:
+      return READING_NA;
   }
 
   switch(sensor_num) {
@@ -1625,6 +1557,8 @@ read_ava_temp(uint8_t sensor_num, float *value) {
     case MB_SENSOR_C4_AVA_RTEMP:
       addr = 0x90;
       break;
+    default:
+      return READING_NA;
   }
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
@@ -1646,7 +1580,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
   tcount = 1;
   rcount = 2;
 
-  ret = i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
@@ -1674,12 +1608,11 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
   int fd = 0;
   char fn[32];
   int ret = READING_NA;;
-  static unsigned int retry[12] = {0}, initialized[4] = {0};
+  static unsigned int retry[12] = {0};
   uint8_t i_retry;
-  uint8_t tcount, rcount, slot_cfg, addr, mux_chan, mux_addr = 0xe2;
+  uint8_t slot_cfg, addr, mux_chan, mux_addr = 0xe2;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
-  int16_t temp;
   /*previous_addr - it is used for identifying the slave address.
    *                If the slave address is changed, bus_voltage and shunt_voltage are updated.
    *Rshunt - it is defined by the schematic. It will be 2m ohm in the fbtp
@@ -1745,10 +1678,6 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       return READING_NA;
   }
 
-  // If Power On Time == 1, re-initialize INA230
-  if (pot == 1 && (i_retry % 3) == 0)
-    initialized[i_retry/3] = 0;
-
   //use channel 4
   mux_chan = 0x3;
 
@@ -1801,7 +1730,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     //get the bus voltage
     tbuf[0] = 0x02;
     memset(rbuf, 0, sizeof(rbuf));
-    ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2);
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
     if (ret < 0) {
       ret = READING_NA;
       goto error_exit;
@@ -1813,7 +1742,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     //get the shunt voltage
     tbuf[0] = 0x01;
     memset(rbuf, 0, sizeof(rbuf));
-    ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2);
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
     if (ret < 0) {
       ret = READING_NA;
       goto error_exit;
@@ -1915,6 +1844,8 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
       i_retry = 10; break;
     case MB_SENSOR_C4_4_NVME_CTEMP:
       i_retry = 11; break;
+    default:
+      return READING_NA;
   }
 
   switch(sensor_num) {
@@ -1967,6 +1898,8 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
     case MB_SENSOR_C4_4_NVME_CTEMP:
       switch_chan = 3;
       break;
+    default:
+      return READING_NA;
   }
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
@@ -1997,7 +1930,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
   tcount = 1;
   rcount = 8;
 
-  ret = i2c_io(fd, addr, tbuf, tcount, rbuf, rcount);
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
@@ -2026,7 +1959,7 @@ add_CPLD_event (uint8_t fru, uint8_t snr_num, uint8_t reg, uint8_t snr_val, uint
   char sensor_name[32] = {0}, event_str[30] = {0};
   pal_get_sensor_name(fru, snr_num, sensor_name);
 
-  sprintf(event_str, "");
+  strcpy(event_str, "");
   switch(reg) {
       case PWRDATA1_REG :
 	 if (value == 0x40)
@@ -2090,7 +2023,6 @@ read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot
   char fn[32];
   int ret = READING_NA, i;
   static unsigned int retry=0;
-  uint8_t tcount, rcount;
   static uint8_t power_fail = 0;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0}, data_chk;
@@ -2128,7 +2060,7 @@ read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot
     }
 
     tbuf[0] = i;
-    ret = i2c_io(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
     if (ret < 0) {
       ret = READING_NA;
       goto error_exit;
@@ -2158,7 +2090,7 @@ read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot
       }
       // Read 1 byte in offset 00h
       tbuf[0] = i;
-      ret = i2c_io(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
+      ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
       if (ret < 0) {
         ret = READING_NA;
         goto error_exit;
@@ -2189,7 +2121,6 @@ error_exit:
 static int
 pal_key_index(char *key) {
 
-  int ret;
   int i;
 
   i = 0;
@@ -2222,7 +2153,6 @@ pal_get_key_value(char *key, char *value) {
 int
 pal_set_key_value(char *key, char *value) {
   int index, ret;
-  char cmd[64];
   // Check is key is defined and valid
   if ((index = pal_key_index(key)) < 0)
     return -1;
@@ -2348,14 +2278,14 @@ FORCE_ADR() {
   char vpath[64] = {0};
   sprintf(vpath, GPIO_VAL, GPIO_FM_FORCE_ADR_N);
   if (write_device(vpath, "1")) {
-    return -1;
+    return;
   }
   if (write_device(vpath, "0")) {
-    return -1;
+    return;
   }
   msleep(10);
   if (write_device(vpath, "1")) {
-    return -1;
+    return;
   }
 }
 
@@ -2434,37 +2364,6 @@ server_power_off(bool gs_flag) {
   if (write_device(vpath, "1")) {
     return -1;
   }
-
-  return 0;
-}
-
-// Power reset the server in given slot
-static int
-server_power_reset(void) {
-  char vpath[64] = {0};
-
-  sprintf(vpath, GPIO_VAL, GPIO_POWER_RESET);
-
-  system("/usr/bin/sv stop fscd >> /dev/null");
-  FORCE_ADR();
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  sleep(1);
-
-  if (write_device(vpath, "0")) {
-    return -1;
-  }
-
-  sleep(1);
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
-  system("/etc/init.d/setup-fan.sh >> /dev/null");
-  system("/usr/bin/sv start fscd >> /dev/null");
 
   return 0;
 }
@@ -2936,49 +2835,10 @@ pal_set_id_led(uint8_t fru, uint8_t status) {
   return 0;
 }
 
-static int
-set_usb_mux(uint8_t state) {
-  return 0;
-}
-
-// Update the USB Mux to the server at given slot
-int
-pal_switch_usb_mux(uint8_t slot) {
-  return 0;
-}
-
 // Switch the UART mux to the given fru
 int
 pal_switch_uart_mux(uint8_t fru) {
   return control_sol_txd(fru);
-}
-
-// Enable POST buffer for the server in given slot
-int
-pal_post_enable(uint8_t slot) {
-  int ret;
-  int i;
-
-  return 0;
-}
-
-// Disable POST buffer for the server in given slot
-int
-pal_post_disable(uint8_t slot) {
-  int ret;
-  int i;
-
-  return 0;
-}
-
-// Get the last post code of the given slot
-int
-pal_post_get_last(uint8_t slot, uint8_t *status) {
-  int ret;
-  uint8_t len;
-  int i;
-
-  return 0;
 }
 
 // Handle the received post code, for now display it on debug card
@@ -3024,7 +2884,7 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   const int loop_threshold = 3;
   const int longest_loop_code = 4;
   int i, nearest_00, len, loop_count, check_until;
-  unsigned char buff[256];
+  uint8_t buff[256];
   uint8_t location, maj_err, min_err, mem_train_fail;
   int ret = READING_NA, rc;
   static unsigned int retry=0;
@@ -3124,8 +2984,8 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static unsigned int retry = 0;
   static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
   static time_t rst_time = 0;
-  static char postcodes_last[256] = {0};
-  char postcodes[256] = {0};
+  static uint8_t postcodes_last[256] = {0};
+  uint8_t postcodes[256] = {0};
   struct stat file_stat;
   int ret = READING_NA, rc, len;
   char sensor_name[32] = {0};
@@ -3275,7 +3135,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 int
 pal_fruid_write(uint8_t slot, char *path)
 {
-  int ret = 0;
   int fru_size = 0;
   char command[128]={0};
   char device_name[16]={0};
@@ -3359,13 +3218,10 @@ pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
-  uint8_t status;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   int ret;
-  float volt, curr;
   static uint8_t poweron_10s_flag = 0;
-  uint8_t retry = MAX_READ_RETRY;
   bool server_off;
 
   switch(fru) {
@@ -4403,11 +4259,8 @@ pal_set_def_key_value() {
 
   int ret;
   int i;
-  int fru;
   char key[MAX_KEY_LEN] = {0};
   char kpath[MAX_KEY_PATH_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
-  char cmd[MAX_VALUE_LEN] = {0};
 
   i = 0;
   while(strcmp(key_cfg[i].name, LAST_KEY)) {
@@ -4459,14 +4312,13 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
 
 void
 pal_dump_key_value(void) {
-  int i;
   int ret;
-
+  int i = 0;
   char value[MAX_VALUE_LEN] = {0x0};
 
   while (strcmp(key_cfg[i].name, LAST_KEY)) {
     printf("%s:", key_cfg[i].name);
-    if (ret = kv_get(key_cfg[i].name, value) < 0) {
+    if ((ret = kv_get(key_cfg[i].name, value)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -4517,7 +4369,6 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 static int
 pal_get_guid(uint16_t offset, char *guid) {
   int fd = 0;
-  uint64_t tmp[GUID_SIZE];
   ssize_t bytes_rd;
 
   errno = 0;
@@ -4556,9 +4407,7 @@ err_exit:
 static int
 pal_set_guid(uint16_t offset, char *guid) {
   int fd = 0;
-  uint64_t tmp[GUID_SIZE];
   ssize_t bytes_wr;
-  int i = 0;
 
   errno = 0;
 
@@ -4595,7 +4444,7 @@ err_exit:
 
 // GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
 static void
-pal_populate_guid(uint8_t *guid, uint8_t *str) {
+pal_populate_guid(char *guid, char *str) {
   unsigned int secs;
   unsigned int usecs;
   struct timeval tv;
@@ -4703,9 +4552,8 @@ void
 pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
 
    char str_server_por_cfg[64];
-   char *buff[MAX_VALUE_LEN];
+   char buff[MAX_VALUE_LEN];
    int policy = 3;
-   uint8_t status, ret;
    unsigned char *data = res_data;
 
    // Platform Power Policy
@@ -4884,15 +4732,6 @@ int
 pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t o_val, uint8_t n_val) {
 
-  char name[32];
-  bool valid = false;
-  uint8_t diff = o_val ^ n_val;
-  return 0;
-}
-
-static int
-pal_store_crashdump(uint8_t fru) {
-
   return 0;
 }
 
@@ -4900,7 +4739,8 @@ pal_store_crashdump(uint8_t fru) {
 static pthread_t tid_dwr = -1;
 static void *dwr_handler(void *arg) {
   int delay_reset_time = (int)arg;
-  int len, retry = 0;
+  int retry = 0;
+  unsigned char len;
   uint8_t ipmb_buf[256];
   ipmb_req_t *req;
   ipmb_res_t *res;
@@ -4927,7 +4767,7 @@ static void *dwr_handler(void *arg) {
       req->data[1] = 0x00; // [7] 0b = re-arm all event status
       // Invoke IPMB library handler
       len = 0;
-      lib_ipmb_handle(0x4, req, 9, ipmb_buf, &len);
+      lib_ipmb_handle(0x4, (unsigned char *)req, 9, ipmb_buf, &len);
       if (len > 7 && res->cc == 0) {
         syslog(LOG_NOTICE, "Re-arm Host Reset Warning Sensor of ME success");
         break;
@@ -5070,8 +4910,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
   uint8_t snr_type = sel[10];
   uint8_t snr_num = sel[11];
-  char *event_data = &sel[10];
-  char *ed = &event_data[3];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
   char temp_log[128] = {0};
   uint8_t temp;
   /*Used by decoding ME event*/
@@ -5089,7 +4929,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   switch (snr_type) {
     case OS_BOOT:
       // OS_BOOT used by OS
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       switch (ed[0] & 0xF) {
         case 0x07:
           strcat(error_log, "Base OS/Hypervisor Installation started");
@@ -5112,7 +4952,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
   switch(snr_num) {
     case SYSTEM_EVENT:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0xE5) {
         strcat(error_log, "Cause of Time change - ");
 
@@ -5136,7 +4976,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case THERM_THRESH_EVT:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0x1)
         strcat(error_log, "Limit Exceeded");
       else
@@ -5144,7 +4984,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case CRITICAL_IRQ:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0x0)
         strcat(error_log, "NMI / Diagnostic Interrupt");
       else if (ed[0] == 0x03)
@@ -5154,7 +4994,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case POST_ERROR:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if ((ed[0] & 0x0F) == 0x0)
         strcat(error_log, "System Firmware Error");
       else
@@ -5181,7 +5021,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case MACHINE_CHK_ERR:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if ((ed[0] & 0x0F) == 0x0B) {
         strcat(error_log, "Uncorrectable");
       } else if ((ed[0] & 0x0F) == 0x0C) {
@@ -5198,7 +5038,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case PCIE_ERR:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if ((ed[0] & 0xF) == 0x4)
         sprintf(error_log, "PCI PERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       else if ((ed[0] & 0xF) == 0x5)
@@ -5223,7 +5063,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case IIO_ERR:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if ((ed[0] & 0xF) == 0) {
 
         sprintf(temp_log, "CPU %d, Error ID 0x%X", (ed[2] & 0xE0) >> 5,
@@ -5251,7 +5091,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
     case MEMORY_ECC_ERR:
     case MEMORY_ERR_LOG_DIS:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (snr_num == MEMORY_ERR_LOG_DIS) {
         if ((ed[0] & 0x0F) == 0x0)
           strcat(error_log, "Correctable Memory Error Logging Disabled");
@@ -5301,7 +5141,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case PWR_ERR:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0x2)
         strcat(error_log, "PCH_PWROK failure");
       else
@@ -5309,7 +5149,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case CATERR:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0x0)
         strcat(error_log, "IERR/CATERR");
       else if (ed[0] == 0xB)
@@ -5319,7 +5159,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case MSMI:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0x0)
         strcat(error_log, "IERR/MSMI");
       else if (ed[0] == 0xB)
@@ -5329,7 +5169,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case CPU_DIMM_HOT:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
         strcat(error_log, "SOC MEMHOT");
       else
@@ -5337,7 +5177,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case SOFTWARE_NMI:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x03FFFF)
         strcat(error_log, "Software NMI");
       else
@@ -5345,7 +5185,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case ME_POWER_STATE:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       switch (ed[0]) {
         case 0:
           sprintf(error_log, "RUNNING");
@@ -5359,7 +5199,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       }
       break;
     case SPS_FW_HEALTH:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (event_data[0] == 0xDC && ed[1] == 0x06) {
         strcat(error_log, "FW UPDATE");
         return 1;
@@ -5414,7 +5254,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
     /*NM4.0 #550710, Revision 1.95, and turn to p.155*/
     case NM_EXCEPTION:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0xA8) {
         strcat(error_log, "Policy Correction Time Exceeded");
         return 1;
@@ -5422,7 +5262,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
          strcat(error_log, "Unknown");
       break;
     case NM_HEALTH:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       {
         uint8_t health_type_index = (ed[0] & 0xf);
         uint8_t domain_index = (ed[1] & 0xf);
@@ -5434,7 +5274,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case NM_CAPABILITIES:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] & 0x7)//BIT1=policy, BIT2=monitoring, BIT3=pwr limit and the others are reserved
       {
         int capability_index = 0;
@@ -5463,7 +5303,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case NM_THRESHOLD:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       {
         uint8_t threshold_number = (ed[0] & 0x3);
         uint8_t domain_index = (ed[1] & 0xf);
@@ -5479,7 +5319,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
     case CPU0_THERM_STATUS:
     case CPU1_THERM_STATUS:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0] == 0x00)
         strcat(error_log, "CPU Critical Temperature");
       else if (ed[0] == 0x01)
@@ -5491,7 +5331,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case PWR_THRESH_EVT:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[0]  == 0x00)
         strcat(error_log, "Limit Not Exceeded");
       else if (ed[0]  == 0x01)
@@ -5501,7 +5341,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     case HPR_WARNING:
-      sprintf(error_log, "");
+      strcpy(error_log, "");
       if (ed[2]  == 0x01) {
         if (ed[1] == 0xFF)
           strcat(temp_log, "Infinite Time");
@@ -5651,7 +5491,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
   // For 0%, turn off the PWM entirely
   if (unit == 0) {
-    write_fan_value(fan, "pwm%d_en", 0);
+    ret = write_fan_value(fan, "pwm%d_en", 0);
     if (ret < 0) {
       syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
       return -1;
@@ -5710,7 +5550,7 @@ pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%d", ts.tv_sec);
+  sprintf(tstr, "%ld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -6225,7 +6065,7 @@ pal_get_status(void) {
   char str_server_por_cfg[64];
   char buff[MAX_VALUE_LEN];
   int policy = 3;
-  uint8_t status, data, ret;
+  uint8_t data;
 
   // Platform Power Policy
   memset(str_server_por_cfg, 0 , sizeof(char) * 64);
@@ -6287,7 +6127,7 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 int
 pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
-  machine_config_info *mc = &req_data[3];
+  machine_config_info *mc = (machine_config_info *)&req_data[3];
   int ret;
 
   ret = kv_set_bin("mb_machine_config", (char *)mc, sizeof(machine_config_info));
@@ -6395,9 +6235,9 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
 
 int
 pal_get_syscfg_text (char *text) {
-  unsigned char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
+  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";
-  int num_fru =1, num_cpu=2, num_dimm, num_drive=14;
+  int num_cpu=2, num_dimm, num_drive=14;
   int index, ret, surface, bubble;
   unsigned char board_id, revision_id;
   char **dimm_labels;
@@ -6600,7 +6440,7 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   tlen = 6;
 
   /*Invoke IPMB library handler*/
-  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf, &rlen);
 
   if ( 0 == rlen )
   {
@@ -6616,7 +6456,7 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 
 int pal_add_i2c_device(uint8_t bus, char *device_name, uint8_t slave_addr)
 {
-  uint8_t cmd[64] = {0};
+  char cmd[64] = {0};
   int ret = 0;
   const char *template_path="echo %s 0x%x > /sys/bus/i2c/devices/i2c-%d/new_device";
 
@@ -6633,7 +6473,7 @@ int pal_add_i2c_device(uint8_t bus, char *device_name, uint8_t slave_addr)
 
 int pal_del_i2c_device(uint8_t bus, uint8_t slave_addr)
 {
-  uint8_t cmd[64] = {0};
+  char cmd[64] = {0};
   int ret = 0;
   const char *template_path="echo 0x%x > /sys/bus/i2c/devices/i2c-%d/delete_device";
 

@@ -92,7 +92,7 @@ I2C Bus Monitoring
     "busses": [0,1,2]
   }
 
-enbled - Boolean, If set to false will disable I2C monitoring.
+enabled - Boolean, If set to false will disable I2C monitoring.
 busses - The array of I2C busses needing monitoring.
 
 ECC Monitoring
@@ -159,3 +159,15 @@ The following actions are supported:
 
 When the threshold is de-asserted, the same actions will be run for the de-assert case
 (Except reboot of course which is non-recoverable)
+
+Node Manager Monitoring
+-----------------------
+"nm_monitor": {  
+  "enabled": true,
+  "monitor_interval": 1,
+  "retry_threshold": 5
+}
+
+enabled - Boolean, If set to false will disable Node Manager monitoring.
+monitor_interval - The interval (in seconds) when the Node Manager will be sampled.
+retry_threshold - If Node Manager no response, healthd will retry till the threshold. If the retry over the threshold, healthd will issue the event.

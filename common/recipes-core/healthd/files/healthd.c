@@ -149,6 +149,11 @@ static size_t unrec_ecc_threshold_num = 0;
 static unsigned int ecc_recov_max_counter = MAX_ECC_RECOVERABLE_ERROR_COUNTER;
 static unsigned int ecc_unrec_max_counter = MAX_ECC_UNRECOVERABLE_ERROR_COUNTER;
 
+/* Node Manager Monitor enabled */
+static bool nm_monitor_enabled = false;
+static int nm_monitor_interval = DEFAULT_MONITOR_INTERVAL;
+static unsigned char nm_retry_threshold = 0;
+
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
   json_t *tmp;
@@ -394,6 +399,43 @@ initialize_ecc_config(json_t *conf) {
   }
 }
 
+static void
+initialize_nm_monitor_config(json_t *conf)
+{
+  json_t *tmp;
+
+  tmp = json_object_get(conf, "enabled");
+  if (!tmp || !json_is_boolean(tmp))
+  {
+    goto error_bail;
+  }
+
+  nm_monitor_enabled = json_is_true(tmp);
+  if ( !nm_monitor_enabled )
+  {
+    goto error_bail;
+  }
+
+  tmp = json_object_get(conf, "monitor_interval");
+  if (tmp && json_is_number(tmp)) 
+  {
+    nm_monitor_interval = json_integer_value(tmp);
+  }
+
+  tmp = json_object_get(conf, "retry_threshold");
+  if (tmp && json_is_number(tmp))
+  {
+    nm_retry_threshold = json_integer_value(tmp);
+  }
+#ifdef DEBUG
+  syslog(LOG_WARNING, "enabled:%d, monitor_interval:%d, retry_threshold:%d", nm_monitor_enabled, nm_monitor_interval, nm_retry_threshold);
+#endif  
+  return;
+
+error_bail:
+  nm_monitor_enabled = false;
+}
+
 static int
 initialize_configuration(void) {
   json_error_t error;
@@ -414,7 +456,8 @@ initialize_configuration(void) {
   initialize_mem_config(json_object_get(conf, "bmc_mem_utilization"));
   initialize_i2c_config(json_object_get(conf, "i2c"));
   initialize_ecc_config(json_object_get(conf, "ecc_monitoring"));
-
+  initialize_nm_monitor_config(json_object_get(conf, "nm_monitor"));
+  
   json_decref(conf);
 
   return 0;
@@ -855,6 +898,120 @@ ecc_mon_handler() {
   return NULL;
 }
 
+void check_nm_selftest_result(uint8_t fru, int result)
+{
+  static uint8_t no_response_retry[MAX_NUM_FRUS] = {0};
+  static uint8_t abnormal_status_retry[MAX_NUM_FRUS] = {0};
+  static uint8_t is_duplicated_unaccess_event[MAX_NUM_FRUS] = {false};
+  static uint8_t is_duplicated_abnormal_event[MAX_NUM_FRUS] = {false};
+  char fru_name[10]={0};
+  int fru_index = fru - 1;//fru id is start from 1.
+   
+  enum
+  {
+    NM_NORMAL_STATUS = 0,
+  };
+
+  //the fru data is validated, no need to check the data again.
+  pal_get_fru_name(fru, fru_name); 
+
+#ifdef DEBUG 
+  syslog(LOG_WARNING, "fru_name:%s, fruid:%d, result:%d, nm_retry_threshold:%d", fru_name, fru, result, nm_retry_threshold);
+#endif
+ 
+  if ( PAL_ENOTSUP == result )
+  {
+    if ( no_response_retry[fru_index] >= nm_retry_threshold )
+    {
+      if ( !is_duplicated_unaccess_event[fru_index] )
+      {
+        is_duplicated_unaccess_event[fru_index] = true;
+        syslog(LOG_CRIT, "ASSERT: ME Status - Controller Unavailable on the %s", fru_name);
+      }
+    }
+    else
+    {
+      no_response_retry[fru_index]++;
+    }
+  }
+  else
+  {
+    if ( NM_NORMAL_STATUS != result )
+    {
+      if ( abnormal_status_retry[fru_index] >=  nm_retry_threshold )
+      {
+        if ( !is_duplicated_abnormal_event[fru_index] )
+        {
+          is_duplicated_abnormal_event[fru_index] = true;
+          syslog(LOG_CRIT, "ASSERT: ME Status - Controller Access Degraded or Unavailable on the %s", fru_name);
+        }
+      }
+      else
+      {
+        abnormal_status_retry[fru_index]++;
+      }
+    }
+    else
+    {
+      if ( is_duplicated_abnormal_event[fru_index] )
+      {
+        is_duplicated_abnormal_event[fru_index] = false;
+        syslog(LOG_CRIT, "DEASSERT: ME Status - Controller Access Degraded or Unavailable on the %s", fru_name);
+      }
+      
+      if ( is_duplicated_unaccess_event[fru_index] )
+      {
+        is_duplicated_unaccess_event[fru_index] = false;
+        syslog(LOG_CRIT, "DEASSERT: ME Status - Controller Unavailable on the %s", fru_name);
+      }
+      
+      no_response_retry[fru_index] = 0;
+      abnormal_status_retry[fru_index] = 0;  
+    }
+  }
+}
+
+static void *
+nm_monitor()
+{
+  int fru;
+  int ret;
+  int result;
+  const uint8_t normal_status[2] = {0x55, 0x00}; // If the selftest result is 55 00, the status of the controller is okay
+  uint8_t data[2]={0x0}; 
+  
+  while (1)
+  {
+    for ( fru = 1; fru <= MAX_NUM_FRUS; fru++)
+    {
+      if ( pal_is_slot_server(fru) )
+      {
+        if ( pal_is_fw_update_ongoing(fru) )
+        {
+          continue;
+        }
+
+        ret = pal_get_nm_selftest_result(fru, data);
+        if ( PAL_EOK == ret ) 
+        {
+          //if nm has the response, check the status
+          result = memcmp(data, normal_status, sizeof(normal_status));
+        }
+        else
+        {
+          //if nm has no response, suppose it is in the not support state
+          result = PAL_ENOTSUP;
+        }
+        check_nm_selftest_result(fru, result);    
+      } 
+    }
+
+    sleep(nm_monitor_interval);
+  }
+
+  return NULL;
+}
+      
 void
 fwupdate_ongoing_handle(bool is_fw_updating)
 {
@@ -897,6 +1054,7 @@ main(int argc, char **argv) {
   pthread_t tid_mem_monitor;
   pthread_t tid_fw_update_monitor;
   pthread_t tid_ecc_monitor;
+  pthread_t tid_nm_monitor;
 
   if (argc > 1) {
     exit(1);
@@ -949,6 +1107,15 @@ main(int argc, char **argv) {
     }
   }
 
+  if ( nm_monitor_enabled )
+  {
+    if (pthread_create(&tid_nm_monitor, NULL, nm_monitor, NULL) < 0)
+    {
+      syslog(LOG_WARNING, "pthread_create for nm monitor error\n");
+      exit(1);
+    }
+  }
+
   if (pthread_create(&tid_fw_update_monitor, NULL, fw_update_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
     exit(1);
@@ -971,6 +1138,11 @@ main(int argc, char **argv) {
 
   if (ecc_monitor_enabled) {
     pthread_join(tid_ecc_monitor, NULL);
+  }
+
+  if ( nm_monitor_enabled )
+  {
+    pthread_join(tid_nm_monitor, NULL);
   }
 
   pthread_join(tid_fw_update_monitor, NULL);

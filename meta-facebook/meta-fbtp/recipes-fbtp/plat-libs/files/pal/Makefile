@@ -3,9 +3,11 @@ lib: libpal.so
 
 CFLAGS += -Wall -Werror
 
-libpal.so: pal.c
-	$(CC) $(CFLAGS) -fPIC -c -pthread -o pal.o pal.c
-	$(CC) -lkv -ledb -lipmb -lme -lvr -lgpio -shared -o libpal.so pal.o -lc -lrt -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive
+C_SRCS := $(wildcard *.c)
+C_OBJS := ${C_SRCS:.c=.o}
+
+libpal.so: $(C_OBJS)
+	$(CC) $(CFLAGS) -lkv -ledb -lipmb -lme -lvr -lgpio -shared -o libpal.so $^ -lc -lrt -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive
 
 .PHONY: clean
 

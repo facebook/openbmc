@@ -356,23 +356,6 @@ typedef struct _sensor_info_t {
   sdr_full_t sdr;
 } sensor_info_t;
 
-typedef struct
-{
-  uint8_t chassis_type;
-  uint8_t MB_type;
-  uint8_t processor_count;
-  uint8_t memory_count;
-  uint8_t hdd35_count;
-  uint8_t hdd25_count;
-  uint8_t riser_type;
-  uint8_t pcie_card_loc;
-  uint8_t slot1_pciecard_type;
-  uint8_t slot2_pciecard_type;
-  uint8_t slot3_pciecard_type;
-  uint8_t slot4_pciecard_type;
-  uint8_t AEP_mem_count;
-} machine_config_info;
-
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -456,12 +439,12 @@ uint8_t pal_get_status(void);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 void pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh);
-int pal_get_machine_configuration(uint8_t slot, machine_config_info *info);
 int pal_get_syscfg_text(char *text);
 int pal_add_i2c_device(uint8_t bus, char *device_name, uint8_t slave_addr);
 int pal_del_i2c_device(uint8_t bus, uint8_t slave_addr);
 int pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type);
 bool pal_is_ava_card(uint8_t riser_slot);
+int pal_get_machine_configuration(char *conf);
 #ifdef __cplusplus
 } // extern "C"
 #endif

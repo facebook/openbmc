@@ -135,16 +135,16 @@ static int jtag_bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 static STATUS jtag_bic_set_tap_state(uint8_t slot_id, JtagStates src_state, JtagStates tap_state);
 
 static STATUS jtag_bic_shift_wrapper(uint8_t slot_id,
-                              unsigned int write_bit_length, unsigned char* write_data,
-                              unsigned int read_bit_length, unsigned char* read_data,
+                              unsigned int write_bit_length, uint8_t* write_data,
+                              unsigned int read_bit_length, uint8_t* read_data,
                               unsigned int last);
 
-static STATUS jtag_bic_read_write_scan(struct scan_xfer *scan_xfer);
+static STATUS jtag_bic_read_write_scan(uint8_t slot_id, struct scan_xfer *scan_xfer);
 
 
 
-static STATUS JTAG_clock_cycle(int number_of_cycles);
-static STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
+static STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles);
+static STATUS perform_shift(JTAG_Handler* state , unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
                      JtagStates end_tap_state);
@@ -169,14 +169,15 @@ void print_jtag_state(const char *func, JTAG_Handler *state)
 
     else {
         printf("\n%s\n    -JTAG.tap_state=%d(%s), shift_padding.drPre=%d, shift_padding.drPost\
-=%d, shift_padding.irPre=%d, shift_padding.irPost=%d scan_state=%d \n", func,
+=%d, shift_padding.irPre=%d, shift_padding.irPost=%d scan_state=%d slot_id=%d\n", func,
             state->tap_state,
             tap_states_name[state->tap_state],
             state->shift_padding.drPre,
             state->shift_padding.drPost,
             state->shift_padding.irPre,
             state->shift_padding.irPost,
-            state->scan_state
+            state->scan_state,
+            state->fru
           );
     }
 }
@@ -187,6 +188,7 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
     JTAG_Handler *state;
 
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return NULL;
     }
 
@@ -205,21 +207,19 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
     memset(state->padDataZero, 0, sizeof(state->padDataZero));
     state->scan_state = JTAGScanState_Done;
 
-    state->JTAG_driver_handle = -1;
+    state->fru = fru;
 
     return state;
 }
 
 
 
-STATUS JTAG_clock_cycle(int number_of_cycles)
+STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles)
 {
     uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
     uint8_t rbuf[4] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
-
-    uint8_t slot_id = 0; // todo: remove
 
     // tbuf[0:2] = IANA ID
     // tbuf[3]   = tms bit length (max = 8)
@@ -235,7 +235,7 @@ STATUS JTAG_clock_cycle(int number_of_cycles)
 
     if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
                            tbuf, tlen, rbuf, &rlen) < 0) {
-        syslog(LOG_ERR, "waiit cycle failed");
+        syslog(LOG_ERR, "wait cycle failed, slot%d", slot_id);
         return ST_ERR;
     }
 
@@ -256,7 +256,8 @@ STATUS JTAG_initialize(JTAG_Handler* state)
 
     if (JTAG_set_tap_state(state, JtagTLR) != ST_OK ||
         JTAG_set_tap_state(state, JtagRTI) != ST_OK) {
-        syslog(LOG_ERR, "Failed to set initial TAP state.");
+        syslog(LOG_ERR, "Failed to set initial TAP state for. slot%d",
+               state->fru);
         goto bail_err;
     }
 
@@ -264,7 +265,8 @@ STATUS JTAG_initialize(JTAG_Handler* state)
         JTAG_set_padding(state, JTAGPaddingTypes_DRPost, 0) != ST_OK ||
         JTAG_set_padding(state, JTAGPaddingTypes_IRPre, 0) != ST_OK ||
         JTAG_set_padding(state, JTAGPaddingTypes_IRPost, 0) != ST_OK) {
-        syslog(LOG_ERR, "Failed to set initial padding states.");
+        syslog(LOG_ERR, "Failed to set initial padding states. slot%d",
+               state->fru);
         goto bail_err;
     }
     return ST_OK;
@@ -307,7 +309,8 @@ STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, con
     } else if (padding == JTAGPaddingTypes_IRPost) {
         state->shift_padding.irPost = value;
     } else {
-        syslog(LOG_ERR, "Unknown padding value: %d", value);
+        syslog(LOG_ERR, "Unknown padding value: %d, slot%d", value,
+               state->fru);
         return ST_ERR;
     }
     return ST_OK;
@@ -349,9 +352,11 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     if (state == NULL)
         return ST_ERR;
 
-    ret = jtag_bic_set_tap_state(0, state->tap_state, tap_state);
+    ret = jtag_bic_set_tap_state(state->fru, state->tap_state,
+                                 tap_state);
     if (ret != ST_OK) {
-        printf("ERROR: %s jtag_bic_set_tap_state failed!", __FUNCTION__);
+        printf("ERROR: %s jtag_bic_set_tap_state failed! slot%d",
+               __FUNCTION__, state->fru);
         return ST_ERR;
     }
 
@@ -362,7 +367,8 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
         if (JTAG_wait_cycles(state, 5) != ST_OK)
             return ST_ERR;
 
-    syslog(LOG_DEBUG, "TapState: %d", state->tap_state);
+    syslog(LOG_DEBUG, "TapState: %d, slot%d", state->tap_state,
+           state->fru);
 
     return ST_OK;
 }
@@ -419,9 +425,9 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
         postFix = state->shift_padding.drPost;
         padData = state->padDataZero;
     } else {
-        syslog(LOG_ERR, "Shift called but the tap is not in a ShiftIR/DR tap state");
+        syslog(LOG_ERR, "Shift called but the tap is not in a ShiftIR/DR tap state, slot%d", state->fru);
 #ifdef FBY2_DEBUG
-        printf("ERROR: Shift called but the tap is not in a ShiftIR/DR tap state\n");
+        printf("ERROR: Shift called but the tap is not in a ShiftIR/DR tap state, slot%d\n", state->fru);
 #endif
         return ST_ERR;
     }
@@ -461,6 +467,7 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
 //  Optionally write and read the requested number of
 //  bits and go to the requested target state
 //
+static
 STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
@@ -490,21 +497,23 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     scan_xfer.end_tap_state = end_tap_state;
 
 
-    if (jtag_bic_read_write_scan(&scan_xfer) < 0) {
-        syslog(LOG_ERR, "%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed\n",
-               __FUNCTION__);
+    if (jtag_bic_read_write_scan(state->fru, &scan_xfer) < 0) {
+        syslog(LOG_ERR, "%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed, slot%d",
+               __FUNCTION__, state->fru);
 #ifdef FBY2_DEBUG
-        printf("%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed\n", __FUNCTION__);
+        printf("%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed, slot%d\n",
+               __FUNCTION__, state->fru);
 #endif
         return ST_ERR;
     }
 
     // go to end_tap_state as requested
-    if (jtag_bic_set_tap_state(0, state->tap_state, end_tap_state)) {
-        syslog(LOG_ERR, "%s: ERROR, failed to go state %d\n", __FUNCTION__,
-               end_tap_state);
+    if (jtag_bic_set_tap_state(state->fru, state->tap_state, end_tap_state)) {
+        syslog(LOG_ERR, "%s: ERROR, failed to go state %d, slot%d", __FUNCTION__,
+               end_tap_state, state->fru);
 #ifdef FBY2_DEBUG
-        printf("%s: ERROR, failed to go state %d\n", __FUNCTION__, end_tap_state);
+        printf("%s: ERROR, failed to go state %d, slot%d\n", __FUNCTION__,
+               end_tap_state, state->fru);
 #endif
         return (ST_ERR);
     }
@@ -550,7 +559,7 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
     if (state == NULL)
         return ST_ERR;
 
-    if (JTAG_clock_cycle(number_of_cycles) != ST_OK) {
+    if (JTAG_clock_cycle(state->fru, number_of_cycles) != ST_OK) {
             return ST_ERR;
     }
 
@@ -728,7 +737,7 @@ STATUS jtag_bic_shift_wrapper(uint8_t slot_id, unsigned int write_bit_length,
 
 // BIC JTAG driver
 static
-STATUS jtag_bic_read_write_scan(struct scan_xfer *scan_xfer)
+STATUS jtag_bic_read_write_scan(uint8_t slot_id, struct scan_xfer *scan_xfer)
 {
 #define MAX_TRANSFER_BITS  0x400
 
@@ -749,7 +758,11 @@ STATUS jtag_bic_read_write_scan(struct scan_xfer *scan_xfer)
     if (write_bit_length < transfer_bit_length &&
         read_bit_length < transfer_bit_length)
     {
+#ifdef FBY2_DEBUG
         printf("%s: ERROR: illegal input, read(%d)/write(%d) length < transfer length(%d)\n",
+               __FUNCTION__, read_bit_length, write_bit_length, transfer_bit_length);
+#endif
+        syslog(LOG_ERR, "%s: ERROR: illegal input, read(%d)/write(%d) length < transfer length(%d)",
                __FUNCTION__, read_bit_length, write_bit_length, transfer_bit_length);
         return ST_ERR;
     }
@@ -779,11 +792,16 @@ STATUS jtag_bic_read_write_scan(struct scan_xfer *scan_xfer)
 
         last_transaction = (transfer_bit_length <= 0);
 
-        ret = jtag_bic_shift_wrapper(1, this_write_bit_length, scan_xfer->tdi,
+        ret = jtag_bic_shift_wrapper(slot_id, this_write_bit_length, scan_xfer->tdi,
                                    this_read_bit_length, scan_xfer->tdo,
                                    last_transaction);
         if (ret != ST_OK) {
-            printf("%s: ERROR, jtag_bic_shift_wrapper failed\n", __FUNCTION__);
+#ifdef FBY2_DEBUG
+            printf("%s: ERROR, jtag_bic_shift_wrapper failed, slot%d\n",
+                   __FUNCTION__, slot_id);
+#endif
+            syslog(LOG_ERR, "%s: ERROR, jtag_bic_shift_wrapper failed, slot%d\n",
+                   __FUNCTION__, slot_id);
             break;
         }
   }

@@ -106,6 +106,7 @@ activate_hsvc(uint8_t slot_id) {
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-off", runoff_id);
   system(cmd);
+  printf("SLED is ready to be pulled out for hot-service now\n");
 }
 
 int

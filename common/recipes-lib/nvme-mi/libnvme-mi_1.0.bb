@@ -24,7 +24,7 @@ LIC_FILES_CHKSUM = "file://nvme-mi.c;beginline=4;endline=16;md5=7783b537a8ff52cf
 SRC_URI = "file://src \
           "
 
-DEPENDS += "liblog fbutils obmc-i2c"
+DEPENDS += "liblog obmc-i2c"
 
 S = "${WORKDIR}/src"
 
@@ -39,4 +39,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libnvme-mi.so"
 FILES_${PN}-dev = "${includedir}/openbmc/nvme-mi.h"
 
-DEPENDS_${PN} += " liblog fbutils"
+DEPENDS_${PN} += " liblog "

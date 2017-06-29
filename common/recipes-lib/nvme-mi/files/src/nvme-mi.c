@@ -23,6 +23,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <openbmc/obmc-i2c.h>
+#include <time.h>
+#include <errno.h>
 #include "nvme-mi.h"
 
 #define I2C_NVME_INTF_ADDR 0x6A
@@ -50,6 +52,19 @@
 #define VENDOR_ID_SAMSUNG 0x144D
 #define VENDOR_ID_SEAGATE 0x1BB1
 #define VENDOR_ID_TOSHIBA 0x1179
+
+// Helper function for msleep
+void
+msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
+  }
+}
 
 /* Read a byte from NVMe-MI 0x6A. Need to give a bus and a byte address for reading. */
 int

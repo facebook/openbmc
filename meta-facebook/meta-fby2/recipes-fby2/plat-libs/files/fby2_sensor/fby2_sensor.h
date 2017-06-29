@@ -172,6 +172,16 @@ enum {
 enum{
   MEZZ_SENSOR_TEMP = 0x82,
 };
+
+enum {
+  MUX_CH_0 = 0,
+  MUX_CH_1 = 1,
+  MUX_CH_2 = 2,
+  MUX_CH_3 = 3,
+  MUX_CH_4 = 4,
+  MUX_CH_5 = 5,
+};
+
 extern const uint8_t bic_sensor_list[];
 
 extern const uint8_t bic_discrete_list[];

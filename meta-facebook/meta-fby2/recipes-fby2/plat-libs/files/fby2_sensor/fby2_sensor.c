@@ -30,6 +30,7 @@
 #include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include "fby2_sensor.h"
+#include <openbmc/nvme-mi.h>
 
 #define LARGEST_DEVICE_NAME 120
 
@@ -68,6 +69,7 @@
 #define I2C_DEV_DC_1 "/dev/i2c-1"
 #define I2C_DEV_DC_3 "/dev/i2c-5"
 #define I2C_DC_INA_ADDR 0x40
+#define I2C_DC_MUX_ADDR 0x71
 
 #define I2C_DEV_NIC "/dev/i2c-11"
 #define I2C_NIC_ADDR 0x1f
@@ -82,6 +84,8 @@
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
 #define SLOT_FILE "/tmp/slot.bin"
 #define ML_ADM1278_R_SENSE  0.3
+
+#define TOTAL_M2_CH_ON_GP 6
 
 static float ml_hsc_r_sense = ML_ADM1278_R_SENSE;
 
@@ -381,6 +385,85 @@ fby2_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
   } else {
     *status = 0;
   }
+
+  return 0;
+}
+
+static int
+fby2_mux_control(char *device, uint8_t addr, uint8_t channel) {          //PCA9848
+  int dev;
+  int ret;
+  uint8_t reg;
+
+  dev = open(device, O_RDWR);
+  if (dev < 0) {
+    syslog(LOG_ERR, "%s: open() failed", __func__);
+    return -1;
+  }
+
+  /* Assign the i2c device address */
+  ret = ioctl(dev, I2C_SLAVE, addr);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: ioctl() assigning i2c addr failed", __func__);
+    close(dev);
+    return -1;
+  }
+
+  if (channel < TOTAL_M2_CH_ON_GP)       //total 6 pcs M.2 on GP
+    reg = 0x01 << channel;
+  else
+    reg = 0x00; // close all channels
+
+  ret = i2c_smbus_write_byte(dev, reg);
+  if (ret < 0) {
+    close(dev);
+    syslog(LOG_ERR, "%s: i2c_smbus_write_byte failed", __func__);
+    return -1;
+  }
+
+  close(dev);
+  return 0;  
+}
+
+static int
+read_m2_temp_on_gp(char *device, uint8_t sensor_num, float *value) {
+  uint8_t mux_channel;
+  int ret;
+  uint8_t temp; 
+  switch(sensor_num) {
+    case DC_SENSOR_NVMe1_CTEMP:
+      mux_channel = MUX_CH_0;
+      break;
+    case DC_SENSOR_NVMe2_CTEMP:
+      mux_channel = MUX_CH_1;
+      break;
+    case DC_SENSOR_NVMe3_CTEMP:
+      mux_channel = MUX_CH_2;
+      break;
+    case DC_SENSOR_NVMe4_CTEMP:
+      mux_channel = MUX_CH_3;
+      break;
+    case DC_SENSOR_NVMe5_CTEMP:
+      mux_channel = MUX_CH_4;
+      break;
+    case DC_SENSOR_NVMe6_CTEMP:
+      mux_channel = MUX_CH_5;
+      break;
+  }
+ 
+  // control I2C multiplexer on GP to target channel 
+  ret = fby2_mux_control(device, I2C_DC_MUX_ADDR, mux_channel);
+  if(ret < 0) {
+     syslog(LOG_ERR, "%s: fby2_mux_control failed", __func__);
+     return -1;
+  }
+  
+  ret = nvme_temp_read(device, &temp);   
+  if(ret < 0) {
+     syslog(LOG_ERR, "%s: nvme_temp_read failed", __func__);
+     return -1;
+  }
+  *value = (float)temp;
 
   return 0;
 }
@@ -1235,17 +1318,16 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
                 snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_3);
               return read_ina230_value(INA230_POWER, path, I2C_DC_INA_ADDR, (float*) value);
             case DC_SENSOR_NVMe1_CTEMP:
-              return 0;
             case DC_SENSOR_NVMe2_CTEMP:
-              return 0;
             case DC_SENSOR_NVMe3_CTEMP:
-              return 0;
             case DC_SENSOR_NVMe4_CTEMP:
-              return 0;
             case DC_SENSOR_NVMe5_CTEMP:
-              return 0;
             case DC_SENSOR_NVMe6_CTEMP:
-              return 0;
+              if (fru == FRU_SLOT1)
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_1);
+              else
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_3);
+              return read_m2_temp_on_gp(path, sensor_num, (float*) value);
             default:
               return -1;
         }

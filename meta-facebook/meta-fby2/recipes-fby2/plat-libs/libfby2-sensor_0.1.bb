@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://fby2_sensor.c;beginline=8;endline=20;md5=da35978751a9
 
 SRC_URI = "file://fby2_sensor \
           "
-DEPENDS =+ " libipmi libipmb libbic libfby2-common plat-utils obmc-i2c "
+DEPENDS =+ " libipmi libipmb libbic libfby2-common plat-utils obmc-i2c libnvme-mi "
 
 S = "${WORKDIR}/fby2_sensor"
 
@@ -23,3 +23,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libfby2_sensor.so"
 FILES_${PN}-dev = "${includedir}/facebook/fby2_sensor.h"
+
+RDEPENDS_${PN} += " libnvme-mi "

@@ -1471,6 +1471,18 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       return -1;
     }
    }
+  
+  switch(cmd) {     //avoid power control on GP and CF
+    case SERVER_POWER_OFF:
+    case SERVER_POWER_CYCLE:
+    case SERVER_GRACEFUL_SHUTDOWN:
+    case SERVER_POWER_ON:
+      if(pal_is_slot_server(slot_id) == 0) {
+        printf("Should not execute power on/off/graceful_shutdown/cycle/reset on device card\n");
+        return -2;
+      }
+      break; 
+  }
 
   switch(cmd) {
     case SERVER_POWER_ON:

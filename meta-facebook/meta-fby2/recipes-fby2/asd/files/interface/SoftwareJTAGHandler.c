@@ -44,21 +44,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/mman.h>
 #include <openbmc/gpio.h>
 #include <openbmc/pal.h>
-
+#include <facebook/bic.h>
 
 // Enable to print IR/DR trace to syslog
 //#define DEBUG
 
-#if 0
-#define JTAGIOC_BASE    'T'
 
-#define AST_JTAG_SIOCFREQ         _IOW( JTAGIOC_BASE, 3, unsigned int)
-#define AST_JTAG_GIOCFREQ         _IOR( JTAGIOC_BASE, 4, unsigned int)
-#define AST_JTAG_BITBANG          _IOWR(JTAGIOC_BASE, 5, struct tck_bitbang)
-#define AST_JTAG_SET_TAPSTATE     _IOW( JTAGIOC_BASE, 6, unsigned int)
-#define AST_JTAG_READWRITESCAN    _IOWR(JTAGIOC_BASE, 7, struct scan_xfer)
-#define AST_JTAG_SLAVECONTLR      _IOW( JTAGIOC_BASE, 8, unsigned int)
-#endif
+
+// Enable FBY2-specific debug messages
+#define FBY2_DEBUG
 
 struct tck_bitbang {
     unsigned char     tms;
@@ -75,28 +69,122 @@ struct scan_xfer {
     unsigned int     end_tap_state;
 };
 
-
-enum {
-  JTAG_TARGET_CPU,
-  JTAG_TARGET_CPLD
+const char *tap_states_name[] = {
+    "TLR",
+    "RTI",
+    "SelDR",
+    "CapDR",
+    "ShfDR",
+    "Ex1DR",
+    "PauDR",
+    "Ex2DR",
+    "UpdDR",
+    "SelIR",
+    "CapIR",
+    "ShfIR",
+    "Ex1IR",
+    "PauIR",
+    "Ex2IR",
+    "UpdIR",
 };
 
-STATUS JTAG_set_cntlr_mode(int handle, const JTAGDriverState setMode);
-STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi);
-STATUS perform_shift(int handle, unsigned int number_of_bits,
+
+typedef struct
+// this structure represents a TMS cycle, as expressed in a set of bits and a count of bits (note: there are no start->end state transitions that require more than 1 byte of TMS cycles)
+{
+    unsigned char tmsbits;
+    unsigned char count;
+} TmsCycle;
+
+
+// this is the complete set TMS cycles for going from any TAP state to any other TAP state, following a “shortest path” rule
+const TmsCycle _tmsCycleLookup[][16] = {
+/*   start*/ /*TLR      RTI      SelDR    CapDR    SDR      Ex1DR    PDR      Ex2DR    UpdDR    SelIR    CapIR    SIR      Ex1IR    PIR      Ex2IR    UpdIR    destination*/
+/*     TLR*/{ {0x00,0},{0x00,1},{0x02,2},{0x02,3},{0x02,4},{0x0a,4},{0x0a,5},{0x2a,6},{0x1a,5},{0x06,3},{0x06,4},{0x06,5},{0x16,5},{0x16,6},{0x56,7},{0x36,6} },
+/*     RTI*/{ {0x07,3},{0x00,0},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x0d,4},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5} },
+/*   SelDR*/{ {0x03,2},{0x03,3},{0x00,0},{0x00,1},{0x00,2},{0x02,2},{0x02,3},{0x0a,4},{0x06,3},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x0d,4} },
+/*   CapDR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x00,0},{0x00,1},{0x01,1},{0x01,2},{0x05,3},{0x03,2},{0x0f,4},{0x0f,5},{0x0f,6},{0x2f,6},{0x2f,7},{0xaf,8},{0x6f,7} },
+/*     SDR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x00,0},{0x01,1},{0x01,2},{0x05,3},{0x03,2},{0x0f,4},{0x0f,5},{0x0f,6},{0x2f,6},{0x2f,7},{0xaf,8},{0x6f,7} },
+/*   Ex1DR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x02,3},{0x00,0},{0x00,1},{0x02,2},{0x01,1},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6} },
+/*     PDR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x01,2},{0x05,3},{0x00,0},{0x01,1},{0x03,2},{0x0f,4},{0x0f,5},{0x0f,6},{0x2f,6},{0x2f,7},{0xaf,8},{0x6f,7} },
+/*   Ex2DR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x00,1},{0x02,2},{0x02,3},{0x00,0},{0x01,1},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6} },
+/*   UpdDR*/{ {0x07,3},{0x00,1},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x00,0},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5} },
+/*   SelIR*/{ {0x01,1},{0x01,2},{0x05,3},{0x05,4},{0x05,5},{0x15,5},{0x15,6},{0x55,7},{0x35,6},{0x00,0},{0x00,1},{0x00,2},{0x02,2},{0x02,3},{0x0a,4},{0x06,3} },
+/*   CapIR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6},{0x0f,4},{0x00,0},{0x00,1},{0x01,1},{0x01,2},{0x05,3},{0x03,2} },
+/*     SIR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6},{0x0f,4},{0x0f,5},{0x00,0},{0x01,1},{0x01,2},{0x05,3},{0x03,2} },
+/*   Ex1IR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5},{0x07,3},{0x07,4},{0x02,3},{0x00,0},{0x00,1},{0x02,2},{0x01,1} },
+/*     PIR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6},{0x0f,4},{0x0f,5},{0x01,2},{0x05,3},{0x00,0},{0x01,1},{0x03,2} },
+/*   Ex2IR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5},{0x07,3},{0x07,4},{0x00,1},{0x02,2},{0x02,3},{0x00,0},{0x01,1} },
+/*   UpdIR*/{ {0x07,3},{0x00,1},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x0d,4},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x00,0} },
+};
+
+
+
+
+static int jtag_bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
+                  uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+
+
+static STATUS jtag_bic_set_tap_state(uint8_t slot_id, JTAG_Handler* state, JtagStates tap_state);
+
+static STATUS jtag_bic_shift_wrapper(unsigned int write_bit_length, unsigned char* write_data,
+                              unsigned int read_bit_length, unsigned char* read_data,
+                              unsigned int last);
+
+static STATUS bic_jtag_read_write_scan(struct scan_xfer *scan_xfer);
+
+
+
+
+static STATUS JTAG_clock_cycle(int number_of_cycles);
+static STATUS perform_shift(unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
                      JtagStates current_tap_state, JtagStates end_tap_state);
+
+
+
+
+
+// debug helper functions
+#ifdef FBY2_DEBUG
+
+void print_jtag_state(const char *func, JTAG_Handler *state);
+
+
+void print_jtag_state(const char *func, JTAG_Handler *state)
+{
+    if (state == NULL) {
+        printf("Error: null passed to print_state\n");
+    }
+
+    if (state->tap_state > 15) {
+        printf("Error! tap_state=%d(invalid!)\n", state->tap_state);
+    }
+
+    else {
+        printf("\n%s\n    -JTAG.tap_state=%d(%s), shift_padding.drPre=%d, shift_padding.drPost\
+=%d, shift_padding.irPre=%d, shift_padding.irPost=%d scan_state=%d \n", func,
+            state->tap_state,
+            tap_states_name[state->tap_state],
+            state->shift_padding.drPre,
+            state->shift_padding.drPost,
+            state->shift_padding.irPre,
+            state->shift_padding.irPost,
+            state->scan_state
+          );
+    }
+}
+#endif
 
 JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
 {
     JTAG_Handler *state;
 
-#if 0 //TBD_BW  need update
-    if (fru != FRU_MB) {
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
       return NULL;
     }
-#endif
+
     state = (JTAG_Handler*)malloc(sizeof(JTAG_Handler));
     if (state == NULL) {
         return NULL;
@@ -117,145 +205,56 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
     return state;
 }
 
-STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi)
-{
-#if 0
-    struct tck_bitbang bitbang = {0};
 
-    bitbang.tms = tms;
-    bitbang.tdi = tdi;
-    if (ioctl(handle, AST_JTAG_BITBANG, &bitbang) < 0) {
-        syslog(LOG_ERR, "ioctl AST_JTAG_BITBANG failed");
+
+STATUS JTAG_clock_cycle(int number_of_cycles)
+{
+    uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
+    uint8_t rbuf[4] = {0x00};
+    uint8_t rlen = 0;
+    uint8_t tlen = 5;
+
+    uint8_t slot_id = 0; // todo: remove
+
+    // tbuf[0:2] = IANA ID
+    // tbuf[3]   = tms bit length (max = 8)
+    // tbuf[4]   = tmsbits
+    tbuf[3] = number_of_cycles;
+    tbuf[4] = 0x0;
+
+    if (number_of_cycles > 8)
+    {
+        printf("ERROR, trying to delay >8 cycles (%d)\n", number_of_cycles);
+        tbuf[3] = 8;
+    }
+
+    if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
+                           tbuf, tlen, rbuf, &rlen) < 0) {
+        syslog(LOG_ERR, "waiit cycle failed");
         return ST_ERR;
     }
-#endif
+
     return ST_OK;
 
 }
 
-// user level access to set the AST2500 JTAG controller in slave or master mode
-STATUS JTAG_set_cntlr_mode(int handle, const JTAGDriverState setMode)
-{
-#if 0
-    if ((setMode < JTAGDriverState_Master) || (setMode > JTAGDriverState_Slave)) {
-        syslog(LOG_ERR, "An invalid JTAG controller state was used");
-        return ST_ERR;
-    }
-    syslog(LOG_DEBUG, "Setting JTAG controller mode to %s.",
-            setMode == JTAGDriverState_Master ? "MASTER" : "SLAVE");
-    if (ioctl(handle, AST_JTAG_SLAVECONTLR, setMode) < 0) {
-        syslog(LOG_ERR, "ioctl AST_JTAG_SLAVECONTLR failed");
-        return ST_ERR;
-    }
-#endif
-    return ST_OK;
-}
-
-#if 0
-static STATUS JTAG_set_target(int target)
-{
-#if 0
-    gpio_value_en expected_value;
-    gpio_st gpio;
-    STATUS ret = ST_ERR;
-
-    /* Change GPIOY2 to have the JTAG master communicating
-     * to the CPU instead of CPLD */
-    if (gpio_open(&gpio, gpio_num("GPIOY2"))) {
-      syslog(LOG_ERR, "Failed to open GPIOY2\n");
-      return ST_ERR;
-    }
-
-    if (gpio_change_direction(&gpio, GPIO_DIRECTION_OUT)) {
-      syslog(LOG_ERR, "Failed to set GPIOY2 as an output\n");
-      goto bail;
-    }
-
-    if (target == JTAG_TARGET_CPU) {
-      // Set internal strap.
-      system("devmem 0x1E6E207C w 0x80000");
-      expected_value = GPIO_VALUE_LOW;
-    } else {
-      expected_value = GPIO_VALUE_HIGH;
-    }
-
-    gpio_write(&gpio, expected_value);
-    if (gpio_read(&gpio) != expected_value) {
-      syslog(LOG_WARNING, "Writing %d to GPIOY2 failed! ATSD is most probably disabled\n", expected_value);
-      goto bail;
-    }
-    ret = ST_OK;
-bail:
-    gpio_close(&gpio);
-#else
-    STATUS ret = ST_ERR;
-#endif
-    return ret;
-}
-#endif
-
-#if 0
-static STATUS JTAG_set_mux(void)
-{
-    STATUS ret = ST_ERR;
-#if 0
-    gpio_value_en expected_value = GPIO_VALUE_LOW;
-    gpio_st gpio;
-
-    if (gpio_open(&gpio, gpio_num("GPIOR2"))) {
-      syslog(LOG_ERR, "Failed to open GPIOR2\n");
-      return ST_ERR;
-    }
-
-    if (gpio_change_direction(&gpio, GPIO_DIRECTION_OUT)) {
-      syslog(LOG_ERR, "Failed to set GPIOR2 as an output\n");
-      goto bail;
-    }
-
-    // TODO Does this need to be switched?
-    gpio_write(&gpio, expected_value);
-    if (gpio_read(&gpio) != expected_value) {
-      syslog(LOG_WARNING, "Writing %d to GPIOR2 failed! ATSD is most probably disabled\n", expected_value);
-      goto bail;
-    }
-    ret = ST_OK;
-bail:
-    gpio_close(&gpio);
-#endif
-    return ret;
-}
-#endif
 
 STATUS JTAG_initialize(JTAG_Handler* state)
 {
-#if 0
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
+#endif
+
+
     if (state == NULL)
         return ST_ERR;
 
-    if (JTAG_set_target(JTAG_TARGET_CPU) != ST_OK) {
-      return ST_ERR;
-    }
-
-    if (JTAG_set_mux() != ST_OK) {
-      syslog(LOG_ERR, "Setting TCK_MUX failed\n");
-      goto bail_err;
-    }
-
-    state->JTAG_driver_handle = open("/dev/ast-jtag", O_RDWR);
-    if (state->JTAG_driver_handle == -1) {
-        syslog(LOG_ERR, "Can't open /dev/ast-jtag, please install driver");
-        goto bail_err;
-    }
-
-    if (JTAG_set_cntlr_mode(state->JTAG_driver_handle, JTAGDriverState_Master) != ST_OK) {
-        syslog(LOG_ERR, "Failed to set JTAG mode to master.");
-        goto bail_err;
-    }
     if (JTAG_set_tap_state(state, JtagTLR) != ST_OK ||
         JTAG_set_tap_state(state, JtagRTI) != ST_OK) {
         syslog(LOG_ERR, "Failed to set initial TAP state.");
         goto bail_err;
     }
+
     if (JTAG_set_padding(state, JTAGPaddingTypes_DRPre, 0) != ST_OK ||
         JTAG_set_padding(state, JTAGPaddingTypes_DRPost, 0) != ST_OK ||
         JTAG_set_padding(state, JTAGPaddingTypes_IRPre, 0) != ST_OK ||
@@ -265,34 +264,32 @@ STATUS JTAG_initialize(JTAG_Handler* state)
     }
     return ST_OK;
 bail_err:
-    JTAG_set_target(JTAG_TARGET_CPLD);
-#endif
     return ST_ERR;
 }
 
 STATUS JTAG_deinitialize(JTAG_Handler* state)
 {
    STATUS result = ST_OK;
-#if 0
-    if (state == NULL)
-        return ST_ERR;
 
-    result = JTAG_set_cntlr_mode(state->JTAG_driver_handle, JTAGDriverState_Master);
-    if (result != ST_OK) {
-        syslog(LOG_ERR, "Failed to set JTAG mode to slave.");
-    }
-
-    close(state->JTAG_driver_handle);
-    state->JTAG_driver_handle = -1;
-
-    JTAG_set_target(JTAG_TARGET_CPLD);
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
 #endif
+
+   if (state == NULL)
+       return ST_ERR;
+
     return result;
 }
 
+
 STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, const int value)
 {
-#if 0
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
+    printf("    -paddingType=%d, value=%d\n", padding, value);
+#endif
+
+
     if (state == NULL)
         return ST_ERR;
 
@@ -308,7 +305,6 @@ STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, con
         syslog(LOG_ERR, "Unknown padding value: %d", value);
         return ST_ERR;
     }
-#endif
     return ST_OK;
 }
 
@@ -317,26 +313,40 @@ STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, con
 //
 STATUS JTAG_tap_reset(JTAG_Handler* state)
 {
-#if 0
-    if (state == NULL)
-        return ST_ERR;
-    return JTAG_set_tap_state(state, JtagTLR);
-#else
-   return ST_ERR;
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
 #endif
+
+    if (state == NULL)
+      return ST_ERR;
+    return JTAG_set_tap_state(state, JtagTLR);
 }
+
 
 //
 // Request the TAP to go to the target state
 //
 STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
 {
- #if 0
+    STATUS ret;
+
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
+    printf("    -dst_state=%d(", tap_state);
+    if (tap_state <= 15) {
+        printf("%s)\n", tap_states_name[tap_state]);
+    }
+    else {
+        printf("invalid!!)\n");
+    }
+#endif
+
     if (state == NULL)
         return ST_ERR;
 
-    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SET_TAPSTATE, tap_state) < 0) {
-        syslog(LOG_ERR, "ioctl AST_JTAG_SET_TAPSTATE failed");
+    ret = jtag_bic_set_tap_state(0, state, tap_state);
+    if (ret != ST_OK) {
+        printf("ERROR: %s jtag_bic_set_tap_state failed!", __FUNCTION__);
         return ST_ERR;
     }
 
@@ -348,7 +358,7 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
             return ST_ERR;
 
     syslog(LOG_DEBUG, "TapState: %d", state->tap_state);
-#endif
+
     return ST_OK;
 }
 
@@ -357,11 +367,15 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
 //
 STATUS JTAG_get_tap_state(JTAG_Handler* state, JtagStates* tap_state)
 {
-#if 0
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
+    printf("    -current state = %d\n", state->tap_state);
+#endif
+
     if (state == NULL || tap_state == NULL)
         return ST_ERR;
     *tap_state = state->tap_state;
-#endif
+
     return ST_OK;
 }
 
@@ -374,7 +388,15 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
                   unsigned int output_bytes, unsigned char* output,
                   JtagStates end_tap_state)
 {
-#if 0
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
+    printf("    -number_of_bits=%d\n", number_of_bits);
+    printf("    -input_bytes=%d\n", input_bytes);
+    printf("    -output_bytes=%d\n", output_bytes);
+    printf("    -end_tap_state=%d\n", end_tap_state);
+#endif
+
+
     if (state == NULL)
         return ST_ERR;
 
@@ -392,13 +414,16 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
         padData = state->padDataZero;
     } else {
         syslog(LOG_ERR, "Shift called but the tap is not in a ShiftIR/DR tap state");
+#ifdef FBY2_DEBUG
+        printf("ERROR: Shift called but the tap is not in a ShiftIR/DR tap state\n");
+#endif
         return ST_ERR;
     }
 
     if (state->scan_state == JTAGScanState_Done) {
         state->scan_state = JTAGScanState_Run;
         if (preFix) {
-            if (perform_shift(state->JTAG_driver_handle, preFix, MAXPADSIZE, padData,
+            if (perform_shift(preFix, MAXPADSIZE, padData,
                               0, NULL, state->tap_state, state->tap_state) != ST_OK)
                 return ST_ERR;
         }
@@ -406,34 +431,43 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
 
     if ((postFix) && (state->tap_state != end_tap_state)) {
         state->scan_state = JTAGScanState_Done;
-        if (perform_shift(state->JTAG_driver_handle, number_of_bits, input_bytes, input,
+        if (perform_shift(number_of_bits, input_bytes, input,
                           output_bytes, output, state->tap_state, state->tap_state) != ST_OK)
             return ST_ERR;
-        if (perform_shift(state->JTAG_driver_handle, postFix, MAXPADSIZE, padData, 0,
+        if (perform_shift(postFix, MAXPADSIZE, padData, 0,
                           NULL, state->tap_state, end_tap_state) != ST_OK)
             return ST_ERR;
     } else {
-        if (perform_shift(state->JTAG_driver_handle, number_of_bits, input_bytes, input,
+        if (perform_shift(number_of_bits, input_bytes, input,
                           output_bytes, output, state->tap_state, end_tap_state) != ST_OK)
             return ST_ERR;
         if (state->tap_state != end_tap_state) {
             state->scan_state = JTAGScanState_Done;
         }
     }
-#endif
+
     return ST_OK;
 }
+
+
 
 //
 //  Optionally write and read the requested number of
 //  bits and go to the requested target state
 //
-STATUS perform_shift(int handle, unsigned int number_of_bits,
+STATUS perform_shift(unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
                      JtagStates current_tap_state, JtagStates end_tap_state)
 {
-#if 0
+
+#ifdef FBY2_DEBUG
+    printf("\n    -perform_shift -number_of_bits=%d\n", number_of_bits);
+    printf("                   -input_bytes=%d\n", input_bytes);
+    printf("                   -output_bytes=%d\n", output_bytes);
+#endif
+
+
     struct scan_xfer scan_xfer = {0};
     scan_xfer.length = number_of_bits;
     scan_xfer.tdi_bytes = input_bytes;
@@ -442,10 +476,16 @@ STATUS perform_shift(int handle, unsigned int number_of_bits,
     scan_xfer.tdo = output;
     scan_xfer.end_tap_state = end_tap_state;
 
-    if (ioctl(handle, AST_JTAG_READWRITESCAN, &scan_xfer) < 0) {
-        syslog(LOG_ERR, "ioctl AST_JTAG_READWRITESCAN failed!");
+
+    if (bic_jtag_read_write_scan(&scan_xfer) < 0) {
+        syslog(LOG_ERR, "BIC_JTAG_READWRITESCAN failed!");
+#ifdef FBY2_DEBUG
+        printf("ERROR, BIC_JTAG_READ_WRITE_SCAN failed\n");
+#endif
         return ST_ERR;
     }
+
+
 
 #ifdef DEBUG
     {
@@ -463,7 +503,6 @@ STATUS perform_shift(int handle, unsigned int number_of_bits,
         syslog(LOG_DEBUG, "%s: End tap state: %d", shiftStr, end_tap_state);
     }
 #endif
-#endif
     return ST_OK;
 }
 
@@ -476,26 +515,142 @@ STATUS perform_shift(int handle, unsigned int number_of_bits,
 //
 STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
 {
-#if 0
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
+    printf("    -number_of_cycles=%d\n", number_of_cycles);
+#endif
+
     if (state == NULL)
         return ST_ERR;
-    for (unsigned int i = 0; i < number_of_cycles; i++) {
-        if (JTAG_clock_cycle(state->JTAG_driver_handle, 0, 0) != ST_OK)
+
+    if (JTAG_clock_cycle(number_of_cycles) != ST_OK) {
             return ST_ERR;
     }
-#endif
+
     return ST_OK;
 }
 
 STATUS JTAG_set_clock_frequency(JTAG_Handler* state, unsigned int frequency)
 {
-#if 0
+#ifdef FBY2_DEBUG
+    print_jtag_state(__FUNCTION__, state);
+    printf("    -frequency=%d", frequency);
+#endif
+
     if (state == NULL)
         return ST_ERR;
-    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SIOCFREQ, frequency) < 0) {
-        syslog(LOG_ERR, "ioctl AST_JTAG_SIOCFREQ failed");
-        return ST_ERR;
+
+    return ST_OK;
+}
+
+
+static
+int jtag_bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
+                  uint8_t *txbuf, uint8_t txlen,
+                  uint8_t *rxbuf, uint8_t *rxlen)
+{
+    int ret;
+#ifdef FBY2_DEBUG
+    printf("      -BMC->BIC, slot=%d, netfn=0x%02x, cmd=0x%02x, txbuf=0x", slot_id, netfn, cmd);
+    for (int i=0; i<txlen; ++i) {
+        printf("%02x", txbuf[i]);
+    }
+    printf(", txlen=%d\n", txlen);
+#endif
+    ret = bic_ipmb_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
+
+#ifdef FBY2_DEBUG
+    printf("        returned data: rxlen=%d, rxbuf=0x%02x\n", *rxlen, rxbuf[0]);
+    if (ret) {
+        printf("        ERROR: bic_ipmb_wrapper returns %d, ignore error and continue for now\n", ret);
+        // todo remove
+        ret = 0;
     }
 #endif
+
+    return ret;
+}
+
+static
+STATUS generateTMSbits(JtagStates src, JtagStates dst, uint8_t *length, uint8_t *tmsbits)
+{
+    // ensure that src and dst tap states are within 0 to 15.
+    if ((src >= sizeof(_tmsCycleLookup[0])/sizeof(_tmsCycleLookup[0][0])) ||  // Column
+        (dst >= sizeof(_tmsCycleLookup)/sizeof _tmsCycleLookup[0])) {  // row
+        return ST_ERR;
+    }
+
+    *length  = _tmsCycleLookup[src][dst].count;
+    *tmsbits = _tmsCycleLookup[src][dst].tmsbits;
+
     return ST_OK;
+}
+
+static
+STATUS jtag_bic_set_tap_state(uint8_t slot_id, JTAG_Handler* state, JtagStates tap_state)
+{
+    JtagStates src_state = state->tap_state;
+    uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
+    uint8_t rbuf[4] = {0x00};
+    uint8_t rlen = 0;
+    uint8_t tlen = 5;
+    STATUS ret;
+
+    // tbuf[0:2] = IANA ID
+    // tbuf[3]   = tms bit length (max = 8)
+    // tbuf[4]   = tmsbits
+
+    // if goal is to set tap to JtagTLR,  send 8 TMS=1 will do it
+    if (tap_state == JtagTLR) {
+        tbuf[3] = 8;
+        tbuf[4] = 0xff;
+    }
+    // ... otherwise, look up the TMS sequence to go from current state
+    // to tap_state
+    else {
+        ret = generateTMSbits(src_state, tap_state, &(tbuf[3]), &(tbuf[4]));
+        if (ret != ST_OK) {
+            printf("      ERROR: __%s__ failed to find path from state%d to state%d\n",
+                   __FUNCTION__, src_state, tap_state);
+            return ret;
+        }
+    }
+
+#ifdef FBY2_DEBUG
+    printf("      -%s src_state=%d, dst_state=%d, count=%d, tmsbits=0x%02x\n",
+           __FUNCTION__, src_state, tap_state, tbuf[3], tbuf[4]);
+#endif
+
+
+    ret = jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
+                           tbuf, tlen, rbuf, &rlen);
+
+    return ret;
+}
+
+static
+STATUS jtag_bic_shift_wrapper(unsigned int write_bit_length, unsigned char* write_data,
+                              unsigned int read_bit_length, unsigned char* read_data,
+                              unsigned int last)
+{
+  return ST_OK;
+}
+
+// BIC JTAG driver
+static
+STATUS bic_jtag_read_write_scan(struct scan_xfer *scan_xfer)
+{
+  unsigned int write_bit_length    = (scan_xfer->tdi_bytes)<<3;
+  unsigned int read_bit_length     = (scan_xfer->tdo_bytes)<<3;
+  int transfer_bit_length = scan_xfer->length;
+  STATUS ret = ST_OK;
+
+  while (transfer_bit_length)
+  {
+
+      ret = jtag_bic_shift_wrapper(write_bit_length, scan_xfer->tdi,
+                                   read_bit_length, scan_xfer->tdo, 1);
+  }
+
+  return ret;
 }

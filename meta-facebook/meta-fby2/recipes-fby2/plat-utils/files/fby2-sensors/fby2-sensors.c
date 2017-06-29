@@ -191,7 +191,7 @@ main(int argc, char **argv) {
     printf("fby2_sensor_read failed: BIC_SENSOR_VNN_PCH_VR_TEMP\n");
   } else {
         printf("BIC_SENSOR_VNN_PCH_VR_TEMP: %.2f C\n", fvalue);
-  }  
+  }
 
   if (fby2_sensor_read(slot_id, BIC_SENSOR_MB_INLET_TEMP, &fvalue)) {
     printf("fby2_sensor_read failed: BIC_SENSOR_MB_INLET_TEMP\n");
@@ -507,6 +507,24 @@ main(int argc, char **argv) {
     printf("fby2_sensor_read failed: BIC_SENSOR_CPU_DIMM_HOT\n");
   } else {
   	printf("BIC_SENSOR_CPU_DIMM_HOT: 0x%X\n", value);
+  }
+
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_NVME1_CTEMP, &value)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_NVME1_CTEMP\n");
+  } else {
+  	printf("BIC_SENSOR_NVME1_CTEMP: 0x%X\n", value);
+  }
+
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_NVME2_CTEMP, &value)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_NVME2_CTEMP\n");
+  } else {
+  	printf("BIC_SENSOR_NVME2_CTEMP: 0x%X\n", value);
+  }
+
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_LIQUID_PUMP_TACH, &value)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_LIQUID_PUMP_TACH\n");
+  } else {
+  	printf("BIC_SENSOR_LIQUID_PUMP_TACH: 0x%X\n", value);
   }
 
   return 0;

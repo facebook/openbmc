@@ -110,6 +110,8 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_SOC_PACKAGE_PWR,
   BIC_SENSOR_VCCIN_VR_TEMP,
   BIC_SENSOR_VCCIO_VR_TEMP,
+  BIC_SENSOR_NVME1_CTEMP,
+  BIC_SENSOR_NVME2_CTEMP,
   BIC_SENSOR_1V05_PCH_VR_TEMP,
   BIC_SENSOR_VNN_PCH_VR_TEMP,
   BIC_SENSOR_VDDR_AB_VR_TEMP,
@@ -145,6 +147,7 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_PVDDR_AB,
   BIC_SENSOR_PVDDR_DE,
   BIC_SENSOR_PVNN_PCH,
+  BIC_SENSOR_LIQUID_PUMP_TACH,
 };
 
 const uint8_t bic_discrete_list[] = {
@@ -250,9 +253,9 @@ sensor_thresh_array_init() {
   //DC
   dc_sensor_threshold[DC_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
   dc_sensor_threshold[DC_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
-  dc_sensor_threshold[DC_SENSOR_INA230_VOLT][UCR_THRESH] = 13.272;
-  dc_sensor_threshold[DC_SENSOR_INA230_VOLT][LCR_THRESH] = 10.744;
-  dc_sensor_threshold[DC_SENSOR_INA230_POWER][UCR_THRESH] = 110;
+  dc_sensor_threshold[DC_SENSOR_INA230_VOLT][UCR_THRESH] = 13.27;
+  dc_sensor_threshold[DC_SENSOR_INA230_VOLT][LCR_THRESH] = 10.74;
+  dc_sensor_threshold[DC_SENSOR_INA230_POWER][UCR_THRESH] = 155;
   dc_sensor_threshold[DC_SENSOR_NVMe1_CTEMP][UCR_THRESH] = 95;
   dc_sensor_threshold[DC_SENSOR_NVMe2_CTEMP][UCR_THRESH] = 95;
   dc_sensor_threshold[DC_SENSOR_NVMe3_CTEMP][UCR_THRESH] = 95;
@@ -262,7 +265,7 @@ sensor_thresh_array_init() {
 
 
   // MEZZ
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 100;
+  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
 
   init_done = true;
 }
@@ -422,14 +425,14 @@ fby2_mux_control(char *device, uint8_t addr, uint8_t channel) {          //PCA98
   }
 
   close(dev);
-  return 0;  
+  return 0;
 }
 
 static int
 read_m2_temp_on_gp(char *device, uint8_t sensor_num, float *value) {
   uint8_t mux_channel;
   int ret;
-  uint8_t temp; 
+  uint8_t temp;
   switch(sensor_num) {
     case DC_SENSOR_NVMe1_CTEMP:
       mux_channel = MUX_CH_0;
@@ -450,15 +453,15 @@ read_m2_temp_on_gp(char *device, uint8_t sensor_num, float *value) {
       mux_channel = MUX_CH_5;
       break;
   }
- 
-  // control I2C multiplexer on GP to target channel 
+
+  // control I2C multiplexer on GP to target channel
   ret = fby2_mux_control(device, I2C_DC_MUX_ADDR, mux_channel);
   if(ret < 0) {
      syslog(LOG_ERR, "%s: fby2_mux_control failed", __func__);
      return -1;
   }
-  
-  ret = nvme_temp_read(device, &temp);   
+
+  ret = nvme_temp_read(device, &temp);
   if(ret < 0) {
      syslog(LOG_ERR, "%s: nvme_temp_read failed", __func__);
      return -1;
@@ -1331,7 +1334,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
             default:
               return -1;
         }
-        case SLOT_TYPE_NULL: 
+        case SLOT_TYPE_NULL:
           // do nothing
           break;
       }

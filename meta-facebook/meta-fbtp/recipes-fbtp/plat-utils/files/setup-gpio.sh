@@ -433,3 +433,7 @@ gpio_set I3 1
 
 # FW_FORCE_ADR_N: GPIOI2
 gpio_set I2 1
+
+# IRQ_DIMM_SAVE_LVT3_N
+gpio_export D4
+

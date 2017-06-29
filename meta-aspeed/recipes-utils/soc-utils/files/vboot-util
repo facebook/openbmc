@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -66,7 +67,7 @@ main() {
   ROM_EXEC_ADDRESS=$(devmem $(vbs_addr 0x4) 32)
   echo "ROM executed from:       $ROM_EXEC_ADDRESS"
 
-  ROM_KEYS=$(devmem $(vbs_addr 0x8) 32)
+  ROM_KEYS=$(devmem $(vbs_addr 0x08) 32)
   echo "ROM KEK certificates:    $ROM_KEYS"
 
   ROM_HANDOFF=$(devmem $(vbs_addr 0x10) 32)
@@ -75,8 +76,33 @@ main() {
   UBOOT_EXEC_ADDRESS=$(devmem $(vbs_addr 0x0) 32)
   echo "U-Boot executed from:    $UBOOT_EXEC_ADDRESS"
 
-  SUBORDINATE_KEYS=$(devmem $(vbs_addr 0xC) 32)
+  SUBORDINATE_KEYS=$(devmem $(vbs_addr 0x0C) 32)
   echo "U-Boot certificates:     $SUBORDINATE_KEYS"
+
+  # Fallback times
+  SECS=$(devmem $(vbs_addr 0x20) 32)
+  SUBORDINATE_LAST=$(date -ud @$((16#${SECS:2:8})))
+  echo "Certificates fallback:   $SUBORDINATE_LAST"
+
+  SECS=$(devmem $(vbs_addr 0x2c) 32)
+  SUBORDINATE_CURRENT=$(date -ud @$((16#${SECS:2:8})))
+  echo "Certificates time:       $SUBORDINATE_CURRENT"
+
+  SECS=$(devmem $(vbs_addr 0x24) 32)
+  UBOOT_LAST=$(date -ud @$((16#${SECS:2:8})))
+  echo "U-Boot fallback:         $UBOOT_LAST"
+
+  SECS=$(devmem $(vbs_addr 0x30) 32)
+  UBOOT_CURRENT=$(date -ud @$((16#${SECS:2:8})))
+  echo "U-Boot time:             $UBOOT_CURRENT"
+
+  SECS=$(devmem $(vbs_addr 0x28) 32)
+  KERNEL_LAST=$(date -ud @$((16#${SECS:2:8})))
+  echo "Kernel fallback:         $KERNEL_LAST"
+
+  SECS=$(devmem $(vbs_addr 0x34) 32)
+  KERNEL_CURRENT=$(date -ud @$((16#${SECS:2:8})))
+  echo "Kernel time:             $KERNEL_CURRENT"
 
   # Flags
   FORCE_RECOVERY=$(devmem $(vbs_addr 0x14) 8)

@@ -54,6 +54,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Enable FBY2-specific debug messages
 #define FBY2_DEBUG
 
+// ignore errors communicating with BIC
+#define FBY2_IGNORE_ERROR
+
+#define MAX(a,b)            (((a) > (b)) ? (a) : (b))
+#define MIN(a,b)            (((a) < (b)) ? (a) : (b))
+
 struct tck_bitbang {
     unsigned char     tms;
     unsigned char     tdi;        // TDI bit value to write
@@ -125,22 +131,23 @@ static int jtag_bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
                   uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 
-static STATUS jtag_bic_set_tap_state(uint8_t slot_id, JTAG_Handler* state, JtagStates tap_state);
 
-static STATUS jtag_bic_shift_wrapper(unsigned int write_bit_length, unsigned char* write_data,
+static STATUS jtag_bic_set_tap_state(uint8_t slot_id, JtagStates src_state, JtagStates tap_state);
+
+static STATUS jtag_bic_shift_wrapper(uint8_t slot_id,
+                              unsigned int write_bit_length, unsigned char* write_data,
                               unsigned int read_bit_length, unsigned char* read_data,
                               unsigned int last);
 
-static STATUS bic_jtag_read_write_scan(struct scan_xfer *scan_xfer);
-
+static STATUS jtag_bic_read_write_scan(struct scan_xfer *scan_xfer);
 
 
 
 static STATUS JTAG_clock_cycle(int number_of_cycles);
-static STATUS perform_shift(unsigned int number_of_bits,
+static STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
-                     JtagStates current_tap_state, JtagStates end_tap_state);
+                     JtagStates end_tap_state);
 
 
 
@@ -148,8 +155,6 @@ static STATUS perform_shift(unsigned int number_of_bits,
 
 // debug helper functions
 #ifdef FBY2_DEBUG
-
-void print_jtag_state(const char *func, JTAG_Handler *state);
 
 
 void print_jtag_state(const char *func, JTAG_Handler *state)
@@ -344,7 +349,7 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     if (state == NULL)
         return ST_ERR;
 
-    ret = jtag_bic_set_tap_state(0, state, tap_state);
+    ret = jtag_bic_set_tap_state(0, state->tap_state, tap_state);
     if (ret != ST_OK) {
         printf("ERROR: %s jtag_bic_set_tap_state failed!", __FUNCTION__);
         return ST_ERR;
@@ -393,7 +398,8 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
     printf("    -number_of_bits=%d\n", number_of_bits);
     printf("    -input_bytes=%d\n", input_bytes);
     printf("    -output_bytes=%d\n", output_bytes);
-    printf("    -end_tap_state=%d\n", end_tap_state);
+    printf("    -end_tap_state=%d(%s)\n", end_tap_state,
+                 tap_states_name[end_tap_state]);
 #endif
 
 
@@ -423,23 +429,23 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
     if (state->scan_state == JTAGScanState_Done) {
         state->scan_state = JTAGScanState_Run;
         if (preFix) {
-            if (perform_shift(preFix, MAXPADSIZE, padData,
-                              0, NULL, state->tap_state, state->tap_state) != ST_OK)
+            if (perform_shift(state, preFix, MAXPADSIZE, padData,
+                              0, NULL, state->tap_state) != ST_OK)
                 return ST_ERR;
         }
     }
 
     if ((postFix) && (state->tap_state != end_tap_state)) {
         state->scan_state = JTAGScanState_Done;
-        if (perform_shift(number_of_bits, input_bytes, input,
-                          output_bytes, output, state->tap_state, state->tap_state) != ST_OK)
+        if (perform_shift(state, number_of_bits, input_bytes, input,
+                          output_bytes, output, state->tap_state) != ST_OK)
             return ST_ERR;
-        if (perform_shift(postFix, MAXPADSIZE, padData, 0,
-                          NULL, state->tap_state, end_tap_state) != ST_OK)
+        if (perform_shift(state, postFix, MAXPADSIZE, padData, 0,
+                          NULL, end_tap_state) != ST_OK)
             return ST_ERR;
     } else {
-        if (perform_shift(number_of_bits, input_bytes, input,
-                          output_bytes, output, state->tap_state, end_tap_state) != ST_OK)
+        if (perform_shift(state, number_of_bits, input_bytes, input,
+                          output_bytes, output, end_tap_state) != ST_OK)
             return ST_ERR;
         if (state->tap_state != end_tap_state) {
             state->scan_state = JTAGScanState_Done;
@@ -455,16 +461,23 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
 //  Optionally write and read the requested number of
 //  bits and go to the requested target state
 //
-STATUS perform_shift(unsigned int number_of_bits,
+STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
-                     JtagStates current_tap_state, JtagStates end_tap_state)
+                     JtagStates end_tap_state)
 {
 
 #ifdef FBY2_DEBUG
-    printf("\n    -perform_shift -number_of_bits=%d\n", number_of_bits);
-    printf("                   -input_bytes=%d\n", input_bytes);
-    printf("                   -output_bytes=%d\n", output_bytes);
+    int print_len = MIN(10, input_bytes);
+
+    printf("\n    -%s -number_of_bits=%d", __FUNCTION__, number_of_bits);
+    printf("   -input_bytes=%d", input_bytes);
+    printf("   -output_bytes=%d\n", output_bytes);
+    printf("                   -first %d bytes of data: ", print_len);
+    for (int i=0; i<print_len; ++i) {
+      printf("0x%02x ", input[i]);
+    }
+    printf("\n\n");
 #endif
 
 
@@ -477,28 +490,42 @@ STATUS perform_shift(unsigned int number_of_bits,
     scan_xfer.end_tap_state = end_tap_state;
 
 
-    if (bic_jtag_read_write_scan(&scan_xfer) < 0) {
-        syslog(LOG_ERR, "BIC_JTAG_READWRITESCAN failed!");
+    if (jtag_bic_read_write_scan(&scan_xfer) < 0) {
+        syslog(LOG_ERR, "%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed\n",
+               __FUNCTION__);
 #ifdef FBY2_DEBUG
-        printf("ERROR, BIC_JTAG_READ_WRITE_SCAN failed\n");
+        printf("%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed\n", __FUNCTION__);
 #endif
         return ST_ERR;
     }
+
+    // go to end_tap_state as requested
+    if (jtag_bic_set_tap_state(0, state->tap_state, end_tap_state)) {
+        syslog(LOG_ERR, "%s: ERROR, failed to go state %d\n", __FUNCTION__,
+               end_tap_state);
+#ifdef FBY2_DEBUG
+        printf("%s: ERROR, failed to go state %d\n", __FUNCTION__, end_tap_state);
+#endif
+        return (ST_ERR);
+    }
+
+    state->tap_state = end_tap_state;
+
 
 
 
 #ifdef DEBUG
     {
         unsigned int number_of_bytes = (number_of_bits + 7) / 8;
-        const char* shiftStr = (current_tap_state == JtagShfDR) ? "DR" : "IR";
+        const char* shiftStr = (state->tap_state == JtagShfDR) ? "DR" : "IR";
         syslog(LOG_DEBUG, "%s size: %d", shiftStr, number_of_bits);
         if (input != NULL && number_of_bytes <= input_bytes) {
             syslog_buffer(LOG_DEBUG, input, number_of_bytes,
-                           (current_tap_state == JtagShfDR) ? "DR TDI" : "IR TDI");
+                           (state->tap_state == JtagShfDR) ? "DR TDI" : "IR TDI");
         }
         if (output != NULL && number_of_bytes <= output_bytes) {
             syslog_buffer(LOG_DEBUG, output, number_of_bytes,
-                           (current_tap_state == JtagShfDR) ? "DR TDO" : "IR TDO");
+                           (state->tap_state == JtagShfDR) ? "DR TDO" : "IR TDO");
         }
         syslog(LOG_DEBUG, "%s: End tap state: %d", shiftStr, end_tap_state);
     }
@@ -552,8 +579,12 @@ int jtag_bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     int ret;
 #ifdef FBY2_DEBUG
     printf("      -BMC->BIC, slot=%d, netfn=0x%02x, cmd=0x%02x, txbuf=0x", slot_id, netfn, cmd);
-    for (int i=0; i<txlen; ++i) {
-        printf("%02x", txbuf[i]);
+    // IANA ID
+    printf("%02x%02x%02x ", txbuf[0], txbuf[1], txbuf[2]);
+
+    // actual payload
+    for (int i=3; i<txlen; ++i) {
+        printf("%02x ", txbuf[i]);
     }
     printf(", txlen=%d\n", txlen);
 #endif
@@ -561,11 +592,13 @@ int jtag_bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
 #ifdef FBY2_DEBUG
     printf("        returned data: rxlen=%d, rxbuf=0x%02x\n", *rxlen, rxbuf[0]);
+
+#ifdef FBY2_IGNORE_ERROR
     if (ret) {
         printf("        ERROR: bic_ipmb_wrapper returns %d, ignore error and continue for now\n", ret);
-        // todo remove
         ret = 0;
     }
+#endif
 #endif
 
     return ret;
@@ -586,15 +619,17 @@ STATUS generateTMSbits(JtagStates src, JtagStates dst, uint8_t *length, uint8_t 
     return ST_OK;
 }
 
-static
-STATUS jtag_bic_set_tap_state(uint8_t slot_id, JTAG_Handler* state, JtagStates tap_state)
+STATUS jtag_bic_set_tap_state(uint8_t slot_id, JtagStates src_state, JtagStates tap_state)
 {
-    JtagStates src_state = state->tap_state;
     uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
     uint8_t rbuf[4] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
     STATUS ret;
+
+    // if we're already are requested state,
+    if (src_state == tap_state)
+        return ST_OK;
 
     // tbuf[0:2] = IANA ID
     // tbuf[3]   = tms bit length (max = 8)
@@ -617,8 +652,9 @@ STATUS jtag_bic_set_tap_state(uint8_t slot_id, JTAG_Handler* state, JtagStates t
     }
 
 #ifdef FBY2_DEBUG
-    printf("      -%s src_state=%d, dst_state=%d, count=%d, tmsbits=0x%02x\n",
-           __FUNCTION__, src_state, tap_state, tbuf[3], tbuf[4]);
+    printf("      -%s src_state=%d(%s), dst_state=%d(%s), count=%d, tmsbits=0x%02x\n",
+           __FUNCTION__, src_state, tap_states_name[src_state],
+           tap_state, tap_states_name[tap_state], tbuf[3], tbuf[4]);
 #endif
 
 
@@ -629,27 +665,127 @@ STATUS jtag_bic_set_tap_state(uint8_t slot_id, JTAG_Handler* state, JtagStates t
 }
 
 static
-STATUS jtag_bic_shift_wrapper(unsigned int write_bit_length, unsigned char* write_data,
-                              unsigned int read_bit_length, unsigned char* read_data,
-                              unsigned int last)
+STATUS jtag_bic_shift_wrapper(uint8_t slot_id, unsigned int write_bit_length,
+                              unsigned char* write_data, unsigned int read_bit_length,
+                              unsigned char* read_data, unsigned int last_transaction)
 {
-  return ST_OK;
+    uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+    uint8_t rbuf[256] = {0x00};
+    uint8_t rlen = 0;
+    uint8_t tlen = 0;
+    STATUS ret;
+
+    uint8_t  write_len_bytes = (write_bit_length >> 3);
+
+#ifdef FBY2_DEBUG
+    printf("        -%s\n", __FUNCTION__);
+    printf("              - write_bit_length=%d (0x%02x)\n", write_bit_length, write_bit_length);
+    printf("              - read_bit_length=%d (0x%02x)\n", read_bit_length, read_bit_length);
+    printf("              - last_transaction=%d\n\n", last_transaction);
+#endif
+    // tbuf[0:2] = IANA ID
+    // tbuf[3]   = write bit length, (LSB)
+    // tbuf[4]   = write bit length, (MSB)
+    // tbuf[5:n-1] = write data
+    // tbuf[n]   = read bit length (LSB)
+    // tbuf[n+1] = read bit length (MSB)
+    // tbuf[n+2] = last transactions
+
+    tbuf[3] = write_bit_length & 0xFF;
+    tbuf[4] = (write_bit_length >> 8) & 0xFF;
+    memcpy(&(tbuf[5]), write_data, write_len_bytes);
+    tbuf[5 + write_len_bytes] = read_bit_length & 0xFF;
+    tbuf[6 + write_len_bytes] = (read_bit_length >> 8) & 0xFF;
+    tbuf[7 + write_len_bytes] = last_transaction;
+
+    tlen    = write_len_bytes + 8;  //      write payload
+                                    //  + 3 bytes IANA ID
+                                    //  + 2 bytes WR length
+                                    //  + 2 bytes RD length
+                                    //  + 1 byte last_transaction
+
+    ret = jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_JTAG_SHIFT,
+                                tbuf, tlen, rbuf, &rlen);
+
+#ifdef FBY2_DEBUG
+    int print_len = MIN(10, (read_bit_length>>3));
+    printf("        -%s\n", __FUNCTION__);
+    printf("              - ret=%d, rlen=%d\n", ret, rlen);
+    printf("              - first %d bytes of return data\n", print_len);
+    printf("          ");
+    for (int i=0; i<print_len; ++i) {
+        printf("0x%02x ", rbuf[i]) ;
+    }
+    printf("\n\n");
+#endif
+
+    if (ret == ST_OK) {
+        //Ignore IANA ID
+        memcpy(read_data, &rbuf[3], rlen-3);
+    }
+    return ret;
 }
 
 // BIC JTAG driver
 static
-STATUS bic_jtag_read_write_scan(struct scan_xfer *scan_xfer)
+STATUS jtag_bic_read_write_scan(struct scan_xfer *scan_xfer)
 {
-  unsigned int write_bit_length    = (scan_xfer->tdi_bytes)<<3;
-  unsigned int read_bit_length     = (scan_xfer->tdo_bytes)<<3;
-  int transfer_bit_length = scan_xfer->length;
-  STATUS ret = ST_OK;
+#define MAX_TRANSFER_BITS  0x400
 
-  while (transfer_bit_length)
-  {
+    int write_bit_length    = (scan_xfer->tdi_bytes)<<3;
+    int read_bit_length     = (scan_xfer->tdo_bytes)<<3;
+    int transfer_bit_length = scan_xfer->length;
+    int last_transaction  = 0;
+    STATUS ret = ST_OK;
 
-      ret = jtag_bic_shift_wrapper(write_bit_length, scan_xfer->tdi,
-                                   read_bit_length, scan_xfer->tdo, 1);
+
+#ifdef FBY2_DEBUG
+    printf("        -%s initial value:\n", __FUNCTION__);
+    printf("              - transfer_bit_length=%d\n", transfer_bit_length);
+    printf("              - write_bit_length=%d\n", write_bit_length);
+    printf("              - read_bit_length =%d\n\n", read_bit_length);
+#endif
+
+    if (write_bit_length < transfer_bit_length &&
+        read_bit_length < transfer_bit_length)
+    {
+        printf("%s: ERROR: illegal input, read(%d)/write(%d) length < transfer length(%d)\n",
+               __FUNCTION__, read_bit_length, write_bit_length, transfer_bit_length);
+        return ST_ERR;
+    }
+
+    write_bit_length = MIN(write_bit_length, transfer_bit_length);
+    read_bit_length  = MIN(read_bit_length, transfer_bit_length);
+
+    while (transfer_bit_length)
+    {
+        int this_write_bit_length = MIN(write_bit_length, MAX_TRANSFER_BITS);
+        int this_read_bit_length  = MIN(read_bit_length, MAX_TRANSFER_BITS);
+
+        // check if we entered illegal state
+        if (    this_write_bit_length < 0  || this_read_bit_length < 0
+            || last_transaction == 1
+            || (this_write_bit_length == 0 && this_read_bit_length ==0) ) {
+            printf("%s: ERROR, invalid read write length. read=%d, write=%d, last_transaction=%d\n",
+                    __FUNCTION__, this_read_bit_length, this_write_bit_length,
+                    last_transaction);
+            return ST_ERR;
+        }
+
+        transfer_bit_length -= MAX(this_write_bit_length, this_read_bit_length);
+
+        write_bit_length -= this_write_bit_length;
+        read_bit_length  -= this_read_bit_length;
+
+        last_transaction = (transfer_bit_length <= 0);
+
+        ret = jtag_bic_shift_wrapper(1, this_write_bit_length, scan_xfer->tdi,
+                                   this_read_bit_length, scan_xfer->tdo,
+                                   last_transaction);
+        if (ret != ST_OK) {
+            printf("%s: ERROR, jtag_bic_shift_wrapper failed\n", __FUNCTION__);
+            break;
+        }
   }
 
   return ret;

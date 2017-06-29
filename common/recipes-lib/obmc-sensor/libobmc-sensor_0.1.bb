@@ -16,6 +16,11 @@ S = "${WORKDIR}"
 
 DEPENDS = " libpal libedb "
 
+#Enable sensor-util and sensord communicating to sensor-svcd via DBUS
+#CFLAGS =+ "-DDBUS_SENSOR_SVC"
+#LDFLAGS =+ "-lsensor-svc-client"
+#DEPENDS =+ "libsensor-svc-client"
+
 do_install() {
 	  install -d ${D}${libdir}
     install -m 0644 libobmc-sensor.so ${D}${libdir}/libobmc-sensor.so

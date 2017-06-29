@@ -5,7 +5,7 @@ CFLAGS += -Wall -Werror
 
 libobmc-sensor.so: obmc-sensor.c
 	$(CC) $(CFLAGS) -Werror -fPIC -c -o obmc-sensor.o obmc-sensor.c
-	$(CC) -lpal -ledb -shared -o libobmc-sensor.so obmc-sensor.o -lc -lrt
+	$(CC) -lpal -ledb -shared -o libobmc-sensor.so obmc-sensor.o -lc -lrt $(LDFLAGS)
 
 .PHONY: clean
 

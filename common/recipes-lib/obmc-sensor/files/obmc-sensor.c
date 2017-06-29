@@ -34,6 +34,10 @@
 #include <openbmc/edb.h>
 #include "obmc-sensor.h"
 
+#ifdef DBUS_SENSOR_SVC
+#include <openbmc/sensor-svc-client.h>
+#endif
+
 #ifdef DEBUG
 #define DEBUG_STR(...) syslog(LOG_WARNING, __VA_ARGS__)
 #else
@@ -118,8 +122,11 @@ int
 sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
 {
   int ret;
-
+#ifdef DBUS_SENSOR_SVC
+  ret = sensor_svc_read(fru, sensor_num, value);
+#else
   ret = pal_sensor_read(fru, sensor_num, value);
+#endif
   if (ret < 0) {
     DEBUG_STR("sensor_cache_read: cache_get %s failed.\n", key);
     return ERR_FAILURE;
@@ -153,7 +160,12 @@ sensor_cache_write(uint8_t fru, uint8_t sensor_num, bool available, float value)
 
 int sensor_raw_read(uint8_t fru, uint8_t sensor_num, float *value)
 {
+#ifdef DBUS_SENSOR_SVC
+  int ret = sensor_svc_raw_read(fru, sensor_num, value);
+#else
   int ret = pal_sensor_read_raw(fru, sensor_num, value);
+#endif
+
   if (!ret)
     sensor_cache_write(fru, sensor_num, true, *value);
   else if (ret == ERR_SENSOR_NA)

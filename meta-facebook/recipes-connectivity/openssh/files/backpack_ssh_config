@@ -1,0 +1,88 @@
+
+# Global options for all LC, FC connections
+Host fc00? lc?0? fc00?-oob lc?0?-oob cmm
+  User root
+
+# CMM mapping
+Host cmm
+  HostName fe80::c1:1%%eth0.4088
+
+# BMC mappings
+# Line card
+Host lc101-oob
+  HostName fe80::101:1%%eth0.4088
+
+Host lc102-oob
+  HostName fe80::102:1%%eth0.4088
+
+Host lc201-oob
+  HostName fe80::201:1%%eth0.4088
+
+Host lc202-oob
+  HostName fe80::202:1%%eth0.4088
+
+Host lc301-oob
+  HostName fe80::301:1%%eth0.4088
+
+Host lc302-oob
+  HostName fe80::302:1%%eth0.4088
+
+Host lc401-oob
+  HostName fe80::401:1%%eth0.4088
+
+Host lc402-oob
+  HostName fe80::402:1%%eth0.4088
+
+# Fabric Card
+Host fc001-oob
+  HostName fe80::1:1%%eth0.4088
+
+Host fc002-oob
+  HostName fe80::2:1%%eth0.4088
+
+Host fc003-oob
+  HostName fe80::3:1%%eth0.4088
+
+Host fc004-oob
+  HostName fe80::4:1%%eth0.4088
+
+
+# Userver mappings
+# Line card
+Host lc101
+  HostName fe80::101:2%%eth0.4088
+
+Host lc102
+  HostName fe80::102:2%%eth0.4088
+
+Host lc201
+  HostName fe80::201:2%%eth0.4088
+
+Host lc202
+  HostName fe80::202:2%%eth0.4088
+
+Host lc301
+  HostName fe80::301:2%%eth0.4088
+
+Host lc302
+  HostName fe80::302:2%%eth0.4088
+
+Host lc401
+  HostName fe80::401:2%%eth0.4088
+
+Host lc402
+  HostName fe80::402:2%%eth0.4088
+
+# Fabric Card
+Host fc001
+  HostName fe80::1:2%%eth0.4088
+
+Host fc002
+  HostName fe80::2:2%%eth0.4088
+
+Host fc003
+  HostName fe80::3:2%%eth0.4088
+
+Host fc004
+  HostName fe80::4:2%%eth0.4088
+

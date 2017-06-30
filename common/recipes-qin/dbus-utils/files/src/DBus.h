@@ -250,7 +250,7 @@ class DBus : public Ipc {
      */
     static void onBusAcquired (GDBusConnection *connection,
                                const gchar     *name,
-                               gpointer         arg);
+                               gpointer         arg) {}
 
     /**
      * Event handler on name acquired
@@ -258,7 +258,7 @@ class DBus : public Ipc {
      */
     static void onNameAcquired (GDBusConnection *connection,
                                 const gchar     *name,
-                                gpointer         arg) {}
+                                gpointer         arg);
 
     /**
      * Event handler on name lost. Reset DBusObject id to indicate

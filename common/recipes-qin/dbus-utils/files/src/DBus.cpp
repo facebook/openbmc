@@ -240,7 +240,7 @@ void DBus::unregisterObjectInterface(DBusObject              &object,
     << " with interface " << interface.getName();
 }
 
-void DBus::onBusAcquired(GDBusConnection *connection,
+void DBus::onNameAcquired(GDBusConnection *connection,
                          const gchar     *name,
                          gpointer         arg) {
   LOG(INFO) << "DBus connection to be registered with name "

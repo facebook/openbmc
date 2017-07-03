@@ -198,7 +198,7 @@ struct pal_key_cfg {
   {"server_sensor_health", "1", NULL},
   {"nic_sensor_health", "1", NULL},
   {"server_sel_error", "1", NULL},
-  {"server_boot_order", "0000000", NULL},
+  {"server_boot_order", "0100090203ff", NULL},
   {"ntp_server", "", key_func_ntp},
   {"time_zone", "UTC", key_func_tz},
   /* Add more Keys here */
@@ -6218,7 +6218,7 @@ pal_set_adr_trigger(uint8_t slot, bool trigger) {
   return 0;
 }
 
-int 
+int
 pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 {
   uint8_t bus_id = 0x4;

@@ -28,225 +28,166 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "pin_interface.h"
 #include "SoftwareJTAGHandler.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
+#include <syslog.h>
 #include "openbmc/pal.h"
 #include "openbmc/gpio.h"
+#include <facebook/bic.h>
 
-/* Output pins */
-#define DEBUG_EN_GPIO "GPIOB1"
-gpio_st debug_en_gpio;
+#define FBY2_DEBUG
 
-#define TCK_MUX_SEL_GPIO "GPIOR2"
-gpio_st tck_mux_sel_gpio;
 
-#define POWER_DEBUG_EN_GPIO "GPIOP6"
-gpio_st power_debug_en_gpio;
-
-#define PREQ_GPIO "GPIOP5"
-gpio_st preq_gpio;
-
-/* Input pins */
-#if 0
-
-static void gpio_handle(gpio_poll_st *gpio);
-static void *gpio_poll_thread(void *unused);
-static gpio_poll_st g_gpios[3] = {
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_handle, "GPIOR5", "RST_BMC_PLTRST_BUF_N"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_handle, "GPIOR3", "BMC_PRDY_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_handle, "GPIOR4", "BMC_XDP_PRSNT_IN_N"},
+//  PLTRST,  PRDY, XDP_PRESENT
+enum  MONITOR_EVENTS {
+  JTAG_PLTRST_EVENT   = 0,
+  JTAG_PRDY_EVENT,
+  JTAG_XDP_PRESENT_EVENT,
+  JTAG_EVENT_NUM,
 };
+static bool g_gpios_triggered[JTAG_EVENT_NUM] = {false, false, false};
 
-static bool g_gpios_triggered[3] = {false, false, false};
+
 static pthread_mutex_t triggered_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t poll_thread;
 
-/* In FBTP, PLTRST_BUF_N Pin of the CPU is directly connected to
- * the BMC GPIOR5. We need to monitor this and notify ASD. */
-static gpio_st *platrst_gpio = &g_gpios[0].gs;
-
-/* In FBTP, PRDY Pin of the CPU is directly connected to the
- * BMC GPIOR3. We need to monitor this and notify ASD. */
-static gpio_st *prdy_gpio    = &g_gpios[1].gs;
-
-/* In FBTP, GPIOR4 is connected to external circuitry which allows us
- * to detect if an XDP connector is connected to the target CPU. Thus
- * allowing us to disable ASD to avoid any conflicts on the JTAG bus.
- * NOTE: In FBTP this is currently impossible since the JTAG interface
- * is disabled in hardware as soon as an XDP connector is detected. But
- * have the functionality anyway since it does provide value in detecting
- * when an XDP is connected */
-static gpio_st *xdp_present_gpio = &g_gpios[2].gs;
-#endif
 
 int pin_initialize(const int fru)
 {
-
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+      return ST_ERR;
+    }
 
     /* Platform specific enables which are required for the ASD feature */
 
-    /* In FBTP, DEBUG_EN Pin of the CPU is directly connected to the BMC
-     * GPIOB1 which needs to be set to 0 (active-low) to enable debugging.
-     * XXX Note, this should have been set by default or done before the CPU
-     * was started. This most probably has no effect if the CPU is already
-     * running.
-     * */
-#if 0
-    int gpio;
-    if (fru != FRU_MB)
-        return ST_ERR;
-
-    gpio = gpio_num(DEBUG_EN_GPIO);
-    if (gpio_export(gpio) ||
-       gpio_open(&debug_en_gpio, gpio) != 0 ||
-       gpio_change_direction(&debug_en_gpio, GPIO_DIRECTION_OUT)) {
-      return ST_ERR;
-    }
-    gpio_write(&debug_en_gpio, GPIO_VALUE_LOW);
-#endif
+    /* needs to
+     *     - enable DEBUG_EN
+     *     - enable POWER_DEBUG_EN  (XDP_BIC_PWR_DEBUG_N?)
+     *     - FM_JTAG_BIC_TCK_MUX_SEL_N  (select ?)
+     *
+     *     starts 1 thread monitoring GPIO pins
+     *         PLTRST_BUF_N - both edge
+     *         PRDY   - fallign edge
+     *         XDP_PRSNT_IN_N - both edges   (if triggered, disable asd)
+     */
 
 
-    /* In FBTP, POWER_DEBUG_EN Pin of the CPU is directly connected to the
-     * BMC GPIOP6 which needs to be set to 0 (active-low) to enable power-debugging
-     * needed to debug early-boot-stalls. */
-#if 0
-    gpio = gpio_num(POWER_DEBUG_EN_GPIO);
-    if (gpio_export(gpio) ||
-       gpio_open(&power_debug_en_gpio, gpio) != 0 ||
-       gpio_change_direction(&power_debug_en_gpio, GPIO_DIRECTION_OUT)) {
-      return ST_ERR;
-    }
-    gpio_write(&power_debug_en_gpio, GPIO_VALUE_LOW);
-#endif
+    pthread_mutex_lock(&triggered_mutex);
+    g_gpios_triggered[JTAG_PLTRST_EVENT] = false;
+    g_gpios_triggered[JTAG_PRDY_EVENT] = false;
+    g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
+    pthread_mutex_unlock(&triggered_mutex);
 
-    /* In FBTP, JTAG_TCK Pin of the CPU is directly connected to the BMC (JTAG_TCK).
-     * But that output can be connected to the CPU (default) or a second
-     * destination (currently unconnected in DVT which may change in future).
-     * This choice is made based on the output value of GPIOR2 thus,
-     * here we are selecting it to go to the CPU. Potentially unnecessary but
-     * we want to be future proofed. */
-#if 0
-    gpio = gpio_num(TCK_MUX_SEL_GPIO);
-    if (gpio_export(gpio) ||
-       gpio_open(&tck_mux_sel_gpio, gpio) != 0 ||
-       gpio_change_direction(&tck_mux_sel_gpio, GPIO_DIRECTION_OUT)) {
-      return ST_ERR;
-    }
-    gpio_write(&tck_mux_sel_gpio, GPIO_VALUE_LOW);
-#endif
-
-    /* In FBTP, PREQ Pin of the CPU is directly connected to the BMC
-     * GPIOP5. It appears that the AST2500(or FBTP?) needs to have this
-     * set as an input until it's time to trigger otherwise it will cause a
-     * PREQ event For other setups, you may be able to set it to an output right away */
-#if 0
-    gpio = gpio_num(PREQ_GPIO);
-    if (gpio_export(gpio) ||
-       gpio_open(&preq_gpio, gpio) != 0 ||
-       gpio_change_direction(&preq_gpio, GPIO_DIRECTION_IN)) {
-      return ST_ERR;
-    }
-
-    if (gpio_poll_open(g_gpios, 3)) {
-      return ST_ERR;
-    }
-
-    pthread_create(&poll_thread, NULL, gpio_poll_thread, NULL);
-#endif
     return ST_OK;
 }
 
 int pin_deinitialize(const int fru)
 {
-#if 0
-    if (fru != FRU_MB)
-        return ST_ERR;
-
-    if (gpio_change_direction(&debug_en_gpio, GPIO_DIRECTION_IN)) {
-        return ST_ERR;
-    }
-    gpio_close(&debug_en_gpio);
-
-    if (gpio_change_direction(&power_debug_en_gpio, GPIO_DIRECTION_IN)) {
-        return ST_ERR;
-    }
-    gpio_close(&power_debug_en_gpio);
-
-    if (gpio_change_direction(&tck_mux_sel_gpio, GPIO_DIRECTION_IN)) {
-        return ST_ERR;
-    }
-    gpio_close(&tck_mux_sel_gpio);
-
-    if (gpio_change_direction(&preq_gpio, GPIO_DIRECTION_IN)) {
-        return ST_ERR;
-    }
-    gpio_close(&preq_gpio);
-
-    gpio_poll_close(g_gpios, 3);
-
-    pthread_join(poll_thread, NULL);
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
 #endif
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+      return ST_ERR;
+    }
+
+    // TBD
+
     return ST_OK;
 }
 
 
 int power_debug_assert(const int fru, const bool assert)
 {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d, assert=%d", __FUNCTION__, fru, assert);
+#endif
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+      return ST_ERR;
+    }
+
 #if 0
-    if (fru != FRU_MB)
-        return ST_ERR;
     /* Active low. */
     gpio_write(&power_debug_en_gpio, assert ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
 #endif
+
     return ST_OK;
 }
 
 int power_debug_is_asserted(const int fru, bool* asserted)
 {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
 #if 0
     gpio_value_en value;
-    if (fru != FRU_MB)
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      printf("%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
+    }
     value = gpio_read(&power_debug_en_gpio);
     if (value == GPIO_VALUE_INVALID) {
       return ST_ERR;
     }
     *asserted = value == GPIO_VALUE_LOW ? true : false;
 #endif
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, asserted=%d\n", __FUNCTION__, *asserted);
+#endif
+
     return ST_OK;
 }
 
 int preq_assert(const int fru, const bool assert)
 {
-#if 0
-    if (fru != FRU_MB) {
-      return ST_ERR;
-    }
-    /* The direction needs to be changed on demand to avoid
-     * sending an unnecessary PREQ event at initialization.
-     * See comment in pin_initialize() */
-    if (gpio_change_direction(&preq_gpio, GPIO_DIRECTION_OUT)) {
-      return ST_ERR;
-    }
-    /* Active low. */
-    gpio_write(&preq_gpio, assert ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
+    int ret;
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d, assert=%d", __FUNCTION__, fru, assert);
 #endif
-    return ST_OK;
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+      return ST_ERR;
+    }
+
+    /* active low */
+    ret = bic_set_gpio(fru, XDP_BIC_PREQ_N, assert ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
+
+    return ret;
 }
 
 int preq_is_asserted(const int fru, bool* asserted)
 {
-#if 0
-    gpio_value_en value;
-    if (fru != FRU_MB)
-      return ST_ERR;
-    value = gpio_read(&preq_gpio);
-    if (value == GPIO_VALUE_INVALID) {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+    bic_gpio_t gpio;
+    int ret;
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
-    /* Active low. */
-    *asserted = value == GPIO_VALUE_LOW ? true : false;
+
+    ret = bic_get_gpio(fru, &gpio);
+    if (!ret) {
+      /* active low */
+      *asserted = gpio.xdp_bic_preq_n == GPIO_VALUE_LOW ? true : false;
+    }
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, *asserted);
 #endif
-    return ST_OK;
+
+    return ret;
 }
 #if 0
 static void gpio_handle(gpio_poll_st *gpio)
@@ -272,35 +213,54 @@ static void *gpio_poll_thread(void *unused)
   return NULL;
 }
 #endif
+
 int platform_reset_is_event_triggered(const int fru, bool* triggered)
 {
-#if 0
-    if (fru != FRU_MB) {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
     pthread_mutex_lock(&triggered_mutex);
-    *triggered = g_gpios_triggered[0];
-    g_gpios_triggered[0] = false;
+    *triggered = g_gpios_triggered[JTAG_PLTRST_EVENT];
+    g_gpios_triggered[JTAG_PLTRST_EVENT] = false;
     pthread_mutex_unlock(&triggered_mutex);
     /* TODO */
     *triggered = false;
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s %d", __FUNCTION__, *triggered);
 #endif
+
     return ST_OK;
 }
 
 int platform_reset_is_asserted(const int fru, bool* asserted)
 {
-#if 0
-    gpio_value_en value;
-    if (fru != FRU_MB)
-      return ST_ERR;
-    value = gpio_read(platrst_gpio);
-    if (value == GPIO_VALUE_INVALID) {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+    bic_gpio_t gpio;
+    int ret;
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
-    /* active-high */
-    *asserted = value == GPIO_VALUE_HIGH ? true : false;
+
+    ret = bic_get_gpio(fru, &gpio);
+    if (!ret) {
+      /* active low */
+      *asserted = gpio.pltrst_n == GPIO_VALUE_LOW ? true : false;
+    }
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s asserted=%d", __FUNCTION__, *asserted);
 #endif
+
     return ST_OK;
 }
 
@@ -308,56 +268,90 @@ int platform_reset_is_asserted(const int fru, bool* asserted)
 
 int prdy_is_event_triggered(const int fru, bool* triggered)
 {
-    
-#if 0
-    if (fru != FRU_MB)
-        return ST_ERR;
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+      return ST_ERR;
+    }
+
     pthread_mutex_lock(&triggered_mutex);
-    *triggered = g_gpios_triggered[1];
-    g_gpios_triggered[1] = false;
+    *triggered = g_gpios_triggered[JTAG_PRDY_EVENT];
+    g_gpios_triggered[JTAG_PRDY_EVENT] = false;
     pthread_mutex_unlock(&triggered_mutex);
     /* TODO */
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s triggered=%d\n", __FUNCTION__, (int)*triggered);
 #endif
+
     return ST_OK;
 }
 
 int prdy_is_asserted(const int fru, bool* asserted)
 {
-#if 0
-    gpio_value_en value;
-    if (fru != FRU_MB)
-      return ST_ERR;
-    value = gpio_read(prdy_gpio);
-    if (value == GPIO_VALUE_INVALID) {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+    bic_gpio_t gpio;
+    int ret;
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
-    /* active-low */
-    *asserted = value == GPIO_VALUE_LOW ? true : false;
+
+    ret = bic_get_gpio(fru, &gpio);
+    if (!ret) {
+      /* active low */
+      // todo - current BIC does not return PRDY pin to BMC
+      //*asserted = gpio.prdy == GPIO_VALUE_LOW ? true : false;
+    }
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, (int)*asserted);
 #endif
+
     return ST_OK;
 }
 
 int xdp_present_is_event_triggered(const int fru, bool* triggered)
 {
-#if 0
-    if (fru != FRU_MB) {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
     /* TODO */
     pthread_mutex_lock(&triggered_mutex);
-    *triggered = g_gpios_triggered[2];
-    g_gpios_triggered[2] = false;
+    *triggered = g_gpios_triggered[JTAG_XDP_PRESENT_EVENT];
+    g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
     pthread_mutex_unlock(&triggered_mutex);
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, (int)*triggered);
 #endif
+
     return ST_OK;
 }
 
 int xdp_present_is_asserted(const int fru, bool* asserted)
 {
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
+#endif
+
 #if 0
     gpio_value_en value;
-    if (fru != FRU_MB)
-      return ST_ERR;
+    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+      return NULL;
+    }
     value = gpio_read(xdp_present_gpio);
     if (value == GPIO_VALUE_INVALID) {
       return ST_ERR;
@@ -365,5 +359,10 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
     /* active-low */
     *asserted = value == GPIO_VALUE_LOW ? true : false;
 #endif
+
+#ifdef FBY2_DEBUG
+    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, *asserted);
+#endif
+
     return ST_OK;
 }

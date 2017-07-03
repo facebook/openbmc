@@ -29,6 +29,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "pal.h"
+#include <facebook/bic.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 

@@ -411,3 +411,5 @@ if __name__ == "__main__":
         (etype, e) = sys.exc_info()[:2]
         Logger.crit("failed, exception: " + str(etype))
         traceback.print_exc()
+        for line in traceback.format_exc().split('\n'):
+            Logger.crit(line)

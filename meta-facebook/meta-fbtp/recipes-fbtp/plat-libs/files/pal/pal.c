@@ -1025,7 +1025,6 @@ read_hsc_temp_value(float *value) {
   float hsc_b = 31880;
   float hsc_m = 42;
   ipmb_req_t *req;
-  ipmb_res_t *res;
   char path[64] = {0};
   int val=0;
   int ret = 0;
@@ -1062,7 +1061,7 @@ read_hsc_temp_value(float *value) {
   tlen = 16;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf, &rlen);
 
   if (rlen == 0) {
 #ifdef DEBUG

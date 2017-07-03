@@ -139,7 +139,7 @@ static STATUS jtag_bic_shift_wrapper(uint8_t slot_id,
                               unsigned int read_bit_length, uint8_t* read_data,
                               unsigned int last);
 
-static STATUS jtag_bic_read_write_scan(uint8_t slot_id, struct scan_xfer *scan_xfer);
+static STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer);
 
 
 
@@ -497,7 +497,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     scan_xfer.end_tap_state = end_tap_state;
 
 
-    if (jtag_bic_read_write_scan(state->fru, &scan_xfer) < 0) {
+    if (jtag_bic_read_write_scan(state, &scan_xfer) < 0) {
         syslog(LOG_ERR, "%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed, slot%d",
                __FUNCTION__, state->fru);
 #ifdef FBY2_DEBUG
@@ -737,15 +737,17 @@ STATUS jtag_bic_shift_wrapper(uint8_t slot_id, unsigned int write_bit_length,
 
 // BIC JTAG driver
 static
-STATUS jtag_bic_read_write_scan(uint8_t slot_id, struct scan_xfer *scan_xfer)
+STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer)
 {
 #define MAX_TRANSFER_BITS  0x400
 
     int write_bit_length    = (scan_xfer->tdi_bytes)<<3;
     int read_bit_length     = (scan_xfer->tdo_bytes)<<3;
     int transfer_bit_length = scan_xfer->length;
-    int last_transaction  = 0;
+    int last_transaction    = 0;
+    int slot_id             = state->fru;
     STATUS ret = ST_OK;
+    unsigned char *tdi_buffer, *tdo_buffer;
 
 
 #ifdef FBY2_DEBUG
@@ -769,7 +771,8 @@ STATUS jtag_bic_read_write_scan(uint8_t slot_id, struct scan_xfer *scan_xfer)
 
     write_bit_length = MIN(write_bit_length, transfer_bit_length);
     read_bit_length  = MIN(read_bit_length, transfer_bit_length);
-
+    tdi_buffer = scan_xfer->tdi;
+    tdo_buffer = scan_xfer->tdo;
     while (transfer_bit_length)
     {
         int this_write_bit_length = MIN(write_bit_length, MAX_TRANSFER_BITS);
@@ -790,11 +793,20 @@ STATUS jtag_bic_read_write_scan(uint8_t slot_id, struct scan_xfer *scan_xfer)
         write_bit_length -= this_write_bit_length;
         read_bit_length  -= this_read_bit_length;
 
-        last_transaction = (transfer_bit_length <= 0);
+        last_transaction =     (transfer_bit_length <= 0)
+                            && (scan_xfer->end_tap_state != JtagShfDR)
+                            && (scan_xfer->end_tap_state != JtagShfIR);
 
-        ret = jtag_bic_shift_wrapper(slot_id, this_write_bit_length, scan_xfer->tdi,
-                                   this_read_bit_length, scan_xfer->tdo,
-                                   last_transaction);
+        ret = jtag_bic_shift_wrapper(slot_id, this_write_bit_length, tdi_buffer,
+                                     this_read_bit_length, tdo_buffer,
+                                     last_transaction);
+
+        if (last_transaction) {
+            state->tap_state = (state->tap_state == JtagShfDR) ? JtagEx1DR : JtagEx1IR;
+        }
+
+        tdi_buffer += (this_write_bit_length >> 3);
+        tdo_buffer += (this_read_bit_length >> 3);
         if (ret != ST_OK) {
 #ifdef FBY2_DEBUG
             printf("%s: ERROR, jtag_bic_shift_wrapper failed, slot%d\n",

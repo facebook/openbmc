@@ -223,13 +223,16 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_P3V_BAT,
   MB_SENSOR_HSC_IN_VOLT,
   MB_SENSOR_HSC_OUT_CURR,
+  MB_SENSOR_HSC_TEMP,
   MB_SENSOR_HSC_IN_POWER,
   MB_SENSOR_CPU0_TEMP,
   MB_SENSOR_CPU0_TJMAX,
   MB_SENSOR_CPU0_PKG_POWER,
+  MB_SENSOR_CPU0_THERM_MARGIN,
   MB_SENSOR_CPU1_TEMP,
   MB_SENSOR_CPU1_TJMAX,
   MB_SENSOR_CPU1_PKG_POWER,
+  MB_SENSOR_CPU1_THERM_MARGIN,
   MB_SENSOR_PCH_TEMP,
   MB_SENSOR_CPU0_DIMM_GRPA_TEMP,
   MB_SENSOR_CPU0_DIMM_GRPB_TEMP,
@@ -283,6 +286,9 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_VR_PCH_P1V05_CURR,
   MB_SENSOR_VR_PCH_P1V05_VOLT,
   MB_SENSOR_VR_PCH_P1V05_POWER,
+  MB_SENSOR_C2_NVME_CTEMP,
+  MB_SENSOR_C3_NVME_CTEMP,
+  MB_SENSOR_C4_NVME_CTEMP,
   MB_SENSOR_C2_AVA_FTEMP,
   MB_SENSOR_C2_AVA_RTEMP,
   MB_SENSOR_C2_1_NVME_CTEMP,
@@ -449,11 +455,11 @@ dyn_sensor_thresh_array_init() {
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 4) > 0) {
-    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
+  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 2) > 0) {
+    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 2);
     init_cpu0 = true;
   }else{
-    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = 104;
+    mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = 106;
   }
 
   // Check if cpu1 threshold needs to be initialized
@@ -463,11 +469,11 @@ dyn_cpu1_init:
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 4) > 0 ) {
-    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 4);
+  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 2) > 0 ) {
+    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 2);
     init_cpu1 = true;
   }else{
-    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = 104;
+    mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = 106;
   }
 
   // Mark init complete only if both thresholds are initialized
@@ -622,6 +628,10 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_POWER][UCR_THRESH] = 26;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][LCR_THRESH] = 0.94;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][UCR_THRESH] = 1.15;
+
+  mb_sensor_threshold[MB_SENSOR_C2_NVME_CTEMP][UCR_THRESH] = 75;
+  mb_sensor_threshold[MB_SENSOR_C3_NVME_CTEMP][UCR_THRESH] = 75;
+  mb_sensor_threshold[MB_SENSOR_C4_NVME_CTEMP][UCR_THRESH] = 75;
 
   mb_sensor_threshold[MB_SENSOR_C2_AVA_FTEMP][UCR_THRESH] = 60;
   mb_sensor_threshold[MB_SENSOR_C2_AVA_RTEMP][UCR_THRESH] = 80;
@@ -1006,6 +1016,78 @@ read_hsc_current_value(float *value) {
 }
 
 static int
+read_hsc_temp_value(float *value) {
+  uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  float hsc_b = 31880;
+  float hsc_m = 42;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  char path[64] = {0};
+  int val=0;
+  int ret = 0;
+  static int retry = 0;
+
+  req = (ipmb_req_t*)tbuf;
+
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+
+  req->cmd = CMD_NM_SEND_RAW_PMBUS;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x86;
+  //HSC slave addr check for SS and DS
+  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
+  read_device(path, &val);
+  if (val){ //DS
+    req->data[4] = 0x8A;
+  }else{    //SS
+    req->data[4] = 0x22;
+  }
+  req->data[5] = 0x00;
+  req->data[6] = 0x00;
+  req->data[7] = 0x01;
+  req->data[8] = 0x02;
+  req->data[9] = 0x8D;
+  tlen = 16;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(bus_id, tbuf, tlen+1, &rbuf, &rlen);
+
+  if (rlen == 0) {
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "read_hsc_temp_value: Zero bytes received\n");
+#endif
+    ret = READING_NA;
+  }
+  if (rbuf[6] == 0)
+  {
+    *value = ((float) (rbuf[11] << 8 | rbuf[10])*10-hsc_b )/(hsc_m);
+    retry = 0;
+  } else {
+    ret = READING_NA;
+  }
+
+  if (ret == READING_NA) {
+    retry++;
+    if (retry <= 3 )
+      ret = READING_SKIP;
+  }
+
+  return ret;
+}
+
+static int
 read_sensor_reading_from_ME(uint8_t snr_num, float *value) {
   uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
   uint8_t tbuf[256] = {0x00};
@@ -1218,10 +1300,25 @@ read_cpu_temp(uint8_t snr_num, float *value) {
     retry[cpu_index]++;
     if (retry[cpu_index] <= 3) {
       ret = READING_SKIP;
-      return ret;
     }
   } else
     retry[cpu_index] = 0;
+
+  //Updated CPU Thermal Margin cache
+  sprintf(key, "mb_sensor%d", (cpu_index?MB_SENSOR_CPU1_THERM_MARGIN:MB_SENSOR_CPU0_THERM_MARGIN));
+  switch (ret) {
+    case 0:
+      sprintf(str, "%.2f",(float) (dts >> 6));
+      edb_cache_set(key, str);
+      break;
+    case READING_NA:
+      strcpy(str, "NA");
+      edb_cache_set(key, str);
+      break;
+    case READING_SKIP:
+    default:
+      break;
+  }
 
   return ret;
 }
@@ -1800,7 +1897,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
   int fd = 0;
   char fn[32];
   int ret = READING_NA;
-  static unsigned int retry[12] = {0};
+  static unsigned int retry[15] = {0};
   uint8_t i_retry;
   uint8_t tcount, rcount, slot_cfg, addr = 0xd4, mux_chan, mux_addr = 0xe2;
   uint8_t switch_chan, switch_addr=0xe6;
@@ -1835,11 +1932,18 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
       i_retry = 10; break;
     case MB_SENSOR_C4_4_NVME_CTEMP:
       i_retry = 11; break;
+    case MB_SENSOR_C2_NVME_CTEMP:
+      i_retry = 12; break;
+    case MB_SENSOR_C3_NVME_CTEMP:
+      i_retry = 13; break;
+    case MB_SENSOR_C4_NVME_CTEMP:
+      i_retry = 14; break;
     default:
       return READING_NA;
   }
 
   switch(sensor_num) {
+    case MB_SENSOR_C2_NVME_CTEMP:
     case MB_SENSOR_C2_1_NVME_CTEMP:
     case MB_SENSOR_C2_2_NVME_CTEMP:
     case MB_SENSOR_C2_3_NVME_CTEMP:
@@ -1848,6 +1952,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
         return READING_NA;
       mux_chan = 0;
       break;
+    case MB_SENSOR_C3_NVME_CTEMP:
     case MB_SENSOR_C3_1_NVME_CTEMP:
     case MB_SENSOR_C3_2_NVME_CTEMP:
     case MB_SENSOR_C3_3_NVME_CTEMP:
@@ -1856,6 +1961,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
         return READING_NA;
       mux_chan = 1;
       break;
+    case MB_SENSOR_C4_NVME_CTEMP:
     case MB_SENSOR_C4_1_NVME_CTEMP:
     case MB_SENSOR_C4_2_NVME_CTEMP:
     case MB_SENSOR_C4_3_NVME_CTEMP:
@@ -1889,6 +1995,11 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
     case MB_SENSOR_C4_4_NVME_CTEMP:
       switch_chan = 3;
       break;
+    case MB_SENSOR_C2_NVME_CTEMP:
+    case MB_SENSOR_C3_NVME_CTEMP:
+    case MB_SENSOR_C4_NVME_CTEMP:
+      switch_chan = 0xff; // no i2c switch
+      break;
     default:
       return READING_NA;
   }
@@ -1907,13 +2018,13 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
     goto error_exit;
   }
 
-  // control I2C switch to target channel.
-  ret = pal_control_switch(fd, switch_addr, switch_chan);
-  // Report temp of PCIe card on MB_SENSOR_CX_1_NVME_CTEMP senosrs,
-  // no I2C Switch on PCIe Card
-  if (ret < 0 && switch_chan != 0) {
-    ret = READING_NA;
-    goto error_exit;
+  if (switch_chan != 0xff) {
+    // control I2C switch to target channel if it has
+    ret = pal_control_switch(fd, switch_addr, switch_chan);
+    if (ret < 0) {
+      ret = READING_NA;
+      goto error_exit;
+    }
   }
 
   // Read 8 bytes from NVMe
@@ -1935,7 +2046,8 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
 error_exit:
   if (fd > 0) {
     pal_control_switch(fd, switch_addr, 0xff); // close
-    pal_control_mux(fd, mux_addr, 0xff); // close
+    if (switch_chan != 0xff)
+      pal_control_mux(fd, mux_addr, 0xff); // close
     close(fd);
   }
 
@@ -3105,6 +3217,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_HSC_OUT_CURR:
         ret = read_hsc_current_value((float*) value);
         break;
+      case MB_SENSOR_HSC_TEMP:
+        ret = read_hsc_temp_value((float*) value);
+        break;
       case MB_SENSOR_HSC_IN_POWER:
         ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_POWER, (float*) value);
         break;
@@ -3118,6 +3233,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     } else {
       if((poweron_10s_flag < 5) && ((sensor_num == MB_SENSOR_HSC_IN_VOLT) ||
          (sensor_num == MB_SENSOR_HSC_OUT_CURR) || (sensor_num == MB_SENSOR_HSC_IN_POWER) ||
+         (sensor_num == MB_SENSOR_HSC_TEMP) ||
          (sensor_num == MB_SENSOR_FAN0_TACH) || (sensor_num == MB_SENSOR_FAN1_TACH))) {
         if(sensor_num == MB_SENSOR_HSC_IN_POWER){
           poweron_10s_flag++;
@@ -3183,6 +3299,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       case MB_SENSOR_HSC_OUT_CURR:
         ret = read_hsc_current_value((float*) value);
+        break;
+      case MB_SENSOR_HSC_TEMP:
+        ret = read_hsc_temp_value((float*) value);
         break;
       case MB_SENSOR_HSC_IN_POWER:
         ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_POWER, (float*) value);
@@ -3418,6 +3537,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_C4_AVA_RTEMP:
         ret = read_ava_temp(sensor_num, (float*) value);
         break;
+      case MB_SENSOR_C2_NVME_CTEMP:
+      case MB_SENSOR_C3_NVME_CTEMP:
+      case MB_SENSOR_C4_NVME_CTEMP:
       case MB_SENSOR_C2_1_NVME_CTEMP:
       case MB_SENSOR_C2_2_NVME_CTEMP:
       case MB_SENSOR_C2_3_NVME_CTEMP:
@@ -3578,6 +3700,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_HSC_OUT_CURR:
       sprintf(name, "MB_HSC_OUT_CURR");
       break;
+    case MB_SENSOR_HSC_TEMP:
+      sprintf(name, "MB_HSC_TEMP");
+      break;
     case MB_SENSOR_HSC_IN_POWER:
       sprintf(name, "MB_HSC_IN_POWER");
       break;
@@ -3590,6 +3715,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_CPU0_PKG_POWER:
       sprintf(name, "MB_CPU0_PKG_POWER");
       break;
+    case MB_SENSOR_CPU0_THERM_MARGIN:
+      sprintf(name, "MB_CPU0_THERM_MARGIN");
+      break;
     case MB_SENSOR_CPU1_TEMP:
       sprintf(name, "MB_CPU1_TEMP");
       break;
@@ -3598,6 +3726,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       break;
     case MB_SENSOR_CPU1_PKG_POWER:
       sprintf(name, "MB_CPU1_PKG_POWER");
+      break;
+    case MB_SENSOR_CPU1_THERM_MARGIN:
+      sprintf(name, "MB_CPU1_THERM_MARGIN");
       break;
     case MB_SENSOR_PCH_TEMP:
       sprintf(name, "MB_PCH_TEMP");
@@ -3758,6 +3889,15 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_VR_PCH_P1V05_POWER:
       sprintf(name, "MB_VR_PCH_P1V05_POWER");
       break;
+    case MB_SENSOR_C2_NVME_CTEMP:
+      sprintf(name, "MB_C2_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C3_NVME_CTEMP:
+      sprintf(name, "MB_C3_NVME_CTEMP");
+      break;
+    case MB_SENSOR_C4_NVME_CTEMP:
+      sprintf(name, "MB_C4_NVME_CTEMP");
+      break;
     case MB_SENSOR_C2_AVA_FTEMP:
       sprintf(name, "MB_C2_AVA_FTEMP");
       break;
@@ -3888,8 +4028,10 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_OUTLET_REMOTE_TEMP:
     case MB_SENSOR_CPU0_TEMP:
     case MB_SENSOR_CPU0_TJMAX:
+    case MB_SENSOR_CPU0_THERM_MARGIN:
     case MB_SENSOR_CPU1_TEMP:
     case MB_SENSOR_CPU1_TJMAX:
+    case MB_SENSOR_CPU1_THERM_MARGIN:
     case MB_SENSOR_PCH_TEMP:
     case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
     case MB_SENSOR_CPU0_DIMM_GRPB_TEMP:
@@ -3907,6 +4049,9 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_VR_CPU1_VDDQ_GRPD_TEMP:
     case MB_SENSOR_VR_PCH_PVNN_TEMP:
     case MB_SENSOR_VR_PCH_P1V05_TEMP:
+    case MB_SENSOR_C2_NVME_CTEMP:
+    case MB_SENSOR_C3_NVME_CTEMP:
+    case MB_SENSOR_C4_NVME_CTEMP:
     case MB_SENSOR_C2_AVA_FTEMP:
     case MB_SENSOR_C2_AVA_RTEMP:
     case MB_SENSOR_C2_1_NVME_CTEMP:
@@ -3925,6 +4070,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_C4_2_NVME_CTEMP:
     case MB_SENSOR_C4_3_NVME_CTEMP:
     case MB_SENSOR_C4_4_NVME_CTEMP:
+    case MB_SENSOR_HSC_TEMP:
       sprintf(units, "C");
       break;
     case MB_SENSOR_FAN0_TACH:

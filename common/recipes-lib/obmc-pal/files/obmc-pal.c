@@ -644,10 +644,6 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
   int ret;
   struct timespec ts;
 
-  ret = system("pidof flashcp &> /dev/null");
-  if (WIFEXITED(ret) && WEXITSTATUS(ret) == 0)
-    return true;
-
   sprintf(key, "fru%d_fwupd", fruid);
   ret = edb_cache_get(key, value);
   if (ret < 0) {

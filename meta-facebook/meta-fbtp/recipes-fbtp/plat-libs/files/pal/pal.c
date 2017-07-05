@@ -177,8 +177,6 @@ static int key_func_lps (int event, void *arg);
 static int key_func_ntp (int event, void *arg);
 static int key_func_tz (int event, void *arg);
 
-static uint8_t power_fail_log = 0;
-
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -2056,98 +2054,102 @@ error_exit:
   return ret;
 }
 
-static void
-add_CPLD_event (uint8_t fru, uint8_t snr_num, uint8_t reg, uint8_t snr_val, uint8_t value) {
-  char sensor_name[32] = {0}, event_str[30] = {0};
-  pal_get_sensor_name(fru, snr_num, sensor_name);
+//CPLD power status register deifne
+enum {
+  MAIN_PWR_STS_REG = 0x00,
+  CPU0_PWR_STS_REG = 0x01,
+  CPU1_PWR_STS_REG = 0x02,
+};
+//CPLD power status register normal value after power on
+enum {
+  MAIN_PWR_STS_VAL = 0x04, // MAIN_ON
+  CPU0_PWR_STS_VAL = 0x13, // CPUPWRGD
+  CPU1_PWR_STS_VAL = 0x13, // CPUPWRGD
+};
 
-  strcpy(event_str, "");
-  switch(reg) {
-      case PWRDATA1_REG :
-	 if (value == 0x40)
-	   strcat(event_str, "FM_CTNR_PS_ON power rail fails");
-	 else if (value == 0x00)
-	   strcat(event_str, "PWRGD_P12V_MAIN power rail fails");
-	 else if (value == 0xc0)
-	   strcat(event_str, "PWRGD_P5V power rail fails");
-	 else if (value == 0xe0)
-	   strcat(event_str, "PWRGD_P3V3 power rail fails");
-	 else if (value == 0xf7)
-	   strcat(event_str, "PWRGD_PVPP_ABC power rail fails");
-	 else if (value == 0xfb)
-	   strcat(event_str, "PWRGD_PVPP_DEF power rail fails");
-	 else if (value == 0xfd)
-	   strcat(event_str, "PWRGD_PVPP_GHJ power rail fails");
-	 else if (value == 0xfe)
-	   strcat(event_str, "PWRGD_PVPP_KLM power rail fails");
-	 else
-	   strcat(event_str, "Unknown power rail fails(PWRDATA1)");
-        break;
-      case PWRDATA2_REG :
-	 if (value == 0x55)
-	   strcat(event_str, "PWRGD_PVTT_CPU0 power rail fails");
-	 else if (value == 0xaa)
-	   strcat(event_str, "PWRGD_PVTT_CPU1 power rail fails");
-	 else if (value == 0xd5)
-	   strcat(event_str, "PWRGD_PVCCIO_CPU0 power rail fails");
-	 else if (value == 0xea)
-	   strcat(event_str, "PWRGD_PVCCIO_CPU1 power rail fails");
-	 else if (value == 0xf7)
-	   strcat(event_str, "PWRGD_PVCCIN_CPU0 power rail fails");
-	 else if (value == 0xfb)
-	   strcat(event_str, "PWRGD_PVCCIN_CPU1 power rail fails");
-	 else if (value == 0xfd)
-	   strcat(event_str, "PWRGD_PVSA_CPU0 power rail fails");
-	 else if (value == 0xfe)
-	   strcat(event_str, "PWRGD_PVSA_CPU1 power rail fails");
-	 else
-	   strcat(event_str, "Unknown power rail fails(PWRDATA2)");
-        break;
-      case PWRDATA3_REG :
-	 if (value == 0x40)
-	   strcat(event_str, "PWRGD_CPUPWRGD power rail fails");
-	 else if (value == 0x80)
-	   strcat(event_str, "RST_PLTRST_N power rail fails");
-	 else
-	   strcat(event_str, "Unknown power rail fails(PWRDATA3)");
-        break;
-    }
-    if(power_fail_log == 0){
-      _print_sensor_discrete_log(fru, snr_num, sensor_name, reg, event_str);
-      pal_add_cri_sel(event_str);
-      power_fail_log = 1;
-    }
-}
+static struct cpld_reg_desc {
+  unsigned char offset;
+  unsigned char bit;
+  char *name;
+} cpld_power_seq[] = {
+  { 0x07, 3, "FM_SLP_SUS_N" },
+  { 0x07, 2, "RST_RSMRST_N" },
+  { 0x07, 1, "FM_SLPS4_N" },
+  { 0x07, 0, "FM_SLPS3_N" },
+  { 0x03, 7, "FM_CTNR_PS_ON" },
+  { 0x0a, 6, "FM_P12V_MAIN_SW_EN" },
+  { 0x03, 6, "PWRGD_P12V_MAIN" },
+  { 0x0a, 7, "FM_PS_EN" },
+  { 0x03, 5, "PWRGD_P5V" },
+  { 0x0a, 5, "FM_P3V3_CPLD_EN" },
+  { 0x03, 4, "PWRGD_P3V3" },
+  { 0x0a, 4, "FM_PVPP_CPU0_EN" },
+  { 0x03, 3, "PWRGD_PVPP_ABC" },
+  { 0x03, 2, "PWRGD_PVPP_DEF" },
+  { 0x0a, 3, "FM_PVPP_CPU1_EN" },
+  { 0x03, 1, "PWRGD_PVPP_GHJ" },
+  { 0x03, 0, "PWRGD_PVPP_KLM" },
+  { 0x0a, 2, "FM_PVDDQ_ABC_EN" },
+  { 0x0a, 1, "FM_PVDDQ_DEF_EN" },
+  { 0x04, 7, "PWRGD_PVTT_CPU0" },
+  { 0x0a, 0, "FM_PVDDQ_GHJ_EN" },
+  { 0x0b, 7, "FM_PVDDQ_KLM_EN" },
+  { 0x04, 6, "PWRGD_PVTT_CPU1" },
+  { 0x0b, 2, "PWRGD_DRAMPWRGD" },
+  { 0x0b, 6, "FM_PVCCIO_CPU0_EN" },
+  { 0x04, 5, "PWRGD_PVCCIO_CPU0" },
+  { 0x0b, 5, "FM_PVCCIO_CPU1_EN" },
+  { 0x04, 4, "PWRGD_PVCCIO_CPU1" },
+  { 0x0b, 4, "FM_PVCCIN_PVCCSA_CPU0_EN_LVC1" },
+  { 0x04, 3, "PWRGD_PVCCIN_CPU0" },
+  { 0x0b, 3, "FM_PVCCIN_PVCCSA_CPU1_EN_LVC1" },
+  { 0x04, 2, "PWRGD_PVCCIN_CPU1" },
+  { 0x04, 1, "PWRGD_PVSA_CPU0" },
+  { 0x04, 0, "PWRGD_PVSA_CPU1" },
+  { 0x0b, 1, "PWRGD_PCH_PWROK" },
+  { 0x0b, 0, "PWRGD_CPU0_LVC3" },
+  { 0x0c, 7, "PWRGD_CPU1_LVC3" },
+  { 0x05, 7, "PWRGD_CPUPWRGD" },
+  { 0x0c, 6, "PWRGD_SYS_PWROK" },
+  { 0x05, 6, "RST_PLTRST_N" },
+};
+static int cpld_power_seq_num = (sizeof(cpld_power_seq)/sizeof(struct cpld_reg_desc));
 
 static int
 read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot) {
+  static uint8_t power_fail = 0;
+  static uint8_t power_fail_log = 0;
   int fd = 0;
   char fn[32];
   int ret = READING_NA, i;
-  static unsigned int retry=0;
-  static uint8_t power_fail = 0;
   uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0}, data_chk;
-  uint8_t sensor_value;
-  int val;
-  char path[64] = {0};
+  uint8_t data_chk, fail_offset;
+  unsigned char reg[16];
+  char sensor_name[32] = {0}, event_str[30] = {0};
 
-  //Check SLPS4 is high before start monitor CPLD power fail
-  sprintf(path, GPIO_VAL, GPIO_FM_SLPS4_N);
-  if (read_device(path, &val)) {
-    goto error_exit;
-  }
-  if (val == 0x0) {
+  // Check SLPS4 is high before start monitor CPLD power fail
+  if (gpio_get(GPIO_FM_SLPS4_N) != GPIO_VALUE_HIGH) {
+    // Reset
     power_fail = 0;
-    goto error_exit;
+    power_fail_log = 0;
+    ret = 0;
+    goto exit;
+  }
+
+  // Already log
+  if (power_fail_log) {
+    ret = 0;
+    goto exit;
   }
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", CPLD_BUS_ID);
   fd = open(fn, O_RDWR);
   if (fd < 0) {
-    goto error_exit;
+    ret = READING_NA;
+    goto exit;
   }
 
+  // Check the status register 0 to 2
   for(i=0;i<3;i++) {
     switch(i) {
       case MAIN_PWR_STS_REG :
@@ -2162,59 +2164,66 @@ read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot
     }
 
     tbuf[0] = i;
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, &reg[i], 1);
     if (ret < 0) {
       ret = READING_NA;
-      goto error_exit;
+      goto exit;
     }
-    if ( rbuf[0] != data_chk ) {
+    if ( reg[i] != data_chk ) {
+      fail_offset = i;
       power_fail++;
       break;
     }
   }
 
+  // All status regs are expected
+  if (i == 3) {
+    power_fail = 0;
+  }
+
+  // Check the status regs later, it might has not finished
   if(power_fail <= 3) {
     ret = 0;
     *value = 0;
-    power_fail_log = 0;
-  } else {
-    for(i=3;i<6;i++) {
-      switch(i) {
-        case PWRDATA1_REG :
-          data_chk = PWRDATA1_VAL;
-          break;
-        case PWRDATA2_REG :
-          data_chk = PWRDATA2_VAL;
-          break;
-        case PWRDATA3_REG :
-          data_chk = PWRDATA3_VAL;
-          break;
-      }
-      // Read 1 byte in offset 00h
-      tbuf[0] = i;
-      ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, rbuf, 1);
-      if (ret < 0) {
-        ret = READING_NA;
-        goto error_exit;
-      }
-      if ( (rbuf[0] != data_chk) && (power_fail > 3)) {
-        sensor_value = 0x01<<i;
-        *value = sensor_value;
-        add_CPLD_event(fru, sensor_num, i , sensor_value, rbuf[0]);
-        break;
-      }
+    goto exit;
+  }
+
+  // Power failed, get the data offset 0x03 to 0x0c
+  for(i = 3; i < 0x0d; i++) {
+    tbuf[0] = i;
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, &reg[i], 1);
+    if (ret < 0) {
+      ret = READING_NA;
+      goto exit;
     }
   }
 
-error_exit:
+  // Check the power sequence one by one in order
+  for(i=0; i < cpld_power_seq_num; i++) {
+    if (!( reg[cpld_power_seq[i].offset] & (1 << cpld_power_seq[i].bit) )) {
+      break;
+    }
+  }
+
+  if (i == cpld_power_seq_num) {
+    sprintf(event_str, "Unknown power rail fails");
+    // keep the fail status reg offset(0~2)
+  } else {
+    sprintf(event_str, "%s power rail fails", cpld_power_seq[i].name);
+    fail_offset = cpld_power_seq[i].offset;
+  }
+
+  pal_get_sensor_name(fru, sensor_num, sensor_name);
+
+  _print_sensor_discrete_log(fru, sensor_num, sensor_name, fail_offset, event_str);
+  pal_add_cri_sel(event_str);
+  power_fail_log = 1;
+
+  ret = 0;
+
+exit:
   if (fd > 0) {
     close(fd);
-  }
-  if ((ret == READING_NA) && (retry < MAX_READ_RETRY)){
-    ret = READING_SKIP;
-    retry++;
-  } else {
-    retry = 0;
   }
 
   return ret;

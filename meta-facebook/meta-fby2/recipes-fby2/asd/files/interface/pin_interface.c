@@ -269,17 +269,18 @@ static void *gpio_poll_thread(void *fru)
             syslog(LOG_DEBUG, "ASD_BIC: PLTRST_N event");
             g_gpios_triggered[JTAG_PLTRST_EVENT] = true;;
             break;
-/*   ToDo: these 2 pins hae not been defined yet in BIC spec */
-/*
-          case  PRDY:
-            syslog(LOG_DEBUG, "ASD_BIC: PRDY event");
-            g_gpios_triggered[JTAG_PRDY_EVENT] = true;;
+          case  XDP_BIC_PRDY_N:
+            syslog(LOG_DEBUG, "ASD_BIC: PRDY event, trigger type=%d", req_buf[1]);
+            // only record rising edge
+            if (req_buf[1] == 1)
+                g_gpios_triggered[JTAG_PRDY_EVENT] = true;;
             break;
-          case  XDP_PRSNT_IN:
-            syslog(LOG_DEBUG, "ASD_BIC: XDP_PRESENT event");
-            g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;;
+          case  XDP_PRSNT_IN_N:
+            syslog(LOG_DEBUG, "ASD_BIC: XDP_PRESENT event, trigger type=%d", req_buf[1]);
+            // triggers on falling edge
+            if (req_buf[1] == 0)
+                g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;;
             break;
-*/
           default:
             syslog(LOG_ERR, "ASD BIC: unknown GPIO pin # received, %d", gpio_pin);
         }
@@ -301,8 +302,6 @@ int platform_reset_is_event_triggered(const int fru, bool* triggered)
     *triggered = g_gpios_triggered[JTAG_PLTRST_EVENT];
     g_gpios_triggered[JTAG_PLTRST_EVENT] = false;
     pthread_mutex_unlock(&triggered_mutex);
-    /* TODO */
-    *triggered = false;
 
 #ifdef FBY2_DEBUG
     if (*triggered)
@@ -349,7 +348,6 @@ int prdy_is_event_triggered(const int fru, bool* triggered)
     *triggered = g_gpios_triggered[JTAG_PRDY_EVENT];
     g_gpios_triggered[JTAG_PRDY_EVENT] = false;
     pthread_mutex_unlock(&triggered_mutex);
-    /* TODO */
 
 #ifdef FBY2_DEBUG
     if (*triggered)
@@ -372,16 +370,18 @@ int prdy_is_asserted(const int fru, bool* asserted)
     ret = bic_get_gpio(fru, &gpio);
     if (!ret) {
       /* active low */
-      // todo - current BIC does not return PRDY pin to BMC
-      //*asserted = gpio.prdy == GPIO_VALUE_LOW ? true : false;
+      *asserted = gpio.xdp_bic_prdy_n == GPIO_VALUE_LOW ? true : false;
+    } else {
+      syslog(LOG_ERR, "%s: error getting GPIO. fru: %d", __FUNCTION__, fru);
     }
+
 
 #ifdef FBY2_DEBUG
     if (*asserted)
       syslog(LOG_DEBUG, "%s fru=%d asserted", __FUNCTION__, fru);
 #endif
 
-    return ST_OK;
+    return ret;
 }
 
 int xdp_present_is_event_triggered(const int fru, bool* triggered)
@@ -390,7 +390,7 @@ int xdp_present_is_event_triggered(const int fru, bool* triggered)
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
-    /* TODO */
+
     pthread_mutex_lock(&triggered_mutex);
     *triggered = g_gpios_triggered[JTAG_XDP_PRESENT_EVENT];
     g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
@@ -406,26 +406,31 @@ int xdp_present_is_event_triggered(const int fru, bool* triggered)
 
 int xdp_present_is_asserted(const int fru, bool* asserted)
 {
-#if 0
-    gpio_value_en value;
+    bic_gpio_t gpio;
+    int ret;
+
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
-      return NULL;
-    }
-    value = gpio_read(xdp_present_gpio);
-    if (value == GPIO_VALUE_INVALID) {
       return ST_ERR;
     }
-    /* active-low */
-    *asserted = value == GPIO_VALUE_LOW ? true : false;
-#else
+
+    ret = bic_get_gpio(fru, &gpio);
+    if (!ret) {
+      /* active low */
+      *asserted = gpio.xdp_prsnt_in_n == GPIO_VALUE_LOW ? true : false;
+    } else {
+      syslog(LOG_ERR, "%s: error getting GPIO. fru: %d", __FUNCTION__, fru);
+    }
+
+    // Debug code  - to be removed
+    //  Since BIC does not yet support this GPIO, always set this to not-asserted
+    //  so the ASD test can continue
     *asserted = false;
-#endif
 
 #ifdef FBY2_DEBUG
     if (*asserted)
       syslog(LOG_DEBUG, "%s fru=%d asserted", __FUNCTION__, fru);
 #endif
 
-    return ST_OK;
+    return ret;
 }

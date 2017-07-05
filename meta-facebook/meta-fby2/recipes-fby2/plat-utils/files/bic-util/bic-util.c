@@ -143,6 +143,8 @@ util_get_gpio(uint8_t slot_id) {
   printf("31 XDP_BIC_PREQ_N: %d\n", t->bits.xdp_bic_preq_n);
   printf("32 XDP_BIC_TRST: %d\n", t->bits.xdp_bic_trst);
   printf("33 FM_SYS_THROTTLE_LVC3: %d\n", t->bits.fm_sys_throttle_lvc3);
+  printf("34 XDP_BIC_PRDY_N: %d\n", t->bits.xdp_bic_prdy_n);
+  printf("35 XDP_PRSNT_IN_N: %d\n", t->bits.xdp_prsnt_in_n);
   printf("rsvd: %d\n", t->bits.rsvd);
 }
 

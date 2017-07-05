@@ -2963,8 +2963,9 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       }
       break;
     case CMD_OEM_1S_INTR:
-      syslog(LOG_INFO, "ipmi_handle_oem_1s: 1S server interrupt#%d received "
-                "for payload#%d\n", req->data[3], req->payload_id);
+    case CMD_OEM_1S_JTAG_GPIO_STATUS:
+      syslog(LOG_INFO, "ipmi_handle_oem_1s (cmd 0x%02x): 1S server interrupt#%d received "
+                "for payload#%d\n", cmd, req->data[3], req->payload_id);
       pal_handle_oem_1s_intr(req->payload_id, &(req->data[3]));
 
       res->cc = CC_SUCCESS;

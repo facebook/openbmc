@@ -67,6 +67,8 @@ enum {
   XDP_BIC_PREQ_N,
   XDP_BIC_TRST,
   FM_SYS_THROTTLE_LVC3,
+  XDP_BIC_PRDY_N,
+  XDP_PRSNT_IN_N,
 };
 
 enum {
@@ -127,7 +129,9 @@ typedef struct _bic_gpio_t {
   uint32_t xdp_bic_preq_n:1;
   uint32_t xdp_bic_trst:1;
   uint32_t fm_sys_throttle_lvc3:1;
-  uint32_t rsvd:6;
+  uint32_t xdp_bic_prdy_n:1;
+  uint32_t xdp_prsnt_in_n:1;
+  uint32_t rsvd:4;
 } bic_gpio_t;
 
 typedef union _bic_gpio_u {

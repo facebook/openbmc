@@ -34,6 +34,6 @@
   "nm_monitor": {  
     "enabled": true,
     "monitor_interval": 1,
-    "retry_threshold": 5
+    "retry_threshold": 10
   }
 }

@@ -183,6 +183,8 @@ int run_command(const char* cmd);
 int pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause);
 int pal_set_restart_cause(uint8_t slot, uint8_t restart_cause);
 int pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data);
+int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
+
 #ifdef __cplusplus
 }
 #endif

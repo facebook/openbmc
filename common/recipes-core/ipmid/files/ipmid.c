@@ -1597,6 +1597,7 @@ transport_get_lan_config (unsigned char *request, unsigned char *response,
       *data++ = g_lan_config.ip_src;
       break;
     case LAN_PARAM_MAC_ADDR:
+      plat_lan_init(&g_lan_config);
       memcpy(data, g_lan_config.mac_addr, SIZE_MAC_ADDR);
       data += SIZE_MAC_ADDR;
       break;
@@ -3464,7 +3465,7 @@ main (void)
 
   //daemon(1, 1);
   //openlog("ipmid", LOG_CONS, LOG_DAEMON);
-  
+
   plat_fruid_init();
   plat_sensor_init();
   plat_lan_init(&g_lan_config);

@@ -88,8 +88,11 @@ void plat_lan_init(lan_config_t *lan)
       addr6 = (struct sockaddr_in6*) ifa->ifa_addr;
       ip6 = addr6->sin6_addr.s6_addr;
 
-      // If the address is Link Local, Ignore it
+      // If the address is Link Local, get the MAC address, then Ignore it
       if ((ip6[0] == IPV6_LINK_LOCAL_BYTE1) && (ip6[1] == IPV6_LINK_LOCAL_BYTE2)) {
+        strcpy(ifr.ifr_name, ifa->ifa_name);
+        if(ioctl(sd, SIOCGIFHWADDR, &ifr) != -1)
+          memcpy(lan->mac_addr, ifr.ifr_hwaddr.sa_data, SIZE_MAC_ADDR);
         continue;
       }
 

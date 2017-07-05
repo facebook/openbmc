@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "libkv libedb plat-utils libipmi libipmb obmc-pal libme libvr"
+DEPENDS += "libkv libedb plat-utils libipmi libipmb obmc-pal libme libvr libgpio"
 
 S = "${WORKDIR}/pal"
 

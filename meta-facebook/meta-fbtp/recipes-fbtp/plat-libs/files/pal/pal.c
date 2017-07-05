@@ -4713,6 +4713,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 static pthread_t tid_dwr = -1;
 static void *dwr_handler(void *arg) {
   int delay_reset_time = (int)arg;
+  int countdown;
   int retry = 0;
   unsigned char len;
   uint8_t ipmb_buf[256];
@@ -4720,11 +4721,13 @@ static void *dwr_handler(void *arg) {
   ipmb_res_t *res;
 
   if (delay_reset_time < 0)
-    delay_reset_time = MAX_DUMP_TIME;
+    countdown = MAX_DUMP_TIME;
+  else
+    countdown = delay_reset_time;
 
   sleep(30);
 
-  while (delay_reset_time--) {
+  while (countdown--) {
     if (pal_is_crashdump_ongoing(FRU_MB) != 1) {
       req = (ipmb_req_t*)ipmb_buf;
       res = (ipmb_res_t*)ipmb_buf;
@@ -4754,11 +4757,55 @@ static void *dwr_handler(void *arg) {
     sleep(1);
   }
 
-  if (delay_reset_time <= 0) {
+  if (countdown <= 0) {
     syslog(LOG_WARNING, "Autodump waitting for DWR timeout");
   }
 
-  system("/usr/local/bin/autodump.sh --dwr &");
+  // wait system reset
+  sleep(5);
+
+  // Get biosscratchpad7[26]: DWR
+  req = (ipmb_req_t*)ipmb_buf;
+  res = (ipmb_res_t*)ipmb_buf;
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = 0x20;
+  req->seq_lun = 0x00;
+
+  req->cmd = CMD_NM_SEND_RAW_PECI;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x30; // CPU0
+  req->data[4] = 0x06;
+  req->data[5] = 0x05;
+  req->data[6] = 0x61; // RdPCIConfig
+  req->data[7] = 0x00; // Index
+  // Bus 0 Device 8 Fun 2, offset BCh
+  req->data[8] = 0xbc;
+  req->data[9] = 0x20;
+  req->data[10] = 0x04;
+  req->data[11] = 0x00;
+  // Invoke IPMB library handler
+  len = 0;
+  lib_ipmb_handle(0x4, (unsigned char *)req, 19, ipmb_buf, &len);
+  if (len > 15 && res->cc == 0 && res->data[3] == 0x40 && (res->data[7] & 0x04) == 0x04) {
+    // System is in DWR mode
+    system("/usr/local/bin/autodump.sh --dwr &");
+
+    countdown = MAX_DUMP_TIME;
+    while (countdown--) {
+      if (pal_is_crashdump_ongoing(FRU_MB) != 1) {
+        // Global Reset System
+        pal_PBO();
+        break;
+      }
+      sleep(1);
+    }
+  }
 
   tid_dwr = -1;
   pthread_exit(NULL);

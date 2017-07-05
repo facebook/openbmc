@@ -288,10 +288,6 @@ main(int argc, char **argv) {
   int timeout = 5;
   int ret = -1;
 
-  if (pal_is_crashdump_ongoing(1)) {
-    printf("Auto Crash Dump is ongoing, block peci-util.\n");
-    exit(-1);
-  }
   if (pal_before_peci != NULL)
     pal_before_peci();
 

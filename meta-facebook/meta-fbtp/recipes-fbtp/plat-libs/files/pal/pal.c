@@ -910,7 +910,7 @@ read_fan_value_f(const int fan, const char *device, float *value) {
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", TACH_DIR, device_name);
   ret = read_device_float(full_name, value);
-  if (*value < 500 || *value > mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH) {
+  if (*value < 500 || *value > mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH]) {
     sleep(2);
     ret = read_device_float(full_name, value);
   }

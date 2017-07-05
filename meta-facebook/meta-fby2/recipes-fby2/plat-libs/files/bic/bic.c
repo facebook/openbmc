@@ -383,7 +383,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
-  uint32_t pin;
+  uint64_t pin;
   int ret;
 
   pin = 1 << gpio;
@@ -410,7 +410,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
-  uint32_t pin;
+  uint64_t pin;
   int ret;
 
   pin = 1 << gpio;

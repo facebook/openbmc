@@ -37,7 +37,9 @@
 static const char *option_list[] = {
   "--get_dev_id",
   "--get_gpio",
+  "--set_gpio [gpio] [val]",
   "--get_gpio_config",
+  "--set_gpio_config [gpio] [config]",
   "--get_config",
   "--get_post_code",
   "--read_fruid",
@@ -107,41 +109,55 @@ util_get_gpio(uint8_t slot_id) {
   bic_gpio_u *t = (bic_gpio_u*) &gpio;
 
   // Print response
-  printf("PWRGOOD_CPU: %d\n", t->bits.pwrgood_cpu);
-  printf("PWRGD_PCH_PWROK: %d\n", t->bits.pwrgd_pch_pwrok);
-  printf("PVDDR_AB_VRHOT_N: %d\n", t->bits.pvddr_ab_vrhot_n);
-  printf("PVDDR_DE_VRHOT_N: %d\n", t->bits.pvddr_de_vrhot_n);
-  printf("PVCCIN_VRHOT_N: %d\n", t->bits.pvccin_vrhot_n);
-  printf("FM_THROTTLE_N: %d\n", t->bits.fm_throttle_n);
-  printf("FM_PCH_BMC_THERMTRIP_N: %d\n", t->bits.fm_pch_bmc_thermtrip_n);
-  printf("H_MEMHOT_CO_N: %d\n", t->bits.h_memhot_co_n);
-  printf("FM_CPU0_THERMTRIP_LVT3_N: %d\n", t->bits.fm_cpu0_thermtrip_lvt3_n);
-  printf("CPLD_PCH_THERMTRIP: %d\n", t->bits.cpld_pch_thermtrip);
-  printf("FM_CPLD_FIVR_FAULT: %d\n", t->bits.fm_cpld_fivr_fault);
-  printf("FM_CPU_CATERR_N: %d\n", t->bits.fm_cpu_caterr_n);
-  printf("FM_CPU_ERROR2: %d\n", t->bits.fm_cpu_error2);
-  printf("FM_CPU_ERROR1: %d\n", t->bits.fm_cpu_error1);
-  printf("FM_CPU_ERROR0: %d\n", t->bits.fm_cpu_error0);
-  printf("FM_SLP4_N: %d\n", t->bits.fm_slp4_n);
-  printf("FM_NMI_EVENT_BMC_N: %d\n", t->bits.fm_nmi_event_bmc_n);
-  printf("FM_SMI_BMC_N: %d\n", t->bits.fm_smi_bmc_n);
-  printf("PLTRST_N: %d\n", t->bits.pltrst_n);
-  printf("FP_RST_BTN_N: %d\n", t->bits.fp_rst_btn_n);
-  printf("RST_BTN_BMC_OUT_N: %d\n", t->bits.rst_btn_bmc_out_n);
-  printf("FM_BIOS_POST_COMPT_N: %d\n", t->bits.fm_bios_post_compt_n);
-  printf("FM_SLP3_N: %d\n", t->bits.fm_slp3_n);
-  printf("PWRGD_PVCCIN: %d\n", t->bits.pwrgd_pvccin);
-  printf("FM_BACKUP_BIOS_SEL_N: %d\n", t->bits.fm_backup_bios_sel_n);
-  printf("FM_EJECTOR_LATCH_DETECT_N: %d\n", t->bits.fm_ejector_latch_detect_n);
-  printf("BMC_RESET: %d\n", t->bits.bmc_reset);
-  printf("FM_JTAG_BIC_TCK_MUX_SEL_N: %d\n", t->bits.fm_jtag_bic_tck_mux_sel_n);
-  printf("BMC_READY_N: %d\n", t->bits.bmc_ready_n);
-  printf("BMC_COM_SW_N: %d\n", t->bits.bmc_com_sw_n);
-  printf("RST_I2C_MUX_N: %d\n", t->bits.rst_i2c_mux_n);
-  printf("XDP_BIC_PREQ_N: %d\n", t->bits.xdp_bic_preq_n);
-  printf("XDP_BIC_TRST: %d\n", t->bits.xdp_bic_trst);
-  printf("FM_SYS_THROTTLE_LVC3: %d\n", t->bits.fm_sys_throttle_lvc3);
+  printf(" 0 PWRGOOD_CPU: %d\n", t->bits.pwrgood_cpu);
+  printf(" 1 PWRGD_PCH_PWROK: %d\n", t->bits.pwrgd_pch_pwrok);
+  printf(" 2 PVDDR_AB_VRHOT_N: %d\n", t->bits.pvddr_ab_vrhot_n);
+  printf(" 3 PVDDR_DE_VRHOT_N: %d\n", t->bits.pvddr_de_vrhot_n);
+  printf(" 4 PVCCIN_VRHOT_N: %d\n", t->bits.pvccin_vrhot_n);
+  printf(" 5 FM_THROTTLE_N: %d\n", t->bits.fm_throttle_n);
+  printf(" 6 FM_PCH_BMC_THERMTRIP_N: %d\n", t->bits.fm_pch_bmc_thermtrip_n);
+  printf(" 7 H_MEMHOT_CO_N: %d\n", t->bits.h_memhot_co_n);
+  printf(" 8 FM_CPU0_THERMTRIP_LVT3_N: %d\n", t->bits.fm_cpu0_thermtrip_lvt3_n);
+  printf(" 9 CPLD_PCH_THERMTRIP: %d\n", t->bits.cpld_pch_thermtrip);
+  printf("10 FM_CPLD_FIVR_FAULT: %d\n", t->bits.fm_cpld_fivr_fault);
+  printf("11 FM_CPU_CATERR_N: %d\n", t->bits.fm_cpu_caterr_n);
+  printf("12 FM_CPU_ERROR2: %d\n", t->bits.fm_cpu_error2);
+  printf("13 FM_CPU_ERROR1: %d\n", t->bits.fm_cpu_error1);
+  printf("14 FM_CPU_ERROR0: %d\n", t->bits.fm_cpu_error0);
+  printf("15 FM_SLP4_N: %d\n", t->bits.fm_slp4_n);
+  printf("16 FM_NMI_EVENT_BMC_N: %d\n", t->bits.fm_nmi_event_bmc_n);
+  printf("17 FM_SMI_BMC_N: %d\n", t->bits.fm_smi_bmc_n);
+  printf("18 PLTRST_N: %d\n", t->bits.pltrst_n);
+  printf("19 FP_RST_BTN_N: %d\n", t->bits.fp_rst_btn_n);
+  printf("20 RST_BTN_BMC_OUT_N: %d\n", t->bits.rst_btn_bmc_out_n);
+  printf("21 FM_BIOS_POST_COMPT_N: %d\n", t->bits.fm_bios_post_compt_n);
+  printf("22 FM_SLP3_N: %d\n", t->bits.fm_slp3_n);
+  printf("23 PWRGD_PVCCIN: %d\n", t->bits.pwrgd_pvccin);
+  printf("24 FM_BACKUP_BIOS_SEL_N: %d\n", t->bits.fm_backup_bios_sel_n);
+  printf("25 FM_EJECTOR_LATCH_DETECT_N: %d\n", t->bits.fm_ejector_latch_detect_n);
+  printf("26 BMC_RESET: %d\n", t->bits.bmc_reset);
+  printf("27 FM_JTAG_BIC_TCK_MUX_SEL_N: %d\n", t->bits.fm_jtag_bic_tck_mux_sel_n);
+  printf("28 BMC_READY_N: %d\n", t->bits.bmc_ready_n);
+  printf("29 BMC_COM_SW_N: %d\n", t->bits.bmc_com_sw_n);
+  printf("30 RST_I2C_MUX_N: %d\n", t->bits.rst_i2c_mux_n);
+  printf("31 XDP_BIC_PREQ_N: %d\n", t->bits.xdp_bic_preq_n);
+  printf("32 XDP_BIC_TRST: %d\n", t->bits.xdp_bic_trst);
+  printf("33 FM_SYS_THROTTLE_LVC3: %d\n", t->bits.fm_sys_throttle_lvc3);
   printf("rsvd: %d\n", t->bits.rsvd);
+}
+
+
+// Tests utility for setting GPIO values
+static void
+util_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
+  int ret;
+
+  printf("slot %d: setting GPIO %d to %d\n", slot_id, gpio, value);
+  ret = bic_set_gpio(slot_id, gpio, value);
+  if (ret) {
+    printf("ERROR: bic_get_gpio returns %d\n", ret);
+    return;
+  }
 }
 
 static void
@@ -173,6 +189,20 @@ util_get_gpio_config(uint8_t slot_id) {
     } else  {
       printf("Trigger, Edge: %s\n", "Reserved");
     }
+  }
+}
+
+
+// Tests utility for setting GPIO configuration
+static void
+util_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t config) {
+  int ret;
+
+  printf("slot %d: setting GPIO %d config to 0x%02x\n", slot_id, gpio, config);
+  ret = bic_set_gpio_config(slot_id, gpio, &config);
+  if (ret) {
+    printf("ERROR: bic_set_gpio_config returns %d\n", ret);
+    return;
   }
 }
 
@@ -464,8 +494,12 @@ main(int argc, char **argv) {
     util_get_device_id(slot_id);
   } else if (!strcmp(argv[2], "--get_gpio")) {
     util_get_gpio(slot_id);
+  } else if (!strcmp(argv[2], "--set_gpio")) {
+    util_set_gpio(slot_id, atoi(argv[3]), atoi(argv[4]));
   } else if (!strcmp(argv[2], "--get_gpio_config")) {
     util_get_gpio_config(slot_id);
+  } else if (!strcmp(argv[2], "--set_gpio_config")) {
+    util_set_gpio_config(slot_id, atoi(argv[3]), atoi(argv[4]));
   } else if (!strcmp(argv[2], "--get_config")) {
     util_get_config(slot_id);
   } else if (!strcmp(argv[2], "--get_post_code")) {

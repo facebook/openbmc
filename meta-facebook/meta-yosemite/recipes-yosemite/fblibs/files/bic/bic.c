@@ -225,7 +225,7 @@ get_ipmb_bus_id(uint8_t slot_id) {
   return bus_id;
 }
 
-static int
+int
 bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
                   uint8_t *txbuf, uint8_t txlen,
                   uint8_t *rxbuf, uint8_t *rxlen) {

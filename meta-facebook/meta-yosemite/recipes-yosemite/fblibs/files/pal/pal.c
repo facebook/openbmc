@@ -2301,6 +2301,9 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
     case CPU_DIMM_HOT:
       sprintf(name, "CPU_DIMM_HOT");
       break;
+    case SOFTWARE_NMI:
+      sprintf(name, "SOFTWARE_NMI");
+      break;
     case CPU0_THERM_STATUS:
       sprintf(name, "CPU0_THERM_STATUS");
       break;
@@ -2364,6 +2367,7 @@ pal_parse_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data,
         strcat(error_log, "Unknown");
       break;
 
+    case SOFTWARE_NMI:
     case CRITICAL_IRQ:
       sprintf(error_log, "");
       if (ed[0] == 0x0)

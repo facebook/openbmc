@@ -28,15 +28,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "pin_interface.h"
 #include "SoftwareJTAGHandler.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <syslog.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include "openbmc/pal.h"
 #include "openbmc/gpio.h"
 #include <facebook/bic.h>
 
 #define FBY2_DEBUG
+#define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
 
 
 //  PLTRST,  PRDY, XDP_PRESENT
@@ -50,10 +55,15 @@ static bool g_gpios_triggered[JTAG_EVENT_NUM] = {false, false, false};
 
 
 static pthread_mutex_t triggered_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t poll_thread;
 
+static void *gpio_poll_thread(void *arg);
 
 int pin_initialize(const int fru)
 {
+    static bool gpios_polling = false;
+    int *arg;
+
 #ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
 #endif
@@ -61,6 +71,13 @@ int pin_initialize(const int fru)
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
+
+    arg = malloc(sizeof(arg));
+    if (arg == NULL) {
+      syslog(LOG_ERR, "%s: malloc failed, fru=%d", __FUNCTION__, fru);
+      return ST_ERR;
+    }
+    *arg = fru;
 
     /* Platform specific enables which are required for the ASD feature */
 
@@ -75,13 +92,17 @@ int pin_initialize(const int fru)
      *         XDP_PRSNT_IN_N - both edges   (if triggered, disable asd)
      */
 
-
-    pthread_mutex_lock(&triggered_mutex);
-    g_gpios_triggered[JTAG_PLTRST_EVENT] = false;
-    g_gpios_triggered[JTAG_PRDY_EVENT] = false;
-    g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
-    pthread_mutex_unlock(&triggered_mutex);
-
+    /* Start the GPIO polling threads just once */
+    if (gpios_polling == false) {
+        pthread_create(&poll_thread, NULL, gpio_poll_thread, arg);
+        gpios_polling = true;
+    } else {
+        pthread_mutex_lock(&triggered_mutex);
+        g_gpios_triggered[JTAG_PLTRST_EVENT] = false;
+        g_gpios_triggered[JTAG_PRDY_EVENT] = false;
+        g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
+        pthread_mutex_unlock(&triggered_mutex);
+    }
     return ST_OK;
 }
 
@@ -123,9 +144,6 @@ int power_debug_assert(const int fru, const bool assert)
 
 int power_debug_is_asserted(const int fru, bool* asserted)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
 #if 0
     gpio_value_en value;
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
@@ -137,9 +155,13 @@ int power_debug_is_asserted(const int fru, bool* asserted)
       return ST_ERR;
     }
     *asserted = value == GPIO_VALUE_LOW ? true : false;
+#else
+    *asserted = false;
 #endif
+
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, asserted=%d\n", __FUNCTION__, *asserted);
+    if (*asserted)
+      syslog(LOG_DEBUG, "%s, fru=%d asserted", __FUNCTION__, fru);
 #endif
 
     return ST_OK;
@@ -166,9 +188,6 @@ int preq_assert(const int fru, const bool assert)
 
 int preq_is_asserted(const int fru, bool* asserted)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
     bic_gpio_t gpio;
     int ret;
 
@@ -184,42 +203,96 @@ int preq_is_asserted(const int fru, bool* asserted)
     }
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, *asserted);
+    if (*asserted)
+      syslog(LOG_DEBUG, "%s, fru=%d asserted", __FUNCTION__, fru);
 #endif
 
     return ret;
 }
-#if 0
-static void gpio_handle(gpio_poll_st *gpio)
+
+
+
+// open a socket and waits for communcation from ipmid
+static void *gpio_poll_thread(void *fru)
 {
-#if 0
-  size_t idx;
-  pthread_mutex_lock(&triggered_mutex);
-  /* Get the index of this GPIO in g_gpios */
-  idx = (g_gpios - gpio) / sizeof(gpio_poll_st);
-  if (idx < 3) {
-    g_gpios_triggered[idx] = true;
+  int sock, msgsock, n, len, gpio_pin, ret=0;
+  size_t t;
+  struct sockaddr_un server, client;
+  unsigned char req_buf[256];
+  char sock_path[64] = {0};
+
+  if ((sock = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
+  {
+    syslog(LOG_ERR, "ASD_BIC: socket() failed\n");
+    exit (1);
   }
-  pthread_mutex_unlock(&triggered_mutex);
-#endif
-}
 
+  server.sun_family = AF_UNIX;
+  sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, *(int *)fru);
+  strcpy(server.sun_path, sock_path);
+  unlink (server.sun_path);
+  len = strlen (server.sun_path) + sizeof (server.sun_family);
+  if (bind (sock, (struct sockaddr *) &server, len) == -1)
+  {
+    syslog(LOG_ERR, "ASD_BIC: bind() failed, errno=%d", errno);
+    exit (1);
+  }
+  syslog(LOG_DEBUG, "ASD_BIC: Socket has name %s", server.sun_path);
+  if (listen (sock, 5) == -1)
+  {
+    syslog(LOG_ERR, "ASD_BIC: listen() failed, errno=%d", errno);
+    exit (1);
+  }
 
-static void *gpio_poll_thread(void *unused)
-{
-#if 0
-  gpio_poll(g_gpios, 3, -1);
-#endif
+  while (1) {
+    t = sizeof (client);
+    if ((msgsock = accept(sock, (struct sockaddr *) &client, &t)) < 0) {
+      ret = errno;
+      syslog(LOG_WARNING, "ASD_BIC: accept() failed with ret: %x, errno: %x\n",
+             msgsock, ret);
+      sleep(1);
+      continue;
+    }
+
+    n = recv(msgsock, req_buf, sizeof(req_buf), 0);
+    if (n <= 0) {
+        syslog(LOG_WARNING, "ASD_BIC: recv() failed with %d\n", n);
+        sleep(1);
+        continue;
+    } else {
+        syslog(LOG_DEBUG, "message received, %d %d", req_buf[0], req_buf[1]);
+
+        gpio_pin = req_buf[0];
+        pthread_mutex_lock(&triggered_mutex);
+        switch (gpio_pin) {
+          case PLTRST_N:
+            syslog(LOG_DEBUG, "ASD_BIC: PLTRST_N event");
+            g_gpios_triggered[JTAG_PLTRST_EVENT] = true;;
+            break;
+/*   ToDo: these 2 pins hae not been defined yet in BIC spec */
+/*
+          case  PRDY:
+            syslog(LOG_DEBUG, "ASD_BIC: PRDY event");
+            g_gpios_triggered[JTAG_PRDY_EVENT] = true;;
+            break;
+          case  XDP_PRSNT_IN:
+            syslog(LOG_DEBUG, "ASD_BIC: XDP_PRESENT event");
+            g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;;
+            break;
+*/
+          default:
+            syslog(LOG_ERR, "ASD BIC: unknown GPIO pin # received, %d", gpio_pin);
+        }
+        pthread_mutex_unlock(&triggered_mutex);
+    }
+  }
+
   return NULL;
 }
-#endif
+
 
 int platform_reset_is_event_triggered(const int fru, bool* triggered)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
-
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
@@ -232,7 +305,8 @@ int platform_reset_is_event_triggered(const int fru, bool* triggered)
     *triggered = false;
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s %d", __FUNCTION__, *triggered);
+    if (*triggered)
+      syslog(LOG_DEBUG, "%s fru=%d, triggered", __FUNCTION__, fru);
 #endif
 
     return ST_OK;
@@ -240,9 +314,6 @@ int platform_reset_is_event_triggered(const int fru, bool* triggered)
 
 int platform_reset_is_asserted(const int fru, bool* asserted)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
     bic_gpio_t gpio;
     int ret;
 
@@ -258,7 +329,8 @@ int platform_reset_is_asserted(const int fru, bool* asserted)
     }
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s asserted=%d", __FUNCTION__, *asserted);
+    if (*asserted)
+      syslog(LOG_DEBUG, "%s fru=%d asserted", __FUNCTION__, fru);
 #endif
 
     return ST_OK;
@@ -268,10 +340,6 @@ int platform_reset_is_asserted(const int fru, bool* asserted)
 
 int prdy_is_event_triggered(const int fru, bool* triggered)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
-
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
@@ -284,7 +352,8 @@ int prdy_is_event_triggered(const int fru, bool* triggered)
     /* TODO */
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s triggered=%d\n", __FUNCTION__, (int)*triggered);
+    if (*triggered)
+      syslog(LOG_DEBUG, "%s fru=%d triggered", __FUNCTION__, fru);
 #endif
 
     return ST_OK;
@@ -292,9 +361,6 @@ int prdy_is_event_triggered(const int fru, bool* triggered)
 
 int prdy_is_asserted(const int fru, bool* asserted)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
     bic_gpio_t gpio;
     int ret;
 
@@ -311,7 +377,8 @@ int prdy_is_asserted(const int fru, bool* asserted)
     }
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, (int)*asserted);
+    if (*asserted)
+      syslog(LOG_DEBUG, "%s fru=%d asserted", __FUNCTION__, fru);
 #endif
 
     return ST_OK;
@@ -319,10 +386,6 @@ int prdy_is_asserted(const int fru, bool* asserted)
 
 int xdp_present_is_event_triggered(const int fru, bool* triggered)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
-
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
@@ -334,7 +397,8 @@ int xdp_present_is_event_triggered(const int fru, bool* triggered)
     pthread_mutex_unlock(&triggered_mutex);
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, (int)*triggered);
+    if (*triggered)
+      syslog(LOG_DEBUG, "%s fru=%d triggered", __FUNCTION__, fru);
 #endif
 
     return ST_OK;
@@ -342,10 +406,6 @@ int xdp_present_is_event_triggered(const int fru, bool* triggered)
 
 int xdp_present_is_asserted(const int fru, bool* asserted)
 {
-#ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
-#endif
-
 #if 0
     gpio_value_en value;
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
@@ -358,10 +418,13 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
     }
     /* active-low */
     *asserted = value == GPIO_VALUE_LOW ? true : false;
+#else
+    *asserted = false;
 #endif
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "%s asserted=%d\n", __FUNCTION__, *asserted);
+    if (*asserted)
+      syslog(LOG_DEBUG, "%s fru=%d asserted", __FUNCTION__, fru);
 #endif
 
     return ST_OK;

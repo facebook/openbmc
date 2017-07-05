@@ -25,6 +25,8 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/mman.h>
 #include <string.h>
 #include <pthread.h>
@@ -4063,4 +4065,35 @@ pal_get_boot_option(unsigned char para,unsigned char* pbuff)
   unsigned char size = option_size[para];
   memset(pbuff, 0, size);
   return size;
+}
+
+
+int
+pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
+{
+  int sock;
+  struct sockaddr_un server;
+  char sock_path[64] = {0};
+  #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
+
+  sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock < 0) {
+    syslog(LOG_ERR, "%s failed open socket", __FUNCTION__);
+    return -1;
+  }
+
+  server.sun_family = AF_UNIX;
+  sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, slot);
+  strcpy(server.sun_path, sock_path);
+
+  if (connect(sock, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+    close(sock);
+    syslog(LOG_ERR, "%s failed connecting stream socket, %s", __FUNCTION__, server.sun_path);
+    return -1;
+  }
+  if (write(sock, data, 2) < 0)
+    syslog(LOG_ERR, "%s error writing on stream sockets", __FUNCTION__);
+  close(sock);
+
+  return 0;
 }

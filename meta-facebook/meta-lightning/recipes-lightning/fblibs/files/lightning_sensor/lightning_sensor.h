@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/obmc-pal.h>
 #include <facebook/lightning_common.h>
 #include <facebook/lightning_flash.h>
 
@@ -51,19 +52,6 @@ typedef struct _sensor_info_t {
   bool valid;
   sdr_full_t sdr;
 } sensor_info_t;
-
-/* Enum for type of Upper and Lower threshold values */
-enum {
-  SENSOR_VALID = 0x0,
-  UCR_THRESH = 0x01,
-  UNC_THRESH,
-  UNR_THRESH,
-  LCR_THRESH,
-  LNC_THRESH,
-  LNR_THRESH,
-  POS_HYST,
-  NEG_HYST,
-};
 
 // Sensors under PEB
 enum {

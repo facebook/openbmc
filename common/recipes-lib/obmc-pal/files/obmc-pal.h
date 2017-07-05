@@ -68,6 +68,19 @@ enum CTRL_LOW_ACTIVE{
   CTRL_N_DISABLE = 1,
 };
 
+/* Enum for type of Upper and Lower threshold values */
+enum {
+  SENSOR_VALID = 0x0,
+  UCR_THRESH = 0x01,
+  UNC_THRESH,
+  UNR_THRESH,
+  LCR_THRESH,
+  LNC_THRESH,
+  LNR_THRESH,
+  POS_HYST,
+  NEG_HYST,
+};
+
 // Function Declarations
 int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);

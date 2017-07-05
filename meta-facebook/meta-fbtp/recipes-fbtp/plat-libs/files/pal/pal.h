@@ -149,19 +149,6 @@ enum {
   FRU_RISER_SLOT4 = 6,
 };
 
-/* Enum for type of Upper and Lower threshold values */
-enum {
-  SENSOR_VALID = 0x0,
-  UCR_THRESH = 0x01,
-  UNC_THRESH,
-  UNR_THRESH,
-  LCR_THRESH,
-  LNC_THRESH,
-  LNR_THRESH,
-  POS_HYST,
-  NEG_HYST,
-};
-
 // Sensors Under Side Plane
 enum {
   MB_SENSOR_HSC_IN_POWER = 0x29,

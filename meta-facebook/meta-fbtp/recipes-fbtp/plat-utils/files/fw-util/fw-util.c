@@ -41,6 +41,9 @@
 #define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
 #define FSC_CONFIG           "/etc/fsc-config.json"
 
+#define NCSI_DATA_PAYLOAD 64
+#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
+
 static uint8_t g_board_rev_id = BOARD_REV_EVT;
 static uint8_t g_vr_cpu0_vddq_abc;
 static uint8_t g_vr_cpu0_vddq_def;
@@ -49,12 +52,117 @@ static uint8_t g_vr_cpu1_vddq_klm;
 
 static int get_mtd_name(const char* name, char* dev);
 
+typedef struct
+{
+  char  mfg_name[10];//manufacture name
+  uint32_t mfg_id;//manufacture id
+  void (*get_nic_fw)(uint8_t *, char *);
+} nic_info_st;
+
 static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|mb|nic> <--version>\n");
   printf("       fw-util <mb|nic> <--update> <--cpld|--bios|--nic|--vr|--rom|");
   printf("--bmc|--usbdbgfw|--usbdbgbl> <path>\n");
   printf("       fw-util <mb> <--postcode>\n");
+}
+
+static void
+get_mlx_fw_version(uint8_t *buf, char *version)
+{
+  int ver_index_based = 20;
+  int major = 0;
+  int minor = 0;
+  int revision = 0;
+
+  major = buf[ver_index_based++];
+  minor = buf[ver_index_based++];
+  revision = buf[ver_index_based++] << 8;
+  revision += buf[ver_index_based++];
+
+  sprintf(version, "%d.%d.%d", major, minor, revision);
+}
+
+static void
+get_bcm_fw_version(uint8_t *buf, char *version)
+{
+  int ver_start_index = 8;      //the index is defined in the NC-SI spec
+  const int ver_end_index = 19;
+  char ver[32]={0};
+  int i = 0;
+
+  for( ; ver_start_index <= ver_end_index; ver_start_index++, i++)
+  {
+    if ( 0 == buf[ver_start_index] )
+    {
+      break;
+    }
+    ver[i] = buf[ver_start_index];
+  }
+
+  strcat(version, ver);
+}
+
+static  nic_info_st support_nic_list[] =
+{
+  {"Mellanox", 0x19810000, get_mlx_fw_version},
+  {"Broadcom", 0x3d110000, get_bcm_fw_version},
+};
+
+int nic_list_size = sizeof(support_nic_list) / sizeof(nic_info_st);
+
+static void
+print_nic_fw_version(void)
+{
+  char display_nic_str[128]={0};
+  char version[32]={0};
+  char vendor[32]={0};
+  uint8_t buf[NCSI_DATA_PAYLOAD]={0};
+  uint32_t nic_mfg_id=0;
+  FILE *file = NULL;
+  bool is_unknown_mfg_id = true;
+  int current_nic;
+
+  file = fopen(NIC_FW_VER_PATH, "rb");
+  if ( NULL != file )
+  {
+    fread(buf, sizeof(uint8_t), NCSI_DATA_PAYLOAD, file);
+    fclose(file);
+  }
+  else
+  {
+    syslog(LOG_WARNING, "[%s]Cannot open the file at %s",__func__, NIC_FW_VER_PATH);
+  }
+
+  //get the manufcture id
+  nic_mfg_id = (buf[35]<<24) + (buf[34]<<16) + (buf[33]<<8) + buf[32];
+
+  for ( current_nic=0; current_nic <nic_list_size; current_nic++)
+  {
+    //check the nic on the system is supported or not
+    if ( support_nic_list[current_nic].mfg_id == nic_mfg_id )
+    {
+      sprintf(vendor, support_nic_list[current_nic].mfg_name);
+      support_nic_list[current_nic].get_nic_fw(buf, version);
+      is_unknown_mfg_id = false;
+      break;
+    }
+    else
+    {
+      is_unknown_mfg_id = true;
+    }
+  }
+
+  if ( is_unknown_mfg_id )
+  {
+    sprintf(display_nic_str ,"NIC firmware version: NA (Unknown Manufacture ID: 0x%04x)", nic_mfg_id);
+  }
+  else
+  {
+    sprintf(display_nic_str ,"%s NIC firmware version: %s", vendor, version);
+  }
+
+  printf("%s\n", display_nic_str);
 }
 
 static void
@@ -138,7 +246,13 @@ print_fw_ver(uint8_t fru_id) {
   char ver[128] = {0};
   uint8_t cpld_var[4] = {0};
 
-  if (fru_id != 1) {
+  if ( FRU_NIC == fru_id )
+  {
+    print_nic_fw_version();
+    return;
+  }
+
+  if (fru_id != FRU_MB ) {
     printf("Not Supported Operation\n");
     return;
   }

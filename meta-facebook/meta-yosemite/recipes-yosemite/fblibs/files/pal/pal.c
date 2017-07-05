@@ -96,8 +96,6 @@
 #define MAX_READ_RETRY 10
 #define MAX_CHECK_RETRY 2
 
-#define CRASHDUMP_KEY      "slot%d_crashdump"
-
 const static uint8_t gpio_rst_btn[] = { 0, 57, 56, 59, 58 };
 const static uint8_t gpio_led[] = { 0, 97, 96, 99, 98 };
 const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
@@ -2232,7 +2230,6 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           sprintf(key, CRASHDUMP_KEY, fru);
           edb_cache_set(key, "1");
           pal_store_crashdump(fru);
-          edb_cache_set(key, "0");
           break;
 
         case 0x00:  // don't care sensor number 00h

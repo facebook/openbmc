@@ -121,9 +121,9 @@ devmem_clear_bit $(scu_addr 94) 0
 devmem_clear_bit $(scu_addr 94) 1
 
 # Setup GPIOs to Mux Enable: GPIOS3(147), Channel Select: GPIOE4(36), GPIOE5(37)
-  
+
 # To use GPIOS3 (147), SCU8C[3], SCU94[0], and SCU94[1] must be 0
-devmem_clear_bit $(scu_addr 8C) 3  
+devmem_clear_bit $(scu_addr 8C) 3
 devmem_clear_bit $(scu_addr 94) 0
 devmem_clear_bit $(scu_addr 94) 1
 
@@ -131,9 +131,9 @@ devmem_clear_bit $(scu_addr 94) 1
 devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
-  
+
 # To use GPIOE5 (37), SCU80[21], SCU8C[14], and SCU70[22] must be 0
-devmem_clear_bit $(scu_addr 80) 21  
+devmem_clear_bit $(scu_addr 80) 21
 devmem_clear_bit $(scu_addr 8C) 14
 devmem_clear_bit $(scu_addr 70) 22
 
@@ -194,7 +194,7 @@ devmem_clear_bit $(scu_addr a4) 11
 
 # Power LED for Slot#2:
 # To use GPIOM0 (96), SCU90[4], SCU90[5], and SCU84[24] must be 0
-devmem_clear_bit $(scu_addr 90) 4  
+devmem_clear_bit $(scu_addr 90) 4
 devmem_clear_bit $(scu_addr 90) 5
 devmem_clear_bit $(scu_addr 84) 24
 
@@ -408,3 +408,8 @@ devmem_clear_bit $(scu_addr 88) 4
 gpio_export N4
 devmem_clear_bit $(scu_addr 88) 5
 gpio_export N5
+
+
+# Yosemite OOM remediation
+#   enable kernel panic (force reboot)
+echo 1 >> /proc/sys/vm/panic_on_oom

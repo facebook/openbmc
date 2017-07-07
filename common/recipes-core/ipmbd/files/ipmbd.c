@@ -627,6 +627,12 @@ ipmb_handle (int fd, unsigned char *request, unsigned char req_len,
   }
 
   req->seq_lun = index << LUN_OFFSET;
+  req->req_slave_addr = BMC_SLAVE_ADDR << 1;
+
+  // Calculate/update header Cksum
+  req->hdr_cksum = req->res_slave_addr +
+                   req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
 
   // Calculate/update dataCksum
   // Note: dataCkSum byte is last byte

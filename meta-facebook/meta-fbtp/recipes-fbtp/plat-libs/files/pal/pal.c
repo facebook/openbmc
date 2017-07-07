@@ -943,10 +943,9 @@ read_adc_value(const int pin, const char *device, float *value) {
 static int
 read_hsc_current_value(float *value) {
   uint8_t bus_id = 0x4; //TODO: ME's address 0x2c in FBTP
-  uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;
-  uint8_t rlen = 0;
+  int rlen = 0;
   float hsc_b = 20475;
   float Rsence;
   ipmb_req_t *req;
@@ -955,16 +954,10 @@ read_hsc_current_value(float *value) {
   int ret = 0;
   static int retry = 0;
 
-  req = (ipmb_req_t*)tbuf;
+  req = ipmb_txb();
 
   req->res_slave_addr = 0x2C; //ME's Slave Address
   req->netfn_lun = NETFN_NM_REQ<<2;
-  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
-  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
-
-  req->req_slave_addr = 0x20;
-  req->seq_lun = 0x00;
-
   req->cmd = CMD_NM_SEND_RAW_PMBUS;
   req->data[0] = 0x57;
   req->data[1] = 0x01;
@@ -985,12 +978,15 @@ read_hsc_current_value(float *value) {
   req->data[7] = 0x01;
   req->data[8] = 0x02;
   req->data[9] = 0x8C;
-  tlen = 16;
+  tlen = 10 + MIN_IPMB_REQ_LEN; // Data Length + Others
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf, &rlen);
+  rlen = ipmb_send_buf(bus_id, tlen);
+  if (rlen > 0) {
+    memcpy(rbuf, ipmb_rxb(), rlen);
+  }
 
-  if (rlen == 0) {
+  if (rlen <= 0) {
 #ifdef DEBUG
     syslog(LOG_DEBUG, "read_hsc_current_value: Zero bytes received\n");
 #endif
@@ -4725,8 +4721,7 @@ static void *dwr_handler(void *arg) {
   int delay_reset_time = (int)arg;
   int countdown;
   int retry = 0;
-  unsigned char len;
-  uint8_t ipmb_buf[256];
+  int len;
   ipmb_req_t *req;
   ipmb_res_t *res;
 
@@ -4739,23 +4734,8 @@ static void *dwr_handler(void *arg) {
 
   while (countdown--) {
     if (pal_is_crashdump_ongoing(FRU_MB) != 1) {
-      req = (ipmb_req_t*)ipmb_buf;
-      res = (ipmb_res_t*)ipmb_buf;
-      req->res_slave_addr = 0x2C; //ME's Slave Address
-      req->netfn_lun = NETFN_SENSOR_REQ<<2;
-      req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
-      req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
-
-      req->req_slave_addr = 0x20;
-      req->seq_lun = 0x00;
-
-      req->cmd = CMD_SENSOR_REARM_SENSOR_EVENTS;
-      req->data[0] = HPR_WARNING; // Sensor Number
-      req->data[1] = 0x00; // [7] 0b = re-arm all event status
-      // Invoke IPMB library handler
-      len = 0;
-      lib_ipmb_handle(0x4, (unsigned char *)req, 9, ipmb_buf, &len);
-      if (len > 7 && res->cc == 0) {
+      len = ipmb_send(4, 0x2c, NETFN_SENSOR_REQ<<2, CMD_SENSOR_REARM_SENSOR_EVENTS, HPR_WARNING, 0);
+      if (len >= 0 && ipmb_rxb()->cc == 0) {
         syslog(LOG_NOTICE, "Re-arm Host Reset Warning Sensor of ME success");
         break;
       } else {
@@ -4775,16 +4755,10 @@ static void *dwr_handler(void *arg) {
   sleep(5);
 
   // Get biosscratchpad7[26]: DWR
-  req = (ipmb_req_t*)ipmb_buf;
-  res = (ipmb_res_t*)ipmb_buf;
+  req = ipmb_txb();
+  res = ipmb_rxb();
   req->res_slave_addr = 0x2C; //ME's Slave Address
   req->netfn_lun = NETFN_NM_REQ<<2;
-  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
-  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
-
-  req->req_slave_addr = 0x20;
-  req->seq_lun = 0x00;
-
   req->cmd = CMD_NM_SEND_RAW_PECI;
   req->data[0] = 0x57;
   req->data[1] = 0x01;
@@ -4800,9 +4774,11 @@ static void *dwr_handler(void *arg) {
   req->data[10] = 0x04;
   req->data[11] = 0x00;
   // Invoke IPMB library handler
-  len = 0;
-  lib_ipmb_handle(0x4, (unsigned char *)req, 19, ipmb_buf, &len);
-  if (len > 15 && res->cc == 0 && res->data[3] == 0x40 && (res->data[7] & 0x04) == 0x04) {
+  len = ipmb_send_buf(0x4, 12+MIN_IPMB_REQ_LEN);
+  if (len >= (8+MIN_IPMB_RES_LEN) && // Data len >= 8
+    res->cc == 0 && // IPMB Success
+    res->data[3] == 0x40 && // PECI Success
+    (res->data[7] & 0x04) == 0x04) { // DWR mode
     // System is in DWR mode
     system("/usr/local/bin/autodump.sh --dwr &");
 
@@ -6424,39 +6400,23 @@ int
 pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 {
   uint8_t bus_id = 0x4;
-  uint8_t tbuf[16] = {0x0};
-  uint8_t rbuf[16] = {0x0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
+  int rlen = 0;
   int ret = PAL_EOK;
-  ipmb_req_t *req;
-  ipmb_res_t *res;
 
-  /*create metadata*/
-  res = (ipmb_res_t*)rbuf;
-  req = (ipmb_req_t*)tbuf;
-  req->res_slave_addr = 0x2c;
-  req->netfn_lun = NETFN_APP_REQ << 2;
-  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
-  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
-  req->req_slave_addr = 0x20;
-  req->seq_lun = 0x0;
+  rlen = ipmb_send(
+    bus_id,
+    0x2c,
+    NETFN_APP_REQ << 2,
+    CMD_APP_GET_SELFTEST_RESULTS);
 
-  /*Fill data*/
-  req->cmd = CMD_APP_GET_SELFTEST_RESULTS;
-  tlen = 6;
-
-  /*Invoke IPMB library handler*/
-  lib_ipmb_handle(bus_id, tbuf, tlen+1, rbuf, &rlen);
-
-  if ( 0 == rlen )
+  if ( rlen < 2 )
   {
     ret = PAL_ENOTSUP;
   }
   else
   {
     //get the response data
-    memcpy(data, res->data, 2);
+    memcpy(data, ipmb_rxb()->data, 2);
   }
   return ret;
 }

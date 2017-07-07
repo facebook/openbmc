@@ -3,7 +3,7 @@ lib: libipmb.so
 
 libipmb.so: ipmb.c
 	$(CC) $(CFLAGS) -fPIC -c -o ipmb.o ipmb.c
-	$(CC) -shared -o libipmb.so ipmb.o -lc
+	$(CC) -shared -o libipmb.so ipmb.o -lc -lrt
 
 .PHONY: clean
 

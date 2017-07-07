@@ -44,7 +44,9 @@ extern "C" {
 // Need to add a timeout parameter to IPMB request
 // For now changing global timeout to 8 seconds
 #define TIMEOUT_IPMB 8
+#define MIN_IPMB_REQ_LEN 7
 #define MAX_IPMB_RES_LEN 300
+#define MIN_IPMB_RES_LEN 8
 
 typedef struct _ipmb_req_t {
   uint8_t res_slave_addr;
@@ -70,6 +72,33 @@ typedef struct _ipmb_res_t {
 void lib_ipmb_handle(unsigned char bus_id,
                   unsigned char *request, unsigned char req_len,
                   unsigned char *response, unsigned char *res_len);
+
+/*
+ * ipmb_send():
+ *   Send IPMB command without prepare tx data.
+ *   Return length of 'Data' on Success
+ *   Return -1 on failure
+ * ipmb_send_buf():
+ *   Prepare tx data in buffer from ipmb_txb() before call this function,
+ *   only Target_Addr, NetFn_LUN, CMD and Data are required, other fields
+ *   should be handled by ipmbd, tlen is total tx length include header,
+ *   data and checksum.
+ *   Return length of effective 'rx buff' on Success
+ *   Return -1 on failure
+ * ipmb_txb():
+ *   Return thread specific tx buffer
+ * ipmb_rxb():
+ *   Return thread specific rx buffer
+ */
+#define OBMC_API_IPMB_CMD_END 0x193BCDED
+int ipmb_send_internal (unsigned char bus_id,
+  unsigned char addr,
+  unsigned char netfn,
+  unsigned char cmd, ...);
+#define ipmb_send(...) ipmb_send_internal(__VA_ARGS__, OBMC_API_IPMB_CMD_END)
+int ipmb_send_buf (unsigned char bus_id, unsigned char tlen);
+ipmb_res_t* ipmb_rxb();
+ipmb_req_t* ipmb_txb();
 
 #ifdef __cplusplus
 } // extern "C"

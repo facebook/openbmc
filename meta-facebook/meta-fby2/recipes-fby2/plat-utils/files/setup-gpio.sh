@@ -122,9 +122,11 @@ devmem_clear_bit $(scu_addr 94) 1
 
 gpio_set AB1 1
 
-# PWRGD_P3V3: GPIOAB2(218)
+# BMC_SELF_HW_RST: GPIOAB2(218)
 # To use GPIOAB2 (218), SCUA8[2] must be 0
 devmem_clear_bit $(scu_addr a8) 2
+gpio_export AB2
+gpio_set AB2 0
 
 # VGA Mux
 # To use GPIOJ2 (74), SCU84[10] must be 0
@@ -409,6 +411,29 @@ gpio_export N4
 devmem_clear_bit $(scu_addr 88) 5
 gpio_export N5
 
+# Set SLOT throttle pin
+# BMC_THROTTLE_SLOT1_N: GPIOI4 (78)
+gpio_export I4
+gpio_set I4 1
+# BMC_THROTTLE_SLOT2_N: GPIOI5 (79)
+gpio_export I5
+gpio_set I5 1
+# BMC_THROTTLE_SLOT3_N: GPIOI6 (80)
+gpio_export I6
+gpio_set I6 1
+# BMC_THROTTLE_SLOT4_N: GPIOI7 (81)
+gpio_export I7
+gpio_set I7 1
+
+# Set FAN disable pin
+# DISABLE_FAN_N: GPIOM4 (100)
+gpio_export M4
+gpio_set M4 1
+
+# Set FAST PROCHOT pin
+# FAST_PROCHOT_EN: GPIOR4 (140) 
+gpio_export R4
+gpio_set R4 0
 
 # PE_BUFF_OE_0_N: GPIOB4 (12)
 # To use GPIOB4, SCU70[23] must be 0

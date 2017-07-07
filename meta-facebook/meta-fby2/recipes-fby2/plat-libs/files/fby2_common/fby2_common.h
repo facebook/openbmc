@@ -72,8 +72,6 @@ enum {
   TYPE_GP_A_NULL   = 14,
 };
 
-#define CRASHDUMP_KEY "slot%d_crashdump"
-
 //GPIO definition
 #define MAX_SPB_GPIO_NUM                  256
 

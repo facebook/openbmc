@@ -2963,8 +2963,6 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
     case FRU_SLOT4:
       switch(snr_num) {
         case CATERR:
-          sprintf(key, CRASHDUMP_KEY, fru);
-          edb_cache_set(key, "1");
           pal_store_crashdump(fru);
           break;
 
@@ -3966,25 +3964,6 @@ int
 pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
 {
     return -1;
-}
-
-int
-pal_is_crashdump_ongoing(uint8_t slot)
-{
-  char key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  sprintf(key, CRASHDUMP_KEY, slot);
-  ret = edb_cache_get(key, value);
-  if (ret < 0) {
-#ifdef DEBUG
-     syslog(LOG_INFO, "pal_get_crashdumpe: failed");
-#endif
-     return 0;
-  }
-  if (atoi(value) > 0)
-     return 1;
-  return 0;
 }
 
 bool

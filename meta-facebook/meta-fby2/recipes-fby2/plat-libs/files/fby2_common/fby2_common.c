@@ -31,8 +31,9 @@
 #include <string.h>
 #include "fby2_common.h"
 
-#define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
+#define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
+#define CRASHDUMP_PID       "/var/run/autodump%d.pid"
 
 struct threadinfo {
   uint8_t is_running;
@@ -112,10 +113,10 @@ generate_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
+  char fname[128];
   char fruname[16];
   int tmpf;
   int rc;
-
 
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
@@ -124,29 +125,24 @@ generate_dump(void *arg) {
 
   fby2_common_fru_name(fru, fruname);
 
-  // HEADER LINE for the dump
-  memset(cmd, 0, 128);
-  sprintf(cmd, "%s time > %s%s", CRASHDUMP_BIN, CRASHDUMP_FILE, fruname);
-  system(cmd);
+  memset(fname, 0, sizeof(fname));
+  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  if (access(fname, F_OK) == 0) {
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd,"rm %s",fname);
+    system(cmd);
+  }
 
-  // COREID dump
+  // Execute automatic crashdump
   memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s coreid >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
-  system(cmd);
-
-  // MSR dump
-  memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s msr >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
+  sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
   system(cmd);
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
 
   t_dump[fru-1].is_running = 0;
 
-  sprintf(cmd, CRASHDUMP_KEY, fru);
-  edb_cache_set(cmd, "0");
 }
-
 
 int
 fby2_common_crashdump(uint8_t fru) {
@@ -157,7 +153,7 @@ fby2_common_crashdump(uint8_t fru) {
   // Check if the crashdump script exist
   if (access(CRASHDUMP_BIN, F_OK) == -1) {
     syslog(LOG_CRIT, "Crashdump for FRU: %d failed : "
-        "crashdump binary is not preset", fru);
+        "auto crashdump binary is not preset", fru);
     return 0;
   }
 

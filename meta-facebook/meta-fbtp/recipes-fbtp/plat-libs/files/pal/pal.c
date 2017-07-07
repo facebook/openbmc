@@ -6310,12 +6310,15 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   *res_len = 0;
   sprintf(key, "mb_cpu_ppin");
 
-  for (i = 0; i < SIZE_CPU_PPIN; i++) {
+  if (req_len > SIZE_CPU_PPIN*2)
+    req_len = SIZE_CPU_PPIN*2;
+
+  for (i = 0; i < req_len; i++) {
     sprintf(tstr, "%02x", req_data[i]);
     strcat(str, tstr);
   }
 
-  if (pal_set_key_value(key, str) != 0)
+  if (kv_set(key, str) != 0)
     return completion_code;
 
   completion_code = CC_SUCCESS;

@@ -254,6 +254,7 @@ STATUS JTAG_initialize(JTAG_Handler* state)
     if (state == NULL)
         return ST_ERR;
 
+    JTAG_tap_reset(state);
     if (JTAG_set_tap_state(state, JtagTLR) != ST_OK ||
         JTAG_set_tap_state(state, JtagRTI) != ST_OK) {
         syslog(LOG_ERR, "Failed to set initial TAP state for. slot%d",
@@ -327,6 +328,9 @@ STATUS JTAG_tap_reset(JTAG_Handler* state)
 
     if (state == NULL)
       return ST_ERR;
+    //  ShftDR->TLR = 5  1s of TMS, this will force TAP to enter TLR
+    //   from any state
+    state->tap_state = JtagShfDR;
     return JTAG_set_tap_state(state, JtagTLR);
 }
 
@@ -684,7 +688,8 @@ STATUS jtag_bic_shift_wrapper(uint8_t slot_id, unsigned int write_bit_length,
     uint8_t tlen = 0;
     STATUS ret;
 
-    uint8_t  write_len_bytes = (write_bit_length >> 3);
+    // round up to next byte boundary
+    uint8_t  write_len_bytes = ((write_bit_length+7) >> 3);
 
 #ifdef FBY2_DEBUG
     printf("        -%s\n", __FUNCTION__);

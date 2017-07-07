@@ -2455,7 +2455,8 @@ server_power_off(bool gs_flag) {
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
 
   system("/usr/bin/sv stop fscd >> /dev/null");
-  FORCE_ADR();
+  //if (gs_flag != true)
+  //  FORCE_ADR();
   if (write_device(vpath, "1")) {
     return -1;
   }
@@ -2663,7 +2664,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
    case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
-        FORCE_ADR();
+        //FORCE_ADR();
         ret = pal_set_rst_btn(fru, 0);
         if (ret < 0)
           return ret;

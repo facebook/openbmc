@@ -214,6 +214,13 @@ class Object {
      */
     virtual nlohmann::json dumpToJsonRecursive() const;
 
+    /**
+     * Get object path from root.
+     *
+     * @return std::string path from root of the tree separated by '/'
+     */
+    std::string getObjectPath() const;
+
   protected:
 
     void setParent(Object* parent) {

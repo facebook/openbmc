@@ -102,6 +102,16 @@ Object* Object::removeChildObject(const std::string &name) {
   return child;
 }
 
+std::string Object::getObjectPath() const {
+  LOG(INFO) << "getObjectPath \"" << name_ << "\"";
+  if (parent_ == nullptr){
+    return "/" + name_;
+  }
+  else {
+    return parent_->getObjectPath() + "/" + name_;
+  }
+}
+
 nlohmann::json Object::dumpToJson() const {
   LOG(INFO) << "Dump object with name " << name_ << " into json";
   nlohmann::json dump = Object::dump();

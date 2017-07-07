@@ -2669,7 +2669,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         if (ret < 0)
           return ret;
       } else if (status == SERVER_POWER_OFF)
-        return server_power_on();
+        return -1;
       break;
 
     default:

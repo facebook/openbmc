@@ -307,7 +307,8 @@ power_util(uint8_t fru, uint8_t opt) {
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"
           " fru %u", fru);
-        return ret;
+        printf("Power reset fail for fru %u\n", fru);
+        return 0;
       }
       syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", fru);
       break;

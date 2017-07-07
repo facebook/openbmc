@@ -66,6 +66,7 @@ enum {
   SERVER_POWER_OFF,
   SERVER_POWER_ON,
   SERVER_POWER_CYCLE,
+  SERVER_POWER_RESET,
   SERVER_GRACEFUL_SHUTDOWN,
   SERVER_12V_OFF,
   SERVER_12V_ON,
@@ -116,14 +117,6 @@ enum {
   FAN_0 = 0,
   FAN_1,
 };
-
-//: fixme fixme fixme fixme
-//
-//  Temp remap of  SERVER_POWER_RESET  to  power cycle for ipmid watchdog
-//  Need to remove once pal.c adds  SERVER_POWER_RESET support
-#define SERVER_POWER_RESET  SERVER_POWER_CYCLE
-
-
 
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);

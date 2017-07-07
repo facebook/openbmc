@@ -496,6 +496,30 @@ int pal_copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   return 0;
 }
 
+// Update the Reset button input to the server at given slot
+int
+pal_set_rst_btn(uint8_t slot, uint8_t status) {
+  char path[64] = {0};
+  char *val;
+
+  if (slot < 1 || slot > 4) {
+    return -1;
+  }
+
+  if (status) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
+  if (write_device(path, val)) {
+    return -1;
+  }
+
+  return 0;
+}
+
 int pal_fruid_init(uint8_t slot_id) {
 
   int ret=0;
@@ -1478,6 +1502,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   switch(cmd) {     //avoid power control on GP and CF
     case SERVER_POWER_OFF:
     case SERVER_POWER_CYCLE:
+    case SERVER_POWER_RESET:
     case SERVER_GRACEFUL_SHUTDOWN:
     case SERVER_POWER_ON:
       if(pal_is_slot_server(slot_id) == 0) {
@@ -1514,6 +1539,21 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       } else if (status == SERVER_POWER_OFF) {
 
         return (server_power_on(slot_id));
+      }
+      break;
+    
+    case SERVER_POWER_RESET:
+      if (status == SERVER_POWER_ON) {
+        ret = pal_set_rst_btn(slot_id, 0);
+        if (ret < 0)
+          return ret;
+        msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
+        ret = pal_set_rst_btn(slot_id, 1);
+        if (ret < 0)
+          return ret;
+      } else if (status == SERVER_POWER_OFF) {
+        printf("Ignore to execute power reset action when the power status of server is off\n");
+        return -2;
       }
       break;
 
@@ -1660,30 +1700,6 @@ pal_get_rst_btn(uint8_t *status) {
     *status = 0x0;
   } else {
     *status = 0x1;
-  }
-
-  return 0;
-}
-
-// Update the Reset button input to the server at given slot
-int
-pal_set_rst_btn(uint8_t slot, uint8_t status) {
-  char path[64] = {0};
-  char *val;
-
-  if (slot < 1 || slot > 4) {
-    return -1;
-  }
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
-  if (write_device(path, val)) {
-    return -1;
   }
 
   return 0;

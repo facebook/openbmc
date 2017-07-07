@@ -3904,6 +3904,32 @@ int pal_get_plat_sku_id(void){
   return 0x01; // Yosemite V2
 }
 
+//Do slot ac cycle
+int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  uint8_t *data = req_data;
+  char cmd[128] = {0};
+  *res_len = 0;
+  
+  if((*data != 0x55) || (*(data+1) != 0x66) || (*(data+2) != 0x0f)) {
+    return completion_code;
+  }
+
+  if (server_12v_off(slot)) {
+    return completion_code;
+  }
+
+  sleep(DELAY_12V_CYCLE);
+
+  if (server_12v_on(slot)) {
+    return completion_code;
+  }
+  
+  completion_code = CC_SUCCESS;
+  return completion_code;
+}
+
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
 

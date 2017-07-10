@@ -20,5 +20,4 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-ARGS="--json /etc/sensor-svcd-config.json"
-exec /usr/local/bin/sensor-svcd $ARGS
+exec /usr/local/bin/sensor-svcd

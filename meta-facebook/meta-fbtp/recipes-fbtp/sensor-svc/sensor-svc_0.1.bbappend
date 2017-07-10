@@ -4,7 +4,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI =+ "file://setup-sensor-svcd.sh \
             file://run-sensor-svcd.sh \
-            file://sensor-svcd-config.json \
            "
 
 S = "${WORKDIR}"
@@ -22,7 +21,6 @@ do_install_append() {
 
   install -m 755 setup-sensor-svcd.sh ${D}${sysconfdir}/init.d/setup-sensor-svcd.sh
   install -m 755 run-sensor-svcd.sh ${D}${sysconfdir}/sv/sensor-svcd/run
-  install -m 644 sensor-svcd-config.json ${D}${sysconfdir}/sensor-svcd-config.json
   update-rc.d -r ${D} setup-sensor-svcd.sh start 91 5 .
 }
 

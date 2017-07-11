@@ -3016,6 +3016,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   float value;
   char units[64];
   int offset = 0; //sensor overload offset
+  int sku = 0;
 
   if (second_transaction)
     offset = MAX_EXP_IPMB_SENSOR_COUNT;
@@ -3098,11 +3099,22 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
 	    sprintf(str, "NA");
 	  }
 
-    if(edb_cache_set(key, str) < 0) {
+    // Workaround for Type 7 fan's configuration.
+    // The FAN1 and FAN4 are non-installed on Type 7.
+    // So report the fan speed as NA.
+    // TODO: check the fan's status reported by expander fw while expander does support it.
+    //       (Currently expander fw always returns status ok)
+    if ((rbuf[5*i+1] == DPB_SENSOR_FAN1_FRONT) || (rbuf[5*i+1] == DPB_SENSOR_FAN1_REAR) ||
+        (rbuf[5*i+1] == DPB_SENSOR_FAN4_FRONT) || (rbuf[5*i+1] == DPB_SENSOR_FAN4_REAR)) {
+      sku = pal_get_iom_type();
+      if (sku == IOM_IOC) { // IOM type: IOC solution
+        sprintf(str, "NA");
+      }
     }
-  #ifdef DEBUG
-       syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
-  #endif
+
+    if(edb_cache_set(key, str) < 0) {
+      syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+    }
   }
 
   return 0;

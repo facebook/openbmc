@@ -606,11 +606,11 @@ read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   switch (reg) {
     case INA230_VOLT:
       res = ((res & 0x00FF) << 8) | ((res & 0x7F00) >> 8);
-      *value = res / 800;
+      *value = ((float) res) / 800;
       break;
     case INA230_POWER:
       res = ((res & 0x00FF) << 8) | ((res & 0xFF00) >> 8);
-      *value = res / 40;
+      *value = ((float) res) / 40;
       break;
 
   }

@@ -83,6 +83,7 @@ IMAGE_INSTALL += " \
   logrotate \
   asd \
   asd-test \
+  ipmitool \
   "
 
 IMAGE_FEATURES += " \

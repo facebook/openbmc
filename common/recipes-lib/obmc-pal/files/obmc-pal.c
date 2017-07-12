@@ -625,6 +625,24 @@ pal_slotid_to_fruid(int slotid)
 }
 
 int __attribute__((weak))
+pal_devnum_to_fruid(int devnum)
+{
+  // This function is for mapping to fruid from devnum
+  // If the platform's devnum is different with fruid, need to rewrite
+  // this function in project layer.
+  return devnum;
+}
+
+int __attribute__((weak))
+pal_channel_to_bus(int channel)
+{
+  // This function is for mapping to bus from channel
+  // If the platform's channel is different with bus, need to rewrite
+  // this function in project layer.
+  return channel;
+}
+
+int __attribute__((weak))
 pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   char key[64] = {0};
   char value[64] = {0};

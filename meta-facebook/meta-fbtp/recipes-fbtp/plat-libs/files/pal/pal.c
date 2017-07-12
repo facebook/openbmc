@@ -3154,6 +3154,33 @@ pal_get_fru_name(uint8_t fru, char *name) {
 }
 
 int
+pal_devnum_to_fruid(int devnum)
+{
+  return FRU_MB;
+}
+
+int
+pal_channel_to_bus(int channel)
+{
+  switch (channel) {
+    case 0:
+      return 9; // USB (LCD Debug Board)
+    case 6:
+      return 4; // ME
+    case 9:
+      return 1; // Riser (Big Basin)
+  }
+
+  // Debug purpose, map to real bus number
+  if (channel & 0x80) {
+    return (channel & 0x7f);
+  }
+
+  return channel;
+}
+
+
+int
 pal_get_fru_sdr_path(uint8_t fru, char *path) {
   return -1;
 }

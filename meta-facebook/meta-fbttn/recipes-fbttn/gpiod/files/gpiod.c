@@ -521,7 +521,7 @@ run_gpiod(int argc, void **argv) {
   gpio_monitor_poll(fru_flag);
 }
 
-void pcie_power_cycle(void) {
+void iom_3v3_power_cycle (void) {
   char vpath[64] = {0};
   
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
@@ -531,14 +531,14 @@ void pcie_power_cycle(void) {
   write_device(vpath, "1");
 }
 
-void pcie_3v3_off(void) {
+void iom_3v3_power_off (void) {
   char vpath[64] = {0};
 	
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   write_device(vpath, "0");
 }
 
-int get_pe_status (void) {
+int get_perst_value (void) {
   char path[64] = {0};
   int val;
 
@@ -549,33 +549,43 @@ int get_pe_status (void) {
   return val;
 }
 
+// It's used for monitoring BMC PERST pin to detect the server power status.
 void 
 *OEM_PE_MON (void *ptr) {
   int value = 1;
-  int flag  = 0;
   int cnt   = 0;
+  bool is_3v3_power_cycled  = false;
+  bool is_iom_full_power_on = false;
+
   while (1) {
-    //get PE value
-    value = get_pe_status();	 
-    if(!value && flag != 1) {
+    value = get_perst_value();
+    // If PERST value is from high to low (server power status from on to off)
+    if((value == 0) && (is_3v3_power_cycled == false)) {
       msleep(200);
-      //get PE value
-      value = get_pe_status();
-      if(!value) {
-        flag = 1;
-        //3V3 cycle
-        pcie_power_cycle();
+      // Double check the PERST value.
+      value = get_perst_value();
+      if(value == 0) {
+        iom_3v3_power_cycle();
+        is_3v3_power_cycled = true;
+        is_iom_full_power_on = true;
       }
     } else {
-      if(!value) {  
-        cnt ++;
-        if(cnt > 40) {
-          cnt = 0;
-          pcie_3v3_off();
+      if(value == 0) {
+        // If server is power-off, increase the counter for power off IOM 3V3.
+        if (is_iom_full_power_on == true) {
+          cnt ++;
+          // If PERST value keep low over than 20s, it means server has been power-off.
+          // So we power off the IOM 3v3.
+          if(cnt > 40) {  // 40 * 500ms = 20000ms = 20s
+            cnt = 0;
+            iom_3v3_power_off();
+            is_iom_full_power_on = false;
+          }
         }
       } else {
+        // If server is power-on, clear the counter.
         cnt = 0;
-        flag = 0;
+        is_3v3_power_cycled = false;
       }
     }
     msleep(500);

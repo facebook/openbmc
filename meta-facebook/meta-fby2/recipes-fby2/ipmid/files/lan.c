@@ -48,9 +48,9 @@ void plat_lan_init(lan_config_t *lan)
   struct ifaddrs *ifaddr, *ifa;
   struct sockaddr_in *addr;
   struct sockaddr_in6 *addr6;
-  int family, n;
+  int family, n, i;
   unsigned long ip;
-  unsigned char *ip6;
+  unsigned char *ip6, *netmask6;
   int sd;
   struct ifreq ifr;
   uint8_t eui_64_addr[8] = {0x0};
@@ -88,8 +88,11 @@ void plat_lan_init(lan_config_t *lan)
       addr6 = (struct sockaddr_in6*) ifa->ifa_addr;
       ip6 = addr6->sin6_addr.s6_addr;
 
-      // If the address is Link Local, Ignore it
+      // If the address is Link Local, get the MAC address, then Ignore it
       if ((ip6[0] == IPV6_LINK_LOCAL_BYTE1) && (ip6[1] == IPV6_LINK_LOCAL_BYTE2)) {
+        strcpy(ifr.ifr_name, ifa->ifa_name);
+        if(ioctl(sd, SIOCGIFHWADDR, &ifr) != -1)
+          memcpy(lan->mac_addr, ifr.ifr_hwaddr.sa_data, SIZE_MAC_ADDR);
         continue;
       }
 
@@ -118,6 +121,14 @@ void plat_lan_init(lan_config_t *lan)
 
       // copy the ip address from array with MSB first
       memcpy(lan->ip6_addr, ip6, SIZE_IP6_ADDR);
+
+      // calculate the Address Prefix Length
+      netmask6 = ((struct sockaddr_in6*)ifa->ifa_netmask)->sin6_addr.s6_addr;
+      for (i=0; i<SIZE_IP6_ADDR*8; i++) {
+        if (!((netmask6[i/8] << (i%8)) & 0x80))
+          break;
+      }
+      lan->ip6_prefix = i;
     }
   }
 

@@ -45,11 +45,11 @@ def populate_server_node(num):
     if prsnt == None or prsnt == 0:
         return None
 
-    r_server = tree("server" + repr(num), data = get_node_server(num))
-    r_fruid = tree("fruid", data = get_node_fruid("slot" + repr(num)))
-    r_sensors = tree("sensors", data = get_node_sensors("slot" + repr(num)))
-    r_logs = tree("logs", data = get_node_logs("slot" + repr(num)))
-    r_config = tree("config", data = get_node_config("slot" + repr(num)))
+    r_server = tree("server", data = get_node_server(num))
+    r_fruid = tree("fruid", data = get_node_fruid("server"))
+    r_sensors = tree("sensors", data = get_node_sensors("server"))
+    r_logs = tree("logs", data = get_node_logs("server"))
+    r_config = tree("config", data = get_node_config("server"))
     r_server.addChildren([r_fruid, r_sensors, r_logs, r_config])
 
     return r_server

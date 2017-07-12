@@ -117,6 +117,19 @@ static int i2c_slave_read(int fd, uint8_t *buf, uint8_t *len);
 static int i2c_slave_open(uint8_t bus_num);
 static int bic_up_flag = 0;
 
+// Helper function for msleep
+static void
+msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
+  }
+}
+
 // Calculate checksum
 static inline uint8_t
 calc_cksum(uint8_t *buf, uint8_t len) {
@@ -196,8 +209,6 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
   struct i2c_msg msg;
   int rc;
   int i;
-  struct timespec req;
-  struct timespec rem;
 
   memset(&msg, 0, sizeof(msg));
 
@@ -209,16 +220,12 @@ i2c_write(int fd, uint8_t *buf, uint8_t len) {
   data.msgs = &msg;
   data.nmsgs = 1;
 
-  // Setup wait time
-  req.tv_sec = 0;
-  req.tv_nsec = 20000000;//20mSec
-
   pthread_mutex_lock(&m_i2c);
 
   for (i = 0; i < I2C_RETRIES_MAX; i++) {
     rc = ioctl(fd, I2C_RDWR, &data);
     if (rc < 0) {
-      nanosleep(&req, &rem);
+      msleep(20);
       continue;
     } else {
       break;
@@ -481,7 +488,6 @@ ipmb_rx_handler(void *bus_num) {
   mqd_t mq_req = (mqd_t)-1, mq_res, tmq;
   ipmb_req_t *p_req;
   struct timespec req;
-  struct timespec rem;
   char mq_ipmb_req[64] = {0};
   char mq_ipmb_res[64] = {0};
   uint8_t tbuf[MAX_BYTES] = { 0 };
@@ -587,7 +593,7 @@ ipmb_rx_handler(void *bus_num) {
     // Post message to approriate Queue for further processing
     if (mq_timedsend(tmq, (char *)buf, len, 0, &req)) {
       //syslog(LOG_WARNING, "mq_send failed for queue %d\n", tmq);
-      nanosleep(&req, &rem);
+      msleep(10);
       continue;
     }
   }

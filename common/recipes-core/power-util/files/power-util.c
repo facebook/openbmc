@@ -120,7 +120,7 @@ get_power_opt(char *option, uint8_t *opt) {
 
 //check power policy and power state to power on/off server after AC power restore
 void
-power_policy_control(uint8_t fru) {
+power_policy_control(uint8_t fru, char *last_ps) {
   uint8_t chassis_status[5] = {0};
   uint8_t chassis_status_length;
   uint8_t power_policy = POWER_CFG_UKNOWN;
@@ -136,8 +136,11 @@ power_policy_control(uint8_t fru) {
 
   //Check power policy and last power state
   if(power_policy == POWER_CFG_LPS) {
-    pal_get_last_pwr_state(fru, pwr_state);
-    if (!(strcmp(pwr_state, "on"))) {
+    if (!last_ps) {
+      pal_get_last_pwr_state(fru, pwr_state);
+      last_ps = pwr_state;
+    }
+    if (!(strcmp(last_ps, "on"))) {
       sleep(3);
       pal_set_server_power(fru, SERVER_POWER_ON);
     }
@@ -170,6 +173,7 @@ power_util(uint8_t fru, uint8_t opt) {
   int ret;
   uint8_t status;
   int retries;
+  char pwr_state[MAX_VALUE_LEN] = {0};
 
   if (opt == PWR_SLED_CYCLE) {
     for(fru = 1; fru <= MAX_NUM_FRUS; fru++) {
@@ -375,13 +379,15 @@ power_util(uint8_t fru, uint8_t opt) {
       } else {
         syslog(LOG_CRIT, "SERVER_12V_ON successful for FRU: %d", fru);
 
-        power_policy_control(fru);
+        power_policy_control(fru, NULL);
       }
       break;
 
     case PWR_12V_CYCLE:
 
       printf("12V Power cycling fru %u...\n", fru);
+
+      pal_get_last_pwr_state(fru, pwr_state);
 
       ret = pal_set_server_power(fru, SERVER_12V_CYCLE);
       if (ret < 0) {
@@ -391,7 +397,7 @@ power_util(uint8_t fru, uint8_t opt) {
       } else {
         syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", fru);
      
-        power_policy_control(fru);
+        power_policy_control(fru, pwr_state);
       }
       break;
 

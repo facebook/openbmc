@@ -8,9 +8,7 @@
   },
   "watchdog": false,
   "fanpower": true,
-  "chassis_intrusion": {
-    "action": "chassis_intrusion_callout"
-  },
+  "chassis_intrusion": true,
   "min_rpm": 800,
   "profiles": {
     "linear_dimm": {

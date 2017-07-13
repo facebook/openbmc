@@ -62,24 +62,6 @@ class SensorJsonParser {
                             SensorObjectTree     &sensorTree,
                             const std::string    &parentPath);
 
-  private:
-
-    static void throwObjectJsonConfliction(const std::string &name,
-                                           const std::string &parentPath) {
-      // there must be duplicate object
-      LOG(ERROR) << "Object \"" << name << "\" cannot be added "
-        "under parent object at \"" << parentPath << "\"";
-      throw std::invalid_argument("JSON conflicts with the sensor tree");
-    }
-
-    static void throwAttrJsonConfliction(const std::string &attrName,
-                                         const std::string &objectName) {
-      // there must be duplicate attribute
-      LOG(ERROR) << "Attribute \"" << attrName
-        << "\" cannot be added into Object \"" << objectName << "\"";
-      throw std::invalid_argument("JSON conflicts with the sensor tree");
-    }
-
     /**
      * A helper function that adds the Sensor Service into the
      * sensor tree and that proceeds to add the attributes under it.
@@ -103,4 +85,21 @@ class SensorJsonParser {
     static void parseSensor(const nlohmann::json &jObject,
                             SensorObjectTree     &sensorTree,
                             const std::string    &parentPath);
+  private:
+
+    static void throwObjectJsonConfliction(const std::string &name,
+                                           const std::string &parentPath) {
+      // there must be duplicate object
+      LOG(ERROR) << "Object \"" << name << "\" cannot be added "
+        "under parent object at \"" << parentPath << "\"";
+      throw std::invalid_argument("JSON conflicts with the sensor tree");
+    }
+
+    static void throwAttrJsonConfliction(const std::string &attrName,
+                                         const std::string &objectName) {
+      // there must be duplicate attribute
+      LOG(ERROR) << "Attribute \"" << attrName
+        << "\" cannot be added into Object \"" << objectName << "\"";
+      throw std::invalid_argument("JSON conflicts with the sensor tree");
+    }
 };

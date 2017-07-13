@@ -27,9 +27,11 @@
 #include <dbus-utils/dbus-interface/DBusObjectInterface.h>
 #include "DBusSensorInterface.h"
 #include "DBusSensorTreeInterface.h"
+#include "DBusSensorServiceInterface.h"
 
 static DBusSensorTreeInterface sensorTreeInterface;
 static DBusSensorInterface sensorInterface;
+static DBusSensorServiceInterface sensorServiceInterface;
 
 static int parseInt(std::string str) {
   if ((str.length() > 2) && (str.at(0) == '0' && str.at(1) == 'x')){
@@ -72,7 +74,7 @@ SensorService* SensorObjectTree::addSensorService(const std::string &name,
   const std::string path = getPath(parentPath, name);
   Object* parent = getParent(parentPath, name);
   std::unique_ptr<SensorService> upDev(new SensorService(name, parent));
-  return static_cast<SensorService*>(addObjectByPath(std::move(upDev), path, sensorTreeInterface));
+  return static_cast<SensorService*>(addObjectByPath(std::move(upDev), path, sensorServiceInterface));
 }
 
 FRU* SensorObjectTree::addFRU(const std::string &name,

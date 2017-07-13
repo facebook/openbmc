@@ -47,14 +47,14 @@ class FRU : public Object {
     }
 
     /*
-    * returns poweronFlag_
+    * Returns poweronFlag_
     */
     uint8_t getPoweronFlag() {
       return poweronFlag_;
     }
 
     /*
-    * Increments fruId
+    * Returns fruId
     */
     uint8_t getId() {
       return fruId_;

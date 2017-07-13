@@ -161,7 +161,18 @@ class SensorObjectTree : public ObjectTree {
       objectMap_.insert(std::make_pair(path, std::move(upObj)));
 
       DBus* dbus = getDBusObject(ipc_.get());
-      dbus->registerObject(path, interface, object);
+      SensorService* sensorService = nullptr;
+      FRU* fru = nullptr;
+
+      // SensorService registers sensorTree object on dbus
+      // sensorTree access is required to perform add and delete opeartion at SensorService object path
+      if ((sensorService = dynamic_cast<SensorService*>(object)) != nullptr) {
+        LOG(ERROR) << "Object is of SensorService type";
+        dbus->registerObject(path, interface, this);
+      }
+      else {
+        dbus->registerObject(path, interface, object);
+      }
       return object;
     }
 };

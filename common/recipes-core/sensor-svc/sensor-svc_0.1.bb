@@ -35,12 +35,15 @@ SRC_URI =+ "file://Makefile \
            file://SensorAccessMechanism.cpp \
            file://SensorAccessAVA.cpp \
            file://FRU.cpp \
+           file://DBusSensorServiceInterface.cpp \
+           file://DBusSensorServiceInterface.h \
           "
 
 S = "${WORKDIR}"
 
 LDFLAGS =+ " -lpthread -lgobject-2.0 -lobject-tree -lgflags -lgtest -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils"
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils gtest glog gflags obmc-i2c"
+RDEPENDS_${PN} += "dbus"
 
 export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"

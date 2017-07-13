@@ -33,24 +33,6 @@
 #include "SensorJsonParser.h"
 using namespace openbmc::qin;
 
-// validator for the json filename
-static bool validateFilename(const char* flagname,
-                             const std::string &filename) {
-  std::ifstream ifs(filename);
-  if (ifs.good()) { // file is good
-    return true;
-  }
-  printf("Invalid value for --%s: %s\n", flagname, filename.c_str());
-  return false;
-}
-
-// sensord takes json file name to parse the sensor tree
-DEFINE_string(json, "",
-              "JSON file name to be parsed under the object \"/org/openbmc\"");
-
-static const bool regDummy =
-  ::gflags::RegisterFlagValidator(&FLAGS_json, &validateFilename);
-
 // implementation for handling DBus request messages
 static DBusObjectInterface objectInterface;
 
@@ -97,9 +79,7 @@ int main (int argc, char* argv[]) {
   SensorObjectTree sensorTree(sDbus, "org");
 
   sensorTree.addObject("openbmc","/org");
-
-  LOG(INFO) << "Parsing \"" << FLAGS_json << "\" into the sensor tree" << std::endl;
-  SensorJsonParser::parse(FLAGS_json, sensorTree, "/org/openbmc");
+  sensorTree.addSensorService("SensorService", "/org/openbmc");
 
   LOG(INFO) << "Main thread joining the event loop thread" << std::endl;
   t.join();

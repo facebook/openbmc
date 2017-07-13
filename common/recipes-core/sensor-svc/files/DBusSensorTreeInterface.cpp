@@ -214,7 +214,6 @@ void DBusSensorTreeInterface::getFruPathByName(GDBusMethodInvocation* invocation
 
   g_dbus_method_invocation_return_value(invocation,
                                         g_variant_new("(s)", path.c_str()));
-  g_variant_unref(parameters);
 }
 
 /*
@@ -260,7 +259,6 @@ void DBusSensorTreeInterface::getFruPathById(GDBusMethodInvocation* invocation,
 
   g_dbus_method_invocation_return_value(invocation,
                                         g_variant_new("(s)", path.c_str()));
-  g_variant_unref(parameters);
 }
 
 /*
@@ -307,7 +305,6 @@ void DBusSensorTreeInterface::getSensorPathByName(GDBusMethodInvocation* invocat
 
   g_dbus_method_invocation_return_value(invocation,
                                         g_variant_new("(s)", path.c_str()));
-  g_variant_unref(parameters);
 }
 
 /*
@@ -356,8 +353,6 @@ void DBusSensorTreeInterface::getSensorPathById(GDBusMethodInvocation* invocatio
 
   g_dbus_method_invocation_return_value(invocation,
                                         g_variant_new("(s)", path.c_str()));
-
-  g_variant_unref(parameters);
 }
 
 void DBusSensorTreeInterface::methodCallBack(

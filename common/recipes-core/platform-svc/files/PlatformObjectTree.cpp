@@ -24,6 +24,9 @@
 #include <memory>
 #include <glog/logging.h>
 #include "PlatformObjectTree.h"
+#include "DBusPlatformSvcInterface.h"
+
+static DBusPlatformSvcInterface platformSvcInterface;
 
 PlatformService* PlatformObjectTree::addPlatformService(const std::string &name,
                                                         const std::string &parentPath) {
@@ -32,7 +35,7 @@ PlatformService* PlatformObjectTree::addPlatformService(const std::string &name,
   const std::string path = getPath(parentPath, name);
   Object* parent = getParent(parentPath, name);
   std::unique_ptr<PlatformService> upDev(new PlatformService(name, parent));
-  return static_cast<PlatformService*>(addObjectByPath(std::move(upDev), path));
+  return static_cast<PlatformService*>(addObjectByPath(std::move(upDev), path, platformSvcInterface));
 }
 
 FRU* PlatformObjectTree::addFRU(const std::string &name,
@@ -46,7 +49,7 @@ FRU* PlatformObjectTree::addFRU(const std::string &name,
   Object* parent = getParent(parentPath, name);
 
   std::unique_ptr<FRU> upDev(new FRU(name, parent, hotPlugSupport, isAvailable, fruJson));
-  return static_cast<FRU*>(addObjectByPath(std::move(upDev), path));
+  return static_cast<FRU*>(addObjectByPath(std::move(upDev), path, platformSvcInterface));
 }
 
 Sensor* PlatformObjectTree::addSensor(const std::string &name,
@@ -57,7 +60,7 @@ Sensor* PlatformObjectTree::addSensor(const std::string &name,
   FRU* parent = getFRU(getParent(parentPath, name));
 
   std::unique_ptr<Sensor> upObj(new Sensor(name, parent, sensorJson));
-  return static_cast<Sensor*>(addObjectByPath(std::move(upObj), path));
+  return static_cast<Sensor*>(addObjectByPath(std::move(upObj), path, platformSvcInterface));
 }
 
 void PlatformObjectTree::initSensorService(std::string dbusName, std::string dbusPath, std::string dbusInteface) {

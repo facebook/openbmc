@@ -134,4 +134,33 @@ class PlatformObjectTree : public ObjectTree {
       }
       return dbus;
     }
+
+    /**
+     * addObject with specified interface
+     */
+    Object* addObject(const std::string &name,
+                      const std::string &parentPath,
+                      DBusInterfaceBase &interface) {
+      LOG(INFO) << "Adding object \"" << name << "\" under path \""
+        << parentPath << "\"";
+      Object* parent = getParent(parentPath, name);
+      const std::string path = getPath(parentPath, name);
+      std::unique_ptr<Object> upObj(new Object(name, parent));
+      return addObjectByPath(std::move(upObj), path, interface);
+    }
+
+    /**
+     * addObjectByPath with specified interface
+     */
+    Object* addObjectByPath(std::unique_ptr<Object> upObj,
+                            const std::string       &path,
+                            DBusInterfaceBase       &interface) {
+      Object* object = upObj.get();
+      objectMap_.insert(std::make_pair(path, std::move(upObj)));
+
+      DBus* dbus = getDBusObject(ipc_.get());
+      //Register with platformObjectTree object
+      dbus->registerObject(path, interface, this);
+      return object;
+    }
 };

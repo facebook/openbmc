@@ -216,6 +216,7 @@ void showUsage(char **argv) {
     fprintf(stderr, "     2          network transactions\n");
     fprintf(stderr, "     3          JTAG MSG from plugin\n");
     fprintf(stderr, "     4          All log types\n");
+    fprintf(stderr, "  -f <number>   fru number\n");        
     fprintf(stderr, "  -p <number>   Port number (default=%d)\n", DEFAULT_PORT);
     fprintf(stderr, "  -s            Route log messages to the system log\n\n");
 }

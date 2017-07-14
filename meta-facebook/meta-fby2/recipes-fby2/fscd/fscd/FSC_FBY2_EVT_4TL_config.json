@@ -1,5 +1,5 @@
 {
-  "version": "fby2-evt-v0.2",
+  "version": "fby2-dvt-v0.1",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -10,37 +10,6 @@
   "watchdog": true,
   "min_rpm": 800,
   "profiles": {
-    "linear_dimm": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
-      "data": [
-        [65, 18],
-        [67, 25],
-        [70, 30],
-        [72, 35],
-        [74, 40],
-        [76, 50]
-      ]
-    },
-    "linear_mezz": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
-      "data": [
-        [85, 18],
-        [87, 35],
-        [90, 40],
-        [92, 50],
-        [94, 60]
-      ]
-    },
     "linear_inlet": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -49,17 +18,17 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [ 25, 18 ],
-        [ 27, 19 ],
-        [ 29, 20 ],
-        [ 31, 21 ],
-        [ 33, 22 ],
-        [ 35, 23 ],
-        [ 37, 24 ],
-        [ 39, 25 ],
-        [ 41, 26 ],
-        [ 43, 27 ],
-        [ 45, 28 ]
+        [ 25, 40 ],
+        [ 26, 41 ],
+        [ 27, 42 ],
+        [ 28, 43 ],
+        [ 29, 44 ],
+        [ 30, 45 ],
+        [ 31, 46 ],
+        [ 32, 47 ],
+        [ 33, 48 ],
+        [ 34, 49 ],
+        [ 35, 50 ]
       ]
     },
     "linear_cpu_margin": {
@@ -70,13 +39,26 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [ -30, 18 ],
-        [ -28, 20 ],
-        [ -26, 21 ],
-        [ -24, 22 ],
-        [ -22, 23 ],
-        [ -20, 24 ],
-        [ -18, 25 ]
+        [ -45, 35 ],
+        [ -44, 36 ],
+        [ -43, 37 ],
+        [ -42, 38 ],
+        [ -41, 39 ],
+        [ -40, 40 ],
+        [ -39, 41 ],
+        [ -38, 42 ],
+        [ -37, 43 ],
+        [ -36, 44 ],
+        [ -35, 45 ],
+        [ -34, 46 ],
+        [ -33, 47 ],
+        [ -32, 48 ],
+        [ -31, 49 ],
+        [ -30, 50 ],
+        [ -29, 51 ],
+        [ -28, 52 ],
+        [ -27, 53 ],
+        [ -26, 54 ]
       ]
     },
     "pid_cpu_margin": {
@@ -84,101 +66,11 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -10,
-      "negative_hysteresis": 1,
-      "positive_hysteresis": 1,
-      "kp": -1.25,
-      "ki": -0.035,
-      "kd": 0
-    },
-    "linear_mb_outlet": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
-      "data": [
-        [ 43, 18 ],
-        [ 45, 19 ],
-        [ 47, 21 ],
-        [ 49, 23 ]
-      ]
-    },
-    "pid_mb_outlet": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 53,
-      "negative_hysteresis": 3,
-      "positive_hysteresis": 1,
-      "kp": -2,
-      "ki": -0.025,
-      "kd": 0
-    },
-    "pid_mb_m2": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 53,
-      "negative_hysteresis": 3,
-      "positive_hysteresis": 1,
-      "kp": -2,
-      "ki": -0.025,
-      "kd": 0
-    },
-    "linear_mb_m2_boot": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
-      "data": [
-        [ 43, 18 ],
-        [ 45, 19 ],
-        [ 47, 21 ],
-        [ 49, 23 ]
-      ]
-    },
-    "pid_mb_m2_boot": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 53,
-      "negative_hysteresis": 3,
-      "positive_hysteresis": 1,
-      "kp": -2,
-      "ki": -0.025,
-      "kd": 0
-    },
-    "linear_gp_m2": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
-      "data": [
-        [ 43, 18 ],
-        [ 45, 19 ],
-        [ 47, 21 ],
-        [ 49, 23 ]
-      ]
-    },
-    "pid_gp_m2": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 53,
-      "negative_hysteresis": 3,
-      "positive_hysteresis": 1,
-      "kp": -2,
-      "ki": -0.025,
+      "setpoint": -21,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 2,
+      "kp": -6,
+      "ki": -1,
       "kd": 0
     }
   },

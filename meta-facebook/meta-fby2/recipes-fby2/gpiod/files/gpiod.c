@@ -235,7 +235,6 @@ gpio_monitor_poll(uint8_t fru_flag) {
   uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
   gpio_pin_t *gpios;
   char pwr_state[MAX_VALUE_LEN];
-
   uint32_t status;
   bic_gpio_t gpio = {0};
 
@@ -333,18 +332,26 @@ gpio_monitor_poll(uint8_t fru_flag) {
              * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
              * Raise an error and change the LPS from on to off or vice versa for deassert.
              */
-            if (strcmp(pwr_state, "off"))
-              pal_set_last_pwr_state(fru, "off");
-
+            if (strcmp(pwr_state, "off")) {
+              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru])
+                 pal_set_last_pwr_state(fru, "off");
+              else {
+                 break;
+              }
+            }
             syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
 
             // Inform BIOS that BMC is ready
             bic_set_gpio(fru, BMC_READY_N, 0);
           } else {
 
-            if (strcmp(pwr_state, "on"))
-              pal_set_last_pwr_state(fru, "on");
-
+            if (strcmp(pwr_state, "on")) {
+              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru])
+                 pal_set_last_pwr_state(fru, "on");
+              else {
+                 break;
+              }
+            }
             syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           }
         }

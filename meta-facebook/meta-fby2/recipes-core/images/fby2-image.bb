@@ -88,6 +88,7 @@ IMAGE_INSTALL += " \
   guid-util \
   asd \
   asd-test \
+  logrotate \
   "
 
 IMAGE_FEATURES += " \

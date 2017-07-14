@@ -201,6 +201,7 @@ const char * fruid_chassis_type [] = {
 };
 
 int fruid_parse(const char * bin, fruid_info_t * fruid);
+int fruid_parse_eeprom(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fruid);
 void free_fruid_info(fruid_info_t * fruid);
 
 #ifdef __cplusplus

@@ -749,13 +749,6 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
   FILE *fruid_fd;
   uint8_t * eeprom;
 
-  /* Initial all the required fruid structures */
-  fruid_header_t fruid_header;
-  fruid_eeprom_t fruid_eeprom;
-
-  memset(&fruid_header, 0, sizeof(fruid_header_t));
-  memset(&fruid_eeprom, 0, sizeof(fruid_eeprom_t));
-
   /* Reset parser return value */
   ret = 0;
 
@@ -788,11 +781,30 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
   /* Close the FRUID binary file */
   fclose(fruid_fd);
 
+  /* Parse eeprom dump*/
+  ret = fruid_parse_eeprom(eeprom, fruid_len, fruid);
+
+  /* Free the eeprom malloced memory */
+  free(eeprom);
+
+  return ret;
+}
+
+/* Populate the fruid from eeprom dump*/
+int fruid_parse_eeprom(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fruid)
+{
+  int ret = 0;
+
+  /* Initial all the required fruid structures */
+  fruid_header_t fruid_header;
+  fruid_eeprom_t fruid_eeprom;
+
+  memset(&fruid_header, 0, sizeof(fruid_header_t));
+  memset(&fruid_eeprom, 0, sizeof(fruid_eeprom_t));
+
   /* Parse the common header data */
   ret = parse_fruid_header(eeprom, &fruid_header);
   if (ret) {
-    /* Free the eeprom malloc'ed memory */
-    free(eeprom);
     return ret;
   }
 
@@ -806,9 +818,6 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
     /* Free the malloced memory for the fruid information */
     free_fruid_info(fruid);
   }
-
-  /* Free the eeprom malloced memory */
-  free(eeprom);
 
   return ret;
 }

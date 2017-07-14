@@ -526,6 +526,12 @@ main(int argc, char **argv) {
   } else {
   	printf("BIC_SENSOR_LIQUID_PUMP_TACH: 0x%X\n", value);
   }
+  
+  if (fby2_sensor_read(slot_id, BIC_SENSOR_LIQUID_PUMP_PWM, &value)) {
+    printf("fby2_sensor_read failed: BIC_SENSOR_LIQUID_PUMP_PWM\n");
+  } else {
+        printf("BIC_SENSOR_LIQUID_PUMP_PWM: 0x%X\n", value);
+  }
 
   return 0;
 }

@@ -5,8 +5,8 @@ max([
   linear_cpu_margin(slot4:soc_therm_margin) + pid_cpu_margin(slot4:soc_therm_margin),
   linear_dimm(
    max([
-    slot1:soc_dimma0_temp,
-    slot1:soc_dimma1_temp,
+    slot1:soc_dimma0_temp * 10,
+    slot1:soc_dimma1_temp / 2,
     slot1:soc_dimmb0_temp,
     slot1:soc_dimmb1_temp,
     slot2:soc_dimma0_temp,

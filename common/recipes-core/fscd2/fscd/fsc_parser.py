@@ -10,6 +10,8 @@ tokens = (
     "NUM",
     "PLUS",
     "MINUS",
+    "MULTIPLY",
+    "DIVIDE",
     "PAR_OPEN",
     "PAR_END",
     "LIST_OPEN",
@@ -28,6 +30,8 @@ def t_NUM(t):
 
 t_PLUS = r"\+"
 t_MINUS = r"\-"
+t_MULTIPLY = r"\*"
+t_DIVIDE = r"\/"
 t_PAR_OPEN = r"\("
 t_PAR_END = r"\)"
 t_LIST_OPEN = r"\["
@@ -44,7 +48,7 @@ def t_error(t):
 
 start = "expression"
 precedence = (
-    ("left", "PLUS", "MINUS"),
+    ("left", "MULTIPLY", "DIVIDE", "PLUS", "MINUS"),
 )
 
 def p_list_elements(p):
@@ -83,6 +87,20 @@ def p_expression_plus(p):
 
 def p_expression_minus(p):
     "expression : expression MINUS expression"
+    p[0] = {'type': 'infix',
+            'op': p[2],
+            'left': p[1],
+            'right': p[3]}
+
+def p_expression_multiply(p):
+    "expression : expression MULTIPLY expression"
+    p[0] = {'type': 'infix',
+            'op': p[2],
+            'left': p[1],
+            'right': p[3]}
+
+def p_expression_divide(p):
+    "expression : expression DIVIDE expression"
     p[0] = {'type': 'infix',
             'op': p[2],
             'left': p[1],

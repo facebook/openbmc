@@ -1,0 +1,245 @@
+#!/usr/bin/python
+import sys
+from subprocess import Popen, PIPE
+
+IPMIUTIL = "/usr/local/fbpackages/ipmi-util/ipmi-util"
+NODE_NUM = "1" #FRU:1 Server
+boot_order_device = { 0: "USB Device", 1: "IPv4 Network", 9: "IPv6 Network", 2: "SATA HDD", 3: "SATA-CDROM", 4: "Other Removalbe Device" }
+
+def usage():
+    print("Usage: bios-util [ boot_order, plat_info, pcie_config ] <options>")
+    exit(-1)
+    
+def usage_boot_order():
+    print("Usage: bios-util boot_order --clear_CMOS <--enable, --disable, --get>")
+    print("                            --force_boot_BIOS_setup <--enable, --disable, --get>")
+    print("                            --boot_order [ --set < #1st #2nd #3rd #4th #5th >, --get ]")
+    print("       *" + repr(boot_order_device))
+    exit(-1)
+        
+def usage_plat_info():
+    print("Usage: bios-util plat_info --get")
+    exit(-1)
+    
+def usage_PCIE_config():
+    print("Usage: bios-util pcie_config --get")
+    exit(-1)
+
+def execute_IPMI_command(netfn, cmd, req):
+    netfn = (netfn << 2)
+
+    sendreqdata = ""
+    if ( req != "" ):
+      for i in range(0, len(req), 1):
+          sendreqdata += str(req[i]) + " "
+
+    input = IPMIUTIL + " " + NODE_NUM + " " + str(netfn) + " " + str(cmd) + " " + sendreqdata
+    data=''
+
+    output = Popen(input, shell=True, stdout=PIPE)
+    (data, err) =  output.communicate()
+    result = data.strip().split(" ")
+
+    if ( output.returncode != 0 ):
+        print("ipmi-util execute fail..., please check ipmid.")
+        exit(-1)    
+
+    if ( int(result[2], 16) != 0 ):
+        print("IPMI Failed, CC Code:%s" % result[2])
+        exit(0)
+    
+    return result[3:]
+    
+def status_decode(input):
+    if ( input == 1 ):
+        return "Enabled"
+    else:
+        return "Disabled"
+        
+def trans2opcode(input):
+    if ( input == "--enable" ):
+        return 1
+    else:
+        return 0
+
+'''
+OEM Set BIOS Boot Order (NetFn:0x30, CMD: 0x52h)
+Request:
+   Byte 1 - Boot mode
+     Bit 0 - 0 : Legacy, 1 : UEFI
+     Bit 1 - CMOS clear (Optional, BIOS implementation dependent)
+     Bit 2 - Force Boot into BIOS Setup (Optional, BIOS implementation dependent)
+     Bit 6:3 - reserved
+     Bit 7 - boot flags valid
+  Byte 2-6 - Boot sequence
+     Bit 2:0 - boot device id
+         000b: USB device
+         001b: Network
+         010b: SATA HDD
+         011b: SATA-CDROM
+         100b: Other removable Device
+     Bit 7:3 - reserve for boot device special request
+           If Bit 2:0 is 001b (Network), Bit3 is IPv4/IPv6 order
+              Bit3=0b: IPv4 first
+              Bit3=1b: IPv6 first
+Response:
+Byte1 - Completion Code
+'''
+def boot_order(argv):
+    req_data = [""]
+    function = argv[2]
+    option = argv[3]
+    boot_flags_valid = 0  
+
+    result = execute_IPMI_command(0x30, 0x53, "")
+    
+    data = [int(n, 16) for n in result]
+        
+    clear_CMOS = ((data[0] & 0x2) >> 1)
+    force_boot_BIOS_setup = ((data[0] & 0x4) >> 2)
+    boot_order = data[1:]
+    
+    if ( option == "--get" ):
+        if ( function == "--boot_order" ):
+            try:
+                print("Boot Order: " + ", ".join(boot_order_device[dev] for dev in boot_order))
+            except KeyError:
+                print("Invalid Boot Device ID!")
+                print(boot_order_device)
+        elif ( function == "--clear_CMOS" ):
+            print("Clear CMOS Function: " + status_decode(clear_CMOS))
+            exit(0)
+        elif ( function == "--force_boot_BIOS_setup" ):
+            print("Force Boot to BIOS Setup Function: " + status_decode(force_boot_BIOS_setup))
+            exit(0)
+        else:
+            usage_boot_order() 
+    elif ( option == "--enable" ) or ( option == "--disable" ):
+        if ( function == "--clear_CMOS" ):
+            clear_CMOS = trans2opcode(option)
+        elif ( function == "--force_boot_BIOS_setup" ):
+            force_boot_BIOS_setup = trans2opcode(option)
+        else:
+            usage_boot_order() 
+        if ( option == "--enable" ):
+            #Raise the 7th valid bit for enable clean CMOS, and force boot to BIOS setup action
+            boot_flags_valid = (1 << 7)
+    elif ( option == "--set" ):
+        if ( function == "--boot_order" ):
+            if ( len(argv) < 9 ):
+                usage_boot_order() 
+            
+            set_boot_order = argv[4:]
+            for num in set_boot_order:
+                if ( not int(num) in boot_order_device ):
+                    print("Invalid Boot Device ID!")
+                    usage_boot_order()
+            boot_order = set_boot_order
+        else:
+            usage_boot_order() 
+    else:
+        usage_boot_order() 
+    
+    req_data[0] = ((((data[0] & ~0x6) | (clear_CMOS << 1)) | (force_boot_BIOS_setup << 2)) |  boot_flags_valid)
+    req_data[1:] = boot_order
+    
+    execute_IPMI_command(0x30, 0x52, req_data)  
+    
+'''
+OEM Get Platform Info (NetFn:0x30, CMD: 0x7Eh)
+Request:
+   NA
+Response:
+   Byte 1 - Completion Code
+   Byte 2 - Node Slot Index
+     Bit 7 - 1b: present, 0b: not present
+     Bit 6 - 1b: Test Board, 0b: Non Test Board
+     Bit 5:3  - SKU ID
+         000b: Yosemite
+         010b: Triton-Type 5A (Left sub-system)
+         011b: Triton-Type 5B (Right sub-system)
+         100b: Triton-Type 7 SS (IOC based IOM)
+     Bit 2:0 - Slot Index, 1 based
+'''
+def plat_info():
+    req_data = [""]
+    presense = "Not Present"
+    test_board = "Non Test Board"
+    SKU = "Unknown"
+    slot_index = ""
+    result = execute_IPMI_command(0x30, 0x7E, "")
+    
+    data = int(result[0], 16)
+    
+    if ( data & 0x80 ):
+        presense = "Present"
+        
+    if ( data & 0x40 ):
+        test_board = "Test Board"
+    
+    SKU_ID = ((data & 0x38) >> 3 )
+    if ( SKU_ID == 0 ):
+        SKU = "Yosemite"
+    elif ( SKU_ID == 2 ):
+        SKU = "Triton-Type 5A (Left sub-system)"
+    elif ( SKU_ID == 3 ):
+        SKU = "Triton-Type 5B (Right sub-system)"
+    elif ( SKU_ID == 4 ):
+        SKU = "Triton-Type 7 SS (IOC based IOM)"
+        
+    slot_index = str((data & 0x7))
+    
+    print("Presense: " + presense)
+    print(test_board)
+    print("SKU: " + SKU)
+    print("Slot Index: " + slot_index)
+
+'''
+OEM Get PCIe Configuration (NetFn:0x30, CMD: 0xF4h)
+Request:
+   NA
+Response:
+   Byte 1 - Completion Code
+   Byte 2 - config number
+     0x6: Triton-Type 5A/5B
+     0x8: Triton-Type 7
+     0xA: Yosemite
+'''
+def pcie_config():
+    req_data = [""]
+    result = execute_IPMI_command(0x30, 0xF4, "")
+    
+    if ( result[0] == "06" ):
+        config = "Triton-Type 5"
+    elif ( result[0] == "08" ):
+        config = "Triton-Type 7"
+    elif ( result[0] == "0A" ):
+        config = "Yosemite"
+    else:
+        config = "Unknown"
+    print("PCIe Configuration:" + config)
+
+    
+def bios_main():
+    if ( len(sys.argv) < 2 ):
+        usage()
+
+    if ( sys.argv[1] == "boot_order" ):
+        if ( len(sys.argv) < 4 ):
+            usage_boot_order()
+        boot_order(sys.argv)
+        
+    elif ( sys.argv[1] == "plat_info" ):
+        if ( len(sys.argv) != 3 ) or ( sys.argv[2] != "--get" ):
+            usage_plat_info()
+        plat_info()
+        
+    elif ( sys.argv[1] == "pcie_config" ):
+        if ( len(sys.argv) != 3 ) or ( sys.argv[2] != "--get" ):
+            usage_PCIE_config()        
+        pcie_config()
+    else:
+        usage()
+        
+if ( __name__ == '__main__' ):
+    bios_main()

@@ -190,8 +190,8 @@ void
 *clear_bios_data_timer(void *ptr)
 {
   int timer = 0;
+  int slot_id = (int)ptr;
   unsigned char boot[SIZE_BOOT_ORDER]={0};
-  unsigned char slot_id = *(uint8_t *)ptr;
   unsigned char res_len;
   pthread_detach(pthread_self());
 
@@ -2134,6 +2134,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
 
   int RetVal;
   int ret;
+  int slot_id = req->payload_id;
   static pthread_t bios_timer_tid[MAX_NODES];
 
   if ( IsTimerStart[req->payload_id - 1] )
@@ -2145,7 +2146,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   }
 
   /*Create timer thread*/
-  RetVal = pthread_create( &bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, &req->payload_id );
+  RetVal = pthread_create( &bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, (void *)slot_id );
 
   if ( RetVal < 0 )
   {

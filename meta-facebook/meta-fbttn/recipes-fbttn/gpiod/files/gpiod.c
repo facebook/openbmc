@@ -52,7 +52,6 @@
 #define GPIO_COMP_PWR_EN    119   // Mono Lake 12V
 #define GPIO_PE_RESET        203
 #define GPIO_IOM_FULL_PWR_EN 215
-#define GPIO_BOARD_REV_2     74
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 /* To hold the gpio info and status */
@@ -264,7 +263,8 @@ gpio_monitor_poll(uint8_t fru_flag) {
   uint8_t fru;
   uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
   gpio_pin_t *gpios;
-  char pwr_state[MAX_VALUE_LEN];
+  char last_pwr_state[MAX_VALUE_LEN];
+  uint8_t curr_pwr_state = 0;
 
   uint32_t status;
   bic_gpio_t gpio = {0};
@@ -408,75 +408,24 @@ gpio_monitor_poll(uint8_t fru_flag) {
       is_fru_missing[1] = 0;
     }
 
-    // If Mono Lake is present, monitor its gpio status.
+    // If Mono Lake is present, monitor the server power status.
     if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
-      for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
-        if (!(GETBIT(fru_flag, fru))) {
-          usleep(DELAY_GPIOD_READ);
-          continue;
-        }
-
-        gpios = get_struct_gpio_pin(fru);
-        if  (gpios == NULL) {
-          syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-              " fru %u", fru);
-          continue;
-        }
-
-        memset(pwr_state, 0, MAX_VALUE_LEN);
-        pal_get_last_pwr_state(fru, pwr_state);
-
-        /* Get the GPIO pins */
-        if ((ret = bic_get_gpio(fru, (bic_gpio_t *) &n_pin_val)) < 0) {
-          /* log the error message only when the CPU is on but not reachable. */
-          if (!(strcmp(pwr_state, "on"))) {
-  #ifdef DEBUG
-            syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-                " fru %u", fru);
-  #endif
-          }
-          continue;
-        }
-
-        if (o_pin_val[fru] == n_pin_val) {
-          o_pin_val[fru] = n_pin_val;
-          usleep(DELAY_GPIOD_READ);
-          continue;
-        }
-
-        revised_pins = (n_pin_val ^ o_pin_val[fru]);
-
-        for (i = 0; i < MAX_GPIO_PINS; i++) {
-          if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
-            gpios[i].status = GETBIT(n_pin_val, i);
-
-            // Check if the new GPIO val is ASSERT
-            if (gpios[i].status == gpios[i].ass_val) {
-              /*
-               * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
-               * Raise an error and change the LPS from on to off or vice versa for deassert.
-               */
-              if (!(strcmp(pwr_state, "on")))
-                pal_set_last_pwr_state(fru, "off");
-
-              syslog(LOG_CRIT, "FRU: %d, Server is powered off", fru);
-
-              // Inform BIOS that BMC is ready
-              bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
-            } else {
-
-              if (!(strcmp(pwr_state, "off")))
-                pal_set_last_pwr_state(fru, "on");
-
-              syslog(LOG_CRIT, "FRU: %d, Server is powered on", fru);
-            }
-          }
-        }
-
-        o_pin_val[fru] = n_pin_val;
+      if (pal_get_server_power(FRU_SLOT1, &curr_pwr_state) < 0) {
         usleep(DELAY_GPIOD_READ);
+        continue;
+      }
+      memset(last_pwr_state, 0, MAX_VALUE_LEN);
+      pal_get_last_pwr_state(FRU_SLOT1, last_pwr_state);
 
-      } /* For Loop for each fru */
+      if (((strcmp(last_pwr_state, "on")) == 0) && (curr_pwr_state == SERVER_POWER_OFF)) {
+          pal_set_last_pwr_state(FRU_SLOT1, "off");
+          syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SLOT1);
+      } else if (((strcmp(last_pwr_state, "off")) == 0) && (curr_pwr_state == SERVER_POWER_ON)) {
+        pal_set_last_pwr_state(FRU_SLOT1, "on");
+        syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SLOT1);
+      }
+      
+      usleep(DELAY_GPIOD_READ);
     } else {
       usleep(DELAY_GPIOD_READ);
     }
@@ -595,7 +544,7 @@ void
 int
 main(int argc, void **argv) {
   char vpath[64] = {0};
-  int val;
+  int iom_board_id = BOARD_MP;
   
   if (argc < 2) {
     print_usage();
@@ -606,9 +555,8 @@ main(int argc, void **argv) {
 
   // It's a transition period from EVT to DVT
   // Support PERST monitor on DVT stage or later
-  sprintf(vpath, GPIO_VAL, GPIO_BOARD_REV_2);
-  read_device(vpath, &val);
-  if(val != 0) { // except EVT
+  iom_board_id = pal_get_iom_board_id();
+  if(iom_board_id != BOARD_EVT) { // except EVT
     pthread_t PE_RESET_MON_ID;
     if(pthread_create(&PE_RESET_MON_ID,NULL,OEM_PE_MON,NULL) != 0) {
       printf("Error creating thread \n");

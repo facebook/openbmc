@@ -59,6 +59,9 @@
  * DB_PRSNT_BMC_N       GPIOQ6   134
  * SYS_PWR_LED          GPIOA3   3
  * ENCL_FAULT_LED       GPIOO3   115
+ * BOARD_REV_0          GPIOJ0   72  // GPIOJ[0:2] = 000 is EVT
+ * BOARD_REV_1          GPIOJ1   73  // GPIOJ[0:2] = 001 is DVT
+ * BOARD_REV_2          GPIOJ2   74  // GPIOJ[0:2] = 010 is MP
  * IOM_TYPE0            GPIOJ4   76
  * IOM_TYPE1            GPIOJ5   77
  * IOM_TYPE2            GPIOJ6   78
@@ -108,7 +111,8 @@
 #define GPIO_CHASSIS_INTRUSION  487
 #define GPIO_PCIE_RESET 203
 
-// It's a transition period from EVT to DVT
+#define GPIO_BOARD_REV_0    72
+#define GPIO_BOARD_REV_1    73
 #define GPIO_BOARD_REV_2    74
 
 #define PAGE_SIZE  0x1000
@@ -476,7 +480,7 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   char vpath_board_ver[64] = {0};
   uint8_t status;
   int retry = 0;
-  int val;
+  int iom_board_id = BOARD_MP;
 
   if (slot_id != FRU_SLOT1) {
     return -1;
@@ -506,9 +510,8 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
 
 // TODO: Workaround for EVT only. Remove after PVT.
 #ifdef CONFIG_FBTTN
-  sprintf(vpath_board_ver, GPIO_VAL,GPIO_BOARD_REV_2);
-  read_device(vpath_board_ver, &val);
-  if(val == 0) { // EVT only
+  iom_board_id = pal_get_iom_board_id();
+  if(iom_board_id == BOARD_EVT) { // EVT only
   // When ML-CPU is made sure shutdown that is not power-cycle, we should power-off M.2/IOC by BMC.
   //if (cycle_flag == false) {
     do {
@@ -822,6 +825,8 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
+  int iom_board_id = BOARD_MP;
+  int gpio_perst_val = 0;
   char value[MAX_VALUE_LEN] = { 0 };
   bic_gpio_t gpio;
 
@@ -838,27 +843,44 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
     return 0;
   }
 
-  /* If 12V-on, check if the CPU is turned on or not */
-  ret = bic_get_gpio(slot_id, &gpio);
-  if (ret) {
-    // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
-    syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
-        "reading the kv_store for last power state  for fru %d", slot_id);
-    pal_get_last_pwr_state(slot_id, value);
-    if (!(strcmp(value, "off"))) {
-      *status = SERVER_POWER_OFF;
-    } else if (!(strcmp(value, "on"))) {
+  // In DVT systems, we added a new GPIO pin to detect power status
+  iom_board_id = pal_get_iom_board_id();
+  if (iom_board_id == BOARD_EVT) {
+    // Get server power status via BIC
+    /* If 12V-on, check if the CPU is turned on or not */
+    ret = bic_get_gpio(slot_id, &gpio);
+    if (ret) {
+      // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
+      syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
+          "reading the kv_store for last power state  for fru %d", slot_id);
+      pal_get_last_pwr_state(slot_id, value);
+      if (!(strcmp(value, "off"))) {
+        *status = SERVER_POWER_OFF;
+      } else if (!(strcmp(value, "on"))) {
+        *status = SERVER_POWER_ON;
+      } else {
+        return ret;
+      }
+      return 0;
+    }
+
+    if (gpio.pwrgood_cpu) {
       *status = SERVER_POWER_ON;
     } else {
-      return ret;
+      *status = SERVER_POWER_OFF;
     }
-    return 0;
-  }
-
-  if (gpio.pwrgood_cpu) {
-    *status = SERVER_POWER_ON;
   } else {
-    *status = SERVER_POWER_OFF;
+    // Get server power status via GPIO PERST
+    ret = get_gpio_value(GPIO_PCIE_RESET, &gpio_perst_val);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s: get GPIO_PCIE_RESET fail", __func__);
+      return -1;
+    }
+    if (gpio_perst_val == 0) {
+      *status = SERVER_POWER_OFF;
+    } else {
+      *status = SERVER_POWER_ON;
+    }
   }
 
   return 0;
@@ -1258,8 +1280,8 @@ int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   int sku = 0;
-  int val;
-  char path[64] = {0};
+  int iom_board_id = BOARD_MP;
+
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1270,12 +1292,11 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       sku = pal_get_iom_type();
       if (sku == IOM_M2) {  // IOM type: M.2 solution
         // It's a transition period from EVT to DVT
-        sprintf(path, GPIO_VAL, GPIO_BOARD_REV_2);
-        read_device(path, &val);
-        if (val == 0) {         // EVT
+        iom_board_id = pal_get_iom_board_id();
+        if (iom_board_id == BOARD_EVT) {  // EVT
           *sensor_list = (uint8_t *) iom_sensor_list_type5;
           *cnt = iom_sensor_cnt_type5;
-        } else if (val == 1) {  // DVT
+        } else {                          // DVT later
           *sensor_list = (uint8_t *) iom_sensor_list_type5_dvt;
           *cnt = iom_sensor_cnt_type5_dvt;
         }
@@ -1377,12 +1398,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   uint8_t status;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  char vpath_board_rev[64] = {0};
-  char vpath[64] = {0};
   int ret;
   int sku = 0;
-  int gpio_perst_val = 0;
-  int gpio_board_rev_val = 0;
   bool check_server_power_status = false;
 
   switch(fru) {
@@ -1410,62 +1427,48 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
   }
 
-  // It's a transition period from EVT to DVT
-	// In DVT systems, we added a new GPIO pin to detect power status
-  sprintf(vpath_board_rev, GPIO_VAL, GPIO_BOARD_REV_2);
-  read_device(vpath_board_rev, &gpio_board_rev_val);
+  // Check for the power status
+  ret = pal_get_server_power(FRU_SLOT1, &status);
+  if (ret == 0) {
+    ret = fbttn_sensor_read(fru, sensor_num, value);
+    if (ret != 0) {
+      if(ret < 0) {
+        if(fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC)
+          ret = -1;
+        else if(pal_get_server_power(fru, &status) < 0)
+          ret = -1;
+        // This check helps interpret the IPMI packet loss scenario
+        else if(status == SERVER_POWER_ON)
+          ret = -1;
 
-  if (gpio_board_rev_val == 0) {    // EVT
-    // Check for the power status
-    pal_get_server_power(FRU_SLOT1, &status);
-
-  } else {                         // DVT
-    // Check for power status via GPIO_PERST
-    sprintf(vpath, GPIO_VAL, GPIO_PCIE_RESET);
-    read_device(vpath, &gpio_perst_val);
-  }
-
-  ret = fbttn_sensor_read(fru, sensor_num, value);
-  if (ret) {
-    if(ret < 0) {
-      if(fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC)
-        ret = -1;
-      else if(pal_get_server_power(fru, &status) < 0)
-        ret = -1;
-      // This check helps interpret the IPMI packet loss scenario
-      else if(status == SERVER_POWER_ON)
-        ret = -1;
-
-      strcpy(str, "NA");
-    } else {
-      // If ret = READING_SKIP, doesn't update sensor reading and keep the previous value
-      return ret;
-    }
-  }
-  else {
-    // On successful sensor read
-    sku = pal_get_iom_type();
-    if (sku == IOM_M2) { // IOM type: M.2 solution
-      if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
-       || (sensor_num == IOM_SENSOR_ADC_P3V3_M2)) {
-          check_server_power_status = true;
-      }
-    } else {            // IOM type: IOC solution
-      if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
-       || (sensor_num == IOM_SENSOR_ADC_P1V5) || (sensor_num == IOM_SENSOR_ADC_P0V975)
-       || (sensor_num == IOM_IOC_TEMP)) {
-          check_server_power_status = true;
+        strcpy(str, "NA");
+      } else {
+        // If ret = READING_SKIP, doesn't update sensor reading and keep the previous value
+        return ret;
       }
     }
-    if (check_server_power_status == true) {
-      if (gpio_board_rev_val == 0) {    // EVT Systems
-
+    else {
+      // On successful sensor read
+      sku = pal_get_iom_type();
+      if (sku == IOM_M2) { // IOM type: M.2 solution
+        if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
+         || (sensor_num == IOM_SENSOR_ADC_P3V3_M2)) {
+            check_server_power_status = true;
+        }
+      } else {            // IOM type: IOC solution
+        if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
+         || (sensor_num == IOM_SENSOR_ADC_P1V5) || (sensor_num == IOM_SENSOR_ADC_P0V975)
+         || (sensor_num == IOM_IOC_TEMP)) {
+            check_server_power_status = true;
+        }
+      }
+      if (check_server_power_status == true) {
         // If server is powered off, ignore the read and write NA
-				if (status != SERVER_POWER_ON) {
+        if (status != SERVER_POWER_ON) {
           strcpy(str, "NA");
           ret = -1;
         }
-				else {
+        else {
           // double check power status, after reading the sensor
           pal_get_server_power(FRU_SLOT1, &status);
 
@@ -1477,37 +1480,22 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
             sprintf(str, "%.2f",*((float*)value));
           }
         }
-      } else {    // DVT Systems
-        // If server is powered off, ignore the read and write NA
-        if (gpio_perst_val != SERVER_POWER_ON) {
-          strcpy(str, "NA");
-          ret = -1;
-        } else {
-          // double check power status, after reading the sensor
-          read_device(vpath, &gpio_perst_val);
-
-          // If server is powered off, ignore the read and write NA
-          if (gpio_perst_val != SERVER_POWER_ON) {
-            strcpy(str, "NA");
-            ret = -1;
-          } else {
-            sprintf(str, "%.2f",*((float*)value));
-          }
-        }
+      } else {    // check_server_power_status == false
+        sprintf(str, "%.2f",*((float*)value));
       }
-    } else {    // check_server_power_status == false
-      sprintf(str, "%.2f",*((float*)value));
     }
-  }
 
-  if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
-#endif
+    if(edb_cache_set(key, str) < 0) {
+  #ifdef DEBUG
+       syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
+  #endif
+      return -1;
+    }
+    else {
+      return ret;
+    }
+  } else {
     return -1;
-  }
-  else {
-    return ret;
   }
 }
 
@@ -4115,23 +4103,69 @@ get_gpio_value(int gpio_num, uint8_t *value){
   FILE *fp = NULL;
   int rc = 0;
   int ret = 0;
+  int retry_cnt = 5;
+  int i = 0;
 
   sprintf(vpath, GPIO_VAL, gpio_num);
 
-  fp = fopen(vpath, "r");
-  if (!fp) {
-    syslog(LOG_ERR, "%s(): failed to open device %s (%s)",
-                     __func__, vpath, strerror(errno));
-    return errno;
+  for (i = 0; i < retry_cnt; i++) {
+    fp = fopen(vpath, "r");
+    if (fp == NULL) {
+      syslog(LOG_ERR, "%s(): failed to open device %s (%s)",
+                       __func__, vpath, strerror(errno));
+      if (i == (retry_cnt - 1)) {
+        return errno;
+      }
+    } else {
+      break;
+    }
+    msleep(100);
   }
-
-  rc = fscanf(fp, "%d", value);
-  if (rc != 1) {
-    syslog(LOG_ERR, "failed to read device %s (%s)", vpath, strerror(errno));
-    ret = errno;
+  for (i = 0; i < retry_cnt; i++) {
+    ret = 0;
+    rc = fscanf(fp, "%d", value);
+    if (rc != 1) {
+      syslog(LOG_ERR, "failed to read device %s (%s)", vpath, strerror(errno));
+      if (i == (retry_cnt - 1)) {
+        ret = errno;
+      }
+    } else {
+      break;
+    }
+    msleep(100);
   }
 
   fclose(fp);
 
   return ret;
+}
+
+int
+pal_get_iom_board_id (void) {
+  int gpio_board_rev_val[3] = {0};
+  int iom_board_id = BOARD_MP;
+  int ret = 0;
+
+  ret = get_gpio_value(GPIO_BOARD_REV_0, &gpio_board_rev_val[0]);
+  if (ret != 0) {
+    goto default_iom_board_id;
+  }
+  ret = get_gpio_value(GPIO_BOARD_REV_1, &gpio_board_rev_val[1]);
+  if (ret != 0) {
+    goto default_iom_board_id;
+  }
+  ret = get_gpio_value(GPIO_BOARD_REV_2, &gpio_board_rev_val[2]);
+  if (ret != 0) {
+    goto default_iom_board_id;
+  }
+
+  iom_board_id = (gpio_board_rev_val[0] << 2) | (gpio_board_rev_val[1] << 1) | gpio_board_rev_val[2];
+
+  return iom_board_id;
+
+default_iom_board_id:
+  syslog(LOG_WARNING, "%s: cannot get IOM board ID, used default setting: MP", __func__);
+  iom_board_id = BOARD_MP;
+
+  return iom_board_id;
 }

@@ -203,6 +203,12 @@ enum {
   IOM_LED_BLUE,
 };
 
+enum {
+  BOARD_EVT = 0,
+  BOARD_DVT,
+  BOARD_MP,
+};
+
 //fw-util FW Updating Flag File
 #define FW_UPDATE_FLAG "/tmp/fw_update_flag"
 
@@ -326,6 +332,7 @@ int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);
 uint8_t pal_iom_led_control(uint8_t color);
 int server_power_reset(uint8_t slot_id);
+int pal_get_iom_board_id (void);
 
 #ifdef __cplusplus
 } // extern "C"

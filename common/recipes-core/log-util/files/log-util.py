@@ -117,12 +117,15 @@ def log_main():
                     newlog = newlog + log
 
             # Dump the new log in a tmp file
-            if logfile == syslogfiles[1] and fru != 'sys':
+            if logfile == syslogfiles[1]:
                if fru == 'all':
                   temp = 'all'
                else:
-                  fru_num = str(frulist.index(fru))
-                  temp = 'FRU: ' + fru_num
+                  if fru == 'sys':
+                     temp = 'sys'
+                  else:
+                     fru_num = str(frulist.index(fru))
+                     temp = 'FRU: ' + fru_num
                time = datetime.now()
                newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
             curpid = os.getpid()

@@ -21,12 +21,17 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include "bic.h"
+#include <openbmc/edb.h>
 #include <openbmc/obmc-i2c.h>
 
 #define FRUID_READ_COUNT_MAX 0x30
@@ -263,7 +268,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen, &rbuf, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
   if (rlen == 0) {
 #ifdef DEBUG
@@ -927,16 +932,16 @@ update_done:
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF99300");
+       system("devmem 0x1e78a084 w 0xFFF5E700");
        break;
      case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF99300");
+       system("devmem 0x1e78a104 w 0xFFF5E700");
        break;
      case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF99300");
+       system("devmem 0x1e78a184 w 0xFFF5E700");
        break;
      case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF99300");
+       system("devmem 0x1e78a304 w 0xFFF5E700");
        break;
      default:
        syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);

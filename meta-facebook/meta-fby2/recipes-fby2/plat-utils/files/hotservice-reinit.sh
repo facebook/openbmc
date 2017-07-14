@@ -57,7 +57,7 @@ function device_config() {
            gpio_set $PE_BUFF_OE_0 1
            gpio_set $PE_BUFF_OE_1 1
        
-           devmem $I2C_REG w 0xFFF99300
+           devmem $I2C_REG w 0xFFF5E700
         fi
       fi
 }

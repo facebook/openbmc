@@ -81,7 +81,7 @@ if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) != "0" ]]; then
    # Voltage sensor, 0x80
    echo ina230 0x40 > /sys/class/i2c-dev/i2c-1/device/new_device
 else
-   devmem 0x1e78a084 w 0xFFF99300
+   devmem 0x1e78a084 w 0xFFF5E700
 fi
 
 # Bus5,  Glacier Point
@@ -108,7 +108,7 @@ if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) != "0" ]]; then
    # Voltage sensor, 0x80
    echo ina230 0x40 > /sys/class/i2c-dev/i2c-5/device/new_device
 else
-   devmem 0x1e78a184 w 0xFFF99300
+   devmem 0x1e78a184 w 0xFFF5E700
 fi
 
 echo "done"

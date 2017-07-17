@@ -171,3 +171,10 @@ Node Manager Monitoring
 enabled - Boolean, If set to false will disable Node Manager monitoring.
 monitor_interval - The interval (in seconds) when the Node Manager will be sampled.
 retry_threshold - If Node Manager no response, healthd will retry till the threshold. If the retry over the threshold, healthd will issue the event.
+
+Verified Boot Monitoring
+------------------------
+"verified_boot": {
+  "enabled": true
+}
+enabled - Boolean, If set to true, healthd will check the verified boot state once at start-up.

@@ -35,5 +35,8 @@
     "enabled": true,
     "monitor_interval": 1,
     "retry_threshold": 10
+  },
+  "verified_boot": {
+    "enabled": true
   }
 }

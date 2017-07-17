@@ -94,6 +94,12 @@ struct threshold_s {
 #define MAX_ECC_RECOVERABLE_ERROR_COUNTER 255
 #define MAX_ECC_UNRECOVERABLE_ERROR_COUNTER 15
 
+#define VERIFIED_BOOT_STRUCT_BASE     0x1E720000
+#define VERIFIED_BOOT_RECOVERY_FLAG(base)  *((uint8_t *)(base + 0x217))
+#define VERIFIED_BOOT_ERROR_TYPE(base)  *((uint8_t *)(base + 0x219))
+#define VERIFIED_BOOT_ERROR_CODE(base)  *((uint8_t *)(base + 0x21A))
+#define VERIFIED_BOOT_ERROR_TPM(base)  *((uint8_t *)(base + 0x21B))
+
 struct ecc_log {
   // to show the address of ecc error or not. supported chip: AST2500 serials
   bool show_addr;
@@ -153,6 +159,8 @@ static unsigned int ecc_unrec_max_counter = MAX_ECC_UNRECOVERABLE_ERROR_COUNTER;
 static bool nm_monitor_enabled = false;
 static int nm_monitor_interval = DEFAULT_MONITOR_INTERVAL;
 static unsigned char nm_retry_threshold = 0;
+
+static bool vboot_state_check = false;
 
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
@@ -436,6 +444,20 @@ error_bail:
   nm_monitor_enabled = false;
 }
 
+static void initialize_vboot_config(json_t *obj)
+{
+  json_t *tmp;
+
+  if (!obj) {
+    return;
+  }
+  tmp = json_object_get(obj, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  vboot_state_check = json_is_true(tmp);
+}
+
 static int
 initialize_configuration(void) {
   json_error_t error;
@@ -457,6 +479,7 @@ initialize_configuration(void) {
   initialize_i2c_config(json_object_get(conf, "i2c"));
   initialize_ecc_config(json_object_get(conf, "ecc_monitoring"));
   initialize_nm_monitor_config(json_object_get(conf, "nm_monitor"));
+  initialize_vboot_config(json_object_get(conf, "verified_boot"));
   
   json_decref(conf);
 
@@ -1045,6 +1068,44 @@ fw_update_monitor() {
   return NULL;
 }
 
+static void check_vboot_state(void)
+{
+  int mem_fd;
+  uint8_t *vboot_base;
+  uint8_t error_type;
+  uint8_t error_code;
+
+  mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+  if (mem_fd < 0) {
+    syslog(LOG_CRIT, "Error opening /dev/mem\n");
+    return;
+  }
+
+  vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, VERIFIED_BOOT_STRUCT_BASE);
+  if (!vboot_base) {
+    syslog(LOG_CRIT, "Error mapping VERIFIED_BOOT_STRUCT_BASE\n");
+    close(mem_fd);
+    return;
+  }
+
+  error_type = VERIFIED_BOOT_ERROR_TYPE(vboot_base);
+  error_code = VERIFIED_BOOT_ERROR_CODE(vboot_base);
+  if (error_type != 0 || error_code != 0) {
+    syslog(LOG_CRIT, "ASSERT: Verified boot failure (%u:%u)", error_type, error_code);
+    /* TODO Action? */
+  }
+
+  if (VERIFIED_BOOT_RECOVERY_FLAG(vboot_base)) {
+    syslog(LOG_CRIT, "ASSERT: Verification of BMC image failed");
+    /* TODO Action? */
+  } else {
+    syslog(LOG_INFO, "Boot into BMC successful");
+  }
+
+  munmap(vboot_base, PAGE_SIZE);
+  close(mem_fd);
+}
+
 int
 main(int argc, char **argv) {
   pthread_t tid_watchdog;
@@ -1064,6 +1125,9 @@ main(int argc, char **argv) {
 
   initialize_configuration();
 
+  if (vboot_state_check) {
+    check_vboot_state();
+  }
 
 // For current platforms, we are using WDT from either fand or fscd
 // TODO: keeping this code until we make healthd as central daemon that

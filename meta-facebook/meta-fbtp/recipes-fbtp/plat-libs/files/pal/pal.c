@@ -38,6 +38,7 @@
 #include <openbmc/gpio.h>
 #include <openbmc/kv.h>
 #include <openbmc/edb.h>
+#include <openbmc/sensor-correction.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -366,53 +367,35 @@ struct dimm_map {
   char *label;
 };
 
-typedef struct _inlet_corr_t {
-  uint8_t duty;
-  int8_t delta_t;
-} inlet_corr_t;
-
-static inlet_corr_t g_ict[] = {
-  { 10, 7 },
-  { 12, 6 },
-  { 14, 5 },
-  { 18, 4 },
-  { 20, 3 },
-  { 24, 2 },
-  { 32, 1 },
-  { 41, 0 },
-};
-
-static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
-
 static bool is_cpu0_socket_occupy(void);
 static bool is_cpu1_socket_occupy(void);
 static void _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t val, char *event);
 
 static void apply_inlet_correction(float *value) {
-  static int8_t dt = 0;
   int i;
-  uint8_t pwm[2] = {0};
+  static uint8_t pwm[2] = {0};
+  static bool pwm_valid[2] = {false, false};
+  static bool inited = false;
+  float avg_pwm = 0;
+  uint8_t cnt = 0;
 
   // Get PWM value
-  if (pal_get_pwm_value(0, &pwm[0]) || pal_get_pwm_value(1, &pwm[1])) {
-    // If error reading PWM value, use the previous deltaT
-    *value -= dt;
-    return;
+  for (i = 0; i < 2; i ++) {
+    if (pal_get_pwm_value(i, &pwm[i]) == 0 || pwm_valid[i] == true) {
+      pwm_valid[i] = true;
+      avg_pwm += (float)pwm[i];
+      cnt++;
+    }
   }
-  pwm[0] = (pwm[0] + pwm[1]) /2;
-
-  // Scan through the correction table to get correction value for given PWM
-  dt=g_ict[0].delta_t;
-  for (i=0; i< g_ict_count; i++) {
-    if (pwm[0] >= g_ict[i].duty)
-      dt = g_ict[i].delta_t;
-    else
-      break;
+  if (cnt) {
+    avg_pwm = avg_pwm / (float)cnt;
+    if (!inited) {
+      inited = true;
+      sensor_correction_init("/etc/sensor-correction-conf.json");
+    }
+    sensor_correction_apply(FRU_MB, MB_SENSOR_INLET_REMOTE_TEMP, avg_pwm, value);
   }
-
-  // Apply correction for the sensor
-  *(float*)value -= dt;
 }
 
 static void

@@ -13,8 +13,8 @@ S = "${WORKDIR}"
 
 binfiles = "sensor-util"
 
-DEPENDS =+ " libsdr libpal libobmc-sensor "
-RDEPENDS_${PN} =+ "libsdr libpal libobmc-sensor"
+DEPENDS =+ " libsdr libpal libobmc-sensor libaggregate-sensor "
+RDEPENDS_${PN} =+ "libsdr libpal libobmc-sensor libaggregate-sensor "
 
 pkgdir = "sensor-util"
 

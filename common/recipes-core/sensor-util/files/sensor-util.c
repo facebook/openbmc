@@ -30,6 +30,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 #include <openbmc/obmc-sensor.h>
+#include <openbmc/aggregate-sensor.h>
 
 #define STATUS_OK   "ok"
 #define STATUS_NS   "ns"
@@ -190,6 +191,37 @@ static void clear_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_c
   }
 }
 
+static void
+print_aggregate_sensor(bool threshold)
+{
+  size_t cnt, i;
+  char status[8];
+  thresh_sensor_t thresh;
+
+  if (aggregate_sensor_init(NULL)) {
+    return;
+  }
+  if (aggregate_sensor_count(&cnt)) {
+    return;
+  }
+  for (i = 0; i < cnt; i++) {
+    float value;
+    int ret;
+    if (aggregate_sensor_threshold(i, &thresh)) {
+      continue;
+    }
+    ret = aggregate_sensor_read(i, &value);
+    if (ret) {
+      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, i);
+    } else {
+      get_sensor_status(value, &thresh, status);
+      print_sensor_reading(value, i, &thresh, threshold, status);
+    }
+
+  }
+
+}
+
 static int
 print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool history_clear, long period) {
   int ret;
@@ -299,6 +331,7 @@ main(int argc, char **argv) {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
       ret |= print_sensor(fru, num, history, threshold, history_clear, period);
     }
+    print_aggregate_sensor(threshold);
   } else {
     ret = print_sensor(fru, num, history, threshold, history_clear, period);
   }

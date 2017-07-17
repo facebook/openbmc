@@ -19,12 +19,15 @@ SRC_URI =+ "file://Makefile \
            file://FRU.h \
            file://DBusFruServiceInterface.cpp \
            file://DBusFruServiceInterface.h \
+           file://FruIdAccessMechanism.h \
+           file://FruIdAccessI2CEEPROM.h \
+           file://FruIdAccessI2CEEPROM.cpp \
           "
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -lgobject-2.0 -lobject-tree -lgflags -lgtest -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils"
-DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils gtest glog gflags"
+LDFLAGS =+ "-lpthread -lgobject-2.0 -lobject-tree -lgflags -lgtest -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils -lfruid"
+DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils gtest glog gflags libfruid"
 RDEPENDS_${PN} += "dbus"
 
 export SINC = "${STAGING_INCDIR}"

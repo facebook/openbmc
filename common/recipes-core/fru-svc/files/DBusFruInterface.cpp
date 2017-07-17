@@ -26,6 +26,7 @@
 #include <gio/gio.h>
 #include <object-tree/Object.h>
 #include "DBusFruInterface.h"
+#include "FRU.h"
 
 const char* DBusFruInterface::xml =
 "<!DOCTYPE node PUBLIC"
@@ -33,6 +34,9 @@ const char* DBusFruInterface::xml =
 " \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
 "<node>"
 "  <interface name='org.openbmc.FruObject'>"
+"    <method name='getFruIdInfo'>"
+"      <arg type='a{ss}' name='fruId' direction='out'/>"
+"    </method>"
 "  </interface>"
 "</node>";
 
@@ -51,6 +55,26 @@ DBusFruInterface::~DBusFruInterface() {
   g_dbus_node_info_unref(info_);
 }
 
+void DBusFruInterface::getFruIdInfo(GDBusMethodInvocation* invocation,
+                                    gpointer               arg){
+  FRU* fru = static_cast<FRU*>(arg);
+
+  GVariantBuilder* builder;
+  builder = g_variant_builder_new (G_VARIANT_TYPE("a{ss}"));
+
+
+  //Get getFruIdInfo list from fru
+  std::vector<std::pair<std::string, std::string>> getFruIdInfoList =  fru->getFruIdInfoList();
+
+  //Add getFruIdInfo list to dictionary
+  for (auto& it: getFruIdInfoList){
+    g_variant_builder_add (builder, "{ss}", it.first.c_str(), it.second.c_str());
+  }
+
+  g_dbus_method_invocation_return_value (invocation, g_variant_new ("(a{ss})", builder));
+  g_variant_builder_unref(builder);
+}
+
 void DBusFruInterface::methodCallBack(GDBusConnection*       connection,
                                       const char*            sender,
                                       const char*            objectPath,
@@ -61,4 +85,8 @@ void DBusFruInterface::methodCallBack(GDBusConnection*       connection,
                                       gpointer               arg) {
   // arg should be a pointer to FRU
   DCHECK(arg != nullptr) << "Empty object passed to callback";
+
+  if (g_strcmp0(methodName, "getFruIdInfo") == 0) {
+    getFruIdInfo(invocation, arg);
+  }
 }

@@ -25,7 +25,6 @@
 #include <dbus-utils/dbus-interface/DBusObjectInterface.h>
 using namespace openbmc::qin;
 
-//todo: Empty fru interface, need to add methods to support fruid-util
 class DBusFruInterface: public DBusInterfaceBase {
   public:
     /**
@@ -45,6 +44,12 @@ class DBusFruInterface: public DBusInterfaceBase {
      * with what is specified in the xml.
      */
     static const char* xml;
+
+    /**
+     * Callback for getFruIdInfo method, returns FruIdInfo over dbus
+     */
+    static void getFruIdInfo(GDBusMethodInvocation* invocation,
+                             gpointer               arg);
 
     /**
      * Handles the callback by matching the method names in the DBus message

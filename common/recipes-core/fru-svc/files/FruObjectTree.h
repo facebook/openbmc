@@ -63,9 +63,9 @@ class FruObjectTree : public ObjectTree {
      /**
       * Add a FRU to the objectMap_.
       */
-     FRU* addFRU(const std::string &name,
-                 const std::string &parentPath,
-                 const std::string &id);
+     FRU* addFRU(const std::string                     &name,
+                 const std::string                     &parentPath,
+                 std::unique_ptr<FruIdAccessMechanism> fruIdAccess);
 
   private:
 
@@ -122,7 +122,6 @@ class FruObjectTree : public ObjectTree {
       // FruService registers fruTree object on dbus
       // fruTree access is required to perform add and delete operation at FruService object path
       if ((fruService = dynamic_cast<FruService*>(object)) != nullptr) {
-        LOG(ERROR) << "Object is of FruService type";
         dbus->registerObject(path, interface, this);
       }
       else {

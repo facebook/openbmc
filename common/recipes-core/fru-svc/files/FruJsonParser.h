@@ -25,6 +25,7 @@
 #include <nlohmann/json.hpp>
 #include <object-tree/Object.h>
 #include "FruObjectTree.h"
+#include "FruIdAccessI2CEEPROM.h"
 using namespace openbmc::qin;
 
 /**
@@ -47,17 +48,26 @@ class FruJsonParser {
       LOG(INFO) << "Parsing the FRU \"" << name <<
         "\" under the parent path \"" << parentPath << "\"";
 
-      std::string id;
+      Object* object = nullptr;
 
-      //todo: add parsing of fruId access mechanism
-      try {
-        id = jObject.at("id");
+      if (jObject.find("fruIdAccess") == jObject.end()) {
+        LOG(WARNING) << "FruId Access Mechanism for " << name << " not defined";
+        throw std::runtime_error("FruId Access Mechanism for " + name + " not defined");
       }
-      catch (const std::out_of_range& oor) {
-        //Ignore if id is not mentioned
-      }
+      else {
+        // Decode access mechanism
+        const nlohmann::json &fruIdAccess = jObject.at("fruIdAccess");
+        const std::string &type = fruIdAccess.at("type");
 
-      Object* object = fruTree.addFRU(name, parentPath, id);
+        if (type.compare("I2CEEPROM") == 0) {
+          const std::string &eepromPath = fruIdAccess.at("eepromPath");
+          std::unique_ptr<FruIdAccessMechanism> upFruIdAccess(new FruIdAccessI2CEEPROM(eepromPath));
+          object = fruTree.addFRU(name, parentPath, std::move(upFruIdAccess));
+        } else {
+          LOG(ERROR) << "Specified fruid access mechanism " << type;
+          throw std::invalid_argument("Invalid fruid access mechanism");
+        }
+      }
 
       if (object == nullptr) {
         throwObjectJsonConfliction(name, parentPath);

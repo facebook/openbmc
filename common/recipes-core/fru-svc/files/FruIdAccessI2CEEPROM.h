@@ -1,5 +1,5 @@
 /*
- * FRU.h
+ * FruIdAccessI2CEEPROM.h
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,28 +19,24 @@
  */
 
 #pragma once
-#include <string>
-#include <object-tree/Object.h>
 #include "FruIdAccessMechanism.h"
-using namespace openbmc::qin;
 
-class FRU : public Object {
+class FruIdAccessI2CEEPROM : public FruIdAccessMechanism {
   private:
-    const std::vector<std::pair<std::string, std::string>> fruIdInfoList_; // To store fruId information
-                                                                           // This information is fixed and does not change over time
+    std::string eepromPath_;               //path for eeprom file
+    static const int FRUID_SIZE = 256;     //FRUID size in eeprom file
 
   public:
     /*
-    * Contructor
-    */
-    FRU(const std::string &name, Object* parent, std::unique_ptr<FruIdAccessMechanism> fruIdAccess)
-       : Object(name, parent) , fruIdInfoList_(fruIdAccess.get()->getFruIdInfoList()){}
-
+     * Constructor
+     */
+    FruIdAccessI2CEEPROM(const std::string &eepromPath) {
+      this->eepromPath_ = eepromPath;
+    }
 
     /*
-     * Returns fruIdInfoList_
+     * Parses FruId information from eeprom file at eepromPath_
+     * and returns vector represensation FruId information
      */
-    const std::vector<std::pair<std::string, std::string>> & getFruIdInfoList(){
-      return fruIdInfoList_;
-    }
+    std::vector<std::pair<std::string, std::string>> getFruIdInfoList() override;
 };

@@ -50,20 +50,14 @@ FruService* FruObjectTree::addFruService(const std::string &name,
   return static_cast<FruService*>(addObjectByPath(std::move(upDev), path, fruServiceInterface));
 }
 
-FRU* FruObjectTree::addFRU(const std::string &name,
-                           const std::string &parentPath,
-                           const std::string &id) {
+FRU* FruObjectTree::addFRU(const std::string                     &name,
+                           const std::string                     &parentPath,
+                           std::unique_ptr<FruIdAccessMechanism> fruIdAccess) {
   LOG(INFO) << "Adding FRU \"" << name << "\" under the path \""
     << parentPath << "\"";
   const std::string path = getPath(parentPath, name);
   Object* parent = getParent(parentPath, name);
 
-  if (id.empty()){
-    std::unique_ptr<FRU> upDev(new FRU(name, parent));
-    return static_cast<FRU*>(addObjectByPath(std::move(upDev), path, fruInterface));
-  }
-  else {
-    std::unique_ptr<FRU> upDev(new FRU(name, parent, parseInt(id)));
-    return static_cast<FRU*>(addObjectByPath(std::move(upDev), path, fruInterface));
-  }
+  std::unique_ptr<FRU> upDev(new FRU(name, parent, std::move(fruIdAccess)));
+  return static_cast<FRU*>(addObjectByPath(std::move(upDev), path, fruInterface));
 }

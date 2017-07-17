@@ -1,5 +1,5 @@
 /*
- * FRU.h
+ * FruIdAccessMechanism.h
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,28 +19,11 @@
  */
 
 #pragma once
-#include <string>
-#include <object-tree/Object.h>
-#include "FruIdAccessMechanism.h"
-using namespace openbmc::qin;
+#include <vector>
 
-class FRU : public Object {
-  private:
-    const std::vector<std::pair<std::string, std::string>> fruIdInfoList_; // To store fruId information
-                                                                           // This information is fixed and does not change over time
-
+/* FruIdAccessMechanism : abstract class for FruIdAccess
+ */
+class FruIdAccessMechanism {
   public:
-    /*
-    * Contructor
-    */
-    FRU(const std::string &name, Object* parent, std::unique_ptr<FruIdAccessMechanism> fruIdAccess)
-       : Object(name, parent) , fruIdInfoList_(fruIdAccess.get()->getFruIdInfoList()){}
-
-
-    /*
-     * Returns fruIdInfoList_
-     */
-    const std::vector<std::pair<std::string, std::string>> & getFruIdInfoList(){
-      return fruIdInfoList_;
-    }
+    virtual std::vector<std::pair<std::string, std::string>> getFruIdInfoList() = 0;
 };

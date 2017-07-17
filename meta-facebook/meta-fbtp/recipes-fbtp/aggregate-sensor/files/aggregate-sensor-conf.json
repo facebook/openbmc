@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_AIRFLOW",
+      "units": "CFM",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "rpm0": {
+            "fru":       1,
+            "sensor_id": 192
+          },
+          "rpm1": {
+            "fru":       1,
+            "sensor_id": 195
+          }
+        },
+        "linear_expressions": {
+          "A0": "( rpm0 * 0.006555 ) + ( rpm1 * 0.006555 ) - 5.56727",
+          "A1": "( rpm0 * 0.00617 ) + ( rpm1 * 0.00617 ) - 5.42309",
+          "A2": "( rpm0 * 0.005965 ) + ( rpm1 * 0.005965 ) - 5.51325",
+          "A3": "( rpm0 * 0.0055 ) + ( rpm1 * 0.0055 ) - 5.23517",
+          "A4": "( rpm0 * 0.00487 ) + ( rpm1 * 0.00487 ) - 5.97535",
+          "A5": "( rpm0 * 0.005325 ) + ( rpm1 * 0.005325 ) - 5.22082",
+          "A6": "( rpm0 * 0.005245 ) + ( rpm1 * 0.005245 ) - 5.70359"
+        },
+        "condition": {
+          "key": "mb_system_conf",
+          "value_map": {
+            "SS_D": "A0",
+            "SS_0": "A0",
+            "SS_1": "A0",
+            "SS_2": "A1",
+            "SS_3": "A1",
+            "SS_4": "A2",
+            "SS_5": "A2",
+            "SS_6": "A2",
+            "SS_7": "A3",
+            "SS_8": "A4",
+            "DS_D": "A5",
+            "DS_0": "A5",
+            "DS_1": "A5",
+            "DS_2": "A5",
+            "DS_3": "A5",
+            "DS_4": "A6",
+            "DS_5": "A6"
+          },
+          "default_expression": "A0"
+        }
+      }
+    }
+  ]
+}

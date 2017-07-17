@@ -1,0 +1,86 @@
+Aggregate Sensors
+=================
+
+This library provides a mechanism to form sensors which are composed (aggregated)
+from one or more physical sensors.
+
+Configuration
+=============
+
+The configuration is in the JSON format and the default location is in /etc/aggregate-sensor-conf.json.
+Initialization scripts may alter this to have init scripts override this at BMC start.
+
+Version
+-------
+"version": "1.0",
+
+A character string containing any version information of the configuration.
+
+Sensors
+-------
+
+An array of sensors
+
+"sensors": [
+  /* List of aggregate sensor definitions */
+  /* See below */
+]
+
+Sensor configuration
+--------------------
+Each sensor may provide information on various components:
+
+{
+  "name": "MB_AIRFLOW",
+  "units": "CFS",
+  "thresholds": {
+    "ucr": 1000.0
+  },
+  "composition": {
+    "type": "conditional_linear_expression",
+    "sources": {
+      "rpm0": {
+        "fru":       1,
+        "sensor_id": 192
+      },
+      "rpm1": {
+        "fru":       1,
+        "sensor_id": 195
+      }
+    },
+    "linear_expressions": {
+      "A0": "( rpm0 * 0.006555 ) + ( rpm1 * 0.006555 ) - 5.56727",
+      <Snip>
+    },
+    "condition": {
+      "key": "mb_system_conf",
+      "default_expression": "A0",
+      "value_map": {
+        "SS_D": "A0"
+      }
+    }
+  }
+}
+
+Name: The name of the sensor.
+Units: The units of this sensor.
+Thresholds:
+  Describe thresholds if any of this sensor (Valid strings "ucr", "unc", "unr", "lcr", "lnc", "lnr").
+  The value should be a real number providing the corresponding threshold.
+Composition: This is the information which describes how this sensor value is calculated.
+    type: The composition type.
+      "conditional_linear_expression" - This type defines a set of linear expressions and based on the value of the condition key (condition::key described later), this particular expression will be used.
+      Other types may be defined based on usage. Obviously the simpler "linear_expression" may be defined which is the simpler case of conditional_linear_expression.
+    sources: Here is where the variables (physical sensors) to be used as the source of the aggregate sensor composition are defined. the key will be a logical easy to use string defining
+             the sensor will be used (Example "rpm0" or "rpm1"). The value is an object describing the sensor (Currently a tuple, "fru" the FRU on which the sensor is present and
+             "sensor_id" the unique ID for the sensor). This should be easily extendable in the future to replace "sensor_id" with "sensor_name" when the sensors
+             infrastructure moves towards unique names instead of IDs.
+    "linear_expressions": A set of linear expressions. Each expression has a human readable key (In this example "A0"). Note restrictions of the representation:
+      1. The expression is always evaluated left to right order. So a + b * c _will_ be evaluated as (a + b) * c and not as a + (b * c). Use parenthesis liberally.
+      2. Use space to separate tokens. So, (a+b)-c is incorrect while ( a + b ) - c is. The complexity to support free form is just not worth it.
+"condition": This describes the condition which shall define which of the linear expressions will be used.
+  "key" - Will define the key used. In this particular example, "mb_system_conf" - which provides the machine configuration is used. 
+  "value_map": A map of values for the given key which would dictate the expression to use. So, if the value for key "mb_system_conf" is "SS_D", then the expression "A0" will be used in evaluating "MB_AIRFLOW".
+  "default_expression": If getting the value for the provided key fails or if the value got from the key does not exist in "value_map", then this expression is used. Note, this is optional. If not provided,
+                      then the sensor read will fail.
+  "default_expression" - If getting the value of the privided key f

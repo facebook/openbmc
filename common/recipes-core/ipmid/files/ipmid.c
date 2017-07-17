@@ -1386,6 +1386,16 @@ oem_1s_handle_ipmb_kcs(unsigned char *request, unsigned char req_len,
   unsigned char req_buf[MAX_IPMI_MSG_SIZE] = {0};
   unsigned char res_buf[MAX_IPMI_MSG_SIZE] = {0};
 
+  if ((request[BIC_INTF_HDR_SIZE] >> 2) == NETFN_OEM_1S_REQ) {
+    res->cc = CC_SUCCESS;
+    memcpy(res->data, req->data, SIZE_IANA_ID+1);   // IANA ID + Interface type
+    res->data[4] = request[BIC_INTF_HDR_SIZE] + 4;  // netfn/lun
+    res->data[5] = request[BIC_INTF_HDR_SIZE+1];    // cmd
+    res->data[6] = CC_INVALID_CMD;
+    *res_len = 7;
+    return;
+  }
+
   // Add the payload id from the bridged command
   req_buf[0] = req->payload_id;
 

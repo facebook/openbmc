@@ -252,6 +252,11 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_12V_OFF:
+      if (pal_is_crashdump_ongoing(fru) > 0) {
+         printf("Crashdump for fru %u is ongoing...\n", fru);
+         printf("Please wait for 10 minutes and try again\n");
+         return -1;
+      }
 
       printf("12V Powering fru %u to OFF state...\n", fru);
 
@@ -297,6 +302,11 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_12V_CYCLE:
+      if (pal_is_crashdump_ongoing(fru) > 0) {
+         printf("Crashdump for fru %u is ongoing...\n", fru);
+         printf("Please wait for 10 minutes and try again\n");
+         return -1;
+      }
 
       memset(pwr_state, 0, sizeof(pwr_state));
       pal_get_last_pwr_state(fru, pwr_state);
@@ -319,10 +329,12 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_SLED_CYCLE:
-      if (pal_is_crashdump_ongoing(fru) > 0) {
-         printf("Crashdump for fru %u is ongoing...\n", fru);
-         printf("Please wait for 10 minutes and try again\n");
-         return -1;
+      for(fru = 1; fru <= MAX_NODES; fru++) {
+        if (pal_is_crashdump_ongoing(fru) > 0) {
+           printf("Crashdump for fru %u is ongoing...\n", fru);
+           printf("Please wait for 10 minutes and try again\n");
+           return -1;
+        }
       }
       syslog(LOG_CRIT, "SLED_CYCLE successful");
       sleep(1);

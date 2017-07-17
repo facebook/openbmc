@@ -1,0 +1,61 @@
+Sensor correction
+-----------------
+
+This library provides a generic functionality for correcting sensor readings at runtime.
+The design uses JSON configuration read at runtime to easy dynamic manipulation and removes
+the requirement of releasing a new image just to include a correction.
+
+Version
+-------
+"version": "1.0",
+
+This is any character string which can be used for display/debugging purposes.
+
+Sensor List
+-----------
+
+"sensors": [ /* List of sensors needing correction */ ]
+List of sensors needing correction
+
+      "name": "MB_INLET_REMOTE_TEMP",
+      "fru": 1,
+      "id": 163,
+      "correction": {
+        "type": "conditional_table",
+        "tables": {
+          "I0": [
+            [10, 7],
+            [12, 6],
+            [14, 5],
+            [18, 4],
+            [20, 3],
+            [24, 2],
+            [32, 1],
+            [41, 0]
+          ],
+          /* Snip */
+        },
+        "condition": {
+          "key": "mb_system_conf",
+          "default_table": "I0",
+          "value_map": {
+            "SS_D": "I0",
+            "SS_0": "I0",
+            /* Snip */
+          }
+        }
+      }
+
+Name: The name of the sensor. Currently only for ease of readability of the JSON.
+fru: The fru on which this sensor is present.
+id: The ID of this sensor.
+correction: The correction information.
+  type: The type of correction. Supported types ("conditional_table" - Choose a correction table based on a condition).
+  tables: List of tables. Each table is given a name "I0" to ease understandability of the table.
+  A table is itself an array of tuples. Each tuple is <cond_value:correction>. Hence new_value = value - correction with correction chosen based on the current value of 'cond_value'
+  condition: The condition which dictates which table is chosen for the correction.
+  key: The which dictates which table is used.
+  default_table: The default table used when either getting the value for the given key fails or if the value is not in the below 'value_map' list.
+  value_map: A set of values for 'key' and the name of the corresponding table to be used.
+
+

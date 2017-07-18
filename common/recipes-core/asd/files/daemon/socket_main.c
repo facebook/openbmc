@@ -196,7 +196,7 @@ typedef enum {
 
 typedef struct sockaddr_in6 ClientAddrT;
 
-static int comm_fd = 0, host_fd = 0, event_fd = 0;
+static int comm_fd = -1, host_fd = -1, event_fd = -1;
 static uint8_t prdy_timeout = 1;
 
 static struct spi_message out_msg;
@@ -274,9 +274,9 @@ void print_version() {
 }
 
 void exitAll() {
-    if (host_fd != 0)
+    if (host_fd != -1)
         close(host_fd);
-    if (comm_fd != 0)
+    if (comm_fd != -1)
         close(comm_fd);
     if (out_msg.buffer)
         free(out_msg.buffer);
@@ -944,7 +944,7 @@ int main(int argc, char **argv) {
     poll_fds[EVENT_FD_INDEX].events = POLLIN;
     poll_fds[HOST_FD_INDEX].fd = host_fd;
     poll_fds[HOST_FD_INDEX].events = POLLIN;
-    poll_fds[CLIENT_FD_INDEX].fd = 0;
+    poll_fds[CLIENT_FD_INDEX].fd = -1;
     poll_fds[CLIENT_FD_INDEX].events = 0;
 
     while (1) {
@@ -961,7 +961,7 @@ int main(int argc, char **argv) {
             } else {
                 if (value == CLOSE_CLIENT_EVENT) {
                     ASD_log(LogType_Debug, "Internal client close event received.");
-                    if (poll_fds[CLIENT_FD_INDEX].fd == 0) {
+                    if (poll_fds[CLIENT_FD_INDEX].fd == -1) {
                         ASD_log(LogType_Error, "Client already disconnected.");
                     } else {
                         ASD_log(LogType_Error, "Remote JTAG disabled, disconnecting client.");
@@ -969,8 +969,9 @@ int main(int argc, char **argv) {
                             ASD_log(LogType_Error, "Client disconnect cleanup failed.");
                         }
                         close(poll_fds[CLIENT_FD_INDEX].fd);
-                        poll_fds[CLIENT_FD_INDEX].fd = 0;
+                        comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
                         poll_fds[CLIENT_FD_INDEX].events = 0;
+                        poll_fds[CLIENT_FD_INDEX].revents = 0;
                         pollfd_cnt = 2;
                         continue;
                     }
@@ -985,7 +986,7 @@ int main(int argc, char **argv) {
             if (fd == -1) {
                 ASD_log(LogType_Error, "Failed to accept incoming connection.");
                 continue;
-            } else if (poll_fds[CLIENT_FD_INDEX].fd == 0) {
+            } else if (poll_fds[CLIENT_FD_INDEX].fd == -1) {
                 if (on_client_connect(&addr) != ST_OK) {
                     ASD_log(LogType_Error, "Connection attempt failed.");
                     if (on_client_disconnect() != ST_OK) {
@@ -1006,7 +1007,7 @@ int main(int argc, char **argv) {
                 continue;
             }
         }
-        if (poll_fds[CLIENT_FD_INDEX].revents & POLLIN) {
+        if (comm_fd >= 0 && poll_fds[CLIENT_FD_INDEX].revents & POLLIN) {
             switch (read_state) {
                 case SOCKET_READ_STATE_INITIAL: {
                     memset(&s_message.header, 0, sizeof(struct message_header));
@@ -1027,8 +1028,9 @@ int main(int argc, char **argv) {
                             ASD_log(LogType_Error, "Client disconnect cleanup failed.");
                         }
                         close(poll_fds[CLIENT_FD_INDEX].fd);
-                        poll_fds[CLIENT_FD_INDEX].fd = 0;
+                        comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
                         poll_fds[CLIENT_FD_INDEX].events = 0;
+                        poll_fds[CLIENT_FD_INDEX].revents = 0;
                         pollfd_cnt = 2;
                     } else if ((cnt + read_index) == sizeof(s_message.header)) {
                         data_size = get_message_size(&s_message);
@@ -1039,8 +1041,9 @@ int main(int argc, char **argv) {
                                 ASD_log(LogType_Error, "Client disconnect cleanup failed.");
                             }
                             close(poll_fds[CLIENT_FD_INDEX].fd);
-                            poll_fds[CLIENT_FD_INDEX].fd = 0;
+                            comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
                             poll_fds[CLIENT_FD_INDEX].events = 0;
+                            poll_fds[CLIENT_FD_INDEX].revents = 0;
                             pollfd_cnt = 2;
                         } else if (data_size > 0) {
                             read_state = SOCKET_READ_STATE_BUFFER;
@@ -1071,8 +1074,9 @@ int main(int argc, char **argv) {
                             ASD_log(LogType_Error, "Client disconnect cleanup failed.");
                         }
                         close(poll_fds[CLIENT_FD_INDEX].fd);
-                        poll_fds[CLIENT_FD_INDEX].fd = 0;
+                        comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
                         poll_fds[CLIENT_FD_INDEX].events = 0;
+                        poll_fds[CLIENT_FD_INDEX].revents = 0;
                         pollfd_cnt = 2;
                     } else if ((cnt + read_index) == data_size) {
                         // we have finished reading a packet. Set back to initial state for next packet.

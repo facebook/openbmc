@@ -244,7 +244,7 @@ static void gpio_handle(gpio_poll_st *gpio)
   size_t idx;
   pthread_mutex_lock(&triggered_mutex);
   /* Get the index of this GPIO in g_gpios */
-  idx = (g_gpios - gpio) / sizeof(gpio_poll_st);
+  idx = (gpio - g_gpios);
   if (idx < 3) {
     g_gpios_triggered[idx] = true;
   }
@@ -266,8 +266,6 @@ int platform_reset_is_event_triggered(const int fru, bool* triggered)
     *triggered = g_gpios_triggered[0];
     g_gpios_triggered[0] = false;
     pthread_mutex_unlock(&triggered_mutex);
-    /* TODO */
-    *triggered = false;
     return ST_OK;
 }
 
@@ -295,7 +293,6 @@ int prdy_is_event_triggered(const int fru, bool* triggered)
     *triggered = g_gpios_triggered[1];
     g_gpios_triggered[1] = false;
     pthread_mutex_unlock(&triggered_mutex);
-    /* TODO */
     return ST_OK;
 }
 

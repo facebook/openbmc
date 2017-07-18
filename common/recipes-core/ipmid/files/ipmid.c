@@ -175,7 +175,7 @@ static int length_check(unsigned char cmd_len, unsigned char req_len, unsigned c
 {
   ipmi_res_t *res = (ipmi_res_t *) response;
   // req_len = cmd_len + 3 (payload_id, cmd and netfn)
-  if( req_len != (cmd_len + 3) ){
+  if( req_len != (cmd_len + IPMI_MN_REQ_HDR_SIZE) ){
     res->cc = CC_INVALID_LENGTH;
     *res_len = 1;
     return 1;
@@ -232,7 +232,8 @@ void
  */
 // Get Chassis Status (IPMI/Section 28.2)
 static void
-chassis_get_status (unsigned char *request, unsigned char *response, unsigned char *res_len)
+chassis_get_status (unsigned char *request, unsigned char req_len,
+                    unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
@@ -338,7 +339,7 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
   switch (cmd)
   {
     case CMD_CHASSIS_GET_STATUS:
-      chassis_get_status (request, response, res_len);
+      chassis_get_status (request, req_len, response, res_len);
       break;
     case CMD_CHASSIS_SET_POWER_RESTORE_POLICY:
       chassis_set_power_restore_policy(request, req_len, response, res_len);
@@ -1791,7 +1792,7 @@ ipmi_handle_dcmi(unsigned char *request, unsigned char req_len,
  * Function(s) to handle IPMI messages with NetFn: OEM
  */
 static void
-oem_set_proc_info (unsigned char *request, unsigned char *response,
+oem_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
        unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -1820,7 +1821,7 @@ oem_set_proc_info (unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_get_proc_info (unsigned char *request, unsigned char *response,
+oem_get_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
        unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -1847,7 +1848,7 @@ oem_get_proc_info (unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_set_dimm_info (unsigned char *request, unsigned char *response,
+oem_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned char *response,
        unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -1876,7 +1877,7 @@ oem_set_dimm_info (unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_get_dimm_info (unsigned char *request, unsigned char *response,
+oem_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned char *response,
        unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2447,7 +2448,7 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
 }
 
 static void
-oem_set_post_start (unsigned char *request, unsigned char *response,
+oem_set_post_start (unsigned char *request, unsigned char req_len, unsigned char *response,
                   unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2459,7 +2460,7 @@ oem_set_post_start (unsigned char *request, unsigned char *response,
 }
 
 static void
-oem_set_post_end (unsigned char *request, unsigned char *response,
+oem_set_post_end (unsigned char *request, unsigned char req_len, unsigned char *response,
                 unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2506,7 +2507,7 @@ oem_set_adr_trigger(unsigned char *request, unsigned char req_len,
 }
 
 static void
-oem_get_plat_info(unsigned char *request, unsigned char *response,
+oem_get_plat_info(unsigned char *request, unsigned char req_len, unsigned char *response,
                   unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
@@ -2751,16 +2752,16 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
   switch (cmd)
   {
     case CMD_OEM_SET_PROC_INFO:
-      oem_set_proc_info (request, response, res_len);
+      oem_set_proc_info (request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_PROC_INFO:
-      oem_get_proc_info (request, response, res_len);
+      oem_get_proc_info (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_DIMM_INFO:
-      oem_set_dimm_info (request, response, res_len);
+      oem_set_dimm_info (request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_DIMM_INFO:
-      oem_get_dimm_info(request, response, res_len);
+      oem_get_dimm_info(request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_BOOT_ORDER:
       oem_set_boot_order(request, req_len, response, res_len);
@@ -2777,10 +2778,10 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       oem_get_ppr (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_POST_START:
-      oem_set_post_start (request, response, res_len);
+      oem_set_post_start (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_POST_END:
-      oem_set_post_end (request, response, res_len);
+      oem_set_post_end (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_PPIN_INFO:
       oem_set_ppin_info (request, req_len, response, res_len);
@@ -2789,7 +2790,7 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       oem_set_adr_trigger(request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_PLAT_INFO:
-      oem_get_plat_info (request, response, res_len);
+      oem_get_plat_info (request, req_len, response, res_len);
       break;
     case CMD_OEM_SLOT_AC_CYCLE:
       oem_slot_ac_cycle (request, req_len, response, res_len);

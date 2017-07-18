@@ -71,6 +71,9 @@ extern "C" {
 //NetFn, Cmd
 #define IPMI_REQ_HDR_SIZE 2
 
+// PayloadID, NetFn, Cmd
+#define IPMI_MN_REQ_HDR_SIZE (1 + IPMI_REQ_HDR_SIZE)
+
 // NetFn, Cmd, CC
 #define IPMI_RESP_HDR_SIZE 3
 

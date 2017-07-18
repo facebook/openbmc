@@ -2627,7 +2627,7 @@ oem_set_machine_config_info ( unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  pal_set_machine_configuration(req->payload_id, req->data, req_len, response, res_len);
+  pal_set_machine_configuration(req->payload_id, req->data, req_len-3, response, res_len);
 
   res->cc = CC_SUCCESS;
   *res_len = 0;

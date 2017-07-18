@@ -120,17 +120,19 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
   char value[MAX_VALUE_LEN] = {0};
   machine_config_info mc;
 
-  if (req_len < sizeof(machine_config_info) + 3) {
+  if (req_len < sizeof(machine_config_info)) {
     syslog(LOG_CRIT, "Invalid machine configuration received");
     return -1;
   }
 
-  memcpy(&mc, &req_data[3], sizeof(machine_config_info));
+  sprintf(key, "mb_machine_config");
+  kv_set_bin(key, (char *)req_data, sizeof(machine_config_info));
+
+  memcpy(&mc, &req_data[0], sizeof(machine_config_info));
 
   sprintf(key, "mb_system_conf");
 
   set_defaults(&mc);
-
   strcpy(value, machine_config_name(&mc));
 
   /* Set kv first because get_machine_configuration

@@ -2472,7 +2472,20 @@ key_func_tz (int event, void *arg)
 
 static void
 FORCE_ADR() {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN];
   char vpath[64] = {0};
+
+  sprintf(key, "%s", "mb_machine_config");
+  if (kv_get_bin(key, value) < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "FORCE_ADR: get mb_machine_config failed for fru %u", fru);
+#endif
+    return;
+  }
+  if(value[12] == 0 || value[12] > 32)
+    return;
+  
   sprintf(vpath, GPIO_VAL, GPIO_FM_FORCE_ADR_N);
   if (write_device(vpath, "1")) {
     return;
@@ -2541,8 +2554,8 @@ server_power_off(bool gs_flag) {
   sprintf(vpath, GPIO_VAL, GPIO_POWER);
 
   system("/usr/bin/sv stop fscd >> /dev/null");
-  //if (gs_flag != true)
-  //  FORCE_ADR();
+  if (!gs_flag)
+    FORCE_ADR();
   if (write_device(vpath, "1")) {
     return -1;
   }
@@ -2750,7 +2763,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
    case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
-        //FORCE_ADR();
+        FORCE_ADR();
         ret = pal_set_rst_btn(fru, 0);
         if (ret < 0)
           return ret;

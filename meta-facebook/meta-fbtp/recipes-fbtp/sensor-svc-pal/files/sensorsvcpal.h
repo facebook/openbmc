@@ -47,9 +47,9 @@ enum {
   FRU_ALL   = 0,
   FRU_MB = 1,
   FRU_NIC = 2,
-  FRU_RISER_SLOT2 = 4,
-  FRU_RISER_SLOT3 = 5,
-  FRU_RISER_SLOT4 = 6,
+  FRU_RISER_SLOT2 = 3,
+  FRU_RISER_SLOT3 = 4,
+  FRU_RISER_SLOT4 = 5,
 };
 
 // Sensors Under Side Plane

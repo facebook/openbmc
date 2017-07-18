@@ -437,3 +437,6 @@ gpio_set I2 1
 # IRQ_DIMM_SAVE_LVT3_N
 gpio_export D4
 
+# FM_OCP_,MEZZA_PRES: GPIOAB1
+devmem_clear_bit $(scu_addr A8) 1
+gpio_export AB1

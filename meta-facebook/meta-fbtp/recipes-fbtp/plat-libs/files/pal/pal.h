@@ -45,7 +45,7 @@ extern "C" {
 
 #define MAX_NODES 4
 
-#define MAX_NUM_FRUS 6
+#define MAX_NUM_FRUS 5
 
 #define MAX_SDR_LEN           64
 #define MAX_SENSOR_NUM        0xFF
@@ -144,9 +144,9 @@ enum {
   FRU_ALL   = 0,
   FRU_MB = 1,
   FRU_NIC = 2,
-  FRU_RISER_SLOT2 = 4,
-  FRU_RISER_SLOT3 = 5,
-  FRU_RISER_SLOT4 = 6,
+  FRU_RISER_SLOT2 = 3,
+  FRU_RISER_SLOT3 = 4,
+  FRU_RISER_SLOT4 = 5,
 };
 
 // Sensors Under Side Plane

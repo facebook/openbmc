@@ -4,12 +4,19 @@
   "sensorServiceDBusName": "org.openbmc.SensorService",
   "sensorServiceDBusPath": "/org/openbmc/SensorService",
   "sensorServiceDBusInterface": "org.openbmc.SensorTree",
+  "fruServiceDBusName": "org.openbmc.FruService",
+  "fruServiceDBusPath": "/org/openbmc/FruService",
+  "fruServiceDBusInterface": "org.openbmc.FruService",
   "childObjects": [
     {
       "objectType": "FRU",
       "objectName": "mb",
       "id": "1",
       "hotPlugSupport": "0",
+      "fruIdAccess": {
+        "type": "I2CEEPROM",
+        "eepromPath": "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
+      },
       "childObjects":[
         {
           "objectType": "Sensor",
@@ -1191,6 +1198,10 @@
       "objectName": "nic",
       "id": "2",
       "hotPlugSupport": "0",
+      "fruIdAccess": {
+        "type": "I2CEEPROM",
+        "eepromPath": "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"
+      },
       "childObjects":[
         {
           "objectType": "Sensor",

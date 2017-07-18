@@ -35,7 +35,15 @@ const char* DBusFruInterface::xml =
 "<node>"
 "  <interface name='org.openbmc.FruObject'>"
 "    <method name='getFruIdInfo'>"
-"      <arg type='a{ss}' name='fruId' direction='out'/>"
+"      <arg type='a{ss}' name='fruIdInfo' direction='out'/>"
+"    </method>"
+"    <method name='fruIdDumpBinaryData'>"
+"      <arg type='s' name='destFilePath' direction='in'/>"
+"      <arg type='b' name='status' direction='out'/>"
+"    </method>"
+"    <method name='fruIdWriteBinaryData'>"
+"      <arg type='s' name='binFilePath' direction='in'/>"
+"      <arg type='b' name='status' direction='out'/>"
 "    </method>"
 "  </interface>"
 "</node>";
@@ -75,6 +83,40 @@ void DBusFruInterface::getFruIdInfo(GDBusMethodInvocation* invocation,
   g_variant_builder_unref(builder);
 }
 
+void DBusFruInterface::fruIdDumpBinaryData(GVariant*              parameters,
+                                           GDBusMethodInvocation* invocation,
+                                           gpointer               arg){
+  FRU* fru = static_cast<FRU*>(arg);
+
+  gchar* destFilePath = NULL;
+  g_variant_get(parameters, "(&s)", &destFilePath);
+  LOG(INFO) << "fruIdDumpBinaryData " << destFilePath;
+
+  if (fru->fruIdDumpBinaryData(std::string(destFilePath))) {
+    g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", TRUE));
+  }
+  else {
+    g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", FALSE));
+  }
+}
+
+void DBusFruInterface::fruIdWriteBinaryData(GVariant*              parameters,
+                                            GDBusMethodInvocation* invocation,
+                                            gpointer               arg){
+  FRU* fru = static_cast<FRU*>(arg);
+
+  gchar* binFilePath = NULL;
+  g_variant_get(parameters, "(&s)", &binFilePath);
+  LOG(INFO) << "fruIdWriteBinaryData " << binFilePath;
+
+  if (fru->fruIdWriteBinaryData(std::string(binFilePath))) {
+    g_dbus_method_invocation_return_value (invocation,  g_variant_new ("(b)", TRUE));
+  }
+  else {
+    g_dbus_method_invocation_return_value (invocation,  g_variant_new ("(b)", FALSE));
+  }
+}
+
 void DBusFruInterface::methodCallBack(GDBusConnection*       connection,
                                       const char*            sender,
                                       const char*            objectPath,
@@ -88,5 +130,11 @@ void DBusFruInterface::methodCallBack(GDBusConnection*       connection,
 
   if (g_strcmp0(methodName, "getFruIdInfo") == 0) {
     getFruIdInfo(invocation, arg);
+  }
+  else if (g_strcmp0(methodName, "fruIdDumpBinaryData") == 0) {
+    fruIdDumpBinaryData(parameters, invocation, arg);
+  }
+  else if (g_strcmp0(methodName, "fruIdWriteBinaryData") == 0) {
+    fruIdWriteBinaryData(parameters, invocation, arg);
   }
 }

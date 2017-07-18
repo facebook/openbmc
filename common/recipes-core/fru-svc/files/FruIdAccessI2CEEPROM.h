@@ -24,7 +24,7 @@
 class FruIdAccessI2CEEPROM : public FruIdAccessMechanism {
   private:
     std::string eepromPath_;               //path for eeprom file
-    static const int FRUID_SIZE = 256;     //FRUID size in eeprom file
+    static const int FRUID_SIZE = 512;     //FRUID size in eeprom file
 
   public:
     /*
@@ -39,4 +39,17 @@ class FruIdAccessI2CEEPROM : public FruIdAccessMechanism {
      * and returns vector represensation FruId information
      */
     std::vector<std::pair<std::string, std::string>> getFruIdInfoList() override;
+
+    /*
+     * Validate FruId information at binFilePath
+     * On successful validation update binary data at eepromPath_
+     * Returns status of operation
+     */
+    virtual bool writeBinaryData(const std::string & binFilePath) override;
+
+    /*
+     * Dump FruId information from eeprom file at eepromPath_ to destFilePath
+     * Returns status of operation
+     */
+    virtual bool dumpBinaryData(const std::string & destFilePath) override;
 };

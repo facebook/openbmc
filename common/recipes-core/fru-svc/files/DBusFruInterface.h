@@ -52,6 +52,22 @@ class DBusFruInterface: public DBusInterfaceBase {
                              gpointer               arg);
 
     /**
+     * Callback for fruIdDumpBinaryData method,
+     * dumps fruID binary data at destFilePath
+     */
+    static void fruIdDumpBinaryData(GVariant*              parameters,
+                                    GDBusMethodInvocation* invocation,
+                                    gpointer               arg);
+
+    /**
+     * Callback for fruIdWriteBinaryData method,
+     * reads fruID binary data from binFilePath and updates fruID information
+     */
+    static void fruIdWriteBinaryData(GVariant*              parameters,
+                                     GDBusMethodInvocation* invocation,
+                                     gpointer               arg);
+
+    /**
      * Handles the callback by matching the method names in the DBus message
      * to the functions. The above callbacks should be invoked here with
      * method name specified. Checkout g_dbus_connection_register_object in

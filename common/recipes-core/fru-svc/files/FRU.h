@@ -26,15 +26,18 @@ using namespace openbmc::qin;
 
 class FRU : public Object {
   private:
-    const std::vector<std::pair<std::string, std::string>> fruIdInfoList_; // To store fruId information
-                                                                           // This information is fixed and does not change over time
+    std::vector<std::pair<std::string, std::string>> fruIdInfoList_; // To store fruId information
+    std::unique_ptr<FruIdAccessMechanism> fruIdAccess_;
 
   public:
     /*
     * Contructor
     */
     FRU(const std::string &name, Object* parent, std::unique_ptr<FruIdAccessMechanism> fruIdAccess)
-       : Object(name, parent) , fruIdInfoList_(fruIdAccess.get()->getFruIdInfoList()){}
+       : Object(name, parent){
+      fruIdAccess_ = std::move(fruIdAccess);
+      fruIdInfoList_ = fruIdAccess_.get()->getFruIdInfoList();
+    }
 
 
     /*
@@ -42,5 +45,28 @@ class FRU : public Object {
      */
     const std::vector<std::pair<std::string, std::string>> & getFruIdInfoList(){
       return fruIdInfoList_;
+    }
+
+    /*
+     * Write fruId binary data from binFilePath
+     * Update fruIdInfoList_ if write operation is successful
+     * Returns status of operation
+     */
+    bool fruIdWriteBinaryData(const std::string & binFilePath) {
+      if (fruIdAccess_.get()->writeBinaryData(binFilePath)){
+        fruIdInfoList_ = fruIdAccess_.get()->getFruIdInfoList();
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
+
+    /*
+     * Dumps fruId binary data at destFilePath
+     * Returns status of operation
+     */
+    bool fruIdDumpBinaryData(const std::string & destFilePath) {
+      return fruIdAccess_.get()->dumpBinaryData(destFilePath);
     }
 };

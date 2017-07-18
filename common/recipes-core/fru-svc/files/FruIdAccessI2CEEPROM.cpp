@@ -22,6 +22,8 @@
 #include <iostream>
 #include <glog/logging.h>
 #include <openbmc/fruid.h>
+#include <stdlib.h>
+#include <cstdlib>
 #include "FruIdAccessI2CEEPROM.h"
 
 std::vector<std::pair<std::string, std::string>> FruIdAccessI2CEEPROM::getFruIdInfoList() {
@@ -130,4 +132,89 @@ std::vector<std::pair<std::string, std::string>> FruIdAccessI2CEEPROM::getFruIdI
   }
 
   return fruIdInfoList;
+}
+
+bool FruIdAccessI2CEEPROM::writeBinaryData(const std::string & binFilePath){
+  std::ifstream binFile;
+  binFile.open(binFilePath, std::ios::in | std::ios::binary | std::ios::ate);
+
+  if (binFile.is_open()) {
+    //Get size of binFile
+    int size = binFile.tellg();
+
+    if (size >= FRUID_SIZE) {
+      unsigned char fruIdData[FRUID_SIZE] = {0};
+      fruid_info_t fruid;
+
+      //Get binary data from binFilePath
+      binFile.seekg (0, std::ios::beg);
+      binFile.read ((char*)fruIdData, FRUID_SIZE);
+
+      // parse fruId from binFilePath dump and check if it is successful
+      if (fruid_parse_eeprom(fruIdData, FRUID_SIZE, &fruid) == 0){
+        //Parse successful -> binFilePath is verified
+        //Write to eepromPath_
+        std::string command = "dd if=" + binFilePath + " of=" + eepromPath_ + " bs=" + std::to_string(FRUID_SIZE) + " count=1";
+        if (system(command.c_str()) == EXIT_SUCCESS) {
+          return true;
+        }
+        else{
+          LOG(ERROR) << "Command failed: " << command;
+        }
+      }
+      else{
+        LOG(ERROR) << "FRUID checksum failed for input FRUID bin " << binFilePath;
+      }
+    }
+    else {
+      LOG(ERROR) << "File " << binFilePath << " size " << size << " is less than " << FRUID_SIZE;
+    }
+
+    binFile.close();
+  }
+  else{
+    LOG(ERROR) << "Unable to open file " << binFilePath;
+  }
+
+  return false;
+}
+
+bool FruIdAccessI2CEEPROM::dumpBinaryData(const std::string & destFilePath){
+  std::ifstream eepromFile;
+  std::ofstream outFile;
+  eepromFile.open(eepromPath_, std::ios::in | std::ios::binary | std::ios::ate);
+
+  if (eepromFile.is_open()) {
+    //Get size of eepromFile
+    int size = eepromFile.tellg();
+    if (size >= FRUID_SIZE) {
+      unsigned char fruIdData[FRUID_SIZE] = {0};
+
+      //Get binary data from eepromFile
+      eepromFile.seekg (0, std::ios::beg);
+      eepromFile.read ((char*)fruIdData, FRUID_SIZE);
+
+      //write data to destFilePath
+      outFile.open(destFilePath, std::ios::binary);
+      if(outFile.is_open()) {
+        outFile.write((char*)fruIdData, FRUID_SIZE);
+        outFile.close();
+        return true;
+      }
+      else {
+        LOG(ERROR) << "Unable to create file " << destFilePath;
+      }
+    }
+    else {
+      LOG(ERROR) << "File " << eepromPath_ << " size " << size << " is less than " << FRUID_SIZE;
+    }
+
+    //close eepromFile
+    eepromFile.close();
+  }
+  else {
+    LOG(ERROR) << "File " << eepromPath_ << " does not exists";
+  }
+
+  return false;
 }

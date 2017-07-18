@@ -25,5 +25,21 @@
  */
 class FruIdAccessMechanism {
   public:
+
+    /*
+     * Returns vector represensation FruId information
+     */
     virtual std::vector<std::pair<std::string, std::string>> getFruIdInfoList() = 0;
+
+    /*
+     * Write fruId binary data from binFilePath
+     * Returns status of operation
+     */
+    virtual bool writeBinaryData(const std::string & binFilePath) = 0;
+
+    /*
+     * Dump FruId information to destFilePath
+     * Returns status of operation
+     */
+    virtual bool dumpBinaryData(const std::string & destFilePath) = 0;
 };

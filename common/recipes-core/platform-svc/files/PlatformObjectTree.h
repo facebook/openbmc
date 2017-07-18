@@ -31,6 +31,7 @@
 #include <dbus-utils/DBus.h>
 #include <cstdint>
 #include "SensorService.h"
+#include "FruService.h"
 #include <vector>
 
 using namespace openbmc::qin;
@@ -43,6 +44,7 @@ using namespace openbmc::qin;
 class PlatformObjectTree : public ObjectTree {
   private:
     SensorService* sensorService_ = nullptr; // SensorService, to communicate with SensorService
+    FruService* fruService_ = nullptr; // SensorService, to communicate with SensorService
     std::string platformServiceBasePath_;    // Base Path for PlatformService object
 
   public:
@@ -64,6 +66,21 @@ class PlatformObjectTree : public ObjectTree {
      * Set SensorService Availability.
      */
     bool setSensorServiceAvailable(bool isAvaliable);
+
+    /**
+     * Initialize FruService, called from PlatformJsonParser
+     */
+    void initFruService(std::string dbusName, std::string dbusPath, std::string dbusInteface);
+
+    /**
+     * Returns pointer to FruService.
+     */
+    const FruService* getFruService() const;
+
+    /**
+     * Set FruService Availability.
+     */
+    bool setFruServiceAvailable(bool isAvaliable);
 
     /**
      * Set PlatformService Base Path, set from PlatformJsonParser

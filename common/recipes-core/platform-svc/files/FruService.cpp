@@ -1,5 +1,5 @@
 /*
- * SensorService.cpp
+ * FruService.cpp
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,28 +19,28 @@
  */
 
 #include <glog/logging.h>
-#include "SensorService.h"
+#include "FruService.h"
 
-SensorService::SensorService (std::string dbusName, std::string dbusPath, std::string dbusInteface) {
+FruService::FruService (std::string dbusName, std::string dbusPath, std::string dbusInteface) {
   this->dbusName_ = dbusName;
   this->dbusPath_ = dbusPath;
   this->dbusInteface_ = dbusInteface;
   isAvailable_ = false;
 }
 
-std::string const& SensorService::getDBusName() const{
+std::string const& FruService::getDBusName() const{
   return dbusName_;
 }
 
-std::string const& SensorService::getDBusPath() const{
+std::string const& FruService::getDBusPath() const{
   return dbusPath_;
 }
 
-bool SensorService::isAvailable() const {
+bool FruService::isAvailable() const {
   return isAvailable_;
 }
 
-bool SensorService::setIsAvailable(bool isAvailable) {
+bool FruService::setIsAvailable(bool isAvailable) {
   if (this->isAvailable_ == isAvailable) {
     //No change in availability
     return true;
@@ -74,10 +74,10 @@ bool SensorService::setIsAvailable(bool isAvailable) {
   return true;
 }
 
-bool SensorService::reset() const{
+bool FruService::reset() const{
   if (isAvailable_) {
     GError *error = nullptr;
-    // Reset SensorTree Sensor Service
+    // Reset FruTree at Fru Service
     g_dbus_proxy_call_sync(
         proxy_,
         "resetTree",
@@ -98,7 +98,7 @@ bool SensorService::reset() const{
   return false;
 }
 
-bool SensorService::addFRU(std::string fruParentPath, std::string fruJson) const {
+bool FruService::addFRU(std::string fruParentPath, std::string fruJson) const {
   LOG(INFO) << "addFRU " << fruParentPath << " " << fruJson;
 
   if (isAvailable_) {
@@ -125,42 +125,7 @@ bool SensorService::addFRU(std::string fruParentPath, std::string fruJson) const
   return false;
 }
 
-bool SensorService::addSensors(std::string fruPath, std::vector<std::string> sensorJsonList) const {
-  LOG(INFO) << "addSensors at " << fruPath;
-
-  if (isAvailable_) {
-    GError *error = nullptr;
-    GVariantBuilder* builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-    fruPath = dbusPath_ + fruPath;
-
-    for (auto &it : sensorJsonList) {
-      g_variant_builder_add(builder, "s", it.c_str());
-    }
-
-    g_dbus_proxy_call_sync(
-        proxy_,
-        "addSensors",
-        g_variant_new("(sas)", fruPath.c_str(), builder),
-        G_DBUS_CALL_FLAGS_NONE,
-        -1,
-        nullptr,
-        &error);
-
-    g_variant_builder_unref(builder);
-
-    if (error != nullptr) {
-      //Error in setting up proxy_
-      LOG(INFO) << "Error in addSensors " << dbusName_ << " :" << error->message;
-    }
-    else {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool SensorService::removeFRU(std::string fruPath) const {
+bool FruService::removeFRU(std::string fruPath) const {
   LOG(INFO) << "removeFRU " << fruPath;
 
   if (isAvailable_) {

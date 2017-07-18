@@ -3,7 +3,7 @@
 all: platform-svcd
 
 platform-svcd:PlatformSvcd.cpp PlatformObjectTree.cpp PlatformJsonParser.cpp \
-	SensorService.cpp DBusPlatformSvcInterface.cpp
+	SensorService.cpp DBusPlatformSvcInterface.cpp FruService.cpp
 	$(CXX) $(CXXFLAGS) -pthread -std=c++11 -o $@ $^ $(LDFLAGS) -I$(SINC)/glib-2.0 -I$(SLIB)/glib-2.0/include
 .PHONY: clean
 

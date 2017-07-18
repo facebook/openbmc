@@ -75,6 +75,18 @@ bool PlatformObjectTree::setSensorServiceAvailable(bool isAvaliable) {
   return sensorService_->setIsAvailable(isAvaliable);
 }
 
+void PlatformObjectTree::initFruService(std::string dbusName, std::string dbusPath, std::string dbusInteface) {
+  fruService_ = new FruService(dbusName, dbusPath, dbusInteface);
+}
+
+const FruService* PlatformObjectTree::getFruService() const {
+  return fruService_;
+}
+
+bool PlatformObjectTree::setFruServiceAvailable(bool isAvaliable) {
+  return fruService_->setIsAvailable(isAvaliable);
+}
+
 void PlatformObjectTree::setPlatformServiceBasePath(std::string platformServiceBasePath) {
   platformServiceBasePath_ = platformServiceBasePath;
 }

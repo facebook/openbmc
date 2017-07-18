@@ -32,6 +32,7 @@
 #include "PlatformObjectTree.h"
 #include "PlatformJsonParser.h"
 #include "SensorService.h"
+#include "FruService.h"
 using namespace openbmc::qin;
 
 // validator for the json filename
@@ -147,6 +148,71 @@ static void sensorServiceOnNameVanished (GDBusConnection *connection,
   platformTree->setSensorServiceAvailable(false);
 }
 
+// Adds FRU and its children frus to FruService
+void addFRUtoFruService(const FRU* fru, PlatformObjectTree* platformTree) {
+
+  //Check if FruService is Available
+  if (platformTree->getFruService()->isAvailable()) {
+
+    // Return if FRU is not available
+    if (fru->isAvailable() == false) {
+      return;
+    }
+
+    // Get Parent of FRU Object
+    Object* parent = fru->getParent();
+
+    //Remove PlatformService Base path from FRU parent path
+    std::string fruParentPath = parent->getObjectPath().erase(0, platformTree->getPlatformServiceBasePath().length());
+
+    //Add FRU to FruService
+    platformTree->getFruService()->addFRU(fruParentPath, fru->getFruJson());
+
+    //Add recursively all child FRUs
+    for (auto &it : fru->getChildMap()) {
+      FRU* fruChild;
+      if ((fruChild = dynamic_cast<FRU*>(it.second)) != nullptr) {
+        addFRUtoFruService(fruChild, platformTree);
+      }
+    }
+  }
+}
+
+// Callback for FruService dbus name known to exist
+static void fruServiceOnNameAppeared (GDBusConnection *connection,
+                                      const gchar     *name,
+                                      const gchar     *name_owner,
+                                      gpointer         user_data)
+{
+  LOG(INFO) << name <<" on is Up";
+  PlatformObjectTree* platformTree = (PlatformObjectTree*)user_data;
+
+  //Mark FruService available and reset FruService
+  platformTree->setFruServiceAvailable(true);
+  platformTree->getFruService()->reset();
+
+
+  //Push FRUs on FruService
+  Object* obj = platformTree->getObject(platformTree->getPlatformServiceBasePath());
+  for (auto &it : obj->getChildMap()) {
+    FRU* fru;
+    if ((fru = dynamic_cast<FRU*>(it.second)) != nullptr) {
+      addFRUtoFruService(fru, platformTree);
+    }
+  }
+}
+
+// Callback for FruService dbus name known to not exist
+static void fruServiceOnNameVanished (GDBusConnection *connection,
+                                         const gchar     *name,
+                                         gpointer         user_data)
+{
+  LOG(INFO) << name << " is down";
+  PlatformObjectTree* platformTree = (PlatformObjectTree*)user_data;
+  // Mark FruService unavailable
+  platformTree->setFruServiceAvailable(false);
+}
+
 int main (int argc, char* argv[]) {
   ::google::InitGoogleLogging(argv[0]);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -183,7 +249,7 @@ int main (int argc, char* argv[]) {
   LOG(INFO) << "Main thread joining the event loop thread" << std::endl;
 
   //Watch SensorService dbus name
-  guint watcher_id = g_bus_watch_name (G_BUS_TYPE_SYSTEM,
+  guint watcher_sensor_svc_id = g_bus_watch_name (G_BUS_TYPE_SYSTEM,
                                        platformTree.getSensorService()->getDBusName().c_str(),
                                        G_BUS_NAME_WATCHER_FLAGS_NONE,
                                        sensorServiceOnNameAppeared,
@@ -191,9 +257,20 @@ int main (int argc, char* argv[]) {
                                        &platformTree,
                                        nullptr);
 
+  //Watch FruService dbus name
+  guint watcher_fru_svc_id = g_bus_watch_name (G_BUS_TYPE_SYSTEM,
+                                       platformTree.getFruService()->getDBusName().c_str(),
+                                       G_BUS_NAME_WATCHER_FLAGS_NONE,
+                                       fruServiceOnNameAppeared,
+                                       fruServiceOnNameVanished,
+                                       &platformTree,
+                                       nullptr);
+
   t.join();
 
   LOG(INFO) << "Quitting the event loop" << std::endl;
+  g_bus_unwatch_name(watcher_sensor_svc_id);
+  g_bus_unwatch_name(watcher_fru_svc_id);
   g_main_loop_quit(loop);
   g_main_loop_unref(loop);
 

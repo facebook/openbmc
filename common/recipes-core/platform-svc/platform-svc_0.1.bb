@@ -21,6 +21,8 @@ SRC_URI =+ "file://Makefile \
            file://SensorService.cpp \
            file://DBusPlatformSvcInterface.cpp \
            file://DBusPlatformSvcInterface.h \
+           file://FruService.h \
+           file://FruService.cpp \
           "
 
 S = "${WORKDIR}"

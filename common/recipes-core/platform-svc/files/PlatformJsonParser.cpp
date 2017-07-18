@@ -87,14 +87,23 @@ void PlatformJsonParser::parsePlatformService(const nlohmann::json   &jObject,
                                               PlatformObjectTree     &platformTree,
                                               const std::string      &parentPath) {
   const std::string &name = jObject.at("objectName");
-  LOG(INFO) << "Parsing the Sensor Service \"" << name <<
+  LOG(INFO) << "Parsing the Platform Service \"" << name <<
     "\" under the parent path \"" << parentPath << "\"";
 
+  //Parsing of SensorService DBus Information
   const std::string &sensorServiceDBusName = jObject.at("sensorServiceDBusName");
   const std::string &sensorServiceDBusPath = jObject.at("sensorServiceDBusPath");
   const std::string &sensorServiceDBusInterface = jObject.at("sensorServiceDBusInterface");
-
+  //Initialize SensorService
   platformTree.initSensorService(sensorServiceDBusName, sensorServiceDBusPath, sensorServiceDBusInterface);
+
+  //Parsing of FruService DBus Information
+  const std::string &fruServiceDBusName = jObject.at("fruServiceDBusName");
+  const std::string &fruServiceDBusPath = jObject.at("fruServiceDBusPath");
+  const std::string &fruServiceDBusInterface = jObject.at("fruServiceDBusInterface");
+  //Initialize FruService
+  platformTree.initFruService(fruServiceDBusName, fruServiceDBusPath, fruServiceDBusInterface);
+
   Object* object = platformTree.addPlatformService(name, parentPath);
 
   if (object == nullptr) {

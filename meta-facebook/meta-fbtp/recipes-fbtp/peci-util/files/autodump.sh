@@ -82,10 +82,10 @@ $DUMP_SCRIPT pcie >> $LOG_FILE 2>&1
 
 # Sensors
 echo "Sensor history of last ${SENSOR_HISTORY}s at dump:" >> $LOG_FILE 2>&1
-sensor-util all --history $SENSOR_HISTORY >> $LOG_FILE 2>&1
+/usr/local/bin/sensor-util all --history $SENSOR_HISTORY >> $LOG_FILE 2>&1
 
 echo "Sensor threshold at dump: " >> $LOG_FILE 2>&1
-sensor-util all --threshold >> $LOG_FILE 2>&1
+/usr/local/bin/sensor-util all --threshold >> $LOG_FILE 2>&1
 
 echo -n "Auto Dump End at " >> $LOG_FILE
 date >> $LOG_FILE

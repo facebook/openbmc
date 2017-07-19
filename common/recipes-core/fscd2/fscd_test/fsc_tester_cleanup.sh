@@ -19,3 +19,7 @@ echo 0 > ./test-data/test-sysfs-data/fantray2_pwm
 echo 0 > ./test-data/test-sysfs-data/fantray3_pwm
 echo 0 > ./test-data/test-sysfs-data/fantray4_pwm
 echo 0 > ./test-data/test-sysfs-data/fantray5_pwm
+echo 15000 > ./test-data/test-sysfs-data/4-0033/temp1_input
+echo 15000 > ./test-data/test-sysfs-data/3-004b/temp1_input
+echo 15000 > ./test-data/test-sysfs-data/3-0048/temp1_input
+                        

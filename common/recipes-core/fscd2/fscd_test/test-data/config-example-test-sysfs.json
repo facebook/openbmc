@@ -1,6 +1,6 @@
 {
-  "pwm_transition_value": 70,
-  "pwm_boost_value": 100,
+  "pwm_transition_value": 21,
+  "pwm_boost_value": 32,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
@@ -10,7 +10,7 @@
   "fan_dead_boost": {
     "data": [
       [1,0],
-      [5,100]
+      [5,32]
     ],
     "threshold": 20,
     "action": "host_shutdown"
@@ -39,12 +39,12 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [65, 18],
-        [67, 25],
-        [70, 30],
-        [72, 35],
-        [74, 40],
-        [76, 50]
+        [30, 12],
+        [33, 12],
+        [38, 20],
+        [43, 20],
+        [48, 28],
+        [65, 28]
       ]
     },
     "linear_chip": {
@@ -67,16 +67,17 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [85, 18],
-        [87, 35],
-        [90, 40],
-        [92, 50],
-        [94, 60]
+        [30, 12],
+        [33, 12],
+        [38, 20],
+        [43, 20],
+        [48, 28],
+        [65, 28]
       ]
     },
     "linear_exhaust": {
       "read_source" : {
-        "sysfs" : "./test-data/test-sysfs-data/3-0048/no_data"
+        "sysfs" : "./test-data/test-sysfs-data/3-0048/temp1_input"
       },
       "read_limit": {
         "valid": {
@@ -94,17 +95,12 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [ 25, 18 ],
-        [ 27, 19 ],
-        [ 29, 20 ],
-        [ 31, 21 ],
-        [ 33, 22 ],
-        [ 35, 23 ],
-        [ 37, 24 ],
-        [ 39, 25 ],
-        [ 41, 26 ],
-        [ 43, 27 ],
-        [ 45, 28 ]
+        [30, 12],
+        [33, 12],
+        [38, 20],
+        [43, 20],
+        [48, 28],
+        [65, 28]
       ]
     }
   },

@@ -10,7 +10,7 @@ from fsc_bmc_machine_tester import FscdBmcMachineUnitTest2
 from fsc_config_tester import FscdConfigUnitTest
 from fsc_base_tester import Result
 from fsc_operational_tester import FscdOperationalTest
-from fsc_sysfs_tester import FscdSysfsTester
+from fsc_sysfs_tester import FscdSysfsTester, FscdSysfsOperationalTester
 
 def config_suite():
     """
@@ -46,6 +46,15 @@ def bmc_machine_sysfs_suite():
     test_suite.addTest(FscdSysfsTester('test_sensor_read'))
     test_suite.addTest(FscdSysfsTester('test_fan_read'))
     test_suite.addTest(FscdSysfsTester('test_fsc_safe_guards'))
+    return test_suite
+
+
+def operational_sysfs_suite():
+    """
+    Gather all the tests from BMC Machine related tests in a test suite.(sysfs)
+    """
+    test_suite = unittest.TestSuite()
+    test_suite.addTest(FscdSysfsOperationalTester('test_fscd_operation'))
     return test_suite
 
 
@@ -100,11 +109,15 @@ if __name__ == '__main__':
     # sysfs tests
     suite4 = bmc_machine_sysfs_suite()
 
+    # operational sysfs tests
+    suite5 = operational_sysfs_suite()
+
     alltests = unittest.TestSuite([
                                    suite1,
                                    suite2,
                                    suite3,
-                                   suite4
+                                   suite4,
+                                   suite5
                                  ])
     alltests.run(testResult)
 

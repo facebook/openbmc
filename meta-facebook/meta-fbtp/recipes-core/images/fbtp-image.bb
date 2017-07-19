@@ -16,7 +16,12 @@ FLASH_ROOTFS_OFFSET = "4608"
 
 # Include modules in rootfs
 IMAGE_INSTALL += " \
-  packagegroup-openbmc-base \
+  i2c-tools \
+  kernel-modules \
+  lmsensors-sensors \
+  tzdata \
+  u-boot \
+  u-boot-fw-utils \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python \
   openbmc-utils \

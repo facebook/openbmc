@@ -18,9 +18,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <cstdio>
 #include <fstream>
-#include <memory>
 #include <string>
 #include <thread>
 #include <glog/logging.h>
@@ -28,7 +26,6 @@
 #include <gio/gio.h>
 #include <dbus-utils/DBus.h>
 #include <dbus-utils/dbus-interface/DBusObjectInterface.h>
-#include <syslog.h>
 #include "FruObjectTree.h"
 using namespace openbmc::qin;
 
@@ -45,7 +42,6 @@ static void eventLoop(GMainLoop* loop) {
 //Callback for DBus Name Lost
 void fruSvcdOnDbusNameLost() {
   LOG(ERROR) << "DBus Name lost, exiting";
-  syslog(LOG_ERR, "DBus Name lost, exiting");
   exit(-1);
 }
 

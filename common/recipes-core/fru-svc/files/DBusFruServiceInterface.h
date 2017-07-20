@@ -19,12 +19,11 @@
  */
 
 #pragma once
-#include <string>
-#include <glog/logging.h>
-#include <gio/gio.h>
-#include <dbus-utils/dbus-interface/DBusObjectInterface.h>
+#include <dbus-utils/DBusInterfaceBase.h>
 #include "FruObjectTree.h"
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 class DBusFruServiceInterface: public DBusInterfaceBase {
   public:
@@ -41,11 +40,21 @@ class DBusFruServiceInterface: public DBusInterfaceBase {
     ~DBusFruServiceInterface();
 
     /**
-     * All the subfunctions in the callback handler should comply
-     * with what is specified in the xml.
+     * Handles the callback by matching the method names in the DBus message
+     * to the functions. The above callbacks should be invoked here with
+     * method name specified. Checkout g_dbus_connection_register_object in
+     * gio library for details.
      */
-    static const char* xml;
+    static void methodCallBack(GDBusConnection*       connection,
+                               const char*            sender,
+                               const char*            objectPath,
+                               const char*            name,
+                               const char*            methodName,
+                               GVariant*              parameters,
+                               GDBusMethodInvocation* invocation,
+                               gpointer               arg);
 
+  private:
     /**
      * Callback for addFRU method, adds fru under specified path
      */
@@ -53,7 +62,6 @@ class DBusFruServiceInterface: public DBusInterfaceBase {
                        GVariant*              parameters,
                        FruObjectTree*         fruTree,
                        const char*            objectPath);
-
 
     /**
      * Callback for resetTree method, deletes fruTree under FruService
@@ -69,19 +77,7 @@ class DBusFruServiceInterface: public DBusInterfaceBase {
                           GVariant*              parameters,
                           FruObjectTree*         fruTree,
                           const char*            objectPath);
-
-    /**
-     * Handles the callback by matching the method names in the DBus message
-     * to the functions. The above callbacks should be invoked here with
-     * method name specified. Checkout g_dbus_connection_register_object in
-     * gio library for details.
-     */
-    static void methodCallBack(GDBusConnection*       connection,
-                               const char*            sender,
-                               const char*            objectPath,
-                               const char*            name,
-                               const char*            methodName,
-                               GVariant*              parameters,
-                               GDBusMethodInvocation* invocation,
-                               gpointer               arg);
 };
+
+} // namespace qin
+} // namespace openbmc

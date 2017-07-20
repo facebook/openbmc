@@ -19,11 +19,10 @@
  */
 
 #pragma once
-#include <string>
-#include <glog/logging.h>
-#include <gio/gio.h>
-#include <dbus-utils/dbus-interface/DBusObjectInterface.h>
-using namespace openbmc::qin;
+#include <dbus-utils/DBusInterfaceBase.h>
+
+namespace openbmc {
+namespace qin {
 
 class DBusFruInterface: public DBusInterfaceBase {
   public:
@@ -40,11 +39,21 @@ class DBusFruInterface: public DBusInterfaceBase {
     ~DBusFruInterface();
 
     /**
-     * All the subfunctions in the callback handler should comply
-     * with what is specified in the xml.
+     * Handles the callback by matching the method names in the DBus message
+     * to the functions. The above callbacks should be invoked here with
+     * method name specified. Checkout g_dbus_connection_register_object in
+     * gio library for details.
      */
-    static const char* xml;
+    static void methodCallBack(GDBusConnection*       connection,
+                               const char*            sender,
+                               const char*            objectPath,
+                               const char*            name,
+                               const char*            methodName,
+                               GVariant*              parameters,
+                               GDBusMethodInvocation* invocation,
+                               gpointer               arg);
 
+  private:
     /**
      * Callback for getFruIdInfo method, returns FruIdInfo over dbus
      */
@@ -66,19 +75,6 @@ class DBusFruInterface: public DBusInterfaceBase {
     static void fruIdWriteBinaryData(GVariant*              parameters,
                                      GDBusMethodInvocation* invocation,
                                      gpointer               arg);
-
-    /**
-     * Handles the callback by matching the method names in the DBus message
-     * to the functions. The above callbacks should be invoked here with
-     * method name specified. Checkout g_dbus_connection_register_object in
-     * gio library for details.
-     */
-    static void methodCallBack(GDBusConnection*       connection,
-                               const char*            sender,
-                               const char*            objectPath,
-                               const char*            name,
-                               const char*            methodName,
-                               GVariant*              parameters,
-                               GDBusMethodInvocation* invocation,
-                               gpointer               arg);
 };
+} // namespace qin
+} // namespace openbmc

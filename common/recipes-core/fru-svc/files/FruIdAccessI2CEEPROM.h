@@ -21,6 +21,9 @@
 #pragma once
 #include "FruIdAccessMechanism.h"
 
+namespace openbmc {
+namespace qin {
+
 class FruIdAccessI2CEEPROM : public FruIdAccessMechanism {
   private:
     std::string eepromPath_;               //path for eeprom file
@@ -53,3 +56,6 @@ class FruIdAccessI2CEEPROM : public FruIdAccessMechanism {
      */
     virtual bool dumpBinaryData(const std::string & destFilePath) override;
 };
+
+} // namespace qin
+} // namespace openbmc

@@ -22,7 +22,9 @@
 #include <string>
 #include <object-tree/Object.h>
 #include "FruIdAccessMechanism.h"
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 class FRU : public Object {
   private:
@@ -70,3 +72,6 @@ class FRU : public Object {
       return fruIdAccess_.get()->dumpBinaryData(destFilePath);
     }
 };
+
+} // namespace qin
+} // namespace openbmc

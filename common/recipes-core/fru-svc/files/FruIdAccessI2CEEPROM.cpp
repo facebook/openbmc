@@ -18,13 +18,16 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <stdlib.h>
 #include <glog/logging.h>
 #include <openbmc/fruid.h>
-#include <stdlib.h>
-#include <cstdlib>
 #include "FruIdAccessI2CEEPROM.h"
+
+namespace openbmc {
+namespace qin {
 
 std::vector<std::pair<std::string, std::string>> FruIdAccessI2CEEPROM::getFruIdInfoList() {
   std::vector<std::pair<std::string, std::string>> fruIdInfoList;
@@ -218,3 +221,6 @@ bool FruIdAccessI2CEEPROM::dumpBinaryData(const std::string & destFilePath){
 
   return false;
 }
+
+} // namespace qin
+} // namespace openbmc

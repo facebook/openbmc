@@ -21,6 +21,9 @@
 #pragma once
 #include <vector>
 
+namespace openbmc {
+namespace qin {
+
 /* FruIdAccessMechanism : abstract class for FruIdAccess
  */
 class FruIdAccessMechanism {
@@ -43,3 +46,6 @@ class FruIdAccessMechanism {
      */
     virtual bool dumpBinaryData(const std::string & destFilePath) = 0;
 };
+
+} // namespace qin
+} // namespace openbmc

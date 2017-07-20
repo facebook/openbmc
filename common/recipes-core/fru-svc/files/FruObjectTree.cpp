@@ -18,15 +18,14 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <stdexcept>
 #include <string>
-#include <unordered_map>
-#include <memory>
 #include <glog/logging.h>
 #include "FruObjectTree.h"
-#include <dbus-utils/dbus-interface/DBusObjectInterface.h>
 #include "DBusFruInterface.h"
 #include "DBusFruServiceInterface.h"
+
+namespace openbmc {
+namespace qin {
 
 static DBusFruInterface fruInterface;
 static DBusFruServiceInterface fruServiceInterface;
@@ -61,3 +60,6 @@ FRU* FruObjectTree::addFRU(const std::string                     &name,
   std::unique_ptr<FRU> upDev(new FRU(name, parent, std::move(fruIdAccess)));
   return static_cast<FRU*>(addObjectByPath(std::move(upDev), path, fruInterface));
 }
+
+} // namespace qin
+} // namespace openbmc

@@ -20,17 +20,16 @@
 
 #pragma once
 #include <string>
-#include <memory>
+#include <dbus-utils/DBusInterfaceBase.h>
+#include <dbus-utils/DBus.h>
 #include <ipc-interface/Ipc.h>
 #include <object-tree/ObjectTree.h>
 #include <object-tree/Object.h>
 #include "FRU.h"
 #include "FruService.h"
-#include <dbus-utils/DBusInterfaceBase.h>
-#include <dbus-utils/DBus.h>
-#include <cstdint>
 
-using namespace openbmc::qin;
+namespace openbmc {
+namespace qin {
 
 /**
  * Tree structured object superclass that manages the fru objects,
@@ -130,3 +129,6 @@ class FruObjectTree : public ObjectTree {
       return object;
     }
 };
+
+} // namespace qin
+} // namespace openbmc

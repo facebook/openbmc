@@ -18,17 +18,17 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <ctime>
 #include <string>
-#include <stdexcept>
-#include <system_error>
 #include <glog/logging.h>
 #include <gio/gio.h>
 #include <object-tree/Object.h>
 #include "DBusFruInterface.h"
 #include "FRU.h"
 
-const char* DBusFruInterface::xml =
+namespace openbmc {
+namespace qin {
+
+static const char* xml =
 "<!DOCTYPE node PUBLIC"
 " \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
 " \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
@@ -138,3 +138,6 @@ void DBusFruInterface::methodCallBack(GDBusConnection*       connection,
     fruIdWriteBinaryData(parameters, invocation, arg);
   }
 }
+
+} // namespace qin
+} // namespace openbmc

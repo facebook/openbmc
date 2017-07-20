@@ -20,13 +20,13 @@
 
 #pragma once
 #include <string>
-#include <unordered_map>
-#include <functional>
 #include <nlohmann/json.hpp>
 #include <object-tree/Object.h>
 #include "FruObjectTree.h"
 #include "FruIdAccessI2CEEPROM.h"
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 /**
  * Json parser to parse the json file containing the information for
@@ -84,3 +84,6 @@ class FruJsonParser {
       throw std::invalid_argument("JSON conflicts with the fru tree");
     }
 };
+
+} // namespace qin
+} // namespace openbmc

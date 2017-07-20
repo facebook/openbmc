@@ -4,7 +4,7 @@ DESCRIPTION = "Util for reading various sensors"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://SensorUtilV2.cpp;beginline=4;endline=18;md5=3952f9784a9631138c6d1102e8b9a59d"
+LIC_FILES_CHKSUM = "file://SensorUtilV2.cpp;beginline=4;endline=18;md5=6d800d1c02e2ddf19e5ead261943b73b"
 
 SRC_URI = "file://Makefile \
            file://SensorUtilV2.cpp \

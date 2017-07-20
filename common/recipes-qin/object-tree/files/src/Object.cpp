@@ -103,7 +103,6 @@ Object* Object::removeChildObject(const std::string &name) {
 }
 
 std::string Object::getObjectPath() const {
-  LOG(INFO) << "getObjectPath \"" << name_ << "\"";
   if (parent_ == nullptr){
     return "/" + name_;
   }

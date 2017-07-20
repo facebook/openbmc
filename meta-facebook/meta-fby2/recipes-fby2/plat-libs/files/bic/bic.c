@@ -42,7 +42,6 @@
 #define SDR_READ_COUNT_MAX 0x1A
 #define SIZE_SYS_GUID 16
 #define SIZE_IANA_ID 3
-#define GPIO_MAX 33
 
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_VER_STR "F09_"
@@ -327,14 +326,14 @@ bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id) {
 int
 bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
   uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID
-  uint8_t rbuf[7] = {0x00};
+  uint8_t rbuf[12] = {0x00};
   uint8_t rlen = 0;
   int ret;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 0x03, rbuf, &rlen);
 
   // Ignore first 3 bytes of IANA ID
-  memcpy((uint8_t*) gpio, &rbuf[3], 4);
+  memcpy((uint8_t*) gpio, &rbuf[3], 5);
 
   return ret;
 }
@@ -344,49 +343,16 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
   uint8_t tbuf[13] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[3] = {0x00};
   uint8_t rlen = 0;
+  uint64_t pin;
   int ret;
 
-  // Check for boundary conditions
-  if (gpio > GPIO_MAX) {
-    return -1;
-  }
+  pin = 1LL << gpio;
 
-  // Create the mask bytes for the given GPIO#
-  if (gpio < 8) {
-    tbuf[3] = 1 << gpio;
-    tbuf[4] = 0x00;
-    tbuf[5] = 0x00;
-    tbuf[6] = 0x00;
-    tbuf[7] = 0x00;
-  } else if (gpio < 16) {
-    gpio -= 8;
-    tbuf[3] = 0x00;
-    tbuf[4] = 1 << gpio;
-    tbuf[5] = 0x00;
-    tbuf[6] = 0x00;
-    tbuf[7] = 0x00;
-  } else if (gpio < 24) {
-    gpio -= 16;
-    tbuf[3] = 0x00;
-    tbuf[4] = 0x00;
-    tbuf[5] = 1 << gpio;
-    tbuf[6] = 0x00;
-    tbuf[7] = 0x00;
-  } else if (gpio < 32) {
-    gpio -= 24;
-    tbuf[3] = 0x00;
-    tbuf[4] = 0x00;
-    tbuf[5] = 0x00;
-    tbuf[6] = 1 << gpio;
-    tbuf[7] = 0x00;
-  } else {
-    gpio -= 32;
-    tbuf[3] = 0x00;
-    tbuf[4] = 0x00;
-    tbuf[5] = 0x00;
-    tbuf[6] = 0x00;
-    tbuf[7] = 1 << gpio;
-  }
+  tbuf[3] = pin & 0xFF;
+  tbuf[4] = (pin >> 8) & 0xFF;
+  tbuf[5] = (pin >> 16) & 0xFF;
+  tbuf[6] = (pin >> 24) & 0xFF;
+  tbuf[7] = (pin >> 32) & 0xFF;
 
   // Fill the value
   if (value) {
@@ -409,7 +375,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
   uint64_t pin;
   int ret;
 
-  pin = 1 << gpio;
+  pin = 1LL << gpio;
 
   tbuf[3] = pin & 0xFF;
   tbuf[4] = (pin >> 8) & 0xFF;
@@ -436,7 +402,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
   uint64_t pin;
   int ret;
 
-  pin = 1 << gpio;
+  pin = 1LL << gpio;
 
   tbuf[3] = pin & 0xFF;
   tbuf[4] = (pin >> 8) & 0xFF;

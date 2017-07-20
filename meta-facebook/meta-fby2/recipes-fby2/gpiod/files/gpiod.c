@@ -35,10 +35,10 @@
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
+#define SETBIT(x, y)        (x | (1LL << y))
+#define GETBIT(x, y)        ((x & (1LL << y)) > y)
+#define CLEARBIT(x, y)      (x & (~(1LL << y)))
+#define GETMASK(y)          (1LL << y)
 
 #define MAX_NUM_SLOTS       4
 #define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
@@ -232,10 +232,10 @@ gpio_monitor_poll(uint8_t fru_flag) {
   int i, ret;
   uint8_t fru;
   uint8_t slot_12v[MAX_NUM_SLOTS + 1];
-  uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
+  uint64_t revised_pins, n_pin_val = 0, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
   gpio_pin_t *gpios;
   char pwr_state[MAX_VALUE_LEN];
-  uint32_t status;
+  uint64_t status = 0;
   bic_gpio_t gpio = {0};
 
   /* Check for initial Asserts */
@@ -262,7 +262,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       continue;
     }
 
-    memcpy(&status, (uint8_t *) &gpio, sizeof(status));
+    memcpy(&status, (uint8_t *) &gpio, 5);
 
     slot_12v[fru] = 1;
     o_pin_val[fru] = 0;

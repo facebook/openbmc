@@ -59,6 +59,11 @@ const uint8_t gpio_pin_list[] = {
   XDP_BIC_PREQ_N,
   XDP_BIC_TRST,
   FM_SYS_THROTTLE_LVC3,
+  XDP_BIC_PRDY_N,
+  XDP_PRSNT_IN_N,
+  XDP_PRSNT_OUT_N,
+  XDP_BIC_PWR_DEBUG_N,
+  FM_BIC_JTAG_SEL_N,
 };
 
 size_t gpio_pin_cnt = sizeof(gpio_pin_list)/sizeof(uint8_t);
@@ -99,6 +104,11 @@ const char *gpio_pin_name[] = {
   "XDP_BIC_PREQ_N",
   "XDP_BIC_TRST",
   "FM_SYS_THROTTLE_LVC3",
+  "XDP_BIC_PRDY_N",
+  "XDP_PRSNT_IN_N",
+  "XDP_PRSNT_OUT_N",
+  "XDP_BIC_PWR_DEBUG_N",
+  "FM_BIC_JTAG_SEL_N",
 };
 
 int

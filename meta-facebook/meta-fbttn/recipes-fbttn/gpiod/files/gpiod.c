@@ -423,6 +423,8 @@ gpio_monitor_poll(uint8_t fru_flag) {
       } else if (((strcmp(last_pwr_state, "off")) == 0) && (curr_pwr_state == SERVER_POWER_ON)) {
         pal_set_last_pwr_state(FRU_SLOT1, "on");
         syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SLOT1);
+        // Inform BIOS that BMC is ready
+        bic_set_gpio(FRU_SLOT1, GPIO_BMC_READY_N, 0);
       }
       
       usleep(DELAY_GPIOD_READ);

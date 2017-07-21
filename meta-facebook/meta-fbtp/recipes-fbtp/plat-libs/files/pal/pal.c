@@ -6662,6 +6662,11 @@ pal_is_ava_card(uint8_t riser_slot)
   char fn[32];
   bool ret;
   uint8_t riser_mux_addr = 0xe2;
+  uint8_t ava_fruid_addr = 0xa0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount, rcount;
+  int  val;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
 
@@ -6679,6 +6684,13 @@ pal_is_ava_card(uint8_t riser_slot)
     goto error_exit;
   }
 
+  //Send I2C to AVA for FRU present check
+  rcount = 1;
+  val = i2c_rdwr_msg_transfer(fd, ava_fruid_addr, tbuf, tcount, rbuf, rcount);
+  if( val < 0 ) {
+    ret = false;
+      goto error_exit;
+  }
   ret = true;
 
 error_exit:

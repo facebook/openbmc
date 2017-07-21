@@ -950,6 +950,7 @@ read_hsc_current_value(float *value) {
   int val=0;
   int ret = 0;
   static int retry = 0;
+  unsigned char revision_id;
 
   req = ipmb_txb();
 
@@ -960,16 +961,24 @@ read_hsc_current_value(float *value) {
   req->data[1] = 0x01;
   req->data[2] = 0x00;
   req->data[3] = 0x86;
-  //HSC slave addr check for SS and DS
-  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
-  read_device(path, &val);
-  if (val){ //DS
+  pal_get_board_rev_id(&revision_id);
+  if (revision_id < BOARD_REV_PVT) { //DVT
+    //HSC slave addr check for SS and DS
+    sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
+    read_device(path, &val);
+    if (val){ //DS
+      req->data[4] = 0x8A;
+      Rsence = 0.265;
+    }else{    //SS
+      req->data[4] = 0x22;
+      Rsence = 0.505;
+    }
+  } else { //PVT and MP
+    //HSC slave addr is the same for SS and DS
     req->data[4] = 0x8A;
     Rsence = 0.265;
-  }else{    //SS
-    req->data[4] = 0x22;
-    Rsence = 0.505;
   }
+
   req->data[5] = 0x00;
   req->data[6] = 0x00;
   req->data[7] = 0x01;
@@ -1020,6 +1029,7 @@ read_hsc_temp_value(float *value) {
   int val=0;
   int ret = 0;
   static int retry = 0;
+  unsigned char revision_id;
 
   req = (ipmb_req_t*)tbuf;
 
@@ -1036,13 +1046,19 @@ read_hsc_temp_value(float *value) {
   req->data[1] = 0x01;
   req->data[2] = 0x00;
   req->data[3] = 0x86;
-  //HSC slave addr check for SS and DS
-  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
-  read_device(path, &val);
-  if (val){ //DS
+  pal_get_board_rev_id(&revision_id);
+  if (revision_id < BOARD_REV_PVT) { //DVT
+    //HSC slave addr check for SS and DS
+    sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
+    read_device(path, &val);
+    if (val){ //DS
+      req->data[4] = 0x8A;
+    }else{    //SS
+      req->data[4] = 0x22;
+    }
+  } else { //PVT and MP
+    //HSC slave addr is the same for SS and DS
     req->data[4] = 0x8A;
-  }else{    //SS
-    req->data[4] = 0x22;
   }
   req->data[5] = 0x00;
   req->data[6] = 0x00;

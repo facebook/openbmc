@@ -2307,6 +2307,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   int ret;
+  uint8_t val;
   uint8_t retry = MAX_READ_RETRY;
   sensor_check_t *snr_chk;
 
@@ -2364,6 +2365,19 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if (sensor_num == SP_SENSOR_INLET_TEMP) {
         apply_inlet_correction((float *)value);
       }
+      if ((sensor_num == SP_SENSOR_P12V_SLOT1) || (sensor_num == SP_SENSOR_P12V_SLOT2) || 
+          (sensor_num == SP_SENSOR_P12V_SLOT3) || (sensor_num == SP_SENSOR_P12V_SLOT4)) {
+        /* Check whether the system is 12V off or on */
+        ret = pal_is_server_12v_on(sensor_num - SP_SENSOR_P12V_SLOT1 + 1, &val);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s: pal_is_server_12v_on failed",__func__);
+        }
+        if (!val) {
+          sprintf(str, "%.2f",*((float*)value));
+          edb_cache_set(key, str);
+          return -1;
+        }
+      }
     }
     if ((GETBIT(snr_chk->flag, UCR_THRESH) && (*((float*)value) >= snr_chk->ucr)) ||
         (GETBIT(snr_chk->flag, LCR_THRESH) && (*((float*)value) <= snr_chk->lcr))) {
@@ -2397,6 +2411,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
 int
 pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
+   
+  uint8_t val;
+  int ret;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2411,16 +2428,23 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
         *flag = GETMASK(SENSOR_VALID);
       break;
     case FRU_SPB:
-      /*
-       * TODO: This is a HACK (t11229576)
-       */
-      switch(snr_num) {
+      /*		
+       * TODO: This is a HACK (t11229576)		
+       */		
+      switch(snr_num) {		
         case SP_SENSOR_P12V_SLOT1:
         case SP_SENSOR_P12V_SLOT2:
         case SP_SENSOR_P12V_SLOT3:
         case SP_SENSOR_P12V_SLOT4:
-          *flag = GETMASK(SENSOR_VALID);
-          break;
+          /* Check whether the system is 12V off or on */
+          ret = pal_is_server_12v_on(snr_num - SP_SENSOR_P12V_SLOT1 + 1, &val);
+          if (ret < 0) {
+            syslog(LOG_ERR, "%s: pal_is_server_12v_on failed",__func__);
+          }
+          if (!val) {
+            *flag = GETMASK(SENSOR_VALID);
+          }
+          break;		
       }
     case FRU_NIC:
       break;

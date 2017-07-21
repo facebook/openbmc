@@ -1363,13 +1363,13 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case SP_SENSOR_P3V3_STBY:
           return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
         case SP_SENSOR_P12V_SLOT1:
-          return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V_SLOT2:
           return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P12V_SLOT2:
+          return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
         case SP_SENSOR_P12V_SLOT3:
-          return read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V_SLOT4:
           return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+        case SP_SENSOR_P12V_SLOT4:
+          return read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
         case SP_SENSOR_P3V3:
           return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
         case SP_SENSOR_P1V15_BMC_STBY:

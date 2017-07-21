@@ -2199,7 +2199,8 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
             *cnt = bic_sensor_cnt;
             break;
         case SLOT_TYPE_CF:
-            //To do
+            *sensor_list = (uint8_t *) dc_cf_sensor_list;
+            *cnt = dc_cf_sensor_cnt;
             break;
         case SLOT_TYPE_GP:
             *sensor_list = (uint8_t *) dc_sensor_list;
@@ -2346,10 +2347,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;
-    if(pal_get_server_power(fru, &status) < 0)
+    if(pal_get_server_power(fru, &status) < 0) 
       return -1;
     // This check helps interpret the IPMI packet loss scenario
-    if(status == SERVER_POWER_ON)
+    if(status == SERVER_POWER_ON) 
       return -1;
     strcpy(str, "NA");
   }

@@ -161,6 +161,14 @@ enum {
   DC_SENSOR_NVMe6_CTEMP = 0x8F,
 };
 
+//Crane Flat
+enum {
+  DC_CF_SENSOR_OUTLET_TEMP = 0x91,
+  DC_CF_SENSOR_INLET_TEMP = 0x92,
+  DC_CF_SENSOR_INA230_VOLT = 0x93,
+  DC_CF_SENSOR_INA230_POWER = 0x94,
+};
+
 enum{
   MEZZ_SENSOR_TEMP = 0x82,
 };
@@ -180,6 +188,8 @@ extern const uint8_t bic_discrete_list[];
 
 extern const uint8_t dc_sensor_list[];
 
+extern const uint8_t dc_cf_sensor_list[];
+
 extern const uint8_t spb_sensor_list[];
 
 extern const uint8_t nic_sensor_list[];
@@ -197,6 +207,8 @@ extern size_t bic_discrete_cnt;
 extern size_t spb_sensor_cnt;
 
 extern size_t nic_sensor_cnt;
+
+extern size_t dc_cf_sensor_cnt;
 
 int fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
 int fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);

@@ -36,6 +36,7 @@ get_sku()
 	i2cset -y $y 0x40 0x5 0xa w
      elif [[ `awk -v a=1.4 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 && `awk -v a=$SLOT_VOL -v b=1.0 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
         tmp_sku=1
+        i2cset -y $y 0x40 0x5 0xa w
      else
         tmp_sku=0
      fi

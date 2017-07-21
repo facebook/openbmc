@@ -198,6 +198,14 @@ const uint8_t dc_sensor_list[] = {
   DC_SENSOR_NVMe6_CTEMP,
 };
 
+// List of CF sensors to be monitored
+const uint8_t dc_cf_sensor_list[] = {
+  DC_CF_SENSOR_OUTLET_TEMP,
+  DC_CF_SENSOR_INLET_TEMP,
+  DC_CF_SENSOR_INA230_VOLT,
+  DC_CF_SENSOR_INA230_POWER,
+};
+
 // List of NIC sensors to be monitored
 const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
@@ -206,6 +214,7 @@ const uint8_t nic_sensor_list[] = {
 float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float dc_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float dc_cf_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 static void
 sensor_thresh_array_init() {
@@ -280,6 +289,8 @@ size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 
 size_t dc_sensor_cnt = sizeof(dc_sensor_list)/sizeof(uint8_t);
+
+size_t dc_cf_sensor_cnt = sizeof(dc_cf_sensor_list)/sizeof(uint8_t);
 
 enum {
   FAN0 = 0,
@@ -954,8 +965,19 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
            }
            sprintf(units, "");
            break;
-         case SLOT_TYPE_CF: //To do
-           sprintf(units, "");
+         case SLOT_TYPE_CF:
+           switch(sensor_num) {
+             case DC_CF_SENSOR_OUTLET_TEMP:
+             case DC_CF_SENSOR_INLET_TEMP:
+               sprintf(units, "C");
+               break;
+             case DC_CF_SENSOR_INA230_VOLT:
+               sprintf(units, "Volts");
+               break;
+             case DC_CF_SENSOR_INA230_POWER:
+               sprintf(units, "Watts");
+               break;
+           }
            break;
          case SLOT_TYPE_GP:
            switch(sensor_num) {
@@ -1068,7 +1090,8 @@ fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *va
       {
         case SLOT_TYPE_SERVER:
            break;
-        case SLOT_TYPE_CF: //To do
+        case SLOT_TYPE_CF: 
+           *value = dc_cf_sensor_threshold[sensor_num][thresh];
            break;
         case SLOT_TYPE_GP:
            *value = dc_sensor_threshold[sensor_num][thresh];
@@ -1120,10 +1143,26 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
               break;
           }
           break;
-      case SLOT_TYPE_CF: //To do
-          sprintf(name, "");
+        case SLOT_TYPE_CF:
+          switch(sensor_num) {
+            case DC_CF_SENSOR_OUTLET_TEMP:
+              sprintf(name, "DC_CF_OUTLET_TEMP");
+              break;
+            case DC_CF_SENSOR_INLET_TEMP:
+              sprintf(name, "DC_CF_INLET_TEMP");
+              break;
+            case DC_CF_SENSOR_INA230_VOLT:
+              sprintf(name, "DC_CF_INA230_VOLT");
+              break;
+            case DC_CF_SENSOR_INA230_POWER:
+              sprintf(name, "DC_CF_INA230_POWER");
+              break;
+            default:
+              sprintf(name, "");
+              break;
+          }
           break;
-      case SLOT_TYPE_GP:
+        case SLOT_TYPE_GP:
           switch(sensor_num) {
             case DC_SENSOR_OUTLET_TEMP:
               sprintf(name, "DC_OUTLET_TEMP");
@@ -1283,8 +1322,44 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           }
 
           return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
-        case SLOT_TYPE_CF: //To do
-          //
+        case SLOT_TYPE_CF: 
+          //Crane Flat
+          /* Check whether the system is 12V off or on */
+          ret = fby2_is_server_12v_on(fru, &status);
+          if (ret < 0) {
+            syslog(LOG_ERR, "fby2_get_server_power: fby2_is_server_12v_on failed");
+            return -1;
+          }
+
+          if (1 != status)
+            return -1;
+
+          switch(sensor_num) {
+            case DC_CF_SENSOR_OUTLET_TEMP:
+              if(fru == FRU_SLOT1)
+                return read_temp(DC_SLOT1_OUTLET_TEMP_DEVICE, (float*) value);
+              else
+                return read_temp(DC_SLOT3_OUTLET_TEMP_DEVICE, (float*) value);
+            case DC_CF_SENSOR_INLET_TEMP:
+              if(fru == FRU_SLOT1)
+                return read_temp(DC_SLOT1_INLET_TEMP_DEVICE, (float*) value);
+              else
+                return read_temp(DC_SLOT3_INLET_TEMP_DEVICE, (float*) value);
+            case DC_CF_SENSOR_INA230_VOLT:
+              if (fru == FRU_SLOT1)
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_1);
+              else
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_3);
+              return read_ina230_value(INA230_VOLT, path, I2C_DC_INA_ADDR, (float*) value);
+            case DC_CF_SENSOR_INA230_POWER:
+              if (fru == FRU_SLOT1)
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_1);
+              else
+                snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_3);
+              return read_ina230_value(INA230_POWER, path, I2C_DC_INA_ADDR, (float*) value);
+            default:
+              return -1;
+          }  
           break;
         case SLOT_TYPE_GP:
           //Glacier Point

@@ -333,11 +333,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
              * Raise an error and change the LPS from on to off or vice versa for deassert.
              */
             if (strcmp(pwr_state, "off")) {
-              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru])
                  pal_set_last_pwr_state(fru, "off");
-              else {
-                 break;
-              }
             }
             syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
 
@@ -346,11 +342,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
           } else {
 
             if (strcmp(pwr_state, "on")) {
-              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru])
                  pal_set_last_pwr_state(fru, "on");
-              else {
-                 break;
-              }
             }
             syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           }

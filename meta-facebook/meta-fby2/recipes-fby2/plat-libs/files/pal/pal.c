@@ -582,16 +582,16 @@ pal_get_pair_slot_type(uint8_t fru) {
   return type;
 }
 
-// Power On the server in a given slot
 static int
-server_power_on(uint8_t slot_id) {
+power_on_server_physically(uint8_t slot_id){
   char vpath[64] = {0};
+  uint8_t ret = -1;
+  uint8_t retry = MAX_READ_RETRY;
+  bic_gpio_t gpio;
 
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
+  syslog(LOG_WARNING, "%s is on going for slot%d\n",__func__,slot_id);
+
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
-
   if (write_device(vpath, "1")) {
     return -1;
   }
@@ -604,6 +604,63 @@ server_power_on(uint8_t slot_id) {
 
   if (write_device(vpath, "1")) {
     return -1;
+  }
+
+  // Wait for server power good ready  
+  sleep(2);
+
+  while (retry) {
+    ret = bic_get_gpio(slot_id, &gpio);
+    if (!ret) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "%s: Get response successfully for slot%d\n",__func__,slot_id);
+#endif
+      break;
+    }
+    msleep(50);
+    retry--;
+  }
+
+  if (ret) {
+#ifdef DEBUG
+     syslog(LOG_WARNING, "%s: Bridge IC is no response for slot%d\n",__func__,slot_id);
+#endif
+     return -1;
+  }
+
+  // Check power status
+  if (!gpio.pwrgood_cpu) {
+    syslog(LOG_WARNING, "%s: Power on is failed for slot%d\n",__func__,slot_id);
+    return -1;
+  }
+
+  return 0;
+}
+
+// Power On the server in a given slot
+static int
+server_power_on(uint8_t slot_id) {
+  char vpath[64] = {0};
+  int loop = 0;
+  int max_retry = 5;
+  int val = 0;
+
+  if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
+
+  // Power on server
+  for (loop = 0; loop < max_retry; loop++){
+    val = power_on_server_physically(slot_id);
+    if (val == 0) {
+      break;
+    }
+    syslog(LOG_WARNING, "%s(): Power on server failed for %d time(s).\n", __func__, loop);
+    sleep(1);
+
+    // Max retry case
+    if (loop == (max_retry-1))
+      return -1;
   }
 
   return 0;

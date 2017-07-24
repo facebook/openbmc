@@ -256,22 +256,22 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.626;
   spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.2;
   spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 10.8;
-  spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 47.705;
+  spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 52;
   spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 525;
+  spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 625;
 
   //DC
   dc_sensor_threshold[DC_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
   dc_sensor_threshold[DC_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   dc_sensor_threshold[DC_SENSOR_INA230_VOLT][UCR_THRESH] = 13.27;
   dc_sensor_threshold[DC_SENSOR_INA230_VOLT][LCR_THRESH] = 10.74;
-  dc_sensor_threshold[DC_SENSOR_INA230_POWER][UCR_THRESH] = 155;
-  dc_sensor_threshold[DC_SENSOR_NVMe1_CTEMP][UCR_THRESH] = 95;
-  dc_sensor_threshold[DC_SENSOR_NVMe2_CTEMP][UCR_THRESH] = 95;
-  dc_sensor_threshold[DC_SENSOR_NVMe3_CTEMP][UCR_THRESH] = 95;
-  dc_sensor_threshold[DC_SENSOR_NVMe4_CTEMP][UCR_THRESH] = 95;
-  dc_sensor_threshold[DC_SENSOR_NVMe5_CTEMP][UCR_THRESH] = 95;
-  dc_sensor_threshold[DC_SENSOR_NVMe6_CTEMP][UCR_THRESH] = 95;
+  dc_sensor_threshold[DC_SENSOR_INA230_POWER][UCR_THRESH] = 100;
+  dc_sensor_threshold[DC_SENSOR_NVMe1_CTEMP][UCR_THRESH] = 75;
+  dc_sensor_threshold[DC_SENSOR_NVMe2_CTEMP][UCR_THRESH] = 75;
+  dc_sensor_threshold[DC_SENSOR_NVMe3_CTEMP][UCR_THRESH] = 75;
+  dc_sensor_threshold[DC_SENSOR_NVMe4_CTEMP][UCR_THRESH] = 75;
+  dc_sensor_threshold[DC_SENSOR_NVMe5_CTEMP][UCR_THRESH] = 75;
+  dc_sensor_threshold[DC_SENSOR_NVMe6_CTEMP][UCR_THRESH] = 75;
 
 
   // MEZZ

@@ -52,6 +52,11 @@
 #define UART3_TXD (1 << 22)
 #define UART4_TXD (1 << 30)
 
+#define AST_VIC_BASE 0x1e6c0000
+#define HW_HB_STATUS_OFFSET 0x60
+#define HB_LED_OUTPUT_OFFSET 0x64
+#define SW_BLINK (1 << 4)
+
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_OFF 6
 #define DELAY_POWER_CYCLE 10
@@ -1789,19 +1794,30 @@ pal_set_led(uint8_t slot, uint8_t status) {
 // Update Heartbeet LED
 int
 pal_set_hb_led(uint8_t status) {
-  char path[64] = {0};
-  char *val;
+  int vic_fd;
+  void *vic_reg;
+  void *vic_hb_mode;
+  void *vic_hb_output;
+  uint32_t ctrl;
 
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_HB_LED);
-  if (write_device(path, val)) {
+  vic_fd = open("/dev/mem", O_RDWR|O_SYNC);
+  if (vic_fd < 0) {
     return -1;
   }
+
+  vic_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, vic_fd, AST_VIC_BASE);
+  vic_hb_mode = (char*)vic_reg + HW_HB_STATUS_OFFSET;
+  vic_hb_output = (char*)vic_reg + HB_LED_OUTPUT_OFFSET;
+
+  ctrl = *(volatile uint32_t*) vic_hb_mode;
+  if (!(ctrl & SW_BLINK)) {
+    ctrl |= SW_BLINK;
+    *(volatile uint32_t*) vic_hb_mode = ctrl;
+  }
+  *(volatile uint32_t*) vic_hb_output = status;
+
+  munmap(vic_reg, PAGE_SIZE);
+  close(vic_fd);
 
   return 0;
 }

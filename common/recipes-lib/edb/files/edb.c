@@ -72,7 +72,7 @@ edb_cache_set(char *key, char *value) {
   rc = fwrite(value, 1, strlen(value), fp);
   if (rc < 0) {
 #ifdef DEBUG
-     syslog(LOG_WARNING, "cache_set: failed to write to %s", kpath;
+     syslog(LOG_WARNING, "cache_set: failed to write to %s", kpath);
 #endif
      fclose(fp);
      return ENOENT;

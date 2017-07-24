@@ -33,9 +33,11 @@ get_sku()
      y=$(($i*2+1))
      if [[ `awk -v a=1.9 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 &&  `awk -v a=$SLOT_VOL -v b=1.5 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
         tmp_sku=2
-	i2cset -y $y 0x40 0x5 0xa w
+        i2cset -y $y 0x40 0x5 0xa w
      elif [[ `awk -v a=1.4 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 && `awk -v a=$SLOT_VOL -v b=1.0 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
         tmp_sku=1
+        i2cset -y $y 0x70 0x5 c
+        usleep 10000
         i2cset -y $y 0x40 0x5 0xa w
      else
         tmp_sku=0

@@ -38,25 +38,28 @@ function device_config() {
         if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] ; then
            gpio_set $PE_BUFF_OE_0 0
            gpio_set $PE_BUFF_OE_1 0
-          
+
            devmem $I2C_REG w 0xFFF77304
-        
+
+           if [ $(get_slot_type $SLOT_N) == "2" ]; then
+              # I2C mux, 0xE2
+              i2c_add_device $SLOT_B 0x71 pca9551
+              # I2C GPIO, 0x40
+              i2c_add_device $SLOT_B 0x20 pca9551
+           fi
+
            # EEPROM, 0xA2
            i2c_add_device $SLOT_B 0x51 24c128
            # Inlet temp sensor, 0x9A
            i2c_add_device $SLOT_B 0x4d tmp75
            # outlet temp sensor, 0x9C
            i2c_add_device $SLOT_B 0x4e tmp75
-           # I2C mux, 0xE2
-           i2c_add_device $SLOT_B 0x71 pca9551
-           # I2C GPIO, 0x40
-           i2c_add_device $SLOT_B 0x20 pca9551
            # Voltage sensor, 0x80
            i2c_add_device $SLOT_B 0x40 ina230
         else
            gpio_set $PE_BUFF_OE_0 1
            gpio_set $PE_BUFF_OE_1 1
-       
+
            devmem $I2C_REG w 0xFFF5E700
         fi
       fi

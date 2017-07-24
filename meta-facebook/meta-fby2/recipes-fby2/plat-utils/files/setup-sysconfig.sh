@@ -62,10 +62,7 @@ if [[ $(is_server_prsnt 1) == "1" && $(get_slot_type 1) != "0" ]]; then
 
    devmem 0x1e78a084 w 0xFFF77304
 
-   if [ $(get_slot_type 1) == "1" ]; then
-      # I2C mux, 0xE0
-      i2cset -y 1 0x70 0x05 c
-   else
+   if [ $(get_slot_type 1) == "2" ]; then
       # I2C mux, 0xE2
       echo pca9551 0x71 > /sys/class/i2c-dev/i2c-1/device/new_device
       # I2C GPIO, 0x40
@@ -89,10 +86,7 @@ if [[ $(is_server_prsnt 3) == "1" && $(get_slot_type 3) != "0" ]]; then
 
    devmem 0x1e78a184 w 0xFFF77304
 
-   if [ $(get_slot_type 3) == "1" ]; then
-      # I2C mux, 0xE0
-      i2cset -y 5 0x70 0x05 c
-   else
+   if [ $(get_slot_type 3) == "2" ]; then
       # I2C mux, 0xE2
       echo pca9551 0x71 > /sys/class/i2c-dev/i2c-5/device/new_device
       # I2C GPIO, 0x40

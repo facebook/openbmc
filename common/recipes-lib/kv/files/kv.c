@@ -77,7 +77,7 @@ kv_set_bin(char *key, char *value, unsigned char len) {
   ret = fwrite(value, 1, len, fp);
   if (ret < 0) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "kv_set: failed to write to %s", kpath;
+    syslog(LOG_WARNING, "kv_set: failed to write to %s", kpath);
 #endif
     fclose(fp);
     return ENOENT;

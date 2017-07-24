@@ -840,12 +840,27 @@ write_device(const char *device, const char *value) {
 }
 
 static int
-read_temp_attr(const char *device, const char *attr, float *value) {
+read_temp_attr(uint8_t sensor_num, const char *device, const char *attr, float *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
   FILE *fp;
   int size;
+  static unsigned int retry[4] = {0};
+  uint8_t i_retry = -1;
+
+  switch(sensor_num) {
+    case MB_SENSOR_INLET_TEMP:
+      i_retry = 0; break;
+    case MB_SENSOR_OUTLET_TEMP:
+      i_retry = 1; break;
+    case MB_SENSOR_INLET_REMOTE_TEMP:
+      i_retry = 2; break;
+    case MB_SENSOR_OUTLET_REMOTE_TEMP:
+      i_retry = 3; break;
+    default:
+      break;
+  }
 
   // Get current working directory
   snprintf(
@@ -867,13 +882,21 @@ read_temp_attr(const char *device, const char *attr, float *value) {
   }
 
   *value = ((float)tmp)/UNIT_DIV;
+  if( i_retry != -1) {
+    if( *value > mb_sensor_threshold[sensor_num][UCR_THRESH] && retry[i_retry] < 5) {
+      retry[i_retry]++;
+      return READING_SKIP;
+    } else {
+      retry[i_retry] = 0;
+    }
+  }
 
   return 0;
 }
 
 static int
-read_temp(const char *device, float *value) {
-  return read_temp_attr(device, "temp1_input", value);
+read_temp(uint8_t sensor_num, const char *device, float *value) {
+  return read_temp_attr(sensor_num, device, "temp1_input", value);
 }
 
 static int
@@ -3430,18 +3453,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
       // Temp. Sensors
       case MB_SENSOR_INLET_TEMP:
-        ret = read_temp(MB_INLET_TEMP_DEVICE, (float*) value);
+        ret = read_temp(MB_SENSOR_INLET_TEMP, MB_INLET_TEMP_DEVICE, (float*) value);
         break;
       case MB_SENSOR_OUTLET_TEMP:
-        ret = read_temp(MB_OUTLET_TEMP_DEVICE, (float*) value);
+        ret = read_temp(MB_SENSOR_OUTLET_TEMP, MB_OUTLET_TEMP_DEVICE, (float*) value);
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = read_temp_attr(MB_SENSOR_INLET_REMOTE_TEMP, MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
         if (!ret)
           apply_inlet_correction((float *) value);
         break;
       case MB_SENSOR_OUTLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = read_temp_attr(MB_SENSOR_OUTLET_REMOTE_TEMP, MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
         break;
       case MB_SENSOR_P12V:
         ret = read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
@@ -3499,18 +3522,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
       // Temp. Sensors
       case MB_SENSOR_INLET_TEMP:
-        ret = read_temp(MB_INLET_TEMP_DEVICE, (float*) value);
+        ret = read_temp(MB_SENSOR_INLET_TEMP, MB_INLET_TEMP_DEVICE, (float*) value);
         break;
       case MB_SENSOR_OUTLET_TEMP:
-        ret = read_temp(MB_OUTLET_TEMP_DEVICE, (float*) value);
+        ret = read_temp(MB_SENSOR_OUTLET_TEMP, MB_OUTLET_TEMP_DEVICE, (float*) value);
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = read_temp_attr(MB_SENSOR_INLET_REMOTE_TEMP, MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
         if (!ret)
           apply_inlet_correction((float *) value);
         break;
       case MB_SENSOR_OUTLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = read_temp_attr(MB_SENSOR_OUTLET_REMOTE_TEMP, MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
         break;
       // Fan Sensors
       case MB_SENSOR_FAN0_TACH:

@@ -1,5 +1,5 @@
 #!/bin/sh
 . /usr/local/fbpackages/utils/ast-functions
 
-ARGS="mb nic riser_slot2 riser_slot3 riser_slot4"
+ARGS="mb nic"
 exec /usr/local/bin/sensord $ARGS

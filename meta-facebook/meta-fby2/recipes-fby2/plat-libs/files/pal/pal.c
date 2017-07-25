@@ -75,6 +75,7 @@
 
 #define MAX_READ_RETRY 10
 #define MAX_CHECK_RETRY 2
+#define MAX_BIC_CHECK_RETRY 15
 
 #define PLATFORM_FILE "/tmp/system.bin"
 #define SLOT_FILE "/tmp/slot.bin"
@@ -1055,6 +1056,8 @@ server_12v_on(uint8_t slot_id) {
   uint8_t value;
   uint8_t slot_prsnt, slot_latch;
   int rc, pid_file;
+  int retry = MAX_BIC_CHECK_RETRY;
+  bic_gpio_t gpio;
 
   // Check if another hotservice-reinit.sh instance of slotX is running
   while(1) {
@@ -1106,6 +1109,19 @@ server_12v_on(uint8_t slot_id) {
 
   rc = flock(pid_file, LOCK_UN);
   close(pid_file);
+
+  // Wait for BIC ipmb interface is ready
+  while (retry) {
+    ret = bic_get_gpio(slot_id, &gpio);
+    if (!ret)
+      break;
+    sleep(1);
+    retry--;
+  }
+
+  if (ret) {
+    syslog(LOG_INFO, "%s: bic_get_gpio returned error during 12V off to on for fru %d",__func__ ,slot_id);
+  }
 
   return 0;
 }

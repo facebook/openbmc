@@ -45,12 +45,15 @@
 
 static void
 print_usage() {
-  printf("Usage: sensor-util [ %s ] <--threshold> <sensor num>\n",
-      pal_fru_list);
-  printf("Usage: sensor-util [ %s ] <--history [period: 1 ~ %d (s)]> <sensor num>\n",
-      pal_fru_list, MAX_HISTORY_PERIOD);
-  printf("Usage: sensor-util [ %s ] <--history-clear> <sensor num>\n",
-      pal_fru_list);
+  printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
+  printf("       sensor-util [fru] <option> ..\n\n");
+  printf("       [fru]: %s\n", pal_fru_list);
+  printf("       <sensor num>: 0xXX (Omit [sensor num] means all sensors.)\n");
+  printf("       <option>:\n");
+  printf("         --threshold                        show all thresholds\n");
+  printf("         --history <period: [1 ~ %4d] s>   show max, min and average values\n",
+         MAX_HISTORY_PERIOD);
+  printf("         --history-clear                    clear history values\n");
 }
 
 static void
@@ -271,7 +274,7 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
 int
 main(int argc, char **argv) {
 
-  int i;
+  int i = 2;
   int ret;
   uint8_t fru;
   uint8_t num = 0;
@@ -285,46 +288,47 @@ main(int argc, char **argv) {
     exit(-1);
   }
 
-  i = 3; /* Starting at argument 3*/
-  while (argc > 2 && i <= argc) {
-    if (!(strcmp(argv[i-1], "--threshold"))) {
+  ret = pal_get_fru_id(argv[1], &fru);
+  if (ret < 0) {
+    print_usage();
+    return ret;
+  }
+
+  if (argc > 2) {
+    errno = 0;
+    num = (uint8_t) strtol(argv[2], NULL, 0);
+    if ((errno == 0) && (num > 0)) {
+      i++;
+    } else {
+      num = 0;
+    }
+  }
+
+  if (argc > i) {
+    if (!(strcmp(argv[i], "--threshold"))) {
       threshold = true;
-    } else if (!strcmp(argv[i-1], "--history")) {
+    } else if (!(strcmp(argv[i], "--history"))) {
       history = true;
-      if (argc > i) {
+      if (argc == (i+2)) {
         errno = 0;
-        period = strtol(argv[i], NULL, 0);
+        period = strtol(argv[i+1], NULL, 0);
         if (errno || (period <= 0) || (period > MAX_HISTORY_PERIOD)) {
           print_usage();
           exit(-1);
         }
-        i++;
       }
-    } else if (!(strcmp(argv[i-1], "--history-clear"))) {
+    } else if (!(strcmp(argv[i], "--history-clear"))) {
       history_clear = true;
     } else {
-      errno = 0;
-      num = (uint8_t) strtol(argv[i-1], NULL, 0);
-      if (errno || (num <=0)) { //return of strtol() for garbage string is 0
-        print_usage();
-        exit(-1);
-      }
+      print_usage();
+      exit(-1);
     }
-
-    i++;
   }
-
   if ((threshold && history)
       || (threshold && history_clear)
       || (history && history_clear)) {
     print_usage();
     exit(-1);
-  }
-
-  ret = pal_get_fru_id(argv[1], &fru);
-  if (ret < 0) {
-    print_usage();
-    return ret;
   }
 
   if (fru == 0) {

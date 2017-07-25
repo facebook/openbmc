@@ -21,34 +21,38 @@
 #pragma once
 #include <string>
 #include <gio/gio.h>
-#include <vector>
+
+namespace openbmc {
+namespace qin {
 
 /*
  * This class is implemented to communicate with FruService via DBus
  */
 class FruService {
   private:
-    std::string dbusName_;             //well known dbus name for FruService
-    std::string dbusPath_;             //path for FruService object to push FruService
-    std::string dbusInteface_;         //Interface implemented by FruService to push FruService
-    GDBusProxy* proxy_;                // proxy to FruService dbus object
-    bool isAvailable_;                 //Flag whether FruService is available on dbus
+    std::string dbusName_;      //well known dbus name for FruService
+    std::string dbusPath_;      //path for FruService object to push FruService
+    std::string dbusInteface_;  //Interface implemented by FruService
+    GDBusProxy* proxy_;         // proxy to FruService dbus object
+    bool isAvailable_;          //Flag whether FruService is available on dbus
 
   public:
     /*
      * Constructor
      */
-    FruService (std::string dbusName, std::string dbusPath, std::string dbusInteface);
+    FruService (const std::string & dbusName,
+                const std::string & dbusPath,
+                const std::string & dbusInteface);
 
     /*
      * Returns dbusName of FruService
      */
-    std::string const& getDBusName() const;
+    const std::string & getDBusName() const;
 
     /*
      * Returns dbusPath of FruService
      */
-    std::string const& getDBusPath() const;
+    const std::string & getDBusPath() const;
 
     /*
      * Returns whether FruService is available
@@ -65,18 +69,21 @@ class FruService {
      * Reset fruTree at FruService
      * Returns whether operation is successful or not
      */
-    bool reset() const;
+    bool reset();
 
     /*
      * Add FRU at FruService
      * Returns whether operation is successful or not
      */
-    bool addFRU(std::string fruParentPath, std::string fruJson) const;
+    bool addFRU(const std::string & fruParentPath, const std::string & fruJson);
 
 
     /*
      * Remove FRU and its subtree from FruService
      * Returns whether operation is successful or not
      */
-    bool removeFRU(std::string fruPath) const;
+    bool removeFRU(std::string fruPath);
 };
+
+} // namespace qin
+} // namespace openbmc

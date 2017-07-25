@@ -19,13 +19,10 @@
  */
 
 #pragma once
-#include <string>
-#include <glog/logging.h>
-#include <gio/gio.h>
-#include <dbus-utils/dbus-interface/DBusObjectInterface.h>
-#include "FRU.h"
-#include "Sensor.h"
-using namespace openbmc::qin;
+#include <dbus-utils/DBusInterfaceBase.h>
+
+namespace openbmc {
+namespace qin {
 
 class DBusPlatformSvcInterface: public DBusInterfaceBase {
   public:
@@ -42,12 +39,6 @@ class DBusPlatformSvcInterface: public DBusInterfaceBase {
     ~DBusPlatformSvcInterface();
 
     /**
-     * All the subfunctions in the callback handler should comply
-     * with what is specified in the xml.
-     */
-    static const char* xml;
-
-    /**
      * Handles the callback by matching the method names in the DBus message
      * to the functions. The above callbacks should be invoked here with
      * method name specified. Checkout g_dbus_connection_register_object in
@@ -62,6 +53,7 @@ class DBusPlatformSvcInterface: public DBusInterfaceBase {
                                GDBusMethodInvocation* invocation,
                                gpointer               arg);
 
+  private:
     /**
      * Callback for getInformation method
      * Returns access Information
@@ -71,3 +63,6 @@ class DBusPlatformSvcInterface: public DBusInterfaceBase {
                                      GDBusMethodInvocation* invocation,
                                      gpointer               arg);
 };
+
+} // namespace qin
+} // namespace openbmc

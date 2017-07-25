@@ -18,17 +18,17 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <ctime>
 #include <string>
-#include <stdexcept>
-#include <system_error>
 #include <glog/logging.h>
 #include <gio/gio.h>
 #include <object-tree/Object.h>
 #include "DBusPlatformSvcInterface.h"
 #include "PlatformObjectTree.h"
 
-const char* DBusPlatformSvcInterface::xml =
+namespace openbmc {
+namespace qin {
+
+static const char* xml =
 "<!DOCTYPE node PUBLIC"
 " \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
 " \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
@@ -57,36 +57,43 @@ DBusPlatformSvcInterface::~DBusPlatformSvcInterface() {
   g_dbus_node_info_unref(info_);
 }
 
-void DBusPlatformSvcInterface::getAccessInformation(GDBusConnection*       connection,
-                                                    const char*            objectPath,
-                                                    GDBusMethodInvocation* invocation,
-                                                    gpointer               arg) {
+void DBusPlatformSvcInterface::getAccessInformation(
+                                         GDBusConnection*       connection,
+                                         const char*            objectPath,
+                                         GDBusMethodInvocation* invocation,
+                                         gpointer               arg) {
   LOG(INFO) << "getAccessInformation : " << objectPath;
-  PlatformObjectTree* platformObjectTree = static_cast<PlatformObjectTree*>(arg);
+  PlatformObjectTree* platformObjectTree =
+              static_cast<PlatformObjectTree*>(arg);
 
   Object* obj = platformObjectTree->getObject(std::string(objectPath));
 
   //If object of type Sensor return Sensor access (SensorService) Information
-  //todo : Once FRU service is implemented FruService Information will be returned for FRU object
+  //todo : Once FRU service is implemented,
+  // FruService Information will be returned for FRU object
   Sensor* sensor;
   if ((sensor = dynamic_cast<Sensor*>(obj)) != nullptr) {
     //obj of type Sensor
-    //dbusPath of obj is Base dbus path for Sensor Service + (objectpath - platform service base path)
-    std::string dbusPath = platformObjectTree->getSensorService()->getDBusPath() +
-                           std::string(objectPath).erase(0, platformObjectTree->getPlatformServiceBasePath().length());
+    //dbusPath of obj is Base dbus path for Sensor Service
+    //                   + (objectpath - platform service base path)
+    std::string dbusPath =
+              platformObjectTree->getSensorService()->getDBusPath() +
+              std::string(objectPath).erase(0,
+                    platformObjectTree->getPlatformServiceBasePath().length());
 
-    g_dbus_method_invocation_return_value(invocation,
-                                          g_variant_new("(sss)",
-                                          "Sensor",
-                                          platformObjectTree->getSensorService()->getDBusName().c_str(),
-                                          dbusPath.c_str()));
+    g_dbus_method_invocation_return_value(
+              invocation,
+              g_variant_new("(sss)",
+              "Sensor",
+              platformObjectTree->getSensorService()->getDBusName().c_str(),
+              dbusPath.c_str()));
   }
   else {
     g_dbus_method_invocation_return_value(invocation,
-                                          g_variant_new("(sss)",
-                                          "PlatformService",
-                                          ((DBus*)platformObjectTree->getIpc())->getName().c_str(),
-                                          objectPath));
+              g_variant_new("(sss)",
+              "PlatformService",
+              ((DBus*)platformObjectTree->getIpc())->getName().c_str(),
+              objectPath));
   }
 }
 
@@ -106,3 +113,6 @@ void DBusPlatformSvcInterface::methodCallBack(
     getAccessInformation(connection, objectPath, invocation, arg);
   }
 }
+
+} // namespace qin
+} // namespace openbmc

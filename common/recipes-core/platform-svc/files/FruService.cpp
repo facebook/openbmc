@@ -21,18 +21,23 @@
 #include <glog/logging.h>
 #include "FruService.h"
 
-FruService::FruService (std::string dbusName, std::string dbusPath, std::string dbusInteface) {
+namespace openbmc {
+namespace qin {
+
+FruService::FruService (const std::string & dbusName,
+                        const std::string & dbusPath,
+                        const std::string & dbusInteface) {
   this->dbusName_ = dbusName;
   this->dbusPath_ = dbusPath;
   this->dbusInteface_ = dbusInteface;
   isAvailable_ = false;
 }
 
-std::string const& FruService::getDBusName() const{
+const std::string & FruService::getDBusName() const{
   return dbusName_;
 }
 
-std::string const& FruService::getDBusPath() const{
+const std::string & FruService::getDBusPath() const{
   return dbusPath_;
 }
 
@@ -60,7 +65,8 @@ bool FruService::setIsAvailable(bool isAvailable) {
 
     if (error != nullptr) {
       //Error in setting up proxy_
-      LOG(INFO) << "Error in setting up proxy to " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in setting up proxy to "
+                 << dbusName_ << " :" << error->message;
       return false;
     }
   }
@@ -74,7 +80,7 @@ bool FruService::setIsAvailable(bool isAvailable) {
   return true;
 }
 
-bool FruService::reset() const{
+bool FruService::reset() {
   if (isAvailable_) {
     GError *error = nullptr;
     // Reset FruTree at Fru Service
@@ -88,7 +94,7 @@ bool FruService::reset() const{
         &error);
 
     if (error != nullptr) {
-      LOG(INFO) << "Error in addFRU " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in reset " << dbusName_ << " :" << error->message;
     }
     else {
       return true;
@@ -98,24 +104,25 @@ bool FruService::reset() const{
   return false;
 }
 
-bool FruService::addFRU(std::string fruParentPath, std::string fruJson) const {
+bool FruService::addFRU(const std::string & fruParentPath,
+                        const std::string & fruJson) {
   LOG(INFO) << "addFRU " << fruParentPath << " " << fruJson;
 
   if (isAvailable_) {
     GError *error = nullptr;
-    fruParentPath = dbusPath_ + fruParentPath;
+    std::string path = dbusPath_ + fruParentPath;
 
     g_dbus_proxy_call_sync(
           proxy_,
           "addFRU",
-          g_variant_new("(ss)", fruParentPath.c_str(), fruJson.c_str()),
+          g_variant_new("(ss)", path.c_str(), fruJson.c_str()),
           G_DBUS_CALL_FLAGS_NONE,
           -1,
           nullptr,
           &error);
 
     if (error != nullptr) {
-      LOG(INFO) << "Error in addFRU " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in addFRU " << dbusName_ << " :" << error->message;
     }
     else {
       return true;
@@ -125,11 +132,12 @@ bool FruService::addFRU(std::string fruParentPath, std::string fruJson) const {
   return false;
 }
 
-bool FruService::removeFRU(std::string fruPath) const {
+bool FruService::removeFRU(std::string fruPath) {
   LOG(INFO) << "removeFRU " << fruPath;
 
   if (isAvailable_) {
     GError *error = nullptr;
+    fruPath = dbusPath_ + fruPath;
     g_dbus_proxy_call_sync(
         proxy_,
         "removeFRU",
@@ -140,7 +148,8 @@ bool FruService::removeFRU(std::string fruPath) const {
         &error);
 
     if (error != nullptr) {
-      LOG(INFO) << "Error in removeFRU " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in removeFRU "
+                 << dbusName_ << " :" << error->message;
     }
     else {
       return true;
@@ -149,3 +158,6 @@ bool FruService::removeFRU(std::string fruPath) const {
 
   return false;
 }
+
+} // namespace qin
+} // namespace openbmc

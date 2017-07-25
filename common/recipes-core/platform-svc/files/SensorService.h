@@ -23,32 +23,37 @@
 #include <gio/gio.h>
 #include <vector>
 
+namespace openbmc {
+namespace qin {
+
 /*
  * This class is implemented to communicate with SensorService via DBus
  */
 class SensorService {
   private:
-    std::string dbusName_;             //well known dbus name for SensorService
-    std::string dbusPath_;             //path for SensorService object to push sensorTree
-    std::string dbusInteface_;         //Interface implemented by SensorService to push sensorTree
-    GDBusProxy* proxy_;                // proxy to SensorService dbus object
-    bool isAvailable_;                 //Flag whether SensorService is available on dbus
+    std::string dbusName_;     //well known dbus name for SensorService
+    std::string dbusPath_;     //path for SensorService object
+    std::string dbusInteface_; //Interface implemented by SensorService
+    GDBusProxy* proxy_;        // proxy to SensorService dbus object
+    bool isAvailable_;         //Flag whether SensorService is available on dbus
 
   public:
     /*
      * Constructor
      */
-    SensorService (std::string dbusName, std::string dbusPath, std::string dbusInteface);
+    SensorService (const std::string & dbusName,
+                   const std::string & dbusPath,
+                   const std::string & dbusInteface);
 
     /*
      * Returns dbusName of SensorService
      */
-    std::string const& getDBusName() const;
+    const std::string & getDBusName() const;
 
     /*
      * Returns dbusPath of SensorService
      */
-    std::string const& getDBusPath() const;
+    const std::string & getDBusPath() const;
 
     /*
      * Returns whether SensorService is available
@@ -65,23 +70,28 @@ class SensorService {
      * Reset sensorTree at SensorService
      * Returns whether operation is successful or not
      */
-    bool reset() const;
+    bool reset();
 
     /*
      * Add FRU at SensorService
      * Returns whether operation is successful or not
      */
-    bool addFRU(std::string fruParentPath, std::string fruJson) const;
+    bool addFRU(const std::string & fruParentPath,
+                const std::string & fruJson);
 
     /*
      * Add Sensors under FRU at SensorService
      * Returns whether operation is successful or not
      */
-    bool addSensors(std::string fruPath, std::vector<std::string> sensorJsonList) const;
+    bool addSensors(const std::string & fruPath,
+                    const std::vector<std::string> & sensorJsonList);
 
     /*
      * Remove FRU and its subtree from SensorService
      * Returns whether operation is successful or not
      */
-    bool removeFRU(std::string fruPath) const;
+    bool removeFRU(std::string fruPath);
 };
+
+} // namespace qin
+} // namespace openbmc

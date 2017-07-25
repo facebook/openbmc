@@ -21,11 +21,12 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include <functional>
 #include <nlohmann/json.hpp>
 #include <object-tree/Object.h>
 #include "PlatformObjectTree.h"
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 /**
  * Json parser to parse the json file containing the information for
@@ -104,3 +105,6 @@ class PlatformJsonParser {
                             PlatformObjectTree   &platformTree,
                             const std::string    &parentPath);
 };
+
+} // namespace qin
+} // namespace openbmc

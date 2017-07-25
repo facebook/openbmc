@@ -1,5 +1,5 @@
 /*
- * Sensor.h
+ * HotPlugDetectionMechanism.h
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,34 +19,18 @@
  */
 
 #pragma once
-#include <string>
-#include <cstdint>
-#include <stdlib.h>
-#include <stdio.h>
-#include <object-tree/Object.h>
-#include "FRU.h"
 
 namespace openbmc {
 namespace qin {
-
-class Sensor : public Object{
-  private:
-    std::string sensorJson_;   // string representation of Sensor json (nlohmann) object,
-
+/*
+ * Abstract class for HotPlugDetectionMechanism
+ */
+class HotPlugDetectionMechanism {
   public:
     /*
-     * Constructor
+     * Detects availability of FRU and returns whether fru is available or not
      */
-    Sensor (const std::string &name, Object* parent, const std::string &sensorJson) : Object(name, parent){
-      this->sensorJson_ = sensorJson;
-    }
-
-    /*
-     * Returns string representation of Sensor Json object.
-     */
-    std::string const & getSensorJson() const {
-      return sensorJson_;
-    }
+    virtual bool detectAvailability() = 0;
 };
 } // namespace qin
 } // namespace openbmc

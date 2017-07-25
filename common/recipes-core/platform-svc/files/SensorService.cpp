@@ -21,18 +21,23 @@
 #include <glog/logging.h>
 #include "SensorService.h"
 
-SensorService::SensorService (std::string dbusName, std::string dbusPath, std::string dbusInteface) {
+namespace openbmc {
+namespace qin {
+
+SensorService::SensorService (const std::string & dbusName,
+                              const std::string & dbusPath,
+                              const std::string & dbusInteface) {
   this->dbusName_ = dbusName;
   this->dbusPath_ = dbusPath;
   this->dbusInteface_ = dbusInteface;
   isAvailable_ = false;
 }
 
-std::string const& SensorService::getDBusName() const{
+const std::string & SensorService::getDBusName() const{
   return dbusName_;
 }
 
-std::string const& SensorService::getDBusPath() const{
+const std::string & SensorService::getDBusPath() const{
   return dbusPath_;
 }
 
@@ -60,7 +65,8 @@ bool SensorService::setIsAvailable(bool isAvailable) {
 
     if (error != nullptr) {
       //Error in setting up proxy_
-      LOG(INFO) << "Error in setting up proxy to " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in setting up proxy to "
+                 << dbusName_ << " :" << error->message;
       return false;
     }
   }
@@ -74,7 +80,7 @@ bool SensorService::setIsAvailable(bool isAvailable) {
   return true;
 }
 
-bool SensorService::reset() const{
+bool SensorService::reset() {
   if (isAvailable_) {
     GError *error = nullptr;
     // Reset SensorTree Sensor Service
@@ -88,7 +94,7 @@ bool SensorService::reset() const{
         &error);
 
     if (error != nullptr) {
-      LOG(INFO) << "Error in addFRU " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in reset " << dbusName_ << " :" << error->message;
     }
     else {
       return true;
@@ -98,24 +104,25 @@ bool SensorService::reset() const{
   return false;
 }
 
-bool SensorService::addFRU(std::string fruParentPath, std::string fruJson) const {
+bool SensorService::addFRU(const std::string & fruParentPath,
+                           const std::string & fruJson) {
   LOG(INFO) << "addFRU " << fruParentPath << " " << fruJson;
 
   if (isAvailable_) {
     GError *error = nullptr;
-    fruParentPath = dbusPath_ + fruParentPath;
+    std::string path = dbusPath_ + fruParentPath;
 
     g_dbus_proxy_call_sync(
           proxy_,
           "addFRU",
-          g_variant_new("(ss)", fruParentPath.c_str(), fruJson.c_str()),
+          g_variant_new("(ss)", path.c_str(), fruJson.c_str()),
           G_DBUS_CALL_FLAGS_NONE,
           -1,
           nullptr,
           &error);
 
     if (error != nullptr) {
-      LOG(INFO) << "Error in addFRU " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in addFRU " << dbusName_ << " :" << error->message;
     }
     else {
       return true;
@@ -125,13 +132,14 @@ bool SensorService::addFRU(std::string fruParentPath, std::string fruJson) const
   return false;
 }
 
-bool SensorService::addSensors(std::string fruPath, std::vector<std::string> sensorJsonList) const {
+bool SensorService::addSensors(const std::string & fruPath,
+                               const std::vector<std::string> & sensorJsonList) {
   LOG(INFO) << "addSensors at " << fruPath;
 
   if (isAvailable_) {
     GError *error = nullptr;
     GVariantBuilder* builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-    fruPath = dbusPath_ + fruPath;
+    std::string path = dbusPath_ + fruPath;
 
     for (auto &it : sensorJsonList) {
       g_variant_builder_add(builder, "s", it.c_str());
@@ -140,7 +148,7 @@ bool SensorService::addSensors(std::string fruPath, std::vector<std::string> sen
     g_dbus_proxy_call_sync(
         proxy_,
         "addSensors",
-        g_variant_new("(sas)", fruPath.c_str(), builder),
+        g_variant_new("(sas)", path.c_str(), builder),
         G_DBUS_CALL_FLAGS_NONE,
         -1,
         nullptr,
@@ -150,7 +158,8 @@ bool SensorService::addSensors(std::string fruPath, std::vector<std::string> sen
 
     if (error != nullptr) {
       //Error in setting up proxy_
-      LOG(INFO) << "Error in addSensors " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in addSensors "
+                 << dbusName_ << " :" << error->message;
     }
     else {
       return true;
@@ -160,11 +169,12 @@ bool SensorService::addSensors(std::string fruPath, std::vector<std::string> sen
   return false;
 }
 
-bool SensorService::removeFRU(std::string fruPath) const {
+bool SensorService::removeFRU(std::string fruPath) {
   LOG(INFO) << "removeFRU " << fruPath;
 
   if (isAvailable_) {
     GError *error = nullptr;
+    fruPath = dbusPath_ + fruPath;
     g_dbus_proxy_call_sync(
         proxy_,
         "removeFRU",
@@ -175,7 +185,8 @@ bool SensorService::removeFRU(std::string fruPath) const {
         &error);
 
     if (error != nullptr) {
-      LOG(INFO) << "Error in removeFRU " << dbusName_ << " :" << error->message;
+      LOG(ERROR) << "Error in removeFRU "
+                 << dbusName_ << " :" << error->message;
     }
     else {
       return true;
@@ -184,3 +195,6 @@ bool SensorService::removeFRU(std::string fruPath) const {
 
   return false;
 }
+
+} // namespace qin
+} // namespace openbmc

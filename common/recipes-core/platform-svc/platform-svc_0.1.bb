@@ -5,7 +5,7 @@ DESCRIPTION = "This deamon takes input from Json file and builds platform tree. 
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://PlatformSvcd.cpp;beginline=4;endline=16;md5=5f8ba3cd0f216026550dbcc0186d5599"
+LIC_FILES_CHKSUM = "file://PlatformSvcd.cpp;beginline=4;endline=18;md5=6d800d1c02e2ddf19e5ead261943b73b"
 
 SRC_URI =+ "file://Makefile \
            file://org.openbmc.PlatformService.conf \
@@ -23,11 +23,12 @@ SRC_URI =+ "file://Makefile \
            file://DBusPlatformSvcInterface.h \
            file://FruService.h \
            file://FruService.cpp \
+           file://HotPlugDetectionMechanism.h \
+           file://HotPlugDetectionViaPath.h \
           "
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -lgobject-2.0 -lobject-tree -lgflags -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils"
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils glog gflags"
 RDEPENDS_${PN} += "dbus"
 

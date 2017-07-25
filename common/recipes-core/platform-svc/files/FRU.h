@@ -21,25 +21,40 @@
 #pragma once
 #include <string>
 #include <object-tree/Object.h>
-#include <vector>
-#include <nlohmann/json.hpp>
-using namespace openbmc::qin;
+#include "HotPlugDetectionMechanism.h"
+
+namespace openbmc {
+namespace qin {
 
 class FRU : public Object {
   private:
-    bool hotPlugSupport_;   // flag whether FRU supports hotplug
-    bool isAvailable_;      // flag whether FRU is available
-    std::string fruJson_;   // string representation of FRU json (nlohmann) object,
+    bool hotPlugSupport_{false};  // flag whether FRU supports hotplug
+    bool isAvailable_{true};      // flag whether FRU is available
+    std::string fruJson_;         // string representation of
+                                  // FRU json (nlohmann) object
+    std::unique_ptr<HotPlugDetectionMechanism> hotPlugDetectionMechanism_;
+                                  //hotplug detection mechanism,
+                                  //if not set then supports external detection
 
   public:
     /*
-     * Contructor
+     * Contructor for fru which doesn't support hotplug
      */
-    FRU(const std::string &name, Object* parent, bool hotPlugSupport, bool isAvailable, const std::string &fruJson)
-      : Object(name, parent) {
-      this->hotPlugSupport_ = hotPlugSupport;
-      this->isAvailable_ = isAvailable;
-      this->fruJson_ = fruJson;
+    FRU(const std::string &name, Object* parent, const std::string &fruJson)
+      : Object(name, parent) , fruJson_(fruJson) {}
+
+    /*
+     * Contructor for fru which supports hotplug
+     */
+    FRU(const std::string &name,
+        Object* parent,
+        const std::string &fruJson,
+        std::unique_ptr<HotPlugDetectionMechanism> hotPlugDetectionMechanism)
+      : FRU(name, parent, fruJson) {
+      hotPlugSupport_ = true;
+      isAvailable_ = false;
+
+      hotPlugDetectionMechanism_ = std::move(hotPlugDetectionMechanism);
     }
 
     /*
@@ -57,10 +72,32 @@ class FRU : public Object {
     }
 
     /*
-     * Set whether FRU is available or not
+     * Returns whether FRU supports internal hotplug detection mechanism
      */
-    void setAvailable(bool isAvailable) {
-      isAvailable_ = isAvailable;
+    bool isIntHPDetectionSupported() const{
+      if (hotPlugDetectionMechanism_) {
+        //If hotPlugDetectionMechanism_ is set
+        //then supports internal hotplug detection
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
+
+    /*
+     * Set whether FRU is available or not
+     * Can be set only for FRU which supports external hotplug detection
+     * Returns status of operation
+     */
+    bool setAvailable(bool isAvailable) {
+      if (isIntHPDetectionSupported() == false) {
+        isAvailable_ = isAvailable;
+        return true;
+      }
+      else {
+        return false;
+      }
     }
 
     /*
@@ -69,4 +106,19 @@ class FRU : public Object {
     bool isHotPlugSupported() const{
       return hotPlugSupport_;
     }
+
+    /*
+     * Detect if fru is available or not and return availability status
+     */
+    bool detectAvailability() {
+      //Detect only if Internal Hotplug mechanism is supported
+      if (isIntHPDetectionSupported()) {
+        isAvailable_ = hotPlugDetectionMechanism_->detectAvailability();
+      }
+
+      return isAvailable_;
+    }
 };
+
+} // namespace qin
+} // namespace openbmc

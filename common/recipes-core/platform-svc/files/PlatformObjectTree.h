@@ -20,22 +20,22 @@
 
 #pragma once
 #include <string>
-#include <memory>
+#include <mutex>
+#include <vector>
 #include <ipc-interface/Ipc.h>
+#include <dbus-utils/DBusInterfaceBase.h>
+#include <dbus-utils/DBus.h>
 #include <object-tree/ObjectTree.h>
 #include <object-tree/Object.h>
 #include "FRU.h"
-#include "Sensor.h"
-#include "PlatformService.h"
-#include <dbus-utils/DBusInterfaceBase.h>
-#include <dbus-utils/DBus.h>
-#include <cstdint>
-#include "SensorService.h"
 #include "FruService.h"
-#include <vector>
+#include "HotPlugDetectionMechanism.h"
+#include "PlatformService.h"
+#include "Sensor.h"
+#include "SensorService.h"
 
-using namespace openbmc::qin;
-
+namespace openbmc {
+namespace qin {
 
 /**
  * Tree structured object that manages the Platform Services,
@@ -43,9 +43,18 @@ using namespace openbmc::qin;
  */
 class PlatformObjectTree : public ObjectTree {
   private:
-    SensorService* sensorService_ = nullptr; // SensorService, to communicate with SensorService
-    FruService* fruService_ = nullptr; // SensorService, to communicate with SensorService
-    std::string platformServiceBasePath_;    // Base Path for PlatformService object
+    std::unique_ptr<SensorService> sensorService_ = nullptr;
+                            // SensorService, to communicate with SensorService
+    std::unique_ptr<FruService> fruService_ = nullptr;
+                            // FruService, to communicate with SensorService
+    std::string platformServiceBasePath_;
+                            // Base Path for PlatformService object
+    std::unique_lock<std::mutex> sensorServiceLock_
+            {std::unique_lock<std::mutex>(*(new std::mutex()), std::defer_lock)};
+                            // To serialize push/remove Sensor Tree operations
+    std::unique_lock<std::mutex> fruServiceLock_
+            {std::unique_lock<std::mutex>(*(new std::mutex()), std::defer_lock)};
+                            // To serialize push/remove Fru Tree operations
 
   public:
     using ObjectTree::ObjectTree; // inherit base constructor
@@ -55,7 +64,9 @@ class PlatformObjectTree : public ObjectTree {
     /**
      * Initialize SensorService, called from PlatformJsonParser
      */
-    void initSensorService(std::string dbusName, std::string dbusPath, std::string dbusInteface);
+    void initSensorService(const std::string & dbusName,
+                           const std::string & dbusPath,
+                           const std::string & dbusInteface);
 
     /**
      * Returns pointer to SensorService.
@@ -70,7 +81,9 @@ class PlatformObjectTree : public ObjectTree {
     /**
      * Initialize FruService, called from PlatformJsonParser
      */
-    void initFruService(std::string dbusName, std::string dbusPath, std::string dbusInteface);
+    void initFruService(const std::string & dbusName,
+                        const std::string & dbusPath,
+                        const std::string & dbusInteface);
 
     /**
      * Returns pointer to FruService.
@@ -85,7 +98,7 @@ class PlatformObjectTree : public ObjectTree {
     /**
      * Set PlatformService Base Path, set from PlatformJsonParser
      */
-    void setPlatformServiceBasePath(std::string platformServiceBasePath);
+    void setPlatformServiceBasePath(const std::string & platformServiceBasePath);
 
     /**
      * Returns PlatformService Base path.
@@ -103,9 +116,16 @@ class PlatformObjectTree : public ObjectTree {
      */
     FRU* addFRU(const std::string &name,
                 const std::string &parentPath,
-                bool              hotPlugSupport,
-                bool              isAvailable,
                 const std::string &fruJson);
+
+    /**
+     * Add a Hotplug supported FRU to the objectMap_.
+     */
+    FRU* addFRU(
+             const std::string &name,
+             const std::string &parentPath,
+             const std::string &fruJson,
+             std::unique_ptr<HotPlugDetectionMechanism> hotPlugDetectionMechanism);
 
     /**
      * Add a Sensor to the objectMap_. The Sensor should be only
@@ -114,7 +134,32 @@ class PlatformObjectTree : public ObjectTree {
     Sensor* addSensor(const std::string &name,
                       const std::string &parentPath,
                       const std::string &sensorJson);
+
   private:
+
+    /**
+     * Push fru and subtree under fru on Sensor Service
+     * sensorServiceLock_ must be acquired before calling this method
+     */
+    void addFRUtoSensorService(const FRU & fru) throw(const char *);
+
+    /**
+     * Delete fru and subtree under fru at Sensor Service
+     * sensorServiceLock_ must be acquired before calling this method
+     */
+    void removeFRUFromSensorService(const FRU & fru) throw(const char *);
+
+    /**
+     * Push fru and fru tree under fru on Fru Service
+     * fruServiceLock_ must be acquired before calling this method
+     */
+    void addFRUtoFruService(const FRU & fru) throw(const char *);
+
+    /**
+     * Delete fru and fru tree under fru at Fru Service
+     * fruServiceLock_ must be acquired before calling this method
+     */
+    void removeFRUFromFruService(const FRU & fru) throw(const char *);
 
     /**
      * Get the FRU from object.
@@ -181,3 +226,6 @@ class PlatformObjectTree : public ObjectTree {
       return object;
     }
 };
+
+} // namespace qin
+} // namespace openbmc

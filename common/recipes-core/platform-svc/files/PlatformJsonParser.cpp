@@ -18,18 +18,18 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <errno.h>
 #include <string>
-#include <memory>
-#include <fstream>
-#include <system_error>
-#include <stdexcept>
 #include <glog/logging.h>
+#include <gio/gio.h>
 #include <nlohmann/json.hpp>
 #include <object-tree/Object.h>
 #include "PlatformObjectTree.h"
 #include "PlatformJsonParser.h"
-#include <gio/gio.h>
+#include "HotPlugDetectionMechanism.h"
+#include "HotPlugDetectionViaPath.h"
+
+namespace openbmc {
+namespace qin {
 
 std::unordered_map<std::string, PlatformJsonParser::ObjectParser>
     PlatformJsonParser::objectParserMap =
@@ -83,26 +83,35 @@ void PlatformJsonParser::parseObject(const nlohmann::json   &jObject,
   }
 }
 
-void PlatformJsonParser::parsePlatformService(const nlohmann::json   &jObject,
-                                              PlatformObjectTree     &platformTree,
-                                              const std::string      &parentPath) {
+void PlatformJsonParser::parsePlatformService(
+                                    const nlohmann::json   &jObject,
+                                    PlatformObjectTree     &platformTree,
+                                    const std::string      &parentPath) {
   const std::string &name = jObject.at("objectName");
   LOG(INFO) << "Parsing the Platform Service \"" << name <<
     "\" under the parent path \"" << parentPath << "\"";
 
   //Parsing of SensorService DBus Information
-  const std::string &sensorServiceDBusName = jObject.at("sensorServiceDBusName");
-  const std::string &sensorServiceDBusPath = jObject.at("sensorServiceDBusPath");
-  const std::string &sensorServiceDBusInterface = jObject.at("sensorServiceDBusInterface");
+  const std::string &sensorServiceDBusName =
+                               jObject.at("sensorServiceDBusName");
+  const std::string &sensorServiceDBusPath =
+                               jObject.at("sensorServiceDBusPath");
+  const std::string &sensorServiceDBusInterface =
+                               jObject.at("sensorServiceDBusInterface");
   //Initialize SensorService
-  platformTree.initSensorService(sensorServiceDBusName, sensorServiceDBusPath, sensorServiceDBusInterface);
+  platformTree.initSensorService(sensorServiceDBusName,
+                                 sensorServiceDBusPath,
+                                 sensorServiceDBusInterface);
 
   //Parsing of FruService DBus Information
   const std::string &fruServiceDBusName = jObject.at("fruServiceDBusName");
   const std::string &fruServiceDBusPath = jObject.at("fruServiceDBusPath");
-  const std::string &fruServiceDBusInterface = jObject.at("fruServiceDBusInterface");
+  const std::string &fruServiceDBusInterface =
+                               jObject.at("fruServiceDBusInterface");
   //Initialize FruService
-  platformTree.initFruService(fruServiceDBusName, fruServiceDBusPath, fruServiceDBusInterface);
+  platformTree.initFruService(fruServiceDBusName,
+                              fruServiceDBusPath,
+                              fruServiceDBusInterface);
 
   Object* object = platformTree.addPlatformService(name, parentPath);
 
@@ -132,10 +141,35 @@ void PlatformJsonParser::parseFRU(const nlohmann::json   &jObject,
   FRU* fru = nullptr;
 
   if (hotplugSupport.compare("1") == 0) {
-    fru = platformTree.addFRU(name, parentPath, true, false, fruJson.dump());
+    //If fru supports hotplug
+    //Decode hotPlug Detection Mechanism
+    const nlohmann::json &hotPlugDetectionMechanismObject =
+                                       jObject.at("hotPlugDetectionMechanism");
+    const std::string &type = hotPlugDetectionMechanismObject.at("type");
+
+    if (type.compare("external") == 0) {
+      //If FRU supports external hotplug detection
+      std::unique_ptr<HotPlugDetectionMechanism> hotPlugDetectionMechanism;
+      fru = platformTree.addFRU(name,
+                                parentPath,
+                                fruJson.dump(),
+                                std::move(hotPlugDetectionMechanism));
+    } else if (type.compare("path") == 0) {
+      //If FRU supports path based hotplug detection
+      const std::string &path = hotPlugDetectionMechanismObject.at("path");
+      std::unique_ptr<HotPlugDetectionMechanism> hotPlugDetectionMechanism(
+                                             new HotPlugDetectionViaPath(path));
+      fru = platformTree.addFRU(name,
+                                parentPath,
+                                fruJson.dump(),
+                                std::move(hotPlugDetectionMechanism));
+    } else {
+      LOG(ERROR) << "Invalid hot plug detection mechanism " << type;
+      throw std::invalid_argument("Invalid hot plug detection mechanism");
+    }
   }
   else {
-    fru = platformTree.addFRU(name, parentPath, false, true, fruJson.dump());
+    fru = platformTree.addFRU(name, parentPath, fruJson.dump());
   }
 
   if (fru == nullptr) {
@@ -156,3 +190,6 @@ void PlatformJsonParser::parseSensor(const nlohmann::json &jObject,
     throwObjectJsonConfliction(name, parentPath);
   }
 }
+
+} // namespace qin
+} // namespace openbmc

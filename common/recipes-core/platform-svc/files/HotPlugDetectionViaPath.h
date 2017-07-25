@@ -1,5 +1,5 @@
 /*
- * Sensor.h
+ * HotPlugDetectionViaPath.h
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,33 +19,41 @@
  */
 
 #pragma once
-#include <string>
-#include <cstdint>
-#include <stdlib.h>
-#include <stdio.h>
-#include <object-tree/Object.h>
-#include "FRU.h"
+#include <fstream>
+#include <glog/logging.h>
+#include "HotPlugDetectionMechanism.h"
 
 namespace openbmc {
 namespace qin {
 
-class Sensor : public Object{
+class HotPlugDetectionViaPath : public HotPlugDetectionMechanism {
   private:
-    std::string sensorJson_;   // string representation of Sensor json (nlohmann) object,
+    std::string path_;                // Path of the file from which
+                                      // status of FRU can be detected
 
   public:
     /*
      * Constructor
      */
-    Sensor (const std::string &name, Object* parent, const std::string &sensorJson) : Object(name, parent){
-      this->sensorJson_ = sensorJson;
-    }
+    HotPlugDetectionViaPath(const std::string & path) : path_(path) {}
 
     /*
-     * Returns string representation of Sensor Json object.
+     * Detects availability of FRU by reading file at path_ and
+     * returns whether fru is available
      */
-    std::string const & getSensorJson() const {
-      return sensorJson_;
+    bool detectAvailability() {
+      bool available = false;
+      std::ifstream file(path_);
+      if (file.is_open())
+      {
+        //Read FRU availability
+        file >> available;
+        file.close();
+      }
+      else {
+        LOG(ERROR) << "Could not open file " << path_;
+      }
+      return available;
     }
 };
 } // namespace qin

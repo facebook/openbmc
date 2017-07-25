@@ -21,13 +21,13 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = " \
     file://COPYING \
-    file://at93cx6.py \
-    file://at93cx6_util.py \
+    file://at93cx6_py3.py \
+    file://at93cx6_util_py3.py \
     "
 
 SCRIPTS = " \
-    at93cx6.py \
-    at93cx6_util.py \
+    at93cx6_py3.py \
+    at93cx6_util_py3.py \
     "
 
 S = "${WORKDIR}"

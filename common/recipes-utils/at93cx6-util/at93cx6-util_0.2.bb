@@ -15,19 +15,19 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "Utilities for BCM5396"
+SUMMARY = "Utilities for AT93Cx6 EEPROM"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = " \
     file://COPYING \
-    file://bcm5396_py3.py \
-    file://bcm5396_util_py3.py \
+    file://at93cx6.py \
+    file://at93cx6_util.py \
     "
 
 SCRIPTS = " \
-    bcm5396_py3.py \
-    bcm5396_util_py3.py \
+    at93cx6.py \
+    at93cx6_util.py \
     "
 
 S = "${WORKDIR}"

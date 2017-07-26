@@ -1,4 +1,5 @@
-#!/usr/bin/python -tt
+#!/usr/bin/env python3
+#
 # Copyright 2015-present Facebook. All rights reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -15,10 +16,6 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 from board_gpio_rev_table import board_gpio_rev_table
 from board_gpio_table_v1 import board_gpio_table_v1
@@ -30,6 +27,7 @@ from soc_gpio import soc_get_register
 import openbmc_gpio
 import sys
 
+
 def set_register():
     '''
     For DVT/EVT boards the framework is not able to handle for GPIOS0 and
@@ -40,6 +38,7 @@ def set_register():
     l_reg = soc_get_register(0x8C)
     l_reg.clear_bit(0, write_through=True)
 
+
 def wedge_board_rev(soc_gpio_table, board_gpio_rev_table):
     # Setup to read revision
     setup_board_gpio(soc_gpio_table, board_gpio_rev_table)
@@ -48,6 +47,7 @@ def wedge_board_rev(soc_gpio_table, board_gpio_rev_table):
     v1 = openbmc_gpio.gpio_get('BOARD_REV_ID1')
     v2 = openbmc_gpio.gpio_get('BOARD_REV_ID2')
     return ((v2 << 2) | (v1 << 1) | v0)
+
 
 def main():
     print('Setting up GPIOs ... ', end='')
@@ -70,6 +70,7 @@ def main():
     print('Done')
     sys.stdout.flush()
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())

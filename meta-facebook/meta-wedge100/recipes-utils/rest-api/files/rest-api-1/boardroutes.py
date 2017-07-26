@@ -1,4 +1,4 @@
-# Copyright 2015-present Facebook. All rights reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,15 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-from openbmc_gpio_table import BoardGPIO
-
-# The following table is generated using:
-# python wedge100_gpio_parser.py data/wedge100-BMC-gpio.csv
-# DO NOT MODIFY THE TABLE!!!
-# Manual modification will be overridden!!!
-
-board_gpio_rev_table = [
-    BoardGPIO('GPIOY0', 'BOARD_REV_ID0'),
-    BoardGPIO('GPIOY1', 'BOARD_REV_ID1'),
-    BoardGPIO('GPIOY2', 'BOARD_REV_ID2'),
+board_routes = [
+    '/api/sys/usb2i2c_reset',
+    '/api/sys/i2cflush'
 ]

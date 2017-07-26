@@ -14,10 +14,6 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 from openbmc_gpio_table import BoardGPIO
 
@@ -114,4 +110,3 @@ board_gpio_table_v2 = [
     BoardGPIO('GPIOS0', 'BMC_SPI_WP_N'),
     BoardGPIO('GPIOY3', 'LED_POSTCODE_4'),
 ]
-

@@ -17,6 +17,7 @@
 #
 from fsc_util import Logger
 from subprocess import Popen, PIPE
+import time
 
 
 def board_fan_actions(fan, action='None'):
@@ -41,7 +42,7 @@ def board_host_actions(action='None', cause='None'):
     if "host_shutdown" in action:
         Logger.crit("Host is shutdown due to cause %s" % (str(cause),))
         return host_shutdown()
-    Logger.warn("Host needs action %s and cause %s" % (str(action),str(cause),))
+    Logger.warn("Host needs action %s and cause %s" % (str(action), str(cause),))
     pass
 
 
@@ -86,12 +87,12 @@ def set_fan_led(fan, color='led_blue'):
 
 
 def host_shutdown():
-    MAIN_POWER =  "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_main_n"
+    MAIN_POWER = "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_main_n"
     USERVER_POWER = "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_usrv_en"
 
     cmd = ('echo 0' > USERVER_POWER)
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-    sleep(5)
+    time.sleep(5)
     cmd = ('echo 0' > MAIN_POWER)
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return response

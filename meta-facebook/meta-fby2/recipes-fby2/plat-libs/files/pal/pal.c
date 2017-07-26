@@ -250,6 +250,38 @@ static const struct power_coeff pwr_cali_table[] = {
   { 0.0,    0.0 }
 };
 
+//check power policy and power state to power on/off server after AC power restore
+static void
+pal_power_policy_control(uint8_t slot_id, char *last_ps) {
+  uint8_t chassis_status[5] = {0};
+  uint8_t chassis_status_length;
+  uint8_t power_policy = POWER_CFG_UKNOWN;
+  char pwr_state[MAX_VALUE_LEN] = {0};
+
+  //get power restore policy
+  //defined by IPMI Spec/Section 28.2.
+  pal_get_chassis_status(slot_id, NULL, chassis_status, &chassis_status_length);
+
+  //byte[1], bit[6:5]: power restore policy
+  power_policy = (*chassis_status >> 5);
+
+  //Check power policy and last power state
+  if(power_policy == POWER_CFG_LPS) {
+    if (!last_ps) {
+      pal_get_last_pwr_state(slot_id, pwr_state);
+      last_ps = pwr_state;
+    }
+    if (!(strcmp(last_ps, "on"))) {
+      sleep(3);
+      pal_set_server_power(slot_id, SERVER_POWER_ON);
+    }
+  }
+  else if(power_policy == POWER_CFG_ON) {
+    sleep(3);
+    pal_set_server_power(slot_id, SERVER_POWER_ON);
+  }
+}
+
 /* curr/power calibration */
 static void
 power_value_adjust(const struct power_coeff *table, float *value) {
@@ -1555,12 +1587,46 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   return 0;
 }
 
+static int
+server_12v_cycle_physically(uint8_t slot_id){
+  uint8_t pair_slot_id;
+  int pair_set_type=-1;
+  char pwr_state[MAX_VALUE_LEN] = {0};
+
+  if (slot_id == 1 || slot_id == 3) {      
+    pair_set_type = pal_get_pair_slot_type(slot_id);
+    switch(pair_set_type) {
+      case TYPE_CF_A_SV:
+      case TYPE_GP_A_SV:
+        pair_slot_id = slot_id + 1;
+        pal_get_last_pwr_state(pair_slot_id, pwr_state);
+        if (server_12v_off(pair_slot_id))          //Need to 12V off server first when configuration type is pair config
+          return -1;
+        sleep(DELAY_12V_CYCLE);
+        if (server_12v_on(slot_id))
+          return -1;
+        pal_power_policy_control(pair_slot_id, pwr_state);
+        return 0;
+      default:
+        break;
+    }
+  }
+  if (server_12v_off(slot_id))
+    return -1;
+
+  sleep(DELAY_12V_CYCLE);
+
+  return (server_12v_on(slot_id));
+}
+
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   int ret;
   uint8_t status;
   bool gs_flag = false;
+  uint8_t pair_slot_id;
+  int pair_set_type=-1;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
@@ -1644,19 +1710,40 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_12V_ON:
+      if (slot_id == 1 || slot_id == 3) {     //Handle power policy for pair configuration
+        pair_set_type = pal_get_pair_slot_type(slot_id);
+        switch(pair_set_type) {
+          case TYPE_CF_A_SV:
+          case TYPE_GP_A_SV:
+            pair_slot_id = slot_id + 1;
+            ret = server_12v_on(slot_id);
+            if (ret != 0)
+              return ret;
+            pal_power_policy_control(pair_slot_id, NULL);
+            return ret;
+          default:
+            break;
+        }
+      }
       return server_12v_on(slot_id);
 
     case SERVER_12V_OFF:
+      if (slot_id == 1 || slot_id == 3) {      //Need to 12V off server first when configuration type is pair config
+        pair_set_type = pal_get_pair_slot_type(slot_id);
+        switch(pair_set_type) {
+          case TYPE_CF_A_SV:
+          case TYPE_GP_A_SV:
+            pair_slot_id = slot_id + 1;
+            return server_12v_off(pair_slot_id);
+          default:
+            break;
+        }
+      }
       return server_12v_off(slot_id);
 
     case SERVER_12V_CYCLE:
-      if (server_12v_off(slot_id)) {
-        return -1;
-      }
-
-      sleep(DELAY_12V_CYCLE);
-
-      return (server_12v_on(slot_id));
+      ret = server_12v_cycle_physically(slot_id);
+      return ret;
 
     case SERVER_GLOBAL_RESET:
       return server_power_off(slot_id, false);

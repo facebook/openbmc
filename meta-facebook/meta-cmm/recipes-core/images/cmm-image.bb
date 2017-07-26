@@ -13,8 +13,8 @@ UBOOT_IMAGE_ENTRYPOINT = "0x80800000"
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \
-  packagegroup-openbmc-python \
-  packagegroup-openbmc-rest \
+  packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
   at93cx6-util \
   ast-mdio \
   bcm5396-util \

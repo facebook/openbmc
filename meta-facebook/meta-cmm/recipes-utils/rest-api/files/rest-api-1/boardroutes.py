@@ -15,16 +15,11 @@
 # along with this program in a file named COPYING; if not, write to the
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
-# Boston, MA 02110-1301 USA
-#
+# Boston, MA 02110-130
 
-import eeprom_utils
-
-
-def get_chassis_eeprom():
-    return eeprom_utils.get_eeprom_data('/usr/local/bin/ceutil')
-
-
-# For ease of debugging
-if __name__ == '__main__':
-    print(get_chassis_eeprom())
+board_routes = [
+    '/api/sys/component_presence',
+    '/api/sys/firmware_info',
+    '/api/sys/mb/chassis_eeprom',
+    '/api/sys/mb/chassis_all_serial_and_location',
+]

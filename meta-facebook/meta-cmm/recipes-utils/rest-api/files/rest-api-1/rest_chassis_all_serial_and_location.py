@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -18,11 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from backpack_cards import BACKPACK_ALL_CARDS
 
 import json
@@ -31,7 +26,6 @@ import syslog
 from collections import namedtuple
 
 SnAndLocation = namedtuple('SnAndLocation', ('serial', 'location'))
-
 
 
 def _fork_procs_for_eeproms(card):
@@ -50,6 +44,7 @@ def _fork_procs_for_eeproms(card):
 
 def _get_serial_and_location(card, proc):
     data, err = proc.communicate()
+    data = data.decode()
     if proc.returncode:
        raise Exception('Command failed, returncode: {}'.format(proc.returncode))
 
@@ -81,7 +76,7 @@ def get_all_serials_and_locations():
     card_to_procs = { card : _fork_procs_for_eeproms(card)
                      for card in BACKPACK_ALL_CARDS}
     card_infos = {}
-    for card, procs in card_to_procs.iteritems():
+    for card, procs in card_to_procs.items():
         try:
             serial_and_locs = _get_serials_and_loc_for_card(card, procs)
         except Exception as e:

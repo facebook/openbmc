@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2016-present Facebook. All Rights Reserved.
 #
@@ -23,6 +23,7 @@ FCB_NUM_TO_SUBPATH = {
     4: 'i2c-35/i2c-195/195-0033'
 }
 
+
 def _get_version(version_file):
     with open(version_file) as f:
         return f.read()
@@ -30,8 +31,8 @@ def _get_version(version_file):
 
 def _firmware_json(ver, sub_ver, int_base=16):
     return {
-        'version' : int(ver, int_base),
-        'sub_version' : int(sub_ver, int_base)
+        'version': int(ver, int_base),
+        'sub_version': int(sub_ver, int_base)
     }
 
 
@@ -53,7 +54,7 @@ def _get_fcbcpld_info(fcb_num):
 def get_firmware_info():
     firmware_info = {}
     firmware_info['SYS_CPLD'] = _get_syscpld_info()
-    for i in FCB_NUM_TO_SUBPATH.keys():
+    for i in list(FCB_NUM_TO_SUBPATH.keys()):
         firmware_info['FCB{}_CPLD'.format(i)] = _get_fcbcpld_info(i)
 
     return firmware_info

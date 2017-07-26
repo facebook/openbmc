@@ -17,14 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+from board_endpoint import boardApp_Handler
+from boardroutes import *
 
-import eeprom_utils
+def setup_board_routes(app):
+    bhandler = boardApp_Handler()
+    app.router.add_get(board_routes[0], bhandler.rest_comp_presence)
+    app.router.add_get(board_routes[1], bhandler.rest_firmware_info)
+    app.router.add_get(board_routes[2], bhandler.rest_chassis_eeprom_hdl)
+    app.router.add_get(board_routes[3], bhandler.rest_all_serial_and_location_hdl)
 
-
-def get_chassis_eeprom():
-    return eeprom_utils.get_eeprom_data('/usr/local/bin/ceutil')
-
-
-# For ease of debugging
-if __name__ == '__main__':
-    print(get_chassis_eeprom())

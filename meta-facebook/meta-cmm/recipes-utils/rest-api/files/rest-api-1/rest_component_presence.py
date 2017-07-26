@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -28,12 +28,13 @@ def get_presence():
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     data, err = p.communicate()
+    data = data.decode()
     rc = p.returncode
 
     if rc < 0:
         result = ' failed with returncode = ' + str(rc) + ' and error ' + err
     else:
-        data = re.sub(r'\(.+?\)', '', data)
+        data = re.sub('\(.+?\)', '', data)
         for edata in data.split('\n'):
             tdata = edata.split(':')
             if (len(tdata) < 2):

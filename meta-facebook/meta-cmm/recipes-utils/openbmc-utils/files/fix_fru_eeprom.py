@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Copyright 2004-present Facebook. All rights reserved.
 #
@@ -18,12 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 
 
@@ -31,23 +25,22 @@ EEPROMS = {
     'CMM': '/sys/class/i2c-dev/i2c-6/device/6-0051/eeprom',
 }
 
-
 if __name__ == '__main__':
-    for name, path in EEPROMS.items():
+    for name, path in list(EEPROMS.items()):
         print('Fixing %s EEPROM at %s...' % (name, path))
         if not os.path.isfile(path):
             print('%s does not exist. Skip' % path)
             continue
         try:
-            with open(path, 'r+') as f:
+            with open(path, 'rb+') as f:
                 # fix the version #
                 f.seek(2)
-                v=f.read(1)
+                v = f.read(1)
                 if v == b'\x02':
                     print('%s EEPROM has been fixed. Skip' % name)
                     continue
                 f.seek(2)
                 f.write(b'\x02')
             print('%s EEPROM is fixed' % name)
-        except:
+        except Exception:
             print('Failed to fix %s EEPROM' % name)

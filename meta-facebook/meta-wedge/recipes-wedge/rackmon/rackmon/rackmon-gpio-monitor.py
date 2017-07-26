@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
+
 import os
 import json
 import time
@@ -72,20 +72,20 @@ class Monitor(object):
 
     def open_gpio_fds(self):
         info('Opening GPIOs')
-        for name, _ in gpios.items():
+        for name, _ in list(gpios.items()):
             valpath = os.path.join(gpio_path(name), 'value')
             fd = os.open(valpath, os.O_RDONLY)
             self.gpio_fds[name] = fd
 
     def conditions(self):
         now = time.time()
-        for condition, begin in self.active_conditions.items():
+        for condition, begin in list(self.active_conditions.items()):
             c = {'duration': int(now - begin)}
             c.update(condition._asdict())
             yield c
 
     def check_gpios(self):
-        for name, condition in gpios.items():
+        for name, condition in list(gpios.items()):
             fd = self.gpio_fds[name]
             os.lseek(fd, 0, os.SEEK_SET)
             value = int(os.read(fd, 2))

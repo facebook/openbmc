@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/python3
+
 import sys
 import os
 import socket
@@ -310,7 +311,7 @@ def main():
         pause_monitoring()
         for cmd in script:
             belcmd(cmd)
-    except Exception, e:
+    except Exception as e:
         bprint("Update failed")
         resume_monitoring()
         status['exception'] = traceback.format_exc()

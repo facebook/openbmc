@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import os.path
 import os
@@ -229,7 +228,7 @@ def send_image(addr, fwimg):
             continue
         print("Sending " + str(s))
         set_write_address(addr, s.start_address)
-        for i in xrange(0, len(s), 8):
+        for i in range(0, len(s), 8):
             chunk = s.data[i:i+8]
             if len(chunk) < 8:
                 chunk = chunk + ("\xFF" * (8 - len(chunk)))
@@ -301,7 +300,7 @@ def main():
     print("statusfile %s" % statuspath)
     try:
         update_psu(args.addr, args.file)
-    except Exception, e:
+    except Exception as e:
         print("Firmware update failed")
         global status
         status['exception'] = traceback.format_exc()

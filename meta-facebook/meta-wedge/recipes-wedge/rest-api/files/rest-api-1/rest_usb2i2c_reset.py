@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -29,6 +29,8 @@ def set_usb2i2c():
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     out, err = p.communicate()
+    err = err.decode()
+    out = out.decode()
     rc = p.returncode
 
     if rc < 0:

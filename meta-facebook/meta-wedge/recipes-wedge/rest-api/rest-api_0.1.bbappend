@@ -19,7 +19,12 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rest-api-1/rest_usb2i2c_reset.py \
             file://rest-api-1/board_endpoint.py \
+            file://rest-api-1/board_setup_routes.py \
+            file://rest-api-1/boardroutes.py \
           "
 
 binfiles += "rest_usb2i2c_reset.py \
-            board_endpoint.py"
+             board_endpoint.py \
+             board_setup_routes.py \
+             boardroutes.py \
+            "

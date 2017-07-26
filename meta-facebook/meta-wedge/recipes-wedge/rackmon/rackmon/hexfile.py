@@ -68,7 +68,7 @@ class HexFile(object):
         lineno = 0
         for line in lines:
             lineno += 1
-            line = line.strip();
+            line = line.strip()
             if not line.startswith(':'):
                 continue
 
@@ -165,7 +165,7 @@ class Segment(object):
 
     @property
     def addresses(self):
-        return range(self.start_address, self.end_address)
+        return list(range(self.start_address, self.end_address))
 
     def __len__(self):
         return len(self.data)

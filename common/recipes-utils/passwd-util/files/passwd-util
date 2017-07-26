@@ -41,11 +41,15 @@ case "$ACTION" in
     ;;
   *)
     stty -echo
-    read -p "New password: " firstpw
+    OIFS="$IFS"
+    IFS="" read -p "New password: " firstpw
+    IFS="$OIFS"
     stty echo
     echo ""
     stty -echo
-    read -p "Retype password: " secondpw
+    OIFS="$IFS"
+    IFS="" read -p "Retype password: " secondpw
+    IFS="$OIFS"
     stty echo
     echo ""
     if [ ${#firstpw} -lt 1 ] || [ ${#secondpw} -lt 1 ]; then
@@ -56,8 +60,8 @@ case "$ACTION" in
       echo "Passwords don't match"
       exit 1
     fi
-    echo $firstpw > /var/tmppw.$$
-    echo $secondpw >> /var/tmppw.$$
+    echo "$firstpw" > /var/tmppw.$$
+    echo "$secondpw" >> /var/tmppw.$$
     /usr/bin/passwd $* < /var/tmppw.$$ >/dev/null
     ret=$?
     rm -f /var/tmppw.$$

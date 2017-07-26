@@ -107,13 +107,13 @@ util_get_gpio(uint8_t slot_id) {
   bic_gpio_u *t = (bic_gpio_u*) &gpio;
 
   // Print response
-  printf("PWRGOOD_CPU: %d\n", t->bits.pwrgood_cpu);
-  printf("PWRGOOD_PCH_PWROK: %d\n", t->bits.pwrgd_pch_pwrok);
+  printf("XDP_CPU_SYSPWROK: %d\n", t->bits.pwrgood_cpu);
+  printf("PWRGD_PCH_PWROK: %d\n", t->bits.pwrgd_pch_pwrok);
   printf("PVDDR_VRHOT_N: %d\n", t->bits.pvddr_vrhot_n);
   printf("PVCCIN_VRHOT_N: %d\n", t->bits.pvccin_vrhot_n);
   printf("FM_FAST_PROCHOT_N: %d\n", t->bits.fm_fast_prochot_n);
   printf("PCHHOT_CPU_N: %d\n", t->bits.pchhot_cpu_n);
-  printf("FM_CPLD_CPU_DIMM_EVENT_C0_N: %d\n", t->bits.fm_cpld_cpu_dimm_event_c0_n);
+  printf("FM_CPLD_CPU_DIMM_EVENT_CO_N: %d\n", t->bits.fm_cpld_cpu_dimm_event_c0_n);
   printf("FM_CPLD_BDXDE_THERMTRIP_N: %d\n", t->bits.fm_cpld_bdxde_thermtrip_n);
   printf("THERMTRIP_PCH_N: %d\n", t->bits.thermtrip_pch_n);
   printf("FM_CPLD_FIVR_FAULT: %d\n", t->bits.fm_cpld_fivr_fault);

@@ -61,7 +61,7 @@ enum {
   SVR_ID2,
   SVR_ID3,
   BMC_READY_N,
-  RESERVED_29,
+  BMC_COM_SW_N,
   RESERVED_30,
   RESERVED_31,
 };

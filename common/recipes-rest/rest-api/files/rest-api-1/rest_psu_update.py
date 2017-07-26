@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -24,9 +24,10 @@ import os
 import os.path
 import json
 import uuid
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 from tempfile import mkstemp
-from bottle import HTTPError
+from aiohttp import web
+
 
 UPDATE_JOB_DIR = '/var/rackmond/update_jobs'
 UPDATERS = {'delta': '/usr/local/bin/psu-update-delta.py',
@@ -53,9 +54,9 @@ def begin_job(jobdesc):
             # Update complete
             updater_process = None
         else:
-            body = {'error': 'update_already_running',
+            error_body = {'error': 'update_already_running',
                     'pid': updater_process.pid }
-            raise HTTPError(409, body)
+            raise web.HTTPConflict(body=error_body)
     job_id = str(uuid.uuid1())
     (fwfd, fwfilepath) = mkstemp()
     if not os.path.exists(UPDATE_JOB_DIR):
@@ -66,7 +67,7 @@ def begin_job(jobdesc):
     with open(statusfilepath, 'wb') as sfh:
         sfh.write(json.dumps(status))
     try:
-        fwdata = urllib2.urlopen(jobdesc['fw_url'])
+        fwdata = urllib.request.urlopen(jobdesc['fw_url'])
         with os.fdopen(fwfd, 'wb') as fwfile:
             fwfile.write(fwdata.read())
             fwfile.flush()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -44,10 +44,12 @@ def get_bmc():
     # Get BMC's Up Time
     (uptime, _) = Popen('uptime', \
                         shell=True, stdout=PIPE).communicate()
+    uptime = uptime.decode()
 
     # Get Usage information
     (data, _) = Popen('top -b n1', \
                         shell=True, stdout=PIPE).communicate()
+    data = data.decode()
     adata = data.split('\n')
     mem_usage = adata[0]
     cpu_usage = adata[1]
@@ -56,6 +58,7 @@ def get_bmc():
     version = ""
     (data, _) = Popen('cat /etc/issue', \
                         shell=True, stdout=PIPE).communicate()
+    data = data.decode()
     ver = re.search(r'v([\w\d._-]*)\s', data)
     if ver:
         version = ver.group(1)
@@ -73,5 +76,5 @@ def get_bmc():
                 "Resources": [],
              }
 
-    return result;
+    return result
 

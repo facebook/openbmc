@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -35,6 +35,7 @@ def get_wedge_slot():
                          'wedge_slot_id $(wedge_board_type)',
                          shell=True, stdout=subprocess.PIPE)
     out, err = p.communicate()
+    out = out.decode()
     try:
         slot = int(out.strip('\n'))
     except:

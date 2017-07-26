@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -36,7 +36,7 @@ def get_mTerm_status():
         err = ex.error
 
     is_running = 'Not Running'
-    if 'mTerm_server' in data:
+    if b'mTerm_server' in data:
         is_running = 'Running'
 
     result = {

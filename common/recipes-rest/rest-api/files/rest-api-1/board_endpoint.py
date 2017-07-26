@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -17,8 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import bottle
-
-boardApp = bottle.Bottle()
 
 # Platform layer will replace this file with board specific routes
+

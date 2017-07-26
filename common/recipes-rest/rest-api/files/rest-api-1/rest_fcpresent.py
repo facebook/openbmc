@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -61,4 +61,4 @@ def get_fcpresent():
                 "Actions": [],
                 "Resources": [],
              }
-    return result;
+    return result

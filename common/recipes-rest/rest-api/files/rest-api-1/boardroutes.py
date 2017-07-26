@@ -15,11 +15,6 @@
 # along with this program in a file named COPYING; if not, write to the
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
-# Boston, MA 02110-1301 USA
-#
+# Boston, MA 02110-130
 
-import configparser
-
-configpath = '/etc/rest.cfg'
-RestConfig = configparser.ConfigParser()
-RestConfig.read(configpath)
+board_routes = []

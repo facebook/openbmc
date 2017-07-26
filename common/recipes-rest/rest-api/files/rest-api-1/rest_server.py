@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -26,6 +26,7 @@ from subprocess import *
 def get_server():
     (ret, _) = Popen('/usr/local/bin/wedge_power.sh status', \
                      shell=True, stdout=PIPE).communicate()
+    ret = ret.decode()
     status = ret.rsplit()[-1]
 
     result = {
@@ -40,6 +41,7 @@ def server_action(data):
     if data["action"] == 'power-on':
         (ret, _) = Popen('/usr/local/bin/wedge_power.sh status', \
                          shell=True, stdout=PIPE).communicate()
+        ret = ret.decode()
         status = ret.rsplit()[-1]
         if status == 'on':
             res = 'failure'

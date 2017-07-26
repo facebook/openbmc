@@ -1,10 +1,6 @@
-#!/usr/bin/env python
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+#!/usr/bin/env python3
 
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import subprocess
 import syslog
 import time
@@ -68,7 +64,7 @@ def runit_kill_restart(svc):
 
 
 def main():
-    syslog.openlog(b"restwatchdog")
+    syslog.openlog("restwatchdog")
     syslog.syslog(syslog.LOG_INFO,
                   "REST API watchdog checking %s, every %d seconds"
                   % (checkurl, interval))
@@ -81,7 +77,7 @@ def main():
             continue
         else:
             try:
-                f = urllib2.urlopen(checkurl, timeout=timeout, context=sslctx)
+                f = urllib.request.urlopen(checkurl, timeout=timeout, context=sslctx)
                 f.read()
             except Exception:
                 global graceleft

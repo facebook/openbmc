@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -18,16 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 
-import bottle
-from cherrypy.wsgiserver import CherryPyWSGIServer
-from cherrypy.wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
-import datetime
+# aiohttp has access logs and error logs enabled by default. So, only the configuration file is needed to get the desired log output.
+
+from aiohttp import web
+from common_setup_routes import setup_common_routes
+from board_setup_routes import setup_board_routes
 import logging
 import logging.config
-from rest_config import RestConfig
-from common_endpoint import commonApp
-from board_endpoint import boardApp
-
+import ssl
 
 LOGGER_CONF = {
     'version': 1,
@@ -58,68 +56,10 @@ LOGGER_CONF = {
 }
 
 
-# SSL Wrapper for Rest API
-class SSLCherryPyServer(bottle.ServerAdapter):
-    def run(self, handler):
-        server = CherryPyWSGIServer((self.host, self.port), handler)
-        server.ssl_adapter = \
-                pyOpenSSLAdapter(RestConfig.get('ssl', 'certificate'),
-                                 RestConfig.get('ssl', 'key'))
-        try:
-            server.start()
-        finally:
-            server.stop()
-
-
-def log_after_request():
-    try:
-        length = bottle.response.content_length
-    except Exception:
-        try:
-            length = len(bottle.response.body)
-        except Exception:
-            length = 0
-
-    logging.info('{} - - [{}] "{} {} {}" {} {}'.format(
-        bottle.request.environ.get('REMOTE_ADDR'),
-        datetime.datetime.now().strftime('%d/%b/%Y %H:%M:%S'),
-        bottle.request.environ.get('REQUEST_METHOD'),
-        bottle.request.environ.get('REQUEST_URI'),
-        bottle.request.environ.get('SERVER_PROTOCOL'),
-        bottle.response.status_code,
-        length))
-
-
-# Error logging to log file
-class ErrorLogging(object):
-    def write(self, err):
-        logging.error(err)
-
-
-# Middleware to log the requests
-class LogMiddleware(object):
-    def __init__(self, app):
-        self.app = app
-
-    def __call__(self, e, h):
-        e['wsgi.errors'] = ErrorLogging()
-        ret_val = self.app(e, h)
-        log_after_request()
-        return ret_val
-
-# overwrite the stderr and stdout to log to the file
-bottle._stderr = logging.error
-bottle._stdout = logging.info
+app = web.Application()
+setup_common_routes(app)
+setup_board_routes(app)
 logging.config.dictConfig(LOGGER_CONF)
 
-serverApp = bottle.app()
-serverApp.merge(commonApp)
-serverApp.merge(boardApp)
-bottle_app = LogMiddleware(serverApp)
-# Use SSL if the certificate and key exists. Otherwise, run without SSL.
-if (RestConfig.getboolean('listen', 'ssl')):
-    bottle.run(host="::", port=RestConfig.getint('listen', 'port'),
-               server=SSLCherryPyServer, app=bottle_app)
-else:
-    bottle.run(host="::", port=RestConfig.getint('listen', 'port'),
-               server='cherrypy', app=bottle_app)
+web.run_app(app, host="::")
+

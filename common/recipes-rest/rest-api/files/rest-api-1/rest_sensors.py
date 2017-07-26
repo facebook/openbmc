@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -31,11 +31,12 @@ def get_sensors():
                             stderr=subprocess.PIPE)
     try:
         data, err = bmc_command.timed_communicate(proc)
+        data = data.decode()
     except bmc_command.TimeoutError as ex:
         data = ex.output
         err = ex.error
 
-    data = re.sub(r'\(.+?\)', '', data)
+    data = re.sub('\(.+?\)', '', data)
     for edata in data.split('\n\n'):
         adata = edata.split('\n', 1)
         sresult = {}

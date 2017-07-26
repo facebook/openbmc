@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -28,134 +28,90 @@ import rest_slotid
 import rest_psu_update
 import rest_fcpresent
 import rest_mTerm
-import bottle
-from board_endpoint import boardApp
+from aiohttp import web
+from rest_utils import get_endpoints
 
-commonApp = bottle.Bottle()
-commonApp.merge(boardApp)
+class commonApp_Handler:
 
-#Function to get endpoints
-def get_endpoints(path):
-    endpoints = set()
-    splitpaths = {}
-    splitpaths = path.split('/')
-    position = len(splitpaths)
-    for route in commonApp.routes:
-        rest_route_path = route.rule.split('/')
-        if len(rest_route_path) > position and path in route.rule:
-            endpoints.add(rest_route_path[position])
-    return list(endpoints)
- 
-# Handler for root resource endpoint
-@commonApp.route('/api')
-def rest_api():
-    result = {
-        "Information": {
-            "Description": "Wedge RESTful API Entry",
-        },
-        "Actions": [],
-        "Resources": get_endpoints('/api')
-    }
-    return result
+    # Handler for root resource endpoint
+    async def rest_api(self, request):
+        result = {
+            "Information": {
+                "Description": "Wedge RESTful API Entry",
+            },
+            "Actions": [],
+            "Resources": get_endpoints('/api')
+        }
+        return web.json_response(result)
 
+    # Handler for root resource endpoint
+    async def rest_sys(self,request):
+        result = {
+            "Information": {
+                "Description": "Wedge System",
+            },
+            "Actions": [],
+            "Resources": get_endpoints('/api/sys')
+        }
+        return web.json_response(result)
 
-# Handler for sys resource endpoint
-@commonApp.route('/api/sys')
-def rest_sys():
-    result = {
-        "Information": {
-            "Description": "Wedge System",
-        },
-        "Actions": [],
-        "Resources": get_endpoints('/api/sys')
-    }
-    return result
+    # Handler for sys/mb resource endpoint
+    async def rest_mb_sys(self, request):
+        result = {
+            "Information": {
+                "Description": "System Motherboard",
+            },
+            "Actions": [],
+            "Resources": get_endpoints('/api/sys/mb')
+        }
+        return web.json_response(result)
 
+    # Handler for sys/mb/fruid resource endpoint
+    async def rest_fruid_hdl(self,request):
+        return web.json_response(rest_fruid.get_fruid())
 
-# Handler for sys/mb resource endpoint
-@commonApp.route('/api/sys/mb')
-def rest_mb_sys():
-    result = {
-        "Information": {
-            "Description": "System Motherboard",
-        },
-        "Actions": [],
-        "Resources": get_endpoints('/api/sys/mb')
-    }
-    return result
+    # Handler for sys/bmc resource endpoint
+    async def rest_bmc_hdl(self,request):
+        return web.json_response(rest_bmc.get_bmc())
 
+    # Handler for sys/server resource endpoint
+    async def rest_server_hdl(self,request):
+        return web.json_response(rest_server.get_server())
 
-# Handler for sys/mb/fruid resource endpoint
-@commonApp.route('/api/sys/mb/fruid')
-def rest_fruid_hdl():
-    return rest_fruid.get_fruid()
+    # Handler for uServer resource endpoint
+    async def rest_server_act_hdl(self,request):
+        data = await request.json()
+        return web.json_response(rest_server.server_action(data))
 
+    # Handler for sensors resource endpoint
+    async def rest_sensors_hdl(self,request):
+        return web.json_response(rest_sensors.get_sensors())
 
-# Handler for sys/bmc resource endpoint
-@commonApp.route('/api/sys/bmc')
-def rest_bmc_hdl():
-    return rest_bmc.get_bmc()
+    # Handler for gpios resource endpoint
+    async def rest_gpios_hdl(self,request):
+        return web.json_response(rest_gpios.get_gpios())
 
+    # Handler for peer FC presence resource endpoint
+    async def rest_fcpresent_hdl(self,request):
+        return web.json_response(rest_fcpresent.get_fcpresent())
 
-# Handler for sys/server resource endpoint
-@commonApp.route('/api/sys/server')
-def rest_server_hdl():
-    return rest_server.get_server()
+    # Handler for Modbus_registers resource endpoint
+    async def modbus_registers_hdl(self,request):
+        return web.json_response(rest_modbus.get_modbus_registers())
 
+    # Handler for psu_update resource endpoint
+    async def psu_update_hdl(self,request):
+        return web.json_response(rest_psu_update.get_jobs())
 
-# Handler for uServer resource endpoint
-@commonApp.route('/api/sys/server', method='POST')
-def rest_server_act_hdl():
-    data = json.load(bottle.request.body)
-    return rest_server.server_action(data)
+    # Handler for psu_update resource action
+    async def psu_update_hdl_post(self,request):
+        data = await request.json()
+        return web.json_response(rest_psu_update.begin_job(data))
 
+    # Handler for get slotid from endpoint
+    async def rest_slotid_hdl(self,request):
+        return web.json_response(rest_slotid.get_slotid())
 
-# Handler for sensors resource endpoint
-@commonApp.route('/api/sys/sensors')
-def rest_sensors_hdl():
-    return rest_sensors.get_sensors()
-
-
-# Handler for sensors-full resource endpoint
-@commonApp.route('/api/sys/sensors-full')
-def rest_sensors_full_hdl():
-    return rest_sensors.get_sensors_full()
-
-
-# Handler for gpios resource endpoint
-@commonApp.route('/api/sys/gpios')
-def rest_gpios_hdl():
-    return rest_gpios.get_gpios()
-
-
-# Handler for peer FC presence resource endpoint
-@commonApp.route('/api/sys/fc_present')
-def rest_fcpresent_hdl():
-    return rest_fcpresent.get_fcpresent()
-
-
-@commonApp.route('/api/sys/modbus_registers')
-def modbus_registers_hdl():
-    return rest_modbus.get_modbus_registers()
-
-
-@commonApp.route('/api/sys/psu_update')
-def psu_update_hdl():
-    return rest_psu_update.get_jobs()
-
-
-@commonApp.route('/api/sys/psu_update', method='POST')
-def psu_update_hdl_post():
-    data = json.load(bottle.request.body)
-    return rest_psu_update.begin_job(data)
-
-
-# Handler for get slotid from endpoint
-@commonApp.route('/api/sys/slotid')
-def rest_slotid_hdl():
-    return rest_slotid.get_slotid()
-
-
-@commonApp.route('/api/sys/mTerm_status')
-def rest_mTerm_status():
-    return rest_mTerm.get_mTerm_status()
+    # Handler for mTerm status
+    async def rest_mTerm_status(self,request):
+        return web.json_response(rest_mTerm.get_mTerm_status())

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -17,18 +17,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import bottle
+from aiohttp import web
+from rest_utils import get_endpoints
 import rest_usb2i2c_reset
 import rest_i2cflush
 
-boardApp = bottle.Bottle()
+class boardApp_Handler:
 
-# Disable the endpoint in BMC until we root cause cp2112 issues.
-# Handler to reset usb-to-i2c
-#@boardApp.route('/api/sys/usb2i2c_reset')
-#def rest_usb2i2c_reset_hdl():
-#    return rest_usb2i2c_reset.set_usb2i2c()
+    # Disable the endpoint in BMC until we root cause cp2112 issues.
+    # Handler to reset usb-to-i2c
+    #async def rest_usb2i2c_reset_hdl(self,request):
+        #return rest_usb2i2c_reset.set_usb2i2c()
 
-@boardApp.route('/api/sys/i2cflush')
-def rest_i2cflush_hdl():
-    return rest_i2cflush.i2cflush()
+    async def rest_i2cflush_hdl(self,request):
+        return web.json_response(rest_i2cflush.i2cflush())
+

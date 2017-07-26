@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -25,4 +25,5 @@ from subprocess import Popen
 def get_modbus_registers():
     p = Popen('/usr/local/bin/rackmondata', stdout=subprocess.PIPE)
     out, err = p.communicate()
+    out = out.decode()
     return out

@@ -18,8 +18,5 @@
 # Boston, MA 02110-1301 USA
 #
 
-import configparser
 
-configpath = '/etc/rest.cfg'
-RestConfig = configparser.ConfigParser()
-RestConfig.read(configpath)
+""" This file will be replaced by board specific file."""

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-import urllib2, urllib
+import urllib.request, urllib.error, urllib.parse, urllib.request, urllib.parse, urllib.error
 import logging
 import os
 import subprocess
@@ -93,8 +93,8 @@ class SpatulaWrapper(object):
                     endpoint = endpoint))
         for url in urls:
             try:
-                request = urllib2.Request(url)
-                response = urllib2.urlopen(request)
+                request = urllib.request.Request(url)
+                response = urllib.request.urlopen(request)
                 return response.read()
             except Exception as err:
                 continue
@@ -104,11 +104,11 @@ class SpatulaWrapper(object):
         '''
         Api to report the timestamp of a successful run
         '''
-        query = urllib.urlencode({'timestamp': time.time()})
+        query = urllib.parse.urlencode({'timestamp': time.time()})
         url = '{}{}?{}'.format(self.url, endpoint, query)
         try:
-            request = urllib2.Request(url)
-            response = urllib2.urlopen(request)
+            request = urllib.request.Request(url)
+            response = urllib.request.urlopen(request)
             return response.read()
         except Exception as err:
             raise Exception('failed report success {}: {}'.format(url, err))
@@ -117,11 +117,11 @@ class SpatulaWrapper(object):
         '''
         Api to report the timestamp and the error when spatula fails
         '''
-        query = urllib.urlencode({'timestamp': time.time(), 'error': error})
+        query = urllib.parse.urlencode({'timestamp': time.time(), 'error': error})
         url = '{}{}?{}'.format(self.url, endpoint, query)
         try:
-            request = urllib2.Request(url)
-            response = urllib2.urlopen(request)
+            request = urllib.request.Request(url)
+            response = urllib.request.urlopen(request)
             return response.read()
         except Exception as err:
             raise Exception('failed report error [{}]: {}'.format(url, err))
@@ -131,11 +131,11 @@ class SpatulaWrapper(object):
             # get the executable from host
             if not os.path.exists(os.path.dirname(SPATULA_FILE)):
                 os.makedirs(os.path.dirname(SPATULA_FILE))
-            with open(SPATULA_FILE, 'w+') as file:
+            with open(SPATULA_FILE, 'wb') as file:
                 file.write(self._getSpatula())
                 file.close()
             # set the permission
-            os.chmod(SPATULA_FILE, 0755)
+            os.chmod(SPATULA_FILE, 0o755)
             # run the executable file
             spatula = subprocess.Popen([SPATULA_FILE],
                     stdout=subprocess.PIPE,

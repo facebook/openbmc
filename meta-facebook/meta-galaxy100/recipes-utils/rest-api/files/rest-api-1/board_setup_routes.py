@@ -17,31 +17,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
-import json
-import subprocess
-
-
-def _ceutil():
-    proc = subprocess.Popen(
-        ['/usr/bin/wget', '--timeout', '5', '-q', '-O', '-',
-        'http://[fe80::c1:1%eth0.4088]:8080/api/sys/mb/chassis_eeprom'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    try:
-        data, err = proc.communicate()
-        data = data.decode()
-        err = err.decode()
-        if proc.returncode:
-           raise Exception('Command failed, returncode: {}'.format(proc.returncode))
-    except Exception as e:
-        print('Error getting chassis eeprom from CMM {}'.format(e))
-        raise
-
-    for key, val in list(json.loads(data).items()):
-        print('{}: {}'.format(key, val))
+from board_endpoint import boardApp_Handler
+from boardroutes import *
 
 
-if __name__ == '__main__':
-    _ceutil()
+# REMEMBER POST HANDLER add_post
+
+def setup_board_routes(app):
+    bhandler = boardApp_Handler()
+    app.router.add_get(board_routes[0], bhandler.rest_fruid_scm_hdl)
+    app.router.add_get(board_routes[1], bhandler.rest_chassis_eeprom_hdl)
+    app.router.add_get(board_routes[2], bhandler.rest_seutil_hdl)
+    app.router.add_post(board_routes[3], bhandler.rest_sol_act_hdl)
+    app.router.add_get(board_routes[4], bhandler.rest_usb2i2c_reset_hdl)
+    app.router.add_get(board_routes[5], bhandler.rest_firmware_info)

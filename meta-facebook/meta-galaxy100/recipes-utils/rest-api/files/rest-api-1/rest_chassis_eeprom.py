@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2016-present Facebook. All Rights Reserved.
 #
@@ -16,7 +16,7 @@ import eeprom_utils
 
 
 def get_chassis_eeprom():
-  return eeprom_utils.get_eeprom_data('/usr/local/bin/ceutil')
+    return eeprom_utils.get_eeprom_data('/usr/local/bin/ceutil')
 
 
 # For ease of debugging

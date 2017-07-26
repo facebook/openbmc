@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2016-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -11,10 +11,18 @@
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 # for more details.
 #
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-130
 
-import rest_fruid
 
-
-# Handler for FRUID resource endpoint
-def get_seutil():
-    return rest_fruid.get_fruid(cmd=['seutil'])
+board_routes = [
+    '/api/sys/mb/fruid_scm',
+    '/api/sys/mb/chassis_eeprom',
+    '/api/sys/mb/seutil',
+    '/api/sys/sol',
+    '/api/sys/usb2i2c_reset',
+    '/api/sys/firmware_info',
+]

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2016-present Facebook. All Rights Reserved.
 #
@@ -14,6 +14,7 @@
 
 import subprocess
 import bmc_command
+
 
 def _parse_eeprom_data(output):
   eeprom_data = {}
@@ -37,5 +38,5 @@ def get_eeprom_data(util):
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE)
   data, err = bmc_command.timed_communicate(proc)
+  data = data.decode()
   return _parse_eeprom_data(data)
-

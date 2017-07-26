@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import bottle
+from aiohttp import web
 import rest_fruid_scm
 import rest_chassis_eeprom
 import rest_seutil
@@ -25,41 +25,30 @@ import rest_sol
 import rest_usb2i2c_reset
 import rest_firmware
 
-boardApp = bottle.Bottle()
 
+class boardApp_Handler:
 
-# Handler for sys/mb/fruid_scm resource endpoint
-@boardApp.route('/api/sys/mb/fruid_scm')
-def rest_fruid_scm_hdl():
-  return rest_fruid_scm.get_fruid_scm()
+    # Handler for sys/mb/fruid_scm resource endpoint
+    async def rest_fruid_scm_hdl(self, request):
+        return web.json_response(rest_fruid_scm.get_fruid_scm())
 
+    # Handler for sys/mb/seutil resource endpoint
+    async def rest_chassis_eeprom_hdl(self, request):
+        return web.json_response(rest_chassis_eeprom.get_chassis_eeprom())
 
-# Handler for sys/mb/seutil resource endpoint
-@boardApp.route('/api/sys/mb/chassis_eeprom')
-def rest_chassis_eeprom_hdl():
-  return rest_chassis_eeprom.get_chassis_eeprom()
+    # Handler for sys/mb/seutil resource endpoint
+    async def rest_seutil_hdl(self, request):
+        return web.json_response(rest_seutil.get_seutil())
 
+    # Handler for SOL resource endpoint
+    async def rest_sol_act_hdl(self, request):
+        data = await request.json()
+        return web.json_response(rest_sol.sol_action(data))
 
-# Handler for sys/mb/seutil resource endpoint
-@boardApp.route('/api/sys/mb/seutil')
-def rest_seutil_hdl():
-  return rest_seutil.get_seutil()
+    # Handler to reset usb-to-i2c
+    async def rest_usb2i2c_reset_hdl(self, request):
+        return web.json_response(rest_usb2i2c_reset.set_usb2i2c())
 
-
-# Handler for SOL resource endpoint
-@boardApp.route('/api/sys/sol', method='POST')
-def rest_sol_act_hdl():
-    data = json.load(request.body)
-    return rest_sol.sol_action(data)
-
-
-# Handler to reset usb-to-i2c
-@boardApp.route('/api/sys/usb2i2c_reset')
-def rest_usb2i2c_reset_hdl():
-    return rest_usb2i2c_reset.set_usb2i2c()
-
-
-# Handler to get firmware info
-@boardApp.route('/api/sys/firmware_info')
-def rest_firmware_info():
-    return rest_firmware.get_firmware_info()
+    # Handler to get firmware info
+    async def rest_firmware_info(self, request):
+        return web.json_response(rest_firmware.get_firmware_info())

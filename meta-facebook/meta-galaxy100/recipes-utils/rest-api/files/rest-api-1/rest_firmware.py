@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2016-present Facebook. All Rights Reserved.
 #
@@ -14,6 +14,8 @@
 import os
 import subprocess
 import bmc_command
+import syslog
+
 
 def _get_version(version_file):
     with open(version_file) as f:
@@ -48,6 +50,7 @@ def _get_qsfp_cpld_info():
                             stderr=subprocess.PIPE)
     try:
         data, err = bmc_command.timed_communicate(proc)
+        data = data.decode()
         ver, sub_ver = data.split(',')
     except Exception as e:
         syslog.syslog(syslog.LOG_ERR, 'Error getting QSFP CPLD versions : {}'
@@ -65,4 +68,4 @@ def get_firmware_info():
 
 
 if __name__ == '__main__':
-    print ('{}'.format(get_firmware_info()))
+    print('{}'.format(get_firmware_info()))

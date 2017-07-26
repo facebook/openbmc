@@ -19,6 +19,9 @@ SRC_URI += " \
     file://rest-api-1/rest_sol.py \
     file://rest-api-1/rest_firmware.py \
     file://rest-api-1/rest_chassis_eeprom.py \
+    file://rest-api-1/board_endpoint.py \
+    file://rest-api-1/board_setup_routes.py \
+    file://rest-api-1/boardroutes.py \
     "
 
 binfiles += " \
@@ -28,4 +31,7 @@ binfiles += " \
     rest_sol.py \
     rest_firmware.py \
     rest_chassis_eeprom.py \
+    board_endpoint.py \
+    board_setup_routes.py \
+    boardroutes.py \
     "

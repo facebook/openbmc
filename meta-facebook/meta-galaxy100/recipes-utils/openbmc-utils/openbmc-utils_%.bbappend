@@ -34,7 +34,7 @@ SRC_URI += "file://board-utils.sh \
       file://repeater_verify.sh \
       "
 
-RDEPENDS_${PN} += " python bash"
+RDEPENDS_${PN} += " python3 bash"
 DEPENDS_append += " update-rc.d-native"
 
 do_install_board() {

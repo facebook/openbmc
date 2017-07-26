@@ -1,8 +1,4 @@
-#!/usr/bin/python
-#from __future__ import absolute_import
-#from __future__ import division
-#from __future__ import print_function
-#from __future__ import unicode_literals
+#!/usr/bin/python3
 
 import os
 import re
@@ -91,19 +87,19 @@ class Galaxy100Test(object):
 		self.expect2 = cmd_item.expect2
 		self.extern_cmd = cmd_item.extern_cmd
 	def sendcmd(self):
-		print '\033[1;34;44m' +'TestItem:  ' + '\033[0m\"' +  self.name + '\"'
-		print '\033[1;34;44m' +'CMD:  ' + '\033[0m\"' +  self.cmd0 + '\"',
+		print('\033[1;34;44m' +'TestItem:  ' + '\033[0m\"' +  self.name + '\"')
+		print('\033[1;34;44m' +'CMD:  ' + '\033[0m\"' +  self.cmd0 + '\"', end=' ')
 		#sys.stdout.flush()
 		#self.recv = os.popen(self.cmd0).read()
 	def receive(self):
 		#print 'self.recv:' + self.recv
 		if self.extern_cmd != '' and self.recv != '':
-			print 'result: ' + self.recv,
-			print '\033[1;34;44m' +'Extern Cmd:  ' + '\033[0m\"' +  self.extern_cmd + '\"'
-			
-			print os.popen(self.extern_cmd).read()
+			print('result: ' + self.recv, end=' ')
+			print('\033[1;34;44m' +'Extern Cmd:  ' + '\033[0m\"' +  self.extern_cmd + '\"')
+
+			print(os.popen(self.extern_cmd).read())
 		else:
-			print 'result: ' + self.recv
+			print('result: ' + self.recv)
 	def charge(self, opcode, expect, recv):
 		#print 'recv: ' + recv
 		if opcode == '':
@@ -129,7 +125,7 @@ class Galaxy100Test(object):
 					return 0
 				else:
 					return -1
-			
+
 		elif opcode == '>=':
 			#print 'self.recv:' + self.recv + 'expext:' + self.expect0
 			if recv == '':
@@ -189,7 +185,7 @@ class Galaxy100Test(object):
 					return -1
 
 	def judge(self):
-		if self.cmd1 != '': 
+		if self.cmd1 != '':
 			#print '\n\033[1;34;44m' +'Need Charge0:  ' + '\033[0m\"' +  self.cmd1 + '\"',
 			sys.stdout.flush()
 			self.recv = os.popen(self.cmd1).read()
@@ -197,7 +193,7 @@ class Galaxy100Test(object):
 			if ret != 0:#if !=0 , ignore cmd0 and return OK
 				#print '     \033[1;33;43m' + '[Not need to test]' + '\033[0m';
 				return -1
-		if self.cmd2 != '': 
+		if self.cmd2 != '':
 			#print '\n\033[1;34;44m' +'Need Charge1:  ' + '\033[0m\"' +  self.cmd2 + '\"',
 			sys.stdout.flush()
 			self.recv = os.popen(self.cmd2).read()
@@ -213,21 +209,21 @@ class Galaxy100Test(object):
 		self.recv = os.popen(self.cmd0).read()
 		ret = self.charge(self.opcode0, self.expect0, self.recv)
 		if ret == 0:
-			print '     \033[1;32;42m' + '[PASS]' + '\033[0m';
+			print('     \033[1;32;42m' + '[PASS]' + '\033[0m');
 			succ_list.append(self.name)
 			return 0
 		else:
-			print '     \033[1;31;41m' + '[Fail]' + '\033[0m'
+			print('     \033[1;31;41m' + '[Fail]' + '\033[0m')
 			err_list.append(self.name)
 			return -1
 
 
-			
+
 def main():
 	i = 0
 	error = 0
 	success = 0
-	print 'TestItem len:' + str(len)
+	print('TestItem len:' + str(len))
 	for i in range(len):
 		testObj = TestObj(TestItem[i])
 		test = Galaxy100Test(testObj)
@@ -241,17 +237,14 @@ def main():
 			time.sleep(1)
 		#continue
 	if succ_list:
-		print '\033[1;32;42m' + 'Success items: [' + str(success) + ']'
+		print('\033[1;32;42m' + 'Success items: [' + str(success) + ']')
 		for item in succ_list:
-			print item
+			print(item)
 	if err_list:
-		print '\033[1;31;41m' + '\nError items: [' + str(error) + ']'
+		print('\033[1;31;41m' + '\nError items: [' + str(error) + ']')
 		for item in err_list:
-			print item
-		print '\033[0m'
+			print(item)
+		print('\033[0m')
 
 len = len(TestItem)
 rc = main()
-
-
-

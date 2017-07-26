@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -27,6 +27,7 @@ def sol_action(data):
     if data["action"] == 'stop':
         (ret, _) = Popen('ps | grep -v grep | grep sol.sh | awk \'{print $1}\'', \
                     shell=True, stdout=PIPE).communicate()
+        ret = ret.decode()
         adata = ret.split('\n')
         if adata[0] != '':
             cmd = 'kill -9 ' + adata[0] + ' 2>/dev/null'
@@ -34,6 +35,7 @@ def sol_action(data):
                          shell=True, stdout=PIPE).communicate()
         (ret, _) = Popen('ps | grep -v grep | grep microcom | awk \'{print $1}\'', \
                     shell=True, stdout=PIPE).communicate()
+        ret = ret.decode()
         adata = ret.split('\n')
         if adata[0] != '':
             cmd = 'kill -9 ' + adata[0] + ' 2>/dev/null'
@@ -41,7 +43,7 @@ def sol_action(data):
                         shell=True, stdout=PIPE).communicate()
         Popen('rm /var/lock/LCK..ttyS1', \
                     shell=True, stdout=PIPE).communicate()
-        
+
         result = { "result": "success"}
     else:
         result = { "result": "fail"}

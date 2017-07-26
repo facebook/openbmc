@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -18,14 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 
-
 import os
 from subprocess import *
+
 
 # Handler for uServer resource endpoint
 def get_server():
     (ret, _) = Popen('/usr/local/bin/wedge_power.sh status', \
                      shell=True, stdout=PIPE).communicate()
+    ret = ret.decode()
     status = ret.rsplit()[-1]
 
     result = {
@@ -40,6 +41,7 @@ def server_action(data):
     if data["action"] == 'power-on':
         (ret, _) = Popen('/usr/local/bin/wedge_power.sh status', \
                          shell=True, stdout=PIPE).communicate()
+        ret = ret.decode()
         status = ret.rsplit()[-1]
         if status == 'on':
             res = 'failure'
@@ -47,6 +49,7 @@ def server_action(data):
         else:
             (ret, _) = Popen('/usr/local/bin/wedge_power.sh on', \
 			shell=True, stdout=PIPE).communicate()
+            ret = ret.decode()
             res = "success"
     elif data["action"] == 'power-off':
         (ret, _) = Popen('/usr/local/bin/wedge_power.sh off', \

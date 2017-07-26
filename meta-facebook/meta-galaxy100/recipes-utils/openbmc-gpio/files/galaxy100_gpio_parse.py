@@ -1,4 +1,4 @@
-#!/usr/bin/python -tt
+#!/usr/bin/python3
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -10,10 +10,6 @@
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 # for more details.
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import argparse
 import csv
@@ -33,11 +29,11 @@ class CsvReader:
         self.path = path
 
         fileobj = open(path, 'r')
-        self.reader = csv.reader(fileobj, delimiter=b',', quotechar=b'"')
+        self.reader = csv.reader(fileobj, delimiter=',', quotechar='"')
 
-    def next(self):
+    def __next__(self):
         try:
-            line = self.reader.next()
+            line = next(self.reader)
         except StopIteration:
             return None
         return line
@@ -51,7 +47,7 @@ class WedgeGPIO(object):
 
     def parse(self):
         while True:
-            line = self.data.next()
+            line = next(self.data)
             if line is None:
                 break
 

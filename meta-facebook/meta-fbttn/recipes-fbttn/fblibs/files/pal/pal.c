@@ -177,6 +177,7 @@ const char pal_fru_list[] = "all, server, iom, dpb, scc, nic";
 const char pal_fru_list_print[] = "all, server, iom, dpb, scc"; // Cannot read fruid from "nic"
 const char pal_fru_list_rw[] = "server, iom"; // Cannot write fruid to "scc" and "dpb"
 const char pal_server_list[] = "server";
+const char pal_fru_list_sensor_history[] = "all, server, iom, nic"; // Cannot show sensor history to "scc" and "dpb"
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 8;

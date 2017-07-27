@@ -1,0 +1,53 @@
+#!/bin/bash -ex
+#
+# Copyright 2017-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+dir=$(dirname $(realpath $0))
+image_path=${1:?Please specify image file as first argument.}
+target_hostname=${2:?Please specify target hostname as second argument.}
+checksum_path=${3:?Please specify JSON checksum file as third argument.}
+log=${4:-$target_hostname}
+
+port=$((0xB3C))
+url=http://$(hostname):$port/$(basename $image_path)
+
+script -f $log-server.log -c \
+  "$dir/check_image.py \
+   --checksum $checksum_path \
+   --serve \
+   --port $port \
+   $image_path" &
+pid=$!
+
+files="$dir/{virtualcat,partition,system,improve_system}.py $checksum_path"
+target=root@$target_hostname
+data=/mnt/data
+dest=$target:$data/
+script=$data/improve_system.py
+checksum=$data/$(basename $checksum_path)
+scppass="sshpass -p0penBmc scp"
+sshpass="sshpass -p0penBmc ssh"
+sshpass="$sshpass -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+
+script -f $log.log -c \
+  "$scppass $files $dest &&
+   $sshpass $target $script $url --checksum $checksum &&
+   sleep 3m &&
+   $sshpass $target 'head -n 1 /etc/issue; uptime; free'"
+
+kill $pid

@@ -17,22 +17,21 @@
 SUMMARY = "Configure the BMC"
 DESCRIPTION = "The script communicates with host and configures BMC."
 SECTION = "base"
-PR = "r2"
+PR = "r3"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://spatula_wrapper.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
 
 DEPENDS_append = " update-rc.d-native"
 
-SRC_URI = "file://safetoreboot \
-           file://setup-spatula.sh \
+SRC_URI = "file://setup-spatula.sh \
            file://spatula.conf \
            file://spatula_wrapper.py \
           "
 
 S = "${WORKDIR}"
 
-binfiles = "safetoreboot spatula_wrapper.py"
+binfiles = "spatula_wrapper.py"
 
 do_install() {
   bin="${D}/usr/local/bin"

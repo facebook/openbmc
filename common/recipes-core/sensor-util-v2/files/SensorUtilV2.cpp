@@ -34,39 +34,30 @@ using namespace std;
 #define MIN_SENSOR_NUM 1
 #define MAX_SENSOR_NUM 255
 
-// helper function to print errors in user command
-static void printUsageAndExit(string error, int errNo) {
-  cout << "Usage: sensor-util2 [ all/fru-name ] <sensor-num>\n";
-  if (!error.empty()) {
-    cout << "Error: " << error << "\n";
-  }
-  exit(errNo);
-}
-
-// helper function to print errors in excecution
-static void printErrorExit(string error, int errNo) {
-  cout << "Error: " << error << "\n";
-  exit(errNo);
-}
-
-void checkDBusErrorAndExit(GError *error) {
-  if (error != NULL) {
-    cout << "DBus error : " << error->message << "\n";
+//Helper function to check dbus erros
+static void checkDBusErrorAndExit(GError* error) {
+  if (error != nullptr) {
+    if (error->code == G_DBUS_ERROR_SERVICE_UNKNOWN ) {
+      cout << "Error: Sensor Service not available" << endl;
+    }
+    else {
+      cout << "DBus error : " << error->message << endl;
+    }
     exit(error->code);
   }
 }
 
 //Helper function to get DBus Proxy
-GDBusProxy* getDBusProxy(const char* path, const char* interface) {
-  GError* error = NULL;
+static GDBusProxy* getDBusProxy(const char* path, const char* interface) {
+  GError* error = nullptr;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_sync(
                       G_BUS_TYPE_SYSTEM,
                       G_DBUS_PROXY_FLAGS_NONE,
-                      NULL,
+                      nullptr,
                       SENSOR_SVC_DBUS_NAME,
                       path,
                       interface,
-                      NULL,
+                      nullptr,
                       &error);
 
   checkDBusErrorAndExit(error);
@@ -74,16 +65,78 @@ GDBusProxy* getDBusProxy(const char* path, const char* interface) {
   return proxy;
 }
 
-int parseSensorNumber(const char* strValue) {
+/*
+ * Returns available FRU names at sensor-svc
+ */
+static string getAvailableFruNames() {
+  GVariant* response;
+  const char* fruPath;
+  GError* error = nullptr;
+  GVariantIter* iter = nullptr;
+  gchar* fruName;
+  string fruNames;
+
+  // Get proxy to sensor service
+  GDBusProxy* proxy = getDBusProxy(SENSOR_SVC_BASE_PATH,
+                                   SENSOR_SVC_SENSOR_TREE_INTERFACE);
+
+  checkDBusErrorAndExit(error);
+
+  // Get fru list
+  response = g_dbus_proxy_call_sync(
+      proxy,
+      "getFRUList",
+      nullptr,
+      G_DBUS_CALL_FLAGS_NONE,
+      -1,
+      nullptr,
+      &error);
+
+  checkDBusErrorAndExit(error);
+
+  // decode response
+  fruNames = "all";
+  g_variant_get(response, "(as)", &iter);
+  if (iter != nullptr) {
+    while (g_variant_iter_loop (iter, "&s", &fruName)) {
+      fruNames = fruNames + ", " + fruName;
+    }
+
+    g_variant_iter_free (iter);
+  }
+
+  g_variant_unref(response);
+
+  return fruNames;
+}
+
+// helper function to print errors in user command
+static void printUsageAndExit(string error, int errNo) {
+  string frulist = getAvailableFruNames();
+
+  cout << "Usage: sensor-util-v2 [fru] <sensor-num>" << endl;
+  cout << "       [fru]: " << frulist << endl;
+  cout << "       <sensor num>: 0xXX (Omit [sensor num] means all sensors." << endl;
+
+  if (!error.empty()) {
+    cout << "Error: " << error << endl;
+  }
+  exit(errNo);
+}
+
+// helper function to print errors in excecution
+static void printErrorExit(string error, int errNo) {
+  cout << "Error: " << error << endl;
+  exit(errNo);
+}
+
+/*
+ * Parse sensor number from string strValue
+ */
+static int parseSensorNumber(const char* strValue) {
   int sensorNum;
   try {
-    if ((strlen(strValue) > 2) && (strValue[0] == '0' and strValue[1] == 'x')){
-      //hex String
-      sensorNum = std::stoi (strValue, nullptr, 16);
-    }
-    else {
-      sensorNum = std::stoi (strValue);
-    }
+    sensorNum = std::stoi (strValue, nullptr, 0);
   }
   catch(std::exception const & e)
   {
@@ -97,34 +150,20 @@ int parseSensorNumber(const char* strValue) {
   return sensorNum;
 }
 
-void printSensorValue(const gchar* sensorPath) {
-  GVariant *response;
+/*
+ * Print Sensor Object
+ */
+static void printSensorObject(GVariant* sensorObject) {
   const gchar* name;
   gchar id;
   gint ret;
   gdouble sensorValue;
   const gchar* unit;
 
-  GError *error = NULL;
+  //decode sensor object
+  g_variant_get(sensorObject, "(syids)", &name, &id, &ret ,&sensorValue, &unit);
 
-  // Get proxy to sensor object
-  GDBusProxy* proxy = getDBusProxy(sensorPath, SENSOR_SVC_SENSOR_OBJECT_INTERFACE);
-
-  // Get sensor value from Sensor
-  response = g_dbus_proxy_call_sync(
-      proxy,
-      "org.openbmc.SensorObject.getSensorObject",
-      NULL,
-      G_DBUS_CALL_FLAGS_NONE,
-      -1,
-      NULL,
-      &error);
-
-  checkDBusErrorAndExit(error);
-
-  // extract sensorpath from response
-  g_variant_get(response, "(syids)", &name, &id, &ret ,&sensorValue, &unit);
-
+  //print SensorObject
   cout << std::left;
   cout << std::setw(45) << name;
   cout << "0x" << std::hex << std::setw(5) << (int)id << std::dec;
@@ -135,26 +174,62 @@ void printSensorValue(const gchar* sensorPath) {
     cout << std::fixed << std::setprecision(2) << std::setw(10) << sensorValue;
     cout << unit << std::endl;
   }
+}
 
+/*
+ * Print Sensor Object at sensorPath
+ */
+static void printSensor(const gchar* sensorPath) {
+  GVariant* response;
+  const gchar* name;
+  gchar id;
+  gint ret;
+  gdouble sensorValue;
+  const gchar* unit;
+
+  GError* error = nullptr;
+
+  // Get proxy to sensor
+  GDBusProxy* proxy = getDBusProxy(sensorPath,
+                                   SENSOR_SVC_SENSOR_OBJECT_INTERFACE);
+
+  // Get sensor object
+  response = g_dbus_proxy_call_sync(
+      proxy,
+      "getSensorObject",
+      nullptr,
+      G_DBUS_CALL_FLAGS_NONE,
+      -1,
+      nullptr,
+      &error);
+
+  checkDBusErrorAndExit(error);
+
+  printSensorObject(response);
   g_variant_unref(response);
 }
 
-char* getFruObjectPath(const char* fruName) {
-  GVariant *response;
+/*
+ * Locate fru object with name 'fruName' under sensor service
+ * and return path to fru object
+ */
+static char* getFruObjectPath(const char* fruName) {
+  GVariant* response;
   char* fruPath;
-  GError *error = NULL;
+  GError* error = nullptr;
 
-  // Get proxy to sensor object
-  GDBusProxy* proxy = getDBusProxy(SENSOR_SVC_BASE_PATH, SENSOR_SVC_SENSOR_TREE_INTERFACE);
+  // Get proxy to Sensor Service
+  GDBusProxy* proxy = getDBusProxy(SENSOR_SVC_BASE_PATH,
+                                   SENSOR_SVC_SENSOR_TREE_INTERFACE);
 
   // Get fru path
   response = g_dbus_proxy_call_sync(
       proxy,
-      "org.openbmc.SensorTree.getFruPathByName",
+      "getFruPathByName",
       g_variant_new ("(&s)", fruName),
       G_DBUS_CALL_FLAGS_NONE,
       -1,
-      NULL,
+      nullptr,
       &error);
 
   checkDBusErrorAndExit(error);
@@ -166,49 +241,8 @@ char* getFruObjectPath(const char* fruName) {
   return fruPath;
 }
 
-string getAvailableFruList() {
-  GVariant *response;
-  const char* fruPath;
-  GError *error = NULL;
-  GVariantIter *iter = NULL;
-  gchar *fruName;
-  string fruList;
-
-  // Get proxy to sensor service
-  GDBusProxy* proxy = getDBusProxy(SENSOR_SVC_BASE_PATH, SENSOR_SVC_SENSOR_TREE_INTERFACE);
-
-  checkDBusErrorAndExit(error);
-
-  // Get fru path
-  response = g_dbus_proxy_call_sync(
-      proxy,
-      "org.openbmc.SensorTree.getFRUList",
-      NULL,
-      G_DBUS_CALL_FLAGS_NONE,
-      -1,
-      NULL,
-      &error);
-
-  checkDBusErrorAndExit(error);
-
-  // print available fru list
-  fruList = "[ all ";
-  g_variant_get(response, "(as)", &iter);
-  if (iter != NULL) {
-    while (g_variant_iter_loop (iter, "&s", &fruName))
-      fruList = fruList + fruName + " ";
-
-    g_variant_iter_free (iter);
-  }
-
-  g_variant_unref(response);
-
-  fruList += "]";
-  return fruList;
-}
-
-int main(int argc, char const *argv[]) {
-  GError *error = NULL;
+int main(int argc, char const* argv[]) {
+  GError* error = nullptr;
 
   int sensorNum = -1;
 
@@ -231,7 +265,8 @@ int main(int argc, char const *argv[]) {
     fruPath = getFruObjectPath(argv[1]);
 
     if (fruPath[0] == '\0') {
-      printErrorExit("Fru " + string(argv[1]) + "does not exists, Available FRU :" + getAvailableFruList(), -1);
+      //fru argv[1] not found
+      printUsageAndExit("Invalid FRU", -1);
     }
   }
 
@@ -242,27 +277,27 @@ int main(int argc, char const *argv[]) {
 
   if (sensorNum == -1){
     // Sensor number not given by user, print all sensors under fru
-    //Get sensorList under given fru
-    // Get sensor path based on sensorNum
-    GVariant *response;
-    const gchar *sensorPath;
+    // Get all sensor objects under given fru
+    GVariant* response;
+    const gchar* sensorPath;
+    GVariantIter* iter = nullptr;
 
-    // Get sensorpath from FRU object
+    // Get all sensor objects from FRU
     response = g_dbus_proxy_call_sync(
         proxy,
-        "org.openbmc.SensorTree.getSensorObjectPaths",
-        NULL,
+        "getSensorObjects",
+        nullptr,
         G_DBUS_CALL_FLAGS_NONE,
         -1,
-        NULL,
+        nullptr,
         &error);
     checkDBusErrorAndExit(error);
 
-    GVariantIter *iter = NULL;
-    g_variant_get(response, "(as)", &iter);
-    if (iter != NULL) {
-      while (g_variant_iter_loop (iter, "&s", &sensorPath)) {
-        printSensorValue(sensorPath);
+    g_variant_get(response, "(a(syids))", &iter);
+    if (iter != nullptr) {
+      GVariant* sensorObject;
+      while ((sensorObject = g_variant_iter_next_value (iter))) {
+        printSensorObject(sensorObject);
       }
 
       g_variant_iter_free (iter);
@@ -271,18 +306,18 @@ int main(int argc, char const *argv[]) {
   }
   else {
     // Get sensor path based on sensorNum
-    GVariant *response;
+    GVariant* response;
     GVariant* param = g_variant_new("(y)", sensorNum);
-    const gchar *sensorPath;
+    const gchar* sensorPath;
 
     // Get sensorpath from FRU object
     response = g_dbus_proxy_call_sync(
         proxy,
-        "org.openbmc.SensorTree.getSensorPathById",
+        "getSensorPathById",
         param,
         G_DBUS_CALL_FLAGS_NONE,
         -1,
-        NULL,
+        nullptr,
         &error);
     checkDBusErrorAndExit(error);
 
@@ -291,10 +326,11 @@ int main(int argc, char const *argv[]) {
 
     //Check if sensor is located under FRU object
     if (sensorPath[0] == '\0') {
-      printErrorExit("Sensor " + string(argv[2]) + " not found under FRU " + string(argv[1]), -1);
+      printErrorExit("Sensor " + string(argv[2]) +
+                     " not found under FRU " + string(argv[1]), -1);
     }
 
-    printSensorValue(sensorPath);
+    printSensor(sensorPath);
     g_variant_unref(response);
   }
 

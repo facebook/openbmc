@@ -203,8 +203,6 @@ char * key_list[] = {
 "fru_prsnt_health",
 "bmc_health",
 "slot1_sel_error",
-"scc_sensor_timestamp",
-"dpb_sensor_timestamp",
 "slot1_boot_order",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
@@ -225,8 +223,6 @@ char * def_val_list[] = {
   "1", /* fru_prsnt_health */
   "1", /* bmc_health */
   "1", /* slot_sel_error */
-  "0", /* scc_sensor_timestamp */
-  "0", /* dpb_sensor_timestamp */
   "0000000", /* slot1_boot_order */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
@@ -2930,7 +2926,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
       break;
   }
 
-  ret = pal_get_key_value(key, cvalue);
+  ret = pal_get_edb_value(key, cvalue);
     if (ret < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_expander_sensor_check: pal_get_key_value failed for "
@@ -2986,7 +2982,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
       //update timestamp after Updated Expander sensor
       clock_gettime(CLOCK_REALTIME, &ts);
       sprintf(tstr, "%d", ts.tv_sec);
-      pal_set_key_value(key, tstr);
+      pal_set_edb_value(key, tstr);
     }
   }
   return 0;
@@ -4168,4 +4164,44 @@ default_iom_board_id:
   iom_board_id = BOARD_MP;
 
   return iom_board_id;
+}
+
+int
+pal_get_edb_value(char *key, char *value) {
+  int i = 0;
+  int ret = 0;
+
+  for (i = 0; i < RETRY_COUNT; i++) {
+    ret = 0;
+    ret = edb_cache_get(key, value);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s, failed to read edb key (%s), ret: %d, retry: %d", __func__, key, ret, i);
+    }
+    else {
+      break;
+    }
+    msleep(100);
+  }
+
+  return ret;
+}
+
+int
+pal_set_edb_value(char *key, char *value) {
+  int i = 0;
+  int ret = 0;
+
+  for (i = 0; i < RETRY_COUNT; i++) {
+    ret = 0;
+    ret = edb_cache_set(key, value);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s, failed to write edb key (%s), ret: %d, retry: %d", __func__, key, ret, i);
+    }
+    else {
+      break;
+    }
+    msleep(100);
+  }
+
+  return ret;
 }

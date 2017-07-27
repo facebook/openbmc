@@ -333,6 +333,8 @@ int pal_bmc_err_disable(const char *error_item);
 uint8_t pal_iom_led_control(uint8_t color);
 int server_power_reset(uint8_t slot_id);
 int pal_get_iom_board_id (void);
+int pal_get_edb_value(char *key, char *value);
+int pal_set_edb_value(char *key, char *value);
 
 #ifdef __cplusplus
 } // extern "C"

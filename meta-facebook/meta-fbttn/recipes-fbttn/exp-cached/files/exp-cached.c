@@ -66,9 +66,29 @@ fruid_cache_init(void) {
   return;
 }
 
+void
+sensor_timestamp_init(void) {
+  //Initialize SCC and DPB sensor timestamp to 0
+  char key[MAX_KEY_LEN] = {0};
+  int ret = 0;
+
+  sprintf(key, "dpb_sensor_timestamp");
+  ret = pal_set_edb_value(key, "0");
+  if (ret != 0) {
+    syslog(LOG_CRIT, "%s, failed to init %s, ret: %d", __func__, key, ret);
+  }
+
+  sprintf(key, "scc_sensor_timestamp");
+  ret = pal_set_edb_value(key, "0");
+  if (ret != 0) {
+    syslog(LOG_CRIT, "%s, failed to init %s, ret: %d", __func__, key, ret);
+  }
+}
+
 int
 main (int argc, char * const argv[])
 {
+  sensor_timestamp_init();
   fruid_cache_init();
   return 0;
 }

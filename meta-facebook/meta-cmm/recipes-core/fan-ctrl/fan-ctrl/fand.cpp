@@ -57,6 +57,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <syslog.h>
+#include <dirent.h>
 #include "watchdog.h"
 #ifdef CONFIG_GALAXY100
 #include <fcntl.h>
@@ -129,44 +130,42 @@
 #define GALAXY100_SCM_NUM 8
 
 #define FAN_FAILURE_OFFSET 30
+#define FAN_PRESENT 0
+#define FAN_ALIVE 0
 
+#define PATH_CACHE_SIZE 256
 
-struct channel_info_stu {
-  uchar addr;
-  uchar channel;
-};
-struct sensor_info {
-  struct channel_info_stu channel1;
-  struct channel_info_stu channel2;
-  struct channel_info_stu channel3;
-  uchar bus;
-  uchar addr;
+struct sensor_info_sysfs {
+  char* prefix;
+  char* suffix;
   uchar temp;
-  int (*read_temp)(struct channel_info_stu, struct channel_info_stu, struct channel_info_stu, int, int);
+  int (*read_sysfs)(struct sensor_info_sysfs *sensor);
+  char path_cache[PATH_CACHE_SIZE];
 };
-struct fan_info_stu {
-  uchar front_fan_reg;
-  uchar rear_fan_reg;
-  uchar pwm_reg;
-  uchar fan_led_reg;
-  uchar fan_status;
+
+struct fan_info_stu_sysfs {
+  char *front_fan_prefix;
+  char *rear_fan_prefix;
+  char *pwm_prefix;
+  char *fan_led_prefix;
   uchar present;
   uchar failed;
 };
 
-struct galaxy100_board_info_stu {
+struct galaxy100_board_info_stu_sysfs {
   const char *name;
   uint slot_id;
-  struct sensor_info *critical;
-  struct sensor_info *alarm;
+  struct sensor_info_sysfs *critical;
+  struct sensor_info_sysfs *alarm;
 };
-struct galaxy100_fantray_info_stu {
+
+struct galaxy100_fantray_info_stu_sysfs {
   const char *name;
   int present;
-  struct sensor_info channel_info;
-  struct fan_info_stu fan1;
-  struct fan_info_stu fan2;
-  struct fan_info_stu fan3;
+  struct sensor_info_sysfs channel_info;
+  struct fan_info_stu_sysfs fan1;
+  struct fan_info_stu_sysfs fan2;
+  struct fan_info_stu_sysfs fan3;
 };
 
 struct galaxy100_fan_failed_control_stu {
@@ -177,320 +176,146 @@ struct galaxy100_fan_failed_control_stu {
   int alarm_level;
 };
 
-static int galaxy100_i2c_read(int bus, int addr, uchar reg, int byte);
 static int galaxy100_i2c_write(int bus, int addr, uchar reg, int value, int byte);
 static int open_i2c_dev(int i2cbus, char *filename, size_t size);
-static int read_temp(struct channel_info_stu channel1, struct channel_info_stu channel2, struct channel_info_stu channel3, int bus, int addr);
+static int read_temp_sysfs(sensor_info_sysfs *sensor);
 static int read_critical_max_temp(void);
 static int read_alarm_max_temp(void);
 static int calculate_falling_fan_pwm(int temp);
 static int calculate_raising_fan_pwm(int temp);
-static int galaxy100_set_fan(int fan, int value);
-static int galaxy100_fan_is_okey(int fan);
-static int galaxy100_write_fan_led(int fan, const char *color);
-static int system_shutdown(const char *why);
-static int galaxy100_fab_is_present(int fan);
+
+static int galaxy100_set_fan_sysfs(int fan, int value);
+static int galaxy100_fan_is_okey_sysfs(int fan);
+static int galaxy100_write_fan_led_sysfs(int fan, const char *color);
+static int galaxy100_fab_is_present_sysfs(int fan);
 static int galaxy100_lc_present_detect(void);
 static int galaxy100_scm_present_detect(void);
 static int galaxy100_cmm_is_master(void);
-static int galaxy100_chanel_reinit(void);
-
+static int galaxy100_chanel_reinit_sysfs(void);
 
 /*CMM info*/
-struct sensor_info cmm_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0xff,
-  },
-  .channel2 = {
-    .addr = 0x73,
-    .channel = 0xff,
-  },
-  .channel3 = {
-    .addr = 0x70,
-    .channel = 0xff,
-  },
-  .bus = 3,
-  .addr = 0x48,
+struct sensor_info_sysfs cmm_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/3-0048",
+  .suffix = "temp1_input",
   .temp = 0,
-  .read_temp = &read_temp,
+  .read_sysfs = &read_temp_sysfs,
 };
-struct sensor_info cmm_sensor_alarm_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0xff,
-  },
-  .channel2 = {
-    .addr = 0x73,
-    .channel = 0xff,
-  },
-  .channel3 = {
-    .addr = 0x70,
-    .channel = 0xff,
-  },
-  .bus = 3,
-  .addr = 0x49,
+struct sensor_info_sysfs cmm_sensor_alarm_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/3-0049",
+  .suffix = "temp1_input",
   .temp = 0,
-  .read_temp = &read_temp,
+  .read_sysfs = &read_temp_sysfs,
 };
 
-/*SCM info*/
-struct sensor_info scm_fab_1_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x01,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
+struct sensor_info_sysfs scm_fab_1_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/113-0048",
+  .suffix = "temp1_input",
   .temp = 0,
-  .read_temp = &read_temp,
+  .read_sysfs = &read_temp_sysfs,
+};
+struct sensor_info_sysfs scm_fab_2_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/129-0048",
+  .suffix = "temp1_input",
+  .temp = 0,
+  .read_sysfs = &read_temp_sysfs,
+};
+struct sensor_info_sysfs scm_fab_3_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/145-0048",
+  .suffix = "temp1_input",
+  .temp = 0,
+  .read_sysfs = &read_temp_sysfs,
+};
+struct sensor_info_sysfs scm_fab_4_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/161-0048",
+  .suffix = "temp1_input",
+  .temp = 0,
+  .read_sysfs = &read_temp_sysfs,
+};
+struct sensor_info_sysfs scm_lc_1_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/49-0048",
+  .suffix = "temp1_input",
+  .temp = 0,
+  .read_sysfs = &read_temp_sysfs,
+};
+struct sensor_info_sysfs scm_lc_2_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/65-0048",
+  .suffix = "temp1_input",
+  .temp = 0,
+  .read_sysfs = &read_temp_sysfs,
+};
+struct sensor_info_sysfs scm_lc_3_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/81-0048",
+  .suffix = "temp1_input",
+  .temp = 0,
+  .read_sysfs = &read_temp_sysfs,
+};
+struct sensor_info_sysfs scm_lc_4_sensor_critical_info = {
+  .prefix = "/sys/bus/i2c/drivers/lm75/97-0048",
+  .suffix = "temp1_input",
+  .temp = 0,
+  .read_sysfs = &read_temp_sysfs,
 };
 
-struct sensor_info scm_fab_2_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x02,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
-  .temp = 0,
-  .read_temp = &read_temp,
-};
-
-struct sensor_info scm_fab_3_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x40,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
-  .temp = 0,
-  .read_temp = &read_temp,
-};
-
-struct sensor_info scm_fab_4_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x80,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
-  .temp = 0,
-  .read_temp = &read_temp,
-};
-
-struct sensor_info scm_lc_1_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x04,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
-  .temp = 0,
-  .read_temp = &read_temp,
-};
-
-struct sensor_info scm_lc_2_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x08,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
-  .temp = 0,
-  .read_temp = &read_temp,
-};
-
-struct sensor_info scm_lc_3_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x10,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
-  .temp = 0,
-  .read_temp = &read_temp,
-};
-
-struct sensor_info scm_lc_4_sensor_critical_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x20,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x0,
-  },
-  .channel3 = {
-    .addr = 0x73,
-    .channel = 0x02,
-  },
-  .bus = 1,
-  .addr = 0x48,
-  .temp = 0,
-  .read_temp = &read_temp,
-};
-
+//
+// No read function within the structure is used.
+// as most of fantray read is done by concaternating
+// fan name after fantray directory name.
+// (also hwmon scanning is not required)
+// Therefore it is not provided here
+//
 /* fantran info*/
-struct sensor_info fantray1_channel_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x01,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x08,
-  },
-  .channel3 = {
-    .addr = 0xff,//not use
-    .channel = 0xff,
-  },
-  .bus = 0xff,//not use
-  .addr = 0xff,//not use
+struct sensor_info_sysfs fantray1_channel_info = {
+  .prefix = "/sys/bus/i2c/drivers/fancpld/171-0033",
+  .suffix = "",
   .temp = 0,
-  .read_temp = NULL,
+  .read_sysfs = NULL,
 };
-struct sensor_info fantray2_channel_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x02,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x08,
-  },
-  .channel3 = {
-    .addr = 0xff,//not use
-    .channel = 0xff,
-  },
-  .bus = 0xff,//not use
-  .addr = 0xff,//not use
+struct sensor_info_sysfs fantray2_channel_info = {
+  .prefix = "/sys/bus/i2c/drivers/fancpld/179-0033",
+  .suffix = "",
   .temp = 0,
-  .read_temp = NULL,
+  .read_sysfs = NULL,
 };
-struct sensor_info fantray3_channel_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x04,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x08,
-  },
-  .channel3 = {
-    .addr = 0xff,//not use
-    .channel = 0xff,
-  },
-  .bus = 0xff,//not use
-  .addr = 0xff,//not use
+struct sensor_info_sysfs fantray3_channel_info = {
+  .prefix = "/sys/bus/i2c/drivers/fancpld/187-0033",
+  .suffix = "",
   .temp = 0,
-  .read_temp = NULL,
+  .read_sysfs = NULL,
 };
-struct sensor_info fantray4_channel_info = {
-  .channel1 = {
-    .addr = 0x75,
-    .channel = 0x08,
-  },
-  .channel2 = {
-    .addr = 0x70,
-    .channel = 0x08,
-  },
-  .channel3 = {
-    .addr = 0xff,//not use
-    .channel = 0xff,
-  },
-  .bus = 0xff,//not use
-  .addr = 0xff,//not use
+struct sensor_info_sysfs fantray4_channel_info = {
+  .prefix = "/sys/bus/i2c/drivers/fancpld/195-0033",
+  .suffix = "",
   .temp = 0,
-  .read_temp = NULL,
-};
-struct fan_info_stu fan1_info = {
-  .front_fan_reg = 0x20,
-  .rear_fan_reg = 0x21,
-  .pwm_reg = 0x22,
-  .fan_led_reg = 0x24,
-  .fan_status = 0x28,
-  .present = 1,
-  .failed = 0,
-};
-struct fan_info_stu fan2_info = {
-  .front_fan_reg = 0x30,
-  .rear_fan_reg = 0x31,
-  .pwm_reg = 0x32,
-  .fan_led_reg = 0x34,
-  .fan_status = 0x38,
-  .present = 1,
-  .failed = 0,
-};
-struct fan_info_stu fan3_info = {
-  .front_fan_reg = 0x40,
-  .rear_fan_reg = 0x41,
-  .pwm_reg = 0x42,
-  .fan_led_reg = 0x44,
-  .fan_status = 0x48,
-  .present = 1,
-  .failed = 0,
+  .read_sysfs = NULL,
 };
 
+struct fan_info_stu_sysfs fan1_info = {
+  .front_fan_prefix = "fan1_input",
+  .rear_fan_prefix = "fan2_input",
+  .pwm_prefix = "fantray1_pwm",
+  .fan_led_prefix = "fantray1_led_ctrl",
+  .present = 1,
+  .failed = 0,
+};
+struct fan_info_stu_sysfs fan2_info = {
+  .front_fan_prefix = "fan3_input",
+  .rear_fan_prefix = "fan4_input",
+  .pwm_prefix = "fantray2_pwm",
+  .fan_led_prefix = "fantray2_led_ctrl",
+  .present = 1,
+  .failed = 0,
+};
+struct fan_info_stu_sysfs fan3_info = {
+  .front_fan_prefix = "fan5_input",
+  .rear_fan_prefix = "fan6_input",
+  .pwm_prefix = "fantray3_pwm",
+  .fan_led_prefix = "fantray3_led_ctrl",
+  .present = 1,
+  .failed = 0,
+};
 
 /************board and fantray info*****************/
-struct galaxy100_board_info_stu galaxy100_board_info[] = {
+struct galaxy100_board_info_stu_sysfs galaxy100_board_info[] = {
 /*CMM info*/
   {
     .name = "CMM-1",
@@ -557,8 +382,7 @@ struct galaxy100_board_info_stu galaxy100_board_info[] = {
   },
   NULL,
 };
-
-struct galaxy100_fantray_info_stu galaxy100_fantray_info[] = {
+struct galaxy100_fantray_info_stu_sysfs galaxy100_fantray_info[] = {
   {
     .name = "FCB-1",
     .present = 1,
@@ -595,9 +419,11 @@ struct galaxy100_fantray_info_stu galaxy100_fantray_info[] = {
   NULL,
 };
 
-#define BOARD_INFO_SIZE (sizeof(galaxy100_board_info) / sizeof(struct galaxy100_board_info_stu))
-#define FANTRAY_INFO_SIZE (sizeof(galaxy100_fantray_info) / sizeof(struct galaxy100_fantray_info_stu))
 
+#define BOARD_INFO_SIZE (sizeof(galaxy100_board_info) \
+                        / sizeof(struct galaxy100_board_info_stu_sysfs))
+#define FANTRAY_INFO_SIZE (sizeof(galaxy100_fantray_info) \
+                        / sizeof(struct galaxy100_fantray_info_stu_sysfs))
 
 struct galaxy100_fan_failed_control_stu galaxy100_fan_failed_control[] = {
   {
@@ -625,8 +451,6 @@ struct galaxy100_fan_failed_control_stu galaxy100_fan_failed_control[] = {
   NULL,
 };
 
-
-
 int fan_low = GALAXY100_FAN_LOW;
 int fan_medium = GALAXY100_FAN_MEDIUM;
 int fan_high = GALAXY100_FAN_HIGH;
@@ -642,28 +466,6 @@ bool verbose = false;
 int lc_status[GALAXY100_LC_NUM] = {0};
 int scm_status[GALAXY100_SCM_NUM] = {0};
 
-static int galaxy100_i2c_read(int bus, int addr, uchar reg, int byte)
-{
-  int res, file;
-  char filename[20];
-
-  file = open_i2c_dev(bus, filename, sizeof(filename));
-  if(file < 0) {
-    return -1;
-  }
-  if(ioctl(file, I2C_SLAVE_FORCE, addr) < 0) {
-    return -1;
-  }
-  if(byte == 1)
-    res = i2c_smbus_read_byte_data(file, reg);
-  else if(byte == 2)
-    res = i2c_smbus_read_word_data(file, reg);
-  else
-    return -1;
-
-  close(file);
-  return res;
-}
 static int galaxy100_i2c_write(int bus, int addr, uchar reg, int value, int byte)
 {
   int res, file;
@@ -701,71 +503,243 @@ static int open_i2c_dev(int i2cbus, char *filename, size_t size)
   return file;
 }
 
-static int galaxy100_channel_set(int bus, struct channel_info_stu  channel1, struct channel_info_stu channel2, struct channel_info_stu channel3)
+
+/*
+ * Helper function to probe directory, and make full path
+ * Will probe directory structure, then make a full path
+ * using "<prefix>/hwmon/hwmonxxx/<suffix>"
+ * returns < 0, if hwmon directory does not exist or something goes wrong
+ */
+int assemble_sysfs_path(const char* prefix, const char* suffix,
+                        char* full_name, int buffer_size)
 {
-  int ret;
+  int rc = 0;
+  int dirname_found = 0;
+  char temp_str[PATH_CACHE_SIZE];
+  DIR *dir = NULL;
+  struct dirent *ent;
 
-  if(channel1.channel!= 0xff) {
-    ret = galaxy100_i2c_write(bus, channel1.addr, 0x0, channel1.channel, 1);
-    if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set channel1 0x%x on bus %d, value 0x%x",
-             __func__, channel1.addr, bus, channel1.channel);
-      return -1;
-    }
-    usleep(11000);
+  if (full_name == NULL)
+    return -1;
+
+  snprintf(temp_str, (buffer_size - 1), "%s/hwmon", prefix);
+  dir = opendir(temp_str);
+  if (dir == NULL) {
+    rc = ENOENT;
+    goto close_dir_out;
   }
 
-  if(channel2.channel != 0xff) {
-    ret = galaxy100_i2c_write(bus, channel2.addr, 0x0, channel2.channel, 1);
-    if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set channel2 0x%x on bus %d, value 0x%x",
-             __func__, channel2.addr, bus, channel2.channel);
-      return -1;
+  while ((ent = readdir(dir)) != NULL) {
+    if (strstr(ent->d_name, "hwmon")) {
+      // found the correct 'hwmon??' directory
+      snprintf(full_name, buffer_size, "%s/%s/%s",
+               temp_str, ent->d_name, suffix);
+      dirname_found = 1;
+      break;
     }
-    usleep(11000);
-  }
-  if(channel3.channel != 0xff) {
-    ret = galaxy100_i2c_write(bus, channel3.addr, 0x0, channel3.channel, 1);
-    if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set channel3 0x%x on bus %d, value 0x%x",
-             __func__, channel3.addr, bus, channel3.channel);
-      return -1;
-    }
-    usleep(11000);
   }
 
-  return 0;
+close_dir_out:
+  if (dir != NULL) {
+    closedir(dir);
+  }
+
+  if (dirname_found == 0) {
+    rc = ENOENT;
+  }
+
+  return rc;
 }
 
-static int read_temp(struct channel_info_stu  channel1, struct channel_info_stu channel2, struct channel_info_stu channel3, int bus, int addr)
+// Functions for reading from sysfs stub
+int read_sysfs_raw_internal(const char *device, char *value, int log)
+{
+  FILE *fp;
+  int rc;
+
+  if (device == NULL)
+  {
+    if (log)
+      syslog(LOG_INFO, "Device name null. ", device);
+    return -1;
+  }
+
+  if (value == NULL)
+  {
+    if (log)
+      syslog(LOG_INFO, "Read buffer null %s", device);
+    return -2;
+  }
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+    if (log) {
+      syslog(LOG_INFO, "failed to open device %s for read: errno=%d", device, err);
+
+    }
+    return err;
+  }
+
+  rc = fscanf(fp, "%s", value);
+  fclose(fp);
+
+  if (rc != 1) {
+    if (log) {
+      syslog(LOG_INFO, "failed to read device %s", device);
+    }
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+int read_sysfs_raw(char *sysfs_path, char *buffer)
+{
+  return read_sysfs_raw_internal(sysfs_path, buffer, 1);
+}
+
+int read_sysfs_int(char *sysfs_path, int *buffer)
+{
+  int rc = 0;
+  char readBuf[PATH_CACHE_SIZE];
+  rc = read_sysfs_raw(sysfs_path, readBuf);
+  if (rc == 0)
+  {
+    if ((strstr(readBuf, "0x")) ||
+        (strstr(readBuf, "0X")))
+      sscanf(readBuf, "%x", buffer);
+    else
+      sscanf(readBuf, "%d", buffer);
+  }
+  return rc;
+}
+
+// Functions for writing to system stub
+int write_sysfs_raw_internal(const char *device, char *value, int log)
+{
+  FILE *fp;
+  int rc;
+
+  if (device==NULL)
+  {
+    if (log)
+      syslog(LOG_INFO, "Device name null. ", device);
+    return -1;
+  }
+
+  if (value==NULL)
+  {
+    if (log)
+      syslog(LOG_INFO, "Read buffer null %s", device);
+    return -2;
+  }
+
+  fp = fopen(device, "w");
+  if (!fp) {
+    int err = errno;
+    if (log) {
+      syslog(LOG_INFO, "failed to open device %s for write : errno=%d", device, err);
+    }
+    return err;
+  }
+
+  rc = fputs(value, fp);
+  fclose(fp);
+
+  if (rc != 1) {
+    if (log) {
+      syslog(LOG_INFO, "failed to write to device %s", device);
+    }
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+int write_sysfs_raw(char *sysfs_path, char* buffer)
+{
+  return write_sysfs_raw_internal(sysfs_path, buffer, 1);
+}
+
+int write_sysfs_int(char *sysfs_path, int buffer)
+{
+  int rc = 0;
+  char writeBuf[PATH_CACHE_SIZE];
+  snprintf(writeBuf, PATH_CACHE_SIZE, "%d", buffer);
+  return write_sysfs_raw(sysfs_path, writeBuf);
+}
+
+static int read_temp_sysfs(struct sensor_info_sysfs *sensor)
 {
   int ret;
   int value;
+  char fullpath[PATH_CACHE_SIZE];
+  bool use_cache = false;
+  int cache_str_len = 0;
 
-  ret = galaxy100_channel_set(GALAXY100_TEMP_I2C_BUS, channel1, channel2, channel3);
-  if(ret < 0)
-    return -1;
-  ret = galaxy100_i2c_read(bus, addr, 0x0, 2);
-  value = (ret < 0) ? ret : swab16(ret);
-  if(value < 0) {
-    syslog(LOG_ERR, "%s: failed to read temperature bus %d, addr 0x%x", __func__, bus, addr);
+  if (sensor == NULL)
+  {
+    syslog(LOG_NOTICE, "sensor is null\n");
     return -1;
   }
-  usleep(11000);
+  // Check if cache is available
+  if (sensor->path_cache != NULL)
+  {
+    cache_str_len = strlen(sensor->path_cache);
+    if (cache_str_len != 0)
+      use_cache = true;
+  }
 
-  return ((short)value / 128) / 2;
+  if (use_cache == false)
+  {
+    // No cached value yet. Calculate the full path first
+    ret = assemble_sysfs_path(sensor->prefix, sensor->suffix, fullpath, sizeof(fullpath));
+    if(ret != 0)
+    {
+      syslog(LOG_NOTICE, "%s: I2C bus %s not available. Failed reading %s\n", __FUNCTION__, sensor->prefix, sensor->suffix);
+      return -1;
+    }
+    // Update cache, if possible.
+    if (sensor->path_cache != NULL)
+      snprintf(sensor->path_cache, (PATH_CACHE_SIZE - 1), "%s", fullpath);
+      use_cache = true;
+  }
+
+  /*
+   * By the time control reaches here, use_cache is always true
+   * or this function already returned -1. So assume the cache is always on
+   */
+   ret = read_sysfs_int(sensor->path_cache, &value);
+  
+  /*  Note that Kernel sysfs stub pre-converts raw value in xxxxx format,
+   *  which is equivalent to xx.xxx degree - all we need to do is to divide
+   *  the read value by 1000
+  */
+  if (ret < 0)
+    value = ret;
+  else
+    value = value / 1000;
+
+  if(value < 0) {
+    syslog(LOG_ERR, "%s: failed to read temperature bus %s", __func__, fullpath);
+    return -1;
+  }
+
+  usleep(11000);
+  return value;
 }
+
 static int read_critical_max_temp(void)
 {
   int i;
   int temp, max_temp = 0;
-  struct galaxy100_board_info_stu *info;
+  struct galaxy100_board_info_stu_sysfs *info;
 
   for(i = 0; i < BOARD_INFO_SIZE; i++) {
     info = &galaxy100_board_info[i];
     if(info->critical) {
-      temp = read_temp(info->critical->channel1, info->critical->channel2, info->critical->channel3,
-                       info->critical->bus, info->critical->addr);
+      temp = read_temp_sysfs(info->critical);
       if(temp != -1) {
         info->critical->temp = temp;
         if(temp > max_temp)
@@ -777,17 +751,17 @@ static int read_critical_max_temp(void)
 
   return max_temp;
 }
+
 static int read_alarm_max_temp(void)
 {
   int i;
   int temp, max_temp = 0;
-  struct galaxy100_board_info_stu *info;
+  struct galaxy100_board_info_stu_sysfs *info;
 
   for(i = 0; i < BOARD_INFO_SIZE; i++) {
     info = &galaxy100_board_info[i];
     if(info->alarm) {
-      temp = read_temp(info->alarm->channel1, info->alarm->channel2, info->alarm->channel3,
-                       info->alarm->bus, info->alarm->addr);
+      temp = read_temp_sysfs(info->alarm);
       if(temp != -1) {
         info->alarm->temp = temp;
         if(temp > max_temp)
@@ -799,6 +773,7 @@ static int read_alarm_max_temp(void)
 
   return max_temp;
 }
+
 static int calculate_raising_fan_pwm(int temp)
 {
   if(temp < GALAXY100_RAISING_TEMP_LOW) {
@@ -822,16 +797,19 @@ static int calculate_falling_fan_pwm(int temp)
 
   return GALAXY100_FAN_HIGH;
 }
-static int galaxy100_set_fan(int fan, int value)
+
+// Note that the fan number here is 0-based
+static int galaxy100_set_fan_sysfs(int fan, int value)
 {
   int ret;
-  struct galaxy100_fantray_info_stu *info;
-  struct sensor_info  *channel;
+  struct galaxy100_fantray_info_stu_sysfs *info;
+  struct sensor_info_sysfs *channel;
 
   info = &galaxy100_fantray_info[fan];
   channel = &info->channel_info;
+  char fullpath[PATH_CACHE_SIZE];
 
-  ret = galaxy100_fab_is_present(fan);
+  ret = galaxy100_fab_is_present_sysfs(fan);
   if(ret == 0) {
     info->present = 0; //not preset
     return -1;
@@ -841,73 +819,95 @@ static int galaxy100_set_fan(int fan, int value)
     return -1;
   }
 
-  ret = galaxy100_channel_set(GALAXY100_FANTRAY_I2C_BUS, channel->channel1, channel->channel2, channel->channel3);
-  if(ret < 0)
-    return -1;
-
-  ret = galaxy100_i2c_write(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan1.pwm_reg, value, 1);
+  snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s", channel->prefix, "fantray1_pwm");
+  ret = write_sysfs_int(fullpath, value);
   if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to set fan1 pwm 0x%x, value 0x%x", __func__, info->fan1.pwm_reg, value);
+    syslog(LOG_ERR, "%s: failed to set fan %s...%s, value 0x%x", __func__, channel->prefix, "fantray1_pwm", value);
     return -1;
   }
   usleep(11000);
 
-  ret = galaxy100_i2c_write(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan2.pwm_reg, value, 1);
+  snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s", channel->prefix, "fantray2_pwm");
+  ret = write_sysfs_int(fullpath, value);
   if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to set fan2 pwm 0x%x, value 0x%x", __func__, info->fan2.pwm_reg, value);
+    syslog(LOG_ERR, "%s: failed to set fan %s...%s, value 0x%x", __func__, channel->prefix, "fantray2_pwm", value);
     return -1;
   }
   usleep(11000);
 
-  ret = galaxy100_i2c_write(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan3.pwm_reg, value, 1);
+  snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s", channel->prefix, "fantray3_pwm");
+  ret = write_sysfs_int(fullpath, value);
   if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to set fan3 pwm 0x%x, value 0x%x", __func__, info->fan3.pwm_reg, value);
+    syslog(LOG_ERR, "%s: failed to set fan %s...%s, value 0x%x", __func__, channel->prefix, "fantray3_pwm", value);
     return -1;
   }
   usleep(11000);
 
   return 0;
 }
-static int galaxy100_fab_is_present(int fan)
+
+/*
+ * Fan number here is 0-based
+ * Note that 1 means present, unlike LC presence detection
+ */
+static int galaxy100_fab_is_present_sysfs(int fan)
 {
   int ret;
-  int bits = 4 + fan;
+  int fan_1base = fan + 1;
+  char buf[PATH_CACHE_SIZE];
+  int rc = 0;
 
-  ret = galaxy100_i2c_read(GALAXY100_CMM_SYS_I2C_BUS, GALAXY100_CMM_SYS_CPLD_ADDR, GALAXY100_MODULE_PRESENT_REG, 1);
-  if(ret < 0) {
+  snprintf(buf, PATH_CACHE_SIZE, "/sys/bus/i2c/drivers/cmmcpld/13-003e/fc%d_present", fan_1base);
+
+  rc = read_sysfs_int(buf, &ret);
+
+  if(rc < 0) {
     syslog(LOG_ERR, "%s: failed to read module present reg 0x%x", __func__, GALAXY100_MODULE_PRESENT_REG);
     return -1;
   }
+
   usleep(11000);
-  if((ret >> bits) & 0x1 == 0x1) {
-    /*not present*/
+
+  if (ret != 0) {
     syslog(LOG_ERR, "%s: FAB-%d not present", __func__, fan + 1);
     return 0;
   } else {
     return 1;
   }
+
+  // Make compiler happy
+  return 0;
 }
+
+// Note that 0 means present, unlike FC detection function
 static int galaxy100_lc_present_detect(void)
 {
   int i = 0, ret;
+  int lc_1base = 0;
+  char buf[PATH_CACHE_SIZE];
+  int rc = 0;
 
-  ret = galaxy100_i2c_read(GALAXY100_CMM_SYS_I2C_BUS, GALAXY100_CMM_SYS_CPLD_ADDR, GALAXY100_MODULE_PRESENT_REG, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read module present reg 0x%x", __func__, GALAXY100_MODULE_PRESENT_REG);
-    return -1;
-  }
-  usleep(11000);
-  //printf("%s: ret = 0x%x\n", __func__, ret);
   for(i = 0; i < GALAXY100_LC_NUM; i++) {
-    if((ret >> i) & 0x1 == 0x1) {
-      /*not present*/
-      if(lc_status[i] == 0)
-        printf("LC-%d is removed\n", i + 1);
+    lc_1base = i + 1;
+    snprintf(buf, PATH_CACHE_SIZE, "/sys/bus/i2c/drivers/cmmcpld/13-003e/lc%d_present", lc_1base);
+    rc = read_sysfs_int(buf, &ret);
+    usleep(11000);
+    if (rc == 0)
+    {
+      if (ret != 0) {
+        /*not present*/
+        if(lc_status[i] == 0)
+        syslog(LOG_NOTICE, "LC-%d is removed\n", i + 1);
+        lc_status[i] = 1;
+      } else {
+        if(lc_status[i] == 1)
+          syslog(LOG_NOTICE, "LC-%d is inserted\n", i + 1);
+        lc_status[i] = 0;
+      }
+    } else
+    {
+      syslog(LOG_WARNING, "Unable to detect LC presence of LC%d(1-based)!\n", lc_1base);
       lc_status[i] = 1;
-    } else {
-      if(lc_status[i] == 1)
-        printf("LC-%d is inserted\n", i + 1);
-      lc_status[i] = 0;
     }
   }
 
@@ -917,24 +917,48 @@ static int galaxy100_lc_present_detect(void)
 static int galaxy100_scm_present_detect(void)
 {
   int i = 0, ret;
+  int scm_1base = 0;
+  char buf[PATH_CACHE_SIZE];
+  int rc = 0;
 
-  ret = galaxy100_i2c_read(GALAXY100_CMM_SYS_I2C_BUS, GALAXY100_CMM_SYS_CPLD_ADDR, GALAXY100_SCM_PRESENT_REG, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read module present reg 0x%x", __func__, GALAXY100_SCM_PRESENT_REG);
-    return -1;
-  }
-  usleep(11000);
   //printf("%s: ret = 0x%x\n", __func__, ret);
   for(i = 0; i < GALAXY100_SCM_NUM; i++) {
-    if((ret >> i) & 0x1 == 0x1) {
-      /*not present*/
-      if(scm_status[i] == 0)
-        printf("SCM-%d is removed\n", i + 1);
+
+    if ((i == 0) || (i == 1))
+      // SCM 0, 1 are for FC 1 and 2
+      snprintf(buf, PATH_CACHE_SIZE,
+               "/sys/bus/i2c/drivers/cmmcpld/13-003e/scm_fc%d_present",
+               i + 1);
+    else if ((i >= 2) && (i <= 5))
+      // SCM 2 to 5 are for LC1 to 4
+      snprintf(buf, PATH_CACHE_SIZE,
+               "/sys/bus/i2c/drivers/cmmcpld/13-003e/scm_lc%d_present",
+               i - 1);
+    else
+      // SCM 6 and 7 are for FC 3 and 4
+      snprintf(buf, PATH_CACHE_SIZE,
+               "/sys/bus/i2c/drivers/cmmcpld/13-003e/scm_fc%d_present",
+               i - 3);
+
+    rc = read_sysfs_int(buf, &ret);
+    usleep(11000);
+
+    if (rc == 0)
+    {
+      if((ret >> i) & 0x1 == 0x1) {
+        /*not present*/
+        if(scm_status[i] == 0)
+          printf("SCM-%d is removed\n", i + 1);
+        scm_status[i] = 1;
+      } else {
+        if(scm_status[i] == 1)
+          printf("SCM-%d is inserted\n", i + 1);
+        scm_status[i] = 0;
+      }
+    } else
+    {
+      printf("Unable to detect LC presence of SCM%d(0-based)!\n", i);
       scm_status[i] = 1;
-    } else {
-      if(scm_status[i] == 1)
-        printf("SCM-%d is inserted\n", i + 1);
-      scm_status[i] = 0;
     }
   }
 
@@ -944,61 +968,55 @@ static int galaxy100_scm_present_detect(void)
 static int galaxy100_cmm_is_master(void)
 {
   int i = 0, ret;
-
-  ret = galaxy100_i2c_read(GALAXY100_CMM_SYS_I2C_BUS, GALAXY100_CMM_SYS_CPLD_ADDR, GALAXY100_CMM_STATUS_REG, 1);
-  if(ret < 0) {
+  char buf[PATH_CACHE_SIZE];
+  int rc = 0;
+  snprintf(buf, PATH_CACHE_SIZE, "/sys/bus/i2c/drivers/cmmcpld/13-003e/cmm_role");
+  rc = read_sysfs_int(buf, &ret);
+  if(rc < 0) {
     syslog(LOG_ERR, "%s: failed to read cmm status reg 0x%x", __func__, GALAXY100_CMM_STATUS_REG);
     return -1;
   }
   usleep(11000);
-  //printf("%s: ret = 0x%x\n", __func__, ret);
-  if(ret & (0x1 << 3)) {
-    return 0;//slave
-  } else {
-    return 1;//master
-  }
 
+  // In new function, it's a bit tricky.
+  // Readvalue : 0 --> We are master --> Function returns 1
+  // Readvalue : 1 --> We are slave  --> Function returns 0
+
+  if (ret != 0) // Read value says we are NOT master
+    return 0;   // return 0, meaning we are NOT master
+
+  return 1; // Otherwise, return 1, meaning we ARE master
+}
+
+/*
+ * SYSFS already takes care of this logic - finding the right mux
+ * to access fans. So nothing needs to be done here.
+ */
+static int galaxy100_chanel_reinit_sysfs(void)
+{
   return 0;
 }
 
-static int galaxy100_chanel_reinit(void)
-{
-  int i;
-
-  for(i = 0; i < BOARD_INFO_SIZE; i++) {
-    struct galaxy100_board_info_stu *info;
-    info = &galaxy100_board_info[i];
-    if(info->alarm) {
-      info->alarm->channel1.addr = GALAXY100_CMM_CHANNEL1_ADDR_BAKUP;
-    }
-    if(info->critical) {
-      info->critical->channel1.addr = GALAXY100_CMM_CHANNEL1_ADDR_BAKUP;
-    }
-  }
-
-  for(i = 0; i < FANTRAY_INFO_SIZE; i++) {
-    struct galaxy100_fantray_info_stu *info;
-    struct sensor_info  *channel;
-
-    info = &galaxy100_fantray_info[i];
-    channel = &info->channel_info;
-    channel->channel1.addr = GALAXY100_CMM_CHANNEL1_ADDR_BAKUP;
-  }
-}
-
-
-
-static int galaxy100_fan_is_okey(int fan)
+/*
+ * Given fan tray number, Check fan presence status,
+ * and return error if any missing or problematic
+ * Again, fan here is 0 based.
+ */
+static int galaxy100_fan_is_okey_sysfs(int fan)
 {
   int ret;
   int error = 0;
-  struct galaxy100_fantray_info_stu *info;
-  struct sensor_info  *channel;
+  struct galaxy100_fantray_info_stu_sysfs *info;
+  struct sensor_info_sysfs  *channel;
 
   info = &galaxy100_fantray_info[fan];
   channel = &info->channel_info;
+  int rc = 0;
 
-  ret = galaxy100_fab_is_present(fan);
+  char fullpath[PATH_CACHE_SIZE];
+
+  // First, make sure FC is present, before checking every fan behind it.
+  ret = galaxy100_fab_is_present_sysfs(fan);
   if(ret == 0) {
     if(info->present == 1)
       printf("FAB-%d is removed\n", fan + 1);
@@ -1011,13 +1029,13 @@ static int galaxy100_fan_is_okey(int fan)
   } else {
     return -1;
   }
-  ret = galaxy100_channel_set(GALAXY100_FANTRAY_I2C_BUS, channel->channel1, channel->channel2, channel->channel3);
-  if(ret < 0)
-    return -1;
 
-  ret = galaxy100_i2c_read(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan1.fan_status, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read fan1 status 0x%x", __func__, info->fan1.fan_status);
+  snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_present",
+           channel->prefix, 1);
+  rc = read_sysfs_int(fullpath, &ret);
+  if ((ret < 0)|| (rc < 0))
+  {
+    syslog(LOG_ERR, "%s: failed to read fan1 status %s", __func__, fullpath);
     error++;
   } else {
     usleep(11000);
@@ -1030,7 +1048,10 @@ static int galaxy100_fan_is_okey(int fan)
       if(info->fan1.present == 0)
         printf("FCB-%d fantray 1 is inserted\n", fan + 1);
       else {
-        if(ret > 1) {
+        snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_alive",
+                 channel->prefix, 1);
+        rc = read_sysfs_int(fullpath, &ret);
+        if((rc != 0) || (ret != 0)) {
           if(info->fan1.failed == 0)
             printf("FCB-%d fantray 1 is failed\n", fan + 1);
           info->fan1.failed = 1;
@@ -1042,9 +1063,13 @@ static int galaxy100_fan_is_okey(int fan)
     }
   }
 
-  ret = galaxy100_i2c_read(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan2.fan_status, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read fan2 status 0x%x", __func__, info->fan2.fan_status);
+
+  snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_present",
+           channel->prefix, 2);
+  rc = read_sysfs_int(fullpath, &ret);
+  if ((ret < 0)|| (rc < 0))
+  {
+    syslog(LOG_ERR, "%s: failed to read fan2 status %s", __func__, fullpath);
     error++;
   } else {
     usleep(11000);
@@ -1057,7 +1082,10 @@ static int galaxy100_fan_is_okey(int fan)
       if(info->fan2.present == 0)
         printf("FCB-%d fantray 2 is inserted\n", fan + 1);
       else {
-        if(ret > 1) {
+        snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_alive",
+                 channel->prefix, 2);
+        rc = read_sysfs_int(fullpath, &ret);
+        if((rc != 0) || (ret != 0)) {
           if(info->fan2.failed == 0)
             printf("FCB-%d fantray 2 is failed\n", fan + 1);
           info->fan2.failed = 1;
@@ -1069,9 +1097,13 @@ static int galaxy100_fan_is_okey(int fan)
     }
   }
 
-  ret = galaxy100_i2c_read(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan3.fan_status, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read fan3 status 0x%x", __func__, info->fan3.fan_status);
+
+  snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_present",
+           channel->prefix, 3);
+  rc = read_sysfs_int(fullpath, &ret);
+  if ((ret < 0)|| (rc < 0))
+  {
+    syslog(LOG_ERR, "%s: failed to read fan3 status %s", __func__, fullpath);
     error++;
   } else {
     usleep(11000);
@@ -1084,7 +1116,10 @@ static int galaxy100_fan_is_okey(int fan)
       if(info->fan3.present == 0)
         printf("FCB-%d fantray 3 is inserted\n", fan + 1);
       else {
-        if(ret > 1) {
+        snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_alive",
+                 channel->prefix, 3);
+        rc = read_sysfs_int(fullpath, &ret);
+        if((rc != 0) || (ret != 0)) {
           if(info->fan3.failed == 0)
             printf("FCB-%d fantray 3 is failed\n", fan + 1);
           info->fan3.failed = 1;
@@ -1102,20 +1137,27 @@ static int galaxy100_fan_is_okey(int fan)
     return 0;
 }
 
-static int galaxy100_write_fan_led(int fan, const char *color)
+
+static int galaxy100_write_fan_led_sysfs(int fan, const char *color)
 {
   int ret, value;
-  struct galaxy100_fantray_info_stu *info;
-  struct sensor_info  *channel;
+  struct galaxy100_fantray_info_stu_sysfs *info;
+  struct sensor_info_sysfs  *channel;
+  int rc = 0;
+  int fan_alive = 0;
+  int fan_present = 0;
 
   info = &galaxy100_fantray_info[fan];
   channel = &info->channel_info;
+
+  int fan_1base = 0;
+  char fullpath[PATH_CACHE_SIZE];
 
   if(!strcmp(color, FAN_LED_BLUE))
     value = 1; //blue
   else
     value = 2; //red
-  ret = galaxy100_fab_is_present(fan);
+  ret = galaxy100_fab_is_present_sysfs(fan);
   if(ret == 0) {
     info->present = 0; //not preset
     return -1;
@@ -1125,63 +1167,57 @@ static int galaxy100_write_fan_led(int fan, const char *color)
     return -1;
   }
 
-  ret = galaxy100_channel_set(GALAXY100_FANTRAY_I2C_BUS, channel->channel1, channel->channel2, channel->channel3);
-  if(ret < 0)
-    return -1;
-
-  ret = galaxy100_i2c_read(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan1.fan_status, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read fan1 status 0x%x", __func__, info->fan1.fan_status);
-    return -1;
-  }
-  usleep(11000);
-  if((ret & 0x1) == 0 && ((ret > 1 && value == 2) || (ret == 0 && value == 1))) {
-    ret = galaxy100_i2c_write(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan1.fan_led_reg, value, 1);
-    if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set led 0x%x, value 0x%x", __func__, info->fan1.fan_led_reg, value);
+  for (fan_1base = 1; fan_1base <=3; fan_1base++)
+  {
+    // First, make sure fan tray is  present.
+    snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_present",
+             channel->prefix, fan_1base);
+    rc = read_sysfs_int(fullpath, &fan_present);
+    if (rc < 0) {
+      syslog(LOG_ERR, "%s: fantray %d not present (%s : %d)",
+             __func__, fan_1base, fullpath, ret);
       return -1;
     }
-    usleep(11000);
-  }
-
-  ret = galaxy100_i2c_read(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan2.fan_status, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read fan2 status 0x%x", __func__, info->fan2.fan_status);
-    return -1;
-  }
-  usleep(11000);
-  if((ret & 0x1) == 0 && ((ret > 1 && value == 2) || (ret == 0 && value == 1))) {
-    ret = galaxy100_i2c_write(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan2.fan_led_reg, value, 1);
-    if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set led  0x%x, value 0x%x", __func__, info->fan2.fan_led_reg, value);
+    // Second, make sure it's in good condition
+    snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_alive",
+             channel->prefix, fan_1base);
+    rc = read_sysfs_int(fullpath, &fan_alive);
+    if (rc < 0) {
+      syslog(LOG_ERR, "%s: fantray %d is in failure state (%s : %d)",
+             __func__, fan_1base, fullpath, ret);
       return -1;
     }
-    usleep(11000);
-  }
-
-  ret = galaxy100_i2c_read(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan3.fan_status, 1);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to read fan3 status 0x%x", __func__, info->fan3.fan_status);
-    return -1;
-  }
-  usleep(11000);
-  if((ret & 0x1) == 0 && ((ret > 1 && value == 2) || (ret == 0 && value == 1))) {
-    ret = galaxy100_i2c_write(GALAXY100_FANTRAY_I2C_BUS, GALAXY100_FANTRAY_CPLD_ADDR, info->fan3.fan_led_reg, value, 1);
-    if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set led  0x%x, value 0x%x", __func__, info->fan3.fan_led_reg, value);
-      return -1;
+    // If the state matches with what we want to write, write to led reg
+    if (fan_present == FAN_PRESENT)
+    {
+      if (((fan_alive == FAN_ALIVE) && (value == 1))|| // ALIVE and write BLUE
+          ((fan_alive != FAN_ALIVE) && (value == 2)))  // BAD AND write RED
+      {
+        // Third, write value
+        snprintf(fullpath, PATH_CACHE_SIZE, "%s/fantray%d_led_ctrl",
+                 channel->prefix, fan_1base);
+        write_sysfs_int(fullpath, value);
+        usleep(11000);
+        // Finally, read back, and make sure the value is there.
+        rc = read_sysfs_int(fullpath, &ret);
+        if ((rc < 0) || (ret != value)) {
+          syslog(LOG_ERR, "%s: failed to set led %s, value 0x%x (rc = %d, ret = %d, value = %d)\n", __func__, fullpath, value, rc, ret, value);
+          return -1;
+        }
+      }
     }
-    usleep(11000);
   }
-
   return 1;
 }
+
+// No known I2C bus conflict for this one. Leave it as it is.
 static int system_shutdown(const char *why)
 {
   int ret;
   int i;
 
   syslog(LOG_EMERG, "Shutting down:  %s", why);
+
   for(i = 0; i < GALAXY100_PSUS; i++) {
     ret = galaxy100_i2c_write(GALAXY100_PSU_CHANNEL_I2C_BUS, GALAXY100_PSU_CHANNEL_I2C_ADDR, 0x0, 0x1 << i, 1);
     if(ret < 0) {
@@ -1195,6 +1231,7 @@ static int system_shutdown(const char *why)
       return -1;
     }
   }
+
   stop_watchdog();
 
   sleep(2);
@@ -1226,7 +1263,7 @@ void usage() {
 }
 
 int fan_speed_okay(const int fan, const int speed, const int slop) {
-  return !galaxy100_fan_is_okey(fan);
+  return !galaxy100_fan_is_okey_sysfs(fan);
 }
 
 /* Set fan speed as a percentage */
@@ -1242,7 +1279,7 @@ int write_fan_speed(const int fan, const int value) {
   if (unit == PWM_UNIT_MAX)
     unit--;
 
-  return galaxy100_set_fan(fan, unit);
+  return galaxy100_set_fan_sysfs(fan, unit);
 }
 
 
@@ -1250,7 +1287,7 @@ int write_fan_speed(const int fan, const int value) {
 /* Set up fan LEDs */
 
 int write_fan_led(const int fan, const char *color) {
-  return galaxy100_write_fan_led(fan, color);
+  return galaxy100_write_fan_led_sysfs(fan, color);
 }
 
 
@@ -1270,6 +1307,32 @@ void fand_interrupt(int sig)
   exit(3);
 }
 
+/*
+ * Initialize path cache by writing 0-length string
+ */
+void init_path_cache()
+{
+  int i = 0;
+  // Temp Sensor datastructure
+  for (i = 0; i < BOARD_INFO_SIZE; i++)
+  {
+    if (galaxy100_board_info[i].alarm != NULL)
+      snprintf(galaxy100_board_info[i].alarm->path_cache, PATH_CACHE_SIZE, "");
+    if (galaxy100_board_info[i].critical != NULL)
+      snprintf(galaxy100_board_info[i].critical->path_cache, PATH_CACHE_SIZE, "");
+  }
+
+  // This cache is not used currently, but will initialize anyway,
+  // just in case something changes in the future.
+  for (i = 0; i < FANTRAY_INFO_SIZE; i++)
+  {
+    snprintf(galaxy100_fantray_info[i].channel_info.path_cache,
+            PATH_CACHE_SIZE, "");
+  }
+
+  return;
+}
+
 int main(int argc, char **argv) {
   /* Sensor values */
   int critical_temp;
@@ -1277,7 +1340,7 @@ int main(int argc, char **argv) {
   int old_temp = GALAXY100_RAISING_TEMP_HIGH;
   int raising_pwm;
   int falling_pwm;
-  struct galaxy100_fantray_info_stu *info;
+  struct galaxy100_fantray_info_stu_sysfs *info;
   int fan_speed = fan_medium;
   int failed_speed = 0;
 
@@ -1290,22 +1353,19 @@ int main(int argc, char **argv) {
   int fan_bad[FANS];
   int fan;
 
+  int sysfs_rc = 0;
+  int sysfs_value = 0;
+
   unsigned log_count = 0; // How many times have we logged our temps?
   int opt;
   int prev_fans_bad = 0;
 
   struct sigaction sa;
 
-  sa.sa_handler = fand_interrupt;
-  sa.sa_flags = 0;
-  sigemptyset(&sa.sa_mask);
-
-  sigaction(SIGTERM, &sa, NULL);
-  sigaction(SIGINT, &sa, NULL);
-  sigaction(SIGUSR1, &sa, NULL);
+  // Initialize path cache
+  init_path_cache();
 
   // Start writing to syslog as early as possible for diag purposes.
-
   openlog("fand", LOG_CONS, LOG_DAEMON);
 
   while ((opt = getopt(argc, argv, "l:m:h:b:t:r:v")) != -1) {
@@ -1365,10 +1425,11 @@ int main(int argc, char **argv) {
            total_fans);
   }
 
-  if(galaxy100_i2c_read(GALAXY100_CMM_SYS_I2C_BUS, GALAXY100_CMM_SYS_CPLD_ADDR,
-                        GALAXY100_CMM_SLOTID_REG, 1) == 0x1) {
+  sysfs_rc = read_sysfs_int("/sys/bus/i2c/drivers/cmmcpld/13-003e/slotid",
+                             &sysfs_value);
+  if ((sysfs_rc == 0) &&(sysfs_value == 0x1)) {
     // on CMM1
-    galaxy100_chanel_reinit();
+    galaxy100_chanel_reinit_sysfs();
   }
   if(galaxy100_cmm_is_master() == 1) {
     for (fan = 0; fan < total_fans; fan++) {
@@ -1398,9 +1459,11 @@ int main(int argc, char **argv) {
       continue;
     }
 
+    usleep(11000);
     /* Read sensors */
     critical_temp = read_critical_max_temp();
     alarm_temp = read_alarm_max_temp();
+
     if ((critical_temp == BAD_TEMP || alarm_temp == BAD_TEMP)) {
       bad_reads++;
     }
@@ -1439,12 +1502,14 @@ int main(int argc, char **argv) {
       }
     }
     old_temp = critical_temp;
-
     /*
      * Update fans only if there are no failed ones. If any fans failed
      * earlier, all remaining fans should continue to run at max speed.
      */
     if (fan_failure == 0 && fan_speed != old_speed) {
+      syslog(LOG_NOTICE,
+             "critical temp %d, alarm temp %d, fan speed %d, speed changes %d",
+             critical_temp, alarm_temp, fan_speed, fan_speed_changes);
       syslog(LOG_NOTICE,
              "Fan speed changing from %d to %d",
              old_speed,
@@ -1454,7 +1519,6 @@ int main(int argc, char **argv) {
         write_fan_speed(fan + fan_offset, fan_speed);
       }
     }
-
     /*
      * Wait for some change.  Typical I2C temperature sensors
      * only provide a new value every second and a half, so
@@ -1467,7 +1531,6 @@ int main(int argc, char **argv) {
     sleep(5);
     galaxy100_lc_present_detect();
     galaxy100_scm_present_detect();
-
 
     /* Check fan RPMs */
 
@@ -1501,7 +1564,6 @@ int main(int argc, char **argv) {
         write_fan_led(fan + fan_offset, FAN_LED_RED);
       }
     }
-
     if (fan_failure > 0) {
       if (prev_fans_bad != fan_failure) {
         syslog(LOG_CRIT, "%d fans failed", fan_failure);
@@ -1581,7 +1643,6 @@ int main(int argc, char **argv) {
         write_fan_speed(fan + fan_offset, fan_speed);
       }
     }
-
     /* Suppress multiple warnings for similar number of fan failures. */
     prev_fans_bad = fan_failure;
 

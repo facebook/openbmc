@@ -178,6 +178,18 @@ pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
 }
 
 int __attribute__((weak))
+pal_get_pcie_port_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_set_pcie_port_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
 pal_set_cpu_mem_threshold(const char* threshold_path)
 {
   return PAL_EOK;

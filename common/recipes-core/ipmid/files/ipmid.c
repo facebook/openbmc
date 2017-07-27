@@ -2133,7 +2133,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  int RetVal;
+  int ret;
   int ret;
   int slot_id = req->payload_id;
   static pthread_t bios_timer_tid[MAX_NODES];
@@ -2147,9 +2147,9 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   }
 
   /*Create timer thread*/
-  RetVal = pthread_create( &bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, (void *)slot_id );
+  ret = pthread_create( &bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, (void *)slot_id );
 
-  if ( RetVal < 0 )
+  if ( ret < 0 )
   {
     syslog(LOG_WARNING, "[%s] Create BIOS timer thread failed!\n", __func__);
 
@@ -2178,14 +2178,14 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int RetVal;
+  int ret;
 
-  RetVal = pal_get_boot_order(req->payload_id, req->data, res->data, res_len);
+  ret = pal_get_boot_order(req->payload_id, req->data, res->data, res_len);
 
 #ifdef DEBUG
   syslog(LOG_WARNING, "[%s] Get: %x %x %x %x %x %x\n", __func__, res->data[0], res->data[1], res->data[2], res->data[3], res->data[4], res->data[5]);
 #endif
-  if(RetVal == 0)
+  if(ret == 0)
   {
 	res->cc = CC_SUCCESS;
   }
@@ -2708,6 +2708,43 @@ oem_get_flash_info ( unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_get_pcie_port_config(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+
+  ret = pal_get_pcie_port_config(req->payload_id, req->data, req_len, res->data, res_len);
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s] Get: %x %x\n", __func__, res->data[0], res->data[1]);
+#endif
+  if(ret == 0) {
+    res->cc = CC_SUCCESS;
+  } else {
+    res->cc = CC_UNSPECIFIED_ERROR;
+  }
+}
+
+static void
+oem_set_pcie_port_config(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+
+  ret = pal_set_pcie_port_config(req->payload_id, req->data, req_len, res->data, res_len);
+
+  if(ret == 0) {
+    res->cc = CC_SUCCESS;
+  } else {
+    res->cc = CC_UNSPECIFIED_ERROR;
+  }
+}
+
+static void
 oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
                         unsigned char *response, unsigned char *res_len)
 {
@@ -2815,6 +2852,16 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_BIOS_FLASH_INFO:
       oem_get_flash_info(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_PCIE_PORT_CONFIG:
+      if(length_check(0, req_len, response, res_len))
+        break;
+      oem_get_pcie_port_config(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_PCIE_PORT_CONFIG:
+      if(length_check(SIZE_PCIE_PORT_CONFIG, req_len, response, res_len))
+        break;
+      oem_set_pcie_port_config(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

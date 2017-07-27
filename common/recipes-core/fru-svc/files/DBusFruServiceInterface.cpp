@@ -38,11 +38,13 @@ static const char* xml =
   "    <method name='addFRU'>"
   "      <arg type='s' name='fruParentPath' direction='in'/>"
   "      <arg type='s' name='fruJsonString' direction='in'/>"
+  "      <arg type='b' name='status' direction='out'/>"
   "    </method>"
   "    <method name='resetTree'>"
   "    </method>"
   "    <method name='removeFRU'>"
-  "      <arg type='s' name='fruName' direction='in'/>"
+  "      <arg type='s' name='fruPath' direction='in'/>"
+  "      <arg type='b' name='status' direction='out'/>"
   "    </method>"
   "  </interface>"
   "</node>";
@@ -67,21 +69,26 @@ void DBusFruServiceInterface::addFRU(GDBusMethodInvocation* invocation,
                                      FruObjectTree*         fruTree,
                                      const char*            objectPath) {
 
-  LOG(INFO) << "addFRU at " << objectPath;
-
   gchar* fruJsonString = NULL;
   gchar* fruParentPath = NULL;
+  gboolean status = TRUE;
 
   g_variant_get(parameters, "(ss)", &fruParentPath, &fruJsonString);
 
-  LOG(INFO) << "Fru :" << fruJsonString;
+  LOG(INFO) << "addFRU at " << fruParentPath << " Fru :" << fruJsonString;
 
-  //Covert fruJsonString to nlohmann::json jObject and add fru to FruTree
-  nlohmann::json jObject = nlohmann::json::parse(fruJsonString);
-  FruJsonParser::parseFRU(jObject, *fruTree, std::string(fruParentPath));
+  if (fruTree->getObject(fruParentPath) == nullptr) {
+    LOG(ERROR) << "Object " << fruParentPath << " does not exists";
+    status = FALSE;
+  }
+  else {
+    //Covert fruJsonString to nlohmann::json jObject and add fru to FruTree
+    nlohmann::json jObject = nlohmann::json::parse(fruJsonString);
+    FruJsonParser::parseFRU(jObject, *fruTree, fruParentPath);
+  }
 
-  g_dbus_method_invocation_return_value (invocation, NULL);
-
+  g_dbus_method_invocation_return_value (invocation,
+                                         g_variant_new ("(b)", status));
 }
 
 /**
@@ -99,9 +106,9 @@ static void deleteSubtree(FruObjectTree* fruTree , Object* obj) {
 void DBusFruServiceInterface::resetTree(GDBusMethodInvocation* invocation,
                                         FruObjectTree*         fruTree,
                                         const char*            objectPath) {
-  LOG(INFO) << "resetTree at " << objectPath;
+  LOG(INFO) << "resetTree";
 
-  Object* obj = fruTree->getObject(std::string(objectPath));
+  Object* obj = fruTree->getObject(objectPath);
   Object::ChildMap childMap = obj->getChildMap();
   for (auto it = childMap.cbegin(); it != childMap.cend();) {
     deleteSubtree(fruTree, (it++)->second);
@@ -114,27 +121,35 @@ void DBusFruServiceInterface::removeFRU(GDBusMethodInvocation* invocation,
                                         GVariant*              parameters,
                                         FruObjectTree*         fruTree,
                                         const char*            objectPath) {
+  gchar* fruPath = NULL;
+  gboolean status = TRUE;
 
-  LOG(INFO) << "removeFRU at " << objectPath;
+  g_variant_get(parameters, "(&s)", &fruPath);
 
-  gchar* fruName = NULL;
-  g_variant_get(parameters, "(&s)", &fruName);
+  LOG(INFO) << "removeFRU " << fruPath;
 
-  Object* obj = fruTree->getObject(std::string(objectPath) + "/" + std::string(fruName));
-  deleteSubtree(fruTree, obj);
+  Object* obj = fruTree->getObject(fruPath);
+  if ((dynamic_cast<FRU*>(obj)) != nullptr) {
+    deleteSubtree(fruTree, obj);
+  }
+  else {
+    LOG(ERROR) << "FRU " << fruPath << " does not exists";
+    status = FALSE;
+  }
 
-  g_dbus_method_invocation_return_value (invocation, NULL);
-
+  g_dbus_method_invocation_return_value (invocation,
+                                         g_variant_new ("(b)", status));
 }
 
-void DBusFruServiceInterface::methodCallBack(GDBusConnection*       connection,
-                                             const char*            sender,
-                                             const char*            objectPath,
-                                             const char*            interfaceName,
-                                             const char*            methodName,
-                                             GVariant*              parameters,
-                                             GDBusMethodInvocation* invocation,
-                                             gpointer               arg) {
+void DBusFruServiceInterface::methodCallBack(
+                                     GDBusConnection*       connection,
+                                     const char*            sender,
+                                     const char*            objectPath,
+                                     const char*            interfaceName,
+                                     const char*            methodName,
+                                     GVariant*              parameters,
+                                     GDBusMethodInvocation* invocation,
+                                     gpointer               arg) {
   // arg should be a pointer to Object in object-tree
   DCHECK(arg != nullptr) << "Empty object passed to callback";
 

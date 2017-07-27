@@ -109,23 +109,29 @@ bool FruService::addFRU(const std::string & fruParentPath,
   LOG(INFO) << "addFRU " << fruParentPath << " " << fruJson;
 
   if (isAvailable_) {
-    GError *error = nullptr;
+    GError* error = nullptr;
+    GVariant* response;
+    gboolean status;
+
     std::string path = dbusPath_ + fruParentPath;
 
-    g_dbus_proxy_call_sync(
-          proxy_,
-          "addFRU",
-          g_variant_new("(ss)", path.c_str(), fruJson.c_str()),
-          G_DBUS_CALL_FLAGS_NONE,
-          -1,
-          nullptr,
-          &error);
+    response = g_dbus_proxy_call_sync(
+                        proxy_,
+                        "addFRU",
+                        g_variant_new("(ss)", path.c_str(), fruJson.c_str()),
+                        G_DBUS_CALL_FLAGS_NONE,
+                        -1,
+                        nullptr,
+                        &error);
 
     if (error != nullptr) {
       LOG(ERROR) << "Error in addFRU " << dbusName_ << " :" << error->message;
     }
     else {
-      return true;
+      g_variant_get(response, "(b)", &status);
+      if (status == TRUE) {
+        return true;
+      }
     }
   }
 
@@ -136,8 +142,12 @@ bool FruService::removeFRU(std::string fruPath) {
   LOG(INFO) << "removeFRU " << fruPath;
 
   if (isAvailable_) {
-    GError *error = nullptr;
+    GError* error = nullptr;
+    GVariant* response;
+    gboolean status;
+
     fruPath = dbusPath_ + fruPath;
+
     g_dbus_proxy_call_sync(
         proxy_,
         "removeFRU",
@@ -152,7 +162,10 @@ bool FruService::removeFRU(std::string fruPath) {
                  << dbusName_ << " :" << error->message;
     }
     else {
-      return true;
+      g_variant_get(response, "(b)", &status);
+      if (status == TRUE) {
+        return true;
+      }
     }
   }
 

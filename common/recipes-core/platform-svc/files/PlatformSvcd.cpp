@@ -115,6 +115,27 @@ static void fruServiceOnNameVanished (GDBusConnection *connection,
   platformTree->setFruServiceAvailable(false);
 }
 
+/*
+ * Monitors hotplug supported frus every 5 seconds
+ */
+static void hotPlugMonitor(PlatformObjectTree* platformTree) {
+  LOG(INFO) << "hotPlugMonitor started";
+
+  if (platformTree->getNofHPIntDetectSupportedFrus() > 0) {
+    while (true) {
+      //Check for hot plug supported frus
+      platformTree->checkHotPlugSupportedFrus();
+
+      //Sleep for 5 seconds
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+  }
+  else {
+    LOG(INFO) << "No Fru Supports internal hotplug detection, "
+                 "exiting hotPlugMonitor";
+  }
+}
+
 int main (int argc, char* argv[]) {
   ::google::InitGoogleLogging(argv[0]);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -169,6 +190,9 @@ int main (int argc, char* argv[]) {
                         fruServiceOnNameVanished,
                         &platformTree,
                         nullptr);
+
+  //Start a thread for monitoring hotplug supported frus
+  std::thread hotPlugMonitorThread(hotPlugMonitor, &platformTree);
 
   t.join();
 

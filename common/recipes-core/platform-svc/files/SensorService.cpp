@@ -52,7 +52,7 @@ bool SensorService::setIsAvailable(bool isAvailable) {
   }
 
   if (isAvailable == true) {
-    GError *error = nullptr;
+    GError* error = nullptr;
     proxy_ = g_dbus_proxy_new_for_bus_sync(
                         G_BUS_TYPE_SYSTEM,
                         G_DBUS_PROXY_FLAGS_NONE,
@@ -82,7 +82,7 @@ bool SensorService::setIsAvailable(bool isAvailable) {
 
 bool SensorService::reset() {
   if (isAvailable_) {
-    GError *error = nullptr;
+    GError* error = nullptr;
     // Reset SensorTree Sensor Service
     g_dbus_proxy_call_sync(
         proxy_,
@@ -109,23 +109,29 @@ bool SensorService::addFRU(const std::string & fruParentPath,
   LOG(INFO) << "addFRU " << fruParentPath << " " << fruJson;
 
   if (isAvailable_) {
-    GError *error = nullptr;
+    GError* error = nullptr;
+    GVariant* response;
+    gboolean status;
+
     std::string path = dbusPath_ + fruParentPath;
 
-    g_dbus_proxy_call_sync(
-          proxy_,
-          "addFRU",
-          g_variant_new("(ss)", path.c_str(), fruJson.c_str()),
-          G_DBUS_CALL_FLAGS_NONE,
-          -1,
-          nullptr,
-          &error);
+    response = g_dbus_proxy_call_sync(
+                        proxy_,
+                        "addFRU",
+                        g_variant_new("(ss)", path.c_str(), fruJson.c_str()),
+                        G_DBUS_CALL_FLAGS_NONE,
+                        -1,
+                        nullptr,
+                        &error);
 
     if (error != nullptr) {
       LOG(ERROR) << "Error in addFRU " << dbusName_ << " :" << error->message;
     }
     else {
-      return true;
+      g_variant_get(response, "(b)", &status);
+      if (status == TRUE) {
+        return true;
+      }
     }
   }
 
@@ -137,7 +143,10 @@ bool SensorService::addSensors(const std::string & fruPath,
   LOG(INFO) << "addSensors at " << fruPath;
 
   if (isAvailable_) {
-    GError *error = nullptr;
+    GError* error = nullptr;
+    gboolean status;
+    GVariant* response;
+
     GVariantBuilder* builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
     std::string path = dbusPath_ + fruPath;
 
@@ -145,14 +154,14 @@ bool SensorService::addSensors(const std::string & fruPath,
       g_variant_builder_add(builder, "s", it.c_str());
     }
 
-    g_dbus_proxy_call_sync(
-        proxy_,
-        "addSensors",
-        g_variant_new("(sas)", path.c_str(), builder),
-        G_DBUS_CALL_FLAGS_NONE,
-        -1,
-        nullptr,
-        &error);
+    response = g_dbus_proxy_call_sync(
+                        proxy_,
+                        "addSensors",
+                        g_variant_new("(sas)", path.c_str(), builder),
+                        G_DBUS_CALL_FLAGS_NONE,
+                        -1,
+                        nullptr,
+                        &error);
 
     g_variant_builder_unref(builder);
 
@@ -162,7 +171,10 @@ bool SensorService::addSensors(const std::string & fruPath,
                  << dbusName_ << " :" << error->message;
     }
     else {
-      return true;
+      g_variant_get(response, "(b)", &status);
+      if (status == TRUE) {
+        return true;
+      }
     }
   }
 
@@ -173,23 +185,29 @@ bool SensorService::removeFRU(std::string fruPath) {
   LOG(INFO) << "removeFRU " << fruPath;
 
   if (isAvailable_) {
-    GError *error = nullptr;
+    GError* error = nullptr;
+    GVariant* response;
+    gboolean status;
+
     fruPath = dbusPath_ + fruPath;
-    g_dbus_proxy_call_sync(
-        proxy_,
-        "removeFRU",
-        g_variant_new("(&s)", fruPath.c_str()),
-        G_DBUS_CALL_FLAGS_NONE,
-        -1,
-        nullptr,
-        &error);
+    response = g_dbus_proxy_call_sync(
+                        proxy_,
+                        "removeFRU",
+                        g_variant_new("(&s)", fruPath.c_str()),
+                        G_DBUS_CALL_FLAGS_NONE,
+                        -1,
+                        nullptr,
+                        &error);
 
     if (error != nullptr) {
       LOG(ERROR) << "Error in removeFRU "
                  << dbusName_ << " :" << error->message;
     }
     else {
-      return true;
+      g_variant_get(response, "(b)", &status);
+      if (status == TRUE) {
+        return true;
+      }
     }
   }
 

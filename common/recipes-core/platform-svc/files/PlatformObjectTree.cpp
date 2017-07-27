@@ -22,11 +22,13 @@
 #include <glog/logging.h>
 #include "PlatformObjectTree.h"
 #include "DBusPlatformSvcInterface.h"
+#include "DBusHPExtDectectionFruInterface.h"
 
 namespace openbmc {
 namespace qin {
 
 static DBusPlatformSvcInterface platformSvcInterface;
+static DBusHPExtDectectionFruInterface hPExtDectectionFruInterface;
 
 PlatformService* PlatformObjectTree::addPlatformService(
                                           const std::string &name,
@@ -55,11 +57,11 @@ FRU* PlatformObjectTree::addFRU(const std::string &name,
                                            platformSvcInterface));
 }
 
-FRU* PlatformObjectTree::addFRU(
-                         const std::string &name,
-                         const std::string &parentPath,
-                         const std::string &fruJson,
-                         std::unique_ptr<HotPlugDetectionMechanism> hotPlugDetectionMechanism) {
+FRU* PlatformObjectTree::addFRU(const std::string &name,
+                                const std::string &parentPath,
+                                const std::string &fruJson,
+                                std::unique_ptr<HotPlugDetectionMechanism>
+                                                  hotPlugDetectionMechanism) {
   LOG(INFO) << "Adding FRU \"" << name << "\" under the path \""
     << parentPath << "\"";
   const std::string path = getPath(parentPath, name);
@@ -69,9 +71,21 @@ FRU* PlatformObjectTree::addFRU(
                                      parent,
                                      fruJson,
                                      std::move(hotPlugDetectionMechanism)));
-  return static_cast<FRU*>(addObjectByPath(std::move(upDev),
-                                           path,
-                                           platformSvcInterface));
+
+  if (upDev->isIntHPDetectionSupported()) {
+    //supports internal hotplug detection
+    //register fru with with platformSvcInterface
+    return static_cast<FRU*>(addObjectByPath(std::move(upDev),
+                                             path,
+                                             platformSvcInterface));
+  }
+  else {
+    //supports external hotplug detection
+    //register fru with hPExtDectectionFruInterface
+    return static_cast<FRU*>(addObjectByPath(std::move(upDev),
+                                             path,
+                                             hPExtDectectionFruInterface));
+  }
 }
 
 Sensor* PlatformObjectTree::addSensor(const std::string &name,
@@ -196,7 +210,10 @@ void PlatformObjectTree::addFRUtoSensorService(const FRU & fru) throw(const char
                                              platformServiceBasePath_.length());
 
     //Add FRU to SensorService
-    sensorService_->addFRU(fruParentPath, fru.getFruJson());
+    if (sensorService_->addFRU(fruParentPath, fru.getFruJson()) == false) {
+      //addFRU failed, return
+      return;
+    }
 
     //Vector to store json string represenation of all child Sensors
     std::vector<std::string> sensorJsonList;
@@ -209,8 +226,11 @@ void PlatformObjectTree::addFRUtoSensorService(const FRU & fru) throw(const char
       }
     }
     //Add Sensors to platform Service
-    sensorService_->addSensors(fruParentPath + "/" +
-                               fru.getName(), sensorJsonList);
+    if (sensorService_->addSensors(fruParentPath + "/" +
+                                   fru.getName(), sensorJsonList) == false) {
+      //addSensors failed, return
+      return;
+    }
 
     //Add recursively all child FRUs
     for (auto &it : fru.getChildMap()) {
@@ -253,7 +273,10 @@ void PlatformObjectTree::addFRUtoFruService(const FRU & fru) throw(const char *)
                                             platformServiceBasePath_.length());
 
     //Add FRU to FruService
-    fruService_->addFRU(fruParentPath, fru.getFruJson());
+    if (fruService_->addFRU(fruParentPath, fru.getFruJson()) == false) {
+      //addFRU failed, return
+      return;
+    }
 
     //Add recursively all child FRUs
     for (auto &it : fru.getChildMap()) {
@@ -276,6 +299,122 @@ void PlatformObjectTree::removeFRUFromFruService(const FRU & fru) throw(const ch
   if (fruService_->isAvailable()) {
     fruService_->removeFRU(fru.getObjectPath().erase(0,
                                            platformServiceBasePath_.length()));
+  }
+}
+
+bool PlatformObjectTree::setFruAvailable(const std::string & fruPath,
+                                         bool isAvailable) {
+  LOG(INFO) << "setFruAvailable " << fruPath << " " << isAvailable;
+
+  FRU* fru = dynamic_cast<FRU*>(getObject(fruPath));
+
+  if ((fru != nullptr) &&
+      (fru->isIntHPDetectionSupported() == false)) {
+    //if fru supports external hotplug detection
+    bool oldAvailability = fru->isAvailable();
+    fru->setAvailable(isAvailable);
+    bool currentAvailability = fru->isAvailable();
+
+    if (oldAvailability != currentAvailability) {
+      //If there is change in fru availability
+      if (checkIfParentFruAvailable(*fru)) {
+        //push changes on fru service and sensor service
+        changeInFruAvailabilityHandler(*fru);
+      }
+    }
+    return true;
+  }
+
+  return false;
+}
+
+int PlatformObjectTree::getNofHPIntDetectSupportedFrusRec(const Object & obj) {
+  int nofFrus = 0;
+
+  for (auto &it : obj.getChildMap()) {
+    FRU* fru;
+    if ((fru = dynamic_cast<FRU*>(it.second)) != nullptr) {
+      if (fru->isIntHPDetectionSupported()) {
+        //child fru supports internal hotplug detection
+        nofFrus++;
+      }
+
+      if (fru->isAvailable()) {
+        //call recursively on child fru
+        nofFrus += getNofHPIntDetectSupportedFrusRec(*fru);
+      }
+    }
+  }
+
+  return nofFrus;
+}
+
+void PlatformObjectTree::checkHotPlugSupportedFrusRec(const Object & obj) {
+  for (auto &it : obj.getChildMap()) {
+    FRU* fru;
+    if ((fru = dynamic_cast<FRU*>(it.second)) != nullptr) {
+      if (fru->isIntHPDetectionSupported()) {
+        //if fru supports internal hotplug detection
+        bool oldAvailability = fru->isAvailable();
+        bool isAvailable = fru->detectAvailability();
+        if (oldAvailability != isAvailable) {
+          //If change in availability
+          changeInFruAvailabilityHandler(*fru);
+        }
+      }
+
+      //Call recursively on fru subtree if fru is available
+      //If fru is unavailable, no need to check for fru subtree
+      //Children in fru subtree can not be added if fru is unavailable
+      if (fru->isAvailable()) {
+        checkHotPlugSupportedFrusRec(*fru);
+      }
+    }
+  }
+}
+
+void PlatformObjectTree::changeInFruAvailabilityHandler(const FRU & fru) {
+  bool isAvailable = fru.isAvailable();
+
+  if (isAvailable) {
+    //push fru to sensor service
+    sensorServiceLock_.lock();
+    addFRUtoSensorService(fru);
+    sensorServiceLock_.unlock();
+
+    //push fru to fru service
+    fruServiceLock_.lock();
+    addFRUtoFruService(fru);
+    fruServiceLock_.unlock();
+  }
+  else {
+    //remove fru from sensor service
+    sensorServiceLock_.lock();
+    removeFRUFromSensorService(fru);
+    sensorServiceLock_.unlock();
+
+    //remove fru from platform service
+    fruServiceLock_.lock();
+    removeFRUFromFruService(fru);
+    fruServiceLock_.unlock();
+  }
+}
+
+bool PlatformObjectTree::checkIfParentFruAvailable(const FRU & fru) {
+  FRU* parentFru;
+  if ((parentFru = dynamic_cast<FRU*>(fru.getParent())) != nullptr) {
+    if (parentFru->isAvailable() == false) {
+      //parent fru unavailable return false
+      return false;
+    }
+    else {
+      //recursively check for parent fru
+      return checkIfParentFruAvailable(*parentFru);
+    }
+  }
+  else {
+    //Parent is platform service, return true
+    return true;
   }
 }
 

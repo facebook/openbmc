@@ -135,6 +135,33 @@ class PlatformObjectTree : public ObjectTree {
                       const std::string &parentPath,
                       const std::string &sensorJson);
 
+    /**
+     * Returns number of FRUs which supports internal hot plug detection
+     */
+    int getNofHPIntDetectSupportedFrus() {
+      LOG(INFO) << "getNofHPIntDetectSupportedFrus";
+      return getNofHPIntDetectSupportedFrusRec(*getObject(platformServiceBasePath_));
+    }
+
+    /*
+     * This method goes through all frus of platform object tree
+     * and checks if there is any change in fru availability.
+     * If there is change in fru availability,
+     * update the same on fru and sensor service
+     * todo: This function traverses whole tree
+     *       Need changes in data struture to get direct access to frus
+     */
+    void checkHotPlugSupportedFrus() {
+      LOG(INFO) << "checkHotPlugSupportedFrus";
+      checkHotPlugSupportedFrusRec(*getObject(platformServiceBasePath_));
+    }
+
+    /*
+     * Sets availability of fru at fruPath
+     * Returns if operation is successful
+     */
+    bool setFruAvailable(const std::string & fruPath, bool isAvailable);
+
   private:
 
     /**
@@ -160,6 +187,28 @@ class PlatformObjectTree : public ObjectTree {
      * fruServiceLock_ must be acquired before calling this method
      */
     void removeFRUFromFruService(const FRU & fru) throw(const char *);
+
+    /**
+     * Returns number of frus which supports internal detection of hotplug
+     * under obj subtree
+     */
+    int getNofHPIntDetectSupportedFrusRec(const Object & obj);
+
+    /**
+     * Recursively traverses through tree at obj and checks status of frus
+     * which supports internal hotplug detection
+     */
+    void checkHotPlugSupportedFrusRec(const Object & obj);
+
+    /**
+     * Updates fru service and sensor service on change in fru availability
+     */
+    void changeInFruAvailabilityHandler(const FRU & fru);
+
+    /**
+     * Checks if all frus in path from platform service to fru are available
+     */
+    bool checkIfParentFruAvailable(const FRU & fru);
 
     /**
      * Get the FRU from object.

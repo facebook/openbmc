@@ -25,6 +25,8 @@ SRC_URI =+ "file://Makefile \
            file://FruService.cpp \
            file://HotPlugDetectionMechanism.h \
            file://HotPlugDetectionViaPath.h \
+           file://DBusHPExtDectectionFruInterface.h \
+           file://DBusHPExtDectectionFruInterface.cpp \
           "
 
 S = "${WORKDIR}"

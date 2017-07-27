@@ -1,5 +1,5 @@
 /*
- * DBusPlatformSvcInterface.cpp
+ * DBusHPExtDectectionFruInterface.cpp
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -22,7 +22,7 @@
 #include <glog/logging.h>
 #include <gio/gio.h>
 #include <object-tree/Object.h>
-#include "DBusPlatformSvcInterface.h"
+#include "DBusHPExtDectectionFruInterface.h"
 #include "PlatformObjectTree.h"
 
 namespace openbmc {
@@ -39,10 +39,14 @@ static const char* xml =
 "      <arg type='s' name='dbusName' direction='out'/>"
 "      <arg type='s' name='dbusPath' direction='out'/>"
 "    </method>"
+"    <method name='setFruAvailable'>"
+"      <arg type='b' name='isAvaliable' direction='in'/>"
+"      <arg type='b' name='status' direction='out'/>"
+"    </method>"
 "  </interface>"
 "</node>";
 
-DBusPlatformSvcInterface::DBusPlatformSvcInterface() {
+DBusHPExtDectectionFruInterface::DBusHPExtDectectionFruInterface() {
   info_ = g_dbus_node_info_new_for_xml(xml, nullptr);
   if (info_ == nullptr) {
     LOG(ERROR) << "xml parsing for dbus interface failed";
@@ -53,63 +57,61 @@ DBusPlatformSvcInterface::DBusPlatformSvcInterface() {
   vtable_ = {methodCallBack, nullptr, nullptr, nullptr};
 }
 
-DBusPlatformSvcInterface::~DBusPlatformSvcInterface() {
+DBusHPExtDectectionFruInterface::~DBusHPExtDectectionFruInterface() {
   g_dbus_node_info_unref(info_);
 }
 
-void DBusPlatformSvcInterface::getAccessInformation(
+void DBusHPExtDectectionFruInterface::getAccessInformation(
                                          GDBusConnection*       connection,
                                          const char*            objectPath,
                                          GDBusMethodInvocation* invocation,
                                          gpointer               arg) {
   LOG(INFO) << "getAccessInformation : " << objectPath;
   PlatformObjectTree* platformObjectTree =
-              static_cast<PlatformObjectTree*>(arg);
+                                static_cast<PlatformObjectTree*>(arg);
 
-  Object* obj = platformObjectTree->getObject(std::string(objectPath));
+  //dbusPath of obj is Base dbus path for FRU Service
+  //                   + (objectpath - platform service base path)
+  std::string dbusPath =
+            platformObjectTree->getFruService()->getDBusPath() +
+            std::string(objectPath).erase(0,
+                  platformObjectTree->getPlatformServiceBasePath().length());
 
-  if (dynamic_cast<Sensor*>(obj) != nullptr) {
-    //obj of type Sensor
-    //dbusPath of obj is Base dbus path for Sensor Service
-    //                   + (objectpath - platform service base path)
-    std::string dbusPath =
-              platformObjectTree->getSensorService()->getDBusPath() +
-              std::string(objectPath).erase(0,
-                    platformObjectTree->getPlatformServiceBasePath().length());
+  g_dbus_method_invocation_return_value(
+            invocation,
+            g_variant_new("(sss)",
+            "FRU",
+            platformObjectTree->getFruService()->getDBusName().c_str(),
+            dbusPath.c_str()));
+}
 
-    g_dbus_method_invocation_return_value(
-              invocation,
-              g_variant_new("(sss)",
-              "Sensor",
-              platformObjectTree->getSensorService()->getDBusName().c_str(),
-              dbusPath.c_str()));
-  }
-  else if (dynamic_cast<FRU*>(obj) != nullptr) {
-    //obj of type FRU
-    //dbusPath of obj is Base dbus path for FRU Service
-    //                   + (objectpath - platform service base path)
-    std::string dbusPath =
-              platformObjectTree->getFruService()->getDBusPath() +
-              std::string(objectPath).erase(0,
-                    platformObjectTree->getPlatformServiceBasePath().length());
+void DBusHPExtDectectionFruInterface::setFruAvailable(
+                                         GDBusConnection*       connection,
+                                         const char*            objectPath,
+                                         GVariant*              parameters,
+                                         GDBusMethodInvocation* invocation,
+                                         gpointer               arg) {
+  LOG(INFO) << "setFruAvailable : " << objectPath;
+  gboolean isAvailable;
+  PlatformObjectTree* platformObjectTree =
+                                static_cast<PlatformObjectTree*>(arg);
+  //get fru status from parameters
+  g_variant_get(parameters, "(b)", &isAvailable);
 
-    g_dbus_method_invocation_return_value(
-              invocation,
-              g_variant_new("(sss)",
-              "FRU",
-              platformObjectTree->getFruService()->getDBusName().c_str(),
-              dbusPath.c_str()));
+  //set fru available
+  if (platformObjectTree->setFruAvailable(objectPath, isAvailable)) {
+    //susccessfully updated fru availability
+    g_dbus_method_invocation_return_value(invocation,
+                                          g_variant_new("(b)", TRUE));
   }
   else {
+    //failed to set fru Availability
     g_dbus_method_invocation_return_value(invocation,
-              g_variant_new("(sss)",
-              "PlatformService",
-              ((DBus*)platformObjectTree->getIpc())->getName().c_str(),
-              objectPath));
+                                          g_variant_new("(b)", FALSE));
   }
 }
 
-void DBusPlatformSvcInterface::methodCallBack(
+void DBusHPExtDectectionFruInterface::methodCallBack(
                                GDBusConnection*       connection,
                                const char*            sender,
                                const char*            objectPath,
@@ -123,6 +125,9 @@ void DBusPlatformSvcInterface::methodCallBack(
 
   if (g_strcmp0(methodName, "getAccessInformation") == 0) {
     getAccessInformation(connection, objectPath, invocation, arg);
+  }
+  else if (g_strcmp0(methodName, "setFruAvailable") == 0) {
+    setFruAvailable(connection, objectPath, parameters, invocation, arg);
   }
 }
 

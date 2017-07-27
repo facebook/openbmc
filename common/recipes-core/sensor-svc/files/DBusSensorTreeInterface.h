@@ -93,6 +93,12 @@ class DBusSensorTreeInterface: public DBusInterfaceBase {
                                gpointer               arg);
 
     /**
+     * Callback for getSensorObjects method
+     * Returns all sensor objects under subtree
+     */
+    static void getSensorObjects(GDBusMethodInvocation* invocation,
+                                 gpointer               arg);
+    /**
      * Handles the callback by matching the method names in the DBus message
      * to the functions. The above callbacks should be invoked here with
      * method name specified. Checkout g_dbus_connection_register_object in

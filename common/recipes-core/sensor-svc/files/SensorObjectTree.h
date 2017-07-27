@@ -167,7 +167,6 @@ class SensorObjectTree : public ObjectTree {
       // SensorService registers sensorTree object on dbus
       // sensorTree access is required to perform add and delete opeartion at SensorService object path
       if ((sensorService = dynamic_cast<SensorService*>(object)) != nullptr) {
-        LOG(ERROR) << "Object is of SensorService type";
         dbus->registerObject(path, interface, this);
       }
       else {

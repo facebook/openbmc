@@ -56,6 +56,9 @@ const char* DBusSensorTreeInterface::xml =
   "      <arg type='y' name='id' direction='in'/>"
   "      <arg type='s' name='path' direction='out'/>"
   "    </method>"
+  "    <method name='getSensorObjects'>"
+  "      <arg type='a(syids)' name='sensorlist' direction='out'/>"
+  "    </method>"
   "  </interface>"
   "</node>";
 
@@ -355,6 +358,48 @@ void DBusSensorTreeInterface::getSensorPathById(GDBusMethodInvocation* invocatio
                                         g_variant_new("(s)", path.c_str()));
 }
 
+/**
+ * Recursively traverses through subtree under Object obj and
+ * adds all sensor objects to GVariantBuilder* builder
+ */
+static void addSensorObjects(GVariantBuilder* builder, Object* obj) {
+  for (auto &it : obj->getChildMap()) {
+    Sensor* sensor;
+    if ((sensor = dynamic_cast<Sensor*>(it.second)) != nullptr) {
+      //child is Sensor, add it to builder
+      g_variant_builder_add(builder,
+                            "(syids)",
+                            sensor->getName().c_str(),
+                            sensor->getId(),
+                            sensor->getLastReadStatus(),
+                            sensor->getValue(),
+                            sensor->getUnit().c_str());
+    }
+  }
+
+  for (auto &it : obj->getChildMap()) {
+    if (dynamic_cast<FRU*>(it.second) != nullptr) {
+      //Recursively call on child FRU
+      addSensorObjects(builder, it.second);
+    }
+  }
+}
+
+void DBusSensorTreeInterface::getSensorObjects(
+                                           GDBusMethodInvocation* invocation,
+                                           gpointer               arg) {
+  Object* obj = static_cast<Object*>(arg);
+  LOG(INFO) << "getSensorObjects of " << obj->getName();
+
+  GVariantBuilder* builder = g_variant_builder_new(G_VARIANT_TYPE("a(syids)"));
+
+  addSensorObjects(builder, obj);
+
+  g_dbus_method_invocation_return_value(invocation,
+                                        g_variant_new("(a(syids))", builder));
+  g_variant_builder_unref(builder);
+}
+
 void DBusSensorTreeInterface::methodCallBack(
                           GDBusConnection*       connection,
                           const char*            sender,
@@ -384,5 +429,8 @@ void DBusSensorTreeInterface::methodCallBack(
   }
   else if (g_strcmp0(methodName, "getFruPathById") == 0) {
     getFruPathById(invocation, parameters, arg);
+  }
+  else if (g_strcmp0(methodName, "getSensorObjects") == 0) {
+    getSensorObjects(invocation, arg);
   }
 }

@@ -58,21 +58,24 @@ const char* DBusSensorServiceInterface::xml =
   "      <arg type='y' name='id' direction='in'/>"
   "      <arg type='s' name='path' direction='out'/>"
   "    </method>"
+  "    <method name='getSensorObjects'>"
+  "      <arg type='a(syids)' name='sensorlist' direction='out'/>"
+  "    </method>"
   "    <method name='addFRU'>"
   "      <arg type='s' name='fruParentPath' direction='in'/>"
   "      <arg type='s' name='fruJsonString' direction='in'/>"
-  "    </method>"
-  "    <method name='addSensor'>"
-  "      <arg type='s' name='sensorJsonString' direction='in'/>"
+  "      <arg type='b' name='status' direction='out'/>"
   "    </method>"
   "    <method name='addSensors'>"
   "      <arg type='s' name='fruPath' direction='in'/>"
   "      <arg type='as' name='sensorJsonString' direction='in'/>"
+  "      <arg type='b' name='status' direction='out'/>"
   "    </method>"
   "    <method name='resetTree'>"
   "    </method>"
   "    <method name='removeFRU'>"
-  "      <arg type='s' name='fruName' direction='in'/>"
+  "      <arg type='s' name='fruPath' direction='in'/>"
+  "      <arg type='b' name='status' direction='out'/>"
   "    </method>"
   "  </interface>"
   "</node>";
@@ -96,20 +99,25 @@ void DBusSensorServiceInterface::addFRU(GDBusMethodInvocation* invocation,
                                         GVariant*              parameters,
                                         SensorObjectTree*      sensorTree,
                                         const char*            objectPath) {
-  LOG(INFO) << "addFRU at " << objectPath;
-
   gchar* fruJsonString = NULL;
   gchar* fruParentPath = NULL;
+  gboolean status = TRUE;
 
   g_variant_get(parameters, "(ss)", &fruParentPath, &fruJsonString);
 
-  LOG(INFO) << "Fru :" << fruJsonString;
+  LOG(INFO) << "addFRU at " << fruParentPath << " FRU: " << fruJsonString;
 
-  //Covert fruJsonString to nlohmann::json jObject and add fru to SensorTree
-  nlohmann::json jObject = nlohmann::json::parse(fruJsonString);
-  SensorJsonParser::parseFRU(jObject, *sensorTree, std::string(fruParentPath));
+  if (sensorTree->getObject(fruParentPath) == nullptr) {
+    LOG(ERROR) << "Object " << fruParentPath << " does not exists";
+    status = FALSE;
+  }
+  else {
+    //Covert fruJsonString to nlohmann::json jObject and add fru to SensorTree
+    nlohmann::json jObject = nlohmann::json::parse(fruJsonString);
+    SensorJsonParser::parseFRU(jObject, *sensorTree, fruParentPath);
+  }
 
-  g_dbus_method_invocation_return_value (invocation, NULL);
+  g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", status));
 }
 
 void DBusSensorServiceInterface::addSensors(GDBusMethodInvocation* invocation,
@@ -119,22 +127,28 @@ void DBusSensorServiceInterface::addSensors(GDBusMethodInvocation* invocation,
   GVariantIter* iter = NULL;
   gchar* sensorJsonString = NULL;
   gchar* frupath = NULL;
-
-  LOG(INFO) << "addSensors at " << objectPath;
+  gboolean status = TRUE;
 
   g_variant_get(parameters, "(sas)", &frupath, &iter);
-  if (iter != NULL) {
+
+  LOG(INFO) << "addSensors at " << frupath;
+
+  if (dynamic_cast<FRU*>(sensorTree->getObject(frupath)) == nullptr) {
+    LOG(ERROR) << "Fru " << frupath << " does not exists";
+    status = FALSE;
+  }
+  else if (iter != NULL) {
     while (g_variant_iter_loop (iter, "&s", &sensorJsonString)) {
       LOG(INFO) << "Sensor :" << sensorJsonString;
 
       //Covert sensorJsonString to nlohmann::json jObject and add sensor to SensorTree
       nlohmann::json jObject = nlohmann::json::parse(sensorJsonString);
-      SensorJsonParser::parseSensor(jObject, *sensorTree, std::string(frupath));
+      SensorJsonParser::parseSensor(jObject, *sensorTree, frupath);
     }
-    g_variant_iter_free (iter);
   }
 
-  g_dbus_method_invocation_return_value (invocation, NULL);
+  g_variant_iter_free (iter);
+  g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", status));
 }
 
 /**
@@ -154,7 +168,7 @@ void DBusSensorServiceInterface::resetTree(GDBusMethodInvocation* invocation,
                                            const char*            objectPath) {
   LOG(INFO) << "resetTree at " << objectPath;
 
-  Object* obj = sensorTree->getObject(std::string(objectPath));
+  Object* obj = sensorTree->getObject(objectPath);
   Object::ChildMap childMap = obj->getChildMap();
   for (auto it = childMap.cbegin(); it != childMap.cend();) {
     deleteSubtree(sensorTree, (it++)->second);
@@ -167,15 +181,23 @@ void DBusSensorServiceInterface::removeFRU(GDBusMethodInvocation* invocation,
                                            GVariant*              parameters,
                                            SensorObjectTree*      sensorTree,
                                            const char*            objectPath) {
-  LOG(INFO) << "removeFRU at " << objectPath;
+  gchar* fruPath = NULL;
+  gboolean status = TRUE;
+  g_variant_get(parameters, "(&s)", &fruPath);
 
-  gchar* fruName = NULL;
-  g_variant_get(parameters, "(&s)", &fruName);
+  LOG(INFO) << "removeFRU " << fruPath;
 
-  Object* obj = sensorTree->getObject(std::string(objectPath) + "/" + std::string(fruName));
-  deleteSubtree(sensorTree, obj);
+  Object* obj = sensorTree->getObject(fruPath);
+  if ((dynamic_cast<FRU*>(obj)) != nullptr) {
+    deleteSubtree(sensorTree, obj);
+  }
+  else {
+    LOG(ERROR) << "FRU " << fruPath << " does not exists";
+    status = FALSE;
+  }
 
-  g_dbus_method_invocation_return_value (invocation, NULL);
+  g_dbus_method_invocation_return_value (invocation,
+                                         g_variant_new ("(b)", status));
 }
 
 void DBusSensorServiceInterface::methodCallBack(
@@ -206,7 +228,7 @@ void DBusSensorServiceInterface::methodCallBack(
   }
   else {
     // For remaining methods call DBusSensorTreeInterface::methodCallBack
-    // Pass SensorService object (sensorTree->getObject(std::string(objectPath))) as arg
+    // Pass SensorService object (sensorTree->getObject(objectPath)) as arg
     DBusSensorTreeInterface::methodCallBack(connection,
                                             sender,
                                             objectPath,
@@ -214,6 +236,6 @@ void DBusSensorServiceInterface::methodCallBack(
                                             methodName,
                                             parameters,
                                             invocation,
-                                            sensorTree->getObject(std::string(objectPath)));
+                                            sensorTree->getObject(objectPath));
   }
 }

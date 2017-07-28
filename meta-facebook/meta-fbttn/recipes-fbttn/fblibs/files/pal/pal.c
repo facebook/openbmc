@@ -205,6 +205,7 @@ char * key_list[] = {
 "bmc_health",
 "slot1_sel_error",
 "slot1_boot_order",
+"server_pcie_port_config",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -225,6 +226,7 @@ char * def_val_list[] = {
   "1", /* bmc_health */
   "1", /* slot_sel_error */
   "0000000", /* slot1_boot_order */
+  "c084", /* server_pcie_port_config */ /* Default: Port #1: Auto; Port3C: disable, Port3D: enable */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -4195,6 +4197,63 @@ default_iom_board_id:
   iom_board_id = BOARD_MP;
 
   return iom_board_id;
+}
+
+int
+pal_get_pcie_port_config (uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t pcie_port_config[SIZE_PCIE_PORT_CONFIG] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+  int msb, lsb;
+  int ret;
+  int i;
+  int j = 0;
+
+  sprintf(key, "server_pcie_port_config");
+
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    *res_len = 0;
+    return ret;
+  }
+
+  for (i = 0; i < 2 * SIZE_PCIE_PORT_CONFIG; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    pcie_port_config[j] = (msb << 4) | lsb;
+
+    j++;
+  }
+
+  memcpy(res_data, pcie_port_config, SIZE_PCIE_PORT_CONFIG);
+  *res_len = SIZE_PCIE_PORT_CONFIG;  
+
+  return 0;
+}
+
+int
+pal_set_pcie_port_config (uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t pcie_port_config[SIZE_PCIE_PORT_CONFIG] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+  int i;
+
+  *res_len = 0;
+
+  sprintf(key, "server_pcie_port_config");
+
+  memcpy(pcie_port_config, req_data, SIZE_PCIE_PORT_CONFIG);
+  for (i = 0; i < SIZE_PCIE_PORT_CONFIG; i++) {
+    snprintf(tstr, 3, "%02x", pcie_port_config[i]);
+    strncat(str, tstr, 3);
+  }
+
+  return pal_set_key_value(key, str);
 }
 
 int

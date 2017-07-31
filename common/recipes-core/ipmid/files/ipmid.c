@@ -2134,7 +2134,6 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   int ret;
-  int ret;
   int slot_id = req->payload_id;
   static pthread_t bios_timer_tid[MAX_NODES];
 

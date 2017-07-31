@@ -54,8 +54,7 @@
  * IOM_FULL_PWR_EN      GPIOAA7  215
  * IOM_FULL_PGOOD       GPIOAB1  217 // EVT: GPIOAB2(218); DVT: GPIOAB1(217)
  * BMC_LOC_HEARTBEAT    GPIOO1   113
- * BMC_UART_SEL         GPIOS1   145 // output; 0:cpu 1:bmc
- * DEBUG_HDR_UART_SEL   GPIOS2   146 // input
+ * UART_SEL_IN          GPIOS1   145 // input; 0: UART_SEL_SERVER; 1: UART_SEL_BMC
  * DB_PRSNT_BMC_N       GPIOQ6   134
  * SYS_PWR_LED          GPIOA3   3
  * ENCL_FAULT_LED       GPIOO3   115
@@ -92,8 +91,7 @@
 #define BMC_EXT1_LED_Y_N 37
 #define BMC_EXT2_LED_Y_N 39
 
-#define GPIO_UART_SEL 145
-#define GPIO_DEBUG_HDR_UART_SEL 146
+#define UART_SEL_IN 145
 
 #define GPIO_POSTCODE_0 56
 #define GPIO_POSTCODE_1 57
@@ -1020,33 +1018,17 @@ pal_sled_cycle(void) {
 // Read the Front Panel Hand Switch and return the position
 int
 pal_get_hand_sw(uint8_t *pos) {
-  static int prev_state = -1;
-  static uint8_t prev_uart = HAND_SW_BMC;
-  static int count = 0;
-  int curr_state = -1;
-  uint8_t curr_uart = -1;
-  char path[64] = {0};
+  uint8_t uart_sel = HAND_SW_BMC;
+  int ret = 0;
 
-  // GPIO_DEBUG_HDR_UART_SEL: GPIOS2 (146)
-  sprintf(path, GPIO_VAL, GPIO_DEBUG_HDR_UART_SEL);
-  if (read_device(path, &curr_state)) {
+  // UART_SEL_IN: GPIOS1 (145)
+  // 0: UART_SEL_SERVER; 1: UART_SEL_BMC
+  ret = get_gpio_value(UART_SEL_IN, &uart_sel);
+  if (ret != 0) {
     return -1;
   }
 
-  // When a status changed (a pulse), switch the UART selection
-  if (curr_state != prev_state) {
-    count++;
-    if (count == 2) {
-      curr_uart = ~(prev_uart & 0x1);   // 0: HAND_SW_BMC; 1: HAND_SW_SERVER1
-      count = 0;
-    }
-  } else {
-    curr_uart = prev_uart;
-  }
-
-  *pos = curr_uart;
-  prev_state = curr_state;
-  prev_uart = curr_uart;
+  *pos = uart_sel;
 
   return 0;
 }
@@ -1178,23 +1160,6 @@ pal_switch_usb_mux(uint8_t slot) {
   return 0;
 }
 
-// Switch the UART mux to the given slot
-int
-pal_switch_uart_mux(uint8_t fru) {
-  char * gpio_uart_sel;
-  char path[64] = {0};
-  int ret;
-
-	if(fru != 0)//BMC
-	  gpio_uart_sel = "1";
-	else
-	  gpio_uart_sel = "0";
-
-  sprintf(path, GPIO_VAL, GPIO_UART_SEL);
-  ret = write_device(path, gpio_uart_sel);
-  return ret;
-}
-
 // Enable POST buffer for the server in given slot
 int
 pal_post_enable(uint8_t slot) {
@@ -1272,10 +1237,13 @@ pal_post_handle(uint8_t slot, uint8_t status) {
   uint8_t prsnt, pos;
   int ret;
 
-  // Display the post code in the debug card
-  ret = pal_post_display(status);
-  if (ret) {
-    return ret;
+  // Only allow front-paneld to control
+  if ((slot == HAND_SW_SERVER) || (slot == HAND_SW_BMC)) {
+    // Display the post code or error code in the 7-seg LED of debug card
+    ret = pal_post_display(status);
+    if (ret) {
+      return ret;
+    }
   }
 
   return 0;
@@ -3570,7 +3538,7 @@ pal_get_error_code(uint8_t* data, uint8_t* error_count) {
   return 0;
 }
 
-// Get the last post code of the given slot
+// Get post code buffer of the given slot from BIC
 int
 pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len) {
   int ret;

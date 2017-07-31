@@ -434,7 +434,9 @@ gpio_export P4
 devmem_clear_bit $(scu_addr 88) 21
 devmem_clear_bit $(scu_addr 90) 28
 
-gpio_export P5
+gpio_set P5 1
+# set GPIOP5 WDT reset tolerance
+gpio_tolerance_fun P5
 
 # DEBUG_GPIO_BMC_4: P6 (126)
 # To use GPIOP4, SCU88[20] must be 0
@@ -458,43 +460,37 @@ devmem_clear_bit $(scu_addr 2C) 1
 
 gpio_export Q6
 
-# EXP_UART_EN: S0 (134)
+# EXP_UART_EN: S0 (144)
 # To use GPIOS0, SCU8C[0] must be 0
 devmem_clear_bit $(scu_addr 8C) 0
 
 gpio_set S0 0
 
-# BMC_UART_SEL: S1 (135)
+# UART_SEL_IN: S1 (145)
 # To use GPIOS1, SCU8C[1] must be 0
 devmem_clear_bit $(scu_addr 8C) 1
 
-gpio_tolerance_fun S1
+gpio_export S1
 
-# DEBUG_HDR_UART_SEL: S2 (136)
-# To use GPIOS2, SCU8C[2] must be 0
-devmem_clear_bit $(scu_addr 8C) 2
-
-gpio_export S2
-
-# BMC_GPIOS4: S4 (138)
+# BMC_GPIOS4: S4 (148)
 # To use GPIOS4, SCU8C[4] must be 0
 devmem_clear_bit $(scu_addr 8C) 4
 
 gpio_export S4
 
-# BMC_GPIOS5: S5 (139)
+# BMC_GPIOS5: S5 (149)
 # To use GPIOS5, SCU8C[5] must be 0
 devmem_clear_bit $(scu_addr 8C) 5
 
 gpio_export S5
 
-# BMC_GPIOS6: S6 (140)
+# BMC_GPIOS6: S6 (150)
 # To use GPIOS6, SCU8C[6] must be 0
 devmem_clear_bit $(scu_addr 8C) 6
 
 gpio_export S6
 
-# BMC_GPIOS7: S7 (141)
+# BMC_GPIOS7: S7 (151)
 # To use GPIOS7, SCU8C[7] must be 0
 devmem_clear_bit $(scu_addr 8C) 7
 

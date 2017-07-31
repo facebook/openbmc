@@ -121,8 +121,14 @@ enum {
 };
 
 enum {
-  HAND_SW_SERVER1 = 0,
-  HAND_SW_BMC
+  UART_SEL_SERVER = 0,
+  UART_SEL_BMC = 1,
+};
+
+// Distinguish between FRU ID, it means the debug card only for front-paneld controlling
+enum {
+  HAND_SW_SERVER = 10,
+  HAND_SW_BMC = 11,
 };
 
 enum {
@@ -224,7 +230,6 @@ int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_hand_sw(uint8_t *pos);
 int pal_switch_usb_mux(uint8_t slot);
-int pal_switch_uart_mux(uint8_t slot);
 int pal_post_enable(uint8_t slot);
 int pal_post_disable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *post);

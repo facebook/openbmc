@@ -112,43 +112,38 @@ void check_cache_post_code(){
 // Thread for monitoring debug card hotswap
 static void *
 debug_card_handler() {
-  int curr = -1;
-  int prev = -1;
   uint8_t prsnt;
   uint8_t pos ;
-  uint8_t prev_pos = -1;
   int index = 0, ret, timer = 0;
-  uint8_t UART_OUT = 1;
+  uint8_t uart_selection = HAND_SW_BMC;
   int CURT = 0;
-  static uint8_t error[255], count_ret = 0, count_cur = 0, num;
+  static uint8_t error[255], count_ret = 0, count_cur = 0;
+  static uint8_t code = 0; // BIOS post code or BMC/Expander error code
   uint8_t buffer[MAX_IPMB_RES_LEN], buf_len;
   uint8_t status;
 
   while (1) {
 
-	ret = pal_is_fru_prsnt(FRU_SLOT1, &prsnt);
+    ret = pal_is_fru_prsnt(FRU_SLOT1, &prsnt);
     if (!ret && prsnt == 1) {
-		ret = pal_get_server_power(FRU_SLOT1, &status);
-		if(!ret && (status == SERVER_POWER_ON) ) {
-          ret = pal_post_enable(FRU_SLOT1);
+      ret = pal_get_server_power(FRU_SLOT1, &status);
+      if(!ret && (status == SERVER_POWER_ON) ) {
+        ret = pal_post_enable(FRU_SLOT1);
+        if (!ret) {
+          ret = pal_post_get_buffer(buffer, &buf_len);
           if (!ret) {
-            ret = pal_post_get_buffer(buffer, &buf_len);
-            if (!ret) {
-              cache_post_code(buffer,buf_len);
-            }
+            cache_post_code(buffer,buf_len);
           }
-	    }
-	    else
-	      check_cache_post_code();
+        }
+      } else {
+        check_cache_post_code();
+      }
     }
     // Check if debug card present or not
-    #if 1
     ret = pal_is_debug_card_prsnt(&prsnt);
     if (ret) {
       goto debug_card_out;
     }
-    #endif
-    curr = 1;
 
     // If Debug Card is present
     if (prsnt) {
@@ -156,54 +151,56 @@ debug_card_handler() {
       if (ret) {
         goto debug_card_out;
       }
-      if(pos != prev_pos) {
-        CURT++;
-        prev_pos = pos;
-        if( (CURT%2) == 0) {
-          UART_OUT = !UART_OUT;
-          ret = pal_switch_uart_mux(UART_OUT);
+
+      /*
+       * Handle whether it is server postcode or BMC error code in
+       * pal_post_handle() definition and display on USB debug card
+      */
+      // Determine what to display on Debug Card 7-Segment LED
+      if (pos == UART_SEL_BMC) {
+        uart_selection = HAND_SW_BMC;
+        code = 0;
+
+        //BMC Error Code Polling
+        if (timer == 0) {
+          pal_get_error_code(error, &count_ret);
         }
-      }
 
-      //Debug Card 7-Segment LED Display
-      //BMC Error Code Polling
-      if (timer == 0) {
-        pal_get_error_code(error, &count_ret);
-      }
-
-      //if Count is 0 means no error, shows 0
-      if(count_ret == 0) {
-        num = 0;
-      }
-      else {
-        if(count_ret < count_cur) {
-          index = 0;
+        //if Count is 0 means no error, shows 0
+        if(count_ret == 0) {
+          code = 0;
         }
-        count_cur = count_ret;
-        //Each number shows twice while loop is around 1 second
-        num = error[index/2];
-        //Expander error code shows in 0~99 decimal, bmc shows A0~FF hexadecimal
-        if(num < 100)
-          num = num/10*16+num%10;
+        else {
+          if(count_ret < count_cur) {
+            index = 0;
+          }
+          count_cur = count_ret;
+          //Each number shows twice while loop is around 1 second
+          code = error[index/2];
+          //Expander error code shows in 0~99 decimal, bmc shows A0~FF hexadecimal
+          if(code < 100)
+            code = code/10*16+code%10;
 
-        index++;
+          index++;
 
-        //when count_cur reach count_cur*2, means all sensors have been shown, so set index=0 to get error code again
-        if(index >= count_cur*2)
-          index = 0;
+          //when count_cur reach count_cur*2, means all sensors have been shown, so set index=0 to get error code again
+          if(index >= count_cur*2)
+            index = 0;
+        }
+        timer++;
+        //while loop 6 times is around 3 seconds
+        if(timer == 7)
+          timer = 0;
       }
-      timer++;
-      //while loop 6 times is around 3 seconds
-      if(timer == 7)
-        timer = 0;
+      // Only if UART Select is on Server, then get post code via bic and show it
+      else if (pos == UART_SEL_SERVER) {
+        uart_selection = HAND_SW_SERVER;
+        code = 0;
 
-      //Determine what to display on Debug Card 7-Segment LED
-      //Only if UART Select is on Server, then get post code via bic and show it
-      if (UART_OUT == HAND_SW_SERVER1) {
         // Make sure the server is present
         ret = pal_is_fru_prsnt(FRU_SLOT1, &prsnt);
         if (ret || !prsnt) {
-          goto debug_card_done;
+          goto debug_card_out;
         }
         // Enable POST codes for slot1
         ret = pal_post_enable(FRU_SLOT1);
@@ -212,28 +209,21 @@ debug_card_handler() {
         }
 
         // Get last post code and display it
-        ret = pal_post_get_last(FRU_SLOT1, &num);
+        ret = pal_post_get_last(FRU_SLOT1, &code);
         if (ret) {
           goto debug_card_out;
         }
+      } else {  // default UART output is BMC
+        uart_selection = HAND_SW_BMC;
+        code = 0;
       }
 
-      /*
-       * TODO: Change the first argument from FRU_SLOT1 to UART_OUT
-       * Handle whether it is server postcode or BMC error code in
-       * pal_post_handle() definition and display od USB debug card
-      */
-      ret = pal_post_handle(FRU_SLOT1, num);
-      if (ret) {
+      ret = pal_post_handle(uart_selection, code);
+      if (ret != 0) {
         goto debug_card_out;
       }
-
-      goto debug_card_done;
     }
 
-debug_card_done:
-    prev = curr;
-    prev_pos = pos;
 debug_card_out:
     if (prsnt)
       msleep(500);

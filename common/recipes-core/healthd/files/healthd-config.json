@@ -43,10 +43,7 @@
   },
   "ecc_monitoring" : {
     "enabled": false,
-    "log" : {
-      "ecc_address_log": false,
-      "regenerating_interval": 600
-    },
+    "ecc_address_log": false,
     "monitor_interval": 2,
     "recov_max_counter": 255,
     "unrec_max_counter": 15,
@@ -78,5 +75,10 @@
         "action": ["log-critical"]
       }
     ]
+  },
+  "bmc_health": {
+    "enabled": false,
+    "monitor_interval": 2,
+    "regenerating_interval": 1200
   }
 }

@@ -100,12 +100,6 @@ struct threshold_s {
 #define VERIFIED_BOOT_ERROR_CODE(base)  *((uint8_t *)(base + 0x21A))
 #define VERIFIED_BOOT_ERROR_TPM(base)  *((uint8_t *)(base + 0x21B))
 
-struct ecc_log {
-  // to show the address of ecc error or not. supported chip: AST2500 serials
-  bool show_addr;
-  int regen_interval;
-};
-
 #define BMC_HEALTH_FILE "bmc_health"
 #define HEALTH "1"
 #define NOT_HEALTH "0"
@@ -147,13 +141,19 @@ static char *recoverable_ecc_name = "ECC Recoverable Error";
 static char *unrecoverable_ecc_name = "ECC Unrecoverable Error";
 static bool ecc_monitor_enabled = false;
 static unsigned int ecc_monitor_interval = DEFAULT_MONITOR_INTERVAL;
-static struct ecc_log ecc_log_setting = {false, 0};
+// to show the address of ecc error or not. supported chip: AST2500 serials
+static bool ecc_addr_log = false;
 static struct threshold_s *recov_ecc_threshold;
 static size_t recov_ecc_threshold_num = 0;
 static struct threshold_s *unrec_ecc_threshold;
 static size_t unrec_ecc_threshold_num = 0;
 static unsigned int ecc_recov_max_counter = MAX_ECC_RECOVERABLE_ERROR_COUNTER;
 static unsigned int ecc_unrec_max_counter = MAX_ECC_UNRECOVERABLE_ERROR_COUNTER;
+
+/* BMC Health Monitor */
+static bool regen_log_enabled = false;
+static unsigned int bmc_health_monitor_interval = DEFAULT_MONITOR_INTERVAL;
+static int regen_interval = 1200;
 
 /* Node Manager Monitor enabled */
 static bool nm_monitor_enabled = false;
@@ -248,19 +248,6 @@ static void initialize_thresholds(const char *target, json_t *array, struct thre
   }
 }
 
-static void initialize_ecc_log(json_t *conf, struct ecc_log *log_setting) {
-  json_t *tmp;
-
-  tmp = json_object_get(conf, "ecc_address_log");
-  if (tmp || json_is_boolean(tmp)) {
-    log_setting->show_addr = json_is_true(tmp);
-  }
-  tmp = json_object_get(conf, "regenerating_interval");
-  if (tmp || json_is_number(tmp)) {
-    log_setting->regen_interval = json_integer_value(tmp);
-  }
-}
-
 static void
 initialize_hb_config(json_t *conf) {
   json_t *tmp;
@@ -291,6 +278,8 @@ initialize_cpu_config(json_t *conf) {
   tmp = json_object_get(conf, "monitor_interval");
   if (tmp && json_is_number(tmp)) {
     cpu_monitor_interval = json_integer_value(tmp);
+    if (cpu_monitor_interval <= 0)
+      cpu_monitor_interval = DEFAULT_MONITOR_INTERVAL;
   }
   tmp = json_object_get(conf, "threshold");
   if (!tmp || !json_is_array(tmp)) {
@@ -319,6 +308,8 @@ initialize_mem_config(json_t *conf) {
   tmp = json_object_get(conf, "monitor_interval");
   if (tmp && json_is_number(tmp)) {
     mem_monitor_interval = json_integer_value(tmp);
+    if (mem_monitor_interval <= 0)
+      mem_monitor_interval = DEFAULT_MONITOR_INTERVAL;
   }
   tmp = json_object_get(conf, "threshold");
   if (!tmp || !json_is_array(tmp)) {
@@ -381,9 +372,9 @@ initialize_ecc_config(json_t *conf) {
   if (!ecc_monitor_enabled) {
     return;
   }
-  tmp = json_object_get(conf, "log");
-  if (tmp || json_is_object(tmp)) {
-    initialize_ecc_log(tmp, &ecc_log_setting);
+  tmp = json_object_get(conf, "ecc_address_log");
+  if (tmp || json_is_boolean(tmp)) {
+    ecc_addr_log = json_is_true(tmp);
   }
   tmp = json_object_get(conf, "monitor_interval");
   if (tmp && json_is_number(tmp)) {
@@ -408,6 +399,26 @@ initialize_ecc_config(json_t *conf) {
 }
 
 static void
+initialize_bmc_health_config(json_t *conf) {
+  json_t *tmp;
+
+  tmp = json_object_get(conf, "enabled");
+  if (tmp || json_is_boolean(tmp)) {
+    regen_log_enabled = json_is_true(tmp);
+  }
+  tmp = json_object_get(conf, "monitor_interval");
+  if (tmp && json_is_number(tmp)) {
+    bmc_health_monitor_interval = json_integer_value(tmp);
+    if (bmc_health_monitor_interval <= 0)
+      bmc_health_monitor_interval = DEFAULT_MONITOR_INTERVAL;
+  }
+  tmp = json_object_get(conf, "regenerating_interval");
+  if (tmp && json_is_number(tmp)) {
+    regen_interval = json_integer_value(tmp);
+  }
+}
+
+static void
 initialize_nm_monitor_config(json_t *conf)
 {
   json_t *tmp;
@@ -428,6 +439,10 @@ initialize_nm_monitor_config(json_t *conf)
   if (tmp && json_is_number(tmp)) 
   {
     nm_monitor_interval = json_integer_value(tmp);
+    if (nm_monitor_interval <= 0)
+    {
+      nm_monitor_interval = DEFAULT_MONITOR_INTERVAL;
+    }
   }
 
   tmp = json_object_get(conf, "retry_threshold");
@@ -478,9 +493,10 @@ initialize_configuration(void) {
   initialize_mem_config(json_object_get(conf, "bmc_mem_utilization"));
   initialize_i2c_config(json_object_get(conf, "i2c"));
   initialize_ecc_config(json_object_get(conf, "ecc_monitoring"));
+  initialize_bmc_health_config(json_object_get(conf, "bmc_health"));
   initialize_nm_monitor_config(json_object_get(conf, "nm_monitor"));
   initialize_vboot_config(json_object_get(conf, "verified_boot"));
-  
+
   json_decref(conf);
 
   return 0;
@@ -564,7 +580,7 @@ static void ecc_threshold_assert_check(const char *target, int value,
   if (!thres->asserted && value > thres_counter) {
     thres->asserted = true;
     if (thres->log) {
-      if (ecc_log_setting.show_addr) {
+      if (ecc_addr_log) {
         syslog(LOG_CRIT, "%s occurred (over %d%%) "
             "Counter = %d Address of last recoverable ECC error = 0x%x",
             target, (int)thres->value, value, (ecc_err_addr >> 4) & 0xFFFFFFFF);
@@ -848,11 +864,6 @@ ecc_mon_handler() {
   void *mcr50_addr;
   void *mcr58_addr;
   void *mcr5c_addr;
-  int bmc_health_last_state = 1;
-  int bmc_health_kv_state = 1;
-  char tmp_health[MAX_VALUE_LEN];
-  int ret = 0;
-  int relog_counter = 0;
   int retry_err = 0;
 
   while (1) {
@@ -874,7 +885,7 @@ ecc_mon_handler() {
         AST_MCR_BASE);
     mcr50_addr = (char*)mcr_base_addr + INTR_CTRL_STS_OFFSET;
     ecc_status = *(volatile uint32_t*) mcr50_addr;
-    if (ecc_log_setting.show_addr) {
+    if (ecc_addr_log) {
       mcr58_addr = (char*)mcr_base_addr + ADDR_FIRST_UNRECOVER_ECC_OFFSET;
       unrecover_ecc_err_addr = *(volatile uint32_t*) mcr58_addr;
       mcr5c_addr = (char*)mcr_base_addr + ADDR_LAST_RECOVER_ECC_OFFSET;
@@ -882,15 +893,6 @@ ecc_mon_handler() {
     }
     munmap(mcr_base_addr, PAGE_SIZE);
     close(mcr_fd);
-
-    // get current health status from kv_store
-    memset(tmp_health, 0, MAX_VALUE_LEN);
-    ret = pal_get_key_value(BMC_HEALTH_FILE, tmp_health);
-    if (ret){
-      syslog(LOG_ERR, " %s - kv get bmc_health status failed", __func__);
-    }
-
-    bmc_health_kv_state = atoi(tmp_health);
 
     ecc_recoverable_error_counter = (ecc_status >> 16) & 0xFF;
     ecc_unrecoverable_error_counter = (ecc_status >> 12) & 0xF;
@@ -903,20 +905,54 @@ ecc_mon_handler() {
     ecc_threshold_check(unrecoverable_ecc_name, ecc_unrecoverable_error_counter,
                         unrec_ecc_threshold, unrec_ecc_threshold_num, unrecover_ecc_err_addr);
 
-    // If log-util clear all fru, cleaning ECC error status
-    // After doing it, daemon will regenerate assert
+    sleep(ecc_monitor_interval);
+  }
+  return NULL;
+}
+
+static void *
+bmc_health_monitor()
+{
+  int bmc_health_last_state = 1;
+  int bmc_health_kv_state = 1;
+  char tmp_health[MAX_VALUE_LEN];
+  int relog_counter = 0;
+  int relog_counter_criteria = regen_interval / bmc_health_monitor_interval;
+  size_t i;
+  int ret = 0;
+
+  while(1) {
+    // get current health status from kv_store
+    memset(tmp_health, 0, MAX_VALUE_LEN);
+    ret = pal_get_key_value(BMC_HEALTH_FILE, tmp_health);
+    if (ret){
+      syslog(LOG_ERR, " %s - kv get bmc_health status failed", __func__);
+    }
+    bmc_health_kv_state = atoi(tmp_health);
+
+    // If log-util clear all fru, cleaning CPU/MEM/ECC error status
+    // After doing it, daemon will regenerate asserted log
     // Generage a syslog every regen_interval loop counter
-    if (((ecc_log_setting.regen_interval > 0) &&
-         (relog_counter >= ecc_log_setting.regen_interval)) ||
-        ((bmc_health_kv_state != bmc_health_last_state) &&
-         (bmc_health_kv_state == 1))) {
-      bmc_health = CLEARBIT(bmc_health, BIT_RECOVERABLE_ECC);
-      bmc_health = CLEARBIT(bmc_health, BIT_UNRECOVERABLE_ECC);
+    if ((relog_counter >= relog_counter_criteria) ||
+        ((bmc_health_last_state == 0) && (bmc_health_kv_state == 1))) {
+
+      for(i = 0; i < cpu_threshold_num; i++)
+        cpu_threshold[i].asserted = false;
+      for(i = 0; i < mem_threshold_num; i++)
+        mem_threshold[i].asserted = false;
+      for(i = 0; i < recov_ecc_threshold_num; i++)
+        recov_ecc_threshold[i].asserted = false;
+      for(i = 0; i < unrec_ecc_threshold_num; i++)
+        unrec_ecc_threshold[i].asserted = false;
+
+      pthread_mutex_lock(&global_error_mutex);
+      bmc_health = 0;
+      pthread_mutex_unlock(&global_error_mutex);
       relog_counter = 0;
     }
     bmc_health_last_state = bmc_health_kv_state;
     relog_counter++;
-    sleep(ecc_monitor_interval);
+    sleep(bmc_health_monitor_interval);
   }
   return NULL;
 }
@@ -1115,6 +1151,7 @@ main(int argc, char **argv) {
   pthread_t tid_mem_monitor;
   pthread_t tid_fw_update_monitor;
   pthread_t tid_ecc_monitor;
+  pthread_t tid_bmc_health_monitor;
   pthread_t tid_nm_monitor;
 
   if (argc > 1) {
@@ -1171,6 +1208,13 @@ main(int argc, char **argv) {
     }
   }
 
+  if (regen_log_enabled) {
+    if (pthread_create(&tid_bmc_health_monitor, NULL, bmc_health_monitor, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for BMC Health monitoring errorr\n");
+      exit(1);
+    }
+  }
+
   if ( nm_monitor_enabled )
   {
     if (pthread_create(&tid_nm_monitor, NULL, nm_monitor, NULL) < 0)
@@ -1202,6 +1246,10 @@ main(int argc, char **argv) {
 
   if (ecc_monitor_enabled) {
     pthread_join(tid_ecc_monitor, NULL);
+  }
+
+  if (regen_log_enabled) {
+    pthread_join(tid_bmc_health_monitor, NULL);
   }
 
   if ( nm_monitor_enabled )

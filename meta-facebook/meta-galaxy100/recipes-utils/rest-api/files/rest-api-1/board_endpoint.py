@@ -26,6 +26,7 @@ import rest_usb2i2c_reset
 import rest_firmware
 import rest_chassis_all_serial_and_location
 import rest_scm_led
+import rest_i2cflush
 
 boardApp = bottle.Bottle()
 
@@ -83,3 +84,9 @@ def rest_scm_led_blue():
 @boardApp.route('/api/sys/scm_led_green')
 def rest_scm_led_green():
     return rest_scm_led.set_led(color='green')
+
+
+# Handler to unfreeze I2C bus through I2C clock flush
+@boardApp.route('/api/sys/i2cflush')
+def rest_i2cflush_hdl():
+    return rest_i2cflush.i2cflush()

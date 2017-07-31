@@ -20,6 +20,7 @@
 #include <openbmc/ipmi.h>
 
 extern int verbose;
+#define IPMI_OBMC_RETRY 4
 
 int ipmi_obmc_setup(struct ipmi_intf * intf)
 {
@@ -27,6 +28,24 @@ int ipmi_obmc_setup(struct ipmi_intf * intf)
 	intf->max_request_data_size = MAX_IPMB_RES_LEN;
 	intf->max_response_data_size = MAX_IPMB_RES_LEN;
 	return 0;
+}
+
+int ipmi_obmc_open(struct ipmi_intf * intf)
+{
+	struct ipmi_session_params *params;
+
+	params = &intf->ssn_params;
+	if (!params->retry)
+		params->retry = IPMI_OBMC_RETRY;
+
+	intf->opened = 1;
+
+	return 0;
+}
+
+void ipmi_obmc_close(struct ipmi_intf * intf)
+{
+	intf->opened = 0;
 }
 
 static struct ipmi_rs *
@@ -39,6 +58,7 @@ ipmi_obmc_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	unsigned char *rbuf = (unsigned char *)ipmb_res;
 	int retval = 0;
 	int bus;
+	int try = 0;
 
 	if (intf == NULL || req == NULL)
 		return NULL;
@@ -54,16 +74,17 @@ ipmi_obmc_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		ipmb_req->netfn_lun |= req->msg.lun;
 		ipmb_req->cmd = req->msg.cmd;
 		memcpy(ipmb_req->data, req->msg.data, req->msg.data_len);
-		retval = ipmb_send_buf(
-			pal_channel_to_bus(intf->target_channel),
-			req->msg.data_len + MIN_IPMB_REQ_LEN);
-		if (retval < MIN_IPMB_RES_LEN) {
-			return NULL;
-		} else {
-			rsp.ccode = ipmb_res->cc;
-			rsp.data_len = retval - MIN_IPMB_RES_LEN;
-			memcpy(rsp.data, ipmb_res->data, rsp.data_len);
-			rsp.data[rsp.data_len] = 0;
+		for (try=0; try < intf->ssn_params.retry; try++) {
+			retval = ipmb_send_buf(
+				pal_channel_to_bus(intf->target_channel),
+				req->msg.data_len + MIN_IPMB_REQ_LEN);
+			if (retval >= MIN_IPMB_RES_LEN) {
+				rsp.ccode = ipmb_res->cc;
+				rsp.data_len = retval - MIN_IPMB_RES_LEN;
+				memcpy(rsp.data, ipmb_res->data, rsp.data_len);
+				rsp.data[rsp.data_len] = 0;
+				return &rsp;
+			}
 		}
 	} else {
 		// IPMI
@@ -72,24 +93,27 @@ ipmi_obmc_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		tbuf[1] |= req->msg.lun;
 		tbuf[2] = req->msg.cmd;
 		memcpy(&tbuf[3], req->msg.data, req->msg.data_len);
-		retval = 0;
-		lib_ipmi_handle(tbuf, req->msg.data_len + 3, rbuf, &retval);
-		if (retval < 3) {
-			return NULL;
-		} else {
-			rsp.ccode = rbuf[2];
-			rsp.data_len = retval - 3;
-			memcpy(rsp.data, &rbuf[3], rsp.data_len);
-			rsp.data[rsp.data_len] = 0;
+		for (try=0; try < intf->ssn_params.retry; try++) {
+			retval = 0;
+			lib_ipmi_handle(tbuf, req->msg.data_len + 3, rbuf, &retval);
+			if (retval >= 3) {
+				rsp.ccode = rbuf[2];
+				rsp.data_len = retval - 3;
+				memcpy(rsp.data, &rbuf[3], rsp.data_len);
+				rsp.data[rsp.data_len] = 0;
+				return &rsp;
+			}
 		}
 	}
 
-	return &rsp;
+	return NULL;
 }
 
 struct ipmi_intf ipmi_obmc_intf = {
 .name = "obmc",
 .desc = "Linux OpenBMC Interface",
 .setup = ipmi_obmc_setup,
+.open = ipmi_obmc_open,
+.close = ipmi_obmc_close,
 .sendrecv = ipmi_obmc_send_cmd,
 };

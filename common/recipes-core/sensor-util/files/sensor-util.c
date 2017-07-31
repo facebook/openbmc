@@ -43,11 +43,18 @@
 
 #define MAX_HISTORY_PERIOD  3600
 
+#ifdef CUSTOM_FRU_LIST
+  static const char * pal_fru_list_sensor_history_t =  pal_fru_list_sensor_history;
+#else
+  static const char * pal_fru_list_sensor_history_t =  pal_fru_list;
+#endif /* CUSTOM_FRU_LIST */
+
 static void
 print_usage() {
   printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
   printf("       sensor-util [fru] <option> ..\n\n");
-  printf("       [fru]: %s\n", pal_fru_list);
+  printf("       [fru]           : %s\n", pal_fru_list);
+  printf("       [historical fru]: %s\n", pal_fru_list_sensor_history_t);
   printf("       <sensor num>: 0xXX (Omit [sensor num] means all sensors.)\n");
   printf("       <option>:\n");
   printf("         --threshold                        show all thresholds\n");
@@ -232,6 +239,7 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
   int sensor_cnt;
   uint8_t *sensor_list;
   char fruname[16] = {0};
+  char* valid;
   
   if (pal_get_fru_name(fru, fruname)) {
     sprintf(fruname, "fru%d", fru);
@@ -259,6 +267,13 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
     return ret;
   }
 
+  if (history_clear || history) {
+    //Check if the input FRU is exist in sensor history list
+    valid = strstr(pal_fru_list_sensor_history_t, fruname);
+    if (valid == NULL)
+      return 0;
+  }
+
   if (history_clear) {
     clear_sensor_history(fru, sensor_list, sensor_cnt, sensor_num);
   } else if (history) {
@@ -282,6 +297,7 @@ main(int argc, char **argv) {
   bool history = false;
   bool history_clear = false;
   long period = 60;
+  char* valid;
 
   if (argc < 2 || argc > 5) {
     print_usage();
@@ -329,6 +345,15 @@ main(int argc, char **argv) {
       || (history && history_clear)) {
     print_usage();
     exit(-1);
+  }
+
+  if (history_clear || history) {
+    //Check if the input FRU is exist in sensor history list
+    valid = strstr(pal_fru_list_sensor_history_t, argv[1]);
+    if (valid == NULL) {
+      print_usage();
+      exit(-1);
+    }
   }
 
   if (fru == 0) {

@@ -29,6 +29,8 @@
 #include <openbmc/edb.h>
 #include <openbmc/kv.h>
 
+#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
+
 int __attribute__((weak))
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr)
 {
@@ -771,4 +773,92 @@ int __attribute__((weak))
 pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
 {
   return 0;
+}
+
+int __attribute__((weak))
+pal_set_gpio_value(int gpio_num, uint8_t value) {
+  char vpath[64] = {0};
+  char *val;
+  FILE *fp = NULL;
+  int rc = 0;
+  int ret = 0;
+  int retry_cnt = 5;
+  int i = 0;
+
+  sprintf(vpath, GPIO_VAL, gpio_num);
+  val = (value == 0) ? "0": "1";
+
+  for (i = 0; i < retry_cnt; i++) {
+    fp = fopen(vpath, "w");
+    if (fp == NULL) {
+      syslog(LOG_ERR, "%s(): failed to open device %s (%s)",
+                       __func__, vpath, strerror(errno));
+      if (i == (retry_cnt - 1)) {
+        return errno;
+      }
+    } else {
+      break;
+    }
+    msleep(100);
+  }
+  for (i = 0; i < retry_cnt; i++) {
+    ret = 0;
+    rc = fputs(val, fp);
+    if (rc < 0) {
+      syslog(LOG_ERR, "failed to write device %s (%s)", vpath, strerror(errno));
+      if (i == (retry_cnt - 1)) {
+        ret = errno;
+      }
+    } else {
+      break;
+    }
+    msleep(100);
+  }
+
+  fclose(fp);
+
+  return ret;
+}
+
+int __attribute__((weak))
+pal_get_gpio_value(int gpio_num, uint8_t *value) {
+  char vpath[64] = {0};
+  FILE *fp = NULL;
+  int rc = 0;
+  int ret = 0;
+  int retry_cnt = 5;
+  int i = 0;
+
+  sprintf(vpath, GPIO_VAL, gpio_num);
+
+  for (i = 0; i < retry_cnt; i++) {
+    fp = fopen(vpath, "r");
+    if (fp == NULL) {
+      syslog(LOG_ERR, "%s(): failed to open device %s (%s)",
+                       __func__, vpath, strerror(errno));
+      if (i == (retry_cnt - 1)) {
+        return errno;
+      }
+    } else {
+      break;
+    }
+    msleep(100);
+  }
+  for (i = 0; i < retry_cnt; i++) {
+    ret = 0;
+    rc = fscanf(fp, "%d", value);
+    if (rc != 1) {
+      syslog(LOG_ERR, "failed to read device %s (%s)", vpath, strerror(errno));
+      if (i == (retry_cnt - 1)) {
+        ret = errno;
+      }
+    } else {
+      break;
+    }
+    msleep(100);
+  }
+
+  fclose(fp);
+
+  return ret;
 }

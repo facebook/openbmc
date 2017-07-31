@@ -627,6 +627,14 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     NULL,
     0x80, 6, 1,
   },
+  {
+    "i2c_sta_rst_raw",
+    "Backdoor register for directly controlling I2C master for QSFP access\n"
+    "To be used for CP2112 I2C CLK flush purpose only",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x96, 0, 8,
+  },
 };
 
 static i2c_dev_data_st syscpld_data;

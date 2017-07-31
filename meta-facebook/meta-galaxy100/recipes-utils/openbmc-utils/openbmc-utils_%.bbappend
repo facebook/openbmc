@@ -32,6 +32,8 @@ SRC_URI += "file://board-utils.sh \
       file://version_dump \
       file://cpldupgrade \
       file://repeater_verify.sh \
+      file://galaxy100_cp2112_i2c_flush.sh \
+      file://galaxy100_cp2112_toggle_reset.sh \
       "
 
 RDEPENDS_${PN} += " python3 bash"
@@ -58,6 +60,8 @@ do_install_board() {
     install -m 0755 version_dump ${D}${bindir}/version_dump
     install -m 0755 qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
     install -m 0755 ceutil.py ${D}${localbindir}/ceutil
+    install -m 0755 galaxy100_cp2112_i2c_flush.sh ${D}${localbindir}/galaxy100_cp2112_i2c_flush.sh
+    install -m 0755 galaxy100_cp2112_toggle_reset.sh ${D}${localbindir}/galaxy100_cp2112_toggle_reset.sh
 
     # init
     install -d ${D}${sysconfdir}/init.d

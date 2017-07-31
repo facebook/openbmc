@@ -22,6 +22,7 @@ SRC_URI += " \
     file://rest-api-1/board_endpoint.py \
     file://rest-api-1/board_setup_routes.py \
     file://rest-api-1/boardroutes.py \
+    file://rest-api-1/rest_i2cflush.py \
     "
 
 binfiles += " \
@@ -34,4 +35,5 @@ binfiles += " \
     board_endpoint.py \
     board_setup_routes.py \
     boardroutes.py \
+    rest_i2cflush.py \
     "

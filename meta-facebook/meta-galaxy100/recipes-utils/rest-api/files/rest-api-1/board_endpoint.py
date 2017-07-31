@@ -24,6 +24,7 @@ import rest_seutil
 import rest_sol
 import rest_usb2i2c_reset
 import rest_firmware
+import rest_i2cflush
 
 
 class boardApp_Handler:
@@ -52,3 +53,8 @@ class boardApp_Handler:
     # Handler to get firmware info
     async def rest_firmware_info(self, request):
         return web.json_response(rest_firmware.get_firmware_info())
+
+    # Handler to unfreeze I2C bus through I2C clock flush
+    @boardApp.route('/api/sys/i2cflush')
+    def rest_i2cflush_hdl():
+        return rest_i2cflush.i2cflush()

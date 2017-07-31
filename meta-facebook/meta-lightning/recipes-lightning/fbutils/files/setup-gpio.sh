@@ -430,8 +430,8 @@ devmem_clear_bit $(scu_addr a4) 10
 devmem_set_bit $(scu_addr 70) 19
 
 gpio_set Y0 1
-gpio_set Y1 0
-gpio_set Y2 0
+gpio_get Y1
+gpio_get Y2
 
 # GPIOZ
 # To use ROMA2, SCUA4[16] must be 1, SCU94[0] must be 0, and SCU94[1] must be 0

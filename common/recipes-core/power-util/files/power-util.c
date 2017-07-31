@@ -38,6 +38,7 @@
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle, " \
                         "12V-off, 12V-on, 12V-cycle"
 #endif
+#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 const char *pwr_option_list = PWR_OPTION_LIST;
 
@@ -417,6 +418,34 @@ power_util(uint8_t fru, uint8_t opt) {
   return ret;
 }
 
+static int
+add_process_running_flag(uint8_t slot_id, uint8_t opt) {
+  int pid_file;
+  char path[128];
+
+  if (opt == PWR_STATUS) {
+    return opt;
+  } else {
+    sprintf(path, PWR_UTL_LOCK, slot_id);
+    pid_file = open(path, O_CREAT | O_RDWR, 0666);
+    if (flock(pid_file, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
+      return (-opt);
+    }
+  }
+
+  return opt;
+}
+
+static void
+rm_process_running_flag(uint8_t slot_id, uint8_t opt) {
+  char path[128];
+
+  if (opt != PWR_STATUS) {
+    sprintf(path, PWR_UTL_LOCK, slot_id);
+    remove(path);
+  }
+}
+
 int
 main(int argc, char **argv) {
 
@@ -466,11 +495,20 @@ main(int argc, char **argv) {
     }
   }
 
+  // Check if another instance is running 
+  if (add_process_running_flag(fru, opt) < 0) {
+    printf("power_util: another instance is running for FRU:%d...\n",fru);
+    //Make power-util exit code to "-2" when another instance is running
+    exit(-2);
+  }
+
   ret = power_util(fru, opt);
   if (ret < 0) {
     print_usage();
+    rm_process_running_flag(fru, opt);
     return ret;
   }
 
+  rm_process_running_flag(fru, opt);
   return ret;
 }

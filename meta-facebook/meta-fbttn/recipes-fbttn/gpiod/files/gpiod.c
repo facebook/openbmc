@@ -50,9 +50,10 @@
 #define GPIO_SCC_B_INS      479
 #define GPIO_NIC_INS        209
 #define GPIO_COMP_PWR_EN    119   // Mono Lake 12V
-#define GPIO_PE_RESET        203
+#define GPIO_PCIE_RESET      203
 #define GPIO_IOM_FULL_PWR_EN 215
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
+#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 /* To hold the gpio info and status */
 typedef struct {
@@ -259,12 +260,15 @@ init_gpio_pins() {
 /* Monitor the gpio pins */
 static int
 gpio_monitor_poll(uint8_t fru_flag) {
+  FILE *fp = NULL;
   int i, ret;
   uint8_t fru;
   uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
   gpio_pin_t *gpios;
   char last_pwr_state[MAX_VALUE_LEN];
-  uint8_t curr_pwr_state = 0;
+  uint8_t curr_pwr_state = -1;
+  uint8_t prev_pwr_state = -1;
+  uint8_t server_12v_status = 0;
 
   uint32_t status;
   bic_gpio_t gpio = {0};
@@ -273,6 +277,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
   bool is_fru_prsnt[MAX_NUM_FRUS] = {false};
   char vpath_comp_pwr_en[64] = {0};
   char vpath_iom_full_pwr_en[64] = {0};
+  char vpath_pwr_util_lock[64] = {0};
   int val;
   int fru_health_last_state = 1;
   int fru_health_kv_state = 1;
@@ -322,6 +327,11 @@ gpio_monitor_poll(uint8_t fru_flag) {
   chassis_type = (pal_get_sku() >> 6) & 0x1;
   sprintf(vpath_comp_pwr_en, GPIO_VAL, GPIO_COMP_PWR_EN);
   sprintf(vpath_iom_full_pwr_en, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
+  // For checking power-util is running or not
+  sprintf(vpath_pwr_util_lock, PWR_UTL_LOCK, FRU_SLOT1);
+
+  // Initialze pervious power status via GPIO PERST
+  prev_pwr_state = get_perst_value();
 
   /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
   while(1) {
@@ -410,23 +420,47 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
     // If Mono Lake is present, monitor the server power status.
     if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
-      if (pal_get_server_power(FRU_SLOT1, &curr_pwr_state) < 0) {
-        usleep(DELAY_GPIOD_READ);
-        continue;
-      }
-      memset(last_pwr_state, 0, MAX_VALUE_LEN);
-      pal_get_last_pwr_state(FRU_SLOT1, last_pwr_state);
+      // Get current server power status via GPIO PERST
+      curr_pwr_state = get_perst_value();
 
-      if (((strcmp(last_pwr_state, "on")) == 0) && (curr_pwr_state == SERVER_POWER_OFF)) {
-          pal_set_last_pwr_state(FRU_SLOT1, "off");
+      if ((prev_pwr_state == SERVER_POWER_ON) && (curr_pwr_state == SERVER_POWER_OFF)) {
+        // Check server 12V power status, avoid changing the lps due to 12V-off      
+        ret = pal_is_server_12v_on(FRU_SLOT1, &server_12v_status);
+        if ((ret >= 0) && (server_12v_status == CTRL_ENABLE)) { // 12V-on
+          // Change lps only if power-util is NOT running.
+          // If power-util is running, the power status might be changed soon.
+          fp = fopen(vpath_pwr_util_lock, "r");
+          if (fp == NULL) { // File is absent, means power-util is not running
+            pal_set_last_pwr_state(FRU_SLOT1, "off");            
+          } else {
+            fclose(fp);
+          }
           syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SLOT1);
-      } else if (((strcmp(last_pwr_state, "off")) == 0) && (curr_pwr_state == SERVER_POWER_ON)) {
-        pal_set_last_pwr_state(FRU_SLOT1, "on");
-        syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SLOT1);
-        // Inform BIOS that BMC is ready
-        bic_set_gpio(FRU_SLOT1, GPIO_BMC_READY_N, 0);
+        } else {
+          prev_pwr_state = curr_pwr_state;
+          usleep(DELAY_GPIOD_READ);
+          continue;
+        }
+      } else if ((prev_pwr_state == SERVER_POWER_OFF) && (curr_pwr_state == SERVER_POWER_ON)) {
+        ret = pal_is_server_12v_on(FRU_SLOT1, &server_12v_status);
+        if ((ret >= 0) && (server_12v_status == CTRL_ENABLE)) {
+          fp = fopen(vpath_pwr_util_lock , "r");
+          if (fp == NULL) {
+            pal_set_last_pwr_state(FRU_SLOT1, "on");            
+          } else {
+            fclose(fp);
+          }          
+          syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SLOT1);
+
+          // Inform BIOS that BMC is ready
+          bic_set_gpio(FRU_SLOT1, GPIO_BMC_READY_N, 0);
+        } else {
+          prev_pwr_state = curr_pwr_state;
+          usleep(DELAY_GPIOD_READ);
+          continue;
+        }
       }
-      
+      prev_pwr_state = curr_pwr_state;
       usleep(DELAY_GPIOD_READ);
     } else {
       usleep(DELAY_GPIOD_READ);
@@ -493,7 +527,7 @@ int get_perst_value (void) {
   char path[64] = {0};
   int val;
 
-  sprintf(path, GPIO_VAL, GPIO_PE_RESET);
+  sprintf(path, GPIO_VAL, GPIO_PCIE_RESET);
   if (read_device(path, &val))
     return -1;
 

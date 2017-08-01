@@ -1,0 +1,14 @@
+{
+  "com_e_driver": {
+    "bus": "4",
+    "address": "0x33"
+  },
+  "fancpld": {
+    "bus": "8",
+    "address": "0x33"
+  },
+  "tmp75": {
+    "bus": "8",
+    "address": "0x49"
+  }
+}

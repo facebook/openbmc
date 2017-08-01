@@ -1,0 +1,59 @@
+{
+"type":"galaxy100",
+"ast_adc-isa-0000":
+{
+  "+5 Bias Voltage":"yes",
+  "+6.8 Bias Voltage":"yes",
+  "+3.3 Voltage standby":"yes",
+  "+2.5 Voltage standby":"yes"
+},
+"adm1278-i2c-0-10":
+{
+  "vin":"yes",
+  "vout1":"yes",
+  "temp1":"yes",
+  "pin":"yes",
+  "iout1":"yes"
+},
+"adm1278-i2c-11-10":
+{
+  "vin":"yes",
+  "vout1":"yes",
+  "temp1":"yes",
+  "pin":"yes",
+  "iout1":"yes"
+},
+"galaxy100_ec-i2c-0-33":
+{
+  "CPU Voltage":"yes",
+  "+3 Voltage":"yes",
+  "+5 Voltage":"yes",
+  "+12 Voltage":"yes",
+  "DIMM Voltage":"yes",
+  "CPU Temp":"yes",
+  "DIMM Temp":"yes"
+},
+"IR3584-i2c-1-72":
+{
+  "in0":"yes",
+  "curr1":"yes"
+},
+"IR3581-i2c-1-70":
+{
+  "in0":"yes",
+  "curr1":"yes"
+},
+"pwr1014a-i2c-2-40":
+{
+  "+3.3 VMON1 Voltage":"yes",
+  "+1.2 VMON2 Voltage":"yes",
+  "+1.25 VMON3 Voltage":"yes",
+  "+1.0 VMON4 Voltage":"yes",
+  "+1.0 VMON5 Voltage":"yes",
+  "+3.3 VMON6 Voltage":"yes",
+  "+1.8 VMON7 Voltage":"yes",
+  "+1.538 VMON8 Voltage":"yes",
+  "+6.8 VMON9 Voltage":"yes",
+  "+12 VMON10 Voltage":"yes"
+}
+}

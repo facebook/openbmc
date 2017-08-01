@@ -1,0 +1,374 @@
+{
+"type":"cmm",
+"tmp75-i2c-154-4b":
+{
+  "FC4 Inlet Temp": "yes"
+},
+"tmp75-i2c-98-49":
+{
+  "SCM-LC4 Outlet Temp": "yes"
+},
+"tmp75-i2c-81-48":
+{
+  "SCM-LC3 Inlet Temp": "yes"
+},
+ "tmp75-i2c-154-4a":
+{
+  "FC4 Outlet Top Temp": "yes"
+},
+"tmp75-i2c-93-4a":
+{
+  "LC402 Switch Temp": "yes"
+},
+"tmp75-i2c-42-4b":
+{
+  "LC101 QSFP Temp": "yes"
+},
+"tmp75-i2c-42-4a":
+{
+  "LC101 Switch Temp": "yes"
+},
+"tmp75-i2c-93-4b":
+{
+  "LC402 QSFP Temp": "yes"
+},
+"pfe3000-i2c-27-10":
+{
+  "temp3": "yes",
+  "pout1": "yes",
+  "pin": "yes",
+  "temp2": "yes",
+  "vin": "yes",
+  "temp1": "yes",
+  "fan1": "yes",
+  "vout2": "yes",
+  "vout1": "yes",
+  "pout2": "yes",
+  "iout1": "yes",
+  "iout2": "yes",
+  "iin": "yes"
+},
+"tmp75-i2c-161-48":
+{
+  "SCM-FC4 Inlet Temp": "yes"
+},
+"tmp75-i2c-74-4b":
+{
+  "LC301 QSFP Temp": "yes"
+},
+"tmp75-i2c-97-48":
+{
+  "SCM-LC4 Inlet Temp": "yes"
+},
+"tmp75-i2c-45-48":
+{
+  "LC102 Outlet Temp": "yes"
+},
+"tmp75-i2c-45-49":
+{
+  "LC102 Inlet Temp": "yes"
+},
+"tmp75-i2c-122-49":
+{
+  "FC2 Outlet Bottom Temp": "yes"
+},
+"tmp75-i2c-49-48":
+{
+  "SCM-LC1 Inlet Temp": "yes"
+},
+"tmp75-i2c-61-4a":
+{
+  "LC202 Switch Temp": "yes"
+},
+"tmp75-i2c-61-4b":
+{
+  "LC202 QSFP Temp": "yes"
+},
+"tmp75-i2c-154-48":
+{
+  "FC4 Switch Temp": "yes"
+},
+"tmp75-i2c-162-49":
+{
+  "SCM-FC4 Outlet Temp": "yes"
+},
+"tmp75-i2c-77-4b":
+{
+  "LC302 QSFP Temp": "yes"
+},
+"tmp75-i2c-77-4a":
+{
+  "LC302 Switch Temp": "yes"
+},
+"pfe3000-i2c-25-10":
+{
+  "temp3": "yes",
+  "pout1": "yes",
+  "pin": "yes",
+  "temp2": "yes",
+  "vin": "yes",
+  "temp1": "yes",
+  "fan1": "yes",
+  "vout2": "yes",
+  "vout1": "yes",
+  "pout2": "yes",
+  "iout1": "yes",
+  "iout2": "yes",
+  "iin": "yes"
+},
+"tmp75-i2c-65-48":
+{
+  "SCM-LC2 Inlet Temp": "yes"
+},
+"tmp75-i2c-58-4a":
+{
+  "LC201 Switch Temp": "yes"
+},
+"tmp75-i2c-58-4b":
+{
+  "LC201 QSFP Temp": "yes"
+},
+"pfe3000-i2c-26-10":
+{
+  "temp3": "yes",
+  "pout1": "yes",
+  "pin": "yes",
+  "temp2": "yes",
+  "vin": "yes",
+  "temp1": "yes",
+  "fan1": "yes",
+  "vout2": "yes",
+  "vout1": "yes",
+  "pout2": "yes",
+  "iout1": "yes",
+  "iout2": "yes",
+  "iin": "yes"
+},
+"tmp75-i2c-106-4a":
+{
+  "FC1 Outlet Top Temp": "yes"
+},
+"tmp75-i2c-82-49":
+{
+  "SCM-LC3 Outlet Temp": "yes"
+},
+"tmp75-i2c-106-4b":
+{
+  "FC1 Inlet Temp": "yes"
+},
+"tmp75-i2c-122-4b":
+{
+  "FC2 Inlet Temp": "yes"
+},
+"tmp75-i2c-122-4a":
+{
+  "FC2 Outlet Top Temp": "yes"
+},
+"tmp75-i2c-90-48":
+{
+  "LC401 Outlet Temp": "yes"
+},
+"tmp75-i2c-90-49":
+{
+  "LC401 Inlet Temp": "yes"
+},
+"tmp75-i2c-138-4b":
+{
+  "FC3 Inlet Temp": "yes"
+},
+"tmp75-i2c-61-48":
+{
+  "LC202 Outlet Temp": "yes"
+},
+"tmp75-i2c-61-49":
+{
+  "LC202 Inlet Temp": "yes"
+},
+"tmp75-i2c-74-49":
+{
+  "LC301 Inlet Temp": "yes"
+},
+"tmp75-i2c-138-49":
+{
+  "FC3 Outlet Bottom Temp": "yes"
+},
+"tmp75-i2c-45-4b":
+{
+  "LC102 QSFP Temp": "yes"
+},
+"tmp75-i2c-74-48":
+{
+  "LC301 Outlet Temp": "yes"
+},
+"tmp75-i2c-45-4a":
+{
+  "LC102 Switch Temp": "yes"
+},
+"fancpld-i2c-187-33":
+{
+  "Fan 3-2 Rear": "yes",
+  "Fan 3-1 Front": "yes",
+  "Fan 3-1 Rear": "yes",
+  "Fan 3-3 Rear": "yes",
+  "Fan 3-3 Front": "yes",
+  "Fan 3-2 Front": "yes"
+},
+"tmp75-i2c-114-49":
+{
+  "SCM-FC1 Outlet Temp": "yes"
+},
+"pfe3000-i2c-24-10":
+{
+  "temp3": "yes",
+  "pout1": "yes",
+  "pin": "yes",
+  "temp2": "yes",
+  "vin": "yes",
+  "temp1": "yes",
+  "fan1": "yes",
+  "vout2": "yes",
+  "vout1": "yes",
+  "pout2": "yes",
+  "iout1": "yes",
+  "iout2": "yes",
+  "iin": "yes"
+},
+"tmp75-i2c-146-49":
+{
+  "SCM-FC3 Outlet Temp": "yes"
+},
+"tmp75-i2c-138-4a":
+{
+  "FC3 Outlet Top Temp": "yes"
+},
+"tmp75-i2c-66-49":
+{
+  "SCM-LC2 Outlet Temp": "yes"
+},
+"tmp75-i2c-130-49":
+{
+  "SCM-FC2 Outlet Temp": "yes"
+},
+"fancpld-i2c-195-33":
+{
+  "Fan 4-1 Rear": "yes",
+  "Fan 4-2 Front": "yes",
+  "Fan 4-3 Rear": "yes",
+  "Fan 4-2 Rear": "yes",
+  "Fan 4-1 Front": "yes",
+  "Fan 4-3 Front": "yes"
+},
+"tmp75-i2c-154-49":
+{
+  "FC4 Outlet Bottom Temp": "yes"
+},
+"tmp75-i2c-93-49":
+{
+  "LC402 Inlet Temp": "yes"
+},
+"tmp75-i2c-93-48":
+{
+  "LC402 Outlet Temp": "yes"
+},
+"tmp75-i2c-42-49":
+{
+  "LC101 Inlet Temp": "yes"
+},
+"tmp75-i2c-42-48":
+{
+  "LC101 Outlet Temp": "yes"
+},
+"fancpld-i2c-171-33":
+{
+  "Fan 1-3 Rear": "yes",
+  "Fan 1-1 Front": "yes",
+  "Fan 1-2 Front": "yes",
+  "Fan 1-1 Rear": "yes",
+  "Fan 1-3 Front": "yes",
+  "Fan 1-2 Rear": "yes"
+},
+"tmp75-i2c-90-4a":
+{
+  "LC401 Switch Temp": "yes"
+},
+"tmp75-i2c-90-4b":
+{
+  "LC401 QSFP Temp": "yes"
+},
+"tmp75-i2c-145-48":
+{
+  "SCM-FC3 Inlet Temp": "yes"
+},
+"tmp75-i2c-50-49":
+{
+  "SCM-LC1 Outlet Temp": "yes"
+},
+"tmp75-i2c-113-48":
+{
+  "SCM-FC1 Inlet Temp": "yes"
+},
+"fancpld-i2c-179-33":
+{
+  "Fan 2-1 Rear": "yes",
+  "Fan 2-2 Front": "yes",
+  "Fan 2-3 Front": "yes",
+  "Fan 2-1 Front": "yes",
+  "Fan 2-2 Rear": "yes",
+  "Fan 2-3 Rear": "yes"
+},
+"tmp75-i2c-106-48":
+{
+  "FC1 Switch Temp": "yes"
+},
+"tmp75-i2c-3-49":
+{
+  "CMM Outlet Temp": "yes"
+},
+"tmp75-i2c-3-48":
+{
+  "CMM Inlet Temp": "yes"
+},
+"tmp75-i2c-129-48":
+{
+  "SCM-FC2 Inlet Temp": "yes"
+},
+"ast_adc-isa-0000":
+{
+  "XP1R15V": "yes",
+  "XP5V": "yes",
+  "VCC XP5V": "yes",
+  "XP2R5V": "yes",
+  "XP12V uServer": "yes",
+  "XP12V": "yes",
+  "XP1R2V": "yes",
+  "XP3R3V": "yes"
+},
+"tmp75-i2c-122-48":
+{
+  "FC2 Switch Temp": "yes"
+},
+"tmp75-i2c-106-49":
+{
+  "FC1 Outlet Bottom Temp": "yes"
+},
+"tmp75-i2c-74-4a":
+{
+  "LC301 Switch Temp": "yes"
+},
+"tmp75-i2c-138-48":
+{
+  "FC3 Switch Temp": "yes"
+},
+"tmp75-i2c-77-49":
+{
+  "LC302 Inlet Temp": "yes"
+},
+"tmp75-i2c-77-48":
+{
+  "LC302 Outlet Temp": "yes"
+},
+"tmp75-i2c-58-49":
+{
+  "LC201 Inlet Temp": "yes"
+}
+}

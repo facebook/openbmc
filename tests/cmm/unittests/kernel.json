@@ -1,0 +1,8 @@
+[
+  "pmbus_core",
+  "fancpld",
+  "cmmcpld",
+  "i2c_mux",
+  "jbd",
+  "ext"
+]

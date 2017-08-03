@@ -165,6 +165,11 @@ static void gpio_event_handle(gpio_poll_st *gp)
     log_gpio_change(gp, 20*1000);
     return;
   }
+  else if ( gp->gs.gs_gpio == gpio_num("GPIOY1"))//FM_SLPS4_N. falling edge is detected
+  {
+    pal_check_power_sts();
+    return;
+  }
 
   log_gpio_change(gp, 0);
 
@@ -335,6 +340,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX5", "H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX6", "H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX7", "H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOY1", "FM_SLPS4_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOZ2", "IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOAA0", "FM_CPU1_SKTOCC_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA1", "IRQ_SML1_PMBUS_ALERT_N"},

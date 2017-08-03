@@ -2225,17 +2225,12 @@ error_exit:
   return ret;
 }
 
-//CPLD power status register deifne
-enum {
-  MAIN_PWR_STS_REG = 0x00,
-  CPU0_PWR_STS_REG = 0x01,
-  CPU1_PWR_STS_REG = 0x02,
-};
-//CPLD power status register normal value after power on
-enum {
-  MAIN_PWR_STS_VAL = 0x04, // MAIN_ON
-  CPU0_PWR_STS_VAL = 0x13, // CPUPWRGD
-  CPU1_PWR_STS_VAL = 0x13, // CPUPWRGD
+//When the power is turned off, three states are 0.
+enum 
+{
+  MAIN_STATE_PWR_OFF = 0x0,
+  CPU0_STATE_PWR_OFF = 0x0,
+  CPU1_STATE_PWR_OFF = 0x0,
 };
 
 static struct cpld_reg_desc {
@@ -2243,6 +2238,8 @@ static struct cpld_reg_desc {
   unsigned char bit;
   char *name;
 } cpld_power_seq[] = {
+  { 0x07, 5, "PWRGD_PVNN_P1V05_PCH"},
+  { 0x07, 4, "PWRGD_DSW_PWROK"},
   { 0x07, 3, "FM_SLP_SUS_N" },
   { 0x07, 2, "RST_RSMRST_N" },
   { 0x07, 1, "FM_SLPS4_N" },
@@ -2286,118 +2283,107 @@ static struct cpld_reg_desc {
 };
 static int cpld_power_seq_num = (sizeof(cpld_power_seq)/sizeof(struct cpld_reg_desc));
 
-static int
-read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot) {
-  static uint8_t power_fail = 0;
-  static uint8_t power_fail_log = 0;
+int get_CPLD_power_sts(uint8_t *reg)
+{
   int fd = 0;
   char fn[32];
-  int ret = READING_NA, i;
   uint8_t tbuf[16] = {0};
-  uint8_t data_chk, fail_offset;
-  unsigned char reg[16];
-  char sensor_name[32] = {0}, event_str[30] = {0};
-
-  // Check SLPS4 is high before start monitor CPLD power fail
-  if (gpio_get(GPIO_FM_SLPS4_N) != GPIO_VALUE_HIGH) {
-    // Reset
-    power_fail = 0;
-    power_fail_log = 0;
-    ret = 0;
-    goto exit;
-  }
-
-  // Already log
-  if (power_fail_log) {
-    ret = 0;
-    goto exit;
-  }
-
+  int ret = PAL_ENOTSUP;
+  int i; 
+  
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", CPLD_BUS_ID);
   fd = open(fn, O_RDWR);
   if (fd < 0) {
-    ret = READING_NA;
+    syslog(LOG_WARNING, "[%s] Cannot open the i2c-%d", __func__, CPLD_BUS_ID);
+    ret = PAL_ENOTSUP;
     goto exit;
   }
-
-  // Check the status register 0 to 2
-  for(i=0;i<3;i++) {
-    switch(i) {
-      case MAIN_PWR_STS_REG :
-        data_chk = MAIN_PWR_STS_VAL;
-        break;
-      case CPU0_PWR_STS_REG :
-        data_chk = CPU0_PWR_STS_VAL;
-        break;
-      case CPU1_PWR_STS_REG :
-        data_chk = CPU1_PWR_STS_VAL;
-        break;
-    }
-
+  
+  // Get the data offset 0x00 to 0x0c
+  for(i = 0; i < 0x0d; i++) {
     tbuf[0] = i;
     ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, &reg[i], 1);
     if (ret < 0) {
-      ret = READING_NA;
-      goto exit;
-    }
-    if ( reg[i] != data_chk ) {
-      fail_offset = i;
-      power_fail++;
-      break;
-    }
-  }
-
-  // All status regs are expected
-  if (i == 3) {
-    power_fail = 0;
-  }
-
-  // Check the status regs later, it might has not finished
-  if(power_fail <= 3) {
-    ret = 0;
-    *value = 0;
-    goto exit;
-  }
-
-  // Power failed, get the data offset 0x03 to 0x0c
-  for(i = 3; i < 0x0d; i++) {
-    tbuf[0] = i;
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDR, tbuf, 1, &reg[i], 1);
-    if (ret < 0) {
-      ret = READING_NA;
+      syslog(LOG_WARNING, "[%s] Cannot acces the i2c-%d dev: %x", __func__, CPLD_BUS_ID, CPLD_ADDR);
+      ret = PAL_ENOTSUP;
       goto exit;
     }
   }
 
-  // Check the power sequence one by one in order
-  for(i=0; i < cpld_power_seq_num; i++) {
-    if (!( reg[cpld_power_seq[i].offset] & (1 << cpld_power_seq[i].bit) )) {
-      break;
-    }
-  }
-
-  if (i == cpld_power_seq_num) {
-    sprintf(event_str, "Unknown power rail fails");
-    // keep the fail status reg offset(0~2)
-  } else {
-    sprintf(event_str, "%s power rail fails", cpld_power_seq[i].name);
-    fail_offset = cpld_power_seq[i].offset;
-  }
-
-  pal_get_sensor_name(fru, sensor_num, sensor_name);
-
-  _print_sensor_discrete_log(fru, sensor_num, sensor_name, fail_offset, event_str);
-  pal_add_cri_sel(event_str);
-  power_fail_log = 1;
-
-  ret = 0;
-
+  ret = PAL_EOK; 
+  
 exit:
-  if (fd > 0) {
+  if (fd > 0) 
+  {
     close(fd);
   }
 
-  return ret;
+  return ret;  
+}
+
+void 
+pal_check_power_sts(void)
+{
+  uint8_t fail_offset =0xff; //init to 0xff to identify the undefined error
+  uint8_t reg[16]={0};
+  char *sensor_name = "MB_POWER_FAIL";
+  const uint8_t sensor_num = MB_SENSOR_POWER_FAIL;
+  const uint8_t fru = FRU_MB;
+  //the main_state, cpu0_state, cpu1_state are 0 when the power is turned off normally 
+  const uint8_t normal_power_off_sts[3]={MAIN_STATE_PWR_OFF, CPU0_STATE_PWR_OFF, CPU1_STATE_PWR_OFF};
+  char event_str[30] = {0};
+  int i;
+  int ret;
+  int bit_value = 0; //get the bit from the register
+  int power_faill_addr = -1;
+ 
+  sleep(1);//ensure the power data is updated
+
+  //get the power data when the slp4 falling 
+  ret = get_CPLD_power_sts(reg);
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING, "[%s] Cannot get the power status from CPLD", __func__);
+    return;
+  }
+
+  //if the power is turned off normally. the value of three machine states are 0
+  ret = memcmp(reg, normal_power_off_sts, sizeof(normal_power_off_sts)); 
+  if ( PAL_EOK == ret ) 
+  {
+    return;
+  }
+
+  // Check the power sequence one by one in order.
+  for ( i=0; i < cpld_power_seq_num; i++ ) 
+  {
+    bit_value = reg[cpld_power_seq[i].offset] & (1 << cpld_power_seq[i].bit);
+    
+    //record the fail index if the power fail occur
+    //0 means the power fail
+    if ( 0 == bit_value )
+    {
+      power_faill_addr = i;
+      
+      sprintf(event_str, "%s power rail fails", cpld_power_seq[power_faill_addr].name);
+
+      fail_offset = cpld_power_seq[power_faill_addr].offset;
+      
+      _print_sensor_discrete_log(fru, sensor_num, sensor_name, fail_offset, event_str);
+     
+      pal_add_cri_sel(event_str);   
+    }
+  }
+  
+  //Unknnow error 
+  if ( power_faill_addr < 0 )
+  {
+    sprintf(event_str, "%s power rail fails", "Unknown");
+    
+    _print_sensor_discrete_log(fru, sensor_num, sensor_name, fail_offset, event_str);
+    
+    pal_add_cri_sel(event_str);
+  }
 }
 
 static int
@@ -3500,9 +3486,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_HSC_IN_POWER:
         ret = read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_POWER, (float*) value);
         break;
-      case MB_SENSOR_POWER_FAIL:
-        ret = read_CPLD_power_fail_sts (fru, sensor_num, (float*) value, poweron_10s_flag);
-        break;
       default:
         ret = READING_NA;
         break;
@@ -3844,9 +3827,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_C4_P12V_INA230_PWR:
       case MB_SENSOR_CONN_P12V_INA230_PWR:
         ret = read_INA230 (sensor_num, (float*) value, poweron_10s_flag);
-        break;
-      case MB_SENSOR_POWER_FAIL:
-        ret = read_CPLD_power_fail_sts (fru, sensor_num, (float*) value, poweron_10s_flag);
         break;
       case MB_SENSOR_MEMORY_LOOP_FAIL:
         ret = check_postcodes(FRU_MB, sensor_num, (float*) value);

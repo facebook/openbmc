@@ -52,10 +52,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 // Enable FBY2-specific debug messages
-#define FBY2_DEBUG
+//#define FBY2_DEBUG
 
 // ignore errors communicating with BIC
-#define FBY2_IGNORE_ERROR
+//#define FBY2_IGNORE_ERROR
 
 #define MAX(a,b)            (((a) > (b)) ? (a) : (b))
 #define MIN(a,b)            (((a) < (b)) ? (a) : (b))
@@ -147,8 +147,7 @@ static STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles);
 static STATUS perform_shift(JTAG_Handler* state , unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
-                     JtagStates end_tap_state);
-
+                     JtagStates current_tap_state, JtagStates end_tap_state);
 
 
 
@@ -220,23 +219,33 @@ STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles)
     uint8_t rbuf[4] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
+    int this_delay_cycle=0;
 
-    // tbuf[0:2] = IANA ID
-    // tbuf[3]   = tms bit length (max = 8)
-    // tbuf[4]   = tmsbits
-    tbuf[3] = number_of_cycles;
-    tbuf[4] = 0x0;
+
+    while (number_of_cycles)
+    {
+        this_delay_cycle = MIN(8, number_of_cycles);
+
+        // tbuf[0:2] = IANA ID
+        // tbuf[3]   = tms bit length (max = 8)
+        // tbuf[4]   = tmsbits
+        tbuf[3] = this_delay_cycle;
+        tbuf[4] = 0x0;
+
+        number_of_cycles -= this_delay_cycle;
+#if 0
 
     if (number_of_cycles > 8)
     {
         printf("ERROR, trying to delay >8 cycles (%d)\n", number_of_cycles);
         tbuf[3] = 8;
     }
-
-    if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
-                           tbuf, tlen, rbuf, &rlen) < 0) {
-        syslog(LOG_ERR, "wait cycle failed, slot%d", slot_id);
-        return ST_ERR;
+#endif
+        if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
+                               tbuf, tlen, rbuf, &rlen) < 0) {
+            syslog(LOG_ERR, "wait cycle failed, slot%d", slot_id);
+            return ST_ERR;
+        }
     }
 
     return ST_OK;
@@ -440,23 +449,23 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
         state->scan_state = JTAGScanState_Run;
         if (preFix) {
             if (perform_shift(state, preFix, MAXPADSIZE, padData,
-                              0, NULL, state->tap_state) != ST_OK)
-                return ST_ERR;
+                              0, NULL, state->tap_state, state->tap_state) != ST_OK)
+                 return ST_ERR;
         }
     }
 
     if ((postFix) && (state->tap_state != end_tap_state)) {
         state->scan_state = JTAGScanState_Done;
         if (perform_shift(state, number_of_bits, input_bytes, input,
-                          output_bytes, output, state->tap_state) != ST_OK)
-            return ST_ERR;
+                          output_bytes, output, state->tap_state, state->tap_state) != ST_OK)
+             return ST_ERR;
         if (perform_shift(state, postFix, MAXPADSIZE, padData, 0,
-                          NULL, end_tap_state) != ST_OK)
-            return ST_ERR;
+                            NULL, state->tap_state, end_tap_state) != ST_OK)
+             return ST_ERR;
     } else {
         if (perform_shift(state, number_of_bits, input_bytes, input,
-                          output_bytes, output, end_tap_state) != ST_OK)
-            return ST_ERR;
+                          output_bytes, output, state->tap_state, end_tap_state) != ST_OK)
+             return ST_ERR;
         if (state->tap_state != end_tap_state) {
             state->scan_state = JTAGScanState_Done;
         }
@@ -475,8 +484,8 @@ static
 STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
-                     JtagStates end_tap_state)
-{
+                     JtagStates current_tap_state, JtagStates end_tap_state)
+ {
 
 #ifdef FBY2_DEBUG
     int print_len = MIN(10, input_bytes);
@@ -530,17 +539,17 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
 #ifdef DEBUG
     {
         unsigned int number_of_bytes = (number_of_bits + 7) / 8;
-        const char* shiftStr = (state->tap_state == JtagShfDR) ? "DR" : "IR";
-        syslog(LOG_DEBUG, "%s size: %d", shiftStr, number_of_bits);
+        const char* shiftStr = (current_tap_state == JtagShfDR) ? "DR" : "IR";
+        syslog(LogType_Debug, "%s size: %d", shiftStr, number_of_bits);
         if (input != NULL && number_of_bytes <= input_bytes) {
-            syslog_buffer(LOG_DEBUG, input, number_of_bytes,
-                           (state->tap_state == JtagShfDR) ? "DR TDI" : "IR TDI");
+            syslog_buffer(LogType_Debug, input, number_of_bytes,
+                           (current_tap_state == JtagShfDR) ? "DR TDI" : "IR TDI");
         }
         if (output != NULL && number_of_bytes <= output_bytes) {
-            syslog_buffer(LOG_DEBUG, output, number_of_bytes,
-                           (state->tap_state == JtagShfDR) ? "DR TDO" : "IR TDO");
+            syslog_buffer(LogType_Debug, output, number_of_bytes,
+                           (current_tap_state == JtagShfDR) ? "DR TDO" : "IR TDO");
         }
-        syslog(LOG_DEBUG, "%s: End tap state: %d", shiftStr, end_tap_state);
+        syslog(LogType_Debug, "%s: End tap state: %d", shiftStr, end_tap_state);
     }
 #endif
     return ST_OK;
@@ -787,13 +796,16 @@ STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer
         if (    this_write_bit_length < 0  || this_read_bit_length < 0
             || last_transaction == 1
             || (this_write_bit_length == 0 && this_read_bit_length ==0) ) {
-            printf("%s: ERROR, invalid read write length. read=%d, write=%d, last_transaction=%d\n",
-                    __FUNCTION__, this_read_bit_length, this_write_bit_length,
+            printf("%s: ASD_SP02 ERROR, invalid read write length. read=%d, write=%d, last_transaction=%d\n",
+                     __FUNCTION__, this_read_bit_length, this_write_bit_length,
                     last_transaction);
             return ST_ERR;
         }
 
         transfer_bit_length -= MAX(this_write_bit_length, this_read_bit_length);
+        if (transfer_bit_length) {
+            printf("ASD_SP01: multi loop transfer %d\n", transfer_bit_length);
+        }
 
         write_bit_length -= this_write_bit_length;
         read_bit_length  -= this_read_bit_length;

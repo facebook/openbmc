@@ -45,6 +45,7 @@
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
+#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 /* To hold the gpio info and status */
 typedef struct {
@@ -237,6 +238,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
   char pwr_state[MAX_VALUE_LEN];
   uint64_t status = 0;
   bic_gpio_t gpio = {0};
+  char path[128];
 
   /* Check for initial Asserts */
   for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
@@ -333,10 +335,12 @@ gpio_monitor_poll(uint8_t fru_flag) {
              * Raise an error and change the LPS from on to off or vice versa for deassert.
              */
             if (strcmp(pwr_state, "off")) {
-              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru])
-                 pal_set_last_pwr_state(fru, "off");
-              else {
-                 break;
+              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
+                 // Check if power-util is still running to ignore getting incorrect power status
+                 sprintf(path, PWR_UTL_LOCK, fru);
+                 if(access(path, F_OK) != 0) {
+                    pal_set_last_pwr_state(fru, "off");
+                 }
               }
             }
             syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
@@ -346,10 +350,12 @@ gpio_monitor_poll(uint8_t fru_flag) {
           } else {
 
             if (strcmp(pwr_state, "on")) {
-              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru])
-                 pal_set_last_pwr_state(fru, "on");
-              else {
-                 break;
+              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
+                 // Check if power-util is still running to ignore getting incorrect power status
+                 sprintf(path, PWR_UTL_LOCK, fru);
+                 if(access(path, F_OK) != 0) {
+                    pal_set_last_pwr_state(fru, "on");
+                 }
               }
             }
             syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);

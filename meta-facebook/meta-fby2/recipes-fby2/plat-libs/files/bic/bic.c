@@ -939,7 +939,7 @@ update_done:
   system(cmd);
 
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating firmware is exiting\n");
+  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting\n");
   if (fd > 0) {
     close(fd);
   }
@@ -1079,7 +1079,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       lseek(fd, 0, SEEK_SET);
       //goto error_exit;
     }
-
+    syslog(LOG_CRIT, "bic_update_fw: update bios firmware on slot %d\n", slot_id);
     set_fw_update_ongoing(slot_id, 30);
     dsize = st.st_size/100;
   } else if (comp == UPDATE_VR) {
@@ -1087,7 +1087,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       printf("invalid VR file!\n");
       goto error_exit;
     }
-
+    syslog(LOG_CRIT, "bic_update_fw: update vr firmware on slot %d\n", slot_id);
     set_fw_update_ongoing(slot_id, 25);
     dsize = st.st_size/5;
   } else {
@@ -1095,7 +1095,14 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       printf("invalid CPLD file!\n");
       goto error_exit;
     }
-
+    switch(comp){
+      case UPDATE_CPLD:
+        syslog(LOG_CRIT, "bic_update_fw: update cpld firmware on slot %d\n", slot_id);
+        break;
+      case UPDATE_BIC_BOOTLOADER:
+        syslog(LOG_CRIT, "bic_update_fw: update bic bootloader firmware on slot %d\n", slot_id);
+        break;
+    }
     set_fw_update_ongoing(slot_id, 20);
     dsize = st.st_size/20;
   }
@@ -1216,6 +1223,20 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 update_done:
   ret = 0;
 error_exit:
+  switch(comp) {
+    case UPDATE_BIOS:
+      syslog(LOG_CRIT, "bic_update_fw: updating bios firmware is exiting\n");
+      break;
+    case UPDATE_CPLD:
+      syslog(LOG_CRIT, "bic_update_fw: updating cpld firmware is exiting\n");
+      break;
+    case UPDATE_VR:
+      syslog(LOG_CRIT, "bic_update_fw: updating vr firmware is exiting\n");
+      break;
+    case UPDATE_BIC_BOOTLOADER:
+      syslog(LOG_CRIT, "bic_update_fw: updating bic bootloader firmware is exiting\n");
+      break;
+  } 
   if (fd > 0 ) {
     close(fd);
   }

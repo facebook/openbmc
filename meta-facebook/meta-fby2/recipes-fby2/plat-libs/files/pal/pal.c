@@ -644,7 +644,7 @@ power_on_server_physically(uint8_t slot_id){
     return -1;
   }
 
-  // Wait for server power good ready  
+  // Wait for server power good ready
   sleep(2);
 
   while (retry) {
@@ -1593,7 +1593,7 @@ server_12v_cycle_physically(uint8_t slot_id){
   int pair_set_type=-1;
   char pwr_state[MAX_VALUE_LEN] = {0};
 
-  if (slot_id == 1 || slot_id == 3) {      
+  if (slot_id == 1 || slot_id == 3) {
     pair_set_type = pal_get_pair_slot_type(slot_id);
     switch(pair_set_type) {
       case TYPE_CF_A_SV:
@@ -1642,7 +1642,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       return -1;
     }
    }
-  
+
   switch(cmd) {     //avoid power control on GP and CF
     case SERVER_POWER_OFF:
     case SERVER_POWER_CYCLE:
@@ -1653,7 +1653,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         printf("Should not execute power on/off/graceful_shutdown/cycle/reset on device card\n");
         return -2;
       }
-      break; 
+      break;
   }
 
   switch(cmd) {
@@ -1685,7 +1685,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         return (server_power_on(slot_id));
       }
       break;
-    
+
     case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
         ret = pal_set_rst_btn(slot_id, 0);
@@ -2466,10 +2466,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;
-    if(pal_get_server_power(fru, &status) < 0) 
+    if(pal_get_server_power(fru, &status) < 0)
       return -1;
     // This check helps interpret the IPMI packet loss scenario
-    if(status == SERVER_POWER_ON) 
+    if(status == SERVER_POWER_ON)
       return -1;
     strcpy(str, "NA");
   }
@@ -2485,7 +2485,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if (sensor_num == SP_SENSOR_INLET_TEMP) {
         apply_inlet_correction((float *)value);
       }
-      if ((sensor_num == SP_SENSOR_P12V_SLOT1) || (sensor_num == SP_SENSOR_P12V_SLOT2) || 
+      if ((sensor_num == SP_SENSOR_P12V_SLOT1) || (sensor_num == SP_SENSOR_P12V_SLOT2) ||
           (sensor_num == SP_SENSOR_P12V_SLOT3) || (sensor_num == SP_SENSOR_P12V_SLOT4)) {
         /* Check whether the system is 12V off or on */
         ret = pal_is_server_12v_on(sensor_num - SP_SENSOR_P12V_SLOT1 + 1, &val);
@@ -2531,7 +2531,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
 int
 pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
-   
+
   uint8_t val;
   int ret;
 
@@ -2548,10 +2548,10 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
         *flag = GETMASK(SENSOR_VALID);
       break;
     case FRU_SPB:
-      /*		
-       * TODO: This is a HACK (t11229576)		
-       */		
-      switch(snr_num) {		
+      /*
+       * TODO: This is a HACK (t11229576)
+       */
+      switch(snr_num) {
         case SP_SENSOR_P12V_SLOT1:
         case SP_SENSOR_P12V_SLOT2:
         case SP_SENSOR_P12V_SLOT3:
@@ -2564,7 +2564,7 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
           if (!val) {
             *flag = GETMASK(SENSOR_VALID);
           }
-          break;		
+          break;
       }
     case FRU_NIC:
       break;
@@ -4112,7 +4112,7 @@ int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   uint8_t *data = req_data;
   char cmd[128] = {0};
   *res_len = 0;
-  
+
   if((*data != 0x55) || (*(data+1) != 0x66) || (*(data+2) != 0x0f)) {
     return completion_code;
   }
@@ -4126,7 +4126,7 @@ int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   if (server_12v_on(slot)) {
     return completion_code;
   }
-  
+
   completion_code = CC_SUCCESS;
   return completion_code;
 }
@@ -4294,13 +4294,15 @@ int
 pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
 {
   int sock;
+  int err;
   struct sockaddr_un server;
   char sock_path[64] = {0};
   #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
 
   sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock < 0) {
-    syslog(LOG_ERR, "%s failed open socket", __FUNCTION__);
+    err = errno;
+    syslog(LOG_ERR, "%s failed open socket (errno=%d)", __FUNCTION__, err);
     return -1;
   }
 
@@ -4309,12 +4311,17 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   strcpy(server.sun_path, sock_path);
 
   if (connect(sock, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+    err = errno;
     close(sock);
-    syslog(LOG_ERR, "%s failed connecting stream socket, %s", __FUNCTION__, server.sun_path);
+    syslog(LOG_ERR, "%s failed connecting stream socket (errno=%d), %s",
+           __FUNCTION__, err, server.sun_path);
     return -1;
   }
-  if (write(sock, data, 2) < 0)
-    syslog(LOG_ERR, "%s error writing on stream sockets", __FUNCTION__);
+  if (write(sock, data, 2) < 0) {
+    err = errno;
+    syslog(LOG_ERR, "%s error writing on stream sockets (errno=%d)",
+           __FUNCTION__, err);
+  }
   close(sock);
 
   return 0;

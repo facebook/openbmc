@@ -321,7 +321,9 @@ static void *gpio_poll_thread(void *fru)
         }
         pthread_mutex_unlock(&triggered_mutex);
     }
+    close(msgsock);
   }
+  close(sock);
 
   return NULL;
 }

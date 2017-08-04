@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <unistd.h>
 #include <openbmc/obmc-i2c.h>
 #include "fby2_sensor.h"
 #include <openbmc/nvme-mi.h>
@@ -70,6 +71,13 @@
 #define I2C_DEV_DC_3 "/dev/i2c-5"
 #define I2C_DC_INA_ADDR 0x40
 #define I2C_DC_MUX_ADDR 0x71
+
+#define I2C_DEV_HSC "/dev/i2c-10"
+#define I2C_HSC_ADDR 0x80  // 8-bit
+#define EIN_ROLLOVER_CNT 0x10000
+#define EIN_SAMPLE_CNT 0x1000000
+#define EIN_ENERGY_CNT 0x800000
+#define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
 
 #define I2C_DEV_NIC "/dev/i2c-11"
 #define I2C_NIC_ADDR 0x1f
@@ -382,7 +390,7 @@ read_device_float(const char *device, float *value) {
 int
 fby2_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
 
-  uint8_t val;
+  int val;
   char path[64] = {0};
 
   if (slot_id < 1 || slot_id > 4) {
@@ -584,6 +592,62 @@ read_hsc_value(const char* attr, const char *device, float r_sense, float *value
   else {
     *value = ((float) tmp)/UNIT_DIV;
   }
+
+  return 0;
+}
+
+static int
+read_hsc_ein(const char *device, uint8_t addr, float r_sense, float *value) {
+  int dev, ret;
+  uint8_t wbuf[4] = {0xdc}, rbuf[12] = {0};
+  uint32_t energy, rollover, sample;
+  uint32_t pre_energy, pre_rollover, pre_sample;
+  uint32_t sample_diff;
+  double energy_diff;
+  static uint32_t last_energy, last_rollover, last_sample;
+  static uint8_t pre_ein = 0;
+
+  dev = open(device, O_RDWR);
+  if (dev < 0) {
+    return -1;
+  }
+
+  // read READ_EIN_EXT
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 9);
+  close(dev);
+  if (ret || (rbuf[0] != 8)) {  // length = 8 bytes
+    return -1;
+  }
+
+  pre_energy = last_energy;
+  pre_rollover = last_rollover;
+  pre_sample = last_sample;
+
+  last_energy = energy = (rbuf[3]<<16) | (rbuf[2]<<8) | rbuf[1];
+  last_rollover = rollover = (rbuf[5]<<8) | rbuf[4];
+  last_sample = sample = (rbuf[8]<<16) | (rbuf[7]<<8) | rbuf[6];
+
+  if (!pre_ein) {
+    pre_ein = 1;
+    return -1;
+  }
+
+  if ((pre_rollover > rollover) || ((pre_rollover == rollover) && (pre_energy > energy))) {
+    rollover += EIN_ROLLOVER_CNT;
+  }
+  if (pre_sample > sample) {
+    sample += EIN_SAMPLE_CNT;
+  }
+
+  energy_diff = (double)(rollover-pre_rollover)*EIN_ENERGY_CNT + (double)energy - (double)pre_energy;
+  if (energy_diff < 0) {
+    return -1;
+  }
+  sample_diff = sample - pre_sample;
+  if (sample_diff == 0) {
+    return -1;
+  }
+  *value = (float)((energy_diff/sample_diff/256) * PIN_COEF/r_sense);
 
   return 0;
 }
@@ -1359,7 +1423,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
               return read_ina230_value(INA230_POWER, path, I2C_DC_INA_ADDR, (float*) value);
             default:
               return -1;
-          }  
+          }
           break;
         case SLOT_TYPE_GP:
           //Glacier Point
@@ -1464,7 +1528,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case SP_SENSOR_HSC_TEMP:
           return read_hsc_value(HSC_TEMP, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
         case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE, ml_hsc_r_sense, (float *) value);
+          return read_hsc_ein(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);
       }
       break;
 

@@ -191,6 +191,7 @@ void
 {
   int timer = 0;
   int slot_id = (int)ptr;
+  int oldstate;
   unsigned char boot[SIZE_BOOT_ORDER]={0};
   unsigned char res_len;
   pthread_detach(pthread_self());
@@ -206,7 +207,9 @@ void
   }
 
   //get boot order setting
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
   pal_get_boot_order(slot_id, NULL, boot, &res_len);
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 
 #ifdef DEBUG
   syslog(LOG_WARNING, "[%s][%lu] Get: %x %x %x %x %x %x\n", __func__, pthread_self() ,boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
@@ -220,7 +223,9 @@ void
 #endif
 
   //set data
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
   pal_set_boot_order(slot_id, boot, NULL, &res_len);
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 
   IsTimerStart[slot_id - 1] = false;
 
@@ -2145,29 +2150,29 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
     pthread_cancel(bios_timer_tid[req->payload_id - 1]);
   }
 
-  /*Create timer thread*/
-  ret = pthread_create( &bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, (void *)slot_id );
+  if (req->data[0] & (BIOS_BOOT_VALID_FLAG | CMOS_VALID_FLAG)) {
+    /*Create timer thread*/
+    ret = pthread_create(&bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, (void *)slot_id);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "[%s] Create BIOS timer thread failed!\n", __func__);
 
-  if ( ret < 0 )
-  {
-    syslog(LOG_WARNING, "[%s] Create BIOS timer thread failed!\n", __func__);
+      res->cc = CC_NODE_BUSY;
+      *res_len = 0;
+      return;
+    }
 
-    res->cc = CC_NODE_BUSY;
-    *res_len = 0;
-    return;
+    IsTimerStart[req->payload_id - 1] = true;
   }
-
-  IsTimerStart[req->payload_id - 1] = true;
 
   ret = pal_set_boot_order(req->payload_id, req->data, res->data, res_len);
 
   if(ret == 0)
   {
-	res->cc = CC_SUCCESS;
+    res->cc = CC_SUCCESS;
   }
   else
   {
-	res->cc = CC_INVALID_PARAM;
+    res->cc = CC_INVALID_PARAM;
   }
 }
 

@@ -2202,6 +2202,7 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
   int selector = req->data[0],  i =1 , para, size = 0, offset;
   char temp[20]= {0};
+  char filepath[128]= {0};
   FILE *fp = NULL;
 
   if (access("/mnt/data/ppr/", F_OK) == -1)
@@ -2221,7 +2222,9 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
       }
       else
         sprintf(temp, "%c", 0);
-      fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
+
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
+      fp = fopen(filepath, "r");
       if (!fp) {
         res->cc = CC_NOT_SUPP_IN_CURR_STATE;
         return;
@@ -2233,7 +2236,8 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
         return;
       }
       fclose(fp);
-      fp = fopen("/mnt/data/ppr/ppr_action", "w");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_action", req->payload_id);
+      fp = fopen(filepath, "w");
       if(fp != NULL)
         fwrite(temp, sizeof(char), 1, fp);
       break;
@@ -2245,7 +2249,8 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
       else
       {
         sprintf(temp, "%c", req->data[1]);
-        fp = fopen("/mnt/data/ppr/ppr_row_count", "w");
+        sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
+        fp = fopen(filepath, "w");
         if(fp != NULL)
           fwrite(temp, sizeof(char), 1, fp);
       }
@@ -2259,7 +2264,8 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
         res->cc = CC_INVALID_LENGTH;
         return;
       }
-      fp = fopen("/mnt/data/ppr/ppr_row_addr", "a+");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_addr", req->payload_id);
+      fp = fopen(filepath, "a+");
       fseek(fp, 0, SEEK_END);
       size = ftell(fp);
       fseek(fp, 0, SEEK_SET);
@@ -2274,7 +2280,8 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
           offset = ftell(fp);
            if(temp[0] == req->data[1]) {
            fclose(fp);
-           fp = fopen("/mnt/data/ppr/ppr_row_addr", "w+");
+           sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_addr", req->payload_id);
+           fp = fopen(filepath, "w+");
              offset =  ftell(fp) - 8;
              if (offset < 0)
                offset = 0;
@@ -2299,7 +2306,8 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
         res->cc = CC_INVALID_LENGTH;
         return;
       }
-      fp = fopen("/mnt/data/ppr/ppr_history_data", "a+");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_history_data", req->payload_id);
+      fp = fopen(filepath, "a+");
       fseek(fp, 0, SEEK_END);
       size = ftell(fp);
       fseek(fp, 0, SEEK_SET);
@@ -2314,7 +2322,8 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
           offset = ftell(fp);
           if(temp[0] == req->data[1]) {
             fclose(fp);
-            fp = fopen("/mnt/data/ppr/ppr_history_data", "w+");
+            sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_history_data", req->payload_id);
+            fp = fopen(filepath, "w+");
             offset =  ftell(fp) - 17;
             if (offset < 0)
               offset = 0;
@@ -2347,6 +2356,7 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
   int selector = req->data[0], i = 0;
   FILE *fp = NULL;
+  char filepath[128]= {0};
   char temp[20], kpath[20];
 
   sprintf(kpath, "%s", "/mnt/data/ppr");
@@ -2356,18 +2366,20 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
   res->cc = CC_SUCCESS;
   switch(selector) {
     case 1:
-      fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
+      fp = fopen(filepath, "r");
       if (!fp) {
-        fp = fopen("/mnt/data/ppr/ppr_row_count", "w");
+        fp = fopen(filepath, "w");
         sprintf(temp, "%c",0);
         fwrite(temp, sizeof(char), 1, fp);
       }
       else
         fread(res->data, 1, 1, fp);
       fclose(fp);
-      fp = fopen("/mnt/data/ppr/ppr_action", "r");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_action", req->payload_id);
+      fp = fopen(filepath, "r");
       if (!fp) {
-        fp = fopen("/mnt/data/ppr/ppr_action", "w");
+        fp = fopen(filepath, "w");
         sprintf(temp, "%c",0);
         fwrite(temp, sizeof(char), 1, fp);
         fclose(fp);
@@ -2383,9 +2395,10 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
       *res_len = 1;
       break;
     case 2:
-      fp = fopen("/mnt/data/ppr/ppr_row_count", "r");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
+      fp = fopen(filepath, "r");
       if (!fp) {
-        fp = fopen("/mnt/data/ppr/ppr_row_count", "w");
+        fp = fopen(filepath, "w");
         sprintf(temp, "%c",0);
         fwrite(temp, sizeof(char), 1, fp);
         res->data[0] = 0;
@@ -2399,8 +2412,8 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
-
-      fp = fopen("/mnt/data/ppr/ppr_row_addr", "r+");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_addr", req->payload_id);
+      fp = fopen(filepath, "r+");
       if (!fp) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
@@ -2421,7 +2434,8 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
-      fp = fopen("/mnt/data/ppr/ppr_history_data", "r+");
+      sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_history_data", req->payload_id);
+      fp = fopen(filepath, "r+");
       if (!fp) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;

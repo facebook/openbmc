@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "openbmc/gpio.h"
 #include <facebook/bic.h>
 
-#define FBY2_DEBUG
+//#define FBY2_DEBUG
 #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
 
 
@@ -295,23 +295,30 @@ static void *gpio_poll_thread(void *fru)
         sleep(1);
         continue;
     } else {
+#ifdef FBY2_DEBUG
         syslog(LOG_DEBUG, "message received, %d %d", req_buf[0], req_buf[1]);
-
+#endif
         gpio_pin = req_buf[0];
         pthread_mutex_lock(&triggered_mutex);
         switch (gpio_pin) {
           case PLTRST_N:
+#ifdef FBY2_DEBUG
             syslog(LOG_DEBUG, "ASD_BIC: PLTRST_N event");
+#endif
             g_gpios_triggered[JTAG_PLTRST_EVENT] = true;;
             break;
           case  XDP_BIC_PRDY_N:
+#ifdef FBY2_DEBUG
             syslog(LOG_DEBUG, "ASD_BIC: PRDY event, trigger type=%d", req_buf[1]);
+#endif
             // only record falling edge
             if (req_buf[1] == 0)
                 g_gpios_triggered[JTAG_PRDY_EVENT] = true;;
             break;
           case  XDP_PRSNT_IN_N:
+#ifdef FBY2_DEBUG
             syslog(LOG_DEBUG, "ASD_BIC: XDP_PRESENT event, trigger type=%d", req_buf[1]);
+#endif
             // triggers on falling edge
             if (req_buf[1] == 0)
                 g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;;

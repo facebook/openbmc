@@ -368,7 +368,7 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     ret = jtag_bic_set_tap_state(state->fru, state->tap_state,
                                  tap_state);
     if (ret != ST_OK) {
-        printf("ERROR: %s jtag_bic_set_tap_state failed! slot%d",
+        syslog(LOG_ERR, "ERROR: %s jtag_bic_set_tap_state failed! slot%d",
                __FUNCTION__, state->fru);
         return ST_ERR;
     }
@@ -379,10 +379,10 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     if ((tap_state == JtagRTI) || (tap_state == JtagPauDR))
         if (JTAG_wait_cycles(state, 5) != ST_OK)
             return ST_ERR;
-
+#ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "TapState: %d, slot%d", state->tap_state,
            state->fru);
-
+#endif
     return ST_OK;
 }
 

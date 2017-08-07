@@ -125,7 +125,6 @@ gpio_set AB1 1
 # BMC_SELF_HW_RST: GPIOAB2(218)
 # To use GPIOAB2 (218), SCUA8[2] must be 0
 devmem_clear_bit $(scu_addr a8) 2
-gpio_export AB2
 gpio_set AB2 0
 
 # VGA Mux
@@ -134,8 +133,8 @@ devmem_clear_bit $(scu_addr 84) 10
 # To use GPIOJ3 (75), SCU84[11] must be 0
 devmem_clear_bit $(scu_addr 84) 11
 
-gpio_set J2 0
-gpio_set J3 0
+gpio_export J2
+gpio_export J3
 
 #========================================================================================================#
 # Setup GPIOs to Mux Enable: GPIOAB3(219), Channel Select: GPIOE4(36), GPIOE5(37)
@@ -150,12 +149,10 @@ devmem_clear_scu70_bit 22
 
 # To use GPIOE5 (37), SCU80[21], SCU8C[14], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 21
-devmem_clear_bit $(scu_addr 8C) 14
-devmem_clear_scu70_bit 22
 
-gpio_set AB3 0
-gpio_set E4 0
-gpio_set E5 0
+gpio_export AB3
+gpio_export E4
+gpio_export E5
 #========================================================================================================#
 
 # USB_OC_N, resettable fuse tripped, GPIO Q6
@@ -178,23 +175,23 @@ devmem_clear_bit $(scu_addr 80) 16
 devmem_clear_bit $(scu_addr 8C) 12
 devmem_clear_scu70_bit 22
 
-gpio_set E0 0
+gpio_export E0
 
 # To enable GPIOE1, SCU80[17], SCU8C[12], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 17
 
-gpio_set E1 0
+gpio_export E1
 
 # To enable GPIOE2, SCU80[18], SCU8C[13], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 18
 devmem_clear_bit $(scu_addr 8C) 13
 
-gpio_set E2 1
+gpio_export E2
 
 # To enable GPIOE3, SCU80[19], SCU8C[13], and SCU70[22] must be 0
 devmem_clear_bit $(scu_addr 80) 19
 
-gpio_set E3 1
+gpio_export E3
 
 # Enable GPIOY3: BoardId(Yosemite or Test system)
 devmem_clear_bit $(scu_addr a4) 11
@@ -308,15 +305,9 @@ gpio_set P4 0
 gpio_set P5 0
 
 # LED_POSTCODE_6: GPIOP6 (126)
-# To use GPIOP6, SCU88[22] must be 0
-devmem_clear_bit $(scu_addr 88) 22
-
 gpio_set P6 0
 
 # LED_POSTCODE_7: GPIOP7 (127)
-# To use GPIOP7, SCU88[23] must be 0
-devmem_clear_bit $(scu_addr 88) 23
-
 gpio_set P7 0
 
 # BMC_READY_N: GPIOA0 (0)
@@ -352,25 +343,25 @@ gpio_set S3 1
 # To use GPIOO4, SCU88[12] must be 0
 devmem_clear_bit $(scu_addr 88) 12
 
-gpio_export O4 
+gpio_export O4
 
 #  P12V_STBY_SLOT2_EN: GPIOO5 (117)
 # To use GPIOO5, SCU88[13] must be 0
 devmem_clear_bit $(scu_addr 88) 13
 
-gpio_export O5 
+gpio_export O5
 
 # P12V_STBY_SLOT3_EN: GPIOO6 (118)
 # To use GPIOO6, SCU88[13] must be 0
 devmem_clear_bit $(scu_addr 88) 14
 
-gpio_export O6 
+gpio_export O6
 
 # P12V_STBY_SLOT4_EN: GPIOO7 (119)
 # To use GPIOO7, SCU88[15] must be 0
 devmem_clear_bit $(scu_addr 88) 15
 
-gpio_export O7 
+gpio_export O7
 
 #Wait for ME ready
 sleep 3
@@ -413,48 +404,38 @@ gpio_export N5
 
 # Set SLOT throttle pin
 # BMC_THROTTLE_SLOT1_N: GPIOI4 (78)
-gpio_export I4
 gpio_set I4 1
 # BMC_THROTTLE_SLOT2_N: GPIOI5 (79)
-gpio_export I5
 gpio_set I5 1
 # BMC_THROTTLE_SLOT3_N: GPIOI6 (80)
-gpio_export I6
 gpio_set I6 1
 # BMC_THROTTLE_SLOT4_N: GPIOI7 (81)
-gpio_export I7
 gpio_set I7 1
 
 # Set FAN disable pin
 # DISABLE_FAN_N: GPIOM4 (100)
-gpio_export M4
 gpio_set M4 1
 
 # Set FAST PROCHOT pin
-# FAST_PROCHOT_EN: GPIOR4 (140) 
-gpio_export R4
+# FAST_PROCHOT_EN: GPIOR4 (140)
 gpio_set R4 0
 
 # PE_BUFF_OE_0_N: GPIOB4 (12)
 # To use GPIOB4, SCU70[23] must be 0
 devmem_clear_scu70_bit 23
 gpio_export B4
-gpio_set B4 1
 
 # PE_BUFF_OE_1_N: GPIOB4 (13)
 #To use GPIOB5, SCU80[13] must be 0
 devmem_clear_bit $(scu_addr 80) 13
 gpio_export B5
-gpio_set B5 1
 
 # PE_BUFF_OE_2_N: GPIOB4 (14)
 devmem_clear_bit $(scu_addr 80) 14
 gpio_export B6
-gpio_set B6 1
 
 # PE_BUFF_OE_3_N: GPIOB4 (15)
 gpio_export B7
-gpio_set B7 1
 
 # Set debounce timer #1 value to 0x12E1FC ~= 2s
 $DEVMEM 0x1e780050 32 0x179A7B0

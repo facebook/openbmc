@@ -3153,10 +3153,9 @@ oem_usb_dbg_get_updated_frames(unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   uint8_t num_updates;
-  uint8_t updated_frames[256];
   int ret;
 
-  ret = plat_udbg_get_updated_frames(&num_updates, updated_frames);
+  ret = plat_udbg_get_updated_frames(&num_updates, &res->data[4]);
   if (ret) {
     memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -3166,7 +3165,6 @@ oem_usb_dbg_get_updated_frames(unsigned char *request, unsigned char req_len,
 
   memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
   res->data[3] = num_updates;
-  memcpy(&res->data[4], updated_frames, num_updates);
   res->cc = CC_SUCCESS;
   *res_len = SIZE_IANA_ID + 1 + num_updates;
 }
@@ -3183,13 +3181,12 @@ oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
   uint8_t end;
   uint8_t phase;
   uint8_t count;
-  uint8_t desc[256] = {0};
   int ret;
 
   index = req->data[3];
   phase = req->data[4];
 
-  ret = plat_udbg_get_post_desc(index, &next, phase, &end, &count, desc);
+  ret = plat_udbg_get_post_desc(index, &next, phase, &end, &count, &res->data[8]);
   if (ret) {
     memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -3203,7 +3200,6 @@ oem_usb_dbg_get_post_desc(unsigned char *request, unsigned char req_len,
   res->data[5] = phase;
   res->data[6] = end;
   res->data[7] = count;
-  memcpy(&res->data[8], desc, count);
   res->cc = CC_SUCCESS;
   *res_len = SIZE_IANA_ID + 5 + count;
 }
@@ -3220,12 +3216,11 @@ oem_usb_dbg_get_gpio_desc(unsigned char *request, unsigned char req_len,
   uint8_t level;
   uint8_t in_out;
   uint8_t count;
-  uint8_t desc[256];
   int ret;
 
   index = req->data[3];
 
-  ret = plat_udbg_get_gpio_desc(index, &next, &level, &in_out, &count, desc);
+  ret = plat_udbg_get_gpio_desc(index, &next, &level, &in_out, &count, &res->data[8]);
   if (ret) {
     memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -3239,7 +3234,6 @@ oem_usb_dbg_get_gpio_desc(unsigned char *request, unsigned char req_len,
   res->data[5] = level;
   res->data[6] = in_out;
   res->data[7] = count;
-  memcpy(&res->data[8], desc, count);
   res->cc = CC_SUCCESS;
   *res_len = SIZE_IANA_ID + 5 + count;
 }
@@ -3255,13 +3249,12 @@ oem_usb_dbg_get_frame_data(unsigned char *request, unsigned char req_len,
   uint8_t page;
   uint8_t next;
   uint8_t count;
-  uint8_t data[256] = {0};
   int ret;
 
   frame = req->data[3];
   page = req->data[4];
 
-  ret = plat_udbg_get_frame_data(frame, page, &next, &count, data);
+  ret = plat_udbg_get_frame_data(frame, page, &next, &count, &res->data[7]);
   if (ret) {
     memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -3274,7 +3267,6 @@ oem_usb_dbg_get_frame_data(unsigned char *request, unsigned char req_len,
   res->data[4] = page;
   res->data[5] = next;
   res->data[6] = count;
-  memcpy(&res->data[7], data, count);
   res->cc = CC_SUCCESS;
   *res_len = SIZE_IANA_ID + 4 + count;
 }
@@ -3290,14 +3282,13 @@ oem_usb_dbg_control_panel(unsigned char *request, unsigned char req_len,
   uint8_t operation;
   uint8_t item;
   uint8_t count;
-  uint8_t data[256] = {0};
   int ret;
 
   panel = req->data[3];
   operation = req->data[4];
   item = req->data[5];
 
-  ret = plat_udbg_control_panel(panel, operation, item, &count, data);
+  ret = plat_udbg_control_panel(panel, operation, item, &count, &res->data[3]);
   if (ret) {
     memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
     res->cc = ret;
@@ -3306,7 +3297,6 @@ oem_usb_dbg_control_panel(unsigned char *request, unsigned char req_len,
   }
 
   memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
-  memcpy(&res->data[3], data, count);
   res->cc = CC_SUCCESS;
   *res_len = SIZE_IANA_ID + count;
 }

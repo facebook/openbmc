@@ -180,6 +180,7 @@ int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_get_config(uint8_t slot_id, bic_config_t *cfg);
+int bic_set_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len);
 
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);
@@ -198,6 +199,8 @@ int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *
 
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
+
+int bic_request_post_buffer_data(uint8_t slot_id, uint8_t *port_buff, uint8_t *len);
 
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 

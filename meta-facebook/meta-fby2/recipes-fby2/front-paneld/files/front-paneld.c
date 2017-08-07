@@ -358,6 +358,9 @@ ts_handler() {
         ctime_r(&time_sled_off, buf);
         syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
 
+        sprintf(buf, "AC lost");
+        pal_add_cri_sel(buf);
+
         // Get uptime
         clock_gettime(CLOCK_MONOTONIC, &mts);
         // To find out when SLED was on, subtract the uptime from current time

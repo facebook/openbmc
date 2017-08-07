@@ -835,8 +835,8 @@ return 0;
 }
 
 /* Populates all sensor_info_t struct using the path to SDR dump */
-int
-sdr_init(char *path, sensor_info_t *sinfo) {
+static int
+_sdr_init(char *path, sensor_info_t *sinfo) {
 int fd;
 uint8_t buf[MAX_SDR_LEN] = {0};
 uint8_t bytes_rd = 0;
@@ -891,7 +891,7 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
                 return ERR_NOT_READY;
             }
 
-            if (sdr_init(path, sinfo) < 0) {
+            if (_sdr_init(path, sinfo) < 0) {
 #ifdef DEBUG
                syslog(LOG_ERR, "fby2_sensor_sdr_init: sdr_init failed for FRU %d", fru);
 #endif

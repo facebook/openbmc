@@ -19,6 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include <ctype.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -28,10 +29,13 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "pal.h"
 #include <facebook/bic.h>
+#include <openbmc/edb.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -124,6 +128,10 @@ typedef struct {
   float lcr;
   float lnc;
   float lnr;
+  float pos_hyst;
+  float neg_hyst;
+  int curr_st;
+  char name[32];
 
 } _sensor_thresh_t;
 
@@ -138,6 +146,13 @@ typedef struct {
 } sensor_check_t;
 
 static sensor_check_t m_snr_chk[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+
+typedef struct {
+  char name[32];
+
+} sensor_desc_t;
+
+static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -773,7 +788,7 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
   int slot_type=-1;
   int pair_slot_id;
   int pair_set_type=-1;
-  int status=0;
+  uint8_t status=0;
   int ret=-1;
   char vpath[80]={0};
   char cmd[80] = {0};
@@ -842,7 +857,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   int slot_type=-1;
   int pair_slot_id;
   int pair_set_type=-1;
-  int status=0;
+  uint8_t status=0;
   char hspath[80]={0};
   char vpath[80]={0};
   int ret=-1;
@@ -1450,7 +1465,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
-  uint8_t val;
+  int val=0;
   char path[64] = {0};
   int ret=-1;
 
@@ -1481,7 +1496,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
               return -1;
 
            /* Check whether the system is 12V off or on */
-           ret = pal_is_server_12v_on(fru, &val);
+           ret = pal_is_server_12v_on(fru, (uint8_t *)&val);
            if (ret < 0) {
              syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
              return -1;
@@ -2370,6 +2385,17 @@ get_sensor_check(uint8_t fru, uint8_t snr_num) {
   return &m_snr_chk[fru-1][snr_num];
 }
 
+static sensor_desc_t *
+get_sensor_desc(uint8_t fru, uint8_t snr_num) {
+
+  if (fru < 1 || fru > MAX_NUM_FRUS) {
+    syslog(LOG_WARNING, "get_sensor_desc: Wrong FRU ID %d\n", fru);
+    return NULL;
+  }
+
+  return &m_snr_desc[fru-1][snr_num];
+}
+
 int
 pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
@@ -2847,7 +2873,7 @@ err_exit:
 
 // GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
 static void
-pal_populate_guid(uint8_t *guid, uint8_t *str) {
+pal_populate_guid(uint8_t *guid, char *str) {
   unsigned int secs;
   unsigned int usecs;
   struct timeval tv;
@@ -2925,9 +2951,9 @@ pal_set_sys_guid(uint8_t slot, char *str) {
   int i=0;
   uint8_t guid[GUID_SIZE] = {0x00};
 
-  pal_populate_guid(&guid, str);
+  pal_populate_guid(guid, str);
 
-  return bic_set_sys_guid(slot, &guid);
+  return bic_set_sys_guid(slot, guid);
 }
 
 int
@@ -3067,7 +3093,7 @@ int
 pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t o_val, uint8_t n_val) {
 
-  char name[32];
+  char name[32], crisel[128];
   bool valid = false;
   uint8_t diff = o_val ^ n_val;
 
@@ -3076,6 +3102,9 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
       case BIC_SENSOR_SYSTEM_STATUS:
         sprintf(name, "SOC_Thermal_Trip");
         valid = true;
+
+        sprintf(crisel, "%s - %s,FRU:%u", name, GETBIT(n_val, 0)?"ASSERT":"DEASSERT", fru);
+        pal_add_cri_sel(crisel);
         break;
       case BIC_SENSOR_VR_HOT:
         sprintf(name, "SOC_VR_Hot");
@@ -3425,6 +3454,17 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         /* All Info Valid */
         chn_num = (ed[2] & 0x1C) >> 2;
         dimm_num = ed[2] & 0x3;
+
+        if (sen_type == 0x0C) {
+          if ((ed[0] & 0x0F) == 0x0) {
+            sprintf(temp_log, "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num, dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          } else if ((ed[0] & 0x0F) == 0x1) {
+            sprintf(temp_log, "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num, dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          }
+        }
+
         sprintf(temp_log, " DIMM %c%d (CPU# %d, CHN# %d, DIMM# %d)",
             'A'+chn_num, dimm_num, (ed[2] & 0xE0) >> 5, chn_num, dimm_num);
       } else if (((ed[1] & 0xC) >> 2) == 0x1) {
@@ -3446,18 +3486,34 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
     case PWR_ERR:
       sprintf(error_log, "");
-      if (ed[0] == 0x2)
+      if (ed[0] == 0x1) {
+        strcat(error_log, "SYS_PWROK failure");
+
+        sprintf(temp_log, "SYS_PWROK failure,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      } else if (ed[0] == 0x2) {
         strcat(error_log, "PCH_PWROK failure");
+
+        sprintf(temp_log, "PCH_PWROK failure,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      }
       else
         strcat(error_log, "Unknown");
       break;
 
     case CATERR:
       sprintf(error_log, "");
-      if (ed[0] == 0x0)
+      if (ed[0] == 0x0) {
         strcat(error_log, "IERR");
-      else if (ed[0] == 0xB)
+
+        sprintf(temp_log, "IERR,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      } else if (ed[0] == 0xB) {
         strcat(error_log, "MCERR");
+
+        sprintf(temp_log, "MCERR,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      }
       else
         strcat(error_log, "Unknown");
       break;
@@ -3482,6 +3538,23 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     default:
       sprintf(error_log, "Unknown");
       break;
+  }
+
+  return 0;
+}
+
+int
+pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  char crisel[128];
+  uint8_t mfg_id[] = {0x4c, 0x1c, 0x00};
+
+  error_log[0] = '\0';
+
+  // Record Type: 0xC0 (OEM)
+  if ((sel[2] == 0xC0) && !memcmp(&sel[7], mfg_id, sizeof(mfg_id))) {
+    snprintf(crisel, sizeof(crisel), "Slot %u PCIe err,FRU:%u", sel[14], fru);
+    pal_add_cri_sel(crisel);
   }
 
   return 0;
@@ -3980,7 +4053,7 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
 
   char key[MAX_KEY_LEN] = {0};
   sprintf(key, "slot%d_por_cfg", slot);
-  char *buff[MAX_VALUE_LEN];
+  char buff[MAX_VALUE_LEN];
   int policy = 3;
   uint8_t status, ret;
   unsigned char *data = res_data;
@@ -4159,11 +4232,179 @@ pal_get_platform_id(uint8_t *id) {
 
 void
 pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+  uint8_t fru = 1;
+  char crisel[128];
+  char thresh_name[8];
+  sensor_desc_t *snr_desc;
+
+  switch (thresh) {
+    case UNR_THRESH:
+      sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+      sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+      sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+      sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+      sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+      sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_sensor_assert_handle: wrong thresh enum value");
+      return;
+  }
+
+  switch (snr_num) {
+    case SP_SENSOR_FAN0_TACH:
+      sprintf(crisel, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_FAN1_TACH:
+      sprintf(crisel, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
+      break;
+    case BIC_SENSOR_SOC_TEMP:
+      sprintf(crisel, "SOC Temp %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case SP_SENSOR_P1V15_BMC_STBY:
+      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P1V2_BMC_STBY:
+      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P2V5_BMC_STBY:
+      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - ASSERT", thresh_name, val);
+      break;
+    case BIC_SENSOR_P3V3_MB:
+    case BIC_SENSOR_P12V_MB:
+    case BIC_SENSOR_P1V05_PCH:
+    case BIC_SENSOR_P3V3_STBY_MB:
+    case BIC_SENSOR_PV_BAT:
+    case BIC_SENSOR_PVDDR_AB:
+    case BIC_SENSOR_PVDDR_DE:
+    case BIC_SENSOR_PVNN_PCH:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_1V05_PCH_VR_VOL:
+    case BIC_SENSOR_VDDR_AB_VR_VOL:
+    case BIC_SENSOR_VDDR_DE_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_INA230_VOL:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    case SP_SENSOR_P5V:
+    case SP_SENSOR_P12V:
+    case SP_SENSOR_P3V3_STBY:
+    case SP_SENSOR_P12V_SLOT1:
+    case SP_SENSOR_P12V_SLOT2:
+    case SP_SENSOR_P12V_SLOT3:
+    case SP_SENSOR_P12V_SLOT4:
+    case SP_SENSOR_P3V3:
+    case SP_P1V8_STBY:
+    case SP_SENSOR_HSC_IN_VOLT:
+      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
+      sprintf(crisel, "%s %s %.2fV - ASSERT", snr_desc->name, thresh_name, val);
+      break;
+    default:
+      return;
+  }
+
+  pal_add_cri_sel(crisel);
   return;
 }
 
 void
 pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+  uint8_t fru = 1;
+  char crisel[128];
+  char thresh_name[8];
+  sensor_desc_t *snr_desc;
+
+  switch (thresh) {
+    case UNR_THRESH:
+      sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+      sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+      sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+      sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+      sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+      sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_sensor_deassert_handle: wrong thresh enum value");
+      return;
+  }
+
+  switch (snr_num) {
+    case SP_SENSOR_FAN0_TACH:
+      sprintf(crisel, "Fan0 %s %.0fRPM - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_FAN1_TACH:
+      sprintf(crisel, "Fan1 %s %.0fRPM - DEASSERT", thresh_name, val);
+      break;
+    case BIC_SENSOR_SOC_TEMP:
+      sprintf(crisel, "SOC Temp %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case SP_SENSOR_P1V15_BMC_STBY:
+      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P1V2_BMC_STBY:
+      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P2V5_BMC_STBY:
+      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - DEASSERT", thresh_name, val);
+      break;
+    case BIC_SENSOR_P3V3_MB:
+    case BIC_SENSOR_P12V_MB:
+    case BIC_SENSOR_P1V05_PCH:
+    case BIC_SENSOR_P3V3_STBY_MB:
+    case BIC_SENSOR_PV_BAT:
+    case BIC_SENSOR_PVDDR_AB:
+    case BIC_SENSOR_PVDDR_DE:
+    case BIC_SENSOR_PVNN_PCH:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_1V05_PCH_VR_VOL:
+    case BIC_SENSOR_VDDR_AB_VR_VOL:
+    case BIC_SENSOR_VDDR_DE_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_INA230_VOL:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    case SP_SENSOR_P5V:
+    case SP_SENSOR_P12V:
+    case SP_SENSOR_P3V3_STBY:
+    case SP_SENSOR_P12V_SLOT1:
+    case SP_SENSOR_P12V_SLOT2:
+    case SP_SENSOR_P12V_SLOT3:
+    case SP_SENSOR_P12V_SLOT4:
+    case SP_SENSOR_P3V3:
+    case SP_P1V8_STBY:
+    case SP_SENSOR_HSC_IN_VOLT:
+      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
+      sprintf(crisel, "%s %s %.2fV - DEASSERT", snr_desc->name, thresh_name, val);
+      break;
+    default:
+      return;
+  }
+
+  pal_add_cri_sel(crisel);
   return;
 }
 
@@ -4213,8 +4454,9 @@ pal_is_fw_update_ongoing(uint8_t fru) {
 int
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
 
-  sensor_check_t *snr_chk;
   _sensor_thresh_t *psnr = (_sensor_thresh_t *)snr;
+  sensor_check_t *snr_chk;
+  sensor_desc_t *snr_desc;
 
   snr_chk = get_sensor_check(fru, snr_num);
   snr_chk->flag = psnr->flag;
@@ -4224,12 +4466,19 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   snr_chk->val_valid = 0;
   snr_chk->last_val = 0;
 
+  snr_desc = get_sensor_desc(fru, snr_num);
+  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+
   return 0;
 }
 
 void pal_add_cri_sel(char *str)
 {
+  char cmd[128];
 
+  snprintf(cmd, sizeof(cmd), "logger -p local0.err \"%s\"", str);
+  system(cmd);
 }
 
 // TODO: Extend pal_get_status to support multiple servers
@@ -4237,7 +4486,7 @@ void pal_add_cri_sel(char *str)
 uint8_t
 pal_get_status(void) {
   char str_server_por_cfg[64];
-  char *buff[MAX_VALUE_LEN];
+  char buff[MAX_VALUE_LEN];
   int policy = 3;
   uint8_t status, data, ret;
 

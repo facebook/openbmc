@@ -118,7 +118,6 @@ enum {
 #define GPIO_POSTCODE_5                   125
 #define GPIO_POSTCODE_6                   126
 #define GPIO_POSTCODE_7                   127
-#define GPIO_HB_LED                       135
 #define GPIO_DBG_CARD_PRSNT               139
 #define GPIO_RST_SLOT1_SYS_RESET_N        144
 #define GPIO_RST_SLOT2_SYS_RESET_N        145

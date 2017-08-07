@@ -57,6 +57,9 @@
 #define HB_LED_OUTPUT_OFFSET 0x64
 #define SW_BLINK (1 << 4)
 
+#define AST_GPIO_BASE 0x1e780000
+#define GPIO_AB_AA_Z_Y 0x1e0
+
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_OFF 6
 #define DELAY_POWER_CYCLE 10
@@ -109,6 +112,9 @@ const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
 
 uint8_t g_dev_guid[GUID_SIZE] = {0};
+
+static void *m_gpio_hand_sw = NULL;
+static void *m_hbled_output = NULL;
 
 typedef struct {
   uint16_t flag;
@@ -1770,56 +1776,34 @@ pal_sled_cycle(void) {
 // Read the Front Panel Hand Switch and return the position
 int
 pal_get_hand_sw(uint8_t *pos) {
-  char path[64] = {0};
-  int id1, id2, id4, id8;
+  int gpio_fd;
+  void *gpio_reg;
   uint8_t loc;
-  // Read 4 GPIOs to read the current position
-  // id1: GPIOAA4(GPIO_HAND_SW_ID1)
-  // id2: GPIOAA5(GPIO_HAND_SW_ID2)
-  // id4: GPIOAA6(GPIO_HAND_SW_ID3)
-  // id8: GPIOAA7(GPIO_HAND_SW_ID4)
 
-  // Read ID1
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID1);
-  if (read_device(path, &id1)) {
-    return -1;
+  if (!m_gpio_hand_sw) {
+    gpio_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    if (gpio_fd < 0) {
+      return -1;
+    }
+
+    gpio_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, gpio_fd, AST_GPIO_BASE);
+    m_gpio_hand_sw = (char*)gpio_reg + GPIO_AB_AA_Z_Y;
+    close(gpio_fd);
   }
 
-  // Read ID2
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID2);
-  if (read_device(path, &id2)) {
-    return -1;
-  }
-
-  // Read ID4
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID4);
-  if (read_device(path, &id4)) {
-    return -1;
-  }
-
-  // Read ID8
-  sprintf(path, GPIO_VAL, GPIO_HAND_SW_ID8);
-  if (read_device(path, &id8)) {
-    return -1;
-  }
-
-  loc = ((id8 << 3) | (id4 << 2) | (id2 << 1) | (id1));
+  loc = (((*(volatile uint32_t*) m_gpio_hand_sw) >> 20) & 0xF) % 5;  // GPIOAA[7:4]
 
   switch(loc) {
   case 0:
-  case 5:
     *pos = HAND_SW_SERVER1;
     break;
   case 1:
-  case 6:
     *pos = HAND_SW_SERVER2;
     break;
   case 2:
-  case 7:
     *pos = HAND_SW_SERVER3;
     break;
   case 3:
-  case 8:
     *pos = HAND_SW_SERVER4;
     break;
   default:
@@ -1900,27 +1884,27 @@ pal_set_hb_led(uint8_t status) {
   int vic_fd;
   void *vic_reg;
   void *vic_hb_mode;
-  void *vic_hb_output;
   uint32_t ctrl;
 
-  vic_fd = open("/dev/mem", O_RDWR|O_SYNC);
-  if (vic_fd < 0) {
-    return -1;
+  if (!m_hbled_output) {
+    vic_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    if (vic_fd < 0) {
+      return -1;
+    }
+
+    vic_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, vic_fd, AST_VIC_BASE);
+    vic_hb_mode = (char*)vic_reg + HW_HB_STATUS_OFFSET;
+    m_hbled_output = (char*)vic_reg + HB_LED_OUTPUT_OFFSET;
+    close(vic_fd);
+
+    ctrl = *(volatile uint32_t*) vic_hb_mode;
+    if (!(ctrl & SW_BLINK)) {
+      ctrl |= SW_BLINK;
+      *(volatile uint32_t*) vic_hb_mode = ctrl;
+    }
   }
 
-  vic_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, vic_fd, AST_VIC_BASE);
-  vic_hb_mode = (char*)vic_reg + HW_HB_STATUS_OFFSET;
-  vic_hb_output = (char*)vic_reg + HB_LED_OUTPUT_OFFSET;
-
-  ctrl = *(volatile uint32_t*) vic_hb_mode;
-  if (!(ctrl & SW_BLINK)) {
-    ctrl |= SW_BLINK;
-    *(volatile uint32_t*) vic_hb_mode = ctrl;
-  }
-  *(volatile uint32_t*) vic_hb_output = status;
-
-  munmap(vic_reg, PAGE_SIZE);
-  close(vic_fd);
+  *(volatile uint32_t*) m_hbled_output = status;
 
   return 0;
 }

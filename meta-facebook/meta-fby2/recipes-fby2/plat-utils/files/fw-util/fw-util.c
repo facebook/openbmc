@@ -30,6 +30,9 @@
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
 
+#define NCSI_DATA_PAYLOAD 64
+#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
+
 #define MAX_NUM_OPTIONS 6
 enum {
   OPT_SLOT1 = 1,
@@ -40,12 +43,41 @@ enum {
   OPT_ALL   = 6,
 };
 
+typedef struct
+{
+  char  mfg_name[10];  //manufacture name
+  uint32_t mfg_id;     //manufacture id
+  void (*get_nic_fw)(uint8_t *, char *);
+} nic_info_st;
+
 static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|slot1|slot2|slot3|slot4|nic> <--version>\n");
   printf("       fw-util <all|slot1|slot2|slot3|slot4|nic> <--update> <--cpld|--bios|--bic|--bicbl|--nic|--vr> <path>\n");
   printf("       fw-util <all|slot1|slot2|slot3|slot4> <--postcode>\n");
 }
+
+static void
+get_mlx_fw_version(uint8_t *buf, char *version) {
+  int ver_index_based = 20;
+  int major = 0;
+  int minor = 0;
+  int revision = 0;
+ 
+  major = buf[ver_index_based++];
+  minor = buf[ver_index_based++];
+  revision = buf[ver_index_based++] << 8;
+  revision += buf[ver_index_based++];
+ 
+  sprintf(version, "%d.%d.%d", major, minor, revision);
+}
+
+static nic_info_st support_nic_list[] =
+{
+  {"Mellanox", 0x19810000, get_mlx_fw_version},
+};
+
+int nic_list_size = sizeof(support_nic_list) / sizeof(nic_info_st);
 
 static void
 print_bmc_version(void) {
@@ -195,9 +227,49 @@ print_slot_version(uint8_t slot_id) {
 
 static void
 print_nic_version(uint8_t slot_id) {
-  // TODO: Need to read nic card firmware version for print
-  // There are 2 nic card vendors, BCRM and MEZZ 
-  printf("NIC Card Version: NA\n");
+  // Need to read nic card firmware version for print
+  // There are 1 nic card vendor,MEZZ 
+  char display_nic_str[128]={0};
+  char version[32]={0};
+  char vendor[32]={0};
+  uint8_t buf[NCSI_DATA_PAYLOAD]={0};
+  uint32_t nic_mfg_id=0;
+  FILE *file = NULL;
+  bool is_unknown_mfg_id = true;
+  int current_nic;
+
+  file = fopen(NIC_FW_VER_PATH, "rb");
+  if ( NULL != file ) {
+    fread(buf, sizeof(uint8_t), NCSI_DATA_PAYLOAD, file);
+    fclose(file);
+  }
+  else {
+    syslog(LOG_WARNING, "[%s]Cannot open the file at %s",__func__, NIC_FW_VER_PATH);
+  }
+
+  //get the manufcture id
+  nic_mfg_id = (buf[35]<<24) + (buf[34]<<16) + (buf[33]<<8) + buf[32];
+
+  for ( current_nic=0; current_nic <nic_list_size; current_nic++) {
+    //check the nic on the system is supported or not
+    if ( support_nic_list[current_nic].mfg_id == nic_mfg_id ) {
+      sprintf(vendor, support_nic_list[current_nic].mfg_name);
+      support_nic_list[current_nic].get_nic_fw(buf, version);
+      is_unknown_mfg_id = false;
+      break;
+    }
+    else {
+      is_unknown_mfg_id = true;
+    }
+  }
+
+  if ( is_unknown_mfg_id ) {
+    sprintf(display_nic_str ,"NIC firmware version: NA (Unknown Manufacture ID: 0x%04x)", nic_mfg_id);
+  }
+  else {
+    sprintf(display_nic_str ,"%s NIC firmware version: %s", vendor, version);
+  }
+  printf("%s\n", display_nic_str);  
 }
 
 // TODO: Need to confirm the interpretation of firmware version for print

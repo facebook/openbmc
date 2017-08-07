@@ -28,28 +28,28 @@ slot=$1
 
 case $slot in
   1)
-    gpio_set E4 1
+    gpio_set E4 0
     gpio_set E5 0
+    gpio_set AB3 0
     ;;
   2)
-    gpio_set E4 0
+    gpio_set E4 1
     gpio_set E5 0
+    gpio_set AB3 0
     ;;
   3)
-    gpio_set E4 1
+    gpio_set E4 0
     gpio_set E5 1
+    gpio_set AB3 0
     ;;
   4)
-    gpio_set E4 0
+    gpio_set E4 1
     gpio_set E5 1
+    gpio_set AB3 0
     ;;
   *)
-    gpio_set E4 0
-    gpio_set E5 0
+    gpio_set AB3 1
     ;;
 esac
-
-# Enable the USB MUX GPIOS3(147)
-gpio_set S3 0
 
 echo "Done"

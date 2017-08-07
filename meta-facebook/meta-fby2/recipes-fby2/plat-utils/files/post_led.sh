@@ -27,12 +27,12 @@ usage() {
 . /usr/local/fbpackages/utils/ast-functions
 
 # Function to set the less significant hex digit
-display_lower() {  
+display_lower() {
     local bit0=$(expr $1 % 2)
     local bit1=$(expr $1 / 2 % 2)
     local bit2=$(expr $1 / 4 % 2)
     local bit3=$(expr $1 / 8 % 2)
-    
+
     # Set the pins to the correct operating mode.
     # The relevant pins are GPIOG[0...3].
     # For GPIO bank G, SCU84[0..3] must be 0.
@@ -56,21 +56,12 @@ display_upper() {
     local bit3=$(expr $1 / 8 % 2)
 
     # Set the pins to the correct operating mode.
-    # The relevant pins are GPIOB[4...7].
-    # GPIOB4: SCU80[12] = 0 and Strap[14] = 0
-    # GPIOB5: SCU80[13] = 0
-    # GPIOB6: SCU80[14] = 0
-    # GPIOB7: SCU80[15] = 0
-    devmem_clear_bit $(scu_addr 70) 14
-    devmem_clear_bit $(scu_addr 80) 12
-    devmem_clear_bit $(scu_addr 80) 13
-    devmem_clear_bit $(scu_addr 80) 14
-    devmem_clear_bit $(scu_addr 80) 15
+    # The relevant pins are GPIOP[4...7].
 
-    gpio_set 12 $bit0
-    gpio_set 13 $bit1
-    gpio_set 14 $bit2
-    gpio_set 15 $bit3
+    gpio_set 124 $bit0
+    gpio_set 125 $bit1
+    gpio_set 126 $bit2
+    gpio_set 127 $bit3
 }
 
 # Check number of parameters

@@ -94,8 +94,36 @@
 #define ML_ADM1278_R_SENSE  0.3
 
 #define TOTAL_M2_CH_ON_GP 6
+#define MAX_POS_READING_MARGIN 127
 
 static float ml_hsc_r_sense = ML_ADM1278_R_SENSE;
+
+// List of BIC sensors which need to do negative reading handle
+const uint8_t bic_neg_reading_sensor_support_list[] = {
+  /* Temperature sensors*/
+  BIC_SENSOR_MB_OUTLET_TEMP,
+  BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM,
+  BIC_SENSOR_MB_INLET_TEMP,
+  BIC_SENSOR_PCH_TEMP,
+  BIC_SENSOR_SOC_TEMP,
+  BIC_SENSOR_SOC_DIMMA0_TEMP,
+  BIC_SENSOR_SOC_DIMMA1_TEMP,
+  BIC_SENSOR_SOC_DIMMB0_TEMP,
+  BIC_SENSOR_SOC_DIMMB1_TEMP,
+  BIC_SENSOR_SOC_DIMMD0_TEMP,
+  BIC_SENSOR_SOC_DIMMD1_TEMP,
+  BIC_SENSOR_SOC_DIMME0_TEMP,
+  BIC_SENSOR_SOC_DIMME1_TEMP,
+  BIC_SENSOR_NVME1_CTEMP,
+  BIC_SENSOR_NVME2_CTEMP,
+  BIC_SENSOR_VCCIO_VR_CURR,
+  BIC_SENSOR_VCCIN_VR_CURR,
+  BIC_SENSOR_VDDR_AB_VR_CURR,
+  BIC_SENSOR_VDDR_DE_VR_CURR,
+  BIC_SENSOR_1V05_PCH_VR_CURR,
+  BIC_SENSOR_VCCSA_VR_CURR,
+  BIC_SENSOR_VNN_PCH_VR_CURR,
+};
 
 // List of BIC sensors to be monitored
 const uint8_t bic_sensor_list[] = {
@@ -725,6 +753,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     void *value) {
 
   int ret;
+  int i;
   sdr_full_t *sdr;
   ipmi_sensor_reading_t sensor;
 
@@ -789,6 +818,14 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
 
   if ((sensor_num == BIC_SENSOR_SOC_THERM_MARGIN) && (* (float *) value > 0)) {
    * (float *) value -= (float) THERMAL_CONSTANT;
+  }
+
+  if (*(float *) value > MAX_POS_READING_MARGIN) {     //Negative reading handle
+    for(i=0;i<sizeof(bic_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
+      if (sensor_num == bic_neg_reading_sensor_support_list[i]) {
+        * (float *) value -= (float) THERMAL_CONSTANT;
+      }
+    }
   }
 
   return 0;

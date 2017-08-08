@@ -905,6 +905,19 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
       syslog(LOG_ERR, "%s: get GPIO_PCIE_RESET fail", __func__);
       return -1;
     }
+
+    // Each time Server Power On and Reset, BIOS sends a 13~14ms PERST# low pulse to PCIe devices.
+    // To filter-out the low pulse to prevent the false power status query,
+    // we add recheck in 50ms (add some tolerance) if the power status is off.
+    if (gpio_perst_val == 0) {
+      msleep(50);
+      ret = get_gpio_value(GPIO_PCIE_RESET, &gpio_perst_val);
+      if (ret != 0) {
+        syslog(LOG_ERR, "%s: get GPIO_PCIE_RESET fail", __func__);
+        return -1;
+      }
+    }
+
     if (gpio_perst_val == 0) {
       *status = SERVER_POWER_OFF;
     } else {

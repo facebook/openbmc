@@ -41,7 +41,7 @@
 #define GETMASK(y)          (1 << y)
 
 #define MAX_NUM_SLOTS       1
-#define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
+#define POLLING_INTERVAL    500
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
 #define GPIO_BMC_READY_N    28
@@ -427,6 +427,18 @@ gpio_monitor_poll(uint8_t fru_flag) {
         // Check server 12V power status, avoid changing the lps due to 12V-off      
         ret = pal_is_server_12v_on(FRU_SLOT1, &server_12v_status);
         if ((ret >= 0) && (server_12v_status == CTRL_ENABLE)) { // 12V-on
+
+          // Each time Server Power On and Reset, BIOS sends a 13~14ms PERST# low pulse to PCIe devices.
+          // To filter-out the low pulse to prevent the false power status query,
+          // we add recheck in 50ms (add some tolerance).
+          msleep(50);
+          curr_pwr_state = get_perst_value();
+          if (curr_pwr_state == SERVER_POWER_ON) {
+            // the signal is not a real power off signal but a power on PERST# pulse
+            msleep(POLLING_INTERVAL);
+            continue;
+          }
+
           // Change lps only if power-util is NOT running.
           // If power-util is running, the power status might be changed soon.
           fp = fopen(vpath_pwr_util_lock, "r");
@@ -437,8 +449,8 @@ gpio_monitor_poll(uint8_t fru_flag) {
           }
           syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SLOT1);
         } else {
-          prev_pwr_state = curr_pwr_state;
-          usleep(DELAY_GPIOD_READ);
+          prev_pwr_state = SERVER_POWER_OFF;
+          msleep(POLLING_INTERVAL);
           continue;
         }
       } else if ((prev_pwr_state == SERVER_POWER_OFF) && (curr_pwr_state == SERVER_POWER_ON)) {
@@ -455,15 +467,23 @@ gpio_monitor_poll(uint8_t fru_flag) {
           // Inform BIOS that BMC is ready
           bic_set_gpio(FRU_SLOT1, GPIO_BMC_READY_N, 0);
         } else {
-          prev_pwr_state = curr_pwr_state;
-          usleep(DELAY_GPIOD_READ);
+          prev_pwr_state = SERVER_POWER_OFF;
+          msleep(POLLING_INTERVAL);
+          continue;
+        }
+      } else {
+        ret = pal_is_server_12v_on(FRU_SLOT1, &server_12v_status);
+        if ((ret >= 0) && (server_12v_status == CTRL_DISABLE)) {  // 12V-off
+          curr_pwr_state = SERVER_POWER_OFF;
+        }else{
+          msleep(POLLING_INTERVAL);
           continue;
         }
       }
       prev_pwr_state = curr_pwr_state;
-      usleep(DELAY_GPIOD_READ);
+      msleep(POLLING_INTERVAL);
     } else {
-      usleep(DELAY_GPIOD_READ);
+      msleep(POLLING_INTERVAL);
     }
 
     // If log-util clear all fru, cleaning ML, SCC, and NIC present status

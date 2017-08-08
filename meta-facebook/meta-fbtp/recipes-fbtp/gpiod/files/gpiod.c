@@ -345,7 +345,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOAA0", "FM_CPU1_SKTOCC_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA1", "IRQ_SML1_PMBUS_ALERT_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAB0", "IRQ_HSC_FAULT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOD4", "IRQ_DIMM_SAVE_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD4", "IRQ_DIMM_SAVE_LVT3_N"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);

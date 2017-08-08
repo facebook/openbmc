@@ -64,7 +64,8 @@ TEST(FRUTest, HotPlugExternalDetection) {
 TEST(FRUTest, HotPlugInternalDetectionViaPath) {
   //Create file for hotplug detection
   HotPlugDetectionFile file("/tmp/hpDetectViaPathTest");
-  std::unique_ptr<HotPlugDetectionViaPath> hpDetect(new HotPlugDetectionViaPath(file.getFileName()));
+  std::unique_ptr<HotPlugDetectionViaPath>
+             hpDetect(new HotPlugDetectionViaPath(file.getFileName()));
   //Create FRU object, fru supports internal hotplug detection
   FRU fru("", nullptr, "", std::move(hpDetect));
   //by default fru is unavailable

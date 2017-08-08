@@ -22,6 +22,9 @@ include_directories($ENV{SLIB}/glib-2.0/include)
 find_library(OBJECT-TREE object-tree)
 find_library(GTEST gtest)
 find_library(GLOG glog)
+find_library(DBUS-UTILS dbus-utils)
+find_library(GIO gio-2.0)
+find_library(GLIB glib-2.0)
 
 add_executable(test-platform-svc-fru
   FRUTest.cpp
@@ -47,5 +50,30 @@ target_link_libraries(test-platform-svc-hotplugdetectionmechanism
 )
 
 install(TARGETS test-platform-svc-hotplugdetectionmechanism DESTINATION bin)
+
+add_executable(test-platform-svc-platform-object-tree
+  PlatformObjectTreeTest.cpp
+  ../PlatformObjectTree.cpp
+  ../PlatformJsonParser.cpp
+  ../SensorService.cpp
+  ../DBusPlatformSvcInterface.cpp
+  ../FruService.cpp
+  ../DBusHPExtDectectionFruInterface.cpp
+)
+
+target_link_libraries(test-platform-svc-platform-object-tree
+  ${GLOG}
+  ${GFLAGS}
+  ${GIO}
+  ${GLIB}
+  ${GTEST}
+  ${DBUS-UTILS}
+  ${OBJECT-TREE}
+  -lgobject-2.0
+  -lpthread
+)
+
+install(TARGETS test-platform-svc-platform-object-tree DESTINATION bin)
+install(FILES test-platform-svcd-config.json DESTINATION /etc)
 
 install(FILES platform-svc-unit-tests.sh DESTINATION bin)

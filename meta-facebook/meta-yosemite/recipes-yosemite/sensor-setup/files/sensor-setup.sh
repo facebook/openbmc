@@ -42,13 +42,47 @@
 modprobe lm75
 modprobe pmbus
 
-# Enable the ADC inputs;  adc0 - adc7 are connected to various voltage sensors
+# setup ADC channels
 
-echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc1_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc2_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc3_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc4_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc5_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc6_en
-echo 1 > /sys/devices/platform/ast_adc.0/adc7_en
+ADC_PATH="/sys/devices/platform/ast_adc.0"
+
+# Enable the ADC inputs;  adc0 - adc7 are connected to various voltage sensors
+#
+#  adc0 P5V_STBY_SCALED           r1: 5.11k,   r2: 3.48k,  v2: 0mv
+#  adc1 P12V_STBY_SCALED          r1: 5.11k,   r2: 1.02k,  v2: 0mv
+#  adc2 P3V3_STBY_SCALED          r1: 5.11k,   r2: 8.25k,  v2: 0mv
+#  adc3 P12V_STBY_SLOT2_SCALED    r1: 5.11k,   r2: 1.02k,  v2: 0mv
+#  adc4 P12V_STBY_SLOT1_SCALED    r1: 5.11k,   r2: 1.02k,  v2: 0mv
+#  adc5 P12V_STBY_SLOT4_SCALED    r1: 5.11k,   r2: 1.02k,  v2: 0mv
+#  adc6 P12V_STBY_SLOT3_SCALED    r1: 5.11k,   r2: 1.02k,  v2: 0mv
+#  adc7 P3V3_SCALED               r1: 5.11k,   r2: 8.25k,  v2: 0mv
+
+config_adc() {
+    channel=$1
+    r1=$2
+    r2=$3
+    v2=$4
+    echo $r1 > ${ADC_PATH}/adc${channel}_r1
+    echo $r2 > ${ADC_PATH}/adc${channel}_r2
+    echo $v2 > ${ADC_PATH}/adc${channel}_v2
+    echo 1 > ${ADC_PATH}/adc${channel}_en
+}
+
+config_adc 0  5110  3480 0
+config_adc 1  5110  1020 0
+config_adc 2  5110  8250 0
+config_adc 3  5110  1020 0
+config_adc 4  5110  1020 0
+config_adc 5  5110  1020 0
+config_adc 6  5110  1020 0
+config_adc 7  5110  8250 0
+
+
+#echo 1 > /sys/devices/platform/ast_adc.0/adc0_en
+#echo 1 > /sys/devices/platform/ast_adc.0/adc1_en
+#echo 1 > /sys/devices/platform/ast_adc.0/adc2_en
+#echo 1 > /sys/devices/platform/ast_adc.0/adc3_en
+#echo 1 > /sys/devices/platform/ast_adc.0/adc4_en
+#echo 1 > /sys/devices/platform/ast_adc.0/adc5_en
+#echo 1 > /sys/devices/platform/ast_adc.0/adc6_en
+#echo 1 > /sys/devices/platform/ast_adc.0/adc7_en

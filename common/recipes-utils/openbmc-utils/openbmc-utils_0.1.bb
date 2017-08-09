@@ -29,6 +29,7 @@ SRC_URI = " \
     file://rc.early \
     file://rc.local \
     file://dhclient-exit-hooks \
+    file://rm_poweroff_cmd.sh \
     "
 
 OPENBMC_UTILS_FILES = " \
@@ -36,6 +37,7 @@ OPENBMC_UTILS_FILES = " \
     openbmc-utils.sh \
     rc.early \
     rc.local \
+    rm_poweroff_cmd.sh \
     "
 
 S = "${WORKDIR}"
@@ -68,6 +70,9 @@ do_install() {
 
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
+
+    install -m 0755 ${WORKDIR}/rm_poweroff_cmd.sh ${D}${sysconfdir}/init.d/rm_poweroff_cmd.sh
+    update-rc.d -r ${D} rm_poweroff_cmd.sh start 99 S .
 }
 
 FILES_${PN} += "/usr/local"

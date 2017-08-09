@@ -28,8 +28,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/file.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/pal.h>
 #include <facebook/bic.h>
 
 #define LAST_RECORD_ID 0xFFFF
@@ -83,14 +85,20 @@ sdr_cache_init(uint8_t slot_id) {
   unlink(path);
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
-    syslog(LOG_WARNING, "sdr_cache_init: open fails for path: %s\n", path);
+    syslog(LOG_WARNING, "%s: open fails for path: %s\n", __func__, path);
     return;
+  }
+
+  ret = pal_flock_retry(fd);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
+   return;
   }
 
   while (1) {
     ret = bic_get_sdr(slot_id, &req, res, &rlen);
     if (ret) {
-      syslog(LOG_WARNING, "sdr_cache_init:bic_get_sdr returns %d\n", ret);
+      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d\n", __func__, ret);
       continue;
     }
 
@@ -103,6 +111,12 @@ sdr_cache_init(uint8_t slot_id) {
       // syslog(LOG_INFO, "This record is LAST record\n");
       break;
     }
+  }
+
+  ret = pal_unflock_retry(fd);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+   return;
   }
 
   rename(sdr_temp_path, sdr_path);

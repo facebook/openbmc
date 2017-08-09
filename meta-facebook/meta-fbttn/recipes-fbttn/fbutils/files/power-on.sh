@@ -33,43 +33,64 @@ KEYDIR=/mnt/data/kv_store
 DEF_PWR_ON=1
 TO_PWR_ON=
 
-# It's a transition period from EVT to DVT
-BOARD_ID=`cat /sys/class/gpio/gpio74/value`
-if [ $BOARD_ID -eq 0  ]; then   # EVT
-  echo "For EVT IOM Setting..."
-  IOM_FULL_GOOD=218
-elif [ $BOARD_ID -eq 1  ]; then # DVT
-  echo "For DVT IOM Setting..."
-  IOM_FULL_GOOD=217
-fi
+BOARD_EVT=0
+BOARD_DVT=1
+BOARD_MP=2
 
+# According to different stage to assign the correct IOM_FULL_GOOD GPIO pin
+GPIO_BOARD_REV_0=`cat /sys/class/gpio/gpio72/value`
+GPIO_BOARD_REV_1=`cat /sys/class/gpio/gpio73/value`
+GPIO_BOARD_REV_2=`cat /sys/class/gpio/gpio74/value`
+IOM_BOARD_ID=$(($GPIO_BOARD_REV_0 << 2 | $GPIO_BOARD_REV_1 << 1 | $GPIO_BOARD_REV_2))
+case "$IOM_BOARD_ID" in
+  "$BOARD_EVT")
+    logger -s -p user.info -t power-on "For EVT IOM Setting..."
+    IOM_FULL_GOOD=218
+    ;;
+  "$BOARD_DVT")
+    logger -s -p user.info -t power-on "For DVT IOM Setting..."
+    IOM_FULL_GOOD=217
+    ;;
+  "$BOARD_MP")
+    logger -s -p user.info -t power-on "For MP IOM Setting..."
+    IOM_FULL_GOOD=217
+    ;;
+  *)
+    logger -s -p user.info -t power-on "For MP IOM Setting..."
+    IOM_FULL_GOOD=217
+    ;;
+esac
+
+# Check power policy
+# $1: slot number
 check_por_config()
 {
 
   TO_PWR_ON=-1
+  slot_num=$1
 
   # Check if the file/key doesn't exist
-  if [ ! -f "${KEYDIR}/slot${1}_por_cfg" ]; then
+  if [ ! -f "${KEYDIR}/slot${slot_num}_por_cfg" ]; then
     TO_PWR_ON=$DEF_PWR_ON
   else
-    POR=`cat ${KEYDIR}/slot${1}_por_cfg`
+    PWR_POLICY=`cat ${KEYDIR}/slot${slot_num}_por_cfg`
 
     # Case ON
-    if [ $POR == "on" ]; then
+    if [ $PWR_POLICY == "on" ]; then
       TO_PWR_ON=1;
 
     # Case OFF
-    elif [ $POR == "off" ]; then
+    elif [ $PWR_POLICY == "off" ]; then
       TO_PWR_ON=0;
 
     # Case LPS
-    elif [ $POR == "lps" ]; then
+    elif [ $PWR_POLICY == "lps" ]; then
 
       # Check if the file/key doesn't exist
-      if [ ! -f "${KEYDIR}/pwr_server${1}_last_state" ]; then
+      if [ ! -f "${KEYDIR}/pwr_server${slot_num}_last_state" ]; then
         TO_PWR_ON=$DEF_PWR_ON
       else
-        LS=`cat ${KEYDIR}/pwr_server${1}_last_state`
+        LS=`cat ${KEYDIR}/pwr_server${slot_num}_last_state`
         if [ $LS == "on" ]; then
           TO_PWR_ON=1;
         elif [ $LS == "off" ]; then
@@ -100,8 +121,8 @@ sync_date()
     ts=$(date -d @$val +"%Y.%m.%d-%H:%M:%S")
 
     # set the command
-    echo Syncing up BMC time with server$i...
-    date $ts
+    logger -s -p user.info -t power-on "Syncing up BMC time with server..."
+    logger -s -p user.info -t power-on "`date $ts`"
   fi
 }
 
@@ -109,7 +130,7 @@ sync_date()
 # Check Mono Lake and SCC is present or not
 is_server_12v_off="1"
 if [ $(is_server_prsnt) == "0" ]; then
-  echo "The Mono Lake is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+  logger -s -p user.warn -t power-on "The Mono Lake is absent, turn off Mono Lake HSC 12V and IOM 3V3."
   gpio_set O7 0
   gpio_set AA7 0
   is_server_12v_off="0"
@@ -121,20 +142,20 @@ else
     iom_local=$(($(($? >> 4)) & 0x3))
     # IOMA
     if [ $iom_local -eq 1 ] && [ $(is_scc_prsnt 478) == "0" ]; then
-      echo "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+      logger -s -p user.warn -t power-on "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
       gpio_set O7 0
       gpio_set AA7 0
       is_server_12v_off="0"
     #IOMB
     elif [ $iom_local -eq 2 ] && [ $(is_scc_prsnt 479) == "0" ]; then
-      echo "The SCCB is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+      logger -s -p user.warn -t power-on "The SCCB is absent, turn off Mono Lake HSC 12V and IOM 3V3."
       gpio_set O7 0
       gpio_set AA7 0
       is_server_12v_off="0"
     fi
   else  # type 7, only check SCCA
     if [ $iom_local -eq 1 ] && [ $(is_scc_prsnt 478) == "0" ]; then
-      echo "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
+      logger -s -p user.warn -t power-on "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
       gpio_set O7 0
       gpio_set AA7 0
       is_server_12v_off="0"
@@ -163,21 +184,17 @@ if [ $(is_bmc_por) -eq 1 ] && [ $is_server_12v_off -eq 1 ]; then
 
   # For Triton MonoLake PWR sequence
   if [ $(gpio_get $IOM_FULL_GOOD) == 1 ]; then
-    #set ML board power en
+    #set ML board power enable (12V on)
     gpio_set O7 1
     sleep 3  # waiting for ME ready
     sync_date 
     check_por_config 1
     if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
         power-util server on
+        logger -s -p user.info -t power-on "Power on server"
     fi
   else
-    echo "IOM PWR Fail"
-  fi
-
-  check_por_config 1
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt) == "1" ] ; then
-    power-util server on
+    logger -s -p user.warn -t power-on "IOM full power good is disable"
   fi
 else
   sync_date

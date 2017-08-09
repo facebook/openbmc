@@ -1,5 +1,6 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
 DEVMEM=/sbin/devmem
+AST_POR_FLAG=/tmp/ast_por
 
 devmem_set_bit() {
     local addr
@@ -127,17 +128,32 @@ gpio_get() {
     cat ${dir}/value
 }
 
+# Store and Clear Power On Reset flag (SCU3C[0])
+store_clear_por()
+{
+  local val
+
+  if [ -f $AST_POR_FLAG ]; then
+    return
+  fi
+
+  # Read the Power On Reset flag SCU3C[0] to determine if this boot is AC on or not
+  val=$(devmem 0x1e6e203c 2>/dev/null)
+  if [ "$((val & 0x1))" == "1" ]; then
+      # Power ON Reset
+      echo 1 > $AST_POR_FLAG
+  else
+      echo 0 > $AST_POR_FLAG
+  fi
+
+  # Clear Power On Reset bit
+  devmem 0x1e6e203c 32 $((val & 0xfffffffe)) 2>/dev/null
+}
+
 # Check to see if BMC power-on-reset
 is_bmc_por() {
-    local val
-    # Read the Watch Dog Flag
-    val=$(devmem 0x1e6e203c 2>/dev/null)
-    if [ "$((val & 0x6))" == "0" ]; then
-        # Power ON Reset
-        echo 1
-    else
-        echo 0
-    fi
+  store_clear_por
+  /bin/cat $AST_POR_FLAG
 }
 
 # Check to see if server is present in given slot or not

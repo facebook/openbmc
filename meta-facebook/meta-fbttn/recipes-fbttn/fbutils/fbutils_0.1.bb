@@ -39,6 +39,7 @@ SRC_URI = "file://ast-functions \
            file://check_pal_sku.sh \
            file://setup-platform.sh \
            file://bios-util \
+           file://setup-por.sh \
           "
 
 pkgdir = "utils"
@@ -84,6 +85,8 @@ do_install() {
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
   install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
   update-rc.d -r ${D} setup-platform.sh start 63 5 .
+  install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
+  update-rc.d -r ${D} setup-por.sh start 63 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

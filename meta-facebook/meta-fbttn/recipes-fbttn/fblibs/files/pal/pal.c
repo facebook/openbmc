@@ -117,7 +117,7 @@
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
 #define PIN_CTRL2_OFFSET 0x84
-#define WDT_OFFSET 0x3C
+#define SCU_RST_STS_OFFSET 0x3C   // SCU3C: System reset control/status
 
 //#define UART1_TXD (1 << 22)
 
@@ -149,6 +149,8 @@
 #define FIXED_BOOT_DEVICE_FILE "/tmp/fixed_boot_device.bin"
 #define BIOS_DEFAULT_SETTING_FILE "/tmp/bios_default_setting.bin"
 #define LAST_BOOT_TIME "/tmp/last_boot_time.bin"
+
+#define AST_POR_FLAG "/tmp/ast_por"
 // SHIFT to 16
 #define UART1_TXD 0
 
@@ -1783,32 +1785,19 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   return 0;
 }
 
+// Determine if BMC is AC on
 int
 pal_is_bmc_por(void) {
-  uint32_t scu_fd;
-  uint32_t wdt;
-  void *scu_reg;
-  void *scu_wdt;
+  FILE *fp;
+  int por = 0;
 
-  scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (scu_fd < 0) {
-    return 0;
+  fp = fopen(AST_POR_FLAG, "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &por);
+    fclose(fp);
   }
 
-  scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_SCU_BASE);
-  scu_wdt = (char*)scu_reg + WDT_OFFSET;
-
-  wdt = *(volatile uint32_t*) scu_wdt;
-
-  munmap(scu_reg, PAGE_SIZE);
-  close(scu_fd);
-
-  if (wdt & 0x6) {
-    return 0;
-  } else {
-    return 1;
-  }
+  return (por == 1) ? 1 : 0;
 }
 
 int

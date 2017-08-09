@@ -2685,6 +2685,18 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   // Current Power State
   ret = pal_get_server_power(FRU_SLOT1, &status);
   if (ret >= 0) {
+    switch (status) {
+      case SERVER_POWER_ON:
+        status = SERVER_POWER_ON;
+        break;
+      case SERVER_POWER_OFF:
+      case SERVER_12V_OFF:
+        status = SERVER_POWER_OFF;
+        break;
+      default:
+        status = SERVER_POWER_OFF;
+        break;
+    }
     *data++ = status | (policy << 5);
   } else {
     // load default

@@ -630,6 +630,25 @@ pal_flock_retry(int fd)
 }
 
 int __attribute__((weak))
+pal_unflock_retry(int fd)
+{
+  int ret = 0;
+  int retry_count = 0;
+
+  ret = flock(fd, LOCK_UN);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fd, LOCK_UN);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int __attribute__((weak))
 pal_slotid_to_fruid(int slotid)
 {
   // This function is for mapping to fruid from slotid

@@ -179,6 +179,7 @@ int pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_l
 int pal_handle_string_sel(char *log, uint8_t log_len);
 int pal_set_adr_trigger(uint8_t slot, bool trigger);
 int pal_flock_retry(int fd);
+int pal_unflock_retry(int fd);
 int pal_devnum_to_fruid(int devnum);
 int pal_channel_to_bus(int channel);
 int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);

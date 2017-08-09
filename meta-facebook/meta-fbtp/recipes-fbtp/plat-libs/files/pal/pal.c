@@ -2707,9 +2707,9 @@ pal_get_num_slots(uint8_t *num) {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  int val;
-  char path[64] = {0};
   uint8_t slot_cfg = 0;
+  char full_name[LARGEST_DEVICE_NAME + 1]={0};
+  FILE *fp;
   *status = 0;
 
   switch (fru) {
@@ -2717,11 +2717,12 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       *status = 1;
       break;
     case FRU_NIC:
-      sprintf(path, GPIO_VAL, GPIO_FM_OCP_MEZZA_PRES);
-      if (read_device(path, &val))
+      snprintf(full_name, LARGEST_DEVICE_NAME, "%s", "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon");
+      fp = fopen(full_name, "r");
+      if (!fp) {
         return -1;
-      if(val ==1)
-         *status = 1;
+      }
+      *status = 1;
       break;
     case FRU_RISER_SLOT2:
     case FRU_RISER_SLOT3:

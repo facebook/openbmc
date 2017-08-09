@@ -152,6 +152,12 @@ struct fan_info_stu_sysfs {
   uchar failed;
 };
 
+struct psu_info_sysfs {
+  char* sysfs_path;
+  char* shutdown_path;
+  int value_to_shutdown;
+};
+
 struct galaxy100_board_info_stu_sysfs {
   const char *name;
   uint slot_id;
@@ -176,7 +182,6 @@ struct galaxy100_fan_failed_control_stu {
   int alarm_level;
 };
 
-static int galaxy100_i2c_write(int bus, int addr, uchar reg, int value, int byte);
 static int open_i2c_dev(int i2cbus, char *filename, size_t size);
 static int read_temp_sysfs(sensor_info_sysfs *sensor);
 static int read_critical_max_temp(void);
@@ -419,6 +424,32 @@ struct galaxy100_fantray_info_stu_sysfs galaxy100_fantray_info[] = {
   NULL,
 };
 
+struct psu_info_sysfs galaxy100_psu_info[] = {
+  {
+    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/24-0010",
+    .shutdown_path = "control/shutdown",
+    .value_to_shutdown = 1,
+  },
+  {
+    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/25-0010",
+    .shutdown_path = "control/shutdown",
+    .value_to_shutdown = 1,
+  },
+  {
+    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/26-0010",
+    .shutdown_path = "control/shutdown",
+    .value_to_shutdown = 1,
+  },
+  {
+    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/27-0010",
+    .shutdown_path = "control/shutdown",
+    .value_to_shutdown = 1,
+  },
+
+  NULL,
+};
+
+
 
 #define BOARD_INFO_SIZE (sizeof(galaxy100_board_info) \
                         / sizeof(struct galaxy100_board_info_stu_sysfs))
@@ -465,44 +496,6 @@ int report_temp = REPORT_TEMP;
 bool verbose = false;
 int lc_status[GALAXY100_LC_NUM] = {0};
 int scm_status[GALAXY100_SCM_NUM] = {0};
-
-static int galaxy100_i2c_write(int bus, int addr, uchar reg, int value, int byte)
-{
-  int res, file;
-  char filename[20];
-
-  file = open_i2c_dev(bus, filename, sizeof(filename));
-  if(file < 0) {
-    return -1;
-  }
-  if(ioctl(file, I2C_SLAVE_FORCE, addr) < 0) {
-    return -1;
-  }
-  if(byte == 1)
-    res = i2c_smbus_write_byte_data(file, reg, value);
-  else if(byte == 2)
-    res = i2c_smbus_write_word_data(file, reg, value);
-  else
-    return -1;
-
-  close(file);
-  return res;
-}
-static int open_i2c_dev(int i2cbus, char *filename, size_t size)
-{
-  int file;
-
-  snprintf(filename, size, "/dev/i2c/%d", i2cbus);
-  filename[size - 1] = '\0';
-  file = open(filename, O_RDWR);
-  if (file < 0 && (errno == ENOENT || errno == ENOTDIR)) {
-    sprintf(filename, "/dev/i2c-%d", i2cbus);
-    file = open(filename, O_RDWR);
-  }
-
-  return file;
-}
-
 
 /*
  * Helper function to probe directory, and make full path
@@ -711,7 +704,7 @@ static int read_temp_sysfs(struct sensor_info_sysfs *sensor)
    * or this function already returned -1. So assume the cache is always on
    */
    ret = read_sysfs_int(sensor->path_cache, &value);
-  
+
   /*  Note that Kernel sysfs stub pre-converts raw value in xxxxx format,
    *  which is equivalent to xx.xxx degree - all we need to do is to divide
    *  the read value by 1000
@@ -1210,24 +1203,23 @@ static int galaxy100_write_fan_led_sysfs(int fan, const char *color)
   return 1;
 }
 
-// No known I2C bus conflict for this one. Leave it as it is.
 static int system_shutdown(const char *why)
 {
   int ret;
   int i;
+  char fullpath[PATH_CACHE_SIZE];
 
   syslog(LOG_EMERG, "Shutting down:  %s", why);
 
   for(i = 0; i < GALAXY100_PSUS; i++) {
-    ret = galaxy100_i2c_write(GALAXY100_PSU_CHANNEL_I2C_BUS, GALAXY100_PSU_CHANNEL_I2C_ADDR, 0x0, 0x1 << i, 1);
+
+    snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s",
+             galaxy100_psu_info[i].sysfs_path,
+             galaxy100_psu_info[i].shutdown_path);
+
+    ret = write_sysfs_int(fullpath, galaxy100_psu_info[i].value_to_shutdown);
     if(ret < 0) {
       syslog(LOG_ERR, "%s: failed to set PSU channel 0x%x, value 0x%x", __func__, GALAXY100_PSU_CHANNEL_I2C_ADDR, 0x1 << i);
-      return -1;
-    }
-    usleep(11000);
-    ret = galaxy100_i2c_write(GALAXY100_PSU_CHANNEL_I2C_BUS, GALAXY100_PSU_I2C_ADDR, 0x1, 0x0, 1);
-    if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set PSU shutdown 0x1, value 0x0", __func__);
       return -1;
     }
   }
@@ -1583,8 +1575,15 @@ int main(int argc, char **argv) {
 
         for (fan = 0; fan < total_fans; fan++) {
           info = &galaxy100_fantray_info[fan];
-          if(info->present == 0)
+          if(info->present == 0) {
             not_present++;
+            // Make sure that all fans on a FAB is marked as absent if that
+            // fab itself is absent. Thus, one FAB down is equal to
+            // three FANs down
+            info->fan1.present = 0;
+            info->fan2.present = 0;
+            info->fan3.present = 0;
+          }
           if(info->fan1.failed == 1 | info->fan1.present == 0)
             fan_failed++;
           if(info->fan2.failed == 1 | info->fan2.present == 0)
@@ -1593,10 +1592,6 @@ int main(int argc, char **argv) {
             fan_failed++;
         }
         if(fan_failed >= 6)
-          count++;
-        else if(not_present == 1 && fan_failed >= 3)
-          count++;
-        else if(not_present >= 2)
           count++;
         else
           count = 0;

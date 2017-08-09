@@ -197,18 +197,22 @@ void* worker_thread(void* args)
         }
 
         // PRDY Event handling
-        status = prdy_is_event_triggered(state->fru, &triggered);
-        if (status != ST_OK) {
-            ASD_log(LogType_Error, "Failed to get pin event status for CPU_PRDY: %d", status);
-        } else if (triggered) {
-            ASD_log(LogType_Debug, "CPU_PRDY Asserted Event Detected");
-            if (state->event_cfg.report_PRDY) {
-                ASD_log(LogType_Debug, "Sending PRDY event to plugin");
+        if (state->event_cfg.report_PRDY) {
+            status = prdy_is_event_triggered(state->fru, &triggered);
+            if (status != ST_OK) {
+                ASD_log(LogType_Error, "Failed to get gpio event status for CPU_PRDY: %d", status);
+            } else if (triggered) {
+                ASD_log(LogType_Debug, "CPU_PRDY Asserted Event Detected. Sending PRDY event to plugin");
                 state->event_cb(PIN_EVENT, ASD_EVENT_PRDY_EVENT);
                 if (state->event_cfg.break_all) {
                     ASD_log(LogType_Debug, "BreakAll detected PRDY, asserting PREQ");
-                    if (preq_assert(state->fru, true) != ST_OK)
+                    if (preq_assert(state->fru, true) != ST_OK) {
                         ASD_log(LogType_Error, "Failed to assert PREQ");
+                    }
+                    usleep(10000);
+                    if (preq_assert(state->fru, false) != ST_OK) {
+                        ASD_log(LogType_Error, "Failed to deassert PREQ");
+                    }
                 }
             }
         }
@@ -444,7 +448,7 @@ STATUS target_wait_PRDY(Target_Control_Handle* state, const uint8_t log2time) {
 
     pthread_mutex_lock(&state->write_config_mutex);
     bool detected = false;
-    ASD_log(LogType_Debug, "Waiting for PRDY...");
+    ASD_log(LogType_Debug, "Waiting for PRDY (timeout of %d ms)", (timeout / 1000));
     while(1) {
         STATUS status = prdy_is_event_triggered(state->fru, &detected);
         if (status != ST_OK) {
@@ -457,10 +461,16 @@ STATUS target_wait_PRDY(Target_Control_Handle* state, const uint8_t log2time) {
         useconds = end.tv_usec - start.tv_usec;
         utime = ((seconds) * 1000000 + useconds) + 0.5;
 
-        if (utime > timeout) {
+        if (utime >= timeout || timeout <= 4) {
+            // If the timeout is <= 4 microseconds, this is such a small period of time where it
+            // becomes more reasonable to simply timeout and not sleep. Any sleep on most boards
+            // will likely result in a thread context switch totaling far more than the desired
+            // timeout value.
             break;
         } else {
-            usleep(1);
+            // It should be noted that in reality many boards will sleep longer than the 1ms
+            // specified below.
+            usleep(1000);
         }
     }
     pthread_mutex_unlock(&state->write_config_mutex);
@@ -491,4 +501,18 @@ STATUS checkXDPstate(Target_Control_Handle* state)
         return ST_ERR;
     }
     return ST_OK;
+}
+
+STATUS target_jtag_chain_select(Target_Control_Handle* state, const uint8_t scan_chain) {
+    STATUS status = ST_ERR;
+    if (scan_chain == SCAN_CHAIN_0) {
+        ASD_log(LogType_Debug, "Scan Chain Select: JTAG");
+        status = tck_mux_select_assert(state->fru, false);
+    } else if (scan_chain == SCAN_CHAIN_1) {
+        ASD_log(LogType_Debug, "Scan Chain Select: PCH");
+        status = tck_mux_select_assert(state->fru, true);
+    } else {
+        ASD_log(LogType_Error, "Scan Chain Select: Unknown Scan Chain -> %d", scan_chain);
+    }
+    return status;
 }

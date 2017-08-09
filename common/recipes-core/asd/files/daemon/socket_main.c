@@ -54,6 +54,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "asd/SoftwareJTAGHandler.h"
 #include "target_handler.h"
 #include "logging.h"
+#include "ext_network.h"
+#include "session.h"
+#include "authenticate.h"
 
 //---------------------------------------------
 //   At Scale Debug Protocol specific defines
@@ -80,6 +83,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // This mask is used to extract the write pin from a command byte
 #define WRITE_PIN_MASK          0x7f
+
+#define SCAN_CHAIN_SELECT       0x40
+#define SCAN_CHAIN_SELECT_MASK  0xf
 
 //  ReadStatus      00001nnn        n defines the status register
 #define READ_STATUS_MIN         8
@@ -138,8 +144,17 @@ typedef enum {
     AGENT_CONTROL_TYPE = 0,
     JTAG_TYPE,
     PROBE_MODE_TYPE,
-    DMA_TYPE
+    DMA_TYPE,
+    HARDWARE_LOG_EVENT = 5
 } headerType;
+
+// AGENT_CONTROL_TYPE commands
+#define NUM_IN_FLIGHT_MESSAGES_SUPPORTED_CMD 3
+#define OBTAIN_DOWNSTREAM_VERSION_CMD 5
+#define AGENT_CONFIGURATION_CMD 8
+
+// AGENT_CONFIGURATION_CMD types
+#define AGENT_CONFIG_TYPE_LOGGING 1
 
 // The protocol spec states the following:
 //    the status code that either contains 0x00 for successful completion
@@ -165,6 +180,27 @@ struct spi_message {
     unsigned char* buffer;
 } __attribute__((packed));
 
+typedef enum {
+    IPC_LogType_MIN = -1,
+    IPC_LogType_Trace = 0,
+    IPC_LogType_Debug,
+    IPC_LogType_Info,
+    IPC_LogType_Warning,
+    IPC_LogType_Error,
+    IPC_LogType_Off,
+    IPC_LogType_MAX,
+} IPC_LogType;
+
+typedef struct logging_configuration {
+    union {
+        struct {
+            uint8_t logging_level : 3;
+            uint8_t logging_stream : 3;
+        };
+        char value;
+    };
+} __attribute__((packed)) logging_configuration;
+
 //----------------------------------------------------
 //            Common Defines
 //----------------------------------------------------
@@ -176,13 +212,11 @@ struct spi_message {
 #define NUM_IN_FLIGHT_BUFFERS_TO_USE 20
 #define DEFAULT_PORT                 5123
 #define DEFAULT_FRU                  1 // usually the first FRU in most plats.
-#define NUM_IN_FLIGHT_MESSAGES_SUPPORTED_CMD 3
-#define OBTAIN_DOWNSTREAM_VERSION_CMD        5
 
 // Two simple rules for the version string are:
 // 1. less than 265 in length (or it will be truncated in the plugin)
 // 2. no dashes, as they are used later up the sw stack between components.
-static char asd_version[] = "ASD_BMC_v0.92";
+static char asd_version[] = "ASD_BMC_v0.96";
 
 typedef enum {
      CLOSE_CLIENT_EVENT = 1
@@ -194,9 +228,7 @@ typedef enum {
      SOCKET_READ_STATE_BUFFER,
 } SocketReadState;
 
-typedef struct sockaddr_in6 ClientAddrT;
-
-static int comm_fd = -1, host_fd = -1, event_fd = -1;
+static int host_fd = -1, event_fd = -1;
 static uint8_t prdy_timeout = 1;
 
 static struct spi_message out_msg;
@@ -208,6 +240,17 @@ static Target_Control_Handle* target_control_handle = NULL;
 
 int port_number = DEFAULT_PORT;
 uint8_t cpu_fru = DEFAULT_FRU;
+static logging_configuration remote_logging_config;
+
+static struct {
+    int n_port_number;
+    char *cp_certkeyfile;
+    extnet_hdlr_type_t e_extnet_type;
+    auth_hdlr_type_t e_auth_type;
+} sg_options = {DEFAULT_PORT, NULL, EXTNET_HDLR_NON_ENCRYPT, AUTH_HDLR_NONE};
+
+bool shouldRemoteLog(ASD_LogType asd_level);
+void sendRemoteLoggingMessage(ASD_LogType asd_level, const char* message);
 
 void showUsage(char **argv) {
     fprintf(stderr, "Usage: %s [option(s)]\n", argv[0]);
@@ -219,37 +262,53 @@ void showUsage(char **argv) {
     fprintf(stderr, "  -f <number>   fru number\n");        
     fprintf(stderr, "  -p <number>   Port number (default=%d)\n", DEFAULT_PORT);
     fprintf(stderr, "  -s            Route log messages to the system log\n\n");
+#ifndef REFERENCE_CODE
+    fprintf(stderr, "  -k file       Specify SSL Certificate/Key file\n\n");
+#endif
 }
+
+#ifndef REFERENCE_CODE
+#define OPTIONS "l:p:f:k:s"
+#else
+#define OPTIONS "l:p:f:s"
+#endif
 
 void process_command_line(int argc, char **argv) {
     int c = 0;
-    while ((c = getopt(argc, argv, "l:p:f:s")) != -1) {
+    ASD_LogType logType = LogType_None;
+    bool b_usesyslog = false;
+    while ((c = getopt(argc, argv, OPTIONS)) != -1) {
         switch (c) {
             case 'l': {
-                int i = atoi(optarg);
-                ASD_LogType type = LogType_None;
+                int i = atoi(optarg) + 1;
                 if(i > LogType_MIN && i < LogType_MAX)
-                    type = (ASD_LogType)i;
+                    logType = (ASD_LogType)i;
                 else
-                    fprintf(stderr, "invalid log type %d\n", i);
+                    fprintf(stderr, "invalid log logType %d\n", i);
 
-                ASD_initialize_log_settings(type);
                 break;
             }
             case 'p': {
                 int port = atoi(optarg);
                 fprintf(stderr, "Setting Port: %d\n", port);
-                port_number = port;
+                sg_options.n_port_number = port;
                 break;
             }
+            case 's': {
+                b_usesyslog = true;
+                break;
+            }
+#ifndef REFERENCE_CODE
+            case 'k':
+                sg_options.cp_certkeyfile = optarg;
+                sg_options.e_extnet_type = EXTNET_HDLR_TLS;
+                sg_options.e_auth_type = AUTH_HDLR_PAM;
+                break;
+#endif
             case 'f': {
                 uint8_t fru = atoi(optarg);
                 fprintf(stderr, "Setting FRU: %u\n", fru);
                 cpu_fru = fru;
-                break;
-            }
-            case 's': {
-                ASD_initialize_log_settings(LogType_Syslog);
                 break;
             }
             default:  // h, ?, and other
@@ -259,6 +318,7 @@ void process_command_line(int argc, char **argv) {
             }
         }
     }
+    ASD_initialize_log_settings(logType, b_usesyslog, &shouldRemoteLog, &sendRemoteLoggingMessage);
     if (optind < argc) {
         fprintf(stderr, "invalid non-option argument(s)\n");
         showUsage(argv);
@@ -274,10 +334,9 @@ void print_version() {
 }
 
 void exitAll() {
+    session_close_all();
     if (host_fd != -1)
         close(host_fd);
-    if (comm_fd != -1)
-        close(comm_fd);
     if (out_msg.buffer)
         free(out_msg.buffer);
     if (send_buffer)
@@ -292,19 +351,20 @@ void exitAll() {
     }
 }
 
-void send_error_message(int comm_fd, struct spi_message *input_message,
+void send_error_message(extnet_conn_t *p_extconn,
+                        struct spi_message *input_message,
                         ASDError cmd_stat) {
     ssize_t cnt = 0;
     struct spi_message error_message = {{0}};  // initialize the struct
 
-    if (comm_fd < 0)
+    if (p_extconn->sockfd < 0)
         return;
 
-    memcpy(&error_message.header, &(input_message->header), 
-        sizeof(struct message_header));
+    memcpy(&error_message.header, 
+        &(input_message->header), sizeof(struct message_header));
 
     error_message.header.cmd_stat = cmd_stat;
-    cnt = send(comm_fd, &error_message.header, sizeof(struct message_header), 0);
+    cnt = extnet_send(p_extconn, &error_message.header, sizeof(struct message_header));
     if (cnt != sizeof(error_message.header)) {
         ASD_log(LogType_Error, "Failed to send an error message to client: %d", cnt);
     }
@@ -317,7 +377,6 @@ int get_message_size(struct spi_message *s_message) {
         result = -1;
     return result;
 }
-
 
 STATUS write_event_config(const uint8_t data_byte) {
     STATUS status = ST_OK;
@@ -431,7 +490,7 @@ STATUS write_cfg(const writeCfg cmd, const unsigned char *data, int *cnt) {
 }
 
 STATUS read_status(const ReadType index, uint8_t pin,
-                   const unsigned char *return_buffer,
+                   unsigned char *return_buffer,
                    const int return_buffer_size, int *bytes_written) {
     STATUS status = ST_OK;
     *bytes_written = 0;
@@ -444,10 +503,10 @@ STATUS read_status(const ReadType index, uint8_t pin,
         status = target_read(target_control_handle, index, pin, &pinAsserted);
     }
     if (status == ST_OK) {
-        out_msg.buffer[(*bytes_written)++] = READ_STATUS_MIN + index;
-        out_msg.buffer[*bytes_written] = pin;
+        return_buffer[(*bytes_written)++] = READ_STATUS_MIN + index;
+        return_buffer[*bytes_written] = pin;
         if (pinAsserted)
-            out_msg.buffer[*bytes_written] |= 1 << 7;  // set 7th bit
+            return_buffer[*bytes_written] |= 1 << 7;  // set 7th bit
         (*bytes_written)++;
     }
     return status;
@@ -455,18 +514,20 @@ STATUS read_status(const ReadType index, uint8_t pin,
 
 STATUS send_out_msg_on_socket(struct spi_message *message) {
     int send_buffer_size = 0;
+    extnet_conn_t authd_conn;
 
-    if (comm_fd < 0 || message == NULL)
+    if (session_get_authenticated_conn(&authd_conn) != ST_OK || message == NULL) {
         return ST_ERR;
+    }
 
     int cnt = 0;
     int size = get_message_size(message);
     if (size == -1) {
-        ASD_log(LogType_Error, "Failed to send message because get message size failed.");
+        ASD_log(LogType_Error | LogType_NoRemote, "Failed to send message because get message size failed.");
         return ST_ERR;
     }
 
-    ASD_log(LogType_NETWORK,
+    ASD_log(LogType_NETWORK | LogType_NoRemote,
             "Response header:  origin_id: 0x%02x\n"
             "    reserved: 0x%02x    enc_bit: 0x%02x\n"
             "    type: 0x%02x        size_lsb: 0x%02x\n"
@@ -476,8 +537,8 @@ STATUS send_out_msg_on_socket(struct spi_message *message) {
             message->header.enc_bit, message->header.type,
             message->header.size_lsb, message->header.size_msb,
             message->header.tag, message->header.cmd_stat);
-    ASD_log(LogType_NETWORK, "Response Buffer size: %d", size);
-    ASD_log_buffer(LogType_NETWORK, message->buffer, size, "NetRsp");
+    ASD_log(LogType_NETWORK | LogType_NoRemote, "Response Buffer size: %d", size);
+    ASD_log_buffer(LogType_NETWORK | LogType_NoRemote, message->buffer, size, "NetRsp");
 
     send_buffer_size = sizeof(struct message_header) + size;
 
@@ -487,10 +548,10 @@ STATUS send_out_msg_on_socket(struct spi_message *message) {
         sizeof(message->header));
     memcpy(send_buffer+sizeof(message->header), message->buffer, size);
 
-    cnt = send(comm_fd, send_buffer, send_buffer_size, 0);
+    cnt = extnet_send(&authd_conn, send_buffer, send_buffer_size);
     pthread_mutex_unlock(&send_buffer_mutex);
     if (cnt != send_buffer_size) {
-        ASD_log(LogType_Error, "Failed to write message buffer to the socket: %d", cnt);
+        ASD_log(LogType_Error | LogType_NoRemote, "Failed to write message buffer to the socket: %d", cnt);
         return ST_ERR;
     }
 
@@ -522,7 +583,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
     memset(&out_msg.header, 0, sizeof(struct message_header));
     memset(out_msg.buffer, 0, MAX_DATA_SIZE);
 
-    ASD_log(LogType_JTAG, "NetReq size: %d", size);
+    ASD_log(LogType_JTAG, "NetReq tag: %d size: %d", s_message->header.tag, size);
     ASD_log_buffer(LogType_JTAG, s_message->buffer, size, "NetReq");
 
     while (cnt < size) {
@@ -538,13 +599,17 @@ STATUS process_jtag_message(struct spi_message *s_message) {
         } else if (cmd == WRITE_PINS) {
             uint8_t data = (int)s_message->buffer[cnt];
             bool assert = (data >> 7) == 1;
+            Pin pin = PIN_MIN;
             uint8_t index = data & WRITE_PIN_MASK;
             if (index > PIN_MIN && index < PIN_MAX) {
-                Pin pin = (Pin)index;
+                pin = (Pin)index;
                 status = target_write(target_control_handle, pin, assert);
                 cnt++;  // increment for the data byte
-            }
-            else {
+            } else if ((index & SCAN_CHAIN_SELECT) == SCAN_CHAIN_SELECT) {
+                int scan_chain = (index & SCAN_CHAIN_SELECT_MASK);
+                status = target_jtag_chain_select(target_control_handle, scan_chain);
+                cnt++;
+            } else {
                 ASD_log(LogType_Error, "Unexpected WRITE_PINS index: 0x%02x", index);
                 status = ST_ERR;
             }
@@ -569,11 +634,10 @@ STATUS process_jtag_message(struct spi_message *s_message) {
         } else if (cmd == WAIT_CYCLES_TCK_DISABLE ||
                    cmd == WAIT_CYCLES_TCK_ENABLE) {
             unsigned int number_of_cycles = s_message->buffer[cnt];
-            if (cmd == WAIT_CYCLES_TCK_ENABLE) {
-                status = JTAG_wait_cycles(jtag_handler, number_of_cycles);
-            } else {
-                ASD_log(LogType_Debug, "Disabled wait cycle of 0x%x", number_of_cycles);
-            }
+            if (number_of_cycles==0)
+                number_of_cycles = 256;
+            ASD_log(LogType_Debug, "Wait cycle of %d", number_of_cycles);
+            status = JTAG_wait_cycles(jtag_handler, number_of_cycles);
             cnt++;  // account for the number of cycles data byte
         } else if (cmd == WAIT_PRDY) {
             status = target_wait_PRDY(target_control_handle, prdy_timeout);
@@ -686,8 +750,12 @@ STATUS process_jtag_message(struct spi_message *s_message) {
         }
 
         if (status != ST_OK) {
+            extnet_conn_t authd_conn;
+
             ASD_log(LogType_Error, "Failed to process command 0x%02x", (int)cmd);
-            send_error_message(comm_fd, s_message, ASD_UNKNOWN_ERROR);
+            if (session_get_authenticated_conn(&authd_conn) != ST_OK) {
+                send_error_message(&authd_conn, s_message, ASD_UNKNOWN_ERROR);
+            }
             break;
         }
     }
@@ -701,14 +769,14 @@ STATUS process_jtag_message(struct spi_message *s_message) {
 
         status = send_out_msg_on_socket(&out_msg);
         if (status != ST_OK) {
-            ASD_log(LogType_Error, "Failed to send message back on the socket");
+            ASD_log(LogType_Error | LogType_NoRemote, "Failed to send message back on the socket");
         }
     }
 
     return status;
 }
 
-void process_message(int comm_fd, struct spi_message *s_message) {
+void process_message(extnet_conn_t *p_extcon, struct spi_message *s_message) {
     if ((s_message->header.type != JTAG_TYPE)
         || (s_message->header.cmd_stat != 0 &&
             s_message->header.cmd_stat != 0x80 &&
@@ -718,15 +786,71 @@ void process_message(int comm_fd, struct spi_message *s_message) {
                 "Type = 1 & cmd_stat=0 or 1 or 0x80\n"
                 "I got Type=%x, cmd_stat=%x",
                 s_message->header.type, s_message->header.cmd_stat);
-        send_error_message(comm_fd, s_message, ASD_UNKNOWN_ERROR);
+        send_error_message(p_extcon, s_message, ASD_UNKNOWN_ERROR);
         return;
     }
 
     if (process_jtag_message(s_message) != ST_OK) {
         ASD_log(LogType_Error, "Failed to process JTAG message");
-        send_error_message(comm_fd, s_message, ASD_UNKNOWN_ERROR);
+        send_error_message(p_extcon, s_message, ASD_UNKNOWN_ERROR);
         return;
     }
+}
+
+IPC_LogType ipc_asd_log_map[LogType_MAX];
+
+// This function maps the open ipc log levels to the levels
+// we have already defined in this codebase.
+void init_logging_map() {
+    ipc_asd_log_map[(int)LogType_None] = IPC_LogType_Off;
+    ipc_asd_log_map[(int)LogType_IRDR] = IPC_LogType_Trace;
+    ipc_asd_log_map[(int)LogType_NETWORK] = IPC_LogType_Trace;
+    ipc_asd_log_map[(int)LogType_JTAG] = IPC_LogType_Trace;
+    // no log message should be logged as all.
+    ipc_asd_log_map[(int)LogType_All] = IPC_LogType_Off;
+    ipc_asd_log_map[(int)LogType_Debug] = IPC_LogType_Debug;
+    ipc_asd_log_map[(int)LogType_Error] = IPC_LogType_Error;
+}
+
+bool shouldRemoteLog(ASD_LogType asd_level) {
+    bool result = false;
+    if (remote_logging_config.logging_level != IPC_LogType_Off) {
+        if (remote_logging_config.logging_level <= ipc_asd_log_map[asd_level])
+            result = true;
+    }
+    return result;
+}
+
+void sendRemoteLoggingMessage(ASD_LogType asd_level, const char* message) {
+    if (shouldRemoteLog(asd_level)) {
+        logging_configuration config_byte;
+        config_byte.logging_level = ipc_asd_log_map[asd_level];
+        config_byte.logging_stream = remote_logging_config.logging_stream;
+        struct spi_message msg = {{0}};
+        int message_length = strlen(message);
+        if (message_length > (MAX_DATA_SIZE-2))
+            message_length = (MAX_DATA_SIZE-2); // minus 2 for the 2 prefixing bytes.
+        int buffer_length = message_length + 2;
+        msg.buffer = (unsigned char*)malloc(buffer_length);
+        if (msg.buffer) {
+            msg.header.type = HARDWARE_LOG_EVENT;
+            msg.header.tag = 0;
+            msg.header.origin_id = 0;
+            msg.buffer[0] = AGENT_CONFIGURATION_CMD;
+            msg.buffer[1] = config_byte.value;
+            // Copy message into remaining buffer space.
+            memcpy(&msg.buffer[2], message, message_length);
+            // Store the message size into the msb and lsb fields. The size
+            // is the length of the message string, plus 2 for the 2 prefix
+            // bytes containing the stream and level bits and the cmd type.
+            msg.header.size_lsb = buffer_length & 0xFF;
+            msg.header.size_msb = (buffer_length >> 8) & 0x1F;
+            msg.header.cmd_stat = ASD_SUCCESS;
+            send_out_msg_on_socket(&msg);
+            free(msg.buffer);
+        }
+    }
+    return;
 }
 
 static STATUS sendPinEvent(ASD_EVENT value) {
@@ -745,7 +869,7 @@ static STATUS sendPinEvent(ASD_EVENT value) {
         target_handler_msg.buffer[0] = (value & 0xFF);
 
         if (send_out_msg_on_socket(&target_handler_msg) != ST_OK) {
-            ASD_log(LogType_Error, "Failed to send pin control event to client.");
+            ASD_log(LogType_Error | LogType_NoRemote, "Failed to send pin control event to client.");
             result = ST_ERR;
         }
         free(target_handler_msg.buffer);
@@ -777,7 +901,7 @@ static STATUS TargetHandlerCallback(eventTypes event, ASD_EVENT value) {
     return result;
 }
 
-STATUS on_client_connect(struct sockaddr_in6 *cl_addr) {
+STATUS on_client_connect(extnet_conn_t *p_extcon) {
     STATUS result = ST_OK;
     ASD_log(LogType_Debug, "Preparing for client connection");
 
@@ -798,11 +922,16 @@ STATUS on_client_connect(struct sockaddr_in6 *cl_addr) {
         result = ST_ERR;
     }
 
+    remote_logging_config.logging_level = IPC_LogType_Off;
+    remote_logging_config.logging_stream = 0;
+
     return result;
 }
 
 STATUS on_client_disconnect() {
     STATUS result = ST_OK;
+    remote_logging_config.logging_level = IPC_LogType_Off;
+    remote_logging_config.logging_stream = 0;
     ASD_log(LogType_Debug, "Cleaning up after client connection");
 
     pthread_mutex_destroy(&send_buffer_mutex);
@@ -822,14 +951,19 @@ STATUS on_client_disconnect() {
     return result;
 }
 
-void on_message_received(struct spi_message message, const int data_size) {
+void on_message_received(extnet_conn_t *p_extconn,
+                         struct spi_message message,
+                         const int data_size) {
     if (message.header.enc_bit) {
         ASD_log(LogType_Error, "enc_bit found be we don't support it!");
-        send_error_message(comm_fd, &message, ASD_UNKNOWN_ERROR);
+        send_error_message(p_extconn, &message, ASD_UNKNOWN_ERROR);
         return;
     }
     if (message.header.type == AGENT_CONTROL_TYPE) {
         memcpy(&out_msg.header, &message.header, sizeof(struct message_header));
+        // The plugin stores the command in the cmd_stat parameter.
+        // For the response, the plugin expects the same value in the first
+        // byte of the buffer.
         out_msg.buffer[0] = message.header.cmd_stat;
 
         switch(message.header.cmd_stat) {
@@ -847,23 +981,58 @@ void on_message_received(struct spi_message message, const int data_size) {
                 out_msg.header.size_msb = 0;
                 out_msg.header.cmd_stat = ASD_SUCCESS;
                 break;
+            case AGENT_CONFIGURATION_CMD:
+            {
+                // An agent configuration command was sent.
+                // The next byte is the Agent Config type.
+                int config_type = message.buffer[0];
+                // So far - we only support the logging config type
+                if (config_type == AGENT_CONFIG_TYPE_LOGGING) {
+                    // We will store the logging stream only for the sake of sending
+                    // it back to the IPC plugin. Technically the protocol is
+                    // defined in such a way as where the BMC could emit log
+                    // messages for several streams, but since we only have it
+                    // implemented with one stream, we wont do much with this
+                    // stored stream.
+                    remote_logging_config.value = message.buffer[1];
+                    ASD_log(LogType_Debug | LogType_NoRemote, "Remote logging command received. Stream: %d Level: %d",
+                            remote_logging_config.logging_stream, remote_logging_config.logging_level);
+                    out_msg.header.size_lsb = 1;
+                    out_msg.header.size_msb = 0;
+                    out_msg.header.cmd_stat = ASD_SUCCESS;
+                }
+                break;
+            }
+            default:
+            {
+                ASD_log(LogType_Debug, "Unsupported Agent Control command received %d", message.header.cmd_stat);
+            }
         }
         if(send_out_msg_on_socket(&out_msg) != ST_OK) {
-            ASD_log(LogType_Error, "Failed to send agent control message response.");
+            ASD_log(LogType_Error | LogType_NoRemote, "Failed to send agent control message response.");
         }
     } else {
-        process_message(comm_fd, &message);
+        process_message(p_extconn, &message);
     }
 }
 
+
+#ifndef REFERENCE_CODE
+#define EXTNET_DATA sg_options.cp_certkeyfile
+#else
+#define EXTNET_DATA NULL
+#endif
+
 int main(int argc, char **argv) {
-    int pollfd_cnt = 2;
-    struct sockaddr_in6 host_addr = {0};
-    struct pollfd poll_fds[3] = {{0}};
+    int pollfd_cnt;
+    struct pollfd poll_fds[CLIENT_FD_INDEX+MAX_SESSIONS] = {{0}};
     struct spi_message s_message = {{0}};
-    int opt = 1, data_size = 0;
+    int data_size = 0;
     SocketReadState read_state = SOCKET_READ_STATE_INITIAL;
     ssize_t read_index = 0;
+    init_logging_map();
+    remote_logging_config.logging_level = IPC_LogType_Off;
+    remote_logging_config.logging_stream = 0;
 
     print_version();
     process_command_line(argc, argv);
@@ -881,7 +1050,9 @@ int main(int argc, char **argv) {
         exitAll();
         return 1;
     }
-    comm_fd = -1;
+    extnet_init(sg_options.e_extnet_type, EXTNET_DATA, MAX_SESSIONS);
+    auth_init(sg_options.e_auth_type, NULL);
+    session_init();
 
     out_msg.buffer = (unsigned char*) malloc(MAX_DATA_SIZE);
     if (!out_msg.buffer) {
@@ -915,40 +1086,37 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    host_fd = socket(AF_INET6, SOCK_STREAM, 0);
-    if (host_fd < 0) {
-        ASD_log(LogType_Error, "Could not obtain the socket fd");
+    if (extnet_open_external_socket(NULL, sg_options.n_port_number, &host_fd) != ST_OK) {
+        ASD_log(LogType_Error, "Could not open the external socket");
         if(s_message.buffer)
             free(s_message.buffer);
         exitAll();
         return 1;
     }
-
-    setsockopt(host_fd, SOL_SOCKET, SO_REUSEADDR, &opt,sizeof(int));
-    setsockopt(host_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(int));
-
-    host_addr.sin6_family = AF_INET6;
-    host_addr.sin6_addr   = in6addr_any;
-    host_addr.sin6_port = htons(port_number);
-
-    if (bind(host_fd, (struct sockaddr *) &host_addr, sizeof(host_addr)) < 0) {
-        ASD_log(LogType_Error, "Could not bind. Ensure that another client is "
-                "not still connected.");
-        if(s_message.buffer)
-            free(s_message.buffer);
-        exitAll();
-        return 1;
-    }
-    listen(host_fd, 5);
     poll_fds[EVENT_FD_INDEX].fd = event_fd;
     poll_fds[EVENT_FD_INDEX].events = POLLIN;
     poll_fds[HOST_FD_INDEX].fd = host_fd;
     poll_fds[HOST_FD_INDEX].events = POLLIN;
-    poll_fds[CLIENT_FD_INDEX].fd = -1;
-    poll_fds[CLIENT_FD_INDEX].events = 0;
 
     while (1) {
-        if (poll(poll_fds, pollfd_cnt, -1) == -1) {
+        session_fdarr_t session_fds = {-1};
+        int n_clients = 0, i;
+        int n_timeout = -1;
+
+        if (session_getfds(session_fds, &n_clients, &n_timeout) != ST_OK) {
+            ASD_log(LogType_Debug, "Cannot get client session fds!");
+            if (s_message.buffer)
+                free(s_message.buffer);
+            exitAll();
+            return 1;
+        }
+        for (i=0; i<n_clients; i++) {
+            poll_fds[CLIENT_FD_INDEX+i].fd = session_fds[i];
+            poll_fds[CLIENT_FD_INDEX+i].events = POLLIN;
+            poll_fds[CLIENT_FD_INDEX+i].revents = 0;
+        }
+        pollfd_cnt = CLIENT_FD_INDEX + n_clients;
+        if (poll(poll_fds, pollfd_cnt, n_timeout) == -1) {
             break;
         }
 
@@ -960,138 +1128,175 @@ int main(int argc, char **argv) {
                 ASD_log(LogType_Error, "Error occurred receiving internal event.");
             } else {
                 if (value == CLOSE_CLIENT_EVENT) {
+                    extnet_conn_t authd_conn;
+
                     ASD_log(LogType_Debug, "Internal client close event received.");
-                    if (poll_fds[CLIENT_FD_INDEX].fd == -1) {
-                        ASD_log(LogType_Error, "Client already disconnected.");
+                    if (session_get_authenticated_conn(&authd_conn) != ST_OK) {
+                        ASD_log(LogType_Error, "Authorized client already disconnected.");
                     } else {
                         ASD_log(LogType_Error, "Remote JTAG disabled, disconnecting client.");
                         if (on_client_disconnect() != ST_OK) {
                             ASD_log(LogType_Error, "Client disconnect cleanup failed.");
                         }
-                        close(poll_fds[CLIENT_FD_INDEX].fd);
-                        comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
-                        poll_fds[CLIENT_FD_INDEX].events = 0;
-                        poll_fds[CLIENT_FD_INDEX].revents = 0;
-                        pollfd_cnt = 2;
+                        session_close(&authd_conn);
                         continue;
                     }
                 }
             }
         }
         if (poll_fds[HOST_FD_INDEX].revents & POLLIN) {
-            struct sockaddr_in6 addr;
-            uint len = sizeof(addr);
             ASD_log(LogType_Debug, "Client Connecting.");
-            int fd = accept(host_fd, (struct sockaddr *)&addr, &len);
-            if (fd == -1) {
+            extnet_conn_t new_extconn;
+
+            if (extnet_accept_connection(host_fd, &new_extconn) != ST_OK) {
                 ASD_log(LogType_Error, "Failed to accept incoming connection.");
                 continue;
-            } else if (poll_fds[CLIENT_FD_INDEX].fd == -1) {
-                if (on_client_connect(&addr) != ST_OK) {
-                    ASD_log(LogType_Error, "Connection attempt failed.");
-                    if (on_client_disconnect() != ST_OK) {
-                        ASD_log(LogType_Error, "Client disconnect cleanup failed.");
-                    }
-                    close(fd);
-                    continue;
-                }
-                comm_fd = fd;
-                poll_fds[CLIENT_FD_INDEX].fd = comm_fd;
-                poll_fds[CLIENT_FD_INDEX].events = POLLIN;
-                pollfd_cnt = 3;
-                read_state = SOCKET_READ_STATE_INITIAL;
-                ASD_log(LogType_Error, "Client connected.");
-            } else {
-                ASD_log(LogType_Debug, "Received 2nd connection. Refusing...");
-                close(fd);
+            }
+            // Create a session for the new connection
+            if (session_open(&new_extconn, SOCKET_READ_STATE_INITIAL) != ST_OK) {
+                ASD_log(LogType_Error,
+                        "Unable to add session for new connection fd %d",
+                        new_extconn.sockfd);
+                extnet_close_client(&new_extconn);
                 continue;
             }
-        }
-        if (comm_fd >= 0 && poll_fds[CLIENT_FD_INDEX].revents & POLLIN) {
-            switch (read_state) {
-                case SOCKET_READ_STATE_INITIAL: {
-                    memset(&s_message.header, 0, sizeof(struct message_header));
-                    memset(s_message.buffer, 0, MAX_DATA_SIZE);
-                    read_state = SOCKET_READ_STATE_HEADER;
-                    read_index = 0;
-                    // do not 'break' here, continue on and read the header
+            if (sg_options.e_auth_type == AUTH_HDLR_NONE) {
+                /* Special case where auth is not required. Stuff fd to the
+                 * poll_fds array to immediately process the connection.
+                 * Otherwise it may be timed out as unathenticated. */
+                if (CLIENT_FD_INDEX+n_clients < sizeof(poll_fds)/sizeof(poll_fds[0])) {
+                    poll_fds[CLIENT_FD_INDEX+n_clients].fd = new_extconn.sockfd;
+                    poll_fds[CLIENT_FD_INDEX+n_clients].revents |= POLLIN;
+                    n_clients++;
                 }
-                case SOCKET_READ_STATE_HEADER: {
-                    ssize_t cnt = recv(comm_fd, (void*)(&(s_message.header)+read_index),
-                                       sizeof(s_message.header)-read_index, 0);
-                    if (cnt < 1) {
-                        if(cnt == 0)
-                            ASD_log(LogType_Error, "Client disconnected");
-                        else
-                            ASD_log(LogType_Error, "Socket header receive failed: %d", cnt);
-                        if (on_client_disconnect() != ST_OK) {
-                            ASD_log(LogType_Error, "Client disconnect cleanup failed.");
-                        }
-                        close(poll_fds[CLIENT_FD_INDEX].fd);
-                        comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
-                        poll_fds[CLIENT_FD_INDEX].events = 0;
-                        poll_fds[CLIENT_FD_INDEX].revents = 0;
-                        pollfd_cnt = 2;
-                    } else if ((cnt + read_index) == sizeof(s_message.header)) {
-                        data_size = get_message_size(&s_message);
-                        if (data_size == -1) {
-                            ASD_log(LogType_Error, "Failed to read header size.");
-                            send_error_message(comm_fd, &s_message, ASD_UNKNOWN_ERROR);
+            }
+        }
+
+        session_close_expired_unauth();
+        for (i=0; i<n_clients; i++) {
+            if (poll_fds[CLIENT_FD_INDEX+i].revents & POLLIN) {
+                extnet_conn_t *p_extconn;
+
+                p_extconn = session_lookup_conn(poll_fds[CLIENT_FD_INDEX+i].fd);
+
+                if (!p_extconn) {
+                    ASD_log(LogType_Error, "Session for fd %d vanished!",
+                            poll_fds[CLIENT_FD_INDEX+i].fd);
+                    continue;
+                }
+
+                if (session_already_authenticated(p_extconn) != ST_OK) {
+                    // Authenticate the client
+                    if (auth_client_handshake(p_extconn) != ST_OK) {
+                        session_close(p_extconn);
+                    } else if (session_auth_complete(p_extconn) != ST_OK) {
+                        session_close(p_extconn);
+                    } else {
+                        ASD_log(LogType_Debug,
+                                "Session on fd %d now authenticated",
+                                p_extconn->sockfd);
+
+                        if (on_client_connect(p_extconn) != ST_OK) {
+                            ASD_log(LogType_Error, "Connection attempt failed.");
                             if (on_client_disconnect() != ST_OK) {
                                 ASD_log(LogType_Error, "Client disconnect cleanup failed.");
                             }
-                            close(poll_fds[CLIENT_FD_INDEX].fd);
-                            comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
-                            poll_fds[CLIENT_FD_INDEX].events = 0;
-                            poll_fds[CLIENT_FD_INDEX].revents = 0;
-                            pollfd_cnt = 2;
-                        } else if (data_size > 0) {
-                            read_state = SOCKET_READ_STATE_BUFFER;
-                            read_index = 0;
+                            session_close(p_extconn);
+                            continue;
+                        }
+                        ASD_log(LogType_Error,
+                                "Authenticated client connected on fd %d.",
+                                p_extconn->sockfd);
+                    }
+                    continue;
+                }
+
+                if (session_get_data(p_extconn, &read_state) != ST_OK) {
+                    ASD_log(LogType_Error, "Cannot get session data for fd %d!",
+                            p_extconn->sockfd);
+                    session_close(p_extconn);
+                    continue;
+                }
+                ASD_log(LogType_Debug | LogType_NoRemote, "read_state: %d", read_state);
+
+                switch (read_state) {
+                    case SOCKET_READ_STATE_INITIAL: {
+                        memset(&s_message.header, 0, sizeof(struct message_header));
+                        memset(s_message.buffer, 0, MAX_DATA_SIZE);
+                        read_state = SOCKET_READ_STATE_HEADER;
+                        session_set_data(p_extconn, read_state);
+                        read_index = 0;
+                        // do not 'break' here, continue on and read the header
+                    }
+                    case SOCKET_READ_STATE_HEADER: {
+                        ssize_t cnt = extnet_recv(p_extconn,
+                                           (void*)(&(s_message.header)+read_index),
+                                           sizeof(s_message.header)-read_index);
+                        if (cnt < 1) {
+                            if(cnt == 0)
+                                ASD_log(LogType_Error, "Client disconnected");
+                            else
+                                ASD_log(LogType_Error, "Socket header receive failed: %d", cnt);
+                            if (on_client_disconnect() != ST_OK) {
+                                ASD_log(LogType_Error, "Client disconnect cleanup failed.");
+                            }
+                            session_close(p_extconn);
+                        } else if ((cnt + read_index) == sizeof(s_message.header)) {
+                            data_size = get_message_size(&s_message);
+                            if (data_size == -1) {
+                                ASD_log(LogType_Error, "Failed to read header size.");
+                                send_error_message(p_extconn, &s_message, ASD_UNKNOWN_ERROR);
+                                if (on_client_disconnect() != ST_OK) {
+                                    ASD_log(LogType_Error, "Client disconnect cleanup failed.");
+                                }
+                                session_close(p_extconn);
+                            } else if (data_size > 0) {
+                                read_state = SOCKET_READ_STATE_BUFFER;
+                                session_set_data(p_extconn, read_state);
+                                read_index = 0;
+                            } else {
+                                // we have finished reading a message and there is no buffer to read.
+                                // Set back to initial state for next packet and process message.
+                                read_state = SOCKET_READ_STATE_INITIAL;
+                                session_set_data(p_extconn, read_state);
+                                on_message_received(p_extconn, s_message, data_size);
+                            }
                         } else {
-                            // we have finished reading a message and there is no buffer to read.
-                            // Set back to initial state for next packet and process message.
+                            read_index += cnt;
+                            ASD_log(LogType_Debug, "Socket header read not complete (%d of %d)",
+                                    read_index, sizeof(s_message.header));
+                        }
+                        break;
+                    }
+                    case SOCKET_READ_STATE_BUFFER: {
+                        ssize_t cnt = extnet_recv(p_extconn, (void*)(s_message.buffer+read_index),
+                                           data_size-read_index);
+                        if (cnt < 1) {
+                            if(cnt == 0)
+                                ASD_log(LogType_Error, "Client disconnected");
+                            else
+                                ASD_log(LogType_Error, "Socket buffer receive failed: %d", cnt);
+                            send_error_message(p_extconn, &s_message, ASD_UNKNOWN_ERROR);
+                            if (on_client_disconnect() != ST_OK) {
+                                ASD_log(LogType_Error, "Client disconnect cleanup failed.");
+                            }
+                            session_close(p_extconn);
+                        } else if ((cnt + read_index) == data_size) {
+                            // we have finished reading a packet. Set back to initial state for next packet.
                             read_state = SOCKET_READ_STATE_INITIAL;
-                            on_message_received(s_message, data_size);
+                            session_set_data(p_extconn, read_state);
+                            on_message_received(p_extconn, s_message, data_size);
+                        } else {
+                            read_index += cnt;
+                            ASD_log(LogType_Debug, "Socket header read not complete (%d of %d)",
+                                    read_index, data_size);
                         }
-                    } else {
-                        read_index += cnt;
-                        ASD_log(LogType_Debug, "Socket header read not complete (%d of %d)",
-                                read_index, sizeof(s_message.header));
+                        break;
                     }
-                    break;
-                }
-                case SOCKET_READ_STATE_BUFFER: {
-                    ssize_t cnt = recv(comm_fd, (void*)(s_message.buffer+read_index),
-                                       data_size-read_index, 0);
-                    if (cnt < 1) {
-                        if(cnt == 0)
-                            ASD_log(LogType_Error, "Client disconnected");
-                        else
-                            ASD_log(LogType_Error, "Socket buffer receive failed: %d", cnt);
-                        send_error_message(comm_fd, &s_message, ASD_UNKNOWN_ERROR);
-                        if (on_client_disconnect() != ST_OK) {
-                            ASD_log(LogType_Error, "Client disconnect cleanup failed.");
-                        }
-                        close(poll_fds[CLIENT_FD_INDEX].fd);
-                        comm_fd = poll_fds[CLIENT_FD_INDEX].fd = -1;
-                        poll_fds[CLIENT_FD_INDEX].events = 0;
-                        poll_fds[CLIENT_FD_INDEX].revents = 0;
-                        pollfd_cnt = 2;
-                    } else if ((cnt + read_index) == data_size) {
-                        // we have finished reading a packet. Set back to initial state for next packet.
-                        read_state = SOCKET_READ_STATE_INITIAL;
-                        on_message_received(s_message, data_size);
-                    } else {
-                        read_index += cnt;
-                        ASD_log(LogType_Debug, "Socket header read not complete (%d of %d)",
-                                read_index, data_size);
+                    default:
+                    {
+                        ASD_log(LogType_Error, "Invalid socket read state: %d", read_state);
                     }
-                    break;
-                }
-                default:
-                {
-                    ASD_log(LogType_Error, "Invalid socket read state: %d", read_state);
                 }
             }
         }

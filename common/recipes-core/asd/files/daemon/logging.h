@@ -32,31 +32,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 
 typedef enum {
-    LogType_MIN = -1,
+    LogType_MIN = 0,
     LogType_None,
     LogType_IRDR,
     LogType_NETWORK,
     LogType_JTAG,
+    // no log message should be logged as All.
     LogType_All,
     LogType_Debug,
     LogType_Error,
-    LogType_Syslog,
     LogType_MAX,
+    LogType_NoRemote = 0x80  // Special flag to indicate that the message should not be forwarded on to a remote logger.
 } ASD_LogType;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef bool (*ShouldLogFunctionPtr)(ASD_LogType);
+typedef void (*LogFunctionPtr)(ASD_LogType, const char*);
 
 void ASD_log(ASD_LogType log_type, const char* format, ...);
 
 void ASD_log_buffer(ASD_LogType log_type, const unsigned char* ptr, size_t len,
                     const char* prefixPtr);
 
-void ASD_initialize_log_settings(ASD_LogType type);
-
-#ifdef __cplusplus
-}
-#endif
+void ASD_initialize_log_settings(ASD_LogType type, bool b_usesyslog,
+                                 ShouldLogFunctionPtr should_log_ptr, LogFunctionPtr log_ptr);
 
 #endif  // _LOGGING_H_

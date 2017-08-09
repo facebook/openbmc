@@ -31,6 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <pthread.h>
 #include <stdbool.h>
 
+// Supported JTAG Scan Chains
+#define SCAN_CHAIN_0 0
+#define SCAN_CHAIN_1 1
+
 // ASD Protocol Event IDs
 typedef enum {
     ASD_EVENT_PLRSTDEASSRT = 1,
@@ -117,6 +121,7 @@ STATUS target_read(Target_Control_Handle* state, const ReadType statusRegister,
 STATUS target_write_event_config(Target_Control_Handle* state, const WriteConfig event_cfg,
                                  const bool enable);
 STATUS target_wait_PRDY(Target_Control_Handle* state, const uint8_t log2time);
+STATUS target_jtag_chain_select(Target_Control_Handle* state, const uint8_t scan_chain);
 
 #ifdef __cplusplus
 }

@@ -2,9 +2,11 @@
 all: asd
 
 LDFLAGS += -lpthread -lgpio -lpal -lasd-jtagintf
-CFLAGS += -Wall -Werror
+CFLAGS += -Wall -Werror -DREFERENCE_CODE
+C_SRCS := $(wildcard *.c)
+C_OBJS := ${C_SRCS:.c=.o}
 
-asd: logging.o socket_main.o target_handler.o
+asd: $(C_OBJS)
 	$(CC) $(CFLAGS) -std=gnu99 -o $@ $^ $(LDFLAGS)
 .PHONY: clean
 

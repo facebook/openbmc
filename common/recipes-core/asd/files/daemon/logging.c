@@ -34,10 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <syslog.h>
 
 static bool prnt_irdr = false, prnt_net = false,
-     prnt_jtagMsg = false, prnt_Debug = false,
-     write_to_syslog = false;
+     prnt_jtagMsg = false, prnt_Debug = false;
+static bool sg_b_writetosyslog = false;
+static ShouldLogFunctionPtr shouldLogCallback = NULL;
+static LogFunctionPtr loggingCallback = NULL;
 
-static bool ShouldLog(ASD_LogType log_type)
+#define CALLBACK_LOG_MESSAGE_LENGTH 256
+
+bool ShouldLog(ASD_LogType log_type)
 {
     bool log = false;
     if (log_type == LogType_IRDR && prnt_irdr) {
@@ -56,16 +60,28 @@ static bool ShouldLog(ASD_LogType log_type)
 
 void ASD_log(ASD_LogType log_type, const char *format, ...)
 {
-    if (!ShouldLog(log_type))
+    bool no_remote = (log_type & LogType_NoRemote) == LogType_NoRemote;
+    log_type &= ~LogType_NoRemote;
+    bool local_log = ShouldLog(log_type);
+    bool remoteLog = (shouldLogCallback && loggingCallback && !no_remote && shouldLogCallback(log_type));
+    if (!local_log && !remoteLog)
         return;
 
     va_list args;
     va_start(args, format);
-    if (write_to_syslog) {
-        vsyslog(LOG_USER, format, args);
-    } else {
-        vfprintf(stderr, format, args);
-        fprintf(stderr, "\n");
+    if (local_log) {
+        if (sg_b_writetosyslog) {
+            vsyslog(LOG_USER, format, args);
+        } else {
+            vfprintf(stderr, format, args);
+            fprintf(stderr, "\n");
+        }
+    }
+    if (remoteLog) {
+        char buffer[CALLBACK_LOG_MESSAGE_LENGTH];
+        memset(buffer, '\0', CALLBACK_LOG_MESSAGE_LENGTH);
+        vsnprintf(buffer, CALLBACK_LOG_MESSAGE_LENGTH, format, args);
+        loggingCallback(log_type, buffer);
     }
     va_end(args);
 }
@@ -80,7 +96,11 @@ void ASD_log_buffer(ASD_LogType log_type,
     char line[256];
     static const char itoh[] = "0123456789abcdef";
 
-    if (!ShouldLog(log_type))
+    bool no_remote = (log_type & LogType_NoRemote) == LogType_NoRemote;
+    log_type &= ~LogType_NoRemote;
+    bool local_log = ShouldLog(log_type);
+    bool remoteLog = (shouldLogCallback && loggingCallback && !no_remote && shouldLogCallback(log_type));
+    if (!local_log && !remoteLog)
         return;
 
     /*  0         1         2         3         4         5         6
@@ -98,26 +118,33 @@ void ASD_log_buffer(ASD_LogType log_type,
                 *h++ = ' ';
             ubuf++;
         }
+        if (remoteLog) {
+            loggingCallback(log_type, line);
+        }
         *h++ = '\n';
         i += l;
-        if (write_to_syslog)
-            syslog(LOG_USER, "%s", line);
-        else
-            fprintf(stderr, "%s", line);
+        if (local_log) {
+            if (sg_b_writetosyslog)
+                syslog(LOG_USER, "%s", line);
+            else
+                fprintf(stderr, "%s", line);
+        }
     }
 }
 
-void ASD_initialize_log_settings(ASD_LogType type)
+void ASD_initialize_log_settings(ASD_LogType type, bool b_writetosyslog,
+                                 ShouldLogFunctionPtr should_log_ptr, LogFunctionPtr log_ptr)
 {
+    sg_b_writetosyslog = b_writetosyslog;
+    shouldLogCallback = should_log_ptr;
+    loggingCallback = log_ptr;
+
     prnt_irdr = false;
     prnt_net = false;
     prnt_jtagMsg = false;
     prnt_Debug = false;
 
     switch (type) {
-        case LogType_Syslog:
-            write_to_syslog = true;
-            break;
         case LogType_IRDR: {
             prnt_irdr = true;
             fprintf(stderr, "IR/DR messages are enabled\n");
@@ -153,7 +180,8 @@ void ASD_initialize_log_settings(ASD_LogType type)
         case LogType_None:
             break;
         case LogType_MIN:
-        case LogType_MAX: {
+        case LogType_MAX:
+        case LogType_NoRemote: {
             fprintf(stderr, "Invalid log setting\n");
             break;
         }

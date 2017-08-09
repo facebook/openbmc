@@ -483,3 +483,8 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
 
     return ret;
 }
+
+int tck_mux_select_assert(const int fru, bool assert)
+{
+  return ST_OK;
+}

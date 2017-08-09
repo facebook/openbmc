@@ -1,10 +1,9 @@
 /*
 Copyright (c) 2017, Intel Corporation
-Copyright (c) 2017, Facebook Inc.
- 
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
- 
+
     * Redistributions of source code must retain the above copyright notice,
       this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright
@@ -13,7 +12,7 @@ modification, are permitted provided that the following conditions are met:
     * Neither the name of Intel Corporation nor the names of its contributors
       may be used to endorse or promote products derived from this software
       without specific prior written permission.
- 
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,29 +25,33 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _PIN_INTERFACE_H_
-#define _PIN_INTERFACE_H_
-#include <stdlib.h>
-#include <stdbool.h>
+/**
+ * @file session.h
+ * @brief Functions and definitions to track remote sessions
+ */
 
-int pin_initialize(const int fru);
-int pin_deinitialize(const int fru);
+#ifndef __SESSION_H
+#define __SESSION_H
 
-int power_debug_assert(const int fru, const bool assert);
-int power_debug_is_asserted(const int fru, bool* asserted);
+#include "ext_network.h"
 
-int preq_assert(const int fru, const bool assert);
-int preq_is_asserted(const int fru, bool* asserted);
+/** Max number of sessions */
+#define MAX_SESSIONS 5
+#define SESSION_AUTH_EXPIRE_TIMEOUT 15
 
-int prdy_is_event_triggered(const int fru, bool* triggered);
-int prdy_is_asserted(const int fru, bool* asserted);
+typedef int session_fdarr_t[MAX_SESSIONS];
 
-int platform_reset_is_event_triggered(const int fru, bool* triggered);
-int platform_reset_is_asserted(const int fru, bool* asserted);
-
-int xdp_present_is_event_triggered(const int fru, bool* triggered);
-int xdp_present_is_asserted(const int fru, bool* asserted);
-
-int tck_mux_select_assert(const int fru, bool assert);
+extern void session_init(void);
+extern extnet_conn_t *session_lookup_conn(int fd);
+extern STATUS session_open(extnet_conn_t *p_extconn, uint32_t u32_data);
+extern STATUS session_close(extnet_conn_t *p_extconn);
+extern void session_close_all(void);
+extern void session_close_expired_unauth(void);
+extern STATUS session_set_data(extnet_conn_t *p_extconn, uint32_t u32_data);
+extern STATUS session_get_data(extnet_conn_t *p_extconn, uint32_t *pu32_data);
+extern STATUS session_already_authenticated(extnet_conn_t *p_extconn);
+extern STATUS session_auth_complete(extnet_conn_t *p_extconn);
+extern STATUS session_get_authenticated_conn(extnet_conn_t *p_authd_conn);
+extern STATUS session_getfds(session_fdarr_t na_fds, int *pn_fds, int *pn_timeout);
 
 #endif

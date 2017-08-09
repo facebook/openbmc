@@ -87,7 +87,7 @@ int main (int argc, char **argv) {
     unsigned int irSize = 11; // 11 bits per uncore
     unsigned int numUncores = 0;
     unsigned int writeSize = 0;
-    unsigned int ir_command = 0;
+    unsigned long long ir_command = 0; // 8 bytes (enough to support 4 sockets)
     unsigned int shiftSize = 0;
     unsigned int fFlag = 0;
     unsigned int qFlag = 0;

@@ -336,3 +336,10 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
     *asserted = value == GPIO_VALUE_LOW ? true : false;
     return ST_OK;
 }
+
+int tck_mux_select_assert(const int fru, bool assert)
+{
+  gpio_write(&tck_mux_sel_gpio, assert ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  return ST_OK;
+}
+

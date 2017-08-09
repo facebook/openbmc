@@ -60,7 +60,17 @@ ERROR[92]="Rollback protection is jumping too far into the future"
 ERROR[99]="Rollback protection did not finish"
 
 vbs_addr() {
-    echo $(($VBS + $1))
+  echo $(($VBS + $1))
+}
+
+vbs_time() {
+  T=$1
+  if [[ "$T" = "0" || "$T" > "4000000000" ]]; then
+    echo "not set"
+  else
+    D=$(date -ud @$T)
+    echo "$D"
+  fi
 }
 
 main() {
@@ -81,27 +91,27 @@ main() {
 
   # Fallback times
   SECS=$(devmem $(vbs_addr 0x20) 32)
-  SUBORDINATE_LAST=$(date -ud @$((16#${SECS:2:8})))
+  SUBORDINATE_LAST=$(vbs_time $((16#${SECS:2:8})))
   echo "Certificates fallback:   $SUBORDINATE_LAST"
 
   SECS=$(devmem $(vbs_addr 0x2c) 32)
-  SUBORDINATE_CURRENT=$(date -ud @$((16#${SECS:2:8})))
+  SUBORDINATE_CURRENT=$(vbs_time $((16#${SECS:2:8})))
   echo "Certificates time:       $SUBORDINATE_CURRENT"
 
   SECS=$(devmem $(vbs_addr 0x24) 32)
-  UBOOT_LAST=$(date -ud @$((16#${SECS:2:8})))
+  UBOOT_LAST=$(vbs_time $((16#${SECS:2:8})))
   echo "U-Boot fallback:         $UBOOT_LAST"
 
   SECS=$(devmem $(vbs_addr 0x30) 32)
-  UBOOT_CURRENT=$(date -ud @$((16#${SECS:2:8})))
+  UBOOT_CURRENT=$(vbs_time $((16#${SECS:2:8})))
   echo "U-Boot time:             $UBOOT_CURRENT"
 
   SECS=$(devmem $(vbs_addr 0x28) 32)
-  KERNEL_LAST=$(date -ud @$((16#${SECS:2:8})))
+  KERNEL_LAST=$(vbs_time $((16#${SECS:2:8})))
   echo "Kernel fallback:         $KERNEL_LAST"
 
   SECS=$(devmem $(vbs_addr 0x34) 32)
-  KERNEL_CURRENT=$(date -ud @$((16#${SECS:2:8})))
+  KERNEL_CURRENT=$(vbs_time $((16#${SECS:2:8})))
   echo "Kernel time:             $KERNEL_CURRENT"
 
   # Flags

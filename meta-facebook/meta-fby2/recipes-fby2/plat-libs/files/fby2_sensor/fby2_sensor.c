@@ -874,43 +874,41 @@ return 0;
 /* Populates all sensor_info_t struct using the path to SDR dump */
 static int
 _sdr_init(char *path, sensor_info_t *sinfo) {
-int fd;
-uint8_t buf[MAX_SDR_LEN] = {0};
-uint8_t bytes_rd = 0;
-uint8_t snr_num = 0;
-sdr_full_t *sdr;
+  int fd;
+  uint8_t buf[MAX_SDR_LEN] = {0};
+  uint8_t bytes_rd = 0;
+  uint8_t snr_num = 0;
+  sdr_full_t *sdr;
 
-while (access(path, F_OK) == -1) {
-  sleep(5);
-}
+  while (access(path, F_OK) == -1) {
+    sleep(5);
+  }
 
-fd = open(path, O_RDONLY);
-if (fd < 0) {
-  syslog(LOG_ERR, "sdr_init: open failed for %s\n", path);
-  return -1;
-}
-
-while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
-  if (bytes_rd != sizeof(sdr_full_t)) {
-    syslog(LOG_ERR, "sdr_init: read returns %d bytes\n", bytes_rd);
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "sdr_init: open failed for %s\n", path);
     return -1;
   }
 
-  sdr = (sdr_full_t *) buf;
-  snr_num = sdr->sensor_num;
-  sinfo[snr_num].valid = true;
-  memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
-}
+  while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
+    if (bytes_rd != sizeof(sdr_full_t)) {
+      syslog(LOG_ERR, "sdr_init: read returns %d bytes\n", bytes_rd);
+      close(fd);
+      return -1;
+    }
 
-return 0;
+    sdr = (sdr_full_t *) buf;
+    snr_num = sdr->sensor_num;
+    sinfo[snr_num].valid = true;
+    memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
+  }
+
+  close(fd);
+  return 0;
 }
 
 int
 fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
-  int fd;
-  uint8_t buf[MAX_SDR_LEN] = {0};
-  uint8_t bytes_rd = 0;
-  uint8_t sn = 0;
   char path[64] = {0};
 
   switch(fru) {

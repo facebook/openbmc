@@ -1320,7 +1320,7 @@ int pal_get_airflow(float *airflow_cfm)
 }
 
 void
-pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   uint8_t *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int fd, ret;
@@ -1387,7 +1387,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 }
 
 void
-pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   uint8_t *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int i, fd, ret;

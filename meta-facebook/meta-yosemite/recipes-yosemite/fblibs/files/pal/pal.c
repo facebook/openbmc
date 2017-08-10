@@ -2831,12 +2831,12 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   return 0;
 }
 
-void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh)
+void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
 {
 
 }
 
-void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh)
+void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
 {
 
 }

@@ -3402,7 +3402,7 @@ unsigned char pal_sum_error_code(void) {
   return 0;
 }
 void
-pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   uint8_t status;
 
   if ((snr_num == MEZZ_SENSOR_TEMP) && (thresh == UNR_THRESH)) {
@@ -3416,7 +3416,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 }
 
 void
-pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   uint8_t status;
 
   if ((snr_num == MEZZ_SENSOR_TEMP) && (thresh == UNC_THRESH)) {

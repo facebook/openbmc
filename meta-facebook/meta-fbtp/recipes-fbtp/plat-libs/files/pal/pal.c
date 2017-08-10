@@ -6098,7 +6098,7 @@ is_cpu1_socket_occupy(void) {
 }
 
 void
-pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
   char thresh_name[10];
 
@@ -6171,7 +6171,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 }
 
 void
-pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
   char thresh_name[10];
 

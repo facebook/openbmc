@@ -536,13 +536,13 @@ pal_get_plat_sku_id(void)
 }
 
 void __attribute__((weak))
-pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh)
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
 {
   return;
 }
 
 void __attribute__((weak))
-pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh)
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
 {
   return;
 }

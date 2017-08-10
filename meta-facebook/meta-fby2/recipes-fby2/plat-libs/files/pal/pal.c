@@ -4231,8 +4231,7 @@ pal_get_platform_id(uint8_t *id) {
 }
 
 void
-pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
-  uint8_t fru = 1;
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;
@@ -4320,8 +4319,7 @@ pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh) {
 }
 
 void
-pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh) {
-  uint8_t fru = 1;
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;

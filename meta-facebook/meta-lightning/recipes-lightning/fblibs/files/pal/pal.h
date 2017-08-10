@@ -223,8 +223,8 @@ int pal_get_tray_location(char *self_name, uint8_t self_len, char *peer_name, ui
 int pal_reset_ssd_switch();
 void pal_log_clear(char *fru);
 int pal_get_airflow(float *airflow_cfm);
-void pal_sensor_assert_handle(uint8_t snr_num, float val, uint8_t thresh);
-void pal_sensor_deassert_handle(uint8_t snr_num, float val, uint8_t thresh);
+void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
+void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_err_code_enable(const uint8_t error_num);
 void pal_err_code_disable(const uint8_t error_num);
 int pal_read_error_code_file(uint8_t *error_code_arrray);

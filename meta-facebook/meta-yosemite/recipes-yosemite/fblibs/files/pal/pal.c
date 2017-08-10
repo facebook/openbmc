@@ -2645,18 +2645,16 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
 int
 pal_get_fan_speed(uint8_t fan, int *rpm) {
-  int dev;
-  int ret;
-  int rpm_h;
-  int rpm_l;
-  int cnt;
+   int ret;
+   float value;
 
-  if (fan >= pal_tach_cnt) {
-    syslog(LOG_INFO, "pal_get_fan_speed: fan number is invalid - %d", fan);
-    return -1;
-  }
+   // Redirect FAN to sensor cache
+   ret = pal_sensor_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
 
-  return read_fan_value(fan + 1, "fan%d_input", rpm);
+   if (0 == ret)
+      *rpm = (int) value;
+
+   return ret;
 }
 
 void
@@ -2891,5 +2889,3 @@ pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len
 int pal_get_plat_sku_id(void){
   return 0x01; // Yosemite V2
 }
-
-

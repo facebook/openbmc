@@ -21,15 +21,25 @@
 #include "Sensor.h"
 #include "SensorAccessMechanism.h"
 
-Sensor::Sensor (const std::string &name, Object* parent, uint8_t id, std::string unit, std::unique_ptr<SensorAccessMechanism> sensorAccess)
-             : Object(name, parent){
+namespace openbmc {
+namespace qin {
+
+Sensor::Sensor (const std::string &name,
+                Object* parent,
+                uint8_t id,
+                const std::string &unit,
+                std::unique_ptr<SensorAccessMechanism> sensorAccess)
+             : Object(name, parent) {
   this->id_ = id;
   this->unit_ = unit;
   this->sensorAccess_ = std::move(sensorAccess);
 }
 
-Sensor::Sensor (const std::string &name, Object* parent, std::string unit, std::unique_ptr<SensorAccessMechanism> sensorAccess)
-             : Object(name, parent){
+Sensor::Sensor (const std::string &name,
+                Object* parent,
+                const std::string &unit,
+                std::unique_ptr<SensorAccessMechanism> sensorAccess)
+             : Object(name, parent) {
   this->unit_ = unit;
   this->sensorAccess_ = std::move(sensorAccess);
 }
@@ -63,3 +73,6 @@ ReadResult Sensor::sensorRawRead(){
 
   return readResult;
 }
+
+} // namespace qin
+} // namespace openbmc

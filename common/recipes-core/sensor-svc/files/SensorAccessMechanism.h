@@ -21,6 +21,9 @@
 #pragma once
 #include <cstdint>
 
+namespace openbmc {
+namespace qin {
+
 //Acccess conditions
 #define ACCESS_COND_CHECK_FRUPOWERON (1 << 0)
 #define ACCESS_COND_CHECK_FRUPOWERON_5SEC (1 << 1)
@@ -32,9 +35,9 @@ enum ReadResult {
   READING_SUCCESS = 0
 };
 
-class Sensor;
+class Sensor;     //Forward declaration of class Sensor
+
 class SensorAccessMechanism {
-public:
 
 protected:
 
@@ -99,3 +102,6 @@ public:
     this->maxNofRetry_ = maxNofRetry;
   }
 };
+
+} // namespace qin
+} // namespace openbmc

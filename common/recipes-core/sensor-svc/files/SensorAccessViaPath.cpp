@@ -1,5 +1,6 @@
 /*
- * SensorAccessViaPath.cpp : Functions need to be implemented in platform specific directory
+ * SensorAccessViaPath.cpp : Functions need to be implemented
+ *                           in platform specific directory
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -21,8 +22,14 @@
 #include "SensorAccessViaPath.h"
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 bool SensorAccessViaPath::preRawRead(Sensor* s, float* value) {
   return true;
 }
 
 void SensorAccessViaPath::postRawRead(Sensor* s, float* value) {}
+
+} // namespace qin
+} // namespace openbmc

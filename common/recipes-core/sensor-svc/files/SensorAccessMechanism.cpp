@@ -1,5 +1,6 @@
 /*
- * SensorAccessMechanism.cpp : Functions need to be implemented in platform specific directory
+ * SensorAccessMechanism.cpp : Functions need to be implemented
+ *                             in platform specific directory
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -20,6 +21,9 @@
 
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 bool SensorAccessMechanism::checkAccessConditions(Sensor* s) {
   return true;
 }
@@ -27,3 +31,6 @@ bool SensorAccessMechanism::checkAccessConditions(Sensor* s) {
 void SensorAccessMechanism::rawRead(Sensor* s, float *value){
   readResult_ = READING_NA;
 }
+
+} // namespace qin
+} // namespace openbmc

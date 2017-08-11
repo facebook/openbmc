@@ -28,7 +28,6 @@
 #include <gio/gio.h>
 #include <dbus-utils/DBus.h>
 #include <dbus-utils/dbus-interface/DBusObjectInterface.h>
-#include <syslog.h>
 #include "SensorObjectTree.h"
 #include "SensorJsonParser.h"
 using namespace openbmc::qin;
@@ -46,7 +45,6 @@ static void eventLoop(GMainLoop* loop) {
 //Callback for DBus Name Lost
 void sensordSvcdOnDbusNameLost() {
   LOG(ERROR) << "DBus Name lost, exiting";
-  syslog(LOG_ERR, "DBus Name lost, exiting");
   exit(-1);
 }
 
@@ -67,28 +65,28 @@ int main (int argc, char* argv[]) {
   GMainLoop *loop;
   std::thread t;
 
-  LOG(INFO) << "Connecting the sensord to the system DBus daemon" << std::endl;
+  LOG(INFO) << "Connecting the sensord to the system DBus daemon";
   dbus.registerConnection();
 
-  LOG(INFO) << "Setting up the event loop and waiting for the connection" << std::endl;
+  LOG(INFO) << "Setting up the event loop and waiting for the connection";
   loop = g_main_loop_new(nullptr, FALSE);
   t = std::thread(eventLoop, loop);
   dbus.waitForConnection();
 
-  LOG(INFO) << "Creating sensor tree" << std::endl;
+  LOG(INFO) << "Creating sensor tree";
   SensorObjectTree sensorTree(sDbus, "org");
 
   sensorTree.addObject("openbmc","/org");
   sensorTree.addSensorService("SensorService", "/org/openbmc");
 
-  LOG(INFO) << "Main thread joining the event loop thread" << std::endl;
+  LOG(INFO) << "Main thread joining the event loop thread";
   t.join();
 
-  LOG(INFO) << "Quitting the event loop" << std::endl;
+  LOG(INFO) << "Quitting the event loop";
   g_main_loop_quit(loop);
   g_main_loop_unref(loop);
 
-  LOG(INFO) << "Unregistering the connection to the system DBus" << std::endl;
+  LOG(INFO) << "Unregistering the connection to the system DBus";
   dbus.unregisterConnection(); // unregister all objects
   return 0;
 }

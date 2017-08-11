@@ -21,12 +21,15 @@
 #pragma once
 #include <string>
 #include <object-tree/Object.h>
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 class FRU : public Object {
   private:
     uint8_t fruId_ = 0xFF;      // id of FRU, default 0xFF
-    uint8_t poweronFlag_ = 0;   // keeps track of time in seconds elapsed after FRU power on
+    uint8_t poweronFlag_ = 0;   // keeps track of time in seconds
+                                // elapsed after FRU power on
                                 // todo: rework on poweronFlag_
 
   public:
@@ -35,9 +38,8 @@ class FRU : public Object {
     /*
     * Contructor with fruId
     */
-    FRU(const std::string &name, Object* parent, uint8_t fruId) : Object(name, parent) {
-      this->fruId_ = fruId;
-    }
+    FRU(const std::string &name, Object* parent, uint8_t fruId)
+      : Object(name, parent) , fruId_(fruId) {}
 
     /*
     * Increments poweronFlag_
@@ -65,3 +67,6 @@ class FRU : public Object {
     */
     bool isFruOff();
 };
+
+} // namespace qin
+} // namespace openbmc

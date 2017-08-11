@@ -35,6 +35,9 @@
 #include <glog/logging.h>
 #include <openbmc/obmc-i2c.h>
 
+namespace openbmc {
+namespace qin {
+
 #define MAX_READ_RETRY 10
 #define VR_UPDATE_IN_PROGRESS "/tmp/stop_monitor_vr"
 #define VR_TIMEOUT 500 * 4 // 4 including temp, current, power, volt
@@ -42,6 +45,8 @@
 #define VR_TELEMETRY_CURR 0x15
 #define VR_TELEMETRY_POWER 0x2D
 #define VR_TELEMETRY_TEMP 0x29
+
+
 
 class SensorAccessVR : public SensorAccessMechanism {
   private:
@@ -51,7 +56,10 @@ class SensorAccessVR : public SensorAccessMechanism {
     uint8_t slaveAddr_;
 
   public:
-    SensorAccessVR(uint8_t busId, uint8_t loop, uint8_t reg, uint8_t slaveAddr) {
+    SensorAccessVR(uint8_t busId,
+                   uint8_t loop,
+                   uint8_t reg,
+                   uint8_t slaveAddr) {
       this->busId_ = busId;
       this->loop_ = loop;
       this->reg_ = reg;
@@ -74,14 +82,17 @@ class SensorAccessVR : public SensorAccessMechanism {
       static uint16_t vrUpdateInProgressCount = 0;
       if ( access(VR_UPDATE_IN_PROGRESS, F_OK) == 0 )
       {
-        //Avoid sensord unmonitoring vr sensors due to unexpected condition happen during vr_update
+        //Avoid sensord unmonitoring vr sensors
+        //due to unexpected condition happen during vr_update
         if ( vrUpdateInProgressCount > VR_TIMEOUT)
         {
           remove(VR_UPDATE_IN_PROGRESS);
           vrUpdateInProgressCount = 0;
         }
 
-        syslog(LOG_WARNING, "[%d]Stop Monitor VR Volt due to VR update is in progress\n", vrUpdateInProgressCount++);
+        syslog(LOG_WARNING,
+               "[%d]Stop Monitor VR Volt due to VR update is in progress\n",
+               vrUpdateInProgressCount++);
         LOG(INFO) << "VR update in progress ";
         return;
       }
@@ -195,3 +206,6 @@ class SensorAccessVR : public SensorAccessMechanism {
       }
     }
 };
+
+} // namespace qin
+} // namespace openbmc

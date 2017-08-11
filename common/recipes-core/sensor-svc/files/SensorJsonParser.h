@@ -21,11 +21,11 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include <functional>
 #include <nlohmann/json.hpp>
-#include <object-tree/Object.h>
 #include "SensorObjectTree.h"
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 /**
  * Json parser to parse the json file containing the information for
@@ -103,3 +103,6 @@ class SensorJsonParser {
       throw std::invalid_argument("JSON conflicts with the sensor tree");
     }
 };
+
+} // namespace qin
+} // namespace openbmc

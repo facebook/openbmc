@@ -1,5 +1,6 @@
 /*
- * DBusSensorServiceInterface.h: SensorService in SensorObjectTree registers on dbus using this interface
+ * DBusSensorServiceInterface.h: SensorService in SensorObjectTree registers
+ *                               on dbus using this interface
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,12 +20,11 @@
  */
 
 #pragma once
-#include <string>
-#include <glog/logging.h>
-#include <gio/gio.h>
 #include "DBusSensorTreeInterface.h"
 #include "SensorObjectTree.h"
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 class DBusSensorServiceInterface: public DBusSensorTreeInterface {
   public:
@@ -41,11 +41,21 @@ class DBusSensorServiceInterface: public DBusSensorTreeInterface {
     ~DBusSensorServiceInterface();
 
     /**
-     * All the subfunctions in the callback handler should comply
-     * with what is specified in the xml.
+     * Handles the callback by matching the method names in the DBus message
+     * to the functions. The above callbacks should be invoked here with
+     * method name specified. Checkout g_dbus_connection_register_object in
+     * gio library for details.
      */
-    static const char* xml;
+    static void methodCallBack(GDBusConnection*       connection,
+                               const char*            sender,
+                               const char*            objectPath,
+                               const char*            name,
+                               const char*            methodName,
+                               GVariant*              parameters,
+                               GDBusMethodInvocation* invocation,
+                               gpointer               arg);
 
+  private:
     /**
      * Callback for addFRU method, adds fru under specified path
      */
@@ -70,25 +80,14 @@ class DBusSensorServiceInterface: public DBusSensorTreeInterface {
                           const char*            objectPath);
 
     /**
-     * Callback for removeFRU method, removes specified FRU and its childer (FRUs and Sensors)
+     * Callback for removeFRU method, removes specified FRU
+     * and subtree under FRU
      */
     static void removeFRU(GDBusMethodInvocation* invocation,
                           GVariant*              parameters,
                           SensorObjectTree*      sensorTree,
                           const char*            objectPath);
-
-    /**
-     * Handles the callback by matching the method names in the DBus message
-     * to the functions. The above callbacks should be invoked here with
-     * method name specified. Checkout g_dbus_connection_register_object in
-     * gio library for details.
-     */
-    static void methodCallBack(GDBusConnection*       connection,
-                               const char*            sender,
-                               const char*            objectPath,
-                               const char*            name,
-                               const char*            methodName,
-                               GVariant*              parameters,
-                               GDBusMethodInvocation* invocation,
-                               gpointer               arg);
 };
+
+} // namespace qin
+} // namespace openbmc

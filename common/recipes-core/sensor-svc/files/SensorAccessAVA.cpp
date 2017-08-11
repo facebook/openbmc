@@ -1,5 +1,6 @@
 /*
- * SensorAccessAVA.cpp : Functions need to be implemented in platform specific directory
+ * SensorAccessAVA.cpp : Functions need to be implemented
+ *                       in platform specific directory
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -21,6 +22,12 @@
 #include "SensorAccessAVA.h"
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 void SensorAccessAVA::rawRead(Sensor* s, float *value) {
   readResult_ = READING_NA;
 }
+
+} // namespace qin
+} // namespace openbmc

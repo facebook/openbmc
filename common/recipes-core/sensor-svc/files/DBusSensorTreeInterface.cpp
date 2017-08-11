@@ -18,17 +18,18 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <ctime>
 #include <string>
-#include <stdexcept>
-#include <system_error>
+#include <vector>
 #include <glog/logging.h>
 #include <gio/gio.h>
-#include <object-tree/Object.h>
 #include "DBusSensorTreeInterface.h"
-#include <vector>
+#include "FRU.h"
+#include "Sensor.h"
 
-const char* DBusSensorTreeInterface::xml =
+namespace openbmc {
+namespace qin {
+
+static const char* xml =
   "<!DOCTYPE node PUBLIC"
   " \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
   " \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
@@ -41,9 +42,6 @@ const char* DBusSensorTreeInterface::xml =
   "    <method name='getSensorPathById'>"
   "      <arg type='y' name='id' direction='in'/>"
   "      <arg type='s' name='path' direction='out'/>"
-  "    </method>"
-  "    <method name='getSensorObjectPaths'>"
-  "      <arg type='as' name='path' direction='out'/>"
   "    </method>"
   "    <method name='getFRUList'>"
   "      <arg type='as' name='path' direction='out'/>"
@@ -90,50 +88,8 @@ static std::string getPathToCurrentObject(Object* obj){
 }
 
 /*
-* Helper function, returns vector of paths of all Sensors Under Object obj subtree
-*/
-static std::vector<std::string> getSensorObjectPathsRec(Object* obj) {
-  std::vector<std::string> sensorObjectPaths;
-
-  for (auto &it : obj->getChildMap()) {
-    if (dynamic_cast<Sensor*>(it.second) != nullptr){
-      sensorObjectPaths.push_back(it.second->getName());
-    }
-    else {
-      std::vector<std::string> childSubtree = getSensorObjectPathsRec(it.second);
-      if (!childSubtree.empty()){
-        for (auto &itVec : childSubtree) {
-          sensorObjectPaths.push_back(it.first + "/" + itVec);
-        }
-      }
-    }
-  }
-
-  return sensorObjectPaths;
-}
-
-void DBusSensorTreeInterface::getSensorObjectPaths(GDBusMethodInvocation* invocation,
-                                                   gpointer               arg) {
-  GVariantBuilder* builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-  Object* obj = static_cast<Object*>(arg);
-  LOG(INFO) << "Listing array of paths to sensors in subtree \"" << obj->getName()
-    << "\"";
-
-  std::vector<std::string> subtree = getSensorObjectPathsRec(obj);
-  std::string objectPath = getPathToCurrentObject(obj);
-
-  for (auto &it : subtree) {
-    std::string sensorPath = objectPath + "/" + it;
-    g_variant_builder_add(builder, "s", sensorPath.c_str());
-  }
-
-  g_dbus_method_invocation_return_value(invocation,
-                                        g_variant_new("(as)", builder));
-  g_variant_builder_unref(builder);
-}
-
-/*
-* Helper function, returns vector of FRU names of all FRUs Under Object obj subtree
+* Helper function, returns vector of FRU names of
+* all FRUs under Object obj subtree
 */
 static std::vector<std::string> getFRUListRec(Object* obj) {
   std::vector<std::string> sensorObjectPaths;
@@ -157,8 +113,7 @@ void DBusSensorTreeInterface::getFRUList(GDBusMethodInvocation* invocation,
                                          gpointer               arg) {
   GVariantBuilder* builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
   Object* obj = static_cast<Object*>(arg);
-  LOG(INFO) << "Listing array of Sensor Devices in subtree \"" << obj->getName()
-    << "\"";
+  LOG(INFO) << "getFRUList " << obj->getName();
 
   std::vector<std::string> fruList = getFRUListRec(obj);
   std::string objectPath = getPathToCurrentObject(obj);
@@ -201,9 +156,10 @@ static std::string getFruPathByNameRec(Object* obj, std::string fruName) {
   return path;
 }
 
-void DBusSensorTreeInterface::getFruPathByName(GDBusMethodInvocation* invocation,
-                                               GVariant*              parameters,
-                                               gpointer               arg){
+void DBusSensorTreeInterface::getFruPathByName(
+                                          GDBusMethodInvocation* invocation,
+                                          GVariant*              parameters,
+                                          gpointer               arg){
   Object* obj = static_cast<Object*>(arg);
   const gchar *fruName;
   g_variant_get(parameters, "(&s)", &fruName);
@@ -265,9 +221,11 @@ void DBusSensorTreeInterface::getFruPathById(GDBusMethodInvocation* invocation,
 }
 
 /*
-* Helper function, locates Sensor with sensorName under subtree and returns its path
+* Helper function, locates Sensor with sensorName under subtree and
+* returns its path
 */
-static std::string getSensorPathByNameRec(Object* obj, std::string sensorName) {
+static std::string getSensorPathByNameRec(Object* obj,
+                                          std::string sensorName) {
   std::string path;
 
   for (auto &it : obj->getChildMap()) {
@@ -292,9 +250,10 @@ static std::string getSensorPathByNameRec(Object* obj, std::string sensorName) {
   return path;
 }
 
-void DBusSensorTreeInterface::getSensorPathByName(GDBusMethodInvocation* invocation,
-                                                  GVariant*              parameters,
-                                                  gpointer               arg) {
+void DBusSensorTreeInterface::getSensorPathByName(
+                                             GDBusMethodInvocation* invocation,
+                                             GVariant*              parameters,
+                                             gpointer               arg) {
   Object* obj = static_cast<Object*>(arg);
   const gchar *sensorName;
   g_variant_get(parameters, "(&s)", &sensorName);
@@ -338,15 +297,17 @@ static std::string getSensorPathByIdRec(Object* obj, uint16_t id) {
   return path;
 }
 
-void DBusSensorTreeInterface::getSensorPathById(GDBusMethodInvocation* invocation,
-                                                GVariant*              parameters,
-                                                gpointer               arg) {
+void DBusSensorTreeInterface::getSensorPathById(
+                                             GDBusMethodInvocation* invocation,
+                                             GVariant*              parameters,
+                                             gpointer               arg) {
   Object* obj = static_cast<Object*>(arg);
 
   uint8_t id;
   g_variant_get(parameters, "(y)", &id);
 
-  LOG(INFO) << "getSensorPathById of " << (int)id << " from " << obj->getName();
+  LOG(INFO) << "getSensorPathById of " << (int)id
+            << " from " << obj->getName();
 
   std::string path = getSensorPathByIdRec(obj, id);
 
@@ -418,9 +379,6 @@ void DBusSensorTreeInterface::methodCallBack(
   else if (g_strcmp0(methodName, "getSensorPathById") == 0) {
     getSensorPathById(invocation, parameters, arg);
   }
-  else if (g_strcmp0(methodName, "getSensorObjectPaths") == 0) {
-    getSensorObjectPaths(invocation, arg);
-  }
   else if (g_strcmp0(methodName, "getFRUList") == 0) {
     getFRUList(invocation, arg);
   }
@@ -434,3 +392,6 @@ void DBusSensorTreeInterface::methodCallBack(
     getSensorObjects(invocation, arg);
   }
 }
+
+} // namespace qin
+} // namespace openbmc

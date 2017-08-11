@@ -22,7 +22,13 @@
 #include "Sensor.h"
 #include "SensorAccessMechanism.h"
 
+namespace openbmc {
+namespace qin {
+
 class SensorAccessAVA : public SensorAccessMechanism {
   protected:
     void rawRead(Sensor* s, float *value) override;
 };
+
+} // namespace qin
+} // namespace openbmc

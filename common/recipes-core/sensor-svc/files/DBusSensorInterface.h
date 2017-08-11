@@ -1,5 +1,6 @@
 /*
- * DBusSensorInterface.h: Sensor in SensorObjectTree registers on dbus using this interface
+ * DBusSensorInterface.h: Sensor in SensorObjectTree registers
+ *                        on dbus using this interface
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,15 +20,10 @@
  */
 
 #pragma once
-#include <string>
-#include <glog/logging.h>
-#include <gio/gio.h>
-#include <dbus-utils/dbus-interface/DBusObjectInterface.h>
-#include "FRU.h"
-#include "SensorService.h"
-#include "Sensor.h"
-using namespace openbmc::qin;
+#include <dbus-utils/DBusInterfaceBase.h>
 
+namespace openbmc {
+namespace qin {
 
 class DBusSensorInterface: public DBusInterfaceBase {
   public:
@@ -44,12 +40,6 @@ class DBusSensorInterface: public DBusInterfaceBase {
     ~DBusSensorInterface();
 
     /**
-     * All the subfunctions in the callback handler should comply
-     * with what is specified in the xml.
-     */
-    static const char* xml;
-
-    /**
      * Handles the callback by matching the method names in the DBus message
      * to the functions. The above callbacks should be invoked here with
      * method name specified. Checkout g_dbus_connection_register_object in
@@ -64,6 +54,7 @@ class DBusSensorInterface: public DBusInterfaceBase {
                                GDBusMethodInvocation* invocation,
                                gpointer               arg);
 
+  private:
     /**
      * Callback for sensorRead method
      * Return last read value of sensor and read status
@@ -92,3 +83,6 @@ class DBusSensorInterface: public DBusInterfaceBase {
     static void getSensorId(GDBusMethodInvocation* invocation,
                             gpointer               arg);
 };
+
+} // namespace qin
+} // namespace openbmc

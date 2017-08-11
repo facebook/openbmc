@@ -20,6 +20,12 @@
 
 #include "FRU.h"
 
+namespace openbmc {
+namespace qin {
+
 bool FRU::isFruOff() {
   return false;
 }
+
+} // namespace qin
+} // namespace openbmc

@@ -20,12 +20,13 @@
 
 #pragma once
 #include <string>
-#include <cstdio>
 #include <fstream>
 #include <sstream>
-#include <cstring>
-#include <syslog.h>
+#include <glog/logging.h>
 #include "SensorAccessMechanism.h"
+
+namespace openbmc {
+namespace qin {
 
 #define LARGEST_DEVICE_NAME 120
 #define GPIO_BAT_SENSE_EN_N 46
@@ -33,30 +34,23 @@
 
 class SensorAccessViaPath : public SensorAccessMechanism {
   private:
-    std::string path;          //sensor path
-    float unitDiv = 1;         //divisor for value read from path
+    std::string path_;          //sensor path
+    float unitDiv_ = 1;         //divisor for value read from path
 
   public:
-    SensorAccessViaPath(std::string path){
-      this->path = path;
-    }
+    SensorAccessViaPath(std::string path)
+      : path_(path) {}
 
-    SensorAccessViaPath(std::string path, float unitDiv) {
-      this->path = path;
-      this->unitDiv = unitDiv;
-    }
-
-    void setUnitDiv(float unitDiv) {
-      this->unitDiv = unitDiv;
-    }
+    SensorAccessViaPath(std::string path, float unitDiv)
+      : path_(path), unitDiv_(unitDiv) {}
 
     void rawRead(Sensor* s, float *value) override {
-      int pos = path.find('*');
+      int pos = path_.find('*');
       while (pos != std::string::npos){
-        //need to resolve path
+        //need to resolve path_
         char temp[LARGEST_DEVICE_NAME];
         std::ostringstream out;
-        out << "cd " << path.substr(0, pos + 1) << "; pwd";
+        out << "cd " << path_.substr(0, pos + 1) << "; pwd";
 
         // Get current working directory
         FILE* fp = popen(out.str().c_str(), "r");
@@ -68,22 +62,22 @@ class SensorAccessViaPath : public SensorAccessMechanism {
           int size = strlen(temp);
           temp[size-1] = '\0';
 
-          path = std::string(temp) + path.substr(pos + 1);
+          path_ = std::string(temp) + path_.substr(pos + 1);
         }
 
-        pos = path.find('*');
+        pos = path_.find('*');
       }
 
-      std::ifstream sensorFile (path.c_str());
+      std::ifstream sensorFile (path_.c_str());
       if (sensorFile.is_open())
       {
         sensorFile >> *value;
         sensorFile.close();
-        *value = (*value) / unitDiv;
+        *value = (*value) / unitDiv_;
         readResult_ = READING_SUCCESS;
       }
       else {
-        syslog(LOG_INFO, "Could not open sensor file at %s ", path.c_str());
+        LOG(INFO) << "Could not open sensor file at " << path_;
         readResult_ = READING_NA;
       }
     }
@@ -91,3 +85,6 @@ class SensorAccessViaPath : public SensorAccessMechanism {
     bool preRawRead(Sensor* s, float* value) override;
     void postRawRead(Sensor* s, float* value) override;
 };
+
+} // namespace qin
+} // namespace openbmc

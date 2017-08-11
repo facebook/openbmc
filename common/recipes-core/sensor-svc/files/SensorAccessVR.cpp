@@ -1,5 +1,6 @@
 /*
- * SensorAccessVR.cpp : Functions need to be implemented in platform specific directory
+ * SensorAccessVR.cpp : Functions need to be implemented
+ *                      in platform specific directory
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -21,6 +22,12 @@
 #include "SensorAccessVR.h"
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 bool SensorAccessVR::preRawRead(Sensor* s, float* value) {
   return true;
 }
+
+} // namespace qin
+} // namespace openbmc

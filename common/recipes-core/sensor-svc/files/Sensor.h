@@ -26,24 +26,34 @@
 #include <object-tree/Object.h>
 #include "SensorAccessMechanism.h"
 #include "FRU.h"
-using namespace openbmc::qin;
+
+namespace openbmc {
+namespace qin {
 
 class Sensor : public Object{
   private:
-    uint8_t id_ = 0xFF;                                    // Sensor Id
-    float value_;                                          // Last Read Sensor Value
-    std::string unit_;                                     // Unit of Sensor
-    std::unique_ptr<SensorAccessMechanism> sensorAccess_;  // sensorAccess mechanism
+    uint8_t id_ = 0xFF;                           // Sensor Id
+    float value_;                                 // Last Read Sensor Value
+    std::string unit_;                            // Unit of Sensor
+    std::unique_ptr<SensorAccessMechanism> sensorAccess_;
+                                                  // sensorAccess mechanism
 
   public:
     /*
      * Constructor
      */
-    Sensor (const std::string &name, Object* parent, uint8_t id, std::string unit, std::unique_ptr<SensorAccessMechanism> sensorAccess);
+    Sensor (const std::string &name,
+            Object* parent,
+            uint8_t id,
+            const std::string &unit,
+            std::unique_ptr<SensorAccessMechanism> sensorAccess);
     /*
      * Constructor without ID
      */
-    Sensor (const std::string &name, Object* parent, std::string unit, std::unique_ptr<SensorAccessMechanism> sensorAccess);
+    Sensor (const std::string &name,
+            Object* parent,
+            const std::string &unit,
+            std::unique_ptr<SensorAccessMechanism> sensorAccess);
 
     /*
      * Returns parent FRU
@@ -75,3 +85,6 @@ class Sensor : public Object{
      */
     ReadResult sensorRawRead();
 };
+
+} // namespace qin
+} // namespace openbmc

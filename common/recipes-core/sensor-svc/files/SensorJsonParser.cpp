@@ -18,23 +18,20 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <errno.h>
 #include <string>
-#include <memory>
 #include <fstream>
-#include <system_error>
-#include <stdexcept>
 #include <glog/logging.h>
 #include <nlohmann/json.hpp>
-#include <object-tree/Object.h>
-#include "SensorObjectTree.h"
-#include "SensorJsonParser.h"
 #include "SensorAccessMechanism.h"
 #include "SensorAccessViaPath.h"
 #include "SensorAccessAVA.h"
 #include "SensorAccessNVME.h"
 #include "SensorAccessINA230.h"
 #include "SensorAccessVR.h"
+#include "SensorJsonParser.h"
+
+namespace openbmc {
+namespace qin {
 
 std::unordered_map<std::string, SensorJsonParser::ObjectParser>
     SensorJsonParser::objectParserMap =
@@ -43,15 +40,6 @@ std::unordered_map<std::string, SensorJsonParser::ObjectParser>
       {"FRU",  SensorJsonParser::parseFRU},
       {"Sensor",  SensorJsonParser::parseSensor},
     };
-
-static int parseInt(std::string str) {
-  if ((str.length() > 2) && (str.at(0) == '0' && str.at(1) == 'x')){
-    return std::stoi (str,nullptr,16);
-  }
-  else {
-    return std::stoi (str);
-  }
-}
 
 void SensorJsonParser::parse(const std::string &jsonFile,
                              SensorObjectTree  &sensorTree,
@@ -151,6 +139,7 @@ void SensorJsonParser::parseSensor(const nlohmann::json &jObject,
   const std::string &unit = jObject.at("unit");
 
   Object* object = nullptr;
+  std::unique_ptr<SensorAccessMechanism> upSensorAccess;
 
   if (jObject.find("access") == jObject.end()) {
     LOG(WARNING) << "Access Mechanism for " << name << " not defined";
@@ -163,46 +152,56 @@ void SensorJsonParser::parseSensor(const nlohmann::json &jObject,
 
     if (type.compare("path") == 0) {
       const std::string &path = access.at("path");
-      std::unique_ptr<SensorAccessMechanism> upSensorAccess(new SensorAccessViaPath(path));
       try {
         //Set unitDiv if set in json file
         const std::string &unitDiv = access.at("unitDiv");
-        ((SensorAccessViaPath*)upSensorAccess.get())->setUnitDiv(std::stof(unitDiv));
+        upSensorAccess = std::unique_ptr<SensorAccessMechanism>
+                           (new SensorAccessViaPath(path, std::stof(unitDiv)));
       }
       catch (const std::out_of_range& oor) {
-        //Ignore if unitDiv is not mentioned
+        //if unitDiv is not mentioned
+        upSensorAccess = std::unique_ptr<SensorAccessMechanism>
+                           (new SensorAccessViaPath(path));
       }
-      object = sensorTree.addSensor(name, parentPath, id, unit, std::move(upSensorAccess));
     } else if (type.compare("AVA") == 0) {
-      std::unique_ptr<SensorAccessMechanism> upSensorAccess(new SensorAccessAVA());
-      object = sensorTree.addSensor(name, parentPath, id, unit, std::move(upSensorAccess));
+      upSensorAccess =  std::unique_ptr<SensorAccessMechanism>
+                           (new SensorAccessAVA());
     } else if (type.compare("INA230") == 0) {
-      std::unique_ptr<SensorAccessMechanism> upSensorAccess(new SensorAccessINA230());
-      object = sensorTree.addSensor(name, parentPath, id, unit, std::move(upSensorAccess));
+      upSensorAccess = std::unique_ptr<SensorAccessMechanism>
+                           (new SensorAccessINA230());
     } else if (type.compare("NVME") == 0) {
-      std::unique_ptr<SensorAccessMechanism> upSensorAccess(new SensorAccessNVME());
-      object = sensorTree.addSensor(name, parentPath, id, unit, std::move(upSensorAccess));
+      upSensorAccess = std::unique_ptr<SensorAccessMechanism>
+                           (new SensorAccessNVME());
     } else if (type.compare("VR") == 0) {
       const std::string &busId = access.at("busId");
       const std::string &loop = access.at("loop");
       const std::string &reg = access.at("reg");
       const std::string &slaveAddr = access.at("slaveAddr");
-      std::unique_ptr<SensorAccessMechanism> upSensorAccess(new SensorAccessVR(
-                                                                        parseInt(busId),
-                                                                        parseInt(loop),
-                                                                        parseInt(reg),
-                                                                        parseInt(slaveAddr)));
-      object = sensorTree.addSensor(name, parentPath, id, unit, std::move(upSensorAccess));
+      upSensorAccess =  std::unique_ptr<SensorAccessMechanism>
+                           (new SensorAccessVR(
+                                       std::stoi(busId, nullptr, 0),
+                                       std::stoi(loop, nullptr, 0),
+                                       std::stoi(reg, nullptr, 0),
+                                       std::stoi(slaveAddr, nullptr, 0)));
     } else if (type.compare("NONE") == 0) {
-      std::unique_ptr<SensorAccessMechanism> upSensorAccess(new SensorAccessMechanism());
-      object = sensorTree.addSensor(name, parentPath, id, unit, std::move(upSensorAccess));
+      upSensorAccess = std::unique_ptr<SensorAccessMechanism>
+                           (new SensorAccessMechanism());
     } else {
       LOG(ERROR) << "Specified sensor access mechanism " << type;
       throw std::invalid_argument("Invalid sensor api");
     }
+
+    object = sensorTree.addSensor(name,
+                                  parentPath,
+                                  id,
+                                  unit,
+                                  std::move(upSensorAccess));
   }
 
   if (object == nullptr) {
     throwObjectJsonConfliction(name, parentPath);
   }
 }
+
+} // namespace qin
+} // namespace openbmc

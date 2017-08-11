@@ -1,5 +1,6 @@
 /*
- * DBusSensorTreeInterface.h: Fru, SensorService in SensorObjectTree registers on dbus using this interface
+ * DBusSensorTreeInterface.h: Fru in SensorObjectTree registers
+ *                            on dbus using this interface
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -19,12 +20,10 @@
  */
 
 #pragma once
-#include <string>
-#include <glog/logging.h>
-#include <gio/gio.h>
-#include <dbus-utils/dbus-interface/DBusObjectInterface.h>
-#include "SensorObjectTree.h"
-using namespace openbmc::qin;
+#include <dbus-utils/DBusInterfaceBase.h>
+
+namespace openbmc {
+namespace qin {
 
 class DBusSensorTreeInterface: public DBusInterfaceBase {
   public:
@@ -41,11 +40,21 @@ class DBusSensorTreeInterface: public DBusInterfaceBase {
     ~DBusSensorTreeInterface();
 
     /**
-     * All the subfunctions in the callback handler should comply
-     * with what is specified in the xml.
+     * Handles the callback by matching the method names in the DBus message
+     * to the functions. The above callbacks should be invoked here with
+     * method name specified. Checkout g_dbus_connection_register_object in
+     * gio library for details.
      */
-    static const char* xml;
+    static void methodCallBack(GDBusConnection*       connection,
+                               const char*            sender,
+                               const char*            objectPath,
+                               const char*            name,
+                               const char*            methodName,
+                               GVariant*              parameters,
+                               GDBusMethodInvocation* invocation,
+                               gpointer               arg);
 
+  private:
     /**
      * Callback for getSensorPathById method
      * Return path to Sensor for input sensorid
@@ -98,18 +107,7 @@ class DBusSensorTreeInterface: public DBusInterfaceBase {
      */
     static void getSensorObjects(GDBusMethodInvocation* invocation,
                                  gpointer               arg);
-    /**
-     * Handles the callback by matching the method names in the DBus message
-     * to the functions. The above callbacks should be invoked here with
-     * method name specified. Checkout g_dbus_connection_register_object in
-     * gio library for details.
-     */
-    static void methodCallBack(GDBusConnection*       connection,
-                               const char*            sender,
-                               const char*            objectPath,
-                               const char*            name,
-                               const char*            methodName,
-                               GVariant*              parameters,
-                               GDBusMethodInvocation* invocation,
-                               gpointer               arg);
 };
+
+} // namespace qin
+} // namespace openbmc

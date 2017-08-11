@@ -21,9 +21,13 @@
 #pragma once
 #include <object-tree/Object.h>
 
-using namespace openbmc::qin;
+namespace openbmc {
+namespace qin {
 
 class SensorService : public Object{
   public:
     using Object::Object; // inherit constructor
 };
+
+} // namespace qin
+} // namespace openbmc

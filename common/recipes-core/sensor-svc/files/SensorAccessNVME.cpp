@@ -1,5 +1,6 @@
 /*
- * SensorAccessNVME.cpp : Functions need to be implemented in platform specific directory
+ * SensorAccessNVME.cpp : Functions need to be implemented
+ *                        in platform specific directory
  *
  * Copyright 2017-present Facebook. All Rights Reserved.
  *
@@ -21,6 +22,12 @@
 #include "SensorAccessNVME.h"
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 void SensorAccessNVME::rawRead(Sensor* s, float *value) {
   readResult_ = READING_NA;
 }
+
+} // namespace qin
+} // namespace openbmc

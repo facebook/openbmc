@@ -21,7 +21,13 @@
 #pragma once
 #include "SensorAccessMechanism.h"
 
+namespace openbmc {
+namespace qin {
+
 class SensorAccessINA230 : public SensorAccessMechanism {
   protected:
     void rawRead(Sensor* s, float *value) override;
 };
+
+} // namespace qin
+} // namespace openbmc

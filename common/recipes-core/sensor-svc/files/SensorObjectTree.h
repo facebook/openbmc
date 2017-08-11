@@ -31,7 +31,8 @@
 #include <dbus-utils/DBus.h>
 #include <cstdint>
 
-using namespace openbmc::qin;
+namespace openbmc {
+namespace qin {
 
 /**
  * Tree structured object superclass that manages the sensor devices and objects,
@@ -165,7 +166,8 @@ class SensorObjectTree : public ObjectTree {
       FRU* fru = nullptr;
 
       // SensorService registers sensorTree object on dbus
-      // sensorTree access is required to perform add and delete opeartion at SensorService object path
+      // sensorTree access is required to perform add
+      // and delete opeartion at SensorService object path
       if ((sensorService = dynamic_cast<SensorService*>(object)) != nullptr) {
         dbus->registerObject(path, interface, this);
       }
@@ -175,3 +177,6 @@ class SensorObjectTree : public ObjectTree {
       return object;
     }
 };
+
+} // namespace qin
+} // namespace openbmc

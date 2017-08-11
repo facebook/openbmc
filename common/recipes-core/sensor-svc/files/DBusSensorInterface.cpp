@@ -18,16 +18,16 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <ctime>
 #include <string>
-#include <stdexcept>
-#include <system_error>
 #include <glog/logging.h>
 #include <gio/gio.h>
-#include <object-tree/Object.h>
 #include "DBusSensorInterface.h"
+#include "Sensor.h"
 
-const char* DBusSensorInterface::xml =
+namespace openbmc {
+namespace qin {
+
+static const char* xml =
 "<!DOCTYPE node PUBLIC"
 " \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
 " \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
@@ -138,3 +138,6 @@ void DBusSensorInterface::methodCallBack(
     getSensorId(invocation, arg);
   }
 }
+
+} // namespace qin
+} // namespace openbmc

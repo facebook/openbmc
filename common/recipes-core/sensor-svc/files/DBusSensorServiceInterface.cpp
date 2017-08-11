@@ -18,19 +18,17 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <ctime>
 #include <string>
-#include <stdexcept>
-#include <system_error>
 #include <glog/logging.h>
 #include <gio/gio.h>
-#include <object-tree/Object.h>
 #include <nlohmann/json.hpp>
 #include "DBusSensorServiceInterface.h"
 #include "SensorJsonParser.h"
-#include <vector>
 
-const char* DBusSensorServiceInterface::xml =
+namespace openbmc {
+namespace qin {
+
+static const char* xml =
   "<!DOCTYPE node PUBLIC"
   " \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
   " \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
@@ -43,9 +41,6 @@ const char* DBusSensorServiceInterface::xml =
   "    <method name='getSensorPathById'>"
   "      <arg type='y' name='id' direction='in'/>"
   "      <arg type='s' name='path' direction='out'/>"
-  "    </method>"
-  "    <method name='getSensorObjectPaths'>"
-  "      <arg type='as' name='path' direction='out'/>"
   "    </method>"
   "    <method name='getFRUList'>"
   "      <arg type='as' name='path' direction='out'/>"
@@ -117,7 +112,8 @@ void DBusSensorServiceInterface::addFRU(GDBusMethodInvocation* invocation,
     SensorJsonParser::parseFRU(jObject, *sensorTree, fruParentPath);
   }
 
-  g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", status));
+  g_dbus_method_invocation_return_value (invocation,
+                                         g_variant_new ("(b)", status));
 }
 
 void DBusSensorServiceInterface::addSensors(GDBusMethodInvocation* invocation,
@@ -141,14 +137,16 @@ void DBusSensorServiceInterface::addSensors(GDBusMethodInvocation* invocation,
     while (g_variant_iter_loop (iter, "&s", &sensorJsonString)) {
       LOG(INFO) << "Sensor :" << sensorJsonString;
 
-      //Covert sensorJsonString to nlohmann::json jObject and add sensor to SensorTree
+      //Covert sensorJsonString to nlohmann::json jObject
+      //and add sensor to SensorTree
       nlohmann::json jObject = nlohmann::json::parse(sensorJsonString);
       SensorJsonParser::parseSensor(jObject, *sensorTree, frupath);
     }
   }
 
   g_variant_iter_free (iter);
-  g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", status));
+  g_dbus_method_invocation_return_value (invocation,
+                                         g_variant_new ("(b)", status));
 }
 
 /**
@@ -239,3 +237,6 @@ void DBusSensorServiceInterface::methodCallBack(
                                             sensorTree->getObject(objectPath));
   }
 }
+
+} // namespace qin
+} // namespace openbmc

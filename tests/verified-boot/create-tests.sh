@@ -219,7 +219,7 @@ mkdir -p "$OUTPUT_DIR/error/subordinates"
 $SCRIPTS/fit-signsub --mkimage $MKIMAGE --keydir $OUTPUT_DIR/error/kek \
   $OUTPUT_DIR/subordinates/subordinates.dtb $OUTPUT_DIR/error/subordinates/subordinates.dtb.signed
 
-echo "[+] Creating 4.40.1..."
+echo "[+] Creating 4.40..."
 $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
   --signed-subordinate $OUTPUT_DIR/error/subordinates/subordinates.dtb.signed \
   --keydir $OUTPUT_DIR/odm0 $OUTPUT_DIR/flashes/$FLASH_UNSIGNED \
@@ -228,30 +228,35 @@ ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.4.40.1
 
 create_bad_fit "u-boot" "4.40.2" 's/key-name-hint = "kek"/key-name-hint = "not-kek"/g'
 create_bad_fit "u-boot" "4.40.3" 's/data = <0xd00dfeed/data = <0xd00dfefd/g'
-create_bad_fit "u-boot" "4.42.1" 's/timestamp = <\(.*\)>;/timestamp = <0x10>;/g'
-
-BAD_HASH="0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10"
-MATCH='compression = "none";\(.*\)value = <\(.*\)>;\n\t\t\t\talgo\(.*\)config'
-MATCH=":a;N;\$!ba;s/${MATCH}/compression = \"none\";\\1value = "
-MATCH="${MATCH}<${BAD_HASH}>;\\n\\t\\t\\t\\talgo\\3/g"
-create_bad_fit "u-boot" "4.42.2" "$MATCH"
-
-create_bad_fit "u-boot" "4.42.3" 's/key-name-hint = "odm0"/key-name-hint = "kek"/g'
-create_bad_fit "u-boot" "4.42.4" 's/key-name-hint = "odm0"/key-name-hint = "odm1"/g'
-create_bad_fit "u-boot" "4.42.5" 's/compression = "none";/compression = "none";\n\n\t\t\thash@2 { algo = "sha256"; };/g'
 
 # Test-tests
 # create_bad_fit "u-boot" "0.0.1" 's/key-name-hint = "odm0"/key-name-hint = "odm0"/g'
 # create_bad_fit "os" "0.0.2" 's/key-name-hint = "odm0"/key-name-hint = "odm0"/g'
 
 echo "[+] Creating 4.43..."
-cp $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43
-dd if=/dev/random of=$OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43 bs=1 seek=540772 count=16 conv=notrunc
-ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.4.43
+cp $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43.1
+dd if=/dev/random of=$OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43.1 bs=1 seek=540772 count=16 conv=notrunc
+ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.4.43.1
+
+create_bad_fit "u-boot" "4.43.2" 's/key-name-hint = "odm0"/key-name-hint = "kek"/g'
+create_bad_fit "u-boot" "4.43.3" 's/key-name-hint = "odm0"/key-name-hint = "odm1"/g'
+create_bad_fit "u-boot" "4.43.4" 's/compression = "none";/compression = "none";\n\n\t\t\thash@2 { algo = "sha256"; };/g'
+
+# The timestamp is part of the signature.
+create_bad_fit "u-boot" "4.43.5" 's/timestamp = <\(.*\)>;/timestamp = <0x10>;/g'
+
+BAD_HASH="0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10"
+MATCH='compression = "none";\(.*\)value = <\(.*\)>;\n\t\t\t\talgo\(.*\)config'
+MATCH=":a;N;\$!ba;s/${MATCH}/compression = \"none\";\\1value = "
+MATCH="${MATCH}<${BAD_HASH}>;\\n\\t\\t\\t\\talgo\\3/g"
+create_bad_fit "u-boot" "4.43.6" "$MATCH"
 
 create_bad_fit "os" "6.60.1" 's/key-name-hint = "odm0"/key-name-hint = "bad"/g'
 create_bad_fit "os" "6.60.2" 's/key-name-hint = "odm0"/key-name-hint = "odm1"/g'
 create_bad_fit "os" "6.60.3" 's/timestamp = <\(.*\)>;/timestamp = <0x10>;/g'
+
+cp $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.6.60.4
+dd if=/dev/random of=$OUTPUT_DIR/flashes/$INPUT_NAME.CS1.6.60.4 bs=1 seek=921600 count=16 conv=notrunc
 
 echo "[+] Creating ODM1 signed 0.0.3"
 $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
@@ -260,6 +265,22 @@ $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
   --sign-os \
   $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.0.0.3
 ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.0.0.3
+
+# Create newly-signed (correct) firmware for fallback checks
+$SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
+  --sign-os \
+  --signed-subordinate $OUTPUT_DIR/subordinates/subordinates.dtb.signed \
+  --keydir $OUTPUT_DIR/odm0 \
+  $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.0.0 $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.next.1
+
+$SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
+  --sign-os \
+  --signed-subordinate $OUTPUT_DIR/subordinates/subordinates.dtb.signed \
+  --keydir $OUTPUT_DIR/odm0 \
+  $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.0.0 $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.next.2
+
+# This invalidates the signature but sets the timestamp too far into the future.
+create_bad_fit "u-boot" "4.43.5.1" 's/timestamp = <\(.*\)>;/timestamp = <0xEE6B2800>;/g'
 
 # Create a subordinate that does not include the ODM1 key.
 $SCRIPTS/fit-cs --template $SCRIPTS/store.dts.in --subordinate --subtemplate $SCRIPTS/sub.dts.in \
@@ -272,7 +293,7 @@ $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \
   --sign-os \
   --signed-subordinate $OUTPUT_DIR/odm0/odm0.dtb.signed \
   --keydir $OUTPUT_DIR/odm0 \
-  $OUTPUT_DIR/flashes/$INPUT_NAME.unsigned $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.future
-ln -s $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.future $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.future
+  $OUTPUT_DIR/flashes/$INPUT_NAME.unsigned $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.future
+ln -sf $INPUT_NAME.CS1.future $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.future
 
 echo -e "\n\nThe test firmware images are now located in $OUTPUT_DIR/flashes"

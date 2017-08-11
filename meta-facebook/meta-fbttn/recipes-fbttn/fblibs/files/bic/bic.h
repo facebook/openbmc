@@ -85,6 +85,12 @@ enum {
   UPDATE_BIC,
 };
 
+//Force Intel ME Recovery Command Options
+enum {
+  RECOVERY_MODE = 1,
+  RESTORE_FACTORY_DEFAULT,
+};
+
 // Bridge IC Spec
 typedef struct _bic_gpio_t {
   uint32_t pwrgood_cpu:1;
@@ -175,6 +181,8 @@ int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 
 int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+
+int me_recovery(uint8_t slot_id, uint8_t command);
 
 #ifdef __cplusplus
 } // extern "C"

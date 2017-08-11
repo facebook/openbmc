@@ -245,9 +245,17 @@ fw_update_slot(char **argv, uint8_t slot_id) {
   }
   if (!strcmp(argv[3], "--bios")) {
     pal_set_server_power(slot_id, SERVER_POWER_OFF);
+    printf("Powering Server to OFF state...\n");
+    sleep(10);
+    me_recovery(slot_id, RECOVERY_MODE);
+    sleep(1);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
+    sleep(1);
+    me_recovery(slot_id, RESTORE_FACTORY_DEFAULT);
+    printf("Update BIOS Completed, Server 12V-cycling...\n");
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(3);
+    printf("Powering Server to ON state...\n");
     pal_set_server_power(slot_id, SERVER_POWER_ON);
     return ret;
   }

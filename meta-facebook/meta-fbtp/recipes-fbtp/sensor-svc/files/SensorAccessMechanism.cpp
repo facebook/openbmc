@@ -21,6 +21,9 @@
 #include <openbmc/sensorsvcpal.h>
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 bool SensorAccessMechanism::checkAccessConditions(Sensor* s) {
   if (accessCondition_ & ACCESS_COND_CHECK_FRUPOWERON) {
     if (s->getFru()->isFruOff()) {
@@ -46,44 +49,60 @@ void SensorAccessMechanism::rawRead(Sensor* s, float *value){
     {
       switch (s->getId()) {
         case MB_SENSOR_HSC_IN_VOLT:
-          readResult_ = (ReadResult)pal_read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_VOLT, (float*) value);
+          readResult_ = (ReadResult)pal_read_sensor_reading_from_ME(
+                                                      MB_SENSOR_HSC_IN_VOLT,
+                                                      value);
           break;
         case MB_SENSOR_HSC_OUT_CURR:
-          readResult_ = (ReadResult)pal_read_hsc_current_value((float*) value);
+          readResult_ = (ReadResult)pal_read_hsc_current_value(value);
           break;
         case MB_SENSOR_HSC_IN_POWER:
-          readResult_ = (ReadResult)pal_read_sensor_reading_from_ME(MB_SENSOR_HSC_IN_POWER, (float*) value);
+          readResult_ = (ReadResult)pal_read_sensor_reading_from_ME(
+                                                      MB_SENSOR_HSC_IN_POWER,
+                                                      value);
           break;
 
         //CPU, DIMM, PCH Temp
         case MB_SENSOR_CPU0_TEMP:
         case MB_SENSOR_CPU1_TEMP:
-          readResult_ = (ReadResult)pal_read_cpu_temp(s->getId(), (float*) value);
+          readResult_ = (ReadResult)pal_read_cpu_temp(s->getId(), value);
           break;
         case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
         case MB_SENSOR_CPU0_DIMM_GRPB_TEMP:
         case MB_SENSOR_CPU1_DIMM_GRPC_TEMP:
         case MB_SENSOR_CPU1_DIMM_GRPD_TEMP:
-          readResult_ = (ReadResult)pal_read_dimm_temp(s->getId(), (float*) value);
+          readResult_ = (ReadResult)pal_read_dimm_temp(s->getId(), value);
           break;
         case MB_SENSOR_CPU0_PKG_POWER:
         case MB_SENSOR_CPU1_PKG_POWER:
-          readResult_ = (ReadResult)pal_read_cpu_package_power(s->getId(), (float*) value);
+          readResult_ = (ReadResult)pal_read_cpu_package_power(s->getId(),
+                                                               value);
           break;
         case MB_SENSOR_PCH_TEMP:
-          readResult_ = (ReadResult)pal_read_sensor_reading_from_ME(MB_SENSOR_PCH_TEMP, (float*) value);
+          readResult_ = (ReadResult)pal_read_sensor_reading_from_ME(
+                                                      MB_SENSOR_PCH_TEMP,
+                                                      value);
           break;
         //discrete
         case MB_SENSOR_POWER_FAIL:
-          readResult_ = (ReadResult)pal_read_CPLD_power_fail_sts (FRU_MB, s->getId(), (float*) value, s->getFru()->getPoweronFlag());
+          readResult_ = (ReadResult)pal_read_CPLD_power_fail_sts (
+                                              FRU_MB,
+                                              s->getId(),
+                                              value,
+                                              s->getFru()->getPoweronFlag());
           break;
         case MB_SENSOR_MEMORY_LOOP_FAIL:
-          readResult_ = (ReadResult)pal_check_postcodes(FRU_MB, s->getId(), (float*) value);
+          readResult_ = (ReadResult)pal_check_postcodes(FRU_MB,
+                                                        s->getId(),
+                                                        value);
           break;
         case MB_SENSOR_PROCESSOR_FAIL:
-          readResult_ = (ReadResult)pal_check_frb3(FRU_MB, s->getId(), (float*) value);
+          readResult_ = (ReadResult)pal_check_frb3(FRU_MB, s->getId(), value);
           break;
       }
     }
   }
 }
+
+} // namespace qin
+} // namespace openbmc

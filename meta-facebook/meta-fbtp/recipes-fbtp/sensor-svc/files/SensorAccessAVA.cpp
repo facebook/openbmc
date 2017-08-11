@@ -21,6 +21,12 @@
 #include <openbmc/sensorsvcpal.h>
 #include "SensorAccessAVA.h"
 
+namespace openbmc {
+namespace qin {
+
 void SensorAccessAVA::rawRead(Sensor* s, float *value) {
   readResult_ = (ReadResult)pal_read_ava_temp((uint8_t)s->getId(), value);
 }
+
+} // namespace qin
+} // namespace openbmc

@@ -22,6 +22,14 @@
 #include "SensorAccessINA230.h"
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 void SensorAccessINA230::rawRead(Sensor* s, float *value) {
-  readResult_ =  (ReadResult)pal_read_INA230(s->getId(), value, s->getFru()->getPoweronFlag());
+  readResult_ =  (ReadResult)pal_read_INA230(s->getId(),
+                                             value,
+                                             s->getFru()->getPoweronFlag());
 }
+
+} // namespace qin
+} // namespace openbmc

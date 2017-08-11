@@ -22,6 +22,9 @@
 #include "Sensor.h"
 #include <openbmc/sensorsvcpal.h>
 
+namespace openbmc {
+namespace qin {
+
 bool SensorAccessVR::preRawRead(Sensor* s, float* value) {
   switch(s->getId()) {
     case MB_SENSOR_VR_CPU1_VCCIN_TEMP:
@@ -55,3 +58,6 @@ bool SensorAccessVR::preRawRead(Sensor* s, float* value) {
 
   return true;
 }
+
+} // namespace qin
+} // namespace openbmc

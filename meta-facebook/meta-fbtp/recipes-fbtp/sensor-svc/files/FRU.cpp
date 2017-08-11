@@ -21,6 +21,9 @@
 #include "FRU.h"
 #include <openbmc/sensorsvcpal.h>
 
+namespace openbmc {
+namespace qin {
+
 bool FRU::isFruOff() {
   int ret;
   uint8_t status;
@@ -36,3 +39,6 @@ bool FRU::isFruOff() {
     return false;
   }
 }
+
+} // namespace qin
+} // namespace openbmc

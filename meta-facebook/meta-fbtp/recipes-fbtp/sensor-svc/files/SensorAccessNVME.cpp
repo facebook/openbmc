@@ -22,6 +22,12 @@
 #include "SensorAccessNVME.h"
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 void SensorAccessNVME::rawRead(Sensor* s, float *value) {
   readResult_ = (ReadResult)pal_read_nvme_temp(s->getId(), value);
 }
+
+} // namespace qin
+} // namespace openbmc

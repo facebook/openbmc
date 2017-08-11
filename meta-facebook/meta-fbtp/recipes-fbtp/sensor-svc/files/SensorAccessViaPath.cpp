@@ -26,6 +26,9 @@
 #include <openbmc/sensorsvcpal.h>
 #include "Sensor.h"
 
+namespace openbmc {
+namespace qin {
+
 bool SensorAccessViaPath::preRawRead(Sensor* s, float* value) {
   if (s->getId() == MB_SENSOR_P3V_BAT) {
     gpio_set(GPIO_BAT_SENSE_EN_N, GPIO_VALUE_HIGH);
@@ -53,3 +56,6 @@ void SensorAccessViaPath::postRawRead(Sensor* s, float* value) {
       break;
   }
 }
+
+} // namespace qin
+} // namespace openbmc

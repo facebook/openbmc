@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,30 +14,21 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-BIN_CONSOLED="/usr/local/bin/consoled"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+SRC_URI += "file://mTerm1/run \
+            file://mTerm2/run \
+            file://mTerm3/run \
+            file://mTerm4/run \
+           file://mTerm-service-setup.sh \
+           "
 
-if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
-then
-  SLOT=$1
-else
-  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
-  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
-  exit -1
-fi
+S = "${WORKDIR}"
 
-if [ $# -gt 1 ]; then
-  if [[ "$2" == "--history" ]]; then
-    cat $LOGFILE 2>/dev/null
-    exit 0
-  fi
-fi
-
-exec /usr/local/bin/mTerm_client $SLOT
-
-echo
-echo
-echo "-----------------------"
-echo "Exit from SOL session."
+# launch 4 mTerm services, 1 for each server
+MTERM_SERVICES = "mTerm1 \
+                  mTerm2 \
+                  mTerm3 \
+                  mTerm4 \
+                 "

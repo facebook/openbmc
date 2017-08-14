@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <dirent.h>
 #include <openbmc/obmc-i2c.h>
 #include "yosemite_sensor.h"
 
@@ -274,20 +275,66 @@ read_device_float(const char *device, float *value) {
   return 0;
 }
 
+
 static int
-read_temp(const char *device, float *value) {
+get_current_dir(const char *device, char *dir_name) {
   char full_name[LARGEST_DEVICE_NAME + 1];
+  DIR *dir = NULL;
+  struct dirent *ent;
+
+  snprintf(full_name, sizeof(full_name), "%s/hwmon", device);
+  dir = opendir(full_name);
+  if (dir == NULL) {
+    goto close_dir_out;
+  }
+  while ((ent = readdir(dir)) != NULL) {
+    if (strstr(ent->d_name, "hwmon")) {
+      // found the correct 'hwmon??' directory
+      snprintf(dir_name, sizeof(full_name), "%s/hwmon/%s/",
+      device, ent->d_name);
+      goto close_dir_out;
+    }
+  }
+
+close_dir_out:
+  if (dir != NULL) {
+    if (closedir(dir)) {
+      syslog(LOG_ERR, "%s closedir failed, errno=%s\n",
+              __FUNCTION__, strerror(errno));
+    }
+  }
+  return 0;
+}
+
+
+static int
+read_temp_attr(const char *device, const char *attr, float *value) {
+  char full_dir_name[LARGEST_DEVICE_NAME + 1];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
-  if (read_device(full_name, &tmp)) {
+  // Get current working directory
+  if (get_current_dir(device, dir_name))
+  {
     return -1;
+  }
+  snprintf(
+      full_dir_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+
+
+  if (read_device(full_dir_name, &tmp)) {
+     return -1;
   }
 
   *value = ((float)tmp)/UNIT_DIV;
 
   return 0;
+}
+
+
+static int
+read_temp(const char *device, float *value) {
+  return read_temp_attr(device, "temp1_input", value);
 }
 
 static int
@@ -311,12 +358,20 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char *device, float *value) {
-  char full_name[LARGEST_DEVICE_NAME];
+read_hsc_value(const char* attr, const char *device, float *value) {
+  char full_dir_name[LARGEST_DEVICE_NAME];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", HSC_DEVICE, device);
-  if(read_device(full_name, &tmp)) {
+  // Get current working directory
+  if (get_current_dir(device, dir_name))
+  {
+    return -1;
+  }
+  snprintf(
+      full_dir_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+
+  if(read_device(full_dir_name, &tmp)) {
     return -1;
   }
 
@@ -335,7 +390,8 @@ read_nic_temp(uint8_t snr_num, float *value) {
   if (snr_num == MEZZ_SENSOR_TEMP) {
     dev = open(I2C_DEV_NIC, O_RDWR);
     if (dev < 0) {
-      syslog(LOG_ERR, "open() failed for read_nic_temp");
+      syslog(LOG_ERR, "open() failed for read_nic_temp, errno=%s",
+             strerror(errno));
       return -1;
     }
     /* Assign the i2c device address */
@@ -873,13 +929,13 @@ yosemite_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
         // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, (float*) value);
+          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE, (float*) value);
         case SP_SENSOR_HSC_OUT_CURR:
-          return read_hsc_value(HSC_OUT_CURR, (float*) value);
+          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE, (float*) value);
         case SP_SENSOR_HSC_TEMP:
-          return read_hsc_value(HSC_TEMP, (float*) value);
+          return read_hsc_value(HSC_TEMP, HSC_DEVICE, (float*) value);
         case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_value(HSC_IN_POWER, (float*) value);
+          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE, (float*) value);
       }
       break;
 
@@ -892,4 +948,3 @@ yosemite_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
   }
 }
-

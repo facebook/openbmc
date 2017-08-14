@@ -40,7 +40,15 @@
 #define SIZE_IANA_ID 3
 #define SIZE_SYS_GUID 16
 
+// declare for clearing BIOS flag
+#define BIOS_TIMEOUT 600
+// Boot valid flag
+#define BIOS_BOOT_VALID_FLAG (1U << 7)
+#define CMOS_VALID_FLAG      (1U << 1)
+
 extern void plat_lan_init(lan_config_t *lan);
+
+static uint8_t IsTimerStart[MAX_NODES] = {0};
 
 // TODO: Once data storage is finalized, the following structure needs
 // to be retrieved/updated from persistant backend storage
@@ -65,6 +73,55 @@ static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
 
 /*
+ **Function to handle with clearing BIOS flag
+ */
+static void
+*clear_bios_data_timer(void *ptr)
+{
+  int timer = 0;
+  int slot_id = (int)ptr;
+  int oldstate;
+  uint8_t boot[SIZE_BOOT_ORDER] = {0};
+  uint8_t res_len;
+
+  pthread_detach(pthread_self());
+
+  while (timer <= BIOS_TIMEOUT) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "[%s][%lu] Timer: %d\n", __func__, pthread_self(), timer);
+#endif
+    sleep(1);
+
+    timer++;
+  }
+
+  //get boot order setting
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+  pal_get_boot_order(slot_id, NULL, boot, &res_len);
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s][%lu] Get: %x %x %x %x %x %x\n", __func__, pthread_self() ,boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
+#endif
+
+  //clear boot-valid and cmos bits due to timeout:
+  boot[0] &= ~(BIOS_BOOT_VALID_FLAG | CMOS_VALID_FLAG);
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s][%lu] Set: %x %x %x %x %x %x\n", __func__, pthread_self() , boot[0], boot[1], boot[2], boot[3], boot[4], boot[5]);
+#endif
+
+  //set data
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+  pal_set_boot_order(slot_id, boot, NULL, &res_len);
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+
+  IsTimerStart[slot_id - 1] = false;
+
+  pthread_exit(0);
+}
+
+/*
  * Function(s) to handle IPMI messages with NetFn: Chassis
  */
 // Get Chassis Status (IPMI/Section 28.2)
@@ -86,6 +143,7 @@ chassis_get_status (unsigned char *response, unsigned char *res_len)
   *res_len = data - &res->data[0];
 }
 
+#ifdef CHASSIS_GET_BOOT_OPTION_SUPPORT
 // Get System Boot Options (IPMI/Section 28.12)
 static void
 chassis_get_boot_options (unsigned char *request, unsigned char *response,
@@ -147,6 +205,7 @@ chassis_get_boot_options (unsigned char *request, unsigned char *response,
     *res_len = data - &res->data[0];
   }
 }
+#endif
 
 // Handle Chassis Commands (IPMI/Section 28)
 static void
@@ -163,9 +222,11 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
     case CMD_CHASSIS_GET_STATUS:
       chassis_get_status (response, res_len);
       break;
+#ifdef CHASSIS_GET_BOOT_OPTION_SUPPORT
     case CMD_CHASSIS_GET_BOOT_OPTIONS:
       chassis_get_boot_options (request, response, res_len);
       break;
+#endif
     default:
       res->cc = CC_INVALID_CMD;
       break;
@@ -1277,6 +1338,56 @@ oem_set_dimm_info (unsigned char *request, unsigned char *response,
 }
 
 static void
+oem_set_boot_order(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+  int slot_id = req->payload_id;
+  static pthread_t bios_timer_tid[MAX_NODES];
+
+  if (IsTimerStart[req->payload_id - 1]) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "[%s] Close the previous thread\n", __func__);
+#endif
+    pthread_cancel(bios_timer_tid[req->payload_id - 1]);
+  }
+
+  if (req->data[0] & (BIOS_BOOT_VALID_FLAG | CMOS_VALID_FLAG)) {
+    // create timer thread
+    ret = pthread_create(&bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, (void *)slot_id);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "[%s] Create BIOS timer thread failed!\n", __func__);
+
+      res->cc = CC_NODE_BUSY;
+      *res_len = 0;
+      return;
+    }
+
+    IsTimerStart[req->payload_id - 1] = true;
+  }
+
+  ret = pal_set_boot_order(req->payload_id, req->data, res->data, res_len);
+  res->cc = (ret == 0) ? CC_SUCCESS : CC_INVALID_PARAM;
+}
+
+static void
+oem_get_boot_order(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+
+  ret = pal_get_boot_order(req->payload_id, req->data, res->data, res_len);
+#ifdef DEBUG
+  syslog(LOG_WARNING, "[%s] Get: %x %x %x %x %x %x\n", __func__, res->data[0], res->data[1], res->data[2], res->data[3], res->data[4], res->data[5]);
+#endif
+  res->cc = (ret == 0) ? CC_SUCCESS : CC_INVALID_PARAM;
+}
+
+static void
 oem_set_post_start (unsigned char *request, unsigned char *response,
                   unsigned char *res_len)
 {
@@ -1358,6 +1469,12 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_DIMM_INFO:
       oem_set_dimm_info (request, response, res_len);
+      break;
+    case CMD_OEM_SET_BOOT_ORDER:
+      oem_set_boot_order(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_BOOT_ORDER:
+      oem_get_boot_order(request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_POST_START:
       oem_set_post_start (request, response, res_len);

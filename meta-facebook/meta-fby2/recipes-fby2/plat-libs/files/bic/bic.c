@@ -28,6 +28,7 @@
 #include <syslog.h>
 #include <errno.h>
 #include <time.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "bic.h"
@@ -627,6 +628,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   int ret = -1, rc;
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
+  struct rlimit mqlim;
 
   syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
 
@@ -679,6 +681,12 @@ _update_bic_main(uint8_t slot_id, char *path) {
   printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
   if (!_is_bic_update_ready(slot_id)) {
+    mqlim.rlim_cur = RLIM_INFINITY;
+    mqlim.rlim_max = RLIM_INFINITY;
+    if (setrlimit(RLIMIT_MSGQUEUE, &mqlim) < 0) {
+      goto error_exit;
+    }
+
     // Restart ipmb daemon with "bicup" for bic update
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "/usr/local/bin/ipmbd %d %d bicup > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);

@@ -153,6 +153,7 @@
 #define READING_SKIP 1
 
 #define NIC_MAX_TEMP 125
+#define NIC_MIN_TEMP  0
 #define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
 #define MAX_READ_RETRY 10
@@ -930,7 +931,7 @@ read_nic_temp(const char *device, float *value) {
   *value = ((float)tmp)/UNIT_DIV;
 
   // Workaround: handle when NICs wrongly report higher temperatures
-  if (*value > NIC_MAX_TEMP) {
+  if (( *value > NIC_MAX_TEMP ) || ( *value < NIC_MIN_TEMP )) {
     ret = READING_NA;
   } else {
     retry = 0;

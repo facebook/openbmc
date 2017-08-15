@@ -230,6 +230,7 @@ fw_update_slot(char **argv, uint8_t slot_id) {
   uint8_t status;
   int ret;
   char cmd[80];
+  int retry_count = 0;
 
   ret = pal_is_fru_prsnt(slot_id, &status);
   if (ret < 0) {
@@ -240,13 +241,41 @@ fw_update_slot(char **argv, uint8_t slot_id) {
     printf("Server board is not present!\n");
     goto err_exit;
   }
+
+  //Check Power Status
+  if (pal_get_server_power(slot_id, &status)) {
+    printf("Failed to get Server power status. Stopping the update!\n");
+    return -1;
+  }
+  if(status == SERVER_12V_OFF) {
+    //argv[3]+2 to ignore the "--" symbol
+    printf("Can't update %s FW version since the Server is 12V-off!\n", argv[3]+2);
+    return -1;
+  }
+
   if (!strcmp(argv[3], "--cpld")) {
      return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
   }
   if (!strcmp(argv[3], "--bios")) {
-    pal_set_server_power(slot_id, SERVER_POWER_OFF);
-    printf("Powering Server to OFF state...\n");
-    sleep(10);
+    pal_set_server_power(slot_id, SERVER_GRACEFUL_SHUTDOWN);
+    printf("Gracefully Shutting-down Server to OFF state...\n");
+    
+    //Checking Server Power Status to make sure Server is really Off
+    while (retry_count < 20) {
+      ret = pal_get_server_power(slot_id, &status);
+      if ( (ret == 0) && (status == SERVER_POWER_OFF) ){
+        break;
+      }
+      else{
+        retry_count++;
+        sleep(1);
+      }
+    }
+    if (retry_count == 20){
+      printf("Failed to Power Off Server. Stopping the update!\n");
+      return -1;
+    }
+
     me_recovery(slot_id, RECOVERY_MODE);
     sleep(1);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);

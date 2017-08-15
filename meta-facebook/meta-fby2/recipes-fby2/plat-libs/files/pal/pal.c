@@ -4167,23 +4167,21 @@ int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
 
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
   uint8_t *data = req_data;
+  char pwr_state[MAX_VALUE_LEN] = {0};
   *res_len = 0;
 
   if((*data != 0x55) || (*(data+1) != 0x66) || (*(data+2) != 0x0f)) {
     return completion_code;
   }
 
-  if (server_12v_off(slot)) {
-    return completion_code;
-  }
+  pal_get_last_pwr_state(slot, pwr_state);
 
-  sleep(DELAY_12V_CYCLE);
+  if(pal_set_server_power(slot, SERVER_12V_CYCLE))
+    return completion_code; 
 
-  if (server_12v_on(slot)) {
-    return completion_code;
-  }
+  syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", slot);
+  pal_power_policy_control(slot, pwr_state);
 
-  pal_power_policy_control(slot, NULL);
   completion_code = CC_SUCCESS;
   return completion_code;
 }

@@ -225,8 +225,12 @@ def main():
 
     rom_content_pre = data[0:rom_fit_offset]
     rom_fit = inject_kek(rom_fit, args.kek)
-    rom_fit += '\x00' * (3200 - len(rom_fit))
-    rom_content_post = data[rom_fit_offset + 3200:args.rom_size]
+    if len(rom_fit) > args.rom_fit_size:
+        print("KEK cannot fit within ROM FIT")
+        sys.exit(1)
+
+    rom_fit += '\x00' * (args.rom_fit_size - len(rom_fit))
+    rom_content_post = data[rom_fit_offset + args.rom_fit_size:args.rom_size]
     data = rom_content_pre + rom_fit + rom_content_post + data[args.rom_size:]
 
     if args.signed_subordinate is not None:
@@ -314,7 +318,7 @@ if __name__ == '__main__':
         help="Location to ROM kek certificate store DTS", required=True)
     parser.add_argument('--rom-size', default=84 * 1024,
         help="Size of ROM region")
-    parser.add_argument('--rom-fit-size', default=3200,
+    parser.add_argument('--rom-fit-size', default=5120,
         help="Size of the ROM FIT region")
     parser.add_argument('--offset', default=0x080000, type=int,
         help="Location within filename to find firmware FIT DTB")

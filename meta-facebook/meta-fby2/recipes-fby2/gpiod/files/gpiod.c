@@ -201,7 +201,7 @@ populate_gpio_pins(uint8_t fru) {
 
   for(i = 0; i < gpio_pin_cnt; i++) {
     // Only monitor the PWRGOOD_CPU pin
-    if (i == PWRGOOD_CPU)
+    if (i == PWRGD_COREPWR)
       gpios[gpio_pin_list[i]].flag = 1;
   }
 
@@ -314,7 +314,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
           usleep(DELAY_GPIOD_READ);
           continue;
         }
-        n_pin_val = CLEARBIT(o_pin_val[fru], PWRGOOD_CPU);
+        n_pin_val = CLEARBIT(o_pin_val[fru], PWRGD_COREPWR);
       }
 
       if (o_pin_val[fru] == n_pin_val) {

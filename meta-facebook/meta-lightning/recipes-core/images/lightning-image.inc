@@ -66,6 +66,7 @@ IMAGE_INSTALL += " \
   spatula \
   enclosure-util \
   fw-util \
+  openbmc-gpio \
   "
 
 IMAGE_FEATURES += " \

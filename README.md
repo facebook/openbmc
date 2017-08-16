@@ -29,6 +29,8 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
 
 ## How to build
 
+Note: In the instruction set below, references to <platform> for some of the steps is an example only and need to be replaced with the respective platform when setting up for a different platform.
+
 1. Set up the build environment based on the Yocto Project's [Quick Start Guide](http://www.yoctoproject.org/docs/1.6.1/yocto-project-qs/yocto-project-qs.html).
 
 2. Clone Yocto repository:
@@ -47,25 +49,25 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
 
 4. Initialize a build directory. In the `poky` directory:
  ```bash
- $ export TEMPLATECONF=meta-openbmc/meta-facebook/meta-wedge/conf
+ $ export TEMPLATECONF=meta-openbmc/meta-facebook/meta-<platform>/conf
  $ source oe-init-build-env
  ```
  Choose between `meta-wedge`, `meta-wedge100`, `meta-yosemite`, or any of the other platforms listed in the meta-openbmc/meta-facebook directory.
  After this step, you will be dropped into a build directory, `poky/build`.
 
 5. Start the build within the build directory:
+ In general to build for the platform:
  ```bash
- $ bitbake wedge-image
+ $ bitbake <platform>-image
  ```
-
-The build process automatically fetches all necessary packages and builds the complete image. The final build results are in `poky/build/tmp/deploy/images/wedge`. The root password will be `0penBmc`, you may change this in the local configuration.
+ The build process automatically fetches all necessary packages and builds the complete image. The final build results are in `poky/build/tmp/deploy/images/<platform>`. The root password will be `0penBmc`, you may change this in the local configuration.
 
 #### Build Artifacts
 
 * **u-boot.bin** - This is the u-boot image for the board.
 * **uImage** - This the Linux kernel for the board.
-* **wedge-image-wedge.cpio.lzma.u-boot** - This is the rootfs for the board
-* **flash-wedge** - This is the complete flash image including u-boot, kernel, and the rootfs.
+* **<platform>-image-<platform>.cpio.lzma.u-boot** - This is the rootfs for the board
+* **flash-<platform>** - This is the complete flash image including u-boot, kernel, and the rootfs.
 
 #### Yocto Configuration
 
@@ -75,7 +77,7 @@ If you have previously set up and built poky, you may change your local configur
 
 When using the example `TEMPLATECONF` for Wedge, the `./build/conf/templateconf.cfg`:
 ```
-meta-openbmc/meta-facebook/meta-wedge/conf
+meta-openbmc/meta-facebook/meta-<platform>/conf
 ```
 
 The layers config `./build/conf/bblayers.conf`, will contain:
@@ -92,7 +94,7 @@ BBLAYERS ?= " \
   /PREFIX/poky/meta-openembedded/meta-python \
   /PREFIX/poky/meta-openbmc \
   /PREFIX/poky/meta-openbmc/meta-aspeed \
-  /PREFIX/poky/meta-openbmc/meta-facebook/meta-wedge \
+  /PREFIX/poky/meta-openbmc/meta-facebook/meta-<platform> \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   /PREFIX/poky/meta \
@@ -103,7 +105,7 @@ BBLAYERS_NON_REMOVABLE ?= " \
 And finally the `./build/config/local.conf` will include important configuration options:
 ```
 # Machine Selection
-MACHINE ??= "wedge"
+MACHINE ??= "<platform>"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

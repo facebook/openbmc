@@ -454,7 +454,7 @@ power_on_server_physically(uint8_t slot_id){
     return -1;
   }
 
-  sleep(1);
+  msleep(200);
 
   if (write_device(vpath, "1")) {
     return -1;
@@ -470,20 +470,30 @@ server_power_on(uint8_t slot_id) {
   int val = 0;
   int loop = 0;
   int max_retry = 5;
+  int pid_file;
+
+  // Check if another instance is running 
+  if (pal_powering_on_flag(slot_id) < 0) {
+    syslog(LOG_WARNING, "%s(): Another instance is running for FRU: %d.\n", __func__, slot_id);
+    //Make server_power_on exit code to "-2" when another instance is running
+    return -2;
+  }
 
   //Enable IOM full power via GPIO_IOM_FULL_PWR_EN
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   for (loop = 0; loop < max_retry; loop++){
     write_device(vpath, "1");
-    sleep(2);
     read_device(vpath, &val);
     if (val == 1)
       break;
     syslog(LOG_WARNING, "%s(): GPIO_IOM_FULL_PWR_EN status is %d. Try %d time(s).\n", __func__, val, loop);
-
+    msleep(10);
     // Max retry case
-    if (loop == (max_retry-1))
+    if (loop == (max_retry-1)) {
       syslog(LOG_CRIT, "%s(): Fail to enable GPIO_IOM_FULL_PWR_EN after %d tries.\n", __func__, val, max_retry);
+      pal_rm_powering_on_flag(slot_id);
+      return -1;
+    }
   }
 
   // Power on server
@@ -495,10 +505,13 @@ server_power_on(uint8_t slot_id) {
     sleep(2);
 
     // Max retry case
-    if (loop == (max_retry-1))
+    if (loop == (max_retry-1)) {
+      pal_rm_powering_on_flag(slot_id);
       return -1;
+    }
   }
 
+  pal_rm_powering_on_flag(slot_id);
   return 0;
 }
 
@@ -4276,4 +4289,27 @@ pal_set_edb_value(char *key, char *value) {
   }
 
   return ret;
+}
+
+int
+pal_powering_on_flag(uint8_t slot_id) {
+  int pid_file;
+  char path[128];
+
+  sprintf(path, SERVER_PWR_ON_LOCK, slot_id);
+  pid_file = open(path, O_CREAT | O_RDWR, 0666);
+  if (pid_file == -1) {
+    return -1;
+  }
+  close(pid_file);
+
+  return 0;
+}
+
+void
+pal_rm_powering_on_flag(uint8_t slot_id) {
+  char path[128];
+
+  sprintf(path, SERVER_PWR_ON_LOCK, slot_id);
+  remove(path);
 }

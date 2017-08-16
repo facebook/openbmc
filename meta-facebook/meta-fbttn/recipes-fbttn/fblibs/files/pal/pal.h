@@ -43,6 +43,7 @@ extern "C" {
 
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
+#define SERVER_PWR_ON_LOCK "/var/run/server%d_power_on.lock"
 
 #define SETBIT(x, y)        (x | (1 << y))
 #define GETBIT(x, y)        ((x & (1 << y)) > y)
@@ -341,6 +342,8 @@ int server_power_reset(uint8_t slot_id);
 int pal_get_iom_board_id (void);
 int pal_get_edb_value(char *key, char *value);
 int pal_set_edb_value(char *key, char *value);
+int pal_powering_on_flag(uint8_t slot_id);
+void pal_rm_powering_on_flag(uint8_t slot_id);
 
 #ifdef __cplusplus
 } // extern "C"

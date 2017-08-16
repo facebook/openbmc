@@ -559,9 +559,13 @@ void
 *OEM_PE_MON (void *ptr) {
   int value = 1;
   int cnt   = 0;
+  int ret   = 0;
   bool is_3v3_power_cycled  = false;
   bool is_iom_full_power_on = false;
+  char vpath_server_pwr_on_lock[64] = {0};
 
+  // For checking server_power_on is running or not
+  sprintf(vpath_server_pwr_on_lock, SERVER_PWR_ON_LOCK, FRU_SLOT1);
   while (1) {
     value = get_perst_value();
     // If PERST value is from high to low (server power status from on to off)
@@ -583,8 +587,12 @@ void
           // So we power off the IOM 3v3.
           if(cnt > 40) {  // 40 * 500ms = 20000ms = 20s
             cnt = 0;
-            iom_3v3_power_off();
-            is_iom_full_power_on = false;
+            // Power off 3V3 only if server_power_on is NOT running.
+            ret = access(vpath_server_pwr_on_lock, F_OK);
+            if (ret == -1) {
+              iom_3v3_power_off();
+              is_iom_full_power_on = false;
+            }
           }
         }
       } else {

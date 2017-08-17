@@ -25,6 +25,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -72,6 +73,7 @@ void showUsage(char **argv, unsigned int qFlag) {
     printQ(qFlag,"Usage: %s [option]\n", argv[0]);
     printQ(qFlag,"  -q            Run quietly, no printing to the console\n");
     printQ(qFlag,"  -f            Run endlessly until ctrl-c is used\n");
+    printQ(qFlag,"  -s <number>   Connect to fru <number> (default=1)\n");
     printQ(qFlag,"  -i <number>   Run [number] of iterations\n");
     printQ(qFlag,"\n");
 }
@@ -93,7 +95,7 @@ int main (int argc, char **argv) {
     unsigned int qFlag = 0;
     unsigned int numIterations = 0;
     unsigned int shift_size_in_bits = 0;
-    unsigned int c = 0, i = 0, j = 0, loopCnt = 0;
+    unsigned int c = 0, i = 0, j = 0, loopCnt = 0, fru=1;
     struct timeval tval_before, tval_after, tval_result;
     JTAG_Handler *handle;
 
@@ -102,7 +104,7 @@ int main (int argc, char **argv) {
     signal(SIGINT, intHandler);  // catch ctrl-c
 
     opterr = 0;
-    while ((c = getopt (argc, argv, "qfi:?")) != -1)
+    while ((c = getopt (argc, argv, "qfi:s:?")) != -1)
         switch (c) {
             case 'q':
                 qFlag = 1;
@@ -114,6 +116,9 @@ int main (int argc, char **argv) {
             case 'i':
                 if ((numIterations = atoi(optarg)) > 0)
                     break;
+            case 's':
+                if ((fru = atoi(optarg)) > 0)
+                    break;
             case '?':
                 showUsage(argv, qFlag);
             return -1;
@@ -124,9 +129,9 @@ int main (int argc, char **argv) {
         showUsage(argv, qFlag);
         return -1;
     }
-
+    printf("ASD: connect to fru %d\n", fru);
     // load the driver
-    handle = SoftwareJTAGHandler(1); // TODO get from user
+    handle = SoftwareJTAGHandler(fru); // TODO get from user
     if (!handle) {
       printf("Setup of JTAG driver failed!\n");
       return -1;

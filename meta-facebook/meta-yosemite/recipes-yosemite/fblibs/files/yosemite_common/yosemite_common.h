@@ -36,6 +36,8 @@ enum {
   FRU_NIC   = 6,
 };
 
+#define CRASHDUMP_KEY "slot%d_crashdump"
+
 int yosemite_common_fru_name(uint8_t fru, char *str);
 int yosemite_common_fru_id(char *str, uint8_t *fru);
 int yosemite_common_crashdump(uint8_t fru);

@@ -60,6 +60,11 @@ extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
 enum {
+  LED_STATE_OFF,
+  LED_STATE_ON,
+};
+
+enum {
   USB_MUX_OFF,
   USB_MUX_ON,
 };
@@ -102,6 +107,7 @@ enum {
   PWR_ERR = 0X56,
   CATERR = 0xEB,
   CPU_DIMM_HOT = 0xB3,
+  SOFTWARE_NMI = 0x90,
   CPU0_THERM_STATUS = 0x1C,
   SPS_FW_HEALTH = 0x17,
   NM_EXCEPTION = 0x18,
@@ -197,6 +203,11 @@ void pal_log_clear(char *fru);
 int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
+int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
+int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
+int pal_is_crashdump_ongoing(uint8_t slot);
+bool pal_is_fw_update_ongoing(uint8_t fru);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_post_end_chk(uint8_t *post_end_chk);

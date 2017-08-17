@@ -165,6 +165,10 @@ char * key_list[] = {
 "slot2_sel_error",
 "slot3_sel_error",
 "slot4_sel_error",
+"slot1_boot_order",
+"slot2_boot_order",
+"slot3_boot_order",
+"slot4_boot_order",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -198,6 +202,10 @@ char * def_val_list[] = {
   "1", /* slot2_sel_error */
   "1", /* slot3_sel_error */
   "1", /* slot4_sel_error */
+  "000000000000", /* slot1_boot_order */
+  "000000000000", /* slot2_boot_order */
+  "000000000000", /* slot3_boot_order */
+  "000000000000", /* slot4_boot_order */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -2171,6 +2179,9 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
     case CPU_DIMM_HOT:
       sprintf(name, "CPU_DIMM_HOT");
       break;
+    case SOFTWARE_NMI:
+      sprintf(name, "SOFTWARE_NMI");
+      break;
     case CPU0_THERM_STATUS:
       sprintf(name, "CPU0_THERM_STATUS");
       break;
@@ -2260,6 +2271,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         strcat(error_log, "Unknown");
       break;
 
+    case SOFTWARE_NMI:
     case CRITICAL_IRQ:
       sprintf(error_log, "");
       if (ed[0] == 0x0)
@@ -2760,6 +2772,54 @@ pal_fan_recovered_handle(int fan_num) {
 
   // TODO: Add action in case of fan recovered
   return 0;
+}
+
+int
+pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
+  int i, j = 0;
+  int ret;
+  int msb, lsb;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  sprintf(key, "slot%u_boot_order", slot);
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    *res_len = 0;
+     return ret;
+  }
+
+  memset(boot, 0x00, SIZE_BOOT_ORDER);
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    boot[j++] = (msb << 4) | lsb;
+  }
+
+  *res_len = SIZE_BOOT_ORDER;
+  return 0;
+}
+
+int
+pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+
+  sprintf(key, "slot%u_boot_order", slot);
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    snprintf(tstr, 3, "%02x", boot[i]);
+    strncat(str, tstr, 3);
+  }
+
+  *res_len = 0;
+  return pal_set_key_value(key, str);
 }
 
 int

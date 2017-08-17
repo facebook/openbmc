@@ -20,17 +20,41 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <facebook/bic.h>
+#include <facebook/yosemite_gpio.h>
 #include <openbmc/ipmi.h>
 
 #define LAST_RECORD_ID 0xFFFF
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
+
+static const char *option_list[] = {
+  "--get_dev_id",
+  "--get_gpio",
+  "--get_gpio_config",
+  "--get_config",
+  "--get_post_code",
+  "--read_fruid",
+  "--get_sdr",
+  "--read_sensor"
+};
+
+static void
+print_usage_help(void) {
+  int i;
+
+  printf("Usage: bic-util <slot1|slot2|slot3|slot4> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: bic-util <slot1|slot2|slot3|slot4> <option>\n");
+  printf("       option:\n");
+  for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
+    printf("       %s\n", option_list[i]);
+}
 
 // Test to Get device ID
 static void
@@ -83,13 +107,13 @@ util_get_gpio(uint8_t slot_id) {
   bic_gpio_u *t = (bic_gpio_u*) &gpio;
 
   // Print response
-  printf("PWRGOOD_CPU: %d\n", t->bits.pwrgood_cpu);
-  printf("PWRGOOD_PCH_PWROK: %d\n", t->bits.pwrgd_pch_pwrok);
+  printf("XDP_CPU_SYSPWROK: %d\n", t->bits.pwrgood_cpu);
+  printf("PWRGD_PCH_PWROK: %d\n", t->bits.pwrgd_pch_pwrok);
   printf("PVDDR_VRHOT_N: %d\n", t->bits.pvddr_vrhot_n);
   printf("PVCCIN_VRHOT_N: %d\n", t->bits.pvccin_vrhot_n);
   printf("FM_FAST_PROCHOT_N: %d\n", t->bits.fm_fast_prochot_n);
   printf("PCHHOT_CPU_N: %d\n", t->bits.pchhot_cpu_n);
-  printf("FM_CPLD_CPU_DIMM_EVENT_C0_N: %d\n", t->bits.fm_cpld_cpu_dimm_event_c0_n);
+  printf("FM_CPLD_CPU_DIMM_EVENT_CO_N: %d\n", t->bits.fm_cpld_cpu_dimm_event_c0_n);
   printf("FM_CPLD_BDXDE_THERMTRIP_N: %d\n", t->bits.fm_cpld_bdxde_thermtrip_n);
   printf("THERMTRIP_PCH_N: %d\n", t->bits.thermtrip_pch_n);
   printf("FM_CPLD_FIVR_FAULT: %d\n", t->bits.fm_cpld_fivr_fault);
@@ -117,26 +141,29 @@ util_get_gpio_config(uint8_t slot_id) {
   int i;
   bic_gpio_config_t gpio_config = {0};
   bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
+  char gpio_name[32];
+
 
   // Read configuration of all bits
-  for (i = 0;  i < MAX_GPIO_PINS; i++) {
+  for (i = 0;  i < gpio_pin_cnt; i++) {
     ret = bic_get_gpio_config(slot_id, i, &gpio_config);
     if (ret == -1) {
       continue;
     }
 
-    printf("gpio_config for pin#%d:\n", i);
-    printf("Direction: %s", t->bits.dir?"Output":"Input");
-    printf("Interrupt Enabled?: %s", t->bits.ie?"Enabled":"Disabled");
-    printf("Trigger Type: %s", t->bits.edge?"Level":"Edge");
+    yosemite_get_gpio_name(slot_id, i, gpio_name);
+    printf("gpio_config for pin#%d (%s):\n", i, gpio_pin_name[i]);
+    printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
+    printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
+    printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");
     if (t->bits.trig == 0x0) {
-      printf("Trigger Edge: %s\n", "Falling Edge");
+      printf("Trigger,  Edge: %s\n", "Falling Edge");
     } else if (t->bits.trig == 0x1) {
-      printf("Trigger Edge: %s\n", "Falling Edge");
+      printf("Trigger,  Edge: %s\n", "Rising Edge");
     } else if (t->bits.trig == 0x2) {
-      printf("Trigger Edge: %s\n", "Both Edges");
+      printf("Trigger,  Edge: %s\n", "Both Edges");
     } else  {
-      printf("Trigger Edge: %s\n", "Reserved");
+      printf("Trigger, Edge: %s\n", "Reserved");
     }
   }
 }
@@ -181,7 +208,10 @@ util_get_post_buf(uint8_t slot_id) {
 
   printf("util_get_post_buf: returns %d bytes\n", len);
   for (i = 0; i < len; i++) {
-    printf("0x%X:", buf[i]);
+    if (!(i % 16) && i)
+      printf("\n");
+
+    printf("%02X ", buf[i]);
   }
   printf("\n");
 }
@@ -368,15 +398,89 @@ util_read_sensor(uint8_t slot_id) {
   }
 }
 
+static int
+process_command(uint8_t slot_id, int argc, char **argv) {
+  int i, ret, retry = 2;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  for (i = 0; i < argc; i++) {
+    tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
+  }
+
+  while (retry >= 0) {
+    ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    retry--;
+  }
+  if (ret) {
+    printf("BIC no response!\n");
+    return ret;
+  }
+
+  for (i = 0; i < rlen; i++) {
+    if (!(i % 16) && i)
+      printf("\n");
+
+    printf("%02X ", rbuf[i]);
+  }
+  printf("\n");
+
+  return 0;
+}
+
 // TODO: Make it as User selectable tests to run
 int
 main(int argc, char **argv) {
-
   uint8_t slot_id;
 
-  slot_id = atoi(argv[1]);
+  if (argc < 3) {
+    goto err_exit;
+  }
 
-  util_get_fw_ver(slot_id);
+  if (!strcmp(argv[1], "slot1")) {
+    slot_id = 1;
+  } else if (!strcmp(argv[1] , "slot2")) {
+    slot_id = 2;
+  } else if (!strcmp(argv[1] , "slot3")) {
+    slot_id = 3;
+  } else if (!strcmp(argv[1] , "slot4")) {
+    slot_id = 4;
+  } else {
+    goto err_exit;
+  }
+
+  if (!strcmp(argv[2], "--get_dev_id")) {
+    util_get_device_id(slot_id);
+  } else if (!strcmp(argv[2], "--get_gpio")) {
+    util_get_gpio(slot_id);
+  } else if (!strcmp(argv[2], "--get_gpio_config")) {
+    util_get_gpio_config(slot_id);
+  } else if (!strcmp(argv[2], "--get_config")) {
+    util_get_config(slot_id);
+  } else if (!strcmp(argv[2], "--get_post_code")) {
+    util_get_post_buf(slot_id);
+  } else if (!strcmp(argv[2], "--read_fruid")) {
+    util_read_fruid(slot_id);
+  } else if (!strcmp(argv[2], "--get_sdr")) {
+    util_get_sdr(slot_id);
+  } else if (!strcmp(argv[2], "--read_sensor")) {
+    util_read_sensor(slot_id);
+  } else if (argc >= 4) {
+    return process_command(slot_id, (argc - 2), (argv + 2));
+  } else {
+    goto err_exit;
+  }
+
+  return 0;
+
+err_exit:
+  print_usage_help();
+  return -1;
 
 #if 0
   util_get_device_id(slot_id);

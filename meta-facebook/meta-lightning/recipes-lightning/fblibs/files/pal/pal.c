@@ -706,22 +706,54 @@ pal_key_check(char *key) {
 
 int
 pal_set_key_value(char *key, char *value) {
+  int i = 0;
+  int max_retry = 5;
+  int ret = 0;
 
   // Check is key is defined and valid
   if (pal_key_check(key))
     return -1;
 
-  return set_key_value(key, value);
+  //Retry for max_retry Times
+  for (i = 0; i < max_retry; i++) {
+    ret = 0;
+    ret = set_key_value(key, value);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s, failed to write device (%s), ret: %d, retry: %d", __func__, key, ret, i);
+    }
+    else {
+      break;
+    }
+    msleep(100);
+  }
+
+  return ret;
 }
 
 int
 pal_get_key_value(char *key, char *value) {
+  int i = 0;
+  int max_retry = 5;
+  int ret = 0;
 
   // Check is key is defined and valid
   if (pal_key_check(key))
     return -1;
 
-  return get_key_value(key, value);
+  //Retry for max_retry Times
+  for (i = 0; i < max_retry; i++) {
+    ret = 0;
+    ret = get_key_value(key, value);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s, failed to read device (%s), ret: %d, retry: %d", __func__, key, ret, i);
+    }
+    else {
+      break;
+    }
+    msleep(100);
+  }
+
+  return ret;
 }
 
 void

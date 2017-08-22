@@ -29,10 +29,25 @@
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
 #include <openbmc/ipmi.h>
+#include <sys/time.h>
+#include <time.h>
 
 #define LAST_RECORD_ID 0xFFFF
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
+
+#define NUM_SLOTS 4
+#define JTAG_TOTAL_API 1
+
+enum cmd_profile_type {
+  CMD_AVG_DURATION=0,
+  CMD_MIN_DURATION,
+  CMD_MAX_DURATION,
+  CMD_NUM_SAMPLES,
+  CMD_PROFILE_NUM
+};
+
+long double cmd_profile[NUM_SLOTS][CMD_PROFILE_NUM]={0};
 
 static const char *option_list[] = {
   "--get_dev_id",
@@ -44,7 +59,8 @@ static const char *option_list[] = {
   "--get_post_code",
   "--read_fruid",
   "--get_sdr",
-  "--read_sensor"
+  "--read_sensor",
+  "--perf_test [loop_count]  (0 to run forever)"
 };
 
 static void
@@ -57,6 +73,7 @@ print_usage_help(void) {
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
 }
+
 
 // Test to Get device ID
 static void
@@ -439,6 +456,77 @@ util_read_sensor(uint8_t slot_id) {
   }
 }
 
+
+// runs performance test for loopCount loops
+static void
+util_perf_test(uint8_t slot_id, int loopCount) {
+  int ret;
+  ipmi_dev_id_t id = {0};
+  int i = 0;
+  int index = slot_id -1;
+  long double elapsedTime = 0;
+
+  cmd_profile[index][CMD_MIN_DURATION] = 3000000;
+  cmd_profile[index][CMD_MAX_DURATION] = 0;
+  cmd_profile[index][CMD_NUM_SAMPLES]  = 0;
+  cmd_profile[index][CMD_AVG_DURATION] = 0;
+
+  printf("bic-util: perf test on slot%d for ", slot_id);
+  if (loopCount)
+    printf("%d cycles\n", loopCount);
+  else
+    printf("infinite cycles\n");
+
+  while(1)
+  {
+    struct timeval  tv1, tv2;
+    gettimeofday(&tv1, NULL);
+
+    ret = bic_get_dev_id(slot_id, &id);
+    if (ret) {
+      printf("util_get_device_id: bic_get_dev_id returns %d, loop=%d\n", ret, i);
+      return;
+    }
+
+    gettimeofday(&tv2, NULL);
+
+    elapsedTime = (((long double)(tv2.tv_usec - tv1.tv_usec) / 1000000 +
+                   (long double)(tv2.tv_sec - tv1.tv_sec)) * 1000000);
+
+    cmd_profile[index][CMD_AVG_DURATION] += elapsedTime;
+    cmd_profile[index][CMD_NUM_SAMPLES] += 1;
+    if (cmd_profile[index][CMD_MAX_DURATION] < elapsedTime)
+      cmd_profile[index][CMD_MAX_DURATION] = elapsedTime;
+    if (cmd_profile[index][CMD_MIN_DURATION] > elapsedTime && elapsedTime > 0)
+      cmd_profile[index][CMD_MIN_DURATION] = elapsedTime;
+
+    ++i;
+
+    if ((i & 0xfff) == 0) {
+      printf("slot%d stats: loop %d num cmds=%d, avg duration(us)=%d, min duration(us)=%d, max duration(us)=%d\n",
+            slot_id, i,
+            (int)cmd_profile[index][CMD_NUM_SAMPLES],
+            (int)(cmd_profile[index][CMD_AVG_DURATION]/cmd_profile[index][CMD_NUM_SAMPLES]),
+            (int)cmd_profile[index][CMD_MIN_DURATION],
+            (int)cmd_profile[index][CMD_MAX_DURATION]
+          );
+    }
+
+    if (loopCount != 0  && i==loopCount) {
+      printf("slot%d stats after loop %d\n num cmds=%d, avg duration(us)=%d, min duration(us)=%d, max duration(us)=%d\n",
+            slot_id, i,
+            (int)cmd_profile[index][CMD_NUM_SAMPLES],
+            (int)(cmd_profile[index][CMD_AVG_DURATION]/cmd_profile[index][CMD_NUM_SAMPLES]),
+            (int)cmd_profile[index][CMD_MIN_DURATION],
+            (int)cmd_profile[index][CMD_MAX_DURATION]
+          );
+      break;
+    }
+  }  // while(1) {}
+
+
+}
+
 static int
 process_command(uint8_t slot_id, int argc, char **argv) {
   int i, ret, retry = 2;
@@ -515,6 +603,8 @@ main(int argc, char **argv) {
     util_get_sdr(slot_id);
   } else if (!strcmp(argv[2], "--read_sensor")) {
     util_read_sensor(slot_id);
+  } else if (!strcmp(argv[2], "--perf_test")) {
+    util_perf_test(slot_id, atoi(argv[3]));
   } else if (argc >= 4) {
     return process_command(slot_id, (argc - 2), (argv + 2));
   } else {
@@ -526,27 +616,4 @@ main(int argc, char **argv) {
 err_exit:
   print_usage_help();
   return -1;
-
-#if 0
-  util_get_fw_ver(slot_id);
-
-  util_get_device_id(slot_id);
-
-  util_get_gpio(slot_id);
-  util_get_gpio_config(slot_id);
-
-  util_get_config(slot_id);
-
-  util_get_post_buf(slot_id);
-
-  util_get_fruid_info(slot_id);
-  util_read_fruid(slot_id);
-
-  util_get_sel_info(slot_id);
-  util_get_sel(slot_id);
-
-  util_get_sdr_info(slot_id);
-  util_get_sdr(slot_id);
-  util_read_sensor(slot_id);
-#endif
 }

@@ -51,7 +51,7 @@ extern "C" {
 #define I2C_SLAVE_RD    0x0710 /* Slave Read */
 #define I2C_SLAVE_WR    0x0711 /* Slave /Write */
 #define I2C_SLAVE_RDWR  0x0712 /* Slave Read/Write */
-
+#define I2C_BUS_STATUS  0x0799 /* Get Bus Status */
 /***********************************************************
  * I2C-DEV Helper functions
  **********************************************************/
@@ -70,6 +70,11 @@ static inline __s32 i2c_smbus_access(int file, char read_write, __u8 command,
 	return ioctl(file,I2C_SMBUS,&args);
 }
 
+static inline __s32 i2c_smbus_status(int file)
+{
+	struct i2c_smbus_ioctl_data args;
+	return ioctl(file, I2C_BUS_STATUS, &args);
+}
 
 static inline __s32 i2c_smbus_write_quick(int file, __u8 value)
 {

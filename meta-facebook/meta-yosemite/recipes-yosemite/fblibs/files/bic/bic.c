@@ -1177,6 +1177,18 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 update_done:
   ret = 0;
 error_exit:
+  switch(comp) {
+    case UPDATE_BIOS:
+      syslog(LOG_CRIT, "bic_update_fw: updating bios firmware is exiting\n");
+      break;
+    case UPDATE_CPLD:
+      syslog(LOG_CRIT, "bic_update_fw: updating cpld firmware is exiting\n");
+      break;
+    case UPDATE_BIC_BOOTLOADER:
+      syslog(LOG_CRIT, "bic_update_fw: updating bic bootloader firmware is exiting\n");
+      break;
+  }
+
   if (fd > 0 ) {
     close(fd);
   }
@@ -1184,6 +1196,8 @@ error_exit:
   if (tbuf) {
     free(tbuf);
   }
+
+  set_fw_update_ongoing(slot_id, 0);
 
   if (ret) {
     printf("updating fw on slot %d failed\n", slot_id);

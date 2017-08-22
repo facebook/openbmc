@@ -248,12 +248,12 @@ debug_card_handler() {
       }
 
       // Display Post code on UART button press event
-      sprintf(display, "/usr/local/bin/post_led.sh %d", pos);
-      system(display);
+      if (pal_set_debug_card_led(pos))
+        syslog(LOG_WARNING, "%s(): pal_set_debug_card_led() failed", __func__);
       sleep(POST_LED_DELAY_TIME);
     }
-    sprintf(display, "/usr/local/bin/post_led.sh %d", err_num);
-    system(display);
+    if (pal_set_debug_card_led(err_num))
+      syslog(LOG_WARNING, "%s(): pal_set_debug_card_led() failed", __func__);
 debug_card_out:
     sleep(POST_LED_DELAY_TIME);
   }

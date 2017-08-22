@@ -59,6 +59,15 @@
 #define GPIO_TRAY_LOCATION_ID 55 // 0: lower tray, 1: upper tray
 #define TRAY_LOCATION_FILE "/tmp/tray_location"
 
+#define GPIO_DEBUG_CARD_HIGH_HEX_0 48
+#define GPIO_DEBUG_CARD_HIGH_HEX_1 49
+#define GPIO_DEBUG_CARD_HIGH_HEX_2 50
+#define GPIO_DEBUG_CARD_HIGH_HEX_3 51
+#define GPIO_DEBUG_CARD_LOW_HEX_0 72
+#define GPIO_DEBUG_CARD_LOW_HEX_1 73
+#define GPIO_DEBUG_CARD_LOW_HEX_2 74
+#define GPIO_DEBUG_CARD_LOW_HEX_3 75
+
 #define I2C_DEV_FAN "/dev/i2c-5"
 #define I2C_ADDR_FAN 0x2d
 #define FAN_REGISTER_H 0x80
@@ -1907,50 +1916,36 @@ pal_get_boot_option(unsigned char para,unsigned char* pbuff)
 }
 
 int
-pal_set_cpu_mem_threshold(const char* threshold_path) {
-  char str[MAX_KEY_LEN];
-  int threshold = 0;
-  int retry_count = 0;
-  int ret = 0;
-  FILE *fp;
+pal_set_debug_card_led(const int display_num) {
+  int val;
+  int high_hex = display_num / 16;
+  int low_hex = display_num % 16;
 
-  memset(str, 0, sizeof(char) * MAX_KEY_LEN);
-  if (strcasestr(threshold_path, "CPU") != 0ULL) {
-    threshold = CPU_THRESHOLD;
-    sprintf(str, "%d", threshold);
-  } else if (strcasestr(threshold_path, "MEM") != 0ULL) {
-    threshold = MEM_THRESHOLD;
-    sprintf(str, "%d", threshold);
-  } else {
-    syslog(LOG_WARNING, "%s: setting threshold to error path: %s", __func__, threshold_path);
+  val = low_hex % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_LOW_HEX_0, val))
     return -1;
-  }
-  if (access(threshold_path, F_OK) == -1) {
-    fp = fopen(threshold_path, "w");
-    if (!fp) {
-      syslog(LOG_WARNING, "%s: failed to open %s", __func__, threshold_path);
-      return -1;
-    }
-  } else {
-    return 0;
-  }
-
-  ret = pal_flock_retry(fileno(fp));
-  if (ret) {
-    syslog(LOG_WARNING, "%s(): failed to flock on %s. %s", __func__, threshold_path, strerror(errno));
-    fclose(fp);
+  val = (low_hex / 2) % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_LOW_HEX_1, val))
     return -1;
-  }
-
-  ret = fwrite(str, sizeof(char), 3, fp);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s: failed to write threshold to %s",__func__, threshold_path);
-    flock(fileno(fp), LOCK_UN);
-    fclose(fp);
+  val = (low_hex / 4) % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_LOW_HEX_2, val))
     return -1;
-  }
+  val = (low_hex / 8) % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_LOW_HEX_3, val))
+    return -1;
 
-  flock(fileno(fp), LOCK_UN);
-  fclose(fp);
+  val = high_hex % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_HIGH_HEX_0, val))
+    return -1;
+  val = (high_hex / 2) % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_HIGH_HEX_1, val))
+    return -1;
+  val = (high_hex / 4) % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_HIGH_HEX_2, val))
+    return -1;
+  val = (high_hex / 8) % 2;
+  if (pal_set_gpio_value(GPIO_DEBUG_CARD_HIGH_HEX_3, val))
+    return -1;
+
   return 0;
 }

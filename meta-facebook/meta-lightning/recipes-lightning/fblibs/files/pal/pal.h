@@ -238,9 +238,9 @@ int pal_drive_health(const char* dev);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 uint8_t pal_get_status(void);
-int pal_set_cpu_mem_threshold(const char* threshold_path);
 int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);
+int pal_set_debug_card_led(const int display_num);
 
 #ifdef __cplusplus
 } // extern "C"

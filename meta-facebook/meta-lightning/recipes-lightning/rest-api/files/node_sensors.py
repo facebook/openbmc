@@ -20,7 +20,7 @@ class sensorsNode(node):
 
     def getInformation(self):
         result = {}
-        cmd = '/usr/local/bin/sensor-util ' + self.name
+        cmd = '/usr/local/bin/sensor-util ' + self.name + ' --threshold'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         sdata = data.split('\n')
         for line in sdata:
@@ -28,7 +28,7 @@ class sensorsNode(node):
             if line.find("failed") != -1:
                 continue
 
-            kv = line.split(':')
+            kv = [line[0:line.find(':')-1], line[line.find(':')+1:]]
             if (len(kv) < 2):
                 continue
 

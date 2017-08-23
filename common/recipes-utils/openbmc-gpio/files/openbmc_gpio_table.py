@@ -292,8 +292,8 @@ def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
                 raise Exception('Failed to configure function "%s"' % gpio)
 
     for gpio in board_gpio_table:
-        if not (gpio.gpio).startswith('GPIO'):
-            continue
+        #if not (gpio.gpio).startswith('GPIO'):
+        #    continue
         openbmc_gpio.gpio_export(gpio.gpio, gpio.shadow)
         if gpio.value == GPIO_INPUT:
             continue

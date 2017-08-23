@@ -31,7 +31,6 @@ SRC_URI = " \
     file://soc_gpio.py \
     file://soc_gpio_table.py \
     file://setup_board.py \
-    file://openbmc_gpio_setup.py \
     "
 
 S = "${WORKDIR}"
@@ -61,10 +60,5 @@ do_install_append() {
     for f in ${OPENBMC_GPIO_UTILS}; do
         install -m 755 $f ${localbindir}/${f}
     done
-
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
-    install -m 755 openbmc_gpio_setup.py ${D}${sysconfdir}/init.d/openbmc_gpio_setup.py
-    update-rc.d -r ${D} openbmc_gpio_setup.py start 59 5 .
 }
 

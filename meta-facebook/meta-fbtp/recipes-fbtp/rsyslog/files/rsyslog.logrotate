@@ -1,0 +1,31 @@
+# /etc/logrotate.d/rsyslog
+
+/var/log/messages
+/var/log/boot.log
+{
+        rotate 5
+        missingok
+        notifempty
+        size 10M
+        delaycompress
+        compress
+        postrotate
+          /bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
+        endscript
+}
+
+/mnt/data/logfile
+/mnt/data/cri_sel
+{
+        rotate 1
+        size 200k
+        missingok
+        notifempty
+        nocompress
+        sharedscripts
+        nodateext
+        start 0
+        postrotate
+          /bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
+        endscript
+}

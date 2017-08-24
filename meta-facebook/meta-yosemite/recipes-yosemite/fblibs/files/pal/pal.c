@@ -2947,5 +2947,5 @@ pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len
 
 //For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e
 int pal_get_plat_sku_id(void){
-  return 0x01; // Yosemite V2
+  return 0; // Yosemite V1
 }

@@ -51,6 +51,6 @@ SLOTS=
 
 SLOTS="$SLOTS spb nic"
 echo $SLOTS
-#/usr/local/bin/sensord $SLOTS
+/usr/local/bin/sensord $SLOTS
 
 echo "done."

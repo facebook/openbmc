@@ -37,6 +37,7 @@
 #include <sys/reboot.h>
 #include "watchdog.h"
 #include <openbmc/pal.h>
+#include <openbmc/obmc-i2c.h>
 
 #define I2C_BUS_NUM            14
 #define AST_I2C_BASE           0x1E78A000  /* I2C */
@@ -68,6 +69,17 @@ struct i2c_bus_s ast_i2c_dev_offset[I2C_BUS_NUM] = {
   {0x400,  "I2C DEV12 OFFSET", false},
   {0x440,  "I2C DEV13 OFFSET", false},
   {0x480,  "I2C DEV14 OFFSET", false},
+};
+enum {
+  BUS_LOCK_RECOVER_ERROR = 0,
+  BUS_LOCK_RECOVER_TIMEOUT,
+  BUS_LOCK_RECOVER_SUCCESS,
+  BUS_LOCK_PRESERVE,
+  SLAVE_DEAD_RECOVER_ERROR,
+  SLAVE_DEAD_RECOVER_TIMEOUT,
+  SLAVE_DEAD_RECOVER_SUCCESS,
+  SLAVE_DEAD_PRESERVE,
+  UNDEFINED_CASE,
 };
 
 #define CPU_INFO_PATH "/proc/stat"
@@ -667,63 +679,92 @@ watchdog_handler() {
 
 static void *
 i2c_mon_handler() {
-  uint32_t i2c_fd;
-  uint32_t i2c_cmd_sts[I2C_BUS_NUM] = {false};
-  void *i2c_reg;
-  void *i2c_cmd_reg;
-  bool is_error_occur[I2C_BUS_NUM] = {false};
-  char str_i2c_log[64];
-  int timeout;
+  char i2c_bus_device[16];
+  int dev;
+  int bus_status = 0;
+  int asserted_flag[I2C_BUS_NUM] = {};
+  bool assert_handle = 0;
   int i;
 
   while (1) {
-    i2c_fd = open("/dev/mem", O_RDWR | O_SYNC );
-    if (i2c_fd >= 0) {
-      i2c_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, i2c_fd, AST_I2C_BASE);
-      for (i = 0; i < I2C_BUS_NUM; i++) {
-        if (!ast_i2c_dev_offset[i].enabled) {
-          continue;
-        }
-        i2c_cmd_reg = (char*)i2c_reg + ast_i2c_dev_offset[i].offset + I2C_CMD_REG;
-        i2c_cmd_sts[i] = *(volatile uint32_t*) i2c_cmd_reg;
+    for (i = 0; i < I2C_BUS_NUM; i++) {
+      if (!ast_i2c_dev_offset[i].enabled) {
+        continue;
+      }
+      sprintf(i2c_bus_device, "/dev/i2c-%d", i);
+      dev = open(i2c_bus_device, O_RDWR);
+      if (dev < 0) {
+        syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+        continue;
+      }
+      bus_status = i2c_smbus_status(dev);
+      close(dev);
 
-        timeout = 3000;
-        if ((i2c_cmd_sts[i] & AST_I2CD_SDA_LINE_STS) && !(i2c_cmd_sts[i] & AST_I2CD_SCL_LINE_STS)) {
-          //if SDA == 1 and SCL == 0, it means the master is locking the bus.
-          if (is_error_occur[i] == false) {
-            while (i2c_cmd_sts[i] & AST_I2CD_BUS_BUSY_STS) {
-              i2c_cmd_reg = (char*)i2c_reg + ast_i2c_dev_offset[i].offset + I2C_CMD_REG;
-              i2c_cmd_sts[i] = *(volatile uint32_t*) i2c_cmd_reg;
-              if (timeout < 0) {
-                break;
-              }
-              timeout--;
-              usleep(10);
-            }
-            // If the bus is busy over 30 ms, means the I2C transaction is abnormal.
-            // To confirm the bus is not workable.
-            if (timeout < 0) {
-              memset(str_i2c_log, 0, sizeof(char) * 64);
-              sprintf(str_i2c_log, "ASSERT: I2C bus %d crashed (I2C bus index base 0)", i);
-              syslog(LOG_CRIT, str_i2c_log);
-              is_error_occur[i] = true;
-              pal_i2c_crash_assert_handle(i);
-            }
-          }
-        } else {
-          if (is_error_occur[i] == true) {
-            memset(str_i2c_log, 0, sizeof(char) * 64);
-            sprintf(str_i2c_log, "DEASSERT: I2C bus %d crashed (I2C bus index base 0)", i);
-            syslog(LOG_CRIT, str_i2c_log);
-            is_error_occur[i] = false;
-            pal_i2c_crash_deassert_handle(i);
-          }
+      assert_handle = 0;
+      if (bus_status == 0) {
+        /* Bus status is normal */
+        if (asserted_flag[i] != 0) {
+          asserted_flag[i] = 0;
+          syslog(LOG_CRIT, "DEASSERT: I2C(%d) Bus recoveried. (I2C bus index base 0)", i);
+          pal_i2c_crash_deassert_handle(i);
+        }
+      } else {
+        /* Check each case */
+        if (GETBIT(bus_status, BUS_LOCK_RECOVER_ERROR)
+            && !GETBIT(asserted_flag[i], BUS_LOCK_RECOVER_ERROR)) {
+          asserted_flag[i] = SETBIT(asserted_flag[i], BUS_LOCK_RECOVER_ERROR);
+          syslog(LOG_CRIT, "ASSERT: I2C(%d) bus is locked (Master Lock or Slave Clock Stretch). "
+                           "Recovery error. (I2C bus index base 0)", i);
+          assert_handle = 1;
+        }
+        bus_status = CLEARBIT(bus_status, BUS_LOCK_RECOVER_ERROR);
+        if (GETBIT(bus_status, BUS_LOCK_RECOVER_TIMEOUT)
+            && !GETBIT(asserted_flag[i], BUS_LOCK_RECOVER_TIMEOUT)) {
+          asserted_flag[i] = SETBIT(asserted_flag[i], BUS_LOCK_RECOVER_TIMEOUT);
+          syslog(LOG_CRIT, "ASSERT: I2C(%d) bus is locked (Master Lock or Slave Clock Stretch). "
+                           "Recovery timed out. (I2C bus index base 0)", i);
+          assert_handle = 1;
+        }
+        bus_status = CLEARBIT(bus_status, BUS_LOCK_RECOVER_TIMEOUT);
+        if (GETBIT(bus_status, BUS_LOCK_RECOVER_SUCCESS)) {
+          syslog(LOG_CRIT, "I2C(%d) bus had been locked (Master Lock or Slave Clock Stretch) "
+                           "and has been recoveried successfully. (I2C bus index base 0)", i);
+        }
+        bus_status = CLEARBIT(bus_status, BUS_LOCK_RECOVER_SUCCESS);
+        if (GETBIT(bus_status, SLAVE_DEAD_RECOVER_ERROR)
+            && !GETBIT(asserted_flag[i], SLAVE_DEAD_RECOVER_ERROR)) {
+          asserted_flag[i] = SETBIT(asserted_flag[i], SLAVE_DEAD_RECOVER_ERROR);
+          syslog(LOG_CRIT, "ASSERT: I2C(%d) Slave is dead (SDA keeps low). "
+                           "Bus recovery error. (I2C bus index base 0)", i);
+          assert_handle = 1;
+        }
+        bus_status = CLEARBIT(bus_status, SLAVE_DEAD_RECOVER_ERROR);
+        if (GETBIT(bus_status, SLAVE_DEAD_RECOVER_TIMEOUT)
+            && !GETBIT(asserted_flag[i], SLAVE_DEAD_RECOVER_TIMEOUT)) {
+          asserted_flag[i] = SETBIT(asserted_flag[i], SLAVE_DEAD_RECOVER_TIMEOUT);
+          syslog(LOG_CRIT, "ASSERT: I2C(%d) Slave is dead (SDAs keep low). "
+                           "Bus recovery timed out. (I2C bus index base 0)", i);
+          assert_handle = 1;
+        }
+        bus_status = CLEARBIT(bus_status, SLAVE_DEAD_RECOVER_TIMEOUT);
+        if (GETBIT(bus_status, SLAVE_DEAD_RECOVER_SUCCESS)) {
+          syslog(LOG_CRIT, "I2C(%d) Slave was dead. and bus has been recoveried successfully. "
+                           "(I2C bus index base 0)", i);
+        }
+        bus_status = CLEARBIT(bus_status, SLAVE_DEAD_RECOVER_SUCCESS);
+        /* Check if any undefined bit remain in bus_status */
+        if ((bus_status != 0) && !GETBIT(asserted_flag[i], UNDEFINED_CASE)) {
+          asserted_flag[i] = SETBIT(asserted_flag[i], 8);
+          syslog(LOG_CRIT, "ASSERT: I2C(%d) Undefined case. (I2C bus index base 0)", i);
+          assert_handle = 1;
+        }
+
+        if (assert_handle) {
+          pal_i2c_crash_assert_handle(i);
         }
       }
-      munmap(i2c_reg, PAGE_SIZE);
-      close(i2c_fd);
     }
-    sleep(1);
+    sleep(30);
   }
   return NULL;
 }

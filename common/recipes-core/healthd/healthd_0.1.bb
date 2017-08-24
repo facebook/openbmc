@@ -18,7 +18,7 @@ S = "${WORKDIR}"
 
 LDFLAGS =+ " -lpal -ljansson "
 
-DEPENDS =+ " libpal jansson "
+DEPENDS =+ " libpal jansson obmc-i2c"
 
 binfiles = "healthd"
 

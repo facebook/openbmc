@@ -21,12 +21,11 @@ sslctx.verify_mode = ssl.CERT_NONE
 checkurl = "http{}://localhost:{}/api".format(
     's' if listen_ssl else '', port)
 interval = 30
-timeout = 5
+timeout = 10
 service = "restapi"
 # intervals before forced kill
-grace = 1
+grace = 3
 graceleft = grace
-
 
 def killall(killcmd=b'python\x00/usr/local/bin/rest.py\x00'):
     try:
@@ -69,19 +68,27 @@ def main():
                   "REST API watchdog checking %s, every %d seconds"
                   % (checkurl, interval))
     while True:
+        global graceleft
         time.sleep(interval)
         status = runit_status(service)
+        timeout_seen = 0;
         if status != 0:
             syslog.syslog(syslog.LOG_WARNING,
                           "REST API not running (sv status: %d)" % (status, ))
             continue
         else:
             try:
-                f = urllib.request.urlopen(checkurl, timeout=timeout, context=sslctx)
+                # Send request to REST service to see if it's alive
+                f = urllib.request.urlopen(checkurl, timeout=timeout,
+                        context=sslctx)
                 f.read()
-            except Exception:
-                global graceleft
-                syslog.syslog(syslog.LOG_WARNING, "REST API not responding")
+            except Exception as ex:
+                timeout_seen = 1;
+                if graceleft == 1:
+                    # With python3, all exceptions can be
+                    # printed out as a string
+                    syslog.syslog(syslog.LOG_WARNING,
+                       "REST API timeout too many times : {}".format(str(ex)))
                 if graceleft <= 0:
                     syslog.syslog(syslog.LOG_ERR,
                                   "Killing unresponsive REST service")
@@ -89,6 +96,8 @@ def main():
                     graceleft = grace
                 else:
                     graceleft -= 1
+            if timeout_seen == 0 :
+                graceleft = grace
 
 if __name__ == "__main__":
     main()

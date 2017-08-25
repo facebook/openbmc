@@ -16,12 +16,12 @@ do_configure[prefuncs] += "configure_spi_layout"
 configure_spi_layout() {
     # If the VERIFIED_BOOT flag is changed the state will need to be cleaned.
     if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-        defconfig_option_on CONFIG_AST_DUAL_FLASH ../defconfig
+        defconfig_option_on CONFIG_AST_DUAL_FLASH ${WORKDIR}/defconfig
         if [ -f ".config" ]; then
             defconfig_option_on CONFIG_AST_DUAL_FLASH .config
         fi
     else
-        defconfig_option_off CONFIG_AST_DUAL_FLASH ../defconfig
+        defconfig_option_off CONFIG_AST_DUAL_FLASH ${WORKDIR}/defconfig
         if [ -f ".config" ]; then
             defconfig_option_off CONFIG_AST_DUAL_FLASH .config
         fi

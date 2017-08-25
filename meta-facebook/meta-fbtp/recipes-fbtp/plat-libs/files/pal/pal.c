@@ -163,8 +163,6 @@
 #define CPLD_ADDR 0xA0
 
 static uint8_t gpio_rst_btn[] = { 0, GPIO_POWER_RESET};
-const static uint8_t gpio_id_led[] = { 0, 41, 40, 43, 42 };
-const static uint8_t gpio_prsnt[] = { 0, 61, 60, 63, 62 };
 const char pal_fru_list[] = "all, mb, nic, riser_slot2, riser_slot3, riser_slot4";
 const char pal_server_list[] = "mb";
 
@@ -2855,9 +2853,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     case SERVER_GRACEFUL_SHUTDOWN:
       if (status == SERVER_POWER_OFF)
         return 1;
-      else
-        gs_flag = true;
-        return server_power_off(gs_flag);
+      gs_flag = true;
+      return server_power_off(gs_flag);
       break;
 
    case SERVER_POWER_RESET:
@@ -6737,8 +6734,7 @@ pal_is_ava_card(uint8_t riser_slot)
   }
 
   // control I2C multiplexer to target channel.
-  ret = pal_control_mux(fd, riser_mux_addr, riser_slot);
-  if ( ret < 0 ) {
+  if (pal_control_mux(fd, riser_mux_addr, riser_slot) < 0) {
     syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
     ret = false;
     goto error_exit;

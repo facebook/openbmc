@@ -233,14 +233,7 @@ STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles)
         tbuf[4] = 0x0;
 
         number_of_cycles -= this_delay_cycle;
-#if 0
 
-    if (number_of_cycles > 8)
-    {
-        printf("ERROR, trying to delay >8 cycles (%d)\n", number_of_cycles);
-        tbuf[3] = 8;
-    }
-#endif
         if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
                                tbuf, tlen, rbuf, &rlen) < 0) {
             syslog(LOG_ERR, "wait cycle failed, slot%d", slot_id);
@@ -439,9 +432,6 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
         padData = state->padDataZero;
     } else {
         syslog(LOG_ERR, "Shift called but the tap is not in a ShiftIR/DR tap state, slot%d", state->fru);
-#ifdef FBY2_DEBUG
-        printf("ERROR: Shift called but the tap is not in a ShiftIR/DR tap state, slot%d\n", state->fru);
-#endif
         return ST_ERR;
     }
 
@@ -513,10 +503,6 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     if (jtag_bic_read_write_scan(state, &scan_xfer) < 0) {
         syslog(LOG_ERR, "%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed, slot%d",
                __FUNCTION__, state->fru);
-#ifdef FBY2_DEBUG
-        printf("%s: ERROR, BIC_JTAG_READ_WRITE_SCAN failed, slot%d\n",
-               __FUNCTION__, state->fru);
-#endif
         return ST_ERR;
     }
 
@@ -524,10 +510,6 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     if (jtag_bic_set_tap_state(state->fru, state->tap_state, end_tap_state)) {
         syslog(LOG_ERR, "%s: ERROR, failed to go state %d, slot%d", __FUNCTION__,
                end_tap_state, state->fru);
-#ifdef FBY2_DEBUG
-        printf("%s: ERROR, failed to go state %d, slot%d\n", __FUNCTION__,
-               end_tap_state, state->fru);
-#endif
         return (ST_ERR);
     }
 
@@ -611,6 +593,10 @@ int jtag_bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     printf(", txlen=%d\n", txlen);
 #endif
     ret = bic_ipmb_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
+    if (ret) {
+      syslog(LOG_ERR, "ERROR, jtag_bic_ipmb_wrapper failed, slot%d\n", slot_id);
+    }
+
 
 #ifdef FBY2_DEBUG
     printf("        returned data: rxlen=%d, rxbuf=0x%02x\n", *rxlen, rxbuf[0]);
@@ -667,7 +653,7 @@ STATUS jtag_bic_set_tap_state(uint8_t slot_id, JtagStates src_state, JtagStates 
     else {
         ret = generateTMSbits(src_state, tap_state, &(tbuf[3]), &(tbuf[4]));
         if (ret != ST_OK) {
-            printf("      ERROR: __%s__ failed to find path from state%d to state%d\n",
+            syslog(LOG_ERR, "ERROR: __%s__ failed to find path from state%d to state%d\n",
                    __FUNCTION__, src_state, tap_state);
             return ret;
         }
@@ -796,15 +782,16 @@ STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer
         if (    this_write_bit_length < 0  || this_read_bit_length < 0
             || last_transaction == 1
             || (this_write_bit_length == 0 && this_read_bit_length ==0) ) {
-            printf("%s: ASD_SP02 ERROR, invalid read write length. read=%d, write=%d, last_transaction=%d\n",
-                     __FUNCTION__, this_read_bit_length, this_write_bit_length,
+            syslog(LOG_ERR, "ASD_SP02: slot=%d, ERROR: invalid read write length. read=%d, write=%d, last_transaction=%d\n",
+                    slot_id, this_read_bit_length, this_write_bit_length,
                     last_transaction);
             return ST_ERR;
         }
 
         transfer_bit_length -= MAX(this_write_bit_length, this_read_bit_length);
         if (transfer_bit_length) {
-            printf("ASD_SP01: multi loop transfer %d\n", transfer_bit_length);
+            syslog(LOG_DEBUG, "ASD_SP01: slot=%d, multi loop transfer %d",
+                   slot_id, transfer_bit_length);
         }
 
         write_bit_length -= this_write_bit_length;
@@ -825,11 +812,7 @@ STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer
         tdi_buffer += (this_write_bit_length >> 3);
         tdo_buffer += (this_read_bit_length >> 3);
         if (ret != ST_OK) {
-#ifdef FBY2_DEBUG
-            printf("%s: ERROR, jtag_bic_shift_wrapper failed, slot%d\n",
-                   __FUNCTION__, slot_id);
-#endif
-            syslog(LOG_ERR, "%s: ERROR, jtag_bic_shift_wrapper failed, slot%d\n",
+            syslog(LOG_ERR, "%s: ERROR, jtag_bic_shift_wrapper failed, slot%d",
                    __FUNCTION__, slot_id);
             break;
         }

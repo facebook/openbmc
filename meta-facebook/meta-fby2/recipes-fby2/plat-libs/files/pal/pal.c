@@ -117,6 +117,8 @@ const char pal_tach_list[] = "0, 1";
 
 uint8_t g_dev_guid[GUID_SIZE] = {0};
 
+static unsigned char m_slot_ac_start[MAX_NODES] = {0};
+
 static void *m_gpio_hand_sw = NULL;
 static void *m_hbled_output = NULL;
 
@@ -4163,24 +4165,49 @@ int pal_get_plat_sku_id(void){
 }
 
 //Do slot ac cycle
+static void * slot_ac_cycle(void *ptr)
+{
+  int slot = (int)ptr;
+  char pwr_state[MAX_VALUE_LEN] = {0};
+
+  pthread_detach(pthread_self());
+
+  msleep(500);
+
+  pal_get_last_pwr_state(slot, pwr_state);
+  if (!pal_set_server_power(slot, SERVER_12V_CYCLE)) {
+    syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", slot);
+    pal_power_policy_control(slot, pwr_state);
+  }
+
+  m_slot_ac_start[slot-1] = false;
+  pthread_exit(0);
+}
+
 int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
 
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
   uint8_t *data = req_data;
-  char pwr_state[MAX_VALUE_LEN] = {0};
+  int ret, slot_id = slot;
+  pthread_t tid;
+
   *res_len = 0;
 
-  if((*data != 0x55) || (*(data+1) != 0x66) || (*(data+2) != 0x0f)) {
+  if ((*data != 0x55) || (*(data+1) != 0x66) || (*(data+2) != 0x0f)) {
     return completion_code;
   }
 
-  pal_get_last_pwr_state(slot, pwr_state);
-
-  if(pal_set_server_power(slot, SERVER_12V_CYCLE))
-    return completion_code; 
-
-  syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", slot);
-  pal_power_policy_control(slot, pwr_state);
+  if (m_slot_ac_start[slot-1] != false) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+	
+  m_slot_ac_start[slot-1] = true;
+  ret = pthread_create(&tid, NULL, slot_ac_cycle, (void *)slot_id);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Create Slot AC Cycle thread failed!\n", __func__);
+    m_slot_ac_start[slot-1] = false;
+    return CC_NODE_BUSY;
+  }
 
   completion_code = CC_SUCCESS;
   return completion_code;

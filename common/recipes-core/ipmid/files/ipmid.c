@@ -2148,6 +2148,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
     syslog(LOG_WARNING, "[%s] Close the previous thread\n", __func__);
 #endif
     pthread_cancel(bios_timer_tid[req->payload_id - 1]);
+    IsTimerStart[req->payload_id - 1] = false;
   }
 
   if (req->data[0] & (BIOS_BOOT_VALID_FLAG | CMOS_VALID_FLAG)) {

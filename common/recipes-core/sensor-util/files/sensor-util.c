@@ -41,7 +41,9 @@
 #define STATUS_LCR  "lcr"
 #define STATUS_LNR  "lnr"
 
-#define MAX_HISTORY_PERIOD  3600
+#define MAX_HISTORY_PERIOD     3600
+#define AGGREGATE_SENSOR_START 0x100
+#define AGGREGATE_SENSOR_FRU   0xff
 
 #ifdef CUSTOM_FRU_LIST
   static const char * pal_fru_list_sensor_history_t =  pal_fru_list_sensor_history;
@@ -64,7 +66,7 @@ print_usage() {
 }
 
 static void
-print_sensor_reading(float fvalue, uint8_t snr_num, thresh_sensor_t *thresh,
+print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
     bool threshold, char *status) {
 
   printf("%-28s (0x%X) : %7.2f %-5s | (%s)",
@@ -151,7 +153,7 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
       continue;
     } else {
       get_sensor_status(fvalue, &thresh, status);
-      print_sensor_reading(fvalue, snr_num, &thresh, threshold, status);
+      print_sensor_reading(fvalue, (uint16_t)snr_num, &thresh, threshold, status);
     }
   }
 }
@@ -202,34 +204,41 @@ static void clear_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_c
 }
 
 static void
-print_aggregate_sensor(bool threshold)
+print_aggregate_sensor(bool threshold, uint16_t snr_num)
 {
   size_t cnt, i;
   char status[8];
   thresh_sensor_t thresh;
 
+  if (snr_num != 0 && snr_num < AGGREGATE_SENSOR_START) {
+    return;
+  }
   if (aggregate_sensor_init(NULL)) {
     return;
   }
   if (aggregate_sensor_count(&cnt)) {
     return;
   }
+
   for (i = 0; i < cnt; i++) {
     float value;
     int ret;
+    uint16_t num = i + AGGREGATE_SENSOR_START;
+
+    if (snr_num && snr_num != num) {
+      continue;
+    }
     if (aggregate_sensor_threshold(i, &thresh)) {
       continue;
     }
     ret = aggregate_sensor_read(i, &value);
     if (ret) {
-      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, i);
+      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, num);
     } else {
       get_sensor_status(value, &thresh, status);
-      print_sensor_reading(value, i, &thresh, threshold, status);
+      print_sensor_reading(value, num, &thresh, threshold, status);
     }
-
   }
-
 }
 
 static int
@@ -290,9 +299,9 @@ int
 main(int argc, char **argv) {
 
   int i = 2;
-  int ret;
+  int ret = 0;
   uint8_t fru;
-  uint8_t num = 0;
+  uint16_t num = 0;
   bool threshold = false;
   bool history = false;
   bool history_clear = false;
@@ -304,15 +313,19 @@ main(int argc, char **argv) {
     exit(-1);
   }
 
-  ret = pal_get_fru_id(argv[1], &fru);
-  if (ret < 0) {
-    print_usage();
-    return ret;
+  if (!strcmp(argv[1], "aggregate")) {
+    fru = AGGREGATE_SENSOR_FRU;
+  } else {
+    ret = pal_get_fru_id(argv[1], &fru);
+    if (ret < 0) {
+      print_usage();
+      return ret;
+    }
   }
 
   if (argc > 2) {
     errno = 0;
-    num = (uint8_t) strtol(argv[2], NULL, 0);
+    num = (uint16_t) strtol(argv[2], NULL, 0);
     if ((errno == 0) && (num > 0)) {
       i++;
     } else {
@@ -346,6 +359,10 @@ main(int argc, char **argv) {
     print_usage();
     exit(-1);
   }
+  if (fru == AGGREGATE_SENSOR_FRU && (history || history_clear)) {
+    printf("Sensor history unsupported for aggregate sensors.\n");
+    exit(-1);
+  }
 
   if (history_clear || history) {
     //Check if the input FRU is exist in sensor history list
@@ -357,12 +374,20 @@ main(int argc, char **argv) {
   }
 
   if (fru == 0) {
-    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-      ret |= print_sensor(fru, num, history, threshold, history_clear, period);
+    if (num < AGGREGATE_SENSOR_START) {
+      for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+        ret |= print_sensor(fru, (uint8_t)num, history, threshold, history_clear, period);
+      }
     }
-    print_aggregate_sensor(threshold);
+    if (!history && !history_clear) {
+      print_aggregate_sensor(threshold, num);
+    }
+  } else if (fru == AGGREGATE_SENSOR_FRU) {
+    print_aggregate_sensor(threshold, num);
   } else {
-    ret = print_sensor(fru, num, history, threshold, history_clear, period);
+    if (num < AGGREGATE_SENSOR_START) {
+      ret = print_sensor(fru, (uint8_t)num, history, threshold, history_clear, period);
+    }
   }
   return ret;
 }

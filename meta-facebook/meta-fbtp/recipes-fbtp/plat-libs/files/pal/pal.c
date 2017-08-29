@@ -6126,40 +6126,40 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
 
   switch(snr_num) {
     case MB_SENSOR_FAN0_TACH:
-      sprintf(cmd, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
+      sprintf(cmd, "Fan0 %s %.0fRPM - Assert", thresh_name, val);
       break;
     case MB_SENSOR_FAN1_TACH:
-      sprintf(cmd, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
+      sprintf(cmd, "Fan1 %s %.0fRPM - Assert", thresh_name, val);
       break;
     case MB_SENSOR_CPU0_TEMP:
-      sprintf(cmd, "P0 Temp %s %.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P0 Temp %s %.0fC - Assert", thresh_name, val);
       break;
     case MB_SENSOR_CPU1_TEMP:
-      sprintf(cmd, "P1 Temp %s %.0f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P1 Temp %s %.0fC - Assert", thresh_name, val);
       break;
     case MB_SENSOR_P3V_BAT:
-      sprintf(cmd, "P3V_BAT %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P3V_BAT %s %.2fV - Assert", thresh_name, val);
       break;
     case MB_SENSOR_P3V3:
-      sprintf(cmd, "P3V3 %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P3V3 %s %.2fV - Assert", thresh_name, val);
       break;
     case MB_SENSOR_P5V:
-      sprintf(cmd, "P5V %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P5V %s %.2fV - Assert", thresh_name, val);
       break;
     case MB_SENSOR_P12V:
-      sprintf(cmd, "P12V %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P12V %s %.2fV - Assert", thresh_name, val);
       break;
     case MB_SENSOR_P1V05:
-      sprintf(cmd, "P1V05 %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P1V05 %s %.2fV - Assert", thresh_name, val);
       break;
     case MB_SENSOR_PVNN_PCH_STBY:
-      sprintf(cmd, "PVNN_PCH_STBY %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "PVNN_PCH_STBY %s %.2fV - Assert", thresh_name, val);
       break;
     case MB_SENSOR_P3V3_STBY:
-      sprintf(cmd, "P3V3_STBY %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P3V3_STBY %s %.2fV - Assert", thresh_name, val);
       break;
     case MB_SENSOR_P5V_STBY:
-      sprintf(cmd, "P5V_STBY %s %.2f - ASSERT", thresh_name, val);
+      sprintf(cmd, "P5V_STBY %s %.2fV - Assert", thresh_name, val);
       break;
     default:
       return;
@@ -6199,40 +6199,40 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
 
   switch(snr_num) {
     case MB_SENSOR_FAN0_TACH:
-      sprintf(cmd, "Fan0 %s %3.0fRPM - DEASSERT", thresh_name, val);
+      sprintf(cmd, "Fan0 %s %3.0fRPM - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_FAN1_TACH:
-      sprintf(cmd, "Fan1 %s %3.0fRPM - DEASSERT", thresh_name, val);
+      sprintf(cmd, "Fan1 %s %3.0fRPM - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_CPU0_TEMP:
-      sprintf(cmd, "P0 Temp %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P0 Temp %s %3.0fC - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_CPU1_TEMP:
-      sprintf(cmd, "P1 Temp %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P1 Temp %s %3.0fC - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_P3V_BAT:
-      sprintf(cmd, "P3V_BAT %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P3V_BAT %s %3.0fV - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_P3V3:
-      sprintf(cmd, "P3V3 %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P3V3 %s %3.0fV - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_P5V:
-      sprintf(cmd, "P5V %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P5V %s %3.0fV - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_P12V:
-      sprintf(cmd, "P12V %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P12V %s %3.0fV - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_P1V05:
-      sprintf(cmd, "P1V05 %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P1V05 %s %3.0fV - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_PVNN_PCH_STBY:
-      sprintf(cmd, "PVNN_PCH_STBY %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "PVNN_PCH_STBY %s %3.0fV - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_P3V3_STBY:
-      sprintf(cmd, "P3V3_STBY %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P3V3_STBY %s %3.0fV - Deassert", thresh_name, val);
       break;
     case MB_SENSOR_P5V_STBY:
-      sprintf(cmd, "P5V_STBY %s %3.0f - DEASSERT", thresh_name, val);
+      sprintf(cmd, "P5V_STBY %s %3.0fV - Deassert", thresh_name, val);
       break;
 
     default:

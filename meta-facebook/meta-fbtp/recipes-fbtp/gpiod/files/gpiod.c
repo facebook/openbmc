@@ -54,6 +54,8 @@ static uint8_t MSMI_irq = 0;
 static long int reset_sec = 0, power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static bool smi_count_start = false;
+
 static inline long int reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
   *val = 0;
@@ -191,6 +193,54 @@ static void gpio_event_handle(gpio_poll_st *gp)
   }
 }
 
+static void
+*smi_timer()
+{
+
+  int smi_timeout_count = 1;  
+  int smi_timeout_threshold = 90;
+  bool is_issue_event = false;
+
+#ifdef SMI_DEBUG
+  syslog(LOG_WARNING, "[%s][%lu] Timer is started.\n", __func__, pthread_self());
+#endif
+
+  while(1)
+  {
+    if ( smi_count_start == true )
+    {
+      smi_timeout_count++;
+    }
+    else
+    {
+      smi_timeout_count = 0;
+    }
+
+#ifdef SMI_DEBUG
+    syslog(LOG_WARNING, "[%s][%lu] smi_timeout_count[%d] == smi_timeout_threshold[%d]\n", __func__, pthread_self(), smi_timeout_count, smi_timeout_threshold);
+#endif
+    
+    if ( smi_timeout_count == smi_timeout_threshold )
+    {
+      syslog(LOG_CRIT, "ASSERT: GPIOG7-FM_BIOS_SMI_ACTIVE_N\n");
+      is_issue_event = true;
+    }
+    else if ( (is_issue_event == true) && (smi_count_start == false) )
+    {
+      syslog(LOG_CRIT, "DEASSERT: GPIOG7-FM_BIOS_SMI_ACTIVE_N\n");
+      is_issue_event = false;
+    }
+
+    //sleep periodically.
+    sleep(1);
+#ifdef SMI_DEBUG
+    syslog(LOG_WARNING, "[%s][%lu] smi_count_start flag is %d. count=%d\n", __func__, pthread_self(), smi_count_start, smi_timeout_count);
+#endif
+  }
+
+  return NULL;
+}
+
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON
 static void gpio_event_handle_power(gpio_poll_st *gp)
 {
@@ -225,6 +275,18 @@ static void gpio_event_handle_power(gpio_poll_st *gp)
   }
   if (gp->gs.gs_gpio == gpio_num("GPION3") ){ //FM_CPU_MSMI_LVT3_N
     MSMI_irq++;
+    return;
+  }
+
+  if ( gp->gs.gs_gpio == gpio_num("GPIOG7") ) {//GPIOG7
+    if ( gp->value == GPIO_VALUE_LOW )
+    {
+      smi_count_start = true;
+    }
+    else
+    {
+      smi_count_start = false;
+    }
     return;
   }
 
@@ -322,6 +384,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPIOG1", "FM_CPU_CATERR_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOG2", "FM_PCH_BMC_THERMTRIP_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG3", "FM_CPU0_SKTOCC_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG7", "FM_BIOS_SMI_ACTIVE_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI0", "FM_CPU0_FIVR_FAULT_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI1", "FM_CPU1_FIVR_FAULT_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL0", "IRQ_UV_DETECT_N"},
@@ -538,6 +601,7 @@ main(int argc, char **argv) {
   int rc, pid_file;
   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
+  pthread_t tid_smi_timer;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -562,6 +626,13 @@ main(int argc, char **argv) {
       syslog(LOG_WARNING, "pthread_create for platform_reset_filter_handler\n");
       exit(1);
     }
+
+    //Create thread for SMI check
+    if (pthread_create(&tid_smi_timer, NULL, smi_timer, NULL) < 0) 
+    {
+      syslog(LOG_WARNING, "pthread_create for smi_handler fail\n");
+      exit(1);
+    }   
 
     gpio_poll_open(g_gpios, g_count);
     //GPIO status pre check

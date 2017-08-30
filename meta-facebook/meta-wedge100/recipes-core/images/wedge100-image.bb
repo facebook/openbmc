@@ -20,7 +20,6 @@ IMAGE_INSTALL += " \
   bcm5396-util \
   ast-mdio \
   openbmc-gpio \
-  fan-ctrl \
   rackmon \
   watchdog-ctrl \
   sensor-setup \
@@ -38,6 +37,7 @@ IMAGE_INSTALL += " \
   spatula \
   trousers \
   tpm-tools \
+  fan-ctrl \
   "
 
 IMAGE_FEATURES += " \

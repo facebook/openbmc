@@ -27,7 +27,7 @@ def board_fan_actions(fan, action='None'):
     - handling fan led
     '''
     if "led" in action:
-        set_fan_led(fan.fan_num, color=action)
+        set_fan_led(fan.label, color=action)
     else:
         Logger.warn("%s needs action %s" % (fan.label, str(action),))
     pass
@@ -41,6 +41,8 @@ def board_host_actions(action='None', cause='None'):
     '''
     if "host_shutdown" in action:
         Logger.crit("Host is shutdown due to cause %s" % (str(cause),))
+        # TODO: In case host_shutdown was trigger due to bad fans then
+        # cross check with fantray failure state as well
         return host_shutdown()
     Logger.warn("Host needs action %s and cause %s" % (str(action), str(cause),))
     pass
@@ -73,6 +75,10 @@ def set_fan_led(fan, color='led_blue'):
     FAN_LED = "/sys/bus/i2c/drivers/fancpld/8-0033/"
     FAN_LED_BLUE = "0x1"
     FAN_LED_RED = "0x2"
+
+    for fan in fan.split():
+        if fan.isdigit():
+            break
 
     fan_key = 'fantray' + str(fan) + '_led_ctrl'
     if "red" in color:

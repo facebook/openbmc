@@ -61,14 +61,13 @@
 #include <signal.h>
 #include <openbmc/gpio.h>
 #include "openbmc/ipmi.h"
-#include "openbmc/ipmb.h"
 
 unsigned char req_buf[256];
 unsigned char res_buf[300];
 uint8_t debug = 0;
+uint8_t fm_bmc_ready_n = 145;
 int kcs_fd;
 
-#define FM_BMC_READY_N 145
 #define TOUCH(path) \
 {\
   int fd = creat(path, 0644);\
@@ -78,7 +77,7 @@ int kcs_fd;
 void set_bmc_ready(bool ready)
 {
   gpio_st gpio;
-  gpio_open(&gpio, FM_BMC_READY_N);
+  gpio_open(&gpio, fm_bmc_ready_n);
   /* Active low */
   if (ready)
     gpio_write(&gpio, GPIO_VALUE_LOW);
@@ -145,9 +144,10 @@ main(int argc, char * const argv[]) {
   daemon(1, 0);
   openlog("kcsd", LOG_CONS, LOG_DAEMON);
 
-  if (argc > 1)
+  if (argc > 2) {
     kcs_channel_num = (uint8_t)strtoul(argv[1], NULL, 0);
-
+    fm_bmc_ready_n = (uint8_t)strtoul(argv[2], NULL, 0);
+  }
   sprintf(cmd, "echo 1 > /sys/devices/platform/ast-kcs.%d/enable", kcs_channel_num);
   system(cmd);
 

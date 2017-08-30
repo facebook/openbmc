@@ -56,6 +56,8 @@
 #define LED_ON_TIME_BMC_SELECT 500
 #define LED_OFF_TIME_BMC_SELECT 500
 
+//SLED Time Sync Timeout
+#define SLED_TS_TIMEOUT 100
 
 uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 
@@ -295,17 +297,19 @@ ts_handler() {
 
     // Make sure the time is initialized properly
     // Since there is no battery backup, the time could be reset to build time
-    if (time_init == 0) {
+    // wait 100s at most, to prevent infinite waiting
+    if ( time_init < SLED_TS_TIMEOUT ) {
       // Read current time
       clock_gettime(CLOCK_REALTIME, &ts);
 
-      if (ts.tv_sec < time_sled_off) {
+      if ( (ts.tv_sec < time_sled_off) && (++time_init < SLED_TS_TIMEOUT) ) {
         sleep(1);
         continue;
       }
-
-      // If current time is more than the stored time, the date is correct
-      time_init = 1;
+      
+      // If get the correct time or time sync timeout
+      time_init = SLED_TS_TIMEOUT;
+      
       // Need to log SLED ON event, if this is Power-On-Reset
       if (pal_is_bmc_por()) {
         // Get uptime

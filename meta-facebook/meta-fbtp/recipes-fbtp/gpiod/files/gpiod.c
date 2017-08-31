@@ -263,7 +263,8 @@ static void gpio_event_handle_power(gpio_poll_st *gp)
       gp->gs.gs_gpio == gpio_num("GPION3") || //FM_CPU_MSMI_LVT3_N
       gp->gs.gs_gpio == gpio_num("GPIOG1") || //FM_CPU_CATERR_LVT3_N
       gp->gs.gs_gpio == gpio_num("GPIOE6") || //FM_CPU0_PROCHOT_LVT3_BMC_N
-      gp->gs.gs_gpio == gpio_num("GPIOE7") ){ //FM_CPU1_PROCHOT_LVT3_BMC_N
+      gp->gs.gs_gpio == gpio_num("GPIOE7") || //FM_CPU1_PROCHOT_LVT3_BMC_N
+      gp->gs.gs_gpio == gpio_num("GPIOX5") ){ //H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N
     if (power_on_sec < 3)
       return;
   }

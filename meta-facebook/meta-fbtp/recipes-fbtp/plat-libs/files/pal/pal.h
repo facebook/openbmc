@@ -412,6 +412,7 @@ int pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type);
 bool pal_is_ava_card(uint8_t riser_slot);
 int pal_get_machine_configuration(char *conf);
 void pal_check_power_sts(void);
+int pal_CPU_error_num_chk(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

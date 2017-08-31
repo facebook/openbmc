@@ -534,6 +534,8 @@ static void *
 ierr_mcerr_event_handler() {
   uint8_t CATERR_ierr_time_count = 0;
   uint8_t MSMI_ierr_time_count = 0;
+  int CPU_num;
+  char temp_log[128] = {0};
 
   while (1) {
     if ( CATERR_irq > 0 ){
@@ -543,10 +545,22 @@ ierr_mcerr_event_handler() {
           //FM_CPU_CATERR_LVT3_N
           if (gpio_get(gpio_num("GPIOG1")) == GPIO_VALUE_LOW) {
             syslog(LOG_CRIT, "ASSERT: IERR/CATERR\n");
-            pal_add_cri_sel("CPU IERR/CATERR");
+
+            CPU_num = pal_CPU_error_num_chk();
+            if(CPU_num != -1)
+              sprintf(temp_log, "CPU%d IERR/CATERR", CPU_num);
+            else
+              sprintf(temp_log, "CPU IERR/CATERR");
+            pal_add_cri_sel(temp_log);
           } else {
             syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
-            pal_add_cri_sel("CPU MCERR/CATERR");
+
+            CPU_num = pal_CPU_error_num_chk();
+            if(CPU_num != -1)
+              sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
+            else
+              sprintf(temp_log, "CPU MCERR/CATERR");
+            pal_add_cri_sel(temp_log);
           }
             CATERR_irq--;
             CATERR_ierr_time_count = 0;
@@ -555,9 +569,15 @@ ierr_mcerr_event_handler() {
             system("/usr/local/bin/autodump.sh &");
           } else if ( CATERR_irq > 1 ){
                    while (CATERR_irq > 1){
-                        syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
-                        pal_add_cri_sel("CPU MCERR/CATERR");
-                        CATERR_irq = CATERR_irq - 1;
+                     syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
+
+                     CPU_num = pal_CPU_error_num_chk();
+                     if(CPU_num != -1)
+                       sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
+                     else
+                       sprintf(temp_log, "CPU MCERR/CATERR");
+                     pal_add_cri_sel(temp_log);
+                     CATERR_irq = CATERR_irq - 1;
                    }
                    CATERR_ierr_time_count = 1;
                  }
@@ -571,10 +591,22 @@ ierr_mcerr_event_handler() {
           //FM_CPU_MSMI_LVT3_N
           if (gpio_get(gpio_num("GPION3")) == GPIO_VALUE_LOW) {
             syslog(LOG_CRIT, "ASSERT: IERR/MSMI\n");
-            pal_add_cri_sel("CPU IERR/MSMI");
+
+            CPU_num = pal_CPU_error_num_chk();
+            if(CPU_num != -1)
+              sprintf(temp_log, "CPU%d IERR/MSMI", CPU_num);
+            else
+              sprintf(temp_log, "CPU IERR/MSMI");
+            pal_add_cri_sel(temp_log);
           } else {
             syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
-            pal_add_cri_sel("CPU MCERR/MSMI");
+
+            CPU_num = pal_CPU_error_num_chk();
+            if(CPU_num != -1)
+              sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
+            else
+              sprintf(temp_log, "CPU MCERR/MSMI");
+            pal_add_cri_sel(temp_log);
           }
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
@@ -583,9 +615,15 @@ ierr_mcerr_event_handler() {
           system("/usr/local/bin/autodump.sh &");
         } else if ( MSMI_irq > 1 ){
                  while (MSMI_irq > 1){
-                      syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
-                      pal_add_cri_sel("CPU MCERR/MSMI");
-                      MSMI_irq = MSMI_irq - 1;
+                   syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
+
+                   CPU_num = pal_CPU_error_num_chk();
+                   if(CPU_num != -1)
+                     sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
+                   else
+                     sprintf(temp_log, "CPU MCERR/MSMI");
+                   pal_add_cri_sel(temp_log);
+                   MSMI_irq = MSMI_irq - 1;
                  }
                  MSMI_ierr_time_count = 1;
                }

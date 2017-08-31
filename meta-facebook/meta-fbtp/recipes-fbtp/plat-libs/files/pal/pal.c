@@ -6776,3 +6776,42 @@ pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type )
 #endif
   return ret;
 }
+
+int
+pal_CPU_error_num_chk(void)
+{
+  int len;
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+
+  // Get biosscratchpad7[26]: DWR
+  req = ipmb_txb();
+  res = ipmb_rxb();
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->cmd = CMD_NM_SEND_RAW_PECI;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x30;
+  req->data[4] = 0x05;
+  req->data[5] = 0x05;
+  req->data[6] = 0xa1;
+  req->data[7] = 0x00;
+  req->data[8] = 0x00;
+  req->data[9] = 0x05;
+  req->data[10] = 0x00;
+  // Invoke IPMB library handler
+  len = ipmb_send_buf(0x4, 11+MIN_IPMB_REQ_LEN);
+  if (len >= (4+MIN_IPMB_RES_LEN) && // Data len >= 4
+    res->cc == 0 && // IPMB Success
+    res->data[3] == 0x40 ) {
+    if((res->data[7] & 0xE0) > 0)
+      return 1; //CPU1
+    else if((res->data[7] & 0x1C) > 0)
+      return 0; // CPU0
+    else
+      return -1;
+  } else
+    return -1;
+}

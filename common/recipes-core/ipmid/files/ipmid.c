@@ -3496,7 +3496,8 @@ wdt_timer (void *arg) {
           wdt->no_log = 0;
         }
         else {
-          syslog(LOG_CRIT, "%s Watchdog %s",
+          syslog(LOG_CRIT, "FRU: %u, %s Watchdog %s",
+            wdt->slot,
             wdt_use_name[wdt->use & 0x7],
             wdt_action_name[action & 0x7]);
         }

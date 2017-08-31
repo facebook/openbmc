@@ -15,9 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-all: gpiod 
+all: gpiod
 
-sensord: gpiod.c 
+gpiod: gpiod.c
 	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -pthread -lm -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean

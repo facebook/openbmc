@@ -41,7 +41,7 @@
 #define GETMASK(y)          (1LL << y)
 
 #define MAX_NUM_SLOTS       4
-#define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
+#define DELAY_GPIOD_READ    1000000
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
@@ -113,7 +113,7 @@ get_struct_gpio_pin(uint8_t fru) {
   return gpios;
 }
 
-int
+static int
 enable_gpio_intr_config(uint8_t fru, uint8_t gpio) {
   int ret;
 
@@ -190,7 +190,6 @@ static void
 populate_gpio_pins(uint8_t fru) {
 
   int i, ret;
-
   gpio_pin_t *gpios;
 
   gpios = get_struct_gpio_pin(fru);
@@ -199,14 +198,10 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  for(i = 0; i < gpio_pin_cnt; i++) {
-    // Only monitor the PWRGOOD_CPU pin
-    if (i == PWRGD_COREPWR)
-      gpios[gpio_pin_list[i]].flag = 1;
-  }
+  // Only monitor the PWRGD_COREPWR pin
+  gpios[PWRGD_COREPWR].flag = 1;
 
-
-  for(i = 0; i < MAX_GPIO_PINS; i++) {
+  for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GETBIT(gpio_ass_val, i);
       ret = fby2_get_gpio_name(fru, i, gpios[i].name);
@@ -222,151 +217,105 @@ init_gpio_pins() {
   int fru;
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
-        populate_gpio_pins(fru);
+    populate_gpio_pins(fru);
   }
 
 }
 
 /* Monitor the gpio pins */
-static int
-gpio_monitor_poll(uint8_t fru_flag) {
+static void *
+gpio_monitor_poll(void *ptr) {
   int i, ret;
-  uint8_t fru;
-  uint8_t slot_12v[MAX_NUM_SLOTS + 1];
-  uint64_t revised_pins, n_pin_val = 0, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
+  uint8_t fru = (int)ptr;
+  uint8_t slot_12v = 1;
+  uint64_t revised_pins, n_pin_val = 0, o_pin_val = 0;
   gpio_pin_t *gpios;
   char pwr_state[MAX_VALUE_LEN];
-  uint64_t status = 0;
-  bic_gpio_t gpio = {0};
   char path[128];
 
   /* Check for initial Asserts */
-  for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
-    if (GETBIT(fru_flag, fru) == 0)
-      continue;
-
-    // Inform BIOS that BMC is ready
-    bic_set_gpio(fru, BMC_READY_N, 0);
-
-    ret = bic_get_gpio(fru, &gpio);
-    if (ret) {
-#ifdef DEBUG
-      syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-        " fru %u", fru);
-#endif
-      continue;
-    }
-
-    gpios = get_struct_gpio_pin(fru);
-    if  (gpios == NULL) {
-      syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-          " fru %u", fru);
-      continue;
-    }
-
-    memcpy(&status, (uint8_t *) &gpio, 5);
-
-    slot_12v[fru] = 1;
-    o_pin_val[fru] = 0;
-
-    for (i = 0; i < MAX_GPIO_PINS; i++) {
-
-      if (gpios[i].flag == 0)
-        continue;
-
-      gpios[i].status = GETBIT(status, i);
-
-      if (gpios[i].status)
-        o_pin_val[fru] = SETBIT(o_pin_val[fru], i);
-    }
+  gpios = get_struct_gpio_pin(fru);
+  if (gpios == NULL) {
+    syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for fru %u", fru);
+    pthread_exit(NULL);
   }
 
-  /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
-  while(1) {
-
-    for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
-      if (!(GETBIT(fru_flag, fru))) {
-        usleep(DELAY_GPIOD_READ);
-        continue;
-      }
-
-      gpios = get_struct_gpio_pin(fru);
-      if  (gpios == NULL) {
-        syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-            " fru %u", fru);
-        continue;
-      }
-
-      memset(pwr_state, 0, MAX_VALUE_LEN);
-      pal_get_last_pwr_state(fru, pwr_state);
-
-      /* Get the GPIO pins */
-      if ((ret = bic_get_gpio(fru, (bic_gpio_t *) &n_pin_val)) < 0) {
-        /* log the error message only when the CPU is on but not reachable. */
-        if (!(strcmp(pwr_state, "on"))) {
+  // Inform BIOS that BMC is ready
+  bic_set_gpio(fru, BMC_READY_N, 0);
+  ret = bic_get_gpio(fru, (bic_gpio_t *) &o_pin_val);
+  if (ret) {
 #ifdef DEBUG
-          syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-              " fru %u", fru);
+    syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for fru %u", fru);
 #endif
-        }
+  }
 
-        if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
-          usleep(DELAY_GPIOD_READ);
-          continue;
-        }
-        n_pin_val = CLEARBIT(o_pin_val[fru], PWRGD_COREPWR);
+  while (1) {
+    memset(pwr_state, 0, MAX_VALUE_LEN);
+    pal_get_last_pwr_state(fru, pwr_state);
+
+    /* Get the GPIO pins */
+    if ((ret = bic_get_gpio(fru, (bic_gpio_t *) &n_pin_val)) < 0) {
+#ifdef DEBUG
+      /* log the error message only when the CPU is on but not reachable. */
+      if (!(strcmp(pwr_state, "on"))) {
+        syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for fru %u", fru);
       }
+#endif
 
-      if (o_pin_val[fru] == n_pin_val) {
+      if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
         usleep(DELAY_GPIOD_READ);
         continue;
       }
+      n_pin_val = CLEARBIT(o_pin_val, PWRGD_COREPWR);
+    }
 
-      revised_pins = (n_pin_val ^ o_pin_val[fru]);
+    if (o_pin_val == n_pin_val) {
+      usleep(DELAY_GPIOD_READ);
+      continue;
+    }
 
-      for (i = 0; i < MAX_GPIO_PINS; i++) {
-        if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
-          gpios[i].status = GETBIT(n_pin_val, i);
+    revised_pins = (n_pin_val ^ o_pin_val);
 
-          // Check if the new GPIO val is ASSERT
-          if (gpios[i].status == gpios[i].ass_val) {
-            /*
-             * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
-             * Raise an error and change the LPS from on to off or vice versa for deassert.
-             */
-            if (strcmp(pwr_state, "off")) {
-              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
-                 // Check if power-util is still running to ignore getting incorrect power status
-                 sprintf(path, PWR_UTL_LOCK, fru);
-                 if(access(path, F_OK) != 0) {
-                    pal_set_last_pwr_state(fru, "off");
-                 }
+    for (i = 0; i < MAX_GPIO_PINS; i++) {
+      if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
+        gpios[i].status = GETBIT(n_pin_val, i);
+
+        // Check if the new GPIO val is ASSERT
+        if (gpios[i].status == gpios[i].ass_val) {
+          /*
+           * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
+           * Raise an error and change the LPS from on to off or vice versa for deassert.
+           */
+          if (strcmp(pwr_state, "off")) {
+            if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
+              // Check if power-util is still running to ignore getting incorrect power status
+              sprintf(path, PWR_UTL_LOCK, fru);
+              if (access(path, F_OK) != 0) {
+                pal_set_last_pwr_state(fru, "off");
               }
             }
-            syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
-
-            // Inform BIOS that BMC is ready
-            bic_set_gpio(fru, BMC_READY_N, 0);
-          } else {
-
-            if (strcmp(pwr_state, "on")) {
-              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
-                 // Check if power-util is still running to ignore getting incorrect power status
-                 sprintf(path, PWR_UTL_LOCK, fru);
-                 if(access(path, F_OK) != 0) {
-                    pal_set_last_pwr_state(fru, "on");
-                 }
-              }
-            }
-            syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           }
+          syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+
+          // Inform BIOS that BMC is ready
+          bic_set_gpio(fru, BMC_READY_N, 0);
+        } else {
+          if (strcmp(pwr_state, "on")) {
+            if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
+              // Check if power-util is still running to ignore getting incorrect power status
+              sprintf(path, PWR_UTL_LOCK, fru);
+              if (access(path, F_OK) != 0) {
+                pal_set_last_pwr_state(fru, "on");
+              }
+            }
+          }
+          syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
         }
       }
+    }
 
-      o_pin_val[fru] = n_pin_val;
-      usleep(DELAY_GPIOD_READ);
-
-    } /* For Loop for each fru */
+    o_pin_val = n_pin_val;
+    usleep(DELAY_GPIOD_READ);
   } /* while loop */
 } /* function definition*/
 
@@ -378,11 +327,9 @@ print_usage() {
 /* Spawns a pthread for each fru to monitor all the sensors on it */
 static void
 run_gpiod(int argc, void **argv) {
-
-  //gpio_monitor();
-
-  int i, ret;
+  int i, ret, slot;
   uint8_t fru_flag, fru;
+  pthread_t tid_gpio[MAX_NUM_SLOTS];
 
   /* Check for which fru do we need to monitor the gpio pins */
   fru_flag = 0;
@@ -392,10 +339,20 @@ run_gpiod(int argc, void **argv) {
       print_usage();
       exit(-1);
     }
-    fru_flag = SETBIT(fru_flag, fru);
+
+    if ((fru >= FRU_SLOT1) && (fru < (FRU_SLOT1 + MAX_NUM_SLOTS))) {
+      fru_flag = SETBIT(fru_flag, fru);
+      slot = fru;
+      if (pthread_create(&tid_gpio[fru-1], NULL, gpio_monitor_poll, (void *)slot) < 0) {
+        syslog(LOG_WARNING, "pthread_create for gpio_monitor_poll failed\n");
+      }
+    }
   }
 
-  gpio_monitor_poll(fru_flag);
+  for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
+    if (GETBIT(fru_flag, fru))
+      pthread_join(tid_gpio[fru-1], NULL);
+  }
 }
 
 int

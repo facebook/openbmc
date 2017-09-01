@@ -3540,6 +3540,7 @@ main (void)
   pthread_t tid;
   int *p_s2;
   int rc = 0;
+  uint8_t max_slot_num = 0;
 
   //daemon(1, 1);
   //openlog("ipmid", LOG_CONS, LOG_DAEMON);
@@ -3561,29 +3562,31 @@ main (void)
   pthread_mutex_init(&m_oem_usb_dbg, NULL);
   pthread_mutex_init(&m_oem_q, NULL);
 
-  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-    if (pal_is_slot_server(fru)) {
-      uint8_t cause;
-      struct watchdog_data *wdt_data = calloc(1, sizeof(struct watchdog_data));
-      if (!wdt_data) {
-        syslog(LOG_WARNING, "ipmid: allocation wdt info failed!\n");
-        continue;
-      }
-      wdt_data->slot = fru;
-      wdt_data->valid = 0;
-      wdt_data->pre_interval = 1;
-      pthread_mutex_init(&wdt_data->mutex, NULL);
+  pal_get_num_slots(&max_slot_num);
+  fru = 1;
 
-      g_wdt[fru - 1] = wdt_data;
-      pthread_create(&wdt_data->tid, NULL, wdt_timer, wdt_data);
-      pthread_detach(wdt_data->tid);
-      if (pal_get_restart_cause(fru, &cause)) {
-        // If no restart cause is set, set the default to be
-        // PWR_ON_PUSH_BUTTON since that is the most obvious cause
-        // since BMC has just booted up and started the ipmid.
-        pal_set_restart_cause(fru, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
-      }
+  while(fru <= max_slot_num){
+    uint8_t cause;
+    struct watchdog_data *wdt_data = calloc(1, sizeof(struct watchdog_data));
+    if (!wdt_data) {
+      syslog(LOG_WARNING, "ipmid: allocation wdt info failed!\n");
+      continue;
     }
+    wdt_data->slot = fru;
+    wdt_data->valid = 0;
+    wdt_data->pre_interval = 1;
+    pthread_mutex_init(&wdt_data->mutex, NULL);
+
+    g_wdt[fru - 1] = wdt_data;
+    pthread_create(&wdt_data->tid, NULL, wdt_timer, wdt_data);
+    pthread_detach(wdt_data->tid);
+    if (pal_get_restart_cause(fru, &cause)) {
+      // If no restart cause is set, set the default to be
+      // PWR_ON_PUSH_BUTTON since that is the most obvious cause
+      // since BMC has just booted up and started the ipmid.
+      pal_set_restart_cause(fru, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+    }
+    fru++;
   }
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)

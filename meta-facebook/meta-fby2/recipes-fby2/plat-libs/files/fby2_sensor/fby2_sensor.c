@@ -1040,6 +1040,9 @@ fby2_get_slot_type(uint8_t fru) {
     case FRU_SLOT4:
       type = (type & (0x3 << 6)) >> 6;
     break;
+    default:
+      type = 3;   //set default to 3(Empty Slot)
+    break;
   }
 
   return type;

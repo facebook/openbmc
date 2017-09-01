@@ -313,6 +313,8 @@ pwr_btn_handler() {
     }
 
     if (pos != HAND_SW_BMC) {
+      if (cmd == SERVER_POWER_ON)
+        pal_set_restart_cause(pos, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
       // Reverse the power state of the given server
       ret = pal_set_server_power(pos, cmd);
     }

@@ -193,6 +193,10 @@ char * key_list[] = {
 "slot2_cpu_ppin",
 "slot3_cpu_ppin",
 "slot4_cpu_ppin",
+"fru1_restart_cause",
+"fru2_restart_cause",
+"fru3_restart_cause",
+"fru4_restart_cause",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -234,6 +238,10 @@ char * def_val_list[] = {
   "0", /* slot2_cpu_ppin */
   "0", /* slot3_cpu_ppin */
   "0", /* slot4_cpu_ppin */
+  "3", /* fru1_restart_cause */
+  "3", /* fru2_restart_cause */
+  "3", /* fru3_restart_cause */
+  "3", /* fru4_restart_cause */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };

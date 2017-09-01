@@ -92,6 +92,7 @@ slot_kv_st slot_kv_list[] = {
   {"slot%d_sel_error",         "1"},
   {"slot%d_boot_order",  "0000000"},
   {"slot%d_cpu_ppin",          "0"},
+  {"fru%d_restart_cause",      "3"},
 };
 
 // Thread for delay event

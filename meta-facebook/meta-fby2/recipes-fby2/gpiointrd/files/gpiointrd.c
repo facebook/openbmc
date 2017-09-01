@@ -49,6 +49,8 @@
 #define HOTSERVICE_FILE "/tmp/slot%d_reinit"
 #define HSLOT_PID  "/tmp/slot%u_reinit.pid"
 
+#define DEBUG_ME_EJECTOR_LOG 1 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
+
 static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
 static void *hsvc_event_handler(void *ptr);
 static pthread_mutex_t hsvc_mutex[MAX_NODES + 1]; 
@@ -61,6 +63,13 @@ char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
 };
 
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+
+typedef struct {
+  uint8_t def_val;
+  char name[64];
+  uint8_t num;
+  char log[256]; 
+} def_chk_info;
 
 typedef struct {
   char slot_key[32];
@@ -230,6 +239,10 @@ static void gpio_event_handle(void *p)
       sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
       read_device(vpath, &value);
       
+#if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
+      syslog(LOG_CRIT,"GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON", slot_id);
+#endif
+
       // HOT SERVER event would be detected when SLED is pulled out
       if (value) {
           log_gpio_change(gp, 0);
@@ -469,16 +482,44 @@ static gpio_poll_st g_gpios[] = {
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
 
+#if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
+static def_chk_info def_gpio_chk[] = {
+  // { default value, gpio name, gpio num, log }
+  { 0, "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N", GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N", GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N", GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N", GPIO_SLOT4_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+};
+
+static void default_gpio_check(void) {
+  int i;
+  uint8_t value;
+  char vpath[80] = {0};
+
+  for (i=0; i<sizeof(def_gpio_chk)/sizeof(def_chk_info); i++) {
+    sprintf(vpath, GPIO_VAL, def_gpio_chk[i].num);
+    read_device(vpath, &value);
+    if (value != def_gpio_chk[i].def_val)
+      syslog(LOG_CRIT, def_gpio_chk[i].log);
+  }
+}
+#endif
+
 int
 main(int argc, void **argv) {
   int dev, rc, pid_file;
   uint8_t status = 0;
   int i;
+ 
 
   for(i=1 ;i<MAX_NODES + 1; i++)
   {
     pthread_mutex_init(&hsvc_mutex[i], NULL);
   }
+
+#if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
+  default_gpio_check();
+#endif
 
   pid_file = open("/var/run/gpiointrd.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);

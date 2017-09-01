@@ -58,23 +58,24 @@ print_usage_help(void) {
 }
 
 static void
-get_mlx_fw_version(uint8_t *buf, char *version) {
+get_nic_fw_version(uint8_t *buf, char *version) {
   int ver_index_based = 20;
   int major = 0;
   int minor = 0;
   int revision = 0;
- 
+
   major = buf[ver_index_based++];
   minor = buf[ver_index_based++];
   revision = buf[ver_index_based++] << 8;
   revision += buf[ver_index_based++];
- 
+
   sprintf(version, "%d.%d.%d", major, minor, revision);
 }
 
 static nic_info_st support_nic_list[] =
 {
-  {"Mellanox", 0x19810000, get_mlx_fw_version},
+  {"Mellanox", 0x19810000, get_nic_fw_version},
+  {"Broadcom", 0x3D110000, get_nic_fw_version},
 };
 
 int nic_list_size = sizeof(support_nic_list) / sizeof(nic_info_st);
@@ -209,12 +210,12 @@ print_slot_version(uint8_t slot_id) {
   }
   else {
     printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
-  } 
-    
+  }
+
   // Print BIOS version
   if (pal_get_sysfw_ver(slot_id, ver)) {
     printf("BIOS Version: NA\n");
-  } 
+  }
   else {
     // BIOS version response contains the length at offset 2 followed by ascii string
     printf("BIOS Version: ");
@@ -228,7 +229,7 @@ print_slot_version(uint8_t slot_id) {
 static void
 print_nic_version(uint8_t slot_id) {
   // Need to read nic card firmware version for print
-  // There are 1 nic card vendor,MEZZ 
+  // There are 1 nic card vendor,MEZZ
   char display_nic_str[128]={0};
   char version[32]={0};
   char vendor[32]={0};
@@ -269,7 +270,7 @@ print_nic_version(uint8_t slot_id) {
   else {
     sprintf(display_nic_str ,"%s NIC firmware version: %s", vendor, version);
   }
-  printf("%s\n", display_nic_str);  
+  printf("%s\n", display_nic_str);
 }
 
 // TODO: Need to confirm the interpretation of firmware version for print
@@ -334,7 +335,7 @@ fw_update_slot(char **argv, uint8_t slot_id) {
   if(!pal_is_slot_server(slot_id)) {
     printf("slot%d is not server\n", slot_id);
     goto err_exit;
-  }  
+  }
 
   if (!strcmp(argv[3], "--cpld")) {
      return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
@@ -384,7 +385,7 @@ update_fw(char **argv, uint8_t slot_id) {
       if (check_dup_process(slot_id) < 0) {
         printf("fw_util: another instance is running...\n");
         ret = -1;
-      } 
+      }
       else {
         ret = fw_update_slot(argv, slot_id);
       }
@@ -441,7 +442,7 @@ print_update_result(int ret, uint8_t slot_id) {
       }
       else {
         printf("fw_util: updated nic fw successfully!\n");
-      }      
+      }
       break;
     case OPT_ALL:
       if (ret < 0) {
@@ -532,10 +533,10 @@ main(int argc, char **argv) {
   } else {
       goto err_exit;
   }
-  
+
   // check operation to perform
   if (!strcmp(argv[2], "--version")) {
-     
+
      if (slot_id < OPT_ALL) {
        print_fw_ver(slot_id);
        return 0;
@@ -559,7 +560,7 @@ main(int argc, char **argv) {
     ret = update_fw(argv, slot_id);
 
     print_update_result(ret, slot_id);
-    return ret; 
+    return ret;
   }
 
   if (!strcmp(argv[2], "--postcode")) {
@@ -567,12 +568,12 @@ main(int argc, char **argv) {
         print_postcodes(slot_id);
         return 0;
      }
-     
+
      // Print all slots postcode
      for (slot_id = OPT_SLOT1; slot_id <= OPT_SLOT4; slot_id++) {
         print_postcodes(slot_id);
         printf("\n");
-     }     
+     }
      return 0;
   }
 

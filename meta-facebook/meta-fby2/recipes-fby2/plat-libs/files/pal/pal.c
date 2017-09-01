@@ -4221,6 +4221,39 @@ int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   return completion_code;
 }
 
+int pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  uint8_t *data = req_data;
+  uint8_t slot_id = slot;
+
+  *res_len = 0;
+
+  if ((*data != 0x55) || (*(data+1) != 0x66)) {
+    return completion_code;
+  }
+
+  switch(*(data+2)){
+    case 0x0f:    //do slot ac cycle
+      completion_code = pal_slot_ac_cycle(slot_id, req_data, req_len, res_data, res_len);
+      return completion_code;
+    break;
+    case 0xac:   //do sled ac cycle
+      syslog(LOG_CRIT, "SLED_CYCLE starting...");
+      pal_update_ts_sled();
+      sync();
+      sleep(1);
+      pal_sled_cycle();
+    break;
+    default:
+      return completion_code;
+    break;
+  }
+
+  completion_code = CC_SUCCESS;
+  return completion_code;
+}
+
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
 

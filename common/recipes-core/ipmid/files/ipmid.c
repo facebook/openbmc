@@ -2573,13 +2573,13 @@ oem_get_plat_info(unsigned char *request, unsigned char req_len, unsigned char *
 }
 
 static void
-oem_slot_ac_cycle(unsigned char *request, unsigned char req_len,
+oem_sled_ac_cycle(unsigned char *request, unsigned char req_len,
                   unsigned char *response, unsigned char *res_len)
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  res->cc = pal_slot_ac_cycle(req->payload_id, req->data, req_len, res->data, res_len);
+  res->cc = pal_sled_ac_cycle(req->payload_id, req->data, req_len, res->data, res_len);
 
   return;
 }
@@ -2848,8 +2848,8 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
     case CMD_OEM_GET_PLAT_INFO:
       oem_get_plat_info (request, req_len, response, res_len);
       break;
-    case CMD_OEM_SLOT_AC_CYCLE:
-      oem_slot_ac_cycle (request, req_len, response, res_len);
+    case CMD_OEM_SLED_AC_CYCLE:
+      oem_sled_ac_cycle (request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_PCIE_CONFIG:
       oem_get_poss_pcie_config (request, req_len, response, res_len);

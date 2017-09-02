@@ -31,7 +31,7 @@ IMAGE_INSTALL += " \
   repeater  \
   retimer  \
   sensor-setup \
-  sms-kcsd \
+  kcsd \
   spatula \
   stress  \
   usb-console \

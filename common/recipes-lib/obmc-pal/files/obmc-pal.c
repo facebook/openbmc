@@ -881,3 +881,15 @@ pal_get_gpio_value(int gpio_num, uint8_t *value) {
 
   return ret;
 }
+
+int __attribute__((weak))
+pal_ipmb_processing(int bus, void *buf, uint16_t size)
+{
+  return 0;
+}
+
+int __attribute__((weak))
+pal_ipmb_finished(int bus, void *buf, uint16_t size)
+{
+  return 0;
+}

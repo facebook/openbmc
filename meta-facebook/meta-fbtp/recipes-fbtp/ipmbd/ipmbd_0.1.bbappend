@@ -2,6 +2,7 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
+             file://run-ipmbd_1.sh \
              file://run-ipmbd_4.sh \
              file://run-ipmbd_9.sh \
            "
@@ -19,9 +20,11 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/ipmbd_1
   install -d ${D}${sysconfdir}/sv/ipmbd_4
   install -d ${D}${sysconfdir}/sv/ipmbd_9
   install -m 755 setup-ipmbd.sh ${D}${sysconfdir}/init.d/setup-ipmbd.sh
+  install -m 755 run-ipmbd_1.sh ${D}${sysconfdir}/sv/ipmbd_1/run
   install -m 755 run-ipmbd_4.sh ${D}${sysconfdir}/sv/ipmbd_4/run
   install -m 755 run-ipmbd_9.sh ${D}${sysconfdir}/sv/ipmbd_9/run
   update-rc.d -r ${D} setup-ipmbd.sh start 65 5 .

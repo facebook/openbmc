@@ -31,6 +31,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
+runsv /etc/sv/ipmbd_1 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_4 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_9 > /dev/null 2>&1 &
 

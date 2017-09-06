@@ -204,6 +204,316 @@ struct pal_key_cfg {
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
+static int
+pal_control_mux(int fd, uint8_t addr, uint8_t channel) {
+  uint8_t tcount = 1, rcount = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  // PCA9544A
+  if (channel < 4)
+    tbuf[0] = 0x04 + channel;
+  else
+    tbuf[0] = 0x00; // close all channels
+
+  return i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
+}
+
+static int
+pal_control_switch(int fd, uint8_t addr, uint8_t channel) {
+  uint8_t tcount = 1, rcount = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  // PCA9846
+  if (channel < 4)
+    tbuf[0] = 0x01 << channel;
+  else
+    tbuf[0] = 0x00; // close all channels
+
+  return i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
+}
+
+// Shared Memory data accrossing processes
+struct mux_shm {
+  pthread_mutex_t mutex;
+  pthread_cond_t unlock, free;
+  int locked;
+  int using_num;
+  time_t expiration;
+  uint8_t chan, ipmb_chan;
+};
+
+// Data in each process
+struct mux {
+  pthread_once_t init;
+  void (*init_func)(void);
+  int bus_fd, addr, wait_time;
+  struct mux_shm *shm;
+};
+
+static void init_mux_data_riser_mux(void);
+struct mux riser_mux = {
+  .init = PTHREAD_ONCE_INIT,
+  .init_func = init_mux_data_riser_mux,
+  .bus_fd = -1,
+  .addr = 0xe2,
+  .wait_time = 3,
+  .shm = NULL,
+};
+static void init_mux_data_riser_mux(void) {
+  int fd;
+  struct stat st;
+  pthread_mutexattr_t mutex_attr;
+  pthread_condattr_t cond_attr;
+  char path[128];
+  uint8_t slot_cfg;
+
+  fd = shm_open("/mux_data_riser_mux", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  flock(fd, LOCK_EX);
+
+  fstat(fd, &st);
+  ftruncate(fd, sizeof(struct mux_shm));
+  riser_mux.shm = (struct mux_shm *)mmap(NULL, sizeof(struct mux_shm),
+    PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  // Initialize shared memory
+  if (st.st_size < sizeof(struct mux_shm)) {
+    pthread_mutexattr_init(&mutex_attr);
+    pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(&riser_mux.shm->mutex, &mutex_attr);
+    pthread_condattr_init(&cond_attr);
+    pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+    pthread_cond_init(&riser_mux.shm->unlock, &cond_attr);
+    pthread_cond_init(&riser_mux.shm->free, &cond_attr);
+    riser_mux.shm->locked = 0;
+    riser_mux.shm->using_num = 0;
+    riser_mux.shm->expiration = 0;
+    riser_mux.shm->chan = 0xff;
+
+    if (pal_get_slot_cfg_id(&slot_cfg) < 0)
+      slot_cfg = SLOT_CFG_EMPTY;
+
+    // default channel to top slot
+    if(slot_cfg == SLOT_CFG_SS_3x8)
+      riser_mux.shm->ipmb_chan = 2;
+    else
+      riser_mux.shm->ipmb_chan = 1;
+  }
+
+  flock(fd, LOCK_UN);
+  close(fd);
+
+  snprintf(path, sizeof(path), "/dev/i2c-%d", RISER_BUS_ID);
+  riser_mux.bus_fd = open(path, O_RDWR);
+  if (riser_mux.bus_fd < 0) {
+    syslog(LOG_ERR, "Cannot open %s\n", path);
+  }
+}
+
+static struct mux_shm *mux_get_shm(struct mux *mux) {
+  pthread_once(&(mux->init), mux->init_func);
+  return mux->shm;
+}
+
+/*
+ * Release the mux
+ */
+static int mux_release (struct mux *mux)
+{
+  struct mux_shm *shm = mux_get_shm(mux);
+  int ret = 0;
+  uint8_t old_chan;
+
+  pthread_mutex_lock(&shm->mutex);
+  old_chan = shm->chan;
+  if (shm->chan != shm->ipmb_chan) {
+    ret = pal_control_mux(mux->bus_fd, mux->addr, shm->ipmb_chan);
+  }
+  shm->chan = shm->ipmb_chan;
+  pthread_mutex_unlock(&shm->mutex);
+
+  //send online command out side of mutex
+  if(old_chan != shm->ipmb_chan) {
+    if(pal_is_BBV_prsnt())
+      notify_BBV_ipmb_offline_online(1,0);
+  }
+  pthread_mutex_lock(&shm->mutex);
+  shm->locked = 0;
+  pthread_cond_broadcast(&shm->unlock);
+  pthread_mutex_unlock(&shm->mutex);
+  
+  return ret;
+}
+/*
+ * Request to use the mux on the channel
+ */
+static int mux_using (struct mux *mux)
+{
+  struct mux_shm *shm = mux_get_shm(mux);
+  int ret = -1;
+  struct timespec to;
+
+  clock_gettime(CLOCK_REALTIME, &to);
+  to.tv_sec += mux->wait_time;
+
+  pthread_mutex_lock(&shm->mutex);
+  if (shm->locked == 1 && time(NULL) > shm->expiration) {
+    mux_release(mux);
+  }
+
+  while(1) {
+    if (shm->chan == shm->ipmb_chan) {
+      ret = 0;
+      break;
+    }
+    ret = pthread_cond_timedwait(&shm->unlock, &shm->mutex, &to);
+    if (ret == ETIMEDOUT) {
+      syslog(LOG_WARNING, "%s wait unlock timeout\n", __func__);
+      break;
+    }
+  }
+
+  shm->using_num++;
+  pthread_mutex_unlock(&shm->mutex);
+
+  return ret;
+}
+/*
+ * Notify that using finished
+ */
+static int mux_finish (struct mux *mux)
+{
+  struct mux_shm *shm = mux_get_shm(mux);
+  pthread_mutex_lock(&shm->mutex);
+  if (shm->using_num > 0)
+    shm->using_num--;
+  pthread_cond_broadcast(&shm->free);
+  pthread_mutex_unlock(&shm->mutex);
+  return 0;
+}
+/*
+ * Request to lock the mux on the channel, doesn't allow other to use
+ * Return 0 on success, other on failure
+ */
+static int mux_lock (struct mux *mux, int chan, int lease_time)
+{
+  struct mux_shm *shm = mux_get_shm(mux);
+  int ret = -1;
+  struct timespec to;
+
+  clock_gettime(CLOCK_REALTIME, &to);
+  to.tv_sec += mux->wait_time;
+
+  pthread_mutex_lock(&shm->mutex);
+  if (shm->locked == 1 && time(NULL) > shm->expiration) {
+    mux_release(mux);
+  }
+
+  // Announce to lock this resource
+  while(1) {
+    if (shm->locked == 0) {
+      shm->expiration = time(NULL) + lease_time;
+      shm->locked = 1;
+      pthread_mutex_unlock(&shm->mutex);
+      //send offline command out side of mutex
+      if(shm->ipmb_chan != chan) {
+        if(pal_is_BBV_prsnt())
+          notify_BBV_ipmb_offline_online(0,mux->wait_time);
+      }
+      pthread_mutex_lock(&shm->mutex);
+      shm->chan = chan;
+      ret = 0;
+      break;
+    }
+    ret = pthread_cond_timedwait(&shm->unlock, &shm->mutex, &to);
+    if (ret == ETIMEDOUT) {
+      syslog(LOG_WARNING, "%s wait unlock timeout\n", __func__);
+      break;
+    }
+  }
+
+  // Wait for all ipmb transaction finished before switch channel
+  if (ret == 0 && shm->ipmb_chan != chan) {
+    clock_gettime(CLOCK_REALTIME, &to);
+    to.tv_sec += mux->wait_time;
+    while (1) {
+      if (shm->using_num == 0) {
+        break;
+      }
+      ret = pthread_cond_timedwait(&shm->free, &shm->mutex, &to);
+      if (ret == ETIMEDOUT) {
+        syslog(LOG_WARNING, "%s wait free timeout\n", __func__);
+        break;
+      }
+    }
+
+    // switch MUX no matter bus free or time-out
+    ret = pal_control_mux(mux->bus_fd, mux->addr, chan);
+    if (ret != 0) {
+      // unlock if failed
+      pal_control_mux(mux->bus_fd, mux->addr, shm->ipmb_chan);
+      shm->chan = shm->ipmb_chan;
+      shm->locked = 0;
+      pthread_cond_broadcast(&shm->unlock);
+    }
+  }
+  pthread_mutex_unlock(&shm->mutex);
+
+  return ret;
+}
+
+int pal_ipmb_processing(int bus, void *buf, uint16_t size)
+{
+  if (bus == RISER_BUS_ID)
+    return mux_using(&riser_mux);
+
+  return 0;
+}
+
+int pal_ipmb_finished(int bus, void *buf, uint16_t size)
+{
+  if (bus == RISER_BUS_ID)
+    return mux_finish(&riser_mux);
+
+  return 0;
+}
+
+int
+notify_BBV_ipmb_offline_online(uint8_t on_off, int off_sec) {
+  int rlen = 0;
+
+  rlen = ipmb_send(
+    RISER_BUS_ID,
+    0x2c,
+    NETFN_OEM_REQ << 2,
+    CMD_OEM_SET_IPMB_OFFONLINE,
+    0x4C,
+    0x1C,
+    0x00,
+    on_off,
+    off_sec & 0xff,
+    off_sec >> 8);
+
+  if ( rlen < 0 )
+  {
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "%s(%d): Zero bytes received\n", __func__, __LINE__);
+#endif
+    return -1;
+  }
+  else
+  {
+    if (ipmb_rxb()->cc == 0) {
+      return 0;
+    } else {
+      syslog(LOG_DEBUG, "%s(%d): fail com_code:%x \n", __func__, __LINE__,ipmb_rxb()->cc);
+      return -1;
+    }
+  }
+}
+
 // List of MB sensors to be monitored
 const uint8_t mb_sensor_list[] = {
   MB_SENSOR_INLET_TEMP,
@@ -697,36 +1007,6 @@ sensor_thresh_array_init() {
 
   init_board_sensors();
   init_done = true;
-}
-
-static int
-pal_control_mux(int fd, uint8_t addr, uint8_t channel) {
-  uint8_t tcount = 1, rcount = 0;
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-
-  // PCA9544A
-  if (channel < 4)
-    tbuf[0] = 0x04 + channel;
-  else
-    tbuf[0] = 0x00; // close all channels
-
-  return i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
-}
-
-static int
-pal_control_switch(int fd, uint8_t addr, uint8_t channel) {
-  uint8_t tcount = 1, rcount = 0;
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-
-  // PCA9846
-  if (channel < 4)
-    tbuf[0] = 0x01 << channel;
-  else
-    tbuf[0] = 0x00; // close all channels
-
-  return i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
 }
 
 static int
@@ -1647,7 +1927,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
   int ret = READING_NA;;
   static unsigned int retry[6] = {0};
   uint8_t i_retry;
-  uint8_t tcount, rcount, slot_cfg, addr, mux_chan, mux_addr = 0xe2;
+  uint8_t tcount, rcount, slot_cfg, addr, mux_chan;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
@@ -1694,6 +1974,9 @@ read_ava_temp(uint8_t sensor_num, float *value) {
       return READING_NA;
   }
 
+  if (!pal_is_ava_card(mux_chan))
+    return READING_NA;
+
   switch(sensor_num) {
     case MB_SENSOR_C2_AVA_FTEMP:
     case MB_SENSOR_C3_AVA_FTEMP:
@@ -1717,7 +2000,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
   }
 
   // control multiplexer to target channel.
-  ret = pal_control_mux(fd, mux_addr, mux_chan);
+  ret = mux_lock(&riser_mux, mux_chan, 2);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
@@ -1741,7 +2024,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
 
 error_exit:
   if (fd > 0) {
-    pal_control_mux(fd, mux_addr, 0xff); // close
+    mux_release(&riser_mux);
     close(fd);
   }
 
@@ -1758,7 +2041,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
   int ret = READING_NA;;
   static unsigned int retry[12] = {0};
   uint8_t i_retry;
-  uint8_t slot_cfg, addr, mux_chan, mux_addr = 0xe2;
+  uint8_t slot_cfg, addr, mux_chan;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t BoardInfo;
@@ -1836,7 +2119,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
   }
 
   //control multiplexer to target channel.
-  ret = pal_control_mux(fd, mux_addr, mux_chan);
+  ret = mux_lock(&riser_mux, mux_chan, 2);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
@@ -2049,7 +2332,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
 
 error_exit:
   if (fd > 0) {
-    pal_control_mux(fd, mux_addr, 0xff); // close
+    mux_release(&riser_mux);
     close(fd);
   }
 
@@ -2066,7 +2349,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
   int ret = READING_NA;
   static unsigned int retry[15] = {0};
   uint8_t i_retry;
-  uint8_t tcount, rcount, slot_cfg, addr = 0xd4, mux_chan, mux_addr = 0xe2;
+  uint8_t tcount, rcount, slot_cfg, addr = 0xd4, mux_chan;
   uint8_t switch_chan, switch_addr=0xe6;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
@@ -2179,7 +2462,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
   }
 
   // control I2C multiplexer to target channel.
-  ret = pal_control_mux(fd, mux_addr, mux_chan);
+  ret = mux_lock(&riser_mux, mux_chan, 2);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
@@ -2212,9 +2495,9 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
 
 error_exit:
   if (fd > 0) {
-    pal_control_switch(fd, switch_addr, 0xff); // close
     if (switch_chan != 0xff)
-      pal_control_mux(fd, mux_addr, 0xff); // close
+      pal_control_switch(fd, switch_addr, 0xff); // close
+    mux_release(&riser_mux);
     close(fd);
   }
 
@@ -3319,7 +3602,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 int
-pal_fruid_write(uint8_t slot, char *path)
+pal_fruid_write(uint8_t fru, char *path)
 {
   int fru_size = 0;
   char command[128]={0};
@@ -3329,12 +3612,12 @@ pal_fruid_write(uint8_t slot, char *path)
   uint8_t device_type = 0;
   uint8_t acutal_riser_slot = 0;
 
-  switch (slot)
+  switch (fru)
   {
     case FRU_RISER_SLOT2:
     case FRU_RISER_SLOT3:
     case FRU_RISER_SLOT4:
-      acutal_riser_slot = slot - FRU_RISER_SLOT2;//make the slot start from 0
+      acutal_riser_slot = fru - FRU_RISER_SLOT2;//make the slot start from 0
       if ( pal_is_ava_card( acutal_riser_slot ) )
       {
         fru_size = 512;
@@ -3358,11 +3641,11 @@ pal_fruid_write(uint8_t slot, char *path)
   switch (device_type)
   {
     case FOUND_AVA_DEVICE:
-      system("sv stop sensord");
+      mux_lock(&riser_mux, acutal_riser_slot, 2);
       pal_add_i2c_device(bus, device_name, device_addr);
       system(command);
       pal_del_i2c_device(bus, device_addr);
-      system("sv start sensord");
+      mux_release(&riser_mux);
     break;
 
   }
@@ -6718,7 +7001,6 @@ pal_is_ava_card(uint8_t riser_slot)
   int fd = 0;
   char fn[32];
   bool ret;
-  uint8_t riser_mux_addr = 0xe2;
   uint8_t ava_fruid_addr = 0xa0;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
@@ -6734,7 +7016,8 @@ pal_is_ava_card(uint8_t riser_slot)
   }
 
   // control I2C multiplexer to target channel.
-  if (pal_control_mux(fd, riser_mux_addr, riser_slot) < 0) {
+  ret = mux_lock(&riser_mux, riser_slot, 2);
+  if ( ret < 0 ) {
     syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
     ret = false;
     goto error_exit;
@@ -6752,6 +7035,7 @@ pal_is_ava_card(uint8_t riser_slot)
 error_exit:
   if (fd > 0)
   {
+    mux_release(&riser_mux);
     close(fd);
   }
 
@@ -6774,6 +7058,44 @@ pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type )
     syslog(LOG_WARNING, "Unknown or no device on the riser slot %d", riser_slot+2);
   }
 #endif
+  return ret;
+}
+
+bool
+pal_is_BBV_prsnt()
+{
+  int fd = 0;
+  char fn[32];
+  bool ret;
+  uint8_t BBV_present_chk_addr = 0x92;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount, rcount;
+  int  val;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+
+  fd = open(fn, O_RDWR);
+  if ( fd < 0 ) {
+    ret = false;
+    goto error_exit;
+  }
+
+  //Send I2C to re-timer
+  rcount = 1;
+  val = i2c_rdwr_msg_transfer(fd, BBV_present_chk_addr, tbuf, tcount, rbuf, rcount);
+  if( val < 0 ) {
+    ret = false;
+      goto error_exit;
+  }
+  ret = true;
+
+error_exit:
+  if (fd > 0)
+  {
+    close(fd);
+  }
+
   return ret;
 }
 

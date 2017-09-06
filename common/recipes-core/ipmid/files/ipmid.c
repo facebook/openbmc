@@ -50,7 +50,6 @@
 // Boot valid flag
 #define BIOS_BOOT_VALID_FLAG (1U << 7)
 #define CMOS_VALID_FLAG      (1U << 1)
-
 //#define CHASSIS_GET_BOOT_OPTION_SUPPORT
 //#define CHASSIS_SET_BOOT_OPTION_SUPPORT
 
@@ -66,6 +65,7 @@ static lan_config_t g_lan_config = { 0 };
 
 // TODO: Need to store this info after identifying proper storage
 static sys_info_param_t g_sys_info_params;
+
 
 // IPMI Watchdog Timer Structure
 struct watchdog_data {
@@ -163,6 +163,7 @@ extern int plat_udbg_control_panel(uint8_t panel, uint8_t operation, uint8_t ite
 
 static void ipmi_handle(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len);
+extern int bbv_power_cycle(int delay_time);
 
 static struct watchdog_data *get_watchdog(int slot_id)
 {
@@ -2764,6 +2765,19 @@ oem_set_pcie_port_config(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_bbv_power_cycle ( unsigned char *request, unsigned char req_len,
+                  unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int delay_time;
+  *res_len = 0;
+
+  delay_time = req->data[0];
+  res->cc = bbv_power_cycle(delay_time);
+}
+
+static void
 oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
                         unsigned char *response, unsigned char *res_len)
 {
@@ -2881,6 +2895,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       if(length_check(SIZE_PCIE_PORT_CONFIG, req_len, response, res_len))
         break;
       oem_set_pcie_port_config(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_BBV_POWER_CYCLE:
+      oem_bbv_power_cycle(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

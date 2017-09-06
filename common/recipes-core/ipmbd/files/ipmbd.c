@@ -63,6 +63,7 @@
 #include <semaphore.h>
 #include <poll.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-pal.h>
 #include "openbmc/ipmi.h"
 #include "openbmc/ipmb.h"
 
@@ -359,6 +360,8 @@ ipmb_req_handler(void *bus_num) {
       continue;
     }
 
+    pal_ipmb_processing(g_bus_id, rxbuf, rlen);
+
 #ifdef DEBUG
     syslog(LOG_WARNING, "Received Request of %d bytes\n", rlen);
     for (i = 0; i < rlen; i++) {
@@ -416,6 +419,8 @@ ipmb_req_handler(void *bus_num) {
 
      // Send response back
      i2c_write(fd, txbuf, tlen+IPMB_HDR_SIZE);
+
+     pal_ipmb_finished(g_bus_id, txbuf, tlen+IPMB_HDR_SIZE);
   }
 }
 
@@ -655,6 +660,8 @@ ipmb_handle (int fd, unsigned char *request, unsigned char req_len,
   g_seq.seq[index].p_buf = response;
   pthread_mutex_unlock(&m_seq);
 
+  pal_ipmb_processing(g_bus_id, request, req_len);
+
   // Send request over i2c bus
   if (i2c_write(fd, request, req_len)) {
     goto ipmb_handle_out;
@@ -679,6 +686,8 @@ ipmb_handle_out:
 
   g_seq.seq[index].in_use = false;
   pthread_mutex_unlock(&m_seq);
+
+  pal_ipmb_finished(g_bus_id, request, *res_len);
 
   return;
 }

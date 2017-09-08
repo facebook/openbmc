@@ -58,8 +58,9 @@
 #define MAX_VR_CHIPS 9
 #define VR_TIMEOUT 500
 #define MAX_READ_RETRY 10
+#define MAX_NEGATIVE_RETRY 3
+#define READING_SKIP       1
 #define BIT(value, index) ((value >> index) & 1)
-
 
 //Used identify VR Chip info. there are 4 vr fw code in EVT3 and after
 enum
@@ -461,6 +462,7 @@ vr_read_temp(uint8_t vr, uint8_t loop, float *value) {
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   int16_t temp;
+  static unsigned int max_negative_retry = MAX_NEGATIVE_RETRY;
 
   // The following block for detecting vr_update is in progress or not
   if ( access(VR_UPDATE_IN_PROGRESS, F_OK) == 0 )
@@ -547,6 +549,17 @@ vr_read_temp(uint8_t vr, uint8_t loop, float *value) {
   if ((rbuf[1] & 0x08))
     temp |= 0xF000; // If negative, sign extend temp.
   *value = (float)temp * 0.125;
+  
+  //handle negative temperature value
+  if( *value < 0 ) {
+    if ( max_negative_retry > 0 ) {
+      max_negative_retry--;
+      ret = READING_SKIP;
+    }
+  } else {
+    max_negative_retry = MAX_NEGATIVE_RETRY;
+  }
+
 error_exit:
   if (fd > 0) {
     close(fd);

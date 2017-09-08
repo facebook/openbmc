@@ -1161,7 +1161,7 @@ read_temp_attr(uint8_t sensor_num, const char *device, const char *attr, float *
 
   *value = ((float)tmp)/UNIT_DIV;
   if( i_retry != -1) {
-    if( *value > mb_sensor_threshold[sensor_num][UCR_THRESH] && retry[i_retry] < 5) {
+    if( ( *value > mb_sensor_threshold[sensor_num][UCR_THRESH]  || *value < 0 ) && retry[i_retry] < 5) {
       retry[i_retry]++;
       return READING_SKIP;
     } else {

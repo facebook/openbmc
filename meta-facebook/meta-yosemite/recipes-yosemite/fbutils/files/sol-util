@@ -25,7 +25,7 @@ LOGFILE2="/tmp/consoled_$1_log"
 
 if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
 then
-  SLOT=$1 
+  SLOT=$1
 else
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --force"
@@ -61,7 +61,7 @@ kill -9 -s TERM $PID 2>/dev/null
 
 if [[ "$2" == "--force" ]]; then
   PID=$(ps -w| grep -e $BIN_CONSOLED | grep -e $SLOT | awk '{print $1}')
-  kill -9 -s TERM $PID 2>/dev/null
+  kill -9  $PID 2>/dev/null
 fi
 
 $BIN_CONSOLED $SLOT --term

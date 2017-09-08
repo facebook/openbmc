@@ -3164,6 +3164,12 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
       valid = false;
     }
   }
+
+  if (GETBIT(diff, 4)) {
+    if (snr_num == BIC_SENSOR_PROC_FAIL) {
+        _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 4), "FRB3");
+    }
+  }
 }
 
 static int

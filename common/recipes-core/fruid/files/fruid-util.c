@@ -293,6 +293,9 @@ int main(int argc, char * argv[]) {
         if ( ret < 0 )
         {
           syslog(LOG_WARNING, "[%s] Please check the fruid: %d", __func__, fru);
+          close(fd_newbin);
+          close(fd_tmpbin);
+          return -1;
         }
       } else {
         if (access(eeprom_path, F_OK) == -1) {

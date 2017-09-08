@@ -272,6 +272,12 @@ devmem_clear_bit $(scu_addr a4) 31
 
 gpio_export AA7
 
+# SLED_SEATED_N: GPIOAC7(227)
+# To use GPIOAC7, SCUAC[7] must be 0
+devmem_clear_bit $(scu_addr ac) 7
+
+gpio_set AC7 1
+
 # LED POST CODES: 8 GPIO signals
 
 # LED_POSTCODE_0: GPIOG0 (48)

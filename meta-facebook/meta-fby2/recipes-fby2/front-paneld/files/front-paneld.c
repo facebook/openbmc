@@ -498,6 +498,13 @@ led_sync_handler() {
 #endif
 
   while (1) {
+    // Handle Sled fully seated 
+    ret = pal_set_sled_led();
+    if (0 != ret) {
+      sleep(1);
+      continue;
+    }
+
     // Handle Slot IDENTIFY condition
     memset(identify, 0x0, 16);
     ret = pal_get_key_value("identify_sled", identify);

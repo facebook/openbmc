@@ -138,6 +138,7 @@ int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_get_pwr_btn(uint8_t *status);
 int pal_get_rst_btn(uint8_t *status);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
+int pal_set_sled_led(void);
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);

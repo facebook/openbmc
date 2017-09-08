@@ -140,7 +140,9 @@ enum {
 #define GPIO_HAND_SW_ID4                  214
 #define GPIO_HAND_SW_ID8                  215
 #define GPIO_RST_BTN                      216
+#define GPIO_BMC_SELF_HW_RST              218
 #define GPIO_USB_MUX_EN_N                 219
+#define GPIO_SLED_SEATED_N                227
 
 int fby2_common_fru_name(uint8_t fru, char *str);
 int fby2_common_fru_id(char *str, uint8_t *fru);

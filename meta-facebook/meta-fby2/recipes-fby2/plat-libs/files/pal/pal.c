@@ -1879,6 +1879,33 @@ pal_get_rst_btn(uint8_t *status) {
   return 0;
 }
 
+// Update the SLED LED for sled fully seated
+int 
+pal_set_sled_led(void) {
+  char path[64] = {0};
+  int val;
+  
+  sprintf(path, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+  
+  memset(path, 0, sizeof(path));
+  sprintf(path, GPIO_VAL, GPIO_SLED_SEATED_N);
+  if (val) {
+    if (write_device(path, "1")) {
+      return -1;
+    }
+  }
+  else {
+    if (write_device(path, "0")) {
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
 // Update the LED for the given slot with the status
 int
 pal_set_led(uint8_t slot, uint8_t status) {

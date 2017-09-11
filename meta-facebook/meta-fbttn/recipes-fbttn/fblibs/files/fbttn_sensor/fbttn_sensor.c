@@ -1002,6 +1002,7 @@ if (fd < 0) {
 ret = flock_retry(fd);
 if (ret == -1) {
  syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
+ close(fd);
  return -1;
 }
 
@@ -1009,6 +1010,7 @@ while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
   if (bytes_rd != sizeof(sdr_full_t)) {
     syslog(LOG_ERR, "%s: read returns %d bytes\n", __func__, bytes_rd);
     unflock_retry(fd);
+    close(fd);
     return -1;
   }
 
@@ -1021,9 +1023,11 @@ while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
 ret = unflock_retry(fd);
 if (ret == -1) {
  syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+ close(fd);
  return -1;
 }
 
+close(fd);
 return 0;
 }
 

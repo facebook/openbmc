@@ -92,6 +92,7 @@ sdr_cache_init(uint8_t slot_id) {
   ret = pal_flock_retry(fd);
   if (ret == -1) {
    syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
+   close(fd);
    return;
   }
 
@@ -116,9 +117,11 @@ sdr_cache_init(uint8_t slot_id) {
   ret = pal_unflock_retry(fd);
   if (ret == -1) {
    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+   close(fd);
    return;
   }
 
+  close(fd);
   rename(sdr_temp_path, sdr_path);
 }
 

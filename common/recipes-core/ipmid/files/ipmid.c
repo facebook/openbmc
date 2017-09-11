@@ -506,6 +506,21 @@ static void
 app_cold_reset(unsigned char *request, unsigned char req_len,
               unsigned char *response, unsigned char *res_len)
 {
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int i;
+
+  *res_len = 0;
+  res->cc = CC_SUCCESS;
+  if (pal_is_fw_update_ongoing_system()) {
+    res->cc = CC_NODE_BUSY;
+    return;
+  }
+  for (i = 1; i < MAX_NUM_FRUS; i++) {
+    if (pal_is_crashdump_ongoing(i)) {
+      res->cc = CC_NODE_BUSY;
+      return;
+    }
+  }
   reboot(RB_AUTOBOOT);
 }
 

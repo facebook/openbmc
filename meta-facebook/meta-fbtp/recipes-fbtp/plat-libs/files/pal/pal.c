@@ -5583,17 +5583,27 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
     case PCIE_ERR:
       strcpy(error_log, "");
-      if ((ed[0] & 0xF) == 0x4)
+      if ((ed[0] & 0xF) == 0x4) {
         sprintf(error_log, "PCI PERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
-      else if ((ed[0] & 0xF) == 0x5)
+        sprintf(temp_log, "PCIPERR:B%02X/D%02X/F%02X", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0xF) == 0x5) {
         sprintf(error_log, "PCI SERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
-      else if ((ed[0] & 0xF) == 0x7)
+        sprintf(temp_log, "PCISERR:B%02X/D%02X/F%02X", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0xF) == 0x7) {
         sprintf(error_log, "Correctable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
-      else if ((ed[0] & 0xF) == 0x8)
+        sprintf(temp_log, "PCICorr:B%02X/D%02X/F%02X", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0xF) == 0x8) {
         sprintf(error_log, "Uncorrectable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
-      else if ((ed[0] & 0xF) == 0xA)
+        sprintf(temp_log, "PCIUncorr:B%02X/D%02X/F%02X", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0xF) == 0xA) {
         sprintf(error_log, "Bus Fatal (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
-      else if ((ed[0] & 0xF) == 0xD) {
+        sprintf(temp_log, "PCIBusFatal:B%02X/D%02X/F%02X", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0xF) == 0xD) {
         unsigned int vendor_id = (unsigned int)ed[1] << 8 | (unsigned int)ed[2];
         sprintf(error_log, "Vendor ID: 0x%4x", vendor_id);
       } else if ((ed[0] & 0xF) == 0xE) {

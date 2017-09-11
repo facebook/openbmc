@@ -16,10 +16,10 @@ def eepromTest(util):
     """
     utilCMD = util.EEPROMCmd
     if utilCMD is None:
-        raise Exception("eeprom command not implemented")
+        raise Exception("Eeprom command not implemented")
     prodnames = util.ProductName
     if prodnames is None:
-        raise Exception("eeprom product name not implemented")
+        raise Exception("Eeprom product name not implemented")
     logger.debug("Executing eeprom util dump with command: " + str(utilCMD))
     f = subprocess.Popen(utilCMD,
                          shell=True,
@@ -28,13 +28,13 @@ def eepromTest(util):
     info, err = f.communicate()
     if len(err) > 0:
         raise Exception(err + " [FAILED]")
+    info = info.decode('utf-8')
     name = info.split('Product Name')[1].split(': ')[1].split('\n')[0]
-
     # check all possible product name types
     success = False
     index = 0
     for i in range(len(prodnames)):
-        if prodnames[i] in name:
+        if prodnames[i].lower() in name.lower():
             success = True
             index = i
     if success:

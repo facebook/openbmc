@@ -23,7 +23,7 @@ def fansTest(platformType, util):
     if util.StartControlCmd is None:
         raise Exception("fan start command not implemented")
     # get fan test
-    logger.debug("executing: " + str(util.GetFanCmd))
+    logger.debug("Executing: " + str(util.GetFanCmd))
     f = subprocess.Popen(util.GetFanCmd,
                          shell=True,
                          stdout=subprocess.PIPE,
@@ -48,7 +48,7 @@ def fansTest(platformType, util):
             raise Exception(err)
 
     # set fan speed
-    logger.debug("executing: " + str(util.SetFanCmd))
+    logger.debug("Executing: " + str(util.SetFanCmd))
     err = subprocess.Popen(util.SetFanCmd,
                            shell=True,
                            stdout=subprocess.PIPE,

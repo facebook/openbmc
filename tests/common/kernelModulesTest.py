@@ -17,6 +17,7 @@ def kernel_check(data):
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     info, err = f.communicate()
+    info = info.decode('utf-8')
     if len(err) != 0:
         raise Exception(err)
     failed = []

@@ -1,4 +1,24 @@
 {
+  "tmp75": {
+    "bus": "3",
+    "address": "0x48"
+  },
+  "tmp75": {
+    "bus": "3",
+    "address": "0x49"
+  },
+  "tmp75": {
+    "bus": "3",
+    "address": "0x4a"
+  },
+  "tmp75": {
+    "bus": "3",
+    "address": "0x4b"
+  },
+  "tmp75": {
+    "bus": "3",
+    "address": "0x4c"
+  },
   "com_e_driver": {
     "bus": "4",
     "address": "0x33"
@@ -10,5 +30,9 @@
   "tmp75": {
     "bus": "8",
     "address": "0x49"
+  },
+  "syscpld": {
+    "bus": "12",
+    "address": "0x31"
   }
 }

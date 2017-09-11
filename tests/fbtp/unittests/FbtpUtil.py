@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import sys
 import os
+import re
 try:
     currentPath = os.getcwd()
     commonPath = currentPath.replace('fbtp/unittests', 'common')
@@ -11,7 +12,6 @@ try:
 except Exception:
     pass
 import BaseUtil
-
 
 class FbtpUtil(BaseUtil.BaseUtil):
 
@@ -28,11 +28,14 @@ class FbtpUtil(BaseUtil.BaseUtil):
         """
         Supports getting fan pwm for Tioga Pass
         """
+        info = info.decode('utf-8')
         info = info.split(':')[1].split('RPM')
-        pwm = int(filter(str.isdigit, str(info[1])))
-        return pwm
+        pwm_str = re.sub("[^0-9]", "", info[1])
+        return int(pwm_str)
+
 
     def get_fan_test(self, info):
+        info = info.decode('utf-8')
         info = info.split('\n')
         goodRead = ['Fan', 'RPM', '%', 'Speed']
         for line in info:
@@ -52,7 +55,7 @@ class FbtpUtil(BaseUtil.BaseUtil):
     PowerCmdOff = '/usr/local/bin/power-util mb off'
     PowerCmdReset = '/usr/local/bin/power-util mb reset'
     PowerCmdStatus = '/usr/local/bin/power-util mb status'
-    PowerHW = '/usr/local/bin/power-util mb status && echo "OK" || echo "NOK"'
+    PowerHW = '/usr/local/bin/power-util mb status && echo "on" || echo "off"'
 
     # sol
     solCmd = '/usr/local/bin/sol-util mb'

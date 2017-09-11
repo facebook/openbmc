@@ -36,16 +36,16 @@ def sensorTest(platformType, data, util):
 def sensorTestNetwork(platformType, data, util):
     failed = []
     createSensorDictNetworkLmSensors(util)
-    logger.debug("checking values against json file")
+    logger.debug("Checking values against json file")
     for driver in data:
-        if isinstance(data[driver], types.DictType):
+        if isinstance(data[driver], dict):
             for reading in data[driver]:
                 try:
                     raw_value = sensorDict[driver][reading]
                 except Exception:
                     failed += [driver, reading]
                     continue
-                if isinstance(data[driver][reading], types.ListType):
+                if isinstance(data[driver][reading], list):
                     values = re.findall(r"[-+]?\d*\.\d+|\d+", raw_value)
                     if len(values) == 0:
                         failed += [driver, reading]
@@ -106,7 +106,8 @@ def createSensorDictNetworkLmSensors(util):
     info, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
-    logger.debug("creating sensor dictionary")
+    logger.debug("Creating sensor dictionary")
+    info = info.decode('utf-8')
     info = info.split('\n')
     currentKey = ''
     for line in info:

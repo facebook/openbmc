@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import sys
 import os
+import re
 try:
     currentPath = os.getcwd()
     commonPath = currentPath.replace('wedge/unittests', 'common')
@@ -28,11 +29,13 @@ class WedgeUtil(BaseUtil.BaseUtil):
         """
         Supports getting fan speed for wedge
         """
+        info = info.decode('utf-8')
         info = info.split(':')[1].split(',')
         speed = int(info[0])
         return speed
 
     def get_fan_test(self, info):
+        info = info.decode('utf-8')
         info = info.split('\n')
         goodRead = ['Fan', 'RPMs:']
         for line in info:
@@ -55,7 +58,7 @@ class WedgeUtil(BaseUtil.BaseUtil):
     PowerCmdOff = '/usr/local/bin/wedge_power.sh off'
     PowerCmdReset = '/usr/local/bin/wedge_power.sh reset'
     PowerCmdStatus = '/usr/local/bin/wedge_power.sh status'
-    PowerHW = 'source /usr/local/bin/board-utils.sh && wedge_is_us_on && echo "OK" || echo "NOK"'
+    PowerHW = 'source /usr/local/bin/board-utils.sh && wedge_is_us_on && echo "on" || echo "off"'
 
     # sol
     solCmd = '/usr/local/bin/sol.sh'

@@ -1,7 +1,11 @@
 [
-  "pfe1100",
-  "syscpld",
-  "pcf8574",
+  "g_cdc",
   "pmbus",
-  "max127"
+  "lm75",
+  "tpm",
+  "syscpld",
+  "fancpld",
+  "com_e_driver",
+  "ltc4151",
+  "pmbus"
 ]

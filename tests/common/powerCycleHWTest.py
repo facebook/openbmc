@@ -30,6 +30,7 @@ def powerCycleTest(util):
     out, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
+    out = out.decode('utf-8')
     if 'on' or 'ON' in out:
         status = 'on'
     else:
@@ -58,11 +59,11 @@ def powerCycleTest(util):
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     out, err = f.communicate()
-    out = out.split('\n')[0]
+    out = out.decode('utf-8')
     if len(err) != 0:
         raise Exception(err)
-    if ('OK' in out):
-        print("Power Test bad read of hardware [FAILED]")
+    if ('off' not in out.lower()):
+        print("Power Test bad read of hardware. Expected OFF [FAILED]")
         sys.exit(1)
     # Power on
     logger.debug("executing power on command")
@@ -80,9 +81,12 @@ def powerCycleTest(util):
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     out, err = f.communicate()
-    out = out.split('\n')[0]
+    out = out.decode('utf-8')
     if len(err) != 0:
         raise Exception(err)
+    if ('on' not in out.lower()):
+        print("Power Test bad read of hardware. Expected ON [FAILED]")
+        sys.exit(1)
     # Set the power to the status when test began
     if status == 'off':
         logger.debug("executing power off command")
@@ -93,12 +97,13 @@ def powerCycleTest(util):
         out, err = f.communicate()
         if len(err) != 0:
             raise Exception(err)
-    if ('NOK' in out):
-        print("Power Test bad read of hardware [FAILED]")
-        sys.exit(1)
-    else:
-        print("Power Test correct reading of hardware [PASSED]")
-        sys.exit(0)
+        out = out.decode('utf-8')
+        if ('off' not in out.lower()):
+            print("Power Test bad read of hardware [FAILED]")
+            sys.exit(1)
+
+    print("Power Test correct reading of hardware [PASSED]")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

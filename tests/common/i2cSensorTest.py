@@ -22,6 +22,7 @@ def i2c_check(name, bus, address):
     info, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
+    info = info.decode('utf-8')
     info = info.split('\n')
     row = address[2]
     col = address[3]
@@ -40,6 +41,7 @@ def i2c_check(name, bus, address):
     info, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
+    info = info.decode('utf-8')
     info = info.split('\n')
     badread = True
     for i in range(1, len(info) - 1):

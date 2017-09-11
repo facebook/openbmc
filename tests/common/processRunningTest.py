@@ -15,6 +15,7 @@ def process_check(data):
     logger.debug("executing command: ps")
     f = subprocess.Popen('ps', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     info, err = f.communicate()
+    info = info.decode('utf-8')
     if len(err) != 0:
         raise Exception(err)
     failed = []

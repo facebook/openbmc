@@ -19,9 +19,10 @@ def memory_usage_check(threshold):
     info, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
+    info = info.decode('utf-8')
     info = info.split('\n')
     line = info[1].split(" ")
-    line = filter(lambda x: x != '', line)
+    line = list(filter(lambda x: x != '', line))
     used = int(100 - (float(line[3]) / float(line[1])) * 100)
     if used < threshold:
         print("Memory usage is below threshold: " + str(threshold) +

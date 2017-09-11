@@ -27,7 +27,7 @@ class Galaxy100Util(BaseUtil.BaseUtil):
     PowerCmdOff = '/usr/local/bin/wedge_power.sh off'
     PowerCmdReset = '/usr/local/bin/wedge_power.sh reset'
     PowerCmdStatus = '/usr/local/bin/wedge_power.sh status'
-    PowerHW = 'source /usr/local/bin/board-utils.sh && wedge_is_us_on && echo "OK" || echo "NOK"'
+    PowerHW = 'source /usr/local/bin/board-utils.sh && wedge_is_us_on && echo "on" || echo "off"'
 
     # sol
     solCmd = '/usr/local/bin/sol.sh'

@@ -12,13 +12,15 @@ def get_ip4_address(ifname):
     """
     Get IPv4 address of a given interface
     """
-    f = subprocess.Popen(['ip', 'addr', 'show', ifname],
+    f = subprocess.Popen(['ip', 'addr', 'show', ifname.encode('utf-8')],
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     out, err = f.communicate()
     if (len(out) == 0 or len(err) != 0):
-        raise Exception("Device " + ifname + " does not exist [FAILED]")
+        raise Exception("Device " + ifname.encode('utf-8') + " does not exist [FAILED]")
+    out = out.decode('utf-8')
     ipv4 = out.split("inet ")[1].split("/")[0]
+    logger.debug("Got ip address for " + str(ifname))
     return ipv4
 
 
@@ -26,13 +28,15 @@ def get_ip6_address(ifname):
     """
     Get IPv6 address of a given interface
     """
-    f = subprocess.Popen(['ip', 'addr', 'show', ifname],
+    f = subprocess.Popen(['ip', 'addr', 'show', ifname.encode('utf-8')],
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     out, err = f.communicate()
     if (len(out) == 0 or len(err) != 0):
-        raise Exception("Device " + ifname + " does not exist [FAILED]")
+        raise Exception("Device " + ifname.encode('utf-8') + " does not exist [FAILED]")
+    out = out.decode('utf-8')
     ipv6 = out.split("inet6 ")[1].split("/")[0]
+    logger.debug("Got ip address for " + str(ifname))
     return ipv6
 
 
@@ -41,10 +45,10 @@ def pingConnection(ifname, ver):
     Test connection of a given interface and version of IP address
     """
     if int(ver) == 4:
-        logger.debug("getting ip address for " + str(ifname))
+        logger.debug("Getting ip address for " + str(ifname))
         ip = get_ip4_address(ifname)
         cmd = "ping -c 1 -q -w 1 " + ip
-        logger.debug("executing: " + str(cmd))
+        logger.debug("Executing: " + cmd)
         f = subprocess.Popen(cmd, shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -52,10 +56,10 @@ def pingConnection(ifname, ver):
         if len(err) > 0:
             raise Exception(err)
     elif int(ver) == 6:
-        logger.debug("getting ip address for " + str(ifname))
+        logger.debug("Getting ip address for " + str(ifname))
         ip = get_ip6_address(ifname)
-        cmd = "ping -c 1 -q -w 1 " + ip
-        logger.debug("executing: " + str(cmd))
+        cmd = "ping6 -c 1 -q -w 1 " + ip
+        logger.debug("Executing: " + cmd)
         f = subprocess.Popen(cmd, shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -89,7 +93,7 @@ if __name__ == "__main__":
         pingConnection(ifname, ver)
     except Exception as e:
         if type(e) == IndexError:
-            print('No IPv' + ver + ' address for ' + ifname +
+            print('No IPv' + ver + ' address for ' + ifname.encode('utf-8') +
                   ' interface [FAILED]')
         else:
             print("interface Test [FAILED]")

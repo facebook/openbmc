@@ -231,6 +231,11 @@ char * def_val_list[] = {
   LAST_KEY /* Same as last entry of the key_list */
 };
 
+char * cfg_support_key_list[] = {
+  "slot1_por_cfg",
+  LAST_KEY /* This is the last key of the list */
+};
+
 struct power_coeff {
   float ein;
   float coeff;
@@ -371,7 +376,6 @@ write_device(const char *device, const char *value) {
 
 static int
 pal_key_check(char *key) {
-
   int ret;
   int i;
 
@@ -379,8 +383,9 @@ pal_key_check(char *key) {
   while(strcmp(key_list[i], LAST_KEY)) {
 
     // If Key is valid, return success
-    if (!strcmp(key, key_list[i]))
+    if (!strcmp(key, key_list[i])) {
       return 0;
+    }
 
     i++;
   }
@@ -389,6 +394,31 @@ pal_key_check(char *key) {
   syslog(LOG_WARNING, "pal_key_check: invalid key - %s", key);
 #endif
   return -1;
+}
+
+// Check what keys can be set by cfg-util
+int
+pal_cfg_key_check(char *key) {
+  int i;
+
+  i = 0;
+  while(strcmp(cfg_support_key_list[i], LAST_KEY)) {
+    // If Key is valid and can be set, return success
+    if (!strcmp(key, cfg_support_key_list[i])) {
+      return 0;
+    }
+    i++;
+  }
+
+  // Check is key is defined and valid but cannot be set
+  if (pal_key_check(key) == 0) {
+    return 1;
+  } else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "%s: invalid key - %s", __func__, key);
+#endif
+    return -1;
+  }
 }
 
 int

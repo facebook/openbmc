@@ -673,6 +673,9 @@ pal_set_def_key_value() {
 
     if (!strcmp(key_list[i], "system_identify")) {
       sprintf(kpath, KV_STORE, key_list[i]);
+      if (access(KV_STORE_PATH, F_OK) == -1) {
+        mkdir(KV_STORE_PATH, 0777);
+      }
     } else {
       sprintf(kpath, TMP_PATH, key_list[i]);
     }

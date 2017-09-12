@@ -373,7 +373,8 @@ devmem_clear_bit $(scu_addr 88) 21
 gpio_set P5 1
 # GPIOP6 BMC_PWR_DEBUG_N
 devmem_clear_bit $(scu_addr 88) 22
-gpio_set P6 1
+# gpio_set P6 1
+
 # GPIOP7 RST_RSMRST_N
 devmem_clear_bit $(scu_addr 88) 23
 gpio_export P7

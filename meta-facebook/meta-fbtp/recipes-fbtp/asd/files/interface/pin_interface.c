@@ -104,10 +104,9 @@ int pin_initialize(const int fru)
     gpio = gpio_num(POWER_DEBUG_EN_GPIO);
     if (gpio_export(gpio) ||
        gpio_open(&power_debug_en_gpio, gpio) != 0 ||
-       gpio_change_direction(&power_debug_en_gpio, GPIO_DIRECTION_OUT)) {
+       gpio_change_direction(&power_debug_en_gpio, GPIO_DIRECTION_IN)) {
       return ST_ERR;
     }
-    gpio_write(&power_debug_en_gpio, GPIO_VALUE_LOW);
 
     /* In FBTP, JTAG_TCK Pin of the CPU is directly connected to the BMC (JTAG_TCK).
      * But that output can be connected to the CPU (default) or a second
@@ -162,10 +161,6 @@ int pin_deinitialize(const int fru)
         return ST_ERR;
     }
     gpio_close(&debug_en_gpio);
-
-    if (gpio_change_direction(&power_debug_en_gpio, GPIO_DIRECTION_IN)) {
-        return ST_ERR;
-    }
     gpio_close(&power_debug_en_gpio);
 
     if (gpio_change_direction(&tck_mux_sel_gpio, GPIO_DIRECTION_IN)) {
@@ -189,10 +184,6 @@ int pin_deinitialize(const int fru)
 
 int power_debug_assert(const int fru, const bool assert)
 {
-    if (fru != FRU_MB)
-        return ST_ERR;
-    /* Active low. */
-    gpio_write(&power_debug_en_gpio, assert ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
     return ST_OK;
 }
 

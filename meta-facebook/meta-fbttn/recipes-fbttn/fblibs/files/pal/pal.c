@@ -3890,7 +3890,7 @@ int pal_nic_otp(int fru, int snr_num, float thresh_val) {
   }
 
   // power off Mono Lake 12V HSC
-  syslog(LOG_CRIT, "Powering Off Server due to NIC temp UNR reached. (val = %.2f)", curr_val);
+  syslog(LOG_CRIT, "Powering Off Server 12V due to NIC temp UNR reached. (val = %.2f)", curr_val);
   server_12v_off(FRU_SLOT1);
   otp_server_12v_off_flag = 1;
   return 0;

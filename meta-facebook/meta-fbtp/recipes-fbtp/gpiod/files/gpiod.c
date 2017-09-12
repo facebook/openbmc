@@ -548,7 +548,9 @@ ierr_mcerr_event_handler() {
             syslog(LOG_CRIT, "ASSERT: IERR/CATERR\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num != -1)
+            if(CPU_num == 2)
+              sprintf(temp_log, "CPU0/1 IERR/CATERR");
+            else if(CPU_num != -1)
               sprintf(temp_log, "CPU%d IERR/CATERR", CPU_num);
             else
               sprintf(temp_log, "CPU IERR/CATERR");
@@ -557,7 +559,9 @@ ierr_mcerr_event_handler() {
             syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num != -1)
+            if(CPU_num == 2)
+              sprintf(temp_log, "CPU0/1 IERR/CATERR");
+            else if(CPU_num != -1)
               sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
             else
               sprintf(temp_log, "CPU MCERR/CATERR");
@@ -573,7 +577,9 @@ ierr_mcerr_event_handler() {
                      syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
 
                      CPU_num = pal_CPU_error_num_chk();
-                     if(CPU_num != -1)
+                     if(CPU_num == 2)
+                       sprintf(temp_log, "CPU0/1 IERR/CATERR");
+                     else if(CPU_num != -1)
                        sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
                      else
                        sprintf(temp_log, "CPU MCERR/CATERR");
@@ -594,7 +600,9 @@ ierr_mcerr_event_handler() {
             syslog(LOG_CRIT, "ASSERT: IERR/MSMI\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num != -1)
+            if(CPU_num == 2)
+              sprintf(temp_log, "CPU0/1 IERR/CATERR");
+            else if(CPU_num != -1)
               sprintf(temp_log, "CPU%d IERR/MSMI", CPU_num);
             else
               sprintf(temp_log, "CPU IERR/MSMI");
@@ -603,7 +611,9 @@ ierr_mcerr_event_handler() {
             syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num != -1)
+            if(CPU_num == 2)
+              sprintf(temp_log, "CPU0/1 IERR/CATERR");
+            else if(CPU_num != -1)
               sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
             else
               sprintf(temp_log, "CPU MCERR/MSMI");
@@ -619,7 +629,9 @@ ierr_mcerr_event_handler() {
                    syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
 
                    CPU_num = pal_CPU_error_num_chk();
-                   if(CPU_num != -1)
+                   if(CPU_num == 2)
+                     sprintf(temp_log, "CPU0/1 IERR/CATERR");
+                   else if(CPU_num != -1)
                      sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
                    else
                      sprintf(temp_log, "CPU MCERR/MSMI");

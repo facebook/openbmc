@@ -7138,7 +7138,9 @@ pal_CPU_error_num_chk(void)
   if (len >= (4+MIN_IPMB_RES_LEN) && // Data len >= 4
     res->cc == 0 && // IPMB Success
     res->data[3] == 0x40 ) {
-    if((res->data[7] & 0xE0) > 0)
+    if(((res->data[7] & 0xE0) > 0) && ((res->data[7] & 0x1C) > 0))
+      return 2; //Both
+    else if((res->data[7] & 0xE0) > 0)
       return 1; //CPU1
     else if((res->data[7] & 0x1C) > 0)
       return 0; // CPU0

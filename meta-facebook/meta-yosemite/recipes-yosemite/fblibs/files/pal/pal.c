@@ -2437,19 +2437,6 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   return 0;
 }
 
-// Helper function for msleep
-void
-msleep(int msec) {
-  struct timespec req;
-
-  req.tv_sec = 0;
-  req.tv_nsec = msec * 1000 * 1000;
-
-  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
-    continue;
-  }
-}
-
 int
 pal_set_sensor_health(uint8_t fru, uint8_t value) {
 

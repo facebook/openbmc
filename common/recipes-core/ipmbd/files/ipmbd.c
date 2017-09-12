@@ -118,19 +118,6 @@ static int i2c_slave_read(int fd, uint8_t *buf, uint8_t *len);
 static int i2c_slave_open(uint8_t bus_num);
 static int bic_up_flag = 0;
 
-// Helper function for msleep
-static void
-msleep(int msec) {
-  struct timespec req;
-
-  req.tv_sec = 0;
-  req.tv_nsec = msec * 1000 * 1000;
-
-  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
-    continue;
-  }
-}
-
 // Calculate checksum
 static inline uint8_t
 calc_cksum(uint8_t *buf, uint8_t len) {

@@ -502,7 +502,7 @@ server_power_on(uint8_t slot_id) {
   int max_retry = 5;
   int pid_file;
 
-  // Check if another instance is running 
+  // Check if another instance is running
   if (pal_powering_on_flag(slot_id) < 0) {
     syslog(LOG_WARNING, "%s(): Another instance is running for FRU: %d.\n", __func__, slot_id);
     //Make server_power_on exit code to "-2" when another instance is running
@@ -2335,19 +2335,6 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   }
 
   return 0;
-}
-
-// Helper function for msleep
-void
-msleep(int msec) {
-  struct timespec req;
-
-  req.tv_sec = 0;
-  req.tv_nsec = msec * 1000 * 1000;
-
-  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
-    continue;
-  }
 }
 
 int
@@ -4255,7 +4242,7 @@ pal_get_pcie_port_config (uint8_t slot, uint8_t *req_data, uint8_t req_len, uint
   }
 
   memcpy(res_data, pcie_port_config, SIZE_PCIE_PORT_CONFIG);
-  *res_len = SIZE_PCIE_PORT_CONFIG;  
+  *res_len = SIZE_PCIE_PORT_CONFIG;
 
   return 0;
 }

@@ -31,6 +31,7 @@
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
+// PAL functions
 int __attribute__((weak))
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr)
 {
@@ -893,3 +894,18 @@ pal_ipmb_finished(int bus, void *buf, uint16_t size)
 {
   return 0;
 }
+
+// Helper functions for some of PAL routines
+void __attribute__((weak))
+ msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
+  }
+}
+
+

@@ -1880,16 +1880,16 @@ pal_get_rst_btn(uint8_t *status) {
 }
 
 // Update the SLED LED for sled fully seated
-int 
+int
 pal_set_sled_led(void) {
   char path[64] = {0};
   int val;
-  
+
   sprintf(path, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
   if (read_device(path, &val)) {
     return -1;
   }
-  
+
   memset(path, 0, sizeof(path));
   sprintf(path, GPIO_VAL, GPIO_SLED_SEATED_N);
   if (val) {
@@ -3601,19 +3601,6 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
   }
 
   return 0;
-}
-
-// Helper function for msleep
-void
-msleep(int msec) {
-  struct timespec req;
-
-  req.tv_sec = 0;
-  req.tv_nsec = msec * 1000 * 1000;
-
-  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
-    continue;
-  }
 }
 
 int

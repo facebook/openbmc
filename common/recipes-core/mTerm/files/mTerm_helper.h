@@ -45,6 +45,8 @@ typedef struct bufStore {
   int  maxSizeBytes;
   char file[PATH_SIZE];
   char backupfile[PATH_SIZE];
+  char needTimestamp;
+  unsigned long lineNumber;
 } bufStore;
 
 typedef struct TlvHeader {

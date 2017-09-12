@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
+#include <time.h>
 #include "mTerm_helper.h"
 #include "tty_helper.h"
 
@@ -154,6 +155,7 @@ bufStore* createBuffer(const char *dev, int fsize) {
 
   buf->buf_fd = open(buf->file, O_RDWR | O_APPEND | O_CREAT, 0666) ;
   buf->maxSizeBytes = fsize;
+  buf->needTimestamp = 1;
   return buf;
 }
 
@@ -165,10 +167,30 @@ void closeBuffer(bufStore* buf) {
   free(buf);
 }
 
+/* Write human-readable timestamp with line number in the provided buffer */
+void writeTimestampToBuffer(bufStore *buf) {
+
+  time_t cur_time;
+  size_t dateLen;
+  char dateBuff[64];
+
+  time(&cur_time);
+
+  if (!ctime_r(&cur_time, dateBuff))
+    strcpy(dateBuff, "unknown time ");
+
+  dateLen = strlen(dateBuff);
+  dateBuff[dateLen - 1] = ' ';
+  snprintf(dateBuff + dateLen, sizeof(dateBuff) - dateLen, "%07lu ", buf->lineNumber++);
+  writeData(buf->buf_fd, dateBuff, strlen(dateBuff), "buffer");
+}
+
 void writeToBuffer(bufStore *buf, char* data, int len) {
    bool rotate = false;
    struct stat file_stat;
-   int rc = stat(buf->file, &file_stat);
+   int rc = stat(buf->file, &file_stat), nbytes = len, cur_len;
+   char *cur = data, *prev = data;
+
    if (rc != 0) {
      if (errno == ENOENT) {
        // Maybe someone externally removed our buffer file. Force file rotation.
@@ -195,7 +217,30 @@ void writeToBuffer(bufStore *buf, char* data, int len) {
        exit(-1);
      }
    }
-   writeData(buf->buf_fd, data, len, "buffer");
+
+  /*
+   * Treat data as byte array but try to seek out newline characters. When they are
+   * found, add current timestamp and sequential line number.
+   */
+   while ((cur = memchr(cur, '\n', nbytes)) || nbytes) {
+     if (buf->needTimestamp) {
+       writeTimestampToBuffer(buf);
+       buf->needTimestamp = 0;
+     }
+     /* there is no new line in this buffer, move on */
+     if (!cur) {
+       writeData(buf->buf_fd, prev, nbytes, "buffer");
+       break;
+     }
+
+     cur_len = cur - prev + 1;
+     nbytes -= cur_len;
+
+     writeData(buf->buf_fd, prev, cur_len, "buffer");
+     prev = ++cur;
+     buf->needTimestamp = 1;
+  }
+
 }
 
 long int bufferGetLines(char* fname, int clientfd, int nlines, long int curr) {

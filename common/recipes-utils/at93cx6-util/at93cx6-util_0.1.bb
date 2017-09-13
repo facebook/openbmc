@@ -44,6 +44,6 @@ do_install() {
     done
 }
 
-RDEPENDS_${PN} = "bitbang python"
+RDEPENDS_${PN} = "bitbang python3"
 
 FILES_${PN} += "/usr/local"

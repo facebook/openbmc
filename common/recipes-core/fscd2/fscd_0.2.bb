@@ -42,6 +42,7 @@ S = "${WORKDIR}"
 inherit distutils
 
 DEPENDS_${PN} = "python python-distribute update-rc.d-native"
+DEPENDS += "update-rc.d-native"
 
 RDEPENDS_${PN} += "python-syslog python-ply "
 

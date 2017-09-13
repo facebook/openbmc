@@ -47,6 +47,8 @@ MTERM_SERVICES = "mTerm \
                  "
 pkgdir = "mTerm"
 
+DEPENDS += "update-rc.d-native"
+
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"

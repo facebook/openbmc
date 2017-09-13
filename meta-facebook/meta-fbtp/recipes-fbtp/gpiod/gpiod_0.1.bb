@@ -31,7 +31,7 @@ S = "${WORKDIR}"
 
 binfiles = "gpiod \
            "
-DEPENDS += " libgpio libpal libocpdbg-lcd "
+DEPENDS += " libgpio libpal libocpdbg-lcd update-rc.d-native"
 
 pkgdir = "gpiod"
 

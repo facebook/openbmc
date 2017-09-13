@@ -6,7 +6,7 @@ SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_4.sh \
              file://run-ipmbd_9.sh \
            "
-DEPENDS_append = " plat-utils "
+DEPENDS_append = " plat-utils update-rc.d-native"
 
 CFLAGS_prepend = " -DCONFIG_FBTP"
 

@@ -16,7 +16,7 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 3,
       "data": [
         [ 25, 20 ],
         [ 27, 22 ],
@@ -37,7 +37,7 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 3,
       "data": [
         [ -34, 20 ],
         [ -32, 44 ],

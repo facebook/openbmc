@@ -2530,7 +2530,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         power_value_adjust(pwr_cali_table, (float *)value);
       }
       if (sensor_num == SP_SENSOR_INLET_TEMP) {
-        apply_inlet_correction((float *)value);
+//        apply_inlet_correction((float *)value);
       }
       if ((sensor_num == SP_SENSOR_P12V_SLOT1) || (sensor_num == SP_SENSOR_P12V_SLOT2) ||
           (sensor_num == SP_SENSOR_P12V_SLOT3) || (sensor_num == SP_SENSOR_P12V_SLOT4)) {
@@ -4241,7 +4241,7 @@ int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   if (m_slot_ac_start[slot-1] != false) {
     return CC_NOT_SUPP_IN_CURR_STATE;
   }
-	
+
   m_slot_ac_start[slot-1] = true;
   ret = pthread_create(&tid, NULL, slot_ac_cycle, (void *)slot_id);
   if (ret < 0) {

@@ -3,7 +3,7 @@ lib: libbios.so
 
 libbios.so: bios.c
 	$(CC) $(CFLAGS) -fPIC -c -pthread bios.c
-	$(CC) -shared -o libbios.so bios.o -lc
+	$(CC) -shared -o libbios.so bios.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

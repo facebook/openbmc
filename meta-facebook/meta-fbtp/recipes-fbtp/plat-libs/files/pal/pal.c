@@ -1685,6 +1685,9 @@ read_dimm_temp(uint8_t snr_num, float *value) {
     ret = pal_get_platform_id(&BoardInfo);
     if (ret == 0) {
       odm_id = (int) (BoardInfo & 0x1);
+      //re-init the ret variable since the sensor reading(NA or value) is affected by it
+      //make sure the ret variable used correctly.
+      ret = READING_NA;
     }
   }
 

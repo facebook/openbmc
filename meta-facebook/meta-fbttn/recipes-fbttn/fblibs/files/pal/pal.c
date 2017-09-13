@@ -1974,7 +1974,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   switch(fru) {
     case FRU_SLOT1:
       switch(snr_num) {
-        case CATERR:
+        case CATERR_B:
           pal_store_crashdump(fru);
         }
       sprintf(key, "slot%d_sel_error", fru);
@@ -2014,57 +2014,8 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
   switch (fru) {
     case FRU_SLOT1:
-      switch(snr_num) {
-        case SYSTEM_EVENT:
-          sprintf(name, "SYSTEM_EVENT");
-          break;
-        case THERM_THRESH_EVT:
-          sprintf(name, "THERM_THRESH_EVT");
-          break;
-        case CRITICAL_IRQ:
-          sprintf(name, "CRITICAL_IRQ");
-          break;
-        case POST_ERROR:
-          sprintf(name, "POST_ERROR");
-          break;
-        case MACHINE_CHK_ERR:
-          sprintf(name, "MACHINE_CHK_ERR");
-          break;
-        case PCIE_ERR:
-          sprintf(name, "PCIE_ERR");
-          break;
-        case IIO_ERR:
-          sprintf(name, "IIO_ERR");
-          break;
-        case MEMORY_ECC_ERR:
-          sprintf(name, "MEMORY_ECC_ERR");
-          break;
-        case PWR_ERR:
-          sprintf(name, "PWR_ERR");
-          break;
-        case CATERR:
-          sprintf(name, "CATERR");
-          break;
-        case CPU_DIMM_HOT:
-          sprintf(name, "CPU_DIMM_HOT");
-          break;
-        case CPU0_THERM_STATUS:
-          sprintf(name, "CPU0_THERM_STATUS");
-          break;
-        case SPS_FW_HEALTH:
-          sprintf(name, "SPS_FW_HEALTH");
-          break;
-        case NM_EXCEPTION:
-          sprintf(name, "NM_EXCEPTION");
-          break;
-        case PWR_THRESH_EVT:
-          sprintf(name, "PWR_THRESH_EVT");
-          break;
-        default:
-          sprintf(name, "Unknown");
-          break;
-        }
-        break;
+      pal_get_x86_event_sensor_name(fru, snr_num, name);
+      break;
     case FRU_SCC:
       fbttn_sensor_name(fru, snr_num, name);
       fbttn_sensor_name(fru-1, snr_num, name); // the fru is always 4, so we have to minus 1 for DPB sensors, since scc and dpb sensor all come from Expander
@@ -2272,7 +2223,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             strcat(error_log, "Unknown");
           break;
 
-        case CATERR:
+        case CATERR_B:
           sprintf(error_log, "");
           if (ed[0] == 0x0)
             strcat(error_log, "IERR");

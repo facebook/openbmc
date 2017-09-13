@@ -5370,96 +5370,6 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 }
 
 int
-pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
-  uint8_t snr_type = sel[10];
-  uint8_t snr_num = sel[11];
-
-  switch (snr_type) {
-    case OS_BOOT:
-      // OS_BOOT used by OS
-      sprintf(name, "OS");
-      return 0;
-  }
-
-  switch(snr_num) {
-    case SYSTEM_EVENT:
-      sprintf(name, "SYSTEM_EVENT");
-      break;
-    case THERM_THRESH_EVT:
-      sprintf(name, "THERM_THRESH_EVT");
-      break;
-    case CRITICAL_IRQ:
-      sprintf(name, "CRITICAL_IRQ");
-      break;
-    case POST_ERROR:
-      sprintf(name, "POST_ERROR");
-      break;
-    case MACHINE_CHK_ERR:
-      sprintf(name, "MACHINE_CHK_ERR");
-      break;
-    case PCIE_ERR:
-      sprintf(name, "PCIE_ERR");
-      break;
-    case IIO_ERR:
-      sprintf(name, "IIO_ERR");
-      break;
-    case MEMORY_ECC_ERR:
-      sprintf(name, "MEMORY_ECC_ERR");
-      break;
-    case MEMORY_ERR_LOG_DIS:
-      sprintf(name, "MEMORY_ERR_LOG_DIS");
-      break;
-    case PWR_ERR:
-      sprintf(name, "PWR_ERR");
-      break;
-    case CATERR:
-      sprintf(name, "CATERR");
-      break;
-    case CPU_DIMM_HOT:
-      sprintf(name, "CPU_DIMM_HOT");
-      break;
-    case SOFTWARE_NMI:
-      sprintf(name, "SOFTWARE_NMI");
-      break;
-    case CPU0_THERM_STATUS:
-      sprintf(name, "CPU0_THERM_STATUS");
-      break;
-    case CPU1_THERM_STATUS:
-      sprintf(name, "CPU1_THERM_STATUS");
-      break;
-    case ME_POWER_STATE:
-      sprintf(name, "ME_POWER_STATE");
-      break;
-    case SPS_FW_HEALTH:
-      sprintf(name, "SPS_FW_HEALTH");
-      break;
-    case NM_EXCEPTION:
-      sprintf(name, "NM_EXCEPTION");
-      break;
-    case NM_HEALTH:
-      sprintf(name, "NM_HEALTH");
-      break;
-    case NM_CAPABILITIES:
-      sprintf(name, "NM_CAPABILITIES");
-      break;
-    case NM_THRESHOLD:
-      sprintf(name, "NM_THRESHOLD");
-      break;
-    case PWR_THRESH_EVT:
-      sprintf(name, "PWR_THRESH_EVT");
-      break;
-    case HPR_WARNING:
-      sprintf(name, "HPR_WARNING");
-      break;
-    default:
-      sprintf(name, "Unknown");
-      break;
-  }
-
-  return 0;
-}
-
-int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
   uint8_t snr_type = sel[10];
@@ -5712,7 +5622,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         strcat(error_log, "Unknown");
       break;
 
-    case CATERR:
+    case CATERR_A:
       strcpy(error_log, "");
       if (ed[0] == 0x0)
         strcat(error_log, "IERR/CATERR");
@@ -5817,7 +5727,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
 
     /*NM4.0 #550710, Revision 1.95, and turn to p.155*/
-    case NM_EXCEPTION:
+    case NM_EXCEPTION_A:
       strcpy(error_log, "");
       if (ed[0] == 0xA8) {
         strcat(error_log, "Policy Correction Time Exceeded");

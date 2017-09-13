@@ -425,10 +425,123 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
   return PAL_EOK;
 }
 
-int __attribute__((weak))
-pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name)
+/*
+ *  Default implementation if pal_is_fru_x86 is to always return true
+ *  on all FRU, on all platform. This is because all uServers so far are X86.
+ *  This logic can be "OVERRIDDEN" as needed, on any newer platform,
+ *  in order to return dynamic value, based on the information which
+ *  BMC collected so far.
+ *  (therefore mix-and-match supported; not sure if needed.)
+ */
+bool __attribute__((weak))
+pal_is_fru_x86(uint8_t fru)
 {
-  return PAL_EOK;
+  return true;
+}
+
+int __attribute__((weak))
+pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num,
+                                     char *name)
+{
+  if (pal_is_fru_x86(fru))
+  {
+    switch(snr_num) {
+      case SYSTEM_EVENT:
+        sprintf(name, "SYSTEM_EVENT");
+        break;
+      case THERM_THRESH_EVT:
+        sprintf(name, "THERM_THRESH_EVT");
+        break;
+      case CRITICAL_IRQ:
+        sprintf(name, "CRITICAL_IRQ");
+        break;
+      case POST_ERROR:
+        sprintf(name, "POST_ERROR");
+        break;
+      case MACHINE_CHK_ERR:
+        sprintf(name, "MACHINE_CHK_ERR");
+        break;
+      case PCIE_ERR:
+        sprintf(name, "PCIE_ERR");
+        break;
+      case IIO_ERR:
+        sprintf(name, "IIO_ERR");
+        break;
+      case MEMORY_ECC_ERR:
+        sprintf(name, "MEMORY_ECC_ERR");
+        break;
+      case MEMORY_ERR_LOG_DIS:
+        sprintf(name, "MEMORY_ERR_LOG_DIS");
+        break;
+      case PWR_ERR:
+        sprintf(name, "PWR_ERR");
+        break;
+      case CATERR_A:
+      case CATERR_B:
+        sprintf(name, "CATERR");
+        break;
+      case CPU_DIMM_HOT:
+        sprintf(name, "CPU_DIMM_HOT");
+        break;
+      case SOFTWARE_NMI:
+        sprintf(name, "SOFTWARE_NMI");
+        break;
+      case CPU0_THERM_STATUS:
+        sprintf(name, "CPU0_THERM_STATUS");
+        break;
+      case CPU1_THERM_STATUS:
+        sprintf(name, "CPU1_THERM_STATUS");
+        break;
+      case ME_POWER_STATE:
+        sprintf(name, "ME_POWER_STATE");
+        break;
+      case SPS_FW_HEALTH:
+        sprintf(name, "SPS_FW_HEALTH");
+        break;
+      case NM_EXCEPTION_A:
+      case NM_EXCEPTION_B:
+        sprintf(name, "NM_EXCEPTION");
+        break;
+      case NM_HEALTH:
+        sprintf(name, "NM_HEALTH");
+        break;
+      case NM_CAPABILITIES:
+        sprintf(name, "NM_CAPABILITIES");
+        break;
+      case NM_THRESHOLD:
+        sprintf(name, "NM_THRESHOLD");
+        break;
+      case PWR_THRESH_EVT:
+        sprintf(name, "PWR_THRESH_EVT");
+        break;
+      case HPR_WARNING:
+        sprintf(name, "HPR_WARNING");
+        break;
+      default:
+        sprintf(name, "Unknown");
+        break;
+    }
+    return 0;
+  } else {
+    sprintf(name, "UNDEFINED:NOT_X86");
+  }
+  return 0;
+}
+
+int __attribute__((weak))
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+
+  // If SNR_TYPE is OS_BOOT, sensor name is OS
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return 0;
+  }
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
 }
 
 int __attribute__((weak))
@@ -916,5 +1029,3 @@ void __attribute__((weak))
     continue;
   }
 }
-
-

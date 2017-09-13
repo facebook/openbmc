@@ -81,6 +81,43 @@ enum {
   NEG_HYST,
 };
 
+enum {
+  OS_BOOT = 0x1F,
+};
+
+// Enum for get the event sensor name in processing SEL
+enum {
+  SYSTEM_EVENT = 0xE9,
+  THERM_THRESH_EVT = 0x7D,
+  BUTTON = 0xAA,
+  POWER_STATE = 0xAB,
+  CRITICAL_IRQ = 0xEA,
+  POST_ERROR = 0x2B,
+  MACHINE_CHK_ERR = 0x40,
+  PCIE_ERR = 0x41,
+  IIO_ERR = 0x43,
+  MEMORY_ECC_ERR = 0X63,
+  MEMORY_ERR_LOG_DIS = 0X87,
+  PROCHOT_EXT = 0X51,
+  PWR_ERR = 0X56,
+  CATERR_A = 0xE6, // W100, FBTP
+  CATERR_B = 0xEB, // FBY2, FBTTN, LIGHTNING ,YOSEMITE
+  CPU_DIMM_HOT = 0xB3,
+  SOFTWARE_NMI = 0x90,
+  CPU0_THERM_STATUS = 0x1C,
+  CPU1_THERM_STATUS = 0x1D,
+  ME_POWER_STATE = 0x16,
+  SPS_FW_HEALTH = 0x17,
+  NM_EXCEPTION_A = 0x18,   // W100, FBTP, FBY2, YOSEMITE
+  NM_EXCEPTION_B = 0x8,    // FBTTN
+  NM_HEALTH = 0x19,
+  NM_CAPABILITIES = 0x1A,
+  NM_THRESHOLD = 0x1B,
+  PWR_THRESH_EVT = 0x3B,
+  MSMI = 0xE7,
+  HPR_WARNING = 0xC5,
+};
+
 // Helper function needed by some of pal functions
 void msleep(int msec);
 
@@ -154,6 +191,8 @@ int pal_get_sys_guid(uint8_t slot, char *guid);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name, uint8_t o_val, uint8_t n_val);
+bool pal_is_fru_x86(uint8_t fru);
+int pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);

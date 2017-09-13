@@ -132,31 +132,6 @@ enum {
   HAND_SW_BMC = 11,
 };
 
-enum {
-  OS_BOOT = 0x1F,
-};
-
-enum {
-  SYSTEM_EVENT = 0xE9,
-  THERM_THRESH_EVT = 0x7D,
-  BUTTON = 0xAA,
-  POWER_STATE = 0xAB,
-  CRITICAL_IRQ = 0xEA,
-  POST_ERROR = 0x2B,
-  MACHINE_CHK_ERR = 0x40,
-  PCIE_ERR = 0x41,
-  IIO_ERR = 0x43,
-  MEMORY_ECC_ERR = 0X63,
-  PROCHOT_EXT = 0X51,
-  PWR_ERR = 0X56,
-  CATERR = 0xEB,
-  CPU_DIMM_HOT = 0xB3,
-  CPU0_THERM_STATUS = 0x1C,
-  SPS_FW_HEALTH = 0x17,
-  NM_EXCEPTION = 0x8,
-  PWR_THRESH_EVT = 0x3B,
-};
-
 //Event/Reading Type Code Ranges
 enum {
   GENERIC = 0x5,

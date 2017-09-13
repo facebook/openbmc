@@ -20,7 +20,7 @@ lib: libgpio.so
 CFLAGS += -Wall -Werror
 
 libgpio.so: gpio.o gpio_name.o
-	$(CC) -shared -o libgpio.so gpio.o gpio_name.o -lc -pthread
+	$(CC) -shared -o libgpio.so gpio.o gpio_name.o -lc -pthread $(LDFLAGS)
 
 gpio.o: gpio.c
 	$(CC) $(CFLAGS) -fPIC -c -o gpio.o gpio.c

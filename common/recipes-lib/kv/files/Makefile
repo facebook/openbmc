@@ -19,7 +19,7 @@ lib: libkv.so
 
 libkv.so: kv.c
 	$(CC) $(CFLAGS) -fPIC -c -o kv.o kv.c
-	$(CC) -shared -o libkv.so kv.o -lc
+	$(CC) -shared -o libkv.so kv.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

@@ -3,7 +3,7 @@ lib: libsdr.so
 
 libsdr.so: sdr.c
 	$(CC) $(CFLAGS) -fPIC -c -o sdr.o sdr.c
-	$(CC) -lpal -lm -shared -o libsdr.so sdr.o -lc
+	$(CC) -lpal -lm -shared -o libsdr.so sdr.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

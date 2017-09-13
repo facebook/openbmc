@@ -3,7 +3,7 @@ lib: libocpdbg-lcd.so
 CFLAGS += -Wall -Werror
 libocpdbg-lcd.so: ocp-dbg-lcd.c
 	$(CC) $(CFLAGS) -fPIC -c -o ocp-dbg-lcd.o ocp-dbg-lcd.c
-	$(CC) -shared -o libocpdbg-lcd.so ocp-dbg-lcd.o -lc
+	$(CC) -shared -o libocpdbg-lcd.so ocp-dbg-lcd.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

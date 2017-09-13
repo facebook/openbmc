@@ -19,7 +19,7 @@ lib: libfruid.so
 
 libfruid.so: fruid.c
 	$(CC) $(CFLAGS) -fPIC -c -o fruid.o fruid.c
-	$(CC) -shared -o libfruid.so fruid.o -lc
+	$(CC) -shared -o libfruid.so fruid.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

@@ -1401,7 +1401,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
       break;
   }
   if (retry == 4) { //if the third retry still failed, return -1
-    syslog(LOG_CRIT, "%s: Command: Restart using Recovery Firmware failed..., retried: %d", __func__, command, retry);
+    syslog(LOG_CRIT, "%s: Command: Restart using Recovery Firmware failed..., retried: %d", __func__, retry);
     return -1;
   }
 
@@ -1443,7 +1443,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
     }
   }
   if (retry == 4) { //if the third retry still failed, return -1
-    syslog(LOG_CRIT, "%s: Command: Restore Factory Default failed..., retried: %d", __func__, command, retry);
+    syslog(LOG_CRIT, "%s: Command: Restore Factory Default failed..., retried: %d", __func__, retry);
     return -1;
   }
 

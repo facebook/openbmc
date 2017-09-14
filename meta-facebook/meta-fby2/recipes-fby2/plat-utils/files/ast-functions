@@ -73,10 +73,6 @@ gpio_name2value() {
         esac
         remaining=${remaining:1}
     done
-
-    if [ $val -gt 219 ]; then
-        val=$((val - 4))
-    fi
     echo "$val"
 }
 

@@ -2261,6 +2261,13 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     static float current = 0x0;
     static float power = 0x0;
 
+    // Delay for 2 cycles and check INA230 init done
+    if( pot < 3 )
+    {
+      ret = READING_NA;
+      goto error_exit;
+    }
+
     //check the previous all INA230 sensors are read and change the addr to the next
     if ( previous_addr != addr )
     {

@@ -7023,8 +7023,8 @@ pal_is_ava_card(uint8_t riser_slot)
   }
 
   // control I2C multiplexer to target channel.
-  ret = mux_lock(&riser_mux, riser_slot, 2);
-  if ( ret < 0 ) {
+  val = mux_lock(&riser_mux, riser_slot, 2);
+  if ( val < 0 ) {
     syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
     ret = false;
     goto error_exit;

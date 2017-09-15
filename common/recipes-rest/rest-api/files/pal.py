@@ -86,6 +86,34 @@ def pal_server_action(slot_id, command):
     else:
         return 0
 
+def pal_get_server_2s_power():
+    status = c_ubyte()
+    p_status = pointer(status)
+    ret = lpal_hndl.pal_get_server_power(1, p_status)
+    if ret:
+        return None
+    else:
+        return status.value
+
+def pal_server_2s_action(command):
+    if command == 'power-off':
+        cmd = '/usr/local/bin/power-util mb off'
+    elif command == 'power-on':
+        cmd = '/usr/local/bin/power-util mb on'
+    elif command == 'power-cycle':
+        cmd = '/usr/local/bin/power-util mb cycle'
+    elif command == 'graceful-shutdown':
+        cmd = '/usr/local/bin/power-util mb graceful-shutdown'
+    elif command == 'reset':
+        cmd = '/usr/local/bin/power-util mb reset'
+    else:
+        return -1
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    if ret.startswith( 'Usage' ):
+        return -1
+    else:
+        return 0
+
 def pal_sled_action(command):
     if command == 'sled-cycle':
         cmd = '/usr/local/bin/power-util sled-cycle'

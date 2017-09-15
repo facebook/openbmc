@@ -315,6 +315,7 @@ fw_update_slot(char **argv, uint8_t slot_id) {
   uint8_t status;
   int ret;
   char cmd[80];
+  int retry_count = 0;
 
   ret = pal_is_fru_prsnt(slot_id, &status);
   if (ret < 0) {
@@ -341,13 +342,35 @@ fw_update_slot(char **argv, uint8_t slot_id) {
      return bic_update_fw(slot_id, UPDATE_CPLD, argv[4]);
   }
   if (!strcmp(argv[3], "--bios")) {
-    sprintf(cmd, "/usr/local/bin/power-util slot%u off", slot_id);
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", slot_id);
     system(cmd);
+
+    //Checking Server Power Status to make sure Server is really Off
+    while (retry_count < 20){
+      ret = pal_get_server_power(slot_id, &status);
+      if ( (ret == 0) && (status == SERVER_POWER_OFF) ){
+        break;
+      }
+      else{
+        retry_count++;
+        sleep(1);
+      }
+    }
+    if (retry_count == 20){
+      printf("Failed to Power Off Server%u. Stopping the update!\n",slot_id);
+      return -1;
+    }
+ 
+    me_recovery(slot_id, RECOVERY_MODE);
+    sleep(1);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
     sleep(1);
+    memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-cycle", slot_id);
     system(cmd);
     sleep(5);
+    memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "/usr/local/bin/power-util slot%u on", slot_id);
     system(cmd);
     return ret;

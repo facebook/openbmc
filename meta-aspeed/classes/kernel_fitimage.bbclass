@@ -124,6 +124,11 @@ oe_mkimage() {
 
     KERNEL_FILE="${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}"
     RAMDISK_FILE="${DEPLOY_DIR_IMAGE}/$1"
+    # Newer oe-core (>Krogoth) copies the image after this step.
+    # Hence we need to use the path from ${IMGDEPLOYDIR}.
+    if [ ! -e ${RAMDISK_FILE} ]; then
+      RAMDISK_FILE="${IMGDEPLOYDIR}/$1"
+    fi
 
     rm -f ${FIT_SOURCE}
     fitimage_emit_fit_header ${FIT_SOURCE}

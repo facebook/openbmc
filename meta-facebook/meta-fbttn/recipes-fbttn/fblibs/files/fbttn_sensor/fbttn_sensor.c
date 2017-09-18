@@ -780,7 +780,7 @@ read_nic_temp(const char *device, float *value) {
   int tmp;
   FILE *fp;
   int size;
-  int ret = 0;
+  int ret = 0, read_retry = 0;
   static unsigned int retry = 0;
 
   // Get current working directory
@@ -798,10 +798,21 @@ read_nic_temp(const char *device, float *value) {
   snprintf(
       full_name, LARGEST_DEVICE_NAME, "%s/temp2_input", dir_name);
 
-  if (read_device(full_name, &tmp)) {
+  while (read_retry < 5) {
+    if (read_device(full_name, &tmp)) {
+      msleep(50);
+      read_retry++;
+    }
+    else
+      break;
+  }
+  if (read_retry == 5) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "%s: read failed; max read_retry reached: %d", __func__, read_retry;
+#endif
     return -1;
   }
-
+  
   *value = ((float)tmp)/UNIT_DIV;
 
   // Workaround: handle when NICs wrongly report higher temperatures

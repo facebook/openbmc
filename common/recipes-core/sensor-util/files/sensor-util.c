@@ -290,7 +290,10 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
   } else {
     get_sensor_reading(fru, sensor_list, sensor_cnt, sensor_num, threshold);
   }
-  if (sensor_cnt > 0)
+
+  //Print Empty Line to separate frus, 
+  //only when sensor_cnt greater than 0, not history-clear, and sensor_num is not specified
+  if ( (sensor_cnt > 0) && (!history_clear) && (sensor_num == 0) )
     printf("\n");
   return 0;
 }

@@ -29,7 +29,6 @@ SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
            file://setup_rov.sh \
            file://mdio.py \
-           file://fbttn_power.sh \
            file://power-on.sh \
            file://create_vlan_intf \
            file://rc.early \
@@ -47,7 +46,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
-  mdio.py setup_rov.sh fbttn_power.sh power_util.py \
+  mdio.py setup_rov.sh power_util.py \
   check_pal_sku.sh bios-util"
 
 DEPENDS_append = "update-rc.d-native"

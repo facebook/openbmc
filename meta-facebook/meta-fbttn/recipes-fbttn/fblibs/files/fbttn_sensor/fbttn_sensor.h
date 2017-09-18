@@ -105,6 +105,7 @@ enum {
   BIC_SENSOR_CAT_ERR = 0xEB, //Event-only
 };
 
+// Sensors under IOM
 enum{
   ML_SENSOR_HSC_VOLT = 0xC,
   ML_SENSOR_HSC_CURR = 0xD,
@@ -132,8 +133,8 @@ enum{
   IOM_IOC_TEMP = 0x77, // type VII only
 };
 
+// Sensors under DPB, queried by Expander
 enum{
-  // TODO: At Pre-Alpha BMC accesses HW monitor directly
   DPB_SENSOR_FAN1_FRONT = 0x69,
   DPB_SENSOR_FAN1_REAR = 0x6A,
   DPB_SENSOR_FAN2_FRONT = 0x6B,
@@ -193,6 +194,7 @@ enum{
   DPB_SENSOR_HDD_35 = 0xB1,
 };
 
+// Sensors under SCC, queried by Expander
 enum{
   SCC_Drawer = 0x0, //discrete for Drawer Pull Out and Push In
   SCC_SENSOR_EXPANDER_TEMP = 0x60,
@@ -209,6 +211,7 @@ enum{
   SCC_SENSOR_P0V975_SENSE = 0x5F,
 };
 
+// Sensors under NIC
 enum{
   MEZZ_SENSOR_TEMP = 0x82,
 };

@@ -126,8 +126,12 @@ sync_date()
   fi
 }
 
-# TODO: Add comments for each and every step
-# Check Mono Lake and SCC is present or not
+# Check Mono Lake and SCC is present or not:
+# 1. If Mono Lake absent, turn off Mono Lake HSC 12V and IOM 3V3
+# 2. If SCC absent, turn off Mono Lake HSC 12V and IOM 3V3
+#    (1) Get chassis type
+#    (2) If chsssis type is 5, check SCC is present or not on current side
+#    (3) If chsssis type is 7, only check SCCA present
 is_server_12v_off="1"
 if [ $(is_server_prsnt) == "0" ]; then
   logger -s -p user.warn -t power-on "The Mono Lake is absent, turn off Mono Lake HSC 12V and IOM 3V3."
@@ -135,8 +139,10 @@ if [ $(is_server_prsnt) == "0" ]; then
   gpio_set AA7 0
   is_server_12v_off="0"
 else
+  # Get chassis type
   sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
   chassis_type=$(($(($? >> 6)) & 0x1))
+
   if [ $chassis_type -eq 0 ]; then  # type 5
     sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
     iom_local=$(($(($? >> 4)) & 0x3))
@@ -169,12 +175,7 @@ if [ $(is_bmc_por) -eq 1 ] && [ $is_server_12v_off -eq 1 ]; then
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
 
-  # TODO: SCC local power control by BMC depends on HW design
-  # Keep the SCC standby and full power good value
-  scc_stby_good=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio484/value`
-  scc_full_good=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio485/value`
-
-  # For Triton remote SCC PWR sequence
+  # For fbttn remote SCC PWR sequence
   sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
   chassis_type=$(($(($? >> 6)) & 0x1))
   if [ $chassis_type -eq 1 ]; then  # type 7, always power-on SCC B
@@ -182,7 +183,7 @@ if [ $(is_bmc_por) -eq 1 ] && [ $is_server_12v_off -eq 1 ]; then
     gpio_tolerance_fun F1
   fi
 
-  # For Triton MonoLake PWR sequence
+  # For fbttn MonoLake PWR sequence
   if [ $(gpio_get $IOM_FULL_GOOD) == 1 ]; then
     #set ML board power enable (12V on)
     gpio_set O7 1

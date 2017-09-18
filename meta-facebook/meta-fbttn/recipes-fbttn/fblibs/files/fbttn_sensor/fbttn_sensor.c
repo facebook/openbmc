@@ -1670,8 +1670,8 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
     case FRU_IOM:
       switch(sensor_num) {
-    //ML HSC
-    case ML_SENSOR_HSC_PWR:
+        //ML HSC
+        case ML_SENSOR_HSC_PWR:
           return read_hsc_value(HSC_IN_POWER, HSC_DEVICE_ML, ml_hsc_r_sense, (float *) value);
         case ML_SENSOR_HSC_VOLT:
           return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE_ML, ml_hsc_r_sense, (float *) value);
@@ -1727,7 +1727,6 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
 
-    // TODO: Add read functions for every DPB sensors.
     case FRU_DPB:
       switch(sensor_num) {
         case DPB_SENSOR_FAN1_FRONT:

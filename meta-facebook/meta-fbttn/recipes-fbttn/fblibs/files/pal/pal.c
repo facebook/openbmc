@@ -156,19 +156,21 @@
 
 unsigned char g_err_code[ERROR_CODE_NUM];
 
- /*For Triton Power Sequence
-  * After BMC ready
-  *
-  * 1.       Output : SCC_STBY_PWR_EN
-  * //2. Check Input  : SCC_STBY_PWR_GOOD //OVER GPIO_EXP
-  * 3.       Output : SCC_LOC_FULL_PWR_EN
-  * //4. Check Input  : SCC_LOC_FULL_PWR_GOOD //OVER GPIO_EXP
-  *  5.      Output : IOM_FULL_PWR_EN
-  *  6.  Check Input  :IOM_FULL_PGOOD
+ /* For fbttn Power Sequence (controlled by HW)
+  * 1.       Input  : SCC_STBY_PWR_EN
+  * 2. Check Input  : SCC_STBY_PWR_GOOD     // OVER GPIO_EXP
+  * 3.       Input  : SCC_LOC_FULL_PWR_EN
+  * 4. Check Input  : SCC_LOC_FULL_PWR_GOOD // OVER GPIO_EXP
+  * 5.       Input  : IOM_FULL_PWR_EN
+  * 6. Check Input  : IOM_FULL_PGOOD
+  * After BMC ready (controlled by BMC)
+  * 7.       Output : SCC_RMT_FULL_PWR_EN   // type 7 only
+  * 8.       Output : COMP_PWR_EN
+  * 9.       Output : COMP_PWR_BTN_N        // is_server_prsnt = true
 */
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_SYS_RST_BTN };
-const static uint8_t gpio_led[] = { 0, GPIO_PWR_LED };      // TODO: In DVT, Map to ML PWR LED
-const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED
+const static uint8_t gpio_led[] = { 0, GPIO_PWR_LED };      // System power LED (Blue color, on front panel)
+const static uint8_t gpio_id_led[] = { 0,  GPIO_PWR_LED };  // Identify LED (System power LED)
 //const static uint8_t gpio_prsnt[] = { 0, 61 };
 //const static uint8_t gpio_bic_ready[] = { 0, 107 };
 const static uint8_t gpio_power_btn[] = { 0, GPIO_PWR_BTN_N };

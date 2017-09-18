@@ -121,7 +121,6 @@ print_fw_bmc_ver(void) {
   return;
 }
 
-// TODO: Need to confirm the interpretation of firmware version for print
 // Right now using decimal to print the versions
 static void
 print_fw_ver(uint8_t slot_id) {
@@ -151,78 +150,78 @@ print_fw_ver(uint8_t slot_id) {
 
   // Print CPLD Version
   if (bic_get_fw_ver(slot_id, FW_CPLD, ver)) {
-    return;
+    printf("CPLD Version: NA\n");
+  } else {
+    printf("CPLD Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
   }
-
-  printf("CPLD Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print Bridge-IC Version
   if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
-    return;
+    printf("Bridge-IC Version: NA\n");
+  } else {
+    printf("Bridge-IC Version: v%x.%02x\n", ver[0], ver[1]);
   }
-
-  printf("Bridge-IC Version: v%x.%02x\n", ver[0], ver[1]);
 
   // Print Bridge-IC Bootloader Version
   if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
-    return;
+    printf("Bridge-IC Bootloader Version: NA\n");
+  } else {
+    printf("Bridge-IC Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
   }
-
-  printf("Bridge-IC Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
 
   // Print ME Version
   if (bic_get_fw_ver(slot_id, FW_ME, ver)){
-    return;
+    printf("ME Version: NA\n");
+  } else {
+    printf("ME Version: %x.%x.%x.%x%x\n", ver[0], ver[1], ver[2], ver[3], ver[4]);
   }
-
-  printf("ME Version: %x.%x.%x.%x%x\n", ver[0], ver[1], ver[2], ver[3], ver[4]);
 
   // Print PVCCIN VR Version
   if (bic_get_fw_ver(slot_id, FW_PVCCIN_VR, ver)){
-    return;
+    printf("PVCCIN VR Version: NA\n");
+  } else {
+    printf("PVCCIN VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
   }
-
-  printf("PVCCIN VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print DDRAB VR Version
   if (bic_get_fw_ver(slot_id, FW_DDRAB_VR, ver)){
-    return;
+    printf("DDRAB VR Version: NA\n");
+  } else {
+    printf("DDRAB VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
   }
-
-  printf("DDRAB VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print P1V05 VR Version
   if (bic_get_fw_ver(slot_id, FW_P1V05_VR, ver)){
-    return;
+    printf("P1V05 VR Version: NA\n");
+  } else {
+    printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
   }
-
-  printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print PVCCGBE VR Version
   if (bic_get_fw_ver(slot_id, FW_PVCCGBE_VR, ver)){
-    return;
+    printf("PVCCGBE VR Version: NA\n");
+  } else {
+    printf("PVCCGBE VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
   }
-
-  printf("PVCCGBE VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print PVCCSCSUS VR Version
   if (bic_get_fw_ver(slot_id, FW_PVCCSCSUS_VR, ver)){
-    return;
+    printf("PVCCSCSUS VR Version: NA\n");
+  } else {
+    printf("PVCCSCSUS VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
   }
-
-  printf("PVCCSCSUS VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
 
   // Print BIOS version
   if (pal_get_sysfw_ver(slot_id, ver)) {
-    return;
-  }
-
-  // BIOS version response contains the length at offset 2 followed by ascii string
-  printf("BIOS Version: ");
-  for (i = 3; i < 3+ver[2]; i++) {
-    printf("%c", ver[i]);
-  }
+    printf("BIOS Version: NA\n");
+  } else {
+    // BIOS version response contains the length at offset 2 followed by ascii string
+    printf("BIOS Version: ");
+    for (i = 3; i < 3+ver[2]; i++) {
+      printf("%c", ver[i]);
+    }
     printf("\n");
+  }
 }
 
 int

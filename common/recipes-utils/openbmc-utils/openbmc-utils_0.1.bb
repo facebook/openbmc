@@ -30,6 +30,7 @@ SRC_URI = " \
     file://rc.local \
     file://dhclient-exit-hooks \
     file://rm_poweroff_cmd.sh \
+    file://revise_inittab \
     "
 
 OPENBMC_UTILS_FILES = " \
@@ -38,6 +39,7 @@ OPENBMC_UTILS_FILES = " \
     rc.early \
     rc.local \
     rm_poweroff_cmd.sh \
+    revise_inittab \
     "
 
 S = "${WORKDIR}"

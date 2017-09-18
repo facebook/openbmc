@@ -3069,7 +3069,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
   if (ret) {
     #ifdef DEBUG
-      syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: expander_ipmb_wrapper failed.");
+      syslog(LOG_WARNING, "%s: expander_ipmb_wrapper failed.", __func__);
     #endif
 
     //if expander doesn't respond, set all sensors value to NA and save to cache
@@ -3079,7 +3079,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
 
       if(edb_cache_set(key, str) < 0) {
         #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+          syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__ , key, str);
         #endif
       }
     }
@@ -3087,62 +3087,42 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   }
 
   for(i = 0; i < sensor_cnt; i++) {
-    // search the corresponding sensor table to fill up the raw data and statsu
-    // rbuf[5*i+1] sensor number
-    // rbuf[5*i+2] sensor raw data1
-    // rbuf[5*i+3] sensor raw data2
-    // rbuf[5*i+4] sensor status
-    // rbuf[5*i+5] reserved
-    fbttn_sensor_units(fru, rbuf[5*i+1], units);
-
-    if( strcmp(units,"C") == 0 ) {
-      value = rbuf[5*i+2];
-    }
-    else if( rbuf[5*i+1] >= DPB_SENSOR_FAN1_FRONT && rbuf[5*i+1] <= DPB_SENSOR_FAN4_REAR ) {
-      value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
-      value = value * 10;
-    }
-    else if( rbuf[5*i+1] == DPB_SENSOR_HSC_POWER || rbuf[5*i+1] == DPB_SENSOR_12V_POWER_CLIP ) {
-      value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
-    }
+    if (rbuf[5*i+4] != 0) {
+      //if sensor status byte is not 0, means sensor reading is unavailable
+      sprintf(str, "NA");
+    } 
     else {
-      value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
-      value = value/100;
+      // search the corresponding sensor table to fill up the raw data and status
+      // rbuf[5*i+1] sensor number
+      // rbuf[5*i+2] sensor raw data1
+      // rbuf[5*i+3] sensor raw data2
+      // rbuf[5*i+4] sensor status
+      // rbuf[5*i+5] reserved
+      fbttn_sensor_units(fru, rbuf[5*i+1], units);
+      if( strcmp(units,"C") == 0 ) {
+        value = rbuf[5*i+2];
+      }
+      else if( rbuf[5*i+1] >= DPB_SENSOR_FAN1_FRONT && rbuf[5*i+1] <= DPB_SENSOR_FAN4_REAR ) {
+        value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+        value = value * 10;
+      }
+      else if( rbuf[5*i+1] == DPB_SENSOR_HSC_POWER || rbuf[5*i+1] == DPB_SENSOR_12V_POWER_CLIP ) {
+        value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+      }
+      else {
+        value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+        value = value/100;
+      }
+      
+      sprintf(str, "%.2f",(float)value);
     }
+
     //cache sensor reading
     sprintf(key, "dpb_sensor%d", rbuf[5*i+1]);
-    sprintf(str, "%.2f",(float)value);
-
-
-    //Ignore FAN stauts
-    //For EVT Expander workaround
-    //If Expander can handle fan's status; This should be removed.
-    if( !(rbuf[5*i+1] >= DPB_SENSOR_FAN1_FRONT && rbuf[5*i+1] <= DPB_SENSOR_FAN4_REAR) )
-      if(rbuf[5*i+4] != 0){
-      sprintf(str, "NA");
-    }
-
-    //Ignore FAN stauts
-    if( strcmp(units,"RPM") != 0 )
-      if(rbuf[5*i+4] != 0){
-	    sprintf(str, "NA");
-	  }
-
-    // Workaround for Type 7 fan's configuration.
-    // The FAN1 and FAN4 are non-installed on Type 7.
-    // So report the fan speed as NA.
-    // TODO: check the fan's status reported by expander fw while expander does support it.
-    //       (Currently expander fw always returns status ok)
-    if ((rbuf[5*i+1] == DPB_SENSOR_FAN1_FRONT) || (rbuf[5*i+1] == DPB_SENSOR_FAN1_REAR) ||
-        (rbuf[5*i+1] == DPB_SENSOR_FAN4_FRONT) || (rbuf[5*i+1] == DPB_SENSOR_FAN4_REAR)) {
-      sku = pal_get_iom_type();
-      if (sku == IOM_IOC) { // IOM type: IOC solution
-        sprintf(str, "NA");
-      }
-    }
-
     if(edb_cache_set(key, str) < 0) {
-      syslog(LOG_WARNING, "pal_exp_dpb_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+      #ifdef DEBUG
+        syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__ , key, str);
+      #endif
     }
   }
 
@@ -3179,7 +3159,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_EXP_GET_SENSOR_READING, tbuf, tlen, rbuf, &rlen);
   if (ret) {
     #ifdef DEBUG
-      syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: expander_ipmb_wrapper failed.");
+      syslog(LOG_WARNING, "%s: expander_ipmb_wrapper failed.", __func__);
     #endif
 
     //if expander doesn't respond, set all sensors value to NA and save to cache
@@ -3189,7 +3169,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
 
       if(edb_cache_set(key, str) < 0) {
         #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+          syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__ , key, str);
         #endif
       }
     }
@@ -3197,41 +3177,47 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   }
 
   for(i = 0; i < sensor_cnt; i++) {
-    // search the corresponding sensor table to fill up the raw data and statsu
-    // rbuf[5*i+1] sensor number
-    // rbuf[5*i+2] sensor raw data1
-    // rbuf[5*i+3] sensor raw data2
-    // rbuf[5*i+4] sensor status
-    // rbuf[5*i+5] reserved
-    fbttn_sensor_units(fru, rbuf[5*i+1], units);
-
-    if( strcmp(units,"C") == 0 ) {
-      value = rbuf[5*i+2];
-    }
-    else if( strcmp(units,"Watts") == 0 ) {
-      value = (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
-    }
+    if (rbuf[5*i+4] != 0) {
+      //if sensor status byte is not 0, means sensor reading is unavailable
+      sprintf(str, "NA");
+    }    
     else {
-      value = (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
-      value = value/100;
-    }
-    // cache sensor reading
-    sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
-    sprintf(str, "%.2f",(float)value);
+      // search the corresponding sensor table to fill up the raw data and status
+      // rbuf[5*i+1] sensor number
+      // rbuf[5*i+2] sensor raw data1
+      // rbuf[5*i+3] sensor raw data2
+      // rbuf[5*i+4] sensor status
+      // rbuf[5*i+5] reserved
+      fbttn_sensor_units(fru, rbuf[5*i+1], units);
 
-    // SCC_IOC have to check if the server is on, if not shows "NA"
-    if (rbuf[5*i+1] == SCC_SENSOR_IOC_TEMP) {
-      pal_get_server_power(FRU_SLOT1, &status);
-      if (status != SERVER_POWER_ON) {
-        strcpy(str, "NA");
+      if( strcmp(units,"C") == 0 ) {
+        value = rbuf[5*i+2];
+      }
+      else if( strcmp(units,"Watts") == 0 ) {
+        value = (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+      }
+      else {
+        value = (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
+        value = value/100;
+      }
+
+      sprintf(str, "%.2f",(float)value);
+
+      // SCC_IOC have to check if the server is on, if not shows "NA"
+      if (rbuf[5*i+1] == SCC_SENSOR_IOC_TEMP) {
+        pal_get_server_power(FRU_SLOT1, &status);
+        if (status != SERVER_POWER_ON) {
+          strcpy(str, "NA");
+        }
       }
     }
 
+    //cache sensor reading
+    sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
     if(edb_cache_set(key, str) < 0) {
       #ifdef DEBUG
-        syslog(LOG_WARNING, "pal_exp_scc_read_sensor_wrapper: cache_set key = %s, str = %s failed.", key, str);
+        syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__, key, str);
       #endif
-      return -1;
     }
   }
 

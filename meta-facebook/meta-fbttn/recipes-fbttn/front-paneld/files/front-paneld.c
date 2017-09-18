@@ -87,7 +87,7 @@ write_cache(const char *device, uint8_t value) {
 }
 void cache_post_code(unsigned char* buffer,int buf_len){
   FILE *fp;
-  fp = fopen("/tmp/post_code_buffer.bin", "w");
+  fp = fopen(POST_CODE_FILE, "w");
   if (fp) {
       lockf(fileno(fp),F_LOCK,0L);
       while (buf_len) {
@@ -101,12 +101,10 @@ void cache_post_code(unsigned char* buffer,int buf_len){
 }
 void check_cache_post_code(){
   FILE *fp;
-  fp = fopen("/tmp/post_code_buffer.bin", "r");
 
-  if (fp) {
+  if (access(POST_CODE_FILE, F_OK) == 0) {
       //exist
-      rename("/tmp/post_code_buffer.bin", "/tmp/last_post_code_buffer.bin");
-      fclose(fp);
+      rename(POST_CODE_FILE, LAST_POST_CODE_FILE);
   }
 }
 // Thread for monitoring debug card hotswap

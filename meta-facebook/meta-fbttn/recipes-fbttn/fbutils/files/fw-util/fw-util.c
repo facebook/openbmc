@@ -43,6 +43,7 @@ print_usage_help(void) {
 
   printf("Usage: fw-util <all|server|iom|scc> <--version>\n");
   printf("       fw-util <server> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
+  printf("       fw-util <server> <--postcode>\n");
   printf("       fw-util <iom> <--update> <--rom|--bmc> <path>\n");
 }
 
@@ -364,6 +365,62 @@ void sig_handler(int signo) {
   }
 }
 
+void postcode_handler(){
+  FILE *fp=NULL;
+  unsigned char postcodes[256], buff, post_code_file[32];
+  int i, post_length;
+
+  sprintf(post_code_file, POST_CODE_FILE);
+
+  if (access(POST_CODE_FILE, F_OK) == -1) {
+    if (access(LAST_POST_CODE_FILE, F_OK) == -1) {
+      printf("No POST Code... Seems Server never Powerd ON since System AC ON...\n");
+      return;
+    }
+    else{
+      printf("Server had been Powered OFF, showing Last POST Code\n");
+      sprintf(post_code_file, LAST_POST_CODE_FILE);
+    }
+  }
+
+  fp = fopen(post_code_file, "r");
+  if (fp == NULL) {
+    syslog(LOG_WARNING, "%s: Cannot open %s",__func__, post_code_file);
+    return PAL_ENOTSUP;
+  }
+  
+  if (pal_flock_retry(fileno(fp))) {
+   syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, post_code_file);
+   fclose(fp);
+   return;
+  }
+
+  for (i = 0; i < 256; i++) {
+    // %hhx: unsigned char*
+    if (fscanf(fp, "%hhx", &buff) == 1) {
+      postcodes[i] = buff;
+    } 
+    else {
+      break;
+    }
+  }
+  post_length = i;
+  if (pal_unflock_retry(fileno(fp))) {
+   syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, post_code_file);
+   fclose(fp);
+   return;
+  }
+  fclose(fp);
+
+  for (i = 0; i < post_length; i++) {
+    printf("%02X ", postcodes[i]);
+    if (i%16 == 15)
+      printf("\n");
+  }
+  if (i%16 != 0)
+    printf("\n");
+}
+
 int
 main(int argc, char **argv) {
   uint8_t fru;
@@ -434,6 +491,14 @@ main(int argc, char **argv) {
     return 0;
   }
 
+  if (!strcmp(argv[2], "--postcode")) {
+    if (fru != FRU_SLOT1) {
+      goto exit;
+    }
+    postcode_handler();  
+      
+    return 0;
+  }
 
   if (!strcmp(argv[2], "--update")) {
     if (argc != 5) {

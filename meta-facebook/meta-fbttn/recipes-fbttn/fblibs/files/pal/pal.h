@@ -220,6 +220,9 @@ enum {
 //fw-util FW Updating Flag File
 #define FW_UPDATE_FLAG "/tmp/fw_update_flag"
 
+#define POST_CODE_FILE "/tmp/post_code_buffer.bin"
+#define LAST_POST_CODE_FILE "/tmp/last_post_code_buffer.bin"
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);

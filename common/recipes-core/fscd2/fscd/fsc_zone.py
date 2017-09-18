@@ -86,7 +86,7 @@ class Zone:
                 if sensor.status in ['ucr']:
                     Logger.warn('Sensor %s reporting status %s' %
                                 (sensor.name, sensor.status))
-                    outmin = self.transitional
+                    outmin = max(outmin, self.transitional)
 
                 if self.fail_sensor_type != None:
                     if 'standby_sensor_fail' in self.fail_sensor_type.keys():
@@ -98,7 +98,7 @@ class Zone:
                                             ret = fsc_board.get_power_status(board)
                                             if ret:
                                                 Logger.debug("Server Sensor Fail")
-                                                outmin = self.boost
+                                                outmin = max(outmin, self.boost)
                                                 break
                                 elif re.match(r'SSD', sensor.name) != None:
                                     if 'SSD_sensor_fail' in self.fail_sensor_type.keys():
@@ -106,7 +106,7 @@ class Zone:
                                             fail_ssd_count = fail_ssd_count + 1
                                 else:
                                     Logger.debug("Standby Sensor Fail")
-                                    outmin = self.boost
+                                    outmin = max(outmin, self.boost)
                                     break
             else:
                 missing.add(v)
@@ -149,7 +149,7 @@ class Zone:
                                         break
                                     else:
                                         if list_index == len(self.ssd_progressive_algorithm['offset_algorithm']):
-                                            outmin = self.boost
+                                            outmin = max(outmin, self.boost)
 
         if exprout < outmin:
             exprout = outmin

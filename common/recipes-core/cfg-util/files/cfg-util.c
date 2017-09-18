@@ -36,6 +36,7 @@ int
 main(int argc, char **argv) {
 
   int ret;
+  int check_key;
   uint8_t key[MAX_KEY_LEN] = {0};
   uint8_t val[MAX_VALUE_LEN] = {0};
 
@@ -77,8 +78,16 @@ main(int argc, char **argv) {
   snprintf(key, MAX_KEY_LEN, "%s", argv[1]);
   snprintf(val, MAX_VALUE_LEN, "%s", argv[2]);
 
-  ret = pal_set_key_value(key, val);
-  if (ret) {
+  // Check the key can be set or not by cfg-util
+  check_key = pal_cfg_key_check(key);
+  if (check_key == 0) {         // check OK
+    ret = pal_set_key_value(key, val);
+    if (ret != 0) {
+      goto err_exit;
+    }
+  } else if (check_key == 1) {  // the key is valid but unsupported in cfg-util
+    printf("The key does not support to set: %s\n", key);
+  } else {                      // the key is invalid
     goto err_exit;
   }
 

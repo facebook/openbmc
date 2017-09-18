@@ -356,6 +356,15 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
 }
 
 int __attribute__((weak))
+pal_cfg_key_check(char *key)
+{
+  /* TODO: Leverage the code from meta-facebook/meta-fbttn/recipes-fbttn/fblibs/files/pal/pal.c; 
+   * once all platforms using cfg-util uses cfg_support_key_list[]
+   */
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_key_value(char *key, char *value)
 {
   return PAL_EOK;

@@ -52,9 +52,10 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: me-util <server> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: me-util <server> <netfn/LUN> <cmd> <data bytes to send>\n");
   printf("Usage: me-util <server> 48 coreid\n");
   printf("Usage: me-util <server> 48 msr\n");
+  printf("       *48 coreid/msr data will be saved at /mnt/data/crashdump_slot1\n");
 }
 
 int crash_dump_msr(void) {
@@ -365,7 +366,7 @@ main(int argc, char **argv) {
   char log[128];
   char temp[8];
 
-  if (argc < 3) {
+  if (argc < 4) {
     goto err_exit;
   }
 
@@ -385,7 +386,7 @@ main(int argc, char **argv) {
       return ret;
     }
     else {
-    goto err_exit;
+      goto err_exit;
     }
   }
 

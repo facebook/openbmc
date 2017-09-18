@@ -237,13 +237,14 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   struct tm ts;
   char time[64];
   char mfg_id[16];
+  char event_data[4];
 
   /* Record Type (Byte 2) */
   record_type = (uint8_t) sel[2];
   if (record_type == 0x02) {
-    sprintf(error_type, "System Event Record");
+    sprintf(error_type, "Standard");
   } else if (record_type >= 0xC0 && record_type <= 0xDF) {
-    sprintf(error_type, "OEM");
+    sprintf(error_type, "OEM timestamped");
   } else if (record_type >= 0xE0 && record_type <= 0xFF) {
     sprintf(error_type, "OEM non-timestamped");
   } else {
@@ -251,6 +252,8 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   }
 
   if (record_type < 0xE0) {
+    /* Timestamped SEL. including Standard and OEM. */
+
     /* Convert Timestamp from Unix time (Byte 6:3) to Human readable format */
     timestamp = 0;
     timestamp |= sel[3];
@@ -262,44 +265,52 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
     strptime(time, "%s", &ts);
     memset(&time, 0, sizeof(time));
     strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &ts);
-
-    /* OEM Data (Byte 10:15) */
-    sprintf(oem_data, "%02X%02X%02X%02X%02X%02X", sel[10], sel[11], sel[12], sel[13],
-        sel[14], sel[15]);
   }
 
   if (record_type < 0xC0) {
+    /* standard SEL records*/
+
     /* Sensor num (Byte 11) */
     sensor_num = (uint8_t) sel[11];
     ret = pal_get_event_sensor_name(fru, sel, sensor_name);
 
     /* Event Data (Byte 13:15) */
     ret = pal_parse_sel(fru, sel, error_log);
+    sprintf(event_data, "%02X%02X%02X", sel[13], sel[14], sel[15]);
 
     /* Check if action needs to be taken based on the SEL message */
     if (!ret)
       ret = pal_sel_handler(fru, sensor_num, &sel[10]);
 
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-        "Sensor: %s (0x%02X), Raw data: (%s) %s ",
+        "Sensor: %s (0x%02X), Event Data: (%s) %s ",
         fru,
         error_type, record_type,
         time,
         sensor_name, sensor_num,
-        oem_data, error_log);
+        event_data, error_log);
   } else if (record_type < 0xE0) {
+    /* timestamped OEM SEL records */
+
     ret = pal_parse_oem_sel(fru, sel, error_log);
 
     /* Manufacturer ID (byte 9:7) */
     sprintf(mfg_id, "%02x%02x%02x", sel[9], sel[8], sel[7]);
+
+    /* OEM Data (Byte 10:15) */
+    sprintf(oem_data, "%02X%02X%02X%02X%02X%02X", sel[10], sel[11], sel[12],
+          sel[13], sel[14], sel[15]);
+
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-        "MFG ID: %s, Raw data: (%s) %s ",
+        "MFG ID: %s, OEM Data: (%s) %s ",
         fru,
         error_type, record_type,
         time,
         mfg_id,
         oem_data, error_log);
   } else {
+    /* non-timestamped OEM SEL records */
+
     ret = pal_parse_oem_sel(fru, sel, error_log);
 
     /* OEM Data (Byte 3:15) */
@@ -307,7 +318,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
         sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
 
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), "
-        "Raw data: (%s) %s ",
+        "OEM Data: (%s) %s ",
         fru,
         error_type, record_type,
         oem_data, error_log);

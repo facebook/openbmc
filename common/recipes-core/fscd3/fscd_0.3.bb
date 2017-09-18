@@ -39,7 +39,7 @@ SRC_URI = "\
 
 S = "${WORKDIR}"
 
-inherit distutils
+inherit distutils3
 
 RDEPENDS_${PN} += "python3-syslog python3-ply "
 

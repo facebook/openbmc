@@ -3049,15 +3049,34 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 int
 pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
 
-    int ret;
-    int completion_code=CC_UNSPECIFIED_ERROR;
-    // Send command to get 80 port record from Bridge IC
-    ret = bic_request_post_buffer_data(slot, res_data, res_len);
+  int ret;
+  uint8_t status;
 
-    if(0 == ret)
-       completion_code = CC_SUCCESS;
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    return PAL_ENOTSUP;
+  }
 
-    return completion_code;
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+     return -1;
+  }
+  if (status == 0) {
+    return PAL_ENOTREADY;
+  }
+
+  ret = pal_is_server_12v_on(slot, &status);
+  if(ret < 0 || 0 == status) {
+    return PAL_ENOTREADY;
+  }
+
+  if(!pal_is_slot_server(slot)) {
+    return PAL_ENOTSUP;
+  }
+
+  // Send command to get 80 port record from Bridge IC
+  ret = bic_request_post_buffer_data(slot, res_data, res_len);
+
+  return ret;
 }
 
 int

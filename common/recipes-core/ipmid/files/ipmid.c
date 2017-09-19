@@ -2630,10 +2630,24 @@ oem_get_80port_record ( unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
 
-  res->cc = pal_get_80port_record (req->payload_id, req->data, req_len, res->data, res_len);
-
-  return;
+  *res_len = 0;
+  ret = pal_get_80port_record (req->payload_id, req->data, req_len, res->data, res_len);
+  switch(ret) {
+    case PAL_EOK:
+      res->cc = CC_SUCCESS;
+      break;
+    case PAL_ENOTSUP:
+      res->cc = CC_INVALID_PARAM;
+      break;
+    case PAL_ENOTREADY:
+      res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+      break;
+    default:
+      res->cc = CC_UNSPECIFIED_ERROR;
+      break;
+  }
 }
 
 static void

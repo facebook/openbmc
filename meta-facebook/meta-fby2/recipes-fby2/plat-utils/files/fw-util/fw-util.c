@@ -485,32 +485,6 @@ print_postcodes(uint8_t slot_id) {
   unsigned char postcodes[256];
   int ret = 0;
 
-  if (slot_id < OPT_SLOT1 || slot_id > OPT_SLOT4) {
-    printf("Not Supported Operation\n");
-    return -1;
-  }
-
-  ret = pal_is_fru_prsnt(slot_id, &status);
-  if (ret < 0) {
-     printf("pal_is_fru_prsnt failed for fru: %d\n", slot_id);
-     return -1;
-  }
-  if (status == 0) {
-    printf("slot%d is empty!\n", slot_id);
-    return -1;
-  }
-
-  ret = pal_is_server_12v_on(slot_id, &status);
-  if(ret < 0 || 0 == status) {
-    printf("slot%d 12V is off\n", slot_id);
-    return -1;
-  }
-
-  if(!pal_is_slot_server(slot_id)) {
-    printf("slot%d is not server\n", slot_id);
-    return -1;
-  }
-
   len = 0; // clear higher bits
   rc = pal_get_80port_record(slot_id, NULL, 0, postcodes, (uint8_t *)&len);
   if (rc != PAL_EOK) {

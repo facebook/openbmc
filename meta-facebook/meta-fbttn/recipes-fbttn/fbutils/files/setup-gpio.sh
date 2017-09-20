@@ -96,6 +96,8 @@ devmem_clear_bit $(scu_addr 8C) 10
 devmem_clear_bit $(scu_addr 70) 21
 
 gpio_set D5 1
+# set GPIOD5 WDT reset tolerance
+gpio_tolerance_fun D5
 
 # M2_1_PRESENT_N: E0 (32)
 # To use GPIOE0, SCU80[16], SCU8C[12], and SCU70[22] must be 0
@@ -414,7 +416,7 @@ devmem_clear_bit $(scu_addr 88) 18
 # TODO: Disable the CPU Throttle PIN to fix the leakage issue from BMC to ML
 gpio_export P2
 
-# DEBUG_GPIO_BMC_1: P3 (123)
+# DEBUG_PWR_BTN_N: P3 (123)
 # To use GPIOP3, SCU88[19] must be 0
 devmem_clear_bit $(scu_addr 88) 19
 
@@ -426,7 +428,9 @@ gpio_export P3
 devmem_clear_bit $(scu_addr 88) 20
 devmem_clear_bit $(scu_addr 90) 28
 
-gpio_export P4
+gpio_set P4 1
+# set GPIOP4 WDT reset tolerance
+gpio_tolerance_fun P4
 
 # DEBUG_GPIO_BMC_3: P5 (125)
 # To use GPIOP4, SCU88[20] must be 0
@@ -434,9 +438,7 @@ gpio_export P4
 devmem_clear_bit $(scu_addr 88) 21
 devmem_clear_bit $(scu_addr 90) 28
 
-gpio_set P5 1
-# set GPIOP5 WDT reset tolerance
-gpio_tolerance_fun P5
+gpio_export P5
 
 # DEBUG_GPIO_BMC_4: P6 (126)
 # To use GPIOP4, SCU88[20] must be 0
@@ -499,6 +501,13 @@ gpio_export S7
 # Disable Z0~AB1 Function 3-4
 # To use NOR Function, SCU90[31] must be 0
 devmem_clear_bit $(scu_addr 90) 31
+
+# DEBUG_RST_BTN_N: Z0 (200)
+# To use GPIOZ0, SCUA4[16], and SCU70[19] must be 0
+devmem_clear_bit $(scu_addr A4) 16
+devmem_clear_bit $(scu_addr 70) 19
+
+gpio_export Z0
 
 #Z1 = 1, Z2 = 0 to make IOM LED defualt OFF
 # BMC_ML_PWR_YELLOW_LED: Z1 (201)

@@ -145,7 +145,7 @@ debug_card_handler() {
 
     // If Debug Card is present
     if (prsnt) {
-      ret = pal_get_hand_sw(&pos);
+      ret = pal_get_uart_sel_pos(&pos);
       if (ret) {
         goto debug_card_out;
       }
@@ -242,7 +242,7 @@ usb_handler() {
 
   while (1) {
     // Get the current hand switch position
-    ret = pal_get_hand_sw(&pos);
+    ret = pal_get_uart_sel_pos(&pos);
     if (ret) {
       goto hand_sw_out;
     }
@@ -263,6 +263,158 @@ hand_sw_out:
     sleep(1);
     continue;
   }
+}
+
+// Thread to monitor debug card reset button
+static void *
+dbg_rst_btn_handler() {
+  uint8_t btn;
+  uint8_t pos;
+  uint8_t prsnt;
+  int ret;
+  int i;
+
+  while (1) {
+    // Check if debug card present or not
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if ((ret < 0) || (prsnt == 0)) {
+      msleep(500);
+      continue;
+    }   
+     
+    // Check if reset button is pressed
+    ret = pal_get_dbg_rst_btn(&btn);
+    if ((ret < 0) || (btn == 0)) {
+      goto dbg_rst_btn_out;
+    }
+
+    // Check UART selection
+    ret = pal_get_uart_sel_pos(&pos);
+    if (ret < 0) {
+      goto dbg_rst_btn_out;
+    }
+
+    syslog(LOG_WARNING, "Debug card reset button pressed\n");
+    if (pos == UART_SEL_BMC) {
+      syslog(LOG_CRIT, "Debug card reset button pressed for BMC\n");
+      run_command("reboot");
+      break;
+    } else if (pos == UART_SEL_SERVER) {
+      ret = pal_set_rst_btn(FRU_SLOT1, 0);
+      if (ret < 0) {
+        goto dbg_rst_btn_out;
+      }
+
+      // Wait for the button to be released
+      for (i = 0; i < BTN_MAX_SAMPLES; i++) {
+        ret = pal_get_dbg_rst_btn(&btn);
+        if ((ret < 0) || (btn == 1)) {
+          msleep(100);
+          continue;
+        }
+        pal_update_ts_sled();
+        syslog(LOG_WARNING, "Debug card reset button released\n");
+        syslog(LOG_CRIT, "Debug card reset button pressed for FRU: %d\n", FRU_SLOT1);
+        ret = pal_set_rst_btn(FRU_SLOT1, 1);
+        goto dbg_rst_btn_out;
+      }
+
+      // handle error case
+      if (i == BTN_MAX_SAMPLES) {
+        pal_update_ts_sled();
+        syslog(LOG_CRIT, "Debug card reset button seems to stuck for long time\n");
+        goto dbg_rst_btn_out;
+      }
+    } else {
+      goto dbg_rst_btn_out;
+    }
+dbg_rst_btn_out:
+    msleep(100);
+  }
+}
+
+// Thread to handle debug card power button and power on/off the selected server
+static void *
+dbg_pwr_btn_handler() {
+// TODO: if the firmware of different brand debug card is ready, we will enable this feature
+#if 0 
+  uint8_t btn, cmd;
+  uint8_t power;
+  uint8_t pos;
+  uint8_t prsnt;
+  int ret;
+  int i;
+  
+  while (1) {
+    // Check if debug card present or not
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if ((ret < 0) || (prsnt == 0)) {
+      msleep(500);
+      continue;
+    }
+
+    // Check if power button is pressed
+    ret = pal_get_dbg_pwr_btn(&btn);
+    if ((ret < 0) || (btn == 0)) {
+      goto dbg_pwr_btn_out;
+    }
+
+    // Check UART selection
+    ret = pal_get_uart_sel_pos(&pos);
+    if (ret < 0) {
+      goto dbg_pwr_btn_out;
+    }
+    
+    if (pos == UART_SEL_BMC) {
+      // do nothing
+      goto dbg_pwr_btn_out;
+    } else if (pos == UART_SEL_SERVER) { 
+      syslog(LOG_WARNING, "Debug card power button pressed\n");
+      // Wait for the button to be released
+      for (i = 0; i < BTN_POWER_OFF; i++) {
+        ret = pal_get_dbg_pwr_btn(&btn);
+        if ((ret < 0) || (btn == 1)) {
+          msleep(100);
+          continue;
+        }
+        syslog(LOG_WARNING, "Debug card power button released\n");
+        break;
+      }
+
+      // Get the current power state (power on vs. power off)
+      ret = pal_get_server_power(FRU_SLOT1, &power);
+      if (ret < 0) {
+        goto dbg_pwr_btn_out;
+      }
+
+      // Set power command should reverse of current power state
+      cmd = !power;
+
+      // To determine long button press
+      if (i >= BTN_POWER_OFF) {
+        pal_update_ts_sled();
+        syslog(LOG_CRIT, "Debug card power button long pressed for FRU: %d\n", FRU_SLOT1);
+      } else {
+
+        // If current power state is ON and it is not a long press,
+        // the power off should be Graceful Shutdown
+        if (power == SERVER_POWER_ON) {
+          cmd = SERVER_GRACEFUL_SHUTDOWN;
+        }
+
+        pal_update_ts_sled();
+        syslog(LOG_CRIT, "Debug card power button pressed for FRU: %d\n", FRU_SLOT1);
+      }
+
+      // Reverse the power state of the given server
+      ret = pal_set_server_power(FRU_SLOT1, cmd);
+    } else {
+      goto dbg_pwr_btn_out;
+    }
+dbg_pwr_btn_out:
+    msleep(100);
+  }
+#endif
 }
 
 // Thread to monitor Reset Button and propagate to selected server
@@ -295,7 +447,7 @@ rst_btn_handler() {
       }
       pal_update_ts_sled();
       syslog(LOG_WARNING, "Reset button released\n");
-      syslog(LOG_CRIT, "Reset Button pressed for FRU: %d\n", FRU_SLOT1);
+      syslog(LOG_CRIT, "Reset button pressed for FRU: %d\n", FRU_SLOT1);
       ret = pal_set_rst_btn(FRU_SLOT1, 1);
       goto rst_btn_out;
     }
@@ -303,7 +455,7 @@ rst_btn_handler() {
     // handle error case
     if (i == BTN_MAX_SAMPLES) {
       pal_update_ts_sled();
-      syslog(LOG_WARNING, "Reset button seems to stuck for long time\n");
+      syslog(LOG_CRIT, "Reset button seems to stuck for long time\n");
       goto rst_btn_out;
     }
 rst_btn_out:
@@ -326,7 +478,7 @@ pwr_btn_handler() {
       goto pwr_btn_out;
     }
 
-    syslog(LOG_WARNING, "power button pressed\n");
+    syslog(LOG_WARNING, "Power button pressed\n");
     // Wait for the button to be released
     for (i = 0; i < BTN_POWER_OFF; i++) {
       ret = pal_get_pwr_btn(&btn);
@@ -334,7 +486,7 @@ pwr_btn_handler() {
         msleep(100);
         continue;
       }
-      syslog(LOG_WARNING, "power button released\n");
+      syslog(LOG_WARNING, "Power button released\n");
       break;
     }
 
@@ -351,7 +503,7 @@ pwr_btn_handler() {
     // To determine long button press
     if (i >= BTN_POWER_OFF) {
       pal_update_ts_sled();
-      syslog(LOG_CRIT, "Power Button long pressed for FRU: %d\n", FRU_SLOT1);
+      syslog(LOG_CRIT, "Power button long pressed for FRU: %d\n", FRU_SLOT1);
     } else {
 
       // If current power state is ON and it is not a long press,
@@ -360,7 +512,7 @@ pwr_btn_handler() {
         cmd = SERVER_GRACEFUL_SHUTDOWN;
 
       pal_update_ts_sled();
-      syslog(LOG_CRIT, "Power Button pressed for FRU: %d\n", FRU_SLOT1);
+      syslog(LOG_CRIT, "Power button pressed for FRU: %d\n", FRU_SLOT1);
     }
 
     // Reverse the power state of the given server
@@ -856,6 +1008,8 @@ hb_mon_handler() {
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
+  pthread_t tid_dbg_rst_btn;
+  pthread_t tid_dbg_pwr_btn;
   pthread_t tid_rst_btn;
   pthread_t tid_pwr_btn;
   pthread_t tid_ts;
@@ -868,6 +1022,16 @@ main (int argc, char * const argv[]) {
   
   if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for debug card error\n");
+    exit(1);
+  }
+
+  if (pthread_create(&tid_dbg_rst_btn, NULL, dbg_rst_btn_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for debug card reset button error\n");
+    exit(1);
+  }
+
+  if (pthread_create(&tid_dbg_pwr_btn, NULL, dbg_pwr_btn_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for debug card power button error\n");
     exit(1);
   }
 
@@ -911,6 +1075,8 @@ main (int argc, char * const argv[]) {
   }
 
   pthread_join(tid_debug_card, NULL);
+  pthread_join(tid_dbg_rst_btn, NULL);
+  pthread_join(tid_dbg_pwr_btn, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_ts, NULL);

@@ -65,6 +65,8 @@
  * IOM_TYPE1            GPIOJ5   77
  * IOM_TYPE2            GPIOJ6   78
  * IOM_TYPE3            GPIOJ7   79
+ * DEBUG_PWR_BTN_N      GPIOP3   123
+ * DEBUG_RST_BTN_N      GPIOZ0   200
  * */
 
 //Update at 9/12/2016 for Triton
@@ -112,6 +114,9 @@
 #define GPIO_BOARD_REV_0    72
 #define GPIO_BOARD_REV_1    73
 #define GPIO_BOARD_REV_2    74
+
+#define GPIO_DEBUG_PWR_BTN_N 123
+#define GPIO_DEBUG_RST_BTN_N 200
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -1075,9 +1080,9 @@ pal_sled_cycle(void) {
   return 0;
 }
 
-// Read the Front Panel Hand Switch and return the position
+// Read  Debug Card UART Select and return the position
 int
-pal_get_hand_sw(uint8_t *pos) {
+pal_get_uart_sel_pos(uint8_t *pos) {
   uint8_t uart_sel = HAND_SW_BMC;
   int ret = 0;
 
@@ -1093,14 +1098,57 @@ pal_get_hand_sw(uint8_t *pos) {
   return 0;
 }
 
+// Return the Front panel's debug card Power Button status
+int
+pal_get_dbg_pwr_btn(uint8_t *status) {
+  char path[64] = {0};
+  int val = 0;
+  int ret = 0;
+
+  ret = get_gpio_value(GPIO_DEBUG_PWR_BTN_N, &val);
+  if (ret != 0) {
+    return -1;
+  }
+
+  if (val == 1) {
+    *status = 0x0;
+  } else {
+    *status = 0x1;
+  }
+
+  return 0;
+}
+
+// Return the front panel's debug card Reset Button status
+int
+pal_get_dbg_rst_btn(uint8_t *status) {
+  char path[64] = {0};
+  int val = 0;
+  int ret = 0;
+
+  ret = get_gpio_value(GPIO_DEBUG_RST_BTN_N, &val);
+  if (ret != 0) {
+    return -1;
+  }
+
+  if (val == 1) {
+    *status = 0x0;
+  } else {
+    *status = 0x1;
+  }
+
+  return 0;
+}
+
 // Return the Front panel Power Button
 int
 pal_get_pwr_btn(uint8_t *status) {
   char path[64] = {0};
-  int val;
+  int val = 0;
+  int ret = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_PWR_BTN);
-  if (read_device(path, &val)) {
+  ret = get_gpio_value(GPIO_PWR_BTN, &val);
+  if (ret != 0) {
     return -1;
   }
 
@@ -1117,10 +1165,11 @@ pal_get_pwr_btn(uint8_t *status) {
 int
 pal_get_rst_btn(uint8_t *status) {
   char path[64] = {0};
-  int val;
+  int val = 0;
+  int ret = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_RST_BTN);
-  if (read_device(path, &val)) {
+  ret = get_gpio_value(GPIO_RST_BTN, &val);
+  if (ret != 0) {
     return -1;
   }
 

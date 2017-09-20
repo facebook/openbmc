@@ -162,7 +162,7 @@ int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_c
 int bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len);
 
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);
-int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path);
+int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);
 int bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path);
 
 int bic_get_sel_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
@@ -183,6 +183,8 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 int me_recovery(uint8_t slot_id, uint8_t command);
+
+int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
 
 #ifdef __cplusplus
 } // extern "C"

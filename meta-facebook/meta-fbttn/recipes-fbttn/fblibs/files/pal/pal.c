@@ -4269,3 +4269,24 @@ pal_rm_powering_on_flag(uint8_t slot_id) {
   sprintf(path, SERVER_PWR_ON_LOCK, slot_id);
   remove(path);
 }
+
+//Overwrite the one in obmc-pal.c without systme call of flashcp check
+bool
+pal_is_fw_update_ongoing(uint8_t fruid) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  struct timespec ts;
+
+  sprintf(key, "fru%d_fwupd", fruid);
+  ret = edb_cache_get(key, value);
+  if (ret < 0) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
+}

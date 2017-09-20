@@ -37,7 +37,6 @@ SRC_URI = "file://ast-functions \
            file://COPYING \
            file://check_pal_sku.sh \
            file://setup-platform.sh \
-           file://bios-util \
            file://setup-por.sh \
           "
 
@@ -47,7 +46,7 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
   mdio.py setup_rov.sh power_util.py \
-  check_pal_sku.sh bios-util"
+  check_pal_sku.sh "
 
 DEPENDS_append = "update-rc.d-native"
 

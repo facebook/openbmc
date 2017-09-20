@@ -2097,7 +2097,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
     case FRU_SLOT3:
     case FRU_SLOT4:
       switch(snr_num) {
-        case CATERR:
+        case CATERR_B:
           sprintf(key, CRASHDUMP_KEY, fru);
           edb_cache_set(key, "1");
           pal_store_crashdump(fru);
@@ -2333,7 +2333,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         strcat(error_log, "Unknown");
       break;
 
-    case CATERR:
+    case CATERR_B:
       sprintf(error_log, "");
       if (ed[0] == 0x0)
         strcat(error_log, "IERR");

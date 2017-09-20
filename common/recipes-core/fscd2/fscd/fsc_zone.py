@@ -89,25 +89,23 @@ class Zone:
                     outmin = max(outmin, self.transitional)
 
                 if self.fail_sensor_type != None:
-                    if 'standby_sensor_fail' in self.fail_sensor_type.keys():
-                        if self.fail_sensor_type['standby_sensor_fail'] == True:
-                            if sensor.status in ['na']:
-                                if re.match(r'SOC', sensor.name) != None:
-                                    if 'server_sensor_fail' in self.fail_sensor_type.keys():
-                                        if self.fail_sensor_type['server_sensor_fail'] == True:
-                                            ret = fsc_board.get_power_status(board)
-                                            if ret:
-                                                Logger.debug("Server Sensor Fail")
-                                                outmin = max(outmin, self.boost)
-                                                break
-                                elif re.match(r'SSD', sensor.name) != None:
-                                    if 'SSD_sensor_fail' in self.fail_sensor_type.keys():
-                                        if self.fail_sensor_type['SSD_sensor_fail'] == True:
-                                            fail_ssd_count = fail_ssd_count + 1
-                                else:
+                    if sensor.status in ['na']:
+                        if re.match(r'SOC', sensor.name) != None:
+                            if 'server_sensor_fail' in self.fail_sensor_type.keys():
+                                if self.fail_sensor_type['server_sensor_fail'] == True:
+                                    ret = fsc_board.get_power_status(board)
+                                    if ret:
+                                        Logger.debug("Server Sensor Fail")
+                                        outmin = max(outmin, self.boost)
+                        elif re.match(r'SSD', sensor.name) != None:
+                            if 'SSD_sensor_fail' in self.fail_sensor_type.keys():
+                                if self.fail_sensor_type['SSD_sensor_fail'] == True:
+                                    fail_ssd_count = fail_ssd_count + 1
+                        else:
+                            if 'standby_sensor_fail' in self.fail_sensor_type.keys():
+                                if self.fail_sensor_type['standby_sensor_fail'] == True:
                                     Logger.debug("Standby Sensor Fail")
                                     outmin = max(outmin, self.boost)
-                                    break
             else:
                 missing.add(v)
                 # evaluation tries to ignore the effects of None values
@@ -123,7 +121,7 @@ class Zone:
             Logger.info(self.expr_str + " = " + str(exprout))
         # If *all* sensors in the top level max() report None, the
         # expression will report None
-        if not exprout:
+        if (not exprout) and (outmin == 0):
             if not self.transitional_assert_flag:
                 Logger.crit('ASSERT: Zone%d No sane fan speed could be \
                     calculated! Using transitional speed.' % (self.counter))

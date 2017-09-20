@@ -89,6 +89,7 @@ IMAGE_INSTALL += " \
   libmctp \
   mTerm \
   ipmi-util \
+  bios-util \
   "
 
 IMAGE_FEATURES += " \

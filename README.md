@@ -62,6 +62,26 @@ Note: In the instruction set below, references to <platform> for some of the ste
  ```
  The build process automatically fetches all necessary packages and builds the complete image. The final build results are in `poky/build/tmp/deploy/images/<platform>`. The root password will be `0penBmc`, you may change this in the local configuration.
 
+### Kernel Development
+By default, OpenBMC build process fetches and build Linux kernel directly from GitHub repository.
+To make local kernel changes and build with the modified kernel:
+  1. Clone kernel source
+```
+$ cd poky
+$ git clone -b openbmc/helium/4.1 https://github.com/theopolis/linux.git meta-openbmc/meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1
+```
+  2. Update build recipes to point to local kernel source directory
+in `meta-aspeed/conf/machine/include/ast2520.inc`, add these 2 lines below the `PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed` line
+
+(check `meta-facebook/meta-<platfom>/conf/machine/<platfom>.conf` for the correct `astxxxx.inc` file to modify)
+
+```
+INHERIT += "externalsrc"
+EXTERNALSRC_pn-linux-aspeed = "<dir>/meta-openbmc/meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1"
+```
+
+
+
 #### Build Artifacts
 
 * **u-boot.bin** - This is the u-boot image for the board.

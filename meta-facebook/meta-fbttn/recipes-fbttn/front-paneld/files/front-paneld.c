@@ -543,6 +543,7 @@ ts_handler() {
   if (pal_is_bmc_por()) {
     ctime_r(&time_sled_off, buf);
     syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
+    pal_add_cri_sel("BMC AC lost");
   }
 
   while (1) {

@@ -991,55 +991,55 @@ unflock_retry(int fd)
 }
 
 /* Populates all sensor_info_t struct using the path to SDR dump */
-int
-sdr_init(char *path, sensor_info_t *sinfo) {
-int fd;
-int ret = 0;
-uint8_t buf[MAX_SDR_LEN] = {0};
-uint8_t bytes_rd = 0;
-uint8_t snr_num = 0;
-sdr_full_t *sdr;
+static int
+_sdr_init(char *path, sensor_info_t *sinfo) {
+  int fd;
+  int ret = 0;
+  uint8_t buf[MAX_SDR_LEN] = {0};
+  uint8_t bytes_rd = 0;
+  uint8_t snr_num = 0;
+  sdr_full_t *sdr;
 
-while (access(path, F_OK) == -1) {
-  sleep(5);
-}
+  while (access(path, F_OK) == -1) {
+    sleep(5);
+  }
 
-fd = open(path, O_RDONLY);
-if (fd < 0) {
-  syslog(LOG_ERR, "%s: open failed for %s\n", __func__, path);
-  return -1;
-}
-
-ret = flock_retry(fd);
-if (ret == -1) {
- syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
- close(fd);
- return -1;
-}
-
-while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
-  if (bytes_rd != sizeof(sdr_full_t)) {
-    syslog(LOG_ERR, "%s: read returns %d bytes\n", __func__, bytes_rd);
-    unflock_retry(fd);
-    close(fd);
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s: open failed for %s\n", __func__, path);
     return -1;
   }
 
-  sdr = (sdr_full_t *) buf;
-  snr_num = sdr->sensor_num;
-  sinfo[snr_num].valid = true;
-  memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
-}
+  ret = flock_retry(fd);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
+   close(fd);
+   return -1;
+  }
 
-ret = unflock_retry(fd);
-if (ret == -1) {
- syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
- close(fd);
- return -1;
-}
+  while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
+    if (bytes_rd != sizeof(sdr_full_t)) {
+      syslog(LOG_ERR, "%s: read returns %d bytes\n", __func__, bytes_rd);
+      unflock_retry(fd);
+      close(fd);
+      return -1;
+    }
 
-close(fd);
-return 0;
+    sdr = (sdr_full_t *) buf;
+    snr_num = sdr->sensor_num;
+    sinfo[snr_num].valid = true;
+    memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
+  }
+
+  ret = unflock_retry(fd);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+   close(fd);
+   return -1;
+  }
+
+  close(fd);
+  return 0;
 }
 
 int
@@ -1061,7 +1061,7 @@ fbttn_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
       }
 
       while (retry <= 3) {
-        if (sdr_init(path, sinfo) < 0) {
+        if (_sdr_init(path, sinfo) < 0) {
           if (retry == 3) { //if the third retry still failed, return -1
             syslog(LOG_CRIT, "%s: sdr_init failed for FRU %d, retried: %d", __func__, fru, retry);
             return -1;

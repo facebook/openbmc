@@ -2084,6 +2084,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   uint8_t sen_type = event_data[0];
   uint8_t event_type = sel[12] & 0x7F;
   uint8_t event_dir = sel[12] & 0x80;
+  char cri_sel_str[32] = {0};
 
   switch (fru) {
     case FRU_SLOT1:
@@ -2152,6 +2153,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             strcat(error_log, "Software NMI");
           else
             strcat(error_log, "Unknown");
+            sprintf(cri_sel_str, "CRITICAL_IRQ, %s", error_log);
+            pal_add_cri_sel(cri_sel_str);
           break;
 
         case POST_ERROR:
@@ -2173,10 +2176,16 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
           sprintf(error_log, "");
           if ((ed[0] & 0x0F) == 0x0B) {
             strcat(error_log, "Uncorrectable");
+            sprintf(cri_sel_str, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+            pal_add_cri_sel(cri_sel_str);
           } else if ((ed[0] & 0x0F) == 0x0C) {
             strcat(error_log, "Correctable");
+            sprintf(cri_sel_str, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+            pal_add_cri_sel(cri_sel_str);
           } else {
             strcat(error_log, "Unknown");
+            sprintf(cri_sel_str, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+            pal_add_cri_sel(cri_sel_str);
           }
 
           sprintf(temp_log, ", Machine Check bank Number %d ", ed[1]);
@@ -2200,6 +2209,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             strcat(error_log, "Bus Fatal");
           else
             strcat(error_log, "Unknown");
+
+          sprintf(cri_sel_str, "PCIE_ERR %s", error_log);
+          pal_add_cri_sel(cri_sel_str);
           break;
 
         case IIO_ERR:
@@ -2227,17 +2239,26 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
               strcat(error_log, " - Reserved");
           } else
             strcat(error_log, "Unknown");
+
+          sprintf(cri_sel_str, "IIO_ERR %s", error_log);
+          pal_add_cri_sel(cri_sel_str);
           break;
 
         case MEMORY_ECC_ERR:
           sprintf(error_log, "");
           if ((ed[0] & 0x0F) == 0x0) {
-            if (sen_type == 0x0C)
+            if (sen_type == 0x0C) {
               strcat(error_log, "Correctable");
+              sprintf(cri_sel_str, "DIMM%02X ECC err", ed[2]);
+              pal_add_cri_sel(cri_sel_str);
+            }
             else if (sen_type == 0x10)
               strcat(error_log, "Correctable ECC error Logging Disabled");
-          } else if ((ed[0] & 0x0F) == 0x1)
-            strcat(error_log, "Uncorrectable");
+          } else if ((ed[0] & 0x0F) == 0x1) {
+              strcat(error_log, "Uncorrectable");
+              sprintf(cri_sel_str, "DIMM%02X UECC err", ed[2]);
+              pal_add_cri_sel(cri_sel_str);
+            }
           else if ((ed[0] & 0x0F) == 0x5)
             strcat(error_log, "Correctable ECC error Logging Limit Reached");
           else
@@ -2260,8 +2281,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             sprintf(temp_log, " (CHN# %d, DIMM# %d)",
                 (ed[2] & 0x18) >> 3, ed[2] & 0x7);
           }
-          strcat(error_log, temp_log);
-
+          strcat(error_log, temp_log);          
           break;
 
         case PWR_ERR:
@@ -2270,6 +2290,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             strcat(error_log, "PCH_PWROK failure");
           else
             strcat(error_log, "Unknown");
+          sprintf(cri_sel_str, "PWR_ERR %s", error_log);
+          pal_add_cri_sel(cri_sel_str);
           break;
 
         case CATERR_B:
@@ -2280,6 +2302,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             strcat(error_log, "MCERR");
           else
             strcat(error_log, "Unknown");
+          sprintf(cri_sel_str, "CATERR %s", error_log);
+          pal_add_cri_sel(cri_sel_str);
           break;
 
         case CPU_DIMM_HOT:
@@ -2288,6 +2312,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             strcat(error_log, "SOC MEMHOT");
           else
             strcat(error_log, "Unknown");
+          sprintf(cri_sel_str, "CPU_DIMM_HOT %s", error_log);
+          pal_add_cri_sel(cri_sel_str);
           break;
 
         case SPS_FW_HEALTH:
@@ -3591,7 +3617,9 @@ pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len) {
 void
 pal_add_cri_sel(char *str)
 {
-
+  char cmd[128];
+  snprintf(cmd, 128, "logger -p local0.err \"%s\"",str);
+  system(cmd);
 }
 
 void

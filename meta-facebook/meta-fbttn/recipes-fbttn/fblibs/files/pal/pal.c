@@ -233,7 +233,7 @@ char * def_val_list[] = {
   "1", /* bmc_health */
   "1", /* slot_sel_error */
   "0000000", /* slot1_boot_order */
-  "c084", /* server_pcie_port_config */ /* Default: Port #1: Auto; Port3C: disable, Port3D: enable */
+  "0000", /* server_pcie_port_config */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };

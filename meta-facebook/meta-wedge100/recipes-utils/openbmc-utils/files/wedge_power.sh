@@ -28,6 +28,7 @@ PWR_BTN_GPIO="BMC_PWR_BTN_OUT_N"
 PWR_SYSTEM_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_cyc_all_n"
 PWR_USRV_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/usrv_rst_n"
 PWR_TH_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/th_sys_rst_n"
+MAIN_PWR="${SYSCPLD_SYSFS_DIR}/pwr_main_n"
 
 usage() {
     echo "Usage: $prog <command> [command options]"
@@ -48,19 +49,55 @@ usage() {
     echo
 }
 
+main_power_status() {
+  status=$(cat $MAIN_PWR | head -1 )
+  if [ "$status" == "0x1" ]; then
+      return 0            # powered on
+  else
+      return 1
+  fi
+}
+
 do_status() {
     echo -n "Microserver power is "
+    return_code=0
     if wedge_is_us_on; then
         echo "on"
     else
         echo "off"
+        return_code=1
     fi
-    return 0
+    main_power_status
+    rc=$?
+    if [ $rc == "0" ]; then
+        echo "System main power is on"
+    else
+        echo "System main power is off"
+        return_code=1
+    fi
+    return $return_code
 }
 
 do_on_com_e() {
     echo 1 > $PWR_USRV_SYSFS
     return $?
+}
+
+do_on_main_pwr() {
+  main_power_status
+  rc=$?
+  if [ $rc == "1" ]; then
+    echo 1 > $MAIN_PWR
+    ret=$?
+    if [ $ret -eq 0 ]; then
+      echo "Turning on system main power"
+      logger "Successfully power on main power"
+      return 0
+    else
+      return 1
+    fi
+  fi
+  return 0
 }
 
 do_on() {
@@ -90,6 +127,7 @@ do_on() {
     # reset TH
     reset_brcm.sh
     # power on sequence
+    do_on_main_pwr
     do_on_com_e
     ret=$?
     if [ $ret -eq 0 ]; then

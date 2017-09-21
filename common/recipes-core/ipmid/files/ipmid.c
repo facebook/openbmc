@@ -2613,6 +2613,18 @@ oem_get_poss_pcie_config(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_bypass_cmd(unsigned char *request, unsigned char req_len,
+                          unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = pal_bypass_cmd(req->payload_id, req->data, req_len, res->data, res_len);
+
+  return;
+}
+
+static void
 oem_get_board_id(unsigned char *request, unsigned char req_len,
 					unsigned char *response, unsigned char *res_len)
 {
@@ -2896,6 +2908,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_PCIE_CONFIG:
       oem_get_poss_pcie_config (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_BYPASS_CMD:
+      oem_bypass_cmd (request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_BOARD_ID:
       oem_get_board_id (request, req_len, response, res_len);

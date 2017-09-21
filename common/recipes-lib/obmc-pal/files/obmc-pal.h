@@ -237,6 +237,7 @@ int pal_set_gpio_value(int gpio_num, uint8_t value);
 int pal_get_gpio_value(int gpio_num, uint8_t *value);
 int pal_ipmb_processing(int bus, void *buf, uint16_t size);
 int pal_ipmb_finished(int bus, void *buf, uint16_t size);
+int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 
 #ifdef __cplusplus
 }

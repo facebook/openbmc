@@ -359,7 +359,8 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
 int __attribute__((weak))
 pal_cfg_key_check(char *key)
 {
-  /* TODO: Leverage the code from meta-facebook/meta-fbttn/recipes-fbttn/fblibs/files/pal/pal.c; 
+  /* TODO: Leverage the code from
+   * meta-facebook/meta-fbttn/recipes-fbttn/fblibs/files/pal/pal.c;
    * once all platforms using cfg-util uses cfg_support_key_list[]
    */
   return PAL_EOK;
@@ -551,10 +552,558 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data)
   return PAL_EOK;
 }
 
+/*
+ * A Function to parse common SEL message, a helper funciton
+ * for pal_parse_sel.
+ *
+ * Note that this fuction __CANNOT__ be overriden.
+ * To add board specific routine, please override pal_parse_sel.
+ */
+
+bool
+pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
+{
+
+  bool parsed = true;
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+  uint8_t temp;
+  uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
+
+  /*Used by decoding ME event*/
+  char *nm_capability_status[2] = {"Not Available", "Available"};
+  char *nm_domain_name[6] = {"Entire Platform", "CPU Subsystem", "Memory Subsystem", "HW Protection", "High Power I/O subsystem", "Unknown"};
+  char *nm_err_type[17] =
+                    {"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
+                     "Extended Telemetry Device Reading Failure", "Outlet Temperature Reading Failure",
+                     "Volumetric Airflow Reading Failure", "Policy Misconfiguration",
+                     "Power Sensor Reading Failure", "Inlet Temperature Reading Failure",
+                     "Host Communication Error", "Real-time Clock Synchronization Failure",
+                    "Platform Shutdown Initiated by Intel NM Policy", "Unknown"};
+  char *nm_health_type[4] = {"Unknown", "Unknown", "SensorIntelNM", "Unknown"};
+
+
+  strcpy(error_log, "");
+
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      switch (ed[0] & 0xF) {
+        case 0x07:
+          strcat(error_log, "Base OS/Hypervisor Installation started");
+          break;
+        case 0x08:
+          strcat(error_log, "Base OS/Hypervisor Installation completed");
+          break;
+        case 0x09:
+          strcat(error_log, "Base OS/Hypervisor Installation aborted");
+          break;
+        case 0x0A:
+          strcat(error_log, "Base OS/Hypervisor Installation failed");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          parsed = false;
+          break;
+      }
+      return parsed;
+  }
+
+  switch(snr_num) {
+    case SYSTEM_EVENT:
+      if (ed[0] == 0xE5) {
+        strcat(error_log, "Cause of Time change - ");
+
+        if (ed[2] == 0x00)
+          strcat(error_log, "NTP");
+        else if (ed[2] == 0x01)
+          strcat(error_log, "Host RTL");
+        else if (ed[2] == 0x02)
+          strcat(error_log, "Set SEL time cmd ");
+        else if (ed[2] == 0x03)
+          strcat(error_log, "Set SEL time UTC offset cmd");
+        else
+          strcat(error_log, "Unknown");
+
+        if (ed[1] == 0x00)
+          strcat(error_log, " - First Time");
+        else if(ed[1] == 0x80)
+          strcat(error_log, " - Second Time");
+
+      }
+      break;
+
+    case THERM_THRESH_EVT:
+      if (ed[0] == 0x1)
+        strcat(error_log, "Limit Exceeded");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case CRITICAL_IRQ:
+
+      if (ed[0] == 0x0)
+        strcat(error_log, "NMI / Diagnostic Interrupt");
+      else if (ed[0] == 0x03)
+        strcat(error_log, "Software NMI");
+      else
+        strcat(error_log, "Unknown");
+
+      sprintf(temp_log,  "CRITICAL_IRQ, %s", error_log);
+      pal_add_cri_sel(temp_log);
+
+      break;
+
+    case POST_ERROR:
+      if ((ed[0] & 0x0F) == 0x0)
+        strcat(error_log, "System Firmware Error");
+      else
+        strcat(error_log, "Unknown");
+      if (((ed[0] >> 6) & 0x03) == 0x3) {
+        // TODO: Need to implement IPMI spec based Post Code
+        strcat(error_log, ", IPMI Post Code");
+      } else if (((ed[0] >> 6) & 0x03) == 0x2) {
+        sprintf(temp_log, ", OEM Post Code 0x%02X%02X", ed[2], ed[1]);
+        strcat(error_log, temp_log);
+        switch ((ed[2] << 8) | ed[1]) {
+          case 0xA105:
+            sprintf(temp_log, ", BMC Failed (No Response)");
+            strcat(error_log, temp_log);
+            break;
+          case 0xA106:
+            sprintf(temp_log, ", BMC Failed (Self Test Fail)");
+            strcat(error_log, temp_log);
+            break;
+          default:
+            break;
+        }
+      }
+      break;
+
+    case MACHINE_CHK_ERR:
+      if ((ed[0] & 0x0F) == 0x0B) {
+        strcat(error_log, "Uncorrectable");
+        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0x0F) == 0x0C) {
+        strcat(error_log, "Correctable");
+        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+        pal_add_cri_sel(temp_log);
+      } else {
+        strcat(error_log, "Unknown");
+        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+        pal_add_cri_sel(temp_log);
+      }
+
+      sprintf(temp_log, ", Machine Check bank Number %d ", ed[1]);
+      strcat(error_log, temp_log);
+      sprintf(temp_log, ", CPU %d, Core %d ", ed[2] >> 5, ed[2] & 0x1F);
+      strcat(error_log, temp_log);
+
+      break;
+
+    case PCIE_ERR:
+
+      if ((ed[0] & 0xF) == 0x4) {
+        sprintf(error_log, "PCI PERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+      } else if ((ed[0] & 0xF) == 0x5) {
+        sprintf(error_log, "PCI SERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+      } else if ((ed[0] & 0xF) == 0x7) {
+        sprintf(error_log, "Correctable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+      } else if ((ed[0] & 0xF) == 0x8) {
+        sprintf(error_log, "Uncorrectable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+      } else if ((ed[0] & 0xF) == 0xA) {
+        sprintf(error_log, "Bus Fatal (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+      } else if ((ed[0] & 0xF) == 0xD) {
+        unsigned int vendor_id = (unsigned int)ed[1] << 8 | (unsigned int)ed[2];
+        sprintf(error_log, "Vendor ID: 0x%4x", vendor_id);
+      } else if ((ed[0] & 0xF) == 0xE) {
+        unsigned int device_id = (unsigned int)ed[1] << 8 | (unsigned int)ed[2];
+        sprintf(error_log, "Device ID: 0x%4x", device_id);
+      } else if ((ed[0] & 0xF) == 0xF) {
+        sprintf(error_log, "Error ID from downstream: 0x%2x 0x%2x", ed[1], ed[2]);
+      } else {
+        strcat(error_log, "Unknown");
+      }
+
+      sprintf(temp_log, "PCI_ERR %s", error_log);
+      pal_add_cri_sel(temp_log);
+
+      break;
+
+    case IIO_ERR:
+      if ((ed[0] & 0xF) == 0) {
+
+        sprintf(temp_log, "CPU %d, Error ID 0x%X", (ed[2] & 0xE0) >> 5,
+            ed[1]);
+        strcat(error_log, temp_log);
+
+        temp = ed[2] & 0x7;
+        if (temp == 0x0)
+          strcat(error_log, " - IRP0");
+        else if (temp == 0x1)
+          strcat(error_log, " - IRP1");
+        else if (temp == 0x2)
+          strcat(error_log, " - IIO-Core");
+        else if (temp == 0x3)
+          strcat(error_log, " - VT-d");
+        else if (temp == 0x4)
+          strcat(error_log, " - Intel Quick Data");
+        else if (temp == 0x5)
+          strcat(error_log, " - Misc");
+        else
+          strcat(error_log, " - Reserved");
+      } else
+        strcat(error_log, "Unknown");
+      sprintf(temp_log, "IIO_ERR %s", error_log);
+      pal_add_cri_sel(temp_log);
+      break;
+
+    case MEMORY_ECC_ERR:
+    case MEMORY_ERR_LOG_DIS:
+      if (snr_num == MEMORY_ECC_ERR) {
+        // SEL from MEMORY_ECC_ERR Sensor
+        if ((ed[0] & 0x0F) == 0x0) {
+          if (sen_type == 0x0C) {
+            strcat(error_log, "Correctable");
+            sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+            pal_add_cri_sel(temp_log);
+          } else if (sen_type == 0x10)
+            strcat(error_log, "Correctable ECC error Logging Disabled");
+        } else if ((ed[0] & 0x0F) == 0x1) {
+          strcat(error_log, "Uncorrectable");
+          sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+          pal_add_cri_sel(temp_log);
+        } else if ((ed[0] & 0x0F) == 0x5)
+          strcat(error_log, "Correctable ECC error Logging Limit Reached");
+        else
+          strcat(error_log, "Unknown");
+      } else if (snr_num == MEMORY_ERR_LOG_DIS) {
+        // SEL from MEMORY_ERR_LOG_DIS Sensor
+        if ((ed[0] & 0x0F) == 0x0)
+          strcat(error_log, "Correctable Memory Error Logging Disabled");
+        else
+          strcat(error_log, "Unknown");
+      }
+
+      // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
+      sprintf(temp_log, " (DIMM %02X)", ed[2]);
+      strcat(error_log, temp_log);
+
+      sprintf(temp_log, " Logical Rank %d", ed[1] & 0x03);
+      strcat(error_log, temp_log);
+
+      // DIMM number (ed[2]):
+      // Bit[7:5]: Socket number  (Range: 0-7)
+      // Bit[4:2]: Channel number (Range: 0-7)
+      // Bit[1:0]: DIMM number    (Range: 0-3)
+      if (((ed[1] & 0xC) >> 2) == 0x0) {
+        /* All Info Valid */
+        chn_num = (ed[2] & 0x1C) >> 2;
+        dimm_num = ed[2] & 0x3;
+
+        /* If critical SEL logging is available, do it */
+        if (sen_type == 0x0C) {
+          if ((ed[0] & 0x0F) == 0x0) {
+            sprintf(temp_log, "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          } else if ((ed[0] & 0x0F) == 0x1) {
+            sprintf(temp_log, "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          }
+        }
+        /* Then continue parse the error into a string. */
+        /* All Info Valid                               */
+        sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+        /* DIMM info not valid */
+        sprintf(temp_log, " (CPU# %d, CHN# %d)",
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
+      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+        /* CHN info not valid */
+        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
+            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
+      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+        /* CPU info not valid */
+        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
+            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+      }
+      strcat(error_log, temp_log);
+
+      break;
+
+
+    case PWR_ERR:
+      if (ed[0] == 0x1) {
+        strcat(error_log, "SYS_PWROK failure");
+        /* Also try logging to Critial log file, if available */
+        sprintf(temp_log, "SYS_PWROK failure,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      } else if (ed[0] == 0x2) {
+        strcat(error_log, "PCH_PWROK failure");
+        /* Also try logging to Critial log file, if available */
+        sprintf(temp_log, "PCH_PWROK failure,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      }
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case CATERR_A:
+    case CATERR_B:
+      if (ed[0] == 0x0) {
+        strcat(error_log, "IERR/CATERR");
+        /* Also try logging to Critial log file, if available */
+        sprintf(temp_log, "IERR,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      } else if (ed[0] == 0xB) {
+        strcat(error_log, "MCERR/CATERR");
+        /* Also try logging to Critial log file, if available */
+        sprintf(temp_log, "MCERR,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
+      }
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case MSMI:
+      if (ed[0] == 0x0)
+        strcat(error_log, "IERR/MSMI");
+      else if (ed[0] == 0xB)
+        strcat(error_log, "MCERR/MSMI");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case CPU_DIMM_HOT:
+      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
+        strcat(error_log, "SOC MEMHOT");
+      else
+        strcat(error_log, "Unknown");
+      sprintf(temp_log, "CPU_DIMM_HOT %s", error_log);
+      pal_add_cri_sel(temp_log);
+      break;
+
+    case SOFTWARE_NMI:
+      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x03FFFF)
+        strcat(error_log, "Software NMI");
+      else
+        strcat(error_log, "Unknown SW NMI");
+      break;
+
+    case ME_POWER_STATE:
+      switch (ed[0]) {
+        case 0:
+          sprintf(error_log, "RUNNING");
+          break;
+        case 2:
+          sprintf(error_log, "POWER_OFF");
+          break;
+        default:
+          sprintf(error_log, "Unknown[%d]", ed[0]);
+          break;
+      }
+      break;
+    case SPS_FW_HEALTH:
+      if (event_data[0] == 0xDC && ed[1] == 0x06) {
+        strcat(error_log, "FW UPDATE");
+        return 1;
+      } else if (ed[1] == 0x01) {
+        strcat(error_log, "Image execution failed");
+        return 1;
+      } else if (ed[1] == 0x02) {
+        strcat(error_log, "Flash erase error");
+        return 1;
+      } else if (ed[1] == 0x03) {
+        strcat(error_log, "Flash state information");
+        return 1;
+      } else if (ed[1] == 0x04) {
+        strcat(error_log, "Internal error");
+        return 1;
+      } else if (ed[1] == 0x05) {
+        strcat(error_log, "BMC did not respond");
+        return 1;
+      } else if (ed[1] == 0x07) {
+        strcat(error_log, "Manufacturing error");
+        return 1;
+      } else if (ed[1] == 0x08) {
+        strcat(error_log, "Automatic Restore to Factory Presets");
+        return 1;
+      } else if (ed[1] == 0x09) {
+        strcat(error_log, "Firmware Exception");
+        return 1;
+      } else if (ed[1] == 0x0A) {
+        strcat(error_log, "Flash Wear-Out Protection Warning");
+        return 1;
+      } else if (ed[1] == 0x0D) {
+        strcat(error_log, "DMI interface error");
+        return 1;
+      } else if (ed[1] == 0x0E) {
+        strcat(error_log, "MCTP interface error");
+        return 1;
+      } else if (ed[1] == 0x0F) {
+        strcat(error_log, "Auto-configuration finished");
+        return 1;
+      } else if (ed[1] == 0x10) {
+        strcat(error_log, "Unsupported Segment Defined Feature");
+        return 1;
+      } else if (ed[1] == 0x12) {
+        strcat(error_log, "CPU Debug Capability Disabled");
+        return 1;
+      } else if (ed[1] == 0x13) {
+        strcat(error_log, "UMA operation error");
+        return 1;
+      } else
+         strcat(error_log, "Unknown");
+      break;
+
+    /*NM4.0 #550710, Revision 1.95, and turn to p.155*/
+    case NM_EXCEPTION_A:
+    case NM_EXCEPTION_B:
+      if (ed[0] == 0xA8) {
+        strcat(error_log, "Policy Correction Time Exceeded");
+        return 1;
+      } else
+         strcat(error_log, "Unknown");
+      break;
+    case NM_HEALTH:
+      {
+        uint8_t health_type_index = (ed[0] & 0xf);
+        uint8_t domain_index = (ed[1] & 0xf);
+        uint8_t err_type_index = ((ed[1] >> 4) & 0xf);
+
+        sprintf(error_log, "%s,Domain:%s,ErrType:%s,Err:0x%x", nm_health_type[health_type_index], nm_domain_name[domain_index], nm_err_type[err_type_index], ed[2]);
+      }
+      return 1;
+      break;
+
+    case NM_CAPABILITIES:
+      if (ed[0] & 0x7)//BIT1=policy, BIT2=monitoring, BIT3=pwr limit and the others are reserved
+      {
+        int capability_index = 0;
+        char *policy_capability = NULL;
+        char *monitoring_capability = NULL;
+        char *pwr_limit_capability = NULL;
+
+        capability_index = BIT(ed[0], 0);
+        policy_capability = nm_capability_status[ capability_index ];
+
+        capability_index = BIT(ed[0], 1);
+        monitoring_capability = nm_capability_status[ capability_index ];
+
+        capability_index = BIT(ed[0], 2);
+        pwr_limit_capability = nm_capability_status[ capability_index ];
+
+        sprintf(error_log, "PolicyInterface:%s,Monitoring:%s,PowerLimit:%s",
+          policy_capability, monitoring_capability, pwr_limit_capability);
+      }
+      else
+      {
+        strcat(error_log, "Unknown");
+      }
+
+      return 1;
+      break;
+
+    case NM_THRESHOLD:
+      {
+        uint8_t threshold_number = (ed[0] & 0x3);
+        uint8_t domain_index = (ed[1] & 0xf);
+        uint8_t policy_id = ed[2];
+        uint8_t policy_event_index = BIT(ed[0], 3);
+        char *policy_event[2] = {"Threshold Exceeded", "Policy Correction Time Exceeded"};
+
+        sprintf(error_log, "Threshold Number:%d-%s,Domain:%s,PolicyID:0x%x",
+          threshold_number, policy_event[policy_event_index], nm_domain_name[domain_index], policy_id);
+      }
+      return 1;
+      break;
+
+    case CPU0_THERM_STATUS:
+    case CPU1_THERM_STATUS:
+      if (ed[0] == 0x00)
+        strcat(error_log, "CPU Critical Temperature");
+      else if (ed[0] == 0x01)
+        strcat(error_log, "PROCHOT#");
+      else if (ed[0] == 0x02)
+        strcat(error_log, "TCC Activation");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case PWR_THRESH_EVT:
+      if (ed[0]  == 0x00)
+        strcat(error_log, "Limit Not Exceeded");
+      else if (ed[0]  == 0x01)
+        strcat(error_log, "Limit Exceeded");
+      else
+        strcat(error_log, "Unknown");
+      break;
+
+    case HPR_WARNING:
+      if (ed[2]  == 0x01) {
+        if (ed[1] == 0xFF)
+          strcat(temp_log, "Infinite Time");
+        else
+          sprintf(temp_log, "%d minutes",ed[1]);
+        strcat(error_log, temp_log);
+      } else {
+        strcat(error_log, "Unknown");
+      }
+      break;
+
+    default:
+      sprintf(error_log, "Unknown");
+      parsed = false;
+      break;
+  }
+  if (((event_data[2] & 0x80) >> 7) == 0) {
+    sprintf(temp_log, " Assertion");
+    strcat(error_log, temp_log);
+  } else {
+    sprintf(temp_log, " Deassertion");
+    strcat(error_log, temp_log);
+  }
+  return parsed;
+}
+
+
 int __attribute__((weak))
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
-  return PAL_EOK;
+  //
+  // If a platform needs to process a specific type of SEL message
+  // differently from what the common code does,
+  // this function can be overriden to do such unique handling
+  // instead of calling the common SEL parsing logic (pal_parse_sel_helper.)
+  //
+  // This default handler will not perform any special handling, and will
+  // just call the default handler (pal_parse_sel_helper) for every type of
+  // SEL msessages.
+  //
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+}
+
+// By default, pal_add_cri_sel will do the best effort to
+// log critical messages to default log file.
+// Some platform has already overriden this function with
+// empty function (do not log anything)
+void __attribute__((weak))
+pal_add_cri_sel(char *str)
+{
+  char cmd[128];
+  snprintf(cmd, 128, "logger -p local0.err \"%s\"",str);
+  system(cmd);
 }
 
 int __attribute__((weak))
@@ -1034,7 +1583,7 @@ void __attribute__((weak))
 int __attribute__((weak))
 pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
-  // Completion Code Invalid Command 
+  // Completion Code Invalid Command
   return 0xC1;
 }
 

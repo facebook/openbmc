@@ -2044,292 +2044,56 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+  bool parsed;
   uint8_t snr_type = sel[10];
   uint8_t snr_num = sel[11];
   char *event_data = &sel[10];
   char *ed = &event_data[3];
-  char temp_log[128] = {0};
+  char temp_og[128] = {0};
   uint8_t temp;
   uint8_t sen_type = event_data[0];
   uint8_t event_type = sel[12] & 0x7F;
   uint8_t event_dir = sel[12] & 0x80;
-  char cri_sel_str[32] = {0};
 
-  switch (fru) {
-    case FRU_SLOT1:
-      switch (snr_type) {
-        case OS_BOOT:
-          // OS_BOOT used by OS
-          sprintf(error_log, "");
-          switch (ed[0] & 0xF) {
-            case 0x07:
-              strcat(error_log, "Base OS/Hypervisor Installation started");
-              break;
-            case 0x08:
-              strcat(error_log, "Base OS/Hypervisor Installation completed");
-              break;
-            case 0x09:
-              strcat(error_log, "Base OS/Hypervisor Installation aborted");
-              break;
-            case 0x0A:
-              strcat(error_log, "Base OS/Hypervisor Installation failed");
-              break;
-            default:
-              strcat(error_log, "Unknown");
-              break;
-          }
-          return 0;
-      }
+  parsed = false;
 
-      switch(snr_num) {
-        case SYSTEM_EVENT:
-          sprintf(error_log, "");
-          if (ed[0] == 0xE5) {
-            strcat(error_log, "Cause of Time change - ");
-
-            if (ed[2] == 0x00)
-              strcat(error_log, "NTP");
-            else if (ed[2] == 0x01)
-              strcat(error_log, "Host RTL");
-            else if (ed[2] == 0x02)
-              strcat(error_log, "Set SEL time cmd ");
-            else if (ed[2] == 0x03)
-              strcat(error_log, "Set SEL time UTC offset cmd");
-            else
-              strcat(error_log, "Unknown");
-
-            if (ed[1] == 0x00)
-              strcat(error_log, " - First Time");
-            else if(ed[1] == 0x80)
-              strcat(error_log, " - Second Time");
-
-          }
-          break;
-
-        case THERM_THRESH_EVT:
-          sprintf(error_log, "");
-          if (ed[0] == 0x1)
-            strcat(error_log, "Limit Exceeded");
-          else
-            strcat(error_log, "Unknown");
-          break;
-
-        case CRITICAL_IRQ:
-          sprintf(error_log, "");
-          if (ed[0] == 0x0)
-            strcat(error_log, "NMI / Diagnostic Interrupt");
-          else if (ed[0] == 0x03)
-            strcat(error_log, "Software NMI");
-          else
-            strcat(error_log, "Unknown");
-            sprintf(cri_sel_str, "CRITICAL_IRQ, %s", error_log);
-            pal_add_cri_sel(cri_sel_str);
-          break;
-
-        case POST_ERROR:
-          sprintf(error_log, "");
-          if ((ed[0] & 0x0F) == 0x0)
-            strcat(error_log, "System Firmware Error");
-          else
-            strcat(error_log, "Unknown");
-          if (((ed[0] >> 6) & 0x03) == 0x3) {
-            // TODO: Need to implement IPMI spec based Post Code
-            strcat(error_log, ", IPMI Post Code");
-           } else if (((ed[0] >> 6) & 0x03) == 0x2) {
-             sprintf(temp_log, ", OEM Post Code 0x%X 0x%X", ed[2], ed[1]);
-             strcat(error_log, temp_log);
-           }
-          break;
-
-        case MACHINE_CHK_ERR:
-          sprintf(error_log, "");
-          if ((ed[0] & 0x0F) == 0x0B) {
-            strcat(error_log, "Uncorrectable");
-            sprintf(cri_sel_str, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
-            pal_add_cri_sel(cri_sel_str);
-          } else if ((ed[0] & 0x0F) == 0x0C) {
-            strcat(error_log, "Correctable");
-            sprintf(cri_sel_str, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
-            pal_add_cri_sel(cri_sel_str);
-          } else {
-            strcat(error_log, "Unknown");
-            sprintf(cri_sel_str, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
-            pal_add_cri_sel(cri_sel_str);
-          }
-
-          sprintf(temp_log, ", Machine Check bank Number %d ", ed[1]);
-          strcat(error_log, temp_log);
-          sprintf(temp_log, ", CPU %d, Core %d ", ed[2] >> 5, ed[2] & 0x1F);
-          strcat(error_log, temp_log);
-
-          break;
-
-        case PCIE_ERR:
-          sprintf(error_log, "");
-          if ((ed[0] & 0xF) == 0x4)
-            strcat(error_log, "PCI PERR");
-          else if ((ed[0] & 0xF) == 0x5)
-            strcat(error_log, "PCI SERR");
-          else if ((ed[0] & 0xF) == 0x7)
-            strcat(error_log, "Correctable");
-          else if ((ed[0] & 0xF) == 0x8)
-            strcat(error_log, "Uncorrectable");
-          else if ((ed[0] & 0xF) == 0xA)
-            strcat(error_log, "Bus Fatal");
-          else
-            strcat(error_log, "Unknown");
-
-          sprintf(cri_sel_str, "PCIE_ERR %s", error_log);
-          pal_add_cri_sel(cri_sel_str);
-          break;
-
-        case IIO_ERR:
-          sprintf(error_log, "");
-          if ((ed[0] & 0xF) == 0) {
-
-            sprintf(temp_log, "CPU %d, Error ID 0x%X", (ed[2] & 0xE0) >> 5,
-                ed[1]);
-            strcat(error_log, temp_log);
-
-            temp = ed[2] & 0x7;
-            if (temp == 0x0)
-              strcat(error_log, " - IRP0");
-            else if (temp == 0x1)
-              strcat(error_log, " - IRP1");
-            else if (temp == 0x2)
-              strcat(error_log, " - IIO-Core");
-            else if (temp == 0x3)
-              strcat(error_log, " - VT-d");
-            else if (temp == 0x4)
-              strcat(error_log, " - Intel Quick Data");
-            else if (temp == 0x5)
-              strcat(error_log, " - Misc");
-            else
-              strcat(error_log, " - Reserved");
-          } else
-            strcat(error_log, "Unknown");
-
-          sprintf(cri_sel_str, "IIO_ERR %s", error_log);
-          pal_add_cri_sel(cri_sel_str);
-          break;
-
-        case MEMORY_ECC_ERR:
-          sprintf(error_log, "");
-          if ((ed[0] & 0x0F) == 0x0) {
-            if (sen_type == 0x0C) {
-              strcat(error_log, "Correctable");
-              sprintf(cri_sel_str, "DIMM%02X ECC err", ed[2]);
-              pal_add_cri_sel(cri_sel_str);
+  // First, try checking if the SEL message is a platform-specific one (FBTTN)
+  if (fru==FRU_SCC) {
+    parsed = true;
+    switch (event_type) {
+      case SENSOR_SPECIFIC:
+        switch (snr_type) {
+          case DIGITAL_DISCRETE:
+            switch (ed[0] & 0x0F) {
+              //Sensor Type Code, Physical Security 0x5h, SENSOR_SPECIFIC Offset 0x0h General Chassis Intrusion
+              case 0x0:
+                if (!event_dir)
+                  sprintf(error_log, "Drawer be Pulled Out");
+                else
+                  sprintf(error_log, "Drawer be Pushed Back");
+                break;
             }
-            else if (sen_type == 0x10)
-              strcat(error_log, "Correctable ECC error Logging Disabled");
-          } else if ((ed[0] & 0x0F) == 0x1) {
-              strcat(error_log, "Uncorrectable");
-              sprintf(cri_sel_str, "DIMM%02X UECC err", ed[2]);
-              pal_add_cri_sel(cri_sel_str);
-            }
-          else if ((ed[0] & 0x0F) == 0x5)
-            strcat(error_log, "Correctable ECC error Logging Limit Reached");
-          else
-            strcat(error_log, "Unknown");
+            break;
+        }
+        break;
 
-          if (((ed[1] & 0xC) >> 2) == 0x0) {
-            /* All Info Valid */
-            sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
-                (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
-          } else if (((ed[1] & 0xC) >> 2) == 0x1) {
-            /* DIMM info not valid */
-            sprintf(temp_log, " (CPU# %d, CHN# %d)",
-                (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
-          } else if (((ed[1] & 0xC) >> 2) == 0x2) {
-            /* CHN info not valid */
-            sprintf(temp_log, " (CPU# %d, DIMM# %d)",
-                (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
-          } else if (((ed[1] & 0xC) >> 2) == 0x3) {
-            /* CPU info not valid */
-            sprintf(temp_log, " (CHN# %d, DIMM# %d)",
-                (ed[2] & 0x18) >> 3, ed[2] & 0x7);
-          }
-          strcat(error_log, temp_log);          
-          break;
+      case GENERIC:
+        if (ed[0] & 0x0F)
+          sprintf(error_log, "ASSERT, Limit Exceeded");
+        else
+          sprintf(error_log, "DEASSERT, Limit Not Exceeded");
+        break;
 
-        case PWR_ERR:
-          sprintf(error_log, "");
-          if (ed[0] == 0x2)
-            strcat(error_log, "PCH_PWROK failure");
-          else
-            strcat(error_log, "Unknown");
-          sprintf(cri_sel_str, "PWR_ERR %s", error_log);
-          pal_add_cri_sel(cri_sel_str);
-          break;
-
-        case CATERR_B:
-          sprintf(error_log, "");
-          if (ed[0] == 0x0)
-            strcat(error_log, "IERR");
-          else if (ed[0] == 0xB)
-            strcat(error_log, "MCERR");
-          else
-            strcat(error_log, "Unknown");
-          sprintf(cri_sel_str, "CATERR %s", error_log);
-          pal_add_cri_sel(cri_sel_str);
-          break;
-
-        case CPU_DIMM_HOT:
-          sprintf(error_log, "");
-          if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
-            strcat(error_log, "SOC MEMHOT");
-          else
-            strcat(error_log, "Unknown");
-          sprintf(cri_sel_str, "CPU_DIMM_HOT %s", error_log);
-          pal_add_cri_sel(cri_sel_str);
-          break;
-
-        case SPS_FW_HEALTH:
-          sprintf(error_log, "");
-          if (event_data[0] == 0xDC && ed[1] == 0x06) {
-            strcat(error_log, "FW UPDATE");
-            return 1;
-          } else
-             strcat(error_log, "Unknown");
-          break;
-
-        default:
-          sprintf(error_log, "Unknown");
-          break;
-      }
-    break;
-    case FRU_SCC:
-      switch (event_type) {
-        case SENSOR_SPECIFIC:
-          switch (snr_type) {
-            case DIGITAL_DISCRETE:
-              switch (ed[0] & 0x0F) {
-                //Sensor Type Code, Physical Security 0x5h, SENSOR_SPECIFIC Offset 0x0h General Chassis Intrusion
-                case 0x0:
-                  if (!event_dir)
-                    sprintf(error_log, "Drawer be Pulled Out");
-                  else
-                    sprintf(error_log, "Drawer be Pushed Back");
-                  break;
-              }
-              break;
-          }
-          break;
-
-        case GENERIC:
-          if (ed[0] & 0x0F)
-            sprintf(error_log, "ASSERT, Limit Exceeded");
-          else
-            sprintf(error_log, "DEASSERT, Limit Not Exceeded");
-          break;
-
-        default:
-          sprintf(error_log, "Unknown");
-          break;
-      }
-      break;
+      default:
+        sprintf(error_log, "Unknown");
+        break;
+    }
   }
+
+  // If this message was not a platform specific message, just run a
+  // common SEL parsing routine
+  if (!parsed)
+    pal_parse_sel_helper(fru, sel, error_log);
 
   return 0;
 }
@@ -3087,7 +2851,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     if (rbuf[5*i+4] != 0) {
       //if sensor status byte is not 0, means sensor reading is unavailable
       sprintf(str, "NA");
-    } 
+    }
     else {
       // search the corresponding sensor table to fill up the raw data and status
       // rbuf[5*i+1] sensor number
@@ -3110,7 +2874,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
         value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
         value = value/100;
       }
-      
+
       sprintf(str, "%.2f",(float)value);
     }
 
@@ -3177,7 +2941,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
     if (rbuf[5*i+4] != 0) {
       //if sensor status byte is not 0, means sensor reading is unavailable
       sprintf(str, "NA");
-    }    
+    }
     else {
       // search the corresponding sensor table to fill up the raw data and status
       // rbuf[5*i+1] sensor number

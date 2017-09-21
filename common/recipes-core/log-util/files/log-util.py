@@ -24,6 +24,7 @@ import sys
 import os
 from ctypes import *
 from lib_pal import *
+import subprocess
 
 syslogfiles = ['/mnt/data/logfile.0', '/mnt/data/logfile']
 cmdlist = ['--print', '--clear']
@@ -36,6 +37,17 @@ def print_usage():
     print 'Usage: %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[0])
     print '       %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[1])
 
+def rsyslog_hup():
+    try:
+        with open('/var/run/rsyslogd.pid') as f:
+            pid = f.readline()
+            if (pid == "" or pid == "0"):
+                print("WARNING: Invalid rsyslog PID(%s) skipping rsyslog hangup" % (pid))
+                return
+            cmd = ['kill', '-HUP', pid]
+            subprocess.check_call(cmd)
+    except (OSError, IOError) as e:
+        pass
 
 def log_main():
 
@@ -191,6 +203,7 @@ def log_main():
 
     if cmd == cmdlist[1]:
         pal_log_clear(fru)
+        rsyslog_hup()
 
 if __name__ == '__main__':
     log_main()

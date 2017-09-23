@@ -24,8 +24,6 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
-
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -75,6 +73,7 @@ void showUsage(char **argv, unsigned int qFlag) {
     printQ(qFlag,"  -f            Run endlessly until ctrl-c is used\n");
     printQ(qFlag,"  -s <number>   Connect to fru <number> (default=1)\n");
     printQ(qFlag,"  -i <number>   Run [number] of iterations\n");
+    printQ(qFlag,"  -r <number>   IR size (CPU=11, PCH=8, default 11)\n");
     printQ(qFlag,"\n");
 }
 
@@ -104,7 +103,7 @@ int main (int argc, char **argv) {
     signal(SIGINT, intHandler);  // catch ctrl-c
 
     opterr = 0;
-    while ((c = getopt (argc, argv, "qfi:s:?")) != -1)
+    while ((c = getopt (argc, argv, "qfi:s:r:?")) != -1)
         switch (c) {
             case 'q':
                 qFlag = 1;
@@ -119,6 +118,9 @@ int main (int argc, char **argv) {
             case 's':
                 if ((fru = atoi(optarg)) > 0)
                     break;
+            case 'r':
+                if ((irSize = atoi(optarg)) > 0)
+                    break;
             case '?':
                 showUsage(argv, qFlag);
             return -1;
@@ -129,7 +131,7 @@ int main (int argc, char **argv) {
         showUsage(argv, qFlag);
         return -1;
     }
-    printf("ASD: connect to fru %d\n", fru);
+    printf("ASD: connect to fru %d, irSize=%d\n", fru, irSize);
     // load the driver
     handle = SoftwareJTAGHandler(fru); // TODO get from user
     if (!handle) {

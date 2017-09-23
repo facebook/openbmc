@@ -34,8 +34,8 @@ frulist = ''
 def print_usage():
     global frulist
 
-    print 'Usage: %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[0])
-    print '       %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[1])
+    print('Usage: %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[0]))
+    print('       %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[1]))
 
 def rsyslog_hup():
     try:
@@ -54,7 +54,7 @@ def log_main():
     global frulist
 
     # Get the list of frus from PAL library
-    frus = pal_get_fru_list()
+    frus = pal_get_fru_list().decode()
     frulist = re.split(r',\s', frus)
     frulist.append('sys')
 
@@ -67,33 +67,34 @@ def log_main():
 
     # Check if the fru passed in as argument exists in the fru list
     if fru not in frulist:
-        print "Error: Fru not in the list [ %s ] \n" % ' | '.join(frulist)
+        print("Error: Fru not in the list [ %s ] \n" % ' | '.join(frulist))
         print_usage()
         return -1
 
     # Check if the cmd passed in as argument exists in the cmd list
     if cmd not in cmdlist:
-        print "Unknown command: %s \n" % cmd
+        print("Unknown command: %s \n" % cmd)
         print_usage()
         return -1
 
     # Print cmd
     if cmd == cmdlist[0]:
-        print '%-4s %-8s %-22s %-16s %s' % (
+        print('%-4s %-8s %-22s %-16s %s' % (
             "FRU#",
             "FRU_NAME",
             "TIME_STAMP",
             "APP_NAME",
             "MESSAGE"
-            )
+            ))
 
     for logfile in syslogfiles:
 
         try:
             fd = open(logfile, 'a+')
+            fd.seek(0, os.SEEK_SET)
             syslog = fd.readlines()
             fd.close()
-        except:
+        except Exception:
             print("Unexpected error:", sys.exc_info()[0])
             continue
 
@@ -193,13 +194,13 @@ def log_main():
                 app = temp2[0]
                 message = temp2[1].rstrip('\n')
 
-                print '%-4s %-8s %-22s %-16s %s' % (
+                print('%-4s %-8s %-22s %-16s %s' % (
                     fru_num,
                     fruname,
                     time,
                     app,
                     message
-                    )
+                    ))
 
     if cmd == cmdlist[1]:
         pal_log_clear(fru)

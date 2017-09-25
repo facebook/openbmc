@@ -93,10 +93,10 @@ def inject_kek(rom_fit, path):
 
 def sign_firmware(dts):
     # Perform signing.
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+    with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(dts)
         tmp.flush()
-        with tempfile.NamedTemporaryFile(delete=False) as tmp2:
+        with tempfile.NamedTemporaryFile() as tmp2:
             cmd = [args.mkimage, "-f", tmp.name, "-E", "-k", args.keydir,
                 "-p", "%08x" % args.size, "-r", tmp2.name]
             if args.token:
@@ -116,10 +116,10 @@ def sign_firmware(dts):
 
 
 def sign_os(dts):
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+    with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(dts)
         tmp.flush()
-        with tempfile.NamedTemporaryFile(delete=False) as tmp2:
+        with tempfile.NamedTemporaryFile() as tmp2:
             cmd = [args.mkimage, "-f", tmp.name, "-k", args.keydir,
                 "-r", tmp2.name]
             if args.token:

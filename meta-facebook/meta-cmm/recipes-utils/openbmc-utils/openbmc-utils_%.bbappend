@@ -51,7 +51,7 @@ OPENBMC_UTILS_FILES += " \
 
 DEPENDS_append = " update-rc.d-native"
 
-RDEPENDS_${PN} += "python"
+RDEPENDS_${PN} += "python3"
 
 do_install_append() {
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh

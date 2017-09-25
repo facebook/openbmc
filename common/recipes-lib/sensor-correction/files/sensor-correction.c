@@ -50,7 +50,6 @@
 
 #define MAX_NUM_CONDITIONS 32
 #define MAX_NUM_TABLES     32
-#define MAX_CORRECTIONS    16
 
 typedef struct {
   char cond_value[MAX_VALUE_LEN];
@@ -64,7 +63,7 @@ typedef struct {
 
 typedef struct {
   size_t num;
-  correction_element_t corr_table[MAX_CORRECTIONS];
+  correction_element_t *corr_table;
 } correction_table_t;
 
 typedef struct {
@@ -111,8 +110,12 @@ static int load_table(json_t *obj, correction_table_t *tbl)
   size_t i;
 
   tbl->num = json_array_size(obj);
-  if (!tbl->num || tbl->num > MAX_CORRECTIONS) {
+  if (!tbl->num) {
     DEBUG("Unsupported number of entries in correction table: %zu\n", tbl->num);
+    return -1;
+  }
+  tbl->corr_table = calloc(tbl->num, sizeof(correction_table_t));
+  if (!tbl->corr_table) {
     return -1;
   }
   for (i = 0; i < tbl->num; i++) {
@@ -120,6 +123,7 @@ static int load_table(json_t *obj, correction_table_t *tbl)
     json_t *cond_value_o, *correction_o;
     if (!e || !json_is_array(e) || json_array_size(e) != 2) {
       DEBUG("Could not get correction: %zu\n", i);
+      free(tbl->corr_table);
       return -1;
     }
     cond_value_o = json_array_get(e, 0);
@@ -128,6 +132,7 @@ static int load_table(json_t *obj, correction_table_t *tbl)
         !json_is_number(cond_value_o) ||
         !json_is_number(correction_o)) {
       DEBUG("Invalid value in index: %zu\n", i);
+      free(tbl->corr_table);
       return -1;
     }
     tbl->corr_table[i].cond_value = get_float(cond_value_o);

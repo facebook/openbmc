@@ -172,6 +172,12 @@ static void gpio_event_handle(gpio_poll_st *gp)
     pal_check_power_sts();
     return;
   }
+  else if( gp->gs.gs_gpio == gpio_num("GPIOE2") ) {
+    pal_set_restart_cause(FRU_MB, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+  }
+  else if( gp->gs.gs_gpio == gpio_num("GPIOE0") ) {
+    pal_set_restart_cause(FRU_MB, RESTART_CAUSE_RESET_PUSH_BUTTON);
+  }
 
   log_gpio_change(gp, 0);
 
@@ -191,6 +197,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
     }
     pal_add_cri_sel(cmd);
   }
+
 }
 
 static void

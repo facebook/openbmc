@@ -298,7 +298,6 @@ int pal_set_server_power(uint8_t fru, uint8_t cmd);
 int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_switch_uart_mux(uint8_t fru);
-int pal_get_pwr_btn(uint8_t *status);
 int pal_get_rst_btn(uint8_t *status);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);

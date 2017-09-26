@@ -3627,7 +3627,6 @@ main (void)
   fru = 1;
 
   while(fru <= max_slot_num){
-    uint8_t cause;
     struct watchdog_data *wdt_data = calloc(1, sizeof(struct watchdog_data));
     if (!wdt_data) {
       syslog(LOG_WARNING, "ipmid: allocation wdt info failed!\n");
@@ -3641,12 +3640,7 @@ main (void)
     g_wdt[fru - 1] = wdt_data;
     pthread_create(&wdt_data->tid, NULL, wdt_timer, wdt_data);
     pthread_detach(wdt_data->tid);
-    if (pal_get_restart_cause(fru, &cause)) {
-      // If no restart cause is set, set the default to be
-      // PWR_ON_PUSH_BUTTON since that is the most obvious cause
-      // since BMC has just booted up and started the ipmid.
-      pal_set_restart_cause(fru, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
-    }
+    pal_set_def_restart_cause( fru );
     fru++;
   }
 

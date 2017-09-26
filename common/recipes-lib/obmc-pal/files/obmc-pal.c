@@ -28,6 +28,7 @@
 #include <sys/wait.h>
 #include <openbmc/edb.h>
 #include <openbmc/kv.h>
+#include <openbmc/ipmi.h>
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
@@ -1035,5 +1036,16 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
 {
   // Completion Code Invalid Command 
   return 0xC1;
+}
+
+void __attribute__((weak))
+pal_set_def_restart_cause(uint8_t slot) {
+  uint8_t cause;
+  if (pal_get_restart_cause(slot, &cause)) {
+    // If no restart cause is set, set the default to be
+    // PWR_ON_PUSH_BUTTON since that is the most obvious cause
+    // since BMC has just booted up and started the ipmid.
+    pal_set_restart_cause(slot, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+  }
 }
 

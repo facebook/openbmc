@@ -54,7 +54,6 @@
 #define GPIO_POWER_RESET 33
 
 #define GPIO_RST_BTN 144
-#define GPIO_PWR_BTN 24
 
 #define GPIO_HB_LED 165
 
@@ -3179,26 +3178,6 @@ pal_sled_cycle(void) {
 
   // Double Side
   system("i2cset -y 7 0x45 0xd9 c &> /dev/null");
-
-  return 0;
-}
-
-// Return the Front panel Power Button
-int
-pal_get_pwr_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_PWR_BTN);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  if (val) {
-    *status = 0x0;
-  } else {
-    *status = 0x1;
-  }
 
   return 0;
 }
@@ -7055,4 +7034,27 @@ pal_CPU_error_num_chk(void)
       return -1;
   } else
     return -1;
+}
+
+void
+pal_set_def_restart_cause(uint8_t slot)
+{
+  char pwr_policy[MAX_VALUE_LEN];
+  char last_pwr_st[MAX_VALUE_LEN];
+  if ( FRU_MB == slot )
+  {
+    kv_get("pwr_server_last_state", last_pwr_st);
+    kv_get("server_por_cfg", pwr_policy);
+    if( pal_is_bmc_por() )
+    {
+      if( !strcmp( pwr_policy, "on") )
+      {
+        pal_set_restart_cause(FRU_MB, RESTART_CAUSE_AUTOMATIC_PWR_UP);
+      }
+      else if( !strcmp( pwr_policy, "lps") && !strcmp( last_pwr_st, "on") )
+      {
+        pal_set_restart_cause(FRU_MB, RESTART_CAUSE_AUTOMATIC_PWR_UP_LPR);
+      }
+    }
+  }
 }

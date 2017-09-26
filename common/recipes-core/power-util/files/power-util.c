@@ -316,6 +316,7 @@ power_util(uint8_t fru, uint8_t opt) {
         return 0;
       }
       syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", fru);
+      pal_set_restart_cause(fru, RESTART_CAUSE_IPMI_CHASSIS_CMD);
       break;
 
     case PWR_CYCLE:
@@ -340,6 +341,7 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_WARNING, "power_util: pal_set_led failed for fru %u", fru);
         return ret;
       }
+      pal_set_restart_cause(fru, RESTART_CAUSE_IPMI_CHASSIS_CMD);
       break;
 
     case PWR_12V_OFF:

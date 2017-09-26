@@ -465,8 +465,8 @@ main(int argc, char **argv) {
   option =  argc == 2 ? argv[1] : argv [2];
 
   ret = get_power_opt(option, &opt);
-  /* If argc is 2, the option is sled-cycle */
-  if ((ret < 0) || (argc == 2 && opt != PWR_SLED_CYCLE)) {
+  /* If argc is 2, the option is sled-cycle;  we should ignore power-util fru sled-cycle*/
+  if ((ret < 0) || (argc == 2 && opt != PWR_SLED_CYCLE) || (argc == 3 && opt == PWR_SLED_CYCLE)) {
     printf("Wrong option: %s\n", option);
     print_usage();
     exit(-1);

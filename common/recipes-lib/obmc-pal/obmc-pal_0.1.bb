@@ -12,7 +12,7 @@ SRC_URI = "file://obmc-pal.h \
            file://obmc-pal.c \
            file://CMakeLists.txt \
           "
-DEPENDS += " libedb libkv"
+DEPENDS += " libedb libkv libipmi"
 
 inherit cmake
 

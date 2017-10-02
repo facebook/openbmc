@@ -108,6 +108,14 @@ int pin_initialize(const int fru)
       return ST_ERR;
     };
 
+    // set FM_BIC_JTAG_SEL_N = 1 to enable ASD
+    if (bic_set_gpio(fru, FM_BIC_JTAG_SEL_N, GPIO_VALUE_HIGH)) {
+      syslog(LOG_ERR, "%s: assert FM_BIC_JTAG_SEL_N failed, fru=%d",
+             __FUNCTION__, fru);
+      return ST_ERR;
+    };
+
+
     /* Start the GPIO polling threads just once */
     if (gpios_polling == false) {
         pthread_create(&poll_thread, NULL, gpio_poll_thread, arg);
@@ -149,6 +157,14 @@ int pin_deinitialize(const int fru)
              __FUNCTION__, fru);
       return ST_ERR;
     };
+
+    // set FM_BIC_JTAG_SEL_N = 0 to disable ASD
+    if (bic_set_gpio(fru, FM_BIC_JTAG_SEL_N, GPIO_VALUE_LOW)) {
+      syslog(LOG_ERR, "%s: assert FM_BIC_JTAG_SEL_N failed, fru=%d",
+             __FUNCTION__, fru);
+      return ST_ERR;
+    };
+
 
     return ST_OK;
 }

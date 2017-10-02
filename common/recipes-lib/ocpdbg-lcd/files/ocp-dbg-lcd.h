@@ -24,7 +24,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <stdint.h>
 
+int usb_dbg_init(uint8_t bus, uint8_t mcu_addr, uint8_t io_exp_addr);
 int usb_dbg_update_fw(char *path);
 int usb_dbg_update_boot_loader(char *path);
 void usb_dbg_reset(void);

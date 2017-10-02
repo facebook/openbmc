@@ -34,7 +34,6 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
 
-#define MCU_BUS_ID 0x9
 #define MCU_UPDATE_RETRIES 12
 #define MCU_UPDATE_TIMEOUT 500
 
@@ -50,9 +49,11 @@
 #define CMD_RUN_SIZE 7
 #define CMD_STATUS_SIZE 3
 #define CMD_DATA_SIZE 0xFF
-#define MCU_addr 0x60
 #define IPMB_WRITE_COUNT_MAX 224
-#define PCA9555_addr 0x4E
+
+static uint8_t io_expander_addr = 0x4E;
+static uint8_t mcu_bus_id       = 0x9;
+static uint8_t MCU_addr         = 0x60;
 
 // Helper function for msleep
 static void
@@ -65,6 +66,14 @@ msleep(int msec) {
   while(nanosleep(&req, &req) == -1 && errno == EINTR) {
     continue;
   }
+}
+
+int usb_dbg_init(uint8_t bus, uint8_t mcu_addr, uint8_t io_exp_addr)
+{
+  mcu_bus_id       = bus;
+  MCU_addr         = mcu_addr;
+  io_expander_addr = io_exp_addr;
+  return 0;
 }
 
 static int
@@ -95,7 +104,7 @@ enable_MCU_update(void)
   req->data[3] = 0x1;
   tlen = 10;
 
-  lib_ipmb_handle(MCU_BUS_ID, tbuf, tlen+1, rbuf, &rlen);
+  lib_ipmb_handle(mcu_bus_id, tbuf, tlen+1, rbuf, &rlen);
   if (rlen == 0) {
     syslog(LOG_DEBUG, "%s(%d): Zero bytes received from MCU\n", __func__, __LINE__);
   }
@@ -141,11 +150,11 @@ usb_dbg_update_fw(char *path)
   dsize = size/20;
 
   // Open the i2c driver
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", MCU_BUS_ID);
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", mcu_bus_id);
   ifd = open(fn, O_RDWR);
   if (ifd < 0) {
     syslog(LOG_WARNING, "%s(%d): i2c_open failed for bus#%d\n",
-            __func__, __LINE__, MCU_BUS_ID);
+            __func__, __LINE__, mcu_bus_id);
     goto error_exit2;
   }
 
@@ -154,9 +163,9 @@ usb_dbg_update_fw(char *path)
 
   // Kill ipmb daemon
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "sv stop ipmbd_%d", MCU_BUS_ID);
+  sprintf(cmd, "sv stop ipmbd_%d", mcu_bus_id);
   system(cmd);
-  printf("Stopped ipmbd %x..\n",MCU_BUS_ID);
+  printf("Stopped ipmbd %x..\n",mcu_bus_id);
 
   //Waiting for MCU reset to bootloader for updating
   sleep(1);
@@ -320,7 +329,7 @@ usb_dbg_update_fw(char *path)
 error_exit:
   // Restart ipmbd daemon
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "sv start ipmbd_%d", MCU_BUS_ID);
+  sprintf(cmd, "sv start ipmbd_%d", mcu_bus_id);
   system(cmd);
 
 error_exit2:
@@ -375,7 +384,7 @@ update_MCU_bl_fw(uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf)
   tlen = len + 16;
 
 bic_send:
-  lib_ipmb_handle(MCU_BUS_ID, tbuf, tlen+1, rbuf, &rlen);
+  lib_ipmb_handle(mcu_bus_id, tbuf, tlen+1, rbuf, &rlen);
   if ((rlen == 0) && (retries--)) {
     sleep(1);
     syslog(LOG_DEBUG, "%s(%d): target %d, offset: %d, len: %d retrying..\n", __func__, __LINE__, target, offset, len);
@@ -457,7 +466,7 @@ usb_dbg_reset(void)
   uint8_t rbuf[2] = {0};
   int ret;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", MCU_BUS_ID);
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", mcu_bus_id);
   fd = open(fn, O_RDWR);
   if (fd < 0) {
     syslog(LOG_ERR, "%s(%d) : open fails for path: %s\n", __func__, __LINE__, fn);
@@ -465,7 +474,7 @@ usb_dbg_reset(void)
   }
   //Set Configuration register
   tbuf[0] = 0x06; tbuf[1] = 0xFF; tbuf[2] = 0xFF;
-  ret = i2c_rdwr_msg_transfer(fd, PCA9555_addr, tbuf, 3, rbuf, 0);
+  ret = i2c_rdwr_msg_transfer(fd, io_expander_addr, tbuf, 3, rbuf, 0);
   if (ret < 0) {
     syslog(LOG_ERR, "%s(%d) : reset_PCA9555 fail.\n", __func__, __LINE__ );
     goto error_exit;

@@ -5244,43 +5244,14 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 #define MAX_DUMP_TIME 10800 /* 3 hours */
 static pthread_t tid_dwr = -1;
 static void *dwr_handler(void *arg) {
-  int delay_reset_time = (int)arg;
-  int countdown;
-  int retry = 0;
   int len;
   ipmb_req_t *req;
   ipmb_res_t *res;
 
-  if (delay_reset_time < 0)
-    countdown = MAX_DUMP_TIME;
-  else
-    countdown = delay_reset_time;
-
+  //delay 30s for system reset
   sleep(30);
 
-  while (countdown--) {
-    if (pal_is_crashdump_ongoing(FRU_MB) != 1) {
-      len = ipmb_send(4, 0x2c, NETFN_SENSOR_REQ<<2, CMD_SENSOR_REARM_SENSOR_EVENTS, HPR_WARNING, 0);
-      if (len >= 0 && ipmb_rxb()->cc == 0) {
-        syslog(LOG_NOTICE, "Re-arm Host Reset Warning Sensor of ME success");
-        break;
-      } else {
-        syslog(LOG_WARNING, "Re-arm Host Reset Warning Sensor of ME failed");
-        if (retry++ > 2)
-          break;
-      }
-    }
-    sleep(1);
-  }
-
-  if (countdown <= 0) {
-    syslog(LOG_WARNING, "Autodump waitting for DWR timeout");
-  }
-
-  // wait system reset
-  sleep(5);
-
-  // Get biosscratchpad7[26]: DWR
+  // Get biosscratchpad7[26]: DWR assert check
   req = ipmb_txb();
   res = ipmb_rxb();
   req->res_slave_addr = 0x2C; //ME's Slave Address
@@ -5301,49 +5272,36 @@ static void *dwr_handler(void *arg) {
   req->data[11] = 0x00;
   // Invoke IPMB library handler
   len = ipmb_send_buf(0x4, 12+MIN_IPMB_REQ_LEN);
+
   if (len >= (8+MIN_IPMB_RES_LEN) && // Data len >= 8
     res->cc == 0 && // IPMB Success
     res->data[3] == 0x40 && // PECI Success
     (res->data[7] & 0x04) == 0x04) { // DWR mode
     // System is in DWR mode
+    syslog(LOG_WARNING, "Start DWR Autodump");
     system("/usr/local/bin/autodump.sh --dwr &");
-
-    countdown = MAX_DUMP_TIME;
-    while (countdown--) {
-      if (pal_is_crashdump_ongoing(FRU_MB) != 1) {
-        // Global Reset System
-        pal_PBO();
-        break;
-      }
-      sleep(1);
-    }
+  } else {
+    syslog(LOG_WARNING, "Start Second Autodump");
+    system("/usr/local/bin/autodump.sh --second &");
   }
 
   tid_dwr = -1;
   pthread_exit(NULL);
 }
-int
-pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
-  // Host Partition Reset Warning Sensor Message
-  uint8_t host_rst_warn_event[] = {0xDC, HPR_WARNING, 0x77};
-  int delay_reset_time;
 
-  if (!memcmp(event_data, host_rst_warn_event, sizeof(host_rst_warn_event))) {
-    syslog(LOG_WARNING, "Host Partition Reset Warning Sensor Message from ME");
-    // Pre-Go_S1
-    if (event_data[4] == 0xFF)
-      delay_reset_time = -1;
-    else
-      delay_reset_time = event_data[4] * 60;
-
+void
+pal_second_crashdump_chk(void) {
     if (tid_dwr != -1)
       pthread_cancel(tid_dwr);
 
-    if (pthread_create(&tid_dwr, NULL, dwr_handler, (void *)delay_reset_time) == 0)
+    if (pthread_create(&tid_dwr, NULL, dwr_handler, NULL) == 0)
       pthread_detach(tid_dwr);
     else
       tid_dwr = -1;
-  }
+}
+
+int
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   return 0;
 }

@@ -55,6 +55,7 @@ static long int reset_sec = 0, power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool smi_count_start = false;
+static bool MCERR_IERR_assert = false;
 
 static inline long int reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
@@ -152,7 +153,8 @@ static void platform_reset_event_handle(gpio_poll_st *gp)
   }
 
   log_gpio_change(gp, 0);
-
+  if (MCERR_IERR_assert == 1)
+    pal_second_crashdump_chk();
 }
 
 // Generic Event Handler for GPIO changes
@@ -543,18 +545,19 @@ ierr_mcerr_event_handler() {
   char temp_log[128] = {0};
 
   while (1) {
-    if ( CATERR_irq > 0 ){
+    if (CATERR_irq > 0) {
       CATERR_ierr_time_count++;
-      if ( CATERR_ierr_time_count == 2 ){
-        if ( CATERR_irq == 1 ){
+      if (CATERR_ierr_time_count == 2) {
+        if (CATERR_irq == 1) {
           //FM_CPU_CATERR_LVT3_N
+          MCERR_IERR_assert = true;
           if (gpio_get(gpio_num("GPIOG1")) == GPIO_VALUE_LOW) {
             syslog(LOG_CRIT, "ASSERT: IERR/CATERR\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num == 2)
+            if (CPU_num == 2)
               sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if(CPU_num != -1)
+            else if (CPU_num != -1)
               sprintf(temp_log, "CPU%d IERR/CATERR", CPU_num);
             else
               sprintf(temp_log, "CPU IERR/CATERR");
@@ -563,50 +566,51 @@ ierr_mcerr_event_handler() {
             syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num == 2)
+            if (CPU_num == 2)
               sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if(CPU_num != -1)
+            else if (CPU_num != -1)
               sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
             else
               sprintf(temp_log, "CPU MCERR/CATERR");
             pal_add_cri_sel(temp_log);
           }
-            CATERR_irq--;
-            CATERR_ierr_time_count = 0;
-            //light up the fault LED
-            set_gpio_value("GPIOU5", GPIO_VALUE_LOW);
-            system("/usr/local/bin/autodump.sh &");
-          } else if ( CATERR_irq > 1 ){
-                   while (CATERR_irq > 1){
-                     syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
+          CATERR_irq--;
+          CATERR_ierr_time_count = 0;
+          //light up the fault LED
+          set_gpio_value("GPIOU5", GPIO_VALUE_LOW);
+          system("/usr/local/bin/autodump.sh &");
+        } else if (CATERR_irq > 1) {
+          while (CATERR_irq > 1) {
+            syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
 
-                     CPU_num = pal_CPU_error_num_chk();
-                     if(CPU_num == 2)
-                       sprintf(temp_log, "CPU0/1 IERR/CATERR");
-                     else if(CPU_num != -1)
-                       sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
-                     else
-                       sprintf(temp_log, "CPU MCERR/CATERR");
-                     pal_add_cri_sel(temp_log);
-                     CATERR_irq = CATERR_irq - 1;
-                   }
-                   CATERR_ierr_time_count = 1;
-                 }
+            CPU_num = pal_CPU_error_num_chk();
+            if (CPU_num == 2)
+              sprintf(temp_log, "CPU0/1 IERR/CATERR");
+            else if (CPU_num != -1)
+              sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
+            else
+              sprintf(temp_log, "CPU MCERR/CATERR");
+            pal_add_cri_sel(temp_log);
+            CATERR_irq = CATERR_irq - 1;
+          }
+          CATERR_ierr_time_count = 1;
         }
+      }
     }
 
-    if ( MSMI_irq > 0 ){
+    if (MSMI_irq > 0) {
       MSMI_ierr_time_count++;
-      if ( MSMI_ierr_time_count == 2 ){
-        if ( MSMI_irq == 1 ){
+      if (MSMI_ierr_time_count == 2) {
+        if (MSMI_irq == 1) {
           //FM_CPU_MSMI_LVT3_N
+          MCERR_IERR_assert = true;
           if (gpio_get(gpio_num("GPION3")) == GPIO_VALUE_LOW) {
             syslog(LOG_CRIT, "ASSERT: IERR/MSMI\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num == 2)
+            if (CPU_num == 2)
               sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if(CPU_num != -1)
+            else if (CPU_num != -1)
               sprintf(temp_log, "CPU%d IERR/MSMI", CPU_num);
             else
               sprintf(temp_log, "CPU IERR/MSMI");
@@ -615,9 +619,9 @@ ierr_mcerr_event_handler() {
             syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
 
             CPU_num = pal_CPU_error_num_chk();
-            if(CPU_num == 2)
+            if (CPU_num == 2)
               sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if(CPU_num != -1)
+            else if (CPU_num != -1)
               sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
             else
               sprintf(temp_log, "CPU MCERR/MSMI");
@@ -625,26 +629,26 @@ ierr_mcerr_event_handler() {
           }
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
-          //light up the fault LED
+          //light up the fault LED and do autodump
           set_gpio_value("GPIOU5", GPIO_VALUE_LOW);
           system("/usr/local/bin/autodump.sh &");
-        } else if ( MSMI_irq > 1 ){
-                 while (MSMI_irq > 1){
-                   syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
+        } else if (MSMI_irq > 1) {
+          while (MSMI_irq > 1) {
+            syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
 
-                   CPU_num = pal_CPU_error_num_chk();
-                   if(CPU_num == 2)
-                     sprintf(temp_log, "CPU0/1 IERR/CATERR");
-                   else if(CPU_num != -1)
-                     sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
-                   else
-                     sprintf(temp_log, "CPU MCERR/MSMI");
-                   pal_add_cri_sel(temp_log);
-                   MSMI_irq = MSMI_irq - 1;
-                 }
-                 MSMI_ierr_time_count = 1;
-               }
-       }
+            CPU_num = pal_CPU_error_num_chk();
+            if (CPU_num == 2)
+              sprintf(temp_log, "CPU0/1 IERR/CATERR");
+            else if (CPU_num != -1)
+              sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
+            else
+              sprintf(temp_log, "CPU MCERR/MSMI");
+            pal_add_cri_sel(temp_log);
+            MSMI_irq = MSMI_irq - 1;
+          }
+          MSMI_ierr_time_count = 1;
+        }
+      }
     }
     usleep(25000); //25ms
    }

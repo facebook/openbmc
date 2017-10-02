@@ -380,6 +380,7 @@ void pal_check_power_sts(void);
 int notify_BBV_ipmb_offline_online(uint8_t on_off, int off_sec);
 bool pal_is_BBV_prsnt();
 int pal_CPU_error_num_chk(void);
+void pal_second_crashdump_chk(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

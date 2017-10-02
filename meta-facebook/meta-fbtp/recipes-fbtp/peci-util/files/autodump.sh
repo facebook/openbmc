@@ -28,6 +28,7 @@ LOG_MSG_PREFIX=""
 CPU0_SKTOCC_N="/sys/class/gpio/gpio51/value"
 CPU1_SKTOCC_N="/sys/class/gpio/gpio208/value"
 DWR=0
+SECOND_DUMP=0
 DELAY_SEC=30
 SENSOR_HISTORY=180
 
@@ -40,6 +41,9 @@ do
   --now)
     DELAY_SEC=0
     ;;
+  --second)
+    SECOND_DUMP=1
+    ;;
   *)
     echo "unknown argument $1"
     ;;
@@ -51,6 +55,12 @@ if [ "$DWR" == "1" ]; then
   LOG_ARCHIVE='/mnt/data/autodump_dwr.tar.gz'
   LOG_MSG_PREFIX="DWR "
   echo "Auto Dump after Demoted Warm Reset"
+fi
+
+if [ "$SECOND_DUMP" == "1" ]; then
+  LOG_ARCHIVE='/mnt/data/autodump_second.tar.gz'
+  LOG_MSG_PREFIX="SECOND_DUMP "
+  echo "Auto Dump after system reset"
 fi
 
 if [ "$DELAY_SEC" != "0" ]; then

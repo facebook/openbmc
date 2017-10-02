@@ -6113,28 +6113,39 @@ pal_get_board_rev_id(uint8_t *id) {
 
 int
 pal_get_mb_slot_id(uint8_t *id) {
-  int val;
-  char path[64] = {0};
+  int fd = 0, ret = -1;
+  char fn[32];
+  uint8_t retry = 3, tcount, rcount, addr;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
 
-  sprintf(path, GPIO_VAL, GPIO_MB_SLOT_ID0);
-  if (read_device(path, &val)) {
-    return -1;
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", CPLD_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
   }
-  *id = val&0x01;
 
-  sprintf(path, GPIO_VAL, GPIO_MB_SLOT_ID1);
-  if (read_device(path, &val)) {
-    return -1;
+  //PCA9554 slave address
+  addr = 0x42;
+  //0x00: input register
+  tbuf[0] = 0x00;
+  tcount = 1;
+  rcount = 1;
+
+  while (ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
   }
-  *id = *id | (val<<1);
-
-  sprintf(path, GPIO_VAL, GPIO_MB_SLOT_ID2);
-  if (read_device(path, &val)) {
-    return -1;
+  if (ret < 0) {
+    goto err_exit;
   }
-  *id = *id | (val<<2);
 
-  return 0;
+  *id = rbuf[0] & 0x07;
+
+  err_exit:
+    if (fd > 0)
+      close(fd);
+
+    return ret;
 }
 
 

@@ -6964,9 +6964,10 @@ pal_is_BBV_prsnt()
   char fn[32];
   bool ret;
   uint8_t BBV_present_chk_addr = 0x92;
+  uint8_t re_timer_present_chk_addr = 0x82;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
-  uint8_t tcount, rcount;
+  uint8_t tcount=0, rcount;
   int  val;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
@@ -6977,9 +6978,17 @@ pal_is_BBV_prsnt()
     goto error_exit;
   }
 
-  //Send I2C to re-timer
+  //Send I2C to Bridge card on BBV
   rcount = 1;
   val = i2c_rdwr_msg_transfer(fd, BBV_present_chk_addr, tbuf, tcount, rbuf, rcount);
+  if( val < 0 ) {
+    ret = false;
+      goto error_exit;
+  }
+
+  //Send I2C to re-timer
+  rcount = 1;
+  val = i2c_rdwr_msg_transfer(fd, re_timer_present_chk_addr, tbuf, tcount, rbuf, rcount);
   if( val < 0 ) {
     ret = false;
       goto error_exit;

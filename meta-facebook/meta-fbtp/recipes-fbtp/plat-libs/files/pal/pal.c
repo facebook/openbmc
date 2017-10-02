@@ -5090,7 +5090,7 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
      else
        policy = 3;
    }
-   *data++ = 0x01 | (policy << 5);
+   *data++ = ((is_server_off())?0x00:0x01) | (policy << 5);
    *data++ = 0x00;   // Last Power Event
    *data++ = 0x40;   // Misc. Chassis Status
    *data++ = 0x00;   // Front Panel Button Disable

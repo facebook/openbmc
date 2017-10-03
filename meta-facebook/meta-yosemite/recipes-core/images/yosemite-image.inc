@@ -83,6 +83,7 @@ IMAGE_INSTALL += " \
   passwd-util \
   logrotate \
   conf-util \
+  ncsi-util \
   "
 
 IMAGE_FEATURES += " \

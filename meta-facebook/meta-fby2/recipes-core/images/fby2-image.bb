@@ -64,6 +64,7 @@ IMAGE_INSTALL += " \
   ipmbd \
   bic-cached \
   bic-util \
+  ncsi-util \
   fby2-sensors \
   sensor-util \
   sensor-mon \

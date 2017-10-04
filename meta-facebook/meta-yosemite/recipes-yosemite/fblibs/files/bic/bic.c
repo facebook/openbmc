@@ -21,12 +21,16 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
 #include <time.h>
 #include <sys/stat.h>
 #include "bic.h"
+#include <openbmc/edb.h>
 #include <openbmc/obmc-i2c.h>
 
 #define FRUID_READ_COUNT_MAX 0x30
@@ -225,6 +229,24 @@ get_ipmb_bus_id(uint8_t slot_id) {
   return bus_id;
 }
 
+static int
+set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[64];
+  char value[64];
+  struct timespec ts;
+
+  sprintf(key, "slot%d_fwupd", slot_id);
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%d", ts.tv_sec);
+
+  if (edb_cache_set(key, value) < 0) {
+     return -1;
+  }
+
+  return 0;
+}
+
 int
 bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
                   uint8_t *txbuf, uint8_t txlen,
@@ -270,7 +292,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen, &rbuf, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
   if (rlen == 0) {
 #ifdef DEBUG
@@ -631,11 +653,9 @@ _update_bic_main(uint8_t slot_id, char *path) {
   }
 
   // Kill ipmb daemon for this slot
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -10", get_ipmb_bus_id(slot_id));
+  sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
   printf("stop ipmbd for slot %x..\n", slot_id);
-
-  sleep(2);
 
   // The I2C high speed clock (1M) could cause to read BIC data abnormally.
   // So reduce I2C bus clock speed which is a workaround for BIC update.
@@ -659,10 +679,25 @@ _update_bic_main(uint8_t slot_id, char *path) {
        break;
   }
   sleep(1);
+  printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
-  // Enable Bridge-IC update
   if (!_is_bic_update_ready(slot_id)) {
-     _enable_bic_update(slot_id);
+    // Restart ipmb daemon with "bicup" for bic update
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "/usr/local/bin/ipmbd %d %d bicup > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
+    system(cmd);
+    printf("start ipmbd bicup for this slot %x..\n",slot_id);
+
+    sleep(2);
+
+    // Enable Bridge-IC update
+    _enable_bic_update(slot_id);
+
+    // Kill ipmb daemon "bicup" for this slot
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
+    system(cmd);
+    printf("stop ipmbd for slot %x..\n", slot_id);
   }
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
@@ -879,7 +914,6 @@ _update_bic_main(uint8_t slot_id, char *path) {
   }
 
 update_done:
-  // mark as successful
   ret = 0;
   // Restore the I2C bus clock to 1M.
   switch(slot_id)
@@ -903,18 +937,26 @@ update_done:
 
   // Restart ipmbd daemon
   sleep(1);
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill -12", get_ipmb_bus_id(slot_id));
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
 
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating firmware is exiting\n");
+  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting\n");
   if (fd > 0) {
     close(fd);
   }
 
   if (ifd > 0) {
      close(ifd);
-   }
+  }
+
+  set_fw_update_ongoing(slot_id, 0);
+
+  //Unlock fw-util
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
+  system(cmd);
 
   return ret;
 }
@@ -1017,30 +1059,13 @@ check_bios_image(int fd, long size) {
   return 0;
 }
 
-static int
-set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
-  char key[64];
-  char value[64];
-  struct timespec ts;
-
-  sprintf(key, "slot%d_fwupd", slot_id);
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%d", ts.tv_sec);
-
-  if (edb_cache_set(key, value) < 0) {
-     return -1;
-  }
-
-  return 0;
-}
-
 int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   int ret = -1, rc;
   uint32_t offset;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
+  char    cmd[100] = {0};
   uint8_t target;
   int fd;
   int i;
@@ -1051,7 +1076,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   printf("updating fw on slot %d:\n", slot_id);
   // Handle Bridge IC firmware separately as the process differs significantly from others
   if (comp == UPDATE_BIC) {
-    set_fw_update_ongoing(slot_id, 25);
+    set_fw_update_ongoing(slot_id, 60);
     return  _update_bic_main(slot_id, path);
   }
 
@@ -1060,6 +1085,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
+    printf("ERROR: invalid file path!\n");
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
 #endif
@@ -1072,15 +1098,22 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       printf("invalid BIOS file!\n");
       goto error_exit;
     }
-
-    set_fw_update_ongoing(slot_id, 25);
+    syslog(LOG_CRIT, "bic_update_fw: update bios firmware on slot %d\n", slot_id);
+    set_fw_update_ongoing(slot_id, 30);
     dsize = st.st_size/100;
   } else {
     if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
       printf("invalid CPLD file!\n");
       goto error_exit;
     }
-
+    switch(comp){
+      case UPDATE_CPLD:
+        syslog(LOG_CRIT, "bic_update_fw: update cpld firmware on slot %d\n", slot_id);
+        break;
+      case UPDATE_BIC_BOOTLOADER:
+        syslog(LOG_CRIT, "bic_update_fw: update bic bootloader firmware on slot %d\n", slot_id);
+        break;
+    }
     set_fw_update_ongoing(slot_id, 20);
     dsize = st.st_size/20;
   }
@@ -1121,7 +1154,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     if((last_offset + dsize) <= offset) {
        switch(comp) {
          case UPDATE_BIOS:
-           set_fw_update_ongoing(slot_id, 20);
+           set_fw_update_ongoing(slot_id, 25);
            printf("updated bios: %d %%\n", offset/dsize);
            break;
          case UPDATE_CPLD:
@@ -1187,8 +1220,7 @@ error_exit:
     case UPDATE_BIC_BOOTLOADER:
       syslog(LOG_CRIT, "bic_update_fw: updating bic bootloader firmware is exiting\n");
       break;
-  }
-
+  } 
   if (fd > 0 ) {
     close(fd);
   }
@@ -1199,9 +1231,10 @@ error_exit:
 
   set_fw_update_ongoing(slot_id, 0);
 
-  if (ret) {
-    printf("updating fw on slot %d failed\n", slot_id);
-  }
+  //Unlock fw-util
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
+  system(cmd);
   return ret;
 }
 

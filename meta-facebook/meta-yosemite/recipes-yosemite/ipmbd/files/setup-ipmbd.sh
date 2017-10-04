@@ -30,75 +30,26 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-DAEMON=/usr/local/bin/ipmbd
-NAME=ipmbd
-DESC="IPMB Rx/Tx Daemon"
+echo "Starting IPMB Rx/Tx Daemon"
 
-test -f $DAEMON || exit 0
+runsv /etc/sv/ipmbd_3 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_1 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_7 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_5 > /dev/null 2>&1 &
 
-STOPPER=
-ACTION="$1"
+if [ $(is_server_prsnt 1) == "0" ]; then
+  sv stop ipmbd_3
+fi
 
-case "$ACTION" in
-  start)
-    echo -n "Starting $DESC: "
+if [ $(is_server_prsnt 2) == "0" ]; then
+  sv stop ipmbd_1
+fi
 
-    if [ $(is_server_prsnt 1) == "1" ]; then
-      $DAEMON 3 1 > /dev/null 2>&1 &
-    fi
+if [ $(is_server_prsnt 3) == "0" ]; then
+  sv stop ipmbd_7
+fi
 
-    if [ $(is_server_prsnt 2) == "1" ]; then
-      $DAEMON 1 2 > /dev/null 2>&1 &
-    fi
+if [ $(is_server_prsnt 4) == "0" ]; then
+  sv stop ipmbd_5
+fi
 
-    if [ $(is_server_prsnt 3) == "1" ]; then
-      $DAEMON 7 3 > /dev/null 2>&1 &
-    fi
-
-    if [ $(is_server_prsnt 4) == "1" ]; then
-      $DAEMON 5 4 > /dev/null 2>&1 &
-    fi
-
-    echo "$NAME."
-    ;;
-  stop)
-    echo -n "Stopping $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    echo "$NAME."
-    ;;
-   restart|force-reload)
-    echo -n "Restarting $DESC: "
-    start-stop-daemon --stop --quiet --exec $DAEMON
-    sleep 1
-    if [ $(is_server_prsnt 1) == "1" ]; then
-      $DAEMON 3 1 > /dev/null 2>&1 &
-    fi
-
-    if [ $(is_server_prsnt 2) == "1" ]; then
-      $DAEMON 1 2 > /dev/null 2>&1 &
-    fi
-
-    if [ $(is_server_prsnt 3) == "1" ]; then
-      $DAEMON 7 3 > /dev/null 2>&1 &
-    fi
-
-    if [ $(is_server_prsnt 4) == "1" ]; then
-      $DAEMON 5 4 > /dev/null 2>&1 &
-    fi
-
-    echo "$NAME."
-    ;;
-  status)
-    status $DAEMON
-    exit $?
-    ;;
-  *)
-    N=${0##*/}
-    N=${N#[SK]??}
-    echo "Usage: $N {start|stop|status|restart|force-reload}" >&2
-    exit 1
-    ;;
-esac
-
-exit 0

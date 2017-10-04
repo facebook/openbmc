@@ -19,13 +19,25 @@
 #
 
 
-from subprocess import *
+from subprocess import Popen, PIPE
 import re
+
+
+# Read all contents of file path specified.
+def read_file_contents(path):
+    try:
+        with open(path, 'r') as proc_file:
+            content = proc_file.readlines()
+    except IOError as e:
+        content = None
+
+    return content
+
 
 # Handler for FRUID resource endpoint
 def get_bmc():
     # Get BMC Reset Reason
-    (wdt_counter, _) = Popen('devmem 0x1e785010', \
+    (wdt_counter, _) = Popen('devmem 0x1e785010',
                              shell=True, stdout=PIPE).communicate()
     wdt_counter = int(wdt_counter, 0)
 
@@ -42,13 +54,21 @@ def get_bmc():
         reset_reason = "User Initiated Reset or WDT Reset"
 
     # Get BMC's Up Time
-    (uptime, _) = Popen('uptime', \
-                        shell=True, stdout=PIPE).communicate()
-    uptime = uptime.decode()
+    uptime = Popen('uptime', shell=True, stdout=PIPE).stdout.read()
+
+    # Use another method, ala /proc, but keep the old one for backwards
+    # compat.
+    # See http://man7.org/linux/man-pages/man5/proc.5.html for details
+    # on full contents of proc endpoints.
+    uptime_seconds = read_file_contents("/proc/uptime")[0].split()[0]
+
+    # Pull load average directory from proc instead of processing it from
+    # the contents of uptime command output later.
+    load_avg = read_file_contents("/proc/loadavg")[0].split()[0:3]
 
     # Get Usage information
-    (data, _) = Popen('top -b n1', \
-                        shell=True, stdout=PIPE).communicate()
+    (data, _) = Popen('top -b n1',
+                      shell=True, stdout=PIPE).communicate()
     data = data.decode()
     adata = data.split('\n')
     mem_usage = adata[0]
@@ -56,8 +76,8 @@ def get_bmc():
 
     # Get OpenBMC version
     version = ""
-    (data, _) = Popen('cat /etc/issue', \
-                        shell=True, stdout=PIPE).communicate()
+    (data, _) = Popen('cat /etc/issue',
+                      shell=True, stdout=PIPE).communicate()
     data = data.decode()
     ver = re.search(r'v([\w\d._-]*)\s', data)
     if ver:
@@ -67,7 +87,15 @@ def get_bmc():
                 "Information": {
                     "Description": "Wedge BMC",
                     "Reset Reason": reset_reason,
+                    # Upper case Uptime is for legacy
+                    # API support
                     "Uptime": uptime,
+                    # Lower case Uptime is for simpler
+                    # more pass-through proxy
+                    "uptime": uptime_seconds,
+                    "load-1": load_avg[0],
+                    "load-5": load_avg[1],
+                    "load-15": load_avg[2],
                     "Memory Usage": mem_usage,
                     "CPU Usage": cpu_usage,
                     "OpenBMC Version": version,
@@ -77,4 +105,3 @@ def get_bmc():
              }
 
     return result
-

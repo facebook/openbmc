@@ -58,6 +58,13 @@ def server_action(data):
         (ret, _) = Popen('/usr/local/bin/wedge_power.sh reset', \
 			 shell=True, stdout=PIPE).communicate()
         res = "success"
+    elif data["action"] == '12V-cycle':
+        # This will shut off the board immediately so will never
+        # actually return success. Could try to background this
+        # process or something to be able to return properly.
+        (ret, _) = Popen('/usr/local/bin/wedge_power.sh reset -s', \
+			 shell=True, stdout=PIPE).communicate()
+        res = "success"
     else:
         res = 'failure'
         reason = 'invalid action'

@@ -22,7 +22,7 @@ S = "${WORKDIR}"
 export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"
 
-DEPENDS =+ "libobmc-sensor libpal libsdr jansson"
-RDEPENDS_${PN} =+ "libobmc-sensor libpal libsdr jansson"
+DEPENDS =+ "libpal libsdr jansson"
+RDEPENDS_${PN} =+ "libpal libsdr jansson"
 
 inherit cmake

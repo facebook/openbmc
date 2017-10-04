@@ -6,6 +6,7 @@ set(CMAKE_LINK_FLAGS "-ledb")
 
 add_library(obmc-pal
   obmc-pal
+  obmc-sensor
 )
 
 target_link_libraries(obmc-pal
@@ -15,5 +16,6 @@ install(TARGETS obmc-pal DESTINATION lib)
 
 install(FILES
   obmc-pal.h
+  obmc-sensor.h
   DESTINATION include/openbmc
 )

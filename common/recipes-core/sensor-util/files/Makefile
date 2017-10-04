@@ -4,7 +4,7 @@ all: sensor-util
 CFLAGS += -Wall -Werror
 
 sensor-util: sensor-util.o
-	$(CC) $(CFLAGS) -lsdr -lpal -lobmc-sensor -laggregate-sensor -lrt -lm -std=gnu99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lsdr -lpal -laggregate-sensor -lrt -lm -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

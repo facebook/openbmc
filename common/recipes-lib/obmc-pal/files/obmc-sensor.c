@@ -30,8 +30,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <errno.h>
-#include <openbmc/pal.h>
 #include <openbmc/edb.h>
+#include "obmc-pal.h"
 #include "obmc-sensor.h"
 
 #ifdef DBUS_SENSOR_SVC

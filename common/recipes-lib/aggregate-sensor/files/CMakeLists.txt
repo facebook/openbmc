@@ -13,7 +13,6 @@ set_target_properties(aggregate-sensor PROPERTIES VERSION "0.1")
 
 target_link_libraries(aggregate-sensor
   jansson
-  obmc-sensor
   pal
   sdr
 )

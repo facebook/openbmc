@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libipmi libfruid update-rc.d-native libsdr libobmc-sensor"
+DEPENDS_append = "libipmi libfruid update-rc.d-native libsdr"
 LDFLAGS_append = "-lfruid -lipmb"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"

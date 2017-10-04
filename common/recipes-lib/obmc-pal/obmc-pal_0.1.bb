@@ -10,6 +10,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1;md5=1
 
 SRC_URI = "file://obmc-pal.h \
            file://obmc-pal.c \
+           file://obmc-sensor.c \
+           file://obmc-sensor.h \
            file://CMakeLists.txt \
           "
 DEPENDS += " libedb libkv libipmi"

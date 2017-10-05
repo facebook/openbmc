@@ -2434,40 +2434,6 @@ get_sensor_desc(uint8_t fru, uint8_t snr_num) {
 }
 
 int
-pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  int ret;
-
-  switch(fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      sprintf(key, "slot%d_sensor%d", fru, sensor_num);
-      break;
-    case FRU_SPB:
-      sprintf(key, "spb_sensor%d", sensor_num);
-      break;
-    case FRU_NIC:
-      sprintf(key, "nic_sensor%d", sensor_num);
-      break;
-  }
-
-  ret = edb_cache_get(key, str);
-  if(ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_sensor_read: cache_get %s failed.", key);
-#endif
-    return ret;
-  }
-  if(strcmp(str, "NA") == 0)
-    return -1;
-  *((float*)value) = atof(str);
-  return ret;
-}
-int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   uint8_t status;
@@ -3764,7 +3730,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
    float value;
 
    // Redirect FAN to sensor cache
-   ret = pal_sensor_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
+   ret = sensor_cache_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
 
    if (0 == ret)
       *rpm = (int) value;

@@ -3643,49 +3643,6 @@ pal_fruid_write(uint8_t fru, char *path)
 }
 
 int
-pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  int ret;
-
-  switch(fru) {
-  case FRU_MB:
-    sprintf(key, "mb_sensor%d", sensor_num);
-    break;
-  case FRU_NIC:
-    sprintf(key, "nic_sensor%d", sensor_num);
-    break;
-/*
-  case FRU_RISER_SLOT2:
-    sprintf(key, "riser_slot2_sensor%d", sensor_num);
-    break;
-  case FRU_RISER_SLOT3:
-    sprintf(key, "riser_slot3_sensor%d", sensor_num);
-    break;
-  case FRU_RISER_SLOT4:
-    sprintf(key, "riser_slot4_sensor%d", sensor_num);
-    break;
-*/
-  default:
-    return -1;
-  }
-  ret = edb_cache_get(key, str);
-  if(ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_sensor_read: cache_get %s failed.", key);
-#endif
-    return ret;
-  }
-
-  if(strcmp(str, "NA") == 0)
-    return -1;
-
-  *((float*)value) = atof(str);
-
-  return ret;
-}
-
-int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};

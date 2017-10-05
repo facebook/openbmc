@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <openbmc/obmc-sensor.h>
 #include <openbmc/obmc-i2c.h>
 #include "lightning_sensor.h"
 
@@ -715,7 +716,7 @@ read_temp_value(char *device, uint8_t addr, uint8_t type, float *value) {
   if(addr == PEB_TMP421_U15){
     // Calculate average RPM
       for(fan = 0; fan < 12; fan++) {
-          rc = pal_sensor_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &rpm_val);
+          rc = sensor_cache_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &rpm_val);
           if(rc == -1) {
             continue;
            }

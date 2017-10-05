@@ -175,7 +175,6 @@ int pal_get_fruid_name(uint8_t fru, char *name);
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
-int pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh,

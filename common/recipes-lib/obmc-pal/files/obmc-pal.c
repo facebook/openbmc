@@ -321,7 +321,7 @@ pal_get_fru_devtty(uint8_t fru, char *devtty)
 }
 
 int __attribute__((weak))
-pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value)
+pal_sensor_check(uint8_t fru, uint8_t sensor_num)
 {
   return PAL_EOK;
 }

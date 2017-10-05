@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <pthread.h>
+#include <openbmc/obmc-sensor.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -1459,45 +1460,13 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     return -1;
 }
 
-int
-pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  int ret;
-
-  switch(fru) {
-    case FRU_SLOT1:
-      sprintf(key, "server_sensor%d", sensor_num);
-      break;
-    case FRU_IOM:
-      sprintf(key, "iom_sensor%d", sensor_num);
-      break;
-    case FRU_DPB:
+int pal_sensor_check(uint8_t fru, uint8_t sensor_num) {
+  if (fru == FRU_DPB || fru == FRU_SCC) {
       pal_expander_sensor_check(fru, sensor_num);
-      sprintf(key, "dpb_sensor%d", sensor_num);
-      break;
-    case FRU_SCC:
-      pal_expander_sensor_check(fru, sensor_num);
-      sprintf(key, "scc_sensor%d", sensor_num);
-      break;
-    case FRU_NIC:
-      sprintf(key, "nic_sensor%d", sensor_num);
-      break;
   }
-
-  ret = edb_cache_get(key, str);
-  if(ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_sensor_read: cache_get %s failed.", key);
-#endif
-    return ret;
-  }
-  if(strcmp(str, "NA") == 0)
-    return -1;
-  *((float*)value) = atof(str);
-  return ret;
+  return PAL_EOK;
 }
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
@@ -2609,7 +2578,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   int ret;
   float value;
   // Redirect fan to sensor
-  ret = pal_sensor_read(FRU_DPB, DPB_SENSOR_FAN1_FRONT + fan , &value);
+  ret = sensor_cache_read(FRU_DPB, DPB_SENSOR_FAN1_FRONT + fan , &value);
 
   if (ret == 0)
     *rpm = (int) value;

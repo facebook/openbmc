@@ -46,6 +46,8 @@
 
 #define MAX_DATA_NUM    2000
 
+#define CACHE_READ_RETRY 5
+
 typedef struct {
   long log_time;
   float value;
@@ -116,22 +118,37 @@ close_bail:
   return ret;
 }
 
-
-
-int
+int __attribute__((weak))
 sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
 {
+#ifndef DBUS_SENSOR_SVC
   int ret;
-#ifdef DBUS_SENSOR_SVC
-  ret = sensor_svc_read(fru, sensor_num, value);
-#else
-  ret = pal_sensor_read(fru, sensor_num, value);
-#endif
+  char key[MAX_KEY_LEN];
+  char str[MAX_VALUE_LEN];
+  int retry = 0;
+
+  pal_sensor_check(fru, sensor_num);
+
+  if (sensor_key_get(fru, sensor_num, key))
+    return ERR_UNKNOWN_FRU;
+  for (retry = 0; retry < CACHE_READ_RETRY; retry++) {
+    if (!(ret = edb_cache_get(key, str))) {
+      break;
+    }
+  }
   if (ret < 0) {
     DEBUG_STR("sensor_cache_read: cache_get %s failed.\n", key);
-    return ERR_FAILURE;
+    return ERR_SENSOR_NA;
   }
+  if (0 == strcmp(str, "NA")) {
+    return ERR_SENSOR_NA;
+  }
+
+  *((float*)value) = atof(str);
   return 0;
+#else
+  return sensor_svc_read(fru, sensor_num, value);
+#endif
 }
 
 static int

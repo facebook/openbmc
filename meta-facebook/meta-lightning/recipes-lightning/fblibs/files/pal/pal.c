@@ -30,6 +30,7 @@
 #include <sys/file.h>
 #include <pthread.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-sensor.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -457,46 +458,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   return lightning_sensor_sdr_init(fru, sinfo);
-}
-
-int
-pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
-
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  int ret, retry = 0;
-
-  switch(fru) {
-    case FRU_PEB:
-      sprintf(key, "peb_sensor%d", sensor_num);
-      break;
-    case FRU_PDPB:
-      sprintf(key, "pdpb_sensor%d", sensor_num);
-      break;
-    case FRU_FCB:
-      sprintf(key, "fcb_sensor%d", sensor_num);
-      break;
-  }
-
-  // Add retry to avoid N/A which caused by open cache file collision
-  while (retry < MAX_RETRY) {
-    ret = edb_cache_get(key, str);
-
-    if (!ret)
-      break;
-    retry++;
-  }
-
-  if(ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_sensor_read: cache_get %s failed.", key);
-#endif
-    return ret;
-  }
-  if(strcmp(str, "NA") == 0)
-    return -1;
-  *((float*)value) = atof(str);
-  return ret;
 }
 
 int
@@ -993,7 +954,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   int ret;
   float value;
 
-  ret = pal_sensor_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &value);
+  ret = sensor_cache_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &value);
   if (ret == 0)
     *rpm = (int) value;
 
@@ -1317,7 +1278,7 @@ int pal_get_airflow(float *airflow_cfm)
 
   // Calculate average RPM
   for (fan = 0; fan < pal_tach_cnt; fan++) {
-    rc = pal_sensor_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &value);
+    rc = sensor_cache_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &value);
     if(rc == -1) {
       continue;
     }

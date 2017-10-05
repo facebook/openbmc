@@ -219,30 +219,28 @@ STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles)
     uint8_t rbuf[4] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
-    int this_delay_cycle=0;
 
 
-    while (number_of_cycles)
+    if (number_of_cycles > 255)
     {
-        this_delay_cycle = MIN(8, number_of_cycles);
+      syslog(LOG_ERR, "ASD: delay cycle = %d(> 255). slot%d",
+           number_of_cycles, slot_id);
+      number_of_cycles = 255;
+    }
 
-        // tbuf[0:2] = IANA ID
-        // tbuf[3]   = tms bit length (max = 8)
-        // tbuf[4]   = tmsbits
-        tbuf[3] = this_delay_cycle;
-        tbuf[4] = 0x0;
+    // tbuf[0:2] = IANA ID
+    // tbuf[3]   = tms bit length
+    // tbuf[4]   = tmsbits
+    tbuf[3] = number_of_cycles;
+    tbuf[4] = 0x0;
 
-        number_of_cycles -= this_delay_cycle;
-
-        if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
-                               tbuf, tlen, rbuf, &rlen) < 0) {
-            syslog(LOG_ERR, "wait cycle failed, slot%d", slot_id);
-            return ST_ERR;
-        }
+    if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
+                           tbuf, tlen, rbuf, &rlen) < 0) {
+        syslog(LOG_ERR, "wait cycle failed, slot%d", slot_id);
+        return ST_ERR;
     }
 
     return ST_OK;
-
 }
 
 
@@ -299,9 +297,13 @@ STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, con
     printf("    -paddingType=%d, value=%d\n", padding, value);
 #endif
 
-
     if (state == NULL)
         return ST_ERR;
+
+    if (value > 0) {
+      syslog(LOG_DEBUG, "ASD: __%s__: slot=%d, type=%d, value%d",
+             __FUNCTION__, state->fru, padding, value);
+    }
 
     if (padding == JTAGPaddingTypes_DRPre) {
         state->shift_padding.drPre = value;
@@ -369,9 +371,6 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     // move the [soft] state to the requested tap state.
     state->tap_state = tap_state;
 
-    if ((tap_state == JtagRTI) || (tap_state == JtagPauDR))
-        if (JTAG_wait_cycles(state, 5) != ST_OK)
-            return ST_ERR;
 #ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "TapState: %d, slot%d", state->tap_state,
            state->fru);
@@ -657,6 +656,11 @@ STATUS jtag_bic_set_tap_state(uint8_t slot_id, JtagStates src_state, JtagStates 
                    __FUNCTION__, src_state, tap_state);
             return ret;
         }
+    }
+
+    // add delay count for 2 special cases
+    if ((tap_state == JtagRTI) || (tap_state == JtagPauDR)) {
+        tbuf[3] += 5;
     }
 
 #ifdef FBY2_DEBUG

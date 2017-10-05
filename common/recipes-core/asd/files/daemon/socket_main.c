@@ -37,11 +37,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <getopt.h>
 #include <sys/eventfd.h>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/file.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <stdbool.h>
@@ -1023,6 +1025,19 @@ void on_message_received(extnet_conn_t *p_extconn,
 #define EXTNET_DATA NULL
 #endif
 
+static int
+check_dup_process(uint8_t fru) {
+  int pid_file;
+  char path[64];
+
+  sprintf(path, "/var/run/asd_%d.lock", fru);
+  pid_file = open(path, O_CREAT | O_RDWR, 0666);
+  if (flock(pid_file, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
+    return -1;
+  }
+  return 0;
+}
+
 int main(int argc, char **argv) {
     int pollfd_cnt;
     struct pollfd poll_fds[CLIENT_FD_INDEX+MAX_SESSIONS] = {{0}};
@@ -1036,6 +1051,13 @@ int main(int argc, char **argv) {
 
     print_version();
     process_command_line(argc, argv);
+
+    if (check_dup_process(cpu_fru) != 0) {
+        ASD_log(LogType_Error,
+          "Another ASD instance is running for fru:%d", cpu_fru);
+        return ST_ERR;
+    }
+
 
     jtag_handler = SoftwareJTAGHandler(cpu_fru);
     if (!jtag_handler) {

@@ -27,7 +27,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/ioctl.h>
+#include <sys/file.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -75,6 +77,19 @@ void showUsage(char **argv, unsigned int qFlag) {
     printQ(qFlag,"  -i <number>   Run [number] of iterations\n");
     printQ(qFlag,"  -r <number>   IR size (CPU=11, PCH=8, default 11)\n");
     printQ(qFlag,"\n");
+}
+
+static int
+check_dup_process(uint8_t fru) {
+  int pid_file;
+  char path[64];
+
+  sprintf(path, "/var/run/asd_%d.lock", fru);
+  pid_file = open(path, O_CREAT | O_RDWR, 0666);
+  if (flock(pid_file, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
+    return -1;
+  }
+  return 0;
 }
 
 int main (int argc, char **argv) {
@@ -131,6 +146,11 @@ int main (int argc, char **argv) {
         showUsage(argv, qFlag);
         return -1;
     }
+    if (check_dup_process(fru) != 0) {
+        printf("ERROR: Another instance running for FRU: %d\n", fru);
+        return -1;
+    }
+
     printf("ASD: connect to fru %d, irSize=%d\n", fru, irSize);
     // load the driver
     handle = SoftwareJTAGHandler(fru); // TODO get from user

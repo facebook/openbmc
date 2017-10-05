@@ -181,10 +181,8 @@ util_get_config(uint8_t slot_id) {
     return;
   }
 
-  printf("SoL Enabled?: %s", t->bits.sol? "Enabled" : "Disabled");
-  printf("POST Enabled?: %s", t->bits.post? "Enabled" : "Disabled");
-  printf("KCS Enabled?: %s", t->bits.kcs? "Enabled" : "Disabled");
-  printf("IPMB Enabled?: %s", t->bits.ipmb? "Enabled" : "Disabled");
+  printf("SoL Enabled:  %s\n", t->bits.sol ? "Enabled" : "Disabled");
+  printf("POST Enabled: %s\n", t->bits.post ? "Enabled" : "Disabled");
 }
 
 static void

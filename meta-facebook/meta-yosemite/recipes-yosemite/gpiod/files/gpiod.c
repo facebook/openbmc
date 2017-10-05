@@ -44,7 +44,7 @@
 #define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
-#define GPIO_BMC_READY_N    28
+#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 /* To hold the gpio info and status */
 typedef struct {
@@ -86,7 +86,7 @@ get_struct_gpio_pin(uint8_t fru) {
   return gpios;
 }
 
-int
+static int
 enable_gpio_intr_config(uint8_t fru, uint8_t gpio) {
   int ret;
 
@@ -163,7 +163,6 @@ static void
 populate_gpio_pins(uint8_t fru) {
 
   int i, ret;
-
   gpio_pin_t *gpios;
 
   gpios = get_struct_gpio_pin(fru);
@@ -172,14 +171,10 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  for(i = 0; i < gpio_pin_cnt; i++) {
-    // Only monitor the PWRGOOD_CPU pin
-    if (i == PWRGOOD_CPU)
-      gpios[gpio_pin_list[i]].flag = 1;
-  }
+  // Only monitor the PWRGD_COREPWR pin
+  gpios[PWRGOOD_CPU].flag = 1;
 
-
-  for(i = 0; i < MAX_GPIO_PINS; i++) {
+  for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GETBIT(gpio_ass_val, i);
       ret = yosemite_get_gpio_name(fru, i, gpios[i].name);
@@ -195,8 +190,9 @@ init_gpio_pins() {
   int fru;
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
-        populate_gpio_pins(fru);
+    populate_gpio_pins(fru);
   }
+
 }
 
 /* Monitor the gpio pins */
@@ -208,6 +204,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
   uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
   gpio_pin_t *gpios;
   char pwr_state[MAX_VALUE_LEN];
+  char path[128];
 
   uint32_t status;
   bic_gpio_t gpio = {0};
@@ -218,7 +215,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       continue;
 
     // Inform BIOS that BMC is ready
-    bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
+    bic_set_gpio(fru, BMC_READY_N, 0);
 
     ret = bic_get_gpio(fru, &gpio);
     if (ret) {
@@ -278,13 +275,12 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
       /* Get the GPIO pins */
       if ((ret = bic_get_gpio(fru, (bic_gpio_t *) &n_pin_val)) < 0) {
+#ifdef DEBUG
         /* log the error message only when the CPU is on but not reachable. */
         if (!(strcmp(pwr_state, "on"))) {
-#ifdef DEBUG
-          syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-              " fru %u", fru);
-#endif
+          syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for fru %u", fru);
         }
+#endif
 
         if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
           usleep(DELAY_GPIOD_READ);
@@ -310,18 +306,29 @@ gpio_monitor_poll(uint8_t fru_flag) {
              * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
              * Raise an error and change the LPS from on to off or vice versa for deassert.
              */
-            if (strcmp(pwr_state, "off"))
-              pal_set_last_pwr_state(fru, "off");
-
+            if (strcmp(pwr_state, "off")) {
+              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
+                // Check if power-util is still running to ignore getting incorrect power status
+                sprintf(path, PWR_UTL_LOCK, fru);
+                if (access(path, F_OK) != 0) {
+                  pal_set_last_pwr_state(fru, "off");
+                }
+              }
+            }
             syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
 
             // Inform BIOS that BMC is ready
-            bic_set_gpio(fru, GPIO_BMC_READY_N, 0);
+            bic_set_gpio(fru, BMC_READY_N, 0);
           } else {
-
-            if (strcmp(pwr_state, "on"))
-              pal_set_last_pwr_state(fru, "on");
-
+            if (strcmp(pwr_state, "on")) {
+              if ((pal_is_server_12v_on(fru, &slot_12v[fru]) != 0) || slot_12v[fru]) {
+                // Check if power-util is still running to ignore getting incorrect power status
+                sprintf(path, PWR_UTL_LOCK, fru);
+                if (access(path, F_OK) != 0) {
+                  pal_set_last_pwr_state(fru, "on");
+                }
+              }
+            }
             syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           }
         }
@@ -342,9 +349,6 @@ print_usage() {
 /* Spawns a pthread for each fru to monitor all the sensors on it */
 static void
 run_gpiod(int argc, void **argv) {
-
-  //gpio_monitor();
-
   int i, ret;
   uint8_t fru_flag, fru;
 

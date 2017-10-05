@@ -2852,6 +2852,77 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
       return 0;
 }
 
+void
+pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+
+  char key[MAX_KEY_LEN] = {0};
+  sprintf(key, "slot%d_por_cfg", slot);
+  char buff[MAX_VALUE_LEN];
+  int policy = 3;
+  uint8_t status, ret;
+  unsigned char *data = res_data;
+
+  // Platform Power Policy
+  if (pal_get_key_value(key, buff) == 0)
+  {
+    if (!memcmp(buff, "off", strlen("off")))
+      policy = 0;
+    else if (!memcmp(buff, "lps", strlen("lps")))
+      policy = 1;
+    else if (!memcmp(buff, "on", strlen("on")))
+      policy = 2;
+    else
+      policy = 3;
+  }
+
+  // Current Power State
+  ret = pal_get_server_power(slot, &status);
+  if (ret >= 0) {
+    *data++ = status | (policy << 5);
+  } else {
+    // load default
+    syslog(LOG_WARNING, "ipmid: pal_get_server_power failed for slot1\n");
+    *data++ = 0x00 | (policy << 5);
+  }
+  *data++ = 0x00;   // Last Power Event
+  *data++ = 0x40;   // Misc. Chassis Status
+  *data++ = 0x00;   // Front Panel Button Disable
+  *res_len = data - res_data;
+}
+
+uint8_t
+pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
+
+	uint8_t completion_code;
+	char key[MAX_KEY_LEN] = {0};
+	sprintf(key, "slot%d_por_cfg", slot);
+	completion_code = CC_SUCCESS;   // Fill response with default values
+	unsigned char policy = *pwr_policy & 0x07;  // Power restore policy
+
+	switch (policy)
+	{
+	  case 0:
+	    if (pal_set_key_value(key, "off") != 0)
+	      completion_code = CC_UNSPECIFIED_ERROR;
+	    break;
+	  case 1:
+	    if (pal_set_key_value(key, "lps") != 0)
+	      completion_code = CC_UNSPECIFIED_ERROR;
+	    break;
+	  case 2:
+	    if (pal_set_key_value(key, "on") != 0)
+	      completion_code = CC_UNSPECIFIED_ERROR;
+	    break;
+	  case 3:
+		// no change (just get present policy support)
+	    break;
+	  default:
+	      completion_code = CC_PARAM_OUT_OF_RANGE;
+	    break;
+	}
+	return completion_code;
+}
+
 int
 pal_get_platform_id(uint8_t *id) {
    return 0;

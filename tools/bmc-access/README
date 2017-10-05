@@ -1,0 +1,89 @@
+BMC Access scripts
+
+Installation:
+  Copy all the scripts to some directory in the current users path.
+  I generally have a 'bin' directory in my home directory and have 
+  PATH=$PATH:$HOME/bin
+  in my .bashrc.
+
+Logging into the BMC
+  bmc shell [OPTIONS]
+  OPTIONS:
+    -v|--verbose
+      Print verbose information
+    -b [BMC_IP BMC_PASSWORD] [BMC_DEVICE]
+      BMC IP: IPv4/IPv6 IP of the BMC. This assumes that the BMC has the default ssh password.
+      BMC PASSWORD: SSH password for the BMC.
+      BMC DEVICE: Index provided by bmc devices (See bmc devices & bmc add-device)
+    -p|--proxy [PROXY SSH USER/IP] [PROXY SSH PASSWORD]
+      PROXY SSH USER/IP is of the form user@proxy_ip
+      PROXY SSH PASSWORD is the password of the proxy
+
+    If the BMC IP is not provided, this will log into the last used BMC.
+    Most of the time if you reuse the BMCs (as I do) then you just need to call `bmc shell`
+
+Sending files to BMC
+  bmc send [OPTIONS] SRC_FILE DEST_PATH
+  OPTIONS:
+    -v|--verbose
+      Print verbose information
+    -b [BMC_IP BMC_PASSWORD] [BMC_DEVICE]
+      BMC IP: IPv4/IPv6 IP of the BMC. This assumes that the BMC has the default ssh password.
+      BMC PASSWORD: SSH password for the BMC.
+      BMC DEVICE: Index provided by bmc devices (See bmc devices & bmc add-device)
+    -p|--proxy [PROXY SSH USER/IP] [PROXY SSH PASSWORD]
+      PROXY SSH USER/IP is of the form user@proxy_ip
+      PROXY SSH PASSWORD is the password of the proxy
+
+    If the BMC IP is not provided, this will send the file into the last used BMC.
+    Most of the time if you reuse the BMCs (as I do) then you just need to call `bmc send src/blah dest/blah`
+
+Flashing an image to the BMC
+  bmc flash [OPTIONS] FLASH_IMAGE
+  OPTIONS:
+    -v|--verbose
+      Print verbose information
+    -b [BMC_IP BMC_PASSWORD] [BMC_DEVICE]
+      BMC IP: IPv4/IPv6 IP of the BMC. This assumes that the BMC has the default ssh password.
+      BMC PASSWORD: SSH password for the BMC.
+      BMC DEVICE: Index provided by bmc devices (See bmc devices & bmc add-device)
+    -p|--proxy [PROXY SSH USER/IP] [PROXY SSH PASSWORD]
+      PROXY SSH USER/IP is of the form user@proxy_ip
+      PROXY SSH PASSWORD is the password of the proxy
+    -f|--fru FRU
+      FRU: Is the FRU name of the BMC. (Default FRU is 'mb' can be changed in bmc-flash `FRU`)
+    -c|--components [COMPONENTS LIST]
+      COMPONENTS LIST: comma separated list of components. For example, if running:
+      bmc flash -f mb -c rom,bmc <flash image>
+      this will call 
+      fw-util mb --update --rom <flash image>
+      fw-util mb --update --bmc <flash image>
+    --noreboot
+      By default, the tool will reboot the BMC after the update. This will allow us to 
+      change that default.
+
+    If the BMC IP is not provided, this will flash the last used BMC.
+    Most of the time if you reuse the BMCs (as I do) then you just need to call `bmc flash FLASH_IMAGE`
+
+    TODO: This assumes that the target BMC uses fw-util. We might want to add an option for 'legacy'. Probably
+    a 'bmc flashcp' which uses /mtd/<components>.
+
+Remember a device
+bmc add-device bmc-ip bmc-password [proxy proxy-password]
+  This will store the device for ease access. 
+  Note this is stored in clear-text in ~/.bmc_devices. If the password is sensitive, don't do this.
+  This allows you to call bmc shell -b 0 For example instead of typing all the information.
+
+Listing remembered devices
+bmc devices
+  This will display all the remembered devices
+devvm ~ $ bmc devices
+[0] 172.23.97.166 *default*
+[1] 172.23.97.165 (down)
+
+Note, we will attempt at getting the current status of the BMC by pinging it. If it fails, this prints (down) next
+to the IP. It will also show *default* next to the last used IP. It does not have to be the first.
+
+Displaying the history
+bmc history
+  Shows all the operations performed in the past. In case you want to recollect the IP of the BMC last used.

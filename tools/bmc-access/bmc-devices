@@ -1,0 +1,47 @@
+#!/bin/sh
+# Copyright 2017-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+. bmc-lib $*
+
+LAST=$(latest_device)
+if [ -e $DEV_FILE ]; then
+  DEVICES=$(cat $DEV_FILE)
+fi
+IDX=0
+for i in $DEVICES; do
+  POST_FIX=""
+  if [ "$i" == "$LAST" ]; then
+    POST_FIX="*default*"
+  fi
+  bmc_ip=$(device_bmc_ip $i)
+  proxy=$(device_proxy_ip $i 0)
+  proxy_pwd=$(device_proxy_password $i 0)
+  if [ "$proxy" == "" ]; then
+    if [ $(is_up_1hop $bmc_ip) != "yes" ]; then
+      POST_FIX="(down) $POST_FIX"
+    fi
+  else
+    if [ $(is_up_2hop $PROXY $PROXY_PASSWORD $bmc_ip) != "yes" ]; then
+      POST_FIX="(down) $POST_FIX"
+    fi
+  fi
+  echo "[$IDX] $bmc_ip $POST_FIX"
+  IDX=$((IDX + 1))
+done
+
+

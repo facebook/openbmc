@@ -1,0 +1,125 @@
+#!/bin/sh
+# Copyright 2017-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+. bmc-lib $*
+
+usage() {
+  echo "USAGE: $0 [OPTIONS] image_path"
+  echo "OPTIONS: "
+  generic_options
+  echo "  -f|--fru <fru name>"
+  echo "    Specify the FRU name used for fw-util <fru>. By default 'mb' is used"
+  echo "  -c|--components <component list>"
+  echo "    Comma separated list of components which will be used in fw-util <fru> --update --<component>"
+  echo "    Example $0 -c rom,bmc flash-fbtp will flash both rom & bmc with the given image"
+}
+
+# DEFAULTS, change for ease of use
+FRU="mb"
+COMPONENT_LIST="bmc"
+REBOOT="yes"
+DEV_IMAGE=""
+PROXY_TMP_DIR="/tmp/$USER"
+idx=0
+while [ $idx -lt ${#ARGUMENTS[@]} ]; do
+  key="${ARGUMENTS[$idx]}"
+  idx=$((idx + 1))
+  value="${ARGUMENTS[$idx]}"
+  case $key in
+    -f|--fru)
+      FRU=$value
+      idx=$((idx + 1))
+      ;;
+    -c|--components)
+      COMPONENT_LIST=$value
+      idx=$((idx + 1))
+      ;;
+    --noreboot)
+      REBOOT="no"
+      ;;
+    *)
+      if [ "$DEV_IMAGE" != "" ]; then
+        echo "Ignoring unknown option: $DEV_IMAGE"
+      fi
+      DEV_IMAGE=$key
+  esac
+done
+
+CLIST=(${COMPONENT_LIST//,/ })
+if [ $VERBOSE == "yes" ]; then
+  echo "FRU: $FRU"
+  echo "COMPONENT_LIST: $COMPONENT_LIST"
+  echo "PROXY: $PROXY"
+  echo "BMC_IP: $BMC_IP"
+  echo "PROXY_TMP_DIR: $PROXY_TMP_DIR"
+fi
+if [ "$1" == "" ]; then
+	usage
+	exit -1
+fi
+DEV_IMAGE_REAL=$(realpath $DEV_IMAGE)
+
+if [ "$PROXY" != "" ]; then
+  echo "Moving image to BMC"
+  send_2hop $DEV_IMAGE $PROXY $PROXY_PASSWORD $PROXY_TMP_DIR root@$BMC_IP $BMC_PASSWORD /tmp
+  echo "Flashing image on BMC"
+  for c in ${CLIST[@]}
+  do
+    cmd_2hop $PROXY $PROXY_PASSWORD root@$BMC_IP $BMC_PASSWORD fw-util $FRU --update --$c /tmp/$(basename $DEV_IMAGE)
+  done
+  sleep 5
+  if [ $REBOOT == "yes" ]; then
+    echo "Rebooting the BMC..."
+    cmd_2hop $PROXY $PROXY_PASSWORD root@$BMC_IP $BMC_PASSWORD reboot
+    sleep 5
+    if [ $(wait_2hop $PROXY $PROXY_PASSWORD $BMC_IP) != "done" ]; then
+      echo "$BMC_IP did not come up for a while... giving up"
+      echo "boot-up failure after FLASH $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP" >> ~/.bmc_history
+    else
+      echo "Flash successful!"
+      echo "Flash of $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP successful" >> ~/.bmc_history
+    fi
+  else
+    echo "Flash successful (Reboot pending)"
+  fi
+else
+  echo "Moving image to BMC"
+  send_1hop $DEV_IMAGE root@$BMC_IP $BMC_PASSWORD /tmp
+  for c in ${CLIST[@]}
+  do
+    cmd_1hop root@$BMC_IP $BMC_PASSWORD fw-util $FRU --update --$c /tmp/$(basename $DEV_IMAGE)
+  done
+  sleep 5
+  if [ $REBOOT == "yes" ]; then
+    echo "Rebooting the BMC..."
+    cmd_1hop root@$BMC_IP $BMC_PASSWORD reboot
+    sleep 5
+    if [ $(wait_1hop $BMC_IP) != "done" ]; then
+      echo "$BMC_IP did not come up for a while... giving up"
+      echo "boot-up failure after FLASH $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP" >> ~/.bmc_history
+    else
+      echo "Flash successful!"
+      echo "Flash of $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP successful" >> ~/.bmc_history
+    fi
+  else
+    echo "Flash successful (Reboot pending)"
+  fi
+fi
+exit 0
+
+

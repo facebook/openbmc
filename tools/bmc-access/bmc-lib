@@ -1,0 +1,343 @@
+# Copyright 2017-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+DEV_FILE=~/.bmc_devices
+HISTORY_FILE=~/.bmc_history
+LAST_FILE=~/.bmc_latest
+
+is_ipv6() {
+  if [ $(echo $1 | grep ":") ]; then
+    echo "yes"
+  else
+    echo "no"
+  fi
+}
+
+is_ipv4() {
+  if [ $(echo $1 | grep -P "\d+\.\d+\.\d+\.\d+") ]; then
+    echo "yes"
+  else
+    echo "no"
+  fi
+}
+
+device_bmc_ip() {
+  local dev=$1
+  local tmp=(${dev//##/ })
+  local bmc_ip=${tmp[0]}
+  echo "$bmc_ip"
+}
+device_bmc_password() {
+  local dev=$1
+  local tmp=(${dev//##/ })
+  local bmc_pwd=${tmp[1]}
+  echo "$bmc_pwd"
+}
+
+device_proxy_ip() {
+  local dev=$1
+  local pxy_index=$2
+  if [ "$pxy_index" == "" ]; then
+    pxy_index=0
+  fi
+  local tmp=(${dev//##/ })
+  local index=$((pxy_index * 2))
+  local index=$((index + 2))
+  local proxy_ip=${tmp[$index]}
+  echo "$proxy_ip"
+}
+device_proxy_password() {
+  local dev=$1
+  local pxy_index=$2
+  if [ "$pxy_index" == "" ]; then
+    pxy_index=0
+  fi
+  local tmp=(${dev//##/ })
+  local index=$((pxy_index * 2))
+  local index=$((index + 3))
+  local proxy_pwd=${tmp[$index]}
+  echo "$proxy_pwd"
+}
+
+latest_device() {
+  local last=""
+  if [ -e $LAST_FILE ]; then
+    last=$(head -1 $LAST_FILE)
+  fi
+  echo $last
+}
+
+device_str() {
+  local bmc_ip=$1
+  local bmc_pwd=$2
+  local proxy=$3
+  local proxy_pwd=$4
+  local str="$bmc_ip##$bmc_pwd"
+  if [ "$proxy" != "" ]; then
+    str="$str##$proxy##$proxy_pwd"
+  fi
+  echo $str
+}
+
+bmc_set_last() {
+  local bmc_ip=$1
+  local bmc_pwd=$2
+  local proxy=$3
+  local proxy_pwd=$4
+  local str=$(device_str $bmc_ip $bmc_pwd $proxy $proxy_pwd)
+  echo $str > $LAST_FILE
+}
+
+is_up_1hop() {
+  local dest=$1
+  local ret=0
+  if [ $(is_ipv4 $dest) == "yes" ]; then
+    ret=$(ping -q -W 2 -c 1 $dest | grep "1 received" | wc -l)
+  else
+    ret=$(ping6 -q -W 2 -c 1 $dest | grep "1 received" | wc -l)
+  fi
+  if [ $ret -eq 0 ]; then
+    echo "no"
+  else
+    echo "yes"
+  fi
+}
+
+is_up_2hop() {
+  local proxy=$1
+  local proxy_password=$2
+  local dest=$3
+  local ret=0
+  if [ $(is_ipv4 $dest) == "yes" ]; then
+    ret=$(sshpass -p $proxy_password ssh -q -tt $proxy ping -q -W 2 -c 1 $dest | grep "1 received" | wc -l)
+  else
+    ret=$(sshpass -p $proxy_password ssh -q -tt $proxy ping6 -q -W 2 -c 1 $dest | grep "1 received" | wc -l)
+  fi
+  if [ $ret -eq 0 ]; then
+    echo "no"
+  else
+    echo "yes"
+  fi
+}
+
+get_device() {
+  local in=$1
+  if [ -e $DEV_FILE ]; then
+    local devs=$(cat $DEV_FILE)
+    local idx=0
+    for d in $devs; do
+      if [ "$idx" == "$in" ]; then
+        echo $d
+        break
+      fi
+      idx=$((idx + 1))
+    done
+  else
+    echo "error"
+  fi
+}
+
+wait_1hop() {
+  local dest=$1
+  local timeout=$2
+  if [ "$timeout" == "" ]; then
+    timeout=180
+  fi
+  local initial_wait=45
+  if [ $initial_wait -ge $timeout ]; then
+    initial_wait=$timeout
+  fi
+  local rem=$((timeout - initial_wait))
+  local step=5
+  if [ $(is_up_1hop $dest) == "yes" ]; then
+    echo "done"
+  else
+    sleep $initial_wait
+    while [ $rem -ge $step ]; do
+      if [ $(is_up_1hop $dest) == "yes" ]; then
+        break
+      fi
+      rem=$((rem - $step))
+      sleep $step
+    done
+    if [ $(is_up_1hop $dest) == "yes" ]; then
+      echo "done"
+    else
+      echo "timeout"
+    fi
+  fi
+}
+
+
+
+wait_2hop() {
+  local proxy=$1
+  local proxy_password=$2
+  local dest=$3
+  local timeout=$4
+  if [ "$timeout" == "" ]; then
+    timeout=180
+  fi
+  local initial_wait=45
+  if [ $initial_wait -ge $timeout ]; then
+    initial_wait=$timeout
+  fi
+  local rem=$((timeout - initial_wait))
+  local step=5
+  if [ $(is_up_2hop $proxy $proxy_password $dest) == "yes" ]; then
+    echo "done"
+  else
+    sleep $initial_wait
+    while [ $rem -ge $step ]; do
+      if [ $(is_up_2hop $proxy $proxy_password $dest) == "yes" ]; then
+        break
+      fi
+      rem=$((rem - $step))
+      sleep $step
+    done
+    if [ $(is_up_2hop $proxy $proxy_password $dest) == "yes" ]; then
+      echo "done"
+    else
+      echo "timeout"
+    fi
+  fi
+}
+
+cmd_1hop() {
+  local dest=$1
+  shift
+  local dest_password=$1
+  shift
+  sshpass -p $dest_password ssh -q -tt -oStrictHostKeyChecking=no $dest $*
+}
+
+cmd_2hop() {
+  local proxy=$1
+  shift
+  local proxy_password=$1
+  shift
+  local dest=$1
+  shift
+  local dest_password=$1
+  shift
+  cmd_1hop $proxy $proxy_password sshpass -p $dest_password ssh -q -tt -oStrictHostKeyChecking=no $dest $*
+}
+
+send_1hop() {
+  local src=$1
+  local dest=$2
+  local dest_password=$3
+  local dest_path=$4
+
+  local tmp=(${dest//\@/ })
+  local user=${tmp[0]}
+  local ip=${tmp[1]}
+  if [ $(is_ipv6 $ip) == "yes" ]; then
+    sshpass -p $dest_password scp -oStrictHostKeyChecking=no $src $user@[$ip]:$dest_path/
+  else
+    sshpass -p $dest_password scp -oStrictHostKeyChecking=no $src $user@$ip:$dest_path/
+  fi
+}
+
+send_2hop() {
+  local src=$1
+  local proxy=$2
+  local proxy_password=$3
+  local proxy_path=$4
+  local dest=$5
+  local dest_password=$6
+  local dest_path=$7
+
+  local name=$(basename $src)
+  cmd_1hop $proxy $proxy_password mkdir -p $proxy_path
+  send_1hop $src $proxy $proxy_password $proxy_path
+  
+  local tmp=(${dest//\@/ })
+  local user=${tmp[0]}
+  local ip=${tmp[1]}
+
+  if [ $(is_ipv6 $dest) == "yes" ]; then
+    ip="[$ip]"
+  fi
+  cmd_1hop $proxy $proxy_password sshpass -p $dest_password scp -oStrictHostKeyChecking=no $proxy_path/$name $user@$ip:$dest_path/
+  cmd_1hop $proxy $proxy_password rm -f $proxy_path/$(basename $src)
+}
+
+generic_options() {
+  echo "  -b|--bmc BMC_IP BMC_PASSWORD"
+  echo "    Use the provided BMC IP address and password"
+  echo "  -p|--proxy PROXY_IP PROXY_PASSWORD"
+  echo "    Use the provided Proxy IP address and password"
+  echo "  --noproxy"
+  echo "    Do not use a proxy for this BMC."
+  echo "  -v|--verbose"
+  echo "    Print verbose messages (for debugging)"
+}
+
+ARGUMENTS=()
+VERBOSE="no"
+DEVICE=$(latest_device)
+PROXY=$(device_proxy_ip $DEVICE 0)
+PROXY_PASSWORD=$(device_proxy_password $DEVICE 0)
+BMC_IP=$(device_bmc_ip $DEVICE)
+BMC_PASSWORD=$(device_bmc_password $DEVICE)
+
+while [[ $# -gt 0 ]]
+do
+	key="$1"
+	case $key in
+    -p|--proxy)
+    PROXY="$2"
+    PROXY_PASSWORD="$3"
+    shift # past argument
+    shift
+    ;;
+    --noproxy)
+    PROXY=""
+    ;;
+    -v|--verbose)
+    VERBOSE="yes"
+    ;;
+    -b|--bmc)
+    if [ $(is_ipv6 $in) == "yes" ]; then
+      BMC_IP=$2
+      BMC_PASSWORD=$3
+    elif [ $(is_ipv4 $in) == "yes" ]; then
+      BMC_IP=$2
+      BMC_PASSWORD=$3
+    else
+      DEVICE=$(get_device $2)
+      if [ "$DEVICE" == "error" ]; then
+        echo "Unknown BMC: $2"
+        exit -1
+      fi
+      BMC_IP=$(device_bmc_ip $DEVICE)
+      BMC_PASSWORD=$(device_bmc_password $DEVICE)
+      PROXY=$(device_proxy_ip $DEVICE 0)
+      PROXY_PASSWORD=$(device_proxy_password $DEVICE 0)
+    fi
+    shift
+    shift
+    ;;
+    *)
+    # unknown option
+    ARGUMENTS+=($1)
+    ;;
+	esac
+	shift # past argument or value
+done
+

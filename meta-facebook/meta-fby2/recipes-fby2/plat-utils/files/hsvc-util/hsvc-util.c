@@ -47,7 +47,7 @@ print_usage_help(void) {
 }
 
 
-void
+int
 activate_hsvc(uint8_t slot_id) {
   char cmd[128] = {0};
   int pair_set_type;  
@@ -55,6 +55,7 @@ activate_hsvc(uint8_t slot_id) {
   int runoff_id = slot_id;
   int ret=-1;
   int status;
+  char tstr[64] = {0};
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
@@ -99,14 +100,32 @@ activate_hsvc(uint8_t slot_id) {
   if ( SLOT_TYPE_SERVER == fby2_get_slot_type(runoff_id) ) {
      printf("Delay 30s for graceful-shutdown\n");
      sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", runoff_id);
-     system(cmd);
-     sleep(30);
+     ret = run_command(cmd);
+     if (0 == ret) {
+       sleep(30);
+     } else {
+       return -1;
+     }
   }
 
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-off", runoff_id);
-  system(cmd);
-  printf("SLED is ready to be pulled out for hot-service now\n");
+  ret = run_command(cmd);
+  if (0 == ret) {
+    printf("SLED is ready to be pulled out for hot-service now\n");
+  } else {
+    printf("Fail to turn slot%d to 12V-off\n",slot_id);
+    return -1;
+  }
+
+  sprintf(tstr, "identify_slot%d", slot_id);
+  ret = pal_set_key_value(tstr, "on");
+  if (ret < 0) {
+    syslog(LOG_ERR, "pal_set_key_value: set %s on failed",tstr);
+    return -1;
+  }
+  
+  return 0;
 }
 
 int
@@ -139,14 +158,22 @@ main(int argc, char **argv) {
   if (!strcmp(argv[2], "--start")) {
      
      if (slot_id < OPT_ALL) {
-        activate_hsvc(slot_id);
-        return 0;
+        ret = activate_hsvc(slot_id);
+        if (ret != 0) {
+          goto err_exit;
+        } else {
+          return 0;
+        }
      }
 
      for (slot_id = OPT_SLOT1; slot_id < MAX_NUM_OPTIONS; slot_id++) {
-        activate_hsvc(slot_id);
+        ret |= activate_hsvc(slot_id);
      }
-     return 0;
+     if (ret != 0) {
+       goto err_exit;
+     } else {
+       return 0;
+     }
   }
 
 err_exit:

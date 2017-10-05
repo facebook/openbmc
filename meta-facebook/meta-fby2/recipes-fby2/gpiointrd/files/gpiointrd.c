@@ -95,7 +95,6 @@ slot_kv_st slot_kv_list[] = {
   // {slot_key, slot_def_val}
   {"pwr_server%d_last_state", "on"},
   {"sysfw_ver_slot%d",         "0"},
-  {"identify_slot%d",        "off"},
   {"slot%d_por_cfg",         "lps"},
   {"slot%d_sensor_health",     "1"},
   {"slot%d_sel_error",         "1"},

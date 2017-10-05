@@ -986,6 +986,7 @@ pal_hot_service_action(uint8_t slot_id) {
   char cmd[128] = {0};
   char hspath[80] = {0};
   int ret=-1;
+  char tstr[64] = {0};
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
@@ -1007,6 +1008,11 @@ pal_hot_service_action(uint8_t slot_id) {
         syslog(LOG_ERR, "%s: pal_fruid_init failed",__func__);
 
      pal_system_config_check(slot_id);
+     sprintf(tstr, "identify_slot%d", slot_id);
+     ret = pal_set_key_value(tstr, "off");
+     if (ret < 0) {
+       syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
+     }
   }
 
   // Check if pair slot is swap
@@ -1169,7 +1175,6 @@ server_12v_on(uint8_t slot_id) {
   }
 
   pal_hot_service_action(slot_id);
-
   rc = flock(pid_file, LOCK_UN);
   close(pid_file);
 

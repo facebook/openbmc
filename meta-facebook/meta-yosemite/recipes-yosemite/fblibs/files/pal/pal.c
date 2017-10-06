@@ -922,6 +922,21 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       }
       break;
 
+    case SERVER_POWER_RESET:
+      if (status == SERVER_POWER_ON) {
+        ret = pal_set_rst_btn(slot_id, 0);
+        if (ret < 0)
+          return ret;
+        msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
+        ret = pal_set_rst_btn(slot_id, 1);
+        if (ret < 0)
+          return ret;
+      } else if (status == SERVER_POWER_OFF) {
+        printf("Ignore to execute power reset action when the power status of server is off\n");
+        return -2;
+      }
+      break;
+
     case SERVER_GRACEFUL_SHUTDOWN:
       if (status == SERVER_POWER_OFF)
         return 1;

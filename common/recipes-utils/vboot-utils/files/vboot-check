@@ -1,0 +1,221 @@
+#!/usr/bin/env python2
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+import argparse
+import datetime
+import hashlib
+import json
+import StringIO
+import sys
+
+from pyfdt import pyfdt
+
+
+def get_fdt(content):
+    # Represent the FIT as an IO resource.
+    fit_io = StringIO.StringIO(content)
+    dtb = pyfdt.FdtBlobParse(fit_io)
+    fdt = dtb.to_fdt()
+    return fdt
+
+
+def show_keys(name, fdt, error):
+    fdt_json = json.loads(fdt.to_json())
+    if "signature" not in fdt_json:
+        print(error)
+        return False
+    for key in fdt_json["signature"]:
+        print("  %s: %s (%s) (signs %s)" % (
+            name,
+            key,
+            fdt_json["signature"][key]["algo"][1],
+            fdt_json["signature"][key]["required"][1]
+        ))
+    return True
+
+
+def get_date(fdt):
+    timestamp = fdt.resolve_path('/timestamp')[0]
+    return  datetime.datetime.fromtimestamp(
+        timestamp,
+    ).strftime('%Y-%m-%d %H:%M:%S')
+
+
+
+def get_fdt_hash(fdt, path):
+    return fdt.resolve_path("%s/hash@1/value" % (path)).to_raw().encode('hex')
+
+
+def get_fdt_signer(fdt, path):
+    return fdt.resolve_path("%s/signature@1/key-name-hint" % (path))[0]
+
+
+def get_fdt_algo(fdt, path):
+    return fdt.resolve_path("%s/hash@1/algo" % (path))[0]
+
+
+def get_hash(content):
+    return hashlib.sha256(content).hexdigest()
+
+
+def decode_flash(fh, data):
+    # Detect KEK from ROM region
+    rom_fit = None
+    rom_fit_offset = 0
+    for i in range(args.rom_size / 4):
+        if data[i * 4:(i * 4) + 4] == '\xd0\x0d\xfe\xed':
+            rom_fit = data[i * 4:(i * 4) + args.rom_fit_size]
+            rom_fit_offset = i * 4
+            break
+    if rom_fit is None:
+        print("Cannot find SPL FIT region")
+        return 1
+
+    # Print SPL information
+    rom_fit = get_fdt(rom_fit)
+    print("SPL FIT offset: %s" % (rom_fit_offset))
+    if not show_keys(
+        "SPL KEK",
+        rom_fit,
+        "SPL does not contain KEK keys"
+    ):
+        return 1
+    print("")
+
+    # Read the U-Boot FIT, the U-Boot data area (max)
+    data = data + fh.read(0x6B000)
+    uboot_fit = fh.read(0x4000)
+    uboot = fh.read(0x5C000)
+    uboot_fit = get_fdt(uboot_fit)
+
+    # Print subordinate keys information
+    keys_path = uboot_fit.resolve_path('/keys/fdt@1/data')
+    if keys_path is None:
+        print("U-Boot FIT does not contain subordinate keys")
+        return 1
+
+    keys = get_fdt(keys_path.to_raw())
+    keys_timestamp = get_date(keys)
+    print("Subordinate timestamp: %s" % (keys_timestamp))
+
+    keys_sig = uboot_fit.resolve_path('/keys/fdt@1/signature@1')
+    if keys_sig is None:
+        print("Subordinate keys are not signed")
+        return 1
+
+    keys_hash = get_fdt_hash(uboot_fit, '/keys/fdt@1')
+    keys_valid = hashlib.sha256(keys_path.to_raw()).hexdigest() == keys_hash
+
+    print("Subordinate keys signing key: %s" % (
+        get_fdt_signer(uboot_fit, '/keys/fdt@1')))
+    print("Subordinate keys hash (%s): %s: %s" % (
+        get_fdt_algo(uboot_fit, '/keys/fdt@1'),
+        keys_hash,
+        "OK" if keys_valid else "BAD"))
+
+    if not show_keys(
+        "Subordinate",
+        keys,
+        "Subordinate FIT does not contain keys"
+    ):
+        return 1
+    print("")
+
+    # Print U-Boot information
+    uboot_timestamp = get_date(uboot_fit)
+    print("U-Boot timestamp: %s" % (uboot_timestamp))
+
+    uboot_sig = uboot_fit.resolve_path('/configurations/conf@1/signature@1')
+    if uboot_sig is None:
+        print("U-Boot FIT configuration not signed")
+        return 1
+
+    uboot_size = uboot_fit.resolve_path('/images/firmware@1/data-size')[0]
+    uboot_hash = get_fdt_hash(uboot_fit, '/images/firmware@1')
+    uboot = uboot[0:uboot_size]
+    uboot_valid = hashlib.sha256(uboot).hexdigest() == uboot_hash
+
+    print("U-Boot configuration signing key: %s" % (
+        get_fdt_signer(uboot_fit, '/configurations/conf@1')))
+    print("U-Boot hash (%s): %s: %s" % (
+        get_fdt_algo(uboot_fit, '/images/firmware@1'),
+        uboot_hash,
+        "OK" if uboot_valid else "BAD"))
+    print("")
+
+
+def decode_os(fh):
+    os = fh.read()
+    os = get_fdt(os)
+
+    # Print Kernel/Ramdisk (OS) information
+    os_timestamp = get_date(os)
+    print("Kernel/ramdisk timestamp: %s" % (os_timestamp))
+
+    os_sig = os.resolve_path('/configurations/conf@1/signature@1')
+    if os_sig is None:
+        print("Kernel/ramdisk FIT configuration not signed")
+        return 1
+    print("Kernel/ramdisk configuration signing key: %s" % (
+        get_fdt_signer(os, '/configurations/conf@1')))
+
+    kernel_hash = get_fdt_hash(os, '/images/kernel@1')
+    kernel_valid = get_hash(os.resolve_path('/images/kernel@1/data').to_raw())
+
+    ramdisk_hash = get_fdt_hash(os, '/images/ramdisk@1')
+    ramdisk_valid = get_hash(os.resolve_path('/images/ramdisk@1/data').to_raw())
+
+    print("Kernel hash (%s): %s: %s" % (
+        get_fdt_algo(os, '/images/kernel@1'),
+        kernel_hash,
+        "OK" if kernel_valid else "BAD"))
+    print("Ramdisk hash (%s): %s: %s" % (
+        get_fdt_algo(os, '/images/ramdisk@1'),
+        ramdisk_hash, "OK" if ramdisk_valid else "BAD"))
+
+
+def main():
+    with open(args.filename, 'rb') as fh:
+        data = fh.read(84 * 1024)
+
+        data_size = len(data)
+        if data_size < 4:
+            print("Not sure what this file contains: %s" % (filename))
+            return 1
+        if data[:4] != '\x0f\x00\x00\xea':
+            return decode_fit(data)
+
+        ret = decode_flash(fh, data)
+        if ret > 0:
+            return ret
+        return decode_os(fh)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Show vboot info')
+    parser.add_argument('--rom-size', default=84 * 1024,
+        help="Size of ROM region")
+    parser.add_argument('--rom-fit-size', default=3200,
+        help="Size of the ROM FIT region")
+    parser.add_argument('filename', help="Input firmware")
+    args = parser.parse_args()
+
+    try:
+        sys.exit(main())
+    except Exception as e:
+        print("Exception: %s" % (str(e)))
+        sys.exit(1)

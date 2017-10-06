@@ -45,6 +45,7 @@ OPENBMC_UTILS_FILES = " \
 S = "${WORKDIR}"
 
 DEPENDS = "update-rc.d-native"
+RDEPENDS_${PN} += "bash"
 
 do_install() {
     pkgdir="/usr/local/packages/utils"

@@ -90,6 +90,7 @@ IMAGE_INSTALL += " \
   mTerm \
   ipmi-util \
   bios-util \
+  vboot-utils \
   "
 
 IMAGE_FEATURES += " \

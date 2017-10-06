@@ -55,6 +55,7 @@ IMAGE_INSTALL += " \
   asd \
   asd-test \
   ipmitool \
+  vboot-utils \
   "
 
 IMAGE_FEATURES += " \

@@ -86,3 +86,7 @@ config_adc 7  5110  8250 0
 #echo 1 > /sys/devices/platform/ast_adc.0/adc5_en
 #echo 1 > /sys/devices/platform/ast_adc.0/adc6_en
 #echo 1 > /sys/devices/platform/ast_adc.0/adc7_en
+
+i2cset -y -f 10 0x40 0xd4 0x3f1c w
+rmmod adm1275
+modprobe adm1275

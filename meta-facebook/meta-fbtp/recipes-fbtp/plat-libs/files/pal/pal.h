@@ -56,6 +56,10 @@ extern "C" {
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
 
+#define AST_GPIO_BASE 0x1e780000
+#define UARTSW_OFFSET 0x68
+#define SEVEN_SEGMENT_OFFSET 0x20
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -113,6 +117,12 @@ enum {
   FRU_RISER_SLOT2 = 3,
   FRU_RISER_SLOT3 = 4,
   FRU_RISER_SLOT4 = 5,
+};
+
+enum {
+  UARTSW_BY_BMC,
+  UARTSW_BY_DEBUG,
+  SET_SEVEN_SEGMENT,
 };
 
 // Sensors Under Side Plane
@@ -380,6 +390,8 @@ int notify_BBV_ipmb_offline_online(uint8_t on_off, int off_sec);
 bool pal_is_BBV_prsnt();
 int pal_CPU_error_num_chk(void);
 void pal_second_crashdump_chk(void);
+int pal_mmap (uint32_t base, uint8_t offset, int option, uint32_t para);
+int pal_uart_switch_for_led_ctrl (void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

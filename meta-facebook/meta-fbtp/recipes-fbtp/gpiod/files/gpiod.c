@@ -56,6 +56,7 @@ static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool smi_count_start = false;
 static bool MCERR_IERR_assert = false;
+static int g_uart_switch_count = 0;
 
 static inline long int reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
@@ -172,6 +173,12 @@ static void gpio_event_handle(gpio_poll_st *gp)
   else if ( gp->gs.gs_gpio == gpio_num("GPIOY1"))//FM_SLPS4_N. falling edge is detected
   {
     pal_check_power_sts();
+    return;
+  }
+  else if ( gp->gs.gs_gpio == gpio_num("GPIOQ4") || gp->gs.gs_gpio == gpio_num("GPIOQ5") ) //FM_UARTSW_MSB_N or FM_UARTSW_LSB_N
+  {
+    g_uart_switch_count = 2;
+    pal_uart_switch_for_led_ctrl();
     return;
   }
   else if( gp->gs.gs_gpio == gpio_num("GPIOE2") ) {
@@ -416,6 +423,8 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA1", "IRQ_SML1_PMBUS_ALERT_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAB0", "IRQ_HSC_FAULT_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD4", "IRQ_DIMM_SAVE_LVT3_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOQ4", "FM_UARTSW_LSB_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOQ5", "FM_UARTSW_MSB_N"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
@@ -516,8 +525,12 @@ gpio_timer() {
         }
       }
     }
-
+    if ( g_uart_switch_count > 0) {
+      if ( --g_uart_switch_count == 0 )
+        pal_mmap(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_DEBUG, 0);
+    }
   }
+
   return NULL;
 }
 // The function for setting GPIO value

@@ -82,6 +82,8 @@
 #define GPIO_FM_SLPS4_N 193
 #define GPIO_FM_FORCE_ADR_N 66
 #define GPIO_FM_OCP_MEZZA_PRES 217
+#define GPIO_UARTSW_LSB_N 132
+#define GPIO_UARTSW_MSB_N 133
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -6489,6 +6491,79 @@ pal_CPU_error_num_chk(void)
       return -1;
   } else
     return -1;
+}
+
+int
+pal_mmap (uint32_t base, uint8_t offset, int option, uint32_t para)
+{
+  uint32_t mmap_fd;
+  uint32_t ctrl;
+  void *reg_base;
+  void *reg_offset;
+
+  mmap_fd = open("/dev/mem", O_RDWR | O_SYNC );
+  if (mmap_fd < 0) {
+    return -1;
+  }
+
+  reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, base);
+  reg_offset = (char*) reg_base + offset;
+  ctrl = *(volatile uint32_t*) reg_offset;
+
+  switch(option) {
+    case UARTSW_BY_BMC:                //UART Switch control by bmc
+      ctrl &= 0x00ffffff;
+      break;
+    case UARTSW_BY_DEBUG:           //UART Switch control by debug card
+      ctrl |= 0x01000000;
+      break;
+    case SET_SEVEN_SEGMENT:      //set channel on the seven segment display
+      ctrl &= 0x00ffffff;
+      ctrl |= para;
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_mmap: unknown option");
+      break;
+  }
+  *(volatile uint32_t*) reg_offset = ctrl;
+
+  munmap(reg_base, PAGE_SIZE);
+  close(mmap_fd);
+
+  return 0;
+}
+
+int
+pal_uart_switch_for_led_ctrl (void)
+{
+  char path[64] = {0};
+  int val = 0;
+  static uint8_t pre_local = 0xff, pre_mid = 0xff;
+  uint8_t local = 0, mid = 0;
+  uint32_t channel = 0;
+
+  //UART Switch control by bmc
+  pal_mmap (AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_BMC, 0);
+
+  sprintf(path, GPIO_VAL, GPIO_UARTSW_MSB_N);
+  local = (read_device(path, &val))? -1: val;
+  sprintf(path, GPIO_VAL, GPIO_UARTSW_LSB_N);
+  mid = (read_device(path, &val))? -1: val;
+  if (local == -1 || mid == -1)
+    return -1;
+  else
+    channel =  channel | ((~local&0x01) << 25) | ((~mid&0x01) <<24);
+
+  if (local == pre_local && mid == pre_mid)
+    return -1;
+
+  pre_local = local;
+  pre_mid = mid;
+
+  //show channel on 7-segment display
+  pal_mmap (AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel);
+
+  return 0;
 }
 
 void

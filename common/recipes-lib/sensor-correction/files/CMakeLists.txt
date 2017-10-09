@@ -15,7 +15,6 @@ target_link_libraries(sensor-correction
 )
 
 install(TARGETS sensor-correction DESTINATION lib)
-install(FILES sensor-correction-conf.json DESTINATION /etc)
 
 install(FILES
   sensor-correction.h

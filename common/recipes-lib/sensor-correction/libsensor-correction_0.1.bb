@@ -12,10 +12,15 @@ SRC_URI = "file://CMakeLists.txt \
            file://sensor-correction.c \
            file://sensor-correction-conf.json \
           "
-
+SENSOR_CORR_CONFIG = "sensor-correction-conf.json"
 S = "${WORKDIR}"
-export SINC = "${STAGING_INCDIR}"
-export SLIB = "${STAGING_LIBDIR}"
+
+do_install_append() {
+  install -d ${D}${sysconfdir}
+  for f in ${SENSOR_CORR_CONFIG}; do
+    install -m 644 ${WORKDIR}/$f ${D}${sysconfdir}/$f
+  done
+}
 
 DEPENDS =+ "libedb jansson"
 RDEPENDS_${PN} += "libedb jansson"

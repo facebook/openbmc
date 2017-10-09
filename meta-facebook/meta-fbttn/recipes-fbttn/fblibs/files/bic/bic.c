@@ -1107,8 +1107,10 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size)
   // Indicates the size of the FRUID
   nread = (info.size_msb << 6) + (info.size_lsb);
   *fru_size = nread;
-  if (*fru_size == 0)
-     goto error_exit;
+  if (*fru_size == 0) {
+    syslog(LOG_ERR, "%s: FRU %d - FRU size is zero\n", __func__, slot_id);
+    goto error_exit;
+  }
 
   // Read chunks of FRUID binary data in a loop
   offset = 0;
@@ -1351,6 +1353,10 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
     *rlen += tlen-2;
     req->offset += tlen-2;
     len -= tlen-2;
+  }
+
+  if (*rlen == 0) {
+    syslog(LOG_ERR, "%s: FRU %d - SDR size is zero\n", __func__, slot_id);
   }
 
   return 0;

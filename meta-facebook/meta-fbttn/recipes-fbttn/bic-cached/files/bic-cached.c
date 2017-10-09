@@ -38,9 +38,13 @@
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
 
+#define GPIO_BIC_READY_N 55   // GPIOG7: I2C_COMP_ALERT_N
+#define BIC_READY 0           // BIC ready: 0; BIC NOT ready: 1
+#define BIC_NOT_READY 1
+
 int
 fruid_cache_init(uint8_t slot_id) {
-  // Initialize Slot0's fruid
+  // Initialize server's fruid
   int ret = 0;
   int fru_size = 0;
   char fruid_temp_path[64] = {0};
@@ -59,9 +63,9 @@ fruid_cache_init(uint8_t slot_id) {
   return ret;
 }
 
-void
+int
 sdr_cache_init(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   int fd;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
@@ -86,20 +90,21 @@ sdr_cache_init(uint8_t slot_id) {
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
     syslog(LOG_WARNING, "%s: open fails for path: %s\n", __func__, path);
-    return;
+    ret = -2;
+    return ret;
   }
 
   ret = pal_flock_retry(fd);
   if (ret == -1) {
    syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
    close(fd);
-   return;
+   return ret;
   }
 
   while (1) {
     ret = bic_get_sdr(slot_id, &req, res, &rlen);
     if (ret) {
-      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d\n", __func__, ret);
+      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d, sdr_size: %d\n", __func__, ret, rlen);
       continue;
     }
 
@@ -118,21 +123,24 @@ sdr_cache_init(uint8_t slot_id) {
   if (ret == -1) {
    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
    close(fd);
-   return;
+   return ret;
   }
 
   close(fd);
   rename(sdr_temp_path, sdr_path);
+
+  return ret;
 }
 
 int
 main (int argc, char * const argv[])
 {
-  int ret;
+  int ret = -1;
+  int retry = 0;
+  int max_retry = 180;  // 1 s * 180 = 3 mins
   uint8_t slot_id;
   uint8_t self_test_result[2] = {0};
-  int retry = 0;
-  int max_retry = 3;
+  uint8_t bic_ready_val = BIC_NOT_READY;
 
   if (argc != 2) {
     return -1;
@@ -141,28 +149,44 @@ main (int argc, char * const argv[])
   slot_id = atoi(argv[1]);
 
   // Check BIC Self Test Result
-  do {
+  while (1) {
     ret = bic_get_self_test_result(slot_id, &self_test_result);
-    if (ret == 0){
-      syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
-      break;
+    if (ret == 0) {
+      // Check BIC is ready
+      ret = get_gpio_value(GPIO_BIC_READY_N, &bic_ready_val);
+      if ((ret == 0) && (bic_ready_val == BIC_READY)) {
+        syslog(LOG_INFO, "bic_get_self_test_result: %02X %02X, BIC is ready: %d\n", self_test_result[0], self_test_result[1], bic_ready_val);
+        break;
+      }
     }
     sleep(5);
-  } while (ret != 0);
+  }
 
-  // Get Server FRU
+  // Get Server SDR
+  retry = 0;
   do {
-    if (fruid_cache_init(slot_id) == 0)
-      break;
-
+    ret = sdr_cache_init(slot_id);
     retry++;
     sleep(1);
-  } while (retry < max_retry);
+  } while ((ret != 0) && (retry < max_retry));
+  if (retry == max_retry) {   // if exceed 3 mins, exit this step
+    syslog(LOG_CRIT, "Fail on getting Server SDR.\n");
+  } else {
+    syslog(LOG_INFO, "Server SDR initial is done.\n");
+  }
 
-  if (retry == max_retry)
-    syslog(LOG_CRIT, "Fail on getting Server FRU.");
-
-  sdr_cache_init(slot_id);
+  // Get Server FRU
+  retry = 0;
+  do {
+    ret = fruid_cache_init(slot_id);
+    retry++;
+    sleep(1);
+  } while ((ret != 0) && (retry < max_retry));
+  if (retry == max_retry) {
+    syslog(LOG_CRIT, "Fail on getting Server FRU.\n");
+  } else {
+    syslog(LOG_INFO, "Server FRU initial is done.\n");
+  }
 
   return 0;
 }

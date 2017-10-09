@@ -3895,6 +3895,7 @@ get_gpio_value(int gpio_num, uint8_t *value){
   int ret = 0;
   int retry_cnt = 5;
   int i = 0;
+  int tmp_value = -1;
 
   sprintf(vpath, GPIO_VAL, gpio_num);
 
@@ -3913,7 +3914,7 @@ get_gpio_value(int gpio_num, uint8_t *value){
   }
   for (i = 0; i < retry_cnt; i++) {
     ret = 0;
-    rc = fscanf(fp, "%d", value);
+    rc = fscanf(fp, "%d", &tmp_value);
     if (rc != 1) {
       syslog(LOG_ERR, "failed to read device %s (%s)", vpath, strerror(errno));
       if (i == (retry_cnt - 1)) {
@@ -3926,6 +3927,8 @@ get_gpio_value(int gpio_num, uint8_t *value){
   }
 
   fclose(fp);
+
+  *value = (uint8_t) tmp_value;
 
   return ret;
 }

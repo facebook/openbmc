@@ -90,6 +90,7 @@ IMAGE_INSTALL += " \
   asd \
   asd-test \
   logrotate \
+  bios-util \
   "
 
 IMAGE_FEATURES += " \

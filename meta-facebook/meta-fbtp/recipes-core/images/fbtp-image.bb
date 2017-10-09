@@ -55,6 +55,7 @@ IMAGE_INSTALL += " \
   asd \
   asd-test \
   ipmitool \
+  bios-util \
   vboot-utils \
   "
 

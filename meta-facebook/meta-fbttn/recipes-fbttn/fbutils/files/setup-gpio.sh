@@ -401,6 +401,9 @@ devmem_clear_bit $(scu_addr 88) 15
 # set GPIOO7 WDT reset tolerance
 gpio_tolerance_fun O7
 
+# Disable GPIOP internal pull down
+devmem_set_bit $(scu_addr 8C) 31
+
 # DEBUG_GPIO_BMC_6: P0 (120)
 # To use GPIOP0, SCU88[16] must be 0
 devmem_clear_bit $(scu_addr 88) 16

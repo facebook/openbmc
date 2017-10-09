@@ -336,8 +336,6 @@ dbg_rst_btn_out:
 // Thread to handle debug card power button and power on/off the selected server
 static void *
 dbg_pwr_btn_handler() {
-// TODO: if the firmware of different brand debug card is ready, we will enable this feature
-#if 0 
   uint8_t btn, cmd;
   uint8_t power;
   uint8_t pos;
@@ -414,7 +412,6 @@ dbg_pwr_btn_handler() {
 dbg_pwr_btn_out:
     msleep(100);
   }
-#endif
 }
 
 // Thread to monitor Reset Button and propagate to selected server

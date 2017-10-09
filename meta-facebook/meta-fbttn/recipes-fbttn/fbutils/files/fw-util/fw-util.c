@@ -31,10 +31,15 @@
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/ocp-dbg-lcd.h>
 
 #define PAGE_SIZE  0x1000
 #define AST_WDT_BASE 0x1e785000
 #define WDT2_TIMEOUT_OFFSET 0x30
+
+#define MCU_I2C_BUS_ID 11
+#define MCU_ADDR       0x60
+#define IO_EXP_ADDR    0x4E
 
 static void
 print_usage_help(void) {
@@ -44,7 +49,7 @@ print_usage_help(void) {
   printf("Usage: fw-util <all|server|iom|scc> <--version>\n");
   printf("       fw-util <server> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
   printf("       fw-util <server> <--postcode>\n");
-  printf("       fw-util <iom> <--update> <--rom|--bmc> <path>\n");
+  printf("       fw-util <iom> <--update> <--rom|--bmc|--usbdbgfw|--usbdbgbl> <path>\n");
 }
 
 static void
@@ -577,6 +582,20 @@ main(int argc, char **argv) {
           is_bmc_update_flag = true;          
         }
         goto exit;
+      } else if (!strcmp(argv[3], "--usbdbgfw")) {
+        usb_dbg_init(MCU_I2C_BUS_ID, MCU_ADDR, IO_EXP_ADDR);
+        ret = usb_dbg_update_fw(argv[4]);
+        if (ret < 0) {
+          printf("Error Occur at updating USB DBG FW!\n");
+        }
+      } else if (!strcmp(argv[3], "--usbdbgbl")) {
+        usb_dbg_init(MCU_I2C_BUS_ID, MCU_ADDR, IO_EXP_ADDR);
+        ret = usb_dbg_update_boot_loader(argv[4]);
+        if (ret < 0) {
+          printf("Error Occur at updating USB DBG bootloader!\n");
+        }
+      } else {
+        printf("Uknown option: %s\n", argv[3]);
       }
     }
   }

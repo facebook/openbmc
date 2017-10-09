@@ -16,6 +16,8 @@ do_install() {
     install -m 0755 fw-util ${D}${bindir}/fw-util
 }
 
-DEPENDS += " libbic libpal"
+DEPENDS += " libbic libpal libocpdbg-lcd"
 
 FILES_${PN} = "${bindir}"
+
+RDEPENDS_${PN} = "libocpdbg-lcd"

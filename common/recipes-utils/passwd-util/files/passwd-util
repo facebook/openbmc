@@ -56,9 +56,8 @@ case "$ACTION" in
       echo "Passwords don't match"
       exit 1
     fi
-    echo $firstpw > /var/tmppw.$$
-    echo $secondpw >> /var/tmppw.$$
-    /usr/bin/passwd $* < /var/tmppw.$$ >/dev/null
+    echo "root:$firstpw" > /var/tmppw.$$
+    /usr/sbin/chpasswd < /var/tmppw.$$ >/dev/null
     ret=$?
     rm -f /var/tmppw.$$
     if [ $ret -ne 0 ]; then

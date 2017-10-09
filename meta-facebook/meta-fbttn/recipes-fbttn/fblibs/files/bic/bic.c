@@ -223,6 +223,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   int i = 0;
   int ret;
   uint8_t bus_id;
+  int retry = 0;
 
   ret = get_ipmb_bus_id(slot_id);
   if (ret < 0) {
@@ -253,15 +254,25 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
-  // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen, &rbuf, &rlen);
+  while(retry < 5) {
+    // Invoke IPMB library handler
+    lib_ipmb_handle(bus_id, tbuf, tlen, &rbuf, &rlen);
 
+    if (rlen == 0) {
+      retry++;
+      msleep(20);
+    }
+    else
+      break;
+  }
+  
   if (rlen == 0) {
 #ifdef DEBUG
-    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received\n");
+    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received, retry:%d\n", retry);
 #endif
     return -1;
   }
+
 
   // Handle IPMB response
   res  = (ipmb_res_t*) rbuf;

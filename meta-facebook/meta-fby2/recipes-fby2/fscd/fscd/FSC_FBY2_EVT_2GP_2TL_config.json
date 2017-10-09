@@ -7,7 +7,7 @@
     "fan_fail": true,
     "sensor_fail": true
   },
-  "watchdog": true,
+  "watchdog": false,
   "min_rpm": 800,
   "profiles": {
     "linear_inlet": {
@@ -53,69 +53,69 @@
         [ -2, 100 ]
       ]
     },
-    "linear_dimm": {		
-      "read_source" : {		
-        "util" : "/usr/local/bin/sensor-util"		
-      },		
-      "type": "linear",		
-      "positive_hysteresis": 0,		
-      "negative_hysteresis": 0,		
-      "data": [		
-        [65, 20],		
-        [67, 26],		
-        [69, 32],		
-        [71, 38],		
-        [73, 44],		
-        [75, 50]		
-      ]		
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [65, 20],
+        [67, 26],
+        [69, 32],
+        [71, 38],
+        [73, 44],
+        [75, 50]
+      ]
     },
-    "linear_mezz": {		
-      "read_source" : {		
-        "util" : "/usr/local/bin/sensor-util"		
-      },		
-      "type": "linear",		
-      "positive_hysteresis": 0,		
-      "negative_hysteresis": 0,		
-      "data": [		
-        [85, 20],		
-        [87, 35],		
-        [90, 40],		
-        [92, 50],		
-        [94, 60]		
-      ]		
+    "linear_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [85, 20],
+        [87, 35],
+        [90, 40],
+        [92, 50],
+        [94, 60]
+      ]
     },
-    "linear_mb_m2": {		
-      "read_source" : {		
-        "util" : "/usr/local/bin/sensor-util"		
-      },		
-      "type": "linear",		
-      "positive_hysteresis": 0,		
-      "negative_hysteresis": 0,		
-      "data": [		
-        [ 56, 28 ],		
-        [ 58, 30 ],		
-        [ 60, 35 ],		
-        [ 62, 40 ],	
-        [ 64, 45 ],	
-        [ 66, 50 ],	
-        [ 68, 55 ],	
-        [ 70, 60 ],	
-        [ 73, 70 ]		
-      ]		
-    },	
-    "linear_gp_m2": {		
-      "read_source" : {		
-        "util" : "/usr/local/bin/sensor-util"		
-      },		
-      "type": "linear",		
-      "positive_hysteresis": 0,		
-      "negative_hysteresis": 0,		
-      "data": [		
-        [ 68, 20 ],		
-        [ 70, 40 ],		
-        [ 72, 60 ],		
-        [ 73, 70 ]		
-      ]		
+    "linear_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 56, 28 ],
+        [ 58, 30 ],
+        [ 60, 35 ],
+        [ 62, 40 ],
+        [ 64, 45 ],
+        [ 66, 50 ],
+        [ 68, 55 ],
+        [ 70, 60 ],
+        [ 73, 70 ]
+      ]
+    },
+    "linear_gp_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 68, 20 ],
+        [ 70, 40 ],
+        [ 72, 60 ],
+        [ 73, 70 ]
+      ]
     }
   },
   "fans": {

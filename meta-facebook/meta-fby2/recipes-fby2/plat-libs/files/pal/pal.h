@@ -99,6 +99,7 @@ int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
+int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
 int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_hand_sw(uint8_t *pos);

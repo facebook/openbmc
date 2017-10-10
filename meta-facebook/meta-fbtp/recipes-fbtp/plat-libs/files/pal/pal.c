@@ -731,27 +731,27 @@ static void _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_n
 
 static void apply_inlet_correction(float *value) {
   int i;
-  static uint8_t pwm[2] = {0};
-  static bool pwm_valid[2] = {false, false};
+  static int rpm[2] = {0};
+  static bool rpm_valid[2] = {false, false};
   static bool inited = false;
-  float avg_pwm = 0;
+  float avg_rpm = 0;
   uint8_t cnt = 0;
 
   // Get PWM value
   for (i = 0; i < 2; i ++) {
-    if (pal_get_pwm_value(i, &pwm[i]) == 0 || pwm_valid[i] == true) {
-      pwm_valid[i] = true;
-      avg_pwm += (float)pwm[i];
+    if (pal_get_fan_speed(i, &rpm[i]) == 0 || rpm_valid[i] == true) {
+      rpm_valid[i] = true;
+      avg_rpm += (float)rpm[i];
       cnt++;
     }
   }
   if (cnt) {
-    avg_pwm = avg_pwm / (float)cnt;
+    avg_rpm = avg_rpm / (float)cnt;
     if (!inited) {
       inited = true;
       sensor_correction_init("/etc/sensor-correction-conf.json");
     }
-    sensor_correction_apply(FRU_MB, MB_SENSOR_INLET_REMOTE_TEMP, avg_pwm, value);
+    sensor_correction_apply(FRU_MB, MB_SENSOR_INLET_REMOTE_TEMP, avg_rpm, value);
   }
 }
 

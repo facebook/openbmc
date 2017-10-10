@@ -1,21 +1,56 @@
 #!/usr/bin/python
 import sys
+import re
+import os.path
 from subprocess import Popen, PIPE
+from ctypes import *
+
+lpal_hndl = CDLL("libpal.so")
 
 POST_CODE_FILE = "/tmp/post_code_buffer.bin"
 IPMIUTIL = "/usr/local/fbpackages/ipmi-util/ipmi-util"
-NODE_NUM = "1"  # FRU 1: Server
 
 boot_order_device = { 0: "USB Device", 1: "IPv4 Network", 9: "IPv6 Network", 2: "SATA HDD", 3: "SATA-CDROM", 4: "Other Removalbe Device" }
+supported_commands = ["boot_order", "postcode"]
+
+def pal_print_postcode(fru):
+    postcodes = (c_ubyte * 256)()
+    plen = c_ushort(0)
+    ret = lpal_hndl.pal_get_80port_record(fru, 0, 0, byref(postcodes), byref(plen))
+    if ret != 0:
+        print("Error %d returned by get_80port" % (ret))
+        return
+    for i in range(0, plen.value):
+        sys.stdout.write("%02X " % (postcodes[i]))
+        sys.stdout.flush()
+        if (i%16 == 15):
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+    if plen.value % 16 != 0:
+        sys.stdout.write("\n")
+    sys.stdout.flush()
+
+def pal_get_fru_id(fruname):
+    fruid = c_ubyte(0)
+    ret = lpal_hndl.pal_get_fru_id(c_char_p(fruname), byref(fruid))
+    if (ret != 0):
+        return ret
+    return fruid.value
+
+def pal_is_slot_server(fru):
+    ret = lpal_hndl.pal_is_slot_server(c_ubyte(fru))
+    if ret != 1:
+        return False
+    return True
 
 def usage():
-    print("Usage: bios-util [ boot_order, postcode ] <options>")
+    print("Usage: bios-util FRU [ boot_order, postcode ] <options>")
     exit(-1)
     
 def usage_boot_order():
-    print("Usage: bios-util boot_order --clear_CMOS <--enable, --disable, --get>")
-    print("                            --force_boot_BIOS_setup <--enable, --disable, --get>")
-    print("                            --boot_order [ --set < #1st #2nd #3rd #4th #5th >, --get, --disable ]")
+    print("Usage: bios-util FRU boot_order --clear_CMOS <--enable, --disable, --get>")
+    print("                                --force_boot_BIOS_setup <--enable, --disable, --get>")
+    print("                                --boot_order [ --set < #1st #2nd #3rd #4th #5th >, --get, --disable ]")
     print("       *" + repr(boot_order_device))
     exit(-1)
 
@@ -23,7 +58,7 @@ def usage_postcode():
     print("Usage: bios-util postcode --get")
     exit(-1)
 
-def execute_IPMI_command(netfn, cmd, req):
+def execute_IPMI_command(fru, netfn, cmd, req):
     netfn = (netfn << 2)
 
     sendreqdata = ""
@@ -31,7 +66,7 @@ def execute_IPMI_command(netfn, cmd, req):
       for i in range(0, len(req), 1):
           sendreqdata += str(req[i]) + " "
 
-    input = IPMIUTIL + " " + NODE_NUM + " " + str(netfn) + " " + str(cmd) + " " + sendreqdata
+    input = IPMIUTIL + " " + str(fru) + " " + str(netfn) + " " + str(cmd) + " " + sendreqdata
     data=''
 
     output = Popen(input, shell=True, stdout=PIPE)
@@ -89,13 +124,13 @@ Request:
 Response:
 Byte1 - Completion Code
 '''
-def boot_order(argv):
+def boot_order(fru, argv):
     req_data = [""]
     function = argv[2]
     option = argv[3]
     boot_flags_valid = 1  
 
-    result = execute_IPMI_command(0x30, 0x53, "")
+    result = execute_IPMI_command(fru, 0x30, 0x53, "")
     
     data = [int(n, 16) for n in result]
         
@@ -157,30 +192,60 @@ def boot_order(argv):
     req_data[0] = ((((data[0] & ~0x86) | (clear_CMOS << 1)) | (force_boot_BIOS_setup << 2)) |  (boot_flags_valid << 7) )
     req_data[1:] = boot_order
     
-    execute_IPMI_command(0x30, 0x52, req_data)
+    execute_IPMI_command(fru, 0x30, 0x52, req_data)
 
-def postcode():
-    postcode_file = open(POST_CODE_FILE, 'r')
-    print(postcode_file.read())
+def postcode(fru):
+    if os.path.isfile(POST_CODE_FILE):
+        postcode_file = open(POST_CODE_FILE, 'r')
+        print(postcode_file.read())
+    else:
+        pal_print_postcode(fru)
 
-def bios_main():
-    if ( len(sys.argv) < 2 ):
-        usage()
-
-    if ( sys.argv[1] == "boot_order" ):
-        if ( len(sys.argv) < 4 ):
+def bios_main_fru(fru, command):
+    if ( command == "boot_order" ):
+        if ( len(sys.argv) < 5 ):
             usage_boot_order()
         else:
-            boot_order(sys.argv)
-
-    elif ( sys.argv[1] == "postcode" ):
-        if ( len(sys.argv) != 3 ) or ( sys.argv[2] != "--get" ):
+            boot_order(fru, sys.argv[1:])
+    elif ( command == "postcode" ):
+        if ( len(sys.argv) != 4 ) or ( sys.argv[3] != "--get" ):
             usage_postcode()
         else:
-            postcode()
+            postcode(fru)
 
-    else:
+def bios_main():
+    if ( len(sys.argv) < 3 ):
         usage()
+    fruname = sys.argv[1]
+    command = sys.argv[2]
+
+    if command not in supported_commands:
+        usage()
+        return
+
+    if fruname == "all":
+        frulist_c = create_string_buffer(128)
+        ret = lpal_hndl.pal_get_fru_list(frulist_c)
+        if ret:
+            print("Getting fru list failed!")
+            return
+        frulist_s = frulist_c.value.decode()
+        frulist = re.split(r',\s', frulist_s)
+        for fruname in frulist:
+            fru = pal_get_fru_id(fruname)
+            if fru >= 0:
+                if pal_is_slot_server(fru) == True:
+                    print ("%s:" % (fruname))
+                    bios_main_fru(fru, command)
+    else:
+        fru = pal_get_fru_id(fruname)
+        if fru < 0:
+            print("%s is not a known FRU on this platform" % (fruname))
+            return
+        if pal_is_slot_server(fru) == False:
+            print("%s is not a server" % (fruname))
+            return
+        bios_main_fru(fru, command)
         
 if ( __name__ == '__main__' ):
     bios_main()

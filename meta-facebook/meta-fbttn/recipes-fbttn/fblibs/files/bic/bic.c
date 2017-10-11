@@ -265,7 +265,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     else
       break;
   }
-  
+
   if (rlen == 0) {
 #ifdef DEBUG
     syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received, retry:%d\n", retry);
@@ -614,7 +614,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   int ret;
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
-  
+
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -899,7 +899,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   // Kill sendor daemon for this slot
   if (comp == UPDATE_BIOS ) {
     system("sv stop sensord");
-    printf("Stopped sensord for this slot.\n");    
+    printf("Stopped sensord for this slot.\n");
   }
   stat(path, &st);
   if (comp == UPDATE_BIOS) {
@@ -1395,13 +1395,13 @@ Request
   Byte 1:3 = Intel Manufacturer ID - 000157h, LS byte first.
 
   Byte 4 - Command
-    = 01h Restart using Recovery Firmware 
+    = 01h Restart using Recovery Firmware
       (Intel ME FW configuration is not restored to factory defaults)
     = 02h Restore Factory Default Variable values and restart the Intel ME FW
     = 03h PTT Initial State Restore
 Response
-  Byte 1 - Completion Code 
-  = 00h - Success 
+  Byte 1 - Completion Code
+  = 00h - Success
   (Remaining standard Completion Codes are shown in Section 2.12)
   = 81h - Unsupported Command parameter value in the Byte 4 of the request.
 
@@ -1445,7 +1445,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
   memset(&rbuf, 0, 256);
   /*
       0x6 0x4: Get Self-Test Results
-    Byte 1 - Completion Code 
+    Byte 1 - Completion Code
     Byte 2
       = 55h - No error. All Self-Tests Passed.
       = 81h - Firmware entered Recovery bootloader mode

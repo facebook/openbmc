@@ -106,8 +106,11 @@
 #define GPIO_POSTCODE_7 63
 
 #define GPIO_DBG_CARD_PRSNT 134
-//??
+#define GPIO_SCC_A_INS 478        // 0: Present; 1: Absent
+#define GPIO_SCC_B_INS 479        // 0: Present; 1: Absent
+
 #define GPIO_BMC_READY_N    28
+#define GPIO_BIC_READY_N    55   // GPIOG7: I2C_COMP_ALERT_N
 
 #define GPIO_CHASSIS_INTRUSION  487
 #define GPIO_PCIE_RESET 203
@@ -813,6 +816,42 @@ pal_get_num_slots(uint8_t *num) {
 }
 
 int
+pal_is_scc_prsnt() {
+
+  int val = 0;
+  int ret = 0;
+  int sku = 0;
+  int gpio_num;
+
+  sku = pal_get_iom_type();
+  // IOM type: M.2 solution
+  if (sku == IOM_M2) {
+    if (pal_get_iom_location() == IOM_SIDEA) { // IOMA
+      gpio_num = GPIO_SCC_A_INS;
+    } else if (pal_get_iom_location() == IOM_SIDEB) { // IOMB
+      gpio_num = GPIO_SCC_B_INS;
+    } else {
+      gpio_num = GPIO_SCC_A_INS;
+    }
+
+  // IOM type: IOC solution
+  } else {
+    gpio_num = GPIO_SCC_A_INS;
+  }
+
+  ret = get_gpio_value(gpio_num, &val);
+  if (ret != 0) {
+    return -1;
+  }
+
+  if (val == 0) {
+    return 1; // Present
+  } else {
+    return 0; // Absent
+  }
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int val;
   char path[64] = {0};
@@ -821,33 +860,16 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SLOT1:
       *status = is_server_prsnt(fru);
       break;
-    case FRU_IOM:
-    case FRU_DPB:
+    // Need to check if local SCC is inserted.
     case FRU_SCC:
+      *status = pal_is_scc_prsnt();
+      break;
+    case FRU_DPB:
+    case FRU_IOM:
     case FRU_NIC:
       *status = 1;
       break;
     default:
-      return -1;
-  }
-
-  return 0;
-}
-int
-pal_is_fru_ready(uint8_t fru, uint8_t *status) {
-  int val;
-  char path[64] = {0};
-
-  switch (fru) {
-    case FRU_SLOT1:
-    //TODO: is_SCC_ready needs to be implemented
-   case FRU_IOM:
-   case FRU_DPB:
-   case FRU_SCC:
-   case FRU_NIC:
-     *status = 1;
-     break;
-   default:
       return -1;
   }
 
@@ -878,6 +900,73 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
     *status = CTRL_ENABLE;
   } else {
     *status = CTRL_DISABLE;
+  }
+
+  return 0;
+}
+
+int
+pal_is_bic_ready(uint8_t slot_id, uint8_t *status) {
+
+  int val = 0;
+  int ret = 0;
+
+  ret = get_gpio_value(GPIO_BIC_READY_N, &val);
+  if (ret != 0) {
+    return -1;
+  }
+
+  if (val == 0) {
+    *status = BIC_READY;
+  } else {
+    *status = BIC_NOT_READY;
+  }
+
+  return 0;
+}
+
+int
+pal_is_fru_ready(uint8_t fru, uint8_t *status) {
+  uint8_t ctrl_status, val;
+  char path[64] = {0};
+
+  switch (fru) {
+    case FRU_SLOT1:
+      // Check if the server board is powered up
+      if (!pal_is_server_12v_on(fru, &ctrl_status)) {
+
+        // If the server is powered up, check if the BIC is ready.
+        if (ctrl_status == CTRL_ENABLE) {
+
+          if (!pal_is_bic_ready(fru, &val))
+            *status = (val == BIC_READY)? 1 : 0; // BIC_READY: 0; BIC_NOT_READY: 1
+
+        // ctrl_status == CTRL_DISABLE; the server is 12V-OFF
+        } else {
+          *status = 0;
+        }
+        break;
+
+      // if pal_is_server_12v_on failed
+      } else
+        return -1;
+
+    case FRU_DPB:
+      // Only if local SCC is present, BMC can read the DPB sensors and fruid
+      *status = pal_is_scc_prsnt();
+
+      //TODO: is_SCC_ready needed to confirm is expander is ready
+      break;
+
+    case FRU_SCC:
+      //TODO: is_SCC_ready needed to confirm is expander is ready
+    case FRU_IOM:
+    case FRU_NIC:
+      *status = 1;
+      break;
+
+    default:
+      return -1;
   }
 
   return 0;
@@ -1442,22 +1531,15 @@ int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   uint8_t status;
 
+  // SDR only supported for MonoLake
   switch(fru) {
     case FRU_SLOT1:
       pal_is_fru_prsnt(fru, &status);
-      break;
-    case FRU_IOM:
-    case FRU_DPB:
-    case FRU_SCC:
-    case FRU_NIC:
-      status = 1;
-      break;
+      if (status)
+        return fbttn_sensor_sdr_init(fru, sinfo);
+    default:
+      return -1;
   }
-
-  if (status)
-    return fbttn_sensor_sdr_init(fru, sinfo);
-  else
-    return -1;
 }
 
 int pal_sensor_check(uint8_t fru, uint8_t sensor_num) {
@@ -1477,14 +1559,15 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   int sku = 0;
   bool check_server_power_status = false;
 
+  if(pal_is_fru_prsnt(fru, &status) < 0)
+      return -1;
+
+  if (!status)
+      return -1;
+
   switch(fru) {
     case FRU_SLOT1:
       sprintf(key, "server_sensor%d", sensor_num);
-      if(pal_is_fru_prsnt(fru, &status) < 0)
-         return -1;
-      if (!status) {
-         return -1;
-      }
       break;
     case FRU_IOM:
       sprintf(key, "iom_sensor%d", sensor_num);
@@ -2557,6 +2640,7 @@ int pal_get_iom_type(void){
   iom_type = (pal_sku & 0x0F);
   return iom_type;
 }
+
 int pal_is_scc_stb_pwrgood(void){
 //To do: to get SCC STB Power good from IO Exp via I2C
 return 0;
@@ -2730,6 +2814,8 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
     case FRU_SCC:
       sprintf(key, "scc_sensor_timestamp");
       break;
+    default:
+      return -1;
   }
 
   ret = pal_get_edb_value(key, cvalue);

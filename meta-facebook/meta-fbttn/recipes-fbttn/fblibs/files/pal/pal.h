@@ -41,6 +41,9 @@ extern "C" {
 #define FRU_STATUS_GOOD   1
 #define FRU_STATUS_BAD    0
 
+#define BIC_READY 0           // BIC ready: 0; BIC NOT ready: 1
+#define BIC_NOT_READY 1
+
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
 #define SERVER_PWR_ON_LOCK "/var/run/server%d_power_on.lock"
@@ -291,9 +294,9 @@ int pal_fan_recovered_handle(int fan_num);
 int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num);
 int pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t sensor_num);
 int pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t sensor_num, int second_transaction);
-int  pal_get_bmc_rmt_hb(void);
-int  pal_get_scc_loc_hb(void);
-int  pal_get_scc_rmt_hb(void);
+int pal_get_bmc_rmt_hb(void);
+int pal_get_scc_loc_hb(void);
+int pal_get_scc_rmt_hb(void);
 void pal_err_code_enable(unsigned char num);
 void pal_err_code_disable(unsigned char num);
 uint8_t pal_read_error_code_file(uint8_t *error_code_arrray);
@@ -324,6 +327,8 @@ int pal_get_edb_value(char *key, char *value);
 int pal_set_edb_value(char *key, char *value);
 int pal_powering_on_flag(uint8_t slot_id);
 void pal_rm_powering_on_flag(uint8_t slot_id);
+int pal_is_bic_ready(uint8_t slot_id, uint8_t *status);
+
 
 #ifdef __cplusplus
 } // extern "C"

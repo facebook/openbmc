@@ -38,9 +38,6 @@
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
 
-#define GPIO_BIC_READY_N 55   // GPIOG7: I2C_COMP_ALERT_N
-#define BIC_READY 0           // BIC ready: 0; BIC NOT ready: 1
-#define BIC_NOT_READY 1
 
 int
 fruid_cache_init(uint8_t slot_id) {
@@ -152,10 +149,13 @@ main (int argc, char * const argv[])
   while (1) {
     ret = bic_get_self_test_result(slot_id, &self_test_result);
     if (ret == 0) {
+
       // Check BIC is ready
-      ret = get_gpio_value(GPIO_BIC_READY_N, &bic_ready_val);
+      ret = pal_is_bic_ready(slot_id, &bic_ready_val);
       if ((ret == 0) && (bic_ready_val == BIC_READY)) {
-        syslog(LOG_INFO, "bic_get_self_test_result: %02X %02X, BIC is ready: %d\n", self_test_result[0], self_test_result[1], bic_ready_val);
+        syslog(LOG_INFO, "bic_get_self_test_result: %02X %02X, "
+            "BIC is ready: %d\n", self_test_result[0],
+            self_test_result[1], bic_ready_val);
         break;
       }
     }

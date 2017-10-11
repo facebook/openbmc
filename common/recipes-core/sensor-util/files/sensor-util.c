@@ -249,7 +249,7 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
   uint8_t *sensor_list;
   char fruname[16] = {0};
   char* valid;
-  
+
   if (pal_get_fru_name(fru, fruname)) {
     sprintf(fruname, "fru%d", fru);
   }
@@ -260,13 +260,13 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
     return ret;
   }
   if (status == 0) {
-    printf("%s is empty!\n", fruname);
+    printf("%s is not present!\n\n", fruname);
     return -1;
   }
 
   ret = pal_is_fru_ready(fru, &status);
   if ((ret < 0) || (status == 0)) {
-    printf("%s is unavailable!\n", fruname);
+    printf("%s is unavailable!\n\n", fruname);
     return ret;
   }
 
@@ -291,7 +291,7 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
     get_sensor_reading(fru, sensor_list, sensor_cnt, sensor_num, threshold);
   }
 
-  //Print Empty Line to separate frus, 
+  //Print Empty Line to separate frus,
   //only when sensor_cnt greater than 0, not history-clear, and sensor_num is not specified
   if ( (sensor_cnt > 0) && (!history_clear) && (sensor_num == 0) )
     printf("\n");

@@ -96,6 +96,8 @@
 #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
 #define BIN_SLOT        "/tmp/fruid_slot%d.bin"
 
+#define GMAC0_DIR "/sys/devices/platform/ftgmac100.0/net/eth0"
+
 
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
@@ -706,6 +708,44 @@ power_on_server_physically(uint8_t slot_id){
   return 0;
 }
 
+
+#define MAX_POWER_PREP_RETRY_CNT    3
+static int
+write_gmac0_value(const char *device_name, const int value) {
+  char full_name[LARGEST_DEVICE_NAME];
+  char output_value[LARGEST_DEVICE_NAME];
+  int err;
+  int retry_cnt=0;
+
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", GMAC0_DIR, device_name);
+  snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
+
+  do {
+    err = write_device(full_name, output_value);
+    if (err == ENOENT) {
+      syslog(LOG_INFO, "Retry powerup_prep for host%d [%d], err=%d", value, (retry_cnt+1), err);
+      break;
+    } else if (err != 0) {
+      syslog(LOG_INFO, "Retry powerup_prep for host%d [%d], err=%d", value, (retry_cnt+1), err);
+      sleep(1);
+    }
+  } while ((err != 0) && (retry_cnt++ < MAX_POWER_PREP_RETRY_CNT));
+
+  return err;
+}
+
+// Write to /sys/devices/platform/ftgmac100.0/net/eth0/powerup_prep_host_id
+static int
+nic_powerup_prep(uint8_t slot_id) {
+  int err;
+  // sleep(1);
+
+  err = write_gmac0_value("powerup_prep_host_id", slot_id);
+
+  return err;
+}
+
+
 // Power On the server in a given slot
 static int
 server_power_on(uint8_t slot_id) {
@@ -743,6 +783,11 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
+
+  if (nic_powerup_prep(slot_id) != 0) {
+    return -1;
+  }
+
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
   if (write_device(vpath, "1")) {
@@ -1033,6 +1078,10 @@ server_12v_off(uint8_t slot_id) {
   uint8_t status;
 
   if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
+
+  if (nic_powerup_prep(slot_id) != 0) {
     return -1;
   }
 

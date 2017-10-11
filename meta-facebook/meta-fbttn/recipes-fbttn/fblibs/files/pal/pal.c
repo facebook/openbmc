@@ -4189,3 +4189,36 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
 
   return false;
 }
+
+//check power policy and power state to power on/off server after AC power restore
+void
+pal_power_policy_control(uint8_t fru, char *last_ps) {
+  uint8_t chassis_status[5] = {0};
+  uint8_t chassis_status_length;
+  uint8_t power_policy = POWER_CFG_UKNOWN;
+  char pwr_state[MAX_VALUE_LEN] = {0};
+
+
+  //get power restore policy
+  //defined by IPMI Spec/Section 28.2.
+  pal_get_chassis_status(fru, NULL, chassis_status, &chassis_status_length);
+
+  //byte[1], bit[6:5]: power restore policy
+  power_policy = (*chassis_status >> 5);
+
+  //Check power policy and last power state
+  if(power_policy == POWER_CFG_LPS) {
+    if (!last_ps) {
+      pal_get_last_pwr_state(fru, pwr_state);
+      last_ps = pwr_state;
+    }
+    if (!(strcmp(last_ps, "on"))) {
+      sleep(3);
+      pal_set_server_power(fru, SERVER_POWER_ON);
+    }
+  }
+  else if(power_policy == POWER_CFG_ON) {
+    sleep(3);
+    pal_set_server_power(fru, SERVER_POWER_ON);
+  }
+}

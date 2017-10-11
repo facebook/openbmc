@@ -67,7 +67,7 @@ static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 
 char *fru_prsnt_log_string[2 * MAX_NUM_FRUS] = {
   // slot1, iom, dpb, scc, nic
- "ASSERT: Mono Lake missing", "", "", "ASSERT: SCC missing", "ASSERT: NIC is plugged out",
+ "", "ASSERT: Mono Lake missing", "", "", "ASSERT: SCC missing", "ASSERT: NIC is plugged out",
  "DEASSERT: Mono Lake missing", "", "", "DEASSERT: SCC missing", "DEASSERT: NIC is plugged out",
 };
 
@@ -88,7 +88,7 @@ int get_fru_prsnt(int chassis_type, uint8_t fru) {
       case FRU_SCC:
         // Type 5 need to recognize BMC is in which side
 
-        if ( i == 0 ) {  // Type 5 
+        if ( i == 0 ) {  // Type 5
           if (pal_get_iom_location() == IOM_SIDEA) {          // IOMA
             gpio_num = GPIO_SCC_A_INS;
           } else if (pal_get_iom_location() == IOM_SIDEB) {   // IOMB
@@ -106,8 +106,8 @@ int get_fru_prsnt(int chassis_type, uint8_t fru) {
       default:
         return -2;
     }
-    
-    sprintf(path, GPIO_VAL, gpio_num);  
+
+    sprintf(path, GPIO_VAL, gpio_num);
 
     fp = fopen(path, "r");
     if (!fp) {
@@ -283,6 +283,9 @@ gpio_monitor_poll(uint8_t fru_flag) {
   int fru_health_kv_state = 1;
   char tmp_health[MAX_VALUE_LEN];
   int is_fru_missing[2] = {0};
+  int is_scc_hotplugged[2] = {1,1}; // if [1,1] = SCC is not present since sled-cycle
+                                    // if [0,1] = SCC is hot plugged
+  // Make is_scc_hotplugged defualt to [1,1], so if SCC is not present since sled-cycle, ML 12V will not be powered off
 
   /* Check for initial Asserts */
   for (fru = 1; fru <= MAX_NUM_SLOTS; fru++) {
@@ -334,6 +337,15 @@ gpio_monitor_poll(uint8_t fru_flag) {
   prev_pwr_state = get_perst_value();
 
   /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
+
+//ML and SCC Board Present Cases
+//1. In case the SCC is connected, the server will continue power-on as usual.
+//2. In case the SCC is not inserted when AC on, BMC log ASSERT SCC absence and the server will continue power-on as usual.
+//3. In case the SCC is hotplugged out (surprise removal), BMC log ASSERT SCC absence and turn off ML-12V.
+//4. In case the SCC is hotplugged in (surprise install), BMC log DEASSERT SCC absence and turn on ML-12V and then turn on ML-DC depending on on/off/lps power policy.
+//5. In case the Server is hotplugged out (surprise removal), BMC log ASSERT ML absence and turn off ML-12V and IOM-3V3.
+//6. In case the Server is hotplugged in (surprise install), BMC log DEASSERT ML absence and turn on ML-12V.
+
   while(1) {
     // get current health status from kv_store
     memset(tmp_health, 0, MAX_VALUE_LEN);
@@ -343,41 +355,58 @@ gpio_monitor_poll(uint8_t fru_flag) {
     }
     fru_health_kv_state = atoi(tmp_health);
 
-    // To detect Mono Lake, SCC, and NIC is present or not
+    // To detect Mono Lake is present or not
     if (get_fru_prsnt(chassis_type, FRU_SLOT1) == 1) {   // absent
       if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SLOT1 - 1]);
+        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SLOT1]);
         is_fru_prsnt[FRU_SLOT1 - 1] = true;
       }
       // Turn off ML HSC 12V and IOM 3V3 when Mono Lake was hot plugged
       read_device(vpath_comp_pwr_en, &val);
       if (val != 0) {
-        syslog(LOG_CRIT, "Powering Off Server due to server is absent."); 
-        server_12v_off(FRU_SLOT1);
+        syslog(LOG_CRIT, "Powering Off Server due to server is absent.");
+        pal_set_server_power(FRU_SLOT1, SERVER_12V_OFF);
         write_device(vpath_iom_full_pwr_en, "0");
       }
       pal_err_code_enable(0xE4);
       pal_set_key_value("fru_prsnt_health", "0");
       is_fru_missing[0] = 1;
     } else {
-      if (is_fru_prsnt[FRU_SLOT1 - 1] == true) {        
-        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1 - 1]);
+      if (is_fru_prsnt[FRU_SLOT1 - 1] == true) {
+        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1]);
         is_fru_prsnt[FRU_SLOT1 - 1] = false;
+
+        read_device(vpath_comp_pwr_en, &val);
+        if ((val != 1) && (is_fru_missing[0] == 1)) {
+          syslog(LOG_CRIT, "Due to Server board were pushed in. Power On Server board 12V power.");
+          pal_set_server_power(FRU_SLOT1, SERVER_12V_ON);
+        }
+        is_fru_missing[0] = 0;
       }
       pal_err_code_disable(0xE4);
     }
+
+    // To detect SCC is hotplugged or not
     if (get_fru_prsnt(chassis_type, FRU_SCC) == 1) {   // absent
       if (is_fru_prsnt[FRU_SCC - 1] == false) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SCC - 1]);
+        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SCC]);
         is_fru_prsnt[FRU_SCC - 1] = true;
       }
-      if (get_fru_prsnt(0, FRU_SCC) == 1) { // SCC of current side is absent
-        // Turn off ML HSC 12V and IOM 3V3 when SCC was hot plugged
+
+      is_scc_hotplugged[0] = is_scc_hotplugged[1];
+      is_scc_hotplugged[1] = 1;
+
+
+      if (get_fru_prsnt(chassis_type, FRU_SCC) == 1 &&  // SCC of current side is absent
+          is_scc_hotplugged[0] == 0 &&  // [1,1] = SCC is not present since sled-cycle
+          is_scc_hotplugged[1] == 1 ) { // [0,1] = SCC is hotplugged
+
+        // Turn off ML HSC 12V and IOM 3V3 only when SCC is hotplugged
+        // If SCC is not present since sled-cycle, keep ML 12V turned on
         read_device(vpath_comp_pwr_en, &val);
         if (val != 0) {
-          syslog(LOG_CRIT, "Powering Off Server due to SCC is absent."); 
-          server_12v_off(FRU_SLOT1);
-          write_device(vpath_iom_full_pwr_en, "0");
+          syslog(LOG_CRIT, "Powering Off Server due to SCC is absent.");
+          pal_set_server_power(FRU_SLOT1, SERVER_12V_OFF);
         }
       }
       pal_err_code_enable(0xE7);
@@ -385,37 +414,37 @@ gpio_monitor_poll(uint8_t fru_flag) {
       pal_set_key_value("scc_sensor_health", "0");
       is_fru_missing[1] = 1;
     } else {
+      is_scc_hotplugged[0] = is_scc_hotplugged[1];
+      is_scc_hotplugged[1] = 0;
       if (is_fru_prsnt[FRU_SCC - 1] == true) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC - 1]);
+        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC]);
         is_fru_prsnt[FRU_SCC - 1] = false;
+
+        read_device(vpath_comp_pwr_en, &val);
+        if ((val != 1) && (is_fru_missing[1] == 1)) {
+          syslog(LOG_CRIT, "Due to SCC were pushed in. Power On Server board 12V power and Power On Server by Power Restore Policy.");
+          pal_set_server_power(FRU_SLOT1, SERVER_12V_ON);
+          pal_power_policy_control(FRU_SLOT1, NULL);
+        }
+        is_fru_missing[1] = 0;
       }
       pal_err_code_disable(0xE7);
     }
+
+    // To detect NIC is present  or not
     if (get_fru_prsnt(chassis_type, FRU_NIC) == 0) {   // absent
       if (is_fru_prsnt[FRU_NIC - 1] == false) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_NIC - 1]);
+        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_NIC]);
         is_fru_prsnt[FRU_NIC - 1] = true;
       }
       pal_err_code_enable(0xE8);
       pal_set_key_value("fru_prsnt_health", "0");
     } else {
       if (is_fru_prsnt[FRU_NIC - 1] == true) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_NIC - 1]);
+        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_NIC]);
         is_fru_prsnt[FRU_NIC - 1] = false;
       }
       pal_err_code_disable(0xE8);
-    } 
-
-    // Turn on ML HSC 12V and IOM 3V3 when Mono Lake and SCC were pushed in
-    if ((get_fru_prsnt(chassis_type, FRU_SLOT1) == 0) && (get_fru_prsnt(0, FRU_SCC) == 0)) {
-      read_device(vpath_comp_pwr_en, &val);
-      if ((val != 1) && ((is_fru_missing[0] == 1) || (is_fru_missing[1] == 1))) {
-        syslog(LOG_CRIT, "Due to Server board and SCC were pushed in. Power On Server board 12V power.");
-        server_12v_on(FRU_SLOT1);
-        write_device(vpath_iom_full_pwr_en, "1");
-      }
-      is_fru_missing[0] = 0;
-      is_fru_missing[1] = 0;
     }
 
     // If Mono Lake is present, monitor the server power status.
@@ -424,7 +453,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       curr_pwr_state = get_perst_value();
 
       if ((prev_pwr_state == SERVER_POWER_ON) && (curr_pwr_state == SERVER_POWER_OFF)) {
-        // Check server 12V power status, avoid changing the lps due to 12V-off      
+        // Check server 12V power status, avoid changing the lps due to 12V-off
         ret = pal_is_server_12v_on(FRU_SLOT1, &server_12v_status);
         if ((ret >= 0) && (server_12v_status == CTRL_ENABLE)) { // 12V-on
 
@@ -443,7 +472,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
           // If power-util is running, the power status might be changed soon.
           fp = fopen(vpath_pwr_util_lock, "r");
           if (fp == NULL) { // File is absent, means power-util is not running
-            pal_set_last_pwr_state(FRU_SLOT1, "off");            
+            pal_set_last_pwr_state(FRU_SLOT1, "off");
           } else {
             fclose(fp);
           }
@@ -458,10 +487,10 @@ gpio_monitor_poll(uint8_t fru_flag) {
         if ((ret >= 0) && (server_12v_status == CTRL_ENABLE)) {
           fp = fopen(vpath_pwr_util_lock , "r");
           if (fp == NULL) {
-            pal_set_last_pwr_state(FRU_SLOT1, "on");            
+            pal_set_last_pwr_state(FRU_SLOT1, "on");
           } else {
             fclose(fp);
-          }          
+          }
           syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SLOT1);
 
           // Inform BIOS that BMC is ready
@@ -528,7 +557,7 @@ run_gpiod(int argc, void **argv) {
 
 void iom_3v3_power_cycle (void) {
   char vpath[64] = {0};
-  
+
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   write_device(vpath, "1");
   write_device(vpath, "0");
@@ -538,7 +567,7 @@ void iom_3v3_power_cycle (void) {
 
 void iom_3v3_power_off (void) {
   char vpath[64] = {0};
-	
+
   sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
   write_device(vpath, "0");
 }
@@ -555,7 +584,7 @@ int get_perst_value (void) {
 }
 
 // It's used for monitoring BMC PERST pin to detect the server power status.
-void 
+void
 *OEM_PE_MON (void *ptr) {
   int value = 1;
   int cnt   = 0;
@@ -609,12 +638,12 @@ int
 main(int argc, void **argv) {
   char vpath[64] = {0};
   int iom_board_id = BOARD_MP;
-  
+
   if (argc < 2) {
     print_usage();
     exit(-1);
   }
-  
+
   init_gpio_pins();
 
   // It's a transition period from EVT to DVT

@@ -37,6 +37,7 @@ BOARD_EVT=0
 BOARD_DVT=1
 BOARD_MP=2
 
+
 # According to different stage to assign the correct IOM_FULL_GOOD GPIO pin
 GPIO_BOARD_REV_0=`cat /sys/class/gpio/gpio72/value`
 GPIO_BOARD_REV_1=`cat /sys/class/gpio/gpio73/value`
@@ -126,61 +127,34 @@ sync_date()
   fi
 }
 
-# Check Mono Lake and SCC is present or not:
-# 1. If Mono Lake absent, turn off Mono Lake HSC 12V and IOM 3V3
-# 2. If SCC absent, turn off Mono Lake HSC 12V and IOM 3V3
-#    (1) Get chassis type
-#    (2) If chsssis type is 5, check SCC is present or not on current side
-#    (3) If chsssis type is 7, only check SCCA present
+is_server_12v_off="1"
+
+# Check Mono Lake is  present or not:
+# If Mono Lake absent, turn off Mono Lake HSC 12V and IOM 3V3
 is_server_12v_off="1"
 if [ "$(is_server_prsnt)" == "0" ]; then
   logger -s -p user.warn -t power-on "The Mono Lake is absent, turn off Mono Lake HSC 12V and IOM 3V3."
   gpio_set O7 0
   gpio_set AA7 0
   is_server_12v_off="0"
-else
-  # Get chassis type and iom position
-  sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
-  PAL_SKU=$?
-  chassis_type=$(($(($PAL_SKU >> 6)) & 0x1))
-  iom_local=$(($(($PAL_SKU >> 4)) & 0x3))
-
-  if [ "$chassis_type" == "0" ]; then  # type 5
-    # IOMA
-    if [ "$iom_local" == "1" ] && [ "$(is_scc_prsnt 478)" == "0" ]; then
-      logger -s -p user.warn -t power-on "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
-      gpio_set O7 0
-      gpio_set AA7 0
-      is_server_12v_off="0"
-    #IOMB
-    elif [ "$iom_local" == "2" ] && [ "$(is_scc_prsnt 479)" == "0" ]; then
-      logger -s -p user.warn -t power-on "The SCCB is absent, turn off Mono Lake HSC 12V and IOM 3V3."
-      gpio_set O7 0
-      gpio_set AA7 0
-      is_server_12v_off="0"
-    fi
-  else  # type 7, only check SCCA
-    if [ "$iom_local" == "1" ] && [ "$(is_scc_prsnt 478)" == "0" ]; then
-      logger -s -p user.warn -t power-on "The SCCA is absent, turn off Mono Lake HSC 12V and IOM 3V3."
-      gpio_set O7 0
-      gpio_set AA7 0
-      is_server_12v_off="0"
-    fi
-  fi
 fi
 
 # Check whether it is fresh power on reset
 if [ "$(is_bmc_por)" == "1" ] && [ "$is_server_12v_off" == "1" ]; then
+
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
 
   # For fbttn remote SCC PWR sequence
   sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
-  chassis_type=$(($(($? >> 6)) & 0x1))
-  if [ "$chassis_type" == "1" ]; then  # type 7, always power-on SCC B
+  PAL_SKU=$(($(($? >> 6)) & 0x1))
+  if [ "$PAL_SKU" == "1" ]; then  # type 7, always power-on SCC B
     gpio_set F1 1
     gpio_tolerance_fun F1
   fi
+
+  # Turn on the IOM_FULL_PWR_EN to power on the M.2 and IOM 3v3 
+  gpio_set AA7 1
 
   # For fbttn MonoLake PWR sequence
   if [ "$(gpio_get $IOM_FULL_GOOD)" == "1" ]; then

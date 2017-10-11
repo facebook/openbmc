@@ -22,8 +22,10 @@ SRC_URI += "file://vr.cpp \
             file://cpld.cpp \
             file://bios.cpp \
             file://usbdbg.cpp \
+            file://usbdbg.h \
             file://me.cpp \
            "
+
 DEPENDS += "libgpio libme libcpld libbios libocpdbg-lcd libvr"
 RDEPENDS_${PN} += "libgpio libme libcpld libbios libocpdbg-lcd libvr"
 LDFLAGS += " -lgpio -lme -lcpld -lbios -locpdbg-lcd -lvr"

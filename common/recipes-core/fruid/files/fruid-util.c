@@ -133,7 +133,7 @@ void get_fruid_info(uint8_t fru, char *path, char* name) {
 
 static int
 print_usage() {
-  
+
   if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
     pal_fru_list_rw_t = pal_fru_list_rw_t + strlen("all, ");
   }
@@ -177,7 +177,7 @@ int main(int argc, char * argv[]) {
   if (exist == NULL) {
     print_usage();
     exit(-1);
-  }  
+  }
 
   if (fru == FRU_ALL && argc > 2) {
     printf("Cannot dump/write FRUID for \"all\". Please use select individual FRU.\n");
@@ -222,12 +222,18 @@ int main(int argc, char * argv[]) {
 
     ret = pal_is_fru_prsnt(fru, &status);
     if (ret < 0) {
-       printf("pal_is_server_fru failed for fru: %d\n", fru);
+       printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
        return ret;
     }
 
     if (status == 0) {
-      printf("%s is empty!\n\n", name);
+      printf("%s is not present!\n\n", name);
+      return ret;
+    }
+
+    ret = pal_is_fru_ready(fru, &status);
+    if ((ret < 0) || (status == 0)) {
+      printf("%s is unavailable!\n\n", name);
       return ret;
     }
 
@@ -329,7 +335,7 @@ int main(int argc, char * argv[]) {
 
     fru = 1;
 
-    while (fru <= MAX_NUM_FRUS) {    
+    while (fru <= MAX_NUM_FRUS) {
       ret = pal_get_fruid_path(fru, path);
       if (ret < 0) {
         fru++;
@@ -344,13 +350,20 @@ int main(int argc, char * argv[]) {
 
       ret = pal_is_fru_prsnt(fru, &status);
       if (ret < 0) {
-        printf("pal_is_server_fru failed for fru: %d\n", fru);
+        printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
         fru++;
         continue;
       }
 
       if (status == 0) {
-        printf("\n%s is empty!\n\n", name);
+        printf("\n%s is not present!\n\n", name);
+        fru++;
+        continue;
+      }
+
+      ret = pal_is_fru_ready(fru, &status);
+      if ((ret < 0) || (status == 0)) {
+        printf("%s is unavailable!\n\n", name);
         fru++;
         continue;
       }

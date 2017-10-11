@@ -455,8 +455,8 @@ snr_health_monitor() {
   uint8_t value = 0;
   int num;
   int ret = 0;
-  int fru_health_last_state[MAX_NUM_FRUS+1] = {0};
-  int fru_health_kv_state[MAX_NUM_FRUS+1] = {0};
+  uint8_t fru_health_last_state[MAX_NUM_FRUS+1] = {0};
+  uint8_t fru_health_kv_state[MAX_NUM_FRUS+1] = {0};
 
   // Initial fru health, default value is good.
   for (num = 0; num<=MAX_NUM_FRUS; num++){
@@ -561,12 +561,13 @@ run_sensord(int argc, char **argv) {
     if (GETBIT(fru_flag, fru))
       pthread_join(thread_snr[fru-1], NULL);
   }
+  return 0;
 }
 
 
 int
-main(int argc, void **argv) {
-  int dev, rc, pid_file;
+main(int argc, char **argv) {
+  int rc, pid_file;
 
   if (argc < 2) {
     print_usage();
@@ -584,7 +585,7 @@ main(int argc, void **argv) {
 
     syslog(LOG_INFO, "sensord: daemon started");
 
-    rc = run_sensord(argc, (char **) argv);
+    rc = run_sensord(argc, argv);
     if (rc < 0) {
       print_usage();
       return -1;

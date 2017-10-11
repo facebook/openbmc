@@ -52,6 +52,7 @@
 #define CMOS_VALID_FLAG      (1U << 1)
 //#define CHASSIS_GET_BOOT_OPTION_SUPPORT
 //#define CHASSIS_SET_BOOT_OPTION_SUPPORT
+#define CONFIG_FBTP 1
 
 static unsigned char IsTimerStart[MAX_NODES] = {0};
 
@@ -1398,7 +1399,7 @@ storage_clr_sel (unsigned char *request, unsigned char *response,
   return;
 }
 
-#ifdef CONFIG_FBTTN
+#if defined(CONFIG_FBTTN) || defined(CONFIG_FBTP)
 static void
 storage_get_sel_time (unsigned char *response, unsigned char *res_len)
 {
@@ -1466,7 +1467,7 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
     case CMD_STORAGE_CLR_SEL:
       storage_clr_sel (request, response, res_len);
       break;
-#ifdef CONFIG_FBTTN
+#if defined(CONFIG_FBTTN) || defined(CONFIG_FBTP)
      // To avoid BIOS using this command to update RTC
      // TBD: Respond only if BMC's time has synced with NTP
     case CMD_STORAGE_GET_SEL_TIME:

@@ -1,9 +1,11 @@
 #!/usr/bin/python
 import sys
+import os.path
 from subprocess import Popen, PIPE
 
 IPMIUTIL = "/usr/local/fbpackages/ipmi-util/ipmi-util"
 PLATFORM_FILE = "/tmp/system.bin"
+POST_CODE_FILE = "/tmp/post_code_buffer.bin"
 
 NODE_NUM = "1"  # FRU:1 Server
 IOM_M2 = 1      # IOM type: M.2
@@ -14,7 +16,7 @@ PCIe_port_name_T5 = {0: "SCC IOC", 1: "flash1", 2: "flash2", 3: "NIC"}
 PCIe_port_name_T7 = {0: "SCC IOC", 1: "IOM IOC", 3: "NIC"}
 
 def usage():
-    print("Usage: bios-util [ boot_order, plat_info, pcie_config, pcie_port_config ] <options>")
+    print("Usage: bios-util [ boot_order, plat_info, pcie_config, pcie_port_config, postcode ] <options>")
     exit(-1)
     
 def usage_boot_order():
@@ -39,6 +41,10 @@ def usage_PCIE_port_config():
         print("Usage: bios-util pcie_port_config [ --set <--enable, --disable> <scc_ioc, flash1, flash2, nic>, --get ]")
     elif ( iom_type == IOM_IOC ):
         print("Usage: bios-util pcie_port_config [ --set <--enable, --disable> <scc_ioc, iom_ioc, nic>, --get ]")
+    exit(-1)
+
+def usage_postcode():
+    print("Usage: bios-util postcode --get")
     exit(-1)
 
 def get_iom_type():
@@ -429,6 +435,13 @@ def pcie_port_config(argv):
     else:
         usage_PCIE_port_config()
 
+def postcode():
+    if os.path.isfile(POST_CODE_FILE):
+        postcode_file = open(POST_CODE_FILE, 'r')
+        print(postcode_file.read())
+    else:
+        print("POST code file is not exist!")
+
 def bios_main():
     if ( len(sys.argv) < 2 ):
         usage()
@@ -460,6 +473,13 @@ def bios_main():
             usage_PCIE_port_config()
         else:
             pcie_port_config(sys.argv)
+
+    elif ( sys.argv[1] == "postcode" ):
+        if ( len(sys.argv) != 3 ) or ( sys.argv[2] != "--get" ):
+            usage_postcode()
+        else:
+            postcode()
+
     else:
         usage()
         

@@ -23,6 +23,13 @@ UsbDbgBlComponent::UsbDbgBlComponent(string fru, string comp,
 
 int UsbDbgBlComponent::update(string image)
 {
-  return usb_dbg_update_boot_loader((char *)image.c_str());
+  int ret = FW_STATUS_NOT_SUPPORTED;
+
+  ret = usb_dbg_update_boot_loader((char *)image.c_str());
+  if (ret > 0) {
+    return FW_STATUS_SUCCESS;
+  } else {
+    return FW_STATUS_FAILURE;
+  }
 }
 

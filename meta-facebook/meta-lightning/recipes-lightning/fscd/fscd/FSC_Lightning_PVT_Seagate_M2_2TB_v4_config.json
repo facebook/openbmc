@@ -20,7 +20,7 @@
       [14,25]
     ]
   },
-  "watchdog": true,
+  "watchdog": false,
   "chassis_intrusion": true,
   "min_rpm": 400,
   "profiles": {
@@ -106,7 +106,7 @@
       "positive_hysteresis":0,
       "negative_hysteresis":3,
       "data": [
-        [1, 10],	
+        [1, 10],
         [60, 12],
         [61, 14],
         [62, 16],

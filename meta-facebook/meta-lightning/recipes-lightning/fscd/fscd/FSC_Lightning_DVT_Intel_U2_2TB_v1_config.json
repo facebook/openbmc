@@ -17,7 +17,7 @@
       [14,25]
     ]
   },
-  "watchdog": true,
+  "watchdog": false,
   "min_rpm": 400,
   "profiles": {
     "linear_ambient": {

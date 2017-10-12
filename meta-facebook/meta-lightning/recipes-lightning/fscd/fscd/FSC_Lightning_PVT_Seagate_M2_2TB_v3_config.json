@@ -20,7 +20,7 @@
       [14,25]
     ]
   },
-  "watchdog": true,
+  "watchdog": false,
   "chassis_intrusion": true,
   "min_rpm": 400,
   "profiles": {

@@ -442,21 +442,21 @@ sensor_thresh_array_init() {
       150, 0, 0, 0, 0, 0, 0, 0);
   //DPB FAN
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_FRONT,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_REAR,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_FRONT,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_REAR,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_FRONT,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_REAR,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_FRONT,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_REAR,
-      0, 0, 0, 400, 0, 0, 0, 0);
+      0, 0, 0, 1200, 0, 0, 0, 0);
   //DPB HSC
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_HSC_POWER,
       885, 0, 0, 0, 0, 0, 0, 0);

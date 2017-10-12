@@ -129,7 +129,7 @@ static char * get_chassis_type(uint8_t type_hex)
     return NULL;
   }
 
-  char * type_str = (char *) malloc(strlen(fruid_chassis_type[type]));
+  char * type_str = (char *) malloc(strlen(fruid_chassis_type[type])+1);
   if (!type_str) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
@@ -138,6 +138,7 @@ static char * get_chassis_type(uint8_t type_hex)
   }
 
   memcpy(type_str, fruid_chassis_type[type], strlen(fruid_chassis_type[type]));
+  type_str[strlen(fruid_chassis_type[type])] = '\0';
 
   return type_str;
 }

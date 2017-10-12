@@ -40,27 +40,49 @@ fruid_cache_init(void) {
   int i;
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
+  int retry = 0;
 
   sprintf(fruid_temp_path, "/tmp/tfruid_scc.bin");
   sprintf(fruid_path, "/tmp/fruid_scc.bin");
 
-  ret = exp_read_fruid(fruid_temp_path, FRU_SCC);
-  if (ret) {
-    syslog(LOG_ERR, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_SCC);
+  while(retry < 5) {
+    ret = exp_read_fruid(fruid_temp_path, FRU_SCC);
+    if (ret != 0) {
+      retry++;
+      msleep(20);
+    }     
+    else
+      break;
   }
+
+  if(retry == 5)
+    syslog(LOG_CRIT, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_SCC);
+  else
+    syslog(LOG_INFO, "SCC FRU initial is done.\n");
 
   rename(fruid_temp_path, fruid_path);
 
+  retry = 0;
   sprintf(fruid_temp_path, "/tmp/tfruid_dpb.bin");
   sprintf(fruid_path, "/tmp/fruid_dpb.bin");
 
-  //delay 3 seconds betwenn for two continuous commands
+  //delay 3 seconds between for two continuous commands
   sleep(3);
 
-  ret = exp_read_fruid(fruid_temp_path, FRU_DPB);
-  if (ret) {
-    syslog(LOG_ERR, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_DPB);
+  while(retry < 5) {
+    ret = exp_read_fruid(fruid_temp_path, FRU_DPB);
+    if (ret != 0) {
+      retry++;
+      msleep(20);
+    }     
+    else
+      break;
   }
+
+  if(retry == 5)
+    syslog(LOG_CRIT, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_DPB);
+  else
+    syslog(LOG_INFO, "DPB FRU initial is done.\n");
 
   rename(fruid_temp_path, fruid_path);
   return;

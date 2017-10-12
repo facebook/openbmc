@@ -13,6 +13,15 @@ echo $PID > $PID_FILE
 
 # kill previous autodump if exist
 if [ ! -z "$OLDPID" ] && (grep "autodump" /proc/$OLDPID/cmdline &> /dev/null) ; then
+
+  LOG_FILE='/tmp/autodump.log'
+  LOG_ARCHIVE='/mnt/data/autodump_uncompleted.tar.gz'
+  echo -n "(uncompleted) Auto Dump End at " >> $LOG_FILE
+  date >> $LOG_FILE
+
+  tar zcf $LOG_ARCHIVE -C `dirname $LOG_FILE` `basename $LOG_FILE` && \
+  rm -rf $LOG_FILE && \
+
   echo "kill pid $OLDPID..."
   kill -s 9 $OLDPID
   killall peci-util &> /dev/null

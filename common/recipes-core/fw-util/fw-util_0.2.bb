@@ -13,6 +13,7 @@ SRC_URI =+ "file://Makefile \
            file://bmc.cpp \
            file://nic.cpp \
            file://fscd.cpp \
+           file://tpm.cpp \
           "
 
 S = "${WORKDIR}"

@@ -328,6 +328,7 @@ int pal_set_edb_value(char *key, char *value);
 int pal_powering_on_flag(uint8_t slot_id);
 void pal_rm_powering_on_flag(uint8_t slot_id);
 int pal_is_bic_ready(uint8_t slot_id, uint8_t *status);
+int pal_get_iom_ioc_ver(uint8_t *ver);
 
 
 #ifdef __cplusplus

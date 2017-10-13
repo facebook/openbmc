@@ -223,24 +223,6 @@ get_ipmb_bus_id(uint8_t slot_id) {
   return bus_id;
 }
 
-static int
-set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
-  char key[64];
-  char value[64];
-  struct timespec ts;
-
-  sprintf(key, "slot%d_fwupd", slot_id);
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%d", ts.tv_sec);
-
-  if (edb_cache_set(key, value) < 0) {
-     return -1;
-  }
-
-  return 0;
-}
-
 int
 bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
                   uint8_t *txbuf, uint8_t txlen,
@@ -956,13 +938,6 @@ error_exit:
      close(ifd);
   }
 
-  set_fw_update_ongoing(slot_id, 0);
-
-  //Unlock fw-util
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
-  system(cmd);
-
   return ret;
 }
 
@@ -1064,7 +1039,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   printf("updating fw on slot %d:\n", slot_id);
   // Handle Bridge IC firmware separately as the process differs significantly from others
   if (comp == UPDATE_BIC) {
-    set_fw_update_ongoing(slot_id, 60);
     return  _update_bic_main(slot_id, path);
   }
 
@@ -1088,7 +1062,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       //goto error_exit;
     }
     syslog(LOG_CRIT, "bic_update_fw: update bios firmware on slot %d\n", slot_id);
-    set_fw_update_ongoing(slot_id, 30);
     dsize = st.st_size/100;
   } else if (comp == UPDATE_VR) {
     if (check_vr_image(fd, st.st_size) < 0) {
@@ -1096,7 +1069,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       goto error_exit;
     }
     syslog(LOG_CRIT, "bic_update_fw: update vr firmware on slot %d\n", slot_id);
-    set_fw_update_ongoing(slot_id, 25);
     dsize = st.st_size/5;
   } else {
     if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
@@ -1111,7 +1083,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
         syslog(LOG_CRIT, "bic_update_fw: update bic bootloader firmware on slot %d\n", slot_id);
         break;
     }
-    set_fw_update_ongoing(slot_id, 20);
     dsize = st.st_size/20;
   }
   // Write chunks of binary data in a loop
@@ -1151,7 +1122,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     if((last_offset + dsize) <= offset) {
        switch(comp) {
          case UPDATE_BIOS:
-           set_fw_update_ongoing(slot_id, 25);
            printf("updated bios: %d %%\n", offset/dsize);
            break;
          case UPDATE_CPLD:
@@ -1169,7 +1139,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   }
 
   if (comp == UPDATE_CPLD) {
-    set_fw_update_ongoing(slot_id, 60);
     for (i = 0; i < 60; i++) {  // wait 60s at most
       rc = _get_cpld_update_progress(slot_id, buf);
       if (rc) {
@@ -1192,7 +1161,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   if (comp != UPDATE_BIOS) {
     goto update_done;
   }
-  set_fw_update_ongoing(slot_id, 55);
 
   // Checksum calculation for BIOS image
   tbuf = malloc(BIOS_VERIFY_PKT_SIZE * sizeof(uint8_t));
@@ -1253,12 +1221,6 @@ error_exit:
     free(tbuf);
   }
 
-  set_fw_update_ongoing(slot_id, 0);
-
-  //Unlock fw-util
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
-  system(cmd);
   return ret;
 }
 

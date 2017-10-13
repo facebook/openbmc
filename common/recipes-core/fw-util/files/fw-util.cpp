@@ -23,6 +23,7 @@
 #include <string>
 #include <cstring>
 #include <stdlib.h>
+#include <unistd.h>
 #include <unordered_map>
 #include <map>
 #include <tuple>
@@ -103,6 +104,37 @@ void Component::populateFruList()
   }
 }
 
+class ProcessLock {
+  private:
+    string file;
+    int fd;
+    bool _ok;
+  public:
+  ProcessLock(string name) {
+    file = "/var/run/fw-util-" + name + ".lock";
+    _ok = false;
+    fd = open(file.c_str(), O_RDWR|O_CREAT, 0666);
+    if (fd < 0) {
+      return;
+    }
+    if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
+      close(fd);
+      fd = -1;
+      return;
+    }
+    _ok = true;
+  }
+  ~ProcessLock() {
+    if (_ok) {
+      remove(file.c_str());
+      close(fd);
+    }
+  }
+  bool ok() {
+    return _ok;
+  }
+};
+
 void usage()
 {
   cout << "USAGE: " << exec_name << " all|FRU --version [all|COMPONENT]" << endl;
@@ -146,6 +178,13 @@ int main(int argc, char *argv[])
       component = component.substr(2);
     }
   }
+
+  ProcessLock lock(fru);
+  if (!lock.ok()) {
+    cerr << "Another instance of fw-util for " << fru << " already running" << endl;
+    return -1;
+  }
+
   if (action == "--update") {
     uint8_t fru_id;
 

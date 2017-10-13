@@ -9,11 +9,13 @@
 using namespace std;
 
 class BiosComponent : public Component {
-  uint8_t slot_id;
+  string fru_name;
+  uint8_t slot_id = 0;
   Server server;
+  char err_str[SERVER_ERR_STR_LEN] = {0};
   public:
     BiosComponent(string fru, string comp, uint8_t _slot_id)
-      : Component(fru, comp), slot_id(_slot_id), server(_slot_id) {}
+      : Component(fru, comp), fru_name(fru), slot_id(_slot_id), server(_slot_id, (char *)fru_name.c_str(), err_str) {}
     int update(string image) {
       int ret;
       uint8_t status;
@@ -54,18 +56,19 @@ class BiosComponent : public Component {
       int i;
 
       if (!server.ready()) {
-        return FW_STATUS_NOT_SUPPORTED;
-      }
-      if (pal_get_sysfw_ver(slot_id, ver)) {
-        cout << "BIOS Version: NA" << endl;
-      }
-      else {
-        // BIOS version response contains the length at offset 2 followed by ascii string
-        printf("BIOS Version: ");
-        for (i = 3; i < 3+ver[2]; i++) {
-          printf("%c", ver[i]);
+        printf("BIOS Version: NA (%s)\n", err_str);
+      } else {
+        if (pal_get_sysfw_ver(slot_id, ver)) {
+          cout << "BIOS Version: NA" << endl;
         }
-        printf("\n");
+        else {
+          // BIOS version response contains the length at offset 2 followed by ascii string
+          printf("BIOS Version: ");
+          for (i = 3; i < 3+ver[2]; i++) {
+            printf("%c", ver[i]);
+          }
+          printf("\n");
+        }
       }
       return 0;
     }

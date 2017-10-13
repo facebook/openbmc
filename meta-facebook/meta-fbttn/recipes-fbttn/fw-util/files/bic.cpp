@@ -8,11 +8,13 @@
 using namespace std;
 
 class BicFwComponent : public Component {
-  uint8_t slot_id;
+  string fru_name;
+  uint8_t slot_id = 0;
   Server server;
+  char err_str[SERVER_ERR_STR_LEN] = {0};
   public:
     BicFwComponent(string fru, string comp, uint8_t _slot_id)
-      : Component(fru, comp), slot_id(_slot_id), server(_slot_id) {}
+      : Component(fru, comp), fru_name(fru), slot_id(_slot_id), server(_slot_id, (char *)fru_name.c_str(), err_str) {}
     int update(string image) {
       if (!server.ready()) {
         return FW_STATUS_NOT_SUPPORTED;
@@ -22,25 +24,28 @@ class BicFwComponent : public Component {
     int print_version() {
       uint8_t ver[32];
       if (!server.ready()) {
-        return FW_STATUS_NOT_SUPPORTED;
-      }
-      // Print Bridge-IC Version
-      if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
-        printf("Bridge-IC Version: NA\n");
-      }
-      else {
-        printf("Bridge-IC Version: v%x.%02x\n", ver[0], ver[1]);
+        printf("Bridge-IC Version: NA (%s)\n", err_str);
+      } else {
+        // Print Bridge-IC Version
+        if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
+          printf("Bridge-IC Version: NA\n");
+        }
+        else {
+          printf("Bridge-IC Version: v%x.%02x\n", ver[0], ver[1]);
+        }
       }
       return 0;
     }
 };
 
 class BicFwBlComponent : public Component {
-  uint8_t slot_id;
+  string fru_name;
+  uint8_t slot_id = 0;
   Server server;
+  char err_str[SERVER_ERR_STR_LEN] = {0};
   public:
     BicFwBlComponent(string fru, string comp, uint8_t _slot_id)
-      : Component(fru, comp), slot_id(_slot_id), server(_slot_id) {}
+      : Component(fru, comp), fru_name(fru), slot_id(_slot_id), server(_slot_id, (char *)fru_name.c_str(), err_str) {}
     int update(string image) {
       if (!server.ready()) {
         return FW_STATUS_NOT_SUPPORTED;
@@ -50,14 +55,15 @@ class BicFwBlComponent : public Component {
     int print_version() {
       uint8_t ver[32];
       if (!server.ready()) {
-        return FW_STATUS_NOT_SUPPORTED;
-      }
-      // Print Bridge-IC Bootloader Version
-      if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
-        printf("Bridge-IC Bootloader Version: NA\n");
-      }
-      else {
-        printf("Bridge-IC Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
+        printf("Bridge-IC Bootloader Version: NA (%s)\n", err_str);
+      } else {
+        // Print Bridge-IC Bootloader Version
+        if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
+          printf("Bridge-IC Bootloader Version: NA\n");
+        }
+        else {
+          printf("Bridge-IC Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
+        }
       }
       return 0;
     }

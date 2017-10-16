@@ -111,18 +111,23 @@ main(int argc, char **argv) {
 
   count = argc-1;
 
-
   for (i=1; i<argc; ++i) {
-      printf("0x%x ", atoi(argv[i]));
-      buf[i-1] = atoi(argv[i]);
+    buf[i-1] = atoi(argv[i]);
+  }
+
+#ifdef DEBUG
+  for (i=0; i<count; i++) {
+    if (i && !(i%16))
+      printf("\n");
+
+    printf("0x%x ", buf[i]);
   }
   printf("\n");
+#endif
 
   write_ftgmac0_value("cmd_payload", count, buf);
 
-
-  goto err_exit;
-
+  return 0;
 
 err_exit:
   print_usage_help();

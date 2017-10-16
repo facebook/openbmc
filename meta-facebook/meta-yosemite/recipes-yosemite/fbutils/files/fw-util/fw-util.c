@@ -342,6 +342,11 @@ main(int argc, char **argv) {
     if (argc != 5) {
       goto err_exit;
     }
+    if ((slot_id == OPT_NIC) || !strcmp(argv[3], "--nic") )
+    {
+        printf("fw_util: NIC update is not supported\n");
+        return -1;
+    }
     // single slot update
     if (slot_id <= OPT_SLOT4) {
       if (check_dup_process(slot_id) < 0) {

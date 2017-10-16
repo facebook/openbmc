@@ -1,4 +1,5 @@
 {
+  "version": "fbttn-dvt-v2.1",
   "pwm_transition_value": 55,
   "pwm_boost_value": 50,
   "sample_interval_ms": 3000,

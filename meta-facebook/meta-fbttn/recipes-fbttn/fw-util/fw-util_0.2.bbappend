@@ -19,16 +19,13 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://platform.cpp \
             file://vr.cpp \
-            file://cpld.cpp \
-            file://bios.cpp \
-            file://bic.cpp \
-            file://me.cpp \
             file://exp.cpp \
             file://ioc.cpp \
             file://usbdbg.cpp \
             file://usbdbg.h \
            "
 
+CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libexp libocpdbg-lcd"
 RDEPENDS_${PN} += "libipmi libipmb libbic libexp libocpdbg-lcd"
 LDFLAGS += " -lipmi -lipmb -lbic -lexp -locpdbg-lcd"

@@ -16,6 +16,14 @@ SRC_URI =+ "file://Makefile \
            file://nic.cpp \
            file://fscd.cpp \
            file://tpm.cpp \
+           file://bic_fw.cpp \
+           file://bic_fw.h \
+           file://bic_me.cpp \
+           file://bic_me.h \
+           file://bic_bios.cpp \
+           file://bic_bios.h \
+           file://bic_cpld.cpp \
+           file://bic_cpld.h \
           "
 
 S = "${WORKDIR}"

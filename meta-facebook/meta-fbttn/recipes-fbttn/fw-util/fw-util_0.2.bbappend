@@ -23,11 +23,9 @@ SRC_URI += "file://platform.cpp \
             file://bios.cpp \
             file://bic.cpp \
             file://me.cpp \
-            file://server.cpp \
             file://exp.cpp \
             file://ioc.cpp \
             file://usbdbg.cpp \
-            file://server.h \
             file://usbdbg.h \
            "
 

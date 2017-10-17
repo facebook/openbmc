@@ -22,8 +22,6 @@ SRC_URI += "file://vr.cpp \
             file://bios.cpp \
             file://bic.cpp \
             file://me.cpp \
-            file://server.cpp \
-            file://server.h \
            "
 DEPENDS += "libipmi libipmb libbic"
 RDEPENDS_${PN} += "libipmi libipmb libbic"

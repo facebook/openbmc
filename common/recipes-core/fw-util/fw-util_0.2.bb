@@ -10,6 +10,8 @@ LIC_FILES_CHKSUM = "file://fw-util.cpp;beginline=4;endline=16;md5=5f8ba3cd0f2160
 SRC_URI =+ "file://Makefile \
            file://fw-util.h \
            file://fw-util.cpp \
+           file://server.h \
+           file://server.cpp \
            file://bmc.cpp \
            file://nic.cpp \
            file://fscd.cpp \

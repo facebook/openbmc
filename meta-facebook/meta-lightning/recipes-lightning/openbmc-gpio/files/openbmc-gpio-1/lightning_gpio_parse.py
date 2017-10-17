@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -39,11 +40,11 @@ class CsvReader:
         self.path = path
 
         fileobj = open(path, 'r')
-        self.reader = csv.reader(fileobj, delimiter=b',', quotechar=b'"')
+        self.reader = csv.reader(fileobj, delimiter=str(u','), quotechar=str(u'"'))
 
     def next(self):
         try:
-            line = self.reader.next()
+            line = next(self.reader)
         except StopIteration:
             return None
         return line

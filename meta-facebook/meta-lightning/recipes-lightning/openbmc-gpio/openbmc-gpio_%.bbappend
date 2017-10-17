@@ -18,9 +18,21 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
-          file://board_gpio_table.py \
-          file://setup_board.py \
+          file://openbmc-gpio-1/board_gpio_table.py \
+          file://openbmc-gpio-1/board_passthrough_gpio_table.py \
+          file://openbmc-gpio-1/board_tolerance_gpio_table.py \
+          file://openbmc-gpio-1/openbmc_gpio_setup.py \
+          file://openbmc-gpio-1/setup_board.py \
           "
 OPENBMC_GPIO_SOC_TABLE = "ast2400_gpio_table.py"
+
+FILES_${PN} += "/usr/local/bin ${sysconfdir}"
+
+do_install_append() {
+     install -d ${D}${sysconfdir}/init.d
+     install -d ${D}${sysconfdir}/rcS.d
+     install -m 755 openbmc_gpio_setup.py ${D}${sysconfdir}/init.d/openbmc_gpio_setup.py
+     update-rc.d -r ${D} openbmc_gpio_setup.py start 59 5 .
+}
 
 FILES_${PN} += "/usr/local/bin ${sysconfdir}"

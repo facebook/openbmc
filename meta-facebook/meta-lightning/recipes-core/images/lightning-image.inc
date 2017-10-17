@@ -12,22 +12,6 @@ UBOOT_RAMDISK_LOADADDRESS = "0x40800000"
 UBOOT_IMAGE_LOADADDRESS = "0x40008000"
 FLASH_ROOTFS_OFFSET = "4608"
 
-PYTHON_PKGS = " \
-  python-core \
-  python-io \
-  python-json \
-  python-shell \
-  python-subprocess \
-  python-argparse \
-  python-ctypes \
-  python-datetime \
-  python-email \
-  python-threading \
-  python-mime \
-  python-pickle \
-  python-misc \
-  python-netserver \
-  "
 
 NTP_PKGS = " \
   ntp \
@@ -50,7 +34,7 @@ IMAGE_INSTALL += " \
   usb-console \
   sensor-util \
   sensor-mon \
-  ${PYTHON_PKGS} \
+  packagegroup-openbmc-python3 \
   ${NTP_PKGS} \
   iproute2 \
   dhcp-client \
@@ -66,6 +50,7 @@ IMAGE_INSTALL += " \
   spatula \
   enclosure-util \
   fw-util \
+  openbmc-gpio \
   "
 
 IMAGE_FEATURES += " \

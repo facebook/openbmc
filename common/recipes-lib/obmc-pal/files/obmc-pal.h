@@ -245,7 +245,7 @@ int pal_ipmb_processing(int bus, void *buf, uint16_t size);
 int pal_ipmb_finished(int bus, void *buf, uint16_t size);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 void pal_set_def_restart_cause(uint8_t slot);
-
+int pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size);
 #ifdef __cplusplus
 }
 #endif

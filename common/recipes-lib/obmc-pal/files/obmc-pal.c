@@ -1594,3 +1594,108 @@ pal_set_def_restart_cause(uint8_t slot) {
   }
 }
 
+int __attribute__((weak))
+pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size)
+{
+  FILE *fru_in_fd=NULL;
+  FILE *fru_out_fd=NULL;
+  uint8_t *fru_in_arr=NULL;
+  uint8_t *fru_out_arr=NULL;
+  int ret=PAL_EOK;
+  int size=0;
+  int i;
+
+  //get the size
+  size=cmp_size * sizeof(uint8_t);
+
+  //open the fru_in file
+  fru_in_fd = fopen(fru_in, "rb");
+  if ( NULL == fru_in_fd ) {
+    syslog(LOG_WARNING, "[%s] unable to open the file: %s", __func__, fru_in);
+    ret=PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  //open the fru_out file
+  fru_out_fd = fopen(fru_out, "rb");
+  if ( NULL == fru_out_fd ) {
+    syslog(LOG_WARNING, "[%s] unable to open the file: %s", __func__, fru_out);
+    ret=PAL_ENOTSUP;
+    goto error_exit;
+  }
+  
+  //get the fru_in data
+  fru_in_arr = (uint8_t*) malloc(size);
+  ret = fread(fru_in_arr, sizeof(uint8_t), size, fru_in_fd);
+  if ( ret != size )
+  {
+    syslog(LOG_WARNING, "[%s] Get fru_in data fail", __func__);
+    ret=PAL_ENOTSUP;
+    goto error_exit;    
+  }
+
+#ifdef FRU_DEBUG  
+  syslog(LOG_WARNING,"[%s] Print Read_in", __func__);
+  for ( i=0; i<size; i++ )
+  {
+    syslog(LOG_WARNING, "[%s]ReadIn[%d]=%x", __func__, i, fru_in_arr[i]);
+  }
+#endif
+
+  //get the fru_out data
+  fru_out_arr = (uint8_t*) malloc(size);
+  ret=fread(fru_out_arr, sizeof(uint8_t), size, fru_out_fd);
+  if ( ret != size )
+  {
+    syslog(LOG_WARNING, "[%s] Get fru_out data fail", __func__);
+    ret=PAL_ENOTSUP;
+    goto error_exit;    
+  }
+
+#ifdef FRU_DEBUG
+  syslog(LOG_WARNING,"[%s] Print Read_out", __func__);
+  for ( i=0; i<size; i++ )
+  {
+    syslog(LOG_WARNING, "[%s]ReadOut[%d]=%x", __func__, i, fru_out_arr[i]);
+  }
+  
+#endif
+
+  for ( i=0; i<size; i++ )
+  {
+    if ( fru_in_arr[i] != fru_out_arr[i] )
+    {
+      printf("[%s]FRU Comparison Fail. Data Mismatch\n", __func__);
+      syslog(LOG_WARNING, "[%s]FRU Comparison Fail. Data Mismatch", __func__);
+      syslog(LOG_WARNING, "[%s]Index:%d In:%x Out:%x", __func__, i, fru_in_arr[i], fru_out_arr[i]);
+      ret=PAL_ENOTSUP;
+      goto error_exit;
+    }
+  }
+  
+  ret=PAL_EOK;
+
+error_exit:
+
+  if ( NULL != fru_in_fd )
+  {
+     close(fru_in_fd);
+  }
+  
+  if ( NULL != fru_out_fd )
+  {
+     close(fru_out_fd);
+  }
+  
+  if ( NULL != fru_in_arr )
+  {
+    free(fru_in_arr);
+  }
+  
+  if ( NULL != fru_out_arr )
+  {
+    free(fru_out_arr);
+  }
+  
+  return ret;
+}

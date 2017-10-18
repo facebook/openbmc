@@ -36,25 +36,25 @@
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
 
-void
+int
 fruid_cache_init(uint8_t slot_id) {
   // Initialize Slot0's fruid
-  int ret;
-  int i;
+  int ret=0;
+  int fru_size=0;
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
 
   sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
   sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
 
-  ret = bic_read_fruid(slot_id, 0, fruid_temp_path);
+  ret = bic_read_fruid(slot_id, 0, fruid_temp_path, &fru_size);
   if (ret) {
-    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid returns %d\n", ret);
+    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid returns %d, fru_size: %d\n", ret, fru_size);
   }
 
   rename(fruid_temp_path, fruid_path);
 
-  return;
+  return ret;
 }
 
 void
@@ -112,8 +112,10 @@ int
 main (int argc, char * const argv[])
 {
   int ret;
-  ipmi_dev_id_t id = {0};
   uint8_t slot_id;
+  uint8_t self_test_result[2]={0};
+  int retry = 0;
+  int max_retry = 3;
 
   if (argc != 2) {
     return -1;
@@ -121,12 +123,28 @@ main (int argc, char * const argv[])
 
   slot_id = atoi(argv[1]);
 
+  // Check BIC Self Test Result
   do {
-    ret = bic_get_dev_id(slot_id, &id);
+    ret = bic_get_self_test_result(slot_id, &self_test_result);
+    if (ret == 0) {
+      syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
+      break;
+    }
     sleep(5);
   } while (ret != 0);
 
-  fruid_cache_init(slot_id);
+  // Get Server FRU
+  do {
+    if (fruid_cache_init(slot_id) == 0)
+      break;
+
+    retry++;
+    sleep(1);
+  } while (retry < max_retry);
+
+  if (retry == max_retry)
+    syslog(LOG_CRIT, "Fail on getting Server FRU.");
+
   sdr_cache_init(slot_id);
 
   return 0;

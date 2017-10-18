@@ -297,14 +297,14 @@ util_get_fruid_info(uint8_t slot_id) {
 static void
 util_read_fruid(uint8_t slot_id) {
   int ret;
-  int i;
+  int fru_size = 0;
 
   char path[64] = {0};
   sprintf(path, "/tmp/fruid_slot%d.bin", slot_id);
 
-  ret = bic_read_fruid(slot_id, 0, path);
+  ret = bic_read_fruid(slot_id, 0, path, &fru_size);
   if (ret) {
-    printf("util_read_fruid: bic_read_fruid returns %d\n", ret);
+    printf("util_read_fruid: bic_read_fruid returns %d, fru_size: %d\n", ret, fru_size);
     return;
   }
 }

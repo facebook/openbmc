@@ -294,6 +294,17 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   return 0;
 }
 
+// Get Self-Test result
+int
+bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result) {
+  int ret;
+  uint8_t rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS, NULL, 0, (uint8_t *) self_test_result, &rlen);
+
+  return ret;
+}
+
 // Get Device ID
 int
 bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id) {
@@ -1287,8 +1298,8 @@ _read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uin
 }
 
 int
-bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
-  int ret;
+bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size) {
+  int ret = 0;
   uint32_t nread;
   uint32_t offset;
   uint8_t count;
@@ -1320,6 +1331,9 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
 
   // Indicates the size of the FRUID
   nread = (info.size_msb << 6) + (info.size_lsb);
+  *fru_size = nread;
+  if (*fru_size == 0)
+     goto error_exit;
 
   // Read chunks of FRUID binary data in a loop
   offset = 0;
@@ -1346,12 +1360,15 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
     nread -= (rlen-1);
   }
 
+ close(fd);
+ return ret;
+
 error_exit:
   if (fd > 0 ) {
     close(fd);
   }
 
-  return ret;
+  return -1;
 }
 
 static int

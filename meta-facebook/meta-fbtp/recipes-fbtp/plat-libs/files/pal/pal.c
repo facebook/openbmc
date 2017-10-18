@@ -3618,29 +3618,44 @@ pal_fruid_write(uint8_t fru, char *path)
   uint8_t device_addr = 0;
   uint8_t device_type = 0;
   uint8_t acutal_riser_slot = 0;
+  int ret=PAL_EOK;
+  FILE *fruid_fd;
 
+  fruid_fd = fopen(path, "rb");
+  if ( NULL == fruid_fd ) {
+    syslog(LOG_WARNING, "[%s] unable to open the file: %s", __func__, path);
+    return PAL_ENOTSUP;
+  }
+
+  fseek(fruid_fd, 0, SEEK_END);
+  fru_size = (uint32_t) ftell(fruid_fd);
+  fclose(fruid_fd);
+  printf("[%s]FRU Size: %d\n", __func__, fru_size);
   switch (fru)
   {
     case FRU_RISER_SLOT2:
     case FRU_RISER_SLOT3:
     case FRU_RISER_SLOT4:
       acutal_riser_slot = fru - FRU_RISER_SLOT2;//make the slot start from 0
-      if ( pal_is_ava_card( acutal_riser_slot ) )
+      if ( true == pal_is_ava_card( acutal_riser_slot ) )
       {
-        fru_size = 512;
         device_type = FOUND_AVA_DEVICE;
         device_addr = 0x50;
         bus = RISER_BUS_ID;
         sprintf(device_name, "24c64");
         sprintf(command, "dd if=%s of=%s bs=%d count=1", path, EEPROM_RISER, fru_size);
       }
+      else
+      {
+        //if there is no riser card, return
+        syslog(LOG_WARNING, "[%s] There is no fru on the riser slot %d ", __func__, fru);
+        return PAL_ENOTSUP;
+      }
     break;
 
     default:
       //if there is an unknown device on the slot, return
-#if DEBUG
-      syslog(LOG_WARNING, "[%s] Unknown device on the slot", __func__, slot);
-#endif
+      syslog(LOG_WARNING, "[%s] Unknown device on the fru %d ", __func__, fru);
       return PAL_ENOTSUP;
     break;
   }
@@ -3648,16 +3663,25 @@ pal_fruid_write(uint8_t fru, char *path)
   switch (device_type)
   {
     case FOUND_AVA_DEVICE:
-      mux_lock(&riser_mux, acutal_riser_slot, 2);
+      mux_lock(&riser_mux, acutal_riser_slot, 5);
       pal_add_i2c_device(bus, device_name, device_addr);
       system(command);
+      //compare the in and out data
+      ret=pal_compare_fru_data((char*)EEPROM_RISER, path, fru_size);
+      if (ret < 0)
+      {
+        ret = PAL_ENOTSUP;
+        system("i2cdetect -y -q 1 > /tmp/AVA_FRU_FAIL.log");
+        syslog(LOG_ERR, "[%s] AVA FRU Write Fail", __func__);
+      }
+            
       pal_del_i2c_device(bus, device_addr);
       mux_release(&riser_mux);
     break;
 
   }
 
-  return PAL_EOK;
+  return ret;
 }
 
 int

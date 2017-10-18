@@ -32,7 +32,7 @@ def pal_print_postcode(fru):
 
 def pal_get_fru_id(fruname):
     fruid = c_ubyte(0)
-    ret = lpal_hndl.pal_get_fru_id(c_char_p(fruname), byref(fruid))
+    ret = lpal_hndl.pal_get_fru_id(fruname.encode('ascii'), byref(fruid))
     if (ret != 0):
         return ret
     return fruid.value

@@ -151,6 +151,8 @@ int main(int argc, char * argv[]) {
   int fd_tmpbin;
   int fd_newbin;
   int fd_eeprom;
+  FILE *fp;
+  int fru_size;
   uint8_t fru;
   char *file_path = NULL;
   char path[64] = {0};
@@ -291,6 +293,23 @@ int main(int argc, char * argv[]) {
         return errno;
       }
 
+
+      fp = fopen(file_path, "rb");
+      if ( NULL == fp )
+      {
+        syslog(LOG_ERR, "Unable to get the %s fp %s", file_path, strerror(errno));
+        return errno;
+      }
+
+      //get the size of the new binary
+      fseek(fp, 0L, SEEK_END);
+      fru_size = ftell(fp);
+      rewind(fp);
+      close(fp);
+
+      //check the size overflow or not
+      fru_size = (fru_size > FRUID_SIZE)?FRUID_SIZE:fru_size;
+
       ret = pal_get_fruid_eeprom_path(fru, eeprom_path);
       if (ret < 0) {
         //Can not handle in common, so call pal libray for update
@@ -311,15 +330,28 @@ int main(int argc, char * argv[]) {
           close(fd_tmpbin);
           return -1;
         }
-        sprintf(command, "dd if=%s of=%s bs=%d count=1", file_path, eeprom_path, FRUID_SIZE);
+        sprintf(command, "dd if=%s of=%s bs=%d count=1", file_path, eeprom_path, fru_size);
         system(command);
+
+        ret = pal_compare_fru_data(eeprom_path, file_path, fru_size);
+        if (ret < 0)
+        {
+          syslog(LOG_ERR, "[%s] FRU:%d Write Fail", __func__, fru);
+          close(fd_newbin);
+          close(fd_tmpbin);
+          return -1;
+        }
       }
-      ret = copy_file(fd_tmpbin, fd_newbin, FRUID_SIZE);
+      
+      ret = copy_file(fd_tmpbin, fd_newbin, fru_size);
       if (ret < 0) {
         syslog(LOG_ERR, "copy: write to %s file failed: %s",
             path, strerror(errno));
+        close(fd_newbin);
+        close(fd_tmpbin);
         return ret;
       }
+
       close(fd_newbin);
       close(fd_tmpbin);
 

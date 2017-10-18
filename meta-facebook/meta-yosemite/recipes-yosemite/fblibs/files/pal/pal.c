@@ -972,6 +972,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
 int
 pal_sled_cycle(void) {
+  syslog(LOG_CRIT, "SLED_CYCLE successful");
   pal_update_ts_sled();
   // Remove the adm1275 module as the HSC device is busy
   system("rmmod adm1275");

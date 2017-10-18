@@ -41,7 +41,6 @@
 #define STATUS_LCR  "lcr"
 #define STATUS_LNR  "lnr"
 
-#define MAX_HISTORY_PERIOD     3600
 #define AGGREGATE_SENSOR_START 0x100
 #define AGGREGATE_SENSOR_FRU   0xff
 
@@ -60,9 +59,41 @@ print_usage() {
   printf("       <sensor num>: 0xXX (Omit [sensor num] means all sensors.)\n");
   printf("       <option>:\n");
   printf("         --threshold                        show all thresholds\n");
-  printf("         --history <period: [1 ~ %4d] s>   show max, min and average values\n",
-         MAX_HISTORY_PERIOD);
+  printf("         --history <period>   show max, min and average values of last <period> seconds\n");
+  printf("         --history <period>[m/h/d] show max, min and average values of last <period> minutes/hours/days\n");
+  printf("              example --history 4d means history of 4 days\n");
+  printf("         --history <period>   show max, min and average values of last <period> seconds\n");
   printf("         --history-clear                    clear history values\n");
+}
+
+static int convert_period(char *str, long *val) {
+  char *endptr = NULL;
+  long ret;
+  int rc = 0;
+  ret = strtol(str, &endptr, 0);
+  switch(*endptr) {
+    case 'd':
+    case 'D':
+      *val = ret * 24 * 3600;
+      break;
+    case 'h':
+    case 'H':
+      *val = ret * 3600;
+      break;
+    case 'm':
+    case 'M':
+      *val = ret * 60;
+      break;
+    case 's':
+    case 'S':
+    case '\0':
+      *val = ret;
+      break;
+    default:
+      rc = -1;
+      break;
+  }
+  return rc;
 }
 
 static void
@@ -343,8 +374,7 @@ main(int argc, char **argv) {
       history = true;
       if (argc == (i+2)) {
         errno = 0;
-        period = strtol(argv[i+1], NULL, 0);
-        if (errno || (period <= 0) || (period > MAX_HISTORY_PERIOD)) {
+        if (convert_period(argv[i+1], &period)) {
           print_usage();
           exit(-1);
         }

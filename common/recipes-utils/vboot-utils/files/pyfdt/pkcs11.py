@@ -7,7 +7,6 @@
 
 import os
 import sys
-import StringIO
 
 from . import pyfdt
 

@@ -13,12 +13,12 @@ SRC_URI += " \
 
 S = "${WORKDIR}"
 
-DEPENDS = "python"
-RDEPEND_${PN}-python += "python python-argparse"
+DEPENDS = "python3"
+RDEPEND_${PN}-python3 += "python3 python3-argparse"
 
-PACKAGES += "${PN}-python"
+PACKAGES += "${PN}-python3"
 
-inherit distutils python-dir
+inherit distutils3 python-dir
 
 do_compile() {
   # No-op

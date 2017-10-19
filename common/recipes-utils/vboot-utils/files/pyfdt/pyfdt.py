@@ -290,7 +290,7 @@ class FdtPropertyWords(FdtProperty):
 
     def to_raw(self):
         """Return RAW value representation"""
-        return ''.join([pack('>I', word) for word in self.words])
+        return b''.join([pack('>I', word) for word in self.words])
 
     def __str__(self):
         """String representation"""

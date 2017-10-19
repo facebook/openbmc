@@ -2803,12 +2803,16 @@ key_func_ntp (int event, void *arg)
       // Remove old NTP server
       kv_get("ntp_server", ntp_server_old);
       if (strlen(ntp_server_old) > 2) {
+        snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
+        system(cmd);
         snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
         system(cmd);
       }
       // Add new NTP server
       snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", (char *)arg);
       if (strlen(ntp_server_new) > 2) {
+        snprintf(cmd, MAX_VALUE_LEN, "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
+        system(cmd);
         snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
         system(cmd);
       }

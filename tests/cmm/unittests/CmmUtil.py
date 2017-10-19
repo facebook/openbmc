@@ -20,7 +20,7 @@ class CmmUtil(BaseUtil.BaseUtil):
 
     # Fans
     GetFanCmd = '/usr/local/bin/get_fan_speed.sh 1'
-    SetFanCmd = '/usr/local/bin/set_fan_speed.sh 0'
+    SetFanCmd = '/usr/local/bin/set_fan_speed.sh 0 1'
     KillControlCmd = ['/usr/local/bin/watchdog_ctrl.sh off',
                       '/usr/bin/killall -USR1 fand']
     StartControlCmd = '/bin/sh /etc/init.d/setup-fan.sh'
@@ -29,11 +29,13 @@ class CmmUtil(BaseUtil.BaseUtil):
         """
         Supports getting fan speed for CMM
         """
+        info = info.decode('utf-8')
         info = info.split(':')[1].split('RPM')
         speed = int(info[0])
         return speed
 
     def get_fan_test(self, info):
+        info = info.decode('utf-8')
         info = info.split('\n')
         goodRead = ['Fan', 'RPM']
         for line in info:
@@ -49,7 +51,7 @@ class CmmUtil(BaseUtil.BaseUtil):
     EEPROMCmd = '/usr/bin/weutil'
 
     # sol
-    solCmd = '/usr/local/bin/sol.sh cmm'
+    solCmd = '/usr/local/bin/sol.sh lc101'
     solCloseConnection = ['\r', 'CTRL-x']
 
     def solConnectionClosed(self, info):

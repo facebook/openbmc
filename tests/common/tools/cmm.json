@@ -11,7 +11,7 @@
       "eth0.4088":"yes"
     }],
   "eepromTest.py":"yes",
-  "fansTest.py":"yes",
+  "fansTest.py":"no",
   "connectionTest.py":["yes",
     {
       "version":6

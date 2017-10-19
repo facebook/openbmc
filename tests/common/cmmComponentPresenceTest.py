@@ -19,6 +19,7 @@ def componentPresence():
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     info, err = f.communicate()
+    info = info.decode('utf-8')
     if len(err) > 0:
         raise Exception(err + " [FAILED]")
     info = info.split('\n')
@@ -28,7 +29,8 @@ def componentPresence():
     logger.debug("Checking component presence output")
     for line in info:
         if ':' in line:
-            if '1' not in line.split(':')[1]:
+            data = line.split(':')
+            if 'peer_cmm' not in data[0] and '1' not in data[1]:
                 success = False
 
     if success:

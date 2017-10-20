@@ -20,6 +20,7 @@
 from aiohttp import web
 from rest_utils import get_endpoints
 import rest_usb2i2c_reset
+from rest_utils import dumps_bytestr, get_endpoints
 
 class boardApp_Handler:
 

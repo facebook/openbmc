@@ -21,6 +21,7 @@ from aiohttp import web
 from rest_utils import get_endpoints
 import rest_usb2i2c_reset
 import rest_i2cflush
+from rest_utils import dumps_bytestr, get_endpoints
 
 class boardApp_Handler:
 
@@ -30,5 +31,5 @@ class boardApp_Handler:
         #return rest_usb2i2c_reset.set_usb2i2c()
 
     async def rest_i2cflush_hdl(self,request):
-        return web.json_response(rest_i2cflush.i2cflush())
+        return web.json_response(rest_i2cflush.i2cflush(), dumps=dumps_bytestr)
 

@@ -54,7 +54,7 @@ def get_bmc():
         reset_reason = "User Initiated Reset or WDT Reset"
 
     # Get BMC's Up Time
-    uptime = Popen('uptime', shell=True, stdout=PIPE).stdout.read()
+    uptime = Popen('uptime', shell=True, stdout=PIPE).stdout.read().decode()
 
     # Use another method, ala /proc, but keep the old one for backwards
     # compat.

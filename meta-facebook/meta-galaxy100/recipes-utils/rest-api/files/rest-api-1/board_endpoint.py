@@ -25,34 +25,34 @@ import rest_sol
 import rest_usb2i2c_reset
 import rest_firmware
 import rest_i2cflush
-
+from rest_utils import dumps_bytestr, get_endpoints
 
 class boardApp_Handler:
 
     # Handler for sys/mb/fruid_scm resource endpoint
     async def rest_fruid_scm_hdl(self, request):
-        return web.json_response(rest_fruid_scm.get_fruid_scm())
+        return web.json_response(rest_fruid_scm.get_fruid_scm(), dumps=dumps_bytestr)
 
     # Handler for sys/mb/seutil resource endpoint
     async def rest_chassis_eeprom_hdl(self, request):
-        return web.json_response(rest_chassis_eeprom.get_chassis_eeprom())
+        return web.json_response(rest_chassis_eeprom.get_chassis_eeprom(), dumps=dumps_bytestr)
 
     # Handler for sys/mb/seutil resource endpoint
     async def rest_seutil_hdl(self, request):
-        return web.json_response(rest_seutil.get_seutil())
+        return web.json_response(rest_seutil.get_seutil(), dumps=dumps_bytestr)
 
     # Handler for SOL resource endpoint
     async def rest_sol_act_hdl(self, request):
         data = await request.json()
-        return web.json_response(rest_sol.sol_action(data))
+        return web.json_response(rest_sol.sol_action(data), dumps=dumps_bytestr)
 
     # Handler to reset usb-to-i2c
     async def rest_usb2i2c_reset_hdl(self, request):
-        return web.json_response(rest_usb2i2c_reset.set_usb2i2c())
+        return web.json_response(rest_usb2i2c_reset.set_usb2i2c(), dumps=dumps_bytestr)
 
     # Handler to get firmware info
     async def rest_firmware_info(self, request):
-        return web.json_response(rest_firmware.get_firmware_info())
+        return web.json_response(rest_firmware.get_firmware_info(), dumps=dumps_bytestr)
 
     # Handler to unfreeze I2C bus through I2C clock flush
     @boardApp.route('/api/sys/i2cflush')

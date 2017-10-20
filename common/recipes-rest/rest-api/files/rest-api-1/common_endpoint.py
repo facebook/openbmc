@@ -30,7 +30,7 @@ import rest_fcpresent
 import rest_mTerm
 import asyncio
 from aiohttp import web
-from rest_utils import get_endpoints
+from rest_utils import dumps_bytestr, get_endpoints
 from concurrent.futures import ThreadPoolExecutor
 
 def common_force_async(func):
@@ -64,7 +64,7 @@ class commonApp_Handler:
             "Actions": [],
             "Resources": get_endpoints('/api')
         }
-        return web.json_response(result)
+        return web.json_response(result, dumps=dumps_bytestr)
 
     @common_force_async
     def rest_api(self, request):
@@ -79,7 +79,7 @@ class commonApp_Handler:
             "Actions": [],
             "Resources": get_endpoints('/api/sys')
         }
-        return web.json_response(result)
+        return web.json_response(result, dumps=dumps_bytestr)
 
     @common_force_async
     def rest_sys(self,request):
@@ -94,7 +94,7 @@ class commonApp_Handler:
             "Actions": [],
             "Resources": get_endpoints('/api/sys/mb')
         }
-        return web.json_response(result)
+        return web.json_response(result, dumps=dumps_bytestr)
 
     @common_force_async
     def rest_mb_sys(self, request):
@@ -102,7 +102,7 @@ class commonApp_Handler:
 
     # Handler for sys/mb/fruid resource endpoint
     def helper_rest_fruid_hdl(self,request):
-        return web.json_response(rest_fruid.get_fruid())
+        return web.json_response(rest_fruid.get_fruid(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_fruid_hdl(self,request):
@@ -110,7 +110,8 @@ class commonApp_Handler:
 
     # Handler for sys/bmc resource endpoint
     def helper_rest_bmc_hdl(self,request):
-        return web.json_response(rest_bmc.get_bmc())
+        result = rest_bmc.get_bmc()
+        return web.json_response(result, dumps=dumps_bytestr)
 
     @common_force_async
     def rest_bmc_hdl(self,request):
@@ -118,7 +119,7 @@ class commonApp_Handler:
 
     # Handler for sys/server resource endpoint
     def helper_rest_server_hdl(self,request):
-        return web.json_response(rest_server.get_server())
+        return web.json_response(rest_server.get_server(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_server_hdl(self,request):
@@ -127,7 +128,7 @@ class commonApp_Handler:
     # Handler for uServer resource endpoint
     def helper_rest_server_act_hdl(self,request):
         data = request.json()
-        return web.json_response(rest_server.server_action(data))
+        return web.json_response(rest_server.server_action(data), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_server_act_hdl(self,request):
@@ -135,7 +136,7 @@ class commonApp_Handler:
 
     # Handler for sensors resource endpoint
     def helper_rest_sensors_hdl(self,request):
-        return web.json_response(rest_sensors.get_sensors())
+        return web.json_response(rest_sensors.get_sensors(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_sensors_hdl(self,request):
@@ -143,7 +144,7 @@ class commonApp_Handler:
 
     # Handler for gpios resource endpoint
     def helper_rest_gpios_hdl(self,request):
-        return web.json_response(rest_gpios.get_gpios())
+        return web.json_response(rest_gpios.get_gpios(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_gpios_hdl(self,request):
@@ -151,7 +152,7 @@ class commonApp_Handler:
 
     # Handler for peer FC presence resource endpoint
     def helper_rest_fcpresent_hdl(self,request):
-        return web.json_response(rest_fcpresent.get_fcpresent())
+        return web.json_response(rest_fcpresent.get_fcpresent(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_fcpresent_hdl(self,request):
@@ -159,7 +160,7 @@ class commonApp_Handler:
 
     # Handler for Modbus_registers resource endpoint
     def helper_modbus_registers_hdl(self,request):
-        return web.json_response(rest_modbus.get_modbus_registers())
+        return web.json_response(rest_modbus.get_modbus_registers(), dumps=dumps_bytestr)
 
     @common_force_async
     def modbus_registers_hdl(self,request):
@@ -167,7 +168,7 @@ class commonApp_Handler:
 
     # Handler for psu_update resource endpoint
     def helper_psu_update_hdl(self,request):
-        return web.json_response(rest_psu_update.get_jobs())
+        return web.json_response(rest_psu_update.get_jobs(), dumps=dumps_bytestr)
 
     @common_force_async
     def psu_update_hdl(self,request):
@@ -176,7 +177,7 @@ class commonApp_Handler:
     # Handler for psu_update resource action
     def helper_psu_update_hdl_post(self,request):
         data = request.json()
-        return web.json_response(rest_psu_update.begin_job(data))
+        return web.json_response(rest_psu_update.begin_job(data), dumps=dumps_bytestr)
 
     @common_force_async
     def psu_update_hdl_post(self,request):
@@ -184,7 +185,7 @@ class commonApp_Handler:
 
     # Handler for get slotid from endpoint
     def helper_rest_slotid_hdl(self,request):
-        return web.json_response(rest_slotid.get_slotid())
+        return web.json_response(rest_slotid.get_slotid(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_slotid_hdl(self,request):
@@ -192,7 +193,7 @@ class commonApp_Handler:
 
     # Handler for mTerm status
     def helper_rest_mTerm_status(self,request):
-        return web.json_response(rest_mTerm.get_mTerm_status())
+        return web.json_response(rest_mTerm.get_mTerm_status(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_mTerm_status(self,request):

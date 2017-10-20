@@ -37,6 +37,7 @@
 #include <sys/reboot.h>
 #include "watchdog.h"
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 
 #define I2C_BUS_NUM            14
@@ -1145,12 +1146,81 @@ fw_update_monitor() {
   return NULL;
 }
 
+static int log_count(const char *str)
+{
+  char cmd[512];
+  FILE *fp;
+  int ret;
+  snprintf(cmd, sizeof(cmd), "grep \"%s\" /mnt/data/logfile /mnt/data/logfile.0 2> /dev/null | wc -l", str);
+  fp = popen(cmd, "r");
+  if (!fp) {
+    return 0;
+  }
+  if (fscanf(fp, "%d", &ret) != 1) {
+    ret = 0;
+  }
+  pclose(fp);
+  return ret;
+}
+
+/* Called when we have booted into the golden image
+ * because of verified boot failure */
+static void check_vboot_recovery(uint8_t error_type, uint8_t error_code)
+{
+  char log[512];
+  char curr_err[MAX_VALUE_LEN] = {0};
+  int assert_count, deassert_count;
+
+  /* Technically we can get this from the kv store vboot_error. But
+   * we cannot trust it since it could be compromised. Hence try to
+   * infer this by counting ASSERT and DEASSERT logs from the persistent
+   * log file */
+  snprintf(log, sizeof(log), " ASSERT: Verified boot failure (%d,%d)", error_type, error_code);
+  assert_count = log_count(log);
+  snprintf(log, sizeof(log), " DEASSERT: Verified boot failure (%d,%d)", error_type, error_code);
+  deassert_count = log_count(log);
+  if (assert_count <= deassert_count) {
+    /* This is the first time we are seeing this error. Log it */
+    syslog(LOG_CRIT, "ASSERT: Verified boot failure (%d,%d)", error_type, error_code);
+  }
+  /* Set the error so main can deassert with the correct error code */
+  snprintf(curr_err, sizeof(curr_err), "(%d,%d)", error_type, error_code);
+  kv_set("vboot_error", curr_err);
+}
+
+/* Called when we have booted into CS1. Note verified boot
+ * could have still failed if we are not in SW enforcement */
+static void check_vboot_main(uint8_t error_type, uint8_t error_code)
+{
+  char last_err[MAX_VALUE_LEN] = {0};
+
+  if (error_type != 0 || error_code != 0) {
+    /* The only way we will boot into BMC (CS1) while there
+     * is an active vboot error is if we are not enforcing.
+     * Act as if we are in recovery */
+    check_vboot_recovery(error_type, error_code);
+  } else {
+    /* We have successfully booted into a verified BMC! */
+    if (0 != kv_get("vboot_error", last_err)) {
+      /* We do not have info of the previous error. Not much we can do
+       * log an info message and carry on */
+      syslog(LOG_INFO, "Verified boot successful!");
+    } else if (strcmp(last_err, "(0,0)")) {
+      /* We just recovered from a previous error! */
+      syslog(LOG_CRIT, "DEASSERT: Verified boot failure %s", last_err);
+      /* Do not deassert again on reboot */
+      kv_set("vboot_error", "(0,0)");
+    }
+  }
+}
+
 static void check_vboot_state(void)
 {
   int mem_fd;
   uint8_t *vboot_base;
   uint8_t error_type;
   uint8_t error_code;
+  uint8_t recovery_flag;
 
   mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
   if (mem_fd < 0) {
@@ -1167,18 +1237,13 @@ static void check_vboot_state(void)
 
   error_type = VERIFIED_BOOT_ERROR_TYPE(vboot_base);
   error_code = VERIFIED_BOOT_ERROR_CODE(vboot_base);
-  if (error_type != 0 || error_code != 0) {
-    syslog(LOG_CRIT, "ASSERT: Verified boot failure (%u:%u)", error_type, error_code);
-    /* TODO Action? */
-  }
+  recovery_flag = VERIFIED_BOOT_RECOVERY_FLAG(vboot_base);
 
-  if (VERIFIED_BOOT_RECOVERY_FLAG(vboot_base)) {
-    syslog(LOG_CRIT, "ASSERT: Verification of BMC image failed");
-    /* TODO Action? */
+  if (recovery_flag) {
+    check_vboot_recovery(error_type, error_code);
   } else {
-    syslog(LOG_INFO, "Boot into BMC successful");
+    check_vboot_main(error_type, error_code);
   }
-
   munmap(vboot_base, PAGE_SIZE);
   close(mem_fd);
 }

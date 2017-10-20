@@ -16,9 +16,9 @@ SRC_URI = "file://Makefile \
           "
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpal -ljansson "
+LDFLAGS =+ " -lpal -ljansson -lkv "
 
-DEPENDS =+ " libpal jansson obmc-i2c update-rc.d-native"
+DEPENDS =+ " libpal jansson obmc-i2c libkv update-rc.d-native"
 
 binfiles = "healthd"
 

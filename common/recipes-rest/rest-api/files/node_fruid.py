@@ -38,6 +38,7 @@ class fruidNode(node):
         result = {}
         cmd = '/usr/local/bin/fruid-util ' + self.name
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = data.decode()
         sdata = data.split('\n')
         for line in sdata:
             # skip lines with --- or startin with FRU

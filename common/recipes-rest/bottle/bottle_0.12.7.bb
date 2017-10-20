@@ -9,11 +9,14 @@ SRC_URI[sha256sum] = "e3ea2191f06ca51af45bf6ca41ed2d1b2d809ceda0876466879fe205be
 
 S = "${WORKDIR}/${PN}-${PV}"
 
-dst="/usr/lib/python2.7"
+# TODO: Remove dst_py2 once all the platforms migrate to py3
+dst_py2="/usr/lib/python2.7"
+dst_py3="/usr/lib/python3.5"
 
 do_install() {
   mkdir -p ${D}/${dst}
-  install -m 755 bottle.py ${D}/${dst}
+  install -m 755 bottle.py ${D}/${dst_py2}
+  install -m 755 bottle.py ${D}/${dst_py3}
 }
 
 FILES_${PN} = "${dst}"

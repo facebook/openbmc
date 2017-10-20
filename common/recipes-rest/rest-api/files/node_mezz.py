@@ -33,7 +33,7 @@ class mezzNode(node):
             self.actions = actions
 
 def get_node_mezz():
-    name = pal_get_platform_name()
+    name = pal_get_platform_name().decode()
     info = {
             "Description": name + " Mezzanine Card",
            }

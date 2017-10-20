@@ -40,6 +40,7 @@ class sensorsNode(node):
         result = {}
         cmd = '/usr/local/bin/sensor-util ' + self.name
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = data.decode()
         sdata = data.split('\n')
         for line in sdata:
             # skip lines with " or startin with FRU

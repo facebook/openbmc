@@ -80,7 +80,7 @@ def pal_server_action(slot_id, command):
         cmd = '/usr/bin/fpc-util slot'+sid+' --identify off'
     else:
         return -1
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     if ret.startswith( 'Usage' ):
         return -1
     else:
@@ -124,7 +124,7 @@ def pal_sled_action(command):
     else:
         return -1
 
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     if ret.startswith( 'Usage' ):
         return -1
     else:

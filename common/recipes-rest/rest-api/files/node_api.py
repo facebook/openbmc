@@ -23,7 +23,7 @@ from pal import *
 
 def get_node_api():
 
-    name = pal_get_platform_name()
+    name = pal_get_platform_name().decode()
     info = {
         "Description": name + " RESTful API Entry",
         }

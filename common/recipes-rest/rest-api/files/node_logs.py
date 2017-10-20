@@ -39,6 +39,7 @@ class logsNode(node):
         linfo = []
         cmd = '/usr/local/bin/log-util ' + self.name +' --print'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = data.decode()
         sdata = data.split('\n')
         for line in sdata:
             # skip lines with --- or startin with FRU
@@ -73,6 +74,7 @@ class logsNode(node):
         else:
             cmd = '/usr/local/bin/log-util ' + self.name +' --clear'
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+            data = data.decode()
             if data.startswith( 'Usage' ):
                 res = 'failure'
             else:

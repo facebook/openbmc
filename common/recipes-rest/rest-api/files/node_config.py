@@ -36,7 +36,7 @@ class configNode(node):
     def getInformation(self):
         result = {}
         cmd = '/usr/local/bin/cfg-util dump-all'
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         sdata = data.split('\n');
         altname = self.name.replace('slot', 'server')
         for line in sdata:
@@ -51,7 +51,7 @@ class configNode(node):
         # Get the list of parameters to be updated
         params = data["update"]
         altname = self.name.replace('slot', 'server')
-        for key in params.keys():
+        for key in list(params.keys()):
             # update only if the key starts with the name
             if key.find(self.name) != -1 or key.find(altname) != -1:
                 ret = pal_set_key_value(key, params[key])

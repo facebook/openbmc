@@ -318,6 +318,9 @@ devmem_clear_bit $(scu_addr 84) 2
 
 gpio_export G2
 
+# FM_BIOS_SMI_ACTIVE_N: GPIOG7 (55) 
+gpio_export G7
+
 # FM_PMBUS_ALERT_BUF_EN_N: GPIOL5 (93)
 # To use GPIOG2, SCU84[21] and SCU90[5] must be 0
 devmem_clear_bit $(scu_addr 84) 21

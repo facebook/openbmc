@@ -39,6 +39,8 @@
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
 
+//#define SMI_DEBUG
+
 #define TOUCH(path) \
 {\
   int fd = creat(path, 0644);\
@@ -54,7 +56,6 @@ static uint8_t MSMI_irq = 0;
 static long int reset_sec = 0, power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static bool smi_count_start = false;
 static bool MCERR_IERR_assert = false;
 static int g_uart_switch_count = 0;
 
@@ -208,21 +209,26 @@ static void
 *smi_timer()
 {
 
+  char *pin_name="GPIOG7";
+  int pin_num = 0;
   int smi_timeout_count = 1;  
   int smi_timeout_threshold = 90;
   bool is_issue_event = false;
+ 
+  pin_num = gpio_num(pin_name);
 
 #ifdef SMI_DEBUG
   syslog(LOG_WARNING, "[%s][%lu] Timer is started.\n", __func__, pthread_self());
+  syslog(LOG_WARNING, "[%s] Get GPIO Num: %d", __func__, pin_num);
 #endif
-
+  
   while(1)
   {
-    if ( smi_count_start == true )
+    if ( GPIO_VALUE_LOW == gpio_get(pin_num) ) 
     {
       smi_timeout_count++;
     }
-    else
+    else if ( GPIO_VALUE_HIGH == gpio_get(pin_num) )
     {
       smi_timeout_count = 0;
     }
@@ -236,7 +242,7 @@ static void
       syslog(LOG_CRIT, "ASSERT: GPIOG7-FM_BIOS_SMI_ACTIVE_N\n");
       is_issue_event = true;
     }
-    else if ( (is_issue_event == true) && (smi_count_start == false) )
+    else if ( (true == is_issue_event) && (0 == smi_timeout_count) )
     {
       syslog(LOG_CRIT, "DEASSERT: GPIOG7-FM_BIOS_SMI_ACTIVE_N\n");
       is_issue_event = false;
@@ -245,7 +251,7 @@ static void
     //sleep periodically.
     sleep(1);
 #ifdef SMI_DEBUG
-    syslog(LOG_WARNING, "[%s][%lu] smi_count_start flag is %d. count=%d\n", __func__, pthread_self(), smi_count_start, smi_timeout_count);
+    syslog(LOG_WARNING, "[%s][%lu] count=%d\n", __func__, pthread_self(), smi_timeout_count);
 #endif
   }
 
@@ -287,18 +293,6 @@ static void gpio_event_handle_power(gpio_poll_st *gp)
   }
   if (gp->gs.gs_gpio == gpio_num("GPION3") ){ //FM_CPU_MSMI_LVT3_N
     MSMI_irq++;
-    return;
-  }
-
-  if ( gp->gs.gs_gpio == gpio_num("GPIOG7") ) {//GPIOG7
-    if ( gp->value == GPIO_VALUE_LOW )
-    {
-      smi_count_start = true;
-    }
-    else
-    {
-      smi_count_start = false;
-    }
     return;
   }
 
@@ -393,7 +387,6 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPIOG1", "FM_CPU_CATERR_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOG2", "FM_PCH_BMC_THERMTRIP_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG3", "FM_CPU0_SKTOCC_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG7", "FM_BIOS_SMI_ACTIVE_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI0", "FM_CPU0_FIVR_FAULT_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI1", "FM_CPU1_FIVR_FAULT_LVT3_N"},
   {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL0", "IRQ_UV_DETECT_N"},

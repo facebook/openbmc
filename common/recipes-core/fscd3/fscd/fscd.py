@@ -101,11 +101,11 @@ class Fscd(object):
         self.wdfile = None
         if self.watchdog:
             Logger.info("watchdog pinging enabled")
-            self.wdfile = open('/dev/watchdog', 'w+')
+            self.wdfile = open('/dev/watchdog', 'wb+', buffering=0)
             if not self.wdfile:
                 Logger.error("couldn't open watchdog device")
             else:
-                self.wdfile.write('V')
+                self.wdfile.write(b'V')
                 self.wdfile.flush()
         self.interval = self.fsc_config['sample_interval_ms'] / 1000.0
 
@@ -362,7 +362,7 @@ class Fscd(object):
 
         while True:
             if self.wdfile:
-                self.wdfile.write('V')
+                self.wdfile.write(b'V')
                 self.wdfile.flush()
 
             time.sleep(self.interval)
@@ -388,7 +388,7 @@ def handle_term(signum, frame):
     Logger.warn("killed by signal %d" % (signum,))
     if signum == signal.SIGQUIT and wdfile:
         Logger.info("Killed with SIGQUIT - stopping watchdog.")
-        wdfile.write("X")
+        wdfile.write(b"X")
         wdfile.flush()
         wdfile.close()
         wdfile = None

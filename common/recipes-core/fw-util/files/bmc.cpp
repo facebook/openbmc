@@ -108,7 +108,7 @@ class BmcComponent : public Component {
         fscanf(fp, "OpenBMC Release %s\n", vers);
         fclose(fp);
       }
-      cout << _component << " Version: " << string(vers) << endl;
+      cout << "BMC Version: " << string(vers) << endl;
       return FW_STATUS_SUCCESS;
     }
 };

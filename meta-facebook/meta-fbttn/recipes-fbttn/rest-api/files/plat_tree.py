@@ -81,7 +81,7 @@ def init_plat_tree():
         r_server = populate_server_node(i)
         if r_server:
             r_api.addChild(r_server)
-   
+
     #Add /api/nic/fruid end point
     r_temp = tree("fruid", data = get_node_fruid("nic"))
     r_nic.addChild(r_temp)

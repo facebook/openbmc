@@ -67,7 +67,7 @@ def board_callout(callout='None', **kwargs):
 
 def set_all_pwm(boost):
     cmd = ('/usr/local/bin/fan-util --set %d' % (boost))
-    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     return response
 
 
@@ -100,7 +100,7 @@ def get_power_status(fru):
     cmd = "/usr/local/bin/power-util %s status" % fru
     data=''
     try:
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         result=data.split(": ")
         if match(r'ON', result[1]) != None:
             return 1
@@ -109,6 +109,6 @@ def get_power_status(fru):
     except SystemExit:
         Logger.debug("SystemExit from sensor read")
         raise
-    except:
+    except Exception:
         Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
     return -1

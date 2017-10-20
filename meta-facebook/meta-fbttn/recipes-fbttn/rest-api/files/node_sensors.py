@@ -21,7 +21,7 @@ class sensorsNode(node):
     def getInformation(self):
         result = {}
         cmd = '/usr/local/bin/sensor-util ' + self.name
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         sdata = data.split('\n')
         for line in sdata:
             # skip lines with " or startin with FRU

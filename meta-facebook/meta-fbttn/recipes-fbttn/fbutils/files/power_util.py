@@ -31,6 +31,7 @@ POR_LPS = '%s/last_state' % POR_DIR
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
+
 class PORConfig():
     on  = "1"     # Default ON
     off = "2"     # Default OFF
@@ -64,7 +65,7 @@ def init_por():
     if not os.path.isfile(POR_CONFIG):
         try:
             os.makedirs(POR_DIR)
-        except OSERROR as err:
+        except OSError as err:
             pass
 
         por_cnfg = open(POR_CONFIG, 'w')

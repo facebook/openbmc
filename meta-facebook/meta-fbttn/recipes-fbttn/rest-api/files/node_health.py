@@ -18,29 +18,29 @@ class healthNode(node):
             self.actions = actions
 
     def getInformation(self):
-    
+
         # Enclosure health LED status (GOOD/BAD)
         dpb_hlth = Popen('cat /mnt/data/kv_store/dpb_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         iom_hlth = Popen('cat /mnt/data/kv_store/iom_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         nic_hlth = Popen('cat /mnt/data/kv_store/nic_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         scc_hlth = Popen('cat /mnt/data/kv_store/scc_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         slot1_hlth = Popen('cat /mnt/data/kv_store/slot1_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
 
         if ((dpb_hlth == "1")&(iom_hlth == "1")&(nic_hlth == "1")&(scc_hlth == "1")&(slot1_hlth == "1")):
            result="Good"
         else:
            result="Bad"
-        
+
         info = {
            "Status of enclosure health LED": result
         }
 
         return info
-    
+
 def get_node_health():
     return healthNode()

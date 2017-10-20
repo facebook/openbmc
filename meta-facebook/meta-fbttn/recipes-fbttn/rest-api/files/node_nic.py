@@ -4,7 +4,7 @@ from node import node
 from pal import *
 
 def get_node_nic():
-    name = pal_get_platform_name()
+    name = pal_get_platform_name().decode()
     info = {
             "Description": name + " Mezzanine Card",
     }

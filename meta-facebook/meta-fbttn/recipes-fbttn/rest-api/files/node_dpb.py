@@ -19,11 +19,11 @@ class dpbNode(node):
     def getInformation(self):
         result = {}
 
-        name = pal_get_platform_name()
+        name = pal_get_platform_name().decode()
         result["Description"] = name + " Drive Plan Board"
 
         cmd = '/usr/bin/enclosure-util --error'
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         data = data.strip()
         sdata = data.split('\n')
         for line in sdata:
@@ -31,7 +31,7 @@ class dpbNode(node):
             result[kv[0].strip()] = kv[1].strip()
 
         cmd = '/usr/bin/enclosure-util --hdd-status'
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         data = data.strip()
         sdata = data.split('\n')
         for line in sdata:
@@ -42,7 +42,7 @@ class dpbNode(node):
 
         for hddnum in range(0, 35):
             cmd = '/usr/bin/enclosure-util --hdd-status '+ str(hddnum)
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             data = data.strip()
             kv = data.split(':')
             result[kv[0].strip()] = kv[1].strip()

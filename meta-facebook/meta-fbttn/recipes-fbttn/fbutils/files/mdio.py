@@ -39,6 +39,7 @@ def devmem_read(reg):
     cmd = devmem_read_cmd(reg)
     #print('Cmd: {}'.format(cmd))
     out = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
+    out = out.decode()
     return int(out, 0)
 
 
@@ -88,6 +89,7 @@ def write_mdio(args):
 def auto_int(x):
     return int(x, 0)
 
+
 if __name__ == '__main__':
     ap = ArgumentParser()
     ap.add_argument('--mac', '-m', type=int, default=2,
@@ -118,7 +120,7 @@ if __name__ == '__main__':
         exit(-1)
 
     if args.phy > 0x1f:
-        printf("PHY address must be smaller than 0x1f.")
+        print("PHY address must be smaller than 0x1f.")
         exit(-2)
 
     args.func(args)

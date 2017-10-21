@@ -14,9 +14,10 @@ dst_py2="/usr/lib/python2.7"
 dst_py3="/usr/lib/python3.5"
 
 do_install() {
-  mkdir -p ${D}/${dst}
+  mkdir -p ${D}/${dst_py2}
+  mkdir -p ${D}/${dst_py3}
   install -m 755 bottle.py ${D}/${dst_py2}
   install -m 755 bottle.py ${D}/${dst_py3}
 }
 
-FILES_${PN} = "${dst}"
+FILES_${PN} = "${dst_py2} ${dst_py3}"

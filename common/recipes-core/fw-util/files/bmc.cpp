@@ -54,6 +54,38 @@ static bool get_mtd_name(const char* name, char* dev)
   return found;
 }
 
+string get_machine()
+{
+  string ret = "";
+  char machine[128] = "NA";
+  FILE *fp = fopen("/etc/issue", "r");
+  if (fp) {
+    if (fscanf(fp, "OpenBMC Release %[^ \t\n-]", machine) == 1) {
+      ret = machine;
+    }
+    fclose(fp);
+  }
+  return ret;
+}
+
+bool is_image_valid(string &image)
+{
+  string curr_machine = get_machine();
+  string cmd = "grep \"U-Boot 2016.07 " + curr_machine +
+    "\" " + image + " 2> /dev/null | wc -l";
+  FILE *fp = popen(cmd.c_str(), "r");
+  if (!fp) {
+    return false;
+  }
+  bool ret = false;
+  int num = 0;
+  if (fscanf(fp, "%d", &num) == 1 && num > 0) {
+    ret = true;
+  }
+  pclose(fp);
+  return ret;
+}
+
 /* Flashes full image to provided MTD. Gets version from 
  * /etc/issue */
 class BmcComponent : public Component {
@@ -73,6 +105,11 @@ class BmcComponent : public Component {
       if (_mtd_name == "") {
         // Upgrade not supported
         return FW_STATUS_NOT_SUPPORTED;
+      }
+
+      if (is_image_valid(image_path) == false) {
+        cerr << image_path << " is not a valid BMC image for " << get_machine() << endl;
+        return FW_STATUS_FAILURE;
       }
 
       if (!get_mtd_name(_mtd_name.c_str(), dev)) {

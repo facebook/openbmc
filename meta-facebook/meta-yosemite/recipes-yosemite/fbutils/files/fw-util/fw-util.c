@@ -332,7 +332,6 @@ main(int argc, char **argv) {
        return 0;
      }
      for (slot_id = 1; slot_id < MAX_NUM_OPTIONS; slot_id++) {
-        printf("Get version info for slot%d\n", slot_id);
         print_fw_ver(slot_id);;
         printf("\n");
      }

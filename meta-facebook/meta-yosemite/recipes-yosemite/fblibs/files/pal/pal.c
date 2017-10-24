@@ -417,12 +417,21 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
 static int
 server_12v_on(uint8_t slot_id) {
   char vpath[64] = {0};
+  int val;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
 
   sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+
+  if (read_device(vpath, &val)) {
+    return -1;
+  }
+
+  if (val == 0x1) {
+    return 1;
+  }
 
   if (write_device(vpath, "1")) {
     return -1;
@@ -435,12 +444,21 @@ server_12v_on(uint8_t slot_id) {
 static int
 server_12v_off(uint8_t slot_id) {
   char vpath[64] = {0};
+  int val;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
 
   sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+
+  if (read_device(vpath, &val)) {
+    return -1;
+  }
+
+  if (val == 0x0) {
+    return 1;
+  }
 
   if (write_device(vpath, "0")) {
     return -1;
@@ -952,7 +970,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       return server_12v_off(slot_id);
 
     case SERVER_12V_CYCLE:
-      if (server_12v_off(slot_id)) {
+      if (server_12v_off(slot_id) < 0) {
         return -1;
       }
 

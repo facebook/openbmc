@@ -422,9 +422,9 @@ gpio_set I7 1
 # DISABLE_FAN_N: GPIOM4 (100)
 gpio_set M4 1
 
-# Set FAST PROCHOT pin
+# Set FAST PROCHOT pin (Default Enable)
 # FAST_PROCHOT_EN: GPIOR4 (140)
-gpio_set R4 0
+gpio_set R4 1
 
 # PE_BUFF_OE_0_N: GPIOB4 (12)
 # To use GPIOB4, SCU70[23] must be 0

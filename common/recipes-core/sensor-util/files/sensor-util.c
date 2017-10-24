@@ -26,6 +26,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <getopt.h>
 #include <time.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
@@ -43,6 +44,8 @@
 
 #define AGGREGATE_SENSOR_START 0x100
 #define AGGREGATE_SENSOR_FRU   0xff
+
+#define SENSOR_ALL             -1
 
 #ifdef CUSTOM_FRU_LIST
   static const char * pal_fru_list_sensor_history_t =  pal_fru_list_sensor_history;
@@ -170,7 +173,7 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
     snr_num = sensor_list[i];
 
     /* If calculation is for a single sensor, ignore all others. */
-    if (num && snr_num != num) {
+    if (num != SENSOR_ALL && snr_num != num) {
       continue;
     }
 
@@ -201,7 +204,7 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
 
   for (i = 0; i < sensor_cnt; i++) {
     snr_num = sensor_list[i];
-    if (num && snr_num != num) {
+    if (num != SENSOR_ALL && snr_num != num) {
       continue;
     }
 
@@ -225,7 +228,7 @@ static void clear_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_c
 
   for (i = 0; i < sensor_cnt; i++) {
     snr_num = sensor_list[i];
-    if (num && snr_num != num) {
+    if (num != SENSOR_ALL && snr_num != num) {
       continue;
     }
     if (sensor_clear_history(fru, snr_num)) {
@@ -235,7 +238,7 @@ static void clear_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_c
 }
 
 static void
-print_aggregate_sensor(bool threshold, uint16_t snr_num)
+print_aggregate_sensor(bool threshold, int snr_num)
 {
   size_t cnt, i;
   char status[8];
@@ -256,7 +259,7 @@ print_aggregate_sensor(bool threshold, uint16_t snr_num)
     int ret;
     uint16_t num = i + AGGREGATE_SENSOR_START;
 
-    if (snr_num && snr_num != num) {
+    if (snr_num != SENSOR_ALL && snr_num != num) {
       continue;
     }
     if (aggregate_sensor_threshold(i, &thresh)) {
@@ -273,13 +276,12 @@ print_aggregate_sensor(bool threshold, uint16_t snr_num)
 }
 
 static int
-print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool history_clear, long period) {
+print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool history_clear, long period) {
   int ret;
   uint8_t status;
   int sensor_cnt;
   uint8_t *sensor_list;
   char fruname[16] = {0};
-  char* valid;
 
   if (pal_get_fru_name(fru, fruname)) {
     sprintf(fruname, "fru%d", fru);
@@ -307,13 +309,6 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
     return ret;
   }
 
-  if (history_clear || history) {
-    //Check if the input FRU is exist in sensor history list
-    valid = strstr(pal_fru_list_sensor_history_t, fruname);
-    if (valid == NULL)
-      return 0;
-  }
-
   if (history_clear) {
     clear_sensor_history(fru, sensor_list, sensor_cnt, sensor_num);
   } else if (history) {
@@ -324,74 +319,101 @@ print_sensor(uint8_t fru, uint8_t sensor_num, bool history, bool threshold, bool
 
   //Print Empty Line to separate frus,
   //only when sensor_cnt greater than 0, not history-clear, and sensor_num is not specified
-  if ( (sensor_cnt > 0) && (!history_clear) && (sensor_num == 0) )
+  if ( (sensor_cnt > 0) && (!history_clear) && (sensor_num == SENSOR_ALL) )
     printf("\n");
+  return 0;
+}
+
+int parse_args(int argc, char *argv[], char *fruname,
+    bool *history_clear, bool *history, bool *threshold, long *period, int *snr)
+{
+  int ret;
+  int num;
+  char *end;
+  int index;
+  static struct option long_opts[] = {
+    {"history-clear", no_argument, 0, 'c'},
+    {"history", required_argument, 0, 'h'},
+    {"threshold", no_argument,     0, 't'},
+    {0,0,0,0},
+  };
+
+  /* Set defaults */
+  *history_clear = false;
+  *history = false;
+  *threshold = false;
+  *period = 60;
+  *snr = -1;
+
+  while(-1 != (ret = getopt_long(argc, argv, "ch:t", long_opts, &index))) {
+    switch(ret) {
+      case 'c':
+        *history_clear = true;
+        break;
+      case 't':
+        *threshold = true;
+        break;
+      case 'h':
+        *history = true;
+        if (convert_period(optarg, period)) {
+          return -1;
+        }
+        break;
+      default:
+        return -1;
+    }
+  }
+  if (argc < optind + 1) {
+    return -1;
+  }
+  strcpy(fruname, argv[optind]);
+
+  if (argc > optind + 1) {
+    *snr = strtol(argv[optind + 1], &end, 0);
+    if (!end || *end != '\0') {
+      printf("Invalid sensor: %s\n", argv[optind + 1]);
+      return -1;
+    }
+  }
+  /* Only one of these flags should be on at 
+   * any time */
+  num = (int)*threshold + (int)*history_clear + (int)*history;
+  if (num > 1) {
+    return -1;
+  }
+
   return 0;
 }
 
 int
 main(int argc, char **argv) {
 
-  int i = 2;
   int ret = 0;
   uint8_t fru;
-  uint16_t num = 0;
-  bool threshold = false;
-  bool history = false;
-  bool history_clear = false;
-  long period = 60;
-  char* valid;
+  int num;
+  bool threshold;
+  bool history;
+  bool history_clear;
+  long period;
+  char fruname[32];
 
-  if (argc < 2 || argc > 5) {
+  if (parse_args(argc, argv, fruname,
+        &history_clear, &history,
+        &threshold, &period, &num)) {
     print_usage();
     exit(-1);
   }
 
-  if (!strcmp(argv[1], "aggregate")) {
+  if (!strcmp(fruname, "aggregate")) {
     fru = AGGREGATE_SENSOR_FRU;
   } else {
-    ret = pal_get_fru_id(argv[1], &fru);
+    ret = pal_get_fru_id(fruname, &fru);
     if (ret < 0) {
       print_usage();
       return ret;
     }
   }
 
-  if (argc > 2) {
-    errno = 0;
-    num = (uint16_t) strtol(argv[2], NULL, 0);
-    if ((errno == 0) && (num > 0)) {
-      i++;
-    } else {
-      num = 0;
-    }
-  }
-
-  if (argc > i) {
-    if (!(strcmp(argv[i], "--threshold"))) {
-      threshold = true;
-    } else if (!(strcmp(argv[i], "--history"))) {
-      history = true;
-      if (argc == (i+2)) {
-        errno = 0;
-        if (convert_period(argv[i+1], &period)) {
-          print_usage();
-          exit(-1);
-        }
-      }
-    } else if (!(strcmp(argv[i], "--history-clear"))) {
-      history_clear = true;
-    } else {
-      print_usage();
-      exit(-1);
-    }
-  }
-  if ((threshold && history)
-      || (threshold && history_clear)
-      || (history && history_clear)) {
-    print_usage();
-    exit(-1);
-  }
   if (fru == AGGREGATE_SENSOR_FRU && (history || history_clear)) {
     printf("Sensor history unsupported for aggregate sensors.\n");
     exit(-1);
@@ -399,8 +421,7 @@ main(int argc, char **argv) {
 
   if (history_clear || history) {
     //Check if the input FRU is exist in sensor history list
-    valid = strstr(pal_fru_list_sensor_history_t, argv[1]);
-    if (valid == NULL) {
+    if (NULL == strstr(pal_fru_list_sensor_history_t, fruname)) {
       print_usage();
       exit(-1);
     }
@@ -409,7 +430,7 @@ main(int argc, char **argv) {
   if (fru == 0) {
     if (num < AGGREGATE_SENSOR_START) {
       for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-        ret |= print_sensor(fru, (uint8_t)num, history, threshold, history_clear, period);
+        ret |= print_sensor(fru, num, history, threshold, history_clear, period);
       }
     }
     if (!history && !history_clear) {
@@ -419,7 +440,7 @@ main(int argc, char **argv) {
     print_aggregate_sensor(threshold, num);
   } else {
     if (num < AGGREGATE_SENSOR_START) {
-      ret = print_sensor(fru, (uint8_t)num, history, threshold, history_clear, period);
+      ret = print_sensor(fru, num, history, threshold, history_clear, period);
     }
   }
   return ret;

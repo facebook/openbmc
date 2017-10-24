@@ -18,8 +18,8 @@ FLASH_ROOTFS_OFFSET = "4608"
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \
-  packagegroup-openbmc-python \
-  packagegroup-openbmc-rest \
+  packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
   openbmc-utils \
   at93cx6-util \
   ast-mdio \
@@ -27,7 +27,6 @@ IMAGE_INSTALL += " \
   lldp-util \
   bitbang \
   flashrom \
-  cherryPy \
   plat-utils \
   fscd \
   fan-util \

@@ -58,12 +58,14 @@ def board_callout(callout='None', **kwargs):
 def set_all_pwm(boost):
     cmd = ('/usr/local/bin/fan-util --set %d' % (boost))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    response = response.decode()
     return response
 
 
 def bmc_read_power():
     cmd = '/usr/local/bin/power-util mb status'
     data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    data = data.decode()
     if 'ON' in data:
         return 1
     else:

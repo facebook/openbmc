@@ -110,8 +110,8 @@ class ProcessLock {
     int fd;
     bool _ok;
   public:
-  ProcessLock(string name) {
-    file = "/var/run/fw-util-" + name + ".lock";
+  ProcessLock() {
+    file = "/var/run/fw-util.lock";
     _ok = false;
     fd = open(file.c_str(), O_RDWR|O_CREAT, 0666);
     if (fd < 0) {
@@ -172,85 +172,82 @@ int main(int argc, char *argv[])
   string fru(argv[1]);
   string action(argv[2]);
   string component("all");
+  string image("");
+
   if (argc >= 4) {
     component.assign(argv[3]);
     if (component.compare(0, 2, "--") == 0) {
       component = component.substr(2);
     }
   }
-
-  ProcessLock lock(fru);
-  if (!lock.ok()) {
-    cerr << "Another instance of fw-util for " << fru << " already running" << endl;
-    return -1;
-  }
-
   if (action == "--update") {
-    uint8_t fru_id;
-
     if (argc < 5) {
       usage();
       return -1;
     }
-    string image(argv[4]);
+    image.assign(argv[4]);
+    ifstream f(image);
+    if (!f.good()) {
+      cerr << "Cannot access: " << image << endl;
+      return -1;
+    }
+    if (component == "all") {
+      cerr << "Upgrading all components not supported" << endl;
+      return -1;
+    }
+  } else if (action != "--version") {
+    cerr << "Invalid action: " << action << endl;
+    usage();
+    return -1;
+  }
 
-    if (Component::fru_list.find(fru) == Component::fru_list.end()) {
-      cerr << "Invalid FRU: " << fru << endl;
-      return -1;
-    }
-    if (Component::fru_list[fru].find(component) == Component::fru_list[fru].end()) {
-      cerr << "Invalid component: " << component << endl;
-      return -1;
-    }
-    {
-      ifstream f(image);
-      if (!f.good()) {
-        cerr << "Cannot access: " << image << endl;
-        return -1;
-      }
-    }
-    if (pal_get_fru_id((char *)fru.c_str(), &fru_id)) {
-      // Set to some default FRU which should be present
-      // in the system.
-      fru_id = 1;
-    }
-    pal_set_fw_update_ongoing(fru_id, 60 * 10);
-    ret = Component::fru_list[fru][component]->update(image);
-    pal_set_fw_update_ongoing(fru_id, 0);
-    if (ret == 0) {
-      cout << "Upgrade of " << component << " succeeded" << endl;
-    } else if (ret == FW_STATUS_NOT_SUPPORTED) {
-      cerr << "Upgrade of " << component << " not supported" << endl;
-    } else {
-      cerr << "Upgrade of " << component << " failed" << endl;
-    }
-  } else if (action == "--version") {
-    unordered_map<Component *,bool> done_map;
-    for (auto fkv : Component::fru_list) {
-      if (fru == "all" || fru == fkv.first) {
-        for (auto ckv : Component::fru_list[fkv.first]) {
-          if (component == "all" || component == ckv.first) {
-            Component *c = Component::fru_list[fkv.first][ckv.first];
-            if (done_map.find(c) == done_map.end()) {
+  // Ensure only one instance of fw-util is running
+  ProcessLock lock;
+  if (!lock.ok()) {
+    cerr << "Another instance of fw-util already running" << endl;
+    return -1;
+  }
+
+  unordered_map<Component *,bool> done_map;
+  for (auto fkv : Component::fru_list) {
+    if (fru == "all" || fru == fkv.first) {
+      for (auto ckv : Component::fru_list[fkv.first]) {
+        if (component == "all" || component == ckv.first) {
+          Component *c = Component::fru_list[fkv.first][ckv.first];
+          if (done_map.find(c) == done_map.end()) {
+            done_map[c] = true;
+            if (action == "--version") {
               ret = c->print_version();
-              done_map[c] = true;
               if (ret != FW_STATUS_SUCCESS && ret != FW_STATUS_NOT_SUPPORTED) {
                 cerr << "Error getting version of " << c->component() 
                   << " on fru: " << c->fru() << endl;
+              }
+            } else { // update
+              uint8_t fru_id;
+              if (pal_get_fru_id((char *)c->fru().c_str(), &fru_id)) {
+                // Set to some default FRU which should be present
+                // in the system.
+                fru_id = 1;
+              }
+              pal_set_fw_update_ongoing(fru_id, 60 * 10);
+              ret = c->update(image);
+              pal_set_fw_update_ongoing(fru_id, 0);
+              if (ret == 0) {
+                cout << "Upgrade of " << c->fru() << " : " << component << " succeeded" << endl;
+              } else  {
+                cerr << "Upgrade of " << c->fru() << " : " << component;
+                if (ret == FW_STATUS_NOT_SUPPORTED) {
+                  cerr << " not supported" << endl;
+                } else {
+                  cerr << " failed" << endl;
+                }
               }
             }
           }
         }
       }
     }
-    // Since not all components supports getting a version.
-    if (fru == "all" || component == "all") {
-      ret = 0;
-    }
-  } else {
-    cerr << "Invalid action: " << action << endl;
-    usage();
-    return -1;
   }
-  return ret;
+
+  return 0;
 }

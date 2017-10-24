@@ -54,7 +54,7 @@ typedef struct
 static void
 print_usage_help(void) {
   printf("Usage: fw-util <all|slot1|slot2|slot3|slot4|nic> <--version>\n");
-  printf("       fw-util <all|slot1|slot2|slot3|slot4|nic> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
+  printf("       fw-util <all|slot1|slot2|slot3|slot4> <--update> <--cpld|--bios|--bic|--bicbl> <path>\n");
 }
 
 static void

@@ -83,8 +83,12 @@ sensor_key_get(uint8_t fru, uint8_t sensor_num, char *key)
 {
   char fruname[32];
 
-  if (pal_get_fru_name(fru, fruname))
-    return -1;
+  if (fru == AGGREGATE_SENSOR_FRU_ID) {
+    strcpy(fruname, AGGREGATE_SENSOR_FRU_NAME);
+  } else {
+    if (pal_get_fru_name(fru, fruname))
+      return -1;
+  }
   sprintf(key, "%s_sensor%d", fruname, sensor_num);
   return 0;
 }
@@ -256,7 +260,7 @@ sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
 #endif
 }
 
-static int
+int
 sensor_cache_write(uint8_t fru, uint8_t sensor_num, bool available, float value)
 {
   char key[MAX_KEY_LEN];

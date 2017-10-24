@@ -42,11 +42,7 @@
 #define STATUS_LCR  "lcr"
 #define STATUS_LNR  "lnr"
 
-#define AGGREGATE_SENSOR_START 0x100
-#define AGGREGATE_SENSOR_FRU   0xff
-
 #define SENSOR_ALL             -1
-
 #ifdef CUSTOM_FRU_LIST
   static const char * pal_fru_list_sensor_history_t =  pal_fru_list_sensor_history;
 #else
@@ -177,8 +173,15 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
       continue;
     }
 
-    if (sdr_get_snr_thresh(fru, snr_num, &thresh))
-      syslog(LOG_ERR, "sdr_init_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+    if (fru == AGGREGATE_SENSOR_FRU_ID) {
+      if (aggregate_sensor_threshold(snr_num, &thresh)) {
+        syslog(LOG_ERR, "agg_snr_thresh failed for agg num: 0x%X", snr_num);
+      }
+    } else {
+      if (sdr_get_snr_thresh(fru, snr_num, &thresh)) {
+        syslog(LOG_ERR, "sdr_init_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+      }
+    }
 
     usleep(50);
 
@@ -208,9 +211,16 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
       continue;
     }
 
-    if (sdr_get_snr_thresh(fru, snr_num, &thresh) < 0) {
-      syslog(LOG_ERR, "sdr_get_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
-      continue;
+    if (fru == AGGREGATE_SENSOR_FRU_ID) {
+      if (aggregate_sensor_threshold(snr_num, &thresh)) {
+        syslog(LOG_ERR, "agg_snr_threshold failed 0x%x", snr_num);
+        continue;
+      }
+    } else {
+      if (sdr_get_snr_thresh(fru, snr_num, &thresh) < 0) {
+        syslog(LOG_ERR, "sdr_get_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+        continue;
+      }
     }
 
     if (sensor_read_history(fru, snr_num, &min, &average, &max, start_time) < 0) {
@@ -237,44 +247,6 @@ static void clear_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_c
   }
 }
 
-static void
-print_aggregate_sensor(bool threshold, int snr_num)
-{
-  size_t cnt, i;
-  char status[8];
-  thresh_sensor_t thresh;
-
-  if (snr_num != 0 && snr_num < AGGREGATE_SENSOR_START) {
-    return;
-  }
-  if (aggregate_sensor_init(NULL)) {
-    return;
-  }
-  if (aggregate_sensor_count(&cnt)) {
-    return;
-  }
-
-  for (i = 0; i < cnt; i++) {
-    float value;
-    int ret;
-    uint16_t num = i + AGGREGATE_SENSOR_START;
-
-    if (snr_num != SENSOR_ALL && snr_num != num) {
-      continue;
-    }
-    if (aggregate_sensor_threshold(i, &thresh)) {
-      continue;
-    }
-    ret = aggregate_sensor_read(i, &value);
-    if (ret) {
-      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, num);
-    } else {
-      get_sensor_status(value, &thresh, status);
-      print_sensor_reading(value, num, &thresh, threshold, status);
-    }
-  }
-}
-
 static int
 print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool history_clear, long period) {
   int ret;
@@ -283,30 +255,48 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool his
   uint8_t *sensor_list;
   char fruname[16] = {0};
 
-  if (pal_get_fru_name(fru, fruname)) {
-    sprintf(fruname, "fru%d", fru);
-  }
+  if (fru == AGGREGATE_SENSOR_FRU_ID) {
+    size_t cnt, i;
+    if (aggregate_sensor_init(NULL)) {
+      return -1;
+    }
+    if (aggregate_sensor_count(&cnt)) {
+      return 0;
+    }
+    strcpy(fruname, AGGREGATE_SENSOR_FRU_NAME);
+    sensor_list = malloc(sizeof(uint8_t) * cnt);
+    if (!sensor_list) {
+      return -1;
+    }
+    for (i = 0; i < cnt; i++) {
+      sensor_list[i] = i;
+    }
+    sensor_cnt = (int)cnt;
+  } else {
+    if (pal_get_fru_name(fru, fruname)) {
+      sprintf(fruname, "fru%d", fru);
+    }
+    ret = pal_is_fru_prsnt(fru, &status);
+    if (ret < 0) {
+      printf("pal_is_fru_prsnt failed for fru: %s\n", fruname);
+      return ret;
+    }
+    if (status == 0) {
+      printf("%s is not present!\n\n", fruname);
+      return -1;
+    }
 
-  ret = pal_is_fru_prsnt(fru, &status);
-  if (ret < 0) {
-    printf("pal_is_fru_prsnt failed for fru: %s\n", fruname);
-    return ret;
-  }
-  if (status == 0) {
-    printf("%s is not present!\n\n", fruname);
-    return -1;
-  }
+    ret = pal_is_fru_ready(fru, &status);
+    if ((ret < 0) || (status == 0)) {
+      printf("%s is unavailable!\n\n", fruname);
+      return ret;
+    }
 
-  ret = pal_is_fru_ready(fru, &status);
-  if ((ret < 0) || (status == 0)) {
-    printf("%s is unavailable!\n\n", fruname);
-    return ret;
-  }
-
-  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
-  if (ret < 0) {
-    printf("%s get sensor list failed!\n", fruname);
-    return ret;
+    ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+    if (ret < 0) {
+      printf("%s get sensor list failed!\n", fruname);
+      return ret;
+    }
   }
 
   if (history_clear) {
@@ -404,44 +394,30 @@ main(int argc, char **argv) {
     exit(-1);
   }
 
-  if (!strcmp(fruname, "aggregate")) {
-    fru = AGGREGATE_SENSOR_FRU;
+  if (!strcmp(fruname, AGGREGATE_SENSOR_FRU_NAME)) {
+    fru = AGGREGATE_SENSOR_FRU_ID;
   } else {
     ret = pal_get_fru_id(fruname, &fru);
     if (ret < 0) {
       print_usage();
       return ret;
     }
-  }
-
-  if (fru == AGGREGATE_SENSOR_FRU && (history || history_clear)) {
-    printf("Sensor history unsupported for aggregate sensors.\n");
-    exit(-1);
-  }
-
-  if (history_clear || history) {
-    //Check if the input FRU is exist in sensor history list
-    if (NULL == strstr(pal_fru_list_sensor_history_t, fruname)) {
-      print_usage();
-      exit(-1);
+    if (history_clear || history) {
+      //Check if the input FRU is exist in sensor history list
+      if (NULL == strstr(pal_fru_list_sensor_history_t, fruname)) {
+        print_usage();
+        exit(-1);
+      }
     }
   }
 
   if (fru == 0) {
-    if (num < AGGREGATE_SENSOR_START) {
-      for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-        ret |= print_sensor(fru, num, history, threshold, history_clear, period);
-      }
+    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+      ret |= print_sensor(fru, num, history, threshold, history_clear, period);
     }
-    if (!history && !history_clear) {
-      print_aggregate_sensor(threshold, num);
-    }
-  } else if (fru == AGGREGATE_SENSOR_FRU) {
-    print_aggregate_sensor(threshold, num);
+    ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, history, threshold, history_clear, period);
   } else {
-    if (num < AGGREGATE_SENSOR_START) {
-      ret = print_sensor(fru, num, history, threshold, history_clear, period);
-    }
+    ret = print_sensor(fru, num, history, threshold, history_clear, period);
   }
   return ret;
 }

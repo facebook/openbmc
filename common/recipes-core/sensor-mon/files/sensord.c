@@ -33,6 +33,7 @@
 #include <openbmc/sdr.h>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-sensor.h>
+#include <openbmc/aggregate-sensor.h>
 
 #define DELAY 2
 #define STOP_PERIOD 10
@@ -40,6 +41,7 @@
 #define MAX_ASSERT_CHECK_RETRY 1
 
 static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM] = {0};
 
 static void
 print_usage() {
@@ -55,6 +57,10 @@ static thresh_sensor_t *
 get_struct_thresh_sensor(uint8_t fru) {
 
   thresh_sensor_t *snr;
+
+  if (fru == AGGREGATE_SENSOR_FRU_ID) {
+    return g_aggregate_snr;
+  }
 
   if (fru < 1 || fru > MAX_NUM_FRUS) {
     syslog(LOG_WARNING, "get_struct_thresh_sensor: Wrong FRU ID %d\n", fru);
@@ -103,6 +109,24 @@ init_fru_snr_thresh(uint8_t fru) {
   }
 
   return 0;
+}
+
+static int
+sensor_raw_read_helper(uint8_t fru, uint8_t snr_num, float *val)
+{
+  int ret = 0;
+
+  if (fru == AGGREGATE_SENSOR_FRU_ID) {
+    ret = aggregate_sensor_read(snr_num, val);
+    if (ret == 0) {
+      sensor_cache_write(fru, snr_num, true, *val);
+    } else {
+      sensor_cache_write(fru, snr_num, false, 0.0);
+    }
+  } else {
+    ret = sensor_raw_read(fru, snr_num, val);
+  }
+  return ret;
 }
 
 static float
@@ -181,7 +205,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
     if (retry < MAX_SENSOR_CHECK_RETRY) {
       msleep(50);
-      ret = sensor_raw_read(fru, snr_num, curr_val);
+      ret = sensor_raw_read_helper(fru, snr_num, curr_val);
       if (ret < 0)
         return -1;
     }
@@ -286,7 +310,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
     if (retry < MAX_ASSERT_CHECK_RETRY) {
       msleep(50);
-      ret = sensor_raw_read(fru, snr_num, curr_val);
+      ret = sensor_raw_read_helper(fru, snr_num, curr_val);
       if (ret < 0)
         return -1;
     }
@@ -402,7 +426,7 @@ snr_monitor(void *arg) {
       snr_num = sensor_list[i];
       curr_val = 0;
       if (snr[snr_num].flag) {
-        if (!(ret = sensor_raw_read(fru, snr_num, &curr_val))) {
+        if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
 
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
@@ -428,7 +452,7 @@ snr_monitor(void *arg) {
 
     for (i = 0; i < discrete_cnt; i++) {
       snr_num = discrete_list[i];
-      ret = sensor_raw_read(fru, snr_num, &curr_val);
+      ret = sensor_raw_read_helper(fru, snr_num, &curr_val);
       if (!ret && (snr[snr_num].curr_state != (int) curr_val)) {
         pal_sensor_discrete_check(fru, snr_num, snr[snr_num].name,
             snr[snr_num].curr_state, (int) curr_val);
@@ -508,6 +532,68 @@ snr_health_monitor() {
   } /* while loop */
 }
 
+static void *
+aggregate_snr_monitor(void *unused)
+{
+  size_t cnt = 0, i;
+  int ret;
+  float curr_val;
+  uint8_t fru = AGGREGATE_SENSOR_FRU_ID;
+  uint8_t snr_num;
+  thresh_sensor_t *snr;
+
+  if(aggregate_sensor_init(NULL)) {
+    syslog(LOG_WARNING, "Initializing aggregate sensors failed!");
+  }
+
+  aggregate_sensor_count(&cnt);
+  if (cnt == 0) {
+    pthread_exit(NULL);
+    return NULL;
+  }
+  for(i = 0; i < (int)cnt; i++) {
+    aggregate_sensor_threshold(i, &g_aggregate_snr[i]);
+  }
+  snr = get_struct_thresh_sensor(fru);
+  if (snr == NULL) {
+    syslog(LOG_WARNING, "agg_snr_monitor: get_struct_thresh_sensor failed");
+    pthread_exit(NULL);
+  }
+
+  while(1) {
+    for (i = 0; i < cnt; i++) {
+      snr_num = (uint8_t)i;
+      curr_val = 0;
+      if (snr[snr_num].flag) {
+        if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
+
+          check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LNC_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_assert(fru, snr_num, LNR_THRESH, &curr_val);
+
+          check_thresh_deassert(fru, snr_num, UNR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, UCR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, UNC_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
+          check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
+#ifdef DEBUG
+        } else {
+          syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
+              fru, snr_num, snr[snr_num].name);
+#endif /* DEBUG */
+        } /* pal_sensor_read return check */
+      } /* flag check */
+    } /* loop for all sensors */
+    sleep(DELAY);
+  }
+  pthread_exit(NULL);
+  return NULL;
+}
+
 /* Spawns a pthread for each fru to monitor all the sensors on it */
 static int
 run_sensord(int argc, char **argv) {
@@ -517,6 +603,7 @@ run_sensord(int argc, char **argv) {
   uint8_t fru_flag = 0;
   pthread_t thread_snr[MAX_NUM_FRUS];
   pthread_t sensor_health;
+  pthread_t agg_sensor_mon;
 
   arg = 1;
   while(arg < argc) {
@@ -553,6 +640,13 @@ run_sensord(int argc, char **argv) {
   if (pthread_create(&sensor_health, NULL, snr_health_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for sensor health failed\n");
   }
+
+  /* Aggregate sensor monitor */
+  if (pthread_create(&agg_sensor_mon, NULL, aggregate_snr_monitor, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for aggregate sensor failed!\n");
+  }
+ 
+  pthread_join(agg_sensor_mon, NULL);
 
   pthread_join(sensor_health, NULL);
 

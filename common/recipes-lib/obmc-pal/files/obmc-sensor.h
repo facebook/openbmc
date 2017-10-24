@@ -33,10 +33,22 @@ extern "C" {
 #define ERR_SENSOR_NA   -2
 #define ERR_FAILURE     -3
 
+/* Range for sensor num for various sensors */
+#define PHYSICAL_SENSOR_START   0
+#define PHYSICAL_SENSOR_END     0xff
+#define AGGREGATE_SENSOR_START  0x100
+
+/* FRU used for aggregate sensors */
+#define AGGREGATE_SENSOR_FRU_ID   0xff
+#define AGGREGATE_SENSOR_FRU_NAME "aggregate"
+
 /* Functions */
 
 /* Read a cached value of the given sensor */
 int sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value);
+
+/* Writes the cache explicitly */
+int sensor_cache_write(uint8_t fru, uint8_t sensor_num, bool available, float value);
 
 /* Read the sensor history */
 int sensor_read_history(uint8_t fru, uint8_t sensor_num, float *min,

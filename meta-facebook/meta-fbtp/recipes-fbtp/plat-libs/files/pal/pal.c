@@ -430,6 +430,7 @@ static int mux_lock (struct mux *mux, int chan, int lease_time)
     }
     ret = pthread_cond_timedwait(&shm->unlock, &shm->mutex, &to);
     if (ret == ETIMEDOUT) {
+      ret = -ETIMEDOUT;
       syslog(LOG_WARNING, "%s wait unlock timeout\n", __func__);
       break;
     }
@@ -1978,7 +1979,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
       return READING_NA;
   }
 
-  if (!pal_is_ava_card(mux_chan))
+  if ( false == pal_is_ava_card(mux_chan) )
     return READING_NA;
 
   switch(sensor_num) {
@@ -1996,18 +1997,18 @@ read_ava_temp(uint8_t sensor_num, float *value) {
       return READING_NA;
   }
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    ret = READING_NA;
-    goto error_exit;
-  }
-
-  // control multiplexer to target channel.
+  //try to control multiplexer to target channel and it will exit if it fail
   ret = mux_lock(&riser_mux, mux_chan, 2);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    ret = READING_NA;
+    goto release_mux_and_exit;
   }
 
   // Read 2 bytes from TMP75
@@ -2018,7 +2019,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
   if (ret < 0) {
     ret = READING_NA;
-    goto error_exit;
+    goto release_mux_and_exit;
   }
   ret = 0;
   retry[i_retry] = 0;
@@ -2026,9 +2027,15 @@ read_ava_temp(uint8_t sensor_num, float *value) {
   // rbuf:MSB, LSB; 12-bit value on Bit[15:4], unit: 0.0625
   *value = (float)(signed char)rbuf[0];
 
+//if the channel is locked, unlock it and then exit
+release_mux_and_exit:
+  
+  mux_release(&riser_mux);
+
+//if the channel is busy, exit the function
 error_exit:
+
   if (fd > 0) {
-    mux_release(&riser_mux);
     close(fd);
   }
 
@@ -2115,18 +2122,18 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
   //use channel 4
   mux_chan = 0x3;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    ret = READING_NA;
-    goto error_exit;
-  }
-
-  //control multiplexer to target channel.
+  //try to control multiplexer to target channel and it will exit if it fail
   ret = mux_lock(&riser_mux, mux_chan, 2);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
+  }
+  
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    ret = READING_NA;
+    goto release_mux_and_exit;
   }
 
   switch(sensor_num) {
@@ -2167,7 +2174,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 3, rbuf, 0);
       if (ret < 0) {
         ret = READING_NA;
-        goto error_exit;
+        goto release_mux_and_exit;
       }
 
       //Set Calibration register
@@ -2175,7 +2182,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 3, rbuf, 0);
       if (ret < 0) {
         ret = READING_NA;
-        goto error_exit;
+        goto release_mux_and_exit;
       }
       initialized[i_retry/3] = 1;
     }
@@ -2183,7 +2190,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     // Delay for 2 cycles and check INA230 init done
     if(pot < 3 || initialized[i_retry/3] == 0){
       ret = READING_NA;
-      goto error_exit;
+      goto release_mux_and_exit;
     }
 
     //Get registers data
@@ -2215,7 +2222,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
     if (ret < 0) {
       ret = READING_NA;
-      goto error_exit;
+      goto release_mux_and_exit;
     }
     int16_t temp;
     switch(sensor_num) {
@@ -2266,7 +2273,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     if( pot < 3 )
     {
       ret = READING_NA;
-      goto error_exit;
+      goto release_mux_and_exit;
     }
 
     //check the previous all INA230 sensors are read and change the addr to the next
@@ -2281,7 +2288,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
       if (ret < 0) {
         ret = READING_NA;
-        goto error_exit;
+        goto release_mux_and_exit;
       }
 
       //transform the value from raw data to the reading
@@ -2293,7 +2300,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
       if (ret < 0) {
         ret = READING_NA;
-        goto error_exit;
+        goto release_mux_and_exit;
       }
 
       //If shunt voltage is a negative value, set the shunt_voltage to 0
@@ -2341,9 +2348,15 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     ret = 0;
     retry[i_retry] = 0;
 
+//if the channel is locked, unlock it and then exit
+release_mux_and_exit:
+  
+  mux_release(&riser_mux);   
+
+//if the channel is busy, exit the function 
 error_exit:
+
   if (fd > 0) {
-    mux_release(&riser_mux);
     close(fd);
   }
 
@@ -2465,18 +2478,18 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
       return READING_NA;
   }
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
-  fd = open(fn, O_RDWR);
-  if (fd < 0) {
-    ret = READING_NA;
-    goto error_exit;
-  }
-
-  // control I2C multiplexer to target channel.
+  //try to control I2C multiplexer to target channel and it will exit if it fail
   ret = mux_lock(&riser_mux, mux_chan, 2);
   if (ret < 0) {
     ret = READING_NA;
     goto error_exit;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    ret = READING_NA;
+    goto release_mux_and_exit;
   }
 
   if (switch_chan != 0xff) {
@@ -2484,7 +2497,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
     ret = pal_control_switch(fd, switch_addr, switch_chan);
     if (ret < 0) {
       ret = READING_NA;
-      goto error_exit;
+      goto release_mux_and_exit;
     }
   }
 
@@ -2496,7 +2509,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
   if (ret < 0) {
     ret = READING_NA;
-    goto error_exit;
+    goto release_mux_and_exit;
   }
   ret = 0;
   retry[i_retry] = 0;
@@ -2504,11 +2517,18 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
   // Cmd 0: length, SFLGS, SMART Warnings, CTemp, PDLU, Reserved, Reserved, PEC
   *value = (float)(signed char)rbuf[3];
 
+//if the channel is locked, unlock it and then exit
+release_mux_and_exit:
+
+  mux_release(&riser_mux);
+
+//if the channel is busy, exit the function
 error_exit:
+
   if (fd > 0) {
     if (switch_chan != 0xff)
       pal_control_switch(fd, switch_addr, 0xff); // close
-    mux_release(&riser_mux);
+
     close(fd);
   }
 
@@ -3666,21 +3686,24 @@ pal_fruid_write(uint8_t fru, char *path)
 
   switch (device_type)
   {
-    case FOUND_AVA_DEVICE:
-      mux_lock(&riser_mux, acutal_riser_slot, 5);
-      pal_add_i2c_device(bus, device_name, device_addr);
-      system(command);
-      //compare the in and out data
-      ret=pal_compare_fru_data((char*)EEPROM_RISER, path, fru_size);
-      if (ret < 0)
+    case FOUND_AVA_DEVICE:       
+      ret = mux_lock(&riser_mux, acutal_riser_slot, 5);
+      if ( PAL_EOK == ret )
       {
-        ret = PAL_ENOTSUP;
-        system("i2cdetect -y -q 1 > /tmp/AVA_FRU_FAIL.log");
-        syslog(LOG_ERR, "[%s] AVA FRU Write Fail", __func__);
-      }
+        pal_add_i2c_device(bus, device_name, device_addr);
+        system(command);
+        //compare the in and out data
+        ret=pal_compare_fru_data((char*)EEPROM_RISER, path, fru_size);
+        if (ret < 0)
+        {
+          ret = PAL_ENOTSUP;
+          system("i2cdetect -y -q 1 > /tmp/AVA_FRU_FAIL.log");
+          syslog(LOG_ERR, "[%s] AVA FRU Write Fail", __func__);
+        }
             
-      pal_del_i2c_device(bus, device_addr);
-      mux_release(&riser_mux);
+        pal_del_i2c_device(bus, device_addr);
+        mux_release(&riser_mux);
+      }
     break;
 
   }
@@ -6401,14 +6424,6 @@ pal_is_ava_card(uint8_t riser_slot)
   uint8_t tcount, rcount;
   int  val;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
-
-  fd = open(fn, O_RDWR);
-  if ( fd < 0 ) {
-    ret = false;
-    goto error_exit;
-  }
-
   // control I2C multiplexer to target channel.
   val = mux_lock(&riser_mux, riser_slot, 2);
   if ( val < 0 ) {
@@ -6417,19 +6432,31 @@ pal_is_ava_card(uint8_t riser_slot)
     goto error_exit;
   }
 
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+
+  fd = open(fn, O_RDWR);
+  if ( fd < 0 ) {
+    ret = false;
+    goto release_mux_and_exit;
+  }
+
   //Send I2C to AVA for FRU present check
   rcount = 1;
   val = i2c_rdwr_msg_transfer(fd, ava_fruid_addr, tbuf, tcount, rbuf, rcount);
   if( val < 0 ) {
     ret = false;
-      goto error_exit;
+      goto release_mux_and_exit;
   }
   ret = true;
 
+release_mux_and_exit:
+
+  mux_release(&riser_mux);
+
 error_exit:
+
   if (fd > 0)
   {
-    mux_release(&riser_mux);
     close(fd);
   }
 
@@ -6446,12 +6473,12 @@ pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type )
     *device_type = FOUND_AVA_DEVICE;
     ret = PAL_EOK;
   }
-#if DEBUG
   else
   {
+    //riser_slot start from 2
     syslog(LOG_WARNING, "Unknown or no device on the riser slot %d", riser_slot+2);
   }
-#endif
+  
   return ret;
 }
 

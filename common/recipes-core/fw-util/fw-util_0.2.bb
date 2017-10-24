@@ -24,11 +24,13 @@ SRC_URI =+ "file://Makefile \
            file://bic_bios.h \
            file://bic_cpld.cpp \
            file://bic_cpld.h \
+           file://extlib.cpp \
+           file://extlib.h \
           "
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -ljansson -lpal "
+LDFLAGS =+ " -lpthread -ljansson -lpal -ldl "
 DEPENDS += "jansson libpal"
 RDEPENDS_${PN} += "jansson libpal"
 CXXFLAGS += '-DVERIFIED_BOOT=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "1", "0", d)}'

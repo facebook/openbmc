@@ -32,7 +32,7 @@ if [ "$#" -ne 2 ] && [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-if [ "$2" -le 0 ] || ["$2" -ge 13]; then
+if [ "$2" -le 0 ] || [ "$2" -ge 13 ]; then
   echo "Fan id $2: not a valid id"
   exit 1
 fi

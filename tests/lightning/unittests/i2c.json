@@ -1,0 +1,22 @@
+{
+  "FCB_EEPROM": {
+    "bus": "5",
+    "address": "0x51"
+  },
+  "FCB_SENSOR_BJT_TEMP_1": {
+    "bus": "5",
+    "address": "0x60"
+  },
+  "PDPB_TMP75_U47": {
+    "bus": "6",
+    "address": "0x49"
+  },
+  "PDPB_TMP75_U48": {
+    "bus": "6",
+    "address": "0x4a"
+  },
+  "PDPB_SENSOR_RIGHT_REAR_TEMP": {
+    "bus": "6",
+    "address": "0x51"
+  }
+}

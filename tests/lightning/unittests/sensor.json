@@ -1,0 +1,23 @@
+{
+"type":"lightning",
+"PEB_P12V                     (0x42) ":["11.25", "13.63"],
+"PEB_P1V26                    (0xF0) ":["1.13", "1.39"],
+"PEB_HSC_IN_VOLT              (0x49) ":["11.25", "13.63"],
+"PEB_HSC_OUT_CURR             (0x4A) ":["0", "8"],
+"PEB_HSC_IN_POWER             (0x4D) ":["0", "96"],
+"PCIE_SW_TEMP                 (0x53) ":["0", "95"],
+"SYS_INLET_TEMP               (0x56) ":["0", "50"],
+"PDPB_P12V                    (0x4B) ":["11.25", "13.63"],
+"PDPB_P3V3                    (0x4C) ":["2.98", "3.63"],
+"LEFT_FRONT_TEMP              (0x50) ":["0", "55"],
+"RIGHT_REAR_TEMP              (0x51) ":["0", "55"],
+"SSD_0_TEMP                   (0x63) ":["0", "75"],
+"SSD_14_TEMP                  (0x71) ":["0", "75"],
+"FAN1_FRONT_SPEED             (0x20) ":["400", "12000"],
+"FAN1_REAR_SPEED              (0x21) ":["400", "12000"],
+"FCB_P12V_AUX                 (0x34) ":["11.25", "13.63"],
+"FCB_P12VL                    (0x35) ":["11.25", "13.63"],
+"FCB_HSC_IN_VOLT              (0x38) ":["11.25", "13.63"],
+"FCB_HSC_OUT_CURR             (0x39) ":["0", "60"],
+"AIRFLOW                      (0x2C) ":["0", "200"]
+}

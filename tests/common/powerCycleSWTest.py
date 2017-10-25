@@ -5,7 +5,10 @@ from __future__ import unicode_literals
 import subprocess
 import sys
 import unitTestUtil
-import pxssh
+try:
+	from pexpect import pxssh
+except:
+	import pxssh
 import time
 import os
 import logging
@@ -33,7 +36,7 @@ def powerCycleTest(unitTestUtil, utilType, hostnameBMC, hostnameMS):
     logger.debug("checking power status")
     ssh.sendline(utilType.PowerCmdStatus)
     ssh.prompt()
-    if 'on' or 'ON' in ssh.before:
+    if 'on' in (ssh.before).decode() or 'ON' in (ssh.before).decode():
         status = 'on'
     else:
         logger.debug("executing power on command")
@@ -60,7 +63,7 @@ def powerCycleOnOffTest(pingcmd, utilType, ssh):
     out, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
-    if 'PASSED' in out:
+    if 'PASSED' in out.decode():
         print("Power Cycle test off command [FAILED]")
         sys.exit(1)
     # Power on
@@ -77,9 +80,9 @@ def powerCycleOnOffTest(pingcmd, utilType, ssh):
         out, err = f.communicate()
         if len(err) != 0:
             raise Exception(err)
-        if 'PASSED' in out:  # break when ping passes
+        if 'PASSED' in out.decode():  # break when ping passes
             break
-    if 'FAILED' in out:
+    if 'FAILED' in out.decode():
         print("Power Cycle test on command [FAILED]")
         sys.exit(1)
 
@@ -97,7 +100,7 @@ def powerCycleResetTest(pingcmd, utilType, ssh, status):
     out, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
-    if 'PASSED' in out:
+    if 'PASSED' in out.decode():
         print("Power Cycle test reset command [FAILED]")
         sys.exit(1)
     t_end = time.time() + 60 * 10
@@ -109,14 +112,14 @@ def powerCycleResetTest(pingcmd, utilType, ssh, status):
         out, err = f.communicate()
         if len(err) != 0:
             raise Exception(err)
-        if 'PASSED' in out:  # break when ping passes
+        if 'PASSED' in out.decode():  # break when ping passes
             break
     # Set the power to the status when test began
     if status == 'off':
         logger.debug("executing power off command")
         ssh.sendline(utilType.PowerCmdOff)
         ssh.prompt()
-    if 'FAILED' in out:
+    if 'FAILED' in out.decode():
         print("Power Cycle test reset command [FAILED]")
         sys.exit(1)
     else:

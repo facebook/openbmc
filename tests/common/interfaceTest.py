@@ -40,26 +40,41 @@ def get_ip6_address(ifname):
     return ipv6
 
 
+def get_ifusb0_ip6_address(ifname):
+    """
+    Get IPv6 address of a given interface
+    """
+    f = subprocess.Popen(['ip', 'addr', 'show', ifname.encode('utf-8')],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = f.communicate()
+    if (len(out) == 0 or len(err) != 0):
+        raise Exception("Device " + ifname.encode('utf-8') + " does not exist [FAILED]")
+    out = out.decode('utf-8')
+    ipv6 = out.split("inet6 ")[1].split("/")[0]
+    usb0 = "".join(ipv6) + "%usb0"
+    logger.debug("Got ip address for " + str(ifname))
+    return usb0
+
+
 def pingConnection(ifname, ver):
     """
     Test connection of a given interface and version of IP address
     """
-    if int(ver) == 4:
-        logger.debug("Getting ip address for " + str(ifname))
+    cmd = ""
+    logger.debug("getting ip address for " + str(ifname))
+    if ifname == "usb0":
+        ip = get_ifusb0_ip6_address(ifname)
+        cmd = "ping6 -c 1 -q -w 1 " + ip
+    elif int(ver) == 4:
         ip = get_ip4_address(ifname)
         cmd = "ping -c 1 -q -w 1 " + ip
-        logger.debug("Executing: " + cmd)
-        f = subprocess.Popen(cmd, shell=True,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        err = f.communicate()[1]
-        if len(err) > 0:
-            raise Exception(err)
     elif int(ver) == 6:
-        logger.debug("Getting ip address for " + str(ifname))
         ip = get_ip6_address(ifname)
         cmd = "ping6 -c 1 -q -w 1 " + ip
-        logger.debug("Executing: " + cmd)
+
+    if cmd != "":
+        logger.debug("Executing: " + str(cmd))
         f = subprocess.Popen(cmd, shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)

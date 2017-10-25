@@ -7,29 +7,20 @@ import sys
 import unitTestUtil
 import logging
 
+PING_CMDS = {4: "ping -c 1 -q -w 1 {}", 6: "ping6 -c 1 -q -w 1 {}"}
 
-def pingTest(ping, version):
+def pingTest(ping, version, logger, cmd):
     """
     Ping a host from outside the platform
     """
-    if int(version) == 4:
-        logger.debug("executing ipv4 ping command")
-        cmd = ["ping", "-c", "1", "-q", "-w", "1", ping]
-        f = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        err = f.communicate()[1]
-        logger.debug("ping command successfully executed")
-        if len(err) > 0:
-            raise Exception(err)
-    elif int(version) == 6:
-        logger.debug("executing ipv6 ping command")
-        cmd = ["ping6", "-c", "1", "-q", "-w", "1", ping]
-        f = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        err = f.communicate()[1]
-        if len(err) > 0:
-            raise Exception(err)
-        logger.debug("ping6 command successfully executed")
+    logger.debug("executing ipv{} ping command".format(version))
+    cmd = cmd.format(ping)
+    f = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    rst, err = f.communicate()
+    if "1 received, 0% packet loss".encode('utf-8') not in rst:
+        raise Exception(err)
+    logger.debug("ping{} command successfully executed".format(version))
     if f.returncode == 0:
         print('Connection for ' + ping + ' v' + str(version) + " [PASSED]")
         sys.exit(0)
@@ -54,8 +45,10 @@ if __name__ == "__main__":
         if args.verbose is not None:
             logger = util.logger(args.verbose)
         ping = args.ping
-        version = str(args.version)
-        pingTest(ping, version)
+        version = args.version
+        pingcmd = PING_CMDS[version]
+        version = str(version)
+        pingTest(ping, version, logger, pingcmd)
     except Exception as e:
         print("Ping Test [FAILED]")
         print("Error: " + str(e))

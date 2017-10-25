@@ -30,7 +30,7 @@ def i2c_check(name, bus, address):
     index = int('0x' + col, 16)
     line = line.split(' ')
     reading = line[index + 1]
-    if reading != 'UU':
+    if reading != 'UU' and reading != address[2] + address[3]:
         failed += [str(name) + ' detect']
     cmd = 'i2cdump -f -y ' + bus + ' ' + address + ' b'
     logger.debug("executing: " + str(cmd))

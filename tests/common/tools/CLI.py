@@ -2,7 +2,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-import pxssh
+from subprocess import *
+try:
+	from pexpect import pxssh
+except:
+	import pxssh
 import sys
 import subprocess
 import pexpect
@@ -13,105 +17,168 @@ import unitTestUtil
 
 VERBOSE = False
 MODE = 'WARN'
+HEADNODE = False
 
 
 def setVerbose(cmd):
     return cmd + ' --verbose ' + MODE
 
 
-def interfaceTest(ssh, data):
+def interfaceTest(cmd_bmc, data):
     """
     Run interfaceTest.py with command line arguments
     """
+    print(cmd_bmc)
     if data["interfaceTest.py"][1]["eth0"]["v4"] == "yes":
         args = "eth0 4"
         if VERBOSE:
             args = setVerbose(args)
-        ssh.sendline('python interfaceTest.py ' + args)
-        ssh.prompt(timeout=100)
-        output = ssh.before
-        print(output.split('\n', 1)[1])
+        cmd = cmd_bmc + 'python /tmp/tests/common/interfaceTest.py ' + args
+        sshProcess = Popen(
+            cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
+        output = sshProcess.communicate()
+        if VERBOSE:
+            print(output[0].decode())
+        else:
+            print(output[0].decode().split('\n')[0].rstrip())
+        #print(str(output[0].encode('utf-8')).split('\n')[0])
     if data["interfaceTest.py"][1]["eth0"]["v6"] == "yes":
         args = "eth0 6"
         if VERBOSE:
             args = setVerbose(args)
-        ssh.sendline('python interfaceTest.py ' + args)
-        ssh.prompt(timeout=100)
-        output = ssh.before
-        print(output.split('\n', 1)[1])
+        cmd = cmd_bmc + 'python /tmp/tests/common/interfaceTest.py ' + args
+        sshProcess = Popen(
+            cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
+        output = sshProcess.communicate()
+        if VERBOSE:
+            print(output[0].decode())
+        else:
+            print(output[0].decode().split('\n')[0].rstrip())
+        #print(str(output[0].encode('utf-8')).split('\n')[0])
     if data["interfaceTest.py"][1]["usb0"] == "yes":
         args = "usb0 6"
         if VERBOSE:
             args = setVerbose(args)
-        ssh.sendline('python interfaceTest.py ' + args)
-        ssh.prompt(timeout=100)
-        output = ssh.before
-        print(output.split('\n', 1)[1])
+        cmd = cmd_bmc + 'python /tmp/tests/common/interfaceTest.py ' + args
+        sshProcess = Popen(
+            cmd,
+            shell=True,
+            stdin=None,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True)
+        output = sshProcess.communicate()
+        # in python 3, communicate has the timeout parameter
+        # output = sshProcess.communicate(timeout=100)
+        if VERBOSE:
+            print(output[0])
+        else:
+            print(output[0].rstrip().split('\n')[0])
     if data["interfaceTest.py"][1]["eth0.4088"] == "yes":
         args = "eth0.4088 6"
         if VERBOSE:
             args = setVerbose(args)
-        ssh.sendline('python interfaceTest.py ' + args)
-        ssh.prompt(timeout=100)
-        output = ssh.before
-        print(output.split('\n', 1)[1])
+        cmd = cmd_bmc + 'python /tmp/tests/common/interfaceTest.py ' + args
+        sshProcess = Popen(
+            cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
+        output = sshProcess.communicate()
+        print(output[0].rstrip())
+        #print(str(output[0].encode('utf-8')).split('\n')[0])
     return
 
 
-def generalTypeTest(ssh, data, testName):
+def generalTypeTest(cmd_bmc, data, testName):
     """
     Run testName.py with command line arguments
     """
     platformType = data["type"]
-    cmd = 'python ' + testName + ' ' + platformType
+    cmd = cmd_bmc + 'python /tmp/tests/common/' + testName + ' ' + platformType
     if VERBOSE:
         cmd = setVerbose(cmd)
-    ssh.sendline(cmd)
-    ssh.prompt(timeout=1000)
-    output = ssh.before
-    print(output.split('\n', 1)[1])
+    sshProcess = Popen(cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
+    output = sshProcess.communicate()
+    if VERBOSE:
+        print(output[0].decode())
+    else:
+        print(output[0].decode().split('\n')[0].rstrip())
+    #print(output[0].rstrip())
+    #print(output[0].split(b'\n')[0])
     return
 
 
-def generalJsonTest(ssh, data, testName):
+def generalJsonTest(cmd_bmc, data, testName):
     json = data[testName][1]['json']
-    cmd = 'python ' + testName + ' ' + json
+    cmd = "python /tmp/tests/common/{0} /tmp/tests/common/{1}"
+    cmd = cmd_bmc + cmd.format(str(testName), json)
     if VERBOSE:
         cmd = setVerbose(cmd)
-    ssh.sendline(cmd)
-    ssh.prompt(timeout=1000)
-    output = ssh.before
-    print(output.split('\n', 1)[1])
+    sshProcess = Popen(cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
+    output = sshProcess.communicate()
+    if VERBOSE:
+        print(output[0].decode())
+    else:
+        print(output[0].decode().split('\n')[0].rstrip())
+    #print(output[0].rstrip())
+    #print(output[0].split(b'\n')[0])
+    #print(str(output[0].encode('utf-8')).split('\n')[0])
     return
 
 
-def connectionTest(hostnameBMC):
+def connectionTest(hostnameBMC, data, headnodeName=None):
     version = data['connectionTest.py'][1]['version']
-    cmd = 'python ../connectionTest.py ' + str(hostnameBMC) + ' ' + str(version)
+    cmd = ""
+    if HEADNODE:
+        pythonfile = data['connectionTest.py'][1]['testfile']
+        cmd = "python {0} {1} {2} {3}"
+        cmd = cmd.format(str(pythonfile), str(headnodeName), str(hostnameBMC), str(version))
+    else:
+        cmd = "python ../connectionTest.py {0} {1}"
+        cmd = cmd.format(str(hostnameBMC), str(version))
     if VERBOSE:
         cmd = setVerbose(cmd)
-    f = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    f = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     info, err = f.communicate()
-    print(info)
+    print(info.decode().rstrip())
     return
 
 
-def memoryUsageTest(ssh, data):
+def memoryUsageTest(cmd_bmc, data):
     threshold = data['memoryUsageTest.py'][1]['threshold']
-    cmd = 'python memoryUsageTest.py ' + threshold
+    cmd = cmd_bmc + 'python /tmp/tests/common/memoryUsageTest.py ' + threshold
     if VERBOSE:
         cmd = setVerbose(cmd)
-    ssh.sendline(cmd)
-    ssh.prompt(timeout=1000)
-    output = ssh.before
-    print(output.split('\n', 1)[1])
+    sshProcess = Popen(cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
+    output = sshProcess.communicate()
+    print(output[0].decode().split('\n')[0].rstrip())
+    #print(output.decode().split('\n')[0].rstrip())
+    #print(output[0].encode('utf-8')).split('\n')[0])
     return
 
 
-def generalTypeBMCTest(ssh, data, testName, BMC):
+def generalTypeBMCTest(hostnameBMC, testName, data, headnodeName=None):
     platformType = data["type"]
-    cmd = 'python ../' + testName + ' ' + platformType + ' ' + hostnameBMC
+    cmd = ""
+    if HEADNODE:
+        pythonfile = data[testName][1]['testfile']
+        cmd = "python {0} {1} {2} {3}"
+        cmd = cmd.format(pythonfile, headnodeName, platformType, hostnameBMC)
+    else:
+        cmd = "python ../{0} {1} {2}"
+        cmd = cmd.format(testName, platformType, hostnameBMC)
+    if VERBOSE:
+        cmd = setVerbose(cmd)
+    f = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    info, err = f.communicate()
+    print(info)
+    return
+
+
+def powerCycleSWTest(cmd_bmc, data, hostnameBMC, hostnameMS):
+    platformType = data["type"]
+    cmd = 'python ../powerCycleSWTest.py {0} {1} {2}'
+    cmd = cmd.format(platformType, hostnameBMC, hostnameMS)
     if VERBOSE:
         cmd = setVerbose(cmd)
     f = subprocess.Popen(cmd,
@@ -120,21 +187,10 @@ def generalTypeBMCTest(ssh, data, testName, BMC):
                          stderr=subprocess.PIPE)
     info, err = f.communicate()
     print(info)
+    if len(info) == 0:
+        print(err)
     return
 
-
-def powerCycleSWTest(ssh, data, hostnameBMC, hostnameMS):
-    platformType = data["type"]
-    cmd = 'python ../powerCycleSWTest.py ' + platformType + ' ' + hostnameBMC + ' ' + hostnameMS
-    if VERBOSE:
-        cmd = setVerbose(cmd)
-    f = subprocess.Popen(cmd,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    info, err = f.communicate()
-    print(info)
-    return
 
 def cmmComponentPresenceTest(ssh, data, testName):
     cmd = "python " + testName
@@ -143,7 +199,7 @@ def cmmComponentPresenceTest(ssh, data, testName):
     ssh.sendline(cmd)
     ssh.prompt(timeout=1000)
     output = ssh.before
-    print(output.split('\n', 1)[1])
+    print(str(output, 'utf-8').split('\n', 1)[1])
     return
 
 
@@ -153,19 +209,30 @@ if __name__ == "__main__":
     """
     # parse json string
     data = {}
+    cmd_headnode = "sshpass -p password ssh -tt -6 root@{} "
+    cmd_bmc = "sshpass -p 0penBmc ssh -tt root@{} "
     util = unitTestUtil.UnitTestUtil()
     try:
-        args = util.Argparser(['json', 'hostnameBMC', 'hostnameMS', '--verbose'],
-                              [str, str, str, None],
-                              ['a json file', 'a hostname for BMC',
+        args = util.Argparser(['json', '--headnode', 'hostnameBMC', 'hostnameMS', '--verbose'],
+                              [str, None, str, str, None],
+                              ['a json file', 'a host name for the headnode', 'a hostname for BMC',
                               'a hostname for the Micro server',
                               'output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR'])
+        hostnameBMC = ""
+        headnodeName = ""
         json = args.json
+        hostnameBMC = args.hostnameBMC
+        hostnameMS = args.hostnameMS
+        if args.headnode is not None:
+            HEADNODE = True
+            headnodeName = args.headnode
         if args.verbose is not None:
             VERBOSE = True
             MODE = args.verbose
-        hostnameBMC = args.hostnameBMC
-        hostnameMS = args.hostnameMS
+        if HEADNODE:
+            cmd_bmc = cmd_headnode.format(headnodeName) + cmd_bmc.format(hostnameBMC)
+        else:
+            cmd_bmc = cmd_bmc.format(hostnameBMC)
         data = util.JSONparser(json)
     except Exception as e:
         print("Error returned: " + str(e))
@@ -173,57 +240,77 @@ if __name__ == "__main__":
     if len(data) != 0:
         # scp directory
         path = os.getcwd().replace('/common/tools', '')
-        util.scp(path, hostnameBMC, True, pexpect)
+        #util.scp(path, hostnameBMC, True, pexpect)
 
         # login to host
         ssh = pxssh.pxssh()
-        util.Login(hostnameBMC, ssh)
-        ssh.sendline('cd /tmp/tests/common')
-        ssh.prompt()
+        if HEADNODE is False:
+            # scp directory
+            util.scp(path, hostnameBMC, True, pexpect)
+            # login to host
+            util.Login(hostnameBMC, ssh)
+            ssh.sendline('cd /tmp/tests/common')
+            ssh.prompt()
+        else:
+            util.scp_through_proxy(path, headnodeName, hostnameBMC,
+                                   True, pexpect)
 
         # run tests
         if "cmmComponentPresenceTest.py" in data:
             if data["cmmComponentPresenceTest.py"] == 'yes':
-                cmmComponentPresenceTest(ssh, data, "cmmComponentPresenceTest.py")
+                cmmComponentPresenceTest(ssh, data,
+                                         "cmmComponentPresenceTest.py")
         if "cmmPowerGPIOPresence.py" in data:
             if data["cmmPowerGPIOPresence.py"] == 'yes':
                 cmmComponentPresenceTest(ssh, data, "cmmPowerGPIOPresence.py")
         if "interfaceTest.py" in data:
             if data["interfaceTest.py"][0] == 'yes':
-                interfaceTest(ssh, data)
+                interfaceTest(cmd_bmc, data)
         if "eepromTest.py" in data:
             if data["eepromTest.py"] == 'yes':
-                generalTypeTest(ssh, data, "eepromTest.py")
+                generalTypeTest(cmd_bmc, data, "eepromTest.py")
         if "fansTest.py" in data:
             if data["fansTest.py"] == 'yes':
-                generalTypeTest(ssh, data, "fansTest.py")
+                generalTypeTest(cmd_bmc, data, "fansTest.py")
         if "connectionTest.py" in data:
             if data["connectionTest.py"][0] == 'yes':
-                connectionTest(hostnameBMC)
+                if HEADNODE:
+                    connectionTest(hostnameBMC, data, headnodeName)
+                else:
+                    connectionTest(hostnameBMC, data)
         if "sensorTest.py" in data:
             if data["sensorTest.py"][0] == 'yes':
-                generalJsonTest(ssh, data, "sensorTest.py")
+                generalJsonTest(cmd_bmc, data, "sensorTest.py")
         if "i2cSensorTest.py" in data:
             if data["i2cSensorTest.py"][0] == 'yes':
-                generalJsonTest(ssh, data, "i2cSensorTest.py")
+                generalJsonTest(cmd_bmc, data, "i2cSensorTest.py")
         if "memoryUsageTest.py" in data:
             if data["memoryUsageTest.py"][0] == 'yes':
-                memoryUsageTest(ssh, data)
+                memoryUsageTest(cmd_bmc, data)
         if "kernelModulesTest.py" in data:
             if data["kernelModulesTest.py"][0] == 'yes':
-                generalJsonTest(ssh, data, "kernelModulesTest.py")
+                generalJsonTest(cmd_bmc, data, "kernelModulesTest.py")
         if "processRunningTest.py" in data:
             if data["processRunningTest.py"][0] == 'yes':
-                generalJsonTest(ssh, data, "processRunningTest.py")
+                generalJsonTest(cmd_bmc, data, "processRunningTest.py")
         if "solTest.py" in data:
             if data["solTest.py"] == 'yes':
-                generalTypeBMCTest(ssh, data, "solTest.py", hostnameBMC)
+                if HEADNODE:
+                    generalTypeBMCTest(hostnameBMC, "solTest.py", data,
+                                       headnodeName)
+                else:
+                    generalTypeBMCTest(hostnameBMC, "solTest.py", data)
         if "powerCycleHWTest.py" in data:
             if data["powerCycleHWTest.py"] == 'yes':
-                generalTypeTest(ssh, data, "powerCycleHWTest.py")
+                generalTypeTest(cmd_bmc, data, "powerCycleHWTest.py")
         if "powerCycleSWTest.py" in data:
             if data["powerCycleSWTest.py"] == 'yes':
-                powerCycleSWTest(ssh, data, hostnameBMC, hostnameMS)
+                powerCycleSWTest(cmd_bmc, data, hostnameBMC, hostnameMS)
         if "watchdogResetTest.py" in data:
-            if data["watchdogResetTest.py"] == 'yes':
-                generalTypeBMCTest(ssh, data, "watchdogResetTest.py", hostnameBMC)
+            if data["watchdogResetTest.py"][0] == 'yes':
+                if HEADNODE:
+                    generalTypeBMCTest(hostnameBMC, "watchdogResetTest.py",
+                                       data, headnodeName)
+                else:
+                    generalTypeBMCTest(hostnameBMC, "watchdogResetTest.py",
+                                       data)

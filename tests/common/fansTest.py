@@ -23,7 +23,7 @@ def fansTest(platformType, util):
     if util.StartControlCmd is None:
         raise Exception("fan start command not implemented")
     # get fan test
-    logger.debug("Executing: " + str(util.GetFanCmd))
+    logger.debug("Executing: {}".format(util.GetFanCmd))
     f = subprocess.Popen(util.GetFanCmd,
                          shell=True,
                          stdout=subprocess.PIPE,
@@ -48,7 +48,7 @@ def fansTest(platformType, util):
             raise Exception(err)
 
     # set fan speed
-    logger.debug("Executing: " + str(util.SetFanCmd))
+    logger.debug("Executing: ".format(util.SetFanCmd))
     err = subprocess.Popen(util.SetFanCmd,
                            shell=True,
                            stdout=subprocess.PIPE,
@@ -107,5 +107,5 @@ if __name__ == "__main__":
             print("No support for platform type given or none given [FAILED]")
         else:
             print("Get and Set fan test [FAILED]")
-            print("Error code returned: " + str(e))
+            print("Error code returned: " + str(e, 'utf-8'))
         sys.exit(1)

@@ -42,6 +42,11 @@ try:
     import FbttnUtil
 except Exception as e:
     pass
+try:
+    sys.path.insert(0, testPath + 'lightning/unittests/')
+    import LightningUtil
+except Exception as e:
+    pass
 
 
 class UnitTestUtil:
@@ -62,6 +67,8 @@ class UnitTestUtil:
             return FbtpUtil.FbtpUtil()
         elif platformType == 'fbttn':
             return FbttnUtil.FbttnUtil()
+        elif platformType == 'lightning':
+            return LightningUtil.LightningUtil()
         else:
             raise Exception("Unsupported Platform")
 
@@ -110,6 +117,32 @@ class UnitTestUtil:
         if not auth:
             child.sendline(password)
             child.expect(pexpect.EOF)
+        child.close()
+        return
+
+    def Login_through_proxy(self, headnode, bmcname, pexpect):
+        headnode_password = 'password'
+        bmc_password = '0penBmc'
+        ssh_cmd = "sshpass -p {0} ssh -tt root@{1} sshpass -p {2} ssh root@{3}"
+        ssh_cmd.format(headnode_password, headnode, bmc_password, bmcname)
+
+    def scp_through_proxy(self, path, headnode, bmcname, Multiple, pexpect):
+        headnode_password = 'password'
+        bmc_password = '0penBmc'
+        scpcmd = ""
+        if Multiple:
+            scpcmd = "scp -o 'ProxyCommand ssh root@{0} nc %h %p' -r {1} root@[{2}]:/tmp"
+        else:
+            scpcmd = "scp -o 'ProxyCommand ssh root@{0} nc %h %p' {1} root@[{2}]:/tmp"
+        scpcmd = scpcmd.format(headnode, path, bmcname)
+        child = pexpect.spawn(scpcmd)
+        auth1 = child.expect(['password:', pexpect.EOF])
+        if not auth1:
+            child.sendline(headnode_password)
+            auth2 = child.expect(['password:', pexpect.EOF])
+            if not auth2:
+                child.sendline(bmc_password)
+                child.expect(pexpect.EOF)
         child.close()
         return
 

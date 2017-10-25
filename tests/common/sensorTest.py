@@ -10,7 +10,7 @@ import unitTestUtil
 import logging
 
 sensorDict = {}
-util_support_map = ['fbttn', 'fbtp']
+util_support_map = ['fbttn', 'fbtp', 'lightning']
 lm_sensor_support_map = ['wedge', 'wedge100', 'galaxy100', 'cmm']
 
 
@@ -75,7 +75,7 @@ def sensorTestUtil(platformType, data, util):
         except Exception:
             failed += [sensor]
             continue
-        if isinstance(data[sensor], types.ListType):
+        if isinstance(data[sensor], list):
             values = re.findall(r"[-+]?\d*\.\d+|\d+", raw_value)
             if len(values) == 0:
                 failed += [sensor]
@@ -98,7 +98,7 @@ def createSensorDictNetworkLmSensors(util):
     cmd = util.SensorCmd
     if cmd is None:
         raise Exception("sensor command not implemented")
-    logger.debug("executing command: " + str(cmd))
+    logger.debug("executing command: ".format(cmd))
     f = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
@@ -140,6 +140,7 @@ def createSensorDictUtil(util):
     if len(err) != 0:
         raise Exception(err)
     logger.debug("creating sensor dictionary")
+    info = info.decode('utf-8')
     info = info.split('\n')
     for line in info:
         if ':' in line:
@@ -169,5 +170,5 @@ if __name__ == "__main__":
         sensorTest(platformType, data, utilType)
     except Exception as e:
         print("Sensor test [FAILED]")
-        print("Error code returned: " + str(e))
+        print("Error code returned: {}".format(e))
     sys.exit(1)

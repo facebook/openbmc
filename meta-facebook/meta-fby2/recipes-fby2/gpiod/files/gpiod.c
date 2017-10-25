@@ -35,11 +35,6 @@
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
 
-#define SETBIT(x, y)        (x | (1LL << y))
-#define GETBIT(x, y)        ((x & (1LL << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1LL << y)))
-#define GETMASK(y)          (1LL << y)
-
 #define MAX_NUM_SLOTS       4
 #define DELAY_GPIOD_READ    1000000
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
@@ -59,6 +54,8 @@ static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot3[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
+
+static bool smi_count_start[MAX_NUM_SLOTS] = {0};
 
 static int
 read_device(const char *device, int *value) {
@@ -84,6 +81,75 @@ read_device(const char *device, int *value) {
   } else {
     return 0;
   }
+}
+
+static void *
+smi_timer(void *ptr) {
+  uint8_t fru = (int)ptr;
+  int smi_timeout_count = 1;
+  int smi_timeout_threshold = 90;
+  bool is_issue_event = false;
+  int ret;
+  uint8_t status;
+
+#ifdef SMI_DEBUG
+  syslog(LOG_WARNING, "[%s][%lu] Timer is started.\n", __func__, pthread_self());
+#endif
+
+  while(1)
+  {
+    // Check 12V status
+    if (0 == pal_is_server_12v_on(fru, &status)) {
+      if (0 == status) {
+        smi_count_start[fru-1] = false; // reset smi count
+      }
+    } else {
+      syslog(LOG_ERR, "%s: pal_is_server_12v_on failed", __func__);
+      continue;
+    }
+
+    // Check Power status
+    if (0 == pal_get_server_power(fru, &status)) {
+      if (SERVER_POWER_OFF == status) {
+        smi_count_start[fru-1] = false; // reset smi count
+      }
+    } else {
+      syslog(LOG_ERR, "%s: pal_get_server_power failed", __func__);
+      continue;
+    }
+
+    if ( smi_count_start[fru-1] == true )
+    {
+      smi_timeout_count++;
+    }
+    else
+    {
+      smi_timeout_count = 0;
+    }
+
+#ifdef SMI_DEBUG
+    syslog(LOG_WARNING, "[%s][%lu] smi_timeout_count[%d] == smi_timeout_threshold[%d]\n", __func__, pthread_self(), smi_timeout_count, smi_timeout_threshold);
+#endif
+
+    if ( smi_timeout_count == smi_timeout_threshold )
+    {
+      syslog(LOG_CRIT, "ASSERT: SMI signal is stuck low for %d sec on slot%d\n", smi_timeout_threshold, fru);
+      is_issue_event = true;
+    }
+    else if ( (is_issue_event == true) && (smi_count_start[fru-1] == false) )
+    {
+      syslog(LOG_CRIT, "DEASSERT: SMI signal is stuck low for %d sec on slot%d\n", smi_timeout_threshold, fru);
+      is_issue_event = false;
+    }
+
+    //sleep periodically.
+    sleep(1);
+#ifdef SMI_DEBUG
+    syslog(LOG_WARNING, "[%s][%lu] smi_count_start flag is %d. count=%d\n", __func__, pthread_self(), smi_count_start[fru-1], smi_timeout_count);
+#endif
+  }
+
+  return NULL;
 }
 
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
@@ -198,8 +264,9 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  // Only monitor the PWRGD_COREPWR pin
+  // Only monitor the PWRGD_COREPWR & FM_SMI_BMC_N pin
   gpios[PWRGD_COREPWR].flag = 1;
+  gpios[FM_SMI_BMC_N].flag = 1;
 
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
@@ -267,6 +334,7 @@ gpio_monitor_poll(void *ptr) {
         continue;
       }
       n_pin_val = CLEARBIT(o_pin_val, PWRGD_COREPWR);
+      n_pin_val = CLEARBIT(o_pin_val, FM_SMI_BMC_N);
     }
 
     if (o_pin_val == n_pin_val) {
@@ -282,34 +350,43 @@ gpio_monitor_poll(void *ptr) {
 
         // Check if the new GPIO val is ASSERT
         if (gpios[i].status == gpios[i].ass_val) {
-          /*
-           * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
-           * Raise an error and change the LPS from on to off or vice versa for deassert.
-           */
-          if (strcmp(pwr_state, "off")) {
-            if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
-              // Check if power-util is still running to ignore getting incorrect power status
-              sprintf(path, PWR_UTL_LOCK, fru);
-              if (access(path, F_OK) != 0) {
-                pal_set_last_pwr_state(fru, "off");
-              }
-            }
-          }
-          syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
 
-          // Inform BIOS that BMC is ready
-          bic_set_gpio(fru, BMC_READY_N, 0);
-        } else {
-          if (strcmp(pwr_state, "on")) {
-            if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
-              // Check if power-util is still running to ignore getting incorrect power status
-              sprintf(path, PWR_UTL_LOCK, fru);
-              if (access(path, F_OK) != 0) {
-                pal_set_last_pwr_state(fru, "on");
+          if (PWRGD_COREPWR == i) {
+            /*
+             * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
+             * Raise an error and change the LPS from on to off or vice versa for deassert.
+             */
+            if (strcmp(pwr_state, "off")) {
+              if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
+                // Check if power-util is still running to ignore getting incorrect power status
+                sprintf(path, PWR_UTL_LOCK, fru);
+                if (access(path, F_OK) != 0) {
+                  pal_set_last_pwr_state(fru, "off");
+                }
               }
             }
+            syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+
+            // Inform BIOS that BMC is ready
+            bic_set_gpio(fru, BMC_READY_N, 0);
+          } else if (i == FM_SMI_BMC_N) {
+            smi_count_start[fru-1] = true;
           }
-          syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+        } else {
+          if (PWRGD_COREPWR == i) {
+            if (strcmp(pwr_state, "on")) {
+              if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
+                // Check if power-util is still running to ignore getting incorrect power status
+                sprintf(path, PWR_UTL_LOCK, fru);
+                if (access(path, F_OK) != 0) {
+                  pal_set_last_pwr_state(fru, "on");
+                }
+              }
+            }
+            syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+          } else if (i == FM_SMI_BMC_N) {
+            smi_count_start[fru-1] = false;
+          }
         }
       }
     }
@@ -330,6 +407,7 @@ run_gpiod(int argc, void **argv) {
   int i, ret, slot;
   uint8_t fru_flag, fru;
   pthread_t tid_gpio[MAX_NUM_SLOTS];
+  pthread_t tid_smi_timer[MAX_NUM_SLOTS];
 
   /* Check for which fru do we need to monitor the gpio pins */
   fru_flag = 0;
@@ -343,6 +421,12 @@ run_gpiod(int argc, void **argv) {
     if ((fru >= FRU_SLOT1) && (fru < (FRU_SLOT1 + MAX_NUM_SLOTS))) {
       fru_flag = SETBIT(fru_flag, fru);
       slot = fru;
+
+      //Create thread for SMI check
+      if (pthread_create(&tid_smi_timer[fru-1], NULL, smi_timer, (void *)fru) < 0) {
+        syslog(LOG_WARNING, "pthread_create for smi_handler fail fru%d\n", fru);
+      }
+
       if (pthread_create(&tid_gpio[fru-1], NULL, gpio_monitor_poll, (void *)slot) < 0) {
         syslog(LOG_WARNING, "pthread_create for gpio_monitor_poll failed\n");
       }
@@ -350,8 +434,10 @@ run_gpiod(int argc, void **argv) {
   }
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
-    if (GETBIT(fru_flag, fru))
+    if (GETBIT(fru_flag, fru)) {
+      pthread_join(tid_smi_timer[fru-1], NULL);
       pthread_join(tid_gpio[fru-1], NULL);
+    }
   }
 }
 

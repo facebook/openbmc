@@ -42,10 +42,10 @@ extern "C" {
 #define KV_STORE "/mnt/data/kv_store/%s"
 #define KV_STORE_PATH "/mnt/data/kv_store"
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
+#define SETBIT(x, y)        (x | (1LL << y))
+#define GETBIT(x, y)        ((x & (1LL << y)) > y)
+#define CLEARBIT(x, y)      (x & (~(1LL << y)))
+#define GETMASK(y)          (1LL << y)
 
 #define MAX_NODES 4
 

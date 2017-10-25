@@ -1133,18 +1133,19 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     if((last_offset + dsize) <= offset) {
        switch(comp) {
          case UPDATE_BIOS:
-           printf("updated bios: %d %%\n", offset/dsize);
+           printf("\rupdated bios: %d %%", offset/dsize);
            break;
          case UPDATE_CPLD:
-           printf("uploaded cpld: %d %%\n", offset/dsize*5);
+           printf("\ruploaded cpld: %d %%", offset/dsize*5);
            break;
          case UPDATE_VR:
-           printf("updated vr: %d %%\n", offset/dsize*20);
+           printf("\rupdated vr: %d %%", offset/dsize*20);
            break;
          default:
-           printf("updated bic boot loader: %d %%\n", offset/dsize*5);
+           printf("\rupdated bic boot loader: %d %%", offset/dsize*5);
            break;
        }
+       fflush(stdout);
        last_offset += dsize;
     }
   }
@@ -1160,7 +1161,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
         goto error_exit;
       }
 
-      printf("updated cpld: %d %%\n", buf[0]);
+      printf("\rupdated cpld: %d %%", buf[0]);
+      fflush(stdout);
       buf[0] %= 101;
       if (buf[0] == 100)
         break;
@@ -1210,6 +1212,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 update_done:
   ret = 0;
 error_exit:
+  printf("\n");
   switch(comp) {
     case UPDATE_BIOS:
       syslog(LOG_CRIT, "bic_update_fw: updating bios firmware is exiting\n");

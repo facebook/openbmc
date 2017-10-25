@@ -206,9 +206,8 @@ def main():
             print("Not sure what this file contains: %s" % (filename))
             return 1
         if data[:4] != b'\x0f\x00\x00\xea':
-            print(data[:4])
-            return -1
-            #return decode_fit(data)
+            print("Non-flash file inputs are not supported")
+            return 1
 
         ret = decode_flash(fh, data)
         if ret > 0:
@@ -219,7 +218,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Show vboot info')
     parser.add_argument('--rom-size', default=84 * 1024,
         help="Size of ROM region")
-    parser.add_argument('--rom-fit-size', default=5100,
+    parser.add_argument('--rom-fit-size', default=5120,
         help="Size of the ROM FIT region")
     parser.add_argument('filename', help="Input firmware")
     args = parser.parse_args()

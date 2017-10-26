@@ -357,6 +357,56 @@ static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 
+void
+msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
+  }
+}
+
+int 
+flock_retry(int fd)
+{
+  int ret = 0;
+  int retry_count = 0;
+
+  ret = flock(fd, LOCK_EX | LOCK_NB);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fd, LOCK_EX | LOCK_NB);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int 
+unflock_retry(int fd)
+{
+  int ret = 0;
+  int retry_count = 0;
+
+  ret = flock(fd, LOCK_UN);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fd, LOCK_UN);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
+}
+
 static int
 read_device(const char *device, int *value) {
   FILE *fp;
@@ -875,6 +925,7 @@ return 0;
 static int
 _sdr_init(char *path, sensor_info_t *sinfo) {
   int fd;
+  int ret = 0;
   uint8_t buf[MAX_SDR_LEN] = {0};
   uint8_t bytes_rd = 0;
   uint8_t snr_num = 0;
@@ -886,13 +937,21 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
 
   fd = open(path, O_RDONLY);
   if (fd < 0) {
-    syslog(LOG_ERR, "sdr_init: open failed for %s\n", path);
+    syslog(LOG_ERR, "%s: open failed for %s\n", __func__, path);
     return -1;
+  }
+
+  ret = flock_retry(fd);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
+   close(fd);
+   return -1;
   }
 
   while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
     if (bytes_rd != sizeof(sdr_full_t)) {
-      syslog(LOG_ERR, "sdr_init: read returns %d bytes\n", bytes_rd);
+      syslog(LOG_ERR, "%s: read returns %d bytes\n", __func__, bytes_rd);
+      unflock_retry(fd);
       close(fd);
       return -1;
     }
@@ -903,6 +962,13 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
   }
 
+  ret = unflock_retry(fd);
+  if (ret == -1) {
+    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+    close(fd);
+    return -1;
+  }
+
   close(fd);
   return 0;
 }
@@ -910,6 +976,7 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
 int
 fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
+  int retry = 0;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -925,12 +992,20 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 #endif
                 return ERR_NOT_READY;
             }
-
-            if (_sdr_init(path, sinfo) < 0) {
+            while (retry <= 3) {
+              if (_sdr_init(path, sinfo) < 0) {
+                 if (retry == 3) { //if the third retry still failed, return -1
 #ifdef DEBUG
-               syslog(LOG_ERR, "fby2_sensor_sdr_init: sdr_init failed for FRU %d", fru);
+                   syslog(LOG_ERR, "fby2_sensor_sdr_init: sdr_init failed for FRU %d", fru);
 #endif
+                   return -1;
+                 }
+                 retry++;
+                 sleep(1);
+              } else {
+                break;
               }
+            }
         break;
         case SLOT_TYPE_CF:
         case SLOT_TYPE_GP:

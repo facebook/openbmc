@@ -2,7 +2,7 @@
 all: bic-cached
 
 bic-cached: bic-cached.c 
-	$(CC) -pthread -lbic -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

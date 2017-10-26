@@ -24,6 +24,7 @@ from __future__ import division
 from io import DEFAULT_BUFFER_SIZE
 
 import logging
+import os
 import unittest
 import virtualcat
 
@@ -350,3 +351,27 @@ class TestVirtualCat(unittest.TestCase):
                     self.callback.assert_not_called()
                     # Don't care whether seek() is called before closing
             self.assertEqual(mocked_open.mock_calls, call_list)
+
+    def test_multiple_images_peek_beyond_end(self):
+        with patch.object(
+            virtualcat, "open", mock_open(), create=True
+        ) as mocked_open:
+            image = MagicMock()
+            with virtualcat.VirtualCat([image]) as vc:
+                mock_file = vc.open_file
+                mock_file.tell.side_effect = [0, 1]
+                mock_file.read.side_effect = [self.data]
+                vc.peek()
+                mock_file.read.side_effect = [b'']
+                with self.assertRaises(IOError):
+                    vc.peek()
+                self.callback.assert_not_called()
+            self.assertEqual(mocked_open.mock_calls, [
+                call(image.file_name, 'rb'),
+                call().tell(),
+                call().read(4),
+                call().seek(-4, os.SEEK_CUR),
+                call().tell(),
+                call().read(4),
+                call().close()
+            ])

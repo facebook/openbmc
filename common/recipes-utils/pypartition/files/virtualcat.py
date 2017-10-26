@@ -90,7 +90,6 @@ class VirtualCat(object):
         self.images = []  # type: ImageSourcesType
         self.images.extend(reference_image_list)
         self.open_file = open(self.images[0].file_name, 'rb')
-        self.bytes_read_or_skipped = 0
 
     def __enter__(self):
         # type: () -> VirtualCat
@@ -99,12 +98,6 @@ class VirtualCat(object):
     def __exit__(self, exception_type, exception_value, exception_traceback):
         # type: (type, int, int) -> None
         self.open_file.close()
-
-    def peek(self):
-        # type: () -> int
-        word = self.open_file.read(4)
-        self.open_file.seek(-4, os.SEEK_CUR)
-        return struct.unpack(b'>I', word)[0]
 
     def next_image_if_needed(self):
         # type: () -> None
@@ -127,8 +120,15 @@ class VirtualCat(object):
             raise IOError('read {} bytes but {} requested'.format(
                 bytes_read, requested_size
             ))
-        self.bytes_read_or_skipped += bytes_read
         return data
+
+    def peek(self):
+        # type: () -> int
+        word_format = b'>I'
+        word_length = struct.calcsize(word_format)
+        raw_word = self.verified_read(word_length)
+        self.open_file.seek(word_length * -1, os.SEEK_CUR)
+        return struct.unpack(word_format, raw_word)[0]
 
     def read_with_callback(self, size, callback):
         # type: (int, Callable[[bytes], None]) -> None

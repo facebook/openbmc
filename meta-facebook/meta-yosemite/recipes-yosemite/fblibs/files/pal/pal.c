@@ -2101,7 +2101,6 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           sprintf(key, CRASHDUMP_KEY, fru);
           edb_cache_set(key, "1");
           pal_store_crashdump(fru);
-          edb_cache_set(key, "0");
           break;
 
         case 0x00:  // don't care sensor number 00h

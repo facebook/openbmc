@@ -27,6 +27,7 @@ from node_api import get_node_api
 from node_sled import get_node_sled
 from node_mezz import get_node_mezz
 from node_bmc import get_node_bmc
+from node_vboot import get_node_vboot
 from node_server_2s import get_node_server_2s
 from node_fruid import get_node_fruid
 from node_sensors import get_node_sensors
@@ -56,6 +57,9 @@ def init_plat_tree():
 
     # /api/sled/mb/bmc end point
     r_temp = tree("bmc", data = get_node_bmc())
+    r_mb.addChild(r_temp)
+
+    r_temp = tree("vboot", data = get_node_vboot())
     r_mb.addChild(r_temp)
 
     # /api/sled/mb/sensors end point

@@ -23,6 +23,7 @@ import re
 from node import node
 from pal import *
 from uuid import getnode as get_mac
+import os.path
 
 class bmcNode(node):
     def __init__(self, info = None, actions = None):
@@ -99,6 +100,20 @@ class bmcNode(node):
                             shell=True, stdout=PIPE).stdout.read().decode()
         kernel_version = data.strip('\n')
 
+        # Get TPM version
+        tpm_path = "/sys/class/tpm/tpm0/device/caps"
+        if os.path.isfile(tpm_path):
+            with open(tpm_path) as f:
+                for line in f:
+                    if 'TCG version:' in line:
+                        tpm_tcg_version = line.strip("TCG version: ").strip('\n')
+                    elif 'Firmware version:' in line:
+                        tpm_fw_version = line.strip("Firmware version: ").strip('\n')
+        else:
+            tpm_tcg_version = "NA"
+            tpm_fw_version = "NA"
+
+
         info = {
             "Description": name + " BMC",
             "MAC Addr": mac_addr,
@@ -109,6 +124,8 @@ class bmcNode(node):
             "OpenBMC Version": obc_version,
             "u-boot version": uboot_version,
             "kernel version": kernel_release + " " + kernel_version,
+            "TPM TCG version": tpm_tcg_version,
+            "TPM FW version": tpm_fw_version,
             }
 
         return info

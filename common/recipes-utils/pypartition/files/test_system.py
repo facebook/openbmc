@@ -144,6 +144,7 @@ class TestSystem(unittest.TestCase):
         for (dry_run, expected_arguments) in inputs_outputs:
             with patch.object(subprocess, 'call') as mock_call:
                 with patch.object(logging, 'shutdown') as mock_shutdown:
-                    system.reboot(dry_run, 'testing', MagicMock())
-                    mock_call.assert_called_with(expected_arguments)
-                    mock_shutdown.assert_called()
+                    with self.assertRaises(SystemExit):
+                        system.reboot(dry_run, 'testing', MagicMock())
+                        mock_call.assert_called_with(expected_arguments)
+                        mock_shutdown.assert_called()

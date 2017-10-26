@@ -298,3 +298,10 @@ def reboot(dry_run, reason, logger):
 
     logging.shutdown()
     subprocess.call(reboot_command)
+    # Trying to run anything after the `shutdown -r` command is issued would be
+    # racing against shutdown killing this process.
+    if subprocess.call(reboot_command) == 0:
+        sys.exit(0)
+    else:
+        logger.error('Unable to reboot')
+        sys.exit(1)

@@ -66,6 +66,7 @@ def pal_server_action(slot_id, command):
     else:
         return -1
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    ret = ret.decode()
     if ret.startswith( 'Usage' ):
         return -1
     else:
@@ -82,6 +83,7 @@ def pal_sled_action(command):
         return -1
 
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    ret = ret.decode()
     if ret.startswith( 'Usage' ):
         return -1
     else:

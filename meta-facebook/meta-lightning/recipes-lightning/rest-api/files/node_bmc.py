@@ -37,7 +37,7 @@ class bmcNode(node):
 
     def getInformation(self):
         # Get Platform Name
-        name = pal_get_platform_name()
+        name = pal_get_platform_name().decode()
 
         # Get MAC Address
         mac = get_mac()
@@ -45,7 +45,7 @@ class bmcNode(node):
 
         # Get BMC Reset Reason
         wdt_counter = Popen('devmem 0x1e785010', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         wdt_counter = int(wdt_counter, 0)
         wdt_counter &= 0xff00
 
@@ -61,11 +61,11 @@ class bmcNode(node):
 
         # Get BMC's Up Time
         uptime = Popen('uptime', \
-                        shell=True, stdout=PIPE).stdout.read()
+                        shell=True, stdout=PIPE).stdout.read().decode()
 
         # Get Usage information
         data = Popen('top -b n1', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         adata = data.split('\n')
         mem_usage = adata[0]
         cpu_usage = adata[1]
@@ -73,7 +73,7 @@ class bmcNode(node):
         # Get OpenBMC version
         obc_version = ""
         data = Popen('cat /etc/issue', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
 
         # OpenBMC Version
         ver = re.search(r'[v|V]([\w\d._-]*)\s', data)
@@ -83,7 +83,7 @@ class bmcNode(node):
         # Get U-boot Version
         uboot_version = ""
         data = Popen( 'strings /dev/mtd0 | grep U-Boot | grep 20', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
 
         # U-boot Version
         uboot_version = data.strip('\n')
@@ -91,12 +91,12 @@ class bmcNode(node):
         # Get kernel release and kernel version
         kernel_release = ""
         data = Popen( 'uname -r', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         kernel_release = data.strip('\n')
 
         kernel_version = ""
         data = Popen( 'uname -v', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         kernel_version = data.strip('\n')
 
         info = {

@@ -63,7 +63,7 @@ def board_callout(callout='None', **kwargs):
 
 def set_all_pwm(boost):
     cmd = ('/usr/local/bin/fan-util --set %d' % (boost))
-    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     return response
 
 

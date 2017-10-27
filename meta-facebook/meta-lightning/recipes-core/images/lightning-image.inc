@@ -44,7 +44,7 @@ IMAGE_INSTALL += " \
   front-paneld \
   fpc-util \
   fscd \
-  rest-api \
+  packagegroup-openbmc-rest3 \
   bottle \
   lldp-util \
   spatula \

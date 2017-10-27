@@ -20,25 +20,25 @@ class identifyNode(node):
     def getInformation(self):
         identify_status=""
         data = Popen('cat /mnt/data/kv_store/system_identify', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         identify_status = data.strip('\n')
         info = {
                 "Status of identify LED": identify_status
         }
-               
+
         return info
 
     def doAction(self, data):
         if data["action"] == "on":
             cmd = '/usr/bin/fpc-util --identify on'
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             if data.startswith( 'Usage' ):
                 res = 'failure'
             else:
                 res = 'success'
         elif data["action"] == "off":
             cmd = '/usr/bin/fpc-util --identify off'
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             if data.startswith( 'Usage' ):
                 res = 'failure'
             else:
@@ -49,7 +49,7 @@ class identifyNode(node):
         result = { "result": res }
 
         return result
-    
+
 def get_node_identify(name):
     actions = [ "on", "off" ]
     return identifyNode(name = name, actions = actions)

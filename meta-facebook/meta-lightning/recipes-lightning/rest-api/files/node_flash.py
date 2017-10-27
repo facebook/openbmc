@@ -20,13 +20,13 @@ class flashNode(node):
         # Get vendor name
         vendor_name=" "
         data = Popen('cat /tmp/ssd_vendor', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         vendor_name = data.strip('\n')
 
         # Get flash type
         flash_type=" "
         data = Popen('cat /tmp/ssd_sku_info', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         flash_type = data.strip('\n')
 
         info = {
@@ -35,6 +35,6 @@ class flashNode(node):
         }
 
         return info
-    
+
 def get_node_flash():
     return flashNode()

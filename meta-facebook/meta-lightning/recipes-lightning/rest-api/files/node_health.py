@@ -18,28 +18,28 @@ class healthNode(node):
             self.actions = actions
 
     def getInformation(self):
-    
+
         # Enclosure health LED status (GOOD/BAD)
         peb_hlth = Popen('cat /tmp/peb_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         pdpb_hlth = Popen('cat /tmp/pdpb_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         fcb_hlth = Popen('cat /tmp/fcb_sensor_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
         bmc_hlth = Popen('cat /tmp/bmc_health', \
-                            shell=True, stdout=PIPE).stdout.read()
+                            shell=True, stdout=PIPE).stdout.read().decode()
 
         if ((peb_hlth == "1") and (pdpb_hlth == "1")
                 and (fcb_hlth == "1") and (bmc_hlth == "1")):
             result="Good"
         else:
             result="Bad"
-        
+
         info = {
            "Status of enclosure health LED": result
         }
 
         return info
-    
+
 def get_node_health():
     return healthNode()

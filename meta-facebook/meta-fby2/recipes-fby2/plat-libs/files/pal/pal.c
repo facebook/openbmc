@@ -2094,8 +2094,10 @@ pal_switch_vga_mux(uint8_t slot) {
     gpio_sw0 = "1";
     gpio_sw1 = "1";
     break;
-  default:
-    return 0;
+  default:   // default case, assumes server 1
+    gpio_sw0 = "0";
+    gpio_sw1 = "0";
+    break;
   }
 
   sprintf(path, GPIO_VAL, GPIO_VGA_SW0);
@@ -4327,7 +4329,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     netfn = req_data[1];
     cmd = req_data[2];
     tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
-    
+
     if (tlen < 0)
       return completion_code;
 
@@ -4355,7 +4357,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       }
     }
 
-    return completion_code;  
+    return completion_code;
 }
 
 unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};

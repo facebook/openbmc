@@ -64,12 +64,12 @@ def read_raw(args):
     val = raw.read(args.address)
 
     if args.int:
-        print "{}".format(val)
+        print("{}".format(val))
     else:
         if args.bus_width == 16:
-            print "0x{:04X}".format(val)
+            print("0x{:04X}".format(val))
         else:
-            print "0x{:02X}".format(val)
+            print("0x{:02X}".format(val))
 
 def write_raw(args):
     if args.value[:2] == "0x":

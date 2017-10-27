@@ -15,22 +15,22 @@ UBOOT_RAMDISK_LOADADDRESS = "0x80800000"
 FLASH_ROOTFS_OFFSET = "4608"
 
 PYTHON_PKGS = " \
-  python-core \
-  python-io \
-  python-json \
-  python-shell \
-  python-subprocess \
-  python-argparse \
-  python-ctypes \
-  python-datetime \
-  python-email \
-  python-threading \
-  python-mime \
-  python-pickle \
-  python-misc \
-  python-netserver \
-  python-syslog \
-  python-ply \
+  python3-core \
+  python3-io \
+  python3-json \
+  python3-shell \
+  python3-subprocess \
+  python3-argparse \
+  python3-ctypes \
+  python3-datetime \
+  python3-email \
+  python3-threading \
+  python3-mime \
+  python3-pickle \
+  python3-misc \
+  python3-netserver \
+  python3-syslog \
+  python3-ply \
   "
 
 NTP_PKGS = " \

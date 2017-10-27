@@ -21,7 +21,7 @@ from argparse import ArgumentParser
 from bcm5396 import Bcm5396
 
 def auto_long(x):
-    return long(x, 0)
+    return int(x, 0)
 
 def auto_int(x):
     return int(x, 0)
@@ -58,7 +58,7 @@ def register_parser(subparser):
                              help='The register to read from')
     read_parser.add_argument('size', type=auto_int,
                              help='Number of bytes',
-                             choices=range(1, 9))
+                             choices=list(1, 9))
 
     write_parser = reg_sub.add_parser('write', help='write switch register')
     write_parser.set_defaults(func=write_register)
@@ -70,7 +70,7 @@ def register_parser(subparser):
                              help='The value to write')
     write_parser.add_argument('size', type=auto_int,
                              help='Number of bytes',
-                             choices=range(1, 9))
+                             choices=list(1, 9))
 
 
 def dump_arl(args):
@@ -103,7 +103,7 @@ def __parse_port_list(parm):
             end = int(port[idx+1:])
             if start > end or start < 0 or end > 15:
                 raise Exception('Invalid port range %s-%s' % (start, end))
-            ports.extend(range(start, end + 1))
+            ports.extend(list(start, end + 1))
     return ports
 
 def enable_vlan(args):

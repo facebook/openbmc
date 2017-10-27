@@ -13,13 +13,14 @@ SOURCE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPTS="$SOURCE/signing"
 
 # Option parsing.
-if [ "$#" -ne 3 ]; then
+if [ "$#" -lt 3 ]; then
   echo "Invalid parameters:"
-  echo "./build.sh POKY_BUILD INPUT_FLASH OUTPUT_DIR"
+  echo "./build.sh POKY_BUILD INPUT_FLASH OUTPUT_DIR [-e]"
   echo ""
   echo "  POKY_BUILD: Directory of build-dir within poky"
   echo "  INPUT_FLASH: The input flash-BOARD file"
   echo "  OUTPUT_DIR: Existing directory that will contain output flashes"
+  echo "  [-e] Create failure tests from a signed input-flash"
   exit 1
 fi
 
@@ -76,6 +77,17 @@ INPUT_NAME=`basename $INPUT_FLASH`
 
 OUTPUT_DIR="$3"
 OUTPUT_DIR=`realpath $OUTPUT_DIR || echo $OUTPUT_DIR`
+
+EASY_TESTS=0
+if [ ! -z "$4" ]; then
+  EASY_TESTS=1
+fi
+
+DIRTY=`find $OUTPUT_DIR | wc -l`
+if [ ! "$DIRTY" = "1" ]; then
+  echo "Note: the OUTPUT_DIR ($OUTPUT_DIR) is not empty..."
+fi
+
 if [ ! -d "$OUTPUT_DIR" ]; then
   echo "Error: the OUTPUT_DIR argument ($OUTPUT_DIR) does not exist?"
   exit 1
@@ -91,9 +103,29 @@ echo -e "Using dtc: \t$DTC"
 echo -e "Using openssl: \t$OPENSSL"
 echo ""
 
-DIRTY=`find $OUTPUT_DIR | wc -l`
-if [ ! "$DIRTY" = "1" ]; then
-  echo "Note: the OUTPUT_DIR ($OUTPUT_DIR) is not empty..."
+function easy_corrupt_uboot() {
+  INPUT=$1
+  OUTPUT=$2
+  cp $INPUT $OUTPUT
+  dd if=/dev/random of=$OUTPUT bs=1 seek=540772 count=16 conv=notrunc
+}
+
+function easy_corrupt_kernel() {
+  INPUT=$1
+  OUTPUT=$2
+  cp $INPUT $OUTPUT
+  dd if=/dev/random of=$OUTPUT bs=1 seek=921600 count=16 conv=notrunc
+
+}
+
+if [ "$EASY_TESTS" = "1" ]; then
+  echo "[+] Creating simple failure case tests"
+  echo ""
+  easy_corrupt_uboot $INPUT_FLASH $OUTPUT_DIR/$INPUT_NAME.corrupt_uboot
+  easy_corrupt_kernel $INPUT_FLASH $OUTPUT_DIR/$INPUT_NAME.corrupt_kernel
+  echo " Wrote: $OUTPUT_DIR/$INPUT_NAME.corrupt_uboot"
+  echo " Wrote: $OUTPUT_DIR/$INPUT_NAME.corrupt_kernel"
+  exit 0
 fi
 
 # Create the example KEK (ROM root key).
@@ -234,8 +266,7 @@ create_bad_fit "u-boot" "4.40.3" 's/data = <0xd00dfeed/data = <0xd00dfefd/g'
 # create_bad_fit "os" "0.0.2" 's/key-name-hint = "odm0"/key-name-hint = "odm0"/g'
 
 echo "[+] Creating 4.43..."
-cp $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43.1
-dd if=/dev/random of=$OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43.1 bs=1 seek=540772 count=16 conv=notrunc
+easy_corrupt_uboot $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.4.43.1
 ln -sf $FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS0.4.43.1
 
 create_bad_fit "u-boot" "4.43.2" 's/key-name-hint = "odm0"/key-name-hint = "kek"/g'
@@ -255,8 +286,8 @@ create_bad_fit "os" "6.60.1" 's/key-name-hint = "odm0"/key-name-hint = "bad"/g'
 create_bad_fit "os" "6.60.2" 's/key-name-hint = "odm0"/key-name-hint = "odm1"/g'
 create_bad_fit "os" "6.60.3" 's/timestamp = <\(.*\)>;/timestamp = <0x10>;/g'
 
-cp $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.6.60.4
-dd if=/dev/random of=$OUTPUT_DIR/flashes/$INPUT_NAME.CS1.6.60.4 bs=1 seek=921600 count=16 conv=notrunc
+echo "[+] Creating 6.60.4..."
+easy_corrupt_kernel $OUTPUT_DIR/flashes/$FLASH_SIGNED $OUTPUT_DIR/flashes/$INPUT_NAME.CS1.6.60.4
 
 echo "[+] Creating ODM1 signed 0.0.3"
 $SCRIPTS/fit-sign --mkimage $MKIMAGE --kek $OUTPUT_DIR/kek/kek.dtb \

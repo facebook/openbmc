@@ -47,6 +47,7 @@ class PhyMemory(object):
                             'before reading HW' % (self.value, self.addr))
         cmd = ['devmem', '0x%x' % self.addr]
         out = subprocess.check_output(cmd)
+        out = out.decode()
         self.value = int(out, 16)
         logging.debug('Read from %s @0x%x, got value (0x%x)'
                       % (str(self), self.addr, self.value))

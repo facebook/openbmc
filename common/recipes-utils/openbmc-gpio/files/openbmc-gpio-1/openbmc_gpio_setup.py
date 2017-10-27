@@ -1,3 +1,4 @@
+#!/usr/bin/python -tt
 # Copyright 2015-present Facebook. All rights reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -19,31 +20,24 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import phymemory
+from board_gpio_table import board_gpio_table
+from soc_gpio_table import soc_gpio_table
+from openbmc_gpio_table import setup_board_gpio
+from soc_gpio import soc_get_register
 
-_soc_reg_map = {}
-
-
-class SCUReg(phymemory.PhyMemory):
-    SCU_REG_MAX = 0x1A4
-    SCU_ADDR_BASE = 0x1E6E2000
-    def __init__(self, reg):
-        assert 0 <= reg <= self.SCU_REG_MAX
-        self.reg = reg
-        super(SCUReg, self).__init__(self.SCU_ADDR_BASE + reg, 'SCU%X' % reg)
+import openbmc_gpio
+import sys
 
 
-def soc_get_register(addr):
-    if addr in _soc_reg_map:
-        return _soc_reg_map[addr]
-    reg = SCUReg(addr)
-    _soc_reg_map[addr] = reg
-    return reg
+def main():
+    print('Setting up GPIOs ... ', end='')
+    sys.stdout.flush()
+    openbmc_gpio.setup_shadow()
 
+    setup_board_gpio(soc_gpio_table, board_gpio_table)
+    print('Done')
+    sys.stdout.flush()
+    return 0
 
-def soc_get_tolerance_reg(addr):
-    if addr in _soc_reg_map:
-        return _soc_reg_map[addr]
-    reg = phymemory.PhyMemory(addr)
-    _soc_reg_map[addr] = reg
-    return reg
+if __name__ == '__main__':
+    sys.exit(main())

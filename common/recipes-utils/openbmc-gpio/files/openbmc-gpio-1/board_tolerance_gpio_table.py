@@ -1,4 +1,3 @@
-#!/usr/bin/python -tt
 # Copyright 2015-present Facebook. All rights reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -15,28 +14,10 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
-from board_gpio_table import board_gpio_table
-from soc_gpio_table import soc_gpio_table
-from openbmc_gpio_table import setup_board_gpio
-from soc_gpio import soc_get_register
+# This is an dummy board tolerance GPIO table. If this is included in the final image,
+# please double check the configuration of your image to define the correct
+# Tolerance GPIO table to be used for your board.
 
-import openbmc_gpio
-import sys
-
-def main():
-    print('Setting up GPIOs ... ', end='')
-    sys.stdout.flush()
-    openbmc_gpio.setup_shadow()
-
-    setup_board_gpio(soc_gpio_table, board_gpio_table)
-    print('Done')
-    sys.stdout.flush()
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
+board_tolerance_gpio_table = [
+]

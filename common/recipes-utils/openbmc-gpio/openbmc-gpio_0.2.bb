@@ -23,6 +23,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 SRC_URI = " \
     file://openbmc-gpio-1/COPYING \
     file://openbmc-gpio-1/board_gpio_table.py \
+    file://openbmc-gpio-1/board_passthrough_gpio_table.py \
+    file://openbmc-gpio-1/board_tolerance_gpio_table.py \
     file://openbmc-gpio-1/openbmc_gpio.py \
     file://openbmc-gpio-1/openbmc_gpio_table.py \
     file://openbmc-gpio-1/openbmc_gpio_util.py \

@@ -22,6 +22,7 @@ from __future__ import unicode_literals
 import logging
 import os
 import string
+import shutil
 
 
 _gpio_shadow = '/tmp/gpionames'
@@ -29,6 +30,8 @@ _gpio_shadow = '/tmp/gpionames'
 
 def setup_shadow(shadow=None):
     global _gpio_shadow
+    if os.path.exists(_gpio_shadow):
+        shutil.rmtree(_gpio_shadow)
     if shadow is not None:
         _gpio_shadow = shadow
     if not os.path.exists(_gpio_shadow):
@@ -132,11 +135,10 @@ def gpio_get(name, change_direction=True):
 
 def gpio_set(name, value, change_direction=True):
     path = gpio_dir(name)
-    with open(os.path.join(path, 'value'), 'w') as f:
-        f.write('%d\n' % (1 if value else 0))
     if change_direction:
-        with open(os.path.join(path, 'direction'), 'w') as f:
-            f.write('out\n')
+        with open(os.path.join(path, 'direction'), 'w') as df:
+            df.write('%s\n' %("high" if value else "low"))
+            df.close()
 
 
 def gpio_info(name):

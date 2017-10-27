@@ -40,3 +40,11 @@ def soc_get_register(addr):
     reg = SCUReg(addr)
     _soc_reg_map[addr] = reg
     return reg
+
+
+def soc_get_tolerance_reg(addr):
+    if addr in _soc_reg_map:
+        return _soc_reg_map[addr]
+    reg = phymemory.PhyMemory(addr)
+    _soc_reg_map[addr] = reg
+    return reg

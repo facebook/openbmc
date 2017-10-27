@@ -19,10 +19,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from soc_gpio import soc_get_register
+from soc_gpio import soc_get_register, soc_get_tolerance_reg
 
 import openbmc_gpio
 import logging
+import phymemory
 import os
 import sys
 
@@ -71,16 +72,14 @@ class BitsEqual(object):
     def unsatisfy(self, **kwargs):
         if not BitsEqual.check(self):
             return
-        if len(self.bits) > 1:
-            raise NotSmartEnoughException('Not able to unsatisfy '
-                                          'multi-bits equal')
         bit = self.bits[0]
         reg = soc_get_register(self.register)
         value = self.value
-        if value & 0x1 == 0x1:
-            reg.clear_bit(bit, **kwargs)
-        else:
-            reg.set_bit(bit, **kwargs)
+        for bit in sorted(self.bits):
+            if value & 0x1 == 0x1:
+                reg.clear_bit(bit, **kwargs)
+            else:
+                reg.set_bit(bit, **kwargs)
 
 
 class BitsNotEqual(BitsEqual):
@@ -168,10 +167,10 @@ class SocGPIOTable(object):
 
     def _parse_gpio_table(self):
         # first get list of registers based on the SoC GPIO table
-        for pin, funcs in self.soc_gpio_table.iteritems():
+        for pin, funcs in self.soc_gpio_table.items():
             for func in funcs:
                 assert func.name not in self.functions
-                self.functions[func.name] = pin
+                self.functions[func.name.split('/')[0]] = pin
                 if func.condition is not None:
                     self.registers |= func.condition.get_registers()
 
@@ -192,7 +191,7 @@ class SocGPIOTable(object):
         funcs = self.soc_gpio_table[self.functions[func_name]]
         for func in funcs:
             cond = func.condition
-            if func.name == func_name:
+            if func.name.startswith(func_name):
                 # this is the function we want to configure.
                 # if the condition is None, we are good to go,
                 # otherwiset, satisfy the condition
@@ -255,7 +254,7 @@ class SocGPIOTable(object):
         all = []
         for pin in self.soc_gpio_table:
             active, _ = self._get_one_pin(pin, False)
-            all.append(active)
+            all.append(active.split('/')[0])
         return all
 
 
@@ -268,6 +267,36 @@ class BoardGPIO(object):
         self.gpio = gpio
         self.shadow = shadow
         self.value = value
+
+
+def setup_board_tolerance_gpio(board_tolerance_gpio_table,
+                               board_gpioOffsetDic, validate=True):
+    gpio_configured = []
+    regs = []
+    for gpio in board_tolerance_gpio_table:
+        if not (gpio.gpio).startswith('GPIO'):
+            continue
+        gpio_val = openbmc_gpio.gpio_name2value(gpio.gpio)
+        offset = int(gpio_val / 32)
+        phy_addr = board_gpioOffsetDic[str(offset)]
+        bit = gpio_val % 32
+        # config the devmem and write through to the hw
+        reg = soc_get_tolerance_reg(phy_addr)
+        reg.set_bit(bit)
+        regs.append(reg)
+
+    for reg in regs:
+        reg.write()
+
+        # export gpio
+    for gpio in board_tolerance_gpio_table:
+        openbmc_gpio.gpio_export(gpio.gpio, gpio.shadow)
+        def_val = openbmc_gpio.gpio_get(gpio.gpio, change_direction=False)
+        if def_val == 1:
+            openbmc_gpio.gpio_set(gpio.gpio, 1)
+        else:
+            openbmc_gpio.gpio_set(gpio.gpio, 0)
+
 
 def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
     soc = SocGPIOTable(soc_gpio_table)
@@ -292,8 +321,8 @@ def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
                 raise Exception('Failed to configure function "%s"' % gpio)
 
     for gpio in board_gpio_table:
-        #if not (gpio.gpio).startswith('GPIO'):
-        #    continue
+        if not (gpio.gpio).startswith('GPIO'):
+            continue
         openbmc_gpio.gpio_export(gpio.gpio, gpio.shadow)
         if gpio.value == GPIO_INPUT:
             continue

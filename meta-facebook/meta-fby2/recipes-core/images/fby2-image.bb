@@ -79,7 +79,6 @@ IMAGE_INSTALL += " \
   fpc-util \
   me-util \
   log-util \
-  cherryPy \
   lldp-util \
   fan-util \
   spatula \

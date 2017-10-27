@@ -71,6 +71,7 @@ def execute_IPMI_command(fru, netfn, cmd, req):
 
     output = Popen(input, shell=True, stdout=PIPE)
     (data, err) =  output.communicate()
+    data = data.decode()
     result = data.strip().split(" ")
 
     if ( output.returncode != 0 ):

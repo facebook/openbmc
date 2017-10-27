@@ -369,25 +369,22 @@ devmem_clear_bit $(scu_addr 88) 15
 
 gpio_export O7
 
-#Wait for ME ready
-sleep 3
-
-# PWRGD_P12V_STBY_SLOT1: GPIOP0 (120)
+# SLOT1_EJECTOR_LATCH_DETECT_N: GPIOP0 (120)
 # To use GPIOP0, SCU88[16] must be 0
 devmem_clear_bit $(scu_addr 88) 16
 gpio_export P0
 
-# PWRGD_P12V_STBY_SLOT2: GPIOP1 (121)
+# SLOT2_EJECTOR_LATCH_DETECT_N: GPIOP1 (121)
 # To use GPIOP1, SCU88[17] must be 0
 devmem_clear_bit $(scu_addr 88) 17
 gpio_export P1
 
-# PWRGD_P12V_STBY_SLOT3: GPIOP2 (122)
+# SLOT3_EJECTOR_LATCH_DETECT_N: GPIOP2 (122)
 # To use GPIOP2, SCU88[18] must be 0
 devmem_clear_bit $(scu_addr 88) 18
 gpio_export P2
 
-# PWRGD_P12V_STBY_SLOT4: GPIOP3 (123)
+# SLOT4_EJECTOR_LATCH_DETECT_N: GPIOP3 (123)
 # To use GPIOP3, SCU88[19] must be 0
 devmem_clear_bit $(scu_addr 88) 19
 gpio_export P3
@@ -442,6 +439,11 @@ gpio_export B6
 
 # PE_BUFF_OE_3_N: GPIOB4 (15)
 gpio_export B7
+
+# Disable PWM reset during external reset
+devmem_clear_bit $(scu_addr 9c) 17
+# Disable PWM reset during WDT1 reset
+devmem_clear_bit 0x1e78501c 17
 
 # Set debounce timer #1 value to 0x12E1FC ~= 2s
 $DEVMEM 0x1e780050 32 0x179A7B0

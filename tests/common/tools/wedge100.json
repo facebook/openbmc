@@ -24,6 +24,10 @@
     {
       "json":"../wedge100/unittests/i2c.json"
     }],
+  "restapiTest.py":["yes",
+    {
+      "json":"../../wedge100/unittests/rest_endpoint.json"
+    }],
   "powerCycleSWTest.py":"yes",
   "powerCycleHWTest.py":"yes",
   "solTest.py":"yes",

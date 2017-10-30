@@ -14,32 +14,6 @@ UBOOT_RAMDISK_LOADADDRESS = "0x80800000"
 # dev-spi-cmm.c. Rootfs starts from 4.5M
 FLASH_ROOTFS_OFFSET = "4608"
 
-PYTHON_PKGS = " \
-  python3-core \
-  python3-io \
-  python3-json \
-  python3-shell \
-  python3-subprocess \
-  python3-argparse \
-  python3-ctypes \
-  python3-datetime \
-  python3-email \
-  python3-threading \
-  python3-mime \
-  python3-pickle \
-  python3-misc \
-  python3-netserver \
-  python3-syslog \
-  python3-ply \
-  "
-
-NTP_PKGS = " \
-  ntp \
-  ntp-utils \
-  sntp \
-  ntpdate \
-  "
-
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   kernel-modules \
@@ -53,13 +27,10 @@ IMAGE_INSTALL += " \
   i2c-tools \
   sensor-setup \
   lmsensors-sensors \
-  rest-api \
-  bottle \
   ipmid \
-  ${PYTHON_PKGS} \
-  ${NTP_PKGS} \
-  iproute2 \
-  dhcp-client \
+  packagegroup-openbmc-net \
+  packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
   fruid \
   ipmbd \
   bic-cached \
@@ -80,7 +51,6 @@ IMAGE_INSTALL += " \
   me-util \
   log-util \
   lldp-util \
-  fan-util \
   spatula \
   passwd-util \
   openbmc-utils \

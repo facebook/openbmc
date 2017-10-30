@@ -142,6 +142,17 @@ def connectionTest(hostnameBMC, data, headnodeName=None):
     print(info.decode().rstrip())
     return
 
+def restapiTest(hostnameBMC, data):
+    json = data["restapiTest.py"][1]['json']
+    cmd = "python ../restapiTest.py {0} {1}"
+    cmd = cmd.format(str(hostnameBMC), json)
+    if VERBOSE:
+        cmd = setVerbose(cmd)
+    f = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    info, err = f.communicate()
+    print(info.decode().rstrip())
+    return
 
 def memoryUsageTest(cmd_bmc, data):
     threshold = data['memoryUsageTest.py'][1]['threshold']
@@ -272,6 +283,9 @@ if __name__ == "__main__":
         if "fansTest.py" in data:
             if data["fansTest.py"] == 'yes':
                 generalTypeTest(cmd_bmc, data, "fansTest.py")
+        if "restapiTest.py" in data:
+            if data["restapiTest.py"][0] == 'yes':
+                restapiTest(hostnameBMC, data)
         if "connectionTest.py" in data:
             if data["connectionTest.py"][0] == 'yes':
                 if HEADNODE:

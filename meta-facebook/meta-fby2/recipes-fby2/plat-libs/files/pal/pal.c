@@ -4292,39 +4292,6 @@ pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len
     return -1;
 }
 
-bool
-pal_is_fw_update_ongoing(uint8_t fru) {
-
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  struct timespec ts;
-
-  switch (fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      sprintf(key, "slot%d_fwupd", fru);
-      break;
-    case FRU_SPB:
-    case FRU_NIC:
-    default:
-      return false;
-  }
-
-  ret = edb_cache_get(key, value);
-  if (ret < 0) {
-     return false;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return true;
-
-  return false;
-}
-
 int
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
 

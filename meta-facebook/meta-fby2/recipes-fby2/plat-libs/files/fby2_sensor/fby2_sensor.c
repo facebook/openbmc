@@ -81,7 +81,7 @@
 #define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
 
 #define I2C_DEV_NIC "/dev/i2c-11"
-#define I2C_NIC_ADDR 0x1f
+#define I2C_NIC_ADDR 0x3e  // 8-bit
 #define I2C_NIC_SENSOR_TEMP_REG 0x01
 
 #define BIC_SENSOR_READ_NA 0x20
@@ -776,25 +776,21 @@ read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
 }
 
 static int
-read_nic_temp(const char *device, float *value) {
-  char cmd[LARGEST_DEVICE_NAME + 1];
-  char full_dir_name[LARGEST_DEVICE_NAME + 1];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
-  int tmp;
+read_nic_temp(const char *device, uint8_t addr, float *value) {
+  int dev, ret, res;
+  uint8_t wbuf[4] = {I2C_NIC_SENSOR_TEMP_REG};
 
-  // Get current working directory
-  if (get_current_dir(device, dir_name))
-  {
-    return -1;
-  }
-  snprintf(
-      full_dir_name, LARGEST_DEVICE_NAME, "%s/temp2_input", dir_name);
-
-  if (read_device(full_dir_name, &tmp)) {
+  dev = open(device, O_RDWR);
+  if (dev < 0) {
     return -1;
   }
 
-  *value = ((float)tmp)/UNIT_DIV;
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, (uint8_t *)&res, 1);
+  close(dev);
+  if (ret) {
+    return -1;
+  }
+  *value = (float)(res & 0xFF);
 
   return 0;
 }
@@ -1500,7 +1496,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           }
 
           return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
-        case SLOT_TYPE_CF: 
+        case SLOT_TYPE_CF:
           //Crane Flat
           /* Check whether the system is 12V off or on */
           ret = fby2_is_server_12v_on(fru, &status);
@@ -1650,7 +1646,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
        	  switch(sensor_num) {
        	    // Mezz Temp
        		  case MEZZ_SENSOR_TEMP:
-              return read_nic_temp(MEZZ_TEMP_DEVICE, (float*) value);
+              return read_nic_temp(I2C_DEV_NIC, I2C_NIC_ADDR, (float*) value);
        	  }
       break;
   }

@@ -36,6 +36,7 @@
 #include "pal.h"
 #include <facebook/bic.h>
 #include <openbmc/edb.h>
+#include <openbmc/obmc-sensor.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -2533,6 +2534,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   if(ret < 0) {
     snr_chk->val_valid = 0;
 
+    if (ret == EER_READ_NA)
+      return ERR_SENSOR_NA;
+
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;
     if(pal_get_server_power(fru, &status) < 0)
@@ -2540,7 +2544,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     // This check helps interpret the IPMI packet loss scenario
     if(status == SERVER_POWER_ON)
       return -1;
-    strcpy(str, "NA");
+
+    return ERR_SENSOR_NA;
   }
   else {
     // On successful sensor read
@@ -2583,19 +2588,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       snr_chk->val_valid = 1;
       snr_chk->retry_cnt = 0;
     }
-
-    sprintf(str, "%.2f",*((float*)value));
   }
 
-  if(edb_cache_set(key, str) < 0) {
-#ifdef DEBUG
-     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
-#endif
-    return -1;
-  }
-  else {
-    return ret;
-  }
+  return ret;
 }
 
 int
@@ -4437,7 +4432,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       memcpy(tbuf, &req_data[1], tlen);
       tbuf[0] = tbuf[0] << 2;
       // Bypass command to ME
-      ret = bic_me_xmit(slot, tbuf, tlen, &rbuf, &rlen);
+      ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
       if (0 == ret) {
          completion_code = rbuf[0];
          memcpy(&res_data[0], &rbuf[1], (rlen - 1));

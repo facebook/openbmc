@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <time.h>
 #include <openbmc/obmc-i2c.h>
 #include "fby2_sensor.h"
 #include <openbmc/nvme-mi.h>
@@ -818,7 +819,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     syslog(LOG_ERR, "bic_read_sensor_wrapper: sensor_num: 0x%X, flag: 0x%X",
         sensor_num, sensor.flags);
 #endif
-    return -1;
+    return EER_READ_NA;
   }
 
   if (discrete) {

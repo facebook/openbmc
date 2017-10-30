@@ -38,6 +38,7 @@ extern "C" {
 #define MAX_RETRIES_SDR_INIT  30
 #define THERMAL_CONSTANT      256
 #define ERR_NOT_READY         -2
+#define EER_READ_NA           -3
 
 typedef struct _sensor_info_t {
   bool valid;

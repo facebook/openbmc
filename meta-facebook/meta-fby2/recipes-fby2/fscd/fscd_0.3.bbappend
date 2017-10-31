@@ -36,9 +36,7 @@ FSC_ZONE_CONFIG +="FSC_FBY2_EVT_4TL_zone1.fsc \
                    FSC_FBY2_EVT_2GP_2TL_zone1.fsc \
                   "
 
-FSC_INIT_FILE += "setup-fan.sh"
-
-do_install() {
+do_install_append() {
   install -d ${D}${sysconfdir}/init.d
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
   update-rc.d -r ${D} setup-fan.sh start 92 5 .

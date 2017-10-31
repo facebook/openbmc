@@ -68,11 +68,11 @@ do_install_append() {
   for f in ${FSC_ZONE_CONFIG}; do
     install -m 644 $f ${D}${sysconfdir}/fsc/$f
   done
-  if [ -z $FSC_INIT_FILE ]; then
+  if [ ! -z ${FSC_INIT_FILE} ]; then
     install -m 755 ${FSC_INIT_FILE} ${D}${sysconfdir}/init.d/
     update-rc.d -r ${D} ${FSC_INIT_FILE} start 91 5 .
   fi
-  if [ -z $FSC_SV_FILE ]; then
+  if [ ! -z ${FSC_SV_FILE} ]; then
     install -m 755 ${FSC_SV_FILE} ${D}${sysconfdir}/sv/fscd/run
   fi
   for f in ${FSC_BIN_FILES}; do

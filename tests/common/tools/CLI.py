@@ -4,9 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from subprocess import *
 try:
-	from pexpect import pxssh
+    from pexpect import pxssh
 except:
-	import pxssh
+    import pxssh
 import sys
 import subprocess
 import pexpect
@@ -307,10 +307,11 @@ if __name__ == "__main__":
             if data["powerCycleSWTest.py"] == 'yes':
                 powerCycleSWTest(cmd_bmc, data, hostnameBMC, hostnameMS)
         if "watchdogResetTest.py" in data:
-            if data["watchdogResetTest.py"][0] == 'yes':
-                if HEADNODE:
+            if HEADNODE:
+                if data["watchdogResetTest.py"][0] == 'yes':
                     generalTypeBMCTest(hostnameBMC, "watchdogResetTest.py",
                                        data, headnodeName)
-                else:
+            else:
+                if data["watchdogResetTest.py"] == 'yes':
                     generalTypeBMCTest(hostnameBMC, "watchdogResetTest.py",
                                        data)

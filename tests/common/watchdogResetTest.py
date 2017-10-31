@@ -1,3 +1,4 @@
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -62,7 +63,7 @@ def watchdogReset(unitTestUtil, utilType, logger, cmd_bmc, hostname, headnode=No
 
     # check that host is pingable -> not pingable -> pingable
     pingcmd = ""
-    if utilType.ConnectionTestPath is None or headnode is None:
+    if headnode is None or utilType.ConnectionTestPath is None:
         pingcmd = 'python {0}tests/common/connectionTest.py {1} 6'.format(testPath, hostname)
         #pingcmd = ['python', testPath + 'common/connectionTest.py', hostname, '6']
     else:
@@ -125,7 +126,6 @@ if __name__ == "__main__":
                               'output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR'])
         if args.verbose is not None:
             logger = util.logger(args.verbose)
-        headnode = args.headnode
         platformType = args.type
         hostname = args.hostbmc
         utilType = util.importUtil(platformType)

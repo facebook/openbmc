@@ -50,7 +50,6 @@ IMAGE_INSTALL += " \
   guid-util \
   gpiod \
   peci-util \
-  logrotate \
   asd \
   asd-test \
   ipmitool \

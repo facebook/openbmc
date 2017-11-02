@@ -283,6 +283,18 @@ chassis_get_system_restart_cause(unsigned char *request, unsigned char req_len,
   *res_len = 2;
 }
 
+static void
+chassis_identify(unsigned char *request, unsigned char req_len,
+                 unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = pal_set_slot_led(req->payload_id, req->data, req_len, res->data, res_len);
+
+  return;
+}
+
 #ifdef CHASSIS_GET_BOOT_OPTION_SUPPORT
 // Get System Boot Options (IPMI/Section 28.12)
 static void
@@ -347,6 +359,9 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
   {
     case CMD_CHASSIS_GET_STATUS:
       chassis_get_status (request, req_len, response, res_len);
+      break;
+    case CMD_CHASSIS_IDENTIFY:
+      chassis_identify (request, req_len, response, res_len);
       break;
     case CMD_CHASSIS_SET_POWER_RESTORE_POLICY:
       chassis_set_power_restore_policy(request, req_len, response, res_len);

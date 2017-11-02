@@ -10,7 +10,7 @@ lpal_hndl = CDLL("libpal.so")
 POST_CODE_FILE = "/tmp/post_code_buffer.bin"
 IPMIUTIL = "/usr/local/fbpackages/ipmi-util/ipmi-util"
 
-boot_order_device = { 0: "USB Device", 1: "IPv4 Network", 9: "IPv6 Network", 2: "SATA HDD", 3: "SATA-CDROM", 4: "Other Removalbe Device" }
+boot_order_device = { 0: "USB Device", 1: "IPv4 Network", 9: "IPv6 Network", 2: "SATA HDD", 3: "SATA-CDROM", 4: "Other Removalbe Device", 255: "Reserved" }
 supported_commands = ["boot_order", "postcode"]
 
 def pal_print_postcode(fru):

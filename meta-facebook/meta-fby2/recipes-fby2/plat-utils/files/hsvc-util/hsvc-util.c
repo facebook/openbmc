@@ -43,7 +43,7 @@ enum {
 
 static void
 print_usage_help(void) {
-  printf("Usage: hsvc-util <all|slot1|slot2|slot3|slot4> <--start>\n");
+  printf("Usage: hsvc-util <all|slot1|slot2|slot3|slot4> <--start | --stop>\n");
 }
 
 
@@ -134,6 +134,9 @@ main(int argc, char **argv) {
   uint8_t slot_id;
   int ret = 0;
   char cmd[80];
+  char tstr[64] = {0};
+  uint8_t flag = 0;
+
   // Check for border conditions
   if ((argc != 3)) {
     goto err_exit;
@@ -170,6 +173,31 @@ main(int argc, char **argv) {
         ret |= activate_hsvc(slot_id);
      }
      if (ret != 0) {
+       goto err_exit;
+     } else {
+       return 0;
+     }
+  } else if (!strcmp(argv[2], "--stop")) {
+     if (slot_id < OPT_ALL) {
+       sprintf(tstr, "identify_slot%d", slot_id);
+       ret = pal_set_key_value(tstr, "off");
+       if (ret < 0) {
+         syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
+         goto err_exit;
+       } else {
+         return 0;
+       }
+     }
+
+     for (slot_id = OPT_SLOT1; slot_id < MAX_NUM_OPTIONS; slot_id++) {
+        sprintf(tstr, "identify_slot%d", slot_id);
+        ret = pal_set_key_value(tstr, "off");
+        if (ret < 0) {
+          syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
+          flag = 1;
+        }
+     }
+     if (flag == 1) {
        goto err_exit;
      } else {
        return 0;

@@ -4101,6 +4101,66 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
    return completion_code;
 }
 
+int pal_set_slot_led(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+
+   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+   uint8_t *data = req_data;
+   int slot_id = slot;
+   char tstr[64] = {0};
+   int ret=-1;
+
+   *res_len = 0;
+   sprintf(tstr, "identify_slot%d", slot_id);
+
+   /* There are 2 option bytes for Chassis Identify Command
+    * Byte 1 : Identify Interval in seconds. (Not support, OpenBMC only support turn off action)
+    *          00h = Turn off Identify
+    * Byte 2 : Force Identify On
+    *          BIT0 : 1b = Turn on Identify indefinitely. This overrides the values in byte 1.
+    *                 0b = Identify state driven according to byte 1.
+    */
+   if (req_len <= 5) {
+     if (5 == req_len) {
+       if (GETBIT(*(data+1), 0)) {
+         ret = pal_set_key_value(tstr, "on");
+         if (ret < 0) {
+           syslog(LOG_ERR, "pal_set_key_value: set %s on failed",tstr);
+           return completion_code;
+         }
+       } else if (0 == *data) {
+         ret = pal_set_key_value(tstr, "off");
+         if (ret < 0) {
+           syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
+           return completion_code;
+         }         
+       } else {
+         completion_code = CC_INVALID_PARAM;
+         return completion_code;
+       }
+     } else if (4 == req_len) {
+       if (0 == *data) {
+         ret = pal_set_key_value(tstr, "off");
+         if (ret < 0) {
+           syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
+           return completion_code;
+         }
+       } else {
+         completion_code = CC_INVALID_PARAM;
+         return completion_code;
+       }
+     } else {
+       completion_code = CC_UNSPECIFIED_ERROR;
+       return completion_code;
+     }
+   } else {
+     completion_code = CC_PARAM_OUT_OF_RANGE;
+     return completion_code;
+   }
+
+   completion_code = CC_SUCCESS;
+   return completion_code;
+}
+
 int
 pal_get_platform_id(uint8_t *id) {
    return 0;

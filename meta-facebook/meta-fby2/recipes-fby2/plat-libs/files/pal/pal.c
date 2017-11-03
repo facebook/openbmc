@@ -1823,6 +1823,15 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       return server_12v_on(slot_id);
 
     case SERVER_12V_OFF:
+      /* Check whether the system is 12V off or on */
+      ret = pal_is_server_12v_on(slot_id, &status);
+      if (ret < 0) {
+        syslog(LOG_ERR, "pal_set_server_power: pal_is_server_12v_off failed");
+        return -1;
+      }
+      if (!status)  //Have already 12V-OFF
+        return 1;
+
       if (slot_id == 1 || slot_id == 3) {      //Need to 12V off server first when configuration type is pair config
         pair_set_type = pal_get_pair_slot_type(slot_id);
         switch(pair_set_type) {

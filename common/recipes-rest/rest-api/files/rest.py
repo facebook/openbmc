@@ -67,7 +67,8 @@ def url_router(path):
 
     # Handle POST request
     if request.method == 'POST':
-        return c.doAction(json.load(request.body))
+        lines = request.body.readlines()
+        return c.doAction(json.loads(lines[0].decode()))
 
     return None
 

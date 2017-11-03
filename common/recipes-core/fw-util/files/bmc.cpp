@@ -3,13 +3,17 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 #include "fw-util.h"
 
-#ifndef VERIFIED_BOOT_LOCKDOWN
-#define VERIFIED_BOOT_LOCKDOWN 0
-#endif
-
 using namespace std;
+
+#define PAGE_SIZE                     0x1000
+#define VERIFIED_BOOT_STRUCT_BASE     0x1E720000
+#define VERIFIED_BOOT_HARDWARE_ENFORCE(base) \
+  *((uint8_t *)(base + 0x215))
 
 static int system_w(const string &cmd)
 {
@@ -23,6 +27,33 @@ static int system_w(const string &cmd)
   if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
     return FW_STATUS_SUCCESS;
   return FW_STATUS_FAILURE;
+}
+
+static bool vboot_hardware_enforce(void)
+{
+  int mem_fd;
+  uint8_t *vboot_base;
+  uint8_t hw_enforce_flag;
+
+  mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+  if (mem_fd < 0) {
+    cerr << "Error opening /dev/mem" << endl;
+    return false;
+  }
+
+  vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, VERIFIED_BOOT_STRUCT_BASE);
+  if (!vboot_base) {
+    cerr << "Error mapping VERIFIED_BOOT_STRUCT_BASE" << endl;
+    close(mem_fd);
+    return false;
+  }
+
+  hw_enforce_flag = VERIFIED_BOOT_HARDWARE_ENFORCE(vboot_base);
+
+  munmap(vboot_base, PAGE_SIZE);
+  close(mem_fd);
+
+  return hw_enforce_flag == 1 ? true : false;
 }
 
 static bool get_mtd_name(const char* name, char* dev)
@@ -119,20 +150,41 @@ class BmcComponent : public Component {
       cout << "Flashing to device: " << string(dev) << endl;
       if (_writable_offset > 0) {
         flash_image = image_path + "-tmp";
-        // Create a temp image with the first 'writable_offset' bytes removed
-        cmd_str << "tail -c+" << _writable_offset << " "
-          << image_path << " > " << flash_image;
-        ret = system_w(cmd_str.str());
-        if (ret != 0) {
-          cerr << "Creating temp image: " << flash_image << " failed" << endl;
+        // Ensure that we are not overwriting an existing file.
+        while (access( flash_image.c_str(), F_OK  ) != -1) {
+          flash_image.append("_");
+        }
+        // Open input image and seek skipping to the writable offset.
+        int fd_r = open(image_path.c_str(), O_RDONLY);
+        if (fd_r < 0) {
+          cerr << "Cannot open " << image_path << " for reading" << endl;
           return FW_STATUS_FAILURE;
         }
-        cmd_str.clear();
-        cmd_str.str("");
+        if (lseek(fd_r, _writable_offset, SEEK_SET) != (off_t)_writable_offset) {
+          close(fd_r);
+          cerr << "Cannot seek " << image_path << endl;
+          return FW_STATUS_FAILURE;
+        }
+        // create tmp file for writing.
+        int fd_w = open(flash_image.c_str(), O_WRONLY | O_CREAT);
+        if (fd_w < 0) {
+          cerr << "Cannot write to " << flash_image << endl;
+          close(fd_r);
+          return FW_STATUS_FAILURE;
+        }
+        // Copy from r to w.
+        uint8_t buf[1024];
+        size_t r_b;
+        while ((r_b = read(fd_r, buf, 1024)) > 0) {
+          write(fd_w, buf, r_b);
+        }
+        close(fd_r);
+        close(fd_w);
       }
       cmd_str << "flashcp -v " << flash_image << " " << string(dev);
       ret = system_w(cmd_str.str());
       if (_writable_offset > 0) {
+        // this is a temp. file, remove it.
         remove(flash_image.c_str());
       }
       return ret;
@@ -198,27 +250,29 @@ class SystemConfig {
       dual_flash = false;
     }
     if (dual_flash) {
-#if VERIFIED_BOOT == 1
+      if (get_mtd_name("\"romx\"", NULL)) {
+        // If verified boot is enabled, we should
+        // have the romx partition
+        if (vboot_hardware_enforce()) {
+          // Locked down, Update from a 64k offset.
+          static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", 64 * 1024);
+          // Locked down, Allow getting version of ROM, but do not allow
+          // upgrading it.
+          static BmcUbootVersionComponent rom("bmc", "rom", "", "\"rom\"");
+        } else {
+          // Unlocked Flash, Upgrade the full BMC flash1.
+          static BmcComponent bmc("bmc", "bmc", "\"flash1\"");
+          // Unlocked flash, Allow upgrading the ROM.
+          static BmcUbootVersionComponent rom("bmc", "rom", "\"flash0\"", "\"rom\"");
+        }
+      } else {
+        // non-verified-boot. BMC boots off of flash0.
+        static BmcComponent bmc("bmc", "bmc", "\"flash0\"");
+        // Dual flash supported, but not in verified boot format.
+        // Allow flashing the second flash. Read version from u-boot partition.
+        static BmcUbootVersionComponent bmcalt("bmc", "flash1", "\"flash1\"", "\"u-boot\"");
+      }
       // Verified boot supported and in dual-flash mode.
-#if VERIFIED_BOOT_LOCKDOWN == 1
-      // Locked down, Update from a 64k offset.
-      static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", 64 * 1024);
-      // Locked down, Allow getting version of ROM, but do not allow
-      // upgrading it.
-      static BmcUbootVersionComponent rom("bmc", "rom", "", "\"rom\"");
-#else
-      // Unlocked Flash, Upgrade the full BMC flash1.
-      static BmcComponent bmc("bmc", "bmc", "\"flash1\"");
-      // Unlocked flash, Allow upgrading the ROM.
-      static BmcUbootVersionComponent rom("bmc", "rom", "\"flash0\"", "\"rom\"");
-#endif
-#else
-      // non-verified-boot. BMC boots off of flash0.
-      static BmcComponent bmc("bmc", "bmc", "\"flash0\"");
-      // Dual flash supported, but not in verified boot format.
-      // Allow flashing the second flash. Read version from u-boot partition.
-      static BmcUbootVersionComponent bmcalt("bmc", "flash1", "\"flash1\"", "\"u-boot\"");
-#endif
     } else {
       // We just have the one flash. Allow upgrading flash0.
       static BmcComponent bmc("bmc", "bmc", "\"flash0\"");
@@ -226,4 +280,4 @@ class SystemConfig {
   }
 };
 
-SystemConfig sysconf;
+SystemConfig bmc_sysconf;

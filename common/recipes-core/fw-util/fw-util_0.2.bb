@@ -33,7 +33,6 @@ S = "${WORKDIR}"
 LDFLAGS =+ " -lpthread -ljansson -lpal -ldl "
 DEPENDS += "jansson libpal"
 RDEPENDS_${PN} += "jansson libpal"
-CXXFLAGS += '-DVERIFIED_BOOT=${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "1", "0", d)}'
 
 do_install() {
   install -d ${D}${bindir}

@@ -200,11 +200,6 @@ debug_card_handler() {
         if (ret || !prsnt) {
           goto debug_card_out;
         }
-        // Enable POST codes for slot1
-        ret = pal_post_enable(FRU_SLOT1);
-        if (ret) {
-          goto debug_card_out;
-        }
 
         // Get last post code and display it
         ret = pal_post_get_last(FRU_SLOT1, &code);

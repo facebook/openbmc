@@ -1375,16 +1375,16 @@ pal_post_enable(uint8_t slot) {
     return ret;
   }
 
-  t->bits.post = 1;
-
-  ret = bic_set_config(slot, &config);
-  if (ret) {
+  if (t->bits.post == 0) {
+    t->bits.post = 1;
+    ret = bic_set_config(slot, &config);
+    if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "post_enable: bic_set_config failed\n");
+      syslog(LOG_WARNING, "post_enable: bic_set_config failed\n");
 #endif
-    return ret;
+      return ret;
+    }
   }
-
   return 0;
 }
 

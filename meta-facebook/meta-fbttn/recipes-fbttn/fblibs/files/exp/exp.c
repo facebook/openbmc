@@ -27,6 +27,18 @@
 #include <sys/stat.h>
 #include "exp.h"
 
+static void
+msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
+  }
+}
+
 int
 expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
   ipmb_req_t *req;
@@ -38,6 +50,7 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
   int count = 0;
   int i = 0;
   int ret;
+  int retry = 0;
 
   req = (ipmb_req_t*)tbuf;
 
@@ -58,12 +71,22 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
 
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
-  // Invoke IPMB library handler
-  lib_ipmb_handle(EXPANDER_IPMB_BUS_NUM, tbuf, tlen, &rbuf, &rlen);
+  while(retry < 5) {
+    // Invoke IPMB library handler
+    lib_ipmb_handle(EXPANDER_IPMB_BUS_NUM, tbuf, tlen, &rbuf, &rlen);
+
+    if (rlen == 0) {
+      retry++;
+      msleep(20);
+    }
+    else {
+      break;
+    }
+  }
 
   if (rlen == 0) {
 #ifdef DEBUG
-    syslog(LOG_DEBUG, "%s: Zero bytes received\n", __func__);
+    syslog(LOG_DEBUG, "%s: Zero bytes received, retry:%d\n", __func__, retry);
 #endif
     return -1;
   }
@@ -72,9 +95,7 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
   res  = (ipmb_res_t*) rbuf;
 
   if (res->cc) {
-#ifdef DEBUG
     syslog(LOG_ERR, "%s: Completion Code: 0x%X\n", __func__, res->cc);
-#endif
     return -1;
   }
 

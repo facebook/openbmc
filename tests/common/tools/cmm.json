@@ -24,6 +24,10 @@
     {
       "json":"../cmm/unittests/i2c.json"
     }],
+  "restapiTest.py":["yes",
+    {
+        "json":"../../cmm/unittests/rest_endpoint.json"
+    }],
   "solTest.py":"yes",
   "watchdogResetTest.py":"yes",
   "cmmComponentPresenceTest.py":"yes",

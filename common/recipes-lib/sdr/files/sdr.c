@@ -586,12 +586,13 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
 
     if (retry++ > MAX_RETRIES_SDR_INIT) {
       syslog(LOG_INFO, "sdr_get_snr_thresh: failed for fru: %d", fru);
-      return -1;
+
+      return ERR_NOT_READY;
     }
 #ifdef DEBUG
     syslog(LOG_INFO, "sdr_get_snr_thresh: fru: %d, ret: %d cnt: %d", fru, ret, cnt++);
 #endif /* DEBUG */
-    sleep(1);
+    msleep(50);
     ret = pal_sensor_sdr_init(fru, sinfo);
   }
 

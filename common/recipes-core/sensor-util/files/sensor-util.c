@@ -163,6 +163,8 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
   float fvalue;
   char status[8];
   thresh_sensor_t thresh;
+  int ret = 0;
+  char fruname[32] = {0};
 
   for (i = 0; i < sensor_cnt; i++) {
 
@@ -176,10 +178,18 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
     if (fru == AGGREGATE_SENSOR_FRU_ID) {
       if (aggregate_sensor_threshold(snr_num, &thresh)) {
         syslog(LOG_ERR, "agg_snr_thresh failed for agg num: 0x%X", snr_num);
+        continue;
       }
     } else {
-      if (sdr_get_snr_thresh(fru, snr_num, &thresh)) {
-        syslog(LOG_ERR, "sdr_init_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+      ret = sdr_get_snr_thresh(fru, snr_num, &thresh);
+      if (ret == ERR_NOT_READY) {
+        pal_get_fru_name(fru, fruname);
+        printf("%s SDR is missing!", fruname);
+        return;
+      }
+      else if (ret < 0) {
+        syslog(LOG_ERR, "sdr_get_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+        continue;
       }
     }
 
@@ -202,6 +212,8 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
   uint8_t snr_num;
   float min, average, max;
   thresh_sensor_t thresh;
+  int ret = 0;
+  char fruname[32] = {0};
 
   start_time = time(NULL) - period;
 
@@ -217,7 +229,13 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
         continue;
       }
     } else {
-      if (sdr_get_snr_thresh(fru, snr_num, &thresh) < 0) {
+      ret = sdr_get_snr_thresh(fru, snr_num, &thresh);
+      if (ret == ERR_NOT_READY) {
+        pal_get_fru_name(fru, fruname);
+        printf("%s SDR is missing!", fruname);
+        return;
+      }
+      else if (ret < 0) {
         syslog(LOG_ERR, "sdr_get_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
         continue;
       }

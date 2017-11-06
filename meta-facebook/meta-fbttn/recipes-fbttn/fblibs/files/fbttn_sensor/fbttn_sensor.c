@@ -1487,16 +1487,16 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "ADC_P3V3_M2");
           break;
         case IOM_SENSOR_M2_AMBIENT_TEMP1:
-          sprintf(name, "M.2_Ambient_Temp_1");
+          sprintf(name, "M2_Ambient_Temp_1");
           break;
         case IOM_SENSOR_M2_AMBIENT_TEMP2:
-          sprintf(name, "M.2_Ambient_Temp_2");
+          sprintf(name, "M2_Ambient_Temp_2");
           break;
         case IOM_SENSOR_M2_SMART_TEMP1:
-          sprintf(name, "M.2_SMART_Temp_1");
+          sprintf(name, "M2_SMART_Temp_1");
           break;
         case IOM_SENSOR_M2_SMART_TEMP2:
-          sprintf(name, "M.2_SMART_Temp_2");
+          sprintf(name, "M2_SMART_Temp_2");
           break;
         case IOM_IOC_TEMP:
           sprintf(name, "IOM_IOC_TEMP");

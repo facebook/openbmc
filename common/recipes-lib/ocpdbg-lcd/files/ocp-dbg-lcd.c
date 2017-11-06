@@ -130,7 +130,7 @@ usb_dbg_update_fw(char *path)
   uint8_t rcount;
   volatile int xcount;
   int i = 0;
-  int ret;
+  int ret = 0;
   uint32_t offset = 0;
   uint32_t last_offset = 0;
   uint32_t dsize;
@@ -165,7 +165,7 @@ usb_dbg_update_fw(char *path)
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv stop ipmbd_%d", mcu_bus_id);
   system(cmd);
-  printf("Stopped ipmbd %x..\n",mcu_bus_id);
+  printf("Stopped ipmbd %d..\n",mcu_bus_id);
 
   //Waiting for MCU reset to bootloader for updating
   sleep(1);
@@ -216,6 +216,7 @@ usb_dbg_update_fw(char *path)
 
   if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
     printf("download response: %x:%x\n", rbuf[0], rbuf[1]);
+    ret = -1;
     goto error_exit;
   }
 
@@ -270,7 +271,7 @@ usb_dbg_update_fw(char *path)
 
     offset += xcount;
     if((last_offset + dsize) <= offset) {
-       printf("updated bic: %d %%\n", offset/dsize*5);
+       printf("updated debug card FW: %d %%\n", offset/dsize*5);
        last_offset += dsize;
     }
 
@@ -340,7 +341,7 @@ error_exit2:
     close(fd);
   }
 
-  return 0;
+  return ret;
 }
 
 static int

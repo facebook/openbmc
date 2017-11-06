@@ -37,6 +37,7 @@ BOARD_EVT=0
 BOARD_DVT=1
 BOARD_MP=2
 
+BIC_READY_GPIO=55
 
 # According to different stage to assign the correct IOM_FULL_GOOD GPIO pin
 GPIO_BOARD_REV_0=`cat /sys/class/gpio/gpio72/value`
@@ -66,7 +67,6 @@ esac
 # $1: slot number
 check_por_config()
 {
-
   TO_PWR_ON=-1
   slot_num=$1
 
@@ -99,31 +99,56 @@ check_por_config()
         fi
       fi
     fi
+    logger -s -p user.info -t power-on "Power Policy: $PWR_POLICY, Last Power State: $LS"
   fi
+}
+
+# Check if BIC is ready or not
+check_bic_ready()
+{
+  retry=0
+  while [ "$retry" != "5" ]
+  do
+    if [ "$(gpio_get $BIC_READY_GPIO)" == "0" ]; then
+      logger -s -p user.warn -t power-on "BIC is Ready!"
+      return
+    else
+      logger -s -p user.info -t power-on "BIC is NOT Ready!!! Retry: $retry"
+      retry=$((retry+1))
+      sleep 1
+    fi
+  done
 }
 
 # Sync BMC's date with one of the four servers
 sync_date()
 {
+  retry=0
   if [ "$(is_server_prsnt)" == "1" ] ; then
-    # Use standard IPMI command 'get-sel-time' to read RTC time
-    output=$(/usr/local/bin/me-util server 0x28 0x48)
-    # Sync BMC time only when ME returns correct response length
-    if [ "$(echo $output | wc -c)" == "12" ] ; then
-      col1=$(echo $output | cut -d' ' -f1 | sed 's/^0*//')
-      col2=$(echo $output | cut -d' ' -f2 | sed 's/^0*//')
-      col3=$(echo $output | cut -d' ' -f3 | sed 's/^0*//')
-      col4=$(echo $output | cut -d' ' -f4 | sed 's/^0*//')
-      # create the integer from the hex bytes returned
-      val=$((0x$col4 << 24 | 0x$col3 << 16 | 0x$col2 << 8 | 0x$col1))
-      # create the timestamp required for busybox's date command
-      ts=$(date -d @$val +"%Y.%m.%d-%H:%M:%S")
-      # set the command
-      logger -s -p user.info -t power-on "Syncing up BMC time with server..."
-      logger -s -p user.info -t power-on "`date $ts`"
-    else
-      logger -s -p user.info -t power-on "Get SEL time from ME failed, so syncing up BMC time with server failed..."
-    fi
+    while [ "$retry" != "5" ]
+    do
+      # Use standard IPMI command 'get-sel-time' to read RTC time
+      output=$(/usr/local/bin/me-util server 0x28 0x48)
+      # Sync BMC time only when ME returns correct response length
+      if [ "$(echo $output | wc -c)" == "12" ] ; then
+        col1=$(echo $output | cut -d' ' -f1 | sed 's/^0*//')
+        col2=$(echo $output | cut -d' ' -f2 | sed 's/^0*//')
+        col3=$(echo $output | cut -d' ' -f3 | sed 's/^0*//')
+        col4=$(echo $output | cut -d' ' -f4 | sed 's/^0*//')
+        # create the integer from the hex bytes returned
+        val=$((0x$col4 << 24 | 0x$col3 << 16 | 0x$col2 << 8 | 0x$col1))
+        # create the timestamp required for busybox's date command
+        ts=$(date -d @$val +"%Y.%m.%d-%H:%M:%S")
+        # set the command
+        logger -s -p user.info -t power-on "Syncing up BMC time with server..."
+        logger -s -p user.info -t power-on "`date $ts`"
+        return
+      else
+        retry=$((retry+1))
+        logger -s -p user.info -t power-on "Get SEL time from ME failed, syncing up BMC time with server failed for $retry times"
+        sleep 1
+      fi
+    done
   fi
 }
 
@@ -141,7 +166,7 @@ fi
 
 # Check whether it is fresh power on reset
 if [ "$(is_bmc_por)" == "1" ] && [ "$is_server_12v_off" == "1" ]; then
-
+  logger -s -p user.warn -t power-on "BMC POR and Server is Present"
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
 
@@ -155,21 +180,24 @@ if [ "$(is_bmc_por)" == "1" ] && [ "$is_server_12v_off" == "1" ]; then
 
   # Turn on the IOM_FULL_PWR_EN to power on the M.2 and IOM 3v3 
   gpio_set AA7 1
-
+  logger -s -p user.warn -t power-on "Turning on IOM 3v3(IOM_FULL_PWR_EN)"
   # For fbttn MonoLake PWR sequence
   if [ "$(gpio_get $IOM_FULL_GOOD)" == "1" ]; then
+    logger -s -p user.warn -t power-on "BMC full power good is enable"
     #set ML board power enable (12V on)
     gpio_set O7 1
+    logger -s -p user.warn -t power-on "Turning Server 12V-on"
     sleep 3  # waiting for ME ready
-    sync_date 
+    check_bic_ready    
+    sync_date
     check_por_config 1
     if [ "$TO_PWR_ON" == "1" ] && [ "$(is_server_prsnt)" == "1" ] ; then
         power-util server on
-        logger -s -p user.info -t power-on "Power on server"
     fi
   else
     logger -s -p user.warn -t power-on "IOM full power good is disable"
   fi
 else
+  logger -s -p user.warn -t power-on "BMC Rebooted or Server is not Present"
   sync_date
 fi

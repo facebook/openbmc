@@ -26,7 +26,7 @@
         "valid": {
           "limit": 100,
           "threshold": 1,
-          "action": "host_shutdown"
+          "action": "host_warning"
         },
         "invalid": {
           "limit": -60,

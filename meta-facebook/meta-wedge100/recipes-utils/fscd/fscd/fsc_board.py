@@ -96,9 +96,11 @@ def host_shutdown():
     MAIN_POWER = "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_main_n"
     USERVER_POWER = "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_usrv_en"
 
-    cmd = ('echo 0' > USERVER_POWER)
+    cmd = 'echo 0 > ' + USERVER_POWER
+    Logger.info("host_shutdown() executing {}".format(cmd))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     time.sleep(5)
-    cmd = ('echo 0' > MAIN_POWER)
+    cmd = 'echo 0 > ' + MAIN_POWER
+    Logger.info("host_shutdown() executing {}".format(cmd))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return response

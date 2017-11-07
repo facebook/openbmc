@@ -18,6 +18,35 @@
 
 import syslog
 import logging
+import logging.config
+
+LOGGER_CONF = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '%(message)s'
+        },
+    },
+    'handlers': {
+        'file_handler': {
+            'level': 'INFO',
+            'formatter': 'default',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/fscd.log',
+            'maxBytes': 100000,
+            'backupCount': 1,
+            'encoding': 'utf8'
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['file_handler'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    }
+}
 
 LOG_MAP = {
         'debug': syslog.LOG_DEBUG,
@@ -72,3 +101,4 @@ class Logger(object):
     def start(name, log_level):
         syslog.openlog(name)
         syslog.setlogmask(syslog.LOG_UPTO(LOG_MAP[log_level]))
+        logging.config.dictConfig(LOGGER_CONF)

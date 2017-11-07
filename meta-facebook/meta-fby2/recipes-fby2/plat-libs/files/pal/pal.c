@@ -1860,6 +1860,24 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 }
 
 int
+pal_get_fan_latch(uint8_t *status) {
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (1 == val)
+    *status = 1;
+  else
+    *status = 0;
+
+  return 0;
+}
+
+int
 pal_sled_cycle(void) {
   pal_update_ts_sled();
   // Remove the adm1275 module as the HSC device is busy
@@ -1954,18 +1972,12 @@ pal_get_rst_btn(uint8_t *status) {
 
 // Update the SLED LED for sled fully seated
 int
-pal_set_sled_led(void) {
+pal_set_sled_led(uint8_t status) {
   char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
-  if (read_device(path, &val)) {
-    return -1;
-  }
 
   memset(path, 0, sizeof(path));
   sprintf(path, GPIO_VAL, GPIO_SLED_SEATED_N);
-  if (val) {
+  if (status) {
     if (write_device(path, "1")) {
       return -1;
     }

@@ -113,7 +113,7 @@ int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_get_pwr_btn(uint8_t *status);
 int pal_get_rst_btn(uint8_t *status);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
-int pal_set_sled_led(void);
+int pal_set_sled_led(uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
@@ -176,6 +176,7 @@ int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res
 void pal_add_cri_sel(char *str);
 uint8_t pal_get_status(void);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_fan_latch(uint8_t *status);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -55,6 +55,7 @@
 #define LED_ON_TIME_BMC_SELECT 500
 #define LED_OFF_TIME_BMC_SELECT 500
 
+#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 static uint8_t m_pos = 0xff;
@@ -498,12 +499,6 @@ led_sync_handler() {
 #endif
 
   while (1) {
-    // Handle Sled fully seated 
-    ret = pal_set_sled_led();
-    if (0 != ret) {
-      sleep(1);
-      continue;
-    }
 
     // Handle Slot IDENTIFY condition
     memset(identify, 0x0, 16);
@@ -642,6 +637,59 @@ led_sync_handler() {
   }
 }
 
+// Thread to handle Seat LED state
+static void *
+seat_led_handler() {
+  int ret;
+  char path[64] = {0};
+  char identify[16] = {0};
+  char tstr[64] = {0};
+  int slot, val;
+  int ident;
+
+  while (1) {  
+    ret = pal_get_fan_latch(&val);
+    if (ret < 0) {
+      msleep(500);
+      continue;
+    }
+
+    // Handle Sled fully seated
+    if (val) { // SLED is pull out
+      ret = pal_set_sled_led(LED_ON);
+      if (0 != ret) {
+        sleep(1);
+      }
+    } else {   // SLED is fully pull in
+      ident = 0;
+      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
+        sprintf(tstr, "identify_slot%d", slot);
+        memset(identify, 0x0, 16);
+        ret = pal_get_key_value(tstr, identify);
+        if (ret == 0 && !strcmp(identify, "on")) {
+          ident = 1;
+        }
+      }
+
+      // Start blinking the SEAT LED
+      if (1 == ident) {
+        pal_set_sled_led(LED_ON);
+        msleep(LED_ON_TIME_IDENTIFY);
+
+        pal_set_sled_led(LED_OFF);
+        msleep(LED_OFF_TIME_IDENTIFY);
+      } else {
+        ret = pal_set_sled_led(LED_OFF);
+        if (0 != ret) {
+          sleep(1);
+        }
+      }
+      
+      continue;
+    }
+  }
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
@@ -650,6 +698,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_ts;
   pthread_t tid_sync_led;
   pthread_t tid_led;
+  pthread_t tid_seat_led;
   int rc;
   int pid_file;
 
@@ -695,12 +744,18 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_seat_led, NULL, seat_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for seat led error\n");
+    exit(1);
+  }
+
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_ts, NULL);
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_led, NULL);
+  pthread_join(tid_seat_led, NULL);
 
   return 0;
 }

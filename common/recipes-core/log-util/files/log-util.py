@@ -39,14 +39,11 @@ def print_usage():
 
 def rsyslog_hup():
     try:
-        with open('/var/run/rsyslogd.pid') as f:
-            pid = f.readline()
-            if (pid == "" or pid == "0"):
-                print("WARNING: Invalid rsyslog PID(%s) skipping rsyslog hangup" % (pid))
-                return
+        pid = subprocess.check_output(['pidof', 'rsyslogd']).decode().strip()
+        if re.match(r'^\d+$', pid):
             cmd = ['kill', '-HUP', pid]
             subprocess.check_call(cmd)
-    except (OSError, IOError) as e:
+    except (OSError, IOError, subprocess.CalledProcessError) as e:
         pass
 
 def log_main():

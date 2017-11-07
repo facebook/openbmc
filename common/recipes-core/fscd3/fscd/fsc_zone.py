@@ -71,16 +71,21 @@ class Zone:
         self.boost = boost
         self.fail_sensor_type = fail_sensor_type
         self.ssd_progressive_algorithm = ssd_progressive_algorithm
+        self.missing_sensor_assert_flag = ([False] * len(self.expr_meta['ext_vars']))
 
     def run(self, sensors, dt):
         ctx = {'dt': dt}
         outmin = 0
         fail_ssd_count = 0
-        missing = set()
+        sensor_index = 0
 
         for v in self.expr_meta['ext_vars']:
             board, sname = v.split(":")
             if sname in sensors[board]:
+                if self.missing_sensor_assert_flag[sensor_index]:
+                    Logger.crit('DEASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
+                    self.missing_sensor_assert_flag[sensor_index] = False
+
                 sensor = sensors[board][sname]
                 ctx[v] = sensor.value
                 if sensor.status in ['ucr']:
@@ -107,12 +112,14 @@ class Zone:
                                     Logger.debug("Standby Sensor Fail")
                                     outmin = max(outmin, self.boost)                             
             else:
-                missing.add(v)
+                if not self.missing_sensor_assert_flag[sensor_index]:
+                    Logger.crit('ASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
+                    self.missing_sensor_assert_flag[sensor_index] = True
                 # evaluation tries to ignore the effects of None values
                 # (e.g. acts as 0 in max/+)
                 ctx[v] = None
-        if missing:
-            Logger.warn('Missing sensors: %s' % (', '.join(missing),))
+            sensor_index += 1
+
         if verbose:
             (exprout, dxstr) = self.expr.dbgeval(ctx)
             Logger.info(dxstr + " = " + str(exprout))

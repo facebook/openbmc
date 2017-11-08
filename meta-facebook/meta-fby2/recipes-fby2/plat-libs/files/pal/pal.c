@@ -1891,7 +1891,7 @@ pal_sled_cycle(void) {
 
 // Read the Front Panel Hand Switch and return the position
 int
-pal_get_hand_sw(uint8_t *pos) {
+pal_get_hand_sw_physically(uint8_t *pos) {
   int gpio_fd;
   void *gpio_reg;
   uint8_t loc;
@@ -1928,6 +1928,26 @@ pal_get_hand_sw(uint8_t *pos) {
   }
 
   return 0;
+}
+
+int
+pal_get_hand_sw(uint8_t *pos) {
+  char value[MAX_VALUE_LEN];
+  uint8_t loc;
+  int ret;
+
+  ret = edb_cache_get("spb_hand_sw", value);
+  if (!ret) {
+    loc = atoi(value);
+    if ((loc > HAND_SW_BMC) || (loc < HAND_SW_SERVER1)) {
+      return pal_get_hand_sw_physically(pos);
+    }
+
+    *pos = loc;
+    return 0;
+  }
+
+  return pal_get_hand_sw_physically(pos);
 }
 
 // Return the Front panel Power Button

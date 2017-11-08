@@ -2,7 +2,7 @@
 all: front-paneld
 
 front-paneld: front-paneld.c 
-	$(CC) -pthread -lpal -lbic -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread -lpal -lbic -ledb -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

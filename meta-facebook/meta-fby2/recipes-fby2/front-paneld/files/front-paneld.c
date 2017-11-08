@@ -30,6 +30,7 @@
 #include <sys/un.h>
 #include <time.h>
 #include <sys/time.h>
+#include <openbmc/edb.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
@@ -74,13 +75,37 @@ static void *
 debug_card_handler() {
   int curr = -1;
   int prev = -1;
+  int ret;
   uint8_t prsnt = 0;
   uint8_t pos;
-  uint8_t prev_pos = 0xff;
+  uint8_t prev_pos = 0xff, prev_phy_pos = 0xff;
   uint8_t lpc;
-  int ret;
+  char str[8];
 
   while (1) {
+    ret = pal_get_hand_sw_physically(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    if (pos == prev_phy_pos) {
+      goto get_hand_sw_cache;
+    }
+
+    msleep(10);
+    ret = pal_get_hand_sw_physically(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    prev_phy_pos = pos;
+    sprintf(str, "%u", pos);
+    ret = edb_cache_set("spb_hand_sw", str);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+get_hand_sw_cache:
     ret = pal_get_hand_sw(&pos);
     if (ret) {
       goto debug_card_out;
@@ -88,12 +113,6 @@ debug_card_handler() {
 
     if (pos == prev_pos) {
       goto debug_card_prs;
-    }
-
-    msleep(10);
-    ret = pal_get_hand_sw(&pos);
-    if (ret) {
-      goto debug_card_out;
     }
     m_pos = pos;
 
@@ -106,7 +125,6 @@ debug_card_handler() {
     if (ret) {
       goto debug_card_out;
     }
-
 
 debug_card_prs:
     // Check if debug card present or not
@@ -149,8 +167,6 @@ debug_card_prs:
         // For BMC, there is no need to have POST specific code
         goto debug_card_done;
       }
-
-
 
       // Make sure the server at selected position is ready
       ret = pal_is_fru_ready(pos, &prsnt);

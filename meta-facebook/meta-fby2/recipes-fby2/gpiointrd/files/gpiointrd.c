@@ -30,6 +30,7 @@
 #include <pthread.h>
 #include <sys/un.h>
 #include <sys/file.h>
+#include <openbmc/edb.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
@@ -53,7 +54,7 @@
 
 static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
 static void *hsvc_event_handler(void *ptr);
-static pthread_mutex_t hsvc_mutex[MAX_NODES + 1]; 
+static pthread_mutex_t hsvc_mutex[MAX_NODES + 1];
 
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
@@ -68,7 +69,7 @@ typedef struct {
   uint8_t def_val;
   char name[64];
   uint8_t num;
-  char log[256]; 
+  char log[256];
 } def_chk_info;
 
 typedef struct {
@@ -196,23 +197,18 @@ static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
 }
 
 // Generic Event Handler for GPIO changes
-static void gpio_event_handle(void *p)
+static void gpio_event_handle(gpio_poll_st *gp)
 {
-  gpio_poll_st *gp = (gpio_poll_st*) p;
   char cmd[128] = {0};
   int ret=-1;
   uint8_t slot_id;
-  uint8_t value;
+  int value;
   int status;
-  char slotrcpath[80] = {0};
-  char hspath[80] = {0};
-  char hslotpid[80] = {0};
   char vpath[80] = {0};
-  char slot_kv[80] = {0};
-  int i=0;
+  char locstr[MAX_VALUE_LEN];
   static bool prsnt_assert[MAX_NODES + 1]={0};
   static pthread_t hsvc_action_tid[MAX_NODES + 1];
-  hot_service_info hsvc_info[MAX_NODES + 1];  
+  hot_service_info hsvc_info[MAX_NODES + 1];
 
   if (gp->gs.gs_gpio == gpio_num("GPIOH5")) { // GPIO_FAN_LATCH_DETECT
     if (gp->value == 1) { // low to high
@@ -227,17 +223,17 @@ static void gpio_event_handle(void *p)
       sprintf(cmd, "/etc/init.d/setup-fan.sh ; sv start fscd");
       system(cmd);
     }
-  } 
+  }
   else if (gp->gs.gs_gpio == gpio_num("GPIOP0") || gp->gs.gs_gpio == gpio_num("GPIOP1") ||
            gp->gs.gs_gpio == gpio_num("GPIOP2") || gp->gs.gs_gpio == gpio_num("GPIOP3") 
           ) //  GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N 
-  { 
+  {
     slot_id = (gp->gs.gs_gpio - GPIO_SLOT1_EJECTOR_LATCH_DETECT_N) + 1;
     if (gp->value == 1) { // low to high
 
       sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
       read_device(vpath, &value);
-      
+
 #if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
       syslog(LOG_CRIT,"GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON", slot_id);
 #endif
@@ -291,7 +287,7 @@ static void gpio_event_handle(void *p)
     // HOT SERVER event would be detected when SLED is pulled out
     if (value) {
        prsnt_assert[slot_id] = true;
-       
+
        if (gp->value == 1) { // SLOT Removal
           hsvc_info[slot_id].slot_id = slot_id;
           hsvc_info[slot_id].action = REMOVAl;
@@ -304,12 +300,12 @@ static void gpio_event_handle(void *p)
 #endif
             pthread_cancel(hsvc_action_tid[slot_id]);
           }
-   
+
           //Create thread for hsvc event detect
           if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
             syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread for slot%x\n",__func__, slot_id);
             pthread_mutex_unlock(&hsvc_mutex[slot_id]);
-            return -1;
+            return;
           }
           IsHotServiceStart[slot_id] = true;
           pthread_mutex_unlock(&hsvc_mutex[slot_id]);
@@ -317,7 +313,7 @@ static void gpio_event_handle(void *p)
        else { // SLOT INSERTION
           hsvc_info[slot_id].slot_id = slot_id;
           hsvc_info[slot_id].action = INSERTION;
-          
+
           pthread_mutex_lock(&hsvc_mutex[slot_id]);
           if ( IsHotServiceStart[slot_id] )
           {
@@ -331,26 +327,36 @@ static void gpio_event_handle(void *p)
           if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
             syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread for slot%x\n",__func__, slot_id);
             pthread_mutex_unlock(&hsvc_mutex[slot_id]);
-            return -1;
+            return;
           }
           IsHotServiceStart[slot_id] = true;
           pthread_mutex_unlock(&hsvc_mutex[slot_id]);
        }
     }
   } // End of GPIO_SLOT1/2/3/4_PRSNT_B_N, GPIO_SLOT1/2/3/4_PRSNT_N
+  else if (gp->gs.gs_gpio == gpio_num("GPIOO3")) {
+    if (pal_get_hand_sw(&slot_id)) {
+      slot_id = HAND_SW_BMC;
+    }
+
+    slot_id = (slot_id >= HAND_SW_BMC) ? HAND_SW_SERVER1 : (slot_id + 1);
+    sprintf(locstr, "%u", slot_id);
+    edb_cache_set("spb_hand_sw", locstr);
+    syslog(LOG_INFO, "change hand_sw location to FRU %s by button", locstr);
+  }
 }
 
 static void *
 hsvc_event_handler(void *ptr) {
-   
+
   int ret=-1;
   uint8_t value;
+  uint8_t status;
   char vpath[80] = {0};
   char hspath[80] = {0};
   char cmd[128] = {0};
   char slotrcpath[80] = {0};
   char hslotpid[80] = {0};
-  int status;
   char slot_kv[80] = {0};
   int i=0;
   hot_service_info *hsvc_info = (hot_service_info *)ptr;
@@ -359,7 +365,7 @@ hsvc_event_handler(void *ptr) {
 
   switch(hsvc_info->action)
   {
-    case REMOVAl :   
+    case REMOVAl :
       usleep(250000);   //Delay 250ms to wait for slot present pin status stable
       ret = pal_is_fru_prsnt(hsvc_info->slot_id, &value);
       if (ret < 0) {
@@ -410,8 +416,8 @@ hsvc_event_handler(void *ptr) {
         sprintf(cmd, "echo %d > %s", fby2_get_slot_type(hsvc_info->slot_id), slotrcpath);
         system(cmd);
       }
-      break; 
-    case INSERTION :   
+      break;
+    case INSERTION :
       sleep(5);   //Delay 5 seconds to wait for slot present pin status stable
       ret = pal_is_fru_prsnt(hsvc_info->slot_id, &value);
       if (ret < 0) {
@@ -454,8 +460,8 @@ hsvc_event_handler(void *ptr) {
       }
       break;
   }
- 
-  pthread_mutex_lock(&hsvc_mutex[hsvc_info->slot_id]); 
+
+  pthread_mutex_lock(&hsvc_mutex[hsvc_info->slot_id]);
   IsHotServiceStart[hsvc_info->slot_id] = false;
   pthread_mutex_unlock(&hsvc_mutex[hsvc_info->slot_id]);
 
@@ -464,19 +470,20 @@ hsvc_event_handler(void *ptr) {
 
 static gpio_poll_st g_gpios[] = {
   // {{gpio, fd}, edge, gpioValue, call-back function, GPIO description}
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOH5",  "GPIO_FAN_LATCH_DETECT"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOP0",  "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOP1",  "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOP2",  "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOP3",  "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOZ0",  "GPIO_SLOT1_PRSNT_B_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOZ1",  "GPIO_SLOT2_PRSNT_B_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOZ2",  "GPIO_SLOT3_PRSNT_B_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOZ3",  "GPIO_SLOT4_PRSNT_B_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA0", "GPIO_SLOT1_PRSNT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA1", "GPIO_SLOT2_PRSNT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA2", "GPIO_SLOT3_PRSNT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA3", "GPIO_SLOT4_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOH5",  "GPIO_FAN_LATCH_DETECT"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP0",  "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP1",  "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP2",  "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP3",  "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ0",  "GPIO_SLOT1_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ1",  "GPIO_SLOT2_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ2",  "GPIO_SLOT3_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ3",  "GPIO_SLOT4_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA0", "GPIO_SLOT1_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA1", "GPIO_SLOT2_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA2", "GPIO_SLOT3_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA3", "GPIO_SLOT4_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOO3",  "GPIO_UART_SEL"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
@@ -492,7 +499,7 @@ static def_chk_info def_gpio_chk[] = {
 
 static void default_gpio_check(void) {
   int i;
-  uint8_t value;
+  int value;
   char vpath[80] = {0};
 
   for (i=0; i<sizeof(def_gpio_chk)/sizeof(def_chk_info); i++) {

@@ -60,8 +60,9 @@ class bmcNode(node):
             reset_reason = "User Initiated Reset or WDT Reset"
 
         # Get BMC's Up Time
-        uptime = Popen('uptime', \
+        data = Popen('uptime', \
                         shell=True, stdout=PIPE).stdout.read().decode()
+        uptime = data.strip()
 
         # Get Usage information
         data = Popen('top -b n1', \

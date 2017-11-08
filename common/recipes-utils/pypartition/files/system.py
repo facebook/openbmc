@@ -125,7 +125,7 @@ def get_mtds():
     all_mtds = []
     full_flash_mtds = []
     for (device, size_in_hex, name) in mtd_info:
-        if name.startswith('flash'):
+        if name.startswith('flash') or name == 'Partition_000':
             full_flash_mtds.append(MemoryTechnologyDevice(
                 device, int(size_in_hex, 16), name
             ))

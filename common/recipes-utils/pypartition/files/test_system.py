@@ -42,10 +42,7 @@ class TestSystem(unittest.TestCase):
         self.mock_mtd.size = 1
 
     def test_get_mtds_single_full_mode(self):
-        # Partition_000 (the default name that the Linux kernel generates if
-        # no name is specified, for example if "mtdparts=spi0.0:-" is used) is
-        # not currently supported.
-        for name in ['flash0', 'flash']:
+        for name in ['flash0', 'flash', 'Partition_000']:
             data = textwrap.dedent('''\
             dev:    size   erasesize  name
             mtd0: 02000000 00010000 "{}"

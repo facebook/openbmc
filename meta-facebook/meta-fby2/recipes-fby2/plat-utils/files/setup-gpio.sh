@@ -272,7 +272,28 @@ devmem_clear_bit $(scu_addr a4) 31
 
 gpio_export AA7
 
-# SLED_SEATED_N: GPIOAC7(227)
+
+# SLOT1_LED: GPIOAC0(224)
+# To use GPIOAC0, SCUAC[0] must be 0
+devmem_clear_bit $(scu_addr ac) 0
+gpio_set AC0 0
+
+# SLOT2_LED: GPIOAC1(225)
+# To use GPIOAC1, SCUAC[1] must be 0
+devmem_clear_bit $(scu_addr ac) 1
+gpio_set AC1 0
+
+# SLOT3_LED: GPIOAC2(226)
+# To use GPIOAC2, SCUAC[2] must be 0
+devmem_clear_bit $(scu_addr ac) 2
+gpio_set AC2 0
+
+# SLOT4_LED: GPIOAC3(227)
+# To use GPIOAC3, SCUAC[3] must be 0
+devmem_clear_bit $(scu_addr ac) 3
+gpio_set AC3 0
+
+# SLED_SEATED_N: GPIOAC7(231)
 # To use GPIOAC7, SCUAC[7] must be 0
 devmem_clear_bit $(scu_addr ac) 7
 

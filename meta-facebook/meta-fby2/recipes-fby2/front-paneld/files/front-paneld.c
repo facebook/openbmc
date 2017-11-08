@@ -515,7 +515,6 @@ led_sync_handler() {
 #endif
 
   while (1) {
-
     // Handle Slot IDENTIFY condition
     memset(identify, 0x0, 16);
     ret = pal_get_key_value("identify_sled", identify);
@@ -629,6 +628,7 @@ led_sync_handler() {
           g_sync_led[slot] = 1;
           pal_set_led(slot, LED_OFF);
           pal_set_id_led(slot, ID_LED_ON);
+          pal_set_slot_id_led(slot, LED_ON); // Slot ID LED on top of each TL 
         } else {
           g_sync_led[slot] = 0;
         }
@@ -639,6 +639,7 @@ led_sync_handler() {
       for (slot = 1; slot <=4; slot++) {
         if (id_arr[slot]) {
           pal_set_id_led(slot, ID_LED_OFF);
+          pal_set_slot_id_led(slot, LED_OFF); // Slot ID LED on top of each TL
         }
       }
 

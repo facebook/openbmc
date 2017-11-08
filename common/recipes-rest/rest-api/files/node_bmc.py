@@ -25,6 +25,23 @@ from pal import *
 from uuid import getnode as get_mac
 import os.path
 
+def getSPIVendor(manufacturer_id):
+    # Define Manufacturer ID
+    MFID_WINBOND = "EF"    # Winbond
+    MFID_MICRON = "20"     # Micron
+    MFID_MACRONIX = "C2"   # Macronix
+
+    vendor_name = {
+        MFID_WINBOND: "Winbond",
+        MFID_MICRON: "Micron",
+        MFID_MACRONIX: "Macronix",
+        }
+
+    if manufacturer_id in vendor_name:
+        return(vendor_name[manufacturer_id])
+    else:
+        return("Unknown")
+
 class bmcNode(node):
     def __init__(self, info = None, actions = None):
         if info == None:
@@ -113,6 +130,19 @@ class bmcNode(node):
             tpm_tcg_version = "NA"
             tpm_fw_version = "NA"
 
+        # SPI0 Vendor
+        spi0_vendor = ""
+        data = Popen('cat /tmp/spi0.0_vendor.dat | cut -c1-2', \
+                            shell=True, stdout=PIPE).stdout.read().decode()
+        spi0_mfid = data.strip('\n')
+        spi0_vendor = getSPIVendor(spi0_mfid)
+
+        # SPI1 Vendor
+        spi1_vendor = ""
+        data = Popen('cat /tmp/spi0.1_vendor.dat | cut -c1-2', \
+                            shell=True, stdout=PIPE).stdout.read().decode()
+        spi1_mfid = data.strip('\n')
+        spi1_vendor = getSPIVendor(spi1_mfid)
 
         info = {
             "Description": name + " BMC",
@@ -126,6 +156,8 @@ class bmcNode(node):
             "kernel version": kernel_release + " " + kernel_version,
             "TPM TCG version": tpm_tcg_version,
             "TPM FW version": tpm_fw_version,
+            "SPI0 Vendor": spi0_vendor,
+            "SPI1 Vendor": spi1_vendor,
             }
 
         return info

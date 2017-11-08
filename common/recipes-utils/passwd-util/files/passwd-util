@@ -41,11 +41,15 @@ case "$ACTION" in
     ;;
   *)
     stty -echo
-    read -p "New password: " firstpw
+    OIFS="$IFS"
+    IFS="" read -p "New password: " firstpw
+    IFS="$OIFS"
     stty echo
     echo ""
     stty -echo
-    read -p "Retype password: " secondpw
+    OIFS="$IFS"
+    IFS="" read -p "Retype password: " secondpw
+    IFS="$OIFS"
     stty echo
     echo ""
     if [ ${#firstpw} -lt 1 ] || [ ${#secondpw} -lt 1 ]; then

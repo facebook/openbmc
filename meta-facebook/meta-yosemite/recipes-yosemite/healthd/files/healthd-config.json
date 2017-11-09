@@ -17,6 +17,7 @@
   },
   "bmc_mem_utilization" : {
     "enabled": true,
+    "enable_panic_on_oom": true,
     "window_size": 120,
     "monitor_interval": 1,
     "threshold": [
@@ -80,5 +81,8 @@
     "enabled": false,
     "monitor_interval": 2,
     "regenerating_interval": 1200
+  },
+  "verfied_boot": {
+    "enabled": false
   }
 }

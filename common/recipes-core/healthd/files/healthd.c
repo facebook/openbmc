@@ -117,6 +117,8 @@ struct threshold_s {
 #define HEALTH "1"
 #define NOT_HEALTH "0"
 
+#define VM_PANIC_ON_OOM_FILE "/proc/sys/vm/panic_on_oom"
+
 enum ASSERT_BIT {
   BIT_CPU_OVER_THRESHOLD = 0,
   BIT_MEM_OVER_THRESHOLD = 1,
@@ -138,6 +140,7 @@ static size_t cpu_threshold_num = 0;
 /* Memory monitor enabled */
 static char *mem_monitor_name = "BMC Memory utilization";
 static bool mem_monitor_enabled = false;
+static bool mem_enable_panic = false;
 static unsigned int mem_window_size = DEFAULT_WINDOW_SIZE;
 static unsigned int mem_monitor_interval = DEFAULT_MONITOR_INTERVAL;
 static struct threshold_s *mem_threshold;
@@ -314,6 +317,10 @@ initialize_mem_config(json_t *conf) {
   if (!mem_monitor_enabled) {
     return;
   }
+  tmp = json_object_get(conf, "enable_panic_on_oom");
+  if (tmp && json_is_true(tmp)) {
+    mem_enable_panic = true;
+  }
   tmp = json_object_get(conf, "window_size");
   if (tmp && json_is_number(tmp)) {
     mem_window_size = json_integer_value(tmp);
@@ -449,7 +456,7 @@ initialize_nm_monitor_config(json_t *conf)
   }
 
   tmp = json_object_get(conf, "monitor_interval");
-  if (tmp && json_is_number(tmp)) 
+  if (tmp && json_is_number(tmp))
   {
     nm_monitor_interval = json_integer_value(tmp);
     if (nm_monitor_interval <= 0)
@@ -465,7 +472,7 @@ initialize_nm_monitor_config(json_t *conf)
   }
 #ifdef DEBUG
   syslog(LOG_WARNING, "enabled:%d, monitor_interval:%d, retry_threshold:%d", nm_monitor_enabled, nm_monitor_interval, nm_retry_threshold);
-#endif  
+#endif
   return;
 
 error_bail:
@@ -516,12 +523,18 @@ initialize_configuration(void) {
 }
 
 static void threshold_assert_check(const char *target, float value, struct threshold_s *thres) {
+
+  struct sysinfo info;
+
   if (!thres->asserted && value >= thres->value) {
     thres->asserted = true;
     if (thres->log) {
       syslog(thres->log_level, "ASSERT: %s (%.2f%%) exceeds the threshold (%.2f%%).\n", target, value, thres->value);
     }
     if (thres->reboot) {
+      sysinfo(&info);
+      syslog(thres->log_level, "Rebooting BMC; latest uptime: %ld sec", info.uptime);
+
       sleep(1);
       reboot(RB_AUTOBOOT);
     }
@@ -842,6 +855,38 @@ CPU_usage_monitor() {
   return NULL;
 }
 
+static int set_panic_on_oom(void) {
+
+  FILE *fp;
+  int ret;
+  int tmp_value;
+
+  fp = fopen(VM_PANIC_ON_OOM_FILE, "r+");
+  if (fp == NULL) {
+    syslog(LOG_CRIT, "%s: failed to open file: %s", __func__, VM_PANIC_ON_OOM_FILE);
+    return -1;
+   }
+
+  ret = fscanf(fp, "%d", &tmp_value);
+  if (ret != 1) {
+    syslog(LOG_CRIT, "%s: failed to read file: %s", __func__, VM_PANIC_ON_OOM_FILE);
+    fclose(fp);
+    return -1;
+  }
+
+  // if /proc/sys/vm/panic_on_oom is 0; set it to 1
+  if (tmp_value == 0) {
+    ret = fputs("1", fp);
+    fclose(fp);
+    if (ret < 0) {
+      syslog(LOG_CRIT, "%s: failed to write to file: %s", __func__, VM_PANIC_ON_OOM_FILE);
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
 static void *
 memory_usage_monitor() {
   struct sysinfo s_info;
@@ -850,6 +895,10 @@ memory_usage_monitor() {
   float mem_utilization[mem_window_size];
 
   memset(mem_utilization, 0, sizeof(float) * mem_window_size);
+
+  if (mem_enable_panic) {
+    set_panic_on_oom();
+  }
 
   while (1) {
 
@@ -1007,19 +1056,19 @@ void check_nm_selftest_result(uint8_t fru, int result)
   static uint8_t is_duplicated_abnormal_event[MAX_NUM_FRUS] = {false};
   char fru_name[10]={0};
   int fru_index = fru - 1;//fru id is start from 1.
-   
+
   enum
   {
     NM_NORMAL_STATUS = 0,
   };
 
   //the fru data is validated, no need to check the data again.
-  pal_get_fru_name(fru, fru_name); 
+  pal_get_fru_name(fru, fru_name);
 
-#ifdef DEBUG 
+#ifdef DEBUG
   syslog(LOG_WARNING, "fru_name:%s, fruid:%d, result:%d, nm_retry_threshold:%d", fru_name, fru, result, nm_retry_threshold);
 #endif
- 
+
   if ( PAL_ENOTSUP == result )
   {
     if ( no_response_retry[fru_index] >= nm_retry_threshold )
@@ -1059,15 +1108,15 @@ void check_nm_selftest_result(uint8_t fru, int result)
         is_duplicated_abnormal_event[fru_index] = false;
         syslog(LOG_CRIT, "DEASSERT: ME Status - Controller Access Degraded or Unavailable on the %s", fru_name);
       }
-      
+
       if ( is_duplicated_unaccess_event[fru_index] )
       {
         is_duplicated_unaccess_event[fru_index] = false;
         syslog(LOG_CRIT, "DEASSERT: ME Status - Controller Unavailable on the %s", fru_name);
       }
-      
+
       no_response_retry[fru_index] = 0;
-      abnormal_status_retry[fru_index] = 0;  
+      abnormal_status_retry[fru_index] = 0;
     }
   }
 }
@@ -1079,8 +1128,8 @@ nm_monitor()
   int ret;
   int result;
   const uint8_t normal_status[2] = {0x55, 0x00}; // If the selftest result is 55 00, the status of the controller is okay
-  uint8_t data[2]={0x0}; 
-  
+  uint8_t data[2]={0x0};
+
   while (1)
   {
     for ( fru = 1; fru <= MAX_NUM_FRUS; fru++)
@@ -1093,7 +1142,7 @@ nm_monitor()
         }
 
         ret = pal_get_nm_selftest_result(fru, data);
-        if ( PAL_EOK == ret ) 
+        if ( PAL_EOK == ret )
         {
           //if nm has the response, check the status
           result = memcmp(data, normal_status, sizeof(normal_status));
@@ -1103,8 +1152,8 @@ nm_monitor()
           //if nm has no response, suppose it is in the not support state
           result = PAL_ENOTSUP;
         }
-        check_nm_selftest_result(fru, result);    
-      } 
+        check_nm_selftest_result(fru, result);
+      }
     }
 
     sleep(nm_monitor_interval);
@@ -1112,7 +1161,7 @@ nm_monitor()
 
   return NULL;
 }
-      
+
 void
 fwupdate_ongoing_handle(bool is_fw_updating)
 {
@@ -1224,13 +1273,13 @@ static void check_vboot_state(void)
 
   mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
   if (mem_fd < 0) {
-    syslog(LOG_CRIT, "Error opening /dev/mem\n");
+    syslog(LOG_CRIT, "%s: Error opening /dev/mem\n", __func__);
     return;
   }
 
   vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, VERIFIED_BOOT_STRUCT_BASE);
   if (!vboot_base) {
-    syslog(LOG_CRIT, "Error mapping VERIFIED_BOOT_STRUCT_BASE\n");
+    syslog(LOG_CRIT, "%s: Error mapping VERIFIED_BOOT_STRUCT_BASE\n", __func__);
     close(mem_fd);
     return;
   }

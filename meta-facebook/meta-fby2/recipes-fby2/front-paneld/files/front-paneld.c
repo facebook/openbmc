@@ -628,7 +628,7 @@ led_sync_handler() {
           g_sync_led[slot] = 1;
           pal_set_led(slot, LED_OFF);
           pal_set_id_led(slot, ID_LED_ON);
-          pal_set_slot_id_led(slot, LED_ON); // Slot ID LED on top of each TL 
+          pal_set_slot_id_led(slot, LED_OFF); // Slot ID LED on top of each TL
         } else {
           g_sync_led[slot] = 0;
         }
@@ -639,7 +639,7 @@ led_sync_handler() {
       for (slot = 1; slot <=4; slot++) {
         if (id_arr[slot]) {
           pal_set_id_led(slot, ID_LED_OFF);
-          pal_set_slot_id_led(slot, LED_OFF); // Slot ID LED on top of each TL
+          pal_set_slot_id_led(slot, LED_ON); // Slot ID LED on top of each TL
         }
       }
 
@@ -664,7 +664,7 @@ seat_led_handler() {
   int slot, val;
   int ident;
 
-  while (1) {  
+  while (1) {
     ret = pal_get_fan_latch(&val);
     if (ret < 0) {
       msleep(500);
@@ -701,7 +701,7 @@ seat_led_handler() {
           sleep(1);
         }
       }
-      
+
       continue;
     }
   }

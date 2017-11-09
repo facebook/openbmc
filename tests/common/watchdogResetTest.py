@@ -14,7 +14,7 @@ currentPath = os.getcwd()
 try:
     testPath = currentPath[0:currentPath.index('tests')]
 except Exception:
-    testPath = '/tmp/tests/'
+    testPath = '/tmp/'
 
 
 def watchdogReset(unitTestUtil, utilType, logger, cmd_bmc, hostname, headnode=None):

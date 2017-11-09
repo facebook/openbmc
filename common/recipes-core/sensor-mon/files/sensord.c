@@ -35,7 +35,7 @@
 #include <openbmc/obmc-sensor.h>
 #include <openbmc/aggregate-sensor.h>
 
-#define DELAY 2
+#define MIN_POLL_INTERVAL 2
 #define STOP_PERIOD 10
 #define MAX_SENSOR_CHECK_RETRY 3
 #define MAX_ASSERT_CHECK_RETRY 1
@@ -386,6 +386,7 @@ snr_monitor(void *arg) {
   float curr_val;
   uint8_t *sensor_list, *discrete_list;
   thresh_sensor_t *snr;
+  static uint8_t snr_poll_interval[MAX_SENSOR_NUM] = {0};
 
   ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
   if (ret < 0) {
@@ -426,6 +427,12 @@ snr_monitor(void *arg) {
       snr_num = sensor_list[i];
       curr_val = 0;
       if (snr[snr_num].flag) {
+        // granular the sensor via assigning the poll_interval
+        if (snr_poll_interval[snr_num] > 0) {
+          snr_poll_interval[snr_num] -= MIN_POLL_INTERVAL;
+          continue;
+        }
+        snr_poll_interval[snr_num] = snr[snr_num].poll_interval;
         if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
 
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
@@ -467,7 +474,7 @@ snr_monitor(void *arg) {
     }
 #endif
 
-    sleep(DELAY);
+    sleep(MIN_POLL_INTERVAL);
   } /* while loop*/
 } /* function definition */
 
@@ -528,7 +535,7 @@ snr_health_monitor() {
       pal_set_sensor_health(fru, value);
 
     } /* for loop for frus */
-    sleep(DELAY);
+    sleep(MIN_POLL_INTERVAL);
   } /* while loop */
 }
 
@@ -588,7 +595,7 @@ aggregate_snr_monitor(void *unused)
         } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */
-    sleep(DELAY);
+    sleep(MIN_POLL_INTERVAL);
   }
   pthread_exit(NULL);
   return NULL;
@@ -645,7 +652,7 @@ run_sensord(int argc, char **argv) {
   if (pthread_create(&agg_sensor_mon, NULL, aggregate_snr_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for aggregate sensor failed!\n");
   }
- 
+
   pthread_join(agg_sensor_mon, NULL);
 
   pthread_join(sensor_health, NULL);

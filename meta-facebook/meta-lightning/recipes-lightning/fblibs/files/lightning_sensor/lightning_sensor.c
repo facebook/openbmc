@@ -165,6 +165,7 @@ const uint8_t peb_sensor_pmc_list[] = {
   PEB_SENSOR_SYS_INLET_TEMP,
 };
 
+
 // List of PEB sensors to be monitored (PLX)
 const uint8_t peb_sensor_plx_list[] = {
   PEB_SENSOR_ADC_P12V,
@@ -180,6 +181,7 @@ const uint8_t peb_sensor_plx_list[] = {
   PEB_SENSOR_HSC_IN_POWER,
   PEB_SENSOR_SYS_INLET_TEMP,
 };
+
 
 // List of U.2 SKU PDPB sensors to be monitored
 const uint8_t pdpb_u2_sensor_list[] = {
@@ -205,6 +207,7 @@ const uint8_t pdpb_u2_sensor_list[] = {
   PDPB_SENSOR_FLASH_TEMP_13,
   PDPB_SENSOR_FLASH_TEMP_14,
 };
+
 
 // List of M.2 SKU PDPB sensors to be monitored
 const uint8_t pdpb_m2_sensor_list[] = {
@@ -271,6 +274,7 @@ const uint8_t fcb_sensor_list[] = {
   FCB_SENSOR_FAN6_REAR_SPEED,
   FCB_SENSOR_AIRFLOW,
 };
+
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
@@ -658,7 +662,7 @@ read_tmp75_temp_value(const char *device, float *value) {
   }
 
   *value = ((float)tmp)/UNIT_DIV;
-  
+
   return 0;
 }
 
@@ -711,7 +715,7 @@ read_temp_value(char *device, uint8_t addr, uint8_t type, float *value) {
     syslog(LOG_WARNING, "read_temp_value: invalid res value = 0x%X", res);
     return -1;
   }
-  
+
   // Correction Factor for Inlet temperature sensor
   if(addr == PEB_TMP421_U15){
     // Calculate average RPM
@@ -909,11 +913,11 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     res_l = i2c_smbus_read_byte_data(dev, reg + 1);
 
     /* Read failed */
-    if ((res_h == -1) || (res_l == -1)) 
+    if ((res_h == -1) || (res_l == -1))
       retry++;
     else
       break;
-    
+
     msleep(100);
   }
 
@@ -921,7 +925,7 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     syslog(LOG_DEBUG, "%s() i2c_smbus_read_byte_data failed, high byte: 0x%x, low byte: 0x%x", __func__, res_h, res_l);
     return -1;
   }
-  
+
 
   /* Modify the monitor_flag when the last sensor query finish in this query interval */
   if (FAN_REGISTER+2 == reg) {
@@ -995,7 +999,7 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     /* temp sensor reading */
     if (reg == NCT7904_TEMP_CH1 || reg == NCT7904_TEMP_CH2) {
       *value = signextend32(res, 10) * multipler;
-      if (reg == NCT7904_TEMP_CH2) 
+      if (reg == NCT7904_TEMP_CH2)
         *value = *value - 2;
     /* add offset to sensor reading  */
     } else if (reg == NCT7904_VSEN6 || reg == NCT7904_VSEN7 || reg == NCT7904_VSEN9) {
@@ -1237,6 +1241,174 @@ lightning_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, floa
       *value = fcb_sensor_threshold[sensor_num][thresh];
       break;
   }
+  return 0;
+}
+
+/* Get the poll interval for the sensor */
+int
+lightning_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t* value) {
+  switch(fru) {
+    case FRU_PEB:
+      switch(sensor_num) {
+        case PEB_SENSOR_PCIE_SW_TEMP:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_SYS_INLET_TEMP:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_HSC_IN_VOLT:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_HSC_OUT_CURR:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_HSC_IN_POWER:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P12V:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P5V:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P3V3_STBY:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P1V8_STBY:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P1V53:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P0V9:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P0V9_E:
+          *value = (uint8_t ) 2;
+          break;
+        case PEB_SENSOR_ADC_P1V26:
+          *value = (uint8_t ) 2;
+          break;
+        default:
+          *value = (uint8_t ) 2;
+          break;
+      }
+      break;
+
+    case FRU_PDPB:
+
+      if (sensor_num >= PDPB_SENSOR_FLASH_TEMP_0 &&
+          sensor_num < (PDPB_SENSOR_FLASH_TEMP_0 + lightning_flash_cnt)) {
+        *value = (uint8_t ) 2;
+        break;
+      }
+
+      if (sensor_num >= PDPB_SENSOR_AMB_TEMP_0 &&
+          sensor_num < (PDPB_SENSOR_AMB_TEMP_0 + lightning_flash_cnt)) {
+        *value = (uint8_t ) 2;
+        break;
+      }
+
+      switch(sensor_num) {
+        case PDPB_SENSOR_LEFT_REAR_TEMP:
+          *value = (uint8_t ) 2;
+          break;
+        case PDPB_SENSOR_LEFT_FRONT_TEMP:
+          *value = (uint8_t ) 2;
+          break;
+        case PDPB_SENSOR_RIGHT_REAR_TEMP:
+          *value = (uint8_t ) 2;
+          break;
+        case PDPB_SENSOR_RIGHT_FRONT_TEMP:
+          *value = (uint8_t ) 2;
+          break;
+        case PDPB_SENSOR_P12V:
+          *value = (uint8_t ) 2;
+          break;
+        case PDPB_SENSOR_P3V3:
+          *value = (uint8_t ) 2;
+          break;
+        default:
+          *value = (uint8_t ) 2;
+          break;
+      }
+      break;
+
+    case FRU_FCB:
+      switch(sensor_num) {
+        case FCB_SENSOR_P12V_AUX:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_P12VL:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_P12VU:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_P3V3:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_HSC_IN_VOLT:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_HSC_OUT_CURR:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_HSC_IN_POWER:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_BJT_TEMP_1:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_BJT_TEMP_2:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN1_FRONT_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN1_REAR_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN2_FRONT_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN2_REAR_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN3_FRONT_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN3_REAR_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN4_FRONT_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN4_REAR_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN5_FRONT_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN5_REAR_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN6_FRONT_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_FAN6_REAR_SPEED:
+          *value = (uint8_t ) 2;
+          break;
+        case FCB_SENSOR_AIRFLOW:
+          *value = (uint8_t ) 2;
+          break;
+        default:
+          *value = (uint8_t ) 2;
+          break;
+      }
+      break;
+  }
+
   return 0;
 }
 
@@ -1569,7 +1741,7 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         // Airflow
         case FCB_SENSOR_AIRFLOW:
           return pal_get_airflow((float*) value);
-          
+
         default:
           return -1;
       }

@@ -147,6 +147,16 @@ extern const uint8_t pdpb_m2_sensor_list[];
 
 extern const uint8_t fcb_sensor_list[];
 
+extern const int peb_sensor_pmc_time_period[];
+
+extern const int peb_sensor_plx_time_period[];
+
+extern const int pdpb_u2_sensor_time_period[];
+
+extern const int pdpb_m2_sensor_time_period[];
+
+extern const int fcb_sensor_time_period[];
+
 extern size_t peb_sensor_pmc_cnt;
 
 extern size_t peb_sensor_plx_cnt;

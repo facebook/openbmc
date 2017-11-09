@@ -619,6 +619,7 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
 
     ret = pal_get_sensor_name(fru, snr_num, snr->name);
     ret = pal_get_sensor_units(fru, snr_num, snr->units);
+    ret = pal_get_sensor_poll_interval(fru, snr_num, &(snr->poll_interval));
     ret = pal_get_sensor_threshold(fru, snr_num, UCR_THRESH, &(snr->ucr_thresh));
     if (!(snr->ucr_thresh)) {
       snr->flag = CLEARBIT(snr->flag, UCR_THRESH);

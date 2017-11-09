@@ -569,6 +569,11 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 }
 
 int
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, void *value) {
+  return lightning_sensor_poll_interval(fru, sensor_num, value);
+}
+
+int
 pal_get_fruid_path(uint8_t fru, char *path) {
   return lightning_get_fruid_path(fru, path);
 }

@@ -309,6 +309,13 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 }
 
 int __attribute__((weak))
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, void *value)
+{
+  *value = (uint8_t *) 2;
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
   return PAL_EOK;
@@ -1629,7 +1636,7 @@ pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size)
     ret=PAL_ENOTSUP;
     goto error_exit;
   }
-  
+
   //get the fru_in data
   fru_in_arr = (uint8_t*) malloc(size);
   ret = fread(fru_in_arr, sizeof(uint8_t), size, fru_in_fd);
@@ -1637,10 +1644,10 @@ pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size)
   {
     syslog(LOG_WARNING, "[%s] Get fru_in data fail", __func__);
     ret=PAL_ENOTSUP;
-    goto error_exit;    
+    goto error_exit;
   }
 
-#ifdef FRU_DEBUG  
+#ifdef FRU_DEBUG
   syslog(LOG_WARNING,"[%s] Print Read_in", __func__);
   for ( i=0; i<size; i++ )
   {
@@ -1655,7 +1662,7 @@ pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size)
   {
     syslog(LOG_WARNING, "[%s] Get fru_out data fail", __func__);
     ret=PAL_ENOTSUP;
-    goto error_exit;    
+    goto error_exit;
   }
 
 #ifdef FRU_DEBUG
@@ -1664,7 +1671,7 @@ pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size)
   {
     syslog(LOG_WARNING, "[%s]ReadOut[%d]=%x", __func__, i, fru_out_arr[i]);
   }
-  
+
 #endif
 
   for ( i=0; i<size; i++ )
@@ -1678,7 +1685,7 @@ pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size)
       goto error_exit;
     }
   }
-  
+
   ret=PAL_EOK;
 
 error_exit:
@@ -1687,21 +1694,21 @@ error_exit:
   {
      close(fru_in_fd);
   }
-  
+
   if ( NULL != fru_out_fd )
   {
      close(fru_out_fd);
   }
-  
+
   if ( NULL != fru_in_arr )
   {
     free(fru_in_arr);
   }
-  
+
   if ( NULL != fru_out_arr )
   {
     free(fru_out_arr);
   }
-  
+
   return ret;
 }

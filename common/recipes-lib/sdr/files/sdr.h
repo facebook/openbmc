@@ -55,6 +55,7 @@ typedef struct {
   int curr_state;
   char name[32];
   char units[64];
+  uint8_t poll_interval;
 
 } thresh_sensor_t;
 

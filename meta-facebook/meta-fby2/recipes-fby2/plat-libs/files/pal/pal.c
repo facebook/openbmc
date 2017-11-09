@@ -2106,7 +2106,7 @@ pal_set_slot_id_led(uint8_t slot, uint8_t status) {
     val = "0";
   }
 
-  sprintf(path, GPIO_VAL, gpio_slot_led[slot]);
+  sprintf(path, GPIO_VAL, gpio_slot_id_led[slot]);
   if (write_device(path, val)) {
     return -1;
   }
@@ -2353,7 +2353,7 @@ pal_post_enable(uint8_t slot) {
 #endif
     return ret;
   }
-  
+
   if (0 == t->bits.post) {
     t->bits.post = 1;
     ret = bic_set_config(slot, &config);
@@ -4207,7 +4207,7 @@ int pal_set_slot_led(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *
          if (ret < 0) {
            syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
            return completion_code;
-         }         
+         }
        } else {
          completion_code = CC_INVALID_PARAM;
          return completion_code;

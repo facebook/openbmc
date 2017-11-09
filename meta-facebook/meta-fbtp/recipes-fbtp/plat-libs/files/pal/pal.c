@@ -6067,6 +6067,92 @@ pal_get_boot_option(unsigned char para,unsigned char* pbuff)
 }
 
 int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+
+  if( ( MEMORY_ECC_ERR == snr_num ) || ( MEMORY_ERR_LOG_DIS == snr_num ) )
+    {
+    strcpy(error_log, "");
+    if ( MEMORY_ECC_ERR == snr_num )
+      {
+      switch( ed[0] & 0x0F )
+        {
+        case 0x00:
+          {
+          strcat(error_log, "Correctable");
+          sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+          pal_add_cri_sel(temp_log);
+          }
+          break;
+        case 0x01:
+          {
+          strcat(error_log, "Uncorrectable");
+          sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+          pal_add_cri_sel( temp_log );
+          }
+          break;
+        case 0x02:
+          strcat(error_log,"Parity");
+          break;
+        case 0x05:
+          strcat(error_log, "Correctable ECC error Logging Limit Reached");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+        }
+      }
+    else if ( MEMORY_ERR_LOG_DIS == snr_num )
+      {
+      if ( 0x00 == ( ed[0] & 0x0F ) ) {
+          strcat(error_log, "Correctable Memory Error Logging Disabled");
+        } else {
+          strcat(error_log, "Unknown");
+        }
+      }
+      // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
+      sprintf(temp_log, " (DIMM %02X)", ed[2]);
+      strcat(error_log, temp_log);
+
+      sprintf(temp_log, " Logical Rank %d", ed[1] & 0x03);
+      strcat(error_log, temp_log);
+
+      switch((ed[1] & 0x0C) >> 2 ) {
+         case 0x00:
+            //Ignore when " All info available"
+            break;
+         case 0x01:
+            strcat(error_log, " DIMM info not valid");
+            break;
+         case 0x02:
+            strcat(error_log, " CHN info not valid");
+            break;
+         case 0x03:
+            strcat(error_log, " CPU info not valid");
+            break;
+         default:
+            strcat(error_log, " Unknown");
+            break;
+      }
+
+      if ( ( ( event_data[2] & 0x80 ) >> 7 ) == 0) {
+        sprintf(temp_log, " Assertion");
+        strcat(error_log, temp_log);
+      } else {
+        sprintf(temp_log, " Deassertion");
+        strcat(error_log, temp_log);
+      }
+    return 0;
+    }
+  pal_parse_sel_helper(fru, sel, error_log);
+  return 0;
+}
+
+int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   char str[128];

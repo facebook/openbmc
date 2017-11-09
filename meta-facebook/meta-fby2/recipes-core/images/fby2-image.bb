@@ -16,18 +16,14 @@ FLASH_ROOTFS_OFFSET = "4608"
 
 # Include modules in rootfs
 IMAGE_INSTALL += " \
-  kernel-modules \
-  u-boot \
-  u-boot-fw-utils \
   healthd \
   plat-utils \
   fan-util \
   fscd \
   watchdog-ctrl \
-  i2c-tools \
   sensor-setup \
-  lmsensors-sensors \
   ipmid \
+  packagegroup-openbmc-base \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
@@ -58,7 +54,6 @@ IMAGE_INSTALL += " \
   guid-util \
   asd \
   asd-test \
-  logrotate \
   bios-util \
   "
 

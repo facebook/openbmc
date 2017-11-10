@@ -658,10 +658,9 @@ led_sync_handler() {
 static void *
 seat_led_handler() {
   int ret;
-  char path[64] = {0};
   char identify[16] = {0};
   char tstr[64] = {0};
-  int slot, val;
+  uint8_t slot, val;
   int ident;
 
   while (1) {
@@ -673,10 +672,7 @@ seat_led_handler() {
 
     // Handle Sled fully seated
     if (val) { // SLED is pull out
-      ret = pal_set_sled_led(LED_ON);
-      if (0 != ret) {
-        sleep(1);
-      }
+      pal_set_sled_led(LED_ON);
     } else {   // SLED is fully pull in
       ident = 0;
       for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
@@ -695,15 +691,13 @@ seat_led_handler() {
 
         pal_set_sled_led(LED_OFF);
         msleep(LED_OFF_TIME_IDENTIFY);
+        continue;
       } else {
-        ret = pal_set_sled_led(LED_OFF);
-        if (0 != ret) {
-          sleep(1);
-        }
+        pal_set_sled_led(LED_OFF);
       }
-
-      continue;
     }
+
+    sleep(1);
   }
 }
 

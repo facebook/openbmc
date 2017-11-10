@@ -1,16 +1,14 @@
 {
   "pwm_transition_value": 21,
-  "pwm_boost_value": 32,
+  "pwm_boost_value": 31,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true,
-    "progressive": true
+    "progressive": false
   },
   "fan_dead_boost": {
     "data": [
-      [1,0],
-      [5,32]
     ],
     "threshold": 20,
     "action": "host_shutdown"
@@ -25,12 +23,12 @@
       "read_limit": {
         "valid": {
           "limit": 100,
-          "threshold": 1,
+          "threshold": 20,
           "action": "host_warning"
         },
         "invalid": {
           "limit": -60,
-          "threshold": 4,
+          "threshold": 10,
           "action": "host_warning"
         }
       },
@@ -52,12 +50,12 @@
       "read_limit": {
         "valid": {
           "limit": 80,
-          "threshold": 1,
+          "threshold": 20,
           "action": "host_shutdown"
         },
         "invalid":{
           "limit": -60,
-          "threshold": 4,
+          "threshold": 10,
           "action": "host_shutdown"
         }
       },
@@ -79,12 +77,12 @@
       "read_limit": {
         "valid": {
           "limit": 60,
-          "threshold": 1,
+          "threshold": 20,
           "action": "host_shutdown"
         },
         "invalid":{
           "limit": -60,
-          "threshold": 4,
+          "threshold": 10,
           "action": "host_shutdown"
         }
       },
@@ -106,12 +104,12 @@
       "read_limit": {
         "valid": {
           "limit": 60,
-          "threshold": 1,
+          "threshold": 20,
           "action": "host_shutdown"
         },
         "invalid":{
           "limit": -60,
-          "threshold": 4,
+          "threshold": 10,
           "action": "host_shutdown"
         }
       },
@@ -133,12 +131,12 @@
       "read_limit": {
         "valid": {
           "limit": 60,
-          "threshold": 1,
+          "threshold": 20,
           "action": "host_shutdown"
         },
         "invalid": {
           "limit": -60,
-          "threshold": 4,
+          "threshold": 10,
           "action": "host_shutdown"
         }
       },

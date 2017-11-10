@@ -865,7 +865,7 @@ static int set_panic_on_oom(void) {
   if (fp == NULL) {
     syslog(LOG_CRIT, "%s: failed to open file: %s", __func__, VM_PANIC_ON_OOM_FILE);
     return -1;
-   }
+  }
 
   ret = fscanf(fp, "%d", &tmp_value);
   if (ret != 1) {
@@ -876,14 +876,16 @@ static int set_panic_on_oom(void) {
 
   // if /proc/sys/vm/panic_on_oom is 0; set it to 1
   if (tmp_value == 0) {
+    fseek(fp, 0, SEEK_SET);
     ret = fputs("1", fp);
-    fclose(fp);
     if (ret < 0) {
       syslog(LOG_CRIT, "%s: failed to write to file: %s", __func__, VM_PANIC_ON_OOM_FILE);
+      fclose(fp);
       return -1;
     }
   }
 
+  fclose(fp);
   return 0;
 }
 

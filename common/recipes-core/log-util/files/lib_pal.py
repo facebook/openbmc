@@ -31,4 +31,4 @@ def pal_get_fru_list():
         return frulist.value
 
 def pal_log_clear(fru):
-    lpal_hndl.pal_log_clear(fru)
+    lpal_hndl.pal_log_clear(fru.encode('ascii'))

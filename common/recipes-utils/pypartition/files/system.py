@@ -262,7 +262,7 @@ def flash(attempts, image_file, mtd, logger):
     flash_command = ['flashcp', image_file.file_name, mtd.file_name]
     if attempts < 1:
         flash_command = ['dd', 'if={}'.format(image_file.file_name),
-                         'of=/dev/null', 'status=none']
+                         'of=/dev/null']
         attempts = 1
 
     for attempt in range(attempts):

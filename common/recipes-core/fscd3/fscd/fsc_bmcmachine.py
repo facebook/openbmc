@@ -228,7 +228,10 @@ def parse_fan_sysfs(sensor_data):
     Returns:
         PWM
     '''
-    return int(sensor_data)
+    if sensor_data:
+        return int(sensor_data)
+    else:
+        return -1
 
 
 def parse_fan_util(fan_data):

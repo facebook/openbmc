@@ -78,8 +78,9 @@ class Fscd(object):
         if 'boost' in self.fsc_config and 'progressive' in self.fsc_config['boost']:
                 if self.fsc_config['boost']['progressive']:
                     self.boost_type = 'progressive'
-                if 'fan_dead_boost' in self.fsc_config:
-                    self.fan_dead_boost = self.fsc_config['fan_dead_boost']
+        if 'fan_dead_boost' in self.fsc_config:
+            self.fan_dead_boost = self.fsc_config['fan_dead_boost']
+            self.all_fan_fail_counter = 0
         if 'boost' in self.fsc_config and 'sensor_fail' in self.fsc_config['boost']:
                 if self.fsc_config['boost']['sensor_fail']:
                     if 'fail_sensor_type' in self.fsc_config:
@@ -276,34 +277,39 @@ class Fscd(object):
 
             if self.fan_fail:
                 if self.boost_type == 'progressive' and self.fan_dead_boost:
+                    # Cases where we want to progressively bump PWMs
                     dead = len(dead_fans)
                     if dead > 0:
-                        Logger.info("Failed fans: %s" %
+                        Logger.info("Progressive mode: Failed fans: %s" %
                               (', '.join([str(i.label) for i in dead_fans],)))
-                        for fan_count, rate in self.fan_dead_boost:
+                        for fan_count, rate in self.fan_dead_boost["data"]:
                             if dead <= fan_count:
                                 pwmval = clamp(pwmval + (dead * rate), 0, 100)
                                 break
                         else:
                             pwmval = self.boost
-                    # all the fans failed
-                    if len(dead_fans) == len(self.fans):
-                        self.all_fan_fail_counter += 1
-                        if self.fan_dead_boost["threshold"] and self.fan_dead_boost["action"]:
-                            if self.fan_fail_counter >= self.fan_dead_boost["threshold"]:
-                                self.fsc_host_action(
-                                    action=self.fan_dead_boost["action"],
-                                    cause="All fans are bad for more than"
-                                          + str(self.fan_dead_boost["threshold"])
-                                          + "cycles"
-                                    )
-                            else:
-                                self.all_fan_fail_counter = 0
                 else:
                     if dead_fans:
+                        # If not progressive ,when there is 1 fan failed, boost all fans
                         Logger.info("Failed fans: %s" % (
                             ', '.join([str(i.label) for i in dead_fans],)))
                         pwmval = self.boost
+                    if self.fan_dead_boost:
+                        # If all the fans failed take action after a few cycles
+                        if len(dead_fans) == len(self.fans):
+                            self.all_fan_fail_counter = self.all_fan_fail_counter + 1
+                            Logger.warn("Currently all fans failed for {} cycles".format(self.all_fan_fail_counter))
+                            if self.fan_dead_boost["threshold"] and self.fan_dead_boost["action"]:
+                                if self.all_fan_fail_counter >= self.fan_dead_boost["threshold"]:
+                                    self.fsc_host_action(
+                                        action=self.fan_dead_boost["action"],
+                                        cause="All fans are bad for more than "
+                                              + str(self.fan_dead_boost["threshold"])
+                                              + " cycles"
+                                        )
+                        else:
+                            # If atleast 1 fan is working reset the counter
+                            self.all_fan_fail_counter = 0
 
             if abs(zone.last_pwm - pwmval) > self.ramp_rate:
                 if pwmval < zone.last_pwm:

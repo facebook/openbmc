@@ -27,18 +27,19 @@ Global config attributes:
     This label is for specifing fail_sensor_type is used or not.
     The detail of fail_sensor_type is shown below.
   "progressive": true/false
-    This label is for specifing fan_dead_boost is used or not.
-    The detail of fan_dead_boost is shown below.
+    This label is for specifing if fans should progressively change PWM.
+    fan_dead_boost is used here. The detail of fan_dead_boost is shown below.
 
 "fan_dead_boost":
-  [N1,M1],
-  [N2,M2]
-  If the number of dead fans is between N(#-1) and N#,
-  the PWM will increase M%.
-  If the number of dead fans is more than the latest N#,
-  the PWM will be pwm_boost_value.
-
-  If all fans have failed for 'threshold' number of times then perform 'action'
+  if "progresssive" was enabled, "data" needs to provided in the form:
+    [N1,M1],
+    [N2,M2]
+    If the number of dead fans is between N(#-1) and N#,
+    the PWM will increase M%.
+    If the number of dead fans is more than the latest N#,
+    the PWM will be pwm_boost_value.
+  Otherwise, if all fans have failed for 'threshold' number of times then
+  perform 'action'
 
 "fail_sensor_type":
   "SSD_sensor_fail": true/false

@@ -7,9 +7,11 @@
     "sensor_fail": true,
     "progressive": true
   },
-  "fan_dead_boost": [
-    [2,10]
-  ],
+  "fan_dead_boost": {
+    "data": [
+      [2,10]
+    ]
+  },
   "fail_sensor_type": {
       "standby_sensor_fail": true,
       "SSD_sensor_fail":true,

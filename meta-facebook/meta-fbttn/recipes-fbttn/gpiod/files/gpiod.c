@@ -55,6 +55,15 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
+#define SERVER_IS_PRESENT 0
+#define SERVER_IS_ABSENT 1
+#define SCC_IS_PRESENT 0
+#define SCC_IS_ABSENT 1
+#define NIC_IS_PRESENT 1
+#define NIC_IS_ABSENT 0
+#define MAX_ASSERT_CHECK_RETRY 3
+#define MAX_DEASSERT_CHECK_RETRY 3
+
 /* To hold the gpio info and status */
 typedef struct {
   uint8_t flag;
@@ -124,6 +133,43 @@ int get_fru_prsnt(int chassis_type, uint8_t fru) {
     }
   }
   return val;
+}
+
+/* Retry for FRU present assert */
+int check_fru_present_assert (int chassis_type, uint8_t fru, int fru_present_val, int fru_absent_val) {
+  int is_present = 0;
+  int retry = 0;
+
+  while (retry <= MAX_ASSERT_CHECK_RETRY) {
+    is_present = get_fru_prsnt(chassis_type, fru);
+    if (is_present == fru_present_val) {
+      break;
+    }
+
+    msleep(50);
+    retry++;
+  }
+
+  return is_present;
+}
+
+/* Retry for FRU present deassert */
+int check_fru_present_deassert (int chassis_type, uint8_t fru, int fru_present_val, int fru_absent_val) {
+  int is_present = 0;
+  int retry = 0;
+
+  retry = 0;
+  while (retry <= MAX_DEASSERT_CHECK_RETRY) {
+    is_present = get_fru_prsnt(chassis_type, fru);
+    if (is_present == fru_absent_val) {
+      break;
+    }
+
+    msleep(50);
+    retry++;
+  }
+
+  return is_present;
 }
 
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
@@ -262,6 +308,7 @@ static int
 gpio_monitor_poll(uint8_t fru_flag) {
   FILE *fp = NULL;
   int i, ret;
+  int is_fru_present = 0;
   uint8_t fru;
   uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS + 1] = {0};
   gpio_pin_t *gpios;
@@ -356,95 +403,120 @@ gpio_monitor_poll(uint8_t fru_flag) {
     fru_health_kv_state = atoi(tmp_health);
 
     // To detect Mono Lake is present or not
-    if (get_fru_prsnt(chassis_type, FRU_SLOT1) == 1) {   // absent
-      if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SLOT1]);
-        is_fru_prsnt[FRU_SLOT1 - 1] = true;
-      }
-      // Turn off ML HSC 12V and IOM 3V3 when Mono Lake was hot plugged
-      read_device(vpath_comp_pwr_en, &val);
-      if (val != 0) {
-        syslog(LOG_CRIT, "Powering Off Server due to server is absent.");
-        pal_set_server_power(FRU_SLOT1, SERVER_12V_OFF);
-        write_device(vpath_iom_full_pwr_en, "0");
-      }
-      pal_err_code_enable(0xE4);
-      pal_set_key_value("fru_prsnt_health", "0");
-      is_fru_missing[0] = 1;
-    } else {
-      if (is_fru_prsnt[FRU_SLOT1 - 1] == true) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1]);
-        is_fru_prsnt[FRU_SLOT1 - 1] = false;
-
-        read_device(vpath_comp_pwr_en, &val);
-        if ((val != 1) && (is_fru_missing[0] == 1)) {
-          syslog(LOG_CRIT, "Due to Server board were pushed in. Power On Server board 12V power.");
-          pal_set_server_power(FRU_SLOT1, SERVER_12V_ON);
+    if (get_fru_prsnt(chassis_type, FRU_SLOT1) == SERVER_IS_ABSENT) {
+      // Double check Mono Lake is absent
+      is_fru_present = check_fru_present_assert(chassis_type, FRU_SLOT1, SERVER_IS_PRESENT, SERVER_IS_ABSENT);
+      if (is_fru_present == SERVER_IS_ABSENT) {
+        if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
+          syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SLOT1]);
+          is_fru_prsnt[FRU_SLOT1 - 1] = true;
         }
-        is_fru_missing[0] = 0;
+        // Turn off ML HSC 12V and IOM 3V3 when Mono Lake was hot plugged
+        read_device(vpath_comp_pwr_en, &val);
+        if (val != 0) {
+          syslog(LOG_CRIT, "Powering Off Server due to server is absent.");
+          pal_set_server_power(FRU_SLOT1, SERVER_12V_OFF);
+          write_device(vpath_iom_full_pwr_en, "0");
+        }
+        pal_err_code_enable(0xE4);
+        pal_set_key_value("fru_prsnt_health", "0");
+        is_fru_missing[0] = 1;
       }
-      pal_err_code_disable(0xE4);
+    } else {
+      // Double check Mono Lake is present
+      is_fru_present = check_fru_present_deassert(chassis_type, FRU_SLOT1, SERVER_IS_PRESENT, SERVER_IS_ABSENT);
+      if (is_fru_present == SERVER_IS_PRESENT) {
+        if (is_fru_prsnt[FRU_SLOT1 - 1] == true) {
+          
+            syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1]);
+            is_fru_prsnt[FRU_SLOT1 - 1] = false;
+
+            read_device(vpath_comp_pwr_en, &val);
+            if ((val != 1) && (is_fru_missing[0] == 1)) {
+              syslog(LOG_CRIT, "Due to Server board were pushed in. Power On Server board 12V power.");
+              pal_set_server_power(FRU_SLOT1, SERVER_12V_ON);
+            }
+            is_fru_missing[0] = 0;
+        }
+        pal_err_code_disable(0xE4);
+      }
     }
 
     // To detect SCC is hotplugged or not
-    if (get_fru_prsnt(chassis_type, FRU_SCC) == 1) {   // absent
-      if (is_fru_prsnt[FRU_SCC - 1] == false) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SCC]);
-        is_fru_prsnt[FRU_SCC - 1] = true;
-      }
-
-      is_scc_hotplugged[0] = is_scc_hotplugged[1];
-      is_scc_hotplugged[1] = 1;
-
-
-      if (get_fru_prsnt(chassis_type, FRU_SCC) == 1 &&  // SCC of current side is absent
-          is_scc_hotplugged[0] == 0 &&  // [1,1] = SCC is not present since sled-cycle
-          is_scc_hotplugged[1] == 1 ) { // [0,1] = SCC is hotplugged
-
-        // Turn off ML HSC 12V and IOM 3V3 only when SCC is hotplugged
-        // If SCC is not present since sled-cycle, keep ML 12V turned on
-        read_device(vpath_comp_pwr_en, &val);
-        if (val != 0) {
-          syslog(LOG_CRIT, "Powering Off Server due to SCC is absent.");
-          pal_set_server_power(FRU_SLOT1, SERVER_12V_OFF);
+    if (get_fru_prsnt(chassis_type, FRU_SCC) == SCC_IS_ABSENT) {
+      // Double check SCC is absent
+      is_fru_present = check_fru_present_assert(chassis_type, FRU_SCC, SCC_IS_PRESENT, SCC_IS_ABSENT);
+      if (is_fru_present == SCC_IS_ABSENT) {
+        if (is_fru_prsnt[FRU_SCC - 1] == false) {
+          syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SCC]);
+          is_fru_prsnt[FRU_SCC - 1] = true;
         }
+
+        is_scc_hotplugged[0] = is_scc_hotplugged[1];
+        is_scc_hotplugged[1] = 1;
+
+
+        if (get_fru_prsnt(chassis_type, FRU_SCC) == SCC_IS_ABSENT &&  // SCC of current side is absent
+            is_scc_hotplugged[0] == 0 &&  // [1,1] = SCC is not present since sled-cycle
+            is_scc_hotplugged[1] == 1 ) { // [0,1] = SCC is hotplugged
+
+          // Turn off ML HSC 12V and IOM 3V3 only when SCC is hotplugged
+          // If SCC is not present since sled-cycle, keep ML 12V turned on
+          read_device(vpath_comp_pwr_en, &val);
+          if (val != 0) {
+            syslog(LOG_CRIT, "Powering Off Server due to SCC is absent.");
+            pal_set_server_power(FRU_SLOT1, SERVER_12V_OFF);
+          }
+        }
+        pal_err_code_enable(0xE7);
+        pal_set_key_value("fru_prsnt_health", "0");
+        pal_set_key_value("scc_sensor_health", "0");
+        is_fru_missing[1] = 1;
       }
-      pal_err_code_enable(0xE7);
-      pal_set_key_value("fru_prsnt_health", "0");
-      pal_set_key_value("scc_sensor_health", "0");
-      is_fru_missing[1] = 1;
     } else {
-      is_scc_hotplugged[0] = is_scc_hotplugged[1];
-      is_scc_hotplugged[1] = 0;
-      if (is_fru_prsnt[FRU_SCC - 1] == true) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC]);
-        is_fru_prsnt[FRU_SCC - 1] = false;
+      // Double check SCC is present
+      is_fru_present = check_fru_present_deassert(chassis_type, FRU_SCC, SCC_IS_PRESENT, SCC_IS_ABSENT);
+      if (is_fru_present == SCC_IS_PRESENT) {
+        is_scc_hotplugged[0] = is_scc_hotplugged[1];
+        is_scc_hotplugged[1] = 0;
+        if (is_fru_prsnt[FRU_SCC - 1] == true) {
+          syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC]);
+          is_fru_prsnt[FRU_SCC - 1] = false;
 
-        read_device(vpath_comp_pwr_en, &val);
-        if ((val != 1) && (is_fru_missing[1] == 1)) {
-          syslog(LOG_CRIT, "Due to SCC were pushed in. Power On Server board 12V power and Power On Server by Power Restore Policy.");
-          pal_set_server_power(FRU_SLOT1, SERVER_12V_ON);
-          pal_power_policy_control(FRU_SLOT1, NULL);
+          read_device(vpath_comp_pwr_en, &val);
+          if ((val != 1) && (is_fru_missing[1] == 1)) {
+            syslog(LOG_CRIT, "Due to SCC were pushed in. Power On Server board 12V power and Power On Server by Power Restore Policy.");
+            pal_set_server_power(FRU_SLOT1, SERVER_12V_ON);
+            pal_power_policy_control(FRU_SLOT1, NULL);
+          }
+          is_fru_missing[1] = 0;
         }
-        is_fru_missing[1] = 0;
+        pal_err_code_disable(0xE7);
       }
-      pal_err_code_disable(0xE7);
     }
 
-    // To detect NIC is present  or not
-    if (get_fru_prsnt(chassis_type, FRU_NIC) == 0) {   // absent
-      if (is_fru_prsnt[FRU_NIC - 1] == false) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[FRU_NIC]);
-        is_fru_prsnt[FRU_NIC - 1] = true;
+    // To detect NIC is present or not
+    if (get_fru_prsnt(chassis_type, FRU_NIC) == NIC_IS_ABSENT) {
+      // Double check NIC is absent
+      is_fru_present = check_fru_present_assert(chassis_type, FRU_NIC, NIC_IS_PRESENT, NIC_IS_ABSENT);
+      if (is_fru_present == NIC_IS_ABSENT) {
+        if (is_fru_prsnt[FRU_NIC - 1] == false) {
+          syslog(LOG_CRIT, fru_prsnt_log_string[FRU_NIC]);
+          is_fru_prsnt[FRU_NIC - 1] = true;
+        }
+        pal_err_code_enable(0xE8);
+        pal_set_key_value("fru_prsnt_health", "0");
       }
-      pal_err_code_enable(0xE8);
-      pal_set_key_value("fru_prsnt_health", "0");
     } else {
-      if (is_fru_prsnt[FRU_NIC - 1] == true) {
-        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_NIC]);
-        is_fru_prsnt[FRU_NIC - 1] = false;
+      // Double check NIC is present
+      is_fru_present = check_fru_present_deassert(chassis_type, FRU_NIC, NIC_IS_PRESENT, NIC_IS_ABSENT);
+      if (is_fru_present == NIC_IS_PRESENT) {
+        if (is_fru_prsnt[FRU_NIC - 1] == true) {
+          syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_NIC]);
+          is_fru_prsnt[FRU_NIC - 1] = false;
+        }
+        pal_err_code_disable(0xE8);
       }
-      pal_err_code_disable(0xE8);
     }
 
     // If Mono Lake is present, monitor the server power status.

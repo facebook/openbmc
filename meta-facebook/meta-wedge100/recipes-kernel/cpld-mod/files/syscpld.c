@@ -150,6 +150,62 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0xd, 0, 8,
   },
   {
+    "pwr_stby_ok",
+    "0x0: Power not OK\n"
+    "0x1: Power is OK\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x11, 0, 1,
+  },
+  {
+    "vcore_vrdy1",
+    "0x0: Power not OK\n"
+    "0x1: Power is OK\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x12, 0, 1,
+  },
+  {
+    "vcore_hot",
+    "0x0: Power not OK\n"
+    "0x1: Power is OK\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x12, 1, 1,
+  },
+  {
+    "vanlog_vrdy1",
+    "0x0: Power not OK\n"
+    "0x1: Power is OK\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x12, 2, 1,
+  },
+  {
+    "vanlog_hot",
+    "0x0: Power not OK\n"
+    "0x1: Power is OK\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x12, 3, 1,
+  },
+  {
+    "v3v3_vrdy1",
+    "0x0: Power not OK\n"
+    "0x1: Power is OK\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x12, 4, 1,
+  },
+  {
+    "v3v3_hot",
+    "0x0: Power not OK\n"
+    "0x1: Power is OK\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x12, 5, 1,
+  },
+  {
     "com-e_board_type",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,

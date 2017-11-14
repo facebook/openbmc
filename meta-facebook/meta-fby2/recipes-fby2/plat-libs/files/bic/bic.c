@@ -37,6 +37,7 @@
 
 #define FRUID_READ_COUNT_MAX 0x30
 #define FRUID_WRITE_COUNT_MAX 0x30
+#define IPMB_READ_COUNT_MAX 224
 #define IPMB_WRITE_COUNT_MAX 224
 #define BIOS_ERASE_PKT_SIZE (64*1024)
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
@@ -582,6 +583,30 @@ bic_send:
   return ret;
 }
 
+// Read firmware for various components
+static int
+_dump_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint8_t len, uint8_t *rbuf, uint8_t *rlen) {
+  uint8_t tbuf[16] = {0x15, 0xA0, 0x00};  // IANA ID
+  int ret;
+  int retries = 3;
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = target;
+  memcpy(&tbuf[4], &offset, sizeof(uint32_t));
+  tbuf[8] = len;
+
+  do {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_READ_FW_IMAGE, tbuf, 9, rbuf, rlen);
+    if (!ret && (len == (*rlen -= 3)))
+      return 0;
+
+    sleep(1);
+    printf("_dump_fw: slot: %d, target %d, offset: %d, len: %d retrying..\n", slot_id, target, offset, len);
+  } while ((--retries));
+
+  return -1;
+}
+
 // Get CPLD update progress
 static int
 _get_cpld_update_progress(uint8_t slot_id, uint8_t *progress) {
@@ -1034,6 +1059,75 @@ check_bios_image(int fd, long size) {
 }
 
 int
+bic_dump_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  int ret = -1, rc, fd;
+  uint32_t offset, next_doffset;
+  uint32_t img_size = 0x2000000, dsize;
+  uint8_t count, read_count;
+  uint8_t buf[256], rlen;
+
+  if (comp != DUMP_BIOS) {
+    printf("ERROR: only support dump BIOS image!\n");
+    return ret;
+  }
+  printf("dumping fw on slot %d:\n", slot_id);
+
+  fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd < 0) {
+    printf("ERROR: invalid file path!\n");
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_dump_fw: open fails for path: %s\n", path);
+#endif
+    goto error_exit;
+  }
+
+  // Write chunks of binary data in a loop
+  dsize = img_size / 100;
+  offset = 0;
+  next_doffset = offset + dsize;
+  while (1) {
+    read_count = ((offset + IPMB_READ_COUNT_MAX) <= img_size) ? IPMB_READ_COUNT_MAX : (img_size - offset);
+
+    // read image from Bridge-IC
+    rc = _dump_fw(slot_id, comp, offset, read_count, buf, &rlen);
+    if (rc) {
+      goto error_exit;
+    }
+
+    // Write to file
+    count = write(fd, &buf[3], rlen);
+    if (count <= 0) {
+      goto error_exit;
+    }
+
+    // Update counter
+    offset += count;
+    if (offset >= next_doffset) {
+      switch (comp) {
+        case DUMP_BIOS:
+          printf("\rdumped bios: %d %%", offset/dsize);
+          break;
+      }
+      fflush(stdout);
+      next_doffset += dsize;
+    }
+
+    if (offset >= img_size)
+      break;
+  }
+
+  ret = 0;
+
+error_exit:
+  printf("\n");
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   int ret = -1, rc;
   uint32_t offset;
@@ -1226,7 +1320,7 @@ error_exit:
     case UPDATE_BIC_BOOTLOADER:
       syslog(LOG_CRIT, "bic_update_fw: updating bic bootloader firmware is exiting\n");
       break;
-  } 
+  }
   if (fd > 0 ) {
     close(fd);
   }

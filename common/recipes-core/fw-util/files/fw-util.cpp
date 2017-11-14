@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 
   exec_name = argv[0];
   Component::populateFruList();
-  
+
   if (argc < 3) {
     usage();
     return -1;
@@ -180,16 +180,18 @@ int main(int argc, char *argv[])
       component = component.substr(2);
     }
   }
-  if (action == "--update") {
+  if ((action == "--update") || (action == "--dump")) {
     if (argc < 5) {
       usage();
       return -1;
     }
     image.assign(argv[4]);
-    ifstream f(image);
-    if (!f.good()) {
-      cerr << "Cannot access: " << image << endl;
-      return -1;
+    if (action == "--update") {
+      ifstream f(image);
+      if (!f.good()) {
+        cerr << "Cannot access: " << image << endl;
+        return -1;
+      }
     }
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
@@ -222,20 +224,27 @@ int main(int argc, char *argv[])
                 cerr << "Error getting version of " << c->component() 
                   << " on fru: " << c->fru() << endl;
               }
-            } else { // update
+            } else {  // update or dump
               uint8_t fru_id;
+              string str_act("");
               if (pal_get_fru_id((char *)c->fru().c_str(), &fru_id)) {
                 // Set to some default FRU which should be present
                 // in the system.
                 fru_id = 1;
               }
               pal_set_fw_update_ongoing(fru_id, 60 * 10);
-              ret = c->update(image);
+              if (action == "--update") {
+                ret = c->update(image);
+                str_act.assign("Upgrade");
+              } else {
+                ret = c->dump(image);
+                str_act.assign("Dump");
+              }
               pal_set_fw_update_ongoing(fru_id, 0);
               if (ret == 0) {
-                cout << "Upgrade of " << c->fru() << " : " << component << " succeeded" << endl;
-              } else  {
-                cerr << "Upgrade of " << c->fru() << " : " << component;
+                cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
+              } else {
+                cerr << str_act << " of " << c->fru() << " : " << component;
                 if (ret == FW_STATUS_NOT_SUPPORTED) {
                   cerr << " not supported" << endl;
                 } else {

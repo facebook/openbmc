@@ -18,6 +18,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://vr.cpp \
+            file://bic_bios_ext.cpp \
             file://platform.cpp \
            "
 CXXFLAGS += " -DBIC_SUPPORT "

@@ -97,10 +97,13 @@ void Component::populateFruList()
     if (fru_list.find(real_fru) != fru_list.end() &&
         fru_list[real_fru].find(real_comp) != fru_list[real_fru].end()) {
       fru_list[fru][comp] = fru_list[real_fru][real_comp];
-    } else {
+    }
+#ifdef DEBUG
+    else {
       cerr << "Ignoring alias (" << fru << "," << comp << ") to unknown ("
         << real_fru << "," << real_comp << ")" << endl;
     }
+#endif
   }
 }
 

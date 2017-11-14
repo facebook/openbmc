@@ -48,7 +48,6 @@ IMAGE_INSTALL += " \
   log-util \
   lldp-util \
   spatula \
-  passwd-util \
   openbmc-utils \
   ipmi-util \
   guid-util \

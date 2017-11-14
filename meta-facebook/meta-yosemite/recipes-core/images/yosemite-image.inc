@@ -76,7 +76,6 @@ IMAGE_INSTALL += " \
   lldp-util \
   fan-util \
   spatula \
-  passwd-util \
   conf-util \
   ncsi-util \
   "

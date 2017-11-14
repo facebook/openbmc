@@ -14,4 +14,5 @@ RDEPENDS_${PN} += " \
   u-boot-fw-utils \
   rsyslog \
   logrotate \
+  passwd-util \
   "

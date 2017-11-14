@@ -47,7 +47,6 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
-  passwd-util \
   power-util \
   sensor-mon \
   sensor-setup \

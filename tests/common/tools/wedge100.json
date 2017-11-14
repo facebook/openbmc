@@ -43,5 +43,9 @@
   "processRunningTest.py":["yes",
     {
       "json":"../wedge100/unittests/process.json"
+    }],
+    "fscd_test.py":["yes",
+    {
+      "testfile":"/wedge100/unittests/"
     }]
 }

@@ -87,12 +87,12 @@ def interfaceTest(cmd_bmc, data):
     return
 
 
-def generalTypeTest(cmd_bmc, data, testName):
+def generalTypeTest(cmd_bmc, data, testName, testPath="/common/"):
     """
-    Run testName.py with command line arguments
+    Run testName.py with command line arguments on the target BMC
     """
     platformType = data["type"]
-    cmd = cmd_bmc + 'python /tmp/tests/common/' + testName + ' ' + platformType
+    cmd = cmd_bmc + 'python /tmp/tests' + testPath + testName + ' ' + platformType
     if VERBOSE:
         cmd = setVerbose(cmd)
     sshProcess = Popen(cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
@@ -105,6 +105,15 @@ def generalTypeTest(cmd_bmc, data, testName):
     #print(output[0].split(b'\n')[0])
     return
 
+def fscdTest(cmd_bmc, data, testName, testPath="/common/"):
+    """
+    Run testName.py with command line arguments on the target BMC
+    """
+    cmd = cmd_bmc + 'python /tmp/tests' + testPath + testName
+    sshProcess = Popen(cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
+    output = sshProcess.communicate()
+    print(output[0].decode())
+    return
 
 def generalJsonTest(cmd_bmc, data, testName):
     json = data[testName][1]['json']
@@ -320,6 +329,9 @@ if __name__ == "__main__":
         if "powerCycleSWTest.py" in data:
             if data["powerCycleSWTest.py"] == 'yes':
                 powerCycleSWTest(cmd_bmc, data, hostnameBMC, hostnameMS)
+        if "fscd_test.py" in data:
+            if data["fscd_test.py"][0] == 'yes':
+                fscdTest(cmd_bmc, data, "fscd_test.py", data["fscd_test.py"][1]["testfile"])
         if "watchdogResetTest.py" in data:
             if HEADNODE:
                 if data["watchdogResetTest.py"][0] == 'yes':

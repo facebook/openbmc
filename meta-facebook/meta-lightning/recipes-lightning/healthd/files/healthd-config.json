@@ -25,6 +25,11 @@
         "value": 70.0,
         "hysteresis" : 5.0,
         "action": ["log-critical", "bmc-error-trigger"]
+      },
+      {
+        "value": 95.0,
+        "hysteresis" : 5.0,
+        "action": ["log-critical", "bmc-error-trigger", "reboot"]
       }
     ]
   },

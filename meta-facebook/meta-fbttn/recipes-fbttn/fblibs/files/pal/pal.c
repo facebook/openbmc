@@ -1557,6 +1557,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   int ret;
   int sku = 0;
+  int i;
   bool check_server_power_status = false;
 
   if(pal_is_fru_prsnt(fru, &status) < 0)
@@ -1588,16 +1589,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   // Check for the power status
   ret = pal_get_server_power(FRU_SLOT1, &status);
   if (ret == 0) {
-    ret = fbttn_sensor_read(fru, sensor_num, value);
+    ret = fbttn_sensor_read(fru, sensor_num, value, status);
     if (ret != 0) {
-      if(ret < 0) {
-        if(fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC)
+      if (ret < 0) {
+        if (fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC) {
           ret = -1;
-        else if(pal_get_server_power(fru, &status) < 0)
+        } else if (pal_get_server_power(fru, &status) < 0) {
           ret = -1;
-        // This check helps interpret the IPMI packet loss scenario
-        else if(status == SERVER_POWER_ON)
+        } else if (status == SERVER_POWER_ON) {
+          // This check helps interpret the IPMI packet loss scenario
           ret = -1;
+        }
 
         strcpy(str, "NA");
       } else {
@@ -1609,15 +1611,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       // On successful sensor read
       sku = pal_get_iom_type();
       if (sku == IOM_M2) { // IOM type: M.2 solution
-        if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
-         || (sensor_num == IOM_SENSOR_ADC_P3V3_M2)) {
+        for (i = 0; i < iom_t5_non_stby_sensor_cnt; i++) {
+          if (sensor_num == iom_t5_non_stby_sensor_list[i]) {
             check_server_power_status = true;
+            break;
+          }
         }
       } else {            // IOM type: IOC solution
-        if ((sensor_num == IOM_SENSOR_ADC_P3V3) || (sensor_num == IOM_SENSOR_ADC_P1V8)
-         || (sensor_num == IOM_SENSOR_ADC_P1V5) || (sensor_num == IOM_SENSOR_ADC_P0V975)
-         || (sensor_num == IOM_IOC_TEMP)) {
+        for (i = 0; i < iom_t7_non_stby_sensor_cnt; i++) {
+          if (sensor_num == iom_t7_non_stby_sensor_list[i]) {
             check_server_power_status = true;
+            break;
+          }
         }
       }
       if (check_server_power_status == true) {

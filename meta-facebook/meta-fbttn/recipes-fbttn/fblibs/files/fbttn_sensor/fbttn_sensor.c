@@ -314,6 +314,25 @@ const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
 };
 
+// List of IOM non-standby sensor
+// STANDBY sensors: sensors are active when standby power is on
+// NON-STANDBY sensors: sensors need Server power which are not active with only standby power
+const uint8_t iom_t5_non_stby_sensor_list[] = {
+  IOM_SENSOR_ADC_P3V3,
+  IOM_SENSOR_ADC_P1V8,
+  IOM_SENSOR_ADC_P3V3_M2,
+  IOM_SENSOR_M2_SMART_TEMP1,
+  IOM_SENSOR_M2_SMART_TEMP2,
+};
+
+const uint8_t iom_t7_non_stby_sensor_list[] = {
+  IOM_SENSOR_ADC_P3V3,
+  IOM_SENSOR_ADC_P1V8,
+  IOM_SENSOR_ADC_P1V5,
+  IOM_SENSOR_ADC_P0V975,
+  IOM_IOC_TEMP,
+};
+
 float iom_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float dpb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float scc_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -529,6 +548,10 @@ size_t dpb_discrete_cnt = sizeof(dpb_discrete_list)/sizeof(uint8_t);
 size_t scc_sensor_cnt = sizeof(scc_sensor_list)/sizeof(uint8_t);
 
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
+
+size_t iom_t5_non_stby_sensor_cnt = sizeof(iom_t5_non_stby_sensor_list)/sizeof(uint8_t);
+
+size_t iom_t7_non_stby_sensor_cnt = sizeof(iom_t7_non_stby_sensor_list)/sizeof(uint8_t);
 
 enum {
   FAN0 = 0,
@@ -1636,7 +1659,7 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
 
 int
-fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
+fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value, uint8_t status) {
 
   float volt;
   float curr;
@@ -1647,8 +1670,13 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   switch (fru) {
     case FRU_SLOT1:
 
-      if (!(is_server_prsnt(fru))) {
+      if ((is_server_prsnt(fru)) == false) {
         return -1;
+      }
+
+      // Do not monitor server sensors when server power is 12V-OFF
+      if (status == SERVER_STATUS_12V_OFF) {
+        return READING_NA;
       }
 
       ret = fbttn_sdr_init(fru);
@@ -1669,6 +1697,7 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
 
     case FRU_IOM:
+      // Standby sensors
       switch(sensor_num) {
         //ML HSC
         case ML_SENSOR_HSC_PWR:
@@ -1702,28 +1731,39 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_adc_value(ADC_PIN5, ADC_VALUE, (float *) value);
         case IOM_SENSOR_ADC_P1V15_STBY:
           return read_adc_value(ADC_PIN6, ADC_VALUE, (float *) value);
-        case IOM_SENSOR_ADC_P3V3:
-          return read_adc_value(ADC_PIN7, ADC_VALUE, (float *) value);
-        case IOM_SENSOR_ADC_P1V8:
-          return read_adc_value(ADC_PIN8, ADC_VALUE, (float *) value);
-        case IOM_SENSOR_ADC_P1V5:
-          return read_adc_value(ADC_PIN9, ADC_VALUE, (float *) value);
-        case IOM_SENSOR_ADC_P0V975:
-          return read_adc_value(ADC_PIN10, ADC_VALUE, (float *) value);
-        case IOM_SENSOR_ADC_P3V3_M2:
-          return read_adc_value(ADC_PIN11, ADC_VALUE, (float *) value);
         // M.2 Ambient Temp
         case IOM_SENSOR_M2_AMBIENT_TEMP1:
           return read_temp(IOM_M2_AMBIENT_TEMP1_DEVICE, (float *) value);
         case IOM_SENSOR_M2_AMBIENT_TEMP2:
           return read_temp(IOM_M2_AMBIENT_TEMP2_DEVICE, (float *) value);
-        // M.2 SMART Temp
-        case IOM_SENSOR_M2_SMART_TEMP1:
-          return read_M2_temp(IOM_M2_1_TEMP_DEVICE, (float *) value);
-        case IOM_SENSOR_M2_SMART_TEMP2:
-          return read_M2_temp(IOM_M2_2_TEMP_DEVICE, (float *) value);
-        case IOM_IOC_TEMP:
-          return mctp_get_iom_ioc_temp((float *) value);
+      }
+
+      // Do not monitor these IOM sensors when server power is not ON
+      if (status == SERVER_STATUS_POWER_ON) {
+        // Non-standby sensors
+        switch(sensor_num) {
+          // Various Voltages
+          case IOM_SENSOR_ADC_P3V3:
+            return read_adc_value(ADC_PIN7, ADC_VALUE, (float *) value);
+          case IOM_SENSOR_ADC_P1V8:
+            return read_adc_value(ADC_PIN8, ADC_VALUE, (float *) value);
+          case IOM_SENSOR_ADC_P1V5:
+            return read_adc_value(ADC_PIN9, ADC_VALUE, (float *) value);
+          case IOM_SENSOR_ADC_P0V975:
+            return read_adc_value(ADC_PIN10, ADC_VALUE, (float *) value);
+          case IOM_SENSOR_ADC_P3V3_M2:
+            return read_adc_value(ADC_PIN11, ADC_VALUE, (float *) value);
+          // M.2 SMART Temp
+          case IOM_SENSOR_M2_SMART_TEMP1:
+            return read_M2_temp(IOM_M2_1_TEMP_DEVICE, (float *) value);
+          case IOM_SENSOR_M2_SMART_TEMP2:
+            return read_M2_temp(IOM_M2_2_TEMP_DEVICE, (float *) value);
+          // IOC Temp
+          case IOM_IOC_TEMP:
+            return mctp_get_iom_ioc_temp((float *) value);
+        }
+      } else {
+        return READING_NA;
       }
       break;
 

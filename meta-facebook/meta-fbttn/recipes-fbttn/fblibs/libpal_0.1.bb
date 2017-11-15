@@ -27,4 +27,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
-RDEPENDS_${PN} += " libfbttn-common libkv libedb libnvme-mi"
+RDEPENDS_${PN} += " libfbttn-common libfbttn-sensor libkv libedb libnvme-mi"

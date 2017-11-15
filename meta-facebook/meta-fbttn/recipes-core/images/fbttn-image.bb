@@ -24,7 +24,6 @@ IMAGE_INSTALL += " \
   expander-util \
   exp-cached \
   fan-util \
-  fbttn-sensors \
   fbutils \
   fpc-util \
   fruid \

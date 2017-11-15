@@ -236,6 +236,18 @@ enum {
   DRAWER_CLOSED = 487,
 };
 
+// Server status
+enum {
+  SERVER_STATUS_POWER_OFF,
+  SERVER_STATUS_POWER_ON,
+  SERVER_STATUS_POWER_CYCLE,
+  SERVER_STATUS_POWER_RESET,
+  SERVER_STATUS_GRACEFUL_SHUTDOWN,
+  SERVER_STATUS_12V_OFF,
+  SERVER_STATUS_12V_ON,
+  SERVER_STATUS_12V_CYCLE,
+};
+
 extern const uint8_t bic_sensor_list[];
 
 extern const uint8_t bic_discrete_list[];
@@ -253,6 +265,10 @@ extern const uint8_t scc_sensor_list[];
 extern const uint8_t dpb_discrete_list[];
 
 extern const uint8_t nic_sensor_list[];
+
+extern const uint8_t iom_t5_non_stby_sensor_list[];
+
+extern const uint8_t iom_t7_non_stby_sensor_list[];
 
 extern float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
 
@@ -274,7 +290,11 @@ extern size_t scc_sensor_cnt;
 
 extern size_t nic_sensor_cnt;
 
-int fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
+extern size_t iom_t5_non_stby_sensor_cnt;
+
+extern size_t iom_t7_non_stby_sensor_cnt;
+
+int fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value, uint8_t status);
 int fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int fbttn_sensor_sdr_path(uint8_t fru, char *path);

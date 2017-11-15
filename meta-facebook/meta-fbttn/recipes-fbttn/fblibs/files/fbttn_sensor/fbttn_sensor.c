@@ -286,6 +286,7 @@ const uint8_t dpb_sensor_list[] = {
   DPB_SENSOR_HDD_33,
   DPB_SENSOR_HDD_34,
   DPB_SENSOR_HDD_35,
+  AIRFLOW,
 };
 
 const uint8_t dpb_discrete_list[] = {
@@ -493,6 +494,8 @@ sensor_thresh_array_init() {
     assign_sensor_threshold(FRU_DPB, DPB_SENSOR_HDD_0 + i,
       65, 0, 0, 0, 0, 0, 0, 0);
   } 
+  assign_sensor_threshold(FRU_DPB, AIRFLOW,
+      0, 0, 0, 0, 0, 0, 0, 0);
 
   // SCC
   //SCC ADC
@@ -1343,6 +1346,9 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case DPB_SENSOR_B_TEMP:
           sprintf(units, "C");
           break;
+        case AIRFLOW:
+          sprintf(units, "CFM");
+          break;
       }
       break;
 
@@ -1598,6 +1604,9 @@ fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case DPB_SENSOR_B_TEMP:
           sprintf(name, "DPB_Inlet_Temp_2");
+          break;
+        case AIRFLOW:
+          sprintf(name, "Airflow");
           break;
       }
       break;

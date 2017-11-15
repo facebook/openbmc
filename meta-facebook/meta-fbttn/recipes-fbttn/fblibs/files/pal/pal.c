@@ -2958,7 +2958,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
         value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
         value = value * 10;
       }
-      else if( rbuf[5*i+1] == DPB_SENSOR_HSC_POWER || rbuf[5*i+1] == DPB_SENSOR_12V_POWER_CLIP ) {
+      else if( rbuf[5*i+1] == DPB_SENSOR_HSC_POWER || rbuf[5*i+1] == DPB_SENSOR_12V_POWER_CLIP || (rbuf[5*i+1] == AIRFLOW) ) {
         value =  (((rbuf[5*i+2] << 8) + rbuf[5*i+3]));
       }
       else {

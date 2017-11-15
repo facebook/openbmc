@@ -192,6 +192,7 @@ enum{
   DPB_SENSOR_HDD_33 = 0xAF,
   DPB_SENSOR_HDD_34 = 0xB0,
   DPB_SENSOR_HDD_35 = 0xB1,
+  AIRFLOW = 0x76,
 };
 
 // Sensors under SCC, queried by Expander

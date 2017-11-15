@@ -2878,7 +2878,7 @@ static void
 FORCE_ADR() {
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN];
-  char vpath[64] = {0};
+  //char vpath[64] = {0};
 
   sprintf(key, "%s", "mb_machine_config");
   if (kv_get_bin(key, value) < 0) {
@@ -2889,7 +2889,7 @@ FORCE_ADR() {
   }
   if(value[12] == 0 || value[12] > 32)
     return;
-
+#if 0 /*disable the force ADR*/
   sprintf(vpath, GPIO_VAL, GPIO_FM_FORCE_ADR_N);
   if (write_device(vpath, "1")) {
     return;
@@ -2901,6 +2901,7 @@ FORCE_ADR() {
   if (write_device(vpath, "1")) {
     return;
   }
+#endif
 }
 
 // Power Button Override

@@ -66,7 +66,7 @@ IMAGE_INSTALL += " \
   gpiod \
   front-paneld \
   power-util \
-  mTerm\
+  mterm\
   cfg-util \
   fw-util \
   fpc-util \

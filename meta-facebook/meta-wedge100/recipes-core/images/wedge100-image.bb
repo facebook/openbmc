@@ -33,7 +33,7 @@ IMAGE_INSTALL += " \
   jbi \
   flashrom \
   psumuxmon \
-  mTerm \
+  mterm \
   spatula \
   trousers \
   tpm-tools \

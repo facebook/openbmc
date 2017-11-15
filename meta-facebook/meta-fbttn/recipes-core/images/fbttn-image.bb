@@ -40,7 +40,7 @@ IMAGE_INSTALL += " \
   lldp-util \
   log-util \
   me-util \
-  mTerm \
+  mterm \
   openbmc-utils \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \

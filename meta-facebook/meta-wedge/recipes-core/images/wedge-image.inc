@@ -32,5 +32,5 @@ IMAGE_INSTALL += " \
   po-eeprom \
   bitbang \
   spatula \
-  mTerm \
+  mterm \
   "

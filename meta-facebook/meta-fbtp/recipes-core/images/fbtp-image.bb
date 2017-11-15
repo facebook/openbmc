@@ -31,7 +31,7 @@ IMAGE_INSTALL += " \
   fscd \
   fan-util \
   power-util \
-  mTerm \
+  mterm \
   front-paneld \
   ipmid \
   fruid \

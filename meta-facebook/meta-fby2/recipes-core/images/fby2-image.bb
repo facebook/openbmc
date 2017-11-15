@@ -39,7 +39,7 @@ IMAGE_INSTALL += " \
   gpiointrd \
   front-paneld \
   power-util \
-  mTerm\
+  mterm\
   cfg-util \
   fw-util \
   hsvc-util \

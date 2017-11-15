@@ -22,7 +22,7 @@ IMAGE_INSTALL += " \
   flashrom \
   ipmid \
   lldp-util \
-  mTerm \
+  mterm \
   memtester  \
   mkeeprom  \
   openbmc-utils \

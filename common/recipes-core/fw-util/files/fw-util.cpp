@@ -113,8 +113,8 @@ class ProcessLock {
     int fd;
     bool _ok;
   public:
-  ProcessLock() {
-    file = "/var/run/fw-util.lock";
+  ProcessLock(string name) {
+    file = "/var/run/fw-util-" + name + ".lock";
     _ok = false;
     fd = open(file.c_str(), O_RDWR|O_CREAT, 0666);
     if (fd < 0) {
@@ -141,7 +141,7 @@ class ProcessLock {
 void usage()
 {
   cout << "USAGE: " << exec_name << " all|FRU --version [all|COMPONENT]" << endl;
-  cout << "       " << exec_name << " FRU --update  [--]COMPONENT IMAGE_PATH" << endl;
+  cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
   for (auto fkv : Component::fru_list) {
@@ -206,16 +206,16 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  // Ensure only one instance of fw-util is running
-  ProcessLock lock;
-  if (!lock.ok()) {
-    cerr << "Another instance of fw-util already running" << endl;
-    return -1;
-  }
-
   unordered_map<Component *,bool> done_map;
   for (auto fkv : Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
+      // Ensure only one instance of fw-util per FRU is running
+      ProcessLock lock(fkv.first);
+      if (!lock.ok()) {
+        cerr << "Another instance of fw-util already running" << endl;
+        return -1;
+      }
+
       for (auto ckv : Component::fru_list[fkv.first]) {
         if (component == "all" || component == ckv.first) {
           Component *c = Component::fru_list[fkv.first][ckv.first];
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
             if (action == "--version") {
               ret = c->print_version();
               if (ret != FW_STATUS_SUCCESS && ret != FW_STATUS_NOT_SUPPORTED) {
-                cerr << "Error getting version of " << c->component() 
+                cerr << "Error getting version of " << c->component()
                   << " on fru: " << c->fru() << endl;
               }
             } else {  // update or dump

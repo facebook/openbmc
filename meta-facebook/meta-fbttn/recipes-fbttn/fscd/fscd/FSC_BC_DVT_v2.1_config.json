@@ -43,7 +43,10 @@
         [ -4, 55 ]
       ]
      },
-	  "linear_mezz_sensor_temp": {
+    "linear_mezz_sensor_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
       "type": "linear",
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
@@ -68,16 +71,16 @@
       ]
     },
     "pid_soc_therm_margin": {
-    "read_source" : {
-      "util" : "/usr/local/bin/sensor-util"
-    },
-    "type": "pid",
-    "setpoint": -10,
-    "negative_hysteresis": 2,
-    "positive_hysteresis": 0,
-    "kp": -8,
-    "ki": -0.05,
-    "kd": 0
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -10,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -8,
+      "ki": -0.05,
+      "kd": 0
     },
     "pid_mezz_sensor_temp": {
       "read_source" : {

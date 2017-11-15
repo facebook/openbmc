@@ -93,9 +93,9 @@ write_ftgmac0_value(const char *device_name, unsigned char count, unsigned char 
 
 static void
 print_usage_help(void) {
-  printf("Usage: ncsi-util <cmd> <[0..n] raw_payload_bytes_to_send>\n\n");
+  printf("Usage: ncsi-util <channel_id> <cmd> <[0..n] raw_payload_bytes_to_send>\n\n");
   printf("   e.g. \n");
-  printf("       ncsi-util 80 0 0 129 25 0 0 27 0\n");
+  printf("       ncsi-util 0 80 0 0 129 25 0 0 27 0\n");
 }
 
 

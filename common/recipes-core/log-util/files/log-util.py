@@ -149,8 +149,10 @@ def log_main():
         if cmd == cmdlist[0]:
 
             for log in syslog:
+                # log eg: Nov  9 14:59:07 rtptest1413-oob fbttn-b2a192a user.crit power-util: SERVER_POWER_ON successful for FRU: 1
+                #         ====date======  ===hostname==== ===version=== =loglevel= =appname=  ===message===========================
                 # Print only critical logs
-                if not (re.search(r' bmc [a-z]*.crit ', log) or re.search(r'log-util:', log)):
+                if not (re.search(r' [a-z]*.crit ', log) or re.search(r'log-util:', log)):
                     continue
 
                 # Find the FRU number
@@ -179,17 +181,27 @@ def log_main():
                 if re.search(r'log-util:', log):
                      print (log)
                      continue
+
+
+                tmp = log.split()
+
                 # Time format Sep 28 22:10:50
-                temp = re.split(r' bmc [a-z]*.crit ', log)
-                ts = temp[0]
-                currtime = datetime.now()
-                ts = '%d %s' % (currtime.year, ts)
+                ts= ' '.join(tmp[0:3])
+                ts = '%d %s' % (datetime.now().year, ts)
                 time = datetime.strptime(ts, '%Y %b %d %H:%M:%S')
                 time = time.strftime('%Y-%m-%d %H:%M:%S')
 
-                temp2 = re.split(r': ', temp[1], 1)
-                app = temp2[0]
-                message = temp2[1].rstrip('\n')
+                # Hostname
+                hostname = tmp[3]
+
+                # OpenBMC Version Information
+                version = tmp[4]
+
+                # Application Name
+                app = tmp[6].strip(':')
+
+                # Log Message
+                message = ' '.join(tmp[7:]).rstrip('\n')
 
                 print('%-4s %-8s %-22s %-16s %s' % (
                     fru_num,

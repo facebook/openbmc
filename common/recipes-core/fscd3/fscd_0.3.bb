@@ -41,6 +41,7 @@ S = "${WORKDIR}"
 
 inherit distutils3
 
+DEPENDS += "update-rc.d-native"
 RDEPENDS_${PN} += "python3-syslog python3-ply "
 
 FSC_BIN_FILES = ""

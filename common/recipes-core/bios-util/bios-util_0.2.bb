@@ -17,4 +17,6 @@ do_install() {
     install -m 0755 bios-util.py ${D}${bindir}/bios-util
 }
 
+RDEPENDS_${PN} += "python3-core"
+
 FILES_${PN} = "${prefix}/bin"

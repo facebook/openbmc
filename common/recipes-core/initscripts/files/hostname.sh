@@ -7,29 +7,49 @@
 # Default-Stop:
 # Short-Description: Set hostname based on /etc/hostname
 ### END INIT INFO
-HOSTNAME=$(/bin/hostname)
+HOSTNAME="bmc-oob"
 
-NAME=""
-retries=0
-while [ $retries -lt 5 ]; do
-  IP=$(ip a s eth0 | sed -nr 's, *inet6 ([0-9a-f:]+)/64.*,\1,p; T; q')
-  NAME=$(nslookup $IP | sed -nr '$s,.* ,,p')
-  if [ "$NAME" != "$IP" ]; then
-    echo $NAME > /etc/hostname
-    break
+set_hostname() {
+  local name=$1
+  # Update /etc configuration and persistent cache.
+  echo $name > /etc/hostname
+  echo $name > /mnt/data/hostname
+  # Set hostname
+  hostname $name
+  # Reload/Restart any services needing the updated hostname
+  /etc/init.d/syslog reload
+}
+
+update_hostname() {
+  # Wait till DHCP gets its IP addresses.
+  sleep 15
+  # Do a DNS lookup for each IP address on eth0 to find a hostname.
+  FOUND_NAME=""
+  for ip in $(ip a s eth0 | sed -nr 's, *inet6? ([0-9a-f:.]+)\/.*,\1,p'); do
+    dns_ptr=$(nslookup $ip | sed -nr '$s,.* ,,p')
+    if [ "$dns_ptr" != "$ip" ]; then
+        FOUND_NAME=$dns_ptr
+        break
+    fi
+	done
+
+  # nslookup didn't return anything. Do not update files.
+  [[ -z $FOUND_NAME ]] && return 0
+
+  # Only update if the hostname is different from the one set
+  # at bootup.
+  if [ "$HOSTNAME" != "$FOUND_NAME" ]; then
+    set_hostname $FOUND_NAME
+    logger "Hostname changed from $HOSTNAME to $FOUND_NAME"
   fi
-  retries=$((retries + 1))
-  sleep 1
-done
+}
 
-hostname -b -F /etc/hostname 2> /dev/null
-if [ $? -eq 0 ]; then
-	exit
+if [ -e /mnt/data/hostname ]; then
+  # Use the cached copy to set the hostname
+  HOSTNAME=$(cat /mnt/data/hostname)
 fi
+set_hostname $HOSTNAME
+# Start the update process in the background so
+# we may update the cached copy if it has changed.
+(update_hostname &)&
 
-# Busybox hostname doesn't support -b so we need implement it on our own
-if [ -f /etc/hostname ];then
-	hostname `cat /etc/hostname`
-elif [ -z "$HOSTNAME" -o "$HOSTNAME" = "(none)" -o ! -z "`echo $HOSTNAME | sed -n '/^[0-9]*\.[0-9].*/p'`" ] ; then
-	hostname localhost
-fi

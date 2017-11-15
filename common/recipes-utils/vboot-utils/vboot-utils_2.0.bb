@@ -17,8 +17,13 @@ DEPENDS = "python3"
 RDEPEND_${PN}-python3 += "python3 python3-argparse"
 
 PACKAGES += "${PN}-python3"
-
-inherit distutils3 python-dir
+inherit distutils3
+python() {
+  if d.getVar('DISTRO_CODENAME', True) == 'rocko':
+    d.setVar('INHERIT', 'python3-dir')
+  else:
+    d.setVar('INHERIT', 'python-dir')
+}
 
 do_compile() {
   # No-op

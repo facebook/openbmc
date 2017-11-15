@@ -50,6 +50,7 @@
 // Boot valid flag
 #define BIOS_BOOT_VALID_FLAG (1U << 7)
 #define CMOS_VALID_FLAG      (1U << 1)
+#define FORCE_BOOT_BIOS_SETUP_VALID_FLAG (1U << 2)
 //#define CHASSIS_GET_BOOT_OPTION_SUPPORT
 //#define CHASSIS_SET_BOOT_OPTION_SUPPORT
 #define CONFIG_FBTP 1
@@ -2183,7 +2184,7 @@ oem_set_boot_order(unsigned char *request, unsigned char req_len,
     IsTimerStart[req->payload_id - 1] = false;
   }
 
-  if (req->data[0] & (BIOS_BOOT_VALID_FLAG | CMOS_VALID_FLAG)) {
+  if (req->data[0] & (BIOS_BOOT_VALID_FLAG | CMOS_VALID_FLAG | FORCE_BOOT_BIOS_SETUP_VALID_FLAG)) {
     /*Create timer thread*/
     ret = pthread_create(&bios_timer_tid[req->payload_id - 1], NULL, clear_bios_data_timer, (void *)slot_id);
     if (ret < 0) {

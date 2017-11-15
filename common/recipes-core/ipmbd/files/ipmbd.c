@@ -735,7 +735,7 @@ ipmb_lib_handler(void *bus_num) {
   ipmb_sfd_t *sfd;
   int fd;
   uint8_t *bnum = (uint8_t*) bus_num;
-  char sock_path[20] = {0};
+  char sock_path[24] = {0};
   int rc = 0;
   pthread_attr_t attr;
 
@@ -766,7 +766,7 @@ ipmb_lib_handler(void *bus_num) {
     exit (1);
   }
 
-  sprintf(sock_path, "%s_%d", SOCK_PATH_IPMB, *bnum);
+  snprintf(sock_path, sizeof(sock_path), "%s_%d", SOCK_PATH_IPMB, *bnum);
 
   local.sun_family = AF_UNIX;
   strcpy (local.sun_path, sock_path);

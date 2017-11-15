@@ -237,7 +237,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   struct tm ts;
   char time[64];
   char mfg_id[16];
-  char event_data[4];
+  char event_data[8];
 
   /* Record Type (Byte 2) */
   record_type = (uint8_t) sel[2];

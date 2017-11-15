@@ -766,7 +766,7 @@ static sensor_desc_c cri_sensor[]  =
     {"HSC_VOL:"        , MB_SENSOR_HSC_IN_VOLT      ,"V"},
     {"Fan0:"           , MB_SENSOR_FAN0_TACH        ,"RPM"},
     {"Fan1:"           , MB_SENSOR_FAN1_TACH        ,"RPM"},
-    {"Inlet_TEMP:"     , MB_SENSOR_INLET_TEMP       ,"C"},
+    {"Inlet_TEMP:"   , MB_SENSOR_INLET_REMOTE_TEMP ,"C"},
     {"P0_VR_TEMP:"   , MB_SENSOR_VR_CPU0_VCCIN_TEMP,"C"},
     {"P1_VR_TEMP:"   , MB_SENSOR_VR_CPU1_VCCIN_TEMP,"C"},
     {"P0_VR_Pwr:"    , MB_SENSOR_VR_CPU0_VCCIN_POWER,"W"},

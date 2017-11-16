@@ -96,6 +96,10 @@ enum {
   UPDATE_VR,
 };
 
+enum {
+  DUMP_BIOS = 0,
+};
+
 //Force Intel ME Recovery Command Options
 enum {
   RECOVERY_MODE = 1,
@@ -210,6 +214,7 @@ int bic_request_post_buffer_data(uint8_t slot_id, uint8_t *port_buff, uint8_t *l
 
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 
+int bic_dump_fw(uint8_t slot_id, uint8_t comp, char *path);
 int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 int me_recovery(uint8_t slot_id, uint8_t command);

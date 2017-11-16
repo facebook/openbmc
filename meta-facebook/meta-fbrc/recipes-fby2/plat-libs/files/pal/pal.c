@@ -103,6 +103,7 @@
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
 const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID2_LED_N, GPIO_SYSTEM_ID3_LED_N, GPIO_SYSTEM_ID4_LED_N };  // Identify LED
+const static uint8_t gpio_slot_id_led[] = { 0,  GPIO_SLOT1_LED, GPIO_SLOT2_LED, GPIO_SLOT3_LED, GPIO_SLOT4_LED }; // Slot ID LED on each TL card
 const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N };
 const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
 const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
@@ -1860,6 +1861,24 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 }
 
 int
+pal_get_fan_latch(uint8_t *status) {
+  char path[64] = {0};
+  int val;
+
+  sprintf(path, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (1 == val)
+    *status = 1;
+  else
+    *status = 0;
+
+  return 0;
+}
+
+int
 pal_sled_cycle(void) {
   pal_update_ts_sled();
   // Remove the adm1275 module as the HSC device is busy
@@ -1873,7 +1892,7 @@ pal_sled_cycle(void) {
 
 // Read the Front Panel Hand Switch and return the position
 int
-pal_get_hand_sw(uint8_t *pos) {
+pal_get_hand_sw_physically(uint8_t *pos) {
   int gpio_fd;
   void *gpio_reg;
   uint8_t loc;
@@ -1910,6 +1929,26 @@ pal_get_hand_sw(uint8_t *pos) {
   }
 
   return 0;
+}
+
+int
+pal_get_hand_sw(uint8_t *pos) {
+  char value[MAX_VALUE_LEN];
+  uint8_t loc;
+  int ret;
+
+  ret = edb_cache_get("spb_hand_sw", value);
+  if (!ret) {
+    loc = atoi(value);
+    if ((loc > HAND_SW_BMC) || (loc < HAND_SW_SERVER1)) {
+      return pal_get_hand_sw_physically(pos);
+    }
+
+    *pos = loc;
+    return 0;
+  }
+
+  return pal_get_hand_sw_physically(pos);
 }
 
 // Return the Front panel Power Button
@@ -1954,18 +1993,12 @@ pal_get_rst_btn(uint8_t *status) {
 
 // Update the SLED LED for sled fully seated
 int
-pal_set_sled_led(void) {
+pal_set_sled_led(uint8_t status) {
   char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
-  if (read_device(path, &val)) {
-    return -1;
-  }
 
   memset(path, 0, sizeof(path));
   sprintf(path, GPIO_VAL, GPIO_SLED_SEATED_N);
-  if (val) {
+  if (status) {
     if (write_device(path, "1")) {
       return -1;
     }
@@ -2051,6 +2084,29 @@ pal_set_id_led(uint8_t slot, uint8_t status) {
   }
 
   sprintf(path, GPIO_VAL, gpio_id_led[slot]);
+  if (write_device(path, val)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_set_slot_id_led(uint8_t slot, uint8_t status) {
+  char path[64] = {0};
+  char *val;
+
+  if (slot < 1 || slot > 4) {
+    return -1;
+  }
+
+  if (status) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  sprintf(path, GPIO_VAL, gpio_slot_id_led[slot]);
   if (write_device(path, val)) {
     return -1;
   }
@@ -2297,7 +2353,7 @@ pal_post_enable(uint8_t slot) {
 #endif
     return ret;
   }
-  
+
   if (0 == t->bits.post) {
     t->bits.post = 1;
     ret = bic_set_config(slot, &config);
@@ -2342,10 +2398,6 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
   uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t len;
   int i;
-  
-  if (slot > FBY2_MAX_NUM_SLOTS) {
-    return -1;
-  }
 
   ret = bic_get_post_buf(slot, buf, &len);
   if (ret) {
@@ -4088,40 +4140,29 @@ int pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
 }
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
-int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
 
-   uint8_t pcie_conf = 0x00;
-   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
-   unsigned char *data = res_data;
-   int pcie_type = 0;
+  uint8_t completion_code = CC_SUCCESS;
+  uint8_t pcie_conf = 0x00;
+  uint8_t *data = res_data;
+  int pair_set_type;
 
-   if (read_device(SLOT_FILE, &pcie_type)) {              //Retrieve PCIe configuration type
-     printf("Get slot type failed\n");
-     *res_len = 0;
-     return completion_code;
-   }
+  pair_set_type = pal_get_pair_slot_type(slot);
+  switch (pair_set_type) {
+    case TYPE_CF_A_SV:
+      pcie_conf = 0x0f;
+      break;
+    case TYPE_GP_A_SV:
+      pcie_conf = 0x01;
+      break;
+    default:
+      pcie_conf = 0x00;
+      break;
+  }
 
-   switch(pcie_type)
-   {
-      	case PCIE_CONFIG_4xTL:       //For the configuration of 4x Twin Lakes
-	  pcie_conf = 0x00;
-	break;
-	case PCIE_CONFIG_2xCF_2xTL:  //For the configuration of 2x CF + 2x Twin Lakes
-	  pcie_conf = 0x0f;
-	break;
-	case PCIE_CONFIG_2xGP_2xTL:   //For the configuration of 2x GP + 2x Twin Lakes
-	  pcie_conf = 0x01;
-	break;
-	default :                     //Unknown configuration
-	  *res_len = 0;
-	  return completion_code;
-   }
-
-   *data++ = pcie_conf;
-   *res_len = data - res_data;
-   completion_code = CC_SUCCESS;
-
-   return completion_code;
+  *data++ = pcie_conf;
+  *res_len = data - res_data;
+  return completion_code;
 }
 
 int pal_set_slot_led(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
@@ -4155,7 +4196,7 @@ int pal_set_slot_led(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *
          if (ret < 0) {
            syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
            return completion_code;
-         }         
+         }
        } else {
          completion_code = CC_INVALID_PARAM;
          return completion_code;

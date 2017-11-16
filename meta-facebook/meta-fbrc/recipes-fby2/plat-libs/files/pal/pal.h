@@ -100,8 +100,10 @@ int pal_is_slot_server(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
+int pal_slot_pair_12V_off(uint8_t slot_id);
 int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
+int pal_get_hand_sw_physically(uint8_t *pos);
 int pal_get_hand_sw(uint8_t *pos);
 int pal_switch_vga_mux(uint8_t slot);
 int pal_switch_usb_mux(uint8_t slot);
@@ -113,10 +115,11 @@ int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_get_pwr_btn(uint8_t *status);
 int pal_get_rst_btn(uint8_t *status);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
-int pal_set_sled_led(void);
+int pal_set_sled_led(uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
+int pal_set_slot_id_led(uint8_t slot, uint8_t status);
 int pal_get_fru_list(char *list);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
 int pal_get_fru_name(uint8_t fru, char *name);
@@ -176,6 +179,7 @@ int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res
 void pal_add_cri_sel(char *str);
 uint8_t pal_get_status(void);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_fan_latch(uint8_t *status);
 #ifdef __cplusplus
 } // extern "C"
 #endif

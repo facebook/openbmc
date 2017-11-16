@@ -14,10 +14,10 @@ BicFwBlComponent bicfwbl3("slot3", "bicbl", 3);
 BicFwBlComponent bicfwbl4("slot4", "bicbl", 4);
 
 // Register the BIOS components
-BiosComponent bios1("slot1", "bios", 1);
-BiosComponent bios2("slot2", "bios", 2);
-BiosComponent bios3("slot3", "bios", 3);
-BiosComponent bios4("slot4", "bios", 4);
+//BiosComponent bios1("slot1", "bios", 1);
+//BiosComponent bios2("slot2", "bios", 2);
+//BiosComponent bios3("slot3", "bios", 3);
+//BiosComponent bios4("slot4", "bios", 4);
 
 // Register the ME components
 MeComponent me1("slot1", "me", 1);

@@ -17,8 +17,8 @@
 
 all: gpiointrd 
 
-gpiointrd: gpiointrd.c 
-	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -pthread -lgpio -lfby2_common -lfby2_sensor -std=c99 -o $@ $^ $(LDFLAGS)
+gpiointrd: gpiointrd.c
+	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -pthread -lgpio -lfby2_common -lfby2_sensor -ledb -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

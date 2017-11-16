@@ -15,7 +15,7 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-openbmc \
   ##OEROOT##/meta-openbmc/meta-aspeed \
   ##OEROOT##/meta-openbmc/meta-facebook \
-  ##OEROOT##/meta-openbmc/meta-facebook/meta-fby2 \
+  ##OEROOT##/meta-openbmc/meta-facebook/meta-fbrc \
   ##OEROOT##/meta-openbmc/meta-facebook/meta-python3 \  
   "
 BBLAYERS_NON_REMOVABLE ?= " \

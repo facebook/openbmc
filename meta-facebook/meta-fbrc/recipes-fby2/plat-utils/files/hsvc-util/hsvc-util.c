@@ -54,7 +54,7 @@ activate_hsvc(uint8_t slot_id) {
   int pair_slot_id;
   int runoff_id = slot_id;
   int ret=-1;
-  int status;
+  uint8_t status;
   char tstr[64] = {0};
 
   if (0 == slot_id%2)
@@ -64,13 +64,6 @@ activate_hsvc(uint8_t slot_id) {
 
   pair_set_type = pal_get_pair_slot_type(slot_id);
     
-  /* Check whether the system is 12V off or on */
-  ret = pal_is_server_12v_on(pair_slot_id, &status);
-  if (ret < 0) {
-    syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
-    return -1;
-  }
-
   if (0 != slot_id%2) {
      switch(pair_set_type) {
         case TYPE_SV_A_SV:
@@ -98,13 +91,21 @@ activate_hsvc(uint8_t slot_id) {
   }
 
   if ( SLOT_TYPE_SERVER == fby2_get_slot_type(runoff_id) ) {
-     printf("Delay 30s for graceful-shutdown\n");
-     sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", runoff_id);
-     ret = run_command(cmd);
-     if (0 == ret) {
-       sleep(30);
-     } else {
+     ret = pal_is_server_12v_on(runoff_id, &status);
+     if (ret < 0) {
+       syslog(LOG_ERR, "%s: pal_is_server_12v_on failed", __func__);
        return -1;
+     }
+
+     if (status) {
+       printf("Delay 30s for graceful-shutdown\n");
+       sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", runoff_id);
+       ret = run_command(cmd);
+       if (0 == ret) {
+         sleep(30);
+       } else {
+         return -1;
+       }
      }
   }
 

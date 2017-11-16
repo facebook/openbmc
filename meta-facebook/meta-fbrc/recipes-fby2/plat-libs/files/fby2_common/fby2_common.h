@@ -146,7 +146,11 @@ enum {
 #define GPIOAB5_RESERVED_PIN              221 //GPIOAB5 is reserved and could not be used
 #define GPIOAB6_RESERVED_PIN              222 //GPIOAB6 is reserved and could not be used
 #define GPIOAB7_RESERVED_PIN              223 //GPIOAB7 is reserved and could not be used
-#define GPIO_SLED_SEATED_N                231 //GPIOAC7 
+#define GPIO_SLOT1_LED                    224
+#define GPIO_SLOT2_LED                    225
+#define GPIO_SLOT3_LED                    226
+#define GPIO_SLOT4_LED                    227
+#define GPIO_SLED_SEATED_N                231 //GPIOAC7
 
 int fby2_common_fru_name(uint8_t fru, char *str);
 int fby2_common_fru_id(char *str, uint8_t *fru);

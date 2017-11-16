@@ -35,7 +35,7 @@ binfiles = "gpiointrd \
 
 CFLAGS += " -lbic -lfby2_gpio -lpal "
 
-DEPENDS += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal "
+DEPENDS += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libedb"
 
 pkgdir = "gpiointrd"
 

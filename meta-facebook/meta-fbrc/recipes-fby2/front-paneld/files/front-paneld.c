@@ -30,6 +30,7 @@
 #include <sys/un.h>
 #include <time.h>
 #include <sys/time.h>
+#include <openbmc/edb.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
@@ -55,6 +56,7 @@
 #define LED_ON_TIME_BMC_SELECT 500
 #define LED_OFF_TIME_BMC_SELECT 500
 
+#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 static uint8_t m_pos = 0xff;
@@ -73,22 +75,47 @@ static void *
 debug_card_handler() {
   int curr = -1;
   int prev = -1;
+  int ret;
   uint8_t prsnt = 0;
   uint8_t pos;
-  uint8_t prev_pos = 0xff;
+  uint8_t prev_pos = 0xff, prev_phy_pos = 0xff;
   uint8_t lpc;
-  uint8_t ready = -1;
-  int ret;
+  char str[8];
 
   while (1) {
-    // Get the knob position
+    ret = pal_get_hand_sw_physically(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    if (pos == prev_phy_pos) {
+      goto get_hand_sw_cache;
+    }
+
+    msleep(10);
+    ret = pal_get_hand_sw_physically(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    prev_phy_pos = pos;
+    sprintf(str, "%u", pos);
+    ret = edb_cache_set("spb_hand_sw", str);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+get_hand_sw_cache:
     ret = pal_get_hand_sw(&pos);
     if (ret) {
       goto debug_card_out;
     }
+
+    if (pos == prev_pos) {
+      goto debug_card_prs;
+    }
     m_pos = pos;
 
-    // Switch VGA, USB and UART based on knob position
     ret = pal_switch_vga_mux(pos);
     if (ret) {
       goto debug_card_out;
@@ -99,18 +126,14 @@ debug_card_handler() {
       goto debug_card_out;
     }
 
-    ret = pal_switch_uart_mux(pos);
-    if (ret) {
-      goto debug_card_out;
-    }
-
+debug_card_prs:
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
     if (ret) {
       goto debug_card_out;
     }
     curr = prsnt;
-    
+
     // Check if Debug Card was either inserted or removed
     if (curr != prev) {
       if (!curr) {
@@ -127,26 +150,42 @@ debug_card_handler() {
       }
     }
 
-    // Make sure the server at selected position is ready
-    ret = pal_is_fru_ready(pos, &prsnt);
-    if (ret || !prsnt) {
-      goto debug_card_done;
-    }
-    
-    // Enable POST codes for all slots
-    ret = pal_post_enable(pos);
-    if (ret) {
-      goto debug_card_done;
-    }
+    // If Debug Card is present
+    if (curr) {
+      if ((pos == prev_pos) && (curr == prev)) {
+        goto debug_card_out;
+      }
 
-    // Get last post code
-    ret = pal_post_get_last(pos, &lpc);
-    if (ret) {
-      goto debug_card_done;
-    }
+      // Switch UART mux based on hand switch
+      ret = pal_switch_uart_mux(pos);
+      if (ret) {
+        goto debug_card_out;
+      }
 
-    // If debug card present
-    if (prsnt) {
+      // Enable POST code based on hand switch
+      if (pos == HAND_SW_BMC) {
+        // For BMC, there is no need to have POST specific code
+        goto debug_card_done;
+      }
+
+      // Make sure the server at selected position is ready
+      ret = pal_is_fru_ready(pos, &prsnt);
+      if (ret || !prsnt) {
+        goto debug_card_done;
+      }
+
+      // Enable POST codes for all slots
+      ret = pal_post_enable(pos);
+      if (ret) {
+        goto debug_card_done;
+      }
+
+      // Get last post code and display it
+      ret = pal_post_get_last(pos, &lpc);
+      if (ret) {
+        goto debug_card_done;
+      }
+
       ret = pal_post_handle(pos, lpc);
       if (ret) {
         goto debug_card_out;
@@ -476,13 +515,6 @@ led_sync_handler() {
 #endif
 
   while (1) {
-    // Handle Sled fully seated 
-    ret = pal_set_sled_led();
-    if (0 != ret) {
-      sleep(1);
-      continue;
-    }
-
     // Handle Slot IDENTIFY condition
     memset(identify, 0x0, 16);
     ret = pal_get_key_value("identify_sled", identify);
@@ -596,6 +628,7 @@ led_sync_handler() {
           g_sync_led[slot] = 1;
           pal_set_led(slot, LED_OFF);
           pal_set_id_led(slot, ID_LED_ON);
+          pal_set_slot_id_led(slot, LED_OFF); // Slot ID LED on top of each TL
         } else {
           g_sync_led[slot] = 0;
         }
@@ -606,6 +639,7 @@ led_sync_handler() {
       for (slot = 1; slot <=4; slot++) {
         if (id_arr[slot]) {
           pal_set_id_led(slot, ID_LED_OFF);
+          pal_set_slot_id_led(slot, LED_ON); // Slot ID LED on top of each TL
         }
       }
 
@@ -620,6 +654,53 @@ led_sync_handler() {
   }
 }
 
+// Thread to handle Seat LED state
+static void *
+seat_led_handler() {
+  int ret;
+  char identify[16] = {0};
+  char tstr[64] = {0};
+  uint8_t slot, val;
+  int ident;
+
+  while (1) {
+    ret = pal_get_fan_latch(&val);
+    if (ret < 0) {
+      msleep(500);
+      continue;
+    }
+
+    // Handle Sled fully seated
+    if (val) { // SLED is pull out
+      pal_set_sled_led(LED_ON);
+    } else {   // SLED is fully pull in
+      ident = 0;
+      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
+        sprintf(tstr, "identify_slot%d", slot);
+        memset(identify, 0x0, 16);
+        ret = pal_get_key_value(tstr, identify);
+        if (ret == 0 && !strcmp(identify, "on")) {
+          ident = 1;
+        }
+      }
+
+      // Start blinking the SEAT LED
+      if (1 == ident) {
+        pal_set_sled_led(LED_ON);
+        msleep(LED_ON_TIME_IDENTIFY);
+
+        pal_set_sled_led(LED_OFF);
+        msleep(LED_OFF_TIME_IDENTIFY);
+        continue;
+      } else {
+        pal_set_sled_led(LED_OFF);
+      }
+    }
+
+    sleep(1);
+  }
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
@@ -628,6 +709,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_ts;
   pthread_t tid_sync_led;
   pthread_t tid_led;
+  pthread_t tid_seat_led;
   int rc;
   int pid_file;
 
@@ -673,12 +755,18 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_seat_led, NULL, seat_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for seat led error\n");
+    exit(1);
+  }
+
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_ts, NULL);
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_led, NULL);
+  pthread_join(tid_seat_led, NULL);
 
   return 0;
 }

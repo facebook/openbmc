@@ -37,12 +37,11 @@ SRC_URI += "file://setup-rest-api.sh \
             file://node_health.py \
             file://node_peb.py \
             file://node_fcb.py \
-            file://node_identify.py \
             file://node_flash.py \
             file://node_pdpb.py \
            "
 
-binfiles += "setup-rest-api.sh plat_tree.py node_api.py node_bmc.py node_fruid.py node_sensors.py node_logs.py node_fans.py node_health.py node_peb.py node_fcb.py node_identify.py node_flash.py node_pdpb.py"
+binfiles += "setup-rest-api.sh plat_tree.py node_api.py node_bmc.py node_fruid.py node_sensors.py node_logs.py node_fans.py node_health.py node_peb.py node_fcb.py node_flash.py node_pdpb.py"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

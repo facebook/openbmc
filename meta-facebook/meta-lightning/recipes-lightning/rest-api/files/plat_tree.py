@@ -16,7 +16,6 @@ from node_logs import get_node_logs
 from node_flash import get_node_flash
 from node_bmc import get_node_bmc
 from node_health import get_node_health
-from node_identify import get_node_identify
 from tree import tree
 from pal import *
 
@@ -73,9 +72,6 @@ def init_plat_tree():
     r_peb.addChild(r_temp)
     #Add /api/peb/health end point
     r_temp = tree("health", data = get_node_health())
-    r_peb.addChild(r_temp)
-    #Add /api/peb/identify end point
-    r_temp = tree("identify", data = get_node_identify("peb"))
     r_peb.addChild(r_temp)
     #Add /api/peb/logs end point
     r_temp = tree("logs", data = get_node_logs("peb"))

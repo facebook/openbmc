@@ -53,7 +53,8 @@ Protocol 2
 # but this is overridden so installations will only check .ssh/authorized_keys
 AuthorizedKeysFile .ssh/authorized_keys
 
-#AuthorizedPrincipalsFile none
+TrustedUserCAKeys /mnt/data/etc/ssh/trusted_ca
+AuthorizedPrincipalsFile /mnt/data/etc/ssh/auth_principals/auth_principals_%u
 
 #AuthorizedKeysCommand none
 #AuthorizedKeysCommandUser nobody

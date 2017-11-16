@@ -58,8 +58,13 @@ class bmcNode(node):
         name = pal_get_platform_name().decode()
 
         # Get MAC Address
-        mac = open('/sys/class/net/eth0/address').read()
-        mac_addr = mac[0:17].upper()
+        mac_path = "/sys/class/net/eth0/address"
+        if os.path.isfile(mac_path):
+            mac = open('/sys/class/net/eth0/address').read()
+            mac_addr = mac[0:17].upper()
+        else:
+            mac = get_mac()
+            mac_addr = ':'.join(("%012X" % mac)[i:i+2] for i in range(0, 12, 2))
 
         # Get BMC Reset Reason
         wdt_counter = Popen('devmem 0x1e785010', \
@@ -78,8 +83,9 @@ class bmcNode(node):
             reset_reason = "User Initiated Reset or WDT Reset"
 
         # Get BMC's Up Time
-        uptime = Popen('uptime', \
+        data = Popen('uptime', \
                         shell=True, stdout=PIPE).stdout.read().decode()
+        uptime = data.strip()
 
         # Get Usage information
         data = Popen('top -b n1', \

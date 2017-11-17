@@ -1027,13 +1027,48 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   return 0;
 }
 
+bool
+pal_is_hsvc_ongoing(uint8_t slot_id) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "fru%u_hsvc", slot_id);
+  if (edb_cache_get(key, value)) {
+     return false;
+  }
+
+  if (atoi(value))
+     return true;
+
+  return false;
+}
+
+int
+pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident) {
+  char key[MAX_KEY_LEN];
+
+  sprintf(key, "fru%u_hsvc", slot_id);
+  if (edb_cache_set(key, (status) ? "1" : "0")) {
+     return -1;
+  }
+
+  if (ident) {
+    sprintf(key, "identify_slot%u", slot_id);
+    if (pal_set_key_value(key, (status) ? "on" : "off")) {
+      syslog(LOG_ERR, "pal_set_key_value: set %s failed", key);
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
 static void
 pal_hot_service_action(uint8_t slot_id) {
   uint8_t pair_slot_id;
   char cmd[128] = {0};
   char hspath[80] = {0};
   int ret=-1;
-  char tstr[64] = {0};
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
@@ -1055,11 +1090,7 @@ pal_hot_service_action(uint8_t slot_id) {
         syslog(LOG_ERR, "%s: pal_fruid_init failed",__func__);
 
      pal_system_config_check(slot_id);
-     sprintf(tstr, "identify_slot%d", slot_id);
-     ret = pal_set_key_value(tstr, "off");
-     if (ret < 0) {
-       syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
-     }
+     pal_set_hsvc_ongoing(slot_id, 0, 1);
   }
 
   // Check if pair slot is swap

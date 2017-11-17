@@ -37,6 +37,7 @@
 
 #define BTN_MAX_SAMPLES   200
 #define BTN_POWER_OFF     40
+#define BTN_HSVC          100
 #define MAX_NUM_SLOTS 4
 #define HB_SLEEP_TIME (5 * 60)
 #define HB_TIMESTAMP_COUNT (60 * 60 / HB_SLEEP_TIME)
@@ -261,10 +262,10 @@ rst_btn_out:
 // Thread to handle Power Button and power on/off the selected server
 static void *
 pwr_btn_handler() {
-  int ret;
+  int ret, i;
   uint8_t pos, btn, cmd;
-  int i;
-  uint8_t power;
+  uint8_t power, st_12v = 0;
+  char tstr[64];
 
   while (1) {
     // Check the position of hand switch
@@ -280,46 +281,69 @@ pwr_btn_handler() {
       goto pwr_btn_out;
     }
 
-    syslog(LOG_WARNING, "power button pressed\n");
+    syslog(LOG_WARNING, "Power button pressed\n");
 
     // Wait for the button to be released
-    for (i = 0; i < BTN_POWER_OFF; i++) {
+    for (i = 0; i < BTN_HSVC; i++) {
       ret = pal_get_pwr_btn(&btn);
       if (ret || btn ) {
         msleep(100);
         continue;
       }
-      syslog(LOG_WARNING, "power button released\n");
+      syslog(LOG_WARNING, "Power button released\n");
       break;
     }
 
-
     // Get the current power state (power on vs. power off)
-    if (pos != HAND_SW_BMC)
-    {
-      ret = pal_get_server_power(pos, &power);
+    if (pos != HAND_SW_BMC) {
+      ret = pal_is_server_12v_on(pos, &st_12v);
       if (ret) {
         goto pwr_btn_out;
       }
-      // Set power command should reverse of current power state
-      cmd = !power;
+
+      if (i >= BTN_HSVC) {
+        pal_update_ts_sled();
+        syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
+
+        if (!pal_is_hsvc_ongoing(pos) || st_12v) {
+          sprintf(tstr, "/usr/bin/hsvc-util slot%u --start", pos);
+          run_command(tstr);
+          goto pwr_btn_out;
+        }
+      }
+
+      if (st_12v) {
+        ret = pal_get_server_power(pos, &power);
+        if (ret) {
+          goto pwr_btn_out;
+        }
+        // Set power command should reverse of current power state
+        cmd = !power;
+      }
     }
 
     // To determine long button press
     if (i >= BTN_POWER_OFF) {
       // if long press (>4s) and hand-switch position == bmc, then initiate
       // sled-cycle
-      if (pos == HAND_SW_BMC)
-      {
+      if (pos == HAND_SW_BMC) {
+        pal_update_ts_sled();
         syslog(LOG_CRIT, "SLED_CYCLE using power button successful");
         sleep(1);
         pal_sled_cycle();
       } else {
         pal_update_ts_sled();
         syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
+
+        if (!st_12v) {
+          sprintf(tstr, "/usr/bin/hsvc-util slot%u --stop", pos);
+          run_command(tstr);
+          sprintf(tstr, "/usr/local/bin/power-util slot%u 12V-on", pos);
+          run_command(tstr);
+          goto pwr_btn_out;
+        }
       }
     } else {
-
       // If current power state is ON and it is not a long press,
       // the power off should be Graceful Shutdown
       if (power == SERVER_POWER_ON)
@@ -329,12 +353,14 @@ pwr_btn_handler() {
       syslog(LOG_CRIT, "Power Button Press for FRU: %d\n", pos);
     }
 
-    if (pos != HAND_SW_BMC) {
+    if ((pos != HAND_SW_BMC) && st_12v) {
       if (cmd == SERVER_POWER_ON)
         pal_set_restart_cause(pos, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+
       // Reverse the power state of the given server
       ret = pal_set_server_power(pos, cmd);
     }
+
 pwr_btn_out:
     msleep(100);
   }
@@ -658,8 +684,6 @@ led_sync_handler() {
 static void *
 seat_led_handler() {
   int ret;
-  char identify[16] = {0};
-  char tstr[64] = {0};
   uint8_t slot, val;
   int ident;
 
@@ -676,10 +700,7 @@ seat_led_handler() {
     } else {   // SLED is fully pull in
       ident = 0;
       for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
-        sprintf(tstr, "identify_slot%d", slot);
-        memset(identify, 0x0, 16);
-        ret = pal_get_key_value(tstr, identify);
-        if (ret == 0 && !strcmp(identify, "on")) {
+        if (pal_is_hsvc_ongoing(slot)) {
           ident = 1;
         }
       }

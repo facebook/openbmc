@@ -101,6 +101,8 @@ int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
 int pal_slot_pair_12V_off(uint8_t slot_id);
+bool pal_is_hsvc_ongoing(uint8_t slot_id);
+int pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident);
 int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_hand_sw_physically(uint8_t *pos);
@@ -134,8 +136,7 @@ int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
-int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh,
-    void *value);
+int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value);
 int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
 int pal_set_def_key_value();
@@ -153,8 +154,7 @@ int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_fruid_write(uint8_t slot, char *path);
 int pal_is_bmc_por(void);
-int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
-    uint8_t o_val, uint8_t n_val);
+int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name, uint8_t o_val, uint8_t n_val);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
 int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);

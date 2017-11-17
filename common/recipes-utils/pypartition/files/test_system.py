@@ -44,22 +44,22 @@ class TestSystem(unittest.TestCase):
         self.mock_mtd.size = 1
         self.mock_mtd.file_name = '/dev/mtd99'
 
-    def test_get_mtds_single_full_mode(self):
+    @patch.object(system, 'open', create=True)
+    def test_get_mtds_single_full_mode(self, mocked_open):
         for name in ['flash0', 'flash', 'Partition_000']:
             data = textwrap.dedent('''\
             dev:    size   erasesize  name
             mtd0: 02000000 00010000 "{}"
             ''').format(name)
-            with patch.object(
-                system, "open", mock_open(read_data=data), create=True
-            ):
-                for mtds in system.get_mtds():
-                    self.assertEqual(len(mtds), 1)
-                    self.assertEqual(mtds[0].file_name, '/dev/mtd0')
-                    self.assertEqual(mtds[0].size, 0x2000000)
-                    self.assertEqual(mtds[0].device_name, name)
+            mocked_open.return_value = mock_open(read_data=data).return_value
+            for mtds in system.get_mtds():
+                self.assertEqual(len(mtds), 1)
+                self.assertEqual(mtds[0].file_name, '/dev/mtd0')
+                self.assertEqual(mtds[0].size, 0x2000000)
+                self.assertEqual(mtds[0].device_name, name)
 
-    def test_get_mtds_dual_super_fit_mode(self):
+    @patch.object(system, 'open', create=True)
+    def test_get_mtds_dual_super_fit_mode(self, mocked_open):
         for order in [(0, 1), (1, 0)]:
             data = textwrap.dedent('''\
                 dev:    size   erasesize  name
@@ -76,21 +76,19 @@ class TestSystem(unittest.TestCase):
                 mtd10: 00400000 00010000 "dataro"
                 mtd11: 02000000 00010000 "flash{}"
             ''').format(order[0], order[1])
-            with patch.object(
-                system, "open", mock_open(read_data=data), create=True
-            ):
-                (full_mtds, all_mtds) = system.get_mtds()
-                self.assertEqual(len(full_mtds), 2)
-                self.assertEqual(full_mtds[0].device_name, 'flash1')
-                self.assertEqual(len(all_mtds), 12)
+            mocked_open.return_value = mock_open(read_data=data).return_value
+            (full_mtds, all_mtds) = system.get_mtds()
+            self.assertEqual(len(full_mtds), 2)
+            self.assertEqual(full_mtds[0].device_name, 'flash1')
+            self.assertEqual(len(all_mtds), 12)
 
-    def test_flash_too_big(self):
+    @patch.object(subprocess, 'check_output')
+    def test_flash_too_big(self, mocked_check_output):
         self.mock_image.size = 2
-        with patch.object(subprocess, 'check_output') as mock_check_output:
-            with self.assertRaises(SystemExit) as context_manager:
-                system.flash(1, self.mock_image, self.mock_mtd, self.logger)
-                mock_check_output.assert_not_called()
-                self.assertEqual(context_manager.exception.code, 1)
+        with self.assertRaises(SystemExit) as context_manager:
+            system.flash(1, self.mock_image, self.mock_mtd, self.logger)
+            mocked_check_output.assert_not_called()
+            self.assertEqual(context_manager.exception.code, 1)
 
     @patch.object(system, 'open', create=True)
     @patch.object(system, 'glob', return_value=['/proc/123/cmdline',
@@ -157,6 +155,9 @@ class TestSystem(unittest.TestCase):
             failures = combination // 10
             if attempts > failures + 1:
                 continue
+            # Create a new one every iteration, instead of reusing a single
+            # patch decorator instance, to make debugging failed call count
+            # assertions simple.
             with patch.object(subprocess, 'check_call') as mocked_check_call:
                 return_values = [MagicMock()]
                 flashcp = call(['flashcp', self.mock_image.file_name,
@@ -170,9 +171,9 @@ class TestSystem(unittest.TestCase):
                 mocked_check_call.side_effect = return_values
                 system.flash(attempts, self.mock_image, self.mock_mtd,
                              self.logger)
-                mocked_other_flasher_running.assert_called()
+                self.assertNotEqual(mocked_other_flasher_running.call_count, 0)
                 if attempts == 0:
-                    mocked_check_call.assert_called_once()
+                    self.assertEqual(mocked_check_call.call_count, 1)
                     self.assertNotEqual(mocked_check_call.call_args[0][0],
                                         'flashcp')
                 else:

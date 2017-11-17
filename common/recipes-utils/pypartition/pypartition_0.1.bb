@@ -43,9 +43,9 @@ do_lint() {
   flake8 *.py
   mypy *.py
 }
-addtask do_lint after do_unpack
+addtask do_lint after do_build
 
 do_unit_test() {
   python3 -m unittest discover
 }
-addtask do_unit_test after do_unpack
+addtask do_unit_test after do_build

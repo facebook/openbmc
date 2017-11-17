@@ -46,6 +46,6 @@ do_lint() {
 addtask do_lint after do_unpack
 
 do_unit_test() {
-  python -m unittest discover
+  python3 -m unittest discover
 }
 addtask do_unit_test after do_unpack

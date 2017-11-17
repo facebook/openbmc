@@ -22,6 +22,7 @@ from __future__ import unicode_literals
 from __future__ import division
 
 import logging
+import os
 import subprocess
 import system
 import textwrap
@@ -35,11 +36,13 @@ except ImportError:
 
 class TestSystem(unittest.TestCase):
     def setUp(self):
-        logging.root.setLevel(logging.DEBUG)
+        self.logger = MagicMock()
         self.mock_image = MagicMock()
         self.mock_image.size = 1
+        self.mock_image.file_name = '/tmp/myimagefile'
         self.mock_mtd = MagicMock()
         self.mock_mtd.size = 1
+        self.mock_mtd.file_name = '/dev/mtd99'
 
     def test_get_mtds_single_full_mode(self):
         for name in ['flash0', 'flash', 'Partition_000']:
@@ -85,52 +88,112 @@ class TestSystem(unittest.TestCase):
         self.mock_image.size = 2
         with patch.object(subprocess, 'check_output') as mock_check_output:
             with self.assertRaises(SystemExit) as context_manager:
-                system.flash(1, self.mock_image, self.mock_mtd, MagicMock())
+                system.flash(1, self.mock_image, self.mock_mtd, self.logger)
                 mock_check_output.assert_not_called()
                 self.assertEqual(context_manager.exception.code, 1)
 
-    def test_flash_competition(self):
-        with patch.object(subprocess, 'check_output') as mock_check_output:
-            mock_check_output.side_effect = '1234567'
-            with self.assertRaises(SystemExit) as context_manager:
-                system.flash(1, self.mock_image, self.mock_mtd, MagicMock())
-                mock_check_output.assert_called_once()
-                self.assertEqual(context_manager.exception.code, 1)
+    @patch.object(system, 'open', create=True)
+    @patch.object(system, 'glob', return_value=['/proc/123/cmdline',
+                                                '/proc/self/cmdline'])
+    @patch.object(os, 'getpid', return_value=123)
+    def test_other_flasher_running_skip_self(
+        self, mocked_getpid, mocked_glob, mocked_open
+    ):
+        self.assertEqual(system.other_flasher_running(self.logger), False)
+        mocked_open.assert_not_called()
 
-    def test_flash_retries(self):
-        self.mock_image.file_name = '/tmp/myimagefile'
-        self.mock_mtd.file_name = '/dev/mtd99'
-        with patch.object(subprocess, 'check_output') as mock_check_output:
-            mock_check_output.side_effect = subprocess.CalledProcessError(
-                321, 'command', 'output'
-            )
-            for combination in range(100):
-                attempts = combination % 10
-                failures = combination // 10
-                if attempts > failures + 1:
-                    continue
-                with patch.object(subprocess, 'check_call') as mock_check_call:
-                    return_values = [MagicMock()]
-                    flashcp = call(['flashcp', self.mock_image.file_name,
-                                    self.mock_mtd.file_name])
-                    calls = []
-                    for _ in range(min(attempts, failures)):
-                        return_values.insert(
-                            0, subprocess.CalledProcessError(255, 'in', 'out')
-                        )
-                        calls.append(flashcp)
-                    mock_check_call.side_effect = return_values
-                    system.flash(attempts, self.mock_image, self.mock_mtd,
-                                 MagicMock())
-                    mock_check_output.assert_called_once()
-                    if attempts == 0:
-                        mock_check_call.assert_called_once()
-                        self.assertNotEqual(mock_check_call.call_args[0][0],
-                                            'flashcp')
-                    else:
-                        mock_check_call.assert_has_calls(calls)
+    @patch.object(system, 'open', create=True)
+    @patch.object(system, 'glob')
+    @patch.object(os, 'getpid', return_value=123)
+    def test_other_flasher_running_return_false(
+        self, mocked_getpid, mocked_glob, mocked_open
+    ):
+        read_data = [
+            b'runsv\x00/etc/sv/restapi\x00',
+            b'/usr/bin/mTerm_server\x00wedge\x00/dev/ttyS1\x00',
+            b'/usr/sbin/ntpd\x00-p\x00/var/run/ntpd.pid\x00-g\x00',
+            b'\x00',
+        ]
+        # Return the full list of /proc/$pid/cmdline from a single glob() call
+        mocked_glob.return_value = [
+            '/proc/{}/cmdline'.format(200 + i) for i in range(len(read_data))
+        ]
+        # Return just one cmdline from each open().read()
+        mocked_open.side_effect = [
+            mock_open(read_data=datum).return_value for datum in read_data
+        ]
+        self.assertEqual(system.other_flasher_running(self.logger), False)
 
-    def test_reboot(self):
+    @patch.object(system, 'open', create=True)
+    @patch.object(system, 'glob', return_value=['/proc/456/cmdline'])
+    @patch.object(os, 'getpid', return_value=123)
+    def test_other_flasher_running_return_true(
+        self, mocked_getpid, mocked_glob, mocked_open
+    ):
+        read_data = [
+            b'python\x00/usr/local/bin/psu-update-delta.py\x00',
+            b'jbi\x00-i\x00/tmp/WEDGE100_SYSCPLD_v6_101.jbc\x00',
+        ]
+        for datum in read_data:
+            mocked_open.return_value = mock_open(read_data=datum).return_value
+            self.assertEqual(system.other_flasher_running(self.logger), True)
+
+    @patch.object(system, 'other_flasher_running', return_value=True)
+    @patch.object(subprocess, 'check_call')
+    def test_flash_while_flashing_refused(
+        self, mocked_check_call, mocked_other_flasher_running
+    ):
+        with self.assertRaises(SystemExit) as context_manager:
+            system.flash(1, self.mock_image, self.mock_mtd, self.logger)
+            mocked_check_call.assert_not_called()
+            self.assertEqual(context_manager.exception.code, 1)
+
+    @patch.object(system, 'other_flasher_running', return_value=False)
+    def test_flash_retries(
+        self, mocked_other_flasher_running
+    ):
+        for combination in range(100):
+            attempts = combination % 10
+            failures = combination // 10
+            if attempts > failures + 1:
+                continue
+            with patch.object(subprocess, 'check_call') as mocked_check_call:
+                return_values = [MagicMock()]
+                flashcp = call(['flashcp', self.mock_image.file_name,
+                                self.mock_mtd.file_name])
+                calls = []
+                for _ in range(min(attempts, failures)):
+                    return_values.insert(
+                        0, subprocess.CalledProcessError(255, 'in', 'out')
+                    )
+                    calls.append(flashcp)
+                mocked_check_call.side_effect = return_values
+                system.flash(attempts, self.mock_image, self.mock_mtd,
+                             self.logger)
+                mocked_other_flasher_running.assert_called()
+                if attempts == 0:
+                    mocked_check_call.assert_called_once()
+                    self.assertNotEqual(mocked_check_call.call_args[0][0],
+                                        'flashcp')
+                else:
+                    mocked_check_call.assert_has_calls(calls)
+
+    @patch.object(system, 'other_flasher_running', return_value=True)
+    @patch.object(subprocess, 'call')
+    def test_reboot_while_flashing_refused(
+        self, mocked_call, mocked_other_flasher_running
+    ):
+        with self.assertRaises(SystemExit) as context_manager:
+            system.reboot(False, 'testing', self.logger)
+            mocked_call.assert_not_called()
+            self.assertEqual(context_manager.exception.code, 1)
+
+    @patch.object(system, 'other_flasher_running', return_value=False)
+    @patch.object(subprocess, 'call')
+    @patch.object(logging, 'shutdown')
+    def test_reboot(
+        self, mocked_shutdown, mocked_call, mocked_other_flasher_running
+    ):
         inputs_outputs = [
             (True, [
                 'wall',
@@ -139,9 +202,7 @@ class TestSystem(unittest.TestCase):
             (False, ['shutdown', '-r', 'now', 'pypartition is testing.']),
         ]
         for (dry_run, expected_arguments) in inputs_outputs:
-            with patch.object(subprocess, 'call') as mock_call:
-                with patch.object(logging, 'shutdown') as mock_shutdown:
-                    with self.assertRaises(SystemExit):
-                        system.reboot(dry_run, 'testing', MagicMock())
-                        mock_call.assert_called_with(expected_arguments)
-                        mock_shutdown.assert_called()
+            with self.assertRaises(SystemExit):
+                system.reboot(dry_run, 'testing', self.logger)
+                mocked_call.assert_called_with(expected_arguments)
+                mocked_shutdown.assert_called()

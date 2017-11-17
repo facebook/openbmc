@@ -38,6 +38,7 @@ import re
 import subprocess
 import sys
 
+from glob import glob
 
 if False:
     from typing import List, Optional, Tuple, Union
@@ -240,6 +241,42 @@ def run_verbosely(command, logger):
     subprocess.check_call(command)
     logger.info('Finished running `{}`.'.format(command_string))
 
+def other_flasher_running(logger):
+    # type: (logging.Logger) -> bool
+    basenames = [
+        b'autodump.sh', b'cpld_upgrade.sh', b'dd', b'flash_eraseall', b'flashcp',
+        b'flashrom', b'fw-util', b'fw_setenv', b'improve_system.py', b'jbi',
+        b'psu-update-bel.py', b'psu-update-delta.py',
+    ]
+    running_flashers = {}
+
+    our_cmdline = ['/proc/self/cmdline', '/proc/thread-self/cmdline',
+        '/proc/{}/cmdline'.format(os.getpid())]
+
+    for cmdline_file in glob('/proc/*/cmdline'):
+        if cmdline_file in our_cmdline:
+            continue
+        try:
+            with open(cmdline_file, 'rb') as cmdline:
+                # Consider all command line parameters so `python foo.py` and
+                # `foo.py` are both detected.
+                for parameter in cmdline.read().split(b'\x00'):
+                    basename = os.path.basename(parameter)
+                    if basename in basenames:
+                        if basename in running_flashers.keys():
+                            running_flashers[basename] += 1
+                        else:
+                            running_flashers[basename] = 1
+        # Processes and their respective files in procfs naturally come and go.
+        except IOError:
+            pass
+
+    if running_flashers == {}:
+        return False
+
+    message = '{} running.'.format(b','.join(running_flashers.keys()).decode())
+    logger.error(message)
+    return True
 
 def flash(attempts, image_file, mtd, logger):
     # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger) -> None
@@ -247,16 +284,8 @@ def flash(attempts, image_file, mtd, logger):
         logger.error('{} is too big for {}.'.format(image_file, mtd))
         sys.exit(1)
 
-    for application in ['flashcp', 'fw_setenv']:
-        try:
-            pid = subprocess.check_output(['pidof', application]).strip()
-        except subprocess.CalledProcessError:
-            pass
-        else:
-            logger.error('{} appears to be running as pid {}'.format(
-                application, pid
-            ))
-            sys.exit(1)
+    if other_flasher_running(logger):
+        sys.exit(1)
 
     # TODO only write bytes that have changed
     flash_command = ['flashcp', image_file.file_name, mtd.file_name]
@@ -283,6 +312,10 @@ def flash(attempts, image_file, mtd, logger):
 # concurrently by rebooting as soon as possible after verification.
 def reboot(dry_run, reason, logger):
     # type: (bool, str, logging.Logger) -> None
+
+    if other_flasher_running(logger):
+        sys.exit(1)
+
     reboot_command = ['shutdown', '-r', 'now',
                       'pypartition is {}.'.format(reason)]
     if dry_run:

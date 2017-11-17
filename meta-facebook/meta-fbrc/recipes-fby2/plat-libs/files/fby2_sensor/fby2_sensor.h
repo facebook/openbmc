@@ -45,7 +45,7 @@ typedef struct _sensor_info_t {
   sdr_full_t sdr;
 } sensor_info_t;
 
-// Sensors under Bridge IC
+// Sensors under Bridge IC (TwinLake)
 enum {
   BIC_SENSOR_MB_INLET_TEMP = 0x01,
   BIC_SENSOR_VCCIN_VR_TEMP = 0x02,
@@ -122,6 +122,53 @@ enum {
   BIC_SENSOR_CAT_ERR = 0xEB, //Event-only
 };
 
+
+// Sensors under Bridge IC (RC)
+enum {
+  BIC_RC_SENSOR_OUTLET_TEMP = 0x01,
+  BIC_RC_SENSOR_INLET_TEMP = 0x02,
+  BIC_RC_SENSOR_SYS_SOC_TEMP_L = 0x03,
+  BIC_RC_SENSOR_SYS_SOC_TEMP_R = 0x04,
+  BIC_RC_SENSOR_NVME_1CTEMP = 0x05,
+  BIC_RC_SENSOR_P12V_MB = 0x0A,
+  BIC_RC_SENSOR_P3V3_STBY_MB = 0x0B,
+  BIC_RC_SENSOR_P3V2_MB = 0x0C,
+  BIC_RC_SENSOR_PV_BAT = 0x0D,
+  BIC_RC_SENSOR_PVDDQ_423 = 0x0E,
+  BIC_RC_SENSOR_PVDDQ_510 = 0x0F,
+  BIC_RC_SENSOR_SOC_TEMP = 0x14,
+  BIC_RC_SENSOR_PMF2432_TEMP = 0x15,
+  BIC_RC_SENSOR_PMF2344_TEMP = 0x16,
+  BIC_RC_SENSOR_CVR_APC_TEMP = 0x17,
+  BIC_RC_SENSOR_CVR_CBF_TEMP = 0x18,
+  BIC_RC_SENSOR_SOC_DIMM2_TEMP = 0x19,
+  BIC_RC_SENSOR_SOC_DIMM3_TEMP = 0x1A,
+  BIC_RC_SENSOR_SOC_DIMM4_TEMP = 0x1B,
+  BIC_RC_SENSOR_SOC_DIMM5_TEMP = 0x1C,
+  BIC_RC_SENSOR_SOC_PWR = 0x1D,
+  BIC_RC_SENSOR_PVDDQ_423_VR_TEMP = 0x28,
+  BIC_RC_SENSOR_PVDDQ_510_VR_TEMP = 0x29,
+  BIC_RC_SENSOR_PVDDQ_423_VR_VOL = 0x2A,
+  BIC_RC_SENSOR_PVDDQ_510_VR_VOL = 0x2B,
+  BIC_RC_SENSOR_CVR_APC_CURR = 0x30,
+  BIC_RC_SENSOR_CVR_CBF_CURR = 0x31,
+  BIC_RC_SENSOR_PVDDQ_423_VR_POUT = 0x32,
+  BIC_RC_SENSOR_PVDDQ_510_VR_POUT = 0x33,
+  BIC_RC_SENSOR_CVR_APC_POUT = 0x34,
+  BIC_RC_SENSOR_CVR_CBF_POUT = 0x35,
+  BIC_RC_SENSOR_INA230_VOL = 0x36,
+  BIC_RC_SENSOR_INA230_POWER = 0x37,
+  BIC_RC_SENSOR_SYSTEM_STATUS = 0x64, // Discrete
+  BIC_RC_SENSOR_VR_HOT = 0x65,  // Discrete
+  BIC_RC_SENSOR_SYS_BOOTING_STS = 0x66,  // Discrete
+  BIC_RC_SENSOR_PROCHOT_EXT = 0xC8, 
+  BIC_RC_SENSOR_THEM_TRIP = 0xC9,
+  BIC_RC_SENSOR_IMC_BOOT_ERR = 0xCA,
+  BIC_RC_SENSOR_RAS_UNCORR = 0xCB,
+  BIC_RC_SENSOR_RAS_CORR_INFO = 0xCC,
+  BIC_RC_SENSOR_RAS_FATAL = 0xCD,
+};
+
 // Sensors Under Side Plane
 enum {
   SP_SENSOR_INLET_TEMP = 0x81,
@@ -183,9 +230,20 @@ enum {
   MUX_CH_5 = 5,
 };
 
+// Server type
+enum {
+  SERVER_TYPE_RC = 0x0,
+  SERVER_TYPE_TL = 0x1,
+  SERVER_TYPE_NONE = 0xFF,
+};
+
 extern const uint8_t bic_sensor_list[];
 
+extern const uint8_t bic_rc_sensor_list[];
+
 extern const uint8_t bic_discrete_list[];
+
+extern const uint8_t bic_rc_discrete_list[];
 
 extern const uint8_t dc_sensor_list[];
 
@@ -201,7 +259,11 @@ extern const uint8_t nic_sensor_list[];
 
 extern size_t bic_sensor_cnt;
 
+extern size_t bic_rc_sensor_cnt;
+
 extern size_t dc_sensor_cnt;
+
+extern size_t dc_rc_sensor_cnt;
 
 extern size_t bic_discrete_cnt;
 
@@ -218,6 +280,7 @@ int fby2_sensor_sdr_path(uint8_t fru, char *path);
 int fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
 int fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int fby2_get_slot_type(uint8_t fru);
+int fby2_get_server_type(uint8_t fru, uint8_t *type);
 
 
 #ifdef __cplusplus

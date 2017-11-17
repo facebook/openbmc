@@ -1106,16 +1106,32 @@ pal_system_config_check(uint8_t slot_id) {
   char cmd[80] = {0};
   int ret=-1;
   uint8_t value;
+  uint8_t server_type = 0xFF;
   int slot_type = -1;
   int last_slot_type = -1;
   char slot_str[80] = {0};
   char last_slot_str[80] = {0};
 
-  // 0(TwinLake), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
+  // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   slot_type = fby2_get_slot_type(slot_id);
   switch (slot_type) {
      case SLOT_TYPE_SERVER:
-       sprintf(slot_str,"1S Server");
+       ret = fby2_get_server_type(slot_id, &server_type);
+       if (ret) {
+         syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+         return ret; 
+       } 
+       switch (server_type) {
+         case SERVER_TYPE_RC:
+           sprintf(slot_str,"RC"); 
+           break;
+         case SERVER_TYPE_TL:
+           sprintf(slot_str,"Twin Lake");
+           break;
+         default:
+           sprintf(slot_str,"Undefined server type");
+           break;
+       }
        break;
      case SLOT_TYPE_CF:
        sprintf(slot_str,"Crane Flat");
@@ -1138,10 +1154,25 @@ pal_system_config_check(uint8_t slot_id) {
     return -1;
   }
 
-  // 0(TwinLake), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
+  // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   switch (last_slot_type) {
      case SLOT_TYPE_SERVER:
-       sprintf(last_slot_str,"1S Server");
+       ret = fby2_get_server_type(slot_id, &server_type);
+       if (ret) {
+         syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+         return ret; 
+       } 
+       switch (server_type) {
+         case SERVER_TYPE_RC:
+           sprintf(slot_str,"RC");
+           break;
+         case SERVER_TYPE_TL:
+           sprintf(slot_str,"Twin Lake");
+           break;
+         default:
+           sprintf(slot_str,"Undefined server type");
+           break;
+       }
        break;
      case SLOT_TYPE_CF:
        sprintf(last_slot_str,"Crane Flat");
@@ -2474,6 +2505,8 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
+  uint8_t ret = 0xFF;
+  uint8_t server_type = 0xFF;
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -2482,8 +2515,25 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
-            *sensor_list = (uint8_t *) bic_sensor_list;
-            *cnt = bic_sensor_cnt;
+            ret = fby2_get_server_type(fru, &server_type);
+            if (ret) {
+              syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+            }
+            switch (server_type) {
+              case SERVER_TYPE_RC:
+                *sensor_list = (uint8_t *) bic_rc_sensor_list;
+                *cnt = bic_rc_sensor_cnt;
+                break;
+              case SERVER_TYPE_TL:
+                *sensor_list = (uint8_t *) bic_sensor_list;
+                *cnt = bic_sensor_cnt;
+                break;
+              default:
+                syslog(LOG_ERR, "%s, Undefined server type, using Twin Lake sensor list as default\n", __func__);
+                *sensor_list = (uint8_t *) bic_sensor_list;
+                *cnt = bic_sensor_cnt;
+              break;
+            }
             break;
         case SLOT_TYPE_CF:
             *sensor_list = (uint8_t *) dc_cf_sensor_list;

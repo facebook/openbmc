@@ -1,4 +1,3 @@
-
 do_install_append() {
-  do_install_backpack_ssh_config
+  cat ${WORKDIR}/backpack_ssh_config >> ${D}${sysconfdir}/ssh/ssh_config
 }

@@ -38,6 +38,7 @@ void escHelp(void) {
   printf("  CTRL-l ?   : Display help message.\r\n");
   printf("  CTRL-l x : Terminate the connection.\r\n");
   printf("  /var/log/mTerm_%s.log : Log location\r\n", g_fru);
+  printf("  /mnt/data/log/mTerm_%s.log : Log location\r\n", g_fru);
   printf("  CTRL-l + b : Send Break\r\n");
   /*TODO: Log file read from tool*/
   //printf("  CTRL-L :N - For reading last N lines from end of buffer.\r\n");
@@ -129,7 +130,7 @@ void charSend(int clientfd, char* c, int length) {
   sendTlv(clientfd, ASCII_CARAT, c, length);
 }
 
-bufStore* createBuffer(const char *dev, int fsize) {
+bufStore* createBuffer(const char *dev, const char *location, int fsize) {
   bufStore* buf;
 
   buf = (bufStore*)malloc(sizeof(bufStore));
@@ -139,7 +140,7 @@ bufStore* createBuffer(const char *dev, int fsize) {
   }
 
   int ret;
-  ret = snprintf(buf->file, sizeof(buf->file), "/var/log/mTerm_%s.log", dev);
+  ret = snprintf(buf->file, sizeof(buf->file), "%s/mTerm_%s.log", location, dev);
   if ((ret < 0) || (ret >= sizeof(buf->file))) {
     perror("mTerm: Received dev name too long to create buffer file");
     free(buf);
@@ -147,7 +148,7 @@ bufStore* createBuffer(const char *dev, int fsize) {
   }
 
   ret = snprintf(buf->backupfile, sizeof(buf->backupfile),
-    "/var/log/mTerm_%s_backup.log", dev);
+    "%s/mTerm_%s_backup.log", location, dev);
   if ((ret < 0) || (ret >= sizeof(buf->backupfile))) {
     perror("mTerm: Received dev name too long to create backup buffer file");
     free(buf);

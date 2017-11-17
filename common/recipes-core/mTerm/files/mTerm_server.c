@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <sys/uio.h>
+#include <sys/stat.h>
 #include "tty_helper.h"
 #include "mTerm_helper.h"
 
@@ -97,7 +98,7 @@ void sendBreak(int clientFd, int solFd, char *c) {
 }
 
 static void processClient(fd_set* master, int clientFd , int solFd,
-                          bufStore *buf) {
+                          bufStore *buf, bufStore *buf_permanent) {
   char data[SEND_SIZE];
   int nbytes = 0;
   TlvHeader header;
@@ -142,6 +143,7 @@ static void processClient(fd_set* master, int clientFd , int solFd,
           }
         } else {
           bufferGetLines(buf->file, clientFd, atoi(vec[1].iov_base), 0);
+          bufferGetLines(buf_permanent->file, clientFd, atoi(vec[1].iov_base), 0);
         }
         break;
       case 'x':
@@ -163,7 +165,7 @@ they don't read it fast enough. If we end up buffering too much data for any
 particular client then we should disconnect that client.
 */
 static int processSol(fd_set* master, int serverfd, int fdmax,
-                      int solFd, bufStore *buf) {
+                      int solFd, bufStore *buf, bufStore *buf_permanent) {
   char data[SEND_SIZE];
   int nbytes;
   int currFd;
@@ -182,6 +184,7 @@ static int processSol(fd_set* master, int serverfd, int fdmax,
       }
     }
     writeToBuffer(buf, data, nbytes);
+    writeToBuffer(buf_permanent, data, nbytes);
   } else if (nbytes < 0) {
     syslog(LOG_ERR, "mTerm_server: Error on read fd=%d\n", solFd);
     return -1;
@@ -212,9 +215,18 @@ static void connectServer(const char *stty, const char *dev) {
   }
 
   struct bufStore* buf;
-  buf = createBuffer(dev, FILE_SIZE_BYTES);
+  buf = createBuffer(dev, location_tmp, FILE_SIZE_BYTES);
   if (!buf || (buf->buf_fd < 0)) {
     syslog(LOG_ERR, "mTerm_server: Failed to create the log file\n");
+    closeTty(tty_sol);
+    close(serverfd);
+    return;
+  }
+
+  struct bufStore* buf_permanent;
+  buf_permanent = createBuffer(dev, location_permanent, FILE_SIZE_BYTES);
+  if (!buf_permanent || (buf_permanent->buf_fd < 0)) {
+    syslog(LOG_ERR, "mTerm_server: Failed to create the permanent log file\n");
     closeTty(tty_sol);
     close(serverfd);
     return;
@@ -242,7 +254,7 @@ static void connectServer(const char *stty, const char *dev) {
       }
     }
     if (FD_ISSET(tty_sol->fd, &read_fds)) {
-      if ( processSol(&master, serverfd, fdmax, tty_sol->fd, buf) < 0) {
+      if ( processSol(&master, serverfd, fdmax, tty_sol->fd, buf, buf_permanent) < 0) {
         break;
       }
     }
@@ -252,7 +264,7 @@ static void connectServer(const char *stty, const char *dev) {
         if ((i == serverfd) || (i == tty_sol->fd)) {
           continue;
         } else {
-          processClient(&master, i, tty_sol->fd, buf);
+          processClient(&master, i, tty_sol->fd, buf, buf_permanent);
         }
       }
     }
@@ -260,6 +272,7 @@ static void connectServer(const char *stty, const char *dev) {
   closeTty(tty_sol);
   close(serverfd);
   closeBuffer(buf);
+  closeBuffer(buf_permanent);
 }
 
 static void
@@ -271,6 +284,12 @@ int main(int argc, char **argv) {
   if (argc != 3) {
     print_usage();
     exit(1);
+  }
+
+  //Create /mnt/data/log folder for mTerm_fru.log
+  struct stat st = {0};
+  if (stat("/mnt/data/log", &st) == -1) {
+    mkdir("/mnt/data/log", 0755);
   }
 
   char *stty, *dev;

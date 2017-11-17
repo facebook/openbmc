@@ -25,7 +25,7 @@ import socket
 import os
 from node_api import get_node_api
 from node_scc import get_node_scc
-from node_nic import get_node_nic
+from node_mezz import get_node_mezz
 from node_dpb import get_node_dpb
 from node_iom import get_node_iom
 from node_server import get_node_server
@@ -38,6 +38,7 @@ from node_health import get_node_health
 from node_identify import get_node_identify
 from node_fans import get_node_fans
 from node_vboot import get_node_vboot
+from node_bios import *
 from tree import tree
 from pal import *
 
@@ -51,7 +52,20 @@ def populate_server_node(num):
     r_sensors = tree("sensors", data = get_node_sensors("server"))
     r_logs = tree("logs", data = get_node_logs("server"))
     r_config = tree("config", data = get_node_config("server"))
-    r_server.addChildren([r_fruid, r_sensors, r_logs, r_config])
+    r_bios = tree("bios", data = get_node_bios("server"))
+    r_server.addChildren([r_fruid, r_sensors, r_logs, r_config, r_bios])
+
+    r_boot_order_trunk = tree("boot-order", data = get_node_bios_boot_order_trunk("server"))
+    r_postcode_trunk = tree("postcode", data = get_node_bios_postcode_trunk("server"))
+    r_plat_info_trunk = tree("plat-info", data = get_node_bios_plat_info_trunk("server"))
+    r_pcie_port_config_trunk = tree("pcie-port-config", data = get_node_bios_pcie_port_config_trunk("server"))
+    r_bios.addChildren([r_boot_order_trunk, r_postcode_trunk, r_plat_info_trunk, r_pcie_port_config_trunk])
+
+
+    r_clear_cmos = tree("clear_cmos", data = get_node_bios_clear_cmos("server"))
+    r_force_boot_bios_setup = tree("force_boot_bios_setup", data = get_node_bios_force_boot_setup("server"))
+    r_boot_order = tree("boot_order", data = get_node_bios_boot_order("server"))
+    r_boot_order_trunk.addChildren([r_clear_cmos, r_force_boot_bios_setup, r_boot_order])
 
     return r_server
 
@@ -63,9 +77,9 @@ def init_plat_tree():
     r_api = tree("api", data = get_node_api())
 
 
-    # Add /api/nic to represent Mezzanine Card
-    r_nic = tree("nic", data = get_node_nic())
-    r_api.addChild(r_nic)
+    # Add /api/mezz to represent Mezzanine Card
+    r_mezz = tree("nic", data = get_node_mezz())
+    r_api.addChild(r_mezz)
     # Add /api/iom to represent IO Module
     r_iom = tree("iom", data = get_node_iom())
     r_api.addChild(r_iom)
@@ -83,15 +97,12 @@ def init_plat_tree():
         if r_server:
             r_api.addChild(r_server)
 
-    #Add /api/nic/fruid end point
-    r_temp = tree("fruid", data = get_node_fruid("nic"))
-    r_nic.addChild(r_temp)
-    #Add /api/nic/sensors end point
+    #Add /api/mezz/sensors end point
     r_temp = tree("sensors", data = get_node_sensors("nic"))
-    r_nic.addChild(r_temp)
-    #Add /api/nic/logs end point
+    r_mezz.addChild(r_temp)
+    #Add /api/mezz/logs end point
     r_temp = tree("logs", data = get_node_logs("nic"))
-    r_nic.addChild(r_temp)
+    r_mezz.addChild(r_temp)
 
     #Add /api/iom/fruid end point
     r_temp = tree("fruid", data = get_node_fruid("iom"))

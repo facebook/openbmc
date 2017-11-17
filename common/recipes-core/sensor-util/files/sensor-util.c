@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include <getopt.h>
 #include <time.h>
+#include <pthread.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 #include <openbmc/obmc-sensor.h>
@@ -48,6 +49,18 @@
 #else
   static const char * pal_fru_list_sensor_history_t =  pal_fru_list;
 #endif /* CUSTOM_FRU_LIST */
+
+static pthread_mutex_t timer = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t done = PTHREAD_COND_INITIALIZER;
+
+// This is for get_sensor_reading
+typedef struct {
+  uint8_t fru;
+  int sensor_cnt;
+  int sensor_num;
+  bool threshold;
+  uint8_t sensor_list[];  
+} get_sensor_reading_struct;
 
 static void
 print_usage() {
@@ -154,10 +167,10 @@ get_sensor_status(float fvalue, thresh_sensor_t *thresh, char *status) {
     sprintf(status, STATUS_LNR);
 }
 
-static void
-get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
-    bool threshold) {
+static void*
+get_sensor_reading(void *sensor_data) {
 
+  get_sensor_reading_struct *sensor_info = sensor_data;
   int i;
   uint8_t snr_num;
   float fvalue;
@@ -166,43 +179,49 @@ get_sensor_reading(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num,
   int ret = 0;
   char fruname[32] = {0};
 
-  for (i = 0; i < sensor_cnt; i++) {
+  //Allow this thread to be killed at any time
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-    snr_num = sensor_list[i];
-
+  for (i = 0; i < sensor_info->sensor_cnt; i++) {    
+    snr_num = sensor_info->sensor_list[i];
     /* If calculation is for a single sensor, ignore all others. */
-    if (num != SENSOR_ALL && snr_num != num) {
+    if (sensor_info->sensor_num != SENSOR_ALL && snr_num != sensor_info->sensor_num) {
       continue;
     }
 
-    if (fru == AGGREGATE_SENSOR_FRU_ID) {
+    if (sensor_info->fru == AGGREGATE_SENSOR_FRU_ID) {
       if (aggregate_sensor_threshold(snr_num, &thresh)) {
         syslog(LOG_ERR, "agg_snr_thresh failed for agg num: 0x%X", snr_num);
         continue;
       }
     } else {
-      ret = sdr_get_snr_thresh(fru, snr_num, &thresh);
+      ret = sdr_get_snr_thresh(sensor_info->fru, snr_num, &thresh);
       if (ret == ERR_NOT_READY) {
-        pal_get_fru_name(fru, fruname);
-        printf("%s SDR is missing!", fruname);
-        return;
+        pal_get_fru_name(sensor_info->fru, fruname);
+        printf("%s SDR is missing!\n", fruname);
+        //Tell caller it's done
+        pthread_cond_signal(&done);
+        return NULL;
       }
       else if (ret < 0) {
-        syslog(LOG_ERR, "sdr_get_snr_thresh failed for FRU %d num: 0x%X", fru, snr_num);
+        syslog(LOG_ERR, "sdr_get_snr_thresh failed for FRU %d num: 0x%X", sensor_info->fru, snr_num);
         continue;
       }
     }
 
     usleep(50);
-
-    if (sensor_cache_read(fru, snr_num, &fvalue) < 0) {
-      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_list[i]);
+    if (sensor_cache_read(sensor_info->fru, snr_num, &fvalue) < 0) {
+      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_info->sensor_list[i]);
       continue;
     } else {
       get_sensor_status(fvalue, &thresh, status);
-      print_sensor_reading(fvalue, (uint16_t)snr_num, &thresh, threshold, status);
+      print_sensor_reading(fvalue, (uint16_t)snr_num, &thresh, sensor_info->threshold, status);
     }
   }
+
+  //Tell caller it's done
+  pthread_cond_signal(&done);
+  return NULL;
 }
 
 static void
@@ -232,7 +251,7 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
       ret = sdr_get_snr_thresh(fru, snr_num, &thresh);
       if (ret == ERR_NOT_READY) {
         pal_get_fru_name(fru, fruname);
-        printf("%s SDR is missing!", fruname);
+        printf("%s SDR is missing!\n", fruname);
         return;
       }
       else if (ret < 0) {
@@ -265,6 +284,38 @@ static void clear_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_c
   }
 }
 
+void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struct *sensor_data)
+{
+  struct timespec abs_time;
+  pthread_t tid_get_sensor_reading;
+  int err;
+  char fruname[32] = {0};
+
+  pthread_mutex_lock(&timer);
+
+  //Assign the timeout time to abs_time
+  clock_gettime(CLOCK_REALTIME, &abs_time);
+  abs_time.tv_sec += timeout->tv_sec;
+  abs_time.tv_nsec += timeout->tv_nsec;
+
+  //Make get_sensor_reading a thread
+  pthread_create(&tid_get_sensor_reading, NULL, get_sensor_reading, (void *) sensor_data);
+
+  //Timer thread, continue only when get_sensor_reading send the done signal or abs_time timed out
+  err = pthread_cond_timedwait(&done, &timer, &abs_time);
+
+  //Timeout actions
+  if (err == ETIMEDOUT) {
+    pal_get_fru_name(sensor_data->fru, fruname);
+    printf("FRU:%s timed out...\n", fruname);
+    pthread_cancel(tid_get_sensor_reading);
+  }
+
+  pthread_mutex_unlock(&timer);
+
+  return;
+}
+
 static int
 print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool history_clear, long period) {
   int ret;
@@ -272,6 +323,12 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool his
   int sensor_cnt;
   uint8_t *sensor_list;
   char fruname[16] = {0};
+  struct timespec timeout;
+  get_sensor_reading_struct data;
+
+  //Setup 4 seconds timeout for each fru get_sensor_reading
+  memset(&timeout, 0, sizeof(timeout));
+  timeout.tv_sec = 4;
 
   if (fru == AGGREGATE_SENSOR_FRU_ID) {
     size_t cnt, i;
@@ -322,13 +379,20 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool his
   } else if (history) {
     get_sensor_history(fru, sensor_list, sensor_cnt, sensor_num, period);
   } else {
-    get_sensor_reading(fru, sensor_list, sensor_cnt, sensor_num, threshold);
+    data.fru = fru;
+    data.sensor_cnt = sensor_cnt;
+    data.sensor_num = sensor_num;
+    data.threshold = threshold;
+    memcpy(data.sensor_list, sensor_list, sizeof(uint8_t)*sensor_cnt);
+    get_sensor_reading_timer(&timeout, &data);
   }
 
   //Print Empty Line to separate frus,
   //only when sensor_cnt greater than 0, not history-clear, and sensor_num is not specified
-  if ( (sensor_cnt > 0) && (!history_clear) && (sensor_num == SENSOR_ALL) )
+  if ( (sensor_cnt > 0) && (!history_clear) && (sensor_num == SENSOR_ALL) ){
     printf("\n");
+  }
+
   return 0;
 }
 

@@ -59,25 +59,34 @@ def pal_get_server_power(slot_id):
         return status.value
 
 def pal_server_action(slot_id, command):
-    sid = str(slot_id)
+
+    plat_name = pal_get_platform_name().decode()
+
+    if 'FBTTN' in plat_name and 'identify' in command:
+        fru = ''
+    elif 'FBTTN' in plat_name:
+        fru = 'server'
+    else:
+        fru = 'slot'+str(slot_id)
+
     if command == 'power-off':
-        cmd = '/usr/local/bin/power-util slot'+sid+' off'
+        cmd = '/usr/local/bin/power-util '+fru+' off'
     elif command == 'power-on':
-        cmd = '/usr/local/bin/power-util slot'+sid+' on'
+        cmd = '/usr/local/bin/power-util '+fru+' on'
     elif command == 'power-cycle':
-        cmd = '/usr/local/bin/power-util slot'+sid+' cycle'
+        cmd = '/usr/local/bin/power-util '+fru+' cycle'
     elif command == 'graceful-shutdown':
-        cmd = '/usr/local/bin/power-util slot'+sid+' graceful-shutdown'
+        cmd = '/usr/local/bin/power-util '+fru+' graceful-shutdown'
     elif command == '12V-off':
-        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-off'
+        cmd = '/usr/local/bin/power-util '+fru+' 12V-off'
     elif command == '12V-on':
-        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-on'
+        cmd = '/usr/local/bin/power-util '+fru+' 12V-on'
     elif command == '12V-cycle':
-        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-cycle'
+        cmd = '/usr/local/bin/power-util '+fru+' 12V-cycle'
     elif command == 'identify-on':
-        cmd = '/usr/bin/fpc-util slot'+sid+' --identify on'
+        cmd = '/usr/bin/fpc-util '+fru+' --identify on'
     elif command == 'identify-off':
-        cmd = '/usr/bin/fpc-util slot'+sid+' --identify off'
+        cmd = '/usr/bin/fpc-util '+fru+' --identify off'
     else:
         return -1
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()

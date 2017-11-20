@@ -40,11 +40,15 @@ def board_host_actions(action='None', cause='None'):
     - alarming/syslogging criticals
     '''
     if "host_shutdown" in action:
+        if "All fans are bad" in cause:
+            if not check_if_all_fantrays_ok():
+                Logger.warn("Host action %s not performed for cause %s" %
+                            (str(action), str(cause),))
+                return False
         Logger.crit("Host is shutdown due to cause %s" % (str(cause),))
-        # TODO: In case host_shutdown was trigger due to bad fans then
-        # cross check with fantray failure state as well
         return host_shutdown()
-    Logger.warn("Host needs action %s and cause %s" % (str(action), str(cause),))
+    Logger.warn("Host needs action '%s' and cause '%s'" %
+                (str(action), str(cause),))
     pass
 
 
@@ -104,3 +108,19 @@ def host_shutdown():
     Logger.info("host_shutdown() executing {}".format(cmd))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return response
+
+
+def check_if_all_fantrays_ok():
+    FANTRAY_STATUS = "/sys/class/i2c-adapter/i2c-8/8-0033/fantray_failure"
+
+    cmd = 'cat ' + FANTRAY_STATUS
+    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    response = response.decode()
+    response = response.split("\n")
+    if "0x00" not in response[0]:
+        Logger.warn("All fans report failed RPM not consistent with "
+                    "Fantray status {}".format(response[0]))
+        return False
+    Logger.warn("All fans report failed RPM consistent with "
+                "Fantray status{}".format(response[0]))
+    return True

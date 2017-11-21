@@ -372,7 +372,7 @@ devmem_clear_bit $(scu_addr 88) 12
 
 gpio_export O4
 
-#  P12V_STBY_SLOT2_EN: GPIOO5 (117)
+# P12V_STBY_SLOT2_EN: GPIOO5 (117)
 # To use GPIOO5, SCU88[13] must be 0
 devmem_clear_bit $(scu_addr 88) 13
 
@@ -426,14 +426,27 @@ gpio_export N4
 devmem_clear_bit $(scu_addr 88) 5
 gpio_export N5
 
+# To use GPIOI0~GPIOI7, SCU70[13:12] must be 0
+devmem_clear_scu70_bit 12
+devmem_clear_scu70_bit 13
+
+# SLOT1_POWER_EN: GPIOI0 (64)
+gpio_export I0
+# SLOT2_POWER_EN: GPIOI1 (65)
+gpio_export I1
+# SLOT3_POWER_EN: GPIOI2 (66)
+gpio_export I2
+# SLOT4_POWER_EN: GPIOI3 (67)
+gpio_export I3
+
 # Set SLOT throttle pin
-# BMC_THROTTLE_SLOT1_N: GPIOI4 (78)
+# BMC_THROTTLE_SLOT1_N: GPIOI4 (68)
 gpio_set I4 1
-# BMC_THROTTLE_SLOT2_N: GPIOI5 (79)
+# BMC_THROTTLE_SLOT2_N: GPIOI5 (69)
 gpio_set I5 1
-# BMC_THROTTLE_SLOT3_N: GPIOI6 (80)
+# BMC_THROTTLE_SLOT3_N: GPIOI6 (70)
 gpio_set I6 1
-# BMC_THROTTLE_SLOT4_N: GPIOI7 (81)
+# BMC_THROTTLE_SLOT4_N: GPIOI7 (71)
 gpio_set I7 1
 
 # Set FAN disable pin

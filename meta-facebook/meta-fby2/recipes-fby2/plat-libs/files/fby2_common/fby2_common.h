@@ -96,6 +96,10 @@ enum {
 #define GPIO_POSTCODE_2                    50
 #define GPIO_POSTCODE_3                    51
 #define GPIO_FAN_LATCH_DETECT              61
+#define GPIO_SLOT1_POWER_EN                64
+#define GPIO_SLOT2_POWER_EN                65
+#define GPIO_SLOT3_POWER_EN                66
+#define GPIO_SLOT4_POWER_EN                67
 #define GPIO_VGA_SW0                       74
 #define GPIO_VGA_SW1                       75
 #define GPIO_PWR1_LED                      96

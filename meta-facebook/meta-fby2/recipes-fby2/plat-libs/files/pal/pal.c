@@ -108,6 +108,7 @@ const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRS
 const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
 const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
+const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N};
 
@@ -1655,7 +1656,7 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
-  int ret;
+  int ret, val;
   char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
   uint8_t retry = MAX_READ_RETRY;
@@ -1670,6 +1671,16 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   /* If 12V-off, return */
   if (!(*status)) {
     *status = SERVER_12V_OFF;
+    return 0;
+  }
+
+  if (!pal_is_slot_server(slot_id)) {
+    sprintf(value, GPIO_VAL, gpio_power_en[slot_id]);
+    if (!read_device(value, &val)) {
+      *status = (val == 0x1) ? SERVER_POWER_ON : SERVER_POWER_OFF;
+    } else {
+      *status = SERVER_POWER_OFF;
+    }
     return 0;
   }
 

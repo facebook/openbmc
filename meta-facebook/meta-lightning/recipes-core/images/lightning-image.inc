@@ -48,6 +48,7 @@ IMAGE_INSTALL += " \
   enclosure-util \
   fw-util \
   openbmc-gpio \
+  switchtec-user \
   "
 
 IMAGE_FEATURES += " \

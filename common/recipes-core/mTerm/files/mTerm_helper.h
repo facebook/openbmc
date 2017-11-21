@@ -33,10 +33,6 @@
 #define FILE_SIZE_BYTES 300000
 #define MAX_BYTE 255
 
-//SOL log file locations
-#define location_tmp "/var/log"
-#define location_permanent "/mnt/data/log"
-
 typedef enum escMode {
   EOL,
   ESC,
@@ -66,7 +62,7 @@ int escSend(int clientfd, char c, escMode* mode);
 void escClose(int clientfd);
 void charSend(int clientfd, char* c, int length);
 // buffer processing
-bufStore* createBuffer(const char *dev, const char *location, int fsize);
+bufStore* createBuffer(const char *dev, int fsize);
 void closeBuffer(bufStore* buf);
 long int bufferGetLines(char* fname, int clientfd, int n, long int curr);
 void writeToBuffer(bufStore *buf, char* data, int len);

@@ -77,46 +77,102 @@ int usb_dbg_init(uint8_t bus, uint8_t mcu_addr, uint8_t io_exp_addr)
 }
 
 static int
-enable_MCU_update(void)
+mcu_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen)
 {
-  uint8_t tbuf[256] = {0x00};
-  uint8_t rbuf[256] = {0x00};
   ipmb_req_t *req;
+  ipmb_res_t *res;
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
 
-  req = (ipmb_req_t*)tbuf;
-
+  req = (ipmb_req_t *)tbuf;
   req->res_slave_addr = MCU_addr;
-  req->netfn_lun = NETFN_OEM_1S_REQ<<2;
+  req->netfn_lun = netfn << LUN_OFFSET;
   req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
   req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
 
-  req->req_slave_addr = 0x20;
+  req->req_slave_addr = BMC_SLAVE_ADDR << 1;
   req->seq_lun = 0x00;
+  req->cmd = cmd;
 
-  rlen = 0;
-  memset( rbuf,0x00,sizeof(rbuf) );
-  req->cmd = CMD_OEM_1S_ENABLE_BIC_UPDATE;
-  req->data[0] = 0x15;
-  req->data[1] = 0xA0;
-  req->data[2] = 0x00;
-  req->data[3] = 0x1;
-  tlen = 10;
-
-  lib_ipmb_handle(mcu_bus_id, tbuf, tlen+1, rbuf, &rlen);
-  if (rlen == 0) {
-    syslog(LOG_DEBUG, "%s(%d): Zero bytes received from MCU\n", __func__, __LINE__);
+  // copy the data to be send
+  if (txlen) {
+    memcpy(req->data, txbuf, txlen);
   }
-#ifdef DEBUG
-  syslog(LOG_WARNING, "%s(%d): reset MCU, ComCode:%x\n", __func__, __LINE__,rbuf[6]);
-#endif
 
-  return rlen;
+  tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(mcu_bus_id, tbuf, tlen, rbuf, &rlen);
+
+  if (rlen == 0) {
+    syslog(LOG_DEBUG, "mcu_ipmb_wrapper: Zero bytes received\n");
+    return -1;
+  }
+
+  // Handle IPMB response
+  res = (ipmb_res_t *)rbuf;
+
+  if (res->cc) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "mcu_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+#endif
+    return -1;
+  }
+
+  // copy the received data back to caller
+  if ((rlen -= (IPMB_HDR_SIZE + IPMI_RESP_HDR_SIZE)) > *rxlen) {
+    return -1;
+  }
+  *rxlen = rlen;
+  memcpy(rxbuf, res->data, *rxlen);
+
+  return 0;
+}
+
+static int
+enable_MCU_update(void)
+{
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = sizeof(rbuf);
+  int ret;
+
+  // 0x1: Update on I2C Channel, the only available option from BMC
+  tbuf[3] = 0x1;
+
+  ret = mcu_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_ENABLE_BIC_UPDATE, tbuf, 4, rbuf, &rlen);
+
+  return ret;
 }
 
 int
-usb_dbg_update_fw(char *path)
+usb_dbg_get_fw_ver(uint8_t comp, uint8_t *ver) {
+  uint8_t rbuf[32] = {0x00};
+  uint8_t rlen = sizeof(rbuf);
+  int ret = -1;
+
+  switch (comp) {
+    case 0x00:  // runtime firmware version
+      ret = mcu_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0, rbuf, &rlen);
+      if (!ret) {
+        memcpy(ver, &rbuf[2], 2);
+      }
+      break;
+    case 0x01:  // boot-loader version
+      ret = mcu_ipmb_wrapper(NETFN_OEM_REQ, 0x40, NULL, 0, rbuf, &rlen);
+      if (!ret) {
+        memcpy(ver, &rbuf[0], 2);
+      }
+      break;
+  }
+
+  return ret;
+}
+
+int
+usb_dbg_update_fw(char *path, uint8_t en_mcu_upd)
 {
   int fd = -1;
   int ifd = -1;
@@ -159,7 +215,9 @@ usb_dbg_update_fw(char *path)
   }
 
   // Enable Bridge-IC update
-  enable_MCU_update();
+  if (en_mcu_upd) {
+    enable_MCU_update();
+  }
 
   // Kill ipmb daemon
   memset(cmd, 0, sizeof(cmd));
@@ -338,7 +396,7 @@ error_exit2:
     close(fd);
   }
   if (ifd > 0) {
-    close(fd);
+    close(ifd);
   }
 
   return ret;
@@ -350,6 +408,7 @@ update_MCU_bl_fw(uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf)
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   ipmb_req_t *req;
+  ipmb_res_t *res;
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   int retries = 3;
@@ -390,6 +449,12 @@ bic_send:
     sleep(1);
     syslog(LOG_DEBUG, "%s(%d): target %d, offset: %d, len: %d retrying..\n", __func__, __LINE__, target, offset, len);
     goto bic_send;
+  }
+
+  res = (ipmb_res_t *)rbuf;
+  if (rlen && res->cc) {
+    syslog(LOG_DEBUG, "%s(%d): Completion Code: 0x%X\n", __func__, __LINE__, res->cc);
+    return 0;
   }
 
   return rlen;

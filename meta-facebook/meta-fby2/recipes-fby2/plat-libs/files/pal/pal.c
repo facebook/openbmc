@@ -4613,3 +4613,45 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
 
   return 0;
 }
+
+int
+pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+
+  if ((bus == 13) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (ts.tv_sec >= (last_time + 5)) {
+      last_time = ts.tv_sec;
+      ts.tv_sec += 30;
+
+      sprintf(key, "ocpdbg_lcd");
+      sprintf(value, "%d", ts.tv_sec);
+      if (edb_cache_set(key, value) < 0) {
+        return -1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+bool
+pal_is_mcu_working(void) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  sprintf(key, "ocpdbg_lcd");
+  if (edb_cache_get(key, value)) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
+}

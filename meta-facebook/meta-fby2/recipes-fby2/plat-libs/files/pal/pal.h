@@ -180,6 +180,8 @@ void pal_add_cri_sel(char *str);
 uint8_t pal_get_status(void);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_get_fan_latch(uint8_t *status);
+int pal_ipmb_processing(int bus, void *buf, uint16_t size);
+bool pal_is_mcu_working(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

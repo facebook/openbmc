@@ -12,7 +12,7 @@ UsbDbgComponent::UsbDbgComponent(string fru, string comp,
 
 int UsbDbgComponent::update(string image)
 {
-      return usb_dbg_update_fw((char *)image.c_str());
+  return usb_dbg_update_fw((char *)image.c_str(), 1);
 }
 
 UsbDbgBlComponent::UsbDbgBlComponent(string fru, string comp,

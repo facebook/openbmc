@@ -27,7 +27,8 @@ extern "C" {
 #include <stdint.h>
 
 int usb_dbg_init(uint8_t bus, uint8_t mcu_addr, uint8_t io_exp_addr);
-int usb_dbg_update_fw(char *path);
+int usb_dbg_get_fw_ver(uint8_t comp, uint8_t *ver);
+int usb_dbg_update_fw(char *path, uint8_t en_mcu_upd);
 int usb_dbg_update_boot_loader(char *path);
 void usb_dbg_reset(void);
 

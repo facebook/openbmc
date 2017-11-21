@@ -134,7 +134,7 @@ debug_card_prs:
       goto debug_card_out;
     }
     curr = prsnt;
-
+    
     // Check if Debug Card was either inserted or removed
     if (curr != prev) {
       if (!curr) {
@@ -151,42 +151,32 @@ debug_card_prs:
       }
     }
 
-    // If Debug Card is present
-    if (curr) {
-      if ((pos == prev_pos) && (curr == prev)) {
-        goto debug_card_out;
-      }
+    // Switch UART mux based on hand switch
+    ret = pal_switch_uart_mux(pos);
+    if (ret) {
+      goto debug_card_out;
+    }
 
-      // Switch UART mux based on hand switch
-      ret = pal_switch_uart_mux(pos);
-      if (ret) {
-        goto debug_card_out;
-      }
+    // Make sure the server at selected position is ready
+    ret = pal_is_fru_ready(pos, &prsnt);
+    if (ret || !prsnt) {
+      goto debug_card_done;
+    }
+    
+    // Enable POST codes for all slots
+    ret = pal_post_enable(pos);
+    if (ret) {
+      goto debug_card_done;
+    }
 
-      // Enable POST code based on hand switch
-      if (pos == HAND_SW_BMC) {
-        // For BMC, there is no need to have POST specific code
-        goto debug_card_done;
-      }
-
-      // Make sure the server at selected position is ready
-      ret = pal_is_fru_ready(pos, &prsnt);
-      if (ret || !prsnt) {
-        goto debug_card_done;
-      }
-
-      // Enable POST codes for all slots
-      ret = pal_post_enable(pos);
-      if (ret) {
-        goto debug_card_done;
-      }
-
-      // Get last post code and display it
-      ret = pal_post_get_last(pos, &lpc);
-      if (ret) {
-        goto debug_card_done;
-      }
-
+    // Get last post code and display it
+    ret = pal_post_get_last(pos, &lpc);
+    if (ret) {
+      goto debug_card_done;
+    }
+    
+    // Show POSTCODE if debug card present
+    if (prsnt) {
       ret = pal_post_handle(pos, lpc);
       if (ret) {
         goto debug_card_out;

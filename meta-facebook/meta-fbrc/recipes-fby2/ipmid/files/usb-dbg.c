@@ -1200,10 +1200,11 @@ static int
 plat_udbg_get_info_page(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   int ret, boardid;
   char line_buff[1000], *pres_dev = line_buff, *delim = "\n", path[32];
+  char tstr[64];
   FILE *fp;
   fruid_info_t fruid;
   lan_config_t lan_config = {0};
-  uint8_t pos, rlen;
+  uint8_t pos, rlen, st_12v = 0;
   uint8_t zero_ip6_addr[SIZE_IP6_ADDR] = {0};
 
   if (page == 1) {
@@ -1218,6 +1219,22 @@ plat_udbg_get_info_page(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *cou
     }
 
     // FRU
+    if (!pal_get_fru_name(pos, tstr)) {
+      sprintf(line_buff, "FRU:%s", tstr);
+      frame_info.append(&frame_info, line_buff, 0);
+
+      if (pos != HAND_SW_BMC) {
+        if (pal_is_hsvc_ongoing(pos)) {
+          ret = pal_is_server_12v_on(pos, &st_12v);
+          if (!ret && !st_12v)
+            sprintf(line_buff, ESC_ALT"HSVC: READY"ESC_RST);
+          else
+            sprintf(line_buff, ESC_ALT"HSVC: START"ESC_RST);
+
+          frame_info.append(&frame_info, line_buff, 0);
+        }
+      }
+    }
     if (pos != HAND_SW_BMC) {
       snprintf(path, sizeof(path), "/tmp/fruid_slot%u.bin", pos);
       ret = fruid_parse(path, &fruid);

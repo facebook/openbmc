@@ -100,6 +100,8 @@ int pal_is_slot_server(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
+bool pal_is_hsvc_ongoing(uint8_t slot_id);
+int pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident);
 int pal_slot_pair_12V_off(uint8_t slot_id);
 int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);

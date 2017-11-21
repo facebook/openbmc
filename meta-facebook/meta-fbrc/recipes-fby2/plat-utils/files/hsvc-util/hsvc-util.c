@@ -50,12 +50,14 @@ print_usage_help(void) {
 int
 activate_hsvc(uint8_t slot_id) {
   char cmd[128] = {0};
-  int pair_set_type;  
+  int pair_set_type;
   int pair_slot_id;
   int runoff_id = slot_id;
   int ret=-1;
-  uint8_t status;
+  uint8_t status, i;
   char tstr[64] = {0};
+
+  pal_set_hsvc_ongoing(slot_id, 1, 0);
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
@@ -63,7 +65,7 @@ activate_hsvc(uint8_t slot_id) {
     pair_slot_id = slot_id + 1;
 
   pair_set_type = pal_get_pair_slot_type(slot_id);
-    
+
   if (0 != slot_id%2) {
      switch(pair_set_type) {
         case TYPE_SV_A_SV:
@@ -77,10 +79,8 @@ activate_hsvc(uint8_t slot_id) {
            break;
         case TYPE_CF_A_SV:
         case TYPE_GP_A_SV:
-           // Need to 12V-off pair slot first to avoid accessing device card error 
-           if (status) {
-             runoff_id = pair_slot_id;
-           }
+           // Need to 12V-off pair slot first to avoid accessing device card error
+           runoff_id = pair_slot_id;
            break;
      }
   }
@@ -102,7 +102,14 @@ activate_hsvc(uint8_t slot_id) {
        sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", runoff_id);
        ret = run_command(cmd);
        if (0 == ret) {
-         sleep(30);
+         for (i = 0; i < 10; i++) {
+           sleep(3);
+           ret = pal_get_server_power(runoff_id, &status);
+           if (!ret && !status) {
+              sleep(3);
+              break;
+           }
+         }
        } else {
          return -1;
        }
@@ -125,7 +132,7 @@ activate_hsvc(uint8_t slot_id) {
     syslog(LOG_ERR, "pal_set_key_value: set %s on failed",tstr);
     return -1;
   }
-  
+
   return 0;
 }
 
@@ -134,8 +141,6 @@ main(int argc, char **argv) {
 
   uint8_t slot_id;
   int ret = 0;
-  char cmd[80];
-  char tstr[64] = {0};
   uint8_t flag = 0;
 
   // Check for border conditions
@@ -157,10 +162,10 @@ main(int argc, char **argv) {
   } else {
       goto err_exit;
   }
-  
+
   // check operation to perform
   if (!strcmp(argv[2], "--start")) {
-     
+
      if (slot_id < OPT_ALL) {
         ret = activate_hsvc(slot_id);
         if (ret != 0) {
@@ -180,10 +185,8 @@ main(int argc, char **argv) {
      }
   } else if (!strcmp(argv[2], "--stop")) {
      if (slot_id < OPT_ALL) {
-       sprintf(tstr, "identify_slot%d", slot_id);
-       ret = pal_set_key_value(tstr, "off");
+       ret = pal_set_hsvc_ongoing(slot_id, 0, 1);
        if (ret < 0) {
-         syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
          goto err_exit;
        } else {
          return 0;
@@ -191,10 +194,8 @@ main(int argc, char **argv) {
      }
 
      for (slot_id = OPT_SLOT1; slot_id < MAX_NUM_OPTIONS; slot_id++) {
-        sprintf(tstr, "identify_slot%d", slot_id);
-        ret = pal_set_key_value(tstr, "off");
+        ret = pal_set_hsvc_ongoing(slot_id, 0, 1);
         if (ret < 0) {
-          syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
           flag = 1;
         }
      }

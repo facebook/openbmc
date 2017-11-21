@@ -50,6 +50,7 @@ class serverNode(node):
 def get_node_server(num):
     actions =  ["power-on",
                 "power-off",
+                "power-reset",
                 "power-cycle",
                 "graceful-shutdown",
                 "12V-on",

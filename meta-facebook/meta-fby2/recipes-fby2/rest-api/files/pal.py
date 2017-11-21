@@ -41,7 +41,7 @@ def pal_get_server_power(slot_id):
         return status.value
 
 def pal_server_action(slot_id, command):
-    if command == 'power-off' or command == 'power-on' or command == 'power-cycle' or command == 'graceful-shutdown':
+    if command == 'power-off' or command == 'power-on' or command == 'power-reset' or command == 'power-cycle' or command == 'graceful-shutdown':
         if lpal_hndl.pal_is_slot_server(slot_id) == 0:
             return -2
     sid = str(slot_id)
@@ -49,6 +49,8 @@ def pal_server_action(slot_id, command):
         cmd = '/usr/local/bin/power-util slot'+sid+' off'
     elif command == 'power-on':
         cmd = '/usr/local/bin/power-util slot'+sid+' on'
+    elif command == 'power-reset':
+        cmd = '/usr/local/bin/power-util slot'+sid+' reset'
     elif command == 'power-cycle':
         cmd = '/usr/local/bin/power-util slot'+sid+' cycle'
     elif command == 'graceful-shutdown':
@@ -67,7 +69,7 @@ def pal_server_action(slot_id, command):
         return -1
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     ret = ret.decode()
-    if ret.startswith( 'Usage' ):
+    if ret.find("Usage:") != -1 or ret.find("fail ") != -1:
         return -1
     else:
         return 0

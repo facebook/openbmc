@@ -25,6 +25,7 @@ do_install_append() {
       git_version=""
   fi
 
+  plat_name="${MACHINE}"
   version="${MACHINE}"
   if [[ $git_version == ${MACHINE}-v* ]]; then
     version=${git_version}
@@ -33,6 +34,7 @@ do_install_append() {
     version="${MACHINE}-${sha}"
   fi
 
+  sed -i "s/__PLATFORM_NAME__/${plat_name}/g" ${D}${sysconfdir}/rsyslog.conf
   sed -i "s/__BMC_VERSION_TAG__/${version}/g" ${D}${sysconfdir}/rsyslog.conf
 }
 

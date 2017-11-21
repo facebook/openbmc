@@ -102,7 +102,7 @@ def log_main():
 
             for log in syslog:
                 # Print only critical logs
-                if not (re.search(r' bmc [a-z]*.crit ', log) or re.search(r'log-util:', log)):
+                if not (re.search(r'[a-z]*.crit ', log) or re.search(r'log-util:', log)):
                     continue
 
                 # Find the FRU number
@@ -149,8 +149,8 @@ def log_main():
         if cmd == cmdlist[0]:
 
             for log in syslog:
-                # log eg: Nov  9 14:59:07 rtptest1413-oob fbttn-b2a192a user.crit power-util: SERVER_POWER_ON successful for FRU: 1
-                #         ====date======  ===hostname==== ===version=== =loglevel= =appname=  ===message===========================
+                # log eg: Nov 21 21:46:09 rtptest1413-oob.prn3.facebook.com user.crit fbttn-c279551: power-util: SERVER_POWER_CYCLE successful for FRU: 1
+                #         =date==========  =hostname======================= =loglevel= =version===== =appname=  =message===========================
                 # Print only critical logs
                 if not (re.search(r' [a-z]*.crit ', log) or re.search(r'log-util:', log)):
                     continue
@@ -195,7 +195,7 @@ def log_main():
                 hostname = tmp[3]
 
                 # OpenBMC Version Information
-                version = tmp[4]
+                version = tmp[5]
 
                 # Application Name
                 app = tmp[6].strip(':')

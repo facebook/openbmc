@@ -54,6 +54,7 @@ IMAGE_INSTALL += " \
   asd \
   asd-test \
   bios-util \
+  threshold-util \
   "
 
 IMAGE_FEATURES += " \

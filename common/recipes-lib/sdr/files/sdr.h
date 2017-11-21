@@ -36,29 +36,6 @@ extern "C" {
 #define MAX_SENSOR_RATE_UNIT  7
 #define MAX_SENSOR_BASE_UNIT  92
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
-
-/* To hold the sensor info and calculated threshold values from the SDR */
-typedef struct {
-  uint16_t flag;
-  float ucr_thresh;
-  float unc_thresh;
-  float unr_thresh;
-  float lcr_thresh;
-  float lnc_thresh;
-  float lnr_thresh;
-  float pos_hyst;
-  float neg_hyst;
-  int curr_state;
-  char name[32];
-  char units[64];
-  uint8_t poll_interval;
-
-} thresh_sensor_t;
-
 int sdr_get_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int sdr_get_sensor_units(uint8_t fru, uint8_t snr_num, char *units);
 int sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr);

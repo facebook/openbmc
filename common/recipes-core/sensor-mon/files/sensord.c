@@ -29,6 +29,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/sdr.h>
 #include <openbmc/pal.h>
@@ -108,6 +109,14 @@ init_fru_snr_thresh(uint8_t fru) {
     pal_init_sensor_check(fru, snr_num, (void *)&snr[snr_num]);
   }
 
+  if (access(THRESHOLD_PATH, F_OK) == -1) {
+        mkdir(THRESHOLD_PATH, 0777);
+  }
+  ret = pal_copy_all_thresh_to_file(fru, snr);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Fail to copy thresh to file for FRU: %d", __func__, fru);
+    return ret;
+  }
   return 0;
 }
 
@@ -373,6 +382,56 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
   return 0;
 }
 
+static int
+reinit_snr_threshold(uint8_t fru, int mode) {
+  int ret = 0;
+  thresh_sensor_t *snr;
+
+  snr = get_struct_thresh_sensor(fru);
+  if (snr == NULL) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "%s: get_struct_thresh_sensor failed",__func__);
+#endif /* DEBUG */
+  }
+  ret = pal_get_all_thresh_from_file(fru, snr, mode);
+  if (0 != ret) {
+    syslog(LOG_WARNING, "%s: Fail to get threshold from file for slot%d", __func__, fru);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+thresh_reinit_chk(uint8_t fru) {
+  int ret;
+  char fpath[64] = {0};
+  char initpath[64] = {0};
+  char fru_name[8];
+
+  ret = pal_get_fru_name(fru, fru_name);
+  if (ret < 0) {
+    printf("%s: Fail to get fru%d name\n", __func__, fru);
+    return -1;
+  }
+
+  sprintf(fpath, THRESHOLD_BIN, fru_name);
+  sprintf(initpath, THRESHOLD_RE_FLAG, fru_name);
+  if (0 != access(fpath, F_OK)) {
+    // If there is no THRESHOLD_BIN file but INIT_FLAG exist, it means threshold-util --clear is triggered.
+    // And snr info should be loaded default.
+    if (0 == access(initpath, F_OK)) {
+      ret = reinit_snr_threshold(fru, SENSORD_MODE_NORMAL);
+    }
+  } else {
+    // If THRESHOLD_BIN file exist and INIT_FLAG also exist, it means threshold-util --set is triggered.
+    // And snr info should be updated.    
+    if (0 == access(initpath, F_OK))
+      ret = reinit_snr_threshold(fru, SENSORD_MODE_TESTING);
+  }
+
+  return ret;
+}
 
 /*
  * Starts monitoring all the sensors on a fru for all the threshold/discrete values.
@@ -422,6 +481,10 @@ snr_monitor(void *arg) {
       sleep(STOP_PERIOD);
       continue;
     }
+
+    ret = thresh_reinit_chk(fru);
+    if (ret < 0)
+      syslog(LOG_ERR, "%s: Fail to reinit sensor threshold for fru%d",__func__,fru);
 
     for (i = 0; i < sensor_cnt; i++) {
       snr_num = sensor_list[i];

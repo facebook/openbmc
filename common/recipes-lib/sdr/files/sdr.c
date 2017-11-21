@@ -577,6 +577,10 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
   int cnt = 0;
 #endif /* DEBUG */
   int retry = 0;
+  char fpath[64] = {0};
+  char initpath[64] = {0};
+  char initflag[64] = {0};
+  char fru_name[8];
 
   sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
 
@@ -606,6 +610,26 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
   snr->flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH) |
     GETMASK(UNC_THRESH) | GETMASK(UNR_THRESH) | GETMASK(LCR_THRESH) |
     GETMASK(LNC_THRESH) | GETMASK(LNR_THRESH);
+
+  ret = pal_get_fru_name(fru, fru_name);
+  if (ret < 0) {
+    printf("%s: Fail to get fru%d name\n", __func__, fru);
+    return -1;
+  }
+  
+  sprintf(initpath, INIT_THRESHOLD_BIN, fru_name);
+  if (0 == access(initpath, F_OK)) { // init done
+    sprintf(fpath, THRESHOLD_BIN, fru_name);
+    if (0 == access(fpath, F_OK)) {
+      ret = pal_get_thresh_from_file(fru, snr_num, snr);
+      if (0 != ret) {
+        syslog(LOG_WARNING, "%s: Fail to get threshold from file for slot%d", __func__, fru);
+        return -1;
+      }
+
+      return ret;
+    } 
+  }
 
   if (sdr != NULL) {
     ret = _sdr_get_snr_thresh(fru, sdr, snr_num, snr);

@@ -32,6 +32,38 @@ extern "C" {
 #define BIT(value, index) ((value >> index) & 1)
 #endif // BIT
 
+// for threshold-util
+#define THRESHOLD_PATH     "/tmp/thresh-cache"
+#define INIT_THRESHOLD_BIN "/tmp/thresh-cache/%s_init_thresh-val.bin"
+#define THRESHOLD_BIN      "/tmp/thresh-cache/%s_thresh-val.bin"
+#define THRESHOLD_RE_FLAG  "/tmp/thresh-cache/%s_thresh-reinit"
+#define MAX_SENSOR_NUMBER  0xFF
+#define MAX_THERSH_LEN     256
+
+/* To hold the sensor info and calculated threshold values from the SDR */
+/* To hold the sensor info and calculated threshold values from the SDR */
+typedef struct {
+  uint16_t flag;
+  float ucr_thresh;
+  float unc_thresh;
+  float unr_thresh;
+  float lcr_thresh;
+  float lnc_thresh;
+  float lnr_thresh;
+  float pos_hyst;
+  float neg_hyst;
+  int curr_state;
+  char name[32];
+  char units[64];
+  uint8_t poll_interval;
+
+} thresh_sensor_t;
+
+enum {
+  SENSORD_MODE_TESTING = 0x01,
+  SENSORD_MODE_NORMAL  = 0x0F,
+};
+
 enum {
   PAL_EOK = 0,
   PAL_ENOTSUP = -ENOTSUP,
@@ -248,6 +280,12 @@ int pal_ipmb_finished(int bus, void *buf, uint16_t size);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 void pal_set_def_restart_cause(uint8_t slot);
 int pal_compare_fru_data(char *fru_out, char *fru_in, int cmp_size);
+int pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, float value);
+int pal_get_all_thresh_from_file(uint8_t fru, thresh_sensor_t *sinfo, int mode);
+int pal_copy_all_thresh_to_file(uint8_t fru, thresh_sensor_t *sinfo);
+int pal_get_thresh_from_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo);
+int pal_copy_thresh_to_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo);
+bool pal_is_sensor_existing(uint8_t fru, uint8_t snr_num);
 #ifdef __cplusplus
 }
 #endif

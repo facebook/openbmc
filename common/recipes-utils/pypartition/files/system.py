@@ -132,7 +132,7 @@ def get_mtds():
         all_mtds.append(MemoryTechnologyDevice(
             device, int(size_in_hex, 16), name
         ))
-    full_flash_mtds.sort(None, lambda mtd: mtd.device_name, True)
+    full_flash_mtds.sort(key=lambda mtd: mtd.device_name, reverse=True)
     return (full_flash_mtds, all_mtds)
 
 

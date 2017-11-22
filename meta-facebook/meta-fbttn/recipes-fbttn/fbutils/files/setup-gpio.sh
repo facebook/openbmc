@@ -163,7 +163,7 @@ devmem_clear_bit $(scu_addr 70) 22
 
 gpio_set E7 1
 
-# Becasue SCC power sequence is controlled by HW on EVT.
+# Because SCC power sequence is controlled by HW on EVT.
 # So we just configure SCC PWR pins to GPIO and does not export their GPIO node.
 # SCC PWR pins: GPIOF0, GPIOF1, and GPIOF4
 # SCC_LOC_FULL_PWR_EN: F0 (40), PS

@@ -14066,7 +14066,7 @@ static int jx9Builtin_strtok(jx9_context *pCtx, int nArg, jx9_value **apArg)
 			/* Return the extracted token */
 			jx9_result_string(pCtx, sToken.zString, (int)sToken.nByte);
 		}
-		/* Create our auxilliary data and copy the input */
+		/* Create our auxiliary data and copy the input */
 		pAux = (strtok_aux_data *)jx9_context_alloc_chunk(pCtx, sizeof(strtok_aux_data), TRUE, FALSE);
 		if( pAux ){
 			nLen -= (int)(zInput-zCur);
@@ -49787,7 +49787,7 @@ static int lhPageDefragment(lhpage *pPage)
 	lhcell *pCell;
 	/* Get a temporary page from the pager. This opertaion never fail */
 	zTmp = pEngine->pIo->xTmpPage(pEngine->pIo->pHandle);
-	/* Move the target cells to the begining */
+	/* Move the target cells to the beginning */
 	pCell = pPage->pList;
 	/* Write the slave page number */
 	SyBigEndianPack64(&zTmp[2/*Offset of the first cell */+2/*Offset of the first free block */],pPage->sHdr.iSlave);

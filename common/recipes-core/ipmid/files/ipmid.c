@@ -62,7 +62,7 @@ static unsigned char bmc_global_enable_setting[] = {0x0c,0x0c,0x0c,0x0c};
 extern void plat_lan_init(lan_config_t *lan);
 
 // TODO: Once data storage is finalized, the following structure needs
-// to be retrieved/updated from persistant backend storage
+// to be retrieved/updated from persistent backend storage
 static lan_config_t g_lan_config = { 0 };
 
 // TODO: Need to store this info after identifying proper storage

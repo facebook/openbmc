@@ -22,11 +22,11 @@ S = "${WORKDIR}"
 
 DEPENDS += "libpal"
 
-BIOS_UTIL_CONFIG = ""
+BIOS_UTIL_CONFIG = "bios_default_support.json"
 
 BIOS_UTIL_INIT_FILE = ""
 
-binfiles = "bios-head.py bios_board.py bios_boot_order.py bios_ipmi_util.py bios_postcode.py bios_plat_info.py bios_pcie_port_config.py lib_pal.py bios_default_support.json"
+binfiles = "bios-head.py bios_board.py bios_boot_order.py bios_ipmi_util.py bios_postcode.py bios_plat_info.py bios_pcie_port_config.py lib_pal.py"
 
 pkgdir = "bios-util"
 
@@ -50,6 +50,7 @@ do_install() {
   done
 
   ln -s ../fbpackages/${pkgdir}/bios-head.py ${localbindir}/bios-util
+  cp ${dst}/bios_default_support.json ${dst}/bios_support.json
 
 }
 

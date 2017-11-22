@@ -29,6 +29,8 @@ import json
 import logging
 import struct
 
+from datetime import date
+
 # The typing module isn't installed on BMCs as of 2017-06-18 but it's only
 # needed when running mypy on a developer's machine.
 try:
@@ -185,8 +187,25 @@ class EnvironmentPartition(Partition):
         self.parsed_header = dict(zip(self.header_fields, struct.unpack(
             self.header_format, raw_header
         )))
-        # TODO use enum names, hex, omit trailing nulls in strings, etc.
-        logger.info(json.dumps(self.parsed_header))
+        self.info_strings = []
+        for (key, value) in self.parsed_header.items():
+            if (
+                key == 'magic' or key.endswith('_address') or
+                key.endswith('_crc32')
+            ):
+                value_string = '0x{:08x}'.format(value)
+            # Null-delimited bytes to space-delimited str, merging delimiters
+            elif isinstance(value, bytes):
+                value_string = ' '.join(
+                    [b.decode() for b in value.split(b'\x00') if b]
+                )
+            elif key.endswith('_time'):
+                value_string = date.fromtimestamp(value).isoformat()
+            else:
+                value_string = str(value)
+            self.info_strings.append('{}: {}'.format(key, value_string))
+        # TODO use enum names
+        logger.info(', '.join(self.info_strings))
         Partition.__init__(self, size, offset, name, images, logger)
 
 

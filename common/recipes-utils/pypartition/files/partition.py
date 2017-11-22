@@ -113,7 +113,7 @@ class ExternalChecksumPartition(Partition):
     for the "u-boot" partition because it does not yet contain any built-in
     checksum.
     '''
-    UBootMagics = [0x130000ea, 0xbe0000ea]  # (Wedge(40|100)|Yosemite1); CMM
+    UBootMagics = [0x130000ea, 0xb80000ea, 0xbe0000ea]
 
     def initialize(self):
         # type: () -> None

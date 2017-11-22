@@ -48,7 +48,7 @@
 #define AST_I2CD_BUS_BUSY_STS  (0x1 << 16)
 #define PAGE_SIZE              0x1000
 #define MIN_THRESHOLD          60.0
-#define MAX_THRESHOLD          90.0
+#define MAX_THRESHOLD          95.0
 
 struct i2c_bus_s {
   uint32_t offset;

@@ -40,7 +40,7 @@ class dpbNode(node):
                continue
             result[kv[0].strip()] = kv[1].strip()
 
-        for hddnum in range(0, 35):
+        for hddnum in range(0, 36):
             cmd = '/usr/bin/enclosure-util --hdd-status '+ str(hddnum)
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             data = data.strip()

@@ -243,7 +243,9 @@ def get_node_bios_force_boot_setup(name):
     return bios_force_boot_setup_node(name = name, actions = actions)
 
 def get_node_bios_boot_order(name):
-    actions =  ["set"]
+    actions =  ["set",
+                "disable",
+                ]
     return bios_boot_order_node(name = name, actions = actions)
 
 

@@ -73,6 +73,8 @@ def pal_server_action(slot_id, command):
         cmd = '/usr/local/bin/power-util '+fru+' off'
     elif command == 'power-on':
         cmd = '/usr/local/bin/power-util '+fru+' on'
+    elif command == 'power-reset':
+        cmd = '/usr/local/bin/power-util '+fru+' reset'
     elif command == 'power-cycle':
         cmd = '/usr/local/bin/power-util '+fru+' cycle'
     elif command == 'graceful-shutdown':
@@ -90,7 +92,7 @@ def pal_server_action(slot_id, command):
     else:
         return -1
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-    if ret.startswith( 'Usage' ):
+    if ret.find("Usage:") != -1 or ret.find("fail ") != -1:
         return -1
     else:
         return 0

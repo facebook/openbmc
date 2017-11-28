@@ -2257,17 +2257,12 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     }
 
   } else {
-   /*previous_addr - it is used for identifying the slave address.
-   *                If the slave address is changed, bus_voltage and shunt_voltage are updated.
-   *Rshunt - it is defined by the schematic. It will be 2m ohm in the fbtp
-   *
-   */
-    static uint8_t previous_addr = 0;
+   /*
+    *Rshunt - it is defined by the schematic. It will be 2m ohm in the fbtp
+    */
     const float Rshunt = 0.002;    // 2m ohm
-    static float bus_voltage = 0x0;
-    static float shunt_voltage = 0x0;
-    static float current = 0x0;
-    static float power = 0x0;
+    const uint8_t bus_volt_addr = 0x02; // bus voltage address
+    const uint8_t shunt_volt_addr = 0x01; // shunt voltage address
 
     // Delay for 2 cycles and check INA230 init done
     if( pot < 3 )
@@ -2276,75 +2271,108 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       goto release_mux_and_exit;
     }
 
-    //check the previous all INA230 sensors are read and change the addr to the next
-    if ( previous_addr != addr )
+    memset(rbuf, 0, sizeof(rbuf));
+    memset(tbuf, 0, sizeof(tbuf));
+
+    switch(sensor_num)
     {
-      //record the current addr
-      previous_addr = addr;
-
-      //get the bus voltage
-      tbuf[0] = 0x02;
-      memset(rbuf, 0, sizeof(rbuf));
-      ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
-      if (ret < 0) {
-        ret = READING_NA;
-        goto release_mux_and_exit;
-      }
-
-      //transform the value from raw data to the reading
-      bus_voltage = ((rbuf[1] + rbuf[0]*256) * 0.00125);
-
-      //get the shunt voltage
-      tbuf[0] = 0x01;
-      memset(rbuf, 0, sizeof(rbuf));
-      ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
-      if (ret < 0) {
-        ret = READING_NA;
-        goto release_mux_and_exit;
-      }
-
-      //If shunt voltage is a negative value, set the shunt_voltage to 0
-      if ( BIT(rbuf[0], 7) )
-      {
-        shunt_voltage = 0;
-      }
-      else
-      {
-        shunt_voltage = ((rbuf[1] + rbuf[0]*256) * 0.0000025);
-      }
-
-      //get the current according to the shunt_voltage and Rshunt
-      current = (shunt_voltage / Rshunt);
-
-      //get the power according to the bus_voltage and current
-      power = current * bus_voltage;
-    }
-
-    switch(sensor_num) {
       case MB_SENSOR_C2_P12V_INA230_VOL:
       case MB_SENSOR_C3_P12V_INA230_VOL:
       case MB_SENSOR_C4_P12V_INA230_VOL:
       case MB_SENSOR_CONN_P12V_INA230_VOL:
-        *value = bus_voltage;
+        tbuf[0] = bus_volt_addr;
         break;
       case MB_SENSOR_C2_P12V_INA230_CURR:
       case MB_SENSOR_C3_P12V_INA230_CURR:
       case MB_SENSOR_C4_P12V_INA230_CURR:
       case MB_SENSOR_CONN_P12V_INA230_CURR:
-        *value = current;
+        tbuf[0] = shunt_volt_addr;
         break;
       case MB_SENSOR_C2_P12V_INA230_PWR:
       case MB_SENSOR_C3_P12V_INA230_PWR:
       case MB_SENSOR_C4_P12V_INA230_PWR:
       case MB_SENSOR_CONN_P12V_INA230_PWR:
-        *value = power;
+        tbuf[0] = shunt_volt_addr;
+        tbuf[1] = bus_volt_addr;
         break;
       default:
           syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
         break;
     }
-  }
+   
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
+    if (ret < 0)
+    {
+      ret = READING_NA;
+      goto release_mux_and_exit;
+    }
 
+    //get the additional data to calculate the power reading
+    if ( bus_volt_addr == tbuf[1] )
+    {
+      tbuf[0] = tbuf[1];
+      
+      //use the rbuf[2] and rbuf[3] to store data
+      ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, &rbuf[2], 2);
+      if (ret < 0)
+      {
+        ret = READING_NA;
+        goto release_mux_and_exit;
+      }
+    }
+
+    switch(sensor_num)
+    {
+      case MB_SENSOR_C2_P12V_INA230_VOL:
+      case MB_SENSOR_C3_P12V_INA230_VOL:
+      case MB_SENSOR_C4_P12V_INA230_VOL:
+      case MB_SENSOR_CONN_P12V_INA230_VOL:
+          //calculate the bus voltage
+          *value = ((rbuf[1] + rbuf[0]*256) * 0.00125);
+        break;
+      case MB_SENSOR_C2_P12V_INA230_CURR:
+      case MB_SENSOR_C3_P12V_INA230_CURR:
+      case MB_SENSOR_C4_P12V_INA230_CURR:
+      case MB_SENSOR_CONN_P12V_INA230_CURR:
+        *value = 0;
+        //check the sign bit. If it is a negative value, show 0
+        if ( 1 != BIT(rbuf[0], 7) )
+        {
+          //calculate the shunt voltage
+          *value = ((rbuf[1] + rbuf[0]*256) * 0.0000025);
+
+          //use I = V / R to get the current
+          *value = (*value) / Rshunt;
+        }
+        break;
+      case MB_SENSOR_C2_P12V_INA230_PWR:
+      case MB_SENSOR_C3_P12V_INA230_PWR:
+      case MB_SENSOR_C4_P12V_INA230_PWR:
+      case MB_SENSOR_CONN_P12V_INA230_PWR:
+        {
+          float shunt_volt = 0;
+          float current = 0;
+          float bus_volt = ((rbuf[3] + rbuf[2]*256) * 0.00125);//use rbuf[2] and rbuf[3] to get the bus voltage  
+     
+          //check the sign bit. If it is a negative value, show 0
+          if ( 1 != BIT(rbuf[0], 7) )       
+          {
+            //calculate the shunt voltage
+            shunt_volt = ((rbuf[1] + rbuf[0]*256) * 0.0000025);
+
+            //use I = V / R to get the current
+            current = shunt_volt / Rshunt;
+          }
+
+          //use P = V * I to get the power
+          *value = bus_volt * current;
+        }
+        break;
+      default:
+          syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
+        break;
+    } 
+  }  
     ret = 0;
     retry[i_retry] = 0;
 

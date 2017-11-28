@@ -24,9 +24,8 @@
 #include <syslog.h>
 #include "alert_control.h"
 
-#define PATH_ALERT_STATUS "/sys/bus/i2c/drivers/panther_plus/4-0040/alert_status"
-#define PATH_ALERT_CONTROL "/sys/bus/i2c/drivers/panther_plus/4-0040/alert_control"
-
+#define PATH_ALERT_STATUS "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/alert_status"
+#define PATH_ALERT_CONTROL "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/alert_control"
 #define MASK_ALERT_SMS_KCS 0x01
 
 /*

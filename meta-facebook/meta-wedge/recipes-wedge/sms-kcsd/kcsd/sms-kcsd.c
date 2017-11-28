@@ -33,7 +33,7 @@
 #include <facebook/ipmi.h>
 
 
-#define PATH_SMS_KCS "/sys/bus/i2c/drivers/panther_plus/4-0040/sms_kcs"
+#define PATH_SMS_KCS "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/sms_kcs"
 #define MAX_ALERT_CONTROL_RETRIES 3
 
 typedef struct {

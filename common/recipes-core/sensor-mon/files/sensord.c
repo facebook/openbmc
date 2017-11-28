@@ -445,7 +445,7 @@ snr_monitor(void *arg) {
   float curr_val;
   uint8_t *sensor_list, *discrete_list;
   thresh_sensor_t *snr;
-  static uint8_t snr_poll_interval[MAX_SENSOR_NUM] = {0};
+  uint8_t snr_poll_interval[MAX_SENSOR_NUM] = {0};
 
   ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
   if (ret < 0) {

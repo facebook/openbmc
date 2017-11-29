@@ -133,6 +133,9 @@
 #define FAN_PRESENT 0
 #define FAN_ALIVE 0
 
+#define CMM_BMC_HEART_BEAT "cmm_bmc_heart_beat"
+#define CLEAR_CMM_BMC_HEART_BEAT 1
+
 #define PATH_CACHE_SIZE 256
 
 struct sensor_info_sysfs {
@@ -1203,6 +1206,30 @@ static int galaxy100_write_fan_led_sysfs(int fan, const char *color)
   return 1;
 }
 
+/*
+ * Clear CMM_BMC watchdog timer in every fancpld.
+ * (Do the best effort)
+ */
+void clear_fancpld_watchdog_timer() {
+  char sysfs_path_str[PATH_CACHE_SIZE];
+  int rc = 0, fancpld_inst = 0;
+  /*
+   * galaxy100_fantray_info has NULL as its last entry, so the actual number of
+   * fans in this list is FANTRAY_INFO_SIZE - 1.
+   */
+  for (fancpld_inst = 0;  fancpld_inst < (FANTRAY_INFO_SIZE - 1); fancpld_inst++)
+  {
+    snprintf(sysfs_path_str, PATH_CACHE_SIZE,
+             "%s/%s",
+             galaxy100_fantray_info[fancpld_inst].channel_info.prefix,
+             CMM_BMC_HEART_BEAT);
+    rc = write_sysfs_int(sysfs_path_str, CLEAR_CMM_BMC_HEART_BEAT);
+    if (rc != 0)
+      syslog(LOG_WARNING, "%s: failed to clear watchdog in inst%d : %s\n",
+          __func__, fancpld_inst, sysfs_path_str);
+  }
+}
+
 static int system_shutdown(const char *why)
 {
   int ret;
@@ -1640,6 +1667,13 @@ int main(int argc, char **argv) {
     }
     /* Suppress multiple warnings for similar number of fan failures. */
     prev_fans_bad = fan_failure;
+
+    /*
+     * Do the best effort to CMM_BMC_HEARTBEAT counter in every fancplds.
+     * The watchdog timer expires in 500 secondds, if we don't clear the
+     * counter
+     */
+    clear_fancpld_watchdog_timer();
 
     /* if everything is fine, restart the watchdog countdown. If this process
      * is terminated, the persistent watchdog setting will cause the system

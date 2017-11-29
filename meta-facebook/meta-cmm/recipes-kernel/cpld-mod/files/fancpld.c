@@ -46,6 +46,10 @@
   "0: no interrupt\n"                           \
   "1: interrupt active"
 
+#define cmm_bmc_hb_help_str                     \
+  "1: clears watchdog count in fan cpld\n"      \
+  "   (the watchdog times out in 500s)"
+
 #define intr_wc_help_str                        \
   "0: no interrupt\n"                           \
   "1: interrupt happened (write to clear)"
@@ -290,6 +294,13 @@ static const i2c_dev_attr_st fancpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     9, 2, 1,
+  },
+  {
+    "cmm_bmc_heart_beat",
+    cmm_bmc_hb_help_str,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa, 0, 1,
   },
   {
     "fcb_eeprom_wp",

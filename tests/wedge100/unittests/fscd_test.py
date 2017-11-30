@@ -25,8 +25,9 @@ class fscdTest():
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         info, err = f.communicate()
-        if len(err) > 0:
-            raise Exception(err + " [FAILED]")
+        # err = err.decode('utf-8')
+        # if len(err) > 0:
+        #    raise Exception(err + " [FAILED]")
         info = info.decode('utf-8')
         return info
 
@@ -42,6 +43,7 @@ class fscdTest():
         # Backup original config
         self.run_shell_cmd("cp /etc/fsc-config.json /etc/fsc-config.json.orig")
         # Copy test config to fsc-config and restart fsc
+
         self.run_shell_cmd("cp {}/{} /etc/fsc-config.json".
                            format(self.TEST_DATA_PATH, str(config)))
         self.restart_fscd()
@@ -78,25 +80,25 @@ class fscdTest():
     def run_pwm_test(self,
                      userver_temp=DEFAULT_TEMP,
                      switch_temp=DEFAULT_TEMP,
-                     exhaustleft_temp=DEFAULT_TEMP,
-                     exhaustright_temp=DEFAULT_TEMP,
                      intake_temp=DEFAULT_TEMP,
+                     outlet_temp=DEFAULT_TEMP,
                      expected_pwm=28):
 
         PWM_VAL = expected_pwm
         print("[FSCD Testing] Setting (userver={}C, switch={}C ,"
-              "exhaustleft={}C, exhaustright={}C, intake={}C)".format(
-                    int(userver_temp)/1000, int(switch_temp)/1000,
-                    int(exhaustleft_temp)/1000, int(exhaustright_temp)/1000,
-                    int(intake_temp)/1000))
+              "intake={}C, outlet={}C)".format(
+                    int(userver_temp)/1000,
+                    int(switch_temp)/1000,
+                    int(intake_temp)/1000,
+                    int(outlet_temp)/1000))
         self.run_shell_cmd("echo {} > {}/userver/temp1_input".format(
             userver_temp, self.TEST_DATA_PATH))
         self.run_shell_cmd("echo {} > {}/switch/temp1_input".format(
             switch_temp, self.TEST_DATA_PATH))
-        self.run_shell_cmd("echo {} > {}/exhaustleft/temp1_input".format(
-            exhaustleft_temp, self.TEST_DATA_PATH))
-        self.run_shell_cmd("echo {} > {}/exhaustright/temp1_input".format(
-            exhaustright_temp, self.TEST_DATA_PATH))
+        self.run_shell_cmd("echo {} > {}/intake/temp1_input".format(
+            intake_temp, self.TEST_DATA_PATH))
+        self.run_shell_cmd("echo {} > {}/outlet/temp1_input".format(
+            outlet_temp, self.TEST_DATA_PATH))
 
         # Wait for fans to change PWM
         time.sleep(20)
@@ -131,70 +133,73 @@ class fscdTest():
         # sub-test1: pwm when all temp=23C pwm=12 => duty_cycle=38
         if not self.run_pwm_test(userver_temp=23000,
                                  switch_temp=23000,
-                                 exhaustleft_temp=23000,
-                                 exhaustright_temp=23000,
                                  intake_temp=23000,
+                                 outlet_temp=23000,
                                  expected_pwm=38):
             rc = False
 
         # sub-test2: pwm when all temp<30C pwm=12 => duty_cycle=38
         if not self.run_pwm_test(userver_temp=23000,
                                  switch_temp=28000,
-                                 exhaustleft_temp=29000,
-                                 exhaustright_temp=27000,
                                  intake_temp=28000,
+                                 outlet_temp=23000,
                                  expected_pwm=38):
             rc = False
 
         # sub-test3: pwm when all temp~[20C,33C] to 33C pwm=12 => duty_cycle=38
         if not self.run_pwm_test(userver_temp=30000,
                                  switch_temp=32000,
-                                 exhaustleft_temp=33000,
-                                 exhaustright_temp=20000,
                                  intake_temp=33000,
+                                 outlet_temp=30000,
                                  expected_pwm=38):
             rc = False
 
-        # sub-test4: pwm when all temp~[30C,34C] pwm=12 => duty_cycle=38
+        # sub-test4: pwm when all temp~[30C,35C] pwm=16 => duty_cycle=51
         if not self.run_pwm_test(userver_temp=32000,
                                  switch_temp=32000,
-                                 exhaustleft_temp=34000,
-                                 exhaustright_temp=30000,
-                                 intake_temp=34000,
-                                 expected_pwm=38):
+                                 intake_temp=37000,
+                                 outlet_temp=32000,
+                                 expected_pwm=51):
             rc = False
 
-        # sub-test5: pwm when all temp~[32C,40C] pwm=20 => duty_cycle=67
+        # sub-test4: pwm when all temp~[38C] pwm=16 => duty_cycle=51
+        if not self.run_pwm_test(userver_temp=32000,
+                                 switch_temp=32000,
+                                 intake_temp=39000,
+                                 outlet_temp=32000,
+                                 expected_pwm=51):
+            rc = False
+
+        # sub-test5: pwm when all temp~[32C,42C] pwm=23 => duty_cycle=74
         if not self.run_pwm_test(userver_temp=32000,
                                  switch_temp=38000,
-                                 exhaustleft_temp=39000,
-                                 exhaustright_temp=40000,
-                                 intake_temp=40000,
-                                 expected_pwm=64):
+                                 intake_temp=42000,
+                                 outlet_temp=32000,
+                                 expected_pwm=74):
             rc = False
 
-        # sub-test6: pwm when all temp~[40C,46C] pwm=20 => duty_cycle=63
+        # sub-test6: pwm when all temp~[40C,50C] pwm=31 => duty_cycle=100
         if not self.run_pwm_test(userver_temp=40000,
                                  switch_temp=41000,
-                                 exhaustleft_temp=45000,
-                                 exhaustright_temp=43000,
-                                 intake_temp=44000,
-                                 expected_pwm=64):
+                                 intake_temp=50000,
+                                 outlet_temp=40000,
+                                 expected_pwm=100):
             rc = False
 
-        # sub-test7: pwm when all temp~[46C,50C] pwm=28 => duty_cycle=88
+        # sub-test7: pwm when all temp~[46C,50C] pwm=31 => duty_cycle=100
         if not self.run_pwm_test(userver_temp=46000,
                                  switch_temp=47000,
-                                 exhaustleft_temp=50000,
-                                 exhaustright_temp=70000,
-                                 intake_temp=65000,
-                                 expected_pwm=90):
+                                 intake_temp=85000,
+                                 outlet_temp=46000,
+                                 expected_pwm=100):
             rc = False
 
         # sub-test8: At this point the system should shutdown because
         # temperature limit reached
         # Wait for threshold cycle = ~20sec
-        time.sleep(20)
+        print("[FSCD Testing] System should shutdown because temperature "
+              " limit reached. Verifying...")
+        time.sleep(70)
         if not self.is_userver_on():
             print("[FSCD Testing] Host action test: Expected userver to "
                   "power off due to high temperature event [PASSED]")
@@ -206,16 +211,23 @@ class fscdTest():
         # sub-test9: Remove sensor read path which is equivalent to read
         # failure. Wait for threshold cycle = ~20sec.
         # Firstly recover to good state
+        print("[FSCD Testing] Recovering system for next test...")
         self.run_pwm_test(userver_temp=40000,
                           switch_temp=41000,
-                          exhaustleft_temp=45000,
-                          exhaustright_temp=43000,
                           intake_temp=44000,
-                          expected_pwm=64)
+                          outlet_temp=40000,
+                          expected_pwm=74)
         self.run_shell_cmd("/usr/local/bin/wedge_power.sh on")
-        self.run_shell_cmd("rm {}/exhaustleft/temp1_input".format(
+        time.sleep(10)
+        if self.is_userver_on():
+            print("[FSCD Testing] Ready for next test...")
+        else:
+            print("[FSCD Testing] Unable to recover to good state")
+            return False
+
+        self.run_shell_cmd("rm {}/intake/temp1_input".format(
                             self.TEST_DATA_PATH))
-        time.sleep(20)
+        time.sleep(70)
         if not self.is_userver_on():
             print("[FSCD Testing] Host action test: Expected userver to "
                   "power off due to read failure event [PASSED]")
@@ -245,12 +257,23 @@ class fscdTest():
             rc = False
         # Wait for a few cycles for host action to be performed
         time.sleep(90)
-        if not self.is_userver_on():
-            print("[FSCD Testing] Host action test: Expected userver to "
-                  "power off due to fan RPM read failure event [PASSED]")
+
+        cmd = 'grep -c \'fscd: All fans report failed RPM not consistent with Fantray status 0x1f\' /var/log/messages'
+        data = self.run_shell_cmd(cmd)
+        if int(data) > 0:
+            if self.is_userver_on():
+                print("[FSCD Testing] Host action test: Expected userver to "
+                      "power on due to fan RPM read failure event but"
+                      " fantray status is GOOD [PASSED]")
+            else:
+                print("[FSCD Testing] Host action test: Expected userver to "
+                      "power on due to fan RPM read failure event but"
+                      " fantray status is GOOD [FAILED]")
+                rc = False
         else:
             print("[FSCD Testing] Host action test: Expected userver to "
-                  "power off due to fan RPM read failure event [FAILED]")
+                  "power on due to fan RPM read failure event but"
+                  " fantray status is GOOD [FAILED]")
             rc = False
         return rc
 

@@ -99,7 +99,7 @@ do
 			auto_flag="yes"
 			;;
         ?)
-			echo "unkonw argument"
+			echo "unknown argument"
 			exit 1
 		;;
     esac

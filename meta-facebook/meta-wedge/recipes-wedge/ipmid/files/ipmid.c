@@ -278,7 +278,7 @@ enum
 };
 
 // TODO: Once data storage is finalized, the following structure needs
-// to be retrieved/updated from persistant backend storage
+// to be retrieved/updated from persistent backend storage
 static lan_config_t g_lan_config = { 0 };
 static proc_info_t g_proc_info = { 0 };
 static dimm_info_t g_dimm_info[MAX_NUM_DIMMS] = { 0 };

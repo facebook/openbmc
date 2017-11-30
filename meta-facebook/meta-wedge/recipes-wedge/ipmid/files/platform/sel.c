@@ -68,7 +68,7 @@
 typedef struct {
   int magic; // Magic number to check validity
   int version; // version number of this header
-  int begin; // index to the begining of the log
+  int begin; // index to the beginning of the log
   int end; // index to end of the log
   time_stamp_t ts_add; // last addition time stamp
   time_stamp_t ts_erase; // last erase time stamp

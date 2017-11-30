@@ -359,7 +359,7 @@ JAM_RETURN_TYPE jbi_execute
 	int *format_version
 )
 
-This routine recieves 6 parameters, passes back 2 parameters, and returns a status 
+This routine receives 6 parameters, passes back 2 parameters, and returns a status 
 code (of JAM_RETURN_TYPE). This function is called once in main(), which is coded in the
 jbistub.c file (jbi_execute() is defined in the jbimain.c file). Some processing is done in
 main() to check for valid data being passed to jbi_execute(), and to set up some of the 

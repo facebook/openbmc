@@ -8269,7 +8269,7 @@ basic_json_parser_63:
 
         @param[in] type  the @ref number_float_t in use
 
-        @param[in,out] endptr recieves a pointer to the first character after
+        @param[in,out] endptr receives a pointer to the first character after
         the number
 
         @return the floating point number
@@ -8294,7 +8294,7 @@ basic_json_parser_63:
 
         @param[in] type  the @ref number_float_t in use
 
-        @param[in,out] endptr  recieves a pointer to the first character after
+        @param[in,out] endptr  receives a pointer to the first character after
         the number
 
         @return the floating point number
@@ -8314,7 +8314,7 @@ basic_json_parser_63:
 
         @param[in] type  the @ref number_float_t in use
 
-        @param[in,out] endptr  recieves a pointer to the first character after
+        @param[in,out] endptr  receives a pointer to the first character after
         the number
 
         @return the floating point number

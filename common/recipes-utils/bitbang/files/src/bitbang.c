@@ -94,7 +94,7 @@ void bitbang_close(bitbang_handle_st *hdl)
  * update is also controlled by HZ (100).
  * After I added the high resolution timer support, the spin works as the
  * system time is updated more frequently. However, nanosleep() solution is
- * still noticable slower comparing with spin. There could be some kernel
+ * still noticeable slower comparing with spin. There could be some kernel
  * scheduling tweak missing. Did not get time on that yet.
  * For now, use 10ms as the threshold to determine if spin or nanosleep()
  * is used.

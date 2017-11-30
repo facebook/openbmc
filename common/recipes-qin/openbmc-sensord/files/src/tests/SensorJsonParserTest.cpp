@@ -200,7 +200,7 @@ TEST_F(JsonParserGenericObjectTest, GenericObjectTest) {
                                   *sensorTree_,
                                   "/org/openbmc"));
 
-  LOG(INFO) << "Add object succesfully after removing the duplicate";
+  LOG(INFO) << "Add object successfully after removing the duplicate";
   sensorTree_->deleteObjectByName("Chassis", "/org/openbmc");
   EXPECT_NO_THROW(
     SensorJsonParser::parseObject(jObject_,

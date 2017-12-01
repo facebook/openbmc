@@ -2643,7 +2643,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   while (retry) {
     ret = fby2_sensor_read(fru, sensor_num, value);
-    if(ret >= 0)
+    if ((ret >= 0) || (ret == EER_READ_NA))
       break;
     msleep(50);
     retry--;
@@ -3249,8 +3249,13 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *sensor_list = (uint8_t *) bic_discrete_list;
-      *cnt = bic_discrete_cnt;
+      if (pal_is_slot_server(fru)) {
+        *sensor_list = (uint8_t *) bic_discrete_list;
+        *cnt = bic_discrete_cnt;
+      } else {
+        *sensor_list = NULL;
+        *cnt = 0;
+      }
       break;
     case FRU_SPB:
     case FRU_NIC:

@@ -808,6 +808,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   if (ret) {
     return ret;
   }
+  msleep(1);  // a little delay to reduce CPU utilization
 
   if (sensor.flags & BIC_SENSOR_READ_NA) {
 #ifdef DEBUG

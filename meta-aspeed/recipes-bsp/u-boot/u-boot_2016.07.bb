@@ -145,18 +145,18 @@ do_compile () {
         UBOOT_CONFIGNAME=$(echo ${UBOOT_CONFIGNAME} | sed -e 's/_config/_defconfig/')
 
         # Always turn off the recovery build.
-        defconfig_option_off CONFIG_ASPEED_RECOVERY_BUILD ${S}/configs/${UBOOT_CONFIGNAME}
+        defconfig_option_off CONFIG_ASPEED_RECOVERY_BUILD ${B}/configs/${UBOOT_CONFIGNAME}
 
         if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-            defconfig_option_on CONFIG_SPL ${S}/configs/${UBOOT_CONFIGNAME}
-            defconfig_option_on CONFIG_SPL_FIT_SIGNATURE ${S}/configs/${UBOOT_CONFIGNAME}
-            defconfig_option_on CONFIG_OF_CONTROL ${S}/configs/${UBOOT_CONFIGNAME}
-            defconfig_option_on CONFIG_OF_EMBED ${S}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_SPL ${B}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_SPL_FIT_SIGNATURE ${B}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_OF_CONTROL ${B}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_OF_EMBED ${B}/configs/${UBOOT_CONFIGNAME}
         else
-            defconfig_option_off CONFIG_SPL ${S}/configs/${UBOOT_CONFIGNAME}
-            defconfig_option_off CONFIG_SPL_FIT_SIGNATURE ${S}/configs/${UBOOT_CONFIGNAME}
-            defconfig_option_off CONFIG_OF_CONTROL ${S}/configs/${UBOOT_CONFIGNAME}
-            defconfig_option_off CONFIG_OF_EMBED ${S}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_SPL ${B}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_SPL_FIT_SIGNATURE ${B}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_OF_CONTROL ${B}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_off CONFIG_OF_EMBED ${B}/configs/${UBOOT_CONFIGNAME}
         fi
 
         oe_runmake O=default ${UBOOT_MACHINE}
@@ -164,7 +164,7 @@ do_compile () {
 
         # Finally, the verified-boot builds a second 'recovery' U-Boot.
         if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-            defconfig_option_on CONFIG_ASPEED_RECOVERY_BUILD ${S}/configs/${UBOOT_CONFIGNAME}
+            defconfig_option_on CONFIG_ASPEED_RECOVERY_BUILD ${B}/configs/${UBOOT_CONFIGNAME}
             oe_runmake O=recovery ${UBOOT_MACHINE}
             oe_runmake O=recovery ${UBOOT_MAKE_TARGET}
         fi

@@ -910,9 +910,25 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
   return 0;
 }
 
+static bool
+pal_is_valid_pair(uint8_t slot_id) {
+  int pair_set_type;
+
+  pair_set_type = pal_get_pair_slot_type(slot_id);
+  switch (pair_set_type) {
+    case TYPE_SV_A_SV:
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+    case TYPE_NULL_A_SV:
+    case TYPE_SV_A_NULL:
+      return true;
+  }
+
+  return false;
+}
+
 static int
 pal_slot_pair_12V_on(uint8_t slot_id) {
-  int slot_type=-1;
   int pair_slot_id;
   int pair_set_type=-1;
   uint8_t status=0;
@@ -926,7 +942,6 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   else
     pair_slot_id = slot_id + 1;
 
-  slot_type = fby2_get_slot_type(slot_id);
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
      case TYPE_SV_A_SV:
@@ -1246,8 +1261,11 @@ server_12v_on(uint8_t slot_id) {
 #endif
 
   // Reject 12V-on action when SLOT is not present or SLOT ejector latch pin is high
-  if ( (1 != slot_prsnt) || (slot_latch) )
+  if ((1 != slot_prsnt) || (slot_latch)) {
+    flock(pid_file, LOCK_UN);
+    close(pid_file);
     return -1;
+  }
 
   // Write 12V on
   memset(vpath, 0, sizeof(vpath));
@@ -1260,6 +1278,14 @@ server_12v_on(uint8_t slot_id) {
   pal_hot_service_action(slot_id);
   rc = flock(pid_file, LOCK_UN);
   close(pid_file);
+
+  if (!pal_is_valid_pair(slot_id)) {
+    write_device(vpath, "0");
+    return -1;
+  }
+
+  if (!pal_is_slot_server(slot_id))
+    return 0;
 
   // Wait for BIC ipmb interface is ready
   while (retry) {

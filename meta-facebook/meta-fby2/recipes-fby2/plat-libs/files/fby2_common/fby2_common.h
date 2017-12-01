@@ -60,6 +60,7 @@ enum {
   TYPE_SV_A_SV     = 0,
   TYPE_CF_A_SV     = 1,
   TYPE_GP_A_SV     = 2,
+  TYPE_NULL_A_SV   = 3,
   TYPE_SV_A_CF     = 4,
   TYPE_CF_A_CF     = 5,
   TYPE_GP_A_CF     = 6,
@@ -68,6 +69,7 @@ enum {
   TYPE_CF_A_GP     = 9,
   TYPE_GP_A_GP     = 10,
   TYPE_NULL_A_GP   = 11,
+  TYPE_SV_A_NULL   = 12,
   TYPE_CF_A_NULL   = 13,
   TYPE_GP_A_NULL   = 14,
 };

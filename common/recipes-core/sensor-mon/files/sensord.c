@@ -491,7 +491,7 @@ snr_monitor(void *arg) {
       curr_val = 0;
       if (snr[snr_num].flag) {
         // granular the sensor via assigning the poll_interval
-        if (snr_poll_interval[snr_num] > 0) {
+        if (snr_poll_interval[snr_num] > MIN_POLL_INTERVAL) {
           snr_poll_interval[snr_num] -= MIN_POLL_INTERVAL;
           continue;
         }

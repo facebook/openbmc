@@ -440,7 +440,7 @@ thresh_reinit_chk(uint8_t fru) {
 static void *
 snr_monitor(void *arg) {
 
-  uint8_t fru = *(uint8_t *) arg;
+  uint8_t fru = (uint8_t)(uintptr_t)arg;
   int i, ret, snr_num, sensor_cnt, discrete_cnt;
   float curr_val;
   uint8_t *sensor_list, *discrete_list;
@@ -695,7 +695,7 @@ run_sensord(int argc, char **argv) {
 
       /* Threshold Sensors */
       if (pthread_create(&thread_snr[fru-1], NULL, snr_monitor,
-          (void*) &fru) < 0) {
+          (void*)(uintptr_t)fru) < 0) {
         syslog(LOG_WARNING, "pthread_create for Threshold Sensors for FRU %d failed\n", fru);
 #ifdef DEBUG
       } else {

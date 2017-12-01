@@ -47,6 +47,8 @@ class sensorsNode(node):
                 continue
             if line.find("failed") != -1:
                 continue
+            if line.find(":") == -1:
+                continue
 
             kv = [line[0:line.find(':')-1], line[line.find(':')+1:]]
             if (len(kv) < 2):

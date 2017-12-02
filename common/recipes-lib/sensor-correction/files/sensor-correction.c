@@ -114,7 +114,7 @@ static int load_table(json_t *obj, correction_table_t *tbl)
     DEBUG("Unsupported number of entries in correction table: %zu\n", tbl->num);
     return -1;
   }
-  tbl->corr_table = calloc(tbl->num, sizeof(correction_table_t));
+  tbl->corr_table = calloc(tbl->num, sizeof(correction_element_t));
   if (!tbl->corr_table) {
     return -1;
   }
@@ -326,9 +326,11 @@ int sensor_correction_init(const char *file)
       goto bail;
     }
   }
+  json_decref(conf);
   return 0;
 bail:
   free(g_sensors);
+  json_decref(conf);
   g_sensors = NULL;
   g_sensors_count = 0;
   return -1;

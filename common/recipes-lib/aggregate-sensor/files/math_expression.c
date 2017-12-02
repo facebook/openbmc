@@ -95,7 +95,9 @@ static bool is_constant(char *str)
 static expression_type *alloc_expression(expression_type *parent)
 {
   expression_type *o = calloc(1, sizeof(expression_type));
-  assert(o);
+  if (!o) {
+    return NULL;
+  }
   o->parent = parent;
   return o;
 }
@@ -104,8 +106,9 @@ static expression_term_type *alloc_expression_term(char *name, variable_type *va
 {
   int i;
   expression_term_type *term = calloc(1, sizeof(expression_term_type));
-
-  assert(term);
+  if (!term) {
+    return NULL;
+  }
   term->type = is_constant(name) ? TERM_CONSTANT : TERM_VARIABLE;
   if (term->type == TERM_CONSTANT) {
     term->term.constant = atof(name);
@@ -131,12 +134,23 @@ static int expression_term_evaluate(expression_term_type *term, float *value)
   return term->term.var.value(term->term.var.state, value);
 }
 
-expression_type *expression_parse(char *str, variable_type *vars, size_t num)
+expression_type *expression_parse(const char *user_str, variable_type *vars, size_t num)
 {
   char *token, *saveptr;
-  expression_type *tmp, *current = NULL;
+  expression_type *tmp, *current = NULL, *ret = NULL;
+  char *str;
 
-  current = alloc_expression(NULL);
+  str = calloc(strlen(user_str) + 1, 1);
+  if (!str) {
+    return NULL;
+  }
+  strcpy(str, user_str);
+
+  ret = current = alloc_expression(NULL);
+  if (!current) {
+    free(str);
+    return NULL;
+  }
 
   for(token = strtok_r(str, " \n", &saveptr);
       token != NULL;
@@ -147,6 +161,9 @@ expression_type *expression_parse(char *str, variable_type *vars, size_t num)
     if (!strncmp(token, "(", 2)) {
       /* Start a new group and set it as current */
       current = alloc_expression(current);
+      if (!current) {
+        goto free_bail;
+      }
     } else if (!strncmp(token, ")", 2)) {
       expression_type *parent = current->parent;
       /* Close the current group, set it as the parent's
@@ -171,6 +188,9 @@ expression_type *expression_parse(char *str, variable_type *vars, size_t num)
          * group and then set the new one as the current with
          * its operator set to the freshly parsed operator */
         tmp = alloc_expression(current->parent);
+        if (!tmp) {
+          goto free_bail;
+        }
         tmp->left_exp_group = current;
         current->parent = tmp;
         tmp->type = get_operator(token);
@@ -178,6 +198,9 @@ expression_type *expression_parse(char *str, variable_type *vars, size_t num)
       }
     } else {
       expression_term_type *term = alloc_expression_term(token, vars, num);
+      if (!term) {
+        goto free_bail;
+      }
       /* This is either a variable or a constant. Allocate
        * a expression term and set it as the left (if available) or
        * right of the current expression group */
@@ -193,7 +216,12 @@ expression_type *expression_parse(char *str, variable_type *vars, size_t num)
   /* We are done parsing, ensure that we are the top group
    * and the user is not missing any unclosed parenthesis */
   assert(current->parent == NULL);
+  free(str);
   return current;
+free_bail:
+  /* Free the partially created tree if it exists */
+  expression_destroy(ret);
+  return NULL;
 }
 
 int expression_evaluate(expression_type *exp, float *value)
@@ -239,6 +267,9 @@ int expression_evaluate(expression_type *exp, float *value)
 
 void expression_destroy(expression_type *exp)
 {
+  if (!exp) {
+    return;
+  }
   if (exp->left_exp_term)
     free(exp->left_exp_term);
   else if (exp->left_exp_group)

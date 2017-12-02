@@ -169,7 +169,7 @@ static int load_linear_cond_eq(aggregate_sensor_t *snr, json_t *obj)
     strncpy(&name2idx_map[i][0], key, MAX_STRING_SIZE);
 
     DEBUG("Loading expression: %zu\n", i);
-    snr->expressions[i] = expression_parse((char *)json_string_value(val), vars, num_vars);
+    snr->expressions[i] = expression_parse(json_string_value(val), vars, num_vars);
     if (!snr->expressions[i]) {
       DEBUG("Expression[%zu] parsing failed!\n", i);
       goto bail_exp_parse;

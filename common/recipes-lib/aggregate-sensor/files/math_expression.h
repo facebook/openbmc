@@ -57,7 +57,7 @@ typedef struct expression_type_s expression_type;
  * A copy of the variable (name, value() and state) is made so the
  * caller may free it after this function returns, but must maintain
  * the scope of 'value' & 'state' if they are dynamic objects */
-expression_type *expression_parse(char *str, variable_type *vars, size_t num);
+expression_type *expression_parse(const char *str, variable_type *vars, size_t num);
 
 /* Evaluate the expression. Note, multiple calls to the functions
  * provided in 'vars' in expression_parse might be made */

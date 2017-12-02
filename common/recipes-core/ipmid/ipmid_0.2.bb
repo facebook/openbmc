@@ -22,7 +22,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-LDFLAGS += "-lpal -lkv "
+LDFLAGS += "-lpal -lkv -lsdr -lfruid "
 CFLAGS += "-Wall -Werror "
 
 SRC_URI = "file://Makefile \
@@ -37,12 +37,14 @@ SRC_URI = "file://Makefile \
            file://fruid.h \
            file://usb-dbg.c \
            file://usb-dbg.h \
+           file://usb-dbg-conf.c \
+           file://usb-dbg-conf.h \
            file://BBV.c \
            file://BBV.h \
           "
 
-DEPENDS += " libpal "
-RDEPENDS_${PN} += " libpal "
+DEPENDS += " libpal libsdr libfruid "
+RDEPENDS_${PN} += " libpal libsdr libfruid "
 
 binfiles = "ipmid"
 

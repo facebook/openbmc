@@ -25,6 +25,11 @@
     {
       "json":"../lightning/unittests/i2c.json"
     }],
+  "restapiTest.py":["yes",
+    {
+      "testfile":"../../lightning/unittests/lightningRestapiTest.py",
+      "json":"../../lightning/unittests/rest_endpoint.json"
+    }],
   "watchdogResetTest.py":["yes",
     {
       "testfile":"../../lightning/unittests/lightningWatchdogResetTest.py"

@@ -1,0 +1,182 @@
+{
+  "type":"lightning",
+  "endpoints":{
+    "/api": [
+      "fcb",
+      "pdpb",
+      "peb"
+    ],
+    "/api/fcb":[
+      "fans",
+      "fruid",
+      "sensors",
+      "logs"
+    ],
+    "/api/pdpb":[
+      "sensors",
+      "fruid",
+      "flash",
+      "logs"
+    ],
+    "/api/peb":[
+      "fruid",
+      "sensors",
+      "bmc",
+      "health",
+      "Status of identify LED",
+      "logs"
+    ],
+    "/api/fcb/fans":[
+      "Fan 1 Front Speed",
+      "Fan 1 Rear Speed",
+      "Fan 2 Front Speed",
+      "Fan 2 Rear Speed",
+      "Fan 3 Front Speed",
+      "Fan 3 Rear Speed",
+      "Fan 4 Front Speed",
+      "Fan 4 Rear Speed",
+      "Fan 5 Front Speed",
+      "Fan 5 Rear Speed",
+      "Fan 6 Front Speed",
+      "Fan 6 Rear Speed"
+    ],
+    "/api/fcb/fruid":[
+      "Board FRU ID",
+      "Board Mfg",
+      "Board Mfg Date",
+      "Board Part Number",
+      "Board Product",
+      "Board Serial",
+      "Chassis Part Number",
+      "Chassis Serial Number",
+      "Chassis Type",
+      "Product Asset Tag",
+      "Product Custom Data 1",
+      "Product FRU ID",
+      "Product Manufacturer",
+      "Product Name",
+      "Product Part Number",
+      "Product Serial",
+      "Product Version"
+    ],
+    "/api/fcb/sensors":[
+      "AIRFLOW                      (0x2C)",
+      "FAN1_FRONT_SPEED             (0x20)",
+      "FAN1_REAR_SPEED              (0x21)",
+      "FAN2_FRONT_SPEED             (0x22)",
+      "FAN2_REAR_SPEED              (0x23)",
+      "FAN3_FRONT_SPEED             (0x24)",
+      "FAN3_REAR_SPEED              (0x25)",
+      "FAN4_FRONT_SPEED             (0x26)",
+      "FAN4_REAR_SPEED              (0x27)",
+      "FAN5_FRONT_SPEED             (0x28)",
+      "FAN5_REAR_SPEED              (0x29)",
+      "FAN6_FRONT_SPEED             (0x2A)",
+      "FAN6_REAR_SPEED              (0x2B)",
+      "FCB_BJT_TEMP_1               (0x60)",
+      "FCB_BJT_TEMP_2               (0x61)",
+      "FCB_HSC_IN_POWER             (0x3A)",
+      "FCB_HSC_IN_VOLT              (0x38)",
+      "FCB_HSC_OUT_CURR             (0x39)",
+      "FCB_P12VL                    (0x35)",
+      "FCB_P12VU                    (0x36)",
+      "FCB_P12V_AUX                 (0x34)",
+      "FCB_P3V3                     (0x37)"
+    ],
+    "/api/fcb/logs":[
+      "Logs"
+    ],
+    "/api/pdpb/sensors":[
+      "LEFT_FRONT_TEMP              (0x50)",
+      "LEFT_REAR_TEMP               (0x4F)",
+      "PDPB_P12V                    (0x4B)",
+      "PDPB_P3V3                    (0x4C)",
+      "RIGHT_FRONT_TEMP             (0x52)",
+      "RIGHT_REAR_TEMP              (0x51)",
+      "SSD_0_TEMP                   (0x63)",
+      "SSD_10_TEMP                  (0x6D)",
+      "SSD_11_TEMP                  (0x6E)",
+      "SSD_12_TEMP                  (0x6F)",
+      "SSD_13_TEMP                  (0x70)",
+      "SSD_14_TEMP                  (0x71)",
+      "SSD_1_TEMP                   (0x64)",
+      "SSD_2_TEMP                   (0x65)",
+      "SSD_3_TEMP                   (0x66)",
+      "SSD_4_TEMP                   (0x67)",
+      "SSD_5_TEMP                   (0x68)",
+      "SSD_6_TEMP                   (0x69)",
+      "SSD_7_TEMP                   (0x6A)",
+      "SSD_8_TEMP                   (0x6B)",
+      "SSD_9_TEMP                   (0x6C)"
+    ],
+    "/api/pdpb/fruid":[
+      "Board Mfg",
+      "Board Mfg Date",
+      "Board Part Number",
+      "Board Product",
+      "Board Serial",
+      "Product Asset Tag",
+      "Product Custom Data 1",
+      "Product FRU ID",
+      "Product Manufacturer",
+      "Product Name",
+      "Product Part Number",
+      "Product Serial",
+      "Product Version"
+    ],
+    "/api/pdpb/flash":[
+      "flash type",
+      "vendor name"
+    ],
+    "/api/pdpb/logs":[
+      "Logs"
+    ],
+    "/api/peb/fruid":[
+      "Board Mfg",
+      "Board Mfg Date",
+      "Board Part Number",
+      "Board Product",
+      "Board Serial",
+      "Product Asset Tag",
+      "Product Custom Data 1",
+      "Product FRU ID",
+      "Product Manufacturer",
+      "Product Name",
+      "Product Part Number",
+      "Product Serial",
+      "Product Version"
+    ],
+    "/api/peb/sensors":[
+      "PCIE_SW_TEMP                 (0x53)",
+      "PEB_HSC_IN_POWER             (0x4D)",
+      "PEB_HSC_IN_VOLT              (0x49)",
+      "PEB_HSC_OUT_CURR             (0x4A)",
+      "PEB_P0V9                     (0x47)",
+      "PEB_P0V9_E                   (0x48)",
+      "PEB_P12V                     (0x42)",
+      "PEB_P1V26                    (0xF0)",
+      "PEB_P1V53                    (0x46)",
+      "PEB_P1V8                     (0x45)",
+      "PEB_P3V3                     (0x44)",
+      "PEB_P5V                      (0x43)",
+      "SYS_INLET_TEMP               (0x56)"
+    ],
+    "/api/peb/bmc":[
+      "CPU Usage",
+      "Description",
+      "MAC Addr",
+      "Memory Usage",
+      "OpenBMC Version",
+      "Reset Reason",
+      "Uptime",
+      "kernel version",
+      "u-boot version"
+    ],
+    "/api/peb/health":[
+      "Status of enclosure health LED"
+    ],
+    "/api/peb/logs":[
+      "Logs"
+    ]
+  }
+}

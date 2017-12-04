@@ -19,7 +19,6 @@ VERBOSE = False
 MODE = 'WARN'
 HEADNODE = False
 
-
 def setVerbose(cmd):
     return cmd + ' --verbose ' + MODE
 
@@ -28,7 +27,6 @@ def interfaceTest(cmd_bmc, data):
     """
     Run interfaceTest.py with command line arguments
     """
-    print(cmd_bmc)
     if data["interfaceTest.py"][1]["eth0"]["v4"] == "yes":
         args = "eth0 4"
         if VERBOSE:
@@ -41,7 +39,6 @@ def interfaceTest(cmd_bmc, data):
             print(output[0].decode())
         else:
             print(output[0].decode().split('\n')[0].rstrip())
-        #print(str(output[0].encode('utf-8')).split('\n')[0])
     if data["interfaceTest.py"][1]["eth0"]["v6"] == "yes":
         args = "eth0 6"
         if VERBOSE:
@@ -54,7 +51,6 @@ def interfaceTest(cmd_bmc, data):
             print(output[0].decode())
         else:
             print(output[0].decode().split('\n')[0].rstrip())
-        #print(str(output[0].encode('utf-8')).split('\n')[0])
     if data["interfaceTest.py"][1]["usb0"] == "yes":
         args = "usb0 6"
         if VERBOSE:
@@ -83,7 +79,6 @@ def interfaceTest(cmd_bmc, data):
             cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
         output = sshProcess.communicate()
         print(output[0].rstrip())
-        #print(str(output[0].encode('utf-8')).split('\n')[0])
     return
 
 
@@ -101,8 +96,6 @@ def generalTypeTest(cmd_bmc, data, testName, testPath="/common/"):
         print(output[0].decode())
     else:
         print(output[0].decode().split('\n')[0].rstrip())
-    #print(output[0].rstrip())
-    #print(output[0].split(b'\n')[0])
     return
 
 def fscdTest(cmd_bmc, data, testName, testPath="/common/"):
@@ -127,9 +120,6 @@ def generalJsonTest(cmd_bmc, data, testName):
         print(output[0].decode())
     else:
         print(output[0].decode().split('\n')[0].rstrip())
-    #print(output[0].rstrip())
-    #print(output[0].split(b'\n')[0])
-    #print(str(output[0].encode('utf-8')).split('\n')[0])
     return
 
 
@@ -151,10 +141,15 @@ def connectionTest(hostnameBMC, data, headnodeName=None):
     print(info.decode().rstrip())
     return
 
-def restapiTest(hostnameBMC, data):
+def restapiTest(hostnameBMC, data, headnodeName=None):
     json = data["restapiTest.py"][1]['json']
-    cmd = "python ../restapiTest.py {0} {1}"
-    cmd = cmd.format(str(hostnameBMC), json)
+    if HEADNODE:
+        pythonfile = data["restapiTest.py"][1]['testfile']
+        cmd = "python {0} {1} {2}"
+        cmd = cmd.format(pythonfile, headnodeName, json)
+    else:
+        cmd = "python ../restapiTest.py {0} {1}"
+        cmd = cmd.format(str(hostnameBMC), str(json))
     if VERBOSE:
         cmd = setVerbose(cmd)
     f = subprocess.Popen(
@@ -171,8 +166,6 @@ def memoryUsageTest(cmd_bmc, data):
     sshProcess = Popen(cmd, shell=True, stdin=None, stdout=PIPE, stderr=PIPE)
     output = sshProcess.communicate()
     print(output[0].decode().split('\n')[0].rstrip())
-    #print(output.decode().split('\n')[0].rstrip())
-    #print(output[0].encode('utf-8')).split('\n')[0])
     return
 
 
@@ -293,8 +286,12 @@ if __name__ == "__main__":
             if data["fansTest.py"] == 'yes':
                 generalTypeTest(cmd_bmc, data, "fansTest.py")
         if "restapiTest.py" in data:
-            if data["restapiTest.py"][0] == 'yes':
-                restapiTest(hostnameBMC, data)
+            if HEADNODE:
+                if data["restapiTest.py"][0] == 'yes':
+                    restapiTest(hostnameBMC, data, headnodeName)
+            else:
+                if data["restapiTest.py"][0] == 'yes':
+                    restapiTest(hostnameBMC, data)
         if "connectionTest.py" in data:
             if data["connectionTest.py"][0] == 'yes':
                 if HEADNODE:

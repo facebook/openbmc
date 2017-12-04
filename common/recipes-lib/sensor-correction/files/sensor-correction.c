@@ -78,8 +78,8 @@ typedef struct {
   value_map_element_t value_map[MAX_NUM_CONDITIONS];
 } sensor_correction_t;
 
-sensor_correction_t *g_sensors = NULL;
-size_t g_sensors_count = 0;
+static sensor_correction_t *g_sensors = NULL;
+static size_t g_sensors_count = 0;
 
 static int get_table(value_map_element_t *value_map, size_t num, char *value, size_t *idx)
 {

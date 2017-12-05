@@ -37,6 +37,13 @@
 #define FIELD_TYPE(x)       ((x & (0x03 << 6)) >> 6)
 #define FIELD_LEN(x)        (x & 0x1F)
 
+#ifndef ERR_NOT_READY
+#define ERR_NOT_READY -2
+#endif
+#ifndef MAX_RETRIES_SDR_INIT
+#define MAX_RETRIES_SDR_INIT 1
+#endif
+
 #define MAX_NAME_LEN        16
 
 /* Array for BCD Plus definition. */

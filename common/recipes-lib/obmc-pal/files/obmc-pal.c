@@ -1785,6 +1785,12 @@ pal_copy_all_thresh_to_file(uint8_t fru, thresh_sensor_t *sinfo) {
 }
 
 int __attribute__((weak))
+pal_sensor_sdr_init(uint8_t fru, void *sinfo)
+{
+  return -1;
+}
+
+int __attribute__((weak))
 pal_get_all_thresh_from_file(uint8_t fru, thresh_sensor_t *sinfo, int mode) {
   int fd;
   int cnt = 0;

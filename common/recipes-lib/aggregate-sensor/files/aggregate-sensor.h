@@ -33,4 +33,6 @@ int aggregate_sensor_units(size_t index, char *units);
 /* Called once per process. Safe to call multiple times */
 int aggregate_sensor_init(const char *conf_file);
 
+void aggregate_sensor_conf_print(bool syslog);
+
 #endif

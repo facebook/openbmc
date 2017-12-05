@@ -28,6 +28,14 @@
 #include <jansson.h>
 #include "aggregate-sensor-internal.h"
 
+#define PRINT(slog, fmt, ...) do { \
+  if (slog) { \
+    syslog(LOG_INFO, fmt, ##__VA_ARGS__); \
+  } else { \
+    printf(fmt, ##__VA_ARGS__); \
+  } \
+} while(0)
+
 #define DEFAULT_CONF_FILE_PATH "/etc/aggregate-sensor-conf.json"
 
 size_t g_sensors_count = 0;
@@ -121,52 +129,57 @@ aggregate_sensor_init(const char *conf_file_path)
 }
 
 void
-aggregate_sensors_conf_print(void)
+aggregate_sensor_conf_print(bool slog)
 {
   size_t i;
-  printf("Found: %zu sensors\n", g_sensors_count);
+  PRINT(slog, "Found: %zu sensors\n", g_sensors_count);
   for (i = 0; i < g_sensors_count; i++) {
     aggregate_sensor_t *snr = &g_sensors[i];
     size_t j;
-    printf("Name: %s\n", snr->sensor.name);
-    printf("Unit: %s\n", snr->sensor.units);
-    printf("idx: %zu\n", snr->idx);
-    printf("cond_key: %s\n", snr->cond_key);
-    printf("Expressions: TODO\n");
-    printf("Conditions:\n");
+    PRINT(slog, "Name: %s\n", snr->sensor.name);
+    PRINT(slog, "Unit: %s\n", snr->sensor.units);
+    PRINT(slog, "idx: %zu\n", snr->idx);
+    PRINT(slog, "cond_key: %s\n", snr->cond_key);
+    PRINT(slog, "Expressions: (%zu)\n", snr->num_expressions);
+    for (j = 0; j < snr->num_expressions; j++) {
+      expression_print(snr->expressions[j]);
+      printf("\n");
+    }
+    PRINT(slog, "Default expression IDX: %d\n", snr->default_expression_idx);
+    PRINT(slog, "Conditions:\n");
     for (j = 0; j < snr->value_map_size; j++) {
-      printf("%s => %zu\n", 
+      PRINT(slog, "%s => %zu\n", 
           snr->value_map[j].condition_value,
           snr->value_map[j].formula_index);
     }
-    printf("Thresholds: ");
+    PRINT(slog, "Thresholds: ");
     if (snr->sensor.flag & GETMASK(UCR_THRESH))
-      printf("UCR: %5.5f ", snr->sensor.ucr_thresh);
+      PRINT(slog, "UCR: %5.5f ", snr->sensor.ucr_thresh);
     else
-      printf("UCR: NA ");
+      PRINT(slog, "UCR: NA ");
     if (snr->sensor.flag & GETMASK(UNC_THRESH))
-      printf("UNC: %5.5f ", snr->sensor.unc_thresh);
+      PRINT(slog, "UNC: %5.5f ", snr->sensor.unc_thresh);
     else
-      printf("UNC: NA ");
+      PRINT(slog, "UNC: NA ");
     if (snr->sensor.flag & GETMASK(UNR_THRESH))
-      printf("UNR: %5.5f ", snr->sensor.unr_thresh);
+      PRINT(slog, "UNR: %5.5f ", snr->sensor.unr_thresh);
     else
-      printf("UNR: NA ");
+      PRINT(slog, "UNR: NA ");
     if (snr->sensor.flag & GETMASK(LCR_THRESH))
-      printf("LCR: %5.5f ", snr->sensor.lcr_thresh);
+      PRINT(slog, "LCR: %5.5f ", snr->sensor.lcr_thresh);
     else
-      printf("LCR: NA ");
+      PRINT(slog, "LCR: NA ");
     if (snr->sensor.flag & GETMASK(LNC_THRESH))
-      printf("LNC: %5.5f ", snr->sensor.lnc_thresh);
+      PRINT(slog, "LNC: %5.5f ", snr->sensor.lnc_thresh);
     else
-      printf("LNC: NA ");
+      PRINT(slog, "LNC: NA ");
     if (snr->sensor.flag & GETMASK(LNR_THRESH))
-      printf("LNR: %5.5f ", snr->sensor.lnr_thresh);
+      PRINT(slog, "LNR: %5.5f ", snr->sensor.lnr_thresh);
     else
-      printf("UCR: NA ");
-    printf("\n");
+      PRINT(slog, "UCR: NA ");
+    PRINT(slog, "\n");
 
-    printf("-------------------------\n");
+    PRINT(slog, "-------------------------\n");
   }
 }
 

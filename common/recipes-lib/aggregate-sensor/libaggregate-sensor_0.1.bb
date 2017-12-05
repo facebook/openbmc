@@ -14,7 +14,6 @@ SRC_URI = "file://CMakeLists.txt \
            file://math_expression.c \
            file://aggregate-sensor-internal.h \
            file://aggregate-sensor-json.c \
-           file://aggregate-sensor-test.c \
            file://aggregate-sensor-conf.json \
           "
 
@@ -23,6 +22,6 @@ export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"
 
 DEPENDS =+ "libpal libsdr jansson"
-RDEPENDS_${PN} =+ "libpal libsdr jansson"
+RDEPENDS_${PN} =+ "libpal libsdr jansson aggregate-sensor-test"
 
 inherit cmake

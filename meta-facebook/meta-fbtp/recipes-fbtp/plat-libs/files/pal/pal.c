@@ -177,7 +177,6 @@ static uint8_t g_plat_id = 0x0;
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
 static int key_func_ntp (int event, void *arg);
-static int key_func_tz (int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -200,7 +199,6 @@ struct pal_key_cfg {
   {"server_sel_error", "1", NULL},
   {"server_boot_order", "0100090203ff", NULL},
   {"ntp_server", "", key_func_ntp},
-  {"time_zone", "UTC", key_func_tz},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -2867,33 +2865,6 @@ key_func_ntp (int event, void *arg)
       // Restart NTP server
       snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
       system(cmd);
-      break;
-    case KEY_AFTER_INI:
-      break;
-  }
-
-  return 0;
-}
-
-static int
-key_func_tz (int event, void *arg)
-{
-  char cmd[MAX_VALUE_LEN];
-  char timezone[MAX_VALUE_LEN];
-  char path[MAX_VALUE_LEN];
-
-  switch (event) {
-    case KEY_BEFORE_SET:
-      snprintf(timezone, MAX_VALUE_LEN, "%s", (char *)arg);
-      snprintf(path, MAX_VALUE_LEN, "/usr/share/zoneinfo/%s", (char *)arg);
-      if( access(path, F_OK) != -1 ) {
-        snprintf(cmd, MAX_VALUE_LEN, "echo %s > /etc/timezone", timezone);
-        system(cmd);
-        snprintf(cmd, MAX_VALUE_LEN, "ln -fs %s /etc/localtime", path);
-        system(cmd);
-      } else {
-        return -1;
-      }
       break;
     case KEY_AFTER_INI:
       break;

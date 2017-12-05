@@ -18,7 +18,7 @@
 #
 
 from argparse import ArgumentParser
-from bcm5396 import Bcm5396
+from bcm5396_py3 import Bcm5396
 
 def auto_long(x):
     return int(x, 0)

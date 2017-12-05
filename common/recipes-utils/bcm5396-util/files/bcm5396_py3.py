@@ -47,7 +47,7 @@ class Bcm5396MDIO:
         if op == 'write':
             cmd += ' %s' % val
         out = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)\
-                        .communicate().decode()[0]
+                        .communicate()[0].decode()
         if op == 'write':
             return val
         # need to parse the result for read
@@ -188,7 +188,7 @@ class Bcm5396SPI:
         cmd += write_cmd
         rc = 0
         out = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)\
-                        .communicate().decode()[0]
+                        .communicate()[0].decode()
         if to_read:
             # need to parse the result
             for line in out.split('\n'):

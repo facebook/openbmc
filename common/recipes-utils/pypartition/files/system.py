@@ -61,7 +61,7 @@ def is_openbmc():
 
 
 standalone = logging.Formatter(
-    '%(asctime)-15s %(levelname)s:%(message)s'
+    '%(levelname)s:%(asctime)-15s %(message)s'
 )
 
 

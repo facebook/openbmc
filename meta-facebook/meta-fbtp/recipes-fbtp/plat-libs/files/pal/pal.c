@@ -1310,7 +1310,7 @@ read_hsc_current_value(float *value) {
   } else { //PVT and MP
     //HSC slave addr is the same for SS and DS
     req->data[4] = 0x8A;
-    Rsence = 0.265;
+    Rsence = 0.267;
   }
 
   req->data[5] = 0x00;

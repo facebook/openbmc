@@ -536,6 +536,8 @@ ts_handler() {
     ctime_r(&time_sled_off, buf);
     syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
     pal_add_cri_sel("BMC AC lost");
+  } else {
+    syslog(LOG_CRIT, "BMC Reboot detected");
   }
 
   while (1) {

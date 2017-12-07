@@ -272,6 +272,7 @@ int check_active_psus() {
   lock_holder(worldlock, &world.lock);
   lock_take(worldlock);
   if (world.paused == 1) {
+    lock_release(worldlock);
     usleep(1000);
     goto cleanup;
   }
@@ -412,6 +413,7 @@ int fetch_monitored_data() {
   lock_holder(worldlock, &world.lock);
   lock_take(worldlock);
   if (world.paused == 1) {
+    lock_release(worldlock);
     usleep(1000);
     goto cleanup;
   }

@@ -5403,6 +5403,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 #define MAX_DUMP_TIME 10800 /* 3 hours */
 static pthread_t tid_dwr = -1;
 static void *dwr_handler(void *arg) {
+#if 0
   int len;
   ipmb_req_t *req;
   ipmb_res_t *res;
@@ -5443,6 +5444,9 @@ static void *dwr_handler(void *arg) {
     syslog(LOG_WARNING, "Start Second Autodump");
     system("/usr/local/bin/autodump.sh --second &");
   }
+#endif
+  syslog(LOG_WARNING, "Start Second/DWR Autodump");
+  system("/usr/local/bin/autodump.sh &");
 
   tid_dwr = -1;
   pthread_exit(NULL);

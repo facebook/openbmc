@@ -106,6 +106,18 @@ echo "Sensor history of last ${SENSOR_HISTORY}s at dump:" >> $LOG_FILE 2>&1
 echo "Sensor threshold at dump: " >> $LOG_FILE 2>&1
 /usr/local/bin/sensor-util all --threshold >> $LOG_FILE 2>&1
 
+# dwr
+$DUMP_SCRIPT dwr >> $LOG_FILE 2>&1
+
+# rename the archieve file based on whether dump in DWR mode or not
+if [ "$?" == "2" ]; then
+  LOG_ARCHIVE='/mnt/data/autodump_dwr.tar.gz'
+  LOG_MSG_PREFIX="DWR "
+else
+  LOG_ARCHIVE='/mnt/data/autodump_second.tar.gz'
+  LOG_MSG_PREFIX="SECOND_DUMP "
+fi
+
 echo -n "Auto Dump End at " >> $LOG_FILE
 date >> $LOG_FILE
 

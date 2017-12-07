@@ -3457,9 +3457,9 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static int log_asserted = 0;
   const int loop_threshold = 3;
   const int longest_loop_code = 4;
-  int i, nearest_00, len, loop_count, check_until;
+  int i, len, check_from, check_until;
   uint8_t buff[256];
-  uint8_t location, maj_err, min_err, mem_train_fail;
+  uint8_t location, maj_err, min_err, loop_convention;
   int ret = READING_NA, rc;
   static unsigned int retry=0;
   char sensor_name[32] = {0};
@@ -3480,52 +3480,64 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   if (rc != PAL_EOK)
     goto error_exit;
 
-  mem_train_fail = 0;
-  loop_count = 0;
+  loop_convention = 0; // NO loop
+  check_from = len - (longest_loop_code * (loop_threshold) );
   check_until = len - (longest_loop_code * (loop_threshold+1) );
-  // Check post code from tail
-  for(i = len - 1; i >= 0 && i >= check_until; i--) {
-    if (buff[i] == 0x00) {
-      if (loop_count < loop_threshold) {
-        // found 00
-        loop_count++;
-        nearest_00 = i;
-        continue;
-      } else {
-        // found (loop_threshold+1)-th 00 from tail
-        if (!memcmp(&buff[i], &buff[nearest_00], len - nearest_00)) {
-          // PostCode looping over loop_threshold times
-          if ((nearest_00 - i) == 4) {
-            // Loop Convention1
-            mem_train_fail = 1;
-            location = buff[i+1];
-            maj_err = buff[i+2];
-            min_err = buff[i+3];
-          }
-          if ((nearest_00 - i) == 3) {
-            // Loop Convention2
-            mem_train_fail = 1;
-            location = 0x00;
-            maj_err = buff[i+1];
-            min_err = buff[i+2];
-          }
-        }
-        // break after 2nd 00
-        break;
+  // Check post code from last 12 to last 16 codes
+  for(i = check_from; i >= 0 && i >= check_until; i--) {
+
+    if (i > 0 && buff[i-1] == 0x00) {
+      // If previous code is 00h, find the 1st 00h.
+      continue;
+    }
+
+    // Check Loop Convention1, 0x00 -> DIMM Location -> Major Error Code - > Minor Error Code -> Loop
+    // Major shall not be 0x00, and it also shall not be 0xA0 ~ 0xDF
+    // DIMM Location and Minor might be 0x00, but they shall not be 0x00 at the same time.
+    // When Minor is 0x00, the DIMM location shall be 0xA0 ~ 0xDF
+    if (buff[i] == 0x00 &&
+        buff[i+4] == 0x00 &&
+        !memcmp(&buff[i], &buff[i+4], len - i - 4) ) {
+
+      // Check special minor 00h case
+      if (buff[i+1] == 0x00 &&
+          buff[i+2] >= 0xA0 &&
+          buff[i+2] <= 0xDF ) {
+        // This is minor 00h case, the 2nd 00h is starting 00h
+        i = i + 1;
       }
+
+      // PostCode looping
+      loop_convention = 1;
+      location = buff[i+1];
+      maj_err = buff[i+2];
+      min_err = buff[i+3];
+      break;
+    }
+    // Check Loop Convention2, 0x00 -> Major Error Code -> Minor Error Code ->Loop
+    // Major and Minor shall not be 0x00 in this convention
+    else if (buff[i] == 0x00 &&
+             buff[i+3] == 0x00 &&
+             !memcmp(&buff[i], &buff[i+3], len - i - 3) ) {
+      // PostCode looping
+      loop_convention = 2;
+      location = 0x00;
+      maj_err = buff[i+1];
+      min_err = buff[i+2];
+      break;
     }
   }
 
-  if (mem_train_fail) {
+  if (loop_convention != 0) {
     if (!log_asserted) {
       pal_get_sensor_name(fru_id, sensor_num, sensor_name);
-      if (location) {
+      if (loop_convention == 1) { // Convention1
         snprintf(str, sizeof(str), "Location:%02X Err:%02X %02X",location, maj_err, min_err);
         _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, 0x01, str);
         snprintf(str, sizeof(str), "DIMM %02X initial fails",location);
         pal_add_cri_sel(str);
         //syslog(LOG_CRIT, "Memory training failure at %02X MajErr:%02X, MinErr:%02X", location, maj_err, min_err);
-      } else {
+    } else { // Convention2
         snprintf(str, sizeof(str), "Location Unknown Err:%02X %02X", maj_err, min_err);
         _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, 0x01, str);
         //syslog(LOG_CRIT, "Memory training failure MajErr:%02X, MinErr:%02X", maj_err, min_err);

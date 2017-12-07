@@ -1,0 +1,116 @@
+diff --git a/client/dhc6.c b/client/dhc6.c
+index 093271f..be57ea6 100644
+--- a/client/dhc6.c
++++ b/client/dhc6.c
+@@ -24,11 +24,13 @@
+  */
+ 
+ #include "dhcpd.h"
++#include <sys/time.h>
++#include <signal.h>
+ 
+ #ifdef DHCPv6
+ 
+ struct sockaddr_in6 DHCPv6DestAddr;
+-
++struct client_state *g_client;
+ /*
+  * Option definition structures that are used by the software - declared
+  * here once and assigned at startup to save lookups.
+@@ -115,6 +117,8 @@ static isc_boolean_t active_prefix(struct client_state *client);
+ static int check_timing6(struct client_state *client, u_int8_t msg_type, 
+ 		         char *msg_str, struct dhc6_lease *lease,
+ 		         struct data_string *ds);
++void callback_to_call_do_init6 (void);
++int add_timeout_within_1sec (void);
+ 
+ extern int onetry;
+ extern int stateless;
+@@ -1260,6 +1264,41 @@ dhc6_score_lease(struct client_state *client, struct dhc6_lease *lease)
+ 	return lease->score;
+ }
+ 
++void callback_to_call_do_init6 (void)
++{
++	log_info("Callback for do_init6()");
++	do_init6(g_client);
++}
++
++int add_timeout_within_1sec (void)
++{
++	int res = 0;
++	struct itimerval tick;
++
++	log_info("Add timeout within a second");
++	memset(&tick, 0, sizeof(tick));
++	signal(SIGALRM, callback_to_call_do_init6);
++
++	/*
++	* RFC3315 section 17.1.2 says we MUST start the first packet
++	* between 0 and SOL_MAX_DELAY seconds.  The good news is
++	* SOL_MAX_DELAY is 1.
++	*/
++	tick.it_value.tv_sec =1;
++	tick.it_value.tv_usec = (random() % (SOL_MAX_DELAY * 100)) * 10000;
++	if (tick.it_value.tv_usec >= 1000000) {
++		tick.it_value.tv_sec += 1;
++		tick.it_value.tv_usec -= 1000000;
++	}
++	tick.it_interval.tv_sec = 0;
++	tick.it_interval.tv_usec = 0;
++
++	res = setitimer(ITIMER_REAL, &tick, NULL);
++	if (res)
++		log_error("Set timer fail for add_timeout_within_1sec()");
++	return res;
++}
++
+ /*
+  * start_init6() kicks off the process, transmitting a packet and
+  * scheduling a retransmission event.
+@@ -1298,11 +1337,11 @@ start_init6(struct client_state *client)
+ 
+ 	client->v6_handler = init_handler;
+ 
+-	/*
++	/* 
+ 	 * RFC3315 section 17.1.2 says we MUST start the first packet
+ 	 * between 0 and SOL_MAX_DELAY seconds.  The good news is
+ 	 * SOL_MAX_DELAY is 1.
+-	 */
++ 
+ 	tv.tv_sec = cur_tv.tv_sec;
+ 	tv.tv_usec = cur_tv.tv_usec;
+ 	tv.tv_usec += (random() % (SOL_MAX_DELAY * 100)) * 10000;
+@@ -1310,7 +1349,10 @@ start_init6(struct client_state *client)
+ 		tv.tv_sec += 1;
+ 		tv.tv_usec -= 1000000;
+ 	}
+-	add_timeout(&tv, do_init6, client, NULL, NULL);
++	//add_timeout() has trouble when timestamp is changed by some reasons 
++	add_timeout(&tv, do_init6, client, NULL, NULL);*/
++	g_client = client;
++	add_timeout_within_1sec();
+ 
+ 	if (nowait)
+ 		go_daemon();
+@@ -1860,14 +1902,17 @@ do_init6(void *input)
+ 
+ 	data_string_forget(&ds, MDL);
+ 
+-	/* Wait RT */
++	/* Wait RT 
+ 	tv.tv_sec = cur_tv.tv_sec + client->RT / 100;
+ 	tv.tv_usec = cur_tv.tv_usec + (client->RT % 100) * 10000;
+ 	if (tv.tv_usec >= 1000000) {
+ 		tv.tv_sec += 1;
+ 		tv.tv_usec -= 1000000;
+ 	}
+-	add_timeout(&tv, do_init6, client, NULL, NULL);
++	//add_timeout() has trouble when timestamp is changed by some reasons
++	add_timeout(&tv, do_init6, client, NULL, NULL);*/
++	g_client = client;
++	add_timeout_within_1sec();
+ 
+ 	dhc6_retrans_advance(client);
+ }

@@ -21,7 +21,7 @@ from pyfdt import pkcs11
 
 
 def write_content(offset, data):
-    with open(args.output, 'a') as fh:
+    with open(args.output, 'a' if offset > 0 else 'w') as fh:
         fh.seek(offset)
         fh.write(data)
 
@@ -192,6 +192,18 @@ def write_test_fdt(data, fdt):
     write_content(offset, data[offset:])
 
 
+def inject_lock(rom_fit):
+    fdt = get_fdt(rom_fit)
+    try:
+        fdt.get_rootnode().remove('hwlock')
+    except ValueError:
+        # hwlock not present
+        pass
+    new_prop = pyfdt.FdtPropertyWords('hwlock', [1])
+    fdt.get_rootnode().subdata.insert(0, new_prop)
+    return fdt.to_dtb()
+
+
 def main():
     with open(args.filename, 'rb') as fh:
         data = fh.read()
@@ -224,7 +236,11 @@ def main():
         sys.exit(1)
 
     rom_content_pre = data[0:rom_fit_offset]
-    rom_fit = inject_kek(rom_fit, args.kek)
+    if args.lock:
+        # Do the lock
+        rom_fit = inject_lock(rom_fit)
+    else:
+        rom_fit = inject_kek(rom_fit, args.kek)
     if len(rom_fit) > args.rom_fit_size:
         print("KEK cannot fit within ROM FIT")
         sys.exit(1)
@@ -232,6 +248,12 @@ def main():
     rom_fit += '\x00' * (args.rom_fit_size - len(rom_fit))
     rom_content_post = data[rom_fit_offset + args.rom_fit_size:args.rom_size]
     data = rom_content_pre + rom_fit + rom_content_post + data[args.rom_size:]
+
+    if args.lock:
+        write_content(0x0, data)
+        print("Setting HW enforce lock bit, next you need to sign it...")
+        print("Wrote unsigned firmware: %s" % (args.output))
+        return 0
 
     if args.signed_subordinate is not None:
         updated_fit = inject_subordinate(uboot_fit, args.signed_subordinate)
@@ -315,7 +337,7 @@ if __name__ == '__main__':
     parser.add_argument('filename', help="Input firmware")
     parser.add_argument('output', help="Output firmware")
     parser.add_argument('--kek', default=None, metavar="PATH",
-        help="Location to ROM kek certificate store DTS", required=True)
+        help="Location to ROM kek certificate store DTS")
     parser.add_argument('--rom-size', default=84 * 1024,
         help="Size of ROM region")
     parser.add_argument('--rom-fit-size', default=5120,
@@ -332,7 +354,7 @@ if __name__ == '__main__':
         help="Sign kernel and rootfs")
     parser.add_argument('--signed-subordinate', default=None, metavar="PATH",
         help="Optional path to signed subordinate certificate store (to add)")
-    parser.add_argument('--mkimage', required=True, metavar="PATH",
+    parser.add_argument('--mkimage', metavar="PATH",
         help="Required path to mkimage")
     parser.add_argument('--test-remove-timestamp', default=False,
         action='store_true',
@@ -345,10 +367,13 @@ if __name__ == '__main__':
         help="Path to directory containing '.key' private key")
     pkey.add_argument('--token', metavar="SERIAL",
         help="Hardware token serial identifier")
+    pkey.add_argument('--lock', default=False, action='store_true',
+        help='Make a (unsigned) flash set the HW enforce bit')
     parser.add_argument('--token-hint', metavar="HINT")
     args = parser.parse_args()
 
     if args.keydir is not None:
+        # Using a keydir to sign a flash.
         pkcs11.clear_environment()
         if not os.path.isdir(args.keydir):
             print("The --keydir must be a directory containing a '.key' key.")
@@ -358,11 +383,16 @@ if __name__ == '__main__':
         if not os.path.exists(keyfile):
             print("Cannot find private key: %s" % (keyfile))
             sys.exit(1)
-    else:
+    elif not args.lock:
+        # Not using a keydir and not locking HW enforcment.
         pkcs11.enforce_environment()
         args.keydir = pkcs11.get_url(args.token)
         if args.token_hint is None:
             print("Please include a --token-hint when using a token")
             sys.exit(1)
+
+    if not args.lock and (args.mkimage is None or args.kek is None):
+        print("Error: argument --mkimage and --kek are required")
+        sys.exit(1)
 
     sys.exit(main())

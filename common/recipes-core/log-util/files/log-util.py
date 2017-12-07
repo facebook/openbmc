@@ -25,6 +25,7 @@ import os
 from ctypes import *
 from lib_pal import *
 import subprocess
+import codecs
 
 syslogfiles = ['/mnt/data/logfile.0', '/mnt/data/logfile']
 cmdlist = ['--print', '--clear']

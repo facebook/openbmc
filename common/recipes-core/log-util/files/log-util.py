@@ -83,11 +83,11 @@ def log_main():
             "APP_NAME",
             "MESSAGE"
             ))
-
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
     for logfile in syslogfiles:
 
         try:
-            fd = open(logfile, 'a+')
+            fd = open(logfile, 'a+', encoding='utf-8')
             fd.seek(0, os.SEEK_SET)
             syslog = fd.readlines()
             fd.close()

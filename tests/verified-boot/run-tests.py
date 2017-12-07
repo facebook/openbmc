@@ -95,6 +95,7 @@ def expect_kernel(
     flash1,
     error_type,
     error_code,
+    location='280e0000',
     verify=True,
     failure=None
 ):
@@ -102,7 +103,7 @@ def expect_kernel(
     if verify:
         c.expect('Verifying Hash Integrity')
 
-    expect_or_expected(c, 'Loading kernel from FIT Image at 280e0000')
+    expect_or_expected(c, 'Loading kernel from FIT Image at %s' % (location))
 
     if error_type == 0:
         expect_or_expected(c, 'Starting kernel')
@@ -231,7 +232,8 @@ def test_kernel_corrupt():
 
 def test_kernel_early_fail():
     # This will not attempt to verify the kernel because vboot already failed.
-    c = expect_kernel('0.0', '4.43.6', 0, 0, verify=False)
+    # The recovery kernel address (on SPI0 0x2000:0000) is expected.
+    c = expect_kernel('0.0', '4.43.6', 0, 0, location='200e0000', verify=False)
     expect_close(c)
 
 
@@ -330,6 +332,8 @@ if __name__ == '__main__':
     test_kernel()
     test_kernel_fail()
     test_kernel_corrupt()
+
+    # This will force-recovery
     test_kernel_early_fail()
 
     # Fallback tests

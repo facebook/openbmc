@@ -59,8 +59,14 @@ int main(int argc, char **argv) {
     if (argc > 1 && (strcmp("force_scan", argv[1]) == 0)) {
       cmd.type = COMMAND_TYPE_FORCE_SCAN;
     }
+    if (argc > 1 && (strcmp("pause", argv[1]) == 0)) {
+      cmd.type = COMMAND_TYPE_PAUSE_MONITORING;
+    }
+    if (argc > 1 && (strcmp("resume", argv[1]) == 0)) {
+      cmd.type = COMMAND_TYPE_START_MONITORING;
+    }
     if(cmd.type == 0) {
-      fprintf(stderr, "Usage: %s { status | data | force_scan }\n", callname);
+      fprintf(stderr, "Usage: %s { status | data | force_scan | pause | resume }\n", callname);
       exit(1);
     }
     clisock = socket(AF_UNIX, SOCK_STREAM, 0);

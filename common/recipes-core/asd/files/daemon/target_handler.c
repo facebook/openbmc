@@ -155,7 +155,6 @@ void* worker_thread(void* args)
             } else if (asserted) {
                 ASD_log(LogType_Debug, "Platform reset asserted");
                 state->event_cb(PIN_EVENT, ASD_EVENT_PLRSTASSERT);  // Reset asserted
-#ifdef SUPPORT_RESET_BREAK
                 if (state->event_cfg.report_PRDY && state->event_cfg.reset_break) {
                     ASD_log(LogType_Debug,
                             "ResetBreak detected PLT_RESET "
@@ -164,11 +163,13 @@ void* worker_thread(void* args)
                         ASD_log(LogType_Error, "Failed to assert PREQ");
                     }
                 }
-#endif
             } else {
                 ASD_log(LogType_Debug, "Platform reset de-asserted");
                 state->event_cb(PIN_EVENT, ASD_EVENT_PLRSTDEASSRT);  // Reset de-asserted
-#ifdef SUPPORT_RESET_BREAK
+#ifdef HANDLE_RESET_BREAK_ON_PLATFORM_RESET_DEASSERT
+                // OpenIPC handles the Reset Break on Platform Reset Deassert.
+                // If we ever need to control it from the BMC (IE: if network performance
+                // isn't sufficient), then we would re-enable this code.
                 if (state->event_cfg.report_PRDY && state->event_cfg.reset_break) {
                     ASD_log(LogType_Debug,
                             "ResetBreak detected PLT_RESET "
@@ -448,7 +449,6 @@ STATUS target_wait_PRDY(Target_Control_Handle* state, const uint8_t log2time) {
 
     pthread_mutex_lock(&state->write_config_mutex);
     bool detected = false;
-    ASD_log(LogType_Debug, "Waiting for PRDY (timeout of %d ms)", (timeout / 1000));
     while(1) {
         STATUS status = prdy_is_event_triggered(state->fru, &detected);
         if (status != ST_OK) {
@@ -477,7 +477,7 @@ STATUS target_wait_PRDY(Target_Control_Handle* state, const uint8_t log2time) {
     if(detected)
         ASD_log(LogType_Debug, "Wait PRDY complete, detected PRDY");
     else
-        ASD_log(LogType_Debug, "Wait PRDY timed out after %d milliseconds.", (utime / 1000));
+        ASD_log(LogType_Debug, "Wait PRDY timed out after %f ms with timeout setting of %f ms.", (float)utime / 1000, (float)timeout/1000);
     return ST_OK;
 }
 

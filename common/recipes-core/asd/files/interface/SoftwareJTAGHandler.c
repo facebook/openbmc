@@ -44,7 +44,7 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
   return NULL;
 }
 
-STATUS JTAG_initialize(JTAG_Handler* state)
+STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 {
     if (state == NULL)
         return ST_ERR;
@@ -124,7 +124,14 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
     return ST_OK;
 }
 
-STATUS JTAG_set_clock_frequency(JTAG_Handler* state, unsigned int frequency)
+STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck)
+{
+    if (state == NULL)
+        return ST_ERR;
+    return ST_OK;
+}
+
+STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain);
 {
     if (state == NULL)
         return ST_ERR;

@@ -60,6 +60,13 @@ typedef enum {
     ST_ERR
 } STATUS;
 
+// Supported JTAG Scan Chains
+typedef enum {
+    SCAN_CHAIN_0 = 0,
+    SCAN_CHAIN_1,
+    MAX_SCAN_CHAINS
+} scanChain;
+
 typedef enum {
     JTAGDriverState_Master = 0,
     JTAGDriverState_Slave
@@ -84,18 +91,24 @@ typedef struct JTAGShiftPadding {
     int irPost;
 } JTAGShiftPadding;
 
-typedef struct JTAG_Handler {
+typedef struct JTAG_Chain_State {
     JtagStates tap_state;
     JTAGShiftPadding shift_padding;
+    JTAGScanState scan_state;
+} JTAG_Chain_State;
+
+typedef struct JTAG_Handler {
+    JTAG_Chain_State chains[MAX_SCAN_CHAINS];
+    JTAG_Chain_State* active_chain;
     unsigned char padDataOne[MAXPADSIZE];
     unsigned char padDataZero[MAXPADSIZE];
-    JTAGScanState scan_state;
     int JTAG_driver_handle;
     int fru;
+    bool sw_mode;
 } JTAG_Handler;
 
 JTAG_Handler* SoftwareJTAGHandler(uint8_t fru);
-STATUS JTAG_initialize(JTAG_Handler* state);
+STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode);
 STATUS JTAG_deinitialize(JTAG_Handler* state);
 STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, const int value);
 STATUS JTAG_tap_reset(JTAG_Handler* state);
@@ -106,7 +119,8 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
                   unsigned int output_bytes, unsigned char* output,
                   JtagStates end_tap_state);
 STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles);
-STATUS JTAG_set_clock_frequency(JTAG_Handler* state, unsigned int frequency);
+STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck);
+STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain);
 
 #ifdef __cplusplus
 }

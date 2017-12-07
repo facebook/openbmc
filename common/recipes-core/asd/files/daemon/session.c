@@ -430,8 +430,6 @@ STATUS session_getfds(session_fdarr_t na_fds, int *pn_fds, int *pn_timeout_ms)
                     }
                 }
                 na_fds[*pn_fds] = p_sess->extconn.sockfd;
-                ASD_log(LogType_Debug | LogType_NoRemote, "Session %d fd %d added to set",
-                        p_sess->id, na_fds[*pn_fds]);
                 (*pn_fds)++;
             }
         }

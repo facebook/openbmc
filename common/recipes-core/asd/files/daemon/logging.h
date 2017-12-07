@@ -53,6 +53,9 @@ void ASD_log(ASD_LogType log_type, const char* format, ...);
 void ASD_log_buffer(ASD_LogType log_type, const unsigned char* ptr, size_t len,
                     const char* prefixPtr);
 
+void ASD_log_shift(const bool is_dr, const bool is_input, const unsigned int number_of_bits,
+                   unsigned int size_bytes, unsigned char* buffer);
+
 void ASD_initialize_log_settings(ASD_LogType type, bool b_usesyslog,
                                  ShouldLogFunctionPtr should_log_ptr, LogFunctionPtr log_ptr);
 

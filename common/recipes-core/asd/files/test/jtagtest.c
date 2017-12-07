@@ -158,7 +158,7 @@ int main (int argc, char **argv) {
       printf("Setup of JTAG driver failed!\n");
       return -1;
     }
-    if (JTAG_initialize(handle) != ST_OK) {
+    if (JTAG_initialize(handle, true) != ST_OK) {
       printf("Initialize of JTAG driver failed!\n");
       return -1;
     }

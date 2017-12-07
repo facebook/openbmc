@@ -156,7 +156,9 @@ typedef enum {
 #define AGENT_CONFIGURATION_CMD 8
 
 // AGENT_CONFIGURATION_CMD types
-#define AGENT_CONFIG_TYPE_LOGGING 1
+#define AGENT_CONFIG_TYPE_LOGGING          1
+#define AGENT_CONFIG_TYPE_GPIO             2
+#define AGENT_CONFIG_TYPE_JTAG_DRIVER_MODE 3
 
 // The protocol spec states the following:
 //    the status code that either contains 0x00 for successful completion
@@ -193,6 +195,11 @@ typedef enum {
     IPC_LogType_MAX,
 } IPC_LogType;
 
+typedef enum {
+    JTAG_DRIVER_MODE_SOFTWARE = 0,
+    JTAG_DRIVER_MODE_HARDWARE = 1
+} JTAG_DRIVER_MODE;
+
 typedef struct logging_configuration {
     union {
         struct {
@@ -218,7 +225,7 @@ typedef struct logging_configuration {
 // Two simple rules for the version string are:
 // 1. less than 265 in length (or it will be truncated in the plugin)
 // 2. no dashes, as they are used later up the sw stack between components.
-static char asd_version[] = "ASD_BMC_v0.96";
+static char asd_version[] = "ASD_BMC_v1.0";
 
 typedef enum {
      CLOSE_CLIENT_EVENT = 1
@@ -239,9 +246,11 @@ static pthread_mutex_t send_buffer_mutex;
 
 static JTAG_Handler* jtag_handler = NULL;
 static Target_Control_Handle* target_control_handle = NULL;
+static bool handlers_initialized = false;
 
 int port_number = DEFAULT_PORT;
 uint8_t cpu_fru = DEFAULT_FRU;
+JTAG_DRIVER_MODE jtag_mode = JTAG_DRIVER_MODE_SOFTWARE;
 static logging_configuration remote_logging_config;
 
 static struct {
@@ -250,6 +259,12 @@ static struct {
     extnet_hdlr_type_t e_extnet_type;
     auth_hdlr_type_t e_auth_type;
 } sg_options = {DEFAULT_PORT, NULL, EXTNET_HDLR_NON_ENCRYPT, AUTH_HDLR_NONE};
+
+
+struct packet_data {
+    unsigned char *next_data;
+    int used, available;
+};
 
 bool shouldRemoteLog(ASD_LogType asd_level);
 void sendRemoteLoggingMessage(ASD_LogType asd_level, const char* message);
@@ -261,6 +276,7 @@ void showUsage(char **argv) {
     fprintf(stderr, "     2          network transactions\n");
     fprintf(stderr, "     3          JTAG MSG from plugin\n");
     fprintf(stderr, "     4          All log types\n");
+    fprintf(stderr, "     5          Debug log messages\n");
     fprintf(stderr, "  -f <number>   fru number\n");        
     fprintf(stderr, "  -p <number>   Port number (default=%d)\n", DEFAULT_PORT);
     fprintf(stderr, "  -s            Route log messages to the system log\n\n");
@@ -398,7 +414,26 @@ STATUS write_event_config(const uint8_t data_byte) {
     return status;
 }
 
-STATUS write_cfg(const writeCfg cmd, const unsigned char *data, int *cnt) {
+
+static void *get_packet_data(struct packet_data *packet, int bytes_wanted) {
+    void *p;
+
+    if (packet == NULL || packet->used + bytes_wanted > packet->available)
+        return NULL;
+
+    p = packet->next_data;
+
+    packet->next_data += bytes_wanted;
+    packet->used += bytes_wanted;
+
+    return p;
+}
+
+
+STATUS write_cfg(const writeCfg cmd, struct packet_data *packet) {
+    STATUS status = ST_OK;
+    unsigned char *data;
+
     if (cmd == JTAG_FREQ) {
         // JTAG_FREQ (Index 1, Size: 1 Byte)
         //  Bit 7:6 – Prescale Value (b'00 – 1, b'01 – 2, b'10 – 4, b'11 – 8)
@@ -408,87 +443,111 @@ STATUS write_cfg(const writeCfg cmd, const unsigned char *data, int *cnt) {
         //  then through the divisor (1-64).
         // e.g. system clock/(prescale * divisor)
         int prescaleVal = 0, divisorVal = 0, tCLK = 0;
-        int baseFreq = 12000000;
-        (*cnt)++;
-        // PCLK is 12MHz on WFP targets
-        prescaleVal = data[0] >> 5;
-        divisorVal = data[0] & 0x1f;
-
-        if (prescaleVal == 0) {
-            prescaleVal = 1;
-        } else if (prescaleVal == 1) {
-            prescaleVal = 2;
-        } else if (prescaleVal == 2) {
-            prescaleVal = 4;
-        } else if (prescaleVal == 3) {
-            prescaleVal = 8;
+        data = get_packet_data(packet, 1);
+        if (data == NULL) {
+            status = ST_ERR;
+            ASD_log(LogType_Error, "Unable to read JTAG_FREQ data byte");
         } else {
-            prescaleVal = 1;
-        }
+            prescaleVal = data[0] >> 5;
+            divisorVal = data[0] & 0x1f;
 
-        if (divisorVal == 0) {
-            divisorVal = 64;
-        }
+            if (prescaleVal == 0) {
+                prescaleVal = 1;
+            } else if (prescaleVal == 1) {
+                prescaleVal = 2;
+            } else if (prescaleVal == 2) {
+                prescaleVal = 4;
+            } else if (prescaleVal == 3) {
+                prescaleVal = 8;
+            } else {
+                prescaleVal = 1;
+            }
 
-        tCLK = (baseFreq/(prescaleVal*divisorVal));
+            if (divisorVal == 0) {
+                divisorVal = 64;
+            }
 
-        if (JTAG_set_clock_frequency(jtag_handler, tCLK) != ST_OK) {
-            ASD_log(LogType_Error, "Unable to set the TAP frequency!");
-            return ST_ERR;
+            tCLK = (prescaleVal*divisorVal);
+            ASD_log(LogType_Debug, "Set JTAG TAP Pre: %d  Div: %d  TCK: %d", prescaleVal, divisorVal, tCLK);
+
+            status = JTAG_set_jtag_tck(jtag_handler, tCLK);
+            if (status != ST_OK)
+                ASD_log(LogType_Error, "Unable to set the JTAG TAP TCK!");
         }
-        return ST_OK;
     } else if (cmd == DR_PREFIX) {
         // DR Postfix (A.K.A. DR Prefix in At-Scale Debug Arch. Spec.)
         // set drPaddingNearTDI 1 byte of data
-        (*cnt)++;
-        ASD_log(LogType_IRDR, "Setting DRPost padding to %d", data[0]);
-        if (JTAG_set_padding(jtag_handler, JTAGPaddingTypes_DRPost, data[0]) != ST_OK) {
-            ASD_log(LogType_Error, "failed to set DRPost padding");
-            return ST_ERR;
+
+        data = get_packet_data(packet, 1);
+        if (data == NULL) {
+            status = ST_ERR;
+            ASD_log(LogType_Error, "Unable to read DRPost data byte");
+        } else {
+            ASD_log(LogType_IRDR, "Setting DRPost padding to %d", data[0]);
+            status = JTAG_set_padding(jtag_handler, JTAGPaddingTypes_DRPost, data[0]);
+            if (status != ST_OK)
+                ASD_log(LogType_Error, "failed to set DRPost padding");
         }
-        return ST_OK;
     } else if (cmd == DR_POSTFIX) {
         // DR preFix (A.K.A. DR Postfix in At-Scale Debug Arch. Spec.)
         // drPaddingNearTDO 1 byte of data
-        (*cnt)++;
-        ASD_log(LogType_IRDR, "Setting DRPre padding to %d", data[0]);
-        if (JTAG_set_padding(jtag_handler, JTAGPaddingTypes_DRPre, data[0]) != ST_OK) {
-            ASD_log(LogType_Error, "failed to set DRPre padding");
-            return ST_ERR;
+
+        data = get_packet_data(packet, 1);
+        if (data == NULL) {
+            status = ST_ERR;
+            ASD_log(LogType_Error, "Unable to read DRPre data byte");
+        } else {
+            ASD_log(LogType_IRDR, "Setting DRPre padding to %d", data[0]);
+            status = JTAG_set_padding(jtag_handler, JTAGPaddingTypes_DRPre, data[0]);
+            if (status != ST_OK)
+                ASD_log(LogType_Error, "failed to set DRPre padding");
         }
-        return ST_OK;
     } else if (cmd == IR_PREFIX) {
         // IR Postfix (A.K.A. IR Prefix in At-Scale Debug Arch. Spec.)
         // irPaddingNearTDI 2 bytes of data
-        (*cnt)+=2;
-        ASD_log(LogType_IRDR, "Setting IRPost padding to %d", (data[1] << 8) | data[0]);
-        if (JTAG_set_padding(jtag_handler, JTAGPaddingTypes_IRPost, (data[1] << 8) | data[0]) != ST_OK) {
-            ASD_log(LogType_Error, "failed to set IRPost padding");
-            return ST_ERR;
+
+        data = get_packet_data(packet, 2);
+        if (data == NULL) {
+            status = ST_ERR;
+            ASD_log(LogType_Error, "Unable to read IRPost data byte");
+        } else {
+            ASD_log(LogType_IRDR, "Setting IRPost padding to %d", (data[1] << 8) | data[0]);
+            status = JTAG_set_padding(jtag_handler, JTAGPaddingTypes_IRPost, (data[1] << 8) | data[0]);
+            if (status != ST_OK)
+                ASD_log(LogType_Error, "failed to set IRPost padding");
         }
-        return ST_OK;
     } else if (cmd == IR_POSTFIX) {
         // IR Prefix (A.K.A. IR Postfix in At-Scale Debug Arch. Spec.)
         // irPaddingNearTDO 2 bytes of data
-        (*cnt)+=2;
-        ASD_log(LogType_IRDR, "Setting IRPre padding to %d", (data[1] << 8) | data[0]);
-        if (JTAG_set_padding(jtag_handler, JTAGPaddingTypes_IRPre, (data[1] << 8) | data[0]) != ST_OK) {
-            ASD_log(LogType_Error, "failed to set IRPre padding");
-            return ST_ERR;
+
+        data = get_packet_data(packet, 2);
+        if (data == NULL) {
+            status = ST_ERR;
+            ASD_log(LogType_Error, "Unable to read IRPre data byte");
+        } else {
+            ASD_log(LogType_IRDR, "Setting IRPre padding to %d", (data[1] << 8) | data[0]);
+            status = JTAG_set_padding(jtag_handler, JTAGPaddingTypes_IRPre, (data[1] << 8) | data[0]);
+            if (status != ST_OK)
+                ASD_log(LogType_Error, "failed to set IRPre padding");
         }
-        return ST_OK;
     } else if (cmd == PRDY_TIMEOUT) {
         // PRDY timeout
         // 1 bytes of data
-        ASD_log(LogType_Debug, "PRDY Timeout config set to %d", data[0]);
-        prdy_timeout = data[0];
-        (*cnt)++;
-        return ST_OK;
+
+        data = get_packet_data(packet, 1);
+        if (data == NULL) {
+            status = ST_ERR;
+            ASD_log(LogType_Error, "Unable to read PRDY_TIMEOUT data byte");
+        } else {
+            ASD_log(LogType_Debug, "PRDY Timeout config set to %d", data[0]);
+            prdy_timeout = data[0];
+        }
     } else {
         ASD_log(LogType_Error, "ERROR: WriteCFG encountered unrecognized command (%d)", cmd);
-        return ST_ERR;
+        status = ST_ERR;
     }
-    return ST_ERR;
+
+    return status;
 }
 
 STATUS read_status(const ReadType index, uint8_t pin,
@@ -571,11 +630,72 @@ static void get_scan_length(const char cmd, uint8_t *num_of_bits, uint8_t *num_o
     }
 }
 
+typedef enum {
+    ScanType_Read,
+    ScanType_Write,
+    ScanType_ReadWrite
+} ScanType;
+
+STATUS determine_shift_end_state(ScanType scan_type, struct packet_data *packet, JtagStates *end_state) {
+    unsigned char *next_cmd_ptr = NULL;
+    unsigned char *next_cmd2_ptr = NULL;
+    STATUS status = ST_OK;
+
+    if (end_state == NULL) {
+        ASD_log(LogType_Error, "Cannot determine end state. Null end_state.");
+        status = ST_ERR;
+    } else {
+        // First we will get the default end_state, to use if there are no more bytes to read from the packet.
+        status = JTAG_get_tap_state(jtag_handler, end_state);
+    }
+    if (status == ST_OK) {
+        // Peek ahead to get next command byte
+        next_cmd_ptr = get_packet_data(packet, 1);
+        if (next_cmd_ptr != NULL) {
+            if (jtag_mode == JTAG_DRIVER_MODE_HARDWARE) {
+                // If in hardware mode, we must peek ahead 2 bytes in order to determine the end state
+                next_cmd2_ptr = get_packet_data(packet, 1);
+            }
+
+            if (*next_cmd_ptr >= TAP_STATE_MIN &&
+                *next_cmd_ptr <= TAP_STATE_MAX) {
+                if (next_cmd2_ptr && ((*next_cmd2_ptr & TAP_STATE_MASK) == JtagPauDR || (*next_cmd2_ptr & TAP_STATE_MASK) == JtagPauIR)) {
+                    ASD_log(LogType_IRDR, "Staying in state: 0x%02x", *end_state);
+                } else {
+                    // Next command is a tap state command
+                    *end_state = (JtagStates)(*next_cmd_ptr & TAP_STATE_MASK);
+                }
+            } else if (scan_type == ScanType_Read && (*next_cmd_ptr < READ_SCAN_MIN || *next_cmd_ptr > READ_SCAN_MAX)) {
+                ASD_log(LogType_Error, "Unexpected sequence during read scan: 0x%02x", *next_cmd_ptr);
+                status = ST_ERR;
+            } else if (scan_type == ScanType_Write && (*next_cmd_ptr < WRITE_SCAN_MIN || *next_cmd_ptr > WRITE_SCAN_MAX)) {
+                ASD_log(LogType_Error, "Unexpected sequence during write scan: 0x%02x", *next_cmd_ptr);
+                status = ST_ERR;
+            } else if (scan_type == ScanType_ReadWrite && (*next_cmd_ptr < READ_WRITE_SCAN_MIN || *next_cmd_ptr > READ_WRITE_SCAN_MAX)) {
+                ASD_log(LogType_Error, "Unexpected sequence during read write scan: 0x%02x", *next_cmd_ptr);
+                status = ST_ERR;
+            }
+
+            packet->next_data--;  // Unpeek next_cmd_ptr
+            packet->used--;
+            if (next_cmd2_ptr) {
+                packet->next_data--;  // Unpeek next_cmd2_ptr
+                packet->used--;
+            }
+        }
+    }
+    return status;
+}
+
 STATUS process_jtag_message(struct spi_message *s_message) {
-    int cnt = 0, response_cnt = 0;
+    int response_cnt = 0;
     JtagStates end_state;
     STATUS status = ST_OK;
     int size = get_message_size(s_message);
+    struct packet_data packet;
+    unsigned char *data_ptr;
+    uint8_t cmd;
+
     if (size == -1) {
         ASD_log(LogType_Error, "Failed to process jtag message because "
                "get message size failed.");
@@ -588,32 +708,79 @@ STATUS process_jtag_message(struct spi_message *s_message) {
     ASD_log(LogType_JTAG, "NetReq tag: %d size: %d", s_message->header.tag, size);
     ASD_log_buffer(LogType_JTAG, s_message->buffer, size, "NetReq");
 
-    while (cnt < size) {
-        char cmd = s_message->buffer[cnt];
-        cnt++;  // increment 1 to account for the command byte
+    packet.next_data = s_message->buffer;
+    packet.used = 0;
+    packet.available = size;
+
+    while (packet.used < packet.available) {
+        data_ptr = get_packet_data(&packet, 1);
+        if (data_ptr == NULL) {
+            ASD_log(LogType_Error, "no command to read, short packet");
+            status = ST_ERR;
+            break;
+        }
+
+        cmd = *data_ptr;
         if (cmd == WRITE_EVENT_CONFIG) {
-            status = write_event_config(s_message->buffer[cnt]);
-            cnt++;  // increment for the data byte
+            data_ptr = get_packet_data(&packet, 1);
+            if (data_ptr == NULL) {
+                ASD_log(LogType_Error, "Failed to read data for WRITE_EVENT_CONFIG, short packet");
+                status = ST_ERR;
+                break;
+            }
+
+            status = write_event_config(*data_ptr);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "write_event_config failed, %s", status);
+                break;
+            }
         } else if (cmd >= WRITE_CFG_MIN && cmd <= WRITE_CFG_MAX) {
-            // the number of bytes to process vary by the config, so cnt is
-            // incremented inside of write_cfg() to account for data bytes.
-            status = write_cfg((writeCfg)cmd, &s_message->buffer[cnt], &cnt);
+            status = write_cfg((writeCfg)cmd, &packet);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "write_cfg failed, %s", status);
+                break;
+            }
         } else if (cmd == WRITE_PINS) {
-            uint8_t data = (int)s_message->buffer[cnt];
+            data_ptr = get_packet_data(&packet, 1);
+            if (data_ptr == NULL) {
+                ASD_log(LogType_Error, "Failed to read data for WRITE_PINS, short packet");
+                status = ST_ERR;
+                break;
+            }
+
+            uint8_t data = *data_ptr;
             bool assert = (data >> 7) == 1;
             Pin pin = PIN_MIN;
             uint8_t index = data & WRITE_PIN_MASK;
+
             if (index > PIN_MIN && index < PIN_MAX) {
                 pin = (Pin)index;
                 status = target_write(target_control_handle, pin, assert);
-                cnt++;  // increment for the data byte
+                if(status != ST_OK) {
+                    ASD_log(LogType_Error, "target_write failed, %s", status);
+                    break;
+                }
             } else if ((index & SCAN_CHAIN_SELECT) == SCAN_CHAIN_SELECT) {
-                int scan_chain = (index & SCAN_CHAIN_SELECT_MASK);
-                status = target_jtag_chain_select(target_control_handle, scan_chain);
-                cnt++;
+                uint8_t scan_chain = (index & SCAN_CHAIN_SELECT_MASK);
+                if (scan_chain >= MAX_SCAN_CHAINS) {
+                    ASD_log(LogType_Error, "Unexpected scan chain: 0x%02x", scan_chain);
+                    status = ST_ERR;
+                    break;
+                }
+                status = target_jtag_chain_select(target_control_handle, (scanChain)scan_chain);
+                if(status != ST_OK) {
+                    ASD_log(LogType_Error, "target_jtag_chain_select failed, %s", status);
+                    break;
+                }
+                status = JTAG_set_active_chain(jtag_handler, (scanChain)scan_chain);
+                if(status != ST_OK) {
+                    ASD_log(LogType_Error, "JTAG_set_active_chain failed, %s", status);
+                    break;
+                }
             } else {
                 ASD_log(LogType_Error, "Unexpected WRITE_PINS index: 0x%02x", index);
                 status = ST_ERR;
+                break;
             }
         } else if (cmd >= READ_STATUS_MIN && cmd <= READ_STATUS_MAX) {
             int bytes_written = 0;
@@ -624,140 +791,159 @@ STATUS process_jtag_message(struct spi_message *s_message) {
             else {
                 ASD_log(LogType_Error,  "Unexpected READ_STATUS index: 0x%02x", index);
                 status = ST_ERR;
+                break;
             }
-            uint8_t pin = (s_message->buffer[cnt] & READ_STATUS_PIN_MASK);
-            cnt++;  // increment for the data byte
-            if (status == ST_OK) {
-                status = read_status(readStatusTypeIndex, pin,
-                                     &out_msg.buffer[response_cnt],
-                                     MAX_DATA_SIZE-response_cnt, &bytes_written);
-                response_cnt += bytes_written;
+
+            data_ptr = get_packet_data(&packet, 1);
+            if (data_ptr == NULL) {
+                ASD_log(LogType_Error, "Failed to read data for Read Status, short packet");
+                status = ST_ERR;
+                break;
             }
+
+            if (response_cnt+2 > MAX_DATA_SIZE) {
+                ASD_log(LogType_Error, "Failed to process READ_STATUS. "
+                        "Response buffer already full");
+                status = ST_ERR;
+                break;
+            }
+
+            uint8_t pin = (*data_ptr & READ_STATUS_PIN_MASK);
+            status = read_status(readStatusTypeIndex, pin, &out_msg.buffer[response_cnt],
+                                 MAX_DATA_SIZE-response_cnt, &bytes_written);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "read_status failed, %s", status);
+                break;
+            }
+            response_cnt += bytes_written;
         } else if (cmd == WAIT_CYCLES_TCK_DISABLE ||
                    cmd == WAIT_CYCLES_TCK_ENABLE) {
-            unsigned int number_of_cycles = s_message->buffer[cnt];
+
+            data_ptr = get_packet_data(&packet, 1);
+            if (data_ptr == NULL) {
+                ASD_log(LogType_Error, "Failed to read data for WAIT_CYCLES_TCK, short packet");
+                status = ST_ERR;
+                break;
+            }
+
+            unsigned int number_of_cycles = *data_ptr;
             if (number_of_cycles==0)
                 number_of_cycles = 256;
+
             ASD_log(LogType_Debug, "Wait cycle of %d", number_of_cycles);
             status = JTAG_wait_cycles(jtag_handler, number_of_cycles);
-            cnt++;  // account for the number of cycles data byte
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "JTAG_wait_cycles failed, %s", status);
+                break;
+            }
         } else if (cmd == WAIT_PRDY) {
             status = target_wait_PRDY(target_control_handle, prdy_timeout);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "target_wait_PRDY failed, %s", status);
+                break;
+            }
         } else if (cmd == CLEAR_TIMEOUT) {
             // Command not yet implemented. This command does not apply to JTAG
             // so we will likely not implement it.
             ASD_log(LogType_Debug, "Clear Timeout command not yet implemented");
         } else if (cmd == TAP_RESET) {
             status = JTAG_tap_reset(jtag_handler);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "JTAG_tap_reset failed, %s", status);
+                break;
+            }
         } else if (cmd >= TAP_STATE_MIN && cmd <= TAP_STATE_MAX) {
             status = JTAG_set_tap_state(jtag_handler, (JtagStates)(cmd & TAP_STATE_MASK));
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "JTAG_set_tap_state failed, %s", status);
+                break;
+            }
         } else if (cmd >= WRITE_SCAN_MIN && cmd <= WRITE_SCAN_MAX) {
             uint8_t num_of_bits = 0;
             uint8_t num_of_bytes = 0;
+
             get_scan_length(cmd, &num_of_bits, &num_of_bytes);
-            status = JTAG_get_tap_state(jtag_handler, &end_state);
-            if (status == ST_OK) {
-                if ((cnt+num_of_bytes) < size) {
-                    char next_cmd = s_message->buffer[cnt+num_of_bytes];
-                    if (next_cmd >= TAP_STATE_MIN &&
-                        next_cmd <= TAP_STATE_MAX) {
-                        // Next command is a tap state command
-                        end_state = (JtagStates)(next_cmd & TAP_STATE_MASK);
-                    } else if (next_cmd < WRITE_SCAN_MIN ||
-                               next_cmd > WRITE_SCAN_MAX) {
-                        ASD_log(LogType_Error, "Unexpected sequence during write scan: 0x%02x", next_cmd);
-                        return ST_ERR;
-                    }
-                }
-                status = JTAG_shift(jtag_handler, num_of_bits, MAX_DATA_SIZE-cnt,
-                                    (unsigned char*)&(s_message->buffer[cnt]),
-                                    0, NULL, end_state);
-                cnt += num_of_bytes;  // Increment by the number of bytes written
+            data_ptr = get_packet_data(&packet, num_of_bytes);
+            if (data_ptr == NULL) {
+                ASD_log(LogType_Error, "Failed to read data from buffer: %d", num_of_bytes);
+                status = ST_ERR;
+                break;
+            }
+
+            status = determine_shift_end_state(ScanType_Write, &packet, &end_state);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "determine_shift_end_state failed, %s", status);
+                break;
+            }
+            status = JTAG_shift(jtag_handler, num_of_bits,
+                                MAX_DATA_SIZE - packet.used - num_of_bytes,
+                                data_ptr, 0, NULL, end_state);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "JTAG_shift failed, %s", status);
+                break;
             }
         } else if (cmd >= READ_SCAN_MIN && cmd <= READ_SCAN_MAX) {
             uint8_t num_of_bits = 0;
             uint8_t num_of_bytes = 0;
-            get_scan_length(cmd, &num_of_bits, &num_of_bytes);
-            status = JTAG_get_tap_state(jtag_handler, &end_state);
-            if (status == ST_OK) {
-                if (response_cnt+sizeof(char)+num_of_bytes > MAX_DATA_SIZE) {
-                    ASD_log(LogType_Error, "Failed to process READ_SCAN. "
-                            "Response buffer already full");
-                    status = ST_ERR;
-                } else {
-                    out_msg.buffer[response_cnt++] = cmd;
 
-                    if (cnt < size) {
-                        char next_cmd = s_message->buffer[cnt];
-                        if (next_cmd >= TAP_STATE_MIN &&
-                            next_cmd <= TAP_STATE_MAX) {
-                            // Next command is a tap state command
-                            end_state = (JtagStates)(next_cmd & TAP_STATE_MASK);
-                        } else if (next_cmd < READ_SCAN_MIN ||
-                                   next_cmd > READ_SCAN_MAX) {
-                            ASD_log(LogType_Error, "Unexpected sequence during read scan: 0x%02x", next_cmd);
-                            status = ST_ERR;
-                        }
-                    }
-                    if (status == ST_OK) {
-                        status = JTAG_shift(jtag_handler, num_of_bits, 0, NULL,
-                                            MAX_DATA_SIZE-response_cnt,
-                                            (unsigned char*)&(out_msg.buffer[response_cnt]),
-                                            end_state);
-                        response_cnt += num_of_bytes;
-                    }
-                }
+            get_scan_length(cmd, &num_of_bits, &num_of_bytes);
+            if (response_cnt+sizeof(char)+num_of_bytes > MAX_DATA_SIZE) {
+                ASD_log(LogType_Error, "Failed to process READ_SCAN. "
+                        "Response buffer already full");
+                status = ST_ERR;
+                break;
             }
+            out_msg.buffer[response_cnt++] = cmd;
+            status = determine_shift_end_state(ScanType_Read, &packet, &end_state);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "determine_shift_end_state failed, %s", status);
+                break;
+            }
+            status = JTAG_shift(jtag_handler, num_of_bits, 0, NULL,
+                                MAX_DATA_SIZE-response_cnt,
+                                (unsigned char*)&(out_msg.buffer[response_cnt]),
+                                end_state);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "JTAG_shift failed, %s", status);
+                break;
+            }
+            response_cnt += num_of_bytes;
         } else if (cmd >= READ_WRITE_SCAN_MIN && cmd <= READ_WRITE_SCAN_MAX) {
             uint8_t num_of_bits = 0;
             uint8_t num_of_bytes = 0;
             get_scan_length(cmd, &num_of_bits, &num_of_bytes);
-            status = JTAG_get_tap_state(jtag_handler, &end_state);
-            if (status == ST_OK) {
-                if (response_cnt+sizeof(char)+num_of_bytes > MAX_DATA_SIZE) {
-                    ASD_log(LogType_Error, "Failed to process READ_WRITE_SCAN. "
-                            "Response buffer already full");
-                    status = ST_ERR;
-                } else {
-                    out_msg.buffer[response_cnt++] = cmd;
-                    if ((cnt+num_of_bytes) < size) {
-                        char next_cmd = s_message->buffer[cnt+num_of_bytes];
-                        if (next_cmd >= TAP_STATE_MIN &&
-                            next_cmd <= TAP_STATE_MAX) {
-                            // Next command is a tap state command
-                            end_state = (JtagStates)(next_cmd & TAP_STATE_MASK);
-                        } else if (next_cmd < READ_WRITE_SCAN_MIN ||
-                                   next_cmd > READ_WRITE_SCAN_MAX) {
-                            ASD_log(LogType_Error, "Unexpected sequence during read/write scan: 0x%02x",
-                                    next_cmd);
-                            status = ST_ERR;
-                        }
-                    }
-
-                    if (status == ST_OK) {
-                        status = JTAG_shift(jtag_handler, num_of_bits, MAX_DATA_SIZE-cnt,
-                                            (unsigned char*)&(s_message->buffer[cnt]),
-                                            MAX_DATA_SIZE-response_cnt,
-                                            (unsigned char*)&(out_msg.buffer[response_cnt]),
-                                            end_state);
-                        response_cnt += num_of_bytes;
-                        cnt += num_of_bytes;
-                    }
-                }
+            if (response_cnt+sizeof(char)+num_of_bytes > MAX_DATA_SIZE) {
+                ASD_log(LogType_Error, "Failed to process READ_WRITE_SCAN. "
+                        "Response buffer already full");
+                status = ST_ERR;
+                break;
             }
+            out_msg.buffer[response_cnt++] = cmd;
+            data_ptr = get_packet_data(&packet, num_of_bytes);
+            if (data_ptr == NULL) {
+                ASD_log(LogType_Error, "Failed to read data from buffer: %d", num_of_bytes);
+                status = ST_ERR;
+                break;
+            }
+            status = determine_shift_end_state(ScanType_ReadWrite, &packet, &end_state);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "determine_shift_end_state failed, %s", status);
+                break;
+            }
+            status = JTAG_shift(jtag_handler, num_of_bits,
+                                MAX_DATA_SIZE - packet.used + num_of_bytes + 1,
+                                data_ptr, MAX_DATA_SIZE-response_cnt,
+                                (unsigned char*)&(out_msg.buffer[response_cnt]),
+                                end_state);
+            if(status != ST_OK) {
+                ASD_log(LogType_Error, "JTAG_shift failed, %s", status);
+                break;
+            }
+            response_cnt += num_of_bytes;
         } else {
             // Unknown Command
             ASD_log(LogType_Error, "Encountered unknown command 0x%02x", (int)cmd);
             status = ST_ERR;
-        }
-
-        if (status != ST_OK) {
-            extnet_conn_t authd_conn;
-
-            ASD_log(LogType_Error, "Failed to process command 0x%02x", (int)cmd);
-            if (session_get_authenticated_conn(&authd_conn) != ST_OK) {
-                send_error_message(&authd_conn, s_message, ASD_UNKNOWN_ERROR);
-            }
             break;
         }
     }
@@ -772,6 +958,12 @@ STATUS process_jtag_message(struct spi_message *s_message) {
         status = send_out_msg_on_socket(&out_msg);
         if (status != ST_OK) {
             ASD_log(LogType_Error | LogType_NoRemote, "Failed to send message back on the socket");
+        }
+    } else {
+        // Send error code to client
+        extnet_conn_t authd_conn;
+        if (session_get_authenticated_conn(&authd_conn) != ST_OK) {
+            send_error_message(&authd_conn, s_message, ASD_UNKNOWN_ERROR);
         }
     }
 
@@ -907,18 +1099,6 @@ STATUS on_client_connect(extnet_conn_t *p_extcon) {
     STATUS result = ST_OK;
     ASD_log(LogType_Debug, "Preparing for client connection");
 
-    // Initialize the pin control handler
-    if (target_initialize(target_control_handle) != ST_OK) {
-        ASD_log(LogType_Error, "Failed to initialize the target_control_handle");
-        result = ST_ERR;
-    }
-
-    // Initialize the jtag handler
-    if (result == ST_OK && JTAG_initialize(jtag_handler) != ST_OK) {
-        ASD_log(LogType_Error, "Failed to initialize the jtag_handler");
-        result = ST_ERR;
-    }
-
     if (result == ST_OK && pthread_mutex_init(&send_buffer_mutex, NULL) != 0) {
         ASD_log(LogType_Error, "Failed to init send buffer mutex");
         result = ST_ERR;
@@ -949,6 +1129,7 @@ STATUS on_client_disconnect() {
         ASD_log(LogType_Error, "Failed to deinitialize the pin control handler");
         result = ST_ERR;
     }
+    handlers_initialized = false;
 
     return result;
 }
@@ -987,18 +1168,23 @@ void on_message_received(extnet_conn_t *p_extconn,
             {
                 // An agent configuration command was sent.
                 // The next byte is the Agent Config type.
-                int config_type = message.buffer[0];
-                // So far - we only support the logging config type
-                if (config_type == AGENT_CONFIG_TYPE_LOGGING) {
-                    // We will store the logging stream only for the sake of sending
-                    // it back to the IPC plugin. Technically the protocol is
-                    // defined in such a way as where the BMC could emit log
-                    // messages for several streams, but since we only have it
-                    // implemented with one stream, we wont do much with this
-                    // stored stream.
-                    remote_logging_config.value = message.buffer[1];
-                    ASD_log(LogType_Debug | LogType_NoRemote, "Remote logging command received. Stream: %d Level: %d",
+                if(data_size > 0) {
+                    int config_type = message.buffer[0];
+                    if (config_type == AGENT_CONFIG_TYPE_LOGGING) {
+                        // We will store the logging stream only for the sake of sending
+                        // it back to the IPC plugin. Technically the protocol is
+                        // defined in such a way as where the BMC could emit log
+                        // messages for several streams, but since we only have it
+                        // implemented with one stream, we wont do much with this
+                        // stored stream.
+                        remote_logging_config.value = message.buffer[1];
+                        ASD_log(LogType_Debug | LogType_NoRemote, "Remote logging command received. Stream: %d Level: %d",
                             remote_logging_config.logging_stream, remote_logging_config.logging_level);
+                    } else if (config_type == AGENT_CONFIG_TYPE_GPIO) {
+                        // Unsupported on openBMC, ignore it.
+                    } else if (config_type == AGENT_CONFIG_TYPE_JTAG_DRIVER_MODE) {
+                        // Unsupported on openBMC, ignore it.
+                    }
                     out_msg.header.size_lsb = 1;
                     out_msg.header.size_msb = 0;
                     out_msg.header.cmd_stat = ASD_SUCCESS;
@@ -1014,10 +1200,28 @@ void on_message_received(extnet_conn_t *p_extconn,
             ASD_log(LogType_Error | LogType_NoRemote, "Failed to send agent control message response.");
         }
     } else {
+        if (!handlers_initialized) {
+            STATUS result = ST_OK;
+            // Initialize the pin control handler
+            if ((result = target_initialize(target_control_handle)) != ST_OK) {
+                ASD_log(LogType_Error, "Failed to initialize the target_control_handle");
+            }
+
+            // Initialize the jtag handler
+            if (result == ST_OK && (result = JTAG_initialize(jtag_handler, jtag_mode == JTAG_DRIVER_MODE_SOFTWARE)) != ST_OK) {
+                ASD_log(LogType_Error, "Failed to initialize the jtag_handler");
+            }
+
+            if (result == ST_OK)
+                handlers_initialized = true;
+            else {
+                send_error_message(p_extconn, &message, ASD_UNKNOWN_ERROR);
+                return;
+            }
+        }
         process_message(p_extconn, &message);
     }
 }
-
 
 #ifndef REFERENCE_CODE
 #define EXTNET_DATA sg_options.cp_certkeyfile
@@ -1061,7 +1265,7 @@ int main(int argc, char **argv) {
 
     jtag_handler = SoftwareJTAGHandler(cpu_fru);
     if (!jtag_handler) {
-        ASD_log(LogType_Error, "Failed to create SoftwareJTAGHandler");
+        ASD_log(LogType_Error, "Failed to create JTAGHandler");
         exitAll();
         return 1;
     }
@@ -1239,7 +1443,6 @@ int main(int argc, char **argv) {
                     session_close(p_extconn);
                     continue;
                 }
-                ASD_log(LogType_Debug | LogType_NoRemote, "read_state: %d", read_state);
 
                 switch (read_state) {
                     case SOCKET_READ_STATE_INITIAL: {

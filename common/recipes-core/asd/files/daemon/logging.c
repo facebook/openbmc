@@ -132,6 +132,56 @@ void ASD_log_buffer(ASD_LogType log_type,
     }
 }
 
+void buffer_to_hex(unsigned int number_of_bits, unsigned int number_of_bytes,
+                   unsigned char* buffer, unsigned int size_of_result, unsigned char* result) {
+    static const char itoh[] = "0123456789abcdef";
+    int result_index = (number_of_bytes*2)-1;
+
+    if (buffer == NULL || result == NULL || size_of_result < number_of_bytes) {
+        return;
+    }
+
+    int last_bit_mask = (0xff >> (8 - (number_of_bits % 8)));
+    if (last_bit_mask != 0 && (buffer[number_of_bytes] & last_bit_mask) >> 4 == 0)
+        result_index--;
+
+    for (unsigned int i = 0; i < number_of_bytes; ++i) {
+        int bit_mask = 0xff;
+        if ((i + 1) == number_of_bytes && number_of_bits % 8 != 0) {
+            // last byte zero out excess bits
+            bit_mask = last_bit_mask;
+        }
+        result[result_index--] = itoh[(buffer[i] & bit_mask) & 0xf];
+        if(result_index >= 0)
+            result[result_index--] = itoh[(buffer[i] & bit_mask) >> 4];
+    }
+}
+
+void ASD_log_shift(const bool is_dr, const bool is_input, const unsigned int number_of_bits,
+                   unsigned int size_bytes, unsigned char* buffer) {
+    unsigned char* result;
+    size_t result_size = size_bytes*2; // each byte will print as two characters
+    bool local_log = ShouldLog(LogType_IRDR);
+    bool remoteLog = (shouldLogCallback && loggingCallback && shouldLogCallback(LogType_IRDR));
+    if (!local_log && !remoteLog)
+        return;
+
+    unsigned int number_of_bytes = (number_of_bits + 7) / 8;
+    if(number_of_bytes > size_bytes)
+        return;
+
+    result = (unsigned char*)malloc(result_size);
+    if (!result) {
+        ASD_log(LogType_Error, "Failed to allocate buffer to print shift data.");
+    }
+    memset(result, '\0', result_size);
+
+    buffer_to_hex(number_of_bits, number_of_bytes, buffer, result_size, result);
+    ASD_log(LogType_IRDR, "Shift %s TD%s: [%db] 0x%s", (is_dr ? "DR" : "IR"), (is_input ? "I" : "O"),
+            number_of_bits, result);
+    free(result);
+}
+
 void ASD_initialize_log_settings(ASD_LogType type, bool b_writetosyslog,
                                  ShouldLogFunctionPtr should_log_ptr, LogFunctionPtr log_ptr)
 {

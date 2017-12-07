@@ -77,12 +77,24 @@ enum {
   JTAG_TARGET_CPLD
 };
 
-STATUS JTAG_set_cntlr_mode(int handle, const JTAGDriverState setMode);
+STATUS JTAG_set_cntlr_mode(JTAG_Handler *state, const JTAGDriverState setMode);
 STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi);
-STATUS perform_shift(int handle, unsigned int number_of_bits,
+STATUS perform_shift(JTAG_Handler *state, unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
                      JtagStates current_tap_state, JtagStates end_tap_state);
+
+
+void initialize_jtag_chains(JTAG_Handler* state) {
+    for (int i=0; i<MAX_SCAN_CHAINS; i++) {
+        state->chains[i].shift_padding.drPre = 0;
+        state->chains[i].shift_padding.drPost = 0;
+        state->chains[i].shift_padding.irPre = 0;
+        state->chains[i].shift_padding.irPost = 0;
+        state->chains[i].tap_state = JtagTLR;
+        state->chains[i].scan_state = JTAGScanState_Done;
+    }
+}
 
 JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
 {
@@ -97,15 +109,11 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
         return NULL;
     }
 
-    state->shift_padding.drPre = 0;
-    state->shift_padding.drPost = 0;
-    state->shift_padding.irPre = 0;
-    state->shift_padding.irPost = 0;
-
-    state->tap_state = JtagTLR;
+    state->active_chain = &state->chains[SCAN_CHAIN_0];
+    initialize_jtag_chains(state);
+    state->sw_mode = true;
     memset(state->padDataOne, ~0, sizeof(state->padDataOne));
     memset(state->padDataZero, 0, sizeof(state->padDataZero));
-    state->scan_state = JTAGScanState_Done;
 
     state->JTAG_driver_handle = -1;
 
@@ -127,7 +135,7 @@ STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi)
 }
 
 // user level access to set the AST2500 JTAG controller in slave or master mode
-STATUS JTAG_set_cntlr_mode(int handle, const JTAGDriverState setMode)
+STATUS JTAG_set_cntlr_mode(JTAG_Handler *state, const JTAGDriverState setMode)
 {
     if ((setMode < JTAGDriverState_Master) || (setMode > JTAGDriverState_Slave)) {
         syslog(LOG_ERR, "An invalid JTAG controller state was used");
@@ -135,7 +143,7 @@ STATUS JTAG_set_cntlr_mode(int handle, const JTAGDriverState setMode)
     }
     syslog(LOG_DEBUG, "Setting JTAG controller mode to %s.",
             setMode == JTAGDriverState_Master ? "MASTER" : "SLAVE");
-    if (ioctl(handle, AST_JTAG_SLAVECONTLR, setMode) < 0) {
+    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SLAVECONTLR, setMode) < 0) {
         syslog(LOG_ERR, "ioctl AST_JTAG_SLAVECONTLR failed");
         return ST_ERR;
     }
@@ -208,7 +216,7 @@ bail:
 
 }
 
-STATUS JTAG_initialize(JTAG_Handler* state)
+STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 {
     if (state == NULL)
         return ST_ERR;
@@ -222,16 +230,18 @@ STATUS JTAG_initialize(JTAG_Handler* state)
       goto bail_err;
     }
 
+    initialize_jtag_chains(state);
     state->JTAG_driver_handle = open("/dev/ast-jtag", O_RDWR);
     if (state->JTAG_driver_handle == -1) {
         syslog(LOG_ERR, "Can't open /dev/ast-jtag, please install driver");
         goto bail_err;
     }
 
-    if (JTAG_set_cntlr_mode(state->JTAG_driver_handle, JTAGDriverState_Master) != ST_OK) {
+    if (JTAG_set_cntlr_mode(state, JTAGDriverState_Master) != ST_OK) {
         syslog(LOG_ERR, "Failed to set JTAG mode to master.");
         goto bail_err;
     }
+    /* TODO The following two is most probably not needed. */
     if (JTAG_set_tap_state(state, JtagTLR) != ST_OK ||
         JTAG_set_tap_state(state, JtagRTI) != ST_OK) {
         syslog(LOG_ERR, "Failed to set initial TAP state.");
@@ -255,7 +265,7 @@ STATUS JTAG_deinitialize(JTAG_Handler* state)
     if (state == NULL)
         return ST_ERR;
 
-    STATUS result = JTAG_set_cntlr_mode(state->JTAG_driver_handle, JTAGDriverState_Master);
+    STATUS result = JTAG_set_cntlr_mode(state, JTAGDriverState_Master);
     if (result != ST_OK) {
         syslog(LOG_ERR, "Failed to set JTAG mode to slave.");
     }
@@ -269,17 +279,17 @@ STATUS JTAG_deinitialize(JTAG_Handler* state)
 
 STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, const int value)
 {
-    if (state == NULL)
+    if (state == NULL || value > MAXPADSIZE)
         return ST_ERR;
 
     if (padding == JTAGPaddingTypes_DRPre) {
-        state->shift_padding.drPre = value;
+        state->active_chain->shift_padding.drPre = value;
     } else if (padding == JTAGPaddingTypes_DRPost) {
-        state->shift_padding.drPost = value;
+        state->active_chain->shift_padding.drPost = value;
     } else if (padding == JTAGPaddingTypes_IRPre) {
-        state->shift_padding.irPre = value;
+        state->active_chain->shift_padding.irPre = value;
     } else if (padding == JTAGPaddingTypes_IRPost) {
-        state->shift_padding.irPost = value;
+        state->active_chain->shift_padding.irPost = value;
     } else {
         syslog(LOG_ERR, "Unknown padding value: %d", value);
         return ST_ERR;
@@ -310,14 +320,13 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
         return ST_ERR;
     }
 
-    // move the [soft] state to the requested tap state.
-    state->tap_state = tap_state;
+    state->active_chain->tap_state = tap_state;
 
     if ((tap_state == JtagRTI) || (tap_state == JtagPauDR))
         if (JTAG_wait_cycles(state, 5) != ST_OK)
             return ST_ERR;
 
-    syslog(LOG_DEBUG, "TapState: %d", state->tap_state);
+    syslog(LOG_DEBUG, "TapState: %d", state->active_chain->tap_state);
     return ST_OK;
 }
 
@@ -328,7 +337,7 @@ STATUS JTAG_get_tap_state(JTAG_Handler* state, JtagStates* tap_state)
 {
     if (state == NULL || tap_state == NULL)
         return ST_ERR;
-    *tap_state = state->tap_state;
+    *tap_state = state->active_chain->tap_state;
     return ST_OK;
 }
 
@@ -347,43 +356,45 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
     unsigned int preFix = 0;
     unsigned int postFix = 0;
     unsigned char* padData = state->padDataOne;
+    JtagStates current_state;
+    JTAG_get_tap_state(state, &current_state);
 
-    if (state->tap_state == JtagShfIR) {
-        preFix = state->shift_padding.irPre;
-        postFix = state->shift_padding.irPost;
+    if (current_state == JtagShfIR) {
+        preFix = state->active_chain->shift_padding.irPre;
+        postFix = state->active_chain->shift_padding.irPost;
         padData = state->padDataOne;
-    } else if (state->tap_state == JtagShfDR) {
-        preFix = state->shift_padding.drPre;
-        postFix = state->shift_padding.drPost;
+    } else if (current_state == JtagShfDR) {
+        preFix = state->active_chain->shift_padding.drPre;
+        postFix = state->active_chain->shift_padding.drPost;
         padData = state->padDataZero;
     } else {
         syslog(LOG_ERR, "Shift called but the tap is not in a ShiftIR/DR tap state");
         return ST_ERR;
     }
 
-    if (state->scan_state == JTAGScanState_Done) {
-        state->scan_state = JTAGScanState_Run;
+    if (state->active_chain->scan_state == JTAGScanState_Done) {
+        state->active_chain->scan_state = JTAGScanState_Run;
         if (preFix) {
-            if (perform_shift(state->JTAG_driver_handle, preFix, MAXPADSIZE, padData,
-                              0, NULL, state->tap_state, state->tap_state) != ST_OK)
+            if (perform_shift(state, preFix, MAXPADSIZE, padData,
+                              0, NULL, current_state, current_state) != ST_OK)
                 return ST_ERR;
         }
     }
 
-    if ((postFix) && (state->tap_state != end_tap_state)) {
-        state->scan_state = JTAGScanState_Done;
-        if (perform_shift(state->JTAG_driver_handle, number_of_bits, input_bytes, input,
-                          output_bytes, output, state->tap_state, state->tap_state) != ST_OK)
+    if ((postFix) && (current_state != end_tap_state)) {
+        state->active_chain->scan_state = JTAGScanState_Done;
+        if (perform_shift(state, number_of_bits, input_bytes, input,
+                          output_bytes, output, current_state, current_state) != ST_OK)
             return ST_ERR;
-        if (perform_shift(state->JTAG_driver_handle, postFix, MAXPADSIZE, padData, 0,
-                          NULL, state->tap_state, end_tap_state) != ST_OK)
+        if (perform_shift(state, postFix, MAXPADSIZE, padData, 0,
+                          NULL, current_state, end_tap_state) != ST_OK)
             return ST_ERR;
     } else {
-        if (perform_shift(state->JTAG_driver_handle, number_of_bits, input_bytes, input,
-                          output_bytes, output, state->tap_state, end_tap_state) != ST_OK)
+        if (perform_shift(state, number_of_bits, input_bytes, input,
+                          output_bytes, output, current_state, end_tap_state) != ST_OK)
             return ST_ERR;
-        if (state->tap_state != end_tap_state) {
-            state->scan_state = JTAGScanState_Done;
+        if (current_state != end_tap_state) {
+            state->active_chain->scan_state = JTAGScanState_Done;
         }
     }
     return ST_OK;
@@ -393,7 +404,7 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
 //  Optionally write and read the requested number of
 //  bits and go to the requested target state
 //
-STATUS perform_shift(int handle, unsigned int number_of_bits,
+STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
                      JtagStates current_tap_state, JtagStates end_tap_state)
@@ -406,26 +417,16 @@ STATUS perform_shift(int handle, unsigned int number_of_bits,
     scan_xfer.tdo = output;
     scan_xfer.end_tap_state = end_tap_state;
 
-    if (ioctl(handle, AST_JTAG_READWRITESCAN, &scan_xfer) < 0) {
+    if (ioctl(state->JTAG_driver_handle, AST_JTAG_READWRITESCAN, &scan_xfer) < 0) {
         syslog(LOG_ERR, "ioctl AST_JTAG_READWRITESCAN failed!");
         return ST_ERR;
     }
-
-#ifdef DEBUG
-    {
-        unsigned int number_of_bytes = (number_of_bits + 7) / 8;
-        const char* shiftStr = (current_tap_state == JtagShfDR) ? "DR" : "IR";
-        syslog(LOG_DEBUG, "%s size: %d", shiftStr, number_of_bits);
-        if (input != NULL && number_of_bytes <= input_bytes) {
-            syslog_buffer(LOG_DEBUG, input, number_of_bytes,
-                           (current_tap_state == JtagShfDR) ? "DR TDI" : "IR TDI");
-        }
-        if (output != NULL && number_of_bytes <= output_bytes) {
-            syslog_buffer(LOG_DEBUG, output, number_of_bytes,
-                           (current_tap_state == JtagShfDR) ? "DR TDO" : "IR TDO");
-        }
-        syslog(LOG_DEBUG, "%s: End tap state: %d", shiftStr, end_tap_state);
-    }
+    state->active_chain->tap_state = end_tap_state;
+#if 0
+    if (input != NULL)
+        ASD_log_shift((current_tap_state == JtagShfDR), true, number_of_bits, input_bytes, input);
+    if (output != NULL)
+        ASD_log_shift((current_tap_state == JtagShfDR), false, number_of_bits, output_bytes, output);
 #endif
     return ST_OK;
 }
@@ -448,13 +449,28 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
     return ST_OK;
 }
 
-STATUS JTAG_set_clock_frequency(JTAG_Handler* state, unsigned int frequency)
+STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck)
 {
+    unsigned int baseFreq = 12000000;
+    unsigned int frequency = baseFreq / tck;
     if (state == NULL)
         return ST_ERR;
     if (ioctl(state->JTAG_driver_handle, AST_JTAG_SIOCFREQ, frequency) < 0) {
         syslog(LOG_ERR, "ioctl AST_JTAG_SIOCFREQ failed");
         return ST_ERR;
     }
+    return ST_OK;
+}
+
+STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain) {
+    if (state == NULL)
+        return ST_ERR;
+
+    if (chain < 0 || chain >= MAX_SCAN_CHAINS) {
+        syslog(LOG_ERR, "Invalid scan chain.");
+        return ST_ERR;
+    }
+
+    state->active_chain = &state->chains[chain];
     return ST_OK;
 }

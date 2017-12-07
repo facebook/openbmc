@@ -31,10 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <pthread.h>
 #include <stdbool.h>
 
-// Supported JTAG Scan Chains
-#define SCAN_CHAIN_0 0
-#define SCAN_CHAIN_1 1
-
 // ASD Protocol Event IDs
 typedef enum {
     ASD_EVENT_PLRSTDEASSRT = 1,

@@ -27,11 +27,30 @@ case "${1}" in
 	start)
 		echo "Starting $DESC: "
 
+    # If TPM chip has not been discovered, probe the chip here
 		if [ ! -e /dev/tpm* ]
 		then
-			echo "device driver not loaded, skipping."
-			exit 0
-		fi
+      # First, pulse reset TPM chip
+      echo 0 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_lpc_rst_n
+      echo 0 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_spi_rst_n
+      sleep 1
+      echo 1 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_lpc_rst_n
+      echo 1 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_spi_rst_n
+      # Secondly, wait for the TPM chip to stabilize
+      sleep 5
+      # Finally, register the device and install the driver
+      . /usr/local/bin/openbmc-utils.sh
+      i2c_device_add 9 0x20 tpm_i2c_infineon
+    fi
+
+    # Additionally, Generate symlink to tpm0 or tpm1, so that tcsd can use it
+    rm -f /dev/tpm
+		if [ -e /dev/tpm0 ]
+    then
+      ln -s /dev/tpm0 /dev/tpm
+    else
+      ln -s /dev/tpm1 /dev/tpm
+    fi
 
 		start-stop-daemon --start --quiet --oknodo --pidfile /var/run/${NAME}.pid --user ${USER} --chuid ${USER} --exec ${DAEMON} -- ${DAEMON_OPTS}
 		RETVAL="$?"

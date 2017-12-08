@@ -10,6 +10,7 @@ RDEPENDS_${PN} += " \
   kernel-modules \
   lmsensors-sensors \
   logrotate \
+  os-release \
   passwd-util \
   rsyslog \
   tzdata \

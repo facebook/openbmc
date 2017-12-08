@@ -6,19 +6,19 @@ PR = "r1"
 inherit packagegroup
 
 RDEPENDS_${PN} += " \
-  python-core \
-  python-io \
-  python-json \
-  python-shell \
-  python-subprocess \
   python-argparse \
+  python-core \
   python-ctypes \
   python-datetime \
   python-email \
-  python-threading \
+  python-io \
+  python-json \
   python-mime \
-  python-pickle \
   python-misc \
   python-netserver \
+  python-pickle \
+  python-shell \
+  python-subprocess \
   python-syslog \
+  python-threading \
   "

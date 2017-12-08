@@ -9,7 +9,7 @@ RDEPENDS_${PN} += " \
   dhcp-client \
   iproute2 \
   ntp \
-  ntpdate \
   ntp-utils \
+  ntpdate \
   sntp \
   "

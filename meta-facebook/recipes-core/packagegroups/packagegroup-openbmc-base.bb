@@ -9,10 +9,10 @@ RDEPENDS_${PN} += " \
   i2c-tools \
   kernel-modules \
   lmsensors-sensors \
+  logrotate \
+  passwd-util \
+  rsyslog \
   tzdata \
   u-boot \
   u-boot-fw-utils \
-  rsyslog \
-  logrotate \
-  passwd-util \
   "

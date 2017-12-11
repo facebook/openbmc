@@ -74,6 +74,11 @@ enum {
   TYPE_GP_A_NULL   = 14,
 };
 
+typedef struct {
+  char slot_key[32];
+  char slot_def_val[32];
+} slot_kv_st;
+
 //GPIO definition
 #define MAX_SPB_GPIO_NUM                  256
 

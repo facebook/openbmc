@@ -72,11 +72,6 @@ typedef struct {
   char log[256];
 } def_chk_info;
 
-typedef struct {
-  char slot_key[32];
-  char slot_def_val[32];
-} slot_kv_st;
-
 struct delayed_log {
   useconds_t usec;
   char msg[256];

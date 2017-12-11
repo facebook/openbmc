@@ -72,6 +72,7 @@
 #define I2C_DEV_DC_3 "/dev/i2c-5"
 #define I2C_DC_INA_ADDR 0x40
 #define I2C_DC_MUX_ADDR 0x71
+#define DC_INA230_DEFAULT_CALIBRATION 0x000A
 
 #define I2C_DEV_HSC "/dev/i2c-10"
 #define I2C_HSC_ADDR 0x80  // 8-bit
@@ -352,6 +353,7 @@ enum {
 enum ina_register {
   INA230_VOLT = 0x02,
   INA230_POWER = 0x03,
+  INA230_CALIBRATION = 0x05,
 };
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -736,6 +738,7 @@ read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   int dev;
   int ret;
   int32_t res;
+  int retry = 4;
 
   dev = open(device, O_RDWR);
   if (dev < 0) {
@@ -751,10 +754,35 @@ read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     return -1;
   }
 
+  // Get INA230 Calibration
+  do {
+    res = i2c_smbus_read_word_data(dev, INA230_CALIBRATION);
+    if (res < 0) {
+      syslog(LOG_ERR, "%s: i2c_smbus_read_word_data failed", __func__);
+      close(dev);
+      return -1;
+    }
+
+    if (0 == res) {
+      /* Write the config in the Calibration register */
+      ret = i2c_smbus_write_word_data(dev, INA230_CALIBRATION, DC_INA230_DEFAULT_CALIBRATION);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s: i2c_smbus_write_word_data failed", __func__);
+        close(dev);
+        return -1;
+      }
+      /* Wait for the conversion to finish */
+      msleep(50);
+      retry--;
+    } else {
+      break;
+    }
+  } while(retry);
+
   res = i2c_smbus_read_word_data(dev, reg);
   if (res < 0) {
-    close(dev);
     syslog(LOG_ERR, "%s: i2c_smbus_read_word_data failed", __func__);
+    close(dev);
     return -1;
   }
 
@@ -767,7 +795,6 @@ read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
       res = ((res & 0x00FF) << 8) | ((res & 0xFF00) >> 8);
       *value = ((float) res) / 40;
       break;
-
   }
 
   close(dev);

@@ -207,13 +207,13 @@ static void gpio_event_handle(gpio_poll_st *gp)
 
   if (gp->gs.gs_gpio == gpio_num("GPIOH5")) { // GPIO_FAN_LATCH_DETECT
     if (gp->value == 1) { // low to high
-      syslog(LOG_CRIT, "SLED is pulled out");
+      syslog(LOG_CRIT, "ASSERT: SLED is not seated");
       memset(cmd, 0, sizeof(cmd));
       sprintf(cmd, "sv stop fscd ; /usr/local/bin/fan-util --set 100");
       system(cmd);
     }
     else { // high to low
-      syslog(LOG_CRIT, "SLED is pulled in");
+      syslog(LOG_CRIT, "DEASSERT: SLED is seated");
       memset(cmd, 0, sizeof(cmd));
       sprintf(cmd, "/etc/init.d/setup-fan.sh ; sv start fscd");
       system(cmd);
@@ -490,6 +490,7 @@ static def_chk_info def_gpio_chk[] = {
   { 0, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N", GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
   { 0, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N", GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
   { 0, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N", GPIO_SLOT4_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_FAN_LATCH_DETECT",             GPIO_FAN_LATCH_DETECT,             "ASSERT: SLED is not seated"                                    },
 };
 
 static void default_gpio_check(void) {

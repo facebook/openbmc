@@ -36,6 +36,7 @@
 #include "pal.h"
 #include <facebook/bic.h>
 #include <openbmc/edb.h>
+#include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -2584,7 +2585,98 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 int
+pal_read_nic_fruid(const char *path, int size) {  // for 1-byte offset length
+  uint8_t wbuf[8], rbuf[32];
+  int offset, count;
+  int fd = -1, dev = -1, ret = -1;
+
+  fd = open(path, O_WRONLY | O_CREAT, 0644);
+  if (fd < 0) {
+    goto error_exit;
+  }
+
+  dev = open("/dev/i2c-12", O_RDWR);
+  if (dev < 0) {
+    goto error_exit;
+  }
+
+  // Read chunks of FRUID binary data in a loop
+  for (offset = 0; offset < size; offset += 8) {
+    wbuf[0] = offset;
+    ret = i2c_rdwr_msg_transfer(dev, 0xA2, wbuf, 1, rbuf, 8);
+    if (ret) {
+      break;
+    }
+
+    count = write(fd, rbuf, 8);
+    if (count != 8) {
+      ret = -1;
+      break;
+    }
+  }
+
+error_exit:
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  if (dev > 0 ) {
+    close(dev);
+  }
+
+  return ret;
+}
+
+static int
+_write_nic_fruid(const char *path) {  // for 1-byte offset length
+  uint8_t wbuf[32];
+  int offset, count;
+  int fd = -1, dev = -1, ret = -1;
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    goto error_exit;
+  }
+
+  dev = open("/dev/i2c-12", O_RDWR);
+  if (dev < 0) {
+    goto error_exit;
+  }
+
+  // Write chunks of FRUID binary data in a loop
+  offset = 0;
+  while (1) {
+    count = read(fd, &wbuf[1], 8);
+    if (count <= 0) {
+      break;
+    }
+
+    wbuf[0] = offset;
+    ret = i2c_rdwr_msg_transfer(dev, 0xA2, wbuf, count+1, NULL, 0);
+    if (ret) {
+      break;
+    }
+
+    offset += count;
+  }
+
+error_exit:
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  if (dev > 0 ) {
+    close(dev);
+  }
+
+  return ret;
+}
+
+int
 pal_fruid_write(uint8_t fru, char *path) {
+  if (fru == FRU_NIC) {
+    return _write_nic_fruid(path);
+  }
   return bic_write_fruid(fru, 0, path);
 }
 

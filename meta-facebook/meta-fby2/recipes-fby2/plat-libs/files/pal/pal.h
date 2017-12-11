@@ -152,6 +152,7 @@ int pal_get_sys_guid(uint8_t slot, char *guid);
 int pal_set_sys_guid(uint8_t slot, char *str);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
+int pal_read_nic_fruid(const char *path, int size);
 int pal_fruid_write(uint8_t slot, char *path);
 int pal_is_bmc_por(void);
 int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name, uint8_t o_val, uint8_t n_val);

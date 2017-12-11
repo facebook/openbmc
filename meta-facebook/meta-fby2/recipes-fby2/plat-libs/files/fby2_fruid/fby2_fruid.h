@@ -24,10 +24,15 @@
 
 #define FBY2_FRU_PATH "/tmp/fruid_%s.bin"
 
+#define MFG_MELLANOX 0x19810000
+#define MFG_BROADCOM 0x3D110000
+#define MFG_UNKNOWN 0xFFFFFFFF
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+uint32_t fby2_get_nic_mfgid(void);
 int fby2_get_fruid_path(uint8_t fru, char *path);
 int fby2_get_fruid_eeprom_path(uint8_t fru, char *path);
 int fby2_get_fruid_name(uint8_t fru, char *name);

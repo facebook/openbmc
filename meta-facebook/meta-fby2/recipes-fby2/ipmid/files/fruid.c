@@ -34,6 +34,8 @@
 #include <sys/stat.h>
 #include "fruid.h"
 #include <facebook/fby2_common.h>
+#include <facebook/fby2_fruid.h>
+#include <openbmc/pal.h>
 
 #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
 #define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"
@@ -223,11 +225,15 @@ int plat_fruid_init(void) {
         ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
         break;
       case FRU_NIC:
+        if (fby2_get_nic_mfgid() == MFG_BROADCOM) {
+          ret = pal_read_nic_fruid(BIN_NIC, 256);
+          break;
+        }
         ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
         break;
       default:
         break;
-    }  
+    }
   }
 
   return ret;

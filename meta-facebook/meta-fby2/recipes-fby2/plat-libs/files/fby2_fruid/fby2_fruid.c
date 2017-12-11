@@ -23,7 +23,7 @@
 #include <syslog.h>
 #include "fby2_fruid.h"
 
-// Common IPMB Wrapper function
+#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
 
 static int
 plat_get_ipmb_bus_id(uint8_t slot_id) {
@@ -48,6 +48,23 @@ plat_get_ipmb_bus_id(uint8_t slot_id) {
   }
 
   return bus_id;
+}
+
+uint32_t
+fby2_get_nic_mfgid(void) {
+  FILE *fp;
+  uint8_t buf[16];
+
+  fp = fopen(NIC_FW_VER_PATH, "rb");
+  if (!fp) {
+    return MFG_UNKNOWN;
+  }
+
+  fseek(fp, 32 , SEEK_SET);
+  fread(buf, 1, 4, fp);
+  fclose(fp);
+
+  return ((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|buf[0]);
 }
 
 /* Populate char path[] with the path to the fru's fruid binary dump */
@@ -110,6 +127,9 @@ fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
       sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
       break;
     case FRU_NIC:
+      if (fby2_get_nic_mfgid() == MFG_BROADCOM) {
+        return -1;
+      }
       sprintf(path, "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom");
       break;
     default:
@@ -125,6 +145,7 @@ fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
 /* Populate char name[] with the path to the fru's name */
 int
 fby2_get_fruid_name(uint8_t fru, char *name) {
+  uint32_t mfg_id;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -151,7 +172,18 @@ fby2_get_fruid_name(uint8_t fru, char *name) {
       sprintf(name, "Side Plane Board");
       break;
     case FRU_NIC:
-      sprintf(name, "CX4 NIC");
+      mfg_id = fby2_get_nic_mfgid();
+      switch (mfg_id) {
+        case MFG_MELLANOX:
+          sprintf(name, "Mellanox NIC");
+          break;
+        case MFG_BROADCOM:
+          sprintf(name, "Broadcom NIC");
+          break;
+        default:
+          sprintf(name, "NIC");
+          break;
+      }
       break;
     default:
 #ifdef DEBUG

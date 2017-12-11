@@ -176,6 +176,10 @@ case $OPTION in
       echo "restart sensord for $SLOT $OPTION"
       sv start sensord 
 
+      echo "restart rest-api for $SLOT $OPTION"
+      ps | grep -v 'grep' | grep 'rest.py' |awk '{print $1}'| xargs kill
+      sh /usr/local/fbpackages/rest-api/setup-rest-api.sh
+
       ;;
     *)
       N=${0##*/}

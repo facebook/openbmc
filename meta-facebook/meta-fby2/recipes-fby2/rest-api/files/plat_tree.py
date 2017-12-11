@@ -28,6 +28,7 @@ from node_spb import get_node_spb
 from node_mezz import get_node_mezz
 from node_bmc import get_node_bmc
 from node_server import get_node_server
+from node_server import get_node_device
 from node_fruid import get_node_fruid
 from node_sensors import get_node_sensors
 from node_logs import get_node_logs
@@ -35,12 +36,23 @@ from node_config import get_node_config
 from tree import tree
 from pal import *
 
+def get_slot_type(num):
+    f = open('/tmp/slot.bin', 'r')
+    slot_type = (int(f.read().split()[0], 10) >> ((num*2) - 2) ) & 0x3
+    f.close()
+    return slot_type
+
 def populate_server_node(num):
     prsnt = pal_is_fru_prsnt(num)
     if prsnt == None or prsnt == 0:
         return None
 
-    r_server = tree("server" + repr(num), data = get_node_server(num))
+    slot_type = get_slot_type(num)
+
+    if slot_type == 0:
+      r_server = tree("server" + repr(num), data = get_node_server(num))
+    else :
+      r_server = tree("device" + repr(num), data = get_node_device(num))
 
     r_fruid = tree("fruid", data = get_node_fruid("slot" + repr(num)))
 

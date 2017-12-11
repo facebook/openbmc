@@ -60,3 +60,12 @@ def get_node_server(num):
                 "identify-off",
                 ]
     return serverNode(num = num, actions = actions)
+
+def get_node_device(num):
+    actions =  ["12V-on",
+                "12V-off",
+                "12V-cycle",
+                "identify-on",
+                "identify-off",
+                ]
+    return serverNode(num = num, actions = actions)

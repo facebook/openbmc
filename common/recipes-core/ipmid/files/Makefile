@@ -21,7 +21,7 @@ C_OBJS := ${C_SRCS:.c=.o}
 all: ipmid
 
 ipmid:  $(C_OBJS)
-	$(CC) -pthread -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC)  $(CFLAGS) -pthread -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

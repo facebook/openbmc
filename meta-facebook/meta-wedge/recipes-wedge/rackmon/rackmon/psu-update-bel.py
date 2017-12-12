@@ -9,6 +9,12 @@ import traceback
 import argparse
 import time
 import json
+from binascii import hexlify, unhexlify
+
+
+def bh(bs):
+    return hexlify(bs).decode('utf-8')
+
 
 status = {
     'pid': os.getpid(),
@@ -64,7 +70,7 @@ def write_status():
     if statuspath is None:
         return
     tmppath = statuspath + '~'
-    with open(tmppath, 'wb') as tfh:
+    with open(tmppath, 'w') as tfh:
         tfh.write(json.dumps(status))
     os.rename(tmppath, statuspath)
 
@@ -106,7 +112,7 @@ def rackmon_command(cmd):
                 break
             replydata.append(data)
         client.close()
-    return ''.join(replydata)
+    return b''.join(replydata)
 
 def pause_monitoring():
     COMMAND_TYPE_PAUSE_MONITORING = 0x04
@@ -164,12 +170,13 @@ def do_dump(cmd):
     bprint(str(cmd))
 
 def do_log(cmd):
-    bel_log(cmd.data)
+    bel_log(cmd.data.decode('utf-8'))
 
 def do_progress(cmd):
-    global pct_done
+    global pct_done, status
     (progress, ) = struct.unpack('B', cmd.data)
     pct_done = progress
+    status['flash_progress_percent'] = progress
     bel_log('')
 
 def read_timeout(cmd):
@@ -232,14 +239,14 @@ def do_write(cmd):
             t2 = time.clock()
             spent = (t2 - t1)
         except ModbusTimeout:
-            last_rx = ''
-            bprint('No response from cmd: ' + mcmd.encode('hex'))
+            last_rx = b''
+            bprint('No response from cmd: ' + bh(mcmd))
     left = spent - (delay / 1000.0)
     if len(rxdata) > 0:
         if rxdata != last_rx:
             global rx_failed
-            bprint('Expected response: %s, len: %d' % (rxdata.encode('hex'), expected))
-            bprint('  Actual response: ' + last_rx.encode('hex'))
+            bprint('Expected response: %s, len: %d' % (bh(rxdata), expected))
+            bprint('  Actual response: ' + bh(last_rx))
             bprint('timeout,spent,left: %d, %d, %d' % (timeout, spent * 1000, left * 1000))
             rx_failed = True
     if left > 0:
@@ -251,7 +258,7 @@ class BelCommandError(Exception):
 def do_error(cmd):
     global rx_failed
     if rx_failed:
-        bel_log(cmd.data)
+        bel_log(cmd.data.decode('utf-8'))
         raise BelCommandError()
 
 cmdfuns = {
@@ -275,11 +282,30 @@ def main():
     statuspath = args.statusfile
     cmds = []
     script = []
+    # Script excerpt, sets progress to 0 percent and logs 'Entering bootloader... '
+    #
+    # P004D
+    # L456E746572696E6720626F6F746C6F616465722E2E2E200C
+    #
+    # ^ first char is command, rest is parameter data for command except for
+    # final byte (two hex chars) which is a CRC8 check digit
+
+    # Commands are one of:
+    #
+    # (H)eader,
+    # (W)rite,
+    # (T)imeout (sleep),
+    # (X) Error message (to print if the last # command failed),
+    # (L)og message,
+    # (P)rogress -- set progress percent to given value,
+    # (M) MD5 code (checksum of the entire script, excluding this line)
     try:
         bprint('Reading FW script...')
         with open(args.file, 'r') as f:
             for line in f:
-                cmd = BelCommand(line[0], line[1:][:-4].decode('hex'))
+                line = line.strip()
+                # convert hex to bytes leave off check digit
+                cmd = BelCommand(line[0], unhexlify(line[1:][:-2]))
                 if cmd.type == 'W':
                     cmd = BelCommand(cmd.type, read_wcmd(cmd))
                 cmds.append(cmd)
@@ -296,14 +322,14 @@ def main():
                cmd.type == 'T' \
                and read_timeout(cmd) > 0 \
                and cmds[0].type == 'W' \
-               and cmds[0].data.rx == '':
+               and cmds[0].data.rx == b'':
                 wcmd = cmds.pop(0)
                 tx = wcmd.data.tx
                 timeout = read_timeout(cmd)
-                rx = ''
+                rx = b''
                 if cmds and cmds[0].type == 'T' and read_timeout(cmds[0]) == 0:
                     cmds.pop(0)
-                if cmds and cmds[0].type == 'W' and cmds[0].data.tx == '':
+                if cmds and cmds[0].type == 'W' and cmds[0].data.tx == b'':
                     rx = cmds.pop(0).data.rx
                 cmd = BelCommand('W', WriteCommand(tx, rx, timeout))
             script.append(cmd)

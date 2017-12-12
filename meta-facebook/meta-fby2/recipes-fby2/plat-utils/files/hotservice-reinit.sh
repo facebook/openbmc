@@ -9,17 +9,13 @@ function device_config() {
 
       case $SLOT_N in
           1)
-            PE_BUFF_OE_0=B4
-            PE_BUFF_OE_1=B5
             I2C_REG=0x1e78a084
           ;;
           3)
-            PE_BUFF_OE_0=B6
-            PE_BUFF_OE_1=B7
             I2C_REG=0x1e78a184
           ;;
       esac
-    
+
       # Delete devices on I2C bus 1 and bus 5 if there are device cards
       # EEPROM, 0xA2
       i2c_remove_device $SLOT_B 0x51
@@ -36,8 +32,6 @@ function device_config() {
 
       if [ $(is_server_prsnt $(($SLOT_N+1))) == "1" ] && [ $(get_slot_type $(($SLOT_N+1))) == "0" ] ; then
         if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] ; then
-           gpio_set $PE_BUFF_OE_0 0
-           gpio_set $PE_BUFF_OE_1 0
 
            devmem $I2C_REG w 0xFFF77304
 
@@ -57,8 +51,6 @@ function device_config() {
            # Voltage sensor, 0x80
            i2c_add_device $SLOT_B 0x40 ina230
         else
-           gpio_set $PE_BUFF_OE_0 1
-           gpio_set $PE_BUFF_OE_1 1
 
            devmem $I2C_REG w 0xFFF5E700
         fi
@@ -106,15 +98,23 @@ OPTION=$2
 case $SLOT in
     slot1)
       SLOT_NUM=1
+      PE_BUFF_OE_0=B4
+      PE_BUFF_OE_1=B5
       ;;
     slot2)
       SLOT_NUM=2
+      PE_BUFF_OE_0=B4
+      PE_BUFF_OE_1=B5
       ;;
     slot3)
       SLOT_NUM=3
+      PE_BUFF_OE_0=B6
+      PE_BUFF_OE_1=B7
       ;;
     slot4)
       SLOT_NUM=4
+      PE_BUFF_OE_0=B6
+      PE_BUFF_OE_1=B7
       ;;
     *)
       N=${0##*/}
@@ -132,6 +132,10 @@ case $OPTION in
          exit 1
       fi
       echo "start to re-init for slot$SLOT_NUM insertion"
+
+      # Make sure PE BUFF is disable
+      gpio_set $PE_BUFF_OE_0 1
+      gpio_set $PE_BUFF_OE_1 1
 
       # Delay 1 second for slot_type voltage ready               
       sleep 2

@@ -462,16 +462,16 @@ gpio_set R4 1
 devmem_clear_scu70_bit 23
 gpio_export B4
 
-# PE_BUFF_OE_1_N: GPIOB4 (13)
+# PE_BUFF_OE_1_N: GPIOB5 (13)
 #To use GPIOB5, SCU80[13] must be 0
 devmem_clear_bit $(scu_addr 80) 13
 gpio_export B5
 
-# PE_BUFF_OE_2_N: GPIOB4 (14)
+# PE_BUFF_OE_2_N: GPIOB6 (14)
 devmem_clear_bit $(scu_addr 80) 14
 gpio_export B6
 
-# PE_BUFF_OE_3_N: GPIOB4 (15)
+# PE_BUFF_OE_3_N: GPIOB7 (15)
 gpio_export B7
 
 # Disable PWM reset during external reset

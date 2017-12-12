@@ -83,6 +83,10 @@ typedef struct {
 #define MAX_SPB_GPIO_NUM                  256
 
 #define GPIO_BMC_READY_N                    0
+#define GPIO_PE_BUFF_OE_0_R_N              12
+#define GPIO_PE_BUFF_OE_1_R_N              13
+#define GPIO_PE_BUFF_OE_2_R_N              14
+#define GPIO_PE_BUFF_OE_3_R_N              15
 #define GPIO_PWR_BTN                       24
 #define GPIO_PWR_SLOT1_BTN_N               25
 #define GPIO_PWR_SLOT2_BTN_N               27

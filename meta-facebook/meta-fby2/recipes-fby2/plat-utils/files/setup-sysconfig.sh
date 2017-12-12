@@ -6,54 +6,58 @@ echo -n "Setup System Configuration .."
 . /usr/local/fbpackages/utils/ast-functions
 
 if [ $(is_server_prsnt 2) == "1" ] ; then
-     if [ $(get_slot_type 2) != "0" ] ; then
-     	gpio_set O5 0
-     	logger -p user.crit "Invalid configuration on SLOT2"
-        if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
-          gpio_set O4 0
-        fi
-     fi
+   if [ $(get_slot_type 2) != "0" ] ; then
+      gpio_set O5 0
+      logger -p user.crit "Invalid configuration on SLOT2"
+      if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
+         gpio_set O4 0
+      fi
+   fi
 else 
-     if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
-        gpio_set O4 0
-     fi
+   if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
+      gpio_set O4 0
+   fi
 fi
 
 if [ $(is_server_prsnt 4) == "1" ] ; then
-     if [ $(get_slot_type 4) != "0" ] ; then
-        gpio_set O7 0
-        logger -p user.crit "Invalid configuration on SLOT4"
-        if [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) != "0" ] ; then
-          gpio_set O6 0
-        fi
-     fi
+   if [ $(get_slot_type 4) != "0" ] ; then
+      gpio_set O7 0
+      logger -p user.crit "Invalid configuration on SLOT4"
+      if [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) != "0" ] ; then
+         gpio_set O6 0
+      fi
+   fi
 else
-     if [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) != "0" ] ; then
-        gpio_set O6 0
-     fi
+   if [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) != "0" ] ; then
+      gpio_set O6 0
+   fi
 fi
 
 # Enable buffer to pass through signal by system configuration
-if [ $(is_server_prsnt 2) == "1" ] && [ $(get_slot_type 2) == "0" ] ; then
+if [ $(is_server_prsnt 1) == "1" ] && [ $(is_server_prsnt 2) == "1" ] ; then
+   if [ $(get_slot_type 1) != "0" ] && [ $(get_slot_type 2) == "0" ] ; then
+      gpio_set B4 0
+      gpio_set B5 0
+   else
+      gpio_set B4 1
+      gpio_set B5 1
+   fi
+else
+   gpio_set B4 1
+   gpio_set B5 1
+fi
 
-  if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
-     gpio_set B4 0
-     gpio_set B5 0
-  else
-     gpio_set B4 1
-     gpio_set B5 1
-  fi
-fi				  
-  
-if [ $(is_server_prsnt 4) == "1" ] && [ $(get_slot_type 4) == "0" ] ; then
-
-  if [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) != "0" ] ; then
-     gpio_set B6 0
-     gpio_set B7 0
-  else
-     gpio_set B6 1
-     gpio_set B7 1
-  fi
+if [ $(is_server_prsnt 3) == "1" ] && [ $(is_server_prsnt 4) == "1" ] ; then
+   if [ $(get_slot_type 3) != "0" ] && [ $(get_slot_type 4) == "0" ] ; then
+      gpio_set B6 0
+      gpio_set B7 0
+   else
+      gpio_set B6 1
+      gpio_set B7 1
+   fi
+else
+   gpio_set B6 1
+   gpio_set B7 1
 fi
 
 # create devices on I2C bus 1 and bus 5

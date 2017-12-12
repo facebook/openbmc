@@ -371,12 +371,14 @@ hsvc_event_handler(void *ptr) {
         printf("Not remove entirely\n");
       }
       else {   //Card has been removed
+        pal_baseboard_clock_control(hsvc_info->slot_id, "1"); // Disable baseboard clock passing buffer to prevent voltage leakage
         ret = pal_is_server_12v_on(hsvc_info->slot_id, &value);    /* Check whether the system is 12V off or on */
         if (ret < 0) {
           syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
           break;
         }
         if (value) {
+
           syslog(LOG_CRIT, fru_prsnt_log_string[2*MAX_NUM_FRUS + hsvc_info->slot_id]);     //Card removal without 12V-off
           memset(vpath, 0, sizeof(vpath));
           sprintf(vpath, GPIO_VAL, gpio_12v[hsvc_info->slot_id]);

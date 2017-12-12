@@ -69,7 +69,11 @@
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_OFF 6
 #define DELAY_POWER_CYCLE 10
+#if 0 // 20 seconds is a temporarily workaround for voltage leakage
 #define DELAY_12V_CYCLE 5
+#else
+#define DELAY_12V_CYCLE 20
+#endif
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
@@ -818,6 +822,33 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
 }
 
 int
+pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
+   char v1path[64] = {0};
+   char v2path[64] = {0};
+
+   switch(slot_id) {
+      case FRU_SLOT1:
+      case FRU_SLOT2:
+        sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_0_R_N);
+        sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_1_R_N);
+        break;
+      case FRU_SLOT3:
+      case FRU_SLOT4:
+        sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_2_R_N);
+        sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_3_R_N);
+        break;
+      default:
+        return -1;
+   }
+
+   if (write_device(v1path, ctrl) || write_device(v2path, ctrl)) {
+     return -1;
+   }
+
+   return 0;
+}
+
+int
 pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
 
   int val;
@@ -930,18 +961,23 @@ pal_is_valid_pair(uint8_t slot_id) {
 
 static int
 pal_slot_pair_12V_on(uint8_t slot_id) {
-  int pair_slot_id;
+  uint8_t pair_slot_id;
   int pair_set_type=-1;
   uint8_t status=0;
   char hspath[80]={0};
   char vpath[80]={0};
   int ret=-1;
   char cmd[80] = {0};
+  uint8_t pwr_slot = slot_id;
+  int retry;
+  uint8_t self_test_result[2]={0};
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
-  else
+  else {
     pair_slot_id = slot_id + 1;
+    pwr_slot = slot_id + 1;
+  }
 
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
@@ -1037,6 +1073,40 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
             return -1;
           }
         }
+         msleep(300);
+         pal_baseboard_clock_control(pair_slot_id, "0");
+       }
+
+       // Check BIC Self Test Result
+       retry = 4;
+       while (retry > 0) {
+         ret = bic_get_self_test_result(pwr_slot, &self_test_result);
+         if (ret == 0) {
+           syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
+           break;
+         }
+         retry--;
+         sleep(5);
+       }
+
+       if (pal_get_server_power(pwr_slot, &status) < 0) {
+         syslog(LOG_ERR, "%s: pal_get_server_power failed", __func__);
+         return -1;
+       }
+
+       retry = 4;
+       if (status) {
+         while (retry > 0) {
+           ret = pal_set_server_power(pwr_slot, SERVER_POWER_CYCLE);
+           if (0 == ret)
+             break;
+           retry--;
+           sleep(1);
+         }
+
+         if (0 == retry) {
+           syslog(LOG_ERR, "%s: Failed to do power cycle", __func__);
+         }
        }
        break;
   }
@@ -1125,7 +1195,9 @@ static int
 server_12v_off(uint8_t slot_id) {
   char vpath[64] = {0};
   int ret=0;
-  uint8_t status;
+  int pair_set_type;
+  uint8_t pair_slot_id;
+  uint8_t runoff_id = slot_id;  
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
@@ -1135,13 +1207,41 @@ server_12v_off(uint8_t slot_id) {
     return -1;
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+  if (0 == slot_id%2)
+    pair_slot_id = slot_id - 1;
+  else
+    pair_slot_id = slot_id + 1;
+
+  pair_set_type = pal_get_pair_slot_type(slot_id);
+
+  if (0 != slot_id%2) {
+     switch(pair_set_type) {
+        case TYPE_SV_A_SV:
+        case TYPE_SV_A_CF:
+        case TYPE_SV_A_GP:
+        case TYPE_CF_A_CF:
+        case TYPE_CF_A_GP:
+        case TYPE_GP_A_CF:
+        case TYPE_GP_A_GP:
+           // do nothing
+           break;
+        case TYPE_CF_A_SV:
+        case TYPE_GP_A_SV:
+           // Need to 12V-off pair slot first to avoid accessing device card error
+           runoff_id = pair_slot_id;
+           break;
+     }
+  }
+  
+  sprintf(vpath, GPIO_VAL, gpio_12v[runoff_id]);
 
   if (write_device(vpath, "0")) {
     return -1;
   }
 
-  ret=pal_slot_pair_12V_off(slot_id);
+  pal_baseboard_clock_control(runoff_id, "1"); 
+
+  ret=pal_slot_pair_12V_off(runoff_id);
   if (0 != ret)
     printf("%s pal_slot_pair_12V_off failed for fru: %d\n", __func__, slot_id);
 
@@ -1250,9 +1350,9 @@ server_12v_on(uint8_t slot_id) {
     return -1;
   }
 
+#if 0
   // Delay 2 seconds to check if slot is inserted entirely
   sleep(2);
-#if 0
   sprintf(vpath, GPIO_VAL, gpio_slot_latch[slot_id]);
   if (read_device(vpath, &slot_latch)) {
     return -1;
@@ -1949,6 +2049,14 @@ pal_get_fan_latch(uint8_t *status) {
 
 int
 pal_sled_cycle(void) {
+  uint8_t slot_id;
+
+  for (slot_id=FRU_SLOT1;slot_id <= FRU_SLOT4;slot_id++) {
+    if (server_12v_off(slot_id))
+      syslog(LOG_WARNING, "%s: Fail to 12V off slot%u before sled cycle\n",__func__, slot_id);
+  }
+
+  sleep(DELAY_12V_CYCLE);
   pal_update_ts_sled();
   // Remove the adm1275 module as the HSC device is busy
   system("rmmod adm1275");

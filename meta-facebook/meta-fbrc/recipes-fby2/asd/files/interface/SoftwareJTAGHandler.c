@@ -162,25 +162,35 @@ void print_jtag_state(const char *func, JTAG_Handler *state)
         printf("Error: null passed to print_state\n");
     }
 
-    if (state->tap_state > 15) {
-        printf("Error! tap_state=%d(invalid!)\n", state->tap_state);
+    if (state->active_chain->tap_state > 15) {
+        printf("Error! tap_state=%d(invalid!)\n", state->active_chain->tap_state);
     }
 
     else {
-        printf("\n%s\n    -JTAG.tap_state=%d(%s), shift_padding.drPre=%d, shift_padding.drPost\
-=%d, shift_padding.irPre=%d, shift_padding.irPost=%d scan_state=%d slot_id=%d\n", func,
-            state->tap_state,
-            tap_states_name[state->tap_state],
-            state->shift_padding.drPre,
-            state->shift_padding.drPost,
-            state->shift_padding.irPre,
-            state->shift_padding.irPost,
-            state->scan_state,
+        printf("\n%s\n    -JTAG.tap_state=%d(%s), active_chain->shift_padding.drPre=%d, active_chain->shift_padding.drPost\
+=%d, active_chain->shift_padding.irPre=%d, active_chain->shift_padding.irPost=%d scan_state=%d slot_id=%d\n", func,
+            state->active_chain->tap_state,
+            tap_states_name[state->active_chain->tap_state],
+            state->active_chain->shift_padding.drPre,
+            state->active_chain->shift_padding.drPost,
+            state->active_chain->shift_padding.irPre,
+            state->active_chain->shift_padding.irPost,
+            state->active_chain->scan_state,
             state->fru
           );
     }
 }
 #endif
+void initialize_jtag_chains(JTAG_Handler* state) {
+    for (int i=0; i<MAX_SCAN_CHAINS; i++) {
+        state->chains[i].shift_padding.drPre = 0;
+        state->chains[i].shift_padding.drPost = 0;
+        state->chains[i].shift_padding.irPre = 0;
+        state->chains[i].shift_padding.irPost = 0;
+        state->chains[i].tap_state = JtagTLR;
+        state->chains[i].scan_state = JTAGScanState_Done;
+    }
+}
 
 JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
 {
@@ -196,15 +206,10 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
         return NULL;
     }
 
-    state->shift_padding.drPre = 0;
-    state->shift_padding.drPost = 0;
-    state->shift_padding.irPre = 0;
-    state->shift_padding.irPost = 0;
-
-    state->tap_state = JtagTLR;
+    initialize_jtag_chains(state);
+    state->active_chain = &state->chains[SCAN_CHAIN_0];
     memset(state->padDataOne, ~0, sizeof(state->padDataOne));
     memset(state->padDataZero, 0, sizeof(state->padDataZero));
-    state->scan_state = JTAGScanState_Done;
 
     state->fru = fru;
 
@@ -244,7 +249,7 @@ STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles)
 }
 
 
-STATUS JTAG_initialize(JTAG_Handler* state)
+STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 {
 #ifdef FBY2_DEBUG
     print_jtag_state(__FUNCTION__, state);
@@ -306,13 +311,13 @@ STATUS JTAG_set_padding(JTAG_Handler* state, const JTAGPaddingTypes padding, con
     }
 
     if (padding == JTAGPaddingTypes_DRPre) {
-        state->shift_padding.drPre = value;
+        state->active_chain->shift_padding.drPre = value;
     } else if (padding == JTAGPaddingTypes_DRPost) {
-        state->shift_padding.drPost = value;
+        state->active_chain->shift_padding.drPost = value;
     } else if (padding == JTAGPaddingTypes_IRPre) {
-        state->shift_padding.irPre = value;
+        state->active_chain->shift_padding.irPre = value;
     } else if (padding == JTAGPaddingTypes_IRPost) {
-        state->shift_padding.irPost = value;
+        state->active_chain->shift_padding.irPost = value;
     } else {
         syslog(LOG_ERR, "Unknown padding value: %d, slot%d", value,
                state->fru);
@@ -334,7 +339,7 @@ STATUS JTAG_tap_reset(JTAG_Handler* state)
       return ST_ERR;
     //  ShftDR->TLR = 5  1s of TMS, this will force TAP to enter TLR
     //   from any state
-    state->tap_state = JtagShfDR;
+    state->active_chain->tap_state = JtagShfDR;
     return JTAG_set_tap_state(state, JtagTLR);
 }
 
@@ -360,7 +365,7 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     if (state == NULL)
         return ST_ERR;
 
-    ret = jtag_bic_set_tap_state(state->fru, state->tap_state,
+    ret = jtag_bic_set_tap_state(state->fru, state->active_chain->tap_state,
                                  tap_state);
     if (ret != ST_OK) {
         syslog(LOG_ERR, "ERROR: %s jtag_bic_set_tap_state failed! slot%d",
@@ -369,10 +374,10 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     }
 
     // move the [soft] state to the requested tap state.
-    state->tap_state = tap_state;
+    state->active_chain->tap_state = tap_state;
 
 #ifdef FBY2_DEBUG
-    syslog(LOG_DEBUG, "TapState: %d, slot%d", state->tap_state,
+    syslog(LOG_DEBUG, "TapState: %d, slot%d", state->active_chain->tap_state,
            state->fru);
 #endif
     return ST_OK;
@@ -385,12 +390,12 @@ STATUS JTAG_get_tap_state(JTAG_Handler* state, JtagStates* tap_state)
 {
 #ifdef FBY2_DEBUG
     print_jtag_state(__FUNCTION__, state);
-    printf("    -current state = %d\n", state->tap_state);
+    printf("    -current state = %d\n", state->active_chain->tap_state);
 #endif
 
     if (state == NULL || tap_state == NULL)
         return ST_ERR;
-    *tap_state = state->tap_state;
+    *tap_state = state->active_chain->tap_state;
 
     return ST_OK;
 }
@@ -421,42 +426,42 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
     unsigned int postFix = 0;
     unsigned char* padData = state->padDataOne;
 
-    if (state->tap_state == JtagShfIR) {
-        preFix = state->shift_padding.irPre;
-        postFix = state->shift_padding.irPost;
+    if (state->active_chain->tap_state == JtagShfIR) {
+        preFix = state->active_chain->shift_padding.irPre;
+        postFix = state->active_chain->shift_padding.irPost;
         padData = state->padDataOne;
-    } else if (state->tap_state == JtagShfDR) {
-        preFix = state->shift_padding.drPre;
-        postFix = state->shift_padding.drPost;
+    } else if (state->active_chain->tap_state == JtagShfDR) {
+        preFix = state->active_chain->shift_padding.drPre;
+        postFix = state->active_chain->shift_padding.drPost;
         padData = state->padDataZero;
     } else {
         syslog(LOG_ERR, "Shift called but the tap is not in a ShiftIR/DR tap state, slot%d", state->fru);
         return ST_ERR;
     }
 
-    if (state->scan_state == JTAGScanState_Done) {
-        state->scan_state = JTAGScanState_Run;
+    if (state->active_chain->scan_state == JTAGScanState_Done) {
+        state->active_chain->scan_state = JTAGScanState_Run;
         if (preFix) {
             if (perform_shift(state, preFix, MAXPADSIZE, padData,
-                              0, NULL, state->tap_state, state->tap_state) != ST_OK)
+                              0, NULL, state->active_chain->tap_state, state->active_chain->tap_state) != ST_OK)
                  return ST_ERR;
         }
     }
 
-    if ((postFix) && (state->tap_state != end_tap_state)) {
-        state->scan_state = JTAGScanState_Done;
+    if ((postFix) && (state->active_chain->tap_state != end_tap_state)) {
+        state->active_chain->scan_state = JTAGScanState_Done;
         if (perform_shift(state, number_of_bits, input_bytes, input,
-                          output_bytes, output, state->tap_state, state->tap_state) != ST_OK)
+                          output_bytes, output, state->active_chain->tap_state, state->active_chain->tap_state) != ST_OK)
              return ST_ERR;
         if (perform_shift(state, postFix, MAXPADSIZE, padData, 0,
-                            NULL, state->tap_state, end_tap_state) != ST_OK)
+                            NULL, state->active_chain->tap_state, end_tap_state) != ST_OK)
              return ST_ERR;
     } else {
         if (perform_shift(state, number_of_bits, input_bytes, input,
-                          output_bytes, output, state->tap_state, end_tap_state) != ST_OK)
+                          output_bytes, output, state->active_chain->tap_state, end_tap_state) != ST_OK)
              return ST_ERR;
-        if (state->tap_state != end_tap_state) {
-            state->scan_state = JTAGScanState_Done;
+        if (state->active_chain->tap_state != end_tap_state) {
+            state->active_chain->scan_state = JTAGScanState_Done;
         }
     }
 
@@ -506,13 +511,13 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     }
 
     // go to end_tap_state as requested
-    if (jtag_bic_set_tap_state(state->fru, state->tap_state, end_tap_state)) {
+    if (jtag_bic_set_tap_state(state->fru, state->active_chain->tap_state, end_tap_state)) {
         syslog(LOG_ERR, "%s: ERROR, failed to go state %d, slot%d", __FUNCTION__,
                end_tap_state, state->fru);
         return (ST_ERR);
     }
 
-    state->tap_state = end_tap_state;
+    state->active_chain->tap_state = end_tap_state;
 
 
 
@@ -560,11 +565,11 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
     return ST_OK;
 }
 
-STATUS JTAG_set_clock_frequency(JTAG_Handler* state, unsigned int frequency)
+STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck)
 {
 #ifdef FBY2_DEBUG
     print_jtag_state(__FUNCTION__, state);
-    printf("    -frequency=%d", frequency);
+    printf("    -tck=%d", tck);
 #endif
 
     if (state == NULL)
@@ -810,7 +815,7 @@ STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer
                                      last_transaction);
 
         if (last_transaction) {
-            state->tap_state = (state->tap_state == JtagShfDR) ? JtagEx1DR : JtagEx1IR;
+            state->active_chain->tap_state = (state->active_chain->tap_state == JtagShfDR) ? JtagEx1DR : JtagEx1IR;
         }
 
         tdi_buffer += (this_write_bit_length >> 3);
@@ -823,4 +828,17 @@ STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer
   }
 
   return ret;
+}
+
+STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain) {
+    if (state == NULL)
+        return ST_ERR;
+
+    if (chain != SCAN_CHAIN_0) {
+        syslog(LOG_ERR, "Invalid chain!.");
+        return ST_ERR;
+    }
+
+    state->active_chain = &state->chains[chain];
+    return ST_OK;
 }

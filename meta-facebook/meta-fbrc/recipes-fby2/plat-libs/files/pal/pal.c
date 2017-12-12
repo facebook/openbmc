@@ -108,6 +108,7 @@ const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRS
 const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
 const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
+const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N};
 
@@ -909,9 +910,25 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
   return 0;
 }
 
+static bool
+pal_is_valid_pair(uint8_t slot_id) {
+  int pair_set_type;
+
+  pair_set_type = pal_get_pair_slot_type(slot_id);
+  switch (pair_set_type) {
+    case TYPE_SV_A_SV:
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+    case TYPE_NULL_A_SV:
+    case TYPE_SV_A_NULL:
+      return true;
+  }
+
+  return false;
+}
+
 static int
 pal_slot_pair_12V_on(uint8_t slot_id) {
-  int slot_type=-1;
   int pair_slot_id;
   int pair_set_type=-1;
   uint8_t status=0;
@@ -925,7 +942,6 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   else
     pair_slot_id = slot_id + 1;
 
-  slot_type = fby2_get_slot_type(slot_id);
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
      case TYPE_SV_A_SV:
@@ -1069,7 +1085,6 @@ pal_hot_service_action(uint8_t slot_id) {
   char cmd[128] = {0};
   char hspath[80] = {0};
   int ret=-1;
-  char tstr[64] = {0};
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
@@ -1092,11 +1107,6 @@ pal_hot_service_action(uint8_t slot_id) {
 
      pal_system_config_check(slot_id);
      pal_set_hsvc_ongoing(slot_id, 0, 1);
-     sprintf(tstr, "identify_slot%d", slot_id);
-     ret = pal_set_key_value(tstr, "off");
-     if (ret < 0) {
-       syslog(LOG_ERR, "pal_set_key_value: set %s off failed",tstr);
-     }
   }
 
   // Check if pair slot is swap
@@ -1282,9 +1292,11 @@ server_12v_on(uint8_t slot_id) {
 #endif
 
   // Reject 12V-on action when SLOT is not present or SLOT ejector latch pin is high
-  if ( (1 != slot_prsnt) || (slot_latch) )
+  if ( (1 != slot_prsnt) || (slot_latch) ) {
+    flock(pid_file, LOCK_UN);
+    close(pid_file);
     return -1;
-
+  }
   // Write 12V on
   memset(vpath, 0, sizeof(vpath));
   sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
@@ -1296,6 +1308,14 @@ server_12v_on(uint8_t slot_id) {
   pal_hot_service_action(slot_id);
   rc = flock(pid_file, LOCK_UN);
   close(pid_file);
+
+  if (!pal_is_valid_pair(slot_id)) {
+    write_device(vpath, "0");
+    return -1;
+  }
+
+  if (!pal_is_slot_server(slot_id))
+    return 0;
 
   // Wait for BIC ipmb interface is ready
   while (retry) {
@@ -1692,7 +1712,7 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
-  int ret;
+  int ret, val;
   char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
   uint8_t retry = MAX_READ_RETRY;
@@ -1707,6 +1727,16 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   /* If 12V-off, return */
   if (!(*status)) {
     *status = SERVER_12V_OFF;
+    return 0;
+  }
+
+  if (!pal_is_slot_server(slot_id)) {
+    sprintf(value, GPIO_VAL, gpio_power_en[slot_id]);
+    if (!read_device(value, &val)) {
+      *status = (val == 0x1) ? SERVER_POWER_ON : SERVER_POWER_OFF;
+    } else {
+      *status = SERVER_POWER_OFF;
+    }
     return 0;
   }
 
@@ -2688,7 +2718,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   while (retry) {
     ret = fby2_sensor_read(fru, sensor_num, value);
-    if(ret >= 0)
+    if((ret >= 0) || (ret == EER_READ_NA))
       break;
     msleep(50);
     retry--;
@@ -3294,8 +3324,13 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *sensor_list = (uint8_t *) bic_discrete_list;
-      *cnt = bic_discrete_cnt;
+      if (pal_is_slot_server(fru)) {
+        *sensor_list = (uint8_t *) bic_discrete_list;
+        *cnt = bic_discrete_cnt;
+      } else {
+        *sensor_list = NULL;
+        *cnt = 0;
+      }
       break;
     case FRU_SPB:
     case FRU_NIC:
@@ -4668,4 +4703,46 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   close(sock);
 
   return 0;
+}
+
+int
+pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+
+  if ((bus == 13) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (ts.tv_sec >= (last_time + 5)) {
+      last_time = ts.tv_sec;
+      ts.tv_sec += 30;
+
+      sprintf(key, "ocpdbg_lcd");
+      sprintf(value, "%d", ts.tv_sec);
+      if (edb_cache_set(key, value) < 0) {
+        return -1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+bool
+pal_is_mcu_working(void) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  sprintf(key, "ocpdbg_lcd");
+  if (edb_cache_get(key, value)) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
 }

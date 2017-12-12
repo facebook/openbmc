@@ -60,6 +60,7 @@ enum {
   TYPE_SV_A_SV     = 0,
   TYPE_CF_A_SV     = 1,
   TYPE_GP_A_SV     = 2,
+  TYPE_NULL_A_SV   = 3,
   TYPE_SV_A_CF     = 4,
   TYPE_CF_A_CF     = 5,
   TYPE_GP_A_CF     = 6,
@@ -68,6 +69,7 @@ enum {
   TYPE_CF_A_GP     = 9,
   TYPE_GP_A_GP     = 10,
   TYPE_NULL_A_GP   = 11,
+  TYPE_SV_A_NULL   = 12,
   TYPE_CF_A_NULL   = 13,
   TYPE_GP_A_NULL   = 14,
 };
@@ -96,6 +98,10 @@ enum {
 #define GPIO_POSTCODE_2                    50
 #define GPIO_POSTCODE_3                    51
 #define GPIO_FAN_LATCH_DETECT              61
+#define GPIO_SLOT1_POWER_EN                64
+#define GPIO_SLOT2_POWER_EN                65
+#define GPIO_SLOT3_POWER_EN                66
+#define GPIO_SLOT4_POWER_EN                67
 #define GPIO_VGA_SW0                       74
 #define GPIO_VGA_SW1                       75
 #define GPIO_PWR1_LED                      96

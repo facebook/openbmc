@@ -1,5 +1,5 @@
 {
-  "version": "fby2-dvt-r01",
+  "version": "fby2-dvt-r04",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -40,18 +40,23 @@
       "negative_hysteresis": 3,
       "data": [
         [ -34, 20 ],
-        [ -32, 44 ],
-        [ -30, 48 ],
-        [ -28, 52 ],
-        [ -26, 56 ],
-        [ -24, 60 ],
-        [ -22, 64 ],
-        [ -20, 68 ],
-        [ -18, 72 ],
-        [ -16, 76 ],
-        [ -4, 80 ],
-        [ -2, 100 ]
+        [ -32, 22 ],
+        [ -30, 24 ],
+        [ -28, 26 ],
+        [ -26, 28 ]
       ]
+    },
+    "pid_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -20,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0
     },
     "linear_dimm": {
       "read_source" : {
@@ -61,12 +66,10 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [65, 20],
-        [67, 26],
-        [69, 32],
-        [71, 38],
-        [73, 44],
-        [75, 50]
+        [70, 20],
+        [73, 35],
+        [75, 50],
+        [80, 65]
       ]
     },
     "linear_mezz": {
@@ -77,8 +80,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [85, 20],
-        [87, 35],
+        [87, 20],
         [90, 40],
         [92, 50],
         [94, 60]
@@ -90,18 +92,24 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 3,
       "data": [
         [ 56, 28 ],
         [ 58, 30 ],
-        [ 60, 35 ],
-        [ 62, 40 ],
-        [ 64, 45 ],
-        [ 66, 50 ],
-        [ 68, 55 ],
-        [ 70, 60 ],
-        [ 73, 70 ]
+        [ 60, 35 ]
       ]
+    },
+    "pid_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.5,
+      "ki": -0.02,
+      "kd": 0
     },
     "linear_gp_m2": {
       "read_source" : {
@@ -112,9 +120,8 @@
       "negative_hysteresis": 0,
       "data": [
         [ 68, 20 ],
-        [ 70, 40 ],
-        [ 72, 60 ],
-        [ 73, 70 ]
+        [ 70, 50 ],
+        [ 74, 70 ]
       ]
     }
   },

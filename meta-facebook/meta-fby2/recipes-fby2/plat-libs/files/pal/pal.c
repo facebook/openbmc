@@ -128,6 +128,7 @@ const char pal_tach_list[] = "0, 1";
 uint8_t g_dev_guid[GUID_SIZE] = {0};
 
 static unsigned char m_slot_ac_start[MAX_NODES] = {0};
+static bool m_sled_ac_start = false;
 
 static void *m_gpio_hand_sw = NULL;
 static void *m_hbled_output = NULL;
@@ -4379,6 +4380,45 @@ int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   return completion_code;
 }
 
+//Do sled ac cycle
+static void * sled_ac_cycle_handler(void *arg)
+{
+  pthread_detach(pthread_self());
+
+  msleep(500);
+
+  syslog(LOG_CRIT, "SLED_CYCLE starting...");
+  pal_update_ts_sled();
+  sync();
+  sleep(1);
+  pal_sled_cycle();
+
+  m_sled_ac_start = false;
+  pthread_exit(0);
+}
+
+int sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  int ret, slot_id = slot;
+  pthread_t tid;
+
+  if (m_sled_ac_start != false) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  m_sled_ac_start = true;
+  ret = pthread_create(&tid, NULL, sled_ac_cycle_handler, NULL);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Create Sled AC Cycle thread failed!\n", __func__);
+    m_sled_ac_start = false;
+    return CC_NODE_BUSY;
+  }
+
+  completion_code = CC_SUCCESS;
+  return completion_code;
+}
+
 int pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
 
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
@@ -4397,11 +4437,8 @@ int pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
       return completion_code;
     break;
     case 0xac:   //do sled ac cycle
-      syslog(LOG_CRIT, "SLED_CYCLE starting...");
-      pal_update_ts_sled();
-      sync();
-      sleep(1);
-      pal_sled_cycle();
+      completion_code = sled_ac_cycle(slot_id, req_data, req_len, res_data, res_len);
+      return completion_code; 
     break;
     default:
       return completion_code;

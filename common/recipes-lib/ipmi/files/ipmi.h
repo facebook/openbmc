@@ -573,6 +573,8 @@ enum
   BIC_INTF_SOL = 0x02,
   BIC_INTF_KCS = 0x03,
   BIC_INTF_KCS_SMM = 0x04,
+  BIC_INTF_SSIF = 0x0F,
+  BIC_INTF_SSIF_SMM = 0x10,
 };
 
 //PPR Action

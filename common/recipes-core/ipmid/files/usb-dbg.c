@@ -744,9 +744,13 @@ udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, 
     frame_info.init(&frame_info, FRAME_BUFF_SIZE);
     snprintf(frame_info.title, 32, "SYS_Info");
 
+    if (plat_get_extra_sysinfo(pos, line_buff) == 0) {
+      frame_info.append(&frame_info, line_buff, 0);
+    }
+
     // FRU
     if (pos != FRU_ALL && pal_get_fruid_path(pos, fruid_path) == 0 &&
-        fruid_parse(fruid_path, &fruid) == 0) {
+      fruid_parse(fruid_path, &fruid) == 0) {
       frame_info.append(&frame_info, "SN:", 0);
       frame_info.append(&frame_info, fruid.board.serial, 1);
       frame_info.append(&frame_info, "PN:", 0);
@@ -931,6 +935,8 @@ static uint8_t panel_boot_order (uint8_t item) {
     for (i--; (strlen(panels[PANEL_BOOT_ORDER].item_str[i]) == 0) && (i > 0); i--) ;
 
     panels[PANEL_BOOT_ORDER].item_num = i;
+  } else {
+    panels[PANEL_BOOT_ORDER].item_num = 0;
   }
   return PANEL_BOOT_ORDER;
 }
@@ -955,6 +961,9 @@ static uint8_t panel_power_policy (uint8_t item) {
         "%cLast State", policy == POWER_CFG_LPS ? '*' : ' ');
     snprintf(panels[PANEL_POWER_POLICY].item_str[3], 32,
         "%cPower Off", policy == POWER_CFG_OFF ? '*' : ' ');
+    panels[PANEL_POWER_POLICY].item_num = 3;
+  } else {
+    panels[PANEL_POWER_POLICY].item_num = 0;
   }
   return PANEL_POWER_POLICY;
 }

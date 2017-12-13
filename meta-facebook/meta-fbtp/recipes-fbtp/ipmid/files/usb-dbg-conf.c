@@ -475,3 +475,8 @@ int plat_get_syscfg_text(uint8_t fru, char *syscfg)
   pal_get_syscfg_text(syscfg);
   return 0;
 }
+
+int plat_get_extra_sysinfo(uint8_t fru, char *info)
+{
+  return -1;
+}

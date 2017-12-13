@@ -1465,6 +1465,13 @@ int main(int argc, char **argv) {
    * of this process's liveliness. */
   set_persistent_watchdog(WATCHDOG_SET_PERSISTENT);
 
+  /* We pet the watchdog here once, so that fan cpld will stop
+   * forcing the fan speed to be 50% - this needs to be done before
+   * we set fan speed to appropriate values for the first time
+   * in the very first pass of the while loop below.
+   */
+  clear_fancpld_watchdog_timer();
+
   sleep(5);  /* Give the fans time to come up to speed */
 
   while (1) {

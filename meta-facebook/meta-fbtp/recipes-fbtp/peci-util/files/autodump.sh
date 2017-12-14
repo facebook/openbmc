@@ -11,6 +11,11 @@ PID_FILE='/var/run/autodump1.pid'
 # Set current pid
 echo $PID > $PID_FILE
 
+# Set crashdump timestamp
+sys_runtime=$(awk '{print $1}' /proc/uptime)
+sys_runtime=$(printf "%0.f" $sys_runtime)
+echo $((sys_runtime+630)) > /tmp/cache_store/fru1_crashdump
+ 
 # kill previous autodump if exist
 if [ ! -z "$OLDPID" ] && (grep "autodump" /proc/$OLDPID/cmdline &> /dev/null) ; then
 

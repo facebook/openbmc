@@ -1170,10 +1170,12 @@ crit_proc_ongoing_handle(bool is_crit_proc_updating)
   if ( true == is_crit_proc_updating ) { // forbid the execution permission
     system("chmod 666 /sbin/shutdown.sysvinit");
     system("chmod 666 /sbin/halt.sysvinit");
+    system("chmod 666 /sbin/init");
   }
   else {
     system("chmod 4755 /sbin/shutdown.sysvinit");
     system("chmod 4755 /sbin/halt.sysvinit");
+    system("chmod 4755 /sbin/init");
   }
 }
 

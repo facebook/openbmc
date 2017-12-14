@@ -39,6 +39,7 @@ from node_identify import get_node_identify
 from node_fans import get_node_fans
 from node_vboot import get_node_vboot
 from node_bios import *
+from node_enclosure import *
 from tree import tree
 from pal import *
 
@@ -138,6 +139,18 @@ def init_plat_tree():
     #Add /api/dpb/fans end point
     r_temp = tree("fans", data = get_node_fans())
     r_dpb.addChild(r_temp)
+    #Add /api/dpb/hdd-status end point
+    r_tmp = tree("hdd-status", data = get_node_enclosure_hdd_status())
+    r_dpb.addChild(r_tmp)
+    #Add /api/dpb/error end point
+    r_tmp = tree("error", data = get_node_enclosure_error())
+    r_dpb.addChild(r_tmp)
+    #Add /api/dpb/flash-health end point
+    r_tmp = tree("flash-health", data = get_node_enclosure_flash_health())
+    r_dpb.addChild(r_tmp)
+    #Add /api/dpb/flash-status end point
+    r_tmp = tree("flash-status", data = get_node_enclosure_flash_status())
+    r_dpb.addChild(r_tmp)
 
     #Add /api/scc/fruid end point
     r_temp = tree("fruid", data = get_node_fruid("scc"))

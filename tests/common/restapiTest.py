@@ -6,12 +6,10 @@ import sys
 import subprocess
 import unitTestUtil
 import logging
-import time
 import ipaddress
 
 CURL_CMD = "curl -g http://{}:8080{} | python -m json.tool"
 CURL_CMD6 = "curl -g http://[{}]:8080{} | python -m json.tool"
-#LINKLOCAL_ADDR = "fe80::ff:fe00:1%usb0"
 
 
 def restapiTest(data, host, logger):

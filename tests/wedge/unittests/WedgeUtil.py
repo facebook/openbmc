@@ -62,7 +62,7 @@ class WedgeUtil(BaseUtil.BaseUtil):
 
     # sol
     solCmd = '/usr/local/bin/sol.sh'
-    solCloseConnection = ['\r', 'CTRL-l', chr(127)]  # send CTRL-l DEL
+    solCloseConnection = ['\r', 'CTRL-l', 'x']
 
     def solConnectionClosed(self, info):
         if 'Connection closed' in info:

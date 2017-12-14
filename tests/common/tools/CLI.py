@@ -145,10 +145,10 @@ def restapiTest(hostnameBMC, data, headnodeName=None):
     json = data["restapiTest.py"][1]['json']
     if HEADNODE:
         pythonfile = data["restapiTest.py"][1]['testfile']
-        cmd = "python {0} {1} {2}"
+        cmd = "python3 {0} {1} {2}"
         cmd = cmd.format(pythonfile, headnodeName, json)
     else:
-        cmd = "python ../restapiTest.py {0} {1}"
+        cmd = "python3 ../restapiTest.py {0} {1}"
         cmd = cmd.format(str(hostnameBMC), str(json))
     if VERBOSE:
         cmd = setVerbose(cmd)

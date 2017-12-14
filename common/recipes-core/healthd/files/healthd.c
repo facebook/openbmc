@@ -1165,9 +1165,9 @@ nm_monitor()
 }
 
 void
-fwupdate_ongoing_handle(bool is_fw_updating)
+crit_proc_ongoing_handle(bool is_crit_proc_updating)
 {
-  if (is_fw_updating) { // forbid the execution permission
+  if ( true == is_crit_proc_updating ) { // forbid the execution permission
     system("chmod 666 /sbin/shutdown.sysvinit");
     system("chmod 666 /sbin/halt.sysvinit");
   }
@@ -1179,19 +1179,29 @@ fwupdate_ongoing_handle(bool is_fw_updating)
 
 //Block reboot and shutdown commands in BMC during any FW updating
 static void *
-fw_update_monitor() {
+crit_proc_monitor() {
 
   bool is_fw_updating = false;
-  bool prev_flag = false;
+  bool is_crashdump_ongoing = false;
 
-  while(1) {
-    //is_fw_updating == true, means BMC is Updating a Device FW
+  while(1) 
+  {
+    //if is_fw_updating == true, means BMC is Updating a Device FW
     is_fw_updating = pal_is_fw_update_ongoing_system();
+    
+    //if is_autodump_ongoing == true, modify the permission
+    is_crashdump_ongoing = pal_is_crashdump_ongoing_system();
 
-    if (is_fw_updating != prev_flag) {
-      fwupdate_ongoing_handle(is_fw_updating);
+    if ( (true == is_fw_updating) || (true == is_crashdump_ongoing) ) 
+    {
+      crit_proc_ongoing_handle(true);
     }
-    prev_flag = is_fw_updating;
+    
+    if ( (false == is_fw_updating) && (false == is_crashdump_ongoing) )
+    {
+      crit_proc_ongoing_handle(false);
+    }
+
     sleep(1);
   }
   return NULL;
@@ -1306,7 +1316,7 @@ main(int argc, char **argv) {
   pthread_t tid_i2c_mon;
   pthread_t tid_cpu_monitor;
   pthread_t tid_mem_monitor;
-  pthread_t tid_fw_update_monitor;
+  pthread_t tid_crit_proc_monitor;
   pthread_t tid_ecc_monitor;
   pthread_t tid_bmc_health_monitor;
   pthread_t tid_nm_monitor;
@@ -1381,7 +1391,7 @@ main(int argc, char **argv) {
     }
   }
 
-  if (pthread_create(&tid_fw_update_monitor, NULL, fw_update_monitor, NULL) < 0) {
+  if (pthread_create(&tid_crit_proc_monitor, NULL, crit_proc_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
     exit(1);
   }
@@ -1414,7 +1424,7 @@ main(int argc, char **argv) {
     pthread_join(tid_nm_monitor, NULL);
   }
 
-  pthread_join(tid_fw_update_monitor, NULL);
+  pthread_join(tid_crit_proc_monitor, NULL);
 
   return 0;
 }

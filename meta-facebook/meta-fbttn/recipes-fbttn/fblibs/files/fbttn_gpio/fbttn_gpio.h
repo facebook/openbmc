@@ -24,6 +24,7 @@ extern "C" {
 #endif
 
 #include <facebook/bic.h>
+#include <facebook/fbttn_common.h>
 
 extern const uint8_t gpio_pin_list[];
 extern const char *gpio_pin_name[];

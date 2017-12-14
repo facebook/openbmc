@@ -39,22 +39,22 @@ const uint8_t gpio_pin_list[] = {
   FM_BDXDE_ERR2_LVT3_N,
   FM_BDXDE_ERR1_LVT3_N,
   FM_BDXDE_ERR0_LVT3_N,
-  //SLP_S4_N,
+  SLP_S4_N,
   FM_NMI_EVENT_BMC_N,
   FM_SMI_BMC_N,
   RST_PLTRST_BMC_N,
   FP_RST_BTN_BUF_N,
   BMC_RST_BTN_OUT_N,
   FM_BDE_POST_CMPLT_N,
-  //FM_BDXDE_SLP3_N,
-  //FM_PWR_LED_N,
+  FM_BDXDE_SLP3_N,
+  FM_PWR_LED_N,
   PWRGD_PVCCIN,
-  //SVR_ID0,
-  //SVR_ID1,
-  //SVR_ID2,
-  //SVR_ID3,
-  //BMC_READY_N,
-  //RESERVED_29,
+  SVR_ID0,
+  SVR_ID1,
+  SVR_ID2,
+  SVR_ID3,
+  BMC_READY_N,
+  BMC_COM_SW_N,
   //RESERVED_30,
   //RESERVED_31,
 };
@@ -92,7 +92,7 @@ const char *gpio_pin_name[] = {
   "SVR_ID2",
   "SVR_ID3",
   "BMC_READY_N",
-  "RESERVED_29",
+  "BMC_COM_SW_N",
   "RESERVED_30",
   "RESERVED_31"
 };
@@ -101,7 +101,7 @@ int
 fbttn_get_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
 
   //TODO: Add support for BMC GPIO pins
-  if (fru < 1 || fru > 4) {
+  if (fru != FRU_SLOT1) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fbttn_get_gpio_name: Wrong fru %u", fru);
 #endif

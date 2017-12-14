@@ -61,7 +61,7 @@ enum {
   SVR_ID2,
   SVR_ID3,
   BMC_READY_N,
-  RESERVED_29,
+  BMC_COM_SW_N,
   RESERVED_30,
   RESERVED_31,
 };
@@ -99,7 +99,7 @@ typedef struct _bic_gpio_t {
   uint32_t pvccin_vrhot_n:1;
   uint32_t fm_fast_prochot_n:1;
   uint32_t pchhot_cpu_n:1;
-  uint32_t fm_cpld_cpu_dimm_event_c0_n:1;
+  uint32_t fm_cpld_cpu_dimm_event_co_n:1;
   uint32_t fm_cpld_bdxde_thermtrip_n:1;
   uint32_t thermtrip_pch_n:1;
   uint32_t fm_cpld_fivr_fault:1;

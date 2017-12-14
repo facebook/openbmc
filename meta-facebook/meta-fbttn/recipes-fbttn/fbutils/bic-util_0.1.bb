@@ -1,6 +1,6 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 SUMMARY = "Bridge IC Utility"
-DESCRIPTION = "Util for checking with Bridge IC on Yosemite"
+DESCRIPTION = "Util for checking with Bridge IC on fbttn"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
@@ -16,6 +16,6 @@ do_install() {
     install -m 0755 bic-util ${D}${bindir}/bic-util
 }
 
-DEPENDS += "libbic"
+DEPENDS += "libbic libfbttn-gpio"
 
 FILES_${PN} = "${bindir}"

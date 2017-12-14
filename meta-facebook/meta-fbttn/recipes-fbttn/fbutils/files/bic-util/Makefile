@@ -2,7 +2,7 @@
 all: bic-util
 
 bic-util: bic-util.c 
-	$(CC) -pthread -lipmi -lipmb -lbic -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread -lipmi -lipmb -lbic -lfbttn_gpio -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

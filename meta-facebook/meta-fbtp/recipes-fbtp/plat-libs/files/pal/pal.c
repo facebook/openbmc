@@ -5304,7 +5304,7 @@ pal_get_sysfw_ver(uint8_t fru, uint8_t *ver) {
 
 int
 pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
-  int i;
+  int i, j, network_dev = 0;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char tstr[10] = {0};
@@ -5312,9 +5312,24 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   sprintf(key, "server_boot_order");
 
   for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
+      if (boot[i] == boot[j])
+        return CC_INVALID_PARAM;
+    }
+
+    //If Bit 2:0 is 001b (Network), Bit3 is IPv4/IPv6 order
+    //Bit3=0b: IPv4 first
+    //Bit3=1b: IPv6 first
+    if (i > 0 && (boot[i] == BOOT_DEVICE_IPV4 || boot[i] == BOOT_DEVICE_IPV6))
+      network_dev++;
+
     snprintf(tstr, 3, "%02x", boot[i]);
     strncat(str, tstr, 3);
   }
+
+  //Not allow having more than 1 network boot device in the boot order.
+  if (network_dev > 1)
+    return CC_INVALID_PARAM;
 
   return pal_set_key_value(key, str);
 }

@@ -293,6 +293,15 @@ enum {
   SLOT_CFG_EMPTY    = 0x03,
 };
 
+enum {
+  BOOT_DEVICE_IPV4     = 0x1,
+  BOOT_DEVICE_HDD      = 0x2,
+  BOOT_DEVICE_CDROM    = 0x3,
+  BOOT_DEVICE_OTHERS   = 0x4,
+  BOOT_DEVICE_IPV6     = 0x9,
+  BOOT_DEVICE_RESERVED = 0xff,
+};
+
 typedef struct _sensor_info_t {
   bool valid;
   sdr_full_t sdr;

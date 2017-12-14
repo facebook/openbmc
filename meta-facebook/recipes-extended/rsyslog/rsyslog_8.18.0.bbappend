@@ -3,6 +3,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://rsyslog.conf \
             file://rotate_logfile \
             file://rotate_cri_sel \
+            file://rsyslog.logrotate \
 "
 
 do_install_append() {
@@ -11,6 +12,7 @@ do_install_append() {
   install -m 755 ${WORKDIR}/rotate_logfile ${dst}/logfile
   install -m 755 ${WORKDIR}/rotate_cri_sel ${dst}/cri_sel
   install -m 644 ${WORKDIR}/rsyslog.conf ${D}${sysconfdir}/rsyslog.conf
+  install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.rsyslog
 
   dir=$(pwd)
   while [ -n "$dir" -a "$dir" != "/" -a ! -d "$dir/meta-openbmc/.git" ]; do

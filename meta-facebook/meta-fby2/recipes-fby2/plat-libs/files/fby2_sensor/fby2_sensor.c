@@ -541,19 +541,19 @@ read_m2_temp_on_gp(char *device, uint8_t sensor_num, float *value) {
   uint8_t temp;
   switch(sensor_num) {
     case DC_SENSOR_NVMe1_CTEMP:
-      mux_channel = MUX_CH_0;
-      break;
-    case DC_SENSOR_NVMe2_CTEMP:
       mux_channel = MUX_CH_1;
       break;
+    case DC_SENSOR_NVMe2_CTEMP:
+      mux_channel = MUX_CH_0;
+      break;
     case DC_SENSOR_NVMe3_CTEMP:
-      mux_channel = MUX_CH_2;
+      mux_channel = MUX_CH_4;
       break;
     case DC_SENSOR_NVMe4_CTEMP:
       mux_channel = MUX_CH_3;
       break;
     case DC_SENSOR_NVMe5_CTEMP:
-      mux_channel = MUX_CH_4;
+      mux_channel = MUX_CH_2;
       break;
     case DC_SENSOR_NVMe6_CTEMP:
       mux_channel = MUX_CH_5;

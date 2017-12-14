@@ -1256,11 +1256,53 @@ int __attribute__((weak))
 pal_is_crashdump_ongoing(uint8_t fru)
 {
   char fname[128];
-  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
-  if (access(fname, F_OK) == 0) {
-    return 1;
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  int ret;
+
+  //if pid file not exist, return false
+  sprintf(fname, "/var/run/autodump%d.pid", fru);  
+  if ( access(fname, F_OK) != 0 ) 
+  {
+    return 0;
   }
+
+  //check the crashdump file in /tmp/cache_store/fru$1_crashdump
+  sprintf(fname, "fru%d_crashdump", fru);
+  ret = edb_cache_get(fname, value);
+  if (ret < 0) 
+  {
+     return 0;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+  {
+     return 1;
+  }
+
+  //over the threshold time, return false
   return 0;                     /* false */
+}
+
+bool __attribute__((weak))
+pal_is_crashdump_ongoing_system(void)
+{
+  //Base on fru number to check if autodump is onging.
+  uint8_t max_slot_num = 0;
+
+  pal_get_num_slots(&max_slot_num);
+
+  for(int i = 1; i <= max_slot_num; i++) //fru start from 1
+  { 
+    int fruid = pal_slotid_to_fruid(i);
+    if ( 1 == pal_is_crashdump_ongoing(fruid) )
+    {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 int __attribute__((weak))

@@ -10,6 +10,9 @@
 
 using namespace std;
 
+#define BMC_RW_OFFSET               (64 * 1024)
+#define ROMX_SIZE                   (84 * 1024)
+
 #define PAGE_SIZE                     0x1000
 #define VERIFIED_BOOT_STRUCT_BASE     0x1E720000
 #define VERIFIED_BOOT_HARDWARE_ENFORCE(base) \
@@ -123,9 +126,10 @@ class BmcComponent : public Component {
   protected:
     string _mtd_name;
     size_t _writable_offset;
+    size_t _skip_offset;
   public:
-    BmcComponent(string fru, string comp, string mtd, size_t w_offset = 0)
-      : Component(fru, comp), _mtd_name(mtd), _writable_offset(w_offset) {}
+    BmcComponent(string fru, string comp, string mtd, size_t w_offset = 0, size_t skip_offset = 0)
+      : Component(fru, comp), _mtd_name(mtd), _writable_offset(w_offset), _skip_offset(skip_offset) {}
     int update(string image_path)
     {
       char dev[12];
@@ -148,7 +152,7 @@ class BmcComponent : public Component {
         return FW_STATUS_FAILURE;
       }
       cout << "Flashing to device: " << string(dev) << endl;
-      if (_writable_offset > 0) {
+      if (_skip_offset > 0 || _writable_offset > 0) {
         flash_image = image_path + "-tmp";
         // Ensure that we are not overwriting an existing file.
         while (access( flash_image.c_str(), F_OK  ) != -1) {
@@ -160,7 +164,7 @@ class BmcComponent : public Component {
           cerr << "Cannot open " << image_path << " for reading" << endl;
           return FW_STATUS_FAILURE;
         }
-        if (lseek(fd_r, _writable_offset, SEEK_SET) != (off_t)_writable_offset) {
+        if (lseek(fd_r, _skip_offset, SEEK_SET) != (off_t)_skip_offset) {
           close(fd_r);
           cerr << "Cannot seek " << image_path << endl;
           return FW_STATUS_FAILURE;
@@ -172,9 +176,33 @@ class BmcComponent : public Component {
           close(fd_r);
           return FW_STATUS_FAILURE;
         }
-        // Copy from r to w.
         uint8_t buf[1024];
         size_t r_b;
+
+        if (_skip_offset > _writable_offset) {
+          size_t copy = _skip_offset - _writable_offset;
+          int fd_d = open(dev, O_RDONLY);
+          if (fd_d < 0) {
+            close(fd_r);
+            close(fd_w);
+            return FW_STATUS_FAILURE;
+          }
+          while (copy > 0) {
+            size_t to_copy = copy > sizeof(buf) ? sizeof(buf) : copy;
+            r_b = read(fd_d, buf, to_copy);
+            if (r_b != to_copy) {
+              close(fd_r);
+              close(fd_d);
+              close(fd_d);
+              return FW_STATUS_FAILURE;
+            }
+            write(fd_w, buf, to_copy);
+            copy -= to_copy;
+          }
+          close(fd_d);
+        }
+
+        // Copy from r to w.
         while ((r_b = read(fd_r, buf, 1024)) > 0) {
           write(fd_w, buf, r_b);
         }
@@ -255,7 +283,7 @@ class SystemConfig {
         // have the romx partition
         if (vboot_hardware_enforce()) {
           // Locked down, Update from a 64k offset.
-          static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", 64 * 1024);
+          static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", BMC_RW_OFFSET, ROMX_SIZE);
           // Locked down, Allow getting version of ROM, but do not allow
           // upgrading it.
           static BmcUbootVersionComponent rom("bmc", "rom", "", "\"rom\"");

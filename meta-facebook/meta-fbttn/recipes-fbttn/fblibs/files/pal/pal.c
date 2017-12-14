@@ -29,6 +29,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <openbmc/obmc-sensor.h>
+#include <facebook/bic.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -4226,4 +4227,66 @@ pal_power_policy_control(uint8_t fru, char *last_ps) {
     sleep(3);
     pal_set_server_power(fru, SERVER_POWER_ON);
   }
+}
+
+// OEM Command "CMD_OEM_BYPASS_CMD" 0x34
+int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+    int ret;
+    int completion_code = CC_UNSPECIFIED_ERROR;
+    uint8_t netfn, cmd, select;
+    uint8_t tlen, rlen;
+    uint8_t tbuf[256] = {0x00};
+    uint8_t rbuf[256] = {0x00};
+    uint8_t status;
+
+    if (slot != FRU_SLOT1) {
+      return CC_PARAM_OUT_OF_RANGE;
+    }
+
+    ret = pal_is_fru_prsnt(slot, &status);
+    if (ret < 0) {
+      return -1;
+    }
+    if (status == 0) {
+      return CC_UNSPECIFIED_ERROR;
+    }
+
+    ret = pal_is_server_12v_on(slot, &status);
+    if((ret < 0) || (status == CTRL_DISABLE)) {
+      return CC_NOT_SUPP_IN_CURR_STATE;
+    }
+
+    select = req_data[0];
+    netfn = req_data[1];
+    cmd = req_data[2];
+    tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+
+    if (tlen < 0) {
+      return completion_code;
+    }
+
+    if (0 == select) { //BIC
+      // Bypass command to Bridge IC
+      if (tlen != 0) {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
+      } else {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
+      }
+
+      if (0 == ret) {
+        completion_code = CC_SUCCESS;
+      }
+
+    } else if (1 == select) { //ME
+      tlen += 2;
+      memcpy(tbuf, &req_data[1], tlen);
+      tbuf[0] = tbuf[0] << 2;
+      // Bypass command to ME
+      ret = bic_me_xmit(slot, tbuf, tlen, res_data, res_len);
+      if (0 == ret) {
+         completion_code = CC_SUCCESS;
+      }
+    }
+
+    return completion_code;
 }

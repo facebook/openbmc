@@ -102,9 +102,14 @@ class Zone:
                                     if ret:
                                         Logger.debug("Server Sensor Fail")
                                         outmin = max(outmin, self.boost)
-                        elif re.match(r'SSD', sensor.name) != None:
+                        elif (re.match(r'SSD', sensor.name) != None) or (re.match(r'M2', sensor.name) != None):
                             if 'SSD_sensor_fail' in list(self.fail_sensor_type.keys()):
                                 if self.fail_sensor_type['SSD_sensor_fail'] == True:
+                                    ret = fsc_board.get_SSD_present()
+                                    if ret:
+                                        Logger.debug("SSD or M.2 Sensor Fail")
+                                        outmin = max(outmin, self.boost)
+
                                     fail_ssd_count = fail_ssd_count + 1
                         else:
                             if 'standby_sensor_fail' in list(self.fail_sensor_type.keys()):

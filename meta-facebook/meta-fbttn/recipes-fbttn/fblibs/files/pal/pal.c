@@ -267,6 +267,58 @@ struct power_coeff power_table[] = {
   {0.0,   0.0}
 };
 
+/* IPMI SEL: System Firmware Error string table */
+struct system_fw_progress {
+  uint8_t EventData1;
+  char DecodeString[128];
+};
+
+struct system_fw_progress system_fw_error[] = {
+  {0x00, "Unspecified"},
+  {0x01, "No system memory is physically installed in the system"},
+  {0x02, "No usable system memory, all installed memory has experienced an unrecoverable failure"},
+  {0x03, "Unrecoverable hard-disk/ATAPI/IDE device failure"},
+  {0x04, "Unrecoverable system-board failure"},
+  {0x05, "Unrecoverable diskette subsystem failure"},
+  {0x06, "Unrecoverable hard-disk controller failure"},
+  {0x07, "Unrecoverable PS/2 or USB keyboard failure"},
+  {0x08, "Removable boot media not found"},
+  {0x09, "Unrecoverable video controller failure"},
+  {0x0A, "No video device detected"},
+  {0x0B, "Firmware (BIOS) ROM corruption detected"},
+  {0x0C, "CPU voltage mismatch (processors that share same supply have mismatched voltage requirements)"},
+  {0x0D, "CPU speed matching failure"},
+};
+
+struct system_fw_progress system_fw_hang_or_progress[] = {
+  {0x00, "Unspecified"},
+  {0x01, "Memory initialization"},
+  {0x02, "Hard-disk initialization"},
+  {0x03, "Secondary processor(s) initialization"},
+  {0x04, "User authentication"},
+  {0x05, "User-initiated system setup"},
+  {0x06, "USB resource configuration"},
+  {0x07, "PCI resource configuration"},
+  {0x08, "Option ROM initialization"},
+  {0x09, "Video initialization"},
+  {0x0A, "Cache initialization"},
+  {0x0B, "SM Bus initialization"},
+  {0x0C, "Keyboard controller initialization"},
+  {0x0D, "Embedded controller/management controller initialization"},
+  {0x0E, "Docking station attachment"},
+  {0x0F, "Enabling docking station"},
+  {0x10, "Docking station ejection"},
+  {0x11, "Disabling docking station"},
+  {0x12, "Calling operating system wake-up vector"},
+  {0x13, "Starting operating system boot process, e.g. calling Int 19h"},
+  {0x14, "Baseboard or motherboard initialization"},
+  {0x15, "reserved"},
+  {0x16, "Floppy initialization"},
+  {0x17, "Keyboard test"},
+  {0x18, "Pointing device test"},
+  {0x19, "Primary processor initialization"},
+};
+
 /* NVMe-MI SSD Status Flag bit mask */
 #define NVME_SFLGS_MASK_BIT 0x28  //Just check bit 3,5
 #define NVME_SFLGS_CHECK_VALUE 0x28 // normal - bit 3,5 = 1
@@ -2138,45 +2190,195 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   uint8_t snr_num = sel[11];
   char *event_data = &sel[10];
   char *ed = &event_data[3];
-  char temp_og[128] = {0};
+  char temp_log[512] = {0};
+  char err_str[512] = {0};
   uint8_t temp;
   uint8_t sen_type = event_data[0];
   uint8_t event_type = sel[12] & 0x7F;
   uint8_t event_dir = sel[12] & 0x80;
+  uint8_t chn_num, dimm_num, map_of_dimm_num;
 
   parsed = false;
+  strcpy(error_log, "");
 
   // First, try checking if the SEL message is a platform-specific one (FBTTN)
-  if (fru==FRU_SCC) {
-    parsed = true;
-    switch (event_type) {
-      case SENSOR_SPECIFIC:
-        switch (snr_type) {
-          case DIGITAL_DISCRETE:
-            switch (ed[0] & 0x0F) {
-              //Sensor Type Code, Physical Security 0x5h, SENSOR_SPECIFIC Offset 0x0h General Chassis Intrusion
-              case 0x0:
-                if (!event_dir)
-                  sprintf(error_log, "Drawer be Pulled Out");
-                else
-                  sprintf(error_log, "Drawer be Pushed Back");
+  switch (fru) {
+    case (FRU_SLOT1):
+      switch (snr_num) {
+        case POST_ERROR:
+          parsed = true;
+          if (((ed[0] >> 6) & 0x03) == 0x3) {
+            // Reference from IPMI spec v2.0 Table 42-3, Sensor Type Codes
+            switch (ed[0] & 0xF) {
+              case 0x00:
+                strcat(error_log, "System Firmware Error (POST Error), IPMI Post Code");
+                if (ed[1] <  (sizeof(system_fw_error) / sizeof(system_fw_error[0]))) {
+                  sprintf(temp_log, ", %s", system_fw_error[ed[1]].DecodeString);
+                } else {
+                  sprintf(temp_log, ", reserved");
+                }
+                break;
+              case 0x01:
+                strcat(error_log, "System Firmware Hang, IPMI Post Code");
+              case 0x02:
+                if (strcmp(error_log, "") == 0) {
+                  strcat(error_log, "System Firmware Progress, IPMI Post Code");
+                }
+                if (ed[1] <  (sizeof(system_fw_hang_or_progress) / sizeof(system_fw_hang_or_progress[0]))) {
+                  sprintf(temp_log, ", %s", system_fw_hang_or_progress[ed[1]].DecodeString);
+                } else {
+                  sprintf(temp_log, ", reserved");
+                }
+                break;
+              default:
+                sprintf(temp_log, "Unknown");
                 break;
             }
-            break;
-        }
-        break;
+            strcat(error_log, temp_log);
+          } else if (((ed[0] >> 6) & 0x03) == 0x2) {
+            if ((ed[0] & 0x0F) == 0x0)
+              strcat(error_log, "System Firmware Error (POST Error)");
+            else
+              strcat(error_log, "Unknown");
 
-      case GENERIC:
-        if (ed[0] & 0x0F)
-          sprintf(error_log, "ASSERT, Limit Exceeded");
-        else
-          sprintf(error_log, "DEASSERT, Limit Not Exceeded");
-        break;
+            sprintf(temp_log, ", OEM Post Code, 0x%02X%02X", ed[2], ed[1]);
+            strcat(error_log, temp_log);
+            switch ((ed[2] << 8) | ed[1]) {
+              case 0xA104:
+                sprintf(temp_log, ", CMOS/NVRAM configuration cleared");
+                strcat(error_log, temp_log);
+                break;
+              case 0xA105:
+                sprintf(temp_log, ", BMC Failed (No Response)");
+                strcat(error_log, temp_log);
+                break;
+              default:
+                break;
+            }
+          } else {
+            strcat(error_log, "Unknown");
+          }
+          break;
+        case MEMORY_ECC_ERR:
+          parsed = true;
+          if (sen_type == 0x0C) {
+            // SEL from MEMORY_ECC_ERR
+            if ((ed[0] & 0x0F) == 0x0) {
+              strcat(error_log, "Correctable");
+              sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+              pal_add_cri_sel(temp_log);
+            } else if ((ed[0] & 0x0F) == 0x1) {
+              strcat(error_log, "Uncorrectable");
+              sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+              pal_add_cri_sel(temp_log);
+            } else if ((ed[0] & 0x0F) == 0x5) {
+              strcat(error_log, "Correctable ECC error Logging Limit Reached");
+            } else {
+              strcat(error_log, "Sensor Type: 0x0C, Unknown");
+            }
+          } else if (sen_type == 0x10) {
+            // SEL from MEMORY_ERR_LOG_DIS
+            if ((ed[0] & 0x0F) == 0x5) {
+              strcat(error_log, "Correctable Memory Error Logging Disabled");
+            } else {
+              strcat(error_log, "Sensor Type: 0x10, Unknown");
+            }
+          }
 
-      default:
-        sprintf(error_log, "Unknown");
-        break;
-    }
+          // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
+          sprintf(temp_log, " (DIMM %02X)", ed[2]);
+          strcat(error_log, temp_log);
+
+          sprintf(temp_log, " Logical Rank %d", ed[1] & 0x03);
+          strcat(error_log, temp_log);
+
+          // Bit[7:5]: CPU number     (Range: 0-7)
+          // Bit[4:3]: Channel number (Range: 0-3)
+          // Bit[2:0]: DIMM number    (Range: 0-7)
+          if (((ed[1] & 0xC) >> 2) == 0x0) {
+            /* All Info Valid */
+            chn_num = (ed[2] & 0x18) >> 3;
+            dimm_num = ed[2] & 0x7;
+            map_of_dimm_num = ed[2];
+
+            /* If critical SEL logging is available, do it */
+            if (sen_type == 0x0C) {
+              if ((ed[0] & 0x0F) == 0x0) {
+                sprintf(err_str, "ECC err");
+              } else if ((ed[0] & 0x0F) == 0x1) {
+                sprintf(err_str, "UECC err");
+              }              
+              switch (map_of_dimm_num) {
+                case 0x00:
+                  sprintf(temp_log, "DIMMA0(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
+                  break;
+                case 0x01:
+                  sprintf(temp_log, "DIMMA1(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
+                  break;
+                case 0x08:
+                  sprintf(temp_log, "DIMMB0(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
+                  break;
+                case 0x09:
+                  sprintf(temp_log, "DIMMB1(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
+                  break;
+              }
+              pal_add_cri_sel(temp_log);
+            }
+            /* Then continue parse the error into a string. */
+            /* All Info Valid                               */
+            strcpy(temp_log, "");
+            sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
+                (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+          } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+            /* DIMM info not valid */
+            sprintf(temp_log, " (CPU# %d, CHN# %d)",
+                (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
+          } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+            /* CHN info not valid */
+            sprintf(temp_log, " (CPU# %d, DIMM# %d)",
+                (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
+          } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+            /* CPU info not valid */
+            sprintf(temp_log, " (CHN# %d, DIMM# %d)",
+                (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+          }
+          strcat(error_log, temp_log);
+          break;
+      }
+      break;
+    case (FRU_SCC):
+      parsed = true;
+      switch (event_type) {
+        case SENSOR_SPECIFIC:
+          switch (snr_type) {
+            case DIGITAL_DISCRETE:
+              switch (ed[0] & 0x0F) {
+                //Sensor Type Code, Physical Security 0x5h, SENSOR_SPECIFIC Offset 0x0h General Chassis Intrusion
+                case 0x0:
+                  if (!event_dir)
+                    sprintf(error_log, "Drawer be Pulled Out");
+                  else
+                    sprintf(error_log, "Drawer be Pushed Back");
+                  break;
+              }
+              break;
+          }
+          break;
+
+        case GENERIC:
+          if (ed[0] & 0x0F)
+            sprintf(error_log, "ASSERT, Limit Exceeded");
+          else
+            sprintf(error_log, "DEASSERT, Limit Not Exceeded");
+          break;
+
+        default:
+          sprintf(error_log, "Unknown");
+          break;
+      }
+      break;
+    default:
+      break;
   }
 
   // If this message was not a platform specific message, just run a

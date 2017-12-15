@@ -29,6 +29,7 @@
 #include <getopt.h>
 #include <time.h>
 #include <pthread.h>
+#include <signal.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 #include <openbmc/obmc-sensor.h>
@@ -179,6 +180,7 @@ get_sensor_reading(void *sensor_data) {
   int ret = 0;
   char fruname[32] = {0};
 
+  pthread_detach(pthread_self());
   //Allow this thread to be killed at any time
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
@@ -221,7 +223,7 @@ get_sensor_reading(void *sensor_data) {
 
   //Tell caller it's done
   pthread_cond_signal(&done);
-  return NULL;
+  pthread_exit(0);
 }
 
 static void
@@ -288,7 +290,7 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
 {
   struct timespec abs_time;
   pthread_t tid_get_sensor_reading;
-  int err;
+  int err, thread_alive;
   char fruname[32] = {0};
 
   pthread_mutex_lock(&timer);
@@ -301,14 +303,24 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
   //Make get_sensor_reading a thread
   pthread_create(&tid_get_sensor_reading, NULL, get_sensor_reading, (void *) sensor_data);
 
-  //Timer thread, continue only when get_sensor_reading send the done signal or abs_time timed out
-  err = pthread_cond_timedwait(&done, &timer, &abs_time);
+  //Check if thread is alive, if pthread_kill (thread_id, sig = 0) returns 0, means thread is alive
+  thread_alive = pthread_kill(tid_get_sensor_reading, 0);
 
-  //Timeout actions
-  if (err == ETIMEDOUT) {
-    pal_get_fru_name(sensor_data->fru, fruname);
-    printf("FRU:%s timed out...\n", fruname);
-    pthread_cancel(tid_get_sensor_reading);
+  if (thread_alive == 0) {
+    //Timer thread, continue only when get_sensor_reading send the done signal or abs_time timed out
+    err = pthread_cond_timedwait(&done, &timer, &abs_time);   
+
+    //Double Check if thread is still alive
+    thread_alive = pthread_kill(tid_get_sensor_reading, 0);
+
+    //Timeout actions
+    //If Timed out, and Thread is still alive, it means the thread is really timed out, cancel the thread
+    //If Timed out, and Thread is dead, it means the timed out is fake, do nothing
+    if ( (err == ETIMEDOUT) && (thread_alive == 0) ) {
+      pal_get_fru_name(sensor_data->fru, fruname);
+      printf("FRU:%s timed out...\n", fruname);
+      pthread_cancel(tid_get_sensor_reading);
+    }
   }
 
   pthread_mutex_unlock(&timer);
@@ -372,6 +384,10 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool his
       printf("%s get sensor list failed!\n", fruname);
       return ret;
     }
+  }
+
+  if (sensor_cnt == 0) {
+    return 0;
   }
 
   if (history_clear) {

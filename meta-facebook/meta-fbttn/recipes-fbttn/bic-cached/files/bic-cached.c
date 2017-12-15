@@ -37,7 +37,8 @@
 #define LAST_RECORD_ID 0xFFFF
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
-
+#define MAX_RETRY 180         // 1 s * 180 = 3 mins
+#define MAX_RETRY_CNT 9000    // A senond can run about 50 times, 3 mins = 180 * 50
 
 int
 fruid_cache_init(uint8_t slot_id) {
@@ -64,6 +65,7 @@ int
 sdr_cache_init(uint8_t slot_id) {
   int ret = 0;
   int fd;
+  int retry = 0;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   char *path = NULL;
@@ -98,10 +100,12 @@ sdr_cache_init(uint8_t slot_id) {
    return ret;
   }
 
-  while (1) {
+  retry = 0;
+  do {
     ret = bic_get_sdr(slot_id, &req, res, &rlen);
     if (ret) {
-      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d, sdr_size: %d\n", __func__, ret, rlen);
+      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d, rsv_id: 0x%x, record_id: 0x%x, sdr_size: %d\n", __func__, ret, req.rsv_id, req.rec_id, rlen);
+      retry++;
       continue;
     }
 
@@ -114,6 +118,10 @@ sdr_cache_init(uint8_t slot_id) {
       // syslog(LOG_INFO, "This record is LAST record\n");
       break;
     }
+    retry++;
+  } while (retry < MAX_RETRY_CNT);
+  if (retry == MAX_RETRY_CNT) {   // if exceed 3 mins, exit this step
+    syslog(LOG_CRIT, "Fail on getting Server SDR via BIC.\n");
   }
 
   ret = pal_unflock_retry(fd);
@@ -134,7 +142,6 @@ main (int argc, char * const argv[])
 {
   int ret = -1;
   int retry = 0;
-  int max_retry = 180;  // 1 s * 180 = 3 mins
   uint8_t slot_id;
   uint8_t self_test_result[2] = {0};
   uint8_t bic_ready_val = BIC_NOT_READY;
@@ -168,8 +175,8 @@ main (int argc, char * const argv[])
     ret = sdr_cache_init(slot_id);
     retry++;
     sleep(1);
-  } while ((ret != 0) && (retry < max_retry));
-  if (retry == max_retry) {   // if exceed 3 mins, exit this step
+  } while ((ret != 0) && (retry < MAX_RETRY));
+  if (retry == MAX_RETRY) {   // if exceed 3 mins, exit this step
     syslog(LOG_CRIT, "Fail on getting Server SDR.\n");
   } else {
     syslog(LOG_INFO, "Server SDR initial is done.\n");
@@ -181,8 +188,8 @@ main (int argc, char * const argv[])
     ret = fruid_cache_init(slot_id);
     retry++;
     sleep(1);
-  } while ((ret != 0) && (retry < max_retry));
-  if (retry == max_retry) {
+  } while ((ret != 0) && (retry < MAX_RETRY));
+  if (retry == MAX_RETRY) {
     syslog(LOG_CRIT, "Fail on getting Server FRU.\n");
   } else {
     syslog(LOG_INFO, "Server FRU initial is done.\n");

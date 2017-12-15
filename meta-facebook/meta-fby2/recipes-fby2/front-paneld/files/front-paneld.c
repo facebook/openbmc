@@ -61,6 +61,7 @@
 
 static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 static uint8_t m_pos = 0xff;
+static uint8_t m_fan_latch = 0;
 
 static int
 get_handsw_pos(uint8_t *pos) {
@@ -644,7 +645,9 @@ led_sync_handler() {
           g_sync_led[slot] = 1;
           pal_set_led(slot, LED_OFF);
           pal_set_id_led(slot, ID_LED_ON);
-          pal_set_slot_id_led(slot, LED_OFF); // Slot ID LED on top of each TL
+          if (m_fan_latch && pal_is_hsvc_ongoing(slot)) {
+            pal_set_slot_id_led(slot, LED_ON); // Slot ID LED on top of each TL
+          }
         } else {
           g_sync_led[slot] = 0;
         }
@@ -655,7 +658,7 @@ led_sync_handler() {
       for (slot = 1; slot <=4; slot++) {
         if (id_arr[slot]) {
           pal_set_id_led(slot, ID_LED_OFF);
-          pal_set_slot_id_led(slot, LED_ON); // Slot ID LED on top of each TL
+          pal_set_slot_id_led(slot, LED_OFF); // Slot ID LED on top of each TL
         }
       }
 
@@ -683,6 +686,7 @@ seat_led_handler() {
       msleep(500);
       continue;
     }
+    m_fan_latch = val;
 
     // Handle Sled fully seated
     if (val) { // SLED is pull out

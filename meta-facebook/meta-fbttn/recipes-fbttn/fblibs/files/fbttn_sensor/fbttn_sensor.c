@@ -445,9 +445,9 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_M2_AMBIENT_TEMP2,
       70, 0, 0, 0, 0, 0, 0, 0); // for Type V
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_M2_SMART_TEMP1,
-      75, 0, 0, 0, 0, 0, 0, 3); // for Type V
+      74, 0, 0, 0, 0, 0, 0, 3); // for Type V
   assign_sensor_threshold(FRU_IOM, IOM_SENSOR_M2_SMART_TEMP2,
-      75, 0, 0, 0, 0, 0, 0, 3); // for Type V
+      74, 0, 0, 0, 0, 0, 0, 3); // for Type V
   //IOM IOC Temp
   assign_sensor_threshold(FRU_IOM, IOM_IOC_TEMP,
       95, 0, 0, 0, 0, 0, 0, 3); // for Type VII

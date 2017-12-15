@@ -115,3 +115,19 @@ def get_power_status(fru):
     except Exception:
         Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
     return -1
+
+def get_SSD_present():
+    cmd = "cat /sys/class/gpio/gpio32/value"
+    data=''
+    try:
+        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        if int(data) == 0:
+            return 1
+        else:
+            return 0
+    except SystemExit:
+        Logger.debug("SystemExit from sensor read")
+        raise
+    except Exception:
+        Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
+    return -1

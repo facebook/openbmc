@@ -26,17 +26,17 @@ set -e
 #   clk_source / ((2 ^ division_h) * (2 * division_l) * (unit + 1))
 #
 # Our clk_source is 24Mhz.  4-pin fans are generally supposed to be driven with
-# a 25Khz PWM control signal.  Therefore we want the divisor to equal 960.
+# a 25Khz PWM control signal.  Therefore we want the divisor to equal 800.
 #
 # We also want the unit to be as large as possible, since this controls the
 # granularity with which we can modulate the PWM signal.  The following
-# settings allow us to set the fan from 0 to 100% in increments of 1/96th.
+# settings allow us to set the fan from 0 to 100% in increments of 1/100th.
 #
 # The AST chip supports 3 different PWM clock configurations, but we only use
 # type M for now.
 echo 0 > $PWM_DIR/pwm_type_m_division_h
-echo 5 > $PWM_DIR/pwm_type_m_division_l
-echo 95 > $PWM_DIR/pwm_type_m_unit
+echo 4 > $PWM_DIR/pwm_type_m_division_l
+echo 99 > $PWM_DIR/pwm_type_m_unit
 # Set Type M tacho clock division to 4
 echo 0 > $PWM_DIR/tacho_type_m_division
 

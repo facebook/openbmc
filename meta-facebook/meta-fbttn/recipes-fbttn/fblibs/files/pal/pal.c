@@ -146,7 +146,7 @@
 
 #define LARGEST_DEVICE_NAME 120
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
-#define PWM_UNIT_MAX 96
+#define PWM_UNIT_MAX 100
 
 #define TACH_RPM "/sys/devices/platform/ast_pwm_tacho.0/tacho%d_rpm"
 #define TACH_BMC_RMT_HB 0
@@ -2584,7 +2584,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
     return -1;
   }
 
-  // Convert the percentage to our 1/96th unit.
+  // Convert the percentage to our 1/100th unit.
   unit = pwm * PWM_UNIT_MAX / 100;
 
   // For 0%, turn off the PWM entirely

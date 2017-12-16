@@ -6,23 +6,33 @@ import sys
 import subprocess
 import unitTestUtil
 import logging
-import ipaddress
+import socket
 
 CURL_CMD = "curl -g http://{}:8080{} | python -m json.tool"
 CURL_CMD6 = "curl -g http://[{}]:8080{} | python -m json.tool"
 
 
+def check_ip6(ip_addr):
+    '''
+    TODO: Move to Py3 in flitr.tw and use inbuilt ipaddress module
+    '''
+    try:
+        socket.inet_pton(socket.AF_INET6, ip_addr)
+    except socket.error:
+        return False
+    else:
+        return True
+
+
 def restapiTest(data, host, logger):
     curl_cmd = ""
-    # only the ipv6 includes ":"
     try:
-        interf = ipaddress.ip_interface(host)
-        if interf.version is 6:
+        if check_ip6(host):
             curl_cmd = CURL_CMD6
         else:
             curl_cmd = CURL_CMD
     except Exception:
-        print("it's host name instead of ipv4 or ipv6")
+        print("Provided host information invalid: hostname/ipv4/ipv6 address")
         curl_cmd = CURL_CMD
     for endpoint in data['endpoints']:
         cmd = curl_cmd.format(host, endpoint)

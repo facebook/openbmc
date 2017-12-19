@@ -1198,7 +1198,7 @@ server_12v_off(uint8_t slot_id) {
   int ret=0;
   int pair_set_type;
   uint8_t pair_slot_id;
-  uint8_t runoff_id = slot_id;  
+  uint8_t runoff_id = slot_id;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
@@ -1233,14 +1233,14 @@ server_12v_off(uint8_t slot_id) {
            break;
      }
   }
-  
+
   sprintf(vpath, GPIO_VAL, gpio_12v[runoff_id]);
 
   if (write_device(vpath, "0")) {
     return -1;
   }
 
-  pal_baseboard_clock_control(runoff_id, "1"); 
+  pal_baseboard_clock_control(runoff_id, "1");
 
   ret=pal_slot_pair_12V_off(runoff_id);
   if (0 != ret)
@@ -1260,11 +1260,30 @@ pal_system_config_check(uint8_t slot_id) {
   char slot_str[80] = {0};
   char last_slot_str[80] = {0};
 
-  // 0(TwinLake), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
+  // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   slot_type = fby2_get_slot_type(slot_id);
   switch (slot_type) {
      case SLOT_TYPE_SERVER:
+#ifdef CONFIG_FBY2_RC
+       ret = fby2_get_server_type(slot_id, &server_type);
+       if (ret) {
+         syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+         return ret;
+       }
+       switch (server_type) {
+         case SERVER_TYPE_RC:
+           sprintf(slot_str,"RC");
+           break;
+         case SERVER_TYPE_TL:
+           sprintf(slot_str,"Twin Lake");
+           break;
+         default:
+           sprintf(slot_str,"Undefined server type");
+           break;
+       }
+#else
        sprintf(slot_str,"1S Server");
+#endif
        break;
      case SLOT_TYPE_CF:
        sprintf(slot_str,"Crane Flat");
@@ -1287,10 +1306,29 @@ pal_system_config_check(uint8_t slot_id) {
     return -1;
   }
 
-  // 0(TwinLake), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
+  // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   switch (last_slot_type) {
      case SLOT_TYPE_SERVER:
+#ifdef CONFIG_FBY2_RC
+       ret = fby2_get_server_type(slot_id, &server_type);
+       if (ret) {
+         syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+         return ret;
+       }
+       switch (server_type) {
+         case SERVER_TYPE_RC:
+           sprintf(slot_str,"RC");
+           break;
+         case SERVER_TYPE_TL:
+           sprintf(slot_str,"Twin Lake");
+           break;
+         default:
+           sprintf(slot_str,"Undefined server type");
+           break;
+       }
+#else
        sprintf(last_slot_str,"1S Server");
+#endif
        break;
      case SLOT_TYPE_CF:
        sprintf(last_slot_str,"Crane Flat");
@@ -2660,8 +2698,30 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
+#ifdef CONFIG_FBY2_RC
+            ret = fby2_get_server_type(fru, &server_type);
+            if (ret) {
+              syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+            }
+            switch (server_type) {
+              case SERVER_TYPE_RC:
+                *sensor_list = (uint8_t *) bic_rc_sensor_list;
+                *cnt = bic_rc_sensor_cnt;
+                break;
+              case SERVER_TYPE_TL:
+                *sensor_list = (uint8_t *) bic_sensor_list;
+                *cnt = bic_sensor_cnt;
+                break;
+              default:
+                syslog(LOG_ERR, "%s, Undefined server type, using Twin Lake sensor list as default\n", __func__);
+                *sensor_list = (uint8_t *) bic_sensor_list;
+                *cnt = bic_sensor_cnt;
+              break;
+            }
+#else
             *sensor_list = (uint8_t *) bic_sensor_list;
             *cnt = bic_sensor_cnt;
+#endif
             break;
         case SLOT_TYPE_CF:
             *sensor_list = (uint8_t *) dc_cf_sensor_list;
@@ -4438,7 +4498,7 @@ int pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
     break;
     case 0xac:   //do sled ac cycle
       completion_code = sled_ac_cycle(slot_id, req_data, req_len, res_data, res_len);
-      return completion_code; 
+      return completion_code;
     break;
     default:
       return completion_code;

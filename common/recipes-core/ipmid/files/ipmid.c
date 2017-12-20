@@ -3159,7 +3159,6 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       }
       break;
     case CMD_OEM_1S_INTR:
-    case CMD_OEM_1S_JTAG_GPIO_STATUS:
 #ifdef DEBUG
       syslog(LOG_INFO, "ipmi_handle_oem_1s (cmd 0x%02x): 1S server interrupt#%d received "
                 "for payload#%d\n", cmd, req->data[3], req->payload_id);

@@ -3623,7 +3623,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
   if (GETBIT(diff, 2)) {
     switch(snr_num) {
       case BIC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SOC_Throttle");
+        sprintf(name, "SYS_Throttle");
         valid = true;
         break;
       case BIC_SENSOR_VR_HOT:

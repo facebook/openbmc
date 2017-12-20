@@ -998,6 +998,36 @@ app_master_write_read (unsigned char *request, unsigned char req_len,
   }
 }
 
+static void
+app_get_sys_intf_caps (unsigned char *request, unsigned char req_len,
+                         unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+
+  res->cc = CC_SUCCESS;
+
+  switch (req->data[0]) {
+    case 0:  // SSIF
+      *data++ = 0x00;
+      *data++ = 0x88;
+      *data++ = 255;
+      *data++ = 125;
+      break;
+    case 1:  // KCS
+      *data++ = 0x00;
+      *data++ = 0x00;
+      *data++ = 255;
+      break;
+    default:
+      res->cc = CC_INVALID_DATA_FIELD;
+      break;
+  }
+
+  *res_len = data - &res->data[0];
+}
+
 // Handle Appliction Commands (IPMI/Section 20)
 static void
 ipmi_handle_app (unsigned char *request, unsigned char req_len,
@@ -1056,10 +1086,13 @@ ipmi_handle_app (unsigned char *request, unsigned char req_len,
       app_clear_message_flags (request, req_len, response, res_len);
       break;
     case CMD_APP_GET_SYS_INFO_PARAMS:
-      app_get_sys_info_params (request,  req_len, response, res_len);
+      app_get_sys_info_params (request, req_len, response, res_len);
       break;
     case CMD_APP_MASTER_WRITE_READ:
-      app_master_write_read (request,  req_len, response, res_len);
+      app_master_write_read (request, req_len, response, res_len);
+      break;
+    case CMD_APP_GET_SYS_INTF_CAPS:
+      app_get_sys_intf_caps (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

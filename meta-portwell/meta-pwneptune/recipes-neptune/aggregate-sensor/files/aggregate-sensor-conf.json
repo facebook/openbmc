@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_AIRFLOW",
+      "units": "CFM",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "rpm0": {
+            "fru":       1,
+            "sensor_id": 192
+          },
+          "rpm1": {
+            "fru":       1,
+            "sensor_id": 195
+          }
+        },
+        "linear_expressions": {
+          "T6nF": "( rpm0 * 0.0053118 ) + ( rpm1 * 0.0053118 ) - 6.98",
+          "T6wAva": "( rpm0 * 0.00505665 ) + ( rpm1 * 0.00505665 ) - 6.94",
+          "T3wAva": "( rpm0 * 0.00455225 ) + ( rpm1 * 0.00455225 ) - 5.69",
+          "T8HN": "( rpm0 * 0.0053118 ) + ( rpm1 * 0.0053118 ) - 6.98",
+          "JBOG": "( rpm0 * 0.0051608 ) + ( rpm1 * 0.0051608 ) - 6.551259969"
+        },
+        "condition": {
+          "key": "mb_system_conf",
+          "default_expression": "T6nF",
+          "value_map": {
+            "SS_D": "T6nF",
+            "SS_0": "T8HN",
+            "SS_1": "T6nF",
+            "SS_4": "T6wAva",
+            "SS_6": "JBOG",
+            "SS_8": "T3wAva",
+            "DS_D": "T6nF"
+          }
+        }
+      }
+    }
+  ]
+}

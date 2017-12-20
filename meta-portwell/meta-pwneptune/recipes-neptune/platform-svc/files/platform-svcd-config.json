@@ -1,0 +1,1221 @@
+{
+  "objectType": "PlatformService",
+  "objectName": "PlatformService",
+  "sensorServiceDBusName": "org.openbmc.SensorService",
+  "sensorServiceDBusPath": "/org/openbmc/SensorService",
+  "sensorServiceDBusInterface": "org.openbmc.SensorTree",
+  "fruServiceDBusName": "org.openbmc.FruService",
+  "fruServiceDBusPath": "/org/openbmc/FruService",
+  "fruServiceDBusInterface": "org.openbmc.FruService",
+  "childObjects": [
+    {
+      "objectType": "FRU",
+      "objectName": "mb",
+      "id": "1",
+      "hotPlugSupport": "0",
+      "fruIdAccess": {
+        "type": "I2CEEPROM",
+        "eepromPath": "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
+      },
+      "childObjects":[
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_INLET_TEMP",
+          "id": "0xA0",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*/temp1_input",
+            "unitDiv": "1000"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_OUTLET_TEMP",
+          "id": "0xA1",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*/temp1_input",
+            "unitDiv": "1000"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_INLET_REMOTE_TEMP",
+          "id": "0xA3",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*/temp2_input",
+            "unitDiv": "1000"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_OUTLET_REMOTE_TEMP",
+          "id": "0xA4",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*/temp2_input",
+            "unitDiv": "1000"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_FAN0_TACH",
+          "id": "0xC0",
+          "unit": "RPM",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_pwm_tacho.0/tacho0_rpm"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_FAN1_TACH",
+          "id": "0xC3",
+          "unit": "RPM",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_pwm_tacho.0/tacho2_rpm"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_P3V3",
+          "id": "0xD1",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc0_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_P5V",
+          "id": "0xD2",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc1_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_P12V",
+          "id": "0xD3",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc2_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_P1V05",
+          "id": "0xD4",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc3_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_PVNN_PCH_STBY",
+          "id": "0xD5",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc4_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_P3V3_STBY",
+          "id": "0xD6",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc5_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_P5V_STBY",
+          "id": "0xD7",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc6_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_P3V_BAT",
+          "id": "0xD0",
+          "unit": "Volts",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast_adc.0/adc7_value"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_P12V_INA230_VOL",
+          "id": "0x90",
+          "unit": "Volts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_P12V_INA230_CURR",
+          "id": "0x91",
+          "unit": "Amps",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_P12V_INA230_PWR",
+          "id": "0x92",
+          "unit": "Watts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_P12V_INA230_VOL",
+          "id": "0x93",
+          "unit": "Volts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_P12V_INA230_CURR",
+          "id": "0x94",
+          "unit": "Amps",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_P12V_INA230_PWR",
+          "id": "0x95",
+          "unit": "Watts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_P12V_INA230_VOL",
+          "id": "0x96",
+          "unit": "Volts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_P12V_INA230_CURR",
+          "id": "0x97",
+          "unit": "Amps",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_P12V_INA230_PWR",
+          "id": "0x98",
+          "unit": "Watts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CONN_P12V_INA230_VOL",
+          "id": "0x99",
+          "unit": "Volts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CONN_P12V_INA230_CURR",
+          "id": "0x9A",
+          "unit": "Amps",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CONN_P12V_INA230_PWR",
+          "id": "0x9B",
+          "unit": "Watts",
+          "access": {
+            "type": "INA230"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_AVA_FTEMP",
+          "id": "0x80",
+          "unit": "C",
+          "access": {
+            "type": "AVA"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_AVA_RTEMP",
+          "id": "0x81",
+          "unit": "C",
+          "access": {
+            "type": "AVA"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_AVA_FTEMP",
+          "id": "0x86",
+          "unit": "C",
+          "access": {
+            "type": "AVA"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_AVA_RTEMP",
+          "id": "0x87",
+          "unit": "C",
+          "access": {
+            "type": "AVA"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_AVA_FTEMP",
+          "id": "0x7E",
+          "unit": "C",
+          "access": {
+            "type": "AVA"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_AVA_RTEMP",
+          "id": "0x7F",
+          "unit": "C",
+          "access": {
+            "type": "AVA"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_1_NVME_CTEMP",
+          "id": "0x82",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_2_NVME_CTEMP",
+          "id": "0x83",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_3_NVME_CTEMP",
+          "id": "0x84",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_4_NVME_CTEMP",
+          "id": "0x85",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_1_NVME_CTEMP",
+          "id": "0x88",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_2_NVME_CTEMP",
+          "id": "0x89",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_3_NVME_CTEMP",
+          "id": "0x8A",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C3_4_NVME_CTEMP",
+          "id": "0x8B",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_1_NVME_CTEMP",
+          "id": "0x8C",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_2_NVME_CTEMP",
+          "id": "0x8D",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_3_NVME_CTEMP",
+          "id": "0x8E",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C4_4_NVME_CTEMP",
+          "id": "0x8F",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIN_TEMP",
+          "id": "0xB1",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIN_CURR",
+          "id": "0xB2",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIN_VOLT",
+          "id": "0xB0",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIN_POWER",
+          "id": "0xB3",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VSA_TEMP",
+          "id": "0xB5",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x29",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VSA_CURR",
+          "id": "0xB6",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x15",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VSA_VOLT",
+          "id": "0xB4",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x1A",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VSA_POWER",
+          "id": "0xB7",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x2D",
+            "slaveAddr": "0x90"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIO_TEMP",
+          "id": "0xB9",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0x94"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIO_CURR",
+          "id": "0xBA",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0x94"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIO_VOLT",
+          "id": "0xB8",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0x94"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIO_POWER",
+          "id": "0xBB",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0x94"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPA_TEMP",
+          "id": "0xBD",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0xE0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPA_CURR",
+          "id": "0xBE",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0xE0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPA_VOLT",
+          "id": "0xBC",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0xE0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPA_POWER",
+          "id": "0xBF",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0xE0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPB_TEMP",
+          "id": "0xCD",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0xE4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPB_CURR",
+          "id": "0xCE",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0xE4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPB_VOLT",
+          "id": "0xCC",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0xE4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VDDQ_GRPB_POWER",
+          "id": "0xCF",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0xE4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIN_TEMP",
+          "id": "0xF1",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIN_CURR",
+          "id": "0xF2",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIN_VOLT",
+          "id": "0xF0",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIN_POWER",
+          "id": "0xF3",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VSA_TEMP",
+          "id": "0xF5",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x29",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VSA_CURR",
+          "id": "0xF6",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x15",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VSA_VOLT",
+          "id": "0xF4",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x1A",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VSA_POWER",
+          "id": "0xF7",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x2D",
+            "slaveAddr": "0xB0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIO_CURR",
+          "id": "0xFA",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0xB4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIO_TEMP",
+          "id": "0xF9",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0xB4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIO_VOLT",
+          "id": "0xF8",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0xB4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VCCIO_POWER",
+          "id": "0xFB",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0xB4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPC_TEMP",
+          "id": "0xFD",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0xA0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPC_CURR",
+          "id": "0xFE",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0xA0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPC_VOLT",
+          "id": "0xFC",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0xA0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPC_POWER",
+          "id": "0xD8",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0xA0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPD_TEMP",
+          "id": "0xDA",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0xA4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPD_CURR",
+          "id": "0xDB",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0xA4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPD_VOLT",
+          "id": "0xD9",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0xA4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU1_VDDQ_GRPD_POWER",
+          "id": "0xDC",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0xA4"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_PVNN_TEMP",
+          "id": "0xC9",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_PVNN_CURR",
+          "id": "0xCA",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x15",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_PVNN_VOLT",
+          "id": "0xC8",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x1A",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_PVNN_POWER",
+          "id": "0xCB",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x2D",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_P1V05_TEMP",
+          "id": "0xC5",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x29",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_P1V05_CURR",
+          "id": "0xC6",
+          "unit": "Amps",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x15",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_P1V05_VOLT",
+          "id": "0xC4",
+          "unit": "Volts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x1A",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_PCH_P1V05_POWER",
+          "id": "0xC7",
+          "unit": "Watts",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x61",
+            "reg": "0x2D",
+            "slaveAddr": "0xD0"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_HSC_IN_VOLT",
+          "id": "0x2A",
+          "unit": "Volts",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_HSC_OUT_CURR",
+          "id": "0xC1",
+          "unit": "Amps",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_HSC_IN_POWER",
+          "id": "0x29",
+          "unit": "Watts",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU0_TEMP",
+          "id": "0xAA",
+          "unit": "C",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU1_TEMP",
+          "id": "0xAB",
+          "unit": "C",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU0_DIMM_GRPA_TEMP",
+          "id": "0xAC",
+          "unit": "C",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU0_DIMM_GRPB_TEMP",
+          "id": "0xAD",
+          "unit": "C",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU1_DIMM_GRPC_TEMP",
+          "id": "0xAE",
+          "unit": "C",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU1_DIMM_GRPD_TEMP",
+          "id": "0xAF",
+          "unit": "C",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU0_PKG_POWER",
+          "id": "0x2C",
+          "unit": "Watts",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_CPU1_PKG_POWER",
+          "id": "0x2D",
+          "unit": "Watts",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_PCH_TEMP",
+          "id": "0x08",
+          "unit": "C",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_POWER_FAIL",
+          "id": "0x9C",
+          "unit": "NA",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_MEMORY_LOOP_FAIL",
+          "id": "0x9D",
+          "unit": "NA",
+          "access": {
+            "type": "NONE"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_PROCESSOR_FAIL",
+          "id": "0x65",
+          "unit": "NA",
+          "access": {
+            "type": "NONE"
+          }
+        }
+      ]
+    },
+    {
+      "objectType": "FRU",
+      "objectName": "nic",
+      "id": "2",
+      "hotPlugSupport": "0",
+      "fruIdAccess": {
+        "type": "I2CEEPROM",
+        "eepromPath": "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"
+      },
+      "childObjects":[
+        {
+          "objectType": "Sensor",
+          "objectName": "MEZZ_SENSOR_TEMP",
+          "id": "0xA2",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*/temp2_input",
+            "retry" : "3",
+            "unitDiv": "1000"
+          }
+        }
+      ]
+    }
+  ]
+}

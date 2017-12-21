@@ -1,0 +1,8 @@
+
+This is an example udev rule that can optionally be installed to allow
+members of the 'adm' group to use the switchtec command without using
+sudo.
+
+This can be customized to your requirements and installed in
+/etc/udev/rules.d/ to set the permissions of all switchtec
+devices across reboots.

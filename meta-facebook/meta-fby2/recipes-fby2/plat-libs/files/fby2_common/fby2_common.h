@@ -79,6 +79,14 @@ typedef struct {
   char slot_def_val[32];
 } slot_kv_st;
 
+
+// Structure for Accuracy Sensor Reading (Bridge IC spec v0.6)
+typedef struct {
+  uint8_t int_value;
+  uint8_t dec_value;
+  uint8_t flags;
+} ipmi_accuracy_sensor_reading_t;
+
 //GPIO definition
 #define MAX_SPB_GPIO_NUM                  256
 

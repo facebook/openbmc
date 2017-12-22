@@ -127,6 +127,12 @@ const uint8_t bic_neg_reading_sensor_support_list[] = {
   BIC_SENSOR_VNN_PCH_VR_CURR,
 };
 
+const uint8_t bic_sdr_accuracy_sensor_support_list[] = {
+  BIC_SENSOR_VCCIN_VR_POUT,
+  BIC_SENSOR_INA230_POWER,
+  BIC_SENSOR_SOC_PACKAGE_PWR,
+};
+
 // List of BIC sensors (Twinlake) to be monitored
 const uint8_t bic_sensor_list[] = {
   /* Threshold sensors */
@@ -923,12 +929,29 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   int i;
   sdr_full_t *sdr;
   ipmi_sensor_reading_t sensor;
+  ipmi_accuracy_sensor_reading_t acsensor;
+  bool is_accuracy_sensor = false;
+  
+  for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
+    if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
+      is_accuracy_sensor = true;
+  }
 
   ret = bic_read_sensor(fru, sensor_num, &sensor);
   if (ret) {
     return ret;
   }
   msleep(1);  // a little delay to reduce CPU utilization
+
+  // accuracy sensor VCCIN_VR_POUT, INA230_POWER and SOC_PACKAGE_PWR
+  if (is_accuracy_sensor) {
+    ret = bic_read_accuracy_sensor(fru, sensor_num, &acsensor);
+    if (ret) {
+      return ret;
+    }
+    msleep(1);  // a little delay to reduce CPU utilization
+    sensor.flags = acsensor.flags;
+  }
 
   if (sensor.flags & BIC_SENSOR_READ_NA) {
 #ifdef DEBUG
@@ -949,6 +972,11 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   // If the SDR is not type1, no need for conversion
   if (sdr->type !=1) {
     *(float *) value = sensor.value;
+    return 0;
+  }
+
+  if (is_accuracy_sensor) {
+    *(float *) value = ((float)(acsensor.int_value*100 + acsensor.dec_value))/100;
     return 0;
   }
 

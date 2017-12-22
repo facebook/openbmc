@@ -1689,6 +1689,23 @@ bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sens
 }
 
 int
+bic_read_accuracy_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_accuracy_sensor_reading_t *sensor) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00, 0x00}; // IANA ID + Sensor Num
+  uint8_t rbuf[255] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = sensor_num;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ACCURACY_SENSOR_READING, tbuf, 0x04, rbuf, &rlen);
+
+  //Ignore IANA ID
+  memcpy(sensor, &rbuf[3], rlen-3);
+  
+  return ret;
+}
+
+int
 bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
   int ret;
   uint8_t rlen = 0;

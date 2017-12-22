@@ -49,6 +49,8 @@ extern "C" {
 
 #define MAX_NODES 4
 
+#define MAX_NIC_TEMP_RETRY 3
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

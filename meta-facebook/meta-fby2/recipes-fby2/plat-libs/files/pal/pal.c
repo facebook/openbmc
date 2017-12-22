@@ -167,6 +167,8 @@ typedef struct {
 
 static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
+static uint8_t otp_server_12v_off_flag = 0;
+
 char * key_list[] = {
 "pwr_server1_last_state",
 "pwr_server2_last_state",
@@ -4587,6 +4589,77 @@ pal_get_platform_id(uint8_t *id) {
    return 0;
 }
 
+int
+pal_nic_otp (int fru, int snr_num, float thresh_val) {
+  int retry = 0;
+  int ret = 0;
+  float curr_val = 0;
+
+  while (retry < MAX_NIC_TEMP_RETRY) {
+    ret = pal_sensor_read_raw(FRU_NIC, snr_num, &curr_val);
+    if (ret < 0) {
+      return -1;
+    }
+    if (curr_val >= thresh_val) {
+      retry++;
+    } else {
+      return 0;
+    }
+
+    msleep(200);
+  }
+
+  // power off server 12V HSC
+  syslog(LOG_CRIT, "Powering Off Server 12V due to NIC temp UNR reached. (val = %.2f)", curr_val);
+  server_12v_off(fru);
+  otp_server_12v_off_flag = 1;
+  return 0;
+}
+
+int
+pal_nic_otp_enable (void) {
+  uint8_t slot = 0xFF, status = 0xFF, slot_type=0xFF;
+
+  for (slot = 1; slot <= 4; slot++) {
+    slot_type = fby2_get_slot_type(slot);
+    if (SLOT_TYPE_SERVER == slot_type) {
+      pal_get_server_power(slot, &status);
+      if (SERVER_12V_OFF != status) {
+        pal_nic_otp(slot, MEZZ_SENSOR_TEMP, nic_sensor_threshold[MEZZ_SENSOR_TEMP][UNR_THRESH]);
+      }
+    }
+  }
+
+  return 0;
+}
+
+int
+pal_nic_otp_disable (float val) {
+  int ret = -1;
+  uint8_t slot = 0xFF, status = 0xFF, slot_type = 0xFF, pwr_state = 0xFF;
+
+  for (slot = 1; slot <= 4; slot++) {
+    // Check if it is a server
+    slot_type = fby2_get_slot_type(slot);
+    if (SLOT_TYPE_SERVER == slot_type) {
+      pal_get_server_power(slot, &status);
+      if ((SERVER_12V_ON != status) && (1 == otp_server_12v_off_flag)) {
+        // power on server 12V HSC
+        syslog(LOG_CRIT, "Due to NIC temp UNC deassert. Power On Server 12V. (val = %.2f)", val);
+        ret = server_12v_on(slot);
+        if (ret) {
+          syslog(LOG_ERR, "server_12v_on() failed, slot%d", slot);
+        } else {
+          // Set power policy based on last power state
+          pal_power_policy_control(slot, NULL);
+          otp_server_12v_off_flag = 0;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char crisel[128];
@@ -4666,6 +4739,11 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case SP_SENSOR_HSC_IN_VOLT:
       snr_desc = get_sensor_desc(FRU_SPB, snr_num);
       sprintf(crisel, "%s %s %.2fV - ASSERT", snr_desc->name, thresh_name, val);
+      break;
+    case MEZZ_SENSOR_TEMP:
+      if(UNR_THRESH >= thresh) {
+        pal_nic_otp_enable();
+      }
       break;
     default:
       return;
@@ -4754,6 +4832,11 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case SP_SENSOR_HSC_IN_VOLT:
       snr_desc = get_sensor_desc(FRU_SPB, snr_num);
       sprintf(crisel, "%s %s %.2fV - DEASSERT", snr_desc->name, thresh_name, val);
+      break;
+    case MEZZ_SENSOR_TEMP:
+      if(UNC_THRESH <= thresh) {
+        pal_nic_otp_disable(val);
+      }
       break;
     default:
       return;

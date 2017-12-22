@@ -4,7 +4,7 @@ SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
 SRCBRANCH = "fb_dev"
-SRCREV = "e5cffc5bee689ea2560add51dc1123e771304298"
+SRCREV = "2398f10c714e46c7b749a6790b8071528a888aa6"
 
 SRC_URI = "git://github.com/Microsemi/switchtec-user.git;protocol=git;branch=${SRCBRANCH};rev=${SRCREV}"
 LIC_FILES_CHKSUM = "file://LICENSE;beginline=4;endline=16;md5=8de3687db4a8ec31beb8fb79762d30b4"

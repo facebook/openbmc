@@ -1167,6 +1167,14 @@ nm_monitor()
 void
 crit_proc_ongoing_handle(bool is_crit_proc_updating)
 {
+  static bool last_is_crit_proc_updating = false;
+
+  if (last_is_crit_proc_updating == is_crit_proc_updating) {
+  /* Nothing changed from last time. Just return */
+    return;
+  }
+  last_is_crit_proc_updating = is_crit_proc_updating;
+
   if ( true == is_crit_proc_updating ) { // forbid the execution permission
     system("chmod 666 /sbin/shutdown.sysvinit");
     system("chmod 666 /sbin/halt.sysvinit");

@@ -31,6 +31,7 @@
 #include <sys/un.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include "ipmb.h"
 
 static pthread_key_t rxkey, txkey;
@@ -93,6 +94,7 @@ lib_ipmb_handle(unsigned char bus_id,
             unsigned char *response, unsigned char *res_len) {
 
   int s, t, len;
+  int r, retries = 5, delay = 20;
   struct sockaddr_un remote;
   char sock_path[64] = {0};
   struct timeval tv;
@@ -131,7 +133,16 @@ lib_ipmb_handle(unsigned char bus_id,
     goto clean_exit;
   }
 
-  if ((t=recv(s, response, MAX_IPMB_RES_LEN, 0)) > 0) {
+  for ( r=0; r<retries; r++) {
+    t = recv(s, response, MAX_IPMB_RES_LEN, 0);
+    if ( t >= 0 || (t < 0 && errno != EINTR))
+      break;
+    //Errno==EINTR, retry,
+    //Delay 20 ms
+    usleep(delay * 1000);
+  }
+
+  if (t > 0) {
     *res_len = t;
   } else {
     if (t < 0) {

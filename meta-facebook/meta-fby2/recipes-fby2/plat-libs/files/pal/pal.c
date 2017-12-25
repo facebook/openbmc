@@ -75,9 +75,6 @@
 #define DELAY_12V_CYCLE 20
 #endif
 
-#define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
-#define CRASHDUMP_FILE      "/mnt/data/crashdump_"
-
 #define LARGEST_DEVICE_NAME 120
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define PWM_UNIT_MAX 96
@@ -1448,7 +1445,7 @@ server_12v_on(uint8_t slot_id) {
 // Debug Card's UART and BMC/SoL port share UART port and need to enable only
 // one TXD i.e. either BMC's TXD or Debug Port's TXD.
 static int
-control_sol_txd(uint8_t slot) {
+control_sol_txd(uint8_t slot, uint8_t dis_tx) {
   uint32_t scu_fd;
   uint32_t ctrl;
   void *scu_reg;
@@ -1472,7 +1469,7 @@ control_sol_txd(uint8_t slot) {
   case 1:
     // Disable UART1's TXD and enable others
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl &= (~UART1_TXD); //Disable
+    ctrl = (dis_tx) ? ctrl & ~UART1_TXD : ctrl | UART1_TXD;
     ctrl |= UART2_TXD;
     *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
@@ -1484,7 +1481,7 @@ control_sol_txd(uint8_t slot) {
     // Disable UART2's TXD and enable others
     ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
     ctrl |= UART1_TXD;
-    ctrl &= (~UART2_TXD); // Disable
+    ctrl = (dis_tx) ? ctrl & ~UART2_TXD : ctrl | UART2_TXD;
     *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
     ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
@@ -1498,7 +1495,7 @@ control_sol_txd(uint8_t slot) {
     *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
 
     ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl &= (~UART3_TXD); // Disable
+    ctrl = (dis_tx) ? ctrl & ~UART3_TXD : ctrl | UART3_TXD;
     ctrl |= UART4_TXD;
     *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
@@ -1510,7 +1507,7 @@ control_sol_txd(uint8_t slot) {
 
     ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
     ctrl |= UART3_TXD;
-    ctrl &= (~UART4_TXD); // Disable
+    ctrl = (dis_tx) ? ctrl & ~UART4_TXD : ctrl | UART4_TXD;
     *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
     break;
   default:
@@ -2477,7 +2474,13 @@ pal_switch_uart_mux(uint8_t slot) {
   char * gpio_uart_sel2;
   char * gpio_uart_rx;
   char path[64] = {0};
+  uint8_t prsnt;
   int ret;
+
+  ret = pal_is_debug_card_prsnt(&prsnt);
+  if (ret) {
+    goto uart_exit;
+  }
 
   // Refer the UART select table in schematic
   switch(slot) {
@@ -2485,25 +2488,25 @@ pal_switch_uart_mux(uint8_t slot) {
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "0";
     gpio_uart_sel0 = "0";
-    gpio_uart_rx = "0";
+    gpio_uart_rx = (prsnt) ? "0" : "1";
     break;
   case HAND_SW_SERVER2:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "0";
     gpio_uart_sel0 = "1";
-    gpio_uart_rx = "0";
+    gpio_uart_rx = (prsnt) ? "0" : "1";
     break;
   case HAND_SW_SERVER3:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "1";
     gpio_uart_sel0 = "0";
-    gpio_uart_rx = "0";
+    gpio_uart_rx = (prsnt) ? "0" : "1";
     break;
   case HAND_SW_SERVER4:
     gpio_uart_sel2 = "0";
     gpio_uart_sel1 = "1";
     gpio_uart_sel0 = "1";
-    gpio_uart_rx = "0";
+    gpio_uart_rx = (prsnt) ? "0" : "1";
     break;
   default:
     // for all other cases, assume BMC
@@ -2515,7 +2518,7 @@ pal_switch_uart_mux(uint8_t slot) {
   }
 
   //  Diable TXD path from BMC to avoid conflict with SoL
-  ret = control_sol_txd(slot);
+  ret = control_sol_txd(slot, prsnt);
   if (ret) {
     goto uart_exit;
   }

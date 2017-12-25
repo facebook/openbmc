@@ -128,6 +128,11 @@ get_hand_sw_cache:
       goto debug_card_out;
     }
 
+    ret = pal_switch_uart_mux(pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
 debug_card_prs:
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
@@ -135,49 +140,53 @@ debug_card_prs:
       goto debug_card_out;
     }
     curr = prsnt;
-    
+
     // Check if Debug Card was either inserted or removed
     if (curr != prev) {
       if (!curr) {
         // Debug Card was removed
         syslog(LOG_WARNING, "Debug Card Extraction\n");
-        // Switch UART mux to BMC
-        ret = pal_switch_uart_mux(HAND_SW_BMC);
-        if (ret) {
-          goto debug_card_out;
-        }
       } else {
         // Debug Card was inserted
         syslog(LOG_WARNING, "Debug Card Insertion\n");
       }
     }
 
-    // Switch UART mux based on hand switch
+    if ((pos == prev_pos) && (curr == prev)) {
+      goto debug_card_out;
+    }
+
     ret = pal_switch_uart_mux(pos);
     if (ret) {
       goto debug_card_out;
     }
 
-    // Make sure the server at selected position is ready
-    ret = pal_is_fru_ready(pos, &prsnt);
-    if (ret || !prsnt) {
-      goto debug_card_done;
-    }
-    
-    // Enable POST codes for all slots
-    ret = pal_post_enable(pos);
-    if (ret) {
-      goto debug_card_done;
-    }
+    // If Debug Card is present
+    if (curr) {
+      // Enable POST code based on hand switch
+      if (pos == HAND_SW_BMC) {
+        // For BMC, there is no need to have POST specific code
+        goto debug_card_done;
+      }
 
-    // Get last post code and display it
-    ret = pal_post_get_last(pos, &lpc);
-    if (ret) {
-      goto debug_card_done;
-    }
-    
-    // Show POSTCODE if debug card present
-    if (prsnt) {
+      // Make sure the server at selected position is ready
+      ret = pal_is_fru_ready(pos, &prsnt);
+      if (ret || !prsnt) {
+        goto debug_card_done;
+      }
+
+      // Enable POST codes for all slots
+      ret = pal_post_enable(pos);
+      if (ret) {
+        goto debug_card_done;
+      }
+
+      // Get last post code and display it
+      ret = pal_post_get_last(pos, &lpc);
+      if (ret) {
+        goto debug_card_done;
+      }
+
       ret = pal_post_handle(pos, lpc);
       if (ret) {
         goto debug_card_out;

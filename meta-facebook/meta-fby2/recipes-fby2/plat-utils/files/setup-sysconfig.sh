@@ -5,6 +5,9 @@ echo -n "Setup System Configuration .."
 
 . /usr/local/fbpackages/utils/ast-functions
 
+SPB_REV=$(($(($(($(gpio_get_val Y2) + $(gpio_get_val Y1))) * 2)) + $(gpio_get_val Y0)))
+echo $SPB_REV > /tmp/spb_rev
+
 if [ $(is_server_prsnt 2) == "1" ] ; then
    if [ $(get_slot_type 2) != "0" ] ; then
       gpio_set O5 0
@@ -13,7 +16,7 @@ if [ $(is_server_prsnt 2) == "1" ] ; then
          gpio_set O4 0
       fi
    fi
-else 
+else
    if [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) != "0" ] ; then
       gpio_set O4 0
    fi
@@ -36,6 +39,7 @@ fi
 # Enable buffer to pass through signal by system configuration
 if [ $(is_server_prsnt 1) == "1" ] && [ $(is_server_prsnt 2) == "1" ] ; then
    if [ $(get_slot_type 1) != "0" ] && [ $(get_slot_type 2) == "0" ] ; then
+      gpio_set J0 0
       gpio_set B4 0
       gpio_set B5 0
    else
@@ -49,6 +53,7 @@ fi
 
 if [ $(is_server_prsnt 3) == "1" ] && [ $(is_server_prsnt 4) == "1" ] ; then
    if [ $(get_slot_type 3) != "0" ] && [ $(get_slot_type 4) == "0" ] ; then
+      gpio_set J1 0
       gpio_set B6 0
       gpio_set B7 0
    else

@@ -119,6 +119,8 @@ typedef struct {
 #define GPIO_SLOT2_POWER_EN                65
 #define GPIO_SLOT3_POWER_EN                66
 #define GPIO_SLOT4_POWER_EN                67
+#define GPIO_CLK_BUFF1_PWR_EN_N            72
+#define GPIO_CLK_BUFF2_PWR_EN_N            73
 #define GPIO_VGA_SW0                       74
 #define GPIO_VGA_SW1                       75
 #define GPIO_PWR1_LED                      96

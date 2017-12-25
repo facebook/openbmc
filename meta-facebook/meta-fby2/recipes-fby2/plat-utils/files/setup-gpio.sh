@@ -463,6 +463,16 @@ gpio_export B6
 # PE_BUFF_OE_3_N: GPIOB7 (15)
 gpio_export B7
 
+# CLK_BUFF1_PWR_EN_N: GPIOJ0 (72)
+# To use GPIOJ2 (72), SCU84[8] must be 0
+devmem_clear_bit $(scu_addr 84) 8
+gpio_export J0
+
+# CLK_BUFF2_PWR_EN_N: GPIOJ1 (73)
+# To use GPIOJ3 (73), SCU84[9] must be 0
+devmem_clear_bit $(scu_addr 84) 9
+gpio_export J1
+
 # Disable PWM reset during external reset
 devmem_clear_bit $(scu_addr 9c) 17
 # Disable PWM reset during WDT1 reset

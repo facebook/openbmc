@@ -101,6 +101,9 @@
 
 #define GMAC0_DIR "/sys/devices/platform/ftgmac100.0/net/eth0"
 
+#define SPB_REV_FILE "/tmp/spb_rev"
+#define SPB_REV_PVT 3
+
 
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
@@ -821,31 +824,57 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
   return 0;
 }
 
+static uint8_t
+_get_spb_rev(void) {
+  int rev;
+
+  if (read_device(SPB_REV_FILE, &rev)) {
+    printf("Get spb revision failed\n");
+    return -1;
+  }
+
+  return rev;
+}
+
 int
 pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
-   char v1path[64] = {0};
-   char v2path[64] = {0};
+  char v1path[64] = {0};
+  char v2path[64] = {0};
+  char v3path[64] = {0};
+  uint8_t rev;
 
-   switch(slot_id) {
-      case FRU_SLOT1:
-      case FRU_SLOT2:
+  rev = _get_spb_rev();
+  switch(slot_id) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+      if (rev < SPB_REV_PVT) {
         sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_0_R_N);
         sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_1_R_N);
-        break;
-      case FRU_SLOT3:
-      case FRU_SLOT4:
+      }
+      sprintf(v3path, GPIO_VAL, GPIO_CLK_BUFF1_PWR_EN_N);
+      break;
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if (rev < SPB_REV_PVT) {
         sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_2_R_N);
         sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_3_R_N);
-        break;
-      default:
-        return -1;
-   }
+      }
+      sprintf(v3path, GPIO_VAL, GPIO_CLK_BUFF2_PWR_EN_N);
+      break;
+    default:
+      return -1;
+  }
 
-   if (write_device(v1path, ctrl) || write_device(v2path, ctrl)) {
-     return -1;
-   }
+  if (write_device(v3path, ctrl)) {
+    return -1;
+  }
 
-   return 0;
+  if (rev < SPB_REV_PVT) {
+    if (write_device(v1path, ctrl) || write_device(v2path, ctrl))
+      return -1;
+  }
+
+  return 0;
 }
 
 int
@@ -1077,10 +1106,18 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          pal_baseboard_clock_control(pair_slot_id, "0");
        }
 
+       // Check whether the system is 12V off or on
+       if (pal_is_server_12v_on(pwr_slot, &status) < 0) {
+         syslog(LOG_ERR, "%s: pal_is_server_12v_on failed", __func__);
+         return -1;
+       }
+       if (!status)
+         break;
+
        // Check BIC Self Test Result
        retry = 4;
        while (retry > 0) {
-         ret = bic_get_self_test_result(pwr_slot, &self_test_result);
+         ret = bic_get_self_test_result(pwr_slot, self_test_result);
          if (ret == 0) {
            syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
            break;
@@ -1406,20 +1443,17 @@ server_12v_on(uint8_t slot_id) {
     return -1;
   }
 
-  // Write 12V on
-  memset(vpath, 0, sizeof(vpath));
-  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
-
   pal_hot_service_action(slot_id);
   rc = flock(pid_file, LOCK_UN);
   close(pid_file);
 
   if (!pal_is_valid_pair(slot_id)) {
-    write_device(vpath, "0");
+    return -1;
+  }
+
+  // Write 12V on
+  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+  if (write_device(vpath, "1")) {
     return -1;
   }
 
@@ -2019,7 +2053,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
           case TYPE_CF_A_SV:
           case TYPE_GP_A_SV:
             pair_slot_id = slot_id + 1;
-            ret = server_12v_on(slot_id);
+            ret = server_12v_on(pair_slot_id);
             if (ret != 0)
               return ret;
             pal_power_policy_control(pair_slot_id, NULL);

@@ -59,7 +59,7 @@ function device_config() {
 
 function set_sysconfig() {
       SLOT_N=$1
-      SLOT_B=$2 
+      SLOT_B=$2
 
       case $SLOT_N in
           1)
@@ -71,7 +71,7 @@ function set_sysconfig() {
                   gpio_set O5 0
                   logger -p user.crit "Invalid configuration on SLOT$SLOT_N"
 
-                  if [ $(is_server_prsnt $(($SLOT_N-1))) == "1" ] && [ $(get_slot_type $(($SLOT_N-1)))  != "0" ] ; then
+                  if [ $(is_server_prsnt $(($SLOT_N-1))) == "1" ] && [ $(get_slot_type $(($SLOT_N-1))) != "0" ] ; then
                      gpio_set O4 0
                   fi
             fi
@@ -84,7 +84,7 @@ function set_sysconfig() {
             if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] ; then
                   gpio_set O7 0
                   logger -p user.crit "Invalid configuration on SLOT$SLOT_N"
-                  if [ $(is_server_prsnt $(($SLOT_N-1))) == "1" ] && [ $(get_slot_type $(($SLOT_N-1)))  != "0" ] ; then
+                  if [ $(is_server_prsnt $(($SLOT_N-1))) == "1" ] && [ $(get_slot_type $(($SLOT_N-1))) != "0" ] ; then
                      gpio_set O6 0
                   fi
             fi
@@ -133,11 +133,7 @@ case $OPTION in
       fi
       echo "start to re-init for slot$SLOT_NUM insertion"
 
-      # Make sure PE BUFF is disable
-      gpio_set $PE_BUFF_OE_0 1
-      gpio_set $PE_BUFF_OE_1 1
-
-      # Delay 1 second for slot_type voltage ready               
+      # Delay 1 second for slot_type voltage ready
       sleep 2
 
       # System Configuration
@@ -149,7 +145,7 @@ case $OPTION in
       sv stop sensord
       rm -rf /tmp/cache_store/$SLOT*
       set_sysconfig $SLOT_NUM $SLOT_BUS
-      
+
       # GPIO
       sv stop gpiod
 

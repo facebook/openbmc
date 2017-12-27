@@ -842,6 +842,7 @@ pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
   char v2path[64] = {0};
   char v3path[64] = {0};
   uint8_t rev;
+  int pair_type;
 
   rev = _get_spb_rev();
   switch(slot_id) {
@@ -865,8 +866,10 @@ pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
       return -1;
   }
 
-  if (write_device(v3path, ctrl)) {
-    return -1;
+  pair_type = pal_get_pair_slot_type(slot_id);
+  if ((pair_type == TYPE_GP_A_SV) || (pair_type == TYPE_CF_A_SV)) {
+    if (write_device(v3path, ctrl))
+      return -1;
   }
 
   if (rev < SPB_REV_PVT) {

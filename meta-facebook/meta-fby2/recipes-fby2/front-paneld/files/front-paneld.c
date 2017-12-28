@@ -211,7 +211,13 @@ rst_btn_handler() {
   uint8_t pos;
   int i;
   uint8_t btn;
+  uint8_t last_btn;
 
+  ret = pal_get_rst_btn(&btn);
+  if (0 == ret) {
+    last_btn = btn;
+  }
+  
   while (1) {
     // Check the position of hand switch
     ret = get_handsw_pos(&pos);
@@ -224,6 +230,9 @@ rst_btn_handler() {
     // Check if reset button is pressed
     ret = pal_get_rst_btn(&btn);
     if (ret || !btn) {
+      if (last_btn != btn) {
+        pal_set_rst_btn(pos, 1);
+      }
       goto rst_btn_out;
     }
 
@@ -255,6 +264,7 @@ rst_btn_handler() {
       goto rst_btn_out;
     }
 rst_btn_out:
+    last_btn = btn;
     msleep(100);
   }
 }
@@ -266,8 +276,10 @@ pwr_btn_handler() {
   uint8_t pos, btn, cmd;
   uint8_t power, st_12v = 0;
   char tstr[64];
+  bool release_flag = true;
 
   while (1) {
+
     // Check the position of hand switch
     ret = get_handsw_pos(&pos);
     if (ret) {
@@ -278,9 +290,16 @@ pwr_btn_handler() {
     // Check if power button is pressed
     ret = pal_get_pwr_btn(&btn);
     if (ret || !btn) {
+      if (false == release_flag)
+        release_flag = true;
+
       goto pwr_btn_out;
     }
 
+    if (false == release_flag)
+      goto pwr_btn_out;
+
+    release_flag = false;
     syslog(LOG_WARNING, "Power button pressed\n");
 
     // Wait for the button to be released
@@ -290,6 +309,8 @@ pwr_btn_handler() {
         msleep(100);
         continue;
       }
+
+      release_flag = true;
       syslog(LOG_WARNING, "Power button released\n");
       break;
     }
@@ -794,3 +815,4 @@ main (int argc, char * const argv[]) {
 
   return 0;
 }
+

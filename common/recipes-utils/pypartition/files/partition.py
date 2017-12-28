@@ -270,11 +270,32 @@ class LegacyUBootPartition(EnvironmentPartition):
                 )
             )
 
-    def __init__(self, sizes, offset, name, images, logger):
-        # type: (List[int], int, str, VirtualCat, logging.Logger) -> None
+    def __init__(self, sizes, offset, name, images, logger, grow_until=None):
+        # type: (List[int], int, str, VirtualCat, logging.Logger, Optional[int]) -> None
         self.sizes = sizes
         EnvironmentPartition.__init__(self, None, offset, name, images, logger)
+
         images.seek_within_current_file(self.partition_size - self.total_size)
+
+        if grow_until is None:
+            return
+
+        sizes_to_check = self.sizes[self.sizes.index(self.partition_size):]
+        for size in sizes_to_check:
+            images.seek_within_current_file(size - self.partition_size)
+            self.partition_size = size
+            if images.peek() == grow_until:
+                return
+
+        self.valid = False
+        sizes_to_check_string = ' or '.join(
+            ['0x{:x}'.format(s) for s in sizes_to_check]
+        )
+        self.logger.warning(
+            'Could not find magic 0x{:x} after {}.'.format(
+                grow_until, sizes_to_check_string
+            )
+        )
 
 
 class DeviceTreePartition(Partition):

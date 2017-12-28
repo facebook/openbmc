@@ -181,7 +181,8 @@ def get_partitions(images, checksums, logger):
     next_magic = images.peek()
     if next_magic == LegacyUBootPartition.magic:
         partitions.append(LegacyUBootPartition(
-            [0x280000, 0x0400000], 0x080000, 'kernel', images, logger
+            [0x280000, 0x0400000], 0x080000, 'kernel', images, logger,
+            LegacyUBootPartition.magic
         ))
         partitions.append(LegacyUBootPartition(
             [0xc00000, 0x1780000],

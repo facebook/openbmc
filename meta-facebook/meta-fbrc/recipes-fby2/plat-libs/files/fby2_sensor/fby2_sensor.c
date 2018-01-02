@@ -909,8 +909,10 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
 
   // y = (mx + b * 10^b_exp) * 10^r_exp
   uint8_t x;
-  uint8_t m_lsb, m_msb, m;
-  uint8_t b_lsb, b_msb, b;
+  uint8_t m_lsb, m_msb;
+  uint16_t m = 0;
+  uint8_t b_lsb, b_msb;
+  uint16_t b = 0;
   int8_t b_exp, r_exp;
 
   x = sensor.value;

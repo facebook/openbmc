@@ -5464,7 +5464,7 @@ static void *dwr_handler(void *arg) {
   }
 #endif
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
-  system("/usr/local/bin/autodump.sh &");
+  system("/usr/local/bin/autodump.sh --second &");
 
   tid_dwr = -1;
   pthread_exit(NULL);

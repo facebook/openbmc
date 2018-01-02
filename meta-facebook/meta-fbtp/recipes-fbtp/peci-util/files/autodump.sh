@@ -65,16 +65,8 @@ do
   shift
 done
 
-if [ "$DWR" == "1" ]; then
-  LOG_ARCHIVE='/mnt/data/autodump_dwr.tar.gz'
-  LOG_MSG_PREFIX="DWR "
-  echo "Auto Dump after Demoted Warm Reset"
-fi
-
-if [ "$SECOND_DUMP" == "1" ]; then
-  LOG_ARCHIVE='/mnt/data/autodump_second.tar.gz'
-  LOG_MSG_PREFIX="SECOND_DUMP "
-  echo "Auto Dump after system reset"
+if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
+  echo "Auto Dump after System Reset or Demoted Warm Reset"
 fi
 
 if [ "$DELAY_SEC" != "0" ]; then
@@ -111,6 +103,8 @@ echo "Sensor history of last ${SENSOR_HISTORY}s at dump:" >> $LOG_FILE 2>&1
 echo "Sensor threshold at dump: " >> $LOG_FILE 2>&1
 /usr/local/bin/sensor-util all --threshold >> $LOG_FILE 2>&1
 
+# only second/dwr autodump need to rename accordingly
+if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
 # dwr
 $DUMP_SCRIPT dwr >> $LOG_FILE 2>&1
 
@@ -121,6 +115,7 @@ if [ "$?" == "2" ]; then
 else
   LOG_ARCHIVE='/mnt/data/autodump_second.tar.gz'
   LOG_MSG_PREFIX="SECOND_DUMP "
+fi
 fi
 
 echo -n "Auto Dump End at " >> $LOG_FILE

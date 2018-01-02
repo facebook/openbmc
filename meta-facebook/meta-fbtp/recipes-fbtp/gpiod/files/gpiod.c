@@ -155,8 +155,10 @@ static void platform_reset_event_handle(gpio_poll_st *gp)
   }
 
   log_gpio_change(gp, 0);
-  if (MCERR_IERR_assert == 1)
+  if (MCERR_IERR_assert == true) {
     pal_second_crashdump_chk();
+    MCERR_IERR_assert = false;
+  }
 }
 
 // Generic Event Handler for GPIO changes

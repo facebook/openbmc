@@ -374,8 +374,10 @@ get_sdr_thresh_val(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
 
   int ret;
   uint8_t x;
-  uint8_t m_lsb, m_msb, m;
-  uint8_t b_lsb, b_msb, b;
+  uint8_t m_lsb, m_msb;
+  uint16_t m = 0;
+  uint8_t b_lsb, b_msb;
+  uint16_t b = 0;
   int8_t b_exp, r_exp;
   uint8_t thresh_val;
 

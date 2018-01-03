@@ -82,7 +82,7 @@
     "monitor_interval": 2,
     "regenerating_interval": 1200
   },
-  "verfied_boot": {
+  "verified_boot": {
     "enabled": true
   }
 }

@@ -19,7 +19,7 @@
 import subprocess
 import struct
 import sys
-
+import math
 
 AT93C46 = 'at93c46'
 AT93C56 = 'at93c56'
@@ -39,7 +39,7 @@ class VerboseLogger:
             if bytestream is not None:
                 sys.stderr.write(
                     "{}: {}\n" .format(
-                        caption, " ".join(['{:02X}'.format(ord(x))
+                        caption, " ".join(['{:02X}'.format(x)
                                            for x in bytestream])))
             else:
                 sys.stderr.write("{}\n".format(caption))
@@ -73,17 +73,28 @@ class AT93CX6SPI(VerboseLogger):
                          + (0 if self.bus_width == 16 else 1)
         self.addr_mask = (1 << self.addr_bits) - 1
 
+    def __bitstring_to_bytes(self, bitstring):
+        result = b''
+        result_len = int(math.ceil(len(bitstring) / 8))
+        val = int(bitstring, 2)
+        packed_len = 0
+        
+        while packed_len != result_len:
+            result = result + bytes([val&0xff])
+            packed_len += 1
+            val >>= 8
+        return result[::-1]
     def __shift(self, bytestream, value):
         '''
         Shift an entire byte stream by value bits.
         '''
-        binary = "".join(['{:08b}'.format(ord(x)) for x in bytestream])
+        binary = "".join(['{:08b}'.format(x) for x in bytestream])
         if value > 0:
             binary = binary[value:] + '0' * value
         else:
             binary = '0' * (-value) + binary[:value]
-        return "".join([chr(int(binary[x:x+8],2))
-                        for x in range(0, len(binary), 8)])
+        result = self.__bitstring_to_bytes(binary)
+        return result
 
     def __io(self, op, addr, data=None):
         '''
@@ -129,14 +140,13 @@ class AT93CX6SPI(VerboseLogger):
 
         self._verbose_print("Command: {}".format(cmd))
 
-        out = subprocess.Popen(cmd.split(),
+        out, err = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE,
                                stdin = subprocess.PIPE)\
                         .communicate(input=write_data)
 
         # Format the response
-        out = out.decode()
-        read_data = self.__shift(out[0], self.addr_bits + 4)
+        read_data = self.__shift(bytes([out[0]]), self.addr_bits + 4)
         if self.bus_width == 16:
             read_data = read_data[:2]
             self._verbose_print("Read data", read_data)
@@ -234,8 +244,8 @@ class AT93CX6(VerboseLogger):
         else:
             # Regular case
             if self.bus_width == 16:
-                real_offset = offset / 2
-                real_limit = limit / 2
+                real_offset = int(offset / 2)
+                real_limit = int(limit / 2)
             else:
                 real_offset = offset
                 real_limit = limit
@@ -264,10 +274,10 @@ class AT93CX6(VerboseLogger):
             raise Exception("Read can't start or end on odd boundary in 16-bit "
                             "mode!")
 
-        output = ""
+        output = b''
         if self.bus_width == 16:
-            real_offset = offset / 2
-            real_limit = limit / 2
+            real_offset = int(offset / 2)
+            real_limit = int(limit / 2)
             pack_instruction = "=H"
         else:
             real_offset = offset
@@ -275,8 +285,8 @@ class AT93CX6(VerboseLogger):
             pack_instruction = "=B"
 
         for addr in range(real_offset, real_offset + real_limit):
-            output = output + struct.pack(pack_instruction,
-                                          self.__swap(self.spi.read(addr)))
+            value_at_position = self.__swap(self.spi.read(addr))
+            output = output + struct.pack(pack_instruction, value_at_position)
 
         self._verbose_print("Read {} bytes from offset {}".format(limit, offset)
                             , output)
@@ -306,7 +316,7 @@ class AT93CX6(VerboseLogger):
 
         self.spi.ewen()
         for addr in range(offset, offset + len(data), offset_divisor):
-            actual_addr = addr / offset_divisor
+            actual_addr = int(addr / offset_divisor)
             value = self.__swap(struct.unpack(
                 pack_instruction, data[(addr - offset):(addr - offset)
                                        + offset_divisor])[0])

@@ -18,7 +18,7 @@
 #
 
 from argparse import ArgumentParser
-import at93cx6
+import at93cx6_py3 as at93cx6
 import sys
 
 
@@ -133,10 +133,10 @@ def read_chip(args):
     data = chip.read(args.start, args.length)
 
     if args.file is None:
-        sys.stdout.write(data)
+        sys.stdout.write(data.decode())
     else:
         with open(args.file, "wb") as fp:
-            fp.write(data)
+            fp.write(data.decode())
 
 def write_chip(args):
     chip = get_chip(args)

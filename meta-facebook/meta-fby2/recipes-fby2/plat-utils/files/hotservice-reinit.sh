@@ -30,7 +30,7 @@ function device_config() {
       # Voltage sensor, 0x80
       i2c_remove_device $SLOT_B 0x40
 
-      if [ $(is_server_prsnt $(($SLOT_N+1))) == "1" ] && [ $(get_slot_type $(($SLOT_N+1))) == "0" ] ; then
+      #if [ $(is_server_prsnt $(($SLOT_N+1))) == "1" ] && [ $(get_slot_type $(($SLOT_N+1))) == "0" ] ; then
         if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] ; then
 
            devmem $I2C_REG w 0xFFF77304
@@ -54,7 +54,7 @@ function device_config() {
 
            devmem $I2C_REG w 0xFFF5E700
         fi
-      fi
+      #fi
 }
 
 function set_sysconfig() {

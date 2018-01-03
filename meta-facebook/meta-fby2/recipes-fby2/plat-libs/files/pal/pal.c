@@ -836,13 +836,26 @@ _get_spb_rev(void) {
   return rev;
 }
 
+static bool
+pal_is_device_pair(uint8_t slot_id) {
+  int pair_set_type;
+
+  pair_set_type = pal_get_pair_slot_type(slot_id);
+  switch (pair_set_type) {
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+      return true;
+  }
+
+  return false;
+}
+
 int
 pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
   char v1path[64] = {0};
   char v2path[64] = {0};
   char v3path[64] = {0};
   uint8_t rev;
-  int pair_type;
 
   rev = _get_spb_rev();
   switch(slot_id) {
@@ -866,8 +879,7 @@ pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
       return -1;
   }
 
-  pair_type = pal_get_pair_slot_type(slot_id);
-  if ((pair_type == TYPE_GP_A_SV) || (pair_type == TYPE_CF_A_SV)) {
+  if (pal_is_device_pair(slot_id)) {
     if (write_device(v3path, ctrl))
       return -1;
   }
@@ -1007,7 +1019,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
   else {
-    pair_slot_id = slot_id + 1;
+    pair_slot_id = slot_id;
     pwr_slot = slot_id + 1;
   }
 
@@ -1088,34 +1100,26 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
 
        // Need to 12V-on pair slot
        if (!status) {
-        sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
-        if (write_device(vpath, "1")) {
-          return -1;
-        }
+         sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
+         if (write_device(vpath, "1")) {
+           return -1;
+         }
 
-        ret = pal_is_server_12v_on(pair_slot_id, &status);
-        if (ret < 0) {
-          syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
-          return -1;
-        }
-
-        if (!status) {
-          sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
-          if (write_device(vpath, "0")) {
-            return -1;
-          }
-        }
          msleep(300);
-         pal_baseboard_clock_control(pair_slot_id, "0");
        }
+       pal_baseboard_clock_control(pair_slot_id, "0");
 
        // Check whether the system is 12V off or on
        if (pal_is_server_12v_on(pwr_slot, &status) < 0) {
          syslog(LOG_ERR, "%s: pal_is_server_12v_on failed", __func__);
          return -1;
        }
-       if (!status)
-         break;
+       if (!status) {
+         sprintf(vpath, GPIO_VAL, gpio_12v[pwr_slot]);
+         if (write_device(vpath, "1")) {
+           return -1;
+         }
+       }
 
        // Check BIC Self Test Result
        retry = 4;
@@ -1193,40 +1197,42 @@ pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident) {
 static void
 pal_hot_service_action(uint8_t slot_id) {
   uint8_t pair_slot_id;
-  char cmd[128] = {0};
-  char hspath[80] = {0};
-  int ret=-1;
+  char cmd[128];
+  char hspath[80], vpath[80];
+  int ret;
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
   else
     pair_slot_id = slot_id + 1;
 
-
   // Re-init system configuration
-  sprintf(hspath,HOTSERVICE_FILE, slot_id);
+  sprintf(hspath, HOTSERVICE_FILE, slot_id);
   if (access(hspath, F_OK) == 0) {
+    sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+    if (write_device(vpath, "1")) {
+      syslog(LOG_ERR, "%s: write_device failed", __func__);
+    }
 
-     sprintf(cmd,"rm -rf %s",hspath);
-     system(cmd);
-     memset(cmd, 0, sizeof(cmd));
-     sprintf(cmd,"%s slot%u start",HOTSERVICE_SCRPIT,slot_id);
-     system(cmd);
+    sprintf(cmd, "rm -rf %s", hspath);
+    system(cmd);
+    sprintf(cmd, "%s slot%u start", HOTSERVICE_SCRPIT, slot_id);
+    system(cmd);
 
-     if (0 != pal_fruid_init(slot_id))
-        syslog(LOG_ERR, "%s: pal_fruid_init failed",__func__);
+    if (0 != pal_fruid_init(slot_id)) {
+      syslog(LOG_ERR, "%s: pal_fruid_init failed", __func__);
+    }
 
-     pal_system_config_check(slot_id);
-     pal_set_hsvc_ongoing(slot_id, 0, 1);
+    pal_system_config_check(slot_id);
+    pal_set_hsvc_ongoing(slot_id, 0, 1);
   }
 
   // Check if pair slot is swap
-  memset(hspath, 0, sizeof(hspath));
-  sprintf(hspath,HOTSERVICE_FILE, pair_slot_id);
+  sprintf(hspath, HOTSERVICE_FILE, pair_slot_id);
   if (access(hspath, F_OK) != 0) {
-     ret=pal_slot_pair_12V_on(slot_id);
-     if (0 != ret)
-       printf("%s pal_slot_pair_12V_on failed for fru: %d\n", __func__, slot_id);
+    ret = pal_slot_pair_12V_on(slot_id);
+    if (0 != ret)
+      printf("%s pal_slot_pair_12V_on failed for fru: %d\n", __func__, slot_id);
   }
 }
 
@@ -1454,10 +1460,10 @@ server_12v_on(uint8_t slot_id) {
     return -1;
   }
 
-  // Write 12V on
-  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-  if (write_device(vpath, "1")) {
-    return -1;
+  if (!pal_is_device_pair(slot_id)) {  // Write 12V on
+    sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+    if (write_device(vpath, "1"))
+      return -1;
   }
 
   if (!pal_is_slot_server(slot_id))
@@ -2056,7 +2062,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
           case TYPE_CF_A_SV:
           case TYPE_GP_A_SV:
             pair_slot_id = slot_id + 1;
-            ret = server_12v_on(pair_slot_id);
+            ret = server_12v_on(slot_id);
             if (ret != 0)
               return ret;
             pal_power_policy_control(pair_slot_id, NULL);

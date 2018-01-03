@@ -143,7 +143,14 @@ int plat_fruid_init(void) {
       //dump the binary. The riser slot id is start from 2
       sprintf(path, BIN_RISER, (riser_slot+2) );
 
-      ret = copy_eeprom_to_bin(EEPROM_RISER, path);
+      if ( pal_riser_mux_switch( riser_slot))
+        syslog(LOG_WARNING, "[%s] Switch Riser Card MUX Failed",__func__);
+
+      if ( copy_eeprom_to_bin( EEPROM_RISER, path))
+        syslog(LOG_WARNING, "[%s]Copy Riser Card EEPROM Failed",__func__);
+
+      if ( pal_riser_mux_release())
+        syslog(LOG_WARNING, "[%s] Release Riser Card MUX Failed",__func__);
 
       //del the device
       pal_del_i2c_device(bus, device_addr);
@@ -156,10 +163,13 @@ int plat_fruid_init(void) {
   }
 #endif
 
-  ret = copy_eeprom_to_bin(EEPROM_MB, BIN_MB);
-  ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
+  if ( copy_eeprom_to_bin(EEPROM_MB, BIN_MB))
+    syslog(LOG_WARNING, "[%s]Copy MB EEPROM Failed",__func__);
 
-  return ret;
+  if ( copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC))
+    syslog(LOG_WARNING, "[%s]Copy NIC EEPROM Failed",__func__);
+
+  return 0;
 }
 
 int plat_fruid_size(unsigned char payload_id) {

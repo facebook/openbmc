@@ -6698,6 +6698,16 @@ error_exit:
   return ret;
 }
 
+int pal_riser_mux_switch (uint8_t riser_slot)
+{
+  return mux_lock(&riser_mux, riser_slot, 2);
+}
+
+int pal_riser_mux_release(void)
+{
+  return mux_release( &riser_mux);
+}
+
 int
 pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type )
 {

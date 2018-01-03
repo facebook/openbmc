@@ -55,6 +55,24 @@ class commonApp_Handler:
         # not overloading CPU too much
         self.common_executor = ThreadPoolExecutor(5)
 
+    # When we call request.json() in asynchronous function, a generator
+    # will be returned. Upon calling next(), the generator will either :
+    #
+    # 1) return the next data as usual,
+    #   - OR -
+    # 2) throw StopIteration, with its first argument as the data
+    #    (this is for indicating that no more data is available)
+    #
+    # Not sure why aiohttp's request generator is implemented this way, but
+    # the following function will handle both of the cases mentioned above.
+    def get_data_from_generator(self, data_generator):
+        data = None
+        try:
+            data = next(data_generator)
+        except StopIteration as e:
+            data = e.args[0]
+        return data
+
     # Handler for root resource endpoint
     def helper_rest_api(self, request):
         result = {
@@ -127,7 +145,7 @@ class commonApp_Handler:
 
     # Handler for uServer resource endpoint
     def helper_rest_server_act_hdl(self,request):
-        data = request.json()
+        data = self.get_data_from_generator(request.json())
         return web.json_response(rest_server.server_action(data), dumps=dumps_bytestr)
 
     @common_force_async
@@ -176,7 +194,7 @@ class commonApp_Handler:
 
     # Handler for psu_update resource action
     def helper_psu_update_hdl_post(self,request):
-        data = request.json()
+        data = self.get_data_from_generator(request.json())
         return web.json_response(rest_psu_update.begin_job(data), dumps=dumps_bytestr)
 
     @common_force_async

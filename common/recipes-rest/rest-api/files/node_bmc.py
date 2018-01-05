@@ -110,8 +110,14 @@ class bmcNode(node):
                             shell=True, stdout=PIPE).stdout.read().decode()
 
         # U-boot Version
-        uboot_version = data.strip('\n')
-
+        lines=data.splitlines()
+        data_len=len(lines)
+        for i in range(data_len):
+            if i!=data_len-1:
+                uboot_version += lines[i] +", "
+            else:
+                uboot_version += lines[i]
+        
         # Get kernel release and kernel version
         kernel_release = ""
         data = Popen( 'uname -r', \

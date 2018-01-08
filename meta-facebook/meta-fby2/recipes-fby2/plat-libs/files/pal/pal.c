@@ -795,8 +795,11 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
     return -1;
   }
 
-  if (nic_powerup_prep(slot_id) != 0) {
-    return -1;
+  if (!gs_flag) {
+    // only needed in ungraceful-shutdown
+    if (nic_powerup_prep(slot_id) != 0) {
+      return -1;
+    }
   }
 
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);

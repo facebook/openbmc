@@ -1304,6 +1304,7 @@ pal_system_config_check(uint8_t slot_id) {
   int last_slot_type = -1;
   char slot_str[80] = {0};
   char last_slot_str[80] = {0};
+  uint8_t server_type = 0xFF;
 
   // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   slot_type = fby2_get_slot_type(slot_id);
@@ -2737,6 +2738,9 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+
+  int ret = -1;
+  uint8_t server_type = 0xFF;
 
   switch(fru) {
     case FRU_SLOT1:

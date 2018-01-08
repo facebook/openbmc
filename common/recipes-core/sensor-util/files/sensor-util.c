@@ -53,6 +53,7 @@
 
 static pthread_mutex_t timer = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t done = PTHREAD_COND_INITIALIZER;
+static bool done_flag = false;
 
 // This is for get_sensor_reading
 typedef struct {
@@ -221,8 +222,19 @@ get_sensor_reading(void *sensor_data) {
     }
   }
 
+  //if the mutex is already locked, the calling thread shall block until the mutex becomes available
+  //wait for the mutex is released and then get the sensor reading
+  pthread_mutex_lock(&timer);
+
+  //modify the flag to true if we get the sensor reading
+  done_flag = true;
+
   //Tell caller it's done
   pthread_cond_signal(&done);
+
+  //release the mutex
+  pthread_mutex_unlock(&timer);
+
   pthread_exit(0);
 }
 
@@ -290,7 +302,8 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
 {
   struct timespec abs_time;
   pthread_t tid_get_sensor_reading;
-  int err, thread_alive;
+  int err = 0;
+  int thread_alive = 0;
   char fruname[32] = {0};
 
   pthread_mutex_lock(&timer);
@@ -306,9 +319,13 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
   //Check if thread is alive, if pthread_kill (thread_id, sig = 0) returns 0, means thread is alive
   thread_alive = pthread_kill(tid_get_sensor_reading, 0);
 
-  if (thread_alive == 0) {
-    //Timer thread, continue only when get_sensor_reading send the done signal or abs_time timed out
-    err = pthread_cond_timedwait(&done, &timer, &abs_time);   
+  if (thread_alive == 0) 
+  {
+    while ( false == done_flag )
+    {
+      //Timer thread, continue only when get_sensor_reading send the done signal or abs_time timed out
+      err = pthread_cond_timedwait(&done, &timer, &abs_time);   
+    }
 
     //Double Check if thread is still alive
     thread_alive = pthread_kill(tid_get_sensor_reading, 0);
@@ -322,6 +339,9 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
       pthread_cancel(tid_get_sensor_reading);
     }
   }
+
+  //re-init for the next fru
+  done_flag = false;
 
   pthread_mutex_unlock(&timer);
 

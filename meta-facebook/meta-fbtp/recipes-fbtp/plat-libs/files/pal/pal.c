@@ -2444,29 +2444,41 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
 
   switch(sensor_num) {
     case MB_SENSOR_C2_NVME_CTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY || ( !pal_is_pcie_ssd_card(0) ))
+        return READING_NA;
+      mux_chan = 0;
+      break;
     case MB_SENSOR_C2_1_NVME_CTEMP:
     case MB_SENSOR_C2_2_NVME_CTEMP:
     case MB_SENSOR_C2_3_NVME_CTEMP:
     case MB_SENSOR_C2_4_NVME_CTEMP:
-      if(slot_cfg == SLOT_CFG_EMPTY)
+      if(slot_cfg == SLOT_CFG_EMPTY || (!pal_is_ava_card(0)))
         return READING_NA;
       mux_chan = 0;
       break;
     case MB_SENSOR_C3_NVME_CTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY || ( !pal_is_pcie_ssd_card(1)))
+         return READING_NA;
+      mux_chan = 1;
+      break;
     case MB_SENSOR_C3_1_NVME_CTEMP:
     case MB_SENSOR_C3_2_NVME_CTEMP:
     case MB_SENSOR_C3_3_NVME_CTEMP:
     case MB_SENSOR_C3_4_NVME_CTEMP:
-      if(slot_cfg == SLOT_CFG_EMPTY)
+      if(slot_cfg == SLOT_CFG_EMPTY || ( !pal_is_ava_card(1)))
         return READING_NA;
       mux_chan = 1;
       break;
     case MB_SENSOR_C4_NVME_CTEMP:
+      if(slot_cfg != SLOT_CFG_SS_3x8 || ( !pal_is_pcie_ssd_card(2)))
+        return READING_NA;
+      mux_chan = 2;
+      break;
     case MB_SENSOR_C4_1_NVME_CTEMP:
     case MB_SENSOR_C4_2_NVME_CTEMP:
     case MB_SENSOR_C4_3_NVME_CTEMP:
     case MB_SENSOR_C4_4_NVME_CTEMP:
-      if(slot_cfg != SLOT_CFG_SS_3x8)
+      if(slot_cfg != SLOT_CFG_SS_3x8 || ( !pal_is_ava_card(2)))
         return READING_NA;
       mux_chan = 2;
       break;
@@ -6698,6 +6710,92 @@ error_exit:
   return ret;
 }
 
+bool pal_is_retimer_card ( uint8_t riser_slot )
+{
+  int fd = 0;
+  char fn[32];
+  bool ret;
+  uint8_t re_timer_present_chk_addr = 0x82;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount=0, rcount;
+  int  val;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if ( fd < 0 ) {
+    ret = false;
+    goto error_exit;
+    }
+
+  //Send I2C to re-timer
+  rcount = 1;
+  val = i2c_rdwr_msg_transfer(fd, re_timer_present_chk_addr, tbuf, tcount, rbuf, rcount);
+  if( val < 0 ) {
+    ret = false;
+      goto error_exit;
+  }
+  ret = true;
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+  return ret;
+}
+
+bool pal_is_pcie_ssd_card( uint8_t riser_slot )
+{
+  bool ret = false;
+  int fd = 0;
+  char fn[32];
+  uint8_t pcie_ssd_addr = 0xd4;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount, rcount;
+  int  val;
+
+  if( !(pal_is_retimer_card(riser_slot) || pal_is_ava_card(riser_slot) ) )
+    {
+    // control I2C multiplexer to target channel.
+    val = mux_lock(&riser_mux, riser_slot, 2);
+    if ( val < 0 ) {
+      syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
+      ret = false;
+      goto error_exit;
+    }
+
+    snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+    fd = open(fn, O_RDWR);
+    if ( fd < 0 ) {
+      ret = false;
+      goto release_mux_and_exit;
+    }
+
+    //Read to check card present
+    tbuf[0] = 0x00;
+    tcount = 1;
+    rcount = 8;
+    val = i2c_rdwr_msg_transfer(fd, pcie_ssd_addr, tbuf, tcount, rbuf, rcount);
+    if( val < 0 ) {
+      ret = false;
+      goto release_mux_and_exit;
+    }
+    ret = true;
+
+    release_mux_and_exit:
+
+    mux_release(&riser_mux);
+
+    error_exit:
+
+    if (fd > 0)
+      {
+      close(fd);
+      }
+    }
+  return ret;
+}
 int pal_riser_mux_switch (uint8_t riser_slot)
 {
   return mux_lock(&riser_mux, riser_slot, 2);

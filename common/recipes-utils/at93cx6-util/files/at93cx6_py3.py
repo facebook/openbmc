@@ -78,7 +78,7 @@ class AT93CX6SPI(VerboseLogger):
         result_len = int(math.ceil(len(bitstring) / 8))
         val = int(bitstring, 2)
         packed_len = 0
-        
+
         while packed_len != result_len:
             result = result + bytes([val&0xff])
             packed_len += 1
@@ -146,7 +146,7 @@ class AT93CX6SPI(VerboseLogger):
                         .communicate(input=write_data)
 
         # Format the response
-        read_data = self.__shift(bytes([out[0]]), self.addr_bits + 4)
+        read_data = self.__shift(out, self.addr_bits + 4)
         if self.bus_width == 16:
             read_data = read_data[:2]
             self._verbose_print("Read data", read_data)

@@ -133,10 +133,10 @@ def read_chip(args):
     data = chip.read(args.start, args.length)
 
     if args.file is None:
-        sys.stdout.write(data.decode())
+        sys.stdout.buffer.write(data)
     else:
         with open(args.file, "wb") as fp:
-            fp.write(data.decode())
+            fp.write(data)
 
 def write_chip(args):
     chip = get_chip(args)

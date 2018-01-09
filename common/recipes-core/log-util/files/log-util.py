@@ -138,7 +138,7 @@ def log_main():
                      fru_num = str(frulist.index(fru))
                      temp = 'FRU: ' + fru_num
                time = datetime.now()
-               newlog = newlog + time.strftime('%b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
+               newlog = newlog + time.strftime('%Y %b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
             curpid = os.getpid()
             tmpfd = open('%s.tmp%d' % (logfile, curpid), 'w')
             tmpfd.write(newlog)
@@ -150,7 +150,7 @@ def log_main():
         if cmd == cmdlist[0]:
 
             for log in syslog:
-                # log eg: Nov 21 21:46:09 rtptest1413-oob.prn3.facebook.com user.crit fbttn-c279551: power-util: SERVER_POWER_CYCLE successful for FRU: 1
+                # log eg: 2017 Nov 21 21:46:09 rtptest1413-oob.prn3.facebook.com user.crit fbttn-c279551: power-util: SERVER_POWER_CYCLE successful for FRU: 1
                 #         =date==========  =hostname======================= =loglevel= =version===== =appname=  =message===========================
                 # Print only critical logs
                 if not (re.search(r' [a-z]*.crit ', log) or re.search(r'log-util:', log)):
@@ -187,22 +187,21 @@ def log_main():
                 tmp = log.split()
 
                 # Time format Sep 28 22:10:50
-                ts= ' '.join(tmp[0:3])
-                ts = '%d %s' % (datetime.now().year, ts)
+                ts= ' '.join(tmp[0:4])
                 time = datetime.strptime(ts, '%Y %b %d %H:%M:%S')
                 time = time.strftime('%Y-%m-%d %H:%M:%S')
 
                 # Hostname
-                hostname = tmp[3]
+                hostname = tmp[4]
 
                 # OpenBMC Version Information
-                version = tmp[5]
+                version = tmp[6]
 
                 # Application Name
-                app = tmp[6].strip(':')
+                app = tmp[7].strip(':')
 
                 # Log Message
-                message = ' '.join(tmp[7:]).rstrip('\n')
+                message = ' '.join(tmp[8:]).rstrip('\n')
 
                 print('%-4s %-8s %-22s %-16s %s' % (
                     fru_num,

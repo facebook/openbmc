@@ -386,7 +386,6 @@ sensor_thresh_array_init() {
   // MEZZ
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UNR_THRESH] = 105;
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UNC_THRESH] = 85;
   init_done = true;
 }
 

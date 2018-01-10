@@ -1890,6 +1890,8 @@ pal_get_all_thresh_from_file(uint8_t fru, thresh_sensor_t *sinfo, int mode) {
     memset(buf, 0, sizeof(buf));
     cnt++;
 
+    pal_init_sensor_check(fru, snr_num, (void *)&sinfo[snr_num]);
+
     if (cnt == sensor_cnt) {
       syslog(LOG_ERR, "%s: cnt = %d", __func__, cnt);
       break;

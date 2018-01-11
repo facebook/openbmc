@@ -1,0 +1,31 @@
+From 58e14d38b156f49c1372a3dc79afd4fde418d98b Mon Sep 17 00:00:00 2001
+From: Yunyun Lin <linyuny@fb.com>
+Date: Wed, 10 Jan 2018 14:15:37 -0800
+Subject: [PATCH] Add version file to hardcode the switchtec version
+
+Summary:
+
+Test Plan:
+
+Reviewers:
+
+Subscribers:
+
+Tasks:
+
+Tags:
+---
+ version | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 version
+
+diff --git a/version b/version
+new file mode 100644
+index 0000000..66ed48c
+--- /dev/null
++++ b/version
+@@ -0,0 +1 @@
++fb-v1.0
+-- 
+2.9.5
+

@@ -1011,7 +1011,7 @@ app_get_sys_intf_caps (unsigned char *request, unsigned char req_len,
   switch (req->data[0]) {
     case 0:  // SSIF
       *data++ = 0x00;
-      *data++ = 0x88;
+      *data++ = 0x80;
       *data++ = 255;
       *data++ = 125;
       break;
@@ -1026,6 +1026,7 @@ app_get_sys_intf_caps (unsigned char *request, unsigned char req_len,
   }
 
   *res_len = data - &res->data[0];
+  pal_get_sys_intf_caps(req->payload_id, req->data, res->data, res_len);
 }
 
 // Handle Appliction Commands (IPMI/Section 20)

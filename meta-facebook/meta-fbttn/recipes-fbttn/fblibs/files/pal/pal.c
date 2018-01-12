@@ -286,7 +286,7 @@ struct system_fw_progress system_fw_error[] = {
   {0x09, "Unrecoverable video controller failure"},
   {0x0A, "No video device detected"},
   {0x0B, "Firmware (BIOS) ROM corruption detected"},
-  {0x0C, "CPU voltage mismatch (processors that share same supply have mismatched voltage requirements)"},
+  {0x0C, "CPU voltage mismatch"},
   {0x0D, "CPU speed matching failure"},
 };
 

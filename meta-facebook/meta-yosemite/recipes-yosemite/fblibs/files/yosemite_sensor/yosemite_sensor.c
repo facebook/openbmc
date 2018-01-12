@@ -66,6 +66,9 @@
 #define LAST_REC_ID 0xFFFF
 
 #define YOSEMITE_SDR_PATH "/tmp/sdr_%s.bin"
+#define ADM1278_R_SENSE 0.5
+
+static float hsc_r_sense = ADM1278_R_SENSE;
 
 // List of BIC sensors to be monitored
 const uint8_t bic_sensor_list[] = {
@@ -358,7 +361,7 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char* attr, const char *device, float *value) {
+read_hsc_value(const char* attr, const char *device, float r_sense, float *value) {
   char full_dir_name[LARGEST_DEVICE_NAME];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
@@ -375,7 +378,12 @@ read_hsc_value(const char* attr, const char *device, float *value) {
     return -1;
   }
 
-  *value = ((float) tmp)/UNIT_DIV;
+  if ((strcmp(attr, HSC_OUT_CURR) == 0) || (strcmp(attr, HSC_IN_POWER) == 0)) {
+    *value = ((float) tmp)/r_sense/UNIT_DIV;
+  }
+  else {
+    *value = ((float) tmp)/UNIT_DIV;
+  }
 
   return 0;
 }
@@ -929,13 +937,13 @@ yosemite_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
         // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE, (float*) value);
+          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE, hsc_r_sense, (float*) value);
         case SP_SENSOR_HSC_OUT_CURR:
-          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE, (float*) value);
+          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE, hsc_r_sense, (float*) value);
         case SP_SENSOR_HSC_TEMP:
-          return read_hsc_value(HSC_TEMP, HSC_DEVICE, (float*) value);
+          return read_hsc_value(HSC_TEMP, HSC_DEVICE, hsc_r_sense, (float*) value);
         case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE, (float*) value);
+          return read_hsc_value(HSC_IN_POWER, HSC_DEVICE, hsc_r_sense, (float*) value);
       }
       break;
 

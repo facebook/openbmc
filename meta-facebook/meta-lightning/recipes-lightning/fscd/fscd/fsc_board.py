@@ -94,3 +94,7 @@ def pal_fan_chassis_intrusion_handle():
         return None
     else:
         return self_tray_pull_out.value
+
+
+def get_SSD_present():
+    return 0

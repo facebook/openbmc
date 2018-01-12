@@ -452,7 +452,7 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_OUT_CURR,
       60, 0, 0, 0, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_HSC_IN_POWER,
-      1020, 0, 0, 0, 0, 0, 0, 0);
+      750, 0, 0, 0, 0, 0, 0, 0);
 
   // FCB Temp Sensor
   assign_sensor_threshold(FRU_FCB, FCB_SENSOR_BJT_TEMP_1,

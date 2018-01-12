@@ -39,6 +39,7 @@ def devmem_read(reg):
     cmd = devmem_read_cmd(reg)
     #print('Cmd: {}'.format(cmd))
     out = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
+    out = out.decode()
     return int(out, 0)
 
 

@@ -113,7 +113,7 @@ class AT93C46SPI(VerboseLogger):
                                stdout=subprocess.PIPE,
                                stdin = subprocess.PIPE)\
                         .communicate(input=write_data)
-
+        out = out.decode()
         # Format the response
         read_data = self.__shift(out[0], cmd_loc + 4)
         if self.bus_width == 16:

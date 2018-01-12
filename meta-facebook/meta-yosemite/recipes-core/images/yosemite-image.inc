@@ -14,31 +14,6 @@ UBOOT_IMAGE_LOADADDRESS = "0x40008000"
 FLASH_ROOTFS_OFFSET = "4608"
 
 
-PYTHON_PKGS = " \
-  python-core \
-  python-io \
-  python-json \
-  python-shell \
-  python-subprocess \
-  python-argparse \
-  python-ctypes \
-  python-datetime \
-  python-email \
-  python-threading \
-  python-mime \
-  python-pickle \
-  python-misc \
-  python-netserver \
-  python-syslog \
-  python-ply \
-  "
-
-NTP_PKGS = " \
-  ntp \
-  ntp-utils \
-  sntp \
-  ntpdate \
-  "
 
 # Include modules in rootfs
 IMAGE_INSTALL += " \
@@ -49,13 +24,10 @@ IMAGE_INSTALL += " \
   fscd \
   watchdog-ctrl \
   sensor-setup \
-  rest-api \
-  bottle \
   ipmid \
-  ${PYTHON_PKGS} \
-  ${NTP_PKGS} \
-  iproute2 \
-  dhcp-client \
+  packagegroup-openbmc-net \
+  packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
   fruid \
   ipmbd \
   bic-cached \
@@ -72,9 +44,7 @@ IMAGE_INSTALL += " \
   fpc-util \
   me-util \
   log-util \
-  cherryPy \
   lldp-util \
-  fan-util \
   spatula \
   conf-util \
   ncsi-util \

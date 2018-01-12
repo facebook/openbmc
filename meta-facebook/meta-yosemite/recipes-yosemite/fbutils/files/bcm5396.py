@@ -47,6 +47,7 @@ class Bcm5396MDIO:
             cmd += ' %s' % val
         out = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)\
                         .communicate()[0]
+        out = out.decode()
         if op == 'write':
             return val
         # need to parse the result for read
@@ -93,7 +94,7 @@ class Bcm5396MDIO:
         self.__write_mdio(self.IO_CTRL_REG, val)
         self.__wait_for_done()
         # Read MII register DATA0_REG for bit 15:0
-        val = long(self.__read_mdio(self.DATA0_REG))
+        val = int(self.__read_mdio(self.DATA0_REG))
         # Read MII register DATA1_REG for bit 31:16
         val |= self.__read_mdio(self.DATA1_REG) << 16
         # Read MII register DATA2_REG for bit 47:32
@@ -148,7 +149,7 @@ class Bcm5396SPI:
     def __bytes2val(self, values):
         # LSB first, MSB last
         pos = 0
-        result = 0L
+        result = 0
         for byte in values:
             if type(byte) is str:
                 byte = int(byte, 16)
@@ -185,9 +186,10 @@ class Bcm5396SPI:
             # the number of bits written.
             cmd += '-r %s ' % str((len(bytes_to_write) + to_read) * 8)
         cmd += write_cmd
-        rc = 0L
+        rc = 0
         out = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)\
                         .communicate()[0]
+        out = out.decode()
         if to_read:
             # need to parse the result
             for line in out.split('\n'):
@@ -287,10 +289,10 @@ class Bcm5396:
         self.write(VLAN_PAGE, CTRL_ADDR, ctrl, 1)
         # write entry
         if (add):
-            entry = 0x1L | ((spt & 0x1F) << 1) \
+            entry = 0x1 | ((spt & 0x1F) << 1) \
                 | (fwd_map << 6) | (untag_map << 23)
         else:
-            entry = 0x0L
+            entry = 0x0
         self.write(VLAN_PAGE, ENTRY_ADDR, entry, 8)
         # write vid as the index
         self.write(VLAN_PAGE, VID_ADDR, vid & 0xFFF, 2)
@@ -358,7 +360,7 @@ class Bcm5396:
         res = {}
         # parse vid first
         res['vid'] = (vid >> 48) & 0xfff
-        mac_val = vid & 0xffffffffffffL
+        mac_val = vid & 0xffffffffffff
         mac_list = []
         for pos in range(5, -1, -1):
             mac_list.append('{:02x}'.format((mac_val >> (pos * 8)) & 0xff))

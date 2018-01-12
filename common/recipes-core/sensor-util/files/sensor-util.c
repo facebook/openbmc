@@ -72,12 +72,11 @@ print_usage() {
   printf("       [historical fru]: %s\n", pal_fru_list_sensor_history_t);
   printf("       <sensor num>: 0xXX (Omit [sensor num] means all sensors.)\n");
   printf("       <option>:\n");
-  printf("         --threshold                        show all thresholds\n");
-  printf("         --history <period>   show max, min and average values of last <period> seconds\n");
+  printf("         --threshold               show all thresholds\n");
+  printf("         --history <period>        show max, min and average values of last <period> seconds\n");
   printf("         --history <period>[m/h/d] show max, min and average values of last <period> minutes/hours/days\n");
   printf("              example --history 4d means history of 4 days\n");
-  printf("         --history <period>   show max, min and average values of last <period> seconds\n");
-  printf("         --history-clear                    clear history values\n");
+  printf("         --history-clear           clear history values\n");
 }
 
 static int convert_period(char *str, long *val) {

@@ -185,11 +185,17 @@ def log_main():
 
 
                 tmp = log.split()
-
-                # Time format Sep 28 22:10:50
-                ts= ' '.join(tmp[0:4])
-                time = datetime.strptime(ts, '%Y %b %d %H:%M:%S')
-                time = time.strftime('%Y-%m-%d %H:%M:%S')
+                if len(tmp[0]) is 4 and re.match(r'[0-9]{4}', tmp[0]) is not None:
+                    # Time format 2017 Sep 28 22:10:50
+                    ts= ' '.join(tmp[0:4])
+                    time = datetime.strptime(ts, '%Y %b %d %H:%M:%S')
+                    time = time.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    # Time format Sep 28 22:10:50
+                    ts= ' '.join(tmp[0:3])
+                    time = datetime.strptime(ts, '%b %d %H:%M:%S')
+                    time = time.strftime('%m-%d %H:%M:%S')
+                    tmp[1:] = log.split()
 
                 # Hostname
                 hostname = tmp[4]

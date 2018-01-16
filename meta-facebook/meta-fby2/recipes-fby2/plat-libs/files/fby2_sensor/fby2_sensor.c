@@ -597,6 +597,7 @@ fby2_mux_control(char *device, uint8_t addr, uint8_t channel) {          //PCA98
   int dev;
   int ret;
   uint8_t reg;
+  int retry = 0;
 
   dev = open(device, O_RDWR);
   if (dev < 0) {
@@ -618,10 +619,19 @@ fby2_mux_control(char *device, uint8_t addr, uint8_t channel) {          //PCA98
     reg = 0x00; // close all channels
 
   ret = i2c_smbus_write_byte(dev, reg);
+  retry = 0;
+  while ((retry < 5) && (ret < 0)) {
+    msleep(100);
+    ret = i2c_smbus_write_byte(dev, reg);
+    if (ret < 0)
+      retry++;
+    else
+      break;
+  }
   if (ret < 0) {
     close(dev);
     syslog(LOG_ERR, "%s: i2c_smbus_write_byte failed", __func__);
-    return -1;
+    return EER_READ_NA;
   }
 
   close(dev);
@@ -658,13 +668,13 @@ read_m2_temp_on_gp(char *device, uint8_t sensor_num, float *value) {
   ret = fby2_mux_control(device, I2C_DC_MUX_ADDR, mux_channel);
   if(ret < 0) {
      syslog(LOG_ERR, "%s: fby2_mux_control failed", __func__);
-     return -1;
+     return ret;
   }
 
   ret = nvme_temp_read(device, &temp);
   if(ret < 0) {
      syslog(LOG_ERR, "%s: nvme_temp_read failed", __func__);
-     return -1;
+     return EER_READ_NA;
   }
   *value = (float)temp;
 

@@ -53,6 +53,7 @@
 
 static pthread_mutex_t timer = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t done = PTHREAD_COND_INITIALIZER;
+static pthread_condattr_t done_attr;
 static bool done_flag = false;
 
 // This is for get_sensor_reading
@@ -305,10 +306,31 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
   int thread_alive = 0;
   char fruname[32] = {0};
 
+  err = pthread_condattr_init(&done_attr);
+  if ( err != 0 )
+  {
+    syslog(LOG_WARNING, "[%s]init condattr fails. errno:%d", __func__, err);
+    return;
+  }
+
+  err = pthread_condattr_setclock(&done_attr, CLOCK_MONOTONIC);
+  if ( err != 0 )
+  {
+    syslog(LOG_WARNING, "[%s]set condattr clock fails. errno:%d", __func__, err);
+    return;
+  }
+
+  err = pthread_cond_init(&done, &done_attr);
+  if ( err != 0 )
+  {
+    syslog(LOG_WARNING, "[%s]init cond fails. errno:%d", __func__, err);
+    return;
+  }
+
   pthread_mutex_lock(&timer);
 
   //Assign the timeout time to abs_time
-  clock_gettime(CLOCK_REALTIME, &abs_time);
+  clock_gettime(CLOCK_MONOTONIC, &abs_time);
   abs_time.tv_sec += timeout->tv_sec;
   abs_time.tv_nsec += timeout->tv_nsec;
 

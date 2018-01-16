@@ -39,13 +39,13 @@ def boot_order(fru, argv):
     boot_flags_valid = 1
 
     result = execute_IPMI_command(fru, 0x30, 0x53, "")
-    
+
     data = [int(n, 16) for n in result]
-        
+
     clear_CMOS = ((data[0] & 0x2) >> 1)
     force_boot_BIOS_setup = ((data[0] & 0x4) >> 2)
     boot_order = data[1:]
-    
+
     if ( option == "get" ):
         if ( function == "--boot_order" ):
             try:
@@ -71,7 +71,7 @@ def boot_order(fru, argv):
             clear_CMOS = trans2opcode(option)
         elif ( function == "--force_boot_BIOS_setup" ):
             force_boot_BIOS_setup = trans2opcode(option)
-            
+
         #Clear the 7th valid bit for disable clean CMOS, force boot to BIOS setup, and set boot order action
         boot_flags_valid = 0
 
@@ -83,8 +83,8 @@ def boot_order(fru, argv):
                     print("Invalid Boot Device ID!")
                     exit(-1)
             boot_order = set_boot_order
-    
-    req_data[0] = ((((data[0] & ~0x86) | (clear_CMOS << 1)) | (force_boot_BIOS_setup << 2)) |  (boot_flags_valid << 7) )
-    req_data[1:] = boot_order
-    
-    execute_IPMI_command(fru, 0x30, 0x52, req_data)
+
+    if ( option != "get" ):
+        req_data[0] = ((((data[0] & ~0x86) | (clear_CMOS << 1)) | (force_boot_BIOS_setup << 2)) | (boot_flags_valid << 7))
+        req_data[1:] = boot_order
+        execute_IPMI_command(fru, 0x30, 0x52, req_data)

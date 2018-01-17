@@ -53,14 +53,14 @@ echo "Setup fan speed... "
 case "$sku_type" in
    "0")
        echo "Run FSC 4 TLs Config"
-       cp /etc/FSC_FBY2_EVT_4TL_config.json ${default_fsc_config_path}
+       cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
    ;;
    "34")
        echo "Run FSC 2 GPs and 2 TLs Config"
-       cp /etc/FSC_FBY2_EVT_2GP_2TL_config.json ${default_fsc_config_path}
+       cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
    ;;
    *)  echo "Unexpected sku type! Use default config"
-       cp /etc/FSC_FBY2_EVT_4TL_config.json ${default_fsc_config_path}
+       cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
    ;;
 esac
 

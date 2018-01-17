@@ -11,7 +11,7 @@
       {
         "value": 85.0,
         "hysteresis" : 5.0,
-        "action": ["log-critical", "bmc-error-trigger"]
+        "action": ["log-warning", "bmc-error-trigger"]
       }
     ]
   },

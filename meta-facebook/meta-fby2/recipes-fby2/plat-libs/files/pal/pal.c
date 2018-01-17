@@ -368,11 +368,9 @@ typedef struct _inlet_corr_t {
 static inlet_corr_t g_ict[] = {
   // Inlet Sensor:
   // duty cycle vs delta_t
-  { 18, 4 },
-  { 20, 3 },
-  { 24, 2 },
-  { 32, 1 },
-  { 41, 0 },
+  { 10, 2 },
+  { 16, 1 },
+  { 38, 0 },
 };
 
 static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
@@ -3008,7 +3006,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         power_value_adjust(pwr_cali_table, (float *)value);
       }
       if (sensor_num == SP_SENSOR_INLET_TEMP) {
-//        apply_inlet_correction((float *)value);
+        apply_inlet_correction((float *)value);
       }
       if ((sensor_num == SP_SENSOR_P12V_SLOT1) || (sensor_num == SP_SENSOR_P12V_SLOT2) ||
           (sensor_num == SP_SENSOR_P12V_SLOT3) || (sensor_num == SP_SENSOR_P12V_SLOT4)) {

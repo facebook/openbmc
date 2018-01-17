@@ -1,16 +1,17 @@
 # /etc/logrotate.d/rsyslog
 
+/var/log/console.log
 /var/log/dhclient.log
 /var/log/messages
 {
-        rotate 5
+        rotate 4
         missingok
         notifempty
         size 10M
         delaycompress
         compress
         postrotate
-		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
+		/etc/init.d/syslog.rsyslog restart
         endscript
 }
 
@@ -21,7 +22,7 @@
 /var/log/cron.log
 /var/log/debug
 {
-        rotate 4
+        rotate 3
         size 5M
         missingok
         notifempty
@@ -29,6 +30,6 @@
         delaycompress
         sharedscripts
         postrotate
-		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
+		/etc/init.d/syslog.rsyslog restart
         endscript
 }

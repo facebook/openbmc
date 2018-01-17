@@ -2135,15 +2135,6 @@ pal_get_fan_latch(uint8_t *status) {
 
 int
 pal_sled_cycle(void) {
-  uint8_t slot_id;
-
-  for (slot_id=FRU_SLOT1;slot_id <= FRU_SLOT4;slot_id++) {
-    if (server_12v_off(slot_id))
-      syslog(LOG_WARNING, "%s: Fail to 12V off slot%u before sled cycle\n",__func__, slot_id);
-  }
-
-  sleep(DELAY_12V_CYCLE);
-  pal_update_ts_sled();
   // Remove the adm1275 module as the HSC device is busy
   system("rmmod adm1275");
 

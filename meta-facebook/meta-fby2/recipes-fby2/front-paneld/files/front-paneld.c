@@ -354,8 +354,6 @@ pwr_btn_handler() {
         pal_sled_cycle();
       } else {
         pal_update_ts_sled();
-        syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
-
         if (!st_12v) {
           sprintf(tstr, "/usr/bin/hsvc-util slot%u --stop", pos);
           run_command(tstr);

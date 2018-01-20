@@ -57,8 +57,8 @@ def is_openbmc():
     if os.path.exists('/etc/issue'):
         magics = [b'Open BMC', b'OpenBMC']
         with open('/etc/issue', 'rb') as etc_issue:
-            first_bytes = etc_issue.read(len(max(magics)))
-            return any([first_bytes.startswith(magic) for magic in magics])
+            first_line = etc_issue.readline()
+        return any(first_line.startswith(magic) for magic in magics)
     return False
 
 

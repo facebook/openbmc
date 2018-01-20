@@ -47,10 +47,10 @@ class TestSystem(unittest.TestCase):
     @patch.object(system, 'open', create=True)
     def test_is_openbmc(self, mocked_open):
         for (data, is_magic) in [
-            (b'this is a unit test', False),
-            (b'\\S\nKernel', False),
-            (b'OpenBMC Release wedge-v51', True),
-            (b'Open BMC Release v25 \n \l', True),
+            (b'this is a unit test\n', False),
+            (b'\\S\n', False),
+            (b'OpenBMC Release wedge-v51\n', True),
+            (b'Open BMC Release v25 \\n \\l\n', True),
         ]:
             mocked_open.return_value = mock_open(read_data=data).return_value
             self.assertEqual(system.is_openbmc(), is_magic)

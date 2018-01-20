@@ -55,9 +55,10 @@ if False:
 def is_openbmc():
     # type: () -> bool
     if os.path.exists('/etc/issue'):
+        magics = [b'Open BMC', b'OpenBMC']
         with open('/etc/issue', 'rb') as etc_issue:
-            magic = b'OpenBMC'
-            return etc_issue.read(len(magic)) == magic
+            first_bytes = etc_issue.read(len(max(magics)))
+            return any([first_bytes.startswith(magic) for magic in magics])
     return False
 
 

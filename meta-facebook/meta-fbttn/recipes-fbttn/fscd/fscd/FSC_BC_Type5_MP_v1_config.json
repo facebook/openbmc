@@ -1,5 +1,5 @@
 {
-  "version": "fbttn-mp-v1",
+  "version": "fbttn-type5-mp-v1",
   "pwm_transition_value": 55,
   "pwm_boost_value": 50,
   "sample_interval_ms": 3000,
@@ -8,14 +8,28 @@
     "sensor_fail": true,
     "progressive": true
   },
-  "fan_dead_boost": [
-    [1,0],
-    [2,100]
-  ],
+  "fan_dead_boost": {
+    "data": [
+      [1,0],
+      [2,100]
+    ]
+  },
+  "sensor_valid_check": {
+    "SOC": {
+      "attribute": {
+        "type" : "power_status",
+        "fru" : "server"
+      }
+    },
+    "M2": {
+      "attribute": {
+        "type" : "gpio",
+        "number" : "32"
+      }
+    }
+  },
   "fail_sensor_type": {
-    "standby_sensor_fail": true,
-    "SSD_sensor_fail": true,
-    "server_sensor_fail": true
+    "SSD_sensor_fail":false
   },
   "watchdog": false,
   "chassis_intrusion": false,
@@ -91,18 +105,18 @@
         [ 73, 48 ],
         [ 74, 55 ] 
       ]
-     },
-    "pid_soc_therm_margin": {
-    "read_source" : {
-      "util" : "/usr/local/bin/sensor-util"
     },
-    "type": "pid",
-    "setpoint": -10,
-    "negative_hysteresis": 2,
-    "positive_hysteresis": 0,
-    "kp": -8,
-    "ki": -0.05,
-    "kd": 0
+    "pid_soc_therm_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -10,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -8,
+      "ki": -0.05,
+      "kd": 0
     },
     "pid_mezz_sensor_temp": {
       "read_source" : {
@@ -188,11 +202,11 @@
   "zones": {
     "zone_0": {
       "pwm_output": [0],
-      "expr_file": "FSC_BC_MP_v1_zone0.fsc"
+      "expr_file": "FSC_BC_Type5_MP_v1_zone0.fsc"
     },
     "zone_1": {
       "pwm_output": [1],
-      "expr_file": "FSC_BC_MP_v1_zone1.fsc"
+      "expr_file": "FSC_BC_Type5_MP_v1_zone1.fsc"
     }
   }
 }

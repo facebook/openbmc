@@ -89,7 +89,6 @@ def pal_fan_recovered_handle(fan):
     else:
         return ret
 
-
 def pal_fan_chassis_intrusion_handle():
     self_tray_pull_out = c_uint(1)
     self_tray_pull_out_point = pointer(self_tray_pull_out)
@@ -99,35 +98,33 @@ def pal_fan_chassis_intrusion_handle():
     else:
         return self_tray_pull_out.value
 
-def get_power_status(fru):
-    cmd = "/usr/local/bin/power-util %s status" % fru
-    data=''
+def sensor_valid_check(board, sname, check_name, attribute):
+    cmd = ''
+    data = ''
     try:
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-        result=data.split(": ")
-        if match(r'ON', result[1]) != None:
-            return 1
-        else:
-            return 0
-    except SystemExit:
-        Logger.debug("SystemExit from sensor read")
-        raise
-    except Exception:
-        Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
-    return -1
+        if attribute['type'] == "power_status":
+            cmd = "/usr/local/bin/power-util %s status" % attribute['fru']
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            result=data.split(": ")
+            if match(r'ON', result[1]) != None:
+                return 1
+            else:
+                return 0
 
-def get_SSD_present():
-    cmd = "cat /sys/class/gpio/gpio32/value"
-    data=''
-    try:
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-        if int(data) == 0:
-            return 1
+        elif attribute['type'] == "gpio":        
+            cmd = "cat /sys/class/gpio/gpio%s/value" % attribute['number']
+            data=''
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if int(data) == 0:
+                return 1
+            else:
+                return 0
         else:
-            return 0
+            Logger.debug("Sensor corresponding valid check funciton not found!")
+            return -1
     except SystemExit:
         Logger.debug("SystemExit from sensor read")
         raise
     except Exception:
-        Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
+        Logger.crit("Exception with board=%s, sensor_name=%s, cmd=%s, response=%s" % (board, sname, cmd, data))
     return -1

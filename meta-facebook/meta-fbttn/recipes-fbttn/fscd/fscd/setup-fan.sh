@@ -29,10 +29,25 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-default_fsc_config_path="/etc/fsc-config.json"
-cp /etc/FSC_BC_MP_v1_config.json ${default_fsc_config_path}
+echo -n "Setup fscd config... "
 
-echo -n "Setup fan speed... "
+default_fsc_config_path="/etc/fsc-config.json"
+fsc_type5_config_path="/etc/FSC_BC_Type5_MP_v1_config.json"
+fsc_type7_config_path="/etc/FSC_BC_Type7_MP_v1_config.json"
+IOM_M2=1      # IOM type: M.2
+IOM_IOC=2     # IOM type: IOC
+
+sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
+  PAL_SKU=$(($? & 0x3))
+  if [ "$PAL_SKU" == "$IOM_M2" ]; then
+    cp ${fsc_type5_config_path} ${default_fsc_config_path}
+  elif [ "$PAL_SKU" == "$IOM_IOC" ]; then
+  	cp ${fsc_type7_config_path} ${default_fsc_config_path}
+  else
+  	cp ${fsc_type5_config_path} ${default_fsc_config_path}
+  	echo "Setup fscd: System type is unknown, using Type5 Config! Please confirm the system type."
+  fi
+
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50
 runsv /etc/sv/fscd > /dev/null 2>&1 &

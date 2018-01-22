@@ -59,7 +59,7 @@ class Fan(object):
 
 
 class Zone:
-    def __init__(self, pwm_output, expr, expr_meta, transitional, counter, boost, fail_sensor_type, ssd_progressive_algorithm):
+    def __init__(self, pwm_output, expr, expr_meta, transitional, counter, boost, sensor_fail, sensor_valid_check, fail_sensor_type, ssd_progressive_algorithm):
         self.pwm_output = pwm_output
         self.last_pwm = transitional
         self.transitional = transitional
@@ -69,6 +69,8 @@ class Zone:
         self.transitional_assert_flag = False
         self.counter = counter
         self.boost = boost
+        self.sensor_fail = sensor_fail
+        self.sensor_valid_check = sensor_valid_check
         self.fail_sensor_type = fail_sensor_type
         self.ssd_progressive_algorithm = ssd_progressive_algorithm
         self.missing_sensor_assert_flag = ([False] * len(self.expr_meta['ext_vars']))
@@ -80,49 +82,40 @@ class Zone:
         sensor_index = 0
 
         for v in self.expr_meta['ext_vars']:
+            sensor_valid_flag = 1
             board, sname = v.split(":")
-            if sname in sensors[board]:
-                if self.missing_sensor_assert_flag[sensor_index]:
-                    Logger.crit('DEASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
-                    self.missing_sensor_assert_flag[sensor_index] = False
+            if self.sensor_valid_check != None:
+                for check_name in self.sensor_valid_check:
+                    if re.match(check_name, sname, re.IGNORECASE) != None:
+                        sensor_valid_flag = fsc_board.sensor_valid_check(board, sname, check_name, self.sensor_valid_check[check_name]["attribute"])
+                        break
 
-                sensor = sensors[board][sname]
-                ctx[v] = sensor.value
-                if sensor.status in ['ucr']:
-                    Logger.warn('Sensor %s reporting status %s' %
-                                (sensor.name, sensor.status))
-                    outmin = max(outmin, self.transitional)
+            if sensor_valid_flag == 1:
+                if sname in sensors[board]:
+                    if self.missing_sensor_assert_flag[sensor_index]:
+                        Logger.crit('DEASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
+                        self.missing_sensor_assert_flag[sensor_index] = False
 
-                if self.fail_sensor_type != None:
-                    if sensor.status in ['na']:
-                        if re.match(r'SOC', sensor.name) != None:
-                            if 'server_sensor_fail' in list(self.fail_sensor_type.keys()):
-                                if self.fail_sensor_type['server_sensor_fail'] == True:
-                                    ret = fsc_board.get_power_status(board)
-                                    if ret:
-                                        Logger.debug("Server Sensor Fail")
-                                        outmin = max(outmin, self.boost)
-                        elif (re.match(r'SSD', sensor.name) != None) or (re.match(r'M2', sensor.name) != None):
-                            if 'SSD_sensor_fail' in list(self.fail_sensor_type.keys()):
-                                if self.fail_sensor_type['SSD_sensor_fail'] == True:
-                                    ret = fsc_board.get_SSD_present()
-                                    if ret:
-                                        Logger.debug("SSD or M.2 Sensor Fail")
-                                        outmin = max(outmin, self.boost)
-
+                    sensor = sensors[board][sname]
+                    ctx[v] = sensor.value
+                    if sensor.status in ['ucr']:
+                        Logger.warn('Sensor %s reporting status %s' % (sensor.name, sensor.status))
+                        outmin = max(outmin, self.transitional)                        
+                    else:
+                        if self.sensor_fail == True:
+                            if sensor.status in ['na']:
+                                if re.match(r'SSD', sensor.name) != None:
                                     fail_ssd_count = fail_ssd_count + 1
-                        else:
-                            if 'standby_sensor_fail' in list(self.fail_sensor_type.keys()):
-                                if self.fail_sensor_type['standby_sensor_fail'] == True:
-                                    Logger.debug("Standby Sensor Fail")
+                                else:
+                                    Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)                             
-            else:
-                if not self.missing_sensor_assert_flag[sensor_index]:
-                    Logger.crit('ASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
-                    self.missing_sensor_assert_flag[sensor_index] = True
-                # evaluation tries to ignore the effects of None values
-                # (e.g. acts as 0 in max/+)
-                ctx[v] = None
+                else:
+                    if not self.missing_sensor_assert_flag[sensor_index]:
+                        Logger.crit('ASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
+                        self.missing_sensor_assert_flag[sensor_index] = True
+                    # evaluation tries to ignore the effects of None values
+                    # (e.g. acts as 0 in max/+)
+                    ctx[v] = None
             sensor_index += 1
 
         if verbose:

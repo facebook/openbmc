@@ -57,7 +57,9 @@ class Fscd(object):
         self.boost_type = self.DEFAULT_BOOST_TYPE
         self.transitional = self.DEFAULT_TRANSITIONAL
         self.ramp_rate = self.DEFAULT_RAMP_RATE
+        self.sensor_fail = None
         self.ssd_progressive_algorithm = None
+        self.sensor_valid_check = None
         self.fail_sensor_type = None
         self.fan_dead_boost = None
         self.fan_fail = None
@@ -82,12 +84,14 @@ class Fscd(object):
             self.fan_dead_boost = self.fsc_config['fan_dead_boost']
             self.all_fan_fail_counter = 0
         if 'boost' in self.fsc_config and 'sensor_fail' in self.fsc_config['boost']:
-                if self.fsc_config['boost']['sensor_fail']:
+                self.sensor_fail = self.fsc_config['boost']['sensor_fail']
+                if self.sensor_fail:
                     if 'fail_sensor_type' in self.fsc_config:
                         self.fail_sensor_type = self.fsc_config['fail_sensor_type']
                     if 'ssd_progressive_algorithm' in self.fsc_config:
                         self.ssd_progressive_algorithm = self.fsc_config['ssd_progressive_algorithm']
-
+        if 'sensor_valid_check' in self.fsc_config:
+            self.sensor_valid_check = self.fsc_config['sensor_valid_check']
         self.watchdog = self.fsc_config['watchdog']
         if 'fanpower' in self.fsc_config:
             self.fanpower = self.fsc_config['fanpower']
@@ -139,7 +143,7 @@ class Fscd(object):
                     self.machine.frus.add(board)
 
                 zone = Zone(data['pwm_output'], expr, inf, self.transitional,
-                            counter, self.boost, self.fail_sensor_type,
+                            counter, self.boost, self.sensor_fail, self.sensor_valid_check, self.fail_sensor_type,
                             self.ssd_progressive_algorithm)
                 counter += 1
                 self.zones.append(zone)

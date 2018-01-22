@@ -59,18 +59,20 @@ Global config attributes:
     [N,M]
     If the number of failed SSD sensors is less than N,
 
-"fail_sensor_type":
-  "SSD_sensor_fail": true/false
-    If SSD sensors are failed, FSCD will execute ssd_progressive_algorithm.
-    The detail of ssd_progressive_algorithm is shown below.
-    standby_sensor_fail must be true when using this label.
-  "server_sensor_fail": true/false
-    The server sensor is a sensor which works when the server power is on.
-    If server sensors are failed, the PWM will be pwm_boost_value.
-    standby_sensor_fail must be true when using this label.
-  "standby_sensor_fail": true/false
-    The standby sensor is a sensor which works when the standby power is on.
-    If standby sensor is failed, the PWM will be pwm_boost_value.
+"sensor_valid_check":
+  This config is to check specific sensor valid which can be every much platform specific.
+  Expample:
+    "SOC": {
+      "attribute": {
+        "type" : "power_status",
+        "fru" : "server"
+      }
+    }
+  "SOC" is the sensor name keyword(Ignore Case).
+  The data in "attribute" if again project-specific and here it is for checking the validity of the sensor  
+  with name that contains "SOC".
+  The data in "attribute" will be parsed in the platform layer function fsc_board.sensor_valid_check()
+  "attribute" can be used by the platform for any kind of validity check for sensor. 
 
 "ssd_progressive_algorithm":
   "offset_algorithm":

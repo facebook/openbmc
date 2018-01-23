@@ -27,10 +27,14 @@
 # Short-Description: Setup crond history buffering
 ### END INIT INFO
 
-# TODO: check for the if slot/server is present before starting the daemon
 echo -n "Setup crond..."
-  mkdir /etc/cron
-  mkdir /etc/cron/crontabs
-  echo "0 * * * * run-parts /etc/cron.daily" > /etc/cron/crontabs/root
+  mkdir /etc/cron.daily
+  mkdir /etc/cron.hourly
+  mkdir -p /etc/cron/crontabs
+  echo "0 * * * * run-parts /etc/cron.hourly" > /etc/cron/crontabs/root
+  echo "0 0 * * * run-parts /etc/cron.daily" >> /etc/cron/crontabs/root
+# TODO: Restarting the rsyslog has potential risk of losing the logs. 
+#       Please remove this cronjob once the Rsyslog memory leak issue is resolved. 
+  echo "0 0 * * * /etc/init.d/syslog.rsyslog restart" >> /etc/cron/crontabs/root
   /etc/init.d/busybox-cron start
 echo "done."

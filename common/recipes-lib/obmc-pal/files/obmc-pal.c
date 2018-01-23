@@ -1794,7 +1794,7 @@ pal_copy_all_thresh_to_file(uint8_t fru, thresh_sensor_t *sinfo) {
   uint8_t bytes_wd = 0;
   uint8_t snr_num = 0;
   int ret;
-  char fru_name[8];
+  char fru_name[32];
   int sensor_cnt;
   uint8_t *sensor_list;
   char fpath[64] = {0};

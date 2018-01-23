@@ -71,6 +71,7 @@ print_usage() {
   printf("       sensor-util [fru] <option> ..\n\n");
   printf("       [fru]           : %s\n", pal_fru_list);
   printf("       [historical fru]: %s\n", pal_fru_list_sensor_history_t);
+  printf("       Use \"aggregate\" as the [fru] to print just aggregated sensors defined for this platform\n");
   printf("       <sensor num>: 0xXX (Omit [sensor num] means all sensors.)\n");
   printf("       <option>:\n");
   printf("         --threshold               show all thresholds\n");

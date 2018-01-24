@@ -88,6 +88,15 @@ enum {
   FW_P1V05_VR,
 };
 
+// RC
+enum {
+  FW_IMC = 3,
+  FW_VDD_APC_CBF_VR = 5,
+  FW_DDR510_VR = 6, 
+  FW_DDR423_VR = 7,
+};
+
+
 enum {
   UPDATE_BIOS = 0,
   UPDATE_CPLD,

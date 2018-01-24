@@ -1967,6 +1967,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   bool gs_flag = false;
   uint8_t pair_slot_id;
   int pair_set_type=-1;
+  uint8_t server_type = 0xFF;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
@@ -2031,7 +2032,25 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         ret = pal_set_rst_btn(slot_id, 0);
         if (ret < 0)
           return ret;
+
+#ifdef CONFIG_FBY2_RC
+        ret = fby2_get_server_type(slot_id, &server_type);
+        if (ret < 0)
+          return ret;
+        switch (server_type) {
+          case SERVER_TYPE_RC:
+            sleep(3);
+            break;
+          case SERVER_TYPE_TL:
+            msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
+            break;
+          default:
+            sleep(3);
+            break;
+        }
+#else
         msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
+#endif
         ret = pal_set_rst_btn(slot_id, 1);
         if (ret < 0)
           return ret;
@@ -3047,12 +3066,34 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
   uint8_t val;
   int ret;
+  uint8_t server_type = 0xFF;
 
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+#ifdef CONFIG_FBY2_RC
+      ret = fby2_get_server_type(fru, &server_type);
+      if (ret) {
+        syslog(LOG_INFO, "%s, Get server type failed, using Twinlake");
+      }
+      switch (server_type) {
+        case SERVER_TYPE_RC:
+          break;
+        case SERVER_TYPE_TL:
+          if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
+            *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
+          else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
+            *flag = GETMASK(SENSOR_VALID);
+          else if (snr_num == BIC_SENSOR_SOC_TJMAX)
+            *flag = GETMASK(SENSOR_VALID);
+          break;
+        default:
+          break;
+      }
+      break;
+#else
       if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
         *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
       else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
@@ -3060,6 +3101,7 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
       else if (snr_num == BIC_SENSOR_SOC_TJMAX)
         *flag = GETMASK(SENSOR_VALID);
       break;
+#endif
     case FRU_SPB:
       /*
        * TODO: This is a HACK (t11229576)

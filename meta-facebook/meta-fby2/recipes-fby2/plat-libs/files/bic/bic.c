@@ -1002,7 +1002,9 @@ static int
 check_cpld_image(int fd, long size) {
   uint8_t buf[32];
   uint8_t hdr[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
-
+#ifdef CONFIG_FBY2_RC
+  return 0;
+#else
   if (size < 32)
     return -1;
 
@@ -1014,6 +1016,7 @@ check_cpld_image(int fd, long size) {
 
   lseek(fd, 0, SEEK_SET);
   return 0;
+#endif
 }
 
 static int

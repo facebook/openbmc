@@ -941,11 +941,13 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   ipmi_sensor_reading_t sensor;
   ipmi_accuracy_sensor_reading_t acsensor;
   bool is_accuracy_sensor = false;
-  
+
+#ifndef CONFIG_FBY2_RC                      //workaround for now, this is only for TL but RC  
   for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
     if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
       is_accuracy_sensor = true;
   }
+#endif
 
   ret = bic_read_sensor(fru, sensor_num, &sensor);
   if (ret) {

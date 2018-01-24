@@ -10,7 +10,7 @@
  * Note that this file obtains the zlib wrapper object is needed, but it never frees it
  * again. While this sounds like a leak (and one may argue it actually is), there is no
  * harm associated with that. The reason is that strm is a core object, so it is terminated
- * only when rsyslogd exists. As we could only release on termination (or else bear more 
+ * only when rsyslogd exists. As we could only release on termination (or else bear more
  * overhead for keeping track of how many users we have), not releasing zlibw is OK, because
  * it will be released when rsyslogd terminates. We may want to revisit this decision if
  * it turns out to be problematic. Then, we need to quasi-refcount the number of accesses
@@ -99,7 +99,7 @@ static rsRetVal
 resolveFileSizeLimit(strm_t *pThis, uchar *pszCurrFName)
 {
 	uchar *pParams;
-	uchar *pCmd;
+	uchar *pCmd = NULL;
 	uchar *p;
 	off_t actualFileSize;
 	rsRetVal localRet;
@@ -110,8 +110,8 @@ resolveFileSizeLimit(strm_t *pThis, uchar *pszCurrFName)
 	if(pThis->pszSizeLimitCmd == NULL) {
 		ABORT_FINALIZE(RS_RET_NON_SIZELIMITCMD); /* nothing we can do in this case... */
 	}
-	
-	/* we first check if we have command line parameters. We assume this, 
+
+	/* we first check if we have command line parameters. We assume this,
 	 * when we have a space in the program name. If we find it, everything after
 	 * the space is treated as a single argument.
 	 */
@@ -135,6 +135,7 @@ resolveFileSizeLimit(strm_t *pThis, uchar *pszCurrFName)
 	execProg(pCmd, 1, pParams);
 
 	free(pCmd);
+	pCmd = NULL;
 
 	localRet = getFileSize(pszCurrFName, &actualFileSize);
 
@@ -183,6 +184,7 @@ doSizeLimitProcessing(strm_t *pThis)
 
 finalize_it:
 	free(pszCurrFName);
+	pszCurrFName = NULL;
 	RETiRet;
 }
 
@@ -285,7 +287,7 @@ strmSetCurrFName(strm_t *pThis)
 finalize_it:
 	RETiRet;
 }
-	
+
 /* This function checks if the actual file has changed and, if so, resets the
  * offset. This is support for monitoring files. It should be called after
  * deserializing the strm object and before doing any other operation on it
@@ -333,7 +335,7 @@ static rsRetVal strmOpenFile(strm_t *pThis)
 		ABORT_FINALIZE(RS_RET_FILE_PREFIX_MISSING);
 
 	CHKiRet(strmSetCurrFName(pThis));
-	
+
 	CHKiRet(doPhysOpen(pThis));
 
 	pThis->iCurrOffs = 0;
@@ -439,7 +441,7 @@ static rsRetVal strmCloseFile(strm_t *pThis)
 			CHKiRet(genFileName(&pThis->pszCurrFName, pThis->pszDir, pThis->lenDir,
 					    pThis->pszFName, pThis->lenFName, pThis->iCurrFNum,
 					    pThis->iFileNumDigits));
-		}			
+		}
 		DBGPRINTF("strmCloseFile: deleting '%s'\n", pThis->pszCurrFName);
 		if(unlink((char*) pThis->pszCurrFName) == -1) {
 			char errStr[1024];
@@ -624,7 +626,7 @@ finalize_it:
 
 
 /* logically "read" a character from a file. What actually happens is that
- * data is taken from the buffer. Only if the buffer is full, data is read 
+ * data is taken from the buffer. Only if the buffer is full, data is read
  * directly from file. In that case, a read is performed blockwise.
  * rgerhards, 2008-01-07
  * NOTE: needs to be enhanced to support sticking with a strm entry (if not
@@ -634,7 +636,7 @@ static rsRetVal strmReadChar(strm_t *pThis, uchar *pC)
 {
 	int padBytes = 0; /* in crypto mode, we may have some padding (non-data) bytes */
 	DEFiRet;
-	
+
 	ASSERT(pThis != NULL);
 	ASSERT(pC != NULL);
 
@@ -645,7 +647,7 @@ static rsRetVal strmReadChar(strm_t *pThis, uchar *pC)
 		pThis->iUngetC = -1;
 		ABORT_FINALIZE(RS_RET_OK);
 	}
-	
+
 	/* do we need to obtain a new buffer? */
 	if(pThis->iBufPtr >= pThis->iBufPtrMax) {
 		CHKiRet(strmReadBuf(pThis, &padBytes));
@@ -717,7 +719,10 @@ strmReadLine(strm_t *pThis, cstr_t **ppCStr, uint8_t mode, sbool bEscapeLF, uint
                 	CHKiRet(cstrAppendChar(*ppCStr, c));
                 	readCharRet = strmReadChar(pThis, &c);
                 	if(readCharRet == RS_RET_EOF) {/* end of file reached without \n? */
-				CHKiRet(rsCStrConstructFromCStr(&pThis->prevLineSegment, *ppCStr));
+                    if(pThis->prevLineSegment != NULL) {
+                      cstrDestruct(&pThis->prevLineSegment);
+                    }
+                    CHKiRet(rsCStrConstructFromCStr(&pThis->prevLineSegment, *ppCStr));
                 	}
                 	CHKiRet(readCharRet);
         	}
@@ -811,6 +816,9 @@ finalize_it:
         if(iRet != RS_RET_OK && *ppCStr != NULL) {
 		if(cstrLen(*ppCStr) > 0) {
 		/* we may have an empty string in an unsuccsfull poll or after restart! */
+			if(pThis->prevLineSegment != NULL) {
+				cstrDestruct(&pThis->prevLineSegment);
+			}
 			rsCStrConstructFromCStr(&pThis->prevLineSegment, *ppCStr);
 		}
                 cstrDestruct(ppCStr);
@@ -850,6 +858,9 @@ strmReadMultiLine(strm_t *pThis, cstr_t **ppCStr, regex_t *preg, sbool bEscapeLF
 			CHKiRet(cstrAppendChar(thisLine, c));
 			readCharRet = strmReadChar(pThis, &c);
 			if(readCharRet == RS_RET_EOF) {/* end of file reached without \n? */
+				if(pThis->prevLineSegment != NULL) {
+					cstrDestruct(&pThis->prevLineSegment);
+				}
 				CHKiRet(rsCStrConstructFromCStr(&pThis->prevLineSegment, thisLine));
 			}
 			CHKiRet(readCharRet);
@@ -869,7 +880,7 @@ strmReadMultiLine(strm_t *pThis, cstr_t **ppCStr, regex_t *preg, sbool bEscapeLF
 				*ppCStr = pThis->prevMsgSegment;
 			}
 			CHKiRet(rsCStrConstructFromCStr(&pThis->prevMsgSegment, thisLine));
-			
+
 		} else {
 			if(pThis->prevMsgSegment != NULL) {
 				/* may be NULL in initial poll! */
@@ -1022,9 +1033,11 @@ CODESTARTobjDestruct(strm)
 		pthread_cond_destroy(&pThis->isEmpty);
 		for(i = 0 ; i < STREAM_ASYNC_NUMBUFS ; ++i) {
 			free(pThis->asyncBuf[i].pBuf);
+			pThis->asyncBuf[i].pBuf = NULL;
 		}
 	} else {
 		free(pThis->pIOBuf);
+		pThis->pIOBuf = NULL;
 	}
 
 	/* Finally, we can free the resources.
@@ -1036,10 +1049,15 @@ CODESTARTobjDestruct(strm)
 	if(pThis->prevMsgSegment)
 		cstrDestruct(&pThis->prevMsgSegment);
 	free(pThis->pszDir);
+	pThis->pszDir = NULL;
 	free(pThis->pZipBuf);
+	pThis->pZipBuf = NULL;
 	free(pThis->pszCurrFName);
+	pThis->pszCurrFName = NULL;
 	free(pThis->pszFName);
+	pThis->pszFName = NULL;
 	free(pThis->pszSizeLimitCmd);
+	pThis->pszSizeLimitCmd = NULL;
 	pThis->bStopWriter = 2; /* RG: use as flag for destruction */
 ENDobjDestruct(strm)
 
@@ -1149,12 +1167,12 @@ doWriteCall(strm_t *pThis, uchar *pBuf, size_t *pLenBuf)
 					CHKiRet(tryTTYRecover(pThis, err));
 				} else {
 					ABORT_FINALIZE(RS_RET_IO_ERROR);
-					/* Would it make sense to cover more error cases? So far, I 
+					/* Would it make sense to cover more error cases? So far, I
 					 * do not see good reason to do so.
 					 */
 				}
 			}
-	 	} 
+	 	}
 		/* advance buffer to next write position */
 		iTotalWritten += iWritten;
 		lenBuf -= iWritten;
@@ -1191,7 +1209,7 @@ finalize_it:
 }
 
 
-/* This function is called to "do" an async write call, what primarily means that 
+/* This function is called to "do" an async write call, what primarily means that
  * the data is handed over to the writer thread (which will then do the actual write
  * in parallel). Note that the stream mutex has already been locked by the
  * strmWrite...() calls. Also note that we always have only a single producer,
@@ -1232,8 +1250,8 @@ strmSchedWrite(strm_t *pThis, uchar *pBuf, size_t lenBuf, int bFlushZip)
 	ASSERT(pThis != NULL);
 
 	/* we need to reset the buffer pointer BEFORE calling the actual write
-	 * function. Otherwise, in circular mode, the write function will 
-	 * potentially close the file, then close will flush and as the 
+	 * function. Otherwise, in circular mode, the write function will
+	 * potentially close the file, then close will flush and as the
 	 * buffer pointer is nonzero, will re-call into this code here. In
 	 * the end result, we than have a problem (and things are screwed
 	 * up). So we reset the buffer pointer first, and all this can
@@ -1290,7 +1308,7 @@ asyncWriterThread(void *pPtr)
 				d_pthread_mutex_unlock(&pThis->mut);
 				strmFlushInternal(pThis, 0);
 				bTimedOut = 0;
-				d_pthread_mutex_lock(&pThis->mut); 
+				d_pthread_mutex_lock(&pThis->mut);
 				continue;
 			}
 			bTimedOut = 0;
@@ -1327,7 +1345,7 @@ asyncWriterThread(void *pPtr)
 				pthread_cond_broadcast(&pThis->isEmpty);
 		}
 	}
-	/* Not reached */	
+	/* Not reached */
 
 finalize_it:
 	ENDfunc
@@ -1366,7 +1384,7 @@ syncFile(strm_t *pThis)
 		DBGPRINTF("sync failed for file %d with error (%d): %s - ignoring\n",
 			   pThis->fd, err, errStr);
 	}
-	
+
 	if(pThis->fdDir != -1) {
 		if(fsync(pThis->fdDir) != 0)
 			DBGPRINTF("stream/syncFile: fsync returned error, ignoring\n");
@@ -1543,7 +1561,7 @@ strmFlushInternal(strm_t *pThis, int bFlushZip)
 
 
 /* flush stream output buffer to persistent storage. This can be called at any time
- * and is automatically called when the output buffer is full. This function is for 
+ * and is automatically called when the output buffer is full. This function is for
  * use by EXTERNAL callers. Do NOT use it internally. It locks the async writer
  * mutex if ther is need to do so.
  * rgerhards, 2010-03-18
@@ -1844,12 +1862,14 @@ strmSetFName(strm_t *pThis, uchar *pszName, size_t iLenName)
 
 	ASSERT(pThis != NULL);
 	ASSERT(pszName != NULL);
-	
+
 	if(iLenName < 1)
 		ABORT_FINALIZE(RS_RET_FILE_PREFIX_MISSING);
 
-	if(pThis->pszFName != NULL)
+	if(pThis->pszFName != NULL) {
 		free(pThis->pszFName);
+		pThis->pszFName = NULL;
+	}
 
 	if((pThis->pszFName = MALLOC(iLenName + 1)) == NULL)
 		ABORT_FINALIZE(RS_RET_OUT_OF_MEMORY);
@@ -1874,7 +1894,7 @@ strmSetDir(strm_t *pThis, uchar *pszDir, size_t iLenDir)
 
 	ASSERT(pThis != NULL);
 	ASSERT(pszDir != NULL);
-	
+
 	if(iLenDir < 1)
 		ABORT_FINALIZE(RS_RET_FILE_PREFIX_MISSING);
 
@@ -1937,7 +1957,7 @@ static rsRetVal strmRecordEnd(strm_t *pThis)
  * later reconstruction of the object.
  * The most common use case for this method is the creation of an
  * on-disk representation of the message object.
- * We do not serialize the dynamic properties. 
+ * We do not serialize the dynamic properties.
  * rgerhards, 2008-01-10
  */
 static rsRetVal strmSerialize(strm_t *pThis, strm_t *pStrm)
@@ -2022,7 +2042,7 @@ strmDup(strm_t *pThis, strm_t **ppNew)
 	pNew->iFileNumDigits = pThis->iFileNumDigits;
 	pNew->bDeleteOnClose = pThis->bDeleteOnClose;
 	pNew->iCurrOffs = pThis->iCurrOffs;
-	
+
 	*ppNew = pNew;
 	pNew = NULL;
 

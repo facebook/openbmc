@@ -18,10 +18,10 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
-            file://FSC_BC_Type5_MP_v1_config.json \
+            file://FSC_BC_Type5_MP_v2_config.json \
             file://FSC_BC_Type5_MP_v1_zone0.fsc \
             file://FSC_BC_Type5_MP_v1_zone1.fsc \
-            file://FSC_BC_Type7_MP_v1_config.json \
+            file://FSC_BC_Type7_MP_v2_config.json \
             file://FSC_BC_Type7_MP_v1_zone0.fsc \
             file://FSC_BC_Type7_MP_v1_zone1.fsc \
             file://fsc_board.py \
@@ -29,8 +29,8 @@ SRC_URI += "file://init_pwm.sh \
 
 FSC_BIN_FILES += "init_pwm.sh"
 
-FSC_CONFIG += "FSC_BC_Type5_MP_v1_config.json \
-			         FSC_BC_Type7_MP_v1_config.json \
+FSC_CONFIG += "FSC_BC_Type5_MP_v2_config.json \
+			         FSC_BC_Type7_MP_v2_config.json \
               "
 
 FSC_ZONE_CONFIG += "FSC_BC_Type5_MP_v1_zone0.fsc \

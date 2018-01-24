@@ -1,5 +1,5 @@
 {
-  "version": "fbttn-type5-mp-v1",
+  "version": "fbttn-type7-mp-v2",
   "pwm_transition_value": 55,
   "pwm_boost_value": 50,
   "sample_interval_ms": 3000,
@@ -20,12 +20,6 @@
         "type" : "power_status",
         "fru" : "server"
       }
-    },
-    "M2": {
-      "attribute": {
-        "type" : "gpio",
-        "number" : "32"
-      }
     }
   },
   "fail_sensor_type": {
@@ -43,9 +37,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ -102, 14 ],
-        [ -12, 15 ],
-        [ -11, 20 ],
+        [ -102, 20 ],
         [ -10, 25 ],
         [ -9, 30 ],
         [ -8, 35 ],
@@ -63,10 +55,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 0, 14 ],
-        [ 70, 16 ],
-        [ 72, 18 ],
-        [ 74, 20 ],
+        [ 0, 20 ],
         [ 76, 22 ],
         [ 78, 24 ],
         [ 80, 26 ],
@@ -80,30 +69,6 @@
         [ 93, 45 ],
         [ 94, 50 ],
         [ 95, 55 ]
-      ]
-    },
-    "linear_m2_smart_temp_1": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 2,
-      "data": [
-        [ 0, 14 ],
-        [ 62, 16 ],
-        [ 63, 18 ],
-        [ 64, 20 ],
-        [ 65, 22 ],
-        [ 66, 24 ],
-        [ 67, 28 ],
-        [ 68, 28 ],
-        [ 69, 28 ],
-        [ 70, 28 ],
-        [ 71, 34 ],
-        [ 72, 41 ],
-        [ 73, 48 ],
-        [ 74, 55 ] 
       ]
     },
     "pid_soc_therm_margin": {
@@ -129,20 +94,8 @@
       "kp": -8,
       "ki": -0.05,
       "kd": 0
-    },
-    "pid_m2_smart_temp_1": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 68,
-      "negative_hysteresis": 2,
-      "positive_hysteresis": 0,
-      "kp": -8,
-      "ki": -0.05,
-      "kd": 0
-    }
-  },
+	  }
+	},
   "fans": {
     "0": {
       "label" : "1 Front",
@@ -202,11 +155,11 @@
   "zones": {
     "zone_0": {
       "pwm_output": [0],
-      "expr_file": "FSC_BC_Type5_MP_v1_zone0.fsc"
+      "expr_file": "FSC_BC_Type7_MP_v1_zone0.fsc"
     },
     "zone_1": {
       "pwm_output": [1],
-      "expr_file": "FSC_BC_Type5_MP_v1_zone1.fsc"
+      "expr_file": "FSC_BC_Type7_MP_v1_zone1.fsc"
     }
   }
 }

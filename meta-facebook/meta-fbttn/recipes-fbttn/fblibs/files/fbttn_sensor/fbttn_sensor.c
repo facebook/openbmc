@@ -462,21 +462,21 @@ sensor_thresh_array_init() {
       150, 0, 0, 0, 0, 0, 0, 0);
   //DPB FAN
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_FRONT,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_REAR,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_FRONT,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_REAR,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_FRONT,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_REAR,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_FRONT,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_REAR,
-      0, 0, 0, 1200, 0, 0, 0, 0);
+      0, 0, 0, 2000, 0, 0, 0, 0);
   //DPB HSC
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_HSC_POWER,
       885, 0, 0, 0, 0, 0, 0, 0);
@@ -493,7 +493,7 @@ sensor_thresh_array_init() {
   for(i = 0 ; i < 36 ; i++) {
     assign_sensor_threshold(FRU_DPB, DPB_SENSOR_HDD_0 + i,
       65, 0, 0, 0, 0, 0, 0, 0);
-  } 
+  }
   assign_sensor_threshold(FRU_DPB, AIRFLOW,
       0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -838,7 +838,7 @@ read_nic_temp(const char *device, float *value) {
 #endif
     return -1;
   }
-  
+
   *value = ((float)tmp)/UNIT_DIV;
 
   // Workaround: handle when NICs wrongly report higher temperatures
@@ -980,7 +980,7 @@ msleep(int msec) {
   }
 }
 
-int 
+int
 flock_retry(int fd)
 {
   int ret = 0;
@@ -999,7 +999,7 @@ flock_retry(int fd)
   return 0;
 }
 
-int 
+int
 unflock_retry(int fd)
 {
   int ret = 0;

@@ -274,3 +274,41 @@ i2c_add_device() {
       echo $DEV_NAME $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/new_device
 }
 
+# Check to see if slot 12v is on or not
+is_slot_12v_on() {
+  local gpio
+  local status
+  local dir
+
+  case $1 in
+   1)
+    gpio=$(gpio_name2value O4)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   2)
+    gpio=$(gpio_name2value O5)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   3)
+    gpio=$(gpio_name2value O6)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   4)
+    gpio=$(gpio_name2value O7)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   *)
+    status="0"
+    ;;
+  esac
+
+  if [ $status == "1" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}

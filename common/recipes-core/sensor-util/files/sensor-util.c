@@ -203,8 +203,13 @@ get_sensor_reading(void *sensor_data) {
       if (ret == ERR_NOT_READY) {
         pal_get_fru_name(sensor_info->fru, fruname);
         printf("%s SDR is missing!\n", fruname);
+
+        //modify the flag to true if we get the sensor reading
+        done_flag = true;
+
         //Tell caller it's done
         pthread_cond_signal(&done);
+
         return NULL;
       }
       else if (ret < 0) {
@@ -335,8 +340,14 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
   abs_time.tv_sec += timeout->tv_sec;
   abs_time.tv_nsec += timeout->tv_nsec;
 
+   pal_get_fru_name(sensor_data->fru, fruname);
+
   //Make get_sensor_reading a thread
-  pthread_create(&tid_get_sensor_reading, NULL, get_sensor_reading, (void *) sensor_data);
+  if (pthread_create(&tid_get_sensor_reading, NULL, get_sensor_reading, (void *) sensor_data) < 0) {
+    syslog(LOG_WARNING, "sensor-util FRU:%s, pthread_create failed\n", fruname);
+    pthread_mutex_unlock(&timer);
+    return;
+  }
 
   //Check if thread is alive, if pthread_kill (thread_id, sig = 0) returns 0, means thread is alive
   thread_alive = pthread_kill(tid_get_sensor_reading, 0);
@@ -346,7 +357,10 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
     while ( false == done_flag )
     {
       //Timer thread, continue only when get_sensor_reading send the done signal or abs_time timed out
-      err = pthread_cond_timedwait(&done, &timer, &abs_time);   
+      err = pthread_cond_timedwait(&done, &timer, &abs_time); 
+      if (err == ETIMEDOUT) {
+        break;
+      }
     }
 
     //Double Check if thread is still alive
@@ -355,8 +369,7 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
     //Timeout actions
     //If Timed out, and Thread is still alive, it means the thread is really timed out, cancel the thread
     //If Timed out, and Thread is dead, it means the timed out is fake, do nothing
-    if ( (err == ETIMEDOUT) && (thread_alive == 0) ) {
-      pal_get_fru_name(sensor_data->fru, fruname);
+    if ( (err == ETIMEDOUT) && (thread_alive == 0) ) {     
       printf("FRU:%s timed out...\n", fruname);
       pthread_cancel(tid_get_sensor_reading);
     }

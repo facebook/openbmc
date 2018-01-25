@@ -59,6 +59,10 @@ case "$sku_type" in
        echo "Run FSC 2 GPs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
    ;;
+   "17")
+       echo "Run FSC 2 CFs and 2 TLs Config"
+       cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
+   ;;
    *)  echo "Unexpected sku type! Use default config"
        cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
    ;;

@@ -23,6 +23,8 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBY2_PVT_4TL_zone1.fsc \
             file://FSC_FBY2_PVT_2GP_2TL_config.json \
             file://FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
+            file://FSC_FBY2_PVT_2CF_2TL_config.json \
+            file://FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
             file://fsc_board.py \
            "
 
@@ -30,10 +32,12 @@ FSC_BIN_FILES += "init_pwm.sh"
 
 FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \
                FSC_FBY2_PVT_2GP_2TL_config.json \
+               FSC_FBY2_PVT_2CF_2TL_config.json \
               "
 
 FSC_ZONE_CONFIG +="FSC_FBY2_PVT_4TL_zone1.fsc \
                    FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
+                   FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
                   "
 
 do_install_append() {

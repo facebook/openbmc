@@ -100,15 +100,15 @@ class Zone:
                     ctx[v] = sensor.value
                     if sensor.status in ['ucr']:
                         Logger.warn('Sensor %s reporting status %s' % (sensor.name, sensor.status))
-                        outmin = max(outmin, self.transitional)                        
+                        outmin = max(outmin, self.transitional)
                     else:
                         if self.sensor_fail == True:
                             if sensor.status in ['na']:
-                                if re.match(r'SSD', sensor.name) != None:
+                                if re.match(r'SSD', sensor.name) != None or re.match(r'(.*)nvme(.*)', sname) != None:
                                     fail_ssd_count = fail_ssd_count + 1
                                 else:
                                     Logger.warn("%s Fail" % v)
-                                    outmin = max(outmin, self.boost)                             
+                                    outmin = max(outmin, self.boost)
                 else:
                     if not self.missing_sensor_assert_flag[sensor_index]:
                         Logger.crit('ASSERT: Zone%d Missing sensors: %s' % (self.counter, v))

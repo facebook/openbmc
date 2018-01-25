@@ -7,6 +7,18 @@
     "fan_fail": true,
     "sensor_fail": true
   },
+  "sensor_valid_check": {
+    "soc": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "nvme": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
   "watchdog": false,
   "min_rpm": 800,
   "profiles": {

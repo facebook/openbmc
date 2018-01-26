@@ -333,8 +333,9 @@ gpio_monitor_poll(void *ptr) {
         usleep(DELAY_GPIOD_READ);
         continue;
       }
-      n_pin_val = CLEARBIT(o_pin_val, PWRGD_COREPWR);
-      n_pin_val = CLEARBIT(o_pin_val, FM_SMI_BMC_N);
+
+      o_pin_val = 0;
+      n_pin_val = o_pin_val;
     }
 
     if (o_pin_val == n_pin_val) {

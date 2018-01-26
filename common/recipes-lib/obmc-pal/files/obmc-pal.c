@@ -2090,3 +2090,9 @@ pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, 
   return 0;
 }
 
+void __attribute__((weak))
+pal_get_me_name(uint8_t *target_name) {
+  strcpy(target_name, "ME");
+  return;
+}
+

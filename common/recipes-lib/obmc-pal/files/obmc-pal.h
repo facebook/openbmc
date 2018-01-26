@@ -293,6 +293,7 @@ int pal_copy_all_thresh_to_file(uint8_t fru, thresh_sensor_t *sinfo);
 int pal_get_thresh_from_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo);
 int pal_copy_thresh_to_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo);
 bool pal_is_sensor_existing(uint8_t fru, uint8_t snr_num);
+void pal_get_me_name(uint8_t *target_name);
 #ifdef __cplusplus
 }
 #endif

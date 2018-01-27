@@ -5173,3 +5173,13 @@ pal_is_mcu_working(void) {
 
   return false;
 }
+
+void 
+pal_get_me_name(uint8_t *target_name) {
+#ifdef CONFIG_FBY2_RC
+  strcpy(target_name, "IMC");
+#else
+  strcpy(target_name, "ME");
+#endif
+  return;
+}

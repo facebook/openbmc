@@ -472,6 +472,10 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   uint8_t rlen = 0;
   int ret;
 
+#ifdef CONFIG_FBY2_RC
+  return 0;
+#endif           
+
   // Fill the component for which firmware is requested
   tbuf[3] = comp;
 

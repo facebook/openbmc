@@ -41,5 +41,11 @@
 #endif
 
 #define OPENBMC
+/*
+ * Enabling the following will make jbi to use its own nsleep,
+ * instead of relying on kernel's timer which is too coarse.
+ * We need this for Helium
+ */
+#define USER_SPACE_NSLEEP
 
 #endif /* INC_JBIPORT_H */

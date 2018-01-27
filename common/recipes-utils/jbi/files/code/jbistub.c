@@ -260,6 +260,50 @@ BOOL verbose = FALSE;
 #define SPIN_THRESHOLD (10 * 1000 * 1000)
 #define NANOSEC_IN_SEC (1000 * 1000 * 1000)
 
+#ifdef USER_SPACE_NSLEEP
+// In Helium, the resolution of system timer is ~10ms,
+// which is too coarse for the utilites that toggles
+// JTAG bus, like this jbi player.
+// This alternative sleep_ns is designed to be used
+// in BMCs with Helium kernel. For every 500ns sleep,
+// it actually sleep for ~800ns, just in order to be
+// safe. (Otherwise CPLD program may fail due to the
+// clock speed which is too fast for Altera device
+// to handle)
+// The following value is from an experiment with
+// Wedge100/S. Using this value, it will take about
+// 1.5 minutes to program SYS CPLD.
+#define USR_NSLP_BASE  1
+#define USR_NSLP_SLOPE (1.0 / 180.0)
+static int sleep_ns(unsigned long clk)
+{
+  struct timespec req;
+  int base = USR_NSLP_BASE;
+  float slope = USR_NSLP_SLOPE;
+  unsigned int toy_variable;
+  int num_loops = base + (float)clk * slope;
+  int i = 0;
+  for (i = 0; i < num_loops; i++)
+  {
+      // Doing something to pass time, such as reading clock
+      // and rotating bits in some toy variable...
+      clock_gettime(CLOCK_MONOTONIC, &req);
+      toy_variable = ((toy_variable & 0x1) << 31 +
+                      (toy_variable) >> 1);
+  }
+  // In order to prevent compiler from optimizing the code above,
+  // we will return toy_variable. But we will make it 0 first before
+  // doing so.
+  // (if the compiler optimize the code above, it will decrease the
+  // delay that this function will make, which will in turn cause
+  // JTAG access to fail)
+  toy_variable = toy_variable & 0xaaaaaaaa; // Reset odd bits
+  toy_variable = toy_variable & 0x55555555; // Reset even bits
+  // By now toy_variable is 0, which is totally fine
+  return toy_variable;
+}
+
+#else
 static int sleep_ns(unsigned long clk)
 {
   struct timespec req, rem;
@@ -296,6 +340,7 @@ static int sleep_ns(unsigned long clk)
   }
   return rc;
 }
+#endif
 
 int initialize_jtag_gpios()
 {

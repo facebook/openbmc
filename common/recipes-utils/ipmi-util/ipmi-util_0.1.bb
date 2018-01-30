@@ -17,7 +17,7 @@ binfiles = "ipmi-util \
 
 pkgdir = "ipmi-util"
 
-DEPENDS = " libipmi "
+DEPENDS = " libipmi libpal "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

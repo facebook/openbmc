@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/pal.h>
 
 static void
 print_usage_help(void) {
@@ -46,6 +47,11 @@ main(int argc, char **argv) {
   int i;
 
   if (argc < 3) {
+    goto err_exit;
+  }
+
+  if (!pal_is_slot_server((uint8_t)strtoul(argv[1], NULL, 0))) {
+    printf("Node: %s is not a valid server\n", argv[1]);
     goto err_exit;
   }
 

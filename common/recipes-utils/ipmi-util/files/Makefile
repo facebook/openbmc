@@ -2,7 +2,7 @@
 all: ipmi-util
 
 ipmi-util: ipmi-util.o 
-	$(CC) $(CFLAGS) -pthread -lipmi --std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lipmi -lpal --std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

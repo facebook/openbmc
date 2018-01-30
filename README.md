@@ -10,6 +10,7 @@ OpenBMC uses the [Yocto Project](https://www.yoctoproject.org) as the underlying
 [**Lightning**](https://code.facebook.com/posts/989638804458007/introducing-lightning-a-flexible-nvme-jbof/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildLightning/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildLightning/) | A flexible NVMe JBOF
 [**Yosemite**](https://code.facebook.com/posts/1616052405274961/introducing-yosemite-the-first-open-source-modular-chassis-for-high-powered-microservers-) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildYosemite/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildYosemite/) | An open source modular chassis for high-powered microservers
 [**Wedge**](https://code.facebook.com/posts/681382905244727/introducing-wedge-and-fboss-the-next-steps-toward-a-disaggregated-network/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge/) | A 40G OS-agnostic TOR switch
+[**Bryce Canyon**](https://code.facebook.com/posts/1869788206569924/introducing-bryce-canyon-our-next-generation-storage-platform/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildFBTTN/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildFBTTN/) | Disk Storage platform
 
 ## Contents
 

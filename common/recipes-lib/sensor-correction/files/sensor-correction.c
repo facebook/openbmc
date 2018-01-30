@@ -62,6 +62,7 @@ typedef struct {
 } correction_element_t;
 
 typedef struct {
+  char name[32];
   size_t num;
   correction_element_t *corr_table;
 } correction_table_t;
@@ -141,12 +142,12 @@ static int load_table(json_t *obj, correction_table_t *tbl)
   return 0;
 }
 
-static int get_table_idx(const char *value, char tablemap[MAX_NUM_TABLES][32], size_t num, size_t *idx)
+static int search_table(const char *table_name, sensor_correction_t *snr, size_t *idx)
 {
   size_t i;
 
-  for (i = 0; i < num; i++) {
-    if (!strcmp(value, tablemap[i])) {
+  for (i = 0; i < snr->num_tables; i++) {
+    if (!strcmp(table_name, snr->tables[i].name)) {
       *idx = i;
       return 0;
     }
@@ -158,7 +159,6 @@ static int get_table_idx(const char *value, char tablemap[MAX_NUM_TABLES][32], s
 static int load_conditional_sensor_correction(json_t *obj, sensor_correction_t *snr)
 {
   json_t *tmp;
-  char tablename2idx[MAX_NUM_TABLES][32];
   void *iter;
   size_t i;
 
@@ -177,7 +177,7 @@ static int load_conditional_sensor_correction(json_t *obj, sensor_correction_t *
       i++, iter = json_object_iter_next(tmp, iter)) {
     const char *table_name = json_object_iter_key(iter);
     json_t *tbl_o = json_object_iter_value(iter);
-    strncpy(&tablename2idx[i][0], table_name, 32);
+    strncpy(snr->tables[i].name, table_name, sizeof(snr->tables[i].name));
     if (!tbl_o || !json_is_array(tbl_o)) {
       DEBUG("Could not get correction table for %s\n", table_name);
       return -1;
@@ -196,8 +196,7 @@ static int load_conditional_sensor_correction(json_t *obj, sensor_correction_t *
 
   tmp = json_object_get(obj, "default_table");
   if (!tmp || !json_is_string(tmp) ||
-      get_table_idx(json_string_value(tmp), tablename2idx,
-          snr->num_tables, &snr->default_table)) {
+      search_table(json_string_value(tmp), snr, &snr->default_table)) {
     DEBUG("Could not get the default table!\n");
     return -1;
   }
@@ -228,7 +227,7 @@ static int load_conditional_sensor_correction(json_t *obj, sensor_correction_t *
       DEBUG("Getting valuemap[%zu] failed\n", i);
       return -1;
     }
-    if (get_table_idx(json_string_value(table_name), tablename2idx, snr->num_tables, &idx)) {
+    if (search_table(json_string_value(table_name), snr, &idx)) {
       DEBUG("Getting index for valuemap[%zu] failed\n", i);
       return -1;
     }

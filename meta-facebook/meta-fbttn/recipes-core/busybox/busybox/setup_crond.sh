@@ -27,9 +27,19 @@
 # Short-Description: Setup crond history buffering
 ### END INIT INFO
 
-echo -n "Setup crond..."
-  mkdir /etc/cron.daily
-  mkdir /etc/cron.hourly
+echo "Setup crond..."
+  if [ ! -d "/etc/cron.daily" ]; then
+      mkdir /etc/cron.daily
+  fi
+
+  if [ ! -d "/etc/cron.hourly" ]; then
+      mkdir /etc/cron.hourly
+  fi
+
+  if [ ! -x /etc/cron.hourly/logrotate ]; then
+      cp /etc/cron.daily/logrotate /etc/cron.hourly/
+  fi
+
   mkdir -p /etc/cron/crontabs
   echo "0 * * * * run-parts /etc/cron.hourly" > /etc/cron/crontabs/root
   echo "0 0 * * * run-parts /etc/cron.daily" >> /etc/cron/crontabs/root

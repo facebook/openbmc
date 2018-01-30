@@ -93,8 +93,8 @@ def get_all_serials_and_locations():
             card_infos[card_key].update(_populate_serial_and_loc(
                 slot_type, serial_and_locs[idx]))
 
-    return json.dumps(card_infos)
+    return card_infos
 
 
 if __name__ == '__main__':
-    print(get_all_serials_and_locations())
+    print('{}'.format(get_all_serials_and_locations()))

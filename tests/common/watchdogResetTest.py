@@ -68,7 +68,6 @@ def watchdogReset(unitTestUtil, utilType, logger, cmd_bmc, hostname, headnode=No
         #pingcmd = ['python', testPath + 'common/connectionTest.py', hostname, '6']
     else:
         pingcmd = 'python {0}{1} {2} {3} 6'.format(testPath, utilType.ConnectionTestPath, headnode, hostname)
-        #pingcmd = ['python', testPath + utilType.ConnectionTestPath, headnode, hostname, '6']
     logger.debug("checking that ping connection to host succeeds before reboot is triggered")
     f = subprocess.Popen(pingcmd,
                          shell=True, stdin=None,
@@ -93,8 +92,8 @@ def watchdogReset(unitTestUtil, utilType, logger, cmd_bmc, hostname, headnode=No
     if b'PASSED' in out:
         print("No reset from watchdog [FAILED]")
         sys.exit(1)
-    logger.debug("waiting 300 seconds")
-    time.sleep(300)
+    logger.debug("waiting 900 seconds")
+    time.sleep(900)
     logger.debug("checking that ping connection to host succeeds, reboot should have completed")
     f = subprocess.Popen(pingcmd,
                          shell=True, stdin=None,

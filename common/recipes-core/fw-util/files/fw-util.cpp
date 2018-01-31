@@ -163,6 +163,7 @@ void usage()
 int main(int argc, char *argv[])
 {
   int ret = 0;
+  int find_comp = 0;
 
   exec_name = argv[0];
   Component::populateFruList();
@@ -218,6 +219,7 @@ int main(int argc, char *argv[])
 
       for (auto ckv : Component::fru_list[fkv.first]) {
         if (component == "all" || component == ckv.first) {
+          find_comp = 1;
           Component *c = Component::fru_list[fkv.first][ckv.first];
           if (done_map.find(c) == done_map.end()) {
             done_map[c] = true;
@@ -259,6 +261,11 @@ int main(int argc, char *argv[])
         }
       }
     }
+  }
+
+  if (!find_comp) {
+    usage();
+    return -1;
   }
 
   return 0;

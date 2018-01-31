@@ -2,7 +2,7 @@
 all: bic-util
 
 bic-util: bic-util.c
-	$(CC) -pthread $(CFLAGS)  -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread $(CFLAGS) -lfby2_sensor -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

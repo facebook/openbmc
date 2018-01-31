@@ -23,7 +23,7 @@
 #include <syslog.h>
 #include "fby2_gpio.h"
 
-// List of GPIO pins to be monitored
+// List of TL GPIO pins to be monitored
 const uint8_t gpio_pin_list[] = {
   PWRGD_COREPWR,
   PWRGD_PCH_PWROK,
@@ -69,6 +69,53 @@ const uint8_t gpio_pin_list[] = {
 size_t gpio_pin_cnt = sizeof(gpio_pin_list)/sizeof(uint8_t);
 const uint32_t gpio_ass_val = 0x0 | (1 << FM_CPLD_FIVR_FAULT);
 
+// List of RC GPIO pins to be monitored
+const uint8_t rc_gpio_pin_list[] = {
+  RC_PWRGD_SYS_PWROK,
+  RC_QDF_PS_HOLD_OUT,
+  RC_PVDDQ_510_VRHOT_N_R1,
+  RC_PVDDQ_423_VRHOT_N_R1,
+  RC_VR_I2C_SEL,
+  RC_QDF_THROTTLE_3P3_N,
+  RC_QDF_FORCE_PMIN,
+  RC_QDF_FORCE_PSTATE,
+  RC_QDF_TEMPTRIP_N,
+  RC_FAST_THROTTLE_N,
+  RC_QDF_LIGHT_THROTTLE_3P3_N,
+  RC_UEFI_DB_MODE_N,
+  RC_QDF_RAS_ERROR_2,
+  RC_QDF_RAS_ERROR_1,
+  RC_QDF_RAS_ERROR_0,
+  RC_SPI_MUX_SEL,
+  RC_QDF_NMI,
+  RC_QDF_SMI,
+  RC_QDF_RES_OUT_N_R,
+  RC_SYS_BUF_RST_N,
+  RC_SYS_BIC_RST_N,
+  RC_FM_BIOS_POST_CMPLT_N,
+  RC_IMC_RDY,
+  RC_PWRGD_PS_PWROK,
+  RC_FM_BACKUP_BIOS_SEL_N,
+  RC_T32_JTAG_DET,
+  RC_BB_BMC_RST_N,
+  RC_QDF_PRSNT_0_N,
+  RC_QDF_PRSNT_1_N,
+  RC_EJCT_DET_N,
+  RC_M2_I2C_MUX_RST_N,
+  RC_BIC_REMOTE_SRST_N,
+  RC_BIC_DB_TRST_N,
+  RC_IMC_BOOT_ERROR,
+  RC_BIC_RDY,
+  RC_QDF_PROCHOT_N,
+  RC_PWR_BIC_BTN_N,
+  RC_PWR_BTN_BUF_N,
+  RC_PMF_REBOOT_REQ_N,
+  RC_BIC_BB_I2C_ALERT,
+};
+size_t rc_gpio_pin_cnt = sizeof(rc_gpio_pin_list)/sizeof(uint8_t);
+
+
+// TL GPIO name
 const char *gpio_pin_name[] = {
   "PWRGD_COREPWR",
   "PWRGD_PCH_PWROK",
@@ -109,6 +156,50 @@ const char *gpio_pin_name[] = {
   "XDP_PRSNT_OUT_N",
   "XDP_BIC_PWR_DEBUG_N",
   "FM_BIC_JTAG_SEL_N",
+};
+
+// RC GPIO name
+const char *rc_gpio_pin_name[] = {
+  "RC_PWRGD_SYS_PWROK",
+  "RC_QDF_PS_HOLD_OUT",
+  "RC_PVDDQ_510_VRHOT_N_R1",
+  "RC_PVDDQ_423_VRHOT_N_R1",
+  "RC_VR_I2C_SEL",
+  "RC_QDF_THROTTLE_3P3_N",
+  "RC_QDF_FORCE_PMIN",
+  "RC_QDF_FORCE_PSTATE",
+  "RC_QDF_TEMPTRIP_N",
+  "RC_FAST_THROTTLE_N",
+  "RC_QDF_LIGHT_THROTTLE_3P3_N",
+  "RC_UEFI_DB_MODE_N",
+  "RC_QDF_RAS_ERROR_2",
+  "RC_QDF_RAS_ERROR_1",
+  "RC_QDF_RAS_ERROR_0",
+  "RC_SPI_MUX_SEL",
+  "RC_QDF_NMI",
+  "RC_QDF_SMI",
+  "RC_QDF_RES_OUT_N_R",
+  "RC_SYS_BUF_RST_N",
+  "RC_SYS_BIC_RST_N",
+  "RC_FM_BIOS_POST_CMPLT_N",
+  "RC_IMC_RDY",
+  "RC_PWRGD_PS_PWROK",
+  "RC_FM_BACKUP_BIOS_SEL_N",
+  "RC_T32_JTAG_DET",
+  "RC_BB_BMC_RST_N",
+  "RC_QDF_PRSNT_0_N",
+  "RC_QDF_PRSNT_1_N",
+  "RC_EJCT_DET_N",
+  "RC_M2_I2C_MUX_RST_N",
+  "RC_BIC_REMOTE_SRST_N",
+  "RC_BIC_DB_TRST_N",
+  "RC_IMC_BOOT_ERROR",
+  "RC_BIC_RDY",
+  "RC_QDF_PROCHOT_N",
+  "RC_PWR_BIC_BTN_N",
+  "RC_PWR_BTN_BUF_N",
+  "RC_PMF_REBOOT_REQ_N",
+  "RC_BIC_BB_I2C_ALERT",
 };
 
 int

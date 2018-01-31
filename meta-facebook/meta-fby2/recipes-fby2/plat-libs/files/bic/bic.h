@@ -74,6 +74,50 @@ enum {
   FM_BIC_JTAG_SEL_N,
 };
 
+// RC GPIO PINS
+enum {
+  RC_PWRGD_SYS_PWROK,
+  RC_QDF_PS_HOLD_OUT,
+  RC_PVDDQ_510_VRHOT_N_R1,
+  RC_PVDDQ_423_VRHOT_N_R1,
+  RC_VR_I2C_SEL,
+  RC_QDF_THROTTLE_3P3_N,
+  RC_QDF_FORCE_PMIN,
+  RC_QDF_FORCE_PSTATE,
+  RC_QDF_TEMPTRIP_N,
+  RC_FAST_THROTTLE_N,
+  RC_QDF_LIGHT_THROTTLE_3P3_N,
+  RC_UEFI_DB_MODE_N,
+  RC_QDF_RAS_ERROR_2,
+  RC_QDF_RAS_ERROR_1,
+  RC_QDF_RAS_ERROR_0,
+  RC_SPI_MUX_SEL,
+  RC_QDF_NMI,
+  RC_QDF_SMI,
+  RC_QDF_RES_OUT_N_R,
+  RC_SYS_BUF_RST_N,
+  RC_SYS_BIC_RST_N,
+  RC_FM_BIOS_POST_CMPLT_N,
+  RC_IMC_RDY,
+  RC_PWRGD_PS_PWROK,
+  RC_FM_BACKUP_BIOS_SEL_N,
+  RC_T32_JTAG_DET,
+  RC_BB_BMC_RST_N,
+  RC_QDF_PRSNT_0_N,
+  RC_QDF_PRSNT_1_N,
+  RC_EJCT_DET_N,
+  RC_M2_I2C_MUX_RST_N,
+  RC_BIC_REMOTE_SRST_N,
+  RC_BIC_DB_TRST_N,
+  RC_IMC_BOOT_ERROR,
+  RC_BIC_RDY,
+  RC_QDF_PROCHOT_N,
+  RC_PWR_BIC_BTN_N,
+  RC_PWR_BTN_BUF_N,
+  RC_PMF_REBOOT_REQ_N,
+  RC_BIC_BB_I2C_ALERT,
+};
+
 enum {
   FW_CPLD = 1,
   FW_BIC,
@@ -159,10 +203,59 @@ typedef struct _bic_gpio_t {
   uint32_t rsvd:1;
 } bic_gpio_t;
 
+// RC gpio
+typedef struct _bic_rc_gpio_t {
+  uint32_t pwrgd_sys_pwrok:1;
+  uint32_t qdf_ps_hold_out:1;
+  uint32_t pvddq_510_vrhot_n_r1:1;
+  uint32_t pvddq_423_vrhot_n_r1:1;
+  uint32_t vr_i2c_sel:1;
+  uint32_t qdf_throttle_3p3_n:1;
+  uint32_t qdf_force_pmin:1;
+  uint32_t qdf_force_pstate:1;
+  uint32_t qdf_temptrip_n:1;
+  uint32_t fast_throttle:1;
+  uint32_t qdf_light_throttle_3p3_n:1;
+  uint32_t uefi_db_mode_n:1;
+  uint32_t qdf_ras_error_2:1;
+  uint32_t qdf_ras_error_1:1;
+  uint32_t qdf_ras_error_0:1;
+  uint32_t spi_mux_sel:1;
+  uint32_t qdf_nmi:1;
+  uint32_t qdf_smi:1;
+  uint32_t qdf_res_out_n_r:1;
+  uint32_t sys_buf_rst_n:1;
+  uint32_t sys_bic_rst_n:1;
+  uint32_t fm_bios_post_cmplt_n:1;
+  uint32_t imc_ready:1;
+  uint32_t pwrgd_ps_pwrok:1;
+  uint32_t fm_backup_bios_sel_n:1;
+  uint32_t t32_jtag_det:1;
+  uint32_t bb_bmc_rst_n:1;
+  uint32_t qdf_prsnt_0_n:1;
+  uint32_t qdf_prsnt_1_n:1;
+  uint32_t ejct_det_n:1;
+  uint32_t m2_i2c_mux_rst_n:1;
+  uint32_t bic_remote_srst_n:1;
+  uint32_t bic_db_trst_n:1;
+  uint32_t imc_boot_error:1;
+  uint32_t bic_rdy:1;
+  uint32_t qdf_prochot_n:1;
+  uint32_t pwr_bic_btn_n:1;
+  uint32_t pwr_btn_buf_n:1;
+  uint32_t pmf_reboot_req_n:1;
+  uint32_t bic_bb_i2c_alert:1;
+} bic_rc_gpio_t;
+
 typedef union _bic_gpio_u {
   uint8_t gpio[4];
   bic_gpio_t bits;
 } bic_gpio_u;
+
+typedef union _bic_rc_gpio_u {
+  uint8_t gpio[4];
+  bic_rc_gpio_t bits;
+} bic_rc_gpio_u;
 
 typedef struct _bic_gpio_config_t {
   uint8_t dir:1;

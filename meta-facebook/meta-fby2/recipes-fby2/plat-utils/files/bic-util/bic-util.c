@@ -28,6 +28,7 @@
 #include <pthread.h>
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
+#include <facebook/fby2_sensor.h>
 #include <openbmc/ipmi.h>
 #include <sys/time.h>
 #include <time.h>
@@ -115,6 +116,47 @@ util_get_fw_ver(uint8_t slot_id) {
 static void
 util_get_gpio(uint8_t slot_id) {
   int ret;
+#ifdef CONFIG_FBY2_RC
+  uint8_t i, group, shift, gpio_cnt;
+  uint8_t server_type = 0xFF, gpio[8] = {0};
+  char **gpio_name;
+
+  ret = fby2_get_server_type(slot_id, &server_type);
+  if (ret < 0) {
+    printf("Cannot get server type. 0x%x\n", server_type);
+    return ;
+  }
+
+  // Get GPIO value
+  ret = bic_get_gpio_raw(slot_id, &gpio);
+  if (ret) {
+    printf("util_get_gpio: bic_get_gpio returns %d\n", ret);
+    return;
+  }
+
+  // Choose corresponding GPIO list based on server type
+  switch (server_type) {
+  case SERVER_TYPE_TL:
+    gpio_cnt = gpio_pin_cnt;
+    gpio_name = gpio_pin_name;
+    break;
+  case SERVER_TYPE_RC:
+    gpio_cnt = rc_gpio_pin_cnt;
+    gpio_name = rc_gpio_pin_name;
+    break;
+  default:
+    printf("Cannot find corresponding server type. 0x%x\n", server_type);
+    return ;
+  }
+
+  // Print the gpio index, name and value
+  for(i=0; i<gpio_cnt; i++) {
+    group = i/8;
+    shift = i%8;
+    printf("%d %s: %d\n",i , gpio_name[i], (gpio[group] >> shift) & 0x01);
+  }
+
+#else
   bic_gpio_t gpio = {0};
 
   ret = bic_get_gpio(slot_id, &gpio);
@@ -166,6 +208,7 @@ util_get_gpio(uint8_t slot_id) {
   printf("37 %s: %d\n", gpio_pin_name[37], t->bits.xdp_bic_pwr_debug_n);
   printf("38 %s: %d\n", gpio_pin_name[38], t->bits.fm_bic_jtag_sel_n);
   printf("rsvd: %d\n", t->bits.rsvd);
+#endif
 }
 
 
@@ -190,7 +233,52 @@ util_get_gpio_config(uint8_t slot_id) {
   bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
   char gpio_name[32];
 
+#ifdef CONFIG_FBY2_RC
+  uint8_t server_type = 0xFF, gpio_cnt = 0xFF;
+  char **gpio_name_t;
+  ret = fby2_get_server_type(slot_id, &server_type);
+  if (ret < 0) {
+    printf("Cannot get server type. 0x%x\n", server_type);
+    return ;
+  }
 
+  switch(server_type) {
+  case SERVER_TYPE_TL:
+    gpio_cnt = gpio_pin_cnt;
+    gpio_name_t = gpio_pin_name;
+    break;
+  case SERVER_TYPE_RC:
+    gpio_cnt = rc_gpio_pin_cnt;
+    gpio_name_t = rc_gpio_pin_name;
+    break;
+  default:
+    printf("Cannot find corresponding server type. 0x%x\n", server_type);
+    return ;
+  }
+  
+  // Read configuration of all bits
+  for (i = 0;  i < gpio_cnt; i++) {
+    ret = bic_get_gpio_config(slot_id, i, &gpio_config);
+    if (ret == -1) {
+      continue;
+    }
+    //fby2_get_gpio_name(slot_id, i, gpio_name);
+    printf("gpio_config for pin#%d (%s):\n", i, gpio_name_t[i]);
+    printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
+    printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
+    printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");
+    if (t->bits.trig == 0x0) {
+      printf("Trigger,  Edge: %s\n", "Falling Edge");
+    } else if (t->bits.trig == 0x1) {
+      printf("Trigger,  Edge: %s\n", "Rising Edge");
+    } else if (t->bits.trig == 0x2) {
+      printf("Trigger,  Edge: %s\n", "Both Edges");
+    } else  {
+      printf("Trigger, Edge: %s\n", "Reserved");
+    }
+  }
+
+#else
   // Read configuration of all bits
   for (i = 0;  i < gpio_pin_cnt; i++) {
     ret = bic_get_gpio_config(slot_id, i, &gpio_config);
@@ -212,6 +300,7 @@ util_get_gpio_config(uint8_t slot_id) {
       printf("Trigger, Edge: %s\n", "Reserved");
     }
   }
+#endif
 }
 
 

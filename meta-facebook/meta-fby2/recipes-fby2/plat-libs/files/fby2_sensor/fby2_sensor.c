@@ -33,7 +33,7 @@
 #include <openbmc/obmc-i2c.h>
 #include "fby2_sensor.h"
 #include <openbmc/nvme-mi.h>
-
+ 
 #define LARGEST_DEVICE_NAME 120
 
 #define MEZZ_TEMP_DEVICE "/sys/class/i2c-adapter/i2c-11/11-001f/hwmon/hwmon*"
@@ -557,7 +557,7 @@ fby2_get_server_type(uint8_t fru, uint8_t *type) {
   // Use product ID to identify the server type
   if (id.prod_id[0] == 0x43 && id.prod_id[1] == 0x52) {
     *type = SERVER_TYPE_RC;
-  } else if (id.prod_id[0] == 0x20 && id.prod_id[1] == 0x46) {
+  } else if (id.prod_id[0] == 0x39 && id.prod_id[1] == 0x30) {
     *type = SERVER_TYPE_TL;
   } else {
     *type = SERVER_TYPE_NONE;

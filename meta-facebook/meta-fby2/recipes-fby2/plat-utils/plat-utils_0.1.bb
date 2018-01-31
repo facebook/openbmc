@@ -40,6 +40,8 @@ SRC_URI = "file://ast-functions \
            file://check_slot_type.sh \
            file://setup-platform.sh \
            file://hotservice-reinit.sh \
+           file://check_server_type.sh \
+           file://setup-server-type.sh \
           "
 
 pkgdir = "utils"
@@ -48,7 +50,7 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py fby2_power.sh power_util.py \
-  check_slot_type.sh hotservice-reinit.sh"
+  check_slot_type.sh hotservice-reinit.sh check_server_type.sh"
 
 DEPENDS_append = "update-rc.d-native"
 
@@ -76,6 +78,8 @@ do_install() {
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   install -m 755 setup-sysconfig.sh ${D}${sysconfdir}/init.d/setup-sysconfig.sh
   update-rc.d -r ${D} setup-sysconfig.sh start 60 5 .
+  install -m 755 setup-server-type.sh ${D}${sysconfdir}/init.d/setup-server-type.sh
+  update-rc.d -r ${D} setup-server-type.sh start 66 5 .
   # networking is done after rcS, any start level within rcS
   # for mac fixup should work
   #install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh

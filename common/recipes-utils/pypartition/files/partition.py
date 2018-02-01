@@ -98,8 +98,9 @@ class Partition(object):
             size = '0x???????'
         else:
             size = '0x{:07x}'.format(self.partition_size)
-        return '{}@0x{:07x}({})'.format(
-            size, self.partition_offset, self.name
+        return '{}@0x{:07x}({}) [{:07x} - {:07x}]'.format(
+            size, self.partition_offset, self.name,
+            self.partition_offset, self.partition_offset + self.partition_size
         )
 
     def end(self):
@@ -220,12 +221,12 @@ class LegacyUBootPartition(EnvironmentPartition):
     populates the corresponding property with the first one that the data fits
     inside.
     '''
-    header_format = b'>7I4B32s'
-    header_size = struct.calcsize(header_format)
     header_fields = ['magic', 'header_crc32', 'creation_time', 'data_size',
                      'load_address', 'entry_address', 'data_crc32', 'os',
                      'cpu_architecture', 'image_type', 'compression_type',
                      'name']
+    header_format = b'>7I4B32s'
+    header_size = struct.calcsize(header_format)
     magic = 0x27051956
 
     def initialize(self):
@@ -304,6 +305,65 @@ class DeviceTreePartition(Partition):
     Both the beginning and end of the data region are determined from fields in
     the header. Used for "kernel" and "rootfs" partitions.
     '''
+    header_fields = [
+        'magic', 'total_size', 'structure_block_offset', 'strings_block_offset',
+        'memory_reservation_map_offset', 'version', 'last_compatible_version',
+        'boot_cpu', 'strings_block_size', 'structure_block_size'
+    ]
+    header_format = b'>%dI' % len(header_fields)
+    header_size = struct.calcsize(header_format)
+    magic = 0xd00dfeed
+
     def __init__(self, size, offset, name, images, logger):
         # type: (int, int, str, VirtualCat, logging.Logger) -> None
-        Partition.__init__(self, size, offset, name, images, logger)
+        self.name = name
+        self.partition_size = size
+        self.partition_offset = offset
+        self.valid = True
+
+        raw_header = images.verified_read(self.header_size)
+        parsed_header = dict(zip(self.header_fields, struct.unpack(
+            self.header_format, raw_header
+        )))
+
+        info_strings = []
+        for (key, value) in parsed_header.items():
+            if (
+                key == 'magic' or key.endswith('_size') or
+                key.endswith('_offset')
+            ):
+                value_string = '0x{:08x}'.format(value)
+            else:
+                value_string = str(value)
+            info_strings.append('{}: {}'.format(key, value_string))
+        logger.info(', '.join(info_strings))
+
+        if parsed_header['magic'] != DeviceTreePartition.magic:
+            self.valid = False
+            message = '{} header magic 0x{:08x} != expected 0x{:08x}.'
+            logger.error(message.format(
+                name, parsed_header['magic'], DeviceTreePartition.magic
+            ))
+
+        if parsed_header['total_size'] > size:
+            self.valid = False
+            message = '{} size 0x{:08x} > expected 0x{:08x}.'
+            logger.error(message.format(
+                name, total_size, size
+            ))
+
+        # Skip over memory reservation and structure blocks to strings block.
+        images.seek_within_current_file(
+            parsed_header['strings_block_offset'] - self.header_size
+        )
+        strings = images.verified_read(parsed_header['strings_block_size'])
+        logger.info(' '.join([b.decode() for b in strings.split(b'\x00')]))
+
+        # Go to end of partition.
+        images.seek_within_current_file(
+                size -
+                parsed_header['structure_block_offset'] -
+                parsed_header['structure_block_size']
+        )
+
+        logger.info('{} has a parseable header.'.format(self))

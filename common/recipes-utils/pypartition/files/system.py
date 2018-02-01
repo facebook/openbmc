@@ -23,6 +23,7 @@ from __future__ import division
 
 from virtualcat import ImageFile, MemoryTechnologyDevice, VirtualCat
 from partition import (
+    DeviceTreePartition,
     EnvironmentPartition,
     ExternalChecksumPartition,
     LegacyUBootPartition,
@@ -191,6 +192,10 @@ def get_partitions(images, checksums, logger):
             'rootfs',
             images,
             logger,
+        ))
+    elif next_magic == DeviceTreePartition.magic:
+        partitions.append(DeviceTreePartition(
+            0x1400000, 0x80000, 'fit', images, logger
         ))
     else:
         logging.error('Unrecognized magic 0x{:x} at offset 0x{:x}.'.format(

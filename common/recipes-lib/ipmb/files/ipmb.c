@@ -90,7 +90,7 @@ ipmb_txb()
  */
 void
 lib_ipmb_handle(unsigned char bus_id,
-            unsigned char *request, unsigned char req_len,
+            unsigned char *request, unsigned short req_len,
             unsigned char *response, unsigned char *res_len) {
 
   int s, t, len;

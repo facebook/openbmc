@@ -280,7 +280,7 @@ typedef union _bic_config_u {
   bic_config_t bits;
 } bic_config_u;
 
-int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *id);
 

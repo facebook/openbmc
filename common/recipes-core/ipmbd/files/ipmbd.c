@@ -192,7 +192,7 @@ i2c_open(uint8_t bus_num) {
 }
 
 static int
-i2c_write(int fd, uint8_t *buf, uint8_t len) {
+i2c_write(int fd, uint8_t *buf, uint16_t len) {
   struct i2c_rdwr_ioctl_data data;
   struct i2c_msg msg;
   int rc;
@@ -609,7 +609,7 @@ cleanup:
  * Function to handle all IPMB requests
  */
 static void
-ipmb_handle (int fd, unsigned char *request, unsigned char req_len,
+ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
        unsigned char *response, unsigned char *res_len)
 {
   ipmb_req_t *req = (ipmb_req_t *) request;

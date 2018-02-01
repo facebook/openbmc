@@ -229,13 +229,13 @@ get_ipmb_bus_id(uint8_t slot_id) {
 
 int
 bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
-                  uint8_t *txbuf, uint8_t txlen,
+                  uint8_t *txbuf, uint16_t txlen,
                   uint8_t *rxbuf, uint8_t *rxlen) {
   ipmb_req_t *req;
   ipmb_res_t *res;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t tlen = 0;
+  uint16_t tlen = 0;
   uint8_t rlen = 0;
   int count = 0;
   int i = 0;

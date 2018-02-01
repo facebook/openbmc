@@ -595,39 +595,6 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_VR_PCH_P1V05_CURR,
   MB_SENSOR_VR_PCH_P1V05_VOLT,
   MB_SENSOR_VR_PCH_P1V05_POWER,
-  MB_SENSOR_C2_NVME_CTEMP,
-  MB_SENSOR_C3_NVME_CTEMP,
-  MB_SENSOR_C4_NVME_CTEMP,
-  MB_SENSOR_C2_AVA_FTEMP,
-  MB_SENSOR_C2_AVA_RTEMP,
-  MB_SENSOR_C2_1_NVME_CTEMP,
-  MB_SENSOR_C2_2_NVME_CTEMP,
-  MB_SENSOR_C2_3_NVME_CTEMP,
-  MB_SENSOR_C2_4_NVME_CTEMP,
-  MB_SENSOR_C3_AVA_FTEMP,
-  MB_SENSOR_C3_AVA_RTEMP,
-  MB_SENSOR_C3_1_NVME_CTEMP,
-  MB_SENSOR_C3_2_NVME_CTEMP,
-  MB_SENSOR_C3_3_NVME_CTEMP,
-  MB_SENSOR_C3_4_NVME_CTEMP,
-  MB_SENSOR_C4_AVA_FTEMP,
-  MB_SENSOR_C4_AVA_RTEMP,
-  MB_SENSOR_C4_1_NVME_CTEMP,
-  MB_SENSOR_C4_2_NVME_CTEMP,
-  MB_SENSOR_C4_3_NVME_CTEMP,
-  MB_SENSOR_C4_4_NVME_CTEMP,
-  MB_SENSOR_C2_P12V_INA230_VOL,
-  MB_SENSOR_C2_P12V_INA230_CURR,
-  MB_SENSOR_C2_P12V_INA230_PWR,
-  MB_SENSOR_C3_P12V_INA230_VOL,
-  MB_SENSOR_C3_P12V_INA230_CURR,
-  MB_SENSOR_C3_P12V_INA230_PWR,
-  MB_SENSOR_C4_P12V_INA230_VOL,
-  MB_SENSOR_C4_P12V_INA230_CURR,
-  MB_SENSOR_C4_P12V_INA230_PWR,
-  MB_SENSOR_CONN_P12V_INA230_VOL,
-  MB_SENSOR_CONN_P12V_INA230_CURR,
-  MB_SENSOR_CONN_P12V_INA230_PWR,
 };
 
 // List of NIC sensors to be monitored
@@ -641,7 +608,7 @@ const uint8_t mb_discrete_sensor_list[] = {
   MB_SENSOR_MEMORY_LOOP_FAIL,
   MB_SENSOR_PROCESSOR_FAIL,
 };
-/*
+
 const uint8_t riser_slot2_sensor_list[] = {
   MB_SENSOR_C2_AVA_FTEMP,
   MB_SENSOR_C2_AVA_RTEMP,
@@ -680,20 +647,20 @@ const uint8_t riser_slot4_sensor_list[] = {
   MB_SENSOR_C4_P12V_INA230_CURR,
   MB_SENSOR_C4_P12V_INA230_PWR,
 };
-*/
+
 float mb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-//float riser_slot2_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-//float riser_slot3_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-//float riser_slot4_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float riser_slot2_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float riser_slot3_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float riser_slot4_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
-//size_t riser_slot2_sensor_cnt = sizeof(riser_slot2_sensor_list)/sizeof(uint8_t);
-//size_t riser_slot3_sensor_cnt = sizeof(riser_slot3_sensor_list)/sizeof(uint8_t);
-//size_t riser_slot4_sensor_cnt = sizeof(riser_slot4_sensor_list)/sizeof(uint8_t);
+size_t riser_slot2_sensor_cnt = sizeof(riser_slot2_sensor_list)/sizeof(uint8_t);
+size_t riser_slot3_sensor_cnt = sizeof(riser_slot3_sensor_list)/sizeof(uint8_t);
+size_t riser_slot4_sensor_cnt = sizeof(riser_slot4_sensor_list)/sizeof(uint8_t);
 
 char g_sys_guid[GUID_SIZE] = {0};
 char g_dev_guid[GUID_SIZE] = {0};
@@ -965,40 +932,40 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][LCR_THRESH] = 0.94;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][UCR_THRESH] = 1.15;
 
-  mb_sensor_threshold[MB_SENSOR_C2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_NVME_CTEMP][UCR_THRESH] = 75;
 
-  mb_sensor_threshold[MB_SENSOR_C2_AVA_FTEMP][UCR_THRESH] = 60;
-  mb_sensor_threshold[MB_SENSOR_C2_AVA_RTEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_C2_1_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_4_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_AVA_FTEMP][UCR_THRESH] = 60;
-  mb_sensor_threshold[MB_SENSOR_C3_AVA_RTEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_C3_1_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_4_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_AVA_FTEMP][UCR_THRESH] = 60;
-  mb_sensor_threshold[MB_SENSOR_C4_AVA_RTEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_C4_1_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_4_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][UCR_THRESH] = 12.96;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][LCR_THRESH] = 11.04;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_CURR][UCR_THRESH] = 5.5;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_PWR][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][UCR_THRESH] = 12.96;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][LCR_THRESH] = 11.04;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_CURR][UCR_THRESH] = 5.5;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_PWR][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][UCR_THRESH] = 12.96;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][LCR_THRESH] = 11.04;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_CURR][UCR_THRESH] = 5.5;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_PWR][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_AVA_FTEMP][UCR_THRESH] = 60;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_AVA_RTEMP][UCR_THRESH] = 80;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_1_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_AVA_FTEMP][UCR_THRESH] = 60;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_AVA_RTEMP][UCR_THRESH] = 80;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_1_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_AVA_FTEMP][UCR_THRESH] = 60;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_AVA_RTEMP][UCR_THRESH] = 80;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_1_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_PWR][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_PWR][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_PWR][UCR_THRESH] = 75;
   mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_VOL][UCR_THRESH] = 12.96;
   mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_VOL][LCR_THRESH] = 11.04;
   mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_CURR][UCR_THRESH] = 20;
@@ -3746,7 +3713,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) nic_sensor_list;
     *cnt = nic_sensor_cnt;
     break;
-/*
   case FRU_RISER_SLOT2:
     *sensor_list = (uint8_t *) riser_slot2_sensor_list;
     *cnt = riser_slot2_sensor_cnt;
@@ -3759,7 +3725,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) riser_slot4_sensor_list;
     *cnt = riser_slot4_sensor_cnt;
     break;
-*/
   default:
     if (fru > MAX_NUM_FRUS)
       return -1;
@@ -3854,19 +3819,18 @@ int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  //char fru_name[32];
+  char fru_name[32];
   int ret;
   static uint8_t poweron_10s_flag = 0;
   bool server_off;
 
-  //pal_get_fru_name(fru, fru_name);
-  //sprintf(key, "%s_sensor%d", fru_name, sensor_num);
+  pal_get_fru_name(fru, fru_name);
+  sprintf(key, "%s_sensor%d", fru_name, sensor_num);
   switch(fru) {
   case FRU_MB:
-    sprintf(key, "mb_sensor%d", sensor_num);
-  //case FRU_RISER_SLOT2:
-  //case FRU_RISER_SLOT3:
-  //case FRU_RISER_SLOT4:
+  case FRU_RISER_SLOT2:
+  case FRU_RISER_SLOT3:
+  case FRU_RISER_SLOT4:
     server_off = is_server_off();
     if (server_off) {
       poweron_10s_flag = 0;
@@ -4339,7 +4303,6 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_NIC:
     *val = nic_sensor_threshold[sensor_num][thresh];
     break;
-/*
   case FRU_RISER_SLOT2:
     *val = riser_slot2_sensor_threshold[sensor_num][thresh];
     break;
@@ -4349,7 +4312,6 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_RISER_SLOT4:
     *val = riser_slot4_sensor_threshold[sensor_num][thresh];
     break;
-*/
   default:
     return -1;
   }
@@ -4360,9 +4322,9 @@ int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   switch(fru) {
   case FRU_MB:
-  //case FRU_RISER_SLOT2:
-  //case FRU_RISER_SLOT3:
-  //case FRU_RISER_SLOT4:
+  case FRU_RISER_SLOT2:
+  case FRU_RISER_SLOT3:
+  case FRU_RISER_SLOT4:
     switch(sensor_num) {
     case MB_SENSOR_INLET_TEMP:
       sprintf(name, "MB_INLET_TEMP");
@@ -4733,9 +4695,9 @@ int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   switch(fru) {
   case FRU_MB:
-  //case FRU_RISER_SLOT2:
-  //case FRU_RISER_SLOT3:
-  //case FRU_RISER_SLOT4:
+  case FRU_RISER_SLOT2:
+  case FRU_RISER_SLOT3:
+  case FRU_RISER_SLOT4:
     switch(sensor_num) {
     case MB_SENSOR_INLET_TEMP:
     case MB_SENSOR_OUTLET_TEMP:

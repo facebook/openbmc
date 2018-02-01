@@ -5,7 +5,7 @@ HOMEPAGE = "http://flashrom.org"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 DEPENDS = "pciutils"
 
-SRC_URI = "http://download.flashrom.org/releases/flashrom-${PV}.tar.bz2 \
+SRC_URI = "https://download.flashrom.org/releases/flashrom-${PV}.tar.bz2 \
            file://flashrom-${PV}/make.local \
            file://01-include-make-local.patch \
           "

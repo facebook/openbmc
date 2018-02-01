@@ -104,6 +104,7 @@
 #define SPB_REV_FILE "/tmp/spb_rev"
 #define SPB_REV_PVT 3
 
+#define IMC_VER_SIZE 8
 
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
@@ -4628,6 +4629,26 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 
   *data++ = pcie_conf;
   *res_len = data - res_data;
+  return completion_code;
+}
+
+int pal_set_imc_version(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+
+  uint8_t completion_code = CC_SUCCESS;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+  int i;
+  *res_len = 0;
+  sprintf(key, "slot%d_imc_ver", (int)slot);
+  for (i = 0; i < IMC_VER_SIZE; i++) {
+    sprintf(tstr, "%x", req_data[i]);
+    strcat(str, tstr);
+  }
+
+  if(kv_set(key, str))
+    completion_code = CC_INVALID_PARAM;
+
   return completion_code;
 }
 

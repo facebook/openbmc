@@ -76,6 +76,7 @@ extern const uint8_t nic_sensor_list[];
 enum
 {
   FOUND_AVA_DEVICE = 0x1,
+  FOUND_RETIMER_DEVICE = 0x2,
 };
 
 enum {
@@ -402,6 +403,7 @@ bool pal_is_BBV_prsnt();
 int pal_CPU_error_num_chk(void);
 void pal_second_crashdump_chk(void);
 int pal_mmap (uint32_t base, uint8_t offset, int option, uint32_t para);
+int pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr);
 int pal_uart_switch_for_led_ctrl (void);
 int pal_riser_mux_switch (uint8_t riser_slot);
 int pal_riser_mux_release (void);

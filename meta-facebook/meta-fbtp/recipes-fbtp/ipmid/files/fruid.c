@@ -35,6 +35,7 @@
 #include "fruid.h"
 #include <openbmc/pal.h>
 
+#define EEPROM_RETIMER "/sys/devices/platform/ast-i2c.3/i2c-3/3-0055/eeprom"
 #define EEPROM_RISER     "/sys/devices/platform/ast-i2c.1/i2c-1/1-0050/eeprom"
 #define EEPROM_NIC      "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"
 #define EEPROM_MB      "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
@@ -61,41 +62,42 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   ssize_t bytes_rd, bytes_wr;
 
   errno = 0;
-
+  
   if (access(eeprom_file, F_OK) != -1) {
 
     eeprom = open(eeprom_file, O_RDONLY);
     if (eeprom == -1) {
-      syslog(LOG_ERR, "copy_eeprom_to_bin: unable to open the %s file: %s",
-          eeprom_file, strerror(errno));
+      syslog(LOG_ERR, "%s: unable to open the %s file: %s",
+          __func__, eeprom_file, strerror(errno));
       return errno;
     }
 
     bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
     if (bin == -1) {
-      syslog(LOG_ERR, "copy_eeprom_to_bin: unable to create %s file: %s",
-          bin_file, strerror(errno));
+      syslog(LOG_ERR, "%s: unable to create %s file: %s",
+         __func__, bin_file, strerror(errno));
       return errno;
     }
 
     bytes_rd = read(eeprom, tmp, FRUID_SIZE);
-    if (bytes_rd != FRUID_SIZE) {
-      syslog(LOG_ERR, "copy_eeprom_to_bin: write to %s file failed: %s",
-          eeprom_file, strerror(errno));
+    if (bytes_rd > FRUID_SIZE) {
+      syslog(LOG_ERR, "%s: read %s file failed: %s",
+          __func__, eeprom_file, strerror(errno));
+      syslog(LOG_ERR, "%s: Need to less than or equal to %d bytes", __func__, FRUID_SIZE);
       return errno;
     }
 
     bytes_wr = write(bin, tmp, bytes_rd);
     if (bytes_wr != bytes_rd) {
-      syslog(LOG_ERR, "copy_eeprom_to_bin: write to %s file failed: %s",
-          bin_file, strerror(errno));
+      syslog(LOG_ERR, "%s: write to %s file failed: %s",
+          __func__, bin_file, strerror(errno));
       return errno;
     }
 
     close(bin);
     close(eeprom);
   }
-
+  
   return 0;
 }
 
@@ -111,10 +113,17 @@ int plat_fruid_init(void) {
   uint8_t device_addr = 0;
   uint8_t device_type = 0;
   char path[64]={0};
+
   enum
   {
     TWO_SLOT_RISER = 0x2,
     THREE_SLOT_RISER = 0x3,
+  };
+
+  enum
+  {
+    SMBUS1 = 0x1,
+    SMBUS3 = 0x3,
   };
 
   ret = pal_get_slot_cfg_id(&slot_cfg);
@@ -137,20 +146,47 @@ int plat_fruid_init(void) {
         sprintf(device_name, "24c64");
         device_addr = 0x50;
       }
+      else if ( FOUND_RETIMER_DEVICE == device_type )
+      {
+        bus = 0x3;
+        sprintf(device_name, "24c02");
+        device_addr = 0x55;
+      }
 
+      sprintf(path, BIN_RISER, (riser_slot+2) );//the output file name. The riser slot id is start from 2
+
+      //add the device
       pal_add_i2c_device(bus, device_name, device_addr);
 
-      //dump the binary. The riser slot id is start from 2
-      sprintf(path, BIN_RISER, (riser_slot+2) );
+      if ( bus == SMBUS1 )
+      {
+        if ( pal_riser_mux_switch( riser_slot ) )
+          syslog(LOG_WARNING, "[%s] Switch Riser Card MUX Failed",__func__);
 
-      if ( pal_riser_mux_switch( riser_slot))
-        syslog(LOG_WARNING, "[%s] Switch Riser Card MUX Failed",__func__);
+        if ( copy_eeprom_to_bin( EEPROM_RISER, path) )
+          syslog(LOG_WARNING, "[%s] Copy Riser Card EEPROM Failed",__func__);
 
-      if ( copy_eeprom_to_bin( EEPROM_RISER, path))
-        syslog(LOG_WARNING, "[%s]Copy Riser Card EEPROM Failed",__func__);
+        if ( pal_riser_mux_release() )
+          syslog(LOG_WARNING, "[%s] Release Riser Card MUX Failed",__func__);
+      }
+      else if ( bus == SMBUS3 )
+      {
+        ret = pal_control_mux_to_target_ch( riser_slot, bus/*retimer fru is on bus3*/, 0xe2/*mux address*/);
+        if ( ret < 0 )
+        {
+          syslog(LOG_WARNING,"[%s] Cannot Switch MUX on bus %d. ", __func__, bus);
+        }
 
-      if ( pal_riser_mux_release())
-        syslog(LOG_WARNING, "[%s] Release Riser Card MUX Failed",__func__);
+        if ( copy_eeprom_to_bin( EEPROM_RETIMER, path) )
+        {
+          syslog(LOG_WARNING, "[%s] Copy Retimer Card EEPROM Failed",__func__);
+        }
+      }
+      else
+      {
+        syslog(LOG_WARNING, "[%s] unexpected error. bus#%d, device#%s, device_addr#%x",
+                            __func__, bus, device_name, device_addr);
+      }
 
       //del the device
       pal_del_i2c_device(bus, device_addr);

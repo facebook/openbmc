@@ -125,6 +125,7 @@
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
 #define EEPROM_RISER     "/sys/devices/platform/ast-i2c.1/i2c-1/1-0050/eeprom"
+#define EEPROM_RETIMER   "/sys/devices/platform/ast-i2c.3/i2c-3/3-0055/eeprom"
 
 #define MB_INLET_TEMP_DEVICE "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*"
 #define MB_OUTLET_TEMP_DEVICE "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*"
@@ -202,6 +203,64 @@ struct pal_key_cfg {
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
+
+//control mux based on the bus and channel
+int
+pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr)
+{
+  int ret;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) 
+  {
+    syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  } 
+ 
+  if (channel < 4)
+  {
+    tbuf[0] = 0x04 + channel;
+  }
+  else
+  {
+    tbuf[0] = 0x00; // close all channels
+  }
+
+  retry = MAX_READ_RETRY;
+  while ( retry > 0 ) 
+  {
+    ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 1, rbuf, 0);
+    if ( PAL_EOK == ret )
+    {
+      break;
+    }
+    
+    msleep(50);
+    retry--;
+  }
+
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] Cannot switch the mux on bus %d", __func__, bus);
+    goto error_exit;
+  }
+
+error_exit:
+
+  if ( fd > 0 )
+  {
+    close(fd);
+  }
+
+  return ret;
+}
 
 static int
 pal_control_mux(int fd, uint8_t addr, uint8_t channel) {
@@ -3773,6 +3832,14 @@ pal_fruid_write(uint8_t fru, char *path)
         sprintf(device_name, "24c64");
         sprintf(command, "dd if=%s of=%s bs=%d count=1", path, EEPROM_RISER, fru_size);
       }
+      else if ( true == pal_is_retimer_card( acutal_riser_slot ) )
+      {
+        device_type = FOUND_RETIMER_DEVICE;
+        device_addr = 0x55;
+        bus = 0x3;
+        sprintf(device_name, "24c02");
+        sprintf(command, "dd if=%s of=%s bs=%d count=1", path, EEPROM_RETIMER, fru_size);
+      }
       else
       {
         //if there is no riser card, return
@@ -3808,6 +3875,24 @@ pal_fruid_write(uint8_t fru, char *path)
         pal_del_i2c_device(bus, device_addr);
         mux_release(&riser_mux);
       }
+    break;
+   
+    case FOUND_RETIMER_DEVICE:
+      ret = pal_control_mux_to_target_ch(acutal_riser_slot, 0x3/*bus number*/, 0xe2/*mux address*/);
+      if ( PAL_EOK == ret )
+      {
+        pal_add_i2c_device(bus, device_name, device_addr);
+        system(command);
+        ret = pal_compare_fru_data((char*)EEPROM_RETIMER, path, fru_size);
+        if ( ret < 0 )
+        {
+          ret = PAL_ENOTSUP;
+          system("i2cdetect -y -q 3 > /tmp/RETIMER_FRU_FAIL.log");
+          syslog(LOG_ERR, "[%s] RETIMER FRU Write Fail", __func__);       
+        }
+        pal_del_i2c_device(bus, device_addr);
+      }
+      ret = PAL_EOK; 
     break;
 
   }
@@ -6678,31 +6763,49 @@ bool pal_is_retimer_card ( uint8_t riser_slot )
   char fn[32];
   bool ret;
   uint8_t re_timer_present_chk_addr = 0x82;
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tcount=0, rcount;
+  uint8_t tbuf = 0x0;
+  uint8_t rbuf = 0x0;
+  uint8_t tcount, rcount;
   int  val;
+
+  // control I2C multiplexer to target channel.
+  val = mux_lock(&riser_mux, riser_slot, 2);
+  if ( val < 0 ) 
+  {
+    syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
+    ret = false;
+    goto error_exit;
+  }
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
   fd = open(fn, O_RDWR);
-  if ( fd < 0 ) {
+  if ( fd < 0 )
+  {
     ret = false;
-    goto error_exit;
-    }
+    goto release_mux_and_exit;
+  }
 
   //Send I2C to re-timer
+  tcount = 1;
   rcount = 1;
-  val = i2c_rdwr_msg_transfer(fd, re_timer_present_chk_addr, tbuf, tcount, rbuf, rcount);
-  if( val < 0 ) {
+  val = i2c_rdwr_msg_transfer(fd, re_timer_present_chk_addr, &tbuf, tcount, &rbuf, rcount);
+  if( val < 0 ) 
+  {
     ret = false;
-      goto error_exit;
+    goto release_mux_and_exit;
   }
+
   ret = true;
 
+release_mux_and_exit:
+  mux_release(&riser_mux);
+
 error_exit:
-  if (fd > 0) {
+  if (fd > 0) 
+  {
     close(fd);
   }
+
   return ret;
 }
 
@@ -6769,13 +6872,18 @@ int pal_riser_mux_release(void)
 }
 
 int
-pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type )
+pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type)
 {
   int ret = PAL_ENOTSUP;
 
-  if ( pal_is_ava_card(riser_slot) )
+  if ( true == pal_is_ava_card(riser_slot) )
   {
     *device_type = FOUND_AVA_DEVICE;
+    ret = PAL_EOK;
+  }
+  else if ( true == pal_is_retimer_card(riser_slot) )
+  {
+    *device_type = FOUND_RETIMER_DEVICE;
     ret = PAL_EOK;
   }
   else

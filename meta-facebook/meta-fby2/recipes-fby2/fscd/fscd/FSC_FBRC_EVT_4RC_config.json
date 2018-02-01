@@ -1,0 +1,106 @@
+{
+  "version": "fbrc-evt-r01",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,  
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "sensor_valid_check": {
+    "soc": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "min_rpm": 800,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 25, 35 ],
+        [ 27, 37 ],
+        [ 29, 39 ],
+        [ 31, 41 ],
+        [ 33, 43 ],
+        [ 35, 45 ],
+        [ 37, 47 ],
+        [ 39, 49 ],
+        [ 41, 51 ],
+        [ 43, 53 ],
+        [ 45, 55 ]
+      ]
+    },
+    "linear_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 40, 35 ],
+        [ 44, 40 ],
+        [ 48, 45 ],
+        [ 52, 50 ],
+        [ 56, 55 ],
+        [ 60, 60 ],
+        [ 64, 65 ],
+        [ 68, 70 ],
+        [ 72, 75 ],
+        [ 76, 80 ],
+        [ 80, 85 ],
+        [ 84, 90 ],
+        [ 88, 95 ],
+        [ 92, 100]
+      ]
+    },
+    "linear_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [80, 35],
+        [83, 35],
+        [86, 45],
+        [89, 55],
+        [92, 65],
+        [95, 75]
+      ]
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 1"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0, 1],
+      "expr_file": "FSC_FBRC_EVT_4RC_zone1.fsc"
+    }
+  }
+}

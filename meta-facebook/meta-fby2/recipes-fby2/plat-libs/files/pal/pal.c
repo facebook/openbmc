@@ -3001,6 +3001,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     retry--;
   }
   if(ret < 0) {
+    if ((ret == EER_READ_NA) && snr_chk->val_valid) {
+      snr_chk->val_valid = 0;
+      return -1;
+    }
     snr_chk->val_valid = 0;
 
     if (ret == EER_READ_NA)

@@ -949,21 +949,17 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   }
 #endif
 
-  ret = bic_read_sensor(fru, sensor_num, &sensor);
+  // accuracy sensor VCCIN_VR_POUT, INA230_POWER and SOC_PACKAGE_PWR
+  if (is_accuracy_sensor) {
+    ret = bic_read_accuracy_sensor(fru, sensor_num, &acsensor);
+    sensor.flags = acsensor.flags;
+  } else {
+    ret = bic_read_sensor(fru, sensor_num, &sensor);
+  }
   if (ret) {
     return ret;
   }
   msleep(1);  // a little delay to reduce CPU utilization
-
-  // accuracy sensor VCCIN_VR_POUT, INA230_POWER and SOC_PACKAGE_PWR
-  if (is_accuracy_sensor) {
-    ret = bic_read_accuracy_sensor(fru, sensor_num, &acsensor);
-    if (ret) {
-      return ret;
-    }
-    msleep(1);  // a little delay to reduce CPU utilization
-    sensor.flags = acsensor.flags;
-  }
 
   if (sensor.flags & BIC_SENSOR_READ_NA) {
 #ifdef DEBUG

@@ -313,6 +313,83 @@ class DeviceTreePartition(Partition):
     header_format = b'>%dI' % len(header_fields)
     header_size = struct.calcsize(header_format)
     magic = 0xd00dfeed
+    FDT_BEGIN_NODE = 1
+    FDT_END_NODE = 2
+    FDT_PROP = 3
+    FDT_NOP = 4
+    FDT_END = 9
+
+    @staticmethod
+    def next_data(images, length, data_type):
+        # type: (VirtualCat, int, str) -> List[Any]
+        fmt = b'>%d%s' % (length // struct.calcsize(data_type), data_type)
+        assert(length == struct.calcsize(fmt))
+        start = images.open_file.tell()
+        data = struct.unpack(fmt, images.verified_read(length))
+        end = images.open_file.tell()
+        while images.open_file.tell() % 4 != 0:
+            assert(images.verified_read(1) == b'\x00')
+        return list(data)
+
+    @staticmethod
+    def next_datum(images, length, datum_type):
+        data = DeviceTreePartition.next_data(images, length, datum_type)
+        assert(len(data) == 1)
+        return data[0]
+
+    @staticmethod
+    def dict_from_node(images, strings, logger):
+        # type: (VirtualCat, bytes, logging.Logger) -> Dict[bytes, Any]]
+        node_name = ''
+        tree = {}
+        while True:
+            token = DeviceTreePartition.next_datum(images, 4, b'I')
+
+            if token == DeviceTreePartition.FDT_BEGIN_NODE:
+                node_name = DeviceTreePartition.next_datum(images, 4, b's')
+                while node_name.find(b'\x00') < 0:
+                    node_name += DeviceTreePartition.next_datum(images, 4, b's')
+                node_name = node_name.rstrip(b'\x00')
+                tree[node_name] = DeviceTreePartition.dict_from_node(
+                    images, strings, logger
+                )
+            elif token == DeviceTreePartition.FDT_END_NODE:
+                return tree
+            elif token == DeviceTreePartition.FDT_PROP:
+                property_name, value = DeviceTreePartition.property_name_value(
+                    images, strings, logger
+                )
+                tree[property_name] = value
+            elif token == DeviceTreePartition.FDT_NOP:
+                pass
+            elif token == DeviceTreePartition.FDT_END:
+                raise InvalidPartitionException('FDT_END before FDT_END_NODE')
+            else:
+                raise InvalidPartitionException('Unsupported token {}'.format(
+                    token
+                    ))
+
+    @staticmethod
+    def property_name_value(images, strings, logger):
+        # type: (VirtualCat, bytes, logging.Logger) -> (bytes, bytes)
+        length = DeviceTreePartition.next_datum(images, 4, b'I')
+        offset = DeviceTreePartition.next_datum(images, 4, b'I')
+        name = strings[offset:strings.index(b'\x00', offset)]
+        if name == b'timestamp':
+            value = date.fromtimestamp(DeviceTreePartition.next_datum(images, length, b'I')).isoformat()
+        elif name in [b'#address-cells', b'load', b'entry']:
+            value = b'0x%x' % DeviceTreePartition.next_datum(images, length, b'I')
+        elif name == b'data':
+            sha256sum = hashlib.sha256()
+            images.read_with_callback(length, sha256sum.update)
+            value = sha256sum.hexdigest()
+        elif name == b'value':
+            value = b''.join([b'%08x' % datum for datum in DeviceTreePartition.next_data(images, length, b'I')])
+        else:
+            if name not in [b'description', b'type', b'arch', b'os', b'compression', b'algo', b'default', b'kernel', b'ramdisk', b'key-name-hint', b'sign-images']:
+                logger.warning('Attempting to decode unrecognized property "{}" as byte-string.'.format(name.decode()))
+            value = DeviceTreePartition.next_datum(images, length, b's').rstrip(b'\x00')
+        return (name, value)
 
     def __init__(self, size, offset, name, images, logger):
         # type: (int, int, str, VirtualCat, logging.Logger) -> None
@@ -336,7 +413,6 @@ class DeviceTreePartition(Partition):
             else:
                 value_string = str(value)
             info_strings.append('{}: {}'.format(key, value_string))
-        logger.info(', '.join(info_strings))
 
         if parsed_header['magic'] != DeviceTreePartition.magic:
             self.valid = False
@@ -359,6 +435,39 @@ class DeviceTreePartition(Partition):
         strings = images.verified_read(parsed_header['strings_block_size'])
         logger.info(' '.join([b.decode() for b in strings.split(b'\x00')]))
 
+        # Now go back to structure block.
+        distance = (
+            parsed_header['structure_block_offset'] -
+            parsed_header['strings_block_offset'] -
+            parsed_header['strings_block_size']
+        )
+        images.seek_within_current_file(distance)
+
+        null = b'\x00\x00\x00\x00'
+        if (
+            DeviceTreePartition.next_datum(images, 4, b'I') != 1 or
+            DeviceTreePartition.next_datum(images, 4, b's') != null
+        ):
+            raise InvalidPartitionException(
+                'Problem with first FDT_BEGIN_NODE.'
+            )
+
+        tree = DeviceTreePartition.dict_from_node(images, strings, logger)
+        logger.info(tree)
+
+        if DeviceTreePartition.next_datum(images, 4, b'I') != 9:
+            raise InvalidPartitionException('Problem with FDT_END.')
+
+        for name, properties in tree[b'images'].items():
+            assert(properties[b'hash@1'][b'algo'] == b'sha256')
+            expected = properties[b'hash@1'][b'value'].decode()
+            if properties[b'data'] != expected:
+                self.valid = False
+                logger.error('{} {} {} != {}.'.format(
+                    name, properties[b'hash@1'][b'algo'], properties[b'data'],
+                    expected
+                ))
+
         # Go to end of partition.
         images.seek_within_current_file(
                 size -
@@ -366,4 +475,4 @@ class DeviceTreePartition(Partition):
                 parsed_header['structure_block_size']
         )
 
-        logger.info('{} has a parseable header.'.format(self))
+        logger.info('{} has valid checksums.'.format(self))

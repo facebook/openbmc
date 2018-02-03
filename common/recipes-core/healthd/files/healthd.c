@@ -49,6 +49,7 @@
 #define PAGE_SIZE              0x1000
 #define MIN_THRESHOLD          60.0
 #define MAX_THRESHOLD          95.0
+#define VERSION_HISTORY_COUNT  (4)
 
 struct i2c_bus_s {
   uint32_t offset;
@@ -1234,6 +1235,65 @@ static int log_count(const char *str)
   return ret;
 }
 
+static int get_curr_version(char *vers)
+{
+  FILE *fp = fopen("/etc/issue", "r");
+  int ret = -1;
+  if (fp) {
+    if(fscanf(fp, "OpenBMC Release %s\n", vers) == 1) {
+      ret = 0;
+    }
+    fclose(fp);
+  }
+  return ret;
+}
+
+static void store_curr_version(void)
+{
+  char versions_raw[MAX_VALUE_LEN] = {0};
+  char versions[VERSION_HISTORY_COUNT][MAX_VALUE_LEN] = {{0}};
+  char curr_version[MAX_VALUE_LEN] = {0};
+  char *saveptr = NULL, *vers;
+  size_t num_vers = 0, i;
+
+  if (get_curr_version(curr_version)) {
+    syslog(LOG_ERR, "Getting version failed!\n");
+    return;
+  }
+
+  if (0 != kv_get("image_versions", versions_raw)) {
+    kv_set("image_versions", curr_version);
+    return;
+  }
+  for (vers = strtok_r(versions_raw, ",", &saveptr), num_vers = 0;
+      vers != NULL;
+      vers = strtok_r(NULL, ",", &saveptr), num_vers++) {
+    strncpy(versions[num_vers], vers, MAX_VALUE_LEN);
+  }
+  if (!strcmp(versions[num_vers - 1], curr_version)) {
+    /* Current version is the same as the last stored
+     * one */
+    return;
+  }
+
+  if (num_vers >= VERSION_HISTORY_COUNT) {
+    for (i = 1; i < num_vers; i++) {
+      strcpy(versions[i - 1], versions[i]);
+    }
+    num_vers--;
+  }
+  strcpy(versions[num_vers], curr_version);
+  num_vers++;
+  strcpy(versions_raw, versions[0]);
+  for (i = 1; i < num_vers; i++) {
+    strcat(versions_raw, ",");
+    strcat(versions_raw, versions[i]);
+  }
+  if (kv_set("image_versions", versions_raw)) {
+    syslog(LOG_ERR, "Setting image version failed");
+  }
+}
+
 /* Called when we have booted into the golden image
  * because of verified boot failure */
 static void check_vboot_recovery(uint8_t error_type, uint8_t error_code)
@@ -1282,6 +1342,7 @@ static void check_vboot_main(uint8_t error_type, uint8_t error_code)
       /* Do not deassert again on reboot */
       kv_set("vboot_error", "(0,0)");
     }
+    store_curr_version();
   }
 }
 
@@ -1341,6 +1402,10 @@ main(int argc, char **argv) {
 
   if (vboot_state_check) {
     check_vboot_state();
+    /* curr version is stored only when vboot is
+     * successful */
+  } else {
+    store_curr_version();
   }
 
 // For current platforms, we are using WDT from either fand or fscd

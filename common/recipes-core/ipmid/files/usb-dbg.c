@@ -143,7 +143,7 @@ static int frame_append (struct frame *self, char *string, int indent)
 // return 0 on seccuess
 static int frame_insert (struct frame *self, char *string, int indent)
 {
-  const size_t buf_size = 64;
+  const size_t buf_size = 128;
   char buf[buf_size];
   char *ptr;
   int ret;

@@ -18,7 +18,10 @@ int MeComponent::print_version() {
       printf("%s Version: NA\n",target_name);
     }
     else {
-      printf("%s Version: %x.%x.%x.%x%x\n",target_name, ver[0], ver[1], ver[2], ver[3], ver[4]);
+      if(!strcmp((const char*)target_name, "ME"))
+        printf("%s Version: %x.%x.%x.%x%x\n",target_name, ver[0], ver[1], ver[2], ver[3], ver[4]);
+      else if(!strcmp((const char*)target_name, "IMC"))
+        printf("%s Version: IMC.DF.%x.%x.%x-%x%x%x%x%x\n",target_name, ver[0], ver[1], ver[2], ver[3], ver[4], ver[5], ver[6], ver[7]);
     }
   } catch(string err) {
     printf("%s Version: NA (%s)\n",target_name, err.c_str());

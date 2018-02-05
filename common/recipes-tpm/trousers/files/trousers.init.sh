@@ -30,14 +30,16 @@ case "${1}" in
     # If TPM chip has not been discovered, probe the chip here
 		if [ ! -e /dev/tpm* ]
 		then
-      # First, pulse reset TPM chip
-      echo 0 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_lpc_rst_n
-      echo 0 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_spi_rst_n
-      sleep 1
+      # Pulse resetting TPM can sometimes (rarely) cause 
+      # COMe CPU to hang, if the reset sequence is performed while
+      # X86 CPU (BIOS or Kernel) is talking to TPM. So we don't
+      # pulse reset TPM here, but just turn it "on". (active low signal)
       echo 1 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_lpc_rst_n
       echo 1 > /sys/bus/i2c/drivers/syscpld/12-0031/tpm_spi_rst_n
-      # Secondly, wait for the TPM chip to stabilize
-      sleep 5
+      # Depending on the previous state, TPM might have been in reset, 
+      # so we give it enough time after waking up, so that its crypto 
+      # stuff will initialize, and the chip becomes ready to access.
+      sleep 7
       # Finally, register the device and install the driver
       . /usr/local/bin/openbmc-utils.sh
       i2c_device_add 9 0x20 tpm_i2c_infineon

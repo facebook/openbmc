@@ -207,6 +207,13 @@ pal_set_pcie_port_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
 }
 
 int __attribute__((weak))
+pal_set_imc_version(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_EOK;
+}
+
+
+int __attribute__((weak))
 pal_set_cpu_mem_threshold(const char* threshold_path)
 {
   return PAL_EOK;
@@ -1267,8 +1274,8 @@ pal_is_crashdump_ongoing(uint8_t fru)
   int ret;
 
   //if pid file not exist, return false
-  sprintf(fname, "/var/run/autodump%d.pid", fru);  
-  if ( access(fname, F_OK) != 0 ) 
+  sprintf(fname, "/var/run/autodump%d.pid", fru);
+  if ( access(fname, F_OK) != 0 )
   {
     return 0;
   }
@@ -1276,7 +1283,7 @@ pal_is_crashdump_ongoing(uint8_t fru)
   //check the crashdump file in /tmp/cache_store/fru$1_crashdump
   sprintf(fname, "fru%d_crashdump", fru);
   ret = edb_cache_get(fname, value);
-  if (ret < 0) 
+  if (ret < 0)
   {
      return 0;
   }
@@ -1300,7 +1307,7 @@ pal_is_crashdump_ongoing_system(void)
   pal_get_num_slots(&max_slot_num);
 
   for(int i = 1; i <= max_slot_num; i++) //fru start from 1
-  { 
+  {
     int fruid = pal_slotid_to_fruid(i);
     if ( 1 == pal_is_crashdump_ongoing(fruid) )
     {
@@ -1944,7 +1951,7 @@ pal_get_thresh_from_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo) {
     syslog(LOG_ERR, "%s: open failed for %s, errno : %d %s\n", __func__, fpath, errno, strerror(errno));
     return -1;
   }
-  
+
   while (cnt != sensor_cnt) {
     lseek(fd, cnt*sizeof(thresh_sensor_t), SEEK_SET);
     if (snr_num == sensor_list[cnt]) {
@@ -2004,8 +2011,8 @@ pal_copy_thresh_to_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo) {
         return -1;
       }
       break;
-    } 
-    cnt++;  
+    }
+    cnt++;
   }
 
   close(fd);
@@ -2095,4 +2102,3 @@ pal_get_me_name(uint8_t *target_name) {
   strcpy(target_name, "ME");
   return;
 }
-

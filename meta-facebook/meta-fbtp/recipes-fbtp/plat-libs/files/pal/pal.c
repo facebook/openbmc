@@ -3264,6 +3264,9 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   int val;
   char path[64] = {0};
 
+  if ( fru != FRU_MB)
+    return -1;
+
   sprintf(path, GPIO_VAL, GPIO_POWER_GOOD);
 
   if (read_device(path, &val)) {

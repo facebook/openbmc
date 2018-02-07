@@ -324,6 +324,7 @@ static void gpio_event_handle_power(gpio_poll_st *gp)
       strcat(cmd, reason);
       syslog(LOG_CRIT, "ASSERT: %s - %s (reason: %s)\n",
         gp->name, gp->desc, reason);
+      strcat(cmd, " ASSERT");
     }
     pal_add_cri_sel(cmd);
     return;

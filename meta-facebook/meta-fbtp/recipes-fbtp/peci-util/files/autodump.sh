@@ -4,6 +4,7 @@ PID=$$
 # File format autodump<fru>.pid (See pal_is_crashdump_ongoing()
 # function definition)
 PID_FILE='/var/run/autodump1.pid'
+DWR_FILE='/tmp/DWR'
 
 # check if running auto dump
 [ -r $PID_FILE ] && OLDPID=`cat $PID_FILE` || OLDPID=''
@@ -127,6 +128,7 @@ logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: 1 is gener
 
 # Remove current pid file
 rm $PID_FILE
+rm $DWR_FILE
 
 echo "${LOG_MSG_PREFIX}Auto Dump Stored in $LOG_ARCHIVE"
 exit 0

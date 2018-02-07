@@ -174,6 +174,7 @@ const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
 
 static uint8_t g_plat_id = 0x0;
+static uint8_t postcodes_last[256] = {0};
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
@@ -3611,7 +3612,6 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static unsigned int retry = 0;
   static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
   static time_t rst_time = 0;
-  static uint8_t postcodes_last[256] = {0};
   uint8_t postcodes[256] = {0};
   struct stat file_stat;
   int ret = READING_NA, rc, len;
@@ -3629,8 +3629,10 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     frb3_fail = 0x10; // bit 4: FRB3 failure
     retry = 0;
     // cache current postcode buffer
-    memset(postcodes_last, 0, sizeof(postcodes_last));
-    pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+    if (stat("/tmp/DWR", &file_stat) != 0) {
+      memset(postcodes_last, 0, sizeof(postcodes_last));
+      pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+    }
   }
 
   if (frb3_fail) {
@@ -3639,7 +3641,7 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
       frb3_fail = 0;
 
     // Port 80 updated
-    memset(postcodes, 0, sizeof(postcodes_last));
+    memset(postcodes, 0, sizeof(postcodes));
     rc = pal_get_80port_record(FRU_MB, NULL, 0, postcodes, (uint8_t *)&len);
     if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
       frb3_fail = 0;
@@ -5534,11 +5536,20 @@ static void *dwr_handler(void *arg) {
 
 void
 pal_second_crashdump_chk(void) {
+    int fd, len;
+
     if (tid_dwr != -1)
       pthread_cancel(tid_dwr);
 
-    if (pthread_create(&tid_dwr, NULL, dwr_handler, NULL) == 0)
+    if (pthread_create(&tid_dwr, NULL, dwr_handler, NULL) == 0) {
+      memset(postcodes_last, 0, sizeof(postcodes_last));
+      pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+
+      fd =  creat("/tmp/DWR", 0644);
+      if (fd)
+        close(fd);
       pthread_detach(tid_dwr);
+    }
     else
       tid_dwr = -1;
 }

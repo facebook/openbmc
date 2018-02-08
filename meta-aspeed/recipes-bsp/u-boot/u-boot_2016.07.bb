@@ -94,11 +94,11 @@ do_compile () {
 
     # found out the source dir
     dir=$(pwd)
-    while [ -n "$dir" -a "$dir" != "/" -a ! -d "$dir/meta-openbmc/.git" ]; do
+    while [ -n "$dir" -a "$dir" != "/" -a ! -e "$dir/meta-openbmc/.git" ]; do
         dir=$(dirname $dir)
     done
 
-    if [ -d "$dir/meta-openbmc/.git" ]; then
+    if [ -e "$dir/meta-openbmc/.git" ]; then
         srcdir="$dir/meta-openbmc"
         srcdir_git="${srcdir}/.git"
         version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --tags --dirty --always 2> /dev/null)

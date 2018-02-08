@@ -15,7 +15,7 @@ do_install_append() {
   install -m 644 ${WORKDIR}/rsyslog.conf ${D}${sysconfdir}/rsyslog.conf
   install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.rsyslog
 
-  dir=$(pwd)
+  dir=${COREBASE}
   while [ -n "$dir" -a "$dir" != "/" -a ! -d "$dir/meta-openbmc/.git" ]; do
       dir=$(dirname $dir)
   done

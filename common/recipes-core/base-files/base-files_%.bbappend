@@ -14,7 +14,7 @@ do_install_bmc_issue () {
     fi
 
     # found out the source dir
-    dir=$(pwd)
+    dir=${COREBASE}
     while [ -n "$dir" -a "$dir" != "/" -a ! -d "$dir/meta-openbmc/.git" ]; do
         dir=$(dirname $dir)
     done

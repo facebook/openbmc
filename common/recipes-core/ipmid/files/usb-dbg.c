@@ -597,7 +597,7 @@ udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uin
         ptr = line_buff;
         // Find message
         ptr = strstr(ptr, "local0.err");
-        if (!ptr || (ptr = strstr(ptr, ":")) == NULL) {
+        if (!ptr || (ptr = strrchr(ptr, ':')) == NULL) {
           continue;
         }
         len = strlen(ptr);

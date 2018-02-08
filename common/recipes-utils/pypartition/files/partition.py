@@ -68,12 +68,6 @@ class Partition(object):
         else:
             self.logger.info('{} readable.'.format(self))
 
-    def enforce_types(self):
-        if self.partition_size is None:
-            raise InvalidPartitionException('Unknown partition size')
-        if self.data_size is None:
-            raise InvalidPartitionException('Unknown data size')
-
     # This initializer will be called by all subclasses, so all subclass
     # overridden logic and types must be encapsulated in the above checksum
     # methods.
@@ -86,9 +80,6 @@ class Partition(object):
         self.data_size = partition_size
         self.logger = logger
         self.initialize()
-        # Unsuccessful attempt to make flake8 stop complaining about
-        # int + Optional[int]
-        self.enforce_types()
         images.read_with_callback(self.data_size, self.update)
         self.finalize()
 
@@ -105,7 +96,6 @@ class Partition(object):
 
     def end(self):
         # type: () -> int
-        self.enforce_types()
         return self.partition_offset + self.partition_size
 
 

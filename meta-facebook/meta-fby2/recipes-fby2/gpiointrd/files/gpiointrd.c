@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 #include <pthread.h>
 #include <sys/un.h>
 #include <sys/file.h>
@@ -55,12 +56,13 @@
 static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
 static void *hsvc_event_handler(void *ptr);
 static pthread_mutex_t hsvc_mutex[MAX_NODES + 1];
+static struct timespec last_ejector_ts[MAX_NODES + 1];
 
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
  "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal", "",
  "", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion", "",
- "", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF", 
+ "", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF",
 };
 
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
@@ -204,6 +206,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
   static bool prsnt_assert[MAX_NODES + 1]={0};
   static pthread_t hsvc_action_tid[MAX_NODES + 1];
   hot_service_info hsvc_info[MAX_NODES + 1];
+  struct timespec ts;
 
   if (gp->gs.gs_gpio == gpio_num("GPIOH5")) { // GPIO_FAN_LATCH_DETECT
     if (gp->value == 1) { // low to high
@@ -225,6 +228,11 @@ static void gpio_event_handle(gpio_poll_st *gp)
   {
     slot_id = (gp->gs.gs_gpio - GPIO_SLOT1_EJECTOR_LATCH_DETECT_N) + 1;
     if (gp->value == 1) { // low to high
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      if (last_ejector_ts[slot_id].tv_sec && ((ts.tv_sec - last_ejector_ts[slot_id].tv_sec) < 5)) {
+        return;
+      }
+      last_ejector_ts[slot_id].tv_sec = ts.tv_sec;
 
       sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
       read_device(vpath, &value);
@@ -364,7 +372,7 @@ hsvc_event_handler(void *ptr) {
       usleep(250000);   //Delay 250ms to wait for slot present pin status stable
       ret = pal_is_fru_prsnt(hsvc_info->slot_id, &value);
       if (ret < 0) {
-        syslog(LOG_CRIT, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, hsvc_info->slot_id);
+        syslog(LOG_ERR, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, hsvc_info->slot_id);
         break;
       }
       if (value) {
@@ -418,7 +426,7 @@ hsvc_event_handler(void *ptr) {
       sleep(5);   //Delay 5 seconds to wait for slot present pin status stable
       ret = pal_is_fru_prsnt(hsvc_info->slot_id, &value);
       if (ret < 0) {
-        syslog(LOG_CRIT, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, hsvc_info->slot_id);
+        syslog(LOG_ERR, "%s pal_is_fru_prsnt failed for fru: %d\n", __func__, hsvc_info->slot_id);
         break;
       }
       if (value) {      //Card has been inserted
@@ -514,11 +522,11 @@ main(int argc, void **argv) {
   int dev, rc, pid_file;
   uint8_t status = 0;
   int i;
- 
 
   for(i=1 ;i<MAX_NODES + 1; i++)
   {
     pthread_mutex_init(&hsvc_mutex[i], NULL);
+    last_ejector_ts[i].tv_sec = 0;
   }
 
 #if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed

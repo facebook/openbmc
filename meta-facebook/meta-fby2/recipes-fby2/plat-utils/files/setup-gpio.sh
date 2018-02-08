@@ -478,11 +478,17 @@ devmem_clear_bit $(scu_addr 9c) 17
 # Disable PWM reset during WDT1 reset
 devmem_clear_bit 0x1e78501c 17
 
-# Set debounce timer #1 value to 0x12E1FC ~= 2s
+# Set debounce timer #1 value to 0x179A7B0 ~= 2s
 $DEVMEM 0x1e780050 32 0x179A7B0
 
 # Select debounce timer #1 for GPIOZ0~GPIOZ3 and GPIOAA0~GPIOAA3
 $DEVMEM 0x1e780194 32 0xF0F00
+
+# Set debounce timer #2 value to 0xF1B3 ~= 5ms
+$DEVMEM 0x1e780054 32 0xF1B3
+
+# Select debounce timer #2 for GPIOP0~GPIOP3
+$DEVMEM 0x1e780100 32 0xF000000
 
 # enable I2C ctrl reg (SCUA4),
 devmem_set_bit $(scu_addr A4) 12 #SCL1 en

@@ -4,3 +4,9 @@ arcanist/.phutil_module_cache
 
 # Python byte-compiled files
 *.pyc
+
+# Build directories
+/build*/
+
+# Local shared state cache
+/.sstate/

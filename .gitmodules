@@ -1,0 +1,36 @@
+[submodule "yocto/fido/poky"]
+	path = yocto/fido/poky
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/poky.git
+	branch = fido
+[submodule "yocto/fido/meta-openembedded"]
+	path = yocto/fido/meta-openembedded
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/meta-openembedded.git
+	branch = fido
+[submodule "yocto/fido/meta-security"]
+	path = yocto/fido/meta-security
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/meta-security.git
+	branch = fido
+[submodule "yocto/krogoth/poky"]
+	path = yocto/krogoth/poky
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/poky.git
+	branch = krogoth
+[submodule "yocto/krogoth/meta-openembedded"]
+	path = yocto/krogoth/meta-openembedded
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/meta-openembedded.git
+	branch = krogoth
+[submodule "yocto/krogoth/meta-security"]
+	path = yocto/krogoth/meta-security
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/meta-security.git
+	branch = krogoth
+[submodule "yocto/rocko/poky"]
+	path = yocto/rocko/poky
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/poky.git
+	branch = rocko
+[submodule "yocto/rocko/meta-openembedded"]
+	path = yocto/rocko/meta-openembedded
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/meta-openembedded.git
+	branch = rocko
+[submodule "yocto/rocko/meta-security"]
+	path = yocto/rocko/meta-security
+	url = ssh://git.vip.facebook.com/data/gitrepos/yocto/meta-security.git
+	branch = rocko

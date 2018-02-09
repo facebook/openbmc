@@ -9,15 +9,15 @@ BBLAYERS ?= " \
   ##OEROOT##/meta \
   ##OEROOT##/meta-poky \
   ##OEROOT##/meta-yocto-bsp \
-  ##OEROOT##/meta-openembedded/meta-oe \
-  ##OEROOT##/meta-openembedded/meta-networking \
-  ##OEROOT##/meta-openembedded/meta-python \
-  ##OEROOT##/meta-openbmc \
-  ##OEROOT##/meta-openbmc/meta-aspeed \
-  ##OEROOT##/meta-openbmc/meta-facebook \
-  ##OEROOT##/meta-openbmc/meta-facebook/meta-wedge \
-  ##OEROOT##/meta-openbmc/meta-facebook/meta-wedge100 \
-  ##OEROOT##/meta-openbmc/meta-facebook/meta-galaxy100 \
+  ##OEROOT##/../meta-openembedded/meta-oe \
+  ##OEROOT##/../meta-openembedded/meta-networking \
+  ##OEROOT##/../meta-openembedded/meta-python \
+  ##OEROOT##/../../.. \
+  ##OEROOT##/../../../meta-aspeed \
+  ##OEROOT##/../../../meta-facebook \
+  ##OEROOT##/../../../meta-facebook/meta-wedge \
+  ##OEROOT##/../../../meta-facebook/meta-wedge100 \
+  ##OEROOT##/../../../meta-facebook/meta-galaxy100 \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   ##OEROOT##/meta \

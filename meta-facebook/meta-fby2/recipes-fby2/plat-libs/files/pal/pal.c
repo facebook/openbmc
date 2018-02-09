@@ -106,6 +106,11 @@
 
 #define IMC_VER_SIZE 8
 
+#define REINIT_TYPE_FULL            0
+#define REINIT_TYPE_HOST_RESOURCE   1
+static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
+
+
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
 const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID2_LED_N, GPIO_SYSTEM_ID3_LED_N, GPIO_SYSTEM_ID4_LED_N };  // Identify LED
@@ -591,7 +596,15 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
   if (status) {
     val = "1";
   } else {
+
     val = "0";
+
+    // send notification to NIC about impending reset
+    if (nic_powerup_prep(slot, REINIT_TYPE_HOST_RESOURCE) != 0) {
+      syslog(LOG_ERR, "%s: NIC notification failed, abort reset\n",
+             __FUNCTION__);
+      return -1;
+    }
   }
 
   sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
@@ -746,12 +759,15 @@ write_gmac0_value(const char *device_name, const int value) {
 }
 
 // Write to /sys/devices/platform/ftgmac100.0/net/eth0/powerup_prep_host_id
+// This is a combo ID consists of the following fields:
+// bit 11~8: reinit_type
+// bit 7~0:  host_id
 static int
-nic_powerup_prep(uint8_t slot_id) {
+nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
   int err;
-  // sleep(1);
+  uint32_t combo_id = ((uint32_t)reinit_type<<8) | (uint32_t)slot_id;
 
-  err = write_gmac0_value("powerup_prep_host_id", slot_id);
+  err = write_gmac0_value("powerup_prep_host_id", combo_id);
 
   return err;
 }
@@ -797,7 +813,7 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
 
   if (!gs_flag) {
     // only needed in ungraceful-shutdown
-    if (nic_powerup_prep(slot_id) != 0) {
+    if (nic_powerup_prep(slot_id, REINIT_TYPE_FULL) != 0) {
       return -1;
     }
   }
@@ -1252,7 +1268,7 @@ server_12v_off(uint8_t slot_id) {
     return -1;
   }
 
-  if (nic_powerup_prep(slot_id) != 0) {
+  if (nic_powerup_prep(slot_id, REINIT_TYPE_FULL) != 0) {
     return -1;
   }
 
@@ -2030,6 +2046,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
     case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
+
         ret = pal_set_rst_btn(slot_id, 0);
         if (ret < 0)
           return ret;
@@ -5199,7 +5216,7 @@ pal_is_mcu_working(void) {
   return false;
 }
 
-void 
+void
 pal_get_me_name(uint8_t *target_name) {
 #ifdef CONFIG_FBY2_RC
   strcpy(target_name, "IMC");

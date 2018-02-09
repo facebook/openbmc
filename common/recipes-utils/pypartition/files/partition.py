@@ -413,6 +413,7 @@ class DeviceTreePartition(Partition):
             else:
                 value_string = str(value)
             info_strings.append('{}: {}'.format(key, value_string))
+        logger.info(' '.join(info_strings))
 
         if parsed_header['magic'] != DeviceTreePartition.magic:
             self.valid = False
@@ -433,7 +434,6 @@ class DeviceTreePartition(Partition):
             parsed_header['strings_block_offset'] - self.header_size
         )
         strings = images.verified_read(parsed_header['strings_block_size'])
-        logger.info(' '.join([b.decode() for b in strings.split(b'\x00')]))
 
         # Now go back to structure block.
         distance = (

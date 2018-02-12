@@ -33,7 +33,6 @@ SRC_URI = "file://ast-functions \
            file://mdio.py \
            file://bcm5396.py \
            file://bcm5396_util.py \
-           file://mount_data0.sh \
            file://eth0_mac_fixup.sh \
            file://yosemite_power.sh \
            file://power-on.sh \
@@ -42,8 +41,6 @@ SRC_URI = "file://ast-functions \
            file://create_vlan_intf \
            file://watch-fc.sh \
            file://fcswitcher.sh \
-           file://rc.early \
-           file://rc.local \
            file://fw_env_config.sh \
            file://COPYING \
           "
@@ -72,11 +69,6 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  # the script to mount /mnt/data
-  install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-  update-rc.d -r ${D} mount_data0.sh start 05 S .
-  install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-  update-rc.d -r ${D} rc.early start 06 S .
   install -m 0755 ${WORKDIR}/fw_env_config.sh ${D}${sysconfdir}/init.d/fw_env_config.sh
   update-rc.d -r ${D} fw_env_config.sh start 05 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
@@ -92,8 +84,6 @@ do_install() {
   update-rc.d -r ${D} power-on.sh start 70 5 .
   #install -m 755 fcswitcher.sh ${D}${sysconfdir}/init.d/fcswitcher.sh
   #update-rc.d -r ${D} fcswitcher.sh start 90 S .
-  install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
-  update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

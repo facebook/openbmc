@@ -46,6 +46,7 @@ IMAGE_INSTALL += " \
   log-util \
   lldp-util \
   spatula \
+  openbmc-utils \
   conf-util \
   ncsi-util \
   "

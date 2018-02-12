@@ -748,6 +748,43 @@ seat_led_handler() {
   }
 }
 
+// Thread to handle Slot ID LED state
+static void *
+slot_id_led_handler() {
+  int slot;
+  uint8_t p_fan_latch;
+  int ret_slot_12v_on;
+  int ret_slot_prsnt; 
+  uint8_t status_slot_12v_on;
+  uint8_t status_slot_prsnt;
+
+  while(1) {
+    p_fan_latch = m_fan_latch;
+
+    if(p_fan_latch) {  // SLED is pulled out
+      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
+        if(!pal_is_hsvc_ongoing(slot)) {
+          ret_slot_12v_on = pal_is_server_12v_on(slot, &status_slot_12v_on);
+          ret_slot_prsnt = pal_is_fru_prsnt(slot, &status_slot_prsnt); 
+          if (ret_slot_12v_on < 0 || ret_slot_prsnt < 0)
+            continue;
+          if (status_slot_prsnt != 1 || status_slot_12v_on != 1)
+            pal_set_slot_id_led(slot, LED_OFF); //Turn slot ID LED off
+          else
+            pal_set_slot_id_led(slot, LED_ON); //Turn slot ID LED on
+        }   
+      }
+    } else { // SLED is fully pulled in
+      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
+        if(!pal_is_hsvc_ongoing(slot)) 
+          pal_set_slot_id_led(slot, LED_OFF); //Turn slot ID LED off
+      }
+    }
+
+    sleep(1);
+  }
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
@@ -757,6 +794,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_sync_led;
   pthread_t tid_led;
   pthread_t tid_seat_led;
+  pthread_t tid_slot_id_led;
   int rc;
   int pid_file;
 
@@ -807,6 +845,12 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_slot_id_led, NULL, slot_id_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for slot id led error\n");
+    exit(1);
+  }
+ 
+
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
@@ -814,6 +858,7 @@ main (int argc, char * const argv[]) {
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_led, NULL);
   pthread_join(tid_seat_led, NULL);
+  pthread_join(tid_slot_id_led, NULL);
 
   return 0;
 }

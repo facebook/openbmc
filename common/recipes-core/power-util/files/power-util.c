@@ -55,6 +55,21 @@ enum {
   PWR_SLED_CYCLE
 };
 
+static const char *option_list[] = {
+  "NA",  // place holder so the rest of the list matches enum above
+  "STATUS",
+  "GRACEFUL_SHUTDOWN",
+  "PWR_OFF",
+  "PWR_ON",
+  "POWER_RESET",
+  "POWER_CYCLE",
+  "12V_OFF",
+  "12V_ON",
+  "12V_CYCLE",
+  "SLED_CYCLE",
+};
+
+
 static void
 print_usage() {
   printf("Usage: power-util [ %s ] [ %s ]\nUsage: power-util sled-cycle\n",
@@ -399,7 +414,7 @@ power_util(uint8_t fru, uint8_t opt) {
         return ret;
       } else {
         syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", fru);
-     
+
         power_policy_control(fru, pwr_state);
       }
       break;
@@ -497,7 +512,7 @@ main(int argc, char **argv) {
     }
   }
 
-  // Check if another instance is running 
+  // Check if another instance is running
   if (add_process_running_flag(fru, opt) < 0) {
     printf("power_util: another instance is running for FRU:%d...\n",fru);
     //Make power-util exit code to "-2" when another instance is running
@@ -506,7 +521,7 @@ main(int argc, char **argv) {
 
   ret = power_util(fru, opt);
   if (ret < 0) {
-    print_usage();
+    printf("ERROR: power-util fru[%d] [%s] failed\n", fru, option_list[opt]);
     rm_process_running_flag(fru, opt);
     return ret;
   }

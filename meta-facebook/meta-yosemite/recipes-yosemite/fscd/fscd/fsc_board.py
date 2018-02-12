@@ -20,7 +20,22 @@
 from fsc_util import Logger
 from ctypes import *
 from subprocess import Popen, PIPE
+from re import match
 
+
+fru_map = {
+    'slot1': "fru1",
+    'slot2': "fru2",
+    'slot3': "fru3",
+    'slot4': "fru4"
+}
+
+loc_map = {
+    'a0': "_dimm1_type",
+    'a1': "_dimm2_type",
+    'b0': "_dimm3_type",
+    'b1': "_dimm4_type"
+}
 
 def board_fan_actions(fan, action='None'):
     '''
@@ -61,3 +76,29 @@ def set_all_pwm(boost):
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     response = response.decode()
     return response
+
+def sensor_valid_check(board, sname, check_name, attribute):
+    try:
+        if attribute['type'] == "power_status":
+            cmd = "/usr/local/bin/power-util %s status" % board
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            result=data.split(": ")
+            if match(r'ON', result[1]) != None:
+                if match(r'soc_dimm', sname) != None:
+                    # check DIMM present
+                    with open("/mnt/data/kv_store/sys_config/"+fru_map[board]+loc_map[sname[8:10]], "rb") as f:
+                        dimm_sts = f.read(1)
+                    if dimm_sts[0] == 0x3f:
+                        return 0
+                return 1
+            else:
+                return 0
+        else:
+            Logger.debug("Sensor corresponding valid check funciton not found!")
+            return -1
+    except SystemExit:
+        Logger.debug("SystemExit from sensor read")
+        raise
+    except Exception:
+        Logger.warn("Exception with board=%s, sensor_name=%s" % (board, sname))
+    return -1

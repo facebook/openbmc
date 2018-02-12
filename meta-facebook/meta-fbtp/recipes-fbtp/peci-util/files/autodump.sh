@@ -128,7 +128,7 @@ logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: 1 is gener
 
 # Remove current pid file
 rm $PID_FILE
-rm $DWR_FILE
+rm -r $DWR_FILE >/dev/null 2>&1
 
 echo "${LOG_MSG_PREFIX}Auto Dump Stored in $LOG_ARCHIVE"
 exit 0

@@ -842,6 +842,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
   uint8_t retry = MAX_READ_RETRY;
+  static uint8_t last_status[MAX_NODES+1] = {0};
 
   /* Check whether the system is 12V off or on */
   ret = pal_is_server_12v_on(slot_id, status);
@@ -853,6 +854,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   /* If 12V-off, return */
   if (!(*status)) {
     *status = SERVER_12V_OFF;
+    last_status[slot_id] = SERVER_POWER_OFF;
     return 0;
   }
 
@@ -867,15 +869,8 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   if (ret) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
     syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
-        " reading the kv_store for last power state  for fru %d", slot_id);
-    pal_get_last_pwr_state(slot_id, value);
-    if (!(strcmp(value, "off"))) {
-      *status = SERVER_POWER_OFF;
-    } else if (!(strcmp(value, "on"))) {
-      *status = SERVER_POWER_ON;
-    } else {
-      return ret;
-    }
+        " using the static last status %u for fru %d", last_status[slot_id], slot_id);
+    *status = last_status[slot_id];
     return 0;
   }
 
@@ -884,6 +879,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   } else {
     *status = SERVER_POWER_OFF;
   }
+  last_status[slot_id] = *status;
 
   return 0;
 }

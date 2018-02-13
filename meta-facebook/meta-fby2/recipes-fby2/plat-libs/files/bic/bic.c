@@ -491,7 +491,8 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   int ret;
 
 #ifdef CONFIG_FBY2_RC
-  return get_imc_version(slot_id, ver);
+  if (comp == FW_ME)
+    return get_imc_version(slot_id, ver);
 #endif           
 
   // Fill the component for which firmware is requested
@@ -1889,3 +1890,4 @@ int get_imc_version(uint8_t slot, uint8_t *ver) {
   }
   return 0;
 }
+

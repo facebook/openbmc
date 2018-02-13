@@ -27,109 +27,194 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <time.h>
-
+#include <unistd.h>
+#include <getopt.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
 #include <openbmc/pal.h>
 
-#define FTGMAC0_DIR "/sys/devices/platform/ftgmac100.0/net/eth0"
-#define MAX_RETRY_CNT 3
-#define LARGEST_DEVICE_NAME 128
+#define noDEBUG   /* debug printfs */
 
-static int
-write_device(const char *device, const char *value) {
-  FILE *fp;
-  int rc;
+#define NETLINK_USER 31
 
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device for write %s", device);
-#endif
-    return err;
-  }
+#define MAX_PAYLOAD 128 /* maximum payload size*/
+typedef struct ncsi_nl_msg_t {
+  char dev_name[10];
+  unsigned char channel_id;
+  unsigned char cmd;
+  unsigned char payload_length;
+  unsigned char msg_payload[MAX_PAYLOAD];
+} NCSI_NL_MSG_T;
 
-  rc = fputs(value, fp);
-  fclose(fp);
+#define MAX_RESPONSE_PAYLOAD 128 /* maximum payload size*/
+typedef struct ncsi_nl_response {
+  unsigned char payload_length;
+  unsigned char msg_payload[MAX_RESPONSE_PAYLOAD];
+} NCSI_NL_RSP_T;
 
-  if (rc < 0) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to write device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-
-static int
-write_ftgmac0_value(const char *device_name, unsigned char count, unsigned char *buf) {
-  char full_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
-  int value = 0;
-  int err;
-  int retry_cnt=0;
-  int i=0;
-  int index = 0;
-
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", FTGMAC0_DIR, device_name);
-
-  for (i=0; i<count; i++)
-     index += snprintf(&output_value[index], LARGEST_DEVICE_NAME-index, "%d ", buf[i]);
-
-  do {
-    err = write_device(full_name, output_value);
-    if (err == ENOENT) {
-      syslog(LOG_INFO, "Error ENOENT, Retry sending cmd [%d], err=%d", (retry_cnt+1), err);
-      break;
-    } else if (err != 0) {
-      syslog(LOG_INFO, "Error, Retry sending cmd [%d], err=%d", (retry_cnt+1), err);
-      sleep(1);
-    }
-  } while ((err != 0) && (retry_cnt++ < MAX_RETRY_CNT));
-
-  return err;
-}
-
-static void
-print_usage_help(void) {
-  printf("Usage: ncsi-util <channel_id> <cmd> <[0..n] raw_payload_bytes_to_send>\n\n");
-  printf("   e.g. \n");
-  printf("       ncsi-util 0 80 0 0 129 25 0 0 27 0\n");
-}
 
 
 int
-main(int argc, char **argv) {
+send_nl_msg(NCSI_NL_MSG_T *nl_msg)
+{
+  int sock_fd;
+  struct sockaddr_nl src_addr, dest_addr;
+  struct nlmsghdr *nlh = NULL;
+  struct iovec iov;
+  struct msghdr msg;
 
-  int i;
-  unsigned char count;
-  unsigned char buf[128];
+  int i  = 0;
+  int msg_size = sizeof(NCSI_NL_MSG_T);
+
+  /* msg response from kernel */
+  NCSI_NL_RSP_T *rcv_buf;
+
+  /* open NETLINK socket to send message to kernel */
+  sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
+  if(sock_fd < 0)  {
+    printf("Error: failed to allocate socket\n");
+    return -1;
+  }
+
+  memset(&src_addr, 0, sizeof(src_addr));
+  src_addr.nl_family = AF_NETLINK;
+  src_addr.nl_pid = getpid(); /* self pid */
+
+  bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr));
+  memset(&dest_addr, 0, sizeof(dest_addr));
+  dest_addr.nl_family = AF_NETLINK;
+  dest_addr.nl_pid = 0; /* For Linux Kernel */
+  dest_addr.nl_groups = 0; /* unicast */
+
+  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
+  if (!nlh) {
+    printf("Error, failed to allocate message buffer\n");
+    goto close_and_exit;
+  }
+  memset(nlh, 0, NLMSG_SPACE(msg_size));
+  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
+  nlh->nlmsg_pid = getpid();
+  nlh->nlmsg_flags = 0;
+
+  /* the actual NC-SI command from user */
+  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
+
+  iov.iov_base = (void *)nlh;
+  iov.iov_len = nlh->nlmsg_len;
+  msg.msg_name = (void *)&dest_addr;
+  msg.msg_namelen = sizeof(dest_addr);
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+  printf("Sending NC-SI command\n");
+  sendmsg(sock_fd,&msg,0);
+
+  printf("NC-SI Command Response:\n");
+  /* Read message from kernel */
+  recvmsg(sock_fd, &msg, 0);
+  rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
+  for (i = 0; i < rcv_buf->payload_length; ++i) {
+		if (i && !(i%16))
+			printf("\n");
+    printf("0x%x ", rcv_buf->msg_payload[i]);
+  }
+  printf("\n");
+
+  free(nlh);
+close_and_exit:
+  close(sock_fd);
+}
+
+
+static void
+showUsage(void) {
+  printf("Usage: ncsi-util [options] <cmd> \n\n");
+  printf("       -h             This help\n");
+  printf("       -n netdev      Specifies the net device to send command to [default=\"eth0\"]\n");
+  printf("       -c channel     Specifies the NC-SI channel on the net device [default=0]\n");
+  printf("Sample: \n");
+  printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
+}
+
+int
+main(int argc, char **argv) {
+  int i = 0;
+  NCSI_NL_MSG_T *msg = NULL;
+  int argflag;
+  char * netdev = NULL;
+  int channel = 0;
 
   if (argc < 2)
     goto err_exit;
 
-  count = argc-1;
+  msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+  if (!msg) {
+    printf("Error: failed buffer allocation\n");
+    return -1;
+  }
 
-  for (i=1; i<argc; ++i) {
-    buf[i-1] = atoi(argv[i]);
+  while ((argflag = getopt(argc, (char **)argv, "hn:c:?")) != -1)
+  {
+    switch(argflag) {
+    case 'n':
+            netdev = strdup(optarg);
+            if (netdev == NULL) {
+              printf("Error: malloc fail\n");
+              goto free_exit;
+            }
+            break;
+    case 'c':
+            channel = (int)strtoul(optarg, NULL, 0);
+            if (channel < 0) {
+              printf("channel %d is out of range.\n", channel);
+              goto free_exit;
+            }
+            break;
+    case 'h':
+    default :
+            goto free_exit;
+    }
+  }
+
+  if (netdev) {
+    sprintf(msg->dev_name, "%s", netdev);
+  } else {
+    sprintf(msg->dev_name, "eth0");
+  }
+  msg->channel_id = channel;
+  msg->cmd = (int)strtoul(argv[optind++], NULL, 0);
+  msg->payload_length = argc - optind;
+  for (i=0; i<msg->payload_length; ++i) {
+    msg->msg_payload[i] = (int)strtoul(argv[i + optind], NULL, 0);
   }
 
 #ifdef DEBUG
-  for (i=0; i<count; i++) {
+  printf("debug prints:");
+  printf("dev = %s\n", msg->dev_name);
+  printf("cmd = 0x%x, channel = 0x%x, payload_length=0x%x\n",
+         msg->cmd, msg->channel_id, msg->payload_length);
+  for (i=0; i<msg->payload_length; i++) {
     if (i && !(i%16))
       printf("\n");
 
-    printf("0x%x ", buf[i]);
+    printf("0x%x ", msg->msg_payload[i]);
   }
   printf("\n");
 #endif
 
-  write_ftgmac0_value("cmd_payload", count, buf);
+  send_nl_msg(msg);
 
+  free(msg);
   return 0;
 
+free_exit:
+  if (msg)
+    free(msg);
+
+  if (netdev)
+    free(netdev);
+
 err_exit:
-  print_usage_help();
+  showUsage();
   return -1;
 }

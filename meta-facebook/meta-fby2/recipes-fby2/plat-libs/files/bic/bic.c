@@ -493,7 +493,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
 #ifdef CONFIG_FBY2_RC
   if (comp == FW_ME)
     return get_imc_version(slot_id, ver);
-#endif           
+#endif
 
   // Fill the component for which firmware is requested
   tbuf[3] = comp;
@@ -1193,14 +1193,14 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       lseek(fd, 0, SEEK_SET);
       //goto error_exit;
     }
-    syslog(LOG_CRIT, "bic_update_fw: update bios firmware on slot %d\n", slot_id);
+    syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
     dsize = st.st_size/100;
   } else if (comp == UPDATE_VR) {
     if (check_vr_image(fd, st.st_size) < 0) {
       printf("invalid VR file!\n");
       goto error_exit;
     }
-    syslog(LOG_CRIT, "bic_update_fw: update vr firmware on slot %d\n", slot_id);
+    syslog(LOG_CRIT, "Update VR: update vr firmware on slot %d\n", slot_id);
     dsize = st.st_size/5;
   } else {
     if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
@@ -1209,10 +1209,10 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
     switch(comp){
       case UPDATE_CPLD:
-        syslog(LOG_CRIT, "bic_update_fw: update cpld firmware on slot %d\n", slot_id);
+        syslog(LOG_CRIT, "Update CPLD: update cpld firmware on slot %d\n", slot_id);
         break;
       case UPDATE_BIC_BOOTLOADER:
-        syslog(LOG_CRIT, "bic_update_fw: update bic bootloader firmware on slot %d\n", slot_id);
+        syslog(LOG_CRIT, "Update BIC BL: update bic bootloader firmware on slot %d\n", slot_id);
         break;
     }
     dsize = st.st_size/20;
@@ -1336,16 +1336,16 @@ error_exit:
   printf("\n");
   switch(comp) {
     case UPDATE_BIOS:
-      syslog(LOG_CRIT, "bic_update_fw: updating bios firmware is exiting\n");
+      syslog(LOG_CRIT, "Update BIOS: updating bios firmware is exiting\n");
       break;
     case UPDATE_CPLD:
-      syslog(LOG_CRIT, "bic_update_fw: updating cpld firmware is exiting\n");
+      syslog(LOG_CRIT, "Update CPLD: updating cpld firmware is exiting\n");
       break;
     case UPDATE_VR:
-      syslog(LOG_CRIT, "bic_update_fw: updating vr firmware is exiting\n");
+      syslog(LOG_CRIT, "Update VR: updating vr firmware is exiting\n");
       break;
     case UPDATE_BIC_BOOTLOADER:
-      syslog(LOG_CRIT, "bic_update_fw: updating bic bootloader firmware is exiting\n");
+      syslog(LOG_CRIT, "Update BIC BL: updating bic bootloader firmware is exiting\n");
       break;
   }
   if (fd > 0 ) {
@@ -1728,7 +1728,7 @@ bic_read_accuracy_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_accuracy_sens
 
   //Ignore IANA ID
   memcpy(sensor, &rbuf[3], rlen-3);
-  
+
   return ret;
 }
 
@@ -1785,13 +1785,13 @@ Request
   Byte 1:3 = Intel Manufacturer ID - 000157h, LS byte first.
 
   Byte 4 - Command
-    = 01h Restart using Recovery Firmware 
+    = 01h Restart using Recovery Firmware
       (Intel ME FW configuration is not restored to factory defaults)
     = 02h Restore Factory Default Variable values and restart the Intel ME FW
     = 03h PTT Initial State Restore
 Response
-  Byte 1 - Completion Code 
-  = 00h - Success 
+  Byte 1 - Completion Code
+  = 00h - Success
   (Remaining standard Completion Codes are shown in Section 2.12)
   = 81h - Unsupported Command parameter value in the Byte 4 of the request.
 
@@ -1835,7 +1835,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
   memset(&rbuf, 0, 256);
   /*
       0x6 0x4: Get Self-Test Results
-    Byte 1 - Completion Code 
+    Byte 1 - Completion Code
     Byte 2
       = 55h - No error. All Self-Tests Passed.
       = 81h - Firmware entered Recovery bootloader mode
@@ -1854,7 +1854,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
       sleep(1);
       continue;
     }
-    
+
     //if Get Self-Test Results is 0x55 0x00, means No error. All Self-Tests Passed.
     //if Get Self-Test Results is 0x81 0x02, means Firmware entered Recovery bootloader mode
     if ( (command == RECOVERY_MODE) && (rbuf[1] == 0x81) && (rbuf[2] == 0x02) ) {
@@ -1890,4 +1890,3 @@ int get_imc_version(uint8_t slot, uint8_t *ver) {
   }
   return 0;
 }
-

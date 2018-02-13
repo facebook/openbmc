@@ -214,7 +214,7 @@ reglist = [
 ]
 
 def main():
-    configure_rackmond(reglist)
+    configure_rackmond(reglist, verify_configure=True)
 
 if __name__ == "__main__":
     main()

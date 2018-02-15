@@ -862,11 +862,17 @@ sensor_thresh_array_init() {
 
   // Assign UCT based on the system is Single Side or Double Side
   if (!(pal_get_platform_id(&g_plat_id)) && !(g_plat_id & PLAT_ID_SKU_MASK)) {
-    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 9000;
-    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 9000;
+    // Single side 10k RPM fans.
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
   } else {
-    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 13500;
-    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 13500;
+    // Double side 15k RPM fans.
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UNC_THRESH] = 13500;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UNC_THRESH] = 13500;
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 17000;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 17000;
   }
 
   mb_sensor_threshold[MB_SENSOR_FAN0_TACH][LCR_THRESH] = 500;

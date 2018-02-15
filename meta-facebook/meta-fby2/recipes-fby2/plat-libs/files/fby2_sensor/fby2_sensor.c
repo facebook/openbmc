@@ -33,7 +33,7 @@
 #include <openbmc/obmc-i2c.h>
 #include "fby2_sensor.h"
 #include <openbmc/nvme-mi.h>
- 
+
 #define LARGEST_DEVICE_NAME 120
 
 #define MEZZ_TEMP_DEVICE "/sys/class/i2c-adapter/i2c-11/11-001f/hwmon/hwmon*"
@@ -329,9 +329,11 @@ sensor_thresh_array_init() {
 
   spb_sensor_threshold[SP_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   spb_sensor_threshold[SP_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
-  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 13500;
+  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
+  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
   spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 13500;
+  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
+  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
   spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
   //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
   spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.5;
@@ -942,7 +944,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   ipmi_accuracy_sensor_reading_t acsensor;
   bool is_accuracy_sensor = false;
 
-#ifndef CONFIG_FBY2_RC                      //workaround for now, this is only for TL but RC  
+#ifndef CONFIG_FBY2_RC                      //workaround for now, this is only for TL but RC
   for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
     if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
       is_accuracy_sensor = true;

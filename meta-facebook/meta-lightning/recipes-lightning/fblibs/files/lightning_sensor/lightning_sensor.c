@@ -618,13 +618,13 @@ read_flash_temp(uint8_t flash_num, float *value) {
 
   if (sku == U2_SKU) {
     ret = lightning_u2_flash_temp_read(lightning_flash_list[flash_num], value);
-    if (ret < 0)
+    if (ret != 0)
       return ret;
 
     return nvme_special_case_handling(flash_num, value);
   } else if (sku == M2_SKU) {
     ret = lightning_m2_flash_temp_read(lightning_flash_list[flash_num], value);
-    if (ret < 0)
+    if (ret != 0)
       return ret;
 
     return nvme_special_case_handling(flash_num, value);

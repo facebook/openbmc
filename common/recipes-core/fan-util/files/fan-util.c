@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <openbmc/pal.h>
+#include <string.h>
 
 #define CMD_SET_FAN_STR "--set"
 #define CMD_GET_FAN_STR "--get"
@@ -38,7 +39,7 @@ enum {
 
 static void
 print_usage(void) {
-  printf("Usage: fan-util --set <[0..100] %> < Fan# [%s] >\n", pal_pwm_list);
+  printf("Usage: fan-util --set <[0..100] %%> < Fan# [%s] >\n", pal_pwm_list);
   printf("       fan-util --get < Fan# [%s] >\n", pal_tach_list);
 }
 
@@ -72,7 +73,7 @@ main(int argc, char **argv) {
   uint8_t cmd;
   uint8_t pwm;
   uint8_t fan = ALL_FAN_NUM;
-  int i, j;
+  int i;
   int ret;
   int rpm = 0;
   char fan_name[32];
@@ -150,7 +151,7 @@ main(int argc, char **argv) {
         memset(fan_name, 0, 32);
         pal_get_fan_name(i, fan_name);
         if ((pal_get_pwm_value(i, &pwm)) == 0)
-          printf("%s Speed: %d RPM (%d%)\n", fan_name, rpm, pwm);
+          printf("%s Speed: %d RPM (%d%%)\n", fan_name, rpm, pwm);
         else {
           printf("Error while getting fan PWM for Fan %d\n", i);
           printf("%s Speed: %d RPM\n", fan_name, rpm);

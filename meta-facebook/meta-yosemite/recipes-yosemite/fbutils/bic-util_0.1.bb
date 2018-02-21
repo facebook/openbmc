@@ -11,7 +11,7 @@ SRC_URI = "file://bic-util \
 
 S = "${WORKDIR}/bic-util"
 
-CFLAGS += " -lbic -lipmi -lipmb -lbic -lyosemite_gpio "
+CFLAGS += " -lbic -lyosemite_gpio "
 
 
 do_install() {
@@ -21,5 +21,6 @@ do_install() {
 
 DEPENDS += "libbic libyosemite-gpio"
 
+RDEPENDS_${PN} += "libbic libyosemite-gpio"
 
 FILES_${PN} = "${bindir}"

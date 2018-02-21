@@ -81,10 +81,10 @@ util_get_device_id(uint8_t slot_id) {
 
 static void
 util_get_fw_ver(uint8_t slot_id) {
-  int i, j, ret;
+  int i, j;
   uint8_t buf[16] = {0};
   for (i = 1; i <= 8; i++) {
-    ret = bic_get_fw_ver(slot_id, i, buf);
+    (void) bic_get_fw_ver(slot_id, i, buf);
     printf("version of comp: %d is", i);
     for (j = 0; j < 10; j++)
       printf("%02X:", buf[j]);
@@ -171,7 +171,6 @@ util_get_gpio_config(uint8_t slot_id) {
 static void
 util_get_config(uint8_t slot_id) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -218,7 +217,6 @@ util_get_post_buf(uint8_t slot_id) {
 static void
 util_get_fruid_info(uint8_t slot_id) {
   int ret;
-  int i;
 
   ipmi_fruid_info_t info = {0};
 
@@ -276,7 +274,6 @@ static void
 util_get_sel(uint8_t slot_id) {
   int ret;
   int i;
-  uint16_t rsv;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
 
@@ -337,8 +334,6 @@ util_get_sdr_info(uint8_t slot_id) {
 static void
 util_get_sdr(uint8_t slot_id) {
   int ret;
-  int i;
-  uint16_t rsv;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
 
@@ -357,7 +352,7 @@ util_get_sdr(uint8_t slot_id) {
       continue;
     }
 
-    sdr_full_t *sdr = res->data;
+    sdr_full_t *sdr = (sdr_full_t*)(res->data);
 
     printf("type: %d, ", sdr->type);
     printf("sensor_num: %d, ", sdr->sensor_num);
@@ -479,25 +474,4 @@ main(int argc, char **argv) {
 err_exit:
   print_usage_help();
   return -1;
-
-#if 0
-  util_get_device_id(slot_id);
-
-  util_get_gpio(slot_id);
-  util_get_gpio_config(slot_id);
-
-  util_get_config(slot_id);
-
-  util_get_post_buf(slot_id);
-
-  util_get_fruid_info(slot_id);
-  util_read_fruid(slot_id);
-
-  util_get_sel_info(slot_id);
-  util_get_sel(slot_id);
-
-  util_get_sdr_info(slot_id);
-  util_get_sdr(slot_id);
-  util_read_sensor(slot_id);
-#endif
 }

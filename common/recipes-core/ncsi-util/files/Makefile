@@ -1,8 +1,10 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 all: ncsi-util
 
+CFLAGS += -Wall -Werror
+
 ncsi-util: ncsi-util.c
-	$(CC) -pthread $(CFLAGS)  -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread $(CFLAGS)  -std=gnu11 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

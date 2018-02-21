@@ -123,6 +123,8 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   free(nlh);
 close_and_exit:
   close(sock_fd);
+
+  return 0;
 }
 
 

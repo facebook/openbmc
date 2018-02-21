@@ -28,7 +28,6 @@
 #include <sys/file.h>
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
-#include <openbmc/ipmi.h>
 
 
 #define NCSI_DATA_PAYLOAD 64

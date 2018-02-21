@@ -86,7 +86,7 @@ void set_bmc_ready(bool ready)
   gpio_close(&gpio);
 }
 
-void *kcs_thread(void) {
+void *kcs_thread(void *unused) {
   struct timespec req;
   struct timespec rem;
 

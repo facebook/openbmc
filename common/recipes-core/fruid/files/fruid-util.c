@@ -31,11 +31,11 @@
 #define FRUID_SIZE      512
 
 #ifdef CUSTOM_FRU_LIST
-  static char * pal_fru_list_print_t =  pal_fru_list_print;
-  static char * pal_fru_list_rw_t =  pal_fru_list_rw;
+  static const char * pal_fru_list_print_t =  pal_fru_list_print;
+  static const char * pal_fru_list_rw_t =  pal_fru_list_rw;
 #else
-  static char * pal_fru_list_print_t =  pal_fru_list;
-  static char * pal_fru_list_rw_t =  pal_fru_list;
+  static const char * pal_fru_list_print_t =  pal_fru_list;
+  static const char * pal_fru_list_rw_t =  pal_fru_list;
 #endif /* CUSTOM_FRU_LIST */
 
 /* To copy the bin files */
@@ -131,7 +131,7 @@ void get_fruid_info(uint8_t fru, char *path, char* name) {
 
 }
 
-static int
+static void
 print_usage() {
 
   if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
@@ -150,7 +150,6 @@ int main(int argc, char * argv[]) {
   int rw = 0;
   int fd_tmpbin;
   int fd_newbin;
-  int fd_eeprom;
   FILE *fp;
   int fru_size;
   uint8_t fru;
@@ -305,7 +304,7 @@ int main(int argc, char * argv[]) {
       fseek(fp, 0L, SEEK_END);
       fru_size = ftell(fp);
       rewind(fp);
-      close(fp);
+      fclose(fp);
 
       //check the size overflow or not
       fru_size = (fru_size > FRUID_SIZE)?FRUID_SIZE:fru_size;
@@ -342,7 +341,7 @@ int main(int argc, char * argv[]) {
           return -1;
         }
       }
-      
+
       ret = copy_file(fd_tmpbin, fd_newbin, fru_size);
       if (ret < 0) {
         syslog(LOG_ERR, "copy: write to %s file failed: %s",

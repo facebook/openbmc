@@ -17,6 +17,8 @@
 
 all: fruid-util
 
+CFLAGS += -Wall -Werror
+
 fruid: fruid-util.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 

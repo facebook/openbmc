@@ -55,6 +55,7 @@ IMAGE_INSTALL += " \
   ipmitool \
   bios-util \
   vboot-utils \
+  crashdump \
   "
 
 IMAGE_FEATURES += " \

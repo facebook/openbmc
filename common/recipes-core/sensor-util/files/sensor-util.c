@@ -85,7 +85,19 @@ static int convert_period(char *str, long *val) {
   char *endptr = NULL;
   long ret;
   int rc = 0;
+
+  errno=0;
   ret = strtol(str, &endptr, 0);
+  if ( ret < 0 ) {
+    return -1;
+  }
+  if ( errno != 0 ) {
+	  perror("Error");
+	  return -1;
+  }
+  if ( strlen(endptr) > 1 )
+	  return -1;
+
   switch(*endptr) {
     case 'd':
     case 'D':

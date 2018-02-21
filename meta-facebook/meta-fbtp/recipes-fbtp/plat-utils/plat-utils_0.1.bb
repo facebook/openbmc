@@ -25,7 +25,6 @@ SRC_URI = "file://ast-functions \
            file://sol-util \
            file://power_led.sh \
            file://setup-gpio.sh \
-           file://power-on.sh \
            file://sync_date.sh \
            file://setup-snoopdma.sh \
            file://setup-por.sh \
@@ -60,8 +59,6 @@ do_install() {
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   install -m 755 setup-snoopdma.sh ${D}${sysconfdir}/init.d/setup-snoopdma.sh
   update-rc.d -r ${D} setup-snoopdma.sh start 82 S .
-  install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  update-rc.d -r ${D} power-on.sh start 96 5 .
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh

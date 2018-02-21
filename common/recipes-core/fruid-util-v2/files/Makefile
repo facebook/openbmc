@@ -17,6 +17,8 @@
 
 all: fruid-util-v2
 
+CXXFLAGS += -Wall -Werror
+
 fruid-util-v2: fruid-util-v2.cpp
 	$(CXX) $(CXXFLAGS) -std=c++11 -pthread -o $@ $^ $(LDFLAGS) -I$(SINC)/glib-2.0 -I$(SLIB)/glib-2.0/include
 

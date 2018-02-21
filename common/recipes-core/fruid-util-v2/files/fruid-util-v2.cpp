@@ -116,7 +116,7 @@ static vector<string> getFruNamesFromXml(const string & xmlStr) {
   const string & endPattern = "\"/>";
 
   //Get position first node tag
-  int pos = xmlStr.find(startPattern);
+  size_t pos = xmlStr.find(startPattern);
 
   while (pos != std::string::npos) {
     //Calculate start position of fruName

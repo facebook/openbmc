@@ -11,7 +11,7 @@ SRC_URI = "file://bic-util \
 
 S = "${WORKDIR}/bic-util"
 
-CFLAGS += " -lbic -lipmi -lipmb -lbic -lfby2_gpio -lfby2_sensor"
+CFLAGS += " -Wall -Werror  -lbic -lfby2_gpio"
 
 
 do_install() {
@@ -19,7 +19,7 @@ do_install() {
     install -m 0755 bic-util ${D}${bindir}/bic-util
 }
 DEPENDS += "libbic libfby2-gpio libfby2-sensor"
-
+RDEPENDS_${PN} += "libbic libfby2-gpio libfby2-sensor "
 
 
 FILES_${PN} = "${bindir}"

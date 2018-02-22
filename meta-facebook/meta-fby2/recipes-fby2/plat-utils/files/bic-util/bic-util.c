@@ -99,18 +99,6 @@ util_get_device_id(uint8_t slot_id) {
   printf("Aux. FW Rev: 0x%X:0x%X:0x%X:0x%X\n", id.aux_fw_rev[0], id.aux_fw_rev[1],id.aux_fw_rev[2],id.aux_fw_rev[3]);
 }
 
-static void
-util_get_fw_ver(uint8_t slot_id) {
-  int i, j, ret;
-  uint8_t buf[16] = {0};
-  for (i = 1; i <= 8; i++) {
-    ret = bic_get_fw_ver(slot_id, i, buf);
-    printf("version of comp: %d is", i);
-    for (j = 0; j < 10; j++)
-      printf("%02X:", buf[j]);
-    printf("\n");
-  }
-}
 
 // Tests for reading GPIO values and configuration
 static void
@@ -255,7 +243,7 @@ util_get_gpio_config(uint8_t slot_id) {
     printf("Cannot find corresponding server type. 0x%x\n", server_type);
     return ;
   }
-  
+
   // Read configuration of all bits
   for (i = 0;  i < gpio_cnt; i++) {
     ret = bic_get_gpio_config(slot_id, i, &gpio_config);
@@ -310,7 +298,7 @@ util_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t config) {
   int ret;
 
   printf("slot %d: setting GPIO %d config to 0x%02x\n", slot_id, gpio, config);
-  ret = bic_set_gpio_config(slot_id, gpio, &config);
+  ret = bic_set_gpio_config(slot_id, gpio, (bic_gpio_config_t *)&config);
   if (ret) {
     printf("ERROR: bic_set_gpio_config returns %d\n", ret);
     return;
@@ -320,7 +308,6 @@ util_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t config) {
 static void
 util_get_config(uint8_t slot_id) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -334,10 +321,6 @@ util_get_config(uint8_t slot_id) {
   printf("POST Enabled: %s\n", t->bits.post ? "Enabled" : "Disabled");
 }
 
-static void
-util_set_config(uint8_t slot_id, uint8_t status) {
-
-}
 
 // Test to get the POST buffer
 static void
@@ -363,25 +346,6 @@ util_get_post_buf(uint8_t slot_id) {
   printf("\n");
 }
 
-// Tests to read FRUID of Monolake Server
-static void
-util_get_fruid_info(uint8_t slot_id) {
-  int ret;
-  int i;
-
-  ipmi_fruid_info_t info = {0};
-
-  ret = bic_get_fruid_info(slot_id, 0, &info);
-  if (ret) {
-    printf("util_get_fruid_info: bic_get_fruid_info returns %d\n", ret);
-    return;
-  }
-
-  printf("FRUID info for 1S Slot..\n");
-
-  printf("FRUID Size: %d\n", (info.size_msb << 8) + (info.size_lsb));
-  printf("Accessed as : %s\n", (info.bytes_words)?"Words":"Bytes");
-}
 
 static void
 util_read_fruid(uint8_t slot_id) {
@@ -398,96 +362,11 @@ util_read_fruid(uint8_t slot_id) {
   }
 }
 
-// Tests to read SEL from Monolake Server
-static void
-util_get_sel_info(uint8_t slot_id) {
-  int ret;
 
-  ipmi_sel_sdr_info_t info;
-
-  ret = bic_get_sel_info(slot_id, &info);
-  if (ret) {
-    printf("util_get_sel_info:bic_get_sel_info returns %d\n", ret);
-    return;
-  }
-
-  printf("SEL info for 1S Slot is..\n");
-
-  printf("version: 0x%X\n", info.ver);
-  printf("Record Count: 0x%X\n", info.rec_count);
-  printf("Free Space: 0x%X\n", info.free_space);
-  printf("Recent Add TS: 0x%X:0x%X:0x%X:0x%X\n", info.add_ts[3], info.add_ts[2], info.add_ts[1], info.add_ts[0]);
-  printf("Recent Erase TS: 0x%X:0x%X:0x%X:0x%X\n", info.erase_ts[3], info.erase_ts[2], info.erase_ts[1], info.erase_ts[0]);
-  printf("Operation Support: 0x%X\n", info.oper);
-}
-
-static void
-util_get_sel(uint8_t slot_id) {
-  int ret;
-  int i;
-  uint16_t rsv;
-  uint8_t rlen;
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-
-  ipmi_sel_sdr_req_t req;
-  ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
-
-  req.rsv_id = 0;
-  req.rec_id = 0;
-  req.offset = 0;
-  req.nbytes = BYTES_ENTIRE_RECORD;
-
-  while (1) {
-    ret = bic_get_sel(slot_id, &req, res, &rlen);
-    if (ret) {
-      printf("util_get_sel:bic_get_sel returns %d\n", ret);
-      continue;
-    }
-
-    printf("SEL for rec_id %d\n", req.rec_id);
-    printf("Next Record ID is %d\n", res->next_rec_id);
-    printf("Record contents are..\n");
-    for (i = 0;  i < rlen-2; i++) { // First 2 bytes are next_rec_id
-      printf("0x%X:", res->data[i]);
-    }
-    printf("\n");
-
-    req.rec_id = res->next_rec_id;
-    if (req.rec_id == LAST_RECORD_ID) {
-      printf("This record is LAST record\n");
-      break;
-    }
-  }
-}
-
-// Tests to read SDR records from Monolake Servers
-static void
-util_get_sdr_info(uint8_t slot_id) {
-  int ret;
-
-  ipmi_sel_sdr_info_t info;
-
-  ret = bic_get_sdr_info(slot_id, &info);
-  if (ret) {
-    printf("util_get_sdr_info:bic_get_sdr_info returns %d\n", ret);
-    return;
-  }
-
-  printf("SDR info for 1S Slot is..\n");
-
-  printf("version: 0x%X\n", info.ver);
-  printf("Record Count: 0x%X\n", info.rec_count);
-  printf("Free Space: 0x%X\n", info.free_space);
-  printf("Recent Add TS: 0x%X:0x%X:0x%X:0x%X\n", info.add_ts[3], info.add_ts[2], info.add_ts[1], info.add_ts[0]);
-  printf("Recent Erase TS: 0x%X:0x%X:0x%X:0x%X\n", info.erase_ts[3], info.erase_ts[2], info.erase_ts[1], info.erase_ts[0]);
-  printf("Operation Support: 0x%X\n", info.oper);
-}
 
 static void
 util_get_sdr(uint8_t slot_id) {
   int ret;
-  int i;
-  uint16_t rsv;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
 
@@ -506,7 +385,7 @@ util_get_sdr(uint8_t slot_id) {
       continue;
     }
 
-    sdr_full_t *sdr = res->data;
+    sdr_full_t *sdr = (sdr_full_t *)res->data;
 
     printf("type: %d, ", sdr->type);
     printf("sensor_num: %d, ", sdr->sensor_num);

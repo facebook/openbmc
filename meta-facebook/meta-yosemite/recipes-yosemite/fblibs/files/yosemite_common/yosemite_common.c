@@ -29,6 +29,8 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <string.h>
+#include <unistd.h>
+#include <openbmc/edb.h>
 #include "yosemite_common.h"
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
@@ -113,14 +115,11 @@ generate_dump(void *arg) {
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
   char fruname[16];
-  int tmpf;
-  int rc;
-
 
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
-  rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  rc = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+  (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  (void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
   yosemite_common_fru_name(fru, fruname);
 
@@ -145,6 +144,8 @@ generate_dump(void *arg) {
 
   sprintf(cmd, CRASHDUMP_KEY, fru);
   edb_cache_set(cmd, "0");
+
+  return NULL;
 }
 
 

@@ -148,7 +148,6 @@ process_command (int peci_fd, int argc, char **argv) {
   uint8_t tbuf[32] = {0x00};
   uint8_t rbuf[32] = {0x00};
   uint8_t tlen = 0;
-  uint16_t rlen = 0;
   int i, opt, retry;
   char file_path[256];
   int optind_long = 0;
@@ -279,10 +278,10 @@ err_exit:
     printf("%s ", argv[i]);
   printf("\n");
   print_usage_help();
-exit:
   return -1;
 }
 
+int
 main(int argc, char **argv) {
   int peci_fd = 0;
   int timeout = 5;

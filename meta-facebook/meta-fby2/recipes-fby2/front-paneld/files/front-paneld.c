@@ -202,6 +202,8 @@ debug_card_out:
     else
       sleep(1);
   }
+
+  return 0;
 }
 
 // Thread to monitor Reset Button and propagate to selected server
@@ -211,13 +213,13 @@ rst_btn_handler() {
   uint8_t pos;
   int i;
   uint8_t btn;
-  uint8_t last_btn;
+  uint8_t last_btn = 0;
 
   ret = pal_get_rst_btn(&btn);
   if (0 == ret) {
     last_btn = btn;
   }
-  
+
   while (1) {
     // Check the position of hand switch
     ret = get_handsw_pos(&pos);
@@ -267,13 +269,16 @@ rst_btn_out:
     last_btn = btn;
     msleep(100);
   }
+
+  return 0;
 }
 
 // Thread to handle Power Button and power on/off the selected server
 static void *
 pwr_btn_handler() {
   int ret, i;
-  uint8_t pos, btn, cmd;
+  uint8_t pos, btn;
+  uint8_t cmd = 0;
   uint8_t power, st_12v = 0;
   char tstr[64];
   bool release_flag = true;
@@ -387,6 +392,7 @@ pwr_btn_handler() {
 pwr_btn_out:
     msleep(100);
   }
+  return 0;
 }
 
 // Thread to monitor SLED Cycles by using time stamp
@@ -397,7 +403,6 @@ ts_handler() {
   struct timespec mts;
   char tstr[64] = {0};
   char buf[128] = {0};
-  uint8_t por = 0;
   uint8_t time_init = 0;
   long time_sled_on;
   long time_sled_off;
@@ -448,6 +453,8 @@ ts_handler() {
 
     sleep(HB_SLEEP_TIME);
   }
+
+  return 0;
 }
 
 // Thread to handle LED state of the server at given slot
@@ -544,6 +551,8 @@ led_handler() {
       }
     }
   }
+
+  return 0;
 }
 
 // Thread to handle LED state of the SLED
@@ -703,6 +712,8 @@ led_sync_handler() {
     }
     msleep(500);
   }
+
+  return 0;
 }
 
 // Thread to handle Seat LED state
@@ -746,6 +757,8 @@ seat_led_handler() {
 
     sleep(1);
   }
+
+  return 0;
 }
 
 // Thread to handle Slot ID LED state
@@ -754,7 +767,7 @@ slot_id_led_handler() {
   int slot;
   uint8_t p_fan_latch;
   int ret_slot_12v_on;
-  int ret_slot_prsnt; 
+  int ret_slot_prsnt;
   uint8_t status_slot_12v_on;
   uint8_t status_slot_prsnt;
 
@@ -765,24 +778,26 @@ slot_id_led_handler() {
       for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
         if(!pal_is_hsvc_ongoing(slot)) {
           ret_slot_12v_on = pal_is_server_12v_on(slot, &status_slot_12v_on);
-          ret_slot_prsnt = pal_is_fru_prsnt(slot, &status_slot_prsnt); 
+          ret_slot_prsnt = pal_is_fru_prsnt(slot, &status_slot_prsnt);
           if (ret_slot_12v_on < 0 || ret_slot_prsnt < 0)
             continue;
           if (status_slot_prsnt != 1 || status_slot_12v_on != 1)
             pal_set_slot_id_led(slot, LED_OFF); //Turn slot ID LED off
           else
             pal_set_slot_id_led(slot, LED_ON); //Turn slot ID LED on
-        }   
+        }
       }
     } else { // SLED is fully pulled in
       for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        if(!pal_is_hsvc_ongoing(slot)) 
+        if(!pal_is_hsvc_ongoing(slot))
           pal_set_slot_id_led(slot, LED_OFF); //Turn slot ID LED off
       }
     }
 
     sleep(1);
   }
+
+  return 0;
 }
 
 int
@@ -849,7 +864,7 @@ main (int argc, char * const argv[]) {
     syslog(LOG_WARNING, "pthread_create for slot id led error\n");
     exit(1);
   }
- 
+
 
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_rst_btn, NULL);
@@ -862,4 +877,3 @@ main (int argc, char * const argv[]) {
 
   return 0;
 }
-

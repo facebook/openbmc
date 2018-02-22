@@ -1,8 +1,10 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 all: front-paneld
 
-front-paneld: front-paneld.c 
-	$(CC) -pthread -lpal -lbic -ledb -o $@ $^ $(LDFLAGS)
+CFLAGS += -Wall -Werror
+
+front-paneld: front-paneld.c
+	$(CC) $(CFLAGS) -std=gnu99 -pthread -lpal -lbic -ledb -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

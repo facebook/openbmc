@@ -39,7 +39,7 @@
 #define MAX_CMD_RETRY 2
 #define MAX_TOTAL_RETRY 30
 
-static total_retry = 0;
+static uint8_t total_retry = 0;
 
 static void
 print_usage_help(void) {
@@ -133,7 +133,7 @@ process_file(uint8_t slot_id, char *path) {
     process_command(slot_id, argc, argv);
     if (total_retry > MAX_TOTAL_RETRY) {
       printf("Maximum retry count exceeded\n");
-      fclose(fp);      
+      fclose(fp);
       return -1;
     }
   }

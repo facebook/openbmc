@@ -61,4 +61,5 @@ do_install() {
   update-rc.d -r ${D} power-on.sh start 70 5 .
 }
 
+RDEPENDS_${PN} += "bash"
 FILES_${PN} += "/usr/local ${sysconfdir}"

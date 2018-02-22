@@ -238,7 +238,7 @@ set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
   sprintf(key, "slot%d_fwupd", slot_id);
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
-  sprintf(value, "%d", ts.tv_sec);
+  sprintf(value, "%d", (int) ts.tv_sec);
 
   if (edb_cache_set(key, value) < 0) {
      return -1;
@@ -257,8 +257,6 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int count = 0;
-  int i = 0;
   int ret;
   uint8_t bus_id;
 
@@ -1231,7 +1229,7 @@ error_exit:
     case UPDATE_BIC_BOOTLOADER:
       syslog(LOG_CRIT, "bic_update_fw: updating bic bootloader firmware is exiting\n");
       break;
-  } 
+  }
   if (fd > 0 ) {
     close(fd);
   }
@@ -1299,7 +1297,6 @@ static int
 _read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8_t *rlen) {
   int ret;
   uint8_t tbuf[4] = {0};
-  uint8_t tlen = 0;
 
   tbuf[0] = fru_id;
   tbuf[1] = offset & 0xFF;
@@ -1415,11 +1412,10 @@ _write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, ui
 
 int
 bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
-  int ret;
+  int ret = 0;
   uint32_t offset;
   uint8_t count;
   uint8_t buf[64] = {0};
-  uint8_t len = 0;
   int fd;
 
   // Open the file exclusively for read
@@ -1466,15 +1462,6 @@ bic_get_sel_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info) {
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SEL_INFO, NULL, 0, (uint8_t *)info, &rlen);
 
-  return ret;
-}
-
-static int
-_get_sel_rsv(uint8_t slot_id, uint16_t *rsv) {
-  int ret;
-  uint8_t rlen = 0;
-
-  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SEL, NULL, 0, (uint8_t *) rsv, &rlen);
   return ret;
 }
 

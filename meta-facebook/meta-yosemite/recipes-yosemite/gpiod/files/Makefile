@@ -17,6 +17,8 @@
 
 all: gpiod 
 
+CFLAGS += -Wall -Werror
+
 sensord: gpiod.c 
 	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -pthread -lm -std=c99 -o $@ $^ $(LDFLAGS)
 

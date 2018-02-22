@@ -35,6 +35,7 @@ binfiles = "gpiod \
 CFLAGS += " -lbic -lyosemite_gpio -lpal "
 
 DEPENDS += " libbic libyosemite-gpio libpal "
+RDEPENDS_${PN} += " libbic libyosemite-gpio libpal "
 
 pkgdir = "gpiod"
 

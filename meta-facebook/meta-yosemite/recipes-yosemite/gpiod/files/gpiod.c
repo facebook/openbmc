@@ -86,79 +86,6 @@ get_struct_gpio_pin(uint8_t fru) {
   return gpios;
 }
 
-static int
-enable_gpio_intr_config(uint8_t fru, uint8_t gpio) {
-  int ret;
-
-  bic_gpio_config_t cfg = {0};
-  bic_gpio_config_t verify_cfg = {0};
-
-
-  ret =  bic_get_gpio_config(fru, gpio, &cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: bic_get_gpio_config failed"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  cfg.ie = 1;
-
-  ret = bic_set_gpio_config(fru, gpio, &cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: bic_set_gpio_config failed"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  ret =  bic_get_gpio_config(fru, gpio, &verify_cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: verification bic_get_gpio_config"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  if (verify_cfg.ie != cfg.ie) {
-    syslog(LOG_WARNING, "Slot_id: %u,Interrupt enabling FAILED for GPIO pin# %d",
-        fru, gpio);
-    return -1;
-  }
-
-  return 0;
-}
-
-/* Enable the interrupt mode for all the gpio sensors */
-static void
-enable_gpio_intr(uint8_t fru) {
-
-  int i, ret;
-  gpio_pin_t *gpios;
-
-  gpios = get_struct_gpio_pin(fru);
-  if (gpios == NULL) {
-    syslog(LOG_WARNING, "enable_gpio_intr: get_struct_gpio_pin failed.");
-    return;
-  }
-
-  for (i = 0; i < gpio_pin_cnt; i++) {
-
-    gpios[i].flag = 0;
-
-    ret = enable_gpio_intr_config(fru, gpio_pin_list[i]);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "enable_gpio_intr: Slot: %d, Pin %d interrupt enabling"
-          " failed", fru, gpio_pin_list[i]);
-      syslog(LOG_WARNING, "enable_gpio_intr: Disable check for Slot %d, Pin %d",
-          fru, gpio_pin_list[i]);
-    } else {
-      gpios[i].flag = 1;
-#ifdef DEBUG
-      syslog(LOG_WARNING, "enable_gpio_intr: Enabled check for Slot: %d, Pin %d",
-          fru, gpio_pin_list[i]);
-#endif /* DEBUG */
-    }
-  }
-}
-
 static void
 populate_gpio_pins(uint8_t fru) {
 
@@ -339,6 +266,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
     } /* For Loop for each fru */
   } /* while loop */
+  return 0;
 } /* function definition*/
 
 static void
@@ -348,7 +276,7 @@ print_usage() {
 
 /* Spawns a pthread for each fru to monitor all the sensors on it */
 static void
-run_gpiod(int argc, void **argv) {
+run_gpiod(int argc, char **argv) {
   int i, ret;
   uint8_t fru_flag, fru;
 
@@ -367,8 +295,8 @@ run_gpiod(int argc, void **argv) {
 }
 
 int
-main(int argc, void **argv) {
-  int dev, rc, pid_file;
+main(int argc, char **argv) {
+  int rc, pid_file;
 
   if (argc < 2) {
     print_usage();

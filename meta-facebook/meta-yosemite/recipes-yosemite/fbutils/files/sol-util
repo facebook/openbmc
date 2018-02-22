@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-BIN_CONSOLED="/usr/local/bin/consoled"
 LOGFILE="/var/log/mTerm_$1.log"
 
 if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]

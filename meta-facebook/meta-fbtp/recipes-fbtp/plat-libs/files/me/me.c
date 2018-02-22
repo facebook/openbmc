@@ -21,9 +21,12 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
+#include <time.h>
+#include <string.h>
 #include <sys/stat.h>
 #include "me.h"
 
@@ -45,19 +48,6 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-// Helper Functions
-static void
-msleep(int msec) {
-  struct timespec req;
-
-  req.tv_sec = 0;
-  req.tv_nsec = msec * 1000 * 1000;
-
-  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
-    continue;
-  }
-}
-
 static int
 me_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
                   uint8_t *txbuf, uint8_t txlen,
@@ -68,9 +58,6 @@ me_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int count = 0;
-  int i = 0;
-  int ret;
   uint8_t bus_id;
 
   bus_id = 0x04;
@@ -95,7 +82,7 @@ me_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen, &rbuf, &rlen);
+  lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
   if (rlen == 0) {
     syslog(LOG_DEBUG, "me_ipmb_wrapper: Zero bytes received\n");
@@ -163,7 +150,6 @@ static int
 _read_fruid(uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8_t *rlen) {
   int ret;
   uint8_t tbuf[4] = {0};
-  uint8_t tlen = 0;
 
   tbuf[0] = fru_id;
   tbuf[1] = offset & 0xFF;
@@ -177,7 +163,7 @@ _read_fruid(uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8
 
 int
 me_read_fruid(uint8_t fru_id, const char *path) {
-  int ret;
+  int ret = -1;
   uint32_t nread;
   uint32_t offset;
   uint8_t count;
@@ -273,11 +259,10 @@ _write_fruid(uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *buf) {
 
 int
 me_write_fruid(uint8_t fru_id, const char *path) {
-  int ret;
+  int ret = -1;
   uint32_t offset;
   uint8_t count;
   uint8_t buf[64] = {0};
-  uint8_t len = 0;
   int fd;
 
   // Open the file exclusively for read
@@ -327,6 +312,7 @@ me_get_sel_info(ipmi_sel_sdr_info_t *info) {
   return ret;
 }
 
+#if 0
 static int
 _get_sel_rsv(uint16_t *rsv) {
   int ret;
@@ -335,6 +321,7 @@ _get_sel_rsv(uint16_t *rsv) {
   ret = me_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SEL, NULL, 0, (uint8_t *) rsv, &rlen);
   return ret;
 }
+#endif
 
 int
 me_get_sel(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
@@ -403,7 +390,7 @@ me_get_sdr(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
   req->offset = 0;
   req->nbytes = sizeof(sdr_rec_hdr_t);
 
-  ret = _get_sdr(req, tbuf, &tlen);
+  ret = _get_sdr(req, (ipmi_sel_sdr_res_t *)tbuf, &tlen);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_ERR, "me_read_sdr: _get_sdr returns %d\n", ret);
@@ -433,7 +420,7 @@ me_get_sdr(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
       req->nbytes = len;
     }
 
-    ret = _get_sdr(req, tbuf, &tlen);
+    ret = _get_sdr(req, (ipmi_sel_sdr_res_t *)tbuf, &tlen);
     if (ret) {
 #ifdef DEBUG
       syslog(LOG_ERR, "me_read_sdr: _get_sdr returns %d\n", ret);
@@ -456,7 +443,7 @@ me_get_sdr(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
 int
 me_read_sensor(uint8_t sensor_num, ipmi_sensor_reading_t *sensor) {
   int ret;
-  int rlen = 0;
+  uint8_t rlen = 0;
 
   ret = me_ipmb_wrapper(NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, (uint8_t *)&sensor_num, 1, (uint8_t *)sensor, &rlen);
 
@@ -466,12 +453,12 @@ me_read_sensor(uint8_t sensor_num, ipmi_sensor_reading_t *sensor) {
 int
 me_get_sys_guid(uint8_t *guid) {
   int ret;
-  int rlen = 0;
+  uint8_t rlen = 0;
 
   ret = me_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, guid, &rlen);
   if (rlen != SIZE_SYS_GUID) {
 #ifdef DEBUG
-    syslog(LOG_ERR, "me_get_sys_guid: returned rlen of %d\n");
+    syslog(LOG_ERR, "me_get_sys_guid: returned rlen of %d\n", rlen);
 #endif
     return -1;
   }

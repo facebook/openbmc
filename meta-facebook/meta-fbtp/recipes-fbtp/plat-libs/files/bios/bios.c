@@ -49,7 +49,7 @@ get_bios_mtd_name(char* dev)
 
   dev[0] = '\0';
   while (fgets(line, sizeof(line), partitions)) {
-    if(sscanf(line, "mtd%d: %*0x %*0x %s",
+    if(sscanf(line, "mtd%d: %*x %*x %s",
                  &mtdno, mnt_name) == 2) {
       if(!strcmp(name, mnt_name)) {
         sprintf(dev, "/dev/mtd%d", mtdno);

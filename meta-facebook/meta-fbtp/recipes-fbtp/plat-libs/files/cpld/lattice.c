@@ -47,6 +47,21 @@ enum
   Both_CF_UFM=1,
 };
 
+struct cpld_dev_info lattice_device_list[2] = {
+	[0] = {
+		.name = "LC LCMXO2-2000HC",
+		.dev_id = 0x012BB043,
+		.cpld_ver = LCMXO2Family_cpld_Get_Ver,
+		.cpld_program = LCMXO2Family_cpld_update,
+  },
+  [1] = {
+    .name = "LC LCMXO2-4000HC",
+    .dev_id = 0x012BC043,
+    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
+    .cpld_program = LCMXO2Family_cpld_update,
+  }
+};
+
 /*search the index of char in string*/
 static int
 indexof(const char *str, const char *c)
@@ -85,7 +100,7 @@ startWith(const char *str, const char *c)
 
 /*convert bit data to byte data*/
 static unsigned int
-ShiftData(unsigned char *data, unsigned int *result, int len)
+ShiftData(char *data, unsigned int *result, int len)
 {
   int i;
   int RetVal = 0;
@@ -110,7 +125,7 @@ ShiftData(unsigned char *data, unsigned int *result, int len)
   {
     data[i] = data[i] - 0x30;
 
-    result[result_index] |= (data[i] << data_index);
+    result[result_index] |= ((unsigned char)data[i] << data_index);
 
 #ifdef CPLD_DEBUG
     printf("[%s]%x %d %x\n", __func__, data[i], data_index, result[result_index]);
@@ -305,7 +320,7 @@ LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size)
 {
   const char TAG_CF_START[]="L000";
   int ReadLineSize = LATTICE_COL_SIZE;
-  unsigned char tmp_buf[ReadLineSize];
+  char tmp_buf[ReadLineSize];
   unsigned int CFStart = 0;
   unsigned int UFMStart = 0;
   const char TAG_UFM[]="NOTE TAG DATA";
@@ -374,8 +389,8 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
   /**TAG Information**/
 
   int ReadLineSize = LATTICE_COL_SIZE + 2;//the len of 128 only contain data size, '\n' need to be considered, too.
-  unsigned char tmp_buf[ReadLineSize];
-  unsigned char data_buf[LATTICE_COL_SIZE];
+  char tmp_buf[ReadLineSize];
+  char data_buf[LATTICE_COL_SIZE];
   unsigned int CFStart = 0;
   unsigned int UFMStart = 0;
   unsigned int ROWStart = 0;
@@ -654,12 +669,12 @@ LCMXO2Family_cpld_verify(CPLDInfo *dev_info)
 
   if ( err )
   {
-    printf("\nVerify CPLD FW Error\n", __func__);
+    printf("\n[%s] Verify CPLD FW Error\n", __func__);
   }
 #ifdef CPLD_DEBUG
   else
   {
-    printf("\nVerify CPLD FW Pass\n", __func__);
+    printf("\n[%s] Verify CPLD FW Pass\n", __func__);
   }
 #endif
 
@@ -710,7 +725,9 @@ static int
 LCMXO2Family_cpld_End()
 {
   int RetVal = 0;
-  unsigned int dr_data[4]={0};
+#ifdef CPLD_DEBUG
+  unsigned int status;
+#endif
 
   ast_jtag_run_test_idle( 0, 0, 3);
   ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_ISC_PROGRAM_DONE);
@@ -720,10 +737,12 @@ LCMXO2Family_cpld_End()
 #endif
 
   //Read CHECK_BUSY
-  dr_data[0] = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
 
 #ifdef CPLD_DEBUG
-  printf("[%s] READ_STATUS: %x\n", __func__, dr_data[0]);
+  status = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
+  printf("[%s] READ_STATUS: %x\n", __func__, status);
+#else
+  LCMXO2Family_Check_Device_Status(CHECK_BUSY);
 #endif
 
   //Shift in BYPASS(0xFF) instruction
@@ -1071,16 +1090,10 @@ error_exit:
 }
 
 /*************************************************************************************/
-unsigned int jed_file_parse_header(FILE *jed_fd)
+void jed_file_parse_header(FILE *jed_fd)
 {
 	//File
-	unsigned char tmp_buf[160];
-	unsigned int *jed_data;
-
-	unsigned int row  = 0;
-	unsigned char input_char, input_bit;
-	int sdr_array = 0, data_bit = 0, bit_cnt = 0;
-	int cmp_err = 0;
+	char tmp_buf[160];
 
 	//Header paser
 	while(fgets(tmp_buf, 120, jed_fd)!= NULL) {
@@ -1097,7 +1110,6 @@ unsigned int jed_file_parser(FILE *jed_fd, unsigned int len, unsigned int *dr_da
 	int i = 0;
 	unsigned char input_char, input_bit;
 	int sdr_array = 0, data_bit = 0, bit_cnt = 0;
-	int cmp_err = 0;
 
 	//Jed row
 	for(i = 0; i < len; i++) {
@@ -1151,13 +1163,11 @@ unsigned int jed_file_parser(FILE *jed_fd, unsigned int len, unsigned int *dr_da
 int lcmxo2_2000hc_cpld_program(FILE *jed_fd)
 {
 	int i;
-	unsigned int tdo = 0;
 	unsigned int *dr_data;
 	//file
 	unsigned int *jed_data;
 
 	unsigned int row  = 0;
-	int cmp_err = 0;
 
 	dr_data = malloc(((424/32) + 1) * sizeof(unsigned int));
 	jed_data = malloc(((cur_dev->dr_bits/32) + 1) * sizeof(unsigned int));
@@ -1664,7 +1674,6 @@ int lcmxo2_2000hc_cpld_flash_disable(void)
 
 int lcmxo2_2000hc_cpld_ver(unsigned int *ver)
 {
-	unsigned int data=0;
 	unsigned int *dr_data;
 
 	unsigned int alloc_size = ((cur_dev->dr_bits /32 + 1) * sizeof(unsigned int) + 4096 ) % 4096;
@@ -1702,9 +1711,8 @@ int lcmxo2_2000hc_cpld_verify(FILE *jed_fd)
 {
 	int i;
 	unsigned int data=0;
-	unsigned int tdo;
-	unsigned int *jed_data;
-	unsigned int *dr_data;
+	unsigned int *jed_data = NULL;
+	unsigned int *dr_data = NULL;
 	unsigned int row  = 0;
 	int cmp_err = 0;
 	int parser_err = 0;
@@ -2034,7 +2042,7 @@ int lcmxo2_2000hc_cpld_verify(FILE *jed_fd)
 	//SIR 8	TDI  (FF)
 	//		TDO  (04)
 	//		MASK (84);
-	tdo = ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
 
 	if (!cfg_err && !ufm_err)
 		ret_err = 0;
@@ -2073,7 +2081,6 @@ err_handle:
 int lcmxo2_2000hc_cpld_erase(void)
 {
 	int i = 0;
-	unsigned int tdo = 0;
 	unsigned int *sdr_data;
 	unsigned int data=0;
 	unsigned int sdr_array = 0;
@@ -2136,7 +2143,7 @@ int lcmxo2_2000hc_cpld_erase(void)
 	//SIR 8	TDI  (FF)
 	//		TDO  (00)
 	//		MASK (C0);
-	tdo = ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
+	ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
 
 	//! Shift in ISC ENABLE X (0x74) instruction
 	//SIR 8	TDI  (74);

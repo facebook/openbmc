@@ -1,3 +1,6 @@
+#ifndef _LATTICE_H_
+#define _LATTICE_H_
+
 #define	LATTICE_INS_LENGTH		0x08
 
 //lattice's cmd
@@ -63,17 +66,6 @@ struct cpld_dev_info {
 };
 
 /*************************************************************************************/
-static struct cpld_dev_info lattice_device_list[] = {
-	[0] = {
-		.name = "LC LCMXO2-2000HC",
-		.dev_id = 0x012BB043,
-		.cpld_ver = LCMXO2Family_cpld_Get_Ver,
-		.cpld_program = LCMXO2Family_cpld_update,
-  },
-  [1] = {
-    .name = "LC LCMXO2-4000HC",
-    .dev_id = 0x012BC043,
-    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
-    .cpld_program = LCMXO2Family_cpld_update,
-  }
-};
+extern struct cpld_dev_info lattice_device_list[2];
+
+#endif

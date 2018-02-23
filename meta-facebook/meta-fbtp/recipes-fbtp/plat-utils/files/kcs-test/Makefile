@@ -10,6 +10,7 @@ OBJS		=
 LDLIBS		= -lc -lrt -lgcc
 EXTRA_FLAGS	= -lpthread
 EXEC_NAME	= kcs-test
+MYCFLAGS = $(CFLAGS) -Wall -Werror
 
 all:		$(EXEC_NAME)
 

@@ -36,6 +36,7 @@ IMAGE_INSTALL += " \
   sensor-util \
   sensor-mon \
   gpiod \
+  gpiointrd \
   front-paneld \
   power-util \
   mterm\

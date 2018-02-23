@@ -24,4 +24,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libbic.so"
 FILES_${PN}-dev = "${includedir}/facebook/bic.h"
 
-RDEPENDS_${PN} += " libedb"
+RDEPENDS_${PN} += " libipmb libedb"

@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 #include <sys/time.h>
 #include <openbmc/pal.h>
@@ -39,7 +40,6 @@ int
 main(int argc, char **argv) {
 
   uint8_t pos;
-  char tstr[64] = {0};
   uint8_t curr;
   int ret;
 

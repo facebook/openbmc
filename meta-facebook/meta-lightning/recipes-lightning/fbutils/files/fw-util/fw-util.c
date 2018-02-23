@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
@@ -42,7 +43,7 @@ get_wdt30_value(uint32_t *wdt30_value){
   void *wdt30_reg_addr;
 
   wdt_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (wdt_fd < 0) 
+  if (wdt_fd < 0)
     return -1;
 
   wdt_reg_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, wdt_fd,
@@ -92,7 +93,7 @@ print_fw_bmc_ver(void) {
   if (fp != NULL) {
     fseek(fp, 16, SEEK_SET);
     memset(str, 0, sizeof(char) * 64);
-    if (!fscanf(fp, "%s", &str)) {
+    if (!fscanf(fp, "%s", str)) {
       strcpy(str, "NA");
     }
     fclose(fp);
@@ -112,7 +113,7 @@ get_mtd_name(const char* name, char* dev)
 
   dev[0] = '\0';
   while (fgets(line, sizeof(line), partitions)) {
-    if(sscanf(line, "mtd%d: %*0x %*0x %s",
+    if(sscanf(line, "mtd%d: %*x %*x %s",
                  &mtdno, mnt_name) == 2) {
       if(!strcmp(name, mnt_name)) {
         sprintf(dev, "/dev/mtd%d", mtdno);
@@ -125,7 +126,7 @@ get_mtd_name(const char* name, char* dev)
   return found;
 }
 
-void sig_handler(int signo) { 
+void sig_handler(int signo) {
   //Catch SIGINT, SIGTERM. If recived signal remove FW Update Flag File.
   //Kill flashcp process if there is any.
   char singal[10]={0};
@@ -198,7 +199,7 @@ main(int argc, char **argv) {
     }
 
     // Normal updating time is less than 4 minutes.
-    pal_set_fw_update_ongoing(FRU_ALL, 4*60*3); 
+    pal_set_fw_update_ongoing(FRU_ALL, 4*60*3);
 
     if (!strcmp(argv[2], "flash0")) {
       if (flash_idx == 0) {
@@ -238,8 +239,8 @@ main(int argc, char **argv) {
       ret = run_command(cmd);
       if (ret == 0) {
         syslog(LOG_CRIT, "BMC %s firmware update successfully", flash_mtd_name);
-        printf("Updated BMC %s successfully, start to reboot BMC.\n", flash_mtd_name);          
-        is_bmc_update_flag = true;          
+        printf("Updated BMC %s successfully, start to reboot BMC.\n", flash_mtd_name);
+        is_bmc_update_flag = true;
       }
       ret = -1;
       goto exit;

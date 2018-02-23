@@ -54,13 +54,11 @@ print_usage_help(void) {
   printf("       enclosure-util --drive-health\n");
 }
 
-void 
+void
 get_error_code() {
   uint8_t error_code_assert[ERROR_CODE_NUM * 8];
   int p_ret = 0;
-  FILE *fp = NULL;
   uint8_t error_code_array[ERROR_CODE_NUM] = {0};
-  int count = 0;
   int tmp = 0;
 
   pal_read_error_code_file(error_code_array);
@@ -69,7 +67,7 @@ get_error_code() {
   p_ret = bit_map(error_code_array, error_code_assert);
   printf("Error Counter: %d\n", p_ret);
   for (tmp = 0; tmp < p_ret; tmp++) {
-    if ( error_code_assert[tmp] < MAX_DESCRIPTION_NUM ) { 
+    if ( error_code_assert[tmp] < MAX_DESCRIPTION_NUM ) {
       printf("Error Code %d: %s", (uint32_t)error_code_assert[tmp],
                                   Error_Code_Description[error_code_assert[tmp]]);
     }
@@ -86,9 +84,7 @@ void
 get_switch_status() {
   uint8_t error_code_assert[ERROR_CODE_NUM * 8];
   int p_ret = 0;
-  FILE *fp = NULL;
   uint8_t error_code_array[ERROR_CODE_NUM] = {0};
-  int count = 0;
   int tmp = 0;
   bool switchStatus[3] = {0};
 
@@ -121,10 +117,20 @@ get_switch_status() {
   printf("\n");
 }
 
+/* if enclosure-util read SSD,
+create a flag file to avoid other process to do any  SSD monitor */
+void ssd_monitor_critical_section() {
+  FILE *fp = NULL;
+  fp = fopen(SKIP_READ_SSD_TEMP, "w");
+  fprintf(fp, "%d ", MAX_SLOT_NUM * 4);
+  fclose(fp);
+  msleep(100);
+}
+
 void drive_status(int num) {
   int ret;
   ssd_monitor_critical_section();
-  
+
   /* read NVMe-MI data */
   ret = pal_read_nvme_data(num, CMD_DRIVE_STATUS);
   if (ret == 1 || ret ==5)
@@ -138,12 +144,6 @@ void drive_status(int num) {
 
 void drive_health() {
   int drive[MAX_SLOT_NUM];
-  uint8_t error_code_assert[ERROR_CODE_NUM * 8];
-  int p_ret = 0;
-  FILE *fp = NULL;
-  uint8_t error_code_array[ERROR_CODE_NUM] = {0};
-  int count = 0;
-  int tmp = 0;
   int i;
 
   ssd_monitor_critical_section();
@@ -177,7 +177,7 @@ void drive_health() {
       printf("%d.2 ", i);
     else if (drive[i] == 5)
       printf("%d.1 %d.2 ", i, i);
-    
+
   printf("\n");
 
   printf("Abnormal Drives: ");
@@ -191,16 +191,6 @@ void drive_health() {
     else if (drive[i] == 2)
       printf("%d.1 %d.2 ", i, i);
   printf("\n");
-}
-
-/* if enclosure-util read SSD, 
-create a flag file to avoid other process to do any  SSD monitor */
-void ssd_monitor_critical_section() {
-  FILE *fp = NULL;
-  fp = fopen(SKIP_READ_SSD_TEMP, "w");
-  fprintf(fp, "%d ", MAX_SLOT_NUM * 4);
-  fclose(fp);
-  msleep(100);
 }
 
 int
@@ -273,7 +263,6 @@ static int bit_map(unsigned char* in_error,unsigned char* data)
   int ret = 0;
   int ii=0;
   int kk=0;
-  int NUM = 0;
   if( data == NULL)
     return 0;
 

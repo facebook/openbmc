@@ -90,6 +90,7 @@ id_led_handler() {
 err:
     sleep(1);
   }
+  pthread_exit(NULL);
 
 }
 
@@ -130,6 +131,7 @@ encl_led_handler() {
 err:
     sleep(1);
   }
+  pthread_exit(NULL);
 
 }
 // Thread for monitoring debug card hotswap
@@ -142,11 +144,9 @@ debug_card_handler() {
   uint8_t btn = 0;
   uint8_t pos = 0;
   uint8_t err_num = 0;
-  char display[50] = "";
   char self_tray_name[16] = "";
   char peer_tray_name[16] = "";
   uint8_t error_code_assert[ERROR_CODE_NUM * 8];
-  FILE *fp = NULL;
   uint8_t error_code_array[ERROR_CODE_NUM] = {0};
   int errCount = 0;
   int displayCount = 0;
@@ -169,7 +169,7 @@ debug_card_handler() {
     if (!pal_self_tray_insertion(&current_tray_state)) {
       if (tray_last_status.self != current_tray_state) {
         tray_last_status.self = current_tray_state;
-        if (current_tray_state) { 
+        if (current_tray_state) {
           pal_err_code_enable(ERR_CODE_SELF_TRAY_PULL_OUT);
           syslog(LOG_CRIT, "ASSERT: Self Tray (%s) Pulled-out", self_tray_name);
         } else {
@@ -257,6 +257,8 @@ debug_card_handler() {
 debug_card_out:
     sleep(POST_LED_DELAY_TIME);
   }
+  pthread_exit(NULL);
+
 }
 
 int

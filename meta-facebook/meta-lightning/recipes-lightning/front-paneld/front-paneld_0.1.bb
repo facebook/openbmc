@@ -42,6 +42,7 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
+RDEPENDS_${PN} += " libpal "
 
 # Inhibit complaints about .debug directories:
 

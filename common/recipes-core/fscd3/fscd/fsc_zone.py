@@ -110,7 +110,10 @@ class Zone:
                     else:
                         if self.sensor_fail == True:
                             if sensor.status in ['na']:
-                                if re.match(r'SSD', sensor.name) != None or re.match(r'(.*)nvme(.*)', sname) != None:
+                                if re.match(r'.+_C[2-4]_[0-3]_NVME_.+', sensor.name) != None:
+                                    Logger.warn("%s Fail" % v)
+                                    outmin = max(outmin, self.boost)
+                                elif re.match(r'SSD', sensor.name) != None or re.match(r'(.*)nvme(.*)', sname) != None:
                                     fail_ssd_count = fail_ssd_count + 1
                                 else:
                                     Logger.warn("%s Fail" % v)

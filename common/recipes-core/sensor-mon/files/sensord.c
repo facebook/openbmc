@@ -476,7 +476,6 @@ snr_monitor(void *arg) {
   }
 
   while(1) {
-
     if (pal_is_fw_update_ongoing(fru)) {
       sleep(STOP_PERIOD);
       continue;

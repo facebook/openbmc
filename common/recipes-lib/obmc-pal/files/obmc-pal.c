@@ -332,6 +332,7 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t *value)
 int __attribute__((weak))
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
+  *cnt = 0;
   return PAL_EOK;
 }
 

@@ -19,7 +19,7 @@ lib: libnvme-mi.so
 
 libnvme-mi.so: nvme-mi.c
 	$(CC) $(CFLAGS) -fPIC -c -o nvme-mi.o nvme-mi.c
-	$(CC) -shared -o libnvme-mi.so nvme-mi.o -lc
+	$(CC) -shared -o libnvme-mi.so nvme-mi.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

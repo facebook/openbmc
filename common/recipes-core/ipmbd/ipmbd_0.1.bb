@@ -13,6 +13,7 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 DEPENDS += "libipmi libipmb obmc-i2c libpal"
+DEPENDS += "update-rc.d-native"
 RDEPENDS_${PN} = "libipmi libpal"
 
 binfiles = "ipmbd"

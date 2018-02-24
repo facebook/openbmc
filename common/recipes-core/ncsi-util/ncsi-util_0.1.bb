@@ -27,6 +27,7 @@ do_install() {
 }
 
 DEPENDS += "libpal "
+RDEPENDS_${PN} += "libpal "
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

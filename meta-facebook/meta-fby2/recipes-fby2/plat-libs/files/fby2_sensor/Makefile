@@ -3,7 +3,7 @@ lib: libfby2_sensor.so
 
 libfby2_sensor.so: fby2_sensor.c
 	$(CC) $(CFLAGS) -fPIC -c -o fby2_sensor.o fby2_sensor.c
-	$(CC) -lm -lbic -lipmi -lipmb -lfby2_common -lnvme-mi -shared -o libfby2_sensor.so fby2_sensor.o -lc
+	$(CC) -lm -lbic -lipmi -lipmb -lfby2_common -lnvme-mi -shared -o libfby2_sensor.so fby2_sensor.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

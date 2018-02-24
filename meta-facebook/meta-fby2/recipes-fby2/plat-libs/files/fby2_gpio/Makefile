@@ -19,7 +19,7 @@ lib: libfby2_gpio.so
 
 libfby2_gpio.so: fby2_gpio.c
 	$(CC) $(CFLAGS) -fPIC -c -o fby2_gpio.o fby2_gpio.c
-	$(CC) -shared -o libfby2_gpio.so fby2_gpio.o -lc
+	$(CC) -shared -o libfby2_gpio.so fby2_gpio.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

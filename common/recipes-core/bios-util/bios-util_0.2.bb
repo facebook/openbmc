@@ -21,6 +21,7 @@ SRC_URI = "file://bios-head.py \
 S = "${WORKDIR}"
 
 DEPENDS += "libpal"
+DEPENDS += "update-rc.d-native"
 
 BIOS_UTIL_CONFIG = "bios_default_support.json"
 

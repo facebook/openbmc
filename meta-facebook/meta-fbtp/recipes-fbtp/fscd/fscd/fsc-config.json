@@ -7,6 +7,33 @@
     "fan_fail": true,
     "sensor_fail": true
   },
+  "sensor_valid_check": {
+    "mb": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "nic": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "riser_slot2": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "riser_slot3": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "riser_slot4": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },  
   "watchdog": false,
   "fanpower": true,
   "min_rpm": 800,

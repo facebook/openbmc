@@ -34,6 +34,7 @@
 #include "pal.h"
 #include <openbmc/vr.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-sensor.h>
 #include <sys/stat.h>
 #include <openbmc/gpio.h>
 #include <openbmc/kv.h>
@@ -1696,6 +1697,123 @@ read_cpu_temp(uint8_t snr_num, float *value) {
   return ret;
 }
 
+bool 
+pal_is_BIOS_completed(uint8_t fru)
+{
+  char path[64] = {0};
+  int val;
+
+  if ( FRU_MB != fru )
+  {
+    syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
+    return false;
+  }
+
+  sprintf(path, GPIO_VAL, GPIO_FM_BIOS_POST_CMPLT_N);
+  if (read_device(path, &val) || val) 
+  {
+    return false;
+  }
+
+  return true;
+}
+
+void
+pal_is_dimm_present_check(uint8_t fru, bool *dimm_sts_list)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int i;
+  int DIMM_SLOT_CNT = 12;//only SS
+  int ret;
+
+  //check dimm info from /mnt/data/sys_config/
+  for (i=0; i<DIMM_SLOT_CNT; i++)
+  {
+    sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
+    ret = kv_get_bin(key, value);
+    if (ret < 4) 
+    {
+      syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
+      return;
+    }
+
+#ifdef FSC_DEBUG    
+    syslog(LOG_WARNING,"[%s]0=%x 1=%x 2=%x 3=%x", __func__, value[0], value[1], value[2], value[3]);
+#endif
+    
+    if ( 0xff == value[0] )
+    {
+      dimm_sts_list[i] = false; 
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]dimm_slot%d is not present", __func__, i);
+#endif
+    }
+    else
+    {
+      dimm_sts_list[i] = true;
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]dimm_slot%d is present", __func__, i);
+#endif
+    }
+  }
+}
+
+bool 
+pal_is_dimm_present(uint8_t sensor_num)
+{
+  static bool is_check = false;
+  static bool dimm_sts_list[12] = {0};  
+  int i = 0,j;
+  uint8_t fru = FRU_MB;
+  
+  if ( false == pal_is_BIOS_completed(fru) )
+  {
+    return false;
+  }
+
+  if ( false == is_check )
+  {
+    is_check = true;
+    pal_is_dimm_present_check(fru, dimm_sts_list);
+  }
+
+  switch (sensor_num)
+  {
+    case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
+      i = 0;
+    break;
+
+    case MB_SENSOR_CPU0_DIMM_GRPB_TEMP:
+      i = 3;
+    break;
+
+    case MB_SENSOR_CPU1_DIMM_GRPC_TEMP:
+      i = 6;
+    break;
+
+    case MB_SENSOR_CPU1_DIMM_GRPD_TEMP:
+      i = 9;
+    break;
+
+    default:
+      syslog(LOG_WARNING, "[%s]Unknown sensor num: 0x%x", __func__, sensor_num);
+    break;
+  }
+ 
+  j = i + 3;
+
+  for ( ; i<j; i++ )
+  {
+    if ( true == dimm_sts_list[i] )
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 static int
 read_dimm_temp(uint8_t snr_num, float *value) {
   int ret = READING_NA;
@@ -1708,8 +1826,6 @@ read_dimm_temp(uint8_t snr_num, float *value) {
   int dimm_index, i;
   int max = 0;
   static uint8_t retry[4] = {0x00};
-  int val;
-  char path[64] = {0};
   static int odm_id = -1;
   uint8_t BoardInfo;
 
@@ -1724,12 +1840,12 @@ read_dimm_temp(uint8_t snr_num, float *value) {
     }
   }
 
-  // show NA if BIOS has not completed POST.
-  sprintf(path, GPIO_VAL, GPIO_FM_BIOS_POST_CMPLT_N);
-  if (read_device(path, &val) || val) {
+  //show NA if BIOS has not completed POST.
+  if ( false == pal_is_BIOS_completed(FRU_MB) )
+  {
     return ret;
   }
-
+  
   switch (snr_num) {
     case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
       dimm_index = 0;
@@ -7097,4 +7213,259 @@ pal_set_def_restart_cause(uint8_t slot)
       }
     }
   }
+}
+
+struct fsc_monitor
+{
+  uint8_t sensor_num;
+  char *sensor_name;
+  bool (*check_sensor_sts)(uint8_t);
+  bool is_alive;
+  uint8_t init_count;
+  uint8_t retry;
+};
+
+static struct fsc_monitor fsc_monitor_riser_list[] =
+{
+  {MB_SENSOR_C2_NVME_CTEMP  , "mb_c2_nvme_ctemp"  , pal_is_pcie_ssd_card , false, 5, 5},
+  {MB_SENSOR_C2_1_NVME_CTEMP, "mb_c2_0_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C2_2_NVME_CTEMP, "mb_c2_1_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C2_3_NVME_CTEMP, "mb_c2_2_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C2_4_NVME_CTEMP, "mb_c2_3_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_NVME_CTEMP  , "mb_c3_nvme_ctemp"  , pal_is_pcie_ssd_card , false, 5, 5},
+  {MB_SENSOR_C3_1_NVME_CTEMP, "mb_c3_0_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_2_NVME_CTEMP, "mb_c3_1_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_3_NVME_CTEMP, "mb_c3_2_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_4_NVME_CTEMP, "mb_c3_3_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_NVME_CTEMP  , "mb_c4_nvme_ctemp"  , pal_is_pcie_ssd_card , false, 5, 5},
+  {MB_SENSOR_C4_1_NVME_CTEMP, "mb_c4_0_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_2_NVME_CTEMP, "mb_c4_1_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_3_NVME_CTEMP, "mb_c4_2_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_4_NVME_CTEMP, "mb_c4_3_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+};
+
+static int fsc_monitor_riser_list_size = sizeof(fsc_monitor_riser_list) / sizeof(struct fsc_monitor);
+
+static struct fsc_monitor fsc_monitor_basic_snr_list[] =
+{
+  {MB_SENSOR_INLET_REMOTE_TEMP  , "mb_inlet_remote_temp"  , NULL, false, 5, 5},
+  {MB_SENSOR_CPU0_PKG_POWER     , "mb_cpu0_pkg_power"     , NULL, false, 5, 5},
+  {MB_SENSOR_CPU1_PKG_POWER     , "mb_cpu1_pkg_power"     , NULL, false, 5, 5},
+  {MB_SENSOR_CPU0_THERM_MARGIN  , "mb_cpu0_therm_margin"  , NULL, false, 5, 5},
+  {MB_SENSOR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin"  , NULL, false, 5, 5},
+  //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
+  {MB_SENSOR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_grpa_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SENSOR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_grpb_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SENSOR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_grpc_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SENSOR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_grpd_temp", pal_is_dimm_present, false, 80, 5},
+};
+
+static int fsc_monitor_basic_snr_list_size = sizeof(fsc_monitor_basic_snr_list) / sizeof(struct fsc_monitor);
+
+int pal_fsc_get_target_snr(char *sname, struct fsc_monitor *fsc_fru_list, int fsc_fru_list_size)
+{
+  int i;
+  for ( i=0;  i<fsc_fru_list_size; i++)
+  {
+    if ( 0 == strcmp(sname, fsc_fru_list[i].sensor_name) )
+    {
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]sensor is found:%s, idx:%d", __func__, sname, i);
+#endif
+      return i;
+    }
+  }
+  
+  syslog(LOG_WARNING,"[%s]Unknown sensor name:%s", __func__, sname);
+  return PAL_ENOTSUP;
+}
+
+int
+pal_init_fsc_snr_sts(uint8_t fru_id, struct fsc_monitor *curr_snr)
+{
+  int ret = PAL_EOK;
+  int actual_fru_id;
+  float value;
+  bool is_snr_prsnt = false;
+  bool is_check_snr_num = false;
+
+  //if the sensor is exist, return.
+  if ( true == curr_snr->is_alive )
+  {
+    curr_snr->init_count = 0;
+    return ret;
+  }
+
+  if ( fru_id >= FRU_RISER_SLOT2 )
+  {
+    actual_fru_id = fru_id - FRU_RISER_SLOT2;
+  }
+  else
+  {
+    actual_fru_id = fru_id;
+
+    if ( (MB_SENSOR_CPU0_DIMM_GRPA_TEMP == curr_snr->sensor_num) || (MB_SENSOR_CPU0_DIMM_GRPB_TEMP == curr_snr->sensor_num) ||
+         (MB_SENSOR_CPU1_DIMM_GRPC_TEMP == curr_snr->sensor_num) || (MB_SENSOR_CPU1_DIMM_GRPD_TEMP == curr_snr->sensor_num) )
+    {
+      is_check_snr_num = true;
+    }
+  }
+
+  //some sensors need to be judged with preidentify function
+  if ( NULL != curr_snr->check_sensor_sts )
+  {
+    if ( true == is_check_snr_num )
+    {
+      //check sensor present based on the sensor name
+      is_snr_prsnt = curr_snr->check_sensor_sts(curr_snr->sensor_num);
+    }
+    else
+    {
+      //check sensor present based on its fru
+      is_snr_prsnt = curr_snr->check_sensor_sts(actual_fru_id);
+    }
+#ifdef FSC_DEBUG
+    syslog(LOG_WARNING,"[%s]Check snr status. is_snr_prsnt:%d, fru_id:%d, actual_fru_id:%d", __func__, is_snr_prsnt, fru_id, actual_fru_id);
+#endif
+
+    if ( (true == is_snr_prsnt) && (false == curr_snr->is_alive) )
+    {
+      //if the fru is exist, check the reading
+      //if the reading is N/A, we assume the sensor is not present
+      //if the reading is the numerical value, we assume the sensor is present 
+      ret = sensor_cache_read(fru_id, curr_snr->sensor_num, &value);
+
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]Check snr reading. fru_id:%d, snum:%x, ret=%d", __func__, fru_id, curr_snr->sensor_num, ret);
+#endif
+
+      if ( PAL_EOK == ret ) 
+      {
+#ifdef FSC_DEBUG
+        syslog(LOG_WARNING,"[%s] snr num %x is found. ret=%d", __func__, curr_snr->sensor_num, ret);
+#endif
+        curr_snr->is_alive = true;
+      }
+    }
+  }
+  else
+  {
+    //no preidentify function. sensors should exist anyway
+#ifdef FSC_DEBUG
+    syslog(LOG_WARNING,"[%s] snr num %x is found. ret=%d", __func__, curr_snr->sensor_num, ret);
+#endif
+    ret = PAL_EOK;
+    curr_snr->is_alive = true;
+  }
+
+  curr_snr->init_count--;
+
+  return ret;
+}
+
+void 
+pal_reinit_fsc_monitor_list()
+{
+  int i;
+
+  //dimm sensors need to be re-init when the system do reset
+  //we only re-init the basic snr list since the dimm sensors is included in it
+  for ( i=0; i<fsc_monitor_basic_snr_list_size; i++ )
+  {
+    fsc_monitor_basic_snr_list[i].is_alive = false;
+    fsc_monitor_basic_snr_list[i].retry = 5;
+
+    if ( (MB_SENSOR_CPU0_DIMM_GRPA_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) || 
+         (MB_SENSOR_CPU0_DIMM_GRPB_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) ||
+         (MB_SENSOR_CPU1_DIMM_GRPC_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) ||
+         (MB_SENSOR_CPU1_DIMM_GRPD_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) )
+    {
+      fsc_monitor_basic_snr_list[i].init_count = 80;
+    }
+    else
+    {
+      fsc_monitor_basic_snr_list[i].init_count = 5;
+    }
+  }
+}
+
+bool pal_sensor_is_valid(char *fru_name, char *sensor_name)
+{
+  const uint8_t init_done = 0;
+  uint8_t fru_id;
+  struct fsc_monitor *fsc_fru_list;
+  int fsc_fru_list_size;
+  int index;
+  int ret;
+  static time_t rst_time = 0;
+  struct stat file_stat;
+
+  //check the fru name is valid or not
+  ret = pal_get_fru_id(fru_name, &fru_id);
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] Wrong fru#%s", __func__, fru_name);
+    return false;
+  }
+
+  //if power reset is executed, re-init the list
+  if ( (stat("/tmp/rst_touch", &file_stat) == 0) && (file_stat.st_mtime > rst_time) ) 
+  {
+    rst_time = file_stat.st_mtime;
+    //in order to record rst_time, the function will be executed at first time
+    pal_reinit_fsc_monitor_list();
+  }
+
+  //check the fru is riser or not
+  if ( fru_id >= FRU_RISER_SLOT2 )
+  {
+    fsc_fru_list = fsc_monitor_riser_list;
+    fsc_fru_list_size = fsc_monitor_riser_list_size;
+  }
+  else
+  {
+    fsc_fru_list = fsc_monitor_basic_snr_list;
+    fsc_fru_list_size = fsc_monitor_basic_snr_list_size;
+  }
+
+  //get the target sensor
+  ret = pal_fsc_get_target_snr(sensor_name, fsc_fru_list, fsc_fru_list_size);
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] undefined sensor: %s", __func__, sensor_name);
+    return false;
+  }
+  
+  index = ret;
+
+  //init the snr list before checking snr fail
+  if ( init_done != fsc_fru_list[index].init_count )
+  {
+    //if we get a sensor reading, it will be checked below
+    //return false if the sensor is not ready
+    ret = pal_init_fsc_snr_sts(fru_id, &fsc_fru_list[index]);
+    if ( PAL_EOK != ret )
+    {
+      return false;
+    }
+  }
+
+
+  //after a sensor is init done, we check its is_alive flag
+  //If the flag is true, return true to make fsc check it
+  //if the flag is false, return false to make fsc skip to check it
+  if ( false == fsc_fru_list[index].is_alive )
+  {
+    return false;
+  }
+
+  //to avoid getting the different reading between here and fscd
+  //wait for two loop
+  if ( fsc_fru_list[index].retry > 3 )
+  {
+    fsc_fru_list[index].retry--;
+    return false;
+  }
+  
+  return true;
 }

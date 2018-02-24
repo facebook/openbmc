@@ -16,8 +16,10 @@
 # Boston, MA 02110-1301 USA
 #
 from fsc_util import Logger
+from ctypes import *
 from subprocess import Popen, PIPE
 
+lpal_hndl = CDLL("libpal.so")
 
 def board_fan_actions(fan, action='None'):
     '''
@@ -70,3 +72,39 @@ def bmc_read_power():
         return 1
     else:
         return 0
+
+def sensor_valid_check(board, sname, check_name, attribute):
+    cmd = ''
+    data = ''
+    try:
+        if attribute['type'] == "power_status":
+            #check power status first
+            pwr_sts = bmc_read_power()
+            if pwr_sts != 1:
+                return 0
+
+            fru_name = c_char_p(board.encode('utf-8'))
+            snr_name = c_char_p(sname.encode('utf-8'))
+
+            is_snr_valid = lpal_hndl.pal_sensor_is_valid(fru_name, snr_name)
+
+            return int(is_snr_valid)
+
+        elif attribute['type'] == "gpio":
+            cmd = "cat /sys/class/gpio/gpio%s/value" % attribute['number']
+            data=''
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if int(data) == 0:
+                return 1
+            else:
+                return 0
+        else:
+            Logger.debug("Sensor corresponding valid check funciton not found!")
+            return -1
+    except SystemExit:
+        Logger.debug("SystemExit from sensor read")
+        raise
+    except Exception as err:
+        Logger.crit("Exception with board=%s, sensor_name=%s, cmd=%s, response=%s, err=%s" % (board, sname, cmd, data, err))
+    return 0
+

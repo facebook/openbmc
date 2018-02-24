@@ -17,5 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libfby2-sensor"
+RDEPENDS_${PN} += "libfby2-sensor"
 
 FILES_${PN} = "${bindir}"

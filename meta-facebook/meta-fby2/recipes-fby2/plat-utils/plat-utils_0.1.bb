@@ -33,7 +33,6 @@ SRC_URI = "file://ast-functions \
            file://eth0_mac_fixup.sh \
            file://fby2_power.sh \
            file://power-on.sh \
-           file://rc.early \
            file://rc.local \
            file://src \
            file://COPYING \
@@ -53,6 +52,7 @@ binfiles = "sol-util power_led.sh post_led.sh \
   check_slot_type.sh hotservice-reinit.sh check_server_type.sh"
 
 DEPENDS_append = "update-rc.d-native"
+RDEPENDS_${PN} += "bash python3 "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -72,8 +72,6 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-  update-rc.d -r ${D} rc.early start 04 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   install -m 755 setup-sysconfig.sh ${D}${sysconfdir}/init.d/setup-sysconfig.sh

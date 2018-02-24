@@ -36,6 +36,8 @@ binfiles = "gpiod \
 CFLAGS += " -lbic -lfby2_gpio -lpal "
 
 DEPENDS += " libbic libfby2-gpio libpal "
+DEPENDS += "update-rc.d-native"
+RDEPENDS_${PN} += " libbic libfby2-gpio libpal "
 
 pkgdir = "gpiod"
 

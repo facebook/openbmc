@@ -15,7 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid"
+DEPENDS_append = " libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid"
+RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libfby2-fruid libbic"
 
 CFLAGS += " -lfby2_fruid "
 LDFLAGS += " -lipmb -lbic -lgpio "

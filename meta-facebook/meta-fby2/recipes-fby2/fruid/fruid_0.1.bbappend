@@ -21,4 +21,5 @@ S = "${WORKDIR}"
 CFLAGS_prepend = " -DCONFIG_FBY2"
 LDFLAGS_append = " -lfby2_fruid"
 
-DEPENDS_prepend = "libfby2-fruid"
+DEPENDS_prepend = "libfby2-fruid "
+RDEPENDS_${PN} += "libfby2-fruid"

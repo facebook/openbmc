@@ -18,6 +18,7 @@ binfiles = "me-util \
 pkgdir = "me-util"
 
 DEPENDS = " libbic libpal "
+RDEPENDS_${PN} += "libbic libpal libipmi libipmb"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

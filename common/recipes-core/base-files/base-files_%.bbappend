@@ -15,25 +15,24 @@ do_install_bmc_issue () {
 
     # found out the source dir
     dir=$(pwd)
-    while [ -n "$dir" -a "$dir" != "/" -a ! -d "$dir/meta-openbmc/.git" ]; do
+    while [[ -n "$dir" && "$dir" != "/" ]] && ! [[ -d "$dir/.git" && -f "$dir/openbmc-init-build-env" ]]; do
         dir=$(dirname $dir)
     done
 
-    if [ -d "$dir/meta-openbmc/.git" ]; then
-        srcdir="$dir/meta-openbmc"
+    if [[ -d "$dir/.git" && -f "$dir/openbmc-init-build-env" ]]; then
+        srcdir="$dir"
         srcdir_git="${srcdir}/.git"
         version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --tags --dirty --always 2> /dev/null)
+        if [[ $version == ${MACHINE}-v* ]]; then
+            print_version=${version}
+        else
+            sha=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} rev-parse --short HEAD)
+            print_version="${MACHINE}-${sha}"
+        fi
     else
-        version=""
+        print_version="${MACHINE}-v0.0"
     fi
 
-    print_version="${MACHINE}"
-    if [[ $version == ${MACHINE}-v* ]]; then
-      print_version=${version}
-    else
-      sha=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} rev-parse --short HEAD)
-      print_version="${MACHINE}-${sha}"
-    fi
     echo "OpenBMC Release ${print_version}" > ${D}${sysconfdir}/issue
     echo >> ${D}${sysconfdir}/issue
     echo "OpenBMC Release ${print_version} %h" > ${D}${sysconfdir}/issue.net

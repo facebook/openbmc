@@ -32,36 +32,29 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
 
 Note: In the instruction set below, references to <platform> for some of the steps is an example only and need to be replaced with the respective platform when setting up for a different platform.
 
-1. Set up the build environment based on the Yocto Project's [Quick Start Guide](http://www.yoctoproject.org/docs/1.6.1/yocto-project-qs/yocto-project-qs.html).
+1. Set up the build environment based on the Yocto Project's [Quick Start Guide](http://www.yoctoproject.org/docs/current/yocto-project-qs/yocto-project-qs.html).
 
-2. Clone Yocto repository:
+2. Clone the OpenBMC repository and its submodules:
  ```bash
- $ git clone -b krogoth https://git.yoctoproject.org/git/poky
+ $ git clone -b helium https://github.com/facebook/openbmc.git
+ $ cd openbmc
+ $ git submodule init
+ $ git submodule update
  ```
 
-3. Clone OpenEmbedded and OpenBMC repositories, in the new created `poky` directory:
+3. Initialize a build directory for the platform to build. In the `openbmc` directory:
  ```bash
- $ cd poky
- $ git clone -b krogoth https://github.com/openembedded/meta-openembedded.git
- $ git clone -b krogoth https://git.yoctoproject.org/git/meta-security
- $ git clone -b helium https://github.com/facebook/openbmc.git meta-openbmc
+ $ source openbmc-init-build-env meta-facebook/meta-wedge
  ```
- Note that this project does not use Yocto release branch names.
+ Choose between `meta-wedge`, `meta-wedge100`, `meta-yosemite`, or any of the other platforms listed in the meta-facebook directory.
+ After this step, you will be dropped into a build directory, `openbmc/build`.
 
-4. Initialize a build directory. In the `poky` directory:
- ```bash
- $ export TEMPLATECONF=meta-openbmc/meta-facebook/meta-<platform>/conf
- $ source oe-init-build-env
- ```
- Choose between `meta-wedge`, `meta-wedge100`, `meta-yosemite`, or any of the other platforms listed in the meta-openbmc/meta-facebook directory.
- After this step, you will be dropped into a build directory, `poky/build`.
-
-5. Start the build within the build directory:
+4. Start the build within the build directory:
  In general to build for the platform:
  ```bash
  $ bitbake <platform>-image
  ```
- The build process automatically fetches all necessary packages and builds the complete image. The final build results are in `poky/build/tmp/deploy/images/<platform>`. The root password will be `0penBmc`, you may change this in the local configuration.
+ The build process automatically fetches all necessary packages and builds the complete image. The final build results are in `openbmc/build/tmp/deploy/images/<platform>`. The root password will be `0penBmc`, you may change this in the local configuration.
 
 ### Kernel Development
 By default, OpenBMC build process fetches and build Linux kernel directly from GitHub repository.
@@ -80,8 +73,6 @@ in `meta-aspeed/conf/machine/include/ast2520.inc`, add these 2 lines below the `
 INHERIT += "externalsrc"
 EXTERNALSRC_pn-linux-aspeed = "<dir>/meta-openbmc/meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1"
 ```
-
-
 
 #### Build Artifacts
 

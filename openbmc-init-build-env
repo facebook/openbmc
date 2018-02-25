@@ -1,0 +1,57 @@
+#!/bin/bash
+
+DISTRO_DEFAULT=krogoth
+declare -a DISTRO_OVERRIDES
+#DISTRO_OVERRIDES=(meta-cmm:rocko)
+
+platform="$1"
+_distro="${DISTRO_DEFAULT}"
+
+if [ -n "$BASH_SOURCE" ]; then
+    THIS_SCRIPT=$BASH_SOURCE
+elif [ -n "$ZSH_NAME" ]; then
+    THIS_SCRIPT=$0
+else
+    THIS_SCRIPT="$(pwd)/openbmc-init-build-env"
+fi
+
+if [ -z "$ZSH_NAME" ] && [ "$0" = "$THIS_SCRIPT" ]; then
+    echo "Error: This script needs to be sourced. Please run as '. $THIS_SCRIPT $@'"
+    exit 1
+fi
+unset THIS_SCRIPT
+
+# Make sure specific BSP is set
+if [ -z "$TEMPLATECONF" ]; then
+    if [ -z "$1" ]; then
+        echo "A specific BSP must be provided:"
+        echo "e.g.:"
+        echo "    . openbmc-init-build-env meta-facebook/meta-wedge"
+        return 1
+    fi
+    if [ -d "$(pwd)/$1" ]; then
+        TEMPLATECONF="$(pwd)/$1/conf"
+    elif [ -d "$(pwd)/meta-$1" ]; then
+        TEMPLATECONF="$(pwd)/meta-$1/conf"
+    else
+        echo "Neither $(pwd)/$1 nor $(pwd)/meta-$1 exists"
+        return 1
+    fi
+    export TEMPLATECONF
+    shift 1
+fi
+
+for override in ${DISTRO_OVERRIDES[*]}; do
+    override_plat=${override%%:*}
+    override_distro=${override##*:}
+    if [[ "${platform/${override_plat}/}" != "${platform}" ]]; then
+        # override happens
+        _distro="${override_distro}"
+    fi
+done
+unset DISTRO_DEFAULT DISTRO_OVERRIDES
+unset override override_plat override_distro
+
+echo "Init build environment for platform '${platform}' with distro ${_distro}..."
+unset platform
+. yocto/${_distro}/poky/oe-init-build-env $@

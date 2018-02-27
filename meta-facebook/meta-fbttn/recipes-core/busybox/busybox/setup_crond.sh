@@ -32,19 +32,7 @@ echo "Setup crond..."
       mkdir /etc/cron.daily
   fi
 
-  if [ ! -d "/etc/cron.hourly" ]; then
-      mkdir /etc/cron.hourly
-  fi
-
-  if [ ! -x /etc/cron.hourly/logrotate ]; then
-      cp /etc/cron.daily/logrotate /etc/cron.hourly/
-  fi
-
   mkdir -p /etc/cron/crontabs
-  echo "0 * * * * run-parts /etc/cron.hourly" > /etc/cron/crontabs/root
   echo "0 0 * * * run-parts /etc/cron.daily" >> /etc/cron/crontabs/root
-# TODO: Restarting the rsyslog has potential risk of losing the logs. 
-#       Please remove this cronjob once the Rsyslog memory leak issue is resolved. 
-  echo "0 0 * * * /etc/init.d/syslog.rsyslog restart" >> /etc/cron/crontabs/root
   /etc/init.d/busybox-cron start
 echo "done."

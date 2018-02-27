@@ -155,6 +155,7 @@ int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_get_config(uint8_t slot_id, bic_config_t *cfg);
+int bic_set_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len);
 
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);

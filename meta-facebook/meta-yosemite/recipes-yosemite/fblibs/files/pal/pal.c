@@ -28,7 +28,9 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 #include <openbmc/obmc-sensor.h>
+#include <openbmc/edb.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -316,8 +318,6 @@ write_device(const char *device, const char *value) {
 
 static int
 pal_key_check(char *key) {
-
-  int ret;
   int i;
 
   i = 0;
@@ -839,7 +839,6 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
-  char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
   uint8_t retry = MAX_READ_RETRY;
   static uint8_t last_status[MAX_NODES+1] = {0};
@@ -1205,7 +1204,7 @@ set_usb_mux(uint8_t state) {
   }
 
   // This GPIO Pin is active low
-  if (!val == state)
+  if ((!val) == state)
     return 0;
 
   if (state)
@@ -1371,7 +1370,6 @@ uart_exit:
 int
 pal_post_enable(uint8_t slot) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -1400,7 +1398,6 @@ pal_post_enable(uint8_t slot) {
 int
 pal_post_disable(uint8_t slot) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -1425,7 +1422,6 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
   int ret;
   uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t len;
-  int i;
 
   ret = bic_get_post_buf(slot, buf, &len);
   if (ret) {
@@ -1831,14 +1827,14 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
 
 void
 pal_dump_key_value(void) {
-  int i;
+  int i = 0;
   int ret;
 
   char value[MAX_VALUE_LEN] = {0x0};
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value) < 0) {
+    if ((ret = kv_get(key_list[i], value)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -1892,13 +1888,13 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
       sprintf(state, "on");
       return 0;
   }
+
+  return 0;
 }
 
 int
 pal_get_sys_guid(uint8_t slot, char *guid) {
-  int ret;
-
-  return bic_get_sys_guid(slot, guid);
+  return bic_get_sys_guid(slot, (uint8_t*) guid);
 }
 
 int
@@ -2036,6 +2032,8 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
       _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 0), name);
       valid = false;
     }
+
+    return 0;
   }
 
   if (GETBIT(diff, 1)) {
@@ -2071,6 +2069,8 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
       valid = false;
     }
   }
+
+  return 0;
 }
 
 static int
@@ -2342,17 +2342,6 @@ pal_get_fan_name(uint8_t num, char *name) {
 }
 
 static int
-read_fan_value(const int fan, const char *device, int *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR,device_name);
-  return read_device(full_name, value);
-}
-
-static int
 write_fan_value(const int fan, const char *device, const int value) {
   char full_name[LARGEST_DEVICE_NAME];
   char device_name[LARGEST_DEVICE_NAME];
@@ -2380,7 +2369,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
   // For 0%, turn off the PWM entirely
   if (unit == 0) {
-    write_fan_value(fan, "pwm%d_en", 0);
+    ret = write_fan_value(fan, "pwm%d_en", 0);
     if (ret < 0) {
       syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
       return -1;
@@ -2441,7 +2430,7 @@ pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%d", ts.tv_sec);
+  sprintf(tstr, "%d", (int) ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 

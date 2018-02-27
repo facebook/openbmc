@@ -17,8 +17,9 @@
   "sensor_valid_check": {
     "SOC": {
       "attribute": {
-        "type" : "power_status",
-        "fru" : "server"
+        "type" : "power_BIC_status",
+        "fru" : "server",
+        "number" : "55"
       }
     },
     "M2": {

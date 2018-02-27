@@ -102,12 +102,18 @@ def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ''
     data = ''
     try:
-        if attribute['type'] == "power_status":
+        if attribute['type'] == "power_BIC_status":
             cmd = "/usr/local/bin/power-util %s status" % attribute['fru']
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             result=data.split(": ")
             if match(r'ON', result[1]) != None:
-                return 1
+                cmd = "cat /sys/class/gpio/gpio%s/value" % attribute['number']
+                data=''
+                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+                if int(data) == 0:
+                    return 1
+                else:
+                    return 0
             else:
                 return 0
 
@@ -121,10 +127,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 return 0
         else:
             Logger.debug("Sensor corresponding valid check funciton not found!")
-            return -1
+            return 0
     except SystemExit:
         Logger.debug("SystemExit from sensor read")
         raise
     except Exception:
         Logger.crit("Exception with board=%s, sensor_name=%s, cmd=%s, response=%s" % (board, sname, cmd, data))
-    return -1
+    return 0

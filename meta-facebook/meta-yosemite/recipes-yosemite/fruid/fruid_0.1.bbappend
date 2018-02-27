@@ -22,3 +22,5 @@ CFLAGS_prepend = " -DCONFIG_YOSEMITE"
 LDFLAGS_append = " -lyosemite_fruid"
 
 DEPENDS_prepend = "libyosemite-fruid"
+
+RDEPENDS_${PN} += "libyosemite-fruid"

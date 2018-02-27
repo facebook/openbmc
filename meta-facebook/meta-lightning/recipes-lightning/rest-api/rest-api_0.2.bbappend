@@ -22,6 +22,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://rest.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
 DEPENDS_append = " update-rc.d-native"
+CFLAGS += " -Wall -Werror "
 
 S = "${WORKDIR}"
 
@@ -64,3 +65,5 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
+
+RDEPENDS_${PN} += " libpal "

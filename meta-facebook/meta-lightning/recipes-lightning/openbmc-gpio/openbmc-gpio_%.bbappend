@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+CFLAGS += " -Wall -Werror "
 
 SRC_URI += " \
           file://openbmc-gpio-1/board_gpio_table.py \

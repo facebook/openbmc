@@ -21,6 +21,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://usbcons.sh;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
+CFLAGS += " -Wall -Werror "
 DEPENDS_append = " update-rc.d-native"
 
 SRC_URI = "file://usbcons.sh \

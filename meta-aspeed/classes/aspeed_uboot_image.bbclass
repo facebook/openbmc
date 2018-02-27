@@ -1,12 +1,31 @@
-inherit image_types_uboot
+def image_types_module(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro == 'fido' or distro == 'krogoth':
+        return 'image_types_uboot'
+    return 'image_types'
+
+# Inherit u-boot classes if legacy uboot images are in use.
+IMAGE_TYPE_MODULE = '${@image_types_module(d)}'
+inherit ${IMAGE_TYPE_MODULE}
+
+# Make Rocko images work just like they would in krogoth
+# That means, let conversion on u-boot call into oe_mkimage so
+# we may do our fit conversions.
+# TODO:
+# More up-stream-worthy method is to use the chaining of conversions.
+CONVERSION_CMD_u-boot = "oe_mkimage ${IMAGE_NAME}.rootfs.${type} none"
 
 # oe_mkimage() was defined in image_types_uboot. Howver, it does not consider
 # the image load address and entry point. Override it here.
 
 oe_mkimage () {
+    ramdisk="${DEPLOY_DIR_IMAGE}/$1"
+    if [ ! -e ${ramdisk} ]; then
+      ramdisk="${IMGDEPLOYDIR}/$1"
+    fi
     mkimage -A ${UBOOT_ARCH} -O linux -T ramdisk -C $2 -n ${IMAGE_NAME} \
         -a ${UBOOT_IMAGE_LOADADDRESS} -e ${UBOOT_IMAGE_ENTRYPOINT} \
-        -d ${DEPLOY_DIR_IMAGE}/$1 ${DEPLOY_DIR_IMAGE}/$1.u-boot
+        -d ${ramdisk} ${ramdisk}.u-boot
 }
 
 UBOOT_IMAGE_ENTRYPOINT ?= "0x42000000"
@@ -43,8 +62,12 @@ flash_image_generate() {
     return 1
   fi
   if [ ! -f $rootfs ]; then
-    echo "Rootfs file ${rootfs} does not exist"
-    return 1
+    new_rootfs="${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.cpio.lzma.u-boot"
+    if [ ! -f $new_rootfs ]; then
+      echo "Rootfs file ${rootfs} does not exist"
+      return 1
+    fi
+    cp -f $new_rootfs ${DEPLOY_DIR_IMAGE}/
   fi
   dst="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_NAME}"
   rm -rf $dst

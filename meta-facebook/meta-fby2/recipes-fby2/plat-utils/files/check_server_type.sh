@@ -20,7 +20,7 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-get_server_type()
+get_server_sku()
 {
    j=0
    max_retry=3
@@ -40,7 +40,10 @@ get_server_type()
            product_id_h=`echo "$output" | cut -c 31-32`
            if [[ "$product_id_l" == 43 && "$product_id_h" == 52 ]] ; then
              #RC
-             tmp_server_type=1                           
+             tmp_server_type=1
+           elif [[ "$product_id_l" == 50 && "$product_id_h" == 45 ]] ; then
+             #EP
+             tmp_server_type=2
            elif [[ "$product_id_l" == 39 && "$product_id_h" == 30 ]] ; then
              #TL
              tmp_server_type=0
@@ -61,7 +64,7 @@ get_server_type()
    return $server_type
 }
 
-get_server_type
+get_server_sku
 SERVER_TYPE=$?
 echo "Server Type: $SERVER_TYPE "
 echo "<SERVER_TYPE[7:0] = {SLOT4, SLOT3, SLOT2, SLOT1}>"

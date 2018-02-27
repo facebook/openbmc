@@ -1,6 +1,5 @@
 # /etc/logrotate.d/rsyslog
 
-/var/log/console.log
 /var/log/dhclient.log
 /var/log/messages
 {
@@ -11,7 +10,7 @@
         delaycompress
         compress
         postrotate
-		/etc/init.d/syslog.rsyslog restart
+		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
         endscript
 }
 
@@ -30,6 +29,6 @@
         delaycompress
         sharedscripts
         postrotate
-		/etc/init.d/syslog.rsyslog restart
+		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
         endscript
 }

@@ -118,6 +118,45 @@ enum {
   RC_BIC_BB_I2C_ALERT,
 };
 
+// EP GPIO PINS
+enum {
+  EP_PWRGD_COREPWR,
+  EP_PWRGD_SYS_PWROK,
+  EP_PWRGD_PS_PWROK_PLD,
+  EP_PVCCIN_VRHOT_N,
+  EP_H_MEMHOT_CO_N,
+  EP_FM_CPLD_BIC_THERMTRIP_N,
+  EP_FM_CPU_ERROR_2,
+  EP_FM_CPU_ERROR_1,
+  EP_FM_CPU_ERROR_0,
+  EP_FM_NMI_EVENT_BMC_N,
+  EP_FM_CRASH_DUMP_M3_N,
+  EP_FP_RST_BTN_N,
+  EP_FP_RST_BTN_OUT_N,
+  EP_FM_BIOS_POST_COMPT_N,
+  EP_FM_BACKUP_BIOS_SEL_N,
+  EP_FM_EJECTOR_LATCH_DETECT_N,
+  EP_BMC_RESET,
+  EP_FM_SMI_BMC_N,
+  EP_PLTRST_N,
+  EP_TMP_ALERT,
+  EP_RST_I2C_MUX_N,
+  EP_XDP_BIC_TRST,
+  EP_SMB_BMC_ALERT_N,
+  EP_FM_CPLD_BIC_M3_HB,
+  EP_IRQ_MEM_SOC_VRHOT_N,
+  EP_FM_CRASH_DUMP_V8_N,
+  EP_FM_M3_ERR_N,
+  EP_FM_CPU_CATERR_LVT3_N,
+  EP_BMC_READY_N,
+  EP_BMC_COM_SW_N,
+  EP_BMC_HB_LED_N,
+  EP_FM_VR_FAULT_N,
+  EP_IRQ_CPLD_BIC_PROCHOT_N,
+  EP_FM_SMB_VR_SOC_MUX_EN,
+};
+
+
 // Server type
 enum {
   SERVER_TYPE_TL = 0x0,
@@ -266,6 +305,45 @@ typedef struct _bic_rc_gpio_t {
   uint32_t bic_bb_i2c_alert:1;
 } bic_rc_gpio_t;
 
+// EP gpio
+typedef struct _bic_ep_gpio_t {
+  uint32_t pwrgood_cpu:1;
+  uint32_t pwrgd_sys_pwrok:1;
+  uint32_t pwrgd_ps_pwrok_pld:1;
+  uint32_t pvccin_vrhot_n:1;
+  uint32_t h_memhot_co_n:1;
+  uint32_t fm_cpld_bic_thermtrip_n:1;
+  uint32_t fm_cpu_error_2:1;
+  uint32_t fm_cpu_error_1:1;
+  uint32_t fm_cpu_error_0:1;
+  uint32_t fm_nmi_event_bmc_n:1;
+  uint32_t fm_crash_dump_m3_n:1;
+  uint32_t fp_rst_btn_n:1;
+  uint32_t fp_rst_btn_out_n:1;
+  uint32_t fm_bios_post_compt_n:1;
+  uint32_t fm_backup_bios_sel_n:1;
+  uint32_t fm_ejector_latch_detect_n:1;
+  uint32_t bmc_reset:1;
+  uint32_t fm_smi_bmc_n:1;
+  uint32_t pltrst_n:1;
+  uint32_t tmp_alert:1;
+  uint32_t rst_i2c_mux_n:1;
+  uint32_t xdp_bic_trst:1;
+  uint32_t smb_bmc_alert_n:1;
+  uint32_t fm_cpld_bic_m3_hb:1;
+  uint32_t irq_mem_soc_vrhot_n:1;
+  uint32_t fm_crash_dump_v8_n:1;
+  uint32_t fm_m3_err_n:1;
+  uint32_t fm_cpu_caterr_lvt3_n:1;
+  uint32_t bmc_ready_n:1;
+  uint32_t bmc_com_sw_n:1;
+  uint32_t bmc_hb_led_n:1;
+  uint32_t fm_vr_fault_n:1;
+  uint32_t irq_cpld_bic_prochot_n:1;
+  uint32_t fm_smb_vr_soc_mux_en:1;
+  uint32_t rsvd:6;
+} bic_ep_gpio_t;
+
 typedef union _bic_gpio_u {
   uint8_t gpio[4];
   bic_gpio_t bits;
@@ -275,6 +353,11 @@ typedef union _bic_rc_gpio_u {
   uint8_t gpio[4];
   bic_rc_gpio_t bits;
 } bic_rc_gpio_u;
+
+typedef union _bic_ep_gpio_u {
+  uint8_t gpio[5];
+  bic_ep_gpio_t bits;
+} bic_ep_gpio_u;
 
 typedef struct _bic_gpio_config_t {
   uint8_t dir:1;
@@ -307,6 +390,7 @@ int bic_get_bic_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_set_bic_config(uint8_t slot_id, bic_config_t *cfg);
 
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
+int bic_get_gpio_raw(uint8_t slot_id, uint8_t *gpio);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);

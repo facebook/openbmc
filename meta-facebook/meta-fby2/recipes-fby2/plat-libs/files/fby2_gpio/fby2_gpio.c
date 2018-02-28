@@ -114,6 +114,45 @@ const uint8_t rc_gpio_pin_list[] = {
 };
 size_t rc_gpio_pin_cnt = sizeof(rc_gpio_pin_list)/sizeof(uint8_t);
 
+// List of EP GPIO pins to be monitored
+const uint8_t ep_gpio_pin_list[] = {
+  EP_PWRGD_COREPWR,
+  EP_PWRGD_SYS_PWROK,
+  EP_PWRGD_PS_PWROK_PLD,
+  EP_PVCCIN_VRHOT_N,
+  EP_H_MEMHOT_CO_N,
+  EP_FM_CPLD_BIC_THERMTRIP_N,
+  EP_FM_CPU_ERROR_2,
+  EP_FM_CPU_ERROR_1,
+  EP_FM_CPU_ERROR_0,
+  EP_FM_NMI_EVENT_BMC_N,
+  EP_FM_CRASH_DUMP_M3_N,
+  EP_FP_RST_BTN_N,
+  EP_FP_RST_BTN_OUT_N,
+  EP_FM_BIOS_POST_COMPT_N,
+  EP_FM_BACKUP_BIOS_SEL_N,
+  EP_FM_EJECTOR_LATCH_DETECT_N,
+  EP_BMC_RESET,
+  EP_FM_SMI_BMC_N,
+  EP_PLTRST_N,
+  EP_TMP_ALERT,
+  EP_RST_I2C_MUX_N,
+  EP_XDP_BIC_TRST,
+  EP_SMB_BMC_ALERT_N,
+  EP_FM_CPLD_BIC_M3_HB,
+  EP_IRQ_MEM_SOC_VRHOT_N,
+  EP_FM_CRASH_DUMP_V8_N,
+  EP_FM_M3_ERR_N,
+  EP_FM_CPU_CATERR_LVT3_N,
+  EP_BMC_READY_N,
+  EP_BMC_COM_SW_N,
+  EP_BMC_HB_LED_N,
+  EP_FM_VR_FAULT_N,
+  EP_IRQ_CPLD_BIC_PROCHOT_N,
+  EP_FM_SMB_VR_SOC_MUX_EN,
+};
+size_t ep_gpio_pin_cnt = sizeof(ep_gpio_pin_list)/sizeof(uint8_t);
+
 
 // TL GPIO name
 const char *gpio_pin_name[] = {
@@ -200,6 +239,44 @@ const char *rc_gpio_pin_name[] = {
   "RC_PWR_BTN_BUF_N",
   "RC_PMF_REBOOT_REQ_N",
   "RC_BIC_BB_I2C_ALERT",
+};
+
+// EP GPIO name
+const char *ep_gpio_pin_name[] = {
+  "EP_PWRGD_COREPWR",
+  "EP_PWRGD_SYS_PWROK",
+  "EP_PWRGD_PS_PWROK_PLD",
+  "EP_PVCCIN_VRHOT_N",
+  "EP_H_MEMHOT_CO_N",
+  "EP_FM_CPLD_BIC_THERMTRIP_N",
+  "EP_FM_CPU_ERROR_2",
+  "EP_FM_CPU_ERROR_1",
+  "EP_FM_CPU_ERROR_0",
+  "EP_FM_NMI_EVENT_BMC_N",
+  "EP_FM_CRASH_DUMP_M3_N",
+  "EP_FP_RST_BTN_N",
+  "EP_FP_RST_BTN_OUT_N",
+  "EP_FM_BIOS_POST_COMPT_N",
+  "EP_FM_BACKUP_BIOS_SEL_N",
+  "EP_FM_EJECTOR_LATCH_DETECT_N",
+  "EP_BMC_RESET",
+  "EP_FM_SMI_BMC_N",
+  "EP_PLTRST_N",
+  "EP_TMP_ALERT",
+  "EP_RST_I2C_MUX_N",
+  "EP_XDP_BIC_TRST",
+  "EP_SMB_BMC_ALERT_N",
+  "EP_FM_CPLD_BIC_M3_HB",
+  "EP_IRQ_MEM_SOC_VRHOT_N",
+  "EP_FM_CRASH_DUMP_V8_N",
+  "EP_FM_M3_ERR_N",
+  "EP_FM_CPU_CATERR_LVT3_N",
+  "EP_BMC_READY_N",
+  "EP_BMC_COM_SW_N",
+  "EP_BMC_HB_LED_N",
+  "EP_FM_VR_FAULT_N",
+  "EP_IRQ_CPLD_BIC_PROCHOT_N",
+  "EP_FM_SMB_VR_SOC_MUX_EN",
 };
 
 int

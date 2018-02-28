@@ -104,7 +104,7 @@ util_get_device_id(uint8_t slot_id) {
 static void
 util_get_gpio(uint8_t slot_id) {
   int ret;
-#ifdef CONFIG_FBY2_RC
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
   uint8_t i, group, shift, gpio_cnt;
   uint8_t server_type = 0xFF, gpio[8] = {0};
   char **gpio_name;
@@ -116,7 +116,7 @@ util_get_gpio(uint8_t slot_id) {
   }
 
   // Get GPIO value
-  ret = bic_get_gpio_raw(slot_id, &gpio);
+  ret = bic_get_gpio_raw(slot_id, gpio);
   if (ret) {
     printf("util_get_gpio: bic_get_gpio returns %d\n", ret);
     return;
@@ -126,11 +126,15 @@ util_get_gpio(uint8_t slot_id) {
   switch (server_type) {
   case SERVER_TYPE_TL:
     gpio_cnt = gpio_pin_cnt;
-    gpio_name = gpio_pin_name;
+    gpio_name = (char **)gpio_pin_name;
     break;
   case SERVER_TYPE_RC:
     gpio_cnt = rc_gpio_pin_cnt;
-    gpio_name = rc_gpio_pin_name;
+    gpio_name = (char **)rc_gpio_pin_name;
+    break;
+  case SERVER_TYPE_EP:
+    gpio_cnt = ep_gpio_pin_cnt;
+    gpio_name = (char **)ep_gpio_pin_name;
     break;
   default:
     printf("Cannot find corresponding server type. 0x%x\n", server_type);
@@ -219,11 +223,10 @@ util_get_gpio_config(uint8_t slot_id) {
   int i;
   bic_gpio_config_t gpio_config = {0};
   bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
-  char gpio_name[32];
 
-#ifdef CONFIG_FBY2_RC
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
   uint8_t server_type = 0xFF, gpio_cnt = 0xFF;
-  char **gpio_name_t;
+  char **gpio_name;
   ret = fby2_get_server_type(slot_id, &server_type);
   if (ret < 0) {
     printf("Cannot get server type. 0x%x\n", server_type);
@@ -233,11 +236,15 @@ util_get_gpio_config(uint8_t slot_id) {
   switch(server_type) {
   case SERVER_TYPE_TL:
     gpio_cnt = gpio_pin_cnt;
-    gpio_name_t = gpio_pin_name;
+    gpio_name = (char **)gpio_pin_name;
     break;
   case SERVER_TYPE_RC:
     gpio_cnt = rc_gpio_pin_cnt;
-    gpio_name_t = rc_gpio_pin_name;
+    gpio_name = (char **)rc_gpio_pin_name;
+    break;
+  case SERVER_TYPE_EP:
+    gpio_cnt = ep_gpio_pin_cnt;
+    gpio_name = (char **)ep_gpio_pin_name;
     break;
   default:
     printf("Cannot find corresponding server type. 0x%x\n", server_type);
@@ -250,8 +257,8 @@ util_get_gpio_config(uint8_t slot_id) {
     if (ret == -1) {
       continue;
     }
-    //fby2_get_gpio_name(slot_id, i, gpio_name);
-    printf("gpio_config for pin#%d (%s):\n", i, gpio_name_t[i]);
+
+    printf("gpio_config for pin#%d (%s):\n", i, gpio_name[i]);
     printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
     printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
     printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");
@@ -273,7 +280,7 @@ util_get_gpio_config(uint8_t slot_id) {
     if (ret == -1) {
       continue;
     }
-    fby2_get_gpio_name(slot_id, i, gpio_name);
+
     printf("gpio_config for pin#%d (%s):\n", i, gpio_pin_name[i]);
     printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
     printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");

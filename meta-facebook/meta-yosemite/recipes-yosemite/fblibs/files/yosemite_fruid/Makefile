@@ -19,7 +19,7 @@ lib: libyosemite_fruid.so
 
 libyosemite_fruid.so: yosemite_fruid.c
 	$(CC) $(CFLAGS) -fPIC -c -o yosemite_fruid.o yosemite_fruid.c
-	$(CC) -lyosemite_common -shared -o libyosemite_fruid.so yosemite_fruid.o -lc
+	$(CC) -lyosemite_common -shared -o libyosemite_fruid.so yosemite_fruid.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

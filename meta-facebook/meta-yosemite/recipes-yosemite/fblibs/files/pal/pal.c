@@ -951,11 +951,12 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
-      if (status == SERVER_POWER_OFF)
+      if (status == SERVER_POWER_OFF) {
         return 1;
-      else
+      } else {
         gs_flag = true;
         return server_power_off(slot_id, gs_flag);
+      }
       break;
 
     case SERVER_12V_ON:

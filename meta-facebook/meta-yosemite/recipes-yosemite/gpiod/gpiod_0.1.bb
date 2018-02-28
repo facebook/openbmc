@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "GPIO Sensor Monitoring Daemon" 
+SUMMARY = "GPIO Sensor Monitoring Daemon"
 DESCRIPTION = "Daemon for monitoring the gpio sensors"
 SECTION = "base"
 PR = "r1"
@@ -35,7 +35,10 @@ binfiles = "gpiod \
 CFLAGS += " -lbic -lyosemite_gpio -lpal "
 
 DEPENDS += " libbic libyosemite-gpio libpal "
-RDEPENDS_${PN} += " libbic libyosemite-gpio libpal "
+DEPENDS_append = " update-rc.d-native "
+
+RDEPENDS_${PN} += " libbic libyosemite-gpio libpal"
+
 
 pkgdir = "gpiod"
 

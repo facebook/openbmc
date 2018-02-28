@@ -19,7 +19,7 @@ lib: libyosemite_gpio.so
 
 libyosemite_gpio.so: yosemite_gpio.c
 	$(CC) $(CFLAGS) -fPIC -c -o yosemite_gpio.o yosemite_gpio.c
-	$(CC) -shared -o libyosemite_gpio.so yosemite_gpio.o -lc
+	$(CC) -shared -o libyosemite_gpio.so yosemite_gpio.o -lc  $(LDFLAGS)
 
 .PHONY: clean
 

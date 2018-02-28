@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "GPIO Interrupt Monitoring Daemon" 
+SUMMARY = "GPIO Interrupt Monitoring Daemon"
 DESCRIPTION = "Daemon for monitoring the gpio"
 SECTION = "base"
 PR = "r1"
@@ -35,8 +35,10 @@ binfiles = "gpiointrd \
 
 CFLAGS += " -lpal "
 
-DEPENDS += " libgpio libpal "
+DEPENDS += " libgpio libpal"
+
 RDEPENDS_${PN} += " libgpio libpal "
+DEPENDS_append = " update-rc.d-native "
 
 pkgdir = "gpiointrd"
 

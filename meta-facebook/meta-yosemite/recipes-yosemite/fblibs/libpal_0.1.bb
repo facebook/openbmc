@@ -25,6 +25,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
-RDEPENDS_${PN} += " libyosemite-common libkv"
-RDEPENDS_${PN} += " libyosemite-common libedb"
-
+RDEPENDS_${PN} += " libbic libyosemite-common libyosemite-fruid libyosemite-sensor libkv libedb"

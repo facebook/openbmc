@@ -1022,24 +1022,42 @@ check_vr_image(int fd, long size) {
 }
 
 static int
-check_cpld_image(int fd, long size) {
+check_cpld_image(uint8_t slot_id, int fd, long size) {
   uint8_t buf[32];
-  uint8_t hdr[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
-#ifdef CONFIG_FBY2_RC
-  return 0;
-#else
+  uint8_t hdr_tl[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
+  uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+  int ret;
+  uint8_t server_type = 0xFF;
+  uint8_t hdr_ep[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39,0x41};
+
+  ret = bic_get_server_type(slot_id, &server_type);
+  if (ret) {
+    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_RC:
+      return 0;
+    case SERVER_TYPE_EP:
+      hdr = hdr_ep;
+      hdr_size = sizeof(hdr_ep);
+      break;
+  }
+#endif
+
   if (size < 32)
     return -1;
 
-  if (read(fd, buf, sizeof(hdr)) != sizeof(hdr))
+  if (read(fd, buf, hdr_size) != hdr_size)
     return -1;
 
-  if (memcmp(buf, hdr, sizeof(hdr)))
+  if (memcmp(buf, hdr, hdr_size))
     return -1;
 
   lseek(fd, 0, SEEK_SET);
   return 0;
-#endif
 }
 
 static int
@@ -1203,7 +1221,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     syslog(LOG_CRIT, "Update VR: update vr firmware on slot %d\n", slot_id);
     dsize = st.st_size/5;
   } else {
-    if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
+    if ((comp == UPDATE_CPLD) && (check_cpld_image(slot_id, fd, st.st_size) < 0)) {
       printf("invalid CPLD file!\n");
       goto error_exit;
     }

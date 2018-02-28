@@ -5225,9 +5225,29 @@ pal_is_mcu_working(void) {
 }
 
 void
-pal_get_me_name(uint8_t *target_name) {
-#ifdef CONFIG_FBY2_RC
-  strcpy(target_name, "IMC");
+pal_get_me_name(uint8_t fru, char *target_name) {
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+  int ret;
+  uint8_t server_type = 0xFF;
+
+  ret = fby2_get_server_type(fru, &server_type);
+  if (ret) {
+    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+    return;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_RC:
+      strcpy(target_name, "IMC");
+      break;
+    case SERVER_TYPE_EP:
+      strcpy(target_name, "M3");
+      break;
+    case SERVER_TYPE_TL:
+    default:
+      strcpy(target_name, "ME");
+      break;
+  }
 #else
   strcpy(target_name, "ME");
 #endif

@@ -144,8 +144,19 @@ enum {
 enum {
   FW_IMC = 3,
   FW_VDD_APC_CBF_VR = 5,
-  FW_DDR510_VR = 6, 
+  FW_DDR510_VR = 6,
   FW_DDR423_VR = 7,
+};
+
+// EP
+enum {
+  FW_M3 = 3,
+  FW_VDD_CORE_VR = 5,
+  FW_VDD_SRAM_VR = 6,
+  FW_VDD_MEM_VR = 7,
+  FW_VDD_SOC_VR = 8,
+  FW_DDR_AG_VR = 9,
+  FW_DDR_BH_VR = 10,
 };
 
 

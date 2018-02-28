@@ -258,7 +258,54 @@ const uint8_t bic_rc_discrete_list[] = {
 
 
 #ifdef CONFIG_FBY2_EP
+// List of BIC (EP) sensors to be monitored
+const uint8_t bic_ep_sensor_list[] = {
+  BIC_EP_SENSOR_MB_OUTLET_TEMP,
+  BIC_EP_SENSOR_MB_OUTLET_TEMP_BOTTOM,
+  BIC_EP_SENSOR_MB_INLET_TEMP,
+  BIC_EP_SENSOR_NVME1_CTEMP,
+  BIC_EP_SENSOR_NVME2_CTEMP,
+  BIC_EP_SENSOR_SOC_TEMP,
+  BIC_EP_SENSOR_SOC_DIMMA_TEMP,
+  BIC_EP_SENSOR_SOC_DIMMB_TEMP,
+  BIC_EP_SENSOR_SOC_DIMMC_TEMP,
+  BIC_EP_SENSOR_SOC_DIMMD_TEMP,
+  BIC_EP_SENSOR_SOC_PACKAGE_PWR,
+  BIC_EP_SENSOR_VDD_CORE_VR_TEMP,
+  BIC_EP_SENSOR_VDD_SRAM_VR_TEMP,
+  BIC_EP_SENSOR_VDD_MEM_VR_TEMP,
+  BIC_EP_SENSOR_VDD_SOC_VR_TEMP,
+  BIC_EP_SENSOR_VDD_CORE_VR_VOL,
+  BIC_EP_SENSOR_VDD_SRAM_VR_VOL,
+  BIC_EP_SENSOR_VDD_MEM_VR_VOL,
+  BIC_EP_SENSOR_VDD_SOC_VR_VOL,
+  BIC_EP_SENSOR_VDD_CORE_VR_CURR,
+  BIC_EP_SENSOR_VDD_SRAM_VR_CURR,
+  BIC_EP_SENSOR_VDD_MEM_VR_CURR,
+  BIC_EP_SENSOR_VDD_SOC_VR_CURR,
+  BIC_EP_SENSOR_VDD_CORE_VR_POUT,
+  BIC_EP_SENSOR_VDD_SRAM_VR_POUT,
+  BIC_EP_SENSOR_VDD_MEM_VR_POUT,
+  BIC_EP_SENSOR_VDD_SOC_VR_POUT,
+  BIC_EP_SENSOR_P3V3_MB,
+  BIC_EP_SENSOR_P12V_STBY_MB,
+  BIC_EP_SENSOR_P1V8_VDD,
+  BIC_EP_SENSOR_P3V3_STBY_MB,
+  BIC_EP_SENSOR_PVDDQ_AB,
+  BIC_EP_SENSOR_PVDDQ_CD,
+  BIC_EP_SENSOR_PV_BAT,
+  BIC_EP_SENSOR_P0V8_VDD,
+  BIC_EP_SENSOR_INA230_POWER,
+  BIC_EP_SENSOR_INA230_VOL,
+};
 
+const uint8_t bic_ep_discrete_list[] = {
+  /* EP Discrete sensors */
+  BIC_EP_SENSOR_SYSTEM_STATUS,
+  BIC_EP_SENSOR_CPU_DIMM_HOT,
+  BIC_EP_SENSOR_PROC_FAIL,
+  BIC_EP_SENSOR_VR_HOT,
+};
 #endif
 
 
@@ -397,6 +444,11 @@ size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 #ifdef CONFIG_FBY2_RC
 size_t bic_rc_sensor_cnt = sizeof(bic_rc_sensor_list)/sizeof(uint8_t);
 size_t bic_rc_discrete_cnt = sizeof(bic_rc_discrete_list)/sizeof(uint8_t);
+#endif
+
+#ifdef CONFIG_FBY2_EP
+size_t bic_ep_sensor_cnt = sizeof(bic_ep_sensor_list)/sizeof(uint8_t);
+size_t bic_ep_discrete_cnt = sizeof(bic_ep_discrete_list)/sizeof(uint8_t);
 #endif
 
 size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
@@ -547,25 +599,7 @@ read_device_float(const char *device, float *value) {
 
 int
 fby2_get_server_type(uint8_t fru, uint8_t *type) {
-  int ret = -1;
-  ipmi_dev_id_t id = {0};
-
-  ret = bic_get_dev_id(fru, &id);
-  if (ret) {
-    syslog(LOG_ERR, "bic_get_dev_id() failed.\n", __func__);
-    return ret;
-  }
-
-  // Use product ID to identify the server type
-  if (id.prod_id[0] == 0x43 && id.prod_id[1] == 0x52) {
-    *type = SERVER_TYPE_RC;
-  } else if (id.prod_id[0] == 0x39 && id.prod_id[1] == 0x30) {
-    *type = SERVER_TYPE_TL;
-  } else {
-    *type = SERVER_TYPE_NONE;
-  }
-
-  return 0;
+  return bic_get_server_type(fru, type);
 }
 
 
@@ -944,7 +978,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   ipmi_accuracy_sensor_reading_t acsensor;
   bool is_accuracy_sensor = false;
 
-#ifndef CONFIG_FBY2_RC                      //workaround for now, this is only for TL but RC
+#if !defined(CONFIG_FBY2_RC) && !defined(CONFIG_FBY2_EP)  // workaround for now, this is only for TL
   for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
     if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
       is_accuracy_sensor = true;

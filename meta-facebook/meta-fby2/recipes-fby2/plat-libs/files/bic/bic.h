@@ -118,6 +118,14 @@ enum {
   RC_BIC_BB_I2C_ALERT,
 };
 
+// Server type
+enum {
+  SERVER_TYPE_TL = 0x0,
+  SERVER_TYPE_RC = 0x1,
+  SERVER_TYPE_EP = 0x2,
+  SERVER_TYPE_NONE = 0xFF,
+};
+
 enum {
   FW_CPLD = 1,
   FW_BIC,
@@ -322,6 +330,7 @@ int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, 
 int me_recovery(uint8_t slot_id, uint8_t command);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
 int bic_read_accuracy_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_accuracy_sensor_reading_t *sensor);
+int bic_get_server_type(uint8_t fru, uint8_t *type);
 int get_imc_version(uint8_t slot, uint8_t *ver);
 
 #ifdef __cplusplus

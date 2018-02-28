@@ -1,0 +1,8 @@
+max([
+  linear_inlet(spb:sp_inlet_temp),
+  linear_cpu_margin(slot1:soc_temp),
+  linear_cpu_margin(slot2:soc_temp),
+  linear_cpu_margin(slot3:soc_temp),
+  linear_cpu_margin(slot4:soc_temp),
+  linear_mezz(nic:mezz_sensor_temp)
+])

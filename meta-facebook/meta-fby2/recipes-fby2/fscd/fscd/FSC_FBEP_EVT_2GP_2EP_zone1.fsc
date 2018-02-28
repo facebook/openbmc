@@ -1,0 +1,20 @@
+max([
+  linear_inlet(spb:sp_inlet_temp),
+  linear_cpu_margin(slot2:soc_temp),
+  linear_cpu_margin(slot4:soc_temp),
+  linear_mezz(nic:mezz_sensor_temp),
+  linear_gp_m2(
+   max([
+    slot1:dc_nvme1_ctemp,
+    slot1:dc_nvme2_ctemp,
+    slot1:dc_nvme3_ctemp,
+    slot1:dc_nvme4_ctemp,
+    slot1:dc_nvme5_ctemp,
+    slot1:dc_nvme6_ctemp,
+    slot3:dc_nvme1_ctemp,
+    slot3:dc_nvme2_ctemp,
+    slot3:dc_nvme3_ctemp,
+    slot3:dc_nvme4_ctemp,
+    slot3:dc_nvme5_ctemp,
+    slot3:dc_nvme6_ctemp]))
+])

@@ -317,7 +317,7 @@ dbg_rst_btn_handler() {
       // handle error case
       if (i == BTN_MAX_SAMPLES) {
         pal_update_ts_sled();
-        syslog(LOG_CRIT, "Debug card reset button seems to stuck for long time\n");
+        syslog(LOG_WARNING, "Debug card reset button seems to stuck for long time\n");
         goto dbg_rst_btn_out;
       }
     } else {
@@ -447,7 +447,7 @@ rst_btn_handler() {
     // handle error case
     if (i == BTN_MAX_SAMPLES) {
       pal_update_ts_sled();
-      syslog(LOG_CRIT, "Reset button seems to stuck for long time\n");
+      syslog(LOG_WARNING, "Reset button seems to stuck for long time\n");
       goto rst_btn_out;
     }
 rst_btn_out:

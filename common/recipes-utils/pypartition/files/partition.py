@@ -403,7 +403,7 @@ class DeviceTreePartition(Partition):
             else:
                 value_string = str(value)
             info_strings.append('{}: {}'.format(key, value_string))
-        logger.info(' '.join(info_strings))
+        logger.info(', '.join(info_strings))
 
         if parsed_header['magic'] != DeviceTreePartition.magic:
             self.valid = False

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -36,7 +37,7 @@
 #define NVME_TEMP_REG 0x03
 
 #define SKIP_READ_SSD_TEMP "/tmp/skipSSD"
- 
+
 /* List of information of I2C mapping for mux and channel */
 const uint8_t lightning_flash_list[] = {
   I2C_MAP_FLASH0,
@@ -157,7 +158,7 @@ lightning_flash_temp_read(uint8_t i2c_map, float *temp) {
   return ret;
 }
 
-int 
+int
 lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
 
   int ret;
@@ -180,7 +181,7 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
 
   // Get temp reading via NVME
   ret = lightning_nvme_temp_read(mux, temp);
-  
+
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): lightning_nvme_temp_read failed, try old method", __func__);
     // If it does not support NVME, try old method
@@ -191,14 +192,14 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
     }
     else
       return 0;
-    
+
     return -1;
   }
 
-  // Error handling for flash seems support NVME but always reture same data, try old method to get temp 
+  // Error handling for flash seems support NVME but always reture same data, try old method to get temp
   ret = lightning_ssd_vendor(&vendor);
 
-  if((ret < 0) && (*temp == 0xD5)) 
+  if((ret < 0) && (*temp == 0xD5))
     ret = lightning_flash_temp_read(i2c_map, temp);
 
   if(ret < 0) {
@@ -311,7 +312,7 @@ lightning_flash_sec_mux_sel_chan(uint8_t mux, uint8_t channel) {
   return 0;
 }
 
-int 
+int
 lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
 
   int dev;
@@ -368,7 +369,7 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
     syslog(LOG_DEBUG, "%s(): i2c_smbus_read_block_data failed", __func__);
     return -1;
   }
-  
+
   close(dev);
 
   /* Result is read as MSB byte first and LSB byte second.
@@ -391,7 +392,7 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
   return ret;
 }
 
-int 
+int
 lightning_m2_flash_temp_read(uint8_t i2c_map, float *temp) {
 
   float temp1;
@@ -417,13 +418,12 @@ lightning_m2_flash_temp_read(uint8_t i2c_map, float *temp) {
   return ret;
 }
 
-int 
+int
 lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
 
   int ret;
   uint8_t mux;
   uint8_t chan;
-  char bus[32];
 
   mux = i2c_map / 10;
   chan = i2c_map % 10;
@@ -451,7 +451,7 @@ lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
   }
 
   ret = lightning_nvme_temp_read(mux, temp);
-  
+
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): lightning_nvme_temp_read failed", __func__);
     return -1;
@@ -460,7 +460,7 @@ lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
   return ret;
 }
 
-int 
+int
 lightning_nvme_temp_read(uint8_t mux, float *temp) {
   int dev;
   int ret;
@@ -502,7 +502,7 @@ lightning_nvme_temp_read(uint8_t mux, float *temp) {
   }
 
   *temp = (float) res;
-  
+
   close(dev);
 
   return ret;

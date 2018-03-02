@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 lib: liblightning_flash.so
+CFLAGS += -Wall -Werror
 
 liblightning_flash.so: lightning_flash.c
 	$(CC) $(CFLAGS) -fPIC -c -o lightning_flash.o lightning_flash.c

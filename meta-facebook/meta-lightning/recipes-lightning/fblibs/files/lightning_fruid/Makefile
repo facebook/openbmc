@@ -17,6 +17,7 @@
 
 lib: liblightning_fruid.so
 
+CFLAGS += -Wall -Werror
 liblightning_fruid.so: lightning_fruid.c
 	$(CC) $(CFLAGS) -fPIC -c -o lightning_fruid.o lightning_fruid.c
 	$(CC) -llightning_common -shared -o liblightning_fruid.so lightning_fruid.o -lc

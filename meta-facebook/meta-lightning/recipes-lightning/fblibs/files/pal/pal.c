@@ -19,19 +19,23 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
-#include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <syslog.h>
 #include <sys/mman.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <pthread.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
+#include <openbmc/edb.h>
 #include "pal.h"
+#include <string.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -119,7 +123,7 @@ const uint8_t sennum2errcode_mapping[MAX_SENSOR_NUM] = {
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xC0 - 0xCF
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xD0 - 0xDF
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xE0 - 0xEF
-  0x2C, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xF0 - 0xFF
+  0x2C, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF  // 0xF0 - 0xFF
 };
 
 char * key_list[] = {
@@ -624,10 +628,8 @@ set_key_value(char *key, char *value) {
 
 int
 pal_set_def_key_value() {
-
   int ret;
   int i;
-  int fru;
   char key[MAX_KEY_LEN] = {0};
   char kpath[MAX_KEY_PATH_LEN] = {0};
 
@@ -647,8 +649,7 @@ pal_set_def_key_value() {
     }
 
     if (access(kpath, F_OK) == -1) {
-
-      if (write_kv(kpath, def_val_list[i])) {
+      if ((ret = write_kv(kpath, def_val_list[i])) != 0) {
 #ifdef DEBUG
           syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
@@ -663,7 +664,6 @@ pal_set_def_key_value() {
 
 static int
 pal_key_check(char *key) {
-  int ret;
   int i;
 
   i = 0;
@@ -720,7 +720,6 @@ pal_get_key_value(char *key, char *value) {
 
   //Retry for max_retry Times
   for (i = 0; i < max_retry; i++) {
-    ret = 0;
     ret = get_key_value(key, value);
     if (ret != 0) {
       syslog(LOG_ERR, "%s, failed to read device (%s), ret: %d, retry: %d", __func__, key, ret, i);
@@ -736,14 +735,14 @@ pal_get_key_value(char *key, char *value) {
 
 void
 pal_dump_key_value(void) {
-  int i;
-  int ret;
+  int i = 0;
+  int ret = 0;
 
   char value[MAX_VALUE_LEN] = {0x0};
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = get_key_value(key_list[i], value) < 0) {
+    if ((ret = get_key_value(key_list[i], value)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -901,7 +900,7 @@ write_fan_value(const int fan, const char *device, const int value) {
 int
 pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   int unit;
-  int ret;
+  int ret = 0;
 
   if (fan >= pal_pwm_cnt) {
     syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
@@ -913,7 +912,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
   // For 0%, turn off the PWM entirely
   if (unit == 0) {
-    write_fan_value(fan, "pwm%d_en", 0);
+    ret = write_fan_value(fan, "pwm%d_en", 0);
     if (ret < 0) {
       syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
       return -1;
@@ -1198,8 +1197,7 @@ pal_peer_tray_insertion(uint8_t *value) {
 int
 pal_get_tray_location(char *self_tray_name, uint8_t self_len,
                       char *peer_tray_name, uint8_t peer_len) {
-  char path[64] = {0};
-  int val = 0;
+  uint8_t val = 0;
 
   if ((self_tray_name == NULL) || (peer_tray_name == NULL)){
     syslog(LOG_ERR, "%s(): Error - Null Pointer", __func__);
@@ -1273,7 +1271,6 @@ int pal_get_airflow(float *airflow_cfm)
   uint8_t ssd_sku = 0;
   float rpm_avg = 0, rpm_sum = 0, value;
   int fan=0;
-  char sku[16] = {0};
   int ret,rc;
 
   if (airflow_cfm == NULL){
@@ -1321,7 +1318,6 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   uint8_t *sensorStatus = NULL;
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int fd, ret;
-  int retry_count = 0;
 
   if (access(ERR_CODE_FILE, F_OK) == -1)
     fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR | O_TRUNC, 00777);
@@ -1389,7 +1385,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   uint8_t error_code_num = sennum2errcode_mapping[snr_num];
   int i, fd, ret;
   bool tmp = 0;
-  int retry_count = 0;
 
   if (access(ERR_CODE_FILE, F_OK) == -1)
     fd = open("/tmp/share_sensor_status", O_CREAT | O_RDWR | O_TRUNC, 00777);
@@ -1481,7 +1476,6 @@ pal_read_error_code_file(uint8_t *error_code_array) {
   uint8_t ret = 0;
   int i = 0;
   int tmp = 0;
-  int retry_count = 0;
 
   if (access(ERR_CODE_FILE, F_OK) == -1) {
     memset(error_code_array, 0, ERROR_CODE_NUM);
@@ -1513,7 +1507,6 @@ int
 pal_write_error_code_file(const uint8_t error_num, const bool status) {
   FILE *fp = NULL;
   uint8_t ret = 0;
-  int retry_count = 0;
   int i = 0;
   int stat = 0;
   int bit_stat = 0;
@@ -1658,7 +1651,6 @@ pal_u2_flash_read_nvme_data(uint8_t slot_num, uint8_t cmd) {
   int ret;
   uint8_t mux;
   uint8_t chan;
-  uint8_t vendor;
   char bus[32];
 
   mux = lightning_flash_list[slot_num] / 10;

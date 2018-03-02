@@ -41,3 +41,4 @@ do_install() {
 
 FILES_${PN} = "${libdir}/liblightning_fruid.so"
 FILES_${PN}-dev = "${includedir}/facebook/lightning_fruid.h"
+RDEPENDS_${PN} += " liblightning-common "

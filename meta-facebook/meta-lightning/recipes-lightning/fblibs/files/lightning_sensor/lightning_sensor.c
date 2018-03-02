@@ -27,6 +27,8 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
+#include <unistd.h>
 #include <syslog.h>
 #include <openbmc/obmc-sensor.h>
 #include <openbmc/obmc-i2c.h>
@@ -58,7 +60,6 @@
 
 #define ADS1015_DEFAULT_CONFIG 0xe383
 
-#define MAX_SENSOR_NUM 0xFF
 #define ALL_BYTES 0xFF
 #define LAST_REC_ID 0xFFFF
 
@@ -275,9 +276,6 @@ const uint8_t fcb_sensor_list[] = {
   FCB_SENSOR_AIRFLOW,
 };
 
-
-static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
-
 float peb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float pdpb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float fcb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -290,7 +288,6 @@ static void
 assign_sensor_threshold(uint8_t fru, uint8_t snr_num, float ucr, float unc,
     float unr, float lcr, float lnc, float lnr, float pos_hyst, float neg_hyst) {
 
-  int ret;
   switch(fru) {
     case FRU_PEB:
       peb_sensor_threshold[snr_num][UCR_THRESH] = ucr;
@@ -529,7 +526,6 @@ read_device(const char *device, int *value) {
   fp = fopen(device, "r");
   if (!fp) {
     int err = errno;
-
 #ifdef DEBUG
     syslog(LOG_INFO, "failed to open device %s", device);
 #endif
@@ -538,7 +534,6 @@ read_device(const char *device, int *value) {
 
   rc = fscanf(fp, "%d", value);
   fclose(fp);
-
   if (rc != 1) {
 #ifdef DEBUG
     syslog(LOG_INFO, "failed to read device %s", device);
@@ -742,21 +737,6 @@ read_temp_value(char *device, uint8_t addr, uint8_t type, float *value) {
   return 0;
 }
 
-static int
-read_temp(const char *device, float *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
-  int tmp;
-
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
-  if (read_device(full_name, &tmp)) {
-    return -1;
-  }
-
-  *value = ((float)tmp)/UNIT_DIV;
-
-  return 0;
-}
 
 static int
 read_hsc_value(uint8_t reg, char *device, uint8_t addr, uint8_t cntlr, float *value) {
@@ -828,7 +808,6 @@ read_hsc_value(uint8_t reg, char *device, uint8_t addr, uint8_t cntlr, float *va
 
   return 0;
 }
-
 
 static int
 read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
@@ -1112,9 +1091,6 @@ lightning_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 /* Get the units for the sensor */
 int
 lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
-  uint8_t op, modifier;
-  sensor_info_t *sinfo;
-
   switch(fru) {
     case FRU_PEB:
       switch(sensor_num) {
@@ -1142,7 +1118,7 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           sprintf(units, "Volts");
           break;
         default:
-          sprintf(units, "");
+          sprintf(units, "%s", "");
           break;
       }
       break;
@@ -1173,7 +1149,7 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           sprintf(units, "Volts");
           break;
         default:
-          sprintf(units, "");
+          sprintf(units, "%s", "");
           break;
       }
       break;
@@ -1217,7 +1193,7 @@ lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           sprintf(units, "CFM");
           break;
         default:
-          sprintf(units, "");
+          sprintf(units, "%s", "");
           break;
       }
       break;
@@ -1459,7 +1435,7 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "PEB_P1V26");
           break;
         default:
-          sprintf(name, "");
+          sprintf(name, "%s", "");
           break;
       }
       break;
@@ -1498,7 +1474,7 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "PDPB_P3V3");
           break;
         default:
-          sprintf(name, "");
+          sprintf(name, "%s", "");
           break;
       }
       break;
@@ -1572,7 +1548,7 @@ lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "AIRFLOW");
           break;
         default:
-          sprintf(name, "");
+          sprintf(name, "%s", "");
           break;
       }
       break;
@@ -1747,4 +1723,5 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
   }
+  return -1;
 }

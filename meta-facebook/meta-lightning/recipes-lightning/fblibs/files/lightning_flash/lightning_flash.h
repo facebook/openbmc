@@ -19,6 +19,9 @@
 #ifndef __LIGHTNING_FLASH_H__
 #define __LIGHTNING_FLASH_H__
 
+#include <stdint.h>
+#include <facebook/lightning_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://lightning_sensor.c;beginline=8;endline=20;md5=da35978
 
 SRC_URI = "file://lightning_sensor \
           "
-DEPENDS =+ " libipmi liblightning-common liblightning-flash obmc-i2c obmc-pal"
+DEPENDS += " libipmi liblightning-common liblightning-flash obmc-i2c obmc-pal"
 
 S = "${WORKDIR}/lightning_sensor"
 
@@ -24,3 +24,4 @@ do_install() {
 
 FILES_${PN} = "${libdir}/liblightning_sensor.so"
 FILES_${PN}-dev = "${includedir}/facebook/lightning_sensor.h"
+RDEPENDS_${PN} += " libipmi liblightning-common liblightning-flash"

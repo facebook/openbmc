@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 #define MAX_SDR_LEN           64
-#define MAX_SENSOR_NUM        0xFF
+#define MAX_SENSOR_NUM        256
 #define MAX_SENSOR_THRESHOLD  8
 #define MAX_RETRIES_SDR_INIT  30
 #define THERMAL_CONSTANT      255
@@ -171,7 +171,8 @@ int lightning_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int lightning_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int lightning_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
 int lightning_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
-
+int lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
+int lightning_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t* value);
 
 #ifdef __cplusplus
 } // extern "C"

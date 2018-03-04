@@ -1,11 +1,10 @@
+# Copyright 2018-present Facebook. All Rights Reserved.
+
 inherit kernel_fitimage
 
-# Base this image on core-image-minimal
-include recipes-core/images/core-image-minimal.bb
+require recipes-core/images/fb-openbmc-image.bb
 
 # Changing the image compression from gz to lzma achieves 30% saving (~3M).
-# However, the current u-boot does not have lzma enabled. Stick to gz
-# until we generate a new u-boot image.
 # UBOOT_IMAGE_LOADADDRESS = "0x80008000"
 # UBOOT_IMAGE_ENTRYPOINT = "0x80008000"
 UBOOT_RAMDISK_LOADADDRESS = "0x80800000"

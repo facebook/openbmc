@@ -89,9 +89,8 @@ class Partition(object):
             size = '0x???????'
         else:
             size = '0x{:07x}'.format(self.partition_size)
-        return '{}@0x{:07x}({}) [{:07x} - {:07x}]'.format(
-            size, self.partition_offset, self.name,
-            self.partition_offset, self.partition_offset + self.partition_size
+        return '{}@0x{:07x}({})'.format(
+            size, self.partition_offset, self.name
         )
 
     def end(self):

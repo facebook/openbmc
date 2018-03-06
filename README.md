@@ -6,10 +6,14 @@ OpenBMC uses the [Yocto Project](https://www.yoctoproject.org) as the underlying
 
 | Board | Status | Description |
 |-------|--------|-------------|
-[**Wedge100**](https://code.facebook.com/posts/1802489260027439/wedge-100-more-open-and-versatile-than-ever/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge100/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge100/) | A 32x100G TOR switch
-[**Lightning**](https://code.facebook.com/posts/989638804458007/introducing-lightning-a-flexible-nvme-jbof/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildLightning/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildLightning/) | A flexible NVMe JBOF
-[**Yosemite**](https://code.facebook.com/posts/1616052405274961/introducing-yosemite-the-first-open-source-modular-chassis-for-high-powered-microservers-) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildYosemite/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildYosemite/) | An open source modular chassis for high-powered microservers
 [**Wedge**](https://code.facebook.com/posts/681382905244727/introducing-wedge-and-fboss-the-next-steps-toward-a-disaggregated-network/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge/) | A 40G OS-agnostic TOR switch
+[**Yosemite**](https://code.facebook.com/posts/1616052405274961/introducing-yosemite-the-first-open-source-modular-chassis-for-high-powered-microservers-) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildYosemite/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildYosemite/) | An open source modular chassis for high-powered microservers
+[**Lightning**](https://code.facebook.com/posts/989638804458007/introducing-lightning-a-flexible-nvme-jbof/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildLightning/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildLightning/) | A flexible NVMe JBOF
+[**Wedge100**](https://code.facebook.com/posts/1802489260027439/wedge-100-more-open-and-versatile-than-ever/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge100/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildWedge100/) | A 32x100G TOR switch
+[**Backpack LC/FC**](https://code.facebook.com/posts/864213503715814/introducing-backpack-our-second-generation-modular-open-switch/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildGalaxy100/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildGalaxy100/) | Linecard and fabric card in a 128x100G modular open switch
+[**Backpack CMM**](https://code.facebook.com/posts/864213503715814/introducing-backpack-our-second-generation-modular-open-switch/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildCMM/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildCMM/) | Chassis management module in a 128x100G modular open switch
+[**Tioga Pass**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildFBTP/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildFBTP/) | A dual-socket compute platform
+[**YosemiteV2**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildFBY2/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildFBY2/) | A refresh of Yosemite
 [**Bryce Canyon**](https://code.facebook.com/posts/1869788206569924/introducing-bryce-canyon-our-next-generation-storage-platform/) | [![Build Status](https://jenkins.osquery.io/job/openbmcHeliumBuildFBTTN/badge/icon)](https://jenkins.osquery.io/job/openbmcHeliumBuildFBTTN/) | Disk Storage platform
 
 ## Contents
@@ -34,12 +38,11 @@ Note: In the instruction set below, references to <platform> for some of the ste
 
 1. Set up the build environment based on the Yocto Project's [Quick Start Guide](http://www.yoctoproject.org/docs/current/yocto-project-qs/yocto-project-qs.html).
 
-2. Clone the OpenBMC repository and its submodules:
+2. Clone the OpenBMC repository and other open source repositories:
  ```bash
  $ git clone -b helium https://github.com/facebook/openbmc.git
  $ cd openbmc
- $ git submodule init
- $ git submodule update
+ $ ./sync_yocto.sh
  ```
 
 3. Initialize a build directory for the platform to build. In the `openbmc` directory:
@@ -56,7 +59,14 @@ Note: In the instruction set below, references to <platform> for some of the ste
  ```
  The build process automatically fetches all necessary packages and builds the complete image. The final build results are in `openbmc/build/tmp/deploy/images/<platform>`. The root password will be `0penBmc`, you may change this in the local configuration.
 
-### Kernel Development
+## Build Artifacts
+
+* **u-boot.bin** - This is the u-boot image for the board.
+* **uImage** - This the Linux kernel for the board.
+* **<platform>-image-<platform>.cpio.lzma.u-boot** - This is the rootfs for the board
+* **flash-<platform>** - This is the complete flash image including u-boot, kernel, and the rootfs.
+
+## Kernel Development
 By default, OpenBMC build process fetches and build Linux kernel directly from GitHub repository.
 To make local kernel changes and build with the modified kernel:
   1. Clone kernel source
@@ -74,56 +84,7 @@ INHERIT += "externalsrc"
 EXTERNALSRC_pn-linux-aspeed = "<dir>/meta-openbmc/meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1"
 ```
 
-#### Build Artifacts
-
-* **u-boot.bin** - This is the u-boot image for the board.
-* **uImage** - This the Linux kernel for the board.
-* **<platform>-image-<platform>.cpio.lzma.u-boot** - This is the rootfs for the board
-* **flash-<platform>** - This is the complete flash image including u-boot, kernel, and the rootfs.
-
-#### Yocto Configuration
-
-It is recommended to setup a new Yocto distribution (a checkout of poky). The initialization script `oe-init-build-env` can read the included `TEMPLATECONF` and set up a local `build/conf/local.conf` along with the associated layer/build configuration.
-
-If you have previously set up and built poky, you may change your local configuration:
-
-When using the example `TEMPLATECONF` for Wedge, the `./build/conf/templateconf.cfg`:
-```
-meta-openbmc/meta-facebook/meta-<platform>/conf
-```
-
-The layers config `./build/conf/bblayers.conf`, will contain:
-```
-BBPATH = "${TOPDIR}"
-BBFILES ?= ""
-
-BBLAYERS ?= " \
-  /PREFIX/poky/meta \
-  /PREFIX/poky/meta-yocto \
-  /PREFIX/poky/meta-yocto-bsp \
-  /PREFIX/poky/meta-openembedded/meta-oe \
-  /PREFIX/poky/meta-openembedded/meta-networking \
-  /PREFIX/poky/meta-openembedded/meta-python \
-  /PREFIX/poky/meta-openbmc \
-  /PREFIX/poky/meta-openbmc/meta-aspeed \
-  /PREFIX/poky/meta-openbmc/meta-facebook/meta-<platform> \
-  "
-BBLAYERS_NON_REMOVABLE ?= " \
-  /PREFIX/poky/meta \
-  /PREFIX/poky/meta-yocto \
-  "
-```
-
-And finally the `./build/config/local.conf` will include important configuration options:
-```
-# Machine Selection
-MACHINE ??= "<platform>"
-
-# OpenBMC distro settings
-DISTRO ?= "openbmc-fb"
-```
-
-# How can I contribute
+## How can I contribute
 
 If you have an application that can be used by different BMCs, you can contribute your application to the OpenBMC common layer.
 

@@ -23,6 +23,7 @@ SRC_URI += "file://board-utils.sh \
            file://power_led.sh \
            file://post_led.sh \
            file://reset_usb.sh \
+           file://reset_cp2112.sh \
            file://setup-gpio.sh \
            file://setup_rov.sh \
            file://eth0_mac_fixup.sh \
@@ -40,7 +41,7 @@ SRC_URI += "file://board-utils.sh \
 OPENBMC_UTILS_FILES += " \
   board-utils.sh us_console.sh sol.sh power_led.sh post_led.sh \
   reset_usb.sh setup_rov.sh wedge_power.sh wedge_us_mac.sh \
-  setup_switch.py us_monitor.sh reset_brcm.sh \
+  setup_switch.py us_monitor.sh reset_brcm.sh reset_cp2112.sh \
   "
 
 DEPENDS_append = " update-rc.d-native"

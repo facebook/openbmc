@@ -222,6 +222,46 @@ dump_sel_syslog(int fru, sel_msg_t *data) {
   syslog(LOG_WARNING, "SEL Entry, FRU: %d, Content: %s\n", fru, str);
 }
 
+static void
+dump_ras_sel_syslog(uint8_t fru, ras_sel_msg_t *data) {
+  int i = 0;
+  char temp_str[8]  = {0};
+  char str[256] = {0};
+
+  for (i = 0; i < SIZE_RAS_SEL - 1; i++) {
+    sprintf(temp_str, "%02X:", data->msg[i]);
+    strcat(str, temp_str);
+  }
+  sprintf(temp_str, "%02X", data->msg[SIZE_RAS_SEL - 1]);
+  strcat(str, temp_str);
+
+  syslog(LOG_WARNING, "SEL Entry, FRU: %d, Content: %s\n", fru, str);
+}
+
+static void
+parse_ras_sel(uint8_t fru, ras_sel_msg_t *data) {
+  uint8_t *sel = data->msg;
+  char error_log_p1[256];
+  char error_log_p2[256];
+  char mfg_id[16];
+
+  /* Manufacturer ID (byte 2:0) */
+  sprintf(mfg_id, "%02x%02x%02x", sel[2], sel[1], sel[0]);
+
+  /* Command-specific (byte 3:34) */ 
+  pal_parse_ras_sel(fru, &sel[3], error_log_p1, error_log_p2);
+
+  syslog(LOG_CRIT, "SEL Entry: FRU: %d, MFG ID: %s, "
+         "%s",
+         fru, mfg_id, error_log_p1);
+
+  syslog(LOG_CRIT, "SEL Entry: FRU: %d, "
+         "%s",
+         fru, error_log_p2);
+
+  pal_update_ts_sled();
+}
+
 /* Parse SEL Log based on IPMI v2.0 Section 32.1 & 32.2*/
 static void
 parse_sel(uint8_t fru, sel_msg_t *data) {
@@ -438,6 +478,19 @@ sel_get_entry(int node, int read_rec_id, sel_msg_t *msg, int *next_rec_id) {
   return 0;
 }
 
+// Add a new entry in to SEL log for RAS SEL
+int
+ras_sel_add_entry(int node, ras_sel_msg_t *msg) {
+
+  // Print the data in syslog
+  dump_ras_sel_syslog(node, msg);
+
+  // Parse the RAS SEL message
+  parse_ras_sel(node, msg);
+
+  return 0;
+}
+
 // Add a new entry in to SEL log
 // IPMI/Section 31.6
 int
@@ -604,3 +657,4 @@ sel_init(void) {
 
   return ret;
 }
+

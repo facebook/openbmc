@@ -45,6 +45,7 @@ IMAGE_INSTALL += " \
   hsvc-util \
   fpc-util \
   me-util \
+  crashdump \
   log-util \
   lldp-util \
   spatula \

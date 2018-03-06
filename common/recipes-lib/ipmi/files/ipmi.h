@@ -63,6 +63,7 @@ extern "C" {
 #define SIZE_PCIE_PORT_CONFIG 2
 
 #define SIZE_SEL_REC 16
+#define SIZE_RAS_SEL 35
 
 // NetFn, Command, Checksum, IANAID(3 bytes), BIC Interface type
 #define BIC_INTF_HDR_SIZE 7
@@ -395,6 +396,7 @@ enum
 // OEM Command Codes for 1S/2S servers
 enum
 {
+  CMD_OEM_ADD_RAS_SEL = 0x10,
   CMD_OEM_SET_PROC_INFO = 0x1A,
   CMD_OEM_GET_PROC_INFO = 0x1B,
   CMD_OEM_SET_DIMM_INFO = 0x1C,

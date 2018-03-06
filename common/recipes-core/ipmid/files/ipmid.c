@@ -1864,6 +1864,23 @@ ipmi_handle_dcmi(unsigned char *request, unsigned char req_len,
  * Function(s) to handle IPMI messages with NetFn: OEM
  */
 static void
+oem_add_ras_sel (unsigned char *request, unsigned char req_len, unsigned char *response,
+                 unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  *res_len = 0;  
+
+  ras_sel_msg_t entry;
+  memcpy(entry.msg, req->data, SIZE_RAS_SEL);
+
+  res->cc = ras_sel_add_entry (req->payload_id, &entry);
+  
+  return;
+}
+
+static void
 oem_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
        unsigned char *res_len)
 {
@@ -2945,6 +2962,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
   pthread_mutex_lock(&m_oem);
   switch (cmd)
   {
+    case CMD_OEM_ADD_RAS_SEL:
+      oem_add_ras_sel (request, req_len, response, res_len);
+      break;
     case CMD_OEM_SET_PROC_INFO:
       oem_set_proc_info (request, req_len, response, res_len);
       break;
@@ -3792,3 +3812,4 @@ main (void)
 
   return 0;
 }
+

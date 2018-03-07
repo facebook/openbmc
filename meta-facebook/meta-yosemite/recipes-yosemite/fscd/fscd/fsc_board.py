@@ -24,10 +24,22 @@ from re import match
 
 
 fru_map = {
-    'slot1': "fru1",
-    'slot2': "fru2",
-    'slot3': "fru3",
-    'slot4': "fru4"
+    'slot1': {
+        'name': 'fru1',
+        'ready': '107'
+    },
+    'slot2': {
+        'name': 'fru2',
+        'ready': '106'
+    },
+    'slot3': {
+        'name': 'fru3',
+        'ready': '109'
+    },
+    'slot4': {
+        'name': 'fru4',
+        'ready': '108'
+    }
 }
 
 loc_map = {
@@ -80,13 +92,18 @@ def set_all_pwm(boost):
 def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute['type'] == "power_status":
+            with open("/sys/class/gpio/gpio"+fru_map[board]['ready']+"/value", "r") as f:
+                bic_ready = f.read(1)
+            if bic_ready[0] == "1":
+                return 0
+
             cmd = "/usr/local/bin/power-util %s status" % board
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             result=data.split(": ")
             if match(r'ON', result[1]) != None:
                 if match(r'soc_dimm', sname) != None:
                     # check DIMM present
-                    with open("/mnt/data/kv_store/sys_config/"+fru_map[board]+loc_map[sname[8:10]], "rb") as f:
+                    with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map[sname[8:10]], "rb") as f:
                         dimm_sts = f.read(1)
                     if dimm_sts[0] == 0x3f:
                         return 0

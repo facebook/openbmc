@@ -74,6 +74,7 @@ class Zone:
         self.fail_sensor_type = fail_sensor_type
         self.ssd_progressive_algorithm = ssd_progressive_algorithm
         self.missing_sensor_assert_flag = ([False] * len(self.expr_meta['ext_vars']))
+        self.missing_sensor_assert_retry = ([0] * len(self.expr_meta['ext_vars']))
         self.sensor_valid_pre = ([0] * len(self.expr_meta['ext_vars']))
         self.sensor_valid_cur = ([0] * len(self.expr_meta['ext_vars']))
 
@@ -94,10 +95,12 @@ class Zone:
                         #Only when both are 1, goes to sensor check process
                         if (self.sensor_valid_cur[sensor_index] == 0) or (self.sensor_valid_pre[sensor_index] == 0):
                             sensor_valid_flag = 0
+                            self.missing_sensor_assert_retry[sensor_index] = 0
                         break
 
             if sensor_valid_flag == 1:
                 if sname in sensors[board]:
+                    self.missing_sensor_assert_retry[sensor_index] = 0
                     if self.missing_sensor_assert_flag[sensor_index]:
                         Logger.crit('DEASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
                         self.missing_sensor_assert_flag[sensor_index] = False
@@ -109,7 +112,7 @@ class Zone:
                         outmin = max(outmin, self.transitional)
                     else:
                         if self.sensor_fail == True:
-                            if sensor.status in ['na']:
+                            if (sensor.status in ['na']) and (self.sensor_valid_cur[sensor_index] != -1):
                                 if re.match(r'.+_C[2-4]_[0-3]_NVME_.+', sensor.name) != None:
                                     Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)
@@ -119,9 +122,11 @@ class Zone:
                                     Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)
                 else:
-                    if not self.missing_sensor_assert_flag[sensor_index]:
+                    if (not self.missing_sensor_assert_flag[sensor_index]) and (self.missing_sensor_assert_retry[sensor_index] >= 2):
                         Logger.crit('ASSERT: Zone%d Missing sensors: %s' % (self.counter, v))
                         self.missing_sensor_assert_flag[sensor_index] = True
+                    if (self.missing_sensor_assert_retry[sensor_index] < 2):
+                        self.missing_sensor_assert_retry[sensor_index] += 1
                     # evaluation tries to ignore the effects of None values
                     # (e.g. acts as 0 in max/+)
                     ctx[v] = None

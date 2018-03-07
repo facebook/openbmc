@@ -92,36 +92,12 @@ do_compile () {
     unset CFLAGS
     unset CPPFLAGS
 
-    # found out the source dir
-    dir=$(pwd)
-    while [ -n "$dir" -a "$dir" != "/" -a ! -d "$dir/meta-openbmc/.git" ]; do
-        dir=$(dirname $dir)
-    done
-
-    if [ -d "$dir/meta-openbmc/.git" ]; then
-        srcdir="$dir/meta-openbmc"
-        srcdir_git="${srcdir}/.git"
-        version=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} describe --tags --dirty --always 2> /dev/null)
-    else
-        version=""
-    fi
-
-    print_version="${MACHINE}"
-    if [[ $version == ${MACHINE}-v* ]]; then
-      print_version=" ${version} "
-    elif [[ $version == "" ]]; then
-      print_version=" ${MACHINE}-v0.0 "
-    else
-      sha=$(git --git-dir=${srcdir_git} --work-tree=${srcdir} rev-parse --short HEAD 2> /dev/null)
-      print_version=" ${MACHINE}-${sha} "
-    fi
-
     if [ ! -e ${B}/.scmversion -a ! -e ${S}/.scmversion ]
     then
         echo ${UBOOT_LOCALVERSION} > ${B}/.scmversion
-        echo ${print_version} >> ${B}/.scmversion
+        echo ${OPENBMC_VERSION} >> ${B}/.scmversion
         echo ${UBOOT_LOCALVERSION} > ${S}/.scmversion
-        echo ${print_version} >> ${S}/.scmversion
+        echo ${OPENBMC_VERSION} >> ${S}/.scmversion
     fi
 
     if [ "x${UBOOT_CONFIG}" != "x" ]

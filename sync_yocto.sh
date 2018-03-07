@@ -22,8 +22,6 @@ do
   if [ -d ./yocto/$branch/meta-security ]; then
     rm -rf ./yocto/$branch/meta-security
   fi
-  rm -r ./yocto/$branch/source_mirrors
-
   git clone -b $branch https://git.yoctoproject.org/git/poky yocto/$branch/poky
   git clone -b $branch https://github.com/openembedded/meta-openembedded.git yocto/$branch/meta-openembedded
   git clone -b $branch https://git.yoctoproject.org/git/meta-security yocto/$branch/meta-security

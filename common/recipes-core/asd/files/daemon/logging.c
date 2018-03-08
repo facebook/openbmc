@@ -67,23 +67,35 @@ void ASD_log(ASD_LogType log_type, const char *format, ...)
     if (!local_log && !remoteLog)
         return;
 
+    char *log_prefix = "ASD: ";
+    char *new_format = malloc(strlen(format) + strlen(log_prefix) + 1);
+    if (!new_format) {
+      new_format = (char *)format;
+    } else {
+      strcpy(new_format, log_prefix);
+      strcat(new_format, format);
+    }
+
     va_list args;
     va_start(args, format);
     if (local_log) {
         if (sg_b_writetosyslog) {
-            vsyslog(LOG_USER, format, args);
+            vsyslog(LOG_USER, new_format, args);
         } else {
-            vfprintf(stderr, format, args);
+            vfprintf(stderr, new_format, args);
             fprintf(stderr, "\n");
         }
     }
     if (remoteLog) {
         char buffer[CALLBACK_LOG_MESSAGE_LENGTH];
         memset(buffer, '\0', CALLBACK_LOG_MESSAGE_LENGTH);
-        vsnprintf(buffer, CALLBACK_LOG_MESSAGE_LENGTH, format, args);
+        vsnprintf(buffer, CALLBACK_LOG_MESSAGE_LENGTH, new_format, args);
         loggingCallback(log_type, buffer);
     }
     va_end(args);
+
+    if (new_format != format)
+      free(new_format);
 }
 
 void ASD_log_buffer(ASD_LogType log_type,

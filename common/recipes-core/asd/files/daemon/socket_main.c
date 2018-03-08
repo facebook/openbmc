@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <errno.h>
 #include <getopt.h>
@@ -1279,7 +1280,7 @@ int main(int argc, char **argv) {
     extnet_init(sg_options.e_extnet_type, EXTNET_DATA, MAX_SESSIONS);
     auth_init(sg_options.e_auth_type, NULL);
     session_init();
-
+    syslog(LOG_WARNING, "ASD daemon launch, fru %d, port %d\n", cpu_fru, sg_options.n_port_number);
     out_msg.buffer = (unsigned char*) malloc(MAX_DATA_SIZE);
     if (!out_msg.buffer) {
         ASD_log(LogType_Error, "Failed to allocate out_msg.buffer");
@@ -1433,6 +1434,8 @@ int main(int argc, char **argv) {
                         ASD_log(LogType_Error,
                                 "Authenticated client connected on fd %d.",
                                 p_extconn->sockfd);
+                        syslog(LOG_WARNING, "Authenticated client connected to fru %d (port %d) on fd %d\n",
+                               cpu_fru, sg_options.n_port_number, p_extconn->sockfd);
                     }
                     continue;
                 }
@@ -1458,10 +1461,13 @@ int main(int argc, char **argv) {
                                            (void*)(&(s_message.header)+read_index),
                                            sizeof(s_message.header)-read_index);
                         if (cnt < 1) {
-                            if(cnt == 0)
+                            if(cnt == 0) {
                                 ASD_log(LogType_Error, "Client disconnected");
-                            else
+                                syslog(LOG_WARNING, "Client disconnected from fru %d (port %d)\n",
+                                       cpu_fru, sg_options.n_port_number);
+                            } else {
                                 ASD_log(LogType_Error, "Socket header receive failed: %d", cnt);
+                            }
                             if (on_client_disconnect() != ST_OK) {
                                 ASD_log(LogType_Error, "Client disconnect cleanup failed.");
                             }

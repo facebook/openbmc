@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <syslog.h>
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/file.h>
@@ -152,6 +153,9 @@ int main (int argc, char **argv) {
     }
 
     printf("ASD: connect to fru %d, irSize=%d\n", fru, irSize);
+    syslog(LOG_WARNING, "ASD: ASD test on fru %d, irSize=%d\n",
+           fru, irSize);
+
     // load the driver
     handle = SoftwareJTAGHandler(fru); // TODO get from user
     if (!handle) {

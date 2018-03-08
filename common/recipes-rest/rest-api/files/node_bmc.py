@@ -117,7 +117,7 @@ class bmcNode(node):
                 uboot_version += lines[i] +", "
             else:
                 uboot_version += lines[i]
-        
+
         # Get kernel release and kernel version
         kernel_release = ""
         data = Popen( 'uname -r', \
@@ -156,6 +156,9 @@ class bmcNode(node):
         spi1_mfid = data.strip('\n')
         spi1_vendor = getSPIVendor(spi1_mfid)
 
+        #ASD status - check if ASD daemon/asd-test is currently running
+        asd_status = bool(Popen('ps | grep -i [a]sd', shell=True, stdout=PIPE).stdout.read())
+
         info = {
             "Description": name + " BMC",
             "MAC Addr": mac_addr,
@@ -170,6 +173,7 @@ class bmcNode(node):
             "TPM FW version": tpm_fw_version,
             "SPI0 Vendor": spi0_vendor,
             "SPI1 Vendor": spi1_vendor,
+            "At-Scale-Debug Running": asd_status,
             }
 
         return info

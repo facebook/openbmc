@@ -45,6 +45,7 @@ OPENBMC_UTILS_FILES += " \
   "
 
 DEPENDS_append = " update-rc.d-native"
+RDEPENDS_${PN} += "python3-core"
 
 do_install_board() {
   # for backward compatible, create /usr/local/fbpackages/utils/ast-functions

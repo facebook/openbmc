@@ -18,7 +18,9 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-facebook/meta-wedge \
   ##OEROOT##/../../../meta-facebook/meta-wedge100 \
   ##OEROOT##/../../../meta-facebook/meta-galaxy100 \
+  ##OEROOT##/../../../meta-facebook/meta-python3 \
   "
+
 BBLAYERS_NON_REMOVABLE ?= " \
   ##OEROOT##/meta \
   ##OEROOT##/meta-poky \

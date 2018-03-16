@@ -26,7 +26,7 @@ LIC_FILES_CHKSUM = "file://lightning_flash.c;beginline=3;endline=15;md5=da359787
 SRC_URI = "file://lightning_flash \
           "
 
-DEPENDS += " obmc-i2c"
+DEPENDS += " liblightning-common obmc-i2c"
 
 S = "${WORKDIR}/lightning_flash"
 
@@ -41,3 +41,4 @@ do_install() {
 
 FILES_${PN} = "${libdir}/liblightning_flash.so"
 FILES_${PN}-dev = "${includedir}/facebook/lightning_flash.h"
+RDEPENDS_${PN} += " liblightning-common"

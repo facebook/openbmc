@@ -400,7 +400,7 @@ int pal_get_machine_configuration(char *conf);
 void pal_check_power_sts(void);
 int notify_BBV_ipmb_offline_online(uint8_t on_off, int off_sec);
 bool pal_is_BBV_prsnt();
-int pal_CPU_error_num_chk(void);
+int pal_CPU_error_num_chk(bool is_caterr);
 void pal_second_crashdump_chk(void);
 int pal_mmap (uint32_t base, uint8_t offset, int option, uint32_t para);
 int pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr);

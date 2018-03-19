@@ -7079,9 +7079,10 @@ error_exit:
 }
 
 int
-pal_CPU_error_num_chk(void)
+pal_CPU_error_num_chk(bool is_caterr)
 {
   int len;
+  int cpu_num = -1;
   ipmb_req_t *req;
   ipmb_res_t *res;
 
@@ -7104,19 +7105,25 @@ pal_CPU_error_num_chk(void)
   req->data[10] = 0x00;
   // Invoke IPMB library handler
   len = ipmb_send_buf(0x4, 11+MIN_IPMB_REQ_LEN);
-  if (len >= (4+MIN_IPMB_RES_LEN) && // Data len >= 4
-    res->cc == 0 && // IPMB Success
-    res->data[3] == 0x40 ) {
-    if(((res->data[7] & 0xE0) > 0) && ((res->data[7] & 0x1C) > 0))
-      return 2; //Both
-    else if((res->data[7] & 0xE0) > 0)
-      return 1; //CPU1
-    else if((res->data[7] & 0x1C) > 0)
-      return 0; // CPU0
-    else
-      return -1;
-  } else
-    return -1;
+  // Data len >= 4 and  IPMB Success
+  if ( ( len >= (4+MIN_IPMB_RES_LEN) ) && ( res->cc == 0 ) && ( res->data[3] == 0x40 ) ) {
+    if( is_caterr ) {
+      if(((res->data[7] & 0xE0) > 0) && ((res->data[7] & 0x1C) > 0))
+        cpu_num = 2; //Both
+      else if((res->data[7] & 0xE0) > 0)
+        cpu_num = 1; //CPU1
+      else if((res->data[7] & 0x1C) > 0)
+        cpu_num = 0; // CPU0
+      } else {
+      if(((res->data[6] & 0xE0) > 0) && ((res->data[6] & 0x1C) > 0))
+        cpu_num = 2; //Both
+      else if((res->data[6] & 0xE0) > 0)
+        cpu_num = 1; //CPU1
+      else if((res->data[6] & 0x1C) > 0)
+        cpu_num = 0; // CPU0
+      }
+  }
+  return cpu_num;
 }
 
 int

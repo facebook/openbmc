@@ -24,6 +24,7 @@ from node import node
 from pal import *
 from uuid import getnode as get_mac
 import os.path
+from vboot import get_vboot_status
 
 def getSPIVendor(manufacturer_id):
     # Define Manufacturer ID
@@ -158,6 +159,7 @@ class bmcNode(node):
 
         #ASD status - check if ASD daemon/asd-test is currently running
         asd_status = bool(Popen('ps | grep -i [a]sd', shell=True, stdout=PIPE).stdout.read())
+        vboot_info = get_vboot_status()
 
         info = {
             "Description": name + " BMC",
@@ -174,6 +176,7 @@ class bmcNode(node):
             "SPI0 Vendor": spi0_vendor,
             "SPI1 Vendor": spi1_vendor,
             "At-Scale-Debug Running": asd_status,
+            "vboot": vboot_info,
             }
 
         return info

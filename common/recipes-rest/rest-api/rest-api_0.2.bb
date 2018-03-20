@@ -26,11 +26,12 @@ SRC_URI = "file://rest.py \
            file://node.py \
            file://tree.py \
            file://pal.py \
+           file://vboot.py \
           "
 DEPENDS += "libpal"
 
 
-binfiles = "rest.py node.py tree.py pal.py"
+binfiles = "rest.py node.py tree.py pal.py vboot.py"
 
 pkgdir = "rest-api"
 RDEPENDS_${PN} += "libpal"

@@ -59,6 +59,8 @@ static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool MCERR_IERR_assert = false;
 static int g_uart_switch_count = 0;
 
+static void set_gpio_value(char *pin, uint8_t value);
+
 static inline long int reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
   *val = 0;
@@ -489,6 +491,7 @@ gpio_timer() {
   long int pot;
   char str[MAX_VALUE_LEN] = {0};
   int tread_time = 0 ;
+  static bool is_ppin_triggered = false;
 
   while (1) {
     sleep(1);
@@ -520,6 +523,14 @@ gpio_timer() {
           syslog(LOG_INFO, "last pwr state updated to off\n");
         }
       }
+      //Trigger PPIN GPIO
+      if( !is_ppin_triggered )
+        {
+        set_gpio_value("GPIOB5", GPIO_VALUE_LOW);
+        usleep(1000);
+        set_gpio_value("GPIOB5", GPIO_VALUE_HIGH);
+        is_ppin_triggered = true;
+        }
     }
     if ( g_uart_switch_count > 0) {
       if ( --g_uart_switch_count == 0 )

@@ -450,3 +450,8 @@ devmem_clear_bit $(scu_addr 90) 27
 
 gpio_export Q4
 gpio_export Q5
+
+#PPIN
+devmem_clear_bit $(scu_addr 80) 13
+gpio_export B5
+gpio_set B5 1

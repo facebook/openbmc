@@ -3076,8 +3076,12 @@ key_func_por_policy (int event, void *arg)
       if (pal_is_fw_update_ongoing(FRU_MB))
         return -1;
       // sync to env
-      snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", (char *)arg);
-      system(cmd);
+      if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", (char *)arg);
+        system(cmd);
+      }
+      else
+        return -1;
       break;
     case KEY_AFTER_INI:
       // sync to env

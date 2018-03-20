@@ -36,6 +36,10 @@ outlined on that page and do not file a public issue.
 * 2 spaces for indentation rather than tabs
 * 80 character line length
 
+## Code of Conduct
+
+Facebook has adopted a Code of Conduct that we expect project participants to adhere to. Please [read the full text](https://code.facebook.com/pages/876921332402685/open-source-code-of-conduct) so that you can understand what actions will and will not be tolerated.
+
 ## License
 OpenBMC is made up of different packages. Each package contains recipe files
 that detail where to fetch source code from third party sources or local

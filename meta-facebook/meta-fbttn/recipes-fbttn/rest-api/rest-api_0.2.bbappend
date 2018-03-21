@@ -31,7 +31,6 @@ SRC_URI += "file://setup-rest-api.sh \
            file://node_api.py \
            file://node_mezz.py \
            file://node_bmc.py \
-           file://node_vboot.py \
            file://node_server.py \
            file://node_fruid.py \
            file://node_sensors.py \
@@ -47,7 +46,7 @@ SRC_URI += "file://setup-rest-api.sh \
            file://node_enclosure.py \
           "
 
-binfiles += "setup-rest-api.sh plat_tree.py node_api.py node_mezz.py node_bmc.py node_vboot.py node_server.py node_fruid.py node_sensors.py node_logs.py node_config.py node_dpb.py node_iom.py node_scc.py node_health.py node_identify.py node_fans.py node_bios.py node_enclosure.py"
+binfiles += "setup-rest-api.sh plat_tree.py node_api.py node_mezz.py node_bmc.py node_server.py node_fruid.py node_sensors.py node_logs.py node_config.py node_dpb.py node_iom.py node_scc.py node_health.py node_identify.py node_fans.py node_bios.py node_enclosure.py"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

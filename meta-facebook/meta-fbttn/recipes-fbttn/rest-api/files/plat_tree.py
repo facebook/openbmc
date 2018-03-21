@@ -37,7 +37,6 @@ from node_config import get_node_config
 from node_health import get_node_health
 from node_identify import get_node_identify
 from node_fans import get_node_fans
-from node_vboot import get_node_vboot
 from node_bios import *
 from node_enclosure import *
 from tree import tree
@@ -116,9 +115,6 @@ def init_plat_tree():
     r_iom.addChild(r_temp)
     #Add /api/iom/bmc end point
     r_temp = tree("bmc", data = get_node_bmc())
-    r_iom.addChild(r_temp)
-    #Add /api/iom/vboot end point
-    r_temp = tree("vboot", data = get_node_vboot())
     r_iom.addChild(r_temp)
     #Add /api/iom/health end point
     r_temp = tree("health", data = get_node_health())

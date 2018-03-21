@@ -1,6 +1,10 @@
 #!/bin/bash
 
-DISTRO_DEFAULT=krogoth
+if [ -z "$DISTRO_DEFAULT" ]; then
+  DISTRO_DEFAULT=krogoth
+else
+  echo "WARNING: distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
+fi
 declare -a DISTRO_OVERRIDES
 #DISTRO_OVERRIDES=(meta-cmm:rocko)
 

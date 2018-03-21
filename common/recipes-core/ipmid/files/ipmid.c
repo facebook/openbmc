@@ -2084,15 +2084,6 @@ oem_q_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
     return;
   }
 
-  //Return error when dimm is not present
-  sprintf(key, "sys_config/fru%d_dimm%d_location", req->payload_id, req->data[3]);
-  ret = kv_get_bin(key, (char *)res->data);
-  if (ret<0 ||res->data[0] != 0x1) {
-    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
-    *res_len = 0;
-    return;
-  }
-
   sprintf(key, "sys_config/fru%d_dimm%d_%s", req->payload_id, req->data[3], dimm_info_key[req->data[4]]);
 
   memcpy(payload, &req->data[5], req_len -8);
@@ -2123,17 +2114,6 @@ oem_q_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
     res->cc = CC_PARAM_OUT_OF_RANGE;
     *res_len = 0;
     return;
-  }
-
-  //Return error when dimm is not present except reading the location of dimm
-  if ((int) req->data[4] != 1) {
-    sprintf(key, "sys_config/fru%d_dimm%d_location", req->payload_id, req->data[3]);
-    ret = kv_get_bin(key, (char *)res->data);
-    if (ret<0 ||res->data[0] != 0x1) {
-      res->cc = CC_NOT_SUPP_IN_CURR_STATE;
-      *res_len = 0;
-      return;
-    }
   }
 
   sprintf(key, "sys_config/fru%d_dimm%d_%s", req->payload_id, req->data[3], dimm_info_key[req->data[4]]);

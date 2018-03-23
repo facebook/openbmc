@@ -145,6 +145,12 @@ class AstGPIO(object):
         if 'SIORD' in ' '.join(parts):
             logging.warning('Unable to process SIORD. Ignore')
             return []
+        if 'GFX064' in ' '.join(parts):
+            logging.warning('Unable to process GFX064. Ignore')
+            return []
+        if 'LHCR0' in ' '.join(parts):
+            logging.warning('Unable to process LHCR0. Ignore')
+            return []
         func = parts[0]
         if func == '':
             # nothing after

@@ -17,9 +17,9 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += " file://rest-api-1/board_endpoint.py \
-             file://rest-api-1/board_setup_routes.py \
-             file://rest-api-1/boardroutes.py \
+SRC_URI += " file://board_endpoint.py \
+             file://board_setup_routes.py \
+             file://boardroutes.py \
              file://rest-api-1/backpack_cards.py \
              file://rest-api-1/rest_component_presence.py \
              file://rest-api-1/rest_firmware.py \
@@ -27,12 +27,14 @@ SRC_URI += " file://rest-api-1/board_endpoint.py \
              file://rest-api-1/rest_chassis_all_serial_and_location.py \
           "
 
+binfiles1 += "backpack_cards.py \
+              rest_component_presence.py \
+              rest_firmware.py \
+              rest_chassis_eeprom.py \
+              rest_chassis_all_serial_and_location.py \
+             "
+
 binfiles += "board_endpoint.py \
              board_setup_routes.py \
              boardroutes.py \
-             backpack_cards.py \
-             rest_component_presence.py \
-             rest_firmware.py \
-             rest_chassis_eeprom.py \
-             rest_chassis_all_serial_and_location.py \
             "

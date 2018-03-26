@@ -27,12 +27,12 @@ DEPENDS_append = " update-rc.d-native"
 SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest.py \
            file://rest-api-1/common_endpoint.py \
-           file://rest-api-1/board_endpoint.py \
+           file://board_endpoint.py \
            file://rest-api-1/rest_watchdog.py \
-           file://rest-api-1/rest_config.py \
+           file://rest_config.py \
            file://rest-api-1/run_rest \
            file://rest-api-1/run_watchdog \
-           file://rest-api-1/rest.cfg \
+           file://rest.cfg \
            file://rest-api-1/rest_bmc.py \
            file://rest-api-1/rest_fruid.py \
            file://rest-api-1/rest_gpios.py \
@@ -47,36 +47,38 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_fcpresent.py \
            file://rest-api-1/rest_helper.py \
            file://rest-api-1/rest_utils.py \
-           file://rest-api-1/board_setup_routes.py \
-           file://rest-api-1/boardroutes.py \
+           file://board_setup_routes.py \
+           file://boardroutes.py \
            file://rest-api-1/common_setup_routes.py \
           "
 
 S = "${WORKDIR}/rest-api-1"
 
-binfiles = "rest.py \
-            setup-rest-api.sh \
-            rest_watchdog.py \
-            rest_config.py \
-            common_endpoint.py \
-            board_endpoint.py \
-            rest_bmc.py \
-            rest_fruid.py \
-            rest_gpios.py \
-            rest_server.py \
-            rest_sensors.py \
-            bmc_command.py \
-            eeprom_utils.py \
-            rest_modbus.py \
-            rest_slotid.py \
-            rest_psu_update.py \
-            rest_fcpresent.py \
-            rest_helper.py \
-            rest_utils.py \
-            rest_mTerm.py \
-            board_setup_routes.py \
+binfiles = "board_setup_routes.py \
             boardroutes.py \
-            common_setup_routes.py"
+            board_endpoint.py \
+            rest_config.py \
+           "
+
+binfiles1 = "rest.py \
+             setup-rest-api.sh \
+             rest_watchdog.py \
+             common_endpoint.py \
+             rest_bmc.py \
+             rest_fruid.py \
+             rest_gpios.py \
+             rest_server.py \
+             rest_sensors.py \
+             bmc_command.py \
+             eeprom_utils.py \
+             rest_modbus.py \
+             rest_slotid.py \
+             rest_psu_update.py \
+             rest_fcpresent.py \
+             rest_helper.py \
+             rest_utils.py \
+             rest_mTerm.py \
+             common_setup_routes.py"
 
 pkgdir = "rest-api"
 
@@ -85,10 +87,14 @@ do_install() {
   bin="${D}/usr/local/bin"
   install -d $dst
   install -d $bin
-  for f in ${binfiles}; do
+  for f in ${binfiles1}; do
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
   done
+  for f in ${binfiles}; do
+    install -m 755 ${WORKDIR}/$f ${dst}/$f
+    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
+  done  
   for f in ${otherfiles}; do
     install -m 644 $f ${dst}/$f
   done
@@ -99,7 +105,7 @@ do_install() {
   install -m 755 run_watchdog ${D}${sysconfdir}/sv/restwatchdog/run
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 644 rest.cfg ${D}${sysconfdir}/rest.cfg
+  install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
   install -m 755 setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
   update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
 }

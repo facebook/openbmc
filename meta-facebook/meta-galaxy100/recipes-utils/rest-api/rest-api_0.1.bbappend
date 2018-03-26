@@ -19,21 +19,24 @@ SRC_URI += " \
     file://rest-api-1/rest_sol.py \
     file://rest-api-1/rest_firmware.py \
     file://rest-api-1/rest_chassis_eeprom.py \
-    file://rest-api-1/board_endpoint.py \
-    file://rest-api-1/board_setup_routes.py \
-    file://rest-api-1/boardroutes.py \
     file://rest-api-1/rest_i2cflush.py \
+    file://board_endpoint.py \
+    file://boardroutes.py \
+    file://board_setup_routes.py \
     "
 
-binfiles += " \
+binfiles1 += " \
     eeprom_utils.py \
     rest_fruid_scm.py \
     rest_seutil.py \
     rest_sol.py \
     rest_firmware.py \
     rest_chassis_eeprom.py \
+    rest_i2cflush.py \
+    "
+
+binfiles += " \
     board_endpoint.py \
     board_setup_routes.py \
     boardroutes.py \
-    rest_i2cflush.py \
     "

@@ -7,6 +7,10 @@ SRC_URI += "file://init \
 
 PR .= ".1"
 
+do_configure_append() {
+  sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" sshd_config
+}
+
 # If the following were do_install_append, it would get combined/concatenated
 # with the do_install_append from Yocto, and not necessarily in the right
 # order (last). So create a new task that comes after do_install (because

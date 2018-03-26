@@ -118,7 +118,7 @@ ClientAliveCountMax 0
 #MaxStartups 10:30:100
 #PermitTunnel no
 #ChrootDirectory none
-#VersionAddendum none
+VersionAddendum __OPENBMC_VERSION__
 
 # no default banner path
 #Banner none

@@ -50,6 +50,7 @@ def rsyslog_hup():
 def log_main():
 
     global frulist
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
 
     # Get the list of frus from PAL library
     frus = pal_get_fru_list().decode()
@@ -84,7 +85,7 @@ def log_main():
             "APP_NAME",
             "MESSAGE"
             ))
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+
     for logfile in syslogfiles:
 
         try:

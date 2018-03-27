@@ -25,6 +25,7 @@ IMAGE_INSTALL += " \
   libcpldupdate-dll-gpio \
   lldp-util \
   mterm \
+  openbmc-gpio \
   openbmc-utils \
   spatula \
   trousers \

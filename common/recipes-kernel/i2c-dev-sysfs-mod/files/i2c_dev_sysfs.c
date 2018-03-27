@@ -176,8 +176,7 @@ static ssize_t i2c_dev_sysfs_show(struct device *dev,
   i2c_dev_data_st *data = i2c_get_clientdata(client);
   i2c_sysfs_attr_st *i2c_attr = TO_I2C_SYSFS_ATTR(attr);
   const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
-  int val;
-  int val_mask;
+  int val, val_mask, reg_val;
 
   if (!dev_attr->ida_show) {
     return -EOPNOTSUPP;
@@ -187,25 +186,28 @@ static ssize_t i2c_dev_sysfs_show(struct device *dev,
     return dev_attr->ida_show(dev, attr, buf);
   }
 
-  val_mask = ~(((-1) >> (dev_attr->ida_n_bits)) << (dev_attr->ida_n_bits));
+  val_mask = (1 << (dev_attr->ida_n_bits)) - 1;
 
   mutex_lock(&data->idd_lock);
 
   /* default handling */
-  val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
+  reg_val = i2c_smbus_read_byte_data(client, dev_attr->ida_reg);
 
   mutex_unlock(&data->idd_lock);
 
-  if (val < 0) {
+  if (reg_val < 0) {
     /* error case */
-    return val;
+    return reg_val;
   }
 
-  val = (val >> dev_attr->ida_bit_offset) & val_mask;
+  val = (reg_val >> dev_attr->ida_bit_offset) & val_mask;
 
-  return scnprintf(buf, PAGE_SIZE, "0x%x%s%s\n", val,
-                   (dev_attr->ida_help) ? "\n\nNote:\n" : "",
-                   (dev_attr->ida_help) ? dev_attr->ida_help : "");
+  return scnprintf(buf, PAGE_SIZE,
+                   "%#x\n\nNote:\n%s\n"
+                   "Bit[%d:%d] @ register %#x, register value %#x\n",
+                   val, (dev_attr->ida_help) ? dev_attr->ida_help : "",
+                   dev_attr->ida_bit_offset + dev_attr->ida_n_bits - 1,
+                   dev_attr->ida_bit_offset, dev_attr->ida_reg, reg_val);
 }
 
 static ssize_t i2c_dev_sysfs_store(struct device *dev,

@@ -25,6 +25,8 @@ class serverNode(node):
             status = 'power-off'
         elif ret == 1:
             status = 'power-on'
+        elif ret == 5:
+            status = '12V-off'
         else:
             status = 'error'
 

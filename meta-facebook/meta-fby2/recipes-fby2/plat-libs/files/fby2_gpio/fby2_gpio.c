@@ -64,6 +64,10 @@ const uint8_t gpio_pin_list[] = {
   XDP_PRSNT_OUT_N,
   XDP_BIC_PWR_DEBUG_N,
   FM_BIC_JTAG_SEL_N,
+  FM_PCIE_BMC_RELINK_N,
+  FM_DISABLE_PCH_VR,
+  FM_BIC_RST_RTCRST,
+  FM_BIC_ME_RCVR,
 };
 
 size_t gpio_pin_cnt = sizeof(gpio_pin_list)/sizeof(uint8_t);
@@ -195,6 +199,10 @@ const char *gpio_pin_name[] = {
   "XDP_PRSNT_OUT_N",
   "XDP_BIC_PWR_DEBUG_N",
   "FM_BIC_JTAG_SEL_N",
+  "FM_PCIE_BMC_RELINK_N",
+  "FM_DISABLE_PCH_VR",
+  "FM_BIC_RST_RTCRST",
+  "FM_BIC_ME_RCVR",
 };
 
 // RC GPIO name

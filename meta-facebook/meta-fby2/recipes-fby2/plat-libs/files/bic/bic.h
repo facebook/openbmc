@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#define MAX_GPIO_PINS     40
+#define MAX_GPIO_PINS     50
 
 // GPIO PINS
 enum {
@@ -72,6 +72,10 @@ enum {
   XDP_PRSNT_OUT_N,
   XDP_BIC_PWR_DEBUG_N,
   FM_BIC_JTAG_SEL_N,
+  FM_PCIE_BMC_RELINK_N,
+  FM_DISABLE_PCH_VR,
+  FM_BIC_RST_RTCRST,
+  FM_BIC_ME_RCVR,
 };
 
 // RC GPIO PINS
@@ -258,6 +262,10 @@ typedef struct _bic_gpio_t {
   uint32_t xdp_prsnt_out_n:1;
   uint32_t xdp_bic_pwr_debug_n:1;
   uint32_t fm_bic_jtag_sel_n:1;
+  uint32_t fm_pcie_bmc_relink_n:1;
+  uint32_t fm_disable_pch_vr:1;
+  uint32_t fm_bic_rst_rtcrst:1;
+  uint32_t fm_bic_me_rcvr:1;
   uint32_t rsvd:1;
 } bic_gpio_t;
 

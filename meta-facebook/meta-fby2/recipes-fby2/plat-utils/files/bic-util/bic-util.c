@@ -199,6 +199,10 @@ util_get_gpio(uint8_t slot_id) {
   printf("36 %s: %d\n", gpio_pin_name[36], t->bits.xdp_prsnt_out_n);
   printf("37 %s: %d\n", gpio_pin_name[37], t->bits.xdp_bic_pwr_debug_n);
   printf("38 %s: %d\n", gpio_pin_name[38], t->bits.fm_bic_jtag_sel_n);
+  printf("39 %s: %d\n", gpio_pin_name[39], t->bits.fm_pcie_bmc_relink_n);
+  printf("40 %s: %d\n", gpio_pin_name[40], t->bits.fm_disable_pch_vr);
+  printf("41 %s: %d\n", gpio_pin_name[41], t->bits.fm_bic_rst_rtcrst);
+  printf("42 %s: %d\n", gpio_pin_name[42], t->bits.fm_bic_me_rcvr);
   printf("rsvd: %d\n", t->bits.rsvd);
 #endif
 }

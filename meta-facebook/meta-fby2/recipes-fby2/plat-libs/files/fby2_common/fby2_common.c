@@ -37,11 +37,22 @@
 
 struct threadinfo {
   uint8_t is_running;
+  bool is_ierr;
   uint8_t fru;
   pthread_t pt;
 };
 
-static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
+static struct threadinfo t_dump[MAX_NUM_FRUS] = {0,false, };
+
+void
+fby2_common_set_ierr(uint8_t fru, bool ierr) {
+  t_dump[fru-1].is_ierr=ierr;
+}
+
+bool
+fby2_common_get_ierr(uint8_t fru) {
+  return t_dump[fru-1].is_ierr;
+}
 
 int
 fby2_common_fru_name(uint8_t fru, char *str) {
@@ -115,7 +126,6 @@ generate_dump(void *arg) {
   char cmd[128];
   char fname[128];
   char fruname[16];
-  int tmpf;
   int rc;
 
   // Usually the pthread cancel state are enable by default but
@@ -133,6 +143,9 @@ generate_dump(void *arg) {
     system(cmd);
   }
 
+  if (fby2_common_get_ierr(fru)) {
+    sleep(30);
+  }
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
@@ -144,21 +157,61 @@ generate_dump(void *arg) {
 
 }
 
+void *
+second_dwr_dump(void *arg) {
+
+  uint8_t fru = *(uint8_t *) arg;
+  char cmd[128];
+  char fname[128];
+  char fruname[16];
+  int rc;
+
+  // Usually the pthread cancel state are enable by default but
+  // here we explicitly would like to enable them
+  rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  rc = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  fby2_common_fru_name(fru, fruname);
+
+  memset(fname, 0, sizeof(fname));
+  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  if (access(fname, F_OK) == 0) {
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd,"rm %s",fname);
+    system(cmd);
+  }
+
+  if (fby2_common_get_ierr(fru)) {
+    sleep(30);
+  }
+  // Execute automatic crashdump
+  memset(cmd, 0, 128);
+  syslog(LOG_WARNING, "Start Second/DWR Autodump");
+  sprintf(cmd, "%s %s --second", CRASHDUMP_BIN, fruname);
+  system(cmd);
+
+  syslog(LOG_CRIT, "Second/DWR Crashdump for FRU: %d is generated.", fru);
+
+  t_dump[fru-1].is_running = 0;
+
+}
+
 int
-fby2_common_crashdump(uint8_t fru) {
+fby2_common_crashdump(uint8_t fru,bool platform_reset) {
 
   int ret;
   char cmd[100];
 
   // Check if the crashdump script exist
   if (access(CRASHDUMP_BIN, F_OK) == -1) {
-    syslog(LOG_CRIT, "Crashdump for FRU: %d failed : "
+    syslog(LOG_CRIT, "fby2_common_crashdump:Crashdump for FRU: %d failed : "
         "auto crashdump binary is not preset", fru);
     return 0;
   }
 
   // Check if a crashdump for that fru is already running.
   // If yes, kill that thread and start a new one.
+  syslog(LOG_INFO, "fby2_common_crashdump: fru%d: is_running=%d",fru,t_dump[fru-1].is_running);
   if (t_dump[fru-1].is_running) {
     ret = pthread_cancel(t_dump[fru-1].pt);
     if (ret == ESRCH) {
@@ -172,20 +225,32 @@ fby2_common_crashdump(uint8_t fru) {
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_crashdump: Previous crashdump thread is cancelled");
 #endif
+      if (platform_reset) {
+        sprintf(cmd, "tar zcf %suncompleted_slot%d.tar.gz -C /mnt/data crashdump_slot%d", CRASHDUMP_FILE,fru,fru);
+        system(cmd);
+      }
     }
   }
 
   // Start a thread to generate the crashdump
   t_dump[fru-1].fru = fru;
-  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) &t_dump[fru-1].fru) < 0) {
-    syslog(LOG_WARNING, "pal_store_crashdump: pthread_create for"
+  if (platform_reset) {
+    if (pthread_create(&(t_dump[fru-1].pt), NULL, second_dwr_dump, (void*) &t_dump[fru-1].fru) < 0) {
+    syslog(LOG_WARNING, "fby2_common_crashdump: pthread_create for"
         " FRU %d failed\n", fru);
     return -1;
+    }
+  } else {
+    if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) &t_dump[fru-1].fru) < 0) {
+    syslog(LOG_WARNING, "fby2_common_crashdump: pthread_create for"
+        " FRU %d failed\n", fru);
+    return -1;
+    }
   }
 
   t_dump[fru-1].is_running = 1;
 
-  syslog(LOG_INFO, "Crashdump for FRU: %d is being generated.", fru);
+  syslog(LOG_INFO, "fby2_common_crashdump: Crashdump for FRU: %d is being generated.", fru);
 
   return 0;
 }

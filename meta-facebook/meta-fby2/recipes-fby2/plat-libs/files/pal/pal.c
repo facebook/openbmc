@@ -3763,8 +3763,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 
 static int
 pal_store_crashdump(uint8_t fru) {
-
-  return fby2_common_crashdump(fru);
+  return fby2_common_crashdump(fru,false);
 }
 
 int
@@ -3782,6 +3781,8 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
     case FRU_SLOT4:
       switch(snr_num) {
         case CATERR_B:
+          if (event_data[3] == 0x00) // 00h:IERR 0Bh:MCERR
+            fby2_common_set_ierr(fru,true);
           pal_store_crashdump(fru);
           break;
 
@@ -5153,6 +5154,13 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   struct sockaddr_un server;
   char sock_path[64] = {0};
   #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
+
+  if ((data[0] == PLTRST_N) && (data[1] == 0x01)) {
+    if (fby2_common_get_ierr(slot)) {
+      fby2_common_crashdump(slot,true);
+    }
+    fby2_common_set_ierr(slot,false);
+  }
 
   sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock < 0) {

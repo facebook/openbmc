@@ -24,6 +24,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 SRC_URI = "file://dump.sh \
             file://crashdump_coreid \
             file://crashdump_msr \
+            file://crashdump_pcie \
+            file://crashdump_pcie_bus \
             file://autodump.sh \
             file://COPYING \
            "
@@ -44,6 +46,8 @@ do_install() {
   install -d $bin
   install -m 644 crashdump_coreid ${dst}/crashdump_coreid
   install -m 644 crashdump_msr ${dst}/crashdump_msr
+  install -m 644 crashdump_pcie ${dst}/crashdump_pcie
+  install -m 644 crashdump_pcie_bus ${dst}/crashdump_pcie_bus
   for f in ${binfiles}; do
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f

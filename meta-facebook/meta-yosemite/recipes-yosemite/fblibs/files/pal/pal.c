@@ -2033,8 +2033,6 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
       _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 0), name);
       valid = false;
     }
-
-    return 0;
   }
 
   if (GETBIT(diff, 1)) {

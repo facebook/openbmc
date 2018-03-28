@@ -3619,30 +3619,16 @@ pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
 
 int
 pal_is_bmc_por(void) {
-  uint32_t scu_fd;
-  uint32_t wdt;
-  void *scu_reg;
-  void *scu_wdt;
+  FILE *fp;
+  int por = 0;
 
-  scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (scu_fd < 0) {
-    return 0;
+  fp = fopen("/tmp/ast_por", "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &por);
+    fclose(fp);
   }
 
-  scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_SCU_BASE);
-  scu_wdt = (char*)scu_reg + WDT_OFFSET;
-
-  wdt = *(volatile uint32_t*) scu_wdt;
-
-  munmap(scu_reg, PAGE_SIZE);
-  close(scu_fd);
-
-  if (wdt & 0x6) {
-    return 0;
-  } else {
-    return 1;
-  }
+  return (por)?1:0;
 }
 
 int

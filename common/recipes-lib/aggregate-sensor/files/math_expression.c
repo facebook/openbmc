@@ -41,7 +41,8 @@ typedef enum {
   OP_INVALID = 0, /* No R value */
   OP_ADD, /* L + R */
   OP_SUBTRACT, /* L - R */
-  OP_MULTIPLY /* L * R */
+  OP_MULTIPLY, /* L * R */
+  OP_DIVIDE /* L / R */
 } operator_type;
 
 struct expression_type_s {
@@ -71,6 +72,9 @@ static operator_type get_operator(char *str)
     case '*':
       op = OP_MULTIPLY;
       break;
+    case '/':
+      op = OP_DIVIDE;
+      break;
     default:
       op = OP_INVALID;
       break;
@@ -81,6 +85,8 @@ static operator_type get_operator(char *str)
 static bool is_constant(char *str)
 {
   bool period_done = false;
+  if (str[0] == '-')
+    str++;
   while(*str) {
     if (period_done == false && *str == '.') {
       period_done = true;
@@ -259,6 +265,9 @@ int expression_evaluate(expression_type *exp, float *value)
     case OP_MULTIPLY:
       *value = l_val * r_val;
       break;
+    case OP_DIVIDE:
+      *value = l_val / r_val;
+      break;
     default:
       assert(0);
   }
@@ -303,6 +312,9 @@ void expression_print(expression_type *exp)
       break;
     case OP_MULTIPLY:
       printf("* ");
+      break;
+    case OP_DIVIDE:
+      printf("/ ");
       break;
     default:
       /* This case is possible only if there is no right term */

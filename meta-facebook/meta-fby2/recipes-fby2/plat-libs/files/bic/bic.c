@@ -69,6 +69,8 @@
 
 #define IMC_VER_SIZE 8
 
+#define SERVER_TYPE_FILE "/tmp/server_type.bin"
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -1935,23 +1937,58 @@ me_recovery(uint8_t slot_id, uint8_t command) {
 int
 bic_get_server_type(uint8_t fru, uint8_t *type) {
   int ret;
+  int retries = 3;
+  int server_type;
   ipmi_dev_id_t id = {0};
 
-  ret = bic_get_dev_id(fru, &id);
-  if (ret) {
-    syslog(LOG_ERR, "bic_get_dev_id() failed.\n", __func__);
-    return ret;
-  }
+  // SERVER_TYPE[7:6] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
+  // SERVER_TYPE[5:4] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
+  // SERVER_TYPE[3:2] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
+  // SERVER_TYPE[1:0] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
+  if (read_device(SERVER_TYPE_FILE, &server_type)) {
+    do{
+      ret = bic_get_dev_id(fru, &id);
+      if (!ret) {
+        // Use product ID to identify the server type
+        if (id.prod_id[0] == 0x43 && id.prod_id[1] == 0x52) {
+          *type = SERVER_TYPE_RC;
+        } else if (id.prod_id[0] == 0x50 && id.prod_id[1] == 0x45) {
+          *type = SERVER_TYPE_EP;
+        } else if (id.prod_id[0] == 0x39 && id.prod_id[1] == 0x30) {
+          *type = SERVER_TYPE_TL;
+        } else {
+          *type = SERVER_TYPE_NONE;
+        }
+        break;
+      }
+    }while ((--retries));
 
-  // Use product ID to identify the server type
-  if (id.prod_id[0] == 0x43 && id.prod_id[1] == 0x52) {
-    *type = SERVER_TYPE_RC;
-  } else if (id.prod_id[0] == 0x50 && id.prod_id[1] == 0x45) {
-    *type = SERVER_TYPE_EP;
-  } else if (id.prod_id[0] == 0x39 && id.prod_id[1] == 0x30) {
-    *type = SERVER_TYPE_TL;
-  } else {
-    *type = SERVER_TYPE_NONE;
+    if(retries == 0) {
+      *type = SERVER_TYPE_NONE;
+      syslog(LOG_ERR, "%s : Get server type failed for slot%u", __func__, fru);
+      return -1;
+    }
+  }
+  else {
+    *type = server_type; 
+    switch(fru)
+    {
+      case FRU_SLOT1:
+        *type = (*type & (0x3 << 0)) >> 0;
+        break;
+      case FRU_SLOT2:
+        *type = (*type & (0x3 << 2)) >> 2;
+        break;
+      case FRU_SLOT3:
+        *type = (*type & (0x3 << 4)) >> 4;
+        break;
+      case FRU_SLOT4:
+        *type = (*type & (0x3 << 6)) >> 6;
+        break;
+      default:
+        *type = SERVER_TYPE_NONE;   //set default to unknown server type
+        break;
+    }
   }
 
   return 0;

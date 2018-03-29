@@ -19,13 +19,10 @@ SUMMARY = "Embedded Database Library"
 DESCRIPTION = "library for storing key-value pairs"
 SECTION = "base"
 PR = "r1"
-LICENSE = "BSD"
-LIC_FILES_CHKSUM = "file://license.txt;beginline=1;endline=25;md5=07ce5b07d9883b58ea6025d1a18f615f"
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://edb.c;beginline=4;endline=16;md5=8d76ccaa6a7a0995dadc51f3d016e179"
 
-SRC_URI = "file://license.txt \
-           file://unqlite.c \
-           file://unqlite.h \
-           file://edb.c \
+SRC_URI = "file://edb.c \
            file://edb.h \
            file://Makefile \
           "

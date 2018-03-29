@@ -17,11 +17,8 @@
 
 lib: libedb.so
 
-libedb.so: unqlite.o edb.o
-	$(CC) -shared unqlite.o edb.o -o libedb.so -lc $(LDFLAGS)
-
-unqlite.o: unqlite.c
-	$(CC) $(CFLAGS) -UNQLITE_ENABLE_THREADS -fPIC -c unqlite.c -o unqlite.o
+libedb.so: edb.o
+	$(CC) -shared edb.o -o libedb.so -lc $(LDFLAGS)
 
 edb.o: edb.c
 	$(CC) $(CFLAGS) -fPIC -c edb.c -o edb.o

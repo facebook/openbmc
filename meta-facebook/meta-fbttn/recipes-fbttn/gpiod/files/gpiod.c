@@ -565,6 +565,12 @@ gpio_monitor_poll(uint8_t fru_flag) {
           }
           syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SLOT1);
 
+          //Run check_M2_nvme.sh only when any of the M2_NVMe file is not existing
+          if( (access( "/tmp/cache_store/M2_1_NVMe", F_OK ) == -1) || (access( "/tmp/cache_store/M2_2_NVMe", F_OK ) == -1) ) {
+            //Check M.2 NVMe surrpot, for fsc M2 sensor valid check
+            system("nohup /etc/check_M2_nvme.sh &");
+          }
+          
           // Inform BIOS that BMC is ready
           bic_set_gpio(FRU_SLOT1, GPIO_BMC_READY_N, 0);
         } else {

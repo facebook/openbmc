@@ -18,25 +18,37 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
-            file://FSC_BC_Type5_MP_v2_config.json \
-            file://FSC_BC_Type5_MP_v1_zone0.fsc \
-            file://FSC_BC_Type5_MP_v1_zone1.fsc \
+            file://FSC_BC_Type5_MP_v3_config.json \
+            file://FSC_BC_Type5_MP_v2_zone0.fsc \
+            file://FSC_BC_Type5_MP_v2_zone1.fsc \
             file://FSC_BC_Type7_MP_v2_config.json \
             file://FSC_BC_Type7_MP_v1_zone0.fsc \
             file://FSC_BC_Type7_MP_v1_zone1.fsc \
             file://fsc_board.py \
+            file://setup_fscd_sensor.sh \
+            file://check_M2_nvme.sh \
            "
 
 FSC_BIN_FILES += "init_pwm.sh"
 
-FSC_CONFIG += "FSC_BC_Type5_MP_v2_config.json \
+FSC_CONFIG += "FSC_BC_Type5_MP_v3_config.json \
 			         FSC_BC_Type7_MP_v2_config.json \
               "
 
-FSC_ZONE_CONFIG += "FSC_BC_Type5_MP_v1_zone0.fsc \
-                    FSC_BC_Type5_MP_v1_zone1.fsc \
+FSC_ZONE_CONFIG += "FSC_BC_Type5_MP_v2_zone0.fsc \
+                    FSC_BC_Type5_MP_v2_zone1.fsc \
                     FSC_BC_Type7_MP_v1_zone0.fsc \
            			    FSC_BC_Type7_MP_v1_zone1.fsc \
            		   "
 
 FSC_INIT_FILE += "setup-fan.sh"
+
+do_install_append() {
+  install -d ${D}${sysconfdir}
+  install -d ${D}${sysconfdir}/init.d
+  
+  install -m 755 setup_fscd_sensor.sh ${D}${sysconfdir}/init.d/setup_fscd_sensor.sh
+  update-rc.d -r ${D} setup_fscd_sensor.sh start 99 5 .
+
+  install -m 755 check_M2_nvme.sh ${D}${sysconfdir}
+}

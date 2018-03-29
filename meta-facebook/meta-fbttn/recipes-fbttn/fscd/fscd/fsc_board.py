@@ -21,6 +21,7 @@ from fsc_util import Logger
 from ctypes import *
 from subprocess import Popen, PIPE
 from re import match
+import os.path
 
 
 lpal_hndl = CDLL("libpal.so")
@@ -104,6 +105,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute['type'] == "power_BIC_status":
             cmd = "/usr/local/bin/power-util %s status" % attribute['fru']
+            data=''
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             result=data.split(": ")
             if match(r'ON', result[1]) != None:
@@ -117,12 +119,28 @@ def sensor_valid_check(board, sname, check_name, attribute):
             else:
                 return 0
 
-        elif attribute['type'] == "gpio":        
+        elif attribute['type'] == "gpio_power_nvme":
             cmd = "cat /sys/class/gpio/gpio%s/value" % attribute['number']
             data=''
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             if int(data) == 0:
-                return 1
+                cmd = "/usr/local/bin/power-util %s status" % attribute['fru']
+                data=''
+                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+                result=data.split(": ")
+                if match(r'ON', result[1]) != None:
+                    cmd = "/tmp/cache_store/M2_%s_NVMe" % attribute['nvme']
+                    data = ''
+                    if os.path.isfile(cmd) == True:
+                        data = open(cmd, "r")
+                        if data.read() == "1":
+                            return 1
+                        else:
+                            return 0
+                    else:
+                        return 0
+                else:
+                    return 0
             else:
                 return 0
         else:

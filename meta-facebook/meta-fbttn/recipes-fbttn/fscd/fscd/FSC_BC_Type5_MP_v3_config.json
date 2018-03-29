@@ -1,5 +1,5 @@
 {
-  "version": "fbttn-type7-mp-v2",
+  "version": "fbttn-type5-mp-v3",
   "pwm_transition_value": 55,
   "pwm_boost_value": 50,
   "sample_interval_ms": 3000,
@@ -20,6 +20,22 @@
         "type" : "power_BIC_status",
         "fru" : "server",
         "number" : "55"
+      }
+    },
+    "M2_SMART_Temp_1": {
+      "attribute": {
+        "type" : "gpio_power_nvme",
+        "number" : "32",
+        "fru" : "server",
+        "nvme" : "1"
+      }
+    },
+    "M2_SMART_Temp_2": {
+      "attribute": {
+        "type" : "gpio_power_nvme",
+        "number" : "33",
+        "fru" : "server",
+        "nvme" : "2"
       }
     }
   },
@@ -72,6 +88,27 @@
         [ 95, 55 ]
       ]
     },
+    "linear_m2_smart_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 0, 20 ],
+        [ 65, 22 ],
+        [ 66, 24 ],
+        [ 67, 28 ],
+        [ 68, 30 ],
+        [ 69, 30 ],
+        [ 70, 30 ],
+        [ 71, 34 ],
+        [ 72, 41 ],
+        [ 73, 48 ],
+        [ 74, 55 ]
+      ]
+    },
     "pid_soc_therm_margin": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -95,8 +132,20 @@
       "kp": -8,
       "ki": -0.05,
       "kd": 0
-	  }
-	},
+    },
+    "pid_m2_smart_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": 4,
+      "ki": -0.05,
+      "kd": 0
+    }
+  },
   "fans": {
     "0": {
       "label" : "1 Front",
@@ -156,11 +205,11 @@
   "zones": {
     "zone_0": {
       "pwm_output": [0],
-      "expr_file": "FSC_BC_Type7_MP_v1_zone0.fsc"
+      "expr_file": "FSC_BC_Type5_MP_v2_zone0.fsc"
     },
     "zone_1": {
       "pwm_output": [1],
-      "expr_file": "FSC_BC_Type7_MP_v1_zone1.fsc"
+      "expr_file": "FSC_BC_Type5_MP_v2_zone1.fsc"
     }
   }
 }

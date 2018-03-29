@@ -473,6 +473,7 @@ enum
   CMD_OEM_1S_SET_TAP_STATE = 0x21,
   CMD_OEM_1S_JTAG_SHIFT = 0x22,
   CMD_OEM_1S_ACCURACY_SENSOR_READING = 0x23,
+  CMD_OEM_1S_SET_PCIE_CONFIG = 0x31,
 };
 
 // OEM Command Codes for USB basded Debug Card

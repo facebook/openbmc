@@ -1006,11 +1006,9 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
 }
 
 static bool
-pal_is_valid_pair(uint8_t slot_id) {
-  int pair_set_type;
-
-  pair_set_type = pal_get_pair_slot_type(slot_id);
-  switch (pair_set_type) {
+pal_is_valid_pair(uint8_t slot_id, int *pair_set_type) {
+  *pair_set_type = pal_get_pair_slot_type(slot_id);
+  switch (*pair_set_type) {
     case TYPE_SV_A_SV:
     case TYPE_CF_A_SV:
     case TYPE_GP_A_SV:
@@ -1027,13 +1025,14 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   uint8_t pair_slot_id;
   int pair_set_type=-1;
   uint8_t status=0;
-  char hspath[80]={0};
   char vpath[80]={0};
   int ret=-1;
-  char cmd[80] = {0};
   uint8_t pwr_slot = slot_id;
   int retry;
   uint8_t self_test_result[2]={0};
+#if defined(CONFIG_FBY2_EP)
+  uint8_t server_type;
+#endif
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
@@ -1151,6 +1150,24 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          retry--;
          sleep(5);
        }
+
+#if defined(CONFIG_FBY2_EP)
+       retry = 2;
+       while (retry > 0) {
+         ret = fby2_get_server_type(pwr_slot, &server_type);
+         if (!ret) {
+           if (server_type == SERVER_TYPE_EP) {
+             ret = bic_set_pcie_config(pwr_slot, (pair_set_type == TYPE_CF_A_SV) ? 0x2 : 0x1);
+             if (ret == 0)
+               break;
+           } else {
+             break;
+           }
+         }
+         retry--;
+         msleep(100);
+       }
+#endif
 
        if (pal_get_server_power(pwr_slot, &status) < 0) {
          syslog(LOG_ERR, "%s: pal_get_server_power failed", __func__);
@@ -1299,7 +1316,6 @@ server_12v_off(uint8_t slot_id) {
   }
 
   sprintf(vpath, GPIO_VAL, gpio_12v[runoff_id]);
-
   if (write_device(vpath, "0")) {
     return -1;
   }
@@ -1423,13 +1439,15 @@ pal_system_config_check(uint8_t slot_id) {
 static int
 server_12v_on(uint8_t slot_id) {
   char vpath[64] = {0};
-  char cmd[128] = {0};
   int ret=-1;
-  uint8_t value;
   uint8_t slot_prsnt, slot_latch;
   int rc, pid_file;
   int retry = MAX_BIC_CHECK_RETRY;
   bic_gpio_t gpio;
+  int pair_set_type=-1;
+#if defined(CONFIG_FBY2_EP)
+  uint8_t server_type, config;
+#endif
 
   // Check if another hotservice-reinit.sh instance of slotX is running
   while(1) {
@@ -1476,7 +1494,7 @@ server_12v_on(uint8_t slot_id) {
   rc = flock(pid_file, LOCK_UN);
   close(pid_file);
 
-  if (!pal_is_valid_pair(slot_id)) {
+  if (!pal_is_valid_pair(slot_id, &pair_set_type)) {
     return -1;
   }
 
@@ -1497,6 +1515,25 @@ server_12v_on(uint8_t slot_id) {
     sleep(1);
     retry--;
   }
+
+#if defined(CONFIG_FBY2_EP)
+  retry = 2;
+  while (retry > 0) {
+    ret = fby2_get_server_type(slot_id, &server_type);
+    if (!ret) {
+      if (server_type == SERVER_TYPE_EP) {
+        config = (pair_set_type == TYPE_CF_A_SV) ? 0x2 : (pair_set_type == TYPE_GP_A_SV) ? 0x1 : 0x0;
+        ret = bic_set_pcie_config(slot_id, config);
+        if (ret == 0)
+          break;
+      } else {
+        break;
+      }
+    }
+    retry--;
+    msleep(100);
+  }
+#endif
 
   if (ret) {
     syslog(LOG_INFO, "%s: bic_get_gpio returned error during 12V off to on for fru %d",__func__ ,slot_id);

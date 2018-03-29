@@ -471,6 +471,7 @@ led_handler() {
   uint8_t power[MAX_NUM_SLOTS+1] = {0};
   uint8_t hlth[MAX_NUM_SLOTS+1] = {0};
   int led_on_time, led_off_time;
+  uint8_t spb_hlth, nic_hlth, chassis_hlth;
 
   while (1) {
     // Get hand switch position to see if this is selected server
@@ -478,6 +479,24 @@ led_handler() {
     if (ret != 0) {
       sleep(1);
       continue;
+    }
+
+    ret = pal_get_fru_health(FRU_SPB, &spb_hlth);
+    if (ret) {
+      sleep(1);
+      continue;
+    }
+
+    ret = pal_get_fru_health(FRU_NIC, &nic_hlth);
+    if (ret) {
+      sleep(1);
+      continue;
+    }
+
+    if ((spb_hlth == FRU_STATUS_GOOD) && (nic_hlth == FRU_STATUS_GOOD)) {
+      chassis_hlth = FRU_STATUS_GOOD;
+    } else {
+      chassis_hlth = FRU_STATUS_BAD;
     }
 
     for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
@@ -505,7 +524,7 @@ led_handler() {
       }
 
       if ((pos == slot) || (power[slot] == SERVER_POWER_ON)) {
-        if (hlth[slot] == FRU_STATUS_GOOD) {
+        if ((hlth[slot] == FRU_STATUS_GOOD) && (chassis_hlth == FRU_STATUS_GOOD)) {
           pal_set_led(slot, LED_ON);
           pal_set_id_led(slot, ID_LED_OFF);
         } else {
@@ -539,7 +558,7 @@ led_handler() {
 
     msleep(led_on_time);
 
-    if (hlth[pos] == FRU_STATUS_GOOD) {
+    if ((hlth[pos] == FRU_STATUS_GOOD) && (chassis_hlth == FRU_STATUS_GOOD)) {
       pal_set_led(pos, LED_OFF);
     } else {
       pal_set_id_led(pos, ID_LED_OFF);
@@ -548,7 +567,7 @@ led_handler() {
     msleep(led_off_time);
 
     if (power[pos] == SERVER_POWER_ON) {
-      if (hlth[pos] == FRU_STATUS_GOOD) {
+      if ((hlth[pos] == FRU_STATUS_GOOD) && (chassis_hlth == FRU_STATUS_GOOD)) {
         pal_set_led(pos, LED_ON);
       } else {
         pal_set_id_led(pos, ID_LED_ON);
@@ -569,8 +588,6 @@ led_sync_handler() {
   char tstr[64] = {0};
   char id_arr[5] = {0};
   uint8_t slot;
-  uint8_t spb_hlth = 0;
-  uint8_t nic_hlth = 0;
 
 #ifdef DEBUG
   syslog(LOG_INFO, "led_handler for slot %d\n", slot);
@@ -598,45 +615,6 @@ led_sync_handler() {
         pal_set_id_led(slot, ID_LED_OFF);
       }
       msleep(LED_OFF_TIME_IDENTIFY);
-      continue;
-    }
-
-    // Handle Sled level health condition
-    ret = pal_get_fru_health(FRU_SPB, &spb_hlth);
-    if (ret) {
-      sleep(1);
-      continue;
-    }
-
-    ret = pal_get_fru_health(FRU_NIC, &nic_hlth);
-    if (ret) {
-      sleep(1);
-      continue;
-    }
-
-    if (spb_hlth == FRU_STATUS_BAD || nic_hlth == FRU_STATUS_BAD) {
-      // Turn OFF Blue LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        g_sync_led[slot] = 1;
-        pal_set_led(slot, LED_OFF);
-      }
-
-      // Start blinking the Yellow/ID LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        pal_set_id_led(slot, ID_LED_ON);
-      }
-
-      msleep(LED_ON_TIME_HEALTH);
-
-      ret = get_handsw_pos(&pos);
-      if ((ret) || (pos == HAND_SW_BMC)) {
-        for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-           pal_set_id_led(slot, ID_LED_OFF);
-        }
-      } else {
-           pal_set_id_led(pos, ID_LED_OFF);
-      }
-      msleep(LED_OFF_TIME_HEALTH);
       continue;
     }
 

@@ -50,6 +50,7 @@ typedef struct {
   size_t idx;
   size_t num_expressions;
   expression_type **expressions;
+  bool conditional;
   char cond_key[MAX_KEY_LEN];
   size_t value_map_size;
   value_map_element_type value_map[MAX_CONDITIONALS];

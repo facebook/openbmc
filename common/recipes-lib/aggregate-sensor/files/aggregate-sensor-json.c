@@ -126,6 +126,47 @@ bail:
 }
 
 /* Parse SENSORS[X]::composition if it is of type
+ * "linear_expression". */
+static int load_linear_eq(aggregate_sensor_t *snr, json_t *obj)
+{
+  variable_type *vars = 0;
+  size_t num_vars = 0;
+  json_t *tmp;
+
+  snr->conditional = false;
+
+  vars = load_variables(json_object_get(obj, "sources"), &num_vars);
+  if (!vars) {
+    return -1;
+  }
+  snr->num_expressions = 1;
+  snr->expressions = calloc(1, sizeof(expression_type *));
+  if (!snr->expressions) {
+    DEBUG("Allocation failure");
+    goto bail_linear_exp;
+  }
+
+  tmp = json_object_get(obj, "linear_expression");
+  if (!tmp || !json_is_string(tmp)) {
+    DEBUG("Getting key: linear_expression failed!\n");
+    goto bail_linear_exp;
+  }
+
+  snr->expressions[0] = expression_parse(json_string_value(tmp), vars, num_vars);
+  if (!snr->expressions[0]) {
+    DEBUG("Expression parsing failed!\n");
+    goto bail_linear_exp;
+  }
+
+  /* We don't need vars anymore */
+  free(vars);
+  return 0;
+bail_linear_exp:
+  cleanup_vars(vars, num_vars);
+  return -1;
+}
+
+/* Parse SENSORS[X]::composition if it is of type
  * "conditional_linear_expression". */
 static int load_linear_cond_eq(aggregate_sensor_t *snr, json_t *obj)
 {
@@ -141,6 +182,8 @@ static int load_linear_cond_eq(aggregate_sensor_t *snr, json_t *obj)
   if (!vars) {
     return -1;
   }
+
+  snr->conditional = true;
 
   tmp = json_object_get(obj, "linear_expressions");
   if (!tmp) {
@@ -255,7 +298,10 @@ static int load_composition(aggregate_sensor_t *snr, json_t *obj)
   if (!strncmp(json_string_value(tmp), "conditional_linear_expression", 
         MAX_STRING_SIZE)) {
     ret = load_linear_cond_eq(snr, obj);
-  } else {
+  } else if (!strncmp(json_string_value(tmp), "linear_expression", MAX_STRING_SIZE)) {
+    ret = load_linear_eq(snr, obj);
+  }
+  else {
     DEBUG("Unsupported composition: %s\n", json_string_value(tmp));
     /* Others can go here as else if */
     return -1;

@@ -61,31 +61,32 @@ aggregate_sensor_read(size_t index, float *value)
 {
   char cond_value[MAX_VALUE_LEN];
   size_t i;
+  int f_idx = -1;
   aggregate_sensor_t *snr;
   if (index >= g_sensors_count) {
     return -1;
   }
   snr = &g_sensors[index];
-  if (edb_cache_get(snr->cond_key, cond_value)) {
-    if (snr->default_expression_idx != -1) {
-      size_t f_idx = snr->default_expression_idx;
-      return expression_evaluate(snr->expressions[f_idx], value);
+  if (snr->conditional) {
+    if (!edb_cache_get(snr->cond_key, cond_value)) {
+      for (i = 0; i < snr->value_map_size; i++) {
+        if (!strncmp(snr->value_map[i].condition_value, cond_value,
+            sizeof(snr->value_map[i].condition_value))) {
+          f_idx = snr->value_map[i].formula_index;
+          break;
+        }
+      }
     }
-    DEBUG("key: %s not available\n", snr->cond_key);
-    return -1;
-  }
-  for (i = 0; i < snr->value_map_size; i++) {
-    if (!strncmp(snr->value_map[i].condition_value, cond_value,
-          sizeof(snr->value_map[i].condition_value))) {
-      size_t f_idx = snr->value_map[i].formula_index;
-      return expression_evaluate(snr->expressions[f_idx], value);
+    if (f_idx == -1) {
+      if (snr->default_expression_idx == -1) {
+        return -1;
+      }
+      f_idx = snr->default_expression_idx;
     }
+  } else {
+    f_idx = 0;
   }
-  if (snr->default_expression_idx != -1) {
-    size_t f_idx = (size_t)snr->default_expression_idx;
-    return expression_evaluate(snr->expressions[f_idx], value);
-  }
-  return -1;
+  return expression_evaluate(snr->expressions[f_idx], value);
 }
 
 int

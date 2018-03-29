@@ -119,20 +119,24 @@ static void load_test_params(const char *file, size_t num)
     assert(json_is_number(o));
     test_sensors[i].snr = json_integer_value(o);
   }
-  tmp2 = json_object_get(tmp, "condition");
+  tmp2 = json_object_get(tmp, "type");
   assert(tmp2);
-  tmp2 = json_object_get(tmp2, "value_map");
-  assert(tmp2);
-  for (i = 0, iter = json_object_iter(tmp2);
-      i < MAX_TEST_VALUE_MAP_SIZE && iter;
-      iter = json_object_iter_next(tmp2, iter), i++) {
-    const char *key = json_object_iter_key(iter);
-    json_t *val = json_object_iter_value(iter);
-    assert(key);
-    assert(val);
-    assert(json_is_string(val));
-    strncpy(test_values[num_test_values], key, MAX_VALUE_LEN);
-    num_test_values++;
+  if (!strcmp(json_string_value(tmp2), "conditional_linear_expression")) {
+    tmp2 = json_object_get(tmp, "condition");
+    assert(tmp2);
+    tmp2 = json_object_get(tmp2, "value_map");
+    assert(tmp2);
+    for (i = 0, iter = json_object_iter(tmp2);
+        i < MAX_TEST_VALUE_MAP_SIZE && iter;
+        iter = json_object_iter_next(tmp2, iter), i++) {
+      const char *key = json_object_iter_key(iter);
+      json_t *val = json_object_iter_value(iter);
+      assert(key);
+      assert(val);
+      assert(json_is_string(val));
+      strncpy(test_values[num_test_values], key, MAX_VALUE_LEN);
+      num_test_values++;
+    }
   }
 }
 

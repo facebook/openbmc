@@ -191,8 +191,6 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_PVDDR_AB,
   BIC_SENSOR_PVDDR_DE,
   BIC_SENSOR_PVNN_PCH,
-  BIC_SENSOR_LIQUID_PUMP_TACH,
-  BIC_SENSOR_LIQUID_PUMP_PWM,
 };
 
 const uint8_t bic_discrete_list[] = {

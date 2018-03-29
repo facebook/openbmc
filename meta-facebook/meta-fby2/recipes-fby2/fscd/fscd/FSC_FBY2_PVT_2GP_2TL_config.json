@@ -13,7 +13,7 @@
         "type" : "power_status"
       }
     },
-    "nvme": {
+    "(.*)nvme": {
       "attribute": {
         "type" : "power_status"
       }

@@ -22,23 +22,32 @@ from ctypes import *
 from subprocess import Popen, PIPE
 from re import match
 
+lpal_hndl = CDLL("libpal.so")
 
 fru_map = {
     'slot1': {
         'name': 'fru1',
-        'gpio': '64'
+        'pwr_gpio': '64',
+        'bic_ready_gpio': '106',
+        'slot_num': 1
     },
     'slot2': {
         'name': 'fru2',
-        'gpio': '65'
+        'pwr_gpio': '65',
+        'bic_ready_gpio': '107',
+        'slot_num': 2
     },
     'slot3': {
         'name': 'fru3',
-        'gpio': '66'
+        'pwr_gpio': '66',
+        'bic_ready_gpio': '108',
+        'slot_num': 3
     },
     'slot4': {
         'name': 'fru4',
-        'gpio': '67'
+        'pwr_gpio': '67',
+        'bic_ready_gpio': '109',
+        'slot_num': 4
     }
 }
 
@@ -106,24 +115,31 @@ def set_all_pwm(boost):
 def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute['type'] == "power_status":
-            with open("/sys/class/gpio/gpio"+fru_map[board]['gpio']+"/value", "r") as f:
+            with open("/sys/class/gpio/gpio"+fru_map[board]['pwr_gpio']+"/value", "r") as f:
                 pwr_sts = f.read(1)
             if pwr_sts[0] == "1":
-                if match(r'soc_dimm', sname) != None:
-                    # check DIMM present
-                    with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map[sname[8:10]], "rb") as f:
-                        dimm_sts = f.read(1)
-                    if dimm_sts[0] != 1:
-                        return 0
-                return 1
-            else:
-                return 0
+                slot_id = fru_map[board]['slot_num']
+                is_slot_server = lpal_hndl.pal_is_slot_server(slot_id)
+                if int(is_slot_server) == 1:
+                    with open("/sys/class/gpio/gpio"+fru_map[board]['bic_ready_gpio']+"/value", "r") as f:
+                        bic_sts = f.read(1)
+                    if bic_sts[0] == "0":
+                        if match(r'soc_dimm', sname) != None:
+                            # check DIMM present
+                            with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map[sname[8:10]], "rb") as f:
+                                dimm_sts = f.read(1)
+                            if dimm_sts[0] != 1:
+                                return 0
+                        return 1
+                else:
+                    return 1    
+            return 0
         else:
             Logger.debug("Sensor corresponding valid check funciton not found!")
-            return -1
+            return 0
     except SystemExit:
         Logger.debug("SystemExit from sensor read")
         raise
     except Exception:
         Logger.warn("Exception with board=%s, sensor_name=%s" % (board, sname))
-    return -1
+    return 0

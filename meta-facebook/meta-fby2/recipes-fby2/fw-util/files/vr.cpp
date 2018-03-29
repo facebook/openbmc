@@ -97,7 +97,7 @@ class VrComponent : public Component {
             printf("DDR_AG VR Version: NA\n");
           }
           else {
-            printf("DDR_AG VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+            printf("DDR_AG VR Version: 0x%02x%02x\n", ver[0], ver[1]);
           }
 
           // Print DDR_BH VR Version
@@ -105,7 +105,7 @@ class VrComponent : public Component {
             printf("DDR_BH VR Version: NA\n");
           }
           else {
-            printf("DDR_BH VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+            printf("DDR_BH VR Version: 0x%02x%02x\n", ver[0], ver[1]);
           }
         } catch (string err) {
             printf("VDD_CORE VR Version: NA (%s)\n", err.c_str());

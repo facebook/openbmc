@@ -92,11 +92,10 @@ def pal_sled_action(command):
         return 0
 
 def pal_set_key_value(key, value):
-    pkey = create_string_buffer(key)
-    pvalue = create_string_buffer(value)
-
-    ret = lpal_hndl.pal_set_key_value(pkey, pvalue)
+    ret = lpal_hndl.pal_set_key_value(key.encode('ascii'), value.encode('ascii'))
     if ret:
         return -1;
     else:
         return 0;
+
+    

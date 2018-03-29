@@ -39,6 +39,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <signal.h>
 
 #define I2C_BUS_NUM            14
 #define AST_I2C_BASE           0x1E78A000  /* I2C */
@@ -1380,6 +1381,12 @@ static void check_vboot_state(void)
   close(mem_fd);
 }
 
+void sig_handler(int signo) {
+  // Catch SIGALRM and SIGTERM. If recived signal record BMC log
+  syslog(LOG_CRIT, "BMC health daemon stopped.");
+  exit(0);
+}
+
 int
 main(int argc, char **argv) {
   pthread_t tid_watchdog;
@@ -1395,6 +1402,10 @@ main(int argc, char **argv) {
   if (argc > 1) {
     exit(1);
   }
+
+  //Catch signals
+  signal(SIGALRM, sig_handler);
+  signal(SIGTERM, sig_handler);
 
   initilize_all_kv();
 

@@ -25,6 +25,15 @@
 #include <string.h>
 #include <openbmc/pal.h>
 #include <sys/reboot.h>
+#include <syslog.h>
+#include <sys/mman.h>
+
+#define PAGE_SIZE                     0x1000
+#define AST_SRAM_BMC_REBOOT_BASE      0x1E721000
+#define BMC_REBOOT_BY_CMD(base) *((uint32_t *)(base + 0x204))
+
+#define BIT_RECORD_LOG                (1 << 8)
+#define FLAG_CFG_UTIL                 (1 << 1)
 
 static void
 print_usage(void) {
@@ -37,8 +46,10 @@ main(int argc, char **argv) {
 
   int ret;
   int check_key;
+  int mem_fd;
   uint8_t key[MAX_KEY_LEN] = {0};
   uint8_t val[MAX_VALUE_LEN] = {0};
+  uint8_t *bmc_reboot_base;
 
   // Handle boundary checks
   if (argc < 2 || argc > 3) {
@@ -56,6 +67,18 @@ main(int argc, char **argv) {
       printf("Reset BMC data to default factory settings and BMC will be reset...\n");
       system("rm /mnt/data/* -rf > /dev/null 2>&1");
       sync();
+
+      // Set the flag to identify the reboot is caused by cfg-util
+      mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+      if (mem_fd >= 0) {
+        bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
+        if (bmc_reboot_base != 0) {
+          BMC_REBOOT_BY_CMD(bmc_reboot_base) |= BIT_RECORD_LOG | FLAG_CFG_UTIL;
+          munmap(bmc_reboot_base, PAGE_SIZE);
+        }
+        close(mem_fd);
+      }
+
       sleep(3);
       reboot(RB_AUTOBOOT);
       return 0;

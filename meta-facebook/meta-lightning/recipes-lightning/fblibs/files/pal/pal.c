@@ -522,6 +522,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
 
   if(ret < 0) {
+    syslog(LOG_WARNING,  "%s(): lightning_sensor_read() failed", __func__);
     strcpy(str, "NA");
   }
   else if (ret == 1) { //case: skip monitoring due to enclosure-util running. but not return NA

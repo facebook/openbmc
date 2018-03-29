@@ -66,22 +66,22 @@ size_t lightning_flash_cnt = sizeof(lightning_flash_list) / sizeof(uint8_t);
 int
 lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
 
-  int dev;
-  int ret;
-  int32_t res;
-  uint8_t mux;
-  uint8_t chan;
-  char bus[32];
-
-  mux = i2c_map / 10;
-  chan = i2c_map % 10;
+  int dev = 0;
+  int ret = 0;
+  int32_t res = 0;
+  uint8_t mux = i2c_map / 10;
+  uint8_t chan = i2c_map % 10;
+  char bus[32] = {0};
 
   //if enclosure-util read SSD, skip SSD monitor
   if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
     return 1;
+
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
+#endif
     return -1;
   }
 
@@ -90,7 +90,9 @@ lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
   else if (mux == I2C_MUX_FLASH2)
     sprintf(bus, "%s", I2C_DEV_FLASH2);
   else {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+#endif
     return -1;
   }
 
@@ -100,14 +102,18 @@ lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+#endif
     return -1;
   }
 
   /* Assign the i2c device address */
   ret = ioctl(dev, I2C_SLAVE, I2C_FLASH_ADDR);
   if (ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+#endif
     close(dev);
     return -1;
   }
@@ -115,8 +121,10 @@ lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
   /* Read the Status from the NVMe device */
   res = i2c_smbus_read_word_data(dev, NVME_STATUS_CMD);
   if (res < 0) {
-    close(dev);
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): i2c_smbus_read_block_data failed", __func__);
+#endif
+    close(dev);
     return -1;
   }
 
@@ -132,13 +140,17 @@ lightning_flash_status_read(uint8_t i2c_map, uint16_t *status) {
 int
 lightning_flash_temp_read(uint8_t i2c_map, float *temp) {
 
-  int ret;
-  uint16_t status;
+  int ret = 0;
+  uint16_t status = 0;
 
   ret = lightning_flash_status_read(i2c_map, &status);
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_flash_status_read failed", __func__);
+#endif
     return -1;
+  } else if(ret == 1) {
+    return ret;
   }
 
   *temp = (status & 0x0FF0) >> 4;
@@ -151,7 +163,9 @@ lightning_flash_temp_read(uint8_t i2c_map, float *temp) {
   *temp += (status & 0x000F) * 0.125;
 
   if (*temp == 0xFF) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): flash not reachable or not present", __func__);
+#endif
     return -1;
   }
 
@@ -161,12 +175,10 @@ lightning_flash_temp_read(uint8_t i2c_map, float *temp) {
 int
 lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
 
-  int ret;
-  uint8_t mux;
-  uint8_t chan;
-  uint8_t vendor;
-  mux = i2c_map / 10;
-  chan = i2c_map % 10;
+  int ret = 0;
+  uint8_t mux = i2c_map / 10;
+  uint8_t chan = i2c_map % 10;
+  uint8_t vendor = 0;
 
   //if enclosure-util read SSD, skip SSD monitor
   if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
@@ -175,7 +187,9 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
   /* Set 1-level mux */
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
+#endif
     return -1;
   }
 
@@ -183,17 +197,25 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
   ret = lightning_nvme_temp_read(mux, temp);
 
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_nvme_temp_read failed, try old method", __func__);
+#endif
     // If it does not support NVME, try old method
     ret = lightning_flash_temp_read(i2c_map, temp);
-    if(ret < 0) {
-      syslog(LOG_DEBUG, "%s(): lightning_flash_temp_read failed", __func__);
-      return -1;
-    }
-    else
-      return 0;
 
-    return -1;
+    if(ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_DEBUG, "%s(): lightning_flash_temp_read failed", __func__);
+#endif
+      return -1;
+    } else if(ret == 1) {
+      return ret;
+    } else {
+      return 0;
+    }
+
+  } else if(ret == 1) {
+    return ret;
   }
 
   // Error handling for flash seems support NVME but always reture same data, try old method to get temp
@@ -203,7 +225,9 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
     ret = lightning_flash_temp_read(i2c_map, temp);
 
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_flash_temp_read failed", __func__);
+#endif
     return -1;
   }
 
@@ -214,24 +238,28 @@ lightning_u2_flash_temp_read(uint8_t i2c_map, float *temp) {
 int
 lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel) {
 
-  int dev;
-  int ret;
-  uint8_t addr;
-  uint8_t chan_en;
-  char bus[32];
+  int dev = 0;
+  int ret = 0;
+  uint8_t addr = 0;
+  uint8_t chan_en = 0;
+  char bus[32] = {0};
 
   if (mux == I2C_MUX_FLASH1)
     sprintf(bus, "%s", I2C_DEV_FLASH1);
   else if (mux == I2C_MUX_FLASH2)
     sprintf(bus, "%s", I2C_DEV_FLASH2);
   else {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+#endif
     return -1;
   }
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+#endif
     return -1;
   }
 
@@ -250,7 +278,9 @@ lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel) {
   /* Assign the i2c device address */
   ret = ioctl(dev, I2C_SLAVE, addr);
   if (ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+#endif
     close(dev);
     return -1;
   }
@@ -258,7 +288,9 @@ lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel) {
   /* Write the channel number to enable it */
   ret = i2c_smbus_write_byte(dev, chan_en);
   if (ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): i2c_smbus_write_byte failed", __func__);
+#endif
     close(dev);
     return -1;
   }
@@ -271,29 +303,35 @@ lightning_flash_mux_sel_chan(uint8_t mux, uint8_t channel) {
 int
 lightning_flash_sec_mux_sel_chan(uint8_t mux, uint8_t channel) {
 
-  int dev;
-  int ret;
-  char bus[32];
+  int dev = 0;
+  int ret = 0;
+  char bus[32] = {0};
 
   if (mux == I2C_MUX_FLASH1)
     sprintf(bus, "%s", I2C_DEV_FLASH1);
   else if (mux == I2C_MUX_FLASH2)
     sprintf(bus, "%s", I2C_DEV_FLASH2);
   else {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+#endif
     return -1;
   }
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+#endif
     return -1;
   }
 
   /* Assign the 2-level mux address */
   ret = ioctl(dev, I2C_SLAVE, I2C_M2_MUX_ADDR);
   if (ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+#endif
     close(dev);
     return -1;
   }
@@ -302,7 +340,9 @@ lightning_flash_sec_mux_sel_chan(uint8_t mux, uint8_t channel) {
   /* Write the channel number to enable it */
   ret = i2c_smbus_write_byte(dev, channel);
   if (ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): i2c_smbus_write_byte failed", __func__);
+#endif
     close(dev);
     return -1;
   }
@@ -315,15 +355,12 @@ lightning_flash_sec_mux_sel_chan(uint8_t mux, uint8_t channel) {
 int
 lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
 
-  int dev;
-  int ret;
-  int32_t res;
-  uint8_t mux;
-  uint8_t chan;
-  char bus[32];
-
-  mux = i2c_map / 10;
-  chan = i2c_map % 10;
+  int dev = 0;
+  int ret = 0;
+  int32_t res = 0;
+  uint8_t mux = i2c_map / 10;
+  uint8_t chan = i2c_map % 10;
+  char bus[32] = {0};
 
   //if enclosure-util read SSD, skip SSD monitor
   if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
@@ -331,7 +368,9 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
 
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
+#endif
     return -1;
   }
 
@@ -340,7 +379,9 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
   else if (mux == I2C_MUX_FLASH2)
     sprintf(bus, "%s", I2C_DEV_FLASH2);
   else {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+#endif
     return -1;
   }
 
@@ -350,14 +391,18 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+#endif
     return -1;
   }
 
   /* Assign the i2c device address */
   ret = ioctl(dev, I2C_SLAVE, I2C_M2CARD_AMB_ADDR);
   if (ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+#endif
     close(dev);
     return -1;
   }
@@ -365,8 +410,10 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
   /* Read the ambient temp */
   res = i2c_smbus_read_word_data(dev, M2CARD_AMB_TEMP_REG);
   if (res < 0) {
-    close(dev);
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): i2c_smbus_read_block_data failed", __func__);
+#endif
+    close(dev);
     return -1;
   }
 
@@ -385,7 +432,9 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
     *temp = (float) (0xFFF - res + 1) * (-1) * 0.0625;
   } else {
     /* Out of range [128C to -55C] */
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): invalid res value = 0x%X", __func__, res);
+#endif
     return -1;
   }
 
@@ -395,21 +444,30 @@ lightning_m2_amb_temp_read(uint8_t i2c_map, float *temp) {
 int
 lightning_m2_flash_temp_read(uint8_t i2c_map, float *temp) {
 
-  float temp1;
-  float temp2;
-  int ret;
+  float temp1 = 0.0;
+  float temp2 = 0.0;
+  int ret = 0;
 
   /* read the M.2 temp on channel 0 */
   ret = lightning_m2_temp_read(i2c_map, M2_MUX_CHANNEL_0, &temp1);
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_m2_temp_read on channel 0 failed", __func__);
+#endif
     return -1;
+  } else if(ret == 1) {
+    return 1;
   }
+
   /* read the M.2 temp on channel 1 */
   ret = lightning_m2_temp_read(i2c_map, M2_MUX_CHANNEL_1, &temp2);
-   if(ret < 0) {
+  if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_m2_temp_read on channel 1 failed", __func__);
+#endif
     return -1;
+  } else if(ret == 1) {
+    return 1;
   }
 
   /*  return the bigger temp reading */
@@ -421,12 +479,9 @@ lightning_m2_flash_temp_read(uint8_t i2c_map, float *temp) {
 int
 lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
 
-  int ret;
-  uint8_t mux;
-  uint8_t chan;
-
-  mux = i2c_map / 10;
-  chan = i2c_map % 10;
+  int ret = 0;
+  uint8_t mux = i2c_map / 10;
+  uint8_t chan = i2c_map % 10;
 
   //if enclosure-util read SSD, skip SSD monitor
   if (access(SKIP_READ_SSD_TEMP, F_OK) == 0)
@@ -435,7 +490,9 @@ lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
   /* Set 1-level mux */
   ret = lightning_flash_mux_sel_chan(mux, chan);
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_flash_mux_sel_chan on Mux %d failed", __func__, mux);
+#endif
     return -1;
   }
 
@@ -446,14 +503,18 @@ lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
   /* Set 2-level mux */
   ret = lightning_flash_sec_mux_sel_chan(mux, m2_mux_chan);
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_flash_sec_mux_sel_chan on Mux %d failed", __func__, mux);
+#endif
     return -1;
   }
 
   ret = lightning_nvme_temp_read(mux, temp);
 
   if(ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): lightning_nvme_temp_read failed", __func__);
+#endif
     return -1;
   }
 
@@ -462,17 +523,19 @@ lightning_m2_temp_read(uint8_t i2c_map, uint8_t m2_mux_chan, float *temp) {
 
 int
 lightning_nvme_temp_read(uint8_t mux, float *temp) {
-  int dev;
-  int ret;
-  int32_t res;
-  char bus[32];
+  int dev = 0;
+  int ret = 0;
+  int32_t res = 0;
+  char bus[32] = {0};
 
   if (mux == I2C_MUX_FLASH1)
     sprintf(bus, "%s", I2C_DEV_FLASH1);
   else if (mux == I2C_MUX_FLASH2)
     sprintf(bus, "%s", I2C_DEV_FLASH2);
   else {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): unknown mux", __func__);
+#endif
     return -1;
   }
 
@@ -482,21 +545,27 @@ lightning_nvme_temp_read(uint8_t mux, float *temp) {
 
   dev = open(bus, O_RDWR);
   if (dev < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): open() failed", __func__);
+#endif
     return -1;
   }
 
   /* Assign the i2c device address */
   ret = ioctl(dev, I2C_SLAVE, I2C_NVME_INTF_ADDR);
   if (ret < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): ioctl() assigning i2c addr failed", __func__);
+#endif
     close(dev);
     return -1;
   }
 
   res = i2c_smbus_read_byte_data(dev, NVME_TEMP_REG);
   if (res < 0) {
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s(): i2c_smbus_read_byte_data failed", __func__);
+#endif
     close(dev);
     return -1;
   }

@@ -26,11 +26,14 @@ from ctypes import *
 from lib_pal import *
 import subprocess
 import codecs
+import time
+from threading import Thread
 
 syslogfiles = ['/mnt/data/logfile.0', '/mnt/data/logfile']
 cmdlist = ['--print', '--clear']
 APPNAME = 'log-util'
 frulist = ''
+filelock = '/tmp/log-util.lock'
 
 def print_usage():
     global frulist
@@ -86,6 +89,20 @@ def log_main():
             "MESSAGE"
             ))
 
+    if cmd == cmdlist[1]:
+        retry = 5
+        while retry!=0:
+            # acquire: open file for write, create if possible, exclusive access guaranteed
+            try:
+                fdlock = os.open(filelock, os.O_CREAT|os.O_WRONLY|os.O_EXCL)
+                break
+            except OSError:
+                # failed to open, another process is running
+                print("log_util: another instance is running...\n")
+                retry = retry - 1
+                time.sleep(5)
+                continue
+
     for logfile in syslogfiles:
 
         try:
@@ -138,8 +155,8 @@ def log_main():
                   else:
                      fru_num = str(frulist.index(fru))
                      temp = 'FRU: ' + fru_num
-               time = datetime.now()
-               newlog = newlog + time.strftime('%Y %b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
+               curtime = datetime.now()
+               newlog = newlog + curtime.strftime('%Y %b %d %H:%M:%S') + ' log-util: User cleared ' + temp + ' logs\n'
             curpid = os.getpid()
             tmpfd = open('%s.tmp%d' % (logfile, curpid), 'w')
             tmpfd.write(newlog)
@@ -189,13 +206,13 @@ def log_main():
                 if len(tmp[0]) is 4 and re.match(r'[0-9]{4}', tmp[0]) is not None:
                     # Time format 2017 Sep 28 22:10:50
                     ts= ' '.join(tmp[0:4])
-                    time = datetime.strptime(ts, '%Y %b %d %H:%M:%S')
-                    time = time.strftime('%Y-%m-%d %H:%M:%S')
+                    curtime = datetime.strptime(ts, '%Y %b %d %H:%M:%S')
+                    curtime = curtime.strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     # Time format Sep 28 22:10:50
                     ts= ' '.join(tmp[0:3])
-                    time = datetime.strptime(ts, '%b %d %H:%M:%S')
-                    time = time.strftime('%m-%d %H:%M:%S')
+                    curtime = datetime.strptime(ts, '%b %d %H:%M:%S')
+                    curtime = curtime.strftime('%m-%d %H:%M:%S')
                     tmp[1:] = log.split()
 
                 # Hostname
@@ -213,7 +230,7 @@ def log_main():
                 print('%-4s %-8s %-22s %-16s %s' % (
                     fru_num,
                     fruname,
-                    time,
+                    curtime,
                     app,
                     message
                     ))
@@ -221,6 +238,12 @@ def log_main():
     if cmd == cmdlist[1]:
         pal_log_clear(fru)
         rsyslog_hup()
+        os.close(fdlock)
+        # release: delete file
+        os.remove(filelock)
 
 if __name__ == '__main__':
-    log_main()
+    
+    run = Thread(target=log_main)
+    run.start()
+    run.join()

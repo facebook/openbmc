@@ -1021,6 +1021,42 @@ pal_is_valid_pair(uint8_t slot_id, int *pair_set_type) {
 }
 
 static int
+_set_slot_12v_en_time(uint8_t slot_id) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += 6;
+
+  sprintf(key, "slot%u_12v_en", slot_id);
+  sprintf(value, "%d", ts.tv_sec);
+  if (edb_cache_set(key, value) < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static bool
+_check_slot_12v_en_time(uint8_t slot_id) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  sprintf(key, "slot%u_12v_en", slot_id);
+  if (edb_cache_get(key, value)) {
+     return true;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (ts.tv_sec >= strtoul(value, NULL, 10))
+     return true;
+
+  return false;
+}
+
+static int
 pal_slot_pair_12V_on(uint8_t slot_id) {
   uint8_t pair_slot_id;
   int pair_set_type=-1;
@@ -1118,6 +1154,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
 
        // Need to 12V-on pair slot
        if (!status) {
+         _set_slot_12v_en_time(pair_slot_id);
          sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
          if (write_device(vpath, "1")) {
            return -1;
@@ -1133,6 +1170,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          return -1;
        }
        if (!status) {
+         _set_slot_12v_en_time(pwr_slot);
          sprintf(vpath, GPIO_VAL, gpio_12v[pwr_slot]);
          if (write_device(vpath, "1")) {
            return -1;
@@ -1245,6 +1283,7 @@ pal_hot_service_action(uint8_t slot_id) {
   // Re-init system configuration
   sprintf(hspath, HOTSERVICE_FILE, slot_id);
   if (access(hspath, F_OK) == 0) {
+    _set_slot_12v_en_time(slot_id);
     sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
     if (write_device(vpath, "1")) {
       syslog(LOG_ERR, "%s: write_device failed", __func__);
@@ -1499,6 +1538,7 @@ server_12v_on(uint8_t slot_id) {
   }
 
   if (!pal_is_device_pair(slot_id)) {  // Write 12V on
+    _set_slot_12v_en_time(slot_id);
     sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
     if (write_device(vpath, "1"))
       return -1;
@@ -3133,6 +3173,7 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
   uint8_t val;
   int ret;
+  uint8_t slot_id;
   uint8_t server_type = 0xFF;
 
   switch(fru) {
@@ -3179,11 +3220,12 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
         case SP_SENSOR_P12V_SLOT3:
         case SP_SENSOR_P12V_SLOT4:
           /* Check whether the system is 12V off or on */
-          ret = pal_is_server_12v_on(snr_num - SP_SENSOR_P12V_SLOT1 + 1, &val);
+          slot_id = snr_num - SP_SENSOR_P12V_SLOT1 + 1;
+          ret = pal_is_server_12v_on(slot_id, &val);
           if (ret < 0) {
             syslog(LOG_ERR, "%s: pal_is_server_12v_on failed",__func__);
           }
-          if (!val) {
+          if (!val || !_check_slot_12v_en_time(slot_id)) {
             *flag = GETMASK(SENSOR_VALID);
           }
           break;

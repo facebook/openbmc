@@ -1,0 +1,4 @@
+usage: bios_tester.py [-h]
+                      [--boot_order {enable,disable,set,get} | --postcode {get} | --plat_info {get} | --pcie_port_config {enable,disable,get}]
+                      FRU
+bios_tester.py: error: argument --boot_order: expected one argument

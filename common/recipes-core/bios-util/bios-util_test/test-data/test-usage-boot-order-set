@@ -1,0 +1,11 @@
+usage: bios-util FRU --boot_order set [-h] [--boot_mode | --boot_order]
+
+Show Set Boot Order usage
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --boot_mode {0,1}     Set BIOS boot mode {0: 'Legacy', 1: 'UEFI'}
+  --boot_order order# order# order# order# order#
+                        Set BIOS boot order {0: 'USB Device', 1: 'IPv4
+                        Network', 2: 'SATA HDD', 3: 'SATA-CDROM', 4: 'Other
+                        Removable Device', 9: 'IPv6 Network', 255: 'Reserved'}

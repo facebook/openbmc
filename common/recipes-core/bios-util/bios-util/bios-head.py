@@ -14,7 +14,7 @@ def bios_main():
 
     if fruname == "all":
         frulist_c = create_string_buffer(128)
-        ret = lpal_hndl.pal_get_fru_list(frulist_c)
+        ret = CDLL(libpal_name).pal_get_fru_list(frulist_c)
         if ret:
             print("Getting fru list failed!")
             return
@@ -37,5 +37,6 @@ def bios_main():
         bios_main_fru(fru, command)
 
 if ( __name__ == '__main__' ):
-    check_bios_util()
-    bios_main()
+    bios_usage_check = check_bios_util()
+    if bios_usage_check.valid is True:
+        bios_main()

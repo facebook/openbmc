@@ -3,13 +3,13 @@ from ctypes import *
 import subprocess
 import sys
 
-lpal_hndl = CDLL("libpal.so")
+libpal_name = "libpal.so"
 
 
 def pal_print_postcode(fru):
     postcodes = (c_ubyte * 256)()
     plen = c_ushort(0)
-    ret = lpal_hndl.pal_get_80port_record(fru, 0, 0, byref(postcodes), byref(plen))
+    ret = CDLL(libpal_name).pal_get_80port_record(fru, 0, 0, byref(postcodes), byref(plen))
     if ret != 0:
         print("Error %d returned by get_80port" % (ret))
         return
@@ -25,13 +25,13 @@ def pal_print_postcode(fru):
 
 def pal_get_fru_id(fruname):
     fruid = c_ubyte(0)
-    ret = lpal_hndl.pal_get_fru_id(fruname.encode('ascii'), byref(fruid))
+    ret = CDLL(libpal_name).pal_get_fru_id(fruname.encode('ascii'), byref(fruid))
     if (ret != 0):
         return ret
     return fruid.value
 
 def pal_is_slot_server(fru):
-    ret = lpal_hndl.pal_is_slot_server(c_ubyte(fru))
+    ret = CDLL(libpal_name).pal_is_slot_server(c_ubyte(fru))
     if ret != 1:
         return False
     return True

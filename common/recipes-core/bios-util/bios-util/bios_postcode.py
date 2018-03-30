@@ -10,10 +10,12 @@ from bios_ipmi_util import *
 
 POST_CODE_FILE = "/tmp/post_code_buffer.bin"
 
-def postcode(fru):
-    if os.path.isfile(POST_CODE_FILE):
-        postcode_file = open(POST_CODE_FILE, 'r')
+def postcode(fru, tmp_file):
+    if os.path.isfile(tmp_file):
+        postcode_file = open(tmp_file, 'r')
         print(postcode_file.read())
     else:
         pal_print_postcode(fru)
+    
+    return True
 

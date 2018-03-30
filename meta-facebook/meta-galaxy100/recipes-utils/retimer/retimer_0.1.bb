@@ -24,6 +24,8 @@ SRC_URI = "file://retimer_card.sh \
           "
 S = "${WORKDIR}"
 
+DEPENDS += "update-rc.d-native"
+
 do_install() {
 	#init
 	install -d ${D}${sysconfdir}/init.d

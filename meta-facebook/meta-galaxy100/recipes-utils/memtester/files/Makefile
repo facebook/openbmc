@@ -17,7 +17,7 @@ OBJECTS += memtester.o tests.o
 .c.o:
 	$(CC) -c $(CFLAGS) $(INCPATH) -o $@ $<
 $(TARGET):$(OBJECTS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJECTS)
+	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJECTS)
 
 .PHONY: clean
 

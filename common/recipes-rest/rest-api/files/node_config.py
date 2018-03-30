@@ -38,7 +38,11 @@ class configNode(node):
         cmd = '/usr/local/bin/cfg-util dump-all'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         sdata = data.split('\n');
-        altname = self.name.replace('slot', 'server')
+        if self.name.find('slot') != -1:
+            altname = self.name.replace('slot', 'server')
+        elif self.name.find('server') != -1:
+            altname = self.name.replace('server', 'slot')
+
         for line in sdata:
             # skip lines that does not start with name
             if line.find(self.name) != -1 or line.find(altname) != -1:
@@ -47,16 +51,24 @@ class configNode(node):
         return result
 
     def doAction(self, data):
-        res = "success"
+        res = "failure"
         # Get the list of parameters to be updated
         params = data["update"]
-        altname = self.name.replace('slot', 'server')
+        if self.name.find('slot') != -1:
+            altname = self.name.replace('slot', 'server')
+        elif self.name.find('server') != -1:
+            altname = self.name.replace('server', 'slot')
+
         for key in list(params.keys()):
             # update only if the key starts with the name
             if key.find(self.name) != -1 or key.find(altname) != -1:
                 ret = pal_set_key_value(key, params[key])
-                if ret:
+                if ret.startswith('Usage'):
                     res = "failure"
+                elif ret == "":
+                    res = "success"
+                else:
+                    res = ret.strip()
 
         result = {"result": res}
 

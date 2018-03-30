@@ -142,8 +142,6 @@ def pal_sled_action(command):
         return 0
 
 def pal_set_key_value(key, value):
-    ret = lpal_hndl.pal_set_key_value(key.encode('ascii'), value.encode('ascii'))
-    if ret:
-        return -1;
-    else:
-        return 0;
+    cmd = '/usr/local/bin/cfg-util %s %s' % (key,value)
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+    return ret;

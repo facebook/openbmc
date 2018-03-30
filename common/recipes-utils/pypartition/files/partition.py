@@ -105,7 +105,7 @@ class ExternalChecksumPartition(Partition):
     for the "u-boot" partition because it does not yet contain any built-in
     checksum.
     '''
-    UBootMagics = [0x130000ea, 0xb80000ea, 0xbe0000ea]
+    UBootMagics = [0x130000ea, 0xb80000ea, 0xbe0000ea, 0xf0000ea]
 
     def initialize(self):
         # type: () -> None
@@ -307,12 +307,24 @@ class DeviceTreePartition(Partition):
     FDT_PROP = 3
     FDT_NOP = 4
     FDT_END = 9
+    recognized_hexadecimals = [
+        b'#address-cells', b'data-size', b'data-position', b'load',
+        b'entry', b'hashed-strings', b'value',
+    ]
+    recognized_strings = [
+        b'algo', b'arch', b'compression', b'default', b'description',
+        b'firmware', b'hashed-nodes', b'kernel', b'key-name-hint', b'os',
+        b'ramdisk', b'sign-images', b'signer-name', b'signer-version',
+        b'type',
+    ]
+    unrecognized_string_message = \
+        'Attempting to parse unrecognized {}-byte property "{}" as string.'
 
     @staticmethod
     def align(images):
         # type: (VirtualCat) -> List[Any]
         while images.open_file.tell() % 4 != 0:
-            assert(images.verified_read(1) == b'\x00')
+            images.verified_read(1)
 
     @staticmethod
     def next_data(images, length, data_type):
@@ -371,18 +383,25 @@ class DeviceTreePartition(Partition):
         name = strings[offset:strings.index(b'\x00', offset)]
         if name == b'timestamp':
             value = date.fromtimestamp(DeviceTreePartition.next_datum(images, length, b'I')).isoformat()
-        elif name in [b'#address-cells', b'load', b'entry']:
-            value = b'0x%x' % DeviceTreePartition.next_datum(images, length, b'I')
         elif name == b'data':
             sha256sum = hashlib.sha256()
             images.read_with_callback(length, sha256sum.update)
             value = sha256sum.hexdigest()
             DeviceTreePartition.align(images)
-        elif name == b'value':
-            value = b''.join([b'%08x' % datum for datum in DeviceTreePartition.next_data(images, length, b'I')])
+        elif name in DeviceTreePartition.recognized_hexadecimals:
+            separator = b'' if name == b'value' else b' '
+            value = separator.join(
+                [b'%08x' % datum for datum in DeviceTreePartition.next_data(
+                    images, length, b'I'
+                )]
+            )
         else:
-            if name not in [b'description', b'type', b'arch', b'os', b'compression', b'algo', b'default', b'kernel', b'ramdisk', b'key-name-hint', b'sign-images']:
-                logger.warning('Attempting to decode unrecognized property "{}" as byte-string.'.format(name.decode()))
+            if name not in DeviceTreePartition.recognized_strings:
+                logger.warning(
+                    DeviceTreePartition.unrecognized_string_message.format(
+                        length, name.decode()
+                    )
+                )
             value = DeviceTreePartition.next_datum(images, length, b's').rstrip(b'\x00')
         return (name, value)
 

@@ -22,14 +22,21 @@ Response:
      Bit 2:0 - Slot Index, 1 based
 '''
 def plat_info(fru):
-    req_data = [""]
+    result = execute_IPMI_command(fru, 0x30, 0x7E, "")
+    
+    data = int(result[0], 16)
+    do_plat_info_action(data)
+
+    # Get PCIe config
+    config = pcie_config(fru)
+    print("PCIe Configuration: " + config)
+
+
+def do_plat_info_action(data):
     presense = "Not Present"
     test_board = "Non Test Board"
     SKU = "Unknown"
     slot_index = ""
-    result = execute_IPMI_command(fru, 0x30, 0x7E, "")
-    
-    data = int(result[0], 16)
     
     if ( data & 0x80 ):
         presense = "Present"
@@ -54,10 +61,6 @@ def plat_info(fru):
     print("SKU: " + SKU)
     print("Slot Index: " + slot_index)
 
-    # Get PCIe config
-    config = pcie_config(fru)
-    print("PCIe Configuration:" + config)
-
 
 '''
 OEM Get PCIe Configuration (NetFn:0x30, CMD: 0xF4h)
@@ -71,9 +74,10 @@ Response:
      0xA: Yosemite
 '''
 def pcie_config(fru):
-    req_data = [""]
     result = execute_IPMI_command(fru, 0x30, 0xF4, "")
-    
+    return do_pcie_config_action(result)
+
+def do_pcie_config_action(result):
     if ( result[0] == "06" ):
         config = "Triton-Type 5"
     elif ( result[0] == "08" ):

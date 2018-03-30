@@ -13,8 +13,8 @@ IOM_IOC = 2     # IOM type: IOC
 PCIe_port_name_T5 = {0: "SCC IOC", 1: "flash1", 2: "flash2", 3: "NIC"}
 PCIe_port_name_T7 = {0: "SCC IOC", 1: "IOM IOC", 3: "NIC"}
 
-def get_iom_type():
-    pal_sku_file = open(PLATFORM_FILE, 'r')
+def get_iom_type(plat_sku_file):
+    pal_sku_file = open(plat_sku_file, 'r')
     pal_sku = pal_sku_file.read()
     iom_type = int(pal_sku) & 0x3  # The IOM type is the last 2 bits
 
@@ -68,19 +68,32 @@ Response:
 def pcie_port_config(fru, argv):
     req_data = ["", ""]
     res_data = ["", ""]
-    pcie_setup_data = [0, 0]
     function = argv[2]
 
+    if ( function != "get" ):
+        device = argv[3]
+    else:
+        device = ""
+
+    # Get the original config
+    result = execute_IPMI_command(fru, 0x30, 0x80, "")
+    res_data = [int(n, 16) for n in result]
+    req_data = do_pcie_port_config_action(PLATFORM_FILE, function, device, res_data)
+
+    if ( function != "get" ):
+        execute_IPMI_command(fru, 0x30, 0x81, req_data)
+
+def do_pcie_port_config_action(plat_sku_file, function, device, res_data):
+    req_data = ["", ""]
+    pcie_setup_data = [0, 0]
+
     # Get IOM type
-    iom_type = get_iom_type()
+    iom_type = get_iom_type(plat_sku_file)
     if ( iom_type == IOM_M2 ):
         PCIe_port_name = PCIe_port_name_T5
     elif ( iom_type == IOM_IOC ):
         PCIe_port_name = PCIe_port_name_T7
 
-    # Get the original config
-    result = execute_IPMI_command(fru, 0x30, 0x80, "")
-    res_data = [int(n, 16) for n in result]
 
     if ( function == "get" ):
         # If the valid bit is invalid, it will be ignored
@@ -133,9 +146,9 @@ def pcie_port_config(fru, argv):
         else:
             print("* PCIe Port #1 is invalid and will be ignored.")
             print("  " + PCIe_port_name[3] + ": Unknown")
-    else:    # enable or disable
-        device = argv[3]
 
+        return None
+    else:    # enable or disable
         if ( device == "--nic" ):
             # IOU2 setting: set the valid bit [7] to 'available' and restore bit [6] to 'enable'
             req_data[0] = (res_data[0] | (1 << 7)) & ~(1 << 6)
@@ -170,5 +183,5 @@ def pcie_port_config(fru, argv):
         elif ( function == "disable" ):
             req_data[0] = req_data[0] | pcie_setup_data[0]
             req_data[1] = req_data[1] | pcie_setup_data[1]
-        execute_IPMI_command(fru, 0x30, 0x81, req_data)
 
+        return req_data

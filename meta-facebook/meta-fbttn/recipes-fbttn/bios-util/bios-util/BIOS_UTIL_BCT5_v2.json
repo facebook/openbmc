@@ -1,4 +1,7 @@
 {
+  "boot_mode": {
+    "supported": true
+  },
   "clear_cmos": {
     "supported": true
   },

@@ -26,6 +26,7 @@ SRC_URI = "file://code \
 S = "${WORKDIR}/code"
 
 DEPENDS += "liblog libgpio"
+RDEPENDS_${PN} += "libgpio"
 
 do_install() {
   bin="${D}/usr/local/bin"

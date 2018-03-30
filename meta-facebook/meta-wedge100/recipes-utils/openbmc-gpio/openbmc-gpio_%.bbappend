@@ -26,6 +26,8 @@ SRC_URI += " \
           "
 OPENBMC_GPIO_SOC_TABLE = "ast2400_gpio_table.py"
 
+DEPENDS += "update-rc.d-native"
+
 do_install_append() {
      install -d ${D}${sysconfdir}/init.d
      install -d ${D}${sysconfdir}/rcS.d

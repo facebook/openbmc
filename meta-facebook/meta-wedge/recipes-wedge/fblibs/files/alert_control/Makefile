@@ -19,7 +19,7 @@ lib: libalert_control.so
 
 libalert_control.so: alert_control.c
 	$(CC) $(CFLAGS) -fPIC -c -o alert_control.o alert_control.c
-	$(CC) -shared -o libalert_control.so alert_control.o -lc
+	$(CC) -shared -o libalert_control.so alert_control.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

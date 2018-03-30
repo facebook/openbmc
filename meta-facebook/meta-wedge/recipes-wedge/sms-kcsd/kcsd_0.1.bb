@@ -26,6 +26,7 @@ DEPENDS_append = " update-rc.d-native"
 
 DEPENDS += "libalert-control"
 DEPENDS += "libipmi"
+RDEPENDS_${PN} += "libalert-control libipmi"
 
 SRC_URI = "file://Makefile \
            file://setup-sms-kcs.sh \

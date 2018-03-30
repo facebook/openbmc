@@ -25,7 +25,7 @@ DEPENDS_append = " update-rc.d-native"
 
 DEPENDS += "libgpio"
 
-RDEPENDS_${PN} = "libgpio"
+RDEPENDS_${PN} = "libgpio python3-core bash"
 
 SRC_URI = "file://Makefile \
            file://modbuscmd.c \

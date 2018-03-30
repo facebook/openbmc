@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS_append = "libwedge-eeprom update-rc.d-native"
+RDEPENDS_${PN} += "libwedge-eeprom"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://get_fan_speed.sh \

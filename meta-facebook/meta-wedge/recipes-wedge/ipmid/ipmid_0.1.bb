@@ -25,6 +25,8 @@ LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73
 LDFLAGS_append = " -lwedge_eeprom"
 
 DEPENDS_append = "libwedge-eeprom update-rc.d-native"
+RDEPENDS_${PN} += "libwedge-eeprom"
+
 
 SRC_URI = "file://Makefile \
            file://setup-ipmid.sh \

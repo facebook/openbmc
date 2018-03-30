@@ -25,6 +25,7 @@ SRC_URI += " \
           file://openbmc-gpio-1/setup_board.py \
           "
 OPENBMC_GPIO_SOC_TABLE = "ast2500_gpio_table.py"
+DEPENDS += "update-rc.d-native"
 
 do_install_append() {
      install -d ${D}${sysconfdir}/init.d

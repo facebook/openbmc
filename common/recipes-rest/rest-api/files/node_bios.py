@@ -70,6 +70,52 @@ class bios_boot_order_trunk_node(node):
         return info
 
 '''''''''''''''''''''''''''''
+         Boot Mode 
+'''''''''''''''''''''''''''''
+class bios_boot_mode_node(node):
+    def __init__(self, name, info = None, actions = None):
+        self.name = name
+
+        if info == None:
+            self.info = {}
+        else:
+            self.info = info
+        if actions == None:
+            self.actions = []
+        else:
+            self.actions = actions
+
+    def getInformation(self):
+        cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order get --boot_mode'
+        boot_order = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        boot_order = boot_order.split('\n')[0].split(': ')
+        
+        info = {
+            boot_order[0]: boot_order[1],
+            "Note #1: Actions Format:": "{ 'action': 'set', 'mode': {0,1} }",
+            "Note #2: Boot Mode No.": "{ 0: 'Legacy', 1: 'UEFI' }",
+            }
+
+        return info
+
+    def doAction(self, data):
+        if data["action"] == "set" and len(data) == 2:
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order set --boot_mode ' + data["mode"]
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
+                res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'failure'
+
+        result = { "result": res }
+
+        return result
+
+'''''''''''''''''''''''''''''
          Clear CMOS
 '''''''''''''''''''''''''''''
 class bios_clear_cmos_node(node):
@@ -229,6 +275,11 @@ class bios_boot_order_node(node):
 
 def get_node_bios_boot_order_trunk(name):
     return bios_boot_order_trunk_node(name)
+
+def get_node_bios_boot_mode(name):
+    actions =  ["set",
+                ]
+    return bios_boot_mode_node(name = name, actions = actions)
 
 def get_node_bios_clear_cmos(name):
     actions =  ["enable",

@@ -61,11 +61,11 @@ def populate_server_node(num):
     r_pcie_port_config_trunk = tree("pcie-port-config", data = get_node_bios_pcie_port_config_trunk("server"))
     r_bios.addChildren([r_boot_order_trunk, r_postcode_trunk, r_plat_info_trunk, r_pcie_port_config_trunk])
 
-
+    r_boot_mode = tree("boot_mode", data = get_node_bios_boot_mode("server"))
     r_clear_cmos = tree("clear_cmos", data = get_node_bios_clear_cmos("server"))
     r_force_boot_bios_setup = tree("force_boot_bios_setup", data = get_node_bios_force_boot_setup("server"))
     r_boot_order = tree("boot_order", data = get_node_bios_boot_order("server"))
-    r_boot_order_trunk.addChildren([r_clear_cmos, r_force_boot_bios_setup, r_boot_order])
+    r_boot_order_trunk.addChildren([r_boot_mode, r_clear_cmos, r_force_boot_bios_setup, r_boot_order])
 
     return r_server
 

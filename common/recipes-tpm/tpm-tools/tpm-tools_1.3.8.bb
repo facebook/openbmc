@@ -14,6 +14,7 @@ SRC_URI += " \
     http://downloads.sourceforge.net/project/trousers/${BPN}/${PV}/${BP}.tar.gz \
     file://tpm-tools-extendpcr.patch \
     file://03-fix-bool-error-parseStringWithValues.patch \
+    file://0001-Fix-formating-issues.patch \
     file://tpm_integrationtest \
 "
 

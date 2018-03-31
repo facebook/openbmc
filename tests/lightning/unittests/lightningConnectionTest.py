@@ -3,7 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 import sys
-sys.path.append('../../common')
+import os
+# To get the path of the current run file and import the file
+# unitTestUtil.py into current direcotry
+curdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append('{}/../../common'.format(curdir))
 import unitTestUtil
 import logging
 from connectionTest import pingTest

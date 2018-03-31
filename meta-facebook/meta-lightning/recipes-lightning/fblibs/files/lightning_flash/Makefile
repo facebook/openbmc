@@ -20,7 +20,7 @@ CFLAGS += -Wall -Werror
 
 liblightning_flash.so: lightning_flash.c
 	$(CC) $(CFLAGS) -fPIC -c -o lightning_flash.o lightning_flash.c
-	$(CC) -shared -o liblightning_flash.so lightning_flash.o -lc
+	$(CC) -shared -o liblightning_flash.so lightning_flash.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

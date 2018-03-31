@@ -3,7 +3,7 @@ all: fw-util
 CFLAGS += -Wall -Werror
 
 fw-util: fw-util.c 
-	$(CC) $(CFLAGS) -lpal -std=c99 -o $@ $^
+	$(CC) $(CFLAGS) -lpal -std=c99 -o $@ $^ $(LDFLAGS) 
 
 .PHONY: clean
 

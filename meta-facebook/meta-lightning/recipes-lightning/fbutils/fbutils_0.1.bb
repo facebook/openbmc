@@ -29,7 +29,6 @@ SRC_URI = "file://ast-functions \
            file://ssd_vid.sh \
            file://setup_adc.sh \
            file://disable_wdt2.sh\
-           file://rc.early \
            file://rc.local \
            file://src \
            file://COPYING \
@@ -66,8 +65,6 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-  update-rc.d -r ${D} rc.early start 06 S .
   # the script to set ADC
   install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
   update-rc.d -r ${D} setup_adc.sh start 90 5 .
@@ -84,4 +81,4 @@ do_install() {
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"
-RDEPENDS_${PN} += "bash"
+RDEPENDS_${PN} += " bash"

@@ -16,7 +16,7 @@ do_install() {
     install -m 0755 fpc-util ${D}${bindir}/fpc-util
 }
 
-DEPENDS += "libpal"
-RDEPENDS_${PN} += "libpal"
+DEPENDS += " libpal"
+RDEPENDS_${PN} += " libipmi libpal"
 
 FILES_${PN} = "${bindir}"

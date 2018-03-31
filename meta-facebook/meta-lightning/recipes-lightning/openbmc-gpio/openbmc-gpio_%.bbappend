@@ -18,6 +18,8 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 CFLAGS += " -Wall -Werror "
 
+DEPENDS_append = "update-rc.d-native"
+
 SRC_URI += " \
           file://openbmc-gpio-1/board_gpio_table.py \
           file://openbmc-gpio-1/board_passthrough_gpio_table.py \

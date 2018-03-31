@@ -16,6 +16,6 @@ do_install() {
     install -m 0755 enclosure-util ${D}${bindir}/enclosure-util
 }
 
-DEPENDS += "libpal"
-RDEPENDS_${PN} += "libpal"
+DEPENDS += " libpal"
+RDEPENDS_${PN} += " libpal"
 FILES_${PN} = "${bindir}"

@@ -16,7 +16,7 @@ do_install() {
     install -m 0755 fw-util ${D}${bindir}/fw-util
 }
 
-DEPENDS += " libpal"
-RDEPENDS_${PN} += "libpal"
+DEPENDS += "libpal "
+RDEPENDS_${PN} += "libpal "
 
 FILES_${PN} = "${bindir}"

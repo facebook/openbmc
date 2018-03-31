@@ -26,6 +26,7 @@
 #include <openbmc/obmc-pal.h>
 #include <facebook/lightning_common.h>
 #include <facebook/lightning_flash.h>
+#include <facebook/lightning_gpio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -173,6 +174,7 @@ int lightning_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, 
 int lightning_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
 int lightning_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t* value);
+int lightning_sensor_get_airflow(float *airflow_cfm);
 
 #ifdef __cplusplus
 } // extern "C"

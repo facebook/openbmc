@@ -284,6 +284,54 @@ float fcb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 uint8_t ssd_no_temp[NUM_SSD] = {0};
 uint8_t ssd_sensor_fail[NUM_SSD] = {0};
 
+int
+lightning_sensor_get_airflow(float *airflow_cfm)
+{
+  uint8_t ssd_sku = 0;
+  float rpm_avg = 0, rpm_sum = 0, value;
+  int fan=0;
+  int ret,rc;
+
+  if (airflow_cfm == NULL){
+    syslog(LOG_ERR, "%s() Invalid memory address", __func__);
+    return -1;
+  }
+
+  // Calculate average RPM
+  for (fan = 0; fan < pal_tach_count; fan++) {
+    rc = sensor_cache_read(FRU_FCB, fcb_sensor_fan1_front_speed + fan, &value);
+    if(rc == -1) {
+      continue;
+    }
+    rpm_sum+=value;
+  }
+
+  rpm_avg = rpm_sum/pal_tach_count;
+
+  ret = lightning_ssd_sku(&ssd_sku);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s() get SSD SKU failed", __func__);
+    return -1;
+  }
+
+  if (ssd_sku == U2_SKU) {
+     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0208*(rpm_avg)) - 7.8821);
+  }
+  else if (ssd_sku == M2_SKU) {
+     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0211*(rpm_avg)) - 10.585);
+  }
+  else {
+    syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD SKU", __func__);
+    return -1;
+  }
+
+  if(*airflow_cfm < 0) {
+    *airflow_cfm = 0;
+  }
+
+  return 0;
+}
+
 static void
 assign_sensor_threshold(uint8_t fru, uint8_t snr_num, float ucr, float unc,
     float unr, float lcr, float lnc, float lnr, float pos_hyst, float neg_hyst) {
@@ -842,7 +890,7 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   uint8_t location;
   uint8_t monitor_flag;
   uint16_t res;
-  float multipler;
+  float multipler = 0;
 
   dev = open(device, O_RDWR);
   if (dev < 0) {
@@ -877,7 +925,7 @@ read_nct7904_value(uint8_t reg, char *device, uint8_t addr, float *value) {
     }
   }
 
-  ret = pal_peer_tray_detection(&peer_tray_exist);
+  ret = gpio_peer_tray_detection(&peer_tray_exist);
   if (ret < 0) {
 #ifdef DEBUG
     syslog(LOG_ERR, "%s: pal_peer_tray_detection() failed.", __func__);
@@ -1773,7 +1821,7 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
         // Airflow
         case FCB_SENSOR_AIRFLOW:
-          return pal_get_airflow((float*) value);
+          return lightning_sensor_get_airflow((float*) value);
 
         default:
           return -1;

@@ -55,12 +55,10 @@
 #define GPIO_BMC_UART_SWITCH 123
 
 #define GPIO_RESET_PCIE_SWITCH 8
-#define GPIO_RESET_SSD_SWITCH 134
 
 #define GPIO_HB_LED 115
 #define GPIO_BMC_SELF_TRAY_INTRU 108 // 0: tray pull-in, 1: tray pull-out
 #define GPIO_BMC_PEER_TRAY_INTRU 0   // 0: tray pull-in, 1: tray pull-out
-#define GPIO_PEER_BMC_HB 117
 #define GPIO_TRAY_LOCATION_ID 55 // 0: lower tray, 1: upper tray
 #define TRAY_LOCATION_FILE "/tmp/tray_location"
 
@@ -1137,20 +1135,6 @@ pal_reset_pcie_switch() {
 }
 
 int
-pal_peer_tray_detection(uint8_t *value) {
-
-  char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_PEER_BMC_HB);
-  if (read_device(path, &val))
-    return -1;
-
-  *value = (uint8_t) val;
-
-  return 0;
-}
-int
 pal_self_tray_location(uint8_t *value) {
 
   char path[64] = {0};
@@ -1231,25 +1215,6 @@ pal_get_tray_location(char *self_tray_name, uint8_t self_len,
   return 0;
 }
 
-// Reset SSD Switch
-int
-pal_reset_ssd_switch() {
-
-  char path[64] = {0};
-  sprintf(path, GPIO_VAL, GPIO_RESET_SSD_SWITCH);
-
-  if (write_device(path, "0"))
-    return -1;
-
-  msleep(100);
-
-  if (write_device(path, "1"))
-    return -1;
-
-  msleep(100);
-
-  return 0;
-}
 
 void
 pal_log_clear(char *fru) {
@@ -1265,53 +1230,6 @@ pal_log_clear(char *fru) {
     pal_set_key_value("fcb_sensor_health", "1");
     pal_set_key_value("bmc_health", "1");
   }
-}
-
-int pal_get_airflow(float *airflow_cfm)
-{
-  uint8_t ssd_sku = 0;
-  float rpm_avg = 0, rpm_sum = 0, value;
-  int fan=0;
-  int ret,rc;
-
-  if (airflow_cfm == NULL){
-    syslog(LOG_ERR, "%s() Invalid memory address", __func__);
-    return -1;
-  }
-
-  // Calculate average RPM
-  for (fan = 0; fan < pal_tach_cnt; fan++) {
-    rc = sensor_cache_read(FRU_FCB, FCB_SENSOR_FAN1_FRONT_SPEED + fan, &value);
-    if(rc == -1) {
-      continue;
-    }
-    rpm_sum+=value;
-  }
-
-  rpm_avg = rpm_sum/pal_tach_cnt;
-
-  ret = lightning_ssd_sku(&ssd_sku);
-  if (ret < 0) {
-    syslog(LOG_DEBUG, "%s() get SSD SKU failed", __func__);
-    return -1;
-  }
-
-  if (ssd_sku == U2_SKU) {
-     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0208*(rpm_avg)) - 7.8821);
-  }
-  else if (ssd_sku == M2_SKU) {
-     *airflow_cfm = (((-2) * (rpm_avg*rpm_avg) / 10000000) + (0.0211*(rpm_avg)) - 10.585);
-  }
-  else {
-    syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD SKU", __func__);
-    return -1;
-  }
-
-  if(*airflow_cfm < 0) {
-    *airflow_cfm = 0;
-  }
-
-  return 0;
 }
 
 void

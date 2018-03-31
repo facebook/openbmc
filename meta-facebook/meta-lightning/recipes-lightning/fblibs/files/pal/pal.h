@@ -31,6 +31,7 @@ extern "C" {
 #include <facebook/lightning_fruid.h>
 #include <facebook/lightning_sensor.h>
 #include <facebook/lightning_flash.h>
+#include <facebook/lightning_gpio.h>
 #include <openbmc/kv.h>
 #include <openbmc/nvme-mi.h>
 
@@ -198,14 +199,11 @@ int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 int pal_set_fan_led(uint8_t num, uint8_t operation);
 int pal_fan_dead_handle(int fan_num);
 int pal_fan_recovered_handle(int fan_num);
-int pal_peer_tray_detection(uint8_t *value);
 int pal_self_tray_location(uint8_t *value);
 int pal_self_tray_insertion(uint8_t *value);
 int pal_peer_tray_insertion(uint8_t *value);
 int pal_get_tray_location(char *self_name, uint8_t self_len, char *peer_name, uint8_t peer_len);
-int pal_reset_ssd_switch();
 void pal_log_clear(char *fru);
-int pal_get_airflow(float *airflow_cfm);
 void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_err_code_enable(const uint8_t error_num);

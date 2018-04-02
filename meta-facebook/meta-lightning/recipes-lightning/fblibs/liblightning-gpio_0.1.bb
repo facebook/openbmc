@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://lightning_gpio.c;beginline=8;endline=20;md5=8ad57a98e
 
 SRC_URI = "file://lightning_gpio \
           "
-DEPENDS += " liblightning-common libgpio obmc-pal"
+DEPENDS += " liblightning-common libgpio"
 
 S = "${WORKDIR}/lightning_gpio"
 

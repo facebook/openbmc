@@ -27,7 +27,6 @@
 #include <sys/mman.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <openbmc/obmc-sensor.h>
 #include "lightning_gpio.h"
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"

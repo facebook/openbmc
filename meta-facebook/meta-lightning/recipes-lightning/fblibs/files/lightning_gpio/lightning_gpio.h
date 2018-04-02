@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <openbmc/gpio.h>
-#include <openbmc/obmc-pal.h>
 #include <facebook/lightning_common.h>
 #ifdef __cplusplus
 extern "C" {

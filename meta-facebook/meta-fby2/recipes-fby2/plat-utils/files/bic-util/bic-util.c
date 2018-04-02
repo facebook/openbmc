@@ -104,9 +104,9 @@ util_get_device_id(uint8_t slot_id) {
 static void
 util_get_gpio(uint8_t slot_id) {
   int ret;
+  uint8_t i, group, shift, gpio[8] = {0};
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-  uint8_t i, group, shift, gpio_cnt;
-  uint8_t server_type = 0xFF, gpio[8] = {0};
+  uint8_t server_type = 0xFF, gpio_cnt;
   char **gpio_name;
 
   ret = fby2_get_server_type(slot_id, &server_type);
@@ -142,68 +142,25 @@ util_get_gpio(uint8_t slot_id) {
   }
 
   // Print the gpio index, name and value
-  for(i=0; i<gpio_cnt; i++) {
+  for (i = 0; i < gpio_cnt; i++) {
     group = i/8;
     shift = i%8;
     printf("%d %s: %d\n",i , gpio_name[i], (gpio[group] >> shift) & 0x01);
   }
 
 #else
-  bic_gpio_t gpio = {0};
-
-  ret = bic_get_gpio(slot_id, &gpio);
+  ret = bic_get_gpio_raw(slot_id, gpio);
   if (ret) {
     printf("util_get_gpio: bic_get_gpio returns %d\n", ret);
     return;
   }
 
-  bic_gpio_u *t = (bic_gpio_u*) &gpio;
-
-  // Print response
-  printf(" 0 %s: %d\n", gpio_pin_name[0], t->bits.pwrgood_cpu);
-  printf(" 1 %s: %d\n", gpio_pin_name[1], t->bits.pwrgd_pch_pwrok);
-  printf(" 2 %s: %d\n", gpio_pin_name[2], t->bits.pvddr_ab_vrhot_n);
-  printf(" 3 %s: %d\n", gpio_pin_name[3], t->bits.pvddr_de_vrhot_n);
-  printf(" 4 %s: %d\n", gpio_pin_name[4], t->bits.pvccin_vrhot_n);
-  printf(" 5 %s: %d\n", gpio_pin_name[5], t->bits.fm_throttle_n);
-  printf(" 6 %s: %d\n", gpio_pin_name[6], t->bits.fm_pch_bmc_thermtrip_n);
-  printf(" 7 %s: %d\n", gpio_pin_name[7], t->bits.h_memhot_co_n);
-  printf(" 8 %s: %d\n", gpio_pin_name[8], t->bits.fm_cpu0_thermtrip_lvt3_n);
-  printf(" 9 %s: %d\n", gpio_pin_name[9], t->bits.cpld_pch_thermtrip);
-  printf("10 %s: %d\n", gpio_pin_name[10], t->bits.fm_cpld_fivr_fault);
-  printf("11 %s: %d\n", gpio_pin_name[11], t->bits.fm_cpu_caterr_n);
-  printf("12 %s: %d\n", gpio_pin_name[12], t->bits.fm_cpu_error2);
-  printf("13 %s: %d\n", gpio_pin_name[13], t->bits.fm_cpu_error1);
-  printf("14 %s: %d\n", gpio_pin_name[14], t->bits.fm_cpu_error0);
-  printf("15 %s: %d\n", gpio_pin_name[15], t->bits.fm_slp4_n);
-  printf("16 %s: %d\n", gpio_pin_name[16], t->bits.fm_nmi_event_bmc_n);
-  printf("17 %s: %d\n", gpio_pin_name[17], t->bits.fm_smi_bmc_n);
-  printf("18 %s: %d\n", gpio_pin_name[18], t->bits.pltrst_n);
-  printf("19 %s: %d\n", gpio_pin_name[19], t->bits.fp_rst_btn_n);
-  printf("20 %s: %d\n", gpio_pin_name[20], t->bits.rst_btn_bmc_out_n);
-  printf("21 %s: %d\n", gpio_pin_name[21], t->bits.fm_bios_post_compt_n);
-  printf("22 %s: %d\n", gpio_pin_name[22], t->bits.fm_slp3_n);
-  printf("23 %s: %d\n", gpio_pin_name[23], t->bits.pwrgd_pvccin);
-  printf("24 %s: %d\n", gpio_pin_name[24], t->bits.fm_backup_bios_sel_n);
-  printf("25 %s: %d\n", gpio_pin_name[25], t->bits.fm_ejector_latch_detect_n);
-  printf("26 %s: %d\n", gpio_pin_name[26], t->bits.bmc_reset);
-  printf("27 %s: %d\n", gpio_pin_name[27], t->bits.fm_jtag_bic_tck_mux_sel_n);
-  printf("28 %s: %d\n", gpio_pin_name[28], t->bits.bmc_ready_n);
-  printf("29 %s: %d\n", gpio_pin_name[29], t->bits.bmc_com_sw_n);
-  printf("30 %s: %d\n", gpio_pin_name[30], t->bits.rst_i2c_mux_n);
-  printf("31 %s: %d\n", gpio_pin_name[31], t->bits.xdp_bic_preq_n);
-  printf("32 %s: %d\n", gpio_pin_name[32], t->bits.xdp_bic_trst);
-  printf("33 %s: %d\n", gpio_pin_name[33], t->bits.fm_sys_throttle_lvc3);
-  printf("34 %s: %d\n", gpio_pin_name[34], t->bits.xdp_bic_prdy_n);
-  printf("35 %s: %d\n", gpio_pin_name[35], t->bits.xdp_prsnt_in_n);
-  printf("36 %s: %d\n", gpio_pin_name[36], t->bits.xdp_prsnt_out_n);
-  printf("37 %s: %d\n", gpio_pin_name[37], t->bits.xdp_bic_pwr_debug_n);
-  printf("38 %s: %d\n", gpio_pin_name[38], t->bits.fm_bic_jtag_sel_n);
-  printf("39 %s: %d\n", gpio_pin_name[39], t->bits.fm_pcie_bmc_relink_n);
-  printf("40 %s: %d\n", gpio_pin_name[40], t->bits.fm_disable_pch_vr);
-  printf("41 %s: %d\n", gpio_pin_name[41], t->bits.fm_bic_rst_rtcrst);
-  printf("42 %s: %d\n", gpio_pin_name[42], t->bits.fm_bic_me_rcvr);
-  printf("rsvd: %d\n", t->bits.rsvd);
+  // Print the gpio index, name and value
+  for (i = 0; i < gpio_pin_cnt; i++) {
+    group = i/8;
+    shift = i%8;
+    printf("%d %s: %d\n",i , gpio_pin_name[i], (gpio[group] >> shift) & 0x01);
+  }
 #endif
 }
 

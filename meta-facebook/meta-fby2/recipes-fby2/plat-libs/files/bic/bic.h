@@ -76,6 +76,7 @@ enum {
   FM_DISABLE_PCH_VR,
   FM_BIC_RST_RTCRST,
   FM_BIC_ME_RCVR,
+  RST_RSMRST_PCH_N,
 };
 
 // RC GPIO PINS
@@ -266,7 +267,8 @@ typedef struct _bic_gpio_t {
   uint32_t fm_disable_pch_vr:1;
   uint32_t fm_bic_rst_rtcrst:1;
   uint32_t fm_bic_me_rcvr:1;
-  uint32_t rsvd:1;
+  uint32_t rst_rsmrst_pch_n:1;
+  uint32_t rsvd:4;
 } bic_gpio_t;
 
 // RC gpio
@@ -351,21 +353,6 @@ typedef struct _bic_ep_gpio_t {
   uint32_t fm_smb_vr_soc_mux_en:1;
   uint32_t rsvd:6;
 } bic_ep_gpio_t;
-
-typedef union _bic_gpio_u {
-  uint8_t gpio[4];
-  bic_gpio_t bits;
-} bic_gpio_u;
-
-typedef union _bic_rc_gpio_u {
-  uint8_t gpio[4];
-  bic_rc_gpio_t bits;
-} bic_rc_gpio_u;
-
-typedef union _bic_ep_gpio_u {
-  uint8_t gpio[5];
-  bic_ep_gpio_t bits;
-} bic_ep_gpio_u;
 
 typedef struct _bic_gpio_config_t {
   uint8_t dir:1;

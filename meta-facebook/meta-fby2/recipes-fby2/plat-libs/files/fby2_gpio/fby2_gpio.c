@@ -68,6 +68,7 @@ const uint8_t gpio_pin_list[] = {
   FM_DISABLE_PCH_VR,
   FM_BIC_RST_RTCRST,
   FM_BIC_ME_RCVR,
+  RST_RSMRST_PCH_N,
 };
 
 size_t gpio_pin_cnt = sizeof(gpio_pin_list)/sizeof(uint8_t);
@@ -203,6 +204,7 @@ const char *gpio_pin_name[] = {
   "FM_DISABLE_PCH_VR",
   "FM_BIC_RST_RTCRST",
   "FM_BIC_ME_RCVR",
+  "RST_RSMRST_PCH_N",
 };
 
 // RC GPIO name

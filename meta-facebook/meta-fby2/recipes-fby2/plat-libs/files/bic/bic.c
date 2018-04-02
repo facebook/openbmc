@@ -1143,6 +1143,75 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   return 0;
 }
 
+static int
+verify_bios_image(uint8_t slot_id, int fd, long size) {
+  int ret = -1;
+  int rc, i;
+  uint32_t offset;
+  uint32_t tcksum, gcksum;
+  volatile uint16_t count;
+  uint8_t target, last_pkt = 0x00;
+  uint8_t *tbuf = NULL;
+#if defined(CONFIG_FBY2_EP)
+  uint8_t server_type = 0xFF;
+
+  rc = bic_get_server_type(slot_id, &server_type);
+  if (rc) {
+    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_EP:
+      last_pkt = 0x80;
+      break;
+  }
+#endif
+
+  // Checksum calculation for BIOS image
+  tbuf = malloc(BIOS_VERIFY_PKT_SIZE * sizeof(uint8_t));
+  if (!tbuf) {
+    return -1;
+  }
+
+  lseek(fd, 0, SEEK_SET);
+  offset = 0;
+  while (1) {
+    count = read(fd, tbuf, BIOS_VERIFY_PKT_SIZE);
+    if (count <= 0) {
+      if (offset >= size) {
+        ret = 0;
+      }
+      break;
+    }
+
+    tcksum = 0;
+    for (i = 0; i < count; i++) {
+      tcksum += tbuf[i];
+    }
+
+    target = ((offset + count) >= size) ? (UPDATE_BIOS | last_pkt) : UPDATE_BIOS;
+
+    // Get the checksum of binary image
+    rc = bic_get_fw_cksum(slot_id, target, offset, count, (uint8_t*)&gcksum);
+    if (rc) {
+      printf("get checksum failed, offset:0x%x\n", offset);
+      break;
+    }
+
+    // Compare both and see if they match or not
+    if (gcksum != tcksum) {
+      printf("checksum does not match, offset:0x%x, 0x%x:0x%x\n", offset, tcksum, gcksum);
+      break;
+    }
+
+    offset += count;
+  }
+
+  free(tbuf);
+  return ret;
+}
+
 int
 bic_dump_fw(uint8_t slot_id, uint8_t comp, char *path) {
   int ret = -1, rc, fd;
@@ -1218,13 +1287,9 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   uint32_t offset;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
-  char    cmd[100] = {0};
   uint8_t target;
   int fd;
   int i;
-  uint32_t tcksum;
-  uint32_t gcksum;
-  uint8_t *tbuf = NULL;
 
   printf("updating fw on slot %d:\n", slot_id);
   // Handle Bridge IC firmware separately as the process differs significantly from others
@@ -1350,45 +1415,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
   }
 
-  if (comp != UPDATE_BIOS) {
-    goto update_done;
-  }
-
-  // Checksum calculation for BIOS image
-  tbuf = malloc(BIOS_VERIFY_PKT_SIZE * sizeof(uint8_t));
-  if (!tbuf) {
+  if ((comp == UPDATE_BIOS) && verify_bios_image(slot_id, fd, st.st_size)) {
     goto error_exit;
-  }
-
-  lseek(fd, 0, SEEK_SET);
-  offset = 0;
-  while (1) {
-    count = read(fd, tbuf, BIOS_VERIFY_PKT_SIZE);
-    if (count <= 0) {
-      break;
-    }
-
-    tcksum = 0;
-    for (i = 0; i < count; i++) {
-      tcksum += tbuf[i];
-    }
-
-    target = ((offset + count) >= st.st_size) ? (comp | 0x80) : comp;
-
-    // Get the checksum of binary image
-    rc = bic_get_fw_cksum(slot_id, target, offset, count, (uint8_t*)&gcksum);
-    if (rc) {
-      printf("get checksum failed, offset:0x%x\n", offset);
-      goto error_exit;
-    }
-
-    // Compare both and see if they match or not
-    if (gcksum != tcksum) {
-      printf("checksum does not match, offset:0x%x, 0x%x:0x%x\n", offset, tcksum, gcksum);
-      goto error_exit;
-    }
-
-    offset += count;
   }
 
 update_done:
@@ -1411,10 +1439,6 @@ error_exit:
   }
   if (fd > 0 ) {
     close(fd);
-  }
-
-  if (tbuf) {
-    free(tbuf);
   }
 
   return ret;
@@ -1970,7 +1994,7 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
     }
   }
   else {
-    *type = server_type; 
+    *type = server_type;
     switch(fru)
     {
       case FRU_SLOT1:

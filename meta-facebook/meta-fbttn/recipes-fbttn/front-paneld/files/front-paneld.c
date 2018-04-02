@@ -289,8 +289,8 @@ dbg_rst_btn_handler() {
     if ((ret < 0) || (prsnt == 0)) {
       msleep(500);
       continue;
-    }   
-     
+    }
+
     // Check if reset button is pressed
     ret = pal_get_dbg_rst_btn(&btn);
     if ((ret < 0) || (btn == 0)) {
@@ -351,7 +351,7 @@ dbg_pwr_btn_handler() {
   uint8_t prsnt;
   int ret;
   int i;
-  
+
   while (1) {
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
@@ -371,11 +371,11 @@ dbg_pwr_btn_handler() {
     if (ret < 0) {
       goto dbg_pwr_btn_out;
     }
-    
+
     if (pos == UART_SEL_BMC) {
       // do nothing
       goto dbg_pwr_btn_out;
-    } else if (pos == UART_SEL_SERVER) { 
+    } else if (pos == UART_SEL_SERVER) {
       syslog(LOG_WARNING, "Debug card power button pressed\n");
       // Wait for the button to be released
       for (i = 0; i < BTN_POWER_OFF; i++) {
@@ -560,7 +560,7 @@ ts_handler() {
     if (mem_fd >= 0) {
       bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
       if (bmc_reboot_base != 0) {
-        BMC_REBOOT__BY_KERN_PANIC(bmc_reboot_base) = 0x0;
+        BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0x0;
         BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0x0;
         munmap(bmc_reboot_base, PAGE_SIZE);
       }
@@ -1089,7 +1089,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_hb_mon;
   int i;
   int *ip;
-  
+
   if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for debug card error\n");
     exit(1);

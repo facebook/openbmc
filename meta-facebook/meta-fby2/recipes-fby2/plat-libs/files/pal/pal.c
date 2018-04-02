@@ -3776,7 +3776,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
         break;
     }
     if (valid) {
-      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 0), name);
+      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 0), name);
       valid = false;
     }
   }
@@ -3797,7 +3797,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
         break;
     }
     if (valid) {
-      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 1), name);
+      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 1), name);
       valid = false;
     }
   }
@@ -3814,14 +3814,20 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
         break;
     }
     if (valid) {
-      _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 2), name);
+      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 2), name);
       valid = false;
+    }
+  }
+
+  if (GETBIT(diff, 3)) {
+    if (snr_num == BIC_SENSOR_SYSTEM_STATUS) {
+      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 3), "PCH_Thermal_Trip");
     }
   }
 
   if (GETBIT(diff, 4)) {
     if (snr_num == BIC_SENSOR_PROC_FAIL) {
-        _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 4), "FRB3");
+      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 4), "FRB3");
     }
   }
 }

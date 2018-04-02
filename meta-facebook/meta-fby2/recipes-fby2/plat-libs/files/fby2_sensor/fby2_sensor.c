@@ -960,6 +960,8 @@ read_nic_temp(const char *device, uint8_t addr, float *value) {
     return -1;
   }
   *value = (float)(res & 0xFF);
+  if (*value > MAX_POS_READING_MARGIN)
+    *value -= THERMAL_CONSTANT;
 
   return 0;
 }

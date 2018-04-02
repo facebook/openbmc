@@ -262,6 +262,47 @@ power_value_adjust(float *value)
    return;
 }
 
+typedef struct _inlet_corr_t {
+  uint8_t duty;
+  float delta_t;
+} inlet_corr_t;
+
+static inlet_corr_t g_ict[] = {
+  // Inlet Sensor:
+  // duty cycle vs delta_t
+  { 10, 2.0 },
+  { 16, 1.5 },
+  { 22, 1.0 },
+  { 26, 0 },
+};
+static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
+
+static void apply_inlet_correction(float *value) {
+  static float dt = 0;
+  int i;
+  uint8_t pwm[2] = {0};
+
+  // Get PWM value
+  if (pal_get_pwm_value(0, &pwm[0]) || pal_get_pwm_value(1, &pwm[1])) {
+    // If error reading PWM value, use the previous deltaT
+    *value -= dt;
+    return;
+  }
+  pwm[0] = (pwm[0] + pwm[1])/2;
+
+  // Scan through the correction table to get correction value for given PWM
+  dt = g_ict[0].delta_t;
+  for (i = 1; i < g_ict_count; i++) {
+    if (pwm[0] >= g_ict[i].duty)
+      dt = g_ict[i].delta_t;
+    else
+      break;
+  }
+
+  // Apply correction for the sensor
+  *(float*)value -= dt;
+}
+
 // Helper Functions
 static int
 read_device(const char *device, int *value) {
@@ -1617,8 +1658,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
   else {
     // On successful sensor read
-    if(fru == FRU_SPB && sensor_num == SP_SENSOR_HSC_IN_POWER) {
-      power_value_adjust(value);
+    if (fru == FRU_SPB) {
+      if (sensor_num == SP_SENSOR_INLET_TEMP) {
+        apply_inlet_correction((float *)value);
+      } else if (sensor_num == SP_SENSOR_HSC_IN_POWER) {
+        power_value_adjust((float *)value);
+      }
     }
     if ((GETBIT(snr_chk->flag, UCR_THRESH) && (*((float*)value) >= snr_chk->ucr)) ||
         (GETBIT(snr_chk->flag, LCR_THRESH) && (*((float*)value) <= snr_chk->lcr))) {

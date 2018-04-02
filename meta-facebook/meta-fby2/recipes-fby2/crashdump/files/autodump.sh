@@ -1,6 +1,15 @@
 #!/bin/bash
 
+ME_UTIL="/usr/local/bin/me-util"
 SLOT_NAME=$1
+
+function is_numeric {
+  if [ $(echo "$1" | grep -cE "^\-?([[:xdigit:]]+)(\.[[:xdigit:]]+)?$") -gt 0 ]; then
+    return 1 
+  else
+    return 0
+  fi
+}
 
 case $SLOT_NAME in
     slot1)
@@ -72,6 +81,53 @@ echo "Auto Dump for $SLOT_NAME Started"
 
 #HEADER LINE for the dump
 $DUMP_SCRIPT "time" > $CRASHDUMP_FILE
+
+# Get Device ID
+echo "Get Device ID:" >> $CRASHDUMP_FILE
+RES=$($ME_UTIL $SLOT_NAME 0x18 0x01)
+echo "$RES" >> $CRASHDUMP_FILE
+# Major Firmware Revision
+REV=$(echo $RES| awk '{print $3;}')
+# Check whether the first parameter is numeric or not
+# If not, then it is an error message from me-util
+is_numeric $(echo $RES| awk '{print $1;}')
+if [ "$?" == 1 ] ;then
+  Mode=$(echo $(($REV & 0x80)))
+  if [ $Mode -ne 0 ] ;then
+    echo "Device firmware update or Self-initialization in progress or Firmware in the recovery boot-loader mode" >> $CRASHDUMP_FILE
+  fi
+fi
+
+# Get Self-test result
+echo "Get Self-test result:" >> $CRASHDUMP_FILE
+RES=$($ME_UTIL $SLOT_NAME 0x18 0x04)
+echo "$RES" >> $CRASHDUMP_FILE
+CC=$(echo $RES| awk '{print $1;}')
+# Check whether the first parameter is numeric or not
+# If not, then it is an error message from me-util 
+is_numeric $CC
+if [ "$?" == 1 ] ;then
+  if [ $CC -ne 55 ] ;then
+    if [ $CC -eq 56 ] ;then
+      echo "Self Test function not implemented in this controller" >> $CRASHDUMP_FILE
+    elif [ $CC -eq 57 ] ;then
+      echo "Corrupted or inaccessible data or devices" >> $CRASHDUMP_FILE
+    elif [ $CC -eq 58 ] ;then
+      echo "Fatal hardware error" >> $CRASHDUMP_FILE
+    elif [ $CC -eq 80 ] ;then
+      echo "PSU Monitoring service error" >> $CRASHDUMP_FILE
+    elif [ $CC -eq 81 ] ;then
+      echo "Firmware entered Recovery boot-loader mode" >> $CRASHDUMP_FILE
+    elif [ $CC -eq 82 ] ;then
+      echo "HSC Monitoring service error" >> $CRASHDUMP_FILE
+    elif [ $CC -eq 83 ] ;then
+      echo "Firmware entered non-UMA restricted mode of operation" >> $CRASHDUMP_FILE
+    else
+      echo "Unknown error" >> $CRASHDUMP_FILE
+    fi
+  fi
+fi
+
 #COREID dump
 $DUMP_SCRIPT $SLOT_NAME "coreid" >> $CRASHDUMP_FILE
 #MSR dump

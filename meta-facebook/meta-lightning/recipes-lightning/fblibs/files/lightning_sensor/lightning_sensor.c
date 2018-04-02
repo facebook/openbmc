@@ -1707,9 +1707,9 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           ret = read_flash_temp(sensor_num - PDPB_SENSOR_FLASH_TEMP_0, (float*) value);
 
           if (ret < 0) {
-            if (pal_reset_ssd_switch() < 0) {
+            if (gpio_reset_ssd_switch() < 0) {
 #ifdef DEBUG
-              syslog(LOG_ERR, "lightning_sensor_read: pal_reset_ssd_switch failed");
+              syslog(LOG_ERR, "lightning_sensor_read: gpio_reset_ssd_switch failed");
 #endif
             }
           }
@@ -1722,9 +1722,9 @@ lightning_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           ret = read_m2_amb_temp(sensor_num - PDPB_SENSOR_AMB_TEMP_0, (float*) value);
 
           if (ret < 0) {
-            if (pal_reset_ssd_switch() < 0) {
+            if (gpio_reset_ssd_switch() < 0) {
 #ifdef DEBUG
-              syslog(LOG_ERR, "lightning_sensor_read: pal_reset_ssd_switch failed");
+              syslog(LOG_ERR, "lightning_sensor_read: gpio_reset_ssd_switch failed");
 #endif
             }
           }

@@ -19,7 +19,7 @@ lib: libfbttn_fruid.so
 
 libfbttn_fruid.so: fbttn_fruid.c
 	$(CC) $(CFLAGS) -fPIC -c -o fbttn_fruid.o fbttn_fruid.c
-	$(CC) -lfbttn_common -shared -o libfbttn_fruid.so fbttn_fruid.o -lc
+	$(CC) -lfbttn_common -shared -o libfbttn_fruid.so fbttn_fruid.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

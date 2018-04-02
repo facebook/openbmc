@@ -3,7 +3,7 @@ lib: libmctp.so
 
 libmctp.so: mctp.c
 	$(CC) $(CFLAGS) -fPIC -c -o mctp.o mctp.c
-	$(CC) -shared -o libmctp.so mctp.o -lc
+	$(CC) -shared -o libmctp.so mctp.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

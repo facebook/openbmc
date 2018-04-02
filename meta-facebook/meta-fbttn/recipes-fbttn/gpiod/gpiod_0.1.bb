@@ -36,6 +36,8 @@ binfiles = "gpiod \
 CFLAGS += " -lbic -lfbttn_gpio -lpal "
 
 DEPENDS += " libbic libfbttn-gpio libpal "
+DEPENDS += "update-rc.d-native"
+RDEPENDS_${PN} += " libbic libfbttn-gpio libpal "
 
 pkgdir = "gpiod"
 

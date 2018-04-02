@@ -3,7 +3,7 @@ lib: libfbttn_common.so
 
 libfbttn_common.so: fbttn_common.c
 	$(CC) $(CFLAGS) -fPIC -pthread -c -o fbttn_common.o fbttn_common.c
-	$(CC) -lpthread -shared -o libfbttn_common.so fbttn_common.o -lc
+	$(CC) -lpthread -shared -o libfbttn_common.so fbttn_common.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

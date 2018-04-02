@@ -17,5 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libipmb libexp"
+RDEPENDS_${PN} += "libipmb libexp"
 
 FILES_${PN} = "${bindir}"

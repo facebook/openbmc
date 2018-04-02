@@ -17,5 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libipmb libexp libpal"
+RDEPENDS_${PN} += "libipmb libexp libpal"
 
 FILES_${PN} = "${bindir}"

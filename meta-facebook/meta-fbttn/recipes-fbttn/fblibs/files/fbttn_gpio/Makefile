@@ -19,7 +19,7 @@ lib: libfbttn_gpio.so
 
 libfbttn_gpio.so: fbttn_gpio.c
 	$(CC) $(CFLAGS) -fPIC -c -o fbttn_gpio.o fbttn_gpio.c
-	$(CC) -lfbttn_common -shared -o libfbttn_gpio.so fbttn_gpio.o -lc
+	$(CC) -lfbttn_common -shared -o libfbttn_gpio.so fbttn_gpio.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

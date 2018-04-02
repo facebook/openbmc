@@ -149,13 +149,15 @@ static int frame_insert (struct frame *self, char *string, int indent)
   char buf[buf_size];
   char *ptr;
   int ret;
+  int i;
 
   ret = self->parse(self, buf, buf_size, string, indent);
 
   if (ret < 0)
     return ret;
 
-  for (ptr = &buf[strlen(buf)-1]; ptr != (buf - 1); ptr--) {
+  for (i = strlen(buf) - 1; i >= 0; i--) {
+    ptr = &buf[i];
     if (self->isFull(self)) {
       if (self->overwrite) {
         self->idx_tail = (self->idx_tail + self->max_size - 1) % self->max_size;

@@ -9,6 +9,7 @@ LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d
 
 
 DEPENDS_append = "libbic libpal update-rc.d-native"
+RDEPENDS_${PN} = "libbic libpal"
 
 SRC_URI = "file://Makefile \
            file://setup-bic-cached.sh \

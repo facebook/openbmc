@@ -241,23 +241,18 @@ dump_ras_sel_syslog(uint8_t fru, ras_sel_msg_t *data) {
 static void
 parse_ras_sel(uint8_t fru, ras_sel_msg_t *data) {
   uint8_t *sel = data->msg;
-  char error_log_p1[256];
-  char error_log_p2[256];
+  char error_log[256];
   char mfg_id[16];
 
   /* Manufacturer ID (byte 2:0) */
   sprintf(mfg_id, "%02x%02x%02x", sel[2], sel[1], sel[0]);
 
   /* Command-specific (byte 3:34) */ 
-  pal_parse_ras_sel(fru, &sel[3], error_log_p1, error_log_p2);
+  pal_parse_ras_sel(fru, &sel[3], error_log);
 
   syslog(LOG_CRIT, "SEL Entry: FRU: %d, MFG ID: %s, "
          "%s",
-         fru, mfg_id, error_log_p1);
-
-  syslog(LOG_CRIT, "SEL Entry: FRU: %d, "
-         "%s",
-         fru, error_log_p2);
+         fru, mfg_id, error_log);
 
   pal_update_ts_sled();
 }

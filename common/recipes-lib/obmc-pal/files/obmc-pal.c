@@ -213,7 +213,7 @@ pal_set_imc_version(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *r
 }
 
 uint8_t __attribute__((weak))
-pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log_p1, char *error_log_p2)
+pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log)
 {
   return PAL_EOK;
 }

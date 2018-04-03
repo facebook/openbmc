@@ -3285,7 +3285,7 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
           if (pal_is_post_ongoing()) {
             // POST is ongoing
             *flag = CLEARBIT(*flag,UNC_THRESH);
-          } else {            
+          } else {
             long current_time_stamp = 0;
             long post_end_timestamp = 0;
             struct timespec ts;
@@ -5577,92 +5577,244 @@ pal_get_me_name(uint8_t fru, char *target_name) {
   return;
 }
 
-uint8_t
-pal_err_ras_sel_handle(uint8_t section_type, char *error_log, uint8_t *sel) {
-  char temp_log[64] = {0};
-  int i;
-  char tstr[10] = {0};
-  char ras_data[128]={0};
+void
+processor_ras_sel_parse(char *error_log, uint8_t *sel) {
+  uint8_t section_sub_type = sel[0];
+  char temp_log[128] = {0};
+
+  switch(section_sub_type) {
+    case 0x00:
+      sprintf(temp_log, " Section Sub-type: Cache Error,");
+      break;
+    case 0x01:
+      sprintf(temp_log, " Section Sub-type: TLB Error,");
+      break;
+    case 0x02:
+      sprintf(temp_log, " Section Sub-type: Bus Error,");
+      break;
+    case 0x03:
+      sprintf(temp_log, " Section Sub-type: Micro-architectural Error,");
+      break;
+    default:
+      sprintf(temp_log, " Section Sub-type: Unknown(0x%x),", section_sub_type);
+      break;
+  }
+  strcat(error_log, temp_log);
+  return;
+}
+
+void
+memory_ras_sel_parse(char *error_log, uint8_t *sel) {
+  uint8_t section_sub_type = sel[0];
+  char temp_log[128] = {0};
   int ch_num;
   int dimm_num;
-  strcpy(error_log, "");
+
+  switch(section_sub_type) {
+    case 0:
+      sprintf(temp_log, " Section Sub-type: Unknown,");
+      break;
+    case 1:
+      sprintf(temp_log, " Section Sub-type: No Error,");
+      break;
+    case 2:
+      sprintf(temp_log, " Section Sub-type: Single-bit ECC,");
+      break;
+    case 3:
+      sprintf(temp_log, " Section Sub-type: Multi-bit ECC,");
+      break;
+    case 4:
+      sprintf(temp_log, " Section Sub-type: Single-symbol Chipkill ECC,");
+      break;
+    case 5:
+      sprintf(temp_log, " Section Sub-type: Multi-symbol ChipKill ECC,");
+      break;
+    case 6:
+      sprintf(temp_log, " Section Sub-type: Master Abort,");
+      break;
+    case 7:
+      sprintf(temp_log, " Section Sub-type: Target Abort,");
+      break;
+    case 8:
+      sprintf(temp_log, " Section Sub-type: Parity Error,");
+      break;
+    case 9:
+      sprintf(temp_log, " Section Sub-type: Watchdog Timeout,");
+      break;
+    case 10:
+      sprintf(temp_log, " Section Sub-type: Invalid Address,");
+      break;
+    case 11:
+      sprintf(temp_log, " Section Sub-type: Mirror Broken,");
+      break;
+    case 12:
+      sprintf(temp_log, " Section Sub-type: Memory Sparing,");
+      break;
+    case 13:
+      sprintf(temp_log, " Section Sub-type: Scrub corrected Error,");
+      break;
+    case 14:
+      sprintf(temp_log, " Section Sub-type: Scrub uncorrected error,");
+      break;
+    case 15:
+      sprintf(temp_log, " Section Sub-type: Physical Memory Map-out event,");
+      break;
+    default:
+      sprintf(temp_log, " Section Sub-type: Undefined(0x%x),", section_sub_type);
+      break;
+  }
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");
+
+  ch_num = sel[4]*256+sel[3];
+  dimm_num = sel[6]*256+sel[5];
+
+  if(ch_num == 3 && dimm_num == 0)
+    sprintf(temp_log, " Error Specific: DIMM A0");
+  else if(ch_num == 2 && dimm_num == 0)
+    sprintf(temp_log, " Error Specific: DIMM B0");
+  else if(ch_num == 4 && dimm_num == 0)
+    sprintf(temp_log, " Error Specific: DIMM C0");
+  else if(ch_num == 5 && dimm_num == 0)
+    sprintf(temp_log, " Error Specific: DIMM D0");
+  else
+    sprintf(temp_log, " Error Specific: Unknown Channel Number (%d) / DIMM Number (%d)", ch_num, dimm_num);
+
+  strcat(error_log, temp_log);
+  return;
+}
+
+void
+pcie_ras_sel_parse(char *error_log, uint8_t *sel) {
+  uint8_t section_sub_type = sel[0];
+  char temp_log[128] = {0};
+  uint8_t fun_num = sel[8];
+  uint8_t dev_num = sel[9];
+  uint8_t seg_num[2] = {sel[10],sel[11]};
+  uint8_t bus_num = sel[12];
+
+  switch(section_sub_type) {
+    case 0x00:
+      sprintf(temp_log, " Section Sub-type: PCIE error,");
+      break;
+    default:
+      sprintf(temp_log, " Section Sub-type: Unknown(0x%x),", section_sub_type);
+      break;
+  }
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");
+
+  sprintf(temp_log, " Error Specific: Segment Number (%02x%02x) / Bus Number (%02x) / Device Number (%02x) / Function Number (%x)", seg_num[1], seg_num[0], bus_num, dev_num, fun_num);
+  strcat(error_log, temp_log);
+
+  return;
+}
+
+void
+qualcomm_fw_ras_sel_parse(char *error_log, uint8_t *sel) {
+  uint8_t section_sub_type = sel[0];
+  char temp_log[128] = {0};
+
+  switch(section_sub_type) {
+    case 0x00:
+      sprintf(temp_log, " Section Sub-type: Invalid,");
+      break;
+    case 0x01:
+      sprintf(temp_log, " Section Sub-type: Imem,");
+      break;
+    case 0x02:
+      sprintf(temp_log, " Section Sub-type: BERT,");
+      break;
+    case 0x03:
+      sprintf(temp_log, " Section Sub-type: IMC Error,");
+      break;
+    case 0x04:
+      sprintf(temp_log, " Section Sub-type: PMIC Over Temp,");
+      break;
+    case 0x05:
+      sprintf(temp_log, " Section Sub-type: XPU Error,");
+      break;
+    case 0x06:
+      sprintf(temp_log, " Section Sub-type: EL3 Firmware Error,");
+      break;
+    default:
+      sprintf(temp_log, " Section Sub-type: Unknown(0x%x),", section_sub_type);
+      break;
+  }
+  strcat(error_log, temp_log);
+
+  return;
+}
+
+uint8_t
+pal_err_ras_sel_handle(uint8_t section_type, char *error_log, uint8_t *sel) {
+  char temp_log[32] = {0};
+  char tstr[10] = {0};
+  char ras_data[128]={0};
+  int i;
 
   switch(section_type) {
     case 0x00:
-      sprintf(temp_log, " Section Sub-type: Processor Specific (ARM) Error,");
+      processor_ras_sel_parse(error_log, sel);
       break;
     case 0x01:
-      sprintf(temp_log, " Section Sub-type: Memory Error,");
-      strcat(error_log, temp_log);
-      strcpy(temp_log, "");
-      ch_num = sel[4]*256+sel[3];
-      dimm_num = sel[6]*256+sel[5];
-
-      if(ch_num == 3 && dimm_num == 0)
-        sprintf(temp_log, " DIMM A0");
-      else if(ch_num == 2 && dimm_num == 0)
-        sprintf(temp_log, " DIMM B0");
-      else if(ch_num == 4 && dimm_num == 0)
-        sprintf(temp_log, " DIMM C0");
-      else if(ch_num == 5 && dimm_num == 0)
-        sprintf(temp_log, " DIMM D0");
-      else
-        syslog(temp_log, " DIMM: Unknown");
+      memory_ras_sel_parse(error_log, sel);
       break;
     case 0x02:  //Not used
       return 0;
     case 0x03:
-      sprintf(temp_log, " Section Sub-type: PCIe Error,");
+      pcie_ras_sel_parse(error_log, sel);
       break;
     case 0x04:
-      sprintf(temp_log, " Section Sub-type: Qualcomm Firmware Error,");
+      qualcomm_fw_ras_sel_parse(error_log, sel);
       break;
     default:
-      sprintf(temp_log, " Section Sub-type: Unknown,");
+      sprintf(temp_log, " Section Sub-type: Unknown(0x%x),", sel[0]);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
       break;
   }
-  if(section_type == 0x01){
+
+  if((section_type != 0x01) && (section_type != 0x03)) {
+    sprintf(temp_log, " Error Specific Raw Data: ");
     strcat(error_log, temp_log);
-  } else {
-    strcat(error_log, temp_log);
-    strcpy(temp_log, "");
-    sprintf(temp_log, " RAS Data: ");
-    strcat(error_log, temp_log);
-    for(i = 1; i <= SIZE_RAS_SEL - 7; i++) {
-      sprintf(tstr, "%02X", sel[i]);
+    for(i = 1; i < SIZE_RAS_SEL - 7; i++) {
+      sprintf(tstr, "%02X:", sel[i]);
       strcat(ras_data, tstr);
     }
-    strcat(error_log, ras_data); 
+    sprintf(tstr, "%02X", sel[SIZE_RAS_SEL - 7]);
+    strcat(ras_data, tstr);
+    strcat(error_log, ras_data);
   }
   return 0;
 }
 
 uint8_t
-pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log_p1, char *error_log_p2) {
+pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log) {
   uint8_t error_type = sel[0];
   uint8_t error_severity = sel[1];
   uint8_t section_type = sel[2];
   char temp_log[128] = {0};
-  strcpy(error_log_p1, "");
+  strcpy(error_log, "");
 
   switch(error_type) {
     case 0x00:
-      sprintf(error_log_p1, " Error Type: SEI,"); 
+      sprintf(error_log, " Error Type: SEI,");
       break;
     case 0x01:
-      sprintf(error_log_p1, " Error Type: SEA,");
+      sprintf(error_log, " Error Type: SEA,");
       break;
     case 0x02:
-      sprintf(error_log_p1, " Error Type: PEI,");
+      sprintf(error_log, " Error Type: PEI,");
       break;
     case 0x03:
-      sprintf(error_log_p1, " Error Type: BERT/BOOT,");
+      sprintf(error_log, " Error Type: BERT/BOOT,");
       break;
     case 0x04:
-      sprintf(error_log_p1, " Error Type: PCIe,");
+      sprintf(error_log, " Error Type: PCIe,");
       break;
     default:
-      sprintf(error_log_p1, " Error Type: Unknown,");
+      sprintf(error_log, " Error Type: Unknown(0x%x),", error_type);
       break;
   }
 
@@ -5680,35 +5832,35 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log_p1, char *error_lo
       sprintf(temp_log, " Error Severity: Informational,");
       break;
     default:
-      sprintf(temp_log, " Error Severity: Unknown,");
+      sprintf(temp_log, " Error Severity: Unknown(0x%x),", error_severity);
       break;
   }
-  strcat(error_log_p1, temp_log);
+  strcat(error_log, temp_log);
   strcpy(temp_log, "");
 
   switch(section_type) {
     case 0x00:
-      sprintf(temp_log, " Section Type: Processor Specific ARM");
+      sprintf(temp_log, " Section Type: Processor Specific ARM,");
       break;
     case 0x01:
-      sprintf(temp_log, " Section Type: Memory");
+      sprintf(temp_log, " Section Type: Memory,");
       break;
     case 0x02:
       sprintf(temp_log, " Section Type: Firmware");
       break;
     case 0x03:
-      sprintf(temp_log, " Section Type: PCIe");
+      sprintf(temp_log, " Section Type: PCIe,");
       break;
     case 0x04:
-      sprintf(temp_log, " Section Type: Qualcomm Firmware");
+      sprintf(temp_log, " Section Type: Qualcomm Firmware,");
       break;
     default:
-      sprintf(temp_log, " Section Type: Unknown");
+      sprintf(temp_log, " Section Type: Unknown(0x%x),", section_type);
       break;
   }
-  strcat(error_log_p1, temp_log);
-  
-  pal_err_ras_sel_handle(section_type,error_log_p2,&sel[3]);
+  strcat(error_log, temp_log);
+
+  pal_err_ras_sel_handle(section_type, error_log, &sel[3]);
 
   return 0;
 }

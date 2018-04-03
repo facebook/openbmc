@@ -1,0 +1,306 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+DEVMEM=/sbin/devmem
+
+devmem_set_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val | (0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val & ~(0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_scu70_bit() {
+    local val
+    val=$((0x1 << $1))
+    $DEVMEM 0x1E6E207C 32 $val
+}
+
+scu_addr() {
+    echo $((0x1E6E2000 + 0x$1))
+}
+
+#LPC Controller, Base Address = 0x1E78_9000
+lpc_addr() {
+    echo $((0x1E789000 + 0x$1))
+}
+
+#GPIO Controller, Base Address = 0x1E78_0000
+gpio_addr() {
+    echo $((0x1E780000 + 0x$1))
+}
+
+GPIODIR="/sys/class/gpio"
+GPIOEXPORT="$GPIODIR/export"
+
+gpio_dir() {
+    echo "$GPIODIR/gpio$1"
+}
+
+gpio_name2value() {
+    local first remaining base val
+    remaining=$1
+    val=0
+    while [ -n "$remaining" ]; do
+        first=${remaining:0:1}
+        case "$first" in
+            [[:lower:]])
+                base=$(printf "%d" "'$first'")
+                base=$((base - 96))
+                val=$((val * 26 + base))
+                ;;
+            [[:upper:]])
+                base=$(printf "%d" "'$first'")
+                base=$((base - 64))
+                val=$((val * 26 + base))
+                ;;
+            *)
+                if [ $val -gt 0 ]; then
+                    val=$((val-1))
+                fi
+                val=$((val * 8 + $remaining))
+                break
+                ;;
+        esac
+        remaining=${remaining:1}
+    done
+    echo "$val"
+}
+
+gpio_export() {
+    local gpio
+    gpio=$(gpio_name2value $1)
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+}
+
+gpio_export_out() {
+    local gpio
+    gpio=$(gpio_name2value $1)
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+        echo out > ${dir}/direction
+    fi
+}
+
+pca9555_gpio_export() {
+    local gpio
+    gpio=$1
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+}
+
+gpio_set() {
+    local gpio
+    local val
+    gpio=$(gpio_name2value $1)
+    val=$2
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+
+    if [ $val == 1 ]; then
+      echo high > ${dir}/direction
+    else
+      echo low > ${dir}/direction
+    fi
+}
+
+gpio_get() {
+    local gpio
+    local val
+    gpio=$(gpio_name2value $1)
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+    echo in > ${dir}/direction
+    cat ${dir}/value
+}
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+    local val
+    # Read the Watch Dog Flag
+    val=$(devmem 0x1e6e203c 2>/dev/null)
+    if [ "$((val & 0x6))" == "0" ]; then
+        # Power ON Reset
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+# Check to see if server is present in given slot or not
+is_server_prsnt() {
+  local prsnt
+
+  case $1 in
+    1)
+      prsnt=0
+      ;;
+    *)
+      prsnt=0
+      ;;
+  esac
+
+  if [ $prsnt == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+# Get slot type (00:TwinLakes, 01:Crace Flat, 10:Glacier Point, 11:Empty Slot)
+get_slot_type() {
+  slot_num=$1
+  slot_bin=`cat /tmp/slot.bin`
+
+  type=$(($(($slot_bin >> $(($(($slot_num*2)) - 2)))) & 3))
+
+  echo $type
+}
+
+# Get server type (00:TwinLakes, 01:RC, 10:EP, 11:Unknown)
+get_server_type() {
+  slot_num=$1
+  server_type_bin=`cat /tmp/server_type.bin`
+
+  type=$(($(($server_type_bin >> $(($(($slot_num*2)) - 2)))) & 3))
+
+  echo $type
+}
+
+# Check to see if Bridge-IC is ready in given slot or not
+is_bic_ready() {
+  local ready
+
+  case $1 in
+   1)
+    ready=$(gpio_get B0)
+    ;;
+   *)
+    ready="1"
+    ;;
+  esac
+
+  if [ $ready == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+minilaketb_is_server_on() {
+    local curr_pwr_cpu
+    curr_pwr_cpu=$(python -c 'import sys; sys.path.append("/usr/local/fbpackages/utils"); import power_util; print power_util.get_pwr_cpu()')
+    if [ $curr_pwr_cpu == "1" ]; then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+gpio_get_val() {
+    local gpio
+    local val
+    gpio=$(gpio_name2value $1)
+    dir=$(gpio_dir $gpio)
+    if [ ! -d ${dir} ]; then
+        echo $gpio > $GPIOEXPORT
+    fi
+    cat ${dir}/value
+}
+
+get_slot_bus() {
+  local bus
+
+  case $1 in
+    1)
+      bus=1
+      ;;
+    2)
+      bus=3
+      ;;
+    3)
+      bus=5
+      ;;
+    4)
+      bus=7
+      ;;
+  esac
+
+  echo $bus
+}
+
+i2c_remove_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      I2C_DEV=`echo $DEV_SLAVE_ADDR | sed s/x/0/g`
+
+      if [ -d /sys/class/i2c-dev/i2c-$SLOT_BUS/device/$SLOT_BUS-$I2C_DEV ]; then
+         echo $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/delete_device
+      fi
+}
+
+i2c_add_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      DEV_NAME=$3
+
+      echo $DEV_NAME $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/new_device
+}
+
+# Check to see if slot 12v is on or not
+is_slot_12v_on() {
+  local gpio
+  local status
+  local dir
+
+  case $1 in
+   1)
+    gpio=$(gpio_name2value O4)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   2)
+    gpio=$(gpio_name2value O5)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   3)
+    gpio=$(gpio_name2value O6)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   4)
+    gpio=$(gpio_name2value O7)
+    dir=$(gpio_dir $gpio)
+    status=$(cat ${dir}/value)
+    ;;
+   *)
+    status="0"
+    ;;
+  esac
+
+  if [ $status == "1" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}

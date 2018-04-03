@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+. /usr/local/fbpackages/utils/ast-functions
+LOGFILE="/var/log/mTerm_$1.log"
+
+if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
+then
+  SLOT=$1
+else
+  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
+  exit -1
+fi
+
+case $SLOT in
+    slot1)
+      SLOT_NUM=1
+      ;;
+    slot2)
+      SLOT_NUM=2
+      ;;
+    slot3)
+      SLOT_NUM=3
+      ;;
+    slot4)
+      SLOT_NUM=4
+      ;;
+esac
+
+if [ $(get_slot_type $SLOT_NUM) == "1" ] || [ $(get_slot_type $SLOT_NUM) == "2" ]; then
+  echo "Should not execute sol-util since CF/GP is on $SLOT"
+  exit 1
+elif [ $(get_slot_type $SLOT_NUM) == "3" ]; then
+  echo "Should not execute sol-util since $SLOT is empty"
+  exit 1
+fi
+
+if [ $# -gt 1 ]; then
+  if [[ "$2" == "--history" ]]; then
+    cat $LOGFILE 2>/dev/null
+    exit 0
+  fi
+fi
+
+exec /usr/local/bin/mTerm_client $SLOT
+
+echo
+echo
+echo "-----------------------"
+echo "Exit from SOL session."

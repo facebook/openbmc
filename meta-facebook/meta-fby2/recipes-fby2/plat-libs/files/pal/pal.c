@@ -5298,6 +5298,18 @@ pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   return 0;
 }
 
+bool
+pal_is_fw_update_ongoing_system(void) {
+  uint8_t i;
+
+  for (i = FRU_SLOT1; i <= FRU_BMC; i++) {
+    if (pal_is_fw_update_ongoing(i) == true)
+      return true;
+  }
+
+  return false;
+}
+
 int
 pal_ipmb_processing(int bus, void *buf, uint16_t size) {
   char key[MAX_KEY_LEN];
@@ -5390,7 +5402,7 @@ pal_err_ras_sel_handle(uint8_t section_type, char *error_log, uint8_t *sel) {
       strcpy(temp_log, "");
       ch_num = sel[4]*256+sel[3];
       dimm_num = sel[6]*256+sel[5];
-      
+
       if(ch_num == 3 && dimm_num == 0)
         sprintf(temp_log, " DIMM A0");
       else if(ch_num == 2 && dimm_num == 0)

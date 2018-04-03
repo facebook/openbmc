@@ -109,6 +109,8 @@ fby2_common_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_SPB;
   } else if (!strcmp(str, "nic")) {
     *fru = FRU_NIC;
+  } else if (!strcmp(str, "bmc")) {
+    *fru = FRU_BMC;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby2_common_fru_id: Wrong fru id");

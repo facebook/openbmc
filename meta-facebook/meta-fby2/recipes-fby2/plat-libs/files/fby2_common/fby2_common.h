@@ -36,6 +36,7 @@ enum {
   FRU_SLOT4 = 4,
   FRU_SPB   = 5,
   FRU_NIC   = 6,
+  FRU_BMC   = 7,
 };
 
 enum {

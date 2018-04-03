@@ -1140,6 +1140,25 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
 }
 
 static int
+_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[64];
+  char value[64] = {0};
+  struct timespec ts;
+
+  sprintf(key, "fru%u_fwupd", slot_id);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%d", ts.tv_sec);
+
+  if (edb_cache_set(key, value) < 0) {
+     return -1;
+  }
+
+  return 0;
+}
+
+static int
 verify_bios_image(uint8_t slot_id, int fd, long size) {
   int ret = -1;
   int rc, i;
@@ -1370,9 +1389,10 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
     // Update counter
     offset += count;
-    if((last_offset + dsize) <= offset) {
+    if ((last_offset + dsize) <= offset) {
        switch(comp) {
          case UPDATE_BIOS:
+           _set_fw_update_ongoing(slot_id, 60);
            printf("\rupdated bios: %d %%", offset/dsize);
            break;
          case UPDATE_CPLD:
@@ -1411,8 +1431,10 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
   }
 
-  if ((comp == UPDATE_BIOS) && verify_bios_image(slot_id, fd, st.st_size)) {
-    goto error_exit;
+  if (comp == UPDATE_BIOS) {
+    _set_fw_update_ongoing(slot_id, 60 * 2);
+    if (verify_bios_image(slot_id, fd, st.st_size))
+      goto error_exit;
   }
 
 update_done:

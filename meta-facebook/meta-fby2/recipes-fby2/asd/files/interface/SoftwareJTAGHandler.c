@@ -29,10 +29,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <termios.h>
@@ -45,6 +48,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openbmc/gpio.h>
 #include <openbmc/pal.h>
 #include <facebook/bic.h>
+
+#define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
 
 // Enable to print IR/DR trace to syslog
 //#define DEBUG
@@ -840,5 +845,180 @@ STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain) {
     }
 
     state->active_chain = &state->chains[chain];
+    return ST_OK;
+}
+
+static void *out_msg_thread(void *arg)
+{
+    int sock, msgsock, n, len, ret;
+    int fru, size, offset = 0;
+    size_t t;
+    struct sockaddr_un server, client;
+    unsigned char *req_buf;
+    char sock_path[64] = {0};
+    struct spi_message om;
+    STATUS (*callback)(struct spi_message *);
+
+    if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        syslog(LOG_ERR, "JTAG_MSG: socket() failed\n");
+        exit(1);
+    }
+
+    fru = ((int *)arg)[0];
+    server.sun_family = AF_UNIX;
+    sprintf(sock_path, "%s_%d", SOCK_PATH_JTAG_MSG, fru);
+    strcpy(server.sun_path, sock_path);
+    unlink(server.sun_path);
+    len = strlen(server.sun_path) + sizeof(server.sun_family);
+    if (bind(sock, (struct sockaddr *)&server, len) == -1) {
+        syslog(LOG_ERR, "JTAG_MSG: bind() failed, errno=%d", errno);
+        exit(1);
+    }
+
+    if (listen (sock, 5) < 0) {
+        syslog(LOG_ERR, "JTAG_MSG: listen() failed, errno=%d", errno);
+        exit(1);
+    }
+
+    if ((om.buffer = (unsigned char *)malloc(4096)) == NULL) {
+        syslog(LOG_ERR, "JTAG_MSG: failed to allocate om.buffer");
+        exit(1);
+    }
+
+    if ((req_buf = (unsigned char *)malloc(4096)) == NULL) {
+        syslog(LOG_ERR, "JTAG_MSG: failed to allocate req_buf");
+        exit(1);
+    }
+
+    callback = (STATUS (*)(struct spi_message *))((int *)arg)[1];
+    free(arg);
+
+    while (1) {
+        t = sizeof(client);
+        if ((msgsock = accept(sock, (struct sockaddr *)&client, &t)) < 0) {
+            ret = errno;
+            syslog(LOG_WARNING, "JTAG_MSG: accept() failed with ret: %x, errno: %x\n", msgsock, ret);
+            sleep(1);
+            continue;
+        }
+
+        n = recv(msgsock, req_buf, 4096, 0);
+        if (n <= 0) {
+            syslog(LOG_WARNING, "JTAG_MSG: recv() failed with %d\n", n);
+            close(msgsock);
+            sleep(1);
+            continue;
+        }
+        close(msgsock);
+
+        switch (req_buf[0]) {
+            case 0x02:  // only one package
+            case 0x03:  // the first package
+                offset = 0;
+                memcpy(&om.header, &req_buf[1], sizeof(om.header));
+                size = ((om.header.size_msb & 0x1F) << 8) | (om.header.size_lsb & 0xFF);
+                if ((size < 0) || (size > 4000)) {
+                    syslog(LOG_ERR, "JTAG_MSG: get message size failed %d, slot%d", size, fru);
+                    continue;
+                }
+
+                if ((size = n - (1+sizeof(om.header))) < 0) {
+                    syslog(LOG_ERR, "JTAG_MSG: invalid buffer size %d (n=%d, type=%u), slot%d", size, n, req_buf[0], fru);
+                    continue;
+                }
+                memcpy(om.buffer, &req_buf[1+sizeof(om.header)], size);
+                offset += size;
+                break;
+            case 0x04:  // the middle package
+            case 0x05:  // the last package
+                if (offset <= 0) {
+                    syslog(LOG_ERR, "JTAG_MSG: offset shouldn't be 0, slot%d", fru);
+                    continue;
+                }
+
+                if ((size = (n-1)) < 0) {
+                    syslog(LOG_ERR, "JTAG_MSG: invalid buffer size %d (n=%d, type=%u), slot%d", size, n, req_buf[0], fru);
+                    continue;
+                }
+                memcpy(&om.buffer[offset], &req_buf[1], size);
+                offset += size;
+                break;
+        }
+
+        if ((req_buf[0] == 0x02) || (req_buf[0] == 0x05)) {
+            offset = 0;
+            callback(&om);
+        }
+    }
+
+    close(sock);
+    pthread_exit(0);
+}
+
+STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callback)(struct spi_message *))
+{
+    static bool om_thread = false;
+    static pthread_t om_tid;
+    uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+    uint8_t rbuf[8] = {0x00};
+    uint8_t rlen = 0;
+    uint8_t slot_id;
+    int *arg;
+
+    if (state == NULL) {
+        return ST_ERR;
+    }
+    slot_id = state->fru;
+
+    if ((jflow == JFLOW_BIC) && (om_thread == false)) {
+        if ((arg = malloc(sizeof(int)*2)) == NULL) {
+            syslog(LOG_ERR, "%s: malloc failed, fru=%d", __FUNCTION__, slot_id);
+            return ST_ERR;
+        }
+        arg[0] = slot_id;
+        arg[1] = (int)callback;
+
+        pthread_create(&om_tid, NULL, out_msg_thread, arg);
+        om_thread = true;
+    }
+
+    tbuf[3] = jflow;
+    if (bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, 4, rbuf, &rlen) < 0) {
+        syslog(LOG_ERR, "1S_ASD_INIT failed, slot%d", slot_id);
+        //return ST_ERR;
+    }
+
+    return ST_OK;
+}
+
+STATUS passthrough_jtag_message(JTAG_Handler *state, struct spi_message *s_message) {
+    uint8_t tbuf[MAX_IPMB_RES_LEN] = {0x15, 0xA0, 0x00}; // IANA ID
+    uint8_t rbuf[8] = {0x00};
+    uint8_t rlen = 0;
+    uint16_t tlen = 3;
+    uint8_t slot_id;
+    int size;
+
+    if (state == NULL) {
+        return ST_ERR;
+    }
+    slot_id = state->fru;
+
+    size = ((s_message->header.size_msb & 0x1F) << 8) | (s_message->header.size_lsb & 0xFF);
+    if (size < 0) {
+        syslog(LOG_ERR, "get message size failed %d, slot%d", size, slot_id);
+        return ST_ERR;
+    }
+
+    // tbuf[0:2] = IANA ID
+    // tbuf[3:n] = message
+    memcpy(&tbuf[3], &s_message->header, sizeof(s_message->header));
+    memcpy(&tbuf[3+sizeof(s_message->header)], s_message->buffer, size);
+    tlen += sizeof(s_message->header) + size;
+    if (bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_MSG_OUT, tbuf, tlen, rbuf, &rlen) < 0) {
+        syslog(LOG_ERR, "passthrough_jtag_message failed, slot%d", slot_id);
+        return ST_ERR;
+    }
+
     return ST_OK;
 }

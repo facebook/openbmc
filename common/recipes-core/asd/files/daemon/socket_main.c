@@ -169,22 +169,6 @@ typedef enum {
     ASD_UNKNOWN_ERROR = 0x7f
 } ASDError;
 
-struct message_header {
-    uint32_t origin_id : 3;
-    uint32_t reserved  : 1;
-    uint32_t enc_bit   : 1;
-    uint32_t type      : 3;
-    uint32_t size_lsb  : 8;
-    uint32_t size_msb  : 5;
-    uint32_t tag       : 3;
-    uint32_t cmd_stat  : 8;
-} __attribute__((packed));
-
-struct spi_message {
-    struct message_header header;
-    unsigned char* buffer;
-} __attribute__((packed));
-
 typedef enum {
     IPC_LogType_MIN = -1,
     IPC_LogType_Trace = 0,
@@ -267,6 +251,15 @@ struct packet_data {
     int used, available;
 };
 
+#ifdef CONFIG_JTAG_MSG_FLOW
+#define DEFAULT_JFLOW JFLOW_BIC
+#define OPT_JFLOW     "j:"
+
+uint8_t jtag_msg_flow = DEFAULT_JFLOW;
+#else
+#define OPT_JFLOW
+#endif
+
 bool shouldRemoteLog(ASD_LogType asd_level);
 void sendRemoteLoggingMessage(ASD_LogType asd_level, const char* message);
 
@@ -278,8 +271,13 @@ void showUsage(char **argv) {
     fprintf(stderr, "     3          JTAG MSG from plugin\n");
     fprintf(stderr, "     4          All log types\n");
     fprintf(stderr, "     5          Debug log messages\n");
-    fprintf(stderr, "  -f <number>   fru number\n");        
+    fprintf(stderr, "  -f <number>   fru number\n");
     fprintf(stderr, "  -p <number>   Port number (default=%d)\n", DEFAULT_PORT);
+#ifdef CONFIG_JTAG_MSG_FLOW
+    fprintf(stderr, "  -j <number>   JTAG message process flow (default=%d)\n", DEFAULT_JFLOW);
+    fprintf(stderr, "     1          process JTAG message on BMC\n");
+    fprintf(stderr, "     2          process JTAG message on Bridge-IC\n");
+#endif
     fprintf(stderr, "  -s            Route log messages to the system log\n\n");
 #ifndef REFERENCE_CODE
     fprintf(stderr, "  -k file       Specify SSL Certificate/Key file\n\n");
@@ -287,9 +285,9 @@ void showUsage(char **argv) {
 }
 
 #ifndef REFERENCE_CODE
-#define OPTIONS "l:p:f:k:s"
+#define OPTIONS "l:p:f:k:s" OPT_JFLOW
 #else
-#define OPTIONS "l:p:f:s"
+#define OPTIONS "l:p:f:s" OPT_JFLOW
 #endif
 
 void process_command_line(int argc, char **argv) {
@@ -330,6 +328,17 @@ void process_command_line(int argc, char **argv) {
                 cpu_fru = fru;
                 break;
             }
+#ifdef CONFIG_JTAG_MSG_FLOW
+            case 'j':
+                jtag_msg_flow = atoi(optarg);
+                fprintf(stderr, "Setting JTAG message process flow: %u\n", jtag_msg_flow);
+                if ((jtag_msg_flow < JFLOW_BMC) || (jtag_msg_flow > JFLOW_BIC)) {
+                    fprintf(stderr, "invalid flow number %d\n", jtag_msg_flow);
+                    showUsage(argv);
+                    exit(EXIT_SUCCESS);
+                }
+                break;
+#endif
             default:  // h, ?, and other
             {
                 showUsage(argv);
@@ -732,13 +741,13 @@ STATUS process_jtag_message(struct spi_message *s_message) {
 
             status = write_event_config(*data_ptr);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "write_event_config failed, %s", status);
+                ASD_log(LogType_Error, "write_event_config failed, %d", status);
                 break;
             }
         } else if (cmd >= WRITE_CFG_MIN && cmd <= WRITE_CFG_MAX) {
             status = write_cfg((writeCfg)cmd, &packet);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "write_cfg failed, %s", status);
+                ASD_log(LogType_Error, "write_cfg failed, %d", status);
                 break;
             }
         } else if (cmd == WRITE_PINS) {
@@ -758,7 +767,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
                 pin = (Pin)index;
                 status = target_write(target_control_handle, pin, assert);
                 if(status != ST_OK) {
-                    ASD_log(LogType_Error, "target_write failed, %s", status);
+                    ASD_log(LogType_Error, "target_write failed, %d", status);
                     break;
                 }
             } else if ((index & SCAN_CHAIN_SELECT) == SCAN_CHAIN_SELECT) {
@@ -770,12 +779,12 @@ STATUS process_jtag_message(struct spi_message *s_message) {
                 }
                 status = target_jtag_chain_select(target_control_handle, (scanChain)scan_chain);
                 if(status != ST_OK) {
-                    ASD_log(LogType_Error, "target_jtag_chain_select failed, %s", status);
+                    ASD_log(LogType_Error, "target_jtag_chain_select failed, %d", status);
                     break;
                 }
                 status = JTAG_set_active_chain(jtag_handler, (scanChain)scan_chain);
                 if(status != ST_OK) {
-                    ASD_log(LogType_Error, "JTAG_set_active_chain failed, %s", status);
+                    ASD_log(LogType_Error, "JTAG_set_active_chain failed, %d", status);
                     break;
                 }
             } else {
@@ -813,7 +822,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
             status = read_status(readStatusTypeIndex, pin, &out_msg.buffer[response_cnt],
                                  MAX_DATA_SIZE-response_cnt, &bytes_written);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "read_status failed, %s", status);
+                ASD_log(LogType_Error, "read_status failed, %d", status);
                 break;
             }
             response_cnt += bytes_written;
@@ -834,13 +843,13 @@ STATUS process_jtag_message(struct spi_message *s_message) {
             ASD_log(LogType_Debug, "Wait cycle of %d", number_of_cycles);
             status = JTAG_wait_cycles(jtag_handler, number_of_cycles);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "JTAG_wait_cycles failed, %s", status);
+                ASD_log(LogType_Error, "JTAG_wait_cycles failed, %d", status);
                 break;
             }
         } else if (cmd == WAIT_PRDY) {
             status = target_wait_PRDY(target_control_handle, prdy_timeout);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "target_wait_PRDY failed, %s", status);
+                ASD_log(LogType_Error, "target_wait_PRDY failed, %d", status);
                 break;
             }
         } else if (cmd == CLEAR_TIMEOUT) {
@@ -850,13 +859,13 @@ STATUS process_jtag_message(struct spi_message *s_message) {
         } else if (cmd == TAP_RESET) {
             status = JTAG_tap_reset(jtag_handler);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "JTAG_tap_reset failed, %s", status);
+                ASD_log(LogType_Error, "JTAG_tap_reset failed, %d", status);
                 break;
             }
         } else if (cmd >= TAP_STATE_MIN && cmd <= TAP_STATE_MAX) {
             status = JTAG_set_tap_state(jtag_handler, (JtagStates)(cmd & TAP_STATE_MASK));
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "JTAG_set_tap_state failed, %s", status);
+                ASD_log(LogType_Error, "JTAG_set_tap_state failed, %d", status);
                 break;
             }
         } else if (cmd >= WRITE_SCAN_MIN && cmd <= WRITE_SCAN_MAX) {
@@ -873,14 +882,14 @@ STATUS process_jtag_message(struct spi_message *s_message) {
 
             status = determine_shift_end_state(ScanType_Write, &packet, &end_state);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "determine_shift_end_state failed, %s", status);
+                ASD_log(LogType_Error, "determine_shift_end_state failed, %d", status);
                 break;
             }
             status = JTAG_shift(jtag_handler, num_of_bits,
                                 MAX_DATA_SIZE - packet.used - num_of_bytes,
                                 data_ptr, 0, NULL, end_state);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "JTAG_shift failed, %s", status);
+                ASD_log(LogType_Error, "JTAG_shift failed, %d", status);
                 break;
             }
         } else if (cmd >= READ_SCAN_MIN && cmd <= READ_SCAN_MAX) {
@@ -897,7 +906,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
             out_msg.buffer[response_cnt++] = cmd;
             status = determine_shift_end_state(ScanType_Read, &packet, &end_state);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "determine_shift_end_state failed, %s", status);
+                ASD_log(LogType_Error, "determine_shift_end_state failed, %d", status);
                 break;
             }
             status = JTAG_shift(jtag_handler, num_of_bits, 0, NULL,
@@ -905,7 +914,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
                                 (unsigned char*)&(out_msg.buffer[response_cnt]),
                                 end_state);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "JTAG_shift failed, %s", status);
+                ASD_log(LogType_Error, "JTAG_shift failed, %d", status);
                 break;
             }
             response_cnt += num_of_bytes;
@@ -928,7 +937,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
             }
             status = determine_shift_end_state(ScanType_ReadWrite, &packet, &end_state);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "determine_shift_end_state failed, %s", status);
+                ASD_log(LogType_Error, "determine_shift_end_state failed, %d", status);
                 break;
             }
             status = JTAG_shift(jtag_handler, num_of_bits,
@@ -937,7 +946,7 @@ STATUS process_jtag_message(struct spi_message *s_message) {
                                 (unsigned char*)&(out_msg.buffer[response_cnt]),
                                 end_state);
             if(status != ST_OK) {
-                ASD_log(LogType_Error, "JTAG_shift failed, %s", status);
+                ASD_log(LogType_Error, "JTAG_shift failed, %d", status);
                 break;
             }
             response_cnt += num_of_bytes;
@@ -984,6 +993,16 @@ void process_message(extnet_conn_t *p_extcon, struct spi_message *s_message) {
         send_error_message(p_extcon, s_message, ASD_UNKNOWN_ERROR);
         return;
     }
+
+#ifdef CONFIG_JTAG_MSG_FLOW
+    if (jtag_msg_flow == JFLOW_BIC) {
+        if (passthrough_jtag_message(jtag_handler, s_message) != ST_OK) {
+            ASD_log(LogType_Error, "Failed to process JTAG message");
+            send_error_message(p_extcon, s_message, ASD_UNKNOWN_ERROR);
+        }
+        return;
+    }
+#endif
 
     if (process_jtag_message(s_message) != ST_OK) {
         ASD_log(LogType_Error, "Failed to process JTAG message");
@@ -1212,6 +1231,12 @@ void on_message_received(extnet_conn_t *p_extconn,
             if (result == ST_OK && (result = JTAG_initialize(jtag_handler, jtag_mode == JTAG_DRIVER_MODE_SOFTWARE)) != ST_OK) {
                 ASD_log(LogType_Error, "Failed to initialize the jtag_handler");
             }
+
+#ifdef CONFIG_JTAG_MSG_FLOW
+            if (result == ST_OK && (result = JTAG_init_passthrough(jtag_handler, jtag_msg_flow, send_out_msg_on_socket)) != ST_OK) {
+                ASD_log(LogType_Error, "Failed to initialize the passthrough_jtag");
+            }
+#endif
 
             if (result == ST_OK)
                 handlers_initialized = true;

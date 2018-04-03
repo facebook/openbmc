@@ -5262,6 +5262,43 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
 }
 
 int
+pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
+{
+  int sock;
+  int err;
+  struct sockaddr_un server;
+  char sock_path[64] = {0};
+  #define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
+
+  sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock < 0) {
+    err = errno;
+    syslog(LOG_ERR, "%s failed open socket (errno=%d)", __FUNCTION__, err);
+    return -1;
+  }
+
+  server.sun_family = AF_UNIX;
+  sprintf(sock_path, "%s_%d", SOCK_PATH_JTAG_MSG, slot);
+  strcpy(server.sun_path, sock_path);
+
+  if (connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+    err = errno;
+    close(sock);
+    syslog(LOG_ERR, "%s failed connecting stream socket (errno=%d), %s",
+           __FUNCTION__, err, server.sun_path);
+    return -1;
+  }
+
+  if (write(sock, data, data_len) < 0) {
+    err = errno;
+    syslog(LOG_ERR, "%s error writing on stream sockets (errno=%d)", __FUNCTION__, err);
+  }
+
+  close(sock);
+  return 0;
+}
+
+int
 pal_ipmb_processing(int bus, void *buf, uint16_t size) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN];

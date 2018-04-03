@@ -107,6 +107,27 @@ typedef struct JTAG_Handler {
     bool sw_mode;
 } JTAG_Handler;
 
+typedef enum {
+    JFLOW_BMC = 1,
+    JFLOW_BIC = 2
+} JFLOW;
+
+struct message_header {
+    uint32_t origin_id : 3;
+    uint32_t reserved  : 1;
+    uint32_t enc_bit   : 1;
+    uint32_t type      : 3;
+    uint32_t size_lsb  : 8;
+    uint32_t size_msb  : 5;
+    uint32_t tag       : 3;
+    uint32_t cmd_stat  : 8;
+} __attribute__((packed));
+
+struct spi_message {
+    struct message_header header;
+    unsigned char* buffer;
+} __attribute__((packed));
+
 JTAG_Handler* SoftwareJTAGHandler(uint8_t fru);
 STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode);
 STATUS JTAG_deinitialize(JTAG_Handler* state);
@@ -121,6 +142,11 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
 STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles);
 STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck);
 STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain);
+
+#ifdef CONFIG_JTAG_MSG_FLOW
+STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callback)(struct spi_message *));
+STATUS passthrough_jtag_message(JTAG_Handler *state, struct spi_message *s_message);
+#endif
 
 #ifdef __cplusplus
 }

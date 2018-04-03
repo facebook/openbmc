@@ -1539,6 +1539,12 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
 }
 
 int __attribute__((weak))
+pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
 pal_set_gpio_value(int gpio_num, uint8_t value) {
   char vpath[64] = {0};
   char *val;

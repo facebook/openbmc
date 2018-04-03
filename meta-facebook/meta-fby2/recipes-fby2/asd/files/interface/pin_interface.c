@@ -62,7 +62,6 @@ static void *gpio_poll_thread(void *arg);
 int pin_initialize(const int fru)
 {
     static bool gpios_polling = false;
-    int *arg;
 
 #ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
@@ -71,13 +70,6 @@ int pin_initialize(const int fru)
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
     }
-
-    arg = malloc(sizeof(arg));
-    if (arg == NULL) {
-      syslog(LOG_ERR, "%s: malloc failed, fru=%d", __FUNCTION__, fru);
-      return ST_ERR;
-    }
-    *arg = fru;
 
     /* Platform specific enables which are required for the ASD feature */
 
@@ -99,7 +91,6 @@ int pin_initialize(const int fru)
       return ST_ERR;
     }
 
-
     // enable FM_JTAG_BIC_TCK_MUX_SEL_N = FM_BIC_JTAG_SEL_N pin
     // active low
     if (bic_set_gpio(fru, FM_JTAG_BIC_TCK_MUX_SEL_N, GPIO_VALUE_LOW)) {
@@ -118,7 +109,7 @@ int pin_initialize(const int fru)
 
     /* Start the GPIO polling threads just once */
     if (gpios_polling == false) {
-        pthread_create(&poll_thread, NULL, gpio_poll_thread, arg);
+        pthread_create(&poll_thread, NULL, gpio_poll_thread, (void *)fru);
         gpios_polling = true;
     } else {
         pthread_mutex_lock(&triggered_mutex);
@@ -279,7 +270,7 @@ static void *gpio_poll_thread(void *fru)
   }
 
   server.sun_family = AF_UNIX;
-  sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, *(int *)fru);
+  sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, (int)fru);
   strcpy(server.sun_path, sock_path);
   unlink (server.sun_path);
   len = strlen (server.sun_path) + sizeof (server.sun_family);
@@ -486,11 +477,6 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
     } else {
       syslog(LOG_ERR, "%s: error getting GPIO. fru: %d", __FUNCTION__, fru);
     }
-
-    // Debug code  - to be removed
-    //  Since BIC does not yet support this GPIO, always set this to not-asserted
-    //  so the ASD test can continue
-    *asserted = false;
 
 #ifdef FBY2_DEBUG
     if (*asserted)

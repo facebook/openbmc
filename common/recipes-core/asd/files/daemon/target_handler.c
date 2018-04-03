@@ -37,6 +37,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define JTAG_CLOCK_CYCLE_MICROSEC 1
 
+#ifdef CONFIG_JTAG_MSG_FLOW
+extern uint8_t jtag_msg_flow;
+#endif
+
 void* worker_thread(void* args);
 STATUS checkXDPstate(Target_Control_Handle* state);
 
@@ -128,6 +132,9 @@ void* worker_thread(void* args)
     while (!state->exit_thread) {
         pthread_mutex_lock(&state->write_config_mutex);
 
+#ifdef CONFIG_JTAG_MSG_FLOW
+      if (jtag_msg_flow != JFLOW_BIC) {
+#endif
         // Power
         if (!pal_get_server_power(state->fru, &curr_power_state) && 
             last_power_state != curr_power_state) {
@@ -217,6 +224,9 @@ void* worker_thread(void* args)
                 }
             }
         }
+#ifdef CONFIG_JTAG_MSG_FLOW
+      }
+#endif
 
         // XDP present detection - This should go last because it can deinit all the pins.
         status = xdp_present_is_event_triggered(state->fru, &triggered);

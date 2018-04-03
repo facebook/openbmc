@@ -17,6 +17,11 @@
       "attribute": {
         "type" : "power_status"
       }
+    },
+    "dc_nvme": {
+      "attribute": {
+        "type" : "power_status"
+      }
     }
   },
   "watchdog": false,

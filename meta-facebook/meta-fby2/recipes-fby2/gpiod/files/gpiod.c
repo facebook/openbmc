@@ -264,9 +264,10 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  // Only monitor the PWRGD_COREPWR & FM_SMI_BMC_N pin
+  // Only monitor the PWRGD_COREPWR & FM_SMI_BMC_N & FM_BIOS_POST_COMPT_N pin
   gpios[PWRGD_COREPWR].flag = 1;
   gpios[FM_SMI_BMC_N].flag = 1;
+  gpios[FM_BIOS_POST_COMPT_N].flag = 1;
 
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
@@ -348,6 +349,16 @@ gpio_monitor_poll(void *ptr) {
   }
 #endif
 
+  //Init POST status
+  gpios[FM_BIOS_POST_COMPT_N].status = GETBIT(o_pin_val, FM_BIOS_POST_COMPT_N);
+  if (gpios[FM_BIOS_POST_COMPT_N].status == gpios[FM_BIOS_POST_COMPT_N].ass_val) {
+    // POST is not ongoing 
+    pal_set_fru_post(fru,0);
+  } else {
+    // POST is ongoing 
+    pal_set_fru_post(fru,1);
+  }
+
   while (1) {
     memset(pwr_state, 0, MAX_VALUE_LEN);
     pal_get_last_pwr_state(fru, pwr_state);
@@ -404,6 +415,9 @@ gpio_monitor_poll(void *ptr) {
             bic_set_gpio(fru, BMC_READY_N, 0);
           } else if (i == FM_SMI_BMC_N) {
             smi_count_start[fru-1] = true;
+          } else if (i == FM_BIOS_POST_COMPT_N) {
+            //Set Post is not ongoing
+            pal_set_fru_post(fru,0);
           }
         } else {
           if (PWRGD_COREPWR == i) {
@@ -423,6 +437,9 @@ gpio_monitor_poll(void *ptr) {
 #endif
           } else if (i == FM_SMI_BMC_N) {
             smi_count_start[fru-1] = false;
+          } else if (i == FM_BIOS_POST_COMPT_N) {
+            //Set Post is ongoing
+            pal_set_fru_post(fru,1);
           }
         }
       }

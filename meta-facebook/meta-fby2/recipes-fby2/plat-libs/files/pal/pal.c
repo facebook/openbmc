@@ -108,6 +108,9 @@
 
 #define REINIT_TYPE_FULL            0
 #define REINIT_TYPE_HOST_RESOURCE   1
+
+#define FAN_WAIT_TIME_AFTER_POST  30
+
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
 
@@ -3147,6 +3150,52 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           return -1;
         }
       }
+      if ((sensor_num == SP_SENSOR_FAN0_TACH) || (sensor_num == SP_SENSOR_FAN1_TACH)) {
+        /* Check whether POST is ongoning or not */
+        uint8_t last_post = 0;
+        uint8_t current_post = pal_is_post_ongoing();
+        long current_time_stamp;
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        current_time_stamp = ts.tv_sec;
+
+        ret = pal_get_last_post(&last_post);
+        if (ret < 0) {
+          pal_set_last_post(0);
+        }
+
+        if (last_post != current_post) {
+          if (current_post == 0) {
+            // set POST end timestamp
+            pal_set_post_end_timestamp(current_time_stamp);
+          }
+          // update POST status;
+          pal_set_last_post(current_post);
+          sprintf(str, "%.2f",*((float*)value));
+          edb_cache_set(key, str);
+          return -1;
+        }
+
+        if (current_post == 1) {
+          // POST is ongoing
+          sprintf(str, "%.2f",*((float*)value));
+          edb_cache_set(key, str);
+          return -1;
+        } else {
+          long post_end_timestamp = 0;
+          int ret = pal_get_post_end_timestamp(&post_end_timestamp);
+          if (ret < 0) {
+            // no timestamp yet
+            pal_set_post_end_timestamp(0);
+          }
+          if (current_time_stamp <  post_end_timestamp + FAN_WAIT_TIME_AFTER_POST ) {
+            // wait for fan speed deassert after POST
+            sprintf(str, "%.2f",*((float*)value));
+            edb_cache_set(key, str);
+            return -1;
+          }
+        }
+      }
     }
     if ((GETBIT(snr_chk->flag, UCR_THRESH) && (*((float*)value) >= snr_chk->ucr)) ||
         (GETBIT(snr_chk->flag, LCR_THRESH) && (*((float*)value) <= snr_chk->lcr))) {
@@ -3227,6 +3276,33 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
           }
           if (!val || !_check_slot_12v_en_time(slot_id)) {
             *flag = GETMASK(SENSOR_VALID);
+          }
+          break;
+        case SP_SENSOR_FAN0_TACH:
+        case SP_SENSOR_FAN1_TACH:
+
+          // Check POST status
+          if (pal_is_post_ongoing()) {
+            // POST is ongoing
+            *flag = CLEARBIT(*flag,UNC_THRESH);
+          } else {            
+            long current_time_stamp = 0;
+            long post_end_timestamp = 0;
+            struct timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            current_time_stamp = ts.tv_sec;
+
+            int ret = pal_get_post_end_timestamp(&post_end_timestamp);
+            if (ret < 0) {
+              // no timestamp yet
+              pal_set_post_end_timestamp(0);
+            }
+
+            if ( current_time_stamp < post_end_timestamp + FAN_WAIT_TIME_AFTER_POST ) {
+              // wait for fan speed deassert after POST
+              *flag = CLEARBIT(*flag,UNC_THRESH);
+            }
+
           }
           break;
       }
@@ -4005,6 +4081,125 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
   sprintf(cvalue, (value > 0) ? "1": "0");
 
   return pal_set_key_value(key, cvalue);
+}
+
+int
+pal_set_fru_post(uint8_t fru, uint8_t value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_post_flag", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
+  return edb_cache_set(key,cvalue);
+}
+
+int
+pal_get_fru_post(uint8_t fru, uint8_t *value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_post_flag", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  ret = edb_cache_get(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+  *value = atoi(cvalue);
+  return 0;
+}
+
+uint8_t
+pal_is_post_ongoing(){
+  uint8_t is_post_ongoing = 0;
+  uint8_t value = 0;
+  for (int fru=1;fru <= 4;fru++) {
+    //get bios post status from kv_store
+    int ret = pal_get_fru_post(fru, &value);
+    if (ret < 0) {
+      //default value
+      value = 0;
+    }
+    is_post_ongoing |= value;
+  }
+  return is_post_ongoing;
+}
+
+int
+pal_set_last_post(uint8_t value) {
+
+  char* key = "last_post_status";
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  sprintf(cvalue, (value > 0) ? "1" : "0");
+
+  return edb_cache_set(key,cvalue);
+}
+
+int
+pal_get_last_post(uint8_t *value) {
+
+  char* key = "last_post_status";
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  ret = edb_cache_get(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+  *value = atoi(cvalue);
+  return 0;
+}
+
+int
+pal_set_post_end_timestamp(long value) {
+
+  char* key = "post_end_timestamp";
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  sprintf(cvalue, "%ld", value);
+
+  return edb_cache_set(key,cvalue);
+}
+
+int
+pal_get_post_end_timestamp(long *value) {
+
+  char* key = "post_end_timestamp";
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  ret = edb_cache_get(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+
+  *value = (long) strtoul(cvalue, NULL, 10);
+  return 0;
 }
 
 int
@@ -5517,5 +5712,3 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log_p1, char *error_lo
 
   return 0;
 }
-
-

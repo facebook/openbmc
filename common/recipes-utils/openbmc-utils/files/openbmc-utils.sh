@@ -118,12 +118,16 @@ gpio_set() {
 gpio_get() {
     local gpio
     local val
+    local keepdirection
     gpio=$(gpio_name2value $1)
     dir=$(gpio_dir $gpio)
+    keepdirection="$2"
     if [ ! -d ${dir} ]; then
         echo $gpio > $GPIOEXPORT
     fi
-    echo in > ${dir}/direction
+    if [ "$keepdirection" != "keepdirection" ]; then
+        echo in > ${dir}/direction
+    fi
     cat ${dir}/value
 }
 

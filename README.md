@@ -66,22 +66,23 @@ Note: In the instruction set below, references to <platform> for some of the ste
 * **<platform>-image-<platform>.cpio.lzma.u-boot** - This is the rootfs for the board
 * **flash-<platform>** - This is the complete flash image including u-boot, kernel, and the rootfs.
 
-## Kernel Development
-By default, OpenBMC build process fetches and build Linux kernel directly from GitHub repository.
-To make local kernel changes and build with the modified kernel:
-  1. Clone kernel source
-```
-$ cd poky
-$ git clone -b openbmc/helium/4.1 https://github.com/theopolis/linux.git meta-openbmc/meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1
-```
-  2. Update build recipes to point to local kernel source directory
-in `meta-aspeed/conf/machine/include/ast2520.inc`, add these 2 lines below the `PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed` line
+## Kernel & U-Boot Development
+By default, OpenBMC build process fetches and build Linux kernel and U-boot directly from GitHub repository.
+- To make local kernel changes and build with the modified kernel:
 
-(check `meta-facebook/meta-<platfom>/conf/machine/<platfom>.conf` for the correct `astxxxx.inc` file to modify)
-
+In the build directory, run
 ```
-INHERIT += "externalsrc"
-EXTERNALSRC_pn-linux-aspeed = "<dir>/meta-openbmc/meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1"
+$ devtool modify linux-aspeed
+```
+or
+```
+$ devtool modify u-boot
+```
+This will create local Linux package under <buildir>/workspace/sources/linux-aspeed  for development
+
+- To go back to default recipes, run
+```
+$ devtool reset linux-aspeed
 ```
 
 ## How can I contribute

@@ -17,4 +17,6 @@ IMAGE_INSTALL += " \
   ast-mdio \
   bitbang \
   mterm \
+  openbmc-gpio \
+  openbmc-utils \
   "

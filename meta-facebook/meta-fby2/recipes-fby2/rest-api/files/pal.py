@@ -41,34 +41,39 @@ def pal_get_server_power(slot_id):
         return status.value
 
 def pal_server_action(slot_id, command):
-    if command == 'power-off' or command == 'power-on' or command == 'power-reset' or command == 'power-cycle' or command == 'graceful-shutdown':
-        if lpal_hndl.pal_is_slot_server(slot_id) == 0:
-            return -2
-    sid = str(slot_id)
+
+    plat_name = pal_get_platform_name().decode()
+
+    if 'FBTTN' in plat_name and 'identify' in command:
+        fru = ''
+    elif 'FBTTN' in plat_name:
+        fru = 'server'
+    else:
+        fru = 'slot'+str(slot_id)
+
     if command == 'power-off':
-        cmd = '/usr/local/bin/power-util slot'+sid+' off'
+        cmd = '/usr/local/bin/power-util '+fru+' off'
     elif command == 'power-on':
-        cmd = '/usr/local/bin/power-util slot'+sid+' on'
+        cmd = '/usr/local/bin/power-util '+fru+' on'
     elif command == 'power-reset':
-        cmd = '/usr/local/bin/power-util slot'+sid+' reset'
+        cmd = '/usr/local/bin/power-util '+fru+' reset'
     elif command == 'power-cycle':
-        cmd = '/usr/local/bin/power-util slot'+sid+' cycle'
+        cmd = '/usr/local/bin/power-util '+fru+' cycle'
     elif command == 'graceful-shutdown':
-        cmd = '/usr/local/bin/power-util slot'+sid+' graceful-shutdown'
+        cmd = '/usr/local/bin/power-util '+fru+' graceful-shutdown'
     elif command == '12V-off':
-        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-off'
+        cmd = '/usr/local/bin/power-util '+fru+' 12V-off'
     elif command == '12V-on':
-        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-on'
+        cmd = '/usr/local/bin/power-util '+fru+' 12V-on'
     elif command == '12V-cycle':
-        cmd = '/usr/local/bin/power-util slot'+sid+' 12V-cycle'
+        cmd = '/usr/local/bin/power-util '+fru+' 12V-cycle'
     elif command == 'identify-on':
-        cmd = '/usr/bin/fpc-util slot'+sid+' --identify on'
+        cmd = '/usr/bin/fpc-util '+fru+' --identify on'
     elif command == 'identify-off':
-        cmd = '/usr/bin/fpc-util slot'+sid+' --identify off'
+        cmd = '/usr/bin/fpc-util '+fru+' --identify off'
     else:
         return -1
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-    ret = ret.decode()
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     if ret.find("Usage:") != -1 or ret.find("fail ") != -1:
         return -1
     else:
@@ -84,18 +89,13 @@ def pal_sled_action(command):
     else:
         return -1
 
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-    ret = ret.decode()
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     if ret.startswith( 'Usage' ):
         return -1
     else:
         return 0
 
 def pal_set_key_value(key, value):
-    ret = lpal_hndl.pal_set_key_value(key.encode('ascii'), value.encode('ascii'))
-    if ret:
-        return -1;
-    else:
-        return 0;
-
-    
+    cmd = '/usr/local/bin/cfg-util %s %s' % (key,value)
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+    return ret;

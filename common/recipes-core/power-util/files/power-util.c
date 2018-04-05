@@ -174,11 +174,11 @@ static bool can_change_power(uint8_t fru)
     sprintf(fruname, "fru%d", fru);
   }
   if (pal_is_fw_update_ongoing(fru)) {
-    printf("FW update for %s is ongoing, block the power controling.\n", fruname);
+    printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
     exit(-1);
   }
   if (pal_is_crashdump_ongoing(fru)) {
-    printf("Crashdump for %s is ongoing, block the power controling.\n", fruname);
+    printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
     exit(-1);
   }
   return true;

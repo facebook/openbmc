@@ -29,7 +29,6 @@ IMAGE_INSTALL += " \
   po-eeprom \
   repeater  \
   retimer  \
-  sensor-setup \
   kcsd \
   spatula \
   stress  \

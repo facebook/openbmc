@@ -34,6 +34,7 @@ SRC_URI += "file://board-utils.sh \
       file://repeater_verify.sh \
       file://galaxy100_cp2112_i2c_flush.sh \
       file://galaxy100_cp2112_toggle_reset.sh \
+      file://setup_i2c.sh \
       "
 
 RDEPENDS_${PN} += " python3 bash"
@@ -63,18 +64,28 @@ do_install_board() {
     install -m 0755 galaxy100_cp2112_i2c_flush.sh ${D}${localbindir}/galaxy100_cp2112_i2c_flush.sh
     install -m 0755 galaxy100_cp2112_toggle_reset.sh ${D}${localbindir}/galaxy100_cp2112_toggle_reset.sh
 
-    # init
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
-    # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-    update-rc.d -r ${D} mount_data0.sh start 03 S .
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-    update-rc.d -r ${D} rc.early start 04 S .
-
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
     install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+
+    # init
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+
+    # rc.S
+
+    # the script to mount /mnt/data
+    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+    update-rc.d -r ${D} mount_data0.sh start 03 S .
+
+    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+    update-rc.d -r ${D} rc.early start 04 S .
+
+    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    update-rc.d -r ${D} setup_i2c.sh start 60 S .
+
+    install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
+    update-rc.d -r ${D} fix_fru_eeprom.py start 61 S .
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
@@ -83,8 +94,11 @@ do_install_board() {
 
     install -m 755 start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
     update-rc.d -r ${D} start_us_monitor.sh start 84 S .
+
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
+
+    # rc.[2345]
 
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
@@ -95,8 +109,6 @@ do_install_board() {
     install -m 755 sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh
     update-rc.d -r ${D} sensors_config_fix.sh start 100 2 3 4 5 .
 
-    install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
-    update-rc.d -r ${D} fix_fru_eeprom.py start 56 S .
 }
 
 FILES_${PN} += "${sysconfdir}"

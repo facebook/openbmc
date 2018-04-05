@@ -1,11 +1,12 @@
 #!/bin/bash
 
 ME_UTIL="/usr/local/bin/me-util"
+FRUID_UTIL="/usr/local/bin/fruid-util"
 SLOT_NAME=$1
 
 function is_numeric {
   if [ $(echo "$1" | grep -cE "^\-?([[:xdigit:]]+)(\.[[:xdigit:]]+)?$") -gt 0 ]; then
-    return 1 
+    return 1
   else
     return 0
   fi
@@ -82,6 +83,16 @@ echo "Auto Dump for $SLOT_NAME Started"
 #HEADER LINE for the dump
 $DUMP_SCRIPT "time" > $CRASHDUMP_FILE
 
+# Get BMC version & hostname
+strings /dev/mtd0 | grep 2016.07 >> $CRASHDUMP_FILE
+uname -a >> $CRASHDUMP_FILE
+cat /etc/issue >> $CRASHDUMP_FILE
+
+# Get FRUID info
+echo "Get FRUID Info:" >> $CRASHDUMP_FILE
+RES=$($FRUID_UTIL $SLOT_NAME)
+echo "$RES" >> $CRASHDUMP_FILE
+
 # Get Device ID
 echo "Get Device ID:" >> $CRASHDUMP_FILE
 RES=$($ME_UTIL $SLOT_NAME 0x18 0x01)
@@ -104,7 +115,7 @@ RES=$($ME_UTIL $SLOT_NAME 0x18 0x04)
 echo "$RES" >> $CRASHDUMP_FILE
 CC=$(echo $RES| awk '{print $1;}')
 # Check whether the first parameter is numeric or not
-# If not, then it is an error message from me-util 
+# If not, then it is an error message from me-util
 is_numeric $CC
 if [ "$?" == 1 ] ;then
   if [ $CC -ne 55 ] ;then

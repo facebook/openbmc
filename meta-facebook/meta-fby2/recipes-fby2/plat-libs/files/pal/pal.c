@@ -5428,6 +5428,13 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
     fby2_common_set_ierr(slot,false);
   }
 
+  sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, slot);
+  if (access(sock_path, F_OK) == -1) {
+    // SOCK_PATH_ASD_BIC  doesn't exist, means ASD daemon for this
+    // slot is not running, exit
+    return 0;
+  }
+
   sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock < 0) {
     err = errno;
@@ -5436,7 +5443,6 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   }
 
   server.sun_family = AF_UNIX;
-  sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, slot);
   strcpy(server.sun_path, sock_path);
 
   if (connect(sock, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {

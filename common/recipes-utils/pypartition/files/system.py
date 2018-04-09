@@ -36,6 +36,7 @@ import logging
 import logging.handlers
 import os
 import re
+import socket
 import subprocess
 import sys
 
@@ -74,12 +75,19 @@ def get_logger():
     logger.setLevel(logging.INFO)
     loggers = [(logging.StreamHandler(), standalone)]  # type: LogDetailsType
     if is_openbmc():
-        loggers.extend([
-            (logging.FileHandler('/mnt/data/pypartition.log'),
-             standalone),
-            (logging.handlers.SysLogHandler('/dev/log'),
-             logging.Formatter('pypartition: %(message)s')),
-        ])
+        try:
+            loggers.append((logging.FileHandler('/mnt/data/pypartition.log'),
+                            standalone))
+        except IOError:
+            print('Error initializing log file in /mnt/data; using /tmp.',
+                  file=sys.stderr)
+            loggers.append((logging.FileHandler('/tmp/pypartition.log'),
+                            standalone))
+        try:
+            loggers.append((logging.handlers.SysLogHandler('/dev/log'),
+                            logging.Formatter('pypartition: %(message)s')))
+        except socket.error:
+            print('Error initializing syslog; skipping.', file=sys.stderr)
     for (handler, formatter) in loggers:
         handler.setFormatter(formatter)
         logger.addHandler(handler)

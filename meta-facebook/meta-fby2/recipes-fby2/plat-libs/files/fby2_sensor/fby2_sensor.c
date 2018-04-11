@@ -436,8 +436,8 @@ sensor_thresh_array_init() {
   // setting this to 120 for BMC loggintg purpose
   // (also in case older NCI FW is used that doesn't have auto-shutdown feature)
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UNR_THRESH] = 120;
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UNC_THRESH] = 105; // for logging purpose
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
+  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 105;
+  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UNC_THRESH] = 95; // for logging purpose
   init_done = true;
 }
 

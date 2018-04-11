@@ -1008,7 +1008,7 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
   uint8_t buf[32];
   uint8_t hdr_tl[] = {0x00,0x01,0x4c,0x1c,0x00,0x46,0x30,0x39};
   uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   int ret;
   uint8_t server_type = 0xFF;
   uint8_t hdr_ep[] = {0x00,0x01,0x4c,0x1c,0x00,0x46,0x30,0x39,0x41};
@@ -1020,6 +1020,8 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
   }
 
   switch (server_type) {
+    case SERVER_TYPE_RC:
+      return 0;
     case SERVER_TYPE_EP:
       hdr = hdr_ep;
       hdr_size = sizeof(hdr_ep);

@@ -24,13 +24,13 @@ int BiosExtComponent::update(string image) {
   int ret;
   uint8_t status;
   int retry_count = 60;
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   uint8_t server_type = 0xFF;
 #endif
 
   try {
     server.ready();
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
     ret = fby2_get_server_type(slot_id, &server_type);
     if (ret) {
       syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
@@ -62,8 +62,8 @@ int BiosExtComponent::update(string image) {
       return -1;
     }
 
-#if defined(CONFIG_FBY2_EP)
-    if (server_type != SERVER_TYPE_EP) {
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
+    if (server_type != SERVER_TYPE_EP && server_type != SERVER_TYPE_RC) {
       me_recovery(slot_id, RECOVERY_MODE);
       sleep(1);
     }

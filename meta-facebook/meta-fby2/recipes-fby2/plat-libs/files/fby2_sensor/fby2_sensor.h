@@ -160,9 +160,9 @@ enum {
   BIC_RC_SENSOR_CVR_CBF_POUT = 0x35,
   BIC_RC_SENSOR_INA230_VOL = 0x36,
   BIC_RC_SENSOR_INA230_POWER = 0x37,
-  BIC_RC_SENSOR_SYSTEM_STATUS = 0x64, // Discrete
-  BIC_RC_SENSOR_VR_HOT = 0x65,  // Discrete
-  BIC_RC_SENSOR_SYS_BOOTING_STS = 0x66,  // Discrete
+  BIC_RC_SENSOR_SYSTEM_STATUS = 0x10, // Discrete
+  BIC_RC_SENSOR_VR_HOT = 0xB2,  // Discrete
+  BIC_RC_SENSOR_SYS_BOOTING_STS = 0x7E,  // Discrete
   BIC_RC_SENSOR_PROCHOT_EXT = 0xC8,
   BIC_RC_SENSOR_THEM_TRIP = 0xC9,
   BIC_RC_SENSOR_IMC_BOOT_ERR = 0xCA,
@@ -312,7 +312,7 @@ extern size_t dc_sensor_cnt;
 
 #ifdef CONFIG_FBY2_RC
   extern size_t bic_rc_sensor_cnt;
-  extern size_t dc_rc_sensor_cnt;
+  extern size_t bic_rc_discrete_cnt;
 #endif
 
 #ifdef CONFIG_FBY2_EP

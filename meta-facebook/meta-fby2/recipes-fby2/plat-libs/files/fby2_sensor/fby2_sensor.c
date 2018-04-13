@@ -1666,6 +1666,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   int i;
   char path[LARGEST_DEVICE_NAME];
   uint8_t status;
+  uint8_t server_type = 0xFF;
 
   switch (fru) {
     case FRU_SLOT1:
@@ -1688,13 +1689,40 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           discrete = false;
 
           i = 0;
+#if defined(CONFIG_FBY2_RC)
+          ret = fby2_get_server_type(fru, &server_type);
+          if (ret) {
+            syslog(LOG_ERR, "%s, Get server type failed", __func__);
+          }
+          switch (server_type) {
+            case SERVER_TYPE_RC:
+              while (i < bic_rc_discrete_cnt) {
+                if (sensor_num == bic_rc_discrete_list[i++]) {
+                  discrete = true;
+                  break;
+                }
+              }
+              break;
+            case SERVER_TYPE_TL:
+              while (i < bic_discrete_cnt) {
+                if (sensor_num == bic_discrete_list[i++]) {
+                  discrete = true;
+                  break;
+                }
+              }
+              break;
+            default:
+              syslog(LOG_ERR, "%s, Undefined server type", __func__);
+              return -1;
+          }
+#else
           while (i < bic_discrete_cnt) {
             if (sensor_num == bic_discrete_list[i++]) {
               discrete = true;
               break;
             }
           }
-
+#endif
           return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
         case SLOT_TYPE_CF:
           //Crane Flat

@@ -2756,7 +2756,13 @@ oem_get_fw_info ( unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
   int ret;
 
-  ret = pal_get_fw_info(req->data[0], res->data, res_len);
+  if (req_len != 4) {
+    res->cc = CC_INVALID_LENGTH;
+    *res_len = 0;
+    return;
+  }
+
+  ret = pal_get_fw_info(req->payload_id, req->data[0], res->data, res_len);
 
   if (ret != 0) {
     res->cc = CC_UNSPECIFIED_ERROR;

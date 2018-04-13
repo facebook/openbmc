@@ -5276,9 +5276,98 @@ void pal_post_end_chk(uint8_t *post_end_chk) {
 }
 
 int
-pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
+  uint8_t max_index = FW_P1V05_VR;
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+  int ret;
+  uint8_t server_type = 0xFF;
+
+  ret = fby2_get_server_type(fru, &server_type);
+  if (ret) {
+    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
     return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_RC:
+      max_index = FW_DDR423_VR;
+      break;
+    case SERVER_TYPE_EP:
+      max_index = FW_DDR_BH_VR;
+      break;
+  }
+#endif
+
+  if (target > max_index)
+    return -1;
+
+  if (target >= FW_CPLD) {
+    if (bic_get_fw_ver(fru, target, res))
+      return -1;
+
+    switch (target) {
+      case FW_CPLD:
+        *res_len = 4;
+        break;
+      case FW_BIC:
+      case FW_BIC_BOOTLOADER:
+        *res_len = 2;
+        break;
+      default:
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+        switch (server_type) {
+          case SERVER_TYPE_RC:
+            switch (target) {
+              case FW_IMC:
+                *res_len = 8;
+                break;
+              default:
+                *res_len = 5;
+                break;
+            }
+            break;
+          case SERVER_TYPE_EP:
+            switch (target) {
+              case FW_M3:
+              case FW_DDR_AG_VR:
+              case FW_DDR_BH_VR:
+                *res_len = 2;
+                break;
+              default:
+                *res_len = 4;
+                break;
+            }
+            break;
+          default:
+            switch (target) {
+              case FW_ME:
+                *res_len = 5;
+                break;
+              default:
+                *res_len = 4;
+                break;
+            }
+            break;
+        }
+#else
+        switch (target) {
+          case FW_ME:
+            *res_len = 5;
+            break;
+          default:
+            *res_len = 4;
+            break;
+        }
+#endif
+        break;
+    }
+  } else {
+    pal_get_sysfw_ver(fru, res);
+    *res_len = SIZE_SYSFW_VER;
+  }
+
+  return 0;
 }
 
 int

@@ -6331,7 +6331,7 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
 }
 
 int
-pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   return -1;
 }

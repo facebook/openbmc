@@ -1254,7 +1254,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
 }
 
 int __attribute__((weak))
-pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   return PAL_EOK;
 }

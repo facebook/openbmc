@@ -2808,7 +2808,7 @@ pal_get_platform_id(uint8_t *id) {
 }
 
 int
-pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
     return -1;
 }

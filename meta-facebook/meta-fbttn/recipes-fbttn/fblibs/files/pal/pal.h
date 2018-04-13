@@ -305,7 +305,7 @@ unsigned char pal_sum_error_code(void);
 void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_post_end_chk(uint8_t *post_end_chk);
-int pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len);
+int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_get_error_code(uint8_t* data, uint8_t* error_count);
 int pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len);
 void pal_add_cri_sel(char *str);

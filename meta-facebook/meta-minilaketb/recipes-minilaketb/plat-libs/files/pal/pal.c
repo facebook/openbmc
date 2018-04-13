@@ -4480,7 +4480,7 @@ void pal_post_end_chk(uint8_t *post_end_chk) {
 }
 
 int
-pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
     return -1;
 }

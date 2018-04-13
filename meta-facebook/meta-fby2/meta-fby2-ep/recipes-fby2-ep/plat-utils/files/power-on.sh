@@ -87,6 +87,7 @@ sync_date()
         [ $(echo $output | wc -c) != 12 ] && continue
         echo Syncing up BMC time with server$i...
         date -s @$((16#$(echo $output | awk '{print $4$3$2$1}')))
+        test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
         break
       fi
     done

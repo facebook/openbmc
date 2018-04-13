@@ -65,7 +65,7 @@ echo "Setup fan speed... "
 #esac
 
 echo "Run FSC 4 RCs Config"
-cp /etc/FSC_FBRC_EVT_4RC_config.json ${default_fsc_config_path}
+cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
 
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50

@@ -508,6 +508,9 @@ pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num,
       case MEMORY_ERR_LOG_DIS:
         sprintf(name, "MEMORY_ERR_LOG_DIS");
         break;
+      case PROCHOT_EXT:
+        sprintf(name, "PROCHOT_EXT");
+        break;
       case PWR_ERR:
         sprintf(name, "PWR_ERR");
         break;

@@ -26,6 +26,8 @@ SRC_URI += "file://board-utils.sh \
             file://reset_brcm.sh \
             file://setup_board.sh \
             file://setup_i2c.sh \
+            file://sol.sh \
+            file://us_console.sh \
             file://wedge_power.sh \
            "
 
@@ -35,6 +37,8 @@ OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     fpga_ver.sh \
     reset_brcm.sh \
+    sol.sh \
+    us_console.sh \
     wedge_power.sh \
     "
 

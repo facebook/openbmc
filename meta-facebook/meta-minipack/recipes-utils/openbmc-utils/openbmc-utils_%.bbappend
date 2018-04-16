@@ -18,8 +18,10 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://board-utils.sh \
+            file://cpld_ver.sh \
             file://disable_watchdog.sh \
             file://eth0_mac_fixup.sh \
+            file://fpga_ver.sh \
             file://power-on.sh \
             file://reset_brcm.sh \
             file://setup_board.sh \
@@ -29,7 +31,9 @@ SRC_URI += "file://board-utils.sh \
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
+    cpld_ver.sh \
     disable_watchdog.sh \
+    fpga_ver.sh \
     reset_brcm.sh \
     wedge_power.sh \
     "

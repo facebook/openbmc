@@ -53,9 +53,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AST_JTAG_SIOCFREQ         _IOW( JTAGIOC_BASE, 3, unsigned int)
 #define AST_JTAG_GIOCFREQ         _IOR( JTAGIOC_BASE, 4, unsigned int)
 #define AST_JTAG_BITBANG          _IOWR(JTAGIOC_BASE, 5, struct tck_bitbang)
-#define AST_JTAG_SET_TAPSTATE     _IOW( JTAGIOC_BASE, 6, unsigned int)
+#define AST_JTAG_SET_TAPSTATE     _IOW( JTAGIOC_BASE, 6, struct tap_state_param)
 #define AST_JTAG_READWRITESCAN    _IOWR(JTAGIOC_BASE, 7, struct scan_xfer)
-#define AST_JTAG_SLAVECONTLR      _IOW( JTAGIOC_BASE, 8, unsigned int)
+#define AST_JTAG_SLAVECONTLR      _IOW( JTAGIOC_BASE, 8, struct controller_mode_param)
+#define AST_JTAG_SET_TCK          _IOW( JTAGIOC_BASE, 9, struct set_tck_param)
+#define AST_JTAG_GET_TCK          _IOR( JTAGIOC_BASE, 10, struct get_tck_param)
+
+typedef enum xfer_mode {
+    HW_MODE = 0,
+    SW_MODE
+} xfer_mode;
 
 struct tck_bitbang {
     unsigned char     tms;
@@ -64,12 +71,35 @@ struct tck_bitbang {
 };
 
 struct scan_xfer {
+    xfer_mode        mode;        // Hardware or software mode
+    unsigned int     tap_state;   // Current tap state
     unsigned int     length;      // number of bits to clock
     unsigned char    *tdi;        // data to write to tap (optional)
     unsigned int     tdi_bytes;
     unsigned char    *tdo;        // data to read from tap (optional)
     unsigned int     tdo_bytes;
     unsigned int     end_tap_state;
+};
+
+struct set_tck_param {
+    xfer_mode        mode;        // Hardware or software mode
+    unsigned int     tck;         // This can be treated differently on systems as needed. It can be a divisor or actual frequency as needed.
+};
+
+struct get_tck_param {
+    xfer_mode        mode;        // Hardware or software mode
+    unsigned int     tck;         // This can be treated differently on systems as needed. It can be a divisor or actual frequency as needed.
+};
+
+struct tap_state_param {
+    xfer_mode        mode;        // Hardware or software mode
+    unsigned int     from_state;
+    unsigned int     to_state;
+};
+
+struct controller_mode_param {
+    xfer_mode        mode;        // Hardware or software mode
+    unsigned int     controller_mode;
 };
 
 enum {
@@ -135,15 +165,20 @@ STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi)
 }
 
 // user level access to set the AST2500 JTAG controller in slave or master mode
-STATUS JTAG_set_cntlr_mode(JTAG_Handler *state, const JTAGDriverState setMode)
+STATUS JTAG_set_cntlr_mode(JTAG_Handler* state, const JTAGDriverState setMode)
 {
+    struct controller_mode_param params = {0};
+    params.mode = state->sw_mode ? SW_MODE : HW_MODE;
+
     if ((setMode < JTAGDriverState_Master) || (setMode > JTAGDriverState_Slave)) {
         syslog(LOG_ERR, "An invalid JTAG controller state was used");
         return ST_ERR;
     }
+
+    params.controller_mode = setMode;
     syslog(LOG_DEBUG, "Setting JTAG controller mode to %s.",
             setMode == JTAGDriverState_Master ? "MASTER" : "SLAVE");
-    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SLAVECONTLR, setMode) < 0) {
+    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SLAVECONTLR, &params) < 0) {
         syslog(LOG_ERR, "ioctl AST_JTAG_SLAVECONTLR failed");
         return ST_ERR;
     }
@@ -221,7 +256,9 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
     if (state == NULL)
         return ST_ERR;
 
+    state->sw_mode = sw_mode;
     if (JTAG_set_target(JTAG_TARGET_CPU) != ST_OK) {
+      syslog(LOG_ERR, "Setting JTAG to CPU failed!\n");
       return ST_ERR;
     }
 
@@ -239,19 +276,6 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 
     if (JTAG_set_cntlr_mode(state, JTAGDriverState_Master) != ST_OK) {
         syslog(LOG_ERR, "Failed to set JTAG mode to master.");
-        goto bail_err;
-    }
-    /* TODO The following two is most probably not needed. */
-    if (JTAG_set_tap_state(state, JtagTLR) != ST_OK ||
-        JTAG_set_tap_state(state, JtagRTI) != ST_OK) {
-        syslog(LOG_ERR, "Failed to set initial TAP state.");
-        goto bail_err;
-    }
-    if (JTAG_set_padding(state, JTAGPaddingTypes_DRPre, 0) != ST_OK ||
-        JTAG_set_padding(state, JTAGPaddingTypes_DRPost, 0) != ST_OK ||
-        JTAG_set_padding(state, JTAGPaddingTypes_IRPre, 0) != ST_OK ||
-        JTAG_set_padding(state, JTAGPaddingTypes_IRPost, 0) != ST_OK) {
-        syslog(LOG_ERR, "Failed to set initial padding states.");
         goto bail_err;
     }
     return ST_OK;
@@ -315,7 +339,12 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
     if (state == NULL)
         return ST_ERR;
 
-    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SET_TAPSTATE, tap_state) < 0) {
+    struct tap_state_param params = {0};
+    params.mode = state->sw_mode ? SW_MODE : HW_MODE;
+    params.from_state = state->active_chain->tap_state;
+    params.to_state = tap_state;
+
+    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SET_TAPSTATE, &params) < 0) {
         syslog(LOG_ERR, "ioctl AST_JTAG_SET_TAPSTATE failed");
         return ST_ERR;
     }
@@ -411,6 +440,8 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                      JtagStates current_tap_state, JtagStates end_tap_state)
 {
     struct scan_xfer scan_xfer = {0};
+    scan_xfer.mode = state->sw_mode ? SW_MODE : HW_MODE;
+    scan_xfer.tap_state = current_tap_state;
     scan_xfer.length = number_of_bits;
     scan_xfer.tdi_bytes = input_bytes;
     scan_xfer.tdi = input;
@@ -429,6 +460,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     if (output != NULL)
         ASD_log_shift((current_tap_state == JtagShfDR), false, number_of_bits, output_bytes, output);
 #endif
+
     return ST_OK;
 }
 
@@ -443,21 +475,26 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
 {
     if (state == NULL)
         return ST_ERR;
-    for (unsigned int i = 0; i < number_of_cycles; i++) {
-        if (JTAG_clock_cycle(state->JTAG_driver_handle, 0, 0) != ST_OK)
-            return ST_ERR;
+    if (state->sw_mode) {
+        for (unsigned int i = 0; i < number_of_cycles; i++) {
+            if (JTAG_clock_cycle(state->JTAG_driver_handle, 0, 0) != ST_OK)
+                return ST_ERR;
+        }
     }
     return ST_OK;
 }
 
 STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck)
 {
-    unsigned int baseFreq = 12000000;
-    unsigned int frequency = baseFreq / tck;
     if (state == NULL)
         return ST_ERR;
-    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SIOCFREQ, frequency) < 0) {
-        syslog(LOG_ERR, "ioctl AST_JTAG_SIOCFREQ failed");
+
+    struct set_tck_param params = {0};
+    params.mode = state->sw_mode ? SW_MODE : HW_MODE;
+    params.tck = tck;
+
+    if (ioctl(state->JTAG_driver_handle, AST_JTAG_SET_TCK, &params) < 0) {
+        syslog(LOG_ERR, "ioctl AST_JTAG_SET_TCK failed");
         return ST_ERR;
     }
     return ST_OK;

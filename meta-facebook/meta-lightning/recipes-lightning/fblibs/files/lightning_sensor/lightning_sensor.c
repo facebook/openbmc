@@ -393,7 +393,7 @@ sensor_thresh_array_init() {
 
   // PEB TEMP SENSORS
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_PCIE_SW_TEMP,
-      95, 93, 0, 0, 0, 0, 0, 2);
+      100, 93, 0, 0, 0, 0, 0, 2);
   assign_sensor_threshold(FRU_PEB, PEB_SENSOR_SYS_INLET_TEMP,
       50, 45, 0, 0, 0, 0, 0, 2);
 
@@ -472,7 +472,7 @@ sensor_thresh_array_init() {
 
       // AMBIENT SENSORS
       assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_AMB_TEMP_0 + i,
-            65, 60, 0, 0, 0, 0, 0, 2);
+            0, 0, 0, 0, 0, 0, 0, 2);
     } else {
       // Default threshold
       assign_sensor_threshold(FRU_PDPB, PDPB_SENSOR_FLASH_TEMP_0 + i,

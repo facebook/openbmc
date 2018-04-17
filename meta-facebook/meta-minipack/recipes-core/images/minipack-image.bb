@@ -30,6 +30,7 @@ IMAGE_INSTALL += " \
   spatula \
   trousers \
   tpm-tools \
+  usb-console \
   watchdog-ctrl \
   "
 IMAGE_FEATURES += " \

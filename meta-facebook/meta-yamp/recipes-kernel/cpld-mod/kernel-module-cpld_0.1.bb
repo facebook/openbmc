@@ -27,6 +27,7 @@ PV = "0.1"
 SRC_URI = "file://Makefile \
            file://supcpld.c \
            file://fancpld.c \
+           file://scdcpld.c \
            file://COPYING \
           "
 

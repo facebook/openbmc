@@ -31,7 +31,7 @@ i2c_device_add 1 0x50 supsfp
 i2c_device_add 2 0x75 pca9548
 
 # Bus  4 - SMBus 5 SCD
-i2c_device_add 4 0x23 scdfpga
+i2c_device_add 4 0x23 scdcpld
 i2c_device_add 4 0x4d max6581
 i2c_device_add 4 0x50 24c512
 

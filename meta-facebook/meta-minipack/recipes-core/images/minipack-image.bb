@@ -17,6 +17,7 @@ IMAGE_INSTALL += " \
   at93cx6-util \
   ast-mdio \
   bcm5396-util \
+  bic-util \
   bitbang \
   cpldupdate \
   flashrom \

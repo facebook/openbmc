@@ -30,6 +30,7 @@ IMAGE_INSTALL += " \
   mterm \
   openbmc-gpio \
   openbmc-utils \
+  sensor-setup \
   spatula \
   trousers \
   tpm-tools \

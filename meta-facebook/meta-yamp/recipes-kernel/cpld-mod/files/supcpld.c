@@ -290,8 +290,8 @@ static const i2c_dev_attr_st supcpld_attr_table[] = {
     0x70, 0, 1,
   },
   {
-    "cou_control",
-    "0x1: Lantch all BMC CTRL signals to CPU\n"
+    "cpu_control",
+    "0x1: Latch all BMC CTRL signals to CPU\n"
     "0x0: Unlatch all BMC CTRL signals to CPU",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,

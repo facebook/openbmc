@@ -27,6 +27,7 @@ IMAGE_INSTALL += " \
   libcpldupdate-dll-echo \
   libcpldupdate-dll-gpio \
   lldp-util \
+  m95m02-util \
   mterm \
   openbmc-gpio \
   openbmc-utils \

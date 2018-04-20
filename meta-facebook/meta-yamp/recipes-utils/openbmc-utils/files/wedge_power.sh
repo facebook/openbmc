@@ -24,6 +24,10 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 prog="$0"
 
+# Disable BMC control so that CPU will not be powered off when
+# BMC is rebooting
+trap 'disable_bmc_control' INT TERM QUIT EXIT
+
 usage() {
     echo "Usage: $prog <command> [command options]"
     echo
@@ -85,7 +89,7 @@ do_on() {
     ret=$?
     if [ $ret -eq 0 ]; then
         echo " Done"
-	      logger "Successfully power on micro-server"
+        logger "Successfully power on micro-server"
     else
         echo " Failed"
         logger "Failed to power on micro-server"
@@ -100,8 +104,10 @@ do_off() {
     ret=$?
     if [ $ret -eq 0 ]; then
         echo " Done"
+        logger "Successfully power off micro-server"
     else
         echo " Failed"
+        logger "Failed to power off micro-server"
     fi
     return $ret
 }

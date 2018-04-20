@@ -19,4 +19,4 @@
 #
 logger "run-dhc6.sh: dhclient -6 Started.."
 pid="/var/run/dhclient6.eth0.pid"
-exec dhclient -6 -d -pf ${pid} eth0 "$@"
+exec dhclient -6 -d -D LL -pf ${pid} eth0 "$@"

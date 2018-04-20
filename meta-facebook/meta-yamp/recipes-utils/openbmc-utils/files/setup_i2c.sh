@@ -69,56 +69,56 @@ i2c_device_add 13 0x60 fanctrl
 # Bus  16 - Muxed LC1 
 i2c_device_add 14 0x4e ucd90120
 i2c_device_add 14 0x42 lcecb
-i2c_device_add 14 0x20 lcio
+i2c_device_add 14 0x20 pca9555
 i2c_device_add 14 0x4c max6658
 i2c_device_add 14 0x50 24c512
 
 # Bus  17 - Muxed LC2 
 i2c_device_add 15 0x4e ucd90120
 i2c_device_add 15 0x42 lcecb
-i2c_device_add 15 0x20 lcio
+i2c_device_add 15 0x20 pca9555
 i2c_device_add 15 0x4c max6658
 i2c_device_add 15 0x50 24c512
 
 # Bus  18 - Muxed LC3 
 i2c_device_add 16 0x4e ucd90120
 i2c_device_add 16 0x42 lcecb
-i2c_device_add 16 0x20 lcio
+i2c_device_add 16 0x20 pca9555
 i2c_device_add 16 0x4c max6658
 i2c_device_add 16 0x50 24c512
 
 # Bus  19 - Muxed LC4 
 i2c_device_add 17 0x4e ucd90120
 i2c_device_add 17 0x42 lcecb
-i2c_device_add 17 0x20 lcio
+i2c_device_add 17 0x20 pca9555
 i2c_device_add 17 0x4c max6658
 i2c_device_add 17 0x50 24c512
 
 # Bus  20 - Muxed LC5 
 i2c_device_add 18 0x4e ucd90120
 i2c_device_add 18 0x42 lcecb
-i2c_device_add 18 0x20 lcio
+i2c_device_add 18 0x20 pca9555
 i2c_device_add 18 0x4c max6658
 i2c_device_add 18 0x50 24c512
 
 # Bus  21 - Muxed LC6 
 i2c_device_add 19 0x4e ucd90120
 i2c_device_add 19 0x42 lcecb
-i2c_device_add 19 0x20 lcio
+i2c_device_add 19 0x20 pca9555
 i2c_device_add 19 0x4c max6658
 i2c_device_add 19 0x50 24c512
 
 # Bus  22 - Muxed LC7 
 i2c_device_add 20 0x4e ucd90120
 i2c_device_add 20 0x42 lcecb
-i2c_device_add 20 0x20 lcio
+i2c_device_add 20 0x20 pca9555
 i2c_device_add 20 0x4c max6658
 i2c_device_add 20 0x50 24c512
 
 # Bus  23 - Muxed LC8 
 i2c_device_add 21 0x4e ucd90120
 i2c_device_add 21 0x42 lcecb
-i2c_device_add 21 0x20 lcio
+i2c_device_add 21 0x20 pca9555
 i2c_device_add 21 0x4c max6658
 i2c_device_add 21 0x50 24c512
 

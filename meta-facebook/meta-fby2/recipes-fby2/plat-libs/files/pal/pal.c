@@ -4009,7 +4009,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
   int ret = -1;
   uint8_t server_type = 0xFF;
   ret = fby2_get_server_type(fru, &server_type);
-  if (ret) { 
+  if (ret) {
     syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
   }
   switch (server_type) {
@@ -4021,12 +4021,33 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
       break;
     default:
       syslog(LOG_ERR, "%s, Undefined server type", __func__);
-      return -1;    
+      return -1;
   }
 #else
   pal_sensor_discrete_check_tl(fru, snr_num, snr_name, o_val, n_val);
 #endif
 
+}
+
+int
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+
+  // If SNR_TYPE is OS_BOOT, sensor name is OS
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return 0;
+    default:
+      if (fby2_sensor_name(fru, snr_num, name) != 0) {
+        break;
+      }
+      return 0;
+  }
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
 }
 
 static int
@@ -4089,8 +4110,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t snr_num = sel[11];
   uint8_t *event_data = &sel[10];
   uint8_t *ed = &event_data[3];
-  char temp_log[512] = {0};
   uint8_t sen_type = event_data[0];
+  char temp_log[512] = {0};
+  bool parsed = false;
 
   switch(snr_num) {
     case MEMORY_ECC_ERR:
@@ -4150,10 +4172,66 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
             (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
       }
       strcat(error_log, temp_log);
-      return 0;
+      parsed = true;
+      break;
     case PROCHOT_EXT:
       strcpy(error_log, "");  //Just show event raw data for now
-      return 0;
+      parsed = true;
+      break;
+    case BIC_SENSOR_SYSTEM_STATUS:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_Thermal_Trip");
+          break;
+        case 0x02:
+          strcat(error_log, "SYS_Throttle");
+          break;
+        case 0x03:
+          strcat(error_log, "PCH_Thermal_Trip");
+          break;
+        case 0x04:
+          strcat(error_log, "FM_Throttle");
+          break;
+        case 0x05:
+          strcat(error_log, "HSC_Throttle");
+          break;
+        case 0x06:
+          strcat(error_log, "MB_Throttle");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+    case BIC_SENSOR_VR_HOT:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_VR_Hot");
+          break;
+        case 0x01:
+          strcat(error_log, "SOC_DIMM_AB_VR_Hot");
+          break;
+        case 0x02:
+          strcat(error_log, "SOC_DIMM_DE_VR_Hot");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+  }
+
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
   }
 
   pal_parse_sel_helper(fru, sel, error_log);

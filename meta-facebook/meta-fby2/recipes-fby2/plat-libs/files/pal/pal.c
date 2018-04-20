@@ -5177,7 +5177,7 @@ pal_nic_otp_disable (float val) {
       pal_get_server_power(slot, &status);
       if ((SERVER_12V_ON != status) && (1 == otp_server_12v_off_flag[slot])) {
         // power on server 12V HSC
-        syslog(LOG_CRIT, "FRU: %u, Power On Server 12V due to NIC temp UCR deassert. (val = %.2f)", slot, val);
+        syslog(LOG_CRIT, "FRU: %u, Power On Server 12V due to NIC temp UNC deassert. (val = %.2f)", slot, val);
         pal_get_last_pwr_state(slot, pwr_state);
         ret = server_12v_on(slot);
         if (ret) {
@@ -5367,7 +5367,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
       sprintf(crisel, "%s %s %.2fV - DEASSERT", snr_desc->name, thresh_name, val);
       break;
     case MEZZ_SENSOR_TEMP:
-      if (thresh <= UNC_THRESH) {
+      if (thresh == UNC_THRESH) {
         pal_nic_otp_disable(val);
       }
       return;

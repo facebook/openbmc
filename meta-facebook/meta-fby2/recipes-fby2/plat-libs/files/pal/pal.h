@@ -51,6 +51,9 @@ extern "C" {
 
 #define MAX_NIC_TEMP_RETRY 3
 
+#define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
+#define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

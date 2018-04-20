@@ -304,6 +304,22 @@ static const struct power_coeff pwr_cali_table[] = {
   { 0.0,    0.0 }
 };
 
+static const char *sock_path_asd_bic[MAX_NODES+1] = {
+  "",
+  SOCK_PATH_ASD_BIC "_1",
+  SOCK_PATH_ASD_BIC "_2",
+  SOCK_PATH_ASD_BIC "_3",
+  SOCK_PATH_ASD_BIC "_4"
+};
+
+static const char *sock_path_jtag_msg[MAX_NODES+1] = {
+  "",
+  SOCK_PATH_JTAG_MSG "_1",
+  SOCK_PATH_JTAG_MSG "_2",
+  SOCK_PATH_JTAG_MSG "_3",
+  SOCK_PATH_JTAG_MSG "_4"
+};
+
 //check power policy and power state to power on/off server after AC power restore
 static void
 pal_power_policy_control(uint8_t slot_id, char *last_ps) {
@@ -5615,8 +5631,6 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   int sock;
   int err;
   struct sockaddr_un server;
-  char sock_path[64] = {0};
-  #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
 
   if ((data[0] == PLTRST_N) && (data[1] == 0x01)) {
     if (fby2_common_get_ierr(slot)) {
@@ -5625,9 +5639,8 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
     fby2_common_set_ierr(slot,false);
   }
 
-  sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, slot);
-  if (access(sock_path, F_OK) == -1) {
-    // SOCK_PATH_ASD_BIC  doesn't exist, means ASD daemon for this
+  if (access(sock_path_asd_bic[slot], F_OK) == -1) {
+    // SOCK_PATH_ASD_BIC doesn't exist, means ASD daemon for this
     // slot is not running, exit
     return 0;
   }
@@ -5640,7 +5653,7 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   }
 
   server.sun_family = AF_UNIX;
-  strcpy(server.sun_path, sock_path);
+  strcpy(server.sun_path, sock_path_asd_bic[slot]);
 
   if (connect(sock, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
     err = errno;
@@ -5665,8 +5678,12 @@ pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   int sock;
   int err;
   struct sockaddr_un server;
-  char sock_path[64] = {0};
-  #define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
+
+  if (access(sock_path_jtag_msg[slot], F_OK) == -1) {
+    // SOCK_PATH_JTAG_MSG doesn't exist, means ASD daemon for this
+    // slot is not running, exit
+    return 0;
+  }
 
   sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock < 0) {
@@ -5676,8 +5693,7 @@ pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   }
 
   server.sun_family = AF_UNIX;
-  sprintf(sock_path, "%s_%d", SOCK_PATH_JTAG_MSG, slot);
-  strcpy(server.sun_path, sock_path);
+  strcpy(server.sun_path, sock_path_jtag_msg[slot]);
 
   if (connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
     err = errno;

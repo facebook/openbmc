@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,11 +50,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openbmc/pal.h>
 #include <facebook/bic.h>
 
-#define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
-
 // Enable to print IR/DR trace to syslog
 //#define DEBUG
-
 
 
 // Enable FBY2-specific debug messages
@@ -155,6 +153,7 @@ static STATUS perform_shift(JTAG_Handler* state , unsigned int number_of_bits,
                      JtagStates current_tap_state, JtagStates end_tap_state);
 
 
+static int m_slot_id = -1;
 
 
 // debug helper functions
@@ -287,14 +286,18 @@ bail_err:
 
 STATUS JTAG_deinitialize(JTAG_Handler* state)
 {
-   STATUS result = ST_OK;
+    STATUS result = ST_OK;
 
 #ifdef FBY2_DEBUG
     print_jtag_state(__FUNCTION__, state);
 #endif
 
-   if (state == NULL)
-       return ST_ERR;
+    if (state == NULL)
+        return ST_ERR;
+
+    if (bic_asd_init(state->fru, 0xFF) < 0) {
+        syslog(LOG_ERR, "1S_ASD_DEINIT failed, slot%d", state->fru);
+    }
 
     return result;
 }
@@ -848,6 +851,20 @@ STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain) {
     return ST_OK;
 }
 
+static void asd_sig_handler(int sig)
+{
+    char sock_path[64];
+
+    if (bic_asd_init(m_slot_id, 0xFF) < 0) {
+        syslog(LOG_ERR, "1S_ASD_DEINIT failed, slot%d", m_slot_id);
+    }
+
+    sprintf(sock_path, "%s_%d", SOCK_PATH_ASD_BIC, m_slot_id);
+    unlink(sock_path);
+    sprintf(sock_path, "%s_%d", SOCK_PATH_JTAG_MSG, m_slot_id);
+    unlink(sock_path);
+}
+
 static void *out_msg_thread(void *arg)
 {
     int sock, msgsock, n, len, ret;
@@ -958,17 +975,31 @@ static void *out_msg_thread(void *arg)
 STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callback)(struct spi_message *))
 {
     static bool om_thread = false;
+    static bool sig_init = false;
     static pthread_t om_tid;
-    uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
-    uint8_t rbuf[8] = {0x00};
-    uint8_t rlen = 0;
     uint8_t slot_id;
     int *arg;
+    struct sigaction sa;
 
     if (state == NULL) {
         return ST_ERR;
     }
     slot_id = state->fru;
+
+    if (sig_init == false) {
+      sa.sa_handler = asd_sig_handler;
+      sa.sa_flags = 0;
+      sigemptyset(&sa.sa_mask);
+
+      sigaction(SIGHUP, &sa, NULL);
+      sigaction(SIGINT, &sa, NULL);
+      sigaction(SIGQUIT, &sa, NULL);
+      sigaction(SIGSEGV, &sa, NULL);
+      sigaction(SIGTERM, &sa, NULL);
+
+      m_slot_id = slot_id;
+      sig_init = true;
+    }
 
     if ((jflow == JFLOW_BIC) && (om_thread == false)) {
         if ((arg = malloc(sizeof(int)*2)) == NULL) {
@@ -982,8 +1013,7 @@ STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callba
         om_thread = true;
     }
 
-    tbuf[3] = jflow;
-    if (bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, 4, rbuf, &rlen) < 0) {
+    if (bic_asd_init(slot_id, jflow) < 0) {
         syslog(LOG_ERR, "1S_ASD_INIT failed, slot%d", slot_id);
         //return ST_ERR;
     }

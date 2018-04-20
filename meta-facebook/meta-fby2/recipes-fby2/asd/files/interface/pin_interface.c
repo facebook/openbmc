@@ -41,7 +41,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <facebook/bic.h>
 
 //#define FBY2_DEBUG
-#define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
 
 
 //  PLTRST,  PRDY, XDP_PRESENT

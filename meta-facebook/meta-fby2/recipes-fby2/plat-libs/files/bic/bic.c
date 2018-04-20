@@ -2039,6 +2039,19 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
 }
 
 int
+bic_asd_init(uint8_t slot_id, uint8_t cmd) {
+  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = cmd;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, 4, rbuf, &rlen);
+
+  return ret;
+}
+
+int
 bic_set_pcie_config(uint8_t slot_id, uint8_t config) {
   uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rlen = 0;

@@ -2530,6 +2530,11 @@ set_usb_mux(uint8_t state) {
   return 0;
 }
 
+int
+pal_enable_usb_mux(uint8_t state) {
+  return set_usb_mux(state);
+}
+
 // Update the VGA Mux to the server at given slot
 int
 pal_switch_vga_mux(uint8_t slot) {
@@ -2584,6 +2589,7 @@ int
 pal_switch_usb_mux(uint8_t slot) {
   char *gpio_sw0, *gpio_sw1;
   char path[64] = {0};
+  uint8_t status;
 
   // Based on the USB mux table in Schematics
   switch(slot) {
@@ -2613,9 +2619,12 @@ pal_switch_usb_mux(uint8_t slot) {
     return 0;
   }
 
-  // Enable the USB MUX
-  if (set_usb_mux(USB_MUX_ON) < 0)
-    return -1;
+  if (!pal_is_slot_server(slot) || (!pal_get_server_power(slot, &status) && (status != SERVER_POWER_ON))) {
+    if (set_usb_mux(USB_MUX_OFF) < 0) {
+      return -1;
+    }
+    return 0;
+  }
 
   sprintf(path, GPIO_VAL, GPIO_USB_SW0);
   if (write_device(path, gpio_sw0) < 0) {
@@ -2632,6 +2641,10 @@ pal_switch_usb_mux(uint8_t slot) {
 #endif
     return -1;
   }
+
+  // Enable the USB MUX
+  if (set_usb_mux(USB_MUX_ON) < 0)
+    return -1;
 
   return 0;
 }

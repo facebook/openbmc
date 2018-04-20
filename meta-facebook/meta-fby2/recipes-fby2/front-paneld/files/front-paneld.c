@@ -82,6 +82,7 @@ debug_card_handler() {
   uint8_t pos;
   uint8_t prev_pos = 0xff, prev_phy_pos = 0xff;
   uint8_t lpc;
+  uint8_t status;
   char str[8];
 
   while (1) {
@@ -118,11 +119,6 @@ get_hand_sw_cache:
     }
     m_pos = pos;
 
-    ret = pal_switch_vga_mux(pos);
-    if (ret) {
-      goto debug_card_out;
-    }
-
     ret = pal_switch_usb_mux(pos);
     if (ret) {
       goto debug_card_out;
@@ -134,6 +130,14 @@ get_hand_sw_cache:
     }
 
 debug_card_prs:
+    if (pos <= MAX_NUM_SLOTS) {
+      if (!pal_is_slot_server(pos) || (!pal_get_server_power(pos, &status) && (status != SERVER_POWER_ON))) {
+        pal_enable_usb_mux(USB_MUX_OFF);
+      } else {
+        pal_enable_usb_mux(USB_MUX_ON);
+      }
+    }
+
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
     if (ret) {

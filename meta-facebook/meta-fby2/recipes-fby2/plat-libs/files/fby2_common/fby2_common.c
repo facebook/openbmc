@@ -153,8 +153,6 @@ generate_dump(void *arg) {
   sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
   system(cmd);
 
-  syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
-
   t_dump[fru-1].is_running = 0;
 
 }
@@ -191,8 +189,6 @@ second_dwr_dump(void *arg) {
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
   sprintf(cmd, "%s %s --second", CRASHDUMP_BIN, fruname);
   system(cmd);
-
-  syslog(LOG_CRIT, "Second/DWR Crashdump for FRU: %d is generated.", fru);
 
   t_dump[fru-1].is_running = 0;
 

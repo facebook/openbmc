@@ -167,13 +167,14 @@ if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
   fi
 fi
 
+echo -n "Auto Dump End at " >> $CRASHDUMP_FILE
+date >> $CRASHDUMP_FILE
+
 tar zcf $CRASHDUMP_LOG_ARCHIVE -C `dirname $CRASHDUMP_FILE` `basename $CRASHDUMP_FILE` && \
 rm -rf $CRASHDUMP_FILE && \
 logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: $SLOT_NUM is generated at $CRASHDUMP_LOG_ARCHIVE"
 
 echo "Auto Dump for $SLOT_NAME Completed"
-echo -n "Auto Dump End at " >> $CRASHDUMP_FILE
-date >> $CRASHDUMP_FILE
 
 # Remove current pid file
 rm $PID_FILE

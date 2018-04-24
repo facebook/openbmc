@@ -35,6 +35,8 @@
 #define FBW_EEPROM_V1_SIZE 174
 #define FBW_EEPROM_VERSION2 2
 #define FBW_EEPROM_V2_SIZE 176
+#define FBW_EEPROM_VERSION3 3
+#define FBW_EEPROM_V3_SIZE 196
 
 /*
  * The eeprom size is 8K, we only use 157 bytes for v1 format.
@@ -231,7 +233,8 @@ static int fbw_parse_buffer(
   fbw_copy_uint8(&eeprom->fbw_version, &cur, FBW_EEPROM_F_VERSION);
   if ((eeprom->fbw_version != FBW_EEPROM_VERSION0) &&
       (eeprom->fbw_version != FBW_EEPROM_VERSION1) &&
-      (eeprom->fbw_version != FBW_EEPROM_VERSION2)) {
+      (eeprom->fbw_version != FBW_EEPROM_VERSION2) &&
+      (eeprom->fbw_version != FBW_EEPROM_VERSION3)) {
     rc = EFAULT;
     LOG_ERR(rc, "Unsupported version number %u", eeprom->fbw_version);
     goto out;
@@ -242,6 +245,8 @@ static int fbw_parse_buffer(
       crc_len = FBW_EEPROM_V1_SIZE;
     } else if (eeprom->fbw_version == FBW_EEPROM_VERSION2) {
       crc_len = FBW_EEPROM_V2_SIZE;
+    } else if (eeprom->fbw_version == FBW_EEPROM_VERSION3) {
+      crc_len = FBW_EEPROM_V3_SIZE;
     }
     assert(crc_len <= len);
   }
@@ -257,7 +262,10 @@ static int fbw_parse_buffer(
   /* Product name: ASCII for 12 characters */
   fbw_strcpy(eeprom->fbw_product_name,
              sizeof(eeprom->fbw_product_name),
-             &cur, FBW_EEPROM_F_PRODUCT_NAME);
+             &cur,
+             (eeprom->fbw_version >= FBW_EEPROM_VERSION3)
+             ? FBW_EEPROM_F_PRODUCT_NAME_V3
+             : FBW_EEPROM_F_PRODUCT_NAME);
 
   /* Product Part #: 8 byte data shown as XX-XXXXXXX */
   fbw_copy_product_number(eeprom->fbw_product_number,
@@ -356,7 +364,10 @@ static int fbw_parse_buffer(
   /* Location on Fabric: "LEFT"/"RIGHT", "WEDGE", "LC" */
   fbw_strcpy(eeprom->fbw_location,
              sizeof(eeprom->fbw_location),
-             &cur, FBW_EEPROM_F_LOCATION);
+             &cur, 
+             (eeprom->fbw_version >= FBW_EEPROM_VERSION3)
+             ? FBW_EEPROM_F_LOCATION_V3
+             : FBW_EEPROM_F_LOCATION);
 
   /* CRC8 */
   fbw_copy_uint8(&eeprom->fbw_crc8,

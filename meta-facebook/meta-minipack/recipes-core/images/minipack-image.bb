@@ -37,6 +37,7 @@ IMAGE_INSTALL += " \
   tpm-tools \
   usb-console \
   watchdog-ctrl \
+  wedge-eeprom \
   "
 IMAGE_FEATURES += " \
   ssh-server-openssh \

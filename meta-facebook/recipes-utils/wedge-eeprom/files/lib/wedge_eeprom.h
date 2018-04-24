@@ -27,6 +27,7 @@ extern "C" {
 #define FBW_EEPROM_F_MAGIC 2
 #define FBW_EEPROM_F_VERSION 1
 #define FBW_EEPROM_F_PRODUCT_NAME 12
+#define FBW_EEPROM_F_PRODUCT_NAME_V3 20
 #define FBW_EEPROM_F_PRODUCT_NUMBER 8
 #define FBW_EEPROM_F_ASSEMBLY_NUMBER 12
 #define FBW_EEPROM_F_FACEBOOK_PCBA_NUMBER 12
@@ -48,6 +49,7 @@ extern "C" {
 #define FBW_EEPROM_F_EXT_MAC_BASE 12
 #define FBW_EEPROM_F_EXT_MAC_SIZE 2
 #define FBW_EEPROM_F_LOCATION 8
+#define FBW_EEPROM_F_LOCATION_V3 20
 #define FBW_EEPROM_F_CRC8 1
 
 #define __MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -57,7 +59,9 @@ struct wedge_eeprom_st {
   uint8_t fbw_version;
 
   /* Product Name */
-  char fbw_product_name[FBW_EEPROM_F_PRODUCT_NAME + 1];
+  char fbw_product_name[__MAX(FBW_EEPROM_F_PRODUCT_NAME,
+                              FBW_EEPROM_F_PRODUCT_NAME_V3)
+                        + 1];
 
   /* Top Level 20 - Product Part Number: XX-XXXXXX */
   char fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER + 2];
@@ -118,7 +122,9 @@ struct wedge_eeprom_st {
   uint16_t fbw_mac_size;
 
   /* Location on Fabric: "LEFT"/"RIGHT", "WEDGE", "LC" */
-  char fbw_location[FBW_EEPROM_F_LOCATION + 1];
+  char fbw_location[__MAX(FBW_EEPROM_F_LOCATION,
+                         FBW_EEPROM_F_LOCATION_V3)
+                    + 1];
 
   /* CRC8 */
   uint8_t fbw_crc8;

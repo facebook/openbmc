@@ -23,12 +23,14 @@ SRC_URI += "file://board-utils.sh \
             file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://fpga_ver.sh \
+            file://peutil \
             file://pimcpld_update.sh \
             file://power-on.sh \
             file://reset_brcm.sh \
             file://scmcpld_update.sh \
             file://setup_board.sh \
             file://setup_i2c.sh \
+            file://seutil \
             file://smbcpld_update.sh \
             file://sol.sh \
             file://us_console.sh \
@@ -41,12 +43,15 @@ OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     fcmcpld_update.sh \
     fpga_ver.sh \
+    peutil \
     pimcpld_update.sh \
     reset_brcm.sh \
     scmcpld_update.sh \
     smbcpld_update.sh \
+    seutil \
     sol.sh \
     us_console.sh \
+    reset_brcm.sh \
     wedge_power.sh \
     "
 

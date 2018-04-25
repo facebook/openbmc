@@ -71,6 +71,8 @@ int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 int pal_get_plat_sku_id(void);
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_fru_list(char *list);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

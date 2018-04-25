@@ -39,6 +39,8 @@
 
 #define LAST_KEY "last_key"
 
+const char pal_fru_list[] = "all, slot1";
+
 char * key_list[] = {
 "sysfw_ver_slot1",
 /* Add more Keys here */
@@ -93,3 +95,10 @@ pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
   *res_len = data - res_data;
   return completion_code;
 }
+
+int
+pal_get_fru_list(char *list) {
+  strcpy(list, pal_fru_list);
+  return 0;
+}
+

@@ -22,6 +22,7 @@ IMAGE_INSTALL += " \
   cpldupdate \
   flashrom \
   fscd \
+  gpiod \
   ipmbd \
   ipmid \
   libcpldupdate-dll-echo \

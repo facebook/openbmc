@@ -20,6 +20,13 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+RC_PRODUCT_ID0=43
+RC_PRODUCT_ID1=52
+EP_PRODUCT_ID0=50
+EP_PRODUCT_ID1=45
+TL_PRODUCT_ID0=39
+TL_PRODUCT_ID1=30
+
 get_server_sku()
 {
    j=0
@@ -38,13 +45,13 @@ get_server_sku()
          if [ $(echo $output | wc -c) == 45 ] ; then
            product_id_l=`echo "$output" | cut -c 28-29`
            product_id_h=`echo "$output" | cut -c 31-32`
-           if [[ "$product_id_l" == 43 && "$product_id_h" == 52 ]] ; then
+           if [[ "$product_id_l" == "$RC_PRODUCT_ID0" && "$product_id_h" == "$RC_PRODUCT_ID1" ]] ; then
              #RC
              tmp_server_type=1
-           elif [[ "$product_id_l" == 50 && "$product_id_h" == 45 ]] ; then
+           elif [[ "$product_id_l" == "$EP_PRODUCT_ID0" && "$product_id_h" == "$EP_PRODUCT_ID1" ]] ; then
              #EP
              tmp_server_type=2
-           elif [[ "$product_id_l" == 39 && "$product_id_h" == 30 ]] ; then
+           elif [[ "$product_id_l" == "$TL_PRODUCT_ID0" && "$product_id_h" == "$TL_PRODUCT_ID1" ]] ; then
              #TL
              tmp_server_type=0
            else
@@ -53,6 +60,7 @@ get_server_sku()
            fi
            break
          fi
+         sleep 1
          j=$(($j+1))
        done
      else

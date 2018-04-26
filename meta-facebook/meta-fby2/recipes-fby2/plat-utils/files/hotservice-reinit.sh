@@ -170,6 +170,10 @@ case $OPTION in
          /usr/local/bin/bic-cached $SLOT_NUM > /dev/null 2>&1 &
       fi
 
+      # Server Type recognition restart
+      echo "restart server type recognition for $SLOT"
+      /etc/init.d/setup-server-type.sh
+      
       echo "restart gpiod for $SLOT $OPTION"
       sv start gpiod
 

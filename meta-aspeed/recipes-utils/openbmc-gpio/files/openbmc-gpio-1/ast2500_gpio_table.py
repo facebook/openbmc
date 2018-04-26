@@ -87,6 +87,10 @@ soc_gpio_table = {
             BitsEqual(0x8c, [15], 0x1), BitsEqual(0x70, [22], 0x1))),
         Function('GPIOE6', None)
     ],
+    'A21': [
+        Function('NDTR4', BitsEqual(0x80, [28], 0x1)),
+        Function('GPIOF4', None)
+    ],
     'A3': [
         Function('GPIOU6', BitsEqual(0xa0, [14], 0x1)),
         Function('RMII1RXD0', BitsEqual(0x70, [6], 0x0)),
@@ -240,6 +244,14 @@ soc_gpio_table = {
         Function('GPIE0(In)', Or(
             BitsEqual(0x8c, [12], 0x1), BitsEqual(0x70, [22], 0x1))),
         Function('GPIOE0', None)
+    ],
+    'B21': [
+        Function('NRI4', BitsEqual(0x80, [27], 0x1)),
+        Function('GPIOF3', None)
+    ],
+    'B22': [
+        Function('NDSR4', BitsEqual(0x80, [26], 0x1)),
+        Function('GPIOF2', None)
     ],
     'B3': [
         Function('GPIOU1', BitsEqual(0xa0, [9], 0x1)),
@@ -632,6 +644,10 @@ soc_gpio_table = {
         Function('RXD4', BitsEqual(0x80, [31], 0x1)),
         Function('GPIOF7', None)
     ],
+    'H19': [
+        Function('NRTS4', BitsEqual(0x80, [29], 0x1)),
+        Function('GPIOF5', None)
+    ],
     'H20': [
         Function('GPIOB7', None)
     ],
@@ -650,6 +666,14 @@ soc_gpio_table = {
     'H5': [
         Function('GPIX4', BitsEqual(0xa4, [4], 0x1)),
         Function('ADC12', None)
+    ],
+    'J18': [
+        Function('NDCD4', BitsEqual(0x80, [25], 0x1)),
+        Function('GPIOF1', None)
+    ],
+    'J19': [
+        Function('NCTS4', BitsEqual(0x80, [24], 0x1)),
+        Function('GPIOF0', None)
     ],
     'J20': [
         Function('USBCKI', BitsEqual(0x70, [23], 0x1)),

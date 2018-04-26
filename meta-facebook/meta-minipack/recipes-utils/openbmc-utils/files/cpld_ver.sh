@@ -18,6 +18,12 @@
 # Boston, MA 02110-1301 USA
 #
 
+. /usr/local/bin/openbmc-utils.sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+board_rev=$(wedge_board_rev)
+
 smb_ver=$(cat /sys/class/i2c-adapter/i2c-12/12-003e/cpld_ver)
 smb_sub_ver=$(cat /sys/class/i2c-adapter/i2c-12/12-003e/cpld_sub_ver)
 scm_ver=$(cat /sys/class/i2c-adapter/i2c-2/2-0035/cpld_ver)
@@ -32,3 +38,12 @@ echo "SCMCPLD: $(($scm_ver)).$(($scm_sub_ver))"
 echo "Top FCMCPLD: $(($fcm_top_ver)).$(($fcm_top_sub_ver))"
 echo "Bottom FCMCPLD: $(($fcm_bottom_ver)).$(($fcm_bottom_sub_ver))"
 
+if [ $board_rev -ne 4 ]; then
+  pdbl_ver=$(cat /sys/class/i2c-adapter/i2c-55/55-0060/cpld_ver)
+  pdbl_sub_ver=$(cat /sys/class/i2c-adapter/i2c-55/55-0060/cpld_sub_ver)
+  pdbr_ver=$(cat /sys/class/i2c-adapter/i2c-63/63-0060/cpld_ver)
+  pdbr_sub_ver=$(cat /sys/class/i2c-adapter/i2c-63/63-0060/cpld_sub_ver)
+
+  echo "Left PDBCPLD: $(($pdbl_ver)).$(($pdbl_sub_ver))"
+  echo "Right PDBCPLD: $(($pdbr_ver)).$(($pdbr_sub_ver))"
+fi

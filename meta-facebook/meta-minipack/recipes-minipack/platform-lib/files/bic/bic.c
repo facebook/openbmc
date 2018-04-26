@@ -487,3 +487,18 @@ error_exit:
 
   return -1;
 }
+
+int
+bic_read_mac(uint8_t slot_id, char *rbuf) {
+	
+  uint8_t tbuf[2] = {0x00, 0x01};
+  int ret;
+  uint8_t rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ, CMD_OEM_GET_MAC_ADDR, tbuf, 2, rbuf, &rlen);
+  
+  if(ret)
+	return -1;
+
+  return ret;
+}

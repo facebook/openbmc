@@ -46,7 +46,8 @@ static const char *option_list[] = {
   "--get_post_code",
   "--get_sdr",
   "--read_sensor",
-  "--read_fruid"
+  "--read_fruid",
+  "--read_mac"
 };
 
 static void
@@ -479,6 +480,24 @@ util_read_sensor(uint8_t slot_id) {
   }
 }
 
+// Test to read MAC address from Minilake
+static void
+util_read_mac(uint8_t slot_id) {
+  int ret;
+  int i;
+  uint8_t mbuf[8] = {0};
+
+
+  ret = bic_read_mac(slot_id, mbuf);
+  if (ret) {
+    printf("Cannot get MAC address from Minilake.\n");
+	return;
+  }
+
+  printf("MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+          mbuf[2], mbuf[3], mbuf[4], mbuf[5], mbuf[6], mbuf[7]);
+}
+
 static int
 process_command(uint8_t slot_id, int argc, char **argv) {
   int i, ret, retry = 2;
@@ -545,6 +564,8 @@ main(int argc, char **argv) {
     util_read_sensor(slot_id);
   } else if (!strcmp(argv[2], "--read_fruid")) {
     util_read_fruid(slot_id);
+  } else if (!strcmp(argv[2], "--read_mac")) {
+    util_read_mac(slot_id);
   } else if (argc >= 4) {
     return process_command(slot_id, (argc - 2), (argv + 2));
   } else {

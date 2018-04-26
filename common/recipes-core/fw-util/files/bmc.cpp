@@ -5,6 +5,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
+#include <algorithm>
 #include <sys/mman.h>
 #include "fw-util.h"
 
@@ -125,11 +126,12 @@ bool is_image_valid(string &image)
 class BmcComponent : public Component {
   protected:
     string _mtd_name;
+    string _vers_mtd;
     size_t _writable_offset;
     size_t _skip_offset;
   public:
-    BmcComponent(string fru, string comp, string mtd, size_t w_offset = 0, size_t skip_offset = 0)
-      : Component(fru, comp), _mtd_name(mtd), _writable_offset(w_offset), _skip_offset(skip_offset) {}
+    BmcComponent(string fru, string comp, string mtd, string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+      : Component(fru, comp), _mtd_name(mtd), _vers_mtd(vers), _writable_offset(w_offset), _skip_offset(skip_offset) {}
     int update(string image_path)
     {
       char dev[12];
@@ -220,51 +222,44 @@ class BmcComponent : public Component {
     int print_version()
     {
       char vers[128] = "NA";
-      FILE *fp = fopen("/etc/issue", "r");
-      if (fp) {
-        fscanf(fp, "OpenBMC Release %s\n", vers);
-        fclose(fp);
+      char mtd[32];
+
+      string comp = _component;
+      std::transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
+
+      if (_vers_mtd == "") {
+        char vers[128] = "NA";
+        FILE *fp = fopen("/etc/issue", "r");
+        if (fp) {
+          fscanf(fp, "OpenBMC Release %s\n", vers);
+          fclose(fp);
+        }
+        cout << comp << " Version: " << string(vers) << endl;
+        return FW_STATUS_SUCCESS;
       }
-      cout << "BMC Version: " << string(vers) << endl;
+
+      if (get_mtd_name(_vers_mtd.c_str(), mtd)) {
+        char cmd[128];
+        FILE *fp;
+        sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd);
+        fp = popen(cmd, "r");
+        if (fp) {
+          char line[256];
+          char min[32];
+          while (fgets(line, sizeof(line), fp)) {
+            int ret;
+            ret = sscanf(line, "U-Boot 2016.07%*[ ]%[^ \n]%*[ ](%*[^)])\n", min);
+            if (ret == 1) {
+              sprintf(vers, "%s", min);
+              break;
+            }
+          }
+          pclose(fp);
+        }
+      }
+      cout << comp << " Version: " << string(vers) << endl;
       return FW_STATUS_SUCCESS;
     }
-};
-
-/* Inherits the flashing bits from BmcComponent, overrides
- * the getting version to get it from the u-boot mtd */
-class BmcUbootVersionComponent : public BmcComponent {
-  private:
-    string _vers_mtd;
-  public:
-    BmcUbootVersionComponent(string fru, string comp, string mtd, string vers_mtd)
-      : BmcComponent(fru, comp, mtd), _vers_mtd(vers_mtd) {}
-  int print_version()
-  {
-    char vers[128] = "NA";
-    char mtd[32];
-
-    if (get_mtd_name(_vers_mtd.c_str(), mtd)) {
-      char cmd[128];
-      FILE *fp;
-      sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd);
-      fp = popen(cmd, "r");
-      if (fp) {
-        char line[256];
-        char min[32];
-        while (fgets(line, sizeof(line), fp)) {
-          int ret;
-          ret = sscanf(line, "U-Boot 2016.07%*[ ]%[^ \n]%*[ ](%*[^)])\n", min);
-          if (ret == 1) {
-            sprintf(vers, "%s", min);
-            break;
-          }
-        }
-        pclose(fp);
-      }
-    }
-    cout << "ROM Version: " << string(vers) << endl;
-    return FW_STATUS_SUCCESS;
-  }
 };
 
 class SystemConfig {
@@ -283,22 +278,22 @@ class SystemConfig {
         // have the romx partition
         if (vboot_hardware_enforce()) {
           // Locked down, Update from a 64k offset.
-          static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", BMC_RW_OFFSET, ROMX_SIZE);
+          static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", "\"u-boot\"", BMC_RW_OFFSET, ROMX_SIZE);
           // Locked down, Allow getting version of ROM, but do not allow
           // upgrading it.
-          static BmcUbootVersionComponent rom("bmc", "rom", "", "\"rom\"");
+          static BmcComponent rom("bmc", "rom", "", "\"u-bootro\"");
         } else {
           // Unlocked Flash, Upgrade the full BMC flash1.
-          static BmcComponent bmc("bmc", "bmc", "\"flash1\"");
+          static BmcComponent bmc("bmc", "bmc", "\"flash1\"", "\"u-boot\"");
           // Unlocked flash, Allow upgrading the ROM.
-          static BmcUbootVersionComponent rom("bmc", "rom", "\"flash0\"", "\"rom\"");
+          static BmcComponent rom("bmc", "rom", "\"flash0\"", "\"u-bootro\"");
         }
       } else {
         // non-verified-boot. BMC boots off of flash0.
-        static BmcComponent bmc("bmc", "bmc", "\"flash0\"");
+        static BmcComponent bmc("bmc", "bmc", "\"flash0\"", "\"u-boot\"");
         // Dual flash supported, but not in verified boot format.
         // Allow flashing the second flash. Read version from u-boot partition.
-        static BmcUbootVersionComponent bmcalt("bmc", "flash1", "\"flash1\"", "\"u-boot\"");
+        static BmcComponent bmcalt("bmc", "flash1", "\"flash1\"", "\"u-boot\"");
       }
       // Verified boot supported and in dual-flash mode.
     } else {

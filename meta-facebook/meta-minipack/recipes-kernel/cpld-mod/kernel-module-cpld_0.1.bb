@@ -26,6 +26,7 @@ PV = "0.1"
 
 SRC_URI = "file://Makefile \
            file://fcmcpld.c \
+           file://pdbcpld.c \
            file://scmcpld.c \
            file://smbcpld.c \
            file://COPYING \
@@ -41,4 +42,5 @@ KERNEL_MODULE_AUTOLOAD += "                     \
  fcmcpld                                        \
  scmcpld                                        \
  smbcpld                                        \
+ pdbcpld                                        \
 "

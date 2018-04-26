@@ -21,6 +21,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
+board_rev=$(wedge_board_rev)
+
 # # Bus 2
 i2c_device_add 2 0x35 scmcpld          # SCMCPLD
 
@@ -47,6 +49,14 @@ i2c_device_add 16 0x10 adm1278         # SCM Hotswap
 # # Bus 17
 i2c_device_add 17 0x4c tmp421          # SCM temp. sensor
 i2c_device_add 17 0x4d tmp421          # SCM temp. sensor
+
+if [ $board_rev -ne 4 ]; then
+    # # Bus 55
+    i2c_device_add 55 0x60 pdbcpld         # Left PDBCPLD
+
+    # # Bus 63
+    i2c_device_add 63 0x60 pdbcpld         # Right PDBCPLD
+fi
 
 # # Bus 49
 i2c_device_add 49 0x59 pfe1100         # PDB-L PFE1100 PSU

@@ -238,12 +238,13 @@ static void gpio_event_handle(gpio_poll_st *gp)
       read_device(vpath, &value);
 
 #if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
-      syslog(LOG_CRIT,"GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON", slot_id);
+      syslog(LOG_CRIT,"FRU: %d, GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON", slot_id, slot_id);
 #endif
 
       // HOT SERVER event would be detected when SLED is pulled out
       if (value) {
-          log_gpio_change(gp, 0);
+          syslog(LOG_CRIT,"DEASSERT: FRU: %d, GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N", slot_id, slot_id);
+//          log_gpio_change(gp, 0);
 #if 0
           sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", slot_id);
           system(cmd);
@@ -362,6 +363,7 @@ hsvc_event_handler(void *ptr) {
   char hslotpid[80] = {0};
   char slot_kv[80] = {0};
   int i=0;
+  char event_log[80] = {0};
   hot_service_info *hsvc_info = (hot_service_info *)ptr;
   pthread_detach(pthread_self());
 
@@ -386,8 +388,8 @@ hsvc_event_handler(void *ptr) {
           break;
         }
         if (value) {
-
-          syslog(LOG_CRIT, fru_prsnt_log_string[2*MAX_NUM_FRUS + hsvc_info->slot_id]);     //Card removal without 12V-off
+          sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[2*MAX_NUM_FRUS + hsvc_info->slot_id]);
+          syslog(LOG_CRIT, event_log);     //Card removal without 12V-off
           memset(vpath, 0, sizeof(vpath));
           sprintf(vpath, GPIO_VAL, gpio_12v[hsvc_info->slot_id]);
           if (write_device(vpath, "0")) {        /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
@@ -397,8 +399,10 @@ hsvc_event_handler(void *ptr) {
           if (0 != ret)
             printf("pal_slot_pair_12V_off failed for fru: %d\n", hsvc_info->slot_id);
         }
-        else
-          syslog(LOG_CRIT, fru_prsnt_log_string[hsvc_info->slot_id]);     //Card removal with 12V-off
+        else {
+          sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[hsvc_info->slot_id]);
+          syslog(LOG_CRIT, event_log);     //Card removal with 12V-off
+        }
 
         // Re-init kv list
         for(i=0; i < sizeof(slot_kv_list)/sizeof(slot_kv_st); i++) {
@@ -430,7 +434,8 @@ hsvc_event_handler(void *ptr) {
         break;
       }
       if (value) {      //Card has been inserted
-        syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + hsvc_info->slot_id]);
+        sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[MAX_NUM_FRUS + hsvc_info->slot_id]);
+        syslog(LOG_CRIT, event_log);
 
         // Create file for 12V-on re-init
         sprintf(hspath, HOTSERVICE_FILE, hsvc_info->slot_id);
@@ -496,10 +501,10 @@ static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
 #if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 static def_chk_info def_gpio_chk[] = {
   // { default value, gpio name, gpio num, log }
-  { 0, "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N", GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
-  { 0, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N", GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
-  { 0, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N", GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
-  { 0, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N", GPIO_SLOT4_EJECTOR_LATCH_DETECT_N, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N", GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, "FRU: 1, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N", GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, "FRU: 2, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N", GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, "FRU: 3, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+  { 0, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N", GPIO_SLOT4_EJECTOR_LATCH_DETECT_N, "FRU: 4, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
   { 0, "GPIO_FAN_LATCH_DETECT",             GPIO_FAN_LATCH_DETECT,             "ASSERT: SLED is not seated"                                    },
 };
 
@@ -511,8 +516,9 @@ static void default_gpio_check(void) {
   for (i=0; i<sizeof(def_gpio_chk)/sizeof(def_chk_info); i++) {
     sprintf(vpath, GPIO_VAL, def_gpio_chk[i].num);
     read_device(vpath, &value);
-    if (value != def_gpio_chk[i].def_val)
+    if (value != def_gpio_chk[i].def_val) {
       syslog(LOG_CRIT, def_gpio_chk[i].log);
+    }
   }
 }
 #endif

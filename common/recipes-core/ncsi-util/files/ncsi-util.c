@@ -57,17 +57,19 @@ typedef struct ncsi_nl_response {
 int
 send_nl_msg(NCSI_NL_MSG_T *nl_msg)
 {
-  int sock_fd;
+  int sock_fd, ret;
   struct sockaddr_nl src_addr, dest_addr;
   struct nlmsghdr *nlh = NULL;
   struct iovec iov;
   struct msghdr msg;
 
-  int i  = 0;
   int msg_size = sizeof(NCSI_NL_MSG_T);
 
+
+  int i  = 0;
   /* msg response from kernel */
   NCSI_NL_RSP_T *rcv_buf;
+  memset(&msg, 0, sizeof(msg));
 
   /* open NETLINK socket to send message to kernel */
   sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
@@ -107,7 +109,11 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   msg.msg_iovlen = 1;
 
   printf("Sending NC-SI command\n");
-  sendmsg(sock_fd,&msg,0);
+  ret = sendmsg(sock_fd,&msg,0);
+  if (ret == -1) {
+    printf("Error: errno=%d\n", errno);
+  }
+
 
   printf("NC-SI Command Response:\n");
   /* Read message from kernel */
@@ -154,7 +160,7 @@ main(int argc, char **argv) {
     printf("Error: failed buffer allocation\n");
     return -1;
   }
-
+  memset(msg, 0, sizeof(NCSI_NL_MSG_T));
   while ((argflag = getopt(argc, (char **)argv, "hn:c:?")) != -1)
   {
     switch(argflag) {

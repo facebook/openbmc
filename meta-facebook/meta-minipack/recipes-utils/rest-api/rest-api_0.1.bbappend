@@ -23,6 +23,7 @@ SRC_URI += "file://rest-api-1/rest_usb2i2c_reset.py \
             file://rest-api-1/board_setup_routes.py \
             file://rest-api-1/rest_fruid_scm.py \
             file://rest-api-1/rest_pim_present.py \
+            file://rest-api-1/rest_piminfo.py \
            "
 
 binfiles += "rest_usb2i2c_reset.py \

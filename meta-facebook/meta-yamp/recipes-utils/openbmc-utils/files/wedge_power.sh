@@ -24,10 +24,6 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 prog="$0"
 
-# Disable BMC control so that CPU will not be powered off when
-# BMC is rebooting
-trap 'disable_bmc_control' INT TERM QUIT EXIT
-
 usage() {
     echo "Usage: $prog <command> [command options]"
     echo
@@ -113,8 +109,31 @@ do_off() {
 }
 
 do_reset() {
-    echo "Reset CPU is not supported. Use off/on."
-    return 254
+    local system opt
+    system=0
+    while getopts "s" opt; do
+        case $opt in
+            s)
+                system=1
+                ;;
+            *)
+                usage
+                exit -1
+                ;;
+        esac
+    done
+    if [ $system -eq 1 ]; then
+        logger "Power reset the whole system ..."
+        echo -n "Power reset the whole system ..."
+        sleep 1
+        echo 0xde > $PWR_SYSTEM_SYSFS
+        # The chassis shall be reset now... if not, we are in trouble
+        echo " Failed"
+        return 254
+    else
+        echo "Reset CPU is not supported. Use off/on."
+        return 254
+    fi
 }
 
 if [ $# -lt 1 ]; then

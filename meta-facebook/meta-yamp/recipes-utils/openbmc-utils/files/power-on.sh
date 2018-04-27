@@ -32,7 +32,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 wedge_power_on_board
 
 echo -n "Checking microserver power status ... "
-if wedge_is_us_on 10 "."; then
+if wedge_is_us_on; then
     echo "on"
     on=1
 else

@@ -15,8 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libipmi libfruid update-rc.d-native libsdr"
-LDFLAGS_append = "-lfruid -lipmb"
+DEPENDS_append = "libipmi libfruid update-rc.d-native libsdr libgpio"
+LDFLAGS_append = "-lfruid -lipmb -lgpio"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \

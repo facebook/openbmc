@@ -20,4 +20,5 @@ IMAGE_INSTALL += " \
   mterm \
   openbmc-gpio \
   openbmc-utils \
+  usb-console \
   "

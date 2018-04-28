@@ -18,6 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
+# In case gadget driver is compiled as module
+modprobe ast-udc
 modprobe g_cdc host_addr=02:00:00:00:00:02 dev_addr=02:00:00:00:00:01
 # For g-ether interface, if the remote side brings down the interface, BMC side
 # still treats it as up. In this case, all packets through usb0 (i.e. NDP) will

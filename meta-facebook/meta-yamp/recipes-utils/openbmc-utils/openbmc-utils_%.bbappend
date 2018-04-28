@@ -17,7 +17,8 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://board-utils.sh \
+SRC_URI += "file://bios_util.sh \
+            file://board-utils.sh \
             file://eth0_mac_fixup.sh \
             file://power-on.sh \
             file://reset_brcm.sh \
@@ -27,6 +28,7 @@ SRC_URI += "file://board-utils.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
+    bios_util.sh \
     board-utils.sh \
     reset_brcm.sh \
     wedge_power.sh \

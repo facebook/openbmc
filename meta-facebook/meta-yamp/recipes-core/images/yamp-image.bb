@@ -16,6 +16,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-rest3 \
   ast-mdio \
   bitbang \
+  flashrom \
   mterm \
   openbmc-gpio \
   openbmc-utils \

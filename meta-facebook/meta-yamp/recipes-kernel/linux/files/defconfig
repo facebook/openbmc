@@ -1128,7 +1128,7 @@ CONFIG_SPI_MASTER=y
 #
 # SPI Master Controller Drivers
 #
-# CONFIG_SPI_AST is not set
+CONFIG_SPI_AST=y
 CONFIG_SPI_FMC=y
 # CONFIG_SPI_FMC_ROM is not set
 # CONFIG_SPI_ALTERA is not set

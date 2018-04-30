@@ -24,6 +24,7 @@ SRC_URI += "file://board-utils.sh \
             file://fcmcpld_update.sh \
             file://fpga_ver.sh \
             file://peutil \
+            file://pdbcpld_update.sh \
             file://pimcpld_update.sh \
             file://power-on.sh \
             file://reset_brcm.sh \
@@ -45,11 +46,12 @@ OPENBMC_UTILS_FILES += " \
     fcmcpld_update.sh \
     fpga_ver.sh \
     peutil \
+    pdbcpld_update.sh \
     pimcpld_update.sh \
     reset_brcm.sh \
     scmcpld_update.sh \
-    smbcpld_update.sh \
     seutil \
+    smbcpld_update.sh \
     sol.sh \
     us_console.sh \
     spi_util.sh \

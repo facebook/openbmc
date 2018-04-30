@@ -1,0 +1,100 @@
+#!/bin/bash
+#
+# Copyright 2018-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+. /usr/local/bin/openbmc-utils.sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+board_rev=$(wedge_board_rev)
+
+usage(){
+    program=`basename "$0"`
+    echo "Usage:"
+    echo "     $program jtag <Location> <*.vme>"
+    echo "     $program i2c <Location> <file>"
+    echo "     <Location>  : left or right"
+}
+
+if [ $board_rev -eq 4 ]; then
+    echo "EVTA hardware doesn't have PDBCPLD"
+    exit -1
+fi
+
+if [ "$#" -ne 3 ]; then
+    usage
+    exit -1
+fi
+
+if [ "$2" = "left" ]; then
+    BUS=54
+elif [ "$2" = "right" ]; then
+    BUS=62
+else
+    echo "$2: not a valid PDB location"
+    exit -1
+fi
+
+source /usr/local/bin/openbmc-utils.sh
+
+interface="$1"
+img="$3"
+PINS=(480 481 482 483)
+PCA9534=`i2cdetect -y ${BUS} 0x21 0x21 | grep "\-\-"` > /dev/null
+
+pca9534_gpio_add()
+{
+    if [ "${PCA9534}" != "" ]; then
+        echo "PDB $1 not insert or PCA9534 fail!"
+        exit -1
+    fi
+
+    i2c_device_add ${BUS} 0x21 pca9534
+    usleep 100000
+
+    for i in {0..3}; do
+        echo "${PINS[i]}" > /sys/class/gpio/export
+    done
+}
+
+pca9534_gpio_delete()
+{
+    if [ "${PCA9534}" != "" ]; then
+        exit -1
+    fi
+
+    for i in {0..3}; do
+        echo "${PINS[i]}" > /sys/class/gpio/unexport
+    done
+
+    i2c_device_delete ${BUS} 0x21
+}
+
+if [ "$interface" = "jtag" ]; then
+    trap pca9534_gpio_delete INT TERM QUIT EXIT
+
+    # export pca9534 GPIO to connect BMC to PDB CPLD pins
+    pca9534_gpio_add $2
+
+    ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms ${PINS[2]} --tdo ${PINS[0]} --tdi ${PINS[1]} --tck ${PINS[3]}
+elif [ "$interface" = "i2c" ]; then
+    echo "Not support now"
+else
+    echo "$1 is not a valid PDB interface"
+    exit -1
+fi

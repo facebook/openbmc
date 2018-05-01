@@ -19,6 +19,9 @@ using namespace std;
 #define VERIFIED_BOOT_HARDWARE_ENFORCE(base) \
   *((uint8_t *)(base + 0x215))
 
+
+extern bool is_image_valid(string &file, const char *desc_file, string &machine);
+
 static int system_w(const string &cmd)
 {
 #ifdef DEBUG
@@ -103,22 +106,12 @@ string get_machine()
   return ret;
 }
 
+
 bool is_image_valid(string &image)
 {
   string curr_machine = get_machine();
-  string cmd = "grep \"U-Boot 2016.07 " + curr_machine +
-    "\" " + image + " 2> /dev/null | wc -l";
-  FILE *fp = popen(cmd.c_str(), "r");
-  if (!fp) {
-    return false;
-  }
-  bool ret = false;
-  int num = 0;
-  if (fscanf(fp, "%d", &num) == 1 && num > 0) {
-    ret = true;
-  }
-  pclose(fp);
-  return ret;
+
+  return is_image_valid(image, "/etc/image_parts.json", curr_machine);
 }
 
 /* Flashes full image to provided MTD. Gets version from 

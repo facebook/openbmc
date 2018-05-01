@@ -13,6 +13,7 @@ SRC_URI =+ "file://Makefile \
            file://server.h \
            file://server.cpp \
            file://bmc.cpp \
+           file://check_image.cpp \
            file://nic.cpp \
            file://fscd.cpp \
            file://tpm.cpp \
@@ -26,17 +27,21 @@ SRC_URI =+ "file://Makefile \
            file://bic_cpld.h \
            file://extlib.cpp \
            file://extlib.h \
+           file://image_parts.json \
           "
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -ljansson -lpal -ldl "
-DEPENDS += "jansson libpal"
-RDEPENDS_${PN} += "jansson libpal"
+LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -ldl "
+DEPENDS += "jansson libpal dtc zlib openssl "
+RDEPENDS_${PN} += "jansson libpal zlib openssl "
 
 do_install() {
   install -d ${D}${bindir}
   install -m 0755 fw-util ${D}${bindir}/fw-util
+  install -d ${D}${sysconfdir}
+  install -m 0644 ${WORKDIR}/image_parts.json ${D}${sysconfdir}/image_parts.json
 }
 
 FILES_${PN} = "${prefix}/bin"
+FILES_${PN} += "${sysconfdir}/image_parts.json"

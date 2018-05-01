@@ -11,109 +11,10 @@
 
 using namespace std;
 
+extern bool is_image_valid(string &file, string &desc, string &machine);
+
 #define BMC_RW_OFFSET               (64 * 1024)
 #define ROMX_SIZE                   (84 * 1024)
-
-#define PAGE_SIZE                     0x1000
-#define VERIFIED_BOOT_STRUCT_BASE     0x1E720000
-#define VERIFIED_BOOT_HARDWARE_ENFORCE(base) \
-  *((uint8_t *)(base + 0x215))
-
-
-extern bool is_image_valid(string &file, const char *desc_file, string &machine);
-
-static int system_w(const string &cmd)
-{
-#ifdef DEBUG
-  cout << "Executing: " << cmd << endl;
-#endif
-  int status = system(cmd.c_str());
-  if (status == -1) {
-    return 127;
-  }
-  if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
-    return FW_STATUS_SUCCESS;
-  return FW_STATUS_FAILURE;
-}
-
-static bool vboot_hardware_enforce(void)
-{
-  int mem_fd;
-  uint8_t *vboot_base;
-  uint8_t hw_enforce_flag;
-
-  mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-  if (mem_fd < 0) {
-    cerr << "Error opening /dev/mem" << endl;
-    return false;
-  }
-
-  vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, VERIFIED_BOOT_STRUCT_BASE);
-  if (!vboot_base) {
-    cerr << "Error mapping VERIFIED_BOOT_STRUCT_BASE" << endl;
-    close(mem_fd);
-    return false;
-  }
-
-  hw_enforce_flag = VERIFIED_BOOT_HARDWARE_ENFORCE(vboot_base);
-
-  munmap(vboot_base, PAGE_SIZE);
-  close(mem_fd);
-
-  return hw_enforce_flag == 1 ? true : false;
-}
-
-static bool get_mtd_name(const char* name, char* dev)
-{
-  FILE* partitions = fopen("/proc/mtd", "r");
-  char line[256], mnt_name[32];
-  unsigned int mtdno;
-  bool found = false;
-
-  if (!partitions) {
-    return false;
-  }
-  if (dev) {
-    dev[0] = '\0';
-  }
-  while (fgets(line, sizeof(line), partitions)) {
-    if(sscanf(line, "mtd%d: %*x %*x %s",
-                 &mtdno, mnt_name) == 2) {
-      if(!strcmp(name, mnt_name)) {
-        if (dev) {
-          sprintf(dev, "/dev/mtd%d", mtdno);
-        }
-        found = true;
-        break;
-      }
-    }
-  }
-  fclose(partitions);
-  return found;
-}
-
-string get_machine()
-{
-  string ret = "";
-  char machine[128] = "NA";
-  FILE *fp = fopen("/etc/issue", "r");
-  if (fp) {
-    if (fscanf(fp, "OpenBMC Release %[^ \t\n-]", machine) == 1) {
-      ret = machine;
-    }
-    fclose(fp);
-  }
-  return ret;
-}
-
-
-bool is_image_valid(string &image)
-{
-  string curr_machine = get_machine();
-
-  return is_image_valid(image, "/etc/image_parts.json", curr_machine);
-}
-
 /* Flashes full image to provided MTD. Gets version from 
  * /etc/issue */
 class BmcComponent : public Component {
@@ -137,12 +38,12 @@ class BmcComponent : public Component {
         return FW_STATUS_NOT_SUPPORTED;
       }
 
-      if (is_image_valid(image_path) == false) {
-        cerr << image_path << " is not a valid BMC image for " << get_machine() << endl;
+      if (is_image_valid(image_path, System::partition_conf(), System::name()) == false) {
+        cerr << image_path << " is not a valid BMC image for " << System::name() << endl;
         return FW_STATUS_FAILURE;
       }
 
-      if (!get_mtd_name(_mtd_name.c_str(), dev)) {
+      if (!System::get_mtd_name(_mtd_name.c_str(), dev)) {
         cerr << "Failed to get device for " << _mtd_name << endl;
         return FW_STATUS_FAILURE;
       }
@@ -205,7 +106,7 @@ class BmcComponent : public Component {
         close(fd_w);
       }
       cmd_str << "flashcp -v " << flash_image << " " << string(dev);
-      ret = system_w(cmd_str.str());
+      ret = System::runcmd(cmd_str.str());
       if (_writable_offset > 0) {
         // this is a temp. file, remove it.
         remove(flash_image.c_str());
@@ -231,7 +132,7 @@ class BmcComponent : public Component {
         return FW_STATUS_SUCCESS;
       }
 
-      if (get_mtd_name(_vers_mtd.c_str(), mtd)) {
+      if (System::get_mtd_name(_vers_mtd.c_str(), mtd)) {
         char cmd[128];
         FILE *fp;
         sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd);
@@ -260,16 +161,16 @@ class SystemConfig {
     bool dual_flash;
   SystemConfig() {
     // If flash1 exists, then we have two flashes
-    if (get_mtd_name("\"flash1\"", NULL)) {
+    if (System::get_mtd_name("\"flash1\"", NULL)) {
       dual_flash = true;
     } else {
       dual_flash = false;
     }
     if (dual_flash) {
-      if (get_mtd_name("\"romx\"", NULL)) {
+      if (System::get_mtd_name("\"romx\"", NULL)) {
         // If verified boot is enabled, we should
         // have the romx partition
-        if (vboot_hardware_enforce()) {
+        if (System::vboot_hardware_enforce()) {
           // Locked down, Update from a 64k offset.
           static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", "\"u-boot\"", BMC_RW_OFFSET, ROMX_SIZE);
           // Locked down, Allow getting version of ROM, but do not allow

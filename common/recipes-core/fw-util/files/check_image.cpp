@@ -413,7 +413,7 @@ class ImageDescriptorList {
   }
 };
 
-bool is_image_valid(string &file, const char *desc_file, string &machine)
+bool is_image_valid(string &file, string &desc, string &machine)
 {
   bool valid = false;
   try {
@@ -422,7 +422,7 @@ bool is_image_valid(string &file, const char *desc_file, string &machine)
     if (!image.supports_machine(mc)) {
       return false;
     }
-    ImageDescriptorList desc_list(desc_file);
+    ImageDescriptorList desc_list(desc.c_str());
     valid = desc_list.is_valid(image);
   } catch(string &ex) {
     cerr << ex << endl;
@@ -431,19 +431,3 @@ bool is_image_valid(string &file, const char *desc_file, string &machine)
   return valid;
 }
 
-#ifdef __TEST__
-int main(int argc, char *argv[])
-{
-  if (argc < 4) {
-    return -1;
-  }
-  string image_file(argv[1]);
-  string machine(argv[3]);
-  if (is_image_valid(image_file, argv[2], machine)) {
-    cout << "VALID" << endl;
-  } else {
-    cout << "INVALID" << endl;
-  }
-  return 0;
-}
-#endif

@@ -56,4 +56,16 @@ class Component {
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
 };
 
+class System {
+  public:
+    static int runcmd(const std::string &cmd);
+    static bool vboot_hardware_enforce();
+    static bool get_mtd_name(const char *name, char *dev);
+    static std::string& name();
+    static std::string& partition_conf();
+    static uint8_t get_fru_id(std::string &name);
+    static void set_update_ongoing(uint8_t fru_id, int timeo);
+    static std::string& lock_file(std::string &name);
+};
+
 #endif

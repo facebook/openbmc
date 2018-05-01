@@ -24,11 +24,14 @@
 #include <cstring>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/file.h>
 #include <unordered_map>
 #include <map>
 #include <tuple>
+#ifdef __TEST__
+#include <gtest/gtest.h>
+#endif
 #include "fw-util.h"
-#include <openbmc/pal.h>
 
 using namespace std;
 
@@ -114,7 +117,7 @@ class ProcessLock {
     bool _ok;
   public:
   ProcessLock(string name) {
-    file = "/var/run/fw-util-" + name + ".lock";
+    file = System::lock_file(name);
     _ok = false;
     fd = open(file.c_str(), O_RDWR|O_CREAT, 0666);
     if (fd < 0) {
@@ -164,6 +167,14 @@ int main(int argc, char *argv[])
 {
   int ret = 0;
   int find_comp = 0;
+
+#ifdef __TEST__
+  testing::InitGoogleTest(&argc, argv);
+  ret = RUN_ALL_TESTS();
+  if (ret != 0) {
+    return ret;
+  }
+#endif
 
   exec_name = argv[0];
   Component::populateFruList();
@@ -230,14 +241,9 @@ int main(int argc, char *argv[])
                   << " on fru: " << c->fru() << endl;
               }
             } else {  // update or dump
-              uint8_t fru_id;
               string str_act("");
-              if (pal_get_fru_id((char *)c->fru().c_str(), &fru_id)) {
-                // Set to some default FRU which should be present
-                // in the system.
-                fru_id = 1;
-              }
-              pal_set_fw_update_ongoing(fru_id, 60 * 10);
+              uint8_t fru_id = System::get_fru_id(c->fru());
+              System::set_update_ongoing(fru_id, 60 * 10);
               if (action == "--update") {
                 ret = c->update(image);
                 str_act.assign("Upgrade");
@@ -245,7 +251,7 @@ int main(int argc, char *argv[])
                 ret = c->dump(image);
                 str_act.assign("Dump");
               }
-              pal_set_fw_update_ongoing(fru_id, 0);
+              System::set_update_ongoing(fru_id, 0);
               if (ret == 0) {
                 cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
               } else {

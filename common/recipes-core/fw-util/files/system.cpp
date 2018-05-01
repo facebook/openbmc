@@ -122,7 +122,7 @@ uint8_t System::get_fru_id(string &name)
 
 void System::set_update_ongoing(uint8_t fru_id, int timeo)
 {
-  pal_set_fw_update_ongoing(fru_id, 60 * 10);
+  pal_set_fw_update_ongoing(fru_id, timeo);
 }
 
 string& System::lock_file(string &name)

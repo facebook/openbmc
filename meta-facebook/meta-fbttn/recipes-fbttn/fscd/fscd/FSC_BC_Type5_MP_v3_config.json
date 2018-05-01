@@ -141,7 +141,7 @@
       "setpoint": 68,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
-      "kp": 4,
+      "kp": -4,
       "ki": -0.05,
       "kd": 0
     }

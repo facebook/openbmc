@@ -1792,7 +1792,7 @@ CONFIG_AST_IPMI_BT=y
 # CONFIG_AST_PECI is not set
 # CONFIG_AST_MBX is not set
 CONFIG_AST_GPIO=y
-# CONFIG_AST_JTAG is not set
+CONFIG_AST_JTAG=m
 # CONFIG_AST_MCTP is not set
 # CONFIG_AST_XDMA is not set
 # CONFIG_AST_RFX is not set

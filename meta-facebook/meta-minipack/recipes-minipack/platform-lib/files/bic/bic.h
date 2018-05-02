@@ -66,6 +66,24 @@ enum {
   RESERVED_31,
 };
 
+enum {
+  UPDATE_BIOS = 0,
+  UPDATE_CPLD,
+  UPDATE_BIC_BOOTLOADER,
+  UPDATE_BIC,
+  UPDATE_VR,
+};
+
+enum {
+  FW_CPLD = 1,
+  FW_BIC,
+  FW_ME,
+  FW_BIC_BOOTLOADER,
+  FW_PVCCIN_VR,
+  FW_DDRAB_VR,
+  FW_P1V05_VR,
+};
+
 // Bridge IC Spec
 typedef struct _bic_gpio_t {
   uint32_t pwrgood_cpu:1;
@@ -139,6 +157,9 @@ int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id);
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);
 int bic_read_mac(uint8_t slot_id, char *rbuf);
+int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
+int bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset, uint32_t len, uint8_t *ver);
+int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 
 #ifdef __cplusplus
 } // extern "C"

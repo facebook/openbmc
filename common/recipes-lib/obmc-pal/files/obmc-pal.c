@@ -537,8 +537,10 @@ pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num,
         sprintf(name, "SPS_FW_HEALTH");
         break;
       case NM_EXCEPTION_A:
-      case NM_EXCEPTION_B:
         sprintf(name, "NM_EXCEPTION");
+        break;
+      case PCH_THERM_THRESHOLD:
+        sprintf(name, "PCH_THERM_THRESHOLD");
         break;
       case NM_HEALTH:
         sprintf(name, "NM_HEALTH");
@@ -609,6 +611,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t temp;
   uint8_t sen_type = event_data[0];
   uint8_t chn_num, dimm_num;
+  uint8_t idx;
 
   /*Used by decoding ME event*/
   char *nm_capability_status[2] = {"Not Available", "Available"};
@@ -619,8 +622,14 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
                      "Volumetric Airflow Reading Failure", "Policy Misconfiguration",
                      "Power Sensor Reading Failure", "Inlet Temperature Reading Failure",
                      "Host Communication Error", "Real-time Clock Synchronization Failure",
-                    "Platform Shutdown Initiated by Intel NM Policy", "Unknown"};
+                     "Platform Shutdown Initiated by Intel NM Policy", "Unknown"};
   char *nm_health_type[4] = {"Unknown", "Unknown", "SensorIntelNM", "Unknown"};
+  const char *thres_event_name[16] = {[0] = "Lower Non-critical", 
+                                      [2] = "Lower Critical", 
+                                      [4] = "Lower Non-recoverable", 
+                                      [7] = "Upper Non-critical", 
+                                      [9] = "Upper Critical", 
+                                      [11] = "Upper Non-recoverable"};
 
 
   strcpy(error_log, "");
@@ -1002,12 +1011,16 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
 
     /*NM4.0 #550710, Revision 1.95, and turn to p.155*/
     case NM_EXCEPTION_A:
-    case NM_EXCEPTION_B:
       if (ed[0] == 0xA8) {
         strcat(error_log, "Policy Correction Time Exceeded");
         return 1;
       } else
          strcat(error_log, "Unknown");
+      break;
+    case PCH_THERM_THRESHOLD:
+      idx = ed[0] & 0x0f;
+      sprintf(temp_log, "%s, curr_val: %d C, thresh_val: %d C", thres_event_name[idx] == NULL ? "Unknown" : thres_event_name[idx],ed[1],ed[2]);
+      strcat(error_log, temp_log);
       break;
     case NM_HEALTH:
       {

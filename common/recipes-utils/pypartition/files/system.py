@@ -176,6 +176,8 @@ def get_partitions(images, checksums, logger):
     # type: (VirtualCat, List[str], logging.Logger) -> List[Partition]
     partitions = []  # type: List[Partition]
     next_magic = images.peek()
+    # First 384K is u-boot for legacy or regular-fit images OR
+    # the combination of SPL + recovery u-boot. Treat them as the same.
     if next_magic in ExternalChecksumPartition.UBootMagics:
         partitions.append(ExternalChecksumPartition(
             0x060000, 0x000000, 'u-boot', images, checksums, logger
@@ -185,9 +187,13 @@ def get_partitions(images, checksums, logger):
             next_magic, 0
         ))
         sys.exit(1)
+
+    # Env is always in the same location for both legacy and FIT images.
     partitions.append(EnvironmentPartition(
         0x020000, 0x060000, 'env', images, logger
     ))
+
+    # Either we are using the legacy image format or the FIT format.
     next_magic = images.peek()
     if next_magic == LegacyUBootPartition.magic:
         partitions.append(LegacyUBootPartition(
@@ -202,9 +208,20 @@ def get_partitions(images, checksums, logger):
             logger,
         ))
     elif next_magic == DeviceTreePartition.magic:
-        partitions.append(DeviceTreePartition(
-            0x1400000, 0x80000, 'fit', images, logger
-        ))
+        # The FIT image at 0x80000 could be a u-boot image (size 0x60000)
+        # or the kernel+rootfs FIT which is much larger.
+        # DeviceTreePartition() will pick the smallest which fits.
+        part = DeviceTreePartition(
+            [0x60000, 0x1B200000], 0x80000, "fit1", images, logger
+        )
+        partitions.append(part)
+
+        # If the end of the above partition is 0xE0000 then we need to
+        # check a second FIT image. This is definitely the larger one.
+        if (part.end() == 0xE0000):
+            partitions.append(DeviceTreePartition(
+                [0x1B200000], 0xE0000, "fit2", images, logger
+            ))
     else:
         logging.error('Unrecognized magic 0x{:x} at offset 0x{:x}.'.format(
             next_magic, 0x80000

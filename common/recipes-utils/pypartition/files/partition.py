@@ -405,10 +405,9 @@ class DeviceTreePartition(Partition):
             value = DeviceTreePartition.next_datum(images, length, b's').rstrip(b'\x00')
         return (name, value)
 
-    def __init__(self, size, offset, name, images, logger):
-        # type: (int, int, str, VirtualCat, logging.Logger) -> None
+    def __init__(self, sizes, offset, name, images, logger):
+        # type: (int, List<int>, str, VirtualCat, logging.Logger) -> None
         self.name = name
-        self.partition_size = size
         self.partition_offset = offset
         self.valid = True
 
@@ -436,11 +435,11 @@ class DeviceTreePartition(Partition):
                 name, parsed_header['magic'], DeviceTreePartition.magic
             ))
 
-        if parsed_header['total_size'] > size:
+        if parsed_header['total_size'] > sizes[-1]:
             self.valid = False
             message = '{} size 0x{:08x} > expected 0x{:08x}.'
             logger.error(message.format(
-                name, total_size, size
+                name, parsed_header['total_size'], sizes[-1]
             ))
 
         # Skip over memory reservation and structure blocks to strings block.
@@ -475,16 +474,35 @@ class DeviceTreePartition(Partition):
         for name, properties in tree[b'images'].items():
             assert(properties[b'hash@1'][b'algo'] == b'sha256')
             expected = properties[b'hash@1'][b'value'].decode()
+            if b'data-size' in properties and b'data-position' in properties:
+                # The data is at a fixed offset, seek to it to compute
+                # the checksum and seek back to the current location.
+                data_pos = int(properties[b'data-position'], 16)
+                data_len = int(properties[b'data-size'], 16)
+                curr_tell = images.open_file.tell()
+                images.open_file.seek(self.partition_offset + data_pos)
+                sha256sum = hashlib.sha256()
+                images.read_with_callback(data_len, sha256sum.update)
+                properties[b'data'] = sha256sum.hexdigest()
+                images.open_file.seek(curr_tell)
             if properties[b'data'] != expected:
                 self.valid = False
                 logger.error('{} {} {} != {}.'.format(
                     name, properties[b'hash@1'][b'algo'], properties[b'data'],
                     expected
                 ))
+            else:
+                logger.info('{} checksums match.'.format(name))
+
+        used_size = images.open_file.tell() - self.partition_offset
+        for sz in sizes:
+            if (used_size < sz):
+                self.partition_size = sz;
+                break
 
         # Go to end of partition.
         images.seek_within_current_file(
-                size -
+                self.partition_size -
                 parsed_header['structure_block_offset'] -
                 parsed_header['structure_block_size']
         )

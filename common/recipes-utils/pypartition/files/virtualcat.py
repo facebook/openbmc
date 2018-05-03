@@ -52,11 +52,12 @@ class MemoryTechnologyDevice(ImageFile):
     Defines MTD attributes so that they can be used mostly interchangeably with
     ImageFiles.
     '''
-    def __init__(self, device, size, device_name):
+    def __init__(self, device, size, device_name, offset=0):
         # type: (str, int, str) -> None
         self.file_name = os.path.join('/dev', device)
         self.size = size
         self.device_name = device_name
+        self.offset = offset
 
     def __str__(self):
         # type: () -> str

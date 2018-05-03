@@ -133,13 +133,24 @@ def get_mtds():
     mtd_info = []
     with open('/proc/mtd', 'r') as proc_mtd:
         mtd_info = proc_mtd_regex.findall(proc_mtd.read())
+    vboot_support = "none"
+    if any(name == 'romx' for (_, _, name) in mtd_info):
+        vboot_support = "software-enforce"
+        if 'Flags hardware_enforce:  0x01' in subprocess.check_output(['vboot-util']).decode():
+            vboot_support = 'hardware-enforce'
     all_mtds = []
     full_flash_mtds = []
     for (device, size_in_hex, name) in mtd_info:
         if name.startswith('flash') or name == 'Partition_000':
-            full_flash_mtds.append(MemoryTechnologyDevice(
-                device, int(size_in_hex, 16), name
-            ))
+            if vboot_support == 'none' or \
+               (vboot_support == 'software-enforce' and (name in ['flash0', 'flash1'])):
+                    full_flash_mtds.append(MemoryTechnologyDevice(
+                        device, int(size_in_hex, 16), name
+                    ))
+            elif vboot_support == 'hardware-enforce' and name in ['flash1']:
+                    full_flash_mtds.append(MemoryTechnologyDevice(
+                        device, int(size_in_hex, 16), name, 384
+                    ))
         all_mtds.append(MemoryTechnologyDevice(
             device, int(size_in_hex, 16), name
         ))
@@ -319,8 +330,21 @@ def flash(attempts, image_file, mtd, logger):
     if other_flasher_running(logger):
         sys.exit(1)
 
+    image_name = image_file.file_name
+    # If MTD has a read-only offset, create a new image file with the
+    # readonly offset from the device and the remaining from the image
+    # file and use that for flashcp.
+    if mtd.offset > 0:
+        image_name = image_name + '.tmp'
+        with open(image_name, 'wb') as out_f:
+            with open(mtd.file_name, 'rb') as in_f:
+                out_f.write(in_f.read(mtd.offset * 1024))
+            with open(image_file.file_name, 'rb') as in_f:
+                in_f.seek(mtd.offset * 1024)
+                out_f.write(in_f.read())
+
     # TODO only write bytes that have changed
-    flash_command = ['flashcp', image_file.file_name, mtd.file_name]
+    flash_command = ['flashcp', image_name, mtd.file_name]
     if attempts < 1:
         flash_command = ['dd', 'if={}'.format(image_file.file_name),
                          'of=/dev/null']
@@ -337,6 +361,9 @@ def flash(attempts, image_file, mtd, logger):
             logger.warning('flashcp attempt {} returned {}.'.format(
                 attempt, result.returncode
             ))
+    # Remove temp file.
+    if (image_file.file_name != image_name):
+        os.remove(image_name)
 
 
 # Unfortunately there is no mutual exclusion between flashing and rebooting.

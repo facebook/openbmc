@@ -60,7 +60,7 @@ def improve_system(logger):
     logger.info('{} KiB free memory.'.format(free_memory))
     # As of August 2017, sample image files are 15 to 22 MiB. Make sure there
     # is space for them and a few flashing related processes.
-    if system.free_kibibytes() < 30 * 1024:
+    if system.free_kibibytes() < 60 * 1024:
         if full_flash_mtds != []:
             [system.get_valid_partitions([full_flash], checksums, logger)
              for full_flash in full_flash_mtds]
@@ -90,7 +90,8 @@ def improve_system(logger):
         system.get_valid_partitions([image_file], checksums, logger)
 
         attempts = 0 if args.dry_run else 3
-        system.flash(attempts, image_file, full_flash_mtds[0], logger)
+        for mtd in full_flash_mtds:
+            system.flash(attempts, image_file, mtd, logger)
         # One could in theory pre-emptively set mtdparts for images that
         # will need it, but the mtdparts generator hasn't been tested on dual
         # flash and potentially other systems. To avoid over-optimizing for

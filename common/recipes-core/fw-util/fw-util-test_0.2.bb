@@ -12,6 +12,7 @@ inherit native
 SRC_URI =+ "file://Makefile \
            file://fw-util.h \
            file://fw-util.cpp \
+           file://fw-util-test.cpp \
            file://bmc.cpp \
            file://check_image.cpp \
            file://image_parts.json \
@@ -23,9 +24,9 @@ SRC_URI =+ "file://Makefile \
 S = "${WORKDIR}"
 
 CXXFLAGS += "-D__TEST__ "
-LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -ldl -lgtest "
-DEPENDS += "jansson dtc zlib openssl dtc-native gtest-native "
-RDEPENDS_${PN} += "jansson zlib openssl gtest-native "
+LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -ldl -lgtest -lgmock "
+DEPENDS += "jansson dtc zlib openssl dtc-native gtest-native gmock-native "
+RDEPENDS_${PN} += "jansson zlib openssl gtest-native gmock-native "
 
 do_install() {
   install -d ${D}${bindir}

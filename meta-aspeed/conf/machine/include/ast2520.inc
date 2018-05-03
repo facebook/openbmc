@@ -16,7 +16,7 @@ require conf/machine/include/tune-arm1136jf-s.inc
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed"
 
 # We have 2 kernel trees to pick from
-PREFERRED_VERSION_linux-aspeed ?= "4.1.15"
+PREFERRED_VERSION_linux-aspeed ?= "4.1.51"
 #PREFERRED_VERSION_linux-aspeed ?= "4.7"
 
 PREFERRED_VERSION_u-boot ?= "v2016.07"

@@ -24,16 +24,18 @@ update_hostname() {
   # Wait till DHCP gets its IP addresses.
   sleep 15
   # Do a DNS lookup for each IP address on eth0 to find a hostname.
+  # If multiple hostnames are returned, the sled one, if present, is preferred.
   FOUND_NAME=""
   for ip in $(ip a s eth0 | sed -nr 's, *inet6? ([0-9a-f:.]+)\/.*,\1,p'); do
-    dns_ptr=$(nslookup $ip | sed -nr '$s,.* ,,p')
-    if [ "$dns_ptr" != "$ip" ]; then
+    dns_ptr=$(dig +short -x $ip | sed -nr '/sled.*-oob/ { p; q }; $ { p }')
+    dns_ptr=${dns_ptr%?}
+    if [ "${dns_ptr:0:2}" != ";;" ]; then
         FOUND_NAME=$dns_ptr
         break
     fi
 	done
 
-  # nslookup didn't return anything. Do not update files.
+  # dig didn't return anything. Do not update files.
   [[ -z $FOUND_NAME ]] && return 0
 
   # Only update if the hostname is different from the one set
@@ -52,4 +54,3 @@ set_hostname $HOSTNAME
 # Start the update process in the background so
 # we may update the cached copy if it has changed.
 (update_hostname &)&
-

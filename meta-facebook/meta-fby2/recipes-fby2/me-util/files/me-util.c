@@ -149,7 +149,63 @@ process_file(uint8_t slot_id, char *path) {
 int
 main(int argc, char **argv) {
   uint8_t slot_id;
+#if defined(CONFIG_FBY2_RC)
+  if (argc < 2) {
+    goto err_exit;
+  }
 
+  uint8_t server_type = 0xFF;
+  uint8_t status;
+  int ret;
+
+  if (!strcmp(argv[1], "slot1")) {
+    slot_id = 1;
+  } else if (!strcmp(argv[1] , "slot2")) {
+    slot_id = 2;
+  } else if (!strcmp(argv[1] , "slot3")) {
+    slot_id = 3;
+  } else if (!strcmp(argv[1] , "slot4")) {
+    slot_id = 4;
+  } else {
+    goto err_exit;
+  }
+
+  ret = pal_is_fru_prsnt(slot_id, &status);
+  if (ret < 0) {
+    printf("Check slot present failed for slot%u\n", slot_id);
+    return ret;
+  }
+  if (status == 0) {
+    printf("slot%u is not present!\n\n", slot_id);
+    return -1;
+  }
+
+  ret = fby2_get_server_type(slot_id, &server_type);
+  if (ret) {
+    printf("Get server type failed for slot%u\n", slot_id);
+    return -1;
+  }
+  switch (server_type) {
+    case SERVER_TYPE_RC:
+      printf("Error: me-util isn't supported on RC platform\n");
+      return -1;
+    case SERVER_TYPE_TL:
+      if (argc < 3) {
+        goto err_exit;
+      }
+      if (!strcmp(argv[2], "--file")) {
+        if (argc < 4) {
+          goto err_exit;
+        }
+        process_file(slot_id, argv[3]);
+        return 0;
+      }
+      return process_command(slot_id, (argc - 2), (argv + 2));
+    default:
+      printf("Error: Block me-util due to unknown server type\n");
+      return -1;
+  }
+#else
   if (argc < 3) {
     goto err_exit;
   }
@@ -176,7 +232,7 @@ main(int argc, char **argv) {
   }
 
   return process_command(slot_id, (argc - 2), (argv + 2));
-
+#endif
 err_exit:
   print_usage_help();
   return -1;

@@ -2,7 +2,7 @@
 all: me-util
 
 me-util: me-util.o 
-	$(CC) $(CFLAGS) -pthread -lipmi -lipmb -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lipmi -lipmb -lfby2_sensor -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -21,6 +21,7 @@ IMAGE_INSTALL += " \
   bitbang \
   cpldupdate \
   flashrom \
+  front-paneld \
   fscd \
   gpiod \
   ipmbd \

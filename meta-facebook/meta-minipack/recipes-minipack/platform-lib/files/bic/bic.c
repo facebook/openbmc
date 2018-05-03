@@ -248,6 +248,21 @@ bic_get_config(uint8_t slot_id, bic_config_t *cfg) {
   return ret;
 }
 
+// Set BIC Configuration
+int
+bic_set_config(uint8_t slot_id, bic_config_t *cfg) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rlen = 0;
+  uint8_t rbuf[4] = {0};
+  int ret;
+
+  tbuf[3] = *(uint8_t *) cfg;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_CONFIG,
+              tbuf, 0x04, rbuf, &rlen);
+  return ret;
+}
+
 // Read POST Buffer
 int
 bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len) {

@@ -234,6 +234,9 @@ gpio_monitor_poll() {
       continue;
     }
 
+    memset(pwr_state, 0, MAX_VALUE_LEN);
+    pal_get_last_pwr_state(FRU_MB, pwr_state);
+
     /* Get the GPIO pins */
     if ((ret = bic_get_gpio(IPMB_BUS, (bic_gpio_t *) &n_pin_val)) < 0) {
       n_pin_val = CLEARBIT(o_pin_val[0], PWRGOOD_CPU);
@@ -252,11 +255,18 @@ gpio_monitor_poll() {
 
         // Check if the new GPIO val is ASSERT
         if (gpios[i].status == gpios[i].ass_val) {
+          if (strcmp(pwr_state, "off")) {
+            pal_set_last_pwr_state(FRU_MB, "off");
+          }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", IPMB_BUS);
         } else {
-	      // Inform BIOS that BMC is ready
-		  bic_set_gpio(IPMB_BUS, BMC_READY_N, 0);
-		}
+          // Inform BIOS that BMC is ready
+          bic_set_gpio(IPMB_BUS, BMC_READY_N, 0);
+          if (strcmp(pwr_state, "on")) {
+            pal_set_last_pwr_state(FRU_MB, "on");
+          }
+          syslog(LOG_CRIT, "FRU: %d, System powered ON", IPMB_BUS);
+        }
       }
     }
 

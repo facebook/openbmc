@@ -160,6 +160,7 @@ int bic_read_mac(uint8_t slot_id, char *rbuf);
 int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
 int bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset, uint32_t len, uint8_t *ver);
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
+int bic_set_config(uint8_t slot_id, bic_config_t *cfg);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/file.h>
-#include <unordered_map>
 #include <map>
 #include <tuple>
 #ifdef __TEST__
@@ -36,78 +35,74 @@
 using namespace std;
 
 string exec_name = "Unknown";
-ComponentList Component::registered_components[MAX_COMPONENTS] = {0};
-ComponentAliasList Component::registered_aliases[MAX_COMPONENTS] = {0};
-map<string, map<string, Component *>> Component::fru_list;
+map<string, map<string, Component *>> * Component::fru_list = NULL;
 
 Component::Component(string fru, string component)
   : _fru(fru), _component(component)
 {
-  for (int i = 0; i < MAX_COMPONENTS; ++i) {
-    if (registered_components[i].obj == NULL) {
-      ComponentList *c = &registered_components[i];
-      strncpy(c->fru, fru.c_str(), sizeof(c->fru));
-      strncpy(c->comp, component.c_str(), sizeof(c->comp));
-      c->fru[sizeof(c->fru) - 1] = c->comp[sizeof(c->comp) - 1] = '\0';
-      c->obj  = this;
-      break;
-    }
+  fru_list_setup();
+  (*fru_list)[fru][component] = this;
+}
+
+Component::~Component()
+{
+  (*fru_list)[_fru].erase(_component);
+  if ((*fru_list)[_fru].size() == 0) {
+    fru_list->erase(_fru);
   }
 }
 
-Component::Component(string fru, string component,
-    string real_fru, string real_component)
-  : _fru(fru), _component(component)
+Component *Component::find_component(string fru, string comp)
 {
-  for (int i = 0; i < MAX_COMPONENTS; ++i) {
-    if (registered_aliases[i].fru[0] == '\0') {
-      ComponentAliasList *c = &registered_aliases[i];
-      strncpy(c->fru, fru.c_str(), sizeof(c->fru));
-      strncpy(c->comp, component.c_str(), sizeof(c->comp));
-      strncpy(c->real_fru, real_fru.c_str(), sizeof(c->real_fru));
-      strncpy(c->real_comp, real_component.c_str(), sizeof(c->real_comp));
-      c->fru[sizeof(c->fru) - 1] = c->comp[sizeof(c->comp) - 1] = '\0';
-      c->real_fru[sizeof(c->real_fru) - 1] = '\0';
-      c->real_comp[sizeof(c->real_comp) - 1] = '\0';
-      break;
-    }
+  if (!fru_list) {
+    return NULL;
   }
+  if (fru_list->find(fru) == fru_list->end()) {
+    return NULL;
+  }
+  if ((*fru_list)[fru].find(comp) == (*fru_list)[fru].end()) {
+    return NULL;
+  }
+  return (*fru_list)[fru][comp];
 }
 
-// Once initialization of static objects are complete, we can
-// call this once in main to throw everything in registered_components
-// into a map data structure for ease of use.
-void Component::populateFruList()
+AliasComponent::AliasComponent(string fru, string comp, string t_fru, string t_comp) :
+  Component(fru, comp), _target_fru(t_fru), _target_comp_name(t_comp), _target_comp(NULL)
 {
-  for (int i = 0; i < MAX_COMPONENTS; ++i) {
-    ComponentList *c = &registered_components[i];
-    if (c->obj == nullptr) {
-      break;
+  // This might not be successful this early.
+  _target_comp = find_component(t_fru, t_comp);
+}
+
+bool AliasComponent::setup()
+{
+  if (!_target_comp) {
+    _target_comp = find_component(_target_fru, _target_comp_name);
+    if (!_target_comp) {
+      return false;
     }
-    fru_list[std::string(c->fru)][std::string(c->comp)] = c->obj;
-    c->fru[0] = c->comp[0] = '\0';
-    c->obj = nullptr;
   }
-  for (int i = 0; i < MAX_COMPONENTS; ++i) {
-    ComponentAliasList *c = &registered_aliases[i];
-    if (c->fru[0] == '\0') {
-      break;
-    }
-    string fru(c->fru);
-    string comp(c->comp);
-    string real_fru(c->real_fru);
-    string real_comp(c->real_comp);
-    if (fru_list.find(real_fru) != fru_list.end() &&
-        fru_list[real_fru].find(real_comp) != fru_list[real_fru].end()) {
-      fru_list[fru][comp] = fru_list[real_fru][real_comp];
-    }
-#ifdef DEBUG
-    else {
-      cerr << "Ignoring alias (" << fru << "," << comp << ") to unknown ("
-        << real_fru << "," << real_comp << ")" << endl;
-    }
-#endif
-  }
+  return true;
+}
+
+int AliasComponent::update(string image)
+{
+  if (!setup())
+    return FW_STATUS_NOT_SUPPORTED;
+  return _target_comp->update(image);
+}
+
+int AliasComponent::dump(string image)
+{
+  if (!setup())
+    return FW_STATUS_NOT_SUPPORTED;
+  return _target_comp->dump(image);
+}
+
+int AliasComponent::print_version()
+{
+  if (!setup())
+    return FW_STATUS_NOT_SUPPORTED;
+  return _target_comp->print_version();
 }
 
 class ProcessLock {
@@ -147,15 +142,16 @@ void usage()
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
-  for (auto fkv : Component::fru_list) {
+  for (auto fkv : *Component::fru_list) {
     string fru_name = fkv.first;
     cout << left << setw(10) << fru_name << " : ";
     for (auto ckv : fkv.second) {
       string comp_name = ckv.first;
       Component *c = ckv.second;
       cout << comp_name;
-      if (c->component() != comp_name || c->fru() != fru_name) {
-        cout << "(" << c->fru() << ":" << c->component() << ")";
+      if (c->is_alias()) {
+        AliasComponent *a = (AliasComponent *)c;
+        cout << "(" << a->alias_fru() << ":" << a->alias_component() << ")";
       }
       cout << " ";
     }
@@ -168,6 +164,8 @@ int main(int argc, char *argv[])
   int ret = 0;
   int find_comp = 0;
 
+  Component::fru_list_setup();
+
 #ifdef __TEST__
   testing::InitGoogleTest(&argc, argv);
   ret = RUN_ALL_TESTS();
@@ -177,8 +175,6 @@ int main(int argc, char *argv[])
 #endif
 
   exec_name = argv[0];
-  Component::populateFruList();
-
   if (argc < 3) {
     usage();
     return -1;
@@ -218,8 +214,7 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  unordered_map<Component *,bool> done_map;
-  for (auto fkv : Component::fru_list) {
+  for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
       // Ensure only one instance of fw-util per FRU is running
       ProcessLock lock(fkv.first);
@@ -228,39 +223,46 @@ int main(int argc, char *argv[])
         return -1;
       }
 
-      for (auto ckv : Component::fru_list[fkv.first]) {
+      for (auto ckv : fkv.second) {
         if (component == "all" || component == ckv.first) {
           find_comp = 1;
-          Component *c = Component::fru_list[fkv.first][ckv.first];
-          if (done_map.find(c) == done_map.end()) {
-            done_map[c] = true;
-            if (action == "--version") {
-              ret = c->print_version();
-              if (ret != FW_STATUS_SUCCESS && ret != FW_STATUS_NOT_SUPPORTED) {
-                cerr << "Error getting version of " << c->component()
-                  << " on fru: " << c->fru() << endl;
-              }
-            } else {  // update or dump
-              string str_act("");
-              uint8_t fru_id = System::get_fru_id(c->fru());
-              System::set_update_ongoing(fru_id, 60 * 10);
-              if (action == "--update") {
-                ret = c->update(image);
-                str_act.assign("Upgrade");
+          Component *c = ckv.second;
+
+          // Ignore aliases if their target is going to be
+          // considered in one of the loops.
+          if (c->is_alias()) {
+            if (component == "all" && (fru == "all" || fru == c->alias_fru()))
+              continue;
+            if (fru == "all" && component == c->alias_component())
+              continue;
+          }
+
+          if (action == "--version") {
+            ret = c->print_version();
+            if (ret != FW_STATUS_SUCCESS && ret != FW_STATUS_NOT_SUPPORTED) {
+              cerr << "Error getting version of " << c->component()
+                << " on fru: " << c->fru() << endl;
+            }
+          } else {  // update or dump
+            string str_act("");
+            uint8_t fru_id = System::get_fru_id(c->fru());
+            System::set_update_ongoing(fru_id, 60 * 10);
+            if (action == "--update") {
+              ret = c->update(image);
+              str_act.assign("Upgrade");
+            } else {
+              ret = c->dump(image);
+              str_act.assign("Dump");
+            }
+            System::set_update_ongoing(fru_id, 0);
+            if (ret == 0) {
+              cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
+            } else {
+              cerr << str_act << " of " << c->fru() << " : " << component;
+              if (ret == FW_STATUS_NOT_SUPPORTED) {
+                cerr << " not supported" << endl;
               } else {
-                ret = c->dump(image);
-                str_act.assign("Dump");
-              }
-              System::set_update_ongoing(fru_id, 0);
-              if (ret == 0) {
-                cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
-              } else {
-                cerr << str_act << " of " << c->fru() << " : " << component;
-                if (ret == FW_STATUS_NOT_SUPPORTED) {
-                  cerr << " not supported" << endl;
-                } else {
-                  cerr << " failed" << endl;
-                }
+                cerr << " failed" << endl;
               }
             }
           }
@@ -268,7 +270,6 @@ int main(int argc, char *argv[])
       }
     }
   }
-
   if (!find_comp) {
     usage();
     return -1;

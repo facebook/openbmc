@@ -4845,7 +4845,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   *res_len = 0;
 
   for (i = 0; i < SIZE_BOOT_ORDER; i++) {
-    if (i > 0) {  // byte[0] is boot mode, byte[1:5] are boot order
+    if ((i > 0) && (boot[i] != 0xFF)) {  // byte[0] is boot mode, byte[1:5] are boot order
       for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
         if (boot[i] == boot[j])
           return CC_INVALID_PARAM;

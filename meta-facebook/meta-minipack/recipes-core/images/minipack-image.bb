@@ -23,6 +23,7 @@ IMAGE_INSTALL += " \
   flashrom \
   front-paneld \
   fscd \
+  fw-util \
   gpiod \
   ipmbd \
   ipmid \

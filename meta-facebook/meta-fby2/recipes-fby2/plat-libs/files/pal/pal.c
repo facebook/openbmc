@@ -4712,17 +4712,47 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
     return 0;
 }
 
+static uint8_t fan_dead_actived_flag = 0; // bit0 : fan 0, bit1 : fan 1
+static uint8_t both_fan_dead_control = 0;
 int
 pal_fan_dead_handle(int fan_num) {
+  int ret;
+  uint8_t slot, status = 0xFF, slot_type = 0xFF;
 
-  // TODO: Add action in case of fan dead
+  if (1 == both_fan_dead_control)
+    return 0;
+
+  fan_dead_actived_flag = SETBIT(fan_dead_actived_flag, fan_num);
+  if (GETBIT(fan_dead_actived_flag, fan_num) && GETBIT(fan_dead_actived_flag, fan_num))
+    both_fan_dead_control = 1;
+
+  if (1 == both_fan_dead_control) {
+    for (slot = 1; slot <= 4; slot++) {
+      slot_type = fby2_get_slot_type(slot);
+      if (SLOT_TYPE_SERVER == slot_type) {
+        pal_get_server_power(slot, &status);
+        if (SERVER_12V_OFF != status) {
+          // power off server 12V HSC
+          ret = server_12v_off(slot);
+          if (ret) {
+            syslog(LOG_ERR, "server_12v_off() failed, slot%d", slot);
+          }
+        }
+      }
+    }
+
+    syslog(LOG_CRIT, "FRU: %u, 12V-off all slots due to both fan fail", FRU_SPB);
+  }
+
   return 0;
 }
 
 int
 pal_fan_recovered_handle(int fan_num) {
 
-  // TODO: Add action in case of fan recovered
+  fan_dead_actived_flag = CLEARBIT(fan_dead_actived_flag, fan_num);
+  both_fan_dead_control = 0;  
+
   return 0;
 }
 

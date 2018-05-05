@@ -26,6 +26,8 @@ import json
 import ssl
 import socket
 import os
+import sys
+import syslog
 from tree import tree
 from node import node
 from plat_tree import init_plat_tree
@@ -34,7 +36,15 @@ CONSTANTS = {
     'certificate': '/usr/lib/ssl/certs/rest_server.pem',
 }
 
-root = init_plat_tree()
+if len(sys.argv) == 2 and sys.argv[1] == 'wr':
+    is_read_only = False
+    syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read/Write Mode')
+else:
+    is_read_only = True
+    syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read Only Mode')
+
+
+root = init_plat_tree(is_read_only)
 
 # Generic router for incoming requests
 @route('/<path:path>', method='ANY')

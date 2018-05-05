@@ -68,22 +68,27 @@ class logsNode(node):
         result = { "Logs": linfo }
         return result
 
-    def doAction(self, data):
-        if data["action"] != "clear":
-            res = 'failure'
+    def doAction(self, data, is_read_only=True):
+        if is_read_only:
+            result = { "result": 'failure' }
         else:
-            cmd = '/usr/local/bin/log-util ' + self.name +' --clear'
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-            data = data.decode()
-            if data.startswith( 'Usage' ):
+            if data["action"] != "clear":
                 res = 'failure'
             else:
-                res = 'success'
-
-        result = { "result": res }
+                cmd = '/usr/local/bin/log-util ' + self.name +' --clear'
+                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+                data = data.decode()
+                if data.startswith( 'Usage' ):
+                    res = 'failure'
+                else:
+                    res = 'success'
+            result = { "result": res }
 
         return result
 
-def get_node_logs(name):
-    actions = [ "clear" ]
+def get_node_logs(name, is_read_only=True):
+    if is_read_only:
+        actions =  []
+    else:
+        actions = [ "clear" ]
     return logsNode(name = name, actions = actions)

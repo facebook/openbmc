@@ -50,26 +50,33 @@ class serverNode(node):
 
         return info
 
-    def doAction(self, data):
-        if pal_server_action(self.num, data["action"]) == -1:
-            res = 'failure'
+    def doAction(self, data, is_read_only=True):
+        if is_read_only:
+            result = { "result": 'failure' }
         else:
-            res = 'success'
+            if pal_server_action(self.num, data["action"]) == -1:
+                res = 'failure'
+            else:
+                res = 'success'
 
-        result = { "result": res }
+            result = { "result": res }
 
         return result
 
-def get_node_server(num):
-    actions =  ["power-on",
-                "power-off",
-                "power-reset",
-                "power-cycle",
-                "graceful-shutdown",
-                "12V-on",
-                "12V-off",
-                "12V-cycle",
-                "identify-on",
-                "identify-off",
-                ]
+def get_node_server(num, is_read_only=True):
+    if is_read_only:
+        actions =  []
+    else:
+        actions =  ["power-on",
+                    "power-off",
+                    "power-reset",
+                    "power-cycle",
+                    "graceful-shutdown",
+                    "12V-on",
+                    "12V-off",
+                    "12V-cycle",
+                    "identify-on",
+                    "identify-off",
+                    ]
+
     return serverNode(num = num, actions = actions)

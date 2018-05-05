@@ -49,21 +49,28 @@ class server2SNode(node):
 
         return info
 
-    def doAction(self, data):
-        if pal_server_action(data["action"]) == -1:
-            res = 'failure'
+    def doAction(self, data, is_read_only=True):
+        if is_read_only:
+            result = { "result": 'failure' }
         else:
-            res = 'success'
+            if pal_server_action(data["action"]) == -1:
+                res = 'failure'
+            else:
+                res = 'success'
 
-        result = { "result": res }
+            result = { "result": res }
 
         return result
 
-def get_node_server_2s():
-    actions =  ["power-on",
-                "power-off",
-                "power-cycle",
-                "graceful-shutdown",
-                "reset",
-                ]
+def get_node_server_2s(is_read_only=True):
+    if is_read_only:
+        actions =  []
+    else:
+        actions =  ["power-on",
+                    "power-off",
+                    "power-cycle",
+                    "graceful-shutdown",
+                    "reset",
+                    ]
+
     return server2SNode(actions = actions)

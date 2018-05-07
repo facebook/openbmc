@@ -81,6 +81,7 @@ typedef struct _sdr_rec_hdr_t {
 #pragma pack(pop)
 
 const static uint8_t gpio_bic_update_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
+const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 
 // Helper Functions
 static void
@@ -202,6 +203,29 @@ _is_bic_update_ready(uint8_t slot_id) {
   }
 }
 
+static uint8_t
+_is_slot_12v_on(uint8_t slot_id) {
+  int val;
+  char path[64] = {0};
+
+  if (slot_id < 1 || slot_id > 4) {
+    return 0;
+  }
+
+  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
+
+  if (read_device(path, &val)) {
+    return 0;
+  }
+
+  if (val == 0x0) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
+
 // Common IPMB Wrapper function
 
 static int
@@ -243,6 +267,10 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   int i = 0;
   int ret;
   uint8_t bus_id;
+
+  if (!_is_slot_12v_on(slot_id)) {
+    return -1;
+  }
 
   ret = get_ipmb_bus_id(slot_id);
   if (ret < 0) {

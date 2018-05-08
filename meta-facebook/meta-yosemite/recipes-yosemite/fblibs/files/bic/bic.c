@@ -962,11 +962,6 @@ error_exit:
 
   set_fw_update_ongoing(slot_id, 0);
 
-  //Unlock fw-util
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
-  system(cmd);
-
   return ret;
 }
 
@@ -1074,7 +1069,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   uint32_t offset;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
-  char    cmd[100] = {0};
   uint8_t target;
   int fd;
   int i;
@@ -1240,10 +1234,6 @@ error_exit:
 
   set_fw_update_ongoing(slot_id, 0);
 
-  //Unlock fw-util
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
-  system(cmd);
   return ret;
 }
 

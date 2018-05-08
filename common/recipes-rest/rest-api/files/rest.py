@@ -49,6 +49,7 @@ root = init_plat_tree(is_read_only)
 # Generic router for incoming requests
 @route('/<path:path>', method='ANY')
 def url_router(path):
+    global is_read_only
     token = path.split('/')
     # Find the Node
     r = root
@@ -78,7 +79,7 @@ def url_router(path):
     # Handle POST request
     if request.method == 'POST':
         lines = request.body.readlines()
-        return c.doAction(json.loads(lines[0].decode()))
+        return c.doAction(json.loads(lines[0].decode()), is_read_only)
 
     return None
 

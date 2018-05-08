@@ -55,7 +55,7 @@ i2c_device_add 5 0x58 pmbus
 i2c_device_add 8 0x58 pmbus
 
 # Bus  9 - SMBus 10 SUP DPM
-i2c_device_add 9 0x11 pmbus
+#i2c_device_add 9 0x11 pmbus
 
 # Bus  10 - SMBus 11 SUP POWER
 i2c_device_add 10 0x21 cpupwr

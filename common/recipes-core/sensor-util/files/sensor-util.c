@@ -212,6 +212,7 @@ get_sensor_reading(void *sensor_data) {
       }
     } else {
       ret = sdr_get_snr_thresh(sensor_info->fru, snr_num, &thresh);
+      pal_alter_sensor_thresh_flag(sensor_info->fru, snr_num, &(thresh.flag));
       if (ret == ERR_NOT_READY) {
         pal_get_fru_name(sensor_info->fru, fruname);
         printf("%s SDR is missing!\n", fruname);

@@ -3196,7 +3196,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         if (last_post != current_post) {
           if (current_post == 0) {
             // set POST end timestamp
-            pal_set_post_end_timestamp(current_time_stamp);
+            pal_set_post_end_timestamp(current_time_stamp+FAN_WAIT_TIME_AFTER_POST);
           }
           // update POST status;
           pal_set_last_post(current_post);
@@ -3217,7 +3217,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
             // no timestamp yet
             pal_set_post_end_timestamp(0);
           }
-          if (current_time_stamp <  post_end_timestamp + FAN_WAIT_TIME_AFTER_POST ) {
+          if (current_time_stamp <  post_end_timestamp ) {
             // wait for fan speed deassert after POST
             sprintf(str, "%.2f",*((float*)value));
             edb_cache_set(key, str);
@@ -3249,9 +3249,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 int
 pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
-  uint8_t val;
   int ret;
-  uint8_t slot_id;
   uint8_t server_type = 0xFF;
 
   switch(fru) {
@@ -3289,58 +3287,65 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
       break;
 #endif
     case FRU_SPB:
-      /*
-       * TODO: This is a HACK (t11229576)
-       */
-      switch(snr_num) {
-        case SP_SENSOR_P12V_SLOT1:
-        case SP_SENSOR_P12V_SLOT2:
-        case SP_SENSOR_P12V_SLOT3:
-        case SP_SENSOR_P12V_SLOT4:
-          /* Check whether the system is 12V off or on */
-          slot_id = snr_num - SP_SENSOR_P12V_SLOT1 + 1;
-          ret = pal_is_server_12v_on(slot_id, &val);
-          if (ret < 0) {
-            syslog(LOG_ERR, "%s: pal_is_server_12v_on failed",__func__);
-          }
-          if (!val || !_check_slot_12v_en_time(slot_id)) {
-            *flag = GETMASK(SENSOR_VALID);
-          }
-          break;
-        case SP_SENSOR_FAN0_TACH:
-        case SP_SENSOR_FAN1_TACH:
-
-          // Check POST status
-          if (pal_is_post_ongoing()) {
-            // POST is ongoing
-            *flag = CLEARBIT(*flag,UNC_THRESH);
-          } else {
-            long current_time_stamp = 0;
-            long post_end_timestamp = 0;
-            struct timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            current_time_stamp = ts.tv_sec;
-
-            int ret = pal_get_post_end_timestamp(&post_end_timestamp);
-            if (ret < 0) {
-              // no timestamp yet
-              pal_set_post_end_timestamp(0);
-            }
-
-            if ( current_time_stamp < post_end_timestamp + FAN_WAIT_TIME_AFTER_POST ) {
-              // wait for fan speed deassert after POST
-              *flag = CLEARBIT(*flag,UNC_THRESH);
-            }
-
-          }
-          break;
-      }
     case FRU_NIC:
       break;
   }
 
   return 0;
 }
+
+int
+pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
+
+  uint8_t val;
+  int ret;
+  uint8_t slot_id;
+
+  if ( fru == FRU_SPB ) {
+    /*
+     * TODO: This is a HACK (t11229576)
+     */
+    if(( snr_num == SP_SENSOR_P12V_SLOT1 ) || ( snr_num == SP_SENSOR_P12V_SLOT2 )
+      || ( snr_num == SP_SENSOR_P12V_SLOT3 ) || ( snr_num == SP_SENSOR_P12V_SLOT4 )){
+      /* Check whether the system is 12V off or on */
+      slot_id = snr_num - SP_SENSOR_P12V_SLOT1 + 1;
+      ret = pal_is_server_12v_on(slot_id, &val);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s: pal_is_server_12v_on failed",__func__);
+      }
+      if (!val || !_check_slot_12v_en_time(slot_id)) {
+        *flag = GETMASK(SENSOR_VALID);
+      }
+    } else if (( snr_num == SP_SENSOR_FAN0_TACH ) || ( snr_num == SP_SENSOR_FAN1_TACH )) {
+      // Check POST status
+      if (pal_is_post_ongoing()) {
+        // POST is ongoing
+        *flag = CLEARBIT(*flag,UNC_THRESH);
+      } else {
+        long current_time_stamp = 0;
+        long post_end_timestamp = 0;
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        current_time_stamp = ts.tv_sec;
+
+        int ret = pal_get_post_end_timestamp(&post_end_timestamp);
+        if (ret < 0) {
+          // no timestamp yet
+          pal_set_post_end_timestamp(0);
+        }
+
+        if ( current_time_stamp < post_end_timestamp ) {
+          // wait for fan speed deassert after POST
+          *flag = CLEARBIT(*flag,UNC_THRESH);
+        }
+
+      }
+    }
+  }
+
+  return 0;
+}
+
 
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {

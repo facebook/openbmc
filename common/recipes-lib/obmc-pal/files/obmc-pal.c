@@ -372,6 +372,11 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag)
 }
 
 int __attribute__((weak))
+pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
 {
   return PAL_EOK;

@@ -2,6 +2,7 @@
 #define _FW_UTIL_H_
 #include <string>
 #include <iostream>
+#include <algorithm>
 #include <map>
 
 #define FW_STATUS_SUCCESS        0
@@ -52,14 +53,24 @@ class AliasComponent : public Component {
 
 class System {
   public:
-    static int runcmd(const std::string &cmd);
-    static bool vboot_hardware_enforce();
-    static bool get_mtd_name(const char *name, char *dev);
-    static std::string& name();
-    static std::string& partition_conf();
-    static uint8_t get_fru_id(std::string &name);
-    static void set_update_ongoing(uint8_t fru_id, int timeo);
-    static std::string& lock_file(std::string &name);
+    virtual int runcmd(const std::string &cmd);
+    virtual bool vboot_hardware_enforce();
+    virtual bool get_mtd_name(std::string name, std::string &dev);
+    bool get_mtd_name(std::string name) {
+      std::string unused;
+      return get_mtd_name(name, unused);
+    }
+    virtual std::string version();
+    std::string name() {
+      std::string vers = version();
+      std::string mc = vers.substr(0, vers.find("-"));
+      std::transform(mc.begin(), mc.end(), mc.begin(), ::tolower);
+      return mc;
+    }
+    virtual std::string& partition_conf();
+    virtual uint8_t get_fru_id(std::string &name);
+    virtual void set_update_ongoing(uint8_t fru_id, int timeo);
+    virtual std::string lock_file(std::string &name);
 };
 
 #endif

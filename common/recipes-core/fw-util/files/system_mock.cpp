@@ -31,33 +31,28 @@ bool System::vboot_hardware_enforce(void)
   }
   return false;
 }
-bool System::get_mtd_name(const char* _name, char* dev)
+bool System::get_mtd_name(string name, string &dev)
 {
   map<string, string> mtd_map = {
-    {"\"flash0\"", "/dev/mtd5"},
+    {"flash0", "/dev/mtd5"},
   };
   if (std::getenv("FWUTIL_VBOOT") ||
       std::getenv("FWUTIL_DUALFLASH")) {
-    mtd_map["\"flash1\""] = "/dev/mtd12";
+    mtd_map["flash1"] = "/dev/mtd12";
   }
   if (std::getenv("FWUTIL_VBOOT")) {
-    mtd_map["\"romx\""] = "/dev/mtd0";
+    mtd_map["romx"] = "/dev/mtd0";
   }
-
-  string name(_name);
-  if (mtd_map.find(name) == mtd_map.end()) {
+  if (mtd_map.find(name) == mtd_map.end())
     return false;
-  }
-  if (dev) {
-    strcpy(dev, mtd_map[name].c_str());
-  }
+  dev = mtd_map[name];
   return true;
 }
 
-string& System::name()
+string System::version()
 {
-  static string ret = "fbtp";
-  const char *env = std::getenv("FWUTIL_MACHINE");
+  static string ret = "fbtp-v10.0";
+  const char *env = std::getenv("FWUTIL_VERSION");
   if (env) {
     ret = env;
   }
@@ -79,10 +74,9 @@ uint8_t System::get_fru_id(string &name)
   return atoi(env);
 }
 
-string& System::lock_file(string &name)
+string System::lock_file(string &name)
 {
-  static string f = "./fw-util.lock";
-  return f;
+  return "./fw-util-" + name + ".lock";
 }
 
 void System::set_update_ongoing(uint8_t fru_id, int timeo)

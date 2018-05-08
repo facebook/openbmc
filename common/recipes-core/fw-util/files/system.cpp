@@ -56,26 +56,27 @@ bool System::vboot_hardware_enforce(void)
 
   return hw_enforce_flag == 1 ? true : false;
 }
-bool System::get_mtd_name(const char* name, char* dev)
+
+bool System::get_mtd_name(string name, string &dev)
 {
   FILE* partitions = fopen("/proc/mtd", "r");
   char line[256], mnt_name[32];
   unsigned int mtdno;
   bool found = false;
 
+  name.insert(0, 1, '"');
+  name += '"';
+  dev.clear();
+
   if (!partitions) {
     return false;
-  }
-  if (dev) {
-    dev[0] = '\0';
   }
   while (fgets(line, sizeof(line), partitions)) {
     if(sscanf(line, "mtd%d: %*x %*x %s",
                 &mtdno, mnt_name) == 2) {
-      if(!strcmp(name, mnt_name)) {
-        if (dev) {
-          sprintf(dev, "/dev/mtd%d", mtdno);
-        }
+      if(!strcmp(name.c_str(), mnt_name)) {
+        dev = "/dev/mtd";
+        dev.append(to_string(mtdno));
         found = true;
         break;
       }
@@ -85,16 +86,14 @@ bool System::get_mtd_name(const char* name, char* dev)
   return found;
 }
 
-string& System::name()
+string System::version()
 {
   static string ret = "";
   if (ret == "") {
-    char machine[128] = "NA";
+    char vers[128] = "NA";
     FILE *fp = fopen("/etc/issue", "r");
     if (fp) {
-      if (fscanf(fp, "OpenBMC Release %[^ \t\n-]", machine) == 1) {
-        ret = machine;
-      }
+      fscanf(fp, "OpenBMC Release %s\n", vers);
       fclose(fp);
     }
   }
@@ -125,8 +124,7 @@ void System::set_update_ongoing(uint8_t fru_id, int timeo)
   pal_set_fw_update_ongoing(fru_id, timeo);
 }
 
-string& System::lock_file(string &name)
+string System::lock_file(string &name)
 {
-  static string f = "/var/run/fw-util-" + name + ".lock";
-  return f;
+  return "/var/run/fw-util-" + name + ".lock";
 }

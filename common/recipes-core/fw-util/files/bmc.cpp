@@ -19,16 +19,17 @@ extern bool is_image_valid(string &file, string &desc, string &machine);
  * /etc/issue */
 class BmcComponent : public Component {
   protected:
+    System &system;
     string _mtd_name;
     string _vers_mtd;
     size_t _writable_offset;
     size_t _skip_offset;
   public:
-    BmcComponent(string fru, string comp, string mtd, string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
-      : Component(fru, comp), _mtd_name(mtd), _vers_mtd(vers), _writable_offset(w_offset), _skip_offset(skip_offset) {}
+    BmcComponent(string fru, string comp, System &sys, string mtd, string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+      : Component(fru, comp), system(sys), _mtd_name(mtd), _vers_mtd(vers), _writable_offset(w_offset), _skip_offset(skip_offset) {}
     int update(string image_path)
     {
-      char dev[12];
+      string dev;
       int ret;
       string flash_image = image_path;
       stringstream cmd_str;
@@ -38,16 +39,18 @@ class BmcComponent : public Component {
         return FW_STATUS_NOT_SUPPORTED;
       }
 
-      if (is_image_valid(image_path, System::partition_conf(), System::name()) == false) {
-        cerr << image_path << " is not a valid BMC image for " << System::name() << endl;
+      string machine = system.name();
+
+      if (is_image_valid(image_path, system.partition_conf(), machine) == false) {
+        cerr << image_path << " is not a valid BMC image for " << system.name() << endl;
         return FW_STATUS_FAILURE;
       }
 
-      if (!System::get_mtd_name(_mtd_name.c_str(), dev)) {
+      if (!system.get_mtd_name(_mtd_name, dev)) {
         cerr << "Failed to get device for " << _mtd_name << endl;
         return FW_STATUS_FAILURE;
       }
-      cout << "Flashing to device: " << string(dev) << endl;
+      cout << "Flashing to device: " << dev << endl;
       if (_skip_offset > 0 || _writable_offset > 0) {
         flash_image = image_path + "-tmp";
         // Ensure that we are not overwriting an existing file.
@@ -77,7 +80,7 @@ class BmcComponent : public Component {
 
         if (_skip_offset > _writable_offset) {
           size_t copy = _skip_offset - _writable_offset;
-          int fd_d = open(dev, O_RDONLY);
+          int fd_d = open(dev.c_str(), O_RDONLY);
           if (fd_d < 0) {
             close(fd_r);
             close(fd_w);
@@ -105,8 +108,8 @@ class BmcComponent : public Component {
         close(fd_r);
         close(fd_w);
       }
-      cmd_str << "flashcp -v " << flash_image << " " << string(dev);
-      ret = System::runcmd(cmd_str.str());
+      cmd_str << "flashcp -v " << flash_image << " " << dev;
+      ret = system.runcmd(cmd_str.str());
       if (_writable_offset > 0) {
         // this is a temp. file, remove it.
         remove(flash_image.c_str());
@@ -116,7 +119,7 @@ class BmcComponent : public Component {
     int print_version()
     {
       char vers[128] = "NA";
-      char mtd[32];
+      string mtd;
 
       string comp = _component;
       std::transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
@@ -132,10 +135,10 @@ class BmcComponent : public Component {
         return FW_STATUS_SUCCESS;
       }
 
-      if (System::get_mtd_name(_vers_mtd.c_str(), mtd)) {
+      if (system.get_mtd_name(_vers_mtd, mtd)) {
         char cmd[128];
         FILE *fp;
-        sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd);
+        sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd.c_str());
         fp = popen(cmd, "r");
         if (fp) {
           char line[256];
@@ -159,40 +162,41 @@ class BmcComponent : public Component {
 class SystemConfig {
   public:
     bool dual_flash;
-  SystemConfig() {
+    System system;
+  SystemConfig() : system() {
     // If flash1 exists, then we have two flashes
-    if (System::get_mtd_name("\"flash1\"", NULL)) {
+    if (system.get_mtd_name("flash1")) {
       dual_flash = true;
     } else {
       dual_flash = false;
     }
     if (dual_flash) {
-      if (System::get_mtd_name("\"romx\"", NULL)) {
+      if (system.get_mtd_name("romx")) {
         // If verified boot is enabled, we should
         // have the romx partition
-        if (System::vboot_hardware_enforce()) {
+        if (system.vboot_hardware_enforce()) {
           // Locked down, Update from a 64k offset.
-          static BmcComponent bmc("bmc", "bmc", "\"flash1rw\"", "\"u-boot\"", BMC_RW_OFFSET, ROMX_SIZE);
+          static BmcComponent bmc("bmc", "bmc", system, "flash1rw", "u-boot", BMC_RW_OFFSET, ROMX_SIZE);
           // Locked down, Allow getting version of ROM, but do not allow
           // upgrading it.
-          static BmcComponent rom("bmc", "rom", "", "\"u-bootro\"");
+          static BmcComponent rom("bmc", "rom", system, "", "u-bootro");
         } else {
           // Unlocked Flash, Upgrade the full BMC flash1.
-          static BmcComponent bmc("bmc", "bmc", "\"flash1\"", "\"u-boot\"");
+          static BmcComponent bmc("bmc", "bmc", system, "flash1", "u-boot");
           // Unlocked flash, Allow upgrading the ROM.
-          static BmcComponent rom("bmc", "rom", "\"flash0\"", "\"u-bootro\"");
+          static BmcComponent rom("bmc", "rom", system, "flash0", "u-bootro");
         }
       } else {
         // non-verified-boot. BMC boots off of flash0.
-        static BmcComponent bmc("bmc", "bmc", "\"flash0\"", "\"u-boot\"");
+        static BmcComponent bmc("bmc", "bmc", system, "flash0", "u-boot");
         // Dual flash supported, but not in verified boot format.
         // Allow flashing the second flash. Read version from u-boot partition.
-        static BmcComponent bmcalt("bmc", "flash1", "\"flash1\"", "\"u-boot\"");
+        static BmcComponent bmcalt("bmc", "flash1", system, "flash1", "u-boot");
       }
       // Verified boot supported and in dual-flash mode.
     } else {
       // We just have the one flash. Allow upgrading flash0.
-      static BmcComponent bmc("bmc", "bmc", "\"flash0\"");
+      static BmcComponent bmc("bmc", "bmc", system, "flash0");
     }
   }
 };

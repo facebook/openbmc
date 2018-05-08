@@ -111,8 +111,7 @@ class ProcessLock {
     int fd;
     bool _ok;
   public:
-  ProcessLock(string name) {
-    file = System::lock_file(name);
+  ProcessLock(string file) {
     _ok = false;
     fd = open(file.c_str(), O_RDWR|O_CREAT, 0666);
     if (fd < 0) {
@@ -174,6 +173,8 @@ int main(int argc, char *argv[])
   }
 #endif
 
+  System system;
+
   exec_name = argv[0];
   if (argc < 3) {
     usage();
@@ -217,7 +218,8 @@ int main(int argc, char *argv[])
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
       // Ensure only one instance of fw-util per FRU is running
-      ProcessLock lock(fkv.first);
+      string this_fru(fkv.first);
+      ProcessLock lock(system.lock_file(this_fru));
       if (!lock.ok()) {
         cerr << "Another instance of fw-util already running" << endl;
         return -1;
@@ -245,8 +247,8 @@ int main(int argc, char *argv[])
             }
           } else {  // update or dump
             string str_act("");
-            uint8_t fru_id = System::get_fru_id(c->fru());
-            System::set_update_ongoing(fru_id, 60 * 10);
+            uint8_t fru_id = system.get_fru_id(c->fru());
+            system.set_update_ongoing(fru_id, 60 * 10);
             if (action == "--update") {
               ret = c->update(image);
               str_act.assign("Upgrade");
@@ -254,7 +256,7 @@ int main(int argc, char *argv[])
               ret = c->dump(image);
               str_act.assign("Dump");
             }
-            System::set_update_ongoing(fru_id, 0);
+            system.set_update_ongoing(fru_id, 0);
             if (ret == 0) {
               cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
             } else {

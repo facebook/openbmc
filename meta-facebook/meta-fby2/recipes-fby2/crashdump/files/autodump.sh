@@ -57,12 +57,16 @@ LOG_MSG_PREFIX=""
 
 DWR=0
 SECOND_DUMP=0
+DELAY_SEC=30
 
 while test $# -gt 1
 do
   case "$2" in
   --dwr)
     DWR=1
+    ;;
+  --now)
+    DELAY_SEC=0
     ;;
   --second)
     SECOND_DUMP=1
@@ -76,6 +80,12 @@ done
 
 if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
   echo "Auto Dump after System Reset or Demoted Warm Reset"
+fi
+
+if [ "$DELAY_SEC" != "0" ]; then
+  echo "Auto Dump will start after ${DELAY_SEC}s..."
+
+  sleep ${DELAY_SEC}
 fi
 
 echo "Auto Dump for $SLOT_NAME Started"

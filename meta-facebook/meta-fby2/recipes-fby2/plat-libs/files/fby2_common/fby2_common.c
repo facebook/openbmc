@@ -37,22 +37,11 @@
 
 struct threadinfo {
   uint8_t is_running;
-  bool is_ierr;
   uint8_t fru;
   pthread_t pt;
 };
 
-static struct threadinfo t_dump[MAX_NUM_FRUS] = {0,false, };
-
-void
-fby2_common_set_ierr(uint8_t fru, bool ierr) {
-  t_dump[fru-1].is_ierr=ierr;
-}
-
-bool
-fby2_common_get_ierr(uint8_t fru) {
-  return t_dump[fru-1].is_ierr;
-}
+static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
 
 int
 fby2_common_fru_name(uint8_t fru, char *str) {
@@ -145,9 +134,6 @@ generate_dump(void *arg) {
     system(cmd);
   }
 
-  if (fby2_common_get_ierr(fru)) {
-    sleep(30);
-  }
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
@@ -180,10 +166,7 @@ second_dwr_dump(void *arg) {
     sprintf(cmd,"rm %s",fname);
     system(cmd);
   }
-
-  if (fby2_common_get_ierr(fru)) {
-    sleep(30);
-  }
+  
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
@@ -209,7 +192,6 @@ fby2_common_crashdump(uint8_t fru,bool platform_reset) {
 
   // Check if a crashdump for that fru is already running.
   // If yes, kill that thread and start a new one.
-  syslog(LOG_INFO, "fby2_common_crashdump: fru%d: is_running=%d",fru,t_dump[fru-1].is_running);
   if (t_dump[fru-1].is_running) {
     ret = pthread_cancel(t_dump[fru-1].pt);
     if (ret == ESRCH) {
@@ -250,5 +232,59 @@ fby2_common_crashdump(uint8_t fru,bool platform_reset) {
 
   syslog(LOG_INFO, "fby2_common_crashdump: Crashdump for FRU: %d is being generated.", fru);
 
+  return 0;
+}
+
+int
+fby2_common_set_ierr(uint8_t fru, bool value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_ierr", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(cvalue, (value == true) ? "1": "0");
+
+  return edb_cache_set(key,cvalue);
+}
+
+int
+fby2_common_get_ierr(uint8_t fru, bool *value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_ierr", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  ret = edb_cache_get(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+  if (atoi(cvalue)){
+    *value = true;
+  } else {
+    *value = false;
+  }
   return 0;
 }

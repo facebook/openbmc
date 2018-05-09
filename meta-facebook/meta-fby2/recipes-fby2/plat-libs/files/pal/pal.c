@@ -5808,7 +5808,9 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   struct sockaddr_un server;
 
   if ((data[0] == PLTRST_N) && (data[1] == 0x01)) {
-    if (fby2_common_get_ierr(slot)) {
+    bool ierr = false;
+    int ret = fby2_common_get_ierr(slot, &ierr);
+    if ((ret == 0) && ierr) {
       fby2_common_crashdump(slot,true);
     }
     fby2_common_set_ierr(slot,false);

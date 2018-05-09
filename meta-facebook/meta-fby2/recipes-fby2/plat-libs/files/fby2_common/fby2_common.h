@@ -180,13 +180,16 @@ typedef struct {
 #define GPIO_SLOT4_LED                    227
 #define GPIO_SLED_SEATED_N                231 //GPIOAC7
 
+#define MAX_KEY_LEN       64
+#define MAX_VALUE_LEN     64
+
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
 int fby2_common_fru_name(uint8_t fru, char *str);
 int fby2_common_fru_id(char *str, uint8_t *fru);
 int fby2_common_crashdump(uint8_t fru,bool platform_reset);
-void fby2_common_set_ierr(uint8_t fru, bool ierr);
-bool fby2_common_get_ierr(uint8_t fru);
+int fby2_common_set_ierr(uint8_t fru, bool value);
+int fby2_common_get_ierr(uint8_t fru, bool *value);
 
 #ifdef __cplusplus
 } // extern "C"

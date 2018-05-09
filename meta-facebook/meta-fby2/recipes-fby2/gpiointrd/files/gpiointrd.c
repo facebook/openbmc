@@ -360,6 +360,14 @@ static void gpio_event_handle(gpio_poll_st *gp)
     edb_cache_set("spb_hand_sw", locstr);
     syslog(LOG_INFO, "change hand_sw location to FRU %s by button", locstr);
   }
+  else if (gp->gs.gs_gpio == gpio_num("GPIOI0") || gp->gs.gs_gpio == gpio_num("GPIOI1") || 
+           gp->gs.gs_gpio == gpio_num("GPIOI2") || gp->gs.gs_gpio == gpio_num("GPIOI3")
+          ) // SLOT1/2/3/4_POWER_EN
+  {
+    slot_id = (gp->gs.gs_gpio - GPIO_SLOT1_POWER_EN) + 1;
+    // high to low
+    fby2_common_set_ierr(slot_id,false);
+  }
 }
 
 static void *
@@ -568,6 +576,10 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA2", "GPIO_SLOT3_PRSNT_N"},
   {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA3", "GPIO_SLOT4_PRSNT_N"},
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOO3",  "GPIO_UART_SEL"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI0",  "GPIO_SLOT1_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI1",  "GPIO_SLOT2_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI2",  "GPIO_SLOT3_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI3",  "GPIO_SLOT4_POWER_EN"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);

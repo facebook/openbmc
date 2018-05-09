@@ -26,5 +26,5 @@ class ExpanderComponent : public Component {
     }
 };
 
-ExpanderComponent exp("scc", "exp");
+ExpanderComponent expander("scc", "exp");
 

@@ -1741,11 +1741,6 @@ pal_get_fan_latch(uint8_t *status) {
 
 int
 pal_sled_cycle(void) {
-  // Remove the adm1275 module as the HSC device is busy
-  system("rmmod adm1275");
-
-  // Send command to HSC power cycle
-  system("i2cset -y 10 0x40 0xd9 c");
 
   return 0;
 }

@@ -180,6 +180,8 @@ typedef struct {
 #define GPIO_SLOT4_LED                    227
 #define GPIO_SLED_SEATED_N                231 //GPIOAC7
 
+#define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
+
 int fby2_common_fru_name(uint8_t fru, char *str);
 int fby2_common_fru_id(char *str, uint8_t *fru);
 int fby2_common_crashdump(uint8_t fru,bool platform_reset);

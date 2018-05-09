@@ -99,6 +99,7 @@ enum {
 
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
+int pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);

@@ -1487,7 +1487,7 @@ pal_system_config_check(uint8_t slot_id) {
   system(cmd);
 
   if ( slot_type != last_slot_type) {
-    syslog(LOG_CRIT, "Unexpected swap on SLOT%u from %s to %s",slot_id,last_slot_str,slot_str);
+    syslog(LOG_CRIT, "Unexpected swap on SLOT%u from %s to %s, FRU: %u",slot_id, last_slot_str, slot_str, slot_id);
   }
 
   return 0;
@@ -1502,6 +1502,7 @@ server_12v_on(uint8_t slot_id) {
   int rc, pid_file;
   int retry = MAX_BIC_CHECK_RETRY;
   bic_gpio_t gpio;
+  uint8_t pair_slot_id;
   int pair_set_type=-1;
 #if defined(CONFIG_FBY2_EP)
   uint8_t server_type, config;
@@ -1530,19 +1531,8 @@ server_12v_on(uint8_t slot_id) {
     return -1;
   }
 
-#if 0
-  // Delay 2 seconds to check if slot is inserted entirely
-  sleep(2);
-  sprintf(vpath, GPIO_VAL, gpio_slot_latch[slot_id]);
-  if (read_device(vpath, &slot_latch)) {
-    return -1;
-  }
-#else
-  slot_latch = 0;
-#endif
-
   // Reject 12V-on action when SLOT is not present or SLOT ejector latch pin is high
-  if ((1 != slot_prsnt) || (slot_latch)) {
+  if (1 != slot_prsnt) {
     flock(pid_file, LOCK_UN);
     close(pid_file);
     return -1;
@@ -1561,6 +1551,37 @@ server_12v_on(uint8_t slot_id) {
     sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
     if (write_device(vpath, "1"))
       return -1;
+  }
+
+  sleep(2); // Wait for latch pin stable
+
+  ret = pal_is_slot_latch_closed(slot_id, &slot_latch);
+  if (ret < 0) {
+    syslog(LOG_WARNING,"%s: pal_is_slot_latch_closed failed for slot: %d", __func__, slot_id);
+    return -1;
+  }
+
+  if (1 != slot_latch) {
+    server_12v_off(slot_id);
+    return -1;
+  }
+
+  if (pal_is_device_pair(slot_id)) {
+    if (0 == slot_id%2)
+      pair_slot_id = slot_id - 1;
+    else
+      pair_slot_id = slot_id + 1;
+
+    ret = pal_is_slot_latch_closed(pair_slot_id, &slot_latch);
+    if (ret < 0) {
+      syslog(LOG_WARNING,"%s: pal_is_slot_latch_closed failed for slot: %d", __func__, pair_slot_id);
+      return -1;
+    }
+
+    if (1 != slot_latch) {
+      server_12v_off(pair_slot_id);
+      return -1;
+    }
   }
 
   if (!pal_is_slot_server(slot_id))
@@ -1842,6 +1863,34 @@ pal_get_platform_name(char *name) {
 int
 pal_get_num_slots(uint8_t *num) {
   *num = FBY2_MAX_NUM_SLOTS;
+
+  return 0;
+}
+
+int
+pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status) {
+  int val_latch;
+  char path[64] = {0};
+
+  switch (slot_id) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(path, GPIO_VAL, gpio_slot_latch[slot_id]);
+      if (read_device(path, &val_latch)) {
+        return -1;
+      }
+
+      if (val_latch == 0x0) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    default:
+      return -1;
+  }
 
   return 0;
 }

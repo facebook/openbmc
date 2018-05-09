@@ -130,16 +130,29 @@ int
 main (int argc, char * const argv[])
 {
   int ret;
+  int pid_file;
   uint8_t slot_id;
   uint8_t self_test_result[2]={0};
   int retry = 0;
   int max_retry = 3;
+  char path[128];
 
   if (argc != 2) {
     return -1;
   }
 
   slot_id = atoi(argv[1]);
+
+  sprintf(path, BIC_CACHED_PID, slot_id);
+  pid_file = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
+  if (pid_file < 0) {
+    syslog(LOG_WARNING, "%s: fails to open path: %s\n", __func__, path);
+  }
+
+  ret = pal_flock_retry(pid_file);
+  if (ret) {
+   syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
+  }
 
   // Check BIC Self Test Result
   do {
@@ -165,5 +178,12 @@ main (int argc, char * const argv[])
 
   sdr_cache_init(slot_id);
 
+  ret = pal_unflock_retry(pid_file);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+  }
+  
+  close(pid_file);
+  remove(path);
   return 0;
 }

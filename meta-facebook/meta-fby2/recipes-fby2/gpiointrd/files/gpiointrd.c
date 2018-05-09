@@ -50,13 +50,18 @@
 #define HOTSERVICE_SCRPIT "/usr/local/bin/hotservice-reinit.sh"
 #define HOTSERVICE_FILE "/tmp/slot%d_reinit"
 #define HSLOT_PID  "/tmp/slot%u_reinit.pid"
+#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
-#define DEBUG_ME_EJECTOR_LOG 1 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
+#define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 
 static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
 static void *hsvc_event_handler(void *ptr);
 static pthread_mutex_t hsvc_mutex[MAX_NODES + 1];
 static struct timespec last_ejector_ts[MAX_NODES + 1];
+static uint8_t IsLatchOpenStart[MAX_NODES + 1] = {0};
+static void *latch_open_handler(void *ptr);
+static pthread_mutex_t latch_open_mutex[MAX_NODES + 1];
+static uint8_t insert_check[MAX_NODES + 1] = {0};
 
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
@@ -66,6 +71,8 @@ char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
 };
 
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+
+const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N };
 
 typedef struct {
   uint8_t def_val;
@@ -205,6 +212,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
   char locstr[MAX_VALUE_LEN];
   static bool prsnt_assert[MAX_NODES + 1]={0};
   static pthread_t hsvc_action_tid[MAX_NODES + 1];
+  static pthread_t latch_open_tid[MAX_NODES + 1];
   hot_service_info hsvc_info[MAX_NODES + 1];
   struct timespec ts;
 
@@ -237,32 +245,29 @@ static void gpio_event_handle(gpio_poll_st *gp)
       sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
       read_device(vpath, &value);
 
-#if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
-      syslog(LOG_CRIT,"FRU: %d, GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON", slot_id, slot_id);
-#endif
-
       // HOT SERVER event would be detected when SLED is pulled out
       if (value) {
-          syslog(LOG_CRIT,"DEASSERT: FRU: %d, GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N", slot_id, slot_id);
-//          log_gpio_change(gp, 0);
-#if 0
-          sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", slot_id);
-          system(cmd);
+        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
+        if(insert_check[slot_id]) {
+          insert_check[slot_id] = false;
+          return;
+        }
 
-          ret = pal_is_server_12v_on(slot_id, &Cur12V_value);
-          if (ret < 0)
-             printf("%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
-          if (Cur12V_value) {
-             // Log SLOT Removal
-             sprintf(str, "Server may be removed without 12V off, Action : 12V off to slot%u",slot_id);
-             syslog(LOG_CRIT, str);
-
-             // Active 12V off to protect server/device board
-             memset(cmd, 0, sizeof(cmd));
-             sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-off", slot_id);
-             system(cmd);
-          }
+        pthread_mutex_lock(&latch_open_mutex[slot_id]);
+        if ( IsLatchOpenStart[slot_id] )
+        {
+#ifdef DEBUG
+          syslog(LOG_WARNING, "[%s] Close the previous thread for slot%x\n", __func__, slot_id);
 #endif
+          pthread_cancel(latch_open_tid[slot_id]);
+        }
+        //Create thread for latch open detect
+        if (pthread_create(&latch_open_tid[slot_id], NULL, latch_open_handler, (void*)&slot_id) < 0) {
+          syslog(LOG_WARNING, "[%s] Create latch_open_handler thread failed for slot%u\n",__func__, slot_id);
+          return;
+        }
+        IsLatchOpenStart[slot_id] = true;
+        pthread_mutex_unlock(&latch_open_mutex[slot_id]);
       }
     } //End of low to high
   } //End of GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N
@@ -305,9 +310,16 @@ static void gpio_event_handle(gpio_poll_st *gp)
             pthread_cancel(hsvc_action_tid[slot_id]);
           }
 
+          if ( IsLatchOpenStart[hsvc_info->slot_id] ){
+            pthread_cancel(latch_open_tid[hsvc_info->slot_id]);
+            pthread_mutex_lock(&latch_open_mutex[hsvc_info->slot_id]);
+            IsLatchOpenStart[hsvc_info->slot_id] = false;
+            pthread_mutex_unlock(&latch_open_mutex[hsvc_info->slot_id]);
+          }
+
           //Create thread for hsvc event detect
           if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
-            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread for slot%x\n",__func__, slot_id);
+            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread failed for slot%x\n",__func__, slot_id);
             pthread_mutex_unlock(&hsvc_mutex[slot_id]);
             return;
           }
@@ -329,7 +341,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
 
           //Create thread for hsvc event detect
           if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
-            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread for slot%x\n",__func__, slot_id);
+            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread failed for slot%x\n",__func__, slot_id);
             pthread_mutex_unlock(&hsvc_mutex[slot_id]);
             return;
           }
@@ -348,6 +360,67 @@ static void gpio_event_handle(gpio_poll_st *gp)
     edb_cache_set("spb_hand_sw", locstr);
     syslog(LOG_INFO, "change hand_sw location to FRU %s by button", locstr);
   }
+}
+
+static void *
+latch_open_handler(void *ptr) {
+  uint8_t slot_id = *(uint8_t *) ptr;
+  uint8_t pair_slot_id;
+  int ret;
+  uint8_t value;
+  char path_slot[128];
+  char path_pair_slot[128];
+  int pair_set_type;
+  pthread_detach(pthread_self());
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  sleep(2);
+
+  pair_set_type = pal_get_pair_slot_type(slot_id);
+  switch(pair_set_type) {
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+      if (0 == slot_id%2)
+        pair_slot_id = slot_id - 1;
+      else
+        pair_slot_id = slot_id + 1;
+
+      sprintf(path_slot, PWR_UTL_LOCK, slot_id);
+      sprintf(path_pair_slot, PWR_UTL_LOCK, pair_slot_id);
+      if ((access(path_slot, F_OK) == 0) || (access(path_pair_slot, F_OK) == 0)) {
+        pthread_mutex_lock(&latch_open_mutex[slot_id]);
+        IsLatchOpenStart[slot_id] = false;
+        pthread_mutex_unlock(&latch_open_mutex[slot_id]);
+        pthread_exit(0);
+      }
+      break; 
+    default:
+      sprintf(path_slot, PWR_UTL_LOCK, slot_id);
+      if (access(path_slot, F_OK) == 0) {
+        pthread_mutex_lock(&latch_open_mutex[slot_id]);
+        IsLatchOpenStart[slot_id] = false;
+        pthread_mutex_unlock(&latch_open_mutex[slot_id]);
+        pthread_exit(0);
+      } 
+      break;
+  }
+
+
+  ret = pal_is_server_12v_on(slot_id, &value);
+  if (ret < 0)
+    syslog(LOG_WARNING, "%s : pal_is_server_12v_on failed for slot: %u", __func__, slot_id);
+  if (value) {
+    // Active 12V off to protect server/device board
+    if(pal_set_server_power(slot_id, SERVER_12V_OFF) < 0)
+      syslog(LOG_WARNING,"%s : server_12v_off failed for slot: %u", __func__, slot_id);
+  }
+
+  pthread_mutex_lock(&latch_open_mutex[slot_id]);
+  IsLatchOpenStart[slot_id] = false;
+  pthread_mutex_unlock(&latch_open_mutex[slot_id]);
+
+  pthread_exit(0);
 }
 
 static void *
@@ -463,6 +536,7 @@ hsvc_event_handler(void *ptr) {
         if (!status) {
           sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-on &",hsvc_info->slot_id);
           system(cmd);
+          insert_check[hsvc_info->slot_id] = true;
         }
       }
       else {
@@ -498,15 +572,61 @@ static gpio_poll_st g_gpios[] = {
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
 
-#if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 static def_chk_info def_gpio_chk[] = {
   // { default value, gpio name, gpio num, log }
+#if DEBUG_ME_EJECTOR_LOG
   { 0, "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N", GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, "FRU: 1, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
   { 0, "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N", GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, "FRU: 2, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
   { 0, "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N", GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, "FRU: 3, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
   { 0, "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N", GPIO_SLOT4_EJECTOR_LATCH_DETECT_N, "FRU: 4, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON" },
+#endif
   { 0, "GPIO_FAN_LATCH_DETECT",             GPIO_FAN_LATCH_DETECT,             "ASSERT: SLED is not seated"                                    },
 };
+
+static void slot_latch_check(void) {
+  int slot_id;
+  int value;
+  char vpath[80] = {0};
+  int fd;
+  char path[128] = {0};
+  int ret;
+  int def_slot_latch_val = 0;
+  int retry_count = 0;
+  int max_retry_count = 40;
+
+  for (slot_id = 1; slot_id <= MAX_NUM_SLOTS; slot_id++) {
+    sprintf(vpath, GPIO_VAL, gpio_slot_latch[slot_id]);
+    read_device(vpath, &value);
+    if (value != def_slot_latch_val) {
+      sprintf(path, BIC_CACHED_PID, slot_id);
+      while(retry_count < max_retry_count) {
+        fd = open(path, O_WRONLY | O_CREAT, 0666);
+        if (fd < 0) {
+          syslog(LOG_WARNING, "%s: Open file failed for path: %s", __func__, path);
+          retry_count++;
+          continue;
+        }
+        ret = flock(fd, LOCK_EX | LOCK_NB);
+        if (ret) {
+          syslog(LOG_WARNING,"Waiting for bic-cached complete for slot%d",slot_id);
+          retry_count++;
+          sleep(1);
+        } else {
+          break;
+        }
+      }
+     
+      syslog(LOG_CRIT,"FRU: %d, SLOT%d_EJECTOR_LATCH is not closed", slot_id, slot_id);
+      if (pal_set_server_power(slot_id, SERVER_12V_OFF) < 0)
+        syslog(LOG_WARNING,"%s : server_12v_off failed for slot: %d", __func__, slot_id);
+
+      flock(fd, LOCK_UN);
+      close(fd);
+      remove(path);
+      retry_count = 0;
+    }
+  }
+}
 
 static void default_gpio_check(void) {
   int i;
@@ -521,7 +641,6 @@ static void default_gpio_check(void) {
     }
   }
 }
-#endif
 
 int
 main(int argc, void **argv) {
@@ -532,12 +651,13 @@ main(int argc, void **argv) {
   for(i=1 ;i<MAX_NODES + 1; i++)
   {
     pthread_mutex_init(&hsvc_mutex[i], NULL);
+    pthread_mutex_init(&latch_open_mutex[i], NULL);
     last_ejector_ts[i].tv_sec = 0;
   }
 
-#if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
   default_gpio_check();
-#endif
+
+  slot_latch_check();
 
   pid_file = open("/var/run/gpiointrd.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -558,6 +678,7 @@ main(int argc, void **argv) {
   for(i=1; i<MAX_NODES + 1; i++)
   {
     pthread_mutex_destroy(&hsvc_mutex[i]);
+    pthread_mutex_destroy(&latch_open_mutex[i]);
   }
 
   return 0;

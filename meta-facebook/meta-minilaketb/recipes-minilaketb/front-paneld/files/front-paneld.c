@@ -331,11 +331,6 @@ pwr_btn_handler() {
         pal_update_ts_sled();
         syslog(LOG_CRIT, "Power Button Long Press for FRU: %d\n", pos);
 
-        if (!pal_is_hsvc_ongoing(pos) || st_12v) {
-          sprintf(tstr, "/usr/bin/hsvc-util slot%u --start", pos);
-          run_command(tstr);
-          goto pwr_btn_out;
-        }
       }
 
       if (st_12v) {
@@ -353,10 +348,7 @@ pwr_btn_handler() {
       // if long press (>4s) and hand-switch position == bmc, then initiate
       // sled-cycle
       if (pos == HAND_SW_BMC) {
-        pal_update_ts_sled();
-        syslog(LOG_CRIT, "SLED_CYCLE using power button successful");
-        sleep(1);
-        pal_sled_cycle();
+          // minilaketb do nothing here.
       } else {
         if (i < BTN_HSVC) {
           pal_update_ts_sled();
@@ -364,8 +356,6 @@ pwr_btn_handler() {
         }
 
         if (!st_12v) {
-          sprintf(tstr, "/usr/bin/hsvc-util slot%u --stop", pos);
-          run_command(tstr);
           sprintf(tstr, "/usr/local/bin/power-util slot%u 12V-on", pos);
           run_command(tstr);
           goto pwr_btn_out;

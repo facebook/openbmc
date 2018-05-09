@@ -1141,92 +1141,6 @@ server_12v_on(uint8_t slot_id) {
   return 0;
 }
 
-// Debug Card's UART and BMC/SoL port share UART port and need to enable only
-// one TXD i.e. either BMC's TXD or Debug Port's TXD.
-static int
-control_sol_txd(uint8_t slot, uint8_t dis_tx) {
-  uint32_t scu_fd;
-  uint32_t ctrl;
-  void *scu_reg;
-  void *scu_pin_ctrl1;
-  void *scu_pin_ctrl2;
-
-  scu_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (scu_fd < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "control_sol_txd: open fails\n");
-#endif
-    return -1;
-  }
-
-  scu_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, scu_fd,
-             AST_SCU_BASE);
-  scu_pin_ctrl1 = (char*)scu_reg + PIN_CTRL1_OFFSET;
-  scu_pin_ctrl2 = (char*)scu_reg + PIN_CTRL2_OFFSET;
-
-  switch(slot) {
-  case 1:
-    // Disable UART1's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl = (dis_tx) ? ctrl & ~UART1_TXD : ctrl | UART1_TXD;
-    ctrl |= UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 2:
-    // Disable UART2's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD;
-    ctrl = (dis_tx) ? ctrl & ~UART2_TXD : ctrl | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 3:
-    // Disable UART3's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl = (dis_tx) ? ctrl & ~UART3_TXD : ctrl | UART3_TXD;
-    ctrl |= UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  case 4:
-    // Disable UART4's TXD and enable others
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD | UART2_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD;
-    ctrl = (dis_tx) ? ctrl & ~UART4_TXD : ctrl | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  default:
-    // Any other slots we need to enable all TXDs
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl2;
-    ctrl |= UART1_TXD ; //XG1 need GPIOM6,7
-    *(volatile uint32_t*) scu_pin_ctrl2 = ctrl;
-
-    ctrl = *(volatile uint32_t*) scu_pin_ctrl1;
-    ctrl |= UART3_TXD | UART4_TXD;
-    *(volatile uint32_t*) scu_pin_ctrl1 = ctrl;
-    break;
-  }
-
-  munmap(scu_reg, PAGE_SIZE);
-  close(scu_fd);
-
-  return 0;
-}
-
 // Display the given POST code using GPIO port
 static int
 pal_post_display(uint8_t status) {
@@ -2067,12 +1981,6 @@ pal_switch_uart_mux(uint8_t slot) {
     gpio_uart_sel0 = "0";
     gpio_uart_rx = "1";
     break;
-  }
-
-  //  Diable TXD path from BMC to avoid conflict with SoL
-  ret = control_sol_txd(slot, prsnt);
-  if (ret) {
-    goto uart_exit;
   }
 
   // Enable Debug card path

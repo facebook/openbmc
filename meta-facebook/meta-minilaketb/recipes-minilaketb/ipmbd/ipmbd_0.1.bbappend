@@ -3,7 +3,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_2.sh \
-             file://run-ipmbd_13.sh \
+             file://run-ipmbd_4.sh \
            "
 DEPENDS_append = " plat-utils "
 
@@ -20,12 +20,12 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/ipmbd_2
-  install -d ${D}${sysconfdir}/sv/ipmbd_13
+  install -d ${D}${sysconfdir}/sv/ipmbd_4
   install -d ${D}${sysconfdir}/ipmbd_2
-  install -d ${D}${sysconfdir}/ipmbd_13
+  install -d ${D}${sysconfdir}/ipmbd_4
   install -m 755 setup-ipmbd.sh ${D}${sysconfdir}/init.d/setup-ipmbd.sh
   install -m 755 run-ipmbd_2.sh ${D}${sysconfdir}/sv/ipmbd_2/run
-  install -m 755 run-ipmbd_13.sh ${D}${sysconfdir}/sv/ipmbd_13/run
+  install -m 755 run-ipmbd_4.sh ${D}${sysconfdir}/sv/ipmbd_4/run
   update-rc.d -r ${D} setup-ipmbd.sh start 65 5 .
 }
 

@@ -264,8 +264,8 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  // Only monitor the PWRGD_COREPWR & FM_SMI_BMC_N pin
-  gpios[PWRGD_COREPWR].flag = 1;
+  // Only monitor the XDP_CPU_SYSPWROK & FM_SMI_BMC_N pin
+  gpios[XDP_CPU_SYSPWROK].flag = 1;
   gpios[FM_SMI_BMC_N].flag = 1;
 
   for (i = 0; i < MAX_GPIO_PINS; i++) {
@@ -352,7 +352,7 @@ gpio_monitor_poll(void *ptr) {
         // Check if the new GPIO val is ASSERT
         if (gpios[i].status == gpios[i].ass_val) {
 
-          if (PWRGD_COREPWR == i) {
+          if (XDP_CPU_SYSPWROK == i) {
             /*
              * GPIO - PWRGOOD_CPU assert indicates that the CPU is turned off or in a bad shape.
              * Raise an error and change the LPS from on to off or vice versa for deassert.
@@ -374,7 +374,7 @@ gpio_monitor_poll(void *ptr) {
             smi_count_start[fru-1] = true;
           }
         } else {
-          if (PWRGD_COREPWR == i) {
+          if (XDP_CPU_SYSPWROK == i) {
             if (strcmp(pwr_state, "on")) {
               if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
                 // Check if power-util is still running to ignore getting incorrect power status

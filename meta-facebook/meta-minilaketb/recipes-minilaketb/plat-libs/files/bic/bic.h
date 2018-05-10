@@ -33,45 +33,36 @@ extern "C" {
 
 // GPIO PINS
 enum {
-  PWRGD_COREPWR = 0x0,
+  XDP_CPU_SYSPWROK = 0x0,
   PWRGD_PCH_PWROK,
-  PVDDR_AB_VRHOT_N,
-  PVDDR_DE_VRHOT_N,
+  PVDDR_VRHOT_N,
   PVCCIN_VRHOT_N,
-  FM_THROTTLE_N,
-  FM_PCH_BMC_THERMTRIP_N,
-  H_MEMHOT_CO_N,
-  FM_CPU0_THERMTRIP_LVT3_N,
-  CPLD_PCH_THERMTRIP,
+  FM_FAST_PROCHOT_N,
+  PCHHOT_CPU_N,
+  FM_CPLD_CPU_DIMM_EVENT_CO_N,
+  FM_CPLD_BDXDE_THERMTRIP_N,
+  THERMTRIP_PCH_N,
   FM_CPLD_FIVR_FAULT,
-  FM_CPU_CATERR_N,
-  FM_CPU_ERROR_2,
-  FM_CPU_ERROR_1,
-  FM_CPU_ERROR_0,
-  FM_SLPS4_N,
+  FM_BDXDE_CATERR_LVT3_N,
+  FM_BDXDE_ERR2_LVT3_N,
+  FM_BDXDE_ERR1_LVT3_N,
+  FM_BDXDE_ERR0_LVT3_N,
+  SLP_S4_N,
   FM_NMI_EVENT_BMC_N,
   FM_SMI_BMC_N,
-  PLTRST_N,
-  FP_RST_BTN_N,
-  RST_BTN_BMC_OUT_N,
-  FM_BIOS_POST_COMPT_N,
-  FM_SLPS3_N,
+  RST_PLTRST_BMC_N,
+  FP_RST_BTN_BUF_N,
+  BMC_RST_BTN_OUT_N,
+  FM_BDE_POST_CMPLT_N,
+  FM_BDXDE_SLP3_N,
+  FM_PWR_LED_N,
   PWRGD_PVCCIN,
-  FM_BACKUP_BIOS_SEL_N,
-  FM_EJECTOR_LATCH_DETECT_N,
-  BMC_RESET,
-  FM_JTAG_BIC_TCK_MUX_SEL_N,
+  SVR_ID0,
+  SVR_ID1,
+  SVR_ID2,
+  SVR_ID3,
   BMC_READY_N,
   BMC_COM_SW_N,
-  RST_I2C_MUX_N,
-  XDP_BIC_PREQ_N,
-  XDP_BIC_TRST,
-  FM_SYS_THROTTLE_LVC3,
-  XDP_BIC_PRDY_N,
-  XDP_PRSNT_IN_N,
-  XDP_PRSNT_OUT_N,
-  XDP_BIC_PWR_DEBUG_N,
-  FM_BIC_JTAG_SEL_N,
 };
 
 // RC GPIO PINS
@@ -169,13 +160,9 @@ enum {
   FW_CPLD = 1,
   FW_BIC,
   FW_ME,
-  FW_PVCCIO_VR,
-  FW_PVCCIN_VR,
-  FW_PVCCSA_VR,
-  FW_DDRAB_VR,
-  FW_DDRDE_VR,
   FW_BIC_BOOTLOADER,
-  FW_PVNNPCH_VR,
+  FW_PVCCIN_VR,
+  FW_DDRAB_VR,
   FW_P1V05_VR,
 };
 
@@ -217,47 +204,38 @@ enum {
   RESTORE_FACTORY_DEFAULT,
 };
 
-// Bridge IC Spec
+//Minilake Bridge IC Spec
 typedef struct _bic_gpio_t {
   uint32_t pwrgood_cpu:1;
   uint32_t pwrgd_pch_pwrok:1;
-  uint32_t pvddr_ab_vrhot_n:1;
-  uint32_t pvddr_de_vrhot_n:1;
+  uint32_t pvddr_vrhot_n:1;
   uint32_t pvccin_vrhot_n:1;
-  uint32_t fm_throttle_n:1;
-  uint32_t fm_pch_bmc_thermtrip_n:1;
-  uint32_t h_memhot_co_n:1;
-  uint32_t fm_cpu0_thermtrip_lvt3_n:1;
-  uint32_t cpld_pch_thermtrip:1;
+  uint32_t fm_fast_prochot_n:1;
+  uint32_t pchhot_cpu_n:1;
+  uint32_t fm_cpld_cpu_dimm_event_co_n:1;
+  uint32_t fm_cpld_bdxde_thermtrip_n:1;
+  uint32_t thermtrip_pch_n:1;
   uint32_t fm_cpld_fivr_fault:1;
-  uint32_t fm_cpu_caterr_n:1;
-  uint32_t fm_cpu_error2:1;
-  uint32_t fm_cpu_error1:1;
-  uint32_t fm_cpu_error0:1;
-  uint32_t fm_slp4_n:1;
+  uint32_t fm_bdxde_caterr_lvt3_n:1;
+  uint32_t fm_bdxde_err2_lvt3_n:1;
+  uint32_t fm_bdxde_err1_lvt3_n:1;
+  uint32_t fm_bdxde_err0_lvt3_n:1;
+  uint32_t slp_s4_n:1;
   uint32_t fm_nmi_event_bmc_n:1;
   uint32_t fm_smi_bmc_n:1;
-  uint32_t pltrst_n:1;
-  uint32_t fp_rst_btn_n:1;
-  uint32_t rst_btn_bmc_out_n:1;
-  uint32_t fm_bios_post_compt_n:1;
-  uint32_t fm_slp3_n:1;
+  uint32_t rst_pltrst_bmc_n:1;
+  uint32_t fp_rst_btn_buf_n:1;
+  uint32_t bmc_rst_btn_out_n:1;
+  uint32_t fm_bde_post_cmplt_n:1;
+  uint32_t fm_bdxde_slp3_n:1;
+  uint32_t fm_pwr_led_n:1;
   uint32_t pwrgd_pvccin:1;
-  uint32_t fm_backup_bios_sel_n:1;
-  uint32_t fm_ejector_latch_detect_n:1;
-  uint32_t bmc_reset:1;
-  uint32_t fm_jtag_bic_tck_mux_sel_n:1;
+  uint32_t svr_id0:1;
+  uint32_t svr_id1:1;
+  uint32_t svr_id2:1;
+  uint32_t svr_id3:1;
   uint32_t bmc_ready_n:1;
   uint32_t bmc_com_sw_n:1;
-  uint32_t rst_i2c_mux_n:1;
-  uint32_t xdp_bic_preq_n:1;
-  uint32_t xdp_bic_trst:1;
-  uint32_t fm_sys_throttle_lvc3:1;
-  uint32_t xdp_bic_prdy_n:1;
-  uint32_t xdp_prsnt_in_n:1;
-  uint32_t xdp_prsnt_out_n:1;
-  uint32_t xdp_bic_pwr_debug_n:1;
-  uint32_t fm_bic_jtag_sel_n:1;
   uint32_t rsvd:1;
 } bic_gpio_t;
 

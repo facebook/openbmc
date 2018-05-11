@@ -3945,27 +3945,10 @@ pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
   bool valid = false;
   uint8_t diff = o_val ^ n_val;
 
-  if (GETBIT(diff, 0)) {
-    switch(snr_num) {
-      case BIC_RC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SOC_Thermal_Trip");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 0), name);
-      valid = false;
-    }
-  }
-
   if (GETBIT(diff, 1)) {
     switch(snr_num) {
       case BIC_RC_SENSOR_VR_HOT:
         sprintf(name, "510_VR_Hot");
-        valid = true;
-        break;
-      case BIC_RC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "VR_Fault");
         valid = true;
         break;
     }
@@ -3977,6 +3960,10 @@ pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
 
   if (GETBIT(diff, 2)) {
     switch(snr_num) {
+      case BIC_RC_SENSOR_SYSTEM_STATUS:
+        sprintf(name, "CPU0_Thermal_Trip");
+        valid = true;
+        break;
       case BIC_RC_SENSOR_VR_HOT:
         sprintf(name, "423_VR_Hot");
         valid = true;
@@ -3984,6 +3971,19 @@ pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
     }
     if (valid) {
       _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 2), name);
+      valid = false;
+    }
+  }
+
+  if (GETBIT(diff, 4)) {
+    switch(snr_num) {
+      case BIC_RC_SENSOR_SYSTEM_STATUS:
+        sprintf(name, "CPU0_FIVR_Fault");
+        valid = true;
+        break;
+    }
+    if (valid) {
+      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 4), name);
       valid = false;
     }
   }
@@ -4094,12 +4094,39 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
   pal_sensor_discrete_check_tl(fru, snr_num, snr_name, o_val, n_val);
 #endif
 
+  return 0;
 }
+
+#if defined(CONFIG_FBY2_RC)
+int 
+fby2_rc_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+
+  switch(sensor_num) {
+    case BIC_RC_SENSOR_RAS_UNCORR:
+      sprintf(name, "RAS_UNCORR");
+      break;
+    case BIC_RC_SENSOR_RAS_CORR_INFO:
+      sprintf(name, "RAS_CORR_INFO");
+      break;
+    case BIC_RC_SENSOR_RAS_FATAL:
+      sprintf(name, "RAS_FATAL");
+      break;
+    case BIC_RC_SENSOR_PWR_FAIL:
+      sprintf(name, "POWER_FAILURE");
+      break;
+    default:
+      return -1;
+  }
+  return 0;
+}
+#endif
 
 int
 pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
   uint8_t snr_type = sel[10];
   uint8_t snr_num = sel[11];
+  uint8_t server_type = 0xFF;
+  int ret = -1;
 
   // If SNR_TYPE is OS_BOOT, sensor name is OS
   switch (snr_type) {
@@ -4113,6 +4140,23 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
       }
       return 0;
   }
+
+#if defined(CONFIG_FBY2_RC)
+  ret = fby2_get_server_type(fru, &server_type);
+  if (ret) {
+    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+  }
+  switch(server_type){
+    case SERVER_TYPE_RC:
+      if(fby2_rc_event_sensor_name(fru, snr_num, name) == 0) {
+        return 0;
+      }
+      break;
+    case SERVER_TYPE_TL:
+      break;
+  }
+#endif
+
   // Otherwise, translate it based on snr_num
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
 }
@@ -4171,8 +4215,67 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   return pal_set_key_value(key, cvalue);
 }
 
+#if defined(CONFIG_FBY2_RC)
 int
-pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  uint8_t sen_type = event_data[0];
+  char temp_log[512] = {0};
+  bool parsed = false;
+
+  switch(snr_num) {
+    case PROCHOT_EXT:
+      strcpy(error_log, "");  //Just show event raw data for now
+      parsed = true;
+      break;
+    case BIC_RC_SENSOR_RAS_UNCORR:
+    case BIC_RC_SENSOR_RAS_CORR_INFO:
+    case BIC_RC_SENSOR_RAS_FATAL:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x01:
+          strcat(error_log, "State Asserted");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+    case BIC_RC_SENSOR_PWR_FAIL:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x06:
+          strcat(error_log, "Power Unit Failure Detected");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+  }
+
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+}
+#endif
+
+int
+pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t snr_num = sel[11];
   uint8_t *event_data = &sel[10];
@@ -4290,7 +4393,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
       }
       parsed = true;
       break;
-  }
+  }  
 
   if (parsed == true) {
     if ((event_data[2] & 0x80) == 0) {
@@ -4302,6 +4405,35 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
   }
 
   pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+#if defined(CONFIG_FBY2_RC)
+  int ret = -1;
+  uint8_t server_type = 0xFF;
+  ret = fby2_get_server_type(fru, &server_type);
+  if (ret) {
+    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+  }
+  switch (server_type) {
+    case SERVER_TYPE_RC:
+      pal_parse_sel_rc(fru, sel, error_log);
+      break;
+    case SERVER_TYPE_TL:
+      pal_parse_sel_tl(fru, sel, error_log);
+      break;
+    default:
+      syslog(LOG_ERR, "%s, Undefined server type", __func__);
+      return -1;
+  }
+#else
+  pal_parse_sel_tl(fru, sel, error_log);
+#endif
 
   return 0;
 }

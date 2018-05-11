@@ -67,10 +67,6 @@ minilaketb_common_fru_name(uint8_t fru, char *str) {
       sprintf(str, "spb");
       break;
 
-    case FRU_NIC:
-      sprintf(str, "nic");
-      break;
-
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "minilaketb_common_fru_id: Wrong fru id");
@@ -96,8 +92,6 @@ minilaketb_common_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_SLOT4;
   } else if (!strcmp(str, "spb")) {
     *fru = FRU_SPB;
-  } else if (!strcmp(str, "nic")) {
-    *fru = FRU_NIC;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "minilaketb_common_fru_id: Wrong fru id");

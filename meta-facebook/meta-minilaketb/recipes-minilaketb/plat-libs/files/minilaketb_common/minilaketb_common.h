@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-#define MAX_NUM_FRUS 6
+#define MAX_NUM_FRUS 5
 enum {
   FRU_ALL   = 0,
   FRU_SLOT1 = 1,
@@ -33,7 +33,6 @@ enum {
   FRU_SLOT3 = 3,
   FRU_SLOT4 = 4,
   FRU_SPB   = 5,
-  FRU_NIC   = 6,
 };
 
 enum {

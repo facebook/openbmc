@@ -343,10 +343,6 @@ const uint8_t dc_cf_sensor_list[] = {
   DC_CF_SENSOR_INA230_POWER,
 };
 
-// List of NIC sensors to be monitored
-const uint8_t nic_sensor_list[] = {
-  MEZZ_SENSOR_TEMP,
-};
 
 float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float dc_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -418,9 +414,6 @@ sensor_thresh_array_init() {
   dc_cf_sensor_threshold[DC_CF_SENSOR_INA230_VOLT][LCR_THRESH] = 11.25;
   dc_cf_sensor_threshold[DC_CF_SENSOR_INA230_POWER][UCR_THRESH] = 70;
 
-  // MEZZ
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UNR_THRESH] = 105;
-  nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
   init_done = true;
 }
 
@@ -438,8 +431,6 @@ size_t bic_ep_discrete_cnt = sizeof(bic_ep_discrete_list)/sizeof(uint8_t);
 #endif
 
 size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
-
-size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 
 size_t dc_sensor_cnt = sizeof(dc_sensor_list)/sizeof(uint8_t);
 
@@ -1080,9 +1071,7 @@ switch(fru) {
   case FRU_SPB:
     sprintf(fru_name, "%s", "spb");
     break;
-  case FRU_NIC:
-    sprintf(fru_name, "%s", "nic");
-    break;
+
   default:
 #ifdef DEBUG
     syslog(LOG_WARNING, "minilaketb_sensor_sdr_path: Wrong Slot ID\n");
@@ -1194,7 +1183,6 @@ minilaketb_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
       break;
 
     case FRU_SPB:
-    case FRU_NIC:
       return -1;
       break;
   }
@@ -1354,13 +1342,6 @@ minilaketb_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           break;
       }
       break;
-    case FRU_NIC:
-      switch(sensor_num) {
-        case MEZZ_SENSOR_TEMP:
-          sprintf(units, "C");
-          break;
-      }
-      break;
   }
   return 0;
 }
@@ -1391,9 +1372,6 @@ minilaketb_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, flo
       break;
     case FRU_SPB:
       *value = spb_sensor_threshold[sensor_num][thresh];
-      break;
-    case FRU_NIC:
-      *value = nic_sensor_threshold[sensor_num][thresh];
       break;
   }
   return 0;
@@ -1556,13 +1534,6 @@ minilaketb_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case SP_SENSOR_HSC_IN_POWER:
           sprintf(name, "SP_HSC_IN_POWER");
-          break;
-      }
-      break;
-    case FRU_NIC:
-      switch(sensor_num) {
-        case MEZZ_SENSOR_TEMP:
-          sprintf(name, "MEZZ_SENSOR_TEMP");
           break;
       }
       break;
@@ -1755,14 +1726,6 @@ minilaketb_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case SP_SENSOR_HSC_IN_POWER:
           return read_hsc_ein(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);
       }
-      break;
-
-      case FRU_NIC:
-       	  switch(sensor_num) {
-       	    // Mezz Temp
-       		  case MEZZ_SENSOR_TEMP:
-              return read_nic_temp(I2C_DEV_NIC, I2C_NIC_ADDR, (float*) value);
-       	  }
       break;
   }
 }

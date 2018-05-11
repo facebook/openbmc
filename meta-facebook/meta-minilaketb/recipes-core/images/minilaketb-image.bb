@@ -31,7 +31,6 @@ IMAGE_INSTALL += " \
   ipmbd \
   bic-cached \
   bic-util \
-  ncsi-util \
   minilaketb-sensors \
   sensor-util \
   sensor-mon \

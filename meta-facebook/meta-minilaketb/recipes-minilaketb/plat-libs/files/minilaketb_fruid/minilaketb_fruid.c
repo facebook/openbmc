@@ -50,22 +50,6 @@ plat_get_ipmb_bus_id(uint8_t slot_id) {
   return bus_id;
 }
 
-uint32_t
-minilaketb_get_nic_mfgid(void) {
-  FILE *fp;
-  uint8_t buf[16];
-
-  fp = fopen(NIC_FW_VER_PATH, "rb");
-  if (!fp) {
-    return MFG_UNKNOWN;
-  }
-
-  fseek(fp, 32 , SEEK_SET);
-  fread(buf, 1, 4, fp);
-  fclose(fp);
-
-  return ((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|buf[0]);
-}
 
 /* Populate char path[] with the path to the fru's fruid binary dump */
 int
@@ -88,9 +72,7 @@ minilaketb_get_fruid_path(uint8_t fru, char *path) {
     case FRU_SPB:
       sprintf(fname, "spb");
       break;
-    case FRU_NIC:
-      sprintf(fname, "nic");
-      break;
+
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "minilaketb_get_fruid_path: wrong fruid");
@@ -126,12 +108,7 @@ minilaketb_get_fruid_eeprom_path(uint8_t fru, char *path) {
     case FRU_SPB:
       sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
       break;
-    case FRU_NIC:
-      if (minilaketb_get_nic_mfgid() == MFG_BROADCOM) {
-        return -1;
-      }
-      sprintf(path, "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom");
-      break;
+
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "minilaketb_get_fruid_eeprom_path: wrong fruid");
@@ -171,20 +148,7 @@ minilaketb_get_fruid_name(uint8_t fru, char *name) {
     case FRU_SPB:
       sprintf(name, "Side Plane Board");
       break;
-    case FRU_NIC:
-      mfg_id = minilaketb_get_nic_mfgid();
-      switch (mfg_id) {
-        case MFG_MELLANOX:
-          sprintf(name, "Mellanox NIC");
-          break;
-        case MFG_BROADCOM:
-          sprintf(name, "Broadcom NIC");
-          break;
-        default:
-          sprintf(name, "NIC");
-          break;
-      }
-      break;
+
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "minilaketb_get_fruid_name: wrong fruid");

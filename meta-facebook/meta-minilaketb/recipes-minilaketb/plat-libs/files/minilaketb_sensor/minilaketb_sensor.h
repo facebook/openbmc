@@ -306,9 +306,6 @@ enum {
   DC_CF_SENSOR_INA230_POWER = 0x94,
 };
 
-enum{
-  MEZZ_SENSOR_TEMP = 0x82,
-};
 
 enum {
   MUX_CH_0 = 0,

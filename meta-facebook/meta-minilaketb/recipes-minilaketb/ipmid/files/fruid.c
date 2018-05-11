@@ -174,13 +174,7 @@ int plat_fruid_init(void) {
       case FRU_SPB:
         ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
         break;
-      case FRU_NIC:
-        if (minilaketb_get_nic_mfgid() == MFG_BROADCOM) {
-          ret = pal_read_nic_fruid(BIN_NIC, 256);
-          break;
-        }
-        ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
-        break;
+        
       default:
         break;
     }

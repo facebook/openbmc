@@ -58,7 +58,7 @@ echo 0 > $PWM_DIR/tacho0_source
 echo 1 > $PWM_DIR/tacho1_source
 
 t=0
-while [ $t -le 1 ]; do
+while [ $t -le 3 ]; do
     echo 1 > $PWM_DIR/tacho${t}_en
     t=$((t+1))
 done

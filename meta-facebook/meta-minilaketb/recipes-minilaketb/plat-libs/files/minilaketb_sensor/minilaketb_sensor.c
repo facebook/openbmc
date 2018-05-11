@@ -438,7 +438,7 @@ size_t dc_cf_sensor_cnt = sizeof(dc_cf_sensor_list)/sizeof(uint8_t);
 
 enum {
   FAN0 = 0,
-  FAN1,
+  FAN1 = 2,
 };
 
 enum {

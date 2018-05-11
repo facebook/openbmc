@@ -700,7 +700,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF77304");
+       system("devmem 0x1e78a0c4 w 0xFFF77304"); // change to bus 3
        break;
      case FRU_SLOT2:
        system("devmem 0x1e78a104 w 0xFFF77304");
@@ -963,7 +963,7 @@ update_done:
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF5E700");
+       system("devmem 0x1e78a0c4 w 0xFFF5E700");  //change to bus 3
        break;
      case FRU_SLOT2:
        system("devmem 0x1e78a104 w 0xFFF5E700");
@@ -1001,7 +1001,7 @@ error_exit:
 static int
 check_vr_image(int fd, long size) {
   uint8_t buf[32];
-  uint8_t hdr[] = {0x00,0x01,0x4c,0x1c,0x00,0x46,0x30,0x39,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+  uint8_t hdr[] = {0x00,0x01,0x4c,0x1c,0x00,0x58,0x47,0x31,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};  //change header to XG1
 
   if (size < 32)
     return -1;
@@ -1019,42 +1019,58 @@ check_vr_image(int fd, long size) {
 }
 
 static int
-check_cpld_image(uint8_t slot_id, int fd, long size) {
-  uint8_t buf[32];
-  uint8_t hdr_tl[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
-  uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-  int ret;
-  uint8_t server_type = 0xFF;
-  uint8_t hdr_ep[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39,0x41};
+check_cpld_image(int fd, long size) {
+    int i, j, rcnt;
+    uint8_t *buf, data;
+    uint16_t crc_exp, crc_val = 0xffff;
+    uint32_t dword, crc_offs;
 
-  ret = bic_get_server_type(slot_id, &server_type);
-  if (ret) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-    return -1;
-  }
+    if (size < 52)
+      return -1;
 
-  switch (server_type) {
-    case SERVER_TYPE_RC:
-      return 0;
-    case SERVER_TYPE_EP:
-      hdr = hdr_ep;
-      hdr_size = sizeof(hdr_ep);
-      break;
-  }
-#endif
+    buf = (uint8_t *)malloc(size);
+    if (!buf) {
+      return -1;
+    }
 
-  if (size < 32)
-    return -1;
+    i = 0;
+    while (i < size) {
+      rcnt = read(fd, (buf + i), size);
+      if ((rcnt < 0) && (errno != EINTR)) {
+        free(buf);
+        return -1;
+      }
+      i += rcnt;
+    }
 
-  if (read(fd, buf, hdr_size) != hdr_size)
-    return -1;
+    dword = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    if ((dword != 0x4A414D00) && (dword != 0x4A414D01)) {
+      free(buf);
+      return -1;
+    }
 
-  if (memcmp(buf, hdr, hdr_size))
-    return -1;
+    i = 32 + (dword & 0x1) * 8;
+    crc_offs = (buf[i] << 24) | (buf[i+1] << 16) | (buf[i+2] << 8) | buf[i+3];
+    if ((crc_offs + sizeof(crc_exp)) > size) {
+      free(buf);
+      return -1;
+    }
+    crc_exp = (buf[crc_offs] << 8) | buf[crc_offs+1];
 
-  lseek(fd, 0, SEEK_SET);
-  return 0;
+    for (i = 0; i < crc_offs; i++) {
+      data = buf[i];
+      for (j = 0; j < 8; j++, data >>= 1) {
+        crc_val = ((data ^ crc_val) & 0x1) ? ((crc_val >> 1) ^ 0x8408) : (crc_val >> 1);
+      }
+    }
+    crc_val = ~crc_val;
+    free(buf);
+
+    if (crc_exp != crc_val)
+      return -1;
+
+    lseek(fd, 0, SEEK_SET);
+    return 0;
 }
 
 static int
@@ -1218,7 +1234,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     syslog(LOG_CRIT, "Update VR: update vr firmware on slot %d\n", slot_id);
     dsize = st.st_size/5;
   } else {
-    if ((comp == UPDATE_CPLD) && (check_cpld_image(slot_id, fd, st.st_size) < 0)) {
+    if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
       printf("invalid CPLD file!\n");
       goto error_exit;
     }
@@ -1283,27 +1299,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
        }
        fflush(stdout);
        last_offset += dsize;
-    }
-  }
-
-  if (comp == UPDATE_CPLD) {
-    for (i = 0; i < 60; i++) {  // wait 60s at most
-      rc = _get_cpld_update_progress(slot_id, buf);
-      if (rc) {
-        goto error_exit;
-      }
-
-      if (buf[0] == 0xFD) {  // error code
-        goto error_exit;
-      }
-
-      printf("\rupdated cpld: %d %%", buf[0]);
-      fflush(stdout);
-      buf[0] %= 101;
-      if (buf[0] == 100)
-        break;
-
-      sleep(2);
     }
   }
 

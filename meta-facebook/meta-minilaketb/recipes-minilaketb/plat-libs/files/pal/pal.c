@@ -3098,6 +3098,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t *ed = &event_data[3];
   char temp_log[512] = {0};
   uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
 
   switch(snr_num) {
     case MEMORY_ECC_ERR:
@@ -3108,12 +3109,14 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
         if ((ed[0] & 0x0F) == 0x0) {
           if (sen_type == 0x0C) {
             strcat(error_log, "Correctable");
+            sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+            pal_add_cri_sel(temp_log);
           } else if (sen_type == 0x10)
             strcat(error_log, "Correctable ECC error Logging Disabled");
         } else if ((ed[0] & 0x0F) == 0x1) {
           strcat(error_log, "Uncorrectable");
-        } else if ((ed[0] & 0x0F) == 0x2) {
-          strcat(error_log, "Parity Error");
+          sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+          pal_add_cri_sel(temp_log);
         } else if ((ed[0] & 0x0F) == 0x5)
           strcat(error_log, "Correctable ECC error Logging Limit Reached");
         else
@@ -3126,35 +3129,43 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, "Unknown");
       }
 
-      if (((ed[1] & 0xC) >> 2) == 0x0) {  /* All Info Valid */
+      // DIMM number (ed[2]):
+      // Bit[7:5]: Socket number  (Range: 0-7)
+      // Bit[4:3]: Channel number (Range: 0-3)
+      // Bit[2:0]: DIMM number    (Range: 0-7)
+      if (((ed[1] & 0xC) >> 2) == 0x0) {
+        /* All Info Valid */
+        chn_num = (ed[2] & 0x18) >> 3;
+        dimm_num = ed[2] & 0x7;
+
         /* If critical SEL logging is available, do it */
         if (sen_type == 0x0C) {
           if ((ed[0] & 0x0F) == 0x0) {
-            sprintf(temp_log, "DIMM%02X ECC err,FRU:%u", ed[2], fru);
+            sprintf(temp_log, "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
             pal_add_cri_sel(temp_log);
           } else if ((ed[0] & 0x0F) == 0x1) {
-            sprintf(temp_log, "DIMM%02X UECC err,FRU:%u", ed[2], fru);
-            pal_add_cri_sel(temp_log);
-          } else if ((ed[0] & 0x0F) == 0x2) {
-            sprintf(temp_log, "DIMM%02X Parity err,FRU:%u", ed[2], fru);
+            sprintf(temp_log, "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
             pal_add_cri_sel(temp_log);
           }
         }
         /* Then continue parse the error into a string. */
         /* All Info Valid                               */
-        sprintf(temp_log, " (DIMM %02X) Logical Rank %d", ed[2], ed[1] & 0x03);
+        sprintf(temp_log, " DIMM %c%d Logical Rank %d (CPU# %d, CHN# %d, DIMM# %d)",
+            'A'+chn_num, dimm_num, ed[1] & 0x03, (ed[2] & 0xE0) >> 5, chn_num, dimm_num);
       } else if (((ed[1] & 0xC) >> 2) == 0x1) {
         /* DIMM info not valid */
         sprintf(temp_log, " (CPU# %d, CHN# %d)",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2);
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
       } else if (((ed[1] & 0xC) >> 2) == 0x2) {
         /* CHN info not valid */
         sprintf(temp_log, " (CPU# %d, DIMM# %d)",
-            (ed[2] & 0xE0) >> 5, ed[2] & 0x3);
+            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
       } else if (((ed[1] & 0xC) >> 2) == 0x3) {
         /* CPU info not valid */
         sprintf(temp_log, " (CHN# %d, DIMM# %d)",
-            (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
+            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
       }
       strcat(error_log, temp_log);
       return 0;

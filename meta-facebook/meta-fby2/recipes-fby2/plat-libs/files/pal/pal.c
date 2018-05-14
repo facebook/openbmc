@@ -4393,7 +4393,45 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
       }
       parsed = true;
       break;
-  }  
+#ifdef CONFIG_FBY2_EP
+    case NBU_ERROR:
+      strcpy(error_log, "");
+      if (ed[0] == 0xAB) {
+        strcat(error_log, "Uncorrectable");
+      } else if (ed[0] == 0xAC) {
+        strcat(error_log, "Correctable");
+      } else {
+        strcat(error_log, "Unknown");
+      }
+      sprintf(temp_log, " (POST code %02X) ", ed[1]);
+      strcat(error_log, temp_log);
+      switch (ed[2]) {
+        case 0x00:
+          strcat(error_log, "NBU Tag Correctable ECC Error");
+          break;
+        case 0x01:
+          strcat(error_log, "NBU Tag Uncorrectable ECC Error");
+          break;
+        case 0x02:
+          strcat(error_log, "NBU BAR Address Error");
+          break;
+        case 0x03:
+          strcat(error_log, "NBU Snoop Filter Correctable ECC Error");
+          break;
+        case 0x04:
+          strcat(error_log, "NBU Snoop Filter Uncorrectable ECC Error");
+          break;
+        case 0x05:
+          strcat(error_log, "NBU Timeout Error");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+#endif
+  }
 
   if (parsed == true) {
     if ((event_data[2] & 0x80) == 0) {

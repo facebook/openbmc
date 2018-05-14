@@ -1512,6 +1512,11 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
             case BIC_SENSOR_VR_HOT:
               sprintf(name, "VR_HOT");
               break;
+#ifdef CONFIG_FBY2_EP
+            case NBU_ERROR:
+              sprintf(name, "NBU_ERROR");
+              break;
+#endif
             default:
               sprintf(name, "");
               return -1;

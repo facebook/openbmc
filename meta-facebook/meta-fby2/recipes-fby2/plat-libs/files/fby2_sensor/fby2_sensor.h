@@ -215,6 +215,11 @@ enum {
   BIC_EP_SENSOR_PVDDQ_AB = 0xD8,
   BIC_EP_SENSOR_P0V8_VDD = 0xD9,
 };
+
+// logged from FBEP system firmware
+enum {
+  NBU_ERROR = 0x9E,
+};
 #endif
 
 // Sensors Under Side Plane

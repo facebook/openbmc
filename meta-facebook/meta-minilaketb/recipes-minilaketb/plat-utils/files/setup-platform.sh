@@ -25,7 +25,7 @@ echo $SLOT_TYPE > /tmp/slot.bin
 
 
 # do init power
-echo "[ T6A ] : Start setup PCA9555"
+echo "[ minilakeTB ] : Start setup PCA9555"
 do_init_power=0;
 
 ret=$(i2cget -y 12 0x20  0x02 w)
@@ -43,25 +43,25 @@ if [ "$do_init_power" -eq "1" ]; then
     i2cset -y 12 0x20  0x02 0xFD 0xD7 i
     # set 0x06 dir register, 0xFD port0, 0xD3 port1
     i2cset -y 12 0x20  0x06 0xFD 0xD3 i
-    usleep 2000;
+    usleep 10000;
 
     # set P0V9 as high
     i2cset -y 12 0x20  0x06 0xDD 0xD3 i
-    usleep 2000;
+    usleep 10000;
 
     # set P1V8 as high
     i2cset -y 12 0x20  0x06 0x9D 0xD3 i
-    usleep 2000;
+    usleep 10000;
 
     # set OSC_OE as high
-    i2cset -y 12 0x20  0x06 0x9D 0xD3 i
-    usleep 2000;
+    i2cset -y 12 0x20  0x06 0x9D 0xD1 i
+    usleep 10000;
 
     # set RST_PLT_MEZZ_N as high
     i2cset -y 12 0x20  0x06 0x8D 0xD1 i
-    usleep 2000;
+    usleep 10000;
 
-    echo "[ T6A ] : setup PCA9555 finish !!!"
+    echo "[ minilakeTB ] : setup PCA9555 finish !!!"
 else
-    echo "[ T6A ] : no need to setup PCA9555 !!!"
+    echo "[ minilakeTB ] : no need to setup PCA9555 !!!"
 fi

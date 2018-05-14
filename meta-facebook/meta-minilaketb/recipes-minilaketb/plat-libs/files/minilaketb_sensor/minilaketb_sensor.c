@@ -952,23 +952,8 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   int i;
   sdr_full_t *sdr;
   ipmi_sensor_reading_t sensor;
-  ipmi_accuracy_sensor_reading_t acsensor;
-  bool is_accuracy_sensor = false;
 
-#if !defined(CONFIG_FBY2_RC) && !defined(CONFIG_FBY2_EP)  // workaround for now, this is only for TL
-  for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
-    if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
-      is_accuracy_sensor = true;
-  }
-#endif
-
-  // accuracy sensor VCCIN_VR_POUT, INA230_POWER and SOC_PACKAGE_PWR
-  if (is_accuracy_sensor) {
-    ret = bic_read_accuracy_sensor(fru, sensor_num, &acsensor);
-    sensor.flags = acsensor.flags;
-  } else {
-    ret = bic_read_sensor(fru, sensor_num, &sensor);
-  }
+  ret = bic_read_sensor(fru, sensor_num, &sensor);
   if (ret) {
     return ret;
   }
@@ -993,11 +978,6 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   // If the SDR is not type1, no need for conversion
   if (sdr->type !=1) {
     *(float *) value = sensor.value;
-    return 0;
-  }
-
-  if (is_accuracy_sensor) {
-    *(float *) value = ((float)(acsensor.int_value*100 + acsensor.dec_value))/100;
     return 0;
   }
 

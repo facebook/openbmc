@@ -36,6 +36,7 @@ IMAGE_INSTALL += " \
   openbmc-gpio \
   openbmc-utils \
   sensor-setup \
+  sensor-mon \
   spatula \
   trousers \
   tpm-tools \

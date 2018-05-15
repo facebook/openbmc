@@ -23,6 +23,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 board_rev=$(wedge_board_rev)
 
+# # Bus 5
+i2c_device_add 5 0x33 com_e_driver     # COM-e
+
 # # Bus 2
 i2c_device_add 2 0x35 scmcpld          # SCMCPLD
 

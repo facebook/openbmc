@@ -45,7 +45,7 @@ scm_monitor_handler(){
   int ret;
   uint8_t prsnt = 0;
   uint8_t power;
-  uint8_t pos = FRU_MB;
+  uint8_t pos = FRU_SCM;
 
   while (1) {
     ret = pal_is_scm_prsnt(&prsnt);

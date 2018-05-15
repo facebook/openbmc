@@ -44,6 +44,7 @@
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 #define SCM_SYSFS "/sys/class/i2c-adapter/i2c-2/2-0035/%s"
 #define SMB_SYSFS "/sys/class/i2c-adapter/i2c-12/12-003e/%s"
+#define MINIPACK_SDR_PATH "/tmp/sdr_%s.bin"
 
 #define GPIO_MB_REV_ID_0 52
 #define GPIO_MB_REV_ID_1 53
@@ -66,7 +67,7 @@
 #define DELAY_POWER_OFF 5
 #define DELAY_POWER_CYCLE 10
 
-const char pal_fru_list[] = "all, slot1";
+const char pal_fru_list[] = "all, scm";
 
 char * key_list[] = {
 "pwr_server1_last_state",
@@ -83,6 +84,65 @@ char * def_val_list[] = {
 /* Add more Keys here */
   LAST_KEY /* Same as last entry of the key_list */
 };
+
+// List of BIC sensors to be monitored
+const uint8_t bic_sensor_list[] = {
+  /* Threshold sensors */
+  BIC_SENSOR_MB_OUTLET_TEMP,
+  BIC_SENSOR_MB_INLET_TEMP,
+  BIC_SENSOR_PCH_TEMP,
+  BIC_SENSOR_VCCIN_VR_TEMP,
+  BIC_SENSOR_1V05MIX_VR_TEMP,
+  BIC_SENSOR_SOC_TEMP,
+  BIC_SENSOR_SOC_THERM_MARGIN,
+  BIC_SENSOR_VDDR_VR_TEMP,
+  BIC_SENSOR_SOC_DIMMA0_TEMP,
+  BIC_SENSOR_SOC_DIMMB0_TEMP,
+  BIC_SENSOR_SOC_PACKAGE_PWR,
+  BIC_SENSOR_VCCIN_VR_POUT,
+  BIC_SENSOR_VDDR_VR_POUT,
+  BIC_SENSOR_SOC_TJMAX,
+  BIC_SENSOR_P3V3_MB,
+  BIC_SENSOR_P12V_MB,
+  BIC_SENSOR_P1V05_PCH,
+  BIC_SENSOR_P3V3_STBY_MB,
+  BIC_SENSOR_P5V_STBY_MB,
+  BIC_SENSOR_PV_BAT,
+  BIC_SENSOR_PVDDR,
+  BIC_SENSOR_P1V05_MIX,
+  BIC_SENSOR_1V05MIX_VR_CURR,
+  BIC_SENSOR_VDDR_VR_CURR,
+  BIC_SENSOR_VCCIN_VR_CURR,
+  BIC_SENSOR_VCCIN_VR_VOL,
+  BIC_SENSOR_VDDR_VR_VOL,
+  BIC_SENSOR_P1V05MIX_VR_VOL,
+  BIC_SENSOR_P1V05MIX_VR_Pout,
+  BIC_SENSOR_INA230_POWER,
+  BIC_SENSOR_INA230_VOL,
+};
+
+const uint8_t bic_discrete_list[] = {
+  /* Discrete sensors */
+  BIC_SENSOR_SYSTEM_STATUS,
+  BIC_SENSOR_PROC_FAIL,
+  BIC_SENSOR_SYS_BOOT_STAT,
+  BIC_SENSOR_CPU_DIMM_HOT,
+  BIC_SENSOR_VR_HOT,
+  BIC_SENSOR_POWER_THRESH_EVENT,
+  BIC_SENSOR_POST_ERR,
+  BIC_SENSOR_POWER_ERR,
+  BIC_SENSOR_PROC_HOT_EXT,
+  BIC_SENSOR_MACHINE_CHK_ERR,
+  BIC_SENSOR_PCIE_ERR,
+  BIC_SENSOR_OTHER_IIO_ERR,
+  BIC_SENSOR_MEM_ECC_ERR,
+  BIC_SENSOR_SPS_FW_HLTH,
+  BIC_SENSOR_CAT_ERR,
+};
+
+size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
+
+static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 // Helper Functions
 static int
@@ -816,3 +876,273 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   return 0;
 }
 
+static int
+minipack_sensor_sdr_path(uint8_t fru, char *path) {
+
+  char fru_name[16] = {0};
+
+  switch(fru) {
+    case FRU_SCM:
+      sprintf(fru_name, "%s", "scm");
+      break;
+    default:
+  #ifdef DEBUG
+      syslog(LOG_WARNING, "minipack_sensor_sdr_path: Wrong Slot ID\n");
+  #endif
+      return -1;
+  }
+
+  sprintf(path, MINIPACK_SDR_PATH, fru_name);
+
+  if (access(path, F_OK) == -1) {
+    return -1;
+  }
+
+return 0;
+}
+
+/* Populates all sensor_info_t struct using the path to SDR dump */
+static int
+sdr_init(char *path, sensor_info_t *sinfo) {
+  int fd;
+  int ret = 0;
+  uint8_t buf[MAX_SDR_LEN] = {0};
+  uint8_t bytes_rd = 0;
+  uint8_t snr_num = 0;
+  sdr_full_t *sdr;
+
+  while (access(path, F_OK) == -1) {
+    sleep(5);
+  }
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s: open failed for %s\n", __func__, path);
+    return -1;
+  }
+
+  ret = pal_flock_retry(fd);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
+   close(fd);
+   return -1;
+  }
+
+  while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
+    if (bytes_rd != sizeof(sdr_full_t)) {
+      syslog(LOG_ERR, "%s: read returns %d bytes\n", __func__, bytes_rd);
+      pal_unflock_retry(fd);
+      close(fd);
+      return -1;
+    }
+
+    sdr = (sdr_full_t *) buf;
+    snr_num = sdr->sensor_num;
+    sinfo[snr_num].valid = true;
+    memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
+  }
+
+  ret = pal_unflock_retry(fd);
+  if (ret == -1) {
+    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+    close(fd);
+    return -1;
+  }
+
+  close(fd);
+  return 0;
+}
+
+static int
+minipack_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
+  char path[64] = {0};
+  int retry = 0;
+
+  switch(fru) {
+    case FRU_SCM:
+      if (minipack_sensor_sdr_path(fru, path) < 0) {
+#ifdef DEBUG
+        syslog(LOG_WARNING, "minipack_sensor_sdr_path: get_fru_sdr_path failed\n");
+#endif
+        return ERR_NOT_READY;
+      }
+      while (retry <= 3) {
+        if (sdr_init(path, sinfo) < 0) {
+          if (retry == 3) { //if the third retry still failed, return -1
+#ifdef DEBUG
+            syslog(LOG_ERR, "minipack_sensor_sdr_init: sdr_init failed for FRU %d", fru);
+#endif
+            return -1;
+          }
+          retry++;
+          sleep(1);
+        } else {
+          break;
+        }
+      }
+      break;
+  }
+
+  return 0;
+}
+
+static int
+minipack_sdr_init(uint8_t fru) {
+
+  static bool init_done[MAX_NUM_FRUS] = {false};
+
+  if (!init_done[fru - 1]) {
+
+    sensor_info_t *sinfo = g_sinfo[fru-1];
+
+    if (minipack_sensor_sdr_init(fru, sinfo) < 0)
+      return ERR_NOT_READY;
+
+    init_done[fru - 1] = true;
+  }
+
+  return 0;
+}
+
+static int
+bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
+    void *value) {
+
+  int ret;
+  ipmi_sensor_reading_t sensor;
+  sdr_full_t *sdr;
+
+  ret = bic_read_sensor(IPMB_BUS, sensor_num, &sensor);
+  if (ret) {
+    return ret;
+  }
+
+  if (sensor.flags & BIC_SENSOR_READ_NA) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_read_sensor_wrapper: Reading Not Available");
+    syslog(LOG_ERR, "bic_read_sensor_wrapper: sensor_num: 0x%X, flag: 0x%X",
+        sensor_num, sensor.flags);
+#endif
+    return -1;
+  }
+
+  if (discrete) {
+    *(float *) value = (float) sensor.status;
+    return 0;
+  }
+
+  sdr = &g_sinfo[fru-1][sensor_num].sdr;
+
+  // If the SDR is not type1, no need for conversion
+  if (sdr->type !=1) {
+    *(float *) value = sensor.value;
+    return 0;
+  }
+
+  // y = (mx + b * 10^b_exp) * 10^r_exp
+  uint8_t x;
+  uint8_t m_lsb, m_msb;
+  uint16_t m = 0;
+  uint8_t b_lsb, b_msb;
+  uint16_t b = 0;
+  int8_t b_exp, r_exp;
+
+  x = sensor.value;
+
+  m_lsb = sdr->m_val;
+  m_msb = sdr->m_tolerance >> 6;
+  m = (m_msb << 8) | m_lsb;
+
+  b_lsb = sdr->b_val;
+  b_msb = sdr->b_accuracy >> 6;
+  b = (b_msb << 8) | b_lsb;
+
+  // exponents are 2's complement 4-bit number
+  b_exp = sdr->rb_exp & 0xF;
+  if (b_exp > 7) {
+    b_exp = (~b_exp + 1) & 0xF;
+    b_exp = -b_exp;
+  }
+  r_exp = (sdr->rb_exp >> 4) & 0xF;
+  if (r_exp > 7) {
+    r_exp = (~r_exp + 1) & 0xF;
+    r_exp = -r_exp;
+  }
+
+  * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
+
+  if ((sensor_num == BIC_SENSOR_SOC_THERM_MARGIN) && (* (float *) value > 0)) {
+   * (float *) value -= (float) THERMAL_CONSTANT;
+  }
+
+  return 0;
+}
+
+int
+pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
+
+  int ret = -1;
+  bool discrete = false;
+  int i = 0;
+  uint8_t prsnt = 0;
+
+  switch (fru) {
+    case FRU_SCM:
+      ret = pal_is_scm_prsnt(&prsnt);
+      if (ret) {
+        return ret;
+      }
+
+      if (!prsnt) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "pal_is_scm_prsnt is not present\n");
+#endif
+        return -1;
+      }
+
+      ret = minipack_sdr_init(fru);
+      if (ret < 0) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "minipack_sdr_init fail\n");
+#endif
+        return ret;
+      }
+
+      while (i < bic_discrete_cnt) {
+        if (sensor_num == bic_discrete_list[i++]) {
+          discrete = true;
+          break;
+        }
+      }
+      break;
+  }
+  return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
+}
+
+bool
+pal_is_fw_update_ongoing(uint8_t fru) {
+
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  struct timespec ts;
+
+  switch (fru) {
+    case FRU_SCM:
+      sprintf(key, "slot%d_fwupd", IPMB_BUS);
+      break;
+    default:
+      return false;
+  }
+
+  ret = edb_cache_get(key, value);
+  if (ret < 0) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
+}

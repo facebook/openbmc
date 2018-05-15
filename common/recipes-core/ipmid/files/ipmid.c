@@ -1895,7 +1895,6 @@ oem_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char 
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN];
   unsigned int index = req->data[0];
-  int ret;
 
   *res_len = 0;
   res->cc = CC_UNSPECIFIED_ERROR;
@@ -1908,8 +1907,7 @@ oem_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char 
   value[4] = req->data[3];
   value[5] = req->data[1]; // Type stored as revision.
   value[6] = 0;
-  ret = kv_set_bin(key, value, 7);
-  if (ret != 7)  {
+  if(kv_set(key, value, 7, KV_FPERSIST) != 0) {
     return;
   }
   res->cc = CC_SUCCESS;
@@ -1924,14 +1922,13 @@ oem_get_proc_info (unsigned char *request, unsigned char req_len, unsigned char 
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN];
   unsigned int index = req->data[0];
-  int ret;
+  size_t ret;
 
   *res_len = 0;
   res->cc = CC_UNSPECIFIED_ERROR;
 
   sprintf(key, "sys_config/fru%u_cpu%u_basic_info", req->payload_id, index);
-  ret = kv_get_bin(key, value);
-  if (ret < 7) {
+  if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 7) {
     return;
   }
   res->data[0] = value[5]; // Return Processor revision as Type
@@ -1948,7 +1945,6 @@ oem_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned char 
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int ret;
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
   unsigned char index = req->data[0];
@@ -1957,15 +1953,13 @@ oem_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned char 
   res->cc = CC_UNSPECIFIED_ERROR;
 
   sprintf(key, "sys_config/fru%d_dimm%d_type", req->payload_id, index);
-  ret = kv_set_bin(key, (char *)&req->data[1], 1);
-  if (ret != 1) {
+  if(kv_set(key, (char *)&req->data[1], 1, KV_FPERSIST)) {
     return;
   }
   sprintf(key, "sys_config/fru%d_dimm%d_speed", req->payload_id, index);
   memcpy(value, &req->data[2], 2);
   memcpy(value + 2, &req->data[4], 4);
-  ret = kv_set_bin(key, (char *)value, 6);
-  if (ret != 6) {
+  if(kv_set(key, (char *)value, 6, KV_FPERSIST)) {
     return;
   }
   res->cc = CC_SUCCESS;
@@ -1980,21 +1974,19 @@ oem_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned char 
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
   unsigned char index = req->data[0];
-  int ret;
+  size_t ret;
 
   *res_len = 0;
   res->cc = CC_UNSPECIFIED_ERROR;
 
   sprintf(key, "sys_config/fru%d_dimm%d_type", req->payload_id, index);
-  ret = kv_get_bin(key, value);
-  if (ret < 1) {
+  if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 1) {
     return;
   }
   memcpy(&res->data[0], value, 1); // Type
 
   sprintf(key, "sys_config/fru%d_dimm%d_speed", req->payload_id, index);
-  ret = kv_get_bin(key, value);
-  if (ret < 6) {
+  if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 6) {
     return;
   }
   memcpy(&res->data[1], value, 2); // speed
@@ -2015,7 +2007,6 @@ oem_q_set_proc_info (unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0};
   char payload[100] = {0};
-  int ret = 0;
   int numOfParam = sizeof(cpu_info_key)/sizeof(char *);
 
   if ((req->data[4] >= numOfParam) ||
@@ -2029,8 +2020,7 @@ oem_q_set_proc_info (unsigned char *request, unsigned char req_len, unsigned cha
   sprintf(key, "sys_config/fru%d_cpu%d_%s", req->payload_id, req->data[3], cpu_info_key[req->data[4]]);
 
   memcpy(payload, &req->data[5], req_len -8);
-  ret =  kv_set_bin(key, payload, req_len - 8);
-  if (ret != req_len - 8) {
+  if(kv_set(key, payload, req_len - 8, KV_FPERSIST)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     *res_len = 0;
     return;
@@ -2047,7 +2037,7 @@ oem_q_get_proc_info (unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0};
-  int ret = 0;
+  size_t ret = 0;
   int numOfParam = sizeof(cpu_info_key)/sizeof(char *);
 
   if ((req->data[4] >= numOfParam) ||
@@ -2060,15 +2050,14 @@ oem_q_get_proc_info (unsigned char *request, unsigned char req_len, unsigned cha
 
   sprintf(key, "sys_config/fru%d_cpu%d_%s", req->payload_id, req->data[3], cpu_info_key[req->data[4]]);
 
-  ret = kv_get_bin(key, (char *)res->data);
-  if (ret < 0) {
+  if (kv_get(key, (char *)res->data, &ret, KV_FPERSIST) < 0) {
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     *res_len = 0;
     return;
   }
 
   res->cc = CC_SUCCESS;
-  *res_len = ret;
+  *res_len = (unsigned char)ret;
 }
 
 static void
@@ -2079,7 +2068,6 @@ oem_q_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0};
   char payload[100] = {0};
-  int ret = 0;
   int numOfParam = sizeof(dimm_info_key)/sizeof(char *);
 
   if ((req->data[4] >= numOfParam) ||
@@ -2093,8 +2081,7 @@ oem_q_set_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
   sprintf(key, "sys_config/fru%d_dimm%d_%s", req->payload_id, req->data[3], dimm_info_key[req->data[4]]);
 
   memcpy(payload, &req->data[5], req_len -8);
-  ret =  kv_set_bin(key, payload, req_len - 8);
-  if (ret != req_len - 8) {
+  if(kv_set(key, payload, req_len - 8, KV_FPERSIST)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     *res_len = 0;
     return;
@@ -2111,7 +2098,7 @@ oem_q_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0};
-  int ret = 0;
+  size_t ret = 0;
   int numOfParam = sizeof(dimm_info_key)/sizeof(char *);
 
   if ((req->data[4] >= numOfParam) ||
@@ -2124,15 +2111,14 @@ oem_q_get_dimm_info (unsigned char *request, unsigned char req_len, unsigned cha
 
   sprintf(key, "sys_config/fru%d_dimm%d_%s", req->payload_id, req->data[3], dimm_info_key[req->data[4]]);
 
-  ret = kv_get_bin(key, (char *)res->data);
-  if (ret < 0) {
+  if(kv_get(key, (char *)res->data, &ret, KV_FPERSIST) < 0) {
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     *res_len = 0;
     return;
   }
 
   res->cc = CC_SUCCESS;
-  *res_len = ret;
+  *res_len = (unsigned char)ret;
 }
 
 static void
@@ -2143,7 +2129,6 @@ oem_q_set_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0}, cltrType;
   char payload[100] = {0};
-  int ret = 0;
   int numOfParam = sizeof(drive_info_key)/sizeof(char *);
 
   if ((req->data[5] >= numOfParam) ||
@@ -2168,8 +2153,7 @@ oem_q_set_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
   sprintf(key, "sys_config/fru%d_%c_drive%d_%s", req->payload_id, cltrType, req->data[4], drive_info_key[req->data[5]]);
 
   memcpy(payload, &req->data[6], req_len - 9);
-  ret =  kv_set_bin(key, payload, req_len - 9);
-  if (ret != req_len - 9) {
+  if(kv_set(key, payload, req_len - 9, KV_FPERSIST)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     *res_len = 0;
     return;
@@ -2186,7 +2170,7 @@ oem_q_get_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   char key[100] = {0}, cltrType;
-  int ret = 0;
+  size_t ret = 0;
   int numOfParam = sizeof(drive_info_key)/sizeof(char *);
 
   if ((req->data[5] >= numOfParam) ||
@@ -2210,15 +2194,14 @@ oem_q_get_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
   }
   sprintf(key, "sys_config/fru%d_%c_drive%d_%s", req->payload_id, cltrType, req->data[4], drive_info_key[req->data[5]]);
 
-  ret = kv_get_bin(key, (char *)res->data);
-  if (ret < 0) {
+  if(kv_get(key, (char *)res->data, &ret, KV_FPERSIST) < 0) {
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     *res_len = 0;
     return;
   }
 
   res->cc = CC_SUCCESS;
-  *res_len = ret;
+  *res_len = (unsigned char)ret;
 }
 
 static void
@@ -2813,7 +2796,7 @@ oem_set_flash_info ( unsigned char *request, unsigned char req_len,
   sprintf(key, "%s_bios_flashinfo", fruname);
   sprintf(value, "%u %u %u", mfg_id, dev_id, sts);
 
-  if (kv_set(key, value)) {
+  if (kv_set(key, value, 0, KV_FPERSIST)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     return;
   }
@@ -2841,7 +2824,7 @@ oem_get_flash_info ( unsigned char *request, unsigned char req_len,
   }
 
   sprintf(key, "%s_bios_flashinfo", fruname);
-  if (kv_get(key, value)) {
+  if (kv_get(key, value, NULL, KV_FPERSIST)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     return;
   }

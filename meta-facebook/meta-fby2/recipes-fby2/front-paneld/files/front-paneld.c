@@ -63,6 +63,10 @@ static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 static uint8_t m_pos = 0xff;
 static uint8_t m_fan_latch = 0;
 
+slot_kv_st slot_kv_list[] = {
+  {"identify_slot%d", "off"},
+};
+
 static int
 get_handsw_pos(uint8_t *pos) {
   if ((m_pos > HAND_SW_BMC) || (m_pos < HAND_SW_SERVER1))
@@ -798,6 +802,21 @@ main (int argc, char * const argv[]) {
   pthread_t tid_slot_id_led;
   int rc;
   int pid_file;
+  int slot_id;
+  int i;
+  char slot_kv[80] = {0};
+  int ret;
+
+  for(slot_id = 1 ;slot_id < MAX_NUM_SLOTS + 1; slot_id++)
+  {
+    for(i = 0; i < sizeof(slot_kv_list)/sizeof(slot_kv_st); i++) { 
+      memset(slot_kv, 0, sizeof(slot_kv));
+      sprintf(slot_kv, slot_kv_list[i].slot_key, slot_id);
+      if ((ret = pal_set_key_value(slot_kv, slot_kv_list[i].slot_def_val)) < 0) {        //Restore Slot indication LED status to normal when BMC reset
+        syslog(LOG_WARNING, "%s %s: kv_set failed. %d", __func__, slot_kv_list[i].slot_key, ret);
+      }
+    }   
+  }
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);

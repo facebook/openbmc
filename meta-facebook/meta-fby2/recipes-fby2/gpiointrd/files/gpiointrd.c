@@ -264,6 +264,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
         //Create thread for latch open detect
         if (pthread_create(&latch_open_tid[slot_id], NULL, latch_open_handler, (void*)&slot_id) < 0) {
           syslog(LOG_WARNING, "[%s] Create latch_open_handler thread failed for slot%u\n",__func__, slot_id);
+          pthread_mutex_unlock(&latch_open_mutex[slot_id]);
           return;
         }
         IsLatchOpenStart[slot_id] = true;

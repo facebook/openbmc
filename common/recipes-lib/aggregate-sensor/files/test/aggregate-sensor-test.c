@@ -23,7 +23,7 @@
 #include <assert.h>
 #include <jansson.h>
 #include "aggregate-sensor.h"
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-sensor.h>
 
 #define MAX_TEST_SENSORS 32
@@ -44,10 +44,13 @@ size_t        num_test_values = 0;
 
 char          *curr_val = NULL;
 
-int edb_cache_get(char *key, char *value)
+int kv_get(char *key, char *value, size_t *len, unsigned int flags)
 {
   if (curr_val) {
     strcpy(value, curr_val);
+    if (len) {
+      *len = strlen(value);
+    }
     return 0;
   }
   return -1;

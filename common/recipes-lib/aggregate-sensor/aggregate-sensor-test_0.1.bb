@@ -32,8 +32,8 @@ SRC_URI = "file://test/Makefile \
            file://math_expression.h \
           "
 S = "${WORKDIR}/test"
-DEPENDS += " jansson libsdr libpal libedb "
-RDEPENDS_${PN} += "jansson"
+DEPENDS += " jansson libsdr libpal libkv "
+RDEPENDS_${PN} += "jansson "
 
 do_install() {
   bin="${D}/usr/local/bin"

@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <openbmc/obmc-sensor.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <jansson.h>
 #include "aggregate-sensor-internal.h"
 
@@ -68,7 +68,7 @@ aggregate_sensor_read(size_t index, float *value)
   }
   snr = &g_sensors[index];
   if (snr->conditional) {
-    if (!edb_cache_get(snr->cond_key, cond_value)) {
+    if (!kv_get(snr->cond_key, cond_value, NULL, 0)) {
       for (i = 0; i < snr->value_map_size; i++) {
         if (!strncmp(snr->value_map[i].condition_value, cond_value,
             sizeof(snr->value_map[i].condition_value))) {

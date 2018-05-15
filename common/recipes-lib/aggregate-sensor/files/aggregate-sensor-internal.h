@@ -21,7 +21,7 @@
 #define _AGGREGATE_SENSOR_INTERNAL_H_
 #include "aggregate-sensor.h"
 #include "math_expression.h"
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 

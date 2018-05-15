@@ -15,6 +15,7 @@ target_link_libraries(aggregate-sensor
   jansson
   pal
   sdr
+  kv
 )
 
 install(TARGETS aggregate-sensor DESTINATION lib)

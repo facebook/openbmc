@@ -1380,18 +1380,11 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 int
 pal_is_slot_server(uint8_t fru)
 {
-  switch(minilaketb_get_slot_type(fru))
-  {
-    case SLOT_TYPE_SERVER:
-      break;
-    case SLOT_TYPE_CF:
-    case SLOT_TYPE_GP:
-    case SLOT_TYPE_NULL:
-      return 0;
-      break;
+  if( fru == FRU_SLOT1 ) {
+    return 1; // only have server slot1 
+  } else {
+    return 0;
   }
-
-  return 1;
 }
 
 int

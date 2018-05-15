@@ -133,10 +133,13 @@ def get_mtds():
     mtd_info = []
     with open('/proc/mtd', 'r') as proc_mtd:
         mtd_info = proc_mtd_regex.findall(proc_mtd.read())
-    vboot_support = "none"
+    vboot_support = 'none'
     if any(name == 'romx' for (_, _, name) in mtd_info):
-        vboot_support = "software-enforce"
-        if 'Flags hardware_enforce:  0x01' in subprocess.check_output(['vboot-util']).decode():
+        vboot_support = 'software-enforce'
+        vboot_util_output = subprocess.check_output(
+            ['/usr/local/bin/vboot-util']
+        ).decode()
+        if 'Flags hardware_enforce:  0x01' in vboot_util_output:
             vboot_support = 'hardware-enforce'
     all_mtds = []
     full_flash_mtds = []

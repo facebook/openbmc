@@ -17,6 +17,8 @@
 
 lib: libkv.so
 
+CFLAGS += -Wall -Werror
+
 libkv.so: kv.c
 	$(CC) $(CFLAGS) -fPIC -c -o kv.o kv.c
 	$(CC) -shared -o libkv.so kv.o -lc $(LDFLAGS)

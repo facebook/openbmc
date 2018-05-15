@@ -29,6 +29,9 @@ SRC_URI = "file://edb.c \
 
 S = "${WORKDIR}"
 
+DEPENDS += "libkv"
+RDEPENDS_${PN} += "libkv"
+
 do_install() {
 	  install -d ${D}${libdir}
     install -m 0644 libedb.so ${D}${libdir}/libedb.so

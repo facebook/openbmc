@@ -19,178 +19,264 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <libgen.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include "kv.h"
 
+/* Used for the non-persist database */
+const char *cache_store = "/tmp/cache_store/%s";
+const char *kv_store    = "/mnt/data/kv_store/%s";
+
+#ifdef DEBUG
+#ifdef __TEST__
+#define KV_DEBUG(fmt, ...) printf(fmt "\n", ## __VA_ARGS__)
+#else
+#define KV_DEBUG(fmt, ...) syslog(LOG_WARNING, fmt, ## __VA_ARGS__)
+#endif
+#else
+#define KV_DEBUG(fmt, ...)
+#endif
+
+void mkdir_recurse(char *dir, mode_t mode)
+{
+  if (access(dir, F_OK) == -1) {
+    char curr[MAX_KEY_PATH_LEN];
+    char parent[MAX_KEY_PATH_LEN];
+    strcpy(curr, dir);
+    strcpy(parent, dirname(curr));
+    mkdir_recurse(parent, mode);
+    mkdir(dir, mode);
+  }
+}
+
+void key_path_setup(char *kpath, char *key, unsigned int flags)
+{
+  char path[MAX_KEY_PATH_LEN];
+  /* Create the path if they dont already exist */
+  if ((flags & KV_FPERSIST) != 0) {
+    sprintf(kpath, kv_store, key);
+  } else {
+    sprintf(kpath, cache_store, key);
+  }
+  strcpy(path, kpath);
+  mkdir_recurse(dirname(path), 0777);
+}
+
 /*
-*  set binary value
-*  retrun number of successfully write
+*  set key::value
+*  len is the size of value. If 0, it is assumed value is
+*      a string and strlen() is used to determine the length.
+*  flags is bitmask of options.
+*
+*  return 0 on success, negative error code on failure.
 */
 int
-kv_set_bin(char *key, char *value, unsigned char len) {
+kv_set(char *key, char *value, size_t len, unsigned int flags) {
   FILE *fp;
-  int rc, ret = 0;
+  int rc, ret = -1;
   char kpath[MAX_KEY_PATH_LEN] = {0};
-  char *p;
 
-  sprintf(kpath, KV_STORE, key);
+  key_path_setup(kpath, key, flags);
 
-  p = &kpath[strlen(KV_STORE_PATH)-1];
-  while ((*p != '\0') && ((p = strchr(p+1, '/')) != NULL)) {
-    *p = '\0';
-    if (access(kpath, F_OK) == -1) {
-      mkdir(kpath, 0777);
-    }
-    *p = '/';
+  /* If the key already exists, and user wants to create it,
+   * deny the access */
+  if ((flags & KV_FCREATE) && access(kpath, F_OK) != -1) {
+    KV_DEBUG("kv_set: FCREATE is provided and %s already exist!\n", kpath);
+    return -1;
+  }
+
+  /* Optimizes a lot of things */
+  if (len == 0) {
+    len = strlen(value);
   }
 
   fp = fopen(kpath, "r+");
   if (!fp && (errno == ENOENT))
     fp = fopen(kpath, "w");
   if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "kv_set: failed to open %s", kpath);
-#endif
-    return err;
+    KV_DEBUG("kv_set: failed to open %s %d", kpath, errno);
+    return -1;
   }
 
   rc = flock(fileno(fp), LOCK_EX);
   if (rc < 0) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "kv_set: failed to flock on %s, err %d", kpath, err);
-#endif
-    fclose(fp);
-    return -1;
+    KV_DEBUG("kv_set: failed to flock on %s, err %d", kpath, errno);
+    goto close_bail;
   }
 
   if (ftruncate(fileno(fp), 0) < 0) {  //truncate cache file after getting flock
-    fclose(fp);
-    return -1;
+    KV_DEBUG("kv_set: truncate failed!\n");
+    goto unlock_bail;
   }
 
-  ret = fwrite(value, 1, len, fp);
-  if (ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "kv_set: failed to write to %s", kpath);
-#endif
-    fclose(fp);
-    return ENOENT;
+  rc = fwrite(value, 1, len, fp);
+  if (rc < 0) {
+    KV_DEBUG("kv_set: failed to write to %s, err %d", kpath, errno);
+    goto unlock_bail;
   }
   fflush(fp);
 
+  if (rc != len) {
+    KV_DEBUG("kv_set: Wrote only %d of %d bytes as value", (int)ret, (int)len);
+    goto unlock_bail;
+  }
+  ret = 0;
+unlock_bail:
   rc = flock(fileno(fp), LOCK_UN);
   if (rc < 0) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "kv_set: failed to unlock flock on %s, err %d", kpath, err);
-#endif
-    fclose(fp);
-    return -1;
+    KV_DEBUG("kv_set: failed to unlock flock on %s, err %d", kpath, errno);
+    ret = -1;
   }
-
+close_bail:
   fclose(fp);
-
   return ret;
 }
 
 /*
-*  get binary value
-*  retrun number of successfully read
+*  get key::value
+*  len is the return size of value. If NULL then this information
+*      is not returned to the user (And assumed to be a string).
+*  flags is bitmask of options.
+*
+*  return 0 on success, negative error code on failure.
 */
 int
-kv_get_bin(char *key, char *value) {
+kv_get(char *key, char *value, size_t *len, unsigned int flags) {
   FILE *fp;
-  int rc, ret=0;
+  int rc, ret=-1;
   char kpath[MAX_KEY_PATH_LEN] = {0};
-  char *p;
 
-  sprintf(kpath, KV_STORE, key);
-
-  p = &kpath[strlen(KV_STORE_PATH)-1];
-  while ((*p != '\0') && ((p = strchr(p+1, '/')) != NULL)) {
-    *p = '\0';
-    if (access(kpath, F_OK) == -1) {
-      mkdir(kpath, 0777);
-    }
-    *p = '/';
-  }
+  key_path_setup(kpath, key, flags);
 
   fp = fopen(kpath, "r");
   if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "kv_get: failed to open %s, err %d", kpath, err);
-#endif
+    KV_DEBUG("kv_get: failed to open %s, err %d", kpath, errno);
     return -1;
   }
 
   rc = flock(fileno(fp), LOCK_EX);
   if (rc < 0) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "kv_get: failed to flock %s, err %d", kpath, err);
-#endif
-    fclose(fp);
-    return -1;
+    KV_DEBUG("kv_get: failed to flock %s, err %d", kpath, errno);
+    goto close_bail;
   }
 
-  ret = (int) fread(value, 1, MAX_VALUE_LEN, fp);
-  if (ret < 0 || ferror(fp)) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "kv_get: failed to read %s", kpath);
-#endif
-    fclose(fp);
-    return -1;
+  rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
+  if (rc < 0 || ferror(fp)) {
+    KV_DEBUG("kv_get: failed to read %s", kpath);
+    goto unlock_bail;
   }
-
+  if (len)
+    *len = rc;
+  ret = 0;
+unlock_bail:
   rc = flock(fileno(fp), LOCK_UN);
   if (rc < 0) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "kv_get: failed to unlock flock on %s, err %d", kpath, err);
-#endif
-    fclose(fp);
-    return -1;
+    KV_DEBUG("kv_get: failed to unlock flock on %s, err %d", kpath, errno);
+    ret = -1;
   }
-
+close_bail:
   fclose(fp);
-
   return ret;
 }
 
-/*
-*  set string value which is terminated by a null
-*  retrun 0 on success, else on failure
-*/
-int
-kv_set(char *key, char *value) {
-  int ret = kv_set_bin(key, value, strlen(value));
-
-  if (ret == strlen(value))
-    return 0;
-  else
-    return -1;
+/* Backwards compatibility */
+int edb_cache_get(char *key, char *value)
+{
+  return kv_get(key, value, NULL, 0);
 }
 
-/*
-*  get string value which is terminated by a null
-*  retrun 0 on success, else on failure
-*/
-int
-kv_get(char *key, char *value) {
-  int ret = kv_get_bin(key, value);
+int edb_cache_set(char *key, char *value)
+{
+  return kv_set(key, value, 0, 0);
+}
 
-  if (ret >= 0)
-    value[(ret < MAX_VALUE_LEN)?(ret):(ret-1)] = '\0';
+#ifdef __TEST__
+#include <assert.h>
+#include "edb.h"
+int main(int argc, char *argv[])
+{
+  char value[MAX_VALUE_LEN];
+  size_t len;
 
-  if (ret < 0)
-    return -1;
+  cache_store = "./test/tmp/%s";
+  kv_store    = "./test/persist/%s";
+
+  assert(kv_set("test1", "val", 0, KV_FPERSIST) == 0);
+  printf("SUCCESS: Creating persist key func call\n");
+  assert(access("./test/persist/test1", F_OK) == 0);
+  printf("SUCCESS: key file created as expected!\n");
+  assert(kv_get("test1", value, NULL, KV_FPERSIST) == 0);
+  printf("SUCCESS: Read of key succeeded!\n");
+  assert(strcmp(value, "val") == 0);
+  printf("SUCCESS: Read key is of value what was expected!\n");
+
+  assert(kv_set("test1", "val", 0, 0) == 0);
+  printf("SUCCESS: Creating non-persist key func call\n");
+  assert(access("./test/tmp/test1", F_OK) == 0);
+  printf("SUCCESS: key file created as expected!\n");
+  assert(kv_get("test1", value, NULL, 0) == 0);
+  printf("SUCCESS: Read of key succeeded!\n");
+  assert(strcmp(value, "val") == 0);
+  printf("SUCCESS: Read key is of value what was expected!\n");
+
+  assert(kv_set("test1", "val", 2, KV_FPERSIST) == 0);
+  printf("SUCCESS: Updating key with len\n");
+  len = 0;
+  memset(value, 0, sizeof(value));
+  assert(kv_get("test1", value, &len, KV_FPERSIST) == 0);
+  printf("SUCCESS: Read of key succeeded!\n");
+  assert(strcmp(value, "va") == 0);
+  assert(len == 2);
+  printf("SUCCESS: Read key is of value & len what was expected!\n");
+
+  assert(kv_set("test1", "v2", 0, KV_FCREATE) != 0);
+  memset(value, 0, sizeof(value));
+  assert(kv_get("test1", value, NULL, 0) == 0);
+  assert(strcmp(value, "val") == 0);
+  printf("SUCCESS: KV_FCREATE failed on existing key and did not modify existing value\n");
+
+  assert(kv_set("test2", "val2", 0, KV_FCREATE) == 0);
+  memset(value, 0, sizeof(value));
+  assert(kv_get("test2", value, NULL, 0) == 0);
+  assert(strcmp(value, "val2") == 0);
+  printf("SUCCESS: KV_FCREATE succeeded on non-existing key\n");
+
+  /* Legacy kv_set/kv_get */
+  assert(kv_set("test3", "val3") == 0);
+  memset(value, 0, sizeof(value));
+  assert(kv_get("test3", value) == 0);
+  assert(strcmp(value, "val3") == 0);
+  assert(access("./test/persist/test3", F_OK) == 0);
+  assert(access("./test/tmp/test3", F_OK) != 0);
+  printf("SUCCESS: Legacy kv_set/kv_get works!\n");
+
+  /* Legacy kv_set_bin, kv_get_bin */
+  assert(kv_set_bin("test4", "val4", 3) == 3);
+  memset(value, 0, sizeof(value));
+  assert(kv_get_bin("test4", value) == 3);
+  assert(strcmp(value, "val") == 0);
+  assert(access("./test/persist/test4", F_OK) == 0);
+  assert(access("./test/tmp/test4", F_OK) != 0);
+  printf("SUCCESS: Legacy kv_set_bin/kv_get_bin works!\n");
+
+  assert(edb_cache_set("test5", "val5") == 0);
+  memset(value, 0, sizeof(value));
+  assert(edb_cache_get("test5", value) == 0);
+  assert(strcmp(value, "val5") == 0);
+  memset(value, 0, sizeof(value));
+  assert(kv_get("test5", value, NULL, 0) == 0);
+  assert(strcmp(value, "val5") == 0);
+  assert(edb_cache_get("test6", value) != 0);
+  printf("SUCCESS: Legacy edb_cache_get/edb_cache_set works!\n");
+
+  system("rm -rf ./test");
 
   return 0;
 }
+#endif

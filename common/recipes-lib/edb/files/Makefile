@@ -17,6 +17,9 @@
 
 lib: libedb.so
 
+LDFLAGS += -lkv
+CFLAGS += -Wall -Werror
+
 libedb.so: edb.o
 	$(CC) -shared edb.o -o libedb.so -lc $(LDFLAGS)
 

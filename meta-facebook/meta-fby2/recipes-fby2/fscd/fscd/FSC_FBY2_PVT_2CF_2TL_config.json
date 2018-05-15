@@ -1,5 +1,5 @@
 {
-  "version": "fby2-dvt-r05",
+  "version": "fby2-pvt-r06",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -90,12 +90,14 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 2,
       "data": [
-        [87, 20],
-        [90, 40],
-        [92, 50],
-        [94, 60]
+        [80, 20],
+        [86, 35],
+        [88, 37],
+        [90, 39],
+        [92, 41],
+        [97, 70]
       ]
     },
     "linear_mb_m2": {
@@ -104,7 +106,7 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 2,
       "data": [
         [ 56, 28 ],
         [ 58, 30 ],

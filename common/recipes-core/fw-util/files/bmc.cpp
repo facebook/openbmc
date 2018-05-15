@@ -11,8 +11,6 @@
 
 using namespace std;
 
-extern bool is_image_valid(string &file, string &desc, string &machine);
-
 #define BMC_RW_OFFSET               (64 * 1024)
 #define ROMX_SIZE                   (84 * 1024)
 int BmcComponent::update(string image_path)
@@ -26,18 +24,16 @@ int BmcComponent::update(string image_path)
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  string machine = system.name();
-
-  if (is_image_valid(image_path, system.partition_conf(), machine) == false) {
-    cerr << image_path << " is not a valid BMC image for " << system.name() << endl;
+  if (is_valid(image_path) == false) {
+    system.error << image_path << " is not a valid BMC image for " << system.name() << endl;
     return FW_STATUS_FAILURE;
   }
 
   if (!system.get_mtd_name(_mtd_name, dev)) {
-    cerr << "Failed to get device for " << _mtd_name << endl;
+    system.error << "Failed to get device for " << _mtd_name << endl;
     return FW_STATUS_FAILURE;
   }
-  cout << "Flashing to device: " << dev << endl;
+  system.output << "Flashing to device: " << dev << endl;
   if (_skip_offset > 0 || _writable_offset > 0) {
     flash_image = image_path + "-tmp";
     // Ensure that we are not overwriting an existing file.
@@ -47,18 +43,18 @@ int BmcComponent::update(string image_path)
     // Open input image and seek skipping to the writable offset.
     int fd_r = open(image_path.c_str(), O_RDONLY);
     if (fd_r < 0) {
-      cerr << "Cannot open " << image_path << " for reading" << endl;
+      system.error << "Cannot open " << image_path << " for reading" << endl;
       return FW_STATUS_FAILURE;
     }
     if (lseek(fd_r, _skip_offset, SEEK_SET) != (off_t)_skip_offset) {
       close(fd_r);
-      cerr << "Cannot seek " << image_path << endl;
+      system.error << "Cannot seek " << image_path << endl;
       return FW_STATUS_FAILURE;
     }
     // create tmp file for writing.
-    int fd_w = open(flash_image.c_str(), O_WRONLY | O_CREAT);
+    int fd_w = open(flash_image.c_str(), O_WRONLY | O_CREAT, 0666);
     if (fd_w < 0) {
-      cerr << "Cannot write to " << flash_image << endl;
+      system.error << "Cannot write to " << flash_image << endl;
       close(fd_r);
       return FW_STATUS_FAILURE;
     }
@@ -113,13 +109,7 @@ int BmcComponent::print_version()
   std::transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
 
   if (_vers_mtd == "") {
-    char vers[128] = "NA";
-    FILE *fp = fopen("/etc/issue", "r");
-    if (fp) {
-      fscanf(fp, "OpenBMC Release %s\n", vers);
-      fclose(fp);
-    }
-    cout << comp << " Version: " << string(vers) << endl;
+    system.output << comp << " Version: " << system.version() << endl;
     return FW_STATUS_SUCCESS;
   }
 
@@ -142,7 +132,7 @@ int BmcComponent::print_version()
       pclose(fp);
     }
   }
-  cout << comp << " Version: " << string(vers) << endl;
+  system.output << comp << " Version: " << string(vers) << endl;
   return FW_STATUS_SUCCESS;
 }
 

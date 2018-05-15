@@ -9,6 +9,7 @@ extern "C" {
 }
 #include <openssl/sha.h>
 #include <zlib.h>
+#include "bmc.h"
 
 int __attribute__((weak)) fdt_first_subnode(const void *fdt, int offset)
 {
@@ -413,16 +414,16 @@ class ImageDescriptorList {
   }
 };
 
-bool is_image_valid(string &file, string &desc, string &machine)
+bool BmcComponent::is_valid(string &file)
 {
   bool valid = false;
   try {
     Image image(file);
-    string mc(machine);
-    if (!image.supports_machine(mc)) {
+    string machine = system.name();
+    if (!image.supports_machine(machine)) {
       return false;
     }
-    ImageDescriptorList desc_list(desc.c_str());
+    ImageDescriptorList desc_list(system.partition_conf().c_str());
     valid = desc_list.is_valid(image);
   } catch(string &ex) {
     cerr << ex << endl;

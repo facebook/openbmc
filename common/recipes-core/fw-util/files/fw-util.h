@@ -53,6 +53,12 @@ class AliasComponent : public Component {
 
 class System {
   public:
+    std::ostream &output;
+    std::ostream &error;
+
+    System() : output(std::cout), error(std::cerr) {}
+    System(std::ostream &out, std::ostream &err): output(out), error(err) {}
+
     virtual int runcmd(const std::string &cmd);
     virtual bool vboot_hardware_enforce();
     virtual bool get_mtd_name(std::string name, std::string &dev);

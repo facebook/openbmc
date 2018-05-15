@@ -15,6 +15,7 @@ SRC_URI =+ "file://Makefile \
            file://fw-util-test.cpp \
            file://bmc.cpp \
            file://bmc.h \
+           file://bmc-test.cpp \
            file://check_image.cpp \
            file://image_parts.json \
            file://system_mock.cpp \

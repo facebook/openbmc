@@ -447,7 +447,7 @@ int plat_get_me_status(uint8_t fru, char *status)
   char buf[256];
   unsigned char rlen;
   int ret;
- 
+
   buf[0] = NETFN_APP_REQ << 2;
   buf[1] = CMD_APP_GET_DEVICE_ID;
   ret = bic_me_xmit(fru, (uint8_t *)buf, 2, (uint8_t *)buf, &rlen);
@@ -554,23 +554,11 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 int plat_get_extra_sysinfo(uint8_t slot, char *info)
 {
   char tstr[16];
-  uint8_t i, st_12v = 0;
-  int ret;
 
   if (!pal_get_fru_name((slot == FRU_ALL)?HAND_SW_BMC:slot, tstr)) {
     sprintf(info, "FRU:%s", tstr);
-    if ((slot != FRU_ALL) && pal_is_hsvc_ongoing(slot)) {
-      for (i = strlen(info); i < 16; i++) {
-        info[i] = ' ';
-      }
-      info[16] = '\0';
-
-      ret = pal_is_server_12v_on(slot, &st_12v);
-      if (!ret && !st_12v)
-        sprintf(info, "%s"ESC_ALT"HSVC: READY"ESC_RST, info);
-      else
-        sprintf(info, "%s"ESC_ALT"HSVC: START"ESC_RST, info);
-    }
+  } else {
+    return 1;
   }
 
   return 0;

@@ -62,5 +62,5 @@ int UsbDbgBlExtComponent::print_version() {
 }
 
 // Register USB Debug Card components
-UsbDbgExtComponent usbdbg("ocpdbg", "mcu", 13, 0x60, 0x4E);
-UsbDbgBlExtComponent usbdbgbl("ocpdbg", "mcubl", 13, 0x60, 0x4E);
+UsbDbgExtComponent usbdbg("ocpdbg", "mcu", 4, 0x60, 0x4E);
+UsbDbgBlExtComponent usbdbgbl("ocpdbg", "mcubl", 4, 0x60, 0x4E);

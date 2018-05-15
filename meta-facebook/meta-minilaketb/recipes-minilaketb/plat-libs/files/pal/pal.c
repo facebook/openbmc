@@ -4403,7 +4403,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
   struct timespec ts;
   static time_t last_time = 0;
 
-  if ((bus == 13) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
+  if ((bus == 4) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
     clock_gettime(CLOCK_MONOTONIC, &ts);
     if (ts.tv_sec >= (last_time + 5)) {
       last_time = ts.tv_sec;

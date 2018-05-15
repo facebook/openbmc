@@ -1262,8 +1262,8 @@ static void store_curr_version(void)
     return;
   }
 
-  if (0 != kv_get("image_versions", versions_raw)) {
-    kv_set("image_versions", curr_version);
+  if (0 != kv_get("image_versions", versions_raw, NULL, KV_FPERSIST)) {
+    kv_set("image_versions", curr_version, 0, KV_FPERSIST);
     return;
   }
   for (vers = strtok_r(versions_raw, ",", &saveptr), num_vers = 0;
@@ -1290,7 +1290,7 @@ static void store_curr_version(void)
     strcat(versions_raw, ",");
     strcat(versions_raw, versions[i]);
   }
-  if (kv_set("image_versions", versions_raw)) {
+  if (kv_set("image_versions", versions_raw, 0, KV_FPERSIST)) {
     syslog(LOG_ERR, "Setting image version failed");
   }
 }
@@ -1317,7 +1317,7 @@ static void check_vboot_recovery(uint8_t error_type, uint8_t error_code)
   }
   /* Set the error so main can deassert with the correct error code */
   snprintf(curr_err, sizeof(curr_err), "(%d,%d)", error_type, error_code);
-  kv_set("vboot_error", curr_err);
+  kv_set("vboot_error", curr_err, 0, KV_FPERSIST);
 }
 
 /* Called when we have booted into CS1. Note verified boot
@@ -1333,7 +1333,7 @@ static void check_vboot_main(uint8_t error_type, uint8_t error_code)
     check_vboot_recovery(error_type, error_code);
   } else {
     /* We have successfully booted into a verified BMC! */
-    if (0 != kv_get("vboot_error", last_err)) {
+    if (0 != kv_get("vboot_error", last_err, NULL, KV_FPERSIST)) {
       /* We do not have info of the previous error. Not much we can do
        * log an info message and carry on */
       syslog(LOG_INFO, "Verified boot successful!");

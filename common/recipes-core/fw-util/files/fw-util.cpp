@@ -217,14 +217,12 @@ int main(int argc, char *argv[])
 
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
-      if (action != "--version") {
-        // Ensure only one instance of fw-util per FRU is running except --version action
-        string this_fru(fkv.first);
-        ProcessLock lock(system.lock_file(this_fru));
-        if (!lock.ok()) {
-          cerr << "Another instance of fw-util already running" << endl;
-          return -1;
-        }
+      // Ensure only one instance of fw-util per FRU is running
+      string this_fru(fkv.first);
+      ProcessLock lock(system.lock_file(this_fru));
+      if (!lock.ok()) {
+        cerr << "Another instance of fw-util already running" << endl;
+        return -1;
       }
 
       for (auto ckv : fkv.second) {

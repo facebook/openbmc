@@ -19,9 +19,12 @@ def check_ip6(ip_addr):
     try:
         socket.inet_pton(socket.AF_INET6, ip_addr)
     except socket.error:
+        # Hack for global address with % since an exception occurs for
+        # valid v6 address
+        if "%" in ip_addr:
+            return True
         return False
-    else:
-        return True
+    return True
 
 
 def restapiTest(data, host, logger):
@@ -37,6 +40,8 @@ def restapiTest(data, host, logger):
     for endpoint in data['endpoints']:
         cmd = curl_cmd.format(host, endpoint)
         logger.debug("Executing cmd={}".format(cmd))
+        print("Executing cmd={}".format(cmd))
+
         try:
             f = subprocess.Popen(cmd,
                                  shell=True,

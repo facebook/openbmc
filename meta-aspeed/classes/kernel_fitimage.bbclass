@@ -157,14 +157,31 @@ oe_mkimage() {
     # Step 2: Prepare a ramdisk image section
     fitimage_emit_section_ramdisk ${FIT_SOURCE} 1 ${RAMDISK_FILE} "lzma" \
         ${UBOOT_RAMDISK_LOADADDRESS}
+
+    # Step 3: Prepare dtb image section (if needed)
+    if test -n "${KERNEL_DEVICETREE}"; then
+        dtbcount=1
+        DFT_DTB_COUNTER=1
+        for DTB in ${KERNEL_DEVICETREE}; do
+            if echo ${DTB} | grep -q '/dts/'; then
+                bbwarn "${DTB} contains the full path to the the dts file, but only the dtb name should be used."
+                DTB=`basename ${DTB} | sed 's,\.dts$,.dtb,g'`
+            fi
+            DTB_PATH="${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}-${DTB}"
+            fitimage_emit_section_dtb ${FIT_SOURCE} ${dtbcount} ${DTB_PATH}
+            dtbcount=`expr ${dtbcount} + 1`
+        done
+    else
+        DFT_DTB_COUNTER=""
+    fi
     fitimage_emit_section_maint ${FIT_SOURCE} sectend
 
-    # Step 3: Prepare a configurations section
+    # Step 4: Prepare a configurations section
     fitimage_emit_section_maint ${FIT_SOURCE} confstart
-    fitimage_emit_section_config ${FIT_SOURCE} 1 1
+    fitimage_emit_section_config ${FIT_SOURCE} 1 1 ${DFT_DTB_COUNTER}
     fitimage_emit_section_maint ${FIT_SOURCE} sectend
     fitimage_emit_section_maint ${FIT_SOURCE} fitend
 
-    # Step 4: Assemble the image
+    # Step 5: Assemble the image
     mkimage -f ${FIT_SOURCE} ${FIT_DESTINATION}
 }

@@ -26,7 +26,6 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/wait.h>
-#include <openbmc/edb.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 
@@ -1309,7 +1308,7 @@ pal_is_crashdump_ongoing(uint8_t fru)
 
   //check the crashdump file in /tmp/cache_store/fru$1_crashdump
   sprintf(fname, "fru%d_crashdump", fru);
-  ret = edb_cache_get(fname, value);
+  ret = kv_get(fname, value, NULL, 0);
   if (ret < 0)
   {
      return 0;
@@ -1456,7 +1455,7 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   ts.tv_sec += tmout;
   sprintf(value, "%d", ts.tv_sec);
 
-  if (edb_cache_set(key, value) < 0) {
+  if (kv_set(key, value, 0, 0) < 0) {
      return -1;
   }
 
@@ -1471,7 +1470,7 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
   struct timespec ts;
 
   sprintf(key, "fru%d_fwupd", fruid);
-  ret = edb_cache_get(key, value);
+  ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
      return false;
   }
@@ -1522,7 +1521,7 @@ pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause) {
 
   sprintf(key, "fru%d_restart_cause", slot);
 
-  if (kv_get(key, value)) {
+  if (kv_get(key, value, NULL, KV_FPERSIST)) {
     return -1;
   }
   if(sscanf(value, "%u", &cause) != 1) {
@@ -1540,7 +1539,7 @@ pal_set_restart_cause(uint8_t slot, uint8_t restart_cause) {
   sprintf(key, "fru%d_restart_cause", slot);
   sprintf(value, "%d", restart_cause);
 
-  if (kv_set(key, value)) {
+  if (kv_set(key, value, 0, KV_FPERSIST)) {
     return -1;
   }
   return 0;

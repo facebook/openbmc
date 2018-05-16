@@ -31,7 +31,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <errno.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include "obmc-pal.h"
 #include "obmc-sensor.h"
 
@@ -241,7 +241,7 @@ sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
   if (sensor_key_get(fru, sensor_num, key))
     return ERR_UNKNOWN_FRU;
   for (retry = 0; retry < CACHE_READ_RETRY; retry++) {
-    if (!(ret = edb_cache_get(key, str))) {
+    if (!(ret = kv_get(key, str, NULL, 0))) {
       break;
     }
   }
@@ -275,7 +275,7 @@ sensor_cache_write(uint8_t fru, uint8_t sensor_num, bool available, float value)
   else
     strcpy(str, "NA");
 
-  ret = edb_cache_set(key, str);
+  ret = kv_set(key, str, 0, 0);
   if (ret) {
     DEBUG_STR("sensor_cache_write: cache_set %s failed.\n", key);
     return ERR_FAILURE;

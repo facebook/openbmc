@@ -22,7 +22,7 @@ do_install_append() {
   done
 }
 
-DEPENDS =+ "libedb jansson"
-RDEPENDS_${PN} += "libedb jansson"
+DEPENDS =+ "libkv jansson"
+RDEPENDS_${PN} += "libkv jansson"
 
 inherit cmake

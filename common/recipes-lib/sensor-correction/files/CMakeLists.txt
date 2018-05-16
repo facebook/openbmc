@@ -11,7 +11,7 @@ set_target_properties(sensor-correction PROPERTIES VERSION "0.1")
 
 target_link_libraries(sensor-correction
   jansson
-  edb
+  kv
 )
 
 install(TARGETS sensor-correction DESTINATION lib)

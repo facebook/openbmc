@@ -27,7 +27,7 @@
 #ifndef __TEST__
 #include <syslog.h>
 #endif
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 
 
 #ifdef __DEBUG__
@@ -349,7 +349,7 @@ int sensor_correction_apply(uint8_t fru, uint8_t sensor_id, float cond_value, fl
      * manipulating it */
     return 0;
   }
-  if (edb_cache_get(snr->cond_key, value) ||
+  if (kv_get(snr->cond_key, value, NULL, 0) ||
       get_table(snr->value_map, snr->value_map_size, value, &table_idx)) {
     table_idx = snr->default_table;
   }

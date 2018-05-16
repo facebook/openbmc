@@ -61,7 +61,6 @@ static struct timespec last_ejector_ts[MAX_NODES + 1];
 static uint8_t IsLatchOpenStart[MAX_NODES + 1] = {0};
 static void *latch_open_handler(void *ptr);
 static pthread_mutex_t latch_open_mutex[MAX_NODES + 1];
-static uint8_t insert_check[MAX_NODES + 1] = {0};
 
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
@@ -248,10 +247,6 @@ static void gpio_event_handle(gpio_poll_st *gp)
       // HOT SERVER event would be detected when SLED is pulled out
       if (value) {
         syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
-        if(insert_check[slot_id]) {
-          insert_check[slot_id] = false;
-          return;
-        }
 
         pthread_mutex_lock(&latch_open_mutex[slot_id]);
         if ( IsLatchOpenStart[slot_id] )
@@ -545,7 +540,6 @@ hsvc_event_handler(void *ptr) {
         if (!status) {
           sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-on &",hsvc_info->slot_id);
           system(cmd);
-          insert_check[hsvc_info->slot_id] = true;
         }
       }
       else {

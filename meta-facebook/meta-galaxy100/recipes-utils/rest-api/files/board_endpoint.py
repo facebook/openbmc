@@ -55,6 +55,5 @@ class boardApp_Handler:
         return web.json_response(rest_firmware.get_firmware_info(), dumps=dumps_bytestr)
 
     # Handler to unfreeze I2C bus through I2C clock flush
-    @boardApp.route('/api/sys/i2cflush')
-    def rest_i2cflush_hdl():
-        return rest_i2cflush.i2cflush()
+    async def rest_i2cflush_hdl(self, request):
+        return web.json_response(rest_i2cflush.i2cflush(), dumps=dumps_bytestr)

@@ -25,4 +25,5 @@ board_routes = [
     '/api/sys/sol',
     '/api/sys/usb2i2c_reset',
     '/api/sys/firmware_info',
+    '/api/sys/i2cflush'
 ]

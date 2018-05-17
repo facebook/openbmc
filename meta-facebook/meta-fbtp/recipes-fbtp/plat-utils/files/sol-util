@@ -18,23 +18,30 @@
 # Boston, MA 02110-1301 USA
 #
 
-
+usage() {
+  echo "Usage: sol-util [ mb ]"
+  echo "       sol-util [ mb ] --history"
+  exit -1
+}
 
 
 if [ "$1" == "mb" ]
 then
   SLOT=$1 
 else
-  echo "Usage: sol-util [ mb ]"
-  echo "       sol-util [ mb ] --history"
-  exit -1
+  usage
 fi
 
 if [ $# -gt 1 ]; then
+  if [ $# -gt 2 ]; then
+    usage
+  fi
   if [[ "$2" == "--history" ]]; then
     LOGFILE="/var/log/mTerm_mb.log"
     cat $LOGFILE 2>/dev/null
     exit 0
+  else
+    usage
   fi
 fi
 exec /usr/local/bin/mTerm_client mb

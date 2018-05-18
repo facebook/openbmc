@@ -73,8 +73,22 @@ case "$sku_type" in
        echo "Run FSC 2 CFs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
    ;;
-   *)  echo "Unexpected sku type! Use default config"
-       cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+   *)
+       server_type="3"
+       for i in 1 2 3 4 ; do
+         server_type=$(get_server_type $i)
+         if [ "$server_type" != "3" ] ; then
+           break;
+         fi
+       done
+
+       if [ "$server_type" == "2" ] ; then
+         echo "Unexpected sku type! Use FSC 4 EPs Config"
+         cp /etc/FSC_FBEP_EVT_4EP_config.json ${default_fsc_config_path}
+       else
+         echo "Unexpected sku type! Use FSC 4 TLs Config"
+         cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+       fi
    ;;
 esac
 

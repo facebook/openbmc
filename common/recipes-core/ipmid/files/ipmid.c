@@ -3267,6 +3267,16 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       memcpy(res->data, req->data, SIZE_IANA_ID);
       *res_len = 3;
       break;
+    case CMD_OEM_1S_RAS_DUMP_IN:
+      if (req_len > 7) {  // payload_id, netfn, cmd, IANA[3], data type
+        pal_handle_oem_1s_ras_dump_in(req->payload_id, &req->data[3], req_len-7);
+        res->cc = CC_SUCCESS;
+      } else {
+        res->cc = CC_INVALID_LENGTH;
+      }
+      memcpy(res->data, req->data, SIZE_IANA_ID);
+      *res_len = 3;
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID

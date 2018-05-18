@@ -106,6 +106,8 @@
 
 #define IMC_VER_SIZE 8
 
+#define RAS_CRASHDUMP_FILE "/mnt/data/crashdump_slot"
+
 #define REINIT_TYPE_FULL            0
 #define REINIT_TYPE_HOST_RESOURCE   1
 
@@ -318,6 +320,14 @@ static const char *sock_path_jtag_msg[MAX_NODES+1] = {
   SOCK_PATH_JTAG_MSG "_2",
   SOCK_PATH_JTAG_MSG "_3",
   SOCK_PATH_JTAG_MSG "_4"
+};
+
+static const char *ras_dump_path[MAX_NODES+1] = {
+  "",
+  RAS_CRASHDUMP_FILE "1",
+  RAS_CRASHDUMP_FILE "2",
+  RAS_CRASHDUMP_FILE "3",
+  RAS_CRASHDUMP_FILE "4"
 };
 
 //check power policy and power state to power on/off server after AC power restore
@@ -6056,6 +6066,39 @@ pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   }
 
   close(sock);
+  return 0;
+}
+
+int
+pal_handle_oem_1s_ras_dump_in(uint8_t slot, uint8_t *data, uint8_t data_len)
+{
+  static uint32_t last_dump_ts[MAX_NODES + 1] = {0};
+  struct timespec ts;
+  FILE *fp;
+
+  switch (data[0]) {
+    case 0x02:  // only one package
+    case 0x03:  // the first package
+    case 0x04:  // the middle package
+    case 0x05:  // the last package
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      fp = fopen(ras_dump_path[slot], (ts.tv_sec > last_dump_ts[slot])?"w":"a+");
+      last_dump_ts[slot] = ts.tv_sec + 60;
+      if (fp == NULL) {
+        syslog(LOG_ERR, "%s: fopen", __FUNCTION__);
+        return -1;
+      }
+
+      if (fwrite(&data[1], 1, data_len, fp) <= 0) {
+        syslog(LOG_ERR, "%s: fwrite", __FUNCTION__);
+        fclose(fp);
+        return -1;
+      }
+
+      fclose(fp);
+      break;
+  }
+
   return 0;
 }
 

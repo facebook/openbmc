@@ -479,6 +479,7 @@ enum
   CMD_OEM_1S_ASD_MSG_IN = 0x27,
   CMD_OEM_1S_ASD_INIT = 0x28,
   CMD_OEM_1S_SET_PCIE_CONFIG = 0x31,
+  CMD_OEM_1S_RAS_DUMP_IN = 0x32,
 };
 
 // OEM Command Codes for USB basded Debug Card

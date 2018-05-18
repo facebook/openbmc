@@ -139,6 +139,7 @@ void usage()
 {
   cout << "USAGE: " << exec_name << " all|FRU --version [all|COMPONENT]" << endl;
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
+  cout << "       " << exec_name << " FRU --dump [--]COMPONENT IMAGE_PATH" << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
   for (auto fkv : *Component::fru_list) {

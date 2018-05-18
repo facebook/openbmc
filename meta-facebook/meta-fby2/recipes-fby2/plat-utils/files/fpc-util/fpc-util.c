@@ -66,6 +66,9 @@ main(int argc, char **argv) {
     if (argc != 4) {
       goto err_exit;
     }
+    if (strcmp(argv[3] , "on") && strcmp(argv[3] , "off")) {
+      goto err_exit;
+    }
     printf("fpc-util: identification for %s is %s\n", argv[1], argv[3]);
     if (slot_id == 0) {
       sprintf(tstr, "identify_sled");

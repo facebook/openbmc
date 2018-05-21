@@ -14,9 +14,6 @@ SRCREV = "AUTOINC"
 SRC_URI = "git://github.com/theopolis/u-boot.git;branch=${SRCBRANCH};protocol=https \
            file://fw_env.config \
            file://fw_env.config.full \
-           file://patch-2018.05/0001-u-boot-openbmc-mavericks_base.patch \
-           file://patch-2018.05/0002-u-boot-openbmc-mavericks_defconfig.patch \
-           file://patch-2018.05/0003-u-boot-openbmc-mavericks_kconf.patch \
           "
 
 PV = "v2016.07"

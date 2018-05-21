@@ -1,0 +1,104 @@
+diff -Nur kernel-source_org/drivers/net/ethernet/faraday/ftgmac100.c kernel-source/drivers/net/ethernet/faraday/ftgmac100.c
+--- kernel-source_org/drivers/net/ethernet/faraday/ftgmac100.c	2018-04-30 09:40:41.407445652 +0800
++++ kernel-source/drivers/net/ethernet/faraday/ftgmac100.c	2018-04-30 09:59:38.967408129 +0800
+@@ -3115,7 +3115,7 @@
+ #if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100) || \
+     defined(CONFIG_CMM) || defined (CONFIG_PWNEPTUNE) || \
+     defined(CONFIG_MINIPACK) || defined (CONFIG_GALAXY100) || \
+-    defined(CONFIG_MINILAKETB)
++    defined(CONFIG_MINILAKETB) || defined(CONFIG_MAVERICKS)
+ 	ftgmac100_start_hw(priv, 1000);
+ #elif defined(CONFIG_FBTP)
+ 	ftgmac100_start_hw(priv, 100);
+diff -Nur kernel-source_org/arch/arm/plat-aspeed/dev-eth.c kernel-source/arch/arm/plat-aspeed/dev-eth.c
+--- kernel-source_org/arch/arm/plat-aspeed/dev-eth.c	2018-04-30 09:40:40.259445690 +0800
++++ kernel-source/arch/arm/plat-aspeed/dev-eth.c	2018-04-30 10:04:06.483399304 +0800
+@@ -45,7 +45,7 @@
+ 	defined(CONFIG_FBTTN) || defined(CONFIG_FBY2) || \
+ 	defined(CONFIG_YOSEMITE) || defined(CONFIG_MINIPACK) || \
+ 	defined(CONFIG_MINILAKETB) || defined(CONFIG_YAMP) || \
+-	defined(CONFIG_GALAXY100)
++	defined(CONFIG_GALAXY100) || defined(CONFIG_MAVERICKS)
+ #define DRVNAME "ftgmac100"
+ #else
+ #define DRVNAME "ast_gmac"
+@@ -158,7 +158,7 @@
+ 	// MAC specs.
+ #if !defined(CONFIG_WEDGE) && !defined(CONFIG_WEDGE100) && \
+     !defined(CONFIG_CMM) && !defined(CONFIG_MINIPACK) && \
+-    !defined(CONFIG_GALAXY100)
++    !defined(CONFIG_GALAXY100) && !defined(CONFIG_MAVERICKS)
+ 
+ 	ast_eth0_data.DF_support = !isRevA0;
+ 
+diff -Nur kernel-source_org/arch/arm/plat-aspeed/Makefile kernel-source/arch/arm/plat-aspeed/Makefile
+--- kernel-source_org/arch/arm/plat-aspeed/Makefile	2018-04-30 09:40:40.259445690 +0800
++++ kernel-source/arch/arm/plat-aspeed/Makefile	2018-04-30 10:05:01.727397482 +0800
+@@ -42,6 +42,11 @@
+   PLATFB = 1
+ endif
+ 
++ifeq ($(CONFIG_MAVERICKS), y)
++  obj-y += dev-uart.o
++  PLATFB = 1
++endif
++
+ ifeq ($(CONFIG_YAMP), y)
+   obj-y += dev-uart.o
+   PLATFB = 1
+diff -Nur kernel-source_org/arch/arm/plat-aspeed/dev-spi-fb.c kernel-source/arch/arm/plat-aspeed/dev-spi-fb.c
+--- kernel-source_org/arch/arm/plat-aspeed/dev-spi-fb.c	2018-04-30 09:40:40.263445690 +0800
++++ kernel-source/arch/arm/plat-aspeed/dev-spi-fb.c	2018-04-30 16:00:56.729784224 +0800
+@@ -173,7 +173,7 @@
+ };
+ 
+ static struct platform_device ast_spi0_device = {
+-#if defined CONFIG_WEDGE100 || defined CONFIG_MINIPACK
++#if defined CONFIG_WEDGE100 || defined CONFIG_MINIPACK || defined CONFIG_MAVERICKS
+           .name           = "ast-spi",
+           .id             = 1,
+ #else
+@@ -374,10 +374,10 @@
+ #endif
+ 
+ #if defined(CONFIG_FBTP)  || defined(CONFIG_LIGHTNING) || defined (CONFIG_WEDGE100) || defined (CONFIG_PWNEPTUNE) || \
+-    defined(CONFIG_MINIPACK)
++    defined(CONFIG_MINIPACK) || defined (CONFIG_MAVERICKS)
+ static struct spi_board_info ast_spi0_devices[] = {
+     {
+-#if defined(CONFIG_WEDGE100) || defined(CONFIG_MINIPACK)
++#if defined(CONFIG_WEDGE100) || defined(CONFIG_MINIPACK) || defined(CONFIG_MAVERICKS)
+         .modalias           = "spidev",
+         .chip_select        = 0,
+         .max_speed_hz       = 33 * 1000 * 1000,
+@@ -445,7 +445,8 @@
+   } else {
+     spi_register_board_info(ast_single_flash_fmc_devices, ARRAY_SIZE(ast_single_flash_fmc_devices));
+   }
+-#if defined(CONFIG_FBTP) || defined(CONFIG_LIGHTNING) || defined(CONFIG_WEDGE100) || defined(CONFIG_PWNEPTUNE)
++#if defined(CONFIG_FBTP) || defined(CONFIG_LIGHTNING) || defined(CONFIG_WEDGE100) || defined(CONFIG_PWNEPTUNE) \
++    || defined(CONFIG_MAVERICKS)
+ 	platform_device_register(&ast_spi0_device);
+ 	spi_register_board_info(ast_spi0_devices, ARRAY_SIZE(ast_spi0_devices));
+ #elif defined(CONFIG_MINIPACK)
+diff -Nur kernel-source_org/arch/arm/mach-aspeed/Kconfig kernel-source/arch/arm/mach-aspeed/Kconfig
+--- kernel-source_org/arch/arm/mach-aspeed/Kconfig	2018-04-30 09:40:40.179445693 +0800
++++ kernel-source/arch/arm/mach-aspeed/Kconfig	2018-04-30 10:16:05.143375598 +0800
+@@ -212,6 +212,9 @@
+ config WEDGE100
+         bool "Facebook Wedge100"
+ 
++config MAVERICKS
++        bool "Barefoot Mavericks"
++
+ config MINIPACK
+         bool "Facebook Minipack"
+ 
+@@ -281,6 +284,7 @@
+     default 0x1e783000 if CMM
+     default 0x1e784000 if YAMP
+     default 0x1e78e000 if WEDGE || WEDGE100
++    default 0x1e78e000 if WEDGE || WEDGE100 || MAVERICKS
+     default 0x1e783000 if MINIPACK
+     default 0x1e784000 if FBTP
+     default 0x1e784000 if FBY2

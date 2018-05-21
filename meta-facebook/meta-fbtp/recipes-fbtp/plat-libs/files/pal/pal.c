@@ -5161,12 +5161,14 @@ pal_set_def_key_value() {
   if (pal_is_bmc_por()) {
     /* Clear all the SEL errors */
     memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sel_error");
 
     /* Write the value "1" which means FRU_STATUS_GOOD */
     ret = pal_set_key_value(key, "1");
 
     /* Clear all the sensor health files*/
     memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sensor_health");
 
     /* Write the value "1" which means FRU_STATUS_GOOD */
     ret = pal_set_key_value(key, "1");

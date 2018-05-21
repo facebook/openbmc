@@ -54,6 +54,7 @@ Each sensor may provide information on various components:
     },
     "condition": {
       "key": "mb_system_conf",
+      "key_type": "regular",
       "default_expression": "A0",
       "value_map": {
         "SS_D": "A0"
@@ -80,6 +81,11 @@ Composition: This is the information which describes how this sensor value is ca
       2. Use space to separate tokens. So, (a+b)-c is incorrect while ( a + b ) - c is. The complexity to support free form is just not worth it.
 "condition": This describes the condition which shall define which of the linear expressions will be used.
   "key" - Will define the key used. In this particular example, "mb_system_conf" - which provides the machine configuration is used. 
+  "key_type" - (If not provided defaults to "regular"). Supported options:
+             * "regular" - key from the non-persistent key-value store.
+             * "persistent" - key from the persistent key-value store.
+             * "path" - Arbitrary file to read.
+               
   "value_map": A map of values for the given key which would dictate the expression to use. So, if the value for key "mb_system_conf" is "SS_D", then the expression "A0" will be used in evaluating "MB_AIRFLOW".
   "default_expression": If getting the value for the provided key fails or if the value got from the key does not exist in "value_map", then this expression is used. Note, this is optional. If not provided,
                       then the sensor read will fail.

@@ -56,6 +56,37 @@ aggregate_sensor_count(size_t *count)
   return 0;
 }
 
+int get_key(cond_key_type type, const char *cond_key, char *cond_value)
+{
+  int ret;
+  switch(type) {
+    case KEY_REGULAR:
+      ret = kv_get((char *)cond_key, cond_value, NULL, 0);
+      break;
+    case KEY_PERSISTENT:
+      ret = kv_get((char *)cond_key, cond_value, NULL, KV_FPERSIST);
+      break;
+    case KEY_PATH:
+      {
+        FILE *fp = fopen(cond_key, "r");
+        if (!fp) {
+          return -1;
+        }
+        ret = (int)fread(cond_value, 1, MAX_STRING_SIZE, fp);
+        fclose(fp);
+        if (ret <= 0) {
+          return -1;
+        }
+        ret = 0;
+      }
+      break;
+    default:
+      ret = -1;
+  }
+  return ret;
+}
+
+
 int
 aggregate_sensor_read(size_t index, float *value)
 {
@@ -68,7 +99,7 @@ aggregate_sensor_read(size_t index, float *value)
   }
   snr = &g_sensors[index];
   if (snr->conditional) {
-    if (!kv_get(snr->cond_key, cond_value, NULL, 0)) {
+    if (!get_key(snr->cond_type, snr->cond_key, cond_value)) {
       for (i = 0; i < snr->value_map_size; i++) {
         if (!strncmp(snr->value_map[i].condition_value, cond_value,
             sizeof(snr->value_map[i].condition_value))) {

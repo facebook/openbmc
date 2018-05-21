@@ -226,6 +226,22 @@ static int load_linear_cond_eq(aggregate_sensor_t *snr, json_t *obj)
     DEBUG("Getting key condition failed\n");
     goto bail_exp_parse;
   }
+
+  tmp2 = json_object_get(tmp, "key_type");
+  if (!tmp2 || !json_is_string(tmp2)) {
+    snr->cond_type = KEY_REGULAR;
+  } else {
+    if (!strcmp(json_string_value(tmp2), "regular")) {
+      snr->cond_type = KEY_REGULAR;
+    } else if (!strcmp(json_string_value(tmp2), "persistent")) {
+      snr->cond_type = KEY_PERSISTENT;
+    } else if (!strcmp(json_string_value(tmp2), "path")) {
+      snr->cond_type = KEY_PATH;
+    } else {
+      goto bail_exp_parse;
+    }
+  }
+
   tmp2 = json_object_get(tmp, "key");
   if (!tmp2 || !json_is_string(tmp2)) {
     DEBUG("Getting key key failed\n");

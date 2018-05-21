@@ -45,6 +45,12 @@ typedef struct {
   size_t formula_index;
 } value_map_element_type;
 
+typedef enum{
+  KEY_REGULAR,
+  KEY_PERSISTENT,
+  KEY_PATH
+} cond_key_type;
+
 typedef struct {
   thresh_sensor_t sensor;
   size_t idx;
@@ -52,6 +58,7 @@ typedef struct {
   expression_type **expressions;
   bool conditional;
   char cond_key[MAX_KEY_LEN];
+  cond_key_type cond_type;
   size_t value_map_size;
   value_map_element_type value_map[MAX_CONDITIONALS];
   int default_expression_idx; /* -1 == invalid */

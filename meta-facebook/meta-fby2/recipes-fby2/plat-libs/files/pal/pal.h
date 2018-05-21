@@ -198,6 +198,7 @@ int pal_set_last_post(uint8_t value);
 int pal_get_last_post(uint8_t *value);
 int pal_set_post_end_timestamp(long value);
 int pal_get_post_end_timestamp(long *value);
+int pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh);
 #ifdef __cplusplus
 } // extern "C"
 #endif

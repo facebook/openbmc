@@ -293,6 +293,9 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
   snr = get_struct_thresh_sensor(fru);
 
+  if (pal_ignore_thresh(fru,snr_num,thresh))
+    return 0;
+
   if (!GETBIT(snr[snr_num].flag, thresh) ||
       GETBIT(snr[snr_num].curr_state, thresh))
     return 0;

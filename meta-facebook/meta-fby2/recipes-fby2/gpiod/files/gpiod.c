@@ -351,12 +351,17 @@ gpio_monitor_poll(void *ptr) {
 
   //Init POST status
   gpios[FM_BIOS_POST_COMPT_N].status = GETBIT(o_pin_val, FM_BIOS_POST_COMPT_N);
+  gpios[PWRGD_COREPWR].status = GETBIT(o_pin_val, PWRGD_COREPWR);
   if (gpios[FM_BIOS_POST_COMPT_N].status == gpios[FM_BIOS_POST_COMPT_N].ass_val) {
     // POST is not ongoing 
     pal_set_fru_post(fru,0);
   } else {
-    // POST is ongoing 
-    pal_set_fru_post(fru,1);
+    // POST is ongoing
+    if (gpios[PWRGD_COREPWR].status == 1) { //on 
+      pal_set_fru_post(fru,1);
+    } else { //off
+      pal_set_fru_post(fru,0);
+    }
   }
 
   while (1) {
@@ -375,7 +380,9 @@ gpio_monitor_poll(void *ptr) {
       if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
         usleep(DELAY_GPIOD_READ);
         continue;
-      }
+      } 
+      //12V-off
+      pal_set_fru_post(fru,0);
 
       o_pin_val = 0;
       n_pin_val = o_pin_val;
@@ -409,6 +416,7 @@ gpio_monitor_poll(void *ptr) {
                 }
               }
             }
+            pal_set_fru_post(fru,0);
             syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
 
             // Inform BIOS that BMC is ready
@@ -430,6 +438,11 @@ gpio_monitor_poll(void *ptr) {
                 }
               }
             }
+            if (GETBIT(n_pin_val, FM_BIOS_POST_COMPT_N) == 1) {
+              pal_set_fru_post(fru,1);
+            } else {
+              pal_set_fru_post(fru,0);
+            }
             syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
 
 #if defined(CONFIG_FBY2_EP)
@@ -439,7 +452,11 @@ gpio_monitor_poll(void *ptr) {
             smi_count_start[fru-1] = false;
           } else if (i == FM_BIOS_POST_COMPT_N) {
             //Set Post is ongoing
-            pal_set_fru_post(fru,1);
+            if (gpios[PWRGD_COREPWR].status == 1) { //on 
+              pal_set_fru_post(fru,1);
+            } else { //off
+              pal_set_fru_post(fru,0);
+            }
           }
         }
       }

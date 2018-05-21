@@ -2154,3 +2154,8 @@ pal_get_me_name(uint8_t fru, char *target_name) {
   return;
 }
 
+int __attribute__((weak))
+pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh){
+  return 0;
+}
+

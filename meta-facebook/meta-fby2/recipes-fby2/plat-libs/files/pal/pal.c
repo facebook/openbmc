@@ -144,6 +144,8 @@ static bool m_sled_ac_start = false;
 static void *m_gpio_hand_sw = NULL;
 static void *m_hbled_output = NULL;
 
+static int ignore_thresh = 0;
+
 typedef struct {
   uint16_t flag;
   float ucr;
@@ -3244,8 +3246,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         uint8_t current_post = pal_is_post_ongoing();
         long current_time_stamp;
         struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
+        clock_gettime(CLOCK_MONOTONIC, &ts);
         current_time_stamp = ts.tv_sec;
+        ignore_thresh=0;
 
         ret = pal_get_last_post(&last_post);
         if (ret < 0) {
@@ -3261,14 +3264,14 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           pal_set_last_post(current_post);
           sprintf(str, "%.2f",*((float*)value));
           edb_cache_set(key, str);
-          return -1;
+          ignore_thresh=1;
         }
 
         if (current_post == 1) {
           // POST is ongoing
           sprintf(str, "%.2f",*((float*)value));
           edb_cache_set(key, str);
-          return -1;
+          ignore_thresh=1;
         } else {
           long post_end_timestamp = 0;
           int ret = pal_get_post_end_timestamp(&post_end_timestamp);
@@ -3280,7 +3283,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
             // wait for fan speed deassert after POST
             sprintf(str, "%.2f",*((float*)value));
             edb_cache_set(key, str);
-            return -1;
+            ignore_thresh=1;
           }
         }
       }
@@ -3303,6 +3306,20 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
 
   return ret;
+}
+
+int
+pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
+  if(fru== FRU_SPB) {
+    if ((snr_num == SP_SENSOR_FAN0_TACH) || (snr_num == SP_SENSOR_FAN1_TACH)) {
+      if (thresh == UNC_THRESH) {
+        if(ignore_thresh){
+          return 1;
+        }
+      }
+    }
+  }
+  return 0;
 }
 
 int
@@ -3384,7 +3401,7 @@ pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
         long current_time_stamp = 0;
         long post_end_timestamp = 0;
         struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
+        clock_gettime(CLOCK_MONOTONIC, &ts);
         current_time_stamp = ts.tv_sec;
 
         int ret = pal_get_post_end_timestamp(&post_end_timestamp);

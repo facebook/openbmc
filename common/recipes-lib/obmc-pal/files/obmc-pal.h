@@ -299,6 +299,7 @@ int pal_copy_thresh_to_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo
 bool pal_is_sensor_existing(uint8_t fru, uint8_t snr_num);
 void pal_get_me_name(uint8_t fru, char *target_name);
 uint8_t pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log);
+int pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh);
 #ifdef __cplusplus
 }
 #endif

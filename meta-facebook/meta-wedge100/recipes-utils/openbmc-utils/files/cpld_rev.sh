@@ -18,8 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-rev=$(head -1 /sys/class/i2c-adapter/i2c-12/12-0031/cpld_rev)
-sub_rev=$(head -1 /sys/class/i2c-adapter/i2c-12/12-0031/cpld_sub_rev)
+rev=$(head -n 1 /sys/class/i2c-adapter/i2c-12/12-0031/cpld_rev)
+sub_rev=$(head -n 1 /sys/class/i2c-adapter/i2c-12/12-0031/cpld_sub_rev)
 
 echo $(($rev)).$(($sub_rev))
-

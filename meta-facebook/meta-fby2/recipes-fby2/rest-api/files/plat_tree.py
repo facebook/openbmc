@@ -60,13 +60,17 @@ def populate_server_node(num, is_read_only=True):
     r_sensors = tree("sensors", data = get_node_sensors("slot" + repr(num)))
     r_logs = tree("logs", data = get_node_logs("slot" + repr(num), is_read_only))
     r_config = tree("config", data = get_node_config("slot" + repr(num), is_read_only))
-    r_bios = tree("bios", data = get_node_bios("server" + repr(num)))
-    r_server.addChildren([r_fruid, r_sensors, r_logs, r_config, r_bios])
+    if slot_type == 0:
+       r_bios = tree("bios", data = get_node_bios("server" + repr(num)))
+       r_server.addChildren([r_fruid, r_sensors, r_logs, r_config, r_bios])
+    else :
+       r_server.addChildren([r_fruid, r_sensors, r_logs, r_config])
 
     r_boot_order_trunk = tree("boot-order", data = get_node_bios_boot_order_trunk("slot" + repr(num)))
     r_postcode_trunk = tree("postcode", data = get_node_bios_postcode_trunk("slot" + repr(num)))
     r_plat_info_trunk = tree("plat-info", data = get_node_bios_plat_info_trunk("slot" + repr(num)))
-    r_bios.addChildren([r_boot_order_trunk, r_postcode_trunk, r_plat_info_trunk])
+    if slot_type == 0:
+       r_bios.addChildren([r_boot_order_trunk, r_postcode_trunk, r_plat_info_trunk])
 
     r_boot_mode = tree("boot_mode", data = get_node_bios_boot_mode("slot" + repr(num), is_read_only))
     r_clear_cmos = tree("clear_cmos", data = get_node_bios_clear_cmos("slot" + repr(num), is_read_only))

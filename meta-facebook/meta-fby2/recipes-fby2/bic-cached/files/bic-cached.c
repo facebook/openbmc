@@ -39,6 +39,9 @@
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
 
+#define MAX_RETRY 180         // 1 s * 180 = 3 mins
+#define MAX_RETRY_CNT 9000    // A senond can run about 50 times, 3 mins = 180 * 50
+
 int
 fruid_cache_init(uint8_t slot_id) {
   // Initialize Slot0's fruid
@@ -60,10 +63,11 @@ fruid_cache_init(uint8_t slot_id) {
   return ret;
 }
 
-void
+int
 sdr_cache_init(uint8_t slot_id) {
   int ret;
   int fd;
+  int retry = 0;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   char *path = NULL;
@@ -87,20 +91,23 @@ sdr_cache_init(uint8_t slot_id) {
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
     syslog(LOG_WARNING, "%s: open fails for path: %s\n", __func__, path);
-    return;
+    ret = -2;
+    return ret;
   }
 
   ret = pal_flock_retry(fd);
   if (ret == -1) {
    syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
    close(fd);
-   return;
+   return ret;
   }
 
-  while (1) {
+  retry = 0;
+  do {
     ret = bic_get_sdr(slot_id, &req, res, &rlen);
     if (ret) {
-      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d\n", __func__, ret);
+      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d, rsv_id: 0x%x, record_id: 0x%x, sdr_size: %d\n", __func__, ret, req.rsv_id, req.rec_id, rlen);
+      retry++;
       continue;
     }
 
@@ -113,17 +120,23 @@ sdr_cache_init(uint8_t slot_id) {
       // syslog(LOG_INFO, "This record is LAST record\n");
       break;
     }
+    retry++;
+  } while (retry < MAX_RETRY_CNT);
+  if (retry == MAX_RETRY_CNT) {   // if exceed 3 mins, exit this step
+    syslog(LOG_CRIT, "Fail on getting Slot%u SDR via BIC", slot_id);
   }
 
   ret = pal_unflock_retry(fd);
   if (ret == -1) {
    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
    close(fd);
-   return;
+   return ret;
   }
 
   close(fd);
   rename(sdr_temp_path, sdr_path);
+
+  return ret;
 }
 
 int
@@ -174,9 +187,17 @@ main (int argc, char * const argv[])
   } while (retry < max_retry);
 
   if (retry == max_retry)
-    syslog(LOG_CRIT, "Fail on getting Server FRU.");
+    syslog(LOG_CRIT, "Fail on getting Slot%u FRU", slot_id);
 
-  sdr_cache_init(slot_id);
+  retry = 0;
+  do {
+    ret = sdr_cache_init(slot_id);
+    retry++;
+    sleep(1);
+  } while ((ret != 0) && (retry < MAX_RETRY));
+  if (retry == MAX_RETRY) {   // if exceed 3 mins, exit this step
+    syslog(LOG_CRIT, "Fail on getting Slot%u SDR", slot_id);
+  } 
 
   ret = pal_unflock_retry(pid_file);
   if (ret == -1) {

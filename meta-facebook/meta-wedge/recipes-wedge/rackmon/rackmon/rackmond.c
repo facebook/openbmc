@@ -88,6 +88,9 @@ typedef struct _rackmond_data {
   // timeout in nanosecs
   int modbus_timeout;
 
+  // inter-command delay
+  int min_delay;
+
   int paused;
 
   rs485_dev rs485;
@@ -104,7 +107,7 @@ int buf_open(write_buffer* buf, int fd, size_t len) {
   int error = 0;
   char* bufmem = malloc(len);
   if(!bufmem) {
-    BAIL("Couldn't allocate write buffer of len %d for fd %d\n", len, fd);
+    BAIL("Couldn't allocate write buffer of len %zd for fd %d\n", len, fd);
   }
   buf->buffer = bufmem;
   buf->pos = 0;
@@ -193,6 +196,7 @@ char psu_address(int rack, int shelf, int psu) {
 
 int modbus_command(rs485_dev* dev, int timeout, char* command, size_t len, char* destbuf, size_t dest_limit, size_t expect) {
   int error = 0;
+  useconds_t delay = world.min_delay;
   lock_holder(devlock, &dev->lock);
   modbus_req req;
   req.tty_fd = dev->tty_fd;
@@ -205,6 +209,9 @@ int modbus_command(rs485_dev* dev, int timeout, char* command, size_t len, char*
   req.scan = scanning;
   lock_take(devlock);
   int cmd_error = modbuscmd(&req);
+  if (delay != 0) {
+    usleep(delay);
+  }
   CHECK(cmd_error);
 cleanup:
   lock_release(devlock);
@@ -770,11 +777,16 @@ int main(int argc, char** argv) {
   signal(SIGPIPE, SIG_IGN);
   int error = 0;
   world.paused = 0;
+  world.min_delay = 0;
   world.modbus_timeout = 300000;
   if (getenv("RACKMOND_TIMEOUT") != NULL) {
     world.modbus_timeout = atoll(getenv("RACKMOND_TIMEOUT"));
     fprintf(stderr, "Timeout from env: %dms\n",
         (world.modbus_timeout / 1000));
+  }
+  if (getenv("RACKMOND_MIN_DELAY") != NULL) {
+    world.min_delay = atoll(getenv("RACKMOND_MIN_DELAY"));
+    fprintf(stderr, "Mindelay from env: %dus\n", world.min_delay);
   }
   world.config = NULL;
   pthread_mutex_init(&world.lock, NULL);
@@ -791,7 +803,7 @@ int main(int argc, char** argv) {
   int socknamelen = sizeof(local.sun_family) + strlen(local.sun_path);
   unlink(local.sun_path);
   CHECKP(bind, bind(sock, (struct sockaddr *)&local, socknamelen));
-  CHECKP(listen, listen(sock, 5));
+  CHECKP(listen, listen(sock, 20));
   syslog(LOG_INFO, "rackmon/modbus service listening");
   while(1) {
     socklen_t clisocklen = sizeof(struct sockaddr_un);

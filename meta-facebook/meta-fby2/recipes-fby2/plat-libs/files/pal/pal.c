@@ -4974,7 +4974,7 @@ pal_fan_dead_handle(int fan_num) {
     return 0;
 
   fan_dead_actived_flag = SETBIT(fan_dead_actived_flag, fan_num);
-  if (GETBIT(fan_dead_actived_flag, fan_num) && GETBIT(fan_dead_actived_flag, fan_num))
+  if (GETBIT(fan_dead_actived_flag, 0) && GETBIT(fan_dead_actived_flag, 1))
     both_fan_dead_control = 1;
 
   if (1 == both_fan_dead_control) {

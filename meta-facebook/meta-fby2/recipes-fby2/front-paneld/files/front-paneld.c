@@ -626,19 +626,6 @@ led_sync_handler() {
       continue;
     }
 
-    // Check if slot needs to be identified
-    ident = 0;
-    for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
-      id_arr[slot] = 0x0;
-      sprintf(tstr, "identify_slot%d", slot);
-      memset(identify, 0x0, 16);
-      ret = pal_get_key_value(tstr, identify);
-      if (ret == 0 && !strcmp(identify, "on")) {
-        id_arr[slot] = 0x1;
-        ident = 1;
-      }
-    }
-
     // Get hand switch position to see if this is selected server
     ret = get_handsw_pos(&pos);
     if (ret) {
@@ -647,7 +634,7 @@ led_sync_handler() {
     }
 
     // Handle BMC select condition when no slot is being identified
-    if ((pos == HAND_SW_BMC) && (ident == 0)) {
+    if (pos == HAND_SW_BMC) {
       // Turn OFF Yellow LED
       for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
         g_sync_led[slot] = 1;
@@ -667,6 +654,19 @@ led_sync_handler() {
 
       msleep(LED_OFF_TIME_BMC_SELECT);
       continue;
+    }
+
+    // Check if slot needs to be identified
+    ident = 0;
+    for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
+      id_arr[slot] = 0x0;
+      sprintf(tstr, "identify_slot%d", slot);
+      memset(identify, 0x0, 16);
+      ret = pal_get_key_value(tstr, identify);
+      if (ret == 0 && !strcmp(identify, "on")) {
+        id_arr[slot] = 0x1;
+        ident = 1;
+      }
     }
 
     // Handle individual identify slot condition

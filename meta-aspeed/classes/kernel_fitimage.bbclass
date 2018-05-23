@@ -28,7 +28,6 @@ require recipes-bsp/u-boot/verified-boot.inc
 IMAGE_FSTYPES += "cpio.lzma.u-boot"
 UBOOT_IMAGE_LOADADDRESS ?= "0x80008000"
 UBOOT_IMAGE_ENTRYPOINT ?= "0x80008000"
-UBOOT_RAMDISK_LOADADDRESS ?= "0x80800000"
 
 # U-Boot is placed at an absolute position relative to the start of the first
 # U-Boot FIT. This value, like most others, depends on U-Boot machine
@@ -155,8 +154,7 @@ oe_mkimage() {
         ${UBOOT_IMAGE_LOADADDRESS} ${UBOOT_IMAGE_ENTRYPOINT}
 
     # Step 2: Prepare a ramdisk image section
-    fitimage_emit_section_ramdisk ${FIT_SOURCE} 1 ${RAMDISK_FILE} "lzma" \
-        ${UBOOT_RAMDISK_LOADADDRESS}
+    fitimage_emit_section_ramdisk ${FIT_SOURCE} 1 ${RAMDISK_FILE} "lzma"
 
     # Step 3: Prepare dtb image section (if needed)
     if test -n "${KERNEL_DEVICETREE}"; then

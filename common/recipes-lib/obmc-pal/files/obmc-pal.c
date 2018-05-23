@@ -218,6 +218,12 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log)
 }
 
 int __attribute__((weak))
+pal_set_fru_post(uint8_t fru, uint8_t value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_set_cpu_mem_threshold(const char* threshold_path)
 {
   return PAL_EOK;
@@ -628,11 +634,11 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
                      "Host Communication Error", "Real-time Clock Synchronization Failure",
                      "Platform Shutdown Initiated by Intel NM Policy", "Unknown"};
   char *nm_health_type[4] = {"Unknown", "Unknown", "SensorIntelNM", "Unknown"};
-  const char *thres_event_name[16] = {[0] = "Lower Non-critical", 
-                                      [2] = "Lower Critical", 
-                                      [4] = "Lower Non-recoverable", 
-                                      [7] = "Upper Non-critical", 
-                                      [9] = "Upper Critical", 
+  const char *thres_event_name[16] = {[0] = "Lower Non-critical",
+                                      [2] = "Lower Critical",
+                                      [4] = "Lower Non-recoverable",
+                                      [7] = "Upper Non-critical",
+                                      [9] = "Upper Critical",
                                       [11] = "Upper Non-recoverable"};
 
 
@@ -2158,4 +2164,3 @@ int __attribute__((weak))
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh){
   return 0;
 }
-

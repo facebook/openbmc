@@ -541,8 +541,23 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   int ret;
 
 #ifdef CONFIG_FBY2_RC
-  if (comp == FW_ME)
-    return get_imc_version(slot_id, ver);
+  uint8_t server_type = 0xFF;
+
+  if (comp == FW_ME) {
+    ret = fby2_get_server_type(slot_id, &server_type);
+    if (ret) {
+      syslog(LOG_ERR, "%s, Get server type failed for slot%u", __func__, slot_id);
+      return -1;
+    }
+
+    switch (server_type) {
+      case SERVER_TYPE_RC:
+        return get_imc_version(slot_id, ver);
+      case SERVER_TYPE_TL:
+      default:
+        break;
+    }
+  }
 #endif
 
   // Fill the component for which firmware is requested

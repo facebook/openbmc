@@ -54,7 +54,7 @@ def populate_server_node(num, is_read_only=True):
     if slot_type == 0:
       r_server = tree("server" + repr(num), data = get_node_server(num, is_read_only))
     else :
-      r_server = tree("device" + repr(num), data = get_node_device(num))
+      r_server = tree("device" + repr(num), data = get_node_device(num, is_read_only))
 
     r_fruid = tree("fruid", data = get_node_fruid("slot" + repr(num)))
     r_sensors = tree("sensors", data = get_node_sensors("slot" + repr(num)))

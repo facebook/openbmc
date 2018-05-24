@@ -41,6 +41,9 @@ def pal_get_server_power(slot_id):
         return status.value
 
 def pal_server_action(slot_id, command):
+    if command == 'power-off' or command == 'power-on' or command == 'power-reset' or command == 'power-cycle' or command == 'graceful-shutdown':
+        if lpal_hndl.pal_is_slot_server(slot_id) == 0:
+            return -2
 
     plat_name = pal_get_platform_name().decode()
 
@@ -74,7 +77,7 @@ def pal_server_action(slot_id, command):
     else:
         return -1
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-    if ret.find("Usage:") != -1 or ret.find("fail ") != -1:
+    if ret.find("Usage:") != -1 or ret.find("fail") != -1:
         return -1
     else:
         return 0

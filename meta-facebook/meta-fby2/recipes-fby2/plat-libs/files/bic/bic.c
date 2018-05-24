@@ -2126,7 +2126,7 @@ int get_imc_version(uint8_t slot, uint8_t *ver) {
   char str[MAX_VALUE_LEN] = {0};
 
   sprintf(key, "slot%d_imc_ver", (int)slot);
-  ret = kv_get(key, str);
+  ret = kv_get(key, str, NULL, KV_FPERSIST);
   if (ret) {
     return ret;
   }

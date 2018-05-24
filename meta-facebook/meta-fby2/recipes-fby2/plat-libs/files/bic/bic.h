@@ -23,6 +23,7 @@
 
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/kv.h>
 #include <facebook/fby2_common.h>
 
 #ifdef __cplusplus

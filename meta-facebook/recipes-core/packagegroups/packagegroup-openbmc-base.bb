@@ -13,6 +13,7 @@ RDEPENDS_${PN} += " \
   os-release \
   passwd-util \
   rsyslog \
+  sudo \
   tzdata \
   u-boot \
   u-boot-fw-utils \

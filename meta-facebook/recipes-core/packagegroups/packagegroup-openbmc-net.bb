@@ -7,10 +7,12 @@ inherit packagegroup
 
 RDEPENDS_${PN} += " \
   bind-utils \
+  curl \
   dhcp-client \
   iproute2 \
   ntp \
   ntp-utils \
   ntpdate \
+  openssh-sftp-server \
   sntp \
   "

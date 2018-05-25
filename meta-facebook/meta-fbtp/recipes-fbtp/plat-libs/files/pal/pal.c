@@ -499,6 +499,7 @@ static int mux_lock (struct mux *mux, int chan, int lease_time)
   if (ret == 0 && shm->ipmb_chan != chan) {
     clock_gettime(CLOCK_REALTIME, &to);
     to.tv_sec += mux->wait_time;
+    shm->expiration += mux->wait_time;
     while (1) {
       if (shm->using_num == 0) {
         break;

@@ -647,7 +647,9 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
   g_seq.seq[index].p_buf = response;
   pthread_mutex_unlock(&m_seq);
 
-  pal_ipmb_processing(g_bus_id, request, req_len);
+  if (pal_ipmb_processing(g_bus_id, request, req_len)) {
+    goto ipmb_handle_out;
+  }
 
   // Send request over i2c bus
   if (i2c_write(fd, request, req_len)) {

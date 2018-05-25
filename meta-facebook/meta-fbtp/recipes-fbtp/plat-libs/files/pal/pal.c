@@ -3071,8 +3071,8 @@ pal_set_key_value(char *key, char *value) {
 static int
 key_func_por_policy (int event, void *arg)
 {
-  char cmd[MAX_VALUE_LEN];
-  char value[MAX_VALUE_LEN];
+  char cmd[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   switch (event) {
     case KEY_BEFORE_SET:
@@ -3100,8 +3100,8 @@ key_func_por_policy (int event, void *arg)
 static int
 key_func_lps (int event, void *arg)
 {
-  char cmd[MAX_VALUE_LEN];
-  char value[MAX_VALUE_LEN];
+  char cmd[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   switch (event) {
     case KEY_BEFORE_SET:
@@ -3123,9 +3123,9 @@ key_func_lps (int event, void *arg)
 static int
 key_func_ntp (int event, void *arg)
 {
-  char cmd[MAX_VALUE_LEN];
-  char ntp_server_new[MAX_VALUE_LEN];
-  char ntp_server_old[MAX_VALUE_LEN];
+  char cmd[MAX_VALUE_LEN] = {0};
+  char ntp_server_new[MAX_VALUE_LEN] = {0};
+  char ntp_server_old[MAX_VALUE_LEN] = {0};
 
   switch (event) {
     case KEY_BEFORE_SET:

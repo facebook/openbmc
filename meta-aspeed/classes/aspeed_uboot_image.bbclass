@@ -15,21 +15,14 @@ inherit ${IMAGE_TYPE_MODULE}
 # More up-stream-worthy method is to use the chaining of conversions.
 CONVERSION_CMD_u-boot = "oe_mkimage ${IMAGE_NAME}.rootfs.${type} none"
 
-# oe_mkimage() was defined in image_types_uboot. Howver, it does not consider
-# the image load address and entry point. Override it here.
-
 oe_mkimage () {
     ramdisk="${DEPLOY_DIR_IMAGE}/$1"
     if [ ! -e ${ramdisk} ]; then
       ramdisk="${IMGDEPLOYDIR}/$1"
     fi
     mkimage -A ${UBOOT_ARCH} -O linux -T ramdisk -C $2 -n ${IMAGE_NAME} \
-        -a ${UBOOT_IMAGE_LOADADDRESS} -e ${UBOOT_IMAGE_ENTRYPOINT} \
         -d ${ramdisk} ${ramdisk}.u-boot
 }
-
-UBOOT_IMAGE_ENTRYPOINT ?= "0x42000000"
-UBOOT_IMAGE_LOADADDRESS ?= "${UBOOT_IMAGE_ENTRYPOINT}"
 
 # 24M
 IMAGE_ROOTFS_SIZE = "24576"

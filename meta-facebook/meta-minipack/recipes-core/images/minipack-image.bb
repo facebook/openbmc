@@ -6,7 +6,6 @@ require recipes-core/images/fb-openbmc-image.bb
 
 # Changing the image compression from gz to lzma achieves 30% saving (~3M).
 IMAGE_FSTYPES += "cpio.lzma.u-boot"
-UBOOT_IMAGE_ENTRYPOINT = "0x80800000"
 
 # Include modules in rootfs
 IMAGE_INSTALL += " \

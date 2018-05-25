@@ -67,6 +67,11 @@ typedef struct {
   correction_element_t *corr_table;
 } correction_table_t;
 
+typedef enum {
+  KEY_REGULAR,
+  KEY_PERSISTENT
+} key_type;
+
 typedef struct {
   char    name[32];
   uint8_t fru;
@@ -74,6 +79,7 @@ typedef struct {
   size_t  num_tables;
   correction_table_t tables[MAX_NUM_TABLES];
   size_t  default_table;
+  key_type cond_key_type;
   char    cond_key[MAX_KEY_LEN];
   size_t  value_map_size;
   value_map_element_t value_map[MAX_NUM_CONDITIONS];
@@ -207,6 +213,15 @@ static int load_conditional_sensor_correction(json_t *obj, sensor_correction_t *
     return -1;
   }
   strncpy(snr->cond_key, json_string_value(tmp), sizeof(snr->cond_key));
+
+  tmp = json_object_get(obj, "key_type");
+  snr->cond_key_type = KEY_REGULAR;
+  if (tmp && json_is_string(tmp)) {
+    if (!strcmp("persistent", json_string_value(tmp))) {
+      snr->cond_key_type = KEY_PERSISTENT;
+    }
+  }
+
   obj = json_object_get(obj, "value_map");
   if (!obj) {
     DEBUG("Could not get value_map\n");
@@ -342,6 +357,7 @@ int sensor_correction_apply(uint8_t fru, uint8_t sensor_id, float cond_value, fl
   correction_table_t *table;
   size_t i;
   float correction;
+  unsigned int flags;
 
   sensor_correction_t *snr = get_correction(fru, sensor_id);
   if (!snr) {
@@ -349,7 +365,8 @@ int sensor_correction_apply(uint8_t fru, uint8_t sensor_id, float cond_value, fl
      * manipulating it */
     return 0;
   }
-  if (kv_get(snr->cond_key, value, NULL, 0) ||
+  flags = snr->cond_key_type == KEY_PERSISTENT ? KV_FPERSIST : 0;
+  if (kv_get(snr->cond_key, value, NULL, flags) ||
       get_table(snr->value_map, snr->value_map_size, value, &table_idx)) {
     table_idx = snr->default_table;
   }

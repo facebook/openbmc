@@ -37,6 +37,7 @@ List of sensors needing correction
         },
         "condition": {
           "key": "mb_system_conf",
+          "key_type": "regular",
           "default_table": "I0",
           "value_map": {
             "SS_D": "I0",
@@ -55,6 +56,7 @@ correction: The correction information.
   A table is itself an array of tuples. Each tuple is <cond_value:correction>. Hence new_value = value - correction with correction chosen based on the current value of 'cond_value'
   condition: The condition which dictates which table is chosen for the correction.
   key: The which dictates which table is used.
+  key_type: The type of key (regular or persistent).
   default_table: The default table used when either getting the value for the given key fails or if the value is not in the below 'value_map' list.
   value_map: A set of values for 'key' and the name of the corresponding table to be used.
 

@@ -13,7 +13,7 @@
 #include "lattice.h"
 #include "ast-jtag.h"
 
-#define MAX_RETRY 1000
+#define MAX_RETRY 4000
 #define LATTICE_COL_SIZE 128
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -103,7 +103,7 @@ static unsigned int
 ShiftData(char *data, unsigned int *result, int len)
 {
   int i;
-  int RetVal = 0;
+  int ret = 0;
   int result_index = 0, data_index = 0;
   int bit_count = 0;
 
@@ -148,16 +148,16 @@ ShiftData(char *data, unsigned int *result, int len)
   {
      printf("[%s] Expected Data Length is [%d] but not [%d] ", __func__, bit_count, len);
 
-     RetVal = -1;
+     ret = -1;
   }
 
-  return RetVal;
+  return ret;
 }
 
 static int
 LCMXO2Family_Check_Device_Status(int mode)
 {
-  int RetVal = 0;
+  int ret = 0;
   int RETRY = MAX_RETRY;
   unsigned int buf[4]={0};
 
@@ -188,12 +188,12 @@ LCMXO2Family_Check_Device_Status(int mode)
             }
 #endif
             RETRY--;
-
+            
           } while( RETRY );
 
           if ( !RETRY )
           {
-            RetVal = -1;
+            ret = -1;
           }
 
       break;
@@ -227,7 +227,7 @@ LCMXO2Family_Check_Device_Status(int mode)
 
           if ( !RETRY )
           {
-              RetVal = -1;
+              ret = -1;
           }
 
       break;
@@ -237,14 +237,14 @@ LCMXO2Family_Check_Device_Status(int mode)
 
   }
 
-  return RetVal;
+  return ret;
 }
 
 /*write cf data*/
 static int
 LCMXO2Family_SendCFdata(CPLDInfo *dev_info)
 {
-  int RetVal = 0;
+  int ret = 0;
   int CurrentAddr = 0;
   int i;
 
@@ -265,25 +265,26 @@ LCMXO2Family_SendCFdata(CPLDInfo *dev_info)
 
     //usleep(1000);
 
-    RetVal = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
+    ret = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
 
-    if ( RetVal < 0 )
+    if ( ret < 0 )
     {
       printf("[%s]Write CF Error\n", __func__);
+      break;
     }
 
   }
 
   printf("\n");
 
-  return RetVal;
+  return ret;
 }
 
 /*write ufm data if need*/
 static int
 LCMXO2Family_SendUFMdata(CPLDInfo *dev_info)
 {
-  int RetVal = 0;
+  int ret = 0;
   int CurrentAddr = 0;
   int i;
 
@@ -302,16 +303,16 @@ LCMXO2Family_SendUFMdata(CPLDInfo *dev_info)
 
     //usleep(1000);
 
-    RetVal = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
-
-    if ( RetVal < 0 )
+    ret = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
+    if ( ret < 0 )
     {
       printf("[%s]Write UFM Error\n", __func__);
+      break;
     }
 
   }
 
-  return RetVal;
+  return ret;
 }
 
 /*check the size of cf and ufm*/
@@ -324,7 +325,7 @@ LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size)
   unsigned int CFStart = 0;
   unsigned int UFMStart = 0;
   const char TAG_UFM[]="NOTE TAG DATA";
-  int RetVal = 0;
+  int ret = 0;
 
   while( NULL != fgets(tmp_buf, ReadLineSize, jed_fd) )
   {
@@ -370,10 +371,10 @@ LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size)
   //cf must greater than 0
   if ( !(*cf_size) )
   {
-    RetVal = -1;
+    ret = -1;
   }
 
-  return RetVal;
+  return ret;
 }
 
 static int
@@ -400,7 +401,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
   int copy_size;
   int current_addr=0;
   int i;
-  int RetVal = 0;
+  int ret = 0;
   int cf_size_used = (cf_size * LATTICE_COL_SIZE) / 8; // unit: bytes
   int ufm_size_used = (ufm_size * LATTICE_COL_SIZE) / 8; // unit: bytes
 
@@ -607,8 +608,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
   if ( dev_info->CheckSum != JED_CheckSum || dev_info->CheckSum == 0)
   {
     printf("[%s] JED File CheckSum Error\n", __func__);
-
-    RetVal = -1;
+    ret = -1;
   }
 #ifdef CPLD_DEBUG
   else
@@ -616,7 +616,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
     printf("[%s] JED File CheckSum OKay\n", __func__);
   }
 #endif
-  return RetVal;
+  return ret;
 }
 
 static int
@@ -626,7 +626,7 @@ LCMXO2Family_cpld_verify(CPLDInfo *dev_info)
   int result;
   int current_addr = 0;
   unsigned int buff[4]={0};
-  int err = 0;
+  int ret = 0;
 
   ast_jtag_run_test_idle( 0, 0, 3);
   ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_LSC_INIT_ADDRESS);
@@ -657,17 +657,14 @@ LCMXO2Family_cpld_verify(CPLDInfo *dev_info)
 
     if ( result )
     {
-      err = 1;
-
+      ret = -1;
       break;
     }
-
-    //usleep(3000);
   }
 
   printf("\n");
 
-  if ( err )
+  if ( -1 == ret )
   {
     printf("\n[%s] Verify CPLD FW Error\n", __func__);
   }
@@ -678,24 +675,24 @@ LCMXO2Family_cpld_verify(CPLDInfo *dev_info)
   }
 #endif
 
-  return err;
+  return ret;
 }
 
 static int
 LCMXO2Family_cpld_Start()
 {
   unsigned int dr_data[4]={0};
-  int RetVal = 0;
+  int ret = 0;
 
   //Enable the Flash (Transparent Mode)
 #ifdef CPLD_DEBUG
   printf("[%s] Enter transparent mode!\n", __func__);
 #endif
+
   ast_jtag_run_test_idle( 0, 0, 3);
   ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_ISC_ENABLE_X);
   dr_data[0] = 0x08;
   ast_jtag_tdi_xfer(0, LATTICE_INS_LENGTH, dr_data);
-  //usleep(3000);
 
   //LSC_CHECK_BUSY(0xF0) instruction
   dr_data[0] = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
@@ -703,9 +700,12 @@ LCMXO2Family_cpld_Start()
   if ( dr_data[0] != 0x0 )
   {
     printf("[%s] Device Busy\n", __func__);
+    ret = -1;
   }
-
-  //usleep(3000);
+  else
+  {
+    ret = 0;
+  }
 
 #ifdef CPLD_DEBUG
   printf("[%s] READ_STATUS(0x3C)!\n", __func__);
@@ -716,18 +716,20 @@ LCMXO2Family_cpld_Start()
   if(dr_data[0] != 0x0)
   {
     printf("[%s] Device Busy\n", __func__);
+    ret = -1;
+  }
+  else
+  {
+    ret = 0;
   }
 
-  return RetVal;
+  return ret;
 }
 
 static int
 LCMXO2Family_cpld_End()
 {
-  int RetVal = 0;
-#ifdef CPLD_DEBUG
-  unsigned int status;
-#endif
+  int ret = 0;
 
   ast_jtag_run_test_idle( 0, 0, 3);
   ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_ISC_PROGRAM_DONE);
@@ -738,11 +740,15 @@ LCMXO2Family_cpld_End()
 
   //Read CHECK_BUSY
 
+  ret = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
+  if ( ret != 0x0 )
+  {
+    printf("[%s] Device Busy\n", __func__);
+    ret = -1;
+  }
+
 #ifdef CPLD_DEBUG
-  status = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
-  printf("[%s] READ_STATUS: %x\n", __func__, status);
-#else
-  LCMXO2Family_Check_Device_Status(CHECK_BUSY);
+  printf("[%s] READ_STATUS: %x\n", __func__, ret);
 #endif
 
   //Shift in BYPASS(0xFF) instruction
@@ -760,14 +766,14 @@ LCMXO2Family_cpld_End()
   //Shift in BYPASS(0xFF) instruction
   ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, BYPASS);
 
-  return RetVal;
+  return ret;
 }
 
 static int
 LCMXO2Family_cpld_Check_ID()
 {
   unsigned int dr_data[4]={0};
-  int RetVal = -1;
+  int ret = -1;
   int i;
 
   //RUNTEST IDLE
@@ -790,20 +796,19 @@ LCMXO2Family_cpld_Check_ID()
   {
     if ( dr_data[0] == lattice_device_list[i].dev_id )
     {
-      RetVal = 0;
-
+      ret = 0;
       break;
     }
   }
 
-  return RetVal;
+  return ret;
 }
 
 static int
 LCMXO2Family_cpld_Erase(int erase_type)
 {
   unsigned int dr_data[4]={0};
-  int RetVal = 0;
+  int ret = 0;
 
   ast_jtag_run_test_idle( 0, 0, 3);
   //Erase the Flash
@@ -831,6 +836,11 @@ LCMXO2Family_cpld_Erase(int erase_type)
   if ( dr_data[0] != 0x0 )
   {
     printf("[%s] Device Busy\n", __func__);
+    ret = -1;
+  }
+  else
+  {
+    ret = 0;
   }
 
 #ifdef CPLD_DEBUG
@@ -843,19 +853,24 @@ LCMXO2Family_cpld_Erase(int erase_type)
   if ( dr_data[0] != 0x0 )
   {
     printf("Erase Failed\n");
+    ret = -1;
+  }
+  else
+  {
+    ret = 0;
   }
 
 #ifdef CPLD_DEBUG
   printf("[%s] Erase Done!\n", __func__);
 #endif
 
-  return RetVal;
+  return ret;
 }
 
 static int
 LCMXO2Family_cpld_program(CPLDInfo *dev_info)
 {
-  int RetVal = 0;
+  int ret = 0;
   unsigned int dr_data[4]={0};
 
 #ifdef CPLD_DEBUG
@@ -870,7 +885,11 @@ LCMXO2Family_cpld_program(CPLDInfo *dev_info)
   printf("[%s] INIT_ADDRESS(0x46) \n", __func__);
 #endif
 
-  LCMXO2Family_SendCFdata(dev_info);
+  ret = LCMXO2Family_SendCFdata(dev_info);
+  if ( ret < 0 )
+  {
+    goto error_exit;
+  }
 
   if ( dev_info->UFM_Line )
   {
@@ -878,7 +897,11 @@ LCMXO2Family_cpld_program(CPLDInfo *dev_info)
     //program UFM
     ast_jtag_sir_xfer(0, LATTICE_INS_LENGTH, LCMXO2_LSC_INIT_ADDR_UFM);
 
-    LCMXO2Family_SendUFMdata(dev_info);
+    ret = LCMXO2Family_SendUFMdata(dev_info);
+    if ( ret < 0 )
+    {
+      goto error_exit;
+    }
   }
 
 #ifdef CPLD_DEBUG
@@ -917,36 +940,39 @@ LCMXO2Family_cpld_program(CPLDInfo *dev_info)
   if ( dr_data[0] != 0x0 )
   {
     printf("[%s] Device Busy\n", __func__);
+    ret = -1;
+    goto error_exit;
   }
 
 #ifdef CPLD_DEBUG
   printf("[%s] READ_STATUS: %x\n", __func__, dr_data[0]);
 #endif
 
-  return RetVal;
+  ret = 0;
+
+error_exit:
+  
+  return ret;
 }
 
 int
 LCMXO2Family_cpld_Get_Ver(unsigned int *ver)
 {
-  int RetVal;
+  int ret;
   unsigned int dr_data[4]={0};
 
-  RetVal = LCMXO2Family_cpld_Check_ID();
+  ret = LCMXO2Family_cpld_Check_ID();
 
-  if ( RetVal < 0 )
+  if ( ret < 0 )
   {
     printf("[%s] Unknown Device ID!\n", __func__);
-
     goto error_exit;
   }
 
-  RetVal = LCMXO2Family_cpld_Start();
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_Start();
+  if ( ret < 0 )
   {
     printf("[%s] Enter Transparent mode Error!\n", __func__);
-
     goto error_exit;
   }
 
@@ -962,15 +988,15 @@ LCMXO2Family_cpld_Get_Ver(unsigned int *ver)
   ast_jtag_tdo_xfer(0, 32, dr_data);
   *ver = dr_data[0];
 
-  RetVal = LCMXO2Family_cpld_End();
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_End();
+  if ( ret < 0 )
   {
     printf("[%s] Exit Transparent Mode Failed!\n", __func__);
   }
 
 error_exit:
-  return RetVal;
+
+  return ret;
 }
 
 int
@@ -980,18 +1006,16 @@ LCMXO2Family_cpld_update(FILE *jed_fd)
   int cf_size = 0;
   int ufm_size = 0;
   int erase_type = 0;
-  int RetVal;
+  int ret;
 
 #ifdef CPLD_DEBUG
   printf("[%s]\n",__func__);
 #endif
 
-  RetVal = LCMXO2Family_cpld_Check_ID();
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_Check_ID();
+  if ( ret < 0 )
   {
     printf("[%s] Unknown Device ID!\n", __func__);
-
     goto error_exit;
   }
 
@@ -999,12 +1023,10 @@ LCMXO2Family_cpld_update(FILE *jed_fd)
   fseek(jed_fd, 0, SEEK_SET);
 
   //get update data size
-  RetVal = LCMXO2Family_Get_Update_Data_Size(jed_fd, &cf_size, &ufm_size);
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_Get_Update_Data_Size(jed_fd, &cf_size, &ufm_size);
+  if ( ret < 0 )
   {
     printf("[%s] Update Data Size Error!\n", __func__);
-
     goto error_exit;
   }
 
@@ -1012,21 +1034,17 @@ LCMXO2Family_cpld_update(FILE *jed_fd)
   fseek(jed_fd, 0, SEEK_SET);
 
   //parse info from JED file and calculate checksum
-  RetVal = LCMXO2Family_JED_File_Parser(jed_fd, &dev_info, cf_size, ufm_size);
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_JED_File_Parser(jed_fd, &dev_info, cf_size, ufm_size);
+  if ( ret < 0 )
   {
     printf("[%s] JED file CheckSum Error!\n", __func__);
-
     goto error_exit;
   }
 
-  RetVal = LCMXO2Family_cpld_Start();
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_Start();
+  if ( ret < 0 )
   {
     printf("[%s] Enter Transparent mode Error!\n", __func__);
-
     goto error_exit;
   }
 
@@ -1039,39 +1057,31 @@ LCMXO2Family_cpld_update(FILE *jed_fd)
     erase_type = Only_CF;
   }
 
-  RetVal = LCMXO2Family_cpld_Erase(erase_type);
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_Erase(erase_type);
+  if ( ret < 0 )
   {
     printf("[%s] Erase failed!\n", __func__);
-
     goto error_exit;
   }
 
-  RetVal = LCMXO2Family_cpld_program(&dev_info);
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_program(&dev_info);
+  if ( ret < 0 )
   {
     printf("[%s] Program failed!\n", __func__);
-
     goto error_exit;
   }
 
-  RetVal = LCMXO2Family_cpld_verify(&dev_info);
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_verify(&dev_info);
+  if ( ret < 0 )
   {
     printf("[%s] Verify Failed!\n", __func__);
-
     goto error_exit;
   }
 
-  RetVal = LCMXO2Family_cpld_End();
-
-  if ( RetVal < 0 )
+  ret = LCMXO2Family_cpld_End();
+  if ( ret < 0 )
   {
     printf("[%s] Exit Transparent Mode Failed!\n", __func__);
-
     goto error_exit;
   }
 
@@ -1086,7 +1096,7 @@ error_exit:
     free(dev_info.UFM);
   }
 
-  return RetVal;
+  return ret;
 }
 
 /*************************************************************************************/

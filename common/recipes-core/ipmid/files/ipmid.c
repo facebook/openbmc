@@ -3656,6 +3656,8 @@ wdt_timer (void *arg) {
         // Execute actin out of mutex
         action = wdt->action;
 
+        pal_set_fru_post(wdt->slot, 0);
+
         if (wdt->no_log) {
           wdt->no_log = 0;
         }

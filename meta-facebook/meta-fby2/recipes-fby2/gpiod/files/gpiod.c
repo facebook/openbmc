@@ -379,6 +379,7 @@ gpio_monitor_poll(void *ptr) {
 
       if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
         usleep(DELAY_GPIOD_READ);
+        pal_set_fru_post(fru,0);
         continue;
       } 
       //12V-off

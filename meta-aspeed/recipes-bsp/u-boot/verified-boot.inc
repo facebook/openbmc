@@ -131,13 +131,11 @@ EOF
 # $2 - Image counter
 # $3 - Path to ramdisk image
 # $4 - Compression type
-# $5 - Load address
 fitimage_emit_section_ramdisk() {
     SOURCE=$1
     IMAGE_COUNTER=$2
     IMAGE_RAMDISK=$3
     IMAGE_COMPRESSION=$4
-    LOAD_ADDRESS=$5
 
     cat << EOF >> ${SOURCE}
         ramdisk@${IMAGE_COUNTER} {
@@ -146,7 +144,6 @@ fitimage_emit_section_ramdisk() {
             type = "ramdisk";
             arch = "${UBOOT_ARCH}";
             compression = "${IMAGE_COMPRESSION}";
-            load = <${LOAD_ADDRESS}>;
             hash@1 {
                 algo = "${VERIFIED_BOOT_HASH_ALGORITHM}";
             };

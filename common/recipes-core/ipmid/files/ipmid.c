@@ -115,7 +115,9 @@ static char *cpu_info_key[] =
   "",
   "product_name",
   "basic_info",
-  "turbo_mode_status"
+  "type",
+  "micro_code",
+  "turbo_mode"
 };
 
 static char *dimm_info_key[] =

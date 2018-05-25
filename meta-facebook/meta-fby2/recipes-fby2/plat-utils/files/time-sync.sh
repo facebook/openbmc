@@ -49,6 +49,14 @@ sync_date()
           if [ $(echo $output | wc -c) == 36 ] ; then 
             time_h=$((16#$(echo "$output" | cut -c 34-35)))
             time_l=$((16#$(echo "$output" | cut -c 31-32)))
+
+            if [ "$time_h" -gt $((16#${default_time_h})) ] ; then
+              echo Syncing up BMC time with server$i...
+              date -s @$((16#$(echo $output | awk '{print $12$11$10$9}')))
+              time_sync_success=1
+              break
+            fi
+
             if [[ "$time_h" -ge $((16#${default_time_h})) && "$time_l" -ge $((16#${default_time_l})) ]] ; then
               echo Syncing up BMC time with server$i...
               date -s @$((16#$(echo $output | awk '{print $12$11$10$9}')))

@@ -42,6 +42,7 @@ SRC_URI = "file://ast-functions \
            file://check_server_type.sh \
            file://setup-server-type.sh \
            file://setup-por.sh \
+           file://time-sync.sh \
           "
 
 pkgdir = "utils"
@@ -50,7 +51,7 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py fby2_power.sh power_util.py \
-  check_slot_type.sh hotservice-reinit.sh check_server_type.sh"
+  check_slot_type.sh hotservice-reinit.sh check_server_type.sh time-sync.sh"
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 "

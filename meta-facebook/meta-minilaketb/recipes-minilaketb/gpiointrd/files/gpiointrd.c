@@ -287,6 +287,15 @@ static void gpio_event_handle(gpio_poll_st *gp)
         write_device(vpath, "0");
     }
   }
+  else if(gp->gs.gs_gpio == gpio_num("GPIOH4")) {
+    int reg;
+    if (gp->value == 1) {
+        syslog(LOG_CRIT, "DEASSERT:GPIOH4 - RST_BMC_PERST_L");
+    }
+    else {
+        syslog(LOG_CRIT, "ASSERT:GPIOH4 - RST_BMC_PERST_L");
+    }
+  }
 }
 
 
@@ -306,7 +315,8 @@ static gpio_poll_st g_gpios[] = {
   // {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA2", "GPIO_SLOT3_PRSNT_N"},
   // {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA3", "GPIO_SLOT4_PRSNT_N"},
   // {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOO3",  "GPIO_UART_SEL"},
-  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOM6",  "SLOT2_RX_BMC"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOM6",  "FM_CB_SLP3_BUF_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOH4",  "RST_BMC_PERST_L"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);

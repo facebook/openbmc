@@ -57,7 +57,7 @@
 #define GPIO_POSTCODE_5 61
 #define GPIO_POSTCODE_6 62
 #define GPIO_POSTCODE_7 63
-#define GPIO_SCM_USB_PRSNT 	204
+#define GPIO_SCM_USB_PRSNT  204
 
 #define COM_PWR_BTN_N "com_pwr_btn_n"
 #define SCM_PRESENT_STATUS "scm_presnt_status"
@@ -200,8 +200,8 @@ write_device(const char *device, const char *value) {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-	*status = 1;
-	return 0;
+    *status = 1;
+    return 0;
 }
 
 void
@@ -230,7 +230,8 @@ pal_get_plat_sku_id(void){
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
 int
-pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len,
+                         uint8_t *res_data, uint8_t *res_len) {
 
   uint8_t completion_code = CC_SUCCESS;
   uint8_t pcie_conf = 0x02;//Minipack
@@ -383,7 +384,8 @@ pal_post_enable(uint8_t slot) {
   ret = bic_get_config(IPMB_BUS, &config);
   if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "post_enable: bic_get_config failed for fru: %d\n", slot);
+    syslog(LOG_WARNING, 
+           "post_enable: bic_get_config failed for fru: %d\n", slot);
 #endif
     return ret;
   }
@@ -855,7 +857,8 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         if (ret < 0)
           return ret;
       } else if (status == SERVER_POWER_OFF) {
-        printf("Ignore to execute power reset action when the power status of server is off\n");
+        printf("Ignore to execute power reset action when the \
+                power status of server is off\n");
         return -2;
       }
       break;
@@ -962,7 +965,8 @@ minipack_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     case FRU_SCM:
       if (minipack_sensor_sdr_path(fru, path) < 0) {
 #ifdef DEBUG
-        syslog(LOG_WARNING, "minipack_sensor_sdr_path: get_fru_sdr_path failed\n");
+        syslog(LOG_WARNING, 
+               "minipack_sensor_sdr_path: get_fru_sdr_path failed\n");
 #endif
         return ERR_NOT_READY;
       }
@@ -970,7 +974,8 @@ minipack_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
         if (sdr_init(path, sinfo) < 0) {
           if (retry == 3) { //if the third retry still failed, return -1
 #ifdef DEBUG
-            syslog(LOG_ERR, "minipack_sensor_sdr_init: sdr_init failed for FRU %d", fru);
+            syslog(LOG_ERR, 
+                   "minipack_sensor_sdr_init: sdr_init failed for FRU %d", fru);
 #endif
             return -1;
           }

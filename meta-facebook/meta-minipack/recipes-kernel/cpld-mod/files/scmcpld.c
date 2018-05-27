@@ -75,24 +75,24 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "sys_red",
-    "0: LED  RED is OFF\n"
-    "1: LED  RED is ON",
+    "0: LED  RED is ON\n"
+    "1: LED  RED is OFF",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x08, 0, 1,
   },
   {
     "sys_green",
-    "0: LED  GREEN is OFF\n"
-    "1: LED  GREEN is ON",
+    "0: LED  GREEN is ON\n"
+    "1: LED  GREEN is OFF",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x08, 1, 1,
   },
   {
     "sys_blue",
-    "0: LED  BLUE is OFF\n"
-    "1: LED  BLUE is ON",
+    "0: LED  BLUE is ON\n"
+    "1: LED  BLUE is OFF",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x08, 2, 1,
@@ -107,40 +107,40 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "sys_tst_en",
-    "0: LED controlled by HW Logic - 7 color\n"
-    "1: LED controlled by sys_red sys_green sys_blue",
+    "0: LED controlled by sys_red sys_green sys_blue\n"
+    "1: LED controlled by HW Logic - 7 color",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x08, 4, 1,
   },
   {
     "rj45_led1",
-    "0: LED GREEN is ON\n"
-    "1: LED GREEN is OFF",
+    "0: LED GREEN is OFF\n"
+    "1: LED GREEN is ON",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x09, 0, 1,
   },
   {
     "rj45_led2",
-    "0: LED ORANGE is ON\n"
-    "1: LED ORANGE is OFF",
+    "0: LED ORANGE is OFF\n"
+    "1: LED ORANGE is ON",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x09, 1, 1,
   },
   {
     "sfp_led3_n",
-    "0: LED ORANGE is ON\n"
-    "1: LED ORANGE is OFF",
+    "1: LED ORANGE is ON\n"
+    "0: LED ORANGE is OFF",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x09, 2, 1,
   },
   {
     "sfp_led3_p",
-    "0: LED GREEN is ON\n"
-    "1: LED GREEN is OFF",
+    "1: LED GREEN is ON\n"
+    "0: LED GREEN is OFF",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x09, 3, 1,
@@ -277,13 +277,6 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x14, 0, 1,
   },
   {
-    "com_exp_pwr_force_off",
-    "When this bit set to 0, the CPLD will force the COMe module power off",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x14, 1, 1,
-  },
-  {
     "com_exp_pwr_cycle",
     "Write 0 to this bit will trigger CPLD power cycling the COMe Module, This bit will auto set to 1 after Power Cycle finish",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -411,6 +404,14 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "ds100_int_n_mask",
+    "0: CPLD passes the interrupt to CPU\n"
+    "1: CPLD blocks incoming the interrupt",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x28, 5, 1,
+  },
+  {
+    "hotswap_pg_mask",
     "0: CPLD passes the interrupt to CPU\n"
     "1: CPLD blocks incoming the interrupt",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -687,6 +688,13 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x36, 1, 1,
   },
   {
+    "com_e_pwr_on",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x36, 2, 1,
+  },
+  {
     "ds80_all_done_n",
     "0: External EEPROM load passed\n"
     "1: External EEPROM load failed or incomplete",
@@ -833,6 +841,27 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x3a, 4, 1,
   },
   {
+    "scm_uart_switch_n",
+    "Debug card UART-Sel button",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x3a, 5, 1,
+  },
+  {
+    "scm_debug_rst_btn_n",
+    "Debug card reset button",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x3a, 6, 1,
+  },
+  {
+    "scm_pwr_btn_n",
+    "Debug card power button",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x3a, 7, 1,
+  },
+  {
     "ds100_ensmb",
     "0:Disbale\n"
     "1:Enable",
@@ -895,30 +924,9 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "tx_disable",
-    "Transmitter Disable",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    NULL,
-    0x41, 3, 1,
-  },
-  {
-    "reserved_1",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
-    NULL,
-    0x42, 0, 1,
-  },
-  {
-    "reserved_2",
-    NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    NULL,
-    0x42, 0, 1,
-  },
-  {
-    "reserved_3",
-    NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    NULL,
+    I2C_DEV_ATTR_STORE_DEFAULT,
     0x42, 0, 1,
   },
 };

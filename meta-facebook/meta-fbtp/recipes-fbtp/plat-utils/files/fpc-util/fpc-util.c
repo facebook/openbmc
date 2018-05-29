@@ -45,6 +45,10 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
+  if (strcmp(argv[3], "on") != 0 && strcmp(argv[3], "off") != 0) {
+    goto err_exit;
+  }
+
   if (argc != 4) {
     goto err_exit;
   }

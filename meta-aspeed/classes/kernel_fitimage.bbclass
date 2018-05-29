@@ -26,8 +26,6 @@ require recipes-bsp/u-boot/verified-boot.inc
 # However, the current u-boot does not have lzma enabled. Stick to gz
 # until we generate a new u-boot image.
 IMAGE_FSTYPES += "cpio.lzma.u-boot"
-UBOOT_IMAGE_LOADADDRESS ?= "0x80008000"
-UBOOT_IMAGE_ENTRYPOINT ?= "0x80008000"
 
 # U-Boot is placed at an absolute position relative to the start of the first
 # U-Boot FIT. This value, like most others, depends on U-Boot machine
@@ -151,7 +149,7 @@ oe_mkimage() {
     # Step 1: Prepare a kernel image section
     fitimage_emit_section_maint ${FIT_SOURCE} imagestart
     fitimage_emit_section_kernel ${FIT_SOURCE} 1 "${KERNEL_FILE}" "none" \
-        ${UBOOT_IMAGE_LOADADDRESS} ${UBOOT_IMAGE_ENTRYPOINT}
+        ${UBOOT_LOADADDRESS} ${UBOOT_ENTRYPOINT}
 
     # Step 2: Prepare a ramdisk image section
     fitimage_emit_section_ramdisk ${FIT_SOURCE} 1 ${RAMDISK_FILE} "lzma"

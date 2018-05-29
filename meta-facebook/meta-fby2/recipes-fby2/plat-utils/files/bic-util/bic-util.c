@@ -37,6 +37,8 @@
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
 
+#define MAX_ARG_NUM 64
+
 #define NUM_SLOTS 4
 #define JTAG_TOTAL_API 1
 
@@ -61,7 +63,8 @@ static const char *option_list[] = {
   "--read_fruid",
   "--get_sdr",
   "--read_sensor",
-  "--perf_test [loop_count]  (0 to run forever)"
+  "--perf_test [loop_count]  (0 to run forever)",
+  "--file [path]"
 };
 
 static void
@@ -498,10 +501,46 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   return 0;
 }
 
+static int
+process_file(uint8_t slot_id, char *path) {
+  FILE *fp;
+  int argc;
+  char buf[1024];
+  char *str, *next, *del=" \n";
+  char *argv[MAX_ARG_NUM];
+
+  if (!(fp = fopen(path, "r"))) {
+    syslog(LOG_WARNING, "Failed to open %s", path);
+    return -1;
+  }
+
+  while (fgets(buf, sizeof(buf), fp) != NULL) {
+    str = strtok_r(buf, del, &next);
+    for (argc = 0; argc < MAX_ARG_NUM && str; argc++, str = strtok_r(NULL, del, &next)) {
+      if (str[0] == '#')
+        break;
+
+      if (!argc && !strcmp(str, "echo")) {
+        printf("%s", (*next) ? next : "\n");
+        break;
+      }
+      argv[argc] = str;
+    }
+    if (argc < 1)
+      continue;
+
+    process_command(slot_id, argc, argv);
+  }
+  fclose(fp);
+
+  return 0;
+}
+
 // TODO: Make it as User selectable tests to run
 int
 main(int argc, char **argv) {
   uint8_t slot_id;
+  uint8_t config;
 
   if (argc < 3) {
     goto err_exit;
@@ -524,11 +563,21 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[2], "--get_gpio")) {
     util_get_gpio(slot_id);
   } else if (!strcmp(argv[2], "--set_gpio")) {
+    if (argc < 5) {
+      goto err_exit;
+    }
+    if (strcmp(argv[4] , "0") && strcmp(argv[4] , "1")) {
+      goto err_exit;
+    }
     util_set_gpio(slot_id, atoi(argv[3]), atoi(argv[4]));
   } else if (!strcmp(argv[2], "--get_gpio_config")) {
     util_get_gpio_config(slot_id);
   } else if (!strcmp(argv[2], "--set_gpio_config")) {
-    util_set_gpio_config(slot_id, atoi(argv[3]), atoi(argv[4]));
+    if (argc < 5) {
+      goto err_exit;
+    }
+    config = (uint8_t)strtol(argv[4], NULL, 0);
+    util_set_gpio_config(slot_id, atoi(argv[3]), config);
   } else if (!strcmp(argv[2], "--get_config")) {
     util_get_config(slot_id);
   } else if (!strcmp(argv[2], "--get_post_code")) {
@@ -540,7 +589,15 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[2], "--read_sensor")) {
     util_read_sensor(slot_id);
   } else if (!strcmp(argv[2], "--perf_test")) {
+    if (argc < 4) {
+      goto err_exit;
+    }
     util_perf_test(slot_id, atoi(argv[3]));
+  } else if (!strcmp(argv[2], "--file")) {
+    if (argc < 4) {
+      goto err_exit;
+    }
+    process_file(slot_id, argv[3]);
   } else if (argc >= 4) {
     return process_command(slot_id, (argc - 2), (argv + 2));
   } else {

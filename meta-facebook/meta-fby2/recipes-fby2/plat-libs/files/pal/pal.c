@@ -2379,7 +2379,7 @@ pal_get_hand_sw_physically(uint8_t *pos) {
 
 int
 pal_get_hand_sw(uint8_t *pos) {
-  char value[MAX_VALUE_LEN];
+  char value[MAX_VALUE_LEN] = {0};
   uint8_t loc;
   int ret;
 
@@ -4301,6 +4301,171 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
 }
 #endif
 
+#if defined(CONFIG_FBY2_EP)
+int
+pal_parse_sel_ep(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  uint8_t sen_type = event_data[0];
+  char temp_log[512] = {0};
+  bool parsed = false;
+
+  switch(snr_num) {
+    case MEMORY_ECC_ERR:
+    case MEMORY_ERR_LOG_DIS:
+      strcpy(error_log, "");
+      if (snr_num == MEMORY_ECC_ERR) {
+        // SEL from MEMORY_ECC_ERR Sensor
+        if ((ed[0] & 0x0F) == 0x0) {
+          if (sen_type == 0x0C) {
+            strcat(error_log, "Correctable");
+          } else if (sen_type == 0x10)
+            strcat(error_log, "Correctable ECC error Logging Disabled");
+        } else if ((ed[0] & 0x0F) == 0x1) {
+          strcat(error_log, "Uncorrectable");
+        } else if ((ed[0] & 0x0F) == 0x2) {
+          strcat(error_log, "Parity Error");
+        } else if ((ed[0] & 0x0F) == 0x5)
+          strcat(error_log, "Correctable ECC error Logging Limit Reached");
+        else
+          strcat(error_log, "Unknown");
+      } else {
+        // SEL from MEMORY_ERR_LOG_DIS Sensor
+        if ((ed[0] & 0x0F) == 0x0)
+          strcat(error_log, "Correctable Memory Error Logging Disabled");
+        else
+          strcat(error_log, "Unknown");
+      }
+
+      if (((ed[1] & 0xC) >> 2) == 0x0) {  /* All Info Valid */
+        /* If critical SEL logging is available, do it */
+        if (sen_type == 0x0C) {
+          if ((ed[0] & 0x0F) == 0x0) {
+            sprintf(temp_log, "DIMM%02X ECC err,FRU:%u", ed[2], fru);
+            pal_add_cri_sel(temp_log);
+          } else if ((ed[0] & 0x0F) == 0x1) {
+            sprintf(temp_log, "DIMM%02X UECC err,FRU:%u", ed[2], fru);
+            pal_add_cri_sel(temp_log);
+          } else if ((ed[0] & 0x0F) == 0x2) {
+            sprintf(temp_log, "DIMM%02X Parity err,FRU:%u", ed[2], fru);
+            pal_add_cri_sel(temp_log);
+          }
+        }
+        /* Then continue parse the error into a string. */
+        /* All Info Valid                               */
+        sprintf(temp_log, " (DIMM %02X) Logical Rank %d", ed[2], ed[1] & 0x03);
+      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+        /* DIMM info not valid */
+        sprintf(temp_log, " (CPU# %d, CHN# %d)",
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2);
+      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+        /* CHN info not valid */
+        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
+            (ed[2] & 0xE0) >> 5, ed[2] & 0x3);
+      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+        /* CPU info not valid */
+        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
+            (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
+      }
+      strcat(error_log, temp_log);
+      parsed = true;
+      break;
+    case BIC_EP_SENSOR_SYSTEM_STATUS:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x05:
+          strcat(error_log, "HSC_Throttle");
+          break;
+        case 0x06:
+          strcat(error_log, "MB_Throttle");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+    case BIC_EP_SENSOR_VR_HOT:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SRAM_CORE_VR_HOT");
+          break;
+        case 0x01:
+          strcat(error_log, "MEM_SOC_VR_HOT");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+    case BIC_EP_SENSOR_CPU_DIMM_HOT:
+      strcpy(error_log, "");
+      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x00FFFF)
+        strcat(error_log, "PROCHOT");
+      else
+        strcat(error_log, "Unknown");
+      sprintf(temp_log, "CPU_DIMM_HOT %s", error_log);
+      pal_add_cri_sel(temp_log);
+      parsed = true;
+      break;
+    case NBU_ERROR:
+      strcpy(error_log, "");
+      if (ed[0] == 0xAB) {
+        strcat(error_log, "Uncorrectable");
+      } else if (ed[0] == 0xAC) {
+        strcat(error_log, "Correctable");
+      } else {
+        strcat(error_log, "Unknown");
+      }
+      sprintf(temp_log, " (POST code %02X) ", ed[1]);
+      strcat(error_log, temp_log);
+      switch (ed[2]) {
+        case 0x00:
+          strcat(error_log, "NBU Tag Correctable ECC Error");
+          break;
+        case 0x01:
+          strcat(error_log, "NBU Tag Uncorrectable ECC Error");
+          break;
+        case 0x02:
+          strcat(error_log, "NBU BAR Address Error");
+          break;
+        case 0x03:
+          strcat(error_log, "NBU Snoop Filter Correctable ECC Error");
+          break;
+        case 0x04:
+          strcat(error_log, "NBU Snoop Filter Uncorrectable ECC Error");
+          break;
+        case 0x05:
+          strcat(error_log, "NBU Timeout Error");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+  }
+
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+
+}
+#endif
+
 int
 pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 {
@@ -4420,44 +4585,6 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
       }
       parsed = true;
       break;
-#ifdef CONFIG_FBY2_EP
-    case NBU_ERROR:
-      strcpy(error_log, "");
-      if (ed[0] == 0xAB) {
-        strcat(error_log, "Uncorrectable");
-      } else if (ed[0] == 0xAC) {
-        strcat(error_log, "Correctable");
-      } else {
-        strcat(error_log, "Unknown");
-      }
-      sprintf(temp_log, " (POST code %02X) ", ed[1]);
-      strcat(error_log, temp_log);
-      switch (ed[2]) {
-        case 0x00:
-          strcat(error_log, "NBU Tag Correctable ECC Error");
-          break;
-        case 0x01:
-          strcat(error_log, "NBU Tag Uncorrectable ECC Error");
-          break;
-        case 0x02:
-          strcat(error_log, "NBU BAR Address Error");
-          break;
-        case 0x03:
-          strcat(error_log, "NBU Snoop Filter Correctable ECC Error");
-          break;
-        case 0x04:
-          strcat(error_log, "NBU Snoop Filter Uncorrectable ECC Error");
-          break;
-        case 0x05:
-          strcat(error_log, "NBU Timeout Error");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
-      }
-      parsed = true;
-      break;
-#endif
   }
 
   if (parsed == true) {
@@ -4478,7 +4605,7 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
-#if defined(CONFIG_FBY2_RC)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
   int ret = -1;
   uint8_t server_type = 0xFF;
   ret = fby2_get_server_type(fru, &server_type);
@@ -4486,9 +4613,16 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
     syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
   }
   switch (server_type) {
+#if defined(CONFIG_FBY2_RC)
     case SERVER_TYPE_RC:
       pal_parse_sel_rc(fru, sel, error_log);
       break;
+#endif
+#if defined(CONFIG_FBY2_EP)
+    case SERVER_TYPE_EP:
+      pal_parse_sel_ep(fru, sel, error_log);
+      break;
+#endif
     case SERVER_TYPE_TL:
       pal_parse_sel_tl(fru, sel, error_log);
       break;

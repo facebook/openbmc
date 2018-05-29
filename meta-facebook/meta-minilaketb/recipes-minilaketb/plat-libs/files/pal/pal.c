@@ -2277,6 +2277,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   uint8_t val;
   uint8_t retry = MAX_READ_RETRY;
   sensor_check_t *snr_chk;
+  bic_gpio_t gpio;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2350,6 +2351,27 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           edb_cache_set(key, str);
           return -1;
         }
+      }
+      if ( sensor_num == SP_SENSOR_P3V3 ) {
+          while (retry) {
+            ret = bic_get_gpio(FRU_SLOT1, &gpio);
+            if (!ret)
+              break;
+            sleep(1);
+            retry--;
+          }
+
+          if (ret) {
+              val = 0;
+          } else {
+              val = gpio.pwrgd_pch_pwrok;
+          }
+
+          if (val == 0) {
+            sprintf(str, "%.2f",*((float*)value));
+            edb_cache_set(key, str);
+            return -1;
+          }
       }
     }
     if ((GETBIT(snr_chk->flag, UCR_THRESH) && (*((float*)value) >= snr_chk->ucr)) ||

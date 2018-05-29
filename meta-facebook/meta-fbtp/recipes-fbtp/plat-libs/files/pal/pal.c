@@ -6534,7 +6534,6 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
   else
     return 0;
 
-  pal_add_cri_sel(error_log);
   return 0;
 }
 

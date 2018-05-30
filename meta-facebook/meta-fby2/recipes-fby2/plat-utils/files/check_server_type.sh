@@ -34,7 +34,8 @@ get_server_sku()
    server_type=0
    for i in 1 2 3 4
    do
-     if [[ $(is_server_prsnt $i) == "1" && $(get_slot_type $i) == "0" ]] ; then
+     slot_12v=$(is_slot_12v_on $i)
+     if [[ $(is_server_prsnt $i) == "1" && "$slot_12v" == "1" && $(get_slot_type $i) == "0" ]] ; then
        tmp_server_type=3
        j=0
        while [ ${j} -lt ${max_retry} ]
@@ -65,6 +66,11 @@ get_server_sku()
        done
      else
        tmp_server_type=3
+
+       # Do not replace slotX server type when it is 12V off
+       if [[ "$slot_12v" == "0" && -f /tmp/server_type.bin ]] ; then
+         tmp_server_type=$(get_server_type $i)
+       fi
      fi
      server_type=$(($(($tmp_server_type << $((($i-1) * 2)))) + $server_type))
    done

@@ -343,7 +343,7 @@ class bios_postcode_node(node):
     def getInformation(self):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --postcode get'
         postcode = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-        postcode = postcode.split('\n')[0]
+        postcode = postcode.replace("\n", "").strip()
 
         info = { "POST Code": postcode }
 

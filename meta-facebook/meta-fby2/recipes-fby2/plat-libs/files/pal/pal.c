@@ -5380,6 +5380,18 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
 	int i;
 	int completion_code = CC_UNSPECIFIED_ERROR;
 	*res_len = 0;
+#if defined(CONFIG_FBY2_EP)
+	int ret;
+	uint8_t server_type = 0xFF;
+	ret = fby2_get_server_type(slot, &server_type);
+	if (ret) {
+		syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+	}
+
+	if (server_type == SERVER_TYPE_EP) {
+		return CC_INVALID_CMD;
+	}
+#endif
 	sprintf(key, "slot%d_cpu_ppin", slot);
 
 	for (i = 0; i < SIZE_CPU_PPIN; i++) {

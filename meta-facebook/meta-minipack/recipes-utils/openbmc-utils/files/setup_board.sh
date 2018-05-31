@@ -50,7 +50,6 @@ echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
 
 # EVTA is 4, EVTB is 0
 if [ $board_rev -ne 4 ]; then
-    # Keep BMC_RST_FPGA pin to high, IOB FPGA in normal mode
-    echo out > /tmp/gpionames/BMC_RST_FPGA/direction
-    echo 1 > /tmp/gpionames/BMC_RST_FPGA/value
+    # Set BMC_RST_FPGA(GPIOP2) pin to high, IOB FPGA in normal mode
+    gpio_set BMC_RST_FPGA 1
 fi

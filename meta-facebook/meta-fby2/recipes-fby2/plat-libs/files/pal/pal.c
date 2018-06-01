@@ -224,6 +224,7 @@ char * key_list[] = {
 "fru2_restart_cause",
 "fru3_restart_cause",
 "fru4_restart_cause",
+"ntp_server",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -269,6 +270,7 @@ char * def_val_list[] = {
   "3", /* fru2_restart_cause */
   "3", /* fru3_restart_cause */
   "3", /* fru4_restart_cause */
+  "", /* ntp_server */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -514,6 +516,36 @@ pal_key_check(char *key) {
   return -1;
 }
 
+static int
+key_func_ntp(char *value)
+{
+  char cmd[MAX_VALUE_LEN] = {0};
+  char ntp_server_new[MAX_VALUE_LEN] = {0};
+  char ntp_server_old[MAX_VALUE_LEN] = {0};
+
+  // Remove old NTP server
+  kv_get("ntp_server", ntp_server_old);
+  if (strlen(ntp_server_old) > 2) {
+    snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
+    system(cmd);
+    snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+    system(cmd);
+  }
+  // Add new NTP server
+  snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", value);
+  if (strlen(ntp_server_new) > 2) {
+    snprintf(cmd, MAX_VALUE_LEN, "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
+    system(cmd);
+    snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
+    system(cmd);
+  }
+  // Restart NTP server
+  snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
+  system(cmd);
+
+  return 0;
+}
+
 int
 pal_get_key_value(char *key, char *value) {
 
@@ -523,6 +555,7 @@ pal_get_key_value(char *key, char *value) {
 
   return kv_get(key, value);
 }
+
 int
 pal_set_key_value(char *key, char *value) {
 
@@ -530,6 +563,9 @@ pal_set_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
+  if (!strcmp(key, "ntp_server")) {
+    key_func_ntp(value);
+  }
   return kv_set(key, value);
 }
 

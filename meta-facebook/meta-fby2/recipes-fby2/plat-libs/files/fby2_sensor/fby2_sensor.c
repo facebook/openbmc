@@ -196,9 +196,7 @@ const uint8_t bic_sensor_list[] = {
 const uint8_t bic_discrete_list[] = {
   /* Discrete sensors */
   BIC_SENSOR_SYSTEM_STATUS,
-  BIC_SENSOR_CPU_DIMM_HOT,
   BIC_SENSOR_PROC_FAIL,
-  BIC_SENSOR_VR_HOT,
 };
 
 
@@ -299,9 +297,7 @@ const uint8_t bic_ep_sensor_list[] = {
 const uint8_t bic_ep_discrete_list[] = {
   /* EP Discrete sensors */
   BIC_EP_SENSOR_SYSTEM_STATUS,
-  BIC_EP_SENSOR_CPU_DIMM_HOT,
   BIC_EP_SENSOR_PROC_FAIL,
-  BIC_EP_SENSOR_VR_HOT,
 };
 #endif
 

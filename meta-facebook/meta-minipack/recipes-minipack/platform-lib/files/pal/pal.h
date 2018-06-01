@@ -46,6 +46,7 @@ extern "C" {
 #define MAX_SENSOR_NUM  0xFF
 #define ERR_NOT_READY   -2
 #define MAX_SDR_LEN     64
+#define MAX_PIM 8
 
 extern const char pal_fru_list[];
 
@@ -156,6 +157,7 @@ int pal_set_com_pwr_btn_n(char *status);
 int pal_get_board_rev(int *rev);
 int pal_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
 bool pal_is_fw_update_ongoing(uint8_t fru);
+int pal_is_pim_prsnt(uint8_t *status, int num);
 
 #ifdef __cplusplus
 } // extern "C"

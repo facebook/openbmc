@@ -61,6 +61,7 @@
 
 #define COM_PWR_BTN_N "com_pwr_btn_n"
 #define SCM_PRESENT_STATUS "scm_presnt_status"
+#define PIM_PRSNT_STATUS "pim_fpga_cpld_%d_prsnt_n_status"
 
 #define LAST_KEY "last_key"
 #define MAX_READ_RETRY 10
@@ -349,6 +350,22 @@ pal_is_scm_prsnt(uint8_t *status) {
   } else {
     *status = 0;
   }
+
+  return 0;
+}
+
+int
+pal_is_pim_prsnt(uint8_t *status, int num) {
+  int val;
+  char path[128] = {0};
+
+  sprintf(path, SMB_SYSFS, PIM_PRSNT_STATUS);
+  sprintf(path, path, num + 1);
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  *status = val;
 
   return 0;
 }

@@ -105,26 +105,6 @@ i2c_device_add 74 0x49 tmp75           # FCM-B temp. sensor
 # # Bus 67
 i2c_device_add 75 0x10 adm1278         # FCM-T Hotswap
 
-# # Bus 84 92 100 108 116 124 132 140  # PIM1 ~ PIM8 Hotswap
-BUS="84 92 100 108 116 124 132 140"
-for bus in ${BUS}; do
-    i2c_device_add $bus 0x10 adm1278
-done
-
-# # Bus 86 94 102 110 118 126 134 142  # PIM1 ~ PIM8 MAX34461
-BUS="86 94 102 110 118 126 134 142"
-for bus in ${BUS}; do
-    i2c_device_add $bus 0x74 max34461
-done
-
-# # Bus 82 90 98 106 114 122 130 138   # PIM1 ~ PIM8 temp. sensor
-# # Bus 83 91 99 107 115 123 131 139   # PIM1 ~ PIM8 temp. sensor
-BUS="82 90 98 106 114 122 130 138"
-for bus in ${BUS}; do
-    i2c_device_add $bus 0x48 tmp75
-    i2c_device_add $(($bus+1)) 0x4b tmp75
-done
-
 # # Bus 6
 i2c_device_add 6 0x51 24c64            # Board fru EEPROM
 

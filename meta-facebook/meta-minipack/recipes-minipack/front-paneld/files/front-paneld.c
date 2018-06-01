@@ -80,6 +80,58 @@ scm_mon_out:
   return 0;
 }
 
+// Thread for monitoring pim plug
+static void *
+pim_monitor_handler(){
+  int num;
+  uint8_t ret;
+  uint8_t prsnt = 0;
+  uint8_t curr = 0xff;
+  char cmd[64] = { 0 };
+  while (1) {
+    for(num = 0; num < MAX_PIM; num++){
+      ret = pal_is_pim_prsnt(&prsnt, num);
+      if (ret) {
+        goto pim_mon_out;
+      }
+      //(1)Shift left current bit to leftmost and clear the overflow bit as 0.
+      //(2)Shift current bit to rightmost to compare with prsnt bit.
+      //(3)0 is prsnt, 1 is not prsnt.
+      if(prsnt ^ (((curr << (MAX_PIM - num - 1)) & 0xff) >> (MAX_PIM - 1))){
+        if(prsnt){
+          syslog(LOG_WARNING, "PIM %d is unplugged.", num + 1);
+          sprintf(cmd, "/usr/local/bin/set_pim_sensor.sh %d unload", num + 1);
+          ret = run_command(cmd);
+        } else {
+          syslog(LOG_WARNING, "PIM %d is plugged in.", num + 1);
+          sprintf(cmd, "/usr/local/bin/set_pim_sensor.sh %d load", num + 1);
+          ret = run_command(cmd);
+          if(ret){
+              syslog(LOG_WARNING, "DOMFPGA/MAX34461 of PIM %d is not ready "
+                                  "or sensor cannot be mounted.", num + 1);
+          }
+        }
+        //Shift changed status to match current bit and +/- the result.
+        curr = prsnt ? (curr + (0x01 << num)) : (curr - (0x01 << num));
+      }
+      //Set PIM number into DOM FPGA 0x03 register to control LED stream.
+      //0 is prsnt, 1 is not prsnt.
+      if(!prsnt) {
+          sprintf(cmd, "/usr/local/bin/set_pim_sensor.sh %d id", num + 1);
+          ret = run_command(cmd);
+          if(ret){
+              syslog(LOG_WARNING, 
+                     "Cannot set slot id into FPGA register of PIM %d"
+                     ,num + 1);
+          }
+      }
+    }
+pim_mon_out:
+    sleep(1);
+  }
+  return 0;
+}
+
 // Thread for monitoring debug card hotswap
 static void *
 debug_card_handler() {
@@ -146,6 +198,7 @@ debug_card_out:
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_scm_monitor;
+  pthread_t tid_pim_monitor;
   pthread_t tid_debug_card;
   int rc;
   int pid_file;
@@ -171,6 +224,11 @@ main (int argc, char * const argv[]) {
     syslog(LOG_WARNING, "pthread_create for scm monitor error\n");
     exit(1);
   }
+  
+  if (pthread_create(&tid_pim_monitor, NULL, pim_monitor_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for pim monitor error\n");
+    exit(1);
+  }
 
   if (brd_rev != BOARD_REV_EVTA) {
     if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) < 0) {
@@ -181,6 +239,7 @@ main (int argc, char * const argv[]) {
   }
 
   pthread_join(tid_scm_monitor, NULL);
+  pthread_join(tid_pim_monitor, NULL);
 
   return 0;
 }

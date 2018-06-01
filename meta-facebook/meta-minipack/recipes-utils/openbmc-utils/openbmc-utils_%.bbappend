@@ -30,6 +30,7 @@ SRC_URI += "file://board-utils.sh \
             file://presence_util.sh \
             file://reset_brcm.sh \
             file://scmcpld_update.sh \
+            file://set_pim_sensor.sh \
             file://setup_board.sh \
             file://setup_i2c.sh \
             file://seutil \
@@ -52,6 +53,7 @@ OPENBMC_UTILS_FILES += " \
     pimcpld_update.sh \
     reset_brcm.sh \
     scmcpld_update.sh \
+    set_pim_sensor.sh \
     seutil \
     smbcpld_update.sh \
     sol.sh \

@@ -142,6 +142,9 @@ power_policy_control(uint8_t fru, char *last_ps) {
   uint8_t power_policy = POWER_CFG_UKNOWN;
   char pwr_state[MAX_VALUE_LEN] = {0};
 
+  if (pal_is_slot_server(fru) == 0) {
+    return;
+  }
 
   //get power restore policy
   //defined by IPMI Spec/Section 28.2.

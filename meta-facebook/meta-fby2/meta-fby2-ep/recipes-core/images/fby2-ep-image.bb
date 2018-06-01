@@ -39,6 +39,7 @@ IMAGE_INSTALL += " \
   hsvc-util \
   fpc-util \
   me-util \
+  crashdump \
   log-util \
   lldp-util \
   spatula \
@@ -49,6 +50,7 @@ IMAGE_INSTALL += " \
   asd-test \
   bios-util \
   threshold-util \
+  ncsid \
   "
 
 IMAGE_FEATURES += " \

@@ -71,6 +71,9 @@
 
 #define SERVER_TYPE_FILE "/tmp/server_type.bin"
 
+#define RC_BIOS_SIG_OFFSET 0x3F00000
+#define RC_BIOS_IMAGE_SIZE (64*1024*1024)
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -1150,12 +1153,36 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
   return 0;
 }
 
+#if defined(CONFIG_FBY2_RC)
+static int
+check_bios_image_rc(uint8_t slot_id, int fd, long size) {
+  
+  uint8_t sig_rc[] = { 0x52, 0x43, 0x5f, 0x55, 0x45, 0x46, 0x49 };
+  uint8_t buf[16] = {0}; 
+  uint8_t sig_size = sizeof(sig_rc);
+ 
+  if (size < RC_BIOS_IMAGE_SIZE)
+    return -1;
+
+  lseek(fd, RC_BIOS_SIG_OFFSET, SEEK_SET);
+
+  if(read(fd, buf, sig_size) != sig_size)
+    return -1;
+
+  if (memcmp(buf, sig_rc, sig_size))
+    return -1;
+  
+  lseek(fd, 0, SEEK_SET);
+  return 0;
+}
+#endif
+
 static int
 check_bios_image(uint8_t slot_id, int fd, long size) {
   int i, rcnt, end;
   uint8_t *buf;
   uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   int ret;
   uint8_t server_type = 0xFF;
 
@@ -1168,9 +1195,12 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   switch (server_type) {
     case SERVER_TYPE_EP:
       return 0;
+    case SERVER_TYPE_RC:
+      ret = check_bios_image_rc(slot_id, fd, size);
+      return ret;
   }
 #endif
-
+  
   if (size < BIOS_VER_REGION_SIZE)
     return -1;
 
@@ -1398,7 +1428,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     if (check_bios_image(slot_id, fd, st.st_size) < 0) {
       printf("invalid BIOS file!\n");
       lseek(fd, 0, SEEK_SET);
-      //goto error_exit;
+      goto error_exit;
     }
     syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
     dsize = st.st_size/100;
@@ -1512,16 +1542,16 @@ error_exit:
   printf("\n");
   switch(comp) {
     case UPDATE_BIOS:
-      syslog(LOG_CRIT, "Update BIOS: updating bios firmware is exiting\n");
+      syslog(LOG_CRIT, "Update BIOS: updating bios firmware is exiting on slot %d\n", slot_id);
       break;
     case UPDATE_CPLD:
-      syslog(LOG_CRIT, "Update CPLD: updating cpld firmware is exiting\n");
+      syslog(LOG_CRIT, "Update CPLD: updating cpld firmware is exiting on slot %d\n", slot_id);
       break;
     case UPDATE_VR:
-      syslog(LOG_CRIT, "Update VR: updating vr firmware is exiting\n");
+      syslog(LOG_CRIT, "Update VR: updating vr firmware is exiting on slot %d\n", slot_id);
       break;
     case UPDATE_BIC_BOOTLOADER:
-      syslog(LOG_CRIT, "Update BIC BL: updating bic bootloader firmware is exiting\n");
+      syslog(LOG_CRIT, "Update BIC BL: updating bic bootloader firmware is exiting on slot %d\n", slot_id);
       break;
   }
   if (fd > 0 ) {

@@ -65,3 +65,36 @@ if [ "$do_init_power" -eq "1" ]; then
 else
     echo "[ minilakeTB ] : no need to setup PCA9555 !!!"
 fi
+
+
+# get MAC from EEPROM and set to BMC.
+SetMAC() {
+    rmmod at24
+    i2cset -y 8 0x51 0x18 0x10 || return 1;
+
+    MAC=$(i2cget -y 8 0x51)|| return 1;
+    MAC=$MAC':'$(i2cget -y 8 0x51)|| return 1;
+    MAC=$MAC':'$(i2cget -y 8 0x51)|| return 1;
+    MAC=$MAC':'$(i2cget -y 8 0x51)|| return 1;
+    MAC=$MAC':'$(i2cget -y 8 0x51)|| return 1;
+    MAC=$MAC':'$(i2cget -y 8 0x51)|| return 1;
+
+    MAC=$(echo $MAC | sed 's/0x//g');
+    #ifdown eth0
+    ifconfig eth0 hw ether $MAC
+    #ifup eth0
+    modprobe at24
+    return 0
+}
+
+retry=5;
+while [[ $retry -gt 0 ]]; do
+    SetMAC
+    if [ $? -eq 0 ]; then
+        echo setup MAC finish !
+        exit 0
+    else
+        retry=$(($retry-1))
+    fi
+done
+# Finish MAC setting

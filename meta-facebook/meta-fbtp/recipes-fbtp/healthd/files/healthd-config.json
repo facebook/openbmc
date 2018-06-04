@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "heartbeat": {
-    "interval": 50
+    "interval": 500
   },
   "bmc_cpu_utilization" : {
     "enabled": true,

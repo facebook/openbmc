@@ -27,6 +27,17 @@ def check_ip6(ip_addr):
     return True
 
 
+def slotidTest(data, result, endpoint):
+    for item in data['endpoints'][endpoint]:
+        item = item.encode()
+        if item in result:
+            return
+    print("Expected one of {} in response={}",
+          format(data['endpoints'][endpoint], result))
+    print("Rest-api test [FAILED]")
+    sys.exit(1)
+
+
 def restapiTest(data, host, logger):
     curl_cmd = ""
     try:
@@ -48,6 +59,9 @@ def restapiTest(data, host, logger):
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             result, err = f.communicate()
+            if "slotid" in endpoint:
+                slotidTest(data, result, endpoint)
+                continue
             for item in data['endpoints'][endpoint]:
                 item = item.encode()
                 if item not in result:

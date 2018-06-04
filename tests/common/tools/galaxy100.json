@@ -1,40 +1,40 @@
 {
   "type":"galaxy100",
-  "interfaceTest.py":["no",
+  "interfaceTest.py":["yes",
     {
       "eth0":
         {
-          "v4":"no",
-          "v6":"no"
+          "v4":"yes",
+          "v6":"yes"
         },
-      "usb0":"no",
-      "eth0.4088":"no"
+      "usb0":"yes",
+      "eth0.4088":"yes"
     }],
-  "eepromTest.py":"no",
-  "connectionTest.py":["no",
+  "eepromTest.py":"yes",
+  "connectionTest.py":["yes",
     {
       "version":6
     }],
-  "sensorTest.py":["no",
+  "sensorTest.py":["yes",
     {
       "json":"../galaxy100/unittests/sensor.json"
     }],
-  "i2cSensorTest.py":["no",
+  "i2cSensorTest.py":["yes",
     {
       "json":"../galaxy100/unittests/i2c.json"
     }],
-  "powerCycleSWTest.py":"no",
-  "powerCycleHWTest.py":"no",
-  "solTest.py":"no",
-  "memoryUsageTest.py":["no",
+  "powerCycleSWTest.py":"yes",
+  "powerCycleHWTest.py":"yes",
+  "solTest.py":"yes",
+  "memoryUsageTest.py":["yes",
     {
       "threshold":"91"
     }],
-  "kernelModulesTest.py":["no",
+  "kernelModulesTest.py":["yes",
     {
       "json":"../galaxy100/unittests/kernel.json"
     }],
-  "processRunningTest.py":["no",
+  "processRunningTest.py":["yes",
     {
       "json":"../galaxy100/unittests/process.json"
     }],

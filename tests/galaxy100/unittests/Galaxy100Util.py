@@ -19,7 +19,7 @@ class Galaxy100Util(BaseUtil.BaseUtil):
     SensorCmd = '/usr/bin/sensors'
 
     # EEPROM
-    ProductName = ['LC', 'FC']
+    ProductName = ['LC', 'FAB']
     EEPROMCmd = '/usr/bin/weutil'
 
     # Power Cycle
@@ -31,7 +31,7 @@ class Galaxy100Util(BaseUtil.BaseUtil):
 
     # sol
     solCmd = '/usr/local/bin/sol.sh'
-    solCloseConnection = ['\r', 'CTRL-l', chr(127)]  # send CTRL-l DEL
+    solCloseConnection = ['\r', 'CTRL-l', 'x']
 
     def solConnectionClosed(self, info):
         if 'Connection closed' in info:

@@ -1,8 +1,8 @@
 [
-  "pfe1100",
   "syscpld",
   "scmcpld",
   "pmbus",
-  "fb_panther_plus",
-  "max127"
+  "pwr1014a",
+  "galaxy100_ec",
+  "g_cdc"
 ]

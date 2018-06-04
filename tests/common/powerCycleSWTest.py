@@ -5,19 +5,22 @@ from __future__ import unicode_literals
 import subprocess
 import sys
 import unitTestUtil
+
 try:
-	from pexpect import pxssh
+    from pexpect import pxssh
 except:
-	import pxssh
+    import pxssh
 import time
 import os
 import logging
+
 currentPath = os.getcwd()
 try:
-    testPath = currentPath[0:currentPath.index('common')]
+    testPath = currentPath[0: currentPath.index("common")]
 except Exception:
-    testPath = '/tmp/tests/'
+    testPath = "/tmp/tests/"
 
+WAIT_TIME = 200  # seconds
 
 def powerCycleTest(unitTestUtil, utilType, hostnameBMC, hostnameMS):
     if utilType.PowerCmdStatus is None:
@@ -28,22 +31,23 @@ def powerCycleTest(unitTestUtil, utilType, hostnameBMC, hostnameMS):
         raise Exception("power off command not implemented")
     if utilType.PowerCmdReset is None:
         raise Exception("power reset command not implemented")
-    pingcmd = ['python', testPath + 'common/connectionTest.py', hostnameMS, '6']
+    pingcmd = ["python",testPath + "common/connectionTest.py", hostnameMS, "6"]
     ssh = pxssh.pxssh()
     unitTestUtil.Login(hostnameBMC, ssh)
-    status = ''
+    status = ""
     # Power on for test to start if not already
-    logger.debug("checking power status")
+    logger.debug("Checking current power status")
     ssh.sendline(utilType.PowerCmdStatus)
     ssh.prompt()
-    if 'on' in (ssh.before).decode() or 'ON' in (ssh.before).decode():
-        status = 'on'
+    if "on" in (ssh.before).decode() or "ON" in (ssh.before).decode():
+        status = "on"
     else:
-        logger.debug("executing power on command")
+        logger.debug("Executing power ON command")
         ssh.sendline(utilType.PowerCmdOn)
         ssh.prompt()
-        status = 'off'
+        status = "off"
     powerCycleOnOffTest(pingcmd, utilType, ssh)
+    logger.debug("Waiting before next step ...")
     powerCycleResetTest(pingcmd, utilType, ssh, status)
 
 
@@ -52,75 +56,81 @@ def powerCycleOnOffTest(pingcmd, utilType, ssh):
     For a given platform test their power on, off, and reset commands
     """
     # Power off
-    logger.debug("executing power off command")
+    logger.debug("Executing power OFF command")
     ssh.sendline(utilType.PowerCmdOff)
     ssh.prompt()
     # Check that ping connection is failure
-    logger.debug("checking that ping to Microserver fails since power is off")
-    f = subprocess.Popen(pingcmd,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    logger.debug("Checking that ping to Microserver fails since power is off")
+    f = subprocess.Popen(pingcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
-    if 'PASSED' in out.decode():
+    if "PASSED" in out.decode():
         print("Power Cycle test off command [FAILED]")
         sys.exit(1)
+    print("Power Cycle test OFF command [PASSED]")
+    logger.debug("Waiting before next step ...")
+    time.sleep(WAIT_TIME)
+
     # Power on
-    logger.debug("executing power on command")
+    logger.debug("Executing power ON command")
     ssh.sendline(utilType.PowerCmdOn)
     ssh.prompt()
+    logger.debug("Waiting before next step ...")
+    time.sleep(WAIT_TIME)
     # Check that ping connection is good
-    logger.debug("checking that ping to Microserver passes since power is on")
+    logger.debug("Checking that ping to Microserver passes since power is on")
     t_end = time.time() + 60 * 10
     while time.time() < t_end:  # ping until timeout or ping passes
-        f = subprocess.Popen(pingcmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        f = subprocess.Popen(pingcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = f.communicate()
         if len(err) != 0:
             raise Exception(err)
-        if 'PASSED' in out.decode():  # break when ping passes
+        if "PASSED" in out.decode():  # break when ping passes
             break
-    if 'FAILED' in out.decode():
+    if "FAILED" in out.decode():
         print("Power Cycle test on command [FAILED]")
         sys.exit(1)
+    print("Power Cycle test ON command [PASSED]")
 
 
 def powerCycleResetTest(pingcmd, utilType, ssh, status):
     # Power reset
-    logger.debug("executing power reset command")
+    logger.debug("Executing power RESET command")
     ssh.sendline(utilType.PowerCmdReset)
+    time.sleep(WAIT_TIME)
     ssh.prompt()
     # Check that ping connection is failure then success
-    logger.debug("checking that ping to Microserver fails because Microserver is resetting")
-    f = subprocess.Popen(pingcmd,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    logger.debug(
+        "Checking that ping to Microserver fails because Microserver is resetting"
+    )
+    f = subprocess.Popen(pingcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = f.communicate()
     if len(err) != 0:
         raise Exception(err)
-    if 'PASSED' in out.decode():
-        print("Power Cycle test reset command [FAILED]")
+    if "PASSED" in out.decode():
+        print("Power Cycle test RESET command [FAILED]")
         sys.exit(1)
     t_end = time.time() + 60 * 10
-    logger.debug("checking that ping to Microserver passes because Microserver should be done with reset")
+    logger.debug(
+        "Checking that ping to Microserver passes because Microserver should be done with reset"
+    )
     while time.time() < t_end:  # ping until timeout or ping passes
-        f = subprocess.Popen(pingcmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        f = subprocess.Popen(pingcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = f.communicate()
         if len(err) != 0:
             raise Exception(err)
-        if 'PASSED' in out.decode():  # break when ping passes
+        if "PASSED" in out.decode():  # break when ping passes
             break
+    print("Power Cycle test RESET command [PASSED]")
+    logger.debug("Waiting before next step ...")
     # Set the power to the status when test began
-    if status == 'off':
+    if status == "off":
         logger.debug("executing power off command")
         ssh.sendline(utilType.PowerCmdOff)
         ssh.prompt()
-    if 'FAILED' in out.decode():
-        print("Power Cycle test reset command [FAILED]")
+    if "FAILED" in out.decode():
+        print("Power Cycle test RESET command [FAILED]")
         sys.exit(1)
     else:
         print("Power Cycle test [PASSED]")
@@ -136,12 +146,15 @@ if __name__ == "__main__":
     logger = util.logger(logging.WARN)
     try:
         args = util.Argparser(
-            ['type', 'hostnameBMC', 'hostnameMS',
-             '--verbose'], [str, str, str, None], [
-                 'a platform type', 'a hostname for the BMC',
-                 'a hostname for the Microserver',
-                 'output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR'
-             ])
+            ["type", "hostnameBMC", "hostnameMS", "--verbose"],
+            [str, str, str, None],
+            [
+                "a platform type",
+                "a hostname for the BMC",
+                "a hostname for the Microserver",
+                "output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR",
+            ],
+        )
         if args.verbose is not None:
             logger = util.logger(args.verbose)
         platformType = args.type

@@ -46,6 +46,7 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 #define SLOT_RECORD_FILE "/tmp/slot%d.rc"
+#define SV_TYPE_RECORD_FILE "/tmp/server_type%d.rc"
 
 #define HOTSERVICE_SCRPIT "/usr/local/bin/hotservice-reinit.sh"
 #define HOTSERVICE_FILE "/tmp/slot%d_reinit"
@@ -441,7 +442,8 @@ hsvc_event_handler(void *ptr) {
   char slotrcpath[80] = {0};
   char hslotpid[80] = {0};
   char slot_kv[80] = {0};
-  int i=0;
+  int i = 0, slot_type;
+  uint8_t server_type;
   char event_log[80] = {0};
   hot_service_info *hsvc_info = (hot_service_info *)ptr;
   pthread_detach(pthread_self());
@@ -506,9 +508,20 @@ hsvc_event_handler(void *ptr) {
 
         // Assign slot type
         sprintf(slotrcpath, SLOT_RECORD_FILE, hsvc_info->slot_id);
-        memset(cmd, 0, sizeof(cmd));
-        sprintf(cmd, "echo %d > %s", fby2_get_slot_type(hsvc_info->slot_id), slotrcpath);
+        slot_type = fby2_get_slot_type(hsvc_info->slot_id);
+        sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
         system(cmd);
+
+        if (slot_type == SLOT_TYPE_SERVER) {  // Assign server type
+          server_type = 0xFF;
+          ret = fby2_get_server_type(hsvc_info->slot_id, &server_type);
+          if (ret) {
+            syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+          }
+          sprintf(slotrcpath, SV_TYPE_RECORD_FILE, hsvc_info->slot_id);
+          sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
+          system(cmd);
+        }
       }
       break;
     case INSERTION :
@@ -530,9 +543,20 @@ hsvc_event_handler(void *ptr) {
 
         // Assign slot type
         sprintf(slotrcpath, SLOT_RECORD_FILE, hsvc_info->slot_id);
-        memset(cmd, 0, sizeof(cmd));
-        sprintf(cmd, "echo %d > %s", fby2_get_slot_type(hsvc_info->slot_id), slotrcpath);
+        slot_type = fby2_get_slot_type(hsvc_info->slot_id);
+        sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
         system(cmd);
+
+        if (slot_type == SLOT_TYPE_SERVER) {  // Assign server type
+          server_type = 0xFF;
+          ret = fby2_get_server_type(hsvc_info->slot_id, &server_type);
+          if (ret) {
+            syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+          }
+          sprintf(slotrcpath, SV_TYPE_RECORD_FILE, hsvc_info->slot_id);
+          sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
+          system(cmd);
+        }
 
         // Remove pid_file
         memset(cmd, 0, sizeof(cmd));

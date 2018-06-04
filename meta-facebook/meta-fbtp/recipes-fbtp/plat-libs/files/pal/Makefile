@@ -7,7 +7,7 @@ C_SRCS := $(wildcard *.c)
 C_OBJS := ${C_SRCS:.c=.o}
 
 libpal.so: $(C_OBJS)
-	$(CC) $(CFLAGS) -lkv -ledb -lipmb -lme -lvr -lgpio -lsensor-correction -shared -o libpal.so $^ $(LDFLAGS) -lc -lrt -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive
+	$(CC) $(CFLAGS) -lkv -lipmb -lme -lvr -lgpio -lsensor-correction -shared -o libpal.so $^ $(LDFLAGS) -lc -lrt -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive
 
 .PHONY: clean
 

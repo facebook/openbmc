@@ -4,7 +4,6 @@
 #include <syslog.h>
 #include "pal.h"
 #include <openbmc/kv.h>
-#include <openbmc/edb.h>
 
 #define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
@@ -139,8 +138,8 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
    * tests for cache first and then for kv. That way
    * we avoid (at minimum shrink the window for)
    * the potential race between the two */
-  kv_set(key, value);
-  edb_cache_set(key, value);
+  kv_set(key, value, 0, KV_FPERSIST);
+  kv_set(key, value, 0, 0);
   return 0;
 }
 
@@ -155,14 +154,14 @@ int pal_get_machine_configuration(char *conf)
    * check persistent kv store for previous boot conf,
    * if that fails, then get platform ID to ensure
    * we use default SS or DS */
-  ret = edb_cache_get(key, value);
+  ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
-    ret = kv_get(key, value);
+    ret = kv_get(key, value, NULL, KV_FPERSIST);
     if (ret < 0) {
       strcpy(value, default_machine_config_name());
-      kv_set(key, value);
+      kv_set(key, value, 0, KV_FPERSIST);
     }
-    edb_cache_set(key, value);
+    kv_set(key, value, 0, 0);
   }
   strcpy(conf, value);
   return 0;

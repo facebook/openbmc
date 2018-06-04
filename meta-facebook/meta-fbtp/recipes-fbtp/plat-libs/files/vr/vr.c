@@ -33,7 +33,7 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include "vr.h"
 
 #define VR_BUS_ID 0x5
@@ -719,7 +719,7 @@ fetch_vr_info(uint8_t vr, char *key, uint8_t page,
     sprintf(value, "%08X", *(unsigned int*)info);
   else
     sprintf(value, "%04X", *(unsigned int*)info);
-  edb_cache_set(key, value);
+  kv_set(key, value, 0, 0);
 
 error_exit:
   if (fd > 0) {
@@ -733,7 +733,7 @@ static int
 get_vr_ver(uint8_t vr, uint8_t *ver) {
   char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
   sprintf(key, "vr_%02Xh_ver", vr);
-  if (edb_cache_get(key, value) < 0)
+  if (kv_get(key, value, NULL, 0) < 0)
     return fetch_vr_info(vr, key, VR_FW_PAGE, VR_FW_REG1, VR_FW_REG2, ver);
   *(unsigned int*)ver = (unsigned int)strtoul(value, NULL, 16);
   return 0;
@@ -743,7 +743,7 @@ static int
 get_vr_checksum(uint8_t vr, uint8_t *checksum) {
   char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
   sprintf(key, "vr_%02Xh_checksum", vr);
-  if (edb_cache_get(key, value) < 0)
+  if (kv_get(key, value, NULL, 0) < 0)
     return fetch_vr_info(vr, key, VR_FW_PAGE_2, VR_FW_REG4, VR_FW_REG3, checksum);
   *(unsigned int*)checksum = (unsigned int)strtoul(value, NULL, 16);
   return 0;
@@ -753,7 +753,7 @@ static int
 get_vr_deviceId(uint8_t vr, uint8_t *deviceId) {
   char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
   sprintf(key, "vr_%02Xh_deviceId", vr);
-  if (edb_cache_get(key, value) < 0)
+  if (kv_get(key, value, NULL, 0) < 0)
     return fetch_vr_info(vr, key, VR_FW_PAGE_3, VR_FW_REG5, 0, deviceId);
   *(unsigned short*)deviceId = (unsigned short)strtoul(value, NULL, 16);
   return 0;

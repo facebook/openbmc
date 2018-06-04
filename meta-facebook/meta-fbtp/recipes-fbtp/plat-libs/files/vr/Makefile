@@ -5,7 +5,7 @@ CFLAGS += -Wall -Werror
 
 libvr.so: vr.c
 	$(CC) $(CFLAGS) -fPIC -c -pthread vr.c
-	$(CC) -ledb -shared -o libvr.so vr.o -lc $(LDFLAGS)
+	$(CC) -lkv -shared -o libvr.so vr.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

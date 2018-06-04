@@ -38,7 +38,6 @@
 #include <sys/stat.h>
 #include <openbmc/gpio.h>
 #include <openbmc/kv.h>
-#include <openbmc/edb.h>
 #include <openbmc/sensor-correction.h>
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -824,7 +823,7 @@ dyn_sensor_thresh_array_init() {
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 2) > 0) {
+  if( kv_get(key,str,NULL,0) >= 0 && (float) (strtof(str, NULL) - 2) > 0) {
     mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 2);
     init_cpu0 = true;
   }else{
@@ -838,7 +837,7 @@ dyn_cpu1_init:
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 2) > 0 ) {
+  if( kv_get(key,str,NULL,0) >= 0 && (float) (strtof(str, NULL) - 2) > 0 ) {
     mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 2);
     init_cpu1 = true;
   }else{
@@ -1627,7 +1626,7 @@ read_cpu_temp(uint8_t snr_num, float *value) {
     //ME no response or PECI command completion code error. Set "NA" in sensor cache.
     strcpy(str, "NA");
   }
-  edb_cache_set(key, str);
+  kv_set(key, str, 0, 0);
 
   // Get CPU temp if BMC got TjMax
   ret = READING_NA;
@@ -1687,11 +1686,11 @@ read_cpu_temp(uint8_t snr_num, float *value) {
   switch (ret) {
     case 0:
       sprintf(str, "%.2f",(float) (dts >> 6));
-      edb_cache_set(key, str);
+      kv_set(key, str, 0, 0);
       break;
     case READING_NA:
       strcpy(str, "NA");
-      edb_cache_set(key, str);
+      kv_set(key, str, 0, 0);
       break;
     case READING_SKIP:
     default:
@@ -1729,14 +1728,13 @@ pal_is_dimm_present_check(uint8_t fru, bool *dimm_sts_list)
   char value[MAX_VALUE_LEN] = {0};
   int i;
   int DIMM_SLOT_CNT = 12;//only SS
-  int ret;
+  size_t ret;
 
   //check dimm info from /mnt/data/sys_config/
   for (i=0; i<DIMM_SLOT_CNT; i++)
   {
     sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
-    ret = kv_get_bin(key, value);
-    if (ret < 4) 
+    if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4)
     {
       syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
       return;
@@ -3050,7 +3048,7 @@ pal_get_key_value(char *key, char *value) {
   if ((index = pal_key_index(key)) < 0)
     return -1;
 
-  return kv_get(key, value);
+  return kv_get(key, value, NULL, KV_FPERSIST);
 }
 
 int
@@ -3066,7 +3064,7 @@ pal_set_key_value(char *key, char *value) {
       return ret;
   }
 
-  return kv_set(key, value);
+  return kv_set(key, value, 0, KV_FPERSIST);
 }
 
 static int
@@ -3089,7 +3087,7 @@ key_func_por_policy (int event, void *arg)
       break;
     case KEY_AFTER_INI:
       // sync to env
-      kv_get("server_por_cfg", value);
+      kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", value);
       system(cmd);
       break;
@@ -3112,7 +3110,7 @@ key_func_lps (int event, void *arg)
       system(cmd);
       break;
     case KEY_AFTER_INI:
-      kv_get("pwr_server_last_state", value);
+      kv_get("pwr_server_last_state", value, NULL, KV_FPERSIST);
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", value);
       system(cmd);
       break;
@@ -3131,7 +3129,7 @@ key_func_ntp (int event, void *arg)
   switch (event) {
     case KEY_BEFORE_SET:
       // Remove old NTP server
-      kv_get("ntp_server", ntp_server_old);
+      kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
       if (strlen(ntp_server_old) > 2) {
         snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
         system(cmd);
@@ -3161,10 +3159,11 @@ static void
 FORCE_ADR() {
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN];
+  size_t len;
   //char vpath[64] = {0};
 
   sprintf(key, "%s", "mb_machine_config");
-  if (kv_get_bin(key, value) < 0) {
+  if (kv_get(key, value, &len, KV_FPERSIST) < 0 || len < 13) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "FORCE_ADR: get mb_machine_config failed for fru %u", fru);
 #endif
@@ -4494,7 +4493,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   } else {
     sprintf(str, "%.2f",*((float*)value));
   }
-  if(edb_cache_set(key, str) < 0) {
+  if(kv_set(key, str, 0, 0) < 0) {
 #ifdef DEBUG
      syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
 #endif
@@ -5129,33 +5128,18 @@ pal_get_fruid_name(uint8_t fru, char *name) {
 int
 pal_set_def_key_value() {
 
-  int ret;
   int i;
   char key[MAX_KEY_LEN] = {0};
-  char kpath[MAX_KEY_PATH_LEN] = {0};
 
-  i = 0;
-  while(strcmp(key_cfg[i].name, LAST_KEY)) {
-
-    memset(key, 0, MAX_KEY_LEN);
-    memset(kpath, 0, MAX_KEY_PATH_LEN);
-
-    sprintf(kpath, KV_STORE, key_cfg[i].name);
-
-    if (access(kpath, F_OK) == -1) {
-
-      if ((ret = kv_set(key_cfg[i].name, key_cfg[i].def_val)) < 0) {
+  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
 #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
 #endif
-      }
     }
-
     if (key_cfg[i].function) {
       key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
     }
-
-    i++;
   }
 
   /* Actions to be taken on Power On Reset */
@@ -5165,14 +5149,14 @@ pal_set_def_key_value() {
     strcpy(key, "server_sel_error");
 
     /* Write the value "1" which means FRU_STATUS_GOOD */
-    ret = pal_set_key_value(key, "1");
+    pal_set_key_value(key, "1");
 
     /* Clear all the sensor health files*/
     memset(key, 0, MAX_KEY_LEN);
     strcpy(key, "server_sensor_health");
 
     /* Write the value "1" which means FRU_STATUS_GOOD */
-    ret = pal_set_key_value(key, "1");
+    pal_set_key_value(key, "1");
   }
 
   return 0;
@@ -5192,7 +5176,7 @@ pal_dump_key_value(void) {
 
   while (strcmp(key_cfg[i].name, LAST_KEY)) {
     printf("%s:", key_cfg[i].name);
-    if ((ret = kv_get(key_cfg[i].name, value)) < 0) {
+    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -6617,7 +6601,7 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
     strcat(str, tstr);
   }
 
-  if (kv_set(key, str) != 0)
+  if (kv_set(key, str, 0, KV_FPERSIST) != 0)
     return completion_code;
 
   completion_code = CC_SUCCESS;
@@ -6630,7 +6614,8 @@ pal_get_syscfg_text (char *text) {
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";
   int num_cpu=2, num_dimm, num_drive=14;
-  int index, ret, surface, bubble;
+  int index, surface, bubble;
+  size_t ret;
   unsigned char board_id, revision_id;
   char **dimm_labels;
   struct dimm_map map[24], temp_map;
@@ -6658,8 +6643,7 @@ pal_get_syscfg_text (char *text) {
     // Processor#
     snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_product_name",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 26) {
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 26) {
       // Read 4 bytes Processor#
       snprintf(&entry[strlen(entry)], 5, "%s", &value[22]);
     }
@@ -6667,8 +6651,7 @@ pal_get_syscfg_text (char *text) {
     // Frequency & Core Number
     snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_basic_info",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 5) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
       sprintf(&entry[strlen(entry)], "/%.1fG/%dc",
         (float) (value[4] << 8 | value[3])/1000, value[0]);
     }
@@ -6723,8 +6706,7 @@ pal_get_syscfg_text (char *text) {
     // Check Present
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_location",
       key_prefix, map[index].index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 1) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
       // Skip if not present
       if (value[0] != 0x01)
         continue;
@@ -6733,8 +6715,7 @@ pal_get_syscfg_text (char *text) {
     // Module Manufacturer ID
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_manufacturer_id",
       key_prefix, map[index].index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 2) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
       switch (value[1]) {
         case 0xce:
           sprintf(&entry[strlen(entry)], "Samsung");
@@ -6754,8 +6735,7 @@ pal_get_syscfg_text (char *text) {
     // Speed
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_speed",
       key_prefix, map[index].index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 6) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
       sprintf(&entry[strlen(entry)], "/%dMhz/%dGB",
         value[1]<<8 | value[0],
         (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024 );
@@ -6772,8 +6752,7 @@ pal_get_syscfg_text (char *text) {
     // Check Present
     snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_location",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 3) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 3) {
       // Skip if not present
       if (value[2] == 0xff)
         continue;
@@ -6782,8 +6761,7 @@ pal_get_syscfg_text (char *text) {
     // Model name
     snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_model_name",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 1) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
       snprintf(&entry[strlen(entry)], ret+1, "%s", value);
     }
 
@@ -7224,12 +7202,12 @@ pal_uart_switch_for_led_ctrl (void)
 void
 pal_set_def_restart_cause(uint8_t slot)
 {
-  char pwr_policy[MAX_VALUE_LEN];
-  char last_pwr_st[MAX_VALUE_LEN];
+  char pwr_policy[MAX_VALUE_LEN] = {0};
+  char last_pwr_st[MAX_VALUE_LEN] = {0};
   if ( FRU_MB == slot )
   {
-    kv_get("pwr_server_last_state", last_pwr_st);
-    kv_get("server_por_cfg", pwr_policy);
+    kv_get("pwr_server_last_state", last_pwr_st, NULL, KV_FPERSIST);
+    kv_get("server_por_cfg", pwr_policy, NULL, KV_FPERSIST);
     if( pal_is_bmc_por() )
     {
       if( !strcmp( pwr_policy, "on") )

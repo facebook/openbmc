@@ -2244,24 +2244,8 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         if (ret < 0)
           return ret;
 
-#ifdef CONFIG_FBY2_RC
-        ret = fby2_get_server_type(slot_id, &server_type);
-        if (ret < 0)
-          return ret;
-        switch (server_type) {
-          case SERVER_TYPE_RC:
-            sleep(3);
-            break;
-          case SERVER_TYPE_TL:
-            msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
-            break;
-          default:
-            sleep(3);
-            break;
-        }
-#else
         msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
-#endif
+
         ret = pal_set_rst_btn(slot_id, 1);
         if (ret < 0)
           return ret;

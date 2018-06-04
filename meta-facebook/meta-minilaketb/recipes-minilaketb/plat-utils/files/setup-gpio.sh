@@ -253,7 +253,7 @@ gpio_set F0 1
 # Identify LED for Slot#1:
 # To use GPIOF1 (41), SCU80[25], SCU90[30], must be 0
 devmem_clear_bit $(scu_addr 80) 25
-gpio_set F1 1
+gpio_export F1
 
 # Identify LED for Slot#4:
 # To use GPIOF2 (42), SCU80[26], SCU90[30],  must be 0

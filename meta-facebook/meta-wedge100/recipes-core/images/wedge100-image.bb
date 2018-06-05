@@ -35,7 +35,7 @@ IMAGE_INSTALL += " \
   spatula \
   trousers \
   tpm-tools \
-  fan-ctrl \
+  fscd  \
   "
 
 IMAGE_FEATURES += " \

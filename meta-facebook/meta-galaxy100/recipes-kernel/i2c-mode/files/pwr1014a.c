@@ -282,6 +282,13 @@ static const i2c_dev_attr_st pwr1014a_attr_table[] = {
     NULL,
     0x7, 0, 8,
   },
+  {
+    "mod_hard_powercycle",
+    "Writing 0 here will powercycle the entire module (NOT the chassis)",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x12, 0, 8,
+  },
 };
 
 static i2c_dev_data_st pwr1014a_data;

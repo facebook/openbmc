@@ -21,6 +21,7 @@ prog="$0"
 
 PWR_SYSTEM_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_cyc_all_n"
 #PWR_USRV_RST_SYSFS="${SCMCPLD_SYSFS_DIR}/come_rst_n"
+ALT_SYSRESET_SYSFS="/sys/bus/i2c/drivers/pwr1014a/2-0040/mod_hard_powercycle"
 
 usage() {
     echo "Usage: $prog <command> [command options]"
@@ -142,6 +143,13 @@ do_reset() {
         echo -n "Power reset whole system ..."
         sleep 1
         echo 0 > $PWR_SYSTEM_SYSFS
+        # In case the previous reset attempt fails, we try the alternative
+        # way - reset the entire module through PWR1014A
+        logger -s "wedge_power.sh reset -s through CPLD failed. Using pwr1014a instead."
+        # Give rsyslog enough time to flush the log
+        sleep 5
+        echo 0 > $ALT_SYSRESET_SYSFS 
+        sleep 1
     else
         if ! wedge_is_us_on; then
             echo "Power resetting microserver that is powered off has no effect."

@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+# Copyright 2018-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+PERSIST_STORE=/mnt/data/kv_store
+REGULAR_STORE=/tmp/cache_store
+
+kv_loc() {
+  local type
+  type=$1
+  if [[ "$type" == *persistent* ]]; then
+    echo "$PERSIST_STORE"
+  else
+    echo "$REGULAR_STORE"
+  fi
+}
+
+kv_get() {
+  local key type loc
+  key=$1
+  type=$2
+  cat "$(kv_loc "$type")/$key" 2> /dev/null
+}
+
+kv_set() {
+  local key value type loc key_file
+  key=$1
+  value=$2
+  type=$3
+  if [ -z "$key" ]; then
+    return 1
+  fi
+  loc=$(kv_loc "$type")
+  key_file="$loc/$key"
+  mkdir -p "$(dirname "$key_file")"
+
+  if [[ "$type" == *create*  ]]; then
+    if [ -e "$key_file" ]; then
+      return 1
+    fi
+  fi
+
+  echo -n "$value" > "$key_file"
+  return 0
+}
+
+if [[ "$0" == "${BASH_SOURCE[0]}"  ]]; then
+  if [[ "$1" == "get"  ]]; then
+    val=$(kv_get "$2" "$3")
+    echo -n "$val"
+    exit 0
+  elif [[ "$1" == "set"  ]]; then
+    kv_set "$2" "$3" "$4"
+    if [ "$?" != 0 ]; then
+      echo "kv_set failed"
+      exit -1
+    fi
+    exit 0
+  fi
+  exit -1
+fi

@@ -25,11 +25,32 @@ LIC_FILES_CHKSUM = "file://kv.c;beginline=4;endline=16;md5=da35978751a9d71b73679
 SRC_URI = "file://Makefile \
            file://kv.c \
            file://kv.h \
+           file://kv \
+           file://kv.py \
           "
 
 S = "${WORKDIR}"
 
+RDEPENDS_${PN} += "python3-core bash"
+inherit distutils3
+python() {
+  if d.getVar('DISTRO_CODENAME', True) == 'rocko':
+    d.setVar('INHERIT', 'python3-dir')
+  else:
+    d.setVar('INHERIT', 'python-dir')
+}
+
+do_compile() {
+  make
+}
+
 do_install() {
+    install -d ${D}${bindir}
+    install -m 755 kv ${D}${bindir}/kv
+
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    install -m 644 kv.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+
 	  install -d ${D}${libdir}
     install -m 0644 libkv.so ${D}${libdir}/libkv.so
 
@@ -37,5 +58,5 @@ do_install() {
     install -m 0644 kv.h ${D}${includedir}/openbmc/kv.h
 }
 
-FILES_${PN} = "${libdir}/libkv.so"
+FILES_${PN} = "${libdir}/libkv.so ${bindir}/kv ${PYTHON_SITEPACKAGES_DIR}/kv.py"
 FILES_${PN}-dev = "${includedir}/openbmc/kv.h"

@@ -61,7 +61,6 @@
 
 static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 static uint8_t m_pos = 0xff;
-static uint8_t m_fan_latch = 0;
 
 static int
 get_handsw_pos(uint8_t *pos) {
@@ -669,9 +668,6 @@ led_sync_handler() {
           g_sync_led[slot] = 1;
           pal_set_led(slot, LED_OFF);
           pal_set_id_led(slot, ID_LED_ON);
-          if (m_fan_latch && pal_is_hsvc_ongoing(slot)) {
-            pal_set_slot_id_led(slot, LED_ON); // Slot ID LED on top of each TL
-          }
         } else {
           g_sync_led[slot] = 0;
         }
@@ -682,7 +678,6 @@ led_sync_handler() {
       for (slot = 1; slot <=MAX_NUM_SLOTS; slot++) {
         if (id_arr[slot]) {
           pal_set_id_led(slot, ID_LED_OFF);
-          pal_set_slot_id_led(slot, LED_OFF); // Slot ID LED on top of each TL
         }
       }
 
@@ -699,89 +694,6 @@ led_sync_handler() {
   return 0;
 }
 
-// Thread to handle Seat LED state
-static void *
-seat_led_handler() {
-  int ret;
-  uint8_t slot, val;
-  int ident;
-
-  while (1) {
-    ret = pal_get_fan_latch(&val);
-    if (ret < 0) {
-      msleep(500);
-      continue;
-    }
-    m_fan_latch = val;
-
-    // Handle Sled fully seated
-    if (val) { // SLED is pull out
-      pal_set_sled_led(LED_ON);
-    } else {   // SLED is fully pull in
-      ident = 0;
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
-        if (pal_is_hsvc_ongoing(slot)) {
-          ident = 1;
-        }
-      }
-
-      // Start blinking the SEAT LED
-      if (1 == ident) {
-        pal_set_sled_led(LED_ON);
-        msleep(LED_ON_TIME_IDENTIFY);
-
-        pal_set_sled_led(LED_OFF);
-        msleep(LED_OFF_TIME_IDENTIFY);
-        continue;
-      } else {
-        pal_set_sled_led(LED_OFF);
-      }
-    }
-
-    sleep(1);
-  }
-
-  return 0;
-}
-
-// Thread to handle Slot ID LED state
-static void *
-slot_id_led_handler() {
-  int slot;
-  uint8_t p_fan_latch;
-  int ret_slot_12v_on;
-  int ret_slot_prsnt;
-  uint8_t status_slot_12v_on;
-  uint8_t status_slot_prsnt;
-
-  while(1) {
-    p_fan_latch = m_fan_latch;
-
-    if(p_fan_latch) {  // SLED is pulled out
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        if(!pal_is_hsvc_ongoing(slot)) {
-          ret_slot_12v_on = pal_is_server_12v_on(slot, &status_slot_12v_on);
-          ret_slot_prsnt = pal_is_fru_prsnt(slot, &status_slot_prsnt);
-          if (ret_slot_12v_on < 0 || ret_slot_prsnt < 0)
-            continue;
-          if (status_slot_prsnt != 1 || status_slot_12v_on != 1)
-            pal_set_slot_id_led(slot, LED_OFF); //Turn slot ID LED off
-          else
-            pal_set_slot_id_led(slot, LED_ON); //Turn slot ID LED on
-        }
-      }
-    } else { // SLED is fully pulled in
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        if(!pal_is_hsvc_ongoing(slot))
-          pal_set_slot_id_led(slot, LED_OFF); //Turn slot ID LED off
-      }
-    }
-
-    sleep(1);
-  }
-
-  return 0;
-}
 
 int
 main (int argc, char * const argv[]) {
@@ -791,8 +703,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_ts;
   pthread_t tid_sync_led;
   pthread_t tid_led;
-  pthread_t tid_seat_led;
-  pthread_t tid_slot_id_led;
+
   int rc;
   int pid_file;
 
@@ -838,25 +749,12 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (pthread_create(&tid_seat_led, NULL, seat_led_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for seat led error\n");
-    exit(1);
-  }
-
-  if (pthread_create(&tid_slot_id_led, NULL, slot_id_led_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for slot id led error\n");
-    exit(1);
-  }
-
-
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_ts, NULL);
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_led, NULL);
-  pthread_join(tid_seat_led, NULL);
-  pthread_join(tid_slot_id_led, NULL);
 
   return 0;
 }

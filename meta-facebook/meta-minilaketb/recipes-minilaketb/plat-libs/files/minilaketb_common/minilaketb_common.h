@@ -25,14 +25,11 @@
 extern "C" {
 #endif
 
-#define MAX_NUM_FRUS 5
+#define MAX_NUM_FRUS 2
 enum {
   FRU_ALL   = 0,
   FRU_SLOT1 = 1,
-  FRU_SLOT2 = 2,
-  FRU_SLOT3 = 3,
-  FRU_SLOT4 = 4,
-  FRU_SPB   = 5,
+  FRU_SPB   = 2,
 };
 
 enum {
@@ -44,9 +41,6 @@ enum {
 
 enum {
   IPMB_BUS_SLOT1 = 2,
-  IPMB_BUS_SLOT2 = 3,
-  IPMB_BUS_SLOT3 = 5,
-  IPMB_BUS_SLOT4 = 7,
 };
 
 enum {
@@ -96,49 +90,29 @@ typedef struct {
 #define GPIO_PE_BUFF_OE_3_R_N              15
 #define GPIO_PWR_BTN                       24
 #define GPIO_PWR_SLOT1_BTN_N               25
-#define GPIO_PWR_SLOT2_BTN_N               27
-#define GPIO_PWR_SLOT3_BTN_N               29
-#define GPIO_PWR_SLOT4_BTN_N               31
 #define GPIO_UART_SEL0                     32
 #define GPIO_UART_SEL1                     33
 #define GPIO_UART_SEL2                     34
 #define GPIO_UART_RX                       35
 #define GPIO_SYSTEM_ID1_LED_N              40
-#define GPIO_SYSTEM_ID2_LED_N              41
-#define GPIO_SYSTEM_ID3_LED_N              42
-#define GPIO_SYSTEM_ID4_LED_N              43
 #define GPIO_POSTCODE_0                    48
 #define GPIO_POSTCODE_1                    49
 #define GPIO_POSTCODE_2                    50
 #define GPIO_POSTCODE_3                    51
 #define GPIO_FAN_LATCH_DETECT              61
 #define GPIO_SLOT1_POWER_EN                64
-#define GPIO_SLOT2_POWER_EN                65
-#define GPIO_SLOT3_POWER_EN                66
-#define GPIO_SLOT4_POWER_EN                67
 #define GPIO_CLK_BUFF1_PWR_EN_N            72
 #define GPIO_CLK_BUFF2_PWR_EN_N            73
 #define GPIO_VGA_SW0                       74
 #define GPIO_VGA_SW1                       75
 #define GPIO_PWR1_LED                      96
-#define GPIO_PWR2_LED                      97
-#define GPIO_PWR3_LED                      98
-#define GPIO_PWR4_LED                      99
+
 // change I2C_SLOT1_ALERT_N form GPION2(106) to GPIOB0
 #define GPIO_I2C_SLOT1_ALERT_N            8
-#define GPIO_I2C_SLOT2_ALERT_N            8
-#define GPIO_I2C_SLOT3_ALERT_N            8
-#define GPIO_I2C_SLOT4_ALERT_N            8
 // change GPIO_P12V_STBY_SLOT1_EN  from GPIOO4 to GPIOZ0
 #define GPIO_P12V_STBY_SLOT1_EN           200
-#define GPIO_P12V_STBY_SLOT2_EN           200
-#define GPIO_P12V_STBY_SLOT3_EN           200
-#define GPIO_P12V_STBY_SLOT4_EN           200
 // END : GPIO_P12V_STBY_SLOT1_EN  from GPIOO4 to GPIOZ0
-#define GPIO_SLOT1_EJECTOR_LATCH_DETECT_N 120
-#define GPIO_SLOT2_EJECTOR_LATCH_DETECT_N 121
-#define GPIO_SLOT3_EJECTOR_LATCH_DETECT_N 122
-#define GPIO_SLOT4_EJECTOR_LATCH_DETECT_N 123
+
 #define GPIO_POSTCODE_4                   124
 #define GPIO_POSTCODE_5                   125
 #define GPIO_POSTCODE_6                   126
@@ -146,9 +120,6 @@ typedef struct {
 /*change DBG_CARD_PRSNT form GPIOR3 to GPIOE4*/
 #define GPIO_DBG_CARD_PRSNT               36
 #define GPIO_RST_SLOT1_SYS_RESET_N        144
-#define GPIO_RST_SLOT2_SYS_RESET_N        145
-#define GPIO_RST_SLOT3_SYS_RESET_N        146
-#define GPIO_RST_SLOT4_SYS_RESET_N        147
 #define GPIO_BOARD_REV_ID0                192
 #define GPIO_BOARD_REV_ID1                193
 #define GPIO_BOARD_REV_ID2                194
@@ -164,11 +135,7 @@ typedef struct {
 #define GPIOAB5_RESERVED_PIN              221 //GPIOAB5 is reserved and could not be used
 #define GPIOAB6_RESERVED_PIN              222 //GPIOAB6 is reserved and could not be used
 #define GPIOAB7_RESERVED_PIN              223 //GPIOAB7 is reserved and could not be used
-#define GPIO_SLOT1_LED                    224
-#define GPIO_SLOT2_LED                    225
-#define GPIO_SLOT3_LED                    226
-#define GPIO_SLOT4_LED                    227
-#define GPIO_SLED_SEATED_N                231 //GPIOAC7
+
 
 int minilaketb_common_fru_name(uint8_t fru, char *str);
 int minilaketb_common_fru_id(char *str, uint8_t *fru);

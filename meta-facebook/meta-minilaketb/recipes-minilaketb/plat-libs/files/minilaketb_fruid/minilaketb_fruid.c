@@ -33,15 +33,6 @@ plat_get_ipmb_bus_id(uint8_t slot_id) {
   case FRU_SLOT1:
     bus_id = IPMB_BUS_SLOT1;
     break;
-  case FRU_SLOT2:
-    bus_id = IPMB_BUS_SLOT2;
-    break;
-  case FRU_SLOT3:
-    bus_id = IPMB_BUS_SLOT3;
-    break;
-  case FRU_SLOT4:
-    bus_id = IPMB_BUS_SLOT4;
-    break;
   default:
     bus_id = -1;
     break;
@@ -59,15 +50,6 @@ minilaketb_get_fruid_path(uint8_t fru, char *path) {
   switch(fru) {
     case FRU_SLOT1:
       sprintf(fname, "slot1");
-      break;
-    case FRU_SLOT2:
-      sprintf(fname, "slot2");
-      break;
-    case FRU_SLOT3:
-      sprintf(fname, "slot3");
-      break;
-    case FRU_SLOT4:
-      sprintf(fname, "slot4");
       break;
     case FRU_SPB:
       sprintf(fname, "spb");
@@ -90,9 +72,6 @@ minilaketb_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -126,9 +105,6 @@ minilaketb_get_fruid_name(uint8_t fru, char *name) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:

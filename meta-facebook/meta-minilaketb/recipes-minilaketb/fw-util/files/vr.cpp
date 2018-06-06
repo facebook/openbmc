@@ -205,6 +205,3 @@ class VrComponent : public Component {
 };
 
 VrComponent vr1("slot1", "vr", 1);
-VrComponent vr2("slot2", "vr", 2);
-VrComponent vr3("slot3", "vr", 3);
-VrComponent vr4("slot4", "vr", 4);

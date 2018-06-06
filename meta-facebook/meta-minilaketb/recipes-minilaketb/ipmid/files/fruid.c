@@ -69,15 +69,6 @@ plat_get_ipmb_bus_id(uint8_t slot_id) {
   case FRU_SLOT1:
     bus_id = IPMB_BUS_SLOT1;
     break;
-  case FRU_SLOT2:
-    bus_id = IPMB_BUS_SLOT2;
-    break;
-  case FRU_SLOT3:
-    bus_id = IPMB_BUS_SLOT3;
-    break;
-  case FRU_SLOT4:
-    bus_id = IPMB_BUS_SLOT4;
-    break;
   default:
     bus_id = -1;
     break;
@@ -152,9 +143,6 @@ int plat_fruid_init(void) {
 
     switch(fru) {
       case FRU_SLOT1:
-      case FRU_SLOT2:
-      case FRU_SLOT3:
-      case FRU_SLOT4:
         switch(plat_get_slot_type(fru))
         {
            case SLOT_TYPE_SERVER:
@@ -174,7 +162,7 @@ int plat_fruid_init(void) {
       case FRU_SPB:
         ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
         break;
-        
+
       default:
         break;
     }

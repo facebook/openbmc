@@ -464,7 +464,7 @@ enum ina_register {
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN };
 
 void
 msleep(int msec) {
@@ -1039,15 +1039,6 @@ switch(fru) {
   case FRU_SLOT1:
     sprintf(fru_name, "%s", "slot1");
     break;
-  case FRU_SLOT2:
-    sprintf(fru_name, "%s", "slot2");
-    break;
-  case FRU_SLOT3:
-    sprintf(fru_name, "%s", "slot3");
-    break;
-  case FRU_SLOT4:
-    sprintf(fru_name, "%s", "slot4");
-    break;
   case FRU_SPB:
     sprintf(fru_name, "%s", "spb");
     break;
@@ -1127,9 +1118,6 @@ minilaketb_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -1211,9 +1199,6 @@ minilaketb_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
          case SLOT_TYPE_SERVER:
@@ -1333,9 +1318,6 @@ minilaketb_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, flo
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -1363,9 +1345,6 @@ minilaketb_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -1535,9 +1514,6 @@ minilaketb_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
   switch (fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
 
       switch(minilaketb_get_slot_type(fru))
       {

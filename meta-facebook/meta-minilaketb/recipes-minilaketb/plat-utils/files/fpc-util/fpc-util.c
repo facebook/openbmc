@@ -31,8 +31,7 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: fpc-util <slot1|slot2|slot3|slot4> --usb\n");
-  printf("       fpc-util <slot1|slot2|slot3|slot4|sled> --identify <on/off>\n");
+  printf("       fpc-util <slot1> --identify <on/off>\n");
 }
 
 int
@@ -47,24 +46,11 @@ main(int argc, char **argv) {
 
   if (!strcmp(argv[1], "slot1")) {
     slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = 2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = 3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = 4;
-  } else if (!strcmp(argv[1] , "sled")) {
-    slot_id = 0;
   } else {
     goto err_exit;
   }
 
-  if (!strcmp(argv[2], "--usb")) {
-    printf("fpc-util: switching USB channel to slot%d\n", slot_id);
-    printf("T6A doesn't have USB_SW GPIO!!!");
-    return 0;
-   // return pal_switch_usb_mux(slot_id);
-  } else if (!strcmp(argv[2], "--identify")) {
+  if (!strcmp(argv[2], "--identify")) {
     if (argc != 4) {
       goto err_exit;
     }

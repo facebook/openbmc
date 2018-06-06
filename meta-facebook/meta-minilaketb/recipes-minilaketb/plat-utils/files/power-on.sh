@@ -74,7 +74,7 @@ check_por_config()
 sync_date()
 {
   if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-    for i in 1 2 3 4
+    for i in 1
     do
       if [[ $(is_server_prsnt $i) == "1" && $(get_slot_type $i) == "0" ]] ; then
         # Use standard IPMI command 'get-sel-time' to read RTC time
@@ -103,18 +103,4 @@ if [ $(is_bmc_por) -eq 1 ]; then
     power-util slot1 on
   fi
 
-  check_por_config 2
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 2) == "1" ] && [ $(get_slot_type 2) == "0" ] ; then
-    power-util slot2 on
-  fi
-
-  check_por_config 3
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) == "0" ] ; then
-    power-util slot3 on
-  fi
-
-  check_por_config 4
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 4) == "1" ] && [ $(get_slot_type 4) == "0" ] ; then
-    power-util slot4 on
-  fi
 fi

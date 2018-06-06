@@ -21,35 +21,15 @@ SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
             file://FSC_MINILAKETB_PVT_4TL_config.json \
             file://FSC_MINILAKETB_PVT_4TL_zone1.fsc \
-            file://FSC_MINILAKETB_PVT_2GP_2TL_config.json \
-            file://FSC_MINILAKETB_PVT_2GP_2TL_zone1.fsc \
-            file://FSC_MINILAKETB_PVT_2CF_2TL_config.json \
-            file://FSC_MINILAKETB_PVT_2CF_2TL_zone1.fsc \
-            file://FSC_FBRC_EVT_4RC_config.json \
-            file://FSC_FBRC_EVT_4RC_zone1.fsc \
-            file://FSC_FBEP_EVT_4EP_config.json \
-            file://FSC_FBEP_EVT_4EP_zone1.fsc \
-            file://FSC_FBEP_EVT_2GP_2EP_config.json \
-            file://FSC_FBEP_EVT_2GP_2EP_zone1.fsc \
             file://fsc_board.py \
            "
 
 FSC_BIN_FILES += "init_pwm.sh"
 
 FSC_CONFIG += "FSC_MINILAKETB_PVT_4TL_config.json \
-               FSC_MINILAKETB_PVT_2GP_2TL_config.json \
-               FSC_MINILAKETB_PVT_2CF_2TL_config.json \
-               FSC_FBRC_EVT_4RC_config.json \
-               FSC_FBEP_EVT_4EP_config.json \
-               FSC_FBEP_EVT_2GP_2EP_config.json \
               "
 
 FSC_ZONE_CONFIG +="FSC_MINILAKETB_PVT_4TL_zone1.fsc \
-                   FSC_MINILAKETB_PVT_2GP_2TL_zone1.fsc \
-                   FSC_MINILAKETB_PVT_2CF_2TL_zone1.fsc \
-                   FSC_FBRC_EVT_4RC_zone1.fsc \
-                   FSC_FBEP_EVT_4EP_zone1.fsc \
-                   FSC_FBEP_EVT_2GP_2EP_zone1.fsc \
                   "
 
 do_install_append() {

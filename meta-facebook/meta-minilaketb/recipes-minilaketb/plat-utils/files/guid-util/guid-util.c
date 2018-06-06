@@ -30,8 +30,8 @@
 
 static void
 print_usage_help(void) {
-  printf("Usage: guid-util <slot1|slot2|slot3|slot4|spb> <dev|sys> <--get>\n");
-  printf("       guid-util <slot1|slot2|slot3|slot4|spb> <dev|sys> <--set> <uid>\n");
+  printf("Usage: guid-util <slot1|spb> <dev|sys> <--get>\n");
+  printf("       guid-util <slot1|spb> <dev|sys> <--set> <uid>\n");
 }
 
 int
@@ -50,12 +50,6 @@ main(int argc, char **argv) {
   // Derive slot_id from first parameter
   if (!strcmp(argv[1], "slot1")) {
     slot_id = FRU_SLOT1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = FRU_SLOT2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = FRU_SLOT3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = FRU_SLOT4;
   } else if (!strcmp(argv[1] , "spb")) {
     slot_id = FRU_SPB;
   } else {
@@ -64,9 +58,6 @@ main(int argc, char **argv) {
 
   switch (slot_id) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       // Check SLOT present and SLOT type
       ret = pal_is_fru_prsnt(slot_id, &status);
       if (ret < 0) {
@@ -86,7 +77,7 @@ main(int argc, char **argv) {
       if (!strcmp(argv[2], "dev")) {
         printf("There is only system GUID on each slots.\n");
         goto err_exit;
-      }      
+      }
       break;
     case FRU_SPB:
       if (!strcmp(argv[2], "sys")) {

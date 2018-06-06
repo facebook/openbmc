@@ -78,7 +78,7 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-const static uint8_t gpio_bic_update_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
+const static uint8_t gpio_bic_update_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N };
 
 // Helper Functions
 static void
@@ -209,15 +209,6 @@ get_ipmb_bus_id(uint8_t slot_id) {
   switch(slot_id) {
   case FRU_SLOT1:
     bus_id = IPMB_BUS_SLOT1;
-    break;
-  case FRU_SLOT2:
-    bus_id = IPMB_BUS_SLOT2;
-    break;
-  case FRU_SLOT3:
-    bus_id = IPMB_BUS_SLOT3;
-    break;
-  case FRU_SLOT4:
-    bus_id = IPMB_BUS_SLOT4;
     break;
   default:
     bus_id = -1;
@@ -702,15 +693,6 @@ _update_bic_main(uint8_t slot_id, char *path) {
      case FRU_SLOT1:
        system("devmem 0x1e78a0c4 w 0xFFF77304"); // change to bus 3
        break;
-     case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF77304");
-       break;
-     case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF77304");
-       break;
-     case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF77304");
-       break;
      default:
        syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
        goto error_exit;
@@ -964,15 +946,6 @@ update_done:
   {
      case FRU_SLOT1:
        system("devmem 0x1e78a0c4 w 0xFFF5E700");  //change to bus 3
-       break;
-     case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF5E700");
-       break;
-     case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF5E700");
-       break;
-     case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF5E700");
        break;
      default:
        syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);

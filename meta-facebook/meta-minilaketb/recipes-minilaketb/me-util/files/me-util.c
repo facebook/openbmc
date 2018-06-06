@@ -43,8 +43,8 @@ static total_retry = 0;
 
 static void
 print_usage_help(void) {
-  printf("Usage: me-util <slot1|slot2|slot3|slot4> <[0..n]data_bytes_to_send>\n");
-  printf("Usage: me-util <slot1|slot2|slot3|slot4> <--file> <path>\n");
+  printf("Usage: me-util <slot1> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: me-util <slot1> <--file> <path>\n");
 }
 
 static int
@@ -156,12 +156,6 @@ main(int argc, char **argv) {
 
   if (!strcmp(argv[1], "slot1")) {
     slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = 2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = 3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = 4;
   } else {
     goto err_exit;
   }

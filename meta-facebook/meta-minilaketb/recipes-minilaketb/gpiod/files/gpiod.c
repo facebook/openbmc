@@ -35,7 +35,7 @@
 #include <facebook/bic.h>
 #include <facebook/minilaketb_gpio.h>
 
-#define MAX_NUM_SLOTS       4
+#define MAX_NUM_SLOTS       1
 #define DELAY_GPIOD_READ    1000000
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
@@ -161,15 +161,6 @@ get_struct_gpio_pin(uint8_t fru) {
   switch (fru) {
     case FRU_SLOT1:
       gpios = gpio_slot1;
-      break;
-    case FRU_SLOT2:
-      gpios = gpio_slot2;
-      break;
-    case FRU_SLOT3:
-      gpios = gpio_slot3;
-      break;
-    case FRU_SLOT4:
-      gpios = gpio_slot4;
       break;
     default:
       syslog(LOG_WARNING, "get_struct_gpio_pin: Wrong SLOT ID %d\n", fru);

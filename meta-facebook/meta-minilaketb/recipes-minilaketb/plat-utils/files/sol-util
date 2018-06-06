@@ -21,27 +21,18 @@
 . /usr/local/fbpackages/utils/ast-functions
 LOGFILE="/var/log/mTerm_$1.log"
 
-if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
+if [ "$1" == "slot1" ]
 then
   SLOT=$1
 else
-  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
-  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
+  echo "Usage: sol-util [ slot1 ]"
+  echo "       sol-util [ slot1 ] --history"
   exit -1
 fi
 
 case $SLOT in
     slot1)
       SLOT_NUM=1
-      ;;
-    slot2)
-      SLOT_NUM=2
-      ;;
-    slot3)
-      SLOT_NUM=3
-      ;;
-    slot4)
-      SLOT_NUM=4
       ;;
 esac
 

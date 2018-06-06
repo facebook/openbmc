@@ -41,7 +41,7 @@
 #include <facebook/minilaketb_common.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
-#define MAX_NUM_SLOTS       4
+#define MAX_NUM_SLOTS       1
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
@@ -57,14 +57,7 @@ static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
 static pthread_mutex_t hsvc_mutex[MAX_NODES + 1];
 static struct timespec last_ejector_ts[MAX_NODES + 1];
 
-char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
-  // slot1, slot2, slot3, slot4
- "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal", "",
- "", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion", "",
- "", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF",
-};
-
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN };
 
 typedef struct {
   uint8_t def_val;
@@ -221,49 +214,6 @@ static void gpio_event_handle(gpio_poll_st *gp)
       system(cmd);
     }
   }
-  else if (gp->gs.gs_gpio == gpio_num("GPIOP0") || gp->gs.gs_gpio == gpio_num("GPIOP1") ||
-           gp->gs.gs_gpio == gpio_num("GPIOP2") || gp->gs.gs_gpio == gpio_num("GPIOP3")
-          ) //  GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N
-  {
-    slot_id = (gp->gs.gs_gpio - GPIO_SLOT1_EJECTOR_LATCH_DETECT_N) + 1;
-    if (gp->value == 1) { // low to high
-      clock_gettime(CLOCK_MONOTONIC, &ts);
-      if (last_ejector_ts[slot_id].tv_sec && ((ts.tv_sec - last_ejector_ts[slot_id].tv_sec) < 5)) {
-        return;
-      }
-      last_ejector_ts[slot_id].tv_sec = ts.tv_sec;
-
-      sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
-      read_device(vpath, &value);
-
-#if DEBUG_ME_EJECTOR_LOG // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
-      syslog(LOG_CRIT,"GPIO_SLOT%d_EJECTOR_LATCH_DETECT_N is \"1\" and SLOT_12v is ON", slot_id);
-#endif
-
-      // HOT SERVER event would be detected when SLED is pulled out
-      if (value) {
-          log_gpio_change(gp, 0);
-#if 0
-          sprintf(cmd, "/usr/local/bin/power-util slot%u graceful-shutdown", slot_id);
-          system(cmd);
-
-          ret = pal_is_server_12v_on(slot_id, &Cur12V_value);
-          if (ret < 0)
-             printf("%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
-          if (Cur12V_value) {
-             // Log SLOT Removal
-             sprintf(str, "Server may be removed without 12V off, Action : 12V off to slot%u",slot_id);
-             syslog(LOG_CRIT, str);
-
-             // Active 12V off to protect server/device board
-             memset(cmd, 0, sizeof(cmd));
-             sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-off", slot_id);
-             system(cmd);
-          }
-#endif
-      }
-    } //End of low to high
-  } //End of GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N
 
   else if (gp->gs.gs_gpio == gpio_num("GPIOO3")) {
     if (pal_get_hand_sw(&slot_id)) {

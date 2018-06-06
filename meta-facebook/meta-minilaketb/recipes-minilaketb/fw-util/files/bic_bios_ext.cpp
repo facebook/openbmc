@@ -92,8 +92,5 @@ int BiosExtComponent::dump(string image) {
 }
 
 BiosExtComponent bios1("slot1", "bios", 1);
-BiosExtComponent bios2("slot2", "bios", 2);
-BiosExtComponent bios3("slot3", "bios", 3);
-BiosExtComponent bios4("slot4", "bios", 4);
 
 #endif

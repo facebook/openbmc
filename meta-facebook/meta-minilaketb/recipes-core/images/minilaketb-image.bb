@@ -43,7 +43,6 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   ipmi-util \
   guid-util \
-  bios-util \
   threshold-util \
   "
 

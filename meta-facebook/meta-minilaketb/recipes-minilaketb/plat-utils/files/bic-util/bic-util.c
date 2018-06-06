@@ -68,8 +68,8 @@ static void
 print_usage_help(void) {
   int i;
 
-  printf("Usage: bic-util <slot1|slot2|slot3|slot4> <[0..n]data_bytes_to_send>\n");
-  printf("Usage: bic-util <slot1|slot2|slot3|slot4> <option>\n");
+  printf("Usage: bic-util <slot1> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: bic-util <slot1> <option>\n");
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
@@ -540,12 +540,6 @@ main(int argc, char **argv) {
 
   if (!strcmp(argv[1], "slot1")) {
     slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = 2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = 3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = 4;
   } else {
     goto err_exit;
   }

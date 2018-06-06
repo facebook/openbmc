@@ -43,7 +43,7 @@
 
 #define MINILAKETB_PLATFORM_NAME "MINILAKETB"
 #define LAST_KEY "last_key"
-#define MINILAKETB_MAX_NUM_SLOTS 4
+#define MINILAKETB_MAX_NUM_SLOTS 1
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
@@ -110,18 +110,16 @@
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
 
-const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
-const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
-const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID2_LED_N, GPIO_SYSTEM_ID3_LED_N, GPIO_SYSTEM_ID4_LED_N };  // Identify LED
-const static uint8_t gpio_slot_id_led[] = { 0,  GPIO_SLOT1_LED, GPIO_SLOT2_LED, GPIO_SLOT3_LED, GPIO_SLOT4_LED }; // Slot ID LED on each TL card
-const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
-const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
-const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
-const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N};
+const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N };
+const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED };      // TODO: In DVT, Map to ML PWR LED
+const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N };  // Identify LED
+const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N };
+const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N };
+const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN };
+const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN };
 
-const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb";
-const char pal_server_list[] = "slot1, slot2, slot3, slot4";
+const char pal_fru_list[] = "all, slot1, spb";
+const char pal_server_list[] = "slot1";
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
@@ -175,90 +173,34 @@ static uint8_t otp_server_12v_off_flag[MAX_NODES+1] = {0};
 
 char * key_list[] = {
 "pwr_server1_last_state",
-"pwr_server2_last_state",
-"pwr_server3_last_state",
-"pwr_server4_last_state",
 "sysfw_ver_slot1",
-"sysfw_ver_slot2",
-"sysfw_ver_slot3",
-"sysfw_ver_slot4",
 "identify_sled",
 "identify_slot1",
-"identify_slot2",
-"identify_slot3",
-"identify_slot4",
 "timestamp_sled",
 "slot1_por_cfg",
-"slot2_por_cfg",
-"slot3_por_cfg",
-"slot4_por_cfg",
 "slot1_sensor_health",
-"slot2_sensor_health",
-"slot3_sensor_health",
-"slot4_sensor_health",
 "spb_sensor_health",
-"nic_sensor_health",
 "slot1_sel_error",
-"slot2_sel_error",
-"slot3_sel_error",
-"slot4_sel_error",
 "slot1_boot_order",
-"slot2_boot_order",
-"slot3_boot_order",
-"slot4_boot_order",
 "slot1_cpu_ppin",
-"slot2_cpu_ppin",
-"slot3_cpu_ppin",
-"slot4_cpu_ppin",
 "fru1_restart_cause",
-"fru2_restart_cause",
-"fru3_restart_cause",
-"fru4_restart_cause",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
 
 char * def_val_list[] = {
   "on", /* pwr_server1_last_state */
-  "on", /* pwr_server2_last_state */
-  "on", /* pwr_server3_last_state */
-  "on", /* pwr_server4_last_state */
   "0", /* sysfw_ver_slot1 */
-  "0", /* sysfw_ver_slot2 */
-  "0", /* sysfw_ver_slot3 */
-  "0", /* sysfw_ver_slot4 */
   "off", /* identify_sled */
   "off", /* identify_slot1 */
-  "off", /* identify_slot2 */
-  "off", /* identify_slot3 */
-  "off", /* identify_slot4 */
   "0", /* timestamp_sled */
   "lps", /* slot1_por_cfg */
-  "lps", /* slot2_por_cfg */
-  "lps", /* slot3_por_cfg */
-  "lps", /* slot4_por_cfg */
   "1", /* slot1_sensor_health */
-  "1", /* slot2_sensor_health */
-  "1", /* slot3_sensor_health */
-  "1", /* slot4_sensor_health */
   "1", /* spb_sensor_health */
-  "1", /* nic_sensor_health */
   "1", /* slot1_sel_error */
-  "1", /* slot2_sel_error */
-  "1", /* slot3_sel_error */
-  "1", /* slot4_sel_error */
   "0000000", /* slot1_boot_order */
-  "0000000", /* slot2_boot_order */
-  "0000000", /* slot3_boot_order */
-  "0000000", /* slot4_boot_order */
   "0", /* slot1_cpu_ppin */
-  "0", /* slot2_cpu_ppin */
-  "0", /* slot3_cpu_ppin */
-  "0", /* slot4_cpu_ppin */
   "3", /* fru1_restart_cause */
-  "3", /* fru2_restart_cause */
-  "3", /* fru3_restart_cause */
-  "3", /* fru4_restart_cause */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -508,15 +450,6 @@ pal_get_ipmb_bus_id(uint8_t slot_id) {
   case FRU_SLOT1:
     bus_id = IPMB_BUS_SLOT1;
     break;
-  case FRU_SLOT2:
-    bus_id = IPMB_BUS_SLOT2;
-    break;
-  case FRU_SLOT3:
-    bus_id = IPMB_BUS_SLOT3;
-    break;
-  case FRU_SLOT4:
-    bus_id = IPMB_BUS_SLOT4;
-    break;
   default:
     bus_id = -1;
     break;
@@ -586,7 +519,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
   char path[64] = {0};
   char *val;
 
-  if (slot < 1 || slot > 4) {
+  if (slot != 1) {
     return -1;
   }
 
@@ -620,9 +553,6 @@ int pal_fruid_init(uint8_t slot_id) {
 
   switch(slot_id) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(slot_id))
       {
          case SLOT_TYPE_SERVER:
@@ -834,20 +764,11 @@ pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
   rev = _get_spb_rev();
   switch(slot_id) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
       if (rev < SPB_REV_PVT) {
         sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_0_R_N);
         sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_1_R_N);
       }
       sprintf(v3path, GPIO_VAL, GPIO_CLK_BUFF1_PWR_EN_N);
-      break;
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      if (rev < SPB_REV_PVT) {
-        sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_2_R_N);
-        sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_3_R_N);
-      }
-      sprintf(v3path, GPIO_VAL, GPIO_CLK_BUFF2_PWR_EN_N);
       break;
     default:
       return -1;
@@ -1307,9 +1228,6 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       //XG1 doesn't have present pin
       *status = 1;
     case FRU_SPB:
@@ -1330,9 +1248,6 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -1674,15 +1589,6 @@ pal_get_hand_sw_physically(uint8_t *pos) {
   case 0:
     *pos = HAND_SW_SERVER1;
     break;
-  case 1:
-    *pos = HAND_SW_SERVER2;
-    break;
-  case 2:
-    *pos = HAND_SW_SERVER3;
-    break;
-  case 3:
-    *pos = HAND_SW_SERVER4;
-    break;
   default:
     *pos = HAND_SW_BMC;
     break;
@@ -1751,26 +1657,6 @@ pal_get_rst_btn(uint8_t *status) {
   return 0;
 }
 
-// Update the SLED LED for sled fully seated
-int
-pal_set_sled_led(uint8_t status) {
-  char path[64] = {0};
-
-  memset(path, 0, sizeof(path));
-  sprintf(path, GPIO_VAL, GPIO_SLED_SEATED_N);
-  if (status) {
-    if (write_device(path, "1")) {
-      return -1;
-    }
-  }
-  else {
-    if (write_device(path, "0")) {
-      return -1;
-    }
-  }
-
-  return 0;
-}
 
 // Update the LED for the given slot with the status
 int
@@ -1778,7 +1664,7 @@ pal_set_led(uint8_t slot, uint8_t status) {
   char path[64] = {0};
   char *val;
 
-  if (slot < 1 || slot > 4) {
+  if (slot != 1) {
     return -1;
   }
 
@@ -1833,7 +1719,7 @@ pal_set_id_led(uint8_t slot, uint8_t status) {
   char path[64] = {0};
   char *val;
 
-  if (slot < 1 || slot > 4) {
+  if (slot != 1) {
     return -1;
   }
 
@@ -1844,29 +1730,6 @@ pal_set_id_led(uint8_t slot, uint8_t status) {
   }
 
   sprintf(path, GPIO_VAL, gpio_id_led[slot]);
-  if (write_device(path, val)) {
-    return -1;
-  }
-
-  return 0;
-}
-
-int
-pal_set_slot_id_led(uint8_t slot, uint8_t status) {
-  char path[64] = {0};
-  char *val;
-
-  if (slot < 1 || slot > 4) {
-    return -1;
-  }
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, gpio_slot_id_led[slot]);
   if (write_device(path, val)) {
     return -1;
   }
@@ -1886,18 +1749,7 @@ pal_switch_vga_mux(uint8_t slot) {
     gpio_sw0 = "0";
     gpio_sw1 = "0";
     break;
-  case HAND_SW_SERVER2:
-    gpio_sw0 = "1";
-    gpio_sw1 = "0";
-    break;
-  case HAND_SW_SERVER3:
-    gpio_sw0 = "0";
-    gpio_sw1 = "1";
-    break;
-  case HAND_SW_SERVER4:
-    gpio_sw0 = "1";
-    gpio_sw1 = "1";
-    break;
+
   default:   // default case, assumes server 1
     gpio_sw0 = "0";
     gpio_sw1 = "0";
@@ -1947,24 +1799,7 @@ pal_switch_uart_mux(uint8_t slot) {
     gpio_uart_sel0 = "0";
     gpio_uart_rx = (prsnt) ? "0" : "1";
     break;
-  case HAND_SW_SERVER2:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "0";
-    gpio_uart_sel0 = "1";
-    gpio_uart_rx = (prsnt) ? "0" : "1";
-    break;
-  case HAND_SW_SERVER3:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "0";
-    gpio_uart_rx = (prsnt) ? "0" : "1";
-    break;
-  case HAND_SW_SERVER4:
-    gpio_uart_sel2 = "0";
-    gpio_uart_sel1 = "1";
-    gpio_uart_sel0 = "1";
-    gpio_uart_rx = (prsnt) ? "0" : "1";
-    break;
+
   default:
     // for all other cases, assume BMC
     gpio_uart_sel2 = "1";
@@ -2151,9 +1986,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -2229,9 +2061,6 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       pal_is_fru_prsnt(fru, &status);
       break;
     case FRU_SPB:
@@ -2281,9 +2110,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sensor%d", fru, sensor_num);
       if(pal_is_fru_prsnt(fru, &status) < 0)
          return -1;
@@ -2339,8 +2165,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if (sensor_num == SP_SENSOR_INLET_TEMP) {
         apply_inlet_correction((float *)value);
       }
-      if ((sensor_num == SP_SENSOR_P12V_SLOT1) || (sensor_num == SP_SENSOR_P12V_SLOT2) ||
-          (sensor_num == SP_SENSOR_P12V_SLOT3) || (sensor_num == SP_SENSOR_P12V_SLOT4)) {
+      if ( sensor_num == SP_SENSOR_P12V_SLOT1 ) {
         /* Check whether the system is 12V off or on */
         ret = pal_is_server_12v_on(sensor_num - SP_SENSOR_P12V_SLOT1 + 1, &val);
         if (ret < 0) {
@@ -2403,9 +2228,6 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
 #ifdef CONFIG_FBY2_RC
       ret = minilaketb_get_server_type(fru, &server_type);
       if (ret) {
@@ -2441,9 +2263,6 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
        */
       switch(snr_num) {
         case SP_SENSOR_P12V_SLOT1:
-        case SP_SENSOR_P12V_SLOT2:
-        case SP_SENSOR_P12V_SLOT3:
-        case SP_SENSOR_P12V_SLOT4:
           /* Check whether the system is 12V off or on */
           ret = pal_is_server_12v_on(snr_num - SP_SENSOR_P12V_SLOT1 + 1, &val);
           if (ret < 0) {
@@ -2529,9 +2348,6 @@ pal_set_def_key_value() {
 
       switch(fru) {
         case FRU_SLOT1:
-        case FRU_SLOT2:
-        case FRU_SLOT3:
-        case FRU_SLOT4:
           sprintf(key, "slot%d_sel_error", fru);
         break;
 
@@ -2550,9 +2366,6 @@ pal_set_def_key_value() {
 
       switch(fru) {
         case FRU_SLOT1:
-        case FRU_SLOT2:
-        case FRU_SLOT3:
-        case FRU_SLOT4:
           sprintf(key, "slot%d_sensor_health", fru);
         break;
 
@@ -2577,15 +2390,6 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
   switch(fru) {
     case FRU_SLOT1:
       sprintf(devtty, "/dev/ttyS1");
-      break;
-    case FRU_SLOT2:
-      sprintf(devtty, "/dev/ttyS2");
-      break;
-    case FRU_SLOT3:
-      sprintf(devtty, "/dev/ttyS3");
-      break;
-    case FRU_SLOT4:
-      sprintf(devtty, "/dev/ttyS4");
       break;
     default:
 #ifdef DEBUG
@@ -2640,9 +2444,6 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
 
       sprintf(key, "pwr_server%d_last_state", (int) fru);
 
@@ -2885,7 +2686,7 @@ pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   int ret;
   uint8_t status;
 
-  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+  if (slot != FRU_SLOT1) {
     return PAL_ENOTSUP;
   }
 
@@ -2945,9 +2746,6 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       if (pal_is_slot_server(fru)) {
         *sensor_list = (uint8_t *) bic_discrete_list;
         *cnt = bic_discrete_cnt;
@@ -3071,9 +2869,6 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       switch(snr_num) {
         case CATERR_B:
           pal_store_crashdump(fru);
@@ -3216,9 +3011,6 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sensor_health", fru);
       break;
     case FRU_SPB:
@@ -3243,9 +3035,6 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sensor_health", fru);
       break;
     case FRU_SPB:
@@ -3268,9 +3057,6 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   switch(fru) {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
       sprintf(key, "slot%d_sel_error", fru);
       break;
     case FRU_SPB:
@@ -3460,28 +3246,16 @@ pal_log_clear(char *fru) {
   if (!strcmp(fru, "slot1")) {
     pal_set_key_value("slot1_sensor_health", "1");
     pal_set_key_value("slot1_sel_error", "1");
-  } else if (!strcmp(fru, "slot2")) {
-    pal_set_key_value("slot2_sensor_health", "1");
-    pal_set_key_value("slot2_sel_error", "1");
-  } else if (!strcmp(fru, "slot3")) {
-    pal_set_key_value("slot3_sensor_health", "1");
-    pal_set_key_value("slot3_sel_error", "1");
-  } else if (!strcmp(fru, "slot4")) {
-    pal_set_key_value("slot4_sensor_health", "1");
-    pal_set_key_value("slot4_sel_error", "1");
   } else if (!strcmp(fru, "spb")) {
     pal_set_key_value("spb_sensor_health", "1");
-  } else if (!strcmp(fru, "nic")) {
-    pal_set_key_value("nic_sensor_health", "1");
   } else if (!strcmp(fru, "all")) {
-    for (i = 1; i <= 4; i++) {
+    for (i = 1; i <= 1; i++) {
       sprintf(key, "slot%d_sensor_health", i);
       pal_set_key_value(key, "1");
       sprintf(key, "slot%d_sel_error", i);
       pal_set_key_value(key, "1");
     }
     pal_set_key_value("spb_sensor_health", "1");
-    pal_set_key_value("nic_sensor_health", "1");
   }
 }
 int
@@ -4128,9 +3902,6 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case SP_SENSOR_P12V:
     case SP_SENSOR_P3V3_STBY:
     case SP_SENSOR_P12V_SLOT1:
-    case SP_SENSOR_P12V_SLOT2:
-    case SP_SENSOR_P12V_SLOT3:
-    case SP_SENSOR_P12V_SLOT4:
     case SP_SENSOR_P3V3:
     case SP_P1V8_STBY:
     case SP_SENSOR_HSC_IN_VOLT:
@@ -4216,9 +3987,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case SP_SENSOR_P12V:
     case SP_SENSOR_P3V3_STBY:
     case SP_SENSOR_P12V_SLOT1:
-    case SP_SENSOR_P12V_SLOT2:
-    case SP_SENSOR_P12V_SLOT3:
-    case SP_SENSOR_P12V_SLOT4:
     case SP_SENSOR_P3V3:
     case SP_P1V8_STBY:
     case SP_SENSOR_HSC_IN_VOLT:
@@ -4306,7 +4074,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     uint8_t rbuf[256] = {0x00};
     uint8_t status;
 
-    if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    if (slot != FRU_SLOT1) {
       return CC_PARAM_OUT_OF_RANGE;
     }
 

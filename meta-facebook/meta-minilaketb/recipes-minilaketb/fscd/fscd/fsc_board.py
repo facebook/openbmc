@@ -22,35 +22,18 @@ from ctypes import *
 from subprocess import Popen, PIPE
 from re import match
 
+lpal_hndl = CDLL("libpal.so")
 
 fru_map = {
     'slot1': {
         'name': 'fru1',
         'gpio': '64'
-    },
-    'slot2': {
-        'name': 'fru2',
-        'gpio': '65'
-    },
-    'slot3': {
-        'name': 'fru3',
-        'gpio': '66'
-    },
-    'slot4': {
-        'name': 'fru4',
-        'gpio': '67'
     }
 }
 
 loc_map = {
     'a0': "_dimm0_location",
-    'a1': "_dimm1_location",
-    'b0': "_dimm2_location",
-    'b1': "_dimm3_location",
-    'd0': "_dimm4_location",
-    'd1': "_dimm5_location",
-    'e0': "_dimm6_location",
-    'e1': "_dimm7_location"
+    'b0': "_dimm1_location",
 }
 
 def board_fan_actions(fan, action='None'):
@@ -61,10 +44,10 @@ def board_fan_actions(fan, action='None'):
     '''
     if action in 'dead':
        # TODO: Why not do return pal_fan_dead_handle(fan)
-        pal_fan_dead_handle(fan.fan_num + 1)
+        lpal_hndl.pal_fan_dead_handle(fan.fan_num + 1)
     elif action in 'recover':
        # TODO: Why not do return pal_fan_recovered_handle(fan)
-        pal_fan_recovered_handle(fan.fan_num + 1)
+        lpal_hndl.pal_fan_recovered_handle(fan.fan_num + 1)
     elif "led" in action:
         # No Action Needed. LED controlled in action 'dead' and 'recover'.
         pass

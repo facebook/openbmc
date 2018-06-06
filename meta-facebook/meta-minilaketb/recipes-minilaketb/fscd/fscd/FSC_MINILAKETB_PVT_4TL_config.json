@@ -83,45 +83,6 @@
         [75, 50],
         [80, 65]
       ]
-    },
-    "linear_mezz": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
-      "data": [
-        [87, 20],
-        [90, 40],
-        [92, 50],
-        [94, 60]
-      ]
-    },
-    "linear_mb_m2": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
-      "data": [
-        [ 56, 28 ],
-        [ 58, 30 ],
-        [ 60, 35 ]
-      ]
-    },
-    "pid_mb_m2": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 68,
-      "negative_hysteresis": 2,
-      "positive_hysteresis": 1,
-      "kp": -1.5,
-      "ki": -0.02,
-      "kd": 0
     }
   },
   "fans": {

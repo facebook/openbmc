@@ -78,9 +78,6 @@ enum {
 
 enum {
   HAND_SW_SERVER1 = 1,
-  HAND_SW_SERVER2,
-  HAND_SW_SERVER3,
-  HAND_SW_SERVER4,
   HAND_SW_BMC
 };
 
@@ -123,7 +120,6 @@ int pal_set_sled_led(uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
-int pal_set_slot_id_led(uint8_t slot, uint8_t status);
 int pal_get_fru_list(char *list);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
 int pal_get_fru_name(uint8_t fru, char *name);

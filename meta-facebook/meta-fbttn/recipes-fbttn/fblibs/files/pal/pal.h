@@ -44,8 +44,6 @@ extern "C" {
 #define BIC_READY 0           // BIC ready: 0; BIC NOT ready: 1
 #define BIC_NOT_READY 1
 
-#define KV_STORE "/mnt/data/kv_store/%s"
-#define KV_STORE_PATH "/mnt/data/kv_store"
 #define SERVER_PWR_ON_LOCK "/var/run/server%d_power_on.lock"
 
 #define SETBIT(x, y)        (x | (1 << y))

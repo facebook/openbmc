@@ -29,6 +29,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <openbmc/obmc-sensor.h>
+#include <openbmc/kv.h>
 #include <facebook/bic.h>
 #include "pal.h"
 
@@ -497,7 +498,7 @@ pal_get_key_value(char *key, char *value) {
   //Retry for max RETRY_COUNT Times
   for (i = 0; i < RETRY_COUNT; i++) {
     ret = 0;
-    ret = kv_get(key, value);
+    ret = kv_get(key, value, NULL, KV_FPERSIST);
     if (ret != 0) {
       syslog(LOG_ERR, "%s, failed to read device (%s), ret: %d, retry: %d", __func__, key, ret, i);
     }
@@ -522,7 +523,7 @@ pal_set_key_value(char *key, char *value) {
   //Retry for max RETRY_COUNT Times
   for (i = 0; i < RETRY_COUNT; i++) {
     ret = 0;
-    ret = kv_set(key, value);
+    ret = kv_set(key, value, 0, KV_FPERSIST);
     if (ret != 0) {
       syslog(LOG_ERR, "%s, failed to write device (%s), ret: %d, retry: %d", __func__, key, ret, i);
     }
@@ -1701,7 +1702,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
     }
 
-    if(edb_cache_set(key, str) < 0) {
+    if(kv_set(key, str, 0, 0) < 0) {
   #ifdef DEBUG
        syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
   #endif
@@ -1778,26 +1779,13 @@ pal_set_def_key_value() {
   int i;
   int fru;
   char key[MAX_KEY_LEN] = {0};
-  char kpath[MAX_KEY_PATH_LEN] = {0};
 
-  i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
-
-    memset(key, 0, MAX_KEY_LEN);
-    memset(kpath, 0, MAX_KEY_PATH_LEN);
-
-    sprintf(kpath, KV_STORE, key_list[i]);
-
-    if (access(kpath, F_OK) == -1) {
-
-      if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
+  for(i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+    if ((ret = kv_set(key_list[i], def_val_list[i], 0, KV_FPERSIST | KV_FCREATE)) < 0) {
 #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
-      }
     }
-
-    i++;
   }
 
   /* Actions to be taken on Power On Reset */
@@ -1889,7 +1877,7 @@ pal_dump_key_value(void) {
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value) < 0) {
+    if (ret = kv_get(key_list[i], value, NULL, KV_FPERSIST) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -2743,7 +2731,7 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 void
 pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
    char str_server_por_cfg[64];
-   char *buff[MAX_VALUE_LEN];
+   char buff[MAX_VALUE_LEN];
    int policy = 3;
    uint8_t status, ret;
    unsigned char *data = res_data;
@@ -3132,7 +3120,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
       sprintf(key, "dpb_sensor%d", tbuf[i+1]);
       sprintf(str, "NA");
 
-      if(edb_cache_set(key, str) < 0) {
+      if(kv_set(key, str, 0, 0) < 0) {
         #ifdef DEBUG
           syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__ , key, str);
         #endif
@@ -3174,7 +3162,7 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
 
     //cache sensor reading
     sprintf(key, "dpb_sensor%d", rbuf[5*i+1]);
-    if(edb_cache_set(key, str) < 0) {
+    if(kv_set(key, str, 0, 0) < 0) {
       #ifdef DEBUG
         syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__ , key, str);
       #endif
@@ -3222,7 +3210,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
       sprintf(key, "scc_sensor%d", tbuf[i+1]);
       sprintf(str, "NA");
 
-      if(edb_cache_set(key, str) < 0) {
+      if(kv_set(key, str, 0, 0) < 0) {
         #ifdef DEBUG
           syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__ , key, str);
         #endif
@@ -3269,7 +3257,7 @@ pal_exp_scc_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
 
     //cache sensor reading
     sprintf(key, "scc_sensor%d", rbuf[5*i+1]);
-    if(edb_cache_set(key, str) < 0) {
+    if(kv_set(key, str, 0, 0) < 0) {
       #ifdef DEBUG
         syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__, key, str);
       #endif
@@ -4321,7 +4309,7 @@ pal_get_edb_value(char *key, char *value) {
 
   for (i = 0; i < RETRY_COUNT; i++) {
     ret = 0;
-    ret = edb_cache_get(key, value);
+    ret = kv_get(key, value, NULL, 0);
     if (ret != 0) {
       syslog(LOG_ERR, "%s, failed to read edb key (%s), ret: %d, retry: %d", __func__, key, ret, i);
     }
@@ -4341,7 +4329,7 @@ pal_set_edb_value(char *key, char *value) {
 
   for (i = 0; i < RETRY_COUNT; i++) {
     ret = 0;
-    ret = edb_cache_set(key, value);
+    ret = kv_set(key, value, 0, 0);
     if (ret != 0) {
       syslog(LOG_ERR, "%s, failed to write edb key (%s), ret: %d, retry: %d", __func__, key, ret, i);
     }
@@ -4386,7 +4374,7 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
   struct timespec ts;
 
   sprintf(key, "fru%d_fwupd", fruid);
-  ret = edb_cache_get(key, value);
+  ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
      return false;
   }

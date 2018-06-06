@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "libbic libexp libmctp libfbttn-common libfbttn-fruid libfbttn-sensor libkv libedb libnvme-mi obmc-pal"
+DEPENDS += "libbic libexp libmctp libfbttn-common libfbttn-fruid libfbttn-sensor libkv libnvme-mi obmc-pal"
 
 CFLAGS_prepend = " -DCONFIG_FBTTN"
 
@@ -27,4 +27,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
-RDEPENDS_${PN} += "libbic libexp libmctp libfbttn-common libfbttn-fruid libfbttn-sensor libkv libedb libnvme-mi"
+RDEPENDS_${PN} += "libbic libexp libmctp libfbttn-common libfbttn-fruid libfbttn-sensor libkv libnvme-mi"

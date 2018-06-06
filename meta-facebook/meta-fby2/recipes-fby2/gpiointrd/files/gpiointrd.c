@@ -31,7 +31,7 @@
 #include <pthread.h>
 #include <sys/un.h>
 #include <sys/file.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
@@ -355,7 +355,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
 
     slot_id = (slot_id >= HAND_SW_BMC) ? HAND_SW_SERVER1 : (slot_id + 1);
     sprintf(locstr, "%u", slot_id);
-    edb_cache_set("spb_hand_sw", locstr);
+    kv_set("spb_hand_sw", locstr, 0, 0);
     syslog(LOG_INFO, "change hand_sw location to FRU %s by button", locstr);
   }
   else if (gp->gs.gs_gpio == gpio_num("GPIOI0") || gp->gs.gs_gpio == gpio_num("GPIOI1") || 

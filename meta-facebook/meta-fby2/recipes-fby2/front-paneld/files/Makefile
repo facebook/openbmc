@@ -4,7 +4,7 @@ all: front-paneld
 CFLAGS += -Wall -Werror
 
 front-paneld: front-paneld.c
-	$(CC) $(CFLAGS) -std=gnu99 -pthread -lpal -lbic -ledb -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -std=gnu99 -pthread -lpal -lbic -lkv -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

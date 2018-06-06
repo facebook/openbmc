@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include "pal.h"
 #include <facebook/bic.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
 
@@ -525,7 +525,7 @@ key_func_ntp(char *value)
   char ntp_server_old[MAX_VALUE_LEN] = {0};
 
   // Remove old NTP server
-  kv_get("ntp_server", ntp_server_old);
+  kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
   if (strlen(ntp_server_old) > 2) {
     snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
     system(cmd);
@@ -554,7 +554,7 @@ pal_get_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_get(key, value);
+  return kv_get(key, value, NULL, KV_FPERSIST);
 }
 
 int
@@ -567,7 +567,7 @@ pal_set_key_value(char *key, char *value) {
   if (!strcmp(key, "ntp_server")) {
     key_func_ntp(value);
   }
-  return kv_set(key, value);
+  return kv_set(key, value, 0, KV_FPERSIST);
 }
 
 // Common IPMB Wrapper function
@@ -1099,7 +1099,7 @@ _set_slot_12v_en_time(uint8_t slot_id) {
 
   sprintf(key, "slot%u_12v_en", slot_id);
   sprintf(value, "%d", ts.tv_sec);
-  if (edb_cache_set(key, value) < 0) {
+  if (kv_set(key, value, 0, 0) < 0) {
     return -1;
   }
 
@@ -1113,7 +1113,7 @@ _check_slot_12v_en_time(uint8_t slot_id) {
   struct timespec ts;
 
   sprintf(key, "slot%u_12v_en", slot_id);
-  if (edb_cache_get(key, value)) {
+  if (kv_get(key, value, NULL, 0)) {
      return true;
   }
 
@@ -1307,7 +1307,7 @@ pal_is_hsvc_ongoing(uint8_t slot_id) {
   char value[MAX_VALUE_LEN] = {0};
 
   sprintf(key, "fru%u_hsvc", slot_id);
-  if (edb_cache_get(key, value)) {
+  if (kv_get(key, value, NULL, 0)) {
      return false;
   }
 
@@ -1322,7 +1322,7 @@ pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident) {
   char key[MAX_KEY_LEN];
 
   sprintf(key, "fru%u_hsvc", slot_id);
-  if (edb_cache_set(key, (status) ? "1" : "0")) {
+  if (kv_set(key, (status) ? "1" : "0", 0, 0)) {
      return -1;
   }
 
@@ -2411,7 +2411,7 @@ pal_get_hand_sw(uint8_t *pos) {
   uint8_t loc;
   int ret;
 
-  ret = edb_cache_get("spb_hand_sw", value);
+  ret = kv_get("spb_hand_sw", value, NULL, 0);
   if (!ret) {
     loc = atoi(value);
     if ((loc > HAND_SW_BMC) || (loc < HAND_SW_SERVER1)) {
@@ -3264,7 +3264,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         }
         if (!val) {
           sprintf(str, "%.2f",*((float*)value));
-          edb_cache_set(key, str);
+          kv_set(key, str, 0, 0);
           return -1;
         }
       }
@@ -3291,14 +3291,14 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           // update POST status;
           pal_set_last_post(current_post);
           sprintf(str, "%.2f",*((float*)value));
-          edb_cache_set(key, str);
+          kv_set(key, str, 0, 0);
           ignore_thresh=1;
         }
 
         if (current_post == 1) {
           // POST is ongoing
           sprintf(str, "%.2f",*((float*)value));
-          edb_cache_set(key, str);
+          kv_set(key, str, 0, 0);
           ignore_thresh=1;
         } else {
           long post_end_timestamp = 0;
@@ -3310,7 +3310,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           if (current_time_stamp <  post_end_timestamp ) {
             // wait for fan speed deassert after POST
             sprintf(str, "%.2f",*((float*)value));
-            edb_cache_set(key, str);
+            kv_set(key, str, 0, 0);
             ignore_thresh=1;
           }
         }
@@ -3488,26 +3488,14 @@ pal_set_def_key_value() {
   int i;
   int fru;
   char key[MAX_KEY_LEN] = {0};
-  char kpath[MAX_KEY_PATH_LEN] = {0};
 
   i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
-
-    memset(key, 0, MAX_KEY_LEN);
-    memset(kpath, 0, MAX_KEY_PATH_LEN);
-
-    sprintf(kpath, KV_STORE, key_list[i]);
-
-    if (access(kpath, F_OK) == -1) {
-
-      if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
+  for(i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+    if ((ret = kv_set(key_list[i], def_val_list[i], 0, KV_FPERSIST | KV_FCREATE)) < 0) {
 #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
-      }
     }
-
-    i++;
   }
 
   /* Actions to be taken on Power On Reset */
@@ -3602,7 +3590,7 @@ pal_dump_key_value(void) {
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value) < 0) {
+    if (ret = kv_get(key_list[i], value, NULL, KV_FPERSIST) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -4731,7 +4719,7 @@ pal_set_fru_post(uint8_t fru, uint8_t value) {
 
   sprintf(cvalue, (value > 0) ? "1": "0");
 
-  return edb_cache_set(key,cvalue);
+  return kv_set(key,cvalue,0,0);
 }
 
 int
@@ -4753,7 +4741,7 @@ pal_get_fru_post(uint8_t fru, uint8_t *value) {
       return -1;
   }
 
-  ret = edb_cache_get(key, cvalue);
+  ret = kv_get(key, cvalue, NULL, 0);
   if (ret) {
     return ret;
   }
@@ -4785,7 +4773,7 @@ pal_set_last_post(uint8_t value) {
 
   sprintf(cvalue, (value > 0) ? "1" : "0");
 
-  return edb_cache_set(key,cvalue);
+  return kv_set(key,cvalue, 0, 0);
 }
 
 int
@@ -4795,7 +4783,7 @@ pal_get_last_post(uint8_t *value) {
   char cvalue[MAX_VALUE_LEN] = {0};
   int ret;
 
-  ret = edb_cache_get(key, cvalue);
+  ret = kv_get(key, cvalue, NULL, 0);
   if (ret) {
     return ret;
   }
@@ -4811,7 +4799,7 @@ pal_set_post_end_timestamp(long value) {
 
   sprintf(cvalue, "%ld", value);
 
-  return edb_cache_set(key,cvalue);
+  return kv_set(key,cvalue,0,0);
 }
 
 int
@@ -4821,7 +4809,7 @@ pal_get_post_end_timestamp(long *value) {
   char cvalue[MAX_VALUE_LEN] = {0};
   int ret;
 
-  ret = edb_cache_get(key, cvalue);
+  ret = kv_get(key, cvalue, NULL, 0);
   if (ret) {
     return ret;
   }
@@ -5612,7 +5600,7 @@ int pal_set_imc_version(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
     strcat(str, tstr);
   }
 
-  if(kv_set(key, str))
+  if(kv_set(key, str,0,KV_FPERSIST))
     completion_code = CC_INVALID_PARAM;
 
   return completion_code;
@@ -6320,7 +6308,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
 
       sprintf(key, "ocpdbg_lcd");
       sprintf(value, "%d", ts.tv_sec);
-      if (edb_cache_set(key, value) < 0) {
+      if (kv_set(key, value, 0, 0) < 0) {
         return -1;
       }
     }
@@ -6336,7 +6324,7 @@ pal_is_mcu_working(void) {
   struct timespec ts;
 
   sprintf(key, "ocpdbg_lcd");
-  if (edb_cache_get(key, value)) {
+  if (kv_get(key, value, NULL, 0)) {
      return false;
   }
 

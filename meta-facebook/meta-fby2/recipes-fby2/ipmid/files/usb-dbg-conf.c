@@ -470,7 +470,8 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 {
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";
-  int ret, index, slen;
+  int index, slen;
+  size_t ret;
 
   if (slot == FRU_ALL)
     return -1;
@@ -486,8 +487,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 
   // Processor#
   snprintf(key, sizeof(key), "%sfru%u_cpu0_product_name", key_prefix, slot);
-  ret = kv_get_bin(key, value);
-  if (ret >= 26) {
+  if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 26) {
     // Read 4 bytes Processor#
     snprintf(&entry[slen], 5, "%s", &value[22]);
     entry[(slen += 4)] = 0;
@@ -495,8 +495,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 
   // Frequency & Core Number
   snprintf(key, sizeof(key), "%sfru%u_cpu0_basic_info", key_prefix, slot);
-  ret = kv_get_bin(key, value);
-  if (ret >= 5) {
+  if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
     slen += sprintf(&entry[slen], "/%.1fG/%dc", (float)(value[4] << 8 | value[3])/1000, value[0]);
   }
   sprintf(&entry[slen], "\n");
@@ -508,8 +507,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 
     // Check Present
     snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_location", key_prefix, slot, index);
-    ret = kv_get_bin(key, value);
-    if (ret >= 1) {
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
       // Skip if not present
       if (value[0] != 0x01)
         continue;
@@ -517,8 +515,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 
     // Module Manufacturer ID
     snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_manufacturer_id", key_prefix, slot, index);
-    ret = kv_get_bin(key, value);
-    if (ret >= 2) {
+    if (kv_get(key, value,&ret, KV_FPERSIST) == 0 && ret >= 2) {
       switch (value[1]) {
         case 0xce:
           slen += sprintf(&entry[slen], "Samsung");
@@ -537,8 +534,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 
     // Speed
     snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_speed", key_prefix, slot, index);
-    ret = kv_get_bin(key, value);
-    if (ret >= 6) {
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
       slen += sprintf(&entry[slen], "/%dMHz/%dGB",
         value[1]<<8 | value[0],
         (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024);

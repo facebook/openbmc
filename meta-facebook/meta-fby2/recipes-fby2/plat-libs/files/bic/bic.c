@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "bic.h"
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 
 #define FRUID_READ_COUNT_MAX 0x30
@@ -1250,7 +1250,7 @@ _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
   ts.tv_sec += tmout;
   sprintf(value, "%d", ts.tv_sec);
 
-  if (edb_cache_set(key, value) < 0) {
+  if (kv_set(key, value, 0, 0) < 0) {
      return -1;
   }
 

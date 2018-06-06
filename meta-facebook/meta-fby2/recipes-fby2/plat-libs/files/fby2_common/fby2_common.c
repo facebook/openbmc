@@ -29,6 +29,7 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <string.h>
+#include <openbmc/kv.h>
 #include "fby2_common.h"
 
 #define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
@@ -255,7 +256,7 @@ fby2_common_set_ierr(uint8_t fru, bool value) {
 
   sprintf(cvalue, (value == true) ? "1": "0");
 
-  return edb_cache_set(key,cvalue);
+  return kv_set(key, cvalue, 0, 0);
 }
 
 int
@@ -277,7 +278,7 @@ fby2_common_get_ierr(uint8_t fru, bool *value) {
       return -1;
   }
 
-  ret = edb_cache_get(key, cvalue);
+  ret = kv_get(key, cvalue, NULL, 0);
   if (ret) {
     return ret;
   }

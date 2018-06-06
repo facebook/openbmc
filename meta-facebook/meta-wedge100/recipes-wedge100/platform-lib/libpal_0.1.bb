@@ -12,7 +12,7 @@ SRC_URI = "file://Makefile \
            file://pal.h \
           "
 
-DEPENDS += "libkv libedb libipmi obmc-pal libgpio libsensor-correction"
+DEPENDS += "libkv libipmi obmc-pal libgpio libsensor-correction"
 
 S = "${WORKDIR}"
 

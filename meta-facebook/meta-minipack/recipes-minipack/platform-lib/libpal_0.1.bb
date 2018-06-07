@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "libbic libkv libedb obmc-pal libsensor-correction"
+DEPENDS += "libbic libkv obmc-pal libsensor-correction"
 
 S = "${WORKDIR}/pal"
 
@@ -25,4 +25,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
-RDEPENDS_${PN} += " libbic libedb libkv"
+RDEPENDS_${PN} += " libbic libkv"

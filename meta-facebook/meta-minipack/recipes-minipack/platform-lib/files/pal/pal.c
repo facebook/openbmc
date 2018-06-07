@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include "pal.h"
 #include <facebook/bic.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
 
@@ -269,7 +269,7 @@ pal_get_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  ret = kv_get(key, value);
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
   return ret;
 }
 
@@ -280,7 +280,7 @@ pal_set_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_set(key, value);
+  return kv_set(key, value, 0, KV_FPERSIST);
 }
 
 int
@@ -1157,7 +1157,7 @@ pal_is_fw_update_ongoing(uint8_t fru) {
       return false;
   }
 
-  ret = edb_cache_get(key, value);
+  ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
      return false;
   }

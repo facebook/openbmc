@@ -8,7 +8,7 @@ C_OBJS := ${C_SRCS:.c=.o}
 
 libpal.so: $(C_OBJS)
 	$(CC) $(CFLAGS) -fPIC -c -pthread -o pal.o pal.c
-	$(CC) $(CFLAGS) -lm -lbic -lkv -ledb -lsensor-correction -shared -o libpal.so $^ -lc -lrt -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive
+	$(CC) $(CFLAGS) -lm -lbic -lkv -lsensor-correction -shared -o libpal.so $^ -lc -lrt -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive
 
 .PHONY: clean
 

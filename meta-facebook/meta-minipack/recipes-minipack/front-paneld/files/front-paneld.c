@@ -29,7 +29,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/time.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>

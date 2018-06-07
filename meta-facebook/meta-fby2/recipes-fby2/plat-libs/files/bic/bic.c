@@ -1195,9 +1195,11 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   switch (server_type) {
     case SERVER_TYPE_EP:
       return 0;
+#if defined(CONFIG_FBY2_RC)
     case SERVER_TYPE_RC:
       ret = check_bios_image_rc(slot_id, fd, size);
       return ret;
+#endif
   }
 #endif
   

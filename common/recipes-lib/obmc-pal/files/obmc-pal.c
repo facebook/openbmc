@@ -1311,6 +1311,18 @@ pal_i2c_crash_deassert_handle(int i2c_bus_num)
 }
 
 int __attribute__((weak))
+pal_is_cplddump_ongoing(uint8_t fru)
+{
+  return PAL_EOK;
+}
+
+bool __attribute__((weak))
+pal_is_cplddump_ongoing_system(void)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_is_crashdump_ongoing(uint8_t fru)
 {
   char fname[128];

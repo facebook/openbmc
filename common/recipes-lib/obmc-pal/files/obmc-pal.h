@@ -164,6 +164,7 @@ void msleep(int msec);
 
 // Function Declarations
 int pal_is_crashdump_ongoing(uint8_t fru);
+int pal_is_cplddump_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
@@ -277,6 +278,7 @@ int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);
 bool pal_is_fw_update_ongoing(uint8_t fruid);
 bool pal_is_fw_update_ongoing_system(void);
 bool pal_is_crashdump_ongoing_system(void);
+bool pal_is_cplddump_ongoing_system(void);
 int run_command(const char* cmd);
 int pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause);
 int pal_set_restart_cause(uint8_t slot, uint8_t restart_cause);

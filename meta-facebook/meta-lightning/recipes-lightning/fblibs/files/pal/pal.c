@@ -33,7 +33,7 @@
 #include <pthread.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include "pal.h"
 #include <string.h>
 
@@ -60,7 +60,6 @@
 #define GPIO_BMC_SELF_TRAY_INTRU 108 // 0: tray pull-in, 1: tray pull-out
 #define GPIO_BMC_PEER_TRAY_INTRU 0   // 0: tray pull-in, 1: tray pull-out
 #define GPIO_TRAY_LOCATION_ID 55 // 0: lower tray, 1: upper tray
-#define TRAY_LOCATION_FILE "/tmp/tray_location"
 
 #define GPIO_DEBUG_CARD_HIGH_HEX_0 48
 #define GPIO_DEBUG_CARD_HIGH_HEX_1 49
@@ -345,61 +344,6 @@ pal_set_hb_led(uint8_t status) {
   return pal_set_led(LED_HB, status);
 }
 
-static int
-read_kv(char *key, char *value) {
-
-  FILE *fp;
-  int rc;
-
-  fp = fopen(key, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "read_kv: failed to open %s", key);
-#endif
-    return err;
-  }
-
-  rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
-  fclose(fp);
-  if (rc <= 0) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "read_kv: failed to read %s", key);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-static int
-write_kv(char *key, char *value) {
-
-  FILE *fp;
-  int rc;
-
-  fp = fopen(key, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_kv: failed to open %s", key);
-#endif
-    return err;
-  }
-
-  rc = fwrite(value, 1, strlen(value), fp);
-  fclose(fp);
-
-  if (rc < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_kv: failed to write to %s", key);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
 int
 pal_get_fru_id(char *str, uint8_t *fru) {
 
@@ -545,7 +489,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     sprintf(str, "%.2f", *((float*)value));
   }
 
-  if(edb_cache_set(key, str) < 0) {
+  if(kv_set(key, str, 0, 0) < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
 #endif
@@ -593,71 +537,43 @@ pal_get_fruid_name(uint8_t fru, char *name) {
 
 static int
 get_key_value(char* key, char *value) {
-
-  char kpath[64] = {0};
+  int ret;
 
   if (!strcmp(key, "system_identify")) {
-    sprintf(kpath, KV_STORE, key);
-    if (access(KV_STORE_PATH, F_OK) == -1) {
-      mkdir(KV_STORE_PATH, 0777);
-    }
+    ret = kv_get(key, value, NULL, KV_FPERSIST);
   } else {
-    sprintf(kpath, TMP_PATH, key);
+    ret = kv_get(key, value, NULL, 0);
   }
-
-  return read_kv(kpath, value);
+  return ret;
 }
 
 static int
 set_key_value(char *key, char *value) {
-
-  char kpath[64] = {0};
+  int ret;
 
   if (!strcmp(key, "system_identify")) {
-    sprintf(kpath, KV_STORE, key);
-    if (access(KV_STORE_PATH, F_OK) == -1) {
-      mkdir(KV_STORE_PATH, 0777);
-    }
+    ret = kv_set(key, value, 0, KV_FPERSIST);
   } else {
-    sprintf(kpath, TMP_PATH, key);
+    ret = kv_set(key, value, 0, 0);
   }
-
-  return write_kv(kpath, value);
+  return ret;
 }
 
 int
 pal_set_def_key_value() {
-  int ret;
   int i;
-  char key[MAX_KEY_LEN] = {0};
-  char kpath[MAX_KEY_PATH_LEN] = {0};
 
-  i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
-
-    memset(key, 0, MAX_KEY_LEN);
-    memset(kpath, 0, MAX_KEY_PATH_LEN);
-
+  for (i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+    unsigned int flag = KV_FCREATE;
     if (!strcmp(key_list[i], "system_identify")) {
-      sprintf(kpath, KV_STORE, key_list[i]);
-      if (access(KV_STORE_PATH, F_OK) == -1) {
-        mkdir(KV_STORE_PATH, 0777);
-      }
-    } else {
-      sprintf(kpath, TMP_PATH, key_list[i]);
+      flag |= KV_FPERSIST;
     }
-
-    if (access(kpath, F_OK) == -1) {
-      if ((ret = write_kv(kpath, def_val_list[i])) != 0) {
+    if (kv_set(key_list[i], def_val_list[i], 0, flag) != 0) {
 #ifdef DEBUG
           syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
-      }
     }
-
-    i++;
   }
-
   return 0;
 }
 
@@ -759,16 +675,16 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   switch(fru) {
     case FRU_PEB:
-      sprintf(key, TMP_PATH, "peb_sensor_health");
+      strcpy(key, "peb_sensor_health");
       break;
     case FRU_PDPB:
-      sprintf(key, TMP_PATH, "pdpb_sensor_health");
+      strcpy(key, "pdpb_sensor_health");
       break;
     case FRU_FCB:
-      sprintf(key, TMP_PATH, "fcb_sensor_health");
+      strcpy(key, "fcb_sensor_health");
       break;
     case BMC_HEALTH:
-      sprintf(key, TMP_PATH, "bmc_health");
+      strcpy(key, "bmc_health");
       break;
 
     default:
@@ -777,9 +693,7 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   sprintf(cvalue, (value > 0) ? "1": "0");
 
-  return write_kv(key, cvalue);
-
-  return 0;
+  return kv_set(key, cvalue, 0, 0);
 }
 
 int
@@ -791,23 +705,23 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   switch(fru) {
     case FRU_PEB:
-      sprintf(key, TMP_PATH, "peb_sensor_health");
+      strcpy(key, "peb_sensor_health");
       break;
     case FRU_PDPB:
-      sprintf(key, TMP_PATH, "pdpb_sensor_health");
+      strcpy(key, "pdpb_sensor_health");
       break;
     case FRU_FCB:
-      sprintf(key, TMP_PATH, "fcb_sensor_health");
+      strcpy(key, "fcb_sensor_health");
       break;
     case BMC_HEALTH:
-      sprintf(key, TMP_PATH, "bmc_health");
+      strcpy(key, "bmc_health");
       break;
 
     default:
       return -1;
   }
 
-  ret = read_kv(key, cvalue);
+  ret = kv_get(key, cvalue, NULL, 0);
   if (ret) {
     return ret;
   }
@@ -1183,13 +1097,16 @@ int
 pal_get_tray_location(char *self_tray_name, uint8_t self_len,
                       char *peer_tray_name, uint8_t peer_len) {
   uint8_t val = 0;
+  char cvalue[MAX_VALUE_LEN];
 
   if ((self_tray_name == NULL) || (peer_tray_name == NULL)){
     syslog(LOG_ERR, "%s(): Error - Null Pointer", __func__);
   }
 
-  if (access(TRAY_LOCATION_FILE, F_OK) == 0)
+  // We already have this information
+  if (kv_get("tray_location", cvalue, NULL, 0) == 0) {
     return 0;
+  }
 
   if (pal_self_tray_location(&val) == -1)
     return -1;
@@ -1211,8 +1128,7 @@ pal_get_tray_location(char *self_tray_name, uint8_t self_len,
     return -1;
   }
 
-  write_kv(TRAY_LOCATION_FILE, self_tray_name);
-  return 0;
+  return kv_set("tray_location", self_tray_name, 0, 0);
 }
 
 

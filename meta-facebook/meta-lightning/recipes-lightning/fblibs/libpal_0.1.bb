@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "liblightning-common liblightning-fruid liblightning-sensor liblightning-flash liblightning-gpio libkv libedb libnvme-mi obmc-i2c obmc-pal"
+DEPENDS += "liblightning-common liblightning-fruid liblightning-sensor liblightning-flash liblightning-gpio libkv libnvme-mi obmc-i2c obmc-pal"
 
 S = "${WORKDIR}/pal"
 
@@ -25,4 +25,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
-RDEPENDS_${PN} += " liblightning-common liblightning-fruid liblightning-sensor liblightning-flash liblightning-gpio libipmi libkv libedb libnvme-mi"
+RDEPENDS_${PN} += " liblightning-common liblightning-fruid liblightning-sensor liblightning-flash liblightning-gpio libipmi libkv libnvme-mi"

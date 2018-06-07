@@ -40,10 +40,6 @@ extern "C" {
 #define FRU_STATUS_GOOD   1
 #define FRU_STATUS_BAD    0
 
-#define KV_STORE "/mnt/data/kv_store/%s"
-#define KV_STORE_PATH "/mnt/data/kv_store"
-#define TMP_PATH "/tmp/%s"
-
 #define SETBIT(x, y)        (x | (1 << y))
 #define GETBIT(x, y)        ((x & (1 << y)) > y)
 #define CLEARBIT(x, y)      (x & (~(1 << y)))

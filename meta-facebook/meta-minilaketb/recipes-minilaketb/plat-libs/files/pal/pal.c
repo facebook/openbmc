@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include "pal.h"
 #include <facebook/bic.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
 
@@ -429,7 +429,7 @@ pal_get_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_get(key, value);
+  return kv_get(key, value, NULL, KV_FPERSIST);
 }
 int
 pal_set_key_value(char *key, char *value) {
@@ -438,7 +438,7 @@ pal_set_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_set(key, value);
+  return kv_set(key, value, 0, KV_FPERSIST);
 }
 
 // Common IPMB Wrapper function
@@ -814,7 +814,7 @@ pal_is_hsvc_ongoing(uint8_t slot_id) {
   char value[MAX_VALUE_LEN] = {0};
 
   sprintf(key, "fru%u_hsvc", slot_id);
-  if (edb_cache_get(key, value)) {
+  if (kv_get(key, value, NULL, 0)) {
      return false;
   }
 
@@ -829,7 +829,7 @@ pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident) {
   char key[MAX_KEY_LEN];
 
   sprintf(key, "fru%u_hsvc", slot_id);
-  if (edb_cache_set(key, (status) ? "1" : "0")) {
+  if (kv_set(key, (status) ? "1" : "0", 0, 0)) {
      return -1;
   }
 
@@ -1603,7 +1603,7 @@ pal_get_hand_sw(uint8_t *pos) {
   uint8_t loc;
   int ret;
 
-  ret = edb_cache_get("spb_hand_sw", value);
+  ret = kv_get("spb_hand_sw", value, NULL, 0);
   if (!ret) {
     loc = atoi(value);
     if ((loc > HAND_SW_BMC) || (loc < HAND_SW_SERVER1)) {
@@ -2173,7 +2173,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         }
         if (!val) {
           sprintf(str, "%.2f",*((float*)value));
-          edb_cache_set(key, str);
+          kv_set(key, str, 0, 0);
           return -1;
         }
       }
@@ -2194,7 +2194,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
           if (val == 0) {
             sprintf(str, "%.2f",*((float*)value));
-            edb_cache_set(key, str);
+            kv_set(key, str, 0, 0);
             return -1;
           }
       }
@@ -2312,30 +2312,16 @@ pal_get_fruid_name(uint8_t fru, char *name) {
 int
 pal_set_def_key_value() {
 
-  int ret;
-  int i;
+  int i, ret;
   int fru;
-  char key[MAX_KEY_LEN] = {0};
-  char kpath[MAX_KEY_PATH_LEN] = {0};
+  char key[MAX_KEY_LEN];
 
-  i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
-
-    memset(key, 0, MAX_KEY_LEN);
-    memset(kpath, 0, MAX_KEY_PATH_LEN);
-
-    sprintf(kpath, KV_STORE, key_list[i]);
-
-    if (access(kpath, F_OK) == -1) {
-
-      if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
+  for (i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+    if ((ret = kv_set(key_list[i], def_val_list[i], 0, KV_FPERSIST | KV_FCREATE)) < 0) {
 #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
-      }
     }
-
-    i++;
   }
 
   /* Actions to be taken on Power On Reset */
@@ -2409,7 +2395,7 @@ pal_dump_key_value(void) {
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value) < 0) {
+    if (ret = kv_get(key_list[i], value, NULL, KV_FPERSIST) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -3730,7 +3716,7 @@ int pal_set_imc_version(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
     strcat(str, tstr);
   }
 
-  if(kv_set(key, str))
+  if(kv_set(key, str, 0, KV_FPERSIST))
     completion_code = CC_INVALID_PARAM;
 
   return completion_code;
@@ -4194,7 +4180,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
 
       sprintf(key, "ocpdbg_lcd");
       sprintf(value, "%d", ts.tv_sec);
-      if (edb_cache_set(key, value) < 0) {
+      if (kv_set(key, value, 0, 0) < 0) {
         return -1;
       }
     }
@@ -4210,7 +4196,7 @@ pal_is_mcu_working(void) {
   struct timespec ts;
 
   sprintf(key, "ocpdbg_lcd");
-  if (edb_cache_get(key, value)) {
+  if (kv_get(key, value, NULL, 0)) {
      return false;
   }
 

@@ -18,7 +18,7 @@
 all: gpiointrd
 
 gpiointrd: gpiointrd.c
-	$(CC) $(CFLAGS) -pthread -lgpio -lminilaketb_common -lminilaketb_sensor -ledb -std=gnu99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lgpio -lminilaketb_common -lminilaketb_sensor -lkv -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

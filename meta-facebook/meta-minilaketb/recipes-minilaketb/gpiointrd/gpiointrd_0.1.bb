@@ -35,9 +35,9 @@ binfiles = "gpiointrd \
 
 CFLAGS += " -lbic -lminilaketb_gpio -lpal "
 
-DEPENDS += " libgpio libminilaketb-common libbic libminilaketb-sensor libminilaketb-gpio libpal libedb"
+DEPENDS += " libgpio libminilaketb-common libbic libminilaketb-sensor libminilaketb-gpio libpal libkv"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libgpio libminilaketb-common libbic libminilaketb-sensor libminilaketb-gpio libpal libedb"
+RDEPENDS_${PN} += " libgpio libminilaketb-common libbic libminilaketb-sensor libminilaketb-gpio libpal libkv"
 
 pkgdir = "gpiointrd"
 

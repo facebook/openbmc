@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "bic.h"
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 
 #define FRUID_READ_COUNT_MAX 0x30
@@ -1888,7 +1888,7 @@ int get_imc_version(uint8_t slot, uint8_t *ver) {
   char str[MAX_VALUE_LEN] = {0};
 
   sprintf(key, "slot%d_imc_ver", (int)slot);
-  ret = kv_get(key, str);
+  ret = kv_get(key, str, NULL, KV_FPERSIST);
   if (ret) {
     return ret;
   }

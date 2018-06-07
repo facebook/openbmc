@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://pal.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 SRC_URI = "file://pal \
           "
 
-DEPENDS += "libbic libminilaketb-common libminilaketb-fruid libminilaketb-sensor libkv libedb obmc-pal"
+DEPENDS += "libbic libminilaketb-common libminilaketb-fruid libminilaketb-sensor libkv obmc-pal"
 
 S = "${WORKDIR}/pal"
 
@@ -26,4 +26,3 @@ FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc/pal.h"
 
 RDEPENDS_${PN} += " libminilaketb-common libkv"
-RDEPENDS_${PN} += " libminilaketb-common libedb"

@@ -30,7 +30,7 @@
 #include <sys/un.h>
 #include <time.h>
 #include <sys/time.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
@@ -101,7 +101,7 @@ debug_card_handler() {
 
     prev_phy_pos = pos;
     sprintf(str, "%u", pos);
-    ret = edb_cache_set("spb_hand_sw", str);
+    ret = kv_set("spb_hand_sw", str, 0, 0);
     if (ret) {
       goto debug_card_out;
     }

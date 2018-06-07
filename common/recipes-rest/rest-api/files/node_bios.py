@@ -265,7 +265,7 @@ class bios_boot_order_node(node):
                 data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
                 err = data.stderr.read().decode()
                 data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
+                if err != "" or data != "":
                     res = 'failure'
                 else:
                     res = 'success'

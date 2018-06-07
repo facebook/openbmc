@@ -34,7 +34,6 @@ restore_us_com() {
 
 lm57_monitor() {
     vol=$(cat /sys/devices/platform/ast_adc.0/in0_input 2> /dev/null)
-    vol=$(($vol / 2))
     if [ $vol -le ${TH_SHUTDOWN_VOL} ] && [ $th_shutdown -eq 0 ] ; then
         echo "Shut down TH power by LM57 over temperature..."
         echo "ADC=$vol, standard=$TH_SHUTDOWN_VOL"

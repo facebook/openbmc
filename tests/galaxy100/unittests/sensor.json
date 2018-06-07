@@ -42,18 +42,5 @@
 {
   "in0":"yes",
   "curr1":"yes"
-},
-"pwr1014a-i2c-2-40":
-{
-  "+3.3 VMON1 Voltage":"yes",
-  "+1.2 VMON2 Voltage":"yes",
-  "+1.25 VMON3 Voltage":"yes",
-  "+1.0 VMON4 Voltage":"yes",
-  "+1.0 VMON5 Voltage":"yes",
-  "+3.3 VMON6 Voltage":"yes",
-  "+1.8 VMON7 Voltage":"yes",
-  "+1.538 VMON8 Voltage":"yes",
-  "+6.8 VMON9 Voltage":"yes",
-  "+12 VMON10 Voltage":"yes"
 }
 }

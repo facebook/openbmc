@@ -4209,12 +4209,19 @@ pal_store_crashdump(uint8_t fru) {
   return fby2_common_crashdump(fru,false);
 }
 
+static int
+pal_store_cpld_dump(uint8_t fru) {
+  return fby2_common_cpld_dump(fru);
+}
+
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};
   static int assert_cnt[FBY2_MAX_NUM_SLOTS] = {0};
+  int ret;
+  uint8_t server_type = 0xFF;
 
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
@@ -4222,6 +4229,40 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+#if defined(CONFIG_FBY2_RC)
+      ret = fby2_get_server_type(fru, &server_type);
+      if (ret) {
+        syslog(LOG_ERR, "%s, Get server type failed for slot%u", __func__, fru);
+      }
+
+      switch (server_type) {
+        case SERVER_TYPE_RC:
+          switch(snr_num) {
+            case BIC_RC_SENSOR_PWR_FAIL:
+              pal_store_cpld_dump(fru);
+              break;
+
+            case 0x00:  // don't care sensor number 00h
+              return 0;
+          }
+          break;
+        case SERVER_TYPE_TL:
+          switch(snr_num) {
+            case CATERR_B:
+              if (event_data[3] == 0x00) // 00h:IERR 0Bh:MCERR
+                fby2_common_set_ierr(fru,true);
+              pal_store_crashdump(fru);
+              break;
+
+            case 0x00:  // don't care sensor number 00h
+              return 0;
+          }
+          break;
+        default:
+          syslog(LOG_ERR, "%s, Undefined server type for slot%u", __func__, fru);
+          return -1;
+      }
+#else
       switch(snr_num) {
         case CATERR_B:
           if (event_data[3] == 0x00) // 00h:IERR 0Bh:MCERR
@@ -4232,6 +4273,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         case 0x00:  // don't care sensor number 00h
           return 0;
       }
+#endif
       sprintf(key, "slot%d_sel_error", fru);
 
       fru -= 1;
@@ -6279,6 +6321,50 @@ pal_handle_oem_1s_ras_dump_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   }
 
   return 0;
+}
+
+int
+pal_is_cplddump_ongoing(uint8_t fru) {
+  char fname[128];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  int ret;
+
+  //if pid file not exist, return false
+  sprintf(fname, "/var/run/cplddump%d.pid", fru);
+  if ( access(fname, F_OK) != 0 )
+  {
+    return 0;
+  }
+
+  //check the cplddump file in /tmp/cache_store/fru$1_cplddump
+  sprintf(fname, "fru%d_cplddump", fru);
+  ret = kv_get(fname, value, NULL, 0);
+  if (ret < 0)
+  {
+     return 0;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+  {
+     return 1;
+  }
+
+ //over the threshold time, return false
+  return 0;                     /* false */
+}
+
+bool
+pal_is_cplddump_ongoing_system(void) {
+  uint8_t i;
+
+  for (i = FRU_SLOT1; i <= FRU_SLOT4; i++) {
+    if (pal_is_cplddump_ongoing(i) == 1)
+      return true;
+  }
+
+  return false;
 }
 
 bool

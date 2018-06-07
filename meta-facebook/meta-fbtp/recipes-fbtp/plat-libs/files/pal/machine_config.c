@@ -125,7 +125,7 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
   }
 
   sprintf(key, "mb_machine_config");
-  kv_set_bin(key, (char *)req_data, sizeof(machine_config_info));
+  kv_set(key, (char *)req_data, sizeof(machine_config_info), KV_FPERSIST);
 
   memcpy(&mc, &req_data[0], sizeof(machine_config_info));
 
@@ -134,12 +134,7 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
   set_defaults(&mc);
   strcpy(value, machine_config_name(&mc));
 
-  /* Set kv first because get_machine_configuration
-   * tests for cache first and then for kv. That way
-   * we avoid (at minimum shrink the window for)
-   * the potential race between the two */
   kv_set(key, value, 0, KV_FPERSIST);
-  kv_set(key, value, 0, 0);
   return 0;
 }
 
@@ -150,20 +145,12 @@ int pal_get_machine_configuration(char *conf)
   int ret;
 
   sprintf(key, "mb_system_conf");
-  /* Cache is the most current value, if that fails,
-   * check persistent kv store for previous boot conf,
-   * if that fails, then get platform ID to ensure
-   * we use default SS or DS */
-  ret = kv_get(key, value, NULL, 0);
+
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
   if (ret < 0) {
-    ret = kv_get(key, value, NULL, KV_FPERSIST);
-    if (ret < 0) {
-      strcpy(value, default_machine_config_name());
-      kv_set(key, value, 0, KV_FPERSIST);
-    }
-    kv_set(key, value, 0, 0);
+    strcpy(value, default_machine_config_name());
+    kv_set(key, value, 0, KV_FPERSIST | KV_FCREATE);
   }
   strcpy(conf, value);
   return 0;
 }
-

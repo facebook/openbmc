@@ -67,6 +67,7 @@
         },
         "condition": {
           "key": "mb_system_conf",
+          "key_type": "persistent",
           "default_table": "I0",
           "value_map": {
             "SS_D": "I0",

@@ -25,6 +25,7 @@
         },
         "condition": {
           "key": "mb_system_conf",
+          "key_type": "persistent",
           "default_expression": "T6nF",
           "value_map": {
             "SS_D": "T6nF",

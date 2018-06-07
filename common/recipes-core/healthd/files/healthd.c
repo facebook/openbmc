@@ -1345,7 +1345,7 @@ static void check_vboot_main(uint8_t error_type, uint8_t error_code)
       /* We just recovered from a previous error! */
       syslog(LOG_CRIT, "DEASSERT: Verified boot failure %s", last_err);
       /* Do not deassert again on reboot */
-      kv_set("vboot_error", "(0,0)");
+      kv_set("vboot_error", "(0,0)", 0, KV_FPERSIST);
     }
     store_curr_version();
   }

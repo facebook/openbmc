@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://yosemite_common.c;beginline=8;endline=20;md5=da359787
 
 SRC_URI = "file://yosemite_common \
           "
-DEPENDS += "libkv libedb"
+DEPENDS += "libkv"
 
 S = "${WORKDIR}/yosemite_common"
 
@@ -26,4 +26,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libyosemite_common.so"
 FILES_${PN}-dev = "${includedir}/facebook/yosemite_common.h"
 
-RDEPENDS_${PN} += " libkv libedb"
+RDEPENDS_${PN} += " libkv"

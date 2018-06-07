@@ -30,7 +30,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include "yosemite_common.h"
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
@@ -143,7 +143,7 @@ generate_dump(void *arg) {
   t_dump[fru-1].is_running = 0;
 
   sprintf(cmd, CRASHDUMP_KEY, fru);
-  edb_cache_set(cmd, "0");
+  kv_set(cmd, "0", 0, 0);
 
   return NULL;
 }

@@ -30,7 +30,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <openbmc/obmc-sensor.h>
-#include <openbmc/edb.h>
+#include <openbmc/kv.h>
 #include "pal.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -384,7 +384,7 @@ pal_get_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_get(key, value);
+  return kv_get(key, value, NULL, KV_FPERSIST);
 }
 int
 pal_set_key_value(char *key, char *value) {
@@ -393,7 +393,7 @@ pal_set_key_value(char *key, char *value) {
   if (pal_key_check(key))
     return -1;
 
-  return kv_set(key, value);
+  return kv_set(key, value, 0, KV_FPERSIST);
 }
 
 // Power On the server in a given slot
@@ -1684,7 +1684,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     sprintf(str, "%.2f",*((float*)value));
   }
 
-  if(edb_cache_set(key, str) < 0) {
+  if(kv_set(key, str, 0, 0) < 0) {
 #ifdef DEBUG
      syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
 #endif
@@ -1766,26 +1766,13 @@ pal_set_def_key_value() {
   int i;
   int fru;
   char key[MAX_KEY_LEN] = {0};
-  char kpath[MAX_KEY_PATH_LEN] = {0};
 
-  i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
-
-    memset(key, 0, MAX_KEY_LEN);
-    memset(kpath, 0, MAX_KEY_PATH_LEN);
-
-    sprintf(kpath, KV_STORE, key_list[i]);
-
-    if (access(kpath, F_OK) == -1) {
-
-      if ((ret = kv_set(key_list[i], def_val_list[i])) < 0) {
+  for(i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+    if ((ret = kv_set(key_list[i], def_val_list[i], 0, KV_FPERSIST | KV_FCREATE)) < 0) {
 #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
-      }
     }
-
-    i++;
   }
 
   /* Actions to be taken on Power On Reset */
@@ -1880,7 +1867,7 @@ pal_dump_key_value(void) {
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if ((ret = kv_get(key_list[i], value)) < 0) {
+    if ((ret = kv_get(key_list[i], value, NULL, KV_FPERSIST)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -2139,7 +2126,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       switch(snr_num) {
         case CATERR_B:
           sprintf(key, CRASHDUMP_KEY, fru);
-          edb_cache_set(key, "1");
+          kv_set(key, "1", 0, 0);
           pal_store_crashdump(fru);
           break;
 
@@ -2626,7 +2613,7 @@ pal_is_crashdump_ongoing(uint8_t slot)
   char value[MAX_VALUE_LEN] = {0};
   int ret;
   sprintf(key, CRASHDUMP_KEY, slot);
-  ret = edb_cache_get(key, value);
+  ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
 #ifdef DEBUG
      syslog(LOG_INFO, "pal_get_crashdumpe: failed");
@@ -2659,7 +2646,7 @@ pal_is_fw_update_ongoing(uint8_t fru) {
       return false;
   }
 
-  ret = edb_cache_get(key, value);
+  ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
      return false;
   }

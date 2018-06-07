@@ -39,6 +39,7 @@ SRC_URI += "file://board-utils.sh \
             file://spi_util.sh \
             file://us_console.sh \
             file://wedge_power.sh \
+            file://wedge_us_mac.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -60,6 +61,7 @@ OPENBMC_UTILS_FILES += " \
     us_console.sh \
     spi_util.sh \
     wedge_power.sh \
+    wedge_us_mac.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

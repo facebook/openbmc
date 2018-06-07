@@ -1195,6 +1195,7 @@ crit_proc_monitor() {
 
   bool is_fw_updating = false;
   bool is_crashdump_ongoing = false;
+  bool is_cplddump_ongoing = false;
 
   while(1) 
   {
@@ -1204,12 +1205,15 @@ crit_proc_monitor() {
     //if is_autodump_ongoing == true, modify the permission
     is_crashdump_ongoing = pal_is_crashdump_ongoing_system();
 
-    if ( (true == is_fw_updating) || (true == is_crashdump_ongoing) ) 
+    //if is_cplddump_ongoing == true, modify the permission
+    is_cplddump_ongoing = pal_is_cplddump_ongoing_system();
+
+    if ( (true == is_fw_updating) || (true == is_crashdump_ongoing) || (true == is_cplddump_ongoing) ) 
     {
       crit_proc_ongoing_handle(true);
     }
     
-    if ( (false == is_fw_updating) && (false == is_crashdump_ongoing) )
+    if ( (false == is_fw_updating) && (false == is_crashdump_ongoing) && (false == is_cplddump_ongoing) )
     {
       crit_proc_ongoing_handle(false);
     }

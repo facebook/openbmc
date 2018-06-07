@@ -184,6 +184,10 @@ static bool can_change_power(uint8_t fru)
     printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
     exit(-1);
   }
+  if (pal_is_cplddump_ongoing(fru)) {
+    printf("CPLD dump for %s is ongoing, block the power controlling.\n", fruname);
+    exit(-1);
+  }
   return true;
 }
 

@@ -546,6 +546,13 @@ app_cold_reset(unsigned char *request, unsigned char req_len,
       return;
     }
   }
+  for (i = 1; i < MAX_NUM_FRUS; i++) {
+    if (pal_is_cplddump_ongoing(i)) {
+      res->cc = CC_NODE_BUSY;
+      return;
+    }
+  }
+
   syslog(LOG_CRIT, "BMC Cold Reset.");
   reboot(RB_AUTOBOOT);
 }

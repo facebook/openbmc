@@ -71,6 +71,8 @@ typedef struct ncsi_nl_response {
 #define AEN_TYPE_LINK_STATUS_CHANGE            0x0
 #define AEN_TYPE_CONFIGURATION_REQUIRED        0x1
 #define AEN_TYPE_HOST_NC_DRIVER_STATUS_CHANGE  0x2
+#define AEN_TYPE_MEDIUM_CHANGE                0x70
+#define AEN_TYPE_PENDING_PLDM_REQUEST         0x71
 #define AEN_TYPE_OEM                          0x80
 
 /* BCM-specific  OEM AEN definitions */
@@ -120,6 +122,7 @@ process_NCSI_AEN(AEN_Packet *buf)
   unsigned char host_err_len=0;
   unsigned char req_rst_type=0;
   char logbuf[512];
+  unsigned char log_level = LOG_NOTICE;
 
 #ifdef DEBUG
   // print AEN packet content
@@ -188,6 +191,14 @@ process_NCSI_AEN(AEN_Packet *buf)
         ntohs(buf->Optional_AEN_Data[1]));
         break;
 
+      case AEN_TYPE_MEDIUM_CHANGE:
+        sprintf(logbuf + strlen(logbuf), ", Medium Change");
+        break;
+
+      case AEN_TYPE_PENDING_PLDM_REQUEST:
+        sprintf(logbuf + strlen(logbuf), ", Pending PLDM Request");
+        break;
+
       default:
         sprintf(logbuf + strlen(logbuf), ", Unknown AEN Type");
     }
@@ -199,6 +210,7 @@ process_NCSI_AEN(AEN_Packet *buf)
     if (manu_id == BCM_IANA) {
       switch (buf->AEN_Type) {
         case NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR:
+          log_level = LOG_CRIT;
           sprintf(logbuf + strlen(logbuf), ", BCM Host Err");
           //host_err_event_num = ntohs(buf->Optional_AEN_Data[3])&0xFF;
           host_err_type = ntohs(buf->Optional_AEN_Data[4])>>8;
@@ -215,6 +227,7 @@ process_NCSI_AEN(AEN_Packet *buf)
           break;
 
         case NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED:
+          log_level = LOG_CRIT;
           sprintf(logbuf + strlen(logbuf), ", BCM Reset Required");
           req_rst_type = ntohs(buf->Optional_AEN_Data[3])&0xFF;
           sprintf(logbuf + strlen(logbuf), ", ResetType=0x%x", req_rst_type);
@@ -227,7 +240,7 @@ process_NCSI_AEN(AEN_Packet *buf)
       sprintf(logbuf + strlen(logbuf), ", Unknown OEM AEN, IANA=0x%lx", manu_id);
     }
   }
-  syslog(LOG_NOTICE, "%s", logbuf);
+  syslog(log_level, "%s", logbuf);
   return;
 }
 

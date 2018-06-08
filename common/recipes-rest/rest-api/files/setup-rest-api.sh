@@ -27,6 +27,6 @@
 # Short-Description: Set REST API handler
 ### END INIT INFO
 
-echo -n "Setup REST API handler... "
-/usr/local/bin/rest.py > /tmp/rest.log 2>&1 &
-echo "done."
+runsv /etc/sv/restapi > /dev/null 2>&1 &
+
+sv "$1" restapi

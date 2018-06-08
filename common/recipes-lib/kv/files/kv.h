@@ -31,10 +31,6 @@ extern "C" {
 #define MAX_KEY_LEN       64
 #define MAX_VALUE_LEN     64
 
-/* TODO: Move to source once dependence is removed */
-#define KV_STORE "/mnt/data/kv_store/%s"
-#define KV_STORE_PATH "/mnt/data/kv_store"
-
 /*=====================================================================
  *                              Flags
  *====================================================================*/
@@ -47,43 +43,6 @@ extern "C" {
 
 int kv_get(char *key, char *value, size_t *len, unsigned int flags);
 int kv_set(char *key, char *value, size_t len, unsigned int flags);
-
-/*=====================================================================
- *                  Backwards compatibiliy APIs
- *====================================================================*/
-
-/* Poor man's function overloading in C.
- * If user calls kv_get(a,b), it will call kv_get_str().
- * If the user calls kv_get(a,b,c,d), it will call kv_get() as above.
- * Same applies to kv_set().
- * Remove these when all have migrated to the new improved prototypes! */
-#define MKFN_N(fn,n0,n1,n2,n3,n,...) fn##n
-#define MKFN(fn,...) MKFN_N(fn,##__VA_ARGS__,,bad3,_str,bad1,bad0)(__VA_ARGS__)
-#define kv_get(...) MKFN(kv_get,##__VA_ARGS__)
-#define kv_set(...) MKFN(kv_set,##__VA_ARGS__)
-
-static inline int kv_set_bin(char *key, char *value, unsigned char len) {
-  int rc = kv_set(key, value, (size_t)len, KV_FPERSIST);
-  if (rc == 0)
-    rc = (int)len;
-  return rc;
-}
-
-static inline int kv_get_bin(char *key, char *value) {
-  size_t len;
-  int rc = kv_get(key, value, &len, KV_FPERSIST);
-  if (rc == 0)
-    rc = (int)len;
-  return rc;
-}
-
-static inline int kv_get_str(char *key, char *value) {
-  return kv_get(key, value, NULL, KV_FPERSIST);
-}
-
-static inline int kv_set_str(char *key, char *value) {
-  return kv_set(key, value, 0, KV_FPERSIST);
-}
 
 #ifdef __cplusplus
 }

@@ -185,20 +185,8 @@ close_bail:
   return ret;
 }
 
-/* Backwards compatibility */
-int edb_cache_get(char *key, char *value)
-{
-  return kv_get(key, value, NULL, 0);
-}
-
-int edb_cache_set(char *key, char *value)
-{
-  return kv_set(key, value, 0, 0);
-}
-
 #ifdef __TEST__
 #include <assert.h>
-#include "edb.h"
 int main(int argc, char *argv[])
 {
   char value[MAX_VALUE_LEN];
@@ -246,34 +234,6 @@ int main(int argc, char *argv[])
   assert(kv_get("test2", value, NULL, 0) == 0);
   assert(strcmp(value, "val2") == 0);
   printf("SUCCESS: KV_FCREATE succeeded on non-existing key\n");
-
-  /* Legacy kv_set/kv_get */
-  assert(kv_set("test3", "val3") == 0);
-  memset(value, 0, sizeof(value));
-  assert(kv_get("test3", value) == 0);
-  assert(strcmp(value, "val3") == 0);
-  assert(access("./test/persist/test3", F_OK) == 0);
-  assert(access("./test/tmp/test3", F_OK) != 0);
-  printf("SUCCESS: Legacy kv_set/kv_get works!\n");
-
-  /* Legacy kv_set_bin, kv_get_bin */
-  assert(kv_set_bin("test4", "val4", 3) == 3);
-  memset(value, 0, sizeof(value));
-  assert(kv_get_bin("test4", value) == 3);
-  assert(strcmp(value, "val") == 0);
-  assert(access("./test/persist/test4", F_OK) == 0);
-  assert(access("./test/tmp/test4", F_OK) != 0);
-  printf("SUCCESS: Legacy kv_set_bin/kv_get_bin works!\n");
-
-  assert(edb_cache_set("test5", "val5") == 0);
-  memset(value, 0, sizeof(value));
-  assert(edb_cache_get("test5", value) == 0);
-  assert(strcmp(value, "val5") == 0);
-  memset(value, 0, sizeof(value));
-  assert(kv_get("test5", value, NULL, 0) == 0);
-  assert(strcmp(value, "val5") == 0);
-  assert(edb_cache_get("test6", value) != 0);
-  printf("SUCCESS: Legacy edb_cache_get/edb_cache_set works!\n");
 
   system("rm -rf ./test");
 

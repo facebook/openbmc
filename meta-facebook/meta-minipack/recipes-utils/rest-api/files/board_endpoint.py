@@ -37,4 +37,4 @@ class boardApp_Handler:
     async def rest_pim_present_hdl(self, request):
         return web.json_response(rest_pim_present.get_pim_present(), dumps=dumps_bytestr)
     async def rest_piminfo_hdl(self,request):
-        return web.json_response(piminfo.get_piminfo())
+        return web.json_response(rest_piminfo.get_piminfo())

@@ -32,7 +32,7 @@ fpga_type_re = re.compile('\s*(\S.*) DOMFPGA:')
 def get_piminfo():
     current_pim = 0
     result = {}
-    proc = subprocess.Popen(['fpga_ver.sh', '-u'],
+    proc = subprocess.Popen(['/usr/local/bin/fpga_ver.sh', '-u'],
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     try:

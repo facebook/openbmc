@@ -39,11 +39,9 @@
     ],
     "/api/sys/sensors":[
       "galaxy100_ec-i2c-0-33",
-      "adm1278-i2c-0-10",
       "IR3581-i2c-1-70",
       "IR3584-i2c-1-72",
       "pwr1014a-i2c-2-40",
-      "adm1278-i2c-11-10",
       "ast_adc-isa-0000"
     ],
     "/api/sys/mb": [

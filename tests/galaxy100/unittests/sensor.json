@@ -7,22 +7,6 @@
   "+3.3 Voltage standby":"yes",
   "+2.5 Voltage standby":"yes"
 },
-"adm1278-i2c-0-10":
-{
-  "vin":"yes",
-  "vout1":"yes",
-  "temp1":"yes",
-  "pin":"yes",
-  "iout1":"yes"
-},
-"adm1278-i2c-11-10":
-{
-  "vin":"yes",
-  "vout1":"yes",
-  "temp1":"yes",
-  "pin":"yes",
-  "iout1":"yes"
-},
 "galaxy100_ec-i2c-0-33":
 {
   "CPU Voltage":"yes",

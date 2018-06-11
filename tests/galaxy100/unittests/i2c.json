@@ -1,8 +1,4 @@
 {
-  "adm1278": {
-    "bus": "11",
-    "address": "0x10"
-  },
   "galaxy100_ec": {
     "bus": "0",
     "address": "0x33"

@@ -31,6 +31,7 @@
 
 default_fsc_config_path="/etc/fsc-config.json"
 sku_type=`cat /tmp/slot.bin`
+server_type=`cat /tmp/server_type.bin`
 full_config=1
 
 echo "Setup fan speed... "
@@ -52,19 +53,61 @@ echo "Setup fan speed... "
 
 case "$sku_type" in
    "0")
-       echo "Run FSC 4 TLs Config"
-       cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+     case "$server_type" in 
+       "0")
+         echo "Run FSC 4 TLs Config"
+         cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+       ;;
+       "85")
+         echo "Run FSC 4 RCs Config"
+         cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
+       ;;
+       *)
+         echo "Unexpected 4 Servers config! Run FSC 4 TLs Config as default config"
+         cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+       ;;
+     esac
    ;;
    "34")
+     if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then  
        echo "Run FSC 2 GPs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
+     elif [[ $(get_server_type 2) == "1" && $(get_server_type 4) == "1" ]] ; then
+       echo "Run FSC 4 RCs Config"
+       cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}   
+     else
+       echo "Unexpected 2 GPs and 2 Servers config! Run FSC 2 GPs and 2 TLs Config as default config"
+       cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
+     fi
    ;;
    "17")
+     if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then
        echo "Run FSC 2 CFs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
+     elif [[ $(get_server_type 2) == "1" && $(get_server_type 4) == "1" ]] ; then
+       echo "Run FSC 4 RCs Config"
+       cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
+     else
+       echo "Unexpected 2 CFs and 2 Servers config! Run FSC 2 CFs and 2 TLs Config as default config"
+       cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
+     fi
    ;;
-   *)  echo "Unexpected sku type! Use default config"
+   *)
+     server_type_tmp="3"
+     for i in 1 2 3 4 ; do
+       server_type_tmp=$(get_server_type $i)
+       if [ "$server_type_tmp" != "3" ] ; then
+         break;
+       fi
+     done
+
+     if [ "$server_type_tmp" == "1" ] ; then
+       echo "Unexpected sku type! Use FSC 4 RCs Config as default config"
+       cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
+     else
+       echo "Unexpected sku type! Use FSC 4 TLs Config as default config"
        cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+     fi  
    ;;
 esac
 

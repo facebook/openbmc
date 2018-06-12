@@ -357,7 +357,8 @@ gpio_monitor_poll(void *ptr) {
     pal_set_fru_post(fru,0);
   } else {
     // POST is ongoing
-    if (gpios[PWRGD_COREPWR].status == 1) { //on 
+    if (gpios[PWRGD_COREPWR].status == 1) { //on
+      syslog(LOG_WARNING, "FRU: %d, POST already start", fru);
       pal_set_fru_post(fru,1);
     } else { //off
       pal_set_fru_post(fru,0);
@@ -379,9 +380,8 @@ gpio_monitor_poll(void *ptr) {
 
       if ((pal_is_server_12v_on(fru, &slot_12v) != 0) || slot_12v) {
         usleep(DELAY_GPIOD_READ);
-        pal_set_fru_post(fru,0);
         continue;
-      } 
+      }
       //12V-off
       pal_set_fru_post(fru,0);
 
@@ -427,6 +427,8 @@ gpio_monitor_poll(void *ptr) {
           } else if (i == FM_BIOS_POST_COMPT_N) {
             //Set Post is not ongoing
             pal_set_fru_post(fru,0);
+            //set POST End timestamp
+            pal_set_post_end_timestamp(fru);
           }
         } else {
           if (PWRGD_COREPWR == i) {
@@ -441,6 +443,7 @@ gpio_monitor_poll(void *ptr) {
             }
             if (GETBIT(n_pin_val, FM_BIOS_POST_COMPT_N) == 1) {
               pal_set_fru_post(fru,1);
+              //set POST Start timestamp
             } else {
               pal_set_fru_post(fru,0);
             }
@@ -453,8 +456,9 @@ gpio_monitor_poll(void *ptr) {
             smi_count_start[fru-1] = false;
           } else if (i == FM_BIOS_POST_COMPT_N) {
             //Set Post is ongoing
-            if (gpios[PWRGD_COREPWR].status == 1) { //on 
+            if (gpios[PWRGD_COREPWR].status == 1) { //on
               pal_set_fru_post(fru,1);
+              //set POST Start timestamp
             } else { //off
               pal_set_fru_post(fru,0);
             }

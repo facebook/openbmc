@@ -94,6 +94,11 @@ enum {
   FAN_1,
 };
 
+enum {
+  POST_RESET = 0,
+  POST_SET
+};
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status);
@@ -191,11 +196,17 @@ bool pal_is_mcu_working(void);
 int pal_set_fru_post(uint8_t fru, uint8_t value);
 int pal_get_fru_post(uint8_t fru, uint8_t *value);
 uint8_t pal_is_post_ongoing();
-int pal_set_last_post(uint8_t value);
-int pal_get_last_post(uint8_t *value);
-int pal_set_post_end_timestamp(long value);
-int pal_get_post_end_timestamp(long *value);
 int pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh);
+long pal_get_fscd_counter();
+int pal_set_fscd_counter(long value);
+int pal_set_ignore_thresh(int value);
+int pal_get_ignore_thresh(int *value);
+int pal_set_post_start_timestamp(uint8_t fru, uint8_t method);
+int pal_get_post_start_timestamp(uint8_t fru, long *value);
+int pal_set_post_end_timestamp(uint8_t fru);
+int pal_get_post_end_timestamp(uint8_t fru, long *value);
+uint8_t pal_is_post_time_out();
+void pal_check_fscd_watchdog();
 #ifdef __cplusplus
 } // extern "C"
 #endif

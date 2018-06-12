@@ -112,7 +112,26 @@ def set_all_pwm(boost):
     response = response.decode()
     return response
 
+fscd_counter = 0
+board_for_counter = ""
+sname_for_counter = ""
+
 def sensor_valid_check(board, sname, check_name, attribute):
+
+    global fscd_counter
+    global board_for_counter
+    global sname_for_counter
+
+    if not board_for_counter:
+        board_for_counter = board
+        sname_for_counter = sname
+
+    if str(board) == str(board_for_counter):
+        if str(sname) == str(sname_for_counter):
+            fscd_counter = lpal_hndl.pal_get_fscd_counter()
+            fscd_counter = fscd_counter+1
+            lpal_hndl.pal_set_fscd_counter(fscd_counter)
+
     try:
         if attribute['type'] == "power_status":
             with open("/sys/class/gpio/gpio"+fru_map[board]['pwr_gpio']+"/value", "r") as f:

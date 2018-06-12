@@ -15,7 +15,7 @@ class pebNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         name = pal_get_platform_name().decode()
         location = Popen('cat /tmp/tray_location', \
                          shell=True, stdout=PIPE).stdout.read().decode().strip('\n')

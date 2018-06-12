@@ -36,7 +36,7 @@ class sensorsNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         result = {}
         cmd = '/usr/local/bin/sensor-util ' + self.name + ' --threshold'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()

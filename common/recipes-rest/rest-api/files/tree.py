@@ -76,7 +76,8 @@ class tree:
         return None
 
     async def handleGet(self, request):
-        info = self.data.getInformation()
+        param=dict(request.query)
+        info = self.data.getInformation(param)
         actions = self.data.getActions()
         resources = []
         ca = self.getChildren()

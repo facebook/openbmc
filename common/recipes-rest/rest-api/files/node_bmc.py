@@ -54,7 +54,7 @@ class bmcNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         # Get Platform Name
         name = pal_get_platform_name().decode()
 

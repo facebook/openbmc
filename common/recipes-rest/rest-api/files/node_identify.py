@@ -17,7 +17,7 @@ class identifyNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         identify_status=""
         data = Popen('cat /mnt/data/kv_store/identify_slot1', \
                             shell=True, stdout=PIPE).stdout.read().decode()

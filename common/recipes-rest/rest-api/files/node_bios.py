@@ -35,7 +35,7 @@ class biosNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         info = {
         "Description": "BIOS Information",
         }
@@ -62,7 +62,7 @@ class bios_boot_order_trunk_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         info = {
         "Description": "BIOS Boot Order Information",
         }
@@ -85,7 +85,7 @@ class bios_boot_mode_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order get --boot_mode'
         boot_order = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         boot_order = boot_order.split('\n')[0].split(': ')
@@ -134,7 +134,7 @@ class bios_clear_cmos_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order get --clear_CMOS'
         clear_cmos = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         clear_cmos = clear_cmos.split('\n')[0].split(': ')
@@ -188,7 +188,7 @@ class bios_force_boot_setup_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order get --force_boot_BIOS_setup'
         force_boot_bios_setup = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         force_boot_bios_setup = force_boot_bios_setup.split('\n')[0].split(': ')
@@ -242,7 +242,7 @@ class bios_boot_order_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order get --boot_order'
         boot_order = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         boot_order = boot_order.split('\n')[0].split(': ')
@@ -340,7 +340,7 @@ class bios_postcode_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --postcode get'
         postcode = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
         postcode = postcode.replace("\n", "").strip()
@@ -369,7 +369,7 @@ class bios_plat_info_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --plat_info get'
         data = plat_info = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         plat_info = data.stdout.read().decode()
@@ -404,7 +404,7 @@ class bios_pcie_port_config_node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         cmd = '/usr/local/bin/bios-util ' + self.name + ' --pcie_port_config get'
         data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         pcie_port_config = data.stdout.read().decode()

@@ -35,7 +35,7 @@ class logsNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         linfo = []
         cmd = '/usr/local/bin/log-util ' + self.name +' --print'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()

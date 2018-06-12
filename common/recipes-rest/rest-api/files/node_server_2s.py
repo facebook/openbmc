@@ -36,7 +36,7 @@ class server2SNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         ret = pal_get_server_2s_power()
         if ret == 0:
             status = 'power-off'

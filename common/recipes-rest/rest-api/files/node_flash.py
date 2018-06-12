@@ -16,7 +16,7 @@ class flashNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         # Get vendor name
         vendor_name=" "
         data = Popen('cat /tmp/ssd_vendor', \

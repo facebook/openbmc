@@ -33,7 +33,7 @@ class configNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         result = {}
         cmd = '/usr/local/bin/cfg-util dump-all'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()

@@ -22,7 +22,7 @@ class enclosure_error_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         result = {}
 
         cmd = '/usr/bin/enclosure-util --error'
@@ -52,7 +52,7 @@ class enclosure_flash_health_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         result = {}
 
         cmd = '/usr/bin/enclosure-util --flash-health'
@@ -82,7 +82,7 @@ class enclosure_flash_status_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         info = {}
 
         cmd = '/usr/bin/enclosure-util --flash-status'
@@ -114,7 +114,7 @@ class enclosure_hdd_status_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         result = {}
 
         cmd = '/usr/bin/enclosure-util --hdd-status'

@@ -32,7 +32,7 @@ class node:
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         return self.info
 
     def getActions(self):

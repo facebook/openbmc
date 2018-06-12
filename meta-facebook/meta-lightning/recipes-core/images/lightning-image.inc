@@ -38,7 +38,6 @@ IMAGE_INSTALL += " \
   fpc-util \
   fscd \
   packagegroup-openbmc-rest3 \
-  bottle \
   lldp-util \
   spatula \
   enclosure-util \

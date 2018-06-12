@@ -27,6 +27,8 @@ SRC_URI = "file://rest.py \
            file://tree.py \
            file://pal.py \
            file://vboot.py \
+           file://rest.cfg \
+           file://rest_config.py \
            file://node_bmc.py \
            file://node_api.py \
            file://node_dpb.py \
@@ -71,6 +73,7 @@ do_install() {
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/restapi
   install -m 755 run_rest ${D}${sysconfdir}/sv/restapi/run
+  install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh

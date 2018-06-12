@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,100 +18,54 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import *
-from bottle import route, run, template, request, response, ServerAdapter
-from bottle import abort
-from wsgiref.simple_server import make_server, WSGIRequestHandler, WSGIServer
-import json
-import ssl
-import socket
-import os
-import sys
+# aiohttp has access logs and error logs enabled by default. So, only the configuration file is needed to get the desired log output.
+
+from aiohttp import web
+import logging
+import logging.config
 import syslog
+import ssl
 from tree import tree
 from node import node
 from plat_tree import init_plat_tree
+from rest_config import RestConfig
 
-CONSTANTS = {
-    'certificate': '/usr/lib/ssl/certs/rest_server.pem',
+LOGGER_CONF = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '%(message)s'
+        },
+    },
+    'handlers': {
+        'file_handler': {
+            'level': 'INFO',
+            'formatter': 'default',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/tmp/rest.log',
+            'maxBytes': 1048576,
+            'backupCount': 3,
+            'encoding': 'utf8'
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['file_handler'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    }
 }
 
-if len(sys.argv) == 2 and sys.argv[1] == 'wr':
-    is_read_only = False
-    syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read/Write Mode')
-else:
-    is_read_only = True
+logging.config.dictConfig(LOGGER_CONF)
+app = web.Application()
+is_read_only = not RestConfig.getboolean('access', 'write', fallback=False)
+if is_read_only:
     syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read Only Mode')
-
-
-root = init_plat_tree(is_read_only)
-
-# Generic router for incoming requests
-@route('/<path:path>', method='ANY')
-def url_router(path):
-    global is_read_only
-    token = path.split('/')
-    # Find the Node
-    r = root
-    for t in token:
-        r = r.getChildByName(t)
-        if r == None:
-            return r
-    c = r.data
-
-    # Handle GET request
-    if request.method == 'GET':
-        # Gather info/actions directly from respective node
-        info = c.getInformation()
-        actions = c.getActions()
-
-        # Create list of resources from tree structure
-        resources = []
-        ca = r.getChildren()
-        for t in ca:
-            resources.append(t.name)
-        result = {'Information': info,
-                  'Actions': actions,
-                  'Resources': resources }
-
-        return result
-
-    # Handle POST request
-    if request.method == 'POST':
-        lines = request.body.readlines()
-        return c.doAction(json.loads(lines[0].decode()), is_read_only)
-
-    return None
-
-run(host = "::", port = 8080)
-
-# TODO: Test the https connection with proper certificates
-# SSL Wrapper for Rest API
-class SSLWSGIRefServer(ServerAdapter):
-    def run(self, handler):
-        if self.quiet:
-            class QuietHandler(WSGIRequestHandler):
-                def log_request(*args, **kw): pass
-            self.options['handler_class'] = QuietHandler
-
-        # IPv6 Support
-        server_cls = self.options.get('server_class', WSGIServer)
-
-        if ':' in self.host:
-            if getattr(server_cls, 'address_family') == socket.AF_INET:
-                class server_cls(server_cls):
-                    address_family = socket.AF_INET6
-
-        srv = make_server(self.host, self.port, handler,
-                server_class=server_cls, **self.options)
-        srv.socket = ssl.wrap_socket (
-                srv.socket,
-                certfile=CONSTANTS['certificate'],
-                server_side=True)
-        srv.serve_forever()
-
-# Use SSL if the certificate exists. Otherwise, run without SSL.
-if os.access(CONSTANTS['certificate'], os.R_OK):
-    run(server=SSLWSGIRefServer(host="::", port=8443))
 else:
-    run(host = "::", port = 8080)
+    syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read/Write Mode')
+root = init_plat_tree(is_read_only)
+root.setup(app, not is_read_only)
+web.run_app(app)
+

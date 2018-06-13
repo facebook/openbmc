@@ -19,10 +19,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://vboot-check \
-    file://vboot-util \
     "
 
 OPENBMC_UTILS_FILES += " \
     vboot-check \
-    vboot-util \
     "

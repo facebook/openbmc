@@ -9,12 +9,15 @@ SRC_URI += " \
     file://pyfdt/__init__.py \
     file://pyfdt/pkcs11.py \
     file://pyfdt/pyfdt.py \
+    file://Makefile \
+    file://vboot-util.c \
     "
 
 S = "${WORKDIR}"
 
-DEPENDS = "python3"
+DEPENDS = "python3 libvbs"
 RDEPEND_${PN}-python3 += "python3 python3-argparse"
+RDEPEND_${PN} += "libvbs"
 
 PACKAGES += "${PN}-python3"
 inherit distutils3
@@ -27,7 +30,7 @@ python() {
 
 do_compile() {
   # No-op
-  true
+  make
 }
 
 do_install() {
@@ -36,6 +39,10 @@ do_install() {
   for file in ${S}/pyfdt/*.py; do
     install -m 644 "$file" ${D}${PYTHON_SITEPACKAGES_DIR}/pyfdt/
   done
+
+  install -d ${D}/usr/local/bin
+  install -m 0755 vboot-util ${D}/usr/local/bin/vboot-util
 }
 
 FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}"
+FILES_${PN} += "/usr/local/bin/vboot-util"

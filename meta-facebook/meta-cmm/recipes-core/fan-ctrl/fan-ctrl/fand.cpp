@@ -138,6 +138,11 @@
 
 #define PATH_CACHE_SIZE 256
 
+#define log_error(fmt, args...) \
+  syslog(LOG_ERR, "%s" fmt ": %s", __func__, ##args, strerror(errno))
+#define log_warn(fmt, args...) \
+  syslog(LOG_WARNING, "%s" fmt ": %s", __func__, ##args, strerror(errno))
+
 struct sensor_info_sysfs {
   char* prefix;
   char* suffix;
@@ -548,33 +553,20 @@ close_dir_out:
 }
 
 // Functions for reading from sysfs stub
-int read_sysfs_raw_internal(const char *device, char *value, int log)
+static int read_sysfs_raw_internal(const char *device, char *value, int log)
 {
   FILE *fp;
-  int rc;
-
-  if (device == NULL)
-  {
-    if (log)
-      syslog(LOG_INFO, "Device name null. ", device);
-    return -1;
-  }
-
-  if (value == NULL)
-  {
-    if (log)
-      syslog(LOG_INFO, "Read buffer null %s", device);
-    return -2;
-  }
+  int rc, err;
 
   fp = fopen(device, "r");
   if (!fp) {
-    int err = errno;
     if (log) {
-      syslog(LOG_INFO, "failed to open device %s for read: errno=%d", device, err);
-
+      err = errno;
+      syslog(LOG_INFO, "failed to open device %s for read: %s",
+             device, strerror(err));
+      errno = err;
     }
-    return err;
+    return -1;
   }
 
   rc = fscanf(fp, "%s", value);
@@ -582,28 +574,38 @@ int read_sysfs_raw_internal(const char *device, char *value, int log)
 
   if (rc != 1) {
     if (log) {
-      syslog(LOG_INFO, "failed to read device %s", device);
+      err = errno;
+      syslog(LOG_INFO, "failed to read device %s: %s",
+             device, strerror(err));
+      errno = err;
     }
-    return ENOENT;
-  } else {
-    return 0;
+    return -1;
   }
+
+  return 0;
 }
 
-int read_sysfs_raw(char *sysfs_path, char *buffer)
+static int read_sysfs_raw(char *sysfs_path, char *buffer)
 {
   return read_sysfs_raw_internal(sysfs_path, buffer, 1);
 }
 
-int read_sysfs_int(char *sysfs_path, int *buffer)
+// Returns 0 for success, or -1 on failures.
+static int read_sysfs_int(char *sysfs_path, int *buffer)
 {
-  int rc = 0;
+  int rc;
   char readBuf[PATH_CACHE_SIZE];
+
+  if (sysfs_path == NULL || buffer == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
   rc = read_sysfs_raw(sysfs_path, readBuf);
   if (rc == 0)
   {
-    if ((strstr(readBuf, "0x")) ||
-        (strstr(readBuf, "0X")))
+    if (strstr(readBuf, "0x") ||
+        strstr(readBuf, "0X"))
       sscanf(readBuf, "%x", buffer);
     else
       sscanf(readBuf, "%d", buffer);
@@ -612,30 +614,18 @@ int read_sysfs_int(char *sysfs_path, int *buffer)
 }
 
 // Functions for writing to system stub
-int write_sysfs_raw_internal(const char *device, char *value, int log)
+static int write_sysfs_raw_internal(const char *device, char *value, int log)
 {
   FILE *fp;
-  int rc;
-
-  if (device==NULL)
-  {
-    if (log)
-      syslog(LOG_INFO, "Device name null. ", device);
-    return -1;
-  }
-
-  if (value==NULL)
-  {
-    if (log)
-      syslog(LOG_INFO, "Read buffer null %s", device);
-    return -2;
-  }
+  int rc, err;
 
   fp = fopen(device, "w");
   if (!fp) {
-    int err = errno;
     if (log) {
-      syslog(LOG_INFO, "failed to open device %s for write : errno=%d", device, err);
+      err = errno;
+      syslog(LOG_INFO, "failed to open device %s for write : %s",
+             device, strerror(err));
+      errno = err;
     }
     return err;
   }
@@ -643,25 +633,34 @@ int write_sysfs_raw_internal(const char *device, char *value, int log)
   rc = fputs(value, fp);
   fclose(fp);
 
-  if (rc != 1) {
+  if (rc < 0) {
     if (log) {
+      err = errno;
       syslog(LOG_INFO, "failed to write to device %s", device);
+      errno = err;
     }
-    return ENOENT;
-  } else {
-    return 0;
+    return -1;
   }
+
+  return 0;
 }
 
-int write_sysfs_raw(char *sysfs_path, char* buffer)
+static int write_sysfs_raw(char *sysfs_path, char* buffer)
 {
   return write_sysfs_raw_internal(sysfs_path, buffer, 1);
 }
 
-int write_sysfs_int(char *sysfs_path, int buffer)
+// Returns 0 for success, or -1 on failures.
+static int write_sysfs_int(char *sysfs_path, int buffer)
 {
-  int rc = 0;
+  int rc;
   char writeBuf[PATH_CACHE_SIZE];
+
+  if (sysfs_path == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
   snprintf(writeBuf, PATH_CACHE_SIZE, "%d", buffer);
   return write_sysfs_raw(sysfs_path, writeBuf);
 }
@@ -706,7 +705,7 @@ static int read_temp_sysfs(struct sensor_info_sysfs *sensor)
    * By the time control reaches here, use_cache is always true
    * or this function already returned -1. So assume the cache is always on
    */
-   ret = read_sysfs_int(sensor->path_cache, &value);
+  ret = read_sysfs_int(sensor->path_cache, &value);
 
   /*  Note that Kernel sysfs stub pre-converts raw value in xxxxx format,
    *  which is equivalent to xx.xxx degree - all we need to do is to divide
@@ -717,8 +716,8 @@ static int read_temp_sysfs(struct sensor_info_sysfs *sensor)
   else
     value = value / 1000;
 
-  if(value < 0) {
-    syslog(LOG_ERR, "%s: failed to read temperature bus %s", __func__, fullpath);
+  if (value < 0) {
+    log_error("failed to read temperature bus %s", fullpath);
     return -1;
   }
 
@@ -818,7 +817,8 @@ static int galaxy100_set_fan_sysfs(int fan, int value)
   snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s", channel->prefix, "fantray1_pwm");
   ret = write_sysfs_int(fullpath, value);
   if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to set fan %s...%s, value 0x%x", __func__, channel->prefix, "fantray1_pwm", value);
+    log_error("failed to set fan %s...%s, value %#x",
+              channel->prefix, "fantray1_pwm", value);
     return -1;
   }
   usleep(11000);
@@ -826,7 +826,8 @@ static int galaxy100_set_fan_sysfs(int fan, int value)
   snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s", channel->prefix, "fantray2_pwm");
   ret = write_sysfs_int(fullpath, value);
   if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to set fan %s...%s, value 0x%x", __func__, channel->prefix, "fantray2_pwm", value);
+    log_error("failed to set fan %s...%s, value %#x",
+              channel->prefix, "fantray2_pwm", value);
     return -1;
   }
   usleep(11000);
@@ -834,7 +835,8 @@ static int galaxy100_set_fan_sysfs(int fan, int value)
   snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s", channel->prefix, "fantray3_pwm");
   ret = write_sysfs_int(fullpath, value);
   if(ret < 0) {
-    syslog(LOG_ERR, "%s: failed to set fan %s...%s, value 0x%x", __func__, channel->prefix, "fantray3_pwm", value);
+    log_error("failed to set fan %s...%s, value 0x%x",
+              channel->prefix, "fantray3_pwm", value);
     return -1;
   }
   usleep(11000);
@@ -856,9 +858,9 @@ static int galaxy100_fab_is_present_sysfs(int fan)
   snprintf(buf, PATH_CACHE_SIZE, "/sys/bus/i2c/drivers/cmmcpld/13-003e/fc%d_present", fan_1base);
 
   rc = read_sysfs_int(buf, &ret);
-
   if(rc < 0) {
-    syslog(LOG_ERR, "%s: failed to read module present reg 0x%x", __func__, GALAXY100_MODULE_PRESENT_REG);
+    log_error("failed to read module present reg %#x",
+    GALAXY100_MODULE_PRESENT_REG);
     return -1;
   }
 
@@ -902,7 +904,7 @@ static int galaxy100_lc_present_detect(void)
       }
     } else
     {
-      syslog(LOG_WARNING, "Unable to detect LC presence of LC%d(1-based)!\n", lc_1base);
+      log_warn("Unable to detect LC presence of LC%d(1-based)", lc_1base);
       lc_status[i] = 1;
     }
   }
@@ -969,7 +971,7 @@ static int galaxy100_cmm_is_master(void)
   snprintf(buf, PATH_CACHE_SIZE, "/sys/bus/i2c/drivers/cmmcpld/13-003e/cmm_role");
   rc = read_sysfs_int(buf, &ret);
   if(rc < 0) {
-    syslog(LOG_ERR, "%s: failed to read cmm status reg 0x%x", __func__, GALAXY100_CMM_STATUS_REG);
+    log_error("failed to read cmm status reg %#x", GALAXY100_CMM_STATUS_REG);
     return -1;
   }
   usleep(11000);
@@ -1031,7 +1033,7 @@ static int galaxy100_fan_is_okey_sysfs(int fan)
   rc = read_sysfs_int(fullpath, &ret);
   if ((ret < 0)|| (rc < 0))
   {
-    syslog(LOG_ERR, "%s: failed to read fan1 status %s", __func__, fullpath);
+    log_error("failed to read fan1 status %s", fullpath);
     error++;
   } else {
     usleep(11000);
@@ -1065,7 +1067,7 @@ static int galaxy100_fan_is_okey_sysfs(int fan)
   rc = read_sysfs_int(fullpath, &ret);
   if ((ret < 0)|| (rc < 0))
   {
-    syslog(LOG_ERR, "%s: failed to read fan2 status %s", __func__, fullpath);
+    log_error("failed to read fan2 status %s", fullpath);
     error++;
   } else {
     usleep(11000);
@@ -1099,7 +1101,7 @@ static int galaxy100_fan_is_okey_sysfs(int fan)
   rc = read_sysfs_int(fullpath, &ret);
   if ((ret < 0)|| (rc < 0))
   {
-    syslog(LOG_ERR, "%s: failed to read fan3 status %s", __func__, fullpath);
+    log_error("failed to read fan3 status %s", fullpath);
     error++;
   } else {
     usleep(11000);
@@ -1170,8 +1172,8 @@ static int galaxy100_write_fan_led_sysfs(int fan, const char *color)
              channel->prefix, fan_1base);
     rc = read_sysfs_int(fullpath, &fan_present);
     if (rc < 0) {
-      syslog(LOG_ERR, "%s: fantray %d not present (%s : %d)",
-             __func__, fan_1base, fullpath, ret);
+      log_error("fantray %d not present (%s : %d)",
+                fan_1base, fullpath, ret);
       return -1;
     }
     // Second, make sure it's in good condition
@@ -1179,8 +1181,8 @@ static int galaxy100_write_fan_led_sysfs(int fan, const char *color)
              channel->prefix, fan_1base);
     rc = read_sysfs_int(fullpath, &fan_alive);
     if (rc < 0) {
-      syslog(LOG_ERR, "%s: fantray %d is in failure state (%s : %d)",
-             __func__, fan_1base, fullpath, ret);
+      log_error("fantray %d is in failure state (%s : %d)",
+                fan_1base, fullpath, ret);
       return -1;
     }
     // If the state matches with what we want to write, write to led reg
@@ -1197,7 +1199,9 @@ static int galaxy100_write_fan_led_sysfs(int fan, const char *color)
         // Finally, read back, and make sure the value is there.
         rc = read_sysfs_int(fullpath, &ret);
         if ((rc < 0) || (ret != value)) {
-          syslog(LOG_ERR, "%s: failed to set led %s, value 0x%x (rc = %d, ret = %d, value = %d)\n", __func__, fullpath, value, rc, ret, value);
+          log_error("failed to set led %s, value %#x "
+                    "(rc = %d, ret = %d, value = %d)\n",
+                    fullpath, value, rc, ret, value);
           return -1;
         }
       }
@@ -1224,9 +1228,9 @@ void clear_fancpld_watchdog_timer() {
              galaxy100_fantray_info[fancpld_inst].channel_info.prefix,
              CMM_BMC_HEART_BEAT);
     rc = write_sysfs_int(sysfs_path_str, CLEAR_CMM_BMC_HEART_BEAT);
-    if (rc != 0)
-      syslog(LOG_WARNING, "%s: failed to clear watchdog in inst%d : %s\n",
-          __func__, fancpld_inst, sysfs_path_str);
+    if (rc < 0)
+      log_warn("failed to clear watchdog in inst%d (%s)",
+               fancpld_inst, sysfs_path_str);
   }
 }
 
@@ -1246,7 +1250,8 @@ static int system_shutdown(const char *why)
 
     ret = write_sysfs_int(fullpath, galaxy100_psu_info[i].value_to_shutdown);
     if(ret < 0) {
-      syslog(LOG_ERR, "%s: failed to set PSU channel 0x%x, value 0x%x", __func__, GALAXY100_PSU_CHANNEL_I2C_ADDR, 0x1 << i);
+      log_error("failed to set PSU channel %#x, value %#x",
+                GALAXY100_PSU_CHANNEL_I2C_ADDR, 0x1 << i);
       return -1;
     }
   }

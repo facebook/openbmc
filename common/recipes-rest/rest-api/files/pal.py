@@ -119,7 +119,7 @@ def pal_server_2s_action(command):
         cmd = '/usr/local/bin/power-util mb reset'
     else:
         return -1
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     if ret.startswith( 'Usage' ):
         return -1
     else:

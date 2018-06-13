@@ -53,7 +53,7 @@ class server2SNode(node):
         if is_read_only:
             result = { "result": 'failure' }
         else:
-            if pal_server_action(data["action"]) == -1:
+            if pal_server_2s_action(data["action"]) == -1:
                 res = 'failure'
             else:
                 res = 'success'

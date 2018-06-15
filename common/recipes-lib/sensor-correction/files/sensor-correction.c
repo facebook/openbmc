@@ -352,7 +352,7 @@ bail:
 
 int sensor_correction_apply(uint8_t fru, uint8_t sensor_id, float cond_value, float *sensor_reading)
 {
-  char value[MAX_VALUE_LEN];
+  char value[MAX_VALUE_LEN] = {0};
   size_t table_idx = 0;
   correction_table_t *table;
   size_t i;

@@ -1,12 +1,14 @@
 #!/bin/bash
 
 ME_UTIL="/usr/local/bin/me-util"
+PECI_UTIL="/usr/bin/bic-util"
 CMD_DIR="/usr/local/fbpackages/crashdump"
+INTERFACE="ME_INTERFACE"
 SENSOR_HISTORY=180
 SLOT=$1
 
 # read command from stdin
-function execute_cmd {
+function execute_via_me {
   # if ME_UTIL cannot be executed, return
   [ -x $ME_UTIL ] || \
     return
@@ -18,23 +20,55 @@ function execute_cmd {
         sed 's/^57 01 00 //g'
 }
 
+# read command from stdin
+function execute_via_peci {
+  # if PECI_UTIL cannot be executed, return
+  [ -x $PECI_UTIL ] || \
+    return
+
+  cat | \
+    sed 's/^0x/0xe0 0x29 0x15 0xa0 0x00 0x/g' $1 | \
+      $PECI_UTIL $SLOT --file /dev/stdin | \
+        sed 's/^15 A0 00 //g'
+}
+
+function execute_cmd {
+  cat | execute_via_me
+}
+
 # ARG: Bus[8], Device[5], Function[3], Register[12]
 function PCI_Config_Addr {
-  RESULT=0
   # BUS
-  RESULT=$((RESULT | (($1 & 0xFF) << 20) ))
+  RESULT=$((($1 & 0xFF) << 20))
   # DEV
-  RESULT=$((RESULT | (($2 & 0x1F) << 15) ))
+  RESULT=$((RESULT | (($2 & 0x1F) << 15)))
   # FUN
-  RESULT=$((RESULT | (($3 & 0x7) << 12) ))
+  RESULT=$((RESULT | (($3 & 0x7) << 12)))
   # REG
-  RESULT=$((RESULT | (($4 & 0xFFF) << 0) ))
-  printf "0x%x 0x%x 0x%x 0x%x"\
-    $(( RESULT & 0xFF )) \
-    $(( (RESULT >> 8) & 0xFF )) \
-    $(( (RESULT >> 16) & 0xFF )) \
-    $(( (RESULT >> 24) & 0xFF ))
+  RESULT=$((RESULT | (($4 & 0xFFF) << 0)))
+  printf "0x%x 0x%x 0x%x 0x%x" \
+    $((RESULT & 0xFF)) \
+    $(((RESULT >> 8) & 0xFF)) \
+    $(((RESULT >> 16) & 0xFF)) \
+    $(((RESULT >> 24) & 0xFF))
   return 0
+}
+
+function print_bus_device {
+  BUSM=$(($1 >> 4))
+  BUSL=$((($1 & 0xF) << 4))
+  for DEV in {0..0..1}; do
+    DEVM=$((DEV >> 1))
+    DEVL=$(((DEV & 0x1) << 3))
+    for (( FUN=0; FUN<=0; FUN++ )); do
+      printf "echo \"BUS 0x%02x, Dev 0x%02x, Fun 0x%02x, Reg: 0x100 ~ 0x137\"\n" $1 $DEV $FUN
+      BYTE1=$(((DEVL | FUN) << 4 | 0x1))
+      BYTE2=$((BUSL | DEVM))
+      for REG in {0..52..4}; do
+        printf "0x30 0x06 0x05 0x61 0x00 0x%02x 0x%02x 0x%02x 0x0%x\n" $REG $BYTE1 $BYTE2 $BUSM
+      done
+    done
+  done
 }
 
 function find_end_device {
@@ -46,10 +80,8 @@ function find_end_device {
   SUBORDINATE_BUS=0x$(echo $RES| awk '{print $4;}')
   if [ "$CC" == "40" ] && [ "$SECONDARY_BUS" != "0x00" ] && [ "$SUBORDINATE_BUS" != "0x00" ]; then
     for (( BUS=$SECONDARY_BUS; BUS<=$SUBORDINATE_BUS; BUS++ )); do
-      BUS_MS_NIBBLE=$(printf "%x" $((BUS >> 4)) )
-      BUS_LS_NIBBLE=$(printf "%x" $((BUS & 0xF)) )
-      [ -r $CMD_DIR/crashdump_pcie_bus ] && \
-        sed "s/<BUSM>/$BUS_MS_NIBBLE/g; s/<BUSL>/$BUS_LS_NIBBLE/g" $CMD_DIR/crashdump_pcie_bus | execute_cmd
+      printf "End Device on Bus 0x%02x\n" $BUS
+      echo "$(print_bus_device $BUS)" | execute_cmd
     done
   fi
 }
@@ -65,7 +97,7 @@ function pcie_dump {
 
   # Completion Code
   CC=$(echo $RES| awk '{print $1;}')
-  
+
   # Success
   if [ "$CC" == "40" ]; then
     # CPU root port - Bus 0x16/0x64, Dev 0~3, Fun:0
@@ -149,7 +181,7 @@ echo ""
 
 if [ "$2" = "coreid" ]; then
   [ -r $CMD_DIR/crashdump_coreid ] && \
-      $ME_UTIL $1 --file $CMD_DIR/crashdump_coreid | sed 's/^57 01 00 //g'
+      cat $CMD_DIR/crashdump_coreid | execute_cmd
 elif [ "$2" = "msr" ]; then
   [ -r $CMD_DIR/crashdump_msr ] && \
       cat $CMD_DIR/crashdump_msr | execute_cmd

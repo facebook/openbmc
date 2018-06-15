@@ -172,7 +172,7 @@ second_dwr_dump(void *arg) {
     sprintf(cmd,"rm %s",fname);
     system(cmd);
   }
-  
+
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
@@ -196,8 +196,13 @@ fby2_common_crashdump(uint8_t fru,bool platform_reset) {
     return 0;
   }
 
-  // Check if a crashdump for that fru is already running.
-  // If yes, kill that thread and start a new one.
+  // Check if a crashdump for that fru is already running
+  if (t_dump[fru-1].is_running == 2) {
+    syslog(LOG_WARNING, "fby2_common_crashdump: second_dwr_dump for FRU %d is running\n", fru);
+    return 0;
+  }
+
+  // If yes, kill that thread and start a new one
   if (t_dump[fru-1].is_running) {
     ret = pthread_cancel(t_dump[fru-1].pt);
     if (ret == ESRCH) {
@@ -222,19 +227,17 @@ fby2_common_crashdump(uint8_t fru,bool platform_reset) {
   t_dump[fru-1].fru = fru;
   if (platform_reset) {
     if (pthread_create(&(t_dump[fru-1].pt), NULL, second_dwr_dump, (void*) &t_dump[fru-1].fru) < 0) {
-    syslog(LOG_WARNING, "fby2_common_crashdump: pthread_create for"
-        " FRU %d failed\n", fru);
-    return -1;
+      syslog(LOG_WARNING, "fby2_common_crashdump: pthread_create for FRU %d failed\n", fru);
+      return -1;
     }
+    t_dump[fru-1].is_running = 2;
   } else {
     if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, (void*) &t_dump[fru-1].fru) < 0) {
-    syslog(LOG_WARNING, "fby2_common_crashdump: pthread_create for"
-        " FRU %d failed\n", fru);
-    return -1;
+      syslog(LOG_WARNING, "fby2_common_crashdump: pthread_create for FRU %d failed\n", fru);
+      return -1;
     }
+    t_dump[fru-1].is_running = 1;
   }
-
-  t_dump[fru-1].is_running = 1;
 
   syslog(LOG_INFO, "fby2_common_crashdump: Crashdump for FRU: %d is being generated.", fru);
 

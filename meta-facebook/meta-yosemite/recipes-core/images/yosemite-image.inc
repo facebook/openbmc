@@ -45,6 +45,7 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   conf-util \
   ncsi-util \
+  ncsid \
   "
 
 IMAGE_FEATURES += " \

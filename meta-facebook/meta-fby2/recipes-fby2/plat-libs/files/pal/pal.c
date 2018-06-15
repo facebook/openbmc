@@ -1562,6 +1562,7 @@ server_12v_on(uint8_t slot_id) {
   bic_gpio_t gpio;
   uint8_t pair_slot_id;
   int pair_set_type=-1;
+  uint8_t is_sled_out = 1;
 #if defined(CONFIG_FBY2_EP)
   uint8_t server_type, config;
 #endif
@@ -1613,6 +1614,12 @@ server_12v_on(uint8_t slot_id) {
 
   sleep(2); // Wait for latch pin stable
 
+  // FAN Latch Detect
+  if (pal_get_fan_latch(&is_sled_out) != 0) {
+    syslog(LOG_WARNING, "Get SLED status in/out is failed.");
+    is_sled_out = 1; // default sled out
+  }
+
   ret = pal_is_slot_latch_closed(slot_id, &slot_latch);
   if (ret < 0) {
     syslog(LOG_WARNING,"%s: pal_is_slot_latch_closed failed for slot: %d", __func__, slot_id);
@@ -1620,8 +1627,10 @@ server_12v_on(uint8_t slot_id) {
   }
 
   if (1 != slot_latch) {
-    server_12v_off(slot_id);
-    return -1;
+    if (is_sled_out) { // Only activate 12V off action when sled is out
+      server_12v_off(slot_id);
+      return -1;
+    }
   }
 
   if (pal_is_device_pair(slot_id)) {
@@ -1637,8 +1646,10 @@ server_12v_on(uint8_t slot_id) {
     }
 
     if (1 != slot_latch) {
-      server_12v_off(pair_slot_id);
-      return -1;
+      if (is_sled_out) { // Only activate 12V off action when sled is out
+        server_12v_off(pair_slot_id);
+        return -1;
+      }
     }
   }
 

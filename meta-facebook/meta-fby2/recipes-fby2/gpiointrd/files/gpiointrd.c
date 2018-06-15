@@ -247,10 +247,9 @@ static void gpio_event_handle(gpio_poll_st *gp)
       sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
       read_device(vpath, &value);
 
-      // HOT SERVER event would be detected when SLED is pulled out
+      syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
+      // 12V action would be triggered when SLED is pulled out
       if (value) {
-        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
-
         pthread_mutex_lock(&latch_open_mutex[slot_id]);
         if ( IsLatchOpenStart[slot_id] )
         {
@@ -378,6 +377,7 @@ latch_open_handler(void *ptr) {
   char path_slot[128];
   char path_pair_slot[128];
   int pair_set_type;
+  char vpath[80] = {0};
   pthread_detach(pthread_self());
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -413,14 +413,19 @@ latch_open_handler(void *ptr) {
       break;
   }
 
-
   ret = pal_is_server_12v_on(slot_id, &value);
   if (ret < 0)
     syslog(LOG_WARNING, "%s : pal_is_server_12v_on failed for slot: %u", __func__, slot_id);
   if (value) {
-    // Active 12V off to protect server/device board
-    if(pal_set_server_power(slot_id, SERVER_12V_OFF) < 0)
-      syslog(LOG_WARNING,"%s : server_12v_off failed for slot: %u", __func__, slot_id);
+    sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
+    read_device(vpath, &value);
+
+    // 12V action would be triggered when SLED is pulled out
+    if (value) {
+      // Active 12V off to protect server/device board
+      if(pal_set_server_power(slot_id, SERVER_12V_OFF) < 0)
+        syslog(LOG_WARNING,"%s : server_12v_off failed for slot: %u", __func__, slot_id);
+    }
   }
 
   pthread_mutex_lock(&latch_open_mutex[slot_id]);
@@ -662,10 +667,16 @@ static void slot_latch_check(void) {
           break;
         }
       }
-     
-      syslog(LOG_CRIT,"FRU: %d, SLOT%d_EJECTOR_LATCH is not closed", slot_id, slot_id);
-      if (pal_set_server_power(slot_id, SERVER_12V_OFF) < 0)
-        syslog(LOG_WARNING,"%s : server_12v_off failed for slot: %d", __func__, slot_id);
+
+      sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
+      read_device(vpath, &value);
+
+      syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
+      // 12V action would be triggered when SLED is pulled out
+      if (value) {
+        if (pal_set_server_power(slot_id, SERVER_12V_OFF) < 0)
+          syslog(LOG_WARNING,"%s : server_12v_off failed for slot: %d", __func__, slot_id);
+      }
 
       flock(fd, LOCK_UN);
       close(fd);

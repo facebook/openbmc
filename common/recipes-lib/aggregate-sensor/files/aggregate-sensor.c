@@ -90,7 +90,7 @@ int get_key(cond_key_type type, const char *cond_key, char *cond_value)
 int
 aggregate_sensor_read(size_t index, float *value)
 {
-  char cond_value[MAX_VALUE_LEN];
+  char cond_value[MAX_VALUE_LEN] = {0};
   size_t i;
   int f_idx = -1;
   aggregate_sensor_t *snr;

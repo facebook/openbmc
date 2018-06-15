@@ -33,7 +33,29 @@ function execute_via_peci {
 }
 
 function execute_cmd {
-  cat | execute_via_me
+  if [ "$INTERFACE" == "PECI_INTERFACE" ]; then
+    cat | execute_via_peci
+    return
+  fi
+
+  RES=$($ME_UTIL $SLOT 0x18 0x01)
+  RET=$?
+  # if ME has response and in operational mode, PECI through ME
+  if [ "$RET" -eq "0" ] && [ "${RES:6:1}" == "0" ]; then
+    RES=$($ME_UTIL $SLOT 0xb8 0x40 0x57 0x01 0x00 0x30 0x05 0x05 0xa1 0x00 0x00 0x00 0x00)
+    RET=$?
+    if [ "$RET" -eq "0" ] && [ "${RES:0:11}" == "57 01 00 40" ]; then
+      cat | execute_via_me
+    else
+      INTERFACE="PECI_INTERFACE"
+      cat | execute_via_peci
+    fi
+  # else use wired PECI directly
+  else
+    # echo "Use BIC wired PECI interface due to ME abnormal"
+    INTERFACE="PECI_INTERFACE"
+    cat | execute_via_peci
+  fi
 }
 
 # ARG: Bus[8], Device[5], Function[3], Register[12]

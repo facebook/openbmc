@@ -213,6 +213,8 @@ fby2_common_crashdump(uint8_t fru,bool platform_reset) {
       system(cmd);
       sprintf(cmd, "ps | grep 'me-util' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
       system(cmd);
+      sprintf(cmd, "ps | grep 'bic-util' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
+      system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_crashdump: Previous crashdump thread is cancelled");
 #endif

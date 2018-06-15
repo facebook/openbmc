@@ -221,5 +221,5 @@ class TestSystem(unittest.TestCase):
         for (dry_run, expected_arguments) in inputs_outputs:
             with self.assertRaises(SystemExit):
                 system.reboot(dry_run, 'testing', self.logger)
-                mocked_call.assert_called_with(expected_arguments)
+                mocked_call.assert_called_once_with(expected_arguments)
                 mocked_shutdown.assert_called()

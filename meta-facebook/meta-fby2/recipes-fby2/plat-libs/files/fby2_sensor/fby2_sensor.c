@@ -98,6 +98,8 @@
 #define TOTAL_M2_CH_ON_GP 6
 #define MAX_POS_READING_MARGIN 127
 
+#define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
+
 static float ml_hsc_r_sense = ML_ADM1278_R_SENSE;
 
 // List of BIC sensors which need to do negative reading handle
@@ -199,10 +201,6 @@ const uint8_t bic_discrete_list[] = {
   BIC_SENSOR_PROC_FAIL,
 };
 
-
-
-#ifdef CONFIG_FBY2_RC
-
 // List of BIC (RC) sensors to be monitored
 const uint8_t bic_rc_sensor_list[] = {
   BIC_RC_SENSOR_MB_OUTLET_TEMP,
@@ -221,10 +219,10 @@ const uint8_t bic_rc_sensor_list[] = {
   BIC_RC_SENSOR_PMF2344_TEMP,
   BIC_RC_SENSOR_CVR_APC_TEMP,
   BIC_RC_SENSOR_CVR_CBF_TEMP,
-  BIC_RC_SENSOR_SOC_DIMM2_TEMP,
-  BIC_RC_SENSOR_SOC_DIMM3_TEMP,
-  BIC_RC_SENSOR_SOC_DIMM4_TEMP,
-  BIC_RC_SENSOR_SOC_DIMM5_TEMP,
+  BIC_RC_SENSOR_SOC_DIMMB_TEMP,
+  BIC_RC_SENSOR_SOC_DIMMA_TEMP,
+  BIC_RC_SENSOR_SOC_DIMMC_TEMP,
+  BIC_RC_SENSOR_SOC_DIMMD_TEMP,
   BIC_RC_SENSOR_SOC_PWR,
   BIC_RC_SENSOR_PVDDQ_423_VR_TEMP,
   BIC_RC_SENSOR_PVDDQ_510_VR_TEMP,
@@ -250,8 +248,6 @@ const uint8_t bic_rc_discrete_list[] = {
   BIC_RC_SENSOR_VR_HOT ,
   BIC_RC_SENSOR_SYS_BOOTING_STS,
 };
-#endif
-
 
 #ifdef CONFIG_FBY2_EP
 // List of BIC (EP) sensors to be monitored
@@ -483,6 +479,14 @@ enum ina_register {
   INA230_VOLT = 0x02,
   INA230_POWER = 0x03,
   INA230_CALIBRATION = 0x05,
+};
+
+rc_dimm_location_info rc_dimm_location_list[] = {
+  // {dimm_location_file, dimm_sensor_number}
+  {SYS_CONFIG_PATH "fru%u_dimm0_location", BIC_RC_SENSOR_SOC_DIMMB_TEMP},
+  {SYS_CONFIG_PATH "fru%u_dimm1_location", BIC_RC_SENSOR_SOC_DIMMA_TEMP},
+  {SYS_CONFIG_PATH "fru%u_dimm2_location", BIC_RC_SENSOR_SOC_DIMMC_TEMP},
+  {SYS_CONFIG_PATH "fru%u_dimm3_location", BIC_RC_SENSOR_SOC_DIMMD_TEMP},
 };
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -970,15 +974,55 @@ read_nic_temp(const char *device, uint8_t addr, float *value) {
 }
 
 static int
+rc_dimm_present_check(uint8_t fru, int index, uint8_t sensor_num) {
+
+  int fd;
+  char path[64] = {0};
+  uint8_t dimm_present_status;
+  int dimm_present_data_size = 1;
+
+  sprintf(path, rc_dimm_location_list[index].dimm_location_file, fru);
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    return -1;     //DIMM location file doesn't exist
+  }
+
+  if (read(fd, &dimm_present_status, dimm_present_data_size) != dimm_present_data_size) {
+    close(fd);
+    return -1;
+  }
+
+  switch(dimm_present_status) {
+    case 0x01:     //DIMM present
+      break;
+    case 0xFF:     //DIMM not present
+    default:
+      close(fd);
+      return -1;
+  }
+
+  close(fd);
+  return 0;
+}
+
+static int
 bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     void *value) {
 
   int ret;
   int i;
+  int index;
   sdr_full_t *sdr;
   ipmi_sensor_reading_t sensor;
   ipmi_accuracy_sensor_reading_t acsensor;
   bool is_accuracy_sensor = false;
+  uint8_t server_type = 0xFF;
+
+  ret = fby2_get_server_type(fru, &server_type);
+  if (ret) {
+    syslog(LOG_ERR, "%s, Get server type failed", __func__);
+  }
 
 #if !defined(CONFIG_FBY2_RC) && !defined(CONFIG_FBY2_EP)  // workaround for now, this is only for TL
   for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
@@ -1006,6 +1050,15 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
         sensor_num, sensor.flags);
 #endif
     return EER_READ_NA;
+  }
+
+  if(server_type == SERVER_TYPE_RC) {
+    for(index = 0; index < sizeof(rc_dimm_location_list)/sizeof(rc_dimm_location_info); index++) {
+      if(sensor_num == rc_dimm_location_list[index].dimm_sensor_num) {
+        if(rc_dimm_present_check(fru, index, sensor_num))
+          return EER_READ_NA;
+      }
+    }
   }
 
   if (discrete) {

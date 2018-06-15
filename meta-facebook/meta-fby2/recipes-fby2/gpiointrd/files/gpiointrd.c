@@ -52,7 +52,8 @@
 #define HOTSERVICE_FILE "/tmp/slot%d_reinit"
 #define HSLOT_PID  "/tmp/slot%u_reinit.pid"
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
-#define POST_FLAG_FILE "/tmp/cache_store/slot%d_post_flag" 
+#define POST_FLAG_FILE "/tmp/cache_store/slot%d_post_flag"
+#define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"  
 
 #define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 
@@ -438,6 +439,7 @@ hsvc_event_handler(void *ptr) {
   char vpath[80] = {0};
   char hspath[80] = {0};
   char postpath[80] = {0};
+  char sys_config_path[80] = {0};
   char cmd[128] = {0};
   char slotrcpath[80] = {0};
   char hslotpid[80] = {0};
@@ -498,6 +500,12 @@ hsvc_event_handler(void *ptr) {
         sprintf(postpath, POST_FLAG_FILE, hsvc_info->slot_id);
         memset(cmd, 0, sizeof(cmd));
         sprintf(cmd,"rm %s",postpath);
+        system(cmd);
+
+        // Remove DIMM and CPU related file when board has been removed
+        sprintf(sys_config_path, SYS_CONFIG_FILE, hsvc_info->slot_id);
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd,"rm %s",sys_config_path);
         system(cmd);
 
         // Create file for 12V-on re-init

@@ -45,6 +45,11 @@ typedef struct _sensor_info_t {
   sdr_full_t sdr;
 } sensor_info_t;
 
+typedef struct {
+  int8_t *dimm_location_file;
+  uint8_t dimm_sensor_num;
+} rc_dimm_location_info;
+
 // Sensors under Bridge IC
 enum {
   BIC_SENSOR_MB_INLET_TEMP = 0x01,
@@ -120,8 +125,6 @@ enum {
   BIC_SENSOR_CAT_ERR = 0xEB, //Event-only
 };
 
-#ifdef CONFIG_FBY2_RC
-
 // Sensors under Bridge IC (RC)
 enum {
   BIC_RC_SENSOR_MB_OUTLET_TEMP = 0x01,
@@ -140,10 +143,10 @@ enum {
   BIC_RC_SENSOR_PMF2344_TEMP = 0x16,
   BIC_RC_SENSOR_CVR_APC_TEMP = 0x17,
   BIC_RC_SENSOR_CVR_CBF_TEMP = 0x18,
-  BIC_RC_SENSOR_SOC_DIMM2_TEMP = 0x19,
-  BIC_RC_SENSOR_SOC_DIMM3_TEMP = 0x1A,
-  BIC_RC_SENSOR_SOC_DIMM4_TEMP = 0x1B,
-  BIC_RC_SENSOR_SOC_DIMM5_TEMP = 0x1C,
+  BIC_RC_SENSOR_SOC_DIMMB_TEMP = 0x19,
+  BIC_RC_SENSOR_SOC_DIMMA_TEMP = 0x1A,
+  BIC_RC_SENSOR_SOC_DIMMC_TEMP = 0x1B,
+  BIC_RC_SENSOR_SOC_DIMMD_TEMP = 0x1C,
   BIC_RC_SENSOR_SOC_PWR = 0x1D,
   BIC_RC_SENSOR_PVDDQ_423_VR_TEMP = 0x28,
   BIC_RC_SENSOR_PVDDQ_510_VR_TEMP = 0x29,
@@ -169,7 +172,6 @@ enum {
   BIC_RC_SENSOR_RAS_FATAL = 0xCD,     //Event-only
   BIC_RC_SENSOR_PWR_FAIL = 0xCE,      //Event-only
 };
-#endif
 
 #ifdef CONFIG_FBY2_EP
 // Sensors under Bridge IC (EP)

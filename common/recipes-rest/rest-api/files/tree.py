@@ -91,9 +91,9 @@ class tree:
         return web.json_response(result, dumps=dumps_bytestr)
 
     async def handlePost(self, request):
-        result = {'result': 'booo'}
+        result = {'result': 'not-supported'}
         data = await request.json()
-        if 'action' in data:
+        if 'action' in data and data['action'] in self.data.actions:
             result = self.data.doAction(data, False)
         return web.json_response(result, dumps=dumps_bytestr)
 

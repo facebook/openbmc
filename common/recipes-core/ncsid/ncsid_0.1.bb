@@ -14,7 +14,7 @@ SRC_URI = "file://Makefile \
           "
 
 S = "${WORKDIR}"
-DEPENDS =+ " update-rc.d-native"
+DEPENDS =+ " update-rc.d-native libpal"
 
 binfiles = "ncsid"
 

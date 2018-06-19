@@ -41,7 +41,10 @@
 #include <poll.h>
 #include <pthread.h>
 #include <arpa/inet.h>
- #include <stddef.h>
+#include <stddef.h>
+#include <openbmc/obmc-pal.h>
+#include <time.h>
+
 
 //#define DEBUG 0
 
@@ -51,6 +54,22 @@
 // special  channel/cmd  used for register AEN handler with kernel
 #define REG_AEN_CH  0xfa
 #define REG_AEN_CMD 0xce
+
+
+/*
+   Default config:
+      - poll NIC status once every 60 seconds
+      - log 1 NIC error entries per 30 min
+*/
+
+/* POLL nic status every N seconds */
+#define NIC_STATUS_SAMPLING_DELAY  60
+/* to avoid log flood when NIC reports error, we only allow 1 NIC log Entry
+   per this many minutes
+*/
+#define NIC_LOG_PERIOD 30
+#define NUM_NIC_SAMPLES  (NIC_LOG_PERIOD * (60/NIC_STATUS_SAMPLING_DELAY))
+
 
 
 typedef struct ncsi_nl_msg_t {
@@ -82,6 +101,57 @@ typedef struct ncsi_nl_response {
 #define NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED  0x81
 #define MAX_AEN_DATA_IN_SHORT                   16
 
+typedef union {
+  struct
+  {
+     unsigned long link_flag :    1;
+     unsigned long speed_duplex : 4;
+     unsigned long auto_negotiate_en : 1;
+     unsigned long auto_negoation_complete : 1;
+     unsigned long parallel_detection : 1;
+     unsigned long rsv : 1;
+     unsigned long link_partner_1000_full_duplex : 1;
+     unsigned long link_partner_1000_half_duplex : 1;
+     unsigned long link_partner_100_T4 : 1;
+     unsigned long link_partner_100_full_duplex : 1;
+     unsigned long link_partner_100_half_duplex : 1;
+     unsigned long link_partner_10_full_duplex : 1;
+     unsigned long link_partner_10_half_duplex : 1;
+     unsigned long tx_flow_control : 1;
+     unsigned long rx_flow_control : 1;
+     unsigned long link_partner_flow_control: 2;
+     unsigned long serdes : 1;
+     unsigned long oem_link_speed_valid : 1;
+     unsigned long rsv2 : 10;
+  } bits;
+  unsigned long all32;
+} Link_Status;
+
+typedef union {
+  struct
+  {
+     unsigned long host_NC_driver_status :    1;
+     unsigned long rsv : 31;
+  } bits;
+  unsigned long all32;
+} Other_Indications;
+
+/* Get Link Status Response */
+typedef struct {
+  Link_Status link_status;
+  Other_Indications other_indications;
+  unsigned long oem_link_status;
+} __attribute__((packed)) Get_Link_Status_Response;
+
+/* NC-SI Response Packet */
+typedef struct {
+/* end of NC-SI header */
+	unsigned short  Response_Code;
+	unsigned short  Reason_Code;
+	unsigned char   Payload_Data[128];
+} __attribute__((packed)) NCSI_Response_Packet;
+
+
 typedef struct {
 /* Ethernet Header */
 	unsigned char  DA[6];
@@ -111,6 +181,63 @@ typedef struct _nl_sfd_t {
   int fd;
   int sock;
 } nl_sfd_t;
+
+
+static void
+process_NCSI_resp(NCSI_NL_RSP_T *buf)
+{
+  char logbuf[512];
+  int i=0;
+
+  // flag to ensure we only log NIC error event once per NIC_LOG_PERIOD
+  static int log_event = 0;
+
+  NCSI_Response_Packet *resp = (NCSI_Response_Packet *)buf->msg_payload;
+  Get_Link_Status_Response *linkresp = (Get_Link_Status_Response *)resp->Payload_Data;
+  Link_Status linkstatus;
+  Other_Indications linkOther;
+  linkstatus.all32 = ntohl(linkresp->link_status.all32);
+  linkOther.all32 = ntohl(linkresp->other_indications.all32);
+
+  // check NIC link and driver status, log if either reports error
+  if ((linkstatus.bits.link_flag) && (linkOther.bits.host_NC_driver_status)) {
+    // reset our log count if good status is detected, so next error status will be logged
+    log_event = 0;
+  } else {
+    // NIC error detected
+
+    if ((log_event > 0) && (log_event < NUM_NIC_SAMPLES)) {
+      // NIC erorr status has already been logged in this period, do not log again
+      log_event++;
+    } else {
+      // first time NIC error has been detected in a new sampling period, log it
+      i += sprintf(logbuf, "NIC error:");
+      i += sprintf(logbuf + i, "Rsp:0x%04x ", ntohs(resp->Response_Code));
+      i += sprintf(logbuf + i, "Rsn:0x%04x ", ntohs(resp->Reason_Code));
+      i += sprintf(logbuf + i, "Link:0x%lx ", linkstatus.all32);
+      i += sprintf(logbuf + i, "(LF:0x%x ", linkstatus.bits.link_flag);
+      i += sprintf(logbuf + i, "SP:0x%x ",  linkstatus.bits.speed_duplex);
+      i += sprintf(logbuf + i, "SD:0x%x) ", linkstatus.bits.serdes);
+      i += sprintf(logbuf + i, "Other:0x%lx ", linkOther.all32);
+      i += sprintf(logbuf + i, "(Driver:0x%x) ", linkOther.bits.host_NC_driver_status);
+      i += sprintf(logbuf + i, "OEM:0x%lx ", (unsigned long)ntohl(linkresp->oem_link_status));
+      syslog(LOG_CRIT, "%s", logbuf);
+
+      // reset sampling counter
+      log_event = 1;
+    }
+  }
+}
+
+
+// helper function to check if a given buf is a valid AEN
+static int
+is_aen_packet(AEN_Packet *buf)
+{
+  return (  (buf->MC_ID == 0x00)
+         && (buf->Header_Revision == 0x01)
+         && (buf->IID == 0x00));
+}
 
 
 static void
@@ -155,9 +282,7 @@ process_NCSI_AEN(AEN_Packet *buf)
 #endif
 
 
-  if ((buf->MC_ID != 0x00) ||
-      (buf->Header_Revision != 0x01) ||
-      (buf->IID != 0x00)) {
+  if (!is_aen_packet(buf)) {
     // Invalid AEN packet
     syslog(LOG_NOTICE, "ncsid: Invalid NCSI AEN rcvd: MC_ID=0x%x Rev=0x%x IID=0x%x\n",
            buf->MC_ID, buf->Header_Revision, buf->IID);
@@ -173,6 +298,7 @@ process_NCSI_AEN(AEN_Packet *buf)
     // DMTF standard AENs
     switch (buf->AEN_Type) {
       case AEN_TYPE_LINK_STATUS_CHANGE:
+        log_level = LOG_CRIT;
         sprintf(logbuf + strlen(logbuf), ", LinkStatus=0x%04x-%04x",
         ntohs(buf->Optional_AEN_Data[0]),
         ntohs(buf->Optional_AEN_Data[1]));
@@ -182,10 +308,12 @@ process_NCSI_AEN(AEN_Packet *buf)
         break;
 
       case AEN_TYPE_CONFIGURATION_REQUIRED:
+        log_level = LOG_CRIT;
         sprintf(logbuf + strlen(logbuf), ", Config Required");
         break;
 
       case AEN_TYPE_HOST_NC_DRIVER_STATUS_CHANGE:
+        log_level = LOG_CRIT;
         sprintf(logbuf + strlen(logbuf), ", DriverStatus=0x%04x-%04x",
         ntohs(buf->Optional_AEN_Data[0]),
         ntohs(buf->Optional_AEN_Data[1]));
@@ -234,9 +362,11 @@ process_NCSI_AEN(AEN_Packet *buf)
           break;
 
         default:
+          log_level = LOG_CRIT;
           sprintf(logbuf + strlen(logbuf), ", Unknown BCM AEN Type");
       }
     } else {
+      log_level = LOG_CRIT;
       sprintf(logbuf + strlen(logbuf), ", Unknown OEM AEN, IANA=0x%lx", manu_id);
     }
   }
@@ -280,12 +410,16 @@ ncsi_rx_handler(void *sfd) {
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
     rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
-    syslog(LOG_NOTICE, "ncsid: NCSI AEN rcvd, pl_len=%d, type=0x%x\n",
-            rcv_buf->payload_length,
-            rcv_buf->msg_payload[offsetof(AEN_Packet, AEN_Type)]);
-    process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
-
+    if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
+      syslog(LOG_NOTICE, "ncsid rx: aen packet rcvd, pl_len=%d, type=0x%x",
+              rcv_buf->payload_length,
+              rcv_buf->msg_payload[offsetof(AEN_Packet, AEN_Type)]);
+      process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
+    } else {
+      process_NCSI_resp(rcv_buf);
+    }
   }
+
   free(nlh);
   close(sock_fd);
 
@@ -293,52 +427,19 @@ ncsi_rx_handler(void *sfd) {
 }
 
 
-
-// Thread to setup netlink and recieve AEN
+// Thread to send periodic NC-SI cmmands to check NIC status
 static void*
-ncsi_aen_handler(void *unused) {
-  int sock_fd, ret;
-  struct sockaddr_nl src_addr, dest_addr;
+ncsi_tx_handler(void *sfd) {
+  int ret, sock_fd = ((nl_sfd_t *)sfd)->fd;
+  struct sockaddr_nl dest_addr;
   struct nlmsghdr *nlh = NULL;
   NCSI_NL_MSG_T *nl_msg = NULL;
   struct iovec iov;
   struct msghdr msg;
-  pthread_t tid_rx;
   int msg_size = sizeof(NCSI_NL_MSG_T);
-  nl_sfd_t *sfd;
 
 
-  syslog(LOG_INFO, "ncsid tx: ncsi_tx_handler thread started\n");
-  /* open NETLINK socket to send message to kernel */
-  sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
-  if(sock_fd < 0)  {
-    syslog(LOG_ERR, "ncsid tx: Error: failed to allocate tx socket\n");
-    return NULL;
-  }
-
-  memset(&msg, 0, sizeof(msg));
-  memset(&src_addr, 0, sizeof(src_addr));
-  src_addr.nl_family = AF_NETLINK;
-  src_addr.nl_pid = getpid(); /* self pid */
-
-  if (bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr)) == -1) {
-    syslog(LOG_ERR, "ncsid tx: bind socket failed\n");
-    goto close_and_exit;
-  };
-
-  sfd = (nl_sfd_t *)malloc(sizeof(nl_sfd_t));
-  if (!sfd) {
-    syslog(LOG_ERR, "ncsid tx: malloc fail on sfd\n");
-    goto close_and_exit;
-  }
-
-  sfd->fd = sock_fd;
-  if (pthread_create(&tid_rx, NULL, ncsi_rx_handler, (void*) sfd) != 0) {
-    syslog(LOG_ERR, "ncsid tx: pthread_create failed on ncsi_rx_handler, errno %d\n",
-           errno);
-    goto free_and_exit;
-  }
-
+  syslog(LOG_INFO, "ncsid: ncsi_tx_handler thread started");
   memset(&dest_addr, 0, sizeof(dest_addr));
   dest_addr.nl_family = AF_NETLINK;
   dest_addr.nl_pid = 0;    /* For Linux Kernel */
@@ -364,6 +465,109 @@ ncsi_aen_handler(void *unused) {
   /* send registration message to kernel to register ncsid as AEN handler */
   /* for now only listens on eth0 */
   sprintf(nl_msg->dev_name, "eth0");
+  nl_msg->channel_id = 0;
+  nl_msg->cmd = 0x0a; // get link status
+  nl_msg->payload_length = 0;
+
+  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
+
+  iov.iov_base = (void *)nlh;
+  iov.iov_len = nlh->nlmsg_len;
+  msg.msg_name = (void *)&dest_addr;
+  msg.msg_namelen = sizeof(dest_addr);
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+
+  while (1) {
+    /* send "Get Link status" message to NIC  */
+    ret = sendmsg(sock_fd,&msg,0);
+    if (ret < 0) {
+      syslog(LOG_ERR, "ncsid tx: failed to send cmd, status ret = %d, errno=%d\n",
+               ret, errno);
+    }
+    sleep(NIC_STATUS_SAMPLING_DELAY);
+  }
+
+free_and_exit:
+  free(nlh);
+  close(sock_fd);
+
+  pthread_exit(NULL);
+}
+
+
+// Thread to setup netlink and recieve AEN
+static void*
+ncsi_aen_handler(void *unused) {
+  int sock_fd, ret;
+  struct sockaddr_nl src_addr, dest_addr;
+  struct nlmsghdr *nlh = NULL;
+  NCSI_NL_MSG_T *nl_msg = NULL;
+  struct iovec iov;
+  struct msghdr msg;
+  pthread_t tid_rx;
+  pthread_t tid_tx;
+  int msg_size = sizeof(NCSI_NL_MSG_T);
+  nl_sfd_t *sfd;
+
+
+  syslog(LOG_INFO, "ncsid ncsi_aen_handler: ncsi_tx_handler thread started\n");
+  /* open NETLINK socket to send message to kernel */
+  sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
+  if(sock_fd < 0)  {
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: Error: failed to allocate tx socket\n");
+    return NULL;
+  }
+
+  memset(&msg, 0, sizeof(msg));
+  memset(&src_addr, 0, sizeof(src_addr));
+  src_addr.nl_family = AF_NETLINK;
+  src_addr.nl_pid = getpid(); /* self pid */
+
+  if (bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr)) == -1) {
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: bind socket failed\n");
+    goto close_and_exit;
+  };
+
+  sfd = (nl_sfd_t *)malloc(sizeof(nl_sfd_t));
+  if (!sfd) {
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: malloc fail on sfd\n");
+    goto close_and_exit;
+  }
+
+  sfd->fd = sock_fd;
+  if (pthread_create(&tid_rx, NULL, ncsi_rx_handler, (void*) sfd) != 0) {
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: pthread_create failed on ncsi_rx_handler, errno %d\n",
+           errno);
+    goto free_and_exit;
+  }
+
+  memset(&dest_addr, 0, sizeof(dest_addr));
+  dest_addr.nl_family = AF_NETLINK;
+  dest_addr.nl_pid = 0;    /* For Linux Kernel */
+  dest_addr.nl_groups = 0;
+
+  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
+  if (!nlh) {
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: Error, failed to allocate message buffer\n");
+    goto free_and_exit;
+  }
+
+  memset(nlh, 0, NLMSG_SPACE(msg_size));
+  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
+  nlh->nlmsg_pid = getpid();
+  nlh->nlmsg_flags = 0;
+
+  nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+  if (!nl_msg) {
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: Error, failed to allocate NCSI_NL_MSG\n");
+    goto free_and_exit;
+  }
+
+  /* send registration message to kernel to register ncsid as AEN handler */
+  /* for now only listens on eth0 */
+  sprintf(nl_msg->dev_name, "eth0");
   nl_msg->channel_id = REG_AEN_CH;
   nl_msg->cmd = REG_AEN_CMD;
   nl_msg->payload_length = 0;
@@ -377,14 +581,22 @@ ncsi_aen_handler(void *unused) {
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
 
-  syslog(LOG_INFO, "ncsid tx: registering AEN Handler\n");
+  syslog(LOG_INFO, "ncsid ncsi_aen_handler: registering AEN Handler\n");
   ret = sendmsg(sock_fd,&msg,0);
   if (ret < 0) {
-    syslog(LOG_ERR, "ncsid tx: AEN Registration status ret = %d, errno=%d\n",
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: AEN Registration status ret = %d, errno=%d\n",
              ret, errno);
   }
 
+  if (pthread_create(&tid_tx, NULL, ncsi_tx_handler, (void*) sfd) != 0) {
+    syslog(LOG_ERR, "ncsid ncsi_aen_handler: pthread_create failed on ncsi_tx_handler, errno %d\n",
+           errno);
+    goto free_and_exit;
+  }
+
+
   pthread_join(tid_rx, NULL);
+  pthread_join(tid_tx, NULL);
 
 free_and_exit:
   if (nlh)

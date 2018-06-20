@@ -43,7 +43,7 @@
     },
     "linear_switch": {
       "read_source" : {
-        "sysfs" : "/sys/class/i2c-adapter/i2c-3/3-004b/hwmon/hwmon3/temp1_input"
+        "sysfs" : "/sys/class/i2c-adapter/i2c-3/3-004b/hwmon/hwmon*/temp1_input"
       },
       "read_limit": {
         "valid": {
@@ -68,7 +68,7 @@
     },
     "linear_intake": {
       "read_source" : {
-        "sysfs" : "/sys/class/i2c-adapter/i2c-3/3-0049/hwmon/hwmon1/temp1_input"
+        "sysfs" : "/sys/class/i2c-adapter/i2c-3/3-0049/hwmon/hwmon*/temp1_input"
       },
       "read_limit": {
         "valid": {
@@ -94,7 +94,7 @@
     },
     "linear_outlet": {
       "read_source" : {
-        "sysfs" : "/sys/class/i2c-adapter/i2c-3/3-0048/hwmon/hwmon0/temp1_input"
+        "sysfs" : "/sys/class/i2c-adapter/i2c-3/3-0048/hwmon/hwmon*/temp1_input"
       },
       "read_limit": {
         "valid": {

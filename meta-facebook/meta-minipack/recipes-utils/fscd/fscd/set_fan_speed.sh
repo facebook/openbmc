@@ -17,6 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+fcm_b_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver \
+           2> /dev/null`
+fcm_t_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver \
+           2> /dev/null`
+
 usage() {
     echo "Usage: $0 <PERCENT (0..100)> <Fan Unit (1..8)> " >&2
 }
@@ -51,8 +57,13 @@ else
     fi
 fi
 
-# Convert the percentage to our 1/32th step (0-31).
-step=$((($1 * 31) / 100))
+if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
+    # Convert the percentage to our 1/32th level (0-31).
+    step=$((($1 * 31) / 100))
+else
+    # Convert the percentage to our 1/64th level (0-63).
+    step=$((($1 * 63) / 100))
+fi
 cnt=1
 
 for bus in ${BUS}; do

@@ -55,7 +55,7 @@ static ssize_t fcmcpld_fan_rpm_show(struct device *dev,
 }
 
 #define FANTRAY_PWM_HELP                        \
-  "each value represents 1/32 duty cycle"
+  "each value represents 1/64 duty cycle"
 #define FANTRAY_LED_CTRL_HELP                   \
   "0x0: Under HW control\n"                     \
   "0x1: Red off, Blue on\n"                     \
@@ -158,7 +158,7 @@ static const i2c_dev_attr_st fcmcpld_attr_table[] = {
     FANTRAY_PWM_HELP,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x22, 0, 5,
+    0x22, 0, 6,
   },
   {
     "fantray1_power_enable",
@@ -240,7 +240,7 @@ static const i2c_dev_attr_st fcmcpld_attr_table[] = {
     FANTRAY_PWM_HELP,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x32, 0, 5,
+    0x32, 0, 6,
   },
   {
     "fantray2_power_enable",
@@ -322,7 +322,7 @@ static const i2c_dev_attr_st fcmcpld_attr_table[] = {
     FANTRAY_PWM_HELP,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x42, 0, 5,
+    0x42, 0, 6,
   },
   {
     "fantray3_power_enable",
@@ -404,7 +404,7 @@ static const i2c_dev_attr_st fcmcpld_attr_table[] = {
     FANTRAY_PWM_HELP,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x52, 0, 5,
+    0x52, 0, 6,
   },
   {
     "fantray4_power_enable",

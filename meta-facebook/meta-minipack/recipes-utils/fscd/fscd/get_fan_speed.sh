@@ -17,6 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+fcm_b_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver \
+           2> /dev/null`
+fcm_t_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver \
+           2> /dev/null`
+
 usage() {
     echo "Usage: $0 [Fan Unit (1..8)]" >&2
 }
@@ -27,7 +33,12 @@ show_pwm()
 {
     pwm="/sys/class/i2c-dev/i2c-$1/device/$1-0033/fantray$2_pwm"
     val=$(cat $pwm | head -n 1)
-    echo "$((val * 100 / 31))%"
+
+    if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
+        echo "$((val * 100 / 31))%"
+    else
+        echo "$((val * 100 / 63))%"
+    fi
 }
 
 show_rpm()

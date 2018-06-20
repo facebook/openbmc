@@ -51,6 +51,7 @@ IMAGE_INSTALL += " \
   bios-util \
   threshold-util \
   ncsid \
+  vboot-utils \
   "
 
 IMAGE_FEATURES += " \

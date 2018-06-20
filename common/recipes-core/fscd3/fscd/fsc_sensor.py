@@ -16,6 +16,8 @@
 # Boston, MA 02110-1301 USA
 #
 import abc
+import os
+import re
 from fsc_util import Logger
 from subprocess import Popen, PIPE
 
@@ -36,6 +38,7 @@ class FscSensorBase(object):
             self.write_source = None
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
+        self.hwmon_source = None
 
     @abc.abstractmethod
     def read(self, **kwargs):
@@ -55,6 +58,25 @@ class FscSensorSourceSysfs(FscSensorBase):
     '''
     Class for FSC sensor source for sysfs
     '''
+    def get_hwmon_source(self):
+        # After BMC comes up this hwmon device is setup once and we can cache
+        # that data for the first time instead of determining the source each
+        # time
+        if self.hwmon_source is not None:
+            return self.hwmon_source
+
+        self.hwmon_source = None
+        result = re.split("hwmon", self.read_source)
+        if os.path.isdir(result[0]):
+            construct_hwmon_path = result[0] + "hwmon"
+            x = None
+            for x in os.listdir(construct_hwmon_path):
+                if x.startswith('hwmon'):
+                    construct_hwmon_path = construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+                    if os.path.exists(construct_hwmon_path):
+                        self.hwmon_source = construct_hwmon_path
+                        return self.hwmon_source
+
     def read(self, **kwargs):
         '''
         Reads all sensors values from sysfs source and return data read.
@@ -66,7 +88,14 @@ class FscSensorSourceSysfs(FscSensorBase):
         Return:
             blob of data read from sysfs
         '''
-        cmd = 'cat ' + self.read_source
+
+        # IF read_source has hwmon* then determine what is the hwmon device
+        # and use that for reading
+        readsysfs = self.read_source
+        if "hwmon*" in self.read_source:
+            readsysfs = self.get_hwmon_source()
+
+        cmd = 'cat ' + readsysfs
         Logger.debug("Reading data with cmd=%s" % cmd)
         data = ''
         try:

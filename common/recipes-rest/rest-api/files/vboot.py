@@ -44,7 +44,7 @@ def get_vboot_status():
         data = subprocess.check_output(['/usr/local/bin/vboot-util'], \
                 shell=True).decode().splitlines()
         info["status_text"] = data[-1].strip()
-        m = re.match("Status CRC: 0[xX][0-9a-fA-F]+", data[-4].strip())
+        m = re.match("Status CRC: (0[xX][0-9a-fA-F]+)", data[-4].strip())
         if m:
             info["status_crc"] = m.group(1)
 

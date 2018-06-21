@@ -11,13 +11,14 @@ SRC_URI += " \
     file://pyfdt/pyfdt.py \
     file://Makefile \
     file://vboot-util.c \
+    file://vboot-check \
     "
 
 S = "${WORKDIR}"
 
 DEPENDS = "python3 libvbs"
-RDEPEND_${PN}-python3 += "python3 python3-argparse"
-RDEPEND_${PN} += "libvbs"
+RDEPENDS_${PN}-python3 += "python3 python3-argparse"
+RDEPENDS_${PN} += "libvbs"
 
 PACKAGES += "${PN}-python3"
 inherit distutils3
@@ -42,7 +43,9 @@ do_install() {
 
   install -d ${D}/usr/local/bin
   install -m 0755 vboot-util ${D}/usr/local/bin/vboot-util
+  install -m 0755 vboot-check ${D}/usr/local/bin/vboot-check
 }
 
 FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}"
 FILES_${PN} += "/usr/local/bin/vboot-util"
+FILES_${PN} += "/usr/local/bin/vboot-check"

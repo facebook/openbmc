@@ -62,16 +62,16 @@ if [ $board_rev -ne 4 ]; then
 fi
 
 # # Bus 49
-i2c_device_add 49 0x59 pfe1100         # PDB-L PFE1100 PSU
+i2c_device_add 49 0x59 psu_driver      # PDB-L PSU1 Driver
 
 # # Bus 48
-i2c_device_add 48 0x58 pfe1100         # PDB-L PFE1100 PSU
+i2c_device_add 48 0x58 psu_driver      # PDB-L PSU2 Driver
 
 # # Bus 57
-i2c_device_add 57 0x59 pfe1100         # PDB-R PFE1100 PSU
+i2c_device_add 57 0x59 psu_driver      # PDB-R PSU3 Driver
 
 # # Bus 56
-i2c_device_add 56 0x58 pfe1100         # PDB-R PFE1100 PSU
+i2c_device_add 56 0x58 psu_driver      # PDB-R PSU4 Driver
 
 # # Bus 51
 i2c_device_add 51 0x48 tmp75           # PDB-L temp. sensor

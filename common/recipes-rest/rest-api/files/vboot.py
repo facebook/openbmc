@@ -28,6 +28,7 @@ interested_keys = {
         'U-Boot time': 'uboot_time',
         'Flags force_recovery': 'force_recovery',
         'Flags hardware_enforce': 'hardware_enforce',
+        'Flags software_enforce': 'software_enforce',
         'Flags recovery_boot': 'recovery_boot',
         'Flags recovery_retried': 'recovery_retried'
 }
@@ -43,6 +44,10 @@ def get_vboot_status():
         data = subprocess.check_output(['/usr/local/bin/vboot-util'], \
                 shell=True).decode().splitlines()
         info["status_text"] = data[-1].strip()
+        m = re.match("Status CRC: 0[xX][0-9a-fA-F]+", data[-4].strip())
+        if m:
+            info["status_crc"] = m.group(1)
+
         m = re.match("Status type \((\d+)\) code \((\d+)\)", data[-2].strip())
         if m:
             info['status'] = "{}.{}".format(m.group(1), m.group(2))

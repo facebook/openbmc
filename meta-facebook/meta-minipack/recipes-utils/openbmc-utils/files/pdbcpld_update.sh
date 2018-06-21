@@ -27,7 +27,7 @@ usage(){
     program=`basename "$0"`
     echo "Usage:"
     echo "     $program jtag <Location> <*.vme>"
-    echo "     $program i2c <Location> <file>"
+    echo "     $program i2c <Location> <*.hex>"
     echo "     <Location>  : left or right"
 }
 
@@ -42,20 +42,21 @@ if [ "$#" -ne 3 ]; then
 fi
 
 if [ "$2" = "left" ]; then
-    BUS=54
+    IO_BUS=54
+    CPLD_BUS=53
 elif [ "$2" = "right" ]; then
-    BUS=62
+    IO_BUS=62
+    CPLD_BUS=61
 else
     echo "$2: not a valid PDB location"
     exit -1
 fi
 
-source /usr/local/bin/openbmc-utils.sh
-
 interface="$1"
 img="$3"
-PINS=(480 481 482 483)
-PCA9534=`i2cdetect -y ${BUS} 0x21 0x21 | grep "\-\-"` > /dev/null
+JTAG_PINS=(480 481 482 483)
+HITLESS_PIN=487
+PCA9534=`i2cdetect -y ${IO_BUS} 0x21 0x21 | grep "\-\-"` > /dev/null
 
 pca9534_gpio_add()
 {
@@ -64,12 +65,16 @@ pca9534_gpio_add()
         exit -1
     fi
 
-    i2c_device_add ${BUS} 0x21 pca9534
+    i2c_device_add ${IO_BUS} 0x21 pca9534
     usleep 100000
 
-    for i in {0..3}; do
-        echo "${PINS[i]}" > /sys/class/gpio/export
-    done
+    echo "${HITLESS_PIN}" > /sys/class/gpio/export
+    gpio_set ${HITLESS_PIN} 0
+    if [ "$interface" = "jtag" ]; then
+        for i in {0..3}; do
+            echo "${JTAG_PINS[i]}" > /sys/class/gpio/export
+        done
+    fi
 }
 
 pca9534_gpio_delete()
@@ -78,22 +83,30 @@ pca9534_gpio_delete()
         exit -1
     fi
 
-    for i in {0..3}; do
-        echo "${PINS[i]}" > /sys/class/gpio/unexport
-    done
+    gpio_set ${HITLESS_PIN} 1
+    echo "${HITLESS_PIN}" > /sys/class/gpio/unexport
+    if [ "$interface" = "jtag" ]; then
+        for i in {0..3}; do
+            echo "${JTAG_PINS[i]}" > /sys/class/gpio/unexport
+        done
+    fi
 
-    i2c_device_delete ${BUS} 0x21
+    i2c_device_delete ${IO_BUS} 0x21
 }
 
+trap pca9534_gpio_delete INT TERM QUIT EXIT
+
+# export pca9534 GPIO to connect BMC to PDB CPLD pins
+pca9534_gpio_add $2
+
 if [ "$interface" = "jtag" ]; then
-    trap pca9534_gpio_delete INT TERM QUIT EXIT
-
-    # export pca9534 GPIO to connect BMC to PDB CPLD pins
-    pca9534_gpio_add $2
-
-    ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms ${PINS[2]} --tdo ${PINS[0]} --tdi ${PINS[1]} --tck ${PINS[3]}
+    ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" \
+              --tms ${JTAG_PINS[2]} --tdo ${JTAG_PINS[0]} \
+              --tdi ${JTAG_PINS[1]} --tck ${JTAG_PINS[3]}
+    sleep 1
 elif [ "$interface" = "i2c" ]; then
-    echo "Not support now"
+    cpldupdate-i2c ${CPLD_BUS} 0x40 "${img}"
+    sleep 1
 else
     echo "$1 is not a valid PDB interface"
     exit -1

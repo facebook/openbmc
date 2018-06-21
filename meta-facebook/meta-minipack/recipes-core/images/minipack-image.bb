@@ -19,6 +19,7 @@ IMAGE_INSTALL += " \
   bic-util \
   bitbang \
   cpldupdate \
+  cpldupdate-i2c \
   flashrom \
   front-paneld \
   fscd \

@@ -55,6 +55,8 @@ AuthorizedKeysFile .ssh/authorized_keys
 
 TrustedUserCAKeys /etc/ssh/trusted_ca
 AuthorizedPrincipalsFile /etc/ssh/auth_principals_%u
+AuthorizedPrincipalsCommandUser root
+AuthorizedPrincipalsCommand /etc/ssh/auth_principals.sh
 
 #AuthorizedKeysCommand none
 #AuthorizedKeysCommandUser nobody

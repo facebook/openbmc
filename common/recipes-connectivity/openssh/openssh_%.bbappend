@@ -21,6 +21,10 @@ fakeroot do_install_certificates() {
     install -m 0644 \
       ${AUTH_PRINCIPALS_ROOT} ${D}${sysconfdir}/ssh/auth_principals_root
   fi
+  if [ -f "${AUTH_PRINCIPALS_CMD}" ]; then
+    install -m 0644 \
+      ${AUTH_PRINCIPALS_CMD} ${D}${sysconfdir}/ssh/auth_principals.sh
+  fi
   if [ -f "${TRUSTED_CA}" ]; then
     install -m 0644 ${TRUSTED_CA} ${D}${sysconfdir}/ssh/trusted_ca
   fi

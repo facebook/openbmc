@@ -78,6 +78,7 @@ class commonApp_Handler:
         result = {
             "Information": {
                 "Description": "Wedge RESTful API Entry",
+                "version": "v0.1",
             },
             "Actions": [],
             "Resources": get_endpoints('/api')

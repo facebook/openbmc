@@ -53,6 +53,7 @@ pca9534_gpio_add()
     fi
 
     i2c_device_add ${BUS} 0x26 pca9534
+    usleep 100000
 
     for i in {0..3}; do
         echo "${PINS[i]}" > /sys/class/gpio/export

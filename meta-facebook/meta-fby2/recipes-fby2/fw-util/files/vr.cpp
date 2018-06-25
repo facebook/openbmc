@@ -260,9 +260,32 @@ class VrComponent : public Component {
 
   int update(string image) {
     int ret;
+#if defined(CONFIG_FBY2_EP)
+    uint8_t server_type = 0xFF;
+    char pwr_state[MAX_VALUE_LEN] = {0};
+#endif
+
     try {
       server.ready();
       ret = bic_update_fw(slot_id, UPDATE_VR, (char *)image.c_str());
+
+#if defined(CONFIG_FBY2_EP)
+      if (ret)
+        return ret;
+
+      ret = fby2_get_server_type(slot_id, &server_type);
+      if (ret) {
+        syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
+        return -1;
+      }
+      switch (server_type) {
+        case SERVER_TYPE_EP:
+          pal_get_last_pwr_state(slot_id, pwr_state);
+          pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+          pal_power_policy_control(slot_id, pwr_state);
+          break;
+      }
+#endif
     } catch(string err) {
       ret = FW_STATUS_NOT_SUPPORTED;
     }

@@ -106,6 +106,7 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
+void pal_power_policy_control(uint8_t slot_id, char *last_ps);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
 int pal_slot_pair_12V_off(uint8_t slot_id);

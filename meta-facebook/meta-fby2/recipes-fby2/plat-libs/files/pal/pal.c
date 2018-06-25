@@ -186,96 +186,63 @@ static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 static uint8_t otp_server_12v_off_flag[MAX_NODES+1] = {0};
 
-char * key_list[] = {
-"pwr_server1_last_state",
-"pwr_server2_last_state",
-"pwr_server3_last_state",
-"pwr_server4_last_state",
-"sysfw_ver_slot1",
-"sysfw_ver_slot2",
-"sysfw_ver_slot3",
-"sysfw_ver_slot4",
-"identify_sled",
-"identify_slot1",
-"identify_slot2",
-"identify_slot3",
-"identify_slot4",
-"timestamp_sled",
-"slot1_por_cfg",
-"slot2_por_cfg",
-"slot3_por_cfg",
-"slot4_por_cfg",
-"slot1_sensor_health",
-"slot2_sensor_health",
-"slot3_sensor_health",
-"slot4_sensor_health",
-"spb_sensor_health",
-"nic_sensor_health",
-"slot1_sel_error",
-"slot2_sel_error",
-"slot3_sel_error",
-"slot4_sel_error",
-"slot1_boot_order",
-"slot2_boot_order",
-"slot3_boot_order",
-"slot4_boot_order",
-"slot1_cpu_ppin",
-"slot2_cpu_ppin",
-"slot3_cpu_ppin",
-"slot4_cpu_ppin",
-"fru1_restart_cause",
-"fru2_restart_cause",
-"fru3_restart_cause",
-"fru4_restart_cause",
-"ntp_server",
-/* Add more Keys here */
-LAST_KEY /* This is the last key of the list */
+static int key_func_por_cfg(int event, void *arg);
+static int key_func_ntp(int event, void *arg);
+
+enum key_event {
+  KEY_BEFORE_SET,
+  KEY_AFTER_INI,
 };
 
-char * def_val_list[] = {
-  "on", /* pwr_server1_last_state */
-  "on", /* pwr_server2_last_state */
-  "on", /* pwr_server3_last_state */
-  "on", /* pwr_server4_last_state */
-  "0", /* sysfw_ver_slot1 */
-  "0", /* sysfw_ver_slot2 */
-  "0", /* sysfw_ver_slot3 */
-  "0", /* sysfw_ver_slot4 */
-  "off", /* identify_sled */
-  "off", /* identify_slot1 */
-  "off", /* identify_slot2 */
-  "off", /* identify_slot3 */
-  "off", /* identify_slot4 */
-  "0", /* timestamp_sled */
-  "lps", /* slot1_por_cfg */
-  "lps", /* slot2_por_cfg */
-  "lps", /* slot3_por_cfg */
-  "lps", /* slot4_por_cfg */
-  "1", /* slot1_sensor_health */
-  "1", /* slot2_sensor_health */
-  "1", /* slot3_sensor_health */
-  "1", /* slot4_sensor_health */
-  "1", /* spb_sensor_health */
-  "1", /* nic_sensor_health */
-  "1", /* slot1_sel_error */
-  "1", /* slot2_sel_error */
-  "1", /* slot3_sel_error */
-  "1", /* slot4_sel_error */
-  "0000000", /* slot1_boot_order */
-  "0000000", /* slot2_boot_order */
-  "0000000", /* slot3_boot_order */
-  "0000000", /* slot4_boot_order */
-  "0", /* slot1_cpu_ppin */
-  "0", /* slot2_cpu_ppin */
-  "0", /* slot3_cpu_ppin */
-  "0", /* slot4_cpu_ppin */
-  "3", /* fru1_restart_cause */
-  "3", /* fru2_restart_cause */
-  "3", /* fru3_restart_cause */
-  "3", /* fru4_restart_cause */
-  "", /* ntp_server */
-  /* Add more def values for the correspoding keys*/
-  LAST_KEY /* Same as last entry of the key_list */
+struct pal_key_cfg {
+  char *name;
+  char *def_val;
+  int (*function)(int, void*);
+} key_cfg[] = {
+  /* name, default value, function */
+  {"pwr_server1_last_state", "on", NULL},
+  {"pwr_server2_last_state", "on", NULL},
+  {"pwr_server3_last_state", "on", NULL},
+  {"pwr_server4_last_state", "on", NULL},
+  {"sysfw_ver_slot1", "0", NULL},
+  {"sysfw_ver_slot2", "0", NULL},
+  {"sysfw_ver_slot3", "0", NULL},
+  {"sysfw_ver_slot4", "0", NULL},
+  {"identify_sled", "off", NULL},
+  {"identify_slot1", "off", NULL},
+  {"identify_slot2", "off", NULL},
+  {"identify_slot3", "off", NULL},
+  {"identify_slot4", "off", NULL},
+  {"timestamp_sled", "0", NULL},
+  {"slot1_por_cfg", "lps", key_func_por_cfg},
+  {"slot2_por_cfg", "lps", key_func_por_cfg},
+  {"slot3_por_cfg", "lps", key_func_por_cfg},
+  {"slot4_por_cfg", "lps", key_func_por_cfg},
+  {"slot1_sensor_health", "1", NULL},
+  {"slot2_sensor_health", "1", NULL},
+  {"slot3_sensor_health", "1", NULL},
+  {"slot4_sensor_health", "1", NULL},
+  {"spb_sensor_health", "1", NULL},
+  {"nic_sensor_health", "1", NULL},
+  {"slot1_sel_error", "1", NULL},
+  {"slot2_sel_error", "1", NULL},
+  {"slot3_sel_error", "1", NULL},
+  {"slot4_sel_error", "1", NULL},
+  {"slot1_boot_order", "0000000", NULL},
+  {"slot2_boot_order", "0000000", NULL},
+  {"slot3_boot_order", "0000000", NULL},
+  {"slot4_boot_order", "0000000", NULL},
+  {"slot1_cpu_ppin", "0", NULL},
+  {"slot2_cpu_ppin", "0", NULL},
+  {"slot3_cpu_ppin", "0", NULL},
+  {"slot4_cpu_ppin", "0", NULL},
+  {"fru1_restart_cause", "3", NULL},
+  {"fru2_restart_cause", "3", NULL},
+  {"fru3_restart_cause", "3", NULL},
+  {"fru4_restart_cause", "3", NULL},
+  {"ntp_server", "", key_func_ntp},
+  /* Add more Keys here */
+  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
 struct power_coeff {
@@ -472,11 +439,11 @@ pal_key_check(char *key) {
   int i;
 
   i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
 
     // If Key is valid, return success
-    if (!strcmp(key, key_list[i]))
-      return 0;
+    if (!strcmp(key, key_cfg[i].name))
+      return i;
 
     i++;
   }
@@ -488,31 +455,42 @@ pal_key_check(char *key) {
 }
 
 static int
-key_func_ntp(char *value)
-{
+key_func_por_cfg(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "lps") && strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
+}
+
+static int
+key_func_ntp(int event, void *arg) {
   char cmd[MAX_VALUE_LEN] = {0};
   char ntp_server_new[MAX_VALUE_LEN] = {0};
   char ntp_server_old[MAX_VALUE_LEN] = {0};
 
-  // Remove old NTP server
-  kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
-  if (strlen(ntp_server_old) > 2) {
-    snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
-    system(cmd);
-    snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+  if (event == KEY_BEFORE_SET) {
+    // Remove old NTP server
+    kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
+    if (strlen(ntp_server_old) > 2) {
+      snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
+      system(cmd);
+      snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+      system(cmd);
+    }
+    // Add new NTP server
+    snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", (char *)arg);
+    if (strlen(ntp_server_new) > 2) {
+      snprintf(cmd, MAX_VALUE_LEN, "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
+      system(cmd);
+      snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
+      system(cmd);
+    }
+    // Restart NTP server
+    snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
     system(cmd);
   }
-  // Add new NTP server
-  snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", value);
-  if (strlen(ntp_server_new) > 2) {
-    snprintf(cmd, MAX_VALUE_LEN, "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
-    system(cmd);
-    snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
-    system(cmd);
-  }
-  // Restart NTP server
-  snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
-  system(cmd);
 
   return 0;
 }
@@ -521,7 +499,7 @@ int
 pal_get_key_value(char *key, char *value) {
 
   // Check is key is defined and valid
-  if (pal_key_check(key))
+  if (pal_key_check(key) < 0)
     return -1;
 
   return kv_get(key, value, NULL, KV_FPERSIST);
@@ -529,14 +507,18 @@ pal_get_key_value(char *key, char *value) {
 
 int
 pal_set_key_value(char *key, char *value) {
+  int index, ret;
 
   // Check is key is defined and valid
-  if (pal_key_check(key))
+  if ((index = pal_key_check(key)) < 0)
     return -1;
 
-  if (!strcmp(key, "ntp_server")) {
-    key_func_ntp(value);
+  if (key_cfg[index].function) {
+    ret = key_cfg[index].function(KEY_BEFORE_SET, value);
+    if (ret < 0)
+      return ret;
   }
+
   return kv_set(key, value, 0, KV_FPERSIST);
 }
 
@@ -3537,11 +3519,14 @@ pal_set_def_key_value() {
   char key[MAX_KEY_LEN] = {0};
 
   i = 0;
-  for(i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
-    if ((ret = kv_set(key_list[i], def_val_list[i], 0, KV_FPERSIST | KV_FCREATE)) < 0) {
+  for (i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if ((ret = kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FPERSIST | KV_FCREATE)) < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
 #endif
+    }
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
     }
   }
 
@@ -3635,9 +3620,9 @@ pal_dump_key_value(void) {
 
   char value[MAX_VALUE_LEN] = {0x0};
 
-  while (strcmp(key_list[i], LAST_KEY)) {
-    printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value, NULL, KV_FPERSIST) < 0) {
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+    printf("%s:", key_cfg[i].name);
+    if (ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);

@@ -53,7 +53,7 @@
 #define HSLOT_PID  "/tmp/slot%u_reinit.pid"
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 #define POST_FLAG_FILE "/tmp/cache_store/slot%d_post_flag"
-#define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"  
+#define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"
 
 #define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 
@@ -233,8 +233,8 @@ static void gpio_event_handle(gpio_poll_st *gp)
     }
   }
   else if (gp->gs.gs_gpio == gpio_num("GPIOP0") || gp->gs.gs_gpio == gpio_num("GPIOP1") ||
-           gp->gs.gs_gpio == gpio_num("GPIOP2") || gp->gs.gs_gpio == gpio_num("GPIOP3") 
-          ) //  GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N 
+           gp->gs.gs_gpio == gpio_num("GPIOP2") || gp->gs.gs_gpio == gpio_num("GPIOP3")
+          ) //  GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N
   {
     slot_id = (gp->gs.gs_gpio - GPIO_SLOT1_EJECTOR_LATCH_DETECT_N) + 1;
     if (gp->value == 1) { // low to high
@@ -247,9 +247,12 @@ static void gpio_event_handle(gpio_poll_st *gp)
       sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
       read_device(vpath, &value);
 
-      syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
       // 12V action would be triggered when SLED is pulled out
-      if (value) {
+      // if SLED is seated, log the event that slot latch is open
+      if (!value) {
+        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed while in VCubby", slot_id, slot_id);
+      } else {
+        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
         pthread_mutex_lock(&latch_open_mutex[slot_id]);
         if ( IsLatchOpenStart[slot_id] )
         {
@@ -266,7 +269,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
         }
         IsLatchOpenStart[slot_id] = true;
         pthread_mutex_unlock(&latch_open_mutex[slot_id]);
-      }
+      } // end of SLED seated check
     } //End of low to high
   } //End of GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N
   else if (gp->gs.gs_gpio == gpio_num("GPIOZ0") || gp->gs.gs_gpio == gpio_num("GPIOZ1")   ||
@@ -358,7 +361,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
     kv_set("spb_hand_sw", locstr, 0, 0);
     syslog(LOG_INFO, "change hand_sw location to FRU %s by button", locstr);
   }
-  else if (gp->gs.gs_gpio == gpio_num("GPIOI0") || gp->gs.gs_gpio == gpio_num("GPIOI1") || 
+  else if (gp->gs.gs_gpio == gpio_num("GPIOI0") || gp->gs.gs_gpio == gpio_num("GPIOI1") ||
            gp->gs.gs_gpio == gpio_num("GPIOI2") || gp->gs.gs_gpio == gpio_num("GPIOI3")
           ) // SLOT1/2/3/4_POWER_EN
   {
@@ -401,7 +404,7 @@ latch_open_handler(void *ptr) {
         pthread_mutex_unlock(&latch_open_mutex[slot_id]);
         pthread_exit(0);
       }
-      break; 
+      break;
     default:
       sprintf(path_slot, PWR_UTL_LOCK, slot_id);
       if (access(path_slot, F_OK) == 0) {
@@ -409,7 +412,7 @@ latch_open_handler(void *ptr) {
         IsLatchOpenStart[slot_id] = false;
         pthread_mutex_unlock(&latch_open_mutex[slot_id]);
         pthread_exit(0);
-      } 
+      }
       break;
   }
 
@@ -671,9 +674,12 @@ static void slot_latch_check(void) {
       sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
       read_device(vpath, &value);
 
-      syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
       // 12V action would be triggered when SLED is pulled out
-      if (value) {
+      // if SLED is seated, log the event that slot latch is open
+      if (!value) {
+        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed while in VCubby", slot_id, slot_id);
+      } else {
+        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
         if (pal_set_server_power(slot_id, SERVER_12V_OFF) < 0)
           syslog(LOG_WARNING,"%s : server_12v_off failed for slot: %d", __func__, slot_id);
       }

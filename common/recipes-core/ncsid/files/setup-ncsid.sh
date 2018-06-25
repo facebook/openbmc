@@ -41,7 +41,7 @@ then
 else
       # Broadcom
       echo "Enable Broadcom OEM AENs" >> /dev/kmsg
-      /usr/local/bin/ncsi-util 8 0 0 0 0 0 3 0 1
+      /usr/local/bin/ncsi-util 8 0 0 0 0 0 7 0 1
 fi
 
 echo "done."

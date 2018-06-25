@@ -97,8 +97,9 @@ typedef struct ncsi_nl_response {
 /* BCM-specific  OEM AEN definitions */
 #define BCM_IANA                                         0x0000113D
 #define BCM_HOST_ERR_TYPE_UNGRACEFUL_HOST_SHUTDOWN             0x01
-#define NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR      0x80
-#define NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED  0x81
+#define NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR                       0x80
+#define NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED                   0x81
+#define NCSI_AEN_TYPE_OEM_BCM_HOST_DECOMMISSIONED              0x82
 #define MAX_AEN_DATA_IN_SHORT                   16
 
 typedef union {
@@ -250,32 +251,33 @@ process_NCSI_AEN(AEN_Packet *buf)
   unsigned char req_rst_type=0;
   char logbuf[512];
   unsigned char log_level = LOG_NOTICE;
+  int i=0;
 
 #ifdef DEBUG
   // print AEN packet content
-  sprintf(logbuf, "AEN Packet:");
-  sprintf(logbuf + strlen(logbuf), "DA[6]: %x %x %x %x %x %x   ",
+  i += sprintf(logbuf, "AEN Packet:");
+  i += sprintf(logbuf + i, "DA[6]: %x %x %x %x %x %x   ",
           ntohs(buf->DA[0]), ntohs(buf->DA[1]), ntohs(buf->DA[2]),
           ntohs(buf->DA[3]), ntohs(buf->DA[4]), ntohs(buf->DA[5]));
-  sprintf(logbuf + strlen(logbuf), "SA[6]: %x %x %x %x %x %x   ",
+  i += sprintf(logbuf + i, "SA[6]: %x %x %x %x %x %x   ",
           ntohs(buf->SA[0]), ntohs(buf->SA[1]), ntohs(buf->SA[2]),
           ntohs(buf->SA[3]), ntohs(buf->SA[4]), ntohs(buf->SA[5]));
-  sprintf(logbuf + strlen(logbuf), "EtherType: 0x%04x   ",
+  i += sprintf(logbuf + i, "EtherType: 0x%04x   ",
           ntohs(buf->EtherType));
-  sprintf(logbuf + strlen(logbuf), "MC_ID: %d   ", ntohs(buf->MC_ID));
-  sprintf(logbuf + strlen(logbuf), "Header_Revision: 0x%x   ",
+  i += sprintf(logbuf + i, "MC_ID: %d   ", ntohs(buf->MC_ID));
+  i += sprintf(logbuf + i, "Header_Revision: 0x%x   ",
           ntohs(buf->Header_Revision));
-  sprintf(logbuf + strlen(logbuf), "IID: %d   ", ntohs(buf->IID));
-  sprintf(logbuf + strlen(logbuf), "Command: 0x%x   ", ntohs(buf->Command));
-  sprintf(logbuf + strlen(logbuf), "Channel_ID: %d   ",
+  i += sprintf(logbuf + i, "IID: %d   ", ntohs(buf->IID));
+  i += sprintf(logbuf + i, "Command: 0x%x   ", ntohs(buf->Command));
+  i += sprintf(logbuf + i, "Channel_ID: %d   ",
           ntohs(buf->Channel_ID));
-  sprintf(logbuf + strlen(logbuf), "Payload_Length: %d   ",
+  i += sprintf(logbuf + i, "Payload_Length: %d   ",
           ntohs(buf->Payload_Length));
-  sprintf(logbuf + strlen(logbuf), "AEN_Type: 0x%x   ", ntohs(buf->AEN_Type));
+  i += sprintf(logbuf + i, "AEN_Type: 0x%x   ", ntohs(buf->AEN_Type));
   for (int idx=0; idx<((buf->Payload_Length-4)/2); idx++) {
     if (idx >= MAX_AEN_DATA_IN_SHORT)
       break;
-    sprintf(logbuf + strlen(logbuf), " data[%d]=0x%x",
+    i += sprintf(logbuf + i, " data[%d]=0x%x",
             idx, ntohs(buf->Optional_AEN_Data[idx]));
   }
   syslog(LOG_NOTICE, "%s", logbuf);
@@ -291,7 +293,7 @@ process_NCSI_AEN(AEN_Packet *buf)
 
   buf->Payload_Length = ntohs(buf->Payload_Length);
 
-  sprintf(logbuf, "NCSI AEN rcvd: ch=%d pl_len=%d type=0x%x",
+  i = sprintf(logbuf, "NCSI AEN rcvd: ch=%d pLen=%d type=0x%x",
          buf->Channel_ID, buf->Payload_Length, buf->AEN_Type);
 
   if (buf->AEN_Type < AEN_TYPE_OEM) {
@@ -299,7 +301,7 @@ process_NCSI_AEN(AEN_Packet *buf)
     switch (buf->AEN_Type) {
       case AEN_TYPE_LINK_STATUS_CHANGE:
         log_level = LOG_CRIT;
-        sprintf(logbuf + strlen(logbuf), ", LinkStatus=0x%04x-%04x",
+        i += sprintf(logbuf + i, ", LinkStatus=0x%04x-%04x",
         ntohs(buf->Optional_AEN_Data[0]),
         ntohs(buf->Optional_AEN_Data[1]));
         // printk(" OemLinkStatus=0x%04x-%04x",
@@ -309,26 +311,26 @@ process_NCSI_AEN(AEN_Packet *buf)
 
       case AEN_TYPE_CONFIGURATION_REQUIRED:
         log_level = LOG_CRIT;
-        sprintf(logbuf + strlen(logbuf), ", Config Required");
+        i += sprintf(logbuf + i, ", Config Required");
         break;
 
       case AEN_TYPE_HOST_NC_DRIVER_STATUS_CHANGE:
         log_level = LOG_CRIT;
-        sprintf(logbuf + strlen(logbuf), ", DriverStatus=0x%04x-%04x",
+        i += sprintf(logbuf + i, ", DriverStatus=0x%04x-%04x",
         ntohs(buf->Optional_AEN_Data[0]),
         ntohs(buf->Optional_AEN_Data[1]));
         break;
 
       case AEN_TYPE_MEDIUM_CHANGE:
-        sprintf(logbuf + strlen(logbuf), ", Medium Change");
+        i += sprintf(logbuf + i, ", Medium Change");
         break;
 
       case AEN_TYPE_PENDING_PLDM_REQUEST:
-        sprintf(logbuf + strlen(logbuf), ", Pending PLDM Request");
+        i += sprintf(logbuf + i, ", Pending PLDM Request");
         break;
 
       default:
-        sprintf(logbuf + strlen(logbuf), ", Unknown AEN Type");
+        i += sprintf(logbuf + i, ", Unknown AEN Type");
     }
   } else {
     // OEM AENs
@@ -336,38 +338,47 @@ process_NCSI_AEN(AEN_Packet *buf)
               ntohs(buf->Optional_AEN_Data[1]);
 
     if (manu_id == BCM_IANA) {
+      unsigned char aen_iid = buf->Reserved_4[0];
+      i += sprintf(logbuf + i, " iid=0x%02x", aen_iid);
       switch (buf->AEN_Type) {
         case NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR:
           log_level = LOG_CRIT;
-          sprintf(logbuf + strlen(logbuf), ", BCM Host Err");
+          i += sprintf(logbuf + i, ", BCM Host Err");
           //host_err_event_num = ntohs(buf->Optional_AEN_Data[3])&0xFF;
           host_err_type = ntohs(buf->Optional_AEN_Data[4])>>8;
           host_err_len  = ntohs(buf->Optional_AEN_Data[4])&0xFF;
           if (host_err_type == BCM_HOST_ERR_TYPE_UNGRACEFUL_HOST_SHUTDOWN) {
-            sprintf(logbuf + strlen(logbuf), ", HostId=0x%x",
+            i += sprintf(logbuf + i, ", HostId=0x%x",
             ntohs(buf->Optional_AEN_Data[5]));
-            sprintf(logbuf + strlen(logbuf), " DownCnt=0x%x",
+            i += sprintf(logbuf + i, " DownCnt=0x%04x",
             ntohs(buf->Optional_AEN_Data[6]));
           } else {
-            sprintf(logbuf + strlen(logbuf), ", Unknown HostErrType=0x%x Len=0x%x",
+            i += sprintf(logbuf + i, ", Unknown HostErrType=0x%x Len=0x%x",
                    host_err_type, host_err_len);
           }
           break;
 
         case NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED:
           log_level = LOG_CRIT;
-          sprintf(logbuf + strlen(logbuf), ", BCM Reset Required");
+          i += sprintf(logbuf + i, ", BCM Reset Required");
           req_rst_type = ntohs(buf->Optional_AEN_Data[3])&0xFF;
-          sprintf(logbuf + strlen(logbuf), ", ResetType=0x%x", req_rst_type);
+          i += sprintf(logbuf + i, ", ResetType=0x%02x", req_rst_type);
+          break;
+
+       case NCSI_AEN_TYPE_OEM_BCM_HOST_DECOMMISSIONED:
+          log_level = LOG_CRIT;
+          i += sprintf(logbuf + i, ", BCM Host Decommissioned");
+          i += sprintf(logbuf + i, ", HostId=0x%x",
+               ntohs(buf->Optional_AEN_Data[3]));
           break;
 
         default:
           log_level = LOG_CRIT;
-          sprintf(logbuf + strlen(logbuf), ", Unknown BCM AEN Type");
+          i += sprintf(logbuf + i, ", Unknown BCM AEN Type");
       }
     } else {
       log_level = LOG_CRIT;
-      sprintf(logbuf + strlen(logbuf), ", Unknown OEM AEN, IANA=0x%lx", manu_id);
+      i += sprintf(logbuf + i, ", Unknown OEM AEN, IANA=0x%lx", manu_id);
     }
   }
   syslog(log_level, "%s", logbuf);

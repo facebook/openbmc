@@ -247,6 +247,7 @@ const uint8_t bic_rc_discrete_list[] = {
   BIC_RC_SENSOR_SYSTEM_STATUS ,
   BIC_RC_SENSOR_VR_HOT ,
   BIC_RC_SENSOR_SYS_BOOTING_STS,
+  BIC_RC_SENSOR_PROC_FAIL,
 };
 
 #ifdef CONFIG_FBY2_EP

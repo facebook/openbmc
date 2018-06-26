@@ -2,6 +2,8 @@
 #@NAME: Aspeed AST2520
 #@DESCRIPTION: Machine configuration for Aspeed AST2520 SoC
 
+SOC_MODEL ?= "ast2520"
+
 # Ship all kernel modules by default
 MACHINE_EXTRA_RRECOMMENDS = "kernel-modules"
 
@@ -17,7 +19,7 @@ PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed"
 
 # We have 2 kernel trees to pick from
 PREFERRED_VERSION_linux-aspeed ?= "4.1.51"
-#PREFERRED_VERSION_linux-aspeed ?= "4.7"
+#PREFERRED_VERSION_linux-aspeed ?= "4.17.2"
 
 PREFERRED_VERSION_u-boot ?= "v2016.07"
 PREFERRED_VERSION_u-boot-fw-utils ?= "v2016.07"

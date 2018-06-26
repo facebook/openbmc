@@ -40,25 +40,26 @@ def sensorTestNetwork(platformType, data, util):
     for driver in data:
         if isinstance(data[driver], dict):
             for reading in data[driver]:
-                try:
-                    raw_value = sensorDict[driver][reading]
-                except Exception:
-                    failed += [driver, reading]
-                    continue
-                if isinstance(data[driver][reading], list):
-                    values = re.findall(r"[-+]?\d*\.\d+|\d+", raw_value)
-                    if len(values) == 0:
+                if data[driver][reading] == "yes":
+                    try:
+                            raw_value = sensorDict[driver][reading]
+                    except Exception:
                         failed += [driver, reading]
                         continue
-                    rang = data[driver][reading]
-                    if float(rang[0]) > float(values[0]) or float(
-                            values[0]) > float(rang[1]):
-                        failed += [driver, reading]
-                else:
-                    if bool(re.search(r'\d', raw_value)):
-                        continue
+                    if isinstance(data[driver][reading], list):
+                        values = re.findall(r"[-+]?\d*\.\d+|\d+", raw_value)
+                        if len(values) == 0:
+                            failed += [driver, reading]
+                            continue
+                        rang = data[driver][reading]
+                        if float(rang[0]) > float(values[0]) or float(
+                                values[0]) > float(rang[1]):
+                            failed += [driver, reading]
                     else:
-                        failed += [driver, reading]
+                        if bool(re.search(r'\d', raw_value)):
+                            continue
+                        else:
+                            failed += [driver, reading]
     return failed
 
 

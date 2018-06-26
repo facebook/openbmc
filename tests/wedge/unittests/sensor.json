@@ -22,21 +22,21 @@
 "adm1278-i2c-12-10":
 {
   "vin":"yes",
-  "vout1":"yes",
-  "temp1":"yes",
+  "vout1":"no",
+  "temp1":"no",
   "pin":"yes",
   "iout1":"yes"
 },
 "ads7828-i2c-4-4b":
 {
-  "in0":"yes",
-  "in1":"yes",
-  "in2":"yes",
-  "in3":"yes",
-  "in4":"yes",
-  "in5":"yes",
-  "in6":"yes",
-  "in7":"yes"
+  "in0":"no",
+  "in1":"no",
+  "in2":"no",
+  "in3":"no",
+  "in4":"no",
+  "in5":"no",
+  "in6":"no",
+  "in7":"no"
 },
 "fb_panther_plus-i2c-4-40":
 {
@@ -52,35 +52,35 @@
 },
 "pfe1100-i2c-7-59":
 {
-  "vin":"yes",
-  "vout1":"yes",
-  "vout2":"yes",
-  "fan1":"yes",
-  "temp1":"yes",
-  "temp2":"yes",
-  "temp3":"yes",
-  "pin":"yes",
-  "pout1":"yes",
-  "pout2":"yes",
-  "iin":"yes",
-  "iout1":"yes",
-  "iout2":"yes"
+  "vin":"no",
+  "vout1":"no",
+  "vout2":"no",
+  "fan1":"no",
+  "temp1":"no",
+  "temp2":"no",
+  "temp3":"no",
+  "pin":"no",
+  "pout1":"no",
+  "pout2":"no",
+  "iin":"no",
+  "iout1":"no",
+  "iout2":"no"
 },
 "pfe1100-i2c-7-5a":
 {
-  "vin":"yes",
-  "vout1":"yes",
-  "vout2":"yes",
-  "fan1":"yes",
-  "temp1":"yes",
-  "temp2":"yes",
-  "temp3":"yes",
-  "pin":"yes",
-  "pout1":"yes",
-  "pout2":"yes",
-  "iin":"yes",
-  "iout1":"yes",
-  "iout2":"yes"
+  "vin":"no",
+  "vout1":"no",
+  "vout2":"no",
+  "fan1":"no",
+  "temp1":"no",
+  "temp2":"no",
+  "temp3":"no",
+  "pin":"no",
+  "pout1":"no",
+  "pout2":"no",
+  "iin":"no",
+  "iout1":"no",
+  "iout2":"no"
 },
 "tmp75-i2c-3-48":
 {

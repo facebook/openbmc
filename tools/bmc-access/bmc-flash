@@ -27,13 +27,20 @@ usage() {
   echo "  -c|--components <component list>"
   echo "    Comma separated list of components which will be used in fw-util <fru> --update --<component>"
   echo "    Example $0 -c rom,bmc flash-fbtp will flash both rom & bmc with the given image"
+  echo "  --noreboot"
+  echo "    Do not reboot after the flash"
+  echo "  -s|--sign"
+  echo "    Sign the image before flashing"
 }
 
 # DEFAULTS, change for ease of use
-FRU="mb"
+REBOOT_CMD=reboot
+# REBOOT_CMD=/usr/local/bin/power-util sled-cycle &
+FRU="bmc"
 COMPONENT_LIST="bmc"
 REBOOT="yes"
 DEV_IMAGE=""
+SIGN="no"
 PROXY_TMP_DIR="/tmp/$USER"
 idx=0
 while [ $idx -lt ${#ARGUMENTS[@]} ]; do
@@ -52,6 +59,9 @@ while [ $idx -lt ${#ARGUMENTS[@]} ]; do
     --noreboot)
       REBOOT="no"
       ;;
+    -s|--sign)
+      SIGN="yes"
+      ;;
     *)
       if [ "$DEV_IMAGE" != "" ]; then
         echo "Ignoring unknown option: $DEV_IMAGE"
@@ -60,19 +70,39 @@ while [ $idx -lt ${#ARGUMENTS[@]} ]; do
   esac
 done
 
+if [ "$DEV_IMAGE" == "" ]; then
+  BUILD_IMG_DIR=./tmp/deploy/images
+  if [ -d $BUILD_IMG_DIR ]; then
+    machine=$(ls $BUILD_IMG_DIR)
+    DEV_IMAGE=$BUILD_IMG_DIR/$machine/flash-$machine
+    if [ ! -e $DEV_IMAGE ]; then
+	    usage
+	    exit -1
+    fi
+  else
+	  usage
+	  exit -1
+  fi
+fi
+
 CLIST=(${COMPONENT_LIST//,/ })
+DEV_IMAGE=$(realpath $DEV_IMAGE)
 if [ $VERBOSE == "yes" ]; then
   echo "FRU: $FRU"
   echo "COMPONENT_LIST: $COMPONENT_LIST"
   echo "PROXY: $PROXY"
   echo "BMC_IP: $BMC_IP"
   echo "PROXY_TMP_DIR: $PROXY_TMP_DIR"
+  echo "IMAGE: $DEV_IMAGE"
 fi
-if [ "$1" == "" ]; then
-	usage
-	exit -1
+if [ $SIGN == "yes" ]; then
+  echo "Signing $DEV_IMAGE"
+  DEV_IMAGE=$(bmc sign $DEV_IMAGE)
+  if [ ! -e $out ]; then
+    echo "Signing failed!"
+    exit -1
+  fi
 fi
-DEV_IMAGE_REAL=$(realpath $DEV_IMAGE)
 
 if [ "$PROXY" != "" ]; then
   echo "Moving image to BMC"
@@ -85,14 +115,14 @@ if [ "$PROXY" != "" ]; then
   sleep 5
   if [ $REBOOT == "yes" ]; then
     echo "Rebooting the BMC..."
-    cmd_2hop $PROXY $PROXY_PASSWORD root@$BMC_IP $BMC_PASSWORD reboot
+    cmd_2hop $PROXY $PROXY_PASSWORD root@$BMC_IP $BMC_PASSWORD $REBOOT_CMD
     sleep 5
     if [ $(wait_2hop $PROXY $PROXY_PASSWORD $BMC_IP) != "done" ]; then
       echo "$BMC_IP did not come up for a while... giving up"
-      echo "boot-up failure after FLASH $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP" >> ~/.bmc_history
+      echo "boot-up failure after FLASH $DEV_IMAGE to $COMPONENT_LIST of $BMC_IP" >> ~/.bmc_history
     else
       echo "Flash successful!"
-      echo "Flash of $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP successful" >> ~/.bmc_history
+      echo "Flash of $DEV_IMAGE to $COMPONENT_LIST of $BMC_IP successful" >> ~/.bmc_history
     fi
   else
     echo "Flash successful (Reboot pending)"
@@ -107,14 +137,14 @@ else
   sleep 5
   if [ $REBOOT == "yes" ]; then
     echo "Rebooting the BMC..."
-    cmd_1hop root@$BMC_IP $BMC_PASSWORD reboot
+    cmd_1hop root@$BMC_IP $BMC_PASSWORD $REBOOT_CMD
     sleep 5
     if [ $(wait_1hop $BMC_IP) != "done" ]; then
       echo "$BMC_IP did not come up for a while... giving up"
-      echo "boot-up failure after FLASH $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP" >> ~/.bmc_history
+      echo "boot-up failure after FLASH $DEV_IMAGE to $COMPONENT_LIST of $BMC_IP" >> ~/.bmc_history
     else
       echo "Flash successful!"
-      echo "Flash of $DEV_IMAGE_REAL to $COMPONENT_LIST of $BMC_IP successful" >> ~/.bmc_history
+      echo "Flash of $DEV_IMAGE to $COMPONENT_LIST of $BMC_IP successful" >> ~/.bmc_history
     fi
   else
     echo "Flash successful (Reboot pending)"

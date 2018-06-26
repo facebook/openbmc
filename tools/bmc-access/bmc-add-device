@@ -18,12 +18,48 @@
 
 DEV_FILE=~/.bmc_devices
 
-if [ "$1" == "" ] || [ "$2" == "" ]; then
-  echo "USAGE: $0 <bmc ip> <bmc password> [<proxy ip> <proxy-password>]"
+if [ "$1" == '-b' ]; then
+  . bmc-lib $*
+else
+  ARGUMENTS=($*)
+fi
+
+NUM_ARGS=${#ARGUMENTS[@]}
+
+if [ $NUM_ARGS -lt 2 ]; then
+  echo "USAGE: $0 [-b clone-bmc] <alias> <bmc ip> [<bmc password> <proxy ip> <proxy-password>]"
+  echo "$NUM_ARGS arguments provided"
   exit -1
 fi
-DEVICE="$1##$2"
-if [ "$3" != "" ]; then
-  DEVICE="$DEVICE##$3##$4"
+
+ALIAS=${ARGUMENTS[0]}
+BMC_IP=${ARGUMENTS[1]}
+
+if [ $NUM_ARGS -ge 3 ]; then
+  BMC_PASSWORD=${ARGUMENTS[2]}
+elif [ "$BMC_PASSWORD" == "" ]; then
+  echo "ERROR: We either need to clone a BMC or need to provide at least the password"
+  exit -1
 fi
-echo $DEVICE >> $DEV_FILE
+
+if [ $NUM_ARGS -ge 4 ]; then
+  PROXY=${ARGUMENTS[3]}
+fi
+if [ $NUM_ARGS -ge 5 ]; then
+  PROXY_PASSWORD=${ARGUMENTS[4]}
+fi
+
+DEVICE="$ALIAS##$BMC_IP##$BMC_PASSWORD"
+if [ "$PROXY" != "" ]; then
+  if [ "$PROXY_PASSWORD" == "" ]; then
+    echo "Proxy provided, but no password!"
+    exit -1
+  fi
+  DEVICE="$DEVICE##$PROXY##$PROXY_PASSWORD"
+fi
+if [[ -e $DEV_FILE ]] && [[ $(grep $DEVICE $DEV_FILE | wc -l) != "0" ]]; then
+  echo "$ALIAS ($BMC_IP) already exists in device list"
+  exit -1
+else
+  echo $DEVICE >> $DEV_FILE
+fi

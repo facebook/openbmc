@@ -20,8 +20,16 @@
 
 echo "Logging into $BMC_IP" >> ~/.bmc_history
 if [ "$PROXY" == "" ]; then
-  sshpass -p $BMC_PASSWORD ssh -q -oStrictHostKeyChecking=no root@$BMC_IP $*
+  if [ $(wait_1hop $BMC_IP) != "done" ]; then
+    echo "$BMC_IP is not reachable"
+    exit -1
+  fi
+  cmd_1hop root@$BMC_IP $BMC_PASSWORD ${ARGUMENTS[@]}
 else
-  sshpass -p $PROXY_PASSWORD ssh -q -tt $PROXY sshpass -p $BMC_PASSWORD ssh -q -tt root@$BMC_IP $*
+  if [ $(wait_2hop $PROXY $PROXY_PASSWORD $BMC_IP) != "done" ]; then
+    echo "$BMC_IP is not reachable"
+    exit -1
+  fi
+  cmd_2hop $PROXY $PROXY_PASSWORD root@$BMC_IP $BMC_PASSWORD ${ARGUMENTS[@]}
 fi
-bmc_set_last $BMC_IP $BMC_PASSWORD $PROXY $PROXY_PASSWORD
+bmc_set_last $BMC_ALIAS $BMC_IP $BMC_PASSWORD $PROXY $PROXY_PASSWORD

@@ -43,6 +43,8 @@ class serverNode(node):
             status = 'power-off'
         elif ret == 1:
             status = 'power-on'
+        elif ret == 5:
+            status = '12V-off'
         else:
             status = 'error'
 
@@ -54,7 +56,12 @@ class serverNode(node):
         if is_read_only:
             result = { "result": 'failure' }
         else:
-            if pal_server_action(self.num, data["action"]) == -1:
+            ret = pal_server_action(self.num, data["action"])
+            if ret == -2:
+                res = 'Should not execute power on/off/graceful_shutdown/cycle/reset on device card'
+                result = { "Warning": res }
+                return result
+            elif ret == -1:
                 res = 'failure'
             else:
                 res = 'success'
@@ -78,5 +85,16 @@ def get_node_server(num, is_read_only=True):
                     "identify-on",
                     "identify-off",
                     ]
+    return serverNode(num = num, actions = actions)
 
+def get_node_device(num, is_read_only=True):
+    if is_read_only:
+        actions =  []
+    else:
+        actions =  ["12V-on",
+                    "12V-off",
+                    "12V-cycle",
+                    "identify-on",
+                    "identify-off",
+                    ]
     return serverNode(num = num, actions = actions)

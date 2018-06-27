@@ -20,6 +20,7 @@
 
 from ctypes import *
 from subprocess import *
+import os
 
 lpal_hndl = CDLL("libpal.so")
 
@@ -59,6 +60,9 @@ def pal_get_server_power(slot_id):
         return status.value
 
 def pal_server_action(slot_id, command):
+    if command == 'power-off' or command == 'power-on' or command == 'power-reset' or command == 'power-cycle' or command == 'graceful-shutdown':
+        if lpal_hndl.pal_is_slot_server(slot_id) == 0:
+            return -2
 
     plat_name = pal_get_platform_name().decode()
 
@@ -142,6 +146,14 @@ def pal_sled_action(command):
         return 0
 
 def pal_set_key_value(key, value):
-    cmd = '/usr/local/bin/cfg-util %s %s' % (key,value)
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-    return ret;
+    cmd = ['/usr/local/bin/cfg-util', key, value]
+    if (os.path.exists(cmd[0])):
+        output = check_output(cmd).decode()
+        if "Usage:" in output:
+            raise ValueError("failure")
+    else:
+        pkey = c_char_p(key.encode())
+        pvalue = c_char_p(value.encode())
+        ret = lpal_hndl.pal_set_key_value(pkey, pvalue)
+        if (ret != 0):
+            raise ValueError("failure")

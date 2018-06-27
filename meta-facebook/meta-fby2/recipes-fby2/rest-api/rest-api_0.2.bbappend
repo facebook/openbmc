@@ -16,7 +16,5 @@
 # Boston, MA 02110-1301 USA
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://plat_tree.py \
-           file://node_server.py \
-           file://pal.py \
           "
 

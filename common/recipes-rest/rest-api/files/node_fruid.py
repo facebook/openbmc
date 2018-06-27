@@ -34,7 +34,7 @@ class fruidNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self):
+    def getInformation(self, param={}):
         result = {}
         cmd = '/usr/local/bin/fruid-util ' + self.name
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()

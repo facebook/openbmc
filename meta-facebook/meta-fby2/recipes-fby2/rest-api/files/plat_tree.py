@@ -44,7 +44,7 @@ def get_slot_type(num):
     f.close()
     return slot_type
 
-def populate_server_node(num, is_read_only=True):
+def populate_server_node(r_api, num, is_read_only=True):
     prsnt = pal_is_fru_prsnt(num)
     if prsnt == None or prsnt == 0:
         return None
@@ -56,6 +56,7 @@ def populate_server_node(num, is_read_only=True):
     else :
       r_server = tree("device" + repr(num), data = get_node_device(num, is_read_only))
 
+    r_api.addChild(r_server)
     r_fruid = tree("fruid", data = get_node_fruid("slot" + repr(num)))
     r_sensors = tree("sensors", data = get_node_sensors("slot" + repr(num)))
     r_logs = tree("logs", data = get_node_logs("slot" + repr(num), is_read_only))
@@ -97,9 +98,7 @@ def init_plat_tree(is_read_only=True):
     # Add servers /api/server[1-max]
     num = pal_get_num_slots()
     for i in range(1, num+1):
-        r_server = populate_server_node(i, is_read_only)
-        if r_server:
-            r_api.addChild(r_server)
+        r_server = populate_server_node(r_api, i, is_read_only)
 
     # Add /api/spb/fruid end point
     r_temp = tree("fruid", data = get_node_fruid("spb"))

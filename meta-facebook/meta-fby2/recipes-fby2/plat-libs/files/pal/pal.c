@@ -4278,7 +4278,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-#if defined(CONFIG_FBY2_RC)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
       ret = fby2_get_server_type(fru, &server_type);
       if (ret) {
         syslog(LOG_ERR, "%s, Get server type failed for slot%u", __func__, fru);
@@ -4295,6 +4295,18 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
               return 0;
           }
           break;
+#if defined(CONFIG_FBY2_EP)
+        case SERVER_TYPE_EP:
+          switch(snr_num) {
+            case BIC_EP_SENSOR_POWER_ERR:
+              pal_store_cpld_dump(fru);
+              break;
+
+            case 0x00:  // don't care sensor number 00h
+              return 0;
+          }
+          break;
+#endif
         case SERVER_TYPE_TL:
           switch(snr_num) {
             case CATERR_B:

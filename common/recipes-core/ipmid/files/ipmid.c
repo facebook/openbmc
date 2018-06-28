@@ -409,11 +409,11 @@ sensor_plat_event_msg(unsigned char *request, unsigned char req_len,
 
   if (req_len == 11) { // For messaging from system interface
     entry.msg[7] = req->data[0];  //Store Generator ID
-    memcpy(&entry.msg[9], req->data + 1, 7); 
+    memcpy(&entry.msg[9], req->data + 1, 7);
   } else {
-    memcpy(&entry.msg[9], req->data, 7);  // Platform event provides only last 7 bytes of SEL's 16-byte entry 
+    memcpy(&entry.msg[9], req->data, 7);  // Platform event provides only last 7 bytes of SEL's 16-byte entry
   }
-  
+
   // Use platform APIs to add the new SEL entry
   ret = sel_add_entry (req->payload_id, &entry, &record_id);
   if (ret)
@@ -1886,13 +1886,13 @@ oem_add_ras_sel (unsigned char *request, unsigned char req_len, unsigned char *r
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
 
-  *res_len = 0;  
+  *res_len = 0;
 
   ras_sel_msg_t entry;
   memcpy(entry.msg, req->data, SIZE_RAS_SEL);
 
   res->cc = ras_sel_add_entry (req->payload_id, &entry);
-  
+
   return;
 }
 
@@ -2638,6 +2638,11 @@ oem_get_plat_info(unsigned char *request, unsigned char req_len, unsigned char *
   // Populate the presence bit[7]
   if (pres) {
     pinfo = 0x80;
+  }
+
+  // Bit[6]: Test Board:1, Non Test Board:0
+  if (pal_is_test_board()) {
+    pinfo |= 0x40;
   }
 
   // Get the SKU ID bit[5-3]
@@ -3823,4 +3828,3 @@ main (void)
 
   return 0;
 }
-

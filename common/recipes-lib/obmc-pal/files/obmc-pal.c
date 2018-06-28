@@ -1280,6 +1280,13 @@ pal_get_plat_sku_id(void)
   return PAL_EOK;
 }
 
+int __attribute__((weak))
+pal_is_test_board(void)
+{
+  //Non Test Board:0
+  return 0;
+}
+
 void __attribute__((weak))
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
 {

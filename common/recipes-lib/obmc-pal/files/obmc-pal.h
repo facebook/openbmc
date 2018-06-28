@@ -262,6 +262,7 @@ int pal_self_tray_location(uint8_t *value);
 void pal_log_clear(char *fru);
 int pal_get_dev_guid(uint8_t fru, char *guid);
 int pal_get_plat_sku_id(void);
+int pal_is_test_board(void);
 void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);

@@ -1222,6 +1222,12 @@ pal_get_num_slots(uint8_t *num) {
 }
 
 int
+pal_is_test_board() {
+    //Test Board:1, Non Test Board:0
+    return 1; //this is minilake test board
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int val, val_prim, val_ext;
   char path[64] = {0};
@@ -1296,7 +1302,7 @@ int
 pal_is_slot_server(uint8_t fru)
 {
   if( fru == FRU_SLOT1 ) {
-    return 1; // only have server slot1 
+    return 1; // only have server slot1
   } else {
     return 0;
   }

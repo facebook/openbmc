@@ -1897,6 +1897,20 @@ oem_add_ras_sel (unsigned char *request, unsigned char req_len, unsigned char *r
 }
 
 static void
+oem_add_imc_log (unsigned char *request, unsigned char req_len, unsigned char *response,
+                 unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  *res_len = 0;
+
+  res->cc = pal_add_imc_log (req->payload_id, req->data, req_len, res->data, res_len);
+
+  return;
+}
+
+static void
 oem_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
        unsigned char *res_len)
 {
@@ -2958,6 +2972,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
   {
     case CMD_OEM_ADD_RAS_SEL:
       oem_add_ras_sel (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_ADD_IMC_LOG:
+      oem_add_imc_log (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_PROC_INFO:
       oem_set_proc_info (request, req_len, response, res_len);

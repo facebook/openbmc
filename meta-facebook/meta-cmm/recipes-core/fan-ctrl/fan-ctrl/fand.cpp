@@ -58,7 +58,7 @@
 #include <signal.h>
 #include <syslog.h>
 #include <dirent.h>
-#include "watchdog.h"
+#include <openbmc/watchdog.h>
 #ifdef CONFIG_GALAXY100
 #include <fcntl.h>
 #include <openbmc/obmc-i2c.h>

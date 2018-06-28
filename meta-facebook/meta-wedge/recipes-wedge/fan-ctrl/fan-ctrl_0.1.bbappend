@@ -15,8 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libwedge-eeprom update-rc.d-native"
-RDEPENDS_${PN} += "libwedge-eeprom"
+DEPENDS_append = "libwedge-eeprom update-rc.d-native libwatchdog"
+RDEPENDS_${PN} += "libwedge-eeprom libwatchdog"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://get_fan_speed.sh \
@@ -32,7 +32,7 @@ binfiles += "get_fan_speed.sh \
             set_fan_speed.sh \
            "
 
-LDFLAGS_append = " -lwedge_eeprom"
+LDFLAGS_append = " -lwedge_eeprom -lwatchdog"
 CXXFLAGS_prepend = "-DCONFIG_WEDGE "
 
 pkgdir = "fan_ctrl"

@@ -53,3 +53,6 @@ if [ $board_rev -ne 4 ]; then
     # Set BMC_RST_FPGA(GPIOP2) pin to high, IOB FPGA in normal mode
     gpio_set BMC_RST_FPGA 1
 fi
+
+# Setup management port LED
+/usr/local/bin/setup_mgmt.sh led

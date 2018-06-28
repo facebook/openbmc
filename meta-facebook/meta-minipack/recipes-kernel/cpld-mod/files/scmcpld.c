@@ -146,6 +146,14 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x09, 3, 1,
   },
   {
+    "rj45_mode_sel",
+    "1: Control by OOB_LED\n"
+    "0: Control by SW register 0x09[1:0]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x09, 7, 1,
+  },
+  {
     "oob_led1_n",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,

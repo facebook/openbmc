@@ -66,6 +66,8 @@ scm_monitor_handler(){
           sleep(3);
           syslog(LOG_WARNING, "SCM power on\n");
           pal_set_server_power(pos, SERVER_POWER_ON);
+          /* Setup management port LED */
+          run_command("/usr/local/bin/setup_mgmt.sh led");
           goto scm_mon_out;
         }
       } else {

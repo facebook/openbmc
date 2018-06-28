@@ -15,7 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS_append = " update-rc.d-native libwatchdog"
+RDEPENDS_${PN} += " libwatchdog"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://get_fan_speed.sh \
@@ -31,6 +32,7 @@ binfiles = "                                    \
     fand					\
     "
 
+LDFLAGS += " -lwatchdog"
 CXXFLAGS_prepend = "-DCONFIG_WEDGE100 "
 
 do_install() {

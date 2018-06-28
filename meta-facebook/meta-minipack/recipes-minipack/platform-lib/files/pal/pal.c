@@ -1168,3 +1168,9 @@ pal_is_fw_update_ongoing(uint8_t fru) {
 
   return false;
 }
+
+int
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
+{
+  return -1;
+}

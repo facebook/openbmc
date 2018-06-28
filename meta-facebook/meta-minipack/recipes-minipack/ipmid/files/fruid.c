@@ -114,7 +114,7 @@ static void populate_fruid(void) {
   len = i-PROD_INFO_AREA_OFFSET+1;
   if (len % LEN_BYTE_SIZE) {
    g_fruid[PROD_INFO_CKSUM_OFFSET] = len/LEN_BYTE_SIZE + 1;
-   i += (len % LEN_BYTE_SIZE);
+   i += LEN_BYTE_SIZE - (len % LEN_BYTE_SIZE);
   } else {
    g_fruid[PROD_INFO_CKSUM_OFFSET] = len/LEN_BYTE_SIZE;
   }

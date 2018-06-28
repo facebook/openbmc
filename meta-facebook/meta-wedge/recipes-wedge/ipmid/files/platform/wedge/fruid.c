@@ -135,7 +135,7 @@ populate_fruid(void) {
     // For non-multiple of 8 bytes, add one for partial data
     g_fruid[PROD_INFO_CKSUM_OFFSET] = len/LEN_BYTE_SIZE + 1;
     // And also increment index to keep checksum byte
-    i += (len % LEN_BYTE_SIZE);
+    i += LEN_BYTE_SIZE - (len % LEN_BYTE_SIZE);
   } else {
     g_fruid[PROD_INFO_CKSUM_OFFSET] = len/LEN_BYTE_SIZE;
   }

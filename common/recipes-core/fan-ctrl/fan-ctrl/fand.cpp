@@ -67,7 +67,7 @@
 #include <facebook/wedge_eeprom.h>
 #endif
 
-#include "watchdog.h"
+#include <openbmc/watchdog.h>
 
 #if !defined(CONFIG_LIGHTNING)
 /* Sensor definitions */

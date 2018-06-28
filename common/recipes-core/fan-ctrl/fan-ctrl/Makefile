@@ -17,7 +17,7 @@
 
 all: fand
 
-fand: fand.cpp watchdog.cpp
+fand: fand.cpp
 	$(CXX) $(CXXFLAGS) -pthread -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean

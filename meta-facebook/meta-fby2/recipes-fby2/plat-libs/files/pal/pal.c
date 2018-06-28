@@ -109,6 +109,11 @@
 
 #define RAS_CRASHDUMP_FILE "/mnt/data/crashdump_slot"
 
+#define IMC_START_FILE "/tmp/start_check_slot%d"
+#define IMC_LOG_FILE "/var/log/imc_log_slot"
+#define IMC_LOG_FILE_BAK "/var/log/imc_log_slot%d_bak"
+#define IMC_LOG_FILE_SIZE (24*1024)   //24KB 
+
 #define REINIT_TYPE_FULL            0
 #define REINIT_TYPE_HOST_RESOURCE   1
 
@@ -302,6 +307,14 @@ static const char *ras_dump_path[MAX_NODES+1] = {
   RAS_CRASHDUMP_FILE "2",
   RAS_CRASHDUMP_FILE "3",
   RAS_CRASHDUMP_FILE "4"
+};
+
+static const char *imc_log_path[MAX_NODES+1] = {
+  "",
+  IMC_LOG_FILE "1",
+  IMC_LOG_FILE "2",
+  IMC_LOG_FILE "3",
+  IMC_LOG_FILE "4"
 };
 
 /* curr/power calibration */
@@ -6904,4 +6917,72 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log) {
   pal_err_ras_sel_handle(section_type, error_log, &sel[3]);
 
   return 0;
+}
+
+uint8_t 
+pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  int index;
+  FILE *pFile = NULL;
+  int ret;
+  uint8_t status;
+  uint8_t data_len;
+  struct stat st;
+  char path[80] = {0};
+  char cmd[128] = {0};
+
+
+  *res_len = 0;
+  status = req_data[0];
+  data_len = req_data[1];
+
+  pFile = fopen(imc_log_path[slot], "a+");
+  if (pFile == NULL) {
+    syslog(LOG_WARNING, "%s: failed to open path: %s", __func__, imc_log_path[slot]);
+    return completion_code;
+  }
+
+  if (status == IMC_DUMP_START) {
+    sprintf(path, IMC_START_FILE, slot);
+    sprintf(cmd, "touch %s", path);
+    system(cmd);
+    syslog(LOG_INFO, "IMC Log Start on slot%u", slot);
+  }
+
+  if (status == IMC_DUMP_END) {
+    sprintf(path, IMC_START_FILE, slot);
+    if(access(path, F_OK) != 0) {
+      syslog(LOG_INFO, "IMC Log Start on slot%u", slot);
+    } else {
+      sprintf(cmd, "rm %s", path);
+      system(cmd); 
+    }
+  }
+
+  for (index = 2; index <= data_len + 1; index++) {  
+    if(req_data[index] == 0x00 || req_data[index] == 0x0D)    //ignore unnecessary ASCII character
+      continue;
+    fprintf(pFile, "%c", req_data[index]);
+  }
+
+  if (status == IMC_DUMP_END) {
+    fprintf(pFile, "\n\n");
+    syslog(LOG_INFO, "IMC Log Finish on slot%u", slot);
+
+    stat(imc_log_path[slot], &st);
+    if(st.st_size > IMC_LOG_FILE_SIZE) {   //Do IMC log backup action
+      sprintf(path, IMC_LOG_FILE_BAK, slot);
+      sprintf(cmd, "mv %s %s", imc_log_path[slot], path);
+      system(cmd);
+
+      memset(cmd, 0, sizeof(cmd));
+      sprintf(cmd, "touch %s", imc_log_path[slot]);
+      system(cmd);
+    }
+  }
+
+  fclose(pFile);
+  completion_code = CC_SUCCESS;
+  return completion_code;
 }

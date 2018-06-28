@@ -99,6 +99,12 @@ enum {
   POST_SET
 };
 
+enum {
+  IMC_DUMP_END = 0,
+  IMC_DUMP_START,
+  IMC_DUMP_PROCESS,
+};
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status);

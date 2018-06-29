@@ -7,8 +7,6 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://healthd.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
 SRC_URI = "file://Makefile \
-           file://watchdog.h \
-           file://watchdog.c \
            file://healthd.c \
            file://setup-healthd.sh \
            file://run-healthd.sh \
@@ -16,9 +14,9 @@ SRC_URI = "file://Makefile \
           "
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpal -ljansson -lkv "
+LDFLAGS =+ " -lpal -ljansson -lkv -lwatchdog "
 
-DEPENDS =+ " libpal jansson obmc-i2c libkv update-rc.d-native"
+DEPENDS =+ " libpal jansson obmc-i2c libkv update-rc.d-native libwatchdog"
 
 binfiles = "healthd"
 
@@ -43,7 +41,7 @@ do_install() {
   update-rc.d -r ${D} setup-healthd.sh start 91 5 .
 }
 
-RDEPENDS_${PN} =+ " libpal jansson "
+RDEPENDS_${PN} =+ " libpal jansson libwatchdog"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

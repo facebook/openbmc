@@ -35,7 +35,7 @@
 #include <openbmc/pal.h>
 #include <sys/sysinfo.h>
 #include <sys/reboot.h>
-#include "watchdog.h"
+#include <openbmc/watchdog.h>
 #include <openbmc/pal.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>

@@ -33,7 +33,7 @@
 #include <stdbool.h>
 #include <openbmc/ipmi.h>
 
-#define ETH_INTF_NAME "eth1"
+#define ETH_INTF_NAME "eth0"
 
 #define IPV6_LINK_LOCAL_BYTE1 0xFE
 #define IPV6_LINK_LOCAL_BYTE2 0x80

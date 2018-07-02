@@ -105,9 +105,6 @@
 
 #define IMC_VER_SIZE 8
 
-#define REINIT_TYPE_FULL            0
-#define REINIT_TYPE_HOST_RESOURCE   1
-static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
 
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N };
@@ -529,12 +526,6 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 
     val = "0";
 
-    // send notification to NIC about impending reset
-    if (nic_powerup_prep(slot, REINIT_TYPE_HOST_RESOURCE) != 0) {
-      syslog(LOG_ERR, "%s: NIC notification failed, abort reset\n",
-             __FUNCTION__);
-      return -1;
-    }
   }
 
   sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
@@ -657,20 +648,6 @@ write_gmac0_value(const char *device_name, const int value) {
   return err;
 }
 
-// Write to /sys/devices/platform/ftgmac100.0/net/eth0/powerup_prep_host_id
-// This is a combo ID consists of the following fields:
-// bit 11~8: reinit_type
-// bit 7~0:  host_id
-static int
-nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
-  int err;
-  uint32_t combo_id = ((uint32_t)reinit_type<<8) | (uint32_t)slot_id;
-
-  err = write_gmac0_value("powerup_prep_host_id", combo_id);
-
-  return err;
-}
-
 
 // Power On the server in a given slot
 static int
@@ -710,12 +687,6 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
     return -1;
   }
 
-  if (!gs_flag) {
-    // only needed in ungraceful-shutdown
-    if (nic_powerup_prep(slot_id, REINIT_TYPE_FULL) != 0) {
-      return -1;
-    }
-  }
 
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
@@ -856,9 +827,6 @@ server_12v_off(uint8_t slot_id) {
     return -1;
   }
 
-  if (nic_powerup_prep(slot_id, REINIT_TYPE_FULL) != 0) {
-    return -1;
-  }
 
   sprintf(vpath, GPIO_VAL, gpio_12v[runoff_id]);
 
@@ -3793,35 +3761,6 @@ pal_get_platform_id(uint8_t *id) {
    return 0;
 }
 
-
-int
-pal_nic_otp_disable (float val) {
-  int ret;
-  uint8_t slot, status = 0xFF, slot_type = 0xFF;
-  char pwr_state[MAX_VALUE_LEN] = {0};
-
-  for (slot = 1; slot <= 4; slot++) {
-    // Check if it is a server
-    slot_type = minilaketb_get_slot_type(slot);
-    if (SLOT_TYPE_SERVER == slot_type) {
-      pal_get_server_power(slot, &status);
-      if ((SERVER_12V_ON != status) && (1 == otp_server_12v_off_flag[slot])) {
-        // power on server 12V HSC
-        syslog(LOG_CRIT, "FRU: %u, Power On Server 12V due to NIC temp UCR deassert. (val = %.2f)", slot, val);
-        pal_get_last_pwr_state(slot, pwr_state);
-        ret = server_12v_on(slot);
-        if (ret) {
-          syslog(LOG_ERR, "server_12v_on() failed, slot%d", slot);
-        } else {
-          // Set power policy based on last power state
-          pal_power_policy_control(slot, pwr_state);
-          otp_server_12v_off_flag[slot] = 0;
-        }
-      }
-    }
-  }
-  return 0;
-}
 
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {

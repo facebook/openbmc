@@ -18,16 +18,110 @@
 # Boston, MA 02110-1301 USA
 
 ##### NOTE #########################################################
-# When adding new devices, always add to end of the list here
-# so any other dependencies that are hard coded with GPIO
-# will not break.
+# - When adding new devices, always add to end of the list here
+#   so any other dependencies that are hard coded with GPIO
+#   will not break.
+# - Although technically all the i2c devices can be created by using
+#   device tree, we prefer to do it here, mainly because:
+#     * it's easier to control the order of device creation.
+#     * a majority of i2c devices are located on line/fabric cards,
+#       and it's easier to control device creation/removal and add
+#       hot-plug support in the future.
 ####################################################################
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+#
+# instantiate an i2c device
+# $1 - device name/type
+# $2 - device address
+# $3 - parent bus number
+#
 add_device() {
     echo ${1} ${2} > /sys/class/i2c-dev/i2c-${3}/device/new_device
 }
+
+#
+# instantiate an i2c-mux device and wait untill all its child buses
+# are initialized before the function returns.
+# $1 - device name/type
+# $2 - device address
+# $3 - parent bus number
+# $4 - bus number of the last i2c-mux channel
+#
+add_i2c_mux_sync() {
+    retry=0
+    max_retry=100
+    bus_dir="/sys/class/i2c-dev/i2c-${4}"
+
+    add_device ${1} ${2} ${3}
+
+    until [ -d ${bus_dir} ]
+    do
+        usleep 2000 # sleep for 2 milliseconds
+
+        retry=$((retry + 1))
+        if [ $retry -ge ${max_retry} ]
+        then
+            echo "i2c-mux ${3}-${2} initialization failed: timer expired"
+            exit 1
+        fi
+    done
+}
+
+#
+# instantiate all the i2c-muxes.
+# Note:
+#   - the step is not needed in kernel 4.1 because all the i2c-muxes
+#     are created in 4.1 kernel code. For details please refer to
+#     "arch/arm/plat-aspeed/dev-i2c-cmm.c"
+#   - please do not modify the order of i2c-mux creation unless you've
+#     decided to fix bus-number of leaf i2c-devices.
+#
+bulk_create_i2c_mux() {
+    last_child_bus=15
+    i2c_mux_name="pca9548"
+
+    # Creat i2c-mux 1-0077, which registers 8 i2c buses: 16-23
+    last_child_bus=$((last_child_bus + 8))
+    add_i2c_mux_sync ${i2c_mux_name} 0x77 1 ${last_child_bus}
+
+    # Creat i2c-mux 2-0071, which registers 8 i2c buses: 24-31
+    last_child_bus=$((last_child_bus + 8))
+    add_i2c_mux_sync ${i2c_mux_name} 0x71 2 ${last_child_bus}
+
+    # Creat i2c-mux 8-0077, which registers 8 i2c buses: 32-39
+    last_child_bus=$((last_child_bus + 8))
+    add_i2c_mux_sync ${i2c_mux_name} 0x77 8 ${last_child_bus}
+
+    # Create second-level i2c-muxes which are connected to first level
+    # mux "1-0077". "1-0077" has 8 channels and each channel is connected
+    # with 2 more i2c-muxes (@ address 0x70 & 0x73), thus total 128 i2c
+    # buses (40-167) will be registered.
+    parent_buses="18 19 20 21 16 17 22 23"
+    mux_addresses="0x70 0x73"
+    for bus in ${parent_buses}; do
+        for addr in ${mux_addresses}; do
+            last_child_bus=$((last_child_bus + 8))
+            add_i2c_mux_sync ${i2c_mux_name} ${addr} ${bus} ${last_child_bus}
+        done
+    done
+
+    # Create second-level i2c-muxes which are connected to first level
+    # mux "8-0077". "8-0077" has 8 channels and the first 4 channels are
+    # connected with 1 extra level of i2c-mux (@ address 0x70), thus
+    # totally 32 i2c buses (168-199) will be registered.
+    parent_buses="32 33 34 35"
+    for bus in ${parent_buses}; do
+        last_child_bus=$((last_child_bus + 8))
+        add_i2c_mux_sync ${i2c_mux_name} 0x70 ${bus} ${last_child_bus}
+    done
+}
+
+KERNEL_VERSION=`uname -r`
+if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
+    bulk_create_i2c_mux
+fi
 
 # EEPROM
 add_device 24c64 0x51 6

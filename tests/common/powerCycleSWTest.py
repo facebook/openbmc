@@ -98,7 +98,7 @@ def powerCycleResetTest(pingcmd, utilType, ssh, status):
     # Power reset
     logger.debug("Executing power RESET command")
     ssh.sendline(utilType.PowerCmdReset)
-    time.sleep(WAIT_TIME)
+    time.sleep(10)
     ssh.prompt()
     # Check that ping connection is failure then success
     logger.debug(

@@ -22,7 +22,7 @@
       "Not Applicable"
     ],
     "/api/sys/slotid":[
-      "16"
+      "0"
     ],
     "/api/sys/sensors":[
       "tmp75-i2c-3-48",

@@ -22,8 +22,8 @@ class Wedge100Util(BaseUtil.BaseUtil):
     # Fans
     GetFanCmd = '/usr/local/bin/get_fan_speed.sh 1'
     SetFanCmd = '/usr/local/bin/set_fan_speed.sh 0'
-    KillControlCmd = ['/usr/local/bin/watchdog_ctrl.sh off', '/usr/bin/killall -USR1 fand']
-    StartControlCmd = 'sh /etc/init.d/setup-fan.sh'
+    KillControlCmd = ['/usr/local/bin/watchdog_ctrl.sh off', '/usr/bin/sv stop fscd']
+    StartControlCmd = '/usr/bin/sv start fscd'
 
     def get_speed(self, info):
         """
@@ -70,4 +70,4 @@ class Wedge100Util(BaseUtil.BaseUtil):
         else:
             return False
 
-    daemonProcessesKill = ['/usr/bin/killall fand']
+    daemonProcessesKill = ['/usr/bin/sv stop fscd']

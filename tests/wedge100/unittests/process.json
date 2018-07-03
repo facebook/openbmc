@@ -1,6 +1,6 @@
 [
   "spatula_wrapper.py",
-  "fand",
+  "fscd",
   "psumuxmon",
   "rackmond",
   "dhclient -pf /var/run/dhclient.eth0.pid eth0",

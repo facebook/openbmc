@@ -27,10 +27,12 @@ from lib_pal import *
 import subprocess
 import codecs
 import time
+import json
 from threading import Thread
 
 syslogfiles = ['/mnt/data/logfile.0', '/mnt/data/logfile']
 cmdlist = ['--print', '--clear']
+optcmdlist = ['--json']
 APPNAME = 'log-util'
 frulist = ''
 filelock = '/tmp/log-util.lock'
@@ -38,7 +40,7 @@ filelock = '/tmp/log-util.lock'
 def print_usage():
     global frulist
 
-    print('Usage: %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[0]))
+    print('Usage: %s [ %s ] %s [ %s ]' % (APPNAME, ' | '.join(frulist), cmdlist[0], optcmdlist[0]))
     print('       %s [ %s ] %s' % (APPNAME, ' | '.join(frulist), cmdlist[1]))
 
 def rsyslog_hup():
@@ -60,12 +62,13 @@ def log_main():
     frulist = re.split(r',\s', frus)
     frulist.append('sys')
 
-    if len(sys.argv) is not 3:
+    if len(sys.argv) < 3 or len(sys.argv) > 4 :
         print_usage()
         return -1
 
     fru = sys.argv[1]
     cmd = sys.argv[2]
+    optional_arg = None
 
     # Check if the fru passed in as argument exists in the fru list
     if fru not in frulist:
@@ -79,15 +82,33 @@ def log_main():
         print_usage()
         return -1
 
+    # Get the optional command
+    if len(sys.argv) is 4:
+        optional_arg = sys.argv[3]
+        # Check if optional command is in optcmdlist
+        if optional_arg not in optcmdlist:
+            print("Unknown command: %s \n" % cmd)
+            print_usage()
+            return -1
+
+        if cmd != cmdlist[0]:
+            print("--json option is only valid for --print\n")
+            print_usage()
+            return -1
+
     # Print cmd
     if cmd == cmdlist[0]:
-        print('%-4s %-8s %-22s %-16s %s' % (
-            "FRU#",
-            "FRU_NAME",
-            "TIME_STAMP",
-            "APP_NAME",
-            "MESSAGE"
-            ))
+        #JSON format
+        if optional_arg:
+            linfo = []
+        else:
+            print('%-4s %-8s %-22s %-16s %s' % (
+                "FRU#",
+                "FRU_NAME",
+                "TIME_STAMP",
+                "APP_NAME",
+                "MESSAGE"
+                ))
 
     if cmd == cmdlist[1]:
         retry = 5
@@ -190,16 +211,18 @@ def log_main():
 
                 # Print only if the argument fru matches the log fru
                 if re.search(r'log-util:', log):
-                   if re.search(r'all logs', log):
-                     print (log)
-                     continue
+                    if re.search(r'all logs', log):
+                        if optional_arg is None:
+                            print (log)
+                        continue
 
                 if fru != 'all' and fru != fruname:
                     continue
 
                 if re.search(r'log-util:', log):
-                     print (log)
-                     continue
+                    if optional_arg is None:
+                        print (log)
+                    continue
 
 
                 tmp = log.split()
@@ -227,13 +250,23 @@ def log_main():
                 # Log Message
                 message = ' '.join(tmp[8:]).rstrip('\n')
 
-                print('%-4s %-8s %-22s %-16s %s' % (
-                    fru_num,
-                    fruname,
-                    curtime,
-                    app,
-                    message
-                    ))
+                if optional_arg:
+                    temp = {
+                            "FRU#" : fru_num,
+                            "FRU_NAME" : fruname,
+                            "TIME_STAMP" : curtime,
+                            "APP_NAME" : app,
+                            "MESSAGE" : message,
+                            }
+                    linfo.append(temp)
+                else:
+                    print('%-4s %-8s %-22s %-16s %s' % (
+                        fru_num,
+                        fruname,
+                        curtime,
+                        app,
+                        message
+                        ))
 
     if cmd == cmdlist[1]:
         pal_log_clear(fru)
@@ -241,9 +274,13 @@ def log_main():
         os.close(fdlock)
         # release: delete file
         os.remove(filelock)
+    if cmd == cmdlist[0] and optional_arg:
+        result = { "Logs" : linfo }
+        print(json.dumps(result, indent = 4))
+        return result
 
 if __name__ == '__main__':
-    
+
     run = Thread(target=log_main)
     run.start()
     run.join()

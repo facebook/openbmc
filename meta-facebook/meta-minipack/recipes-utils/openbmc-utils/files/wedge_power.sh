@@ -156,15 +156,22 @@ do_reset() {
     done
     if [ $system -eq 1 ]; then
         if [ $board_rev -eq 4 ]; then
-            logger "EVTA hardware is not support, skip ..."
-            echo "EVTA hardware is not support, skip ..."
-            return -1
+            logger "EVTA is not supported, running a workaround instead"
+            echo "EVTA is not supported, running a workaround instead"
+            i2cset -f -y 1 0x3a 0x12 0
         else
-            logger "Power reset the whole system ..."
+            logger "Power reset the whole system ..."y2y
             echo  "Power reset the whole system ..."
             echo 1 > $PWR_L_CYCLE_SYSFS
             sleep 1
             echo 1 > $PWR_R_CYCLE_SYSFS
+            sleep 3
+            # Control should not reach here, but if it failed to reset
+            # the system through PSU, then run a workaround to reset
+            # most of the system instead (if not all)
+            logger "Failed to reset the system. Running a workaround"
+            echo "Failed to reset the system. Running a workaround"
+            i2cset -f -y 1 0x3a 0x12 0
         fi
     else
         if ! wedge_is_us_on; then

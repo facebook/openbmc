@@ -83,6 +83,6 @@
     "regenerating_interval": 1200
   },
   "verified_boot": {
-    "enabled": true
+    "enabled": false
   }
 }

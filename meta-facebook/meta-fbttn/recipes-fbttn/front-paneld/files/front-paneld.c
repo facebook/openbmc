@@ -528,131 +528,6 @@ pwr_btn_out:
   }
 }
 
-// Thread to monitor SLED Cycles by using time stamp
-static void *
-ts_handler() {
-  int count = 0;
-  int mem_fd;
-  struct timespec ts;
-  struct timespec mts;
-  char tstr[64] = {0};
-  char buf[128] = {0};
-  uint8_t por = 0;
-  uint8_t time_init = 0;
-  uint8_t *bmc_reboot_base;
-  uint32_t kern_panic_flag = 0;
-  uint32_t reboot_detected_flag = 0;
-  long time_sled_on;
-  long time_sled_off;
-
-  // Read the last timestamp from KV storage
-  pal_get_key_value("timestamp_sled", tstr);
-  time_sled_off = (long) strtoul(tstr, NULL, 10);
-
-  // If this reset is due to Power-On-Reset, we detected SLED power OFF event
-  if (pal_is_bmc_por()) {
-    ctime_r(&time_sled_off, buf);
-    syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
-    pal_add_cri_sel("BMC AC lost");
-
-    // Initial BMC reboot flag
-    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-    if (mem_fd >= 0) {
-      bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
-      if (bmc_reboot_base != 0) {
-        BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0x0;
-        BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0x0;
-        munmap(bmc_reboot_base, PAGE_SIZE);
-      }
-      close(mem_fd);
-    }
-  } else {
-    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-    if (mem_fd >= 0) {
-      bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
-      if (bmc_reboot_base != 0) {
-        kern_panic_flag = BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base);
-        reboot_detected_flag = BMC_REBOOT_BY_CMD(bmc_reboot_base);
-
-        // Check the SRAM to make sure the reboot cause
-        // ===== kernel panic =====
-        if ((kern_panic_flag & BIT_RECORD_LOG) == BIT_RECORD_LOG) {
-          // Clear the flag of record log and reserve the kernel panic flag
-          kern_panic_flag &= ~(BIT_RECORD_LOG);
-
-          if ((kern_panic_flag & FLAG_KERN_PANIC) == FLAG_KERN_PANIC) {
-              syslog(LOG_CRIT, "BMC Reboot detected - caused by kernel panic");
-          } else {
-              syslog(LOG_CRIT, "BMC Reboot detected - unknown kernel flag (0x%08x)", kern_panic_flag);
-          }
-
-          BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = kern_panic_flag;
-        // ===== reboot command =====
-        } else if ((reboot_detected_flag & BIT_RECORD_LOG) == BIT_RECORD_LOG) {
-          // Clear the flag of record log and reserve the reboot command flag
-          reboot_detected_flag &= ~(BIT_RECORD_LOG);
-
-          if ((reboot_detected_flag & FLAG_CFG_UTIL) == FLAG_CFG_UTIL) {
-              reboot_detected_flag &= ~(FLAG_CFG_UTIL);
-              syslog(LOG_CRIT, "Reset BMC data to default factory settings");
-          }
-
-          if ((reboot_detected_flag & FLAG_REBOOT_CMD) == FLAG_REBOOT_CMD) {
-              syslog(LOG_CRIT, "BMC Reboot detected - caused by reboot command");
-          } else {
-              syslog(LOG_CRIT, "BMC Reboot detected - unknown reboot command flag (0x%08x)", reboot_detected_flag);
-          }
-
-          BMC_REBOOT_BY_CMD(bmc_reboot_base) = reboot_detected_flag;
-        // ===== others =====
-        } else {
-          syslog(LOG_CRIT, "BMC Reboot detected");
-        }
-
-        munmap(bmc_reboot_base, PAGE_SIZE);
-      }
-      close(mem_fd);
-    }
-  }
-
-  while (1) {
-
-    // Make sure the time is initialized properly
-    // Since there is no battery backup, the time could be reset to build time
-    if (time_init == 0) {
-      // Read current time
-      clock_gettime(CLOCK_REALTIME, &ts);
-
-      if (ts.tv_sec < time_sled_off) {
-        sleep(1);
-        continue;
-      }
-
-      // If current time is more than the stored time, the date is correct
-      time_init = 1;
-      // Need to log SLED ON event, if this is Power-On-Reset
-      if (pal_is_bmc_por()) {
-        // Get uptime
-        clock_gettime(CLOCK_MONOTONIC, &mts);
-        // To find out when SLED was on, subtract the uptime from current time
-        time_sled_on = ts.tv_sec - mts.tv_sec;
-
-        ctime_r(&time_sled_on, buf);
-        // Log an event if this is Power-On-Reset
-        syslog(LOG_CRIT, "SLED Powered ON at %s", buf);
-      }
-    }
-
-    // Store timestamp every one hour to keep track of SLED power
-    if (count++ == HB_TIMESTAMP_COUNT) {
-      pal_update_ts_sled();
-      count = 0;
-    }
-
-    sleep(HB_SLEEP_TIME);
-  }
-}
-
 // Thread to handle LED state of the server at given slot
 static void *
 led_handler(void *num) {
@@ -1082,7 +957,6 @@ main (int argc, char * const argv[]) {
   pthread_t tid_dbg_pwr_btn;
   pthread_t tid_rst_btn;
   pthread_t tid_pwr_btn;
-  pthread_t tid_ts;
   pthread_t tid_sync_led;
   pthread_t tid_leds[MAX_NUM_SLOTS];
   pthread_t tid_iom_led;
@@ -1115,11 +989,6 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (pthread_create(&tid_ts, NULL, ts_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for time stamp error\n");
-    exit(1);
-  }
-
   if (pthread_create(&tid_sync_led, NULL, led_sync_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for led sync error\n");
     exit(1);
@@ -1149,7 +1018,6 @@ main (int argc, char * const argv[]) {
   pthread_join(tid_dbg_pwr_btn, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
-  pthread_join(tid_ts, NULL);
   pthread_join(tid_sync_led, NULL);
   for (i = 0;  i < MAX_NUM_SLOTS; i++) {
     pthread_join(tid_leds[i], NULL);

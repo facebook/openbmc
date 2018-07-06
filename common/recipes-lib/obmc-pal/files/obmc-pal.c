@@ -809,7 +809,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
             ed[1]);
         strcat(error_log, temp_log);
 
-        temp = ed[2] & 0x7;
+        temp = ed[2] & 0xF;
         if (temp == 0x0)
           strcat(error_log, " - IRP0");
         else if (temp == 0x1)
@@ -822,6 +822,14 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, " - Intel Quick Data");
         else if (temp == 0x5)
           strcat(error_log, " - Misc");
+        else if (temp == 0x6)
+          strcat(error_log, " - DMA");
+        else if (temp == 0x7)
+          strcat(error_log, " - ITC");
+        else if (temp == 0x8)
+          strcat(error_log, " - OTC");
+        else if (temp == 0x9)
+          strcat(error_log, " - CI");
         else
           strcat(error_log, " - Reserved");
       } else

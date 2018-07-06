@@ -163,6 +163,7 @@ enum {
 void msleep(int msec);
 
 // Function Declarations
+int pal_is_bmc_por(void);
 int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_is_cplddump_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);

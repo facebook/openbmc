@@ -40,6 +40,12 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr)
 }
 
 int __attribute__((weak))
+pal_is_bmc_por(void)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time)
 {
   return PAL_ENOTSUP;

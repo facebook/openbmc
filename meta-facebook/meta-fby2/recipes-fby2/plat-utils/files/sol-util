@@ -21,12 +21,16 @@
 . /usr/local/fbpackages/utils/ast-functions
 LOGFILE="/var/log/mTerm_$1.log"
 
+function show_usage() {
+  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
+}
+
 if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
 then
   SLOT=$1
 else
-  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
-  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
+  show_usage
   exit -1
 fi
 
@@ -57,6 +61,9 @@ if [ $# -gt 1 ]; then
   if [[ "$2" == "--history" ]]; then
     cat $LOGFILE 2>/dev/null
     exit 0
+  else
+    show_usage
+    exit -1
   fi
 fi
 

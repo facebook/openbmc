@@ -1061,7 +1061,7 @@ update_done:
   system(cmd);
 
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting\n");
+  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", slot_id);
   if (fd > 0) {
     close(fd);
   }

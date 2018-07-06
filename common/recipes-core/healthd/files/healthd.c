@@ -52,6 +52,47 @@
 #define MAX_THRESHOLD          95.0
 #define VERSION_HISTORY_COUNT  (4)
 
+#define CPU_INFO_PATH "/proc/stat"
+#define CPU_NAME_LENGTH 10
+#define DEFAULT_WINDOW_SIZE 120
+#define DEFAULT_MONITOR_INTERVAL 1
+#define HEALTHD_MAX_RETRY 10
+#define CONFIG_PATH "/etc/healthd-config.json"
+
+#define AST_MCR_BASE 0x1e6e0000 // Base Address of SDRAM Memory Controller
+#define INTR_CTRL_STS_OFFSET 0x50 // Interrupt Control/Status Register
+#define ADDR_FIRST_UNRECOVER_ECC_OFFSET 0x58 // Address of First Un-Recoverable ECC Error Addr
+#define ADDR_LAST_RECOVER_ECC_OFFSET 0x5c // Address of Last Recoverable ECC Error Addr
+#define MAX_ECC_RECOVERABLE_ERROR_COUNTER 255
+#define MAX_ECC_UNRECOVERABLE_ERROR_COUNTER 15
+
+#define VERIFIED_BOOT_STRUCT_BASE     0x1E720000
+#define VERIFIED_BOOT_RECOVERY_FLAG(base)  *((uint8_t *)(base + 0x217))
+#define VERIFIED_BOOT_ERROR_TYPE(base)  *((uint8_t *)(base + 0x219))
+#define VERIFIED_BOOT_ERROR_CODE(base)  *((uint8_t *)(base + 0x21A))
+#define VERIFIED_BOOT_ERROR_TPM(base)  *((uint8_t *)(base + 0x21B))
+
+#define BMC_HEALTH_FILE "bmc_health"
+#define HEALTH "1"
+#define NOT_HEALTH "0"
+
+#define VM_PANIC_ON_OOM_FILE "/proc/sys/vm/panic_on_oom"
+
+/* Identify BMC reboot cause */
+#define AST_SRAM_BMC_REBOOT_BASE      0x1E721000
+#define BMC_REBOOT_BY_KERN_PANIC(base) *((uint32_t *)(base + 0x200))
+#define BMC_REBOOT_BY_CMD(base) *((uint32_t *)(base + 0x204))
+#define BIT_RECORD_LOG                (1 << 8)
+// kernel panic
+#define FLAG_KERN_PANIC               (1 << 0)
+// reboot command
+#define FLAG_REBOOT_CMD               (1 << 0)
+#define FLAG_CFG_UTIL                 (1 << 1)
+
+#define HB_SLEEP_TIME (5 * 60)
+#define HB_TIMESTAMP_COUNT (60 * 60 / HB_SLEEP_TIME)
+#define SLED_TS_TIMEOUT 100    //SLED Time Sync Timeout
+
 struct i2c_bus_s {
   uint32_t offset;
   char     *name;
@@ -73,24 +114,6 @@ struct i2c_bus_s ast_i2c_dev_offset[I2C_BUS_NUM] = {
   {0x440,  "I2C DEV13 OFFSET", false},
   {0x480,  "I2C DEV14 OFFSET", false},
 };
-enum {
-  BUS_LOCK_RECOVER_ERROR = 0,
-  BUS_LOCK_RECOVER_TIMEOUT,
-  BUS_LOCK_RECOVER_SUCCESS,
-  BUS_LOCK_PRESERVE,
-  SLAVE_DEAD_RECOVER_ERROR,
-  SLAVE_DEAD_RECOVER_TIMEOUT,
-  SLAVE_DEAD_RECOVER_SUCCESS,
-  SLAVE_DEAD_PRESERVE,
-  UNDEFINED_CASE,
-};
-
-#define CPU_INFO_PATH "/proc/stat"
-#define CPU_NAME_LENGTH 10
-#define DEFAULT_WINDOW_SIZE 120
-#define DEFAULT_MONITOR_INTERVAL 1
-#define HEALTHD_MAX_RETRY 10
-#define CONFIG_PATH "/etc/healthd-config.json"
 
 struct threshold_s {
   float value;
@@ -102,24 +125,17 @@ struct threshold_s {
   bool bmc_error_trigger;
 };
 
-#define AST_MCR_BASE 0x1e6e0000 // Base Address of SDRAM Memory Controller
-#define INTR_CTRL_STS_OFFSET 0x50 // Interrupt Control/Status Register
-#define ADDR_FIRST_UNRECOVER_ECC_OFFSET 0x58 // Address of First Un-Recoverable ECC Error Addr
-#define ADDR_LAST_RECOVER_ECC_OFFSET 0x5c // Address of Last Recoverable ECC Error Addr
-#define MAX_ECC_RECOVERABLE_ERROR_COUNTER 255
-#define MAX_ECC_UNRECOVERABLE_ERROR_COUNTER 15
-
-#define VERIFIED_BOOT_STRUCT_BASE     0x1E720000
-#define VERIFIED_BOOT_RECOVERY_FLAG(base)  *((uint8_t *)(base + 0x217))
-#define VERIFIED_BOOT_ERROR_TYPE(base)  *((uint8_t *)(base + 0x219))
-#define VERIFIED_BOOT_ERROR_CODE(base)  *((uint8_t *)(base + 0x21A))
-#define VERIFIED_BOOT_ERROR_TPM(base)  *((uint8_t *)(base + 0x21B))
-
-#define BMC_HEALTH_FILE "bmc_health"
-#define HEALTH "1"
-#define NOT_HEALTH "0"
-
-#define VM_PANIC_ON_OOM_FILE "/proc/sys/vm/panic_on_oom"
+enum {
+  BUS_LOCK_RECOVER_ERROR = 0,
+  BUS_LOCK_RECOVER_TIMEOUT,
+  BUS_LOCK_RECOVER_SUCCESS,
+  BUS_LOCK_PRESERVE,
+  SLAVE_DEAD_RECOVER_ERROR,
+  SLAVE_DEAD_RECOVER_TIMEOUT,
+  SLAVE_DEAD_RECOVER_SUCCESS,
+  SLAVE_DEAD_PRESERVE,
+  UNDEFINED_CASE,
+};
 
 enum ASSERT_BIT {
   BIT_CPU_OVER_THRESHOLD = 0,
@@ -178,7 +194,11 @@ static bool nm_monitor_enabled = false;
 static int nm_monitor_interval = DEFAULT_MONITOR_INTERVAL;
 static unsigned char nm_retry_threshold = 0;
 
+/* Verified-boot state check */
 static bool vboot_state_check = false;
+
+/* BMC time stamp enabled */
+static bool bmc_timestamp_enabled = false;
 
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
@@ -495,6 +515,19 @@ static void initialize_vboot_config(json_t *obj)
   vboot_state_check = json_is_true(tmp);
 }
 
+static void initialize_bmc_timestamp_config(json_t *obj) {
+  json_t *tmp;
+
+  if (!obj) {
+    return;
+  }
+  tmp = json_object_get(obj, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  bmc_timestamp_enabled = json_is_true(tmp);
+}
+
 static int
 initialize_configuration(void) {
   json_error_t error;
@@ -518,6 +551,7 @@ initialize_configuration(void) {
   initialize_bmc_health_config(json_object_get(conf, "bmc_health"));
   initialize_nm_monitor_config(json_object_get(conf, "nm_monitor"));
   initialize_vboot_config(json_object_get(conf, "verified_boot"));
+  initialize_bmc_timestamp_config(json_object_get(conf, "bmc_timestamp"));
 
   json_decref(conf);
 
@@ -1385,6 +1419,135 @@ static void check_vboot_state(void)
   close(mem_fd);
 }
 
+// Thread to monitor SLED Cycles by using time stamp
+static void *
+timestamp_handler() {
+  int count = 0;
+  int mem_fd;
+  struct timespec ts;
+  struct timespec mts;
+  char tstr[64] = {0};
+  char buf[128] = {0};
+  uint8_t time_init = 0;
+  uint8_t *bmc_reboot_base;
+  uint32_t kern_panic_flag = 0;
+  uint32_t reboot_detected_flag = 0;
+  long time_sled_on;
+  long time_sled_off;
+
+  // Read the last timestamp from KV storage
+  pal_get_key_value("timestamp_sled", tstr);
+  time_sled_off = (long) strtoul(tstr, NULL, 10);
+
+  // If this reset is due to Power-On-Reset, we detected SLED power OFF event
+  if (pal_is_bmc_por()) {
+    ctime_r(&time_sled_off, buf);
+    syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
+    pal_add_cri_sel("BMC AC lost");
+
+    // Initial BMC reboot flag
+    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+    if (mem_fd >= 0) {
+      bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
+      if (bmc_reboot_base != 0) {
+        BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0x0;
+        BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0x0;
+        munmap(bmc_reboot_base, PAGE_SIZE);
+      }
+      close(mem_fd);
+    }
+  } else {
+    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+    if (mem_fd >= 0) {
+      bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
+      if (bmc_reboot_base != 0) {
+        kern_panic_flag = BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base);
+        reboot_detected_flag = BMC_REBOOT_BY_CMD(bmc_reboot_base);
+
+        // Check the SRAM to make sure the reboot cause
+        // ===== kernel panic =====
+        if ((kern_panic_flag & BIT_RECORD_LOG) == BIT_RECORD_LOG) {
+          // Clear the flag of record log and reserve the kernel panic flag
+          kern_panic_flag &= ~(BIT_RECORD_LOG);
+
+          if ((kern_panic_flag & FLAG_KERN_PANIC) == FLAG_KERN_PANIC) {
+              syslog(LOG_CRIT, "BMC Reboot detected - caused by kernel panic");
+          } else {
+              syslog(LOG_CRIT, "BMC Reboot detected - unknown kernel flag (0x%08x)", kern_panic_flag);
+          }
+
+          BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0;
+        // ===== reboot command =====
+        } else if ((reboot_detected_flag & BIT_RECORD_LOG) == BIT_RECORD_LOG) {
+          // Clear the flag of record log and reserve the reboot command flag
+          reboot_detected_flag &= ~(BIT_RECORD_LOG);
+
+          if ((reboot_detected_flag & FLAG_CFG_UTIL) == FLAG_CFG_UTIL) {
+              reboot_detected_flag &= ~(FLAG_CFG_UTIL);
+              syslog(LOG_CRIT, "Reset BMC data to default factory settings");
+          }
+
+          if ((reboot_detected_flag & FLAG_REBOOT_CMD) == FLAG_REBOOT_CMD) {
+              syslog(LOG_CRIT, "BMC Reboot detected - caused by reboot command");
+          } else {
+              syslog(LOG_CRIT, "BMC Reboot detected - unknown reboot command flag (0x%08x)", reboot_detected_flag);
+          }
+
+          BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0;
+        // ===== others =====
+        } else {
+          syslog(LOG_CRIT, "BMC Reboot detected");
+        }
+
+        munmap(bmc_reboot_base, PAGE_SIZE);
+      }
+      close(mem_fd);
+    }
+  }
+
+  while (1) {
+
+    // Make sure the time is initialized properly
+    // Since there is no battery backup, the time could be reset to build time
+    // wait 100s at most, to prevent infinite waiting
+    if ( time_init < SLED_TS_TIMEOUT ) {
+      // Read current time
+      clock_gettime(CLOCK_REALTIME, &ts);
+
+      if ( (ts.tv_sec < time_sled_off) && (++time_init < SLED_TS_TIMEOUT) ) {
+        sleep(1);
+        continue;
+      }
+      
+      // If get the correct time or time sync timeout
+      time_init = SLED_TS_TIMEOUT;
+
+      // Need to log SLED ON event, if this is Power-On-Reset
+      if (pal_is_bmc_por()) {
+        // Get uptime
+        clock_gettime(CLOCK_MONOTONIC, &mts);
+        // To find out when SLED was on, subtract the uptime from current time
+        time_sled_on = ts.tv_sec - mts.tv_sec;
+
+        ctime_r(&time_sled_on, buf);
+        // Log an event if this is Power-On-Reset
+        syslog(LOG_CRIT, "SLED Powered ON at %s", buf);
+      }
+      pal_update_ts_sled();
+    }
+
+    // Store timestamp every one hour to keep track of SLED power
+    if (count++ == HB_TIMESTAMP_COUNT) {
+      pal_update_ts_sled();
+      count = 0;
+    }
+
+    sleep(HB_SLEEP_TIME);
+  }
+  
+  return NULL;
+}
+
 void sig_handler(int signo) {
   // Catch SIGALRM and SIGTERM. If recived signal record BMC log
   syslog(LOG_CRIT, "BMC health daemon stopped.");
@@ -1402,6 +1565,7 @@ main(int argc, char **argv) {
   pthread_t tid_ecc_monitor;
   pthread_t tid_bmc_health_monitor;
   pthread_t tid_nm_monitor;
+  pthread_t tid_timestamp_handler;
 
   if (argc > 1) {
     exit(1);
@@ -1472,10 +1636,8 @@ main(int argc, char **argv) {
     }
   }
 
-  if ( nm_monitor_enabled )
-  {
-    if (pthread_create(&tid_nm_monitor, NULL, nm_monitor, NULL) < 0)
-    {
+  if (nm_monitor_enabled) {
+    if (pthread_create(&tid_nm_monitor, NULL, nm_monitor, NULL) < 0) {
       syslog(LOG_WARNING, "pthread_create for nm monitor error\n");
       exit(1);
     }
@@ -1485,6 +1647,14 @@ main(int argc, char **argv) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
     exit(1);
   }
+
+  if (bmc_timestamp_enabled) {
+    if (pthread_create(&tid_timestamp_handler, NULL, timestamp_handler, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for time stamp handler error\n");
+      exit(1);
+    }
+  }
+  
 
   pthread_join(tid_watchdog, NULL);
 
@@ -1509,12 +1679,15 @@ main(int argc, char **argv) {
     pthread_join(tid_bmc_health_monitor, NULL);
   }
 
-  if ( nm_monitor_enabled )
-  {
+  if (nm_monitor_enabled) {
     pthread_join(tid_nm_monitor, NULL);
   }
 
   pthread_join(tid_crit_proc_monitor, NULL);
+
+  if (bmc_timestamp_enabled) {
+    pthread_join(tid_timestamp_handler, NULL);
+  }
 
   return 0;
 }

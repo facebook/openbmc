@@ -93,75 +93,6 @@ debug_card_out:
   return NULL;
 }
 
-// Thread to monitor SLED Cycles by using time stamp
-static void *
-ts_handler() {
-  int count = 0;
-  struct timespec ts;
-  struct timespec mts;
-  char tstr[64] = {0};
-  char buf[128] = {0};
-  char temp_log[28] = {0};
-  uint8_t time_init = 0;
-  long time_sled_on;
-  long time_sled_off;
-
-  // Read the last timestamp from KV storage
-  pal_get_key_value("timestamp_sled", tstr);
-  time_sled_off = (long) strtoul(tstr, NULL, 10);
-
-  // If this reset is due to Power-On-Reset, we detected SLED power OFF event
-  if (pal_is_bmc_por()) {
-    ctime_r(&time_sled_off, buf);
-    syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
-    sprintf(temp_log, "AC lost");
-    pal_add_cri_sel(temp_log);
-  } else {
-    syslog(LOG_CRIT, "BMC Reboot detected");
-  }
-
-  while (1) {
-
-    // Make sure the time is initialized properly
-    // Since there is no battery backup, the time could be reset to build time
-    // wait 100s at most, to prevent infinite waiting
-    if ( time_init < SLED_TS_TIMEOUT ) {
-      // Read current time
-      clock_gettime(CLOCK_REALTIME, &ts);
-
-      if ( (ts.tv_sec < time_sled_off) && (++time_init < SLED_TS_TIMEOUT) ) {
-        sleep(1);
-        continue;
-      }
-      
-      // If get the correct time or time sync timeout
-      time_init = SLED_TS_TIMEOUT;
-      
-      // Need to log SLED ON event, if this is Power-On-Reset
-      if (pal_is_bmc_por()) {
-        // Get uptime
-        clock_gettime(CLOCK_MONOTONIC, &mts);
-        // To find out when SLED was on, subtract the uptime from current time
-        time_sled_on = ts.tv_sec - mts.tv_sec;
-
-        ctime_r(&time_sled_on, buf);
-        // Log an event if this is Power-On-Reset
-        syslog(LOG_CRIT, "SLED Powered ON at %s", buf);
-      }
-      pal_update_ts_sled();
-    }
-
-    // Store timestamp every one hour to keep track of SLED power
-    if (count++ == HB_TIMESTAMP_COUNT) {
-      pal_update_ts_sled();
-      count = 0;
-    }
-
-    sleep(HB_SLEEP_TIME);
-  }
-  return NULL;
-}
-
 // Thread to handle LED state of the SLED
 static void *
 led_sync_handler() {
@@ -192,7 +123,6 @@ led_sync_handler() {
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
-  pthread_t tid_ts;
   pthread_t tid_sync_led;
   int rc;
   int pid_file;
@@ -214,10 +144,6 @@ main (int argc, char * const argv[]) {
     syslog(LOG_WARNING, "pthread_create for debug card error\n");
     exit(1);
   }
-  if (pthread_create(&tid_ts, NULL, ts_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for time stamp error\n");
-    exit(1);
-  }
 
   if (pthread_create(&tid_sync_led, NULL, led_sync_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for led sync error\n");
@@ -226,6 +152,5 @@ main (int argc, char * const argv[]) {
 
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_sync_led, NULL);
-  pthread_join(tid_ts, NULL);
   return 0;
 }

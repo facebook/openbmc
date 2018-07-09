@@ -403,72 +403,6 @@ pwr_btn_out:
   return 0;
 }
 
-// Thread to monitor SLED Cycles by using time stamp
-static void *
-ts_handler() {
-  int count = 0;
-  struct timespec ts;
-  struct timespec mts;
-  char tstr[64] = {0};
-  char buf[128] = {0};
-  uint8_t time_init = 0;
-  long time_sled_on;
-  long time_sled_off;
-
-  // Read the last timestamp from KV storage
-  pal_get_key_value("timestamp_sled", tstr);
-  time_sled_off = (long) strtoul(tstr, NULL, 10);
-
-  while (1) {
-
-    // Make sure the time is initialized properly
-    // Since there is no battery backup, the time could be reset to build time
-    if (time_init < 100) {  // wait 100s at most, to prevent infinite waiting
-      // Read current time
-      clock_gettime(CLOCK_REALTIME, &ts);
-
-      if ((ts.tv_sec < time_sled_off) && (++time_init < 100)) {
-        sleep(1);
-        continue;
-      }
-
-      // If current time is more than the stored time, the date is correct
-      time_init = 100;
-      // Need to log SLED ON event, if this is Power-On-Reset
-      if (pal_is_bmc_por()) {
-        ctime_r(&time_sled_off, buf);
-        syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
-
-        sprintf(buf, "AC lost");
-        pal_add_cri_sel(buf);
-
-        // Get uptime
-        clock_gettime(CLOCK_MONOTONIC, &mts);
-        // To find out when SLED was on, subtract the uptime from current time
-        time_sled_on = ts.tv_sec - mts.tv_sec;
-
-        ctime_r(&time_sled_on, buf);
-        // Log an event if this is Power-On-Reset
-        syslog(LOG_CRIT, "SLED Powered ON at %s", buf);
-      }
-      else {
-        syslog(LOG_CRIT, "BMC Reboot detected");
-      }
-      pal_update_ts_sled();
-    }
-
-    // Store timestamp every one hour to keep track of SLED power
-    if (count++ == HB_TIMESTAMP_COUNT) {
-      pal_update_ts_sled();
-      count = 0;
-    }
-
-    sleep(HB_SLEEP_TIME);
-  }
-
-  return 0;
-}
-
 // Thread to handle LED state of the server at given slot
 static void *
 led_handler() {
@@ -795,7 +729,6 @@ main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
   pthread_t tid_rst_btn;
   pthread_t tid_pwr_btn;
-  pthread_t tid_ts;
   pthread_t tid_sync_led;
   pthread_t tid_led;
   pthread_t tid_seat_led;
@@ -845,11 +778,6 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (pthread_create(&tid_ts, NULL, ts_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for time stamp error\n");
-    exit(1);
-  }
-
   if (pthread_create(&tid_sync_led, NULL, led_sync_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for led sync error\n");
     exit(1);
@@ -874,7 +802,6 @@ main (int argc, char * const argv[]) {
   pthread_join(tid_debug_card, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
-  pthread_join(tid_ts, NULL);
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_led, NULL);
   pthread_join(tid_seat_led, NULL);

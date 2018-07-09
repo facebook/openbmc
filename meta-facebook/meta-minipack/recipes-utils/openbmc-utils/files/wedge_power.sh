@@ -31,6 +31,10 @@ PWR_USRV_RST_SYSFS="${SCMCPLD_SYSFS_DIR}/iso_com_rst_n"
 PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/cpld_mac_reset_n"
 PWR_L_CYCLE_SYSFS="${PDBCPLD_L_SYSFS_DIR}/power_cycle_go"
 PWR_R_CYCLE_SYSFS="${PDBCPLD_R_SYSFS_DIR}/power_cycle_go"
+SCM_CPLD_BUS=16
+PIM_CPLD_BUS=(84 92 100 108 116 124 132 140)
+CPLD_ADDR=0x10
+CPLD_RESET_CMD=0xd9
 
 usage() {
     echo "Usage: $prog <command> [command options]"
@@ -190,6 +194,69 @@ do_reset() {
     echo " Done"
     return 0
 }
+
+toggle_pim_reset() {
+    pim=$1
+    for slot in 2 3 4 5 6 7 8 9; do
+      if [ $pim -eq 0 ] || [ $slot -eq $pim ]; then
+        index=$(expr $slot - 2)
+         # We don't have PIM CPLD driver for now,
+         # so we will use raw i2c access for the time being
+         echo Power-cycling PIM in slot $slot
+         i2cset -f -y ${PIM_CPLD_BUS[$index]} $CPLD_ADDR $CPLD_RESET_CMD
+      fi
+    done
+}
+
+do_pimreset() {
+    local pim opt retval rc
+    retval=0
+    pim=-1
+    while getopts "23456789a" opt; do
+        case $opt in
+            a)
+                pim=0
+                ;;
+            2)
+                pim=2
+                ;;
+            3)
+                pim=3
+                ;;
+            4)
+                pim=4
+                ;;
+            5)
+                pim=5
+                ;;
+            6)
+                pim=6
+                ;;
+            7)
+                pim=7
+                ;;
+            8)
+                pim=8
+                ;;
+            9)
+                pim=9
+                ;;
+            *)
+                usage
+                exit -1
+                ;;
+        esac
+    done
+    if [ $pim -eq -1 ]; then
+      usage
+      exit -1
+    fi
+
+    toggle_pim_reset $pim
+
+    return $retval
+}
+
 
 if [ $# -lt 1 ]; then
     usage

@@ -169,6 +169,7 @@ static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static uint8_t otp_server_12v_off_flag[MAX_NODES+1] = {0};
 
 char * key_list[] = {
+"server_pcie_port_config",
 "pwr_server1_last_state",
 "sysfw_ver_slot1",
 "identify_sled",
@@ -4180,4 +4181,61 @@ pal_get_me_name(uint8_t fru, char *target_name) {
   strcpy(target_name, "ME");
 #endif
   return;
+}
+
+int
+pal_get_pcie_port_config (uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t pcie_port_config[SIZE_PCIE_PORT_CONFIG] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+  int msb, lsb;
+  int ret;
+  int i;
+  int j = 0;
+
+  sprintf(key, "server_pcie_port_config");
+
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    *res_len = 0;
+    return ret;
+  }
+
+  for (i = 0; i < 2 * SIZE_PCIE_PORT_CONFIG; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    pcie_port_config[j] = (msb << 4) | lsb;
+
+    j++;
+  }
+
+  memcpy(res_data, pcie_port_config, SIZE_PCIE_PORT_CONFIG);
+  *res_len = SIZE_PCIE_PORT_CONFIG;
+
+  return 0;
+}
+
+int
+pal_set_pcie_port_config (uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t pcie_port_config[SIZE_PCIE_PORT_CONFIG] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+  int i;
+
+  *res_len = 0;
+
+  sprintf(key, "server_pcie_port_config");
+
+  memcpy(pcie_port_config, req_data, SIZE_PCIE_PORT_CONFIG);
+  for (i = 0; i < SIZE_PCIE_PORT_CONFIG; i++) {
+    snprintf(tstr, 3, "%02x", pcie_port_config[i]);
+    strncat(str, tstr, 3);
+  }
+
+  return pal_set_key_value(key, str);
 }

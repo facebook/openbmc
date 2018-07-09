@@ -23,7 +23,7 @@ def bios_main_fru(fru, command):
         postcode(fru, POST_CODE_FILE)
     elif ( command == "--plat_info" ):
         plat_info(fru)
-    elif ( command == "--pcie_port_config" ):   
+    elif ( command == "--pcie_port_config" ):
         pcie_port_config(fru, sys.argv[1:])
 
 class check_bios_util(object):
@@ -44,7 +44,7 @@ class check_bios_util(object):
 
     def show_bios_util_usage(self):
         # parse bios-util usage
-        parser = argparse.ArgumentParser(description='Show bios-util usage')
+        parser = argparse.ArgumentParser(description='Show bios-util usage', allow_abbrev=False)
         parser.add_argument("FRU", nargs=1, help='FRU name')
         if self.bios_util_action == "true":
             group = parser.add_mutually_exclusive_group()
@@ -152,7 +152,7 @@ class check_bios_util(object):
             elif self.boot_order:
                 msg_set_option = "[--boot_order]"
 
-            parser = argparse.ArgumentParser(description='Show Set Boot Order usage',
+            parser = argparse.ArgumentParser(description='Show Set Boot Order usage', allow_abbrev=False,
                 usage=self.bios_usage_message + " [-h] " + msg_set_option)
 
             group = parser.add_mutually_exclusive_group()
@@ -171,7 +171,7 @@ class check_bios_util(object):
 
     def get(self):
         if self.argv[2] == "--boot_order":
-            parser = argparse.ArgumentParser(description='Show Get Boot Order usage',
+            parser = argparse.ArgumentParser(description='Show Get Boot Order usage', allow_abbrev=False,
                 usage=self.bios_usage_message + " [-h] " + self.boot_order_message)
 
             group = parser.add_mutually_exclusive_group()
@@ -206,7 +206,7 @@ class check_bios_util(object):
         if self.argv[2] == "--boot_order":
             self.boot_order_message = self.boot_order_message.replace('--boot_mode | ', '')
             self.boot_order_message = self.boot_order_message.replace(' | --boot_order', '')
-            parser = argparse.ArgumentParser(description='Show Enable Boot Order usage',
+            parser = argparse.ArgumentParser(description='Show Enable Boot Order usage', allow_abbrev=False,
                 usage=self.bios_usage_message + " [-h] " + self.boot_order_message)
 
             group = parser.add_mutually_exclusive_group()
@@ -222,7 +222,7 @@ class check_bios_util(object):
             args = parser.parse_args(self.argv[4:6])
 
         elif self.argv[2] == "--pcie_port_config":
-            parser = argparse.ArgumentParser(description='Show Enable PCIe Port Configuration usage',
+            parser = argparse.ArgumentParser(description='Show Enable PCIe Port Configuration usage', allow_abbrev=False,
                     usage=self.bios_usage_message + " [-h] " + self.pcie_port_message)
 
             group = parser.add_mutually_exclusive_group()
@@ -240,7 +240,7 @@ class check_bios_util(object):
     def disable(self):
         if self.argv[2] == "--boot_order":
             self.boot_order_message = self.boot_order_message.replace('--boot_mode | ', '')
-            parser = argparse.ArgumentParser(description='Show Disable Boot Order usage',
+            parser = argparse.ArgumentParser(description='Show Disable Boot Order usage', allow_abbrev=False,
                 usage=self.bios_usage_message + " [-h] " + self.boot_order_message)
 
             group = parser.add_mutually_exclusive_group()
@@ -258,7 +258,7 @@ class check_bios_util(object):
             args = parser.parse_args(self.argv[4:6])
 
         elif self.argv[2] == "--pcie_port_config":
-            parser = argparse.ArgumentParser(description='Show Disable PCIe Port Configuration usage',
+            parser = argparse.ArgumentParser(description='Show Disable PCIe Port Configuration usage', allow_abbrev=False,
                     usage=self.bios_usage_message + " [-h] " + self.pcie_port_message)
 
             group = parser.add_mutually_exclusive_group()

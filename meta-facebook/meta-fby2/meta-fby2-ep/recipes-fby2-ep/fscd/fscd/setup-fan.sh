@@ -54,7 +54,7 @@ case "$sku_type" in
    "0")
        if [ $(get_server_type 2) == "2" ] ; then
          echo "Run FSC 4 EPs Config"
-         cp /etc/FSC_FBEP_EVT_4EP_config.json ${default_fsc_config_path}
+         cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
        else
          echo "Run FSC 4 TLs Config"
          cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
@@ -63,7 +63,7 @@ case "$sku_type" in
    "34")
        if [ $(get_server_type 2) == "2" ] ; then
          echo "Run FSC 2 GPs and 2 EPs Config"
-         cp /etc/FSC_FBEP_EVT_2GP_2EP_config.json ${default_fsc_config_path}
+         cp /etc/FSC_FBEP_DVT_2GP_2EP_config.json ${default_fsc_config_path}
        else
          echo "Run FSC 2 GPs and 2 TLs Config"
          cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
@@ -84,7 +84,7 @@ case "$sku_type" in
 
        if [ "$server_type" == "2" ] ; then
          echo "Unexpected sku type! Use FSC 4 EPs Config"
-         cp /etc/FSC_FBEP_EVT_4EP_config.json ${default_fsc_config_path}
+         cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
        else
          echo "Unexpected sku type! Use FSC 4 TLs Config"
          cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}

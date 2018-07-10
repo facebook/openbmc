@@ -216,6 +216,7 @@ int pal_get_fru_name(uint8_t fru, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 int pal_get_fruid_name(uint8_t fru, char *name);
+int pal_slotid_to_fruid(int slotid);
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t *value);
 int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);

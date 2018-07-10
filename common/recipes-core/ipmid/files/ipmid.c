@@ -2715,6 +2715,18 @@ oem_set_imc_version(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_fw_update_state(unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = pal_set_fw_update_state(req->payload_id, req->data, (req_len - 3), res->data, res_len);
+
+  return;
+}
+
+static void
 oem_bypass_cmd(unsigned char *request, unsigned char req_len,
                           unsigned char *response, unsigned char *res_len)
 {
@@ -3025,6 +3037,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_IMC_VERSION:
       oem_set_imc_version (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_FW_UPDATE_STATE:
+      oem_set_fw_update_state (request, req_len, response, res_len);
       break;
     case CMD_OEM_BYPASS_CMD:
       oem_bypass_cmd (request, req_len, response, res_len);

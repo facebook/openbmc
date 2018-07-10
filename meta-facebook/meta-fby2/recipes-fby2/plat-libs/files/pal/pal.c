@@ -6916,7 +6916,7 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log) {
   return 0;
 }
 
-uint8_t 
+uint8_t
 pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
 
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
@@ -6982,4 +6982,18 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
   fclose(pFile);
   completion_code = CC_SUCCESS;
   return completion_code;
+}
+
+int
+pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  *res_len = 0;
+  if (req_len != 2) {
+    return CC_INVALID_LENGTH;
+  }
+
+  if (pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]))) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
 }

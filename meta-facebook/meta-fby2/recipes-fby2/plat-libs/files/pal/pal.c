@@ -245,6 +245,10 @@ struct pal_key_cfg {
   {"fru2_restart_cause", "3", NULL},
   {"fru3_restart_cause", "3", NULL},
   {"fru4_restart_cause", "3", NULL},
+  {"slot1_trigger_hpr", "on", NULL},
+  {"slot2_trigger_hpr", "on", NULL},
+  {"slot3_trigger_hpr", "on", NULL},
+  {"slot4_trigger_hpr", "on", NULL},
   {"ntp_server", "", key_func_ntp},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
@@ -4251,8 +4255,8 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 }
 
 static int
-pal_store_crashdump(uint8_t fru) {
-  return fby2_common_crashdump(fru,false);
+pal_store_crashdump(uint8_t fru, bool ierr) {
+  return fby2_common_crashdump(fru, ierr, false);
 }
 
 static int
@@ -4307,9 +4311,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         case SERVER_TYPE_TL:
           switch(snr_num) {
             case CATERR_B:
-              if (event_data[3] == 0x00) // 00h:IERR 0Bh:MCERR
-                fby2_common_set_ierr(fru,true);
-              pal_store_crashdump(fru);
+              pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
               break;
 
             case 0x00:  // don't care sensor number 00h
@@ -4323,9 +4325,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 #else
       switch(snr_num) {
         case CATERR_B:
-          if (event_data[3] == 0x00) // 00h:IERR 0Bh:MCERR
-            fby2_common_set_ierr(fru,true);
-          pal_store_crashdump(fru);
+          pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
           break;
 
         case 0x00:  // don't care sensor number 00h
@@ -6389,7 +6389,7 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
     bool ierr = false;
     int ret = fby2_common_get_ierr(slot, &ierr);
     if ((ret == 0) && ierr) {
-      fby2_common_crashdump(slot,true);
+      fby2_common_crashdump(slot, false, true);
     }
     fby2_common_set_ierr(slot,false);
   }

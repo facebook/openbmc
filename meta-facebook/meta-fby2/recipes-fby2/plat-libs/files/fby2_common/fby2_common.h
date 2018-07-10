@@ -187,7 +187,7 @@ typedef struct {
 
 int fby2_common_fru_name(uint8_t fru, char *str);
 int fby2_common_fru_id(char *str, uint8_t *fru);
-int fby2_common_crashdump(uint8_t fru,bool platform_reset);
+int fby2_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 int fby2_common_set_ierr(uint8_t fru, bool value);
 int fby2_common_get_ierr(uint8_t fru, bool *value);
 int fby2_common_cpld_dump(uint8_t fru);

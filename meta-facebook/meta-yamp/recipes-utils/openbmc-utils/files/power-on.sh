@@ -44,3 +44,5 @@ if [ $on -eq 0 ]; then
     # Power on now
     wedge_power.sh on -f
 fi
+
+pim_enable.sh &

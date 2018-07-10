@@ -4194,17 +4194,14 @@ int
 fby2_rc_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
   switch(sensor_num) {
-    case BIC_RC_SENSOR_RAS_UNCORR:
-      sprintf(name, "RAS_UNCORR");
+    case BIC_RC_SENSOR_RAS_CRIT:
+      sprintf(name, "RAS_CRITICAL");
       break;
-    case BIC_RC_SENSOR_RAS_CORR_INFO:
-      sprintf(name, "RAS_CORR_INFO");
+    case BIC_RC_SENSOR_RAS_INFO:
+      sprintf(name, "RAS_INFO");
       break;
     case BIC_RC_SENSOR_RAS_FATAL:
       sprintf(name, "RAS_FATAL");
-      break;
-    case BIC_RC_SENSOR_PWR_FAIL:
-      sprintf(name, "POWER_FAILURE");
       break;
     default:
       return -1;
@@ -4287,7 +4284,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       switch (server_type) {
         case SERVER_TYPE_RC:
           switch(snr_num) {
-            case BIC_RC_SENSOR_PWR_FAIL:
+            case BIC_RC_SENSOR_POWER_ERR:
               pal_store_cpld_dump(fru);
               break;
 
@@ -4377,25 +4374,13 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
       strcpy(error_log, "");  //Just show event raw data for now
       parsed = true;
       break;
-    case BIC_RC_SENSOR_RAS_UNCORR:
-    case BIC_RC_SENSOR_RAS_CORR_INFO:
+    case BIC_RC_SENSOR_RAS_CRIT:
+    case BIC_RC_SENSOR_RAS_INFO:
     case BIC_RC_SENSOR_RAS_FATAL:
       strcpy(error_log, "");
       switch (ed[0] & 0x0F) {
         case 0x01:
           strcat(error_log, "State Asserted");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
-      }
-      parsed = true;
-      break;
-    case BIC_RC_SENSOR_PWR_FAIL:
-      strcpy(error_log, "");
-      switch (ed[0] & 0x0F) {
-        case 0x06:
-          strcat(error_log, "Power Unit Failure Detected");
           break;
         default:
           strcat(error_log, "Unknown");

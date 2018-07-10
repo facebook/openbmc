@@ -391,8 +391,29 @@ static sensor_desc_t cri_sensor[] =
   {"DIMME1_TEMP:" , BIC_SENSOR_SOC_DIMME1_TEMP , "C"   , FRU_ALL, 0},
 };
 
-static char *dimm_label[8] = {"A0", "A1", "B0", "B1", "D0", "D1", "E0", "E1"};
-static int dlabel_count = sizeof(dimm_label) / sizeof(dimm_label[0]);
+static char *dimm_label_tl[8] = {"A0", "A1", "B0", "B1", "D0", "D1", "E0", "E1"};
+static int dlabel_count_tl = sizeof(dimm_label_tl) / sizeof(dimm_label_tl[0]);
+
+#if defined(CONFIG_FBY2_EP)
+static sensor_desc_t cri_sensor_ep[] =
+{
+  {"SOC_TEMP:"    , BIC_EP_SENSOR_SOC_TEMP        , "C"   , FRU_ALL, 0},
+  {"HSC_PWR:"     , SP_SENSOR_HSC_IN_POWER        , "W"   , FRU_SPB, 1},
+  {"HSC_VOL:"     , SP_SENSOR_HSC_IN_VOLT         , "V"   , FRU_SPB, 2},
+  {"FAN0:"        , SP_SENSOR_FAN0_TACH           , "RPM" , FRU_SPB, 0},
+  {"FAN1:"        , SP_SENSOR_FAN1_TACH           , "RPM" , FRU_SPB, 0},
+  {"SP_INLET:"    , SP_SENSOR_INLET_TEMP          , "C"   , FRU_SPB, 0},
+  {"SOC_VR_TEMP:" , BIC_EP_SENSOR_VDD_SOC_VR_TEMP , "C"   , FRU_ALL, 0},
+  {"SOC_VR_PWR:"  , BIC_EP_SENSOR_VDD_SOC_VR_POUT , "W"   , FRU_ALL, 1},
+  {"DIMMA_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMA_TEMP  , "C"   , FRU_ALL, 0},
+  {"DIMMB_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMB_TEMP  , "C"   , FRU_ALL, 0},
+  {"DIMMC_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMC_TEMP  , "C"   , FRU_ALL, 0},
+  {"DIMMD_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMD_TEMP  , "C"   , FRU_ALL, 0},
+};
+
+static char *dimm_label_ep[4] = {"A", "B", "C", "D"};
+static int dlabel_count_ep = sizeof(dimm_label_ep) / sizeof(dimm_label_ep[0]);
+#endif
 
 bool plat_supported(void)
 {
@@ -421,9 +442,27 @@ int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
+#if defined(CONFIG_FBY2_EP)
+  uint8_t server_type = 0xFF;
+#endif
+
   if (!desc || !desc_count) {
     return -1;
   }
+
+#if defined(CONFIG_FBY2_EP)
+  if (bic_get_server_type(fru, &server_type)) {
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_EP:
+      *desc = cri_sensor_ep;
+      *desc_count = sizeof(cri_sensor_ep) / sizeof(cri_sensor_ep[0]);
+      return 0;
+  }
+#endif
+
   *desc = cri_sensor;
   *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
   return 0;
@@ -447,7 +486,21 @@ int plat_get_me_status(uint8_t fru, char *status)
   char buf[256];
   unsigned char rlen;
   int ret;
- 
+#if defined(CONFIG_FBY2_EP)
+  uint8_t server_type = 0xFF;
+#endif
+
+#if defined(CONFIG_FBY2_EP)
+  if (bic_get_server_type(fru, &server_type)) {
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_EP:
+      return -1;
+  }
+#endif
+
   buf[0] = NETFN_APP_REQ << 2;
   buf[1] = CMD_APP_GET_DEVICE_ID;
   ret = bic_me_xmit(fru, (uint8_t *)buf, 2, (uint8_t *)buf, &rlen);
@@ -470,14 +523,32 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 {
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";
+  char **dimm_label = dimm_label_tl;
+  int dlabel_count = dlabel_count_tl;
   int index, slen;
   size_t ret;
+#if defined(CONFIG_FBY2_EP)
+  uint8_t server_type = 0xFF;
+#endif
 
   if (slot == FRU_ALL)
     return -1;
 
   if (text == NULL)
     return -1;
+
+#if defined(CONFIG_FBY2_EP)
+  if (bic_get_server_type(slot, &server_type)) {
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_EP:
+      dimm_label = dimm_label_ep;
+      dlabel_count = dlabel_count_ep;
+      break;
+  }
+#endif
 
   // Clear string buffer
   text[0] = '\0';

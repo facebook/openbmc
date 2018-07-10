@@ -174,7 +174,6 @@ enum {
   BIC_RC_SENSOR_POWER_ERR = 0x56,   //Event-only
 };
 
-#ifdef CONFIG_FBY2_EP
 // Sensors under Bridge IC (EP)
 enum {
   BIC_EP_SENSOR_MB_INLET_TEMP = 0x01,
@@ -225,7 +224,6 @@ enum {
 enum {
   NBU_ERROR = 0x9E,
 };
-#endif
 
 // Sensors Under Side Plane
 enum {

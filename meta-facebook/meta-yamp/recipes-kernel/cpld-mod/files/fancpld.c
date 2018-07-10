@@ -75,18 +75,21 @@
   "0x0: not masked\n"                           \
   "0x1: masked"
 
+#define YAMP_FAN_RPM_CONSTANT 6000000
+
 static ssize_t fancpld_fan_rpm_show(struct device *dev,
                                     struct device_attribute *attr,
                                     char *buf)
 {
   int val;
 
-  val = i2c_dev_read_byte(dev, attr);
+  val = i2c_dev_read_word_littleendian(dev, attr);
   if (val < 0) {
     return val;
   }
-  /* Multiply by 150 to get the RPM */
-  val *= 150;
+
+  // Follow the formula from YAMP fan controller manual
+  val = YAMP_FAN_RPM_CONSTANT / val;
 
   return scnprintf(buf, PAGE_SIZE, "%u\n", val);
 }
@@ -107,74 +110,39 @@ static const i2c_dev_attr_st fancpld_attr_table[] = {
     0x1, 0, 8,
   },
   {
-    "fan1_tach_lower",
+    "fan1_input",
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
+    fancpld_fan_rpm_show,
+    NULL,
     0x10, 0, 8,
   },
   {
-    "fan1_tach_upper",
+    "fan2_input",
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x11, 0, 8,
-  },
-  {
-    "fan2_tach_lower",
+    fancpld_fan_rpm_show,
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
     0x12, 0, 8,
   },
   {
-    "fan2_tach_upper",
+    "fan3_input",
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x13, 0, 8,
-  },
-  {
-    "fan3_tach_lower",
+    fancpld_fan_rpm_show,
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
     0x14, 0, 8,
   },
   {
-    "fan3_tach_upper",
+    "fan4_input",
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x15, 0, 8,
-  },
-  {
-    "fan4_tach_lower",
+    fancpld_fan_rpm_show,
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
     0x16, 0, 8,
   },
   {
-    "fan4_tach_upper",
+    "fan5_input",
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x17, 0, 8,
-  },
-  {
-    "fan5_tach_lower",
+    fancpld_fan_rpm_show,
     NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
     0x18, 0, 8,
-  },
-  {
-    "fan5_tach_upper",
-    NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x19, 0, 8,
   },
   {
     "fan1_pwm",
@@ -245,13 +213,6 @@ static const i2c_dev_attr_st fancpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x45, 0, 8,
-  },
-  {
-    "fan1_id",
-    NULL,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    NULL,
-    0x41, 0, 8,
   },
   {
     "fan1_present",

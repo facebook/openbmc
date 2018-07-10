@@ -155,7 +155,7 @@ is_server_prsnt() {
       prsnt=0
       ;;
     *)
-      prsnt=0
+      prsnt=1
       ;;
   esac
 

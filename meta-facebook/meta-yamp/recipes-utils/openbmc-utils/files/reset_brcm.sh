@@ -21,3 +21,19 @@
 . /usr/local/bin/openbmc-utils.sh
 
 logger "Reset YAMP Forwarding ASIC"
+SCDCPLD_SYSFS_DIR="/sys/class/i2c-dev/i2c-4/device/4-0023"
+SCD_TH3_RST_ON_SYSFS="${SCDCPLD_SYSFS_DIR}/th3_reset"
+SCD_TH3_PCI_RST_ON_SYSFS="${SCDCPLD_SYSFS_DIR}/th3_pci_reset"
+logger "Putting TH3 into reset first"
+echo "Putting TH3 into reset first"
+echo 1 > $SCD_TH3_RST_ON_SYSFS
+echo 1 > $SCD_TH3_PCI_RST_ON_SYSFS
+sleep 1
+logger "Taking TH3 sys out of reset"
+echo "Taking TH3 sys out of reset"
+echo 0 > $SCD_TH3_RST_ON_SYSFS
+sleep 1
+logger "Taking TH3 pci out of reset"
+echo "Taking TH3 pci out of reset"
+echo 0 > $SCD_TH3_PCI_RST_ON_SYSFS
+sleep 1

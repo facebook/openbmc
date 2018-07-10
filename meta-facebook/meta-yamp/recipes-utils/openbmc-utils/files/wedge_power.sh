@@ -131,8 +131,9 @@ do_reset() {
         echo " Failed"
         return 254
     else
-        echo "Reset CPU is not supported. Use off/on."
-        return 254
+        do_off
+        sleep 1
+        do_on
     fi
 }
 

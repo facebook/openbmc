@@ -25,6 +25,7 @@ SRC_URI += "file://bios_util.sh \
             file://setup_board.sh \
             file://setup_i2c.sh \
             file://wedge_power.sh \
+            file://wedge_us_mac.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -32,6 +33,7 @@ OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     reset_brcm.sh \
     wedge_power.sh \
+    wedge_us_mac.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

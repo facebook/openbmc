@@ -214,6 +214,7 @@ int pal_set_post_end_timestamp(uint8_t fru);
 int pal_get_post_end_timestamp(uint8_t fru, long *value);
 uint8_t pal_is_post_time_out();
 void pal_check_fscd_watchdog();
+uint8_t pal_get_server_type(uint8_t fru);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -112,7 +112,7 @@
 #define IMC_START_FILE "/tmp/start_check_slot%d"
 #define IMC_LOG_FILE "/var/log/imc_log_slot"
 #define IMC_LOG_FILE_BAK "/var/log/imc_log_slot%d_bak"
-#define IMC_LOG_FILE_SIZE (24*1024)   //24KB 
+#define IMC_LOG_FILE_SIZE (24*1024)   //24KB
 
 #define REINIT_TYPE_FULL            0
 #define REINIT_TYPE_HOST_RESOURCE   1
@@ -4029,7 +4029,7 @@ _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
 }
 
 #if defined(CONFIG_FBY2_RC)
-void 
+void
 pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t o_val, uint8_t n_val) {
 
@@ -4076,7 +4076,7 @@ pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
       case BIC_RC_SENSOR_PROC_FAIL:
         sprintf(name, "FRB3");
         valid = true;
-        break;  
+        break;
     }
     if (valid) {
       _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 4), name);
@@ -4194,7 +4194,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 }
 
 #if defined(CONFIG_FBY2_RC)
-int 
+int
 fby2_rc_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
   switch(sensor_num) {
@@ -5371,7 +5371,7 @@ int
 pal_fan_recovered_handle(int fan_num) {
 
   fan_dead_actived_flag = CLEARBIT(fan_dead_actived_flag, fan_num);
-  both_fan_dead_control = 0;  
+  both_fan_dead_control = 0;
 
   return 0;
 }
@@ -6953,11 +6953,11 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
       syslog(LOG_INFO, "IMC Log Start on slot%u", slot);
     } else {
       sprintf(cmd, "rm %s", path);
-      system(cmd); 
+      system(cmd);
     }
   }
 
-  for (index = 2; index <= data_len + 1; index++) {  
+  for (index = 2; index <= data_len + 1; index++) {
     if(req_data[index] == 0x00 || req_data[index] == 0x0D)    //ignore unnecessary ASCII character
       continue;
     fprintf(pFile, "%c", req_data[index]);
@@ -6996,4 +6996,13 @@ pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
   }
 
   return CC_SUCCESS;
+}
+
+uint8_t
+pal_get_server_type(uint8_t fru) {
+
+  uint8_t server_type = 0xFF;
+  bic_get_server_type(fru, &server_type);
+
+  return server_type;
 }

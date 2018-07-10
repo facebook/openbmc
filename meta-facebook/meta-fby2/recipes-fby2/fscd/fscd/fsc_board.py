@@ -29,25 +29,29 @@ fru_map = {
         'name': 'fru1',
         'pwr_gpio': '64',
         'bic_ready_gpio': '106',
-        'slot_num': 1
+        'slot_num': 1,
+        'slot_12v_status': '116'
     },
     'slot2': {
         'name': 'fru2',
         'pwr_gpio': '65',
         'bic_ready_gpio': '107',
-        'slot_num': 2
+        'slot_num': 2,
+        'slot_12v_status': '117'
     },
     'slot3': {
         'name': 'fru3',
         'pwr_gpio': '66',
         'bic_ready_gpio': '108',
-        'slot_num': 3
+        'slot_num': 3,
+        'slot_12v_status': '118'
     },
     'slot4': {
         'name': 'fru4',
         'pwr_gpio': '67',
         'bic_ready_gpio': '109',
-        'slot_num': 4
+        'slot_num': 4,
+        'slot_12v_status': '119'
     }
 }
 
@@ -60,6 +64,13 @@ loc_map = {
     'd1': "_dimm5_location",
     'e0': "_dimm6_location",
     'e1': "_dimm7_location"
+}
+
+loc_map_rc = {
+    'b': "_dimm0_location",
+    'a': "_dimm1_location",
+    'c': "_dimm2_location",
+    'd': "_dimm3_location"
 }
 
 def board_fan_actions(fan, action='None'):
@@ -112,6 +123,14 @@ def set_all_pwm(boost):
     response = response.decode()
     return response
 
+def rc_stby_sensor_check(board):
+    with open("/sys/class/gpio/gpio"+fru_map[board]['slot_12v_status']+"/value", "r") as f:
+        slot_12v_sts = f.read(1) 
+    if slot_12v_sts[0] == "1":
+        return 1
+    else:
+        return 0
+
 fscd_counter = 0
 board_for_counter = ""
 sname_for_counter = ""
@@ -132,6 +151,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
             fscd_counter = fscd_counter+1
             lpal_hndl.pal_set_fscd_counter(fscd_counter)
 
+    if match(r'soc_temp_diode', sname) != None:
+        return rc_stby_sensor_check(board) 
+
     try:
         if attribute['type'] == "power_status":
             with open("/sys/class/gpio/gpio"+fru_map[board]['pwr_gpio']+"/value", "r") as f:
@@ -144,11 +166,19 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         bic_sts = f.read(1)
                     if bic_sts[0] == "0":
                         if match(r'soc_dimm', sname) != None:
-                            # check DIMM present
-                            with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map[sname[8:10]], "rb") as f:
-                                dimm_sts = f.read(1)
-                            if dimm_sts[0] != 1:
-                                return 0
+                            server_type = lpal_hndl.pal_get_server_type(slot_id)
+                            if int(server_type) == 1:         #RC Server
+                                # check DIMM present
+                                with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map_rc[sname[9:10]], "rb") as f:
+                                    dimm_sts = f.read(1)
+                                if dimm_sts[0] != 1:
+                                    return 0
+                            else:   
+                                # check DIMM present
+                                with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map[sname[8:10]], "rb") as f:
+                                    dimm_sts = f.read(1)
+                                if dimm_sts[0] != 1:
+                                    return 0
                         return 1
                 else:
                     return 1    

@@ -1,5 +1,5 @@
 {
-  "version": "fbrc-dvt-r01",
+  "version": "fbrc-dvt-r03",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,  
   "sample_interval_ms": 3000,
@@ -41,14 +41,14 @@
         [ 33, 28 ],
         [ 34, 29 ],
         [ 35, 30 ],
-        [ 36, 31 ],
-        [ 37, 32 ],
-        [ 38, 33 ],
-        [ 39, 34 ],
-        [ 40, 35 ]
+        [ 36, 30 ],
+        [ 37, 40 ],
+        [ 38, 50 ],
+        [ 39, 60 ],
+        [ 40, 70 ]
       ]
     },
-    "linear_cpu_margin": {
+    "linear_soc_temp_imc": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -56,10 +56,6 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 68, 15 ],
-        [ 69, 15 ],
-        [ 70, 15 ],
-        [ 71, 15 ],
         [ 72, 15 ],
         [ 73, 16 ],
         [ 74, 17 ],
@@ -84,17 +80,78 @@
         [ 93, 70 ]
       ]
     },
-    "pid_cpu_margin": {
+    "pid_soc_temp_imc": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
       "setpoint": 87,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 69, 15 ],
+        [ 70, 20 ],
+        [ 71, 22 ],
+        [ 72, 24 ],
+        [ 73, 26 ],
+        [ 74, 28 ],
+        [ 75, 30 ],
+        [ 76, 32 ],
+        [ 77, 34 ],
+        [ 78, 36 ],
+        [ 79, 38 ],
+        [ 80, 40 ],
+        [ 81, 42 ],
+        [ 82, 45 ],
+        [ 83, 50 ],
+        [ 84, 60 ],
+        [ 85, 70 ]
+      ]
+    },
+    "pid_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 79,
       "negative_hysteresis": 1,
       "positive_hysteresis": 0,
       "kp": -1,
       "ki": -0.035,
       "kd": 0
+    },
+    "linear_soc_temp_diode": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [  99, 15 ],
+        [ 100, 50 ],
+        [ 101, 52 ],
+        [ 102, 54 ],
+        [ 103, 56 ],
+        [ 104, 58 ],
+        [ 105, 60 ],
+        [ 106, 62 ],
+        [ 107, 64 ],
+        [ 108, 66 ],
+        [ 109, 68 ],
+        [ 110, 70 ]
+      ]
     },
     "linear_mezz": {
       "read_source" : {
@@ -110,11 +167,11 @@
         [88, 21],
         [89, 23],
         [90, 25],
-        [91, 27],
-        [92, 29],
-        [93, 31],
-        [94, 33],
-        [95, 35]
+        [91, 30],
+        [92, 35],
+        [93, 45],
+        [94, 60],
+        [95, 70]
       ]
     },
     "pid_mezz": {
@@ -122,10 +179,10 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 88,
-      "negative_hysteresis": 0,
+      "setpoint": 90,
+      "negative_hysteresis": 1,
       "positive_hysteresis": 0,
-      "kp": -2,
+      "kp": -1,
       "ki": -0.035,
       "kd": 0
     }

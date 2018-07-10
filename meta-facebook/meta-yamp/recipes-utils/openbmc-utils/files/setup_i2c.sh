@@ -22,7 +22,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 . /usr/local/bin/openbmc-utils.sh
 
 # Bus  0 - SMBus 1
-i2c_device_add 0 0x20 bmctpm
+i2c_device_add 0 0x20 tpm_i2c_infineon
 
 # Bus  1 - SMBus 2
 i2c_device_add 1 0x50 supsfp
@@ -70,8 +70,8 @@ i2c_device_add 12 0x43 supcpld
 
 # Bus  13 - SMBus 14 FAN CTRL
 i2c_device_add 13 0x4c max6658
-i2c_device_add 13 0x50 24c512
-i2c_device_add 13 0x60 fanctrl
+i2c_device_add 13 0x52 24c512
+i2c_device_add 13 0x60 fancpld
 
 # Bus  16 - Muxed LC1 
 i2c_device_add 14 0x4e ucd90120

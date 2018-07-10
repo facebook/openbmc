@@ -264,6 +264,9 @@ rst_btn_handler() {
       syslog(LOG_WARNING, "Reset button released\n");
       syslog(LOG_CRIT, "Reset Button pressed for FRU: %d\n", pos);
       ret = pal_set_rst_btn(pos, 1);
+      if (!ret) {
+        pal_set_restart_cause(pos, RESTART_CAUSE_RESET_PUSH_BUTTON);
+      }
       goto rst_btn_out;
     }
 
@@ -748,7 +751,7 @@ main (int argc, char * const argv[]) {
       if ((ret = pal_set_key_value(slot_kv, slot_kv_list[i].slot_def_val)) < 0) {        //Restore Slot indication LED status to normal when BMC reset
         syslog(LOG_WARNING, "%s %s: kv_set failed. %d", __func__, slot_kv_list[i].slot_key, ret);
       }
-    }   
+    }
   }
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);

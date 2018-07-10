@@ -46,24 +46,24 @@ print_usage(void) {
 static int
 parse_pwm(char *str, uint8_t *pwm) {
   char *endptr = NULL;
-  uint8_t val;
+  int val;
 
-  val = (uint8_t)strtol(str, &endptr, 10);
+  val = strtol(str, &endptr, 10);
   if ((*endptr != '\0' && *endptr != '%') || val > 100)
     return -1;
-  *pwm = val;
+  *pwm = (uint8_t)val;
   return 0;
 }
 
 static int
 parse_fan(char *str, uint8_t fan_cnt, uint8_t *fan) {
-  uint8_t val;
+  int val;
   char *endptr = NULL;
 
-  val = (uint8_t)strtol(str, &endptr, 10);
+  val = strtol(str, &endptr, 10);
   if (*endptr != '\0' || val >= fan_cnt)
     return -1;
-  *fan = val;
+  *fan = (uint8_t)val;
   return 0;
 }
 

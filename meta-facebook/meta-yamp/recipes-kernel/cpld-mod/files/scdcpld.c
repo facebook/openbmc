@@ -39,14 +39,14 @@
 
 static const i2c_dev_attr_st scdcpld_attr_table[] = {
   {
-    "cpld_ver_major",
+    "cpld_ver_minor",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x0, 0, 8,
   },
   {
-    "cpld_ver_minor",
+    "cpld_ver_major",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
@@ -109,6 +109,14 @@ static const i2c_dev_attr_st scdcpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x14, 0, 1,
+  },
+  {
+    "th3_pci_reset",
+    "0x1: Reset\n"
+    "0x0: Out of reset",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 1, 1,
   },
   {
     "scd_power_en",

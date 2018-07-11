@@ -44,7 +44,7 @@ while true; do
          fi
          # Check if device was probed and driver was installed
          if [ -e $drv_path/gpio ]; then
-            base=`cat $drv_path/gpio/gpiochip*/base`
+            base=`cat $drv_path/gpio/gpiochip*/base 2>/dev/null`
             # Base should be at least bigger than 100, do quick check
             if [ $base -gt 100 ]; then 
               pim_on_gpio[$i]=$(expr $base + 1)

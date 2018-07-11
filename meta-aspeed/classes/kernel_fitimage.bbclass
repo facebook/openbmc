@@ -23,8 +23,6 @@ CONVERSION_CMD_u-boot = "oe_mkimage ${IMAGE_NAME}.rootfs.${type} none"
 require recipes-bsp/u-boot/verified-boot.inc
 
 # Changing the image compression from gz to lzma achieves 30% saving (~3M).
-# However, the current u-boot does not have lzma enabled. Stick to gz
-# until we generate a new u-boot image.
 IMAGE_FSTYPES += "cpio.lzma.u-boot"
 
 # U-Boot is placed at an absolute position relative to the start of the first

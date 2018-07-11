@@ -3725,6 +3725,14 @@ wdt_timer (void *arg) {
 
     // Execute actin out of mutex
     if (action) {
+      if (pal_is_crashdump_ongoing(wdt->slot)) {
+        syslog(LOG_WARNING, "ipmid: fru%u crashdump is ongoing, ignore wdt action %s",
+          wdt->slot,
+          wdt_action_name[action & 0x7]);
+        action = 0;
+        continue;
+      }
+
       pal_set_restart_cause(wdt->slot, RESTART_CAUSE_WATCHDOG_EXPIRATION);
       switch (action) {
       case 1: // Hard Reset

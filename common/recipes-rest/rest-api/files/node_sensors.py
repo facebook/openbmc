@@ -55,14 +55,14 @@ def sensor_util(fru='all', sensor_name='', sensor_id='', period='60', display=[]
         if 'history' in display:
             # MB_CONN_P12V_INA230_PWR (0x9B) min = NA, average = NA, max = NA
             # SYSTEM_AIRFLOW     (0x0) min = 15.48, average = 15.77, max = 15.86
-            rx = re.compile(r'(\S+)\s+\(0x([a-fA-F\d]+)\)\s+min = ([^,]+), average = ([^,]+), max = (\S+)')
+            rx = re.compile(r'(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+min = ([^,]+), average = ([^,]+), max = (\S+)')
         else:
             # SYSTEM_AIRFLOW               (0x0) :   15.78 CFM   | (ok)
             # SYSTEM_AIRFLOW               (0x0) :   15.62 CFM   | (ok) | UCR: NA | UNC: NA | UNR: NA | LCR: NA | LNC: NA | LNR: NA
-            rx = re.compile(r'(\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)\s+\|\s+\((\S+)\)(.*)$')
+            rx = re.compile(r'(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)\s+\|\s+\((\S+)\)(.*)$')
             # MB_CONN_P12V_INA230_PWR      (0x9B) : NA | (na)
             # MB_CONN_P12V_INA230_PWR      (0x9B) : NA | (na)
-            rx_na = re.compile(r'(\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(\S+)\s+\|\s+\((\S+)\)')
+            rx_na = re.compile(r'(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(\S+)\s+\|\s+\((\S+)\)')
 
         for line in out:
             if 'history' in display:

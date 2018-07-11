@@ -193,6 +193,9 @@ static uint8_t otp_server_12v_off_flag[MAX_NODES+1] = {0};
 
 static int key_func_por_cfg(int event, void *arg);
 static int key_func_ntp(int event, void *arg);
+static int key_func_pwr_last_state(int event, void *arg);
+static int key_func_iden_slot(int event, void *arg);
+static int key_func_iden_sled(int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -205,19 +208,19 @@ struct pal_key_cfg {
   int (*function)(int, void*);
 } key_cfg[] = {
   /* name, default value, function */
-  {"pwr_server1_last_state", "on", NULL},
-  {"pwr_server2_last_state", "on", NULL},
-  {"pwr_server3_last_state", "on", NULL},
-  {"pwr_server4_last_state", "on", NULL},
+  {"pwr_server1_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server2_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server3_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server4_last_state", "on", key_func_pwr_last_state},
   {"sysfw_ver_slot1", "0", NULL},
   {"sysfw_ver_slot2", "0", NULL},
   {"sysfw_ver_slot3", "0", NULL},
   {"sysfw_ver_slot4", "0", NULL},
-  {"identify_sled", "off", NULL},
-  {"identify_slot1", "off", NULL},
-  {"identify_slot2", "off", NULL},
-  {"identify_slot3", "off", NULL},
-  {"identify_slot4", "off", NULL},
+  {"identify_sled", "off", key_func_iden_sled},
+  {"identify_slot1", "off", key_func_iden_slot},
+  {"identify_slot2", "off", key_func_iden_slot},
+  {"identify_slot3", "off", key_func_iden_slot},
+  {"identify_slot4", "off", key_func_iden_slot},
   {"timestamp_sled", "0", NULL},
   {"slot1_por_cfg", "lps", key_func_por_cfg},
   {"slot2_por_cfg", "lps", key_func_por_cfg},
@@ -469,6 +472,36 @@ pal_key_check(char *key) {
   syslog(LOG_WARNING, "pal_key_check: invalid key - %s", key);
 #endif
   return -1;
+}
+
+static int
+key_func_pwr_last_state(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
+}
+
+static int
+key_func_iden_sled(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
+}
+
+static int
+key_func_iden_slot(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
 }
 
 static int

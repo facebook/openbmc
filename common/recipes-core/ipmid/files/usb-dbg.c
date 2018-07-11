@@ -572,6 +572,7 @@ udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uin
   int len;
   int ret;
   char line_buff[FRAME_PAGE_BUF_SIZE], *ptr;
+  char *fptr;
   FILE *fp;
   struct stat file_stat;
   uint8_t pos = plat_get_fru_sel();
@@ -597,21 +598,27 @@ udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uin
         ptr = line_buff;
         // Find message
         ptr = strstr(ptr, "local0.err");
-        if (!ptr || (ptr = strrchr(ptr, ':')) == NULL) {
+        if (ptr == NULL) {
           continue;
+        }
+        // Check if FRU specific information
+        fptr = ptr;
+        fptr = strstr(fptr, ",FRU:");
+        if (fptr) {
+            if ((fptr[5]-'0') != pos) {
+                continue;
+            }
+            // Remove ',FRU:X' from the string.
+            *fptr = '\0';
+        }
+
+        if ((ptr = strrchr(ptr, ':')) == NULL) {
+            continue;
         }
         len = strlen(ptr);
         if (len > 2) {
-					// Check if FRU specific information
-          char *fptr = ptr;
-          fptr = strstr(fptr, ",FRU:");
-          if (fptr) {
-            if ((fptr[5]-'0') != pos)
-              continue;
-            // Remove ',FRU:X' from the string.
-            *fptr = '\0';
-          }
-          ptr += 2;
+            // to skip log string ": "
+            ptr += 2;
         }
         // Write new message
         frame_sel.insert(&frame_sel, ptr, 0);

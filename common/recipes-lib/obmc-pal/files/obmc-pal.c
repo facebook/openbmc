@@ -1194,9 +1194,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 void __attribute__((weak))
 pal_add_cri_sel(char *str)
 {
-  char cmd[128];
-  snprintf(cmd, 128, "logger -p local0.err \"%s\"",str);
-  system(cmd);
+  syslog(LOG_LOCAL0 | LOG_ERR, "%s", str);
 }
 
 int __attribute__((weak))

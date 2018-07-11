@@ -61,6 +61,7 @@
 #include <signal.h>
 #include <openbmc/gpio.h>
 #include "openbmc/ipmi.h"
+#include <time.h>
 
 unsigned char req_buf[256];
 unsigned char res_buf[300];
@@ -89,9 +90,13 @@ void set_bmc_ready(bool ready)
 void *kcs_thread(void *unused) {
   struct timespec req;
   struct timespec rem;
+  struct timespec req_tv;
+  struct timespec res_tv;
 
   unsigned char req_len;
   unsigned short res_len;
+  double temp=0;
+  char cmd[200]={0};
   int i = 0;
 
   set_bmc_ready(true);
@@ -99,18 +104,19 @@ void *kcs_thread(void *unused) {
   // Setup wait time
   req.tv_sec = 0;
   req.tv_nsec = 10000000;//10mSec
+
   while(1) {
     req_len = read(kcs_fd, req_buf, sizeof(req_buf));
     if (req_len > 0) {
       //dump read data
       if(debug) {
-        syslog(LOG_WARNING, "Req [%d] : ", req_len);
-        for(i=0;i<req_len;i++) {
-          syslog(LOG_WARNING, "%x ", req_buf[i]);
+        memset(cmd, 0, 200);
+        clock_gettime(CLOCK_REALTIME, &req_tv);
+        for(i=0; i < req_len; i++) {
+          sprintf(cmd, "%s %02x", cmd, req_buf[i]);
         }
-        syslog(LOG_WARNING, "\n");
+        syslog(LOG_WARNING, "[ %ld.%ld ] KCS Req: %s", req_tv.tv_sec, req_tv.tv_nsec, cmd);
       }
-
       // Add payload_id as 1 to  pass to ipmid
       for (i = req_len; i >=0; i--) {
         req_buf[i+1] = req_buf[i];
@@ -131,8 +137,17 @@ void *kcs_thread(void *unused) {
     }
 
     res_len = write(kcs_fd, res_buf, res_len);
-  }
+    if(debug) {
+      memset(cmd, 0, 200);
+      clock_gettime(CLOCK_REALTIME, &res_tv);
+      for(i=0; i < res_len; i++)
+        sprintf(cmd, "%s %02x", cmd, res_buf[i]);
+      syslog(LOG_WARNING, "[ %ld.%ld ] KCS Res: %s", res_tv.tv_sec, res_tv.tv_nsec, cmd);
 
+      temp =  (res_tv.tv_sec - req_tv.tv_sec -1) *1000 + (1000 + (float) ((res_tv.tv_nsec - req_tv.tv_nsec)/1000000) );
+      syslog(LOG_WARNING, "KCS transaction time: %f ms ", temp);
+    }
+  }
 }
 
 int

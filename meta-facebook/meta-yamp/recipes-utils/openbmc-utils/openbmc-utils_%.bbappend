@@ -20,6 +20,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://bios_util.sh \
             file://board-utils.sh \
             file://eth0_mac_fixup.sh \
+            file://fpga_util.sh \
             file://power-on.sh \
             file://reset_brcm.sh \
             file://setup_board.sh \
@@ -32,6 +33,7 @@ SRC_URI += "file://bios_util.sh \
 OPENBMC_UTILS_FILES += " \
     bios_util.sh \
     board-utils.sh \
+    fpga_util.sh \
     reset_brcm.sh \
     wedge_power.sh \
     wedge_us_mac.sh \

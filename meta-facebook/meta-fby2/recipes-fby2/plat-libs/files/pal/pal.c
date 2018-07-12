@@ -2138,6 +2138,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
     syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
         " reading the kv_store for last power state  for fru %d", slot_id);
+    memset(value, 0, MAX_VALUE_LEN);
     pal_get_last_pwr_state(slot_id, value);
     if (!(strcmp(value, "off"))) {
       *status = SERVER_POWER_OFF;
@@ -5573,7 +5574,7 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
 
   char key[MAX_KEY_LEN] = {0};
   sprintf(key, "slot%d_por_cfg", slot);
-  char buff[MAX_VALUE_LEN];
+  char buff[MAX_VALUE_LEN] = {0};
   int policy = 3;
   uint8_t status, ret;
   unsigned char *data = res_data;
@@ -5980,6 +5981,7 @@ pal_nic_otp_disable (float val) {
       if ((SERVER_12V_ON != status) && (1 == otp_server_12v_off_flag[slot])) {
         // power on server 12V HSC
         syslog(LOG_CRIT, "FRU: %u, Power On Server 12V due to NIC temp UNC deassert. (val = %.2f)", slot, val);
+        memset(pwr_state, 0, MAX_VALUE_LEN);
         pal_get_last_pwr_state(slot, pwr_state);
         ret = server_12v_on(slot);
         if (ret) {
@@ -6308,7 +6310,7 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
 uint8_t
 pal_get_status(void) {
   char str_server_por_cfg[64];
-  char buff[MAX_VALUE_LEN];
+  char buff[MAX_VALUE_LEN] = {0};
   int policy = 3;
   uint8_t status, data, ret;
 

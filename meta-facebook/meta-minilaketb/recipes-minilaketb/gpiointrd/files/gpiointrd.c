@@ -215,7 +215,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
     }
   }
 
-  else if (gp->gs.gs_gpio == gpio_num("GPIOO3")) {
+  else if (gp->gs.gs_gpio == gpio_num("GPIOO4")) {
     if (pal_get_hand_sw(&slot_id)) {
       slot_id = HAND_SW_BMC;
     }
@@ -264,7 +264,7 @@ static gpio_poll_st g_gpios[] = {
   // {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA1", "GPIO_SLOT2_PRSNT_N"},
   // {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA2", "GPIO_SLOT3_PRSNT_N"},
   // {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA3", "GPIO_SLOT4_PRSNT_N"},
-  // {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOO3",  "GPIO_UART_SEL"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOO4",  "GPIO_UART_SEL"},
   {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOM6",  "FM_CB_SLP3_BUF_N"},
   {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOH4",  "RST_BMC_PERST_L"},
 };

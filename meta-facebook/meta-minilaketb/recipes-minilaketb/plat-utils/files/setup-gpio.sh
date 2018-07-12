@@ -372,12 +372,11 @@ gpio_set S2 1
 # To use GPIOS3, SCU8C[0] must be 0
 gpio_set S3 1
 
-# 12V_STBY Enable for Slots
-# P12V_STBY_SLOT1_EN: GPIOO4 (116)
+# DBG_UART_SEL_N : GPIOO4 (116)
 # To use GPIOO4, SCU88[12] must be 0
 devmem_clear_bit $(scu_addr 88) 12
+gpio_get O4
 
-gpio_export O4
 # XG1 P12V_STBY_MB_EN_N is Z0
 gpio_export Z0
 

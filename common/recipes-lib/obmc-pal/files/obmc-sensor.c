@@ -241,6 +241,7 @@ sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
   if (sensor_key_get(fru, sensor_num, key))
     return ERR_UNKNOWN_FRU;
   for (retry = 0; retry < CACHE_READ_RETRY; retry++) {
+    memset(str, 0, MAX_VALUE_LEN);
     if (!(ret = kv_get(key, str, NULL, 0))) {
       break;
     }

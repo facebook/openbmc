@@ -15,33 +15,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEVMEM=/sbin/devmem
-
-devmem_set_bit() {
+i2c_device_add() {
+    local bus
     local addr
-    local val
-    addr=$1
-    val=$($DEVMEM $addr)
-    val=$((val | (0x1 << $2)))
-    $DEVMEM $addr 32 $val
+    local device
+    bus=$"$1"
+    addr="$2"
+    device="$3"
+    echo ${device} ${addr} > /sys/class/i2c-dev/i2c-${bus}/device/new_device
 }
 
-devmem_clear_bit() {
+i2c_device_delete() {
+    local bus
     local addr
-    local val
-    addr=$1
-    val=$($DEVMEM $addr)
-    val=$((val & ~(0x1 << $2)))
-    $DEVMEM $addr 32 $val
+    bus=$"$1"
+    addr="$2"
+    echo ${addr} > /sys/class/i2c-dev/i2c-${bus}/device/delete_device
 }
-
-source "/usr/local/bin/i2c-utils.sh"
-source "/usr/local/bin/gpio-utils.sh"
-
-if [ -f "/usr/local/bin/soc-utils.sh" ]; then
-    source "/usr/local/bin/soc-utils.sh"
-fi
-
-if [ -f "/usr/local/bin/board-utils.sh" ]; then
-    source "/usr/local/bin/board-utils.sh"
-fi

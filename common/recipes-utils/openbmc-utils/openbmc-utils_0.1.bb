@@ -26,6 +26,8 @@ SRC_URI = " \
     file://COPYING \
     file://mount_data0.sh \
     file://openbmc-utils.sh \
+    file://i2c-utils.sh \
+    file://gpio-utils.sh \
     file://rc.early \
     file://rc.local \
     file://dhclient-exit-hooks \
@@ -36,6 +38,8 @@ SRC_URI = " \
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
     openbmc-utils.sh \
+    i2c-utils.sh \
+    gpio-utils.sh \
     rc.early \
     rc.local \
     rm_poweroff_cmd.sh \

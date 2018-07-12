@@ -203,7 +203,11 @@ typedef struct logging_configuration {
 #define HOST_FD_INDEX                1
 #define CLIENT_FD_INDEX              2
 #define MAX_DATA_SIZE                4106
-#define NUM_IN_FLIGHT_BUFFERS_TO_USE 20
+#ifdef CONFIG_JTAG_MSG_FLOW
+#define DEFAULT_NUM_IN_FLIGHT_BUFFERS_TO_USE 10
+#else
+#define DEFAULT_NUM_IN_FLIGHT_BUFFERS_TO_USE 20
+#endif
 #define DEFAULT_PORT                 5123
 #define DEFAULT_FRU                  1 // usually the first FRU in most plats.
 
@@ -237,6 +241,7 @@ int port_number = DEFAULT_PORT;
 uint8_t cpu_fru = DEFAULT_FRU;
 JTAG_DRIVER_MODE jtag_mode = JTAG_DRIVER_MODE_SOFTWARE;
 static logging_configuration remote_logging_config;
+static uint8_t num_in_flight_buffers_to_use = DEFAULT_NUM_IN_FLIGHT_BUFFERS_TO_USE;
 
 static struct {
     int n_port_number;
@@ -278,6 +283,9 @@ void showUsage(char **argv) {
     fprintf(stderr, "     1          process JTAG message on BMC\n");
     fprintf(stderr, "     2          process JTAG message on Bridge-IC\n");
 #endif
+    fprintf(stderr, "  -b <number>   NUM_IN_FLIGHT_BUFFERS_TO_USE \t"
+                    "(default=%d)\n",
+            DEFAULT_NUM_IN_FLIGHT_BUFFERS_TO_USE);
     fprintf(stderr, "  -s            Route log messages to the system log\n\n");
 #ifndef REFERENCE_CODE
     fprintf(stderr, "  -k file       Specify SSL Certificate/Key file\n\n");
@@ -285,9 +293,9 @@ void showUsage(char **argv) {
 }
 
 #ifndef REFERENCE_CODE
-#define OPTIONS "l:p:f:k:s" OPT_JFLOW
+#define OPTIONS "l:p:f:k:sb:" OPT_JFLOW
 #else
-#define OPTIONS "l:p:f:s" OPT_JFLOW
+#define OPTIONS "l:p:f:sb:" OPT_JFLOW
 #endif
 
 void process_command_line(int argc, char **argv) {
@@ -339,6 +347,11 @@ void process_command_line(int argc, char **argv) {
                 }
                 break;
 #endif
+            case 'b':
+                num_in_flight_buffers_to_use = atoi(optarg);
+                fprintf(stderr, "Setting NUM_IN_FLIGHT_BUFFERS_TO_USE: %u\n",
+                        num_in_flight_buffers_to_use);
+                break;
             default:  // h, ?, and other
             {
                 showUsage(argv);
@@ -388,7 +401,7 @@ void send_error_message(extnet_conn_t *p_extconn,
     if (p_extconn->sockfd < 0)
         return;
 
-    memcpy(&error_message.header, 
+    memcpy(&error_message.header,
         &(input_message->header), sizeof(struct message_header));
 
     error_message.header.cmd_stat = cmd_stat;
@@ -615,7 +628,7 @@ STATUS send_out_msg_on_socket(struct spi_message *message) {
 
     pthread_mutex_lock(&send_buffer_mutex);
 
-    memcpy(send_buffer, (unsigned char*)&message->header, 
+    memcpy(send_buffer, (unsigned char*)&message->header,
         sizeof(message->header));
     memcpy(send_buffer+sizeof(message->header), message->buffer, size);
 
@@ -1171,7 +1184,7 @@ void on_message_received(extnet_conn_t *p_extconn,
 
         switch(message.header.cmd_stat) {
             case NUM_IN_FLIGHT_MESSAGES_SUPPORTED_CMD:
-                out_msg.buffer[1] = NUM_IN_FLIGHT_BUFFERS_TO_USE;
+                out_msg.buffer[1] = num_in_flight_buffers_to_use;
                 out_msg.header.size_lsb = 2;
                 out_msg.header.size_msb = 0;
                 out_msg.header.cmd_stat = ASD_SUCCESS;
@@ -1305,7 +1318,9 @@ int main(int argc, char **argv) {
     extnet_init(sg_options.e_extnet_type, EXTNET_DATA, MAX_SESSIONS);
     auth_init(sg_options.e_auth_type, NULL);
     session_init();
-    syslog(LOG_WARNING, "ASD daemon launch, fru %d, port %d\n", cpu_fru, sg_options.n_port_number);
+    syslog(LOG_WARNING, "ASD daemon launch, fru %d, port %d\t"
+                        ", num_buf %d\n",
+           cpu_fru, sg_options.n_port_number, num_in_flight_buffers_to_use);
     out_msg.buffer = (unsigned char*) malloc(MAX_DATA_SIZE);
     if (!out_msg.buffer) {
         ASD_log(LogType_Error, "Failed to allocate out_msg.buffer");

@@ -85,24 +85,6 @@ main(int argc, char **argv) {
   	printf("SP_SENSOR_P12V_SLOT1: %.2f Volts\n", fvalue);
   }
 
-  if (minilaketb_sensor_read(slot_id, SP_SENSOR_P12V_SLOT2, &fvalue)) {
-    printf("minilaketb_sensor_read failed: SP_SENSOR_P12V_SLOT2\n");
-  } else {
-  	printf("SP_SENSOR_P12V_SLOT2: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, SP_SENSOR_P12V_SLOT3, &fvalue)) {
-    printf("minilaketb_sensor_read failed: SP_SENSOR_P12V_SLOT3\n");
-  } else {
-  	printf("SP_SENSOR_P12V_SLOT3: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, SP_SENSOR_P12V_SLOT4, &fvalue)) {
-    printf("minilaketb_sensor_read failed: SP_SENSOR_P12V_SLOT4\n");
-  } else {
-  	printf("SP_SENSOR_P12V_SLOT4: %.2f Volts\n", fvalue);
-  }
-
   if (minilaketb_sensor_read(slot_id, SP_SENSOR_P3V3, &fvalue)) {
     printf("minilaketb_sensor_read failed: SP_SENSOR_P3V3\n");
   } else {
@@ -169,28 +151,10 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_VCCIN_VR_TEMP: %.2f C\n", fvalue);
   }
 
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCSA_VR_TEMP\n");
-  } else {
-  	printf("BIC_SENSOR_VCCSA_VR_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_TEMP\n");
-  } else {
-  	printf("BIC_SENSOR_1V05_PCH_VR_TEMP: %.2f C\n", fvalue);
-  }
-
   if (minilaketb_sensor_read(slot_id, BIC_SENSOR_SOC_TEMP, &fvalue)) {
     printf("minilaketb_sensor_read failed: BIC_SENSOR_SOC_TEMP\n");
   } else {
   	printf("BIC_SENSOR_SOC_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VNN_PCH_VR_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VNN_PCH_VR_TEMP\n");
-  } else {
-        printf("BIC_SENSOR_VNN_PCH_VR_TEMP: %.2f C\n", fvalue);
   }
 
   if (minilaketb_sensor_read(slot_id, BIC_SENSOR_MB_INLET_TEMP, &fvalue)) {
@@ -211,34 +175,10 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_SOC_THERM_MARGIN: %.2f C\n", fvalue);
   }
 
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_DE_VR_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_DE_VR_TEMP\n");
-  } else {
-        printf("BIC_SENSOR_VDDR_DE_VR_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_AB_VR_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_AB_VR_TEMP\n");
-  } else {
-        printf("BIC_SENSOR_VDDR_AB_VR_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM\n");
-  } else {
-        printf("BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM: %.2f C\n", fvalue);
-  }
-
   if (minilaketb_sensor_read(slot_id, BIC_SENSOR_SOC_TJMAX, &fvalue)) {
     printf("minilaketb_sensor_read failed: BIC_SENSOR_SOC_TJMAX\n");
   } else {
   	printf("BIC_SENSOR_SOC_TJMAX: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCIO_VR_TEMP\n");
-  } else {
-  	printf("BIC_SENSOR_VCCIO_VR_TEMP: %.2f C\n", fvalue);
   }
 
   if (minilaketb_sensor_read(slot_id, BIC_SENSOR_SOC_DIMMA0_TEMP, &fvalue)) {
@@ -265,71 +205,10 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_SOC_DIMMB1_TEMP: %.2f C\n", fvalue);
   }
 
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_SOC_DIMMD0_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_SOC_DIMMD0_TEMP\n");
-  } else {
-        printf("BIC_SENSOR_SOC_DIMMD0_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_SOC_DIMMD1_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_SOC_DIMMD1_TEMP\n");
-  } else {
-        printf("BIC_SENSOR_SOC_DIMMD1_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_SOC_DIMME0_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_SOC_DIMME0_TEMP\n");
-  } else {
-        printf("BIC_SENSOR_SOC_DIMME0_TEMP: %.2f C\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_SOC_DIMME1_TEMP, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_SOC_DIMME1_TEMP\n");
-  } else {
-        printf("BIC_SENSOR_SOC_DIMME1_TEMP: %.2f C\n", fvalue);
-  }
-
-  // Server Current Sensors
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_CURR, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCIO_VR_CURR\n");
-  } else {
-  	printf("BIC_SENSOR_VCCIO_VR_CURR: %.2f Amps\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_AB_VR_CURR, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_AB_VR_CURR\n");
-  } else {
-  	printf("BIC_SENSOR_VDDR_AB_VR_CURR: %.2f Amps\n", fvalue);
-  }
-
   if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCIN_VR_CURR, &fvalue)) {
     printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCIN_VR_CURR\n");
   } else {
   	printf("BIC_SENSOR_VCCIN_VR_CURR: %.2f Amps\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_CURR, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCSA_VR_CURR\n");
-  } else {
-        printf("BIC_SENSOR_VCCSA_VR_CURR: %.2f Amps\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VNN_PCH_VR_CURR, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VNN_PCH_VR_CURR\n");
-  } else {
-        printf("BIC_SENSOR_VNN_PCH_VR_CURR: %.2f Amps\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_DE_VR_CURR, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_DE_VR_CURR\n");
-  } else {
-  	printf("BIC_SENSOR_VDDR_DE_VR_CURR: %.2f Amps\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_CURR, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_CURR\n");
-  } else {
-  	printf("BIC_SENSOR_1V05_PCH_VR_CURR: %.2f Amps\n", fvalue);
   }
 
   // Server Voltage Sensors
@@ -343,36 +222,6 @@ main(int argc, char **argv) {
     printf("minilaketb_sensor_read failed: BIC_SENSOR_INA230_VOL\n");
   } else {
         printf("BIC_SENSOR_INA230_VOL: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_DE_VR_VOL, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_DE_VR_VOL\n");
-  } else {
-  	printf("BIC_SENSOR_VDDR_DE_VR_VOL: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_VOL, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_VOL\n");
-  } else {
-  	printf("BIC_SENSOR_1V05_PCH_VR_VOL: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_VOL, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCSA_VR_VOL\n");
-  } else {
-        printf("BIC_SENSOR_VCCSA_VR_VOL: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_VOL, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCIO_VR_VOL\n");
-  } else {
-  	printf("BIC_SENSOR_VCCIO_VR_VOL: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_AB_VR_VOL, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_AB_VR_VOL\n");
-  } else {
-  	printf("BIC_SENSOR_VDDR_AB_VR_VOL: %.2f Volts\n", fvalue);
   }
 
   if (minilaketb_sensor_read(slot_id, BIC_SENSOR_P3V3_MB, &fvalue)) {
@@ -399,28 +248,10 @@ main(int argc, char **argv) {
   	printf("BIC_SENSOR_P3V3_STBY_MB: %.2f Volts\n", fvalue);
   }
 
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_PVDDR_DE, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_PVDDR_DE\n");
-  } else {
-  	printf("BIC_SENSOR_PVDDR_DE: %.2f Volts\n", fvalue);
-  }
-
   if (minilaketb_sensor_read(slot_id, BIC_SENSOR_PV_BAT, &fvalue)) {
     printf("minilaketb_sensor_read failed: BIC_SENSOR_PV_BAT\n");
   } else {
   	printf("BIC_SENSOR_PV_BAT: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_PVDDR_AB, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_PVDDR_AB\n");
-  } else {
-  	printf("BIC_SENSOR_PVDDR_AB: %.2f Volts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_PVNN_PCH, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_PVNN_PCH\n");
-  } else {
-  	printf("BIC_SENSOR_PVNN_PCH: %.2f Volts\n", fvalue);
   }
 
   // Server Power Sensors
@@ -440,42 +271,6 @@ main(int argc, char **argv) {
     printf("minilaketb_sensor_read failed: BIC_SENSOR_SOC_PACKAGE_PWR\n");
   } else {
   	printf("BIC_SENSOR_SOC_PACKAGE_PWR: %.2f Watts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_AB_VR_POUT, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_AB_VR_POUT\n");
-  } else {
-  	printf("BIC_SENSOR_VDDR_AB_VR_POUT: %.2f Watts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCSA_VR_POUT, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCSA_VR_POUT\n");
-  } else {
-  	printf("BIC_SENSOR_VCCSA_VR_POUT: %.2f Watts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VCCIO_VR_POUT, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VCCIO_VR_POUT\n");
-  } else {
-        printf("BIC_SENSOR_VCCIO_VR_POUT: %.2f Watts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VDDR_DE_VR_POUT, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VDDR_DE_VR_POUT\n");
-  } else {
-        printf("BIC_SENSOR_VDDR_DE_VR_POUT: %.2f Watts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_VNN_PCH_VR_POUT, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_VNN_PCH_VR_POUT\n");
-  } else {
-        printf("BIC_SENSOR_VNN_PCH_VR_POUT: %.2f Watts\n", fvalue);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_1V05_PCH_VR_POUT, &fvalue)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_1V05_PCH_VR_POUT\n");
-  } else {
-        printf("BIC_SENSOR_1V05_PCH_VR_POUT: %.2f Watts\n", fvalue);
   }
 
   // Discrete Sensors
@@ -507,30 +302,6 @@ main(int argc, char **argv) {
     printf("minilaketb_sensor_read failed: BIC_SENSOR_CPU_DIMM_HOT\n");
   } else {
   	printf("BIC_SENSOR_CPU_DIMM_HOT: 0x%X\n", value);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_NVME1_CTEMP, &value)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_NVME1_CTEMP\n");
-  } else {
-  	printf("BIC_SENSOR_NVME1_CTEMP: 0x%X\n", value);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_NVME2_CTEMP, &value)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_NVME2_CTEMP\n");
-  } else {
-  	printf("BIC_SENSOR_NVME2_CTEMP: 0x%X\n", value);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_LIQUID_PUMP_TACH, &value)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_LIQUID_PUMP_TACH\n");
-  } else {
-  	printf("BIC_SENSOR_LIQUID_PUMP_TACH: 0x%X\n", value);
-  }
-
-  if (minilaketb_sensor_read(slot_id, BIC_SENSOR_LIQUID_PUMP_PWM, &value)) {
-    printf("minilaketb_sensor_read failed: BIC_SENSOR_LIQUID_PUMP_PWM\n");
-  } else {
-        printf("BIC_SENSOR_LIQUID_PUMP_PWM: 0x%X\n", value);
   }
 
   return 0;

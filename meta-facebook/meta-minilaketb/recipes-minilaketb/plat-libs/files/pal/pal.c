@@ -3817,15 +3817,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case BIC_SENSOR_P1V05_PCH:
     case BIC_SENSOR_P3V3_STBY_MB:
     case BIC_SENSOR_PV_BAT:
-    case BIC_SENSOR_PVDDR_AB:
-    case BIC_SENSOR_PVDDR_DE:
-    case BIC_SENSOR_PVNN_PCH:
     case BIC_SENSOR_VCCIN_VR_VOL:
-    case BIC_SENSOR_VCCIO_VR_VOL:
-    case BIC_SENSOR_1V05_PCH_VR_VOL:
-    case BIC_SENSOR_VDDR_AB_VR_VOL:
-    case BIC_SENSOR_VDDR_DE_VR_VOL:
-    case BIC_SENSOR_VCCSA_VR_VOL:
     case BIC_SENSOR_INA230_VOL:
       snr_desc = get_sensor_desc(fru, snr_num);
       sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
@@ -3902,15 +3894,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case BIC_SENSOR_P1V05_PCH:
     case BIC_SENSOR_P3V3_STBY_MB:
     case BIC_SENSOR_PV_BAT:
-    case BIC_SENSOR_PVDDR_AB:
-    case BIC_SENSOR_PVDDR_DE:
-    case BIC_SENSOR_PVNN_PCH:
     case BIC_SENSOR_VCCIN_VR_VOL:
-    case BIC_SENSOR_VCCIO_VR_VOL:
-    case BIC_SENSOR_1V05_PCH_VR_VOL:
-    case BIC_SENSOR_VDDR_AB_VR_VOL:
-    case BIC_SENSOR_VDDR_DE_VR_VOL:
-    case BIC_SENSOR_VCCSA_VR_VOL:
     case BIC_SENSOR_INA230_VOL:
       snr_desc = get_sensor_desc(fru, snr_num);
       sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);

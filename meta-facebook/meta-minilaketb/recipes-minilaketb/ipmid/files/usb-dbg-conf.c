@@ -374,21 +374,13 @@ static gpio_desc_t gdesc[] = {
 static sensor_desc_t cri_sensor[] =
 {
   {"SOC_TEMP:"    , BIC_SENSOR_SOC_TEMP        , "C"   , FRU_ALL, 0},
-  {"HSC_PWR:"     , SP_SENSOR_HSC_IN_POWER     , "W"   , FRU_SPB, 1},
-  {"HSC_VOL:"     , SP_SENSOR_HSC_IN_VOLT      , "V"   , FRU_SPB, 2},
   {"FAN0:"        , SP_SENSOR_FAN0_TACH        , "RPM" , FRU_SPB, 0},
   {"FAN1:"        , SP_SENSOR_FAN1_TACH        , "RPM" , FRU_SPB, 0},
   {"SP_INLET:"    , SP_SENSOR_INLET_TEMP       , "C"   , FRU_SPB, 0},
   {"SOC_VR_TEMP:" , BIC_SENSOR_VCCIN_VR_TEMP   , "C"   , FRU_ALL, 0},
   {"SOC_VR_PWR:"  , BIC_SENSOR_VCCIN_VR_POUT   , "W"   , FRU_ALL, 1},
   {"DIMMA0_TEMP:" , BIC_SENSOR_SOC_DIMMA0_TEMP , "C"   , FRU_ALL, 0},
-  {"DIMMA1_TEMP:" , BIC_SENSOR_SOC_DIMMA1_TEMP , "C"   , FRU_ALL, 0},
   {"DIMMB0_TEMP:" , BIC_SENSOR_SOC_DIMMB0_TEMP , "C"   , FRU_ALL, 0},
-  {"DIMMB1_TEMP:" , BIC_SENSOR_SOC_DIMMB1_TEMP , "C"   , FRU_ALL, 0},
-  {"DIMMD0_TEMP:" , BIC_SENSOR_SOC_DIMMD0_TEMP , "C"   , FRU_ALL, 0},
-  {"DIMMD1_TEMP:" , BIC_SENSOR_SOC_DIMME1_TEMP , "C"   , FRU_ALL, 0},
-  {"DIMME0_TEMP:" , BIC_SENSOR_SOC_DIMMD0_TEMP , "C"   , FRU_ALL, 0},
-  {"DIMME1_TEMP:" , BIC_SENSOR_SOC_DIMME1_TEMP , "C"   , FRU_ALL, 0},
 };
 
 static char *dimm_label[8] = {"A0", "A1", "B0", "B1", "D0", "D1", "E0", "E1"};

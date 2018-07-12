@@ -103,27 +103,12 @@ static float ml_hsc_r_sense = ML_ADM1278_R_SENSE;
 const uint8_t bic_neg_reading_sensor_support_list[] = {
   /* Temperature sensors*/
   BIC_SENSOR_MB_OUTLET_TEMP,
-  BIC_SENSOR_MB_OUTLET_TEMP_BOTTOM,
   BIC_SENSOR_MB_INLET_TEMP,
   BIC_SENSOR_PCH_TEMP,
   BIC_SENSOR_SOC_TEMP,
   BIC_SENSOR_SOC_DIMMA0_TEMP,
-  BIC_SENSOR_SOC_DIMMA1_TEMP,
   BIC_SENSOR_SOC_DIMMB0_TEMP,
-  BIC_SENSOR_SOC_DIMMB1_TEMP,
-  BIC_SENSOR_SOC_DIMMD0_TEMP,
-  BIC_SENSOR_SOC_DIMMD1_TEMP,
-  BIC_SENSOR_SOC_DIMME0_TEMP,
-  BIC_SENSOR_SOC_DIMME1_TEMP,
-  BIC_SENSOR_NVME1_CTEMP,
-  BIC_SENSOR_NVME2_CTEMP,
-  BIC_SENSOR_VCCIO_VR_CURR,
   BIC_SENSOR_VCCIN_VR_CURR,
-  BIC_SENSOR_VDDR_AB_VR_CURR,
-  BIC_SENSOR_VDDR_DE_VR_CURR,
-  BIC_SENSOR_1V05_PCH_VR_CURR,
-  BIC_SENSOR_VCCSA_VR_CURR,
-  BIC_SENSOR_VNN_PCH_VR_CURR,
 };
 
 const uint8_t bic_sdr_accuracy_sensor_support_list[] = {
@@ -135,39 +120,39 @@ const uint8_t bic_sdr_accuracy_sensor_support_list[] = {
 // List of BIC sensors (Twinlake) to be monitored
 const uint8_t bic_sensor_list[] = {
   /* Threshold sensors */
-    BIC_T6A_SENSOR_MB_OUTLET_TEMP,
-    BIC_T6A_SENSOR_MB_INLET_TEMP,
-    BIC_T6A_SENSOR_PCH_TEMP,
-    BIC_T6A_SENSOR_VCCIN_VR_TEMP,
-    BIC_T6A_SENSOR_1V05MIX_VR_TEMP,
-    BIC_T6A_SENSOR_SOC_TEMP,
-    BIC_T6A_SENSOR_SOC_THERM_MARGIN,
-    BIC_T6A_SENSOR_VDDR_VR_TEMP,
-    BIC_T6A_SENSOR_SOC_DIMMA0_TEMP,
-    BIC_T6A_SENSOR_SOC_DIMMA1_TEMP,
-    BIC_T6A_SENSOR_SOC_DIMMB0_TEMP,
-    BIC_T6A_SENSOR_SOC_DIMMB1_TEMP,
-    BIC_T6A_SENSOR_SOC_PACKAGE_PWR,
-    BIC_T6A_SENSOR_VCCIN_VR_POUT,
-    BIC_T6A_SENSOR_VDDR_VR_POUT,
-    BIC_T6A_SENSOR_SOC_TJMAX,
-    BIC_T6A_SENSOR_P3V3_MB,
-    BIC_T6A_SENSOR_P12V_MB,
-    BIC_T6A_SENSOR_P1V05_PCH,
-    BIC_T6A_SENSOR_P3V3_STBY_MB,
-    BIC_T6A_SENSOR_P5V_STBY_MB,
-    BIC_T6A_SENSOR_PV_BAT,
-    BIC_T6A_SENSOR_PVDDR,
-    BIC_T6A_SENSOR_P1V05_MIX,
-    BIC_T6A_SENSOR_1V05MIX_VR_CURR,
-    BIC_T6A_SENSOR_VDDR_VR_CURR,
-    BIC_T6A_SENSOR_VCCIN_VR_CURR,
-    BIC_T6A_SENSOR_VCCIN_VR_VOL,
-    BIC_T6A_SENSOR_VDDR_VR_VOL,
-    BIC_T6A_SENSOR_P1V05MIX_VR_VOL,
-    BIC_T6A_SENSOR_P1V05MIX_VR_Pout,
-    BIC_T6A_SENSOR_INA230_POWER,
-    BIC_T6A_SENSOR_INA230_VOL,
+    BIC_SENSOR_MB_OUTLET_TEMP,
+    BIC_SENSOR_MB_INLET_TEMP,
+    BIC_SENSOR_PCH_TEMP,
+    BIC_SENSOR_VCCIN_VR_TEMP,
+    BIC_SENSOR_1V05MIX_VR_TEMP,
+    BIC_SENSOR_SOC_TEMP,
+    BIC_SENSOR_SOC_THERM_MARGIN,
+    BIC_SENSOR_VDDR_VR_TEMP,
+    BIC_SENSOR_SOC_DIMMA0_TEMP,
+    BIC_SENSOR_SOC_DIMMA1_TEMP,
+    BIC_SENSOR_SOC_DIMMB0_TEMP,
+    BIC_SENSOR_SOC_DIMMB1_TEMP,
+    BIC_SENSOR_SOC_PACKAGE_PWR,
+    BIC_SENSOR_VCCIN_VR_POUT,
+    BIC_SENSOR_VDDR_VR_POUT,
+    BIC_SENSOR_SOC_TJMAX,
+    BIC_SENSOR_P3V3_MB,
+    BIC_SENSOR_P12V_MB,
+    BIC_SENSOR_P1V05_PCH,
+    BIC_SENSOR_P3V3_STBY_MB,
+    BIC_SENSOR_P5V_STBY_MB,
+    BIC_SENSOR_PV_BAT,
+    BIC_SENSOR_PVDDR,
+    BIC_SENSOR_P1V05_MIX,
+    BIC_SENSOR_1V05MIX_VR_CURR,
+    BIC_SENSOR_VDDR_VR_CURR,
+    BIC_SENSOR_VCCIN_VR_CURR,
+    BIC_SENSOR_VCCIN_VR_VOL,
+    BIC_SENSOR_VDDR_VR_VOL,
+    BIC_SENSOR_P1V05MIX_VR_VOL,
+    BIC_SENSOR_P1V05MIX_VR_Pout,
+    BIC_SENSOR_INA230_POWER,
+    BIC_SENSOR_INA230_VOL,
 };
 
 const uint8_t bic_discrete_list[] = {
@@ -177,16 +162,6 @@ const uint8_t bic_discrete_list[] = {
   BIC_SENSOR_SYS_BOOT_STAT,
   BIC_SENSOR_CPU_DIMM_HOT,
   BIC_SENSOR_VR_HOT,
-  BIC_SENSOR_POWER_THRESH_EVENT,
-  BIC_SENSOR_POST_ERR,
-  BIC_SENSOR_POWER_ERR,
-  BIC_SENSOR_PROC_HOT_EXT,
-  BIC_SENSOR_MACHINE_CHK_ERR,
-  BIC_SENSOR_PCIE_ERR,
-  BIC_SENSOR_OTHER_IIO_ERR,
-  BIC_SENSOR_MEM_ECC_ERR,
-  BIC_SENSOR_SPS_FW_HLTH,
-  BIC_SENSOR_CAT_ERR,
 };
 
 
@@ -308,9 +283,6 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_P12V,
   SP_SENSOR_P3V3_STBY,
   SP_SENSOR_P12V_SLOT1,
-  //SP_SENSOR_P12V_SLOT2,
-  //SP_SENSOR_P12V_SLOT3,
-  //SP_SENSOR_P12V_SLOT4,
   SP_SENSOR_P3V3,
   SP_SENSOR_P1V15_BMC_STBY,
   SP_SENSOR_P1V2_BMC_STBY,
@@ -373,12 +345,6 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 2.97;
   spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.75;
   spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.25;
   spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.63;
   spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 2.97;
   spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][UCR_THRESH] = 1.265;
@@ -1273,9 +1239,6 @@ minilaketb_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           sprintf(units, "Volts");
           break;
         case SP_SENSOR_P12V_SLOT1:
-        case SP_SENSOR_P12V_SLOT2:
-        case SP_SENSOR_P12V_SLOT3:
-        case SP_SENSOR_P12V_SLOT4:
           sprintf(units, "Volts");
           break;
         case SP_SENSOR_P3V3:
@@ -1457,15 +1420,6 @@ minilaketb_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case SP_SENSOR_P12V_SLOT1:
           sprintf(name, "SP_P12V_SLOT1");
-          break;
-        case SP_SENSOR_P12V_SLOT2:
-          sprintf(name, "SP_P12V_SLOT2");
-          break;
-        case SP_SENSOR_P12V_SLOT3:
-          sprintf(name, "SP_P12V_SLOT3");
-          break;
-        case SP_SENSOR_P12V_SLOT4:
-          sprintf(name, "SP_P12V_SLOT4");
           break;
         case SP_SENSOR_P3V3:
           sprintf(name, "SP_P3V3");
@@ -1655,12 +1609,6 @@ minilaketb_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
         case SP_SENSOR_P12V_SLOT1:
           return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V_SLOT2:
-          return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V_SLOT3:
-          return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V_SLOT4:
-          return read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
         case SP_SENSOR_P3V3:
           return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
         case SP_SENSOR_P1V15_BMC_STBY:

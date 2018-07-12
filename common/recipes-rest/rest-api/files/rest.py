@@ -67,5 +67,5 @@ else:
     syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read/Write Mode')
 root = init_plat_tree(is_read_only)
 root.setup(app, not is_read_only)
-web.run_app(app)
+web.run_app(app, host='*')
 

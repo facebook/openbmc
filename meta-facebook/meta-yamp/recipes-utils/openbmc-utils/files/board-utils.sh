@@ -6,6 +6,9 @@ SUP_PWR_ON_SYSFS="${SUPCPLD_SYSFS_DIR}/cpu_control"
 PWR_SYSTEM_SYSFS="${SUPCPLD_SYSFS_DIR}/chassis_power_cycle"
 SCD_TH3_RST_ON_SYSFS="${SCDCPLD_SYSFS_DIR}/th3_reset"
 SCD_TH3_PCI_RST_ON_SYSFS="${SCDCPLD_SYSFS_DIR}/th3_pci_reset"
+SCD_FULL_POWER_SYSFS="${SCDCPLD_SYSFS_DIR}/scd_power_en"
+LC_SMB_MUX_RST="${SCDCPLD_SYSFS_DIR}/lc_smb_mux_rst"
+
 wedge_iso_buf_enable() {
     return 0
 }
@@ -47,9 +50,10 @@ wedge_should_enable_oob() {
 
 wedge_power_on_board() {
     # Order matters here
-    echo 0 > $SCD_TH3_PCI_RST_ON_SYSFS
-    sleep 1
+    echo 1 > $SCD_FULL_POWER_SYSFS
     echo 0 > $SCD_TH3_RST_ON_SYSFS
+    usleep 250000
+    echo 0 > $SCD_TH3_PCI_RST_ON_SYSFS
     sleep 1
     echo 1 > $SUP_PWR_ON_SYSFS
 }

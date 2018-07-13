@@ -127,6 +127,7 @@ do_reset() {
         echo -n "Power reset the whole system ..."
         sleep 1
         echo 0xde > $PWR_SYSTEM_SYSFS
+        sleep 8
         # The chassis shall be reset now... if not, we are in trouble
         echo " Failed"
         return 254

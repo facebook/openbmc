@@ -45,4 +45,4 @@ if [ $on -eq 0 ]; then
     wedge_power.sh on -f
 fi
 
-pim_enable.sh &
+pim_enable.sh > /dev/null 2>&1 &

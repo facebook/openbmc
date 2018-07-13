@@ -66,14 +66,14 @@ lib_ipmi_handle(unsigned char *request, unsigned char req_len,
 #ifdef DEBUG
     syslog(LOG_WARNING, "lib_ipmi_handle: connect() failed\n");
 #endif
-    return;
+    goto cleanup;
   }
 
   if (send(s, request, req_len, 0) == -1) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "lib_ipmi_handle: send() failed\n");
 #endif
-    return;
+    goto cleanup;
   }
 
   if ((t=recv(s, response, MAX_IPMI_RES_LEN, 0)) > 0) {
@@ -87,9 +87,9 @@ lib_ipmi_handle(unsigned char *request, unsigned char req_len,
       printf("Server closed connection");
     }
 
-    return;
   }
 
+cleanup:
   close(s);
 
   return;

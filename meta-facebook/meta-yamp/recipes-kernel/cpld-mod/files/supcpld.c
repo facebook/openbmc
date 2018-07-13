@@ -44,14 +44,14 @@ static const i2c_dev_attr_st supcpld_attr_table[] = {
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x0, 0, 8,
+    0x1, 0, 8,
   },
   {
     "cpld_ver_minor",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x1, 0, 8,
+    0x2, 0, 8,
   },
   {
     "scratch",

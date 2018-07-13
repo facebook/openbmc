@@ -131,9 +131,47 @@ calc_cksum(uint8_t *buf, uint8_t len) {
   return (ZERO_CKSUM_CONST - cksum);
 }
 
+static void seq_init() {
+  // Initialize mutex to access global structure
+  pthread_mutex_init(&m_seq, NULL);
+  // Initialize g_seq structure
+  int i;
+  g_seq.curr_seq = 0;
+  for (i = 0; i < SEQ_NUM_MAX; i++) {
+    g_seq.seq[i].in_use = false;
+    sem_init(&g_seq.seq[i].s_seq, 0, 0);
+    g_seq.seq[i].len = 0;
+    g_seq.seq[i].p_buf = NULL;
+  }
+}
+
+static int seq_put(uint8_t seq, uint8_t *buf, uint8_t len)
+{
+  seq_buf_t *s;
+  int rc = -1;
+
+  if (seq >= SEQ_NUM_MAX) {
+    return -1;
+  }
+  // Check if the response is being waited for
+  pthread_mutex_lock(&m_seq);
+  s = &g_seq.seq[seq];
+  if (s->in_use && s->p_buf) {
+    // Copy the response to the requester's buffer
+    memcpy(s->p_buf, buf, len);
+    s->len = len;
+
+    // Wake up the worker thread to receive the response
+    sem_post(&s->s_seq);
+    rc = 0;
+  }
+  pthread_mutex_unlock(&m_seq);
+  return rc;
+}
+
 // Returns an unused seq# from all possible seq#
 static int8_t
-seq_get_new(void) {
+seq_get_new(unsigned char *resp) {
   int8_t ret = -1;
   uint8_t index;
 
@@ -147,6 +185,7 @@ seq_get_new(void) {
       ret = index;
       g_seq.seq[index].in_use = true;
       g_seq.seq[index].len = 0;
+      g_seq.seq[index].p_buf = resp;
       break;
     }
 
@@ -444,20 +483,10 @@ ipmb_res_handler(void *bus_num) {
     // Check the seq# of response
     index = p_res->seq_lun >> LUN_OFFSET;
 
-    // Check if the response is being waited for
-    pthread_mutex_lock(&m_seq);
-    if (g_seq.seq[index].in_use) {
-      // Copy the response to the requester's buffer
-      memcpy(g_seq.seq[index].p_buf, buf, len);
-      g_seq.seq[index].len = len;
-
-      // Wake up the worker thread to receive the response
-      sem_post(&g_seq.seq[index].s_seq);
-    } else {
+    if (seq_put(index, buf, len)) {
       // Either the IPMB packet is corrupted or arrived late after client exits
       syslog(LOG_WARNING, "bus: %d, WRONG packet received with seq#%d\n", g_bus_id, index);
     }
-    pthread_mutex_unlock(&m_seq);
 
 #ifdef DEBUG
     syslog(LOG_WARNING, "Received Response of %d bytes\n", len);
@@ -618,7 +647,7 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
   struct timespec ts;
 
   // Allocate right sequence Number
-  index = seq_get_new();
+  index = seq_get_new(response);
   if (index < 0) {
     *res_len = 0;
     return ;
@@ -641,11 +670,6 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
   }
 
   request[req_len-1] = ZERO_CKSUM_CONST - request[req_len-1];
-
-  // Setup response buffer
-  pthread_mutex_lock(&m_seq);
-  g_seq.seq[index].p_buf = response;
-  pthread_mutex_unlock(&m_seq);
 
   if (pal_ipmb_processing(g_bus_id, request, req_len)) {
     goto ipmb_handle_out;
@@ -674,6 +698,7 @@ ipmb_handle_out:
   *res_len = g_seq.seq[index].len;
 
   g_seq.seq[index].in_use = false;
+  g_seq.seq[index].p_buf = NULL;
   pthread_mutex_unlock(&m_seq);
 
   pal_ipmb_finished(g_bus_id, request, *res_len);
@@ -748,19 +773,9 @@ ipmb_lib_handler(void *bus_num) {
     return NULL;
   }
 
-  // Initialize g_seq structure
-  int i;
-  for (i = 0; i < SEQ_NUM_MAX; i++) {
-    g_seq.seq[i].in_use = false;
-    sem_init(&g_seq.seq[i].s_seq, 0, 0);
-    g_seq.seq[i].len = 0;
-  }
 
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-  // Initialize mutex to access global structure
-  pthread_mutex_init(&m_seq, NULL);
 
   if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
   {
@@ -879,6 +894,8 @@ main(int argc, char * const argv[]) {
     syslog(LOG_WARNING, "ipmbd: mq_open response failed errno: %d\n", rc);
     goto cleanup;
   }
+
+  seq_init();
 
   // Create thread to handle IPMB Requests
   if (pthread_create(&tid_req_handler, NULL, ipmb_req_handler, (void*) &ipmb_bus_num) < 0) {

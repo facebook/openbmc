@@ -21,6 +21,39 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 source /usr/local/bin/openbmc-utils.sh
 
+#
+# Setup gpios managed by the given i2c IO Expander.
+# $1 - sysfs path of the i2c io expander. For example, 30-0020
+# $2 - offset (within the gpio chip)
+# $3 - list of symbolic links for the gpio pins
+#
+setup_i2c_gpios() {
+    local i2c_path=${1}
+    local offset=${2}
+    shift 2
+    local symlinks="$*"
+    local gpio_chip=$(gpiochip_lookup_by_i2c_path ${i2c_path})
+    local gpio_base=$(gpiochip_get_base ${gpio_chip})
+    local pin link_name
+
+    for link_name in ${symlinks}; do
+        pin=$((gpio_base + offset))
+        gpio_export ${pin} ${link_name}
+        offset=$((offset + 1))
+    done
+}
+
+# The gpio pins managed by aspeed gpio controller always start
+# from 0 in kernel 4.1, but it's dynamically allocated in kernel
+# 4.17, thus we need to read the base from sysfs.
+KERNEL_VERSION=`uname -r`
+if [[ ${KERNEL_VERSION} == 4.1.* ]]; then
+    ASPEED_GPIO_BASE=0
+else
+    ASPEED_GPIOCHIP=$(gpiochip_lookup_by_label 1e780000.gpio)
+    ASPEED_GPIO_BASE=$(gpiochip_get_base ${ASPEED_GPIOCHIP})
+fi
+
 # GPIOM0: BMC_CPLD_TMS
 # GPIOM1: BMC_CPLD_TDI
 # GPIOM2: BMC_CPLD_TCK
@@ -30,58 +63,46 @@ devmem_clear_bit $(scu_addr 84) 24
 devmem_clear_bit $(scu_addr 84) 25
 devmem_clear_bit $(scu_addr 84) 26
 devmem_clear_bit $(scu_addr 84) 27
-gpio_export M0 BMC_CPLD_TMS
-gpio_export M1 BMC_CPLD_TDI
-gpio_export M2 BMC_CPLD_TCK
-gpio_export M3 BMC_CPLD_TDO
-
+IDX=0
+SYMLINKS="BMC_CPLD_TMS BMC_CPLD_TDI BMC_CPLD_TCK BMC_CPLD_TDO"
+for LINK_NAME in ${SYMLINKS}; do
+    OFFSET=$(gpio_name2value M${IDX})
+    PIN=$((ASPEED_GPIO_BASE + OFFSET))
+    gpio_export ${PIN} ${LINK_NAME}
+    IDX=$((IDX + 1))
+done
 
 # GPIOF0: CPLD_JTAG_SEL (needs to be low)
 # SCU90[30] must 0 adn SCU80[24] must be 0
 devmem_clear_bit $(scu_addr 90) 30
 devmem_clear_bit $(scu_addr 80) 24
-gpio_export F0 CPLD_JTAG_SEL
+OFFSET=$(gpio_name2value F0)
+PIN=$((ASPEED_GPIO_BASE + OFFSET))
+gpio_export ${PIN} CPLD_JTAG_SEL
 
 # SYSTEM LED GPIOs
-gpio_export 400 SYS_LED_RED
-gpio_export 401 SYS_LED_GREEN
-gpio_export 402 SYS_LED_BLUE
-gpio_export 403 FAN_LED_RED
-gpio_export 404 FAN_LED_GREEN
-gpio_export 405 FAN_LED_BLUE
-gpio_export 406 PSU_LED_RED
-gpio_export 407 PSU_LED_GREEN
-gpio_export 408 PSU_LED_BLUE
-gpio_export 409 FAB_LED_RED
-gpio_export 410 FAB_LED_GREEN
-gpio_export 411 FAB_LED_BLUE
+SYSLED_SYMLINKS="SYS_LED_RED SYS_LED_GREEN SYS_LED_BLUE
+                 FAN_LED_RED FAN_LED_GREEN FAN_LED_BLUE
+                 PSU_LED_RED PSU_LED_GREEN PSU_LED_BLUE
+                 FAB_LED_RED FAB_LED_GREEN FAB_LED_BLUE"
+setup_i2c_gpios "30-0021" 0 ${SYSLED_SYMLINKS}
 
 # PSU PRESENCE GPIOs
-gpio_export 424 PSU4_PRESENT
-gpio_export 425 PSU3_PRESENT
-gpio_export 426 PSU2_PRESENT
-gpio_export 427 PSU1_PRESENT
+PSU_SYMLINKS="PSU4_PRESENT PSU3_PRESENT PSU2_PRESENT PSU1_PRESENT"
+setup_i2c_gpios "29-0020" 8 ${PSU_SYMLINKS}
 
 # FCB1 GPIOs
-gpio_export 456 FCB1_CPLD_TMS
-gpio_export 457 FCB1_CPLD_TCK
-gpio_export 458 FCB1_CPLD_TDI
-gpio_export 459 FCB1_CPLD_TDO
+FCB1_SYMLINKS="FCB1_CPLD_TMS FCB1_CPLD_TCK FCB1_CPLD_TDI FCB1_CPLD_TDO"
+setup_i2c_gpios "172-0022" 0 ${FCB1_SYMLINKS}
 
 # FCB2 GPIOs
-gpio_export 464 FCB2_CPLD_TMS
-gpio_export 465 FCB2_CPLD_TCK
-gpio_export 466 FCB2_CPLD_TDI
-gpio_export 467 FCB2_CPLD_TDO
+FCB2_SYMLINKS="FCB2_CPLD_TMS FCB2_CPLD_TCK FCB2_CPLD_TDI FCB2_CPLD_TDO"
+setup_i2c_gpios "180-0022" 0 ${FCB2_SYMLINKS}
 
 # FCB3 GPIOs
-gpio_export 472 FCB3_CPLD_TMS
-gpio_export 473 FCB3_CPLD_TCK
-gpio_export 474 FCB3_CPLD_TDI
-gpio_export 475 FCB3_CPLD_TDO
+FCB3_SYMLINKS="FCB3_CPLD_TMS FCB3_CPLD_TCK FCB3_CPLD_TDI FCB3_CPLD_TDO"
+setup_i2c_gpios "188-0022" 0 ${FCB3_SYMLINKS}
 
 # FCB4 GPIOs
-gpio_export 480 FCB4_CPLD_TMS
-gpio_export 481 FCB4_CPLD_TCK
-gpio_export 482 FCB4_CPLD_TDI
-gpio_export 483 FCB4_CPLD_TDO
+FCB4_SYMLINKS="FCB4_CPLD_TMS FCB4_CPLD_TCK FCB4_CPLD_TDI FCB4_CPLD_TDO"
+setup_i2c_gpios "196-0022" 0 ${FCB4_SYMLINKS}

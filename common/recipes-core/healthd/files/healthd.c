@@ -39,6 +39,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/vbs.h>
 #include <signal.h>
 
 #define I2C_BUS_NUM            14
@@ -65,12 +66,6 @@
 #define ADDR_LAST_RECOVER_ECC_OFFSET 0x5c // Address of Last Recoverable ECC Error Addr
 #define MAX_ECC_RECOVERABLE_ERROR_COUNTER 255
 #define MAX_ECC_UNRECOVERABLE_ERROR_COUNTER 15
-
-#define VERIFIED_BOOT_STRUCT_BASE     0x1E720000
-#define VERIFIED_BOOT_RECOVERY_FLAG(base)  *((uint8_t *)(base + 0x217))
-#define VERIFIED_BOOT_ERROR_TYPE(base)  *((uint8_t *)(base + 0x219))
-#define VERIFIED_BOOT_ERROR_CODE(base)  *((uint8_t *)(base + 0x21A))
-#define VERIFIED_BOOT_ERROR_TPM(base)  *((uint8_t *)(base + 0x21B))
 
 #define BMC_HEALTH_FILE "bmc_health"
 #define HEALTH "1"
@@ -1352,6 +1347,7 @@ static void check_vboot_recovery(uint8_t error_type, uint8_t error_code)
   if (assert_count <= deassert_count) {
     /* This is the first time we are seeing this error. Log it */
     syslog(LOG_CRIT, "ASSERT: Verified boot failure (%d,%d)", error_type, error_code);
+    syslog(LOG_CRIT, "Verified boot failure reason: %s", vboot_error(error_code));
   }
   /* Set the error so main can deassert with the correct error code */
   snprintf(curr_err, sizeof(curr_err), "(%d,%d)", error_type, error_code);
@@ -1375,6 +1371,9 @@ static void check_vboot_main(uint8_t error_type, uint8_t error_code)
       /* We do not have info of the previous error. Not much we can do
        * log an info message and carry on */
       syslog(LOG_INFO, "Verified boot successful!");
+
+      /* Create the key */
+      kv_set("vboot_error", "(0,0)", 0, KV_FPERSIST);
     } else if (strcmp(last_err, "(0,0)")) {
       /* We just recovered from a previous error! */
       syslog(LOG_CRIT, "DEASSERT: Verified boot failure %s", last_err);
@@ -1387,36 +1386,17 @@ static void check_vboot_main(uint8_t error_type, uint8_t error_code)
 
 static void check_vboot_state(void)
 {
-  int mem_fd;
-  uint8_t *vboot_base;
-  uint8_t error_type;
-  uint8_t error_code;
-  uint8_t recovery_flag;
+  struct vbs *v = vboot_status();
 
-  mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-  if (mem_fd < 0) {
-    syslog(LOG_CRIT, "%s: Error opening /dev/mem\n", __func__);
+  if (!v) {
+    syslog(LOG_CRIT, "%s: Getting verified boot status failed", __func__);
     return;
   }
-
-  vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, VERIFIED_BOOT_STRUCT_BASE);
-  if (!vboot_base) {
-    syslog(LOG_CRIT, "%s: Error mapping VERIFIED_BOOT_STRUCT_BASE\n", __func__);
-    close(mem_fd);
-    return;
-  }
-
-  error_type = VERIFIED_BOOT_ERROR_TYPE(vboot_base);
-  error_code = VERIFIED_BOOT_ERROR_CODE(vboot_base);
-  recovery_flag = VERIFIED_BOOT_RECOVERY_FLAG(vboot_base);
-
-  if (recovery_flag) {
-    check_vboot_recovery(error_type, error_code);
+  if (v->recovery_boot) {
+    check_vboot_recovery(v->error_type, v->error_code);
   } else {
-    check_vboot_main(error_type, error_code);
+    check_vboot_main(v->error_type, v->error_code);
   }
-  munmap(vboot_base, PAGE_SIZE);
-  close(mem_fd);
 }
 
 // Thread to monitor SLED Cycles by using time stamp

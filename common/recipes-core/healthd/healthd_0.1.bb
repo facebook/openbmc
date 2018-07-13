@@ -14,9 +14,9 @@ SRC_URI = "file://Makefile \
           "
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpal -ljansson -lkv -lwatchdog "
+LDFLAGS =+ " -lpal -ljansson -lkv -lwatchdog -lvbs "
 
-DEPENDS =+ " libpal jansson obmc-i2c libkv update-rc.d-native libwatchdog"
+DEPENDS =+ " libpal jansson obmc-i2c libkv update-rc.d-native libwatchdog libvbs"
 
 binfiles = "healthd"
 
@@ -41,7 +41,7 @@ do_install() {
   update-rc.d -r ${D} setup-healthd.sh start 91 5 .
 }
 
-RDEPENDS_${PN} =+ " libpal jansson libwatchdog"
+RDEPENDS_${PN} =+ " libpal jansson libwatchdog libvbs"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

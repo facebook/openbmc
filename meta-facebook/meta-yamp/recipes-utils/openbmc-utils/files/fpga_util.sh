@@ -8,6 +8,8 @@ JTAG_SEL="${SUPCPLD_SYSFS_DIR}/jtag_sel"
 JTAG_LC_FAN_CTRL="${SCDCPLD_SYSFS_DIR}/jtag_ctrl"
 JTAG_FAN_WP="${SCDCPLD_SYSFS_DIR}/fancpld_wp"
 
+LINECARD=0
+
 trap disconnect_jtag INT TERM QUIT EXIT
 
 usage() {
@@ -15,7 +17,7 @@ usage() {
     echo "Usage:"
     echo "$program <fpga> <action> <fpga file>"
     echo "      <fpga> : sup, scd, lc1, lc2, ..., lc8, fan"
-    echo "      <action> : PROGRAM, VERIFY"
+    echo "      <action> : program, verify"
     exit -1
 }
 
@@ -25,6 +27,12 @@ disconnect_jtag() {
     echo 0 > $JTAG_SEL
     # enable fancpld write protection
     echo 1 > $JTAG_FAN_WP
+    # do not select any linecard or fan
+    echo 0x0 > $JTAG_LC_FAN_CTRL
+    if [ $LINECARD -ne 0 ]; then
+        gpio_set LC${LINECARD}_SCD_CONFIG_L 1
+        gpio_set LC${LINECARD}_FAST_JTAG_EN 0
+    fi
 }
 
 connect_scd_jtag() {
@@ -39,11 +47,17 @@ connect_sup_jtag() {
 }
 
 connect_linecard_jtag() {
+    local lc
+    lc=$1
+    LINECARD=${lc}
     gpio_set $CPLD_JTAG_SEL_L 1
     echo 1 > $JTAG_EN
     echo 0 > $JTAG_SEL
-    # TODO: SCD_CONFIG_L
-    # TODO: echo value > $JTAG_LC_FAN_CTRL
+    # choose correct LC
+    echo ${lc} > $JTAG_LC_FAN_CTRL
+    # put into config(jtag) mode
+    gpio_set LC${lc}_SCD_CONFIG_L 0
+    gpio_set LC${lc}_FAST_JTAG_EN 1
 }
 
 connect_fan_jtag() {
@@ -60,7 +74,7 @@ do_scd() {
         exit -1
     fi
     connect_scd_jtag
-    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a$1 $2
+    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a${1^^} $2
 }
 
 do_sup() {
@@ -70,7 +84,7 @@ do_sup() {
         exit -1
     fi
     connect_sup_jtag
-    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a$1 $2
+    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a${1^^} $2
 }
 
 do_fan() {
@@ -79,8 +93,29 @@ do_fan() {
 }
 
 do_linecard() {
-    echo "Linecard CPLD upgrade is not supported"
-    exit -1
+    local lc action
+    lc="$1"
+    action="${2,,}"
+
+    if [ "$action" != "program" ]; then
+        echo "Only 'program' action is supported for linecard"
+        exit -1
+    fi
+
+    if [ ${#lc} -ne 3 ]; then
+        echo "'$lc' is not a valid linecard. Expect 'lc1', 'lc2', ..., 'lc8'"
+        exit -1
+    fi
+
+    lc=${lc:2:1}
+    if [[ $lc -lt 1 || $lc -gt 8 ]]; then
+        echo "'$lc' is not a valid linecard. Expect 'lc1', 'lc2', ..., 'lc8'"
+        exit -1
+    fi
+
+    connect_linecard_jtag $lc
+
+    xapp -l /usr/lib/libcpldupdate_dll_ast_jtag.so $3
 }
 
 if [ $# -ne 3 ]; then
@@ -98,6 +133,8 @@ elif [ "$1" == "sup" ]; then
 elif [ "$1" == "fan" ]; then
     shift 1
     do_fan $@
+elif [[ "$1" == "lc"* ]]; then
+    do_linecard $@
 else
     usage
 fi

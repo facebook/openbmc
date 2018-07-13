@@ -2862,6 +2862,29 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 }
 
 int
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+  uint8_t server_type = 0xFF;
+  int ret = -1;
+
+  // If SNR_TYPE is OS_BOOT, sensor name is OS
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return 0;
+    default:
+      if (minilaketb_sensor_name(fru, snr_num, name) != 0) {
+        break;
+      }
+      return 0;
+  }
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t snr_num = sel[11];
@@ -2870,8 +2893,38 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
   char temp_log[512] = {0};
   uint8_t sen_type = event_data[0];
   uint8_t chn_num, dimm_num;
+  bool parsed = false;
 
   switch(snr_num) {
+    case BIC_SENSOR_SYSTEM_STATUS:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_Thermal_Trip");
+          break;
+        case 0x01:
+          strcat(error_log, "SOC_FIVR_Fault");
+          break;
+        case 0x02:
+          strcat(error_log, "SOC_Throttle");
+          break;
+        case 0x03:
+          strcat(error_log, "PCH_HOT");
+          break;
+      }
+      parsed = true;
+      break;
+        
+    case BIC_SENSOR_CPU_DIMM_HOT:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x01:
+          strcat(error_log, "SOC_MEMHOT");
+          break;
+      }
+      parsed = true;
+      break;
+    
     case MEMORY_ECC_ERR:
     case MEMORY_ERR_LOG_DIS:
       strcpy(error_log, "");
@@ -2939,7 +2992,17 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
             (ed[2] & 0x18) >> 3, ed[2] & 0x7);
       }
       strcat(error_log, temp_log);
-      return 0;
+      parsed = true;
+      break;
+  }
+  
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
   }
 
   pal_parse_sel_helper(fru, sel, error_log);

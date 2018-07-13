@@ -110,3 +110,53 @@ gpio_get() {
     fi
     cat ${dir}/value
 }
+
+#
+# Lookup sysfs "gpiochip###" directory based on chip label.
+# $1 - gpiochip label
+#
+gpiochip_lookup_by_label() {
+    local input_label=${1}
+    local label entry
+
+    for entry in `ls ${GPIODIR}`; do
+        if [[ ${entry} == gpiochip* ]]; then
+            label=`cat ${GPIODIR}/${entry}/label`
+            if [ ${label} = ${input_label} ]; then
+                break
+            fi
+        fi
+    done
+
+    echo $entry
+}
+
+#
+# Lookup sysfs "gpiochip###" directory based on i2c path (of the
+# io expander).
+# $1 - i2c device path in <bus-addr> format. For example: 30-0021
+#
+gpiochip_lookup_by_i2c_path() {
+    local i2c_path=${1}
+    local entry link_path
+
+    for entry in `ls ${GPIODIR}`; do
+        if [[ ${entry} == gpiochip* ]]; then
+            link_path=$(readlink -f ${GPIODIR}/${entry} 2>/dev/null)
+            if [[ ${link_path} == *i2c*/${i2c_path}/* ]]; then
+                break;
+            fi
+        fi
+    done
+
+    echo ${entry}
+}
+
+#
+# Get base pin number managed by the given gpio chip.
+# $1 - gpiochip sysfs directory. For example, "gpiochip400".
+#
+gpiochip_get_base() {
+    local chip=${1}
+    cat ${GPIODIR}/${chip}/base
+}

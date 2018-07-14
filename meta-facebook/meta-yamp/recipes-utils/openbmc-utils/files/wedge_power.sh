@@ -80,7 +80,6 @@ do_on() {
         fi
     fi
 
-    reset_brcm.sh
     wedge_power_on_board
     ret=$?
     if [ $ret -eq 0 ]; then

@@ -19,5 +19,6 @@ IMAGE_INSTALL += " \
   mterm \
   openbmc-gpio \
   openbmc-utils \
+  wedge-eeprom \
   usb-console \
   "

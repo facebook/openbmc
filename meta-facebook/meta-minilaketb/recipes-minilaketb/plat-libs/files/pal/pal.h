@@ -79,6 +79,11 @@ enum {
 };
 
 enum {
+  SERVER1 = 1,
+  BMC
+};
+
+enum {
   BIC_MODE_NORMAL = 0x01,
   BIC_MODE_UPDATE = 0x0F,
 };

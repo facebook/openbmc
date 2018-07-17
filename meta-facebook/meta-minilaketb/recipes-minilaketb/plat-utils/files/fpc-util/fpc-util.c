@@ -31,7 +31,7 @@
 
 static void
 print_usage_help(void) {
-  printf("       fpc-util <slot1> --identify <on/off>\n");
+  printf("Usage: fpc-util <slot1> --identify <on/off>\n");
 }
 
 int

@@ -106,15 +106,6 @@
 #define IMC_VER_SIZE 8
 
 
-
-const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N };
-const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED };      // TODO: In DVT, Map to ML PWR LED
-const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N };  // Identify LED
-const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N };
-const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N };
-const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN };
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN };
-
 const char pal_fru_list[] = "all, slot1, spb";
 const char pal_server_list[] = "slot1";
 
@@ -172,7 +163,6 @@ char * key_list[] = {
 "server_pcie_port_config",
 "pwr_server1_last_state",
 "sysfw_ver_slot1",
-"identify_sled",
 "identify_slot1",
 "timestamp_sled",
 "slot1_por_cfg",
@@ -189,7 +179,6 @@ LAST_KEY /* This is the last key of the list */
 char * def_val_list[] = {
   "on", /* pwr_server1_last_state */
   "0", /* sysfw_ver_slot1 */
-  "off", /* identify_sled */
   "off", /* identify_slot1 */
   "0", /* timestamp_sled */
   "lps", /* slot1_por_cfg */
@@ -529,7 +518,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 
   }
 
-  sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
+  sprintf(path, GPIO_VAL, GPIO_RST_SLOT1_SYS_RESET_N);
   if (write_device(path, val)) {
     return -1;
   }
@@ -577,7 +566,7 @@ power_on_server_physically(uint8_t slot_id){
 
   syslog(LOG_WARNING, "%s is on going for slot%d\n",__func__,slot_id);
 
-  sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
+  sprintf(vpath, GPIO_VAL, GPIO_PWR_SLOT1_BTN_N);
   if (write_device(vpath, "1")) {
     return -1;
   }
@@ -658,7 +647,7 @@ server_power_on(uint8_t slot_id) {
   int max_retry = 5;
   int val = 0;
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id != 1) {
     return -1;
   }
 
@@ -684,12 +673,12 @@ static int
 server_power_off(uint8_t slot_id, bool gs_flag) {
   char vpath[64] = {0};
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id != 1) {
     return -1;
   }
 
 
-  sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
+  sprintf(vpath, GPIO_VAL, GPIO_PWR_SLOT1_BTN_N);
 
   if (write_device(vpath, "1")) {
     return -1;
@@ -761,11 +750,7 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
   int val;
   char path[64] = {0};
 
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
-  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
+  sprintf(path, GPIO_VAL, GPIO_P12V_STBY_SLOT1_EN);
 
   if (read_device(path, &val)) {
     return -1;
@@ -782,7 +767,7 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
 
 bool
 pal_is_hsvc_ongoing(uint8_t slot_id) {
-  char key[MAX_KEY_LEN];
+  char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
 
   sprintf(key, "fru%u_hsvc", slot_id);
@@ -821,24 +806,22 @@ pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident) {
 static int
 server_12v_off(uint8_t slot_id) {
   char vpath[64] = {0};
-  int ret=0;
-  uint8_t runoff_id = slot_id;
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id != 1) {
     return -1;
   }
 
 
-  sprintf(vpath, GPIO_VAL, gpio_12v[runoff_id]);
+  sprintf(vpath, GPIO_VAL, GPIO_P12V_STBY_SLOT1_EN);
 
   if (write_device(vpath, "1")) {//XG1 is low to enable MB_P12V_STBY
     return -1;
   }
 
-  pal_baseboard_clock_control(runoff_id, "1");
+  pal_baseboard_clock_control(slot_id, "1");
 
 
-  return ret;
+  return 0;
 }
 
 int
@@ -857,26 +840,7 @@ pal_system_config_check(uint8_t slot_id) {
   slot_type = minilaketb_get_slot_type(slot_id);
   switch (slot_type) {
      case SLOT_TYPE_SERVER:
-#ifdef CONFIG_FBY2_RC
-       ret = minilaketb_get_server_type(slot_id, &server_type);
-       if (ret) {
-         syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-         return ret;
-       }
-       switch (server_type) {
-         case SERVER_TYPE_RC:
-           sprintf(slot_str,"RC");
-           break;
-         case SERVER_TYPE_TL:
-           sprintf(slot_str,"Twin Lake");
-           break;
-         default:
-           sprintf(slot_str,"Undefined server type");
-           break;
-       }
-#else
        sprintf(slot_str,"1S Server");
-#endif
        break;
      case SLOT_TYPE_CF:
        sprintf(slot_str,"Crane Flat");
@@ -902,26 +866,7 @@ pal_system_config_check(uint8_t slot_id) {
   // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   switch (last_slot_type) {
      case SLOT_TYPE_SERVER:
-#ifdef CONFIG_FBY2_RC
-       ret = minilaketb_get_server_type(slot_id, &server_type);
-       if (ret) {
-         syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-         return ret;
-       }
-       switch (server_type) {
-         case SERVER_TYPE_RC:
-           sprintf(slot_str,"RC");
-           break;
-         case SERVER_TYPE_TL:
-           sprintf(slot_str,"Twin Lake");
-           break;
-         default:
-           sprintf(slot_str,"Undefined server type");
-           break;
-       }
-#else
        sprintf(last_slot_str,"1S Server");
-#endif
        break;
      case SLOT_TYPE_CF:
        sprintf(last_slot_str,"Crane Flat");
@@ -971,7 +916,7 @@ server_12v_on(uint8_t slot_id) {
     }
   }
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (slot_id != 1) {
     return -1;
   }
 
@@ -1002,7 +947,7 @@ server_12v_on(uint8_t slot_id) {
 
   // Write 12V on
   memset(vpath, 0, sizeof(vpath));
-  sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+  sprintf(vpath, GPIO_VAL, GPIO_P12V_STBY_SLOT1_EN);
 
   if (write_device(vpath, "0")) { //XG1 is low to enable MB_P12V_STBY
     return -1;
@@ -1226,7 +1171,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
-          sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
+          sprintf(path, GPIO_VAL, GPIO_I2C_SLOT1_ALERT_N);
 
           if (read_device(path, &val)) {
             return -1;
@@ -1318,7 +1263,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   }
 
   if (!pal_is_slot_server(slot_id)) {
-    sprintf(value, GPIO_VAL, gpio_power_en[slot_id]);
+    sprintf(value, GPIO_VAL, GPIO_SLOT1_POWER_EN);
     if (!read_device(value, &val)) {
       *status = (val == 0x1) ? SERVER_POWER_ON : SERVER_POWER_OFF;
     } else {
@@ -1443,24 +1388,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         if (ret < 0)
           return ret;
 
-#ifdef CONFIG_FBY2_RC
-        ret = minilaketb_get_server_type(slot_id, &server_type);
-        if (ret < 0)
-          return ret;
-        switch (server_type) {
-          case SERVER_TYPE_RC:
-            sleep(3);
-            break;
-          case SERVER_TYPE_TL:
-            msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
-            break;
-          default:
-            sleep(3);
-            break;
-        }
-#else
         msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
-#endif
         ret = pal_set_rst_btn(slot_id, 1);
         if (ret < 0)
           return ret;
@@ -1635,13 +1563,9 @@ pal_get_rst_btn(uint8_t *status) {
 
 // Update the LED for the given slot with the status
 int
-pal_set_led(uint8_t slot, uint8_t status) {
+pal_set_led(uint8_t fru, uint8_t status) {
   char path[64] = {0};
   char *val;
-
-  if (slot != 1) {
-    return -1;
-  }
 
   if (status) {
     val = "1";
@@ -1649,7 +1573,7 @@ pal_set_led(uint8_t slot, uint8_t status) {
     val = "0";
   }
 
-  sprintf(path, GPIO_VAL, gpio_led[slot]);
+  sprintf(path, GPIO_VAL, GPIO_PWR1_LED);
   if (write_device(path, val)) {
     return -1;
   }
@@ -1690,13 +1614,9 @@ pal_set_hb_led(uint8_t status) {
 
 // Update the Identification LED for the given slot with the status
 int
-pal_set_id_led(uint8_t slot, uint8_t status) {
+pal_set_id_led(uint8_t fru, uint8_t status) {
   char path[64] = {0};
   char *val;
-
-  if (slot != 1) {
-    return -1;
-  }
 
   if (status) {
     val = "1";
@@ -1704,7 +1624,7 @@ pal_set_id_led(uint8_t slot, uint8_t status) {
     val = "0";
   }
 
-  sprintf(path, GPIO_VAL, gpio_id_led[slot]);
+  sprintf(path, GPIO_VAL, GPIO_SYSTEM_ID1_LED_N);
   if (write_device(path, val)) {
     return -1;
   }
@@ -1964,38 +1884,8 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       switch(minilaketb_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-            ret = minilaketb_get_server_type(fru, &server_type);
-            if (ret) {
-              syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-            }
-            switch (server_type) {
-#if defined(CONFIG_FBY2_RC)
-              case SERVER_TYPE_RC:
-                *sensor_list = (uint8_t *) bic_rc_sensor_list;
-                *cnt = bic_rc_sensor_cnt;
-                break;
-#endif
-#if defined(CONFIG_FBY2_EP)
-              case SERVER_TYPE_EP:
-                *sensor_list = (uint8_t *) bic_ep_sensor_list;
-                *cnt = bic_ep_sensor_cnt;
-                break;
-#endif
-              case SERVER_TYPE_TL:
-                *sensor_list = (uint8_t *) bic_sensor_list;
-                *cnt = bic_sensor_cnt;
-                break;
-              default:
-                syslog(LOG_ERR, "%s, Undefined server type, using Twin Lake sensor list as default\n", __func__);
-                *sensor_list = (uint8_t *) bic_sensor_list;
-                *cnt = bic_sensor_cnt;
-              break;
-            }
-#else
             *sensor_list = (uint8_t *) bic_sensor_list;
             *cnt = bic_sensor_cnt;
-#endif
             break;
         case SLOT_TYPE_CF:
             *sensor_list = (uint8_t *) dc_cf_sensor_list;
@@ -2203,27 +2093,6 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
   switch(fru) {
     case FRU_SLOT1:
-#ifdef CONFIG_FBY2_RC
-      ret = minilaketb_get_server_type(fru, &server_type);
-      if (ret) {
-        syslog(LOG_INFO, "%s, Get server type failed, using Twinlake");
-      }
-      switch (server_type) {
-        case SERVER_TYPE_RC:
-          break;
-        case SERVER_TYPE_TL:
-          if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
-            *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
-          else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
-            *flag = GETMASK(SENSOR_VALID);
-          else if (snr_num == BIC_SENSOR_SOC_TJMAX)
-            *flag = GETMASK(SENSOR_VALID);
-          break;
-        default:
-          break;
-      }
-      break;
-#else
       if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
         *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
       else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
@@ -2231,7 +2100,6 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
       else if (snr_num == BIC_SENSOR_SOC_TJMAX)
         *flag = GETMASK(SENSOR_VALID);
       break;
-#endif
     case FRU_SPB:
       /*
        * TODO: This is a HACK (t11229576)
@@ -4184,7 +4052,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
 
 bool
 pal_is_mcu_working(void) {
-  char key[MAX_KEY_LEN];
+  char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
   struct timespec ts;
 
@@ -4202,31 +4070,7 @@ pal_is_mcu_working(void) {
 
 void
 pal_get_me_name(uint8_t fru, char *target_name) {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-  int ret;
-  uint8_t server_type = 0xFF;
-
-  ret = minilaketb_get_server_type(fru, &server_type);
-  if (ret) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-    return;
-  }
-
-  switch (server_type) {
-    case SERVER_TYPE_RC:
-      strcpy(target_name, "IMC");
-      break;
-    case SERVER_TYPE_EP:
-      strcpy(target_name, "M3");
-      break;
-    case SERVER_TYPE_TL:
-    default:
-      strcpy(target_name, "ME");
-      break;
-  }
-#else
   strcpy(target_name, "ME");
-#endif
   return;
 }
 

@@ -59,7 +59,6 @@
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
-static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 static uint8_t m_pos = 0xff;
 
 static int
@@ -449,12 +448,11 @@ ts_handler() {
 // Thread to handle LED state of the server at given slot
 static void *
 led_handler() {
+  char identify[16] = {0};
   int ret;
   uint8_t pos;
-  uint8_t slot;
   uint8_t ready;
-  uint8_t power[MAX_NUM_SLOTS+1] = {0};
-  uint8_t hlth[MAX_NUM_SLOTS+1] = {0};
+  uint8_t power, hlth;
   int led_on_time, led_off_time;
 
   while (1) {
@@ -465,56 +463,59 @@ led_handler() {
       continue;
     }
 
-    for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-      // Check if this LED is managed by sync_led thread
-      if (g_sync_led[slot]) {
+    // Handle Slot IDENTIFY condition
+    memset(identify, 0x0, sizeof(identify));
+    ret = pal_get_key_value("identify_slot1", identify);
+    if (ret == 0 && !strcmp(identify, "on")) {
+      // Turn OFF Blue LED
+      pal_set_led(SERVER1, LED_OFF);
+
+      // Start blinking the ID LED
+      pal_set_id_led(SERVER1, ID_LED_ON);
+
+      msleep(LED_ON_TIME_IDENTIFY);
+
+      pal_set_id_led(SERVER1, ID_LED_OFF);
+
+      msleep(LED_OFF_TIME_IDENTIFY);
+      continue;
+    }
+
+    if (pos == HAND_SW_BMC) {
+      // Turn OFF Yellow LED
+      pal_set_id_led(BMC, ID_LED_OFF);
+
+      // Start blinking the LED
+      pal_set_led(BMC, LED_ON);
+
+      msleep(LED_ON_TIME_BMC_SELECT);
+
+      pal_set_led(BMC, LED_OFF);
+
+      msleep(LED_OFF_TIME_BMC_SELECT);
+      continue;
+    }
+
+    ret = pal_is_fru_ready(pos, &ready);
+    if (!ret && ready) {
+      // Get power status for this slot
+      ret = pal_get_server_power(pos, &power);
+      if (ret) {
         continue;
       }
 
-      ret = pal_is_fru_ready(slot, &ready);
-      if (!ret && ready) {
-        // Get power status for this slot
-        ret = pal_get_server_power(slot, &power[slot]);
-        if (ret) {
-          continue;
-        }
-
-        // Get health status for this slot
-        ret = pal_get_fru_health(slot, &hlth[slot]);
-        if (ret) {
-          continue;
-        }
-      } else {
-        power[slot] = SERVER_POWER_OFF;
-        hlth[slot] = FRU_STATUS_GOOD;
+      // Get health status for this slot
+      ret = pal_get_fru_health(pos, &hlth);
+      if (ret) {
+	continue;
       }
-
-      if ((pos == slot) || (power[slot] == SERVER_POWER_ON)) {
-        if (hlth[slot] == FRU_STATUS_GOOD) {
-          pal_set_led(slot, LED_ON);
-          pal_set_id_led(slot, ID_LED_OFF);
-        } else {
-          pal_set_led(slot, LED_OFF);
-          pal_set_id_led(slot, ID_LED_ON);
-        }
-      } else {
-        pal_set_led(slot, LED_OFF);
-        pal_set_id_led(slot, ID_LED_OFF);
-      }
-    }
-
-    if (pos > MAX_NUM_SLOTS) {
-      sleep(1);
-      continue;
-    }
-
-    if (g_sync_led[pos]) {
-      sleep(1);
-      continue;
+    } else {
+      power = SERVER_POWER_OFF;
+      hlth = FRU_STATUS_GOOD;
     }
 
     // Set blink rate
-    if (power[pos] == SERVER_POWER_ON) {
+    if (power == SERVER_POWER_ON) {
       led_on_time = 900;
       led_off_time = 100;
     } else {
@@ -522,9 +523,17 @@ led_handler() {
       led_off_time = 900;
     }
 
+    if (hlth == FRU_STATUS_GOOD) {
+      pal_set_led(pos, LED_ON);
+      pal_set_id_led(pos, ID_LED_OFF);
+    } else {
+      pal_set_led(pos, LED_OFF);
+      pal_set_id_led(pos, ID_LED_ON);
+    }
+
     msleep(led_on_time);
 
-    if (hlth[pos] == FRU_STATUS_GOOD) {
+    if (hlth == FRU_STATUS_GOOD) {
       pal_set_led(pos, LED_OFF);
     } else {
       pal_set_id_led(pos, ID_LED_OFF);
@@ -532,168 +541,10 @@ led_handler() {
 
     msleep(led_off_time);
 
-    if (power[pos] == SERVER_POWER_ON) {
-      if (hlth[pos] == FRU_STATUS_GOOD) {
-        pal_set_led(pos, LED_ON);
-      } else {
-        pal_set_id_led(pos, ID_LED_ON);
-      }
-    }
   }
 
   return 0;
 }
-
-// Thread to handle LED state of the SLED
-static void *
-led_sync_handler() {
-  int ret;
-  uint8_t pos;
-  uint8_t ident = 0;
-  char identify[16] = {0};
-  char tstr[64] = {0};
-  char id_arr[5] = {0};
-  uint8_t slot;
-  uint8_t spb_hlth = 0;
-
-#ifdef DEBUG
-  syslog(LOG_INFO, "led_handler for slot %d\n", slot);
-#endif
-
-  while (1) {
-    // Handle Slot IDENTIFY condition
-    memset(identify, 0x0, 16);
-    ret = pal_get_key_value("identify_sled", identify);
-    if (ret == 0 && !strcmp(identify, "on")) {
-      // Turn OFF Blue LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        g_sync_led[slot] = 1;
-        pal_set_led(slot, LED_OFF);
-      }
-
-      // Start blinking the ID LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        pal_set_id_led(slot, ID_LED_ON);
-      }
-
-      msleep(LED_ON_TIME_IDENTIFY);
-
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        pal_set_id_led(slot, ID_LED_OFF);
-      }
-      msleep(LED_OFF_TIME_IDENTIFY);
-      continue;
-    }
-
-    // Handle Sled level health condition
-    ret = pal_get_fru_health(FRU_SPB, &spb_hlth);
-    if (ret) {
-      sleep(1);
-      continue;
-    }
-
-    if (spb_hlth == FRU_STATUS_BAD) {
-      // Turn OFF Blue LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        g_sync_led[slot] = 1;
-        pal_set_led(slot, LED_OFF);
-      }
-
-      // Start blinking the Yellow/ID LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        pal_set_id_led(slot, ID_LED_ON);
-      }
-
-      msleep(LED_ON_TIME_HEALTH);
-
-      ret = get_handsw_pos(&pos);
-      if ((ret) || (pos == HAND_SW_BMC)) {
-        for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-           pal_set_id_led(slot, ID_LED_OFF);
-        }
-      } else {
-           pal_set_id_led(pos, ID_LED_OFF);
-      }
-      msleep(LED_OFF_TIME_HEALTH);
-      continue;
-    }
-
-    // Check if slot needs to be identified
-    ident = 0;
-    for (slot = 1; slot <= MAX_NUM_SLOTS; slot++)  {
-      id_arr[slot] = 0x0;
-      sprintf(tstr, "identify_slot%d", slot);
-      memset(identify, 0x0, 16);
-      ret = pal_get_key_value(tstr, identify);
-      if (ret == 0 && !strcmp(identify, "on")) {
-        id_arr[slot] = 0x1;
-        ident = 1;
-      }
-    }
-
-    // Get hand switch position to see if this is selected server
-    ret = get_handsw_pos(&pos);
-    if (ret) {
-      sleep(1);
-      continue;
-    }
-
-    // Handle BMC select condition when no slot is being identified
-    if ((pos == HAND_SW_BMC) && (ident == 0)) {
-      // Turn OFF Yellow LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        g_sync_led[slot] = 1;
-        pal_set_id_led(slot, ID_LED_OFF);
-      }
-
-      // Start blinking Blue LED
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        pal_set_led(slot, LED_ON);
-      }
-
-      msleep(LED_ON_TIME_BMC_SELECT);
-
-      for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-        pal_set_led(slot, LED_OFF);
-      }
-
-      msleep(LED_OFF_TIME_BMC_SELECT);
-      continue;
-    }
-
-    // Handle individual identify slot condition
-    if (ident) {
-      for (slot = 1; slot <=MAX_NUM_SLOTS; slot++) {
-        if (id_arr[slot]) {
-          g_sync_led[slot] = 1;
-          pal_set_led(slot, LED_OFF);
-          pal_set_id_led(slot, ID_LED_ON);
-        } else {
-          g_sync_led[slot] = 0;
-        }
-      }
-
-      msleep(LED_ON_TIME_IDENTIFY);
-
-      for (slot = 1; slot <=MAX_NUM_SLOTS; slot++) {
-        if (id_arr[slot]) {
-          pal_set_id_led(slot, ID_LED_OFF);
-        }
-      }
-
-      msleep(LED_OFF_TIME_IDENTIFY);
-      continue;
-    }
-
-    for (slot = 1; slot <= MAX_NUM_SLOTS; slot++) {
-      g_sync_led[slot] = 0;
-    }
-    msleep(500);
-  }
-
-  return 0;
-}
-
 
 int
 main (int argc, char * const argv[]) {
@@ -701,7 +552,6 @@ main (int argc, char * const argv[]) {
   pthread_t tid_rst_btn;
   pthread_t tid_pwr_btn;
   pthread_t tid_ts;
-  pthread_t tid_sync_led;
   pthread_t tid_led;
 
   int rc;
@@ -739,11 +589,6 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (pthread_create(&tid_sync_led, NULL, led_sync_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for led sync error\n");
-    exit(1);
-  }
-
   if (pthread_create(&tid_led, NULL, led_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for led error\n");
     exit(1);
@@ -753,7 +598,6 @@ main (int argc, char * const argv[]) {
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_ts, NULL);
-  pthread_join(tid_sync_led, NULL);
   pthread_join(tid_led, NULL);
 
   return 0;

@@ -1150,11 +1150,8 @@ is_server_prsnt(uint8_t fru) {
 
 int
 minilaketb_get_slot_type(uint8_t fru) {
-  int type;
-
-  type = 0; //T6A only Server Type
-
-  return type;
+  //T6A only Server Type
+  return 0;
 }
 
 /* Get the units for the sensor */

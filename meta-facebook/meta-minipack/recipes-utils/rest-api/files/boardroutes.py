@@ -19,5 +19,5 @@ board_routes = [
     '/api/sys/usb2i2c_reset',
     '/api/sys/mb/fruid/scm',
     '/api/sys/pim_present',
-    '/api/sys/pim_info',
+    '/api/sys/piminfo',
 ]

@@ -64,7 +64,7 @@ power_on_pim() {
   sleep 1
   gpio_set LC${lc}_SCD_RESET_L 1     # scd out of reset
   gpio_set LC${lc}_BAB_SYS_RESET_L 1 # gearbox out of reset
-  gpio_set LC${lc}_SATELLITE_PROG 1 # required for v6 image on P1
+  gpio_set LC${lc}_SATELLITE_PROG 0 # required for v4 image on P1
   gpio_set LC${lc}_STATUS_RED_L 1 # turn off red
   gpio_set LC${lc}_STATUS_GREEN_L 0 # turn on green
   logger pim_enbale: powered on PIM${lc}

@@ -203,17 +203,17 @@ static const i2c_dev_attr_st supcpld_attr_table[] = {
     0x17, 0, 1,
   },
   {
-    "jtag_sel",
-    "0x1: SCD\n"
-    "0x0: LC",
+    "jtag_en",
+    "0x1: Enable\n"
+    "0x0: Disable",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 1, 1,
   },
   {
-    "jtag_en",
-    "0x1: Enable\n"
-    "0x0: Disable",
+    "jtag_sel",
+    "0x1: SCD\n"
+    "0x0: LC",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x20, 0, 1,

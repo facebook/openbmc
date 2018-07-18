@@ -6,6 +6,7 @@ CMD_DIR="/usr/local/fbpackages/crashdump"
 INTERFACE="ME_INTERFACE"
 SENSOR_HISTORY=180
 SLOT=$1
+TMP_INTERFACE=$INTERFACE
 
 # read command from stdin
 function execute_via_me {
@@ -109,6 +110,14 @@ function find_end_device {
 }
 
 function pcie_dump {
+  # PCI config read is not support ME DMI interface
+  RES=$($ME_UTIL $SLOT 0xb8 0x40 0x57 0x01 0x00 0x30 0x06 0x05 0x61 0x00 0x00 0x81 0x0D 0x00)
+  RET=$?
+  if [ "$RET" -eq "0" ] && [ "${RES:0:19}" == "Completion Code: AC" ]; then
+    TMP_INTERFACE=$INTERFACE
+    INTERFACE="PECI_INTERFACE"
+  fi
+
   # CPU and PCH
   [ -r $CMD_DIR/crashdump_pcie ] && \
     cat $CMD_DIR/crashdump_pcie | execute_cmd
@@ -148,9 +157,18 @@ function pcie_dump {
   fi
 
   # CPU root port - Bus 0x00/0x16/0x64, Dev 0~3, Fun:0
+
+  INTERFACE=$TMP_INTERFACE
 }
 
 function dwr_dump {
+  # DWR assert check is not support ME DMI interface
+  RES=$($ME_UTIL $SLOT 0xb8 0x40 0x57 0x01 0x00 0x30 0x06 0x05 0x61 0x00 0xbc 0x20 0x04 0x00)
+  RET=$?
+  if [ "$RET" -eq "0" ] && [ "${RES:0:19}" == "Completion Code: AC" ]; then
+    TMP_INTERFACE=$INTERFACE
+    INTERFACE="PECI_INTERFACE"
+  fi
 
   echo
   echo DWR assert check:
@@ -167,6 +185,8 @@ function dwr_dump {
   # Completion Code
   CC=$(echo $RES| awk '{print $1;}')
   DWR=0x$(echo $RES| awk '{print $5;}')
+
+  INTERFACE=$TMP_INTERFACE
 
   # Success
   if [ "$CC" == "40" ]; then

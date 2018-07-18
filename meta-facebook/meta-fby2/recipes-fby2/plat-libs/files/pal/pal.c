@@ -117,7 +117,7 @@
 #define REINIT_TYPE_FULL            0
 #define REINIT_TYPE_HOST_RESOURCE   1
 
-#define FAN_WAIT_TIME_AFTER_POST  30
+#define POST_TIMEOUT  300
 
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
@@ -5000,7 +5000,7 @@ pal_is_post_time_out() {
     }
     if (post_start_timestamp != -1) {
       if (post_start_timestamp > post_end_timestamp) {
-        if (current_timestamp-post_start_timestamp > 180) {
+        if (current_timestamp-post_start_timestamp > POST_TIMEOUT) {
           return fru;
         }
       }

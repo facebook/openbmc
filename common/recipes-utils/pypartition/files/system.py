@@ -75,14 +75,8 @@ def get_logger():
     logger.setLevel(logging.INFO)
     loggers = [(logging.StreamHandler(), standalone)]  # type: LogDetailsType
     if is_openbmc():
-        try:
-            loggers.append((logging.FileHandler('/mnt/data/pypartition.log'),
-                            standalone))
-        except IOError:
-            print('Error initializing log file in /mnt/data; using /tmp.',
-                  file=sys.stderr)
-            loggers.append((logging.FileHandler('/tmp/pypartition.log'),
-                            standalone))
+        loggers.append((logging.FileHandler('/var/log/pypartition.log'),
+                        standalone))
         try:
             loggers.append((logging.handlers.SysLogHandler('/dev/log'),
                             logging.Formatter('pypartition: %(message)s')))

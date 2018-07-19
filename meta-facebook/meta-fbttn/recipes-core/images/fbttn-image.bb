@@ -48,6 +48,8 @@ IMAGE_INSTALL += " \
   usb-console \
   watchdog-ctrl \
   vboot-utils \
+  ncsi-util \
+  ncsid \
   "
 
 IMAGE_FEATURES += " \

@@ -19,7 +19,7 @@
 #
 
 ### BEGIN INIT INFO
-# Provides:          setup-ncsid
+# Provides:          enable-aen
 # Required-Start:
 # Required-Stop:
 # Default-Start:     S
@@ -27,8 +27,7 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 
-echo -n "Setup ncsid for BMC "
-
-runsv /etc/sv/ncsid > /dev/null 2>&1 &
+echo "Enable standard AENs:(Link Status, Config Req, Driver Status)" >> /dev/kmsg
+/usr/local/bin/ncsi-util 8 0 0 0 0 0 0 0 7
 
 echo "done."

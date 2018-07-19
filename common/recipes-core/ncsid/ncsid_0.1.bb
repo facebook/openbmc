@@ -10,6 +10,7 @@ LIC_FILES_CHKSUM = "file://ncsid.c;beginline=4;endline=16;md5=da35978751a9d71b73
 SRC_URI = "file://Makefile \
            file://ncsid.c \
            file://setup-ncsid.sh \
+           file://enable-aen.sh \
            file://run-ncsid.sh \
           "
 
@@ -35,6 +36,7 @@ do_install() {
   install -d ${D}${sysconfdir}/ncsid
   install -m 755 setup-ncsid.sh ${D}${sysconfdir}/init.d/setup-ncsid.sh
   install -m 755 run-ncsid.sh ${D}${sysconfdir}/sv/ncsid/run
+  install -m 755 enable-aen.sh ${bin}/enable-aen.sh
   update-rc.d -r ${D} setup-ncsid.sh start 91 5 .
 }
 

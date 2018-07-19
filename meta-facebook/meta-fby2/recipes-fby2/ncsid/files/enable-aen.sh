@@ -19,17 +19,13 @@
 #
 
 ### BEGIN INIT INFO
-# Provides:          setup-ncsid
+# Provides:          enable-aen
 # Required-Start:
 # Required-Stop:
 # Default-Start:     S
 # Default-Stop:
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
-
-echo -n "Setup ncsid for BMC "
-
-runsv /etc/sv/ncsid > /dev/null 2>&1 &
 
 # enables OEM AENs if Broadcom NIC
 q=$(fw-util nic --version | grep -i broadcom)

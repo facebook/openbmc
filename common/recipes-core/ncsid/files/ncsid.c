@@ -240,6 +240,26 @@ is_aen_packet(AEN_Packet *buf)
          && (buf->IID == 0x00));
 }
 
+// Handles AEN type 0x01 - Cnfiguration Required
+// Steps
+//    1. ifdown eth0;ifup eth0    # re-init NIC NC-SI interface
+//    2. restart ncsid
+static void
+handle_ncsi_config()
+{
+  char cmd[64] = {0};
+  int ret = 0;
+
+  syslog(LOG_CRIT, "ncsid: re-configure NC-SI and restart eth0 interface");
+
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "ifdown eth0; ifup eth0");
+  ret = system(cmd);
+
+  syslog(LOG_CRIT, "ncsid: re-start eth0 interface done! ret=%d", ret);
+
+  exit(1);
+}
 
 static void
 process_NCSI_AEN(AEN_Packet *buf)
@@ -311,7 +331,10 @@ process_NCSI_AEN(AEN_Packet *buf)
 
       case AEN_TYPE_CONFIGURATION_REQUIRED:
         log_level = LOG_CRIT;
-        i += sprintf(logbuf + i, ", Config Required");
+        i += sprintf(logbuf + i, ", Configuration Required");
+        syslog(log_level, "%s", logbuf);
+
+        handle_ncsi_config();  // this function will exit ncsid
         break;
 
       case AEN_TYPE_HOST_NC_DRIVER_STATUS_CHANGE:
@@ -508,6 +531,18 @@ free_and_exit:
 }
 
 
+// enable platform-specific AENs
+static void
+enable_aens(void) {
+  char cmd[64] = {0};
+
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "/usr/local/bin/enable-aen.sh");
+  system(cmd);
+
+  return;
+}
+
 // Thread to setup netlink and recieve AEN
 static void*
 ncsi_aen_handler(void *unused) {
@@ -605,6 +640,9 @@ ncsi_aen_handler(void *unused) {
     goto free_and_exit;
   }
 
+  // enable platform-specific AENs
+  enable_aens();
+
 
   pthread_join(tid_rx, NULL);
   pthread_join(tid_tx, NULL);
@@ -634,6 +672,7 @@ main(int argc, char * const argv[]) {
     syslog(LOG_ERR, "ncsid: pthread_create failed on ncsi_handler\n");
     goto cleanup;
   }
+
 
 cleanup:
   if (tid_ncsi_aen_handler > 0) {

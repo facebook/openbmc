@@ -21,6 +21,7 @@ SRC_URI += "file://bios_util.sh \
             file://board-utils.sh \
             file://eth0_mac_fixup.sh \
             file://fpga_util.sh \
+            file://fpga_ver.sh \
             file://power-on.sh \
             file://reset_brcm.sh \
             file://setup_board.sh \
@@ -35,6 +36,7 @@ OPENBMC_UTILS_FILES += " \
     bios_util.sh \
     board-utils.sh \
     fpga_util.sh \
+    fpga_ver.sh \
     reset_brcm.sh \
     wedge_power.sh \
     wedge_us_mac.sh \

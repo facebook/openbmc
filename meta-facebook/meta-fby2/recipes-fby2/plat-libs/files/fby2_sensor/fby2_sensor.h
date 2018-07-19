@@ -290,10 +290,8 @@ enum {
 extern const uint8_t bic_sensor_list[];
 extern const uint8_t bic_discrete_list[];
 
-#ifdef CONFIG_FBY2_RC
-  extern const uint8_t bic_rc_sensor_list[];
-  extern const uint8_t bic_rc_discrete_list[];
-#endif
+extern const uint8_t bic_rc_sensor_list[];
+extern const uint8_t bic_rc_discrete_list[];
 
 #ifdef CONFIG_FBY2_EP
   extern const uint8_t bic_ep_sensor_list[];
@@ -316,10 +314,8 @@ extern size_t bic_sensor_cnt;
 
 extern size_t dc_sensor_cnt;
 
-#ifdef CONFIG_FBY2_RC
-  extern size_t bic_rc_sensor_cnt;
-  extern size_t bic_rc_discrete_cnt;
-#endif
+extern size_t bic_rc_sensor_cnt;
+extern size_t bic_rc_discrete_cnt;
 
 #ifdef CONFIG_FBY2_EP
   extern size_t bic_ep_sensor_cnt;

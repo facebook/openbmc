@@ -246,7 +246,6 @@ const uint8_t bic_rc_discrete_list[] = {
   /* RC discrete sensors */
   BIC_RC_SENSOR_SYSTEM_STATUS ,
   BIC_RC_SENSOR_VR_HOT ,
-  BIC_RC_SENSOR_SYS_BOOTING_STS,
   BIC_RC_SENSOR_PROC_FAIL,
 };
 
@@ -438,10 +437,8 @@ sensor_thresh_array_init() {
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 
-#ifdef CONFIG_FBY2_RC
 size_t bic_rc_sensor_cnt = sizeof(bic_rc_sensor_list)/sizeof(uint8_t);
 size_t bic_rc_discrete_cnt = sizeof(bic_rc_discrete_list)/sizeof(uint8_t);
-#endif
 
 #ifdef CONFIG_FBY2_EP
 size_t bic_ep_sensor_cnt = sizeof(bic_ep_sensor_list)/sizeof(uint8_t);

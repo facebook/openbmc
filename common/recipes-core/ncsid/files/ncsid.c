@@ -200,8 +200,8 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
   linkstatus.all32 = ntohl(linkresp->link_status.all32);
   linkOther.all32 = ntohl(linkresp->other_indications.all32);
 
-  // check NIC link and driver status, log if either reports error
-  if ((linkstatus.bits.link_flag) && (linkOther.bits.host_NC_driver_status)) {
+  // check NIC link status, log if it reports error
+  if (linkstatus.bits.link_flag) {
     // reset our log count if good status is detected, so next error status will be logged
     log_event = 0;
   } else {

@@ -17,4 +17,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-exec /usr/local/bin/mTerm_server yamp /dev/ttyS1
+exec /usr/local/bin/mTerm_server wedge /dev/ttyS1

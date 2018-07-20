@@ -20,7 +20,7 @@ from tree import tree
 from pal import *
 
 # Initialize Platform specific Resource Tree
-def init_plat_tree(is_read_only=True):
+def init_plat_tree():
 
     # Create /api end point as root node
     r_api = tree("api", data = get_node_api())
@@ -32,7 +32,7 @@ def init_plat_tree(is_read_only=True):
     r_pdpb = tree("pdpb", data = get_node_pdpb())
     r_api.addChild(r_pdpb)
     # Add /api/peb to represent fan control board
-    r_peb = tree("peb", data = get_node_peb(is_read_only))
+    r_peb = tree("peb", data = get_node_peb())
     r_api.addChild(r_peb)
 
     #Add /api/fcb/fans end point
@@ -45,7 +45,7 @@ def init_plat_tree(is_read_only=True):
     r_temp = tree("sensors", data = get_node_sensors("fcb"))
     r_fcb.addChild(r_temp)
     #Add /api/fcb/logs end point
-    r_temp = tree("logs", data = get_node_logs("fcb", is_read_only))
+    r_temp = tree("logs", data = get_node_logs("fcb"))
     r_fcb.addChild(r_temp)
 
     #Add /api/pdpb/sensors end point
@@ -58,7 +58,7 @@ def init_plat_tree(is_read_only=True):
     r_temp = tree("fruid", data = get_node_fruid("pdpb"))
     r_pdpb.addChild(r_temp)
     #Add /api/pdpb/logs end point
-    r_temp = tree("logs", data = get_node_logs("pdpb", is_read_only))
+    r_temp = tree("logs", data = get_node_logs("pdpb"))
     r_pdpb.addChild(r_temp)
 
     #Add /api/peb/fruid end point
@@ -68,13 +68,13 @@ def init_plat_tree(is_read_only=True):
     r_temp = tree("sensors", data = get_node_sensors("peb"))
     r_peb.addChild(r_temp)
     #Add /api/peb/bmc end point
-    r_temp = tree("bmc", data = get_node_bmc(is_read_only))
+    r_temp = tree("bmc", data = get_node_bmc())
     r_peb.addChild(r_temp)
     #Add /api/peb/health end point
     r_temp = tree("health", data = get_node_health())
     r_peb.addChild(r_temp)
     #Add /api/peb/logs end point
-    r_temp = tree("logs", data = get_node_logs("peb", is_read_only))
+    r_temp = tree("logs", data = get_node_logs("peb"))
     r_peb.addChild(r_temp)
 
     return r_api

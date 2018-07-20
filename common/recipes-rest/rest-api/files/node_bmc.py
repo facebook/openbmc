@@ -181,23 +181,10 @@ class bmcNode(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if (data["action"] != 'reboot'):
-                result = 'failure'
-            else:
-                Popen('sleep 1; /sbin/reboot', shell=True, stdout=PIPE)
-                result = 'success'
+    def doAction(self, data):
+        Popen('sleep 1; /sbin/reboot', shell=True, stdout=PIPE)
+        return {"result": "success"}
 
-            result = {"result": result}
-
-        return result
-
-def get_node_bmc(is_read_only=True):
-    if is_read_only:
-        actions =  []
-    else:
-        actions = ["reboot"]
+def get_node_bmc():
+    actions = ["reboot"]
     return bmcNode(actions = actions)

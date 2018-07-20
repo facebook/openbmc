@@ -60,12 +60,11 @@ LOGGER_CONF = {
 
 logging.config.dictConfig(LOGGER_CONF)
 app = web.Application()
-is_read_only = not RestConfig.getboolean('access', 'write', fallback=False)
-if is_read_only:
-    syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read Only Mode')
-else:
+writable = RestConfig.getboolean('access', 'write', fallback=False)
+if writable:
     syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read/Write Mode')
-root = init_plat_tree(is_read_only)
-root.setup(app, not is_read_only)
+else:
+    syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read Only Mode')
+root = init_plat_tree()
+root.setup(app, writable)
 web.run_app(app, host='*')
-

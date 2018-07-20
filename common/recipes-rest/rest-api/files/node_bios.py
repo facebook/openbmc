@@ -98,23 +98,20 @@ class bios_boot_mode_node(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if data["action"] == "set" and len(data) == 2:
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order set --boot_mode ' + data["mode"]
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            else:
+    def doAction(self, data):
+        if data["action"] == "set" and len(data) == 2:
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order set --boot_mode ' + data["mode"]
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
                 res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'failure'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
@@ -143,32 +140,29 @@ class bios_clear_cmos_node(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if data["action"] == "enable":
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order enable --clear_CMOS'
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            elif data["action"] == "disable":
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order disable --clear_CMOS'
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            else:
+    def doAction(self, data):
+        if data["action"] == "enable":
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order enable --clear_CMOS'
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
                 res = 'failure'
+            else:
+                res = 'success'
+        elif data["action"] == "disable":
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order disable --clear_CMOS'
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
+                res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'failure'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
@@ -197,32 +191,29 @@ class bios_force_boot_setup_node(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if data["action"] == "enable":
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order enable --force_boot_BIOS_setup'
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            elif data["action"] == "disable":
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order disable --force_boot_BIOS_setup'
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            else:
+    def doAction(self, data):
+        if data["action"] == "enable":
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order enable --force_boot_BIOS_setup'
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
                 res = 'failure'
+            else:
+                res = 'success'
+        elif data["action"] == "disable":
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order disable --force_boot_BIOS_setup'
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
+                res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'failure'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
@@ -255,72 +246,57 @@ class bios_boot_order_node(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if data["action"] == "set" and len(data) == 6:
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order set --boot_order ' \
-                + data["1st"] + " " + data["2nd"] + " " + data["3rd"] + " " + data["4th"] + " " + data["5th"]
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err != "" or data != "":
-                    res = 'failure'
-                else:
-                    res = 'success'
-            elif data["action"] == "disable":
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order disable --boot_order'
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            else:
+    def doAction(self, data):
+        if data["action"] == "set" and len(data) == 6:
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order set --boot_order ' \
+            + data["1st"] + " " + data["2nd"] + " " + data["3rd"] + " " + data["4th"] + " " + data["5th"]
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err != "" or data != "":
                 res = 'failure'
+            else:
+                res = 'success'
+        elif data["action"] == "disable":
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order disable --boot_order'
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
+                res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'failure'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
 def get_node_bios_boot_order_trunk(name):
     return bios_boot_order_trunk_node(name)
 
-def get_node_bios_boot_mode(name, is_read_only=True):
-    if is_read_only:
-        actions =  []
-    else:
-        actions =  ["set",
-                    ]
+def get_node_bios_boot_mode(name):
+    actions =  ["set",
+                ]
     return bios_boot_mode_node(name = name, actions = actions)
 
-def get_node_bios_clear_cmos(name, is_read_only=True):
-    if is_read_only:
-        actions =  []
-    else:
-        actions =  ["enable",
-                    "disable",
-                    ]
+def get_node_bios_clear_cmos(name):
+    actions =  ["enable",
+                "disable",
+                ]
     return bios_clear_cmos_node(name = name, actions = actions)
 
-def get_node_bios_force_boot_setup(name, is_read_only=True):
-    if is_read_only:
-        actions =  []
-    else:
-        actions =  ["enable",
-                    "disable",
-                    ]
+def get_node_bios_force_boot_setup(name):
+    actions =  ["enable",
+                "disable",
+                ]
     return bios_force_boot_setup_node(name = name, actions = actions)
 
-def get_node_bios_boot_order(name, is_read_only=True):
-    if is_read_only:
-        actions =  []
-    else:
-        actions =  ["set",
-                    "disable",
-                    ]
+def get_node_bios_boot_order(name):
+    actions =  ["set",
+                "disable",
+                ]
     return bios_boot_order_node(name = name, actions = actions)
 
 
@@ -431,40 +407,34 @@ class bios_pcie_port_config_node(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if data["action"] == "enable" and len(data) == 2:
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --pcie_port_config enable --' + data["pcie_dev"]
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            elif data["action"] == "disable":
-                cmd = '/usr/local/bin/bios-util ' + self.name + ' --pcie_port_config disable --' + data["pcie_dev"]
-                data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                err = data.stderr.read().decode()
-                data = data.stdout.read().decode()
-                if err.startswith( 'usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            else:
+    def doAction(self, data):
+        if data["action"] == "enable" and len(data) == 2:
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --pcie_port_config enable --' + data["pcie_dev"]
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
                 res = 'failure'
+            else:
+                res = 'success'
+        elif data["action"] == "disable":
+            cmd = '/usr/local/bin/bios-util ' + self.name + ' --pcie_port_config disable --' + data["pcie_dev"]
+            data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            err = data.stderr.read().decode()
+            data = data.stdout.read().decode()
+            if err.startswith( 'usage' ):
+                res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'failure'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
-def get_node_bios_pcie_port_config_trunk(name, is_read_only=True):
-    if is_read_only:
-        actions = []
-    else:
-        actions = ["enable",
-                   "disable",
-                  ]
+def get_node_bios_pcie_port_config_trunk(name):
+    actions = ["enable",
+                "disable",
+                ]
     return bios_pcie_port_config_node(name = name, actions = actions)

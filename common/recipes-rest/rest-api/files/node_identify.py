@@ -28,34 +28,28 @@ class identifyNode(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if data["action"] == "on":
-                cmd = '/usr/bin/fpc-util --identify on'
-                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-                if data.startswith( 'Usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            elif data["action"] == "off":
-                cmd = '/usr/bin/fpc-util --identify off'
-                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-                if data.startswith( 'Usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
+    def doAction(self, data):
+        if data["action"] == "on":
+            cmd = '/usr/bin/fpc-util --identify on'
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if data.startswith( 'Usage' ):
+                res = 'failure'
             else:
-                res = 'not support this action'
+                res = 'success'
+        elif data["action"] == "off":
+            cmd = '/usr/bin/fpc-util --identify off'
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if data.startswith( 'Usage' ):
+                res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'not support this action'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
-def get_node_identify(name, is_read_only=True):
-    if is_read_only:
-        actions = []
-    else:
-        actions = [ "on", "off" ]
+def get_node_identify(name):
+    actions = [ "on", "off" ]
     return identifyNode(name = name, actions = actions)

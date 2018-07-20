@@ -41,36 +41,30 @@ class pebNode(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        else:
-            if data["action"] == "identify-on":
-                cmd = '/usr/bin/fpc-util --identify on'
-                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-                if data.startswith( 'Usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
-            elif data["action"] == "identify-off":
-                cmd = '/usr/bin/fpc-util --identify off'
-                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-                if data.startswith( 'Usage' ):
-                    res = 'failure'
-                else:
-                    res = 'success'
+    def doAction(self, data):
+        if data["action"] == "identify-on":
+            cmd = '/usr/bin/fpc-util --identify on'
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if data.startswith( 'Usage' ):
+                res = 'failure'
             else:
-                res = 'not support this action'
+                res = 'success'
+        elif data["action"] == "identify-off":
+            cmd = '/usr/bin/fpc-util --identify off'
+            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if data.startswith( 'Usage' ):
+                res = 'failure'
+            else:
+                res = 'success'
+        else:
+            res = 'not support this action'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
 
-def get_node_peb(is_read_only=True):
-    if is_read_only:
-        actions = []
-    else:
-        actions = [ "identify-on", "identify-off" ]
+def get_node_peb():
+    actions = [ "identify-on", "identify-off" ]
 
     return pebNode(actions = actions)

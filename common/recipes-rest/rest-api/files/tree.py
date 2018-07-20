@@ -45,8 +45,10 @@ def dumps_bytestr(obj):
     # that is capable of process byte strings.
     return json.dumps(obj, default=default_bytestr)
 
-# Class Definition for Tree
+async def handlePostDefault(request):
+    return web.json_response({'result': 'not-supported'}, dumps=dumps_bytestr)
 
+# Class Definition for Tree
 class tree:
     def __init__(self, name, data = None):
         self.name = name
@@ -92,13 +94,15 @@ class tree:
         result = {'result': 'not-supported'}
         data = await request.json()
         if 'action' in data and data['action'] in self.data.actions:
-            result = self.data.doAction(data, False)
+            result = self.data.doAction(data)
         return web.json_response(result, dumps=dumps_bytestr)
 
     def setup(self, app, support_post):
         app.router.add_get(self.path, self.handleGet)
         if len(self.data.getActions()) > 0 and support_post:
             app.router.add_post(self.path, self.handlePost)
+        else:
+            app.router.add_post(self.path, handlePostDefault)
         for child in self.children:
             child.path = self.path + '/' + child.name
             child.setup(app, support_post)

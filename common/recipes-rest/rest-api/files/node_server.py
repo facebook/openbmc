@@ -52,49 +52,39 @@ class serverNode(node):
 
         return info
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
+    def doAction(self, data):
+        ret = pal_server_action(self.num, data["action"])
+        if ret == -2:
+            res = 'Should not execute power on/off/graceful_shutdown/cycle/reset on device card'
+            result = { "Warning": res }
+            return result
+        elif ret == -1:
+            res = 'failure'
         else:
-            ret = pal_server_action(self.num, data["action"])
-            if ret == -2:
-                res = 'Should not execute power on/off/graceful_shutdown/cycle/reset on device card'
-                result = { "Warning": res }
-                return result
-            elif ret == -1:
-                res = 'failure'
-            else:
-                res = 'success'
-
-            result = { "result": res }
+            res = 'success'
+        result = { "result": res }
 
         return result
 
-def get_node_server(num, is_read_only=True):
-    if is_read_only:
-        actions =  []
-    else:
-        actions =  ["power-on",
-                    "power-off",
-                    "power-reset",
-                    "power-cycle",
-                    "graceful-shutdown",
-                    "12V-on",
-                    "12V-off",
-                    "12V-cycle",
-                    "identify-on",
-                    "identify-off",
-                    ]
+def get_node_server(num):
+    actions =  ["power-on",
+                "power-off",
+                "power-reset",
+                "power-cycle",
+                "graceful-shutdown",
+                "12V-on",
+                "12V-off",
+                "12V-cycle",
+                "identify-on",
+                "identify-off",
+            ]
     return serverNode(num = num, actions = actions)
 
-def get_node_device(num, is_read_only=True):
-    if is_read_only:
-        actions =  []
-    else:
-        actions =  ["12V-on",
-                    "12V-off",
-                    "12V-cycle",
-                    "identify-on",
-                    "identify-off",
-                    ]
+def get_node_device(num):
+    actions =  ["12V-on",
+                "12V-off",
+                "12V-cycle",
+                "identify-on",
+                "identify-off",
+                ]
     return serverNode(num = num, actions = actions)

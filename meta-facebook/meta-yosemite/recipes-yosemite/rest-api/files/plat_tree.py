@@ -35,33 +35,33 @@ from node_config import get_node_config
 from tree import tree
 from pal import *
 
-def populate_server_node(num, is_read_only=True):
+def populate_server_node(num):
     prsnt = pal_is_fru_prsnt(num)
     if prsnt == None or prsnt == 0:
         return None
 
-    r_server = tree("server" + repr(num), data = get_node_server(num, is_read_only))
+    r_server = tree("server" + repr(num), data = get_node_server(num))
 
     r_fruid = tree("fruid", data = get_node_fruid("slot" + repr(num)))
 
     r_sensors = tree("sensors", data = get_node_sensors("slot" + repr(num)))
 
-    r_logs = tree("logs", data = get_node_logs("slot" + repr(num), is_read_only))
+    r_logs = tree("logs", data = get_node_logs("slot" + repr(num)))
 
-    r_config = tree("config", data = get_node_config("slot" + repr(num), is_read_only))
+    r_config = tree("config", data = get_node_config("slot" + repr(num)))
 
     r_server.addChildren([r_fruid, r_sensors, r_logs, r_config])
 
     return r_server
 
 # Initialize Platform specific Resource Tree
-def init_plat_tree(is_read_only=True):
+def init_plat_tree():
 
     # Create /api end point as root node
     r_api = tree("api", data = get_node_api())
 
     # Add /api/spb to represent side plane board
-    r_spb = tree("spb", data = get_node_spb(is_read_only))
+    r_spb = tree("spb", data = get_node_spb())
     r_api.addChild(r_spb)
 
     # Add /api/mezz to represent Network Mezzaine card
@@ -71,7 +71,7 @@ def init_plat_tree(is_read_only=True):
     # Add servers /api/server[1-max]
     num = pal_get_num_slots()
     for i in range(1, num+1):
-        r_server = populate_server_node(i, is_read_only)
+        r_server = populate_server_node(i)
         if r_server:
             r_api.addChild(r_server)
 
@@ -81,7 +81,7 @@ def init_plat_tree(is_read_only=True):
     r_spb.addChild(r_temp)
 
     # /api/spb/bmc end point
-    r_temp = tree("bmc", data = get_node_bmc(is_read_only))
+    r_temp = tree("bmc", data = get_node_bmc())
     r_spb.addChild(r_temp)
 
     # /api/spb/sensors end point
@@ -89,7 +89,7 @@ def init_plat_tree(is_read_only=True):
     r_spb.addChild(r_temp)
 
     # /api/spb/logs end point
-    r_temp = tree("logs", data = get_node_logs("spb", is_read_only))
+    r_temp = tree("logs", data = get_node_logs("spb"))
     r_spb.addChild(r_temp)
 
     # Add /api/mezz/fruid end point
@@ -101,7 +101,7 @@ def init_plat_tree(is_read_only=True):
     r_mezz.addChild(r_temp)
 
     # /api/mezz/logs end point
-    r_temp = tree("logs", data = get_node_logs("nic", is_read_only))
+    r_temp = tree("logs", data = get_node_logs("nic"))
     r_mezz.addChild(r_temp)
 
     return r_api

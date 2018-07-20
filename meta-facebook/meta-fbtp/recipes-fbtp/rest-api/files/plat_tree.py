@@ -36,18 +36,18 @@ from tree import tree
 from pal import *
 
 # Initialize Platform specific Resource Tree
-def init_plat_tree(is_read_only=True):
+def init_plat_tree():
 
     # Create /api end point as root node
     r_api = tree("api", data = get_node_api())
 
     # Add /api/sled to represent entire SLED
-    r_sled = tree("sled", data = get_node_sled(is_read_only))
+    r_sled = tree("sled", data = get_node_sled())
     r_api.addChild(r_sled)
 
 
     # Add mb /api/sled/mb
-    r_mb = tree("mb", data = get_node_server_2s(is_read_only))
+    r_mb = tree("mb", data = get_node_server_2s())
     r_sled.addChild(r_mb)
 
     # Add /api/sled/mb/fruid end point
@@ -55,7 +55,7 @@ def init_plat_tree(is_read_only=True):
     r_mb.addChild(r_temp)
 
     # /api/sled/mb/bmc end point
-    r_temp = tree("bmc", data = get_node_bmc(is_read_only))
+    r_temp = tree("bmc", data = get_node_bmc())
     r_mb.addChild(r_temp)
 
     # /api/sled/mb/sensors end point
@@ -63,7 +63,7 @@ def init_plat_tree(is_read_only=True):
     r_mb.addChild(r_temp)
 
     # /api/sled/mb/logs end point
-    r_temp = tree("logs", data = get_node_logs("mb", is_read_only))
+    r_temp = tree("logs", data = get_node_logs("mb"))
     r_mb.addChild(r_temp)
 
     # Add /api/sled/mezz to represent Network Mezzaine card
@@ -79,7 +79,7 @@ def init_plat_tree(is_read_only=True):
     r_mezz.addChild(r_temp)
 
     # /api/mezz/logs end point
-    r_temp = tree("logs", data = get_node_logs("nic", is_read_only))
+    r_temp = tree("logs", data = get_node_logs("nic"))
     r_mezz.addChild(r_temp)
 
     return r_api

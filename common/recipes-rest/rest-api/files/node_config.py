@@ -52,12 +52,11 @@ class configNode(node):
             result = {"status": "unsupported"}
         return result
 
-
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-            return result
+    def doAction(self, data):
         res = "failure"
+        if "update" not in data:
+            return {"result": "parameter-error"}
+
         # Get the list of parameters to be updated
         params = data["update"]
         for key in list(params.keys()):
@@ -81,9 +80,6 @@ class configNode(node):
         result = {"result": res}
         return result
 
-def get_node_config(name, is_read_only=True):
-    if is_read_only:
-        actions = []
-    else:
-        actions = ["update"]
+def get_node_config(name):
+    actions = ["update"]
     return configNode(name = name, actions = actions)

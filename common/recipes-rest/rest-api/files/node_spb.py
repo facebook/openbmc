@@ -32,29 +32,23 @@ class spbNode(node):
         else:
             self.actions = actions
 
-    def doAction(self, data, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
+    def doAction(self, data):
+        if pal_sled_action(data["action"]) == -1:
+            res = 'failure'
         else:
-            if pal_sled_action(data["action"]) == -1:
-                res = 'failure'
-            else:
-                res = 'success'
+            res = 'success'
 
-            result = { "result": res }
+        result = { "result": res }
 
         return result
 
-def get_node_spb(is_read_only = True):
+def get_node_spb():
     name = pal_get_platform_name().decode()
     info = {
             "Description": name + " Side Plane",
            }
-    if is_read_only:
-        actions = []
-    else:
-        actions = [ "sled-cycle",
-                    "sled-identify-on",
-                    "sled-identify-off",
-                  ]
+    actions = [ "sled-cycle",
+                "sled-identify-on",
+                "sled-identify-off",
+                ]
     return spbNode(info, actions)

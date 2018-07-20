@@ -168,21 +168,12 @@ class sensorsNode(node):
             period = param['history-period']
         return sensor_util(self.name, snr_name, snr_id, period, display)
 
-    def doAction(self, info, is_read_only=True):
-        if is_read_only:
-            result = { "result": 'failure' }
-        elif info['action'] == 'history-clear':
-            snr = ''
-            if 'id' in info:
-                snr = info['id']
-            result = sensor_util_history_clear(self.name, snr)
-        else:
-            result = { "result": 'failure' }
-        return result
+    def doAction(self, info):
+        snr = ''
+        if 'id' in info:
+            snr = info['id']
+        return sensor_util_history_clear(self.name, snr)
 
-def get_node_sensors(name, is_read_only=True):
-    if not is_read_only:
-        actions = ['history-clear']
-    else:
-        actions = []
+def get_node_sensors(name):
+    actions = ['history-clear']
     return sensorsNode(name, actions = actions)

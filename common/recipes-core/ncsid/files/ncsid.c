@@ -183,6 +183,8 @@ typedef struct _nl_sfd_t {
   int sock;
 } nl_sfd_t;
 
+// use to signal all threads to exit
+volatile int thread_stop = 0;
 
 static void
 process_NCSI_resp(NCSI_NL_RSP_T *buf)
@@ -258,7 +260,8 @@ handle_ncsi_config()
 
   syslog(LOG_CRIT, "ncsid: re-start eth0 interface done! ret=%d", ret);
 
-  exit(1);
+  // set flag indicate all threads to exit
+  thread_stop = 1;
 }
 
 static void
@@ -334,7 +337,7 @@ process_NCSI_AEN(AEN_Packet *buf)
         i += sprintf(logbuf + i, ", Configuration Required");
         syslog(log_level, "%s", logbuf);
 
-        handle_ncsi_config();  // this function will exit ncsid
+        handle_ncsi_config();  // this function will signal ncsid to exit
         break;
 
       case AEN_TYPE_HOST_NC_DRIVER_STATUS_CHANGE:
@@ -440,7 +443,7 @@ ncsi_rx_handler(void *sfd) {
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
 
-  while (1) {
+  while (! thread_stop) {
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
     rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
@@ -513,7 +516,7 @@ ncsi_tx_handler(void *sfd) {
   msg.msg_iovlen = 1;
 
 
-  while (1) {
+  while (! thread_stop) {
     /* send "Get Link status" message to NIC  */
     ret = sendmsg(sock_fd,&msg,0);
     if (ret < 0) {

@@ -16,6 +16,7 @@ IMAGE_INSTALL += " \
   ast-mdio \
   bitbang \
   flashrom \
+  lldp-util \
   mterm \
   openbmc-gpio \
   openbmc-utils \

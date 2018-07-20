@@ -30,8 +30,11 @@ disconnect_jtag() {
     # do not select any linecard or fan
     echo 0x0 > $JTAG_LC_FAN_CTRL
     if [ $LINECARD -ne 0 ]; then
-        gpio_set LC${LINECARD}_SCD_CONFIG_L 1
+        # cycle the linecard FPGA
         gpio_set LC${LINECARD}_FAST_JTAG_EN 0
+        gpio_set LC${LINECARD}_SCD_CONFIG_L 0
+        sleep 1
+        gpio_set LC${LINECARD}_SCD_CONFIG_L 1
     fi
 }
 
@@ -55,8 +58,6 @@ connect_linecard_jtag() {
     echo 0 > $JTAG_SEL
     # choose correct LC
     echo ${lc} > $JTAG_LC_FAN_CTRL
-    # put into config(jtag) mode
-    gpio_set LC${lc}_SCD_CONFIG_L 0
     gpio_set LC${lc}_FAST_JTAG_EN 1
 }
 

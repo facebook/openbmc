@@ -42,6 +42,7 @@ SRC_URI = "file://ast-functions \
            file://check_server_type.sh \
            file://setup-server-type.sh \
            file://setup-por.sh \
+           file://sync_date.sh \
            file://time-sync.sh \
            file://cpld-dump.sh \
            file://dump_cpld_ep.sh \
@@ -54,7 +55,8 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py fby2_power.sh power_util.py \
-  check_slot_type.sh hotservice-reinit.sh check_server_type.sh time-sync.sh cpld-dump.sh dump_cpld_ep.sh dump_cpld_rc.sh"
+  check_slot_type.sh hotservice-reinit.sh check_server_type.sh time-sync.sh sync_date.sh \
+  cpld-dump.sh dump_cpld_ep.sh dump_cpld_rc.sh"
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 "

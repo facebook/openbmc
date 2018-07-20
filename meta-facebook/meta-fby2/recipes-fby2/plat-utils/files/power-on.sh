@@ -70,33 +70,11 @@ check_por_config()
   fi
 }
 
-sync_done=0
 if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then 
   date -s "2018-01-01 00:00:00"
 fi
 
-# Sync BMC's date with one of the four servers
-sync_date()
-{
-  if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-    for i in 1 2 3 4
-    do
-      if [[ $(is_server_prsnt $i) == "1" && $(get_slot_type $i) == "0" && $(get_server_type $i) == "0" ]] ; then
-        # Use standard IPMI command 'get-sel-time' to read RTC time
-        output=$(/usr/local/bin/me-util slot$i 0x28 0x48)
-        # if the command fails, continue to next slot
-        [ $(echo $output | wc -c) != 12 ] && continue
-        echo Syncing up BMC time with server$i...
-        date -s @$((16#$(echo $output | awk '{print $4$3$2$1}')))
-        test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
-        sync_done=1
-        break
-      fi
-    done
-  fi
-}
-
-sync_date
+/usr/local/bin/sync_date.sh
 
 # Check whether it is fresh power on reset
 if [ $(is_bmc_por) -eq 1 ]; then
@@ -125,7 +103,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
   fi
 fi
 
-if [ $sync_done == 0 ]; then
+if [ $(is_date_synced) == "0" ]; then
    # Time sync with RC Server
    echo "Start time sync with server"
    sh /usr/local/bin/time-sync.sh &

@@ -39,7 +39,7 @@ sync_date()
     default_time_l=4A   #default time low byte 2018-01-01
     for i in 1 2 3 4 
     do
-      if [[ $(is_server_prsnt $i) == "1" && $(get_slot_type $i) == "0" ]] ; then
+      if [[ $(is_server_prsnt $i) == "1" && $(get_slot_type $i) == "0" && $(get_server_type $i) == "1" ]] ; then
         retry_times=0
         while [ ${retry_times} -lt ${max_retry} ]
         do

@@ -337,3 +337,12 @@ is_slot_12v_on() {
     echo 0
   fi
 }
+
+# Check to see if BMC time synced
+is_date_synced() {
+  if [ -f /tmp/sync_date ]; then
+    /bin/cat /tmp/sync_date
+  else
+    echo 0
+  fi
+}

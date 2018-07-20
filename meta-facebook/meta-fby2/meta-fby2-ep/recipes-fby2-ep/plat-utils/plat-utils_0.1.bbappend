@@ -18,7 +18,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup-config-pcie.sh \
-            file://power-on.sh \
            "
 
 do_install_append() {
@@ -26,6 +25,4 @@ do_install_append() {
   install -d ${D}${sysconfdir}/init.d
   install -m 755 setup-config-pcie.sh ${D}${sysconfdir}/init.d/setup-config-pcie.sh
   update-rc.d -r ${D} setup-config-pcie.sh start 67 5 .
-  install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  update-rc.d -r ${D} power-on.sh start 70 5 .
 }

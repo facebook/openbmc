@@ -173,16 +173,20 @@ case $OPTION in
       # Server Type recognition restart
       echo "restart server type recognition for $SLOT"
       /etc/init.d/setup-server-type.sh
-      
+
       echo "restart gpiod for $SLOT $OPTION"
       sv start gpiod
 
       echo "restart sensord for $SLOT $OPTION"
-      sv start sensord 
+      sv start sensord
 
       echo "restart rest-api for $SLOT $OPTION"
       ps | grep -v 'grep' | grep 'rest.py' |awk '{print $1}'| xargs kill
       sh /usr/local/fbpackages/rest-api/setup-rest-api.sh
+
+      if [ $(is_date_synced) == "0" ]; then
+        /usr/local/bin/sync_date.sh
+      fi
 
       ;;
     *)

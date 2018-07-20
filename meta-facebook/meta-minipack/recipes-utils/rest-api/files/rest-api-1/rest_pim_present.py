@@ -21,9 +21,10 @@
 import json
 import re
 import subprocess
-import bmc_command
 
 MAX_PIM_NUM = 8
+
+
 # Use PIM FPGA to detect pim present
 def is_pim_present(pim_no):
     smbcpld = '/sys/class/i2c-adapter/i2c-12/12-003e'
@@ -55,4 +56,3 @@ def get_pim_present():
                 "Resources": [],
              }
     return result
-

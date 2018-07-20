@@ -42,7 +42,6 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_slotid.py \
            file://rest-api-1/rest_psu_update.py \
            file://rest-api-1/rest_mTerm.py \
-           file://rest-api-1/bmc_command.py \
            file://rest-api-1/eeprom_utils.py \
            file://rest-api-1/rest_fcpresent.py \
            file://rest-api-1/rest_helper.py \
@@ -69,7 +68,6 @@ binfiles1 = "rest.py \
              rest_gpios.py \
              rest_server.py \
              rest_sensors.py \
-             bmc_command.py \
              eeprom_utils.py \
              rest_modbus.py \
              rest_slotid.py \
@@ -94,7 +92,7 @@ do_install() {
   for f in ${binfiles}; do
     install -m 755 ${WORKDIR}/$f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done  
+  done
   for f in ${otherfiles}; do
     install -m 644 $f ${dst}/$f
   done

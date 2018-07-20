@@ -21,7 +21,6 @@
 import json
 import re
 import subprocess
-import bmc_command
 from rest_fruid import get_fruid
 
 # Handler for SCM FRUID resource endpoint

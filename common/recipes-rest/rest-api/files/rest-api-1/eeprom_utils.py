@@ -13,7 +13,7 @@
 #
 
 import subprocess
-import bmc_command
+from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
 def _parse_eeprom_data(output):
@@ -36,5 +36,5 @@ def get_eeprom_data(util):
     proc = subprocess.Popen([util],
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
-    data, err = bmc_command.timed_communicate(proc)
+    data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     return _parse_eeprom_data(data)

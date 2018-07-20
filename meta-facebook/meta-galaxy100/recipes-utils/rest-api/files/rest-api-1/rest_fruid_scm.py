@@ -12,7 +12,6 @@
 # for more details.
 #
 
-import bmc_command
 import eeprom_utils
 
 

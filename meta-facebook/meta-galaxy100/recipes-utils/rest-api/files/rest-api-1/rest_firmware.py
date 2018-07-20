@@ -12,7 +12,6 @@
 # for more details.
 #
 import subprocess
-import bmc_command
 import syslog
 
 SCM_CPLD_PATH = '/usr/local/bin/scm_cpld_rev.sh'

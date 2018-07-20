@@ -20,7 +20,8 @@
 
 
 import subprocess
-import bmc_command
+from rest_utils import DEFAULT_TIMEOUT_SEC
+
 
 
 def get_mTerm_status():
@@ -30,8 +31,8 @@ def get_mTerm_status():
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     try:
-        data, err = bmc_command.timed_communicate(proc)
-    except bmc_command.TimeoutError as ex:
+        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+    except proc.TimeoutError as ex:
         data = ex.output
         err = ex.error
 

@@ -19,6 +19,9 @@
 #
 import json
 from boardroutes import board_routes
+
+DEFAULT_TIMEOUT_SEC = 10
+
 common_routes = [
     '/api',
     '/api/sys',
@@ -71,5 +74,3 @@ def dumps_bytestr(obj):
     # Just call default dumps function, but pass the new default function
     # that is capable of process byte strings.
     return json.dumps(obj, default=default_bytestr)
-
-

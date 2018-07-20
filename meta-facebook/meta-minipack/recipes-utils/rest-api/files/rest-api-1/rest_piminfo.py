@@ -21,7 +21,7 @@
 import json
 import re
 import subprocess
-import bmc_command
+from rest_utils import DEFAULT_TIMEOUT_SEC
 
 # Handler for getting PIM info
 
@@ -36,8 +36,8 @@ def get_piminfo():
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     try:
-        data, err = bmc_command.timed_communicate(proc)
-    except bmc_command.TimeoutError as ex:
+        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+    except proc.TimeoutError as ex:
         data = ex.output
         err = ex.error
 

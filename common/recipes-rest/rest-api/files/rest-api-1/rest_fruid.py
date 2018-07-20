@@ -21,7 +21,8 @@
 import json
 import re
 import subprocess
-import bmc_command
+from rest_utils import DEFAULT_TIMEOUT_SEC
+
 
 # Handler for FRUID resource endpoint
 def get_fruid(cmd=['weutil']):
@@ -30,9 +31,9 @@ def get_fruid(cmd=['weutil']):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     try:
-        data, err = bmc_command.timed_communicate(proc)
+        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         data = data.decode()
-    except bmc_command.TimeoutError as ex:
+    except proc.TimeoutError as ex:
         data = ex.output
         err = ex.error
 

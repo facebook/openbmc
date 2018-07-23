@@ -5,7 +5,6 @@ SRC_URI += "file://rsyslog.conf \
             file://rotate_cri_sel \
             file://rotate_console_log \
             file://rsyslog.logrotate \
-            file://rsyslog-8.18.0/runtime/stream.c \
 "
 
 do_install_append() {

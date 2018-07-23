@@ -249,8 +249,17 @@ is_aen_packet(AEN_Packet *buf)
 static void
 handle_ncsi_config()
 {
+// NCSI Reset time. NCSI Spec specfies NIC to finish reset within 2second max,
+// here we add an extra 1 sec to provide extra buffer
+#define NCSI_RESET_TIMEOUT  3
+
   char cmd[64] = {0};
   int ret = 0;
+
+  // Give NIC some time to finish its reset opeartion before  BMC sends
+  // NCSI commands to re-initialize the interface
+  sleep(NCSI_RESET_TIMEOUT);
+
 
   syslog(LOG_CRIT, "ncsid: re-configure NC-SI and restart eth0 interface");
 

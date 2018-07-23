@@ -3683,7 +3683,7 @@ wdt_timer (void *arg) {
 
       // Check if power off
       ret = pal_get_server_power(wdt->slot, &status);
-      if ((ret >= 0) && (status == SERVER_POWER_OFF)) {
+      if ((ret >= 0) && (status != SERVER_POWER_ON)) {
         wdt->run = 0;
         pthread_mutex_unlock(&wdt->mutex);
         continue;

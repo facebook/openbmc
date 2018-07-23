@@ -112,17 +112,17 @@ def get_checksums_args(description):
 def free_kibibytes():
     # type: () -> int
     proc_meminfo_regex = re.compile(
-        '^MemFree: +(?P<free_kb>[0-9]+) kB$', re.MULTILINE
+        '^MemFree: +([0-9]+) kB$', re.MULTILINE
     )
     with open('/proc/meminfo', 'r') as proc_meminfo:
         return int(proc_meminfo_regex.findall(proc_meminfo.read())[0])
 
 
 def get_mtds():
-    # type () -> Tuple[MTDListType, MTDListType]
+    # type: () -> Tuple[MTDListType, MTDListType]
     proc_mtd_regex = re.compile(
-        '^(?P<dev>mtd[0-9]+): (?P<size>[0-9a-f]+) [0-9a-f]+ '
-        '"(?P<name>[^"]+)"$', re.MULTILINE
+        # Device, size, name
+        '^(mtd[0-9]+): ([0-9a-f]+) [0-9a-f]+ "([^"]+)"$', re.MULTILINE
     )
     mtd_info = []
     with open('/proc/mtd', 'r') as proc_mtd:

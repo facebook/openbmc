@@ -37,8 +37,8 @@ extern "C" {
 #define FRUID_OFFSET_AREA_PRODUCT         3
 #define FRUID_OFFSET_AREA_MULTIRECORD     4
 
-#define FRUID_CHASSIS_TYPECODE_MIN        1
-#define FRUID_CHASSIS_TYPECODE_MAX        32
+#define FRUID_CHASSIS_TYPECODE_MIN        0
+#define FRUID_CHASSIS_TYPECODE_MAX        31
 
 /* To hold the common header information. */
 typedef struct fruid_header_t {

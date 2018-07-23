@@ -787,7 +787,6 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
 
   /* Free the eeprom malloced memory */
   free(eeprom);
-
   return ret;
 }
 

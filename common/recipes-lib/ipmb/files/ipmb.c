@@ -32,7 +32,9 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <openbmc/ipc.h>
 #include "ipmb.h"
+
 
 static pthread_key_t rxkey, txkey;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
@@ -93,73 +95,14 @@ lib_ipmb_handle(unsigned char bus_id,
             unsigned char *request, unsigned short req_len,
             unsigned char *response, unsigned char *res_len) {
 
-  int s, t, len;
-  int r, retries = 5, delay = 20;
-  struct sockaddr_un remote;
-  char sock_path[64] = {0};
-  struct timeval tv;
+  size_t resp_len = MAX_IPMB_RES_LEN;
+  char sock_path[64];
 
   sprintf(sock_path, "%s_%d", SOCK_PATH_IPMB, bus_id);
 
-  // TODO: Need to update to reuse the socket instead of creating new
-  if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "lib_ipmb_handle: socket() failed\n");
-#endif
-    return;
+  if (ipc_send_req(sock_path, request, (size_t)req_len, response, &resp_len, TIMEOUT_IPMB) == 0) {
+    *res_len = (unsigned char)resp_len;
   }
-
-  // setup timeout for receving on socket
-  tv.tv_sec = TIMEOUT_IPMB + 1;
-  tv.tv_usec = 0;
-
-  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
-
-  remote.sun_family = AF_UNIX;
-  strcpy(remote.sun_path, sock_path);
-  len = strlen(remote.sun_path) + sizeof(remote.sun_family);
-
-  if (connect(s, (struct sockaddr *)&remote, len) == -1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "ipmb_handle: connect() failed\n");
-#endif
-    goto clean_exit;
-  }
-
-  if (send(s, request, req_len, 0) == -1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "ipmb_handle: send() failed\n");
-#endif
-    goto clean_exit;
-  }
-
-  for ( r=0; r<retries; r++) {
-    t = recv(s, response, MAX_IPMB_RES_LEN, 0);
-    if ( t >= 0 || (t < 0 && errno != EINTR))
-      break;
-    //Errno==EINTR, retry,
-    //Delay 20 ms
-    usleep(delay * 1000);
-  }
-
-  if (t > 0) {
-    *res_len = t;
-  } else {
-    if (t < 0) {
-#ifdef DEBUG
-      syslog(LOG_WARNING, "lib_ipmb_handle: recv() failed\n");
-#endif
-    } else {
-#ifdef DEBUG
-      syslog(LOG_DEBUG, "Server closed connection\n");
-#endif
-    }
-  }
-
-clean_exit:
-  close(s);
-
-  return;
 }
 
 int

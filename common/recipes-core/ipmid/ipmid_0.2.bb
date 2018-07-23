@@ -22,7 +22,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-LDFLAGS += "-lpal -lkv -lsdr -lfruid "
+LDFLAGS += "-lpal -lkv -lsdr -lfruid -lipc "
 CFLAGS += "-Wall -Werror "
 
 SRC_URI = "file://Makefile \
@@ -43,8 +43,8 @@ SRC_URI = "file://Makefile \
            file://BBV.h \
           "
 
-DEPENDS += " libpal libsdr libfruid "
-RDEPENDS_${PN} += " libpal libsdr libfruid "
+DEPENDS += " libpal libsdr libfruid libipc "
+RDEPENDS_${PN} += " libpal libsdr libfruid libipc "
 
 binfiles = "ipmid"
 

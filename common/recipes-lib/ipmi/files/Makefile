@@ -21,7 +21,7 @@ CFLAGS += -Wall -Werror
 
 libipmi.so: ipmi.c
 	$(CC) $(CFLAGS) -fPIC -c -o ipmi.o ipmi.c
-	$(CC) -shared -o libipmi.so ipmi.o -lc $(LDFLAGS)
+	$(CC) -shared -o libipmi.so ipmi.o -lc -lipc $(LDFLAGS)
 
 .PHONY: clean
 

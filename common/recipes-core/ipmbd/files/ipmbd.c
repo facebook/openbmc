@@ -64,6 +64,7 @@
 #include <poll.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-pal.h>
+#include <openbmc/ipc.h>
 #include "openbmc/ipmi.h"
 #include "openbmc/ipmb.h"
 
@@ -706,130 +707,65 @@ ipmb_handle_out:
   return;
 }
 
-void
-*conn_handler(void *sfd) {
-  ipmb_sfd_t *p_sfd = (ipmb_sfd_t *) sfd;
 
-  int sock = p_sfd->sock;
-  int fd = p_sfd->fd;
-  int n;
+struct ipmb_svc_cookie {
+  int i2c_fd;
+};
+
+int
+conn_handler(client_t *cli) {
+  struct ipmb_svc_cookie *svc = (struct ipmb_svc_cookie *)cli->svc_cookie;
   unsigned char req_buf[MAX_IPMB_RES_LEN];
   unsigned char res_buf[MAX_IPMB_RES_LEN];
-  unsigned char res_len = 0;
-  struct timeval tv;
+  size_t req_len = MAX_IPMB_RES_LEN;
+  unsigned char res_len;
 
-  // setup timeout for receving on socket
-  tv.tv_sec = TIMEOUT_IPMB;
-  tv.tv_usec = 0;
-
-  setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
-
-  n = recv(sock, req_buf, sizeof(req_buf), 0);
-  if (n <= 0) {
-      syslog(LOG_WARNING, "ipmbd: recv() failed with %d\n", n);
-      goto conn_cleanup;
+  if (ipc_recv_req(cli, req_buf, &req_len, TIMEOUT_IPMB)) {
+    syslog(LOG_WARNING, "ipmbd: recv() failed\n");
+    return -1;
   }
 
   if(bic_up_flag){
-      if(!((req_buf[1] == 0xe0) && (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE))){
-          goto conn_cleanup;
-	}
+    if(!((req_buf[1] == 0xe0) && (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE))){
+      return -1;
+	  }
   }
 
-  ipmb_handle(fd, req_buf, n, res_buf, &res_len);
+  ipmb_handle(svc->i2c_fd, req_buf, (unsigned char)req_len, res_buf, &res_len);
 
-  if (send(sock, res_buf, res_len, MSG_NOSIGNAL) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "ipmbd: send() failed\n");
-#endif
+  if(ipc_send_resp(cli, res_buf, res_len) != 0) {
+    syslog(LOG_WARNING, "ipmbd: send() failed!\n");
+    return -1;
   }
-
-conn_cleanup:
-  close(sock);
-  free(p_sfd);
-
-  pthread_exit(NULL);
   return 0;
 }
 
+
 // Thread to receive the IPMB lib messages from various apps
-static void*
-ipmb_lib_handler(void *bus_num) {
-  int s, s2, len;
-  size_t t;
-  struct sockaddr_un local, remote;
-  pthread_t tid;
-  ipmb_sfd_t *sfd;
-  int fd;
-  uint8_t *bnum = (uint8_t*) bus_num;
-  char sock_path[24] = {0};
-  int rc = 0;
-  pthread_attr_t attr;
+static int
+start_ipmb_lib_handler(uint8_t bus_num) {
+  char sock_path[64];
+  struct ipmb_svc_cookie *svc = calloc(1, sizeof(*svc));
+  if (!svc) {
+    return -1;
+  }
 
   // Open the i2c bus for sending request
-  fd = i2c_open(*bnum);
-  if (fd < 0) {
+  svc->i2c_fd = i2c_open(bus_num);
+  if (svc->i2c_fd < 0) {
     syslog(LOG_WARNING, "i2c_open failure\n");
-    return NULL;
+    free(svc);
+    return -1;
   }
 
+  // Initialize mutex to access global structure
+  pthread_mutex_init(&m_seq, NULL);
 
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-  if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
-  {
-    syslog(LOG_WARNING, "ipmbd: socket() failed\n");
-    exit (1);
+  snprintf(sock_path, sizeof(sock_path), "%s_%d", SOCK_PATH_IPMB, bus_num);
+  if (ipc_start_svc(sock_path, conn_handler, SEQ_NUM_MAX, svc, NULL)) {
+    free(svc);
+    return -1;
   }
-
-  snprintf(sock_path, sizeof(sock_path), "%s_%d", SOCK_PATH_IPMB, *bnum);
-
-  local.sun_family = AF_UNIX;
-  strcpy (local.sun_path, sock_path);
-  unlink (local.sun_path);
-  len = strlen (local.sun_path) + sizeof (local.sun_family);
-  if (bind (s, (struct sockaddr *) &local, len) == -1)
-  {
-    syslog(LOG_WARNING, "ipmbd: bind() failed\n");
-    exit (1);
-  }
-
-  if (listen (s, 5) == -1)
-  {
-    syslog(LOG_WARNING, "ipmbd: listen() failed\n");
-    exit (1);
-  }
-
-  while(1) {
-    t = sizeof (remote);
-    // TODO: Seen accept() call failure and need further debug
-    if ((s2 = accept (s, (struct sockaddr *) &remote, &t)) < 0) {
-      rc = errno;
-      syslog(LOG_WARNING, "ipmbd: accept() failed with ret: %x, errno: %x\n", s2, rc);
-      sleep(5);
-      continue;
-    }
-
-    // Creating a worker thread to handle the request
-    // TODO: Need to monitor the server performance with higher load and
-    // see if we need to create pre-defined number of workers and schedule
-    // the requests among them.
-    sfd = (ipmb_sfd_t *) malloc(sizeof(ipmb_sfd_t));
-    sfd->fd = fd;
-    sfd->sock = s2;
-    if (pthread_create(&tid, &attr, conn_handler, (void*) sfd) < 0) {
-        syslog(LOG_WARNING, "ipmbd: pthread_create failed\n");
-        close(s2);
-        continue;
-    }
-
-  }
-
-  close(s);
-  pthread_mutex_destroy(&m_seq);
-  pthread_attr_destroy(&attr);
-
   return 0;
 }
 
@@ -838,7 +774,6 @@ main(int argc, char * const argv[]) {
   pthread_t tid_ipmb_rx;
   pthread_t tid_req_handler;
   pthread_t tid_res_handler;
-  pthread_t tid_lib_handler;
   uint8_t ipmb_bus_num;
   mqd_t mqd_req = (mqd_t)-1, mqd_res = (mqd_t)-1;
   struct mq_attr attr;
@@ -916,7 +851,7 @@ main(int argc, char * const argv[]) {
   }
 
   // Create thread to receive ipmb library requests from apps
-  if (pthread_create(&tid_lib_handler, NULL, ipmb_lib_handler, (void*) &ipmb_bus_num) < 0) {
+  if (start_ipmb_lib_handler(ipmb_bus_num) < 0) {
     syslog(LOG_WARNING, "ipmbd: pthread_create failed\n");
     goto cleanup;
   }
@@ -932,10 +867,6 @@ cleanup:
 
   if (tid_res_handler > 0) {
     pthread_join(tid_res_handler, NULL);
-  }
-
-  if (tid_lib_handler > 0) {
-    pthread_join(tid_lib_handler, NULL);
   }
 
   if (mqd_res > 0) {

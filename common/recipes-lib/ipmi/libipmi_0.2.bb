@@ -27,6 +27,9 @@ SRC_URI = "file://Makefile \
            file://ipmi.h \
           "
 
+DEPENDS += "libipc"
+RDEPENDS_${PN} += "libipc"
+
 S = "${WORKDIR}"
 
 do_install() {

@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-#define SOCK_PATH_IPMB "/tmp/ipmb_socket"
+#define SOCK_PATH_IPMB "ipmb_socket"
 
 #define BMC_SLAVE_ADDR 0x10
 #define BRIDGE_SLAVE_ADDR 0x20

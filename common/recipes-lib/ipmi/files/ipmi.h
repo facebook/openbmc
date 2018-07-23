@@ -27,7 +27,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#define SOCK_PATH_IPMI "/tmp/ipmi_socket"
+#define SOCK_PATH_IPMI "ipmi_socket"
 
 #define IPMI_SEL_VERSION  0x51
 #define IPMI_SDR_VERSION  0x51

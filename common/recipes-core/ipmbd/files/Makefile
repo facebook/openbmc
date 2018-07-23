@@ -4,7 +4,7 @@ all: ipmbd
 CFLAGS += -Wall -Werror
 
 ipmbd: ipmbd.o
-	$(CC) $(CFLAGS) -pthread -lrt -lipmi -lpal -std=gnu99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lrt -lipmi -lpal -lipc -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

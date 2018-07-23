@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <openbmc/ipc.h>
 
 #define MAX_IPMI_RES_LEN 300
 
@@ -40,57 +41,9 @@ void
 lib_ipmi_handle(unsigned char *request, unsigned char req_len,
             unsigned char *response, unsigned short *res_len) {
 
-  int s, t, len;
-  struct sockaddr_un remote;
-  struct timeval tv;
+  size_t resp_len = MAX_IPMI_MSG_SIZE;
 
-  // TODO: Need to update to reuse the socket instead of creating new
-  if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "lib_ipmi_handle: socket() failed\n");
-#endif
-    return;
+  if (ipc_send_req(SOCK_PATH_IPMI, request, (size_t)req_len, response, &resp_len, TIMEOUT_IPMI + 1) == 0) {
+    *res_len = (unsigned char)resp_len;
   }
-
-  // setup timeout for receving on socket
-  tv.tv_sec = TIMEOUT_IPMI + 1;
-  tv.tv_usec = 0;
-
-  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
-
-  remote.sun_family = AF_UNIX;
-  strcpy(remote.sun_path, SOCK_PATH_IPMI);
-  len = strlen(remote.sun_path) + sizeof(remote.sun_family);
-
-  if (connect(s, (struct sockaddr *)&remote, len) == -1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "lib_ipmi_handle: connect() failed\n");
-#endif
-    goto cleanup;
-  }
-
-  if (send(s, request, req_len, 0) == -1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "lib_ipmi_handle: send() failed\n");
-#endif
-    goto cleanup;
-  }
-
-  if ((t=recv(s, response, MAX_IPMI_RES_LEN, 0)) > 0) {
-    *res_len = t;
-  } else {
-    if (t < 0) {
-#ifdef DEBUG
-      syslog(LOG_WARNING, "lib_ipmi_handle: recv() failed\n");
-#endif
-    } else {
-      printf("Server closed connection");
-    }
-
-  }
-
-cleanup:
-  close(s);
-
-  return;
 }

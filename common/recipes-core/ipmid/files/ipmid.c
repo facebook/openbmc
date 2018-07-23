@@ -37,11 +37,12 @@
 #include <openbmc/pal.h>
 #include <sys/reboot.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/ipc.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "sensor.h"
 
-
+#define MAX_REQUESTS 64
 #define SIZE_IANA_ID 3
 #define SIZE_GUID 16
 
@@ -3631,41 +3632,27 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
   return;
 }
 
-void
-*conn_handler(void *socket_desc) {
-  int *p_sock = (int*)socket_desc;
-  int sock = *p_sock;
-  int n;
+int
+conn_handler(client_t *cli) {
   unsigned char req_buf[MAX_IPMI_MSG_SIZE];
   unsigned char res_buf[MAX_IPMI_MSG_SIZE];
-  unsigned short res_len = 0;
-  struct timeval tv;
-  int rc = 0;
+  size_t req_len = MAX_IPMI_MSG_SIZE, res_len = 0;
 
-  // setup timeout for receving on socket
-  tv.tv_sec = TIMEOUT_IPMI;
-  tv.tv_usec = 0;
-
-  setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
-
-  n = recv (sock, req_buf, sizeof(req_buf), 0);
-  rc = errno;
-  if (n <= 0) {
-      syslog(LOG_WARNING, "ipmid: recv() failed with %d, errno: %d\n", n, rc);
-      goto conn_cleanup;
+  if (ipc_recv_req(cli, req_buf, &req_len, TIMEOUT_IPMI)) {
+    syslog(LOG_WARNING, "ipmid: recv() failed\n");
+    return -1;
   }
 
-  ipmi_handle(req_buf, n, res_buf, (unsigned char*)&res_len);
+  ipmi_handle(req_buf, (unsigned char)req_len, res_buf, (unsigned char*)&res_len);
 
-  if (send (sock, res_buf, res_len, 0) < 0) {
+  if (res_len == 0) {
+    return -1;
+  }
+
+  if(ipc_send_resp(cli, res_buf, res_len)) {
     syslog(LOG_WARNING, "ipmid: send() failed\n");
+    return -1;
   }
-
-conn_cleanup:
-  close(sock);
-  free(p_sock);
-
-  pthread_exit(NULL);
   return 0;
 }
 
@@ -3759,11 +3746,8 @@ wdt_timer (void *arg) {
 int
 main (void)
 {
-  int s, s2, fru, len;
-  struct sockaddr_un local, remote;
+  int fru;
   pthread_t tid;
-  int *p_s2;
-  int rc = 0;
   uint8_t max_slot_num = 0;
 
   //daemon(1, 1);
@@ -3807,54 +3791,10 @@ main (void)
     fru++;
   }
 
-  if ((s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
-  {
-    syslog(LOG_WARNING, "ipmid: socket() failed\n");
-    exit (1);
+  if (ipc_start_svc(SOCK_PATH_IPMI, conn_handler, MAX_REQUESTS, NULL, &tid) == 0) {
+    pthread_join(tid, NULL);
   }
 
-  local.sun_family = AF_UNIX;
-  strcpy (local.sun_path, SOCK_PATH_IPMI);
-  unlink (local.sun_path);
-  len = strlen (local.sun_path) + sizeof (local.sun_family);
-  if (bind (s, (struct sockaddr *) &local, len) == -1)
-  {
-    syslog(LOG_WARNING, "ipmid: bind() failed\n");
-    exit (1);
-  }
-
-  if (listen (s, 5) == -1)
-  {
-    syslog(LOG_WARNING, "ipmid: listen() failed\n");
-    exit (1);
-  }
-
-  while(1) {
-    size_t t = sizeof (remote);
-    // TODO: seen accept() call fails and need further debug
-    if ((s2 = accept (s, (struct sockaddr *) &remote, &t)) < 0) {
-      rc = errno;
-      syslog(LOG_WARNING, "ipmid: accept() failed with ret: %x, errno: %x\n", s2, rc);
-      sleep(5);
-      continue;
-    }
-
-    // Creating a worker thread to handle the request
-    // TODO: Need to monitor the server performance with higher load and
-    // see if we need to create pre-defined number of workers and schedule
-    // the requests among them.
-    p_s2 = malloc(sizeof(int));
-    *p_s2 = s2;
-    if (pthread_create(&tid, NULL, conn_handler, (void*) p_s2) < 0) {
-        syslog(LOG_WARNING, "ipmid: pthread_create failed\n");
-        close(s2);
-        continue;
-    }
-
-    pthread_detach(tid);
-  }
-
-  close(s);
 
   pthread_mutex_destroy(&m_chassis);
   pthread_mutex_destroy(&m_sensor);

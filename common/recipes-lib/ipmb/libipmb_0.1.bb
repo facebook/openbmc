@@ -14,6 +14,9 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
+DEPENDS += "libipc"
+RDEPENDS_${PN} += "libipc"
+
 do_install() {
 	  install -d ${D}${libdir}
     install -m 0644 libipmb.so ${D}${libdir}/libipmb.so

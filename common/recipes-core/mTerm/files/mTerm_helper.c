@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
+#include <signal.h>
 #include <time.h>
 #include "mTerm_helper.h"
 #include "tty_helper.h"
@@ -186,6 +187,22 @@ void writeTimestampToBuffer(bufStore *buf) {
   writeData(buf->buf_fd, dateBuff, strlen(dateBuff), "buffer");
 }
 
+void rsyslogd_hup(void)
+{
+  char line[128] = {0};
+  FILE *fp = popen("pidof rsyslogd", "r");
+  if (fp != NULL) {
+    fgets(line, sizeof(line) - 1, fp);
+    if (strlen(line) > 0) {
+      pid_t pid = strtoul(line, NULL, 10);
+      if (pid > 0) {
+        kill(pid, SIGHUP);
+      }
+    }
+    pclose(fp);
+  }
+}
+
 void writeToBuffer(bufStore *buf, char* data, int len) {
    bool rotate = false;
    struct stat file_stat;
@@ -212,6 +229,9 @@ void writeToBuffer(bufStore *buf, char* data, int len) {
    if (rotate) {
      close(buf->buf_fd);
      rename(buf->file, buf->backupfile);
+
+     rsyslogd_hup();
+
      buf->buf_fd = open(buf->file, O_RDWR | O_APPEND | O_CREAT, 0666) ;
      if (buf->buf_fd < 0) {
        perror("Cannot open the mTerm buffer log file");

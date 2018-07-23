@@ -155,6 +155,31 @@ def get_mtds():
     return (full_flash_mtds, all_mtds)
 
 
+def get_writeable_mounted_mtds():
+    # type: (MTDListType) -> List[Tuple[str, str]]
+    writeable_mtd_mounts_regex = re.compile(
+        # Device, mountpoint, filesystem, options, dump_freq, fsck_pass
+        '^(/dev/mtd(?:block)?[0-9]+) ([^ ]+) [^ ]+ [^ ]*rw[^ ]* [0-9]+ [0-9]+$',
+        re.MULTILINE
+    )
+    with open('/proc/mounts', 'r') as mounts:
+        mounts = writeable_mtd_mounts_regex.findall(mounts.read())
+    return mounts
+
+
+def fuser_k_mount_ro(writeable_mounted_mtds, logger):
+    # type: (Tuple[str, str], logging.Logger) -> None
+    for (device, mountpoint) in writeable_mounted_mtds:
+        # TODO don't actually fuser and remount on dry run
+        try:
+            run_verbosely(['fuser', '-km', mountpoint], logger)
+        except subprocess.CalledProcessError:
+            pass
+        run_verbosely(['mount', '-o', 'remount,ro', device, mountpoint],
+                      logger)
+        # TODO T31921137 restart rsyslog
+
+
 def get_kernel_parameters():
     # type: () -> str
     # As far as cov knows, kernel parameters we use are backwards compatible,

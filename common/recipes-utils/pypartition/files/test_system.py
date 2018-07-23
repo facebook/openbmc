@@ -98,6 +98,58 @@ class TestSystem(unittest.TestCase):
             self.assertEqual(full_mtds[0].device_name, 'flash1')
             self.assertEqual(len(all_mtds), 12)
 
+    @patch.object(subprocess, 'check_call')
+    @patch.object(system, 'open', create=True)
+    def test_get_writeable_mounted_mtds(self, mocked_open, mocked_check_call):
+        head = textwrap.dedent('''\
+            rootfs / rootfs rw 0 0
+            proc /proc proc rw 0 0
+            sysfs /sys sysfs rw 0 0
+            ''')
+        device = '/dev/mtdblock99'
+        mountpoint = '/mnt/data'
+        mtd_mount = '{} {} jffs2 {} 0 0\n'.format(device, mountpoint, '{}')
+        tail = textwrap.dedent('''\
+            tmpfs /run tmpfs rw,nosuid,nodev,mode=755 0 0
+            tmpfs /var/volatile tmpfs rw 0 0
+            devpts /dev/pts devpts rw,gid=5,mode=620 0 0''')
+        self.mock_mtd.device_name = 'data0'
+        for options in [None, 'rw', 'ro']:
+            middle = mtd_mount.format(options) or ''
+            data = head + middle + tail
+            mocked_open.return_value = mock_open(read_data=data).return_value
+            mtds = system.get_writeable_mounted_mtds()
+            if options == 'rw':
+                self.assertEqual(len(mtds), 1)
+                self.assertEqual(mtds[0], (
+                    device,
+                    mountpoint,
+                ))
+            else:
+                self.assertEqual(len(mtds), 0)
+
+    @patch.object(subprocess, 'check_call')
+    def test_fuser_k_mount_ro(self, mocked_check_call):
+        writeable_mounted_mtds = []
+        calls = []
+        # TODO set ProcessError side effect
+        for i in range(3):
+            mocked_check_call.reset_mock()
+            system.fuser_k_mount_ro(
+                writeable_mounted_mtds, self.logger
+            )
+            mocked_check_call.assert_has_calls(calls)
+            writeable_mounted_mtds.append(
+                ('/dev/mtdblock{}'.format(i), '/mnt/foo{}'.format(i))
+            )
+            calls.append(
+                call(['fuser', '-km', '/mnt/foo{}'.format(i)])
+            )
+            calls.append(
+                call(['mount', '-o', 'remount,ro', '/dev/mtdblock{}'.format(i),
+                      '/mnt/foo{}'.format(i)])
+            )
+
     @patch.object(subprocess, 'check_output')
     def test_flash_too_big(self, mocked_check_output):
         self.mock_image.size = 2

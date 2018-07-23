@@ -89,6 +89,14 @@ def improve_system(logger):
         image_file = virtualcat.ImageFile(image_file_name)
         system.get_valid_partitions([image_file], checksums, logger)
 
+        # If /mnt/data is smaller in the new image, it must be made read-only
+        # to prevent the tail of the FIT image from being corrupted.
+        # Determining shrinkage isn't trivial (data0 is omitted from image
+        # image files for one thing) and details may change over time, so just
+        # remount every MTD read-only. Reboot is expected to restart the
+        # killed processes.
+        system.fuser_k_mount_ro(system.get_writeable_mounted_mtds(), logger)
+
         attempts = 0 if args.dry_run else 3
         for mtd in full_flash_mtds:
             system.flash(attempts, image_file, mtd, logger)

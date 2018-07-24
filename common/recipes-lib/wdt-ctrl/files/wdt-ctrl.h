@@ -80,6 +80,12 @@ int stop_watchdog(void);
 int watchdog_enable_magic_close(void);
 int watchdog_disable_magic_close(void);
 
+/*
+ * set_persistent_watchdog() is defined in old libwatchdog, and it's
+ * no-op when libwdt-ctrl is used.
+ */
+#define set_persistent_watchdog(p)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

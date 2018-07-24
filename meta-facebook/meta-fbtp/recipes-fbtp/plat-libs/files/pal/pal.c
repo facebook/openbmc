@@ -6492,6 +6492,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
+  char str[128];
   uint16_t bank, col;
   uint8_t record_type = (uint8_t) sel[2];
   uint32_t mfg_id;
@@ -6501,6 +6502,8 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
   mfg_id = (*(uint32_t*)&sel[7]) & 0xFFFFFF;
 
   if (record_type == 0xc0 && mfg_id == 0x1c4c) {
+    snprintf(str, sizeof(str), "Slot %d PCIe err", sel[14]);
+    pal_add_cri_sel(str);
     sprintf(error_log, "VID:0x%02x%2x DID:0x%02x%2x Slot:0x%x Error ID:0x%x",
                         sel[11], sel[10], sel[13], sel[12], sel[14], sel[15]);
   }

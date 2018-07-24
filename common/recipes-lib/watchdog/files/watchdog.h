@@ -56,6 +56,12 @@
 extern "C" {
 #endif
 
+/*
+ * Let's define open_watchdog() so it's easier to switch between old and
+ * new watchdog libraries (libwatchdog vs. libwdt-ctrl).
+ */
+#define open_watchdog(mode, interval) start_watchdog(mode)
+
 /* Forward declarations. */
 int start_watchdog(const int auto_mode);
 enum watchdog_persistent_en {

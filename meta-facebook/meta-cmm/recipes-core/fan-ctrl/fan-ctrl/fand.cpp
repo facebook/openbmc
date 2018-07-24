@@ -58,10 +58,14 @@
 #include <signal.h>
 #include <syslog.h>
 #include <dirent.h>
-#include <openbmc/watchdog.h>
 #ifdef CONFIG_GALAXY100
 #include <fcntl.h>
 #include <openbmc/obmc-i2c.h>
+#endif
+#ifdef USE_WDT_CTRL_LIB
+#include <openbmc/wdt-ctrl.h>
+#else
+#include <openbmc/watchdog.h>
 #endif
 
 /* Sensor definitions */
@@ -1464,7 +1468,7 @@ int main(int argc, char **argv) {
   }
 
   /* Start watchdog in manual mode */
-  start_watchdog(0);
+  open_watchdog(0, 0);
 
   /* Set watchdog to persistent mode so timer expiry will happen independent
    * of this process's liveliness. */

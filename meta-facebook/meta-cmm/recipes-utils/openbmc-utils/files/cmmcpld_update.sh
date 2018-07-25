@@ -30,4 +30,9 @@ source /usr/local/bin/openbmc-utils.sh
 # change CPLD_JTAG_SEL to 0 to connect BMC_CPLD pins
 gpio_set CPLD_JTAG_SEL 0
 
-ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms 96 --tdo 99 --tdi 97 --tck 98
+TMS_NUM=$(gpio_name2value "BMC_CPLD_TMS")
+TDO_NUM=$(gpio_name2value "BMC_CPLD_TDO")
+TDI_NUM=$(gpio_name2value "BMC_CPLD_TDI")
+TCK_NUM=$(gpio_name2value "BMC_CPLD_TCK")
+
+ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms ${TMS_NUM} --tdo ${TDO_NUM} --tdi ${TDI_NUM} --tck ${TCK_NUM}

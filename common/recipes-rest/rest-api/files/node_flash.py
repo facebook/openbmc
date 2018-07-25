@@ -2,6 +2,7 @@
 
 from node import node
 from pal import *
+from kv import kv_get
 
 class flashNode(node):
     def __init__(self, name = None, info = None, actions = None):
@@ -19,14 +20,12 @@ class flashNode(node):
     def getInformation(self, param={}):
         # Get vendor name
         vendor_name=" "
-        data = Popen('cat /tmp/ssd_vendor', \
-                            shell=True, stdout=PIPE).stdout.read().decode()
+        data = kv_get('ssd_vendor')
         vendor_name = data.strip('\n')
 
         # Get flash type
         flash_type=" "
-        data = Popen('cat /tmp/ssd_sku_info', \
-                            shell=True, stdout=PIPE).stdout.read().decode()
+        data = kv_get('ssd_sku_info')
         flash_type = data.strip('\n')
 
         info = {

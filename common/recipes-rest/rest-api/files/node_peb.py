@@ -2,6 +2,7 @@
 
 from node import node
 from pal import *
+from kv import kv_get
 
 class pebNode(node):
     def __init__(self, name = None, info = None, actions = None):
@@ -17,8 +18,7 @@ class pebNode(node):
 
     def getInformation(self, param={}):
         name = pal_get_platform_name().decode()
-        location = Popen('cat /tmp/tray_location', \
-                         shell=True, stdout=PIPE).stdout.read().decode().strip('\n')
+        location = kv_get('tray_location')
         data = Popen('cat /sys/class/gpio/gpio108/value', \
                        shell=True, stdout=PIPE).stdout.read().decode().strip('\n')
         if data == "0":
@@ -28,8 +28,7 @@ class pebNode(node):
         else:
             status = "Unknown"
 
-        data = Popen('cat /mnt/data/kv_store/system_identify', \
-                            shell=True, stdout=PIPE).stdout.read().decode()
+        data = kv_get('system_identify', 1)
         identify_status = data.strip('\n')
 
         info = {

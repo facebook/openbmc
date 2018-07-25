@@ -3,6 +3,7 @@
 from subprocess import *
 from node import node
 from pal import *
+from kv import kv_get
 
 class healthNode(node):
     def __init__(self, name = None, info = None, actions = None):
@@ -40,14 +41,10 @@ class healthNode(node):
             else:
                 result = "Bad"
         elif (name == "Lightning"):
-            peb_hlth = Popen('cat /tmp/peb_sensor_health', \
-                                shell=True, stdout=PIPE).stdout.read().decode()
-            pdpb_hlth = Popen('cat /tmp/pdpb_sensor_health', \
-                                shell=True, stdout=PIPE).stdout.read().decode()
-            fcb_hlth = Popen('cat /tmp/fcb_sensor_health', \
-                                shell=True, stdout=PIPE).stdout.read().decode()
-            bmc_hlth = Popen('cat /tmp/bmc_health', \
-                                shell=True, stdout=PIPE).stdout.read().decode()
+            peb_hlth = kv_get('peb_sensor_health')
+            pdpb_hlth = kv_get('pdpb_sensor_health')
+            fcb_hlth = kv_get('fcb_sensor_health')
+            bmc_hlth = kv_get('bmc_health')
 
             if ((peb_hlth == "1") and (pdpb_hlth == "1")
                     and (fcb_hlth == "1") and (bmc_hlth == "1")):

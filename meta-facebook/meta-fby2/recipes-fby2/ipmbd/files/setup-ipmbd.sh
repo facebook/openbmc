@@ -30,6 +30,9 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+SPB_FRU_FILE="/tmp/fruid_spb.bin"
+SPB_TYPE="/tmp/spb_type"
+
 echo "Starting IPMB Rx/Tx Daemon"
 
 ulimit -q 1024000
@@ -37,7 +40,6 @@ runsv /etc/sv/ipmbd_1 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_3 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_5 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_7 > /dev/null 2>&1 &
-runsv /etc/sv/ipmbd_13 > /dev/null 2>&1 &
 
 #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point 3:Empty Slot)
 #get_slot_type is to get slot type to check if the slot type is server
@@ -68,3 +70,15 @@ elif [ $(is_server_prsnt 4) == "0" ]; then
   sv stop ipmbd_7
 fi
 
+if [ -f $SPB_FRU_FILE ]; then
+  str=$(/usr/local/bin/fruid-util spb | grep -i "Robinson Creek")
+  if [ "$str" != "" ]; then    #RC Baseboard
+    echo 1 > $SPB_TYPE
+  else
+    echo 0 > $SPB_TYPE
+  fi
+else
+  echo 0 > $SPB_TYPE
+fi
+
+runsv /etc/sv/ipmbd_13 > /dev/null 2>&1 &

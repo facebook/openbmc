@@ -8,12 +8,14 @@
 #include <openbmc/gpio.h>
 #include <openbmc/obmc-sensor.h>
 #include <facebook/bic.h>
+#include <syslog.h>
 
 #include "usb-dbg-conf.h"
 
 #define ESCAPE "\x1B"
 #define ESC_ALT ESCAPE"[5;7m"
 #define ESC_RST ESCAPE"[m"
+#define SPB_TYPE_FILE "/tmp/spb_type"
 
 //These postcodes are defined in document "F08 BIOS Specification" Revision: 2A
 static post_desc_t pdesc_phase1[] = {
@@ -360,6 +362,172 @@ static post_phase_desc_t post_phase_desc[] = {
   {2, pdesc_phase2, sizeof(pdesc_phase2)/sizeof(pdesc_phase2[0])},
 };
 
+//These postcodes are defined in document "Robinson Creek UEFI Specification" Version: 0.5
+static post_desc_t rc_pdesc_phase[] = {
+  { 0x00, "Not used" },
+  { 0x01, "MEMORY_INIT" },
+  { 0x02, "HARD_DISK_INIT" },
+  { 0x03, "SECONDARY_PROCESSOR_INIT" },
+  { 0x04, "USER_AUTHENTICATION" },
+  { 0x05, "USER_INITIATED_SYSTEM_SETUP" },
+  { 0x06, "USB_RESOURCE_CONFIG" },
+  { 0x07, "PCI_RESOURCE_CONFIG" },
+  { 0x08, "OPTION_ROM_INIT" },
+  { 0x09, "VIDEO_INIT" },
+  { 0x0A, "CACHE_INIT" },
+  { 0x0B, "SMBUS_INIT" },
+  { 0x0C, "KEYBOARD_CONTROLLER_INIT" },
+  { 0x0D, "EMBEDDED_CONTROLLER_INIT" },
+  { 0x0E, "DOCKING_STATION_ATTACH" },
+  { 0x0F, "ENABLING_DOCKING_STATION" },
+  { 0x10, "DOCKING_STATION_EJECTION" },
+  { 0x11, "DISABLING_DOCKING_STATION" },
+  { 0x12, "CALLING_OS_WAKEUP_VECTOR" },
+  { 0x13, "STARTING_OS_BOOT_PROCESS" },
+  { 0x14, "BASEBOARD_OR_MOTHERBOARD_INIT" },
+  { 0x16, "FLOPPY_INIT" },
+  { 0x17, "KEYBOARD_TEST" },
+  { 0x18, "POINTING_DEVICE_TEST" },
+  { 0x19, "PRIMARY_PROCESSOR_INIT" },
+  { 0x20, "DDR_INIT_BEGIN" },
+  { 0x21, "DDR_INIT_COMPLETE" },
+  { 0x22, "READ_SPB_FROM_MEMORY_DIMM" },
+  { 0x23, "DETECT_MEMORY_DIMM_PRESENCE" },
+  { 0x24, "PROGRAM_TIMING_PARA_IN_MEM" },
+  { 0x25, "CONFIGURING_MEMORY" },
+  { 0x26, "OPTIMIZING_MEMORY_SETTING" },
+  { 0x27, "CACHE_INIT_COMPLETE" },
+  { 0x28, "LOAD_DDR_SI_DATA" },
+  { 0x29, "COHERENT_FABRIC_INIT_BEGIN" },
+  { 0x2A, "COHERENT_FABRIC_INIT_COMPLETE" },
+  { 0x2B, "COHER_FABRIC_PROCESS_DIMM_SPD" },
+  { 0x2C, "MEM_TEST" },
+  { 0x2D, "ENTER_XPU_INIT" },
+  { 0x2E, "FULL_POLICY_SETUP_COMPLETED" },
+  { 0x2F, "DEBUG_POLICY_SETUP_COMPLETED" },
+  { 0x30, "SMMU_INIT" },
+  { 0x32, "SATA_ENABLE" },
+  { 0x33, "SATA_DISABLE" },
+  { 0x34, "SATA_RESET" },
+  { 0x35, "USB_DETECT" },
+  { 0x36, "USB_HOTPLUG" },
+  { 0x37, "USB_RESET" },
+  { 0x38, "SD_CARD_INIT" },
+  { 0x39, "SD_CARD_PRESENCE_DETECT" },
+  { 0x3A, "SD_CARD_DETECTED" },
+  { 0x3B, "SD_CARD_ENABLE" },
+  { 0x3D, "PCIE_INIT" },
+  { 0x3E, "PCIE_HOTPLUG_INIT" },
+  { 0x3F, "PCIE_BUS_ENUMARION" },
+  { 0x40, "PCIE_LINK_TRAINING" },
+  { 0x41, "PCIE_ROOT_BRIDGE_INIT" },
+  { 0x42, "PCIE_ROOT_BRIDGE_PHY_INIT" },
+  { 0x43, "PCIE_ROOT_BRIDGE_CONFIG" },
+  { 0x44, "SPI_NOR_DETECTION" },
+  { 0x50, "SBL_ENTRY" },
+  { 0x51, "SBL_EXIT" },
+  { 0x52, "LOAD_PRIMARY_IMAGES" },
+  { 0x53, "LOAD_SECONDARY_IMAGES" },
+  { 0x54, "DETECTED_SEC_DAT" },
+  { 0x55, "LOCATED_IMAGE_ON_SPI_NOR_IMC" },
+  { 0x56, "LOADING_IMAGE_IMC" },
+  { 0x57, "AUTHENTICATING_IMC" },
+  { 0x58, "LOCATED_IMAGE_ON_SPI_NOR_TZ" },
+  { 0x59, "LOADING_IMAGE_TZ" },
+  { 0x5A, "AUTHENTICATING_TZ" },
+  { 0x5B, "LOCATED_IMAGE_ON_SPI_NOR_XBL" },
+  { 0x5C, "LOADING_IMAGE_XBL" },
+  { 0x5D, "AUTHENTICATING_XBL" },
+  { 0x5E, "MM_INIT" },
+  { 0x5F, "SEC_ENTRY" },
+  { 0x60, "ENTERED_DXE_PHASE" },
+  { 0x61, "ALL_ARCHITECT_DRIVERS_LOADER" },
+  { 0x62, "DXE_READY_TO_BOOT" },
+  { 0x63, "ATTEMPT_BOOT_FROM_BOOT_ORDER" },
+  { 0x6E, "DXE_RESET_SYSTEM" },
+  { 0x6F, "DXE_PCI_BUS_HOT_PLUG" },
+  { 0x70, "DXE_NVRAM_INIT" },
+  { 0x71, "DXE_CPU_INIT" },
+  { 0x72, "DXE_ACPI_INIT" },
+  { 0x73, "DXE_NVRAM_CLEANUP" },
+  { 0x74, "DXE_CONFIG_RESET" },
+  { 0x75, "DXE_BDS_STARTED" },
+  { 0x76, "DXE_BDS_CONNECT_DRIVERS" },
+  { 0x77, "DXE_PCI_BUS_ASSIGN_RESOURCES" },
+  { 0x78, "DXE_IDE_DETECT" },
+  { 0x79, "DXE_SCEI_BEGIN" },
+  { 0x7A, "DXE_SCSI_RESET" },
+  { 0x7B, "DXE_SCSI_DETECT" },
+  { 0x7C, "DXE_SCSI_ENABLE" },
+  { 0x7D, "DXE_SETUP_INPUT_WAIT" },
+  { 0x7E, "SET_VIRTUAL_ADDR_MAP_BEGIN" },
+  { 0x7F, "SET_VIRTUAL_ADDR_MAP_END" },
+  { 0x80, "Not used" },
+  { 0x81, "NO_SYSTEM_MEMORY_INSTALLED" },
+  { 0x82, "NO_USABLE_SYSTEM_MEMORY" },
+  { 0x83, "UNRECOVERABLE_HD_DEVICE_FAIL" },
+  { 0x84, "UNRECOVERABLE_SYS_BOARD_FAIL" },
+  { 0x85, "UNRECOVERABLE_DISKETTE_FAIL" },
+  { 0x86, "UNRECOVERABLE_HD_CONTROl_FAIL" },
+  { 0x87, "UNRECOVERABLE_USB_KB_FAIL" },
+  { 0x88, "REMOVABLE_BOOT_MEDIA_NO_FOUND" },
+  { 0x89, "UNRECOVERABLE_VIDEO_CON_FAIL" },
+  { 0x8A, "NO_VIDEO_DEVICE_DETECTED" },
+  { 0x8B, "BIOS_FW_ROM_CORRUPTION_DETECT" },
+  { 0x8C, "CPU_VOLT_MISMATCH" },
+  { 0x8D, "CPU_SPEED_MATCHING_FAIL" },
+  { 0x90, "DDR_CH0_FAILURE" },
+  { 0x91, "DDR_CH1_FAILURE" },
+  { 0x92, "DDR_CH2_FAILURE" },
+  { 0x93, "DDR_CH3_FAILURE" },
+  { 0x94, "DDR_CH4_FAILURE" },
+  { 0x95, "DDR_CH5_FAILURE" },
+  { 0x96, "DDR_CH0_FAILURE_INVALID_TYPE" },
+  { 0x97, "DDR_CH1_FAILURE_INVALID_TYPE" },
+  { 0x98, "DDR_CH2_FAILURE_INVALID_TYPE" },
+  { 0x99, "DDR_CH3_FAILURE_INVALID_TYPE" },
+  { 0x9A, "DDR_CH4_FAILURE_INVALID_TYPE" },
+  { 0x9B, "DDR_CH5_FAILURE_INVALID_TYPE" },
+  { 0x9C, "COHERENT_FABRIC_INIT_FAIL" },
+  { 0x9D, "L3_CACHE_INIT_FAIL" },
+  { 0x9E, "FAILED_TO_INIT_XPUS" },
+  { 0x9F, "SATA_FAILURE" },
+  { 0xA0, "USB_FAILURE" },
+  { 0xA1, "SD_FAILURE" },
+  { 0xA2, "UEFI_SMMU_FAILURE" },
+  { 0xA3, "HOST_PROCESSOR_SELF_TEST_ERR" },
+  { 0xA4, "HOST_PROCESSOR_THERMAL_ERR" },
+  { 0xA5, "PCIE_GENERAL_ERR" },
+  { 0xA6, "PCIE_CONTROLLER_ERR" },
+  { 0xA7, "PCIE_RESOURCE_CONFLICT" },
+  { 0xA8, "PCIE_CONFIG_ERR" },
+  { 0xA9, "PCIE_LINK_FAILURE" },
+  { 0xB0, "FAILED_TO_LOAD_IMC_IMAGE" },
+  { 0xB1, "FAILED_TO_AUTHENTIC_IMC_IMAGE" },
+  { 0xB2, "FAILED_TO_LOAD_TZ_IMAGE" },
+  { 0xB3, "FAILED_TO_AUTHENTIC_TZ_IMAGE" },
+  { 0xB4, "FAILED_TO_LOAD_XBL_IMAGE" },
+  { 0xB5, "FAILED_TO_AUTHENTIC_XBL_IMAGE" },
+  { 0xB6, "ARCHITECT_DRIVERS_NOT_LOADED" },
+  { 0xB7, "BOOT_OPTION_LOAD_FAILED" },
+  { 0xB8, "BOOT_OPTION_START_FAILED" },
+  { 0xB9, "UNPERMITTED_SECURE_ACCESS" },
+  { 0xBA, "UNPERMITTED_NON_SECURE_ACCESS" },
+  { 0xBB, "UNPERMITTED_QAD_ACCESS" },
+  { 0xBD, "FATAL_EXCEPTION_IN_TRUSTZONE" },
+  { 0xBE, "FATAL_EXCEPTION_IN_SBL" },
+  { 0xBF, "FATAL_APP_PROC_EXCEPT_IN_UEFI" },
+  { 0xF0, "DXE_RESET_NOT_AVAILABLE" },
+  { 0xF1, "DXE_NO_CONSOLE_INPUT" },
+  { 0xF2, "DXE_INVALID_PASSWORD" },
+  { 0xF3, "DXE_BOOT_OPTION_FAILED" },
+  { 0xF4, "DXE_BOOT_UPDATE_FAILED" },
+};
+
+static post_phase_desc_t rc_post_phase_desc[] = {
+  {PHASE_ANY, rc_pdesc_phase, sizeof(rc_pdesc_phase)/sizeof(rc_pdesc_phase[0])},
+};
+
 static gpio_desc_t gdesc[] = {
   { 0x10, 0, 2, "DBG_RST_BTN_N" },
   { 0x11, 0, 1, "PWR_BTN_N" },
@@ -415,6 +583,33 @@ static char *dimm_label_ep[4] = {"A", "B", "C", "D"};
 static int dlabel_count_ep = sizeof(dimm_label_ep) / sizeof(dimm_label_ep[0]);
 #endif
 
+// Helper Functions
+static int
+read_device(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return err;
+  }
+
+  rc = fscanf(fp, "%d", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
 bool plat_supported(void)
 {
   return true;
@@ -422,11 +617,45 @@ bool plat_supported(void)
 
 int plat_get_post_phase(uint8_t fru, post_phase_desc_t **desc, size_t *desc_count)
 {
+  uint8_t server_type = 0xFF;
+  int spb_type = 0xFF; 
+
   if (!desc || !desc_count) {
     return -1;
   }
-  *desc = post_phase_desc;
-  *desc_count = sizeof(post_phase_desc) / sizeof(post_phase_desc[0]);
+
+  if(fru == FRU_ALL) {    //knob is at BMC position
+    if (read_device(SPB_TYPE_FILE, &spb_type)) {
+      syslog(LOG_ERR, "%s: Get spb type failed", __func__);
+      return -1;
+    }
+    switch(spb_type) {
+      case 1:     //RC baseboard
+        *desc = rc_post_phase_desc;
+        *desc_count = sizeof(rc_post_phase_desc) / sizeof(rc_post_phase_desc[0]);
+        return 0;
+      default:
+        *desc = post_phase_desc;
+        *desc_count = sizeof(post_phase_desc) / sizeof(post_phase_desc[0]);
+        return 0;
+    }
+  }
+
+  if (bic_get_server_type(fru, &server_type)) {
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_RC:
+      *desc = rc_post_phase_desc;
+      *desc_count = sizeof(rc_post_phase_desc) / sizeof(rc_post_phase_desc[0]);
+      break;
+    default:
+      *desc = post_phase_desc;
+      *desc_count = sizeof(post_phase_desc) / sizeof(post_phase_desc[0]);
+      break;
+  }
+
   return 0;
 }
 
@@ -486,9 +715,7 @@ int plat_get_me_status(uint8_t fru, char *status)
   char buf[256];
   unsigned char rlen;
   int ret;
-#if defined(CONFIG_FBY2_EP)
   uint8_t server_type = 0xFF;
-#endif
 
 #if defined(CONFIG_FBY2_EP)
   if (bic_get_server_type(fru, &server_type)) {
@@ -500,6 +727,15 @@ int plat_get_me_status(uint8_t fru, char *status)
       return -1;
   }
 #endif
+
+  if (bic_get_server_type(fru, &server_type)) {
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_RC:
+      return -1;
+  }
 
   buf[0] = NETFN_APP_REQ << 2;
   buf[1] = CMD_APP_GET_DEVICE_ID;

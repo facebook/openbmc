@@ -22,11 +22,13 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 source /usr/local/bin/openbmc-utils.sh
 
-CMD='/sys/devices/platform/ast-i2c.13/i2c-13/13-003e/*present'
-FAN_CMD1='/sys/devices/platform/ast-i2c.8/i2c-8/i2c-32/i2c-171/171-0033/'
-FAN_CMD2='/sys/devices/platform/ast-i2c.8/i2c-8/i2c-33/i2c-179/179-0033/'
-FAN_CMD3='/sys/devices/platform/ast-i2c.8/i2c-8/i2c-34/i2c-187/187-0033/'
-FAN_CMD4='/sys/devices/platform/ast-i2c.8/i2c-8/i2c-35/i2c-195/195-0033/'
+SYSFS_I2C_DEVICES='/sys/bus/i2c/devices'
+
+CMD="${SYSFS_I2C_DEVICES}/13-003e/*present"
+FAN_CMD1="${SYSFS_I2C_DEVICES}/171-0033/"
+FAN_CMD2="${SYSFS_I2C_DEVICES}/179-0033/"
+FAN_CMD3="${SYSFS_I2C_DEVICES}/187-0033/"
+FAN_CMD4="${SYSFS_I2C_DEVICES}/195-0033/"
 
 # Will return <key> : <val>
 # eg :- cmm : 1

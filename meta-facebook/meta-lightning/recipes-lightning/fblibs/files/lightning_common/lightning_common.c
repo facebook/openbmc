@@ -29,15 +29,11 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <string.h>
+#include <openbmc/kv.h>
 #include "lightning_common.h"
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
-
-#define PCIE_SW_FILE        "/tmp/pcie_switch_vendor"
-#define SSD_SKU_INFO        "/tmp/ssd_sku_info"
-#define SSD_VENDOR_INFO     "/tmp/ssd_vendor"
-#define PATH_LENGTH         16
 
 int
 lightning_common_fru_name(uint8_t fru, char *str) {
@@ -89,35 +85,20 @@ lightning_common_fru_id(char *str, uint8_t *fru) {
 int
 lightning_pcie_switch(uint8_t fru, uint8_t *pcie_sw) {
 
-  FILE *fp;
-  int rc;
-  char sw[8];
+  char value[MAX_VALUE_LEN] = {0};
 
   if (fru != FRU_PEB) {
     syslog(LOG_INFO, "No PCIe switch on this fru: %d", fru);
     return -1;
   }
 
-  fp = fopen(PCIE_SW_FILE, "r");
-  if (!fp) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "lightning_pcie_switch: fopen failed for fru: %d", fru);
-#endif
+  if (kv_get("pcie_switch_vendor", value, NULL, 0)) {
     return -1;
   }
 
-  rc = (int) fread(sw, 1, 8, fp);
-  fclose(fp);
-  if (rc <= 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "lightning_pcie_switch: fread failed for fru: %d", fru);
-#endif
-    return -1;
-  }
-
-  if (strstr(sw, "PMC") != NULL)
+  if (strstr(value, "PMC") != NULL)
     *pcie_sw = PCIE_SW_PMC;
-  else if (strstr(sw, "PLX") != NULL)
+  else if (strstr(value, "PLX") != NULL)
     *pcie_sw = PCIE_SW_PLX;
   else
     return -1;
@@ -128,30 +109,21 @@ lightning_pcie_switch(uint8_t fru, uint8_t *pcie_sw) {
 int 
 lightning_ssd_sku(uint8_t *ssd_sku) {
 
-  FILE *fp;
-  char sku[PATH_LENGTH] = {0};
+  char sku[MAX_VALUE_LEN] = {0};
   int rc;
 
-  fp = fopen(SSD_SKU_INFO, "r");
-  if(!fp) {
-    syslog(LOG_DEBUG, "%s(): %s fopen failed", __func__, SSD_SKU_INFO);
+  rc = kv_get("ssd_sku_info", sku, NULL, 0);
+  if (rc < 0) {
+    syslog(LOG_DEBUG, "%s(): kv_get for ssd_sku_info failed", __func__);
     return -1;
   }
 
-  rc = (int) fread(sku, 1, sizeof(sku), fp);
-  fclose(fp);
-
-  if(rc <= 0) {
-    syslog(LOG_DEBUG, "%s(): %s fread failed", __func__, SSD_SKU_INFO);
-    return -1;
-  }
-
-  if (strstr(sku, "U2") != NULL)
+  if (!strcmp(sku, "U2"))
     *ssd_sku = U2_SKU;
-  else if (strstr(sku, "M2") != NULL)
+  else if (!strcmp(sku, "M2"))
     *ssd_sku = M2_SKU;
   else {
-    syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD SKU", __func__);
+    syslog(LOG_WARNING, "%s(): Cannot find corresponding SSD SKU for %s", __func__, sku);
     return -1;
   }
 
@@ -160,22 +132,10 @@ lightning_ssd_sku(uint8_t *ssd_sku) {
 
 int
 lightning_ssd_vendor(uint8_t *ssd_vendor) {
+  char vendor[MAX_VALUE_LEN] = {0};
 
-  FILE *fp;
-  char vendor[PATH_LENGTH] = {0};
-  int rc;
-
-  fp = fopen(SSD_VENDOR_INFO, "r");
-  if(!fp) {
-    syslog(LOG_DEBUG, "%s(): %s fopen failed", __func__, SSD_VENDOR_INFO);
-    return -1;
-  }
-
-  rc = (int) fread(vendor, 1, sizeof(vendor), fp);
-  fclose(fp);
-
-  if(rc <= 0) {
-    syslog(LOG_DEBUG, "%s(): %s fread failed", __func__, SSD_VENDOR_INFO);
+  if (kv_get("ssd_vendor", vendor, NULL, 0)) {
+    syslog(LOG_DEBUG, "%s(): ssd_vendor key_get failed failed", __func__);
     return -1;
   }
 

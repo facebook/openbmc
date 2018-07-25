@@ -28,13 +28,14 @@
 ### END INIT INFO
 
 . /usr/local/fbpackages/utils/ast-functions
+. /usr/bin/kv
 
 # Get SSD type and vender_device ID from cache
 default_fsc_config_path="/etc/fsc-config.json"
 
 # get from cache
-flash_type=`cat /tmp/ssd_sku_info`
-ssd_vendor=`cat /tmp/ssd_vendor`
+flash_type=$(kv_get "ssd_sku_info")
+ssd_vendor=$(kv_get "ssd_vendor")
 
 case "$flash_type" in
    "U2")

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 . /usr/local/fbpackages/utils/ast-functions
+. /usr/bin/kv
 
-FILE=/tmp/ssd_vendor
 MUX_BASE=0x08
 I2C_7_MUX_ADDR=0x71
 I2C_8_MUX_ADDR=0x72
@@ -46,15 +46,15 @@ do
         VID=$(i2cget -y 7 $I2C_NVME_INTF_ADDR $I2C_VID_ADDR w)
         if ([[ $VID == *$INTEL* ]])
         then
-            echo -e "intel" > $FILE
+            kv_set "ssd_vendor" "intel"
             exit 0
         elif ([[ $VID == *$SEAGATE* ]])
         then
-            echo -e "seagate" > $FILE
+            kv_set "ssd_vendor" "seagate"
             exit 0
         elif ([[ $VID == *$SAMSUNG* ]])
         then
-            echo -e "samsung" > $FILE
+            kv_set "ssd_vendor" "samsung"
             exit 0
         fi
 
@@ -88,19 +88,19 @@ do
         VID=$(i2cget -y 8 $I2C_NVME_INTF_ADDR $I2C_VID_ADDR w)
         if ([[ $VID == *$INTEL* ]])
         then
-            echo -e "intel" > $FILE
+            kv_set "ssd_vendor" "intel"
             exit 0
         elif ([[ $VID == *$SEAGATE* ]])
         then
-            echo -e "seagate" > $FILE
+            kv_set "ssd_vendor" "seagate"
             exit 0
         elif ([[ $VID == *$SAMSUNG* ]])
         then
-            echo -e "samsung" > $FILE
+            kv_set "ssd_vendor" "samsung"
             exit 0
         fi
 done
 
-echo -e "unknown" > $FILE
+kv_set "ssd_vendor" "unknown"
 
 exit 0

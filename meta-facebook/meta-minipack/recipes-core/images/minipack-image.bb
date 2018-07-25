@@ -35,6 +35,7 @@ IMAGE_INSTALL += " \
   mterm \
   openbmc-gpio \
   openbmc-utils \
+  psu-util \
   sensor-setup \
   sensor-mon \
   spatula \

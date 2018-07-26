@@ -21,8 +21,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
-# Bus  0 - SMBus 1
-i2c_device_add 0 0x20 tpm_i2c_infineon
+# First, take TPM out of reset, so that we can probe it later
+# Active low - 1 means out of reset, 0 means in reset
+gpio_set TPM_RST_N 1
 
 # Bus  1 - SMBus 2
 i2c_device_add 1 0x50 supsfp
@@ -128,3 +129,7 @@ i2c_device_add 21 0x42 pmbus
 i2c_device_add 21 0x20 pca9555
 i2c_device_add 21 0x4c max6658
 i2c_device_add 21 0x50 24c512
+
+# Bus  0 - SMBus 1
+i2c_device_add 0 0x20 tpm_i2c_infineon
+

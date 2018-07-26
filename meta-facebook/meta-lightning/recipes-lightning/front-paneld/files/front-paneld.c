@@ -31,11 +31,13 @@
 #include <time.h>
 #include <sys/time.h>
 #include <openbmc/pal.h>
+#include <openbmc/obmc-sensor.h>
 
 #define BTN_MAX_SAMPLES   200
 #define BTN_POWER_OFF     40
 #define HB_TIMESTAMP_COUNT (60 * 60)
 #define POST_LED_DELAY_TIME 2
+#define MIN_TRAY_VOL 0.3
 
 struct _tray_last_status {
   uint8_t self;
@@ -146,6 +148,8 @@ debug_card_handler() {
   uint8_t err_num = 0;
   char self_tray_name[16] = "";
   char peer_tray_name[16] = "";
+  uint8_t peer_tray_pwr = 0;
+  float peer_tray_vol = 0.0;
   uint8_t error_code_assert[ERROR_CODE_NUM * 8];
   uint8_t error_code_array[ERROR_CODE_NUM] = {0};
   int errCount = 0;
@@ -156,8 +160,14 @@ debug_card_handler() {
 
   /* Getting tray location information */
   i = 0; //setting the retry limit to 3
-  while ((pal_get_tray_location(self_tray_name, sizeof(self_tray_name),
-                               peer_tray_name, sizeof(peer_tray_name)) == -1) && (i < 3)){
+  ret = pal_get_tray_location(self_tray_name, sizeof(self_tray_name),
+                              peer_tray_name, sizeof(peer_tray_name),
+                              &peer_tray_pwr);
+  while ((ret == -1) && (i < 3)){
+    sleep(1);
+    ret = pal_get_tray_location(self_tray_name, sizeof(self_tray_name),
+                                peer_tray_name, sizeof(peer_tray_name),
+                                &peer_tray_pwr);
     syslog(LOG_WARNING, "%s(): pal_get_tray_location() failed", __func__);
     i++;
   }
@@ -180,7 +190,8 @@ debug_card_handler() {
     }
     current_tray_state = 0;
     if (!pal_peer_tray_insertion(&current_tray_state)) {
-      if (tray_last_status.peer != current_tray_state) {
+      sensor_cache_read(FRU_FCB, peer_tray_pwr, &peer_tray_vol);
+      if ((tray_last_status.peer != current_tray_state) && (peer_tray_vol > MIN_TRAY_VOL)) {
         tray_last_status.peer = current_tray_state;
         if (current_tray_state) {
           pal_err_code_enable(ERR_CODE_PEER_TRAY_PULL_OUT);

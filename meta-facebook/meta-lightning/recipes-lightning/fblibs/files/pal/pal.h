@@ -196,7 +196,7 @@ int pal_fan_recovered_handle(int fan_num);
 int pal_self_tray_location(uint8_t *value);
 int pal_self_tray_insertion(uint8_t *value);
 int pal_peer_tray_insertion(uint8_t *value);
-int pal_get_tray_location(char *self_name, uint8_t self_len, char *peer_name, uint8_t peer_len);
+int pal_get_tray_location(char *self_name, uint8_t self_len, char *peer_name, uint8_t peer_len, uint8_t *peer_tray_pwr);
 void pal_log_clear(char *fru);
 void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);

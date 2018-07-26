@@ -824,6 +824,8 @@ CPU_usage_monitor() {
   float cpu_utilization[cpu_window_size];
   FILE *fp;
 
+  sleep(180); //Wait 180s for BMC to idle stage.
+
   memset(cpu_utilization, 0, sizeof(float) * cpu_window_size);
 
   while (1) {

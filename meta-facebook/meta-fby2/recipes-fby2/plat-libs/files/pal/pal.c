@@ -1037,7 +1037,7 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
   /* Check whether the system is 12V off or on */
   ret = pal_is_server_12v_on(pair_slot_id, &status);
   if (ret < 0) {
-    syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+    syslog(LOG_ERR, "pal_slot_pair_12V_off: pal_is_server_12v_on failed");
     return -1;
   }
 
@@ -1159,7 +1159,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          /* Check whether the system is 12V off or on */
          ret = pal_is_server_12v_on(slot_id, &status);
          if (ret < 0) {
-           syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+           syslog(LOG_ERR, "pal_slot_pair_12V_on: pal_is_server_12v_on failed");
            return -1;
          }
 
@@ -1180,7 +1180,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        /* Check whether the system is 12V off or on */
        ret = pal_is_server_12v_on(slot_id, &status);
        if (ret < 0) {
-         syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+         syslog(LOG_ERR, "pal_slot_pair_12V_on: pal_is_server_12v_on failed");
          return -1;
        }
 
@@ -1200,7 +1200,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        /* Check whether the system is 12V off or on */
        ret = pal_is_server_12v_on(slot_id, &status);
        if (ret < 0) {
-         syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+         syslog(LOG_ERR, "pal_slot_pair_12V_on: pal_is_server_12v_on failed");
          return -1;
        }
 
@@ -1218,7 +1218,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        /* Check whether the system is 12V off or on */
        ret = pal_is_server_12v_on(pair_slot_id, &status);
        if (ret < 0) {
-         syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+         syslog(LOG_ERR, "pal_slot_pair_12V_on: pal_is_server_12v_on failed");
          return -1;
        }
 
@@ -2038,7 +2038,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
            /* Check whether the system is 12V off or on */
            ret = pal_is_server_12v_on(fru, (uint8_t *)&val);
            if (ret < 0) {
-             syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+             syslog(LOG_ERR, "pal_is_fru_ready: pal_is_server_12v_on failed");
              return -1;
            }
 
@@ -5573,34 +5573,43 @@ void
 pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
 
   char key[MAX_KEY_LEN] = {0};
-  sprintf(key, "slot%d_por_cfg", slot);
   char buff[MAX_VALUE_LEN] = {0};
   int policy = 3;
   uint8_t status, ret;
+  uint8_t pos = HAND_SW_SERVER1;
   unsigned char *data = res_data;
 
-  // Platform Power Policy
-  if (pal_get_key_value(key, buff) == 0)
-  {
-    if (!memcmp(buff, "off", strlen("off")))
-      policy = 0;
-    else if (!memcmp(buff, "lps", strlen("lps")))
-      policy = 1;
-    else if (!memcmp(buff, "on", strlen("on")))
-      policy = 2;
-    else
-      policy = 3;
+  if (slot == FRU_SPB) {
+    slot = (pal_get_hand_sw(&pos) == 0) ? pos : HAND_SW_BMC;
   }
 
-  // Current Power State
-  ret = pal_get_server_power(slot, &status);
-  if (ret >= 0) {
-    *data++ = status | (policy << 5);
+  if (slot != HAND_SW_BMC) {
+    // Platform Power Policy
+    sprintf(key, "slot%d_por_cfg", slot);
+    if (pal_get_key_value(key, buff) == 0) {
+      if (!memcmp(buff, "off", strlen("off")))
+        policy = 0;
+      else if (!memcmp(buff, "lps", strlen("lps")))
+        policy = 1;
+      else if (!memcmp(buff, "on", strlen("on")))
+        policy = 2;
+      else
+        policy = 3;
+    }
+
+    // Current Power State
+    ret = pal_get_server_power(slot, &status);
+    if (ret >= 0) {
+      *data++ = status | (policy << 5);
+    } else {
+      // load default
+      syslog(LOG_WARNING, "ipmid: pal_get_server_power failed for slot1\n");
+      *data++ = 0x00 | (policy << 5);
+    }
   } else {
-    // load default
-    syslog(LOG_WARNING, "ipmid: pal_get_server_power failed for slot1\n");
     *data++ = 0x00 | (policy << 5);
   }
+
   *data++ = 0x00;   // Last Power Event
   *data++ = 0x40;   // Misc. Chassis Status
   *data++ = 0x00;   // Front Panel Button Disable

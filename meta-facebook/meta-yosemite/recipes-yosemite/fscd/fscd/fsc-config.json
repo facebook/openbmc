@@ -1,4 +1,5 @@
 {
+  "version": "yosemite-mp-r07",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,

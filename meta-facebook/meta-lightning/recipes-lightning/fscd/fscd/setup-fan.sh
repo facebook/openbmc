@@ -57,6 +57,8 @@ case "$flash_type" in
            ;;
            "samsung") cp /etc/FSC_Lightning_PVT_Samsung_M2_2TB_v4_config.json ${default_fsc_config_path}
            ;;
+           "toshiba") cp /etc/FSC_Lightning_PVT_Toshiba_M2_2TB_v1_config.json ${default_fsc_config_path}
+           ;;
            *) echo "Enter into transitional mode - Unexpected M.2 SSD vendor."
               /usr/local/bin/init_pwm.sh
               /usr/local/bin/fan-util --set 70

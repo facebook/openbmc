@@ -14,6 +14,7 @@ M2_CHANNEL0=0x01
 INTEL=0x8680
 SEAGATE=0xb11b
 SAMSUNG=0x4d14
+TOSHIBA=0x7911
 
 M2_MUX_ADDR=$(echo $I2C_M2_MUX_ADDR | cut -c3-4)
 M2CARD_AMB_ADDR=$(echo $I2C_M2CARD_AMB_ADDR | cut -c3-4)
@@ -56,6 +57,10 @@ do
         then
             kv_set "ssd_vendor" "samsung"
             exit 0
+        elif ([[ $VID == *$TOSHIBA* ]])
+        then
+            kv_set "ssd_vendor" "toshiba"
+            exit 0
         fi
 
 done
@@ -97,6 +102,10 @@ do
         elif ([[ $VID == *$SAMSUNG* ]])
         then
             kv_set "ssd_vendor" "samsung"
+            exit 0
+        elif ([[ $VID == *$TOSHIBA* ]])
+        then
+            kv_set "ssd_vendor" "toshiba"
             exit 0
         fi
 done

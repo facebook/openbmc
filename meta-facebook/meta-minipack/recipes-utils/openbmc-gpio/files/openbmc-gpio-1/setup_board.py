@@ -18,5 +18,6 @@
 board_py_modules=[
     'board_gpio_table_v1',
     'board_gpio_table_v2',
+    'board_gpio_table_v3',
     'board_gpio_rev_table',
 ]

@@ -23,9 +23,10 @@ from openbmc_gpio_table import BoardGPIO
 # DO NOT MODIFY THE TABLE!!!
 # Manual modification will be overridden!!!
 
-board_gpio_table_v2 = [
+board_gpio_table_v3 = [
     BoardGPIO('GPIOA2', 'BMC_SPI1_CS1'),
     BoardGPIO('GPIOA3', 'BMC_eMMC_RST_N'),
+    BoardGPIO('GPIOAA0', 'SCM_USB_PRSNT'),
     BoardGPIO('GPIOAA2', 'BMC_SCM_CPLD_TMS'),
     BoardGPIO('GPIOAA3', 'BMC_SCM_CPLD_TCK'),
     BoardGPIO('GPIOAA4', 'BMC_SCM_CPLD_TDI'),
@@ -92,6 +93,5 @@ board_gpio_table_v2 = [
     BoardGPIO('GPIOS7', 'BMC12_9548_2_RST'),
     BoardGPIO('GPIOZ0', 'BMC_SPI_1_WP_N'),
     BoardGPIO('GPIOZ1', 'BMC_SPI_2_WP_N'),
-    BoardGPIO('GPIOZ4', 'SCM_USB_PRSNT'),
     BoardGPIO('GPIOZ5', 'BMC_IN_P1220'),
 ]

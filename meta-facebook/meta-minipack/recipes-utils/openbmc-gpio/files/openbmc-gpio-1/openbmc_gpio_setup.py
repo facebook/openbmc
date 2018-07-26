@@ -20,6 +20,7 @@
 from board_gpio_rev_table import board_gpio_rev_table
 from board_gpio_table_v1 import board_gpio_table_v1
 from board_gpio_table_v2 import board_gpio_table_v2
+from board_gpio_table_v3 import board_gpio_table_v3
 from soc_gpio_table import soc_gpio_table
 from openbmc_gpio_table import setup_board_gpio
 from soc_gpio import soc_get_register
@@ -68,13 +69,13 @@ def main():
     elif version is 0:
         print('Using GPIO EVTB table ', end='')
         setup_board_gpio(soc_gpio_table, board_gpio_table_v2)
+    elif version is 1:
+        print('Using GPIO DVT table ', end='')
+        setup_board_gpio(soc_gpio_table, board_gpio_table_v3)
     else:
-        if version is 2:
-            print('Using GPIO DVT table ', end='')
-        else:
-            print('Unexpected board version %s. Using GPIO DVT table. '
-                % version, end='')
-        setup_board_gpio(soc_gpio_table, board_gpio_table_v2)
+        print('Unexpected board version %s. Using GPIO DVT table. '
+              % version, end='')
+        setup_board_gpio(soc_gpio_table, board_gpio_table_v3)
     print('Done')
     sys.stdout.flush()
     return 0

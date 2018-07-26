@@ -10,7 +10,7 @@
   "fan_dead_boost": {
     "data": [
     ],
-    "threshold": 20,
+    "threshold": 10,
     "action": "host_shutdown"
   },
   "watchdog": true ,
@@ -87,8 +87,8 @@
       "negative_hysteresis": 5,
       "data": [
         [5, 12],
-        [35, 16],
-        [40, 23],
+        [34, 16],
+        [38, 23],
         [45, 31]
       ]
     },

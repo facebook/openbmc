@@ -167,7 +167,7 @@ class fscdTest():
                                  switch_temp=32000,
                                  intake_temp=39000,
                                  outlet_temp=32000,
-                                 expected_pwm=51):
+                                 expected_pwm=74):
             rc = False
 
         # sub-test5: pwm when all temp~[32C,42C] pwm=23 => duty_cycle=74

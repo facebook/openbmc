@@ -1,5 +1,0 @@
-max([
-  linear_soc_therm_margin(server:soc_therm_margin) + pid_soc_therm_margin(server:soc_therm_margin),
-  linear_mezz_sensor_temp(nic:mezz_sensor_temp) + pid_mezz_sensor_temp(nic:mezz_sensor_temp),
-  linear_m2_smart_temp_1(iom:m2_smart_temp_1) + pid_m2_smart_temp_1(iom:m2_smart_temp_1)
-]) 

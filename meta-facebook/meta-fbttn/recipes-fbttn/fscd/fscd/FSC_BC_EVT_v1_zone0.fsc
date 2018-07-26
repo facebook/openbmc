@@ -1,4 +1,0 @@
-max([
-  linear_soc_temp(server:soc_temp),
-  linear_mezz_sensor_temp (nic:mezz_sensor_temp)
-])

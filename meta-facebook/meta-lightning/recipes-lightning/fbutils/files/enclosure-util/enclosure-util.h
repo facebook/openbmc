@@ -97,7 +97,7 @@ char *Error_Code_Description[MAX_DESCRIPTION_NUM] = {
 	"Peer Tray Pulled-out",
 	"BMC CPU Utilization too high",
 	"BMC Memory Utilization too high",
-	"ECC Recoverable Error",
-	"ECC Uncecoverable Error",
+	"Reserved",
+	"Reserved",
 	"Firmware and hardware mismatch" //Error Code 99
 };

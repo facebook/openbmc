@@ -1662,9 +1662,9 @@ pal_bmc_err_enable(const char *error_item) {
   } else if (strcasestr(error_item, "Memory") != 0ULL) {
     pal_err_code_enable(ERR_CODE_MEM);
   } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
-    pal_err_code_enable(ERR_CODE_ECC_UNRECOVERABLE);
+    // Skip reporting ECC error code 
   } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
-    pal_err_code_enable(ERR_CODE_ECC_RECOVERABLE);
+    // Skip reporting ECC error code
   } else {
     syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
     return -1;
@@ -1679,9 +1679,9 @@ pal_bmc_err_disable(const char *error_item) {
   } else if (strcasestr(error_item, "Memory") != 0ULL) {
     pal_err_code_disable(ERR_CODE_MEM);
   } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
-    pal_err_code_disable(ERR_CODE_ECC_UNRECOVERABLE);
+    // Skip reporting ECC error code
   } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
-    pal_err_code_disable(ERR_CODE_ECC_RECOVERABLE);
+    // Skip reporting ECC error code
   } else {
     syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
     return -1;

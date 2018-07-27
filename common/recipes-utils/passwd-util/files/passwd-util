@@ -40,17 +40,13 @@ case "$ACTION" in
     fi
     ;;
   *)
-    stty -echo
     OIFS="$IFS"
-    IFS="" read -p "New password: " firstpw
+    IFS="" read -rsp "New password: " firstpw
     IFS="$OIFS"
-    stty echo
     echo ""
-    stty -echo
     OIFS="$IFS"
-    IFS="" read -p "Retype password: " secondpw
+    IFS="" read -rsp "Retype password: " secondpw
     IFS="$OIFS"
-    stty echo
     echo ""
     if [ ${#firstpw} -lt 1 ] || [ ${#secondpw} -lt 1 ]; then
       echo "Password is empty!"

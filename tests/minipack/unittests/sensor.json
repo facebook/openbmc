@@ -1,0 +1,496 @@
+{
+"type":"minipack", 
+"com_e_driver-i2c-5-33":
+{
+  "P3.3V MB Voltage":"yes",
+  "P12V MB Voltage":"yes",
+  "P1.05V PCH Voltage":"yes",
+  "P3.3V Standby MB Voltage":"yes",
+  "P5V Standby MB Voltage":"yes",
+  "PV Battery Voltage":"yes",
+  "PVDDR Voltage":"yes",
+  "P1.05V Mix Voltage":"yes",
+  "VCCIN VR Voltage":"yes",
+  "VDDR VR Voltage":"yes",
+  "P1.05V Mix VR Voltage":"yes",
+  "INA230 Voltage":"yes",
+  "MB Outlet Temp":"yes",
+  "MB Inlet Temp":"yes",
+  "PCH Temp":"yes",
+  "VCCIN VR Temp":"yes",
+  "1.05V Mix VR Temp":"yes",
+  "SOC Temp":"yes",
+  "SOC Therm Margin Temp":"yes",
+  "VDDR VR Temp":"yes",
+  "SOC DIMMA0 Temp":"yes",
+  "SOC DIMMB0 Temp":"yes",
+  "SOC TJMax Temp":"yes",
+  "SOC Package Power":"yes",
+  "VCCIN VR Output Power":"yes",
+  "VDDR VR Output Power":"yes",
+  "P1.05V Mix VR Output Power":"yes",
+  "INA230 Power":"yes",
+  "1.05V Mix VR Current":"yes",
+  "VDDR VR Current":"yes",
+  "VCCIN VR Current":"yes"
+},
+"powr1220-i2c-1-3a":
+{
+  "vmon1":"yes",
+  "vmon2":"yes",
+  "vmon3":"yes",
+  "vmon4":"yes",
+  "vmon5":"yes",
+  "vmon6":"yes",
+  "vmon7":"yes",
+  "vmon8":"yes",
+  "vmon9":"yes",
+  "vmon10":"yes",
+  "vmon11":"yes",
+  "vmon12":"yes",
+  "vcca":"yes",
+  "vccinp":"yes"
+},
+"ir3595-i2c-1-12":
+{
+  "TH3 serdes Voltage":"yes",
+  "TH3 serdes Current":"yes"
+},
+"isl68127-i2c-1-60":
+{
+  "TH3 core Voltage":"yes",
+  "TH3 core Current":"yes"
+},
+"tmp75-i2c-3-48":
+{
+  "SMB Temp1":"yes"
+},
+"tmp75-i2c-3-49":
+{
+  "SMB Temp2":"yes"
+},
+"tmp75-i2c-3-4a":
+{
+  "SMB Temp3":"yes"
+},
+"tmp75-i2c-3-4b":
+{
+  "SMB Temp4":"yes"
+},
+"tmp422-i2c-30-4c":
+{
+  "SMB Temp":"yes",
+  "TH3 Temp1":"yes",
+  "TH3 Temp2":"yes"
+},
+"tmp421-i2c-17-4c":
+{
+  "SCM Temp1":"yes",
+  "SCM Temp2":"yes"
+},
+"tmp421-i2c-17-4d":
+{
+  "SCM Temp3":"yes",
+  "SCM Temp4":"yes"
+},
+"psu_driver-i2c-49-59":
+{
+  "PSU1 Input Voltage":"yes",
+  "PSU1 12V Output Voltage":"yes",
+  "PSU1 5/3.3V Output Voltage":"yes",
+  "PSU1 FAN":"yes",
+  "PSU1 Temp1":"yes",
+  "PSU1 Temp2":"yes",
+  "PSU1 Temp3":"yes",
+  "PSU1 Input Power":"yes",
+  "PSU1 12V Output Power":"yes",
+  "PSU1 5/3.3V Output Power":"yes",
+  "PSU1 Input Current":"yes",
+  "PSU1 12V Output Current":"yes",
+  "PSU1 5/3.3V Output Current":"yes"
+},
+"psu_driver-i2c-48-58":
+{
+  "PSU2 Input Voltage":"yes",
+  "PSU2 12V Output Voltage":"yes",
+  "PSU2 5/3.3V Output Voltage":"yes",
+  "PSU2 FAN":"yes",
+  "PSU2 Temp1":"yes",
+  "PSU2 Temp2":"yes",
+  "PSU2 Temp3":"yes",
+  "PSU2 Input Power":"yes",
+  "PSU2 12V Output Power":"yes",
+  "PSU2 5/3.3V Output Power":"yes",
+  "PSU2 Input Current":"yes",
+  "PSU2 12V Output Current":"yes",
+  "PSU2 5/3.3V Output Current":"yes"
+},
+"psu_driver-i2c-57-59":
+{
+  "PSU3 Input Voltage":"yes",
+  "PSU3 12V Output Voltage":"yes",
+  "PSU3 5/3.3V Output Voltage":"yes",
+  "PSU3 FAN":"yes",
+  "PSU3 Temp1":"yes",
+  "PSU3 Temp2":"yes",
+  "PSU3 Temp3":"yes",
+  "PSU3 Input Power":"yes",
+  "PSU3 12V Output Power":"yes",
+  "PSU3 5/3.3V Output Power":"yes",
+  "PSU3 Input Current":"yes",
+  "PSU3 12V Output Current":"yes",
+  "PSU3 5/3.3V Output Current":"yes"
+},
+"psu_driver-i2c-56-58":
+{
+  "PSU4 Input Voltage":"yes",
+  "PSU4 12V Output Voltage":"yes",
+  "PSU4 5/3.3V Output Voltage":"yes",
+  "PSU4 FAN":"yes",
+  "PSU4 Temp1":"yes",
+  "PSU4 Temp2":"yes",
+  "PSU4 Temp3":"yes",
+  "PSU4 Input Power":"yes",
+  "PSU4 12V Output Power":"yes",
+  "PSU4 5/3.3V Output Power":"yes",
+  "PSU4 Input Current":"yes",
+  "PSU4 12V Output Current":"yes",
+  "PSU4 5/3.3V Output Current":"yes"
+},
+"adm1278-i2c-16-10":
+{
+  "SCM Voltage":"yes",
+  "SCM Power":"yes",
+  "SCM Current":"yes"
+},
+"tmp75-i2c-51-48":
+{
+  "PDB-L Temp1":"yes"
+},
+"tmp75-i2c-52-49":
+{
+  "PDB-L Temp2":"yes"
+},
+"tmp75-i2c-59-48":
+{
+  "PDB-R Temp1":"yes"
+},
+"tmp75-i2c-60-49":
+{
+  "PDB-R Temp2":"yes"
+},
+"fcmcpld-i2c-64-33":
+{
+  "Fan 1 front":"yes",
+  "Fan 1 rear":"yes",
+  "Fan 3 front":"yes",
+  "Fan 3 rear":"yes",
+  "Fan 5 front":"yes",
+  "Fan 5 rear":"yes",
+  "Fan 7 front":"yes",
+  "Fan 7 rear":"yes"
+},
+"fcmcpld-i2c-72-33":
+{
+  "Fan 2 front":"yes",
+  "Fan 2 rear":"yes",
+  "Fan 4 front":"yes",
+  "Fan 4 rear":"yes",
+  "Fan 6 front":"yes",
+  "Fan 6 rear":"yes",
+  "Fan 8 front":"yes",
+  "Fan 8 rear":"yes"
+},
+"tmp75-i2c-66-48":
+{
+  "FCM-T Temp1":"yes"
+},
+"tmp75-i2c-66-49":
+{
+  "FCM-T Temp2":"yes"
+},
+"adm1278-i2c-67-10":
+{
+  "FCM-T Voltage":"yes",
+  "FCM-T Power":"yes",
+  "FCM-T Current":"yes"
+},
+"tmp75-i2c-74-48":
+{
+  "FCM-B Temp1":"yes"
+},
+"tmp75-i2c-74-49":
+{
+  "FCM-B Temp2":"yes"
+},
+"adm1278-i2c-75-10":
+{
+  "FCM-B Voltage":"yes",
+  "FCM-B Power":"yes",
+  "FCM-B Current":"yes"
+},
+"adm1278-i2c-84-10":
+{
+  "PIM1 Voltage":"yes",
+  "PIM1 Power":"yes",
+  "PIM1 Current":"yes"
+},
+"tmp75-i2c-82-48":
+{
+  "PIM1 Temp1":"yes"
+},
+"tmp75-i2c-83-4b":
+{
+  "PIM1 Temp2":"yes"
+},
+"max34461-i2c-86-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"adm1278-i2c-92-10":
+{
+  "PIM2 Voltage":"yes",
+  "PIM2 Power":"yes",
+  "PIM2 Current":"yes"
+},
+"max34461-i2c-94-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"tmp75-i2c-90-48":
+{
+  "PIM2 Temp1":"yes"
+},
+"tmp75-i2c-91-4b":
+{
+  "PIM2 Temp2":"yes"
+},
+"adm1278-i2c-100-10":
+{
+  "PIM3 Voltage":"yes",
+  "PIM3 Power":"yes",
+  "PIM3 Current":"yes"
+},
+"max34461-i2c-102-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"tmp75-i2c-98-48":
+{
+  "PIM3 Temp1":"yes"
+},
+"tmp75-i2c-99-4b":
+{
+  "PIM3 Temp2":"yes"
+},
+"adm1278-i2c-108-10":
+{
+  "PIM4 Voltage":"yes",
+  "PIM4 Power":"yes",
+  "PIM4 Current":"yes"
+},
+"max34461-i2c-110-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"tmp75-i2c-106-48":
+{
+  "PIM4 Temp1":"yes"
+},
+"tmp75-i2c-107-4b":
+{
+  "PIM4 Temp2":"yes"
+},
+"adm1278-i2c-116-10":
+{
+  "PIM5 Voltage":"yes",
+  "PIM5 Power":"yes",
+  "PIM5 Current":"yes"
+},
+"max34461-i2c-118-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"tmp75-i2c-114-48":
+{
+  "PIM5 Temp1":"yes"
+},
+"tmp75-i2c-115-4b":
+{
+  "PIM5 Temp2":"yes"
+},
+"adm1278-i2c-124-10":
+{
+  "PIM6 Voltage":"yes",
+  "PIM6 Power":"yes",
+  "PIM6 Current":"yes"
+},
+"max34461-i2c-126-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"tmp75-i2c-122-48":
+{
+  "PIM6 Temp1":"yes"
+},
+"tmp75-i2c-123-4b":
+{
+  "PIM6 Temp2":"yes"
+},
+"adm1278-i2c-132-10":
+{
+  "PIM7 Voltage":"yes",
+  "PIM7 Power":"yes",
+  "PIM7 Current":"yes"
+},
+"max34461-i2c-134-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"tmp75-i2c-130-48":
+{
+  "PIM7 Temp1":"yes"
+},
+"tmp75-i2c-131-4b":
+{
+  "PIM7 Temp2":"yes"
+},
+"adm1278-i2c-140-10":
+{
+  "PIM8 Voltage":"yes",
+  "PIM8 Power":"yes",
+  "PIM8 Current":"yes"
+},
+"max34461-i2c-142-74":
+{
+  "vout1":"yes",
+  "vout2":"yes",
+  "vout3":"yes",
+  "vout4":"yes",
+  "vout5":"yes",
+  "vout6":"yes",
+  "vout7":"yes",
+  "vout8":"yes",
+  "vout9":"yes",
+  "vout10":"yes",
+  "vout11":"yes",
+  "vout12":"yes",
+  "vout13":"yes",
+  "vout14":"yes",
+  "vout15":"yes",
+  "vout16":"yes"
+},
+"tmp75-i2c-138-48":
+{
+  "PIM8 Temp1":"yes"
+},
+"tmp75-i2c-139-4b":
+{
+  "PIM8 Temp2":"yes"
+}
+}

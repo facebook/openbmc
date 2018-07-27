@@ -47,6 +47,11 @@ try:
     import LightningUtil
 except Exception as e:
     pass
+try:
+    sys.path.insert(0, testPath + 'minipack/unittests/')
+    import MinipackUtil
+except Exception as e:
+    pass
 
 
 class UnitTestUtil:
@@ -69,6 +74,8 @@ class UnitTestUtil:
             return FbttnUtil.FbttnUtil()
         elif platformType == 'lightning':
             return LightningUtil.LightningUtil()
+        elif platformType == 'minipack':
+            return MinipackUtil.MinipackUtil()
         else:
             raise Exception("Unsupported Platform")
 

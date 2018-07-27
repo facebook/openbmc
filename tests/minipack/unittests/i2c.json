@@ -1,0 +1,234 @@
+{
+  "adm1278": {
+    "bus": "16",
+    "address": "0x10"
+  },
+  "tmp421": {
+    "bus": "17",
+    "address": "0x4c"
+  },
+  "tmp421": {
+    "bus": "17",
+    "address": "0x4d"
+  },
+  "24c64": {
+    "bus": "18",
+    "address": "0x52"
+  },
+  "24c02": {
+    "bus": "22",
+    "address": "0x50"
+  },
+  "slb9645": {
+    "bus": "7",
+    "address": "0x20"
+  },
+  "24c02": {
+    "bus": "32",
+    "address": "0x50"
+  },
+  "24c02": {
+    "bus": "33",
+    "address": "0x50"
+  },
+  "24c64": {
+    "bus": "34",
+    "address": "0x54"
+  },
+  "8V49NS0412NLGI8": {
+    "bus": "10",
+    "address": "0x6c"
+  },
+  "8T49N240": {
+    "bus": "10",
+    "address": "0x6f"
+  },
+  "smbcpld": {
+    "bus": "12",
+    "address": "0x3e"
+  },
+  "iobfpga": {
+    "bus": "13",
+    "address": "0x35"
+  },
+  "PDB-L-psu2": {
+    "bus": "48",
+    "address": "0x58"
+  },
+  "PDB-L-psu2_eeprom": {
+    "bus": "48",
+    "address": "0x50"
+  },
+  "PDB-L-psu1": {
+    "bus": "49",
+    "address": "0x59"
+  },
+  "PDB-L-psu1_eeprom": {
+    "bus": "49",
+    "address": "0x51"
+  },
+  "PDB-L-pca9535": {
+    "bus": "50",
+    "address": "0x20"
+  },
+  "PDB-L-tmp75": {
+    "bus": "51",
+    "address": "0x48"
+  },
+  "PDB-L-tmp75": {
+    "bus": "52",
+    "address": "0x49"
+  },
+  "PDB-L-pca9534": {
+    "bus": "54",
+    "address": "0x21"
+  },
+  "PDB-L-pdbcpld": {
+    "bus": "55",
+    "address": "0x60"
+  },
+  "PDB-R-psu4": {
+    "bus": "56",
+    "address": "0x58"
+  },
+  "PDB-R-psu4_eeprom": {
+    "bus": "56",
+    "address": "0x50"
+  },
+  "PDB-R-psu3": {
+    "bus": "57",
+    "address": "0x59"
+  },
+  "PDB-R-psu3_eeprom": {
+    "bus": "57",
+    "address": "0x51"
+  },
+  "PDB-R-tmp75": {
+    "bus": "59",
+    "address": "0x48"
+  },
+  "PDB-R-tmp75": {
+    "bus": "60",
+    "address": "0x49"
+  },
+  "PDB-R-pca9534": {
+    "bus": "62",
+    "address": "0x21"
+  },
+  "PDB-R-pdbcpld": {
+    "bus": "63",
+    "address": "0x60"
+  },
+  "FCM-T-fcmcpld": {
+    "bus": "64",
+    "address": "0x33"
+  },
+  "FCM-T-24c02": {
+    "bus": "65",
+    "address": "0x51"
+  },
+  "FCM-T-tmp75": {
+    "bus": "66",
+    "address": "0x48"
+  },
+  "FCM-T-tmp75": {
+    "bus": "66",
+    "address": "0x49"
+  },
+  "FCM-T-adm1278": {
+    "bus": "67",
+    "address": "0x10"
+  },
+  "FCM-T-24c64": {
+    "bus": "68",
+    "address": "0x52"
+  },
+  "FCM-B-fcmcpld": {
+    "bus": "72",
+    "address": "0x33"
+  },
+  "FCM-B-24c02": {
+    "bus": "73",
+    "address": "0x51"
+  },
+  "FCM-B-tmp75": {
+    "bus": "74",
+    "address": "0x48"
+  },
+  "FCM-B-tmp75": {
+    "bus": "74",
+    "address": "0x49"
+  },
+  "FCM-B-adm1278": {
+    "bus": "75",
+    "address": "0x10"
+  },
+  "FCM-B-24c64": {
+    "bus": "76",
+    "address": "0x52"
+  },
+  "PIM1-adm1278": {
+    "bus": "84",
+    "address": "0x10"
+  },
+  "PIM1-max3446": {
+    "bus": "86",
+    "address": "0x74"
+  },
+  "PIM2-adm1278": {
+    "bus": "92",
+    "address": "0x10"
+  },
+  "PIM2-max3446": {
+    "bus": "94",
+    "address": "0x74"
+  },
+  "PIM3-adm1278": {
+    "bus": "100",
+    "address": "0x10"
+  },
+  "PIM3-max3446": {
+    "bus": "102",
+    "address": "0x74"
+  },
+  "PIM4-adm1278": {
+    "bus": "108",
+    "address": "0x10"
+  },
+  "PIM4-max3446": {
+    "bus": "110",
+    "address": "0x74"
+  },
+  "PIM5-adm1278": {
+    "bus": "116",
+    "address": "0x10"
+  },
+  "PIM5-max3446": {
+    "bus": "118",
+    "address": "0x74"
+  },
+  "PIM6-adm1278": {
+    "bus": "124",
+    "address": "0x10"
+  },
+  "PIM6-max3446": {
+    "bus": "126",
+    "address": "0x74"
+  },
+  "PIM7-adm1278": {
+    "bus": "132",
+    "address": "0x10"
+  },
+  "PIM7-max3446": {
+    "bus": "134",
+    "address": "0x74"
+  },
+  "PIM8-adm1278": {
+    "bus": "140",
+    "address": "0x10"
+  },
+  "PIM8-max3446": {
+    "bus": "142",
+    "address": "0x74"
+  }
+}

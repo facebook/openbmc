@@ -49,6 +49,9 @@ def watchdogReset(unitTestUtil, utilType, logger, cmd_bmc, hostname, headnode=No
     output = psSubProcess.communicate()[0]
     #info = output.split('\n')
     info = output.decode('utf-8').split('\n')
+    # Sometimes the process was killed too soon so that BMC won't reboot.
+    # So Let it sleep 3 seconds before killing watchdogProcess.
+    time.sleep(3)
     for line in info:
         if "watchdogProcess" in line:
             line = line.split(' ')

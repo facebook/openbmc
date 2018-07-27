@@ -49,6 +49,7 @@ def fansTest(platformType, util):
 
     # set fan speed
     logger.debug("Executing: ".format(util.SetFanCmd))
+    time.sleep(5)   # allow time for fans to be properly set
     err = subprocess.Popen(util.SetFanCmd,
                            shell=True,
                            stdout=subprocess.PIPE,

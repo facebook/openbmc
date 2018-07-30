@@ -83,7 +83,7 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-const static uint8_t gpio_bic_update_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
+const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 
 // Helper Functions
@@ -185,7 +185,7 @@ read_device(const char *device, int *value) {
 }
 
 static uint8_t
-_is_bic_update_ready(uint8_t slot_id) {
+_is_bic_ready(uint8_t slot_id) {
   int val;
   char path[64] = {0};
 
@@ -193,16 +193,16 @@ _is_bic_update_ready(uint8_t slot_id) {
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_bic_update_ready[slot_id]);
+  sprintf(path, GPIO_VAL, gpio_bic_ready[slot_id]);
 
   if (read_device(path, &val)) {
     return 0;
   }
 
   if (val == 0x0) {
-    return 0;
-  } else {
     return 1;
+  } else {
+    return 0;
   }
 }
 
@@ -273,7 +273,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   uint8_t dataCksum;
   int retry = 0;
 
-  if (!_is_slot_12v_on(slot_id)) {
+  if (!_is_bic_ready(slot_id)) {
     return -1;
   }
 
@@ -311,6 +311,10 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
     if (rlen == 0) {
+      if (!_is_bic_ready(slot_id)) {
+        break;
+      }
+
       retry++;
       msleep(20);
     }
@@ -794,7 +798,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   sleep(1);
   printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
-  if (!_is_bic_update_ready(slot_id)) {
+  if (_is_bic_ready(slot_id)) {
     mqlim.rlim_cur = RLIM_INFINITY;
     mqlim.rlim_max = RLIM_INFINITY;
     if (setrlimit(RLIMIT_MSGQUEUE, &mqlim) < 0) {
@@ -821,7 +825,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
-    if (_is_bic_update_ready(slot_id)) {
+    if (!_is_bic_ready(slot_id)) {
       printf("bic ready for update after %d tries\n", i);
       break;
     }
@@ -1022,7 +1026,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
-    if (!_is_bic_update_ready(slot_id))
+    if (_is_bic_ready(slot_id))
       break;
 
     msleep(BIC_UPDATE_TIMEOUT);

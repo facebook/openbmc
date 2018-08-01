@@ -64,27 +64,38 @@ def is_openbmc():
     return False
 
 
-standalone = logging.Formatter(
-    '%(levelname)s:%(asctime)-15s %(message)s'
-)
+def run_verbosely(command, logger):
+    # type: (List[str], logging.Logger) -> None
+    command_string = ' '.join(command)
+    logger.info('Starting to run `{}`.'.format(command_string))
+    subprocess.check_call(command)
+    logger.info('Finished running `{}`.'.format(command_string))
+
+
+def add_syslog_handler(logger):
+    # type(logging.Logger) -> None
+    try:
+        run_verbosely(['/etc/init.d/syslog', 'start'], logger)
+        handler = logging.handlers.SysLogHandler('/dev/log')
+        handler.setFormatter(
+            logging.Formatter('pypartition: %(message)s')
+        )
+        logger.addHandler(handler)
+    except socket.error:
+        logger.error('Error initializing syslog; skipping.')
 
 
 def get_logger():
     # type: () -> logging.Logger
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    loggers = [(logging.StreamHandler(), standalone)]  # type: LogDetailsType
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(
+        '%(levelname)s:%(asctime)-15s %(message)s'
+    ))
+    logger.addHandler(handler)
     if is_openbmc():
-        loggers.append((logging.FileHandler('/var/log/pypartition.log'),
-                        standalone))
-        try:
-            loggers.append((logging.handlers.SysLogHandler('/dev/log'),
-                            logging.Formatter('pypartition: %(message)s')))
-        except socket.error:
-            print('Error initializing syslog; skipping.', file=sys.stderr)
-    for (handler, formatter) in loggers:
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        add_syslog_handler(logger)
     return logger
 
 
@@ -169,6 +180,19 @@ def get_writeable_mounted_mtds():
 
 def fuser_k_mount_ro(writeable_mounted_mtds, logger):
     # type: (Tuple[str, str], logging.Logger) -> None
+    if not writeable_mounted_mtds:
+        return
+
+    # logging.shutdown() documentations says "no further use of the logging
+    # system should be made after this call", so don't call it but instead
+    # selectively remove and add back the specific handlers we expect will stop
+    # working if rsyslog is killed because it has a file descriptor like
+    # /mnt/data/logfile open.
+    for handler in logger.handlers:
+        if isinstance(handler, logging.handlers.SysLogHandler):
+            handler.close()
+            logger.removeHandler(handler)
+
     for (device, mountpoint) in writeable_mounted_mtds:
         # TODO don't actually fuser and remount on dry run
         try:
@@ -177,7 +201,9 @@ def fuser_k_mount_ro(writeable_mounted_mtds, logger):
             pass
         run_verbosely(['mount', '-o', 'remount,ro', device, mountpoint],
                       logger)
-        # TODO T31921137 restart rsyslog
+
+    # rsyslog was likely killed; bring it back
+    add_syslog_handler(logger)
 
 
 def get_kernel_parameters():
@@ -298,13 +324,6 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
         last = current
     return partitions
 
-
-def run_verbosely(command, logger):
-    # type: (List[str], logging.Logger) -> None
-    command_string = ' '.join(command)
-    logger.info('Starting to run `{}`.'.format(command_string))
-    subprocess.check_call(command)
-    logger.info('Finished running `{}`.'.format(command_string))
 
 def other_flasher_running(logger):
     # type: (logging.Logger) -> bool

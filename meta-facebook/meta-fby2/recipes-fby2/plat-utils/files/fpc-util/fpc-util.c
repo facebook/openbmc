@@ -60,6 +60,9 @@ main(int argc, char **argv) {
   }
 
   if (!strcmp(argv[2], "--usb")) {
+    if ((slot_id < 1) || (slot_id > 4))
+      goto err_exit;
+
     printf("fpc-util: switching USB channel to slot%d\n", slot_id);
     return pal_switch_usb_mux(slot_id);
   } else if (!strcmp(argv[2], "--identify")) {

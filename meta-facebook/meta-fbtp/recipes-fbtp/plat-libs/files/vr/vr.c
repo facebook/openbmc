@@ -65,7 +65,8 @@
 //Used identify VR Chip info. there are 4 vr fw code in EVT3 and after
 enum
 {
-    SS_Mix = 0x1,
+    SS_Fairchild = 0x0,
+    SS_IFX = 0x1,
     DS_Fairchild = 0x2,
     DS_IFX = 0x3,
     UNKNOWN_TYPE = 0xff,
@@ -932,28 +933,26 @@ check_vr_fw_code_match_MB(int startindex, int endindex, uint8_t *BinData, uint8_
   uint8_t BOARD_SKU_ID;
   uint8_t VR_SKUID; //identify the version which is suitable for MB or not
   uint8_t VR_Type = UNKNOWN_TYPE;
-  uint8_t IsDoubleSideMB;
-  //Get the FM_BOARD_SKU_ID4 from BoardInfo since it can tell SS/DS
-  IsDoubleSideMB = BIT(BoardInfo, 4);
 
-  //for evt3 and after version
+  //the mapper is defined as below and it is defined by power team
+  // 0x1 - DS & IFX
+  // 0x2 - SS & IFX
+  // 0x3 - DS & Fairchild
+  // 0x4 - SS & Fairchild
   uint8_t DevStageMapper[]=
   {
     DS_IFX,
-    SS_Mix,
+    SS_IFX,
     DS_Fairchild,
+    SS_Fairchild,
   };
 
-  if ( IsDoubleSideMB )
-  {
-    //There is a need to identify DS type
-    BOARD_SKU_ID = BoardInfo >> 3;
-  }
-  else
-  {
-    //Only one type for SS
-    BOARD_SKU_ID = SS_Mix;
-  }
+  //get the type of MB by GPIO
+  //0x0 - SS & Fairchild
+  //0x1 - SS & IFX
+  //0x2 - DS & Fairchild
+  //0x3 - DS & IFX
+  BOARD_SKU_ID = BoardInfo >> 3;
 
 #ifdef VR_DEBUG
   printf("[%s] BoardInfo:%x, BOARD_SKU_ID:%x\n", __func__, BoardInfo, BOARD_SKU_ID);

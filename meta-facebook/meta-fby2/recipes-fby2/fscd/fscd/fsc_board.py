@@ -73,6 +73,13 @@ loc_map_rc = {
     'd': "_dimm3_location"
 }
 
+loc_map_ep = {
+    'a': "_dimm0_location",
+    'b': "_dimm1_location",
+    'c': "_dimm2_location",
+    'd': "_dimm3_location"
+}
+
 def board_fan_actions(fan, action='None'):
     '''
     Override the method to define fan specific actions like:
@@ -152,7 +159,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
             lpal_hndl.pal_set_fscd_counter(fscd_counter)
 
     if match(r'soc_temp_diode', sname) != None:
-        return rc_stby_sensor_check(board) 
+        return rc_stby_sensor_check(board)
 
     try:
         if attribute['type'] == "power_status":
@@ -173,7 +180,13 @@ def sensor_valid_check(board, sname, check_name, attribute):
                                     dimm_sts = f.read(1)
                                 if dimm_sts[0] != 1:
                                     return 0
-                            else:   
+                            elif int(server_type) == 2:       #EP Server
+                                # check DIMM present
+                                with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map_ep[sname[8:9]], "rb") as f:
+                                    dimm_sts = f.read(1)
+                                if dimm_sts[0] != 1:
+                                    return 0
+                            else:
                                 # check DIMM present
                                 with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map[sname[8:10]], "rb") as f:
                                     dimm_sts = f.read(1)
@@ -181,7 +194,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                                     return 0
                         return 1
                 else:
-                    return 1    
+                    return 1
             return 0
         else:
             Logger.debug("Sensor corresponding valid check funciton not found!")

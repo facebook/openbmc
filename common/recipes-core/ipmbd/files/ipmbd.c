@@ -731,7 +731,7 @@ conn_handler(client_t *cli) {
 	  }
   }
 
-  ipmb_handle(svc->i2c_fd, req_buf, (unsigned char)req_len, res_buf, &res_len);
+  ipmb_handle(svc->i2c_fd, req_buf, (unsigned short)req_len, res_buf, &res_len);
 
   if(ipc_send_resp(cli, res_buf, res_len) != 0) {
     syslog(LOG_WARNING, "ipmbd: send() failed!\n");

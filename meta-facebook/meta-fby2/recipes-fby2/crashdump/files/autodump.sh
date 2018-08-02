@@ -91,6 +91,7 @@ if [ "$DELAY_SEC" != "0" ]; then
 fi
 
 echo "Auto Dump for $SLOT_NAME Started"
+logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: $SLOT_NUM started"
 
 #HEADER LINE for the dump
 $DUMP_SCRIPT "time" > $CRASHDUMP_FILE

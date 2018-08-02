@@ -184,7 +184,7 @@ static int length_check(unsigned char cmd_len, unsigned char req_len, unsigned c
   // req_len = cmd_len + 3 (payload_id, cmd and netfn)
   if( req_len != (cmd_len + IPMI_MN_REQ_HDR_SIZE) ){
     res->cc = CC_INVALID_LENGTH;
-    *res_len = 1;
+    *res_len = 0;
     return 1;
   }
   return 0;
@@ -3002,6 +3002,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       oem_get_dimm_info(request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_BOOT_ORDER:
+      if(length_check(SIZE_BOOT_ORDER, req_len, response, res_len)) {
+        break;
+      } 
       oem_set_boot_order(request, req_len, response, res_len);
       break;
     case CMD_OEM_GET_BOOT_ORDER:

@@ -35,6 +35,7 @@ def get_sensors():
         data = data.decode()
     except proc.TimeoutError as ex:
         data = ex.output
+        data = data.decode();
         err = ex.error
 
     data = re.sub('\(.+?\)', '', data)

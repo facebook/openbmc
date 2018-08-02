@@ -20,7 +20,7 @@
 import json
 from boardroutes import board_routes
 
-DEFAULT_TIMEOUT_SEC = 10
+DEFAULT_TIMEOUT_SEC = 20
 
 common_routes = [
     '/api',

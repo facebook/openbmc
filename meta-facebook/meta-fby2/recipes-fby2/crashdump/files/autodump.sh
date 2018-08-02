@@ -3,6 +3,8 @@
 ME_UTIL="/usr/local/bin/me-util"
 FRUID_UTIL="/usr/local/bin/fruid-util"
 SLOT_NAME=$1
+INTERFACE="PECI_INTERFACE"
+PCIE_INTERFACE="PECI_INTERFACE"
 
 function is_numeric {
   if [ $(echo "$1" | grep -cE "^\-?([[:xdigit:]]+)(\.[[:xdigit:]]+)?$") -gt 0 ]; then
@@ -48,7 +50,7 @@ fi
 # Set crashdump timestamp
 sys_runtime=$(awk '{print $1}' /proc/uptime)
 sys_runtime=$(printf "%0.f" $sys_runtime)
-echo $((sys_runtime+630)) > /tmp/cache_store/fru${SLOT_NUM}_crashdump
+echo $((sys_runtime+1200)) > /tmp/cache_store/fru${SLOT_NUM}_crashdump
 
 DUMP_SCRIPT="/usr/local/bin/dump.sh"
 CRASHDUMP_FILE="/mnt/data/crashdump_$SLOT_NAME"
@@ -107,6 +109,24 @@ echo "$RES" >> $CRASHDUMP_FILE
 echo "Get Device ID:" >> $CRASHDUMP_FILE
 RES=$($ME_UTIL $SLOT_NAME 0x18 0x01)
 echo "$RES" >> $CRASHDUMP_FILE
+RET=$?
+
+# if ME has response and in operational mode, PECI through ME
+if [ "$RET" -eq "0" ] && [ "${RES:6:1}" == "0" ]; then
+  RES=$($ME_UTIL $SLOT_NAME 0xb8 0x40 0x57 0x01 0x00 0x30 0x05 0x05 0xa1 0x00 0x00 0x00 0x00)
+  RET=$?
+  if [ "$RET" -eq "0" ] && [ "${RES:0:11}" == "57 01 00 40" ]; then
+    INTERFACE="ME_INTERFACE"
+  else
+    INTERFACE="PECI_INTERFACE"
+  fi
+  # else use wired PECI directly
+else
+  # echo "Use BIC wired PECI interface due to ME abnormal"
+  INTERFACE="PECI_INTERFACE"
+fi
+PCIE_INTERFACE=$INTERFACE
+
 # Major Firmware Revision
 REV=$(echo $RES| awk '{print $3;}')
 # Check whether the first parameter is numeric or not
@@ -117,44 +137,46 @@ if [ "$?" == 1 ] ;then
   if [ $Mode -ne 0 ] ;then
     echo "Device firmware update or Self-initialization in progress or Firmware in the recovery boot-loader mode" >> $CRASHDUMP_FILE
   fi
-fi
-
-# Get Self-test result
-echo "Get Self-test result:" >> $CRASHDUMP_FILE
-RES=$($ME_UTIL $SLOT_NAME 0x18 0x04)
-echo "$RES" >> $CRASHDUMP_FILE
-CC=$(echo $RES| awk '{print $1;}')
-# Check whether the first parameter is numeric or not
-# If not, then it is an error message from me-util
-is_numeric $CC
-if [ "$?" == 1 ] ;then
-  if [ $CC -ne 55 ] ;then
-    if [ $CC -eq 56 ] ;then
-      echo "Self Test function not implemented in this controller" >> $CRASHDUMP_FILE
-    elif [ $CC -eq 57 ] ;then
-      echo "Corrupted or inaccessible data or devices" >> $CRASHDUMP_FILE
-    elif [ $CC -eq 58 ] ;then
-      echo "Fatal hardware error" >> $CRASHDUMP_FILE
-    elif [ $CC -eq 80 ] ;then
-      echo "PSU Monitoring service error" >> $CRASHDUMP_FILE
-    elif [ $CC -eq 81 ] ;then
-      echo "Firmware entered Recovery boot-loader mode" >> $CRASHDUMP_FILE
-    elif [ $CC -eq 82 ] ;then
-      echo "HSC Monitoring service error" >> $CRASHDUMP_FILE
-    elif [ $CC -eq 83 ] ;then
-      echo "Firmware entered non-UMA restricted mode of operation" >> $CRASHDUMP_FILE
-    else
-      echo "Unknown error" >> $CRASHDUMP_FILE
+  # Get Self-test result
+  echo "Get Self-test result:" >> $CRASHDUMP_FILE
+  RES=$($ME_UTIL $SLOT_NAME 0x18 0x04)
+  echo "$RES" >> $CRASHDUMP_FILE
+  CC=$(echo $RES| awk '{print $1;}')
+  # Check whether the first parameter is numeric or not
+  # If not, then it is an error message from me-util
+  is_numeric $CC
+  if [ "$?" == 1 ] ;then
+    if [ $CC -ne 55 ] ;then
+      if [ $CC -eq 56 ] ;then
+        echo "Self Test function not implemented in this controller" >> $CRASHDUMP_FILE
+      elif [ $CC -eq 57 ] ;then
+        echo "Corrupted or inaccessible data or devices" >> $CRASHDUMP_FILE
+      elif [ $CC -eq 58 ] ;then
+        echo "Fatal hardware error" >> $CRASHDUMP_FILE
+      elif [ $CC -eq 80 ] ;then
+        echo "PSU Monitoring service error" >> $CRASHDUMP_FILE
+      elif [ $CC -eq 81 ] ;then
+        echo "Firmware entered Recovery boot-loader mode" >> $CRASHDUMP_FILE
+      elif [ $CC -eq 82 ] ;then
+        echo "HSC Monitoring service error" >> $CRASHDUMP_FILE
+      elif [ $CC -eq 83 ] ;then
+        echo "Firmware entered non-UMA restricted mode of operation" >> $CRASHDUMP_FILE
+      else
+        echo "Unknown error" >> $CRASHDUMP_FILE
+      fi
     fi
+  fi
+
+  # PCI config read is not support ME DMI interface
+  RES=$($ME_UTIL $SLOT_NAME 0xb8 0x40 0x57 0x01 0x00 0x30 0x06 0x05 0x61 0x00 0x00 0x81 0x0D 0x00)
+  RET=$?
+  if [ "$RET" -eq "0" ] && [ "${RES:0:19}" == "Completion Code: AC" ]; then
+    PCIE_INTERFACE="PECI_INTERFACE"
   fi
 fi
 
-#COREID dump
-$DUMP_SCRIPT $SLOT_NAME "coreid" >> $CRASHDUMP_FILE
-#MSR dump
-$DUMP_SCRIPT $SLOT_NAME "msr" >> $CRASHDUMP_FILE
-#PCIe dump
-$DUMP_SCRIPT $SLOT_NAME "pcie" >> $CRASHDUMP_FILE
+echo "Set coreid msr interface = $INTERFACE" >> $CRASHDUMP_FILE
+echo "Set pcie dwr interface = $PCIE_INTERFACE" >> $CRASHDUMP_FILE
 
 # Sensors & sensor thresholds
 echo "Sensor history at dump:" >> $CRASHDUMP_FILE 2>&1
@@ -162,10 +184,17 @@ $DUMP_SCRIPT $SLOT_NAME "sensors" >> $CRASHDUMP_FILE
 echo "Sensor threshold at dump:" >> $CRASHDUMP_FILE 2>&1
 $DUMP_SCRIPT $SLOT_NAME "threshold" >> $CRASHDUMP_FILE
 
+#COREID dump
+$DUMP_SCRIPT $SLOT_NAME "coreid" $INTERFACE >> $CRASHDUMP_FILE
+#MSR dump
+$DUMP_SCRIPT $SLOT_NAME "msr" $INTERFACE >> $CRASHDUMP_FILE
+#PCIe dump
+$DUMP_SCRIPT $SLOT_NAME "pcie" $PCIE_INTERFACE >> $CRASHDUMP_FILE
+
 # only second/dwr autodump need to rename accordingly
 if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
   # dwr
-  $DUMP_SCRIPT $SLOT_NAME  "dwr" >> $CRASHDUMP_FILE
+  $DUMP_SCRIPT $SLOT_NAME  "dwr" $PCIE_INTERFACE >> $CRASHDUMP_FILE
 
   # rename the archieve file based on whether dump in DWR mode or not
   if [ "$?" == "2" ]; then

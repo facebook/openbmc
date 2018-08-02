@@ -3,10 +3,9 @@
 ME_UTIL="/usr/local/bin/me-util"
 PECI_UTIL="/usr/bin/bic-util"
 CMD_DIR="/usr/local/fbpackages/crashdump"
-INTERFACE="ME_INTERFACE"
+INTERFACE=$3
 SENSOR_HISTORY=180
 SLOT=$1
-TMP_INTERFACE=$INTERFACE
 
 # read command from stdin
 function execute_via_me {
@@ -34,27 +33,9 @@ function execute_via_peci {
 }
 
 function execute_cmd {
-  if [ "$INTERFACE" == "PECI_INTERFACE" ]; then
-    cat | execute_via_peci
-    return
-  fi
-
-  RES=$($ME_UTIL $SLOT 0x18 0x01)
-  RET=$?
-  # if ME has response and in operational mode, PECI through ME
-  if [ "$RET" -eq "0" ] && [ "${RES:6:1}" == "0" ]; then
-    RES=$($ME_UTIL $SLOT 0xb8 0x40 0x57 0x01 0x00 0x30 0x05 0x05 0xa1 0x00 0x00 0x00 0x00)
-    RET=$?
-    if [ "$RET" -eq "0" ] && [ "${RES:0:11}" == "57 01 00 40" ]; then
-      cat | execute_via_me
-    else
-      INTERFACE="PECI_INTERFACE"
-      cat | execute_via_peci
-    fi
-  # else use wired PECI directly
+  if [ "$INTERFACE" == "ME_INTERFACE" ]; then
+    cat | execute_via_me
   else
-    # echo "Use BIC wired PECI interface due to ME abnormal"
-    INTERFACE="PECI_INTERFACE"
     cat | execute_via_peci
   fi
 }
@@ -110,13 +91,6 @@ function find_end_device {
 }
 
 function pcie_dump {
-  # PCI config read is not support ME DMI interface
-  RES=$($ME_UTIL $SLOT 0xb8 0x40 0x57 0x01 0x00 0x30 0x06 0x05 0x61 0x00 0x00 0x81 0x0D 0x00)
-  RET=$?
-  if [ "$RET" -eq "0" ] && [ "${RES:0:19}" == "Completion Code: AC" ]; then
-    TMP_INTERFACE=$INTERFACE
-    INTERFACE="PECI_INTERFACE"
-  fi
 
   # CPU and PCH
   [ -r $CMD_DIR/crashdump_pcie ] && \
@@ -155,20 +129,9 @@ function pcie_dump {
     # PCH root port - Bus 0,Dev 0x1D, Fun:4
     find_end_device $ROOT_BUS 0x1D 4
   fi
-
-  # CPU root port - Bus 0x00/0x16/0x64, Dev 0~3, Fun:0
-
-  INTERFACE=$TMP_INTERFACE
 }
 
 function dwr_dump {
-  # DWR assert check is not support ME DMI interface
-  RES=$($ME_UTIL $SLOT 0xb8 0x40 0x57 0x01 0x00 0x30 0x06 0x05 0x61 0x00 0xbc 0x20 0x04 0x00)
-  RET=$?
-  if [ "$RET" -eq "0" ] && [ "${RES:0:19}" == "Completion Code: AC" ]; then
-    TMP_INTERFACE=$INTERFACE
-    INTERFACE="PECI_INTERFACE"
-  fi
 
   echo
   echo DWR assert check:
@@ -186,8 +149,6 @@ function dwr_dump {
   CC=$(echo $RES| awk '{print $1;}')
   DWR=0x$(echo $RES| awk '{print $5;}')
 
-  INTERFACE=$TMP_INTERFACE
-
   # Success
   if [ "$CC" == "40" ]; then
     if [ $((DWR & 0x04)) == 4 ]; then
@@ -203,20 +164,35 @@ function dwr_dump {
   fi
 }
 
+function print_dump_help {
+  echo "$0 <slot#> coreid <INTERFACE> ==> for CPU CoreID"
+  echo "$0 <slot#> msr    <INTERFACE> ==> for CPU MSR"
+  echo "$0 <slot#> sensors            ==> for sensor history"
+  echo "$0 <slot#> threshold          ==> for sensor threshold"
+  echo "$0 <slot#> pcie   <INTERFACE> ==> for PCIe"
+  echo "$0 <slot#> dwr    <INTERFACE> ==> for DWR check"
+  exit 1
+}
+
 if [ "$#" -eq 1 ] && [ $1 = "time" ]; then
   now=$(date)
   echo "Crash Dump generated at $now"
   exit 0
 fi
 
-if [ "$#" -ne 2 ]; then
-  echo "$0 <slot#> coreid    ==> for CPU CoreID"
-  echo "$0 <slot#> msr       ==> for CPU MSR"
-  echo "$0 <slot#> sensors   ==> for sensor history"
-  echo "$0 <slot#> threshold ==> for sensor threshold"
-  echo "$0 <slot#> pcie      ==> for PCIe"
-  echo "$0 <slot#> dwr       ==> for DWR check"
-  exit 1
+if [ "$#" -eq 2 ]; then
+  if [ "$2" != "sensors" ] && [ "$2" != "threshold" ]; then
+    print_dump_help
+  fi
+elif [ "$#" -eq 3 ]; then
+  if [ "$2" != "coreid" ] && [ "$2" != "msr" ] && [ "$2" != "pcie" ] && [ "$2" != "dwr" ]; then
+    print_dump_help
+  fi
+  if [ "$INTERFACE" != "ME_INTERFACE" ] && [ "$INTERFACE" != "PECI_INTERFACE" ]; then
+    print_dump_help     
+  fi
+else
+  print_dump_help
 fi
 
 echo ""

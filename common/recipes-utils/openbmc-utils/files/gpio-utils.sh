@@ -123,12 +123,11 @@ gpiochip_lookup_by_label() {
         if [[ ${entry} == gpiochip* ]]; then
             label=`cat ${GPIODIR}/${entry}/label`
             if [ ${label} = ${input_label} ]; then
-                break
+                echo ${entry}
+                return
             fi
         fi
     done
-
-    echo $entry
 }
 
 #
@@ -144,12 +143,11 @@ gpiochip_lookup_by_i2c_path() {
         if [[ ${entry} == gpiochip* ]]; then
             link_path=$(readlink -f ${GPIODIR}/${entry} 2>/dev/null)
             if [[ ${link_path} == *i2c*/${i2c_path}/* ]]; then
-                break;
+                echo ${entry}
+                return
             fi
         fi
     done
-
-    echo ${entry}
 }
 
 #
@@ -158,5 +156,9 @@ gpiochip_lookup_by_i2c_path() {
 #
 gpiochip_get_base() {
     local chip=${1}
-    cat ${GPIODIR}/${chip}/base
+    local chip_dir="${GPIODIR}/${chip}"
+
+    if [ -L ${chip_dir} ]; then
+       cat ${chip_dir}/base
+    fi
 }

@@ -59,6 +59,10 @@
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
+#define FW_UPDATE_ONGOING 1
+#define CRASHDUMP_ONGOING 2
+#define CPLDDUMP_ONGOING  3
+
 static uint8_t g_sync_led[MAX_NUM_SLOTS+1] = {0x0};
 static uint8_t m_pos = 0xff;
 static uint8_t m_fan_latch = 0;
@@ -214,6 +218,37 @@ debug_card_out:
   return 0;
 }
 
+static int
+is_btn_blocked(uint8_t pos) {
+  uint8_t fru_start, fru_end, fru_sys_end;
+  uint8_t i;
+
+  if (pos == HAND_SW_BMC) {
+    fru_start = FRU_SLOT1;
+    fru_end = FRU_SLOT4;
+    fru_sys_end = FRU_BMC;
+  } else {
+    fru_start = fru_end = fru_sys_end = pos;
+  }
+
+  for (i = fru_start; i <= fru_sys_end; i++) {
+    if (pal_is_fw_update_ongoing(i))
+      return FW_UPDATE_ONGOING;
+  }
+
+  for (i = fru_start; i <= fru_end; i++) {
+    if (pal_is_crashdump_ongoing(i))
+      return CRASHDUMP_ONGOING;
+  }
+
+  for (i = fru_start; i <= fru_end; i++) {
+    if (pal_is_cplddump_ongoing(i))
+      return CPLDDUMP_ONGOING;
+  }
+
+  return 0;
+}
+
 // Thread to monitor Reset Button and propagate to selected server
 static void *
 rst_btn_handler() {
@@ -242,6 +277,23 @@ rst_btn_handler() {
     if (ret || !btn) {
       if (last_btn != btn) {
         pal_set_rst_btn(pos, 1);
+      }
+      goto rst_btn_out;
+    }
+
+    if ((ret = is_btn_blocked(pos))) {
+      if (!last_btn) {
+        switch (ret) {
+          case FW_UPDATE_ONGOING:
+            syslog(LOG_CRIT, "Reset Button blocked due to FW update is ongoing, FRU: %d", pos);
+            break;
+          case CRASHDUMP_ONGOING:
+            syslog(LOG_CRIT, "Reset Button blocked due to crashdump is ongoing, FRU: %d", pos);
+            break;
+          case CPLDDUMP_ONGOING:
+            syslog(LOG_CRIT, "Reset Button blocked due to CPLD dump is ongoing, FRU: %d", pos);
+            break;
+        }
       }
       goto rst_btn_out;
     }
@@ -295,7 +347,6 @@ pwr_btn_handler() {
   bool release_flag = true;
 
   while (1) {
-
     // Check the position of hand switch
     ret = get_handsw_pos(&pos);
     if (ret) {
@@ -329,6 +380,21 @@ pwr_btn_handler() {
       release_flag = true;
       syslog(LOG_WARNING, "Power button released\n");
       break;
+    }
+
+    if ((ret = is_btn_blocked(pos))) {
+      switch (ret) {
+        case FW_UPDATE_ONGOING:
+          syslog(LOG_CRIT, "Power Button blocked due to FW update is ongoing, FRU: %d", pos);
+          break;
+        case CRASHDUMP_ONGOING:
+          syslog(LOG_CRIT, "Power Button blocked due to crashdump is ongoing, FRU: %d", pos);
+          break;
+        case CPLDDUMP_ONGOING:
+          syslog(LOG_CRIT, "Power Button blocked due to CPLD dump is ongoing, FRU: %d", pos);
+          break;
+      }
+      goto pwr_btn_out;
     }
 
     // Get the current power state (power on vs. power off)

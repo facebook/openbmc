@@ -36,6 +36,11 @@ setup_i2c_gpios() {
     local gpio_base=$(gpiochip_get_base ${gpio_chip})
     local pin link_name
 
+    if [ -z "${gpio_base}" ]; then
+        echo "unable to export pins of io expander ${i2c_path}"
+        return
+    fi
+
     for link_name in ${symlinks}; do
         pin=$((gpio_base + offset))
         gpio_export ${pin} ${link_name}
@@ -52,6 +57,10 @@ if [[ ${KERNEL_VERSION} == 4.1.* ]]; then
 else
     ASPEED_GPIOCHIP=$(gpiochip_lookup_by_label 1e780000.gpio)
     ASPEED_GPIO_BASE=$(gpiochip_get_base ${ASPEED_GPIOCHIP})
+    if [ -z "${ASPEED_GPIO_BASE}" ]; then
+        echo "unable to find base pin of aspeed gpio controller"
+        exit 1
+    fi
 fi
 
 # GPIOM0: BMC_CPLD_TMS

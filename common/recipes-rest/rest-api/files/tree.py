@@ -67,9 +67,6 @@ class tree:
         return self.children
 
     def getChildByName(self, name):
-        if self.name == name:
-            return self
-
         for child in self.children:
             if child.name == name:
                 return child
@@ -106,3 +103,20 @@ class tree:
         for child in self.children:
             child.path = self.path + '/' + child.name
             child.setup(app, support_post)
+
+    def merge(self, other):
+        if (self.name != other.name):
+            raise ValueError("Nodes {} and {} differ".format(self.name, other.name))
+
+        # Check if self's node is a dummy node, if so update
+        # from other if it has a valid data.
+        if (self.data is None and other.data is not None):
+            self.data = other.data
+
+        # Copy over the children from other. Merge if necessary.
+        for oc in other.getChildren():
+            c = self.getChildByName(oc.name)
+            if (c is not None):
+                c.merge(oc)
+            else:
+                self.addChild(oc)

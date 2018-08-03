@@ -28,6 +28,7 @@ import ssl
 from tree import tree
 from node import node
 from plat_tree import init_plat_tree
+from common_tree import init_common_tree
 from rest_config import RestConfig
 
 LOGGER_CONF = {
@@ -65,6 +66,8 @@ if writable:
     syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read/Write Mode')
 else:
     syslog.syslog(syslog.LOG_INFO, 'REST: Launched with Read Only Mode')
-root = init_plat_tree()
+
+root = init_common_tree()
+root.merge(init_plat_tree())
 root.setup(app, writable)
 web.run_app(app, host='*')

@@ -43,7 +43,9 @@ extern "C" {
 // TODO: Some IPMB responses take about 5-6 seconds
 // Need to add a timeout parameter to IPMB request
 // For now changing global timeout to 8 seconds
-#define TIMEOUT_IPMB 8
+#if !defined(TIMEOUT_IPMB)
+  #define TIMEOUT_IPMB 8
+#endif
 #define MIN_IPMB_REQ_LEN 7
 #define MAX_IPMB_RES_LEN 300
 #define MIN_IPMB_RES_LEN 8

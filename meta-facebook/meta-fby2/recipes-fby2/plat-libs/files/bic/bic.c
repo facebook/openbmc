@@ -306,7 +306,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
-  while(retry < 5) {
+  while(retry < 3) {
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 

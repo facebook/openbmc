@@ -10,7 +10,7 @@ SRC_URI += " file://setup-ipmbd.sh \
            "
 DEPENDS_append = " plat-utils "
 
-CFLAGS_prepend = " -DCONFIG_FBY2"
+CFLAGS_prepend = " -DCONFIG_FBY2 -DTIMEOUT_IPMB=3"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

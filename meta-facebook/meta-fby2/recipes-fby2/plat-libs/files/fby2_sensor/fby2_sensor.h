@@ -337,6 +337,7 @@ int fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float
 int fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int fby2_get_slot_type(uint8_t fru);
 int fby2_get_server_type(uint8_t fru, uint8_t *type);
+int fby2_get_server_type_directly(uint8_t fru, uint8_t *type);
 
 
 #ifdef __cplusplus

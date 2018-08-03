@@ -604,6 +604,28 @@ fby2_get_server_type(uint8_t fru, uint8_t *type) {
   return bic_get_server_type(fru, type);
 }
 
+int
+fby2_get_server_type_directly(uint8_t fru, uint8_t *type) {
+  int ret;
+  uint8_t rbuf[64] = {0};
+  ipmi_dev_id_t *id = (ipmi_dev_id_t *)rbuf;
+
+  ret = bic_get_dev_id(fru, id);
+  if (!ret) {
+    // Use product ID to identify the server type
+    if (id->prod_id[0] == 0x39 && id->prod_id[1] == 0x30) {
+      *type = SERVER_TYPE_TL;
+    } else if (id->prod_id[0] == 0x43 && id->prod_id[1] == 0x52) {
+      *type = SERVER_TYPE_RC;
+    } else if (id->prod_id[0] == 0x50 && id->prod_id[1] == 0x45) {
+      *type = SERVER_TYPE_EP;
+    } else {
+      *type = SERVER_TYPE_NONE;
+    }
+  }
+
+  return ret;
+}
 
 int
 fby2_is_server_12v_on(uint8_t slot_id, uint8_t *status) {

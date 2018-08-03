@@ -4746,10 +4746,19 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
   int ret = -1;
   uint8_t server_type = 0xFF;
+
   ret = fby2_get_server_type(fru, &server_type);
   if (ret) {
     syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
   }
+
+  if (server_type > SERVER_TYPE_EP) {
+    ret = fby2_get_server_type_directly(fru, &server_type);
+    if (ret) {
+      syslog(LOG_ERR, "%s, Get server type directly failed", __func__);
+    }
+  }
+
   switch (server_type) {
 #if defined(CONFIG_FBY2_RC)
     case SERVER_TYPE_RC:
@@ -4766,6 +4775,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
       break;
     default:
       syslog(LOG_ERR, "%s, Undefined server type", __func__);
+      pal_parse_sel_helper(fru, sel, error_log);
       return -1;
   }
 #else
@@ -4823,7 +4833,7 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
 int
 pal_set_fru_post(uint8_t fru, uint8_t value) {
-  if(value == 0) {
+  if (value == 0) {
     syslog(LOG_WARNING, "FRU: %d, POST END", fru);
     return pal_set_post_start_timestamp(fru,POST_RESET);
   } else {
@@ -4870,10 +4880,10 @@ pal_set_post_start_timestamp(uint8_t fru, uint8_t method) {
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};
   struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC,&ts);
   long value = -1;
 
   if (method == POST_SET) {
+    clock_gettime(CLOCK_MONOTONIC,&ts);
     value = ts.tv_sec;
   } else if (method == POST_RESET) {
     value = -1;

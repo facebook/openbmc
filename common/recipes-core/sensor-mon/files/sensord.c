@@ -201,14 +201,14 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       case UNR_THRESH:
       case UCR_THRESH:
       case UNC_THRESH:
-        if (*curr_val >= (thresh_val - snr[snr_num].neg_hyst))
+        if (FORMAT_CONV(*curr_val) >= FORMAT_CONV((thresh_val - snr[snr_num].neg_hyst)))
           return 0;
         break;
 
       case LNR_THRESH:
       case LCR_THRESH:
       case LNC_THRESH:
-        if (*curr_val <= (thresh_val + snr[snr_num].pos_hyst))
+        if (FORMAT_CONV(*curr_val) <= FORMAT_CONV((thresh_val + snr[snr_num].pos_hyst)))
           return 0;
     }
 
@@ -307,14 +307,14 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
       case UNR_THRESH:
       case UCR_THRESH:
       case UNC_THRESH:
-        if (*curr_val < thresh_val) {
+        if (FORMAT_CONV(*curr_val) < FORMAT_CONV(thresh_val)) {
           return 0;
         }
         break;
       case LNR_THRESH:
       case LCR_THRESH:
       case LNC_THRESH:
-        if (*curr_val > thresh_val) {
+        if (FORMAT_CONV(*curr_val) > FORMAT_CONV(thresh_val)) {
           return 0;
         }
         break;

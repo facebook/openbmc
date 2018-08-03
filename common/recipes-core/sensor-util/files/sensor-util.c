@@ -168,17 +168,17 @@ get_sensor_status(float fvalue, thresh_sensor_t *thresh, char *status) {
   else
     sprintf(status, STATUS_OK);
 
-  if (GETBIT(thresh->flag, UNC_THRESH) && (fvalue >= thresh->unc_thresh))
+  if (GETBIT(thresh->flag, UNC_THRESH) && (FORMAT_CONV(fvalue) >= FORMAT_CONV(thresh->unc_thresh)))
     sprintf(status, STATUS_UNC);
-  if (GETBIT(thresh->flag, UCR_THRESH) && (fvalue >= thresh->ucr_thresh))
+  if (GETBIT(thresh->flag, UCR_THRESH) && (FORMAT_CONV(fvalue) >= FORMAT_CONV(thresh->ucr_thresh)))
     sprintf(status, STATUS_UCR);
-  if (GETBIT(thresh->flag, UNR_THRESH) && (fvalue >= thresh->unr_thresh))
+  if (GETBIT(thresh->flag, UNR_THRESH) && (FORMAT_CONV(fvalue) >= FORMAT_CONV(thresh->unr_thresh)))
     sprintf(status, STATUS_UNR);
-  if (GETBIT(thresh->flag, LNC_THRESH) && (fvalue <= thresh->lnc_thresh))
+  if (GETBIT(thresh->flag, LNC_THRESH) && (FORMAT_CONV(fvalue) <= FORMAT_CONV(thresh->lnc_thresh)))
     sprintf(status, STATUS_LNC);
-  if (GETBIT(thresh->flag, LCR_THRESH) && (fvalue <= thresh->lcr_thresh))
+  if (GETBIT(thresh->flag, LCR_THRESH) && (FORMAT_CONV(fvalue) <= FORMAT_CONV(thresh->lcr_thresh)))
     sprintf(status, STATUS_LCR);
-  if (GETBIT(thresh->flag, LNR_THRESH) && (fvalue <= thresh->lnr_thresh))
+  if (GETBIT(thresh->flag, LNR_THRESH) && (FORMAT_CONV(fvalue) <= FORMAT_CONV(thresh->lnr_thresh)))
     sprintf(status, STATUS_LNR);
 }
 

@@ -76,6 +76,10 @@ def add_syslog_handler(logger):
     # type(logging.Logger) -> None
     try:
         run_verbosely(['/etc/init.d/syslog', 'start'], logger)
+    # Some old init scripts are missing --oknodo
+    except subprocess.CalledProcessError:
+        pass
+    try:
         handler = logging.handlers.SysLogHandler('/dev/log')
         handler.setFormatter(
             logging.Formatter('pypartition: %(message)s')

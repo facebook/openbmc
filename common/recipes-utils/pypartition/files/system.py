@@ -416,6 +416,8 @@ def reboot(dry_run, reason, logger):
     if other_flasher_running(logger):
         sys.exit(1)
 
+    logger.info(reason)
+
     reboot_command = ['shutdown', '-r', 'now',
                       'pypartition is {}.'.format(reason)]
     if dry_run:
@@ -435,5 +437,5 @@ def reboot(dry_run, reason, logger):
     if subprocess.call(reboot_command) == 0:
         sys.exit(0)
     else:
-        logger.error('Unable to reboot')
+        print('Unable to reboot.', file=sys.stderr)
         sys.exit(1)

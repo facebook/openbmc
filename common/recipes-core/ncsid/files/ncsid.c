@@ -242,6 +242,24 @@ is_aen_packet(AEN_Packet *buf)
          && (buf->IID == 0x00));
 }
 
+// reload kernel NC-SI driver and trigger NC-SI interface initialization
+static int
+ncsi_init_if()
+{
+  char cmd[64] = {0};
+  int ret = 0;
+  syslog(LOG_CRIT, "ncsid: re-configure NC-SI and restart eth0 interface");
+
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "ifdown eth0; ifup eth0");
+  ret = system(cmd);
+
+  syslog(LOG_CRIT, "ncsid: re-start eth0 interface done! ret=%d", ret);
+
+  return ret;
+}
+
+
 // Handles AEN type 0x01 - Cnfiguration Required
 // Steps
 //    1. ifdown eth0;ifup eth0    # re-init NIC NC-SI interface
@@ -253,25 +271,107 @@ handle_ncsi_config()
 // here we add an extra 1 sec to provide extra buffer
 #define NCSI_RESET_TIMEOUT  3
 
-  char cmd[64] = {0};
-  int ret = 0;
-
   // Give NIC some time to finish its reset opeartion before  BMC sends
   // NCSI commands to re-initialize the interface
   sleep(NCSI_RESET_TIMEOUT);
 
-
-  syslog(LOG_CRIT, "ncsid: re-configure NC-SI and restart eth0 interface");
-
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "ifdown eth0; ifup eth0");
-  ret = system(cmd);
-
-  syslog(LOG_CRIT, "ncsid: re-start eth0 interface done! ret=%d", ret);
+  ncsi_init_if();
 
   // set flag indicate all threads to exit
   thread_stop = 1;
 }
+
+
+static int
+getMacAddr(int *values) {
+  FILE *fp;
+
+  fp = fopen("/sys/class/net/eth0/address", "rt");
+  if (!fp) {
+    int err = errno;
+    return err;
+  }
+  if( 6 == fscanf(fp, "%x:%x:%x:%x:%x:%x%*c",
+                  &values[0], &values[1], &values[2],
+                  &values[3], &values[4], &values[5] ) )
+  {
+#ifdef DEBUG
+    syslog(LOG_CRIT, "mac check %x:%x:%x:%x:%x:%x",
+               values[0], values[1], values[2], values[3],
+               values[4], values[5]);
+#endif
+  }
+
+  fclose(fp);
+  return 0;
+}
+
+
+
+#define ZERO_OCTET_THRESHOLD 5
+
+// rudimentary check for valid MAC:
+//    invalid MAC == (number of 0 octet >= 5)
+//    valid MAC   == everything else
+static int
+checkValidMacAddr(int *value) {
+  int numZeroOctet = 0;
+  int valid = 1;
+
+  for (int i=0; i<6; ++i) {
+    if (value[i] == 0)
+      numZeroOctet++;
+  }
+
+  if (numZeroOctet >= ZERO_OCTET_THRESHOLD) {
+    valid = 0;
+  }
+
+  return valid;
+}
+
+
+static int
+check_ncsi_status()
+{
+  int values[6] = {0};
+  int ret;
+
+  ret = getMacAddr(values);
+
+  // if fail to obtain MAC addr, do not proceed further
+  if (ret)
+    return ret;
+
+  // if invalid MAC was obtained, re-init NCSI interface and
+  //     check the MAC addr again
+  if (!checkValidMacAddr(values)) {
+    /* invalid mac */
+    syslog(LOG_CRIT, "invalid MAC(%x:%x:%x:%x:%x:%x) detected, reinit NCSI",
+             values[0], values[1], values[2], values[3],
+             values[4], values[5]);
+
+    // re-init NCSI interface and get MAC address again
+    ncsi_init_if();
+    ret = getMacAddr(values);
+    if (!ret && checkValidMacAddr(values)) {
+      syslog(LOG_CRIT, "Valid MAC(%x:%x:%x:%x:%x:%x) obtained after NCSI \t"
+             "re-init, restarting ncsid",
+             values[0], values[1], values[2], values[3],
+             values[4], values[5]);
+      // set flag indicate all threads to exit and re-init NCSID
+      thread_stop = 1;
+    } else {
+      syslog(LOG_CRIT, "Invalid MAC(%x:%x:%x:%x:%x:%x), after NCSI re-init",
+            values[0], values[1], values[2], values[3],
+            values[4], values[5]);
+    }
+  }
+
+  return 0;
+}
+
+
 
 static void
 process_NCSI_AEN(AEN_Packet *buf)
@@ -532,6 +632,8 @@ ncsi_tx_handler(void *sfd) {
       syslog(LOG_ERR, "ncsid tx: failed to send cmd, status ret = %d, errno=%d\n",
                ret, errno);
     }
+
+    ret = check_ncsi_status();
     sleep(NIC_STATUS_SAMPLING_DELAY);
   }
 

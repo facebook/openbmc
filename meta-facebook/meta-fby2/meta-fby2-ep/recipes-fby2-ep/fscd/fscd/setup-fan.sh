@@ -95,9 +95,11 @@ esac
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50
 runsv /etc/sv/fscd > /dev/null 2>&1 &
+logger -p user.info "fscd started"
 
 # Check SLED in/out
 if [ $(gpio_get H5) = 1 ]; then
+   logger -p user.warning "SLED not seated, fscd stopped, set fan speed to 100%"
    sv stop fscd
    /usr/local/bin/fan-util --set 100
 fi

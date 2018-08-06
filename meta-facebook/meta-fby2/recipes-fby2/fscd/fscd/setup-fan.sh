@@ -53,7 +53,7 @@ echo "Setup fan speed... "
 
 case "$sku_type" in
    "0")
-     case "$server_type" in 
+     case "$server_type" in
        "0")
          echo "Run FSC 4 TLs Config"
          cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
@@ -69,12 +69,12 @@ case "$sku_type" in
      esac
    ;;
    "34")
-     if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then  
+     if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then
        echo "Run FSC 2 GPs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
      elif [[ $(get_server_type 2) == "1" && $(get_server_type 4) == "1" ]] ; then
        echo "Run FSC 4 RCs Config"
-       cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}   
+       cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
      else
        echo "Unexpected 2 GPs and 2 Servers config! Run FSC 2 GPs and 2 TLs Config as default config"
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
@@ -107,16 +107,18 @@ case "$sku_type" in
      else
        echo "Unexpected sku type! Use FSC 4 TLs Config as default config"
        cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
-     fi  
+     fi
    ;;
 esac
 
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/fan-util --set 50
 runsv /etc/sv/fscd > /dev/null 2>&1 &
+logger -p user.info "fscd started"
 
-# Check SLED in/out 
+# Check SLED in/out
 if [ $(gpio_get H5) = 1 ]; then
+   logger -p user.warning "SLED not seated, fscd stopped, set fan speed to 100%"
    sv stop fscd
    /usr/local/bin/fan-util --set 100
 fi

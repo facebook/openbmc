@@ -98,6 +98,8 @@ config_adc 15    0  1000 0
 
 #
 i2cset -y -f 10 0x40 0xd4 0x3f1c w
+i2cset -y -f 10 0x40 0xd5 0x0400 w
+i2cset -y -f 10 0x40 0x4a 0x0cb0 w
 rmmod adm1275
 modprobe adm1275
 

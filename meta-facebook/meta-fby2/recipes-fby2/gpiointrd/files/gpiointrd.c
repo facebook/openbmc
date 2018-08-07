@@ -369,6 +369,17 @@ static void gpio_event_handle(gpio_poll_st *gp)
     // high to low
     fby2_common_set_ierr(slot_id,false);
   }
+  else if ( gp->gs.gs_gpio == gpio_num("GPION7") )
+  {
+    if (gp->value == 0)
+    {
+      if( fby2_sensor_read(FRU_SPB, SP_HSC_IOUT_STATUS, &value) )
+      {
+        syslog(LOG_CRIT, "ASSERT: SMB_HOTSWAP_ALERT_N is high to low");
+        fby2_check_hsc_fault();
+      }
+    }  
+  }
 }
 
 static void *
@@ -623,6 +634,7 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI1",  "GPIO_SLOT2_POWER_EN"},
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI2",  "GPIO_SLOT3_POWER_EN"},
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI3",  "GPIO_SLOT4_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPION7",  "GPIO_SMB_HOTSWAP_ALERT_N"},
 };
 
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);

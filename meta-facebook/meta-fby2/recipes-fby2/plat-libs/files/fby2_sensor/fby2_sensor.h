@@ -249,6 +249,7 @@ enum {
   SP_SENSOR_HSC_OUT_CURR = 0xC1,
   SP_SENSOR_HSC_TEMP = 0xC2,
   SP_SENSOR_HSC_IN_POWER = 0xC3,
+  SP_HSC_IOUT_STATUS = 0xF1,
 };
 
 //Glacier Point
@@ -338,6 +339,7 @@ int fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int fby2_get_slot_type(uint8_t fru);
 int fby2_get_server_type(uint8_t fru, uint8_t *type);
 int fby2_get_server_type_directly(uint8_t fru, uint8_t *type);
+int fby2_check_hsc_fault(void);
 
 
 #ifdef __cplusplus

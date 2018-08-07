@@ -903,6 +903,230 @@ read_hsc_ein(const char *device, uint8_t addr, float r_sense, float *value) {
 }
 
 static int
+read_hsc_ioutstatus(const char *device, uint8_t addr, float r_sense, float *value) {
+  int dev, ret;
+  uint8_t wbuf[4] = {0x7b}, rbuf[8] = {0};
+
+  dev = open(device, O_RDWR);
+  if (dev < 0) {
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
+  close(dev);
+  if (ret) {
+    return -1;
+  }
+  
+  if ( BIT(rbuf[0], 5) )
+  {
+    return 1;
+  }
+
+  return 0;
+}
+
+int
+fby2_check_hsc_fault(void) {
+
+   
+  if(check_hsc_status_byte() != 1) {
+    return -1;
+  } else if(check_hsc_status_word() != 1) {
+    return -1;
+  } else if(check_hsc_status_vout() != 1) {
+    return -1;
+  } else if(check_hsc_status_input() != 1) {
+    return -1;
+  } else if(check_hsc_status_temperature() != 1) {
+    return -1;
+  } else if(check_hsc_status_manufacturer() != 1) {
+    return -1;
+  } else if(check_hsc_status_iout() != 1) {
+    return -1;
+  }
+
+  system("i2cset -y -f 10 0x40 0x03 0");
+  return 0;
+
+}
+
+int
+check_hsc_status_byte(void)
+{
+  char* device = I2C_DEV_HSC;
+  uint8_t addr = I2C_HSC_ADDR;
+  int dev, ret;
+  uint8_t wbuf[4] = {0x78}, rbuf[8] = {0};  
+  char *str_content[32] = {0};
+  char * str_target = "00";
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
+  if (ret) {
+    close(dev);
+    return -1;
+  }
+  sprintf(str_content, "%02x", rbuf[0]);
+  if(strcmp(str_content, str_target) != 0 )
+  {
+    close(dev);
+    return -1;
+  }
+
+  return 1;  
+}
+
+int
+check_hsc_status_word(void)
+{
+  char* device = I2C_DEV_HSC;
+  uint8_t addr = I2C_HSC_ADDR;
+  int dev, ret;
+  uint8_t wbuf[4] = {0x79}, rbuf[8] = {0};  
+  char *str_content[32] = {0};
+  char * str_target = "0000";
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 2);
+  if (ret) {
+    close(dev);
+    return -1;
+  }
+  uint16_t content = (rbuf[1]<<8) | rbuf[0];
+  sprintf(str_content, "%04x", content);  
+  if(strcmp(str_content, str_target) != 0 )
+  {
+    close(dev);
+    return -1;
+  }
+
+  return 1;  
+}
+
+int
+check_hsc_status_vout(void)
+{
+  char* device = I2C_DEV_HSC;
+  uint8_t addr = I2C_HSC_ADDR;
+  int dev, ret;
+  uint8_t wbuf[4] = {0x7a}, rbuf[8] = {0};  
+  char *str_content [32] = {0};
+  char * str_target = "00";
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
+  if (ret) {
+    close(dev);
+    return -1;
+  }
+  sprintf(str_content, "%02x", rbuf[0]);
+  if(strcmp(str_content, str_target) != 0 )
+  {
+    close(dev);
+    return -1;
+  }
+
+  return 1;  
+}
+
+int
+check_hsc_status_input(void)
+{
+  char* device = I2C_DEV_HSC;
+  uint8_t addr = I2C_HSC_ADDR;
+  int dev, ret;
+  uint8_t wbuf[4] = {0x7c}, rbuf[8] = {0};  
+  char *str_content [32] = {0};
+  char * str_target = "00";
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
+  if (ret) {
+    close(dev);
+    return -1;
+  }
+  sprintf(str_content, "%02x", rbuf[0]);
+  if(strcmp(str_content, str_target) != 0 )
+  {
+    close(dev);
+    return -1;
+  }
+
+  return 1;  
+}
+
+int
+check_hsc_status_temperature(void)
+{
+  char* device = I2C_DEV_HSC;
+  uint8_t addr = I2C_HSC_ADDR;
+  int dev, ret;
+  uint8_t wbuf[4] = {0x7d}, rbuf[8] = {0};  
+  char *str_content [32] = {0};
+  char * str_target = "00";
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
+  if (ret) {
+    close(dev);
+    return -1;
+  }
+  sprintf(str_content, "%02x", rbuf[0]);
+  if(strcmp(str_content, str_target) != 0 )
+  {
+    close(dev);
+    return -1;
+  }
+
+  return 1;  
+}
+
+int
+check_hsc_status_manufacturer(void)
+{
+  char* device = I2C_DEV_HSC;
+  uint8_t addr = I2C_HSC_ADDR;
+  int dev, ret;
+  uint8_t wbuf[4] = {0x80}, rbuf[8] = {0};  
+  char *str_content [32] = {0};
+  char * str_target = "00";
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
+  if (ret) {
+    close(dev);
+    return -1;
+  }
+  sprintf(str_content, "%02x", rbuf[0]);
+  if(strcmp(str_content, str_target) != 0 )
+  {
+    close(dev);
+    return -1;
+  }
+
+  return 1;  
+}
+
+int
+check_hsc_status_iout(void)
+{
+  char* device = I2C_DEV_HSC;
+  uint8_t addr = I2C_HSC_ADDR;
+  int dev, ret;
+  uint8_t wbuf[4] = {0x7b}, rbuf[8] = {0};  
+  char *str_content [32] = {0};
+  char * str_target = "00";
+
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
+  if (ret) {
+    close(dev);
+    return -1;
+  }
+  if ( BIT(rbuf[0], 7) )
+  {
+    close(dev);
+    return -1;
+  }
+
+  return 1;  
+}
+
+static int
 read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
   int dev;
   int ret;
@@ -1942,6 +2166,8 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_hsc_value(HSC_TEMP, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
         case SP_SENSOR_HSC_IN_POWER:
           return read_hsc_ein(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);
+        case SP_HSC_IOUT_STATUS:
+          return read_hsc_ioutstatus(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);  
       }
       break;
 

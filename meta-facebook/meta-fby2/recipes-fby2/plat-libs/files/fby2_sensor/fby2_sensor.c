@@ -65,6 +65,8 @@
 #define HSC_OUT_CURR "curr1_input"
 #define HSC_TEMP "temp1_input"
 #define HSC_IN_POWER "power1_input"
+#define HSC_PEAK_POWER "power1_input_highest"
+#define HSC_PEAK_IOUT "curr1_highest"
 
 #define UNIT_DIV 1000
 
@@ -324,6 +326,8 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_HSC_OUT_CURR,
   SP_SENSOR_HSC_TEMP,
   SP_SENSOR_HSC_IN_POWER,
+  SP_SENSOR_HSC_PEAK_IOUT,
+  SP_SENSOR_HSC_PEAK_PIN,
 };
 
 const uint8_t dc_sensor_list[] = {
@@ -836,7 +840,7 @@ read_hsc_value(const char* attr, const char *device, float r_sense, float *value
     return -1;
   }
 
-  if ((strcmp(attr, HSC_OUT_CURR) == 0) || (strcmp(attr, HSC_IN_POWER) == 0)) {
+  if ((strcmp(attr, HSC_OUT_CURR) == 0) || (strcmp(attr, HSC_IN_POWER) == 0) || (strcmp(attr, HSC_PEAK_POWER) == 0) || (strcmp(attr, HSC_PEAK_IOUT) == 0)) {
     *value = ((float) tmp)/r_sense/UNIT_DIV;
   }
   else {
@@ -1731,6 +1735,12 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case SP_SENSOR_HSC_IN_POWER:
           sprintf(units, "Watts");
           break;
+        case SP_SENSOR_HSC_PEAK_IOUT:
+          sprintf(units, "Amps");
+          break;
+        case SP_SENSOR_HSC_PEAK_PIN:
+          sprintf(units, "Watts");
+          break;
       }
       break;
     case FRU_NIC:
@@ -1940,6 +1950,12 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case SP_SENSOR_HSC_IN_POWER:
           sprintf(name, "SP_HSC_IN_POWER");
+          break;
+        case SP_SENSOR_HSC_PEAK_IOUT:
+          sprintf(name, "SP_HSC_PEAK_IOUT");
+          break;
+        case SP_SENSOR_HSC_PEAK_PIN:
+          sprintf(name, "SP_HSC_PEAK_PIN");
           break;
       }
       break;
@@ -2168,6 +2184,10 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_hsc_ein(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);
         case SP_HSC_IOUT_STATUS:
           return read_hsc_ioutstatus(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);  
+        case SP_SENSOR_HSC_PEAK_IOUT:
+          return read_hsc_value(HSC_PEAK_IOUT, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
+        case SP_SENSOR_HSC_PEAK_PIN:
+          return read_hsc_value(HSC_PEAK_POWER, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
       }
       break;
 

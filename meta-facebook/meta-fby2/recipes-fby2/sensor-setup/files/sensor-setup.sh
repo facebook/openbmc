@@ -96,7 +96,11 @@ config_adc 13    0  1000 0
 config_adc 14    0  1000 0
 config_adc 15    0  1000 0
 
-#
+# Clear PEAK_PIN & PEAK_IOUT register
+i2cset -y -f 10 0x40 0xd0 0x0000 w
+i2cset -y -f 10 0x40 0xda 0x0000 w
+
+# 
 i2cset -y -f 10 0x40 0xd4 0x3f1c w
 i2cset -y -f 10 0x40 0xd5 0x0400 w
 i2cset -y -f 10 0x40 0x4a 0x0cb0 w

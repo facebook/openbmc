@@ -83,6 +83,8 @@ def get_bmc():
     if ver:
         version = ver.group(1)
 
+    used_fd_count = read_file_contents("/proc/sys/fs/file-nr")[0].split()[0]
+
     result = {
                 "Information": {
                     "Description": "Wedge BMC",
@@ -98,6 +100,7 @@ def get_bmc():
                     "load-15": load_avg[2],
                     "Memory Usage": mem_usage,
                     "CPU Usage": cpu_usage,
+                    "open-fds": used_fd_count,
                     "OpenBMC Version": version,
                 },
                 "Actions": [],

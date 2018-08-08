@@ -18,46 +18,34 @@
 # Boston, MA 02110-1301 USA
 #
 
-PERSIST_STORE=/mnt/data/kv_store
-REGULAR_STORE=/tmp/cache_store
-
-kv_loc() {
-  local type
-  type=$1
+kv_type2flags() {
+  local flags
+  flags="0"
   if [[ "$type" == *persistent* ]]; then
-    echo "$PERSIST_STORE"
-  else
-    echo "$REGULAR_STORE"
+    flags="$flags | kv.FPERSIST"
   fi
+  if [[ "$type" == *create* ]]; then
+    flags="$flags | kv.FCREATE"
+  fi
+  echo $flags
 }
 
 kv_get() {
-  local key type loc
+  local key type flags
   key=$1
   type=$2
-  cat "$(kv_loc "$type")/$key" 2> /dev/null
+  flags=$(kv_type2flags $type)
+  /usr/bin/python -c "import kv; print(kv.kv_get(\"$key\", flags=$flags), end=\"\")" 2> /dev/null
 }
 
 kv_set() {
-  local key value type loc key_file
+  local key value type flags
   key=$1
   value=$2
   type=$3
-  if [ -z "$key" ]; then
-    return 1
-  fi
-  loc=$(kv_loc "$type")
-  key_file="$loc/$key"
-  mkdir -p "$(dirname "$key_file")"
-
-  if [[ "$type" == *create*  ]]; then
-    if [ -e "$key_file" ]; then
-      return 1
-    fi
-  fi
-
-  echo -n "$value" > "$key_file"
-  return 0
+  flags=$(kv_type2flags $type)
+  /usr/bin/python -c "import kv; kv.kv_set(\"$key\", \"$value\", flags=$flags)" 2> /dev/null
+  return $?
 }
 
 if [[ "$0" == "${BASH_SOURCE[0]}"  ]]; then

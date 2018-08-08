@@ -18,7 +18,6 @@ SRC_URI += "file://board-utils.sh \
       file://us_monitor.sh \
       file://us_refresh.sh \
       file://us_console.sh \
-      file://disable_watchdog.sh \
       file://bios_flash.sh \
       file://bcm5389.sh \
       file://at93cx6_util.sh \
@@ -102,9 +101,6 @@ do_install_board() {
 
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
-
-    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
-    update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
 
     install -m 755 sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh
     update-rc.d -r ${D} sensors_config_fix.sh start 100 2 3 4 5 .

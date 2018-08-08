@@ -89,7 +89,7 @@ echo 0x0D > $I2C_CMD
 # Step 5. Finally, toggle reset CP2112, no matter recovery successful or not
 #
 echo "Toggle resetting CP2112"
-/bin/bash /usr/local/bin/galaxy100_cp2112_toggle_reset.sh
+/bin/bash /usr/local/bin/reset_cp2112.sh
 
 #
 # Step 6. Exit with the return code

@@ -35,7 +35,8 @@ bottom_fan_cpld="${SMBCPLD}/smb_cpld_fcm_b_cpld_sel"
 trap 'gpio_set BMC_FCM_T_MUX_SEL 0; \
       gpio_set BMC_FCM_B_MUX_SEL 0; \
       echo 0 > "${top_fan_cpld}"; \
-      echo 0 > "${bottom_fan_cpld}"' INT TERM QUIT EXIT
+      echo 0 > "${bottom_fan_cpld}"; \
+      rm -rf /tmp/fcmcpld_update' INT TERM QUIT EXIT
 
 # change BMC_FCM_T_MUX_SEL and smb_cpld_fcm_t_cpld_sel to 1
 # to connect BMC to Top FANCPLD pins
@@ -47,4 +48,7 @@ echo 1 > "${top_fan_cpld}"
 gpio_set BMC_FCM_B_MUX_SEL 1
 echo 1 > "${bottom_fan_cpld}"
 
+echo 1 > /tmp/fcmcpld_update
+
 ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms 76 --tdo 78 --tdi 79 --tck 77
+

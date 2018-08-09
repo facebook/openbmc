@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,22 +16,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+### BEGIN INIT INFO
+# Provides:          system monitoring
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Set system monitoring
+### END INIT INFO
 
-if [ $# -ne 1 ]; then
-    exit -1
-fi
-
-img="$1"
-
-source /usr/local/bin/openbmc-utils.sh
-
-trap 'gpio_set BMC_SYSCPLD_JTAG_MUX_SEL 0; rm -rf /tmp/smbcpld_update' INT TERM QUIT EXIT
-
-# change BMC_SYSCPLD_JTAG_MUX_SEL to 1 to connect BMC to SMB CPLD pins
-gpio_set BMC_SYSCPLD_JTAG_MUX_SEL 1
-
-echo 1 > /tmp/smbcpld_update
-
-ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms 50 --tdo 51 --tdi 48 --tck 49
+echo -n "Setup system monitoring "
+/usr/local/bin/system_monitor.sh >/dev/null 2>&1 &
+echo "done."

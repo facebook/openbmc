@@ -32,11 +32,6 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 board_rev=$(wedge_board_rev)
 
-# Light up sys led
-i2cset -f -y 50 0x20 0x06 0x00
-i2cset -f -y 50 0x20 0x07 0x00
-i2cset -f -y 50 0x20 0x03 0xfd
-
 # Enable the isolation buffer between BMC and COMe i2c bus
 echo 1 > ${SCMCPLD_SYSFS_DIR}/i2c_bus_en
 echo 0 > ${SCMCPLD_SYSFS_DIR}/iso_com_en

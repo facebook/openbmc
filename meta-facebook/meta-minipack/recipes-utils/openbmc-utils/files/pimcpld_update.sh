@@ -71,11 +71,14 @@ pca9534_gpio_delete()
     done
 
     i2c_device_delete ${BUS} 0x26
+    rm -rf /tmp/pimcpld_update
 }
 
 trap pca9534_gpio_delete INT TERM QUIT EXIT
 
 # export pca9534 GPIO to connect BMC to PIM CPLD pins
 pca9534_gpio_add $1
+
+echo 1 > /tmp/pimcpld_update
 
 ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms ${PINS[1]} --tdo ${PINS[2]} --tdi ${PINS[3]} --tck ${PINS[0]}

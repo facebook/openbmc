@@ -29,6 +29,15 @@ FAN_T_CMD='/sys/class/i2c-dev/i2c-64/device/64-0033/'
 FAN_B_CMD='/sys/class/i2c-dev/i2c-72/device/72-0033/'
 
 
+function usage
+{
+  program=`basename "$0"`
+  echo "Usage:"
+  echo "     $program "
+  echo "     $program <TYPE>"
+  echo "     <TYPE>: scm/pim/fan/psu"
+}
+
 # Will return <key> : <val>
 # eg - scm : 1
 function get_presence
@@ -97,12 +106,27 @@ function get_psu_presence
 }
 
 # get all info
-echo "CARDS"
-get_scm_presence
-get_pim_presence
+if [[ $1 = "" ]]; then
+  echo "CARDS"
+  get_scm_presence
+  get_pim_presence
 
-echo "FANS"
-get_fan_presence
+  echo "FANS"
+  get_fan_presence
 
-echo "POWER SUPPLIES"
-get_psu_presence
+  echo "POWER SUPPLIES"
+  get_psu_presence
+
+else
+  if [[ $1 = "scm" ]]; then
+    get_scm_presence
+  elif [[ $1 = "pim" ]]; then
+    get_pim_presence
+  elif [[ $1 = "fan" ]]; then
+    get_fan_presence
+  elif [[ $1 = "psu" ]]; then
+    get_psu_presence
+  else
+    usage
+  fi
+fi

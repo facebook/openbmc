@@ -23,21 +23,25 @@ SRC_URI += "file://board-utils.sh \
             file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://fpga_ver.sh \
-            file://peutil \
+            file://led_upgrade_mode.sh \
             file://pdbcpld_update.sh \
+            file://peutil \
             file://pimcpld_update.sh \
             file://power-on.sh \
             file://presence_util.sh \
             file://reset_brcm.sh \
             file://scmcpld_update.sh \
             file://set_pim_sensor.sh \
+            file://set_sled.sh \
             file://setup_board.sh \
             file://setup_i2c.sh \
             file://setup_mgmt.sh \
+            file://setup_system_monitor.sh \
             file://seutil \
             file://smbcpld_update.sh \
             file://sol.sh \
             file://spi_util.sh \
+            file://system_monitor.sh \
             file://us_console.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
@@ -49,6 +53,7 @@ OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     fcmcpld_update.sh \
     fpga_ver.sh \
+    led_upgrade_mode.sh \
     presence_util.sh \
     peutil \
     pdbcpld_update.sh \
@@ -56,12 +61,15 @@ OPENBMC_UTILS_FILES += " \
     reset_brcm.sh \
     scmcpld_update.sh \
     set_pim_sensor.sh \
+    set_sled.sh \
     setup_mgmt.sh \
+    setup_system_monitor.sh \
     seutil \
     smbcpld_update.sh \
     sol.sh \
-    us_console.sh \
     spi_util.sh \
+    system_monitor.sh \
+    us_console.sh \
     wedge_power.sh \
     wedge_us_mac.sh \
     "
@@ -102,6 +110,9 @@ do_install_board() {
 
     install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
     update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
+    
+    install -m 0755 ${WORKDIR}/setup_system_monitor.sh ${D}${sysconfdir}/init.d/setup_system_monitor.sh
+    update-rc.d -r ${D} setup_system_monitor.sh start 99 2 3 4 5 .
 }
 
 do_install_append() {

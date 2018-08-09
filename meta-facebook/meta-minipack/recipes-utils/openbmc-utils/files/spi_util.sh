@@ -136,7 +136,7 @@ function read_flash_to_file()
 function write_flash_to_file(){
     spi_no=$1
     in_file=$2
-    out_file="/tmp/${3}_tmp"
+    out_file="/tmp/${3}_spi${1}_tmp"
     modprobe -r spidev
     modprobe spidev
     resize_file $in_file $out_file $spi_no
@@ -598,6 +598,7 @@ function cleanup_spi(){
             i2cset -y $bus $pca9534_ee_sel $output_reg $write_ee_val 2> /dev/null
         fi
     done
+	rm -rf /tmp/*_spi*_tmp
 }
 
 function ui(){

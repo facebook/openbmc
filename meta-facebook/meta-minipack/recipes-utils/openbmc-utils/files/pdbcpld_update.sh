@@ -91,10 +91,14 @@ pca9534_gpio_delete()
         done
     fi
 
+
     i2c_device_delete ${IO_BUS} 0x21
+    rm -rf /tmp/pdbcpld_update
 }
 
 trap pca9534_gpio_delete INT TERM QUIT EXIT
+
+echo 1 > /tmp/pdbcpld_update
 
 # export pca9534 GPIO to connect BMC to PDB CPLD pins
 pca9534_gpio_add $2

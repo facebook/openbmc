@@ -174,7 +174,7 @@ manual_driver_binding() {
             echo "failed to bind ${i2c_dev} after ${retry} retries"
             return 1
         fi
-        echo ${i2c_dev} > "${driver_dir}/bind" >& /dev/null
+        echo ${i2c_dev} > "${driver_dir}/bind" 2> /dev/null
 
         sleep_cnt=0
         while [ ! -L ${driver_link} ] && [ ${sleep_cnt} -lt ${sleep_max} ]

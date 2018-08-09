@@ -26,10 +26,11 @@ if ! wedge_is_us_on; then
     echo "Cannot retrive microserver MAC when microserver is powered off." 1>&2
     exit -2
 fi
+
 count=0
 while [ $count -lt 10 ]
 do
-	mac=$(i2cdump -f -y 0x0 0x33 b 2> /dev/null | grep '^50: '| awk '{ printf "%s:%s:%s:%s:%s:%s\n", $2, $3, $4, $5, $6, $7 }')
+  mac=$(cat /sys/class/i2c-adapter/i2c-0/0-0033/mac_addr)
 
 	if [ -n "$mac" -a "${mac/X/}" = "${mac}" ]; then
 	    echo $mac

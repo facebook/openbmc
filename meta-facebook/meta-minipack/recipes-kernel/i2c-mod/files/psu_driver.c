@@ -20,11 +20,12 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#define DEBUG
+// #define DEBUG
 
 #include <linux/errno.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
+#include <linux/delay.h>
 
 #include <i2c_dev_sysfs.h>
 
@@ -41,13 +42,14 @@
 
 #define POW2(x) (1 << (x))
 
-#define PSU_DELAY 10
+#define PSU_DELAY 15
 #define PMBUS_MFR_MODEL  0x9a
 
 typedef enum {
   DELTA_1500,
   BELPOWER_1100_NA,
   BELPOWER_1500_NAC,
+  MURATA_1500,
   UNKNOWN
 } model_name;
 
@@ -94,9 +96,23 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
   mutex_lock(&data->idd_lock);
 
   ret = i2c_smbus_read_block_data(client, PMBUS_MFR_MODEL, block);
+  msleep(PSU_DELAY);
+
   if (ret < 0 || block[0] == NULL || block[0] == '\n') {
     PSU_DEBUG("Failed to read Manufacturer Model\n");
-    goto unlock;
+  }
+  else {
+    while((value < 0 || value == 0xffff) && count--) {
+      value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
+    }
+  }
+
+  mutex_unlock(&data->idd_lock);
+
+  if (value < 0) {
+    /* error case */
+    PSU_DEBUG("I2C read error, value: %d\n", value);
+    return -1;
   }
 
   if (!strncmp(block, "ECD55020006", 11)) {
@@ -108,22 +124,11 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
   else if (!strncmp(block, "PFE1500-12-054NAC", 17)) {
     model = BELPOWER_1500_NAC;
   }
+  else if (!strncmp(block, "D1U54P-W-1500-12-HC4TC", 22)) {
+    model = MURATA_1500;
+  }
   else {
     model = UNKNOWN;
-    goto unlock;
-  }
-
-  while((value < 0 || value == 0xffff) && count--) {
-    value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
-  }
-
-unlock:
-  mutex_unlock(&data->idd_lock);
-
-  if (value < 0) {
-    /* error case */
-    PSU_DEBUG("I2C read error, value: %d\n", value);
-    return -1;
   }
 
   return value;
@@ -146,6 +151,7 @@ static ssize_t psu_vin_show(struct device *dev,
     break;
   case BELPOWER_1100_NA:
   case BELPOWER_1500_NAC:
+  case MURATA_1500:
     result = ((result & 0x7ff) * 1000) / 2;
     break;
   default:
@@ -174,6 +180,9 @@ static ssize_t psu_iin_show(struct device *dev,
   case BELPOWER_1500_NAC:
     result = ((result & 0x7ff) * 1000) / 64;
     break;
+  case MURATA_1500:
+    result = ((result & 0x7ff) * 1000) / 32;
+    break;
   default:
     break;
   }
@@ -199,6 +208,9 @@ static ssize_t psu_vout_show(struct device *dev,
   case BELPOWER_1100_NA:
   case BELPOWER_1500_NAC:
     result = ((result & 0x7ff) * 1000) / 64;
+    break;
+  case MURATA_1500:
+    result = (result * 1000) / 64;
     break;
   default:
     break;
@@ -226,6 +238,7 @@ static ssize_t psu_iout_show(struct device *dev,
     result = ((result & 0x7ff) * 1000) / 8;
     break;
   case BELPOWER_1500_NAC:
+  case MURATA_1500:
     result = ((result & 0x7ff) * 1000) / 4;
     break;
   default:
@@ -254,6 +267,9 @@ static ssize_t psu_temp_show(struct device *dev,
   case BELPOWER_1500_NAC:
     result = ((result & 0x7ff) * 1000) / 8;
     break;
+  case MURATA_1500:
+    result = (result & 0x7ff) * 1000;
+    break;
   default:
     break;
   }
@@ -278,6 +294,7 @@ static ssize_t psu_fan_show(struct device *dev,
     break;
   case BELPOWER_1100_NA:
   case BELPOWER_1500_NAC:
+  case MURATA_1500:
     result = (result & 0x7ff) * 32;
     break;
   default:
@@ -300,11 +317,101 @@ static ssize_t psu_power_show(struct device *dev,
 
   switch (model) {
   case DELTA_1500:
-    result = linear_convert(result) * 1000;
+    result = linear_convert(result);
     break;
   case BELPOWER_1100_NA:
   case BELPOWER_1500_NAC:
-    result = (result & 0x7ff) * 1000 *1000 * 2;
+  case MURATA_1500:
+    result = (result & 0x7ff) * 1000 * 2;
+    break;
+  default:
+    break;
+  }
+
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
+}
+
+static ssize_t psu_vstby_show(struct device *dev,
+                                 struct device_attribute *attr,
+                                 char *buf)
+{
+  int result = psu_convert(dev, attr);
+
+  if (result < 0) {
+    /* error case */
+    return -1;
+  }
+
+  switch (model) {
+  case DELTA_1500:
+    result = linear_convert(result);
+    break;
+  case BELPOWER_1100_NA:
+  case BELPOWER_1500_NAC:
+    result = ((result & 0x7ff) * 1000) / 64;
+    break;
+  case MURATA_1500:
+    result = ((result & 0x7ff) * 1000) / 128;
+    break;
+  default:
+    break;
+  }
+
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
+}
+
+static ssize_t psu_istby_show(struct device *dev,
+                                 struct device_attribute *attr,
+                                 char *buf)
+{
+  int result = psu_convert(dev, attr);
+
+  if (result < 0) {
+    /* error case */
+    return -1;
+  }
+
+  switch (model) {
+  case DELTA_1500:
+    result = linear_convert(result);
+    break;
+  case BELPOWER_1100_NA:
+    result = ((result & 0x7ff) * 1000) / 8;
+    break;
+  case BELPOWER_1500_NAC:
+    result = ((result & 0x7ff) * 1000) / 4;
+    break;
+  case MURATA_1500:
+    result = ((result & 0x7ff) * 1000) / 128;
+    break;
+  default:
+    break;
+  }
+
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
+}
+
+static ssize_t psu_pstby_show(struct device *dev,
+                                  struct device_attribute *attr,
+                                  char *buf)
+{
+  int result = psu_convert(dev, attr);
+
+  if (result < 0) {
+    /* error case */
+    return -1;
+  }
+
+  switch (model) {
+  case DELTA_1500:
+    result = linear_convert(result);
+    break;
+  case BELPOWER_1100_NA:
+  case BELPOWER_1500_NAC:
+    result = (result & 0x7ff) * 1000 * 2;
+    break;
+  case MURATA_1500:
+    result = ((result & 0x7ff) * 1000) / 32;
     break;
   default:
     break;
@@ -387,21 +494,21 @@ static const i2c_dev_attr_st psu_attr_table[] = {
   {
     "in2_input",
     NULL,
-    psu_vout_show,
+    psu_vstby_show,
     NULL,
     0xd0, 0, 8,
   },
   {
     "curr3_input",
     NULL,
-    psu_iout_show,
+    psu_istby_show,
     NULL,
     0xd1, 0, 8,
   },
   {
     "power3_input",
     NULL,
-    psu_power_show,
+    psu_pstby_show,
     NULL,
     0xd2, 0, 8,
   },
@@ -415,7 +522,6 @@ static i2c_dev_data_st psu_data;
 static const unsigned short normal_i2c[] = {
   0x58, 0x59, I2C_CLIENT_END
 };
-
 
 /* psu_driver id */
 static const struct i2c_device_id psu_id[] = {
@@ -439,7 +545,6 @@ static int psu_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
   int n_attrs = sizeof(psu_attr_table) / sizeof(psu_attr_table[0]);
-  client->flags |= I2C_CLIENT_PEC;
 
   return i2c_dev_sysfs_data_init(client, &psu_data,
                                  psu_attr_table, n_attrs);

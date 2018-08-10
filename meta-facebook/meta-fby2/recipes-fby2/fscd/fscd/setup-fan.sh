@@ -62,6 +62,10 @@ case "$sku_type" in
          echo "Run FSC 4 RCs Config"
          cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
        ;;
+       "170")
+         echo "Run FSC 4 EPs Config"
+         cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
+       ;;
        *)
          echo "Unexpected 4 Servers config! Run FSC 4 TLs Config as default config"
          cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
@@ -75,6 +79,9 @@ case "$sku_type" in
      elif [[ $(get_server_type 2) == "1" && $(get_server_type 4) == "1" ]] ; then
        echo "Run FSC 4 RCs Config"
        cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
+     elif [[ $(get_server_type 2) == "2" && $(get_server_type 4) == "2" ]] ; then
+       echo "Run FSC 2 GPs and 2 EPs Config"
+       cp /etc/FSC_FBEP_DVT_2GP_2EP_config.json ${default_fsc_config_path}
      else
        echo "Unexpected 2 GPs and 2 Servers config! Run FSC 2 GPs and 2 TLs Config as default config"
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
@@ -87,6 +94,9 @@ case "$sku_type" in
      elif [[ $(get_server_type 2) == "1" && $(get_server_type 4) == "1" ]] ; then
        echo "Run FSC 4 RCs Config"
        cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
+     elif [[ $(get_server_type 2) == "2" && $(get_server_type 4) == "2" ]] ; then
+       echo "Run FSC 4 EPs Config"
+       cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
      else
        echo "Unexpected 2 CFs and 2 Servers config! Run FSC 2 CFs and 2 TLs Config as default config"
        cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
@@ -104,6 +114,9 @@ case "$sku_type" in
      if [ "$server_type_tmp" == "1" ] ; then
        echo "Unexpected sku type! Use FSC 4 RCs Config as default config"
        cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
+     elif [ "$server_type_tmp" == "2" ] ; then
+       echo "Unexpected sku type! Use FSC 4 EPs Config as default config"
+       cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
      else
        echo "Unexpected sku type! Use FSC 4 TLs Config as default config"
        cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}

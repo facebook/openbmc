@@ -70,6 +70,8 @@
 #define SEL_RECID_FIRST 0x0000
 #define SEL_RECID_LAST 0xFFFF
 
+#define RAS_SEL_LENGTH 1024
+
 // SEL header struct to keep track of SEL Log entries
 typedef struct {
   int magic; // Magic number to check validity
@@ -241,7 +243,7 @@ dump_ras_sel_syslog(uint8_t fru, ras_sel_msg_t *data) {
 static void
 parse_ras_sel(uint8_t fru, ras_sel_msg_t *data) {
   uint8_t *sel = data->msg;
-  char error_log[256];
+  char error_log[RAS_SEL_LENGTH];
   char mfg_id[16];
 
   /* Manufacturer ID (byte 2:0) */

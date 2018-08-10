@@ -4338,6 +4338,11 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
 static int
 pal_store_crashdump(uint8_t fru, bool ierr) {
+  char cmd[256];
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "sys_runtime=$(awk '{print $1}' /proc/uptime) ; sys_runtime=$(printf \"%0.f\" $sys_runtime) ; echo $((sys_runtime+1200)) > /tmp/cache_store/fru%d_crashdump", fru);
+  system(cmd);
+
   return fby2_common_crashdump(fru, ierr, false);
 }
 

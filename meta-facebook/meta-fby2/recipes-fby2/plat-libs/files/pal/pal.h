@@ -105,6 +105,28 @@ enum {
   IMC_DUMP_PROCESS,
 };
 
+enum {
+  TRANS_TYPE_VALID = 0,
+  OPER_VALID,
+  LEVEL_VALID,
+  PROC_CONTEXT_CORRUPT_VALID,
+  CORR_VALID,
+  PRECISE_PC_VALID,
+  RESTART_PC_VALID,
+  PARTICIPATION_TYPE_VALID,
+  TIMEOUT_VALID,
+  ADDRESS_SPACE_VALID,
+  MEM_ATTR_VALID,
+  ACCESS_MODE_VALID
+};
+
+enum {
+  CACHE_ERROR = 0,
+  TLB_ERROR,
+  BUS_ERROR,
+  MICRO_ARCH_ERROR
+};
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status);

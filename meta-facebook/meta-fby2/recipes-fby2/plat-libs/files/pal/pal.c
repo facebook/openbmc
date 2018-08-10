@@ -324,6 +324,52 @@ static const char *imc_log_path[MAX_NODES+1] = {
   IMC_LOG_FILE "4"
 };
 
+struct ras_pcie_aer_info {
+  char *name;
+  int offset;
+};
+
+struct ras_pcie_aer_info aer_root_err_sts[] = {
+  {"ERR_COR_RECEIVED", 0},
+  {"Multiple ERR_COR Received", 1},
+  {"ERR_FATAL/NONFATAL Received", 2},
+  {"Multiple ERR_FATAL/NONFATAL Received", 3},
+  {"First Uncorrectable Fatal", 4},
+  {"Non-Fatal Error Messages Received", 5},
+  {"Fatal Error Messages Received", 6},
+  {"Advanced Error Interrupt Message Number", 27}
+};
+
+struct ras_pcie_aer_info aer_uncor_err_sts[] = {
+  {"Data Link Protocol Error", 4},
+  {"Surprise Down Error", 5},
+  {"Poisoned TLP", 12},
+  {"Flow Control Protocol Error", 13},
+  {"Completion Timeout", 14},
+  {"Completer Abort", 15},
+  {"Unexpected Completion", 16},
+  {"Receiver Overflow", 17},
+  {"Malformed TLP", 18},
+  {"ECRC Error", 19},
+  {"Unsupported Request Error", 20},
+  {"ACS Violation", 21},
+  {"Uncorrectable Internal Error", 22},
+  {"MC Blocked TLP", 23},
+  {"AtomicOp Egress Blocked", 24},
+  {"TLP Prefix Blocked Error", 25}
+};
+
+struct ras_pcie_aer_info aer_cor_err_sts[] = {
+  {"Receiver Error", 0},
+  {"Bad TLP", 6},
+  {"Bad DLLP", 7},
+  {"REPLAY_NUM Rollover", 8},
+  {"Replay Timer Timeout", 12},
+  {"Advisory Non-Fatal Error", 13},
+  {"Corrected Internal Error", 14},
+  {"Header Log Overflow", 15}
+};
+
 /* curr/power calibration */
 static void
 power_value_adjust(const struct power_coeff *table, float *value) {
@@ -6685,21 +6731,317 @@ pal_get_me_name(uint8_t fru, char *target_name) {
 }
 
 void
+arm_err_parse(uint8_t section_sub_type, char *error_log, uint8_t *sel) {
+  uint16_t validation_bit = (sel[1] << 8) | sel[0];
+  uint8_t trans_type = sel[2] & 0x3;
+  uint8_t operation = sel[2] >> 2 & 0xf;
+  uint8_t level = ((sel[3] << 8) | sel[2]) >> 6 & 0x7;
+  uint8_t pro_con_cor = sel[3] >> 1 & 0x1;
+  uint8_t corrected = sel[3] >> 2 & 0x1;
+  uint8_t pre_pc = sel[3] >> 3 & 0x1;
+  uint8_t res_pc = sel[3] >> 4 & 0x1;
+  uint8_t par_type = sel[3] >> 5 & 0x3;
+  uint8_t timeout = sel[3] >> 7 & 0x1;
+  uint8_t addr_space = sel[4] & 0x3;
+  uint16_t mem_addr_attr = ((sel[5] << 8) | sel[4]) >> 2 & 0x1ff;
+  uint8_t access_mode = sel[5] >> 3 & 0x1;
+  char temp_log[256] = {0};
+  char *type[] = {"cache", "TLB", "bus"};
+
+  if((validation_bit >> TRANS_TYPE_VALID & 0x1) == 1) {
+    switch(trans_type) {
+      case 0:
+        sprintf(temp_log, " Transaction Type: %u – Instruction (Type of %s error),", trans_type, type[section_sub_type]);
+        break;
+      case 1:
+        sprintf(temp_log, " Transaction Type: %u – Data Access (Type of %s error),", trans_type, type[section_sub_type]);
+        break;
+      case 2: 
+        sprintf(temp_log, " Transaction Type: %u – Generic (Type of %s error),", trans_type, type[section_sub_type]);
+        break;
+      default: 
+        sprintf(temp_log, " Transaction Type: %u - Unknown (Type of %s error),", trans_type, type[section_sub_type]);
+        break;
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, " Transaction Type: Not Valid,");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> OPER_VALID & 0x1) == 1) {
+    switch(operation) {
+      case 0:
+        sprintf(temp_log, " Operation: %u – generic error (type of error cannot be determined),", operation);
+        break;
+      case 1:
+        sprintf(temp_log, " Operation: %u – generic read (type of instruction or data request cannot be determined),", operation);
+        break;
+      case 2:
+        sprintf(temp_log, " Operation: %u – generic write (type of instruction or data request cannot be determined),", operation);
+        break;
+      case 3:
+        sprintf(temp_log, " Operation: %u – data read,", operation);
+        break;
+      case 4:
+        sprintf(temp_log, " Operation: %u – data write,", operation);
+        break;
+      case 5:
+        sprintf(temp_log, " Operation: %u – instruction fetch,", operation);
+        break;
+      case 6:
+        sprintf(temp_log, " Operation: %u – prefetch,", operation);
+        break;
+      case 7:
+        switch(section_sub_type) {
+          case CACHE_ERROR:
+            sprintf(temp_log, " Operation: %u – eviction,", operation);
+            break;
+          case TLB_ERROR:
+            sprintf(temp_log, " Operation: %u – local management operation (the processor described in this record initiated a TLB management operation that resulted in an error),", operation);
+            break;
+          default:
+            sprintf(temp_log, " Operation: %u – Unknown,", operation);
+            break;
+        }
+        break;
+      case 8:
+        switch(section_sub_type) {
+          case CACHE_ERROR:
+            sprintf(temp_log, " Operation: %u – snooping (the processor described in this record initiated a cache snoop that resulted in an error),", operation);
+            break;
+          case TLB_ERROR:
+            sprintf(temp_log, " Operation: %u – external management operation (the processor described in this record raised a TLB error caused by another processor or device broadcasting TLB operations),", operation);
+            break;
+          default:
+            sprintf(temp_log, " Operation: %u – Unknown,", operation);
+            break;
+        }
+        break;
+      case 9:
+        sprintf(temp_log, " Operation: %u – snooped (the processor described in this record raised a cache error caused by another processor or device snooping into its cache),", operation);
+        break;
+      case 10:
+        sprintf(temp_log, " Operation: %u – management,", operation);
+        break;
+      default:
+        sprintf(temp_log, " Operation: %u - Unknown,", operation); 
+        break;
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, " Operation: Not Valid,");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> LEVEL_VALID & 0x1) == 1) {
+    switch(section_sub_type) {
+      case CACHE_ERROR:
+        sprintf(temp_log, " Level: %u (Cache level),", level);
+        break;
+      case TLB_ERROR:
+        sprintf(temp_log, " Level: %u (TLB level),", level);
+        break;
+      case BUS_ERROR:
+        sprintf(temp_log, " Level: %u (Affinity level at which the bus error occurred),", level);
+        break;
+      default:
+        sprintf(temp_log, " Level: %u (Unknown),", level);
+        break;
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, " Level: Not Valid,");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> PROC_CONTEXT_CORRUPT_VALID & 0x1) == 1) {
+    switch(pro_con_cor) {
+      case 0:
+        sprintf(temp_log, " Processor Context Corrupt: %u - Processor context not corrupted,", pro_con_cor);
+        break;
+      case 1:
+        sprintf(temp_log, " Processor Context Corrupt: %u - Processor context corrupted,", pro_con_cor);
+        break;
+      default:
+        sprintf(temp_log, " Processor Context Corrupt: %u - Unknown,", pro_con_cor);
+        break;
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, " Processor Context Corrupt: Not Valid,");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> CORR_VALID & 0x1) == 1) {
+    switch(corrected) {
+      case 0:
+        sprintf(temp_log, " Corrected: %u - Uncorrected,", corrected);
+        break;
+      case 1:
+        sprintf(temp_log, " Corrected: %u - Corrected,", corrected);
+        break;
+      default:
+        sprintf(temp_log, " Corrected: %u - Unknown,", corrected);
+        break;
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, " Corrected: Not Valid,");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> PRECISE_PC_VALID & 0x1) == 1) {
+    sprintf(temp_log, " Precise PC: %u (This field indicates that the program counter that is directly associated with the error),", pre_pc);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, " Precise PC: Not Valid,");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> RESTART_PC_VALID & 0x1) == 1) {
+    sprintf(temp_log, " Restartable PC: %u (This field indicates that program execution can be restarted reliably at the PC associated with the error)", res_pc);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, " Restartable PC: Not Valid");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  switch(section_sub_type) {
+    case BUS_ERROR:
+      break;
+    case CACHE_ERROR:
+    case TLB_ERROR:
+    default:
+      return;
+  }
+
+  if((validation_bit >> PARTICIPATION_TYPE_VALID & 0x1) == 1) {
+    switch(par_type) {
+      case 0:
+        sprintf(temp_log, ", Participation Type: %u – Local Processor originated request", par_type);
+        break;
+      case 1:
+        sprintf(temp_log, ", Participation Type: %u – Local processor Responded to request", par_type);
+        break;
+      case 2:
+        sprintf(temp_log, ", Participation Type: %u – Local processor Observed", par_type);
+        break;
+      case 3:
+        sprintf(temp_log, ", Participation Type: %u – Generic", par_type);
+        break;
+      default:
+        sprintf(temp_log, ", Participation Type: %u – Unknown", par_type);
+        break;
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, ", Participation Type: Not Valid");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> TIMEOUT_VALID & 0x1) == 1 ) {
+    sprintf(temp_log, ", Time Out: %u (This field indicates that the request timed out)", timeout);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, ", Time Out: Not Valid");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> ADDRESS_SPACE_VALID & 0x1) == 1) {
+    switch(addr_space) {
+      case 0:
+        sprintf(temp_log, ", Address Space: %u - External Memory Access (e.g. DDR))", addr_space);
+        break;
+      case 1:
+        sprintf(temp_log, ", Address Space: %u - Internal Memory Access (e.g. internal chip ROM))", addr_space);
+        break;
+      case 2:
+        sprintf(temp_log, ", Address Space: %u - Device Memory Access)", addr_space);
+        break;
+      default:
+        sprintf(temp_log, ", Address Space: %u - Unknown", addr_space);
+        break;
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, ", Address Space: Not Valid");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> MEM_ATTR_VALID & 0x1) == 1) {
+    sprintf(temp_log, ", Memory Access Attributes: %u (Memory attribute as described in the ARM specification)", mem_addr_attr);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  } else {
+    sprintf(temp_log, ", Memory Access Attributes: Not Valid");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  if((validation_bit >> ACCESS_MODE_VALID & 0x1) == 1) {
+    switch(access_mode) {
+      case 0:
+        sprintf(temp_log, ", Access Mode: %u - secure", access_mode);
+        break;
+      case 1:
+        sprintf(temp_log, ", Access Mode: %u - normal", access_mode);
+        break;
+      default:
+        sprintf(temp_log, ", Access Mode: %u - Unknown", access_mode);
+        break;
+    }
+    strcat(error_log, temp_log);
+  } else {
+    sprintf(temp_log, ", Access Mode: Not Valid");
+    strcat(error_log, temp_log);
+  }
+
+  return;
+}
+
+int
 processor_ras_sel_parse(char *error_log, uint8_t *sel) {
   uint8_t section_sub_type = sel[0];
   char temp_log[128] = {0};
 
   switch(section_sub_type) {
-    case 0x00:
+    case CACHE_ERROR:
       sprintf(temp_log, " Section Sub-type: Cache Error,");
-      break;
-    case 0x01:
+      strcat(error_log, temp_log);
+      arm_err_parse(section_sub_type, error_log, &sel[1]);
+      return 1;
+    case TLB_ERROR:
       sprintf(temp_log, " Section Sub-type: TLB Error,");
-      break;
-    case 0x02:
+      strcat(error_log, temp_log);
+      arm_err_parse(section_sub_type, error_log, &sel[1]);
+      return 1;
+    case BUS_ERROR:
       sprintf(temp_log, " Section Sub-type: Bus Error,");
-      break;
-    case 0x03:
+      strcat(error_log, temp_log);
+      arm_err_parse(section_sub_type, error_log, &sel[1]);
+      return 1;
+    case MICRO_ARCH_ERROR:
       sprintf(temp_log, " Section Sub-type: Micro-architectural Error,");
       break;
     default:
@@ -6707,7 +7049,7 @@ processor_ras_sel_parse(char *error_log, uint8_t *sel) {
       break;
   }
   strcat(error_log, temp_log);
-  return;
+  return 0;
 }
 
 void
@@ -6792,6 +7134,84 @@ memory_ras_sel_parse(char *error_log, uint8_t *sel) {
 }
 
 void
+pcie_aer_sel_parse(char *error_log, uint8_t *sel) {
+  uint32_t root_err_sts = 0;
+  uint32_t uncor_err_sts = 0;
+  uint32_t cor_err_sts = 0;
+  char temp_log[512] = {0};
+  int index = 0;
+  uint8_t err_flag = 0;
+
+  root_err_sts = (sel[0] << 24) | (sel[1] << 16) | (sel[2] << 8) | sel[3];
+
+  uncor_err_sts = (sel[4] << 24) | (sel[5] << 16) | (sel[6] << 8) | sel[7];
+
+  cor_err_sts = (sel[8] << 24) | (sel[9] << 16) | (sel[10] << 8) | sel[11];
+  
+  sprintf(temp_log, " Root Error Status:");
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");
+
+  for(index = 0; index < (sizeof(aer_root_err_sts)/sizeof(struct ras_pcie_aer_info) - 1); index++) {
+    if((root_err_sts >> aer_root_err_sts[index].offset & 0x1) == 1) {
+      sprintf(temp_log, " \"%s\"", aer_root_err_sts[index].name);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }
+  }
+  sprintf(temp_log, " \"%s: %d\" /", aer_root_err_sts[index].name, root_err_sts >> aer_root_err_sts[index].offset);
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");
+
+  sprintf(temp_log, " AER Uncorrectable Error Status:");
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");
+
+  for(index = 0; index < sizeof(aer_uncor_err_sts)/sizeof(struct ras_pcie_aer_info) ; index++) {
+    if((uncor_err_sts >> aer_uncor_err_sts[index].offset & 0x1) == 1) {
+      sprintf(temp_log, " \"%s\"", aer_uncor_err_sts[index].name);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+      err_flag = 1;
+    }
+  }
+
+  if(!err_flag) {
+    sprintf(temp_log, " None");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+  }
+
+  err_flag = 0;
+
+  sprintf(temp_log, " / AER Correctable Error Status:");
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");
+
+  for(index = 0; index < sizeof(aer_cor_err_sts)/sizeof(struct ras_pcie_aer_info); index++) {
+    if((cor_err_sts >> aer_cor_err_sts[index].offset & 0x1) == 1) {
+      sprintf(temp_log, " \"%s\"", aer_cor_err_sts[index].name);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+      err_flag = 1;
+    }
+  }
+
+  if(!err_flag) {
+    sprintf(temp_log, " None /");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+    return;
+  }
+
+  sprintf(temp_log, " /");
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");
+
+  return;
+}
+
+void
 pcie_ras_sel_parse(char *error_log, uint8_t *sel) {
   uint8_t section_sub_type = sel[0];
   char temp_log[128] = {0};
@@ -6811,8 +7231,10 @@ pcie_ras_sel_parse(char *error_log, uint8_t *sel) {
   strcat(error_log, temp_log);
   strcpy(temp_log, "");
 
-  sprintf(temp_log, " Error Specific: Segment Number (%02x%02x) / Bus Number (%02x) / Device Number (%02x) / Function Number (%x)", seg_num[1], seg_num[0], bus_num, dev_num, fun_num);
+  sprintf(temp_log, " Error Specific: Segment Number (%02x%02x) / Bus Number (%02x) / Device Number (%02x) / Function Number (%x) /", seg_num[1], seg_num[0], bus_num, dev_num, fun_num);
   strcat(error_log, temp_log);
+
+  pcie_aer_sel_parse(error_log, &sel[17]);
 
   return;
 }
@@ -6855,23 +7277,27 @@ qualcomm_fw_ras_sel_parse(char *error_log, uint8_t *sel) {
 
 uint8_t
 pal_err_ras_sel_handle(uint8_t section_type, char *error_log, uint8_t *sel) {
-  char temp_log[32] = {0};
+  char temp_log[256] = {0};
   char tstr[10] = {0};
-  char ras_data[128]={0};
+  char ras_data[256]={0};
+  int ret;
   int i;
 
   switch(section_type) {
     case 0x00:
-      processor_ras_sel_parse(error_log, sel);
+      ret = processor_ras_sel_parse(error_log, sel);
+      if (ret) {
+        return 0;
+      }
       break;
     case 0x01:
       memory_ras_sel_parse(error_log, sel);
-      break;
+      return 0;
     case 0x02:  //Not used
       return 0;
     case 0x03:
       pcie_ras_sel_parse(error_log, sel);
-      break;
+      return 0;
     case 0x04:
       qualcomm_fw_ras_sel_parse(error_log, sel);
       break;
@@ -6882,17 +7308,16 @@ pal_err_ras_sel_handle(uint8_t section_type, char *error_log, uint8_t *sel) {
       break;
   }
 
-  if((section_type != 0x01) && (section_type != 0x03)) {
-    sprintf(temp_log, " Error Specific Raw Data: ");
-    strcat(error_log, temp_log);
-    for(i = 1; i < SIZE_RAS_SEL - 7; i++) {
-      sprintf(tstr, "%02X:", sel[i]);
-      strcat(ras_data, tstr);
-    }
-    sprintf(tstr, "%02X", sel[SIZE_RAS_SEL - 7]);
+  sprintf(temp_log, " Error Specific Raw Data: ");
+  strcat(error_log, temp_log);
+  for(i = 1; i < SIZE_RAS_SEL - 7; i++) {
+    sprintf(tstr, "%02X:", sel[i]);
     strcat(ras_data, tstr);
-    strcat(error_log, ras_data);
   }
+  sprintf(tstr, "%02X", sel[SIZE_RAS_SEL - 7]);
+  strcat(ras_data, tstr);
+  strcat(error_log, ras_data);
+
   return 0;
 }
 

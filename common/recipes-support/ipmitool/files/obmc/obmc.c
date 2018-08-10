@@ -94,11 +94,11 @@ ipmi_obmc_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		tbuf[2] = req->msg.cmd;
 		memcpy(&tbuf[3], req->msg.data, req->msg.data_len);
 		for (try=0; try < intf->ssn_params.retry; try++) {
-			retval = 0;
-			lib_ipmi_handle(tbuf, req->msg.data_len + 3, rbuf, &retval);
-			if (retval >= 3) {
+      unsigned short reslen = 0;
+			lib_ipmi_handle(tbuf, req->msg.data_len + 3, rbuf, &reslen);
+			if (reslen >= 3) {
 				rsp.ccode = rbuf[2];
-				rsp.data_len = retval - 3;
+				rsp.data_len = reslen - 3;
 				memcpy(rsp.data, &rbuf[3], rsp.data_len);
 				rsp.data[rsp.data_len] = 0;
 				return &rsp;

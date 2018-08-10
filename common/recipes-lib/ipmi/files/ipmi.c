@@ -41,9 +41,9 @@ void
 lib_ipmi_handle(unsigned char *request, unsigned char req_len,
             unsigned char *response, unsigned short *res_len) {
 
-  size_t resp_len = MAX_IPMI_MSG_SIZE;
+  size_t resp_len = MAX_IPMI_RES_LEN;
 
   if (ipc_send_req(SOCK_PATH_IPMI, request, (size_t)req_len, response, &resp_len, TIMEOUT_IPMI + 1) == 0) {
-    *res_len = (unsigned char)resp_len;
+    *res_len = (unsigned short)resp_len;
   }
 }

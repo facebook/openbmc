@@ -157,6 +157,18 @@ main(int argc, char **argv) {
   	printf("SP_SENSOR_HSC_IN_POWER: %.2f Watts\n", fvalue);
   }
 
+  if (fby2_sensor_read(slot_id, SP_SENSOR_HSC_PEAK_IOUT, &fvalue)) {
+    printf("fby2_sensor_read failed: SP_SENSOR_HSC_PEAK_IOUT\n");
+  } else {
+        printf("SP_SENSOR_HSC_PEAK_IOUT: %.2f Amps\n", fvalue);
+  }
+
+  if (fby2_sensor_read(slot_id, SP_SENSOR_HSC_PEAK_PIN, &fvalue)) {
+    printf("fby2_sensor_read failed: SP_SENSOR_HSC_PEAK_PIN\n");
+  } else {
+        printf("SP_SENSOR_HSC_PEAK_PIN: %.2f Watts\n", fvalue);
+  }
+
   if (fby2_sensor_read(slot_id, BIC_SENSOR_MB_OUTLET_TEMP, &fvalue)) {
     printf("fby2_sensor_read failed: BIC_SENSOR_MB_OUTLET_TEMP\n");
   } else {

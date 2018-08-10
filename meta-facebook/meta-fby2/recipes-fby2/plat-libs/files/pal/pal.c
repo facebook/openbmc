@@ -3298,10 +3298,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   else {
     // On successful sensor read
     if (fru == FRU_SPB) {
-      if (sensor_num == SP_SENSOR_HSC_OUT_CURR) {
+      if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
         power_value_adjust(curr_cali_table, (float *)value);
       }
-      if (sensor_num == SP_SENSOR_HSC_IN_POWER) {
+      if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN) {
         power_value_adjust(pwr_cali_table, (float *)value);
       }
       if (sensor_num == SP_SENSOR_INLET_TEMP) {

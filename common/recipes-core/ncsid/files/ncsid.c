@@ -450,7 +450,6 @@ process_NCSI_AEN(AEN_Packet *buf)
         break;
 
       case AEN_TYPE_HOST_NC_DRIVER_STATUS_CHANGE:
-        log_level = LOG_CRIT;
         i += sprintf(logbuf + i, ", DriverStatus=0x%04x-%04x",
         ntohs(buf->Optional_AEN_Data[0]),
         ntohs(buf->Optional_AEN_Data[1]));

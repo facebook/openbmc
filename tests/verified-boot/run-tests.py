@@ -146,7 +146,8 @@ def test_no_keys():
 
 
 def test_bad_keys():
-    c = expect_code('3.36', '3.36', 3, 36)
+    # Returns general unverified firmware code.
+    c = expect_code('3.36', '3.36', 4, 43)
     expect_close(c)
 
 
@@ -181,7 +182,8 @@ def test_keys_invalid_bad_hint():
 
 
 def test_keys_invalid_bad_data():
-    c = expect_code('4.40.3', '4.40.3', 4, 40)
+    # Returns general unverified firmware code.
+    c = expect_code('4.40.3', '4.40.3', 4, 43)
     expect_close(c)
 
 

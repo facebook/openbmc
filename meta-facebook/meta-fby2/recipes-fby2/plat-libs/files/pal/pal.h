@@ -237,6 +237,11 @@ int pal_get_post_end_timestamp(uint8_t fru, long *value);
 uint8_t pal_is_post_time_out();
 void pal_check_fscd_watchdog();
 uint8_t pal_get_server_type(uint8_t fru);
+int pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence);
+int pal_get_tpm_physical_presence(uint8_t slot);
+int pal_create_TPMTimer(int fru);
+int pal_set_tpm_timeout(uint8_t slot, int timeout);
+int pal_set_tpm_physical_presence_reset(uint8_t slot, uint8_t reset);
 #ifdef __cplusplus
 } // extern "C"
 #endif

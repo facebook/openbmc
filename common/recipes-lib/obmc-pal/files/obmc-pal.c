@@ -2206,3 +2206,18 @@ int __attribute__((weak))
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh){
   return 0;
 }
+
+int __attribute__((weak))
+pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_tpm_physical_presence(uint8_t slot) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_create_TPMTimer(int fru) {
+  return PAL_ENOTSUP;
+}

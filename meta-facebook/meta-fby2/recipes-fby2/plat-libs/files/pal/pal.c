@@ -118,6 +118,8 @@
 #define REINIT_TYPE_HOST_RESOURCE   1
 
 #define POST_TIMEOUT  300
+//declare for clearing TPM presence flag
+#define TPM_Timeout 600
 
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
@@ -7491,4 +7493,123 @@ pal_get_server_type(uint8_t fru) {
   bic_get_server_type(fru, &server_type);
 
   return server_type;
+}
+
+int
+pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_tpm_phy_prsnt", slot);
+  snprintf(str,MAX_VALUE_LEN, "%u",presence);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+pal_get_tpm_physical_presence(uint8_t slot) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  sprintf(key, "slot%u_tpm_phy_prsnt", slot);
+
+  ret = kv_get(key, cvalue,NULL,0);
+  if (ret) {
+    return 0;
+  }
+  return atoi(cvalue);
+}
+
+int
+pal_set_tpm_physical_presence_reset(uint8_t slot, uint8_t reset) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_tpm_reset", slot);
+  snprintf(str,MAX_VALUE_LEN, "%u",reset);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+pal_get_tpm_physical_presence_reset(uint8_t slot) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  sprintf(key, "slot%u_tpm_reset", slot);
+
+  ret = kv_get(key, cvalue,NULL,0);
+  if (ret) {
+    return 0;
+  }
+  return atoi(cvalue);
+}
+
+int
+pal_set_tpm_timeout(uint8_t slot, int timeout) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_tpm_timeout", slot);
+  snprintf(str,MAX_VALUE_LEN, "%d",timeout);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+pal_get_tpm_timeout(uint8_t slot) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  sprintf(key, "slot%u_tpm_timeout", slot);
+
+  ret = kv_get(key, cvalue,NULL,0);
+  if (ret) {
+    //set default 600
+    syslog(LOG_WARNING,"pal_get_tpm_timeout failed");
+    return TPM_Timeout;
+  }
+  return atoi(cvalue);
+}
+
+void *
+pal_check_start_TPMTimer(void* arg) { //called by daemon threads
+  int slot_id = (int) arg;
+  while (1) {
+    if (pal_get_tpm_physical_presence(slot_id)) { //from 0 to 1
+      int timeout = TPM_Timeout;
+      int timer = 0;
+      int presence = 1;
+
+      timeout = pal_get_tpm_timeout(slot_id);
+      syslog(LOG_WARNING, "[pal_check_start_TPMTimer][%lu] slot%d Start Timeout=%d", pthread_self(),slot_id,timeout);
+
+      while (timer < timeout) {
+        sleep(1);
+        timer++;
+        presence = pal_get_tpm_physical_presence(slot_id);
+        if (presence == 0) { //if not present, stop timer
+          break;
+        }
+        if (pal_get_tpm_physical_presence_reset(slot_id)) { //if reset, update timer and timeout
+          pal_set_tpm_physical_presence_reset(slot_id, 0);
+          timer = 0;
+          timeout = pal_get_tpm_timeout(slot_id);
+          syslog(LOG_WARNING, "[pal_check_start_TPMTimer][%lu] slot%d Reset Timeout: %d\n", pthread_self(),slot_id,timeout);
+        }
+      }
+
+      //after timout set presence 1 to 0
+      if (presence)
+        pal_set_tpm_physical_presence(slot_id,0);
+      syslog(LOG_WARNING, "[pal_check_start_TPMTimer][%lu] slot%d End Timer: %d\n", pthread_self(),slot_id,timer);
+    }
+    sleep(1);
+  }
+  pthread_exit(0);
+}
+
+int
+pal_create_TPMTimer(int fru) {
+  static pthread_t tpm_tid[MAX_NODES]={0};
+  pthread_create(&tpm_tid[fru-1], NULL, pal_check_start_TPMTimer, (void*)fru);
+  pthread_detach(tpm_tid[fru-1]);
+  return 0;
 }

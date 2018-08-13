@@ -308,6 +308,9 @@ uint8_t pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log);
 int pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh);
 int pal_set_fru_post(uint8_t fru, uint8_t value);
 uint8_t pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence);
+int pal_get_tpm_physical_presence(uint8_t slot);
+int pal_create_TPMTimer(int fru);
 #ifdef __cplusplus
 }
 #endif

@@ -2303,6 +2303,62 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_tpm_presence(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  int ret;
+  int slot_id = req->payload_id;
+  int presence = req->data[0];
+
+  if (presence == 0) {
+    ret = pal_set_tpm_physical_presence(slot_id,presence);
+    if (ret == 0) {
+      res->cc = CC_SUCCESS;
+    } else {
+      res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    }
+  } else {
+    // do not set tpm physical presence flag to 1
+    res->cc = CC_UNSPECIFIED_ERROR;
+  }
+}
+
+static void
+oem_get_tpm_presence(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int value;
+
+  value = pal_get_tpm_physical_presence(req->payload_id);
+  syslog(LOG_WARNING, "[%s] Get: %x\n", __func__, value);
+
+  if ((value != 0) && (value != 1)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
+
+  // BMC auto-clear after BIOS retrieve it
+  // if (value == 1) {
+  //   int ret = pal_set_tpm_physical_presence(req->payload_id,0);
+  //   if (ret != 0) {
+  //     res->cc = CC_UNSPECIFIED_ERROR;
+  //     *res_len = 0;
+  //     return;
+  //   }
+  // }
+
+  res->cc = CC_SUCCESS;
+  res->data[0] = value;
+  *res_len = 1;
+}
+
+static void
 oem_set_ppr (unsigned char *request, unsigned char req_len,
                    unsigned char *response, unsigned char *res_len)
 {
@@ -3009,6 +3065,12 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_BOOT_ORDER:
       oem_get_boot_order(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_TPM_PRESENCE:
+      oem_set_tpm_presence(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_TPM_PRESENCE:
+      oem_get_tpm_presence(request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_PPR:
     case CMD_OEM_LEGACY_SET_PPR:
@@ -3777,6 +3839,8 @@ main (void)
   fru = 1;
 
   while(fru <= max_slot_num){
+    //tpm
+    pal_create_TPMTimer(fru);
     struct watchdog_data *wdt_data = calloc(1, sizeof(struct watchdog_data));
     if (!wdt_data) {
       syslog(LOG_WARNING, "ipmid: allocation wdt info failed!\n");

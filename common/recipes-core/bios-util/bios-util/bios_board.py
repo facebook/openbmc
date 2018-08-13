@@ -10,11 +10,11 @@ from bios_boot_order import *
 from bios_postcode import *
 from bios_plat_info import *
 from bios_pcie_port_config import *
-
+from bios_tpm_physical_presence import *
 
 BIOS_UTIL_CONFIG = '/usr/local/fbpackages/bios-util/bios_support.json'
 BIOS_UTIL_DEFAULT_CONFIG = '/usr/local/fbpackages/bios-util/bios_default_support.json'
-supported_commands = ["--boot_order", "--postcode", "--plat_info", "--pcie_port_config"]
+supported_commands = ["--boot_order", "--postcode", "--plat_info", "--pcie_port_config","--tpm-physical-presence"]
 
 def bios_main_fru(fru, command):
     if ( command == "--boot_order" ):
@@ -25,6 +25,8 @@ def bios_main_fru(fru, command):
         plat_info(fru)
     elif ( command == "--pcie_port_config" ):
         pcie_port_config(fru, sys.argv[1:])
+    elif ( command == "--tpm-physical-presence"):
+        tpm_physical_presence(fru, sys.argv[1:])
 
 class check_bios_util(object):
     def __init__(self, config=BIOS_UTIL_CONFIG, default_config=BIOS_UTIL_DEFAULT_CONFIG, argv=sys.argv):
@@ -85,6 +87,8 @@ class check_bios_util(object):
             if self.boot_mode or self.boot_order:
                 group.add_argument("--boot_order", dest="command", action="store", choices=["set", "get"], help="Set or get BIOS boot order")
 
+        if self.tpm_presence:
+            group.add_argument("--tpm-physical-presence", dest="command", action="store", choices=["set", "get"], help="Set or get TPM physical presence")
         if self.postcode:
             group.add_argument("--postcode", dest="command", action="store", choices=["get"], help="Get POST code")
         if self.plat_info:
@@ -119,6 +123,7 @@ class check_bios_util(object):
 
     def get_config_params(self):
         self.bios_util_action = "false"
+        self.tpm_presence = False
         if 'boot_mode' in self.bios_support_config and 'supported' in self.bios_support_config['boot_mode']:
             self.boot_mode = self.bios_support_config['boot_mode']['supported']
         if 'clear_cmos' in self.bios_support_config and 'supported' in self.bios_support_config['clear_cmos']:
@@ -136,9 +141,11 @@ class check_bios_util(object):
             self.pcie_ports = self.pcie_ports.split(', ')
         if 'postcode' in self.bios_support_config and 'supported' in self.bios_support_config['postcode']:
             self.postcode = self.bios_support_config['postcode']['supported']
+        if 'tpm_presence' in self.bios_support_config and 'supported' in self.bios_support_config['tpm_presence']:
+            self.tpm_presence = self.bios_support_config['tpm_presence']['supported']
 
         if self.boot_mode or self.clear_cmos or self.force_boot_bios_setup or self.boot_order \
-           or self.plat_info or self.pcie_port_config or self.postcode:
+           or self.plat_info or self.pcie_port_config or self.postcode or self.tpm_presence:
            self.bios_util_action = "true"
 
     def set(self):
@@ -165,6 +172,18 @@ class check_bios_util(object):
             if len(self.argv) < 5:
                 parser.print_help()
                 return False
+            args = parser.parse_args(self.argv[4:])
+        elif self.argv[2] == "--tpm-physical-presence":
+            parser = argparse.ArgumentParser(description='Show Set TPM physical presence usage', allow_abbrev=False,
+                usage=self.bios_usage_message + " [-h] {presence=0}\n" + self.bios_usage_message + " [-h] {presence=1} {timeout_in_sec}")
+            group = parser.add_argument_group()
+            group.add_argument("{presence}", action="store", choices=["0", "1"], help="Set TPM physical presence {0: 'not present', 1: 'present'}")
+            if len(self.argv) < 5:
+                parser.print_help()
+                return False
+            if self.argv[4].isdigit() == True:
+                if int(self.argv[4]) == 1:
+                    group.add_argument("{timeout_in_sec}", type=int, help="Set TPM physical presence timout in second")
             args = parser.parse_args(self.argv[4:])
 
         return True

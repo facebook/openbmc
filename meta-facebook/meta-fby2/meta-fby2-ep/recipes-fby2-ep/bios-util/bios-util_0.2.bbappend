@@ -17,17 +17,8 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://bios_plat_info.py \
-            file://BIOS_UTIL_FBY2.json \
-            file://setup_bios_util.sh \
-            file://bios_tpm_physical_presence.py \
+SRC_URI += "file://BIOS_UTIL_FBY2.json \
            "
-DEPENDS += "libpal"
-
-binfiles += "bios_plat_info.py bios_tpm_physical_presence.py"
 
 BIOS_UTIL_CONFIG += "BIOS_UTIL_FBY2.json"
 
-BIOS_UTIL_INIT_FILE += "setup_bios_util.sh"
-
-RDEPENDS_${PN} += "libpal"

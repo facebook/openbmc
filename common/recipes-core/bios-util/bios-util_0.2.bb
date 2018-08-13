@@ -16,6 +16,7 @@ SRC_URI = "file://bios-head.py \
            file://bios_pcie_port_config.py \
            file://lib_pal.py \
            file://bios_default_support.json \
+           file://bios_tpm_physical_presence.py \
           "
 
 S = "${WORKDIR}"
@@ -27,7 +28,7 @@ BIOS_UTIL_CONFIG = "bios_default_support.json"
 
 BIOS_UTIL_INIT_FILE = ""
 
-binfiles = "bios-head.py bios_board.py bios_boot_order.py bios_ipmi_util.py bios_postcode.py bios_plat_info.py bios_pcie_port_config.py lib_pal.py"
+binfiles = "bios-head.py bios_board.py bios_boot_order.py bios_ipmi_util.py bios_postcode.py bios_plat_info.py bios_pcie_port_config.py bios_tpm_physical_presence.py lib_pal.py"
 
 pkgdir = "bios-util"
 

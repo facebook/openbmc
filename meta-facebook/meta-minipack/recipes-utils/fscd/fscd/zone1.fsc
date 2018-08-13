@@ -1,0 +1,5 @@
+max([
+  linear_inlet(scm:scm_inlet_remote_temp),
+  linear_switch1(smb:th3_die_temp1),
+  linear_switch2(smb:th3_die_temp2)
+])

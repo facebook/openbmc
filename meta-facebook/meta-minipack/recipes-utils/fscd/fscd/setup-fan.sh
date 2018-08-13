@@ -29,7 +29,22 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+default_fsc_config="/etc/fsc-config.json"
+fcm_b_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver \
+           2> /dev/null`
+fcm_t_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver \
+           2> /dev/null`
+
 echo -n "Setup fan speed... "
+
+if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
+    echo "Run FSC PWM 32 Levels Config"
+    cp /etc/FSC-PWM-32-config.json ${default_fsc_config}
+else
+    echo "Run FSC PWM 64 Levels Config"
+    cp /etc/FSC-PWM-64-config.json ${default_fsc_config}
+fi
+
 /usr/local/bin/set_fan_speed.sh 50
-# runsv /etc/sv/fscd > /dev/null 2>&1 &
+runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

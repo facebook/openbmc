@@ -20,14 +20,19 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://setup-fan.sh \
             file://get_fan_speed.sh \
             file://set_fan_speed.sh \
-            file://fsc-config.json \
+            file://fsc_board.py \
+            file://FSC-PWM-32-config.json \
+            file://FSC-PWM-64-config.json \
+            file://zone1.fsc \
            "
 
 FSC_BIN_FILES += "get_fan_speed.sh \
                   set_fan_speed.sh "
 
-FSC_CONFIG += "fsc-config.json"
+FSC_CONFIG += "FSC-PWM-32-config.json \
+               FSC-PWM-64-config.json \
+              "
 
-FSC_ZONE_CONFIG +=""
+FSC_ZONE_CONFIG +="zone1.fsc"
 
 FSC_INIT_FILE += "setup-fan.sh"

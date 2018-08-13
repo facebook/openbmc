@@ -40,9 +40,6 @@ echo 0 > ${SCMCPLD_SYSFS_DIR}/iso_com_en
 echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_oe_n
 echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
 
-# Disable watchdog temporarily because fscd is not ready
-/usr/local/bin/watchdog_ctrl.sh off
-
 # EVTA is 4, EVTB is 0
 if [ $board_rev -ne 4 ]; then
     # Set BMC_RST_FPGA(GPIOP2) pin to high, IOB FPGA in normal mode

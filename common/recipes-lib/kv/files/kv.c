@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -81,6 +82,8 @@ kv_set(char *key, char *value, size_t len, unsigned int flags) {
   FILE *fp;
   int rc, ret = -1;
   char kpath[MAX_KEY_PATH_LEN] = {0};
+  bool present = true;
+  char curr_value[MAX_VALUE_LEN] = {0};
 
   key_path_setup(kpath, key, flags);
 
@@ -97,8 +100,10 @@ kv_set(char *key, char *value, size_t len, unsigned int flags) {
   }
 
   fp = fopen(kpath, "r+");
-  if (!fp && (errno == ENOENT))
+  if (!fp && (errno == ENOENT)) {
     fp = fopen(kpath, "w");
+    present = false;
+  }
   if (!fp) {
     KV_DEBUG("kv_set: failed to open %s %d", kpath, errno);
     return -1;
@@ -108,6 +113,17 @@ kv_set(char *key, char *value, size_t len, unsigned int flags) {
   if (rc < 0) {
     KV_DEBUG("kv_set: failed to flock on %s, err %d", kpath, errno);
     goto close_bail;
+  }
+
+  // Check if we are writing the same value. If so, exit early
+  // to save on number of times flash is updated.
+  if (present && (flags && KV_FPERSIST)) {
+    rc = (int)fread(curr_value, 1, MAX_VALUE_LEN, fp);
+    if (len == rc && !memcmp(value, curr_value, len)) {
+      ret = 0;
+      goto unlock_bail;
+    }
+    fseek(fp, 0, SEEK_SET);
   }
 
   if (ftruncate(fileno(fp), 0) < 0) {  //truncate cache file after getting flock

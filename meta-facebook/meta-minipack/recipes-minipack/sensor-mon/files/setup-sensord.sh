@@ -29,6 +29,8 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Setup sensor monitoring for minipack... "
+echo -n "Setup sensor monitoring for MINIPACK... "
+
 runsv /etc/sv/sensord > /dev/null 2>&1 &
+
 echo "done."

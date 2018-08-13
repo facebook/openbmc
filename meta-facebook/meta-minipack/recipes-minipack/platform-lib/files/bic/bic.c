@@ -1379,3 +1379,13 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
 
   return ret;
 }
+
+int
+bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result) {
+  int ret;
+  uint8_t rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS, NULL, 0, (uint8_t *) self_test_result, &rlen);
+
+  return ret;
+}

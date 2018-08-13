@@ -15,26 +15,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "Sensor Monitoring Daemon"
-DESCRIPTION = "Daemon for monitoring the COM-e sensors, and write data to COM-e driver"
-SECTION = "base"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://sensord.c;beginline=6;endline=16;md5=84921108300914fe586493deaf38b97c"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI = "file://Makefile \
-           file://sensord.c \
-           file://run-sensord.sh \
-           file://setup-sensord.sh \
-          "
+SRC_URI += "file://setup-sensord.sh \
+            file://run-sensord.sh \
+           "
 
 S = "${WORKDIR}"
 
-binfiles = "sensord \
-           "
-
-DEPENDS += " libpal libbic"
-RDEPENDS_${PN} += "libpal libbic"
+DEPENDS_append = "update-rc.d-native"
 
 pkgdir = "sensor-mon"
 
@@ -62,7 +51,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin ${sysconfdir}"
+FILES_${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin ${sysconfdir} "
 
 # Inhibit complaints about .debug directories for the sensord binary:
 

@@ -154,7 +154,7 @@ fw_update_slot(char **argv, uint8_t slot_id) {
   int ret;
   char cmd[80];
 
-  ret = pal_is_fru_prsnt(slot_id, &status);
+  ret = pal_is_fru_prsnt(FRU_SCM, &status);
   if (ret < 0) {
      printf("pal_is_fru_prsnt failed for fru: %d\n", slot_id);
      goto err_exit;

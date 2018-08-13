@@ -20,7 +20,6 @@ PR = "r0"
 PV = "0.1"
 
 SRC_URI = "file://Makefile \
-           file://com_e_driver.c \
            file://ir3595.c \
            file://isl68127.c \
            file://psu_driver.c \
@@ -33,4 +32,4 @@ DEPENDS += "kernel-module-i2c-dev-sysfs"
 
 RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
 
-KERNEL_MODULE_AUTOLOAD += "ir3595 isl68127 psu_driver com_e_driver"
+KERNEL_MODULE_AUTOLOAD += "ir3595 isl68127 psu_driver"

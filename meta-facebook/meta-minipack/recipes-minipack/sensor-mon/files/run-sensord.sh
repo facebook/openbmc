@@ -1,9 +1,5 @@
 #!/bin/sh
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Setup sensor monitoring for minipack... "
-
-# Check for the slots present and run sensord for those slots only.
-SLOTS="scm"
-
-exec /usr/local/bin/sensord $SLOTS
+ARGS="scm smb pim1 pim2 pim3 pim4 pim5 pim6 pim7 pim8 psu1 psu2 psu3 psu4"
+exec /usr/local/bin/sensord $ARGS

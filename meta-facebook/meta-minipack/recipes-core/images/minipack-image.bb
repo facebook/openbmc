@@ -16,6 +16,7 @@ IMAGE_INSTALL += " \
   at93cx6-util \
   ast-mdio \
   bcm5396-util \
+  bic-cached \
   bic-util \
   bitbang \
   cpldupdate \
@@ -37,6 +38,7 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   psu-util \
   sensor-setup \
+  sensor-util \
   sensor-mon \
   spatula \
   trousers \

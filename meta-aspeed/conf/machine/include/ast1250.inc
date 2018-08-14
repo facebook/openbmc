@@ -2,6 +2,8 @@
 #@NAME: aspeed ast1250
 #@DESCRIPTION: Machine configuration for aspeed ast1250 SoC
 
+SOC_MODEL ?= "ast1250"
+
 # Ship all kernel modules by default
 MACHINE_EXTRA_RRECOMMENDS = "kernel-modules"
 

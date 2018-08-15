@@ -22,4 +22,5 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   usb-console \
   wedge-eeprom \
+  fscd \
   "

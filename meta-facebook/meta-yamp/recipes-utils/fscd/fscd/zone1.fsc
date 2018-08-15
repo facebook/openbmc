@@ -1,0 +1,4 @@
+max([
+  linear_inlet(yamp:inlet_temp),
+  linear_th3(yamp:th3_temp)
+])

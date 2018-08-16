@@ -33,10 +33,7 @@ function set_led_color
   local component=$1 color=$2
   sh /usr/local/bin/set_sled.sh $component $color $board_rev
 }
-# System led:
-# If atleast 1 card is not present = yellow (red+green)
-# otherwise = blue
-# note presence util reads peer cmm =0
+
 function set_sys_led
 {
   scm_nprsnt_cnt=`/usr/local/bin/presence_util.sh scm | grep "scm.*: 0" | wc -l`
@@ -59,20 +56,28 @@ function check_psu_alarm
   local vout_12V_high_th=13 # threshold = 12, error ratio = 0.08
   local vout_12V_low_th=11 # threshold = 12, error ratio = 0.08
   
-  readarray psu < <(/usr/bin/sensors $sensor | grep -e "Input Voltage" -e "12V Output" -e "3.3V Output Voltage")
-  vin=$(echo "${psu}" | sed -e 's/PSU.* Input Voltage:\s*+\(.*\)[.].*$/\1/')
-  vout_12=$(echo "${psu[1]}" | sed -e 's/PSU.* 12V Output Voltage:\s*+\(.*\)[.].*$/\1/')
-  vout_3_3=$(echo "${psu[2]}" | sed -e 's/PSU.*3V Output Voltage:\s*+\(.*\)[.].*$/\1/')
+  if [[ $sensor = "psu1" ]]; then
+    psu_num=1
+  elif [[ $sensor = "psu2" ]]; then
+    psu_num=14
+  elif [[ $sensor = "psu3" ]]; then
+    psu_num=27
+  elif [[ $sensor = "psu4" ]]; then
+    psu_num=40
+  fi
+  vin=$(cat /tmp/cache_store/${sensor}_sensor${psu_num} 2>/dev/null | sed -e 's/\s*\(.*\)[.].*$/\1/')
+  vout_12=$(cat /tmp/cache_store/${sensor}_sensor$(( ${psu_num} + 1 )) 2>/dev/null | sed -e 's/\s*\(.*\)[.].*$/\1/')
+  vout_3_3=$(cat /tmp/cache_store/${sensor}_sensor$(( ${psu_num} + 2 )) 2>/dev/null | sed -e 's/\s*\(.*\)[.].*$/\1/')
   #monitor vin
-  if [ $vin -lt $vin_low_th ] || [ $vin -gt $vin_high_th ] ; then
+  if [[ $vin -lt $vin_low_th ]] || [[ $vin -gt $vin_high_th ]] ; then
     return 0
   fi
   #monitor vout 12V
-  if [ $vout_12 -lt $vout_12V_low_th ] || [ $vout_12 -gt $vout_12V_high_th ]; then
+  if [[ $vout_12 -lt $vout_12V_low_th ]] || [[ $vout_12 -gt $vout_12V_high_th ]]; then
     return 0
   fi
   #monitor vout 3.3V
-  if [ $vout_3_3 -ne 3 ]; then
+  if [[ $vout_3_3 -ne 3 ]]; then
     return 0
   fi
   return 1
@@ -80,7 +85,7 @@ function check_psu_alarm
 
 function set_psu_led
 {
-  sensors=( "psu_driver-i2c-49-59" "psu_driver-i2c-48-58" "psu_driver-i2c-57-59" "psu_driver-i2c-56-58" )
+  sensors=( "psu1" "psu2" "psu3" "psu4" )
   for i in "${sensors[@]}"
   do
     if check_psu_alarm $i; then
@@ -88,27 +93,30 @@ function set_psu_led
       return
     fi
   done
-  psu_nprsnt_cnt=`/usr/local/bin/presence_util.sh psu | grep "psu.*: 0" | wc -l`
-  if [[ $psu_nprsnt_cnt -ge 1 ]]; then
-    set_led_color 'psu' 'red'
-  else
-    set_led_color 'psu' 'blue'
+  set_led_color 'psu' 'blue'
+}
+
+function check_fan_alarm
+{
+  local sensor=$1
+  speed=$(cat /tmp/cache_store/smb_sensor${sensor} 2>/dev/null | sed -e 's/\s*\(.*\)[.].*$/\1/')
+  if [ $speed -eq 0 ] ; then
+    return 0
   fi
+  return 1 
 }
 
 function set_fan_led
 {
-  ret=$(/usr/bin/sensors fcmcpld-* | sed -n "/^Fan.*:.* 0 RPM/p" | wc -l)
-  if [ $ret -gt 0 ]; then
-    set_led_color 'fan' 'red'
-    return
-  fi
-  fan_nprsnt_cnt=`/usr/local/bin/presence_util.sh fan | grep "fan.*: 0" | wc -l`
-  if [[ $fan_nprsnt_cnt -ge 1 ]]; then
-    set_led_color 'fan' 'red'
-  else
-    set_led_color 'fan' 'blue'
-  fi
+  sensors=( "42" "43" "44" "45" "46" "47" "48" "49" "50" "51" "52" "53" "54" "55" "56" "57" )
+  for i in "${sensors[@]}"
+  do
+    if check_fan_alarm $i; then
+      set_led_color 'fan' 'red'
+      return
+    fi
+  done
+  set_led_color 'fan' 'blue'
 }
 
 function set_smb_led
@@ -134,11 +142,11 @@ function touch_upgrade_file
 
 function sys_upgrade_mode
 {
-  local spi2_upgrade=`ls /tmp | grep *_spi2_tmp | wc -l`
+  local spi2_upgrade=`ls /tmp | grep .*_spi2_tmp | wc -l`
   local scmcpld_upgrade=`ls /tmp | grep scmcpld_update | wc -l`
   local fw_util_upgrade=`ls /var/run | grep fw-util_* | wc -l`
   
-  if [[ spi2_upgrade -gt 0 ]] || [[ scmcpld_upgrade -gt 0 ]] || [[ fw_util_upgrade -gt 0 ]]; then
+  if [[ $spi2_upgrade -gt 0 ]] || [[ $scmcpld_upgrade -gt 0 ]] || [[ $fw_util_upgrade -gt 0 ]]; then
     is_sys_upgrade=1
     return
   fi
@@ -148,7 +156,7 @@ function sys_upgrade_mode
 function psu_upgrade_mode
 {
   psu_upgrade=`ls /tmp | grep pdbcpld_update | wc -l`
-  if [[ psu_upgrade -gt 0 ]]; then
+  if [[ $psu_upgrade -gt 0 ]]; then
     is_psu_upgrade=1
     return
   fi
@@ -158,7 +166,7 @@ function psu_upgrade_mode
 function fan_upgrade_mode
 {
   fcm_upgrade=`ls /tmp | grep fcmcpld_update | wc -l`
-  if [[ fcm_upgrade -gt 0 ]]; then
+  if [[ $fcm_upgrade -gt 0 ]]; then
     is_fan_upgrade=1
     return
   fi
@@ -168,10 +176,10 @@ function fan_upgrade_mode
 function smb_upgrade_mode
 {
   local bmc_upgrade=`ps | grep "flashcp" | wc -l` 
-  local spi1_upgrade=`ls /tmp | grep *_spi1_tmp | wc -l`
+  local spi1_upgrade=`ls /tmp | grep .*_spi1_tmp | wc -l`
   local smbcpld_upgrade=`ls /tmp | grep smbcpld_update | wc -l`
   
-  if [[ bmc_upgrade -gt 1 ]] || [[ spi1_upgrade -gt 0 ]] || [[ smbcpld_upgrade -gt 0 ]]; then
+  if [[ $bmc_upgrade -gt 1 ]] || [[ $spi1_upgrade -gt 0 ]] || [[ $smbcpld_upgrade -gt 0 ]]; then
     is_smb_upgrade=1
     return
   fi
@@ -218,5 +226,5 @@ while [ 1 ];do
     set_smb_led
   fi
   start_upgrade_led
-  sleep 1s
+  sleep 10s
 done

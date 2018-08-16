@@ -61,11 +61,11 @@ function led_alternate
   fi
 }
 
-while [ 1 ];do
-  sys_upgrade=`ls /tmp | grep sys_upgrade_mode | wc -l`
-  psu_upgrade=`ls /tmp | grep psu_upgrade_mode | wc -l`
-  fan_upgrade=`ls /tmp | grep fan_upgrade_mode | wc -l`
-  smb_upgrade=`ls /tmp | grep smb_upgrade_mode | wc -l`
+while true; do
+  sys_upgrade=$([[ -f /tmp/sys_upgrade_mode ]] && echo 1 || echo 0)
+  psu_upgrade=$([[ -f /tmp/psu_upgrade_mode ]] && echo 1 || echo 0)
+  fan_upgrade=$([[ -f /tmp/fan_upgrade_mode ]] && echo 1 || echo 0)
+  smb_upgrade=$([[ -f /tmp/smb_upgrade_mode ]] && echo 1 || echo 0)
   if [[ $sys_upgrade -gt 0 ]] || [[ $psu_upgrade -gt 0 ]] || [[ $fan_upgrade -gt 0 ]] || [[ $smb_upgrade -gt 0 ]]; then
     led_alternate $sys_upgrade $sys_led_alter 'sys'
     led_alternate $psu_upgrade $psu_led_alter 'psu'

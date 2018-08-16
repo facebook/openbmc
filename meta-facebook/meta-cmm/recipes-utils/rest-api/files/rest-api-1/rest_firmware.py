@@ -26,7 +26,7 @@ FCB_NUM_TO_SUBPATH = {
 
 def _get_version(version_file):
     with open(version_file) as f:
-        return f.read()
+        return f.readline()
 
 
 def _firmware_json(ver, sub_ver, int_base=16):

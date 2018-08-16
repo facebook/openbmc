@@ -42,3 +42,8 @@ echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
 
 # Setup management port LED
 /usr/local/bin/setup_mgmt.sh led
+
+# Init server_por_cfg
+if [ ! -f "/mnt/data/kv_store/server_por_cfg" ]; then
+    /usr/bin/kv set server_por_cfg on persistent
+fi

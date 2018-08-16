@@ -663,6 +663,8 @@ void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t t
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_get_pim_type(uint8_t fru);
+void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 
 #ifdef __cplusplus
 } // extern "C"

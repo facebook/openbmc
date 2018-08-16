@@ -32,13 +32,26 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 board_rev=$(wedge_board_rev)
 
-# Enable the isolation buffer between BMC and COMe i2c bus
-echo 1 > ${SCMCPLD_SYSFS_DIR}/i2c_bus_en
-echo 0 > ${SCMCPLD_SYSFS_DIR}/iso_com_en
+echo -n "Setting up Default GPIOs value... "
 
-# Make the backup BIOS flash connect to COMe instead of BMC
-echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_oe_n
-echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
+# EVTA is 4, EVTB is 0
+if [ $board_rev -ne 4 ]; then
+    # Set BMC_RST_FPGA(GPIOP2) pin to high, IOB FPGA in normal mode
+    gpio_set BMC_RST_FPGA 1
+fi
 
-# Setup management port LED
-/usr/local/bin/setup_mgmt.sh led
+# Set all reset pin to high, keep in normal mode
+gpio_set BMC_PIM1_9548_RST_N 1
+gpio_set BMC_PIM2_9548_RST_N 1
+gpio_set BMC_PIM3_9548_RST_N 1
+gpio_set BMC_PIM4_9548_RST_N 1
+gpio_set BMC_PIM5_9548_RST_N 1
+gpio_set BMC_PIM6_9548_RST_N 1
+gpio_set BMC_PIM7_9548_RST_N 1
+gpio_set BMC_PIM8_9548_RST_N 1
+gpio_set BMC10_9548_1_RST 1
+gpio_set BMC12_9548_2_RST 1
+gpio_set BMC9_9548_0_RST 1
+gpio_set BMC_eMMC_RST_N 1
+
+echo "done."

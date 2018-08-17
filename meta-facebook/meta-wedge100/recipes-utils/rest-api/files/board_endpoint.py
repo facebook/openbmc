@@ -21,6 +21,7 @@ from aiohttp import web
 from rest_utils import get_endpoints
 import rest_usb2i2c_reset
 import rest_i2cflush
+import rest_modbus
 from rest_utils import dumps_bytestr, get_endpoints
 
 class boardApp_Handler:
@@ -33,3 +34,6 @@ class boardApp_Handler:
     async def rest_i2cflush_hdl(self,request):
         return web.json_response(rest_i2cflush.i2cflush(), dumps=dumps_bytestr)
 
+    # Handler for Modbus_registers resource endpoint
+    async def helper_modbus_registers_hdl(self,request):
+        return web.json_response(rest_modbus.get_modbus_registers(), dumps=dumps_bytestr)

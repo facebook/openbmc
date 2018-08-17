@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+#
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,20 +16,14 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+import subprocess
+from subprocess import Popen
 
-SRC_URI += "file://rest-api-1/rest_i2cflush.py \
-            file://rest-api-1/rest_modbus.py \
-            file://board_endpoint.py \
-            file://boardroutes.py \
-            file://board_setup_routes.py \
-           "
-
-binfiles1 += "rest_i2cflush.py \
-             rest_modbus.py \
-             "
-binfiles += "board_endpoint.py \
-             boardroutes.py \
-             board_setup_routes.py \
-            "
+# Handler for sensors resource endpoint
+def get_modbus_registers():
+    p = Popen('/usr/local/bin/rackmondata', stdout=subprocess.PIPE)
+    out, err = p.communicate()
+    out = out.decode()
+    return out

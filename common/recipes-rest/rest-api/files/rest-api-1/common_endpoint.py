@@ -23,7 +23,6 @@ import rest_server
 import rest_sensors
 import rest_bmc
 import rest_gpios
-import rest_modbus
 import rest_slotid
 import rest_psu_update
 import rest_fcpresent
@@ -177,9 +176,6 @@ class commonApp_Handler:
     def rest_fcpresent_hdl(self,request):
         return self.helper_rest_fcpresent_hdl(request)
 
-    # Handler for Modbus_registers resource endpoint
-    def helper_modbus_registers_hdl(self,request):
-        return web.json_response(rest_modbus.get_modbus_registers(), dumps=dumps_bytestr)
 
     @common_force_async
     def modbus_registers_hdl(self,request):

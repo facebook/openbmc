@@ -21,7 +21,7 @@ DESCRIPTION = "Util for petting watchdog"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://watchdogd.py;beginline=4;endline=16;md5=c5df8524e560f89f6fe75bb131d6e14d"
+LIC_FILES_CHKSUM = "file://watchdogd.sh;beginline=4;endline=16;md5=c5df8524e560f89f6fe75bb131d6e14d"
 
 SRC_URI = "file://watchdogd.sh \
            file://setup-watchdogd.sh \

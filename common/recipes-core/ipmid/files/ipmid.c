@@ -3268,7 +3268,7 @@ oem_1s_handle_ipmb_req(unsigned char *request, unsigned char req_len,
     case BIC_INTF_KCS:
     case BIC_INTF_KCS_SMM:
     case BIC_INTF_SSIF:
-    case BIC_INTF_SSIF_SMM:
+    case BIC_INTF_IMC:
       oem_1s_handle_ipmb_kcs(request, req_len, response, res_len);
       break;
     default:

@@ -7065,9 +7065,15 @@ processor_ras_sel_parse(char *error_log, uint8_t *sel) {
 void
 memory_ras_sel_parse(char *error_log, uint8_t *sel) {
   uint8_t section_sub_type = sel[0];
-  char temp_log[128] = {0};
-  int ch_num;
-  int dimm_num;
+  char temp_log[256] = {0};
+  uint16_t node = 0;
+  int ch_num = 0;
+  int dimm_num = 0;
+  uint16_t bank = 0;
+  uint16_t dev = 0;
+  uint16_t row = 0;
+  uint16_t col = 0;
+  uint16_t rank = 0;
 
   switch(section_sub_type) {
     case 0:
@@ -7125,19 +7131,26 @@ memory_ras_sel_parse(char *error_log, uint8_t *sel) {
   strcat(error_log, temp_log);
   strcpy(temp_log, "");
 
-  ch_num = sel[4]*256+sel[3];
-  dimm_num = sel[6]*256+sel[5];
+  node = sel[2] << 8 | sel[1];
+  ch_num = sel[4] << 8 | sel[3];
+  dimm_num = sel[6] << 8 | sel[5];
+  bank = sel[8] << 8 | sel[7];
+  dev = sel[10] << 8 | sel[9];
+  row = sel[12] << 8 | sel[11];
+  col = sel[14] << 8 | sel[13];
+  rank = sel[16] << 8 | sel[15];
 
-  if(ch_num == 3 && dimm_num == 0)
-    sprintf(temp_log, " Error Specific: DIMM A0");
-  else if(ch_num == 2 && dimm_num == 0)
-    sprintf(temp_log, " Error Specific: DIMM B0");
-  else if(ch_num == 4 && dimm_num == 0)
-    sprintf(temp_log, " Error Specific: DIMM C0");
-  else if(ch_num == 5 && dimm_num == 0)
-    sprintf(temp_log, " Error Specific: DIMM D0");
-  else
-    sprintf(temp_log, " Error Specific: Unknown Channel Number (%d) / DIMM Number (%d)", ch_num, dimm_num);
+  if(ch_num == 3 && dimm_num == 0) {
+    sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM A0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+  } else if(ch_num == 2 && dimm_num == 0) {
+    sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM B0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+  } else if(ch_num == 4 && dimm_num == 0) {
+    sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM C0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+  } else if(ch_num == 5 && dimm_num == 0) {
+    sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM D0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+  } else {
+    sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: Unknown\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+  }
 
   strcat(error_log, temp_log);
   return;

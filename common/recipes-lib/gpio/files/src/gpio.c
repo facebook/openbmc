@@ -36,6 +36,9 @@
 #include <openbmc/log.h>
 
 #define MAX_PINS 64
+/* Famous last words, 32k is more than
+ * sufficient for anyone. */
+#define STACK_SIZE (1024 * 32)
 
 static void strip(char *str) {
   while(*str != '\0') {
@@ -359,14 +362,18 @@ int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
   pthread_t thread_ids[count];
   int ret;
   int i;
+  pthread_attr_t attr;
 
   if (count > MAX_PINS) {
     return -EINVAL;
   }
 
+  pthread_attr_init(&attr);
+  pthread_attr_setstacksize(&attr, STACK_SIZE);
+
   for ( i = 0; i < count; i++) {
     // TODO pass timeout value into thread
-    if ((ret = pthread_create(&thread_ids[i], NULL, gpio_poll_pin, &gpios[i])) < 0) {
+    if ((ret = pthread_create(&thread_ids[i], &attr, gpio_poll_pin, &gpios[i])) < 0) {
       LOG_ERR(ret, "pthread_create failed for %s\n", gpios[i].desc);
       return ret;
     }

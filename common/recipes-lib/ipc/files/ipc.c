@@ -49,6 +49,7 @@
 #define CRITICAL(fmt, ...) syslog(LOG_CRIT, fmt, ## __VA_ARGS__)
 #endif
 
+#define STACK_SIZE (1024 * 32)
 #define MAX_RETRIES 5
 #define CLIENT_TIMEOUT 16
 
@@ -241,6 +242,7 @@ static void *svc_thread(void *param)
 
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  pthread_attr_setstacksize(&attr, STACK_SIZE);
 
   if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
     DEBUG("%s(%s) failed to create socket (%s)", __func__, base_cli->endpoint, strerror(errno));

@@ -38,6 +38,7 @@ IMAGE_INSTALL += " \
   fw-util \
   hsvc-util \
   fpc-util \
+  imc-util \
   me-util \
   crashdump \
   log-util \

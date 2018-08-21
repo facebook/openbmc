@@ -1568,6 +1568,41 @@ error_exit:
 }
 
 int
+bic_imc_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
+  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[256] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret;
+
+  // Fill the interface number as IMC
+  tbuf[3] = BIC_INTF_IMC;
+
+  // Fill the data to be sent
+  memcpy(&tbuf[4], txbuf, txlen);
+
+  // Send data length includes IANA ID and interface number
+  tlen = txlen + 4;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
+  if (ret ) {
+    return -1;
+  }
+
+  // Make sure the received interface number is same
+  if (rbuf[3] != tbuf[3]) {
+    return -1;
+  }
+
+  // Copy the received data to caller skipping header
+  memcpy(rxbuf, &rbuf[4], rlen-4);
+
+  *rxlen = rlen-4;
+
+  return 0;
+}
+
+int
 bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
   uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[256] = {0x00};

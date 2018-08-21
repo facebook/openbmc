@@ -88,7 +88,7 @@
 #define MAX_BIC_CHECK_RETRY 15
 
 #define PLATFORM_FILE "/tmp/system.bin"
-#define SLOT_FILE "/tmp/slot.bin"
+#define SLOT_FILE "slot%d.bin"
 #define SLOT_RECORD_FILE "/tmp/slot%d.rc"
 #define SV_TYPE_RECORD_FILE "/tmp/server_type%d.rc"
 
@@ -769,30 +769,33 @@ int pal_fruid_init(uint8_t slot_id) {
 
 int
 pal_get_pair_slot_type(uint8_t fru) {
-  int type;
+  int type,type2;
+  char slotpath[80] = {0};
 
-  // PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  // PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  // PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  // PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  if (read_device(SLOT_FILE, &type)) {
-    printf("Get slot type failed\n");
-    return -1;
-  }
+  // PAL_TYPE = 0(Server), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+  type = fby2_get_slot_type(fru);
+  if (type < 0)
+    return type;
 
   switch(fru)
   {
     case FRU_SLOT1:
-    case FRU_SLOT2:
-      type = (type & (0xf << 0)) >> 0;
-      break;
     case FRU_SLOT3:
+      type2 = fby2_get_slot_type(fru+1);
+      if (type2 < 0)
+        return type2;
+      else
+        return ((type2<<2) + type);
+    case FRU_SLOT2:
     case FRU_SLOT4:
-      type = (type & (0xf << 4)) >> 4;
-      break;
+      type2 = fby2_get_slot_type(fru-1);
+      if (type2 < 0)
+        return type2;
+      else
+        return ((type<<2) + type2);
   }
 
-  return type;
+  return -1;
 }
 
 static int

@@ -47,68 +47,53 @@
 
 #define FRUID_SIZE        256
 
-#define SLOT_FILE       "/tmp/slot.bin"
+#define SLOT_FILE       "slot%d.bin"
 
 // Helper Functions
-static int
-read_device(const char *device, int *value) {
-  FILE *fp;
-  int rc;
+// static int
+// read_device(const char *device, int *value) {
+//   FILE *fp;
+//   int rc;
 
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-    return err;
-  }
+//   fp = fopen(device, "r");
+//   if (!fp) {
+//     int err = errno;
+// #ifdef DEBUG
+//     syslog(LOG_INFO, "failed to open device %s", device);
+// #endif
+//     return err;
+//   }
 
-  rc = fscanf(fp, "%d", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
+//   rc = fscanf(fp, "%d", value);
+//   fclose(fp);
+//   if (rc != 1) {
+// #ifdef DEBUG
+//     syslog(LOG_INFO, "failed to read device %s", device);
+// #endif
+//     return ENOENT;
+//   } else {
+//     return 0;
+//   }
+// }
 
 /*
  * Get SLOT type
- * PAL_TYPE[7:6] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
- * PAL_TYPE[5:4] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
- * PAL_TYPE[3:2] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
- * PAL_TYPE[1:0] = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
+ * PAL_TYPE = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
  */
 int
 plat_get_slot_type(uint8_t fru) {
-  int type;
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  sprintf(key, SLOT_FILE, fru);
 
-  if (read_device(SLOT_FILE, &type)) {
+  ret = kv_get(key, cvalue,NULL,0);
+  if (ret) {
     printf("Get slot type failed\n");
+    syslog(LOG_WARNING,"plat_get_slot_type failed");
     return -1;
   }
-
-  switch(fru)
-  {
-    case 1:
-      type = (type & (0x3 << 0)) >> 0;
-    break;
-    case 2:
-      type = (type & (0x3 << 2)) >> 2;
-    break;
-    case 3:
-      type = (type & (0x3 << 4)) >> 4;
-    break;
-    case 4:
-      type = (type & (0x3 << 6)) >> 6;
-    break;
-  }
-
-  return type;
+  return atoi(cvalue);
 }
 
 static int

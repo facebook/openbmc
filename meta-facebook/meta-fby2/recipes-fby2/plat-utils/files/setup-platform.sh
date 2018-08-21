@@ -18,7 +18,5 @@
 # Boston, MA 02110-1301 USA
 #
 
-# Get slot type
+# Get and Set slot type
 sh /usr/local/bin/check_slot_type.sh > /dev/NULL
-SLOT_TYPE=$?
-echo $SLOT_TYPE > /tmp/slot.bin

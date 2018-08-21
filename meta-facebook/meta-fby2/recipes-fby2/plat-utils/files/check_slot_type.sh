@@ -19,51 +19,48 @@
 #
 
 . /usr/local/fbpackages/utils/ast-functions
+. /usr/bin/kv
 
 ADC_VALUE=(adc12_value adc13_value adc14_value adc15_value)
 VOL_ENABLE=(O4 O5 O6 O7)
 
-get_sku()
-{
-   i=0
-   sku=0
-   while [ "${i}" -lt "${#ADC_VALUE[@]}" ]
-   do
-     SLOT_VOL=`cat /sys/devices/platform/ast_adc.0/"${ADC_VALUE[$i]}" | cut -d \  -f 1 | awk '{printf ("%.3f\n",$1)}'`
-     y=$(($i*2+1))
-     if [[ `awk -v a=1.9 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 &&  `awk -v a=$SLOT_VOL -v b=1.5 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
-        tmp_sku=2
-        i2cset -y $y 0x40 0x5 0xa w
-     elif [[ `awk -v a=1.4 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 && `awk -v a=$SLOT_VOL -v b=1.0 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
-        tmp_sku=1
-        i2cset -y $y 0x70 0x5 c
-        usleep 10000
-        i2cset -y $y 0x40 0x5 0xa w
-     else
-        tmp_sku=0
-     fi
+i=0
+sku=0
+while [ "${i}" -lt "${#ADC_VALUE[@]}" ]
+do
+  SLOT_VOL=`cat /sys/devices/platform/ast_adc.0/"${ADC_VALUE[$i]}" | cut -d \  -f 1 | awk '{printf ("%.3f\n",$1)}'`
+  SLOT_VOL_ENABLE=${VOL_ENABLE[$i]}
+  y=$(($i*2+1))
+  if [[ `awk -v a=1.9 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 &&  `awk -v a=$SLOT_VOL -v b=1.5 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
+    sku=2
+    i2cset -y $y 0x40 0x5 0xa w
+  elif [[ `awk -v a=1.4 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 && `awk -v a=$SLOT_VOL -v b=1.0 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
+    sku=1
+    i2cset -y $y 0x70 0x5 c
+    usleep 10000
+    i2cset -y $y 0x40 0x5 0xa w
+  else
+    sku=0
+  fi
 
-     if [ $(is_server_prsnt $(($i+1))) == "0" ]; then
-        tmp_sku=3
-     fi
+  i=$(($i+1))
 
-     # Do not replace slotX type when it is 12V off
-     if [ -f /tmp/slot.bin ]; then
-        if [ $(gpio_get_val ${VOL_ENABLE[$i]}) == "0" ]; then
-           tmp_sku=$(get_slot_type $(($i+1)))
-        fi
-     fi
-    
-     sku=$(($(($tmp_sku << $(($i * 2)))) + $sku))
-     i=$(($i+1))
-   done
+  if [ $(is_server_prsnt $i) == "0" ]; then
+    sku=3
+  fi
 
-   return $sku
-}
+  # Do not replace slotX type when it is 12V off
+  if [ -f "/tmp/cache_store/slot$i.bin" ]; then
+    if [ $(gpio_get_val $SLOT_VOL_ENABLE) == "0" ]; then
+      sku=$(get_slot_type $i)
+    fi
+  fi
 
-get_sku
-SLOT_TYPE=$?
-echo "Slot Type: $SLOT_TYPE "
-echo "<SLOT_TYPE[7:0] = {SLOT4, SLOT3, SLOT2, SLOT1}>"
+  echo "Slot$i Type: $sku"
 
-exit $SLOT_TYPE
+  kv_set "slot$i.bin" "$sku"
+  if [ "$?" != 0 ]; then
+    echo "kv_set failed"
+  fi
+
+done

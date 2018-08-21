@@ -1,4 +1,7 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
+
+. /usr/bin/kv
+
 DEVMEM=/sbin/devmem
 
 devmem_set_bit() {
@@ -192,10 +195,12 @@ is_server_prsnt() {
 
 # Get slot type (00:TwinLakes, 01:Crace Flat, 10:Glacier Point, 11:Empty Slot)
 get_slot_type() {
-  slot_num=$1
-  slot_bin=`cat /tmp/slot.bin`
-
-  type=$(($(($slot_bin >> $(($(($slot_num*2)) - 2)))) & 3))
+  slot_file="slot$1.bin"
+  if [ -f "/tmp/cache_store/$slot_file" ]; then
+    type=$(kv_get $slot_file)
+  else
+    type=3
+  fi
 
   echo $type
 }

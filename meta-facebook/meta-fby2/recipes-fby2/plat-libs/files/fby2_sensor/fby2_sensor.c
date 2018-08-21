@@ -94,7 +94,7 @@
 #define LAST_REC_ID 0xFFFF
 
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
-#define SLOT_FILE "/tmp/slot.bin"
+#define SLOT_FILE "slot%d.bin"
 #define ML_ADM1278_R_SENSE  0.3
 
 #define TOTAL_M2_CH_ON_GP 6
@@ -1585,37 +1585,18 @@ is_server_prsnt(uint8_t fru) {
 
 int
 fby2_get_slot_type(uint8_t fru) {
-  int type;
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  sprintf(key, SLOT_FILE, fru);
 
-  // PAL_TYPE[7:6] = 0(Server), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  // PAL_TYPE[5:4] = 0(Server), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  // PAL_TYPE[3:2] = 0(Server), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  // PAL_TYPE[1:0] = 0(Server), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
-  if (read_device(SLOT_FILE, &type)) {
+  ret = kv_get(key, cvalue,NULL,0);
+  if (ret) {
     printf("Get slot type failed\n");
+    syslog(LOG_WARNING,"fby2_get_slot_type failed");
     return -1;
   }
-
-  switch(fru)
-  {
-    case FRU_SLOT1:
-      type = (type & (0x3 << 0)) >> 0;
-    break;
-    case FRU_SLOT2:
-      type = (type & (0x3 << 2)) >> 2;
-    break;
-    case FRU_SLOT3:
-      type = (type & (0x3 << 4)) >> 4;
-    break;
-    case FRU_SLOT4:
-      type = (type & (0x3 << 6)) >> 6;
-    break;
-    default:
-      type = 3;   //set default to 3(Empty Slot)
-    break;
-  }
-
-  return type;
+  return atoi(cvalue);
 }
 
 /* Get the units for the sensor */

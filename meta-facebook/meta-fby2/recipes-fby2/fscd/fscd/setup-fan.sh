@@ -30,7 +30,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 default_fsc_config_path="/etc/fsc-config.json"
-sku_type=`cat /tmp/slot.bin`
+sku_type=0
 server_type=`cat /tmp/server_type.bin`
 full_config=1
 
@@ -50,6 +50,12 @@ echo "Setup fan speed... "
 #   /usr/local/bin/fan-util --set 70
 #   exit 1
 #fi
+
+for i in `seq 1 1 4`
+do
+  tmp_sku=$(get_slot_type $i)
+  sku_type=$(($(($tmp_sku << $(($(($i*2)) - 2))))+$sku_type))
+done
 
 case "$sku_type" in
    "0")

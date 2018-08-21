@@ -23,6 +23,7 @@ import json
 import ssl
 import socket
 import os
+import kv
 from node_api import get_node_api
 from node_spb import get_node_spb
 from node_mezz import get_node_mezz
@@ -39,9 +40,10 @@ from tree import tree
 from pal import *
 
 def get_slot_type(num):
-    f = open('/tmp/slot.bin', 'r')
-    slot_type = (int(f.read().split()[0], 10) >> ((num*2) - 2) ) & 0x3
-    f.close()
+    try:
+        slot_type = int(kv.kv_get("slot" + repr(num) + ".bin"))
+    except Exception:
+        slot_type = 3
     return slot_type
 
 def populate_server_node(r_api, num):

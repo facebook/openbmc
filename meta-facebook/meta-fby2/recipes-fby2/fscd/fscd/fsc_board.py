@@ -134,7 +134,12 @@ def rc_stby_sensor_check(board):
     with open("/sys/class/gpio/gpio"+fru_map[board]['slot_12v_status']+"/value", "r") as f:
         slot_12v_sts = f.read(1) 
     if slot_12v_sts[0] == "1":
-        return 1
+        with open("/sys/class/gpio/gpio"+fru_map[board]['bic_ready_gpio']+"/value", "r") as f:
+            bic_rdy = f.read(1)
+        if bic_rdy[0] == "0":
+            return 1
+        else:
+            return 0
     else:
         return 0
 

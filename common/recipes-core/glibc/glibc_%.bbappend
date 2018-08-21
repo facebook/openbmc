@@ -8,9 +8,6 @@ def glibc_patches(d):
     if distro == 'fido' or distro == 'krogoth':
         return "file://Bug-20116-Fix-use-after-free-in-pthread_create.patch \
                "
-    if distro == 'rocko':
-        return "file://Bug-22111-Fix-tcache-leak-after-thread-destruction.patch \
-               "
     return ""
 
 SRC_URI += '${@glibc_patches(d)}'

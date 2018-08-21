@@ -113,9 +113,10 @@ main(int argc, char **argv) {
   uint8_t snr_num = 0;
   uint8_t thresh_type = 0;
   float threshold_value;
-  int errno, ret = -1;
-  char cmd[128] = {0};  
+  int ret = -1;
+  char cmd[128] = {0};
   char *fru_name = NULL;
+  char *end = NULL;
 
   // Check for border conditions
   if ((argc != 3) && (argc != 6)) {
@@ -154,8 +155,19 @@ main(int argc, char **argv) {
     }
 
     errno = 0;
-    snr_num = (uint8_t) strtol(argv[3], NULL, 0);
-    threshold_value =  atof(argv[5]);
+    ret = strtol(argv[3], &end, 0);
+    if (errno || *end || (ret < 0) || (ret > 0xFF)) {
+      print_usage_help();
+      return -1;
+    }
+    snr_num = (uint8_t)ret;
+
+    errno = 0;
+    threshold_value = strtof(argv[5], &end);
+    if (errno || *end) {
+      print_usage_help();
+      return -1;
+    }
 
     if (FRU_ALL == fru) { // For FRU ALL
       for (fru = FRU_ALL+1; fru <= MAX_NUM_FRUS; fru++) {
@@ -185,7 +197,7 @@ main(int argc, char **argv) {
         ret |= clear_thresh_value_setting(fru);
         if (ret < 0) {
           printf("Fail to clear threshold for fru%d\n", fru);
-        } 
+        }
       }
 
       if (0 == ret) {

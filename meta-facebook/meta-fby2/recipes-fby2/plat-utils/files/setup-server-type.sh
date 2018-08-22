@@ -20,6 +20,4 @@
 
 # Get server type
 sh /usr/local/bin/check_server_type.sh > /dev/NULL
-SERVER_TYPE=$?
-echo $SERVER_TYPE > /tmp/server_type.bin
 

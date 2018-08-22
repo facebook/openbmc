@@ -207,10 +207,12 @@ get_slot_type() {
 
 # Get server type (00:TwinLakes, 01:RC, 10:EP, 11:Unknown)
 get_server_type() {
-  slot_num=$1
-  server_type_bin=`cat /tmp/server_type.bin`
-
-  type=$(($(($server_type_bin >> $(($(($slot_num*2)) - 2)))) & 3))
+  server_type_file="server_type$1.bin"
+  if [ -f "/tmp/cache_store/$server_type_file" ]; then
+    type=$(kv_get $server_type_file)
+  else
+    type=3
+  fi
 
   echo $type
 }

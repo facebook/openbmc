@@ -69,7 +69,7 @@
 
 #define IMC_VER_SIZE 8
 
-#define SERVER_TYPE_FILE "/tmp/server_type.bin"
+#define SERVER_TYPE_FILE "server_type%d.bin"
 
 #define RC_BIOS_SIG_OFFSET 0x3F00000
 #define RC_BIOS_IMAGE_SIZE (64*1024*1024)
@@ -2125,14 +2125,13 @@ int
 bic_get_server_type(uint8_t fru, uint8_t *type) {
   int ret;
   int retries = 3;
-  int server_type;
   ipmi_dev_id_t id = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
 
-  // SERVER_TYPE[7:6] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
-  // SERVER_TYPE[5:4] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
-  // SERVER_TYPE[3:2] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
-  // SERVER_TYPE[1:0] = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
-  if (read_device(SERVER_TYPE_FILE, &server_type)) {
+  // SERVER_TYPE = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
+  sprintf(key, SERVER_TYPE_FILE, fru);
+  if (kv_get(key, cvalue,NULL,0)) {
     do{
       ret = bic_get_dev_id(fru, &id);
       if (!ret) {
@@ -2157,20 +2156,13 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
     }
   }
   else {
-    *type = server_type;
     switch(fru)
     {
       case FRU_SLOT1:
-        *type = (*type & (0x3 << 0)) >> 0;
-        break;
       case FRU_SLOT2:
-        *type = (*type & (0x3 << 2)) >> 2;
-        break;
       case FRU_SLOT3:
-        *type = (*type & (0x3 << 4)) >> 4;
-        break;
       case FRU_SLOT4:
-        *type = (*type & (0x3 << 6)) >> 6;
+        *type = atoi(cvalue);
         break;
       default:
         *type = SERVER_TYPE_NONE;   //set default to unknown server type

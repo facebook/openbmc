@@ -31,7 +31,7 @@
 
 default_fsc_config_path="/etc/fsc-config.json"
 sku_type=0
-server_type=`cat /tmp/server_type.bin`
+server_type=0
 full_config=1
 
 echo "Setup fan speed... "
@@ -55,6 +55,8 @@ for i in `seq 1 1 4`
 do
   tmp_sku=$(get_slot_type $i)
   sku_type=$(($(($tmp_sku << $(($(($i*2)) - 2))))+$sku_type))
+  tmp_server=$(get_server_type $i)
+  server_type=$(($(($tmp_server << $(($(($i*2)) - 2))))+$server_type))
 done
 
 case "$sku_type" in

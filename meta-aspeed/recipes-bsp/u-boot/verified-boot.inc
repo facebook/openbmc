@@ -152,6 +152,27 @@ EOF
 }
 
 #
+# Emit the fitImage ITS DTB section
+#
+# $1 ... FIT source
+# $2 ... Image counter
+# $3 ... Path to DTB image
+fitimage_emit_section_dtb() {
+    cat << EOF >> ${1}
+        fdt@${2} {
+            description = "Flattened Device Tree blob";
+            data = /incbin/("${3}");
+            type = "flat_dt";
+            arch = "${UBOOT_ARCH}";
+            compression = "none";
+            hash@1 {
+                algo = "${VERIFIED_BOOT_HASH_ALGORITHM}";
+            };
+        };
+EOF
+}
+
+#
 # Emit the fitImage ITS firmware configuration section
 #
 # $1 - FIT source
@@ -182,16 +203,25 @@ EOF
 # $1 - FIT source
 # $2 - Linux kernel ID
 # $3 - Ramdisk image ID
+# $4 - DTB image ID
 fitimage_emit_section_config() {
     SOURCE=$1
+    conf_desc="Boot Linux kernel"
 
-    # Test if we have any DTBs at all
+    # Test if we have ramdisk
     if [ -z "${3}" ] ; then
-        conf_desc="Boot Linux kernel"
         ramdisk_line=""
     else
-        conf_desc="Boot Linux kernel with ramdisk"
+        conf_desc="${conf_desc} with ramdisk"
         ramdisk_line="ramdisk = \"ramdisk@${3}\";"
+    fi
+
+    # Test if we have any DTBs at all
+    if [ -z "${4}" ] ; then
+        fdt_line=""
+    else
+        conf_desc="${conf_desc} and device tree blob"
+        fdt_line="fdt = \"fdt@${4}\";"
     fi
     kernel_line="kernel = \"kernel@${2}\";"
 
@@ -201,6 +231,7 @@ fitimage_emit_section_config() {
             description = "${conf_desc}";
             ${kernel_line}
             ${ramdisk_line}
+            ${fdt_line}
             signature@1 {
                 algo = "${VERIFIED_BOOT_ALGORITHM}";
                 key-name-hint = "${VERIFIED_BOOT_KEYNAME}";

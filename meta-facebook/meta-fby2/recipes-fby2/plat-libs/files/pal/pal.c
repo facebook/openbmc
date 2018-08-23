@@ -785,14 +785,14 @@ pal_get_pair_slot_type(uint8_t fru) {
       if (type2 < 0)
         return type2;
       else
-        return ((type2<<2) + type);
+        return ((type2<<4) + type);
     case FRU_SLOT2:
     case FRU_SLOT4:
       type2 = fby2_get_slot_type(fru-1);
       if (type2 < 0)
         return type2;
       else
-        return ((type<<2) + type2);
+        return ((type<<4) + type2);
   }
 
   return -1;
@@ -1536,6 +1536,9 @@ pal_system_config_check(uint8_t slot_id) {
      case SLOT_TYPE_GP:
        sprintf(slot_str,"Glacier Point");
        break;
+     case SLOT_TYPE_GPV2:
+       sprintf(slot_str,"Glacier Point V2");
+       break;
      case SLOT_TYPE_NULL:
        sprintf(slot_str,"Empty Slot");
        break;
@@ -1586,6 +1589,9 @@ pal_system_config_check(uint8_t slot_id) {
        break;
      case SLOT_TYPE_GP:
        sprintf(last_slot_str,"Glacier Point");
+       break;
+     case SLOT_TYPE_GPV2:
+       sprintf(last_slot_str,"Glacier Point V2");
        break;
      case SLOT_TYPE_NULL:
        sprintf(last_slot_str,"Empty Slot");
@@ -2068,6 +2074,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
+        case SLOT_TYPE_GPV2:
           sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
 
           if (read_device(path, &val)) {
@@ -2119,6 +2126,7 @@ pal_is_slot_server(uint8_t fru)
       break;
     case SLOT_TYPE_CF:
     case SLOT_TYPE_GP:
+    case SLOT_TYPE_GPV2:
     case SLOT_TYPE_NULL:
       return 0;
       break;
@@ -5521,6 +5529,9 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 			break;
 		case SLOT_TYPE_GP:
 			SLOT_TYPE = 0x01;
+			break;
+		case SLOT_TYPE_GPV2:
+			SLOT_TYPE = 0x04;
 			break;
 		default :
 			*res_len = 0;

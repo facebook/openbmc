@@ -39,6 +39,8 @@ do
     i2cset -y $y 0x70 0x5 c
     usleep 10000
     i2cset -y $y 0x40 0x5 0xa w
+  elif [[ `awk -v a=0.95 -v b=$SLOT_VOL 'BEGIN{print(a>b)?"1":"0"}'` == 1 && `awk -v a=$SLOT_VOL -v b=0.55 'BEGIN{print(a>b)?"1":"0"}'` == 1 ]]; then
+    sku=4
   else
     sku=0
   fi

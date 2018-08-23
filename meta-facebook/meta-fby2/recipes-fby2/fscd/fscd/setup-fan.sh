@@ -54,7 +54,7 @@ echo "Setup fan speed... "
 for i in `seq 1 1 4`
 do
   tmp_sku=$(get_slot_type $i)
-  sku_type=$(($(($tmp_sku << $(($(($i*2)) - 2))))+$sku_type))
+  sku_type=$(($(($tmp_sku << $(($(($i*4)) - 4))))+$sku_type))
   tmp_server=$(get_server_type $i)
   server_type=$(($(($tmp_server << $(($(($i*2)) - 2))))+$server_type))
 done
@@ -80,7 +80,7 @@ case "$sku_type" in
        ;;
      esac
    ;;
-   "34")
+   "514")
      if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then
        echo "Run FSC 2 GPs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
@@ -95,7 +95,7 @@ case "$sku_type" in
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
      fi
    ;;
-   "17")
+   "257")
      if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then
        echo "Run FSC 2 CFs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}

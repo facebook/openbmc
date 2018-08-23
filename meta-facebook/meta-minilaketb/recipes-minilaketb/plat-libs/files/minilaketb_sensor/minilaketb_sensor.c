@@ -1326,7 +1326,7 @@ minilaketb_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
               break;
             default:
               sprintf(name, "");
-              break;
+              return -1;
           }
           break;
         case SLOT_TYPE_CF:

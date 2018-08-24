@@ -33,9 +33,91 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
+#include <openbmc/obmc-i2c.h>
 
 #define BTN_MAX_SAMPLES   200
 #define BTN_POWER_OFF     40
+
+#define ADM1278_ADDR 0x10
+#define LM75_1_ADDR 0x48
+#define LM75_2_ADDR 0x4b
+#define MAX34461_ADDR 0x74
+#define FPGA_16Q_ADDR 0x60
+#define FPGA_4DD_ADDR 0x61
+
+static int
+i2c_open(uint8_t bus, uint8_t addr) {
+  int fd = -1;
+  int rc = -1;
+  char fn[32];
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+
+  if (fd == -1) {
+    syslog(LOG_WARNING,
+            "Failed to open i2c device %s, errno=%d", fn, errno);
+    return -1;
+  }
+
+  rc = ioctl(fd, I2C_SLAVE_FORCE, addr);
+  if (rc < 0) {
+    syslog(LOG_WARNING,
+            "Failed to open slave @ address 0x%x, errno=%d", addr, errno);
+    close(fd);
+    return -1;
+  }
+
+  return fd;
+}
+
+static int
+pim_driver_add(uint8_t num) {
+  int ret = 0;
+  uint8_t bus = ((num - 1) * 8) + 80;
+
+  sleep(5); /* Sleep to avoid mount max34461 fail. */
+  ret += pal_add_i2c_device((bus + 2), LM75_1_ADDR, "tmp75");
+  ret += pal_add_i2c_device((bus + 3), LM75_2_ADDR, "tmp75");
+  ret += pal_add_i2c_device((bus + 4), ADM1278_ADDR, "adm1278");
+  ret += pal_add_i2c_device((bus + 6), MAX34461_ADDR, "max34461");
+
+  return ret;
+}
+
+static int
+pim_driver_del(uint8_t num) {
+  int ret = 0;
+  uint8_t bus = ((num - 1) * 8) + 80;
+
+  ret += pal_del_i2c_device((bus + 2), LM75_1_ADDR);
+  ret += pal_del_i2c_device((bus + 3), LM75_2_ADDR);
+  ret += pal_del_i2c_device((bus + 4), ADM1278_ADDR);
+  ret += pal_del_i2c_device((bus + 6), MAX34461_ADDR);
+
+  return ret;
+}
+
+static int
+set_pim_slot_id(uint8_t num) {
+  int ret = -1, fd = -1;
+  uint8_t bus = ((num - 1) * 8) + 80;
+  uint8_t fru = num + 2;
+
+  if (pal_get_pim_type(fru) == 0) {
+    fd = i2c_open(bus, FPGA_16Q_ADDR);
+  } else {
+    fd = i2c_open(bus, FPGA_4DD_ADDR);
+  }
+  if (fd < 0) {
+    return -1;
+  }
+
+  ret = i2c_smbus_write_byte_data(fd, 0x03, num);
+  close(fd);
+
+  return ret;
+}
 
 // Thread for monitoring scm plug
 static void *
@@ -45,7 +127,6 @@ scm_monitor_handler(void *unused){
   int ret;
   uint8_t prsnt = 0;
   uint8_t power;
-  uint8_t pos = FRU_SCM;
 
   while (1) {
     ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
@@ -58,14 +139,14 @@ scm_monitor_handler(void *unused){
         // SCM was inserted
         syslog(LOG_WARNING, "SCM Insertion\n");
 
-        ret = pal_get_server_power(pos, &power);
+        ret = pal_get_server_power(FRU_SCM, &power);
         if (ret) {
           goto scm_mon_out;
         }
         if (power == SERVER_POWER_OFF) {
           sleep(3);
           syslog(LOG_WARNING, "SCM power on\n");
-          pal_set_server_power(pos, SERVER_POWER_ON);
+          pal_set_server_power(FRU_SCM, SERVER_POWER_ON);
           /* Setup management port LED */
           run_command("/usr/local/bin/setup_mgmt.sh led");
           goto scm_mon_out;
@@ -91,7 +172,7 @@ pim_monitor_handler(void *unused){
   uint8_t prsnt = 0;
   uint8_t prsnt_ori = 0;
   uint8_t curr_state = 0x00;
-  char cmd[64];
+
   while (1) {
     for(fru = FRU_PIM1; fru <= FRU_PIM8; fru++){
       ret = pal_is_fru_prsnt(fru, &prsnt);
@@ -106,16 +187,14 @@ pim_monitor_handler(void *unused){
       if (prsnt != prsnt_ori) {
         if (prsnt) {
           syslog(LOG_WARNING, "PIM %d is plugged in.", num);
-          snprintf(cmd, 40, "/usr/local/bin/set_pim_sensor.sh %d load", num);
-          ret = run_command(cmd);
+          ret = pim_driver_add(num);
           if(ret){
               syslog(LOG_WARNING, "DOMFPGA/MAX34461 of PIM %d is not ready "
                                   "or sensor cannot be mounted.", num);
           }
         } else {
           syslog(LOG_WARNING, "PIM %d is unplugged.", num);
-          snprintf(cmd, 42, "/usr/local/bin/set_pim_sensor.sh %d unload", num);
-          ret = run_command(cmd);
+          ret = pim_driver_del(num);
         }
         /* Set PIM1 prsnt state @bit0, PIM2 @bit1, ..., PIM8 @bit7 */
         curr_state = prsnt ? SETBIT(curr_state, (num - 1))
@@ -124,8 +203,7 @@ pim_monitor_handler(void *unused){
       /* Set PIM number into DOM FPGA 0x03 register to control LED stream. */
       /* 1 is prsnt, 0 is not prsnt. */
       if (prsnt) {
-        snprintf(cmd, 38, "/usr/local/bin/set_pim_sensor.sh %d id", num);
-        ret = run_command(cmd);
+        ret = set_pim_slot_id(num);
         if (ret) {
             syslog(LOG_WARNING,
                    "Cannot set slot id into FPGA register of PIM %d" ,num);

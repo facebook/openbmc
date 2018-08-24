@@ -540,19 +540,20 @@ write_device(const char *device, const char *value) {
   }
 }
 
-static int
-i2c_device_detect(uint8_t bus_num, uint8_t addr) {
+int
+pal_detect_i2c_device(uint8_t bus, uint8_t addr) {
+
   int fd = -1, rc = -1;
   char fn[32];
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus_num);
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
   if (fd == -1) {
     syslog(LOG_WARNING, "Failed to open i2c device %s", fn);
     return -1;
   }
 
-  rc = ioctl(fd, I2C_SLAVE, addr);
+  rc = ioctl(fd, I2C_SLAVE_FORCE, addr);
   if (rc < 0) {
     syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
     close(fd);
@@ -569,79 +570,116 @@ i2c_device_detect(uint8_t bus_num, uint8_t addr) {
   }
 }
 
+int
+pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name) {
+
+  int ret = -1;
+  char cmd[64];
+
+  snprintf(cmd, sizeof(cmd),
+            "echo %s %d > /sys/bus/i2c/devices/i2c-%d/new_device",
+              device_name, addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
+}
+
+int
+pal_del_i2c_device(uint8_t bus, uint8_t addr) {
+
+  int ret = -1;
+  char cmd[64];
+
+  sprintf(cmd, "echo %d > /sys/bus/i2c/devices/i2c-%d/delete_device",
+           addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
+}
+
 /* -1->unknown; 0->16Q; 1->4DD */
 int
-pal_get_pim_type(uint8_t fru){
+pal_get_pim_type(uint8_t fru) {
   int ret = -1;
 
   switch(fru) {
     case FRU_PIM1:
-      if (!i2c_device_detect(80, 0x60)) {
+      if (!pal_detect_i2c_device(80, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(80, 0x61)) {
+      } else if (!pal_detect_i2c_device(80, 0x61)) {
         ret = 1;
       } else {
         ret = -1;
       }
       break;
     case FRU_PIM2:
-      if (!i2c_device_detect(88, 0x60)) {
+      if (!pal_detect_i2c_device(88, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(88, 0x61)) {
+      } else if (!pal_detect_i2c_device(88, 0x61)) {
         ret = 1;
       } else {
         ret = -1;
       }
       break;
     case FRU_PIM3:
-      if (!i2c_device_detect(96, 0x60)) {
+      if (!pal_detect_i2c_device(96, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(96, 0x61)) {
+      } else if (!pal_detect_i2c_device(96, 0x61)) {
         ret = 1;
       } else {
         ret = -1;
       }
       break;
     case FRU_PIM4:
-      if (!i2c_device_detect(104, 0x60)) {
+      if (!pal_detect_i2c_device(104, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(104, 0x61)) {
+      } else if (!pal_detect_i2c_device(104, 0x61)) {
         ret = 1;
       } else {
         ret = -1;
       }
       break;
     case FRU_PIM5:
-      if (!i2c_device_detect(112, 0x60)) {
+      if (!pal_detect_i2c_device(112, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(112, 0x61)) {
+      } else if (!pal_detect_i2c_device(112, 0x61)) {
         ret = 1;
       } else {
         ret = -1;
       }
       break;
     case FRU_PIM6:
-      if (!i2c_device_detect(120, 0x60)) {
+      if (!pal_detect_i2c_device(120, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(120, 0x61)) {
+      } else if (!pal_detect_i2c_device(120, 0x61)) {
         ret = 1;
       } else {
         ret = -1;
       }
       break;
     case FRU_PIM7:
-      if (!i2c_device_detect(128, 0x60)) {
+      if (!pal_detect_i2c_device(128, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(128, 0x61)) {
+      } else if (!pal_detect_i2c_device(128, 0x61)) {
         ret = 1;
       } else {
         ret = -1;
       }
       break;
     case FRU_PIM8:
-      if (!i2c_device_detect(136, 0x60)) {
+      if (!pal_detect_i2c_device(136, 0x60)) {
         ret = 0;
-      } else if (!i2c_device_detect(136, 0x61)) {
+      } else if (!pal_detect_i2c_device(136, 0x61)) {
         ret = 1;
       } else {
         ret = -1;

@@ -46,12 +46,28 @@ typedef struct ncsi_nl_msg_t {
   unsigned char msg_payload[MAX_PAYLOAD];
 } NCSI_NL_MSG_T;
 
-#define MAX_RESPONSE_PAYLOAD 128 /* maximum payload size*/
+#define MAX_RESPONSE_PAYLOAD 256 /* maximum payload size*/
 typedef struct ncsi_nl_response {
   unsigned char payload_length;
   unsigned char msg_payload[MAX_RESPONSE_PAYLOAD];
 } NCSI_NL_RSP_T;
 
+
+static void
+print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
+{
+  uint8_t *pbuf = rcv_buf->msg_payload;
+  int i = 0;
+
+  printf("NC-SI Command Response:\n");
+  printf("Response Code: 0x%04x  Reason Code: 0x%04x\n", (pbuf[0]<<8)+pbuf[1], (pbuf[2]<<8)+pbuf[3]);
+  for (i = 4; i < rcv_buf->payload_length; ++i) {
+		if (i && !(i%4))
+			printf("\n%d: ", 16+i);
+    printf("0x%02x ", rcv_buf->msg_payload[i]);
+  }
+  printf("\n");
+}
 
 
 int
@@ -62,11 +78,8 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   struct nlmsghdr *nlh = NULL;
   struct iovec iov;
   struct msghdr msg;
-
   int msg_size = sizeof(NCSI_NL_MSG_T);
 
-
-  int i  = 0;
   /* msg response from kernel */
   NCSI_NL_RSP_T *rcv_buf;
   memset(&msg, 0, sizeof(msg));
@@ -114,17 +127,10 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
     printf("Error: errno=%d\n", errno);
   }
 
-
-  printf("NC-SI Command Response:\n");
   /* Read message from kernel */
   recvmsg(sock_fd, &msg, 0);
   rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
-  for (i = 0; i < rcv_buf->payload_length; ++i) {
-		if (i && !(i%16))
-			printf("\n");
-    printf("0x%x ", rcv_buf->msg_payload[i]);
-  }
-  printf("\n");
+  print_ncsi_resp(rcv_buf);
 
   free(nlh);
 close_and_exit:

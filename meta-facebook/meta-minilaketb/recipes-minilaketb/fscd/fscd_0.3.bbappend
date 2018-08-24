@@ -19,17 +19,17 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
-            file://FSC_MINILAKETB_PVT_4TL_config.json \
-            file://FSC_MINILAKETB_PVT_4TL_zone1.fsc \
+            file://FSC_MINILAKETB_DVT.json \
+            file://FSC_MINILAKETB_DVT.fsc \
             file://fsc_board.py \
            "
 
 FSC_BIN_FILES += "init_pwm.sh"
 
-FSC_CONFIG += "FSC_MINILAKETB_PVT_4TL_config.json \
+FSC_CONFIG += "FSC_MINILAKETB_DVT.json \
               "
 
-FSC_ZONE_CONFIG +="FSC_MINILAKETB_PVT_4TL_zone1.fsc \
+FSC_ZONE_CONFIG +="FSC_MINILAKETB_DVT.fsc \
                   "
 
 do_install_append() {

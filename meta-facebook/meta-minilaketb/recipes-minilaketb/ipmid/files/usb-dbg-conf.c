@@ -383,7 +383,7 @@ static sensor_desc_t cri_sensor[] =
   {"DIMMB0_TEMP:" , BIC_SENSOR_SOC_DIMMB0_TEMP , "C"   , FRU_ALL, 0},
 };
 
-static char *dimm_label[8] = {"A0", "A1", "B0", "B1", "D0", "D1", "E0", "E1"};
+static char *dimm_label[] = {"A0", "B0"};
 static int dlabel_count = sizeof(dimm_label) / sizeof(dimm_label[0]);
 
 bool plat_supported(void)
@@ -494,11 +494,12 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
   strcat(text, entry);
 
   // DIMM information
+  // XG1 only have DIMM A0, B0 . index 1 = A0 , 3 =B0 
   for (index = 0; index < dlabel_count; index++) {
     slen = sprintf(entry, "MEM%s:", dimm_label[index]);
 
     // Check Present
-    snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_location", key_prefix, slot, index);
+    snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_location", key_prefix, slot, index*2+1);
     if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
       // Skip if not present
       if (value[0] != 0x01)
@@ -506,7 +507,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
     }
 
     // Module Manufacturer ID
-    snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_manufacturer_id", key_prefix, slot, index);
+    snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_manufacturer_id", key_prefix, slot, index*2+1);
     if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
       switch (value[1]) {
         case 0xce:
@@ -525,7 +526,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
     }
 
     // Speed
-    snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_speed", key_prefix, slot, index);
+    snprintf(key, MAX_KEY_LEN, "%sfru%u_dimm%d_speed", key_prefix, slot, index*2+1);
     if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
       slen += sprintf(&entry[slen], "/%dMHz/%dGB",
         value[1]<<8 | value[0],

@@ -87,11 +87,18 @@ class UnitTestUtil:
             data = json.load(data_file)
         return data
 
-    def Argparser(self, names, platformTypes, helps):
+    def Argparser(self, names, platformTypes, helps, optional=None):
         parser = argparse.ArgumentParser()
         for i in range(len(names)):
             if platformTypes[i] is None:
                 parser.add_argument(names[i], help=helps[i])
+            elif optional and optional[i]:
+                parser.add_argument(
+                    names[i],
+                    metavar=names[i],
+                    type=platformTypes[i],
+                    help=helps[i],
+                    nargs='?')
             else:
                 parser.add_argument(
                     names[i],

@@ -230,12 +230,17 @@ if __name__ == "__main__":
                               [str, None, str, str, None],
                               ['a json file', 'a host name for the headnode', 'a hostname for BMC',
                               'a hostname for the Micro server',
-                              'output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR'])
+                              'output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR'],
+                              [False, False, True, False, False])
         hostnameBMC = ""
         headnodeName = ""
         json = args.json
-        hostnameBMC = args.hostnameBMC
         hostnameMS = args.hostnameMS
+        if args.hostnameBMC is not None:
+            hostnameBMC = args.hostnameBMC
+        else:
+            index = hostnameMS.index('.')
+            hostnameBMC = hostnameMS[:index] + '-oob' + hostnameMS[index:]
         if args.headnode is not None:
             HEADNODE = True
             headnodeName = args.headnode

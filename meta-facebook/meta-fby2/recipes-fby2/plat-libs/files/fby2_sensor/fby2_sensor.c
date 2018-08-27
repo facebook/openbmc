@@ -1272,7 +1272,21 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     syslog(LOG_ERR, "%s, Get server type failed", __func__);
   }
 
-#if !defined(CONFIG_FBY2_RC) && !defined(CONFIG_FBY2_EP)  // workaround for now, this is only for TL
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) 
+  switch(server_type){
+    case SERVER_TYPE_EP:
+    case SERVER_TYPE_RC:
+      break;
+    case SERVER_TYPE_TL:  
+      for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
+        if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
+          is_accuracy_sensor = true;
+      }
+      break;
+    default:
+      return -1;
+  }
+#else
   for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
     if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
       is_accuracy_sensor = true;

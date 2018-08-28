@@ -164,11 +164,6 @@ gpio_export Q6
 # XG1 : GPIOQ7 : COME_BMC_GPI0
 gpio_set Q7 1
 
-# DEBUG_PORT_UART_SEL_BMC_N: GPIOR3(139)
-# To use GPIOR3, SCU88[27] must be 0
-devmem_clear_bit $(scu_addr 88) 27
-
-gpio_export R3
 
 # DEBUG UART Controls
 # 4 signals: DEBUG_UART_SEL_0/1/2 and DEBUG_UART_RX_SEL_N

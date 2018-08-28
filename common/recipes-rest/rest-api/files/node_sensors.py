@@ -125,17 +125,16 @@ def sensor_util(fru='all', sensor_name='', sensor_id='', period='60', display=[]
 
             processing_id = int(s_id, 16)
 
-            if (sensor_id == '' and sensor_name == ''):
+            if ((sensor_id == '' and sensor_name == '') or
+                (sensor_name != '' and sensor_name.lower() == s_name.lower()) or
+                (sensor_id != '' and sensor_id_val == processing_id)):
                 if (s_name in sensors):
-                    sensors[s_name] = [sensors[s_name], snr]
+                    if (isinstance(sensors[s_name], list)):
+                        sensors[s_name].append(snr)
+                    else:
+                        sensors[s_name] = [sensors[s_name], snr]
                 else:
                     sensors[s_name] = snr
-            elif (sensor_name != '' and sensor_name.lower() == s_name.lower()):
-                sensors[s_name] = snr
-                break
-            elif (sensor_id != '' and sensor_id_val == processing_id):
-                sensors[s_name] = snr
-                break
     except subprocess.CalledProcessError:
         print("Exception  received")
     return sensors

@@ -244,14 +244,18 @@ is_aen_packet(AEN_Packet *buf)
 
 // reload kernel NC-SI driver and trigger NC-SI interface initialization
 static int
-ncsi_init_if()
+ncsi_init_if(int inv_addr)
 {
-  char cmd[64] = {0};
-  int ret = 0;
+  char cmd[80] = {0};
+  int ret;
+
   syslog(LOG_CRIT, "ncsid: re-configure NC-SI and restart eth0 interface");
 
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "ifdown eth0; ifup eth0");
+  if (inv_addr) {
+    sprintf(cmd, "ifdown eth0; ifconfig eth0 hw ether 00:00:00:00:00:e0; ifup eth0");
+  } else {
+    sprintf(cmd, "ifdown eth0; ifup eth0");
+  }
   ret = system(cmd);
 
   syslog(LOG_CRIT, "ncsid: re-start eth0 interface done! ret=%d", ret);
@@ -275,7 +279,7 @@ handle_ncsi_config()
   // NCSI commands to re-initialize the interface
   sleep(NCSI_RESET_TIMEOUT);
 
-  ncsi_init_if();
+  ncsi_init_if(0);
 
   // set flag indicate all threads to exit
   thread_stop = 1;
@@ -318,6 +322,9 @@ checkValidMacAddr(int *value) {
   int numZeroOctet = 0;
   int valid = 1;
 
+  if ((value[0] & 0x01))  // broadcast or multicast address
+    return 0;
+
   for (int i=0; i<6; ++i) {
     if (value[i] == 0)
       numZeroOctet++;
@@ -352,11 +359,10 @@ check_ncsi_status()
              values[4], values[5]);
 
     // re-init NCSI interface and get MAC address again
-    ncsi_init_if();
+    ncsi_init_if(1);
     ret = getMacAddr(values);
     if (!ret && checkValidMacAddr(values)) {
-      syslog(LOG_CRIT, "Valid MAC(%x:%x:%x:%x:%x:%x) obtained after NCSI \t"
-             "re-init, restarting ncsid",
+      syslog(LOG_CRIT, "Valid MAC(%x:%x:%x:%x:%x:%x) obtained after NCSI re-init, restarting ncsid",
              values[0], values[1], values[2], values[3],
              values[4], values[5]);
       // set flag indicate all threads to exit and re-init NCSID

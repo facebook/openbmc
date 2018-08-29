@@ -46,5 +46,17 @@ else
 fi
 
 /usr/local/bin/set_fan_speed.sh 50
-runsv /etc/sv/fscd > /dev/null 2>&1 &
+# Currently, fcmcpld version 0.xx will cause BMC to 
+# run into crash loop, due to fscd's own logic and 
+# its failure to disarm bootup watchdog.
+# (this problem is only for fcmcpld 0.xx. Fcmcpld 1.0 and 
+# above works well without any problem.)
+# Until we have fix, we will run fscd only if fcmcpld is 1.0 or higher.
+if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
+    echo "Old FCM CPLD detected. Running fan at the fixed speed."
+    /usr/local/bin/watchdog_ctrl.sh off
+else
+    echo "Starting fscd..."
+    runsv /etc/sv/fscd > /dev/null 2>&1 &
+fi
 echo "done."

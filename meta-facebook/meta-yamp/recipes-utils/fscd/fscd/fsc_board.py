@@ -111,27 +111,11 @@ def yamp_host_shutdown():
     # Then, turn off X86 CPU
     Logger.info("host_shutdown() executing {}".format(CPU_OFF))
     yamp_force_run_cmd(CPU_OFF);
-    time.sleep(3)
-    # Finally, turn all PSU one by one, on bus 5,6,7,8
-    for bus in range(5,9):
-       # We don't have DPS1900 driver, so we use raw i2c cmd
-       # there is no other process using this bus, so this should be safe
-       Logger.info("host_shutdown():shut down PSU on bus {}".format(str(bus)))
-       # Disable Write Protect
-       cmd='i2cset -f -y ' + str(bus) + ' 0x58 0x10 0x00'
-       yamp_force_run_cmd(cmd)
-       # Turn page to "ALL RAILS"
-       cmd='i2cset -f -y ' + str(bus) + ' 0x58 0x0 0xff'
-       yamp_force_run_cmd(cmd)
-       # Respond only to OPERATION
-       cmd='i2cset -f -y ' + str(bus) + ' 0x58 0x2 0x18'
-       yamp_force_run_cmd(cmd)
-       # Operation: soft off
-       cmd='i2cset -f -y ' + str(bus) + ' 0x58 0x1 0x40'
-       yamp_force_run_cmd(cmd)
-       # Operation: immediate off
-       cmd='i2cset -f -y ' + str(bus) + ' 0x58 0x1 0x00'
-       yamp_force_run_cmd(cmd)
+
+    # Until FSCD is proven to be very stable on most versions of FSCD,
+    # we will only turn off SCD and BMC, but not PSUs.
+    # (When PSUs are all turned off, it's hard to recover in DC)
+
     return 0
 
 def board_host_actions(action='None', cause='None'):

@@ -52,7 +52,7 @@ def get_piminfo():
             # Old YAMP FPGA has a bug that returns
             # wrong pim_version. So, use pim_presence information
             # to make sure we are returning the correct value
-            if pim_ver == '0x0' or not check_pim_presence(current_pim):
+            if pim_ver == '0x0' or not check_pim_presence(int(current_pim)):
                 pim_type = 'NA'
             else:
                 pim_type = '16Q'

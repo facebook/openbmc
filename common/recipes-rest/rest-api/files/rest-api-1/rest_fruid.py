@@ -32,7 +32,7 @@ def get_fruid(cmd=['weutil']):
                             stderr=subprocess.PIPE)
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-        data = data.decode()
+        data = data.decode(errors='ignore')
     except proc.TimeoutError as ex:
         data = ex.output
         err = ex.error

@@ -19,7 +19,6 @@
 #
 
 . /usr/local/fbpackages/utils/ast-functions
-. /usr/bin/kv
 
 RC_PRODUCT_ID0=43
 RC_PRODUCT_ID1=52
@@ -64,14 +63,11 @@ do
     done
   else
     # Do not replace slotX server type when it is 12V off
-    if [[ "$slot_12v" == "0" && -f "/tmp/cache_store/server_type$i.bin" ]] ; then
+    if [[ "$slot_12v" == "0" && -f "/tmp/server_type$i.bin" ]] ; then
       server_type=$(get_server_type $i)
     fi
   fi
 
   echo "Slot$i Server Type: $server_type"
-  kv_set "server_type$i.bin" "$server_type"
-  if [ "$?" != 0 ]; then
-    echo "kv_set failed"
-  fi
+  echo $server_type > /tmp/server_type$i.bin
 done

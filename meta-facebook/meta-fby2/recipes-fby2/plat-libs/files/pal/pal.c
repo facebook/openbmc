@@ -88,7 +88,6 @@
 #define MAX_BIC_CHECK_RETRY 15
 
 #define PLATFORM_FILE "/tmp/system.bin"
-#define SLOT_FILE "slot%d.bin"
 #define SLOT_RECORD_FILE "/tmp/slot%d.rc"
 #define SV_TYPE_RECORD_FILE "/tmp/server_type%d.rc"
 

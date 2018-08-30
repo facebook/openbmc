@@ -47,55 +47,6 @@
 
 #define FRUID_SIZE        256
 
-#define SLOT_FILE       "slot%d.bin"
-
-// Helper Functions
-// static int
-// read_device(const char *device, int *value) {
-//   FILE *fp;
-//   int rc;
-
-//   fp = fopen(device, "r");
-//   if (!fp) {
-//     int err = errno;
-// #ifdef DEBUG
-//     syslog(LOG_INFO, "failed to open device %s", device);
-// #endif
-//     return err;
-//   }
-
-//   rc = fscanf(fp, "%d", value);
-//   fclose(fp);
-//   if (rc != 1) {
-// #ifdef DEBUG
-//     syslog(LOG_INFO, "failed to read device %s", device);
-// #endif
-//     return ENOENT;
-//   } else {
-//     return 0;
-//   }
-// }
-
-/*
- * Get SLOT type
- * PAL_TYPE = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot)
- */
-int
-plat_get_slot_type(uint8_t fru) {
-  int ret;
-  char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
-  sprintf(key, SLOT_FILE, fru);
-
-  ret = kv_get(key, cvalue,NULL,0);
-  if (ret) {
-    printf("Get slot type failed\n");
-    syslog(LOG_WARNING,"plat_get_slot_type failed");
-    return -1;
-  }
-  return atoi(cvalue);
-}
-
 static int
 plat_get_ipmb_bus_id(uint8_t slot_id) {
   int bus_id;
@@ -190,7 +141,7 @@ int plat_fruid_init(void) {
       case FRU_SLOT2:
       case FRU_SLOT3:
       case FRU_SLOT4:
-        switch(plat_get_slot_type(fru))
+        switch(fby2_get_slot_type(fru))
         {
            case SLOT_TYPE_SERVER:
              // Do not access EEPROM

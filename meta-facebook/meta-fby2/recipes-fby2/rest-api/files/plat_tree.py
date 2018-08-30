@@ -23,7 +23,6 @@ import json
 import ssl
 import socket
 import os
-import kv
 from node_api import get_node_api
 from node_spb import get_node_spb
 from node_mezz import get_node_mezz
@@ -38,10 +37,21 @@ from node_fans import get_node_fans
 from node_bios import *
 from tree import tree
 from pal import *
+from time import sleep
 
 def get_slot_type(num):
     try:
-        slot_type = int(kv.kv_get("slot" + repr(num) + ".bin"))
+        f = open("/tmp/slot" + repr(num) + ".bin", 'r')
+        retry = 3
+        while retry != 0:
+            value = f.read()
+            if value:
+                slot_type = int(value.split()[0], 10)
+                break
+            retry = retry - 1
+            sleep(0.01)
+            continue
+        f.close()
     except Exception:
         slot_type = 3
     return slot_type

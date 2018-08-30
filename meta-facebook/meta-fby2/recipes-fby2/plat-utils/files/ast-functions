@@ -193,11 +193,28 @@ is_server_prsnt() {
   fi
 }
 
+read_file_rertry() {
+  retries=$1
+  wait_time=$2
+  file=$3
+
+  for i in `seq 1 $retries`; do
+    value=`cat $file`
+    [ ! -z $value ] && break
+    usleep $wait_time
+  done
+
+  echo $value
+}
+
 # Get slot type (00:TwinLakes, 01:Crace Flat, 10:Glacier Point, 11:Empty Slot)
 get_slot_type() {
-  slot_file="slot$1.bin"
-  if [ -f "/tmp/cache_store/$slot_file" ]; then
-    type=$(kv_get $slot_file)
+  slot_file="/tmp/slot$1.bin"
+  if [ -f $slot_file ]; then
+    type=$(read_file_rertry 3 10000 $slot_file)
+    if [ -z $type ]; then
+      type=3
+    fi
   else
     type=3
   fi
@@ -207,9 +224,12 @@ get_slot_type() {
 
 # Get server type (00:TwinLakes, 01:RC, 10:EP, 11:Unknown)
 get_server_type() {
-  server_type_file="server_type$1.bin"
-  if [ -f "/tmp/cache_store/$server_type_file" ]; then
-    type=$(kv_get $server_type_file)
+  server_type_file="/tmp/server_type$1.bin"
+  if [ -f $server_type_file ]; then
+    type=$(read_file_rertry 3 10000 $server_type_file)
+    if [ -z $type ]; then
+      type=3
+    fi
   else
     type=3
   fi

@@ -69,7 +69,7 @@
 
 #define IMC_VER_SIZE 8
 
-#define SERVER_TYPE_FILE "server_type%d.bin"
+#define SERVER_TYPE_FILE "/tmp/server_type%d.bin"
 
 #define RC_BIOS_SIG_OFFSET 0x3F00000
 #define RC_BIOS_IMAGE_SIZE (64*1024*1024)
@@ -2125,13 +2125,26 @@ int
 bic_get_server_type(uint8_t fru, uint8_t *type) {
   int ret;
   int retries = 3;
+  int server_type = SERVER_TYPE_NONE;
   ipmi_dev_id_t id = {0};
   char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
+
+  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+    *type = SERVER_TYPE_NONE;
+    return 0;
+  }
 
   // SERVER_TYPE = 0(TwinLake), 1(RC), 2(EP), 3(unknown)
   sprintf(key, SERVER_TYPE_FILE, fru);
-  if (kv_get(key, cvalue,NULL,0)) {
+  do {
+    if (read_device(key, &server_type) == 0)
+      break;
+    syslog(LOG_WARNING,"fby2_get_slot_type failed");
+    msleep(10);
+  } while (--retries);
+
+  if (retries == 0) {
+    retries = 3;
     do{
       ret = bic_get_dev_id(fru, &id);
       if (!ret) {
@@ -2149,25 +2162,13 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
       }
     }while ((--retries));
 
-    if(retries == 0) {
+    if (retries == 0) {
       *type = SERVER_TYPE_NONE;
       syslog(LOG_ERR, "%s : Get server type failed for slot%u", __func__, fru);
       return -1;
     }
-  }
-  else {
-    switch(fru)
-    {
-      case FRU_SLOT1:
-      case FRU_SLOT2:
-      case FRU_SLOT3:
-      case FRU_SLOT4:
-        *type = atoi(cvalue);
-        break;
-      default:
-        *type = SERVER_TYPE_NONE;   //set default to unknown server type
-        break;
-    }
+  } else {
+    *type = server_type;
   }
 
   return 0;

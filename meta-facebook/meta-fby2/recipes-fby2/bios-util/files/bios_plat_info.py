@@ -1,13 +1,23 @@
 #!/usr/bin/env python
 import sys
-import kv
 import os.path
 from subprocess import Popen, PIPE
 from bios_ipmi_util import *
+from time import sleep
 
 def get_server_type(fru):
     try:
-        server_type = int(kv.kv_get("server_type" + repr(fru) + ".bin"))
+        f = open("/tmp/server_type" + repr(fru) + ".bin", 'r')
+        retry = 3
+        while retry != 0:
+            value = f.read()
+            if value:
+                server_type = int(value.split()[0], 10)
+                break
+            retry = retry - 1
+            sleep(0.01)
+            continue
+        f.close()
     except Exception:
         server_type = 3
     return server_type

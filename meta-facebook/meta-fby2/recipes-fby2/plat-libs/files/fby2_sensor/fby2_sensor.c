@@ -94,7 +94,7 @@
 #define LAST_REC_ID 0xFFFF
 
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
-#define SLOT_FILE "slot%d.bin"
+#define SLOT_FILE "/tmp/slot%d.bin"
 #define ML_ADM1278_R_SENSE  0.3
 
 #define TOTAL_M2_CH_ON_GP 6
@@ -1597,20 +1597,29 @@ is_server_prsnt(uint8_t fru) {
   }
 }
 
+/*
+ * Get SLOT type
+ * PAL_TYPE = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot), 4(Glacier Point V2)
+ */
 int
 fby2_get_slot_type(uint8_t fru) {
-  int ret;
+  int type = 3;   //set default to 3(Empty Slot)
+  int retry = 3;
   char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
-  sprintf(key, SLOT_FILE, fru);
 
-  ret = kv_get(key, cvalue,NULL,0);
-  if (ret) {
-    printf("Get slot type failed\n");
+  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4))
+    return type;
+
+  sprintf(key, SLOT_FILE, fru);
+  do {
+    if (read_device(key, &type) == 0)
+      break;
     syslog(LOG_WARNING,"fby2_get_slot_type failed");
-    return -1;
-  }
-  return atoi(cvalue);
+    retry++;
+    msleep(10);
+  } while (--retry);
+
+  return type;
 }
 
 /* Get the units for the sensor */

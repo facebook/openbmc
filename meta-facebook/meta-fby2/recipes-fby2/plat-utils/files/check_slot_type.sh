@@ -19,7 +19,6 @@
 #
 
 . /usr/local/fbpackages/utils/ast-functions
-. /usr/bin/kv
 
 ADC_VALUE=(adc12_value adc13_value adc14_value adc15_value)
 VOL_ENABLE=(O4 O5 O6 O7)
@@ -52,17 +51,13 @@ do
   fi
 
   # Do not replace slotX type when it is 12V off
-  if [ -f "/tmp/cache_store/slot$i.bin" ]; then
+  if [ -f "/tmp/slot$i.bin" ]; then
     if [ $(gpio_get_val $SLOT_VOL_ENABLE) == "0" ]; then
       sku=$(get_slot_type $i)
     fi
   fi
 
   echo "Slot$i Type: $sku"
-
-  kv_set "slot$i.bin" "$sku"
-  if [ "$?" != 0 ]; then
-    echo "kv_set failed"
-  fi
+  echo $sku > /tmp/slot$i.bin
 
 done

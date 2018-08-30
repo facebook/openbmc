@@ -41,7 +41,7 @@ PID_FILE="/var/run/autodump$SLOT_NUM.pid"
 
 # check if auto crashdump is already running
 if [ -f $PID_FILE ]; then
-  echo "Another auto crashdump for $SLOT_NAME is runnung"
+  echo "Another auto crashdump for $SLOT_NAME is running"
   exit 1
 else
   touch $PID_FILE

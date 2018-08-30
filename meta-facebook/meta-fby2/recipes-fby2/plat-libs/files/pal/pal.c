@@ -121,6 +121,8 @@
 //declare for clearing TPM presence flag
 #define TPM_Timeout 600
 
+#define CHUNK_OF_CRS_HEADER_LEN 2
+
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
 
@@ -6598,8 +6600,26 @@ pal_handle_oem_1s_ras_dump_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   FILE *fp;
 
   switch (data[0]) {
+    //need remove header
     case 0x02:  // only one package
     case 0x03:  // the first package
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      fp = fopen(ras_dump_path[slot], (ts.tv_sec > last_dump_ts[slot])?"w":"a+");
+      last_dump_ts[slot] = ts.tv_sec + 60;
+      if (fp == NULL) {
+        syslog(LOG_ERR, "%s: fopen", __FUNCTION__);
+        return -1;
+      }
+
+      int index = 1 + CHUNK_OF_CRS_HEADER_LEN;
+      if (fwrite(&data[index], 1, (data_len - CHUNK_OF_CRS_HEADER_LEN), fp) <= 0) {
+        syslog(LOG_ERR, "%s: fwrite", __FUNCTION__);
+        fclose(fp);
+        return -1;
+      }
+
+      fclose(fp);
+      break;
     case 0x04:  // the middle package
     case 0x05:  // the last package
       clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -6617,7 +6637,7 @@ pal_handle_oem_1s_ras_dump_in(uint8_t slot, uint8_t *data, uint8_t data_len)
       }
 
       fclose(fp);
-      break;
+      break;                  
   }
 
   return 0;

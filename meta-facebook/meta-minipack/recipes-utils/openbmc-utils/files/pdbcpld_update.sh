@@ -108,6 +108,14 @@ if [ "$interface" = "jtag" ]; then
               --tms ${JTAG_PINS[2]} --tdo ${JTAG_PINS[0]} \
               --tdi ${JTAG_PINS[1]} --tck ${JTAG_PINS[3]}
     sleep 1
+    # 1 is returned upon upgrade success
+    if [ $result -eq 1 ]; then
+        echo "Upgrade successful."
+        exit 0
+    else
+        echo "Upgrade failure. Return code from utility : $result"
+        exit 1
+    fi
 elif [ "$interface" = "i2c" ]; then
     cpldupdate-i2c ${CPLD_BUS} 0x40 "${img}"
     sleep 1

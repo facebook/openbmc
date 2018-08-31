@@ -514,6 +514,15 @@ int parse_args(int argc, char *argv[], char *fruname,
         if (convert_period(optarg, period)) {
           return -1;
         }
+        if (*period > (MAX_COARSE_DATA_NUM * COARSE_THRESHOLD)) {
+          *period = MAX_COARSE_DATA_NUM * COARSE_THRESHOLD;
+          if (!(*period % 86400)) {
+            printf("max period: %ldd\n", (*period / 86400));
+          } else {
+            printf("max period: %lds\n", *period);
+          }
+          return -1;
+        }
         break;
       default:
         return -1;

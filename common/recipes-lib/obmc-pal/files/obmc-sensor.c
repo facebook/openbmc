@@ -46,11 +46,6 @@
 #endif
 
 #define MAX_DATA_NUM    2000
-/* Store enough coarse data for 30 days, configurable */
-#define MAX_COARSE_DATA_NUM (30 * 24)
-/* Any history more than an hour, loses its granularity and
- * it starts to get accounted in the COARSE grained calculations */
-#define COARSE_THRESHOLD ((double)3600)
 
 #define CACHE_READ_RETRY 5
 

@@ -42,6 +42,12 @@ extern "C" {
 #define AGGREGATE_SENSOR_FRU_ID   0xff
 #define AGGREGATE_SENSOR_FRU_NAME "aggregate"
 
+/* Store enough coarse data for 30 days, configurable */
+#define MAX_COARSE_DATA_NUM (30 * 24)
+/* Any history more than an hour, loses its granularity and
+ * it starts to get accounted in the COARSE grained calculations */
+#define COARSE_THRESHOLD ((double)3600)
+
 /* Functions */
 
 /* Read a cached value of the given sensor */

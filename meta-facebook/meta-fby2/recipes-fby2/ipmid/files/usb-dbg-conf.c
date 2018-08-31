@@ -562,7 +562,29 @@ static sensor_desc_t cri_sensor[] =
 static char *dimm_label_tl[8] = {"A0", "A1", "B0", "B1", "D0", "D1", "E0", "E1"};
 static int dlabel_count_tl = sizeof(dimm_label_tl) / sizeof(dimm_label_tl[0]);
 
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
+static sensor_desc_t cri_sensor_rc[] =
+{
+  {"SOC_TEMP_DIODE:"  , BIC_RC_SENSOR_SOC_TEMP_DIODE , "C"   , FRU_ALL, 0},
+  {"SOC_TEMP_IMC:"    , BIC_RC_SENSOR_SOC_TEMP_IMC   , "C"   , FRU_ALL, 0},
+  {"HSC_PWR:"         , SP_SENSOR_HSC_IN_POWER       , "W"   , FRU_SPB, 1},
+  {"HSC_VOL:"         , SP_SENSOR_HSC_IN_VOLT        , "V"   , FRU_SPB, 2},
+  {"FAN0:"            , SP_SENSOR_FAN0_TACH          , "RPM" , FRU_SPB, 0},
+  {"FAN1:"            , SP_SENSOR_FAN1_TACH          , "RPM" , FRU_SPB, 0},
+  {"SP_INLET:"        , SP_SENSOR_INLET_TEMP         , "C"   , FRU_SPB, 0},
+  {"CVR_APC_TEMP:"    , BIC_RC_SENSOR_CVR_APC_TEMP   , "C"   , FRU_ALL, 0},
+  {"CVR_APC_PWR:"     , BIC_RC_SENSOR_CVR_APC_POUT   , "W"   , FRU_ALL, 1},
+  {"CVR_CBF_TEMP:"    , BIC_RC_SENSOR_CVR_CBF_TEMP   , "C"   , FRU_ALL, 0},
+  {"CVR_CBF_PWR:"     , BIC_RC_SENSOR_CVR_CBF_POUT   , "W"   , FRU_ALL, 1},
+  {"DIMMB_TEMP:"      , BIC_RC_SENSOR_SOC_DIMMB_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMMA_TEMP:"      , BIC_RC_SENSOR_SOC_DIMMA_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMMC_TEMP:"      , BIC_RC_SENSOR_SOC_DIMMC_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMMD_TEMP:"      , BIC_RC_SENSOR_SOC_DIMMD_TEMP , "C"   , FRU_ALL, 0},
+};
+
+static char *dimm_label_rc[4] = {"B", "A", "C", "D"};
+static int dlabel_count_rc = sizeof(dimm_label_rc) / sizeof(dimm_label_rc[0]);
+
 static sensor_desc_t cri_sensor_ep[] =
 {
   {"SOC_TEMP:"    , BIC_EP_SENSOR_SOC_TEMP        , "C"   , FRU_ALL, 0},
@@ -671,7 +693,7 @@ int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   uint8_t server_type = 0xFF;
 #endif
 
@@ -679,7 +701,13 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
     return -1;
   }
 
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
+  if(fru == FRU_ALL) {
+    *desc = cri_sensor;
+    *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+    return 0;
+  }
+
   if (bic_get_server_type(fru, &server_type)) {
     return -1;
   }
@@ -688,12 +716,25 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
     case SERVER_TYPE_EP:
       *desc = cri_sensor_ep;
       *desc_count = sizeof(cri_sensor_ep) / sizeof(cri_sensor_ep[0]);
-      return 0;
+      break;
+    case SERVER_TYPE_RC:
+      *desc = cri_sensor_rc;
+      *desc_count = sizeof(cri_sensor_rc) / sizeof(cri_sensor_rc[0]);
+      break;
+    case SERVER_TYPE_TL:
+      *desc = cri_sensor;
+      *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+      break;
+    default:
+      *desc = cri_sensor;
+      *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+      break;
   }
-#endif
-
+#else
   *desc = cri_sensor;
   *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+#endif
+
   return 0;
 }
 
@@ -763,7 +804,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
   int dlabel_count = dlabel_count_tl;
   int index, slen;
   size_t ret;
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   uint8_t server_type = 0xFF;
 #endif
 
@@ -773,7 +814,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
   if (text == NULL)
     return -1;
 
-#if defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   if (bic_get_server_type(slot, &server_type)) {
     return -1;
   }
@@ -782,6 +823,14 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
     case SERVER_TYPE_EP:
       dimm_label = dimm_label_ep;
       dlabel_count = dlabel_count_ep;
+      break;
+    case SERVER_TYPE_RC:
+      dimm_label = dimm_label_rc;
+      dlabel_count = dlabel_count_rc;
+      break;
+    case SERVER_TYPE_TL:
+      dimm_label = dimm_label_tl;
+      dlabel_count = dlabel_count_tl;
       break;
   }
 #endif

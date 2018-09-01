@@ -311,9 +311,9 @@ power_util(uint8_t fru, uint8_t opt) {
          }
          ret = pal_set_server_power(fru, SERVER_POWER_ON);
       }
-      if (ret < 0) {
+      if (ret < 0 || status != SERVER_POWER_ON) {
         syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
-          " fru %u", fru);
+          " for fru %u with status=%u", fru, status);
         return ret;
       }
 

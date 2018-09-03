@@ -34,14 +34,17 @@ board_rev=$(wedge_board_rev)
 
 # Enable the isolation buffer between BMC and COMe i2c bus
 echo 1 > ${SCMCPLD_SYSFS_DIR}/i2c_bus_en
-echo 0 > ${SCMCPLD_SYSFS_DIR}/iso_com_en
+echo 0 > ${SCMCPLD_SYSFS_DIR}/iso_com_early_en
 
 # Make the backup BIOS flash connect to COMe instead of BMC
 echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_oe_n
 echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
 
 # Setup management port LED
-/usr/local/bin/setup_mgmt.sh led
+/usr/local/bin/setup_mgmt.sh led &
+
+# Setup TH3 PCI-e repeater
+/usr/local/bin/setup_pcie_repeater.sh th3 write
 
 # Init server_por_cfg
 if [ ! -f "/mnt/data/kv_store/server_por_cfg" ]; then

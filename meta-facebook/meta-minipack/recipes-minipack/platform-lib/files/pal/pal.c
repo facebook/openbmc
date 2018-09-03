@@ -1668,9 +1668,9 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
     syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
         " reading the kv_store for last power state  for fru %d", slot_id);
     pal_get_last_pwr_state(slot_id, value);
-    if (!(strcmp(value, "off"))) {
+    if (!(strncmp(value, "off", strlen("off")))) {
       *status = SERVER_POWER_OFF;
-    } else if (!(strcmp(value, "on"))) {
+    } else if (!(strncmp(value, "on", strlen("on")))) {
       *status = SERVER_POWER_ON;
     } else {
       return ret;

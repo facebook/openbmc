@@ -23,6 +23,7 @@ source /usr/local/bin/openbmc-utils.sh
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 RJ45_SEL="${SCMCPLD_SYSFS_DIR}/rj45_mode_sel"
+COM_E_PWRGD=`head -n 1 ${SCMCPLD_SYSFS_DIR}/pwrgd_pch_pwrok`
 
 usage(){
     program=`basename "$0"`
@@ -35,17 +36,25 @@ if [ $# -ne 1 ]; then
     exit -1
 fi
 
+# When COM-e power is not ready, it doesn't work to set PHY register.
+# Therefore, waiting for COM-e power ready, then start to set PHY register.
+while [ "$COM_E_PWRGD" == "0x0" ];
+do
+    COM_E_PWRGD=`head -n 1 ${SCMCPLD_SYSFS_DIR}/pwrgd_pch_pwrok`
+    sleep 5
+done
+
 devmem_set_bit $(scu_addr 88) 30
 devmem_set_bit $(scu_addr 88) 31
 
 if [ "$1" == "led" ]; then
     echo "Wait a few seconds to setup management port LED..."
+    ast-mdio.py --mac 1 --phy 0x9 write 0x1e 0x01d
+    ast-mdio.py --mac 1 --phy 0x9 write 0x1f 0x3453
     ast-mdio.py --mac 1 --phy 0x9 write 0x1e 0x012
     ast-mdio.py --mac 1 --phy 0x9 write 0x1f 0xa03
     ast-mdio.py --mac 1 --phy 0x9 write 0x1e 0x019
     ast-mdio.py --mac 1 --phy 0x9 write 0x1f 0x2418
-    ast-mdio.py --mac 1 --phy 0x9 write 0x1e 0x01d
-    ast-mdio.py --mac 1 --phy 0x9 write 0x1f 0x3435
     echo 1 > $RJ45_SEL
     echo "Done!"
 elif [ "$1" == "combo" ]; then

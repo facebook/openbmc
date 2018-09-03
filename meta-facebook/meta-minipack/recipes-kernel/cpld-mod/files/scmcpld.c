@@ -507,14 +507,6 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x31, 4, 1,
   },
   {
-    "pwr_stby_en",
-    "0: disable\n"
-    "1: Enable",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x31, 5, 1,
-  },
-  {
     "a_pwr_stby_en",
     "0: disable\n"
     "1: Enable",
@@ -523,7 +515,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x31, 6, 1,
   },
   {
-    "iso_pcie_com",
+    "iso_com_i2c_en",
     "0: Enable\n"
     "1: Disbale",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -563,14 +555,6 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x32, 4, 1,
   },
   {
-    "iso_com_en",
-    "0: Enable\n"
-    "1: Disbale",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x32, 5, 1,
-  },
-  {
     "iso_tpm_en",
     "0: Enable\n"
     "1: Disbale",
@@ -595,14 +579,6 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x33, 0, 1,
   },
   {
-    "iso_reserved_en",
-    "0: Enable\n"
-    "1: Disbale",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x33, 1, 1,
-  },
-  {
     "iso_brg_thrm_n",
     "input from off-Module temp sensor indicating an over-temp situation",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -610,19 +586,35 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x33, 2, 1,
   },
   {
+    "iso_fpgarp_en",
+    "0: Enable\n"
+    "1: Disbale",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x33, 3, 1,
+  },
+  {
+    "iso_th3rp_en",
+    "0: Enable\n"
+    "1: Disbale",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x33, 4, 1,
+  },
+  {
+    "iso_ds100_en",
+    "0: Enable\n"
+    "1: Disbale",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x33, 5, 1,
+  },
+  {
     "iso_brg_thrmtrip_n",
     "Indicating that the CPU has entered thermal shutdown",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x34, 0, 1,
-  },
-  {//value is weird
-    "uart_en_n",
-    "0: Enable\n"
-    "1: Disbale",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x35, 0, 1,
   },
   {
     "i2c_bus_en",
@@ -868,6 +860,54 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x3a, 7, 1,
+  },
+  {
+    "scm_uart_switch_n_clr",
+    "0: Clear 0x3A Bit [5] data\n"
+    "1: Normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3b, 0, 1,
+  },
+  {
+    "scm_debug_rst_btn_n_clr",
+    "0: Clear 0x3A Bit [6] data\n"
+    "1: Normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3b, 1, 1,
+  },
+  {
+    "iso_com_wdt_en",
+    "0: Enable\n"
+    "1: Disable",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3c, 0, 1,
+  },
+  {
+    "iso_com_early_en",
+    "0: Enable\n"
+    "1: Disable",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3c, 1, 1,
+  },
+  {
+    "iso_switch_en",
+    "0: Enable\n"
+    "1: Disable",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3c, 2, 1,
+  },
+  {
+    "iso_com_thrm_en",
+    "0: Enable\n"
+    "1: Disable",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x3c, 3, 1,
   },
   {
     "ds100_ensmb",

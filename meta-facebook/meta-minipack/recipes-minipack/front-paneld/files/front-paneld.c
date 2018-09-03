@@ -139,6 +139,8 @@ scm_monitor_handler(void *unused){
         // SCM was inserted
         syslog(LOG_WARNING, "SCM Insertion\n");
 
+        /* Setup TH3 PCI-e repeater */
+        run_command("/usr/local/bin/setup_pcie_repeater.sh th3 write");
         ret = pal_get_server_power(FRU_SCM, &power);
         if (ret) {
           goto scm_mon_out;

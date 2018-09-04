@@ -44,6 +44,7 @@ IMAGE_INSTALL += " \
   spatula \
   openbmc-utils \
   conf-util \
+  libncsi \
   ncsi-util \
   ncsid \
   "

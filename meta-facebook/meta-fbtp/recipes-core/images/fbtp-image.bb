@@ -50,6 +50,7 @@ IMAGE_INSTALL += " \
   bios-util \
   vboot-utils \
   crashdump \
+  libncsi \
   ncsi-util \
   ncsid \
   "

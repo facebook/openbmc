@@ -48,6 +48,7 @@ IMAGE_INSTALL += " \
   usb-console \
   watchdog-ctrl \
   vboot-utils \
+  libncsi \
   ncsi-util \
   ncsid \
   "

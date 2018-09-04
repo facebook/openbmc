@@ -13,7 +13,7 @@ SRC_URI = "file://Makefile \
 S = "${WORKDIR}"
 binfiles = "ncsi-util"
 
-CFLAGS += " -lpal "
+CFLAGS += " -lpal -lncsi"
 
 pkgdir = "ncsi-util"
 
@@ -26,8 +26,8 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/ncsi-util ${bin}/ncsi-util
 }
 
-DEPENDS += "libpal "
-RDEPENDS_${PN} += "libpal "
+DEPENDS += "libpal libncsi"
+RDEPENDS_${PN} += "libpal libncsi"
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

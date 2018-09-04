@@ -32,42 +32,11 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <openbmc/pal.h>
+#include <openbmc/ncsi.h>
 
 #define noDEBUG   /* debug printfs */
 
-#define NETLINK_USER 31
 
-#define MAX_PAYLOAD 128 /* maximum payload size*/
-typedef struct ncsi_nl_msg_t {
-  char dev_name[10];
-  unsigned char channel_id;
-  unsigned char cmd;
-  unsigned char payload_length;
-  unsigned char msg_payload[MAX_PAYLOAD];
-} NCSI_NL_MSG_T;
-
-#define MAX_RESPONSE_PAYLOAD 256 /* maximum payload size*/
-typedef struct ncsi_nl_response {
-  unsigned char payload_length;
-  unsigned char msg_payload[MAX_RESPONSE_PAYLOAD];
-} NCSI_NL_RSP_T;
-
-
-static void
-print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
-{
-  uint8_t *pbuf = rcv_buf->msg_payload;
-  int i = 0;
-
-  printf("NC-SI Command Response:\n");
-  printf("Response Code: 0x%04x  Reason Code: 0x%04x\n", (pbuf[0]<<8)+pbuf[1], (pbuf[2]<<8)+pbuf[3]);
-  for (i = 4; i < rcv_buf->payload_length; ++i) {
-		if (i && !(i%4))
-			printf("\n%d: ", 16+i);
-    printf("0x%02x ", rcv_buf->msg_payload[i]);
-  }
-  printf("\n");
-}
 
 
 int

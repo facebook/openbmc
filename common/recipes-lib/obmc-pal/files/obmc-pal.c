@@ -65,6 +65,12 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   return;
 }
 
+int __attribute__((weak))
+pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len)
+{
+  return PAL_ENOTSUP;
+}
+
 void __attribute__((weak))
 pal_get_sys_intf_caps(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {

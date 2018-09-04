@@ -255,6 +255,25 @@ chassis_get_status (unsigned char *request, unsigned char req_len,
   pal_get_chassis_status(req->payload_id, req->data, res->data, res_len);
 }
 
+static void
+chassis_control(unsigned char *request, unsigned char req_len,
+                unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+
+  ret = pal_chassis_control(req->payload_id, req->data, (req_len - 3));
+  if (ret == PAL_ENOTSUP) {
+    res->cc = CC_INVALID_CMD;
+  } else {
+    res->cc = ret;
+  }
+
+  *res_len = 0;
+  return;
+}
+
 // Set Power Restore Policy (IPMI/Section 28.8)
 static void
 chassis_set_power_restore_policy(unsigned char *request, unsigned char req_len,
@@ -364,6 +383,9 @@ ipmi_handle_chassis (unsigned char *request, unsigned char req_len,
   {
     case CMD_CHASSIS_GET_STATUS:
       chassis_get_status (request, req_len, response, res_len);
+      break;
+    case CMD_CHASSIS_CONTROL:
+      chassis_control(request, req_len, response, res_len);
       break;
     case CMD_CHASSIS_IDENTIFY:
       chassis_identify (request, req_len, response, res_len);
@@ -2741,9 +2763,16 @@ oem_sled_ac_cycle(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
 
-  res->cc = pal_sled_ac_cycle(req->payload_id, req->data, req_len, res->data, res_len);
+  ret = pal_sled_ac_cycle(req->payload_id, req->data, (req_len - 3), res->data, res_len);
+  if (ret == PAL_ENOTSUP) {
+    res->cc = CC_INVALID_CMD;
+  } else {
+    res->cc = ret;
+  }
 
+  *res_len = 0;
   return;
 }
 

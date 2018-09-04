@@ -147,8 +147,8 @@ const char pal_tach_list[] = "0, 1";
 
 uint8_t g_dev_guid[GUID_SIZE] = {0};
 
-static unsigned char m_slot_ac_start[MAX_NODES] = {0};
 static bool m_sled_ac_start = false;
+static unsigned char m_slot_pwr_ctrl[MAX_NODES+1] = {0};
 
 static void *m_gpio_hand_sw = NULL;
 static void *m_hbled_output = NULL;
@@ -5784,60 +5784,124 @@ int pal_get_plat_sku_id(void){
   return 0x01; // Yosemite V2
 }
 
-//Do slot ac cycle
-static void * slot_ac_cycle(void *ptr)
-{
-  int slot = (int)ptr;
+//Do slot power control
+static void * slot_pwr_ctrl(void *ptr) {
+  uint8_t slot = (int)ptr & 0xFF;
+  uint8_t cmd = ((int)ptr >> 8) & 0xFF;
   char pwr_state[MAX_VALUE_LEN] = {0};
 
   pthread_detach(pthread_self());
-
   msleep(500);
 
-  pal_get_last_pwr_state(slot, pwr_state);
-  if (!pal_set_server_power(slot, SERVER_12V_CYCLE)) {
-    syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", slot);
-    pal_power_policy_control(slot, pwr_state);
+  if (cmd == SERVER_12V_CYCLE) {
+    pal_get_last_pwr_state(slot, pwr_state);
   }
 
-  m_slot_ac_start[slot-1] = false;
+  if (!pal_set_server_power(slot, cmd)) {
+    switch (cmd) {
+      case SERVER_POWER_OFF:
+        syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d", slot);
+        break;
+      case SERVER_POWER_ON:
+        syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", slot);
+        break;
+      case SERVER_POWER_CYCLE:
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d", slot);
+        break;
+      case SERVER_POWER_RESET:
+        syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", slot);
+        break;
+      case SERVER_GRACEFUL_SHUTDOWN:
+        syslog(LOG_CRIT, "SERVER_GRACEFUL_SHUTDOWN successful for FRU: %d", slot);
+        break;
+      case SERVER_12V_CYCLE:
+        syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", slot);
+        pal_power_policy_control(slot, pwr_state);
+        break;
+    }
+  }
+
+  m_slot_pwr_ctrl[slot] = false;
   pthread_exit(0);
 }
 
-int pal_slot_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
-
-  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
-  uint8_t *data = req_data;
-  int ret, slot_id = slot;
+int pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len)
+{
+  uint8_t comp_code = CC_SUCCESS, cmd = 0;
+  int ret, cmd_slot;
   pthread_t tid;
 
-  *res_len = 0;
-
-  if ((*data != 0x55) || (*(data+1) != 0x66) || (*(data+2) != 0x0f)) {
-    return completion_code;
+  if ((slot < 1) || (slot > 4)) {
+    return CC_UNSPECIFIED_ERROR;
   }
 
-  if (m_slot_ac_start[slot-1] != false) {
+  if (req_len != 1) {
+    return CC_INVALID_LENGTH;
+  }
+
+  if (m_slot_pwr_ctrl[slot] != false) {
     return CC_NOT_SUPP_IN_CURR_STATE;
   }
 
-  m_slot_ac_start[slot-1] = true;
-  ret = pthread_create(&tid, NULL, slot_ac_cycle, (void *)slot_id);
+  switch (req_data[0]) {
+    case 0x00:  // power off
+      cmd = SERVER_POWER_OFF;
+      break;
+    case 0x01:  // power on
+      cmd = SERVER_POWER_ON;
+      break;
+    case 0x02:  // power cycle
+      cmd = SERVER_POWER_CYCLE;
+      break;
+    case 0x03:  // power reset
+      cmd = SERVER_POWER_RESET;
+      break;
+    case 0x05:  // graceful-shutdown
+      cmd = SERVER_GRACEFUL_SHUTDOWN;
+      break;
+    default:
+      comp_code = CC_INVALID_DATA_FIELD;
+      break;
+  }
+
+  if (comp_code == CC_SUCCESS) {
+    m_slot_pwr_ctrl[slot] = true;
+    cmd_slot = (cmd << 8) | slot;
+    ret = pthread_create(&tid, NULL, slot_pwr_ctrl, (void *)cmd_slot);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "[%s] Create slot_pwr_ctrl thread failed!", __func__);
+      m_slot_pwr_ctrl[slot] = false;
+      return CC_NODE_BUSY;
+    }
+  }
+
+  return comp_code;
+}
+
+static int
+pal_slot_ac_cycle(uint8_t slot) {
+  int ret, cmd_slot;
+  pthread_t tid;
+
+  if (m_slot_pwr_ctrl[slot] != false) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  m_slot_pwr_ctrl[slot] = true;
+  cmd_slot = (SERVER_12V_CYCLE << 8) | slot;
+  ret = pthread_create(&tid, NULL, slot_pwr_ctrl, (void *)cmd_slot);
   if (ret < 0) {
-    syslog(LOG_WARNING, "[%s] Create Slot AC Cycle thread failed!\n", __func__);
-    m_slot_ac_start[slot-1] = false;
+    syslog(LOG_WARNING, "[%s] Create slot_ac_cycle thread failed!", __func__);
+    m_slot_pwr_ctrl[slot] = false;
     return CC_NODE_BUSY;
   }
 
-  completion_code = CC_SUCCESS;
-  return completion_code;
+  return CC_SUCCESS;
 }
 
 //Do sled ac cycle
-static void * sled_ac_cycle_handler(void *arg)
-{
+static void * sled_ac_cycle_handler(void *arg) {
   pthread_detach(pthread_self());
-
   msleep(500);
 
   syslog(LOG_CRIT, "SLED_CYCLE starting...");
@@ -5850,10 +5914,9 @@ static void * sled_ac_cycle_handler(void *arg)
   pthread_exit(0);
 }
 
-int sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
-
-  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
-  int ret, slot_id = slot;
+static int
+sled_ac_cycle(void) {
+  int ret;
   pthread_t tid;
 
   if (m_sled_ac_start != false) {
@@ -5863,43 +5926,40 @@ int sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   m_sled_ac_start = true;
   ret = pthread_create(&tid, NULL, sled_ac_cycle_handler, NULL);
   if (ret < 0) {
-    syslog(LOG_WARNING, "[%s] Create Sled AC Cycle thread failed!\n", __func__);
+    syslog(LOG_WARNING, "[%s] Create sled_ac_cycle_handler thread failed!", __func__);
     m_sled_ac_start = false;
     return CC_NODE_BUSY;
   }
 
-  completion_code = CC_SUCCESS;
-  return completion_code;
+  return CC_SUCCESS;
 }
 
-int pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
-
-  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+int pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  uint8_t comp_code = CC_UNSPECIFIED_ERROR;
   uint8_t *data = req_data;
-  uint8_t slot_id = slot;
 
-  *res_len = 0;
+  if ((slot < 1) || (slot > 4)) {
+    return comp_code;
+  }
 
   if ((*data != 0x55) || (*(data+1) != 0x66)) {
-    return completion_code;
+    return comp_code;
   }
 
-  switch(*(data+2)){
-    case 0x0f:    //do slot ac cycle
-      completion_code = pal_slot_ac_cycle(slot_id, req_data, req_len, res_data, res_len);
-      return completion_code;
-    break;
-    case 0xac:   //do sled ac cycle
-      completion_code = sled_ac_cycle(slot_id, req_data, req_len, res_data, res_len);
-      return completion_code;
-    break;
+  switch (*(data+2)) {
+    case 0x0f:  //do slot ac cycle
+      comp_code = pal_slot_ac_cycle(slot);
+      break;
+    case 0xac:  //do sled ac cycle
+      comp_code = sled_ac_cycle();
+      break;
     default:
-      return completion_code;
-    break;
+      comp_code = CC_INVALID_DATA_FIELD;
+      break;
   }
 
-  completion_code = CC_SUCCESS;
-  return completion_code;
+  return comp_code;
 }
 
 //Use part of the function for OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
@@ -6636,7 +6696,7 @@ pal_handle_oem_1s_ras_dump_in(uint8_t slot, uint8_t *data, uint8_t data_len)
       }
 
       fclose(fp);
-      break;                  
+      break;
   }
 
   return 0;

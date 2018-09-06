@@ -40,12 +40,39 @@ extern "C" {
 #define ERR_PRINT(fmt, args...) \
         fprintf(stderr, fmt ": %s\n", ##args, strerror(errno));
 
-#define DRIVER_ADD   "echo %s %d > /sys/class/i2c-dev/i2c-%d/device/new_device"
-#define DRIVER_DEL   "echo %d > /sys/class/i2c-dev/i2c-%d/device/delete_device"
+#define msleep(n) usleep(n*1000)
+
 #define PSU1_EEPROM  "/sys/class/i2c-adapter/i2c-49/49-0051/eeprom"
 #define PSU2_EEPROM  "/sys/class/i2c-adapter/i2c-48/48-0050/eeprom"
 #define PSU3_EEPROM  "/sys/class/i2c-adapter/i2c-57/57-0051/eeprom"
 #define PSU4_EEPROM  "/sys/class/i2c-adapter/i2c-56/56-0050/eeprom"
+
+/* define for DELTA PSU */
+#define DELTA_MODEL         "ECD55020006"
+#define DELTA_HDR_LENGTH    32
+#define UNLOCK_UPGRADE      0xf0
+#define BOOT_FLAG           0xf1
+#define DATA_TO_RAM         0xf2
+#define DATA_TO_FLASH       0xf3
+#define CRC_CHECK           0xf4
+
+#define NORMAL_MODE         0x00
+#define BOOT_MODE           0x01
+
+#define DELTA_PRI_NUM_OF_BLOCK    32
+#define DELTA_PRI_NUM_OF_PAGE     44
+#define DELTA_PRI_PAGE_START      16
+#define DELTA_PRI_PAGE_END        59
+#define DELTA_SEC_NUM_OF_BLOCK    16
+#define DELTA_SEC_NUM_OF_PAGE     232
+#define DELTA_SEC_PAGE_START      48
+#define DELTA_SEC_PAGE_END        279
+
+/* define for BELPOWER PSU */
+#define BELPOWER_MODEL      "PFE1500-12-054NACS457"
+
+/* define for MURATA PSU */
+#define MURATA_MODEL        "D1U54P-W-1500-12-HC4TC"
 
 typedef struct _i2c_info_t {
   uint8_t bus;
@@ -59,7 +86,41 @@ typedef struct _pmbus_info_t {
   uint8_t reg;
 } pmbus_info_t;
 
-int get_mfr_model(int fd, u_int8_t reg, u_int8_t *block);
+typedef struct _delta_hdr_t {
+  uint8_t crc[2];
+  uint16_t page_start;
+  uint16_t page_end;
+  uint16_t byte_per_blk;
+  uint16_t blk_per_page;
+  uint8_t uc;
+  uint8_t app_fw_major;
+  uint8_t app_fw_minor;
+  uint8_t bl_fw_major;
+  uint8_t bl_fw_minor;
+  uint8_t fw_id_len;
+  uint8_t fw_id[16];
+  uint8_t compatibility;
+} delta_hdr_t;
+
+enum {
+  DELTA_1500,
+  BELPOWER_1500_NAC,
+  UNKNOWN
+};
+
+enum {
+  MFR_ID = 0,
+  MFR_MODEL = 1,
+  MFR_REVISION = 2,
+  MFR_DATE = 3,
+  MFR_SERIAL = 4,
+  PRI_FW_VER = 5,
+  SEC_FW_VER = 6
+};
+
+int do_update_psu(u_int8_t num, const char *file, const char *vendor);
+int get_eeprom_info(u_int8_t mum, const char *tpye);
+int get_psu_info(u_int8_t num);
 
 #ifdef __cplusplus
 }

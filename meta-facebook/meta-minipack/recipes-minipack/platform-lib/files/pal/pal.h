@@ -51,6 +51,7 @@ extern "C" {
 #define FAN_PRSNT_STATUS "fantray%d_present"
 #define PSU_L_PRSNT_STATUS "psu_L%d_present_L"
 #define PSU_R_PRSNT_STATUS "psu_R%d_present_L"
+#define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
 
 #define LAST_KEY "last_key"
 
@@ -189,6 +190,7 @@ extern "C" {
 #define DELAY_POWER_CYCLE 10
 
 #define LARGEST_DEVICE_NAME 128
+#define MINIPACK_MAX_NUM_SLOTS 1
 
 #define UNIT_DIV 1000
 
@@ -668,6 +670,8 @@ int pal_del_i2c_device(uint8_t bus, uint8_t addr);
 int pal_get_pim_type(uint8_t fru);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
+int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
+void *generate_dump(void *arg);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -21,6 +21,7 @@ IMAGE_INSTALL += " \
   bitbang \
   cpldupdate \
   cpldupdate-i2c \
+  crashdump \
   flashrom \
   front-paneld \
   fscd \

@@ -36,6 +36,7 @@
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "pal.h"
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
@@ -47,7 +48,14 @@ typedef struct {
   char name[32];
 } sensor_desc_t;
 
+struct threadinfo {
+  uint8_t is_running;
+  uint8_t fru;
+  pthread_t pt;
+};
+
 static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
 
 /* List of BIC Discrete sensors to be monitored */
 const uint8_t bic_discrete_list[] = {
@@ -473,6 +481,7 @@ char * key_list[] = {
 "sysfw_ver_server",
 "timestamp_sled",
 "server_por_cfg",
+"server_sel_error",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -482,6 +491,7 @@ char * def_val_list[] = {
   "0", /* sysfw_ver_server */
   "0", /* timestamp_sled */
   "lps", /* server_por_cfg */
+  "1", /* server_sel_error */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -5511,32 +5521,154 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
 uint8_t
 pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
 
-	uint8_t completion_code;
-	char key[MAX_KEY_LEN];
-	unsigned char policy = *pwr_policy & 0x07;  /* Power restore policy */
+    uint8_t completion_code;
+    char key[MAX_KEY_LEN];
+    unsigned char policy = *pwr_policy & 0x07;  /* Power restore policy */
 
   completion_code = CC_SUCCESS;   /* Fill response with default values */
-	sprintf(key, "%s", "server_por_cfg");
-	switch (policy)
-	{
-	  case 0:
-	    if (pal_set_key_value(key, "off") != 0)
-	      completion_code = CC_UNSPECIFIED_ERROR;
-	    break;
-	  case 1:
-	    if (pal_set_key_value(key, "lps") != 0)
-	      completion_code = CC_UNSPECIFIED_ERROR;
-	    break;
-	  case 2:
-	    if (pal_set_key_value(key, "on") != 0)
-	      completion_code = CC_UNSPECIFIED_ERROR;
-	    break;
-	  case 3:
-		/* no change (just get present policy support) */
-	    break;
-	  default:
-	      completion_code = CC_PARAM_OUT_OF_RANGE;
-	    break;
-	}
-	return completion_code;
+    sprintf(key, "%s", "server_por_cfg");
+    switch (policy)
+    {
+      case 0:
+        if (pal_set_key_value(key, "off") != 0)
+          completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      case 1:
+        if (pal_set_key_value(key, "lps") != 0)
+          completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      case 2:
+        if (pal_set_key_value(key, "on") != 0)
+          completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      case 3:
+        /* no change (just get present policy support) */
+        break;
+      default:
+          completion_code = CC_PARAM_OUT_OF_RANGE;
+        break;
+    }
+    return completion_code;
+}
+
+void *
+generate_dump(void *arg) {
+
+  uint8_t fru = *(uint8_t *) arg;
+  char cmd[128];
+  char fname[128];
+  char fruname[16];
+
+  // Usually the pthread cancel state are enable by default but
+  // here we explicitly would like to enable them
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  pal_get_fru_name(fru, fruname);//scm
+
+  memset(fname, 0, sizeof(fname));
+  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  if (access(fname, F_OK) == 0) {
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd,"rm %s",fname);
+    system(cmd);
+  }
+
+  // Execute automatic crashdump
+  memset(cmd, 0, 128);
+  sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
+  system(cmd);
+
+  syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
+
+  t_dump[fru-1].is_running = 0;
+  return 0;
+}
+
+static int
+pal_store_crashdump(uint8_t fru) {
+
+  int ret;
+  char cmd[100];
+
+  // Check if the crashdump script exist
+  if (access(CRASHDUMP_BIN, F_OK) == -1) {
+    syslog(LOG_CRIT, "Crashdump for FRU: %d failed : "
+        "auto crashdump binary is not preset", fru);
+    return 0;
+  }
+
+  // Check if a crashdump for that fru is already running.
+  // If yes, kill that thread and start a new one.
+  if (t_dump[fru-1].is_running) {
+    ret = pthread_cancel(t_dump[fru-1].pt);
+    if (ret == ESRCH) {
+      syslog(LOG_INFO, 
+             "pal_store_crashdump: No Crashdump pthread exists");
+    } else {
+      pthread_join(t_dump[fru-1].pt, NULL);
+      sprintf(cmd, 
+              "ps | grep '{dump.sh}' | grep 'scm' "
+              "| awk '{print $1}'| xargs kill");
+      system(cmd);
+	  sprintf(cmd, 
+              "ps | grep 'bic-util' | grep 'scm' "
+              "| awk '{print $1}'| xargs kill");
+      system(cmd);
+#ifdef DEBUG
+      syslog(LOG_INFO, "pal_store_crashdump:"
+                       " Previous crashdump thread is cancelled");
+#endif
+    }
+  }
+
+  // Start a thread to generate the crashdump
+  t_dump[fru-1].fru = fru;
+  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, 
+      (void*) &t_dump[fru-1].fru) < 0) {
+    syslog(LOG_WARNING, "pal_store_crashdump: pthread_create for"
+        " FRU %d failed\n", fru);
+    return -1;
+  }
+
+  t_dump[fru-1].is_running = 1;
+
+  syslog(LOG_INFO, "Crashdump for FRU: %d is being generated.", fru);
+
+  return 0;
+}
+
+int
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  static int assert_cnt[MINIPACK_MAX_NUM_SLOTS] = {0};
+  switch(fru) {
+    case FRU_SCM:
+      switch(snr_num) {
+        case CATERR_B:
+          pal_store_crashdump(fru);
+          break;
+
+        case 0x00:  // don't care sensor number 00h
+          return 0;
+      }
+      sprintf(key, "server_sel_error");
+
+      if ((event_data[2] & 0x80) == 0) {  // 0: Assertion,  1: Deassertion
+         assert_cnt[fru-1]++;
+      } else {
+        if (--assert_cnt[fru-1] < 0)
+           assert_cnt[fru-1] = 0;
+      }
+      sprintf(cvalue, "%s", (assert_cnt[fru-1] > 0) ? "0" : "1");
+      break;
+
+    default:
+      return -1;
+  }
+
+  /* Write the value "0" which means FRU_STATUS_BAD */
+  return pal_set_key_value(key, cvalue);
 }

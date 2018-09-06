@@ -30,6 +30,7 @@
 #include <facebook/minipack_gpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/fruid.h>
+#include <fcntl.h>
 
 #define LAST_RECORD_ID 0xFFFF
 #define MAX_SENSOR_NUM 0xFF
@@ -37,6 +38,14 @@
 #define EEPROM_SIZE 256
 #define FRU_NAME "MINILAKE"
 #define FRU_PATH "/tmp/fruid_minilake.bin"
+
+#define LOGFILE "/tmp/bic-util.log"
+
+#define MAX_ARG_NUM 64
+#define MAX_CMD_RETRY 2
+#define MAX_TOTAL_RETRY 30
+
+static int total_retry = 0;
 
 static const char *option_list[] = {
   "--get_dev_id",
@@ -55,6 +64,8 @@ print_usage_help(void) {
   int i;
 
   printf("Usage: bic-util <scm> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: bic-util <scm> <--me> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: bic-util <scm> <--me_file> <path>\n");
   printf("Usage: bic-util <scm> <option>\n");
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
@@ -113,13 +124,13 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nProduct Custom Data 1",fruid->product.custom1);
     if (fruid->product.custom2 != NULL){
       printf("%-27s: %s", "\nProduct Custom Data 2",fruid->product.custom2);
-	}
+    }
     if (fruid->product.custom3 != NULL){
       printf("%-27s: %s", "\nProduct Custom Data 3",fruid->product.custom3);
-	}
+    }
     if (fruid->product.custom4 != NULL){
       printf("%-27s: %s", "\nProduct Custom Data 4",fruid->product.custom4);
-	}
+    }
   }
 
   printf("\n");
@@ -491,7 +502,7 @@ util_read_mac(uint8_t slot_id) {
   ret = bic_read_mac(slot_id, mbuf);
   if (ret) {
     printf("Cannot get MAC address from Minilake.\n");
-	return;
+    return;
   }
 
   printf("MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n",
@@ -533,6 +544,106 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   return 0;
 }
 
+static int
+process_command_me(uint8_t slot_id, int argc, char **argv) {
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  //int logfd, len;
+  //char log[256];
+
+  for (i = 0; i < argc; i++) {
+    tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
+  }
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return ret;
+  }
+
+  //log[0] = 0;
+  if (rbuf[0] != 0x00) {
+    printf("Completion Code: %02X, ", rbuf[0]);
+  }
+
+  for (i = 1; i < rlen; i++) {
+    printf("%02X ", rbuf[i]);
+    //sprintf(log, "%s%02X ", log, rbuf[i]);
+  }
+  printf("\n");
+
+#if 0
+  sprintf(log, "%s\n", log);
+
+  logfd = open(LOGFILE, O_CREAT | O_WRONLY);
+  if (logfd < 0) {
+    syslog(LOG_WARNING, "Opening a tmp file failed. errno: %d", errno);
+    return -1;
+  }
+
+  len = write(logfd, log, strlen(log));
+  if (len != strlen(log)) {
+    syslog(LOG_WARNING, "Error writing the log to the file");
+    close(logfd);
+    return -1;
+  }
+  close(logfd);
+#endif
+
+  return 0;
+}
+
+static int
+process_file(uint8_t slot_id, char *path) {
+  FILE *fp;
+  int argc;
+  char buf[1024];
+  char *str, *next, *del=" \n";
+  char *argv[MAX_ARG_NUM];
+
+  if (!(fp = fopen(path, "r"))) {
+    syslog(LOG_WARNING, "Failed to open %s", path);
+    return -1;
+  }
+
+  while (fgets(buf, sizeof(buf), fp) != NULL) {
+    str = strtok_r(buf, del, &next);
+    for (argc = 0; argc < MAX_ARG_NUM && str; argc++, 
+	     str = strtok_r(NULL, del, &next)) {
+      if (str[0] == '#')
+        break;
+
+      if (!argc && !strcmp(str, "echo")) {
+        printf("%s", (*next) ? next : "\n");
+        break;
+      }
+      argv[argc] = str;
+    }
+    if (argc < 1)
+      continue;
+
+    process_command_me(slot_id, argc, argv);
+    if (total_retry > MAX_TOTAL_RETRY) {
+      printf("Maximum retry count exceeded\n");
+      fclose(fp);
+      return -1;
+    }
+  }
+  fclose(fp);
+
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
   uint8_t slot_id;
@@ -566,9 +677,20 @@ main(int argc, char **argv) {
     util_read_fruid(slot_id);
   } else if (!strcmp(argv[2], "--read_mac")) {
     util_read_mac(slot_id);
+  } else if (!strcmp(argv[2], "--me_file")) {
+    if (argc < 4) {
+      goto err_exit;
+    }
+    process_file(slot_id, argv[3]);
+    return 0;
   } else if (argc >= 4) {
-    return process_command(slot_id, (argc - 2), (argv + 2));
-  } else {
+    if(!strcmp(argv[2], "--me")) {
+      return process_command_me(slot_id, (argc - 3), (argv + 3));
+    }
+    else
+      return process_command(slot_id, (argc - 2), (argv + 2));
+  } 
+ else {
     goto err_exit;
   }
 

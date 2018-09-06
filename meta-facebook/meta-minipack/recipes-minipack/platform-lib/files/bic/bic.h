@@ -162,6 +162,7 @@ int bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset, uint32_t le
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_set_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
+int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 #ifdef __cplusplus
 } // extern "C"

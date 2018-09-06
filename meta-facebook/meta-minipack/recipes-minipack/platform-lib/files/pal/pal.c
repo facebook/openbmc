@@ -196,6 +196,7 @@ const uint8_t smb_sensor_list[] = {
 const uint8_t pim1_sensor_list[] = {
   PIM1_SENSOR_TEMP1,
   PIM1_SENSOR_TEMP2,
+  PIM1_SENSOR_QSFP_TEMP,
   PIM1_SENSOR_HSC_VOLT,
   PIM1_SENSOR_HSC_CURR,
   PIM1_SENSOR_HSC_POWER,
@@ -220,6 +221,7 @@ const uint8_t pim1_sensor_list[] = {
 const uint8_t pim2_sensor_list[] = {
   PIM2_SENSOR_TEMP1,
   PIM2_SENSOR_TEMP2,
+  PIM2_SENSOR_QSFP_TEMP,
   PIM2_SENSOR_HSC_VOLT,
   PIM2_SENSOR_HSC_CURR,
   PIM2_SENSOR_HSC_POWER,
@@ -244,6 +246,7 @@ const uint8_t pim2_sensor_list[] = {
 const uint8_t pim3_sensor_list[] = {
   PIM3_SENSOR_TEMP1,
   PIM3_SENSOR_TEMP2,
+  PIM3_SENSOR_QSFP_TEMP,
   PIM3_SENSOR_HSC_VOLT,
   PIM3_SENSOR_HSC_CURR,
   PIM3_SENSOR_HSC_POWER,
@@ -268,6 +271,7 @@ const uint8_t pim3_sensor_list[] = {
 const uint8_t pim4_sensor_list[] = {
   PIM4_SENSOR_TEMP1,
   PIM4_SENSOR_TEMP2,
+  PIM4_SENSOR_QSFP_TEMP,
   PIM4_SENSOR_HSC_VOLT,
   PIM4_SENSOR_HSC_CURR,
   PIM4_SENSOR_HSC_POWER,
@@ -292,6 +296,7 @@ const uint8_t pim4_sensor_list[] = {
 const uint8_t pim5_sensor_list[] = {
   PIM5_SENSOR_TEMP1,
   PIM5_SENSOR_TEMP2,
+  PIM5_SENSOR_QSFP_TEMP,
   PIM5_SENSOR_HSC_VOLT,
   PIM5_SENSOR_HSC_CURR,
   PIM5_SENSOR_HSC_POWER,
@@ -316,6 +321,7 @@ const uint8_t pim5_sensor_list[] = {
 const uint8_t pim6_sensor_list[] = {
   PIM6_SENSOR_TEMP1,
   PIM6_SENSOR_TEMP2,
+  PIM6_SENSOR_QSFP_TEMP,
   PIM6_SENSOR_HSC_VOLT,
   PIM6_SENSOR_HSC_CURR,
   PIM6_SENSOR_HSC_POWER,
@@ -340,6 +346,7 @@ const uint8_t pim6_sensor_list[] = {
 const uint8_t pim7_sensor_list[] = {
   PIM7_SENSOR_TEMP1,
   PIM7_SENSOR_TEMP2,
+  PIM7_SENSOR_QSFP_TEMP,
   PIM7_SENSOR_HSC_VOLT,
   PIM7_SENSOR_HSC_CURR,
   PIM7_SENSOR_HSC_POWER,
@@ -364,6 +371,7 @@ const uint8_t pim7_sensor_list[] = {
 const uint8_t pim8_sensor_list[] = {
   PIM8_SENSOR_TEMP1,
   PIM8_SENSOR_TEMP2,
+  PIM8_SENSOR_QSFP_TEMP,
   PIM8_SENSOR_HSC_VOLT,
   PIM8_SENSOR_HSC_CURR,
   PIM8_SENSOR_HSC_POWER,
@@ -2456,6 +2464,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
     case PIM1_SENSOR_TEMP2:
       ret = read_attr(PIM1_TEMP2_DEVICE, TEMP(1), value);
       break;
+    case PIM1_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(1), value);
+      break;
     case PIM1_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM1_HSC_DEVICE, PIM_RSENSE, value);
       break;
@@ -2518,6 +2529,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM2_SENSOR_TEMP2:
       ret = read_attr(PIM2_TEMP2_DEVICE, TEMP(1), value);
+      break;
+    case PIM2_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(2), value);
       break;
     case PIM2_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM2_HSC_DEVICE, PIM_RSENSE, value);
@@ -2582,6 +2596,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
     case PIM3_SENSOR_TEMP2:
       ret = read_attr(PIM3_TEMP2_DEVICE, TEMP(1), value);
       break;
+    case PIM3_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(3), value);
+      break;
     case PIM3_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM3_HSC_DEVICE, PIM_RSENSE, value);
       break;
@@ -2644,6 +2661,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM4_SENSOR_TEMP2:
       ret = read_attr(PIM4_TEMP2_DEVICE, TEMP(1), value);
+      break;
+    case PIM4_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(4), value);
       break;
     case PIM4_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM4_HSC_DEVICE, PIM_RSENSE, value);
@@ -2708,6 +2728,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
     case PIM5_SENSOR_TEMP2:
       ret = read_attr(PIM5_TEMP2_DEVICE, TEMP(1), value);
       break;
+    case PIM5_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(5), value);
+      break;
     case PIM5_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM5_HSC_DEVICE, PIM_RSENSE, value);
       break;
@@ -2770,6 +2793,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM6_SENSOR_TEMP2:
       ret = read_attr(PIM6_TEMP2_DEVICE, TEMP(1), value);
+      break;
+    case PIM6_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(6), value);
       break;
     case PIM6_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM6_HSC_DEVICE, PIM_RSENSE, value);
@@ -2834,6 +2860,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
     case PIM7_SENSOR_TEMP2:
       ret = read_attr(PIM7_TEMP2_DEVICE, TEMP(1), value);
       break;
+    case PIM7_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(7), value);
+      break;
     case PIM7_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM7_HSC_DEVICE, PIM_RSENSE, value);
       break;
@@ -2896,6 +2925,9 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM8_SENSOR_TEMP2:
       ret = read_attr(PIM8_TEMP2_DEVICE, TEMP(1), value);
+      break;
+    case PIM8_SENSOR_QSFP_TEMP:
+      ret = read_attr(SMB_IOB_DEVICE, TEMP(8), value);
       break;
     case PIM8_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM8_HSC_DEVICE, PIM_RSENSE, value);
@@ -3523,6 +3555,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM1_SENSOR_TEMP2:
       sprintf(name, "PIM1_TEMP2");
       break;
+    case PIM1_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM1_QSFP_TEMP");
+      break;
     case PIM1_SENSOR_HSC_VOLT:
       sprintf(name, "PIM1_HSC_VOLT");
       break;
@@ -3585,6 +3620,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM2_SENSOR_TEMP2:
       sprintf(name, "PIM2_TEMP2");
+      break;
+    case PIM2_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM2_QSFP_TEMP");
       break;
     case PIM2_SENSOR_HSC_VOLT:
       sprintf(name, "PIM2_HSC_VOLT");
@@ -3649,6 +3687,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM3_SENSOR_TEMP2:
       sprintf(name, "PIM3_TEMP2");
       break;
+    case PIM3_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM3_QSFP_TEMP");
+      break;
     case PIM3_SENSOR_HSC_VOLT:
       sprintf(name, "PIM3_HSC_VOLT");
       break;
@@ -3711,6 +3752,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM4_SENSOR_TEMP2:
       sprintf(name, "PIM4_TEMP2");
+      break;
+    case PIM4_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM4_QSFP_TEMP");
       break;
     case PIM4_SENSOR_HSC_VOLT:
       sprintf(name, "PIM4_HSC_VOLT");
@@ -3775,6 +3819,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM5_SENSOR_TEMP2:
       sprintf(name, "PIM5_TEMP2");
       break;
+    case PIM5_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM5_QSFP_TEMP");
+      break;
     case PIM5_SENSOR_HSC_VOLT:
       sprintf(name, "PIM5_HSC_VOLT");
       break;
@@ -3837,6 +3884,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM6_SENSOR_TEMP2:
       sprintf(name, "PIM6_TEMP2");
+      break;
+    case PIM6_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM6_QSFP_TEMP");
       break;
     case PIM6_SENSOR_HSC_VOLT:
       sprintf(name, "PIM6_HSC_VOLT");
@@ -3901,6 +3951,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM7_SENSOR_TEMP2:
       sprintf(name, "PIM7_TEMP2");
       break;
+    case PIM7_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM7_QSFP_TEMP");
+      break;
     case PIM7_SENSOR_HSC_VOLT:
       sprintf(name, "PIM7_HSC_VOLT");
       break;
@@ -3963,6 +4016,9 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM8_SENSOR_TEMP2:
       sprintf(name, "PIM8_TEMP2");
+      break;
+    case PIM8_SENSOR_QSFP_TEMP:
+      sprintf(name, "PIM8_QSFP_TEMP");
       break;
     case PIM8_SENSOR_HSC_VOLT:
       sprintf(name, "PIM8_HSC_VOLT");
@@ -4377,6 +4433,14 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM7_SENSOR_TEMP2:
     case PIM8_SENSOR_TEMP1:
     case PIM8_SENSOR_TEMP2:
+    case PIM1_SENSOR_QSFP_TEMP:
+    case PIM2_SENSOR_QSFP_TEMP:
+    case PIM3_SENSOR_QSFP_TEMP:
+    case PIM4_SENSOR_QSFP_TEMP:
+    case PIM5_SENSOR_QSFP_TEMP:
+    case PIM6_SENSOR_QSFP_TEMP:
+    case PIM7_SENSOR_QSFP_TEMP:
+    case PIM8_SENSOR_QSFP_TEMP:
       sprintf(units, "C");
       break;
     case PIM1_SENSOR_HSC_CURR:
@@ -4778,6 +4842,7 @@ sensor_thresh_array_init() {
   for (i = 0; i < 8; i++) {
     pim_sensor_threshold[PIM1_SENSOR_TEMP1+(i*0x15)][UCR_THRESH] = 70;
     pim_sensor_threshold[PIM1_SENSOR_TEMP2+(i*0x15)][UCR_THRESH] = 70;
+    pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 70;
     pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x15)][UCR_THRESH] = 12.960;
     pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x15)][LCR_THRESH] = 11.040;
     pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*0x15)][UCR_THRESH] = 25.59;
@@ -5376,6 +5441,16 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
     case PIM8_SENSOR_34461_VOLT15:
     case PIM8_SENSOR_34461_VOLT16:
       *value = 60;
+      break;
+    case PIM1_SENSOR_QSFP_TEMP:
+    case PIM2_SENSOR_QSFP_TEMP:
+    case PIM3_SENSOR_QSFP_TEMP:
+    case PIM4_SENSOR_QSFP_TEMP:
+    case PIM5_SENSOR_QSFP_TEMP:
+    case PIM6_SENSOR_QSFP_TEMP:
+    case PIM7_SENSOR_QSFP_TEMP:
+    case PIM8_SENSOR_QSFP_TEMP:
+      *value = 2;
       break;
     default:
       *value = 10;

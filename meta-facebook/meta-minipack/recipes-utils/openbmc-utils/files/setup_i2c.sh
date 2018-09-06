@@ -32,6 +32,9 @@ i2c_device_add 2 0x35 scmcpld          # SCMCPLD
 # # Bus 12
 i2c_device_add 12 0x3e smbcpld         # SMBCPLD
 
+# # Bus 13
+i2c_device_add 13 0x35 iobfpga         # IOBFPGA
+
 # # Bus 1
 i2c_device_add 1 0x3a powr1220         # SMB power sequencer
 i2c_device_add 1 0x12 ir3595           # TH3 core voltage/current monitor

@@ -57,6 +57,7 @@ extern "C" {
 
 #define I2C_BUS_1_DIR          "/sys/class/i2c-adapter/i2c-1/"
 #define I2C_BUS_3_DIR          "/sys/class/i2c-adapter/i2c-3/"
+#define I2C_BUS_13_DIR         "/sys/class/i2c-adapter/i2c-13/"
 #define I2C_BUS_16_DIR         "/sys/class/i2c-adapter/i2c-16/"
 #define I2C_BUS_17_DIR         "/sys/class/i2c-adapter/i2c-17/"
 #define I2C_BUS_30_DIR         "/sys/class/i2c-adapter/i2c-30/"
@@ -114,6 +115,7 @@ extern "C" {
 #define SMB_TEMP2_DEVICE       I2C_BUS_3_DIR"3-0049/hwmon/hwmon*"
 #define SMB_TEMP3_DEVICE       I2C_BUS_3_DIR"3-004a/hwmon/hwmon*"
 #define SMB_TEMP4_DEVICE       I2C_BUS_3_DIR"3-004b/hwmon/hwmon*"
+#define SMB_IOB_DEVICE         I2C_BUS_13_DIR"13-0035"
 #define SCM_HSC_DEVICE         I2C_BUS_16_DIR"16-0010/hwmon/hwmon*"
 #define SCM_OUTLET_TEMP_DEVICE I2C_BUS_17_DIR"17-004c/hwmon/hwmon*"
 #define SCM_INLET_TEMP_DEVICE  I2C_BUS_17_DIR"17-004d/hwmon/hwmon*"
@@ -568,6 +570,14 @@ enum {
   PIM8_SENSOR_34461_VOLT14 = 0xa6,
   PIM8_SENSOR_34461_VOLT15 = 0xa7,
   PIM8_SENSOR_34461_VOLT16 = 0xa8,
+  PIM1_SENSOR_QSFP_TEMP = 0xa9,
+  PIM2_SENSOR_QSFP_TEMP = 0xaa,
+  PIM3_SENSOR_QSFP_TEMP = 0xab,
+  PIM4_SENSOR_QSFP_TEMP = 0xac,
+  PIM5_SENSOR_QSFP_TEMP = 0xad,
+  PIM6_SENSOR_QSFP_TEMP = 0xae,
+  PIM7_SENSOR_QSFP_TEMP = 0xaf,
+  PIM8_SENSOR_QSFP_TEMP = 0xb0,
 };
 
 /* Sensors on SMB */

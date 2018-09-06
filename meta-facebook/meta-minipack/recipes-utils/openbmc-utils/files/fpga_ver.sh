@@ -20,13 +20,12 @@
 
 
 echo "------IOBFPGA------"
-iob=`i2cdetect -y 13 0x35 0x35 | grep "\-\-"` > /dev/null
+iob_ver=`head -n 1 /sys/class/i2c-adapter/i2c-13/13-0035/fpga_ver 2> /dev/null`
+iob_sub_ver=`head -n 1 /sys/class/i2c-adapter/i2c-13/13-0035/fpga_sub_ver 2> /dev/null`
 
-if [ "${iob}" != "" ]; then
+if [ $? -eq 1 ]; then
     echo "IOBFPGA is not detected"
 else
-    iob_ver=$(i2cget -f -y 13 0x35 0x01)
-    iob_sub_ver=$(i2cget -f -y 13 0x35 0x02)
     echo "IOBFPGA: $(($iob_ver)).$(($iob_sub_ver))"
 fi
 
@@ -36,8 +35,8 @@ BUS="80 88 96 104 112 120 128 136"
 echo "------DOMFPGA------"
 
 for bus in ${BUS}; do
-    pim_16q=`i2cdetect -y $bus 0x60 0x60 | grep "\-\-"` > /dev/null
-    pim_4dd=`i2cdetect -y $bus 0x61 0x61 | grep "\-\-"` > /dev/null
+    pim_16q=`i2cdetect -y $bus 0x60 0x60 | grep "\-\-" 2> /dev/null`
+    pim_4dd=`i2cdetect -y $bus 0x61 0x61 | grep "\-\-" 2> /dev/null`
 
     echo "PIM $num:"
 

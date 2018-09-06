@@ -2151,7 +2151,6 @@ pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, 
   }
 
   ret = pal_get_thresh_from_file(fru, sensor_num, &snr);
-
   if (ret < 0) {
     syslog(LOG_ERR, "%s: Fail to get %s sensor threshold file\n",__func__,fru_name);
     return ret;
@@ -2159,26 +2158,68 @@ pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, 
 
   switch (thresh_type) {
     case UCR_THRESH:
+      if (((snr.flag & GETMASK(UNR_THRESH)) && (value > snr.unr_thresh)) ||
+          ((snr.flag & GETMASK(UNC_THRESH)) && (value < snr.unc_thresh)) ||
+          ((snr.flag & GETMASK(LNC_THRESH)) && (value < snr.lnc_thresh)) ||
+          ((snr.flag & GETMASK(LCR_THRESH)) && (value < snr.lcr_thresh)) ||
+          ((snr.flag & GETMASK(LNR_THRESH)) && (value < snr.lnr_thresh))) {
+        return -1;
+      }
       snr.ucr_thresh = value;
       snr.flag |= SETMASK(UCR_THRESH);
       break;
     case UNC_THRESH:
+      if (((snr.flag & GETMASK(UNR_THRESH)) && (value > snr.unr_thresh)) ||
+          ((snr.flag & GETMASK(UCR_THRESH)) && (value > snr.ucr_thresh)) ||
+          ((snr.flag & GETMASK(LNC_THRESH)) && (value < snr.lnc_thresh)) ||
+          ((snr.flag & GETMASK(LCR_THRESH)) && (value < snr.lcr_thresh)) ||
+          ((snr.flag & GETMASK(LNR_THRESH)) && (value < snr.lnr_thresh))) {
+        return -1;
+      }
       snr.unc_thresh = value;
       snr.flag |= SETMASK(UNC_THRESH);
       break;
     case UNR_THRESH:
+      if (((snr.flag & GETMASK(UCR_THRESH)) && (value < snr.ucr_thresh)) ||
+          ((snr.flag & GETMASK(UNC_THRESH)) && (value < snr.unc_thresh)) ||
+          ((snr.flag & GETMASK(LNC_THRESH)) && (value < snr.lnc_thresh)) ||
+          ((snr.flag & GETMASK(LCR_THRESH)) && (value < snr.lcr_thresh)) ||
+          ((snr.flag & GETMASK(LNR_THRESH)) && (value < snr.lnr_thresh))) {
+        return -1;
+      }
       snr.unr_thresh = value;
       snr.flag |= SETMASK(UNR_THRESH);
       break;
     case LCR_THRESH:
+      if (((snr.flag & GETMASK(LNR_THRESH)) && (value < snr.lnr_thresh)) ||
+          ((snr.flag & GETMASK(LNC_THRESH)) && (value > snr.lnc_thresh)) ||
+          ((snr.flag & GETMASK(UNC_THRESH)) && (value > snr.unc_thresh)) ||
+          ((snr.flag & GETMASK(UCR_THRESH)) && (value > snr.ucr_thresh)) ||
+          ((snr.flag & GETMASK(UNR_THRESH)) && (value > snr.unr_thresh))) {
+        return -1;
+      }
       snr.lcr_thresh = value;
       snr.flag |= SETMASK(LCR_THRESH);
       break;
     case LNC_THRESH:
+      if (((snr.flag & GETMASK(LNR_THRESH)) && (value < snr.lnr_thresh)) ||
+          ((snr.flag & GETMASK(LCR_THRESH)) && (value < snr.lcr_thresh)) ||
+          ((snr.flag & GETMASK(UNC_THRESH)) && (value > snr.unc_thresh)) ||
+          ((snr.flag & GETMASK(UCR_THRESH)) && (value > snr.ucr_thresh)) ||
+          ((snr.flag & GETMASK(UNR_THRESH)) && (value > snr.unr_thresh))) {
+        return -1;
+      }
       snr.lnc_thresh = value;
       snr.flag |= SETMASK(LNC_THRESH);
       break;
     case LNR_THRESH:
+      if (((snr.flag & GETMASK(LCR_THRESH)) && (value > snr.lcr_thresh)) ||
+          ((snr.flag & GETMASK(LNC_THRESH)) && (value > snr.lnc_thresh)) ||
+          ((snr.flag & GETMASK(UNC_THRESH)) && (value > snr.unc_thresh)) ||
+          ((snr.flag & GETMASK(UCR_THRESH)) && (value > snr.ucr_thresh)) ||
+          ((snr.flag & GETMASK(UNR_THRESH)) && (value > snr.unr_thresh))) {
+        return -1;
+      }
       snr.lnr_thresh = value;
       snr.flag |= SETMASK(LNR_THRESH);
       break;

@@ -32,9 +32,16 @@
 default_fsc_config="/etc/fsc-config.json"
 fcm_b_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver \
            2> /dev/null`
+fcm_b_sub_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_sub_ver \
+           2> /dev/null`
 fcm_t_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver \
            2> /dev/null`
-
+fcm_t_sub_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_sub_ver \
+           2> /dev/null`
+fcm_b_maj=`echo $fcm_b_ver | awk '{printf "%d", $1;}'`
+fcm_b_min=`echo $fcm_b_sub_ver | awk '{printf "%d", $1;}'`
+fcm_t_maj=`echo $fcm_t_ver | awk '{printf "%d", $1;}'`
+fcm_t_min=`echo $fcm_t_sub_ver | awk '{printf "%d", $1;}'`
 echo -n "Setup fan speed... "
 
 if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
@@ -44,15 +51,32 @@ else
     echo "Run FSC PWM 64 Levels Config"
     cp /etc/FSC-PWM-64-config.json ${default_fsc_config}
 fi
-
+echo "Setting fan speed to 50%..."
 /usr/local/bin/set_fan_speed.sh 50
+echo "Done setting fan speed"
 # Currently, fcmcpld version 0.xx will cause BMC to 
 # run into crash loop, due to fscd's own logic and 
 # its failure to disarm bootup watchdog.
-# (this problem is only for fcmcpld 0.xx. Fcmcpld 1.0 and 
+# (this problem is only for fcmcpld 0.xx. Fcmcpld 1.9 and 
 # above works well without any problem.)
-# Until we have fix, we will run fscd only if fcmcpld is 1.0 or higher.
-if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
+# Until we have fix, we will run fscd only if fcmcpld is 1.9 or higher.
+fcm_b_compatible=0
+fcm_t_compatible=0
+if [ $fcm_b_maj -eq 1 ] && [ $fcm_b_min -ge 9 ]; then 
+   fcm_b_compatible=1
+fi
+if [ $fcm_b_maj -ge 2 ]; then
+   fcm_b_compatible=1
+fi
+if [ $fcm_t_maj -eq 1 ] && [ $fcm_t_min -ge 9 ]; then
+   fcm_t_compatible=1
+fi
+if [ $fcm_b_maj -ge 2 ]; then
+   fcm_t_compatible=1
+fi
+echo fcm_b version : $fcm_b_maj $fcm_b_min compatible: $fcm_b_compatible
+echo fcm_t version : $fcm_t_maj $fcm_t_min compatible: $fcm_t_compatible
+if [ $fcm_b_compatible -eq 0 ] || [ $fcm_t_compatible -eq 0 ]; then
     echo "Old FCM CPLD detected. Running fan at the fixed speed."
     /usr/local/bin/watchdog_ctrl.sh off
 else

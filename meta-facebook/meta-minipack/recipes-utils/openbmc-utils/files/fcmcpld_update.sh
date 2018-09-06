@@ -51,6 +51,7 @@ echo 1 > "${bottom_fan_cpld}"
 echo 1 > /tmp/fcmcpld_update
 
 ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms 76 --tdo 78 --tdi 79 --tck 77
+result=$?
 # 1 is returned upon upgrade success
 if [ $result -eq 1 ]; then
     echo "Upgrade successful."

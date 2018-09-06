@@ -35,6 +35,7 @@ gpio_set BMC_SCM_CPLD_EN 0
 echo 1 > /tmp/scmcpld_update
 
 ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms 210 --tdo 213 --tdi 212 --tck 211
+result=$?
 # 1 is returned upon upgrade success
 if [ $result -eq 1 ]; then
     echo "Upgrade successful."

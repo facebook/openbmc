@@ -35,6 +35,7 @@ gpio_set BMC_SYSCPLD_JTAG_MUX_SEL 1
 echo 1 > /tmp/smbcpld_update
 
 ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms 50 --tdo 51 --tdi 48 --tck 49
+result=$?
 # 1 is returned upon upgrade success
 if [ $result -eq 1 ]; then
     echo "Upgrade successful."

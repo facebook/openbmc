@@ -107,6 +107,7 @@ if [ "$interface" = "jtag" ]; then
     ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" \
               --tms ${JTAG_PINS[2]} --tdo ${JTAG_PINS[0]} \
               --tdi ${JTAG_PINS[1]} --tck ${JTAG_PINS[3]}
+    result=$?
     sleep 1
     # 1 is returned upon upgrade success
     if [ $result -eq 1 ]; then

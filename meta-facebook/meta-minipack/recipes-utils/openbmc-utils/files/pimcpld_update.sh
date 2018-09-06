@@ -82,6 +82,7 @@ pca9534_gpio_add $1
 echo 1 > /tmp/pimcpld_update
 
 ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms ${PINS[1]} --tdo ${PINS[2]} --tdi ${PINS[3]} --tck ${PINS[0]}
+result=$?
 # 1 is returned upon upgrade success
 if [ $result -eq 1 ]; then
     echo "Upgrade successful."

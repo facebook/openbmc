@@ -4151,6 +4151,9 @@ pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
       case BIC_RC_SENSOR_SYSTEM_STATUS:
         sprintf(name, "CPU0_Thermal_Trip");
         valid = true;
+
+        sprintf(crisel, "%s - %s,FRU:%u", name, GETBIT(n_val, 2)?"ASSERT":"DEASSERT", fru);
+        pal_add_cri_sel(crisel);
         break;
       case BIC_RC_SENSOR_VR_HOT:
         sprintf(name, "423_VR_Hot");
@@ -4469,11 +4472,15 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t sen_type = event_data[0];
   char temp_log[512] = {0};
   bool parsed = false;
+  char crisel[128];
 
   switch(snr_num) {
     case PROCHOT_EXT:
-      strcpy(error_log, "");  //Just show event raw data for now
+      strcpy(error_log, "");  
       parsed = true;
+
+      sprintf(crisel, "PROCHOT ASSERT,FRU:%u", fru);
+      pal_add_cri_sel(crisel);
       break;
     case BIC_RC_SENSOR_RAS_CRIT:
     case BIC_RC_SENSOR_RAS_INFO:
@@ -6147,10 +6154,84 @@ pal_nic_otp_disable (float val) {
 }
 
 void
+pal_sensor_assert_handle_tl(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char crisel[128];
+  sensor_desc_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_SENSOR_SOC_TEMP:
+      sprintf(crisel, "SOC Temp %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_SENSOR_P3V3_MB:
+    case BIC_SENSOR_P12V_MB:
+    case BIC_SENSOR_P1V05_PCH:
+    case BIC_SENSOR_P3V3_STBY_MB:
+    case BIC_SENSOR_PV_BAT:
+    case BIC_SENSOR_PVDDR_AB:
+    case BIC_SENSOR_PVDDR_DE:
+    case BIC_SENSOR_PVNN_PCH:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_1V05_PCH_VR_VOL:
+    case BIC_SENSOR_VDDR_AB_VR_VOL:
+    case BIC_SENSOR_VDDR_DE_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_INA230_VOL:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    default:
+      return;
+  }
+
+  pal_add_cri_sel(crisel);
+  return;
+}
+
+void
+pal_sensor_assert_handle_rc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char crisel[128];
+  sensor_desc_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_RC_SENSOR_SOC_TEMP_DIODE:
+      sprintf(crisel, "SOC Temp DIODE %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_RC_SENSOR_SOC_TEMP_IMC: 
+      sprintf(crisel, "SOC Temp IMC %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_RC_SENSOR_P12V_MB:
+    case BIC_RC_SENSOR_P3V3_STBY_MB:
+    case BIC_RC_SENSOR_P3V2_MB:
+    case BIC_RC_SENSOR_PV_BAT:
+    case BIC_RC_SENSOR_PVDDQ_423:
+    case BIC_RC_SENSOR_PVDDQ_510:
+    case BIC_RC_SENSOR_PVDDQ_423_VR_VOL:
+    case BIC_RC_SENSOR_PVDDQ_510_VR_VOL:
+    case BIC_RC_SENSOR_CVR_APC_VOL:
+    case BIC_RC_SENSOR_CVR_CBF_VOL:
+    case BIC_RC_SENSOR_INA230_VOL:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    default:
+      return;
+  }
+
+  pal_add_cri_sel(crisel);
+  return;
+}
+
+void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;
+
+#if defined(CONFIG_FBY2_RC)
+  int ret;
+  uint8_t server_type = 0xFF;
+#endif
 
   switch (thresh) {
     case UNR_THRESH:
@@ -6176,6 +6257,57 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       return;
   }
 
+#if defined(CONFIG_FBY2_RC)
+  switch (snr_num) {
+    case SP_SENSOR_FAN0_TACH:
+      sprintf(crisel, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_FAN1_TACH:
+      sprintf(crisel, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P1V15_BMC_STBY:
+      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P1V2_BMC_STBY:
+      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P2V5_BMC_STBY:
+      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - ASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P5V:
+    case SP_SENSOR_P12V:
+    case SP_SENSOR_P3V3_STBY:
+    case SP_SENSOR_P12V_SLOT1:
+    case SP_SENSOR_P12V_SLOT2:
+    case SP_SENSOR_P12V_SLOT3:
+    case SP_SENSOR_P12V_SLOT4:
+    case SP_SENSOR_P3V3:
+    case SP_P1V8_STBY:
+    case SP_SENSOR_HSC_IN_VOLT:
+      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
+      sprintf(crisel, "%s %s %.2fV - ASSERT", snr_desc->name, thresh_name, val);
+      break;
+    case MEZZ_SENSOR_TEMP:
+      if (thresh >= UNR_THRESH) {
+        pal_nic_otp_enable(val);
+      }
+      return;
+    default:
+      ret = fby2_get_server_type(fru, &server_type);
+      if (ret) {
+        return;
+      }
+      switch (server_type) {
+        case SERVER_TYPE_RC:
+          pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name); 
+          break;
+        case SERVER_TYPE_TL:
+          pal_sensor_assert_handle_tl(fru, snr_num, val, thresh_name);
+          break;
+      }
+      return;
+  }
+#else
   switch (snr_num) {
     case SP_SENSOR_FAN0_TACH:
       sprintf(crisel, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
@@ -6234,6 +6366,76 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     default:
       return;
   }
+#endif
+
+  pal_add_cri_sel(crisel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle_tl(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char crisel[128];
+  sensor_desc_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_SENSOR_SOC_TEMP:
+      sprintf(crisel, "SOC Temp %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_SENSOR_P3V3_MB:
+    case BIC_SENSOR_P12V_MB:
+    case BIC_SENSOR_P1V05_PCH:
+    case BIC_SENSOR_P3V3_STBY_MB:
+    case BIC_SENSOR_PV_BAT:
+    case BIC_SENSOR_PVDDR_AB:
+    case BIC_SENSOR_PVDDR_DE:
+    case BIC_SENSOR_PVNN_PCH:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_1V05_PCH_VR_VOL:
+    case BIC_SENSOR_VDDR_AB_VR_VOL:
+    case BIC_SENSOR_VDDR_DE_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_INA230_VOL:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    default:
+      return;
+  }
+
+  pal_add_cri_sel(crisel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle_rc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char crisel[128];
+  sensor_desc_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_RC_SENSOR_SOC_TEMP_DIODE:
+      sprintf(crisel, "SOC Temp DIODE %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_RC_SENSOR_SOC_TEMP_IMC:
+      sprintf(crisel, "SOC Temp IMC %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_RC_SENSOR_P12V_MB:
+    case BIC_RC_SENSOR_P3V3_STBY_MB:
+    case BIC_RC_SENSOR_P3V2_MB:
+    case BIC_RC_SENSOR_PV_BAT:
+    case BIC_RC_SENSOR_PVDDQ_423:
+    case BIC_RC_SENSOR_PVDDQ_510:
+    case BIC_RC_SENSOR_PVDDQ_423_VR_VOL:
+    case BIC_RC_SENSOR_PVDDQ_510_VR_VOL:
+    case BIC_RC_SENSOR_CVR_APC_VOL:
+    case BIC_RC_SENSOR_CVR_CBF_VOL:
+    case BIC_RC_SENSOR_INA230_VOL:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    default:
+      return;
+  }
 
   pal_add_cri_sel(crisel);
   return;
@@ -6244,6 +6446,11 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;
+
+#if defined(CONFIG_FBY2_RC)
+  int ret;
+  uint8_t server_type = 0xFF;
+#endif
 
   switch (thresh) {
     case UNR_THRESH:
@@ -6269,6 +6476,57 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
       return;
   }
 
+#if defined(CONFIG_FBY2_RC)
+  switch (snr_num) {
+    case SP_SENSOR_FAN0_TACH:
+      sprintf(crisel, "Fan0 %s %.0fRPM - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_FAN1_TACH:
+      sprintf(crisel, "Fan1 %s %.0fRPM - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P1V15_BMC_STBY:
+      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P1V2_BMC_STBY:
+      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P2V5_BMC_STBY:
+      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - DEASSERT", thresh_name, val);
+      break;
+    case SP_SENSOR_P5V:
+    case SP_SENSOR_P12V:
+    case SP_SENSOR_P3V3_STBY:
+    case SP_SENSOR_P12V_SLOT1:
+    case SP_SENSOR_P12V_SLOT2:
+    case SP_SENSOR_P12V_SLOT3:
+    case SP_SENSOR_P12V_SLOT4:
+    case SP_SENSOR_P3V3:
+    case SP_P1V8_STBY:
+    case SP_SENSOR_HSC_IN_VOLT:
+      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
+      sprintf(crisel, "%s %s %.2fV - DEASSERT", snr_desc->name, thresh_name, val);
+      break;
+    case MEZZ_SENSOR_TEMP:
+      if (thresh == UNC_THRESH) {
+        pal_nic_otp_disable(val);
+      }
+      return;
+    default:
+      ret = fby2_get_server_type(fru, &server_type);
+      if (ret) {
+        return;
+      }
+      switch (server_type) {
+        case SERVER_TYPE_RC:
+          pal_sensor_deassert_handle_rc(fru, snr_num, val, thresh_name);
+          break;
+        case SERVER_TYPE_TL:
+          pal_sensor_deassert_handle_tl(fru, snr_num, val, thresh_name);
+          break;
+      }
+      return;
+  }
+#else
   switch (snr_num) {
     case SP_SENSOR_FAN0_TACH:
       sprintf(crisel, "Fan0 %s %.0fRPM - DEASSERT", thresh_name, val);
@@ -6327,6 +6585,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     default:
       return;
   }
+#endif
 
   pal_add_cri_sel(crisel);
   return;
@@ -7121,39 +7380,49 @@ arm_err_parse(uint8_t section_sub_type, char *error_log, uint8_t *sel) {
 }
 
 int
-processor_ras_sel_parse(char *error_log, uint8_t *sel) {
+processor_ras_sel_parse(uint8_t slot, char *error_log, uint8_t *sel, char *crisel) {
   uint8_t section_sub_type = sel[0];
   char temp_log[128] = {0};
+  char crisel_local[128] = {0};
 
   switch(section_sub_type) {
     case CACHE_ERROR:
       sprintf(temp_log, " Section Sub-type: Cache Error,");
       strcat(error_log, temp_log);
       arm_err_parse(section_sub_type, error_log, &sel[1]);
+      sprintf(crisel_local, "Processor %s Cache Error,FRU:%u",crisel, slot);
+      pal_add_cri_sel(crisel_local);
       return 1;
     case TLB_ERROR:
       sprintf(temp_log, " Section Sub-type: TLB Error,");
       strcat(error_log, temp_log);
       arm_err_parse(section_sub_type, error_log, &sel[1]);
+      sprintf(crisel_local, "Processor %s TLB Error,FRU:%u",crisel, slot);
+      pal_add_cri_sel(crisel_local);
       return 1;
     case BUS_ERROR:
       sprintf(temp_log, " Section Sub-type: Bus Error,");
       strcat(error_log, temp_log);
       arm_err_parse(section_sub_type, error_log, &sel[1]);
+      sprintf(crisel_local, "Processor %s Bus Error,FRU:%u",crisel, slot);
+      pal_add_cri_sel(crisel_local);
       return 1;
     case MICRO_ARCH_ERROR:
       sprintf(temp_log, " Section Sub-type: Micro-architectural Error,");
+      sprintf(crisel_local, "Processor %s Micro-architectural Error,FRU:%u",crisel, slot);
       break;
     default:
       sprintf(temp_log, " Section Sub-type: Unknown(0x%x),", section_sub_type);
+      sprintf(crisel_local, "Processor %s Unknown Error,FRU:%u", slot, crisel, slot);
       break;
   }
   strcat(error_log, temp_log);
+  pal_add_cri_sel(crisel_local);
   return 0;
 }
 
 void
-memory_ras_sel_parse(char *error_log, uint8_t *sel) {
+memory_ras_sel_parse(uint8_t slot, char *error_log, uint8_t *sel, char *crisel) {
   uint8_t section_sub_type = sel[0];
   char temp_log[256] = {0};
   uint16_t node = 0;
@@ -7164,6 +7433,7 @@ memory_ras_sel_parse(char *error_log, uint8_t *sel) {
   uint16_t row = 0;
   uint16_t col = 0;
   uint16_t rank = 0;
+  char crisel_local[128] = {0};
 
   switch(section_sub_type) {
     case 0:
@@ -7232,17 +7502,24 @@ memory_ras_sel_parse(char *error_log, uint8_t *sel) {
 
   if(ch_num == 3 && dimm_num == 0) {
     sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM A0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+    sprintf(crisel_local, "DIMM A0 %s err,FRU:%u",crisel, slot);
   } else if(ch_num == 2 && dimm_num == 0) {
     sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM B0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+    sprintf(crisel_local, "DIMM B0 %s err,FRU:%u",crisel, slot);
   } else if(ch_num == 4 && dimm_num == 0) {
     sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM C0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+    sprintf(crisel_local, "DIMM C0 %s err,FRU:%u",crisel, slot);
   } else if(ch_num == 5 && dimm_num == 0) {
     sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: DIMM D0\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+    sprintf(crisel_local, "DIMM D0 %s err,FRU:%u",crisel, slot);
   } else {
     sprintf(temp_log, " Error Specific: \"Node: %d\" \"Card: %d\" \"Module: %d\" \"Bank: %d\" \"Device: %d\" \"Row: %d\" \"Column: %d\" \"Rank Number: %d\" \"Location: Unknown\"", node, ch_num, dimm_num, bank, dev, row, col, rank);
+    sprintf(crisel_local, "DIMM Unknown %s err,FRU:%u",crisel, slot);
   }
 
   strcat(error_log, temp_log);
+  pal_add_cri_sel(crisel_local);
+
   return;
 }
 
@@ -7325,13 +7602,14 @@ pcie_aer_sel_parse(char *error_log, uint8_t *sel) {
 }
 
 void
-pcie_ras_sel_parse(char *error_log, uint8_t *sel) {
+pcie_ras_sel_parse(uint8_t slot, char *error_log, uint8_t *sel, char *crisel) {
   uint8_t section_sub_type = sel[0];
   char temp_log[128] = {0};
   uint8_t fun_num = sel[8];
   uint8_t dev_num = sel[9];
   uint8_t seg_num[2] = {sel[10],sel[11]};
   uint8_t bus_num = sel[12];
+  char crisel_local[128] = {0};
 
   switch(section_sub_type) {
     case 0x00:
@@ -7348,6 +7626,9 @@ pcie_ras_sel_parse(char *error_log, uint8_t *sel) {
   strcat(error_log, temp_log);
 
   pcie_aer_sel_parse(error_log, &sel[17]);
+
+  sprintf(crisel_local, "PCIe err %s (Bus %02X / Dev %02X / Fun %02X),FRU:%u",crisel, bus_num, dev_num, fun_num, slot);
+  pal_add_cri_sel(crisel_local);
 
   return;
 }
@@ -7389,7 +7670,7 @@ qualcomm_fw_ras_sel_parse(char *error_log, uint8_t *sel) {
 }
 
 uint8_t
-pal_err_ras_sel_handle(uint8_t section_type, char *error_log, uint8_t *sel) {
+pal_err_ras_sel_handle(uint8_t slot, uint8_t section_type, char *error_log, uint8_t *sel, char *crisel) {
   char temp_log[256] = {0};
   char tstr[10] = {0};
   char ras_data[256]={0};
@@ -7398,18 +7679,18 @@ pal_err_ras_sel_handle(uint8_t section_type, char *error_log, uint8_t *sel) {
 
   switch(section_type) {
     case 0x00:
-      ret = processor_ras_sel_parse(error_log, sel);
+      ret = processor_ras_sel_parse(slot, error_log, sel, crisel);
       if (ret) {
         return 0;
       }
       break;
     case 0x01:
-      memory_ras_sel_parse(error_log, sel);
+      memory_ras_sel_parse(slot, error_log, sel, crisel);
       return 0;
     case 0x02:  //Not used
       return 0;
     case 0x03:
-      pcie_ras_sel_parse(error_log, sel);
+      pcie_ras_sel_parse(slot, error_log, sel, crisel);
       return 0;
     case 0x04:
       qualcomm_fw_ras_sel_parse(error_log, sel);
@@ -7441,6 +7722,7 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log) {
   uint8_t section_type = sel[2];
   char temp_log[128] = {0};
   strcpy(error_log, "");
+  char crisel[128] = {0};
 
   switch(error_type) {
     case 0x00:
@@ -7466,18 +7748,23 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log) {
   switch(error_severity) {
     case 0x00:
       sprintf(temp_log, " Error Severity: Recoverable(non-fatal uncorrected),");
+      sprintf(crisel, "Recoverable(non-fatal uncorrected)");
       break;
     case 0x01:
       sprintf(temp_log, " Error Severity: Fatal,");
+      sprintf(crisel, "Fatal");
       break;
     case 0x02:
       sprintf(temp_log, " Error Severity: Corrected,");
+      sprintf(crisel, "Corrected");
       break;
     case 0x03:
       sprintf(temp_log, " Error Severity: Informational,");
+      sprintf(crisel, "Informational");
       break;
     default:
       sprintf(temp_log, " Error Severity: Unknown(0x%x),", error_severity);
+      sprintf(crisel, "Unknown");
       break;
   }
   strcat(error_log, temp_log);
@@ -7505,7 +7792,7 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log) {
   }
   strcat(error_log, temp_log);
 
-  pal_err_ras_sel_handle(section_type, error_log, &sel[3]);
+  pal_err_ras_sel_handle(slot, section_type, error_log, &sel[3], crisel);
 
   return 0;
 }

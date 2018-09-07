@@ -1,6 +1,8 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 lib: libncsi.so
 
+CFLAGS += -Wall -Werror
+
 libncsi.so: ncsi.o aen.o
 	$(CC) -shared -o libncsi.so ncsi.o aen.o -lc -lrt $(LDFLAGS)
 

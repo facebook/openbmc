@@ -10,6 +10,10 @@
 #define MAX_RESPONSE_PAYLOAD 256 /* maximum payload size*/
 
 
+#define NCSI_GET_CONTROLLER_PACKET_STATISTICS 0x18
+#define NCSI_GET_NCSI_STATISTICS              0x19
+#define NCSI_GET_NCSI_PASS_THROUGH_STATISTICS 0x1a
+
 typedef struct ncsi_nl_msg_t {
   char dev_name[10];
   unsigned char channel_id;
@@ -76,11 +80,84 @@ typedef struct {
 } __attribute__((packed)) NCSI_Response_Packet;
 
 
+typedef struct {
+  uint32_t counters_cleared_from_last_read_MSB;
+  uint32_t counters_cleared_from_last_read_LSB;
+  uint64_t total_bytes_rcvd;
+  uint64_t total_bytes_tx;
+  uint64_t total_unicast_pkts_rcvd;
+  uint64_t total_multicast_pkts_rcvd;
+  uint64_t total_broadcast_pkts_rcvd;
+  uint64_t total_unicast_pkts_tx;
+  uint64_t total_multicast_pkts_tx;
+  uint64_t total_broadcast_pkts_tx;
+  uint32_t fcs_receive_errs;
+  uint32_t alignment_errs;
+  uint32_t false_carrier_detections;
+  uint32_t runt_pkts_rcvd;
+  uint32_t jabber_pkts_rcvd;
+  uint32_t pause_xon_frames_rcvd;
+  uint32_t pause_xoff_frames_rcvd;
+  uint32_t pause_xon_frames_tx;
+  uint32_t pause_xoff_frames_tx;
+  uint32_t single_collision_tx_frames;
+  uint32_t multiple_collision_tx_frames;
+  uint32_t late_collision_frames;
+  uint32_t excessive_collision_frames;
+  uint32_t control_frames_rcvd;
+  uint32_t rx_frame_64;
+  uint32_t rx_frame_65_127;
+  uint32_t rx_frame_128_255;
+  uint32_t rx_frame_256_511;
+  uint32_t rx_frame_512_1023;
+  uint32_t rx_frame_1024_1522;
+  uint32_t rx_frame_1523_9022;
+  uint32_t tx_frame_64;
+  uint32_t tx_frame_65_127;
+  uint32_t tx_frame_128_255;
+  uint32_t tx_frame_256_511;
+  uint32_t tx_frame_512_1023;
+  uint32_t tx_frame_1024_1522;
+  uint32_t tx_frame_1523_9022;
+  uint64_t valid_bytes_rcvd;
+  uint32_t err_runt_packets_rcvd;
+  uint32_t err_jabber_packets_rcvd;
+} __attribute__((packed)) NCSI_Controller_Packet_Stats_Response;
+
+
+typedef struct {
+  uint32_t cmds_rcvd;
+  uint32_t ctrl_pkts_dropped;
+  uint32_t cmd_type_errs;
+  uint32_t cmd_chksum_errs;
+  uint32_t rx_pkts;
+  uint32_t tx_pkts;
+  uint32_t aens_sent;
+} __attribute__((packed)) NCSI_Stats_Response;
+
+
+typedef struct {
+  uint64_t tx_packets_rcvd_on_ncsi;
+  uint32_t tx_packets_dropped;
+  uint32_t tx_channel_state_err;
+  uint32_t tx_undersize_err;
+  uint32_t tx_oversize_err;
+  uint32_t rx_packets_rcvd_on_lan;
+  uint32_t total_rx_packets_dropped;
+  uint32_t rx_channel_state_err;
+  uint32_t rx_undersize_err;
+  uint32_t rx_oversize_err;
+} __attribute__((packed)) NCSI_Passthrough_Stats_Response;
+
 int ncsi_init_if(int);
 void handle_ncsi_config(void);
 int getMacAddr(int *values);
 int checkValidMacAddr(int *value);
 int check_ncsi_status(void);
-void print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf);
+void print_ncsi_resp(int cmd, NCSI_NL_RSP_T *rcv_buf);
+void print_ncsi_controller_stats(NCSI_NL_RSP_T *rcv_buf);
+void print_ncsi_stats(NCSI_NL_RSP_T *rcv_buf);
+void print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf);
+
 
 #endif

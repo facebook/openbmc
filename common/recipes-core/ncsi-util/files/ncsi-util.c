@@ -48,6 +48,7 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   struct iovec iov;
   struct msghdr msg;
   int msg_size = sizeof(NCSI_NL_MSG_T);
+  int cmd = nl_msg->cmd;
 
   /* msg response from kernel */
   NCSI_NL_RSP_T *rcv_buf;
@@ -99,7 +100,8 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   /* Read message from kernel */
   recvmsg(sock_fd, &msg, 0);
   rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
-  print_ncsi_resp(rcv_buf);
+
+  print_ncsi_resp(cmd, rcv_buf);
 
   free(nlh);
 close_and_exit:
@@ -115,6 +117,7 @@ showUsage(void) {
   printf("       -h             This help\n");
   printf("       -n netdev      Specifies the net device to send command to [default=\"eth0\"]\n");
   printf("       -c channel     Specifies the NC-SI channel on the net device [default=0]\n");
+  printf("       -S             show adapter statistics");
   printf("Sample: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
 }
@@ -126,6 +129,7 @@ main(int argc, char **argv) {
   int argflag;
   char * netdev = NULL;
   int channel = 0;
+  int fshowethstats = 0;
 
   if (argc < 2)
     goto err_exit;
@@ -136,7 +140,7 @@ main(int argc, char **argv) {
     return -1;
   }
   memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-  while ((argflag = getopt(argc, (char **)argv, "hn:c:?")) != -1)
+  while ((argflag = getopt(argc, (char **)argv, "hSn:c :?")) != -1)
   {
     switch(argflag) {
     case 'n':
@@ -153,6 +157,9 @@ main(int argc, char **argv) {
               goto free_exit;
             }
             break;
+    case 'S':
+           fshowethstats = 1;
+           break;
     case 'h':
     default :
             goto free_exit;
@@ -165,11 +172,17 @@ main(int argc, char **argv) {
     sprintf(msg->dev_name, "eth0");
   }
   msg->channel_id = channel;
-  msg->cmd = (int)strtoul(argv[optind++], NULL, 0);
-  msg->payload_length = argc - optind;
-  for (i=0; i<msg->payload_length; ++i) {
-    msg->msg_payload[i] = (int)strtoul(argv[i + optind], NULL, 0);
-  }
+
+  if (fshowethstats) {
+    msg->cmd = NCSI_GET_CONTROLLER_PACKET_STATISTICS;
+    msg->payload_length =0;
+  } else {
+    msg->cmd = (int)strtoul(argv[optind++], NULL, 0);
+    msg->payload_length = argc - optind;
+    for (i=0; i<msg->payload_length; ++i) {
+      msg->msg_payload[i] = (int)strtoul(argv[i + optind], NULL, 0);
+   }
+ }
 
 #ifdef DEBUG
   printf("debug prints:");

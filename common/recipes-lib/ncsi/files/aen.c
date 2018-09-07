@@ -105,7 +105,7 @@ process_NCSI_AEN(AEN_Packet *buf)
     // Invalid AEN packet
     syslog(LOG_NOTICE, "ncsid: Invalid NCSI AEN rcvd: MC_ID=0x%x Rev=0x%x IID=0x%x\n",
            buf->MC_ID, buf->Header_Revision, buf->IID);
-    return;
+    return 0;
   }
 
   buf->Payload_Length = ntohs(buf->Payload_Length);

@@ -218,6 +218,12 @@ pal_set_imc_version(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *r
 }
 
 uint8_t __attribute__((weak))
+pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_EOK;
+}
+
+uint8_t __attribute__((weak))
 pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
   return PAL_EOK;

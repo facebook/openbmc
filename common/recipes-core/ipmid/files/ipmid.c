@@ -3012,6 +3012,20 @@ oem_set_pcie_port_config(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_add_cper_log(unsigned char *request, unsigned char req_len,
+            unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  *res_len = 0;
+
+  res->cc = pal_add_cper_log(req->payload_id, req->data, req_len, res->data, res_len);
+
+  return;
+}
+
+static void
 oem_bbv_power_cycle ( unsigned char *request, unsigned char req_len,
                   unsigned char *response, unsigned char *res_len)
 {
@@ -3170,6 +3184,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
     case CMD_OEM_BBV_POWER_CYCLE:
       oem_bbv_power_cycle(request, req_len, response, res_len);
       break;
+    case CMD_OEM_ADD_CPER_LOG:
+      oem_add_cper_log(request, req_len, response, res_len);
+      break;  
     default:
       res->cc = CC_INVALID_CMD;
       break;

@@ -373,6 +373,39 @@ struct ras_pcie_aer_info aer_cor_err_sts[] = {
   {"Header Log Overflow", 15}
 };
 
+static const char * const pcie_port_type_strs[] = {
+	"PCIe end point",
+	"legacy PCI end point device",
+	"unknown",
+	"unknown",
+	"root port",
+	"upstream switch port",
+	"downstream switch port",
+	"PCIe to PCI/PCI-X bridge",
+	"PCI/PCI-X to PCIe bridge",
+	"root complex integrated endpoint device",
+	"root complex event collector",
+};
+
+static const char * const memory_error_type_strs[] = {
+	"Unknown",
+	"No eeror",
+	"Single-bit ECC",
+	"Multi-bit ECC",
+	"Single-symbol ChipKill ECC",
+	"Multi-symbol ChipKill ECC",
+	"Master abort",
+	"Target abort",
+	"Parity Error",
+	"Watchdog timeout",
+	"invalid address",
+  "Mirror Broken",
+  "Memory Sparing",
+  "Scrub corrected error",
+  "Scrub uncorrected error",
+  "Physical Memory Map-out event",
+};
+
 /* curr/power calibration */
 static void
 power_value_adjust(const struct power_coeff *table, float *value) {
@@ -7795,6 +7828,452 @@ pal_parse_ras_sel(uint8_t slot, uint8_t *sel, char *error_log) {
   pal_err_ras_sel_handle(slot, section_type, error_log, &sel[3], crisel);
 
   return 0;
+}
+
+uint8_t    
+oem_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len)
+{
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  char error_log[1024] = {0};
+  char temp_log[512] = {0};
+  uint16_t Error_Type = 0;
+  uint8_t Error_location = 0;
+  uint32_t Error_Register0 = 0;
+  uint32_t Error_Register1 = 0;
+  uint16_t Error_Register2 = 0;
+  uint8_t Source_node = 0;
+  uint8_t Destination_node = 0;
+  uint8_t Source_ICI = 0;
+  uint8_t Destination_ICI = 0;
+  uint32_t CRC_Error_Threshold = 0;
+  uint16_t Link_Retrain_threshold = 0;
+  uint16_t Link_Retry_Count = 0;
+  uint16_t Link_Retrain_Window = 0;
+  uint32_t Raw_ICS_Error_Info = 0;
+
+  sprintf(temp_log, "SEL Entry: ");
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");   
+
+  Error_Type = req_data[26] << 8 | req_data[25];
+
+  if (Error_Type == 0) {
+
+    if (req_data[27] & 0x1) {
+      sprintf(temp_log, "CCPI Error Type:Fatal Error for Node Tables");  
+    } else if (req_data[27] & 0x2) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for Req VC");
+    } else if (req_data[27] & 0x4) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for Snp VC");
+    } else if (req_data[27] & 0x8) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for RspSnp VC");
+    } else if (req_data[27] & 0x10) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for Rsp VC");
+    } else if (req_data[27] & 0x20) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for Cmpl VC");
+    } else if (req_data[27] & 0x40) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for Data VC");
+    } else if (req_data[27] & 0x80) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for Gic VC");
+    } else if (req_data[28] & 0x1) {
+        sprintf(temp_log, "CCPI Error Type:Fatal Error for NodeCmd Hwf Read/Write");
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+
+    if (req_data[29] & 0x1) {
+      Source_node = req_data[31];
+      sprintf(temp_log, "  Src node:%d", Source_node);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }
+
+    if (req_data[29] & 0x4) {
+      Destination_node = req_data[32];
+      sprintf(temp_log, "  Dst node:%d", Destination_node);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }  
+
+    if (req_data[29] & 0x2) {
+      Source_ICI = req_data[33];
+      sprintf(temp_log, "  Src ICI:%d", Source_ICI);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }   
+
+    if (req_data[29] & 0x8) {
+      Destination_ICI = req_data[34];
+      sprintf(temp_log, "  Dst ICI:%d", Destination_ICI);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }        
+
+    if (req_data[29] & 0x10) {
+      CRC_Error_Threshold = req_data[37] << 16 | req_data[36] << 8 | req_data[35];
+      sprintf(temp_log, "  CRC_Error Threshold:%d", CRC_Error_Threshold);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }  
+
+    if (req_data[29] & 0x20) {
+      Link_Retrain_threshold = req_data[39] << 8 | req_data[38];
+      sprintf(temp_log, "  Link Retrain threshold:%d", Link_Retrain_threshold);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }
+
+    if (req_data[29] & 0x40) {
+      Link_Retry_Count = req_data[41] << 8 | req_data[40];
+      sprintf(temp_log, "  Link Retry Count:%d", Link_Retry_Count);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }
+
+    if (req_data[29] & 0x80) {
+      Link_Retrain_Window = req_data[43] << 8 | req_data[42];
+      sprintf(temp_log, "  Link Retrain Window:%d", Link_Retrain_Window);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }   
+
+    if (req_data[30] & 0x1) {
+      Raw_ICS_Error_Info = req_data[46] << 16 | req_data[45] << 8 | req_data[44];
+      sprintf(temp_log, "  Raw ICS Error Info:%6x", Raw_ICS_Error_Info);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }       
+
+  } else if (Error_Type == 1) {
+
+    if (req_data[27] & 0x1) {
+      if (req_data[29] & 0x1) {
+        sprintf(temp_log, "Error Mask:NBU Tag Correctable ECC Error");
+      } else if (req_data[29] & 0x2) {
+        sprintf(temp_log, "Error Mask:NBU Tag Uncorrectable ECC Error");
+      } else if (req_data[29] & 0x4) {
+        sprintf(temp_log, "Error Mask:NBU BAR Address Error");
+      } else if (req_data[29] & 0x8) {
+        sprintf(temp_log, "Error Mask:NBU Snoop Filter Correctable ECC Error");
+      } else if (req_data[29] & 0x10) {
+        sprintf(temp_log, "Error Mask:NBU Snoop Filter Uncorrectable ECC Error");
+      } else if (req_data[29] & 0x20) {
+        sprintf(temp_log, "Error Mask:NBU Timeout Error");
+      }
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }
+
+    if( (req_data[27] & 0x4) || (req_data[27] & 0x8))
+    {
+      Error_location = req_data[32];
+      sprintf(temp_log, "  Error Location:%d" ,Error_location);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");     
+    }
+
+    if(req_data[27] & 0x10) {
+      if (req_data[32] == 0) {
+        sprintf(temp_log, "  Subtype:NBU BAR Error");
+      } else if (req_data[32] & 0x1) {
+        sprintf(temp_log, "  Subtype:NBU Timeout Error");
+      } else if (req_data[32] & 0x2) {
+        sprintf(temp_log, "  Subtype:NBU Snoop Filter ECC Error");
+      } else if ((req_data[32] & 0x1) && (req_data[32] & 0x2)) {
+        sprintf(temp_log, "  Subtype:NBU Snoop Filter Count Error");
+      } else if (req_data[32] & 0x4) {
+        sprintf(temp_log, "  Subtype:NBU Tag Error");
+      }
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");      
+    }
+
+    if(req_data[27] & 0x20) {
+      Error_Register0 = req_data[36] << 24 | req_data[35] << 16 | req_data[34] << 8 | req_data[33];
+      sprintf(temp_log, "  Error Register0:0x%08x", Error_Register0);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");      
+    }
+
+    if(req_data[27] & 0x40) {
+      Error_Register1 = req_data[40] << 24 | req_data[39] << 16 | req_data[38] << 8 | req_data[37];
+      sprintf(temp_log, "  Error Register1:0x%08x", Error_Register1);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");       
+    }
+
+    if(req_data[27] & 0x80) {
+      Error_Register2 = req_data[42] << 8 | req_data[41];
+      sprintf(temp_log, "  Error Register2:0x%04x", Error_Register2);
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");         
+    }       
+  }  
+  syslog(LOG_CRIT, "%s", error_log);
+  completion_code = CC_SUCCESS;
+  return completion_code;    
+}
+
+uint8_t    
+pci_express_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len)
+{
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  uint32_t port_type = 0;
+  uint8_t minor_version_bcd = 0;
+  uint8_t major_version_bcd = 0;
+  uint16_t pci_command_register = 0;
+  uint16_t pci_status_register = 0;
+  uint16_t vendorID = 0;
+  uint16_t deviceID = 0;
+  uint16_t class_code = 0;
+  uint8_t function_num = 0;
+  uint8_t device_num = 0;
+  uint16_t seqment_num = 0;
+  uint8_t root_port_pri_bus_num = 0;
+  uint8_t root_port_sec_bus_num = 0;
+  uint16_t slot_num = 0;
+  uint32_t serial_num_lower = 0;
+  uint32_t serial_num_upper = 0;
+  uint16_t bridge_secondary_status_register = 0;
+  uint16_t bridge_control_register = 0;
+  char error_log[1024] = {0};
+  char temp_log[512] = {0};  
+
+  sprintf(temp_log, "SEL Entry: ");
+  strcat(error_log, temp_log);
+  strcpy(temp_log, ""); 
+
+  if (req_data[25] & 0x1) {
+    //port_type
+    port_type = req_data[36] << 24 | req_data[35] << 16 | req_data[34] << 8 | req_data[33];
+    if(port_type < (sizeof(pcie_port_type_strs) / sizeof(pcie_port_type_strs[0]))) { 
+      sprintf(temp_log, "Port Type:%s", pcie_port_type_strs[port_type]);
+    }
+    else {
+      sprintf(temp_log, "Port Type:Unknown");
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");            
+  }  
+
+  if (req_data[25] & 0x2) {
+    //version
+    minor_version_bcd = req_data[37];
+    major_version_bcd = req_data[38];
+    sprintf(temp_log, "  Version:%d.%d", major_version_bcd, minor_version_bcd);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");       
+  }  
+
+  if (req_data[25] & 0x4) {
+    //command & status
+    pci_command_register = req_data[42] << 8 | req_data[41];
+    pci_status_register =  req_data[44] << 8 | req_data[43];
+    sprintf(temp_log, "  Command:0x%04x  Status:0x%04x", pci_command_register, pci_status_register);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");     
+  } 
+
+  if (req_data[25] & 0x8) {
+    //deviceID
+    vendorID = req_data[50] << 8 | req_data[49];
+    deviceID = req_data[52] << 8 | req_data[51];
+    class_code = req_data[55] << 16 | req_data[54] << 8 | req_data[53];
+    function_num = req_data[56];
+    device_num = req_data[57];
+    seqment_num = req_data[59] << 8 |  req_data[58];
+    root_port_pri_bus_num = req_data[60];
+    root_port_sec_bus_num = req_data[61];
+    slot_num = req_data[63] << 5 | ((req_data[62] & 0xF8) >> 3);
+    sprintf(temp_log, "  Device_id:%04x:%02x:%02x.%x  Slot:%d  Secondary_bus:0x%02x  Vendor_id:0x%04x  Device_id:0x%04x  class_code:%06x", seqment_num, root_port_pri_bus_num, device_num, function_num, slot_num, root_port_sec_bus_num, vendorID, deviceID, class_code);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");    
+  } 
+
+  if (req_data[25] & 0x10) {
+    //serial Num
+    serial_num_lower = req_data[68] << 24 | req_data[67] << 16 | req_data[66] << 8 | req_data[65];
+    serial_num_upper = req_data[72] << 24 | req_data[71] << 16 | req_data[70] << 8 | req_data[69];
+    sprintf(temp_log, "  Serial Number:0x%04x, 0x%04x", serial_num_lower, serial_num_upper);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");     
+  }  
+
+  if (req_data[25] & 0x20) {
+    //bridge control status
+    bridge_secondary_status_register = req_data[74] << 8 | req_data[73];
+    bridge_control_register = req_data[76] << 8 | req_data[75];
+    sprintf(temp_log, "  bridge:secondary_status:0x%04x, control: 0x%04x", bridge_secondary_status_register, bridge_control_register);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");      
+  }     
+
+  syslog(LOG_CRIT, "%s", error_log);
+  completion_code = CC_SUCCESS;
+  return completion_code;  
+}
+
+uint8_t    
+memory_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len)
+{
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  char error_log[512] = {0};
+  char temp_log[256] = {0};
+  uint16_t node = 0;
+  uint16_t card = 0;
+  uint16_t module = 0;
+  uint16_t bank = 0;
+  uint16_t dev = 0;
+  uint32_t row = 0;
+  uint16_t col = 0;
+  uint16_t bit = 0;
+  uint16_t rank = 0;
+  uint8_t  ErrorType = 0;
+  uint64_t phy_address = 0;
+  bool first = true; 
+
+  sprintf(temp_log, "SEL Entry: ");
+  strcat(error_log, temp_log);
+  strcpy(temp_log, "");   
+
+  if (req_data[25] & 0x2) {
+    phy_address = req_data[48] << 56 | req_data[47] << 48 | req_data[46] << 40 | req_data[45] << 32 | req_data[44] << 24 | req_data[43] << 16 | req_data[42] << 8 | req_data[41];
+    sprintf(temp_log, "phy_address:0x%x", phy_address);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, ""); 
+    first = false;
+  }
+
+  if(req_data[25] & 0x8) {
+    node = req_data[58] << 8 | req_data[57];
+    if(first)
+      sprintf(temp_log, "Node:%d", node);   
+    else
+      sprintf(temp_log, "  Node:%d", node);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+    first = false;      
+  }
+
+  if(req_data[25] & 0x10) {
+    card = req_data[60] << 8 | req_data[59];
+    sprintf(temp_log, "  Card:%d", card);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");      
+  }  
+  
+  if(req_data[25] & 0x20) {
+    module = req_data[62] << 8 | req_data[61];
+    sprintf(temp_log, "  module:%d", module);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");     
+  }
+
+  if(req_data[25] & 0x40) {
+    bank = req_data[64] << 8 | req_data[63];
+    sprintf(temp_log, "  Bank:%d", bank);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");     
+  }  
+
+  if (req_data[25] & 0x80) {
+    dev = req_data[66] << 8 | req_data[65];
+    sprintf(temp_log, "  dev:%d", dev);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");    
+  }
+
+  if (req_data[26] & 0x1) {
+    row = req_data[68] << 8 | req_data[67];
+    sprintf(temp_log, "  Row:%d", row);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");    
+  } else if (req_data[27] & 0x4) {
+    row = ((req_data[98] & 0x3) << 16) | req_data[68] << 8 | req_data[67];
+    sprintf(temp_log, "  Row:%d", row);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");    
+  }
+
+  if (req_data[26] & 0x2) {
+    col = req_data[70] << 8 | req_data[69];
+    sprintf(temp_log, "  Column:%d", col);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");    
+  }
+
+  if (req_data[26] & 0x4) {
+    bit = req_data[72] << 8 | req_data[71];
+    sprintf(temp_log, "  Bit_Position:%d", bit);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");    
+  }
+
+  if (req_data[26] & 0x40) {
+    ErrorType = req_data[97];
+    if ( ErrorType < (sizeof(memory_error_type_strs) / sizeof(memory_error_type_strs[0]))) {
+      sprintf(temp_log, "  ErrorType:%s", memory_error_type_strs[ErrorType]);
+    } else {
+      sprintf(temp_log, "  ErrorType: Unknown");
+    }
+    strcat(error_log, temp_log);
+    strcpy(temp_log, ""); 
+  }  
+
+  if (req_data[26] & 0x80) {
+    rank = req_data[100] << 8 | req_data[99];
+    sprintf(temp_log, "  Rank_Number:%d", rank);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, ""); 
+  }
+
+  syslog(LOG_CRIT, "%s", error_log);
+  completion_code = CC_SUCCESS;
+  return completion_code;  
+} 
+
+
+uint8_t
+pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+
+  if ( req_data[16] == 0xb8 &&
+       req_data[17] == 0x63 &&
+       req_data[18] == 0x3e &&
+       req_data[19] == 0x83 &&
+       req_data[20] == 0xed &&
+       req_data[21] == 0x7c &&
+       req_data[22] == 0x83 &&
+       req_data[23] == 0xb1  )
+  {
+    //Memory Error Section
+    memory_error_sec_sel_parse(slot, req_data, req_len);  
+  } else if ( req_data[16] == 0xad &&
+              req_data[17] == 0x91 &&
+              req_data[18] == 0xb4 &&
+              req_data[19] == 0x4d &&
+              req_data[20] == 0xcb &&
+              req_data[21] == 0x3c &&
+              req_data[22] == 0x6f &&
+              req_data[23] == 0x35  )
+  {
+    //PCI Express Error Section
+    pci_express_error_sec_sel_parse(slot, req_data, req_len);
+  } else if ( req_data[16] == 0xa9 &&
+              req_data[17] == 0x36 &&
+              req_data[18] == 0x5d &&
+              req_data[19] == 0x6a &&
+              req_data[20] == 0xc5 &&
+              req_data[21] == 0x7c &&
+              req_data[22] == 0xd2 &&
+              req_data[23] == 0xfc  )
+  {
+    //oem specific Error Section
+    oem_error_sec_sel_parse(slot, req_data, req_len);
+  }
+
+  completion_code = CC_SUCCESS;
+  return completion_code;
 }
 
 uint8_t

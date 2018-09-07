@@ -3731,6 +3731,9 @@ conn_handler(client_t *cli) {
   unsigned char req_buf[MAX_IPMI_MSG_SIZE];
   unsigned char res_buf[MAX_IPMI_MSG_SIZE];
   size_t req_len = MAX_IPMI_MSG_SIZE, res_len = 0;
+  
+  memset(req_buf, 0, sizeof(req_buf));
+  memset(res_buf, 0, sizeof(res_buf));
 
   if (ipc_recv_req(cli, req_buf, &req_len, TIMEOUT_IPMI)) {
     syslog(LOG_WARNING, "ipmid: recv() failed\n");

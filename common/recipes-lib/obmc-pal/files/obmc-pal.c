@@ -31,15 +31,8 @@
 #include "obmc-pal.h"
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
-#define SETMASK(y)          (1 << y)
 
 // PAL functions
-int __attribute__((weak))
-pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr)
-{
-  return PAL_EOK;
-}
-
 int __attribute__((weak))
 pal_is_bmc_por(void)
 {
@@ -346,26 +339,6 @@ pal_get_fruid_name(uint8_t fru, char *name)
 }
 
 int __attribute__((weak))
-pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t *value)
-{
-  *value = 2;
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
-{
-  *cnt = 0;
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
 pal_fruid_write(uint8_t slot, char *path)
 {
   return PAL_EOK;
@@ -373,47 +346,6 @@ pal_fruid_write(uint8_t slot, char *path)
 
 int __attribute__((weak))
 pal_get_fru_devtty(uint8_t fru, char *devtty)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_sensor_check(uint8_t fru, uint8_t sensor_num)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value)
 {
   return PAL_EOK;
 }
@@ -478,13 +410,6 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver)
 
 int __attribute__((weak))
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
-pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
-    uint8_t o_val, uint8_t n_val)
 {
   return PAL_EOK;
 }
@@ -1310,18 +1235,6 @@ pal_is_test_board(void)
 {
   //Non Test Board:0
   return 0;
-}
-
-void __attribute__((weak))
-pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
-{
-  return;
-}
-
-void __attribute__((weak))
-pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
-{
-  return;
 }
 
 int __attribute__((weak))

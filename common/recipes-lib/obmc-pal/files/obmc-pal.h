@@ -36,6 +36,7 @@ extern "C" {
 #define GETBIT(x, y)        ((x & (1 << y)) > y)
 #define CLEARBIT(x, y)      (x & (~(1 << y)))
 #define GETMASK(y)          (1 << y)
+#define SETMASK(y)          (1 << y)
 
 // for threshold-util
 #define THRESHOLD_PATH     "/tmp/thresh-cache"

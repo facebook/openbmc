@@ -23,7 +23,6 @@ SRC_URI += "file://board-utils.sh \
             file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://fpga_ver.sh \
-            file://led_upgrade_mode.sh \
             file://pdbcpld_update.sh \
             file://peutil \
             file://pimcpld_update.sh \
@@ -38,12 +37,10 @@ SRC_URI += "file://board-utils.sh \
             file://setup_i2c.sh \
             file://setup_mgmt.sh \
             file://setup_pcie_repeater.sh \
-            file://setup_system_monitor.sh \
             file://seutil \
             file://smbcpld_update.sh \
             file://sol.sh \
             file://spi_util.sh \
-            file://system_monitor.sh \
             file://us_console.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
@@ -55,7 +52,6 @@ OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     fcmcpld_update.sh \
     fpga_ver.sh \
-    led_upgrade_mode.sh \
     presence_util.sh \
     peutil \
     pdbcpld_update.sh \
@@ -66,12 +62,10 @@ OPENBMC_UTILS_FILES += " \
     set_sled.sh \
     setup_mgmt.sh \
     setup_pcie_repeater.sh \
-    setup_system_monitor.sh \
     seutil \
     smbcpld_update.sh \
     sol.sh \
     spi_util.sh \
-    system_monitor.sh \
     us_console.sh \
     wedge_power.sh \
     wedge_us_mac.sh \
@@ -116,9 +110,7 @@ do_install_board() {
 
     install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
     update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
-    
-    install -m 0755 ${WORKDIR}/setup_system_monitor.sh ${D}${sysconfdir}/init.d/setup_system_monitor.sh
-    update-rc.d -r ${D} setup_system_monitor.sh start 99 2 3 4 5 .
+
 }
 
 do_install_append() {

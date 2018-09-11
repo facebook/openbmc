@@ -531,6 +531,33 @@ read_device(const char *device, int *value) {
   }
 }
 
+// Helper Functions
+static int
+read_device_float(const char *device, float *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return err;
+  }
+
+  rc = fscanf(fp, "%f", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
 static int
 write_device(const char *device, const char *value) {
   FILE *fp;
@@ -5746,4 +5773,406 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   /* Write the value "0" which means FRU_STATUS_BAD */
   return pal_set_key_value(key, cvalue);
+
+}
+
+void
+init_led(void)
+{
+  int dev, ret;
+  dev = open("/dev/i2c-50", O_RDWR);
+  if(dev < 0) {
+    syslog(LOG_ERR, "%s: open() failed\n", __func__);
+    return;
+  }
+  
+  ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_SIM_LED);
+  if(ret < 0) {
+    syslog(LOG_ERR, "%s: ioctl() assigned i2c addr failed\n", __func__);
+    close(dev);
+    return;
+  }
+  
+  i2c_smbus_write_byte_data(dev, 0x06, 0x00);
+  i2c_smbus_write_byte_data(dev, 0x07, 0x00);
+  close(dev);
+  
+  return;
+}
+
+int
+set_sled(int brd_rev, uint8_t color, int led_name)
+{
+  int dev, ret;
+  uint8_t io0_reg = 0x02, io1_reg = 0x03;
+  uint8_t clr_val, val_io0, val_io1;
+  dev = open("/dev/i2c-50", O_RDWR);
+  if(dev < 0) {
+    syslog(LOG_ERR, "%s: open() failed\n", __func__);
+    return -1;
+  }
+
+  ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_SIM_LED);
+  if(ret < 0) {
+    syslog(LOG_ERR, "%s: ioctl() assigned i2c addr failed\n", __func__);
+    close(dev);
+    return -1;
+  }
+  val_io0 = i2c_smbus_read_byte_data(dev, 0x02);
+  if(val_io0 < 0) {
+    close(dev);
+    syslog(LOG_ERR, "%s: i2c_smbus_read_byte_data failed\n", __func__);
+    return -1;
+  }
+  
+  val_io1 = i2c_smbus_read_byte_data(dev, 0x03);
+  if(val_io1 < 0) {
+    close(dev);
+    syslog(LOG_ERR, "%s: i2c_smbus_read_byte_data failed\n", __func__);
+    return -1;
+  }
+  
+  clr_val = color;
+  
+  if(brd_rev == 0 || brd_rev == 4) {
+    if(led_name == SLED_SMB || led_name == SLED_PSU) {
+      clr_val = clr_val << 3;
+      val_io0 = (val_io0 & 0x7) | clr_val;
+      val_io1 = (val_io1 & 0x7) | clr_val;
+    }
+    else if(led_name == SLED_SYS || led_name == SLED_FAN) {
+      val_io0 = (val_io0 & 0x38) | clr_val;
+      val_io1 = (val_io1 & 0x38) | clr_val;
+    }
+    else 
+      syslog(LOG_WARNING, "%s: unknown led name\n", __func__);
+
+    if(led_name == SLED_PSU || led_name == SLED_FAN) {
+      i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
+    } else {
+      i2c_smbus_write_byte_data(dev, io1_reg, val_io1);
+    }
+  }
+  else {
+    if(led_name == SLED_FAN || led_name == SLED_SMB) {
+      clr_val = clr_val << 3;
+      val_io0 = (val_io0 & 0x7) | clr_val;
+      val_io1 = (val_io1 & 0x7) | clr_val;
+    }
+    else if(led_name == SLED_SYS || led_name == SLED_PSU) {
+      val_io0 = (val_io0 & 0x38) | clr_val;
+      val_io1 = (val_io1 & 0x38) | clr_val;
+    }
+    else {
+      syslog(LOG_WARNING, "%s: unknown led name\n", __func__);
+    }
+
+    if(led_name == SLED_SYS || led_name == SLED_FAN) {
+      i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
+    } else {
+      i2c_smbus_write_byte_data(dev, io1_reg, val_io1);
+    }
+  }
+
+  close(dev);
+  return 0;
+}
+
+
+static void
+upgrade_led_blink(int brd_rev,
+                uint8_t sys_ug, uint8_t fan_ug, uint8_t psu_ug, uint8_t smb_ug)
+{
+  static uint8_t sys_alter = 0, fan_alter = 0, psu_alter = 0, smb_alter = 0;
+  
+  if(sys_ug) {
+    if(sys_alter == 0) {
+      set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
+      sys_alter = 1;
+    } else {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
+      sys_alter = 0;
+    }
+  }
+  if(fan_ug) {
+    if(fan_alter == 0) {
+      set_sled(brd_rev, SLED_CLR_BLUE, SLED_FAN);
+      fan_alter = 1;
+    } else {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
+      fan_alter = 0;
+    }
+  }
+  if(psu_ug) {
+    if(psu_alter == 0) {
+      set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
+      psu_alter = 1;
+    } else {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      psu_alter = 0;
+    }
+  }
+  if(smb_ug) {
+    if(smb_alter == 0) {
+      set_sled(brd_rev, SLED_CLR_BLUE, SLED_SMB);
+      smb_alter = 1;
+    } else {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SMB);
+      smb_alter = 0;
+    }
+  }
+}
+
+int
+pal_mon_fw_upgrade
+(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, 
+              uint8_t *psu_ug, uint8_t *smb_ug)
+{
+  char cmd[3];
+  FILE *fp;
+  int ret=-1;
+  char *buf_ptr;
+  int buf_size = 1000;
+  int str_size = 200;
+  int tmp_size;
+  char str[200];
+  snprintf(cmd, 3, "ps");
+  fp = popen(cmd, "r");
+  if(NULL == fp)
+     return -1;
+ 
+  buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
+  memset(buf_ptr, 0, sizeof(char));
+  tmp_size = str_size;
+  while(fgets(str, str_size, fp) != NULL) {
+    tmp_size = tmp_size + str_size;
+    if(tmp_size + str_size >= buf_size) {
+      buf_ptr = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
+      buf_size *= 2;
+    }
+    if(!buf_ptr) {
+      syslog(LOG_ERR, 
+             "%s realloc() fail, please check memory remaining", __func__);
+      goto free_buf;
+    }
+    strncat(buf_ptr, str, str_size);
+  }
+
+  //check whether sys led need to blink
+  //TH3
+  *sys_ug = (strstr(buf_ptr, "m95m02-util") != NULL) ? 
+            ((strstr(buf_ptr, "write") != NULL) ? 1 : 0) : 0;
+  if(*sys_ug) goto fan_state;
+  
+  *sys_ug = (strstr(buf_ptr, "flashrom") != NULL) ? 
+           ((strstr(buf_ptr, "spidev2.0") != NULL) &&
+            (strstr(buf_ptr, "-w") != NULL) ? 1 : 0) : 0;
+  if(*sys_ug) goto fan_state;
+
+  *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
+  if(*sys_ug) goto fan_state;
+  
+  *sys_ug = (strstr(buf_ptr, "pimcpld_update") != NULL) ? 1 : 0;
+  if(*sys_ug) goto fan_state;
+  
+  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ? 
+          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
+  if(*sys_ug) goto fan_state;
+  
+  //check whether fan led need to blink
+fan_state:
+  *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
+  
+  //check whether fan led need to blink
+  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ? 
+          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
+
+  //check whether smb led need to blink
+  *smb_ug = (strstr(buf_ptr, "smbcpld_update") != NULL) ? 1 : 0;
+  if(*smb_ug) goto close_fp;
+
+  *smb_ug = (strstr(buf_ptr, "pdbcpld_update") != NULL) ? 1 : 0;
+  if(*smb_ug) goto close_fp;
+
+  *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
+  if(*smb_ug) goto close_fp;
+
+  *smb_ug = (strstr(buf_ptr, "flashrom") != NULL) ? 
+           ((strstr(buf_ptr, "spidev1.0") != NULL) &&
+            (strstr(buf_ptr, "-w") != NULL) ? 1 : 0) : 0;
+  if(*smb_ug) goto close_fp;
+  
+  //BCM5396
+  //NOTE: 
+  //We found that there are only 80 char in each line sometimes.
+  //Thus, using the partial words to replace the critical words.
+  *smb_ug = (strstr(buf_ptr, "at93cx6_util_py") != NULL) ? 
+           ((strstr(buf_ptr, " wri") != NULL) &&
+            (strstr(buf_ptr, "spi_util") != NULL) ? 1 : 0) : 0;
+  if(*smb_ug) goto close_fp;
+
+close_fp:
+  ret = pclose(fp);
+  if(-1 == ret)
+     syslog(LOG_ERR, "%s pclose() fail ", __func__);
+
+  upgrade_led_blink(brd_rev, *sys_ug, *fan_ug, *psu_ug, *smb_ug);
+
+free_buf:
+  free(buf_ptr);
+  return 0;
+}
+
+
+
+void set_sys_led(int brd_rev)
+{
+  uint8_t fru;
+  uint8_t ret = 0;
+  uint8_t prsnt = 0;
+  ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
+  if (ret) {
+    syslog(LOG_ERR, 
+           "%s, scm: cannot get smbcpld register value.", __func__);
+    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
+    return;
+  }
+  if (!prsnt) {
+    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
+    return;
+  }
+  
+  for(fru = FRU_PIM1; fru <= FRU_PIM8; fru++){
+    ret = pal_is_fru_prsnt(fru, &prsnt);
+    if (ret) {
+      syslog(LOG_ERR, 
+             "%s, pim%d: cannot get smbcpld register value.", __func__, fru);
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
+      return;
+    }
+    if (!prsnt) {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
+      return;
+    }
+  }
+  set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
+  return;
+}
+
+void set_fan_led(int brd_rev)
+{
+  int i, val;
+  uint8_t fan_num = 16;//rear:8 && front:8
+  char path[LARGEST_DEVICE_NAME + 1];
+  int sensor_num[] = {42, 43, 44, 45, 46, 47, 48, 49, 
+                             50, 51, 52, 53, 54, 55, 56, 57};
+
+  for(i = 0; i < fan_num; i++) {
+    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_SMB, sensor_num[i]);
+    if(read_device(path, &val)) {
+      syslog(LOG_ERR, 
+             "%s cannot get value from /tmp/cache_store/smb_sensor%d"
+             , __func__, sensor_num[i]);
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
+      return;
+    }
+    if(val == 0) {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
+      return;
+    }    
+  }
+  set_sled(brd_rev, SLED_CLR_BLUE, SLED_FAN);
+  return;
+}
+
+void set_psu_led(int brd_rev)
+{
+  int i, val_in, val_out12;
+  float val_out3;
+  int vin_min = 92;//threshold = 100, error ratio = 0.08
+  int vin_max = 259;// threshold = 240, error ratio = 0.08
+  int vout_12_min = 11;//threshold = 12, error ratio = 0.08
+  int vout_12_max = 13;//threshold = 12, error ratio = 0.08
+  float vout_3_min = 3.00;//threshold = 3.3, error ratio = 0.08
+  float vout_3_max = 3.60;//threshold = 3.3, error ratio = 0.08
+  uint8_t psu_num = 4;
+  int sensor_num[] = {1, 14, 27, 40};
+  char path[LARGEST_DEVICE_NAME + 1];
+  for(i = 0; i < psu_num; i++) {
+
+    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, i+1, sensor_num[i]);
+    if(read_device(path, &val_in)) {
+      syslog(LOG_ERR, 
+             "%s cannot get value from /tmp/cache_store/psu%d_sensor%d"
+             , __func__, i+1, sensor_num[i]);
+    }
+    
+    if(val_in > vin_max || val_in < vin_min) {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      syslog(LOG_ERR, "%s, PSU%d vin is abnormal.", __func__, i+1);
+      return;
+    }
+
+    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, 
+             i+1, sensor_num[i] + 1);
+    if(read_device(path, &val_out12)) {
+      syslog(LOG_ERR, 
+             "%s cannot get value from /tmp/cache_store/psu%d_sensor%d"
+             , __func__, i+1, sensor_num[i] + 1);
+    }
+    
+    if(val_out12 > vout_12_max || val_out12 < vout_12_min) {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      syslog(LOG_ERR, "%s, PSU%d vout 12V is abnormal.", __func__, i+1);
+      return;
+    }
+
+    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, 
+             i+1, sensor_num[i] + 2);
+    if(read_device_float(path, &val_out3)) {
+      syslog(LOG_ERR, 
+             "%s cannot get value from /tmp/cache_store/psu%d_sensor%d"
+             , __func__, i+1, sensor_num[i] + 2);
+    }
+    
+    if(val_out3 > vout_3_max || val_out3 < vout_3_min) {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      syslog(LOG_ERR, "%s, PSU%d vout 3.3V is abnormal.", __func__, i+1);
+      return;
+    }
+    
+  }
+  
+  set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
+  
+  return;
+}
+
+void set_smb_led(int brd_rev)
+{
+  set_sled(brd_rev, SLED_CLR_BLUE, SLED_SMB);
+  return;
+}
+
+int
+pal_light_scm_led(uint8_t led_color)
+{
+  char path[64];
+  int ret;
+  char *val;
+  sprintf(path, SCM_SYSFS, SYS_LED_COLOR);
+  
+  if(led_color == SCM_LED_BLUE)
+    val = "0";
+  else
+    val = "1";
+  ret = write_device(path, val);
+  if (ret) {
+#ifdef DEBUG
+  syslog(LOG_WARNING, "write_device failed for %s\n", path);
+#endif
+    return -1;
+  }
+
+  return 0;
 }

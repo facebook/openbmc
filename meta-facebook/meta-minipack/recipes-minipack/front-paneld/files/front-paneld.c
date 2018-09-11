@@ -218,6 +218,32 @@ pim_mon_out:
   return 0;
 }
 
+// Thread for monitoring sim LED
+static void *
+simLED_monitor_handler(void *unused) {
+  int brd_rev;
+  uint8_t sys_ug = 0, fan_ug = 0, psu_ug = 0, smb_ug = 0;
+  pal_get_board_rev(&brd_rev);
+  init_led();
+  while(1) {
+	sleep(1);
+    pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
+	if(sys_ug == 0) {
+      set_sys_led(brd_rev);
+	}
+	if(fan_ug == 0) {
+	  set_fan_led(brd_rev);
+	}
+	if(psu_ug == 0) {
+	  set_psu_led(brd_rev);
+	}
+	if(smb_ug == 0) {
+	  set_smb_led(brd_rev);
+	}
+  }
+  return 0;
+}
+
 // Thread for monitoring debug card hotswap
 static void *
 debug_card_handler(void *unused) {
@@ -286,6 +312,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_scm_monitor;
   pthread_t tid_pim_monitor;
   pthread_t tid_debug_card;
+  pthread_t tid_simLED_monitor;
   int rc;
   int pid_file;
   int brd_rev;
@@ -315,6 +342,12 @@ main (int argc, char * const argv[]) {
     syslog(LOG_WARNING, "pthread_create for pim monitor error\n");
     exit(1);
   }
+  
+  if (pthread_create(&tid_simLED_monitor, NULL, simLED_monitor_handler, NULL) 
+	  != 0) {
+    syslog(LOG_WARNING, "pthread_create for simLED monitor error\n");
+    exit(1);
+  }
 
   if (brd_rev != BOARD_REV_EVTA) {
     if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) != 0) {
@@ -326,6 +359,7 @@ main (int argc, char * const argv[]) {
 
   pthread_join(tid_scm_monitor, NULL);
   pthread_join(tid_pim_monitor, NULL);
+  pthread_join(tid_simLED_monitor, NULL);
 
   return 0;
 }

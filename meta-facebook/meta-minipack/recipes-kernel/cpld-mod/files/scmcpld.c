@@ -74,44 +74,28 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x02, 0, 8,
   },
   {
-    "sys_red",
-    "0: LED  RED is ON\n"
-    "1: LED  RED is OFF",
+    "sys_led",
+    "0: LED is OFF\n"
+    "1: LED is ON",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x08, 0, 1,
   },
   {
-    "sys_green",
-    "0: LED  GREEN is ON\n"
-    "1: LED  GREEN is OFF",
+    "sys_led_twinkle",
+    "0: LED is not twinking\n"
+    "1: LED is twinking",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x08, 1, 1,
   },
   {
-    "sys_blue",
-    "0: LED  BLUE is ON\n"
-    "1: LED  BLUE is OFF",
+    "sys_led_color",
+    "0: LED color is BLUE\n"
+    "1: LED color is AMBER",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x08, 2, 1,
-  },
-  {
-    "sys_blink",
-    "0: LED No blink\n"
-    "1: LED Blink is ON",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x08, 3, 1,
-  },
-  {
-    "sys_tst_en",
-    "0: LED controlled by sys_red sys_green sys_blue\n"
-    "1: LED controlled by HW Logic - 7 color",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x08, 4, 1,
   },
   {
     "rj45_led1",

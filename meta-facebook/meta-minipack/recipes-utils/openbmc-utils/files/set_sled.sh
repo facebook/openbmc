@@ -59,11 +59,11 @@ esac
 
 if [ "$3" == "0" ] || [ "$3" == "4" ]; then
 
-  if [ "$1" == "fan" ] || [ "$1" == "psu" ]; then
+  if [ "$1" == "smb" ] || [ "$1" == "psu" ]; then
     val=$(($val << 3))
     IO0_VAL=$((($IO0 & 0x7) | $val))
     IO1_VAL=$((($IO1 & 0x7) | $val))
-  elif [ "$1" == "sys" ] || [ "$1" == "smb" ]; then
+  elif [ "$1" == "sys" ] || [ "$1" == "fan" ]; then
     IO0_VAL=$((($IO0 & 0x38) | $val))
     IO1_VAL=$((($IO1 & 0x38) | $val))
   else
@@ -71,7 +71,7 @@ if [ "$3" == "0" ] || [ "$3" == "4" ]; then
     exit -1
   fi
 
-  if [ "$1" == "psu" ] || [ "$1" == "smb" ]; then
+  if [ "$1" == "psu" ] || [ "$1" == "fan" ]; then
     i2cset -f -y 50 0x20 0x2 $IO0_VAL
   else
     i2cset -f -y 50 0x20 0x3 $IO1_VAL

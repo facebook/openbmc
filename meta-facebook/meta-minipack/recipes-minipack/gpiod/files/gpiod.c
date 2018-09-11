@@ -259,6 +259,7 @@ gpio_monitor_poll() {
             pal_set_last_pwr_state(FRU_SCM, "off");
           }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", IPMB_BUS);
+          pal_light_scm_led(SCM_LED_AMBER);
         } else {
           // Inform BIOS that BMC is ready
           bic_set_gpio(IPMB_BUS, BMC_READY_N, 0);
@@ -266,6 +267,7 @@ gpio_monitor_poll() {
             pal_set_last_pwr_state(FRU_SCM, "on");
           }
           syslog(LOG_CRIT, "FRU: %d, System powered ON", IPMB_BUS);
+          pal_light_scm_led(SCM_LED_BLUE);
         }
       }
     }

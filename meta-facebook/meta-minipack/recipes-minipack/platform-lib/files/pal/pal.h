@@ -41,10 +41,13 @@ extern "C" {
 #define SMB_SYSFS "/sys/class/i2c-adapter/i2c-12/12-003e/%s"
 #define FCM_T_SYSFS "/sys/class/i2c-adapter/i2c-64/64-0033/%s"
 #define FCM_B_SYSFS "/sys/class/i2c-adapter/i2c-72/72-0033/%s"
+#define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
+#define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 
 #define MINIPACK_SDR_PATH "/tmp/sdr_%s.bin"
 
 #define COM_PWR_BTN_N "com_pwr_btn_n"
+#define SYS_LED_COLOR "sys_led_color"
 
 #define SCM_PRSNT_STATUS "scm_presnt_status"
 #define PIM_PRSNT_STATUS "pim_fpga_cpld_%d_prsnt_n_status"
@@ -220,6 +223,8 @@ extern "C" {
 
 #define FRU_STATUS_GOOD   1
 #define FRU_STATUS_BAD    0
+
+#define I2C_ADDR_SIM_LED 0x20
 
 extern const char pal_fru_list[];
 
@@ -636,6 +641,28 @@ enum {
   PSU4_SENSOR_TEMP3 = 0x34,
 };
 
+enum
+{
+  SLED_CLR_BLUE = 0x3,
+  SLED_CLR_YELLOW = 0x4,
+  SLED_CLR_RED = 0x6,
+  SLED_CLR_OFF = 0x7,
+};
+
+enum
+{
+  SLED_SYS = 1,
+  SLED_FAN = 2,
+  SLED_PSU = 3,
+  SLED_SMB = 4,
+};
+
+enum
+{
+  SCM_LED_BLUE = 0x01,
+  SCM_LED_AMBER = 0x05,
+};
+
 int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 int pal_get_plat_sku_id(void);
@@ -682,7 +709,14 @@ void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, 
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
-
+int pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, uint8_t *psu_ug, uint8_t *smb_ug);
+void set_sys_led(int brd_rev);
+void set_fan_led(int brd_rev);
+void set_psu_led(int brd_rev);
+void set_smb_led(int brd_rev);
+int set_sled(int brd_rev, uint8_t color, int led_name);
+void init_led(void);
+int pal_light_scm_led(uint8_t led_color);
 #ifdef __cplusplus
 } // extern "C"
 #endif

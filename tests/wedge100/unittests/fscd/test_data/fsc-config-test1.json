@@ -11,7 +11,7 @@
     "data": [
     ],
     "threshold": 20,
-    "action": "host_shutdown"
+    "action": "host_warning"
   },
   "watchdog": true ,
   "min_rpm": 800,
@@ -35,10 +35,10 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 6,
       "data": [
         [5, 12],
-        [60, 16],
+        [40, 16],
         [70, 23]
       ]
     },
@@ -60,11 +60,11 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 6,
       "data": [
         [5, 12],
-        [55, 16],
-        [65, 23]
+        [40, 16],
+        [70, 23]
       ]
     },
     "linear_intake": {
@@ -85,12 +85,11 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 5,
+      "negative_hysteresis": 6,
       "data": [
         [5, 12],
-        [34, 16],
-        [38, 23],
-        [45, 31]
+        [40, 16],
+        [70, 23]
       ]
     },
     "linear_outlet": {
@@ -111,12 +110,11 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 5,
+      "negative_hysteresis": 6,
       "data": [
         [5, 12],
-        [39, 16],
-        [44, 23],
-        [49, 31]
+        [40, 16],
+        [70, 23]
       ]
     }
   },

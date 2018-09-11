@@ -6778,68 +6778,81 @@ pal_get_status(void) {
 
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
-    int ret;
-    int completion_code=CC_UNSPECIFIED_ERROR;
-    uint8_t netfn, cmd, select;
-    uint8_t tlen, rlen;
-    uint8_t tbuf[256] = {0x00};
-    uint8_t rbuf[256] = {0x00};
-    uint8_t status;
+  int ret;
+  int completion_code=CC_UNSPECIFIED_ERROR;
+  uint8_t netfn, cmd, select;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t status;
 
-    if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
-      return CC_PARAM_OUT_OF_RANGE;
-    }
+  *res_len = 0;
 
-    ret = pal_is_fru_prsnt(slot, &status);
-    if (ret < 0) {
-      return -1;
-    }
-    if (status == 0) {
-      return CC_UNSPECIFIED_ERROR;
-    }
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
 
-    ret = pal_is_server_12v_on(slot, &status);
-    if(ret < 0 || 0 == status) {
-      return CC_NOT_SUPP_IN_CURR_STATE;
-    }
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+    return -1;
+  }
+  if (status == 0) {
+    return CC_UNSPECIFIED_ERROR;
+  }
 
-    if(!pal_is_slot_server(slot)) {
-      return CC_UNSPECIFIED_ERROR;
-    }
+  ret = pal_is_server_12v_on(slot, &status);
+  if(ret < 0 || 0 == status) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
 
-    select = req_data[0];
-    netfn = req_data[1];
-    cmd = req_data[2];
-    tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+  if(!pal_is_slot_server(slot)) {
+    return CC_UNSPECIFIED_ERROR;
+  }
 
-    if (tlen < 0)
-      return completion_code;
+  select = req_data[0];
+  netfn = req_data[1];
+  cmd = req_data[2];
+  tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
 
-    if (0 == select) { //BIC
-      // Bypass command to Bridge IC
-      if (tlen != 0) {
-        ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
-      } else {
-        ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
-      }
-
-      if (0 == ret)
-        completion_code = CC_SUCCESS;
-
-    } else if (1 == select) { //ME
-      tlen += 2;
-      memcpy(tbuf, &req_data[1], tlen);
-      tbuf[0] = tbuf[0] << 2;
-      // Bypass command to ME
-      ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
-      if (0 == ret) {
-         completion_code = rbuf[0];
-         memcpy(&res_data[0], &rbuf[1], (rlen - 1));
-         *res_len = rlen - 1;
-      }
-    }
-
+  if (tlen < 0)
     return completion_code;
+
+  if (0 == select) { //BIC
+    // Bypass command to Bridge IC
+    if (tlen != 0) {
+      ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
+    } else {
+      ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
+    }
+
+    if (0 == ret)
+      completion_code = CC_SUCCESS;
+
+  } else if (1 == select) { //ME
+    tlen += 2;
+    memcpy(tbuf, &req_data[1], tlen);
+    tbuf[0] = tbuf[0] << 2;
+    // Bypass command to ME
+    ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
+    if (0 == ret) {
+       completion_code = rbuf[0];
+       memcpy(&res_data[0], &rbuf[1], (rlen - 1));
+       *res_len = rlen - 1;
+    }
+  } else if (2 == select) { //IMC
+    tlen += 2;
+    memcpy(tbuf, &req_data[1], tlen);
+    tbuf[0] = tbuf[0] << 2;
+    // Bypass command to IMC
+    ret = bic_imc_xmit(slot, tbuf, tlen, rbuf, &rlen);
+    if (0 == ret) {
+       completion_code = rbuf[0];
+       memcpy(&res_data[0], &rbuf[1], (rlen - 1));
+       *res_len = rlen - 1;
+    }
+  }
+
+  return completion_code;
 }
 
 unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};

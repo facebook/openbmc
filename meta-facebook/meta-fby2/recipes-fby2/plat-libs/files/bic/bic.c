@@ -754,7 +754,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
     syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
-    goto error_exit;
+    goto error_exit2;
   }
 
   fstat(fd, &buf);
@@ -766,7 +766,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   ifd = i2c_open(get_ipmb_bus_id(slot_id));
   if (ifd < 0) {
     printf("ifd error\n");
-    goto error_exit;
+    goto error_exit2;
   }
 
   // Kill ipmb daemon for this slot
@@ -835,7 +835,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   if (i == BIC_UPDATE_RETRIES) {
     printf("bic is NOT ready for update\n");
     syslog(LOG_CRIT, "bic_update_fw: bic is NOT ready for update\n");
-    goto update_done;
+    goto error_exit;
   }
 
   sleep(1);
@@ -1036,8 +1036,9 @@ _update_bic_main(uint8_t slot_id, char *path) {
     goto error_exit;
   }
 
-update_done:
   ret = 0;
+
+error_exit:
   // Restore the I2C bus clock to 1M.
   switch(slot_id)
   {
@@ -1064,7 +1065,7 @@ update_done:
   sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
 
-error_exit:
+error_exit2:
   syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", slot_id);
   if (fd > 0) {
     close(fd);

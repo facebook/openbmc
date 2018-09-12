@@ -41,6 +41,56 @@ const char *error_code_map[] = {
 };
 #undef VBS_ERROR
 
+bool vboot_partition_exist(void)
+{
+  FILE* partitions = fopen("/proc/mtd", "r");
+  char line[256], mnt_name[32];
+  unsigned int mtdno;
+  bool supported = false;
+
+  if (!partitions) {
+    return false;
+  }
+  while (fgets(line, sizeof(line), partitions)) {
+    if(sscanf(line, "mtd%d: %*x %*x %s",
+                &mtdno, mnt_name) == 2) {
+      if(!strcmp("\"romx\"", mnt_name)) {
+        supported = true;
+        break;
+      }
+    }
+  }
+  fclose(partitions);
+  return supported;
+}
+
+uint16_t crc16(const uint8_t* data, int len)
+{
+  uint16_t ret = 0;
+  int i;
+
+  for (i = 0; i < len; i++) {
+    uint8_t x = (ret >> 8) ^ data[i];
+    uint16_t x12, x5, x1;
+    x ^= x >> 4;
+    x12 = ((uint16_t)x) << 12;
+    x5  = ((uint16_t)x) << 5;
+    x1  = (uint16_t)x;
+    ret = (ret << 8) ^ x12 ^ x5 ^ x1;
+  }
+  return ret;
+}
+
+bool is_vbs_valid(const struct vbs *vbs)
+{
+  struct vbs mvbs = *vbs;
+  mvbs.crc = 0;
+  mvbs.uboot_exec_address = 0; // This is not set when SPL computes the CRC.
+  mvbs.rom_handoff = 0; // SPL clears this before computing the CRC.
+  mvbs.crc = crc16((unsigned char *)&mvbs, sizeof(mvbs));
+  return mvbs.crc == vbs->crc;
+}
+
 struct vbs *vboot_status()
 {
   static struct vbs vbs_cache = {0};
@@ -48,30 +98,35 @@ struct vbs *vboot_status()
   int mem_fd;
   uint8_t *vboot_base;
 
-  if (vbs_cache_valid) {
-    return &vbs_cache;
+  if (!vbs_cache_valid) {
+    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+    if (mem_fd < 0) {
+      syslog(LOG_CRIT, "%s: Error opening /dev/mem (%s)\n", __func__, strerror(errno));
+      return NULL;
+    }
+    vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, 
+        PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd,
+        PAGE_OFFSETED_BASE(AST_SRAM_VBS_BASE, PAGE_SIZE));
+    if (!vboot_base) {
+      syslog(LOG_CRIT, "%s: Error mapping VERIFIED_BOOT_STRUCT_BASE (%s)\n", __func__, strerror(errno));
+      close(mem_fd);
+      return NULL;
+    }
+    memcpy(&vbs_cache, vboot_base + PAGE_OFFSETED_OFF(AST_SRAM_VBS_BASE, PAGE_SIZE),
+        sizeof(vbs_cache));
+    vbs_cache_valid = true;
+    munmap(vboot_base, PAGE_SIZE);
+    close(mem_fd);
   }
 
-  mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-  if (mem_fd < 0) {
-    syslog(LOG_CRIT, "%s: Error opening /dev/mem (%s)\n", __func__, strerror(errno));
-    return NULL;
-  }
-  vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, 
-      PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd,
-      PAGE_OFFSETED_BASE(AST_SRAM_VBS_BASE, PAGE_SIZE));
-  if (!vboot_base) {
-    syslog(LOG_CRIT, "%s: Error mapping VERIFIED_BOOT_STRUCT_BASE (%s)\n", __func__, strerror(errno));
-    close(mem_fd);
-    return NULL;
-  }
-  memcpy(&vbs_cache, vboot_base + PAGE_OFFSETED_OFF(AST_SRAM_VBS_BASE, PAGE_SIZE),
-      sizeof(vbs_cache));
-  // TODO check CRC?
-  vbs_cache_valid = true;
-  munmap(vboot_base, PAGE_SIZE);
-  close(mem_fd);
-  return &vbs_cache;
+  if (is_vbs_valid(&vbs_cache))
+    return &vbs_cache;
+  return NULL;
+}
+
+bool vboot_supported(void)
+{
+  return vboot_partition_exist() && vboot_status() != NULL;
 }
 
 const char *vboot_error(uint32_t error_code)

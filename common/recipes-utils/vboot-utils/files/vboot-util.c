@@ -11,8 +11,14 @@
 int main(int argc, char *argv[])
 {
   char buf[128];
-  struct vbs *v = vboot_status();
+  struct vbs *v;
 
+  if (!vboot_supported()) {
+    printf("Verified boot is not supported on this platform!\n");
+    return 0;
+  }
+
+  v = vboot_status();
   if (!v) {
     printf("ERROR: Could not read the verified boot status\n");
     return -1;

@@ -38,6 +38,8 @@ struct vbs {
   /* 34 */ uint32_t kernel_current;     /* Status reporting only: the current booted kernel. */
 };
 
+bool        vboot_supported(void);
+bool        vboot_partition_exists(void);
 struct vbs *vboot_status(void);
 const char *vboot_error(uint32_t error_code);
 const char *vboot_time(char *buf, size_t buf_len, uint32_t time);

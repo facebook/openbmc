@@ -137,7 +137,7 @@ aggregate_sensor_name(size_t index, char *name)
   if (index >= g_sensors_count) {
     return -1;
   }
-  strncpy(name, g_sensors[index].sensor.name, MAX_STRING_SIZE);
+  strcpy(name, g_sensors[index].sensor.name);
   return 0;
 }
 
@@ -147,7 +147,7 @@ aggregate_sensor_units(size_t index, char *units)
   if (index >= g_sensors_count) {
     return -1;
   }
-  strncpy(units, g_sensors[index].sensor.units, MAX_STRING_SIZE);
+  strcpy(units, g_sensors[index].sensor.units);
   return 0;
 }
 

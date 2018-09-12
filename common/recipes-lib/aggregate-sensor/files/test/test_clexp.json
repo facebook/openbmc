@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "test_np",
+      "units": "TEST",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "snr": {
+            "fru": 1,
+            "sensor_id": 1
+          }
+        },
+        "linear_expressions": {
+          "exp1": "( snr * snr ) - 4",
+          "exp2": "( snr * snr ) + 3"
+        },
+        "condition": {
+          "key": "my_key",
+          "key_type": "regular",
+          "value_map": {
+            "V1": "exp1",
+            "V2": "exp2"
+          }
+        }
+      }
+    },
+    {
+      "name": "test_p",
+      "units": "TEST",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "snr": {
+            "fru": 1,
+            "sensor_id": 1
+          }
+        },
+        "linear_expressions": {
+          "exp1": "( snr * snr ) - 4",
+          "exp2": "( snr * snr ) + 3"
+        },
+        "condition": {
+          "key": "my_key",
+          "key_type": "persistent",
+          "default_expression": "exp2",
+          "value_map": {
+            "V1": "exp1",
+            "V2": "exp2"
+          }
+        }
+      }
+    }
+  ]
+}

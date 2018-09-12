@@ -22,6 +22,6 @@ export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"
 
 DEPENDS =+ "libpal libsdr jansson libkv "
-RDEPENDS_${PN} =+ "libpal libsdr libkv jansson aggregate-sensor-test"
+RDEPENDS_${PN} =+ "libpal libsdr libkv jansson "
 
 inherit cmake

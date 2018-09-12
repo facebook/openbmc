@@ -1311,10 +1311,11 @@ pal_is_crashdump_ongoing_system(void)
 {
   //Base on fru number to check if autodump is onging.
   uint8_t max_slot_num = 0;
+  int i;
 
   pal_get_num_slots(&max_slot_num);
 
-  for(int i = 1; i <= max_slot_num; i++) //fru start from 1
+  for(i = 1; i <= max_slot_num; i++) //fru start from 1
   {
     int fruid = pal_slotid_to_fruid(i);
     if ( 1 == pal_is_crashdump_ongoing(fruid) )
@@ -1468,10 +1469,11 @@ bool __attribute__((weak))
 pal_is_fw_update_ongoing_system(void) {
   //Base on fru number to sum up if fw update is onging.
   uint8_t max_slot_num = 0;
+  int i;
 
   pal_get_num_slots(&max_slot_num);
 
-  for(int i = 0; i <= max_slot_num; i++) { // 0 is reserved for BMC update
+  for(i = 0; i <= max_slot_num; i++) { // 0 is reserved for BMC update
     int fruid = pal_slotid_to_fruid(i);
     if (pal_is_fw_update_ongoing(fruid) == true) //if any slot is true, then we can return true
       return true;

@@ -20,238 +20,327 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <libgen.h>
 #include <assert.h>
 #include <jansson.h>
 #include "aggregate-sensor.h"
 #include <openbmc/kv.h>
 #include <openbmc/obmc-sensor.h>
 
-#define MAX_TEST_SENSORS 32
-#define MAX_TEST_VALUE_MAP_SIZE 32
+const char *test_name = "unknown";
+const char *test_case = "unknown";
+
+#define FLOAT_EQ(v1, v2) do { \
+  ASSERT(v1 < (v2 + 0.001)); \
+  ASSERT(v1 > (v2 - 0.001)); \
+} while(0)
+
+#define TEST_START(file, cnt) do { \
+  int _rc; \
+  size_t _cnt; \
+  test_name = __func__; \
+  test_case = "init"; \
+  mock_start(); \
+  _rc = aggregate_sensor_init(file); \
+  ASSERT(_rc == 0); \
+  _rc = aggregate_sensor_count(&_cnt); \
+  ASSERT(_rc == 0); \
+  ASSERT(_cnt == cnt); \
+} while(0)
+
+#define TEST_CASE(name) do { \
+  mock_start(); \
+  test_case = name; \
+} while(0)
+
+#define PASS() \
+  printf("%s PASS\n", test_name)
+
+#define ASSERT(cond) do { \
+  if (cond) { \
+    printf("%s[%s] PASS\n", test_name, test_case); \
+  } else { \
+    printf("%s[%s] FAIL\n", test_name, test_case); \
+  } \
+  assert(cond); \
+} while(0)
+
+#define MAX_SENSORS 256
+#define MAX_FRUS    16
+#define MAX_KEYS    16
 
 typedef struct {
-  char    name[32];
-  uint8_t fru;
-  uint8_t snr;
   float curr_val;
   int   curr_ret;
+  int   call_cnt;
+  bool  valid;
 } sensor_test_t;
 
-sensor_test_t test_sensors[MAX_TEST_SENSORS];
-size_t        num_test_sensors = 0;
-char          test_values[MAX_TEST_VALUE_MAP_SIZE][MAX_VALUE_LEN];
-size_t        num_test_values = 0;
+typedef struct {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  size_t value_len;
+  int  ret;
+  int  call_cnt;
+  bool persistent;
+  bool valid;
+} kv_test_t;
 
-char          *curr_val = NULL;
+sensor_test_t test_sensors[MAX_FRUS][MAX_SENSORS];
+kv_test_t     test_kv[MAX_KEYS];
 
+kv_test_t *get_test_kv(bool valid, char *key)
+{
+  int i;
+  for (i = 0; i < MAX_KEYS; i++) {
+    if (!valid && test_kv[i].valid == false) {
+      return &test_kv[i];
+    }
+    if (valid && test_kv[i].valid == true && !strcmp(test_kv[i].key, key))
+      return &test_kv[i];
+  }
+  return NULL;
+}
+
+/* Mocked kv_get */
 int kv_get(char *key, char *value, size_t *len, unsigned int flags)
 {
-  if (curr_val) {
-    strcpy(value, curr_val);
-    if (len) {
-      *len = strlen(value);
-    }
-    return 0;
+  kv_test_t *kv = NULL;
+
+  ASSERT(key);
+  ASSERT(value);
+
+  kv = get_test_kv(true, key);
+  ASSERT(kv);
+  memcpy(value, kv->value, kv->value_len);
+  if (len)
+    *len = kv->value_len;
+
+  if (kv->persistent) {
+    ASSERT((flags & KV_FPERSIST) != 0);
+  } else {
+    ASSERT((flags & KV_FPERSIST) == 0);
   }
-  return -1;
+  kv->call_cnt++;
+  return kv->ret;
 }
 
+/* Mocked sensor_cache_read */
 int sensor_cache_read(uint8_t fru, uint8_t snr_num, float *value)
 {
-  size_t i;
-  for (i = 0; i < num_test_sensors; i++) {
-    sensor_test_t *s = &test_sensors[i];
-    if (s->fru == fru && s->snr == snr_num) {
-      *value = s->curr_val;
-      return s->curr_ret;
-    }
-  }
-  return -1;
+  sensor_test_t *snr;
+  ASSERT(fru < MAX_FRUS);
+  ASSERT(snr_num < MAX_SENSORS);
+  snr = &test_sensors[fru][snr_num];
+  ASSERT(snr->valid);
+  *value = snr->curr_val;
+  snr->call_cnt++;
+  return snr->curr_ret;
 }
 
-static json_t *get_sensor(const char *file, size_t num)
+void mock_sensor_cache_read_start(void)
 {
-  static json_t *conf = NULL;
-  json_t *tmp;
-
-  if (!conf) {
-    json_error_t error;
-    conf = json_load_file(file, 0, &error);
-    assert(conf);
-  }
-
-  tmp = json_object_get(conf, "sensors");
-  assert(tmp);
-  tmp = json_array_get(tmp, num);
-  assert(tmp);
-  return tmp;
-}
-
-static void load_test_params(const char *file, size_t num)
-{
-  json_t *tmp = get_sensor(file, num);
-  json_t *tmp2, *iter;
-  size_t i;
-
-  /* Reset previous test loads */
   memset(test_sensors, 0, sizeof(test_sensors));
-  num_test_sensors = 0;
-  memset(test_values, 0, sizeof(test_values));
-  num_test_values = 0;
-
-  tmp = json_object_get(tmp, "composition");
-  assert(tmp);
-  tmp2 = json_object_get(tmp, "sources");
-  num_test_sensors = json_object_size(tmp2);
-  for (i = 0, iter = json_object_iter(tmp2);
-      i < num_test_sensors && iter;
-      i++, iter = json_object_iter_next(tmp2, iter)) {
-    const char *name = json_object_iter_key(iter);
-    json_t *val = json_object_iter_value(iter);
-    json_t *o;
-    assert(name);
-    assert(val);
-    strcpy(test_sensors[i].name, name);
-
-    o = json_object_get(val, "fru");
-    assert(o);
-    assert(json_is_number(o));
-    test_sensors[i].fru = json_integer_value(o);
-    o = json_object_get(val, "sensor_id");
-    assert(o);
-    assert(json_is_number(o));
-    test_sensors[i].snr = json_integer_value(o);
-  }
-  tmp2 = json_object_get(tmp, "type");
-  assert(tmp2);
-  if (!strcmp(json_string_value(tmp2), "conditional_linear_expression")) {
-    tmp2 = json_object_get(tmp, "condition");
-    assert(tmp2);
-    tmp2 = json_object_get(tmp2, "value_map");
-    assert(tmp2);
-    for (i = 0, iter = json_object_iter(tmp2);
-        i < MAX_TEST_VALUE_MAP_SIZE && iter;
-        iter = json_object_iter_next(tmp2, iter), i++) {
-      const char *key = json_object_iter_key(iter);
-      json_t *val = json_object_iter_value(iter);
-      assert(key);
-      assert(val);
-      assert(json_is_string(val));
-      strncpy(test_values[num_test_values], key, MAX_VALUE_LEN);
-      num_test_values++;
-    }
-  }
 }
 
-void set_all_sensors_valid(void)
+void mock_kv_get_start(void)
 {
-  int i;
-  for (i = 0; i < num_test_sensors; i++) {
-    test_sensors[i].curr_ret = 0;
-    test_sensors[i].curr_val = 10.0;
-  }
+  memset(test_kv, 0, sizeof(test_kv));
 }
 
-bool test_sensor_ret(size_t num, bool should_pass)
+void mock_start(void)
+{
+  mock_sensor_cache_read_start();
+  mock_kv_get_start();
+}
+
+void mock_sensor_cache_read(uint8_t fru, uint8_t snr_num, int ret, float value)
+{
+  sensor_test_t *snr;
+  ASSERT(fru < MAX_FRUS);
+  ASSERT(snr_num < MAX_SENSORS);
+  snr = &test_sensors[fru][snr_num];
+  snr->curr_ret = ret;
+  snr->curr_val = value;
+  snr->call_cnt = 0;
+  snr->valid = true;
+}
+
+void mock_kv_get(char *key, char *value, bool persistent, int ret)
+{
+  kv_test_t *kv = get_test_kv(true, key);
+  ASSERT(kv == NULL);
+  kv = get_test_kv(false, key);
+  ASSERT(kv);
+  strcpy(kv->key, key);
+  if (ret == 0) {
+    strcpy(kv->value, value);
+    kv->value_len = strlen(value);
+  } else {
+    kv->value_len = 0;
+    strcpy(kv->value, "");
+  }
+  kv->persistent = persistent;
+  kv->valid = true;
+  kv->call_cnt = 0;
+  kv->ret = ret;
+}
+
+void mock_sensor_cache_read_call_assert(uint8_t fru, uint8_t snr_num, int min_calls, int max_calls)
+{
+  sensor_test_t *snr = &test_sensors[fru][snr_num];
+  ASSERT(snr->call_cnt >= min_calls);
+  ASSERT(snr->call_cnt <= max_calls);
+}
+
+void mock_kv_get_call_assert(char *key, int min_calls, int max_calls)
+{
+  kv_test_t *kv = get_test_kv(true, key);
+  ASSERT(kv);
+  ASSERT(kv->call_cnt >= min_calls);
+  ASSERT(kv->call_cnt <= max_calls);
+}
+
+void test_null(void)
+{
+  TEST_START("./test_null.json", 0);
+  PASS();
+}
+
+static void name_assert(int idx, char *name, int (*func)(size_t,char *))
+{
+  char got_name[64] = {0};
+  int ret;
+
+  ret = func(idx, got_name);
+  ASSERT(ret == 0);
+  ret = strcmp(name, got_name);
+  ASSERT(ret == 0);
+}
+
+void test_lexp(void)
+{
+  int ret;
+  float value;
+
+  TEST_START("./test_lexp.json", 1);
+
+  TEST_CASE("get_name");
+  name_assert(0, "test1", aggregate_sensor_name);
+
+  TEST_CASE("get_units");
+  name_assert(0, "TEST1", aggregate_sensor_units);
+
+  TEST_CASE("snr1_fail");
+  mock_sensor_cache_read(1, 1, -1, 0.0);
+  mock_sensor_cache_read(2, 2, 0, 2.0);
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret != 0);
+  mock_sensor_cache_read_call_assert(1, 1, 1, 1);
+  mock_sensor_cache_read_call_assert(2, 2, 0, 1);
+
+  TEST_CASE("snr2_fail");
+  mock_sensor_cache_read(1, 1, 0, 0.0);
+  mock_sensor_cache_read(2, 2, -1, 2.0);
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret != 0);
+  mock_sensor_cache_read_call_assert(1, 1, 0, 1);
+  mock_sensor_cache_read_call_assert(2, 2, 1, 1);
+
+  TEST_CASE("snr_read_good");
+  mock_sensor_cache_read(1, 1, 0, 1.0);
+  mock_sensor_cache_read(2, 2, 0, 2.0);
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret == 0);
+  mock_sensor_cache_read_call_assert(1, 1, 1, 1);
+  mock_sensor_cache_read_call_assert(2, 2, 1, 1);
+  /* 2.0*1.0 + 3.0*2.0 - 3.0 = 5.0 */
+  FLOAT_EQ(value, 5.0);
+
+  TEST_CASE("bad_sensor");
+  ret = aggregate_sensor_read(1, &value);
+  ASSERT(ret != 0);
+
+  PASS();
+}
+
+void test_cond_lexp(void)
 {
   float value;
-  int ret = aggregate_sensor_read(num, &value);
-  if (should_pass) {
-    if (ret != 0) {
-      assert(0);
-    }
-  } else {
-    if (ret == 0) {
-      assert(0);
-    }
-  }
-  return true;
-}
+  int ret;
 
-void test_sensor_values(size_t num, bool accepted_value)
-{
-  int i;
-  for (i = 0; i < num_test_sensors; i++) {
-    set_all_sensors_valid();
-    test_sensors[i].curr_val = 0;
-    test_sensors[i].curr_ret = -1;
-    printf("SNR: -1 fail expected: PASSED: %d\n", test_sensor_ret(num, false));
-    test_sensors[i].curr_ret = -2;
-    printf("SNR: -2 fail expected: PASSED: %d\n", test_sensor_ret(num, false));
-  }
-  set_all_sensors_valid();
-  printf("SNR: -2 fail expected: PASSED: %d\n", test_sensor_ret(num, accepted_value));
-}
+  TEST_START("./test_clexp.json", 2);
 
-int test_sensor(const char *file, size_t num, const char *name)
-{
-  int i;
-  printf("Testing sensor %zu (%s)\n", num, name);
-  load_test_params(file, num);
-  printf("Sensors (%zu): ", num_test_sensors);
-  for (i = 0; i < num_test_sensors; i++) {
-    sensor_test_t *t = &test_sensors[i];
-    printf("{%s %u %u} ", t->name, t->fru, t->snr);
-  }
-  printf("\nValues: ");
-  for (i = 0; i < num_test_values; i++) {
-    printf("%s ", test_values[i]);
-  }
-  printf("\n");
+  TEST_CASE("test_loaded_sensors");
+  name_assert(0, "test_np", aggregate_sensor_name);
+  name_assert(0, "TEST", aggregate_sensor_units);
+  name_assert(1, "test_p", aggregate_sensor_name);
+  name_assert(1, "TEST", aggregate_sensor_units);
 
-  for (i = 0; i < num_test_values; i++) {
-    curr_val = test_values[i];
-    test_sensor_values(num, true);
-  }
-  curr_val = "INVALID_VALUE";
-  test_sensor_values(num, true); // TODO check if default is set
-  curr_val = NULL;
-  test_sensor_values(num, true); // TODO check if default is set
+  TEST_CASE("no_default_key_read_fail");
+  mock_kv_get("my_key", "", false, -1);
+  // we should not even call read!
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret != 0);
+  mock_kv_get_call_assert("my_key", 1, 1);
 
-  return 0;
-}
+  TEST_CASE("no_default_unknown_value");
+  mock_kv_get("my_key", "bad_val", false, 0);
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret != 0);
+  mock_kv_get_call_assert("my_key", 1, 1);
 
-int aggregate_sensor_test(const char *file)
-{
-  size_t num = 0, i;
-  if (aggregate_sensor_init(file)) {
-    printf("Sensor initialization failed!\n");
-    return -1;
-  }
+  TEST_CASE("no_default_good_reg_val");
+  mock_kv_get("my_key", "V1", false, 0);
+  mock_sensor_cache_read(1, 1, 0, 10.0);
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret == 0);
+  mock_kv_get_call_assert("my_key", 1, 1);
+  // It is dumb. so it should call cache_read for each
+  // time the sensor is seen. Future, we may optimize it
+  // so use min = 1, max = 2.
+  mock_sensor_cache_read_call_assert(1, 1, 1, 2);
+  // v1 => exp1 = (10*10) - 4 = 100-4 = 96
+  FLOAT_EQ(value, 96.0);
 
-  aggregate_sensor_conf_print(false);
+  TEST_CASE("default_set_key_read_fail");
+  mock_kv_get("my_key", "", true, -1);
+  mock_sensor_cache_read(1, 1, 0, 10.0);
+  ret = aggregate_sensor_read(1, &value);
+  ASSERT(ret == 0);
+  mock_kv_get_call_assert("my_key", 1, 1);
+  mock_sensor_cache_read_call_assert(1, 1, 1, 2);
+  //  def: exp2 = (snr * snr ) + 3. = 100+3 = 103.
+  FLOAT_EQ(value, 103.0);
 
-  if (aggregate_sensor_count(&num)) {
-    printf("Getting sensor count failed!\n");
-    return -1;
-  }
-  if (num == 0) {
-    printf("No sensors! Nothing to do\n");
-    return 0;
-  }
-  for(i = 0; i < num; i++) {
-    char sensor_name[128];
-    char sensor_unit[128];
-    int ret;
+  TEST_CASE("default_set_unknown_value");
+  mock_kv_get("my_key", "bad", true, 0);
+  mock_sensor_cache_read(1,1,0,5.0);
+  ret = aggregate_sensor_read(1, &value);
+  ASSERT(ret == 0);
+  FLOAT_EQ(value, 28.0);
 
-    if (aggregate_sensor_name(i, sensor_name) ||
-        aggregate_sensor_units(i, sensor_unit)) {
-      printf("[%zu] Getting name/unit failed\n", i);
-      continue;
-    }
-    ret = test_sensor(file, i, sensor_name);
-    if (ret) {
-      printf("TEst for sensor %zu failed with %d\n", i, ret);
-    }
-  }
-  return 0;
+  TEST_CASE("default_set_good_key");
+  mock_kv_get("my_key", "V1", true, 0);
+  mock_sensor_cache_read(1,1,0,5.0);
+  ret = aggregate_sensor_read(1, &value);
+  ASSERT(ret == 0);
+  FLOAT_EQ(value, 21.0);
+
+  PASS();
 }
 
 int main(int argc, char *argv[])
 {
-  if (argc < 2) {
-    printf("Usage: %s <JSON Config>\n", argv[0]);
-    return -1;
-  }
-  return aggregate_sensor_test(argv[1]);
+  /* Make sure we are in the directory where the
+   * executable lies. Thats where all the json
+   * is copied! */
+  chdir(dirname(argv[0]));
+
+  test_null();
+  test_lexp();
+  test_cond_lexp();
+  printf("All tests PASS!\n");
+  return 0;
 }

@@ -7,7 +7,7 @@
 # Default-Stop:
 # Short-Description: Set hostname based on /etc/hostname
 ### END INIT INFO
-HOSTNAME="bmc-oob"
+HOSTNAME="bmc-oob."
 
 set_hostname() {
   local name=$1

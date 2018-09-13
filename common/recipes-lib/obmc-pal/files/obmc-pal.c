@@ -15,6 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _XOPEN_SOURCE
+#define _GNU_SOURCE
 #include "obmc-pal.h"
 #include <stdio.h>
 #include <stdint.h>
@@ -28,7 +30,6 @@
 #include <sys/wait.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
-#include "obmc-pal.h"
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
@@ -166,6 +167,48 @@ int __attribute__((weak))
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
   return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t record_type = (uint8_t) sel[2];
+  error_log[0] = '\0';
+
+  if ( record_type == 0xfb )
+  {
+    uint8_t general_info = (uint8_t) sel[3];
+    uint32_t timestamp = 0;
+    struct tm ts;
+    char time[64] = {0};
+
+    timestamp |= sel[4];
+    timestamp |= sel[5] << 8;
+    timestamp |= sel[6] << 16;
+    timestamp |= sel[7] << 24;
+
+    sprintf(time, "%u", timestamp);
+    memset(&ts, 0, sizeof(struct tm));
+    strptime(time, "%s", &ts);
+    memset(&time, 0, sizeof(time));
+    strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &ts);
+    if ( (general_info & 0x0) == 0x0 )//PCIe err
+    {
+      uint8_t plat = (general_info & 0x10) >> 4;
+      if ( plat == 0 )//x86
+      {
+        sprintf(error_log, "GeneralInfo: x86/PCIeErr(0x%02X), Time: %s, Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
+                general_info, time, sel[10], sel[11] >> 3, sel[11] & 0x7, ((sel[12]<<8)|sel[13]), sel[14], sel[15]);
+      }
+      else
+      {
+        sprintf(error_log, "GeneralInfo: ARM/PCIeErr(0x%02X), Time: %s, Aux. Info: <domain info>, Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
+                general_info, time, sel[10], sel[11] >> 3, sel[11] & 0x7, ((sel[12]<<8)|sel[13]), sel[14], sel[15]);
+      }
+    }
+  }
+
+  return 0;
 }
 
 int __attribute__((weak))

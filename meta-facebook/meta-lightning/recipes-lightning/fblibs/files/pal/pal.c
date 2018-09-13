@@ -516,7 +516,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 }
 
 int
-pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t *value) {
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value) {
   return lightning_sensor_poll_interval(fru, sensor_num, value);
 }
 

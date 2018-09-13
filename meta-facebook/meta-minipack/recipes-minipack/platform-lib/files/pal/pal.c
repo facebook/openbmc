@@ -5168,7 +5168,7 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 }
 
 static void
-scm_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
+scm_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
 
   switch(sensor_num) {
     case SCM_SENSOR_OUTLET_LOCAL_TEMP:
@@ -5191,7 +5191,7 @@ scm_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
 }
 
 static void
-smb_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
+smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
 
   switch(sensor_num) {
     case SMB_SENSOR_TH3_SERDES_TEMP:
@@ -5266,7 +5266,7 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
 }
 
 static void
-pim_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
+pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
 
   switch(sensor_num) {
     case PIM1_SENSOR_TEMP1:
@@ -5486,7 +5486,7 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
 }
 
 static void
-psu_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
+psu_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
 
   switch(sensor_num) {
     case PSU1_SENSOR_IN_VOLT:
@@ -5550,7 +5550,7 @@ psu_sensor_poll_interval(uint8_t sensor_num, uint8_t *value) {
 }
 
 int
-pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t *value) {
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value) {
 
   switch(fru) {
     case FRU_SCM:

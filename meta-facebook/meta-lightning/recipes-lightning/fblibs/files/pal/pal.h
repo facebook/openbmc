@@ -173,7 +173,6 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh,
     void *value);
-int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t *value);
 int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
 int pal_set_def_key_value();

@@ -61,7 +61,7 @@ typedef struct {
   int curr_state;
   char name[32];
   char units[64];
-  uint8_t poll_interval; // poll interval for each fru's sensor
+  uint32_t poll_interval; // poll interval for each fru's sensor
 
 } thresh_sensor_t;
 
@@ -220,7 +220,7 @@ int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 int pal_get_fruid_name(uint8_t fru, char *name);
 int pal_slotid_to_fruid(int slotid);
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
-int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint8_t *value);
+int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value);
 int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_fruid_write(uint8_t slot, char *path);
 int pal_get_fru_devtty(uint8_t fru, char *devtty);

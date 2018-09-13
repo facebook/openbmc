@@ -46,10 +46,16 @@ Each sensor may provide information on various components:
       "rpm1": {
         "fru":       1,
         "sensor_id": 195
+      },
+      "avg_rpm": {
+        "expression": "sum_rpm / 2"
+      },
+      "sum_rpm": {
+        "expression": "rpm0 + rpm1"
       }
     },
     "linear_expressions": {
-      "A0": "( rpm0 * 0.006555 ) + ( rpm1 * 0.006555 ) - 5.56727",
+      "A0": "( avg_rpm * 10.553) - 5.56727",
       <Snip>
     },
     "condition": {
@@ -63,23 +69,42 @@ Each sensor may provide information on various components:
   }
 }
 
-Name: The name of the sensor.
-Units: The units of this sensor.
-Thresholds:
-  Describe thresholds if any of this sensor (Valid strings "ucr", "unc", "unr", "lcr", "lnc", "lnr").
-  The value should be a real number providing the corresponding threshold.
-Composition: This is the information which describes how this sensor value is calculated.
-    type: The composition type.
-      "conditional_linear_expression" - This type defines a set of linear expressions and based on the value of the condition key (condition::key described later), this particular expression will be used.
-      Other types may be defined based on usage. Obviously the simpler "linear_expression" may be defined which is the simpler case of conditional_linear_expression.
-    sources: Here is where the variables (physical sensors) to be used as the source of the aggregate sensor composition are defined. the key will be a logical easy to use string defining
-             the sensor will be used (Example "rpm0" or "rpm1"). The value is an object describing the sensor (Currently a tuple, "fru" the FRU on which the sensor is present and
-             "sensor_id" the unique ID for the sensor). This should be easily extendable in the future to replace "sensor_id" with "sensor_name" when the sensors
-             infrastructure moves towards unique names instead of IDs.
-    "linear_expressions": A set of linear expressions. Each expression has a human readable key (In this example "A0"). Note restrictions of the representation:
+Name
+----
+The name of the sensor.
+
+Units
+-----
+The units of this sensor.
+
+Thresholds
+----------
+Describe thresholds if any of this sensor (Valid strings "ucr", "unc", "unr", "lcr", "lnc", "lnr").
+The value should be a real number providing the corresponding threshold.
+
+Composition
+-----------
+This is the information which describes how this sensor value is calculated.
+
+type: The composition type.
+  "linear_expression" Is a linear expression which instructs on how to use the source sensors to form the final value of the current aggregate sensor.
+  "conditional_linear_expression" - This type defines a set of linear expressions and based on the value of the condition key (condition::key described later), this particular expression will be used.
+
+sources: Here is where the variables to be used as the source of the aggregate sensor composition are defined. The key will be a logical easy to use string defining
+         the sensor will be used (Example "rpm0" or "rpm1"). The value is an object describing the sensor. There are two supported types of variables:
+  physical sensors - User provides the duple "fru" the FRU on which the sensor is present and "sensor_id" the unique ID for the sensor).
+                     Future extension may also support sensor name instead of the ID.
+  expression       - Use provides an expression (Example: "expression": "rpm0 + rpm1") which will form the variable. The primary usage is to make the actual expression used easier to read.
+                     Example would be a linear expression based on the average of 10 sensors. Instead of doing a/10 * x1 + a/10 x2 + ... a/10 x10 + b, we could do: x = (x1 + x2 + ... + x10) / 10 and
+                     use the simpler expression a * x + b.
+
+"linear_expression": (type == "linear_expression") A linear expression composing the aggregate sensor from its sources. Each expression has a human readable key (In this example "A0"). Note restrictions of the representation:
       1. The expression is always evaluated left to right order. So a + b * c _will_ be evaluated as (a + b) * c and not as a + (b * c). Use parenthesis liberally.
       2. Use space to separate tokens. So, (a+b)-c is incorrect while ( a + b ) - c is. The complexity to support free form is just not worth it.
-"condition": This describes the condition which shall define which of the linear expressions will be used.
+
+"linear_expressions": (type == "conditional_linear_expression"). A set of linear expressions (See "linear_expression").
+
+"condition": (type == "conditional_linear_expression") This describes the condition which shall define which of the linear expressions will be used.
   "key" - Will define the key used. In this particular example, "mb_system_conf" - which provides the machine configuration is used. 
   "key_type" - (If not provided defaults to "regular"). Supported options:
              * "regular" - key from the non-persistent key-value store.
@@ -89,4 +114,4 @@ Composition: This is the information which describes how this sensor value is ca
   "value_map": A map of values for the given key which would dictate the expression to use. So, if the value for key "mb_system_conf" is "SS_D", then the expression "A0" will be used in evaluating "MB_AIRFLOW".
   "default_expression": If getting the value for the provided key fails or if the value got from the key does not exist in "value_map", then this expression is used. Note, this is optional. If not provided,
                       then the sensor read will fail.
-  "default_expression" - If getting the value of the privided key f
+  "default_expression" - If getting the value of the provided key fails, then use this expression as the default.

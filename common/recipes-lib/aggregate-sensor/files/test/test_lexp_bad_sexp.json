@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "test1",
+      "units": "TEST1",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "snr1": {
+            "fru": 1,
+            "sensor_id": 1
+          },
+          "snr_avg": {
+            "expression": "( snr_sum ) / 2.0"
+          },
+          "snr_sum": {
+            "expression": "snr1 + snr2"
+          }
+        },
+        "linear_expression": "( 10.0 * snr_avg ) - 3.0"
+      }
+    }
+  ]
+}

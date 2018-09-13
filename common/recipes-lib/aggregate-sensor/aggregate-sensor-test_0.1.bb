@@ -34,6 +34,7 @@ SRC_URI = "file://test/Makefile \
            file://math_expression.h \
            file://test/test_null.json \
            file://test/test_lexp.json \
+           file://test/test_lexp_sexp.json \
            file://test/test_clexp.json \
           "
 S = "${WORKDIR}/test"

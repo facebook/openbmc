@@ -21,6 +21,7 @@
 #include <jansson.h>
 #include <string.h>
 #include "aggregate-sensor-internal.h"
+#include <syslog.h>
 
 /* Search through an array of strings for a particular string
  * and return the index if successful. Negative error code on
@@ -50,40 +51,81 @@ static void cleanup_vars(variable_type *vars, size_t count)
   free(vars);
 }
 
+static int logical_expression_parse(void *state, float *value)
+{
+  expression_type *exp = (expression_type *)state;
+  return expression_evaluate(exp, value);
+}
+
 /* Load SENSOR[X]::sources[Y] a specific source variable */
 static int load_variable(const char *name, json_t *obj, variable_type *var)
 {
-  json_t *fru_o, *id_o;
+  json_t *fru_o, *id_o, *exp_o;
   struct sensor_src *s;
 
   if (!obj) {
     return -1;
   }
+  strncpy(var->name, name, sizeof(var->name));
 
+  exp_o = json_object_get(obj, "expression");
   fru_o = json_object_get(obj, "fru");
   id_o  = json_object_get(obj, "sensor_id");
-  if (!fru_o || !id_o || !json_is_number(fru_o) ||
-      !json_is_number(id_o)) {
+  if (exp_o && json_is_string(exp_o)) {
+    /* defer parsing the expression till we have loaded
+     * all the variables. So, just set the function to call
+     * and copy over the expression char string to be
+     * parsed later */
+    const char *str = json_string_value(exp_o);
+    var->state = malloc(strlen(str) + 1);
+    if (!var->state) {
+      return -1;
+    }
+    strcpy((char *)var->state, str);
+    var->value = logical_expression_parse;
+  } else if (fru_o && id_o && json_is_number(fru_o) &&
+      json_is_number(id_o)) {
+    /* Copy the function pointer which will be called
+     * when the value of this variable is required */
+    var->value = get_sensor_value;
+
+    /* Allocate the state which will be passed to
+     * get_sensor_value (fru, id) */
+    s = calloc(1, sizeof(struct sensor_src));
+    if (!s) {
+      return -1;
+    }
+
+    s->fru = json_integer_value(fru_o);
+    s->id  = json_integer_value(id_o);
+
+    var->state = s;
+  } else {
     return -1;
   }
 
-  strncpy(var->name, name, sizeof(var->name));
-  /* Copy the function pointer which will be called
-   * when the value of this variable is required */
-  var->value = get_sensor_value;
-
-  /* Allocate the state which will be passed to
-   * get_sensor_value (fru, id) */
-  s = calloc(1, sizeof(struct sensor_src));
-  if (!s) {
-    return -1;
-  }
-
-  s->fru = json_integer_value(fru_o);
-  s->id  = json_integer_value(id_o);
-
-  var->state = s;
   return 0;
+}
+
+size_t sort_variables(variable_type *vars, int num_vars)
+{
+  int i, j;
+
+  /* sort so all expression variables are towards the end */
+  for (i = 0, j = num_vars-1; i < j; i++) {
+    while (vars[j].value == logical_expression_parse && j >= 0)
+      j--;
+    /* vars[j] points to the first non-expression variable when
+     * scanned from the last */
+    if (i < j && vars[i].value == logical_expression_parse) {
+      variable_type tmp = vars[j];
+      vars[j] = vars[i];
+      vars[i] = tmp;
+      j--;
+    }
+  }
+
+  return (size_t)(j + 1);
 }
 
 /* Parse SENSORS[X]::sources the JSON detailing the source sensors and
@@ -92,8 +134,9 @@ static variable_type *load_variables(json_t *obj, size_t *count)
 {
   size_t num_vars;
   void *iter;
-  size_t i;
+  size_t i, exp_start;
   variable_type *vars;
+  size_t redo_count = 0;
 
   if (!obj) {
     DEBUG("Getting sources failed!\n");
@@ -118,6 +161,42 @@ static variable_type *load_variables(json_t *obj, size_t *count)
     if (load_variable(key, val, &vars[i])) {
       goto bail;
     }
+  }
+  
+  exp_start = sort_variables(vars, num_vars);
+
+  for (i = exp_start; i < num_vars;) {
+    char *str_expression = (char *)vars[i].state;
+    /* Use only the expressions which have been pased up till
+     * now. This makes sure we are detect recursive expressions
+     * in our sources and fail early. */
+    vars[i].state = expression_parse(str_expression, vars, i);
+    if (!vars[i].state) {
+      size_t j;
+      variable_type tmp;
+      /* Parsing failed. We probably depend on another expression
+       * which we are yet to parse. Just put this variable at the last
+       * and shift everything left and continue. */
+
+      vars[i].state = str_expression;
+      if ((num_vars - i - 1) == redo_count) {
+        /* The dependency cannot be met. we have a circular/recursive
+         * dependency in the expressions or use of an unknown variable */
+        goto bail;
+      }
+      redo_count++;
+      tmp = vars[i];
+      for (j = i + 1; j < num_vars; j++) {
+        vars[j - 1] = vars[j];
+      }
+      vars[num_vars - 1] = tmp;
+      continue;
+    }
+    /* Successful parse. free the string, reset the redo count and
+     * begin parsing of the next expression variable */
+    free(str_expression);
+    redo_count = 0;
+    i++;
   }
   return vars;
 bail:

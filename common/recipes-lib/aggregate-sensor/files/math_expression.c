@@ -126,7 +126,11 @@ static expression_term_type *alloc_expression_term(char *name, variable_type *va
         break;
       }
     }
-    assert(i < num);
+    if (i == num) {
+      /* Could not find the variable */
+      free(term);
+      return NULL;
+    }
   }
   return term;
 }

@@ -331,6 +331,44 @@ void test_cond_lexp(void)
   PASS();
 }
 
+void test_lexp_source_exp(void)
+{
+  float value;
+  int ret;
+
+  TEST_START("./test_lexp_sexp.json", 1);
+
+  TEST_CASE("correct_reading");
+  mock_sensor_cache_read(1, 1, 0, 3.0);
+  mock_sensor_cache_read(2, 2, 0, 5.0);
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret == 0);
+  mock_sensor_cache_read_call_assert(1, 1, 1, 1);
+  mock_sensor_cache_read_call_assert(2, 2, 1, 1);
+  /* 10.0 * ((3 + 5) / 2) - 3.0 = 10 *8/2 - 3 = 10*4-3 = 37 */
+  FLOAT_EQ(value, 37.0);
+
+  TEST_CASE("snr1_na");
+  mock_sensor_cache_read(1, 1, -1, 0.0);
+  mock_sensor_cache_read(2, 2, 0, 5.0);
+  ret = aggregate_sensor_read(0, &value);
+  ASSERT(ret != 0);
+
+  PASS();
+}
+
+void test_bad_source_exp(void)
+{
+  int ret;
+
+  test_name = __func__;
+  test_case = "init";
+  mock_start();
+  ret = aggregate_sensor_init("./test_lexp_bad_sexp.json");
+  ASSERT(ret != 0);
+  PASS();
+}
+
 int main(int argc, char *argv[])
 {
   /* Make sure we are in the directory where the
@@ -341,6 +379,8 @@ int main(int argc, char *argv[])
   test_null();
   test_lexp();
   test_cond_lexp();
+  test_lexp_source_exp();
+  test_bad_source_exp();
   printf("All tests PASS!\n");
   return 0;
 }

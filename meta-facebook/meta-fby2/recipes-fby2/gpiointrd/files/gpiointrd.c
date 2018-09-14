@@ -54,6 +54,8 @@
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 #define POST_FLAG_FILE "/tmp/cache_store/slot%d_post_flag"
 #define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"
+#define SENSORDUMP_BIN       "/usr/local/bin/sensordump.sh"
+
 
 #define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 
@@ -200,6 +202,15 @@ static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
       syslog(LOG_CRIT, "%s: %s - %s\n", gp->value ? "DEASSERT": "ASSERT", gp->name, gp->desc);
     }
   }
+}
+
+static void create_sensordump()
+{
+    char cmd[80];
+
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "%s", SENSORDUMP_BIN);
+    system(cmd);
 }
 
 // Generic Event Handler for GPIO changes
@@ -375,10 +386,11 @@ static void gpio_event_handle(gpio_poll_st *gp)
     {
       if( fby2_sensor_read(FRU_SPB, SP_HSC_IOUT_STATUS, &value) )
       {
-        syslog(LOG_CRIT, "ASSERT: SMB_HOTSWAP_ALERT_N is high to low");
+        syslog(LOG_CRIT, "ASSERT: OC_warning triggered (falling edge detected for SMB_HOTSWAP_ALERT_N)");
+        create_sensordump();
         fby2_check_hsc_fault();
       }
-    }  
+    }
   }
 }
 

@@ -54,6 +54,7 @@ IMAGE_INSTALL += " \
   libncsi \
   ncsid \
   vboot-utils \
+  sensordump \
   "
 
 IMAGE_FEATURES += " \

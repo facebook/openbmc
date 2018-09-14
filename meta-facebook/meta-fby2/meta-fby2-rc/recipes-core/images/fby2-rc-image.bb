@@ -53,6 +53,7 @@ IMAGE_INSTALL += " \
   threshold-util \
   ncsid \
   vboot-utils \
+  sensordump \
   "
 
 IMAGE_FEATURES += " \

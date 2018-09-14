@@ -15,19 +15,17 @@ STATE_MACHINE=("VREG_5P0_EN" "VREG_5P0_PG" "FM_PS_EN" "VREG_3P3_PG" "PWR_FAIL_N"
 
 lock_state=0
 
-normal_state1_2=0x3
-
 normal_state4=0x1F
 
 normal_state5=0x1FF
 
 normal_state6=0x1FFF
 
-normal_state7_8=0x1FFFF
+normal_state8=0x1FFFF
 
 normal_state9=0x7FFFF
 
-normal_state10_11=0x1FFFFF
+normal_state11=0x1FFFFF
 
 normal_state12=0x7FFFFF
 
@@ -59,6 +57,42 @@ function state_machine_parse {
       ;;
     6)
       echo -n "Reserve(bit 6): "
+      ;;
+    7)
+      echo -n "QDF_CPLD_VREG_S4_SENSE_1P8(bit 7): "
+      ;;
+  esac
+
+  echo $output
+}
+
+function cur_state_machine_parse {
+  DUMP_DATA=$1
+  INDEX=$2
+
+  local output=$[ 16#$DUMP_DATA >> $INDEX & 1 ]
+
+  case $INDEX in
+    0)
+      echo -n "state[0](bit 0): "
+      ;;
+    1)
+      echo -n "state[1](bit 1): "
+      ;;
+    2)
+      echo -n "state[2](bit 2): "
+      ;;
+    3)
+      echo -n "state[3](bit 3): "
+      ;;
+    4)
+      echo -n "state[4](bit 4): "
+      ;;
+    5)
+      echo -n "QDF_TEMPTRIP_1P8_N(bit 5): "
+      ;;
+    6)
+      echo -n "QDF_PROCHOT_1P8_N(bit 6): "
       ;;
     7)
       echo -n "QDF_CPLD_VREG_S4_SENSE_1P8(bit 7): "
@@ -344,7 +378,7 @@ function soc_event_parse {
 }
 
 function cpld_dump_rc {
-  echo "<<< CPLD register 0x02(State Machine) data >>>"
+  echo "<<< CPLD register 0x02(State Machine)(Lock State) data >>>"
 
   output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x02)
 
@@ -356,6 +390,21 @@ function cpld_dump_rc {
   for (( index=0; index<=MAX_INDEX; index=index+1 ))
   do
     state_machine_parse $output $index
+  done
+
+  echo ""
+  echo "<<< CPLD register 0x04(State Machine)(Current State) data >>>"
+
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x04)
+
+  echo -n "Raw Data: 0x"
+  echo $output
+
+  cur_state=$[ 16#$output & $((16#1f)) ]
+
+  for (( index=0; index<=MAX_INDEX; index=index+1 ))
+  do
+    cur_state_machine_parse $output $index
   done
 
   echo ""
@@ -454,27 +503,31 @@ function fail_pwr_rail_check {
   echo ""
   echo "<<< Summary of CPLD Dump >>>"
 
+  if [[ $cur_state -eq 26 ]]; then
+    echo "System is in power fail state" 
+  fi
+
   case $state in
-    [1,2])
-      failed_pwr_rail=$((lock_state ^ normal_state1_2))
-      ;;
-    4)
+    2)
       failed_pwr_rail=$((lock_state ^ normal_state4))
       ;;
-    5)
+    4)
       failed_pwr_rail=$((lock_state ^ normal_state5))
       ;;
-    6)
-      failed_pwr_rail=$((lock_state ^ normal_state6)) 
+    5)
+      failed_pwr_rail=$((lock_state ^ normal_state6))
       ;;
-    [7,8])
-      failed_pwr_rail=$((lock_state ^ normal_state7_8))
+    6)
+      failed_pwr_rail=$((lock_state ^ normal_state8)) 
+      ;;
+    8)
+      failed_pwr_rail=$((lock_state ^ normal_state9))
       ;;
     9)
-      failed_pwr_rail=$((lock_state ^ normal_state9)) 
+      failed_pwr_rail=$((lock_state ^ normal_state11)) 
       ;;
-    [10,11])
-      failed_pwr_rail=$((lock_state ^ normal_state10_11))
+    11)
+      failed_pwr_rail=$((lock_state ^ normal_state12))
       ;;
     12)
       failed_pwr_rail=$((lock_state ^ normal_state12))

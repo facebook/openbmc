@@ -4177,6 +4177,19 @@ pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
   bool valid = false;
   uint8_t diff = o_val ^ n_val;
 
+  if (GETBIT(diff, 0)) {
+    switch(snr_num) {
+      case BIC_RC_SENSOR_PROC_FAIL:
+        sprintf(name, "Secure Boot Authentication Failure");
+        valid = true;
+        break;
+    }
+    if (valid) {
+      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 0), name);
+      valid = false;
+    }
+  }
+
   if (GETBIT(diff, 1)) {
     switch(snr_num) {
       case BIC_RC_SENSOR_VR_HOT:

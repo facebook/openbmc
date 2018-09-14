@@ -16,6 +16,38 @@ SCRIPTNAME=/etc/init.d/$NAME
 [ -x "$RSYSLOGD_BIN" ] || exit 0
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+#
+# Modify the runtime configuration based on flags
+#
+modify_configuration()
+{
+        if [ -e /mnt/data/kv_store/syslog_server ]; then
+                config=$(cat /mnt/data/kv_store/syslog_server)
+                protocol=$(cat /mnt/data/kv_store/syslog_server | awk -F',' '{print $1}')
+                server=$(cat /mnt/data/kv_store/syslog_server | awk -F',' '{print $2}')
+                port=$(cat /mnt/data/kv_store/syslog_server | awk -F',' '{print $3}')
+                conf=/etc/rsyslog.d/remote.conf
+                conf_backup=/etc/rsyslog.d/remote.conf.backup
+                if [ -z "$config" ]; then
+                        # Runtime remote logging disabled.
+                        mv $conf $conf_backup
+                else
+                        # If we have a backup, restore it if we dont have a config.
+                        if [ -e $conf_backup -a ! -e $conf ]; then
+                                mv $conf_backup $conf
+                        fi
+                        # If everything is fine, move on to modify the configuration.
+                        if [ -e $conf -a ! -z "$protocol" -a ! -z "$server" -a ! -z "$port" ]; then
+                                cp $conf $conf_backup
+                                sed "s/target=\"[^\"]\+\"/target=\"$server\"/" -i $conf
+                                sed "s/port=\"[^\"]\+\"/port=\"$port\"/" -i $conf
+                                sed "s/protocol=\"[^\"]\+\"/protocol=\"$protocol\"/" -i $conf
+                        fi
+                fi
+        fi
+}
+
 #
 # Function that starts the daemon/service
 #
@@ -24,6 +56,9 @@ do_start()
         DAEMON=$1
         DAEMON_ARGS=$2
         PIDFILE=$3
+
+        modify_configuration
+
         # Return
         #   0 if daemon has been started
         #   1 if daemon could not be started

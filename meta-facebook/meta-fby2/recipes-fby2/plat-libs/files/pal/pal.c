@@ -8058,22 +8058,18 @@ pci_express_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len
   uint8_t major_version_bcd = 0;
   uint16_t pci_command_register = 0;
   uint16_t pci_status_register = 0;
-  uint16_t vendorID = 0;
-  uint16_t deviceID = 0;
-  uint16_t class_code = 0;
   uint8_t function_num = 0;
   uint8_t device_num = 0;
   uint16_t seqment_num = 0;
   uint8_t root_port_pri_bus_num = 0;
-  uint8_t root_port_sec_bus_num = 0;
-  uint16_t slot_num = 0;
-  uint32_t serial_num_lower = 0;
-  uint32_t serial_num_upper = 0;
-  uint16_t bridge_secondary_status_register = 0;
-  uint16_t bridge_control_register = 0;
   uint8_t  Error_severity = 0;
+  uint32_t aer_root_err_status = 0;
+  uint32_t aer_cor_err_status = 0;
+  uint32_t aer_uncor_err_status = 0;
   char error_log[1024] = {0};
   char temp_log[512] = {0};
+  bool error_flag = 0;
+  int index = 0;
 
   sprintf(temp_log, "SEL Entry: FRU: %d, ", slot);
   strcat(error_log, temp_log);
@@ -8121,36 +8117,76 @@ pci_express_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len
 
   if (req_data[25] & 0x8) {
     //deviceID
-    vendorID = req_data[50] << 8 | req_data[49];
-    deviceID = req_data[52] << 8 | req_data[51];
-    class_code = req_data[55] << 16 | req_data[54] << 8 | req_data[53];
     function_num = req_data[56];
     device_num = req_data[57];
     seqment_num = req_data[59] << 8 |  req_data[58];
     root_port_pri_bus_num = req_data[60];
-    root_port_sec_bus_num = req_data[61];
-    slot_num = req_data[63] << 5 | ((req_data[62] & 0xF8) >> 3);
-    sprintf(temp_log, "Device_id:%04x:%02x:%02x.%x, Slot:%d, Secondary_bus:0x%02x, Vendor_id:0x%04x, Device_id:0x%04x, Class_code:%06x", seqment_num, root_port_pri_bus_num, device_num, function_num, slot_num, root_port_sec_bus_num, vendorID, deviceID, class_code);
+    sprintf(temp_log, "Segment:%04x, Bus:%02x, Device:%02x, Function:%x", seqment_num, root_port_pri_bus_num, device_num, function_num);
     strcat(error_log, temp_log);
     strcpy(temp_log, "");
   }
 
-  if (req_data[25] & 0x10) {
-    //serial Num
-    serial_num_lower = req_data[68] << 24 | req_data[67] << 16 | req_data[66] << 8 | req_data[65];
-    serial_num_upper = req_data[72] << 24 | req_data[71] << 16 | req_data[70] << 8 | req_data[69];
-    sprintf(temp_log, ", Serial Number:0x%04x, 0x%04x, ", serial_num_lower, serial_num_upper);
-    strcat(error_log, temp_log);
-    strcpy(temp_log, "");
-  }
+  if (req_data[25] & 0x80) {
+    //AER info
+    aer_root_err_status = req_data[188] << 24 | req_data[187] << 16 | req_data[186] << 8 | req_data[185];
+    aer_cor_err_status = req_data[156] << 24 | req_data[155] << 16 | req_data[154] << 8 | req_data[153];
+    aer_uncor_err_status = req_data[144] << 24 | req_data[143] << 16 | req_data[142] << 8 | req_data[141];
 
-  if (req_data[25] & 0x20) {
-    //bridge control status
-    bridge_secondary_status_register = req_data[74] << 8 | req_data[73];
-    bridge_control_register = req_data[76] << 8 | req_data[75];
-    sprintf(temp_log, ", Bridge:Secondary_status:0x%04x, Control:0x%04x", bridge_secondary_status_register, bridge_control_register);
+    sprintf(temp_log, ", Root Error Status:");
     strcat(error_log, temp_log);
     strcpy(temp_log, "");
+
+    for(index = 0; index < (sizeof(aer_root_err_sts)/sizeof(struct ras_pcie_aer_info) - 1); index++) {
+      if((aer_root_err_status >> aer_root_err_sts[index].offset & 0x1) == 1) {
+        sprintf(temp_log, " \"%s\"", aer_root_err_sts[index].name);
+        strcat(error_log, temp_log);
+        strcpy(temp_log, "");
+      }
+    }
+
+    sprintf(temp_log, " \"%s:%d\"", aer_root_err_sts[index].name, aer_root_err_status >> aer_root_err_sts[index].offset);
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+
+    error_flag = 0;
+    sprintf(temp_log, ", AER Uncorrectable Error Status:");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+
+    for(index = 0; index < sizeof(aer_uncor_err_sts)/sizeof(struct ras_pcie_aer_info) ; index++) {
+      if((aer_uncor_err_status >> aer_uncor_err_sts[index].offset & 0x1) == 1) {
+        sprintf(temp_log, " \"%s\"", aer_uncor_err_sts[index].name);
+        strcat(error_log, temp_log);
+        strcpy(temp_log, "");
+        error_flag = 1;
+      }
+    }
+
+    if(error_flag == 0) {
+      sprintf(temp_log, "NONE");
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }
+
+    error_flag = 0;
+    sprintf(temp_log, ", AER Correctable Error Status:");
+    strcat(error_log, temp_log);
+    strcpy(temp_log, "");
+
+    for(index = 0; index < sizeof(aer_cor_err_sts)/sizeof(struct ras_pcie_aer_info); index++) {
+      if((aer_cor_err_status >> aer_cor_err_sts[index].offset & 0x1) == 1) {
+        sprintf(temp_log, " \"%s\"", aer_cor_err_sts[index].name);
+        strcat(error_log, temp_log);
+        strcpy(temp_log, "");
+        error_flag = 1;
+      }
+    }
+
+    if(error_flag == 0) {
+      sprintf(temp_log, "NONE");
+      strcat(error_log, temp_log);
+      strcpy(temp_log, "");
+    }
   }
 
   syslog(LOG_CRIT, "%s", error_log);

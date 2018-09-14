@@ -353,7 +353,7 @@ gpio_monitor_poll(void *ptr) {
   gpios[FM_BIOS_POST_COMPT_N].status = GETBIT(o_pin_val, FM_BIOS_POST_COMPT_N);
   gpios[PWRGD_COREPWR].status = GETBIT(o_pin_val, PWRGD_COREPWR);
   if (gpios[FM_BIOS_POST_COMPT_N].status == gpios[FM_BIOS_POST_COMPT_N].ass_val) {
-    // POST is not ongoing 
+    // POST is not ongoing
     pal_set_fru_post(fru,0);
   } else {
     // POST is ongoing
@@ -382,9 +382,12 @@ gpio_monitor_poll(void *ptr) {
         usleep(DELAY_GPIOD_READ);
         continue;
       }
-      //12V-off
-      pal_set_fru_post(fru,0);
 
+      // 12V-off
+      if (gpios[FM_BIOS_POST_COMPT_N].status) {
+        gpios[FM_BIOS_POST_COMPT_N].status = 0;
+        pal_set_fru_post(fru,0);
+      }
       o_pin_val = 0;
       n_pin_val = o_pin_val;
     }

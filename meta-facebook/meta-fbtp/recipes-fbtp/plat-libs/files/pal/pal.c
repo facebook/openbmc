@@ -4034,6 +4034,31 @@ pal_fruid_write(uint8_t fru, char *path)
 }
 
 int
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
+{
+  //default poll interval
+  *value = 2;
+
+  switch (fru)
+  {
+    case FRU_MB:
+      if ( MB_SENSOR_P3V_BAT == sensor_num )
+      {
+        *value = 3600;
+      }
+      break;
+
+    case FRU_NIC:
+    case FRU_RISER_SLOT2:
+    case FRU_RISER_SLOT3:
+    case FRU_RISER_SLOT4:
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};

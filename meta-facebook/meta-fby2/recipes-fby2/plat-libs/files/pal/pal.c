@@ -3188,7 +3188,8 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 #endif
       return -1;
   }
-    return 0;
+
+  return 0;
 }
 
 int
@@ -4412,7 +4413,14 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
 static int
 pal_store_crashdump(uint8_t fru, bool ierr) {
+  uint8_t status;
   char cmd[256];
+
+  if (!pal_get_server_power(fru, &status) && !status) {
+    syslog(LOG_WARNING, "pal_store_crashdump: fru %u is OFF", fru);
+    return -1;
+  }
+
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sys_runtime=$(awk '{print $1}' /proc/uptime) ; sys_runtime=$(printf \"%0.f\" $sys_runtime) ; echo $((sys_runtime+1200)) > /tmp/cache_store/fru%d_crashdump", fru);
   system(cmd);

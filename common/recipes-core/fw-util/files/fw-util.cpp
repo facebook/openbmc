@@ -91,6 +91,13 @@ int AliasComponent::update(string image)
   return _target_comp->update(image);
 }
 
+int AliasComponent::fupdate(string image)
+{
+  if (!setup())
+    return FW_STATUS_NOT_SUPPORTED;
+  return _target_comp->fupdate(image);
+}
+
 int AliasComponent::dump(string image)
 {
   if (!setup())
@@ -139,6 +146,7 @@ void usage()
 {
   cout << "USAGE: " << exec_name << " all|FRU --version [all|COMPONENT]" << endl;
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
+  cout << "       " << exec_name << " FRU --force_update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --dump [--]COMPONENT IMAGE_PATH" << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
@@ -193,7 +201,7 @@ int main(int argc, char *argv[])
       component = component.substr(2);
     }
   }
-  if ((action == "--update") || (action == "--dump")) {
+  if ((action == "--update") || (action == "--dump") || (action == "--force_update")) {
     if (argc < 5) {
       usage();
       return -1;
@@ -203,6 +211,11 @@ int main(int argc, char *argv[])
       ifstream f(image);
       if (!f.good()) {
         cerr << "Cannot access: " << image << endl;
+        return -1;
+      }
+    } else if(action == "--force_update") {
+      if (component != "bic") {
+        cerr << "Force update for " << component << " is not supported" << endl;
         return -1;
       }
     }
@@ -253,6 +266,9 @@ int main(int argc, char *argv[])
             if (action == "--update") {
               ret = c->update(image);
               str_act.assign("Upgrade");
+            } else if (action == "--force_update") {
+              ret = c->fupdate(image);
+              str_act.assign("Force upgrade");
             } else {
               ret = c->dump(image);
               str_act.assign("Dump");

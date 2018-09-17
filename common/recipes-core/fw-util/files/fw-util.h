@@ -32,6 +32,7 @@ class Component {
     virtual std::string &alias_component(void) { return _component; }
     virtual std::string &alias_fru(void) { return _fru; }
     virtual int update(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int fupdate(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int dump(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
 };
@@ -47,6 +48,7 @@ class AliasComponent : public Component {
     std::string &alias_component(void) { return _target_comp_name; }
     std::string &alias_fru(void) { return _target_fru; }
     int update(std::string image);
+    int fupdate(std::string image);
     int dump(std::string image);
     int print_version();
 };

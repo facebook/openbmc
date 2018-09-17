@@ -20,6 +20,17 @@ int BicFwComponent::update(string image) {
   return ret;
 }
 
+int BicFwComponent::fupdate(string image) {
+  int ret;
+  try {
+    server.fready();
+    ret = pal_force_update_bic_fw(slot_id, UPDATE_BIC, (char *)image.c_str());
+  } catch (string err) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  return ret;
+}
+
 int BicFwComponent::print_version() {
   uint8_t ver[32];
   try {

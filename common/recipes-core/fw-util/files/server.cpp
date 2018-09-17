@@ -43,3 +43,29 @@ void Server::ready()
     throw "fru " + fru_name + " is not a server";
   }
 }
+
+void Server::fready()
+{
+  int ret;
+  uint8_t status;
+  ret = pal_is_fru_prsnt(_slot_id, &status);
+  if (ret < 0) {
+  #ifdef DEBUG
+    cerr << "pal_is_fru_prsnt failed for fru " << _slot_id << endl;
+  #endif
+    throw "get " + fru_name + " present failed";
+  }
+  if (status == 0) {
+#ifdef DEBUG
+    cerr << "slot" << _slot_id << " is empty!" << endl;
+#endif
+    throw fru_name + " is empty";
+  }
+  if (!pal_is_slot_server(_slot_id)) {
+#ifdef DEBUG
+    cerr << "slot" << _slot_id << " is not a server" << endl;
+#endif
+    throw "fru " + fru_name + " is not a server";
+  }
+}
+

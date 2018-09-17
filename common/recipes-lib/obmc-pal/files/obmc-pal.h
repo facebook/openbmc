@@ -315,6 +315,7 @@ uint8_t pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
 int pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence);
 int pal_get_tpm_physical_presence(uint8_t slot);
 int pal_create_TPMTimer(int fru);
+int pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
 #ifdef __cplusplus
 }
 #endif

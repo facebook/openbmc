@@ -2232,3 +2232,8 @@ int __attribute__((weak))
 pal_create_TPMTimer(int fru) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  return -2;  //means not support
+}

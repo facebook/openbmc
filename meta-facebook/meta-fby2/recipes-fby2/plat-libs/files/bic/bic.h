@@ -425,6 +425,7 @@ int bic_get_server_type(uint8_t fru, uint8_t *type);
 int bic_asd_init(uint8_t slot_id, uint8_t cmd);
 int bic_set_pcie_config(uint8_t slot_id, uint8_t config);
 int get_imc_version(uint8_t slot, uint8_t *ver);
+int force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
 
 #ifdef __cplusplus
 } // extern "C"

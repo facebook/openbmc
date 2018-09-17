@@ -730,6 +730,329 @@ bic_send:
   return ret;
 }
 
+int
+force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  int fd;
+  int ifd = -1;
+  char cmd[100] = {0};
+  struct stat buf;
+  int size;
+  uint8_t tbuf[256] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount;
+  uint8_t rcount;
+  volatile int xcount;
+  int i = 0;
+  int ret = -1, rc;
+  uint8_t xbuf[256] = {0};
+  uint32_t offset = 0, last_offset = 0, dsize;
+  struct rlimit mqlim;
+
+  if(!_is_slot_12v_on(slot_id)) {
+    return -2;
+  }
+
+  if (_is_bic_ready(slot_id)) {
+    printf("Not support in BIC normal mode\n");
+    return -2;
+  }
+
+  printf("updating fw on slot %d:\n", slot_id);
+
+  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
+
+  // Open the file exclusively for read
+  fd = open(path, O_RDONLY, 0666);
+  if (fd < 0) {
+    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
+    goto error_exit2;
+  }
+
+  fstat(fd, &buf);
+  size = buf.st_size;
+  printf("size of file is %d bytes\n", size);
+  dsize = size/20;
+
+  // Open the i2c driver
+  ifd = i2c_open(get_ipmb_bus_id(slot_id));
+  if (ifd < 0) {
+    printf("ifd error\n");
+    goto error_exit2;
+  }
+
+  // Kill ipmb daemon for this slot
+  sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
+  system(cmd);
+  printf("stop ipmbd for slot %x..\n", slot_id);
+
+  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
+  // So reduce I2C bus clock speed which is a workaround for BIC update.
+  switch(slot_id)
+  {
+     case FRU_SLOT1:
+       system("devmem 0x1e78a084 w 0xFFF77304");
+       break;
+     case FRU_SLOT2:
+       system("devmem 0x1e78a104 w 0xFFF77304");
+       break;
+     case FRU_SLOT3:
+       system("devmem 0x1e78a184 w 0xFFF77304");
+       break;
+     case FRU_SLOT4:
+       system("devmem 0x1e78a304 w 0xFFF77304");
+       break;
+     default:
+       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
+       goto error_exit;
+       break;
+  }
+  sleep(1);
+  printf("Stopped ipmbd for this slot %x..\n",slot_id);
+
+  mqlim.rlim_cur = RLIM_INFINITY;
+  mqlim.rlim_max = RLIM_INFINITY;
+  if (setrlimit(RLIMIT_MSGQUEUE, &mqlim) < 0) {
+    goto error_exit;
+  }
+
+  // Start Bridge IC update(0x21)
+
+  tbuf[0] = CMD_DOWNLOAD_SIZE;
+  tbuf[1] = 0x00; //Checksum, will fill later
+
+  tbuf[2] = BIC_CMD_DOWNLOAD;
+
+  // update flash address: 0x8000
+  tbuf[3] = (BIC_FLASH_START >> 24) & 0xff;
+  tbuf[4] = (BIC_FLASH_START >> 16) & 0xff;
+  tbuf[5] = (BIC_FLASH_START >> 8) & 0xff;
+  tbuf[6] = (BIC_FLASH_START) & 0xff;
+
+  // image size
+  tbuf[7] = (size >> 24) & 0xff;
+  tbuf[8] = (size >> 16) & 0xff;
+  tbuf[9] = (size >> 8) & 0xff;
+  tbuf[10] = (size) & 0xff;
+
+  // calcualte checksum for data portion
+  for (i = 2; i < CMD_DOWNLOAD_SIZE; i++) {
+    tbuf[1] += tbuf[i];
+  }
+
+  tcount = CMD_DOWNLOAD_SIZE;
+
+  rcount = 0;
+
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
+    printf("i2c_io failed download\n");
+    goto error_exit;
+  }
+
+  //delay for download command process ---
+  msleep(500);
+  tcount = 0;
+  rcount = 2;
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
+    printf("i2c_io failed download ack\n");
+    goto error_exit;
+  }
+
+  if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
+    printf("download response: %x:%x\n", rbuf[0], rbuf[1]);
+    goto error_exit;
+  }
+
+  // Loop to send all the image data
+  while (1) {
+    // Get Status
+    tbuf[0] = CMD_STATUS_SIZE;
+    tbuf[1] = BIC_CMD_STATUS;// checksum same as data
+    tbuf[2] = BIC_CMD_STATUS;
+
+    tcount = CMD_STATUS_SIZE;
+    rcount = 0;
+
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      printf("i2c_io failed get status\n");
+      goto error_exit;
+    }
+
+    tcount = 0;
+    rcount = 5;
+
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      printf("i2c_io failed get status ack\n");
+      goto error_exit;
+    }
+
+    if (rbuf[0] != 0x00 ||
+        rbuf[1] != 0xcc ||
+        rbuf[2] != 0x03 ||
+        rbuf[3] != 0x40 ||
+        rbuf[4] != 0x40) {
+      printf("status resp: %x:%x:%x:%x:%x", rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4]);
+      goto error_exit;
+    }
+
+    // Send ACK ---
+    tbuf[0] = 0xcc;
+    tcount = 1;
+    rcount = 0;
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      printf("i2c_io failed send ack\n");
+      goto error_exit;
+    }
+
+    // send next packet
+
+    xcount = read(fd, xbuf, BIC_PKT_MAX);
+    if (xcount <= 0) {
+#ifdef DEBUG
+      printf("read returns %d\n", xcount);
+#endif
+      break;
+    }
+#ifdef DEBUG
+    printf("read returns %d bytes\n", xcount);
+#endif
+
+    offset += xcount;
+    if((last_offset + dsize) <= offset) {
+       printf("updated bic: %d %%\n", offset/dsize*5);
+       last_offset += dsize;
+    }
+
+    tbuf[0] = xcount + 3;
+    tbuf[1] = BIC_CMD_DATA;
+    tbuf[2] = BIC_CMD_DATA;
+    memcpy(&tbuf[3], xbuf, xcount);
+
+    for (i = 0; i < xcount; i++) {
+      tbuf[1] += xbuf[i];
+    }
+
+    tcount = tbuf[0];
+    rcount = 0;
+
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      printf("i2c_io error send data\n");
+      goto error_exit;
+    }
+
+    msleep(10);
+    tcount = 0;
+    rcount = 2;
+
+    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      printf("i2c_io error send data ack\n");
+      goto error_exit;
+    }
+
+    if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
+      printf("data error: %x:%x\n", rbuf[0], rbuf[1]);
+      goto error_exit;
+    }
+  }
+  msleep(500);
+
+  // Run the new image
+  tbuf[0] = CMD_RUN_SIZE;
+  tbuf[1] = 0x00; //checksum
+  tbuf[2] = BIC_CMD_RUN;
+  tbuf[3] = (BIC_FLASH_START >> 24) & 0xff;
+  tbuf[4] = (BIC_FLASH_START >> 16) & 0xff;
+  tbuf[5] = (BIC_FLASH_START >> 8) & 0xff;
+  tbuf[6] = (BIC_FLASH_START) & 0xff;
+
+  for (i = 2; i < CMD_RUN_SIZE; i++) {
+    tbuf[1] += tbuf[i];
+  }
+
+  tcount = CMD_RUN_SIZE;
+  rcount = 0;
+
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
+    printf("i2c_io failed run\n");
+    goto error_exit;
+  }
+
+  tcount = 0;
+  rcount = 2;
+
+  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  if (rc) {
+    printf("i2c_io failed run ack\n");
+    goto error_exit;
+  }
+
+  if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
+    printf("run response: %x:%x\n", rbuf[0], rbuf[1]);
+    goto error_exit;
+  }
+  msleep(500);
+
+  // Wait for SMB_BMC_3v3SB_ALRT_N
+  for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
+    if (_is_bic_ready(slot_id))
+      break;
+
+    msleep(BIC_UPDATE_TIMEOUT);
+  }
+  if (i == BIC_UPDATE_RETRIES) {
+    printf("bic is NOT ready\n");
+    goto error_exit;
+  }
+
+  ret = 0;
+
+error_exit:
+  // Restore the I2C bus clock to 1M.
+  switch(slot_id)
+  {
+     case FRU_SLOT1:
+       system("devmem 0x1e78a084 w 0xFFF5E700");
+       break;
+     case FRU_SLOT2:
+       system("devmem 0x1e78a104 w 0xFFF5E700");
+       break;
+     case FRU_SLOT3:
+       system("devmem 0x1e78a184 w 0xFFF5E700");
+       break;
+     case FRU_SLOT4:
+       system("devmem 0x1e78a304 w 0xFFF5E700");
+       break;
+     default:
+       syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
+       break;
+  }
+
+  // Restart ipmbd daemon
+  sleep(1);
+  memset(cmd, 0, sizeof(cmd));
+  sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
+  system(cmd);
+
+error_exit2:
+  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", slot_id);
+  if (fd > 0) {
+    close(fd);
+  }
+
+  if (ifd > 0) {
+     close(ifd);
+  }
+
+  return ret;
+}
+
 static int
 _update_bic_main(uint8_t slot_id, char *path) {
   int fd;

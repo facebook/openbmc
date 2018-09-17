@@ -8568,3 +8568,8 @@ pal_create_TPMTimer(int fru) {
   pthread_detach(tpm_tid[fru-1]);
   return 0;
 }
+
+int
+pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  return force_update_bic_fw(slot_id, comp, path);
+}

@@ -150,7 +150,7 @@ util_get_gpio(uint8_t slot_id) {
   char **gpio_name;
 
   ret = _get_gpio_cnt_name(slot_id, &gpio_cnt, &gpio_name);
-  if ( ret) {
+  if (ret) {
     printf("util_get_gpio: _get_gpio_cnt_name returns %d\n", ret);
     return ret;
   }
@@ -288,7 +288,7 @@ util_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t config) {
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
   char **gpio_name;
 
-  ret = _get_gpio_cnt_name(slot_id, &gpio_cnt, &gpio_name)
+  ret = _get_gpio_cnt_name(slot_id, &gpio_cnt, &gpio_name);
   if (ret) {
     printf("ERROR: _get_gpio_cnt_name returns %d\n", ret);
     return ret;

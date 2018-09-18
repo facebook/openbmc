@@ -44,10 +44,11 @@ def get_vboot_status():
         data = subprocess.check_output(['/usr/local/bin/vboot-util'], \
                 shell=True).decode().splitlines()
         info["status_text"] = data[-1].strip()
+        if ("Verified boot is not supported" in info["status_text"]):
+            return info
         m = re.match("Status CRC: (0[xX][0-9a-fA-F]+)", data[-4].strip())
         if m:
             info["status_crc"] = m.group(1)
-
         m = re.match("Status type \((\d+)\) code \((\d+)\)", data[-2].strip())
         if m:
             info['status'] = "{}.{}".format(m.group(1), m.group(2))

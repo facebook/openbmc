@@ -3,9 +3,10 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://init \
             file://sshd_config \
             file://backpack_ssh_config \
+            file://link-local-addr-any-interface.patch \
            "
 
-PR .= ".1"
+PR .= ".2"
 
 do_configure_append() {
   sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" sshd_config

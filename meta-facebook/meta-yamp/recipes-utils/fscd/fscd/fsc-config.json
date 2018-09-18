@@ -18,7 +18,7 @@
   "profiles": {
     "linear_inlet": {
       "read_source" : {
-        "sysfs" : "/sys/bus/i2c/drivers/lm90/11-004c/hwmon/hwmon9/temp2_input"
+        "sysfs" : "/sys/bus/i2c/drivers/lm90/11-004c/hwmon/hwmon*/temp2_input"
       },
       "read_limit": {
         "valid": {
@@ -51,7 +51,7 @@
     },
     "linear_th3": {
       "read_source" : {
-        "sysfs" : "/sys/bus/i2c/drivers/max6697/4-004d/hwmon/hwmon7/temp2_input"
+        "sysfs" : "/sys/bus/i2c/drivers/max6697/4-004d/hwmon/hwmon*/temp2_input"
       },
       "read_limit": {
         "valid": {

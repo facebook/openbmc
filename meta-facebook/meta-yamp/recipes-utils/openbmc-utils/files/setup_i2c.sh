@@ -25,6 +25,13 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # Active low - 1 means out of reset, 0 means in reset
 gpio_set TPM_RST_N 1
 
+# Probe the devices used by fscd first, just in case probing 
+# taking too long, when one of modules are not in good shape.
+# 1. Probe SUP Inlet1/2 sensor, used for fscd 
+i2c_device_add 11 0x4c max6658
+# 2. Probe TH3 temp sensor, also used for fscd
+i2c_device_add 4 0x4d max6581
+
 # Bus  1 - SMBus 2
 i2c_device_add 1 0x50 supsfp
 
@@ -40,7 +47,6 @@ i2c_device_add 3 0x44 pmbus
 
 # Bus  4 - SMBus 5 SCD
 i2c_device_add 4 0x23 scdcpld
-i2c_device_add 4 0x4d max6581
 i2c_device_add 4 0x50 24c512
 # Unreset LC SMBUS MUX on the Switch Card
 echo 0 > $LC_SMB_MUX_RST
@@ -64,7 +70,6 @@ i2c_device_add 10 0x27 mempwr
 
 # Bus  11 - SMBus 12 SUP TEMP
 i2c_device_add 11 0x40 pmbus
-i2c_device_add 11 0x4c max6658
 
 # Bus  12 - SMBus 13 SUP CPLD
 i2c_device_add 12 0x43 supcpld

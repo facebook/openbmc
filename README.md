@@ -36,7 +36,7 @@ The BMC SoC layer and board specific layer are grouped together based on the ven
 
 Note: In the instruction set below, references to <platform> for some of the steps is an example only and need to be replaced with the respective platform when setting up for a different platform.
 
-1. Set up the build environment based on the Yocto Project's [Quick Start Guide](http://www.yoctoproject.org/docs/current/yocto-project-qs/yocto-project-qs.html).
+1. Set up the build environment based on the Yocto Project's [Quick Start Guide](https://www.yoctoproject.org/docs/2.5/brief-yoctoprojectqs/brief-yoctoprojectqs.html).
 
 2. Clone the OpenBMC repository and other open source repositories:
  ```bash

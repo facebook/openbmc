@@ -76,8 +76,89 @@ typedef struct _nl_sfd_t {
   int sock;
 } nl_sfd_t;
 
-// use to signal all threads to exit
-volatile int thread_stop = 0;
+
+static int
+send_registration_msg(nl_sfd_t *sfd)
+{
+  struct sockaddr_nl src_addr, dest_addr;
+  struct nlmsghdr *nlh = NULL;
+  NCSI_NL_MSG_T *nl_msg = NULL;
+  struct iovec iov;
+  struct msghdr msg;
+  int msg_size = sizeof(NCSI_NL_MSG_T);
+  int ret = 0;
+  int sock_fd = ((nl_sfd_t *)sfd)->fd;
+
+
+  memset(&msg, 0, sizeof(msg));
+  memset(&src_addr, 0, sizeof(src_addr));
+  src_addr.nl_family = AF_NETLINK;
+  src_addr.nl_pid = getpid(); /* self pid */
+
+  if (bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr)) == -1) {
+    syslog(LOG_ERR, "send_registration_msg: bind socket failed\n");
+    ret = 1;
+    goto free_and_exit;
+  };
+
+  memset(&dest_addr, 0, sizeof(dest_addr));
+  dest_addr.nl_family = AF_NETLINK;
+  dest_addr.nl_pid = 0;    /* For Linux Kernel */
+  dest_addr.nl_groups = 0;
+
+  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
+  if (!nlh) {
+    syslog(LOG_ERR, "send_registration_msg: Error, failed to allocate message buffer\n");
+    ret = 1;
+    goto free_and_exit ;
+  }
+
+  memset(nlh, 0, NLMSG_SPACE(msg_size));
+  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
+  nlh->nlmsg_pid = getpid();
+  nlh->nlmsg_flags = 0;
+
+  nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+  if (!nl_msg) {
+    syslog(LOG_ERR, "send_registration_msg: Error, failed to allocate NCSI_NL_MSG\n");
+    ret = 1;
+    goto free_and_exit ;
+  }
+
+  /* send registration message to kernel to register ncsid as AEN handler */
+  /* for now only listens on eth0 */
+  sprintf(nl_msg->dev_name, "eth0");
+  nl_msg->channel_id = REG_AEN_CH;
+  nl_msg->cmd = REG_AEN_CMD;
+  nl_msg->payload_length = 0;
+
+  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
+
+  iov.iov_base = (void *)nlh;
+  iov.iov_len = nlh->nlmsg_len;
+  msg.msg_name = (void *)&dest_addr;
+  msg.msg_namelen = sizeof(dest_addr);
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+  syslog(LOG_INFO, "send_registration_msg: registering PID %d\n",
+         nlh->nlmsg_pid);
+  ret = sendmsg(sock_fd,&msg,0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "send_registration_msg: status ret = %d, errno=%d\n",
+             ret, errno);
+  }
+
+free_and_exit:
+  if (nlh)
+    free(nlh);
+
+  if (nl_msg)
+    free(nl_msg);
+
+  return ret;
+}
+
 
 
 static void
@@ -144,11 +225,11 @@ ncsi_rx_handler(void *sfd) {
   NCSI_NL_RSP_T *rcv_buf;
   memset(&msg, 0, sizeof(msg));
 
-  syslog(LOG_INFO, "ncsid rx: ncsi_rx_handler thread started");
+  syslog(LOG_INFO, "rx: ncsi_rx_handler thread started");
 
   nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
   if (!nlh) {
-    syslog(LOG_ERR, "ncsid rx: Error, failed to allocate message buffer");
+    syslog(LOG_ERR, "rx: Error, failed to allocate message buffer");
     return NULL;
   }
   memset(nlh, 0, NLMSG_SPACE(msg_size));
@@ -161,17 +242,18 @@ ncsi_rx_handler(void *sfd) {
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
 
-  while (! thread_stop) {
+  while (1) {
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
     rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
     if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
-      syslog(LOG_NOTICE, "ncsid rx: aen packet rcvd, pl_len=%d, type=0x%x",
+      syslog(LOG_NOTICE, "rx: aen packet rcvd, pl_len=%d, type=0x%x",
               rcv_buf->payload_length,
               rcv_buf->msg_payload[offsetof(AEN_Packet, AEN_Type)]);
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
       if (ret == NCSI_IF_REINIT) {
-        thread_stop = 1;
+        send_registration_msg(sfd);
+        enable_aens();
       }
     } else {
       process_NCSI_resp(rcv_buf);
@@ -197,7 +279,7 @@ ncsi_tx_handler(void *sfd) {
   int msg_size = sizeof(NCSI_NL_MSG_T);
 
 
-  syslog(LOG_INFO, "ncsid: ncsi_tx_handler thread started");
+  syslog(LOG_INFO, "ncsi_tx_handler thread started");
   memset(&dest_addr, 0, sizeof(dest_addr));
   dest_addr.nl_family = AF_NETLINK;
   dest_addr.nl_pid = 0;    /* For Linux Kernel */
@@ -205,7 +287,7 @@ ncsi_tx_handler(void *sfd) {
 
   nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
   if (!nlh) {
-    syslog(LOG_ERR, "ncsid tx: Error, failed to allocate message buffer\n");
+    syslog(LOG_ERR, "tx: Error, failed to allocate message buffer\n");
     goto free_and_exit;
   }
 
@@ -216,7 +298,7 @@ ncsi_tx_handler(void *sfd) {
 
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
-    syslog(LOG_ERR, "ncsid tx: Error, failed to allocate NCSI_NL_MSG\n");
+    syslog(LOG_ERR, "tx: Error, failed to allocate NCSI_NL_MSG\n");
     goto free_and_exit;
   }
 
@@ -237,17 +319,18 @@ ncsi_tx_handler(void *sfd) {
   msg.msg_iovlen = 1;
 
 
-  while (! thread_stop) {
+  while (1) {
     /* send "Get Link status" message to NIC  */
     ret = sendmsg(sock_fd,&msg,0);
     if (ret < 0) {
-      syslog(LOG_ERR, "ncsid tx: failed to send cmd, status ret = %d, errno=%d\n",
+      syslog(LOG_ERR, "tx: failed to send cmd, status ret = %d, errno=%d\n",
                ret, errno);
     }
 
     ret = check_ncsi_status();
     if (ret == NCSI_IF_REINIT) {
-      thread_stop = 1;
+      send_registration_msg(sfd);
+      enable_aens();
     }
     sleep(NIC_STATUS_SAMPLING_DELAY);
   }
@@ -260,100 +343,39 @@ free_and_exit:
 }
 
 
-
 // Thread to setup netlink and recieve AEN
 static void*
 ncsi_aen_handler(void *unused) {
-  int sock_fd, ret;
-  struct sockaddr_nl src_addr, dest_addr;
-  struct nlmsghdr *nlh = NULL;
-  NCSI_NL_MSG_T *nl_msg = NULL;
-  struct iovec iov;
-  struct msghdr msg;
+  int sock_fd;
   pthread_t tid_rx;
   pthread_t tid_tx;
-  int msg_size = sizeof(NCSI_NL_MSG_T);
   nl_sfd_t *sfd;
 
-
-  syslog(LOG_INFO, "ncsid ncsi_aen_handler: ncsi_tx_handler thread started\n");
+  syslog(LOG_INFO, "ncsi_aen_handler thread started\n");
   /* open NETLINK socket to send message to kernel */
   sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
   if(sock_fd < 0)  {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: Error: failed to allocate tx socket\n");
+    syslog(LOG_ERR, "ncsi_aen_handler: Error: failed to allocate tx socket\n");
     return NULL;
   }
 
-  memset(&msg, 0, sizeof(msg));
-  memset(&src_addr, 0, sizeof(src_addr));
-  src_addr.nl_family = AF_NETLINK;
-  src_addr.nl_pid = getpid(); /* self pid */
-
-  if (bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr)) == -1) {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: bind socket failed\n");
-    goto close_and_exit;
-  };
-
   sfd = (nl_sfd_t *)malloc(sizeof(nl_sfd_t));
   if (!sfd) {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: malloc fail on sfd\n");
+    syslog(LOG_ERR, "ncsi_aen_handler: malloc fail on sfd\n");
     goto close_and_exit;
   }
 
   sfd->fd = sock_fd;
   if (pthread_create(&tid_rx, NULL, ncsi_rx_handler, (void*) sfd) != 0) {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: pthread_create failed on ncsi_rx_handler, errno %d\n",
+    syslog(LOG_ERR, "ncsi_aen_handler: pthread_create failed on ncsi_rx_handler, errno %d\n",
            errno);
     goto free_and_exit;
   }
 
-  memset(&dest_addr, 0, sizeof(dest_addr));
-  dest_addr.nl_family = AF_NETLINK;
-  dest_addr.nl_pid = 0;    /* For Linux Kernel */
-  dest_addr.nl_groups = 0;
-
-  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
-  if (!nlh) {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: Error, failed to allocate message buffer\n");
-    goto free_and_exit;
-  }
-
-  memset(nlh, 0, NLMSG_SPACE(msg_size));
-  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
-  nlh->nlmsg_pid = getpid();
-  nlh->nlmsg_flags = 0;
-
-  nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
-  if (!nl_msg) {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: Error, failed to allocate NCSI_NL_MSG\n");
-    goto free_and_exit;
-  }
-
-  /* send registration message to kernel to register ncsid as AEN handler */
-  /* for now only listens on eth0 */
-  sprintf(nl_msg->dev_name, "eth0");
-  nl_msg->channel_id = REG_AEN_CH;
-  nl_msg->cmd = REG_AEN_CMD;
-  nl_msg->payload_length = 0;
-
-  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
-
-  iov.iov_base = (void *)nlh;
-  iov.iov_len = nlh->nlmsg_len;
-  msg.msg_name = (void *)&dest_addr;
-  msg.msg_namelen = sizeof(dest_addr);
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-
-  syslog(LOG_INFO, "ncsid ncsi_aen_handler: registering AEN Handler\n");
-  ret = sendmsg(sock_fd,&msg,0);
-  if (ret < 0) {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: AEN Registration status ret = %d, errno=%d\n",
-             ret, errno);
-  }
+  send_registration_msg(sfd);
 
   if (pthread_create(&tid_tx, NULL, ncsi_tx_handler, (void*) sfd) != 0) {
-    syslog(LOG_ERR, "ncsid ncsi_aen_handler: pthread_create failed on ncsi_tx_handler, errno %d\n",
+    syslog(LOG_ERR, "ncsi_aen_handler: pthread_create failed on ncsi_tx_handler, errno %d\n",
            errno);
     goto free_and_exit;
   }
@@ -361,15 +383,10 @@ ncsi_aen_handler(void *unused) {
   // enable platform-specific AENs
   enable_aens();
 
-
   pthread_join(tid_rx, NULL);
   pthread_join(tid_tx, NULL);
 
 free_and_exit:
-  if (nlh)
-    free(nlh);
-  if (nl_msg)
-    free(nl_msg);
   if (sfd)
     free (sfd);
 
@@ -383,11 +400,11 @@ int
 main(int argc, char * const argv[]) {
   pthread_t tid_ncsi_aen_handler;
 
-  syslog(LOG_INFO, "ncsid:started\n");
+  syslog(LOG_INFO, "started\n");
 
   // Create thread to handle AEN registration and Responses
   if (pthread_create(&tid_ncsi_aen_handler, NULL, ncsi_aen_handler, (void*) NULL) < 0) {
-    syslog(LOG_ERR, "ncsid: pthread_create failed on ncsi_handler\n");
+    syslog(LOG_ERR, "pthread_create failed on ncsi_handler\n");
     goto cleanup;
   }
 
@@ -396,6 +413,6 @@ cleanup:
   if (tid_ncsi_aen_handler > 0) {
     pthread_join(tid_ncsi_aen_handler, NULL);
   }
-  syslog(LOG_INFO, "ncsid exit\n");
+  syslog(LOG_INFO, "exit\n");
   return 0;
 }

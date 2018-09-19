@@ -103,7 +103,7 @@ process_NCSI_AEN(AEN_Packet *buf)
 
   if (!is_aen_packet(buf)) {
     // Invalid AEN packet
-    syslog(LOG_NOTICE, "ncsid: Invalid NCSI AEN rcvd: MC_ID=0x%x Rev=0x%x IID=0x%x\n",
+    syslog(LOG_NOTICE, "Invalid NCSI AEN rcvd: MC_ID=0x%x Rev=0x%x IID=0x%x\n",
            buf->MC_ID, buf->Header_Revision, buf->IID);
     return 0;
   }
@@ -121,9 +121,6 @@ process_NCSI_AEN(AEN_Packet *buf)
         i += sprintf(logbuf + i, ", LinkStatus=0x%04x-%04x",
         ntohs(buf->Optional_AEN_Data[0]),
         ntohs(buf->Optional_AEN_Data[1]));
-        // printk(" OemLinkStatus=0x%04x-%04x",
-        //              ntohs(lp->NCSI_Aen.Optional_AEN_Data[2]),
-        //              ntohs(lp->NCSI_Aen.Optional_AEN_Data[3]));
         break;
 
       case AEN_TYPE_CONFIGURATION_REQUIRED:
@@ -131,7 +128,7 @@ process_NCSI_AEN(AEN_Packet *buf)
         i += sprintf(logbuf + i, ", Configuration Required");
         syslog(log_level, "%s", logbuf);
 
-        handle_ncsi_config();  // this function will signal ncsid to exit
+        handle_ncsi_config();
 
         // set flag indicate all threads to exit
         return NCSI_IF_REINIT;

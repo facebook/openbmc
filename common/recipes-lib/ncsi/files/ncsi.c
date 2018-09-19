@@ -38,7 +38,7 @@ ncsi_init_if(int inv_addr)
 {
   char cmd[80] = {0};
   int ret = 0;
-  syslog(LOG_CRIT, "ncsid: re-configure NC-SI and restart eth0 interface");
+  syslog(LOG_CRIT, "re-configure NC-SI and restart eth0 interface");
 
   if (inv_addr) {
     sprintf(cmd, "ifdown eth0; ifconfig eth0 hw ether 00:00:00:00:00:e0; ifup eth0");
@@ -47,7 +47,7 @@ ncsi_init_if(int inv_addr)
   }
   ret = system(cmd);
 
-  syslog(LOG_CRIT, "ncsid: re-start eth0 interface done! ret=%d", ret);
+  syslog(LOG_CRIT, "re-start eth0 interface done! ret=%d", ret);
 
   return ret;
 }
@@ -153,7 +153,7 @@ check_ncsi_status(void)
     ncsi_init_if(1);
     ret = getMacAddr(values);
     if (!ret && checkValidMacAddr(values)) {
-       syslog(LOG_CRIT, "Valid MAC(%x:%x:%x:%x:%x:%x) obtained after NCSI re-init, restarting ncsid",
+       syslog(LOG_CRIT, "Valid MAC(%x:%x:%x:%x:%x:%x) obtained after NCSI re-init",
        values[0], values[1], values[2], values[3],
              values[4], values[5]);
       return NCSI_IF_REINIT;

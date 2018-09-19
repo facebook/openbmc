@@ -48,7 +48,10 @@ class serverNode(node):
         else:
             status = 'error'
 
-        info = { "status": status }
+        bic_status = pal_get_bic_status(self.num)
+
+        info = { "Power status": status,
+                 "BIC_ok" : bic_status }
 
         return info
 

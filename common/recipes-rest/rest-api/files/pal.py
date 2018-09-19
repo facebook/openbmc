@@ -59,6 +59,34 @@ def pal_get_server_power(slot_id):
     else:
         return status.value
 
+# return value
+#  1 - bic okay
+#  0 - bic error
+#  2 - not present
+def pal_get_bic_status(slot_id):
+    plat_name = pal_get_platform_name().decode();
+    if 'FBTTN' in plat_name:
+        fru = ''
+    elif 'FBY2' in plat_name or 'Yosemite' in plat_name:
+        fru = 'slot'+str(slot_id)
+    elif 'minipack' in plat_name:
+        fru = 'scm'
+    else:
+        return 0
+
+    cmd = ['/usr/bin/bic-util', fru, '--get_dev_id']
+
+    try:
+        ret = check_output(cmd).decode()
+        if "Usage:" in ret or "fail " in ret:
+            return 0
+        else:
+            return 1
+    except (OSError, IOError):
+        return 2   # cmd not found, i.e. no BIC on this platform
+    except(CalledProcessError):
+        return 0  # bic-util returns error
+
 def pal_server_action(slot_id, command):
     if command == 'power-off' or command == 'power-on' or command == 'power-reset' or command == 'power-cycle' or command == 'graceful-shutdown':
         if lpal_hndl.pal_is_slot_server(slot_id) == 0:

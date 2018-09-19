@@ -22,6 +22,25 @@
 import os
 from subprocess import *
 
+# return value
+#  1 - bic okay
+#  0 - bic error
+#  2 - not present
+def get_bic_status():
+    cmd = ['/usr/bin/bic-util', 'scm', '--get_dev_id']
+    try:
+        ret = check_output(cmd).decode()
+
+        if "Usage:" in ret or "fail " in ret:
+            return 0
+        else:
+            return 1
+    except (OSError, IOError):
+        return 2   # cmd not found, i.e. no BIC on this platform
+    except(CalledProcessError):
+        return 0  # bic-util returns error
+
+
 # Handler for uServer resource endpoint
 def get_server():
     (ret, _) = Popen('/usr/local/bin/wedge_power.sh status', \
@@ -29,8 +48,10 @@ def get_server():
     ret = ret.decode()
     status = ret.rsplit()[-1]
 
+    bic_status = get_bic_status()
+
     result = {
-                "Information": { "status": status },
+                "Information": { "status": status, "BIC_ok" : bic_status },
                 "Actions": ["power-on", "power-off", "power-reset"],
                 "Resources": [],
              }

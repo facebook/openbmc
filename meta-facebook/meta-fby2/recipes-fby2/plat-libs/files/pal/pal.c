@@ -4433,6 +4433,11 @@ pal_store_cpld_dump(uint8_t fru) {
   return fby2_common_cpld_dump(fru);
 }
 
+static int
+pal_store_sboot_cpld_dump(uint8_t fru) {
+  return fby2_common_sboot_cpld_dump(fru);
+}
+
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
@@ -4458,7 +4463,11 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         case SERVER_TYPE_RC:
           switch(snr_num) {
             case BIC_RC_SENSOR_POWER_ERR:
-              pal_store_cpld_dump(fru);
+              if (event_data[3] == 0x02) {   // 01h:PWR FAIL, 02h:SLOW BOOT
+                pal_store_sboot_cpld_dump(fru);
+              } else {
+                pal_store_cpld_dump(fru);
+              }
               break;
 
             case 0x00:  // don't care sensor number 00h
@@ -4546,6 +4555,24 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
 
       sprintf(crisel, "PROCHOT ASSERT,FRU:%u", fru);
       pal_add_cri_sel(crisel);
+      break;
+    case BIC_RC_SENSOR_POWER_ERR:
+      strcpy(error_log, "");
+      if (ed[0] == 0x1) {
+        strcat(error_log, "SYS_PWROK failure");
+        /* Also try logging to Critial log file, if available */
+        sprintf(crisel, "SYS_PWROK failure,FRU:%u", fru);
+        pal_add_cri_sel(crisel);
+      } else if (ed[0] == 0x2) {
+        strcat(error_log, "Slow Boot");
+        /* Also try logging to Critial log file, if available */
+        sprintf(crisel, "Slow Boot,FRU:%u", fru);
+        pal_add_cri_sel(crisel);
+      }
+      else
+        strcat(error_log, "Unknown");
+
+      parsed = true;
       break;
     case BIC_RC_SENSOR_RAS_CRIT:
     case BIC_RC_SENSOR_RAS_INFO:
@@ -7043,28 +7070,55 @@ int
 pal_is_cplddump_ongoing(uint8_t fru) {
   char fname[128];
   char value[MAX_VALUE_LEN] = {0};
+  char svalue[MAX_VALUE_LEN] = {0};
   struct timespec ts;
   int ret;
+  int cnt = 0;  
 
-  //if pid file not exist, return false
   sprintf(fname, "/var/run/cplddump%d.pid", fru);
-  if ( access(fname, F_OK) != 0 )
+  if ( access(fname, F_OK) == 0 )
   {
-    return 0;
+    cnt++;
   }
 
+  strcpy(fname, "");
+
+  sprintf(fname, "/var/run/sbootcplddump%d.pid", fru);
+  if ( access(fname, F_OK) == 0 )
+  {
+    cnt++;
+  }
+
+  if (cnt == 0) {   //if both pid file not exist, return false
+    return 0;
+  }
+  
+  strcpy(fname, "");
+  
   //check the cplddump file in /tmp/cache_store/fru$1_cplddump
   sprintf(fname, "fru%d_cplddump", fru);
   ret = kv_get(fname, value, NULL, 0);
-  if (ret < 0)
+  if (ret >= 0)
   {
-     return 0;
+     clock_gettime(CLOCK_MONOTONIC, &ts);
+     if (strtoul(value, NULL, 10) > ts.tv_sec)
+     {
+       return 1;
+     }
   }
 
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
+  strcpy(fname, "");
+
+  //check the cplddump file for slow boot in /tmp/cache_store/fru$1_sboot_cplddump
+  sprintf(fname, "fru%d_sboot_cplddump", fru);
+  ret = kv_get(fname, svalue, NULL, 0);
+  if (ret >= 0)
   {
-     return 1;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (strtoul(svalue, NULL, 10) > ts.tv_sec)
+    {
+      return 1;
+    }
   }
 
  //over the threshold time, return false

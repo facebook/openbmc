@@ -47,6 +47,7 @@ SRC_URI = "file://ast-functions \
            file://cpld-dump.sh \
            file://dump_cpld_ep.sh \
            file://dump_cpld_rc.sh \
+           file://sboot-cpld-dump.sh \
           "
 
 pkgdir = "utils"
@@ -56,7 +57,7 @@ S = "${WORKDIR}"
 binfiles = "sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py fby2_power.sh power_util.py \
   check_slot_type.sh hotservice-reinit.sh check_server_type.sh time-sync.sh sync_date.sh \
-  cpld-dump.sh dump_cpld_ep.sh dump_cpld_rc.sh"
+  cpld-dump.sh dump_cpld_ep.sh dump_cpld_rc.sh sboot-cpld-dump.sh"
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 "

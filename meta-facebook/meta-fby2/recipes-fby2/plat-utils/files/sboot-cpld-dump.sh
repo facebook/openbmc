@@ -1,8 +1,9 @@
 #!/bin/bash
+. /usr/local/fbpackages/utils/ast-functions
 
-BIC_UTIL="/usr/bin/bic-util"
 SLOT_NAME=$1
-CPLDDUMP_FILE="/mnt/data/cplddump_$SLOT_NAME"
+CPLDDUMP_FILE="/mnt/data/slow_boot_cplddump_$SLOT_NAME"
+BIC_UTIL="/usr/bin/bic-util"
 
 MAX_INDEX=7
 
@@ -28,7 +29,6 @@ normal_state9=0x7FFFF
 normal_state11=0x1FFFFF
 
 normal_state12=0x7FFFFF
-
 
 function state_machine_parse {
   DUMP_DATA=$1
@@ -377,10 +377,10 @@ function soc_event_parse {
   echo $output
 }
 
-function cpld_dump_rc {
-  echo "<<< CPLD register 0x03(State Machine)(Lock State) data >>>"
+function cpld_dump_process {
+  echo "<<< CPLD register 0x02(State Machine)(Lock State) data >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x03)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x02)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -408,9 +408,9 @@ function cpld_dump_rc {
   done
 
   echo ""
-  echo "<<< CPLD register 0x09(Power SEQ Enable) data >>>"
+  echo "<<< CPLD register 0x08(Power SEQ Enable) data >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x09)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x08)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -421,9 +421,9 @@ function cpld_dump_rc {
   done
 
   echo ""
-  echo "<<< CPLD register 0x0C(Power SEQ Enable) data >>>"
+  echo "<<< CPLD register 0x0B(Power SEQ Enable) data >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x0c)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x0b)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -434,9 +434,9 @@ function cpld_dump_rc {
   done
 
   echo ""
-  echo "<<< CPLD register 0x0F(Power SEQ PWRGD) data >>>"
+  echo "<<< CPLD register 0x0E(Power SEQ PWRGD) data >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x0f)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x0e)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -447,9 +447,9 @@ function cpld_dump_rc {
   done
 
   echo ""
-  echo "<<< CPLD register 0x12(Power SEQ PWRGD) data >>>"
+  echo "<<< CPLD register 0x11(Power SEQ PWRGD) data >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x12)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x11)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -460,9 +460,9 @@ function cpld_dump_rc {
   done
 
   echo ""
-  echo "<<< CPLD register 0x15(DIMM & VR EVENT) data >>>"
+  echo "<<< CPLD register 0x14(DIMM & VR EVENT) data >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x15)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x14)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -473,9 +473,9 @@ function cpld_dump_rc {
   done
 
   echo ""
-  echo "<<< CPLD register 0x18 data(SOC EVENT) >>>"
+  echo "<<< CPLD register 0x17 data(SOC EVENT) >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x18)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x17)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -486,9 +486,9 @@ function cpld_dump_rc {
   done
 
   echo ""
-  echo "<<< CPLD register 0x1B(SOC EVENT) data >>>"
+  echo "<<< CPLD register 0x1A(SOC EVENT) data >>>"
 
-  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x1b)
+  output=$($BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x01 0x1a)
 
   echo -n "Raw Data: 0x"
   echo $output
@@ -501,11 +501,7 @@ function cpld_dump_rc {
 
 function fail_pwr_rail_check {
   echo ""
-  echo "<<< Summary of CPLD Dump >>>"
-
-  if [[ $cur_state -eq 26 ]]; then
-    echo "System is in power fault state" 
-  fi
+  echo "<<< Summary of CPLD Dump for Slow Boot >>>"
 
   case $state in
     2)
@@ -535,7 +531,7 @@ function fail_pwr_rail_check {
     *)
       echo "Last Power State: $state(unknown)"
       echo "Fail Reason: Unknown"
-      exit 1
+      return
       ;;
   esac
 
@@ -548,14 +544,67 @@ function fail_pwr_rail_check {
       echo ${STATE_MACHINE[$idx]}
     fi
   done
-
-  $BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x00 0x1d 0x08 > /dev/null 2>&1   #Break power fault state after CPLD dump
-  sleep 1
-  $BIC_UTIL $SLOT_NAME 0x18 0x52 0x01 0x1e 0x00 0x1d 0x00 > /dev/null 2>&1
 }
 
-cpld_dump_rc
+case $SLOT_NAME in
+    slot1)
+      SLOT_NUM=1
+      ;;
+    slot2)
+      SLOT_NUM=2
+      ;;
+    slot3)
+      SLOT_NUM=3
+      ;;
+    slot4)
+      SLOT_NUM=4
+      ;;
+    *)
+      N=${0##*/}
+      N=${N#[SK]??}
+      echo "Usage: $N {slot1|slot2|slot3|slot4}"
+      exit 1
+      ;;
+esac
 
-fail_pwr_rail_check
+# File format sbootcplddump<slot_id>.pid (See pal_is_cplddump_ongoing()
+# function definition)
+PID_FILE="/var/run/sbootcplddump$SLOT_NUM.pid"
 
+# check if auto CPLD dump for slow boot is already running
+if [ -f $PID_FILE ]; then
+  echo "Another auto CPLD dump for slow boot for $SLOT_NAME is running"
+  exit 1
+else
+  touch $PID_FILE
+fi
+
+# Set cplddump timestamp for slow boot
+sys_runtime=$(awk '{print $1}' /proc/uptime)
+sys_runtime=$(printf "%0.f" $sys_runtime)
+echo $((sys_runtime+630)) > /tmp/cache_store/fru${SLOT_NUM}_sboot_cplddump
+
+LOG_MSG_PREFIX=""
+
+echo "Auto CPLD Dump for Slow Boot for $SLOT_NAME Started"
+
+#HEADER LINE for the dump
+now=$(date)
+echo "Auto CPLD Dump for Slow Boot generated at $now" > $CPLDDUMP_FILE
+
+cpld_dump_process >> $CPLDDUMP_FILE 
+
+fail_pwr_rail_check >> $CPLDDUMP_FILE
+
+echo -n "Auto CPLD Dump for Slow Boot End at " >> $CPLDDUMP_FILE
+date >> $CPLDDUMP_FILE
+
+logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}CPLD dump for Slow Boot for FRU: $SLOT_NUM is generated at $CPLDDUMP_FILE"
+
+echo "Auto CPLD Dump for Slow Boot for $SLOT_NAME Completed"
+
+# Remove current pid file
+rm $PID_FILE
+
+echo "${LOG_MSG_PREFIX}Auto CPLD Dump for Slow Boot Stored in $CPLDDUMP_FILE"
 exit 0

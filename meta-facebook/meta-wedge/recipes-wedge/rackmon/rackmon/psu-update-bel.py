@@ -218,12 +218,10 @@ def do_write(cmd):
     # expected len and finish out any requested delays
     if timeout > 0:
         delay = timeout
-    # P1/Bel's original script used pyserial with a 15s timeout
-    # (allowing a read to take that long to start)
-    # Just in case the timeout preceding a tx-only W command was actually
-    # greater, we preserve it here
-    if timeout < 15000:
-        timeout = 15000
+    # Timeouts specified in the file can be too short, especially when waiting
+    # on a flash erase, pad them out
+    if timeout < 45000:
+        timeout = 45000
     expected = 0
     if rxsz > 0:
         # address byte, CRC

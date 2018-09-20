@@ -39,5 +39,9 @@
   "processRunningTest.py":["yes",
     {
       "json":"../fbtp/unittests/process.json"
+    }],
+  "restapiTest.py": ["yes",
+    {
+      "json": "../../fbtp/unittests/rest_endpoint.json"
     }]
 }

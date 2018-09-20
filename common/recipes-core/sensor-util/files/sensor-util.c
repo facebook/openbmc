@@ -62,7 +62,8 @@ typedef struct {
   int sensor_cnt;
   int sensor_num;
   bool threshold;
-  uint8_t sensor_list[];  
+  bool force;
+  uint8_t sensor_list[];
 } get_sensor_reading_struct;
 
 static void
@@ -79,6 +80,7 @@ print_usage() {
   printf("         --history <period>[m/h/d] show max, min and average values of last <period> minutes/hours/days\n");
   printf("              example --history 4d means history of 4 days\n");
   printf("         --history-clear           clear history values\n");
+  printf("         --force                   read the sensor directly from the h/w (not cache).Ensure sensord is killed before executing this command\n");
 }
 
 static int convert_period(char *str, long *val) {
@@ -198,7 +200,7 @@ get_sensor_reading(void *sensor_data) {
   //Allow this thread to be killed at any time
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-  for (i = 0; i < sensor_info->sensor_cnt; i++) {    
+  for (i = 0; i < sensor_info->sensor_cnt; i++) {
     snr_num = sensor_info->sensor_list[i];
     /* If calculation is for a single sensor, ignore all others. */
     if (sensor_info->sensor_num != SENSOR_ALL && snr_num != sensor_info->sensor_num) {
@@ -232,10 +234,16 @@ get_sensor_reading(void *sensor_data) {
     }
 
     usleep(50);
-    if (sensor_cache_read(sensor_info->fru, snr_num, &fvalue) < 0) {
+    if (true == sensor_info->force)
+      ret = sensor_raw_read(sensor_info->fru, snr_num, &fvalue);
+    else
+      ret = sensor_cache_read(sensor_info->fru, snr_num, &fvalue);
+
+    if (ret < 0) {
       printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_info->sensor_list[i]);
       continue;
-    } else {
+    }
+    else {
       get_sensor_status(fvalue, &thresh, status);
       print_sensor_reading(fvalue, (uint16_t)snr_num, &thresh, sensor_info->threshold, status);
     }
@@ -365,12 +373,12 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
   //Check if thread is alive, if pthread_kill (thread_id, sig = 0) returns 0, means thread is alive
   thread_alive = pthread_kill(tid_get_sensor_reading, 0);
 
-  if (thread_alive == 0) 
+  if (thread_alive == 0)
   {
     while ( false == done_flag )
     {
       //Timer thread, continue only when get_sensor_reading send the done signal or abs_time timed out
-      err = pthread_cond_timedwait(&done, &timer, &abs_time); 
+      err = pthread_cond_timedwait(&done, &timer, &abs_time);
       if (err == ETIMEDOUT) {
         break;
       }
@@ -382,7 +390,7 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
     //Timeout actions
     //If Timed out, and Thread is still alive, it means the thread is really timed out, cancel the thread
     //If Timed out, and Thread is dead, it means the timed out is fake, do nothing
-    if ( (err == ETIMEDOUT) && (thread_alive == 0) ) {     
+    if ( (err == ETIMEDOUT) && (thread_alive == 0) ) {
       printf("FRU:%s timed out...\n", fruname);
       pthread_cancel(tid_get_sensor_reading);
     }
@@ -397,7 +405,7 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
 }
 
 static int
-print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool history_clear, long period) {
+print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool force, bool history_clear, long period) {
   int ret;
   uint8_t status;
   int sensor_cnt;
@@ -467,6 +475,7 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool his
     data.sensor_cnt = sensor_cnt;
     data.sensor_num = sensor_num;
     data.threshold = threshold;
+    data.force = force;
     memcpy(data.sensor_list, sensor_list, sizeof(uint8_t)*sensor_cnt);
     get_sensor_reading_timer(&timeout, &data);
   }
@@ -481,7 +490,7 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool his
 }
 
 int parse_args(int argc, char *argv[], char *fruname,
-    bool *history_clear, bool *history, bool *threshold, long *period, int *snr)
+    bool *history_clear, bool *history, bool *threshold, bool *force, long *period, int *snr)
 {
   int ret;
   int num;
@@ -491,6 +500,7 @@ int parse_args(int argc, char *argv[], char *fruname,
     {"history-clear", no_argument, 0, 'c'},
     {"history", required_argument, 0, 'h'},
     {"threshold", no_argument,     0, 't'},
+    {"force", no_argument, 0, 'f'},
     {0,0,0,0},
   };
 
@@ -498,11 +508,15 @@ int parse_args(int argc, char *argv[], char *fruname,
   *history_clear = false;
   *history = false;
   *threshold = false;
+  *force = false;
   *period = 60;
   *snr = -1;
 
   while(-1 != (ret = getopt_long(argc, argv, "ch:t", long_opts, &index))) {
     switch(ret) {
+      case 'f':
+        *force = true;
+        break;
       case 'c':
         *history_clear = true;
         break;
@@ -540,7 +554,7 @@ int parse_args(int argc, char *argv[], char *fruname,
       return -1;
     }
   }
-  /* Only one of these flags should be on at 
+  /* Only one of these flags should be on at
    * any time */
   num = (int)*threshold + (int)*history_clear + (int)*history;
   if (num > 1) {
@@ -559,12 +573,13 @@ main(int argc, char **argv) {
   bool threshold;
   bool history;
   bool history_clear;
+  bool force;
   long period;
   char fruname[32];
 
   if (parse_args(argc, argv, fruname,
         &history_clear, &history,
-        &threshold, &period, &num)) {
+        &threshold, &force, &period, &num)) {
     print_usage();
     exit(-1);
   }
@@ -588,11 +603,11 @@ main(int argc, char **argv) {
 
   if (fru == 0) {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-      ret |= print_sensor(fru, num, history, threshold, history_clear, period);
+      ret |= print_sensor(fru, num, history, threshold, force, history_clear, period);
     }
-    ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, history, threshold, history_clear, period);
+    ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, history, threshold, false, history_clear, period);
   } else {
-    ret = print_sensor(fru, num, history, threshold, history_clear, period);
+    ret = print_sensor(fru, num, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, history_clear, period);
   }
   return ret;
 }

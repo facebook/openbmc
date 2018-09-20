@@ -30,7 +30,7 @@ def pal_get_platform_name():
     if ret:
         return None
     else:
-        return name.value
+        return name.value.decode()
 
 def pal_get_num_slots():
     num = c_ubyte()
@@ -92,7 +92,7 @@ def pal_server_action(slot_id, command):
         if lpal_hndl.pal_is_slot_server(slot_id) == 0:
             return -2
 
-    plat_name = pal_get_platform_name().decode()
+    plat_name = pal_get_platform_name()
 
     if 'FBTTN' in plat_name and 'identify' in command:
         fru = ''

@@ -6,7 +6,7 @@ from kv import kv_get
 
 class pebNode(node):
     def __init__(self, name = None, info = None, actions = None):
-        name = pal_get_platform_name().decode()
+        name = pal_get_platform_name()
         if info == None:
             self.info = {}
         else:
@@ -17,7 +17,7 @@ class pebNode(node):
             self.actions = actions
 
     def getInformation(self, param={}):
-        name = pal_get_platform_name().decode()
+        name = pal_get_platform_name()
         location = kv_get('tray_location')
         data = Popen('cat /sys/class/gpio/gpio108/value', \
                        shell=True, stdout=PIPE).stdout.read().decode().strip('\n')

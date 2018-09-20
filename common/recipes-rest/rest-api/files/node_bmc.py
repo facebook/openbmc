@@ -56,7 +56,7 @@ class bmcNode(node):
 
     def getInformation(self, param={}):
         # Get Platform Name
-        name = pal_get_platform_name().decode()
+        name = pal_get_platform_name()
 
         # Get MAC Address
         mac_path = "/sys/class/net/eth0/address"

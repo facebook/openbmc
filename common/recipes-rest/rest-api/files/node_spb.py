@@ -43,7 +43,7 @@ class spbNode(node):
         return result
 
 def get_node_spb():
-    name = pal_get_platform_name().decode()
+    name = pal_get_platform_name()
     info = {
             "Description": name + " Side Plane",
            }

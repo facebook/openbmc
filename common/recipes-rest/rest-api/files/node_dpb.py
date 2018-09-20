@@ -5,7 +5,7 @@ from pal import *
 
 
 def get_node_dpb():
-    name = pal_get_platform_name().decode()
+    name = pal_get_platform_name()
     info = {
         "Description": name + " Drive Plan Board",
     }

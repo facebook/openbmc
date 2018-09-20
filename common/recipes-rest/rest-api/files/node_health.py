@@ -20,7 +20,7 @@ class healthNode(node):
 
     def getInformation(self, param={}):
         # Get Platform Name
-        name = pal_get_platform_name().decode()
+        name = pal_get_platform_name()
 
         result = "NA"
         # Enclosure health LED status (GOOD/BAD)

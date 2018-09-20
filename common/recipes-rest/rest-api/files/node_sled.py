@@ -43,7 +43,7 @@ class sledNode(node):
         return result
 
 def get_node_sled():
-    name = pal_get_platform_name().decode()
+    name = pal_get_platform_name()
     info = {
             "Description": name + " SLED",
            }

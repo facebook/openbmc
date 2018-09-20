@@ -1,7 +1,7 @@
 SRCBRANCH = "dev-4.17"
 SRCREV = "AUTOINC"
 
-SRC_URI = "https://github.com/tomrepo/linux.git;branch=${SRCBRANCH};protocol=https \
+SRC_URI = "git://github.com/tomrepo/linux.git;branch=${SRCBRANCH};protocol=https \
           "
 
 LINUX_VERSION ?= "4.17.2"
@@ -13,4 +13,4 @@ PV = "${LINUX_VERSION}"
 
 include linux-aspeed.inc
 
-S = "${WORKDIR}/linux-aspeed-4.17"
+S = "${WORKDIR}/git"

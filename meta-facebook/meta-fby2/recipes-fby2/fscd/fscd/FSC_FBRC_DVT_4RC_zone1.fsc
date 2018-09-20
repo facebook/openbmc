@@ -44,5 +44,17 @@ max([
   linear_soc_temp_diode(slot2:soc_temp_diode),
   linear_soc_temp_diode(slot3:soc_temp_diode),
   linear_soc_temp_diode(slot4:soc_temp_diode),
-  linear_mezz(nic:mezz_sensor_temp) + pid_mezz(nic:mezz_sensor_temp)
+  linear_mezz(nic:mezz_sensor_temp) + pid_mezz(nic:mezz_sensor_temp),
+  linear_mb_m2(
+   max([
+    slot1:nvme1_ctemp,
+    slot2:nvme1_ctemp,
+    slot3:nvme1_ctemp,
+    slot4:nvme1_ctemp])) +
+  pid_mb_m2(
+   max([
+    slot1:nvme1_ctemp,
+    slot2:nvme1_ctemp,
+    slot3:nvme1_ctemp,
+    slot4:nvme1_ctemp]))
 ])

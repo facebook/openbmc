@@ -1,5 +1,5 @@
 {
-  "version": "fbrc-dvt-r03",
+  "version": "fbrc-dvt-r04",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,  
   "sample_interval_ms": 3000,
@@ -9,6 +9,11 @@
   },
   "sensor_valid_check": {
     "soc": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)nvme": {
       "attribute": {
         "type" : "power_status"
       }
@@ -180,6 +185,49 @@
       },
       "type": "pid",
       "setpoint": 90,
+      "negative_hysteresis": 1,
+      "positive_hysteresis": 0,
+      "kp": -1,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 55, 15 ],
+        [ 56, 17 ],
+        [ 57, 19 ],
+        [ 58, 21 ],
+        [ 59, 23 ],
+        [ 60, 25 ],
+        [ 61, 27 ],
+        [ 62, 29 ],
+        [ 63, 31 ],
+        [ 64, 35 ],
+        [ 65, 39 ],
+        [ 66, 43 ],
+        [ 67, 46 ],
+        [ 68, 49 ],
+        [ 69, 52 ],
+        [ 70, 55 ],
+        [ 71, 58 ],
+        [ 72, 61 ],
+        [ 73, 64 ],
+        [ 74, 67 ],
+        [ 75, 70 ]
+      ]
+    },
+    "pid_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 70,
       "negative_hysteresis": 1,
       "positive_hysteresis": 0,
       "kp": -1,

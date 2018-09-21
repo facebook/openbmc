@@ -26,6 +26,16 @@ from uuid import getnode as get_mac
 import os.path
 from vboot import get_vboot_status
 
+# Read all contents of file path specified.
+def read_file_contents(path):
+    try:
+        with open(path, 'r') as proc_file:
+            content = proc_file.readlines()
+    except IOError as e:
+        content = None
+
+    return content
+
 def getSPIVendor(manufacturer_id):
     # Define Manufacturer ID
     MFID_WINBOND = "EF"    # Winbond
@@ -87,6 +97,11 @@ class bmcNode(node):
         data = Popen('uptime', \
                         shell=True, stdout=PIPE).stdout.read().decode()
         uptime = data.strip()
+
+
+        # Pull load average directory from proc instead of processing it from
+        # the contents of uptime command output later.
+        load_avg = read_file_contents("/proc/loadavg")[0].split()[0:3]
 
         # Get Usage information
         data = Popen('top -b n1', \
@@ -161,6 +176,8 @@ class bmcNode(node):
         asd_status = bool(Popen('ps | grep -i [a]sd', shell=True, stdout=PIPE).stdout.read())
         vboot_info = get_vboot_status()
 
+        used_fd_count = read_file_contents("/proc/sys/fs/file-nr")[0].split()[0]
+
         info = {
             "Description": name + " BMC",
             "MAC Addr": mac_addr,
@@ -177,6 +194,10 @@ class bmcNode(node):
             "SPI1 Vendor": spi1_vendor,
             "At-Scale-Debug Running": asd_status,
             "vboot": vboot_info,
+            "load-1": load_avg[0],
+            "load-5": load_avg[1],
+            "load-15": load_avg[2],
+            "open-fds": used_fd_count,
             }
 
         return info

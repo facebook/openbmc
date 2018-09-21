@@ -100,10 +100,14 @@ config_adc 15    0  1000 0
 i2cset -y -f 10 0x40 0xd0 0x0000 w
 i2cset -y -f 10 0x40 0xda 0x0000 w
 
-# 
+#
 i2cset -y -f 10 0x40 0xd4 0x3f1c w
 i2cset -y -f 10 0x40 0xd5 0x0400 w
-i2cset -y -f 10 0x40 0x4a 0x0cb0 w
+
+# calibrtion to get HSC to trigger 50A based on EE team input
+# 0xd14 = 3348 (dec)
+#(3348*10-20475)/ (800*0.3)= 54.1875A
+# 54.1875* 0.92190 = 49.9554A
+i2cset -y -f 10 0x40 0x4a 0x0d14 w
 rmmod adm1275
 modprobe adm1275
-

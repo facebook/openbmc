@@ -34,7 +34,6 @@ SRC_URI += "file://Makefile \
             file://run-ipmid.sh \
             file://sensor.c \
             file://fruid.c \
-            file://lan.c \
            "
 S = "${WORKDIR}"
 

@@ -21,7 +21,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \
            file://sensor.c \
            file://fruid.c \
-           file://lan.c \
            file://run-ipmid.sh \
           "
 

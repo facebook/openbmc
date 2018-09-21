@@ -54,7 +54,7 @@
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 #define POST_FLAG_FILE "/tmp/cache_store/slot%d_post_flag"
 #define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"
-#define SENSORDUMP_BIN       "/usr/local/bin/sensordump.sh"
+#define SENSORDUMP_BIN "/usr/local/bin/sensordump.sh"
 
 
 #define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
@@ -204,13 +204,23 @@ static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
   }
 }
 
-static void create_sensordump()
-{
-    char cmd[80];
+static void
+create_sensordump(void) {
+  system(SENSORDUMP_BIN);
+}
 
-    memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "%s", SENSORDUMP_BIN);
-    system(cmd);
+static void *
+hsc_alert_handler(void *arg) {
+  pthread_detach(pthread_self());
+
+  if (fby2_check_hsc_sts_iout(0x20) == 1) {  // bit5: IOUT_OC_WARN
+    syslog(LOG_CRIT, "ASSERT: OC_warning triggered (falling edge detected for SMB_HOTSWAP_ALERT_N)");
+    create_sensordump();
+    sleep(1);
+    fby2_check_hsc_fault();
+  }
+
+  pthread_exit(NULL);
 }
 
 // Generic Event Handler for GPIO changes
@@ -228,6 +238,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
   static pthread_t latch_open_tid[MAX_NODES + 1];
   hot_service_info hsvc_info[MAX_NODES + 1];
   struct timespec ts;
+  pthread_t hsc_alert_tid;
 
   if (gp->gs.gs_gpio == gpio_num("GPIOH5")) { // GPIO_FAN_LATCH_DETECT
     if (gp->value == 1) { // low to high
@@ -380,15 +391,10 @@ static void gpio_event_handle(gpio_poll_st *gp)
     // high to low
     fby2_common_set_ierr(slot_id,false);
   }
-  else if ( gp->gs.gs_gpio == gpio_num("GPION7") )
-  {
-    if (gp->value == 0)
-    {
-      if( fby2_sensor_read(FRU_SPB, SP_HSC_IOUT_STATUS, &value) )
-      {
-        syslog(LOG_CRIT, "ASSERT: OC_warning triggered (falling edge detected for SMB_HOTSWAP_ALERT_N)");
-        create_sensordump();
-        fby2_check_hsc_fault();
+  else if (gp->gs.gs_gpio == gpio_num("GPION7")) {
+    if (gp->value == 0) {
+      if (pthread_create(&hsc_alert_tid, NULL, hsc_alert_handler, NULL)) {
+        syslog(LOG_WARNING, "[%s] Create hsc_alert_handler thread failed", __func__);
       }
     }
   }

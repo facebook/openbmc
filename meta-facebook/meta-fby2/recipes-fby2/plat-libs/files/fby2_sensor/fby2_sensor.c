@@ -40,17 +40,14 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 #define I2C_BUS_1_DIR "/sys/class/i2c-adapter/i2c-1/"
-#define I2C_BUS_3_DIR "/sys/class/i2c-adapter/i2c-3/"
 #define I2C_BUS_5_DIR "/sys/class/i2c-adapter/i2c-5/"
 #define I2C_BUS_9_DIR "/sys/class/i2c-adapter/i2c-9/"
-#define I2C_BUS_10_DIR "/sys/class/i2c-adapter/i2c-10/"
 
 #define TACH_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
 #define SP_INLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004e/hwmon/hwmon*"
 #define SP_OUTLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004f/hwmon/hwmon*"
-#define HSC_DEVICE I2C_BUS_10_DIR "10-0040/hwmon/hwmon*"
 
 #define DC_SLOT1_INLET_TEMP_DEVICE I2C_BUS_1_DIR "1-004d/hwmon/hwmon*"
 #define DC_SLOT1_OUTLET_TEMP_DEVICE I2C_BUS_1_DIR "1-004e/hwmon/hwmon*"
@@ -58,15 +55,8 @@
 #define DC_SLOT3_INLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004d/hwmon/hwmon*"
 #define DC_SLOT3_OUTLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004e/hwmon/hwmon*"
 
-#define HSC_DEVICE I2C_BUS_10_DIR "10-0040/hwmon/hwmon*"
 #define FAN_TACH_RPM "tacho%d_rpm"
 #define ADC_VALUE "adc%d_value"
-#define HSC_IN_VOLT "in1_input"
-#define HSC_OUT_CURR "curr1_input"
-#define HSC_TEMP "temp1_input"
-#define HSC_IN_POWER "power1_input"
-#define HSC_PEAK_POWER "power1_input_highest"
-#define HSC_PEAK_IOUT "curr1_highest"
 
 #define UNIT_DIV 1000
 
@@ -82,6 +72,7 @@
 #define EIN_SAMPLE_CNT 0x1000000
 #define EIN_ENERGY_CNT 0x800000
 #define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
+#define ADM1278_R_SENSE 0.3
 
 #define I2C_DEV_NIC "/dev/i2c-11"
 #define I2C_NIC_ADDR 0x3e  // 8-bit
@@ -95,14 +86,13 @@
 
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
 #define SLOT_FILE "/tmp/slot%d.bin"
-#define ML_ADM1278_R_SENSE  0.3
 
 #define TOTAL_M2_CH_ON_GP 6
 #define MAX_POS_READING_MARGIN 127
 
 #define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
 
-static float ml_hsc_r_sense = ML_ADM1278_R_SENSE;
+static float hsc_r_sense = ADM1278_R_SENSE;
 
 // List of BIC sensors which need to do negative reading handle
 const uint8_t bic_neg_reading_sensor_support_list[] = {
@@ -823,37 +813,55 @@ read_adc_value(const int pin, const char *device, float *value) {
 }
 
 static int
-read_hsc_value(const char* attr, const char *device, float r_sense, float *value) {
-  char full_dir_name[LARGEST_DEVICE_NAME];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
-  int tmp;
+read_hsc_reg(uint8_t reg, uint8_t *rbuf, uint8_t len) {
+  int dev, ret, retry = 2;
+  uint8_t wbuf[4] = {0};
 
-  // Get current working directory
-  if (get_current_dir(device, dir_name))
-  {
-    return -1;
-  }
-  snprintf(
-      full_dir_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
-
-  if(read_device(full_dir_name, &tmp)) {
+  dev = open(I2C_DEV_HSC, O_RDWR);
+  if (dev < 0) {
     return -1;
   }
 
-  if ((strcmp(attr, HSC_OUT_CURR) == 0) || (strcmp(attr, HSC_IN_POWER) == 0) || (strcmp(attr, HSC_PEAK_POWER) == 0) || (strcmp(attr, HSC_PEAK_IOUT) == 0)) {
-    *value = ((float) tmp)/r_sense/UNIT_DIV;
+  while ((--retry) >= 0) {
+    wbuf[0] = reg;
+    ret = i2c_rdwr_msg_transfer(dev, I2C_HSC_ADDR, wbuf, 1, rbuf, len);
+    if (!ret)
+      break;
+    if (retry)
+      msleep(10);
   }
-  else {
-    *value = ((float) tmp)/UNIT_DIV;
+  close(dev);
+  if (ret) {
+    return -1;
   }
 
   return 0;
 }
 
+static float
+direct2real(uint16_t direct, float m, int b, int R) {
+  if (m == 0) {
+    return 0;
+  }
+  return (((float)direct * pow(10, -R) - b) / m);  // X = 1/m * (Y * 10^-R - b)
+}
+
 static int
-read_hsc_ein(const char *device, uint8_t addr, float r_sense, float *value) {
-  int dev, ret;
-  uint8_t wbuf[4] = {0xdc}, rbuf[12] = {0};
+read_hsc_value(uint8_t reg, float m, int b, int R, float *value) {
+  uint16_t data;
+
+  if (read_hsc_reg(reg, (uint8_t *)&data, 2)) {
+    return -1;
+  }
+
+  *value = direct2real(data, m, b, R);
+  return 0;
+}
+
+static int
+read_hsc_ein(float r_sense, float *value) {
+  int ret;
+  uint8_t rbuf[12] = {0};
   uint32_t energy, rollover, sample;
   uint32_t pre_energy, pre_rollover, pre_sample;
   uint32_t sample_diff;
@@ -861,14 +869,8 @@ read_hsc_ein(const char *device, uint8_t addr, float r_sense, float *value) {
   static uint32_t last_energy, last_rollover, last_sample;
   static uint8_t pre_ein = 0;
 
-  dev = open(device, O_RDWR);
-  if (dev < 0) {
-    return -1;
-  }
-
   // read READ_EIN_EXT
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 9);
-  close(dev);
+  ret = read_hsc_reg(0xdc, rbuf, 9);
   if (ret || (rbuf[0] != 8)) {  // length = 8 bytes
     return -1;
   }
@@ -904,230 +906,6 @@ read_hsc_ein(const char *device, uint8_t addr, float r_sense, float *value) {
   *value = (float)((energy_diff/sample_diff/256) * PIN_COEF/r_sense);
 
   return 0;
-}
-
-static int
-read_hsc_ioutstatus(const char *device, uint8_t addr, float r_sense, float *value) {
-  int dev, ret;
-  uint8_t wbuf[4] = {0x7b}, rbuf[8] = {0};
-
-  dev = open(device, O_RDWR);
-  if (dev < 0) {
-    return -1;
-  }
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
-  close(dev);
-  if (ret) {
-    return -1;
-  }
-  
-  if ( BIT(rbuf[0], 5) )
-  {
-    return 1;
-  }
-
-  return 0;
-}
-
-int
-fby2_check_hsc_fault(void) {
-
-   
-  if(check_hsc_status_byte() != 1) {
-    return -1;
-  } else if(check_hsc_status_word() != 1) {
-    return -1;
-  } else if(check_hsc_status_vout() != 1) {
-    return -1;
-  } else if(check_hsc_status_input() != 1) {
-    return -1;
-  } else if(check_hsc_status_temperature() != 1) {
-    return -1;
-  } else if(check_hsc_status_manufacturer() != 1) {
-    return -1;
-  } else if(check_hsc_status_iout() != 1) {
-    return -1;
-  }
-
-  system("i2cset -y -f 10 0x40 0x03 0");
-  return 0;
-
-}
-
-int
-check_hsc_status_byte(void)
-{
-  char* device = I2C_DEV_HSC;
-  uint8_t addr = I2C_HSC_ADDR;
-  int dev, ret;
-  uint8_t wbuf[4] = {0x78}, rbuf[8] = {0};  
-  char *str_content[32] = {0};
-  char * str_target = "00";
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
-  if (ret) {
-    close(dev);
-    return -1;
-  }
-  sprintf(str_content, "%02x", rbuf[0]);
-  if(strcmp(str_content, str_target) != 0 )
-  {
-    close(dev);
-    return -1;
-  }
-
-  return 1;  
-}
-
-int
-check_hsc_status_word(void)
-{
-  char* device = I2C_DEV_HSC;
-  uint8_t addr = I2C_HSC_ADDR;
-  int dev, ret;
-  uint8_t wbuf[4] = {0x79}, rbuf[8] = {0};  
-  char *str_content[32] = {0};
-  char * str_target = "0000";
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 2);
-  if (ret) {
-    close(dev);
-    return -1;
-  }
-  uint16_t content = (rbuf[1]<<8) | rbuf[0];
-  sprintf(str_content, "%04x", content);  
-  if(strcmp(str_content, str_target) != 0 )
-  {
-    close(dev);
-    return -1;
-  }
-
-  return 1;  
-}
-
-int
-check_hsc_status_vout(void)
-{
-  char* device = I2C_DEV_HSC;
-  uint8_t addr = I2C_HSC_ADDR;
-  int dev, ret;
-  uint8_t wbuf[4] = {0x7a}, rbuf[8] = {0};  
-  char *str_content [32] = {0};
-  char * str_target = "00";
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
-  if (ret) {
-    close(dev);
-    return -1;
-  }
-  sprintf(str_content, "%02x", rbuf[0]);
-  if(strcmp(str_content, str_target) != 0 )
-  {
-    close(dev);
-    return -1;
-  }
-
-  return 1;  
-}
-
-int
-check_hsc_status_input(void)
-{
-  char* device = I2C_DEV_HSC;
-  uint8_t addr = I2C_HSC_ADDR;
-  int dev, ret;
-  uint8_t wbuf[4] = {0x7c}, rbuf[8] = {0};  
-  char *str_content [32] = {0};
-  char * str_target = "00";
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
-  if (ret) {
-    close(dev);
-    return -1;
-  }
-  sprintf(str_content, "%02x", rbuf[0]);
-  if(strcmp(str_content, str_target) != 0 )
-  {
-    close(dev);
-    return -1;
-  }
-
-  return 1;  
-}
-
-int
-check_hsc_status_temperature(void)
-{
-  char* device = I2C_DEV_HSC;
-  uint8_t addr = I2C_HSC_ADDR;
-  int dev, ret;
-  uint8_t wbuf[4] = {0x7d}, rbuf[8] = {0};  
-  char *str_content [32] = {0};
-  char * str_target = "00";
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
-  if (ret) {
-    close(dev);
-    return -1;
-  }
-  sprintf(str_content, "%02x", rbuf[0]);
-  if(strcmp(str_content, str_target) != 0 )
-  {
-    close(dev);
-    return -1;
-  }
-
-  return 1;  
-}
-
-int
-check_hsc_status_manufacturer(void)
-{
-  char* device = I2C_DEV_HSC;
-  uint8_t addr = I2C_HSC_ADDR;
-  int dev, ret;
-  uint8_t wbuf[4] = {0x80}, rbuf[8] = {0};  
-  char *str_content [32] = {0};
-  char * str_target = "00";
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
-  if (ret) {
-    close(dev);
-    return -1;
-  }
-  sprintf(str_content, "%02x", rbuf[0]);
-  if(strcmp(str_content, str_target) != 0 )
-  {
-    close(dev);
-    return -1;
-  }
-
-  return 1;  
-}
-
-int
-check_hsc_status_iout(void)
-{
-  char* device = I2C_DEV_HSC;
-  uint8_t addr = I2C_HSC_ADDR;
-  int dev, ret;
-  uint8_t wbuf[4] = {0x7b}, rbuf[8] = {0};  
-  char *str_content [32] = {0};
-  char * str_target = "00";
-
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, 1);
-  if (ret) {
-    close(dev);
-    return -1;
-  }
-  if ( BIT(rbuf[0], 7) )
-  {
-    close(dev);
-    return -1;
-  }
-
-  return 1;  
 }
 
 static int
@@ -1974,7 +1752,6 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   return 0;
 }
 
-
 int
 fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
@@ -2179,28 +1956,72 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
         // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:
-          return read_hsc_value(HSC_IN_VOLT, HSC_DEVICE, ml_hsc_r_sense, (float *) value);
+          return read_hsc_value(0x88, 19599, 0, -2, (float *)value);
         case SP_SENSOR_HSC_OUT_CURR:
-          return read_hsc_value(HSC_OUT_CURR, HSC_DEVICE, ml_hsc_r_sense, (float *) value);
+          return read_hsc_value(0x8c, (800*hsc_r_sense), 20475, -1, (float *)value);
         case SP_SENSOR_HSC_TEMP:
-          return read_hsc_value(HSC_TEMP, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
+          return read_hsc_value(0x8d, 42, 31880, -1, (float *)value);
         case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_ein(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);
-        case SP_HSC_IOUT_STATUS:
-          return read_hsc_ioutstatus(I2C_DEV_HSC, I2C_HSC_ADDR, ml_hsc_r_sense, (float*) value);  
+          return read_hsc_ein(hsc_r_sense, (float *)value);
         case SP_SENSOR_HSC_PEAK_IOUT:
-          return read_hsc_value(HSC_PEAK_IOUT, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
+          return read_hsc_value(0xd0, (800*hsc_r_sense), 20475, -1, (float *)value);
         case SP_SENSOR_HSC_PEAK_PIN:
-          return read_hsc_value(HSC_PEAK_POWER, HSC_DEVICE, ml_hsc_r_sense, (float*) value);
+          return read_hsc_value(0xda, (6123*hsc_r_sense), 0, -2, (float *)value);
       }
       break;
 
-      case FRU_NIC:
-       	  switch(sensor_num) {
-       	    // Mezz Temp
-       		  case MEZZ_SENSOR_TEMP:
-              return read_nic_temp(I2C_DEV_NIC, I2C_NIC_ADDR, (float*) value);
-       	  }
+    case FRU_NIC:
+      switch(sensor_num) {
+        // Mezz Temp
+        case MEZZ_SENSOR_TEMP:
+          return read_nic_temp(I2C_DEV_NIC, I2C_NIC_ADDR, (float*) value);
+      }
       break;
   }
+}
+
+static int
+check_hsc_status(uint8_t reg, uint8_t len, uint16_t mask) {
+  uint8_t rbuf[4] = {0};
+  uint16_t sts;
+
+  if (read_hsc_reg(reg, rbuf, len)) {
+    return -1;
+  }
+
+  sts = (len == 1) ? rbuf[0] : (rbuf[1] << 8)|rbuf[0];
+  if ((sts & mask) != 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+static int
+clear_hsc_fault(void) {
+  return read_hsc_reg(0x03, NULL, 0);  // CLEAR_FAULTS
+}
+
+int
+fby2_check_hsc_sts_iout(uint8_t mask) {
+  return check_hsc_status(0x7b, 1, mask);  // STATUS_IOUT
+}
+
+int
+fby2_check_hsc_fault(void) {
+  if (check_hsc_status(0x79, 2, 0xBFFE))  // STATUS_WORD
+    return -1;
+  if (check_hsc_status(0x7a, 1, 0xFF))    // STATUS_VOUT
+    return -1;
+  if (check_hsc_status(0x7b, 1, 0xDF))    // STATUS_IOUT
+    return -1;
+  if (check_hsc_status(0x7c, 1, 0xFF))    // STATUS_INPUT
+    return -1;
+  if (check_hsc_status(0x7d, 1, 0xFF))    // STATUS_TEMPERATURE
+    return -1;
+  if (check_hsc_status(0x80, 1, 0xFF))    // STATUS_MFR_SPECIFIC
+    return -1;
+
+  clear_hsc_fault();
+  return 0;
 }

@@ -117,7 +117,7 @@ showUsage(void) {
   printf("       -h             This help\n");
   printf("       -n netdev      Specifies the net device to send command to [default=\"eth0\"]\n");
   printf("       -c channel     Specifies the NC-SI channel on the net device [default=0]\n");
-  printf("       -S             show adapter statistics");
+  printf("       -S             show adapter statistics\n");
   printf("Sample: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
 }
@@ -140,7 +140,7 @@ main(int argc, char **argv) {
     return -1;
   }
   memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-  while ((argflag = getopt(argc, (char **)argv, "hSn:c :?")) != -1)
+  while ((argflag = getopt(argc, (char **)argv, "hSn:c:?")) != -1)
   {
     switch(argflag) {
     case 'n':

@@ -56,16 +56,9 @@
 /*
    Default config:
       - poll NIC status once every 60 seconds
-      - log 1 NIC error entries per 30 min
 */
-
 /* POLL nic status every N seconds */
 #define NIC_STATUS_SAMPLING_DELAY  60
-/* to avoid log flood when NIC reports error, we only allow 1 NIC log Entry
-   per this many minutes
-*/
-#define NIC_LOG_PERIOD 30
-#define NUM_NIC_SAMPLES  (NIC_LOG_PERIOD * (60/NIC_STATUS_SAMPLING_DELAY))
 
 
 
@@ -166,9 +159,8 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
 {
   char logbuf[512];
   int i=0;
-
-  // flag to ensure we only log NIC error event once per NIC_LOG_PERIOD
-  static int log_event = 0;
+  int currentLinkStatus =  0;
+  static int prevLinkStatus = 0;
 
   NCSI_Response_Packet *resp = (NCSI_Response_Packet *)buf->msg_payload;
   Get_Link_Status_Response *linkresp = (Get_Link_Status_Response *)resp->Payload_Data;
@@ -177,19 +169,16 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
   linkstatus.all32 = ntohl(linkresp->link_status.all32);
   linkOther.all32 = ntohl(linkresp->other_indications.all32);
 
-  // check NIC link status, log if it reports error
-  if (linkstatus.bits.link_flag) {
-    // reset our log count if good status is detected, so next error status will be logged
-    log_event = 0;
+  currentLinkStatus = linkstatus.bits.link_flag;
+  if (currentLinkStatus == prevLinkStatus) {
+    return;
   } else {
-    // NIC error detected
-
-    if ((log_event > 0) && (log_event < NUM_NIC_SAMPLES)) {
-      // NIC erorr status has already been logged in this period, do not log again
-      log_event++;
-    } else {
-      // first time NIC error has been detected in a new sampling period, log it
-      i += sprintf(logbuf, "NIC error:");
+      // log link status change
+      if (currentLinkStatus) {
+        i += sprintf(logbuf, "NIC link up:");
+      } else {
+        i += sprintf(logbuf, "NIC link down:");
+      }
       i += sprintf(logbuf + i, "Rsp:0x%04x ", ntohs(resp->Response_Code));
       i += sprintf(logbuf + i, "Rsn:0x%04x ", ntohs(resp->Reason_Code));
       i += sprintf(logbuf + i, "Link:0x%lx ", linkstatus.all32);
@@ -200,10 +189,7 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
       i += sprintf(logbuf + i, "(Driver:0x%x) ", linkOther.bits.host_NC_driver_status);
       i += sprintf(logbuf + i, "OEM:0x%lx ", (unsigned long)ntohl(linkresp->oem_link_status));
       syslog(LOG_WARNING, "%s", logbuf);
-
-      // reset sampling counter
-      log_event = 1;
-    }
+      prevLinkStatus = currentLinkStatus;
   }
 }
 

@@ -1029,6 +1029,7 @@ pal_is_device_pair(uint8_t slot_id) {
   switch (pair_set_type) {
     case TYPE_CF_A_SV:
     case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
       return true;
   }
 
@@ -1145,8 +1146,13 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
       break;
     case TYPE_CF_A_CF:
     case TYPE_CF_A_GP:
+    case TYPE_CF_A_GPV2:
     case TYPE_GP_A_CF:
     case TYPE_GP_A_GP:
+    case TYPE_GP_A_GPV2:
+    case TYPE_GPV2_A_CF:
+    case TYPE_GPV2_A_GP:
+    case TYPE_GPV2_A_GPV2:
       // Need to 12V-off pair slot
       // Pair Slot should be 12V-off when pair slots are device
       if (status) {
@@ -1158,6 +1164,7 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
       break;
     case TYPE_CF_A_SV:
     case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
       // Need to 12V-off pair slot
       if (status) {
         sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
@@ -1178,6 +1185,7 @@ pal_is_valid_pair(uint8_t slot_id, int *pair_set_type) {
     case TYPE_SV_A_SV:
     case TYPE_CF_A_SV:
     case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
     case TYPE_NULL_A_SV:
     case TYPE_SV_A_NULL:
       return true;
@@ -1311,6 +1319,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        break;
      case TYPE_CF_A_SV:
      case TYPE_GP_A_SV:
+     case TYPE_GPV2_A_SV:
        /* Check whether the system is 12V off or on */
        ret = pal_is_server_12v_on(pair_slot_id, &status);
        if (ret < 0) {
@@ -1515,6 +1524,7 @@ server_12v_off(uint8_t slot_id) {
            break;
         case TYPE_CF_A_SV:
         case TYPE_GP_A_SV:
+        case TYPE_GPV2_A_SV:
            // Need to 12V-off pair slot first to avoid accessing device card error
            runoff_id = pair_slot_id;
            break;
@@ -2306,6 +2316,7 @@ server_12v_cycle_physically(uint8_t slot_id){
     switch(pair_set_type) {
       case TYPE_CF_A_SV:
       case TYPE_GP_A_SV:
+      case TYPE_GPV2_A_SV:
         pair_slot_id = slot_id + 1;
         pal_get_last_pwr_state(pair_slot_id, pwr_state);
         if (server_12v_off(pair_slot_id))          //Need to 12V off server first when configuration type is pair config
@@ -2436,6 +2447,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         switch(pair_set_type) {
           case TYPE_CF_A_SV:
           case TYPE_GP_A_SV:
+          case TYPE_GPV2_A_SV:
             pair_slot_id = slot_id + 1;
             ret = server_12v_on(slot_id);
             if (ret != 0)
@@ -2463,6 +2475,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         switch(pair_set_type) {
           case TYPE_CF_A_SV:
           case TYPE_GP_A_SV:
+          case TYPE_GPV2_A_SV:
             pair_slot_id = slot_id + 1;
             return server_12v_off(pair_slot_id);
           default:
@@ -6076,6 +6089,9 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
       break;
     case TYPE_GP_A_SV:
       pcie_conf = 0x01;
+      break;
+    case TYPE_GPV2_A_SV:
+      pcie_conf = 0x010;
       break;
     default:
       pcie_conf = 0x00;

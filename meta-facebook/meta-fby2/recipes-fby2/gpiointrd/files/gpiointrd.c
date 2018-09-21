@@ -420,6 +420,7 @@ latch_open_handler(void *ptr) {
   switch(pair_set_type) {
     case TYPE_CF_A_SV:
     case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
       if (0 == slot_id%2)
         pair_slot_id = slot_id - 1;
       else

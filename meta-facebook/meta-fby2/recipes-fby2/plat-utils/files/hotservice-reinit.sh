@@ -31,7 +31,7 @@ function device_config() {
       i2c_remove_device $SLOT_B 0x40
 
       #if [ $(is_server_prsnt $(($SLOT_N+1))) == "1" ] && [ $(get_slot_type $(($SLOT_N+1))) == "0" ] ; then
-        if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] ; then
+        if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] && [ $(get_slot_type $SLOT_N) != "4" ] ; then
 
            devmem $I2C_REG w 0xFFF77304
 

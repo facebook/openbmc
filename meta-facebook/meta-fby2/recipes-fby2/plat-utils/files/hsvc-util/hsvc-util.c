@@ -92,6 +92,7 @@ activate_hsvc(uint8_t slot_id) {
            break;
         case TYPE_CF_A_SV:
         case TYPE_GP_A_SV:
+        case TYPE_GPV2_A_SV:
            // Need to 12V-off pair slot first to avoid accessing device card error
            runoff_id = pair_slot_id;
            break;

@@ -165,9 +165,11 @@ case $OPTION in
       fi
 
       echo "restart ipmbd for $SLOT $OPTION"
-      if [[ $(is_server_prsnt $SLOT_NUM) == "1" && $(get_slot_type $SLOT_NUM) == "0" ]]; then
-         sv start ipmbd_$SLOT_BUS
-         /usr/local/bin/bic-cached $SLOT_NUM > /dev/null 2>&1 &
+      if [[ $(is_server_prsnt $SLOT_NUM) == "1" ]]; then
+         if [[ $(get_slot_type $SLOT_NUM) == "0" || $(get_slot_type $SLOT_NUM) == "4" ]]; then
+           sv start ipmbd_$SLOT_BUS
+           /usr/local/bin/bic-cached $SLOT_NUM > /dev/null 2>&1 &
+         fi
       fi
 
       # Server Type recognition restart

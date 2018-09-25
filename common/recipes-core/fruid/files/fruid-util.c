@@ -38,6 +38,14 @@
   static const char * pal_fru_list_rw_t =  pal_fru_list;
 #endif /* CUSTOM_FRU_LIST */
 
+#ifdef FRU_DEVICE_LIST
+  static const char * pal_dev_list_print_t = pal_dev_list;
+  static const char * pal_dev_list_rw_t =  pal_dev_list;
+#else
+  static const char * pal_dev_list_print_t = NULL;
+  static const char * pal_dev_list_rw_t = NULL;
+#endif
+
 /* To copy the bin files */
 static int
 copy_file(int out, int in, int bs) {
@@ -133,14 +141,16 @@ void get_fruid_info(uint8_t fru, char *path, char* name) {
 
 static void
 print_usage() {
-
-  if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
-    pal_fru_list_rw_t = pal_fru_list_rw_t + strlen("all, ");
-  }
-
-  printf("Usage: fruid-util [ %s ]\n"
+  if (pal_dev_list_print_t != NULL || pal_dev_list_rw_t != NULL) {
+    printf("Usage: fruid-util [ %s ] [ %s ]\n"
+      "Usage: fruid-util [ %s ] [ %s ] [--dump | --write ] <file>\n",
+      pal_fru_list_print_t, pal_dev_list_print_t, pal_fru_list_rw_t, pal_dev_list_rw_t);
+  } else {
+    printf("Usage: fruid-util [ %s ]\n"
       "Usage: fruid-util [ %s ] [--dump | --write ] <file>\n",
       pal_fru_list_print_t, pal_fru_list_rw_t);
+  }
+  exit(-1);
 }
 
 /* Utility to just print the FRUID */
@@ -153,6 +163,7 @@ int main(int argc, char * argv[]) {
   FILE *fp;
   int fru_size;
   uint8_t fru;
+  uint8_t dev_id = DEV_NONE;
   char *file_path = NULL;
   char path[64] = {0};
   char eeprom_path[64] = {0};
@@ -161,58 +172,91 @@ int main(int argc, char * argv[]) {
   uint8_t status;
   fruid_info_t fruid;
   char* exist;
+  uint8_t num_devs = 0;
 
-  if (argc != 2 && argc != 4) {
+  if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
+    pal_fru_list_rw_t = pal_fru_list_rw_t + strlen("all, ");
+  }
+
+  if (pal_dev_list_rw_t != NULL) {
+    if (!strncmp(pal_dev_list_rw_t, "all, ", strlen("all, "))) {
+      pal_dev_list_rw_t = pal_dev_list_rw_t + strlen("all, ");
+    }
+  }
+
+  //Check if the input FRU is valid
+  if (argc == 2 || argc == 3) {
+    exist = strstr(pal_fru_list_print_t, argv[1]);
+    if (exist == NULL) {
+      printf("Cannot read FRUID for %s\n", argv[1]);
+      print_usage();
+    }
+  } else if (argc == 4 || argc == 5) {
+    exist = strstr(pal_fru_list_rw_t, argv[1]);
+    if (exist == NULL) {
+      printf("Cannot dump/write FRUID for %s\n", argv[1]);
+      print_usage();
+    }
+  } else {
     print_usage();
-    exit(-1);
   }
 
   ret = pal_get_fru_id(argv[1], &fru);
   if (ret < 0) {
     print_usage();
-    return ret;
   }
 
-  //Check if the input FRU is valid for print
-  exist = strstr(pal_fru_list_print_t, argv[1]);
-  if (exist == NULL) {
-    print_usage();
-    exit(-1);
-  }
+  pal_get_num_devs(fru,&num_devs);
 
-  if (fru == FRU_ALL && argc > 2) {
-    printf("Cannot dump/write FRUID for \"all\". Please use select individual FRU.\n");
-    print_usage();
-    exit(-1);
-  }
-
-  if (argc > 2) {
-    exist = strstr(pal_fru_list_rw_t, argv[1]);
-    if (exist == NULL) {
-      printf("Cannot dump/write FRUID for %s\n", argv[1]);
+  //Check if the input device is valid
+  if (argc == 3 || argc == 5) {
+    ret = pal_get_dev_id(argv[2], &dev_id);
+    if (ret < 0) {
       print_usage();
-      exit(-1);
     }
 
-    if (!strcmp(argv[2], "--dump")) {
+    if (num_devs) {
+      if (argc == 3) {
+        if (pal_dev_list_print_t == NULL)
+          print_usage();
+        exist = strstr(pal_dev_list_print_t, argv[2]);
+        if (exist == NULL) {
+          printf("Cannot read FRUID for %s %s\n", argv[1], argv[2]);
+          print_usage();
+        }
+      } else {
+        if (pal_dev_list_rw_t == NULL)
+          print_usage();
+        exist = strstr(pal_dev_list_rw_t, argv[2]);
+        if (exist == NULL) {
+          printf("Cannot dump/write FRUID for %s %s\n", argv[1], argv[2]);
+          print_usage();
+        }
+      }
+    } else {
+      if (fru != FRU_ALL) {
+        print_usage();
+      }
+    }
+  }
+
+  //Check dump/write options
+  if (argc == 4 || argc == 5) {
+    if (!strcmp(argv[argc-2], "--dump")) {
       rw = EEPROM_READ;
-      file_path = argv[3];
-    } else if (!strcmp(argv[2], "--write")) {
+      file_path = argv[argc-1];
+    } else if (!strcmp(argv[argc-2], "--write")) {
       rw = EEPROM_WRITE;
-      file_path = argv[3];
-    }
-    else {
+      file_path = argv[argc-1];
+    } else {
       print_usage();
-      exit(-1);
     }
-
   }
 
   // Check if the new eeprom binary file exits.
   // TODO: Add file size check before adding to the eeprom
   if (rw == EEPROM_WRITE && (access(file_path, F_OK) == -1)) {
       print_usage();
-      exit(-1);
   }
 
   if (fru != FRU_ALL) {
@@ -238,7 +282,15 @@ int main(int argc, char * argv[]) {
       return ret;
     }
 
-    ret = pal_get_fruid_path(fru, path);
+    if (num_devs && dev_id != DEV_NONE && dev_id != DEV_ALL) {
+      pal_get_dev_name(fru,dev_id,name);
+      ret = pal_get_dev_fruid_path(fru, dev_id, path);
+    } else {
+      if (dev_id == DEV_ALL && rw != 0)
+        print_usage();
+      ret = pal_get_fruid_path(fru, path);
+    }
+
     if (ret < 0) {
       return ret;
     }
@@ -312,11 +364,19 @@ int main(int argc, char * argv[]) {
       ret = pal_get_fruid_eeprom_path(fru, eeprom_path);
       if (ret < 0) {
         //Can not handle in common, so call pal libray for update
-        ret = pal_fruid_write(fru, file_path);
+        if (num_devs) {
+          if (dev_id == DEV_ALL) 
+            ret = -1;
+          else if (dev_id == DEV_NONE)
+            ret = pal_fruid_write(fru, file_path);
+          else
+            ret = pal_dev_fruid_write(fru, dev_id, file_path);
+        } else {
+          ret = pal_fruid_write(fru, file_path);
+        }
 
-        if ( ret < 0 )
-        {
-          syslog(LOG_WARNING, "[%s] Please check the fruid: %d", __func__, fru);
+        if (ret < 0) {
+          syslog(LOG_WARNING, "[%s] Please check the fruid: %d device id: %d file_path: %s", __func__, fru, dev_id,file_path);
           close(fd_newbin);
           close(fd_tmpbin);
           return -1;
@@ -358,6 +418,17 @@ int main(int argc, char * argv[]) {
       /* FRUID PRINT ONE FRU */
 
       get_fruid_info(fru, path, name);
+      if (num_devs && dev_id == DEV_ALL) {
+        for (uint8_t i=1;i<=num_devs;i++) {
+          pal_get_dev_name(fru,i,name);
+          ret = pal_get_dev_fruid_path(fru, i, path);
+          if (ret < 0) {
+            printf("%s is unavailable!\n\n", name);
+          } else {
+            get_fruid_info(fru, path, name);
+          }
+        }
+      }
     }
 
   } else if (fru == 0) {
@@ -399,8 +470,31 @@ int main(int argc, char * argv[]) {
         continue;
       }
 
-      get_fruid_info(fru, path, name);
+      if (dev_id == DEV_NONE || dev_id == DEV_ALL)
+        get_fruid_info(fru, path, name);
 
+      num_devs = 0;
+      pal_get_num_devs(fru,&num_devs);
+      if (num_devs) {
+        if (dev_id == DEV_ALL){
+          for (uint8_t i=1;i<=num_devs;i++) {
+            pal_get_dev_name(fru,i,name);
+            ret = pal_get_dev_fruid_path(fru, i, path);
+            if (ret < 0) {
+              printf("%s is unavailable!\n\n", name);
+            } else {
+              get_fruid_info(fru, path, name);
+            }
+          }
+        } else if (dev_id != DEV_NONE) {
+          pal_get_dev_name(fru,dev_id,name);
+          ret = pal_get_dev_fruid_path(fru, dev_id, path);
+          if (ret < 0) {
+            printf("%s is unavailable!\n\n", name);
+          }
+          get_fruid_info(fru, path, name);
+        }
+      }
       fru++;
     }
   }

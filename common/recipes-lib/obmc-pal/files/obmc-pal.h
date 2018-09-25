@@ -46,6 +46,10 @@ extern "C" {
 #define MAX_SENSOR_NUMBER  0xFF
 #define MAX_THERSH_LEN     256
 
+// for fru device
+#define DEV_ALL         0x0
+#define DEV_NONE        0xff
+
 /* To hold the sensor info and calculated threshold values from the SDR */
 /* To hold the sensor info and calculated threshold values from the SDR */
 typedef struct {
@@ -205,6 +209,7 @@ int pal_remove_fw_update_flag(void);
 int pal_get_fw_update_flag(void);
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
+int pal_get_num_devs(uint8_t slot, uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
@@ -215,8 +220,11 @@ int pal_set_led(uint8_t led, uint8_t status);
 int pal_set_hb_led(uint8_t status);
 int pal_get_fru_list(char *list);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
+int pal_get_dev_id(char *fru_str, uint8_t *fru);
 int pal_get_fru_name(uint8_t fru, char *name);
+int pal_get_dev_name(uint8_t fru, uint8_t dev, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
+int pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 int pal_get_fruid_name(uint8_t fru, char *name);
 int pal_slotid_to_fruid(int slotid);
@@ -224,6 +232,7 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value);
 int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_fruid_write(uint8_t slot, char *path);
+int pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path);
 int pal_get_fru_devtty(uint8_t fru, char *devtty);
 int pal_sensor_check(uint8_t fru, uint8_t sensor_num);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);

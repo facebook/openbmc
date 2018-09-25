@@ -303,6 +303,12 @@ pal_get_num_slots(uint8_t *num)
 }
 
 int __attribute__((weak))
+pal_get_num_devs(uint8_t slot, uint8_t *num)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
   return PAL_EOK;
@@ -363,6 +369,12 @@ pal_get_fru_id(char *str, uint8_t *fru)
 }
 
 int __attribute__((weak))
+pal_get_dev_id(char *str, uint8_t *fru)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_fru_name(uint8_t fru, char *name)
 {
   sprintf(name, "fru%u", fru);
@@ -370,7 +382,23 @@ pal_get_fru_name(uint8_t fru, char *name)
 }
 
 int __attribute__((weak))
+pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+{
+  int ret = pal_get_fruid_name(fru, name);
+  if (ret < 0)
+    return ret;
+  sprintf(name, "%s Device %u", name ,dev);
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_fruid_path(uint8_t fru, char *path)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path)
 {
   return PAL_EOK;
 }
@@ -392,6 +420,13 @@ pal_fruid_write(uint8_t slot, char *path)
 {
   return PAL_EOK;
 }
+
+int __attribute__((weak))
+pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path)
+{
+  return PAL_EOK;
+}
+
 
 int __attribute__((weak))
 pal_get_fru_devtty(uint8_t fru, char *devtty)

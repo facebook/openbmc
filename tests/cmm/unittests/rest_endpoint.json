@@ -18,9 +18,6 @@
       "psu_update",
       "firmware_info"
     ],
-    "/api/sys/fc_present": [
-      "Not Applicable"
-    ],
     "/api/sys/slotid": [
       "0"
     ],

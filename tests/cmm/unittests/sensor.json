@@ -102,19 +102,8 @@
 },
 "pfe3000-i2c-25-10":
 {
-  "temp3": "yes",
-  "pout1": "yes",
-  "pin": "yes",
-  "temp2": "yes",
   "vin": "yes",
-  "temp1": "yes",
-  "fan1": "yes",
-  "vout2": "yes",
-  "vout1": "yes",
-  "pout2": "yes",
-  "iout1": "yes",
-  "iout2": "yes",
-  "iin": "yes"
+  "vout1": "yes"
 },
 "tmp75-i2c-65-48":
 {
@@ -130,19 +119,8 @@
 },
 "pfe3000-i2c-26-10":
 {
-  "temp3": "yes",
-  "pout1": "yes",
-  "pin": "yes",
-  "temp2": "yes",
   "vin": "yes",
-  "temp1": "yes",
-  "fan1": "yes",
-  "vout2": "yes",
-  "vout1": "yes",
-  "pout2": "yes",
-  "iout1": "yes",
-  "iout2": "yes",
-  "iin": "yes"
+  "vout1": "yes"
 },
 "tmp75-i2c-106-4a":
 {

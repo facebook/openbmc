@@ -85,17 +85,13 @@ bulk_create_i2c_mux() {
     last_child_bus=15
     i2c_mux_name="pca9548"
 
-    # Creat i2c-mux 1-0077, which registers 8 i2c buses: 16-23
-    last_child_bus=$((last_child_bus + 8))
-    add_i2c_mux_sync ${i2c_mux_name} 0x77 1 ${last_child_bus}
-
-    # Creat i2c-mux 2-0071, which registers 8 i2c buses: 24-31
-    last_child_bus=$((last_child_bus + 8))
-    add_i2c_mux_sync ${i2c_mux_name} 0x71 2 ${last_child_bus}
-
-    # Creat i2c-mux 8-0077, which registers 8 i2c buses: 32-39
-    last_child_bus=$((last_child_bus + 8))
-    add_i2c_mux_sync ${i2c_mux_name} 0x77 8 ${last_child_bus}
+    # The first-level i2c-muxes which are directly connected to aspeed
+    # i2c adapters are described in device tree, and the bus number of
+    # these i2c-muxes' channels are hardcoded (as below) to avoid
+    # breaking the existing applications.
+    #    i2c-mux 1-0077: child bus 16-23
+    #    i2c-mux 2-0071: child bus 24-31
+    #    i2c-mux 8-0077: child bus 32-39
 
     # Create second-level i2c-muxes which are connected to first level
     # mux "1-0077". "1-0077" has 8 channels and each channel is connected

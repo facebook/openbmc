@@ -1256,6 +1256,12 @@ pal_is_slot_server(uint8_t fru)
 }
 
 int __attribute__((weak))
+pal_is_slot_support_update(uint8_t fru)
+{
+  return pal_is_slot_server(fru);
+}
+
+int __attribute__((weak))
 pal_self_tray_location(uint8_t *value)
 {
   return PAL_EOK;

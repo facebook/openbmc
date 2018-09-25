@@ -36,7 +36,7 @@ void Server::ready()
 #endif
     throw fru_name + " power 12V-off";
   }
-  if (!pal_is_slot_server(_slot_id)) {
+  if (!pal_is_slot_support_update(_slot_id)) {
 #ifdef DEBUG
     cerr << "slot" << _slot_id << " is not a server" << endl;
 #endif
@@ -61,7 +61,7 @@ void Server::fready()
 #endif
     throw fru_name + " is empty";
   }
-  if (!pal_is_slot_server(_slot_id)) {
+  if (!pal_is_slot_support_update(_slot_id)) {
 #ifdef DEBUG
     cerr << "slot" << _slot_id << " is not a server" << endl;
 #endif

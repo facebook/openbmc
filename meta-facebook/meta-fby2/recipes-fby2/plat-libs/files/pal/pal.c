@@ -2177,11 +2177,25 @@ pal_is_slot_server(uint8_t fru)
 {
   switch(fby2_get_slot_type(fru))
   {
+    case SLOT_TYPE_CF:
+    case SLOT_TYPE_GP:
+    case SLOT_TYPE_NULL:
+      return 0;
+  }
+
+  return 1;
+}
+
+int
+pal_is_slot_support_update(uint8_t fru)
+{
+  switch(fby2_get_slot_type(fru))
+  {
     case SLOT_TYPE_SERVER:
+    case SLOT_TYPE_GPV2:
       break;
     case SLOT_TYPE_CF:
     case SLOT_TYPE_GP:
-    case SLOT_TYPE_GPV2:
     case SLOT_TYPE_NULL:
       return 0;
       break;
@@ -4563,7 +4577,7 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
 
   switch(snr_num) {
     case PROCHOT_EXT:
-      strcpy(error_log, "");  
+      strcpy(error_log, "");
       parsed = true;
 
       sprintf(crisel, "PROCHOT ASSERT,FRU:%u", fru);
@@ -6305,7 +6319,7 @@ pal_sensor_assert_handle_rc(uint8_t fru, uint8_t snr_num, float val, char* thres
     case BIC_RC_SENSOR_SOC_TEMP_DIODE:
       sprintf(crisel, "SOC Temp DIODE %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
       break;
-    case BIC_RC_SENSOR_SOC_TEMP_IMC: 
+    case BIC_RC_SENSOR_SOC_TEMP_IMC:
       sprintf(crisel, "SOC Temp IMC %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
       break;
     case BIC_RC_SENSOR_P12V_MB:
@@ -6407,7 +6421,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       }
       switch (server_type) {
         case SERVER_TYPE_RC:
-          pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name); 
+          pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name);
           break;
         case SERVER_TYPE_TL:
           pal_sensor_assert_handle_tl(fru, snr_num, val, thresh_name);
@@ -7089,7 +7103,7 @@ pal_is_cplddump_ongoing(uint8_t fru) {
   char svalue[MAX_VALUE_LEN] = {0};
   struct timespec ts;
   int ret;
-  int cnt = 0;  
+  int cnt = 0;
 
   sprintf(fname, "/var/run/cplddump%d.pid", fru);
   if ( access(fname, F_OK) == 0 )
@@ -7108,9 +7122,9 @@ pal_is_cplddump_ongoing(uint8_t fru) {
   if (cnt == 0) {   //if both pid file not exist, return false
     return 0;
   }
-  
+
   strcpy(fname, "");
-  
+
   //check the cplddump file in /tmp/cache_store/fru$1_cplddump
   sprintf(fname, "fru%d_cplddump", fru);
   ret = kv_get(fname, value, NULL, 0);
@@ -7263,10 +7277,10 @@ arm_err_parse(uint8_t section_sub_type, char *error_log, uint8_t *sel) {
       case 1:
         sprintf(temp_log, " Transaction Type: %u – Data Access (Type of %s error),", trans_type, type[section_sub_type]);
         break;
-      case 2: 
+      case 2:
         sprintf(temp_log, " Transaction Type: %u – Generic (Type of %s error),", trans_type, type[section_sub_type]);
         break;
-      default: 
+      default:
         sprintf(temp_log, " Transaction Type: %u - Unknown (Type of %s error),", trans_type, type[section_sub_type]);
         break;
     }
@@ -7334,7 +7348,7 @@ arm_err_parse(uint8_t section_sub_type, char *error_log, uint8_t *sel) {
         sprintf(temp_log, " Operation: %u – management,", operation);
         break;
       default:
-        sprintf(temp_log, " Operation: %u - Unknown,", operation); 
+        sprintf(temp_log, " Operation: %u - Unknown,", operation);
         break;
     }
     strcat(error_log, temp_log);
@@ -7685,7 +7699,7 @@ pcie_aer_sel_parse(char *error_log, uint8_t *sel) {
   uncor_err_sts = (sel[4] << 24) | (sel[5] << 16) | (sel[6] << 8) | sel[7];
 
   cor_err_sts = (sel[8] << 24) | (sel[9] << 16) | (sel[10] << 8) | sel[11];
-  
+
   sprintf(temp_log, " Root Error Status:");
   strcat(error_log, temp_log);
   strcpy(temp_log, "");
@@ -8132,7 +8146,7 @@ oem_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len)
       Error_Register2 = req_data[42] << 8 | req_data[41];
       sprintf(temp_log, "Error Register2:0x%04x", Error_Register2);
       strcat(error_log, temp_log);
-      strcpy(temp_log, "");  
+      strcpy(temp_log, "");
     }
   }
   syslog(LOG_CRIT, "%s", error_log);

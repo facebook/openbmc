@@ -119,8 +119,8 @@ print_slot_version(uint8_t slot_id) {
     return;
   }
 
-  if(!pal_is_slot_server(slot_id)) {
-    printf("slot%d is not server\n", slot_id);
+  if(!pal_is_slot_support_update(slot_id)) {
+    printf("slot%d does not support fw update\n", slot_id);
     return;
   }
 
@@ -333,8 +333,8 @@ fw_update_slot(char **argv, uint8_t slot_id) {
     goto err_exit;
   }
 
-  if(!pal_is_slot_server(slot_id)) {
-    printf("slot%d is not server\n", slot_id);
+  if(!pal_is_slot_support_update(slot_id)) {
+    printf("slot%d do not support update\n", slot_id);
     goto err_exit;
   }
 
@@ -361,7 +361,7 @@ fw_update_slot(char **argv, uint8_t slot_id) {
       printf("Failed to Power Off Server%u. Stopping the update!\n",slot_id);
       return -1;
     }
- 
+
     me_recovery(slot_id, RECOVERY_MODE);
     sleep(1);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);

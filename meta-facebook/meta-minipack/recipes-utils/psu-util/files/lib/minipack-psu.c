@@ -35,6 +35,18 @@ pmbus_info_t pmbus[] = {
   {"MFR_SERIAL", 0x9e},
   {"PRI_FW_VER", 0xdd},
   {"SEC_FW_VER", 0xd7},
+  {"STATUS_WORD", 0x79},
+  {"STATUS_VOUT", 0x7a},
+  {"STATUS_IOUT", 0x7b},
+  {"STATUS_INPUT", 0x7c},
+  {"STATUS_TEMP", 0x7d},
+  {"STATUS_CML", 0x7e},
+  {"STATUS_FAN", 0x81},
+  {"STATUS_STBY_WORD", 0xd3},
+  {"STATUS_VSTBY", 0xd4},
+  {"STATUS_ISTBY", 0xd5},
+  {"OPTN_TIME_TOTAL", 0xd8},
+  {"OPTN_TIME_PRESENT", 0xd9},
 };
 
 static int
@@ -71,7 +83,7 @@ i2c_open(uint8_t bus, uint8_t addr) {
 }
 
 static int
-get_mfr_model(int fd, u_int8_t *block) {
+get_mfr_model(int fd, uint8_t *block) {
   int rc = -1;
 
   rc = i2c_smbus_read_block_data(fd, pmbus[MFR_MODEL].reg, block);
@@ -80,6 +92,47 @@ get_mfr_model(int fd, u_int8_t *block) {
     return -1;
   }
   return 0;
+}
+
+/*
+ * PMBus Linear-11 Data Format
+ * X = Y*2^N
+ */
+static float
+linear_convert(uint8_t value[]) {
+  uint16_t data = (value[1] << 8) | value[0];
+  int y = 0, n = 0;
+  float x = 0;
+  uint8_t msb_y = (data >> 10) & 0x1;
+  uint8_t msb_n = (data >> 15) & 0x1;
+
+  if (msb_y) {
+    y = (~data & 0x3ff) + 1;
+  } else {
+    y = data & 0x3ff;
+  }
+
+  if (msb_n) {
+    n = (~(data >> 11) & 0xf) + 1;
+    x = (float) y / POW2(n);
+  } else {
+    n = ((data >> 11) & 0xf);
+    x = (float) y * POW2(n);
+  }
+
+  return x;
+}
+
+static time_info_t
+time_convert(uint32_t value) {
+  time_info_t record;
+
+  record.day = value / 86400;
+  record.hour = (value / 3600) % 24;
+  record.min = (value / 60) % 60;
+  record.sec = value % 60;
+
+  return record;
 }
 
 static int
@@ -506,7 +559,7 @@ update_murata_psu(int fd, const char *file_path) {
 int
 do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
   int fd = -1, ret = -1;
-  uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
+  uint8_t block[I2C_SMBUS_BLOCK_MAX + 1] = {0};
 
   fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
   if (fd < 0) {
@@ -550,11 +603,11 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
 
 /* Print the FRUID in detail */
 static void
-print_fruid_info(fruid_info_t *fruid, const char *name) {
+print_fruid_info(fruid_info_t *fruid, uint8_t num) {
   /* Print format */
-  printf("%-27s: %s", "\nFRU Information",
-      name /* Name of the FRU device */ );
-  printf("%-27s: %s", "\n---------------", "------------------");
+  printf("%-27s: PSU%d (Bus:%d Addr:0x%x)", "\nFRU Information",
+                          num + 1, psu[num].bus, psu[num].eeprom_addr);
+  printf("%-27s: %s", "\n---------------", "-----------------------");
 
   if (fruid->chassis.flag) {
     printf("%-27s: %s", "\nChassis Type",fruid->chassis.type_str);
@@ -610,9 +663,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name) {
 
 /* Populate and print fruid_info by parsing the fru's binary dump */
 int
-get_eeprom_info(u_int8_t num, const char *tpye) {
+get_eeprom_info(uint8_t num, const char *tpye) {
   int ret = -1, fd = -1;
-  char name[5];
   char eeprom[16];
   fruid_info_t fruid;
   uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
@@ -655,12 +707,11 @@ get_eeprom_info(u_int8_t num, const char *tpye) {
 
   pal_del_i2c_device(psu[num].bus, psu[num].eeprom_addr);
 
-  snprintf(name, sizeof(name), "PSU%d", num + 1);
   if (ret) {
     printf("Failed print EEPROM info!\n");
     return -1;
   } else {
-    print_fruid_info(&fruid, name);
+    print_fruid_info(&fruid, num);
     free_fruid_info(&fruid);
   }
 
@@ -668,11 +719,14 @@ get_eeprom_info(u_int8_t num, const char *tpye) {
 }
 
 int
-get_psu_info(u_int8_t num) {
+get_psu_info(uint8_t num) {
   int fd = -1, rc = -1;
   int i = 0, size = 0;
   uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
+  uint8_t byte;
   uint16_t word = 0;
+  uint32_t optn_time = 0;
+  time_info_t optn;
 
   fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
   if (fd < 0) {
@@ -680,20 +734,175 @@ get_psu_info(u_int8_t num) {
     return -1;
   }
 
-  size = sizeof(pmbus) / sizeof(pmbus[0]);
-  for (i = 0; i < size; i++) {
-    if (i < size -2) {
-      memset(block, 0, sizeof(block));
-      rc = i2c_smbus_read_block_data(fd, pmbus[i].reg, block);
-      if (rc < 0) {
-        ERR_PRINT("get_psu_info()");
+  if (get_mfr_model(fd, block)) {
+    close(fd);
+    return -1;
+  }
+
+  if (!strncmp(block, DELTA_MODEL, strlen(DELTA_MODEL))) {
+    size = OPTN_TIME_PRESENT;
+  } else {
+    size = STATUS_FAN;
+  }
+
+  printf("\n%-26s: PSU%d (Bus:%d Addr:0x%x)", "PSU Information",
+                              num + 1, psu[num].bus, psu[num].pmbus_addr);
+  printf("\n%-26s: %s", "---------------", "-----------------------");
+  for (i = MFR_ID; i <= size; i++) {
+    switch (i) {
+      case MFR_ID:
+      case MFR_MODEL:
+      case MFR_REVISION:
+      case MFR_DATE:
+      case MFR_SERIAL:
+        memset(block, 0, sizeof(block));
+        rc = i2c_smbus_read_block_data(fd, pmbus[i].reg, block);
+        if (rc < 0) {
+          ERR_PRINT("get_psu_info()");
+          return -1;
+        }
+        printf("\n%-18s (0x%X) : %s", pmbus[i].item, pmbus[i].reg, block);
+        break;
+      case PRI_FW_VER:
+      case SEC_FW_VER:
+        word = i2c_smbus_read_word_data(fd, pmbus[i].reg);
+        printf("\n%-18s (0x%X) : %d.%d", pmbus[i].item, pmbus[i].reg,
+                                (word & 0xff), ((word >> 8) & 0xff));
+        break;
+      case STATUS_WORD:
+      case STATUS_STBY_WORD:
+        word = i2c_smbus_read_word_data(fd, pmbus[i].reg);
+        printf("\n%-18s (0x%X) : 0x%x", pmbus[i].item, pmbus[i].reg, word);
+        break;
+      case STATUS_VOUT:
+      case STATUS_IOUT:
+      case STATUS_INPUT:
+      case STATUS_TEMP:
+      case STATUS_CML:
+      case STATUS_FAN:
+      case STATUS_VSTBY:
+      case STATUS_ISTBY:
+        byte = i2c_smbus_read_byte_data(fd, pmbus[i].reg);
+        printf("\n%-18s (0x%X) : 0x%x", pmbus[i].item, pmbus[i].reg, byte);
+        break;
+      case OPTN_TIME_TOTAL:
+      case OPTN_TIME_PRESENT:
+        memset(block, 0, sizeof(block));
+        rc = i2c_smbus_read_block_data(fd, pmbus[i].reg, block);
+        optn_time = block[0] | block[1] << 8 | block[2] << 16 | block[3] << 24;
+        optn = time_convert(optn_time);
+        printf("\n%-18s (0x%X) : %dD:%dH:%dM:%dS", pmbus[i].item, pmbus[i].reg,
+                                      optn.day, optn.hour, optn.min, optn.sec);
+        break;
+    }
+  }
+  printf("\n");
+  close(fd);
+
+  return 0;
+}
+
+int
+get_blackbox_info(uint8_t num, const char *option) {
+  int fd = -1, ret = 0, i;
+  uint8_t psu_num = num + 1;
+  uint8_t read_cmd[3] = {0xfb, 1};
+  uint8_t clear_cmd[3] = {0xfb, 0xaa, 0x55};
+  uint32_t time_total = 0, time_present = 0;
+  uint32_t block[I2C_SMBUS_BLOCK_MAX + 1];
+  blackbox_info_t blackbox;
+  time_info_t total;
+  time_info_t present;
+
+  fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
+  if (fd < 0) {
+    ERR_PRINT("Fail to open i2c");
+    return -1;
+  }
+
+  if (get_mfr_model(fd, block)) {
+    close(fd);
+    return -1;
+  }
+
+  if (strncmp(block, DELTA_MODEL, strlen(DELTA_MODEL))) {
+    printf("PSU%d not support blackbox!\n", psu_num);
+    return -1;
+  }
+
+  if ((!strncmp(option, "--print", strlen("--print")))) {
+    for (read_cmd[2] = 0; read_cmd[2] < 5; read_cmd[2]++) {
+      ret = i2c_rdwr_msg_transfer(fd, psu[num].pmbus_addr << 1,
+                                    read_cmd, 3, &blackbox, 42);
+      if (ret) {
+        printf("PSU%d blackbox page %d read fail!\n", psu_num, read_cmd[2]);
         return -1;
       }
-      printf("%s: %s\n", pmbus[i].item, block);
-    } else {
-      word = i2c_smbus_read_word_data(fd, pmbus[i].reg);
-      printf("%s: %d.%d\n", pmbus[i].item, (word & 0xf), ((word >> 8) & 0xf));
+
+      time_total = blackbox.optn_time_total[0] |
+                   blackbox.optn_time_total[1] << 8 |
+                   blackbox.optn_time_total[2] << 16 |
+                   blackbox.optn_time_total[3] << 24;
+      time_present = blackbox.optn_time_present[0] |
+                     blackbox.optn_time_present[1] << 8 |
+                     blackbox.optn_time_present[2] << 16 |
+                     blackbox.optn_time_present[3] << 24;
+      total = time_convert(time_total);
+      present = time_convert(time_present);
+
+      printf("%-27s: PSU%d (Bus:%d Addr:0x%x)", "\nBlackbox Information",
+                                   psu_num, psu[num].bus, psu[num].pmbus_addr);
+      printf("%-27s: %s", "\n--------------------", "-----------------------");
+      printf("%-27s: %d", "\nPAGE", blackbox.page);
+      printf("%-19s (0xDD) : %d.%d", "\nPRI_FW_VER", blackbox.pri_code_ver[0],
+                                                     blackbox.pri_code_ver[1]);
+      printf("%-19s (0xD7) : %d.%d", "\nSEC_FW_VER", blackbox.sec_code_ver[0],
+                                                     blackbox.sec_code_ver[1]);
+      printf("%-19s (0x79) : 0x%x", "\nSTATUS_WORD",
+                         (blackbox.v1_status[1] << 8) | blackbox.v1_status[0]);
+      printf("%-19s (0x7A) : 0x%x", "\nSTATUS_VOUT", blackbox.v1_status_vout);
+      printf("%-19s (0x7B) : 0x%x", "\nSTATUS_IOUT", blackbox.v1_status_iout);
+      printf("%-19s (0x7C) : 0x%x", "\nSTATUS_INPUT", blackbox.input_status);
+      printf("%-19s (0x7D) : 0x%x", "\nSTATUS_TEMP", blackbox.temp_status);
+      printf("%-19s (0x7E) : 0x%x", "\nSTATUS_CML", blackbox.cml_status);
+      printf("%-19s (0x81) : 0x%x", "\nSTATUS_FAN", blackbox.fan_status);
+      printf("%-19s (0xD3) : 0x%x", "\nSTATUS_STBY_WORD",
+                       (blackbox.vsb_status[1] << 8) | blackbox.vsb_status[0]);
+      printf("%-19s (0xD4) : 0x%x", "\nSTATUS_VSTBY",
+                                             blackbox.vsb_status_vout);
+      printf("%-19s (0xD5) : 0x%x", "\nSTATUS_ISTBY",
+                                             blackbox.vsb_status_iout);
+      printf("%-19s (0xD8) : %dD:%dH:%dM:%dS", "\nOPTN_TIME_TOTAL",
+                                total.day, total.hour, total.min, total.sec);
+      printf("%-19s (0xD9) : %dD:%dH:%dM:%dS", "\nOPTN_TIME_PRESENT",
+                        present.day, present.hour, present.min, present.sec);
+      printf("%-19s (0x88) : %.2f V", "\nIN_VOLT",
+                                              linear_convert(blackbox.vin));
+      printf("%-19s (0x89) : %.2f V", "\n12V_VOLT",
+                                              linear_convert(blackbox.vout));
+      printf("%-19s (0x8B) : %.2f A", "\nIN_CURR",
+                                              linear_convert(blackbox.iin));
+      printf("%-19s (0x8C) : %.2f A", "\n12V_CURR",
+                                              linear_convert(blackbox.iout));
+      printf("%-19s (0x8D) : %.2f C", "\nTEMP1",
+                                              linear_convert(blackbox.temp1));
+      printf("%-19s (0x8E) : %.2f C", "\nTEMP2",
+                                              linear_convert(blackbox.temp2));
+      printf("%-19s (0x8F) : %.2f C", "\nTEMP3",
+                                              linear_convert(blackbox.temp3));
+      printf("%-19s (0x90) : %.2f RPM\n", "\nFAN_SPEED",
+                                          linear_convert(blackbox.fan_speed));
     }
+  } else if ((!strncmp(option, "--clear", strlen("--clear")))) {
+    ret = i2c_rdwr_msg_transfer(fd, psu[num].pmbus_addr << 1,
+                                         clear_cmd, 3, NULL, 0);
+    if (ret) {
+      printf("PSU%d blackbox clear fail!\n", psu_num);
+      return -1;
+    }
+  } else {
+    printf("Invalid option!\n");
+    return -1;
   }
   close(fd);
 

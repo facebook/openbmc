@@ -41,6 +41,7 @@ extern "C" {
         fprintf(stderr, fmt ": %s\n", ##args, strerror(errno));
 
 #define msleep(n) usleep(n*1000)
+#define POW2(x) (1 << (x))
 
 #define PSU1_EEPROM  "/sys/class/i2c-adapter/i2c-49/49-0051/eeprom"
 #define PSU2_EEPROM  "/sys/class/i2c-adapter/i2c-48/48-0050/eeprom"
@@ -86,6 +87,40 @@ typedef struct _pmbus_info_t {
   uint8_t reg;
 } pmbus_info_t;
 
+typedef struct _time_info_t {
+  uint32_t day;
+  uint8_t hour;
+  uint8_t min;
+  uint8_t sec;
+} time_info_t;
+
+typedef struct _blackbox_info_t {
+  uint8_t len;
+  uint8_t page;
+  uint8_t v1_status[2];
+  uint8_t v1_status_vout;
+  uint8_t v1_status_iout;
+  uint8_t vsb_status[2];
+  uint8_t vsb_status_vout;
+  uint8_t vsb_status_iout;
+  uint8_t input_status;
+  uint8_t temp_status;
+  uint8_t cml_status;
+  uint8_t fan_status;
+  uint8_t vin[2];
+  uint8_t iin[2];
+  uint8_t vout[2];
+  uint8_t iout[2];
+  uint8_t temp1[2];
+  uint8_t temp2[2];
+  uint8_t temp3[2];
+  uint8_t fan_speed[2];
+  uint8_t pri_code_ver[2];
+  uint8_t sec_code_ver[2];
+  uint8_t optn_time_total[4];
+  uint8_t optn_time_present[4];
+} blackbox_info_t;
+
 typedef struct _delta_hdr_t {
   uint8_t crc[2];
   uint16_t page_start;
@@ -115,12 +150,25 @@ enum {
   MFR_DATE = 3,
   MFR_SERIAL = 4,
   PRI_FW_VER = 5,
-  SEC_FW_VER = 6
+  SEC_FW_VER = 6,
+  STATUS_WORD = 7,
+  STATUS_VOUT = 8,
+  STATUS_IOUT = 9,
+  STATUS_INPUT = 10,
+  STATUS_TEMP = 11,
+  STATUS_CML = 12,
+  STATUS_FAN = 13,
+  STATUS_STBY_WORD = 14,
+  STATUS_VSTBY = 15,
+  STATUS_ISTBY = 16,
+  OPTN_TIME_TOTAL = 17,
+  OPTN_TIME_PRESENT = 18
 };
 
-int do_update_psu(u_int8_t num, const char *file, const char *vendor);
-int get_eeprom_info(u_int8_t mum, const char *tpye);
-int get_psu_info(u_int8_t num);
+int do_update_psu(uint8_t num, const char *file, const char *vendor);
+int get_eeprom_info(uint8_t mum, const char *tpye);
+int get_psu_info(uint8_t num);
+int get_blackbox_info(uint8_t num, const char *option);
 
 #ifdef __cplusplus
 }

@@ -22,8 +22,12 @@
 #include <facebook/minipack-psu.h>
 
 static const char *option_list[] = {
-  "--get_psu_info",
-  "--get_eeprom_info"
+  "  --get_psu_info",
+  "  --get_eeprom_info",
+  "  --get_blackbox_info",
+  "    options:",
+  "      --print",
+  "      --clear",
 };
 
 static void
@@ -31,8 +35,8 @@ print_usage(const char *name) {
   int i;
 
   printf("Usage: %s <psu1|psu2|psu3|psu4> --update <file_path>\n", name);
-  printf("Usage: %s <psu1|psu2|psu3|psu4> <option>\n", name);
-  printf("       option:\n");
+  printf("Usage: %s <psu1|psu2|psu3|psu4> <command> <options>\n", name);
+  printf("       command:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
 }
@@ -46,7 +50,7 @@ exithandler(int signum) {
 
 int
 main(int argc, const char *argv[]) {
-  u_int8_t psu_num = 0;
+  uint8_t psu_num = 0;
   int pid_file = 0;
   int ret = 0;
 
@@ -81,17 +85,20 @@ main(int argc, const char *argv[]) {
   if (!strcmp(argv[2], "--get_psu_info")) {
     ret = get_psu_info(psu_num);
   }
+  else if (!strcmp(argv[2], "--get_blackbox_info") && argv[3] != NULL) {
+    ret = get_blackbox_info(psu_num, argv[3]);
+  }
   else if (!strcmp(argv[2], "--get_eeprom_info")) {
     ret = get_eeprom_info(psu_num, argv[3]);
   }
-  else if (!strcmp(argv[2], "--update")) {
+  else if (!strcmp(argv[2], "--update") && argv[3] != NULL) {
     signal(SIGHUP, exithandler);
     signal(SIGINT, exithandler);
     signal(SIGTSTP, exithandler);
     signal(SIGTERM, exithandler);
     signal(SIGQUIT, exithandler);
 
-    run_command("sv stop sensord > /dev/nul");
+    run_command("sv stop sensord > /dev/null");
 
     switch (psu_num) {
       case 0:

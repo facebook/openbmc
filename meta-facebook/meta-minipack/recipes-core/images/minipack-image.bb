@@ -42,6 +42,7 @@ IMAGE_INSTALL += " \
   sensor-util \
   sensor-mon \
   spatula \
+  threshold-util \
   trousers \
   tpm-tools \
   usb-console \

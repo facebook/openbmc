@@ -43,6 +43,7 @@ extern "C" {
 #define FCM_B_SYSFS "/sys/class/i2c-adapter/i2c-72/72-0033/%s"
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
+#define KV_PATH "/mnt/data/kv_store/%s"
 
 #define MINIPACK_SDR_PATH "/tmp/sdr_%s.bin"
 
@@ -54,6 +55,7 @@ extern "C" {
 #define FAN_PRSNT_STATUS "fantray%d_present"
 #define PSU_L_PRSNT_STATUS "psu_L%d_present_L"
 #define PSU_R_PRSNT_STATUS "psu_R%d_present_L"
+#define KV_PIM_HEALTH "pim%d_sensor_health"
 #define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
 
 #define LAST_KEY "last_key"
@@ -225,6 +227,12 @@ extern "C" {
 #define FRU_STATUS_BAD    0
 
 #define I2C_ADDR_SIM_LED 0x20
+#define I2C_ADDR_PIM16Q 0x60
+#define I2C_ADDR_PIM4DD 0x61
+
+#define FPGA_STS_LED_REG 0x82
+#define FPGA_STS_CLR_BLUE 0x01
+#define FPGA_STS_CLR_YELLOW 0x05
 
 extern const char pal_fru_list[];
 
@@ -585,7 +593,7 @@ enum {
   PIM8_SENSOR_QSFP_TEMP = 0xb0,
 };
 
-/* Sensors on SMB */
+/* Sensors on PSU */
 enum {
   PSU1_SENSOR_IN_VOLT = 0x01,
   PSU1_SENSOR_12V_VOLT = 0x02,
@@ -717,6 +725,10 @@ void set_smb_led(int brd_rev);
 int set_sled(int brd_rev, uint8_t color, int led_name);
 void init_led(void);
 int pal_light_scm_led(uint8_t led_color);
+int pal_get_fru_health(uint8_t fru, uint8_t *value);
+void pal_set_pim_sts_led(uint8_t fru);
+int pal_set_def_key_value(void);
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 #ifdef __cplusplus
 } // extern "C"
 #endif

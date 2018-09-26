@@ -24,6 +24,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -182,6 +183,7 @@ pim_monitor_handler(void *unused){
         goto pim_mon_out;
       }
       /* FRU_PIM1 = 3, FRU_PIM2 = 4, ...., FRU_PIM8 = 10 */
+      pal_set_pim_sts_led(fru);
       /* Get original prsnt state PIM1 @bit0, PIM2 @bit1, ..., PIM8 @bit7 */
       num = fru - 2;
       prsnt_ori = GETBIT(curr_state, (num - 1));
@@ -216,6 +218,14 @@ pim_mon_out:
     sleep(1);
   }
   return 0;
+}
+
+void
+exithandler(int signum) {
+  int brd_rev;
+  pal_get_board_rev(&brd_rev);
+  set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SMB);
+  exit(0);
 }
 
 // Thread for monitoring sim LED
@@ -316,7 +326,7 @@ main (int argc, char * const argv[]) {
   int rc;
   int pid_file;
   int brd_rev;
-
+  signal(SIGTERM, exithandler);
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
   if(rc) {

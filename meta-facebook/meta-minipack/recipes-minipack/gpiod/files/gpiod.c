@@ -211,8 +211,6 @@ gpio_monitor_poll() {
 
   memcpy(&status, (uint8_t *) &gpio, sizeof(status));
 
-  o_pin_val[0] = 0;
-
   for (i = 0; i < MAX_GPIO_PINS; i++) {
 
     if (gpios[i].flag == 0)
@@ -223,6 +221,9 @@ gpio_monitor_poll() {
     if (gpios[i].status)
       o_pin_val[0] = SETBIT(o_pin_val[0], i);
   }
+  
+  pal_light_scm_led(SCM_LED_AMBER);
+  o_pin_val[0] = 0;
 
   /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
   while(1) {

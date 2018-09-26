@@ -490,6 +490,20 @@ char * key_list[] = {
 "timestamp_sled",
 "server_por_cfg",
 "server_sel_error",
+"scm_sensor_health",
+"smb_sensor_health",
+"pim1_sensor_health",
+"pim2_sensor_health",
+"pim3_sensor_health",
+"pim4_sensor_health",
+"pim5_sensor_health",
+"pim6_sensor_health",
+"pim7_sensor_health",
+"pim8_sensor_health",
+"psu1_sensor_health",
+"psu2_sensor_health",
+"psu3_sensor_health",
+"psu4_sensor_health",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -500,6 +514,20 @@ char * def_val_list[] = {
   "0", /* timestamp_sled */
   "lps", /* server_por_cfg */
   "1", /* server_sel_error */
+  "1", /* scm_sensor_health */
+  "1", /* smb_sensor_health */
+  "1", /* pim1_sensor_health */
+  "1", /* pim2_sensor_health */
+  "1", /* pim3_sensor_health */
+  "1", /* pim4_sensor_health */
+  "1", /* pim5_sensor_health */
+  "1", /* pim6_sensor_health */
+  "1", /* pim7_sensor_health */
+  "1", /* pim8_sensor_health */
+  "1", /* psu1_sensor_health */
+  "1", /* psu2_sensor_health */
+  "1", /* psu3_sensor_health */
+  "1", /* psu4_sensor_health */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -5041,13 +5069,72 @@ get_sensor_desc(uint8_t fru, uint8_t snr_num) {
   return &m_snr_desc[fru-1][snr_num];
 }
 
+static int
+_set_pim_sts_led(uint8_t fru, uint8_t color)
+{
+  int dev, ret, dev_addr;
+  char device_name[20];
+  
+  snprintf(device_name, 20,"/dev/i2c-%d", 80+((fru-3)*8));
+  dev = open(device_name, O_RDWR);
+  if(dev < 0) {
+    syslog(LOG_ERR, "%s: open() failed\n", __func__);
+    return -1;
+  }
+  
+  //dev_addr = 0: 16Q, ret = 1: 4DD
+  dev_addr = pal_get_pim_type(fru);
+  
+  if(dev_addr == 0)
+    ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_PIM16Q);
+  else if(dev_addr == 1)
+    ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_PIM4DD);
+  else
+    ret = -1;
+
+  if(ret < 0) {
+    syslog(LOG_ERR, "%s: ioctl() assigned i2c addr failed\n", __func__);
+    close(dev);
+    return -1;
+  }
+  if(color == FPGA_STS_CLR_BLUE)
+	i2c_smbus_write_byte_data(dev, FPGA_STS_LED_REG, FPGA_STS_CLR_BLUE);
+  else if(color == FPGA_STS_CLR_YELLOW)
+    i2c_smbus_write_byte_data(dev, FPGA_STS_LED_REG, FPGA_STS_CLR_YELLOW);
+
+  close(dev);
+  return 0;
+}
+
+void
+pal_set_pim_sts_led(uint8_t fru)
+{
+  int val;
+  char tmp[LARGEST_DEVICE_NAME];
+  char path[LARGEST_DEVICE_NAME + 1];
+  snprintf(tmp, LARGEST_DEVICE_NAME, KV_PATH, KV_PIM_HEALTH);
+  /* FRU_PIM1 = 3, FRU_PIM2 = 4, ...., FRU_PIM8 = 10 */
+  /* KV_PIM1 = 1, KV_PIM2 = 2, ...., KV_PIM8 = 8 */
+  snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - 2);
+  if(read_device(path, &val)) {
+    syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
+    return;
+  }
+  if(val)
+    _set_pim_sts_led(fru, FPGA_STS_CLR_BLUE);
+  else
+    _set_pim_sts_led(fru, FPGA_STS_CLR_YELLOW);
+  
+  return;
+}
+
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num,
                                       float val, uint8_t thresh) {
   char crisel[128];
   char thresh_name[10];
   sensor_desc_t *snr_desc;
-
+  
   switch (thresh) {
     case UNR_THRESH:
         sprintf(thresh_name, "UNR");
@@ -5097,7 +5184,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num,
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;
-
+  
   switch (thresh) {
     case UNR_THRESH:
       sprintf(thresh_name, "UNR");
@@ -6032,8 +6119,6 @@ void set_sys_led(int brd_rev)
   uint8_t prsnt = 0;
   ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
   if (ret) {
-    syslog(LOG_ERR, 
-           "%s, scm: cannot get smbcpld register value.", __func__);
     set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
     return;
   }
@@ -6045,8 +6130,6 @@ void set_sys_led(int brd_rev)
   for(fru = FRU_PIM1; fru <= FRU_PIM8; fru++){
     ret = pal_is_fru_prsnt(fru, &prsnt);
     if (ret) {
-      syslog(LOG_ERR, 
-             "%s, pim%d: cannot get smbcpld register value.", __func__, fru);
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
       return;
     }
@@ -6070,9 +6153,6 @@ void set_fan_led(int brd_rev)
   for(i = 0; i < fan_num; i++) {
     snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_SMB, sensor_num[i]);
     if(read_device(path, &val)) {
-      syslog(LOG_ERR, 
-             "%s cannot get value from /tmp/cache_store/smb_sensor%d"
-             , __func__, sensor_num[i]);
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
       return;
     }
@@ -6096,48 +6176,52 @@ void set_psu_led(int brd_rev)
   float vout_3_min = 3.00;//threshold = 3.3, error ratio = 0.08
   float vout_3_max = 3.60;//threshold = 3.3, error ratio = 0.08
   uint8_t psu_num = 4;
+  uint8_t prsnt;
   int sensor_num[] = {1, 14, 27, 40};
   char path[LARGEST_DEVICE_NAME + 1];
+  
+  for(i = FRU_PSU1; i <= FRU_PSU4; i++) {
+    pal_is_fru_prsnt(i, &prsnt);
+    if(!prsnt) {
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      return;
+    }
+  }
+  
   for(i = 0; i < psu_num; i++) {
 
     snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, i+1, sensor_num[i]);
     if(read_device(path, &val_in)) {
-      syslog(LOG_ERR, 
-             "%s cannot get value from /tmp/cache_store/psu%d_sensor%d"
-             , __func__, i+1, sensor_num[i]);
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      return;
     }
     
     if(val_in > vin_max || val_in < vin_min) {
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      syslog(LOG_ERR, "%s, PSU%d vin is abnormal.", __func__, i+1);
       return;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, 
              i+1, sensor_num[i] + 1);
     if(read_device(path, &val_out12)) {
-      syslog(LOG_ERR, 
-             "%s cannot get value from /tmp/cache_store/psu%d_sensor%d"
-             , __func__, i+1, sensor_num[i] + 1);
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      return;
     }
     
     if(val_out12 > vout_12_max || val_out12 < vout_12_min) {
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      syslog(LOG_ERR, "%s, PSU%d vout 12V is abnormal.", __func__, i+1);
       return;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, 
              i+1, sensor_num[i] + 2);
     if(read_device_float(path, &val_out3)) {
-      syslog(LOG_ERR, 
-             "%s cannot get value from /tmp/cache_store/psu%d_sensor%d"
-             , __func__, i+1, sensor_num[i] + 2);
+      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
+      return;
     }
-    
+
     if(val_out3 > vout_3_max || val_out3 < vout_3_min) {
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      syslog(LOG_ERR, "%s, PSU%d vout 3.3V is abnormal.", __func__, i+1);
       return;
     }
     
@@ -6176,3 +6260,153 @@ pal_light_scm_led(uint8_t led_color)
 
   return 0;
 }
+
+int
+pal_set_def_key_value(void) {
+  
+  int i, ret;
+  char path[LARGEST_DEVICE_NAME + 1];
+  
+  for (i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+    snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, key_list[i]);
+    if ((ret = kv_set(key_list[i], def_val_list[i], 
+	                  0, KV_FPERSIST | KV_FCREATE)) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+#endif
+    }
+  }
+  return 0;
+ }
+
+int
+pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+  pal_set_def_key_value();
+  return 0;
+}
+
+int
+pal_get_fru_health(uint8_t fru, uint8_t *value) {
+
+  char cvalue[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SCM:
+      sprintf(key, "scm_sensor_health");
+      break;
+    case FRU_SMB:
+      sprintf(key, "smb_sensor_health");
+      break;
+	case FRU_PIM1:
+      sprintf(key, "pim1_sensor_health");
+      break;
+	case FRU_PIM2:
+      sprintf(key, "pim2_sensor_health");
+      break;
+	case FRU_PIM3:
+      sprintf(key, "pim3_sensor_health");
+      break;
+	case FRU_PIM4:
+      sprintf(key, "pim4_sensor_health");
+      break;
+	case FRU_PIM5:
+      sprintf(key, "pim5_sensor_health");
+      break;
+	case FRU_PIM6:
+      sprintf(key, "pim6_sensor_health");
+      break;
+	case FRU_PIM7:
+      sprintf(key, "pim7_sensor_health");
+      break;
+	case FRU_PIM8:
+      sprintf(key, "pim8_sensor_health");
+      break;
+	case FRU_PSU1:
+      sprintf(key, "psu1_sensor_health");
+      break;
+	case FRU_PSU2:
+      sprintf(key, "psu2_sensor_health");
+      break;
+	case FRU_PSU3:
+      sprintf(key, "psu3_sensor_health");
+      break;
+	case FRU_PSU4:
+      sprintf(key, "psu4_sensor_health");
+      break;
+
+    default:
+      return -1;
+  }
+
+  ret = pal_get_key_value(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+
+  *value = atoi(cvalue);
+  
+  *value = *value & atoi(cvalue);
+  return 0;
+}
+
+int
+pal_set_sensor_health(uint8_t fru, uint8_t value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  switch(fru) {
+    case FRU_SCM:
+      sprintf(key, "scm_sensor_health");
+      break;
+    case FRU_SMB:
+      sprintf(key, "smb_sensor_health");
+      break;
+	case FRU_PIM1:
+      sprintf(key, "pim1_sensor_health");
+      break;
+	case FRU_PIM2:
+      sprintf(key, "pim2_sensor_health");
+      break;
+	case FRU_PIM3:
+      sprintf(key, "pim3_sensor_health");
+      break;
+	case FRU_PIM4:
+      sprintf(key, "pim4_sensor_health");
+      break;
+	case FRU_PIM5:
+      sprintf(key, "pim5_sensor_health");
+      break;
+	case FRU_PIM6:
+      sprintf(key, "pim6_sensor_health");
+      break;
+	case FRU_PIM7:
+      sprintf(key, "pim7_sensor_health");
+      break;
+	case FRU_PIM8:
+      sprintf(key, "pim8_sensor_health");
+      break;
+	case FRU_PSU1:
+      sprintf(key, "psu1_sensor_health");
+      break;
+	case FRU_PSU2:
+      sprintf(key, "psu2_sensor_health");
+      break;
+	case FRU_PSU3:
+      sprintf(key, "psu3_sensor_health");
+      break;
+	case FRU_PSU4:
+      sprintf(key, "psu4_sensor_health");
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
+  return pal_set_key_value(key, cvalue);
+}
+

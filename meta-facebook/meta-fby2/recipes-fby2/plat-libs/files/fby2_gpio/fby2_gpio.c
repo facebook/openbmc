@@ -76,7 +76,7 @@ const uint32_t gpio_ass_val = 0x0 | (1 << FM_CPLD_FIVR_FAULT);
 
 // List of RC GPIO pins to be monitored
 const uint8_t rc_gpio_pin_list[] = {
-  RC_PWRGD_SYS_PWROK,
+  RC_PWRGD_PS_PWROK,
   RC_QDF_PS_HOLD_OUT,
   RC_PVDDQ_510_VRHOT_N_R1,
   RC_PVDDQ_423_VRHOT_N_R1,
@@ -99,7 +99,7 @@ const uint8_t rc_gpio_pin_list[] = {
   RC_SYS_BIC_RST_N,
   RC_FM_BIOS_POST_CMPLT_N,
   RC_IMC_RDY,
-  RC_PWRGD_PS_PWROK,
+  RC_PWRGD_SYS_PWROK,
   RC_FM_BACKUP_BIOS_SEL_N,
   RC_T32_JTAG_DET,
   RC_BB_BMC_RST_N,
@@ -209,7 +209,7 @@ const char *gpio_pin_name[] = {
 
 // RC GPIO name
 const char *rc_gpio_pin_name[] = {
-  "RC_PWRGD_SYS_PWROK",
+  "RC_PWRGD_PS_PWROK",
   "RC_QDF_PS_HOLD_OUT",
   "RC_PVDDQ_510_VRHOT_N_R1",
   "RC_PVDDQ_423_VRHOT_N_R1",
@@ -232,7 +232,7 @@ const char *rc_gpio_pin_name[] = {
   "RC_SYS_BIC_RST_N",
   "RC_FM_BIOS_POST_CMPLT_N",
   "RC_IMC_RDY",
-  "RC_PWRGD_PS_PWROK",
+  "RC_PWRGD_SYS_PWROK",
   "RC_FM_BACKUP_BIOS_SEL_N",
   "RC_T32_JTAG_DET",
   "RC_BB_BMC_RST_N",

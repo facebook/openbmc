@@ -146,7 +146,7 @@ void usage()
 {
   cout << "USAGE: " << exec_name << " all|FRU --version [all|COMPONENT]" << endl;
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
-  cout << "       " << exec_name << " FRU --force_update [--]COMPONENT IMAGE_PATH" << endl;
+  cout << "       " << exec_name << " FRU --force --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --dump [--]COMPONENT IMAGE_PATH" << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
@@ -195,13 +195,32 @@ int main(int argc, char *argv[])
   string component("all");
   string image("");
 
-  if (argc >= 4) {
-    component.assign(argv[3]);
-    if (component.compare(0, 2, "--") == 0) {
-      component = component.substr(2);
+  if (action == "--force") {
+    if (argc < 4) {
+      usage();
+      return -1;
+    }
+    string action_ext(argv[3]);
+    if (action_ext != "--update") {
+      usage();
+      return -1;
+    }
+    if (argc >= 5) {
+      component.assign(argv[4]);
+      if (component.compare(0, 2, "--") == 0) {
+        component = component.substr(2);
+      }
+    }
+  } else {
+    if (argc >= 4) {
+      component.assign(argv[3]);
+      if (component.compare(0, 2, "--") == 0) {
+        component = component.substr(2);
+      }
     }
   }
-  if ((action == "--update") || (action == "--dump") || (action == "--force_update")) {
+
+  if ((action == "--update") || (action == "--dump")) {
     if (argc < 5) {
       usage();
       return -1;
@@ -213,11 +232,21 @@ int main(int argc, char *argv[])
         cerr << "Cannot access: " << image << endl;
         return -1;
       }
-    } else if(action == "--force_update") {
-      if (component != "bic") {
-        cerr << "Force update for " << component << " is not supported" << endl;
-        return -1;
-      }
+    } 
+    if (component == "all") {
+      cerr << "Upgrading all components not supported" << endl;
+      return -1;
+    }
+  } else if (action == "--force") {
+    if (argc < 6) {
+      usage();
+      return -1;
+    }
+    image.assign(argv[5]);
+    ifstream f(image);
+    if (!f.good()) {
+      cerr << "Cannot access: " << image << endl;
+      return -1;
     }
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
@@ -227,7 +256,7 @@ int main(int argc, char *argv[])
     cerr << "Invalid action: " << action << endl;
     usage();
     return -1;
-  }
+  } 
 
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
@@ -266,7 +295,7 @@ int main(int argc, char *argv[])
             if (action == "--update") {
               ret = c->update(image);
               str_act.assign("Upgrade");
-            } else if (action == "--force_update") {
+            } else if (action == "--force") {
               ret = c->fupdate(image);
               str_act.assign("Force upgrade");
             } else {

@@ -267,7 +267,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   uint8_t sensor_num;
   uint8_t record_type;
   char sensor_name[32];
-  char error_log[128];
+  char error_log[256];
   char error_type[64];
   char oem_data[32];
   int ret;
@@ -282,6 +282,8 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
     sprintf(error_type, "Standard");
   } else if (record_type >= 0xC0 && record_type <= 0xDF) {
     sprintf(error_type, "OEM timestamped");
+  } else if (record_type == 0xFB) {
+    sprintf(error_type, "Facebook Unified SEL");
   } else if (record_type >= 0xE0 && record_type <= 0xFF) {
     sprintf(error_type, "OEM non-timestamped");
   } else {
@@ -347,18 +349,27 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
         oem_data, error_log);
   } else {
     /* non-timestamped OEM SEL records */
+    //special case.
+    if ( record_type == 0xFB )
+    {
+      time_stamp_fill(&sel[4]);
+      ret = pal_parse_oem_unified_sel(fru, sel, error_log);
+      syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), %s", fru, error_type, record_type, error_log); 
+    }
+    else
+    {
 
-    ret = pal_parse_oem_sel(fru, sel, error_log);
+      ret = pal_parse_oem_sel(fru, sel, error_log);
+      /* OEM Data (Byte 3:15) */
+      sprintf(oem_data, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", sel[3], sel[4], sel[5],
+          sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
 
-    /* OEM Data (Byte 3:15) */
-    sprintf(oem_data, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", sel[3], sel[4], sel[5],
-        sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
-
-    syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), "
-        "OEM Data: (%s) %s ",
-        fru,
-        error_type, record_type,
-        oem_data, error_log);
+      syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), "
+          "OEM Data: (%s) %s ",
+          fru,
+          error_type, record_type,
+          oem_data, error_log);
+    }
   }
 
   pal_update_ts_sled();

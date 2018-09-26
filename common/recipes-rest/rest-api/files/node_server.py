@@ -25,8 +25,12 @@ from node import node
 from pal import *
 
 class serverNode(node):
-    def __init__(self, num = None, info = None, actions = None):
+    def __init__(self, num = None, fru_name = None, info = None, actions = None):
         self.num = num
+        if fru_name is None:
+            self.fru_name = 'slot'+str(num)
+        else:
+            self.fru_name = fru_name
 
         if info == None:
             self.info = {}
@@ -49,14 +53,16 @@ class serverNode(node):
             status = 'error'
 
         bic_status = pal_get_bic_status(self.num)
-
-        info = { "Power status": status,
-                 "BIC_ok" : bic_status }
+        if bic_status == PAL_STATUS_UNSUPPORTED:
+            info = { "Power status": status }
+        else:
+            info = { "Power status": status,
+                      "BIC_ok" : bic_status }
 
         return info
 
     def doAction(self, data):
-        ret = pal_server_action(self.num, data["action"])
+        ret = pal_server_action(self.num, data["action"], self.fru_name)
         if ret == -2:
             res = 'Should not execute power on/off/graceful_shutdown/cycle/reset on device card'
             result = { "Warning": res }
@@ -68,6 +74,15 @@ class serverNode(node):
         result = { "result": res }
 
         return result
+
+def get_node_server_2s(num, name):
+    actions =  ["power-on",
+                "power-off",
+                "power-cycle",
+                "graceful-shutdown",
+                "power-reset",
+                ]
+    return serverNode(num = num, fru_name = name, actions = actions)
 
 def get_node_server(num):
     actions =  ["power-on",

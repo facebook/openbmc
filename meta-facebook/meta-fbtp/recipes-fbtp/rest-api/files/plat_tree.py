@@ -27,7 +27,7 @@ from node_api import get_node_api
 from node_sled import get_node_sled
 from node_mezz import get_node_mezz
 from node_bmc import get_node_bmc
-from node_server_2s import get_node_server_2s
+from node_server import get_node_server_2s
 from node_fruid import get_node_fruid
 from node_sensors import get_node_sensors
 from node_logs import get_node_logs
@@ -47,7 +47,7 @@ def init_plat_tree():
 
 
     # Add mb /api/sled/mb
-    r_mb = tree("mb", data = get_node_server_2s())
+    r_mb = tree("mb", data = get_node_server_2s(1, "mb"))
     r_sled.addChild(r_mb)
 
     # Add /api/sled/mb/fruid end point

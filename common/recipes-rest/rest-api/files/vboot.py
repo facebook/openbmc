@@ -65,5 +65,3 @@ def get_vboot_status():
     except (OSError, subprocess.CalledProcessError) as e:
         pass
     return info
-
-print(get_vboot_status())

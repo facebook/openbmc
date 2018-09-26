@@ -54,7 +54,6 @@ SRC_URI = "file://rest.py \
            file://node_fcb.py \
            file://node_identify.py \
            file://node_pdpb.py \
-           file://node_server_2s.py \
            file://setup-rest-api.sh \
            file://run_rest \
           "

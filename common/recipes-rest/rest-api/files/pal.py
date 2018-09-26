@@ -18,6 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
+PAL_STATUS_UNSUPPORTED = 2
+
 from ctypes import *
 from subprocess import *
 import os
@@ -64,7 +66,7 @@ def pal_get_server_power(slot_id):
 #  0 - bic error
 #  2 - not present
 def pal_get_bic_status(slot_id):
-    plat_name = pal_get_platform_name().decode();
+    plat_name = pal_get_platform_name()
     if 'FBTTN' in plat_name:
         fru = ''
     elif 'FBY2' in plat_name or 'Yosemite' in plat_name:
@@ -72,7 +74,7 @@ def pal_get_bic_status(slot_id):
     elif 'minipack' in plat_name:
         fru = 'scm'
     else:
-        return 0
+        return PAL_STATUS_UNSUPPORTED
 
     cmd = ['/usr/bin/bic-util', fru, '--get_dev_id']
 
@@ -83,11 +85,11 @@ def pal_get_bic_status(slot_id):
         else:
             return 1
     except (OSError, IOError):
-        return 2   # cmd not found, i.e. no BIC on this platform
+        return PAL_STATUS_UNSUPPORTED # No bic on this platform
     except(CalledProcessError):
         return 0  # bic-util returns error
 
-def pal_server_action(slot_id, command):
+def pal_server_action(slot_id, command, fru_name = None):
     if command == 'power-off' or command == 'power-on' or command == 'power-reset' or command == 'power-cycle' or command == 'graceful-shutdown':
         if lpal_hndl.pal_is_slot_server(slot_id) == 0:
             return -2
@@ -96,10 +98,12 @@ def pal_server_action(slot_id, command):
 
     if 'FBTTN' in plat_name and 'identify' in command:
         fru = ''
-    elif 'FBTTN' in plat_name:
+    elif 'FBTTN' in plat_name and fru_name is None:
         fru = 'server'
-    else:
+    elif fru_name is None:
         fru = 'slot'+str(slot_id)
+    else:
+        fru = fru_name
 
     if command == 'power-off':
         cmd = '/usr/local/bin/power-util '+fru+' off'
@@ -125,34 +129,6 @@ def pal_server_action(slot_id, command):
         return -1
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
     if ret.find("Usage:") != -1 or ret.find("fail ") != -1:
-        return -1
-    else:
-        return 0
-
-def pal_get_server_2s_power():
-    status = c_ubyte()
-    p_status = pointer(status)
-    ret = lpal_hndl.pal_get_server_power(1, p_status)
-    if ret:
-        return None
-    else:
-        return status.value
-
-def pal_server_2s_action(command):
-    if command == 'power-off':
-        cmd = '/usr/local/bin/power-util mb off'
-    elif command == 'power-on':
-        cmd = '/usr/local/bin/power-util mb on'
-    elif command == 'power-cycle':
-        cmd = '/usr/local/bin/power-util mb cycle'
-    elif command == 'graceful-shutdown':
-        cmd = '/usr/local/bin/power-util mb graceful-shutdown'
-    elif command == 'reset':
-        cmd = '/usr/local/bin/power-util mb reset'
-    else:
-        return -1
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-    if ret.startswith( 'Usage' ):
         return -1
     else:
         return 0

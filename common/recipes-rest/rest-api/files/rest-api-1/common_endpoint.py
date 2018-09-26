@@ -19,6 +19,7 @@
 #
 import json
 import rest_fruid
+import rest_fruid_pim
 import rest_server
 import rest_sensors
 import rest_bmc
@@ -125,6 +126,14 @@ class commonApp_Handler:
     @common_force_async
     def rest_fruid_hdl(self,request):
         return self.helper_rest_fruid_hdl(request)
+
+    # Handler for sys/mb/fruid resource endpoint
+    def helper_rest_fruid_pim_hdl(self,request):
+        return web.json_response(rest_fruid_pim.get_fruid(), dumps=dumps_bytestr)
+
+    @common_force_async
+    def rest_fruid_pim_hdl(self,request):
+        return self.helper_rest_fruid_pim_hdl(request)
 
     # Handler for sys/bmc resource endpoint
     def helper_rest_bmc_hdl(self,request):

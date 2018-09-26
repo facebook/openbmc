@@ -35,6 +35,8 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest.cfg \
            file://rest-api-1/rest_bmc.py \
            file://rest-api-1/rest_fruid.py \
+           file://rest-api-1/rest_fruid_pim.py \
+           file://rest-api-1/rest_piminfo.py \
            file://rest-api-1/rest_gpios.py \
            file://rest-api-1/rest_server.py \
            file://rest-api-1/rest_sensors.py \
@@ -64,6 +66,8 @@ binfiles1 = "rest.py \
              common_endpoint.py \
              rest_bmc.py \
              rest_fruid.py \
+             rest_fruid_pim.py \
+             rest_piminfo.py \
              rest_gpios.py \
              rest_server.py \
              rest_sensors.py \

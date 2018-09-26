@@ -27,33 +27,41 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 
 pim_number_re = re.compile('\s*PIM (\S.*):')
 fpga_not_found_re = re.compile('\s*DOMFPGA is not detected')
-fpga_type_re = re.compile('\s*(\S.*) DOMFPGA:')
+fpga_type_re = re.compile('\s*(\S.*) DOMFPGA: (\S.*)')
 
-def get_piminfo():
+def prepare_piminfo():
+    pim_type = { '1':'NA', '2':'NA', '3':'NA', '4':'NA',
+                 '5':'NA', '6':'NA', '7':'NA', '8':'NA' }
+    pim_fpga_ver = { '1':'NA', '2':'NA', '3':'NA', '4':'NA',
+                     '5':'NA', '6':'NA', '7':'NA', '8':'NA' }
     current_pim = 0
-    result = {}
     proc = subprocess.Popen(['/usr/local/bin/fpga_ver.sh', '-u'],
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-    except proc.TimeoutError as ex:
-        data = ex.output
-        err = ex.error
+        text_lines = data.split(b'\n', 1)
 
-    text_lines = data.split(b'\n', 1)
-    for text_line_bytes in data.split(b'\n'):
-        text_line=text_line_bytes.decode()
-        # Check if this line shows PIM slot number
-        m = pim_number_re.match(text_line, 0)
-        if m:
-            current_pim = m.group(1)
-        m = fpga_type_re.match(text_line, 0)
-        if m:
-            result['PIM'+str(current_pim)] = m.group(1)
-        m = fpga_not_found_re.match(text_line, 0)
-        if m:
-            result['PIM'+str(current_pim)] = 'NA'
+        for text_line_bytes in data.split(b'\n'):
+            text_line=text_line_bytes.decode()
+            # Check if this line shows PIM slot number
+            m = pim_number_re.match(text_line, 0)
+            if m:
+                current_pim = m.group(1)
+            m = fpga_type_re.match(text_line, 0)
+            if m:
+                pim_type[current_pim] = m.group(1)
+                pim_fpga_ver[current_pim] = m.group(2)
+    except Exception as ex:
+            pass
+
+    return pim_type, pim_fpga_ver
+
+def get_piminfo():
+    result = {}
+    pim_type, pim_fpga_ver = prepare_piminfo()
+    for pim_number in range(1,9):
+            result['PIM'+str(pim_number)] = pim_type[str(pim_number)]
     fresult = {
                 "Information": result,
                 "Actions": [],

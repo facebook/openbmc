@@ -205,7 +205,6 @@ extern "C" {
 #define READING_NA -2
 
 #define SCM_RSENSE 1.16
-#define FCM_RSENSE 0.33
 #define PIM_RSENSE 1.42
 
 #define IPMB_BUS 0
@@ -281,6 +280,11 @@ enum {
   FRU_FAN6 = 20,
   FRU_FAN7 = 21,
   FRU_FAN8 = 22,
+};
+
+enum {
+  HSC_FCM_T = 0,
+  HSC_FCM_B = 1
 };
 
 /* Sensors on SCM */

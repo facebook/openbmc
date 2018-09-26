@@ -481,6 +481,8 @@ size_t psu4_sensor_cnt = sizeof(psu4_sensor_list)/sizeof(uint8_t);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
+static float hsc_rsense[MAX_NUM_FRUS] = {0};
+
 const char pal_fru_list[] = "all, scm, smb, pim1, pim2, pim3, \
 pim4, pim5, pim6, pim7, pim8, psu1, psu2, psu3, psu4";
 
@@ -1642,6 +1644,18 @@ pal_get_board_rev(int *rev) {
 }
 
 int
+pal_get_cpld_board_rev(int *rev, const char *device) {
+  char full_name[LARGEST_DEVICE_NAME + 1];
+
+  snprintf(full_name, LARGEST_DEVICE_NAME, device, "board_ver");
+  if (read_device(full_name, rev)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
 pal_set_last_pwr_state(uint8_t fru, char *state) {
 
   int ret;
@@ -1918,12 +1932,7 @@ read_hsc_attr(const char *device,
     return -1;
   }
 
-  if ((strncmp(attr, CURR(1), 11) == 0) ||
-      (strncmp(attr, POWER(1), 12) == 0)) {
-    *value = ((float)tmp)/r_sense/UNIT_DIV;
-  } else {
-    *value = ((float)tmp)/UNIT_DIV;
-  }
+  *value = ((float)tmp)/r_sense/UNIT_DIV;
 
   return 0;
 }
@@ -2257,6 +2266,37 @@ static void apply_inlet_correction(float *value) {
   }
 }
 
+static void
+hsc_rsense_init(uint8_t hsc_id, const char* device) {
+  static bool rsense_inited[MAX_NUM_FRUS] = {false};
+
+  if (!rsense_inited[hsc_id]) {
+    int brd_rev = -1;
+
+    switch (hsc_id) {
+      case HSC_FCM_T:
+        pal_get_cpld_board_rev(&brd_rev, device);
+        /* R0D or R0E FCM */
+        if (brd_rev == 0x4 || brd_rev == 0x5) {
+          hsc_rsense[hsc_id] = 1.14;
+        } else {
+          hsc_rsense[hsc_id] = 0.33;
+        }
+        break;
+      case HSC_FCM_B:
+        pal_get_cpld_board_rev(&brd_rev, device);
+        /* R0D or R0E FCM */
+        if (brd_rev == 0x4 || brd_rev == 0x5) {
+          hsc_rsense[hsc_id] = 1.15;
+        } else {
+          hsc_rsense[hsc_id] = 0.33;
+        }
+        break;
+    }
+    rsense_inited[hsc_id] = true;
+  }
+}
+
 static int
 scm_sensor_read(uint8_t sensor_num, float *value) {
 
@@ -2289,7 +2329,7 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
           apply_inlet_correction(value);
         break;
       case SCM_SENSOR_HSC_VOLT:
-        ret = read_hsc_volt(SCM_HSC_DEVICE, SCM_RSENSE, value);
+        ret = read_hsc_volt(SCM_HSC_DEVICE, 1, value);
         break;
       case SCM_SENSOR_HSC_CURR:
         ret = read_hsc_curr(SCM_HSC_DEVICE, SCM_RSENSE, value);
@@ -2429,10 +2469,10 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_ISL_DEVICE, VOLT(0), value);
       break;
     case SMB_SENSOR_FCM_T_HSC_VOLT:
-      ret = read_hsc_volt(SMB_FCM_T_HSC_DEVICE, FCM_RSENSE, value);
+      ret = read_hsc_volt(SMB_FCM_T_HSC_DEVICE, 1, value);
       break;
     case SMB_SENSOR_FCM_B_HSC_VOLT:
-      ret = read_hsc_volt(SMB_FCM_B_HSC_DEVICE, FCM_RSENSE, value);
+      ret = read_hsc_volt(SMB_FCM_B_HSC_DEVICE, 1, value);
       break;
     case SMB_SENSOR_TH3_SERDES_CURR:
       ret = read_attr(SMB_IR_DEVICE, CURR(1), value);
@@ -2441,16 +2481,20 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_ISL_DEVICE,  CURR(1), value);
       break;
     case SMB_SENSOR_FCM_T_HSC_CURR:
-      ret = read_hsc_curr(SMB_FCM_T_HSC_DEVICE, FCM_RSENSE, value);
+      hsc_rsense_init(HSC_FCM_T, FCM_T_SYSFS);
+      ret = read_hsc_curr(SMB_FCM_T_HSC_DEVICE, hsc_rsense[HSC_FCM_T], value);
       break;
     case SMB_SENSOR_FCM_B_HSC_CURR:
-      ret = read_hsc_curr(SMB_FCM_B_HSC_DEVICE, FCM_RSENSE, value);
+      hsc_rsense_init(HSC_FCM_B, FCM_B_SYSFS);
+      ret = read_hsc_curr(SMB_FCM_B_HSC_DEVICE, hsc_rsense[HSC_FCM_B], value);
       break;
     case SMB_SENSOR_FCM_T_HSC_POWER:
-      ret = read_hsc_power(SMB_FCM_T_HSC_DEVICE, FCM_RSENSE, value);
+      hsc_rsense_init(HSC_FCM_T, FCM_T_SYSFS);
+      ret = read_hsc_power(SMB_FCM_T_HSC_DEVICE, hsc_rsense[HSC_FCM_T], value);
       break;
     case SMB_SENSOR_FCM_B_HSC_POWER:
-      ret = read_hsc_power(SMB_FCM_B_HSC_DEVICE, FCM_RSENSE, value);
+      hsc_rsense_init(HSC_FCM_B, FCM_B_SYSFS);
+      ret = read_hsc_power(SMB_FCM_B_HSC_DEVICE, hsc_rsense[HSC_FCM_B], value);
       break;
     case SMB_SENSOR_FAN1_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 1, value);
@@ -2523,7 +2567,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(1), value);
       break;
     case PIM1_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM1_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM1_HSC_DEVICE, 1, value);
       break;
     case PIM1_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM1_HSC_DEVICE, PIM_RSENSE, value);
@@ -2589,7 +2633,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(2), value);
       break;
     case PIM2_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM2_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM2_HSC_DEVICE, 1, value);
       break;
     case PIM2_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM2_HSC_DEVICE, PIM_RSENSE, value);
@@ -2655,7 +2699,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(3), value);
       break;
     case PIM3_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM3_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM3_HSC_DEVICE, 1, value);
       break;
     case PIM3_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM3_HSC_DEVICE, PIM_RSENSE, value);
@@ -2721,7 +2765,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(4), value);
       break;
     case PIM4_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM4_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM4_HSC_DEVICE, 1, value);
       break;
     case PIM4_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM4_HSC_DEVICE, PIM_RSENSE, value);
@@ -2787,7 +2831,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(5), value);
       break;
     case PIM5_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM5_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM5_HSC_DEVICE, 1, value);
       break;
     case PIM5_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM5_HSC_DEVICE, PIM_RSENSE, value);
@@ -2853,7 +2897,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(6), value);
       break;
     case PIM6_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM6_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM6_HSC_DEVICE, 1, value);
       break;
     case PIM6_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM6_HSC_DEVICE, PIM_RSENSE, value);
@@ -2919,7 +2963,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(7), value);
       break;
     case PIM7_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM7_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM7_HSC_DEVICE, 1, value);
       break;
     case PIM7_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM7_HSC_DEVICE, PIM_RSENSE, value);
@@ -2985,7 +3029,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_IOB_DEVICE, TEMP(8), value);
       break;
     case PIM8_SENSOR_HSC_VOLT:
-      ret = read_hsc_volt(PIM8_HSC_DEVICE, PIM_RSENSE, value);
+      ret = read_hsc_volt(PIM8_HSC_DEVICE, 1, value);
       break;
     case PIM8_SENSOR_HSC_CURR:
       ret = read_hsc_curr(PIM8_HSC_DEVICE, PIM_RSENSE, value);

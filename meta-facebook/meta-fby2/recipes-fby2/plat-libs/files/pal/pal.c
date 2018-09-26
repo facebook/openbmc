@@ -4205,19 +4205,6 @@ pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
   bool valid = false;
   uint8_t diff = o_val ^ n_val;
 
-  if (GETBIT(diff, 0)) {
-    switch(snr_num) {
-      case BIC_RC_SENSOR_PROC_FAIL:
-        sprintf(name, "Secure Boot Authentication Failure");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 0), name);
-      valid = false;
-    }
-  }
-
   if (GETBIT(diff, 1)) {
     switch(snr_num) {
       case BIC_RC_SENSOR_VR_HOT:
@@ -4390,6 +4377,9 @@ fby2_rc_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       break;
     case BIC_RC_SENSOR_RAS_FATAL:
       sprintf(name, "RAS_FATAL");
+      break;
+    case BIC_RC_SENSOR_SYSTEM_STATUS_2:
+      sprintf(name, "SYSTEM_STATUS_2");
       break;
     default:
       return -1;
@@ -4612,6 +4602,57 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
         default:
           strcat(error_log, "Unknown");
           break;
+      }
+      parsed = true;
+      break;
+    case BIC_RC_SENSOR_PROC_FAIL:
+      strcpy(error_log, "");
+      if (ed[0] == 0x05) {
+        strcat(error_log, "Configuration Error - Secure Boot Failure");
+      } else {
+        strcat(error_log, "Unknown");
+      }
+      parsed = true;
+      break;
+    case BIC_RC_SENSOR_SYSTEM_STATUS_2:
+      strcpy(error_log, ""); 
+      switch (ed[0]) {
+        case 0x00:
+          strcat(error_log, "INA230_Throttle");
+          break;
+        case 0x01:
+          strcat(error_log, "DDR2_Event_Throttle");
+          break;
+        case 0x02:
+          strcat(error_log, "DDR3_Event_Throttle");
+          break;
+        case 0x03:
+          strcat(error_log, "DDR4_Event_Throttle"); 
+          break;
+        case 0x04:
+          strcat(error_log, "DDR5_Event_Throttle");
+          break;
+        case 0x05:
+          strcat(error_log, "APC_CBF_Hot_Throttle");
+          break;
+        case 0x06:
+          strcat(error_log, "VR510_Hot_Throttle");
+          break;
+        case 0x07:
+          strcat(error_log, "VR423_Hot_Throttle");
+          break;
+        case 0x08:
+          strcat(error_log, "Fast_Throttle");
+          break;
+        case 0x09:
+          strcat(error_log, "QDF_Throttle");
+          break;
+        case 0x0A:
+          strcat(error_log, "QDF_Light_Throttle");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;      
       }
       parsed = true;
       break;

@@ -26,10 +26,7 @@ from virtualcat import VirtualCat
 import binascii
 import hashlib
 import json
-import logging
 import struct
-
-from datetime import date
 
 # The typing module isn't installed on BMCs as of 2017-06-18 but it's only
 # needed when running mypy on a developer's machine.
@@ -72,7 +69,7 @@ class Partition(object):
     # overridden logic and types must be encapsulated in the above checksum
     # methods.
     def __init__(self, partition_size, partition_offset, name, images, logger):
-        # type: (Optional[int], int, str, VirtualCat, logging.Logger) -> None
+        # type: (Optional[int], int, str, VirtualCat, object) -> None
         self.valid = True
         self.partition_size = partition_size  # type: Optional[int]
         self.partition_offset = partition_offset
@@ -135,7 +132,7 @@ class ExternalChecksumPartition(Partition):
             self.logger.info('{} has known good md5sum.'.format(self))
 
     def __init__(self, size, offset, name, images, checksums, logger):
-        # type: (int, int, str, VirtualCat, List[str], logging.Logger) -> None
+        # type: (int, int, str, VirtualCat, List[str], object) -> None
         self.checksums = checksums
         Partition.__init__(self, size, offset, name, images, logger)
 
@@ -179,7 +176,7 @@ class EnvironmentPartition(Partition):
             self.logger.info('{} has valid data crc32.'.format(self))
 
     def __init__(self, size, offset, name, images, logger):
-        # type: (Optional[int], int, str, VirtualCat, logging.Logger) -> None
+        # type: (Optional[int], int, str, VirtualCat, object) -> None
         raw_header = images.verified_read(self.header_size)
         self.parsed_header = dict(zip(self.header_fields, struct.unpack(
             self.header_format, raw_header
@@ -197,7 +194,8 @@ class EnvironmentPartition(Partition):
                     [b.decode() for b in value.split(b'\x00') if b]
                 )
             elif key.endswith('_time'):
-                value_string = date.fromtimestamp(value).isoformat()
+                # Not ISO date because T25745701
+                value_string = value
             else:
                 value_string = str(value)
             self.info_strings.append('{}: {}'.format(key, value_string))
@@ -268,7 +266,7 @@ class LegacyUBootPartition(EnvironmentPartition):
             )
 
     def __init__(self, sizes, offset, name, images, logger, grow_until=None):
-        # type: (List[int], int, str, VirtualCat, logging.Logger, Optional[int]) -> None
+        # type: (List[int], int, str, VirtualCat, object, Optional[int]) -> None
         self.sizes = sizes
         EnvironmentPartition.__init__(self, None, offset, name, images, logger)
 
@@ -352,7 +350,7 @@ class DeviceTreePartition(Partition):
 
     @staticmethod
     def dict_from_node(images, strings, logger):
-        # type: (VirtualCat, bytes, logging.Logger) -> Dict[bytes, Any]]
+        # type: (VirtualCat, bytes, object) -> Dict[bytes, Any]]
         node_name = ''
         tree = {}
         while True:
@@ -384,12 +382,13 @@ class DeviceTreePartition(Partition):
 
     @staticmethod
     def property_name_value(images, strings, logger):
-        # type: (VirtualCat, bytes, logging.Logger) -> (bytes, bytes)
+        # type: (VirtualCat, bytes, object) -> (bytes, bytes)
         length = DeviceTreePartition.next_datum(images, 4, b'I')
         offset = DeviceTreePartition.next_datum(images, 4, b'I')
         name = strings[offset:strings.index(b'\x00', offset)]
         if name == b'timestamp':
-            value = date.fromtimestamp(DeviceTreePartition.next_datum(images, length, b'I')).isoformat()
+            # Not ISO date because T25745701
+            value = DeviceTreePartition.next_datum(images, length, b'I')
         elif name == b'data':
             sha256sum = hashlib.sha256()
             images.read_with_callback(length, sha256sum.update)
@@ -413,7 +412,7 @@ class DeviceTreePartition(Partition):
         return (name, value)
 
     def __init__(self, sizes, offset, name, images, logger):
-        # type: (int, List<int>, str, VirtualCat, logging.Logger) -> None
+        # type: (int, List<int>, str, VirtualCat, object) -> None
         self.name = name
         self.partition_offset = offset
         self.valid = True

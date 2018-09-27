@@ -32,8 +32,6 @@ from partition import (
 
 import argparse
 import json
-import logging
-import logging.handlers
 import os
 import re
 import socket
@@ -41,6 +39,67 @@ import subprocess
 import sys
 
 from glob import glob
+
+# The logging module is absent in old images T25745701.
+try:
+    import logging
+    import logging.handlers
+
+
+    def add_syslog_handler(logger):
+        # type(logging.Logger) -> None
+        try:
+            run_verbosely(['/etc/init.d/syslog', 'start'], logger)
+        # Some old init scripts are missing --oknodo
+        except subprocess.CalledProcessError:
+            pass
+        try:
+            handler = logging.handlers.SysLogHandler('/dev/log')
+            handler.setFormatter(
+                logging.Formatter('pypartition: %(message)s')
+            )
+            logger.addHandler(handler)
+        except socket.error:
+            logger.error('Error initializing syslog; skipping.')
+
+
+    def get_logger():
+        # type: () -> logging.Logger
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(
+            '%(levelname)s:%(asctime)-15s %(message)s'
+        ))
+        logger.addHandler(handler)
+        if is_openbmc():
+            add_syslog_handler(logger)
+        return logger
+except ImportError:
+    class StubLogger(object):
+        def debug(self, message):
+            print(message)
+        def info(self, message):
+            print(message)
+        def warn(self, message):
+            print(message)
+        def error(self, message):
+            print(message)
+        def exception(self, message):
+            # This doesn't (yet) print the stack trace.
+            print(message)
+
+
+    def add_syslog_handler(logger):
+        # type(object) -> None
+        pass
+
+
+    def get_logger():
+        # type: () -> object
+        logger = StubLogger()
+        logger.handlers = []
+        return logger
 
 if False:
     from typing import List, Optional, Tuple, Union
@@ -70,37 +129,6 @@ def run_verbosely(command, logger):
     logger.info('Starting to run `{}`.'.format(command_string))
     subprocess.check_call(command)
     logger.info('Finished running `{}`.'.format(command_string))
-
-
-def add_syslog_handler(logger):
-    # type(logging.Logger) -> None
-    try:
-        run_verbosely(['/etc/init.d/syslog', 'start'], logger)
-    # Some old init scripts are missing --oknodo
-    except subprocess.CalledProcessError:
-        pass
-    try:
-        handler = logging.handlers.SysLogHandler('/dev/log')
-        handler.setFormatter(
-            logging.Formatter('pypartition: %(message)s')
-        )
-        logger.addHandler(handler)
-    except socket.error:
-        logger.error('Error initializing syslog; skipping.')
-
-
-def get_logger():
-    # type: () -> logging.Logger
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter(
-        '%(levelname)s:%(asctime)-15s %(message)s'
-    ))
-    logger.addHandler(handler)
-    if is_openbmc():
-        add_syslog_handler(logger)
-    return logger
 
 
 def get_checksums_args(description):
@@ -439,7 +467,12 @@ def reboot(dry_run, reason, logger):
     else:
         logger.info('Proceeding with reboot.')
 
-    logging.shutdown()
+    # The logging module is absent in old images T25745701.
+    try:
+        logging.shutdown()
+    except NameError:
+        pass
+
     # Trying to run anything after the `shutdown -r` command is issued would be
     # racing against shutdown killing this process.
     if subprocess.call(reboot_command) == 0:

@@ -22,7 +22,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import division
 
-import logging
 import signal
 import sys
 import system
@@ -31,7 +30,7 @@ import virtualcat
 
 
 def improve_system(logger):
-    # type: (logging.Logger) -> None
+    # type: (object) -> None
     if not system.is_openbmc():
         logger.error('{} must be run from an OpenBMC system.'.format(
             sys.argv[0]

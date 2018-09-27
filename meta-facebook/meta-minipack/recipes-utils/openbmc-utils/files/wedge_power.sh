@@ -31,6 +31,14 @@ PWR_USRV_RST_SYSFS="${SCMCPLD_SYSFS_DIR}/iso_com_rst_n"
 PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/cpld_mac_reset_n"
 PWR_L_CYCLE_SYSFS="${PDBCPLD_L_SYSFS_DIR}/power_cycle_go"
 PWR_R_CYCLE_SYSFS="${PDBCPLD_R_SYSFS_DIR}/power_cycle_go"
+PWR_L_TIMER_BASE_1S_SYSFS="${PDBCPLD_L_SYSFS_DIR}/timer_base_1s"
+PWR_R_TIMER_BASE_1S_SYSFS="${PDBCPLD_R_SYSFS_DIR}/timer_base_1s"
+PWR_L_TIMER_BASE_10S_SYSFS="${PDBCPLD_L_SYSFS_DIR}/timer_base_10s"
+PWR_R_TIMER_BASE_10S_SYSFS="${PDBCPLD_R_SYSFS_DIR}/timer_base_10s"
+PWR_L_TIMER_COUNTER_SETTING_SYSFS="${PDBCPLD_L_SYSFS_DIR}/timer_counter_setting"
+PWR_R_TIMER_COUNTER_SETTING_SYSFS="${PDBCPLD_R_SYSFS_DIR}/timer_counter_setting"
+PWR_L_TIMER_COUNTER_SETTING_UPDATE_SYSFS="${PDBCPLD_L_SYSFS_DIR}/timer_counter_setting_update"
+PWR_R_TIMER_COUNTER_SETTING_UPDATE_SYSFS="${PDBCPLD_R_SYSFS_DIR}/timer_counter_setting_update"
 SCM_CPLD_BUS=16
 PIM_CPLD_BUS=(84 92 100 108 116 124 132 140)
 CPLD_ADDR=0x10
@@ -52,6 +60,10 @@ usage() {
     echo "  reset: Power reset microserver ungracefully"
     echo "    options:"
     echo "      -s: Power reset whole minipack system ungracefully"
+    echo "      -s -t [1-2550]: Setting boot up time."
+    echo "            From 1 to 249 the step is 1 second."
+    echo "            From 250 to 2550 the step is 10 seconds"
+    echo "            and don't care ones-digits."
     echo
     echo "  pimreset: Power-cycle one or all PIM(s)"
     echo "    options:"
@@ -144,13 +156,54 @@ do_off() {
     return $ret
 }
 
+do_config_reset_timer() {
+    # Check numeric
+    wake_t=$1
+    echo $wake_t | egrep -q '^[0-9]+$'
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        usage
+        exit -1
+    else
+        if [ $wake_t -ge 1 -a $wake_t -lt 250 ];then
+            echo 1 > $PWR_L_TIMER_BASE_1S_SYSFS
+            echo 1 > $PWR_R_TIMER_BASE_1S_SYSFS
+            echo 0 > $PWR_L_TIMER_BASE_10S_SYSFS
+            echo 0 > $PWR_R_TIMER_BASE_10S_SYSFS
+            logger "Waiting $wake_t seconds for the system boot up"
+            echo "Waiting $wake_t seconds for the system boot up"
+        elif [ $wake_t -ge 250 -a $wake_t -le 2550 ];then
+            echo 0 > $PWR_L_TIMER_BASE_1S_SYSFS
+            echo 0 > $PWR_R_TIMER_BASE_1S_SYSFS
+            echo 1 > $PWR_L_TIMER_BASE_10S_SYSFS
+            echo 1 > $PWR_R_TIMER_BASE_10S_SYSFS
+            wake_t=$((wake_t/10))
+            logger "Waiting $(($wake_t * 10)) seconds for the system boot up"
+            echo "Waiting $(($wake_t * 10)) seconds for the system boot up"
+        else
+            usage
+            exit -1
+        fi
+        echo $wake_t > $PWR_L_TIMER_COUNTER_SETTING_SYSFS
+        echo $wake_t > $PWR_R_TIMER_COUNTER_SETTING_SYSFS
+        echo 1 > $PWR_L_TIMER_COUNTER_SETTING_UPDATE_SYSFS
+        echo 1 > $PWR_R_TIMER_COUNTER_SETTING_UPDATE_SYSFS
+    fi
+}
+
 do_reset() {
-    local system opt pulse_us
+    local system timer wake_t opt pulse_us
     system=0
-    while getopts "s" opt; do
+    timer=0
+    wake_t=0
+    while getopts "st:" opt; do
         case $opt in
             s)
                 system=1
+                ;;
+            t)
+                timer=1
+                wake_t=$OPTARG
                 ;;
             *)
                 usage
@@ -158,12 +211,16 @@ do_reset() {
                 ;;
         esac
     done
+
     if [ $system -eq 1 ]; then
         if [ $board_rev -eq 4 ]; then
             logger "EVTA is not supported, running a workaround instead"
             echo "EVTA is not supported, running a workaround instead"
             i2cset -f -y 1 0x3a 0x12 0
         else
+            if [ $timer -eq 1 ]; then
+                do_config_reset_timer $wake_t
+            fi
             logger "Power reset the whole system ..."y2y
             echo  "Power reset the whole system ..."
             echo 1 > $PWR_L_CYCLE_SYSFS

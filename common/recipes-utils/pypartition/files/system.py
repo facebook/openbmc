@@ -108,7 +108,9 @@ def get_checksums_args(description):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('image', nargs='?')
     checksum_help = 'currently required path to JSON file with dict mapping '
-    checksum_help += 'md5sums to versions'
+    checksum_help += 'md5sums to image descriptions'
+    append_help = 'append unrecognized checksums to those from CHECKSUMS and '
+    append_help += 'write the result to this file'
     parser.add_argument('--checksums', help=checksum_help, required=True,
                         type=argparse.FileType('r'))
     if is_openbmc():
@@ -116,6 +118,8 @@ def get_checksums_args(description):
     else:
         parser.add_argument('--serve', action='store_true')
         parser.add_argument('--port', type=int, default=2876)
+        parser.add_argument('--append-new-checksums', help=append_help,
+                            type=argparse.FileType('w'))
 
     args = parser.parse_args()
 

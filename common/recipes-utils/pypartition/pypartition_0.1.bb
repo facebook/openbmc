@@ -35,13 +35,15 @@ SRC_URI = "file://check_image.py \
            file://test_partition.py \
            file://test_system.py \
            file://test_virtualcat.py \
-           file://virtualcat.py"
+           file://virtualcat.py \
+           file://bmc_pusher"
 
 S = "${WORKDIR}"
 
 do_lint() {
   flake8 *.py
   mypy *.py
+  shellcheck bmc_pusher
 }
 addtask do_lint after do_build
 

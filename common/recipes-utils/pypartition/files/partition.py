@@ -118,12 +118,19 @@ class ExternalChecksumPartition(Partition):
     def finalize(self):
         # type: () -> None
         if self.md5sum.hexdigest() not in self.checksums:
-            self.valid = False
-            self.logger.error(
-                '{} md5sum {} not in {}.'.format(
-                    self, self.md5sum.hexdigest(), self.checksums
+            if 'PLACEHOLDER' in self.checksums:
+                self.checksums.remove('PLACEHOLDER')
+                self.checksums.append(self.md5sum.hexdigest())
+                self.logger.info('{} md5sum {} added.'.format(
+                    self, self.md5sum.hexdigest()
+                ))
+            else:
+                self.valid = False
+                self.logger.error(
+                    '{} md5sum {} not in {}.'.format(
+                        self, self.md5sum.hexdigest(), self.checksums
+                    )
                 )
-            )
         else:
             self.logger.info('{} has known good md5sum.'.format(self))
 

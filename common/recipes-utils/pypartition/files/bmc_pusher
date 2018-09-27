@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash
 #
 # Copyright 2017-present Facebook. All Rights Reserved.
 #
@@ -17,37 +17,35 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-dir=$(dirname $(realpath $0))
-image_path=${1:?Please specify image file as first argument.}
-target_hostname=${2:?Please specify target hostname as second argument.}
-checksum_path=${3:?Please specify JSON checksum file as third argument.}
-log=${4:-$target_hostname}
+set -eux -o pipefail
 
-port=$((0xB3C))
-url=http://$(hostname):$port/$(basename $image_path)
+dir=$(dirname "$(realpath "$0")")
+image=${1:?Please specify image file as first argument.}
+checksums=${2:?Please specify JSON checksum file as second argument.}
+target=${3:?Please specify target hostname or \"[ip::v6]\" as third argument.}
 
-script -f $log-server.log -c \
-  "$dir/check_image.py \
-   --checksum $checksum_path \
-   --serve \
-   --port $port \
-   $image_path" &
-pid=$!
+"$dir/check_image.py" \
+  --checksum "$checksums" \
+  --append-new-checksums checksums.json \
+  "$image"
 
-files="$dir/{virtualcat,partition,system,improve_system}.py $checksum_path"
-target=root@$target_hostname
-data=/mnt/data
-dest=$target:$data/
-script=$data/improve_system.py
-checksum=$data/$(basename $checksum_path)
-scppass="sshpass -p0penBmc scp"
-sshpass="sshpass -p0penBmc ssh"
-sshpass="$sshpass -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+options=(-o LogLevel=error -o StrictHostKeyChecking=no)
+options+=(-o UserKnownHostsFile=/dev/null)
+sshpass=(sshpass -p0penBmc)
 
-script -f $log.log -c \
-  "$scppass $files $dest &&
-   $sshpass $target $script $url --checksum $checksum &&
-   sleep 3m &&
-   $sshpass $target 'head -n 1 /etc/issue; uptime; free'"
+files=($dir/{virtualcat,partition,system,improve_system}.py)
+files+=($image checksums.json)
+"${sshpass[@]}" scp "${options[@]}" "${files[@]}" "root@$target:/tmp/"
 
-kill $pid
+upgrade_steps=(/tmp/improve_system.py --checksums /tmp/checksums.json)
+upgrade_steps+=(/tmp/$(basename "$image"))
+rc=0
+"${sshpass[@]}" ssh "${options[@]}" "root@$target" "${upgrade_steps[@]}" ||
+  rc=$?
+# A dropped SSH connection due to shutdown is expected.
+[[ $rc == 0 || $rc == 255 ]] || exit $rc
+
+sleep 4m
+
+checks="head -n 1 /etc/issue; uptime"
+"${sshpass[@]}" ssh "${options[@]}" "root@$target" "$checks"

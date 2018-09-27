@@ -25,6 +25,7 @@ from __future__ import division
 
 import SimpleHTTPServer
 import SocketServer
+import json
 import os
 import socket
 import sys
@@ -53,9 +54,26 @@ def check_image(logger):
         logger.error('No image specified')
         sys.exit(1)
 
-    system.get_valid_partitions(
+    if args.append_new_checksums:
+        checksums.append('PLACEHOLDER')
+
+    partitions = system.get_valid_partitions(
         [virtualcat.ImageFile(args.image)], checksums, logger
     )
+
+    if args.append_new_checksums:
+        checksums = []
+        [
+            checksums.extend(p.checksums)
+            for p in partitions if hasattr(p, 'checksums')
+        ]
+        logger.info('Writing appended checksum list to {}.'.format(
+            args.append_new_checksums.name
+        ))
+        json.dump(
+            {checksum: '' for checksum in checksums},
+            args.append_new_checksums
+        )
 
     if args.serve:
         directory = os.path.dirname(args.image)

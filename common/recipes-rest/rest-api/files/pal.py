@@ -24,9 +24,22 @@ from ctypes import *
 from subprocess import *
 import os
 
-lpal_hndl = CDLL("libpal.so")
+try:
+    lpal_hndl = CDLL("libpal.so")
+except OSError:
+    lpal_hndl = None
 
 def pal_get_platform_name():
+    if lpal_hndl is None:
+        machine = "OpenBMC"
+        with open('/etc/issue') as f:
+            l = f.read().strip()
+            if l.startswith("OpenBMC Release "):
+                tmp = l.split(' ')
+                vers = tmp[2]
+                tmp2 = vers.split('-')
+                machine = tmp2[0]
+        return machine
     name = create_string_buffer(16)
     ret = lpal_hndl.pal_get_platform_name(name)
     if ret:
@@ -35,6 +48,8 @@ def pal_get_platform_name():
         return name.value.decode()
 
 def pal_get_num_slots():
+    if lpal_hndl is None:
+        return 1
     num = c_ubyte()
     p_num = pointer(num)
     ret = lpal_hndl.pal_get_num_slots(p_num)
@@ -44,6 +59,8 @@ def pal_get_num_slots():
         return num.value
 
 def pal_is_fru_prsnt(slot_id):
+    if lpal_hndl is None:
+        return None
     status = c_ubyte()
     p_status = pointer(status)
     ret = lpal_hndl.pal_is_fru_prsnt(slot_id, p_status)
@@ -53,6 +70,9 @@ def pal_is_fru_prsnt(slot_id):
         return status.value
 
 def pal_get_server_power(slot_id):
+    # TODO Use wedge_power.sh?
+    if lpal_hndl is None:
+        return None
     status = c_ubyte()
     p_status = pointer(status)
     ret = lpal_hndl.pal_get_server_power(slot_id, p_status)
@@ -66,6 +86,8 @@ def pal_get_server_power(slot_id):
 #  0 - bic error
 #  2 - not present
 def pal_get_bic_status(slot_id):
+    if lpal_hndl is None:
+        return 0
     plat_name = pal_get_platform_name()
     if 'FBTTN' in plat_name:
         fru = ''
@@ -90,6 +112,9 @@ def pal_get_bic_status(slot_id):
         return 0  # bic-util returns error
 
 def pal_server_action(slot_id, command, fru_name = None):
+    # TODO use wedge_power.sh?
+    if lpal_hndl is None:
+        return -1
     if command == 'power-off' or command == 'power-on' or command == 'power-reset' or command == 'power-cycle' or command == 'graceful-shutdown':
         if lpal_hndl.pal_is_slot_server(slot_id) == 0:
             return -2
@@ -135,19 +160,21 @@ def pal_server_action(slot_id, command, fru_name = None):
 
 def pal_sled_action(command):
     if command == 'sled-cycle':
-        cmd = '/usr/local/bin/power-util sled-cycle'
+        cmd = ['/usr/local/bin/power-util', 'sled-cycle']
     elif command == 'sled-identify-on':
-        cmd = '/usr/bin/fpc-util sled --identify on'
+        cmd = ['/usr/bin/fpc-util', 'sled', '--identify on']
     elif command == 'sled-identify-off':
-        cmd = '/usr/bin/fpc-util sled --identify off'
+        cmd = ['/usr/bin/fpc-util', 'sled', '--identify off']
     else:
         return -1
-
-    ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-    if ret.startswith( 'Usage' ):
+    try:
+        ret = check_output(cmd).decode()
+        if ret.startswith( 'Usage' ):
+            return -1
+        else:
+            return 0
+    except (OSError, IOError, CalledProcessError):
         return -1
-    else:
-        return 0
 
 def pal_set_key_value(key, value):
     cmd = ['/usr/local/bin/cfg-util', key, value]

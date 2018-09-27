@@ -50,6 +50,8 @@ extern "C" {
 #define COM_PWR_BTN_N "com_pwr_btn_n"
 #define SYS_LED_COLOR "sys_led_color"
 
+#define SMB_MAC_CPLD_ROV "mac_cpld_rov%d"
+#define SMB_MAC_CPLD_ROV_NUM 8
 #define SCM_PRSNT_STATUS "scm_presnt_status"
 #define PIM_PRSNT_STATUS "pim_fpga_cpld_%d_prsnt_n_status"
 #define FAN_PRSNT_STATUS "fantray%d_present"
@@ -176,6 +178,7 @@ extern "C" {
 
 #define TEMP(x)  "temp"#x"_input"
 #define VOLT(x)  "in"#x"_input"
+#define VOLT_SET(x)  "vo"#x"_input"
 #define CURR(x)  "curr"#x"_input"
 #define POWER(x) "power"#x"_input"
 
@@ -221,6 +224,8 @@ extern "C" {
 #define MAX_SENSOR_THRESHOLD  8
 #define MAX_SDR_LEN     64
 #define MAX_PIM 8
+#define TH3_VOL_MAX 927
+#define TH3_VOL_MIN 750
 
 #define FRU_STATUS_GOOD   1
 #define FRU_STATUS_BAD    0

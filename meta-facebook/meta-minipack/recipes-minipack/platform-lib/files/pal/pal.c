@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "pal.h"
+#include <math.h>
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
@@ -2364,10 +2365,44 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
 }
 
 static int
+cor_th3_volt(void) {
+  int tmp_volt, i;
+  int val_volt = 0;
+  char str[32];
+  char tmp[LARGEST_DEVICE_NAME];
+  char path[LARGEST_DEVICE_NAME + 1];
+  snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, SMB_MAC_CPLD_ROV);
+
+  for(i = SMB_MAC_CPLD_ROV_NUM - 1; i >= 0; i--) {
+    snprintf(path, LARGEST_DEVICE_NAME, tmp, i);
+    if(read_device(path, &tmp_volt)) {
+      syslog(LOG_ERR, "%s, Cannot read th3 voltage from smbcpld\n", __func__);
+      return -1;
+    }
+    val_volt += tmp_volt;
+    if(i)
+      val_volt = (val_volt << 1);
+  }
+  val_volt = (int)(round((1.6 - (((double)val_volt - 3) * 0.00625)) * 1000));
+
+  if(val_volt > TH3_VOL_MAX || val_volt < TH3_VOL_MIN)
+    return -1;
+
+  snprintf(str, sizeof(str), "%d", val_volt);
+  snprintf(path, LARGEST_DEVICE_NAME, SMB_ISL_DEVICE"/%s", VOLT_SET(0));
+  if(write_device(path, str)) {
+    syslog(LOG_ERR, "%s, Cannot write th3 voltage into ISL68127\n", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
 smb_sensor_read(uint8_t sensor_num, float *value) {
 
-  int ret = -1;
-
+  int ret = -1, th3_ret = -1;
+  static uint8_t bootup_check = 0;
   switch(sensor_num) {
     case SMB_SENSOR_TH3_SERDES_TEMP:
       ret = read_attr(SMB_IR_DEVICE, TEMP(1), value);
@@ -2467,6 +2502,11 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_TH3_CORE_VOLT:
       ret = read_attr(SMB_ISL_DEVICE, VOLT(0), value);
+      if (bootup_check == 0) {
+        th3_ret = cor_th3_volt();
+        if (!th3_ret)
+          bootup_check = 1;
+      }
       break;
     case SMB_SENSOR_FCM_T_HSC_VOLT:
       ret = read_hsc_volt(SMB_FCM_T_HSC_DEVICE, 1, value);
@@ -5844,7 +5884,7 @@ pal_store_crashdump(uint8_t fru) {
               "ps | grep '{dump.sh}' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
       system(cmd);
-	  sprintf(cmd, 
+      sprintf(cmd, 
               "ps | grep 'bic-util' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
       system(cmd);

@@ -111,8 +111,46 @@ static ssize_t isl68127_temp_show(struct device *dev,
   return scnprintf(buf, PAGE_SIZE, "%d\n", result * 1000);
 }
 
+static int parse_val(long val)
+{
+  if (val > 927 || val < 750)
+    return -1;
+
+  return 0;
+}
+
+static ssize_t isl68127_vol_write(struct device *dev,
+                                    struct device_attribute *attr,
+                                    char *buf, size_t count)
+{
+  struct i2c_client *client = to_i2c_client(dev);
+  i2c_dev_data_st *data = i2c_get_clientdata(client);
+  i2c_sysfs_attr_st *i2c_attr = TO_I2C_SYSFS_ATTR(attr);
+  const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
+  int val;
+  
+  if (sscanf(buf, "%i", &val) <= 0) {
+    return -EINVAL;
+  }
+  if (parse_val(val))
+    return -EINVAL;
+
+  mutex_lock(&data->idd_lock);
+  i2c_smbus_write_word_data(client, dev_attr->ida_reg, val);
+  mutex_unlock(&data->idd_lock);
+  
+  return count;
+}
+
 
 static const i2c_dev_attr_st isl68127_attr_table[] = {
+  {
+    "vo0_input",
+    NULL,
+    isl68127_vol_show,
+    isl68127_vol_write,
+    0x21, 0, 8,
+  },
   {
     "in0_input",
     NULL,
@@ -137,6 +175,13 @@ static const i2c_dev_attr_st isl68127_attr_table[] = {
   {
     "in0_label",
     "TH3 core Voltage",
+    i2c_dev_show_label,
+    NULL,
+    0x0, 0, 0,
+  },
+  {
+    "vo0_label",
+    "TH3 core Voltage for setting",
     i2c_dev_show_label,
     NULL,
     0x0, 0, 0,

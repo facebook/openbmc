@@ -7313,13 +7313,13 @@ arm_err_parse(uint8_t section_sub_type, char *error_log, uint8_t *sel) {
   if((validation_bit >> TRANS_TYPE_VALID & 0x1) == 1) {
     switch(trans_type) {
       case 0:
-        sprintf(temp_log, " Transaction Type: %u – Instruction (Type of %s error),", trans_type, type[section_sub_type]);
+        sprintf(temp_log, " Transaction Type: %u - Instruction (Type of %s error),", trans_type, type[section_sub_type]);
         break;
       case 1:
-        sprintf(temp_log, " Transaction Type: %u – Data Access (Type of %s error),", trans_type, type[section_sub_type]);
+        sprintf(temp_log, " Transaction Type: %u - Data Access (Type of %s error),", trans_type, type[section_sub_type]);
         break;
       case 2:
-        sprintf(temp_log, " Transaction Type: %u – Generic (Type of %s error),", trans_type, type[section_sub_type]);
+        sprintf(temp_log, " Transaction Type: %u - Generic (Type of %s error),", trans_type, type[section_sub_type]);
         break;
       default:
         sprintf(temp_log, " Transaction Type: %u - Unknown (Type of %s error),", trans_type, type[section_sub_type]);
@@ -7336,57 +7336,57 @@ arm_err_parse(uint8_t section_sub_type, char *error_log, uint8_t *sel) {
   if((validation_bit >> OPER_VALID & 0x1) == 1) {
     switch(operation) {
       case 0:
-        sprintf(temp_log, " Operation: %u – generic error (type of error cannot be determined),", operation);
+        sprintf(temp_log, " Operation: %u - generic error (type of error cannot be determined),", operation);
         break;
       case 1:
-        sprintf(temp_log, " Operation: %u – generic read (type of instruction or data request cannot be determined),", operation);
+        sprintf(temp_log, " Operation: %u - generic read (type of instruction or data request cannot be determined),", operation);
         break;
       case 2:
-        sprintf(temp_log, " Operation: %u – generic write (type of instruction or data request cannot be determined),", operation);
+        sprintf(temp_log, " Operation: %u - generic write (type of instruction or data request cannot be determined),", operation);
         break;
       case 3:
-        sprintf(temp_log, " Operation: %u – data read,", operation);
+        sprintf(temp_log, " Operation: %u - data read,", operation);
         break;
       case 4:
-        sprintf(temp_log, " Operation: %u – data write,", operation);
+        sprintf(temp_log, " Operation: %u - data write,", operation);
         break;
       case 5:
-        sprintf(temp_log, " Operation: %u – instruction fetch,", operation);
+        sprintf(temp_log, " Operation: %u - instruction fetch,", operation);
         break;
       case 6:
-        sprintf(temp_log, " Operation: %u – prefetch,", operation);
+        sprintf(temp_log, " Operation: %u - prefetch,", operation);
         break;
       case 7:
         switch(section_sub_type) {
           case CACHE_ERROR:
-            sprintf(temp_log, " Operation: %u – eviction,", operation);
+            sprintf(temp_log, " Operation: %u - eviction,", operation);
             break;
           case TLB_ERROR:
-            sprintf(temp_log, " Operation: %u – local management operation (the processor described in this record initiated a TLB management operation that resulted in an error),", operation);
+            sprintf(temp_log, " Operation: %u - local management operation (the processor described in this record initiated a TLB management operation that resulted in an error),", operation);
             break;
           default:
-            sprintf(temp_log, " Operation: %u – Unknown,", operation);
+            sprintf(temp_log, " Operation: %u - Unknown,", operation);
             break;
         }
         break;
       case 8:
         switch(section_sub_type) {
           case CACHE_ERROR:
-            sprintf(temp_log, " Operation: %u – snooping (the processor described in this record initiated a cache snoop that resulted in an error),", operation);
+            sprintf(temp_log, " Operation: %u - snooping (the processor described in this record initiated a cache snoop that resulted in an error),", operation);
             break;
           case TLB_ERROR:
-            sprintf(temp_log, " Operation: %u – external management operation (the processor described in this record raised a TLB error caused by another processor or device broadcasting TLB operations),", operation);
+            sprintf(temp_log, " Operation: %u - external management operation (the processor described in this record raised a TLB error caused by another processor or device broadcasting TLB operations),", operation);
             break;
           default:
-            sprintf(temp_log, " Operation: %u – Unknown,", operation);
+            sprintf(temp_log, " Operation: %u - Unknown,", operation);
             break;
         }
         break;
       case 9:
-        sprintf(temp_log, " Operation: %u – snooped (the processor described in this record raised a cache error caused by another processor or device snooping into its cache),", operation);
+        sprintf(temp_log, " Operation: %u - snooped (the processor described in this record raised a cache error caused by another processor or device snooping into its cache),", operation);
         break;
       case 10:
-        sprintf(temp_log, " Operation: %u – management,", operation);
+        sprintf(temp_log, " Operation: %u - management,", operation);
         break;
       default:
         sprintf(temp_log, " Operation: %u - Unknown,", operation);
@@ -7495,19 +7495,19 @@ arm_err_parse(uint8_t section_sub_type, char *error_log, uint8_t *sel) {
   if((validation_bit >> PARTICIPATION_TYPE_VALID & 0x1) == 1) {
     switch(par_type) {
       case 0:
-        sprintf(temp_log, ", Participation Type: %u – Local Processor originated request", par_type);
+        sprintf(temp_log, ", Participation Type: %u - Local Processor originated request", par_type);
         break;
       case 1:
-        sprintf(temp_log, ", Participation Type: %u – Local processor Responded to request", par_type);
+        sprintf(temp_log, ", Participation Type: %u - Local processor Responded to request", par_type);
         break;
       case 2:
-        sprintf(temp_log, ", Participation Type: %u – Local processor Observed", par_type);
+        sprintf(temp_log, ", Participation Type: %u - Local processor Observed", par_type);
         break;
       case 3:
-        sprintf(temp_log, ", Participation Type: %u – Generic", par_type);
+        sprintf(temp_log, ", Participation Type: %u - Generic", par_type);
         break;
       default:
-        sprintf(temp_log, ", Participation Type: %u – Unknown", par_type);
+        sprintf(temp_log, ", Participation Type: %u - Unknown", par_type);
         break;
     }
     strcat(error_log, temp_log);

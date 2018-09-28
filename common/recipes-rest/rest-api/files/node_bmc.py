@@ -98,6 +98,11 @@ class bmcNode(node):
                         shell=True, stdout=PIPE).stdout.read().decode()
         uptime = data.strip()
 
+        # Use another method, ala /proc, but keep the old one for backwards
+        # compat.
+        # See http://man7.org/linux/man-pages/man5/proc.5.html for details
+        # on full contents of proc endpoints.
+        uptime_seconds = read_file_contents("/proc/uptime")[0].split()[0]
 
         # Pull load average directory from proc instead of processing it from
         # the contents of uptime command output later.
@@ -182,7 +187,12 @@ class bmcNode(node):
             "Description": name + " BMC",
             "MAC Addr": mac_addr,
             "Reset Reason": reset_reason,
+            # Upper case Uptime is for legacy
+            # API support
             "Uptime": uptime,
+            # Lower case Uptime is for simpler
+            # more pass-through proxy
+            "uptime": uptime_seconds,
             "Memory Usage": mem_usage,
             "CPU Usage": cpu_usage,
             "OpenBMC Version": obc_version,

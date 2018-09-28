@@ -30,6 +30,10 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://board_endpoint.py \
            file://rest-api-1/rest_watchdog.py \
            file://rest_config.py \
+           file://pal.py \
+           file://node.py \
+           file://node_bmc.py \
+           file://vboot.py \
            file://rest-api-1/run_rest \
            file://rest-api-1/run_watchdog \
            file://rest.cfg \
@@ -58,6 +62,10 @@ binfiles = "board_setup_routes.py \
             boardroutes.py \
             board_endpoint.py \
             rest_config.py \
+            node.py \
+            node_bmc.py \
+            vboot.py \
+            pal.py \
            "
 
 binfiles1 = "rest.py \

@@ -21,90 +21,15 @@
 
 from subprocess import Popen, PIPE
 import re
+from node_bmc import get_node_bmc
 
-
-# Read all contents of file path specified.
-def read_file_contents(path):
-    try:
-        with open(path, 'r') as proc_file:
-            content = proc_file.readlines()
-    except IOError as e:
-        content = None
-
-    return content
-
-
-# Handler for FRUID resource endpoint
+# Handler for BMC resource endpoint
 def get_bmc():
-    # Get BMC Reset Reason
-    (wdt_counter, _) = Popen('devmem 0x1e785010',
-                             shell=True, stdout=PIPE).communicate()
-    wdt_counter = int(wdt_counter, 0)
-
-    wdt_counter &= 0xff00
-
-    if wdt_counter:
-        por_flag = 0
-    else:
-        por_flag = 1
-
-    if por_flag:
-        reset_reason = "Power ON Reset"
-    else:
-        reset_reason = "User Initiated Reset or WDT Reset"
-
-    # Get BMC's Up Time
-    uptime = Popen('uptime', shell=True, stdout=PIPE).stdout.read().decode()
-
-    # Use another method, ala /proc, but keep the old one for backwards
-    # compat.
-    # See http://man7.org/linux/man-pages/man5/proc.5.html for details
-    # on full contents of proc endpoints.
-    uptime_seconds = read_file_contents("/proc/uptime")[0].split()[0]
-
-    # Pull load average directory from proc instead of processing it from
-    # the contents of uptime command output later.
-    load_avg = read_file_contents("/proc/loadavg")[0].split()[0:3]
-
-    # Get Usage information
-    (data, _) = Popen('top -b n1',
-                      shell=True, stdout=PIPE).communicate()
-    data = data.decode()
-    adata = data.split('\n')
-    mem_usage = adata[0]
-    cpu_usage = adata[1]
-
-    # Get OpenBMC version
-    version = ""
-    (data, _) = Popen('cat /etc/issue',
-                      shell=True, stdout=PIPE).communicate()
-    data = data.decode()
-    ver = re.search(r'v([\w\d._-]*)\s', data)
-    if ver:
-        version = ver.group(1)
-
-    used_fd_count = read_file_contents("/proc/sys/fs/file-nr")[0].split()[0]
-
+    bmc_node = get_node_bmc()
+    info = bmc_node.getInformation()
     result = {
-                "Information": {
-                    "Description": "Wedge BMC",
-                    "Reset Reason": reset_reason,
-                    # Upper case Uptime is for legacy
-                    # API support
-                    "Uptime": uptime,
-                    # Lower case Uptime is for simpler
-                    # more pass-through proxy
-                    "uptime": uptime_seconds,
-                    "load-1": load_avg[0],
-                    "load-5": load_avg[1],
-                    "load-15": load_avg[2],
-                    "Memory Usage": mem_usage,
-                    "CPU Usage": cpu_usage,
-                    "open-fds": used_fd_count,
-                    "OpenBMC Version": version,
-                },
+                "Information": info,
                 "Actions": [],
                 "Resources": [],
              }
-
     return result

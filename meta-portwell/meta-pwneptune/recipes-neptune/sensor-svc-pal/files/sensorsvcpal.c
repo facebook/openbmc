@@ -34,7 +34,6 @@
 #include <sys/stat.h>
 #include <openbmc/gpio.h>
 #include <openbmc/kv.h>
-#include <openbmc/edb.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -482,7 +481,7 @@ pal_read_cpu_temp(uint8_t snr_num, float *value) {
     //ME no response or PECI command completion code error. Set "NA" in sensor cache.
     strcpy(str, "NA");
   }
-  edb_cache_set(key, str);
+  kv_set(key, str, 0, 0);
 
   // Get CPU temp if BMC got TjMax
   ret = READING_NA;
@@ -1525,7 +1524,7 @@ pal_set_key_value(char *key, char *value) {
       return ret;
   }
 
-  return kv_set(key, value);
+  return kv_set(key, value, 0, KV_FPERSIST);
 }
 
 static int
@@ -1544,7 +1543,7 @@ key_func_por_policy (int event, void *arg)
       break;
     case KEY_AFTER_INI:
       // sync to env
-      kv_get("server_por_cfg", value);
+      kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", value);
       system(cmd);
       break;
@@ -1567,7 +1566,7 @@ key_func_lps (int event, void *arg)
       system(cmd);
       break;
     case KEY_AFTER_INI:
-      kv_get("pwr_server_last_state", value);
+      kv_get("pwr_server_last_state", value, NULL, KV_FPERSIST);
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", value);
       system(cmd);
       break;
@@ -1586,7 +1585,7 @@ key_func_ntp (int event, void *arg)
   switch (event) {
     case KEY_BEFORE_SET:
       // Remove old NTP server
-      kv_get("ntp_server", ntp_server_old);
+      kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
       if (strlen(ntp_server_old) > 2) {
         snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
         system(cmd);

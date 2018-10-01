@@ -4,7 +4,6 @@
 #include <syslog.h>
 #include "pal.h"
 #include <openbmc/kv.h>
-#include <openbmc/edb.h>
 
 #define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
@@ -21,7 +20,18 @@ enum {
 
 enum {
   CARD_ABSENT = 0,
-  CARD_PRESENT = 1
+  CARD_1AVA = 1,
+  CARD_2AVA = 2,
+  CARD_3AVA = 3,
+  CARD_4AVA = 4,
+  CARD_RETIMER = 5,
+  CARD_HBA = 6,
+  CARD_OTHER_FLASH = 7,
+  CARD_UNKNOWN = 0x80,
+  // Custom to ease computation. Not
+  // sent by BIOS.
+  CARD_NIC = 0xff,
+  CARD_AVA = 0xfe
 };
 
 typedef struct
@@ -43,25 +53,33 @@ typedef struct
 
 #define NUM_CONFIGURATIONS (sizeof(configurations)/sizeof(configurations[0]))
 
-static struct {
+#define SS_IDX 0
+#define DS_IDX 1
+#define CONF_START 2
+struct conf_s {
   const char *name;
+  const char *desc;
   machine_config_info info;
-} configurations[15] = {
-  {"SS_0", {0, SINGLE_SIDE, 2, 4, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_PRESENT, CARD_ABSENT, 0}},
-  {"SS_1", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_ABSENT, 0, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
-  {"SS_2", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_3SLOT, 0, CARD_PRESENT, CARD_PRESENT, CARD_PRESENT, CARD_PRESENT, 0}},
-  {"SS_3", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, 0}},
-  {"SS_4", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, 0}},
-  {"SS_5", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_PRESENT, CARD_ABSENT, 0}},
-  {"SS_6", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_PRESENT, CARD_PRESENT, CARD_ABSENT, 0}},
-  {"SS_7", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_PRESENT, CARD_PRESENT, CARD_ABSENT, 0}},
-  {"SS_8", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_PRESENT, CARD_PRESENT, CARD_ABSENT, 0}},
-  {"DS_0", {0, DOUBLE_SIDE, 2, 12, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
-  {"DS_1", {0, DOUBLE_SIDE, 2, 12, 1, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
-  {"DS_2", {0, DOUBLE_SIDE, 2, 24, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
-  {"DS_3", {0, DOUBLE_SIDE, 2, 24, 1, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
-  {"DS_4", {0, DOUBLE_SIDE, 2, 12, 0, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 12}},
-  {"DS_5", {0, DOUBLE_SIDE, 2, 12, 1, 0, RISER_2SLOT, 0, CARD_PRESENT, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 12}},
+};
+
+static struct conf_s configurations[] = {
+  {"SS_D", "Single Side, default", {0}},
+  {"DS_D", "Double Side, default", {0}},
+  {"SS_0", "Type 8 Head Node", {0, SINGLE_SIDE, 2, 4, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_RETIMER, CARD_ABSENT, 0}},
+  {"SS_1", "Type 6/8 compute (no-flash)", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_ABSENT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
+  {"SS_2", "Custom 3 Ava cards, no boot-drive", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_3SLOT, 0, CARD_NIC, CARD_AVA, CARD_AVA, CARD_AVA, 0}},
+  {"SS_3", "Type 6 with Ava, no boot-drive", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_AVA, CARD_ABSENT, CARD_ABSENT, 0}},
+  {"SS_4", "Type 6 with Ava", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_AVA, CARD_ABSENT, CARD_ABSENT, 0}},
+  {"SS_5", "Type 6 with Ava (alt)", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_AVA, CARD_ABSENT, 0}},
+  {"SS_6", "JBOG", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_RETIMER, CARD_RETIMER, CARD_ABSENT, 0}},
+  {"SS_7", "Type 3 with Ava", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_AVA, CARD_AVA, CARD_ABSENT, 0}},
+  {"SS_8", "Type 9 with HBA", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_HBA, CARD_HBA, CARD_ABSENT, 0}},
+  {"DS_0", "DS compute", {0, DOUBLE_SIDE, 2, 12, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
+  {"DS_1", "DS compute with boot drive", {0, DOUBLE_SIDE, 2, 12, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
+  {"DS_2", "DS memory without boot-drive", {0, DOUBLE_SIDE, 2, 24, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
+  {"DS_3", "DS memory with boot-drive", {0, DOUBLE_SIDE, 2, 24, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
+  {"DS_4", "DS AEP without boot-drive", {0, DOUBLE_SIDE, 2, 12, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 12}},
+  {"DS_5", "DS AEP with boot-drive", {0, DOUBLE_SIDE, 2, 12, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 12}}
 };
 
 static const char *default_machine_config_name(void)
@@ -77,6 +95,28 @@ static const char *default_machine_config_name(void)
   return "SS_D";
 }
 
+static uint8_t pcie_card_resolve(uint8_t type)
+{
+  switch(type) {
+    case CARD_ABSENT:
+    case CARD_RETIMER:
+    case CARD_HBA:
+    case CARD_OTHER_FLASH:
+      break;
+    case CARD_1AVA:
+    case CARD_2AVA:
+    case CARD_3AVA:
+    case CARD_4AVA:
+      type = CARD_AVA;
+      break;
+    case CARD_UNKNOWN:
+    default:
+      type = CARD_UNKNOWN;
+      break;
+  }
+  return type;
+}
+
 // Sets to known values of knobs we do not care
 // about. So, the lookup logic can be easier.
 static void set_defaults(machine_config_info *mc)
@@ -85,10 +125,10 @@ static void set_defaults(machine_config_info *mc)
   mc->processor_count = 2;
   mc->hdd25_count = 0;
   mc->pcie_card_loc = 0;
-  mc->slot1_pciecard_type = CARD_PRESENT; // NIC always exists
-  mc->slot2_pciecard_type = mc->slot2_pciecard_type > 0 ? CARD_PRESENT : CARD_ABSENT;
-  mc->slot3_pciecard_type = mc->slot3_pciecard_type > 0 ? CARD_PRESENT : CARD_ABSENT;
-  mc->slot4_pciecard_type = mc->slot4_pciecard_type > 0 ? CARD_PRESENT : CARD_ABSENT;
+  mc->slot1_pciecard_type = CARD_NIC; // NIC always exists
+  mc->slot2_pciecard_type = pcie_card_resolve(mc->slot2_pciecard_type);
+  mc->slot3_pciecard_type = pcie_card_resolve(mc->slot3_pciecard_type);
+  mc->slot4_pciecard_type = pcie_card_resolve(mc->slot4_pciecard_type);
 }
 
 static bool config_equal(machine_config_info *m1, machine_config_info *m2)
@@ -96,21 +136,24 @@ static bool config_equal(machine_config_info *m1, machine_config_info *m2)
   return memcmp(m1, m2, sizeof(machine_config_info)) == 0;
 }
 
-static const char *machine_config_name(machine_config_info *mc)
+static struct conf_s *machine_config(machine_config_info *mc)
 {
   int i;
-  for(i = 0; i < NUM_CONFIGURATIONS; i++) {
+
+  set_defaults(mc);
+
+  for(i = CONF_START; i < NUM_CONFIGURATIONS; i++) {
     if (config_equal(mc, &configurations[i].info)) {
-      return configurations[i].name;
+      return &configurations[i];
     }
   }
   if (mc->MB_type == SINGLE_SIDE) {
-    return "SS_D";
+    return &configurations[SS_IDX];
   }
   if (mc->MB_type == DOUBLE_SIDE) {
-    return "DS_D";
+    return &configurations[DS_IDX];
   }
-  return default_machine_config_name();
+  return NULL;
 }
 
 int
@@ -119,6 +162,7 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
   machine_config_info mc;
+  struct conf_s *conf;
 
   if (req_len < sizeof(machine_config_info)) {
     syslog(LOG_CRIT, "Invalid machine configuration received");
@@ -126,21 +170,21 @@ pal_set_machine_configuration(uint8_t slot, uint8_t *req_data, uint8_t req_len, 
   }
 
   sprintf(key, "mb_machine_config");
-  kv_set_bin(key, (char *)req_data, sizeof(machine_config_info));
+  kv_set(key, (char *)req_data, sizeof(machine_config_info), KV_FPERSIST);
 
   memcpy(&mc, &req_data[0], sizeof(machine_config_info));
-
-  sprintf(key, "mb_system_conf");
-
-  set_defaults(&mc);
-  strcpy(value, machine_config_name(&mc));
-
-  /* Set kv first because get_machine_configuration
-   * tests for cache first and then for kv. That way
-   * we avoid (at minimum shrink the window for)
-   * the potential race between the two */
-  kv_set(key, value);
-  edb_cache_set(key, value);
+  conf = machine_config(&mc);
+  if (!conf) {
+    strcpy(value, default_machine_config_name());
+    kv_set("mb_system_conf", value, 0, KV_FPERSIST);
+    kv_set("mb_system_conf_desc", value, 0, KV_FPERSIST);
+    return 0;
+  }
+  strcpy(value, conf->name);
+  kv_set("mb_system_conf", value, 0, KV_FPERSIST);
+  memset(value, 0, sizeof(value));
+  strcpy(value, conf->desc);
+  kv_set("mb_system_conf_desc", value, 0, KV_FPERSIST);
   return 0;
 }
 
@@ -151,20 +195,12 @@ int pal_get_machine_configuration(char *conf)
   int ret;
 
   sprintf(key, "mb_system_conf");
-  /* Cache is the most current value, if that fails,
-   * check persistent kv store for previous boot conf,
-   * if that fails, then get platform ID to ensure
-   * we use default SS or DS */
-  ret = edb_cache_get(key, value);
+
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
   if (ret < 0) {
-    ret = kv_get(key, value);
-    if (ret < 0) {
-      strcpy(value, default_machine_config_name());
-      kv_set(key, value);
-    }
-    edb_cache_set(key, value);
+    strcpy(value, default_machine_config_name());
+    kv_set(key, value, 0, KV_FPERSIST | KV_FCREATE);
   }
   strcpy(conf, value);
   return 0;
 }
-

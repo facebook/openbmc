@@ -8,7 +8,7 @@ SRC_URI =+ "file://setup-sensor-svcd.sh \
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ "-lgpio -lsensor-svc-pal -lkv -ledb -lipmb -lgpio -lobmc-pal"
+LDFLAGS =+ "-lgpio -lsensor-svc-pal -lkv -lipmb -lgpio -lobmc-pal"
 DEPENDS =+ "update-rc.d-native libgpio libsensor-svc-pal"
 RDEPENDS_${PN} += "libgpio"
 

@@ -34,10 +34,10 @@
 #include "pal.h"
 #include <openbmc/vr.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-sensor.h>
 #include <sys/stat.h>
 #include <openbmc/gpio.h>
 #include <openbmc/kv.h>
-#include <openbmc/edb.h>
 #include <openbmc/sensor-correction.h>
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -125,6 +125,7 @@
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
 #define EEPROM_RISER     "/sys/devices/platform/ast-i2c.1/i2c-1/1-0050/eeprom"
+#define EEPROM_RETIMER   "/sys/devices/platform/ast-i2c.3/i2c-3/3-0055/eeprom"
 
 #define MB_INLET_TEMP_DEVICE "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*"
 #define MB_OUTLET_TEMP_DEVICE "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*"
@@ -173,6 +174,7 @@ const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
 
 static uint8_t g_plat_id = 0x0;
+static uint8_t postcodes_last[256] = {0};
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
@@ -202,6 +204,64 @@ struct pal_key_cfg {
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
+
+//control mux based on the bus and channel
+int
+pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr)
+{
+  int ret;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) 
+  {
+    syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  } 
+ 
+  if (channel < 4)
+  {
+    tbuf[0] = 0x04 + channel;
+  }
+  else
+  {
+    tbuf[0] = 0x00; // close all channels
+  }
+
+  retry = MAX_READ_RETRY;
+  while ( retry > 0 ) 
+  {
+    ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 1, rbuf, 0);
+    if ( PAL_EOK == ret )
+    {
+      break;
+    }
+    
+    msleep(50);
+    retry--;
+  }
+
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] Cannot switch the mux on bus %d", __func__, bus);
+    goto error_exit;
+  }
+
+error_exit:
+
+  if ( fd > 0 )
+  {
+    close(fd);
+  }
+
+  return ret;
+}
 
 static int
 pal_control_mux(int fd, uint8_t addr, uint8_t channel) {
@@ -438,6 +498,7 @@ static int mux_lock (struct mux *mux, int chan, int lease_time)
   if (ret == 0 && shm->ipmb_chan != chan) {
     clock_gettime(CLOCK_REALTIME, &to);
     to.tv_sec += mux->wait_time;
+    shm->expiration += mux->wait_time;
     while (1) {
       if (shm->using_num == 0) {
         break;
@@ -595,36 +656,6 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_VR_PCH_P1V05_CURR,
   MB_SENSOR_VR_PCH_P1V05_VOLT,
   MB_SENSOR_VR_PCH_P1V05_POWER,
-  MB_SENSOR_C2_NVME_CTEMP,
-  MB_SENSOR_C3_NVME_CTEMP,
-  MB_SENSOR_C4_NVME_CTEMP,
-  MB_SENSOR_C2_AVA_FTEMP,
-  MB_SENSOR_C2_AVA_RTEMP,
-  MB_SENSOR_C2_1_NVME_CTEMP,
-  MB_SENSOR_C2_2_NVME_CTEMP,
-  MB_SENSOR_C2_3_NVME_CTEMP,
-  MB_SENSOR_C2_4_NVME_CTEMP,
-  MB_SENSOR_C3_AVA_FTEMP,
-  MB_SENSOR_C3_AVA_RTEMP,
-  MB_SENSOR_C3_1_NVME_CTEMP,
-  MB_SENSOR_C3_2_NVME_CTEMP,
-  MB_SENSOR_C3_3_NVME_CTEMP,
-  MB_SENSOR_C3_4_NVME_CTEMP,
-  MB_SENSOR_C4_AVA_FTEMP,
-  MB_SENSOR_C4_AVA_RTEMP,
-  MB_SENSOR_C4_1_NVME_CTEMP,
-  MB_SENSOR_C4_2_NVME_CTEMP,
-  MB_SENSOR_C4_3_NVME_CTEMP,
-  MB_SENSOR_C4_4_NVME_CTEMP,
-  MB_SENSOR_C2_P12V_INA230_VOL,
-  MB_SENSOR_C2_P12V_INA230_CURR,
-  MB_SENSOR_C2_P12V_INA230_PWR,
-  MB_SENSOR_C3_P12V_INA230_VOL,
-  MB_SENSOR_C3_P12V_INA230_CURR,
-  MB_SENSOR_C3_P12V_INA230_PWR,
-  MB_SENSOR_C4_P12V_INA230_VOL,
-  MB_SENSOR_C4_P12V_INA230_CURR,
-  MB_SENSOR_C4_P12V_INA230_PWR,
   MB_SENSOR_CONN_P12V_INA230_VOL,
   MB_SENSOR_CONN_P12V_INA230_CURR,
   MB_SENSOR_CONN_P12V_INA230_PWR,
@@ -641,7 +672,7 @@ const uint8_t mb_discrete_sensor_list[] = {
   MB_SENSOR_MEMORY_LOOP_FAIL,
   MB_SENSOR_PROCESSOR_FAIL,
 };
-/*
+
 const uint8_t riser_slot2_sensor_list[] = {
   MB_SENSOR_C2_AVA_FTEMP,
   MB_SENSOR_C2_AVA_RTEMP,
@@ -680,20 +711,20 @@ const uint8_t riser_slot4_sensor_list[] = {
   MB_SENSOR_C4_P12V_INA230_CURR,
   MB_SENSOR_C4_P12V_INA230_PWR,
 };
-*/
+
 float mb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-//float riser_slot2_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-//float riser_slot3_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-//float riser_slot4_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float riser_slot2_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float riser_slot3_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float riser_slot4_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
-//size_t riser_slot2_sensor_cnt = sizeof(riser_slot2_sensor_list)/sizeof(uint8_t);
-//size_t riser_slot3_sensor_cnt = sizeof(riser_slot3_sensor_list)/sizeof(uint8_t);
-//size_t riser_slot4_sensor_cnt = sizeof(riser_slot4_sensor_list)/sizeof(uint8_t);
+size_t riser_slot2_sensor_cnt = sizeof(riser_slot2_sensor_list)/sizeof(uint8_t);
+size_t riser_slot3_sensor_cnt = sizeof(riser_slot3_sensor_list)/sizeof(uint8_t);
+size_t riser_slot4_sensor_cnt = sizeof(riser_slot4_sensor_list)/sizeof(uint8_t);
 
 char g_sys_guid[GUID_SIZE] = {0};
 char g_dev_guid[GUID_SIZE] = {0};
@@ -792,7 +823,7 @@ dyn_sensor_thresh_array_init() {
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU0_TJMAX);
-  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 2) > 0) {
+  if( kv_get(key,str,NULL,0) >= 0 && (float) (strtof(str, NULL) - 2) > 0) {
     mb_sensor_threshold[MB_SENSOR_CPU0_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 2);
     init_cpu0 = true;
   }else{
@@ -806,7 +837,7 @@ dyn_cpu1_init:
   }
 
   sprintf(key, "mb_sensor%d", MB_SENSOR_CPU1_TJMAX);
-  if( edb_cache_get(key,str) >= 0 && (float) (strtof(str, NULL) - 2) > 0 ) {
+  if( kv_get(key,str,NULL,0) >= 0 && (float) (strtof(str, NULL) - 2) > 0 ) {
     mb_sensor_threshold[MB_SENSOR_CPU1_TEMP][UCR_THRESH] = (float) (strtof(str, NULL) - 2);
     init_cpu1 = true;
   }else{
@@ -829,17 +860,22 @@ sensor_thresh_array_init() {
   if (init_done)
     return;
 
-  mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 90;
   mb_sensor_threshold[MB_SENSOR_INLET_REMOTE_TEMP][UCR_THRESH] = 40;
   mb_sensor_threshold[MB_SENSOR_OUTLET_REMOTE_TEMP][UCR_THRESH] = 90;
 
   // Assign UCT based on the system is Single Side or Double Side
   if (!(pal_get_platform_id(&g_plat_id)) && !(g_plat_id & PLAT_ID_SKU_MASK)) {
-    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 9000;
-    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 9000;
+    // Single side 10k RPM fans.
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
   } else {
-    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 13500;
-    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 13500;
+    // Double side 15k RPM fans.
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UNC_THRESH] = 13500;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UNC_THRESH] = 13500;
+    mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH] = 17000;
+    mb_sensor_threshold[MB_SENSOR_FAN1_TACH][UCR_THRESH] = 17000;
   }
 
   mb_sensor_threshold[MB_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
@@ -865,7 +901,7 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 10.8;
   mb_sensor_threshold[MB_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 52.8;
   mb_sensor_threshold[MB_SENSOR_HSC_IN_POWER][UCR_THRESH] = 792.0;
-  mb_sensor_threshold[MB_SENSOR_PCH_TEMP][UCR_THRESH] = 65;
+  mb_sensor_threshold[MB_SENSOR_PCH_TEMP][UCR_THRESH] = 82;
   mb_sensor_threshold[MB_SENSOR_CPU0_DIMM_GRPA_TEMP][UCR_THRESH] = 81;
   mb_sensor_threshold[MB_SENSOR_CPU0_DIMM_GRPB_TEMP][UCR_THRESH] = 81;
   mb_sensor_threshold[MB_SENSOR_CPU1_DIMM_GRPC_TEMP][UCR_THRESH] = 81;
@@ -965,40 +1001,40 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][LCR_THRESH] = 0.94;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][UCR_THRESH] = 1.15;
 
-  mb_sensor_threshold[MB_SENSOR_C2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_NVME_CTEMP][UCR_THRESH] = 75;
 
-  mb_sensor_threshold[MB_SENSOR_C2_AVA_FTEMP][UCR_THRESH] = 60;
-  mb_sensor_threshold[MB_SENSOR_C2_AVA_RTEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_C2_1_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_4_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_AVA_FTEMP][UCR_THRESH] = 60;
-  mb_sensor_threshold[MB_SENSOR_C3_AVA_RTEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_C3_1_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_4_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_AVA_FTEMP][UCR_THRESH] = 60;
-  mb_sensor_threshold[MB_SENSOR_C4_AVA_RTEMP][UCR_THRESH] = 80;
-  mb_sensor_threshold[MB_SENSOR_C4_1_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_2_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_3_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_4_NVME_CTEMP][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][UCR_THRESH] = 12.96;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][LCR_THRESH] = 11.04;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_CURR][UCR_THRESH] = 5.5;
-  mb_sensor_threshold[MB_SENSOR_C2_P12V_INA230_PWR][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][UCR_THRESH] = 12.96;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][LCR_THRESH] = 11.04;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_CURR][UCR_THRESH] = 5.5;
-  mb_sensor_threshold[MB_SENSOR_C3_P12V_INA230_PWR][UCR_THRESH] = 75;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][UCR_THRESH] = 12.96;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][LCR_THRESH] = 11.04;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_CURR][UCR_THRESH] = 5.5;
-  mb_sensor_threshold[MB_SENSOR_C4_P12V_INA230_PWR][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_AVA_FTEMP][UCR_THRESH] = 60;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_AVA_RTEMP][UCR_THRESH] = 80;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_1_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_AVA_FTEMP][UCR_THRESH] = 60;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_AVA_RTEMP][UCR_THRESH] = 80;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_1_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_AVA_FTEMP][UCR_THRESH] = 60;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_AVA_RTEMP][UCR_THRESH] = 80;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_1_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_2_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_3_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_4_NVME_CTEMP][UCR_THRESH] = 75;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  riser_slot2_sensor_threshold[MB_SENSOR_C2_P12V_INA230_PWR][UCR_THRESH] = 75;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  riser_slot3_sensor_threshold[MB_SENSOR_C3_P12V_INA230_PWR][UCR_THRESH] = 75;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][UCR_THRESH] = 12.96;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_VOL][LCR_THRESH] = 11.04;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_CURR][UCR_THRESH] = 5.5;
+  riser_slot4_sensor_threshold[MB_SENSOR_C4_P12V_INA230_PWR][UCR_THRESH] = 75;
   mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_VOL][UCR_THRESH] = 12.96;
   mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_VOL][LCR_THRESH] = 11.04;
   mb_sensor_threshold[MB_SENSOR_CONN_P12V_INA230_CURR][UCR_THRESH] = 20;
@@ -1589,7 +1625,7 @@ read_cpu_temp(uint8_t snr_num, float *value) {
     //ME no response or PECI command completion code error. Set "NA" in sensor cache.
     strcpy(str, "NA");
   }
-  edb_cache_set(key, str);
+  kv_set(key, str, 0, 0);
 
   // Get CPU temp if BMC got TjMax
   ret = READING_NA;
@@ -1649,11 +1685,11 @@ read_cpu_temp(uint8_t snr_num, float *value) {
   switch (ret) {
     case 0:
       sprintf(str, "%.2f",(float) (dts >> 6));
-      edb_cache_set(key, str);
+      kv_set(key, str, 0, 0);
       break;
     case READING_NA:
       strcpy(str, "NA");
-      edb_cache_set(key, str);
+      kv_set(key, str, 0, 0);
       break;
     case READING_SKIP:
     default:
@@ -1661,6 +1697,122 @@ read_cpu_temp(uint8_t snr_num, float *value) {
   }
 
   return ret;
+}
+
+bool 
+pal_is_BIOS_completed(uint8_t fru)
+{
+  char path[64] = {0};
+  int val;
+
+  if ( FRU_MB != fru )
+  {
+    syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
+    return false;
+  }
+
+  sprintf(path, GPIO_VAL, GPIO_FM_BIOS_POST_CMPLT_N);
+  if (read_device(path, &val) || val) 
+  {
+    return false;
+  }
+
+  return true;
+}
+
+void
+pal_is_dimm_present_check(uint8_t fru, bool *dimm_sts_list)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int i;
+  int DIMM_SLOT_CNT = 12;//only SS
+  size_t ret;
+
+  //check dimm info from /mnt/data/sys_config/
+  for (i=0; i<DIMM_SLOT_CNT; i++)
+  {
+    sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
+    if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4)
+    {
+      syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
+      return;
+    }
+
+#ifdef FSC_DEBUG    
+    syslog(LOG_WARNING,"[%s]0=%x 1=%x 2=%x 3=%x", __func__, value[0], value[1], value[2], value[3]);
+#endif
+    
+    if ( 0xff == value[0] )
+    {
+      dimm_sts_list[i] = false; 
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]dimm_slot%d is not present", __func__, i);
+#endif
+    }
+    else
+    {
+      dimm_sts_list[i] = true;
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]dimm_slot%d is present", __func__, i);
+#endif
+    }
+  }
+}
+
+bool 
+pal_is_dimm_present(uint8_t sensor_num)
+{
+  static bool is_check = false;
+  static bool dimm_sts_list[12] = {0};  
+  int i = 0,j;
+  uint8_t fru = FRU_MB;
+  
+  if ( false == pal_is_BIOS_completed(fru) )
+  {
+    return false;
+  }
+
+  if ( false == is_check )
+  {
+    is_check = true;
+    pal_is_dimm_present_check(fru, dimm_sts_list);
+  }
+
+  switch (sensor_num)
+  {
+    case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
+      i = 0;
+    break;
+
+    case MB_SENSOR_CPU0_DIMM_GRPB_TEMP:
+      i = 3;
+    break;
+
+    case MB_SENSOR_CPU1_DIMM_GRPC_TEMP:
+      i = 6;
+    break;
+
+    case MB_SENSOR_CPU1_DIMM_GRPD_TEMP:
+      i = 9;
+    break;
+
+    default:
+      syslog(LOG_WARNING, "[%s]Unknown sensor num: 0x%x", __func__, sensor_num);
+    break;
+  }
+ 
+  j = i + 3;
+
+  for ( ; i<j; i++ )
+  {
+    if ( true == dimm_sts_list[i] )
+    {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 static int
@@ -1675,8 +1827,6 @@ read_dimm_temp(uint8_t snr_num, float *value) {
   int dimm_index, i;
   int max = 0;
   static uint8_t retry[4] = {0x00};
-  int val;
-  char path[64] = {0};
   static int odm_id = -1;
   uint8_t BoardInfo;
 
@@ -1691,12 +1841,12 @@ read_dimm_temp(uint8_t snr_num, float *value) {
     }
   }
 
-  // show NA if BIOS has not completed POST.
-  sprintf(path, GPIO_VAL, GPIO_FM_BIOS_POST_CMPLT_N);
-  if (read_device(path, &val) || val) {
+  //show NA if BIOS has not completed POST.
+  if ( false == pal_is_BIOS_completed(FRU_MB) )
+  {
     return ret;
   }
-
+  
   switch (snr_num) {
     case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
       dimm_index = 0;
@@ -2444,29 +2594,41 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
 
   switch(sensor_num) {
     case MB_SENSOR_C2_NVME_CTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY || ( !pal_is_pcie_ssd_card(0) ))
+        return READING_NA;
+      mux_chan = 0;
+      break;
     case MB_SENSOR_C2_1_NVME_CTEMP:
     case MB_SENSOR_C2_2_NVME_CTEMP:
     case MB_SENSOR_C2_3_NVME_CTEMP:
     case MB_SENSOR_C2_4_NVME_CTEMP:
-      if(slot_cfg == SLOT_CFG_EMPTY)
+      if(slot_cfg == SLOT_CFG_EMPTY || (!pal_is_ava_card(0)))
         return READING_NA;
       mux_chan = 0;
       break;
     case MB_SENSOR_C3_NVME_CTEMP:
+      if(slot_cfg == SLOT_CFG_EMPTY || ( !pal_is_pcie_ssd_card(1)))
+         return READING_NA;
+      mux_chan = 1;
+      break;
     case MB_SENSOR_C3_1_NVME_CTEMP:
     case MB_SENSOR_C3_2_NVME_CTEMP:
     case MB_SENSOR_C3_3_NVME_CTEMP:
     case MB_SENSOR_C3_4_NVME_CTEMP:
-      if(slot_cfg == SLOT_CFG_EMPTY)
+      if(slot_cfg == SLOT_CFG_EMPTY || ( !pal_is_ava_card(1)))
         return READING_NA;
       mux_chan = 1;
       break;
     case MB_SENSOR_C4_NVME_CTEMP:
+      if(slot_cfg != SLOT_CFG_SS_3x8 || ( !pal_is_pcie_ssd_card(2)))
+        return READING_NA;
+      mux_chan = 2;
+      break;
     case MB_SENSOR_C4_1_NVME_CTEMP:
     case MB_SENSOR_C4_2_NVME_CTEMP:
     case MB_SENSOR_C4_3_NVME_CTEMP:
     case MB_SENSOR_C4_4_NVME_CTEMP:
-      if(slot_cfg != SLOT_CFG_SS_3x8)
+      if(slot_cfg != SLOT_CFG_SS_3x8 || ( !pal_is_ava_card(2)))
         return READING_NA;
       mux_chan = 2;
       break;
@@ -2885,7 +3047,7 @@ pal_get_key_value(char *key, char *value) {
   if ((index = pal_key_index(key)) < 0)
     return -1;
 
-  return kv_get(key, value);
+  return kv_get(key, value, NULL, KV_FPERSIST);
 }
 
 int
@@ -2901,26 +3063,30 @@ pal_set_key_value(char *key, char *value) {
       return ret;
   }
 
-  return kv_set(key, value);
+  return kv_set(key, value, 0, KV_FPERSIST);
 }
 
 static int
 key_func_por_policy (int event, void *arg)
 {
-  char cmd[MAX_VALUE_LEN];
-  char value[MAX_VALUE_LEN];
+  char cmd[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   switch (event) {
     case KEY_BEFORE_SET:
       if (pal_is_fw_update_ongoing(FRU_MB))
         return -1;
       // sync to env
-      snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", (char *)arg);
-      system(cmd);
+      if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
+        snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", (char *)arg);
+        system(cmd);
+      }
+      else
+        return -1;
       break;
     case KEY_AFTER_INI:
       // sync to env
-      kv_get("server_por_cfg", value);
+      kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_policy %s", value);
       system(cmd);
       break;
@@ -2932,8 +3098,8 @@ key_func_por_policy (int event, void *arg)
 static int
 key_func_lps (int event, void *arg)
 {
-  char cmd[MAX_VALUE_LEN];
-  char value[MAX_VALUE_LEN];
+  char cmd[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   switch (event) {
     case KEY_BEFORE_SET:
@@ -2943,7 +3109,7 @@ key_func_lps (int event, void *arg)
       system(cmd);
       break;
     case KEY_AFTER_INI:
-      kv_get("pwr_server_last_state", value);
+      kv_get("pwr_server_last_state", value, NULL, KV_FPERSIST);
       snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv por_ls %s", value);
       system(cmd);
       break;
@@ -2955,14 +3121,14 @@ key_func_lps (int event, void *arg)
 static int
 key_func_ntp (int event, void *arg)
 {
-  char cmd[MAX_VALUE_LEN];
-  char ntp_server_new[MAX_VALUE_LEN];
-  char ntp_server_old[MAX_VALUE_LEN];
+  char cmd[MAX_VALUE_LEN] = {0};
+  char ntp_server_new[MAX_VALUE_LEN] = {0};
+  char ntp_server_old[MAX_VALUE_LEN] = {0};
 
   switch (event) {
     case KEY_BEFORE_SET:
       // Remove old NTP server
-      kv_get("ntp_server", ntp_server_old);
+      kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
       if (strlen(ntp_server_old) > 2) {
         snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
         system(cmd);
@@ -2992,10 +3158,11 @@ static void
 FORCE_ADR() {
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN];
+  size_t len;
   //char vpath[64] = {0};
 
   sprintf(key, "%s", "mb_machine_config");
-  if (kv_get_bin(key, value) < 0) {
+  if (kv_get(key, value, &len, KV_FPERSIST) < 0 || len < 13) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "FORCE_ADR: get mb_machine_config failed for fru %u", fru);
 #endif
@@ -3225,6 +3392,9 @@ int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int val;
   char path[64] = {0};
+
+  if ( fru != FRU_MB)
+    return -1;
 
   sprintf(path, GPIO_VAL, GPIO_POWER_GOOD);
 
@@ -3570,7 +3740,6 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static unsigned int retry = 0;
   static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
   static time_t rst_time = 0;
-  static uint8_t postcodes_last[256] = {0};
   uint8_t postcodes[256] = {0};
   struct stat file_stat;
   int ret = READING_NA, rc, len;
@@ -3588,8 +3757,10 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     frb3_fail = 0x10; // bit 4: FRB3 failure
     retry = 0;
     // cache current postcode buffer
-    memset(postcodes_last, 0, sizeof(postcodes_last));
-    pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+    if (stat("/tmp/DWR", &file_stat) != 0) {
+      memset(postcodes_last, 0, sizeof(postcodes_last));
+      pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+    }
   }
 
   if (frb3_fail) {
@@ -3598,7 +3769,7 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
       frb3_fail = 0;
 
     // Port 80 updated
-    memset(postcodes, 0, sizeof(postcodes_last));
+    memset(postcodes, 0, sizeof(postcodes));
     rc = pal_get_80port_record(FRU_MB, NULL, 0, postcodes, (uint8_t *)&len);
     if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
       frb3_fail = 0;
@@ -3734,7 +3905,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) nic_sensor_list;
     *cnt = nic_sensor_cnt;
     break;
-/*
   case FRU_RISER_SLOT2:
     *sensor_list = (uint8_t *) riser_slot2_sensor_list;
     *cnt = riser_slot2_sensor_cnt;
@@ -3747,7 +3917,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) riser_slot4_sensor_list;
     *cnt = riser_slot4_sensor_cnt;
     break;
-*/
   default:
     if (fru > MAX_NUM_FRUS)
       return -1;
@@ -3796,6 +3965,14 @@ pal_fruid_write(uint8_t fru, char *path)
         sprintf(device_name, "24c64");
         sprintf(command, "dd if=%s of=%s bs=%d count=1", path, EEPROM_RISER, fru_size);
       }
+      else if ( true == pal_is_retimer_card( acutal_riser_slot ) )
+      {
+        device_type = FOUND_RETIMER_DEVICE;
+        device_addr = 0x55;
+        bus = 0x3;
+        sprintf(device_name, "24c02");
+        sprintf(command, "dd if=%s of=%s bs=%d count=1", path, EEPROM_RETIMER, fru_size);
+      }
       else
       {
         //if there is no riser card, return
@@ -3832,6 +4009,24 @@ pal_fruid_write(uint8_t fru, char *path)
         mux_release(&riser_mux);
       }
     break;
+   
+    case FOUND_RETIMER_DEVICE:
+      ret = pal_control_mux_to_target_ch(acutal_riser_slot, 0x3/*bus number*/, 0xe2/*mux address*/);
+      if ( PAL_EOK == ret )
+      {
+        pal_add_i2c_device(bus, device_name, device_addr);
+        system(command);
+        ret = pal_compare_fru_data((char*)EEPROM_RETIMER, path, fru_size);
+        if ( ret < 0 )
+        {
+          ret = PAL_ENOTSUP;
+          system("i2cdetect -y -q 3 > /tmp/RETIMER_FRU_FAIL.log");
+          syslog(LOG_ERR, "[%s] RETIMER FRU Write Fail", __func__);       
+        }
+        pal_del_i2c_device(bus, device_addr);
+      }
+      ret = PAL_EOK; 
+    break;
 
   }
 
@@ -3839,22 +4034,46 @@ pal_fruid_write(uint8_t fru, char *path)
 }
 
 int
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
+{
+  //default poll interval
+  *value = 2;
+
+  switch (fru)
+  {
+    case FRU_MB:
+      if ( MB_SENSOR_P3V_BAT == sensor_num )
+      {
+        *value = 3600;
+      }
+      break;
+
+    case FRU_NIC:
+    case FRU_RISER_SLOT2:
+    case FRU_RISER_SLOT3:
+    case FRU_RISER_SLOT4:
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  //char fru_name[32];
+  char fru_name[32];
   int ret;
   static uint8_t poweron_10s_flag = 0;
   bool server_off;
 
-  //pal_get_fru_name(fru, fru_name);
-  //sprintf(key, "%s_sensor%d", fru_name, sensor_num);
+  pal_get_fru_name(fru, fru_name);
+  sprintf(key, "%s_sensor%d", fru_name, sensor_num);
   switch(fru) {
   case FRU_MB:
-    sprintf(key, "mb_sensor%d", sensor_num);
-  //case FRU_RISER_SLOT2:
-  //case FRU_RISER_SLOT3:
-  //case FRU_RISER_SLOT4:
+  case FRU_RISER_SLOT2:
+  case FRU_RISER_SLOT3:
+  case FRU_RISER_SLOT4:
     server_off = is_server_off();
     if (server_off) {
       poweron_10s_flag = 0;
@@ -4298,7 +4517,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   } else {
     sprintf(str, "%.2f",*((float*)value));
   }
-  if(edb_cache_set(key, str) < 0) {
+  if(kv_set(key, str, 0, 0) < 0) {
 #ifdef DEBUG
      syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
 #endif
@@ -4327,7 +4546,6 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_NIC:
     *val = nic_sensor_threshold[sensor_num][thresh];
     break;
-/*
   case FRU_RISER_SLOT2:
     *val = riser_slot2_sensor_threshold[sensor_num][thresh];
     break;
@@ -4337,7 +4555,6 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_RISER_SLOT4:
     *val = riser_slot4_sensor_threshold[sensor_num][thresh];
     break;
-*/
   default:
     return -1;
   }
@@ -4348,9 +4565,9 @@ int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   switch(fru) {
   case FRU_MB:
-  //case FRU_RISER_SLOT2:
-  //case FRU_RISER_SLOT3:
-  //case FRU_RISER_SLOT4:
+  case FRU_RISER_SLOT2:
+  case FRU_RISER_SLOT3:
+  case FRU_RISER_SLOT4:
     switch(sensor_num) {
     case MB_SENSOR_INLET_TEMP:
       sprintf(name, "MB_INLET_TEMP");
@@ -4721,9 +4938,9 @@ int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   switch(fru) {
   case FRU_MB:
-  //case FRU_RISER_SLOT2:
-  //case FRU_RISER_SLOT3:
-  //case FRU_RISER_SLOT4:
+  case FRU_RISER_SLOT2:
+  case FRU_RISER_SLOT3:
+  case FRU_RISER_SLOT4:
     switch(sensor_num) {
     case MB_SENSOR_INLET_TEMP:
     case MB_SENSOR_OUTLET_TEMP:
@@ -4935,48 +5152,35 @@ pal_get_fruid_name(uint8_t fru, char *name) {
 int
 pal_set_def_key_value() {
 
-  int ret;
   int i;
   char key[MAX_KEY_LEN] = {0};
-  char kpath[MAX_KEY_PATH_LEN] = {0};
 
-  i = 0;
-  while(strcmp(key_cfg[i].name, LAST_KEY)) {
-
-    memset(key, 0, MAX_KEY_LEN);
-    memset(kpath, 0, MAX_KEY_PATH_LEN);
-
-    sprintf(kpath, KV_STORE, key_cfg[i].name);
-
-    if (access(kpath, F_OK) == -1) {
-
-      if ((ret = kv_set(key_cfg[i].name, key_cfg[i].def_val)) < 0) {
+  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
 #ifdef DEBUG
-          syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
 #endif
-      }
     }
-
     if (key_cfg[i].function) {
       key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
     }
-
-    i++;
   }
 
   /* Actions to be taken on Power On Reset */
   if (pal_is_bmc_por()) {
     /* Clear all the SEL errors */
     memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sel_error");
 
     /* Write the value "1" which means FRU_STATUS_GOOD */
-    ret = pal_set_key_value(key, "1");
+    pal_set_key_value(key, "1");
 
     /* Clear all the sensor health files*/
     memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sensor_health");
 
     /* Write the value "1" which means FRU_STATUS_GOOD */
-    ret = pal_set_key_value(key, "1");
+    pal_set_key_value(key, "1");
   }
 
   return 0;
@@ -4996,7 +5200,7 @@ pal_dump_key_value(void) {
 
   while (strcmp(key_cfg[i].name, LAST_KEY)) {
     printf("%s:", key_cfg[i].name);
-    if ((ret = kv_get(key_cfg[i].name, value)) < 0) {
+    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -5304,7 +5508,7 @@ pal_get_sysfw_ver(uint8_t fru, uint8_t *ver) {
 
 int
 pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
-  int i;
+  int i, j, network_dev = 0;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char tstr[10] = {0};
@@ -5312,9 +5516,27 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   sprintf(key, "server_boot_order");
 
   for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    //Byte 0 is boot mode, Byte 1~5 is boot order
+    if ( i != 0) {
+      for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
+        if ( boot[i] == boot[j])
+          return CC_INVALID_PARAM;
+      }
+
+      //If Bit 2:0 is 001b (Network), Bit3 is IPv4/IPv6 order
+      //Bit3=0b: IPv4 first
+      //Bit3=1b: IPv6 first
+      if ( boot[i] == BOOT_DEVICE_IPV4 || boot[i] == BOOT_DEVICE_IPV6)
+        network_dev++;
+    }
+
     snprintf(tstr, 3, "%02x", boot[i]);
     strncat(str, tstr, 3);
   }
+
+  //Not allow having more than 1 network boot device in the boot order.
+  if (network_dev > 1)
+    return CC_INVALID_PARAM;
 
   return pal_set_key_value(key, str);
 }
@@ -5446,7 +5668,7 @@ static void *dwr_handler(void *arg) {
   }
 #endif
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
-  system("/usr/local/bin/autodump.sh &");
+  system("/usr/local/bin/autodump.sh --second &");
 
   tid_dwr = -1;
   pthread_exit(NULL);
@@ -5454,11 +5676,20 @@ static void *dwr_handler(void *arg) {
 
 void
 pal_second_crashdump_chk(void) {
+    int fd, len;
+
     if (tid_dwr != -1)
       pthread_cancel(tid_dwr);
 
-    if (pthread_create(&tid_dwr, NULL, dwr_handler, NULL) == 0)
+    if (pthread_create(&tid_dwr, NULL, dwr_handler, NULL) == 0) {
+      memset(postcodes_last, 0, sizeof(postcodes_last));
+      pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+
+      fd =  creat("/tmp/DWR", 0644);
+      if (fd)
+        close(fd);
       pthread_detach(tid_dwr);
+    }
     else
       tid_dwr = -1;
 }
@@ -6111,7 +6342,7 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
 }
 
 int
-pal_get_fw_info(unsigned char target, unsigned char* res, unsigned char* res_len)
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   return -1;
 }
@@ -6287,6 +6518,7 @@ int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   char str[128];
+  uint16_t bank, col;
   uint8_t record_type = (uint8_t) sel[2];
   uint32_t mfg_id;
   error_log[0] = '\0';
@@ -6297,7 +6529,21 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
   if (record_type == 0xc0 && mfg_id == 0x1c4c) {
     snprintf(str, sizeof(str), "Slot %d PCIe err", sel[14]);
     pal_add_cri_sel(str);
+    sprintf(error_log, "VID:0x%02x%2x DID:0x%02x%2x Slot:0x%x Error ID:0x%x",
+                        sel[11], sel[10], sel[13], sel[12], sel[14], sel[15]);
   }
+  else if (record_type == 0xc2 && mfg_id == 0x1c4c) {
+    sprintf(error_log, "Extra info:0x%x MSCOD:0x%02x%02x MCACOD:0x%02x%02x",
+                        sel[11], sel[13], sel[12], sel[15], sel[14]);
+  }
+  else if (record_type == 0xc3 && mfg_id == 0x1c4c) {
+    bank= (sel[11] & 0xf0) >> 4;
+    col= ((sel[11] & 0x0f) << 8) | sel[12];
+    sprintf(error_log, "Fail Device:0x%x Bank:0x%x Column:0x%x Failed Row:0x%02x%02x%02x",
+                       sel[10], bank, col, sel[13], sel[14], sel[15]);
+  }
+  else
+    return 0;
 
   return 0;
 }
@@ -6382,7 +6628,7 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
     strcat(str, tstr);
   }
 
-  if (kv_set(key, str) != 0)
+  if (kv_set(key, str, 0, KV_FPERSIST) != 0)
     return completion_code;
 
   completion_code = CC_SUCCESS;
@@ -6395,7 +6641,8 @@ pal_get_syscfg_text (char *text) {
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";
   int num_cpu=2, num_dimm, num_drive=14;
-  int index, ret, surface, bubble;
+  int index, surface, bubble;
+  size_t ret;
   unsigned char board_id, revision_id;
   char **dimm_labels;
   struct dimm_map map[24], temp_map;
@@ -6423,8 +6670,7 @@ pal_get_syscfg_text (char *text) {
     // Processor#
     snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_product_name",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 26) {
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 26) {
       // Read 4 bytes Processor#
       snprintf(&entry[strlen(entry)], 5, "%s", &value[22]);
     }
@@ -6432,8 +6678,7 @@ pal_get_syscfg_text (char *text) {
     // Frequency & Core Number
     snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_basic_info",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 5) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
       sprintf(&entry[strlen(entry)], "/%.1fG/%dc",
         (float) (value[4] << 8 | value[3])/1000, value[0]);
     }
@@ -6488,8 +6733,7 @@ pal_get_syscfg_text (char *text) {
     // Check Present
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_location",
       key_prefix, map[index].index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 1) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
       // Skip if not present
       if (value[0] != 0x01)
         continue;
@@ -6498,8 +6742,7 @@ pal_get_syscfg_text (char *text) {
     // Module Manufacturer ID
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_manufacturer_id",
       key_prefix, map[index].index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 2) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
       switch (value[1]) {
         case 0xce:
           sprintf(&entry[strlen(entry)], "Samsung");
@@ -6519,8 +6762,7 @@ pal_get_syscfg_text (char *text) {
     // Speed
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_speed",
       key_prefix, map[index].index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 6) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
       sprintf(&entry[strlen(entry)], "/%dMhz/%dGB",
         value[1]<<8 | value[0],
         (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024 );
@@ -6537,8 +6779,7 @@ pal_get_syscfg_text (char *text) {
     // Check Present
     snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_location",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 3) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 3) {
       // Skip if not present
       if (value[2] == 0xff)
         continue;
@@ -6547,8 +6788,7 @@ pal_get_syscfg_text (char *text) {
     // Model name
     snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_model_name",
       key_prefix, index);
-    ret = kv_get_bin(key, value);
-    if(ret >= 1) {
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
       snprintf(&entry[strlen(entry)], ret+1, "%s", value);
     }
 
@@ -6680,14 +6920,133 @@ error_exit:
   return ret;
 }
 
+bool pal_is_retimer_card ( uint8_t riser_slot )
+{
+  int fd = 0;
+  char fn[32];
+  bool ret;
+  uint8_t re_timer_present_chk_addr = 0x82;
+  uint8_t tbuf = 0x0;
+  uint8_t rbuf = 0x0;
+  uint8_t tcount, rcount;
+  int  val;
+
+  // control I2C multiplexer to target channel.
+  val = mux_lock(&riser_mux, riser_slot, 2);
+  if ( val < 0 ) 
+  {
+    syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
+    ret = false;
+    goto error_exit;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+  fd = open(fn, O_RDWR);
+  if ( fd < 0 )
+  {
+    ret = false;
+    goto release_mux_and_exit;
+  }
+
+  //Send I2C to re-timer
+  tcount = 1;
+  rcount = 1;
+  val = i2c_rdwr_msg_transfer(fd, re_timer_present_chk_addr, &tbuf, tcount, &rbuf, rcount);
+  if( val < 0 ) 
+  {
+    ret = false;
+    goto release_mux_and_exit;
+  }
+
+  ret = true;
+
+release_mux_and_exit:
+  mux_release(&riser_mux);
+
+error_exit:
+  if (fd > 0) 
+  {
+    close(fd);
+  }
+
+  return ret;
+}
+
+bool pal_is_pcie_ssd_card( uint8_t riser_slot )
+{
+  bool ret = false;
+  int fd = 0;
+  char fn[32];
+  uint8_t pcie_ssd_addr = 0xd4;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount, rcount;
+  int  val;
+
+  if( !(pal_is_retimer_card(riser_slot) || pal_is_ava_card(riser_slot) ) )
+    {
+    // control I2C multiplexer to target channel.
+    val = mux_lock(&riser_mux, riser_slot, 2);
+    if ( val < 0 ) {
+      syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
+      ret = false;
+      goto error_exit;
+    }
+
+    snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
+    fd = open(fn, O_RDWR);
+    if ( fd < 0 ) {
+      ret = false;
+      goto release_mux_and_exit;
+    }
+
+    //Read to check card present
+    tbuf[0] = 0x00;
+    tcount = 1;
+    rcount = 8;
+    val = i2c_rdwr_msg_transfer(fd, pcie_ssd_addr, tbuf, tcount, rbuf, rcount);
+    if( val < 0 ) {
+      ret = false;
+      goto release_mux_and_exit;
+    }
+    ret = true;
+
+    release_mux_and_exit:
+
+    mux_release(&riser_mux);
+
+    error_exit:
+
+    if (fd > 0)
+      {
+      close(fd);
+      }
+    }
+  return ret;
+}
+int pal_riser_mux_switch (uint8_t riser_slot)
+{
+  return mux_lock(&riser_mux, riser_slot, 2);
+}
+
+int pal_riser_mux_release(void)
+{
+  return mux_release( &riser_mux);
+}
+
 int
-pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type )
+pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type)
 {
   int ret = PAL_ENOTSUP;
 
-  if ( pal_is_ava_card(riser_slot) )
+  if ( true == pal_is_ava_card(riser_slot) )
   {
     *device_type = FOUND_AVA_DEVICE;
+    ret = PAL_EOK;
+  }
+  else if ( true == pal_is_retimer_card(riser_slot) )
+  {
+    *device_type = FOUND_RETIMER_DEVICE;
     ret = PAL_EOK;
   }
   else
@@ -6747,9 +7106,10 @@ error_exit:
 }
 
 int
-pal_CPU_error_num_chk(void)
+pal_CPU_error_num_chk(bool is_caterr)
 {
   int len;
+  int cpu_num = -1;
   ipmb_req_t *req;
   ipmb_res_t *res;
 
@@ -6772,19 +7132,25 @@ pal_CPU_error_num_chk(void)
   req->data[10] = 0x00;
   // Invoke IPMB library handler
   len = ipmb_send_buf(0x4, 11+MIN_IPMB_REQ_LEN);
-  if (len >= (4+MIN_IPMB_RES_LEN) && // Data len >= 4
-    res->cc == 0 && // IPMB Success
-    res->data[3] == 0x40 ) {
-    if(((res->data[7] & 0xE0) > 0) && ((res->data[7] & 0x1C) > 0))
-      return 2; //Both
-    else if((res->data[7] & 0xE0) > 0)
-      return 1; //CPU1
-    else if((res->data[7] & 0x1C) > 0)
-      return 0; // CPU0
-    else
-      return -1;
-  } else
-    return -1;
+  // Data len >= 4 and  IPMB Success
+  if ( ( len >= (4+MIN_IPMB_RES_LEN) ) && ( res->cc == 0 ) && ( res->data[3] == 0x40 ) ) {
+    if( is_caterr ) {
+      if(((res->data[7] & 0xE0) > 0) && ((res->data[7] & 0x1C) > 0))
+        cpu_num = 2; //Both
+      else if((res->data[7] & 0xE0) > 0)
+        cpu_num = 1; //CPU1
+      else if((res->data[7] & 0x1C) > 0)
+        cpu_num = 0; // CPU0
+      } else {
+      if(((res->data[6] & 0xE0) > 0) && ((res->data[6] & 0x1C) > 0))
+        cpu_num = 2; //Both
+      else if((res->data[6] & 0xE0) > 0)
+        cpu_num = 1; //CPU1
+      else if((res->data[6] & 0x1C) > 0)
+        cpu_num = 0; // CPU0
+      }
+  }
+  return cpu_num;
 }
 
 int
@@ -6863,12 +7229,12 @@ pal_uart_switch_for_led_ctrl (void)
 void
 pal_set_def_restart_cause(uint8_t slot)
 {
-  char pwr_policy[MAX_VALUE_LEN];
-  char last_pwr_st[MAX_VALUE_LEN];
+  char pwr_policy[MAX_VALUE_LEN] = {0};
+  char last_pwr_st[MAX_VALUE_LEN] = {0};
   if ( FRU_MB == slot )
   {
-    kv_get("pwr_server_last_state", last_pwr_st);
-    kv_get("server_por_cfg", pwr_policy);
+    kv_get("pwr_server_last_state", last_pwr_st, NULL, KV_FPERSIST);
+    kv_get("server_por_cfg", pwr_policy, NULL, KV_FPERSIST);
     if( pal_is_bmc_por() )
     {
       if( !strcmp( pwr_policy, "on") )
@@ -6881,4 +7247,259 @@ pal_set_def_restart_cause(uint8_t slot)
       }
     }
   }
+}
+
+struct fsc_monitor
+{
+  uint8_t sensor_num;
+  char *sensor_name;
+  bool (*check_sensor_sts)(uint8_t);
+  bool is_alive;
+  uint8_t init_count;
+  uint8_t retry;
+};
+
+static struct fsc_monitor fsc_monitor_riser_list[] =
+{
+  {MB_SENSOR_C2_NVME_CTEMP  , "mb_c2_nvme_ctemp"  , pal_is_pcie_ssd_card , false, 5, 5},
+  {MB_SENSOR_C2_1_NVME_CTEMP, "mb_c2_0_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C2_2_NVME_CTEMP, "mb_c2_1_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C2_3_NVME_CTEMP, "mb_c2_2_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C2_4_NVME_CTEMP, "mb_c2_3_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_NVME_CTEMP  , "mb_c3_nvme_ctemp"  , pal_is_pcie_ssd_card , false, 5, 5},
+  {MB_SENSOR_C3_1_NVME_CTEMP, "mb_c3_0_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_2_NVME_CTEMP, "mb_c3_1_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_3_NVME_CTEMP, "mb_c3_2_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C3_4_NVME_CTEMP, "mb_c3_3_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_NVME_CTEMP  , "mb_c4_nvme_ctemp"  , pal_is_pcie_ssd_card , false, 5, 5},
+  {MB_SENSOR_C4_1_NVME_CTEMP, "mb_c4_0_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_2_NVME_CTEMP, "mb_c4_1_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_3_NVME_CTEMP, "mb_c4_2_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+  {MB_SENSOR_C4_4_NVME_CTEMP, "mb_c4_3_nvme_ctemp", pal_is_ava_card      , false, 5, 5},
+};
+
+static int fsc_monitor_riser_list_size = sizeof(fsc_monitor_riser_list) / sizeof(struct fsc_monitor);
+
+static struct fsc_monitor fsc_monitor_basic_snr_list[] =
+{
+  {MB_SENSOR_INLET_REMOTE_TEMP  , "mb_inlet_remote_temp"  , NULL, false, 5, 5},
+  {MB_SENSOR_CPU0_PKG_POWER     , "mb_cpu0_pkg_power"     , NULL, false, 5, 5},
+  {MB_SENSOR_CPU1_PKG_POWER     , "mb_cpu1_pkg_power"     , NULL, false, 5, 5},
+  {MB_SENSOR_CPU0_THERM_MARGIN  , "mb_cpu0_therm_margin"  , NULL, false, 5, 5},
+  {MB_SENSOR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin"  , NULL, false, 5, 5},
+  //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
+  {MB_SENSOR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_grpa_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SENSOR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_grpb_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SENSOR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_grpc_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SENSOR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_grpd_temp", pal_is_dimm_present, false, 80, 5},
+};
+
+static int fsc_monitor_basic_snr_list_size = sizeof(fsc_monitor_basic_snr_list) / sizeof(struct fsc_monitor);
+
+int pal_fsc_get_target_snr(char *sname, struct fsc_monitor *fsc_fru_list, int fsc_fru_list_size)
+{
+  int i;
+  for ( i=0;  i<fsc_fru_list_size; i++)
+  {
+    if ( 0 == strcmp(sname, fsc_fru_list[i].sensor_name) )
+    {
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]sensor is found:%s, idx:%d", __func__, sname, i);
+#endif
+      return i;
+    }
+  }
+  
+  syslog(LOG_WARNING,"[%s]Unknown sensor name:%s", __func__, sname);
+  return PAL_ENOTSUP;
+}
+
+int
+pal_init_fsc_snr_sts(uint8_t fru_id, struct fsc_monitor *curr_snr)
+{
+  int ret = PAL_EOK;
+  int actual_fru_id;
+  float value;
+  bool is_snr_prsnt = false;
+  bool is_check_snr_num = false;
+
+  //if the sensor is exist, return.
+  if ( true == curr_snr->is_alive )
+  {
+    curr_snr->init_count = 0;
+    return ret;
+  }
+
+  if ( fru_id >= FRU_RISER_SLOT2 )
+  {
+    actual_fru_id = fru_id - FRU_RISER_SLOT2;
+  }
+  else
+  {
+    actual_fru_id = fru_id;
+
+    if ( (MB_SENSOR_CPU0_DIMM_GRPA_TEMP == curr_snr->sensor_num) || (MB_SENSOR_CPU0_DIMM_GRPB_TEMP == curr_snr->sensor_num) ||
+         (MB_SENSOR_CPU1_DIMM_GRPC_TEMP == curr_snr->sensor_num) || (MB_SENSOR_CPU1_DIMM_GRPD_TEMP == curr_snr->sensor_num) )
+    {
+      is_check_snr_num = true;
+    }
+  }
+
+  //some sensors need to be judged with preidentify function
+  if ( NULL != curr_snr->check_sensor_sts )
+  {
+    if ( true == is_check_snr_num )
+    {
+      //check sensor present based on the sensor name
+      is_snr_prsnt = curr_snr->check_sensor_sts(curr_snr->sensor_num);
+    }
+    else
+    {
+      //check sensor present based on its fru
+      is_snr_prsnt = curr_snr->check_sensor_sts(actual_fru_id);
+    }
+#ifdef FSC_DEBUG
+    syslog(LOG_WARNING,"[%s]Check snr status. is_snr_prsnt:%d, fru_id:%d, actual_fru_id:%d", __func__, is_snr_prsnt, fru_id, actual_fru_id);
+#endif
+
+    if ( (true == is_snr_prsnt) && (false == curr_snr->is_alive) )
+    {
+      //if the fru is exist, check the reading
+      //if the reading is N/A, we assume the sensor is not present
+      //if the reading is the numerical value, we assume the sensor is present 
+      ret = sensor_cache_read(fru_id, curr_snr->sensor_num, &value);
+
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]Check snr reading. fru_id:%d, snum:%x, ret=%d", __func__, fru_id, curr_snr->sensor_num, ret);
+#endif
+
+      if ( PAL_EOK == ret ) 
+      {
+#ifdef FSC_DEBUG
+        syslog(LOG_WARNING,"[%s] snr num %x is found. ret=%d", __func__, curr_snr->sensor_num, ret);
+#endif
+        curr_snr->is_alive = true;
+      }
+    }
+  }
+  else
+  {
+    //no preidentify function. sensors should exist anyway
+#ifdef FSC_DEBUG
+    syslog(LOG_WARNING,"[%s] snr num %x is found. ret=%d", __func__, curr_snr->sensor_num, ret);
+#endif
+    ret = PAL_EOK;
+    curr_snr->is_alive = true;
+  }
+
+  curr_snr->init_count--;
+
+  return ret;
+}
+
+void 
+pal_reinit_fsc_monitor_list()
+{
+  int i;
+
+  //dimm sensors need to be re-init when the system do reset
+  //we only re-init the basic snr list since the dimm sensors is included in it
+  for ( i=0; i<fsc_monitor_basic_snr_list_size; i++ )
+  {
+    fsc_monitor_basic_snr_list[i].is_alive = false;
+    fsc_monitor_basic_snr_list[i].retry = 5;
+
+    if ( (MB_SENSOR_CPU0_DIMM_GRPA_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) || 
+         (MB_SENSOR_CPU0_DIMM_GRPB_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) ||
+         (MB_SENSOR_CPU1_DIMM_GRPC_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) ||
+         (MB_SENSOR_CPU1_DIMM_GRPD_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) )
+    {
+      fsc_monitor_basic_snr_list[i].init_count = 80;
+    }
+    else
+    {
+      fsc_monitor_basic_snr_list[i].init_count = 5;
+    }
+  }
+}
+
+bool pal_sensor_is_valid(char *fru_name, char *sensor_name)
+{
+  const uint8_t init_done = 0;
+  uint8_t fru_id;
+  struct fsc_monitor *fsc_fru_list;
+  int fsc_fru_list_size;
+  int index;
+  int ret;
+  static time_t rst_time = 0;
+  struct stat file_stat;
+
+  //check the fru name is valid or not
+  ret = pal_get_fru_id(fru_name, &fru_id);
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] Wrong fru#%s", __func__, fru_name);
+    return false;
+  }
+
+  //if power reset is executed, re-init the list
+  if ( (stat("/tmp/rst_touch", &file_stat) == 0) && (file_stat.st_mtime > rst_time) ) 
+  {
+    rst_time = file_stat.st_mtime;
+    //in order to record rst_time, the function will be executed at first time
+    pal_reinit_fsc_monitor_list();
+  }
+
+  //check the fru is riser or not
+  if ( fru_id >= FRU_RISER_SLOT2 )
+  {
+    fsc_fru_list = fsc_monitor_riser_list;
+    fsc_fru_list_size = fsc_monitor_riser_list_size;
+  }
+  else
+  {
+    fsc_fru_list = fsc_monitor_basic_snr_list;
+    fsc_fru_list_size = fsc_monitor_basic_snr_list_size;
+  }
+
+  //get the target sensor
+  ret = pal_fsc_get_target_snr(sensor_name, fsc_fru_list, fsc_fru_list_size);
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] undefined sensor: %s", __func__, sensor_name);
+    return false;
+  }
+  
+  index = ret;
+
+  //init the snr list before checking snr fail
+  if ( init_done != fsc_fru_list[index].init_count )
+  {
+    //if we get a sensor reading, it will be checked below
+    //return false if the sensor is not ready
+    ret = pal_init_fsc_snr_sts(fru_id, &fsc_fru_list[index]);
+    if ( PAL_EOK != ret )
+    {
+      return false;
+    }
+  }
+
+
+  //after a sensor is init done, we check its is_alive flag
+  //If the flag is true, return true to make fsc check it
+  //if the flag is false, return false to make fsc skip to check it
+  if ( false == fsc_fru_list[index].is_alive )
+  {
+    return false;
+  }
+
+  //to avoid getting the different reading between here and fscd
+  //wait for two loop
+  if ( fsc_fru_list[index].retry > 3 )
+  {
+    fsc_fru_list[index].retry--;
+    return false;
+  }
+  
+  return true;
 }

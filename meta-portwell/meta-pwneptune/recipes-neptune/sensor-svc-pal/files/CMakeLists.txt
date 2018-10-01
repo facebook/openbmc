@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(libsensor-svc-pal)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
-set(CMAKE_LINK_FLAGS "-lkv -ledb -lipmb -lgpio -lobmc-pal")
+set(CMAKE_LINK_FLAGS "-lkv -lipmb -lgpio -lobmc-pal")
 
 add_library(sensor-svc-pal
   sensorsvcpal.c

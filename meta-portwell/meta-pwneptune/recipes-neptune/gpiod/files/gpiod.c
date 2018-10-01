@@ -59,6 +59,8 @@ static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool MCERR_IERR_assert = false;
 static int g_uart_switch_count = 0;
 
+static void set_gpio_value(char *pin, uint8_t value);
+
 static inline long int reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
   *val = 0;
@@ -155,8 +157,10 @@ static void platform_reset_event_handle(gpio_poll_st *gp)
   }
 
   log_gpio_change(gp, 0);
-  if (MCERR_IERR_assert == 1)
+  if (MCERR_IERR_assert == true) {
     pal_second_crashdump_chk();
+    MCERR_IERR_assert = false;
+  }
 }
 
 // Generic Event Handler for GPIO changes
@@ -322,6 +326,7 @@ static void gpio_event_handle_power(gpio_poll_st *gp)
       strcat(cmd, reason);
       syslog(LOG_CRIT, "ASSERT: %s - %s (reason: %s)\n",
         gp->name, gp->desc, reason);
+      strcat(cmd, " ASSERT");
     }
     pal_add_cri_sel(cmd);
     return;
@@ -486,6 +491,7 @@ gpio_timer() {
   long int pot;
   char str[MAX_VALUE_LEN] = {0};
   int tread_time = 0 ;
+  static bool is_ppin_triggered = false;
 
   while (1) {
     sleep(1);
@@ -517,6 +523,14 @@ gpio_timer() {
           syslog(LOG_INFO, "last pwr state updated to off\n");
         }
       }
+      //Trigger PPIN GPIO
+      if( !is_ppin_triggered )
+        {
+        set_gpio_value("GPIOB5", GPIO_VALUE_LOW);
+        usleep(1000);
+        set_gpio_value("GPIOB5", GPIO_VALUE_HIGH);
+        is_ppin_triggered = true;
+        }
     }
     if ( g_uart_switch_count > 0) {
       if ( --g_uart_switch_count == 0 )
@@ -542,13 +556,29 @@ static void set_gpio_value(char *pin, uint8_t value)
   }
 }
 
+static void ierr_mcerr_event_log(bool is_caterr, const char *err_type)
+{
+  char temp_log[128] = {0};
+  char temp_syslog[128] = {0};
+  char cpu_str[32] = "";
+  int CPU_num = pal_CPU_error_num_chk( is_caterr );
+
+  if (CPU_num == 2)
+    strcpy(cpu_str, "0/1");
+  else if (CPU_num != -1)
+    sprintf(cpu_str, "%d", CPU_num);
+
+  sprintf(temp_syslog, "ASSERT: CPU%s %s\n", cpu_str, err_type);
+  sprintf(temp_log, "CPU%s %s", cpu_str, err_type);
+  syslog(LOG_CRIT, temp_syslog);
+  pal_add_cri_sel(temp_log);
+}
+
 // Thread for IERR/MCERR event detect
 static void *
 ierr_mcerr_event_handler() {
   uint8_t CATERR_ierr_time_count = 0;
   uint8_t MSMI_ierr_time_count = 0;
-  int CPU_num;
-  char temp_log[128] = {0};
 
   while (1) {
     if (CATERR_irq > 0) {
@@ -558,27 +588,9 @@ ierr_mcerr_event_handler() {
           //FM_CPU_CATERR_LVT3_N
           MCERR_IERR_assert = true;
           if (gpio_get(gpio_num("GPIOG1")) == GPIO_VALUE_LOW) {
-            syslog(LOG_CRIT, "ASSERT: IERR/CATERR\n");
-
-            CPU_num = pal_CPU_error_num_chk();
-            if (CPU_num == 2)
-              sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if (CPU_num != -1)
-              sprintf(temp_log, "CPU%d IERR/CATERR", CPU_num);
-            else
-              sprintf(temp_log, "CPU IERR/CATERR");
-            pal_add_cri_sel(temp_log);
+            ierr_mcerr_event_log(true, "IERR/CATERR");
           } else {
-            syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
-
-            CPU_num = pal_CPU_error_num_chk();
-            if (CPU_num == 2)
-              sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if (CPU_num != -1)
-              sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
-            else
-              sprintf(temp_log, "CPU MCERR/CATERR");
-            pal_add_cri_sel(temp_log);
+            ierr_mcerr_event_log(true, "MCERR/CATERR");
           }
           CATERR_irq--;
           CATERR_ierr_time_count = 0;
@@ -587,16 +599,7 @@ ierr_mcerr_event_handler() {
           system("/usr/local/bin/autodump.sh &");
         } else if (CATERR_irq > 1) {
           while (CATERR_irq > 1) {
-            syslog(LOG_CRIT, "ASSERT: MCERR/CATERR\n");
-
-            CPU_num = pal_CPU_error_num_chk();
-            if (CPU_num == 2)
-              sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if (CPU_num != -1)
-              sprintf(temp_log, "CPU%d MCERR/CATERR", CPU_num);
-            else
-              sprintf(temp_log, "CPU MCERR/CATERR");
-            pal_add_cri_sel(temp_log);
+            ierr_mcerr_event_log(true, "MCERR/CATERR");
             CATERR_irq = CATERR_irq - 1;
           }
           CATERR_ierr_time_count = 1;
@@ -611,27 +614,9 @@ ierr_mcerr_event_handler() {
           //FM_CPU_MSMI_LVT3_N
           MCERR_IERR_assert = true;
           if (gpio_get(gpio_num("GPION3")) == GPIO_VALUE_LOW) {
-            syslog(LOG_CRIT, "ASSERT: IERR/MSMI\n");
-
-            CPU_num = pal_CPU_error_num_chk();
-            if (CPU_num == 2)
-              sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if (CPU_num != -1)
-              sprintf(temp_log, "CPU%d IERR/MSMI", CPU_num);
-            else
-              sprintf(temp_log, "CPU IERR/MSMI");
-            pal_add_cri_sel(temp_log);
+            ierr_mcerr_event_log(false, "IERR/MSMI");
           } else {
-            syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
-
-            CPU_num = pal_CPU_error_num_chk();
-            if (CPU_num == 2)
-              sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if (CPU_num != -1)
-              sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
-            else
-              sprintf(temp_log, "CPU MCERR/MSMI");
-            pal_add_cri_sel(temp_log);
+            ierr_mcerr_event_log(false, "MCERR/MSMI");
           }
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
@@ -640,16 +625,7 @@ ierr_mcerr_event_handler() {
           system("/usr/local/bin/autodump.sh &");
         } else if (MSMI_irq > 1) {
           while (MSMI_irq > 1) {
-            syslog(LOG_CRIT, "ASSERT: MCERR/MSMI\n");
-
-            CPU_num = pal_CPU_error_num_chk();
-            if (CPU_num == 2)
-              sprintf(temp_log, "CPU0/1 IERR/CATERR");
-            else if (CPU_num != -1)
-              sprintf(temp_log, "CPU%d MCERR/MSMI", CPU_num);
-            else
-              sprintf(temp_log, "CPU MCERR/MSMI");
-            pal_add_cri_sel(temp_log);
+            ierr_mcerr_event_log(false, "MCERR/MSMI");
             MSMI_irq = MSMI_irq - 1;
           }
           MSMI_ierr_time_count = 1;

@@ -6,8 +6,6 @@ PR = "r1"
 inherit packagegroup
 
 RDEPENDS_${PN} += " \
-  bottle \
-  cherryPy \
   packagegroup-openbmc-python \
   rest-api \
   "

@@ -8,7 +8,6 @@ inherit packagegroup
 RDEPENDS_${PN} += " \
   aiohttp \
   async-timeout \
-  bottle \
   chardet \
   multidict \
   packagegroup-openbmc-python3 \

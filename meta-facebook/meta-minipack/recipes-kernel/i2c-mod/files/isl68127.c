@@ -121,7 +121,7 @@ static int parse_val(long val)
 
 static ssize_t isl68127_vol_write(struct device *dev,
                                     struct device_attribute *attr,
-                                    char *buf, size_t count)
+                                    const char *buf, size_t count)
 {
   struct i2c_client *client = to_i2c_client(dev);
   i2c_dev_data_st *data = i2c_get_clientdata(client);

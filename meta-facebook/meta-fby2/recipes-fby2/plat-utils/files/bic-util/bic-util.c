@@ -105,38 +105,49 @@ util_get_device_id(uint8_t slot_id) {
 }
 
 
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2)
 static int
 _get_gpio_cnt_name(uint8_t slot_id, uint8_t *gpio_cnt, char ***gpio_name) {
   int ret = 0;
   uint8_t server_type = 0xFF;
+  uint8_t slot_type = 0x3;
 
-  ret = fby2_get_server_type(slot_id, &server_type);
-  if (ret < 0) {
-    printf("Cannot get server type. 0x%x\n", server_type);
+  slot_type = fby2_get_slot_type(slot_id);
+
+  if (slot_type == SLOT_TYPE_SERVER) {
+    ret = fby2_get_server_type(slot_id, &server_type);
+    if (ret < 0) {
+      printf("Cannot get server type. 0x%x\n", server_type);
+      return -1;
+    }
+
+    // Choose corresponding GPIO list based on server type
+    switch (server_type) {
+      case SERVER_TYPE_TL:
+        *gpio_cnt = gpio_pin_cnt;
+        *gpio_name = (char **)gpio_pin_name;
+        break;
+      case SERVER_TYPE_RC:
+        *gpio_cnt = rc_gpio_pin_cnt;
+        *gpio_name = (char **)rc_gpio_pin_name;
+        break;
+      case SERVER_TYPE_EP:
+        *gpio_cnt = ep_gpio_pin_cnt;
+        *gpio_name = (char **)ep_gpio_pin_name;
+        break;
+      default:
+        printf("Cannot find corresponding server type. 0x%x\n", server_type);
+        return -1;
+    }
+
+    return ret;
+  } else if (slot_type == SLOT_TYPE_GPV2) {
+    *gpio_cnt = gpv2_gpio_pin_cnt;
+    *gpio_name = (char **)gpv2_gpio_pin_name;
+    return 0;
+  } else {
     return -1;
   }
-
-  // Choose corresponding GPIO list based on server type
-  switch (server_type) {
-    case SERVER_TYPE_TL:
-      *gpio_cnt = gpio_pin_cnt;
-      *gpio_name = (char **)gpio_pin_name;
-      break;
-    case SERVER_TYPE_RC:
-      *gpio_cnt = rc_gpio_pin_cnt;
-      *gpio_name = (char **)rc_gpio_pin_name;
-      break;
-    case SERVER_TYPE_EP:
-      *gpio_cnt = ep_gpio_pin_cnt;
-      *gpio_name = (char **)ep_gpio_pin_name;
-      break;
-    default:
-      printf("Cannot find corresponding server type. 0x%x\n", server_type);
-      return -1;
-  }
-
-  return ret;
 }
 #endif
 
@@ -145,7 +156,7 @@ static int
 util_get_gpio(uint8_t slot_id) {
   int ret = 0;
   uint8_t i, group, shift, gpio[8] = {0};
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2)
   uint8_t gpio_cnt;
   char **gpio_name;
 
@@ -192,7 +203,7 @@ static int
 util_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
   uint8_t gpio_cnt = gpio_pin_cnt;
   int ret = 0;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2)
   char **gpio_name;
 
   ret = _get_gpio_cnt_name(slot_id, &gpio_cnt, &gpio_name);
@@ -208,6 +219,15 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
   }
 
   printf("slot %d: setting GPIO %d to %d\n", slot_id, gpio, value);
+#if defined(CONFIG_FBY2_GPV2)
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+    ret = bic_set_gpio64(slot_id, gpio, value);
+    if (ret) {
+      printf("ERROR: bic_get_gpio returns %d\n", ret);
+    }
+    return ret;
+  }
+#endif
   ret = bic_set_gpio(slot_id, gpio, value);
   if (ret) {
     printf("ERROR: bic_get_gpio returns %d\n", ret);
@@ -221,7 +241,7 @@ util_get_gpio_config(uint8_t slot_id) {
   int i;
   bic_gpio_config_t gpio_config = {0};
   bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2)
   uint8_t gpio_cnt;
   char **gpio_name;
 
@@ -285,7 +305,7 @@ static int
 util_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t config) {
   uint8_t gpio_cnt = gpio_pin_cnt;
   int ret = 0;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2)
   char **gpio_name;
 
   ret = _get_gpio_cnt_name(slot_id, &gpio_cnt, &gpio_name);

@@ -407,7 +407,7 @@ bic_get_gpio_raw(uint8_t slot_id, uint8_t *gpio) {
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen);
 
   // Ignore first 3 bytes of IANA ID
-  memcpy((uint8_t*) gpio, &rbuf[3], 6);
+  memcpy((uint8_t*) gpio, &rbuf[3], 8);
 
   return ret;
 }
@@ -438,6 +438,37 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
   }
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO, tbuf, 15, rbuf, &rlen);
+
+  return ret;
+}
+
+int
+bic_set_gpio64(uint8_t slot_id, uint8_t gpio, uint8_t value) {
+  uint8_t tbuf[20] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[4] = {0x00};
+  uint8_t rlen = 0;
+  uint64_t pin;
+  int ret;
+
+  pin = 1LL << gpio;
+
+  tbuf[3] = pin & 0xFF;
+  tbuf[4] = (pin >> 8) & 0xFF;
+  tbuf[5] = (pin >> 16) & 0xFF;
+  tbuf[6] = (pin >> 24) & 0xFF;
+  tbuf[7] = (pin >> 32) & 0xFF;
+  tbuf[8] = (pin >> 40) & 0xFF;
+  tbuf[9] = (pin >> 48) & 0xFF;
+  tbuf[10] = (pin >> 56) & 0xFF;
+
+  // Fill the value
+  if (value) {
+    memset(&tbuf[11], 0xFF, 8);
+  } else {
+    memset(&tbuf[11], 0x00, 8);
+  }
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO, tbuf, 19, rbuf, &rlen);
 
   return ret;
 }

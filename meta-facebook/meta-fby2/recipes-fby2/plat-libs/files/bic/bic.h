@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-#define MAX_GPIO_PINS     50
+#define MAX_GPIO_PINS     64
 
 // GPIO PINS
 enum {
@@ -160,6 +160,74 @@ enum {
   EP_FM_VR_FAULT_N,
   EP_IRQ_CPLD_BIC_PROCHOT_N,
   EP_FM_SMB_VR_SOC_MUX_EN,
+};
+
+// GPv2 GPIO PINS
+enum {
+  GPV2_BMC_HB_LED_N,
+  GPV2_XDP_BIC_TRST,
+  GPV2_I2C_PESW_MULTI_CONFIG_ADDR0_R,
+  GPV2_I2C_PESW_MULTI_CONFIG_ADDR1_R,
+  GPV2_I2C_PESW_MULTI_CONFIG_ADDR2_R,
+  GPV2_I2C_PESW_MULTI_CONFIG_ADDR3_R,
+  GPV2_I2C_PESW_MULTI_CONFIG_ADDR4_R,
+  GPV2_SMB_BMC_ALRT_N,
+  GPV2_SMB_INA230_ALERT_N,
+  GPV2_P3V3_M2A_EN,
+  GPV2_P3V3_M2B_EN,
+  GPV2_P3V3_M2C_EN,
+  GPV2_P3V3_M2D_EN,
+  GPV2_P3V3_M2E_EN,
+  GPV2_P3V3_M2F_EN,
+  GPV2_P3V3_M2G_EN,
+  GPV2_P3V3_M2H_EN,
+  GPV2_P3V3_M2I_EN,
+  GPV2_P3V3_M2J_EN,
+  GPV2_P3V3_M2K_EN,
+  GPV2_P3V3_M2L_EN,
+  GPV2_PWRGD_P3V3_M2_ALL_R,
+  GPV2_PWRGD_P3V3_M2A,
+  GPV2_PWRGD_P3V3_M2B,
+  GPV2_PWRGD_P3V3_M2C,
+  GPV2_PWRGD_P3V3_M2D,
+  GPV2_PWRGD_P3V3_M2E,
+  GPV2_PWRGD_P3V3_M2F,
+  GPV2_PWRGD_P3V3_M2G,
+  GPV2_PWRGD_P3V3_M2H,
+  GPV2_PWRGD_P3V3_M2I,
+  GPV2_PWRGD_P3V3_M2J,
+  GPV2_PWRGD_P3V3_M2K,
+  GPV2_PWRGD_P3V3_M2L,
+  GPV2_FM_COM_EN_N_R,
+  GPV2_FM_COM_SEL_0_R,
+  GPV2_FM_COM_SEL_1_R,
+  GPV2_FM_COM_SEL_2_R,
+  GPV2_FM_COM_SEL_3_R,
+  GPV2_FM_JTAG_EN_N_R,
+  GPV2_FM_JTAG_SEL_0_R,
+  GPV2_FM_JTAG_SEL_1_R,
+  GPV2_FM_JTAG_SEL_2_R,
+  GPV2_FM_JTAG_SEL_3_R,
+  GPV2_BIC_REMOTE_DEBUG_SELECT_N,
+  GPV2_RST_I2C_MUX1_N_R,
+  GPV2_RST_I2C_MUX2_N_R,
+  GPV2_RST_I2C_MUX3_N_R,
+  GPV2_RST_I2C_MUX4_N_R,
+  GPV2_RST_I2C_MUX5_N_R,
+  GPV2_RST_I2C_MUX6_N_R,
+  GPV2_FM_BIC_DU_M2A_EN_R,
+  GPV2_FM_BIC_DU_M2B_EN_R,
+  GPV2_FM_BIC_DU_M2C_EN_R,
+  GPV2_FM_BIC_DU_M2D_EN_R,
+  GPV2_FM_BIC_DU_M2E_EN_R,
+  GPV2_FM_BIC_DU_M2F_EN_R,
+  GPV2_FM_BIC_DU_M2G_EN_R,
+  GPV2_FM_BIC_DU_M2H_EN_R,
+  GPV2_FM_BIC_DU_M2I_EN_R,
+  GPV2_FM_BIC_DU_M2J_EN_R,
+  GPV2_FM_BIC_DU_M2K_EN_R,
+  GPV2_FM_BIC_DU_M2L_EN_R,
+  GPV2_FM_POWER_EN,
 };
 
 
@@ -388,6 +456,7 @@ int bic_set_bic_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
 int bic_get_gpio_raw(uint8_t slot_id, uint8_t *gpio);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value);
+int bic_set_gpio64(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_get_config(uint8_t slot_id, bic_config_t *cfg);

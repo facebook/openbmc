@@ -6444,11 +6444,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;
-
-#if defined(CONFIG_FBY2_RC)
-  int ret;
-  uint8_t server_type = 0xFF;
-#endif
+  int slot_type = SLOT_TYPE_NULL;
 
   switch (thresh) {
     case UNR_THRESH:
@@ -6474,116 +6470,173 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       return;
   }
 
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      slot_type = fby2_get_slot_type(fru);
+      if (slot_type == SLOT_TYPE_SERVER) {
 #if defined(CONFIG_FBY2_RC)
-  switch (snr_num) {
-    case SP_SENSOR_FAN0_TACH:
-      sprintf(crisel, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_FAN1_TACH:
-      sprintf(crisel, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P1V15_BMC_STBY:
-      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - ASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P1V2_BMC_STBY:
-      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - ASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P2V5_BMC_STBY:
-      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - ASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P5V:
-    case SP_SENSOR_P12V:
-    case SP_SENSOR_P3V3_STBY:
-    case SP_SENSOR_P12V_SLOT1:
-    case SP_SENSOR_P12V_SLOT2:
-    case SP_SENSOR_P12V_SLOT3:
-    case SP_SENSOR_P12V_SLOT4:
-    case SP_SENSOR_P3V3:
-    case SP_P1V8_STBY:
-    case SP_SENSOR_HSC_IN_VOLT:
-      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
-      sprintf(crisel, "%s %s %.2fV - ASSERT", snr_desc->name, thresh_name, val);
-      break;
-    case MEZZ_SENSOR_TEMP:
-      if (thresh >= UNR_THRESH) {
-        pal_nic_otp_enable(val);
-      }
-      return;
-    default:
-      ret = fby2_get_server_type(fru, &server_type);
-      if (ret) {
+        int ret;
+        uint8_t server_type = 0xFF;
+        ret = fby2_get_server_type(fru, &server_type);
+        if (ret) {
+          return;
+        }
+        switch (server_type) {
+          case SERVER_TYPE_RC:
+            pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name);
+            break;
+          case SERVER_TYPE_TL:
+            pal_sensor_assert_handle_tl(fru, snr_num, val, thresh_name);
+            break;
+        }
+        return;
+#else
+        switch (snr_num) {
+          case BIC_SENSOR_P3V3_MB:
+          case BIC_SENSOR_P12V_MB:
+          case BIC_SENSOR_P1V05_PCH:
+          case BIC_SENSOR_P3V3_STBY_MB:
+          case BIC_SENSOR_PV_BAT:
+          case BIC_SENSOR_PVDDR_AB:
+          case BIC_SENSOR_PVDDR_DE:
+          case BIC_SENSOR_PVNN_PCH:
+          case BIC_SENSOR_VCCIN_VR_VOL:
+          case BIC_SENSOR_VCCIO_VR_VOL:
+          case BIC_SENSOR_1V05_PCH_VR_VOL:
+          case BIC_SENSOR_VDDR_AB_VR_VOL:
+          case BIC_SENSOR_VDDR_DE_VR_VOL:
+          case BIC_SENSOR_VCCSA_VR_VOL:
+          case BIC_SENSOR_INA230_VOL:
+            snr_desc = get_sensor_desc(fru, snr_num);
+            sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+            break;
+          default:
+            return;
+        }
+#endif
+      } else if (slot_type == SLOT_TYPE_GPV2) {
+#if defined(CONFIG_FBY2_GPV2) 
+        switch (snr_num) {
+          case GPV2_SENSOR_P12V_BIC_SCALED:
+          case GPV2_SENSOR_P3V3_STBY_BIC_SCALED:
+          case GPV2_SENSOR_P0V92_BIC_SCALED:
+          case GPV2_SENSOR_P1V8_BIC_SCALED:
+          case GPV2_SENSOR_INA230_VOLT:
+          // VR
+          case GPV2_SENSOR_3V3_VR_Vol:
+          case GPV2_SENSOR_0V92_VR_Vol:
+          //M.2 A
+          case GPV2_SENSOR_M2A_INA231_VOL:
+          case GPV2_SENSOR_M2A_FPGA_VOL:
+          case GPV2_SENSOR_M2A_DDR_VOL:
+          //M.2 B
+          case GPV2_SENSOR_M2B_INA231_VOL:
+          case GPV2_SENSOR_M2B_FPGA_VOL:
+          case GPV2_SENSOR_M2B_DDR_VOL:
+          //M.2 C
+          case GPV2_SENSOR_M2C_INA231_VOL:
+          case GPV2_SENSOR_M2C_FPGA_VOL:
+          case GPV2_SENSOR_M2C_DDR_VOL:
+          //M.2 D
+          case GPV2_SENSOR_M2D_INA231_VOL:
+          case GPV2_SENSOR_M2D_FPGA_VOL:
+          case GPV2_SENSOR_M2D_DDR_VOL:
+          //M.2 E
+          case GPV2_SENSOR_M2E_INA231_VOL:
+          case GPV2_SENSOR_M2E_FPGA_VOL:
+          case GPV2_SENSOR_M2E_DDR_VOL:
+          //M.2 F
+          case GPV2_SENSOR_M2F_INA231_VOL:
+          case GPV2_SENSOR_M2F_FPGA_VOL:
+          case GPV2_SENSOR_M2F_DDR_VOL:
+          //M.2 G
+          case GPV2_SENSOR_M2G_INA231_VOL:
+          case GPV2_SENSOR_M2G_FPGA_VOL:
+          case GPV2_SENSOR_M2G_DDR_VOL:
+          //M.2 H
+          case GPV2_SENSOR_M2H_INA231_VOL:
+          case GPV2_SENSOR_M2H_FPGA_VOL:
+          case GPV2_SENSOR_M2H_DDR_VOL:
+          //M.2 I
+          case GPV2_SENSOR_M2I_INA231_VOL:
+          case GPV2_SENSOR_M2I_FPGA_VOL:
+          case GPV2_SENSOR_M2I_DDR_VOL:
+          //M.2 J
+          case GPV2_SENSOR_M2J_INA231_VOL:
+          case GPV2_SENSOR_M2J_FPGA_VOL:
+          case GPV2_SENSOR_M2J_DDR_VOL:
+          //M.2 K
+          case GPV2_SENSOR_M2K_INA231_VOL:
+          case GPV2_SENSOR_M2K_FPGA_VOL:
+          case GPV2_SENSOR_M2K_DDR_VOL:
+          //M.2 L
+          case GPV2_SENSOR_M2L_INA231_VOL:
+          case GPV2_SENSOR_M2L_FPGA_VOL:
+          case GPV2_SENSOR_M2L_DDR_VOL:
+            snr_desc = get_sensor_desc(fru, snr_num);
+            sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+            break;
+          default:
+            return;
+        }
+#else
+        return;
+#endif
+      } else {
         return;
       }
-      switch (server_type) {
-        case SERVER_TYPE_RC:
-          pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name);
+      break;
+    case FRU_SPB:
+      switch (snr_num) {
+        case SP_SENSOR_FAN0_TACH:
+          sprintf(crisel, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
           break;
-        case SERVER_TYPE_TL:
-          pal_sensor_assert_handle_tl(fru, snr_num, val, thresh_name);
+        case SP_SENSOR_FAN1_TACH:
+          sprintf(crisel, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
           break;
+        case SP_SENSOR_P1V15_BMC_STBY:
+          sprintf(crisel, "SP_P1V15_STBY %s %.2fV - ASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_P1V2_BMC_STBY:
+          sprintf(crisel, "SP_P1V2_STBY %s %.2fV - ASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_P2V5_BMC_STBY:
+          sprintf(crisel, "SP_P2V5_STBY %s %.2fV - ASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_P5V:
+        case SP_SENSOR_P12V:
+        case SP_SENSOR_P3V3_STBY:
+        case SP_SENSOR_P12V_SLOT1:
+        case SP_SENSOR_P12V_SLOT2:
+        case SP_SENSOR_P12V_SLOT3:
+        case SP_SENSOR_P12V_SLOT4:
+        case SP_SENSOR_P3V3:
+        case SP_P1V8_STBY:
+        case SP_SENSOR_HSC_IN_VOLT:
+          snr_desc = get_sensor_desc(FRU_SPB, snr_num);
+          sprintf(crisel, "%s %s %.2fV - ASSERT", snr_desc->name, thresh_name, val);
+          break;
+        default:
+          return;
       }
-      return;
-  }
-#else
-  switch (snr_num) {
-    case SP_SENSOR_FAN0_TACH:
-      sprintf(crisel, "Fan0 %s %.0fRPM - ASSERT", thresh_name, val);
       break;
-    case SP_SENSOR_FAN1_TACH:
-      sprintf(crisel, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
-      break;
-    case BIC_SENSOR_SOC_TEMP:
-      sprintf(crisel, "SOC Temp %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
-      break;
-    case SP_SENSOR_P1V15_BMC_STBY:
-      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - ASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P1V2_BMC_STBY:
-      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - ASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P2V5_BMC_STBY:
-      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - ASSERT", thresh_name, val);
-      break;
-    case BIC_SENSOR_P3V3_MB:
-    case BIC_SENSOR_P12V_MB:
-    case BIC_SENSOR_P1V05_PCH:
-    case BIC_SENSOR_P3V3_STBY_MB:
-    case BIC_SENSOR_PV_BAT:
-    case BIC_SENSOR_PVDDR_AB:
-    case BIC_SENSOR_PVDDR_DE:
-    case BIC_SENSOR_PVNN_PCH:
-    case BIC_SENSOR_VCCIN_VR_VOL:
-    case BIC_SENSOR_VCCIO_VR_VOL:
-    case BIC_SENSOR_1V05_PCH_VR_VOL:
-    case BIC_SENSOR_VDDR_AB_VR_VOL:
-    case BIC_SENSOR_VDDR_DE_VR_VOL:
-    case BIC_SENSOR_VCCSA_VR_VOL:
-    case BIC_SENSOR_INA230_VOL:
-      snr_desc = get_sensor_desc(fru, snr_num);
-      sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
-      break;
-    case SP_SENSOR_P5V:
-    case SP_SENSOR_P12V:
-    case SP_SENSOR_P3V3_STBY:
-    case SP_SENSOR_P12V_SLOT1:
-    case SP_SENSOR_P12V_SLOT2:
-    case SP_SENSOR_P12V_SLOT3:
-    case SP_SENSOR_P12V_SLOT4:
-    case SP_SENSOR_P3V3:
-    case SP_P1V8_STBY:
-    case SP_SENSOR_HSC_IN_VOLT:
-      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
-      sprintf(crisel, "%s %s %.2fV - ASSERT", snr_desc->name, thresh_name, val);
-      break;
-    case MEZZ_SENSOR_TEMP:
-      if (thresh >= UNR_THRESH) {
-        pal_nic_otp_enable(val);
+    case FRU_NIC:
+      switch (snr_num) {
+        case MEZZ_SENSOR_TEMP:
+          if (thresh >= UNR_THRESH) {
+            pal_nic_otp_enable(val);
+          }
+          return;
+        default:
+          return;
       }
-      return;
+      break;
     default:
       return;
   }
-#endif
 
   pal_add_cri_sel(crisel);
   return;
@@ -6663,11 +6716,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;
-
-#if defined(CONFIG_FBY2_RC)
-  int ret;
-  uint8_t server_type = 0xFF;
-#endif
+  int slot_type = SLOT_TYPE_NULL;
 
   switch (thresh) {
     case UNR_THRESH:
@@ -6693,116 +6742,173 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
       return;
   }
 
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      slot_type = fby2_get_slot_type(fru);
+      if (slot_type == SLOT_TYPE_SERVER) {
 #if defined(CONFIG_FBY2_RC)
-  switch (snr_num) {
-    case SP_SENSOR_FAN0_TACH:
-      sprintf(crisel, "Fan0 %s %.0fRPM - DEASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_FAN1_TACH:
-      sprintf(crisel, "Fan1 %s %.0fRPM - DEASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P1V15_BMC_STBY:
-      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - DEASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P1V2_BMC_STBY:
-      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - DEASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P2V5_BMC_STBY:
-      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - DEASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P5V:
-    case SP_SENSOR_P12V:
-    case SP_SENSOR_P3V3_STBY:
-    case SP_SENSOR_P12V_SLOT1:
-    case SP_SENSOR_P12V_SLOT2:
-    case SP_SENSOR_P12V_SLOT3:
-    case SP_SENSOR_P12V_SLOT4:
-    case SP_SENSOR_P3V3:
-    case SP_P1V8_STBY:
-    case SP_SENSOR_HSC_IN_VOLT:
-      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
-      sprintf(crisel, "%s %s %.2fV - DEASSERT", snr_desc->name, thresh_name, val);
-      break;
-    case MEZZ_SENSOR_TEMP:
-      if (thresh == UNC_THRESH) {
-        pal_nic_otp_disable(val);
-      }
-      return;
-    default:
-      ret = fby2_get_server_type(fru, &server_type);
-      if (ret) {
+        int ret;
+        uint8_t server_type = 0xFF;
+        ret = fby2_get_server_type(fru, &server_type);
+        if (ret) {
+          return;
+        }
+        switch (server_type) {
+          case SERVER_TYPE_RC:
+            pal_sensor_deassert_handle_rc(fru, snr_num, val, thresh_name);
+            break;
+          case SERVER_TYPE_TL:
+            pal_sensor_deassert_handle_tl(fru, snr_num, val, thresh_name);
+            break;
+        }
+        return;
+#else
+        switch (snr_num) {
+          case BIC_SENSOR_P3V3_MB:
+          case BIC_SENSOR_P12V_MB:
+          case BIC_SENSOR_P1V05_PCH:
+          case BIC_SENSOR_P3V3_STBY_MB:
+          case BIC_SENSOR_PV_BAT:
+          case BIC_SENSOR_PVDDR_AB:
+          case BIC_SENSOR_PVDDR_DE:
+          case BIC_SENSOR_PVNN_PCH:
+          case BIC_SENSOR_VCCIN_VR_VOL:
+          case BIC_SENSOR_VCCIO_VR_VOL:
+          case BIC_SENSOR_1V05_PCH_VR_VOL:
+          case BIC_SENSOR_VDDR_AB_VR_VOL:
+          case BIC_SENSOR_VDDR_DE_VR_VOL:
+          case BIC_SENSOR_VCCSA_VR_VOL:
+          case BIC_SENSOR_INA230_VOL:
+            snr_desc = get_sensor_desc(fru, snr_num);
+            sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+            break;
+          default:
+            return;
+        }
+#endif
+      } else if (slot_type == SLOT_TYPE_GPV2) {
+#if defined(CONFIG_FBY2_GPV2) 
+        switch (snr_num) {
+          case GPV2_SENSOR_P12V_BIC_SCALED:
+          case GPV2_SENSOR_P3V3_STBY_BIC_SCALED:
+          case GPV2_SENSOR_P0V92_BIC_SCALED:
+          case GPV2_SENSOR_P1V8_BIC_SCALED:
+          case GPV2_SENSOR_INA230_VOLT:
+          // VR
+          case GPV2_SENSOR_3V3_VR_Vol:
+          case GPV2_SENSOR_0V92_VR_Vol:
+          //M.2 A
+          case GPV2_SENSOR_M2A_INA231_VOL:
+          case GPV2_SENSOR_M2A_FPGA_VOL:
+          case GPV2_SENSOR_M2A_DDR_VOL:
+          //M.2 B
+          case GPV2_SENSOR_M2B_INA231_VOL:
+          case GPV2_SENSOR_M2B_FPGA_VOL:
+          case GPV2_SENSOR_M2B_DDR_VOL:
+          //M.2 C
+          case GPV2_SENSOR_M2C_INA231_VOL:
+          case GPV2_SENSOR_M2C_FPGA_VOL:
+          case GPV2_SENSOR_M2C_DDR_VOL:
+          //M.2 D
+          case GPV2_SENSOR_M2D_INA231_VOL:
+          case GPV2_SENSOR_M2D_FPGA_VOL:
+          case GPV2_SENSOR_M2D_DDR_VOL:
+          //M.2 E
+          case GPV2_SENSOR_M2E_INA231_VOL:
+          case GPV2_SENSOR_M2E_FPGA_VOL:
+          case GPV2_SENSOR_M2E_DDR_VOL:
+          //M.2 F
+          case GPV2_SENSOR_M2F_INA231_VOL:
+          case GPV2_SENSOR_M2F_FPGA_VOL:
+          case GPV2_SENSOR_M2F_DDR_VOL:
+          //M.2 G
+          case GPV2_SENSOR_M2G_INA231_VOL:
+          case GPV2_SENSOR_M2G_FPGA_VOL:
+          case GPV2_SENSOR_M2G_DDR_VOL:
+          //M.2 H
+          case GPV2_SENSOR_M2H_INA231_VOL:
+          case GPV2_SENSOR_M2H_FPGA_VOL:
+          case GPV2_SENSOR_M2H_DDR_VOL:
+          //M.2 I
+          case GPV2_SENSOR_M2I_INA231_VOL:
+          case GPV2_SENSOR_M2I_FPGA_VOL:
+          case GPV2_SENSOR_M2I_DDR_VOL:
+          //M.2 J
+          case GPV2_SENSOR_M2J_INA231_VOL:
+          case GPV2_SENSOR_M2J_FPGA_VOL:
+          case GPV2_SENSOR_M2J_DDR_VOL:
+          //M.2 K
+          case GPV2_SENSOR_M2K_INA231_VOL:
+          case GPV2_SENSOR_M2K_FPGA_VOL:
+          case GPV2_SENSOR_M2K_DDR_VOL:
+          //M.2 L
+          case GPV2_SENSOR_M2L_INA231_VOL:
+          case GPV2_SENSOR_M2L_FPGA_VOL:
+          case GPV2_SENSOR_M2L_DDR_VOL:
+            snr_desc = get_sensor_desc(fru, snr_num);
+            sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+            break;
+          default:
+            return;
+        }
+#else
+        return;
+#endif
+      } else {
         return;
       }
-      switch (server_type) {
-        case SERVER_TYPE_RC:
-          pal_sensor_deassert_handle_rc(fru, snr_num, val, thresh_name);
+      break;
+    case FRU_SPB:
+      switch (snr_num) {
+        case SP_SENSOR_FAN0_TACH:
+          sprintf(crisel, "Fan0 %s %.0fRPM - DEASSERT", thresh_name, val);
           break;
-        case SERVER_TYPE_TL:
-          pal_sensor_deassert_handle_tl(fru, snr_num, val, thresh_name);
+        case SP_SENSOR_FAN1_TACH:
+          sprintf(crisel, "Fan1 %s %.0fRPM - DEASSERT", thresh_name, val);
           break;
+        case SP_SENSOR_P1V15_BMC_STBY:
+          sprintf(crisel, "SP_P1V15_STBY %s %.2fV - DEASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_P1V2_BMC_STBY:
+          sprintf(crisel, "SP_P1V2_STBY %s %.2fV - DEASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_P2V5_BMC_STBY:
+          sprintf(crisel, "SP_P2V5_STBY %s %.2fV - DEASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_P5V:
+        case SP_SENSOR_P12V:
+        case SP_SENSOR_P3V3_STBY:
+        case SP_SENSOR_P12V_SLOT1:
+        case SP_SENSOR_P12V_SLOT2:
+        case SP_SENSOR_P12V_SLOT3:
+        case SP_SENSOR_P12V_SLOT4:
+        case SP_SENSOR_P3V3:
+        case SP_P1V8_STBY:
+        case SP_SENSOR_HSC_IN_VOLT:
+          snr_desc = get_sensor_desc(FRU_SPB, snr_num);
+          sprintf(crisel, "%s %s %.2fV - DEASSERT", snr_desc->name, thresh_name, val);
+          break;
+        default:
+          return;
       }
-      return;
-  }
-#else
-  switch (snr_num) {
-    case SP_SENSOR_FAN0_TACH:
-      sprintf(crisel, "Fan0 %s %.0fRPM - DEASSERT", thresh_name, val);
       break;
-    case SP_SENSOR_FAN1_TACH:
-      sprintf(crisel, "Fan1 %s %.0fRPM - DEASSERT", thresh_name, val);
-      break;
-    case BIC_SENSOR_SOC_TEMP:
-      sprintf(crisel, "SOC Temp %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
-      break;
-    case SP_SENSOR_P1V15_BMC_STBY:
-      sprintf(crisel, "SP_P1V15_STBY %s %.2fV - DEASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P1V2_BMC_STBY:
-      sprintf(crisel, "SP_P1V2_STBY %s %.2fV - DEASSERT", thresh_name, val);
-      break;
-    case SP_SENSOR_P2V5_BMC_STBY:
-      sprintf(crisel, "SP_P2V5_STBY %s %.2fV - DEASSERT", thresh_name, val);
-      break;
-    case BIC_SENSOR_P3V3_MB:
-    case BIC_SENSOR_P12V_MB:
-    case BIC_SENSOR_P1V05_PCH:
-    case BIC_SENSOR_P3V3_STBY_MB:
-    case BIC_SENSOR_PV_BAT:
-    case BIC_SENSOR_PVDDR_AB:
-    case BIC_SENSOR_PVDDR_DE:
-    case BIC_SENSOR_PVNN_PCH:
-    case BIC_SENSOR_VCCIN_VR_VOL:
-    case BIC_SENSOR_VCCIO_VR_VOL:
-    case BIC_SENSOR_1V05_PCH_VR_VOL:
-    case BIC_SENSOR_VDDR_AB_VR_VOL:
-    case BIC_SENSOR_VDDR_DE_VR_VOL:
-    case BIC_SENSOR_VCCSA_VR_VOL:
-    case BIC_SENSOR_INA230_VOL:
-      snr_desc = get_sensor_desc(fru, snr_num);
-      sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
-      break;
-    case SP_SENSOR_P5V:
-    case SP_SENSOR_P12V:
-    case SP_SENSOR_P3V3_STBY:
-    case SP_SENSOR_P12V_SLOT1:
-    case SP_SENSOR_P12V_SLOT2:
-    case SP_SENSOR_P12V_SLOT3:
-    case SP_SENSOR_P12V_SLOT4:
-    case SP_SENSOR_P3V3:
-    case SP_P1V8_STBY:
-    case SP_SENSOR_HSC_IN_VOLT:
-      snr_desc = get_sensor_desc(FRU_SPB, snr_num);
-      sprintf(crisel, "%s %s %.2fV - DEASSERT", snr_desc->name, thresh_name, val);
-      break;
-    case MEZZ_SENSOR_TEMP:
-      if (thresh == UNC_THRESH) {
-        pal_nic_otp_disable(val);
+    case FRU_NIC:
+      switch (snr_num) {
+        case MEZZ_SENSOR_TEMP:
+          if (thresh == UNC_THRESH) {
+            pal_nic_otp_disable(val);
+          }
+          return;
+        default:
+          return;
       }
-      return;
+      break;
     default:
       return;
   }
-#endif
 
   pal_add_cri_sel(crisel);
   return;

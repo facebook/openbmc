@@ -212,7 +212,7 @@ def cmmComponentPresenceTest(ssh, data, testName):
     ssh.sendline(cmd)
     ssh.prompt(timeout=1000)
     output = ssh.before
-    print(str(output, 'utf-8').split('\n', 1)[1])
+    print(str(output).split('\n', 1)[1])
     return
 
 

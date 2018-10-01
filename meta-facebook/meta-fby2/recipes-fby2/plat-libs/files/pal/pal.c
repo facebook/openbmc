@@ -3196,6 +3196,12 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
             *sensor_list = (uint8_t *) dc_sensor_list;
             *cnt = dc_sensor_cnt;
             break;
+#ifdef CONFIG_FBY2_GPV2
+        case SLOT_TYPE_GPV2:
+            *sensor_list = (uint8_t *) gpv2_sensor_list;
+            *cnt = gpv2_sensor_cnt;
+            break;
+#endif
         default:
             return -1;
             break;
@@ -3407,6 +3413,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     msleep(50);
     retry--;
   }
+
   if(ret < 0) {
     if ((ret == EER_READ_NA) && snr_chk->val_valid) {
       snr_chk->val_valid = 0;
@@ -3591,35 +3598,36 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+      if (fby2_get_slot_type(fru) == SLOT_TYPE_SERVER) {
 #ifdef CONFIG_FBY2_RC
-      ret = fby2_get_server_type(fru, &server_type);
-      if (ret) {
-        syslog(LOG_INFO, "%s, Get server type failed, using Twinlake");
-      }
-      switch (server_type) {
-        case SERVER_TYPE_RC:
-          break;
-        case SERVER_TYPE_TL:
-          if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
-            *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
-          else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
-            *flag = GETMASK(SENSOR_VALID);
-          else if (snr_num == BIC_SENSOR_SOC_TJMAX)
-            *flag = GETMASK(SENSOR_VALID);
-          break;
-        default:
-          break;
-      }
-      break;
+        ret = fby2_get_server_type(fru, &server_type);
+        if (ret) {
+          syslog(LOG_INFO, "%s, Get server type failed, using Twinlake");
+        }
+        switch (server_type) {
+          case SERVER_TYPE_RC:
+            break;
+          case SERVER_TYPE_TL:
+            if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
+              *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
+            else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
+              *flag = GETMASK(SENSOR_VALID);
+            else if (snr_num == BIC_SENSOR_SOC_TJMAX)
+              *flag = GETMASK(SENSOR_VALID);
+            break;
+          default:
+            break;
+        }
 #else
-      if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
-        *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
-      else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
-        *flag = GETMASK(SENSOR_VALID);
-      else if (snr_num == BIC_SENSOR_SOC_TJMAX)
-        *flag = GETMASK(SENSOR_VALID);
-      break;
+        if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
+          *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
+        else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
+          *flag = GETMASK(SENSOR_VALID);
+        else if (snr_num == BIC_SENSOR_SOC_TJMAX)
+          *flag = GETMASK(SENSOR_VALID);
 #endif
+      }
+      break;
     case FRU_SPB:
     case FRU_NIC:
       break;

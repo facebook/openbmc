@@ -2286,6 +2286,27 @@ bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sens
 }
 
 int
+bic_read_device_sensors(uint8_t slot_id, uint8_t dev_id, ipmi_device_sensor_reading_t *sensor, uint8_t *len) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00, 0x00}; // IANA ID + Sensor Num
+  uint8_t rbuf[255] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = dev_id;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_DEVICE_SENSOR_READING, tbuf, 0x04, rbuf, &rlen);
+
+  if (rlen >= 8) { // at least one sensor
+    memcpy(sensor, &rbuf[3], rlen-3);  // Ignore IANA ID
+    *len = rlen - 3;
+  } else {
+    *len = 0;
+    return -1;  // unavailable
+  }
+
+  return ret;
+}
+
+int
 bic_read_accuracy_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_accuracy_sensor_reading_t *sensor) {
   uint8_t tbuf[4] = {0x15, 0xA0, 0x00, 0x00}; // IANA ID + Sensor Num
   uint8_t rbuf[255] = {0x00};

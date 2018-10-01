@@ -93,6 +93,8 @@ extern "C" {
 
 #define SIZE_CPU_PPIN 8
 
+#define MAX_NUM_DEV_SENSORS 16
+
 // IPMI request Structure (IPMI/Section 9.2)
 typedef struct
 {
@@ -278,6 +280,19 @@ typedef struct
   uint8_t status;
   uint8_t ext_status;
 } ipmi_sensor_reading_t;
+
+typedef struct
+{
+  uint8_t sensor_num;
+  uint8_t value;
+  uint8_t flags;
+  uint8_t status;
+  uint8_t ext_status;
+} ipmi_device_sensor_t;
+
+typedef struct _ipmi_device_sensor_reading_t {
+  ipmi_device_sensor_t data[MAX_NUM_DEV_SENSORS];
+} ipmi_device_sensor_reading_t;
 
 // Network Function Codes (IPMI/Section 5.1)
 enum
@@ -486,6 +501,7 @@ enum
   CMD_OEM_1S_ASD_INIT = 0x28,
   CMD_OEM_1S_SET_PCIE_CONFIG = 0x31,
   CMD_OEM_1S_RAS_DUMP_IN = 0x32,
+  CMD_OEM_1S_GET_DEVICE_SENSOR_READING = 0x35,
 };
 
 // OEM Command Codes for USB basded Debug Card

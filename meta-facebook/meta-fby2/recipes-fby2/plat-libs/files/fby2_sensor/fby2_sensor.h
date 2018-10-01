@@ -168,7 +168,7 @@ enum {
   BIC_RC_SENSOR_VR_HOT = 0xB2,  // Discrete
   BIC_RC_SENSOR_SYS_BOOTING_STS = 0x7E,  // Discrete
   BIC_RC_SENSOR_PROC_FAIL = 0x65, //Discrete
-  BIC_RC_SENSOR_SYSTEM_STATUS_2 = 0x11, //Event-only
+  BIC_RC_SENSOR_THROTTLE_STATUS = 0x11, //Event-only
   BIC_RC_SENSOR_RAS_CRIT = 0xCB,    //Event-only
   BIC_RC_SENSOR_RAS_INFO = 0xCC,    //Event-only
   BIC_RC_SENSOR_RAS_FATAL = 0xCD,   //Event-only

@@ -4432,8 +4432,8 @@ fby2_rc_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case BIC_RC_SENSOR_RAS_FATAL:
       sprintf(name, "RAS_FATAL");
       break;
-    case BIC_RC_SENSOR_SYSTEM_STATUS_2:
-      sprintf(name, "SYSTEM_STATUS_2");
+    case BIC_RC_SENSOR_THROTTLE_STATUS:
+      sprintf(name, "THROTTLE_STATUS");
       break;
     default:
       return -1;
@@ -4668,7 +4668,7 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
       }
       parsed = true;
       break;
-    case BIC_RC_SENSOR_SYSTEM_STATUS_2:
+    case BIC_RC_SENSOR_THROTTLE_STATUS:
       strcpy(error_log, ""); 
       switch (ed[0]) {
         case 0x00:

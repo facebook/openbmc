@@ -58,6 +58,7 @@ extern const char pal_pwm_list[];
 extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
+extern const char pal_dev_list[];
 
 enum {
   USB_MUX_OFF,
@@ -129,6 +130,7 @@ enum {
 
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
+int pal_get_num_devs(uint8_t slot, uint8_t *num);
 int pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
@@ -163,8 +165,10 @@ int pal_set_id_led(uint8_t slot, uint8_t status);
 int pal_set_slot_id_led(uint8_t slot, uint8_t status);
 int pal_get_fru_list(char *list);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
+int pal_get_dev_id(char *dev_str, uint8_t *dev);
 int pal_get_fru_name(uint8_t fru, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
+int pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 int pal_get_fruid_name(uint8_t fru, char *name);
 int pal_get_fru_sdr_path(uint8_t fru, char *path);
@@ -193,6 +197,7 @@ int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_read_nic_fruid(const char *path, int size);
 int pal_fruid_write(uint8_t slot, char *path);
+int pal_dev_fruid_write(uint8_t slot, uint8_t dev_id, char *path);
 int pal_is_bmc_por(void);
 int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name, uint8_t o_val, uint8_t n_val);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);

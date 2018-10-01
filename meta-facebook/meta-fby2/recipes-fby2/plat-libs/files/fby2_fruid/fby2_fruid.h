@@ -23,6 +23,7 @@
 #include <facebook/fby2_sensor.h>
 
 #define FBY2_FRU_PATH "/tmp/fruid_%s.bin"
+#define FBY2_FRU_DEV_PATH "/tmp/fruid_%s_dev%d.bin"
 
 #define MFG_MELLANOX 0x19810000
 #define MFG_BROADCOM 0x3D110000
@@ -33,7 +34,7 @@ extern "C" {
 #endif
 
 uint32_t fby2_get_nic_mfgid(void);
-int fby2_get_fruid_path(uint8_t fru, char *path);
+int fby2_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path);
 int fby2_get_fruid_eeprom_path(uint8_t fru, char *path);
 int fby2_get_fruid_name(uint8_t fru, char *name);
 

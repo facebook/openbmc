@@ -144,6 +144,7 @@ int plat_fruid_init(void) {
         switch(fby2_get_slot_type(fru))
         {
            case SLOT_TYPE_SERVER:
+           case SLOT_TYPE_GPV2:
              // Do not access EEPROM
              break;
            case SLOT_TYPE_CF:

@@ -31,8 +31,8 @@
 #include <sys/file.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
-#include <openbmc/obmc-pal.h>
 #include <facebook/bic.h>
+#include <openbmc/pal.h>
 
 
 #define LAST_RECORD_ID 0xFFFF
@@ -43,19 +43,25 @@
 #define MAX_RETRY_CNT 9000    // A senond can run about 50 times, 3 mins = 180 * 50
 
 int
-fruid_cache_init(uint8_t slot_id) {
+fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
   // Initialize Slot0's fruid
   int ret=0;
   int fru_size=0;
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
 
-  sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
-  sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
+  if (fru_id == 0){
+    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
+    sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
+  } else {
+    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d_dev%d.bin", slot_id, fru_id);
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, fru_id);
+  }
 
-  ret = bic_read_fruid(slot_id, 0, fruid_temp_path, &fru_size);
+  ret = bic_read_fruid(slot_id, fru_id, fruid_temp_path, &fru_size);
   if (ret) {
-    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid returns %d, fru_size: %d\n", ret, fru_size);
+    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid slot%d dev=%d"
+           " returns %d, fru_size: %d\n", slot_id, fru_id, ret, fru_size);
   }
 
   rename(fruid_temp_path, fruid_path);
@@ -145,16 +151,20 @@ main (int argc, char * const argv[])
   int ret;
   int pid_file;
   uint8_t slot_id;
+  uint8_t fru_id;
   uint8_t self_test_result[2]={0};
   int retry = 0;
   int max_retry = 3;
   char path[128];
+  uint8_t max_fruid = 0;
 
   if (argc != 2) {
     return -1;
   }
 
   slot_id = atoi(argv[1]);
+
+  pal_get_num_devs(slot_id, &max_fruid);
 
   sprintf(path, BIC_CACHED_PID, slot_id);
   pid_file = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -177,33 +187,36 @@ main (int argc, char * const argv[])
     sleep(5);
   } while (ret != 0);
 
-  // Get Server FRU
-  do {
-    if (fruid_cache_init(slot_id) == 0)
-      break;
-
-    retry++;
-    sleep(1);
-  } while (retry < max_retry);
-
-  if (retry == max_retry)
-    syslog(LOG_CRIT, "Fail on getting Slot%u FRU", slot_id);
-
   retry = 0;
   do {
     ret = sdr_cache_init(slot_id);
     retry++;
     sleep(1);
   } while ((ret != 0) && (retry < MAX_RETRY));
-  if (retry == MAX_RETRY) {   // if exceed 3 mins, exit this step
+  if (ret != 0) {   // if exceed 3 mins, exit this step
     syslog(LOG_CRIT, "Fail on getting Slot%u SDR", slot_id);
-  } 
+  }
+
+  // Get Server FRU
+  for (fru_id = 0;fru_id <= max_fruid; fru_id++) {
+    retry = 0;
+    do {
+      if (fruid_cache_init(slot_id,fru_id) == 0)
+        break;
+
+        retry++;
+        sleep(1);
+    } while (retry < max_retry);
+
+    if (retry == max_retry)
+      syslog(LOG_CRIT, "Fail on getting Slot%u FRU", slot_id);
+  }
 
   ret = pal_unflock_retry(pid_file);
   if (ret == -1) {
    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
   }
-  
+
   close(pid_file);
   remove(path);
   return 0;

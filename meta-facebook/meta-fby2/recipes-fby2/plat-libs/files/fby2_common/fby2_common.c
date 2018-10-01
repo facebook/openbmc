@@ -121,6 +121,45 @@ fby2_common_fru_id(char *str, uint8_t *fru) {
   return 0;
 }
 
+int
+fby2_common_dev_id(char *str, uint8_t *dev) {
+
+  if (!strcmp(str, "all")) {
+    *dev = 0;
+  } else if (!strcmp(str, "device1")) {
+    *dev = 1;
+  } else if (!strcmp(str, "device2")) {
+    *dev = 2;
+  } else if (!strcmp(str, "device3")) {
+    *dev = 3;
+  } else if (!strcmp(str, "device4")) {
+    *dev = 4;
+  } else if (!strcmp(str, "device5")) {
+    *dev = 5;
+  } else if (!strcmp(str, "device6")) {
+    *dev = 6;
+  } else if (!strcmp(str, "device7")) {
+    *dev = 7;
+  } else if (!strcmp(str, "device8")) {
+    *dev = 8;
+  } else if (!strcmp(str, "device9")) {
+    *dev = 9;
+  } else if (!strcmp(str, "device10")) {
+    *dev = 10;
+  } else if (!strcmp(str, "device11")) {
+    *dev = 11;
+  } else if (!strcmp(str, "device12")) {
+    *dev = 12;
+  } else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fby2_common_dev_id: Wrong fru id");
+#endif
+    return -1;
+  }
+
+  return 0;
+}
+
 static int
 trigger_hpr(uint8_t fru) {
   char key[MAX_KEY_LEN];

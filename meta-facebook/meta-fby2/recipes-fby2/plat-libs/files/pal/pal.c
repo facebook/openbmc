@@ -47,6 +47,10 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
+#ifdef CONFIG_FBY2_GPV2
+#define FBY2_MAX_NUM_DEVS 12
+#endif
+
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
@@ -139,6 +143,10 @@ const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N,
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
+
+#ifdef CONFIG_FBY2_GPV2
+const char pal_dev_list[] = "all, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11, device12";
+#endif
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
@@ -792,6 +800,7 @@ int pal_fruid_init(uint8_t slot_id) {
       switch(fby2_get_slot_type(slot_id))
       {
          case SLOT_TYPE_SERVER:
+         case SLOT_TYPE_GPV2:
            // Do not access EEPROM
            break;
          case SLOT_TYPE_CF:
@@ -2049,6 +2058,27 @@ pal_get_num_slots(uint8_t *num) {
 }
 
 int
+pal_get_num_devs(uint8_t slot, uint8_t *num) {
+
+  switch (fby2_get_slot_type(slot)) {
+#ifdef CONFIG_FBY2_GPV2
+    case SLOT_TYPE_GPV2:
+      *num = FBY2_MAX_NUM_DEVS;
+      break;
+#endif
+    case SLOT_TYPE_SERVER:
+    case SLOT_TYPE_CF:
+    case SLOT_TYPE_GP:
+    case SLOT_TYPE_NULL:
+    default:
+      *num = 0;
+      break;
+  }
+
+  return 0;
+}
+
+int
 pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status) {
   int val_latch;
   char path[64] = {0};
@@ -3131,6 +3161,12 @@ pal_get_fru_id(char *str, uint8_t *fru) {
 }
 
 int
+pal_get_dev_id(char *str, uint8_t *fru) {
+
+  return fby2_common_dev_id(str, fru);
+}
+
+int
 pal_get_fru_name(uint8_t fru, char *name) {
 
   return fby2_common_fru_name(fru, name);
@@ -3319,6 +3355,11 @@ pal_fruid_write(uint8_t fru, char *path) {
     return _write_nic_fruid(path);
   }
   return bic_write_fruid(fru, 0, path);
+}
+
+int
+pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
+  return bic_write_fruid(fru, dev_id, path);
 }
 
 int
@@ -3688,7 +3729,12 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
 int
 pal_get_fruid_path(uint8_t fru, char *path) {
-  return fby2_get_fruid_path(fru, path);
+  return fby2_get_fruid_path(fru, DEV_NONE, path);
+}
+
+int
+pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
+  return fby2_get_fruid_path(fru, dev_id, path);
 }
 
 int

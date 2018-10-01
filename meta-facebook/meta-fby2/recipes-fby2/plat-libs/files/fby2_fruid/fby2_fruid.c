@@ -69,7 +69,7 @@ fby2_get_nic_mfgid(void) {
 
 /* Populate char path[] with the path to the fru's fruid binary dump */
 int
-fby2_get_fruid_path(uint8_t fru, char *path) {
+fby2_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
   char fname[16] = {0};
 
   switch(fru) {
@@ -98,7 +98,18 @@ fby2_get_fruid_path(uint8_t fru, char *path) {
       return -1;
   }
 
-  sprintf(path, FBY2_FRU_PATH, fname);
+  if ( dev_id == DEV_NONE ) {
+    sprintf(path, FBY2_FRU_PATH, fname);
+    return 0;
+  }
+
+  if ( fru < FRU_SLOT1 && fru > FRU_SLOT4 )
+    return -1;
+
+  if ( dev_id < 1 || dev_id > 12)
+    return -1;
+
+  sprintf(path, FBY2_FRU_DEV_PATH, fname,dev_id);
   return 0;
 }
 
@@ -114,6 +125,7 @@ fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
+        case SLOT_TYPE_GPV2:
         case SLOT_TYPE_NULL:
           return -1;
           break;
@@ -162,6 +174,9 @@ fby2_get_fruid_name(uint8_t fru, char *name) {
           break;
         case SLOT_TYPE_GP:
           sprintf(name, "Glacier Point %d",fru);
+          break;
+        case SLOT_TYPE_GPV2:
+          sprintf(name, "Glacier Point V2 %d",fru);
           break;
         case SLOT_TYPE_NULL:
           sprintf(name, "Empty SLOT %d",fru);

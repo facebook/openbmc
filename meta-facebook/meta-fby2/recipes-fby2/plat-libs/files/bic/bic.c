@@ -85,6 +85,7 @@ typedef struct _sdr_rec_hdr_t {
 
 const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
 
 // Helper Functions
 static void
@@ -194,7 +195,6 @@ _is_bic_ready(uint8_t slot_id) {
   }
 
   sprintf(path, GPIO_VAL, gpio_bic_ready[slot_id]);
-
   if (read_device(path, &val)) {
     return 0;
   }
@@ -216,7 +216,27 @@ _is_slot_12v_on(uint8_t slot_id) {
   }
 
   sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
+  if (read_device(path, &val)) {
+    return 0;
+  }
 
+  if (val == 0x0) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
+static uint8_t
+_is_slot_power_on(uint8_t slot_id) {
+  int val;
+  char path[64] = {0};
+
+  if (slot_id < 1 || slot_id > 4) {
+    return 0;
+  }
+
+  sprintf(path, GPIO_VAL, gpio_power_en[slot_id]);
   if (read_device(path, &val)) {
     return 0;
   }
@@ -1515,11 +1535,11 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
 #if defined(CONFIG_FBY2_RC)
 static int
 check_bios_image_rc(uint8_t slot_id, int fd, long size) {
-  
+
   uint8_t sig_rc[] = { 0x52, 0x43, 0x5f, 0x55, 0x45, 0x46, 0x49 };
   uint8_t buf[16] = {0}; 
   uint8_t sig_size = sizeof(sig_rc);
- 
+
   if (size < RC_BIOS_IMAGE_SIZE)
     return -1;
 
@@ -1530,7 +1550,7 @@ check_bios_image_rc(uint8_t slot_id, int fd, long size) {
 
   if (memcmp(buf, sig_rc, sig_size))
     return -1;
-  
+
   lseek(fd, 0, SEEK_SET);
   return 0;
 }
@@ -1561,7 +1581,7 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
 #endif
   }
 #endif
-  
+
   if (size < BIOS_VER_REGION_SIZE)
     return -1;
 
@@ -1871,6 +1891,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   }
 
   if (comp == UPDATE_CPLD) {
+    printf("\n");
     for (i = 0; i < 60; i++) {  // wait 60s at most
       rc = _get_cpld_update_progress(slot_id, buf);
       if (rc) {
@@ -2569,6 +2590,10 @@ bic_set_pcie_config(uint8_t slot_id, uint8_t config) {
   uint8_t rlen = 0;
   uint8_t rbuf[16] = {0};
   int ret;
+
+  if (_is_slot_power_on(slot_id)) {
+    return 0;
+  }
 
   tbuf[3] = config;
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_PCIE_CONFIG, tbuf, 0x04, rbuf, &rlen);

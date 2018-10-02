@@ -30,7 +30,7 @@
 
 for i in 1 2 3 4
 do
-  if [ $(get_server_type $i) == "2" ] ; then  # EP
+  if [[ $(get_server_type $i) == "2" && $(fby2_is_server_on $i) == "0" ]] ; then  # EP
     config=0
     if [ $(($i%2)) == 0 ] ; then
       slot_type=$(get_slot_type $(($i-1)))

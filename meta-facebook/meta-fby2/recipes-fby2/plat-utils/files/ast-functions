@@ -267,13 +267,27 @@ is_bic_ready() {
 }
 
 fby2_is_server_on() {
-    local curr_pwr_cpu
-    curr_pwr_cpu=$(python -c 'import sys; sys.path.append("/usr/local/fbpackages/utils"); import power_util; print power_util.get_pwr_cpu()')
-    if [ $curr_pwr_cpu == "1" ]; then
-        echo 1
-    else
-        echo 0
-    fi
+  local pwr_sts
+
+  case $1 in
+   1)
+    pwr_sts=$(gpio_get I0)
+    ;;
+   2)
+    pwr_sts=$(gpio_get I1)
+    ;;
+   3)
+    pwr_sts=$(gpio_get I2)
+    ;;
+   4)
+    pwr_sts=$(gpio_get I3)
+    ;;
+   *)
+    pwr_sts="0"
+    ;;
+  esac
+
+  echo $pwr_sts
 }
 
 gpio_get_val() {

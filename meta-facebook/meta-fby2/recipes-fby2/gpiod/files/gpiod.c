@@ -290,32 +290,6 @@ init_gpio_pins() {
 
 }
 
-#if defined(CONFIG_FBY2_EP)
-static void
-_set_pcie_config(uint8_t slot_id) {  // workaround for the issue that cannot access CPLD in S5
-  int ret, retry = 2;
-  int pair_set_type;
-  uint8_t server_type, config;
-
-  while (retry > 0) {
-    ret = bic_get_server_type(slot_id, &server_type);
-    if (!ret) {
-      if (server_type == SERVER_TYPE_EP) {
-        pair_set_type = pal_get_pair_slot_type(slot_id);
-        config = (pair_set_type == TYPE_CF_A_SV) ? 0x2 : (pair_set_type == TYPE_GP_A_SV) ? 0x1 : 0x0;
-        ret = bic_set_pcie_config(slot_id, config);
-        if (ret == 0)
-          break;
-      } else {
-        break;
-      }
-    }
-    retry--;
-    msleep(100);
-  }
-}
-#endif
-
 /* Monitor the gpio pins */
 static void *
 gpio_monitor_poll(void *ptr) {
@@ -342,12 +316,6 @@ gpio_monitor_poll(void *ptr) {
     syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for fru %u", fru);
 #endif
   }
-
-#if defined(CONFIG_FBY2_EP)
-  if (GETBIT(o_pin_val, PWRGD_COREPWR)) {
-    _set_pcie_config(fru);
-  }
-#endif
 
   //Init POST status
   gpios[FM_BIOS_POST_COMPT_N].status = GETBIT(o_pin_val, FM_BIOS_POST_COMPT_N);
@@ -451,10 +419,6 @@ gpio_monitor_poll(void *ptr) {
               pal_set_fru_post(fru,0);
             }
             syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
-
-#if defined(CONFIG_FBY2_EP)
-            _set_pcie_config(fru);
-#endif
           } else if (i == FM_SMI_BMC_N) {
             smi_count_start[fru-1] = false;
           } else if (i == FM_BIOS_POST_COMPT_N) {

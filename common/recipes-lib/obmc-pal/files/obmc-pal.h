@@ -131,6 +131,10 @@ enum {
   OS_BOOT = 0x1F,
 };
 
+enum {
+  UNIFIED_PCIE_ERR = 0x0,
+};
+
 // Enum for get the event sensor name in processing SEL
 enum {
   SYSTEM_EVENT = 0xE9,

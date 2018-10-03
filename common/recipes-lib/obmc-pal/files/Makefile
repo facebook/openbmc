@@ -17,12 +17,14 @@
 
 lib: libpal.so
 
-CFLAGS += -Wall -Werror
+C_SRCS := $(SOURCES)
+C_OBJS := ${C_SRCS:.c=.o}
 
-libpal.so: obmc-pal.c obmc-sensor.c
-	$(CC) $(CFLAGS) -fPIC -c -o obmc-pal.o obmc-pal.c
-	$(CC) $(CFLAGS) -fPIC -c -o obmc-sensor.o obmc-sensor.c
-	$(CC) -shared -o libpal.so obmc-pal.o obmc-sensor.o -lc $(LDFLAGS)
+libpal.so: $(C_OBJS)
+	$(CC) -shared -o libpal.so $^ $(LDFLAGS) -lc -lrt -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive
+
+$(C_SRCS:.c=.d):%.d:%.c
+	$(CC) $(CFLAGS) $< >$@
 
 .PHONY: clean
 

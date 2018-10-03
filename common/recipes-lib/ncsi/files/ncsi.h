@@ -9,6 +9,10 @@
 #define MAX_PAYLOAD 128 /* maximum payload size*/
 #define MAX_RESPONSE_PAYLOAD 256 /* maximum payload size*/
 
+// NCSI Reset time. NCSI Spec specfies NIC to finish reset within 2second max,
+// here we add an extra 1 sec to provide extra buffer
+#define NCSI_RESET_TIMEOUT  3
+
 
 #define NCSI_GET_CONTROLLER_PACKET_STATISTICS 0x18
 #define NCSI_GET_NCSI_STATISTICS              0x19
@@ -70,6 +74,21 @@ typedef struct {
   Other_Indications other_indications;
   unsigned long oem_link_status;
 } __attribute__((packed)) Get_Link_Status_Response;
+
+
+#define RESP_COMMAND_COMPLETED   0x0000
+#define RESP_COMMAND_FAILED      0x0001
+#define RESP_COMMAND_UNAVAILABLE 0x0002
+#define RESP_COMMAND_UNSUPPORTED 0x0003
+
+#define REASON_NO_ERROR             0x0000
+#define REASON_INTF_INIT_REQD       0x0001
+#define REASON_PARAM_INVALID        0x0002
+#define REASON_CHANNEL_NOT_RDY      0x0003
+#define REASON_PKG_NOT_RDY          0x0004
+#define REASON_INVALID_PAYLOAD_LEN  0x0005
+#define REASON_UNKNOWN_CMD_TYPE     0x7FFF
+
 
 /* NC-SI Response Packet */
 typedef struct {
@@ -150,7 +169,7 @@ typedef struct {
 } __attribute__((packed)) NCSI_Passthrough_Stats_Response;
 
 int ncsi_init_if(int);
-void handle_ncsi_config(void);
+void handle_ncsi_config(int delay);
 int getMacAddr(int *values);
 int checkValidMacAddr(int *value);
 int check_ncsi_status(void);

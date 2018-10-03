@@ -154,7 +154,7 @@ free_and_exit:
 
 
 
-static void
+static int
 process_NCSI_resp(NCSI_NL_RSP_T *buf)
 {
   char logbuf[512];
@@ -168,11 +168,36 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
   Other_Indications linkOther;
   linkstatus.all32 = ntohl(linkresp->link_status.all32);
   linkOther.all32 = ntohl(linkresp->other_indications.all32);
-
   currentLinkStatus = linkstatus.bits.link_flag;
-  if (currentLinkStatus == prevLinkStatus) {
-    return;
+
+  unsigned short cmd_response_code = ntohs(resp->Response_Code);
+  unsigned short cmd_reason_code   = ntohs(resp->Reason_Code);
+  /* chekc for command completion before processing
+     response payload */
+  if ( cmd_response_code != RESP_COMMAND_COMPLETED) {
+      syslog(LOG_WARNING, "NCSI link failed,"
+             " Cmd Response 0x%x, Reason 0x%x",
+             cmd_response_code, cmd_reason_code);
+     /* if command fails for a specific signature (i.e. NCSI interface failure)
+        try to re-init NCSI interface */
+     if (  (cmd_response_code == RESP_COMMAND_UNAVAILABLE)
+          &&
+           ((cmd_reason_code == REASON_INTF_INIT_REQD)  ||
+            (cmd_reason_code == REASON_CHANNEL_NOT_RDY)  ||
+            (cmd_reason_code == REASON_PKG_NOT_RDY))
+        ) {
+      syslog(LOG_WARNING, "NCSI link failed,"
+             " Cmd Response 0x%x, Reason 0x%x, re-init NCSI interface",
+             cmd_response_code, cmd_reason_code);
+      handle_ncsi_config(0);
+      return NCSI_IF_REINIT;
+    }
+
+    /* for other types of command fallures, ignore for now */
+    return 0;
   } else {
+    if (currentLinkStatus != prevLinkStatus)
+    {
       // log link status change
       if (currentLinkStatus) {
         i += sprintf(logbuf, "NIC link up:");
@@ -190,11 +215,10 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
       i += sprintf(logbuf + i, "OEM:0x%lx ", (unsigned long)ntohl(linkresp->oem_link_status));
       syslog(LOG_WARNING, "%s", logbuf);
       prevLinkStatus = currentLinkStatus;
+    }
+    return 0;
   }
 }
-
-
-
 
 
 // Thread to handle the incoming responses
@@ -237,12 +261,13 @@ ncsi_rx_handler(void *sfd) {
               rcv_buf->payload_length,
               rcv_buf->msg_payload[offsetof(AEN_Packet, AEN_Type)]);
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
-      if (ret == NCSI_IF_REINIT) {
-        send_registration_msg(sfd);
-        enable_aens();
-      }
     } else {
-      process_NCSI_resp(rcv_buf);
+      ret = process_NCSI_resp(rcv_buf);
+    }
+
+    if (ret == NCSI_IF_REINIT) {
+      send_registration_msg(sfd);
+      enable_aens();
     }
   }
 

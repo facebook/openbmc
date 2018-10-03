@@ -58,15 +58,13 @@ ncsi_init_if(int inv_addr)
 //    1. ifdown eth0;ifup eth0    # re-init NIC NC-SI interface
 //    2. restart ncsid
 void
-handle_ncsi_config(void)
+handle_ncsi_config(int delay)
 {
-// NCSI Reset time. NCSI Spec specfies NIC to finish reset within 2second max,
-// here we add an extra 1 sec to provide extra buffer
-#define NCSI_RESET_TIMEOUT  3
-
-  // Give NIC some time to finish its reset opeartion before  BMC sends
-  // NCSI commands to re-initialize the interface
-  sleep(NCSI_RESET_TIMEOUT);
+  if (delay) {
+    // Give NIC some time to finish its reset opeartion before  BMC sends
+    // NCSI commands to re-initialize the interface
+    sleep(delay);
+  }
 
   ncsi_init_if(0);
 }

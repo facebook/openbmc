@@ -9,6 +9,7 @@ LICENSE = "LGPLv2"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1;md5=1a6d268fd218675ffea8be556788b780"
 
 BBCLASSEXTEND = "native"
+CFLAGS += "-D__MACHINE__=${MACHINE}"
 
 SRC_URI = "file://obmc-pal.h \
            file://obmc-pal.c \

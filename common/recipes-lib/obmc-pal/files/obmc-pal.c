@@ -33,6 +33,10 @@
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
+#define _STRINGIFY(bw) #bw
+#define STRINGIFY(bw) _STRINGIFY(bw)
+#define MACHINE STRINGIFY(__MACHINE__)
+
 // PAL functions
 int __attribute__((weak))
 pal_is_bmc_por(void)
@@ -299,18 +303,21 @@ pal_set_cpu_mem_threshold(const char* threshold_path)
 int __attribute__((weak))
 pal_get_platform_name(char *name)
 {
+  strcpy(name, MACHINE);
   return PAL_EOK;
 }
 
 int __attribute__((weak))
 pal_get_num_slots(uint8_t *num)
 {
+  *num = 0;
   return PAL_EOK;
 }
 
 int __attribute__((weak))
 pal_get_num_devs(uint8_t slot, uint8_t *num)
 {
+  *num = 0;
   return PAL_EOK;
 }
 
@@ -365,19 +372,30 @@ pal_set_hb_led(uint8_t status)
 int __attribute__((weak))
 pal_get_fru_list(char *list)
 {
+  *list = '\0';
   return PAL_EOK;
 }
 
 int __attribute__((weak))
 pal_get_fru_id(char *str, uint8_t *fru)
 {
-  return PAL_EOK;
+  unsigned int _fru;
+  if (sscanf(str, "fru%u", &_fru) == 1) {
+    *fru = (uint8_t)_fru;
+    return PAL_EOK;
+  }
+  return PAL_ENOTSUP;
 }
 
 int __attribute__((weak))
 pal_get_dev_id(char *str, uint8_t *fru)
 {
-  return PAL_EOK;
+  unsigned int _fru;
+  if (sscanf(str, "fru%u", &_fru) == 1) {
+    *fru = (uint8_t)_fru;
+    return PAL_EOK;
+  }
+  return PAL_ENOTSUP;
 }
 
 int __attribute__((weak))
@@ -400,25 +418,25 @@ pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
 int __attribute__((weak))
 pal_get_fruid_path(uint8_t fru, char *path)
 {
-  return PAL_EOK;
+  return PAL_ENOTSUP;
 }
 
 int __attribute__((weak))
 pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path)
 {
-  return PAL_EOK;
+  return PAL_ENOTSUP;
 }
 
 int __attribute__((weak))
 pal_get_fruid_eeprom_path(uint8_t fru, char *path)
 {
-  return PAL_EOK;
+  return PAL_ENOTSUP;
 }
 
 int __attribute__((weak))
 pal_get_fruid_name(uint8_t fru, char *name)
 {
-  return PAL_EOK;
+  return PAL_ENOTSUP;
 }
 
 int __attribute__((weak))

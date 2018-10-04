@@ -98,7 +98,7 @@ def generalTypeTest(cmd_bmc, data, testName, testPath="/common/"):
         print(output[0].decode().split('\n')[0].rstrip())
     return
 
-def fscdTest(cmd_bmc, data, testName, testPath="/common/"):
+def platformOnlyTest(cmd_bmc, data, testName, testPath="/common/"):
     """
     Run testName.py with command line arguments on the target BMC
     """
@@ -331,9 +331,6 @@ if __name__ == "__main__":
         if "powerCycleSWTest.py" in data:
             if data["powerCycleSWTest.py"] == 'yes':
                 powerCycleSWTest(cmd_bmc, data, hostnameBMC, hostnameMS)
-        if "fscd_test.py" in data:
-            if data["fscd_test.py"][0] == 'yes':
-                fscdTest(cmd_bmc, data, "fscd_test.py", data["fscd_test.py"][1]["testfile"])
         if "watchdogResetTest.py" in data:
             if HEADNODE:
                 if data["watchdogResetTest.py"][0] == 'yes':
@@ -343,3 +340,10 @@ if __name__ == "__main__":
                 if data["watchdogResetTest.py"] == 'yes':
                     generalTypeBMCTest(hostnameBMC, "watchdogResetTest.py",
                                        data)
+        # Platform specific tests
+        if "fscd_test.py" in data:
+            if data["fscd_test.py"][0] == 'yes':
+                platformOnlyTest(cmd_bmc, data, "fscd_test.py", data["fscd_test.py"][1]["testfile"])
+        if "psumuxmon_test.py" in data:
+            if data["psumuxmon_test.py"][0] == 'yes':
+                platformOnlyTest(cmd_bmc, data, "psumuxmon_test.py", data["psumuxmon_test.py"][1]["testfile"])

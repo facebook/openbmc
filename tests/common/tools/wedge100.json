@@ -47,5 +47,10 @@
     "fscd_test.py":["yes",
     {
       "testfile":"/wedge100/unittests/"
+    }],
+    "psumuxmon_test.py":["yes",
+    {
+      "testfile":"/wedge100/unittests/"
     }]
+
 }

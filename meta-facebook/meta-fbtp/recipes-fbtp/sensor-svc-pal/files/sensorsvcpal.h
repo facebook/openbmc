@@ -32,18 +32,6 @@ extern "C" {
 #include <stdbool.h>
 
 enum {
-  SERVER_POWER_OFF,
-  SERVER_POWER_ON,
-  SERVER_POWER_CYCLE,
-  SERVER_POWER_RESET,
-  SERVER_GRACEFUL_SHUTDOWN,
-  /* Not supported in FBTP */
-  SERVER_12V_OFF,
-  SERVER_12V_ON,
-  SERVER_12V_CYCLE,
-};
-
-enum {
   FRU_ALL   = 0,
   FRU_MB = 1,
   FRU_NIC = 2,

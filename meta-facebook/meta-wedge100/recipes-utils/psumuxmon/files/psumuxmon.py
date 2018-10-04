@@ -20,19 +20,44 @@
 import subprocess
 import time
 import syslog
+import re
+import os
 
-pcard_vin = "/sys/class/i2c-adapter/i2c-7/7-006f/in1_input"
+pcard_vin_hwmon = "/sys/class/i2c-adapter/i2c-7/7-006f/hwmon/hwmon*/in1_input"
+pcard_vin = None
+
 mux_bus = 7
 mux_addr = 0x70
 check_interval = 600
 
 
+def get_hwmon_source():
+    pcard_vin = None
+    result = re.split("hwmon", pcard_vin_hwmon)
+    if os.path.isdir(result[0]):
+        construct_hwmon_path = result[0] + "hwmon"
+        x = None
+        for x in os.listdir(construct_hwmon_path):
+            if x.startswith('hwmon'):
+                construct_hwmon_path = construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+                if os.path.exists(construct_hwmon_path):
+                    pcard_vin = construct_hwmon_path
+                    syslog.syslog(syslog.LOG_INFO, "Reading ltc pcard_vin={}".format(pcard_vin))
+                    return pcard_vin
+
+
 def pcard_read(inp):
     try:
+        # After BMC comes up this hwmon device is setup once and we can cache
+        # that data for the first time instead of determining the source each
+        # time
+        if not inp:
+            inp = get_hwmon_source()
         with open(inp, 'r') as f:
             val = int(f.read())
             return val
-    except:
+    except Exception as e:
+        syslog.syslog(syslog.LOG_WARNING, "Reading ltc failed with exception e={}".format(e))
         return None
 
 

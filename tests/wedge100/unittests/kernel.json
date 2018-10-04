@@ -7,5 +7,6 @@
   "fancpld",
   "com_e_driver",
   "ltc4151",
-  "pmbus"
+  "pmbus",
+  "pfe1100"
 ]

@@ -39,7 +39,9 @@ i2c_device_add 6 0x51 24c64
 i2c_device_add 7 0x50 24c02         # BMC PHY EEPROM
 i2c_device_add 7 0x51 24c64         # PFE1100 power supply EEPROM
 i2c_device_add 7 0x52 24c64         # PFE1100 power supply EEPROM
+i2c_device_add 7 0x70 pca9548       # mux before the power supplies
 i2c_device_add 7 0x6f ltc4151
+# 0x70 is the mux for ltc power supply in DC deployment
 
 # Bus 8
 i2c_device_add 8 0x33 fancpld
@@ -51,3 +53,7 @@ i2c_device_add 8 0x49 tmp75
 
 # Bus 12
 i2c_device_add 12 0x31 syscpld
+
+# Bus 14-21 from pca9548 mux_bus
+i2c_device_add 14 0x5a pfe1100
+i2c_device_add 15 0x59 pfe1100

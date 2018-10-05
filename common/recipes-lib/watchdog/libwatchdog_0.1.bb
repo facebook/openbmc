@@ -16,26 +16,6 @@
 # Boston, MA 02110-1301 USA
 
 SUMMARY = "Watchdog Control Library"
-DESCRIPTION = "library for controlling watchdog timer in kernel 4.1"
-SECTION = "base"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://watchdog.c;beginline=4;endline=18;md5=4008d12a82cf78c337e6d8df3db6ff86"
+DESCRIPTION = "watchdog control library for apps running in kernel 4.1"
 
-SRC_URI = "file://Makefile \
-           file://watchdog.c \
-           file://watchdog.h \
-          "
-
-S = "${WORKDIR}"
-
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libwatchdog.so ${D}${libdir}/libwatchdog.so
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 watchdog.h ${D}${includedir}/openbmc/watchdog.h
-}
-
-FILES_${PN} = "${libdir}/libwatchdog.so"
-FILES_${PN}-dev = "${includedir}/openbmc/watchdog.h"
+include libwatchdog.inc

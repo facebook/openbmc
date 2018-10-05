@@ -29,7 +29,7 @@
 #include <sys/ioctl.h>
 #include <linux/watchdog.h>
 
-#include "wdt-ctrl.h"
+#include "watchdog.h"
 
 #define WDT_DEV_FILE          "/dev/watchdog"
 #define WDT_KICK_KEY          "k" /* could be any character except 'V' */

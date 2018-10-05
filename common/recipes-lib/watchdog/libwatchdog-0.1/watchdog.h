@@ -58,7 +58,7 @@ extern "C" {
 
 /*
  * Let's define open_watchdog() so it's easier to switch between old and
- * new watchdog libraries (libwatchdog vs. libwdt-ctrl).
+ * new watchdog libraries.
  */
 #define open_watchdog(mode, interval) start_watchdog(mode)
 

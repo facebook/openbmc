@@ -17,5 +17,6 @@
 
 board_routes = [
     '/api/sys/usb2i2c_reset',
-    '/api/sys/i2cflush'
+    '/api/sys/i2cflush',
+    '/api/sys/modbus_registers',
 ]

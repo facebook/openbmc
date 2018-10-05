@@ -185,11 +185,6 @@ class commonApp_Handler:
     def rest_fcpresent_hdl(self,request):
         return self.helper_rest_fcpresent_hdl(request)
 
-
-    @common_force_async
-    def modbus_registers_hdl(self,request):
-        return self.helper_modbus_registers_hdl(request)
-
     # Handler for psu_update resource endpoint
     def helper_psu_update_hdl(self,request):
         return web.json_response(rest_psu_update.get_jobs(), dumps=dumps_bytestr)

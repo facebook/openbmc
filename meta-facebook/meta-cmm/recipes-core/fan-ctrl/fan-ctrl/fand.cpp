@@ -62,11 +62,7 @@
 #include <fcntl.h>
 #include <openbmc/obmc-i2c.h>
 #endif
-#ifdef USE_WDT_CTRL_LIB
-#include <openbmc/wdt-ctrl.h>
-#else
 #include <openbmc/watchdog.h>
-#endif
 
 /* Sensor definitions */
 #define INTERNAL_TEMPS(x) (x)

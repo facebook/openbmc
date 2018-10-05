@@ -22,15 +22,12 @@ LIC_FILES_CHKSUM = "file://fand.cpp;beginline=4;endline=16;md5=77b71fafe1f586d89
 SRC_URI += "file://setup-fan.sh \
            "
 
-WATCHDOG_LIB = "wdt-ctrl"
-WATCHDOG_CXXFLAGS = "-DUSE_WDT_CTRL_LIB"
+LDFLAGS += " -lwatchdog"
+RDEPENDS_${PN} += " libwatchdog"
 
-LDFLAGS += " -l${WATCHDOG_LIB}"
-RDEPENDS_${PN} += " lib${WATCHDOG_LIB}"
+CXXFLAGS_prepend = "-DCONFIG_GALAXY100 "
 
-CXXFLAGS_prepend = "-DCONFIG_GALAXY100 ${WATCHDOG_CXXFLAGS}"
-
-DEPENDS_append = " update-rc.d-native obmc-i2c lib${WATCHDOG_LIB}"
+DEPENDS_append = " update-rc.d-native obmc-i2c libwatchdog"
 
 do_install_append() {
   install -d ${D}${sysconfdir}/init.d

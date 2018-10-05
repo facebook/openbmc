@@ -55,6 +55,7 @@ IMAGE_INSTALL += " \
   ncsid \
   vboot-utils \
   sensordump \
+  enclosure-util \
   "
 
 IMAGE_FEATURES += " \

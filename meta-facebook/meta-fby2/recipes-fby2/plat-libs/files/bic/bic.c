@@ -206,8 +206,8 @@ _is_bic_ready(uint8_t slot_id) {
   }
 }
 
-static uint8_t
-_is_slot_12v_on(uint8_t slot_id) {
+int
+bic_is_slot_12v_on(uint8_t slot_id) {
   int val;
   char path[64] = {0};
 
@@ -227,8 +227,8 @@ _is_slot_12v_on(uint8_t slot_id) {
   }
 }
 
-static uint8_t
-_is_slot_power_on(uint8_t slot_id) {
+int
+bic_is_slot_power_en(uint8_t slot_id) {
   int val;
   char path[64] = {0};
 
@@ -799,7 +799,7 @@ force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
   uint32_t offset = 0, last_offset = 0, dsize;
   struct rlimit mqlim;
 
-  if(!_is_slot_12v_on(slot_id)) {
+  if (!bic_is_slot_12v_on(slot_id)) {
     return -2;
   }
 
@@ -2536,7 +2536,7 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
   do {
     if (read_device(key, &server_type) == 0)
       break;
-    syslog(LOG_WARNING,"fby2_get_slot_type failed");
+    syslog(LOG_WARNING,"fby2_get_server_type failed");
     msleep(10);
   } while (--retries);
 
@@ -2557,7 +2557,7 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
         }
         break;
       }
-    }while ((--retries));
+    } while ((--retries));
 
     if (retries == 0) {
       *type = SERVER_TYPE_NONE;
@@ -2591,7 +2591,7 @@ bic_set_pcie_config(uint8_t slot_id, uint8_t config) {
   uint8_t rbuf[16] = {0};
   int ret;
 
-  if (_is_slot_power_on(slot_id)) {
+  if (bic_is_slot_power_en(slot_id)) {
     return 0;
   }
 
@@ -2617,4 +2617,35 @@ int get_imc_version(uint8_t slot, uint8_t *ver) {
     ver[i] = str[i] - '0';
   }
   return 0;
+}
+
+int
+bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt) {
+  uint8_t tbuf[32];
+  uint8_t tlen = 3, rlen = 0;
+  int ret;
+
+  tbuf[0] = bus;
+  tbuf[1] = addr;
+  tbuf[2] = rcnt;
+  if (wcnt) {
+    memcpy(&tbuf[3], wbuf, wcnt);
+    tlen += wcnt;
+  }
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  return ret;
+}
+
+int
+bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis) {
+  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = dis;  // 1: disable sensor monitor; 0: enable sensor monitor
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DISABLE_SEN_MON, tbuf, 4, rbuf, &rlen);
+
+  return ret;
 }

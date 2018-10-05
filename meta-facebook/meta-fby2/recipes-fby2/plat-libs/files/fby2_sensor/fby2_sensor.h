@@ -465,6 +465,8 @@ int fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int fby2_get_slot_type(uint8_t fru);
 int fby2_get_server_type(uint8_t fru, uint8_t *type);
 int fby2_get_server_type_directly(uint8_t fru, uint8_t *type);
+int fby2_mux_control(char *device, uint8_t addr, uint8_t channel);
+int fby2_disable_gp_m2_monior(uint8_t slot_id, uint8_t dis);
 int fby2_check_hsc_sts_iout(uint8_t mask);
 int fby2_check_hsc_fault(void);
 

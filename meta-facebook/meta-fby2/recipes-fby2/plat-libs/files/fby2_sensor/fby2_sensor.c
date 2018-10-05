@@ -611,8 +611,6 @@ rc_dimm_location_info rc_dimm_location_list[] = {
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static ipmi_sensor_reading_t g_sread[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
-
 void
 msleep(int msec) {
   struct timespec req;
@@ -750,31 +748,6 @@ fby2_get_server_type_directly(uint8_t fru, uint8_t *type) {
 }
 
 int
-fby2_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
-
-  int val;
-  char path[64] = {0};
-
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
-  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
-
-  if (read_device(path, &val)) {
-    return -1;
-  }
-
-  if (val == 0x1) {
-    *status = 1;
-  } else {
-    *status = 0;
-  }
-
-  return 0;
-}
-
-static int
 fby2_mux_control(char *device, uint8_t addr, uint8_t channel) {          //PCA9848
   int dev;
   int ret;
@@ -821,11 +794,39 @@ fby2_mux_control(char *device, uint8_t addr, uint8_t channel) {          //PCA98
 }
 
 static int
+read_nvme_temp(char *device, uint8_t *temp) {
+  int dev, ret, retry = 3;
+  uint8_t wbuf[4], rbuf[4];
+
+  dev = open(device, O_RDWR);
+  if (dev < 0) {
+    return -1;
+  }
+
+  while ((--retry) >= 0) {
+    wbuf[0] = 0x03;
+    ret = i2c_rdwr_msg_transfer(dev, 0xD4, wbuf, 1, rbuf, 1);
+    if (!ret)
+      break;
+    if (retry)
+      msleep(10);
+  }
+  close(dev);
+  if (ret) {
+    return -1;
+  }
+
+  *temp = rbuf[0];
+  return 0;
+}
+
+static int
 read_m2_temp_on_gp(char *device, uint8_t sensor_num, float *value) {
-  uint8_t mux_channel;
   int ret;
+  uint8_t mux_channel;
   uint8_t temp;
-  switch(sensor_num) {
+
+  switch (sensor_num) {
     case DC_SENSOR_NVMe1_CTEMP:
       mux_channel = MUX_CH_1;
       break;
@@ -848,17 +849,23 @@ read_m2_temp_on_gp(char *device, uint8_t sensor_num, float *value) {
 
   // control I2C multiplexer on GP to target channel
   ret = fby2_mux_control(device, I2C_DC_MUX_ADDR, mux_channel);
-  if(ret < 0) {
+  if (ret < 0) {
      syslog(LOG_ERR, "%s: fby2_mux_control failed", __func__);
      return ret;
   }
 
-  ret = nvme_temp_read(device, &temp);
-  if(ret < 0) {
+  ret = read_nvme_temp(device, &temp);
+  if (ret < 0) {
+#ifdef DEBUG
      syslog(LOG_ERR, "%s: nvme_temp_read failed", __func__);
+#endif
      return EER_READ_NA;
   }
-  *value = (float)temp;
+
+  if ((temp >= 0x80) && (temp <= 0xC3)) {
+    return EER_READ_NA;
+  }
+  *value = (temp <= 0x7F) ? (float)temp : -(float)(0x100 - temp);
 
   return 0;
 }
@@ -1187,7 +1194,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       case SERVER_TYPE_EP:
       case SERVER_TYPE_RC:
         break;
-      case SERVER_TYPE_TL:  
+      case SERVER_TYPE_TL:
         for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
           if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
             is_accuracy_sensor = true;
@@ -1296,7 +1303,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       ipmi_device_sensor_t sdata = {0};
       ipmi_device_sensor_reading_t *dev_sensor = (ipmi_device_sensor_reading_t *) rbuf;
       ret = bic_read_device_sensors(fru, dev_id, dev_sensor,&rlen);
-      
+
       if (ret) {
         return ret;
       } else if (rlen == 0) {
@@ -1988,6 +1995,36 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 }
 
 int
+fby2_disable_gp_m2_monior(uint8_t slot_id, uint8_t dis) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+
+  sprintf(key, "slot%u_dis_gp_m2_mon", slot_id);
+  sprintf(value, "%u", dis);
+  if (kv_set(key, value, 0, 0) < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static bool
+check_gp_m2_monior(uint8_t slot_id) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "slot%u_dis_gp_m2_mon", slot_id);
+  if (kv_get(key, value, NULL, 0)) {
+    return true;
+  }
+
+  if (strtoul(value, NULL, 10) == 0)
+    return true;
+
+  return false;
+}
+
+int
 fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
   float volt;
@@ -2065,31 +2102,19 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           if (ret < 0) {
             return ret;
           }
-          
+
           //Glacier Point V2
           /* Check whether the system is 12V off or on */
-          ret = fby2_is_server_12v_on(fru, &status);
-          if (ret < 0) {
-            syslog(LOG_ERR, "fby2_sensor_read: fby2_is_server_12v_on failed");
-            return -1;
-          }
-
-          if (1 != status)
-            return -1;
+          if (!bic_is_slot_12v_on(fru))
+            return EER_READ_NA;
 
           return bic_read_sensor_wrapper(fru, sensor_num, false, value);
 #endif
         case SLOT_TYPE_CF:
           //Crane Flat
           /* Check whether the system is 12V off or on */
-          ret = fby2_is_server_12v_on(fru, &status);
-          if (ret < 0) {
-            syslog(LOG_ERR, "fby2_sensor_read: fby2_is_server_12v_on failed");
-            return -1;
-          }
-
-          if (1 != status)
-            return -1;
+          if (!bic_is_slot_12v_on(fru))
+            return EER_READ_NA;
 
           switch(sensor_num) {
             case DC_CF_SENSOR_OUTLET_TEMP:
@@ -2121,14 +2146,8 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case SLOT_TYPE_GP:
           //Glacier Point
           /* Check whether the system is 12V off or on */
-          ret = fby2_is_server_12v_on(fru, &status);
-          if (ret < 0) {
-            syslog(LOG_ERR, "fby2_sensor_read: fby2_is_server_12v_on failed");
-            return -1;
-          }
-
-          if (1 != status)
-            return -1;
+          if (!bic_is_slot_12v_on(fru))
+            return EER_READ_NA;
 
           switch(sensor_num) {
             case DC_SENSOR_OUTLET_TEMP:
@@ -2159,6 +2178,11 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
             case DC_SENSOR_NVMe4_CTEMP:
             case DC_SENSOR_NVMe5_CTEMP:
             case DC_SENSOR_NVMe6_CTEMP:
+              if (!bic_is_slot_power_en(fru))
+                return EER_READ_NA;
+              if (check_gp_m2_monior(fru) == false)
+                return EER_READ_NA;
+
               if (fru == FRU_SLOT1)
                 snprintf(path, LARGEST_DEVICE_NAME, "%s", I2C_DEV_DC_1);
               else

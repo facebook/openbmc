@@ -337,7 +337,7 @@ typedef struct _bic_gpio_t {
   uint32_t fm_bic_rst_rtcrst:1;
   uint32_t fm_bic_me_rcvr:1;
   uint32_t rst_rsmrst_pch_n:1;
-  uint32_t rsvd:4;
+  uint32_t rsvd:20;
 } bic_gpio_t;
 
 // RC gpio
@@ -446,6 +446,9 @@ typedef union _bic_config_u {
   bic_config_t bits;
 } bic_config_u;
 
+int bic_is_slot_12v_on(uint8_t slot_id);
+int bic_is_slot_power_en(uint8_t slot_id);
+
 int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *id);
@@ -476,6 +479,7 @@ int bic_get_sdr_rsv(uint8_t slot_id, uint16_t *rsv);
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
 
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
+int bic_read_device_sensors(uint8_t slot_id, uint8_t dev_id, ipmi_device_sensor_reading_t *sensor, uint8_t *len);
 
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
@@ -495,6 +499,9 @@ int bic_asd_init(uint8_t slot_id, uint8_t cmd);
 int bic_set_pcie_config(uint8_t slot_id, uint8_t config);
 int get_imc_version(uint8_t slot, uint8_t *ver);
 int force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
+
+int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
+int bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis);
 
 #ifdef __cplusplus
 } // extern "C"

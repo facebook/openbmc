@@ -783,9 +783,11 @@ bic_send:
 
 int
 force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
+#define MAX_CMD_LEN 100
+
   int fd;
   int ifd = -1;
-  char cmd[100] = {0};
+  char cmd[MAX_CMD_LEN] = {0};
   struct stat buf;
   int size;
   uint8_t tbuf[256] = {0};
@@ -798,6 +800,7 @@ force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
   struct rlimit mqlim;
+  uint8_t done = 0;
 
   if (!bic_is_slot_12v_on(slot_id)) {
     return -2;
@@ -1063,6 +1066,7 @@ force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
   }
 
   ret = 0;
+  done = 1;
 
 error_exit:
   // Restore the I2C bus clock to 1M.
@@ -1101,14 +1105,22 @@ error_exit2:
      close(ifd);
   }
 
+  if(done == 1) {    //update successfully
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached %d &", slot_id);   //retrieve SDR data after BIC FW update
+    system(cmd);
+  }
+
   return ret;
 }
 
 static int
 _update_bic_main(uint8_t slot_id, char *path) {
+#define MAX_CMD_LEN 100
+
   int fd;
   int ifd = -1;
-  char cmd[100] = {0};
+  char cmd[MAX_CMD_LEN] = {0};
   struct stat buf;
   int size;
   uint8_t tbuf[256] = {0};
@@ -1121,6 +1133,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
   struct rlimit mqlim;
+  uint8_t done = 0;
 
   syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
 
@@ -1411,6 +1424,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   }
 
   ret = 0;
+  done = 1;
 
 error_exit:
   // Restore the I2C bus clock to 1M.
@@ -1447,6 +1461,12 @@ error_exit2:
 
   if (ifd > 0) {
      close(ifd);
+  }
+
+  if(done == 1) {    //update successfully
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached %d &", slot_id);   //retrieve SDR data after BIC FW update
+    system(cmd);
   }
 
   return ret;
@@ -1537,7 +1557,7 @@ static int
 check_bios_image_rc(uint8_t slot_id, int fd, long size) {
 
   uint8_t sig_rc[] = { 0x52, 0x43, 0x5f, 0x55, 0x45, 0x46, 0x49 };
-  uint8_t buf[16] = {0}; 
+  uint8_t buf[16] = {0};
   uint8_t sig_size = sizeof(sig_rc);
 
   if (size < RC_BIOS_IMAGE_SIZE)

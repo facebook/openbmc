@@ -21,6 +21,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import division
 
+import errno
 import logging
 import os
 import subprocess
@@ -149,6 +150,28 @@ class TestSystem(unittest.TestCase):
                 call(['mount', '-o', 'remount,ro', '/dev/mtdblock{}'.format(i),
                       '/mnt/foo{}'.format(i)])
             )
+
+    @patch.object(subprocess, 'check_call', autospec=True)
+    def test_remove_healthd_reboot(self, mocked_check_call):
+        data = '''{"version":"1.0","heartbeat":{"interval":500},"bmc_cpu_utilization":{"enabled":true,"window_size":120,"monitor_interval":1,"threshold":[{"value":80,"hysteresis":5,"action":["log-critical","bmc-error-trigger"]}]},"bmc_mem_utilization":{"enabled":true,"enable_panic_on_oom":false,"window_size":120,"monitor_interval":1,"threshold":[{"value":60,"hysteresis":5,"action":["log-warning"]},{"value":70,"hysteresis":5,"action":["log-critical","bmc-error-trigger"]},{"value":80,"hysteresis":5,"action":["log-critical","reboot"]}]},"i2c":{"enabled":false,"busses":[0,1,2,3,4,5,6,7,8,9,10,11,12,13]},"ecc_monitoring":{"enabled":false,"ecc_address_log":false,"monitor_interval":2,"recov_max_counter":255,"unrec_max_counter":15,"recov_threshold":[{"value":0,"action":["log-critical","bmc-error-trigger"]},{"value":50,"action":["log-critical"]},{"value":90,"action":["log-critical"]}],"unrec_threshold":[{"value":0,"action":["log-critical","bmc-error-trigger"]},{"value":50,"action":["log-critical"]},{"value":90,"action":["log-critical"]}]},"bmc_health":{"enabled":false,"monitor_interval":2,"regenerating_interval":1200},"verified_boot":{"enabled":false}}'''  # noqa: E501
+        # cov couldn't get a decorator version to surface .write()
+        with patch('system.open', new=mock_open(read_data=data)) as mock_file:
+            system.remove_healthd_reboot(self.logger)
+            self.assertNotIn(call().write('"reboot"'), mock_file.mock_calls)
+        mocked_check_call.assert_called_with(['sv', 'restart', 'healthd'])
+
+    # If this had autospec=True, assert_not_called() wouldn't work
+    # https://bugs.python.org/issue28380.
+    @patch.object(subprocess, 'check_call')
+    @patch.object(system, 'open', create=True)
+    def test_remove_healthd_reboot_no_config(self, mocked_open,
+                                             mocked_check_call):
+        mocked_open.side_effect = IOError(
+            errno.ENOENT, os.strerror(errno.ENOENT), '/etc/healthd-config.json'
+        )
+        system.remove_healthd_reboot(self.logger)
+        self.assertIn(call('/etc/healthd-config.json'), mocked_open.mock_calls)
+        mocked_check_call.assert_not_called()
 
     @patch.object(subprocess, 'check_output')
     def test_flash_too_big(self, mocked_check_output):

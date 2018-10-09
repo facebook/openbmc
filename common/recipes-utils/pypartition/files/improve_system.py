@@ -96,6 +96,9 @@ def improve_system(logger):
         # killed processes.
         system.fuser_k_mount_ro(system.get_writeable_mounted_mtds(), logger)
 
+        # Don't let healthd reboot mid-flash (S166329).
+        system.remove_healthd_reboot(logger)
+
         attempts = 0 if args.dry_run else 3
         for mtd in full_flash_mtds:
             system.flash(attempts, image_file, mtd, logger)

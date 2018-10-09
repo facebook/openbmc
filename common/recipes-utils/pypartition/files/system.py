@@ -242,6 +242,24 @@ def fuser_k_mount_ro(writeable_mounted_mtds, logger):
     add_syslog_handler(logger)
 
 
+def remove_healthd_reboot(logger):
+    try:
+        with open('/etc/healthd-config.json') as conf:
+            d = json.load(conf)
+        for t in d['bmc_mem_utilization']['threshold']:
+            try:
+                t['action'].remove('reboot')
+            except ValueError:
+                pass
+        with open('/etc/healthd-config.json', 'w') as conf:
+            json.dump(d, conf)
+        run_verbosely(['sv', 'restart', 'healthd'], logger)
+    # Python 2 raises plain IOError. Python 3 raises FileNotFoundError but
+    # that's a sub-class of IOError.
+    except IOError:
+        pass
+
+
 def get_kernel_parameters():
     # type: () -> str
     # As far as cov knows, kernel parameters we use are backwards compatible,

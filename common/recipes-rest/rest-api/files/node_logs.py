@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
+import json
 import re
 from subprocess import *
 from node import node
@@ -37,36 +37,10 @@ class logsNode(node):
 
     def getInformation(self, param={}):
         linfo = []
-        cmd = '/usr/local/bin/log-util ' + self.name +' --print'
+        cmd = '/usr/local/bin/log-util ' + self.name +' --print'+' --json'
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         data = data.decode()
-        sdata = data.split('\n')
-        for line in sdata:
-            # skip lines with --- or startin with FRU
-            if line.startswith( 'FRU' ):
-                continue
-
-            # skip empty lines
-            if line in ['\n', '\r\n']:
-                continue
-
-            line = line.rstrip()
-            cells = re.split("\s{2,}", line, maxsplit=4)
-            if (len(cells) != 5):
-                continue
-
-            temp = {
-                    "FRU#": cells[0],
-                    "FRU_NAME": cells[1],
-                    "TIME_STAMP": cells[2],
-                    "APP_NAME": cells[3],
-                    "MESSAGE": cells[4],
-                   }
-
-            linfo.append(temp)
-
-        result = { "Logs": linfo }
-        return result
+        return json.loads(data)
 
     def doAction(self, data):
         if data["action"] != "clear":

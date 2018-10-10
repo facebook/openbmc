@@ -3687,6 +3687,9 @@ get_scm_sensor_name(uint8_t sensor_num, char *name) {
     case BIC_SENSOR_PV_BAT:
       sprintf(name, "PV_BAT_VOLT");
       break;
+    case BIC_SENSOR_PVDDR:
+      sprintf(name, "PVDDR_VOLT");
+      break;
     case BIC_SENSOR_P1V05_MIX:
       sprintf(name, "P1V05_MIX_VOLT");
       break;
@@ -3702,8 +3705,14 @@ get_scm_sensor_name(uint8_t sensor_num, char *name) {
     case BIC_SENSOR_VCCIN_VR_VOL:
       sprintf(name, "VCCIN_VR_VOLT");
       break;
+    case BIC_SENSOR_VDDR_VR_VOL:
+      sprintf(name, "VDDR_VR_VOLT");
+      break;
+    case BIC_SENSOR_P1V05MIX_VR_VOL:
+      sprintf(name, "1V05MIX_VR_VOLT");
+      break;
     case BIC_SENSOR_P1V05MIX_VR_POUT:
-      sprintf(name, "BP1V05MIX_VR_OUT_POWER");
+      sprintf(name, "1V05MIX_VR_OUT_POWER");
       break;
     case BIC_SENSOR_INA230_POWER:
       sprintf(name, "INA230_POWER");
@@ -4679,8 +4688,11 @@ get_scm_sensor_units(uint8_t sensor_num, char *units) {
     case BIC_SENSOR_P3V3_STBY_MB:
     case BIC_SENSOR_P5V_STBY_MB:
     case BIC_SENSOR_PV_BAT:
+    case BIC_SENSOR_PVDDR:
     case BIC_SENSOR_P1V05_MIX:
     case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VDDR_VR_VOL:
+    case BIC_SENSOR_P1V05MIX_VR_VOL:
     case BIC_SENSOR_INA230_VOL:
       sprintf(units, "Volts");
       break;
@@ -5418,7 +5430,10 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num,
     case BIC_SENSOR_P1V05_PCH:
     case BIC_SENSOR_P3V3_STBY_MB:
     case BIC_SENSOR_PV_BAT:
+    case BIC_SENSOR_PVDDR:
     case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VDDR_VR_VOL:
+    case BIC_SENSOR_P1V05MIX_VR_VOL:
     case BIC_SENSOR_INA230_VOL:
       snr_desc = get_sensor_desc(fru, snr_num);
       sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u",
@@ -5474,7 +5489,10 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num,
         case BIC_SENSOR_P1V05_PCH:
         case BIC_SENSOR_P3V3_STBY_MB:
         case BIC_SENSOR_PV_BAT:
+        case BIC_SENSOR_PVDDR:
         case BIC_SENSOR_VCCIN_VR_VOL:
+        case BIC_SENSOR_VDDR_VR_VOL:
+        case BIC_SENSOR_P1V05MIX_VR_VOL:
         case BIC_SENSOR_INA230_VOL:
           snr_desc = get_sensor_desc(FRU_SCM, snr_num);
           sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u",

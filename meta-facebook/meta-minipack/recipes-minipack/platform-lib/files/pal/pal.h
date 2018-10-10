@@ -669,6 +669,13 @@ enum
   SCM_LED_AMBER = 0x05,
 };
 
+enum {
+  PIM_TYPE_UNPLUG = 0,
+  PIM_TYPE_16Q = 1,
+  PIM_TYPE_4DD = 2,
+  PIM_TYPE_NONE = 3
+};
+
 int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 int pal_get_plat_sku_id(void);
@@ -711,6 +718,10 @@ int pal_detect_i2c_device(uint8_t bus_num, uint8_t addr);
 int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
 int pal_del_i2c_device(uint8_t bus, uint8_t addr);
 int pal_get_pim_type(uint8_t fru);
+int pal_set_pim_type_to_file(uint8_t fru, char *type);
+int pal_get_pim_type_from_file(uint8_t fru);
+int pal_set_pim_thresh(uint8_t fru);
+int pal_clear_thresh_value(uint8_t fru);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);

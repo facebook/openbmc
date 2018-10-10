@@ -46,6 +46,8 @@
 #define FPGA_16Q_ADDR 0x60
 #define FPGA_4DD_ADDR 0x61
 
+#define INTERVAL_MAX  5
+
 static int
 i2c_open(uint8_t bus, uint8_t addr) {
   int fd = -1;
@@ -101,23 +103,33 @@ pim_driver_del(uint8_t num) {
 
 static int
 set_pim_slot_id(uint8_t num) {
-  int ret = -1, fd = -1;
+  int ret = -1, fd = -1, type;
   uint8_t bus = ((num - 1) * 8) + 80;
   uint8_t fru = num + 2;
 
-  if (pal_get_pim_type(fru) == 0) {
+  type = pal_get_pim_type_from_file(fru);
+  if (type == PIM_TYPE_16Q) {
     fd = i2c_open(bus, FPGA_16Q_ADDR);
-  } else {
+  } else if (type == PIM_TYPE_4DD) {
     fd = i2c_open(bus, FPGA_4DD_ADDR);
-  }
-  if (fd < 0) {
+  } else if (type == PIM_TYPE_UNPLUG) {
+    return 0;
+  } else {
     return -1;
   }
 
+  if (fd < 0) {
+    close(fd);
+    return -1;
+  }
   ret = i2c_smbus_write_byte_data(fd, 0x03, num);
   close(fd);
 
-  return ret;
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
 }
 
 // Thread for monitoring scm plug
@@ -175,7 +187,11 @@ pim_monitor_handler(void *unused){
   uint8_t prsnt = 0;
   uint8_t prsnt_ori = 0;
   uint8_t curr_state = 0x00;
+  uint8_t pim_type;
+  uint8_t pim_type_old[10] = {PIM_TYPE_UNPLUG};
+  uint8_t interval[10];
 
+  memset(interval, INTERVAL_MAX, sizeof(interval));
   while (1) {
     for(fru = FRU_PIM1; fru <= FRU_PIM8; fru++){
       ret = pal_is_fru_prsnt(fru, &prsnt);
@@ -183,7 +199,6 @@ pim_monitor_handler(void *unused){
         goto pim_mon_out;
       }
       /* FRU_PIM1 = 3, FRU_PIM2 = 4, ...., FRU_PIM8 = 10 */
-      pal_set_pim_sts_led(fru);
       /* Get original prsnt state PIM1 @bit0, PIM2 @bit1, ..., PIM8 @bit7 */
       num = fru - 2;
       prsnt_ori = GETBIT(curr_state, (num - 1));
@@ -193,12 +208,49 @@ pim_monitor_handler(void *unused){
           syslog(LOG_WARNING, "PIM %d is plugged in.", num);
           ret = pim_driver_add(num);
           if(ret){
-              syslog(LOG_WARNING, "DOMFPGA/MAX34461 of PIM %d is not ready "
+            syslog(LOG_WARNING, "MAX34461 of PIM %d is not ready "
                                   "or sensor cannot be mounted.", num);
+          }
+
+          pim_type = pal_get_pim_type(fru);
+          if (pim_type != pim_type_old[num]) {
+            if (pim_type == PIM_TYPE_16Q) {
+              if (!pal_set_pim_type_to_file(fru, "16q")) {
+                syslog(LOG_INFO, "PIM %d type is 16Q", num);
+                pim_type_old[num] = PIM_TYPE_16Q;
+              } else {
+                syslog(LOG_WARNING,
+                       "pal_set_pim_type_to_file: PIM %d set 16Q failed", num);
+              }
+            } else if (pim_type == PIM_TYPE_4DD) {
+              if (!pal_set_pim_type_to_file(fru, "4dd")) {
+                syslog(LOG_INFO, "PIM %d type is 4DD", num);
+                pim_type_old[num] = PIM_TYPE_4DD;
+              } else {
+                syslog(LOG_WARNING,
+                       "pal_set_pim_type_to_file: PIM %d set 4DD failed", num);
+              }
+            } else {
+              if (!pal_set_pim_type_to_file(fru, "none")) {
+                syslog(LOG_CRIT,
+                        "PIM %d type cannot detect, DOMFPGA get fail", num);
+                pim_type_old[num] = PIM_TYPE_NONE;
+              } else {
+                syslog(LOG_WARNING,
+                      "pal_set_pim_type_to_file: PIM %d set none failed", num);
+              }
+            }
+            pal_set_pim_thresh(fru);
           }
         } else {
           syslog(LOG_WARNING, "PIM %d is unplugged.", num);
+          pim_type_old[num] = PIM_TYPE_UNPLUG;
+          pal_clear_thresh_value(fru);
           ret = pim_driver_del(num);
+          if (pal_set_pim_type_to_file(fru, "unplug")) {
+            syslog(LOG_WARNING,
+                    "pal_set_pim_type_to_file: PIM %d set unplug failed", num);
+          }
         }
         /* Set PIM1 prsnt state @bit0, PIM2 @bit1, ..., PIM8 @bit7 */
         curr_state = prsnt ? SETBIT(curr_state, (num - 1))
@@ -207,10 +259,16 @@ pim_monitor_handler(void *unused){
       /* Set PIM number into DOM FPGA 0x03 register to control LED stream. */
       /* 1 is prsnt, 0 is not prsnt. */
       if (prsnt) {
-        ret = set_pim_slot_id(num);
-        if (ret) {
+        if (interval[num] == 0) {
+          interval[num] = INTERVAL_MAX;
+          pal_set_pim_sts_led(fru);
+          ret = set_pim_slot_id(num);
+          if (ret) {
             syslog(LOG_WARNING,
-                   "Cannot set slot id into FPGA register of PIM %d" ,num);
+                    "Cannot set slot id into FPGA register of PIM %d" ,num);
+          }
+        } else {
+          interval[num]--;
         }
       }
     }
@@ -233,23 +291,38 @@ static void *
 simLED_monitor_handler(void *unused) {
   int brd_rev;
   uint8_t sys_ug = 0, fan_ug = 0, psu_ug = 0, smb_ug = 0;
+  uint8_t interval[4];
+
+  memset(interval, INTERVAL_MAX, sizeof(interval));
   pal_get_board_rev(&brd_rev);
   init_led();
   while(1) {
-	sleep(1);
+    sleep(1);
     pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
-	if(sys_ug == 0) {
+    if(sys_ug == 0 && interval[0] == 0) {
+      interval[0] = INTERVAL_MAX;
       set_sys_led(brd_rev);
-	}
-	if(fan_ug == 0) {
-	  set_fan_led(brd_rev);
-	}
-	if(psu_ug == 0) {
-	  set_psu_led(brd_rev);
-	}
-	if(smb_ug == 0) {
-	  set_smb_led(brd_rev);
-	}
+    } else {
+      interval[0]--;
+    }
+    if(fan_ug == 0 && interval[1] == 0) {
+      interval[1] = INTERVAL_MAX;
+      set_fan_led(brd_rev);
+    } else {
+      interval[1]--;
+    }
+    if(psu_ug == 0 && interval[2] == 0) {
+      interval[2] = INTERVAL_MAX;
+      set_psu_led(brd_rev);
+    } else {
+      interval[2]--;
+    }
+    if(smb_ug == 0 && interval[3] == 0) {
+      interval[3] = INTERVAL_MAX;
+      set_smb_led(brd_rev);
+    } else {
+      interval[3]--;
+    }
   }
   return 0;
 }

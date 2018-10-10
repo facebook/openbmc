@@ -30,6 +30,7 @@ from fsc_profile import profile_constructor, Sensor
 from fsc_zone import Zone, Fan
 from fsc_bmcmachine import BMCMachine
 from fsc_board import board_fan_actions, board_host_actions, board_callout
+from fsc_sensor import FscSensorSourceUtil
 
 RAMFS_CONFIG = '/etc/fsc-config.json'
 CONFIG_DIR = '/etc/fsc'
@@ -186,23 +187,45 @@ class Fscd(object):
                             valid_table = self.fsc_config['profiles'][tuple.name]['read_limit']['valid']
                             valid_read_limit = valid_table['limit']
                             valid_read_action = valid_table['action']
-                            if tuple.value > valid_read_limit:
-                                reason = sensor + '(v=' + str(tuple.value) + \
-                                    ') limit(t=' + str(valid_read_limit) + \
-                                    ') reached'
-                                self.fsc_host_action(action=valid_read_action,
-                                                     cause=reason)
+                            if isinstance(self.sensors[tuple.name].source, FscSensorSourceUtil):
+                                if tuple.value == None:
+                                    self.sensors[tuple.name].source.read_source_fail_counter += 1
+                                else:
+                                    self.sensors[tuple.name].source.read_source_fail_counter = 0
+                                    if tuple.value > valid_read_limit:
+                                        reason = sensor + '(v=' + str(tuple.value) + \
+                                            ') limit(t=' + str(valid_read_limit) + \
+                                            ') reached'
+                                        self.fsc_host_action(action=valid_read_action,
+                                                            cause=reason)
+                            else:
+                                if tuple.value > valid_read_limit:
+                                    reason = sensor + '(v=' + str(tuple.value) + \
+                                        ') limit(t=' + str(valid_read_limit) + \
+                                        ') reached'
+                                    self.fsc_host_action(action=valid_read_action,
+                                                        cause=reason)
+
                         # If temperature read fails
                         if 'invalid' in self.fsc_config['profiles'][tuple.name]['read_limit']:
                             invalid_table = self.fsc_config['profiles'][tuple.name]['read_limit']['invalid']
                             invalid_read_th = invalid_table['threshold']
                             invalid_read_action = invalid_table['action']
-                            if tuple.read_fail_counter >= invalid_read_th:
-                                reason = sensor + '(value=' + str(tuple.value) + \
-                                        ') failed to read ' + \
-                                        str(tuple.read_fail_counter) + ' times'
-                                self.fsc_host_action(action=invalid_read_action,
-                                                     cause=reason)
+                            if isinstance(self.sensors[tuple.name].source, FscSensorSourceUtil):
+                                read_fail_counter = self.sensors[tuple.name].source.read_source_fail_counter
+                                if read_fail_counter >= invalid_read_th:
+                                    reason = sensor + '(value=' + str(tuple.value) + \
+                                            ') failed to read ' + \
+                                            str(read_fail_counter) + ' times'
+                                    self.fsc_host_action(action=invalid_read_action,
+                                                        cause=reason)
+                            else:
+                                if tuple.read_fail_counter >= invalid_read_th:
+                                    reason = sensor + '(value=' + str(tuple.value) + \
+                                            ') failed to read ' + \
+                                            str(tuple.read_fail_counter) + ' times'
+                                    self.fsc_host_action(action=invalid_read_action,
+                                                        cause=reason)
 
     def update_dead_fans(self, dead_fans):
         '''

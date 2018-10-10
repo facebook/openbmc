@@ -1,6 +1,5 @@
 [
   "adm1275",
-  "com_e_driver",
   "fcmcpld",
   "g_cdc",
   "i2c_mux",

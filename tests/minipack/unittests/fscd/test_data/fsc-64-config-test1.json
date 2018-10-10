@@ -16,7 +16,7 @@
   "watchdog": true ,
   "min_rpm": 800,
   "profiles": {
-    "SCM_INLET_REMOTE_TEMP": {
+    "linear_inlet": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -48,7 +48,7 @@
         [39, 32]
       ]
     },
-    "TH3_DIE_TEMP1": {
+    "linear_switch1": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -73,7 +73,7 @@
         [105, 32]
       ]
     },
-    "TH3_DIE_TEMP2": {
+    "linear_switch2": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

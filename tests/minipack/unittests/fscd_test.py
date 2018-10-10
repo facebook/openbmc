@@ -34,6 +34,18 @@ class fscdTest():
     def restart_fscd(self):
         self.run_shell_cmd("sv restart fscd")
 
+    def start_fscd(self):
+        self.run_shell_cmd("sv start fscd")
+
+    def stop_fscd(self):
+        self.run_shell_cmd("sv stop fscd;watchdog_ctrl.sh off")
+
+    def start_sensord(self):
+        self.run_shell_cmd("sv start sensord")
+
+    def stop_sensord(self):
+        self.run_shell_cmd("sv stop sensord")
+
     def setup_for_test(self, config=None):
         '''
         Series of tests that are driven by changing the temperature sensors
@@ -47,6 +59,7 @@ class fscdTest():
         self.run_shell_cmd("cp {}/{} /etc/fsc-config.json".
                            format(self.TEST_DATA_PATH, str(config)))
         self.restart_fscd()
+        time.sleep(10)
 
     def setup_for_test2(self):
         '''
@@ -55,9 +68,14 @@ class fscdTest():
         pass
 
     def tear_down_tests(self):
+        MAIN_POWER = "/sys/bus/i2c/drivers/smbcpld/12-003e/cpld_in_p1220"
+        self.stop_fscd()
         self.run_shell_cmd("/usr/local/bin/wedge_power.sh on")
         self.run_shell_cmd("cp /etc/fsc-config.json.orig /etc/fsc-config.json")
-        self.restart_fscd()
+        self.run_shell_cmd("echo 0x1 > %s" % MAIN_POWER)
+        self.start_sensord()
+        time.sleep(30)
+        self.start_fscd()
 
     def get_fan_pwm(self, pwm_val=None):
         if pwm_val is None:
@@ -78,27 +96,23 @@ class fscdTest():
         return [True, None]
 
     def run_pwm_test(self,
-                     userver_temp=DEFAULT_TEMP,
-                     switch_temp=DEFAULT_TEMP,
-                     intake_temp=DEFAULT_TEMP,
-                     outlet_temp=DEFAULT_TEMP,
-                     expected_pwm=28):
+                     inlet_temp=DEFAULT_TEMP,
+                     switch1_temp=DEFAULT_TEMP,
+                     switch2_temp=DEFAULT_TEMP,
+                     expected_pwm=16):
 
         PWM_VAL = expected_pwm
-        print("[FSCD Testing] Setting (userver={}C, switch={}C ,"
-              "intake={}C, outlet={}C)".format(
-                    int(userver_temp)/1000,
-                    int(switch_temp)/1000,
-                    int(intake_temp)/1000,
-                    int(outlet_temp)/1000))
-        self.run_shell_cmd("echo {} > {}/userver/temp1_input".format(
-            userver_temp, self.TEST_DATA_PATH))
-        self.run_shell_cmd("echo {} > {}/switch/temp1_input".format(
-            switch_temp, self.TEST_DATA_PATH))
-        self.run_shell_cmd("echo {} > {}/intake/temp1_input".format(
-            intake_temp, self.TEST_DATA_PATH))
-        self.run_shell_cmd("echo {} > {}/outlet/temp1_input".format(
-            outlet_temp, self.TEST_DATA_PATH))
+        print("[FSCD Testing] Setting (inlet={}C, switch1={}C ,"
+              "switch2={}C)".format(
+                    inlet_temp,
+                    switch1_temp,
+                    switch2_temp))
+        self.run_shell_cmd("echo {} > /tmp/cache_store/scm_sensor6".format(
+            inlet_temp))
+        self.run_shell_cmd("echo {} > /tmp/cache_store/smb_sensor26".format(
+            switch1_temp))
+        self.run_shell_cmd("echo {} > /tmp/cache_store/smb_sensor27".format(
+            switch2_temp))
 
         # Wait for fans to change PWM
         time.sleep(20)
@@ -118,7 +132,7 @@ class fscdTest():
             return True
         return False
 
-    def run_test1(self):
+    def run_test(self):
         '''
         test1:
         Setup: fsc-config-test1.json - reads sensors temperature from test_data
@@ -127,76 +141,123 @@ class fscdTest():
         2) host action test for shutdown when a high temp event can occur
         3) host action test for shutdown when read failure can occur
         '''
-        self.setup_for_test(config="fsc-config-test1.json")
+        fcm_b = self.run_shell_cmd(
+                "head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver")
+        fcm_t = self.run_shell_cmd(
+                "head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver")
+        if "0x0" in fcm_b or "0x0" in fcm_t:
+            self.setup_for_test(config="fsc-32-config-test1.json")
+        else:
+            self.setup_for_test(config="fsc-64-config-test1.json")
         rc = True
+        time.sleep(20)
+        # sub-test1: pwm when all temp=5C duty_cycle=25
+        if not self.run_pwm_test(inlet_temp=5,
+                                 switch1_temp=5,
+                                 switch2_temp=5,
+                                 expected_pwm=25):
+            rc = False
 
-        # sub-test1: pwm when all temp=23C pwm=12 => duty_cycle=38
-        if not self.run_pwm_test(userver_temp=23000,
-                                 switch_temp=23000,
-                                 intake_temp=23000,
-                                 outlet_temp=23000,
+        # sub-test2: pwm when all temp=20C duty_cycle=25
+        if not self.run_pwm_test(inlet_temp=20,
+                                 switch1_temp=20,
+                                 switch2_temp=20,
+                                 expected_pwm=25):
+            rc = False
+
+        # sub-test3: pwm when all temp=23C duty_cycle=28
+        if not self.run_pwm_test(inlet_temp=23,
+                                 switch1_temp=23,
+                                 switch2_temp=23,
+                                 expected_pwm=28):
+            rc = False
+
+        # sub-test4: pwm when all temp=26C duty_cycle=31
+        if not self.run_pwm_test(inlet_temp=26,
+                                 switch1_temp=26,
+                                 switch2_temp=26,
+                                 expected_pwm=31):
+            rc = False
+
+        # sub-test5: pwm when all temp=29C duty_cycle=34
+        if not self.run_pwm_test(inlet_temp=29,
+                                 switch1_temp=29,
+                                 switch2_temp=29,
+                                 expected_pwm=34):
+            rc = False
+
+        # sub-test6: pwm when all temp=31C duty_cycle=38
+        if not self.run_pwm_test(inlet_temp=31,
+                                 switch1_temp=31,
+                                 switch2_temp=31,
                                  expected_pwm=38):
             rc = False
 
-        # sub-test2: pwm when all temp<30C pwm=12 => duty_cycle=38
-        if not self.run_pwm_test(userver_temp=23000,
-                                 switch_temp=28000,
-                                 intake_temp=28000,
-                                 outlet_temp=23000,
-                                 expected_pwm=38):
+        # sub-test7: pwm when all temp=33C duty_cycle=41
+        if not self.run_pwm_test(inlet_temp=33,
+                                 switch1_temp=33,
+                                 switch2_temp=33,
+                                 expected_pwm=41):
             rc = False
 
-        # sub-test3: pwm when all temp~[20C,33C] to 33C pwm=12 => duty_cycle=38
-        if not self.run_pwm_test(userver_temp=30000,
-                                 switch_temp=32000,
-                                 intake_temp=33000,
-                                 outlet_temp=30000,
-                                 expected_pwm=38):
+        # sub-test8: pwm when all temp=35C duty_cycle=44
+        if not self.run_pwm_test(inlet_temp=35,
+                                 switch1_temp=35,
+                                 switch2_temp=35,
+                                 expected_pwm=44):
             rc = False
 
-        # sub-test4: pwm when all temp~[30C,35C] pwm=16 => duty_cycle=51
-        if not self.run_pwm_test(userver_temp=32000,
-                                 switch_temp=32000,
-                                 intake_temp=37000,
-                                 outlet_temp=32000,
-                                 expected_pwm=51):
+        # sub-test9: pwm when all temp=37C duty_cycle=47
+        if not self.run_pwm_test(inlet_temp=37,
+                                 switch1_temp=37,
+                                 switch2_temp=37,
+                                 expected_pwm=47):
             rc = False
 
-        # sub-test4: pwm when all temp~[38C] pwm=16 => duty_cycle=51
-        if not self.run_pwm_test(userver_temp=32000,
-                                 switch_temp=32000,
-                                 intake_temp=39000,
-                                 outlet_temp=32000,
-                                 expected_pwm=51):
+        # sub-test10: pwm when all temp=39C duty_cycle=50
+        if not self.run_pwm_test(inlet_temp=39,
+                                 switch1_temp=39,
+                                 switch2_temp=39,
+                                 expected_pwm=50):
             rc = False
 
-        # sub-test5: pwm when all temp~[32C,42C] pwm=23 => duty_cycle=74
-        if not self.run_pwm_test(userver_temp=32000,
-                                 switch_temp=38000,
-                                 intake_temp=42000,
-                                 outlet_temp=32000,
-                                 expected_pwm=74):
+        # sub-test11: pwm when switch1 temp=100C duty_cycle=41
+        if not self.run_pwm_test(inlet_temp=20,
+                                 switch1_temp=100,
+                                 switch2_temp=20,
+                                 expected_pwm=41):
             rc = False
 
-        # sub-test6: pwm when all temp~[40C,50C] pwm=31 => duty_cycle=100
-        if not self.run_pwm_test(userver_temp=40000,
-                                 switch_temp=41000,
-                                 intake_temp=50000,
-                                 outlet_temp=40000,
-                                 expected_pwm=100):
+        # sub-test12: pwm when switch2 temp=100C duty_cycle=41
+        if not self.run_pwm_test(inlet_temp=20,
+                                 switch1_temp=20,
+                                 switch2_temp=100,
+                                 expected_pwm=41):
             rc = False
 
-        # sub-test7: pwm when all temp~[46C,50C] pwm=31 => duty_cycle=100
-        if not self.run_pwm_test(userver_temp=46000,
-                                 switch_temp=47000,
-                                 intake_temp=85000,
-                                 outlet_temp=46000,
-                                 expected_pwm=100):
+        # sub-test13: pwm when switch1 temp=29C duty_cycle=50
+        if not self.run_pwm_test(inlet_temp=20,
+                                 switch1_temp=105,
+                                 switch2_temp=20,
+                                 expected_pwm=50):
             rc = False
 
-        # sub-test8: At this point the system should shutdown because
+        # sub-test14: pwm when switch2 temp=29C duty_cycle=50
+        if not self.run_pwm_test(inlet_temp=20,
+                                 switch1_temp=20,
+                                 switch2_temp=105,
+                                 expected_pwm=50):
+            rc = False
+
+        # sub-test15: At this point the system should shutdown because
         # temperature limit reached
         # Wait for threshold cycle = ~20sec
+        if not self.run_pwm_test(inlet_temp=20,
+                                 switch1_temp=115,
+                                 switch2_temp=20,
+                                 expected_pwm=50):
+            rc = False
+ 
         print("[FSCD Testing] System should shutdown because temperature "
               " limit reached. Verifying...")
         time.sleep(70)
@@ -208,15 +269,14 @@ class fscdTest():
                   "power off due to high temperature event [FAILED]")
             rc = False
 
-        # sub-test9: Remove sensor read path which is equivalent to read
+        # sub-test16: Remove sensor read path which is equivalent to read
         # failure. Wait for threshold cycle = ~20sec.
         # Firstly recover to good state
         print("[FSCD Testing] Recovering system for next test...")
-        self.run_pwm_test(userver_temp=40000,
-                          switch_temp=41000,
-                          intake_temp=44000,
-                          outlet_temp=40000,
-                          expected_pwm=74)
+        self.run_pwm_test(inlet_temp=39,
+                          switch1_temp=39,
+                          switch2_temp=39,
+                          expected_pwm=50)
         self.run_shell_cmd("/usr/local/bin/wedge_power.sh on")
         time.sleep(10)
         if self.is_userver_on():
@@ -225,8 +285,7 @@ class fscdTest():
             print("[FSCD Testing] Unable to recover to good state")
             return False
 
-        self.run_shell_cmd("rm {}/intake/temp1_input".format(
-                            self.TEST_DATA_PATH))
+        self.run_shell_cmd("rm /tmp/cache_store/scm_sensor6")
         time.sleep(70)
         if not self.is_userver_on():
             print("[FSCD Testing] Host action test: Expected userver to "
@@ -236,45 +295,7 @@ class fscdTest():
                   "power off due to read failure event [FAILED]")
             rc = False
 
-        return rc
 
-    def run_test2(self):
-        '''
-        test2:
-        Setup: fsc-config-test2.json - reads sensors temperature from HW
-        but reads RPMs and PWMs from test-data.
-        1) fan_dead testing
-        '''
-        rc = True
-        self.setup_for_test(config="fsc-config-test2.json")
-        # Fan PWM boost to 100%
-        time.sleep(30)
-        pwmrc, output = self.get_fan_pwm(pwm_val=100)
-        if pwmrc:
-            print("[FSCD Testing] PWM test,expected=100% [PASSED]")
-        else:
-            print("[FSCD Testing] PWM test,expected=100% [FAILED]")
-            rc = False
-        # Wait for a few cycles for host action to be performed
-        time.sleep(90)
-
-        cmd = 'grep -c \'fscd: All fans report failed RPM not consistent with Fantray status 0x1f\' /var/log/messages'
-        data = self.run_shell_cmd(cmd)
-        if int(data) > 0:
-            if self.is_userver_on():
-                print("[FSCD Testing] Host action test: Expected userver to "
-                      "power on due to fan RPM read failure event but"
-                      " fantray status is GOOD [PASSED]")
-            else:
-                print("[FSCD Testing] Host action test: Expected userver to "
-                      "power on due to fan RPM read failure event but"
-                      " fantray status is GOOD [FAILED]")
-                rc = False
-        else:
-            print("[FSCD Testing] Host action test: Expected userver to "
-                  "power on due to fan RPM read failure event but"
-                  " fantray status is GOOD [FAILED]")
-            rc = False
         return rc
 
 
@@ -284,10 +305,10 @@ if __name__ == '__main__':
         '''
         test = fscdTest()
         try:
-            result1 = test.run_test1()
-            test.tear_down_tests()
-            result2 = test.run_test2()
-            if result1 and result2:
+            test.stop_sensord()
+            time.sleep(20)
+            result = test.run_test()
+            if result:
                 print("FSCD Testing [PASSED]")
                 test.tear_down_tests()
                 exit(0)

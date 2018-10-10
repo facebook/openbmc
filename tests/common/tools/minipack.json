@@ -44,7 +44,7 @@
     {
       "json":"../minipack/unittests/process.json"
     }],
-    "fscd_test.py":["no",
+    "fscd_test.py":["yes",
     {
       "testfile":"/minipack/unittests/"
     }]

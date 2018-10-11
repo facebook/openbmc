@@ -175,7 +175,8 @@ def get_mtds():
     with open('/proc/mtd', 'r') as proc_mtd:
         mtd_info = proc_mtd_regex.findall(proc_mtd.read())
     vboot_support = 'none'
-    if any(name == 'romx' for (_, _, name) in mtd_info):
+    exists = os.path.isfile('/usr/local/bin/vboot-util')
+    if (exists and any(name == 'romx' for (_, _, name) in mtd_info)):
         vboot_support = 'software-enforce'
         vboot_util_output = subprocess.check_output(
             ['/usr/local/bin/vboot-util']
@@ -185,7 +186,8 @@ def get_mtds():
     all_mtds = []
     full_flash_mtds = []
     for (device, size_in_hex, name) in mtd_info:
-        if name.startswith('flash') or name == 'Partition_000':
+        if (name == 'flash' or name == 'flash0' or name == 'flash1' or
+                name == 'Partition_000'):
             if vboot_support == 'none' or \
                (vboot_support == 'software-enforce' and (name in ['flash0', 'flash1'])):
                     full_flash_mtds.append(MemoryTechnologyDevice(

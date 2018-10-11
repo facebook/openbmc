@@ -132,7 +132,7 @@ do_on() {
     ret=$?
     if [ $ret -eq 0 ]; then
         echo " Done"
-	logger "Successfully power on micro-server"
+        logger "Successfully power on micro-server"
     else
         echo " Failed"
         logger "Failed to power on micro-server"

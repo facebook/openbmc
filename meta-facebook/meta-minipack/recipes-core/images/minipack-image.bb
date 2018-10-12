@@ -22,6 +22,7 @@ IMAGE_INSTALL += " \
   cpldupdate \
   cpldupdate-i2c \
   crashdump \
+  e2fsprogs \
   flashrom \
   front-paneld \
   fscd \

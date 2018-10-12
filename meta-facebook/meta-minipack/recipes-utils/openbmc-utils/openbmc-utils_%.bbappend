@@ -34,6 +34,7 @@ SRC_URI += "file://board-utils.sh \
             file://set_sled.sh \
             file://setup_board.sh \
             file://setup_default_gpio.sh \
+            file://setup_emmc.sh \
             file://setup_i2c.sh \
             file://setup_mgmt.sh \
             file://setup_pcie_repeater.sh \
@@ -87,6 +88,10 @@ do_install_board() {
     update-rc.d -r ${D} mount_data0.sh start 03 S .
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
+
+    # the script to setup EMMC
+    install -m 0755 ${WORKDIR}/setup_emmc.sh ${D}${sysconfdir}/init.d/setup_emmc.sh
+    update-rc.d -r ${D} setup_emmc.sh start 05 S .
 
     install -m 755 setup_default_gpio.sh ${D}${sysconfdir}/init.d/setup_default_gpio.sh
     update-rc.d -r ${D} setup_default_gpio.sh start 59 S .

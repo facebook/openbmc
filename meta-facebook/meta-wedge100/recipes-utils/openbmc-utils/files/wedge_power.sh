@@ -32,14 +32,14 @@ usage() {
     echo "Usage: $prog <command> [command options]"
     echo
     echo "Commands:"
-    echo "  status: Get the current microserver power status"
+    echo "  status: Get the current power status"
     echo
-    echo "  on: Power on microserver if not powered on already"
+    echo "  on: Power on microserver and main power if not powered on already"
     echo "    options:"
     echo "      -f: Re-do power on sequence no matter if microserver has "
     echo "          been powered on or not."
     echo
-    echo "  off: Power off microserver ungracefully"
+    echo "  off: Power off microserver and main power ungracefully"
     echo
     echo "  reset: Power reset microserver ungracefully"
     echo "    options:"
@@ -142,12 +142,24 @@ do_off_com_e() {
     echo 0 > $PWR_USRV_SYSFS
 }
 
+do_off_main_pwr() {
+    echo 0 > $PWR_MAIN_SYSFS
+}
+
 do_off() {
     local ret
     ret=0
 
     echo -n "Power off microserver ..."
     if do_off_com_e; then
+        echo " Done"
+    else
+        echo " Failed"
+        ret=1
+    fi
+
+    echo -n "Power off main power ..."
+    if do_off_main_pwr; then
         echo " Done"
     else
         echo " Failed"

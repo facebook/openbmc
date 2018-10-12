@@ -57,20 +57,24 @@ is_main_power_on() {
 }
 
 do_status() {
-    echo -n "Microserver power is "
     return_code=0
+
+    echo -n "Microserver power is "
     if wedge_is_us_on; then
         echo "on"
     else
         echo "off"
         return_code=1
     fi
+
+    echo -n "System main power is "
     if is_main_power_on; then
-        echo "System main power is on"
+        echo "on"
     else
-        echo "System main power is off"
+        echo "off"
         return_code=1
     fi
+
     return $return_code
 }
 

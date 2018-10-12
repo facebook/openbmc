@@ -97,6 +97,7 @@ do_on_main_pwr() {
 
 do_on() {
     local force opt ret
+    ret=0
     force=0
     while getopts "f" opt; do
         case $opt in
@@ -122,13 +123,17 @@ do_on() {
     # reset TH
     reset_brcm.sh
     # power on sequence
-    do_on_main_pwr
+    if ! do_on_main_pwr; then
+      ret=1
+    fi
+
     if do_on_com_e; then
         echo " Done"
         logger "Successfully power on micro-server"
     else
         echo " Failed"
         logger "Failed to power on micro-server"
+        ret=1
     fi
     return $ret
 }
@@ -139,12 +144,16 @@ do_off_com_e() {
 
 do_off() {
     local ret
+    ret=0
+
     echo -n "Power off microserver ..."
     if do_off_com_e; then
         echo " Done"
     else
         echo " Failed"
+        ret=1
     fi
+
     return $ret
 }
 

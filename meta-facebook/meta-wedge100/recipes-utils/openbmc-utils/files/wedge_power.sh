@@ -65,9 +65,7 @@ do_status() {
         echo "off"
         return_code=1
     fi
-    is_main_power_on
-    rc=$?
-    if [ $rc == "0" ]; then
+    if is_main_power_on; then
         echo "System main power is on"
     else
         echo "System main power is off"
@@ -78,16 +76,11 @@ do_status() {
 
 do_on_com_e() {
     echo 1 > $PWR_USRV_SYSFS
-    return $?
 }
 
 do_on_main_pwr() {
-  is_main_power_on
-  rc=$?
-  if [ $rc == "1" ]; then
-    echo 1 > $PWR_MAIN_SYSFS
-    ret=$?
-    if [ $ret -eq 0 ]; then
+  if ! is_main_power_on; then
+    if echo 1 > $PWR_MAIN_SYSFS; then
       echo "Turning on system main power"
       logger "Successfully power on main power"
       return 0
@@ -126,9 +119,7 @@ do_on() {
     reset_brcm.sh
     # power on sequence
     do_on_main_pwr
-    do_on_com_e
-    ret=$?
-    if [ $ret -eq 0 ]; then
+    if do_on_com_e; then
         echo " Done"
         logger "Successfully power on micro-server"
     else
@@ -140,15 +131,12 @@ do_on() {
 
 do_off_com_e() {
     echo 0 > $PWR_USRV_SYSFS
-    return $?
 }
 
 do_off() {
     local ret
     echo -n "Power off microserver ..."
-    do_off_com_e
-    ret=$?
-    if [ $ret -eq 0 ]; then
+    if do_off_com_e; then
         echo " Done"
     else
         echo " Failed"
@@ -228,5 +216,3 @@ case "$command" in
         exit -1
         ;;
 esac
-
-exit $?

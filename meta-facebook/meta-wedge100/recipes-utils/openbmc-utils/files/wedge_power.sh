@@ -24,11 +24,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 prog="$0"
 
-PWR_BTN_GPIO="BMC_PWR_BTN_OUT_N"
 PWR_SYSTEM_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_cyc_all_n"
 PWR_USRV_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/usrv_rst_n"
 PWR_TH_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/th_sys_rst_n"
-MAIN_PWR="${SYSCPLD_SYSFS_DIR}/pwr_main_n"
 
 usage() {
     echo "Usage: $prog <command> [command options]"
@@ -50,7 +48,7 @@ usage() {
 }
 
 main_power_status() {
-  status=$(cat $MAIN_PWR | head -1 )
+  status=$(cat $PWR_MAIN_SYSFS | head -1 )
   if [ "$status" == "0x1" ]; then
       return 0            # powered on
   else
@@ -87,7 +85,7 @@ do_on_main_pwr() {
   main_power_status
   rc=$?
   if [ $rc == "1" ]; then
-    echo 1 > $MAIN_PWR
+    echo 1 > $PWR_MAIN_SYSFS
     ret=$?
     if [ $ret -eq 0 ]; then
       echo "Turning on system main power"

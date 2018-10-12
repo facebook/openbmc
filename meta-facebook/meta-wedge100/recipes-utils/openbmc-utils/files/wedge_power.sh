@@ -47,7 +47,7 @@ usage() {
     echo
 }
 
-main_power_status() {
+is_main_power_on() {
   status=$(cat $PWR_MAIN_SYSFS | head -1 )
   if [ "$status" == "0x1" ]; then
       return 0            # powered on
@@ -65,7 +65,7 @@ do_status() {
         echo "off"
         return_code=1
     fi
-    main_power_status
+    is_main_power_on
     rc=$?
     if [ $rc == "0" ]; then
         echo "System main power is on"
@@ -82,7 +82,7 @@ do_on_com_e() {
 }
 
 do_on_main_pwr() {
-  main_power_status
+  is_main_power_on
   rc=$?
   if [ $rc == "1" ]; then
     echo 1 > $PWR_MAIN_SYSFS

@@ -35,6 +35,7 @@ devmem_clear_bit() {
     $DEVMEM $addr 32 $val
 }
 
+source "/usr/local/bin/shell-utils.sh"
 source "/usr/local/bin/i2c-utils.sh"
 source "/usr/local/bin/gpio-utils.sh"
 

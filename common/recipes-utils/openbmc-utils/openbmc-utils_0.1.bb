@@ -26,6 +26,7 @@ SRC_URI = " \
     file://COPYING \
     file://mount_data0.sh \
     file://openbmc-utils.sh \
+    file://shell-utils.sh \
     file://i2c-utils.sh \
     file://gpio-utils.sh \
     file://rc.early \
@@ -38,6 +39,7 @@ SRC_URI = " \
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
     openbmc-utils.sh \
+    shell-utils.sh \
     i2c-utils.sh \
     gpio-utils.sh \
     rc.early \

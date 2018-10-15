@@ -83,16 +83,7 @@ do_on_com_e() {
 }
 
 do_on_main_pwr() {
-  if ! is_main_power_on; then
-    if echo 1 > $PWR_MAIN_SYSFS; then
-      echo "Turning on system main power"
-      logger "Successfully power on main power"
-      return 0
-    else
-      return 1
-    fi
-  fi
-  return 0
+    echo 1 > $PWR_MAIN_SYSFS
 }
 
 do_on() {
@@ -111,30 +102,24 @@ do_on() {
 
         esac
     done
-    echo -n "Power on microserver ..."
+
     if [ $force -eq 0 ]; then
         # need to check if uS is on or not
         if wedge_is_us_on 10 "."; then
-            echo " Already on. Skip!"
+            echo "Skipping because microserver is already on. Use -f to force."
             return 1
         fi
     fi
 
     # reset TH
     reset_brcm.sh
-    # power on sequence
-    if ! do_on_main_pwr; then
-      ret=1
-    fi
 
-    if do_on_com_e; then
-        echo " Done"
-        logger "Successfully power on micro-server"
-    else
-        echo " Failed"
-        logger "Failed to power on micro-server"
-        ret=1
+    # power on sequence
+    if ! is_main_power_on; then
+      try_and_log "turning on main power" do_on_main_pwr || ret=1
     fi
+    try_and_log "powering on microserver" do_on_com_e || ret=1
+
     return $ret
 }
 
@@ -150,21 +135,8 @@ do_off() {
     local ret
     ret=0
 
-    echo -n "Power off microserver ..."
-    if do_off_com_e; then
-        echo " Done"
-    else
-        echo " Failed"
-        ret=1
-    fi
-
-    echo -n "Power off main power ..."
-    if do_off_main_pwr; then
-        echo " Done"
-    else
-        echo " Failed"
-        ret=1
-    fi
+    try_and_log "powering off microserver" do_off_com_e || ret=1
+    try_and_log "turning off main power" do_off_main_pwr || ret=1
 
     return $ret
 }

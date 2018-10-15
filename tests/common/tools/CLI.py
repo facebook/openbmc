@@ -325,6 +325,16 @@ if __name__ == "__main__":
                                        headnodeName)
                 else:
                     generalTypeBMCTest(hostnameBMC, "solTest.py", data)
+        # Platform specific tests
+        if "fscd_test.py" in data:
+            if data["fscd_test.py"][0] == 'yes':
+                platformOnlyTest(cmd_bmc, data, "fscd_test.py", data["fscd_test.py"][1]["testfile"])
+        if "psumuxmon_test.py" in data:
+            if data["psumuxmon_test.py"][0] == 'yes':
+                platformOnlyTest(cmd_bmc, data, "psumuxmon_test.py", data["psumuxmon_test.py"][1]["testfile"])
+
+        # these tests need to be run at the end because when BMC reboots,
+        # tests are lost from the system
         if "powerCycleHWTest.py" in data:
             if data["powerCycleHWTest.py"] == 'yes':
                 generalTypeTest(cmd_bmc, data, "powerCycleHWTest.py")
@@ -340,10 +350,3 @@ if __name__ == "__main__":
                 if data["watchdogResetTest.py"] == 'yes':
                     generalTypeBMCTest(hostnameBMC, "watchdogResetTest.py",
                                        data)
-        # Platform specific tests
-        if "fscd_test.py" in data:
-            if data["fscd_test.py"][0] == 'yes':
-                platformOnlyTest(cmd_bmc, data, "fscd_test.py", data["fscd_test.py"][1]["testfile"])
-        if "psumuxmon_test.py" in data:
-            if data["psumuxmon_test.py"][0] == 'yes':
-                platformOnlyTest(cmd_bmc, data, "psumuxmon_test.py", data["psumuxmon_test.py"][1]["testfile"])

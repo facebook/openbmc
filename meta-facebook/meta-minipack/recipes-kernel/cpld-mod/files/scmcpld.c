@@ -99,6 +99,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "rj45_led1",
+    "Need 0x09[7] set to 0\n"
     "0: LED GREEN is OFF\n"
     "1: LED GREEN is ON",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -107,6 +108,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "rj45_led2",
+    "Need 0x09[7] set to 0\n"
     "0: LED ORANGE is OFF\n"
     "1: LED ORANGE is ON",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -115,6 +117,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "sfp_led3_n",
+    "Need 0x09[7] set to 0\n"
     "1: LED ORANGE is ON\n"
     "0: LED ORANGE is OFF",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -123,6 +126,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   },
   {
     "sfp_led3_p",
+    "Need 0x09[7] set to 0\n"
     "1: LED GREEN is ON\n"
     "0: LED GREEN is OFF",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -130,9 +134,28 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x09, 3, 1,
   },
   {
-    "rj45_mode_sel",
-    "1: Control by OOB_LED\n"
-    "0: Control by SW register 0x09[1:0]",
+    "oob_mode_sel",
+    "Need 0x09[7] set to 0\n"
+    "1: OOB LED control by OOB\n"
+    "0: SW control, control by 0x09[3:0]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x09, 5, 1,
+  },
+  {
+    "sfp_rj45_sel",
+    "Need 0x09[7] set to 0\n"
+    "1: SFP\n"
+    "0: RJ45",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x09, 6, 1,
+  },
+  {
+    "sfp_auto_detect",
+    "If SFP present then swith OOB LED to SFP, else switch OOB LED to RJ45\n"
+    "1: Auto detect SFP present\n"
+    "0: SW control, Control by SW register 0x09[6:5][3:0]",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x09, 7, 1,

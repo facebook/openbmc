@@ -1558,9 +1558,9 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
 int
 pal_is_debug_card_prsnt(uint8_t *status) {
   int val;
-  char path[64];
+  char path[LARGEST_DEVICE_NAME + 1];
 
-  sprintf(path, GPIO_VAL, GPIO_SCM_USB_PRSNT);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SCM_USB_PRSNT, "value");
 
   if (read_device(path, &val)) {
     return -1;
@@ -1649,53 +1649,53 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
 
 static int
 pal_set_post_gpio_out(void) {
-  char path[64];
+  char path[LARGEST_DEVICE_NAME + 1];
   int ret;
   char *val = "out";
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_0);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_0, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_1);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_1, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_2);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_2, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_3);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_3, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_4);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_4, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_5);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_5, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_6);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_6, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_DIR, GPIO_POSTCODE_7);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_7, "direction");
   ret = write_device(path, val);
   if (ret) {
     goto post_exit;
@@ -1715,7 +1715,7 @@ pal_set_post_gpio_out(void) {
 // Display the given POST code using GPIO port
 static int
 pal_post_display(uint8_t status) {
-  char path[64];
+  char path[LARGEST_DEVICE_NAME + 1];
   int ret;
   char *val;
 
@@ -1728,8 +1728,7 @@ pal_post_display(uint8_t status) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_0);
-
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_0, "value");
   if (BIT(status, 0)) {
     val = "1";
   } else {
@@ -1741,7 +1740,7 @@ pal_post_display(uint8_t status) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_1);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_1, "value");
   if (BIT(status, 1)) {
     val = "1";
   } else {
@@ -1753,7 +1752,7 @@ pal_post_display(uint8_t status) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_2);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_2, "value");
   if (BIT(status, 2)) {
     val = "1";
   } else {
@@ -1765,7 +1764,7 @@ pal_post_display(uint8_t status) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_3);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_3, "value");
   if (BIT(status, 3)) {
     val = "1";
   } else {
@@ -1777,7 +1776,7 @@ pal_post_display(uint8_t status) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_4);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_4, "value");
   if (BIT(status, 4)) {
     val = "1";
   } else {
@@ -1789,7 +1788,7 @@ pal_post_display(uint8_t status) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_5);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_5, "value");
   if (BIT(status, 5)) {
     val = "1";
   } else {
@@ -1801,7 +1800,7 @@ pal_post_display(uint8_t status) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_6);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_6, "value");
   if (BIT(status, 6)) {
     val = "1";
   } else {
@@ -1813,7 +1812,7 @@ pal_post_display(uint8_t status) {
     goto post_exit;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_POSTCODE_7);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_7, "value");
   if (BIT(status, 7)) {
     val = "1";
   } else {
@@ -1865,20 +1864,20 @@ pal_post_handle(uint8_t slot, uint8_t status) {
 // Return the Front panel Power Button
 int
 pal_get_board_rev(int *rev) {
-  char path[64];
+  char path[LARGEST_DEVICE_NAME + 1];
   int val_id_0, val_id_1, val_id_2;
 
-  sprintf(path, GPIO_VAL, GPIO_MB_REV_ID_0);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
   if (read_device(path, &val_id_0)) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_MB_REV_ID_1);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
   if (read_device(path, &val_id_1)) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, GPIO_MB_REV_ID_2);
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
   if (read_device(path, &val_id_2)) {
     return -1;
   }

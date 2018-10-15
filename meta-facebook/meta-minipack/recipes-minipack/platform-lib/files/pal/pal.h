@@ -182,18 +182,18 @@ extern "C" {
 #define CURR(x)  "curr"#x"_input"
 #define POWER(x) "power"#x"_input"
 
-#define GPIO_MB_REV_ID_0 52
-#define GPIO_MB_REV_ID_1 53
-#define GPIO_MB_REV_ID_2 54
-#define GPIO_POSTCODE_0 56
-#define GPIO_POSTCODE_1 57
-#define GPIO_POSTCODE_2 58
-#define GPIO_POSTCODE_3 59
-#define GPIO_POSTCODE_4 60
-#define GPIO_POSTCODE_5 61
-#define GPIO_POSTCODE_6 62
-#define GPIO_POSTCODE_7 63
-#define GPIO_SCM_USB_PRSNT  204
+#define GPIO_SMB_REV_ID_0   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID0/%s"
+#define GPIO_SMB_REV_ID_1   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID1/%s"
+#define GPIO_SMB_REV_ID_2   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID2/%s"
+#define GPIO_POSTCODE_0     "/tmp/gpionames/GPIOH0/%s"
+#define GPIO_POSTCODE_1     "/tmp/gpionames/GPIOH1/%s"
+#define GPIO_POSTCODE_2     "/tmp/gpionames/GPIOH2/%s"
+#define GPIO_POSTCODE_3     "/tmp/gpionames/GPIOH3/%s"
+#define GPIO_POSTCODE_4     "/tmp/gpionames/GPIOH4/%s"
+#define GPIO_POSTCODE_5     "/tmp/gpionames/GPIOH5/%s"
+#define GPIO_POSTCODE_6     "/tmp/gpionames/GPIOH6/%s"
+#define GPIO_POSTCODE_7     "/tmp/gpionames/GPIOH7/%s"
+#define GPIO_SCM_USB_PRSNT  "/tmp/gpionames/SCM_USB_PRSNT/%s"
 
 #define MAX_READ_RETRY 10
 #define DELAY_POWER_OFF 5

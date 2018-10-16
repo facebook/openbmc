@@ -235,7 +235,7 @@ set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
   char value[64];
   struct timespec ts;
 
-  sprintf(key, "slot%d_fwupd", slot_id);
+  sprintf(key, "fru%u_fwupd", slot_id);
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
   sprintf(value, "%d", (int) ts.tv_sec);

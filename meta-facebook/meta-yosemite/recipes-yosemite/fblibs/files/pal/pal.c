@@ -2626,36 +2626,38 @@ pal_is_crashdump_ongoing(uint8_t slot)
 }
 
 bool
-pal_is_fw_update_ongoing(uint8_t fru) {
+pal_is_fw_update_ongoing_system(void) {
+  uint8_t i;
 
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  struct timespec ts;
-
-  switch (fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      sprintf(key, "slot%d_fwupd", fru);
-      break;
-    case FRU_SPB:
-    case FRU_NIC:
-    default:
-      return false;
+  for (i = FRU_SLOT1; i <= FRU_BMC; i++) {
+    if (pal_is_fw_update_ongoing(i) == true)
+      return true;
   }
-
-  ret = kv_get(key, value, NULL, 0);
-  if (ret < 0) {
-     return false;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return true;
 
   return false;
+}
+
+int
+pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
+  char key[64] = {0};
+  char value[64] = {0};
+  struct timespec ts;
+
+  if (fruid == FRU_BMC) {
+    fruid = FRU_SPB;
+  }
+
+  sprintf(key, "fru%d_fwupd", fruid);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  return 0;
 }
 
 int

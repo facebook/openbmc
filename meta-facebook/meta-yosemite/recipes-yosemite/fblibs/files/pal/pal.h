@@ -157,7 +157,6 @@ int pal_fan_recovered_handle(int fan_num);
 int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
 int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 int pal_is_crashdump_ongoing(uint8_t slot);
-bool pal_is_fw_update_ongoing(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);

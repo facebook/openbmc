@@ -19,6 +19,9 @@ Global config attributes:
 "sample_interval_ms":
   The interval value(in millisecond) between monitoring cycles.
 
+"fan_recovery_time":
+  The value(in second) to delay determinating fan status while accelerating from power loss.
+
 "boost":
   List the boost type.
   "fan_fail": true/false

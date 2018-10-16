@@ -64,6 +64,8 @@ class Fscd(object):
         self.fail_sensor_type = None
         self.fan_dead_boost = None
         self.fan_fail = None
+        self.fan_recovery_pending = False
+        self.fan_recovery_time = None
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -114,6 +116,8 @@ class Fscd(object):
                 self.wdfile.write(b'V')
                 self.wdfile.flush()
         self.interval = self.fsc_config['sample_interval_ms'] / 1000.0
+        if 'fan_recovery_time' in self.fsc_config:
+            self.fan_recovery_time = self.fsc_config['fan_recovery_time']
 
     def build_profiles(self):
         self.sensors = {}
@@ -402,8 +406,13 @@ class Fscd(object):
 
             if self.fanpower:
                 if not self.get_fan_power_status():
+                    self.fan_recovery_pending = True
                     continue
             if self.fan_fail:
+                if self.fan_recovery_pending and self.fan_recovery_time != None:
+                    # Accelerating, wait for a while
+                    time.sleep(self.fan_recovery_time)
+                    self.fan_recovery_pending = False
                 # Get dead fans for determining speed
                 dead_fans = self.update_dead_fans(dead_fans)
 

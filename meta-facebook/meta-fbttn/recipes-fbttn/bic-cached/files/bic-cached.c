@@ -39,6 +39,7 @@
 #define BYTES_ENTIRE_RECORD 0xFF
 #define MAX_RETRY 180         // 1 s * 180 = 3 mins
 #define MAX_RETRY_CNT 9000    // A senond can run about 50 times, 3 mins = 180 * 50
+#define SERVER_SDR_DONE_FILE "/tmp/sdr_server.done"
 
 int
 fruid_cache_init(uint8_t slot_id) {
@@ -145,6 +146,7 @@ main (int argc, char * const argv[])
   uint8_t slot_id;
   uint8_t self_test_result[2] = {0};
   uint8_t bic_ready_val = BIC_NOT_READY;
+  char cmd[128];
 
   if (argc != 2) {
     return -1;
@@ -180,6 +182,9 @@ main (int argc, char * const argv[])
     syslog(LOG_CRIT, "Fail on getting Server SDR.\n");
   } else {
     syslog(LOG_INFO, "Server SDR initial is done.\n");
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "touch %s", SERVER_SDR_DONE_FILE);
+    system(cmd);
   }
 
   // Get Server FRU

@@ -165,6 +165,24 @@ def free_kibibytes():
         return int(proc_meminfo_regex.findall(proc_meminfo.read())[0])
 
 
+def get_vboot_enforcement():
+    support = 'none'
+    if (not os.path.isfile('/usr/local/bin/vboot-util')):
+        return support
+    with open('/proc/mtd', 'r') as proc_mtd:
+        mtd_info = proc_mtd.read()
+    if ('romx' not in mtd_info):
+        return support
+    vboot_util_output = subprocess.check_output(
+        ['/usr/local/bin/vboot-util']
+    ).decode()
+    if ('Flags software_enforce:  0x01' in vboot_util_output):
+        support ='software-enforce'
+        if 'Flags hardware_enforce:  0x01' in vboot_util_output:
+            support = 'hardware-enforce'
+    return support
+
+
 def get_mtds():
     # type: () -> Tuple[MTDListType, MTDListType]
     proc_mtd_regex = re.compile(
@@ -174,15 +192,7 @@ def get_mtds():
     mtd_info = []
     with open('/proc/mtd', 'r') as proc_mtd:
         mtd_info = proc_mtd_regex.findall(proc_mtd.read())
-    vboot_support = 'none'
-    exists = os.path.isfile('/usr/local/bin/vboot-util')
-    if (exists and any(name == 'romx' for (_, _, name) in mtd_info)):
-        vboot_support = 'software-enforce'
-        vboot_util_output = subprocess.check_output(
-            ['/usr/local/bin/vboot-util']
-        ).decode()
-        if 'Flags hardware_enforce:  0x01' in vboot_util_output:
-            vboot_support = 'hardware-enforce'
+    vboot_support = get_vboot_enforcement()
     all_mtds = []
     full_flash_mtds = []
     for (device, size_in_hex, name) in mtd_info:
@@ -369,7 +379,21 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
     for current in partitions:
         # TODO populate valid env partition at build time
         # TODO learn to validate data0 partition
-        if not current.valid and current.name not in ['env', 'data0']:
+
+        # Ignore invalid checksum for u-boot when in hardware
+        # enforcement is currently on. For two reasons:
+        # 1) When in hardware-enforcement, the u-boot partition
+        #    is not executed during boot. It is there just to keep
+        #    a symmetric image between flash0 and flash1. Hence
+        #    checking provides no value.
+        # 2) Since only SPL (first 64k) of flash1 is write-protected,
+        #    and the way we work around this during flashing, makes
+        #    white-listing very painful (We would need to whitelist all
+        #    combinations of 84k+300K) with no return on investment due
+        #    to point (1).
+        if (not current.valid and current.name not in ['env', 'data0'] and
+                (current.name not in ['u-boot'] or
+                    get_vboot_enforcement() != 'hardware-enforce')):
             message = 'Exiting due to invalid {} partition (details above).'
             logger.error(message.format(current))
             sys.exit(1)

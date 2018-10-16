@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-override CFLAGS+=-Wall -Werror
+override CFLAGS+=-Wall -Werror -D_GNU_SOURCE
 
 all: mTerm_server mTerm_client
 

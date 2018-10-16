@@ -3,6 +3,7 @@
 SCMCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-2/2-0035"
 SMBCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-12/12-003e"
 PWR_USRV_SYSFS="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
+PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/cpld_mac_reset_n"
 
 wedge_iso_buf_enable() {
     # TODO, no isolation buffer

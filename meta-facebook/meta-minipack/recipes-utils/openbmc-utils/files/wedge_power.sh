@@ -28,7 +28,6 @@ board_rev=$(wedge_board_rev)
 PDBCPLD_L_SYSFS_DIR="/sys/class/i2c-adapter/i2c-55/55-0060"
 PDBCPLD_R_SYSFS_DIR="/sys/class/i2c-adapter/i2c-63/63-0060"
 PWR_USRV_RST_SYSFS="${SCMCPLD_SYSFS_DIR}/iso_com_rst_n"
-PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/cpld_mac_reset_n"
 PWR_L_CYCLE_SYSFS="${PDBCPLD_L_SYSFS_DIR}/power_cycle_go"
 PWR_R_CYCLE_SYSFS="${PDBCPLD_R_SYSFS_DIR}/power_cycle_go"
 PWR_L_TIMER_BASE_1S_SYSFS="${PDBCPLD_L_SYSFS_DIR}/timer_base_1s"

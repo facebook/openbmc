@@ -16,184 +16,274 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "watchdog.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <string.h>
+#include "watchdog.h"
 
-#define WATCHDOG_START_KEY "x"
-#define WATCHDOG_STOP_KEY "X"
+#define WATCHDOG_DEV_FILE		"/dev/watchdog"
+#define WATCHDOG_START_KEY		"x"
+#define WATCHDOG_STOP_KEY		"X"
 /* The "magic close" character (as defined in Linux watchdog specs). */
-#define WATCHDOG_PERSISTENT_KEY "V"
-#define WATCHDOG_NON_PERSISTENT_KEY "a"
+#define WATCHDOG_PERSISTENT_KEY		"V"
+#define WATCHDOG_NON_PERSISTENT_KEY	"a"
 
 static int watchdog_dev = -1;
-
-/* This is needed to prevent rapid consecutive stop/start watchdog calls from
- * generating multiple threads. */
-static int watchdog_started = 0;
-
 static const char* watchdog_kick_key = WATCHDOG_PERSISTENT_KEY;
+
+/* This is needed to prevent rapid consecutive open_watchdog() calls from
+ * generating multiple threads. */
+static int kick_thread_running;
+
 static pthread_t watchdog_tid;
 static pthread_mutex_t watchdog_lock = PTHREAD_MUTEX_INITIALIZER;
-
-/* Forward declarations. */
-static void* watchdog_thread(void* args);
-static int kick_watchdog_unsafe();
+static int auto_kick_interval = 5; /* default auto kick interval */
 
 /*
- * When started, this background thread will constantly reset the watchdog
- * at every 5 second interval.
+ * Write 1 byte character to the watchdog device.
+ *
+ * Returns: 0 for success, and -1 on failures.
  */
+static int write_watchdog(const char *key)
+{
+  int nwrite;
+  int retries = 10;
 
-static void* watchdog_thread(void* args) {
+  while ((nwrite = write(watchdog_dev, key, 1)) < 1) {
+    if (errno != EINTR || --retries < 0) {
+      return -1;
+    }
+  }
 
+  return 0;
+}
+
+/*
+ * Restarts the watchdog timer by sending <watchdog_kick_key>.
+ * This internal function assumes 1) the watchdog device is opened 2) the
+ * watchdog lock has already been acquired.
+ *
+ * Returns 0 on success; -1 indicates failure.
+ */
+static int kick_watchdog_unsafe()
+{
+  return write_watchdog(watchdog_kick_key);
+}
+
+/*
+ * When started, this background thread will constantly kick the watchdog
+ * at <auto-kick-interval> interval.
+ */
+static void* watchdog_kick_thread(void* args)
+{
   pthread_detach(pthread_self());
 
   /* Make sure another instance of the thread hasn't already been started. */
   pthread_mutex_lock(&watchdog_lock);
-  if (watchdog_started) {
+  if (kick_thread_running != 0)
     goto done;
-  } else {
-    watchdog_started = 1;
-  }
+
+  kick_thread_running = 1;
   pthread_mutex_unlock(&watchdog_lock);
 
   /* Actual loop for refreshing the watchdog timer. */
   while (1) {
     pthread_mutex_lock(&watchdog_lock);
-    if (watchdog_dev != -1) {
-      kick_watchdog_unsafe();
-    } else {
+    if (watchdog_dev < 0)
       break;
-    }
+
+    kick_watchdog_unsafe();
     pthread_mutex_unlock(&watchdog_lock);
-    sleep(5);
+    sleep(auto_kick_interval);
   }
 
   /* Broke out of loop because watchdog was stopped. */
-  watchdog_started = 0;
+  kick_thread_running = 0;
 done:
   pthread_mutex_unlock(&watchdog_lock);
   return NULL;
 }
 
 /*
- * Starts the watchdog timer. timer counts down and restarts the ARM chip
- * upon timeout. use kick_watchdog() to restart the timer.
+ * Open watchdog device and also start the watchdog timer. The watchdog
+ * timer will reset the system upon timeout. Use kick_watchdog() to kick
+ * the timer.
  *
- * Returns: 1 on success; 0 otherwise.
+ * Returns: 0 on success; -1 otherwise.
  */
-
-int start_watchdog(const int auto_mode) {
+int open_watchdog(const int auto_mode, int kick_interval)
+{
   int status;
 
   pthread_mutex_lock(&watchdog_lock);
 
-  /* Don't start the watchdog again if it has already been started. */
-  if (watchdog_dev != -1) {
-    while ((status = write(watchdog_dev, WATCHDOG_START_KEY, 1)) == 0
-           && errno == EINTR);
-    pthread_mutex_unlock(&watchdog_lock);
-    syslog(LOG_WARNING, "system watchdog already started.\n");
-    return 0;
+  if (watchdog_dev < 0) {
+    while (((watchdog_dev = open(WATCHDOG_DEV_FILE, O_WRONLY)) == -1) &&
+           errno == EINTR);
+    if (watchdog_dev < 0) {
+      syslog(LOG_WARNING, "failed to open %s: %s\n",
+             WATCHDOG_DEV_FILE, strerror(errno));
+      goto error;
+    }
   }
 
-  while (((watchdog_dev = open("/dev/watchdog", O_WRONLY)) == -1) &&
-    errno == EINTR);
-
-  /* Fail if watchdog device is invalid or if the user asked for auto
-   * mode and the thread failed to spawn. */
-  if ((watchdog_dev == -1) ||
-    (auto_mode == 1 && watchdog_started == 0 &&
-    pthread_create(&watchdog_tid, NULL, watchdog_thread, NULL) != 0)) {
-    goto fail;
+  /* Start auto-kick thread if needed. */
+  if (auto_mode != 0 && kick_thread_running == 0) {
+    if (kick_interval > 0) {
+      auto_kick_interval = kick_interval;
+    }
+    status = pthread_create(&watchdog_tid, NULL,
+                            watchdog_kick_thread, NULL);
+    if (status != 0) {
+      syslog(LOG_WARNING, "failed to create auto-kick thread: %s\n",
+             strerror(status));
+      errno = status;
+      goto error;
+    }
   }
 
-  while ((status = write(watchdog_dev, WATCHDOG_START_KEY, 1)) == 0
-         && errno == EINTR);
+  status = write_watchdog(WATCHDOG_START_KEY);
+  if (status != 0) {
+      syslog(LOG_WARNING, "failed to start watchdog: %s\n",
+             strerror(errno));
+      goto error;
+  }
+
   pthread_mutex_unlock(&watchdog_lock);
-  syslog(LOG_INFO, "system watchdog started.\n");
-  return 1;
+  syslog(LOG_INFO, "system watchdog opened and started.\n");
+  return 0;
 
-fail:
-  if (watchdog_dev != -1) {
+error:
+  if (watchdog_dev >= 0) {
     close(watchdog_dev);
     watchdog_dev = -1;
   }
-
   pthread_mutex_unlock(&watchdog_lock);
-  syslog(LOG_WARNING, "system watchdog failed to start!\n");
-  return 0;
+  return -1;
 }
 
 /*
- * Toggles between watchdog persistent modes. In persistent mode, the watchdog
- * timer will continue to tick even after process shutdown. Under non-
- * persistent mode, the watchdog timer will automatically be disabled when the
- * process shuts down.
+ * Release all the resources allocated by open_watchdog(). The watchdog
+ * timer may or may NOT be stopped, depending on whether magic close
+ * feature is enabled right before closing the device file.
  */
-void set_persistent_watchdog(enum watchdog_persistent_en persistent) {
-  switch (persistent) {
-  case WATCHDOG_SET_PERSISTENT:
-    watchdog_kick_key = WATCHDOG_PERSISTENT_KEY;
-    break;
-  default:
-    watchdog_kick_key = WATCHDOG_NON_PERSISTENT_KEY;
-    break;
+void release_watchdog(void)
+{
+  /*
+   * The auto-kick thread (if created) will quit soon after the file
+   * descriptor is closed.
+   */
+  pthread_mutex_lock(&watchdog_lock);
+  if (watchdog_dev >= 0) {
+    close(watchdog_dev);
+    watchdog_dev = -1;
   }
-  kick_watchdog();
+  pthread_mutex_unlock(&watchdog_lock);
 }
 
 /*
- * Restarts the countdown timer on the watchdog, delaying restart by another
- * timeout period (default: 11 seconds as configured in the device driver).
+ * Enable magic close feature. If the watchdog is closed right after
+ * enabling the feature, the watchdog timer will be disabled at close.
  *
- * This function assumes the watchdog lock has already been acquired and is
- * only used internally within the watchdog code.
+ * Returns: 0 on success, -1 on failures.
+ */
+int watchdog_enable_magic_close(void)
+{
+  watchdog_kick_key = WATCHDOG_NON_PERSISTENT_KEY;
+  return kick_watchdog();
+}
+
+/*
+ * Disable magic close feature. This is the default behavior: watchdog
+ * timer will continue ticking after being closed.
  *
- * Returns 1 on success; 0 or -1 indicates failure (check errno).
+ * Returns: 0 on success, -1 on failures.
+ */
+int watchdog_disable_magic_close(void)
+{
+  watchdog_kick_key = WATCHDOG_PERSISTENT_KEY;
+  return kick_watchdog();
+}
+
+/*
+ * Kick the watchdog, which resets the watchdog timer.
+ *
+ * Returns 0 on success; -1 indicates failure (check errno).
  */
 
-static int kick_watchdog_unsafe() {
-  int status = 0;
-  if (watchdog_dev != -1) {
-    while ((status = write(watchdog_dev, watchdog_kick_key, 1)) == 0
-           && errno == EINTR);
+int kick_watchdog(void) {
+  int status;
+
+  pthread_mutex_lock(&watchdog_lock);
+  if (watchdog_dev >= 0) {
+    status = kick_watchdog_unsafe();
+  } else {
+    errno = EBADFD;
+    status = -1;
+  }
+  pthread_mutex_unlock(&watchdog_lock);
+
+  if (status != 0) {
+    syslog(LOG_WARNING, "failed to kick watchdog: %s\n",
+           strerror(errno));
   }
   return status;
 }
 
 /*
- * Acquires the watchdog lock and resets the watchdog atomically. For use by
- * library users.
+ * Stop the watchdog timer. The watchdog timer will stop ticking if this
+ * function returns successfully.
+ *
+ * Returns: 0 for success, or -1 on failures.
  */
 
-int kick_watchdog() {
-  int result;
-  pthread_mutex_lock(&watchdog_lock);
-  result = kick_watchdog_unsafe();
-  pthread_mutex_unlock(&watchdog_lock);
-
-  return result;
-}
-
-/* Shuts down the watchdog gracefully and disables the watchdog timer so that
- * restarts no longer happen.
- */
-
-void stop_watchdog() {
+int stop_watchdog(void) {
   int status;
+
   pthread_mutex_lock(&watchdog_lock);
-  if (watchdog_dev != -1) {
-    while ((status = write(watchdog_dev, WATCHDOG_STOP_KEY, 1)) == 0
-           && errno == EINTR);
-    close(watchdog_dev);
-    watchdog_dev = -1;
-    syslog(LOG_INFO, "system watchdog stopped.\n");
+  if (watchdog_dev >= 0) {
+    status = write_watchdog(WATCHDOG_STOP_KEY);
+  } else {
+    errno = EBADFD;
+    status = -1;
   }
   pthread_mutex_unlock(&watchdog_lock);
+
+  if (status == 0) {
+    syslog(LOG_INFO, "system watchdog stopped.\n");
+  } else {
+    syslog(LOG_WARNING, "failed to stop watchdog: %s\n",
+           strerror(errno));
+  }
+  return status;
+}
+
+/*
+ * Start the watchdog timer. If the timer is already running, then this
+ * function just resets the timer.
+ *
+ * Returns: 0 for success, -1 on failures.
+ */
+int start_watchdog(void) {
+  int status;
+
+  pthread_mutex_lock(&watchdog_lock);
+  if (watchdog_dev >= 0) {
+    status = write_watchdog(WATCHDOG_START_KEY);
+  } else {
+    errno = EBADFD;
+    status = -1;
+  }
+  pthread_mutex_unlock(&watchdog_lock);
+
+  if (status == 0) {
+    syslog(LOG_INFO, "system watchdog started.\n");
+  } else {
+    syslog(LOG_WARNING, "failed to start watchdog: %s\n",
+           strerror(errno));
+  }
+  return status;
 }

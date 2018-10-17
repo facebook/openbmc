@@ -1039,11 +1039,11 @@ int main(int argc, char **argv) {
 #endif
 
   /* Start watchdog in manual mode */
-  start_watchdog(0);
+  open_watchdog(0, 0);
 
   /* Set watchdog to persistent mode so timer expiry will happen independent
    * of this process's liveliness. */
-  set_persistent_watchdog(WATCHDOG_SET_PERSISTENT);
+  watchdog_disable_magic_close();
 
   sleep(5);  /* Give the fans time to come up to speed */
 

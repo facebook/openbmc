@@ -1468,7 +1468,7 @@ int main(int argc, char **argv) {
 
   /* Set watchdog to persistent mode so timer expiry will happen independent
    * of this process's liveliness. */
-  set_persistent_watchdog(WATCHDOG_SET_PERSISTENT);
+  watchdog_disable_magic_close();
 
   /* We pet the watchdog here once, so that fan cpld will stop
    * forcing the fan speed to be 50% - this needs to be done before

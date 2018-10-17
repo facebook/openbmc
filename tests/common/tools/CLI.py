@@ -287,6 +287,9 @@ if __name__ == "__main__":
         if "eepromTest.py" in data:
             if data["eepromTest.py"] == 'yes':
                 generalTypeTest(cmd_bmc, data, "eepromTest.py")
+        if "hostMacTest.py" in data:
+            if data["hostMacTest.py"] == 'yes':
+                generalTypeTest(cmd_bmc, data, "hostMacTest.py")
         if "fansTest.py" in data:
             if data["fansTest.py"] == 'yes':
                 generalTypeTest(cmd_bmc, data, "fansTest.py")
@@ -315,9 +318,15 @@ if __name__ == "__main__":
         if "kernelModulesTest.py" in data:
             if data["kernelModulesTest.py"][0] == 'yes':
                 generalJsonTest(cmd_bmc, data, "kernelModulesTest.py")
+        if "gpioTest.py" in data:
+            if data["gpioTest.py"][0] == 'yes':
+                generalJsonTest(cmd_bmc, data, "gpioTest.py")
         if "processRunningTest.py" in data:
             if data["processRunningTest.py"][0] == 'yes':
                 generalJsonTest(cmd_bmc, data, "processRunningTest.py")
+        if "bmcUtiltest.py" in data:
+            if data["bmcUtiltest.py"][0] == 'yes':
+                generalJsonTest(cmd_bmc, data, "bmcUtiltest.py")
         if "solTest.py" in data:
             if data["solTest.py"] == 'yes':
                 if HEADNODE:

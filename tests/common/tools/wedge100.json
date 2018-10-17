@@ -51,6 +51,15 @@
     "psumuxmon_test.py":["yes",
     {
       "testfile":"/wedge100/unittests/"
-    }]
+    }],
+    "bmcUtiltest.py":["yes",
+      {
+        "json":"../wedge100/unittests/bmcUtilTest.json"
+      }],
+    "hostMacTest.py":"yes",
+    "gpioTest.py":["yes",
+      {
+        "json":"../wedge100/unittests/gpiolist.json"
+      }]
 
 }

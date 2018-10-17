@@ -41,5 +41,7 @@
     "restapiTest.py":["yes",
     {
         "json":"../../galaxy100/unittests/rest_endpoint.json"
-    }]
+    }],
+    "hostMacTest.py":"yes"
+
 }

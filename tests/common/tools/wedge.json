@@ -43,5 +43,6 @@
   "processRunningTest.py":["yes",
     {
       "json":"../wedge/unittests/process.json"
-    }]
+    }],
+  "hostMacTest.py":"yes"
 }

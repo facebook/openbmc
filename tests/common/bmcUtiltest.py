@@ -11,7 +11,7 @@ import logging
 def bmc_util_check(data):
     """
     Given a json of shell scripts, check that all of them run and have
-    exited properly
+    exited properly. Take care to have only non-disruptive scripts here
     """
     for script in data:
         print("executing command: {}".format(script))

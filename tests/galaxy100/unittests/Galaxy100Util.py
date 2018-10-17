@@ -42,3 +42,6 @@ class Galaxy100Util(BaseUtil.BaseUtil):
             return True
         else:
             return False
+
+    # Host Mac
+    HostMacCmd = '/usr/local/bin/wedge_us_mac.sh'

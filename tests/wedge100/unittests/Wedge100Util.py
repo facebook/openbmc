@@ -29,6 +29,9 @@ class Wedge100Util(BaseUtil.BaseUtil):
     watchdogDaemonKill = ['/usr/bin/sv stop fscd']
     watchdogDaemonRestore = ['/usr/bin/sv start fscd']
 
+    # Host Mac
+    HostMacCmd = '/usr/local/bin/wedge_us_mac.sh'
+
     def get_speed(self, info):
         """
         Supports getting fan pwm for wedge100

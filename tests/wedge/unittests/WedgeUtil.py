@@ -29,6 +29,9 @@ class WedgeUtil(BaseUtil.BaseUtil):
     watchdogDaemonKill = ['/usr/bin/killall fand']
     watchdogDaemonRestore = ['/bin/sh /etc/init.d/setup-fan.sh']
 
+    # Host Mac
+    HostMacCmd = '/usr/local/bin/wedge_us_mac.sh'
+
     def get_speed(self, info):
         """
         Supports getting fan speed for wedge

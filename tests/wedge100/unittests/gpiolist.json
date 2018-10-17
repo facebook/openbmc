@@ -1,0 +1,532 @@
+{
+    "gpios": {
+        "BMC_COM_NIC_ISOBUF_EN": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_COM_PANTHER_ISOBUF_EN": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_CPLD_POWER_INT": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_CPLD_QSFP_INT": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_CPLD_RESET1": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_CPLD_RESET2": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_CPLD_RESET3": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_CPLD_RESET4": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_CPLD_SPARE7": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_CPLD_TCK": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_CPLD_TDI": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_CPLD_TDO": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_CPLD_TMS": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_EEPROM1_SPI_MISO": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_EEPROM1_SPI_MOSI": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_EEPROM1_SPI_SCK": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_EEPROM1_SPI_SS": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_HEARTBEAT_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_MAIN_RESET_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_PWR_BTN_IN_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_PWR_BTN_OUT_N": {
+            "active_low": "0",
+            "direction": "out",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_READY_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BMC_SPI_WP_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_UART_1_RTS": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_WDTRST1": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BMC_WDTRST2": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BOARD_REV_ID0": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BOARD_REV_ID1": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BOARD_REV_ID2": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "BRG_COM_BIOS_DIS0_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "BRG_COM_BIOS_DIS1_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "COM6_BUF_EN": {
+            "active_low": "0",
+            "direction": "out",
+            "edge": "none",
+            "value": "0"
+        },
+        "COM_SPI_SEL": {
+            "active_low": "0",
+            "direction": "out",
+            "edge": "none",
+            "value": "0"
+        },
+        "CPLD_JTAG_SEL": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "CPLD_UPD_EN": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "DEBUG_PORT_UART_SEL_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "DEBUG_UART_SEL_0": {
+            "active_low": "0",
+            "direction": "out",
+            "edge": "none",
+            "value": "1"
+        },
+        "FANCARD_CPLD_TCK": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "FANCARD_CPLD_TDI": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "FANCARD_CPLD_TDO": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "FANCARD_CPLD_TMS": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "FANCARD_I2C_ALARM": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "ISO_BRG_THRMTRIP_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "ISO_BRG_THRM_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "ISO_BUF_EN": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "ISO_COM_BRG_WDT": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "ISO_COM_PWROK": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "ISO_COM_SUS_S3_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "ISO_COM_SUS_S4_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "ISO_COM_SUS_S5_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "ISO_COM_SUS_STAT_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "ISO_MICROSRV_PRSNT_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_0": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_1": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_2": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_3": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_4": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_5": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_6": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_POSTCODE_7": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "LED_PWR_BLUE": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "MSERVE_ISOBUF_EN": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "MSERV_NIC_SMBUS_ALERT_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "MSERV_POWERUP": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "PANTHER_I2C_ALERT_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "PM_SM_ALERT_N": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "QSFP_LED_POSITION": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "RCKMON_SPARE0": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "RCKMON_SPARE1": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "RCKMON_SPARE2": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "RCKMON_SPARE3": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "RCKMON_SPARE4": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "RCKMON_SPARE5": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "RMON1_PF": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "RMON1_RF": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "RMON2_PF": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "RMON2_RF": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "RMON3_PF": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "RMON3_RF": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "SMB_ALERT": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "SPI_IBMC_BT_CS1_N_R": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "SWITCH_EEPROM1_WRT": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "SWITCH_MDC": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "SWITCH_MDIO": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        },
+        "TH_POWERUP": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "TPM_SPI_BUF_EN": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "TPM_SPI_SEL": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "0"
+        },
+        "USB_OCS_N1": {
+            "active_low": "0",
+            "direction": "in",
+            "edge": "none",
+            "value": "1"
+        }
+    }
+}

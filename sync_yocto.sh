@@ -1,6 +1,6 @@
 #!/bin/sh
 
-repos="fido krogoth rocko"
+repos="krogoth rocko"
 
 if [ ! -d ./yocto ]; then
   mkdir ./yocto
@@ -26,4 +26,3 @@ do
   git clone -b $branch https://github.com/openembedded/meta-openembedded.git yocto/$branch/meta-openembedded
   git clone -b $branch https://git.yoctoproject.org/git/meta-security yocto/$branch/meta-security
 done
-

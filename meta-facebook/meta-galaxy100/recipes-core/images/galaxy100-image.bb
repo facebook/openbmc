@@ -32,7 +32,6 @@ IMAGE_INSTALL += " \
   spatula \
   stress  \
   usb-console \
-  watchdog-ctrl \
   wedge-eeprom \
   watchdogd \
   "

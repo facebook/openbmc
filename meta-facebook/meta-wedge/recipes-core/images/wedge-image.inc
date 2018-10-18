@@ -19,7 +19,6 @@ IMAGE_INSTALL += " \
   ast-mdio \
   fan-ctrl \
   rackmon \
-  watchdog-ctrl \
   sensor-setup \
   usb-console \
   oob-nic \

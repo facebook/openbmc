@@ -17,7 +17,6 @@ IMAGE_INSTALL += " \
   fbutils \
   fan-util \
   fscd \
-  watchdog-ctrl \
   sensor-setup \
   ipmid \
   packagegroup-openbmc-net \

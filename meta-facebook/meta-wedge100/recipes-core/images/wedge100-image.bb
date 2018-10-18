@@ -19,7 +19,6 @@ IMAGE_INSTALL += " \
   ast-mdio \
   openbmc-gpio \
   rackmon \
-  watchdog-ctrl \
   sensor-setup \
   usb-console \
   lldp-util \

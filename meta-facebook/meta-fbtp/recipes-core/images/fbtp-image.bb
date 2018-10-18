@@ -17,7 +17,6 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   at93cx6-util \
   ast-mdio \
-  watchdog-ctrl \
   lldp-util \
   bitbang \
   flashrom \

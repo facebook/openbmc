@@ -22,7 +22,6 @@ IMAGE_INSTALL += " \
   fbutils \
   ipmid \
   healthd \
-  watchdog-ctrl \
   usb-console \
   sensor-util \
   sensor-mon \

@@ -14,7 +14,6 @@ IMAGE_INSTALL += " \
   plat-utils \
   fan-util \
   fscd \
-  watchdog-ctrl \
   sensor-setup \
   ipmid \
   packagegroup-openbmc-base \

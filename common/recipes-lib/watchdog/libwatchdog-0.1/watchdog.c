@@ -28,8 +28,8 @@
 #define WATCHDOG_START_KEY		"x"
 #define WATCHDOG_STOP_KEY		"X"
 /* The "magic close" character (as defined in Linux watchdog specs). */
-#define WATCHDOG_PERSISTENT_KEY		"V"
-#define WATCHDOG_NON_PERSISTENT_KEY	"a"
+#define WATCHDOG_PERSISTENT_KEY		"a"
+#define WATCHDOG_NON_PERSISTENT_KEY	"V"
 
 static int watchdog_dev = -1;
 static const char* watchdog_kick_key = WATCHDOG_PERSISTENT_KEY;
@@ -68,7 +68,7 @@ static int write_watchdog(const char *key)
  *
  * Returns 0 on success; -1 indicates failure.
  */
-static int kick_watchdog_unsafe()
+static int kick_watchdog_unsafe(void)
 {
   return write_watchdog(watchdog_kick_key);
 }
@@ -213,8 +213,8 @@ int watchdog_disable_magic_close(void)
  *
  * Returns 0 on success; -1 indicates failure (check errno).
  */
-
-int kick_watchdog(void) {
+int kick_watchdog(void)
+{
   int status;
 
   pthread_mutex_lock(&watchdog_lock);
@@ -239,8 +239,8 @@ int kick_watchdog(void) {
  *
  * Returns: 0 for success, or -1 on failures.
  */
-
-int stop_watchdog(void) {
+int stop_watchdog(void)
+{
   int status;
 
   pthread_mutex_lock(&watchdog_lock);
@@ -267,7 +267,8 @@ int stop_watchdog(void) {
  *
  * Returns: 0 for success, -1 on failures.
  */
-int start_watchdog(void) {
+int start_watchdog(void)
+{
   int status;
 
   pthread_mutex_lock(&watchdog_lock);

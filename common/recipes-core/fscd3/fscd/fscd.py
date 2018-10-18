@@ -24,6 +24,7 @@ import time
 import sys
 import signal
 import traceback
+import subprocess
 
 from fsc_util import Logger, clamp
 from fsc_profile import profile_constructor, Sensor
@@ -39,7 +40,29 @@ CONFIG_DIR = '/etc/fsc'
 #CONFIG_DIR = '/tmp'
 DEFAULT_INIT_BOOST = 100
 DEFAULT_INIT_TRANSITIONAL = 70
+WDTCLI_CMD = '/usr/local/bin/wdtcli'
 
+def kick_watchdog():
+    """kick the watchdog device.
+    """
+    f = subprocess.Popen(WDTCLI_CMD + ' kick',
+                         shell=True,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    info, err = f.communicate()
+    if len(err) != 0:
+        Logger.error("failed to kick watchdog device")
+
+def stop_watchdog():
+    """kick the watchdog device.
+    """
+    f = subprocess.Popen(WDTCLI_CMD + ' stop',
+                         shell=True,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    info, err = f.communicate()
+    if len(err) != 0:
+        Logger.error("failed to kick watchdog device")
 
 class Fscd(object):
 
@@ -106,15 +129,9 @@ class Fscd(object):
             self.chassis_intrusion = False
         if 'ramp_rate' in self.fsc_config:
             self.ramp_rate = self.fsc_config['ramp_rate']
-        self.wdfile = None
         if self.watchdog:
             Logger.info("watchdog pinging enabled")
-            self.wdfile = open('/dev/watchdog', 'wb+', buffering=0)
-            if not self.wdfile:
-                Logger.error("couldn't open watchdog device")
-            else:
-                self.wdfile.write(b'V')
-                self.wdfile.flush()
+            kick_watchdog()
         self.interval = self.fsc_config['sample_interval_ms'] / 1000.0
         if 'fan_recovery_time' in self.fsc_config:
             self.fan_recovery_time = self.fsc_config['fan_recovery_time']
@@ -398,9 +415,8 @@ class Fscd(object):
             time.sleep(30)
 
         while True:
-            if self.wdfile:
-                self.wdfile.write(b'V')
-                self.wdfile.flush()
+            if self.watchdog:
+                kick_watchdog()
 
             time.sleep(self.interval)
 
@@ -430,10 +446,7 @@ def handle_term(signum, frame):
     Logger.warn("killed by signal %d" % (signum,))
     if signum == signal.SIGQUIT and wdfile:
         Logger.info("Killed with SIGQUIT - stopping watchdog.")
-        wdfile.write(b"X")
-        wdfile.flush()
-        wdfile.close()
-        wdfile = None
+        stop_watchdog()
     sys.exit('killed')
 
 

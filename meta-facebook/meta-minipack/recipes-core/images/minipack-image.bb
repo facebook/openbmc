@@ -47,7 +47,6 @@ IMAGE_INSTALL += " \
   trousers \
   tpm-tools \
   usb-console \
-  watchdog-ctrl \
   wedge-eeprom \
   "
 IMAGE_FEATURES += " \

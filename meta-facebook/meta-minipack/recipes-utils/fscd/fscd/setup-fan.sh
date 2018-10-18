@@ -78,7 +78,7 @@ echo fcm_b version : $fcm_b_maj $fcm_b_min compatible: $fcm_b_compatible
 echo fcm_t version : $fcm_t_maj $fcm_t_min compatible: $fcm_t_compatible
 if [ $fcm_b_compatible -eq 0 ] || [ $fcm_t_compatible -eq 0 ]; then
     echo "Old FCM CPLD detected. Running fan at the fixed speed."
-    /usr/local/bin/watchdog_ctrl.sh off
+    /usr/local/bin/wdtcli stop
 else
     echo "Starting fscd..."
     runsv /etc/sv/fscd > /dev/null 2>&1 &

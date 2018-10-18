@@ -80,6 +80,7 @@ typedef unsigned long DWORD;
 //#define VERBOSE
 //#define DEBUG
 #include <openbmc/gpio.h>
+#include <openbmc/hr_nanosleep.h>
 #include <openbmc/log.h>
 #include <errno.h>
 #endif
@@ -245,103 +246,6 @@ BOOL verbose = FALSE;
 
 #ifdef OPENBMC
 
-/*
- * The threshold (ns) to use spin instead of nanosleep().
- * Before adding the high resolution timer support, either spin or nanosleep()
- * will not bring the process wakeup within 10ms. It turns out the system time
- * update is also controlled by HZ (100).
- * After I added the high resolution timer support, the spin works as the
- * system time is updated more frequently. However, nanosleep() solution is
- * still noticeable slower comparing with spin. There could be some kernel
- * scheduling tweak missing. Did not get time on that yet.
- * For now, use 10ms as the threshold to determine if spin or nanosleep()
- * is used.
- */
-#define SPIN_THRESHOLD (10 * 1000 * 1000)
-#define NANOSEC_IN_SEC (1000 * 1000 * 1000)
-
-#ifdef USER_SPACE_NSLEEP
-// In Helium, the resolution of system timer is ~10ms,
-// which is too coarse for the utilites that toggles
-// JTAG bus, like this jbi player.
-// This alternative sleep_ns is designed to be used
-// in BMCs with Helium kernel. For every 500ns sleep,
-// it actually sleep for ~800ns, just in order to be
-// safe. (Otherwise CPLD program may fail due to the
-// clock speed which is too fast for Altera device
-// to handle)
-// The following value is from an experiment with
-// Wedge100/S. Using this value, it will take about
-// 1.5 minutes to program SYS CPLD.
-#define USR_NSLP_BASE  1
-#define USR_NSLP_SLOPE (1.0 / 180.0)
-static int sleep_ns(unsigned long clk)
-{
-  struct timespec req;
-  int base = USR_NSLP_BASE;
-  float slope = USR_NSLP_SLOPE;
-  unsigned int toy_variable;
-  int num_loops = base + (float)clk * slope;
-  int i = 0;
-  for (i = 0; i < num_loops; i++)
-  {
-      // Doing something to pass time, such as reading clock
-      // and rotating bits in some toy variable...
-      clock_gettime(CLOCK_MONOTONIC, &req);
-      toy_variable = ((toy_variable & 0x1) << 31 +
-                      (toy_variable) >> 1);
-  }
-  // In order to prevent compiler from optimizing the code above,
-  // we will return toy_variable. But we will make it 0 first before
-  // doing so.
-  // (if the compiler optimize the code above, it will decrease the
-  // delay that this function will make, which will in turn cause
-  // JTAG access to fail)
-  toy_variable = toy_variable & 0xaaaaaaaa; // Reset odd bits
-  toy_variable = toy_variable & 0x55555555; // Reset even bits
-  // By now toy_variable is 0, which is totally fine
-  return toy_variable;
-}
-
-#else
-static int sleep_ns(unsigned long clk)
-{
-  struct timespec req, rem;
-  int rc = 0;
-  if (clk <= SPIN_THRESHOLD) {
-    struct timespec orig;
-    rc = clock_gettime(CLOCK_MONOTONIC, &req);
-    orig = req;
-    while (!rc && clk) {
-      unsigned long tmp;
-      rc = clock_gettime(CLOCK_MONOTONIC, &rem);
-      tmp = (rem.tv_sec - req.tv_sec) * NANOSEC_IN_SEC;
-      if (rem.tv_nsec >= req.tv_nsec) {
-        tmp += rem.tv_nsec - req.tv_nsec;
-      } else {
-        tmp -= req.tv_nsec - rem.tv_nsec;
-      }
-      if (tmp >= clk) {
-        break;
-      }
-      clk -= tmp;
-      req = rem;
-    }
-  } else {
-    req.tv_sec = 0;
-    req.tv_nsec = clk;
-    while ((rc = nanosleep(&req, &rem)) == -1 && errno == EINTR) {
-      req = rem;
-    }
-  }
-  if (rc == -1) {
-    rc = errno;
-    LOG_ERR(rc, "Failed to sleep %u nanoseconds", clk);
-  }
-  return rc;
-}
-#endif
-
 int initialize_jtag_gpios()
 {
   if (gpio_open(&g_gpio_tck, g_tck) || gpio_open(&g_gpio_tms, g_tms)
@@ -382,8 +286,6 @@ int jbi_jtag_io(int tms, int tdi, int read_tdo)
   gpio_write(&g_gpio_tms, tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
   gpio_write(&g_gpio_tdi, tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
 
-  /* sleep 500ns to make sure the signal shows up on wire */
-  sleep_ns(500);
   /*
    * if we need to read data, the data should be ready from the
    * previous clock falling edge. Read it now.
@@ -394,7 +296,7 @@ int jbi_jtag_io(int tms, int tdi, int read_tdo)
 
   /* do rising edge to clock out the data */
   gpio_write(&g_gpio_tck, GPIO_VALUE_HIGH);
-  sleep_ns(500);
+
   /* do falling edge clocking */
   gpio_write(&g_gpio_tck, GPIO_VALUE_LOW);
 
@@ -598,7 +500,7 @@ void jbi_delay(long microseconds)
 #endif
 
 #ifdef OPENBMC
-  sleep_ns(microseconds * 1000);
+  hr_nanosleep(microseconds * 1000);
 #else
 	delay_loop(microseconds *
 		((one_ms_delay / 1000L) + ((one_ms_delay % 1000L) ? 1 : 0)));

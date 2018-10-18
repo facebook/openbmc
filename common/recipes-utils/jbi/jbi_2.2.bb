@@ -25,7 +25,7 @@ SRC_URI = "file://code \
 
 S = "${WORKDIR}/code"
 
-DEPENDS += "liblog libgpio"
+DEPENDS += "hr-nanosleep liblog libgpio"
 RDEPENDS_${PN} += "libgpio"
 
 do_install() {

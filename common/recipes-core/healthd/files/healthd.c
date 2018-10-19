@@ -252,10 +252,6 @@ initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
       t->bmc_error_trigger = true;
     }
   }
-
-  if (tmp && json_is_boolean(tmp)) {
-    t->reboot = json_is_true(tmp);
-  }
 }
 
 static void initialize_thresholds(const char *target, json_t *array, struct threshold_s **out_arr, size_t *out_len) {
@@ -1401,91 +1397,95 @@ static void check_vboot_state(void)
   }
 }
 
+static void
+log_reboot_cause(char *sled_off_time)
+{
+  int mem_fd;
+  uint8_t *bmc_reboot_base;
+  uint32_t reboot_detected_flag = 0;
+  uint32_t kern_panic_flag = 0;
+
+  mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+  if (mem_fd < 0) {
+    syslog(LOG_CRIT, "devmem open failed");
+    return;
+  }
+  bmc_reboot_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
+  if (bmc_reboot_base == NULL) {
+    syslog(LOG_CRIT, "Mapping SRAM_BMC_REBOOT_BASE failed");
+    close(mem_fd);
+    return;
+  }
+
+  // If this reset is due to Power-On-Reset, we detected SLED power OFF event
+  if (pal_is_bmc_por()) {
+    syslog(LOG_CRIT, "SLED Powered OFF at %s", sled_off_time);
+    pal_add_cri_sel("BMC AC lost");
+
+    // Initial BMC reboot flag
+    BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0x0;
+    BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0x0;
+  } else {
+    kern_panic_flag = BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base);
+    reboot_detected_flag = BMC_REBOOT_BY_CMD(bmc_reboot_base);
+
+    // Check the SRAM to make sure the reboot cause
+    // ===== kernel panic =====
+    if ((kern_panic_flag & BIT_RECORD_LOG)) {
+      // Clear the flag of record log and reserve the kernel panic flag
+      kern_panic_flag &= ~(BIT_RECORD_LOG);
+
+      if ((kern_panic_flag & FLAG_KERN_PANIC)) {
+        syslog(LOG_CRIT, "BMC Reboot detected - caused by kernel panic");
+      } else {
+        syslog(LOG_CRIT, "BMC Reboot detected - unknown kernel flag (0x%08x)", kern_panic_flag);
+      }
+
+      BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0;
+    // ===== reboot command =====
+    } else if ((reboot_detected_flag & BIT_RECORD_LOG)) {
+      // Clear the flag of record log and reserve the reboot command flag
+      reboot_detected_flag &= ~(BIT_RECORD_LOG);
+
+      if ((reboot_detected_flag & FLAG_CFG_UTIL)) {
+        reboot_detected_flag &= ~(FLAG_CFG_UTIL);
+        syslog(LOG_CRIT, "Reset BMC data to default factory settings");
+      }
+
+      if ((reboot_detected_flag & FLAG_REBOOT_CMD)) {
+        syslog(LOG_CRIT, "BMC Reboot detected - caused by reboot command");
+      } else {
+        syslog(LOG_CRIT, "BMC Reboot detected - unknown reboot command flag (0x%08x)", reboot_detected_flag);
+      }
+
+      BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0;
+    // ===== others =====
+    } else {
+      syslog(LOG_CRIT, "BMC Reboot detected");
+    }
+  }
+  munmap(bmc_reboot_base, PAGE_SIZE);
+  close(mem_fd);
+}
+
 // Thread to monitor SLED Cycles by using time stamp
 static void *
-timestamp_handler() {
+timestamp_handler()
+{
   int count = 0;
-  int mem_fd;
   struct timespec ts;
   struct timespec mts;
-  char tstr[64] = {0};
+  char tstr[MAX_VALUE_LEN] = {0};
   char buf[128] = {0};
   uint8_t time_init = 0;
-  uint8_t *bmc_reboot_base;
-  uint32_t kern_panic_flag = 0;
-  uint32_t reboot_detected_flag = 0;
   long time_sled_on;
   long time_sled_off;
 
   // Read the last timestamp from KV storage
   pal_get_key_value("timestamp_sled", tstr);
-  time_sled_off = (long) strtoul(tstr, NULL, 10);
-
-  // If this reset is due to Power-On-Reset, we detected SLED power OFF event
-  if (pal_is_bmc_por()) {
-    ctime_r(&time_sled_off, buf);
-    syslog(LOG_CRIT, "SLED Powered OFF at %s", buf);
-    pal_add_cri_sel("BMC AC lost");
-
-    // Initial BMC reboot flag
-    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-    if (mem_fd >= 0) {
-      bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
-      if (bmc_reboot_base != 0) {
-        BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0x0;
-        BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0x0;
-        munmap(bmc_reboot_base, PAGE_SIZE);
-      }
-      close(mem_fd);
-    }
-  } else {
-    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-    if (mem_fd >= 0) {
-      bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
-      if (bmc_reboot_base != 0) {
-        kern_panic_flag = BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base);
-        reboot_detected_flag = BMC_REBOOT_BY_CMD(bmc_reboot_base);
-
-        // Check the SRAM to make sure the reboot cause
-        // ===== kernel panic =====
-        if ((kern_panic_flag & BIT_RECORD_LOG) == BIT_RECORD_LOG) {
-          // Clear the flag of record log and reserve the kernel panic flag
-          kern_panic_flag &= ~(BIT_RECORD_LOG);
-
-          if ((kern_panic_flag & FLAG_KERN_PANIC) == FLAG_KERN_PANIC) {
-              syslog(LOG_CRIT, "BMC Reboot detected - caused by kernel panic");
-          } else {
-              syslog(LOG_CRIT, "BMC Reboot detected - unknown kernel flag (0x%08x)", kern_panic_flag);
-          }
-
-          BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0;
-        // ===== reboot command =====
-        } else if ((reboot_detected_flag & BIT_RECORD_LOG) == BIT_RECORD_LOG) {
-          // Clear the flag of record log and reserve the reboot command flag
-          reboot_detected_flag &= ~(BIT_RECORD_LOG);
-
-          if ((reboot_detected_flag & FLAG_CFG_UTIL) == FLAG_CFG_UTIL) {
-              reboot_detected_flag &= ~(FLAG_CFG_UTIL);
-              syslog(LOG_CRIT, "Reset BMC data to default factory settings");
-          }
-
-          if ((reboot_detected_flag & FLAG_REBOOT_CMD) == FLAG_REBOOT_CMD) {
-              syslog(LOG_CRIT, "BMC Reboot detected - caused by reboot command");
-          } else {
-              syslog(LOG_CRIT, "BMC Reboot detected - unknown reboot command flag (0x%08x)", reboot_detected_flag);
-          }
-
-          BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0;
-        // ===== others =====
-        } else {
-          syslog(LOG_CRIT, "BMC Reboot detected");
-        }
-
-        munmap(bmc_reboot_base, PAGE_SIZE);
-      }
-      close(mem_fd);
-    }
-  }
+  time_sled_off = (long) strtol(tstr, NULL, 10);
+  ctime_r(&time_sled_off, buf);
+  log_reboot_cause(buf);
 
   while (1) {
 
@@ -1572,25 +1572,25 @@ main(int argc, char **argv) {
 // For current platforms, we are using WDT from either fand or fscd
 // TODO: keeping this code until we make healthd as central daemon that
 //  monitors all the important daemons for the platforms.
-  if (pthread_create(&tid_watchdog, NULL, watchdog_handler, NULL) < 0) {
+  if (pthread_create(&tid_watchdog, NULL, watchdog_handler, NULL)) {
     syslog(LOG_WARNING, "pthread_create for watchdog error\n");
     exit(1);
   }
 
-  if (pthread_create(&tid_hb_led, NULL, hb_handler, NULL) < 0) {
+  if (pthread_create(&tid_hb_led, NULL, hb_handler, NULL)) {
     syslog(LOG_WARNING, "pthread_create for heartbeat error\n");
     exit(1);
   }
 
   if (cpu_monitor_enabled) {
-    if (pthread_create(&tid_cpu_monitor, NULL, CPU_usage_monitor, NULL) < 0) {
+    if (pthread_create(&tid_cpu_monitor, NULL, CPU_usage_monitor, NULL)) {
       syslog(LOG_WARNING, "pthread_create for monitor CPU usage\n");
       exit(1);
     }
   }
 
   if (mem_monitor_enabled) {
-    if (pthread_create(&tid_mem_monitor, NULL, memory_usage_monitor, NULL) < 0) {
+    if (pthread_create(&tid_mem_monitor, NULL, memory_usage_monitor, NULL)) {
       syslog(LOG_WARNING, "pthread_create for monitor memory usage\n");
       exit(1);
     }
@@ -1598,40 +1598,40 @@ main(int argc, char **argv) {
 
   if (i2c_monitor_enabled) {
     // Add a thread for monitoring all I2C buses crash or not
-    if (pthread_create(&tid_i2c_mon, NULL, i2c_mon_handler, NULL) < 0) {
+    if (pthread_create(&tid_i2c_mon, NULL, i2c_mon_handler, NULL)) {
       syslog(LOG_WARNING, "pthread_create for I2C errorr\n");
       exit(1);
     }
   }
 
   if (ecc_monitor_enabled) {
-    if (pthread_create(&tid_ecc_monitor, NULL, ecc_mon_handler, NULL) < 0) {
+    if (pthread_create(&tid_ecc_monitor, NULL, ecc_mon_handler, NULL)) {
       syslog(LOG_WARNING, "pthread_create for ECC monitoring errorr\n");
       exit(1);
     }
   }
 
   if (regen_log_enabled) {
-    if (pthread_create(&tid_bmc_health_monitor, NULL, bmc_health_monitor, NULL) < 0) {
+    if (pthread_create(&tid_bmc_health_monitor, NULL, bmc_health_monitor, NULL)) {
       syslog(LOG_WARNING, "pthread_create for BMC Health monitoring errorr\n");
       exit(1);
     }
   }
 
   if (nm_monitor_enabled) {
-    if (pthread_create(&tid_nm_monitor, NULL, nm_monitor, NULL) < 0) {
+    if (pthread_create(&tid_nm_monitor, NULL, nm_monitor, NULL)) {
       syslog(LOG_WARNING, "pthread_create for nm monitor error\n");
       exit(1);
     }
   }
 
-  if (pthread_create(&tid_crit_proc_monitor, NULL, crit_proc_monitor, NULL) < 0) {
+  if (pthread_create(&tid_crit_proc_monitor, NULL, crit_proc_monitor, NULL)) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
     exit(1);
   }
 
   if (bmc_timestamp_enabled) {
-    if (pthread_create(&tid_timestamp_handler, NULL, timestamp_handler, NULL) < 0) {
+    if (pthread_create(&tid_timestamp_handler, NULL, timestamp_handler, NULL)) {
       syslog(LOG_WARNING, "pthread_create for time stamp handler error\n");
       exit(1);
     }

@@ -21,7 +21,7 @@
 function watchdog_handler
 {
   while true; do
-    echo 'V' > '/dev/watchdog'
+    /usr/local/bin/wdtcli kick
     sleep 5 # secs
   done
 }

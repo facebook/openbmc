@@ -49,7 +49,7 @@ parse_pwm(char *str, uint8_t *pwm) {
   int val;
 
   val = strtol(str, &endptr, 10);
-  if ((*endptr != '\0' && *endptr != '%') || val > 100)
+  if ((*endptr != '\0' && *endptr != '%') || val > 100 || val < 0)
     return -1;
   *pwm = (uint8_t)val;
   return 0;
@@ -61,7 +61,7 @@ parse_fan(char *str, uint8_t fan_cnt, uint8_t *fan) {
   char *endptr = NULL;
 
   val = strtol(str, &endptr, 10);
-  if (*endptr != '\0' || val >= fan_cnt)
+  if (*endptr != '\0' || val >= fan_cnt || val < 0)
     return -1;
   *fan = (uint8_t)val;
   return 0;

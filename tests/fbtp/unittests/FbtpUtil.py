@@ -24,6 +24,10 @@ class FbtpUtil(BaseUtil.BaseUtil):
     KillControlCmd = ['/usr/bin/sv stop fscd']
     StartControlCmd = '/usr/bin/sv start fscd'
 
+    # Watchdog
+    watchdogDaemonKill = ['/usr/bin/sv stop fscd', '/usr/bin/sv stop healthd']
+    watchdogDaemonRestore = ['/usr/bin/sv start healthd', '/usr/bin/sv start fscd']
+
     def get_speed(self, info):
         """
         Supports getting fan pwm for Tioga Pass
@@ -66,5 +70,3 @@ class FbtpUtil(BaseUtil.BaseUtil):
             return True
         else:
             return False
-
-    daemonProcessesKill = ['/usr/bin/sv stop fscd', '/usr/bin/sv stop healthd']

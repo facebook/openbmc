@@ -39,7 +39,7 @@ class fscdTest():
 
     def stop_fscd(self):
         self.run_shell_cmd("sv stop fscd")
-        self.run_shell_cmd("/usr/local/bin/watchdog_ctrl.sh off")
+        self.run_shell_cmd("/usr/local/bin/wdtcli stop")
 
     def start_sensord(self):
         self.run_shell_cmd("sv start sensord")

@@ -5,135 +5,99 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import sys
 import unitTestUtil
-import time
 import subprocess
 import os
 import logging
-CMD_BMC = "sshpass -p 0penBmc ssh -tt root@{} "
+from time import sleep
+from watchdogUtils import WatchdogUtils
+
 currentPath = os.getcwd()
 try:
     testPath = currentPath[0:currentPath.index('tests')]
 except Exception:
     testPath = '/tmp/'
 
-
-def watchdogReset(unitTestUtil, utilType, logger, cmd_bmc, hostname, headnode=None):
+def watchdogTest(unitTestUtil, platType, logger):
+    """Test if watchdog is configured properly on bmc.
     """
-    Test that watchdog is working by causing a reset
-    """
-    if utilType.daemonProcessesKill is None:
-        raise Exception("no daemon process kill commands listed")
-    # Login and run WatchdogProcess
-    logger.debug("starting watchdog process from this test")
-    cmd_run_wdp = "python /tmp/tests/common/watchdogProcess.py"
-    wdSubProcess = subprocess.Popen(cmd_bmc + cmd_run_wdp,
-                                    shell=True, stdin=None,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+    if not platType.watchdogDaemonKill:
+        raise Exception("no daemon process kill commands provided")
+    if not platType.watchdogDaemonRestore:
+        raise Exception("no daemon process restore commands provided")
 
-    # Login and kill daemon processes
-    logger.debug("killing all daemon processes")
-    killcmds = utilType.daemonProcessesKill
-    for cmd in killcmds:
-        killSubProcess = subprocess.Popen(cmd_bmc + cmd,
-                                          shell=True, stdin=None,
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
-        output = killSubProcess.communicate()
-    # kill process that just started from this script
-    logger.debug("killing watchdog process started from this test")
-    psSubProcess = subprocess.Popen(cmd_bmc + "ps",
-                                    shell=True, stdin=None,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-    output = psSubProcess.communicate()[0]
-    #info = output.split('\n')
-    info = output.decode('utf-8').split('\n')
-    # Sometimes the process was killed too soon so that BMC won't reboot.
-    # So Let it sleep 3 seconds before killing watchdogProcess.
-    time.sleep(3)
-    for line in info:
-        if "watchdogProcess" in line:
-            line = line.split(' ')
-            for word in line:
-                if word != '':
-                    killprocess = subprocess.Popen(cmd_bmc + 'kill ' + word,
-                                                   shell=True, stdin=None,
-                                                   stdout=subprocess.PIPE,
-                                                   stderr=subprocess.PIPE)
-                    output = killprocess.communicate()
-                    break
+    wdtUtils = WatchdogUtils(unitTestUtil)
 
-    # check that host is pingable -> not pingable -> pingable
-    pingcmd = ""
-    if headnode is None or utilType.ConnectionTestPath is None:
-        pingcmd = 'python {0}tests/common/connectionTest.py {1} 6'.format(testPath, hostname)
-        #pingcmd = ['python', testPath + 'common/connectionTest.py', hostname, '6']
-    else:
-        pingcmd = 'python {0}{1} {2} {3} 6'.format(testPath, utilType.ConnectionTestPath, headnode, hostname)
-    logger.debug("checking that ping connection to host succeeds before reboot is triggered")
-    f = subprocess.Popen(pingcmd,
-                         shell=True, stdin=None,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    out, err = f.communicate()
-    if len(err) != 0:
-        raise Exception(err)
-    if b'PASSED' not in out:
-        print("watchdog Reset Test [FAILED]")
-        sys.exit(1)
-    logger.debug("waiting 30 seconds")
-    time.sleep(30)
-    logger.debug("checking that ping connection to host fails because rebooting is occurring")
-    f = subprocess.Popen(pingcmd,
-                         shell=True, stdin=None,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    out, err = f.communicate()
-    if len(err) != 0:
-        raise Exception(err)
-    if b'PASSED' in out:
-        print("No reset from watchdog [FAILED]")
-        sys.exit(1)
-    logger.debug("waiting 900 seconds")
-    time.sleep(900)
-    logger.debug("checking that ping connection to host succeeds, reboot should have completed")
-    f = subprocess.Popen(pingcmd,
-                         shell=True, stdin=None,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    out, err = f.communicate()
-    if len(err) != 0:
-        print("checking not connected: err")
-        print(err)
-        raise Exception(err)
-    if b'PASSED' not in out:
-        print("Watchdog Reset Test [FAILED]")
-        sys.exit(1)
-    else:
-        print("Watchdog Reset Test [PASSED]")
-        sys.exit(0)
+    #
+    # Step 1: make sure watchdog is enabled after bmc bootup.
+    #
+    if not wdtUtils.watchdog_is_running():
+        raise Exception("watchdog is not enabled after bmc bootup")
 
+    #
+    # Step 2: kill the program which is responsible for kicking watchdog,
+    # and make sure watchdog is not stopped when the program exit.
+    #
+    logger.debug("killing watchdog-kicking daemon processes")
+    for cmd in platType.watchdogDaemonKill:
+        unitTestUtil.run_shell_cmd(cmd)
+    if not wdtUtils.watchdog_is_running(check_counter=True):
+        raise Exception("watchdog is stopped when daemon process exit")
+
+    #
+    # Step 3: check if watchdog can be stopped.
+    #
+    logger.debug("testing if watchdog can be stopped")
+    wdtUtils.stop_watchdog()
+    if wdtUtils.watchdog_is_running():
+        raise Exception("watchdog cannot be stopped")
+
+    #
+    # Step 4: check if watchdog can be started.
+    #
+    logger.debug("testing if watchdog can be started")
+    wdtUtils.start_watchdog()
+    if not wdtUtils.watchdog_is_running(check_counter=True):
+        raise Exception("watchdog cannot be started")
+
+    #
+    # Step 5: check if watchdog can be kicked properly. The bmc will
+    # reboot if watchdog cannot be kicked properly.
+    #
+    interval = 6
+    iterations = 6
+    logger.debug("testing if watchdog can be kicked properly")
+    for i in range(iterations):
+        wdtUtils.kick_watchdog()
+        logger.debug('[%d/%d] watchdog kicked. Sleeping for %d seconds' %
+                     (i, iterations, interval))
+        sleep(interval)
+
+    #
+    # Step 6: restore watchdog-kicking daemon process.
+    #
+    logger.debug("restoreing watchdog-kicking process")
+    for cmd in platType.watchdogDaemonRestore:
+        unitTestUtil.run_shell_cmd(cmd)
 
 if __name__ == "__main__":
     """
     Input to this file should look like the following:
-    python watchdogResetTest.py type hostname
+    python watchdogResetTest.py type
     """
     util = unitTestUtil.UnitTestUtil()
     logger = util.logger(logging.WARN)
     try:
-        args = util.Argparser(['type', 'hostbmc', '--verbose'], [str, str, None],
-                              ['a platform type', 'a ip or name of hostbmc',
+        args = util.Argparser(['type', '--verbose'], [str, None],
+                              ['a platform type',
                               'output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR'])
         if args.verbose is not None:
             logger = util.logger(args.verbose)
-        platformType = args.type
-        hostname = args.hostbmc
-        utilType = util.importUtil(platformType)
-        cmd_bmc = CMD_BMC.format(hostname)
-        watchdogReset(util, utilType, logger, cmd_bmc, hostname)
+        platType = util.importUtil(args.type)
+        watchdogTest(util, platType, logger)
     except Exception as e:
-        print("watchdog Reset Test [FAILED]")
+        print("watchdog Test [FAILED]")
         print("Error: " + str(e))
-    sys.exit(1)
+        sys.exit(1)
+
+    print("Watchdog Test [PASSED]")
+    sys.exit(0)

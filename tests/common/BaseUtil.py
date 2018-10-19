@@ -89,5 +89,9 @@ class BaseUtil(object):
 
     # watchdog
     @abc.abstractproperty
-    def daemonProcessesKill(self):
+    def watchdogDaemonKill(self):
+        pass
+
+    @abc.abstractproperty
+    def watchdogDaemonRestore(self):
         pass

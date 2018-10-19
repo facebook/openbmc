@@ -25,6 +25,10 @@ class LightningUtil(BaseUtil.BaseUtil):
     KillControlCmd = ['/usr/bin/sv stop fscd']
     StartControlCmd = '/usr/bin/sv start fscd'
 
+    # Watchdog
+    watchdogDaemonKill = ['/usr/bin/sv stop fscd', '/usr/bin/sv stop healthd']
+    watchdogDaemonRestore = ['/usr/bin/sv start healthd', '/usr/bin/sv start fscd']
+
     # LightningConnectionTest path
     ConnectionTestPath = "tests/lightning/unittests/lightningConnectionTest.py"
 
@@ -56,5 +60,3 @@ class LightningUtil(BaseUtil.BaseUtil):
     # FPC
     FPCCmdOn = "/usr/bin/fpc-util --identify on"
     FPCCmdOff = "/usr/bin/fpc-util --identify off"
-
-    daemonProcessesKill = ['/usr/bin/sv stop fscd', '/usr/bin/sv stop healthd']

@@ -30,11 +30,7 @@
       "testfile":"../../lightning/unittests/lightningRestapiTest.py",
       "json":"../../lightning/unittests/rest_endpoint.json"
     }],
-  "watchdogResetTest.py":["yes",
-    {
-      "testfile":"../../lightning/unittests/lightningWatchdogResetTest.py"
-    }
-  ],
+  "watchdogResetTest.py":"yes",
   "memoryUsageTest.py":["yes",
     {
       "threshold":"90"

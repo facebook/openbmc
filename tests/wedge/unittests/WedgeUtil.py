@@ -22,8 +22,12 @@ class WedgeUtil(BaseUtil.BaseUtil):
     # Fans
     GetFanCmd = '/usr/local/bin/get_fan_speed.sh 1'
     SetFanCmd = '/usr/local/bin/set_fan_speed.sh 0'
-    KillControlCmd = ['/usr/local/bin/watchdog_ctrl.sh off', '/usr/bin/killall -USR1 fand']
+    KillControlCmd = ['/usr/local/bin/wdtcli stop', '/usr/bin/killall -USR1 fand']
     StartControlCmd = 'sh /etc/init.d/setup-fan.sh'
+
+    # watchdog
+    watchdogDaemonKill = ['/usr/bin/killall fand']
+    watchdogDaemonRestore = ['/bin/sh /etc/init.d/setup-fan.sh']
 
     def get_speed(self, info):
         """
@@ -69,6 +73,3 @@ class WedgeUtil(BaseUtil.BaseUtil):
             return True
         else:
             return False
-
-    # watchdog
-    daemonProcessesKill = ['/usr/bin/killall fand']

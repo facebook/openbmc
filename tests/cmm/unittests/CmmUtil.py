@@ -21,9 +21,13 @@ class CmmUtil(BaseUtil.BaseUtil):
     # Fans
     GetFanCmd = '/usr/local/bin/get_fan_speed.sh 1'
     SetFanCmd = '/usr/local/bin/set_fan_speed.sh 0 1'
-    KillControlCmd = ['/usr/local/bin/watchdog_ctrl.sh off',
+    KillControlCmd = ['/usr/local/bin/wdtcli stop',
                       '/usr/bin/killall -USR1 fand']
     StartControlCmd = '/bin/sh /etc/init.d/setup-fan.sh'
+
+    # watchdog
+    watchdogDaemonKill = ['/usr/bin/killall fand']
+    watchdogDaemonRestore = ['/bin/sh /etc/init.d/setup-fan.sh']
 
     def get_speed(self, info):
         """
@@ -59,6 +63,3 @@ class CmmUtil(BaseUtil.BaseUtil):
             return True
         else:
             return False
-
-    # watchdog
-    daemonProcessesKill = ['/usr/bin/killall fand']

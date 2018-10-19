@@ -7,6 +7,7 @@ import argparse
 import sys
 import logging
 import os
+import subprocess
 try:
     currentPath = os.getcwd()
     testPath = currentPath[0:currentPath.index('common')]
@@ -172,3 +173,15 @@ class UnitTestUtil:
         ch.setFormatter(formatter)
         root.addHandler(ch)
         return root
+
+    def run_shell_cmd(self, cmd):
+        """Run the supplied command.
+        """
+        proc = subprocess.Popen(cmd,
+                                shell=True,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        out, err = proc.communicate()
+        if len(err) != 0:
+            raise Exception(err)
+        return out

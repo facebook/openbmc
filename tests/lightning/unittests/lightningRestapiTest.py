@@ -23,7 +23,7 @@ def generateCMD(icmd, argument):
 if __name__ == "__main__":
     """
     Input to this file should look like the following:
-    python watchdogResetTest.py type hostname
+    python lightningRestapiTest.py type hostname
     """
     util = unitTestUtil.UnitTestUtil()
     logger = util.logger(logging.WARN)

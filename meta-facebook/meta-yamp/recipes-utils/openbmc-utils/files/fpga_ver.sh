@@ -45,12 +45,14 @@ else
     echo "------PIM-FPGA------"
     pim_list="1 2 3 4 5 6 7 8"
     for pim in ${pim_list}; do
-      pim_ver_file="lc${pim}_fpga_revision"
-      val=$(head -n 1 $SCDCPLD_SYSFS_DIR/$pim_ver_file)
-      if [ "${val}" == "0x0" ]; then
+      pim_maj_ver_file="lc${pim}_fpga_rev_major"
+      pim_min_ver_file="lc${pim}_fpga_rev_minor"
+      val1=$(head -n 1 $SCDCPLD_SYSFS_DIR/$pim_maj_ver_file)
+      val2=$(head -n 1 $SCDCPLD_SYSFS_DIR/$pim_min_ver_file)
+      if [ "$((val1))" -eq 255 ]; then
         echo "PIM $pim : NOT_DETECTED"
       else
-        echo "PIM $pim : $val"
+        echo "PIM $pim : $((val1)).$((val2))"
       fi
     done
 fi

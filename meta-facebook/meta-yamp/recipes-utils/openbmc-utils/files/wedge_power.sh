@@ -41,6 +41,11 @@ usage() {
     echo "    options:"
     echo "      -s: Power reset whole yamp system ungracefully"
     echo
+    echo "  pimreset: Power-cycle one or all PIM(s)"
+    echo "    options:"
+    echo "      -a  : Reset all PIMs or "
+    echo "      -2 , -3 , ... , -9 : Reset a single PIM (2, 3 ... 9) "
+    echo
 }
 
 do_status() {
@@ -137,6 +142,81 @@ do_reset() {
     fi
 }
 
+toggle_pim_reset() {
+  pim=$1
+  # First, put the PIMs we want into reset
+  for slot in 2 3 4 5 6 7 8 9; do
+    if [ $pim -eq 0 ] || [ $slot -eq $pim ]; then
+      # Unlike Minipack, YAMP pim index is 1 based
+      index=$(expr $slot - 1)
+      # Unlike Minipack, YAMP uses GPIO
+      echo Power-cycling PIM in slot $slot
+      echo out > /tmp/gpionames/LC${index}_LC_PWR_CYC/direction
+      echo high > /tmp/gpionames/LC${index}_LC_PWR_CYC/direction
+    fi
+  done
+  # Sleep 1 sec
+  sleep 1
+  # Finally, put the LC_PWR_CYC bit to 0
+  for slot in 2 3 4 5 6 7 8 9; do
+    if [ $pim -eq 0 ] || [ $slot -eq $pim ]; then
+      # Unlike Minipack, YAMP pim index is 1 based
+      index=$(expr $slot - 1)
+      # Unlike Minipack, YAMP uses GPIO
+      echo Putting PIM in $slot into normal operation
+      echo low > /tmp/gpionames/LC${index}_LC_PWR_CYC/direction
+    fi
+  done
+}
+do_pimreset() {
+    local pim opt retval rc
+    retval=0
+    pim=-1
+    while getopts "23456789a" opt; do
+        case $opt in
+            a)
+                pim=0
+                ;;
+            2)
+                pim=2
+                ;;
+            3)
+                pim=3
+                ;;
+            4)
+                pim=4
+                ;;
+            5)
+                pim=5
+                ;;
+            6)
+                pim=6
+                ;;
+            7)
+                pim=7
+                ;;
+            8)
+                pim=8
+                ;;
+            9)
+                pim=9
+                ;;
+            *)
+                usage
+                exit -1
+                ;;
+        esac
+    done
+    if [ $pim -eq -1 ]; then
+      usage
+      exit -1
+    fi
+
+    toggle_pim_reset $pim
+
+    return $retval
+}
+
 if [ $# -lt 1 ]; then
     usage
     exit -1
@@ -157,6 +237,9 @@ case "$command" in
         ;;
     reset)
         do_reset $@
+        ;;
+    pimreset)
+        do_pimreset $@
         ;;
     *)
         usage

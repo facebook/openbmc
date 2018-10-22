@@ -103,7 +103,7 @@
     "1": {
       "label" : "Fan 1 Front",
       "read_source" : {
-        "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan1_input"
+        "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan1_input"
       },
       "write_source" : {
         "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fantray1_pwm"
@@ -112,13 +112,13 @@
     "2": {
       "label" : "Fan 1 Rear",
       "read_source" : {
-        "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan2_input"
+        "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan2_input"
       }
     },
     "3": {
       "label" : "Fan 2 Front",
       "read_source" : {
-        "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan1_input"
+        "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan3_input"
       },
       "write_source" : {
         "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fantray1_pwm"
@@ -127,13 +127,13 @@
     "4": {
       "label" : "Fan 2 Rear",
       "read_source" : {
-        "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan2_input"
+        "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan4_input"
       }
     },
    "5": {
      "label" : "Fan 3 Front",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan3_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan5_input"
      },
      "write_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fantray2_pwm"
@@ -142,13 +142,13 @@
    "6": {
      "label" : "Fan 3 Rear",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan4_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan6_input"
      }
    },
    "7": {
      "label" : "Fan 4 Front",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan3_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan7_input"
      },
      "write_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fantray2_pwm"
@@ -157,13 +157,13 @@
    "8": {
      "label" : "Fan 4 Rear",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan4_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan8_input"
      }
    },
    "9": {
      "label" : "Fan 5 Front",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan5_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan9_input"
      },
      "write_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fantray3_pwm"
@@ -172,13 +172,13 @@
    "10": {
      "label" : "Fan 5 Rear",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan6_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan10_input"
      }
    },
    "11": {
      "label" : "Fan 6 Front",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan5_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan11_input"
      },
      "write_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fantray3_pwm"
@@ -187,13 +187,13 @@
    "12": {
      "label" : "Fan 6 Rear",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan6_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan12_input"
      }
    },
    "13": {
      "label" : "Fan 7 Front",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan7_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan13_input"
      },
      "write_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fantray4_pwm"
@@ -202,13 +202,13 @@
    "14": {
      "label" : "Fan 7 Rear",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-64/64-0033/fan8_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan14_input"
      }
    },
    "15": {
      "label" : "Fan 8 Front",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan7_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan15_input"
      },
      "write_source" : {
        "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fantray4_pwm"
@@ -217,7 +217,7 @@
    "16": {
      "label" : "Fan 8 Rear",
      "read_source" : {
-       "sysfs": "/sys/class/i2c-adapter/i2c-72/72-0033/fan8_input"
+       "sysfs": "/tmp/tests/minipack/unittests/fscd/test_data/fan16_input"
      }
    }
   },

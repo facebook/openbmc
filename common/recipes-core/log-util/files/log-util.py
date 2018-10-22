@@ -149,7 +149,7 @@ def log_main():
                 if re.search(r'FRU: [0-9]{1,2}', log, re.IGNORECASE):
                     fru_num = ''.join(re.findall(r'FRU: [0-9]{1,2}', log, re.IGNORECASE))
                     # FRU is in format "FRU: X"
-                    fru_num = fru_num[5]
+                    fru_num = fru_num.split(" ")[1]
                 else:
                     fru_num = '0'
 
@@ -199,7 +199,7 @@ def log_main():
                 if re.search(r'FRU: [0-9]{1,2}', log, re.IGNORECASE):
                     fru_num = ''.join(re.findall(r'FRU: [0-9]{1,2}', log, re.IGNORECASE))
                     # FRU is in format "FRU: X"
-                    fru_num = fru_num[5]
+                    fru_num = fru_num.split(" ")[1]
                 else:
                     fru_num = '0'
 

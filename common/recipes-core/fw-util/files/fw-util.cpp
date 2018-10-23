@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
   }
 
   if ((action == "--update") || (action == "--dump")) {
-    if (argc < 5) {
+    if (argc != 5) {
       usage();
       return -1;
     }
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
       return -1;
     }
   } else if (action == "--force") {
-    if (argc < 6) {
+    if (argc != 6) {
       usage();
       return -1;
     }
@@ -252,11 +252,16 @@ int main(int argc, char *argv[])
       cerr << "Upgrading all components not supported" << endl;
       return -1;
     }
-  } else if (action != "--version") {
+  } else if (action == "--version") {
+    if(argc != 4) {
+      usage();
+      return -1;
+    }
+  } else {
     cerr << "Invalid action: " << action << endl;
     usage();
     return -1;
-  } 
+  }
 
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {

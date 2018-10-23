@@ -29,6 +29,7 @@ SRC_URI += "file://bios_util.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
             file://pim_enable.sh \
+            file://dpm_ver.sh \
             file://yamp_bios.layout \
             file://showtech.sh \
            "
@@ -41,7 +42,7 @@ OPENBMC_UTILS_FILES += " \
     reset_brcm.sh \
     wedge_power.sh \
     wedge_us_mac.sh \
-    pim_enable.sh \
+    dpm_ver.sh \
     showtech.sh \
     "
 

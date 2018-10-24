@@ -447,6 +447,7 @@ typedef union _bic_config_u {
 } bic_config_u;
 
 int bic_is_slot_12v_on(uint8_t slot_id);
+uint8_t is_bic_ready(uint8_t slot_id);
 int bic_is_slot_power_en(uint8_t slot_id);
 
 int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
@@ -495,6 +496,7 @@ int me_recovery(uint8_t slot_id, uint8_t command);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
 int bic_read_accuracy_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_accuracy_sensor_reading_t *sensor);
 int bic_get_server_type(uint8_t fru, uint8_t *type);
+int bic_reset(uint8_t slot_id);
 int bic_asd_init(uint8_t slot_id, uint8_t cmd);
 int bic_set_pcie_config(uint8_t slot_id, uint8_t config);
 int get_imc_version(uint8_t slot, uint8_t *ver);

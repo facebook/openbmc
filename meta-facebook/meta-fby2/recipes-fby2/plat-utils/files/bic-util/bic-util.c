@@ -42,6 +42,7 @@
 #define NUM_SLOTS 4
 #define JTAG_TOTAL_API 1
 
+
 enum cmd_profile_type {
   CMD_AVG_DURATION=0,
   CMD_MIN_DURATION,
@@ -53,6 +54,7 @@ enum cmd_profile_type {
 long double cmd_profile[NUM_SLOTS][CMD_PROFILE_NUM]={0};
 
 static const char *option_list[] = {
+  "--check_status",
   "--get_dev_id",
   "--get_gpio",
   "--set_gpio [gpio] [val]",
@@ -64,6 +66,7 @@ static const char *option_list[] = {
   "--get_sdr",
   "--read_sensor",
   "--perf_test [loop_count]  (0 to run forever)",
+  "--reset",
   "--file [path]"
 };
 
@@ -78,6 +81,26 @@ print_usage_help(void) {
     printf("       %s\n", option_list[i]);
 }
 
+// Check BIC status
+static int
+util_check_status(uint8_t slot_id) {
+  int ret = 0;
+
+  // BIC status is only valid if 12V-on. check this first
+  if (!bic_is_slot_12v_on(slot_id)) {
+    printf("Server is 12V-off, unable to check BIC status\n");
+    ret = 0;
+  } else {
+    if (is_bic_ready(slot_id)) {
+      printf("BIC status ok\n");
+      ret = 0;
+    } else {
+      printf("Error: BIC not ready\n");
+      ret = -1;
+    }
+  }
+  return ret;
+}
 
 // Test to Get device ID
 static int
@@ -523,6 +546,16 @@ util_perf_test(uint8_t slot_id, int loopCount) {
   return ret;
 }
 
+// Test to Get device ID
+static int
+util_bic_reset(uint8_t slot_id) {
+  int ret = 0;
+  ret = bic_reset(slot_id);
+  printf("Performing BIC reset, status %d\n", ret);
+  return ret;
+}
+
+
 static int
 process_command(uint8_t slot_id, int argc, char **argv) {
   int i, ret, retry = 2;
@@ -617,7 +650,9 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  if (!strcmp(argv[2], "--get_dev_id")) {
+  if (!strcmp(argv[2], "--check_status")) {
+    ret = util_check_status(slot_id);
+  } else if (!strcmp(argv[2], "--get_dev_id")) {
     ret = util_get_device_id(slot_id);
   } else if (!strcmp(argv[2], "--get_gpio")) {
     util_get_gpio(slot_id);
@@ -657,6 +692,8 @@ main(int argc, char **argv) {
       goto err_exit;
     }
     ret = process_file(slot_id, argv[3]);
+  } else if (!strcmp(argv[2], "--reset")) {
+    ret = util_bic_reset(slot_id);
   } else if (argc >= 4) {
     return process_command(slot_id, (argc - 2), (argv + 2));
   } else {

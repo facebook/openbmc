@@ -185,8 +185,8 @@ read_device(const char *device, int *value) {
   }
 }
 
-static uint8_t
-_is_bic_ready(uint8_t slot_id) {
+uint8_t
+is_bic_ready(uint8_t slot_id) {
   int val;
   char path[64] = {0};
 
@@ -293,7 +293,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   uint8_t dataCksum;
   int retry = 0;
 
-  if (!_is_bic_ready(slot_id)) {
+  if (!is_bic_ready(slot_id)) {
     return -1;
   }
 
@@ -331,7 +331,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
     if (rlen == 0) {
-      if (!_is_bic_ready(slot_id)) {
+      if (!is_bic_ready(slot_id)) {
         break;
       }
 
@@ -806,7 +806,7 @@ force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
     return -2;
   }
 
-  if (_is_bic_ready(slot_id)) {
+  if (is_bic_ready(slot_id)) {
     printf("Not support in BIC normal mode\n");
     return -2;
   }
@@ -1055,7 +1055,7 @@ force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
-    if (_is_bic_ready(slot_id))
+    if (is_bic_ready(slot_id))
       break;
 
     msleep(BIC_UPDATE_TIMEOUT);
@@ -1185,7 +1185,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
   sleep(1);
   printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
-  if (_is_bic_ready(slot_id)) {
+  if (is_bic_ready(slot_id)) {
     mqlim.rlim_cur = RLIM_INFINITY;
     mqlim.rlim_max = RLIM_INFINITY;
     if (setrlimit(RLIMIT_MSGQUEUE, &mqlim) < 0) {
@@ -1212,7 +1212,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
-    if (!_is_bic_ready(slot_id)) {
+    if (!is_bic_ready(slot_id)) {
       printf("bic ready for update after %d tries\n", i);
       break;
     }
@@ -1413,7 +1413,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
-    if (_is_bic_ready(slot_id))
+    if (is_bic_ready(slot_id))
       break;
 
     msleep(BIC_UPDATE_TIMEOUT);
@@ -2600,6 +2600,18 @@ bic_asd_init(uint8_t slot_id, uint8_t cmd) {
 
   tbuf[3] = cmd;
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, 4, rbuf, &rlen);
+
+  return ret;
+}
+
+int
+bic_reset(uint8_t slot_id) {
+  uint8_t tbuf[3] = {0x00, 0x00, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen);
 
   return ret;
 }

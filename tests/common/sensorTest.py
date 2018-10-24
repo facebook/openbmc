@@ -10,7 +10,7 @@ import unitTestUtil
 import logging
 
 sensorDict = {}
-util_support_map = ['fbttn', 'fbtp', 'lightning']
+util_support_map = ['fbttn', 'fbtp', 'lightning', 'minipack']
 lm_sensor_support_map = ['wedge', 'wedge100', 'galaxy100', 'cmm']
 
 
@@ -86,8 +86,8 @@ def sensorTestUtil(platformType, data, util):
                     rang[1]):
                 failed += [sensor]
         else:
-            if 'NA' in raw_value:
-                failed += [sensor]
+            if 'ok' not in raw_value:
+                failed += [sensor + raw_value]
     return failed
 
 
@@ -149,6 +149,9 @@ def createSensorDictUtil(util):
             key = lineInfo[0]
             val = ''.join(lineInfo[1:])
             sensorDict[key] = val
+        if "timed out" in line:
+            print(line)
+            raise Exception(line)
 
 
 if __name__ == "__main__":

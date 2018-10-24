@@ -9,7 +9,6 @@
       "gpios",
       "mb",
       "fc_present",
-      "modbus_registers",
       "server",
       "slotid",
       "mTerm_status",

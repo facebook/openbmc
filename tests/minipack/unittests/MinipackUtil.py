@@ -17,7 +17,7 @@ import BaseUtil
 class MinipackUtil(BaseUtil.BaseUtil):
 
     # Sensors
-    SensorCmd = '/usr/bin/sensors'
+    SensorCmd = '/usr/local/bin/sensor-util all'
 
     # Fans
     GetFanCmd = '/usr/local/bin/get_fan_speed.sh 1'

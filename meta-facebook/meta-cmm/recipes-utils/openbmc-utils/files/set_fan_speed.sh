@@ -32,28 +32,27 @@ if [ "$#" -ne 2 ] && [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-if [ "$2" -le 0 ] || [ "$2" -ge 13 ]; then
-  echo "Fan id $2: not a valid id"
-  exit 1
-fi
-
 busses="171 179 187 195"
 if [ "$#" -eq 1 ]; then
     ids="1 2 3"
 else
+    if [ "$2" -le 0 ] || [ "$2" -ge 13 ]; then
+        echo "Fan id $2: not a valid id"
+        exit 1
+    fi
     FAN="$2"
     FAN=$((${FAN} - 1))
     busIndex=$((${FAN} / 3))
     temp=$((${FAN} - ( ${FAN} / 3 * 3 )))
     ids=$((${temp} + 1))
     if [ ${busIndex} -eq 0 ]; then
-      busses="171"
+        busses="171"
     elif [ ${busIndex} -eq 1 ]; then
-      busses="179"
+        busses="179"
     elif [ ${busIndex} -eq 2 ]; then
-      busses="187"
+        busses="187"
     else
-      busses="195"
+        busses="195"
     fi
 fi
 

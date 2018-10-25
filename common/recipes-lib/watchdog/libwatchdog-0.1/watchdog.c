@@ -153,7 +153,7 @@ int open_watchdog(const int auto_mode, int kick_interval)
   }
 
   pthread_mutex_unlock(&watchdog_lock);
-  syslog(LOG_INFO, "system watchdog opened and started.\n");
+  syslog(LOG_DEBUG, "system watchdog opened and started.\n");
   return 0;
 
 error:

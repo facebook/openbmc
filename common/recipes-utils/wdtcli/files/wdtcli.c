@@ -163,6 +163,9 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	openlog(NULL, 0, LOG_USER);
+	setlogmask(LOG_UPTO(LOG_INFO));
+
 	cmd_info = wdtcli_match_cmd(user_cmd);
 	if (cmd_info == NULL) {
 		fprintf(stderr,

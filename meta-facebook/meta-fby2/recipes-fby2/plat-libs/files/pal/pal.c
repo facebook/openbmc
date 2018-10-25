@@ -8888,3 +8888,18 @@ int
 pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
   return force_update_bic_fw(slot_id, comp, path);
 }
+
+void
+pal_specific_plat_fan_check(bool status)
+{
+  uint8_t is_sled_out = 1;
+  if (pal_get_fan_latch(&is_sled_out) != 0) 
+    syslog(LOG_WARNING, "%s: Get SLED status in/out failed", __func__);
+ 
+  if(is_sled_out == 0)
+    printf("Sled Fan Latch Open: False\n");
+  else
+    printf("Sled Fan Latch Open: True\n");
+
+  return;
+}

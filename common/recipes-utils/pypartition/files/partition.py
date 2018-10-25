@@ -320,7 +320,7 @@ class DeviceTreePartition(Partition):
         b'algo', b'arch', b'compression', b'default', b'description',
         b'firmware', b'hashed-nodes', b'kernel', b'key-name-hint', b'os',
         b'ramdisk', b'sign-images', b'signer-name', b'signer-version',
-        b'type',
+        b'type', b'fdt',
     ]
     unrecognized_string_message = \
         'Attempting to parse unrecognized {}-byte property "{}" as string.'

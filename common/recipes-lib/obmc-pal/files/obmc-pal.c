@@ -178,43 +178,26 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
-  uint32_t timestamp = 0;
-  struct tm ts;
-  char time[64] = {0};
+  uint8_t plat;
   error_log[0] = '\0';
-  
-  timestamp |= sel[4];
-  timestamp |= sel[5] << 8;
-  timestamp |= sel[6] << 16;
-  timestamp |= sel[7] << 24;
 
-  sprintf(time, "%u", timestamp);
-  memset(&ts, 0, sizeof(struct tm));
-  strptime(time, "%s", &ts);
-  memset(&time, 0, sizeof(time));
-  strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &ts);
-
-  switch(error_type)
-  {
+  switch (error_type) {
     case UNIFIED_PCIE_ERR:
-      {
-        uint8_t plat = (general_info & 0x10) >> 4;
-        if ( plat == 0 )//x86
-        {
-          sprintf(error_log, "GeneralInfo: x86/PCIeErr(0x%02X), Time: %s, Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
-                  general_info, time, sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
-        }
-        else
-        {
-          sprintf(error_log, "GeneralInfo: ARM/PCIeErr(0x%02X), Time: %s, Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
-                  general_info, time, ((sel[9]<<8)|sel[8]),sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
-        }
-      }    
+      plat = (general_info & 0x10) >> 4;
+      if (plat == 0) {  //x86
+        sprintf(error_log, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, \
+                            TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
+                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
+      } else {
+        sprintf(error_log, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, \
+                            TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
+                general_info, ((sel[9]<<8)|sel[8]),sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
+      }
       break;
 
     default:
-        sprintf(error_log, "Undefined Error Type(0x%02X), Raw: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-                error_type, sel[3], sel[4], sel[5], sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]); 
+      sprintf(error_log, "Undefined Error Type(0x%02X), Raw: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+              error_type, sel[3], sel[4], sel[5], sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
       break;
   }
 

@@ -252,6 +252,7 @@ do_reset() {
 }
 
 toggle_pim_reset() {
+    retval=0
     pim=$1
     for slot in 2 3 4 5 6 7 8 9; do
       if [ $pim -eq 0 ] || [ $slot -eq $pim ]; then
@@ -260,8 +261,13 @@ toggle_pim_reset() {
          # so we will use raw i2c access for the time being
          echo Power-cycling PIM in slot $slot
          i2cset -f -y ${PIM_CPLD_BUS[$index]} $CPLD_ADDR $CPLD_RESET_CMD
+         result=$?
+         if [ $result -ne 0 ]; then
+           retval=$result
+         fi
       fi
     done
+    return $retval
 }
 
 do_pimreset() {
@@ -309,6 +315,7 @@ do_pimreset() {
     fi
 
     toggle_pim_reset $pim
+    retval=$?
 
     return $retval
 }
@@ -337,6 +344,7 @@ case "$command" in
         ;;
     pimreset)
         do_pimreset $@
+        exit $?
         ;;
     *)
         usage

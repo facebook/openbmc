@@ -33,6 +33,9 @@ from fsc_bmcmachine import BMCMachine
 from fsc_board import board_fan_actions, board_host_actions, board_callout
 from fsc_sensor import FscSensorSourceUtil
 
+RECORD_DIR = '/tmp/cache_store/'
+SENSOR_FAIL_RECORD_DIR = '/tmp/sensorfail_record/'
+FAN_FAIL_RECORD_DIR = '/tmp/fanfail_record/'
 RAMFS_CONFIG = '/etc/fsc-config.json'
 CONFIG_DIR = '/etc/fsc'
 # Enable the following for testing only
@@ -41,6 +44,12 @@ CONFIG_DIR = '/etc/fsc'
 DEFAULT_INIT_BOOST = 100
 DEFAULT_INIT_TRANSITIONAL = 70
 WDTCLI_CMD = '/usr/local/bin/wdtcli'
+
+fan_mode = {
+    'normal_mode': 0,
+    'trans_mode': 1,
+    'boost_mode': 2
+}
 
 def kick_watchdog():
     """kick the watchdog device.
@@ -63,6 +72,7 @@ def stop_watchdog():
     info, err = f.communicate()
     if len(err) != 0:
         Logger.error("failed to kick watchdog device")
+
 
 class Fscd(object):
 
@@ -280,6 +290,10 @@ class Fscd(object):
                     Logger.crit("%s dead, %d RPM" % (dead_fan.label,
                                 speeds[dead_fan]))
                 Logger.usbdbg("%s fail" % (dead_fan.label))
+                fan_fail_record_path = FAN_FAIL_RECORD_DIR + '%s' % (dead_fan.label)
+                if not os.path.isfile(fan_fail_record_path):
+                    fan_fail_record = open(fan_fail_record_path, 'w')
+                    fan_fail_record.close()
         for fan in recovered_fans:
             if self.fanpower:
                 Logger.warn("%s has recovered" % (fan.label,))
@@ -287,6 +301,9 @@ class Fscd(object):
                 Logger.crit("%s has recovered" % (fan.label,))
             Logger.usbdbg("%s recovered" % (fan.label))
             self.fsc_fan_action(fan, action='recover')
+            fan_fail_record_path = FAN_FAIL_RECORD_DIR + '%s' % (fan.label)
+            if os.path.isfile(fan_fail_record_path):
+                os.remove(fan_fail_record_path)
         return dead_fans
 
     def update_zones(self, dead_fans, time_difference):
@@ -310,7 +327,7 @@ class Fscd(object):
         self.fsc_safe_guards(sensors_tuples)
         for zone in self.zones:
             Logger.info("PWM: %s" % (json.dumps(zone.pwm_output)))
-
+            mode = 0
             chassis_intrusion_boost_flag = 0
             if self.chassis_intrusion:
                 self_tray_pull_out = board_callout(
@@ -320,10 +337,13 @@ class Fscd(object):
 
             if chassis_intrusion_boost_flag == 0:
                 pwmval = zone.run(sensors=sensors_tuples, dt=time_difference)
+                mode = zone.get_set_fan_mode(mode, action='read')
             else:
                 pwmval = self.boost
+                mode = fan_mode['boost_mode']
 
             if self.fan_fail:
+                boost_record_path = RECORD_DIR + 'fan_fail_boost'
                 if self.boost_type == 'progressive' and self.fan_dead_boost:
                     # Cases where we want to progressively bump PWMs
                     dead = len(dead_fans)
@@ -333,15 +353,32 @@ class Fscd(object):
                         for fan_count, rate in self.fan_dead_boost["data"]:
                             if dead <= fan_count:
                                 pwmval = clamp(pwmval + (dead * rate), 0, 100)
+                                mode = fan_mode['normal_mode']
+                                if os.path.isfile(boost_record_path):
+                                    os.remove(boost_record_path)
                                 break
                         else:
                             pwmval = self.boost
+                            mode = fan_mode['boost_mode']
+                            if not os.path.isfile(boost_record_path):
+                                fan_fail_boost_record = open(boost_record_path, 'w')
+                                fan_fail_boost_record.close()
+                    else:
+                        if os.path.isfile(boost_record_path):
+                            os.remove(boost_record_path)
                 else:
                     if dead_fans:
                         # If not progressive ,when there is 1 fan failed, boost all fans
                         Logger.info("Failed fans: %s" % (
                             ', '.join([str(i.label) for i in dead_fans],)))
                         pwmval = self.boost
+                        mode = fan_mode['boost_mode']
+                        if not os.path.isfile(boost_record_path):
+                            fan_fail_boost_record = open(boost_record_path, 'w')
+                            fan_fail_boost_record.close()
+                    else:
+                        if os.path.isfile(boost_record_path):
+                            os.remove(boost_record_path)
                     if self.fan_dead_boost:
                         # If all the fans failed take action after a few cycles
                         if len(dead_fans) == len(self.fans):
@@ -373,6 +410,8 @@ class Fscd(object):
             else:
                 self.machine.set_pwm(self.fans[zone.pwm_output], pwmval)
 
+            zone.get_set_fan_mode(mode, action='write')
+
     def builder(self):
         '''
         Method to extract from json and build all internal data staructures
@@ -397,6 +436,16 @@ class Fscd(object):
             return True
         return False
 
+    def fail_record_dir(self):
+        '''
+        Create directory to store which sensors and fans failed
+        '''
+        if not os.path.isdir(SENSOR_FAIL_RECORD_DIR):
+            os.mkdir(SENSOR_FAIL_RECORD_DIR)
+
+        if not os.path.isdir(FAN_FAIL_RECORD_DIR):
+            os.mkdir(FAN_FAIL_RECORD_DIR)
+
     def run(self):
         """
         Main FSCD method that builds from the fscd config and runs
@@ -405,8 +454,13 @@ class Fscd(object):
         # Get everything from json and build profiles, fans, zones
         self.builder()
 
+        self.fail_record_dir()
+
         self.machine.set_all_pwm(self.fans, self.transitional)
         self.fsc_set_all_fan_led(color='led_blue')
+
+        mode = fan_mode['trans_mode']
+        self.zones[0].get_set_fan_mode(mode, action='write')
 
         last = time.time()
         dead_fans = set()

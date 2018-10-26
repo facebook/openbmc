@@ -343,6 +343,7 @@ int pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence);
 int pal_get_tpm_physical_presence(uint8_t slot);
 int pal_create_TPMTimer(int fru);
 int pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
+void pal_specific_plat_fan_check(bool status);
 #ifdef __cplusplus
 }
 #endif

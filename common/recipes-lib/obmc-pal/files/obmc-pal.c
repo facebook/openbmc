@@ -2302,3 +2302,9 @@ int __attribute__((weak))
 pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
   return -2;  //means not support
 }
+
+void __attribute__((weak))
+pal_specific_plat_fan_check(bool status)
+{
+  return;
+}

@@ -32,6 +32,39 @@
 #include <inttypes.h>
 #include <locale.h>
 
+
+// NCSI command name
+const char *ncsi_cmd_string[NUM_NCSI_CDMS] = {
+  "CLEAR_INITIAL_STATE",
+  "SELECT_PACKAGE",
+  "DESELECT_PACKAGE",
+  "ENABLE_CHANNEL",
+  "DISABLE_CHANNEL",
+  "RESET_CHANNEL",
+  "ENABLE_CHANNEL_NETWORK_TX",
+  "DISABLE_CHANNEL_NETWORK_TX",
+  "AEN_ENABLE",
+  "SET_LINK",
+  "GET_LINK_STATUS",
+  "SET_VLAN_FILTER",
+  "ENABLE_VLAN",
+  "DISABLE_VLAN",
+  "SET_MAC_ADDRESS",
+  "invalid",  // no command 0x0f
+  "ENABLE_BROADCAST_FILTERING",
+  "DISABLE_BROADCAST_FILTERING",
+  "ENABLE_GLOBAL_MULTICAST_FILTERING",
+  "DISABLE_GLOBAL_MULTICAST_FILTERING",
+  "SET_NCSI_FLOW_CONTROL",
+  "GET_VERSION_ID",
+  "GET_CAPABILITIES",
+  "GET_PARAMETERS",
+  "GET_CONTROLLER_PACKET_STATISTICS",
+  "GET_NCSI_STATISTICS",
+  "GET_NCSI_PASS_THROUGH_STATISTICS",
+};
+
+
 // reload kernel NC-SI driver and trigger NC-SI interface initialization
 int
 ncsi_init_if(int inv_addr)
@@ -165,14 +198,25 @@ check_ncsi_status(void)
   return 0;
 }
 
+const char *
+ncsi_cmd_type_to_name(int cmd)
+{
+  if (cmd < 0 || cmd >= NUM_NCSI_CDMS  ||
+         ncsi_cmd_string[cmd] == NULL) {
+      return "unknown_ncsi_cmd";
+  }
+  return ncsi_cmd_string[cmd];
+}
 
 void
-print_ncsi_resp(int cmd, NCSI_NL_RSP_T *rcv_buf)
+print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
 {
   uint8_t *pbuf = rcv_buf->msg_payload;
   int i = 0;
+  int cmd = rcv_buf->cmd;
 
   printf("NC-SI Command Response:\n");
+  printf("cmd: %s(0x%x)\n", ncsi_cmd_type_to_name(cmd), cmd);
   printf("Response Code: 0x%04x  Reason Code: 0x%04x\n", (pbuf[0]<<8)+pbuf[1], (pbuf[2]<<8)+pbuf[3]);
 
   switch (cmd) {
@@ -296,4 +340,62 @@ print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf)
   printf("  Pass-through RX Packet Undersize Errors: %'zu\n", ntohl(pResp->rx_undersize_err));
   printf("  Pass-through RX Packets Oversize Packets: %'zu\n", ntohl(pResp->rx_oversize_err));
   printf("\n");
+}
+
+int
+handle_get_link_status(NCSI_Response_Packet *resp)
+{
+  char logbuf[512];
+  int currentLinkStatus =  0;
+  int i = 0;
+  int nleft = sizeof(logbuf);
+  int nwrite = 0;
+  static int prevLinkStatus = 0;
+
+  Get_Link_Status_Response *linkresp = (Get_Link_Status_Response *)resp->Payload_Data;
+  Link_Status linkstatus;
+  Other_Indications linkOther;
+  linkstatus.all32 = ntohl(linkresp->link_status.all32);
+  linkOther.all32 = ntohl(linkresp->other_indications.all32);
+  currentLinkStatus = linkstatus.bits.link_flag;
+
+  if (currentLinkStatus != prevLinkStatus)
+  {
+    // log link status change
+    if (currentLinkStatus) {
+      nwrite = snprintf(logbuf, nleft, "NIC link up:");
+    } else {
+      nwrite = snprintf(logbuf, nleft, "NIC link down:");
+    }
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "Rsp:0x%04x ", ntohs(resp->Response_Code));
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "Rsn:0x%04x ", ntohs(resp->Reason_Code));
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "Link:0x%lx ", linkstatus.all32);
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "(LF:0x%x ", linkstatus.bits.link_flag);
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "SP:0x%x ",  linkstatus.bits.speed_duplex);
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "SD:0x%x) ", linkstatus.bits.serdes);
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "Other:0x%lx ", linkOther.all32);
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "(Driver:0x%x) ", linkOther.bits.host_NC_driver_status);
+    i += nwrite;
+    nleft -= nwrite;
+    nwrite = snprintf(logbuf + i, nleft, "OEM:0x%lx ", (unsigned long)ntohl(linkresp->oem_link_status));
+    syslog(LOG_WARNING, "%s", logbuf);
+    prevLinkStatus = currentLinkStatus;
+  }
+  return 0;
 }

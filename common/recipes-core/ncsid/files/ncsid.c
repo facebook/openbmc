@@ -157,21 +157,12 @@ free_and_exit:
 static int
 process_NCSI_resp(NCSI_NL_RSP_T *buf)
 {
-  char logbuf[512];
-  int i=0;
-  int currentLinkStatus =  0;
-  static int prevLinkStatus = 0;
-
+  unsigned char cmd = buf->cmd;
   NCSI_Response_Packet *resp = (NCSI_Response_Packet *)buf->msg_payload;
-  Get_Link_Status_Response *linkresp = (Get_Link_Status_Response *)resp->Payload_Data;
-  Link_Status linkstatus;
-  Other_Indications linkOther;
-  linkstatus.all32 = ntohl(linkresp->link_status.all32);
-  linkOther.all32 = ntohl(linkresp->other_indications.all32);
-  currentLinkStatus = linkstatus.bits.link_flag;
-
   unsigned short cmd_response_code = ntohs(resp->Response_Code);
   unsigned short cmd_reason_code   = ntohs(resp->Reason_Code);
+  int ret = 0;
+
   /* chekc for command completion before processing
      response payload */
   if ( cmd_response_code != RESP_COMMAND_COMPLETED) {
@@ -196,28 +187,19 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
     /* for other types of command fallures, ignore for now */
     return 0;
   } else {
-    if (currentLinkStatus != prevLinkStatus)
-    {
-      // log link status change
-      if (currentLinkStatus) {
-        i += sprintf(logbuf, "NIC link up:");
-      } else {
-        i += sprintf(logbuf, "NIC link down:");
-      }
-      i += sprintf(logbuf + i, "Rsp:0x%04x ", ntohs(resp->Response_Code));
-      i += sprintf(logbuf + i, "Rsn:0x%04x ", ntohs(resp->Reason_Code));
-      i += sprintf(logbuf + i, "Link:0x%lx ", linkstatus.all32);
-      i += sprintf(logbuf + i, "(LF:0x%x ", linkstatus.bits.link_flag);
-      i += sprintf(logbuf + i, "SP:0x%x ",  linkstatus.bits.speed_duplex);
-      i += sprintf(logbuf + i, "SD:0x%x) ", linkstatus.bits.serdes);
-      i += sprintf(logbuf + i, "Other:0x%lx ", linkOther.all32);
-      i += sprintf(logbuf + i, "(Driver:0x%x) ", linkOther.bits.host_NC_driver_status);
-      i += sprintf(logbuf + i, "OEM:0x%lx ", (unsigned long)ntohl(linkresp->oem_link_status));
-      syslog(LOG_WARNING, "%s", logbuf);
-      prevLinkStatus = currentLinkStatus;
+    switch (cmd) {
+      case NCSI_GET_LINK_STATUS:
+        ret  = handle_get_link_status(resp);
+        break;
+      // TBD: handle other command response here
+
+      default:
+        syslog(LOG_WARNING, "unknown command response, cmd 0x%x", cmd);
+        break;
     }
-    return 0;
   }
+
+  return ret;
 }
 
 
@@ -317,7 +299,7 @@ ncsi_tx_handler(void *sfd) {
   /* for now only listens on eth0 */
   sprintf(nl_msg->dev_name, "eth0");
   nl_msg->channel_id = 0;
-  nl_msg->cmd = 0x0a; // get link status
+  nl_msg->cmd = NCSI_GET_LINK_STATUS;
   nl_msg->payload_length = 0;
 
   memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);

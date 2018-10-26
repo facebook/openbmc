@@ -48,7 +48,6 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   struct iovec iov;
   struct msghdr msg;
   int msg_size = sizeof(NCSI_NL_MSG_T);
-  int cmd = nl_msg->cmd;
 
   /* msg response from kernel */
   NCSI_NL_RSP_T *rcv_buf;
@@ -101,7 +100,7 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   recvmsg(sock_fd, &msg, 0);
   rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
 
-  print_ncsi_resp(cmd, rcv_buf);
+  print_ncsi_resp(rcv_buf);
 
   free(nlh);
 close_and_exit:

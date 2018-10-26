@@ -14,9 +14,42 @@
 #define NCSI_RESET_TIMEOUT  3
 
 
-#define NCSI_GET_CONTROLLER_PACKET_STATISTICS 0x18
-#define NCSI_GET_NCSI_STATISTICS              0x19
-#define NCSI_GET_NCSI_PASS_THROUGH_STATISTICS 0x1a
+
+
+
+/* NCSI Command and Response Type */
+#define NCSI_CLEAR_INITIAL_STATE                 0x00
+#define NCSI_SELECT_PACKAGE                      0x01
+#define NCSI_DESELECT_PACKAGE                    0x02
+#define NCSI_ENABLE_CHANNEL                      0x03
+#define NCSI_DISABLE_CHANNEL                     0x04
+#define NCSI_RESET_CHANNEL                       0x05
+#define NCSI_ENABLE_CHANNEL_NETWORK_TX           0x06
+#define NCSI_DISABLE_CHANNEL_NETWORK_TX          0x07
+#define NCSI_AEN_ENABLE                          0x08
+#define NCSI_SET_LINK                            0x09
+#define NCSI_GET_LINK_STATUS                     0x0A
+#define NCSI_SET_VLAN_FILTER                     0x0B
+#define NCSI_ENABLE_VLAN                         0x0C
+#define NCSI_DISABLE_VLAN                        0x0D
+#define NCSI_SET_MAC_ADDRESS                     0x0E
+        // no 0x0F
+#define NCSI_ENABLE_BROADCAST_FILTERING          0x10
+#define NCSI_DISABLE_BROADCAST_FILTERING         0x11
+#define NCSI_ENABLE_GLOBAL_MULTICAST_FILTERING   0x12
+#define NCSI_DISABLE_GLOBAL_MULTICAST_FILTERING  0x13
+#define NCSI_SET_NCSI_FLOW_CONTROL               0x14
+#define NCSI_GET_VERSION_ID                      0x15
+#define NCSI_GET_CAPABILITIES                    0x16
+#define NCSI_GET_PARAMETERS                      0x17
+#define NCSI_GET_CONTROLLER_PACKET_STATISTICS    0x18
+#define NCSI_GET_NCSI_STATISTICS                 0x19
+#define NCSI_GET_NCSI_PASS_THROUGH_STATISTICS    0x1a
+
+#define NUM_NCSI_CDMS 27
+extern const char *ncsi_cmd_string[NUM_NCSI_CDMS];
+
+
 
 typedef struct ncsi_nl_msg_t {
   char dev_name[10];
@@ -27,6 +60,7 @@ typedef struct ncsi_nl_msg_t {
 } NCSI_NL_MSG_T;
 
 typedef struct ncsi_nl_response {
+  unsigned char cmd;
   unsigned char payload_length;
   unsigned char msg_payload[MAX_RESPONSE_PAYLOAD];
 } NCSI_NL_RSP_T;
@@ -168,15 +202,17 @@ typedef struct {
   uint32_t rx_oversize_err;
 } __attribute__((packed)) NCSI_Passthrough_Stats_Response;
 
+
 int ncsi_init_if(int);
 void handle_ncsi_config(int delay);
 int getMacAddr(int *values);
 int checkValidMacAddr(int *value);
 int check_ncsi_status(void);
-void print_ncsi_resp(int cmd, NCSI_NL_RSP_T *rcv_buf);
+void print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_controller_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf);
+int handle_get_link_status(NCSI_Response_Packet *resp);
 
 
 #endif

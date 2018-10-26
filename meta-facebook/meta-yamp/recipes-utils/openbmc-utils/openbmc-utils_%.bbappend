@@ -43,6 +43,7 @@ OPENBMC_UTILS_FILES += " \
     wedge_power.sh \
     wedge_us_mac.sh \
     dpm_ver.sh \
+    pim_enable.sh \
     showtech.sh \
     "
 

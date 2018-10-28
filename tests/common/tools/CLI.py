@@ -327,6 +327,9 @@ if __name__ == "__main__":
         if "bmcUtiltest.py" in data:
             if data["bmcUtiltest.py"][0] == 'yes':
                 generalJsonTest(cmd_bmc, data, "bmcUtiltest.py")
+        if "scriptsDependencyTest.py" in data:
+            if data["scriptsDependencyTest.py"][0] == 'yes':
+                generalJsonTest(cmd_bmc, data, "scriptsDependencyTest.py")
         if "solTest.py" in data:
             if data["solTest.py"] == 'yes':
                 if HEADNODE:

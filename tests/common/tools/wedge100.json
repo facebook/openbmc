@@ -60,6 +60,9 @@
     "gpioTest.py":["yes",
       {
         "json":"../wedge100/unittests/gpiolist.json"
+      }],
+    "scriptsDependencyTest.py":["yes",
+      {
+        "json":"../wedge100/unittests/dependency.json"
       }]
-
 }

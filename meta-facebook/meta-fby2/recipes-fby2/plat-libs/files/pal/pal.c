@@ -47,10 +47,6 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 
-#ifdef CONFIG_FBY2_GPV2
-#define FBY2_MAX_NUM_DEVS 12
-#endif
-
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
 #define PIN_CTRL1_OFFSET 0x80
@@ -2071,7 +2067,7 @@ pal_get_num_devs(uint8_t slot, uint8_t *num) {
   switch (fby2_get_slot_type(slot)) {
 #ifdef CONFIG_FBY2_GPV2
     case SLOT_TYPE_GPV2:
-      *num = FBY2_MAX_NUM_DEVS;
+      *num = MAX_NUM_DEVS;
       break;
 #endif
     case SLOT_TYPE_SERVER:
@@ -2312,6 +2308,41 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   }
 
   return 0;
+}
+
+int
+pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
+  int ret, val;
+  char value[MAX_VALUE_LEN];
+  bic_gpio_t gpio;
+  uint8_t retry = MAX_READ_RETRY;
+
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+    /* Check whether the system is 12V off or on */
+    ret = pal_is_server_12v_on(slot_id, status);
+    if (ret < 0) {
+      syslog(LOG_ERR, "pal_get_device_power: pal_is_server_12v_on failed");
+      return -1;
+    }
+
+    /* If 12V-off, return */
+    if (!(*status)) {
+      *status = DEVICE_POWER_OFF;
+      syslog(LOG_WARNING, "pal_get_device_power: pal_is_server_12v_on 12V-off");
+      return 0;
+    }
+
+    while (retry) {
+      ret = bic_get_dev_power_status(slot_id,dev_id, status,type);
+      if (!ret)
+        break;
+      msleep(50);
+      retry--;
+    }
+    return 0;
+  }
+
+  return -1;
 }
 
 //check power policy and power state to power on/off server after AC power restore

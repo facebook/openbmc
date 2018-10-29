@@ -45,6 +45,7 @@ extern "C" {
 #define GETMASK(y)          (1LL << y)
 
 #define MAX_NODES 4
+#define MAX_NUM_DEVS 12
 
 #define MAX_NIC_TEMP_RETRY 3
 
@@ -63,6 +64,23 @@ extern const char pal_dev_list[];
 enum {
   USB_MUX_OFF,
   USB_MUX_ON,
+};
+
+enum {
+  DEVICE_POWER_OFF,
+  DEVICE_POWER_ON,
+};
+
+enum {
+  DEV_TYPE_UNKNOWN,
+  DEV_TYPE_POC,
+  DEV_TYPE_SSD,
+};
+
+enum {
+  DEV_FRU_NOT_COMPLETE,
+  DEV_FRU_COMPLETE,
+  DEV_FRU_IGNORE,
 };
 
 enum {
@@ -125,6 +143,7 @@ int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
 int pal_is_slot_support_update(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
+int pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);
 void pal_power_policy_control(uint8_t slot_id, char *last_ps);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);

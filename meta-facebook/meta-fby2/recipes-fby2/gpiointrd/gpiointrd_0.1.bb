@@ -33,11 +33,11 @@ S = "${WORKDIR}"
 binfiles = "gpiointrd \
            "
 
-CFLAGS += " -lbic -lfby2_gpio -lpal "
+CFLAGS += " -lbic -lfby2_gpio -lpal -lfruid"
 
-DEPENDS += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libkv"
+DEPENDS += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libkv libfruid"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libkv"
+RDEPENDS_${PN} += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libkv libfruid"
 
 pkgdir = "gpiointrd"
 

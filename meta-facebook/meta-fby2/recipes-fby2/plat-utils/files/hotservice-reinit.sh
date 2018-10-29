@@ -168,6 +168,7 @@ case $OPTION in
       if [[ $(is_server_prsnt $SLOT_NUM) == "1" ]]; then
          if [[ $(get_slot_type $SLOT_NUM) == "0" || $(get_slot_type $SLOT_NUM) == "4" ]]; then
            sv start ipmbd_$SLOT_BUS
+           rm -rf /tmp/fruid_$SLOT*
            /usr/local/bin/bic-cached $SLOT_NUM > /dev/null 2>&1 &
          fi
       fi

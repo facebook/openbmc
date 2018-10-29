@@ -35,6 +35,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
+#include <openbmc/fruid.h>
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
 #include <facebook/fby2_sensor.h>
@@ -66,6 +67,7 @@ static struct timespec last_ejector_ts[MAX_NODES + 1];
 static uint8_t IsLatchOpenStart[MAX_NODES + 1] = {0};
 static void *latch_open_handler(void *ptr);
 static pthread_mutex_t latch_open_mutex[MAX_NODES + 1];
+static uint8_t dev_fru_complete[MAX_NUM_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
 
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
@@ -77,6 +79,13 @@ char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 
 const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N };
+
+struct threadinfo {
+  uint8_t is_running;
+  uint8_t fru;
+  pthread_t pt;
+};
+static struct threadinfo t_fru_cache[MAX_NUM_FRUS] = {0, };
 
 typedef struct {
   uint8_t def_val;
@@ -222,6 +231,150 @@ hsc_alert_handler(void *arg) {
 
   pthread_exit(NULL);
 }
+
+static int
+fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
+  // Initialize Slot0's fruid
+  int ret=0;
+  int fru_size=0;
+  char fruid_temp_path[64] = {0};
+  char fruid_path[64] = {0};
+
+  if (fru_id == 0){
+    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
+    sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
+  } else {
+    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d_dev%d.bin", slot_id, fru_id);
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, fru_id);
+  }
+
+  ret = bic_read_fruid(slot_id, fru_id, fruid_temp_path, &fru_size);
+  if (ret) {
+    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid slot%d dev=%d returns %d, fru_size: %d\n", slot_id, fru_id, ret, fru_size);
+  }
+
+  rename(fruid_temp_path, fruid_path);
+
+  return ret;
+}
+
+static void *
+fru_cache_dump(void *arg) {
+
+  uint8_t fru = *(uint8_t *) arg;
+  uint8_t self_test_result[2]={0};
+  char path[64] = {0};
+  char fruname[16];
+  int ret;
+  int retry;
+  int fd;
+  uint8_t status = DEVICE_POWER_OFF;
+  uint8_t type = DEV_TYPE_UNKNOWN;
+  uint8_t dev_id;
+  int max_retry = 3;
+  bool find_last_file = false;
+  fruid_info_t fruid;
+
+  // Usually the pthread cancel state are enable by default but
+  // here we explicitly would like to enable them
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  // Check BIC Self Test Result
+  do {
+    ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result);
+    if (ret == 0) {
+      syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
+      break;
+    }
+    sleep(5);
+  } while (ret != 0);
+
+  sleep(2); //wait for BIC poll at least one cycle
+
+  // Get GPV2 devices' FRU
+  for (dev_id = 1;dev_id <= MAX_NUM_DEVS; dev_id++) {
+
+    if (dev_fru_complete[dev_id] != DEV_FRU_NOT_COMPLETE)
+      continue;
+
+    //check for power status
+    ret = pal_get_device_power(fru,dev_id,&status,&type);
+    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u type=%u\n", fru, dev_id, status, type);
+
+    if (ret == 0) {
+      if (status == DEVICE_POWER_ON) {
+        if (type == DEV_TYPE_POC) {
+          retry = 0;
+          do {
+            if (fruid_cache_init(fru,dev_id) == 0)
+              break;
+
+            retry++;
+            sleep(1);
+          } while (retry < max_retry);
+
+          if (retry == max_retry)
+            syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id);
+          else {
+            pal_get_dev_fruid_path(fru, dev_id, path);
+            //check file's checksum
+            ret = fruid_parse(path, &fruid);
+            if (ret != 0) { // Fail
+              syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id);
+            } else { // Success
+              free_fruid_info(&fruid);
+              dev_fru_complete[dev_id] = DEV_FRU_COMPLETE;
+              syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id);
+            }
+          }
+        } else { // SSD or unknown
+          syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU\n", fru,dev_id);
+          dev_fru_complete[dev_id] = DEV_FRU_IGNORE;
+        }
+      } else { // Power OFF
+        syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power off\n", fru,dev_id);
+      }
+    } else { // Device Status Unknown
+      syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status\n", fru,dev_id);
+    }
+
+  }
+  t_fru_cache[fru-1].is_running = 0;
+  syslog(LOG_INFO, "%s: FRU %d cache is finished.", __func__, fru);
+}
+
+int
+fru_cahe_init(uint8_t fru) {
+  int ret;
+
+  if (fru == FRU_SLOT2 || fru == FRU_SLOT4)
+    return -1;
+
+  // If yes, kill that thread and start a new one
+  if (t_fru_cache[fru-1].is_running) {
+    ret = pthread_cancel(t_fru_cache[fru-1].pt);
+    if (ret == ESRCH) {
+      syslog(LOG_INFO, "%s: No dump FRU cache pthread exists", __func__);
+    } else {
+      pthread_join(t_fru_cache[fru-1].pt, NULL);
+      syslog(LOG_INFO, "%s: Previous dump FRU cache thread is cancelled", __func__);
+    }
+  }
+
+  // Start a thread to generate the FRU
+  t_fru_cache[fru-1].fru = fru;
+  if (pthread_create(&(t_fru_cache[fru-1].pt), NULL, fru_cache_dump, (void*) &t_fru_cache[fru-1].fru) < 0) {
+    syslog(LOG_WARNING, "%s: pthread_create for FRU %d failed\n", __func__, fru);
+    return -1;
+  }
+  t_fru_cache[fru-1].is_running = 1;
+
+  syslog(LOG_INFO, "%s: FRU %d cache is being generated.", __func__, fru);
+
+  return 0;
+}
+
 
 // Generic Event Handler for GPIO changes
 static void gpio_event_handle(gpio_poll_st *gp)
@@ -388,8 +541,16 @@ static void gpio_event_handle(gpio_poll_st *gp)
           ) // SLOT1/2/3/4_POWER_EN
   {
     slot_id = (gp->gs.gs_gpio - GPIO_SLOT1_POWER_EN) + 1;
-    // high to low
-    fby2_common_set_ierr(slot_id,false);
+    if (gp->value == 1) { // low to high
+      syslog(LOG_WARNING, "[%s] slot%d power enable pin on", __func__,slot_id);
+#if defined(CONFIG_FBY2_GPV2)
+      if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2)
+        fru_cahe_init(slot_id);
+#endif
+    } else { // high to low
+      syslog(LOG_WARNING, "[%s] slot%d power enable pin off", __func__,slot_id);
+      fby2_common_set_ierr(slot_id,false);
+    }
   }
   else if (gp->gs.gs_gpio == gpio_num("GPION7")) {
     if (gp->value == 0) {
@@ -602,6 +763,9 @@ hsvc_event_handler(void *ptr) {
           sprintf(slotrcpath, SV_TYPE_RECORD_FILE, hsvc_info->slot_id);
           sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
           system(cmd);
+        } else if ( SLOT_TYPE_GPV2) {
+          for (i=1;i<=MAX_NUM_DEVS;i++)
+            dev_fru_complete[i] = DEV_FRU_NOT_COMPLETE;
         }
 
         // Remove pid_file
@@ -649,10 +813,10 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA2", "GPIO_SLOT3_PRSNT_N"},
   {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA3", "GPIO_SLOT4_PRSNT_N"},
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOO3",  "GPIO_UART_SEL"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI0",  "GPIO_SLOT1_POWER_EN"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI1",  "GPIO_SLOT2_POWER_EN"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI2",  "GPIO_SLOT3_POWER_EN"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOI3",  "GPIO_SLOT4_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI0",  "GPIO_SLOT1_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI1",  "GPIO_SLOT2_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI2",  "GPIO_SLOT3_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI3",  "GPIO_SLOT4_POWER_EN"},
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPION7",  "GPIO_SMB_HOTSWAP_ALERT_N"},
 };
 
@@ -668,6 +832,8 @@ static def_chk_info def_gpio_chk[] = {
 #endif
   { 0, "GPIO_FAN_LATCH_DETECT",             GPIO_FAN_LATCH_DETECT,             "ASSERT: SLED is not seated"                                    },
 };
+
+const static int power_enable[] = { 0, GPIO_SLOT1_POWER_EN,  GPIO_SLOT2_POWER_EN,  GPIO_SLOT3_POWER_EN,  GPIO_SLOT4_POWER_EN };
 
 static void slot_latch_check(void) {
   int slot_id;
@@ -735,6 +901,17 @@ static void default_gpio_check(void) {
       syslog(LOG_CRIT, def_gpio_chk[i].log);
     }
   }
+#if defined(CONFIG_FBY2_GPV2)
+  for (i=FRU_SLOT1; i<=FRU_SLOT4; i+=2) {
+    if (fby2_get_slot_type(i) == SLOT_TYPE_GPV2) {
+      sprintf(vpath, GPIO_VAL, power_enable[i]);
+      read_device(vpath, &value);
+      if (value) {
+        fru_cahe_init(i);
+      }
+    }
+  }
+#endif
 }
 
 int

@@ -1267,6 +1267,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        break;
      case TYPE_SV_A_CF:
      case TYPE_SV_A_GP:
+     case TYPE_SV_A_GPV2:
        if(slot_id == 2 || slot_id == 4)
        {
          /* Check whether the system is 12V off or on */
@@ -1288,8 +1289,10 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        break;
      case TYPE_GP_A_NULL:
      case TYPE_CF_A_NULL:
+     case TYPE_GPV2_A_NULL:
      case TYPE_NULL_A_GP:
      case TYPE_NULL_A_CF:
+     case TYPE_NULL_A_GPV2:
        /* Check whether the system is 12V off or on */
        ret = pal_is_server_12v_on(slot_id, &status);
        if (ret < 0) {
@@ -1308,8 +1311,13 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        break;
      case TYPE_CF_A_CF:
      case TYPE_CF_A_GP:
+     case TYPE_CF_A_GPV2:
      case TYPE_GP_A_CF:
      case TYPE_GP_A_GP:
+     case TYPE_GP_A_GPV2:
+     case TYPE_GPV2_A_CF:
+     case TYPE_GPV2_A_GP:
+     case TYPE_GPV2_A_GPV2:
        /* Check whether the system is 12V off or on */
        ret = pal_is_server_12v_on(slot_id, &status);
        if (ret < 0) {
@@ -2205,15 +2213,10 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 int
 pal_is_slot_server(uint8_t fru)
 {
-  switch(fby2_get_slot_type(fru))
-  {
-    case SLOT_TYPE_CF:
-    case SLOT_TYPE_GP:
-    case SLOT_TYPE_NULL:
-      return 0;
+  if (fby2_get_slot_type(fru) == SLOT_TYPE_SERVER) {
+    return 1;
   }
-
-  return 1;
+  return 0;
 }
 
 int
@@ -2223,15 +2226,9 @@ pal_is_slot_support_update(uint8_t fru)
   {
     case SLOT_TYPE_SERVER:
     case SLOT_TYPE_GPV2:
-      break;
-    case SLOT_TYPE_CF:
-    case SLOT_TYPE_GP:
-    case SLOT_TYPE_NULL:
-      return 0;
-      break;
+      return 1;
   }
-
-  return 1;
+  return 0;
 }
 
 int

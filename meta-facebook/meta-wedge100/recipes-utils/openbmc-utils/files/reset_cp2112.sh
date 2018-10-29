@@ -18,7 +18,9 @@
 # Boston, MA 02110-1301 USA
 #
 
-CMD='/sys/class/i2c-adapter/i2c-12/12-0031/usb2cp2112_rst_n'
+. /usr/local/bin/openbmc-utils.sh
+
+CMD="${SYSCPLD_SYSFS_DIR}/usb2cp2112_rst_n"
 
 echo -n "Reset CP2112 Switch ... "
 echo 0 > $CMD

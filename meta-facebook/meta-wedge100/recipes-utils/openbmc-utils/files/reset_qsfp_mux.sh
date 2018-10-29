@@ -18,11 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 
+. /usr/local/bin/openbmc-utils.sh
+
 function reset_to_mux
 {
   local num=0 val=$1
   while [ $num -lt 4 ]; do
-    CMD='/sys/class/i2c-adapter/i2c-12/12-0031/i2c_mux'$num'_rst_n'
+    CMD="${SYSCPLD_SYSFS_DIR}/i2c_mux'$num'_rst_n"
     echo $val > $CMD
     (( num++ ))
   done

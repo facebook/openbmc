@@ -18,7 +18,9 @@
 # Boston, MA 02110-1301 USA
 #
 
-CMD='/sys/class/i2c-adapter/i2c-12/12-0031/i2c_flush_en'
+. /usr/local/bin/openbmc-utils.sh
+
+CMD="${SYSCPLD_SYSFS_DIR}/i2c_flush_en"
 
 echo -n "I2c flush to CP2112..."
 echo 1 > $CMD

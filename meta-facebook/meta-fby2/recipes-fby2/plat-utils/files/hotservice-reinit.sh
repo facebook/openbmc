@@ -138,7 +138,7 @@ case $OPTION in
 
       # System Configuration
       echo "reset system configuration for $SLOT $OPTION"
-      /etc/init.d/setup-platform.sh
+      /usr/local/bin/check_slot_type.sh $SLOT
 
       # Remove Service for new device/server
       # Sensor

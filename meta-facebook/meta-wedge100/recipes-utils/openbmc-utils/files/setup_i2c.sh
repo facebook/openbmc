@@ -21,6 +21,14 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
+#
+# Create i2c switches at the beginning so all the channels are properly
+# initialized when the child devices are created.
+# 7-0070 is the i2c-switch for ltc power supply in DC deployment, behind
+# which are 2 pfe1100 power supplies (14-005a & 15-0059).
+#
+i2c_mux_add_sync 7 0x70 pca9548 15
+
 # Bus 3
 i2c_device_add 3 0x48 tmp75
 i2c_device_add 3 0x49 tmp75
@@ -39,9 +47,7 @@ i2c_device_add 6 0x51 24c64
 i2c_device_add 7 0x50 24c02         # BMC PHY EEPROM
 i2c_device_add 7 0x51 24c64         # PFE1100 power supply EEPROM
 i2c_device_add 7 0x52 24c64         # PFE1100 power supply EEPROM
-i2c_device_add 7 0x70 pca9548       # mux before the power supplies
 i2c_device_add 7 0x6f ltc4151
-# 0x70 is the mux for ltc power supply in DC deployment
 
 # Bus 8
 i2c_device_add 8 0x33 fancpld

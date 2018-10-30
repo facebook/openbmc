@@ -6285,7 +6285,7 @@ pal_mon_fw_upgrade
 (int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, 
               uint8_t *psu_ug, uint8_t *smb_ug)
 {
-  char cmd[3];
+  char cmd[5];
   FILE *fp;
   int ret=-1;
   char *buf_ptr;
@@ -6293,7 +6293,7 @@ pal_mon_fw_upgrade
   int str_size = 200;
   int tmp_size;
   char str[200];
-  snprintf(cmd, 3, "ps");
+  snprintf(cmd, sizeof(cmd), "ps w");
   fp = popen(cmd, "r");
   if(NULL == fp)
      return -1;
@@ -6316,14 +6316,10 @@ pal_mon_fw_upgrade
   }
 
   //check whether sys led need to blink
-  //TH3
-  *sys_ug = (strstr(buf_ptr, "m95m02-util") != NULL) ? 
-            ((strstr(buf_ptr, "write") != NULL) ? 1 : 0) : 0;
+  *sys_ug = strstr(buf_ptr, "write spi2") != NULL ? 1 : 0;
   if(*sys_ug) goto fan_state;
-  
-  *sys_ug = (strstr(buf_ptr, "flashrom") != NULL) ? 
-           ((strstr(buf_ptr, "spidev2.0") != NULL) &&
-            (strstr(buf_ptr, "-w") != NULL) ? 1 : 0) : 0;
+
+  *sys_ug = strstr(buf_ptr, "write spi1 BACKUP_BIOS") != NULL ? 1 : 0;
   if(*sys_ug) goto fan_state;
 
   *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
@@ -6354,18 +6350,13 @@ fan_state:
   *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
   if(*smb_ug) goto close_fp;
 
-  *smb_ug = (strstr(buf_ptr, "flashrom") != NULL) ? 
-           ((strstr(buf_ptr, "spidev1.0") != NULL) &&
-            (strstr(buf_ptr, "-w") != NULL) ? 1 : 0) : 0;
+  *smb_ug = strstr(buf_ptr, "write spi1 IOB_FPGA_FLASH") != NULL ? 1 : 0;
   if(*smb_ug) goto close_fp;
-  
-  //BCM5396
-  //NOTE: 
-  //We found that there are only 80 char in each line sometimes.
-  //Thus, using the partial words to replace the critical words.
-  *smb_ug = (strstr(buf_ptr, "at93cx6_util_py") != NULL) ? 
-           ((strstr(buf_ptr, " wri") != NULL) &&
-            (strstr(buf_ptr, "spi_util") != NULL) ? 1 : 0) : 0;
+
+  *smb_ug = strstr(buf_ptr, "write spi1 TH3_FLASH") != NULL ? 1 : 0;
+  if(*smb_ug) goto close_fp;
+
+  *smb_ug = strstr(buf_ptr, "write spi1 BCM5396_EE") != NULL ? 1 : 0;
   if(*smb_ug) goto close_fp;
 
 close_fp:

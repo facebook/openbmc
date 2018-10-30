@@ -162,9 +162,9 @@ def pal_sled_action(command):
     if command == 'sled-cycle':
         cmd = ['/usr/local/bin/power-util', 'sled-cycle']
     elif command == 'sled-identify-on':
-        cmd = ['/usr/bin/fpc-util', 'sled', '--identify on']
+        cmd = ['/usr/bin/fpc-util', 'sled', '--identify', 'on']
     elif command == 'sled-identify-off':
-        cmd = ['/usr/bin/fpc-util', 'sled', '--identify off']
+        cmd = ['/usr/bin/fpc-util', 'sled', '--identify', 'off']
     else:
         return -1
     try:

@@ -27,7 +27,7 @@ from unitTestUtil import UnitTestUtil
 class WatchdogUtils:
     """Watchdog utility functions.
     """
-    _DEVMEM_CMD = 'devmem'
+    _DEVMEM_CMD = '/sbin/devmem'
     _WDT1_CTRL_REG = '0x1E78500C'
     _WDT1_STATUS_REG = '0x1E785000'
     _WDTCLI_CMD = '/usr/local/bin/wdtcli'

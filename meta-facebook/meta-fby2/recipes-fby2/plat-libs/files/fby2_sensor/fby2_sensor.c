@@ -361,6 +361,7 @@ const uint8_t gpv2_sensor_list[] = {
   GPV2_SENSOR_P1V8_BIC_SCALED,
   GPV2_SENSOR_INA230_POWER,
   GPV2_SENSOR_INA230_VOLT,
+  GPV2_SENSOR_PCIE_SW_TEMP,
   // VR
   GPV2_SENSOR_3V3_VR_Vol,
   GPV2_SENSOR_0V92_VR_Vol,
@@ -1249,6 +1250,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       case GPV2_SENSOR_0V92_VR_Pwr:
       case GPV2_SENSOR_3V3_VR_Temp:
       case GPV2_SENSOR_0V92_VR_Temp:
+      case GPV2_SENSOR_PCIE_SW_TEMP:
         dev_id = DEV_NONE;
         ret = bic_read_sensor(fru, sensor_num, sensor);
         if (ret)

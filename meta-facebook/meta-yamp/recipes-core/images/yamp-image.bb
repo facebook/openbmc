@@ -23,4 +23,5 @@ IMAGE_INSTALL += " \
   usb-console \
   wedge-eeprom \
   fscd \
+  led-controld \
   "

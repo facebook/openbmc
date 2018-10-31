@@ -175,7 +175,7 @@ case $OPTION in
 
       # Server Type recognition restart
       echo "restart server type recognition for $SLOT"
-      /etc/init.d/setup-server-type.sh
+      /usr/local/bin/check_server_type.sh $SLOT
 
       echo "restart gpiod for $SLOT $OPTION"
       sv start gpiod

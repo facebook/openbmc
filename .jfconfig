@@ -2,4 +2,23 @@
   "capabilities": [
     "submit",
   ],
+  "sandcastle_job_specs": [{
+    "alias": "openbmc-sandcastle",
+    "command": "SandcastleUniversalCommand",
+    "args": {
+      "name": "openbmc-ci",
+      "oncall": "openbmc",
+      "steps": [{
+        "name": "openbmc-ci-determinator",
+          "shell": "facebook/sandcastle/job.py diff",
+          "determinator": true,
+      }],
+    },
+    "capabilities": {
+      "vcs": "openbmc-git",
+      "type": "lego-yocto",
+    },
+    "description": "Yocto diff listener",
+    "tags": ["openbmc_git"]
+  }]
 }

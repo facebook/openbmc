@@ -60,6 +60,7 @@ extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 extern const char pal_dev_list[];
+extern const char pal_dev_pwr_option_list[];
 
 enum {
   USB_MUX_OFF,
@@ -146,6 +147,7 @@ int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);
 void pal_power_policy_control(uint8_t slot_id, char *last_ps);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
+int pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
 int pal_slot_pair_12V_off(uint8_t slot_id);
 bool pal_is_hsvc_ongoing(uint8_t slot_id);

@@ -142,6 +142,7 @@ const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 #ifdef CONFIG_FBY2_GPV2
 const char pal_dev_list[] = "all, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11, device12";
+const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 #endif
 
 size_t pal_pwm_cnt = 2;
@@ -2410,6 +2411,60 @@ server_12v_cycle_physically(uint8_t slot_id){
   return (server_12v_on(slot_id));
 }
 
+int
+pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
+  int ret;
+  uint8_t status, type;
+  
+  if (slot_id != 1 && slot_id != 3) {
+    return -1;
+  }
+
+  ret = pal_is_fru_ready(slot_id, &status); //Break out if fru is not ready
+  if ((ret < 0) || (status == 0)) {
+    return -2;
+  }
+
+  if (pal_get_device_power(slot_id, dev_id, &status, &type) < 0) {
+    return -1;
+  }
+
+  switch(cmd) {
+    case SERVER_POWER_ON:
+      if (status == SERVER_POWER_ON)
+        return 1;
+      else
+        return bic_set_dev_power_status(slot_id, dev_id, 1);
+      break;
+
+    case SERVER_POWER_OFF:
+      if (status == SERVER_POWER_OFF)
+        return 1;
+      else
+        return bic_set_dev_power_status(slot_id, dev_id, 2);
+      break;
+
+    case SERVER_POWER_CYCLE:
+      if (status == SERVER_POWER_ON) {
+        if (bic_set_dev_power_status(slot_id, dev_id, 2))
+          return -1;
+
+        sleep(DELAY_POWER_CYCLE);
+
+        return bic_set_dev_power_status(slot_id, dev_id, 1);
+
+      } else if (status == SERVER_POWER_OFF) {
+
+        return (bic_set_dev_power_status(slot_id, dev_id, 1));
+      }
+      break;
+
+    default:
+      return -1;
+  }
+
+  return 0;
+}
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {

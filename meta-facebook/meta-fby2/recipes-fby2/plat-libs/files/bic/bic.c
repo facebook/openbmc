@@ -420,6 +420,21 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8
   return ret;
 }
 
+int
+bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
+  uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[4] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = status;  //set power status
+  tbuf[4] = dev_id;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, 5, rbuf, &rlen);
+
+  return ret;
+}
+
 // Get GPIO value and configuration
 int
 bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {

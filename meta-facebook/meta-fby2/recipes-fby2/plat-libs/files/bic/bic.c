@@ -656,8 +656,8 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   tbuf[3] = comp;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 0x04, rbuf, &rlen);
-  // fw version has to be between 2 and 5 bytes based on component
-  if (ret || (rlen < 2+SIZE_IANA_ID) || (rlen > 5+SIZE_IANA_ID)) {
+  // fw version has to be between 1 and 5 bytes based on component
+  if (ret || (rlen < 1+SIZE_IANA_ID) || (rlen > 5+SIZE_IANA_ID)) {
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_get_fw_ver: ret: %d, rlen: %d\n", ret, rlen);
 #endif

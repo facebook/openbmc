@@ -18,12 +18,18 @@ class BiosExtComponent : public BiosComponent {
       : BiosComponent(fru, comp, _slot_id), slot_id(_slot_id), server(_slot_id, fru) {}
     int update(string image);
     int dump(string image);
+    int print_version();
 };
 
 int BiosExtComponent::update(string image) {
   int ret;
   uint8_t status;
   int retry_count = 60;
+#if defined(CONFIG_FBY2_GPV2)
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2)
+    return FW_STATUS_NOT_SUPPORTED;
+#endif
+
 #if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   uint8_t server_type = 0xFF;
   uint8_t gs_action = 1;
@@ -134,6 +140,11 @@ int BiosExtComponent::dump(string image) {
   uint8_t gs_action = 1;
 #endif
 
+#if defined(CONFIG_FBY2_GPV2)
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2)
+    return FW_STATUS_NOT_SUPPORTED;
+#endif
+
   try {
     server.ready();
 #if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
@@ -230,6 +241,14 @@ power_check:
   return ret;
 }
 
+int BiosExtComponent::print_version() {
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_SERVER) {
+    BiosComponent::print_version();
+  }
+  return 0;
+}
+
+// Register the BIOS components
 BiosExtComponent bios1("slot1", "bios", 1);
 BiosExtComponent bios2("slot2", "bios", 2);
 BiosExtComponent bios3("slot3", "bios", 3);

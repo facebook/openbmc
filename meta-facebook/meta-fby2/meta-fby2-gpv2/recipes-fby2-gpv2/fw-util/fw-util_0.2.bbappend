@@ -15,19 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://vr.cpp \
-            file://bic_bios_ext.cpp \
-            file://platform.cpp \
-            file://usbdbg.h \
-            file://usbdbg.cpp \
-            file://usbdbg_ext.cpp \
-            file://bic_cpld_ext.cpp \
-            file://bic_me_ext.cpp \
-            file://pcie_switch.cpp \
-           "
-CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libfby2-sensor"
-RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libfby2-sensor"
-LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lfby2_sensor "
+CXXFLAGS += " -DCONFIG_FBY2_GPV2 "

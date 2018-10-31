@@ -272,6 +272,10 @@ enum {
   FW_DDR_BH_VR = 10,
 };
 
+// GPv2
+enum {
+  FW_PCIE_SWITCH = 7,
+};
 
 enum {
   UPDATE_BIOS = 0,

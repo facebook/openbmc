@@ -16,6 +16,10 @@ class VrComponent : public Component {
     : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
   int print_version() {
     uint8_t ver[32] = {0};
+    if (fby2_get_slot_type(slot_id) != SLOT_TYPE_SERVER) {
+      //GPV2 not support yet
+      return 0;
+    }
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
     int ret;
     uint8_t server_type = 0xFF;

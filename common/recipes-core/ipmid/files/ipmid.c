@@ -565,6 +565,14 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
      fclose(fp);
   }
 
+  // If we are using date based versioning, return
+  // the two digit year instead of the 4 digit year.
+  // Look out for year 2127 when this overflows the
+  // 7 bit allowance for major version :-)
+  if (fv_major > 2000) {
+    fv_major -= 2000;
+  }
+
   res->cc = CC_SUCCESS;
 
   //TODO: Following data needs to be updated based on platform

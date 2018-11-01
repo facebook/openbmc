@@ -258,16 +258,26 @@ def remove_healthd_reboot(logger):
     try:
         with open('/etc/healthd-config.json') as conf:
             d = json.load(conf)
+        changed = False
         for t in d['bmc_mem_utilization']['threshold']:
             try:
                 t['action'].remove('reboot')
+                changed = True
             except ValueError:
                 pass
-        with open('/etc/healthd-config.json', 'w') as conf:
-            json.dump(d, conf)
-        run_verbosely(['sv', 'restart', 'healthd'], logger)
-    # Python 2 raises plain IOError. Python 3 raises FileNotFoundError but
-    # that's a sub-class of IOError.
+        # Yosemite 1 v2.7 (and maybe other images) has a healthd-config.json
+        # but is missing a working sv configuration. Instead, healthd is
+        # launched from the setup-healthd.sh init script. Additionally, it does
+        # not contain the reboot action in its healthd-config.json. So to avoid
+        # failing on these systems, only modify the configuration and restart
+        # the service on an as-needed basis.
+        if changed:
+            with open('/etc/healthd-config.json', 'w') as conf:
+                json.dump(d, conf)
+            run_verbosely(['sv', 'restart', 'healthd'], logger)
+    # If /etc/healthd-config.json does not exist, Python 2 raises plain
+    # IOError. Python 3 raises FileNotFoundError but that's a sub-class of
+    # IOError.
     except IOError:
         pass
 

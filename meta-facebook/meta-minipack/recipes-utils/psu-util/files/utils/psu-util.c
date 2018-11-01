@@ -18,7 +18,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <signal.h>
 #include <facebook/minipack-psu.h>
 
 static const char *option_list[] = {
@@ -41,16 +40,9 @@ print_usage(const char *name) {
     printf("       %s\n", option_list[i]);
 }
 
-void
-exithandler(int signum) {
-  printf("PSU update abort!\n");
-  syslog(LOG_WARNING, "PSU update abort!");
-  exit(1);
-}
-
 int
 main(int argc, const char *argv[]) {
-  uint8_t psu_num = 0;
+  uint8_t psu_num = 0, prsnt = 0;
   int pid_file = 0;
   int ret = 0;
 
@@ -77,9 +69,18 @@ main(int argc, const char *argv[]) {
   }
 
   pid_file = open("/var/run/psu-util.pid", O_CREAT | O_RDWR, 0666);
-  if(flock(pid_file, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
+  if (flock(pid_file, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
     printf("Another psu-util instance is running...\n");
     exit(EXIT_FAILURE);
+  }
+
+  ret = is_psu_prsnt(psu_num, &prsnt);
+  if (ret) {
+    return ret;
+  }
+  if (!prsnt) {
+    printf("PSU%d is not present!\n", psu_num + 1);
+    return -1;
   }
 
   if (!strcmp(argv[2], "--get_psu_info")) {
@@ -92,34 +93,6 @@ main(int argc, const char *argv[]) {
     ret = get_eeprom_info(psu_num, argv[3]);
   }
   else if (!strcmp(argv[2], "--update") && argv[3] != NULL) {
-    signal(SIGHUP, exithandler);
-    signal(SIGINT, exithandler);
-    signal(SIGTSTP, exithandler);
-    signal(SIGTERM, exithandler);
-    signal(SIGQUIT, exithandler);
-
-    run_command("sv stop sensord > /dev/null");
-
-    switch (psu_num) {
-      case 0:
-        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
-                    "pim5 pim6 pim7 pim8 psu2 psu3 psu4 > /dev/null 2>&1 &");
-        break;
-      case 1:
-        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
-                    "pim5 pim6 pim7 pim8 psu1 psu3 psu4 > /dev/null 2>&1 &");
-        break;
-      case 2:
-        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
-                    "pim5 pim6 pim7 pim8 psu1 psu2 psu4 > /dev/null 2>&1 &");
-        break;
-      case 3:
-        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
-                    "pim5 pim6 pim7 pim8 psu1 psu2 psu3 > /dev/null 2>&1 &");
-        break;
-    }
-    syslog(LOG_WARNING, "Stop monitor PSU%d sensor to update", psu_num + 1);
-
     ret = do_update_psu(psu_num, argv[3], argv[4]);
     if (ret) {
       syslog(LOG_WARNING, "PSU%d update fail!", psu_num + 1);
@@ -127,10 +100,6 @@ main(int argc, const char *argv[]) {
     } else {
       syslog(LOG_WARNING, "PSU%d update success!", psu_num + 1);
     }
-
-    run_command("killall sensord");
-    run_command("sv start sensord > /dev/nul");
-    syslog(LOG_WARNING, "Start monitor PSU%d sensor", psu_num + 1);
   }
   else {
     print_usage(argv[0]);

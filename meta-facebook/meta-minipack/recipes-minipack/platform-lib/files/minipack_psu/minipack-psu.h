@@ -76,6 +76,7 @@ extern "C" {
 #define MURATA_MODEL        "D1U54P-W-1500-12-HC4TC"
 
 typedef struct _i2c_info_t {
+  int fd;
   uint8_t bus;
   uint8_t eeprom_addr;
   uint8_t pmbus_addr;
@@ -138,6 +139,11 @@ typedef struct _delta_hdr_t {
 } delta_hdr_t;
 
 enum {
+  STOP,
+  START
+};
+
+enum {
   DELTA_1500,
   BELPOWER_1500_NAC,
   UNKNOWN
@@ -165,6 +171,8 @@ enum {
   OPTN_TIME_PRESENT = 18
 };
 
+int is_psu_prsnt(uint8_t num, uint8_t *status);
+int get_mfr_model(uint8_t num, uint8_t *block);
 int do_update_psu(uint8_t num, const char *file, const char *vendor);
 int get_eeprom_info(uint8_t mum, const char *tpye);
 int get_psu_info(uint8_t num);

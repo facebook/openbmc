@@ -16,15 +16,16 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <signal.h>
 #include "minipack-psu.h"
 
 static delta_hdr_t delta_hdr;
 
 i2c_info_t psu[] = {
-  {49, 0x51, 0x59, PSU1_EEPROM},
-  {48, 0x50, 0x58, PSU2_EEPROM},
-  {57, 0x51, 0x59, PSU3_EEPROM},
-  {56, 0x50, 0x58, PSU4_EEPROM},
+  {-1, 49, 0x51, 0x59, PSU1_EEPROM},
+  {-1, 48, 0x50, 0x58, PSU2_EEPROM},
+  {-1, 57, 0x51, 0x59, PSU3_EEPROM},
+  {-1, 56, 0x50, 0x58, PSU4_EEPROM},
 };
 
 pmbus_info_t pmbus[] = {
@@ -48,6 +49,17 @@ pmbus_info_t pmbus[] = {
   {"OPTN_TIME_TOTAL", 0xd8},
   {"OPTN_TIME_PRESENT", 0xd9},
 };
+
+static g_fd = -1;
+
+static void
+exithandler(int signum) {
+  printf("\nPSU update abort!\n");
+  syslog(LOG_WARNING, "PSU update abort!");
+  close(g_fd);
+  run_command("rm /var/run/psu-util.pid");
+  exit(0);
+}
 
 static int
 i2c_open(uint8_t bus, uint8_t addr) {
@@ -82,16 +94,35 @@ i2c_open(uint8_t bus, uint8_t addr) {
   return fd;
 }
 
-static int
-get_mfr_model(int fd, uint8_t *block) {
-  int rc = -1;
+static void
+sensord_operation(uint8_t num, uint8_t action) {
 
-  rc = i2c_smbus_read_block_data(fd, pmbus[MFR_MODEL].reg, block);
-  if (rc < 0) {
-    ERR_PRINT("get_mfr_model()");
-    return -1;
+  if (action == STOP) {
+    syslog(LOG_WARNING, "Stop monitor PSU%d sensor to update", num + 1);
+    run_command("sv stop sensord > /dev/null");
+    switch (num) {
+      case 0:
+        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
+                    "pim5 pim6 pim7 pim8 psu2 psu3 psu4 > /dev/null 2>&1 &");
+        break;
+      case 1:
+        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
+                    "pim5 pim6 pim7 pim8 psu1 psu3 psu4 > /dev/null 2>&1 &");
+        break;
+      case 2:
+        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
+                    "pim5 pim6 pim7 pim8 psu1 psu2 psu4 > /dev/null 2>&1 &");
+        break;
+      case 3:
+        run_command("/usr/local/bin/sensord scm smb pim1 pim2 pim3 pim4 "
+                    "pim5 pim6 pim7 pim8 psu1 psu2 psu3 > /dev/null 2>&1 &");
+        break;
+    }
+  } else if (action == START) {
+    run_command("killall sensord");
+    run_command("sv start sensord > /dev/nul");
+    syslog(LOG_WARNING, "Start monitor PSU%d sensor", num + 1);
   }
-  return 0;
 }
 
 /*
@@ -207,7 +238,14 @@ delta_img_hdr_parse(const char *file_path) {
     printf("Vendor: Delta\n");
     printf("Model: %s\n", delta_hdr.fw_id);
     printf("HW Compatibility: %d\n", delta_hdr.compatibility);
-    printf("MCU: 0x%x\n", delta_hdr.uc);
+    if (delta_hdr.uc == 0x10) {
+      printf("MCU: primary\n");
+    } else if (delta_hdr.uc == 0x20) {
+      printf("MCU: secondary\n");
+    } else {
+      printf("MCU: unknown number 0x%x\n", delta_hdr.uc);
+      return -1;
+    }
     printf("Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
     return DELTA_1500;
   } else {
@@ -217,7 +255,7 @@ delta_img_hdr_parse(const char *file_path) {
 }
 
 static int
-delta_unlock_upgrade(int fd_i2c) {
+delta_unlock_upgrade(uint8_t num) {
   uint8_t block[I2C_SMBUS_BLOCK_MAX] =
           {delta_hdr.uc, delta_hdr.fw_id[10], delta_hdr.fw_id[9],
                          delta_hdr.fw_id[8], delta_hdr.fw_id[7],
@@ -227,13 +265,13 @@ delta_unlock_upgrade(int fd_i2c) {
                          delta_hdr.fw_id[0], delta_hdr.compatibility};
 
   printf("-- Unlock Upgrade --\n");
-  i2c_smbus_write_block_data(fd_i2c, UNLOCK_UPGRADE,
+  i2c_smbus_write_block_data(psu[num].fd, UNLOCK_UPGRADE,
                                  13, block);
   return 0;
 }
 
 static int
-delta_boot_flag(int fd_i2c, uint16_t mode) {
+delta_boot_flag(uint8_t num, uint16_t mode) {
   uint16_t word = (mode << 8) | delta_hdr.uc;
 
   if (mode == BOOT_MODE) {
@@ -241,13 +279,13 @@ delta_boot_flag(int fd_i2c, uint16_t mode) {
   } else {
     printf("-- Reset PSU --\n");
   }
-  i2c_smbus_write_word_data(fd_i2c, BOOT_FLAG, word);
+  i2c_smbus_write_word_data(psu[num].fd, BOOT_FLAG, word);
 
   return 0;
 }
 
 static int
-delta_fw_transmit(int fd_i2c, const char *path) {
+delta_fw_transmit(uint8_t num, const char *path) {
   FILE* fp;
   int fw_len = 0;
   int block_total = 0;
@@ -277,7 +315,11 @@ delta_fw_transmit(int fd_i2c, const char *path) {
   fread(fw_data, sizeof(uint8_t), fw_len, fp);
   fclose(fp);
 
-  printf("-- Transmit Firmware --\n");
+  if (delta_hdr.uc == 0x10) {
+    printf("-- Transmit Primary Firmware --\n");
+  } else if (delta_hdr.uc == 0x10){
+    printf("-- Transmit Secondary Firmware --\n");
+  }
 
   while (block_total <= fw_block) {
     block[0] = delta_hdr.uc;
@@ -287,7 +329,7 @@ delta_fw_transmit(int fd_i2c, const char *path) {
     if (block[1] < block_size) {
       memcpy(&fw_buf[0], &fw_data[byte_index], 16);
       memcpy(&block[3], &fw_buf, 16);
-      i2c_smbus_write_block_data(fd_i2c, DATA_TO_RAM,
+      i2c_smbus_write_block_data(psu[num].fd, DATA_TO_RAM,
                                       19, block);
       if (delta_hdr.uc == 0x10) {
         msleep(60);
@@ -304,7 +346,7 @@ delta_fw_transmit(int fd_i2c, const char *path) {
     } else {
       block[1] = page_num_lo;
       block[2] = 0;
-      i2c_smbus_write_block_data(fd_i2c, DATA_TO_FLASH,
+      i2c_smbus_write_block_data(psu[num].fd, DATA_TO_FLASH,
                                       3, block);
       msleep(90);
       if (page_num_lo == page_num_max) {
@@ -320,27 +362,27 @@ delta_fw_transmit(int fd_i2c, const char *path) {
 }
 
 static int
-delta_crc_transmit(int fd_i2c) {
+delta_crc_transmit(uint8_t num) {
   uint8_t block[I2C_SMBUS_BLOCK_MAX] =
                      {delta_hdr.uc, delta_hdr.crc[0], delta_hdr.crc[1]};
 
   printf("-- Transmit CRC --\n");
-  i2c_smbus_write_block_data(fd_i2c, CRC_CHECK, 3, block);
+  i2c_smbus_write_block_data(psu[num].fd, CRC_CHECK, 3, block);
 
   return 0;
 }
 
-int
-update_delta_psu(int fd, const char *file_path) {
+static int
+update_delta_psu(uint8_t num, const char *file_path) {
   if (delta_img_hdr_parse(file_path) == DELTA_1500) {
-    delta_unlock_upgrade(fd);
+    delta_unlock_upgrade(num);
     msleep(20);
-    delta_boot_flag(fd, BOOT_MODE);
+    delta_boot_flag(num, BOOT_MODE);
     msleep(2500);
-    delta_fw_transmit(fd, file_path);
-    delta_crc_transmit(fd);
+    delta_fw_transmit(num, file_path);
+    delta_crc_transmit(num);
     msleep(1500);
-    delta_boot_flag(fd, NORMAL_MODE);
+    delta_boot_flag(num, NORMAL_MODE);
 
     if (delta_hdr.uc == 0x10) {
       msleep(4000);
@@ -389,7 +431,7 @@ belpower_img_hdr_parse(const char *file_path) {
 }
 
 static int
-belpower_fw_transmit(int fd_i2c, uint8_t num, const char *file_path) {
+belpower_fw_transmit(uint8_t num, const char *file_path) {
   FILE* fp;
   uint8_t file_buf[128];
   uint8_t byte_buf[128];
@@ -458,10 +500,10 @@ belpower_fw_transmit(int fd_i2c, uint8_t num, const char *file_path) {
         if (strstr(error_text, "Could not enter primary bootloader")) {
           while (retry) {
             printf("Retry enter primary bootloader\n");
-            ret = i2c_rdwr_msg_transfer(fd_i2c, psu[num].pmbus_addr << 1,
+            ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
                                 primary_cmd, sizeof(primary_cmd), NULL, 0);
             sleep(5);
-            ret |= i2c_rdwr_msg_transfer(fd_i2c, psu[num].pmbus_addr << 1,
+            ret |= i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
                           read_cmd, 1, &word_receive, 2);
             if (ret == 0 && word_receive[0] == 0x0
                          && word_receive[1] == 0x1) {
@@ -484,8 +526,8 @@ belpower_fw_transmit(int fd_i2c, uint8_t num, const char *file_path) {
         /* Send command and check result if necessary */
         if (byte_buf[0] == 1) { /* Read */
           if (byte_buf[1] == 1) { /* Read byte */
-            ret = i2c_rdwr_msg_transfer(fd_i2c, psu[num].pmbus_addr << 1,
-                                  &byte_buf[2], byte_buf[0], &byte, byte_buf[1]);
+            ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
+                                &byte_buf[2], byte_buf[0], &byte, byte_buf[1]);
             printf("\n");
             printf("read byte:0x%.2x\n", byte);
             if (ret == 0 && byte == byte_buf[3]) {
@@ -494,8 +536,8 @@ belpower_fw_transmit(int fd_i2c, uint8_t num, const char *file_path) {
               success = false;
             }
           } else if (byte_buf[1] == 2) { /* Read word */
-            ret = i2c_rdwr_msg_transfer(fd_i2c, psu[num].pmbus_addr << 1,
-                          &byte_buf[2], byte_buf[0], &word_receive, byte_buf[1]);
+            ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
+                        &byte_buf[2], byte_buf[0], &word_receive, byte_buf[1]);
             if (ret == 0 && word_receive[0] == byte_buf[3]
                          && word_receive[1] == byte_buf[4]) {
               success = true;
@@ -504,7 +546,7 @@ belpower_fw_transmit(int fd_i2c, uint8_t num, const char *file_path) {
             }
           }
         } else { /* Write */
-          ret = i2c_rdwr_msg_transfer(fd_i2c, psu[num].pmbus_addr << 1,
+          ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
                                         &byte_buf[2], byte_buf[0], NULL, 0);
           if (!ret) {
             success = true;
@@ -539,64 +581,95 @@ belpower_fw_transmit(int fd_i2c, uint8_t num, const char *file_path) {
   return 0;
 }
 
-int
-update_belpower_psu(int fd, uint8_t num, const char *file_path) {
-  if (belpower_img_hdr_parse(file_path) == BELPOWER_1500_NAC ) {
-    belpower_fw_transmit(fd, num, file_path);
+static int
+update_belpower_psu(uint8_t num, const char *file_path) {
+  int ret = -1;
+
+  if (belpower_img_hdr_parse(file_path) == BELPOWER_1500_NAC) {
+    ret = belpower_fw_transmit(num, file_path);
   } else {
     return -1;
   };
 
-  return 0;
+  return ret;
 }
 
-int
-update_murata_psu(int fd, const char *file_path) {
+static int
+update_murata_psu(const char *file_path) {
   printf("Not implemented yet\n");
   return 0;
 }
 
 int
+is_psu_prsnt(uint8_t num, uint8_t *status) {
+
+  return pal_is_fru_prsnt(num + 11, status);
+}
+
+int
+get_mfr_model(uint8_t num, uint8_t *block) {
+  int rc = -1;
+
+  rc = i2c_smbus_read_block_data(psu[num].fd, pmbus[MFR_MODEL].reg, block);
+  if (rc < 0) {
+    ERR_PRINT("get_mfr_model()");
+    return -1;
+  }
+  return 0;
+}
+
+int
 do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
-  int fd = -1, ret = -1;
+  int ret = -1;
   uint8_t block[I2C_SMBUS_BLOCK_MAX + 1] = {0};
 
-  fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
-  if (fd < 0) {
+  signal(SIGHUP, exithandler);
+  signal(SIGINT, exithandler);
+  signal(SIGTERM, exithandler);
+  signal(SIGQUIT, exithandler);
+
+  psu[num].fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
+  g_fd = psu[num].fd;
+  if (psu[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
     return -1;
   }
 
+  sensord_operation(num, STOP);
   if (vendor == NULL) {
-    ret = get_mfr_model(fd, block);
+    ret = get_mfr_model(num, block);
     if (ret < 0) {
       printf("Cannot Get PSU Model\n");
       return -1;
     }
 
     if (!strncmp(block, DELTA_MODEL, strlen(DELTA_MODEL))) {
-      ret = update_delta_psu(fd, file_path);
+      ret = update_delta_psu(num, file_path);
     } else if (!strncmp(block, BELPOWER_MODEL, strlen(BELPOWER_MODEL))) {
-      ret = update_belpower_psu(fd, num, file_path);
+      ret = update_belpower_psu(num, file_path);
     } else if (!strncmp(block, MURATA_MODEL, strlen(MURATA_MODEL))) {
-      ret = update_murata_psu(fd, file_path);
+      ret = update_murata_psu(file_path);
     } else {
       printf("Unsupported device: %s\n", block);
       return -1;
     }
   } else {
     if (!strncasecmp(vendor, "delta", strlen("delta"))) {
-      ret = update_delta_psu(fd, file_path);
+      ret = update_delta_psu(num, file_path);
     } else if (!strncasecmp(vendor, "belpower", strlen("belpower"))) {
-      ret = update_belpower_psu(fd, num, file_path);
+      ret = update_belpower_psu(num, file_path);
     } else if (!strncasecmp(vendor, "murata", strlen("murata"))) {
-      ret = update_murata_psu(fd, file_path);
+      ret = update_murata_psu(file_path);
     } else {
       printf("Unsupported vendor: %s\n", vendor);
       return -1;
     }
   }
-  close(fd);
+
+  if (ret == 0) {
+    sensord_operation(num, START);
+  }
+  close(psu[num].fd);
 
   return ret;
 }
@@ -664,23 +737,24 @@ print_fruid_info(fruid_info_t *fruid, uint8_t num) {
 /* Populate and print fruid_info by parsing the fru's binary dump */
 int
 get_eeprom_info(uint8_t num, const char *tpye) {
-  int ret = -1, fd = -1;
+  int ret = -1;
   char eeprom[16];
   fruid_info_t fruid;
   uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
 
-  fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
-  if (fd < 0) {
+  psu[num].fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
+  g_fd = psu[num].fd;
+  if (psu[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
     return -1;
   }
 
   if (tpye == NULL) {
-    if (get_mfr_model(fd, block)) {
-      close(fd);
+    if (get_mfr_model(num, block)) {
+      close(psu[num].fd);
       return -1;
     }
-    close(fd);
+    close(psu[num].fd);
 
     if (!strncmp(block, DELTA_MODEL, strlen(DELTA_MODEL))) {
       snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
@@ -720,7 +794,7 @@ get_eeprom_info(uint8_t num, const char *tpye) {
 
 int
 get_psu_info(uint8_t num) {
-  int fd = -1, rc = -1;
+  int rc = -1;
   int i = 0, size = 0;
   uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
   uint8_t byte;
@@ -728,14 +802,15 @@ get_psu_info(uint8_t num) {
   uint32_t optn_time = 0;
   time_info_t optn;
 
-  fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
-  if (fd < 0) {
+  psu[num].fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
+  g_fd = psu[num].fd;
+  if (psu[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
     return -1;
   }
 
-  if (get_mfr_model(fd, block)) {
-    close(fd);
+  if (get_mfr_model(num, block)) {
+    close(psu[num].fd);
     return -1;
   }
 
@@ -756,7 +831,7 @@ get_psu_info(uint8_t num) {
       case MFR_DATE:
       case MFR_SERIAL:
         memset(block, 0, sizeof(block));
-        rc = i2c_smbus_read_block_data(fd, pmbus[i].reg, block);
+        rc = i2c_smbus_read_block_data(psu[num].fd, pmbus[i].reg, block);
         if (rc < 0) {
           ERR_PRINT("get_psu_info()");
           return -1;
@@ -765,13 +840,13 @@ get_psu_info(uint8_t num) {
         break;
       case PRI_FW_VER:
       case SEC_FW_VER:
-        word = i2c_smbus_read_word_data(fd, pmbus[i].reg);
+        word = i2c_smbus_read_word_data(psu[num].fd, pmbus[i].reg);
         printf("\n%-18s (0x%X) : %d.%d", pmbus[i].item, pmbus[i].reg,
                                 (word & 0xff), ((word >> 8) & 0xff));
         break;
       case STATUS_WORD:
       case STATUS_STBY_WORD:
-        word = i2c_smbus_read_word_data(fd, pmbus[i].reg);
+        word = i2c_smbus_read_word_data(psu[num].fd, pmbus[i].reg);
         printf("\n%-18s (0x%X) : 0x%x", pmbus[i].item, pmbus[i].reg, word);
         break;
       case STATUS_VOUT:
@@ -782,13 +857,13 @@ get_psu_info(uint8_t num) {
       case STATUS_FAN:
       case STATUS_VSTBY:
       case STATUS_ISTBY:
-        byte = i2c_smbus_read_byte_data(fd, pmbus[i].reg);
+        byte = i2c_smbus_read_byte_data(psu[num].fd, pmbus[i].reg);
         printf("\n%-18s (0x%X) : 0x%x", pmbus[i].item, pmbus[i].reg, byte);
         break;
       case OPTN_TIME_TOTAL:
       case OPTN_TIME_PRESENT:
         memset(block, 0, sizeof(block));
-        rc = i2c_smbus_read_block_data(fd, pmbus[i].reg, block);
+        rc = i2c_smbus_read_block_data(psu[num].fd, pmbus[i].reg, block);
         optn_time = block[0] | block[1] << 8 | block[2] << 16 | block[3] << 24;
         optn = time_convert(optn_time);
         printf("\n%-18s (0x%X) : %dD:%dH:%dM:%dS", pmbus[i].item, pmbus[i].reg,
@@ -797,14 +872,14 @@ get_psu_info(uint8_t num) {
     }
   }
   printf("\n");
-  close(fd);
+  close(psu[num].fd);
 
   return 0;
 }
 
 int
 get_blackbox_info(uint8_t num, const char *option) {
-  int fd = -1, ret = 0, i;
+  int ret = 0, i;
   uint8_t psu_num = num + 1;
   uint8_t read_cmd[3] = {0xfb, 1};
   uint8_t clear_cmd[3] = {0xfb, 0xaa, 0x55};
@@ -814,14 +889,15 @@ get_blackbox_info(uint8_t num, const char *option) {
   time_info_t total;
   time_info_t present;
 
-  fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
-  if (fd < 0) {
+  psu[num].fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
+  g_fd = psu[num].fd;
+  if (psu[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
     return -1;
   }
 
-  if (get_mfr_model(fd, block)) {
-    close(fd);
+  if (get_mfr_model(num, block)) {
+    close(psu[num].fd);
     return -1;
   }
 
@@ -832,7 +908,7 @@ get_blackbox_info(uint8_t num, const char *option) {
 
   if ((!strncmp(option, "--print", strlen("--print")))) {
     for (read_cmd[2] = 0; read_cmd[2] < 5; read_cmd[2]++) {
-      ret = i2c_rdwr_msg_transfer(fd, psu[num].pmbus_addr << 1,
+      ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
                                     read_cmd, 3, &blackbox, 42);
       if (ret) {
         printf("PSU%d blackbox page %d read fail!\n", psu_num, read_cmd[2]);
@@ -894,7 +970,7 @@ get_blackbox_info(uint8_t num, const char *option) {
                                           linear_convert(blackbox.fan_speed));
     }
   } else if ((!strncmp(option, "--clear", strlen("--clear")))) {
-    ret = i2c_rdwr_msg_transfer(fd, psu[num].pmbus_addr << 1,
+    ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
                                          clear_cmd, 3, NULL, 0);
     if (ret) {
       printf("PSU%d blackbox clear fail!\n", psu_num);
@@ -904,7 +980,7 @@ get_blackbox_info(uint8_t num, const char *option) {
     printf("Invalid option!\n");
     return -1;
   }
-  close(fd);
+  close(psu[num].fd);
 
   return 0;
 }

@@ -35,6 +35,7 @@
 #include <sys/un.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
+#include <openbmc/obmc-sensor.h>
 #include <sys/reboot.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/ipc.h>
@@ -474,6 +475,40 @@ sensor_alert_immediate_msg(unsigned char *request, unsigned char req_len,
   res->cc = CC_SUCCESS;
 }
 
+// Set sensor reading (IPMI/Section 35.17)
+static void
+sensor_set_reading(unsigned char *request, unsigned char req_len,
+                      unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  uint8_t sensor_num;
+  uint8_t flags;
+  uint8_t value;
+
+  // We do not support the command in full.
+  if (length_check(3, req_len, response, res_len))
+    return;
+  sensor_num = req->data[0];
+  flags = req->data[1];
+  value = req->data[2];
+  // We support the case only when flags == 1 (write given value
+  // to sensor reading byte ([1:0] - sensor reading operation))
+  if (flags != 0x1) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    return;
+  }
+  // TODO. Allow BMC to specify the sensors which we allow
+  // to be written from the host.
+  if (sensor_cache_write(req->payload_id, sensor_num, true, (float)value)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+  res->cc = CC_SUCCESS;
+}
+
+
+
 // Handle Sensor/Event Commands (IPMI/Section 29)
 static void
 ipmi_handle_sensor(unsigned char *request, unsigned char req_len,
@@ -491,6 +526,9 @@ ipmi_handle_sensor(unsigned char *request, unsigned char req_len,
       break;
     case CMD_SENSOR_ALERT_IMMEDIATE_MSG:
       sensor_alert_immediate_msg(request, req_len, response, res_len);
+      break;
+    case CMD_SENSOR_SET_SENSOR_READING:
+      sensor_set_reading(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

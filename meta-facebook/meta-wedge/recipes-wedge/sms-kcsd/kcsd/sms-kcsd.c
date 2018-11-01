@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <facebook/alert_control.h>
-#include <facebook/ipmi.h>
+#include <openbmc/ipmi.h>
 
 
 #define PATH_SMS_KCS "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/sms_kcs"
@@ -63,7 +63,7 @@ handle_kcs_msg(void) {
   kcs_msg_t *msg;
   unsigned char rbuf[256] = {0};
   unsigned char tbuf[256] = {0};
-  unsigned char tlen = 0;
+  unsigned short tlen = 0;
   int count = 0;
   int i = 0;
 
@@ -86,10 +86,10 @@ handle_kcs_msg(void) {
   msg = (kcs_msg_t*)rbuf;
 
   // Invoke IPMI handler
-  ipmi_handle(msg->buf, msg->length, &tbuf[1], &tlen);
+  lib_ipmi_handle(msg->buf, msg->length, &tbuf[1], &tlen);
 
   // Fill the length as returned by IPMI stack
-  tbuf[0] = tlen;
+  tbuf[0] = (unsigned char)tlen;
 
   //Write Reply back to KCS channel
   fp = fopen(PATH_SMS_KCS, "w");

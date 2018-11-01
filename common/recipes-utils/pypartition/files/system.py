@@ -37,6 +37,7 @@ import re
 import socket
 import subprocess
 import sys
+import time
 
 from glob import glob
 
@@ -275,6 +276,7 @@ def remove_healthd_reboot(logger):
             with open('/etc/healthd-config.json', 'w') as conf:
                 json.dump(d, conf)
             run_verbosely(['sv', 'restart', 'healthd'], logger)
+            time.sleep(10)
     # If /etc/healthd-config.json does not exist, Python 2 raises plain
     # IOError. Python 3 raises FileNotFoundError but that's a sub-class of
     # IOError.

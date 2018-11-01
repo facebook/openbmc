@@ -71,9 +71,9 @@ class TestSystem(unittest.TestCase):
                 self.assertEqual(mtds[0].size, 0x2000000)
                 self.assertEqual(mtds[0].device_name, name)
 
-    @patch.object(subprocess, 'check_output')
+    @patch.object(system, 'get_vboot_enforcement', return_value='none')
     @patch.object(system, 'open', create=True)
-    def test_get_mtds_dual_super_fit_mode(self, mocked_open, mocked_check_output):
+    def test_get_mtds_dual_super_fit_mode(self, mocked_open, mocked_get_vboot):
         for order in [(0, 1), (1, 0)]:
             data = textwrap.dedent('''\
                 dev:    size   erasesize  name
@@ -92,9 +92,6 @@ class TestSystem(unittest.TestCase):
             ''').format(order[0], order[1])
             mocked_open.return_value = mock_open(read_data=data).return_value
             (full_mtds, all_mtds) = system.get_mtds()
-            mocked_check_output.assert_called_with([
-                '/usr/local/bin/vboot-util'
-            ])
             self.assertEqual(len(full_mtds), 2)
             self.assertEqual(full_mtds[0].device_name, 'flash1')
             self.assertEqual(len(all_mtds), 12)

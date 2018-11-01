@@ -299,29 +299,37 @@ simLED_monitor_handler(void *unused) {
   while(1) {
     sleep(1);
     pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
-    if(sys_ug == 0 && interval[0] == 0) {
-      interval[0] = INTERVAL_MAX;
-      set_sys_led(brd_rev);
-    } else {
-      interval[0]--;
+    if (sys_ug == 0) {
+      if (interval[0] == 0) {
+        interval[0] = INTERVAL_MAX;
+        set_sys_led(brd_rev);
+      } else {
+        interval[0]--;
+      }
     }
-    if(fan_ug == 0 && interval[1] == 0) {
-      interval[1] = INTERVAL_MAX;
-      set_fan_led(brd_rev);
-    } else {
-      interval[1]--;
+    if (fan_ug == 0) {
+      if (interval[1] == 0) {
+        interval[1] = INTERVAL_MAX;
+        set_fan_led(brd_rev);
+      } else {
+        interval[1]--;
+      }
     }
-    if(psu_ug == 0 && interval[2] == 0) {
-      interval[2] = INTERVAL_MAX;
-      set_psu_led(brd_rev);
-    } else {
-      interval[2]--;
+    if (psu_ug == 0) {
+      if (interval[2] == 0) {
+        interval[2] = INTERVAL_MAX;
+        set_psu_led(brd_rev);
+      } else {
+        interval[2]--;
+      }
     }
-    if(smb_ug == 0 && interval[3] == 0) {
-      interval[3] = INTERVAL_MAX;
-      set_smb_led(brd_rev);
-    } else {
-      interval[3]--;
+    if (smb_ug == 0) {
+      if (interval[3] == 0) {
+        interval[3] = INTERVAL_MAX;
+        set_smb_led(brd_rev);
+      } else {
+        interval[3]--;
+      }
     }
   }
   return 0;

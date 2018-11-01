@@ -450,7 +450,7 @@ rm_process_running_flag(uint8_t slot_id, uint8_t opt) {
 int
 main(int argc, char **argv) {
 
-  int ret;
+  int ret=0;
 
   uint8_t fru, status, opt;
   char *option;

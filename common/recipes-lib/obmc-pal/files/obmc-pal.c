@@ -323,6 +323,18 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd)
 }
 
 int __attribute__((weak))
+pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_sled_cycle(void)
 {
   return PAL_EOK;

@@ -38,7 +38,18 @@
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle, " \
                         "12V-off, 12V-on, 12V-cycle"
 #endif
+#ifndef PWR_DEV_OPTION_LIST
+#define PWR_DEV_OPTION_LIST "status, off, on, reset, cycle"
+#endif
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
+
+#ifdef FRU_DEVICE_LIST
+  static const char * pal_dev_list_power = pal_dev_list;
+  static const char * dev_pwr_option_list = pal_dev_pwr_option_list;
+#else
+  static const char * pal_dev_list_power = NULL;
+  static const char * dev_pwr_option_list = NULL;
+#endif
 
 const char *pwr_option_list = PWR_OPTION_LIST;
 
@@ -74,6 +85,13 @@ static void
 print_usage() {
   printf("Usage: power-util [ %s ] [ %s ]\nUsage: power-util sled-cycle\n",
       pal_server_list, pwr_option_list);
+  if (pal_dev_list_power != NULL && dev_pwr_option_list != NULL) {
+    if (!strncmp(pal_dev_list_power, "all, ", strlen("all, "))) {
+      pal_dev_list_power = pal_dev_list_power + strlen("all, ");
+    }
+    printf("Usage: power-util [ %s ] [ %s ] [ %s ]\n",
+      pal_server_list, pal_dev_list_power, dev_pwr_option_list);
+  }
 }
 
 static bool
@@ -192,8 +210,98 @@ static bool can_change_power(uint8_t fru)
 }
 
 static int
+dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
+  int ret = 0;
+  uint8_t status, type;
+  int retries;
+
+  if (opt != PWR_STATUS) {
+    if (!can_change_power(fru)) {
+      return -1;
+    }
+  }
+
+  switch(opt) {
+    case PWR_STATUS:
+      ret = pal_get_device_power(fru, dev_id, &status, &type);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_get_device_power failed for fru %u dev %u\n", fru, dev_id);
+        return ret;
+      }
+      printf("Power status for fru %u dev %u : %s\n", fru, dev_id, status?"ON":"OFF");
+
+      break;
+    case PWR_OFF:
+      printf("Powering fru %u dev %u to OFF state...\n", fru, dev_id);
+
+      ret = pal_set_device_power(fru, dev_id, SERVER_POWER_OFF);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_device_power failed for"
+          " fru %u", fru);
+        return ret;
+      } else if (ret == 1) {
+        printf("fru %u dev %u is already powered OFF...\n", fru, dev_id);
+        return 0;
+      } else {
+        syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d DEV: %u", fru, dev_id);
+      }
+      break;
+
+    case PWR_ON:
+
+      printf("Powering fru %u dev %u to ON state...\n", fru, dev_id);
+
+      ret = pal_set_device_power(fru, dev_id, SERVER_POWER_ON);
+      if (ret == 1) {
+        printf("fru %u dev %u is already powered ON...\n", fru, dev_id);
+        return 0;
+      } else if (ret == -2) {  //check if fru is not ready
+        syslog(LOG_WARNING, "power_util: pal_set_device_power failed for"
+          " fru %u", fru);
+        return ret;
+      }
+
+      for (retries = 0; retries < MAX_RETRIES; retries++) {
+         sleep(3);
+         ret = pal_get_device_power(fru, dev_id, &status, &type);
+         if ((ret >= 0) && (status == SERVER_POWER_ON)) {
+           syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %u DEV: %u", fru, dev_id);
+           break;
+         }
+         ret = pal_set_device_power(fru, dev_id, SERVER_POWER_ON);
+      }
+      if (ret < 0 || status != SERVER_POWER_ON) {
+        syslog(LOG_WARNING, "power_util: pal_set_device_power failed for"
+          " for fru %u dev %u with status=%u", fru, dev_id, status);
+        return ret;
+      }
+
+      break;
+
+    case PWR_CYCLE:
+      printf("Power cycling fru %u dev %u...\n", fru, dev_id);
+
+      ret = pal_set_device_power(fru, dev_id, SERVER_POWER_CYCLE);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
+          " fru %u", fru);
+        return ret;
+      } else {
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d DEV: %u", fru, dev_id);
+      }
+      break;
+
+    default:
+      syslog(LOG_WARNING, "power_util: wrong option");
+
+  }
+
+  return ret;
+}
+
+static int
 power_util(uint8_t fru, uint8_t opt) {
-  int ret;
+  int ret = 0;
   uint8_t status;
   int retries;
   char pwr_state[MAX_VALUE_LEN] = {0};
@@ -478,22 +586,8 @@ main(int argc, char **argv) {
 
   uint8_t fru, status, opt;
   char *option;
-
-  /* Check for sled-cycle */
-  if (argc < 2 || argc > 3) {
-    print_usage();
-    exit (-1);
-  }
-
-  option =  argc == 2 ? argv[1] : argv [2];
-
-  ret = get_power_opt(option, &opt);
-  /* If argc is 2, the option is sled-cycle;  we should ignore power-util fru sled-cycle*/
-  if ((ret < 0) || (argc == 2 && opt != PWR_SLED_CYCLE) || (argc == 3 && opt == PWR_SLED_CYCLE)) {
-    printf("Wrong option: %s\n", option);
-    print_usage();
-    exit(-1);
-  }
+  uint8_t num_devs = 0;
+  uint8_t dev_id = DEV_NONE;
 
   if (argc > 2) {
     ret = pal_get_fru_id(argv[1], &fru);
@@ -504,6 +598,16 @@ main(int argc, char **argv) {
     }
   } else {
     fru = -1;
+  }
+
+  pal_get_num_devs(fru,&num_devs);
+
+  /* Check for sled-cycle */
+  if (argc < 2 || argc > 3) {
+    if ( argc != 4 || num_devs == 0) {
+      print_usage();
+      exit (-1);
+    }
   }
 
   if (argc > 2) {
@@ -520,6 +624,31 @@ main(int argc, char **argv) {
     }
   }
 
+  if (argc == 4) {
+    ret = pal_get_dev_id(argv[2], &dev_id);
+    if (ret < 0 || dev_id == DEV_ALL) {
+      printf("pal_get_dev_id failed for %s %s\n", argv[1], argv[2]);
+      print_usage();
+      exit(-1);
+    }
+  }
+
+  option =  argc == 2 ? argv[1] : argc == 3 ? argv [2] : argv[3];
+
+  ret = get_power_opt(option, &opt);
+  /* If argc is 2, the option is sled-cycle;  we should ignore power-util fru sled-cycle*/
+  if ((ret < 0) || (argc == 2 && opt != PWR_SLED_CYCLE) || (argc == 3 && opt == PWR_SLED_CYCLE)) {
+    printf("Wrong option: %s\n", option);
+    print_usage();
+    exit(-1);
+  }
+
+  if (argc == 4 && opt != PWR_ON && opt != PWR_OFF && opt != PWR_STATUS && opt != PWR_CYCLE) {
+    printf("Wrong option for %s: %s\n",argv [2] ,option);
+    print_usage();
+    exit(-1);
+  }
+
   // Check if another instance is running
   if (add_process_running_flag(fru, opt) < 0) {
     printf("power_util: another instance is running for FRU:%d...\n",fru);
@@ -527,11 +656,16 @@ main(int argc, char **argv) {
     exit(-2);
   }
 
-  ret = power_util(fru, opt);
-  if (ret < 0) {
-    printf("ERROR: power-util fru[%d] [%s] failed\n", fru, option_list[opt]);
-    rm_process_running_flag(fru, opt);
-    return ret;
+  if (dev_id == DEV_NONE) {
+    ret = power_util(fru, opt);
+    if (ret < 0) {
+      printf("ERROR: power-util fru[%d] [%s] failed\n", fru, option_list[opt]);
+    }
+  } else if (dev_id != DEV_ALL) {
+    ret = dev_power_util(fru, dev_id, opt);
+    if (ret < 0) {
+      printf("ERROR: power-util fru[%d] dev[%d] [%s] failed\n", fru, dev_id, option_list[opt]);
+    }
   }
 
   rm_process_running_flag(fru, opt);

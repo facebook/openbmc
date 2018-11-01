@@ -87,11 +87,13 @@ class Zone:
 
     def get_set_fan_mode(self, mode, action):
         fan_mode_path = RECORD_DIR + 'fan_mode'
+        if not os.path.isdir(RECORD_DIR):
+            os.mkdir(RECORD_DIR)
         if action in 'read':
             if os.path.isfile(fan_mode_path):
                 with open(fan_mode_path, "r") as f:
                     mode = f.read(1)
-                return mode 
+                return mode
             else:
                 return fan_mode['normal_mode']
         elif action in 'write':
@@ -114,7 +116,7 @@ class Zone:
         sensor_index = 0
         cause_boost_count = 0
         no_sane_flag = 0
-        mode = 0 
+        mode = 0
 
         for v in self.expr_meta['ext_vars']:
             sensor_valid_flag = 1
@@ -147,11 +149,13 @@ class Zone:
                     else:
                         if self.sensor_fail == True:
                             sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
+                            if not os.path.isdir(SENSOR_FAIL_RECORD_DIR):
+                                os.mkdir(SENSOR_FAIL_RECORD_DIR)
                             if (sensor.status in ['na']) and (self.sensor_valid_cur[sensor_index] != -1):
                                 if re.match(r'.+_C[2-4]_[0-3]_NVME_.+', sensor.name) != None:
                                     Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)
-                                    cause_boost_count += 1 
+                                    cause_boost_count += 1
                                 elif re.match(r'SSD', sensor.name) != None or re.match(r'(.*)nvme(.*)', sname) != None:
                                     fail_ssd_count = fail_ssd_count + 1
                                 else:

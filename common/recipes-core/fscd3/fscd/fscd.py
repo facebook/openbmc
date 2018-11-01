@@ -440,6 +440,10 @@ class Fscd(object):
         '''
         Create directory to store which sensors and fans failed
         '''
+
+        if not os.path.isdir(RECORD_DIR):
+            os.mkdir(RECORD_DIR)
+
         if not os.path.isdir(SENSOR_FAIL_RECORD_DIR):
             os.mkdir(SENSOR_FAIL_RECORD_DIR)
 

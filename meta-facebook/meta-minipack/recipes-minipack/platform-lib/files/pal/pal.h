@@ -195,6 +195,7 @@ extern "C" {
 #define GPIO_POSTCODE_7     "/tmp/gpionames/GPIOH7/%s"
 #define GPIO_SCM_USB_PRSNT  "/tmp/gpionames/SCM_USB_PRSNT/%s"
 
+#define MAX_RETRIES_SDR_INIT  30
 #define MAX_READ_RETRY 10
 #define DELAY_POWER_OFF 5
 #define DELAY_POWER_CYCLE 10

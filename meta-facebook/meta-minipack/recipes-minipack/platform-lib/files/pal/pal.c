@@ -2388,6 +2388,87 @@ bic_sdr_init(uint8_t fru) {
   return 0;
 }
 
+/* Get the threshold values from the SDRs */
+static int
+bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
+                       uint8_t thresh, void *value) {
+  int ret, retry = 0;
+  int8_t b_exp, r_exp;
+  uint8_t x, m_lsb, m_msb, b_lsb, b_msb, thresh_val;
+  uint16_t m = 0, b = 0;
+  sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
+  sdr_full_t *sdr;
+
+  while ((ret = bic_sensor_sdr_init(fru, sinfo)) == ERR_NOT_READY &&
+    retry++ < MAX_RETRIES_SDR_INIT) {
+    sleep(1);
+  }
+  if (ret < 0) {
+    syslog(LOG_WARNING, "bic_get_sdr_thresh_val: failed for fru: %d", fru);
+    return -1;
+  }
+  sdr = &sinfo[snr_num].sdr;
+
+  switch (thresh) {
+    case UCR_THRESH:
+      thresh_val = sdr->uc_thresh;
+      break;
+    case UNC_THRESH:
+      thresh_val = sdr->unc_thresh;
+      break;
+    case UNR_THRESH:
+      thresh_val = sdr->unr_thresh;
+      break;
+    case LCR_THRESH:
+      thresh_val = sdr->lc_thresh;
+      break;
+    case LNC_THRESH:
+      thresh_val = sdr->lnc_thresh;
+      break;
+    case LNR_THRESH:
+      thresh_val = sdr->lnr_thresh;
+      break;
+    case POS_HYST:
+      thresh_val = sdr->pos_hyst;
+      break;
+    case NEG_HYST:
+      thresh_val = sdr->neg_hyst;
+      break;
+    default:
+#ifdef DEBUG
+      syslog(LOG_ERR, "bic_get_sdr_thresh_val: reading unknown threshold val");
+#endif
+      return -1;
+  }
+
+  // y = (mx + b * 10^b_exp) * 10^r_exp
+  x = thresh_val;
+
+  m_lsb = sdr->m_val;
+  m_msb = sdr->m_tolerance >> 6;
+  m = (m_msb << 8) | m_lsb;
+
+  b_lsb = sdr->b_val;
+  b_msb = sdr->b_accuracy >> 6;
+  b = (b_msb << 8) | b_lsb;
+
+  // exponents are 2's complement 4-bit number
+  b_exp = sdr->rb_exp & 0xF;
+  if (b_exp > 7) {
+    b_exp = (~b_exp + 1) & 0xF;
+    b_exp = -b_exp;
+  }
+
+  r_exp = (sdr->rb_exp >> 4) & 0xF;
+  if (r_exp > 7) {
+    r_exp = (~r_exp + 1) & 0xF;
+    r_exp = -r_exp;
+  }
+  * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
+
+  return 0;
+}
+
 static int
 bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     void *value) {
@@ -5091,11 +5172,11 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   return ret;
 }
 
-
 static void
 sensor_thresh_array_init(uint8_t fru) {
   static bool init_done[MAX_NUM_FRUS] = {false};
-  int i = 0;
+  int i = 0, j;
+  float fvalue;
 
   pim_thresh_array_init(fru);
 
@@ -5112,6 +5193,13 @@ sensor_thresh_array_init(uint8_t fru) {
       scm_sensor_threshold[SCM_SENSOR_HSC_VOLT][LCR_THRESH] = 11.040;
       scm_sensor_threshold[SCM_SENSOR_HSC_CURR][UCR_THRESH] = 10;
       scm_sensor_threshold[SCM_SENSOR_HSC_POWER][UCR_THRESH] = 100;
+      for (i = scm_sensor_cnt; i < scm_all_sensor_cnt; i++) {
+        for (j = 1; j <= MAX_SENSOR_THRESHOLD + 1; j++) {
+          if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[i], j, &fvalue)){
+            scm_sensor_threshold[scm_all_sensor_list[i]][j] = fvalue;
+          }
+        }
+      }
       break;
     case FRU_SMB:
       smb_sensor_threshold[SMB_SENSOR_1220_VMON1][UCR_THRESH] = 4.32;
@@ -6670,4 +6758,3 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   return pal_set_key_value(key, cvalue);
 }
-

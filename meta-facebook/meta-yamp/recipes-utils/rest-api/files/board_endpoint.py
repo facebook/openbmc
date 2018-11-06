@@ -23,6 +23,7 @@ from rest_utils import dumps_bytestr
 import rest_fruid_scm
 import rest_pim_present
 import rest_piminfo
+import rest_pimserial
 class boardApp_Handler:
     # Handler for sys/mb/fruid/scm resource endpoint
     async def rest_fruid_scm_hdl(self, request):
@@ -35,3 +36,7 @@ class boardApp_Handler:
     # Handler for sys/pim_info resource endpoint (version)
     async def rest_piminfo_hdl(self,request):
         return web.json_response(rest_piminfo.get_piminfo())
+
+    # Handler for sys/pim_serial resource endpoint
+    async def rest_pimserial_hdl(self,request):
+        return web.json_response(rest_pimserial.get_pimserial())

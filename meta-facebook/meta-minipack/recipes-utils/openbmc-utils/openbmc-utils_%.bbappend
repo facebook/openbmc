@@ -31,6 +31,7 @@ SRC_URI += "file://board-utils.sh \
             file://reset_brcm.sh \
             file://scmcpld_update.sh \
             file://set_pim_sensor.sh \
+            file://dump_pim_serials.sh \
             file://set_sled.sh \
             file://setup_board.sh \
             file://setup_default_gpio.sh \
@@ -60,6 +61,7 @@ OPENBMC_UTILS_FILES += " \
     reset_brcm.sh \
     scmcpld_update.sh \
     set_pim_sensor.sh \
+    dump_pim_serials.sh \
     set_sled.sh \
     setup_mgmt.sh \
     setup_pcie_repeater.sh \

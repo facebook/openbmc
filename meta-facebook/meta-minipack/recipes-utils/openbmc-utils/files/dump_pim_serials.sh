@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -15,14 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from board_endpoint import boardApp_Handler
-from boardroutes import *
 
-def setup_board_routes(app):
-    bhandler = boardApp_Handler()
-    app.router.add_get(board_routes[0], bhandler.rest_usb2i2c_reset_hdl)
-    app.router.add_get(board_routes[1], bhandler.rest_fruid_scm_hdl)
-    app.router.add_get(board_routes[2], bhandler.rest_pim_present_hdl)
-    app.router.add_get(board_routes[3], bhandler.rest_piminfo_hdl)
-    app.router.add_get(board_routes[4], bhandler.rest_pimserial_hdl)
+for index in 1 2 3 4 5 6 7 8
+do
+    if [ ! -f /tmp/pim${index}_serial.txt ]; then
+        /usr/local/bin/peutil $index |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim${index}_serial.txt
+    fi
+    serial=`cat /tmp/pim${index}_serial.txt`
+    echo PIM${index} : ${serial}
+done
 

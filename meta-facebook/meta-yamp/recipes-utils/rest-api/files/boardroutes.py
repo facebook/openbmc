@@ -19,4 +19,5 @@ board_routes = [
     '/api/sys/pim_present',
     '/api/sys/piminfo',
     '/api/sys/fruid_scm',
+    '/api/sys/pimserial',
 ]

@@ -24,6 +24,7 @@ import rest_usb2i2c_reset
 import rest_fruid_scm
 import rest_pim_present
 import rest_piminfo
+import rest_pimserial
 class boardApp_Handler:
     # Handler to reset usb-to-i2c
     async def rest_usb2i2c_reset_hdl(self,request):
@@ -38,3 +39,7 @@ class boardApp_Handler:
         return web.json_response(rest_pim_present.get_pim_present(), dumps=dumps_bytestr)
     async def rest_piminfo_hdl(self,request):
         return web.json_response(rest_piminfo.get_piminfo())
+
+    # Handler for sys/pim_serial resource endpoint
+    async def rest_pimserial_hdl(self,request):
+        return web.json_response(rest_pimserial.get_pimserial())

@@ -31,6 +31,9 @@
 #include "ncsi.h"
 #include <inttypes.h>
 #include <locale.h>
+#include <fcntl.h>
+
+#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
 
 
 // NCSI command name
@@ -397,5 +400,30 @@ handle_get_link_status(NCSI_Response_Packet *resp)
     syslog(LOG_WARNING, "%s", logbuf);
     prevLinkStatus = currentLinkStatus;
   }
+  return 0;
+}
+
+int
+handle_get_version_id(NCSI_Response_Packet *resp)
+{
+  Get_Version_ID_Response *vidresp = (Get_Version_ID_Response *)resp->Payload_Data;
+  uint8_t nic_fw_ver[4] = {0};
+  int fd;
+
+  fd = open(NIC_FW_VER_PATH, O_RDWR | O_CREAT, 0666);
+  if (fd < 0) {
+    return -1;
+  }
+
+  lseek(fd, (long)&((Get_Version_ID_Response *)0)->fw_ver, SEEK_SET);
+  read(fd, nic_fw_ver, sizeof(nic_fw_ver));
+  if (memcmp(vidresp->fw_ver, nic_fw_ver, sizeof(nic_fw_ver))) {
+    lseek(fd, 0, SEEK_SET);
+    if (write(fd, vidresp, sizeof(Get_Version_ID_Response)) == sizeof(Get_Version_ID_Response)) {
+      syslog(LOG_WARNING, "updated %s", NIC_FW_VER_PATH);
+    }
+  }
+  close(fd);
+
   return 0;
 }

@@ -61,27 +61,96 @@
 #define NIC_STATUS_SAMPLING_DELAY  60
 
 
-
-
 // Structure for netlink file descriptor and socket
 typedef struct _nl_sfd_t {
   int fd;
   int sock;
 } nl_sfd_t;
 
+static struct timespec last_config_ts;
+
+
+static int
+prepare_ncsi_req_msg(struct msghdr *msg, uint8_t ch, uint8_t cmd) {
+  struct sockaddr_nl *dest_addr = NULL;
+  struct nlmsghdr *nlh = NULL;
+  NCSI_NL_MSG_T *nl_msg = NULL;
+  struct iovec *iov;
+  int msg_size = sizeof(NCSI_NL_MSG_T);
+
+  dest_addr = (struct sockaddr_nl *)malloc(sizeof(struct sockaddr_nl));
+  if (!dest_addr) {
+    syslog(LOG_ERR, "prepare_ncsi_req_msg: failed to allocate msg_name");
+    return -1;
+  }
+  memset(dest_addr, 0, sizeof(*dest_addr));
+  dest_addr->nl_family = AF_NETLINK;
+  dest_addr->nl_pid = 0;    /* For Linux Kernel */
+  dest_addr->nl_groups = 0;
+
+  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
+  if (!nlh) {
+    syslog(LOG_ERR, "prepare_ncsi_req_msg: failed to allocate message buffer");
+    goto free_and_exit;
+  }
+  memset(nlh, 0, NLMSG_SPACE(msg_size));
+  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
+  nlh->nlmsg_pid = getpid();
+  nlh->nlmsg_flags = 0;
+
+  nl_msg = (NCSI_NL_MSG_T *)NLMSG_DATA(nlh);
+  sprintf(nl_msg->dev_name, "eth0");
+  nl_msg->channel_id = ch;
+  nl_msg->cmd = cmd;
+  nl_msg->payload_length = 0;
+
+  iov = (struct iovec *)malloc(sizeof(struct iovec));
+  if (!iov) {
+    syslog(LOG_ERR, "prepare_ncsi_req_msg: failed to allocate iovec");
+    goto free_and_exit;
+  }
+  iov->iov_base = (void *)nlh;
+  iov->iov_len = nlh->nlmsg_len;
+
+  msg->msg_name = (void *)dest_addr;
+  msg->msg_namelen = sizeof(*dest_addr);
+  msg->msg_iov = iov;
+  msg->msg_iovlen = 1;
+
+  return 0;
+
+free_and_exit:
+  if (dest_addr)
+    free(dest_addr);
+  if (nlh)
+    free(nlh);
+  if (iov)
+    free(iov);
+
+  return -1;
+}
+
+static void
+free_ncsi_req_msg(struct msghdr *msg) {
+  if (msg->msg_name)
+    free(msg->msg_name);
+
+  if (msg->msg_iov) {
+    if (msg->msg_iov->iov_base)
+      free(msg->msg_iov->iov_base);
+
+    free(msg->msg_iov);
+  }
+}
+
 
 static int
 send_registration_msg(nl_sfd_t *sfd)
 {
-  struct sockaddr_nl src_addr, dest_addr;
-  struct nlmsghdr *nlh = NULL;
-  NCSI_NL_MSG_T *nl_msg = NULL;
-  struct iovec iov;
+  struct sockaddr_nl src_addr;
   struct msghdr msg;
-  int msg_size = sizeof(NCSI_NL_MSG_T);
   int ret = 0;
   int sock_fd = ((nl_sfd_t *)sfd)->fd;
-
 
   memset(&msg, 0, sizeof(msg));
   memset(&src_addr, 0, sizeof(src_addr));
@@ -89,69 +158,28 @@ send_registration_msg(nl_sfd_t *sfd)
   src_addr.nl_pid = getpid(); /* self pid */
 
   if (bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr)) == -1) {
-    syslog(LOG_ERR, "send_registration_msg: bind socket failed\n");
+    syslog(LOG_ERR, "send_registration_msg: bind socket failed");
     ret = 1;
-    goto free_and_exit;
+    return ret;
   };
 
-  memset(&dest_addr, 0, sizeof(dest_addr));
-  dest_addr.nl_family = AF_NETLINK;
-  dest_addr.nl_pid = 0;    /* For Linux Kernel */
-  dest_addr.nl_groups = 0;
-
-  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
-  if (!nlh) {
-    syslog(LOG_ERR, "send_registration_msg: Error, failed to allocate message buffer\n");
-    ret = 1;
-    goto free_and_exit ;
+  ret = prepare_ncsi_req_msg(&msg, REG_AEN_CH, REG_AEN_CMD);
+  if (ret) {
+    syslog(LOG_ERR, "send_registration_msg: prepare message failed");
+    return ret;
   }
 
-  memset(nlh, 0, NLMSG_SPACE(msg_size));
-  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
-  nlh->nlmsg_pid = getpid();
-  nlh->nlmsg_flags = 0;
+  syslog(LOG_INFO, "send_registration_msg: registering PID %d",
+                    ((struct nlmsghdr *)msg.msg_iov->iov_base)->nlmsg_pid);
 
-  nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
-  if (!nl_msg) {
-    syslog(LOG_ERR, "send_registration_msg: Error, failed to allocate NCSI_NL_MSG\n");
-    ret = 1;
-    goto free_and_exit ;
-  }
-
-  /* send registration message to kernel to register ncsid as AEN handler */
-  /* for now only listens on eth0 */
-  sprintf(nl_msg->dev_name, "eth0");
-  nl_msg->channel_id = REG_AEN_CH;
-  nl_msg->cmd = REG_AEN_CMD;
-  nl_msg->payload_length = 0;
-
-  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
-
-  iov.iov_base = (void *)nlh;
-  iov.iov_len = nlh->nlmsg_len;
-  msg.msg_name = (void *)&dest_addr;
-  msg.msg_namelen = sizeof(dest_addr);
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-
-  syslog(LOG_INFO, "send_registration_msg: registering PID %d\n",
-         nlh->nlmsg_pid);
-  ret = sendmsg(sock_fd,&msg,0);
+  ret = sendmsg(sock_fd, &msg, 0);
   if (ret < 0) {
-    syslog(LOG_ERR, "send_registration_msg: status ret = %d, errno=%d\n",
-             ret, errno);
+    syslog(LOG_ERR, "send_registration_msg: status ret = %d, errno=%d", ret, errno);
   }
 
-free_and_exit:
-  if (nlh)
-    free(nlh);
-
-  if (nl_msg)
-    free(nl_msg);
-
+  free_ncsi_req_msg(&msg);
   return ret;
 }
-
 
 
 static int
@@ -162,26 +190,32 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
   unsigned short cmd_response_code = ntohs(resp->Response_Code);
   unsigned short cmd_reason_code   = ntohs(resp->Reason_Code);
   int ret = 0;
+  struct timespec ts;
 
   /* chekc for command completion before processing
      response payload */
-  if ( cmd_response_code != RESP_COMMAND_COMPLETED) {
-      syslog(LOG_WARNING, "NCSI link failed,"
+  if (cmd_response_code != RESP_COMMAND_COMPLETED) {
+      syslog(LOG_WARNING, "NCSI Cmd (0x%x) failed,"
              " Cmd Response 0x%x, Reason 0x%x",
-             cmd_response_code, cmd_reason_code);
+             cmd, cmd_response_code, cmd_reason_code);
      /* if command fails for a specific signature (i.e. NCSI interface failure)
         try to re-init NCSI interface */
-     if (  (cmd_response_code == RESP_COMMAND_UNAVAILABLE)
-          &&
+    if ((cmd_response_code == RESP_COMMAND_UNAVAILABLE) &&
            ((cmd_reason_code == REASON_INTF_INIT_REQD)  ||
-            (cmd_reason_code == REASON_CHANNEL_NOT_RDY)  ||
+            (cmd_reason_code == REASON_CHANNEL_NOT_RDY) ||
             (cmd_reason_code == REASON_PKG_NOT_RDY))
-        ) {
-      syslog(LOG_WARNING, "NCSI link failed,"
-             " Cmd Response 0x%x, Reason 0x%x, re-init NCSI interface",
-             cmd_response_code, cmd_reason_code);
-      handle_ncsi_config(0);
-      return NCSI_IF_REINIT;
+       ) {
+      clock_gettime(CLOCK_MONOTONIC, &ts);  // to avoid re-initialize closely
+      if (((ts.tv_sec - last_config_ts.tv_sec) >= NIC_STATUS_SAMPLING_DELAY/2) ||
+          (last_config_ts.tv_sec == 0)) {
+        syslog(LOG_WARNING, "NCSI Cmd (0x%x) failed,"
+               " Cmd Response 0x%x, Reason 0x%x, re-init NCSI interface",
+               cmd, cmd_response_code, cmd_reason_code);
+
+        last_config_ts.tv_sec = ts.tv_sec;
+        handle_ncsi_config(0);
+        return NCSI_IF_REINIT;
+      }
     }
 
     /* for other types of command fallures, ignore for now */
@@ -189,7 +223,10 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
   } else {
     switch (cmd) {
       case NCSI_GET_LINK_STATUS:
-        ret  = handle_get_link_status(resp);
+        ret = handle_get_link_status(resp);
+        break;
+      case NCSI_GET_VERSION_ID:
+        ret = handle_get_version_id(resp);
         break;
       // TBD: handle other command response here
 
@@ -234,6 +271,9 @@ ncsi_rx_handler(void *sfd) {
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
 
+  // the last timestamp to call handle_ncsi_config() when processing NCSI_resp
+  last_config_ts.tv_sec = 0;
+
   while (1) {
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
@@ -264,60 +304,27 @@ ncsi_rx_handler(void *sfd) {
 static void*
 ncsi_tx_handler(void *sfd) {
   int ret, sock_fd = ((nl_sfd_t *)sfd)->fd;
-  struct sockaddr_nl dest_addr;
-  struct nlmsghdr *nlh = NULL;
-  NCSI_NL_MSG_T *nl_msg = NULL;
-  struct iovec iov;
-  struct msghdr msg;
-  int msg_size = sizeof(NCSI_NL_MSG_T);
-
+  struct msghdr lsts_msg, vid_msg;
 
   syslog(LOG_INFO, "ncsi_tx_handler thread started");
-  memset(&dest_addr, 0, sizeof(dest_addr));
-  dest_addr.nl_family = AF_NETLINK;
-  dest_addr.nl_pid = 0;    /* For Linux Kernel */
-  dest_addr.nl_groups = 0;
 
-  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
-  if (!nlh) {
-    syslog(LOG_ERR, "tx: Error, failed to allocate message buffer\n");
-    goto free_and_exit;
-  }
+  memset(&lsts_msg, 0, sizeof(lsts_msg));
+  memset(&vid_msg, 0, sizeof(vid_msg));
 
-  memset(nlh, 0, NLMSG_SPACE(msg_size));
-  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
-  nlh->nlmsg_pid = getpid();
-  nlh->nlmsg_flags = 0;
-
-  nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
-  if (!nl_msg) {
-    syslog(LOG_ERR, "tx: Error, failed to allocate NCSI_NL_MSG\n");
-    goto free_and_exit;
-  }
-
-  /* send registration message to kernel to register ncsid as AEN handler */
-  /* for now only listens on eth0 */
-  sprintf(nl_msg->dev_name, "eth0");
-  nl_msg->channel_id = 0;
-  nl_msg->cmd = NCSI_GET_LINK_STATUS;
-  nl_msg->payload_length = 0;
-
-  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
-
-  iov.iov_base = (void *)nlh;
-  iov.iov_len = nlh->nlmsg_len;
-  msg.msg_name = (void *)&dest_addr;
-  msg.msg_namelen = sizeof(dest_addr);
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-
+  prepare_ncsi_req_msg(&lsts_msg, 0, NCSI_GET_LINK_STATUS);
+  prepare_ncsi_req_msg(&vid_msg, 0, NCSI_GET_VERSION_ID);
 
   while (1) {
     /* send "Get Link status" message to NIC  */
-    ret = sendmsg(sock_fd,&msg,0);
+    ret = sendmsg(sock_fd, &lsts_msg, 0);
     if (ret < 0) {
-      syslog(LOG_ERR, "tx: failed to send cmd, status ret = %d, errno=%d\n",
-               ret, errno);
+      syslog(LOG_ERR, "tx: failed to send lsts_msg, status ret = %d, errno=%d\n", ret, errno);
+    }
+
+    /* send "Get Version ID" message to NIC  */
+    ret = sendmsg(sock_fd, &vid_msg, 0);
+    if (ret < 0) {
+      syslog(LOG_ERR, "tx: failed to send vid_msg, status ret = %d, errno=%d\n", ret, errno);
     }
 
     ret = check_ncsi_status();
@@ -328,8 +335,8 @@ ncsi_tx_handler(void *sfd) {
     sleep(NIC_STATUS_SAMPLING_DELAY);
   }
 
-free_and_exit:
-  free(nlh);
+  free_ncsi_req_msg(&lsts_msg);
+  free_ncsi_req_msg(&vid_msg);
   close(sock_fd);
 
   pthread_exit(NULL);

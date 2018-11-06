@@ -109,6 +109,18 @@ typedef struct {
   unsigned long oem_link_status;
 } __attribute__((packed)) Get_Link_Status_Response;
 
+/* Get Version ID Response */
+typedef struct {
+  uint8_t NCSI_ver[8];
+  char fw_name[12];
+  uint8_t fw_ver[4];
+  uint16_t PCI_DID;
+  uint16_t PCI_VID;
+  uint16_t PCI_SSID;
+  uint16_t PCI_SVID;
+  uint32_t IANA;
+} __attribute__((packed)) Get_Version_ID_Response;
+
 
 #define RESP_COMMAND_COMPLETED   0x0000
 #define RESP_COMMAND_FAILED      0x0001
@@ -213,6 +225,7 @@ void print_ncsi_controller_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf);
 int handle_get_link_status(NCSI_Response_Packet *resp);
+int handle_get_version_id(NCSI_Response_Packet *resp);
 
 
 #endif

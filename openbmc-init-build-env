@@ -1,12 +1,25 @@
 #!/bin/bash
 
 if [ -z "$DISTRO_DEFAULT" ]; then
-  DISTRO_DEFAULT=krogoth
+  DISTRO_DEFAULT=rocko
 else
   echo "WARNING: distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
 fi
 declare -a DISTRO_OVERRIDES
-#DISTRO_OVERRIDES=(meta-cmm:rocko)
+DISTRO_OVERRIDES=(
+  meta-cmm:krogoth
+  meta-fbtp:krogoth
+  meta-fby2:krogoth
+  meta-fbttn:krogoth
+  meta-galaxy100:krogoth
+  meta-lightning:krogoth
+  meta-minilaketb:krogoth
+  meta-minipack:krogoth
+  meta-wedge:krogoth
+  meta-wedge100:krogoth
+  meta-yamp:krogoth
+  meta-yosemite:krogoth
+)
 
 platform="$1"
 _distro="${DISTRO_DEFAULT}"

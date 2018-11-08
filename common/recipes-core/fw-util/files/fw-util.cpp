@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
       return -1;
     }
   } else if (action == "--version") {
-    if(argc != 4) {
+    if(argc > 4) {
       usage();
       return -1;
     }

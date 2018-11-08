@@ -28,6 +28,7 @@ from node_sled import get_node_sled
 from node_bmc import get_node_bmc
 from node_sensors import get_node_sensors
 from node_logs import get_node_logs
+from node_fans import get_node_fans
 from tree import tree
 
 def init_common_tree():
@@ -45,6 +46,10 @@ def init_common_tree():
 
     # /api/logs end point
     r_temp = tree("logs", data = get_node_logs("all"))
+    r_api.addChild(r_temp)
+
+    # /api/fans end point
+    r_temp = tree("fans", data = get_node_fans())
     r_api.addChild(r_temp)
 
     return r_api

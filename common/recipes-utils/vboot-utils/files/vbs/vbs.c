@@ -54,7 +54,7 @@ bool vboot_partition_exist(void)
   while (fgets(line, sizeof(line), partitions)) {
     if(sscanf(line, "mtd%d: %*x %*x %s",
                 &mtdno, mnt_name) == 2) {
-      if(!strcmp("\"romx\"", mnt_name)) {
+      if(!strcmp("\"rom\"", mnt_name)) {
         supported = true;
         break;
       }

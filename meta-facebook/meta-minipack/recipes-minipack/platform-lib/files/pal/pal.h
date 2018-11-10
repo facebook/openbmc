@@ -739,6 +739,7 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value);
 void pal_set_pim_sts_led(uint8_t fru);
 int pal_set_def_key_value(void);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
+int minipack_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 #ifdef __cplusplus
 } // extern "C"
 #endif

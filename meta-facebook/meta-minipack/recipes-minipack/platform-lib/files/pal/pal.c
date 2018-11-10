@@ -6758,3 +6758,179 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   return pal_set_key_value(key, cvalue);
 }
+
+int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+  uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
+  bool parsed = false;
+
+  switch(snr_num) {
+    case BIC_SENSOR_SYSTEM_STATUS:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_Thermal_Trip");
+          break;
+        case 0x01:
+          strcat(error_log, "SOC_FIVR_Fault");
+          break;
+        case 0x02:
+          strcat(error_log, "SOC_Throttle");
+          break;
+        case 0x03:
+          strcat(error_log, "PCH_HOT");
+          break;
+      }
+      parsed = true;
+      break;
+
+    case BIC_SENSOR_CPU_DIMM_HOT:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x01:
+          strcat(error_log, "SOC_MEMHOT");
+          break;
+      }
+      parsed = true;
+      break;
+
+    case MEMORY_ECC_ERR:
+    case MEMORY_ERR_LOG_DIS:
+      strcpy(error_log, "");
+      if (snr_num == MEMORY_ECC_ERR) {
+        // SEL from MEMORY_ECC_ERR Sensor
+        if ((ed[0] & 0x0F) == 0x0) {
+          if (sen_type == 0x0C) {
+            strcat(error_log, "Correctable");
+            sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+            pal_add_cri_sel(temp_log);
+          } else if (sen_type == 0x10)
+            strcat(error_log, "Correctable ECC error Logging Disabled");
+        } else if ((ed[0] & 0x0F) == 0x1) {
+          strcat(error_log, "Uncorrectable");
+          sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+          pal_add_cri_sel(temp_log);
+        } else if ((ed[0] & 0x0F) == 0x5)
+          strcat(error_log, "Correctable ECC error Logging Limit Reached");
+        else
+          strcat(error_log, "Unknown");
+      } else {
+        // SEL from MEMORY_ERR_LOG_DIS Sensor
+        if ((ed[0] & 0x0F) == 0x0)
+          strcat(error_log, "Correctable Memory Error Logging Disabled");
+        else
+          strcat(error_log, "Unknown");
+      }
+
+      // DIMM number (ed[2]):
+      // Bit[7:5]: Socket number  (Range: 0-7)
+      // Bit[4:3]: Channel number (Range: 0-3)
+      // Bit[2:0]: DIMM number    (Range: 0-7)
+      if (((ed[1] & 0xC) >> 2) == 0x0) {
+        /* All Info Valid */
+        chn_num = (ed[2] & 0x18) >> 3;
+        dimm_num = ed[2] & 0x7;
+
+        /* If critical SEL logging is available, do it */
+        if (sen_type == 0x0C) {
+          if ((ed[0] & 0x0F) == 0x0) {
+            sprintf(temp_log, "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          } else if ((ed[0] & 0x0F) == 0x1) {
+            sprintf(temp_log, "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          }
+        }
+        /* Then continue parse the error into a string. */
+        /* All Info Valid                               */
+        sprintf(temp_log, " DIMM %c%d Logical Rank %d (CPU# %d, CHN# %d, DIMM# %d)",
+            'A'+chn_num, dimm_num, ed[1] & 0x03, (ed[2] & 0xE0) >> 5, chn_num, dimm_num);
+      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+        /* DIMM info not valid */
+        sprintf(temp_log, " (CPU# %d, CHN# %d)",
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
+      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+        /* CHN info not valid */
+        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
+            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
+      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+        /* CPU info not valid */
+        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
+            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+      }
+      strcat(error_log, temp_log);
+      parsed = true;
+      break;
+  }
+
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+}
+
+int
+minipack_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+
+  switch(fru) {
+    case FRU_SCM:
+      switch(sensor_num) {
+        case BIC_SENSOR_SYSTEM_STATUS:
+          sprintf(name, "SYSTEM_STATUS");
+          break;
+        case BIC_SENSOR_SYS_BOOT_STAT:
+          sprintf(name, "SYS_BOOT_STAT");
+          break;
+        case BIC_SENSOR_CPU_DIMM_HOT:
+          sprintf(name, "CPU_DIMM_HOT");
+          break;
+        case BIC_SENSOR_PROC_FAIL:
+          sprintf(name, "PROC_FAIL");
+          break;
+        case BIC_SENSOR_VR_HOT:
+          sprintf(name, "VR_HOT");
+          break;
+        default:
+          return -1;
+      }
+      break;
+  }
+  return 0;
+}
+
+int
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+
+  // If SNR_TYPE is OS_BOOT, sensor name is OS
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return 0;
+    default:
+      if (minipack_sensor_name(fru, snr_num, name) != 0) {
+        break;
+      }
+      return 0;
+  }
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}

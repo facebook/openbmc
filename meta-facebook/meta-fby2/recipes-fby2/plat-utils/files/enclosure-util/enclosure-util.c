@@ -30,6 +30,7 @@
 
 #define MAX_DRIVE_NUM 2
 #define MAX_GP_DRIVE_NUM 6
+#define MAX_GPV2_DRIVE_NUM 12
 #define CMD_DRIVE_STATUS 0
 #define CMD_DRIVE_HEALTH 1
 #define MAX_SERIAL_NUM 20
@@ -109,12 +110,22 @@ drive_health(ssd_data *ssd) {
 static int
 read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
   int ret = 0;
-  uint8_t wbuf[8], rbuf[64];
+  uint8_t bus, wbuf[8], rbuf[64];
+  char stype_str[32] = {0};
   ssd_data ssd;
 
+  if (m_slot_type == SLOT_TYPE_SERVER) {
+    bus = 0x3;
+    wbuf[0] = 1 << (drv_num - 1);
+    sprintf(stype_str, "Server Board");
+  } else {  // SLOT_TYPE_GPV2
+    bus = (2 + (drv_num - 1)/2) * 2 + 1;
+    wbuf[0] = 1 << ((drv_num - 1)%2);
+    sprintf(stype_str, "Glacier Point V2");
+  }
+
   // MUX
-  wbuf[0] = 1 << (drv_num - 1);
-  ret = bic_master_write_read(slot_id, 0x3, 0xe2, wbuf, 1, rbuf, 0);
+  ret = bic_master_write_read(slot_id, bus, 0xe2, wbuf, 1, rbuf, 0);
   if (ret != 0) {
     syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
     return ret;
@@ -122,11 +133,11 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
 
   if (cmd == CMD_DRIVE_STATUS) {
     memset(&ssd, 0x00, sizeof(ssd_data));
-    printf("Server Board %u Drive%d\n", slot_id, drv_num);
+    printf("%s %u Drive%d\n", stype_str, slot_id, drv_num);
 
     do {
       wbuf[0] = 0x00;  // offset 00
-      ret = bic_master_write_read(slot_id, 0x3, 0xd4, wbuf, 1, rbuf, 8);
+      ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, 8);
       if (ret != 0) {
         syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
         break;
@@ -137,7 +148,7 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
       ssd.pdlu = rbuf[4];
 
       wbuf[0] = 0x08;  // offset 08
-      ret = bic_master_write_read(slot_id, 0x3, 0xd4, wbuf, 1, rbuf, 24);
+      ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, 24);
       if (ret != 0) {
         syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
         break;
@@ -155,7 +166,7 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
     memset(&ssd, 0x00, sizeof(ssd_data));
 
     wbuf[0] = 0x00;  // offset 00
-    ret = bic_master_write_read(slot_id, 0x3, 0xd4, wbuf, 1, rbuf, 8);
+    ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, 8);
     if (ret != 0) {
       syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
       return ret;
@@ -285,7 +296,7 @@ read_gp_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
 
 static void
 ssd_monitor_enable(uint8_t slot_id, uint8_t slot_type, uint8_t en) {
-  if (slot_type == SLOT_TYPE_SERVER) {
+  if ((slot_type == SLOT_TYPE_SERVER) || (slot_type == SLOT_TYPE_GPV2)) {
     if (en) {  // enable sensor monitor
       bic_disable_sensor_monitor(slot_id, 0);
     } else {   // disable sensor monitor
@@ -344,6 +355,9 @@ main(int argc, char **argv) {
   } else if (slot_type == SLOT_TYPE_GP) {
     drv_cnt = MAX_GP_DRIVE_NUM;
     read_nvme_data = read_gp_nvme_data;
+  } else if (slot_type == SLOT_TYPE_GPV2) {
+    drv_cnt = MAX_GPV2_DRIVE_NUM;
+    read_nvme_data = read_bic_nvme_data;
   } else {
     return -1;
   }

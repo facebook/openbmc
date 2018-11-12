@@ -51,6 +51,7 @@ IMAGE_INSTALL += " \
   threshold-util \
   ncsid \
   vboot-utils \
+  enclosure-util \
   "
 
 IMAGE_FEATURES += " \

@@ -152,6 +152,8 @@ class bmcNode(node):
 
         # Get TPM version
         tpm_path = "/sys/class/tpm/tpm0/device/caps"
+        tpm_tcg_version = "NA"
+        tpm_fw_version = "NA"
         if os.path.isfile(tpm_path):
             with open(tpm_path) as f:
                 for line in f:
@@ -159,9 +161,6 @@ class bmcNode(node):
                         tpm_tcg_version = line.strip("TCG version: ").strip('\n')
                     elif 'Firmware version:' in line:
                         tpm_fw_version = line.strip("Firmware version: ").strip('\n')
-        else:
-            tpm_tcg_version = "NA"
-            tpm_fw_version = "NA"
 
         # SPI0 Vendor
         spi0_vendor = ""

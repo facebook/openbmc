@@ -83,7 +83,7 @@ for (( i=0; i<${#SLOT[@]}; i++ )); do
       sleep 1
       j=$(($j+1))
     done
-  elif [ "$slot_12v" == "1" || ! -f "/tmp/server_type$slot_id.bin" ]; then
+  elif [[ "$slot_12v" == "1" || ! -f "/tmp/server_type$slot_id.bin" ]]; then
     server_type=3
   else
     continue

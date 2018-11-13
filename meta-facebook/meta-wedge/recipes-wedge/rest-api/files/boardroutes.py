@@ -19,4 +19,5 @@
 
 board_routes = [
      '/api/sys/usb2i2c_reset',
+     '/api/sys/modbus_registers',
  ]

@@ -18,8 +18,8 @@ do_install() {
 	  install -d ${D}${bindir}
     install -m 0755 bic-util ${D}${bindir}/bic-util
 }
-DEPENDS += "libbic libfby2-gpio libfby2-sensor"
-RDEPENDS_${PN} += "libbic libfby2-gpio libfby2-sensor "
+DEPENDS += "libbic libpal libfby2-gpio libfby2-sensor"
+RDEPENDS_${PN} += "libbic libpal libfby2-gpio libfby2-sensor "
 
 
 FILES_${PN} = "${bindir}"

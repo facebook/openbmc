@@ -30,6 +30,7 @@
 #include <facebook/fby2_gpio.h>
 #include <facebook/fby2_sensor.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/pal.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -88,7 +89,19 @@ util_check_status(uint8_t slot_id) {
 
   // BIC status is only valid if 12V-on. check this first
   if (!bic_is_slot_12v_on(slot_id)) {
-    printf("Server is 12V-off, unable to check BIC status\n");
+    uint8_t status;
+    ret = pal_is_fru_prsnt(slot_id, &status);
+
+    if (ret < 0) {
+       printf("unable to check BIC status\n");
+       return ret;
+    }
+
+    if (status == 0) {
+      printf("Slot is empty, unable to check BIC status\n");
+    } else {
+      printf("Slot is 12V-off, unable to check BIC status\n");
+    }
     ret = 0;
   } else {
     if (is_bic_ready(slot_id)) {

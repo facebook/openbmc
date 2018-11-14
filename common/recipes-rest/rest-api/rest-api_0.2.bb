@@ -59,7 +59,7 @@ SRC_URI = "file://rest.py \
           "
 
 S = "${WORKDIR}"
-DEPENDS += "libpal update-rc.d-native"
+DEPENDS += "libpal update-rc.d-native python3-psutil"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

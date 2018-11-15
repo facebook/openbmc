@@ -561,7 +561,7 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
   if (fp != NULL)
   {
      if (fgets(buffer, sizeof(buffer), fp))
-         sscanf(buffer, "%*[^v]v%d.%d", &fv_major, &fv_minor);
+         sscanf(buffer, "%*[^-]-v%d.%d", &fv_major, &fv_minor);
      fclose(fp);
   }
 

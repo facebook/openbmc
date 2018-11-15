@@ -1,7 +1,7 @@
 SRCBRANCH = "dev-4.17"
 SRCREV = "AUTOINC"
 
-SRC_URI = "git://github.com/tomrepo/linux.git;branch=${SRCBRANCH};protocol=https \
+SRC_URI = "git://github.com/facebook/openbmc-linux.git;branch=${SRCBRANCH};protocol=https \
           "
 
 LINUX_VERSION ?= "4.17.2"

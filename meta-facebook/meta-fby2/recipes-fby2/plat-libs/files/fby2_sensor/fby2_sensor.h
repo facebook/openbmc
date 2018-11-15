@@ -40,6 +40,8 @@ extern "C" {
 #define ERR_NOT_READY         -2
 #define EER_READ_NA           -3
 
+#define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
+
 typedef struct _sensor_info_t {
   bool valid;
   sdr_full_t sdr;

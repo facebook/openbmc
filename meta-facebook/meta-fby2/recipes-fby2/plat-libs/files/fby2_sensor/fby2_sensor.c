@@ -90,8 +90,6 @@
 #define TOTAL_M2_CH_ON_GP 6
 #define MAX_POS_READING_MARGIN 127
 
-#define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
-
 static float hsc_r_sense = ADM1278_R_SENSE;
 
 /* Error codes returned */

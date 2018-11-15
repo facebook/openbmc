@@ -172,7 +172,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 pwr_sts = f.read(1)
             if pwr_sts[0] == "1":
                 slot_id = fru_map[board]['slot_num']
-                is_slot_server = lpal_hndl.pal_is_slot_server(slot_id)
+                is_slot_server = lpal_hndl.pal_is_slot_support_update(slot_id)
                 if int(is_slot_server) == 1:
                     with open("/sys/class/gpio/gpio"+fru_map[board]['bic_ready_gpio']+"/value", "r") as f:
                         bic_sts = f.read(1)
@@ -185,20 +185,35 @@ def sensor_valid_check(board, sname, check_name, attribute):
                                     dimm_sts = f.read(1)
                                 if dimm_sts[0] != 1:
                                     return 0
+                                else:
+                                    return 1
                             elif int(server_type) == 2:       #EP Server
                                 # check DIMM present
                                 with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map_ep[sname[8:9]], "rb") as f:
                                     dimm_sts = f.read(1)
                                 if dimm_sts[0] != 1:
                                     return 0
-                            else:
+                                else:
+                                    return 1
+                            else:                             #TL Server
                                 # check DIMM present
                                 with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map[sname[8:10]], "rb") as f:
                                     dimm_sts = f.read(1)
                                 if dimm_sts[0] != 1:
                                     return 0
-                        return 1
+                                else:
+                                    return 1
+                        else:
+                            fru_name = c_char_p(board.encode('utf-8'))
+                            snr_name = c_char_p(sname.encode('utf-8'))
+                            is_m2_prsnt = lpal_hndl.pal_is_m2_prsnt(fru_name, snr_name)
+                            return int(is_m2_prsnt)
                 else:
+                    if match(r'dc_nvme', sname) != None:   #GPv1 
+                        fru_name = c_char_p(board.encode('utf-8'))
+                        snr_name = c_char_p(sname.encode('utf-8'))
+                        is_m2_prsnt = lpal_hndl.pal_is_m2_prsnt(fru_name, snr_name)
+                        return int(is_m2_prsnt)
                     return 1
             return 0
         else:

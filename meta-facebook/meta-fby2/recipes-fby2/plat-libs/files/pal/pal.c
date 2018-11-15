@@ -422,6 +422,30 @@ const static uint8_t Memory_Error_Section[16] = {0x14, 0x11, 0xbc, 0xa5, 0x64, 0
 const static uint8_t PCIe_Error_Section[16] = {0x54, 0xe9, 0x95, 0xd9, 0xc1, 0xbb, 0x0f, 0x43, 0xad, 0x91, 0xb4, 0x4d, 0xcb, 0x3c, 0x6f, 0x35};
 const static uint8_t OEM_Error_Section[16] = {0x15, 0xbc, 0xd1, 0x62, 0x9d, 0xae, 0x47, 0x44, 0xa9, 0x36, 0x5d, 0x6a, 0xc5, 0x7c, 0xd2, 0xfc};
 
+struct fsc_monitor {
+  char *sensor_name; 
+  uint8_t sensor_num;
+  uint8_t offset;
+};
+
+static struct fsc_monitor fsc_monitor_tl_m2_list[] = {
+  {"nvme1_ctemp", BIC_SENSOR_NVME1_CTEMP, 0},
+  {"nvme2_ctemp", BIC_SENSOR_NVME2_CTEMP, 1}
+};
+
+static int fsc_monitor_tl_m2_list_size = sizeof(fsc_monitor_tl_m2_list) / sizeof(struct fsc_monitor);
+
+static struct fsc_monitor fsc_monitor_gp_m2_list[] = {
+  {"dc_nvme1_ctemp", DC_SENSOR_NVMe1_CTEMP, 2},
+  {"dc_nvme2_ctemp", DC_SENSOR_NVMe2_CTEMP, 3},
+  {"dc_nvme3_ctemp", DC_SENSOR_NVMe3_CTEMP, 4},
+  {"dc_nvme4_ctemp", DC_SENSOR_NVMe4_CTEMP, 5},
+  {"dc_nvme5_ctemp", DC_SENSOR_NVMe5_CTEMP, 6},
+  {"dc_nvme6_ctemp", DC_SENSOR_NVMe6_CTEMP, 7}
+};
+
+static int fsc_monitor_gp_m2_list_size = sizeof(fsc_monitor_gp_m2_list) / sizeof(struct fsc_monitor);
+
 /* curr/power calibration */
 static void
 power_value_adjust(const struct power_coeff *table, float *value) {
@@ -8985,4 +9009,84 @@ pal_specific_plat_fan_check(bool status)
     printf("Sled Fan Latch Open: True\n");
 
   return;
+}
+
+int pal_fsc_get_target_snr(const char *sname, struct fsc_monitor *fsc_m2_list, int fsc_m2_list_size)
+{
+  int index;
+  for (index = 0; index < fsc_m2_list_size; index++)
+  {
+    if(!strcmp(sname, fsc_m2_list[index].sensor_name))
+    {
+      return index;
+    }
+  }
+
+  return PAL_ENOTSUP;
+}
+
+bool pal_is_m2_prsnt(char *slot_name, char *sensor_name)
+{
+  uint8_t slot_id;
+  uint8_t runoff_id;
+  int ret;
+  struct fsc_monitor *fsc_m2_list;
+  int fsc_m2_list_size;
+  int index;
+  int fd = -1;
+  char path[64] = {0};
+  uint8_t m2_present_status;
+  uint8_t read_byte = 1; 
+
+  ret = pal_get_fru_id(slot_name, &slot_id);
+  if(ret){
+    syslog(LOG_WARNING, "%s: pal_get_fru_id failed for %s", __func__, slot_name);
+    return false;
+  }
+
+  if((slot_id < 1) || (slot_id > 4)) {
+    syslog(LOG_WARNING, "%s: invalid slot id %d", __func__, slot_id);
+    return false;
+  } 
+
+  switch(fby2_get_slot_type(slot_id)) {
+    case SLOT_TYPE_SERVER:
+      fsc_m2_list = fsc_monitor_tl_m2_list;
+      fsc_m2_list_size = fsc_monitor_tl_m2_list_size;
+      runoff_id = slot_id;
+      break;
+    case SLOT_TYPE_GP:
+      fsc_m2_list = fsc_monitor_gp_m2_list;
+      fsc_m2_list_size = fsc_monitor_gp_m2_list_size;
+      runoff_id = slot_id + 1;       
+      break;
+    default:
+      return false;
+  }
+  
+  index = pal_fsc_get_target_snr(sensor_name, fsc_m2_list, fsc_m2_list_size);
+
+  if (index < 0) 
+    return false;
+
+  sprintf(path, SYS_CONFIG_PATH "fru%d_m2_%d_info", runoff_id, fsc_m2_list[index].offset); 
+  fd = open(path, O_RDONLY);
+
+  if (fd < 0) 
+    return false;
+
+  if(read(fd, &m2_present_status, read_byte) != read_byte)
+    return false;
+
+  switch(m2_present_status) {
+    case 0x01:     //M.2 is present
+      break;
+    case 0xFF:     //M.2 is not present
+    default:
+      close(fd);
+      return false;
+  }
+
+  close(fd);
+  return true;
 }

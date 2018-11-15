@@ -110,6 +110,10 @@ case "$sku_type" in
        cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
      fi
    ;;
+   "1028")
+     echo "Run FSC 2 GPV2s and 2 TLs Config"
+     cp /etc/FSC_FBGPV2_EVT_config.json ${default_fsc_config_path}
+   ;;
    *)
      server_type_tmp="3"
      for i in 1 2 3 4 ; do

@@ -1,0 +1,62 @@
+max([
+  linear_inlet(spb:sp_inlet_temp),
+  linear_cpu_margin(slot2:soc_therm_margin) + pid_cpu_margin(slot2:soc_therm_margin),
+  linear_cpu_margin(slot4:soc_therm_margin) + pid_cpu_margin(slot4:soc_therm_margin),
+  linear_dimm(
+   max([
+    slot2:soc_dimma0_temp,
+    slot2:soc_dimma1_temp,
+    slot2:soc_dimmb0_temp,
+    slot2:soc_dimmb1_temp,
+    slot2:soc_dimmd0_temp,
+    slot2:soc_dimmd1_temp,
+    slot2:soc_dimme0_temp,
+    slot2:soc_dimme1_temp,
+    slot4:soc_dimma0_temp,
+    slot4:soc_dimma1_temp,
+    slot4:soc_dimmb0_temp,
+    slot4:soc_dimmb1_temp,
+    slot4:soc_dimmd0_temp,
+    slot4:soc_dimmd1_temp,
+    slot4:soc_dimme0_temp,
+    slot4:soc_dimme1_temp])),
+  linear_mezz(nic:mezz_sensor_temp),
+  linear_mb_m2(
+   max([
+    slot2:nvme1_ctemp,
+    slot2:nvme2_ctemp,
+    slot4:nvme1_ctemp,
+    slot4:nvme2_ctemp])) +
+  pid_mb_m2(
+   max([
+    slot2:nvme1_ctemp,
+    slot2:nvme2_ctemp,
+    slot4:nvme1_ctemp,
+    slot4:nvme2_ctemp])),
+  linear_gp_m2(
+   max([
+    slot1:m2a_temp,
+    slot1:m2b_temp,
+    slot1:m2c_temp,
+    slot1:m2d_temp,
+    slot1:m2e_temp,
+    slot1:m2f_temp,
+    slot1:m2g_temp,
+    slot1:m2h_temp,
+    slot1:m2i_temp,
+    slot1:m2j_temp,
+    slot1:m2k_temp,
+    slot1:m2l_temp,
+    slot3:m2a_temp,
+    slot3:m2b_temp,
+    slot3:m2c_temp,
+    slot3:m2d_temp,
+    slot3:m2e_temp,
+    slot3:m2f_temp,
+    slot3:m2g_temp,
+    slot3:m2h_temp,
+    slot3:m2i_temp,
+    slot3:m2j_temp,
+    slot3:m2k_temp,
+    slot3:m2l_temp]))
+])

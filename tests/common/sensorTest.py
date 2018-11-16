@@ -30,7 +30,8 @@ import unitTestUtil
 import logging
 
 sensorDict = {}
-util_support_map = ['fbttn', 'fbtp', 'lightning', 'minipack']
+util_support_map = ['fbttn', 'fbtp', 'lightning', 'minipack', 'fby2', 'yosemite']
+multi_host_map = ['fby2', 'yosemite']
 lm_sensor_support_map = ['wedge', 'wedge100', 'galaxy100', 'cmm']
 
 
@@ -92,19 +93,27 @@ def sensorTestUtil(platformType, data, util):
         if sensor == "type":
             continue
         try:
-            raw_value = sensorDict[sensor]
+            raw_values = sensorDict[sensor]
         except Exception:
             failed += [sensor]
             continue
-        if isinstance(data[sensor], list):
-            values = re.findall(r"[-+]?\d*\.\d+|\d+", raw_value)
-            if len(values) == 0:
+        if platformType in multi_host_map:
+            if len(raw_values) not in [1, 4]:
                 failed += [sensor]
                 continue
-            rang = data[sensor]
-            if float(rang[0]) > float(values[0]) or float(values[0]) > float(
+        elif len(raw_values) not in [1]:
+            failed += [sensor]
+            continue
+        if isinstance(data[sensor], list):
+            for raw_value in raw_values:
+                values = re.findall(r"[-+]?\d*\.\d+|\d+", raw_value)
+                if len(values) == 0:
+                    failed += [sensor]
+                    continue
+                rang = data[sensor]
+                if float(rang[0]) > float(values[0]) or float(values[0]) > float(
                     rang[1]):
-                failed += [sensor]
+                    failed += [sensor]
         else:
             if 'ok' not in raw_value:
                 failed += [sensor + raw_value]
@@ -168,7 +177,9 @@ def createSensorDictUtil(util):
             lineInfo = line.split(':')
             key = lineInfo[0]
             val = ''.join(lineInfo[1:])
-            sensorDict[key] = val
+            if key not in sensorDict:
+                sensorDict[key] = []
+            sensorDict[key].append(val)
         if "timed out" in line:
             print(line)
             raise Exception(line)

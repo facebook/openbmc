@@ -1,0 +1,10 @@
+[
+  "gpiointrd",
+  "sshd",
+  "fscd",
+  "healthd",
+  "sensord",
+  "ipmid",
+  "ipmbd",
+  "front-paneld"
+]

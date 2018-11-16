@@ -59,6 +59,11 @@ try:
 except Exception:
     pass
 try:
+    sys.path.insert(0, testPath + 'fby2/unittests/')
+    import Fby2Util
+except Exception:
+    pass
+try:
     sys.path.insert(0, testPath + 'fbttn/unittests/')
     import FbttnUtil
 except Exception as e:
@@ -77,7 +82,7 @@ except Exception as e:
 
 class UnitTestUtil:
     """
-    SensorData supports wedge, wedge100, cmm, galaxy100, fbttn, and fbtp
+    SensorData supports wedge, wedge100, cmm, galaxy100, fbttn, fby2, and fbtp
     """
 
     def importUtil(self, platformType):
@@ -91,6 +96,8 @@ class UnitTestUtil:
             return Galaxy100Util.Galaxy100Util()
         elif platformType == 'fbtp':
             return FbtpUtil.FbtpUtil()
+        elif platformType == 'fby2':
+            return Fby2Util.Fby2Util()
         elif platformType == 'fbttn':
             return FbttnUtil.FbttnUtil()
         elif platformType == 'lightning':

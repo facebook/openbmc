@@ -1,0 +1,14 @@
+{
+  "MB_INLET": {
+    "bus": "9",
+    "address": "0x4e"
+  },
+  "MB_OUTLET": {
+    "bus": "9",
+    "address": "0x4f"
+  },
+  "MEZZ_SENSOR_TEMP": {
+    "bus": "11",
+    "address": "0x1f"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "type":"fby2",
+  "endpoints": {
+    "/api": [
+      "bmc",
+      "sensors",
+      "logs",
+      "spb",
+      "mezz",
+      "server1",
+      "server2",
+      "server3",
+      "server4"
+    ],
+    "/api/server1": [
+      "fruid",
+      "sensors",
+      "logs",
+      "config",
+      "bios"
+    ],
+    "/api/server2": [
+      "fruid",
+      "sensors",
+      "logs",
+      "config",
+      "bios"
+    ],
+    "/api/server3": [
+      "fruid",
+      "sensors",
+      "logs",
+      "config",
+      "bios"
+    ],
+    "/api/server4": [
+      "fruid",
+      "sensors",
+      "logs",
+      "config",
+      "bios"
+    ],
+    "/api/spb": [
+      "fruid",
+      "bmc",
+      "sensors",
+      "fans",
+      "logs"
+    ],
+    "/api/mezz": [
+      "fruid",
+      "sensors",
+      "logs"
+    ],
+    "/api/bmc": [
+      "Description",
+      "MAC Addr",
+      "Reset Reason",
+      "Uptime",
+      "Memory Usage",
+      "CPU Usage",
+      "OpenBMC Version",
+      "u-boot version",
+      "kernel version",
+      "TPM TCG version",
+      "TPM FW version",
+      "SPI0 Vendor",
+      "SPI1 Vendor",
+      "At-Scale-Debug Running",
+      "vboot"
+    ]
+  }
+}

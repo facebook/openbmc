@@ -77,6 +77,18 @@ const uint8_t bic_discrete_list[] = {
   BIC_SENSOR_CAT_ERR,
 };
 
+// List of BIC sensors which need to do negative reading handle
+const uint8_t bic_neg_reading_sensor_support_list[] = {
+  /* Temperature sensors*/
+  BIC_SENSOR_MB_OUTLET_TEMP,
+  BIC_SENSOR_MB_INLET_TEMP,
+  BIC_SENSOR_PCH_TEMP,
+  BIC_SENSOR_SOC_TEMP,
+  BIC_SENSOR_SOC_DIMMA0_TEMP,
+  BIC_SENSOR_SOC_DIMMB0_TEMP,
+  BIC_SENSOR_VCCIN_VR_CURR,
+};
+
 /* List of SCM sensors to be monitored */
 const uint8_t scm_sensor_list[] = {
   SCM_SENSOR_OUTLET_LOCAL_TEMP,
@@ -2473,7 +2485,7 @@ static int
 bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     void *value) {
 
-  int ret;
+  int ret, i;
   ipmi_sensor_reading_t sensor;
   sdr_full_t *sdr;
 
@@ -2538,6 +2550,14 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
 
   if ((sensor_num == BIC_SENSOR_SOC_THERM_MARGIN) && (* (float *) value > 0)) {
    * (float *) value -= (float) THERMAL_CONSTANT;
+  }
+
+  if (*(float *) value > MAX_POS_READING_MARGIN) {     //Negative reading handle
+    for(i=0;i<sizeof(bic_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
+      if (sensor_num == bic_neg_reading_sensor_support_list[i]) {
+        * (float *) value -= (float) THERMAL_CONSTANT;
+      }
+    }
   }
 
   return 0;

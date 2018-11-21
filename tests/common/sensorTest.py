@@ -63,7 +63,7 @@ def sensorTestNetwork(platformType, data, util):
             for reading in data[driver]:
                 if data[driver][reading] == "yes":
                     try:
-                            raw_value = sensorDict[driver][reading]
+                        raw_value = sensorDict[driver][reading]
                     except Exception:
                         failed += [driver, reading]
                         continue
@@ -115,8 +115,10 @@ def sensorTestUtil(platformType, data, util):
                     rang[1]):
                     failed += [sensor]
         else:
-            if 'ok' not in raw_value:
-                failed += [sensor + raw_value]
+            for raw_value in raw_values:
+                if 'ok' not in raw_value:
+                    failed += [sensor + raw_value]
+                    break
     return failed
 
 

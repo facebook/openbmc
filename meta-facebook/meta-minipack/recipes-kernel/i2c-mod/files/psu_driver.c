@@ -50,33 +50,59 @@ typedef enum {
   BELPOWER_1100_NA,
   BELPOWER_1500_NAC,
   MURATA_1500,
+  LITEON_1500,
   UNKNOWN
 } model_name;
 
 model_name model;
 
-static int linear_convert(int value)
+enum {
+  LINEAR_11,
+  LINEAR_16
+};
+
+/*
+ * PMBus Linear-11 Data Format
+ * X = Y*2^N
+ * X is the "real world" value;
+ * Y is an 11 bit, two's complement integer;
+ * N is a 5 bit, two's complement integer.
+ *
+ * PMBus Linear-16 Data Format
+ * X = Y*2^N
+ * X is the "real world" value;
+ * Y is a 16 bit unsigned binary integer;
+ * N is a 5 bit, two's complement integer.
+ */
+static int linear_convert(int type, int value, int n)
 {
-  int msb_y, msb_n, data_y, data_n = 0;
+  int msb_y, msb_n, data_y, data_n;
   int value_x = 0;
 
-  msb_y = (value >> 10) & 0x1;
-  msb_n = (value >> 15) & 0x1;
+  if (type == LINEAR_11) {
+    msb_y = (value >> 10) & 0x1;
+    data_y = msb_y ? -1 * ((~value & 0x3ff) + 1)
+                   : value & 0x3ff;
 
-  if (msb_y) {
-    data_y = (~value & 0x3ff) + 1;
-  }
-  else {
-    data_y = value & 0x3ff;
-  }
+    if (n != NULL) {
+      value_x = (n < 0) ? (data_y * 1000) / POW2(abs(n))
+                        : (data_y * 1000) * POW2(n);
+    } else {
+      msb_n = (value >> 15) & 0x1;
 
-  if (msb_n) {
-    data_n = (~(value >> 11) & 0xf) + 1;
-    value_x = (data_y * 1000) / POW2(data_n);
-  }
-  else {
-    data_n = ((value >> 11) & 0xf);
-    value_x = (data_y * 1000) * POW2(data_n);
+      if (msb_n) {
+        data_n = (~(value >> 11) & 0xf) + 1;
+        value_x = (data_y * 1000) / POW2(data_n);
+      } else {
+        data_n = ((value >> 11) & 0xf);
+        value_x = (data_y * 1000) * POW2(data_n);
+      }
+    }
+  } else {
+    if (n != NULL) {
+      value_x = (n < 0) ? (value * 1000) / POW2(abs(n))
+                        : (value * 1000) * POW2(n);
+    }
   }
 
   return value_x;
@@ -100,8 +126,7 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
 
   if (ret < 0 || block[0] == NULL || block[0] == '\n') {
     PSU_DEBUG("Failed to read Manufacturer Model\n");
-  }
-  else {
+  } else {
     while((value < 0 || value == 0xffff) && count--) {
       value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
     }
@@ -117,17 +142,15 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
 
   if (!strncmp(block, "ECD55020006", 11)) {
     model = DELTA_1500;
-  }
-  else if (!strncmp(block, "PFE1100-12-054NA", 16)) {
+  } else if (!strncmp(block, "PS-2152-5L", 10)) {
+    model = LITEON_1500;
+  } else if (!strncmp(block, "PFE1100-12-054NA", 16)) {
     model = BELPOWER_1100_NA;
-  }
-  else if (!strncmp(block, "PFE1500-12-054NAC", 17)) {
+  } else if (!strncmp(block, "PFE1500-12-054NAC", 17)) {
     model = BELPOWER_1500_NAC;
-  }
-  else if (!strncmp(block, "D1U54P-W-1500-12-HC4TC", 22)) {
+  } else if (!strncmp(block, "D1U54P-W-1500-12-HC4TC", 22)) {
     model = MURATA_1500;
-  }
-  else {
+  } else {
     model = UNKNOWN;
   }
 
@@ -146,16 +169,17 @@ static ssize_t psu_vin_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-  case MURATA_1500:
-    result = ((result & 0x7ff) * 1000) / 2;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, -1);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -173,18 +197,19 @@ static ssize_t psu_iin_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-    result = ((result & 0x7ff) * 1000) / 64;
-    break;
-  case MURATA_1500:
-    result = ((result & 0x7ff) * 1000) / 32;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+      result = linear_convert(LINEAR_11, result, -6);
+      break;
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, -5);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -202,17 +227,18 @@ static ssize_t psu_vout_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-    result = ((result & 0x7ff) * 1000) / 64;
-    break;
-  case MURATA_1500:
-    result = (result * 1000) / 64;
-    break;
-  default:
+    case DELTA_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case LITEON_1500:
+      result = linear_convert(LINEAR_16, result, -9);
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, -6);
+      break;
+    default:
     break;
   }
 
@@ -231,18 +257,19 @@ static ssize_t psu_iout_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-    result = ((result & 0x7ff) * 1000) / 8;
-    break;
-  case BELPOWER_1500_NAC:
-  case MURATA_1500:
-    result = ((result & 0x7ff) * 1000) / 4;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case BELPOWER_1100_NA:
+      result = linear_convert(LINEAR_11, result, -3);
+      break;
+    case BELPOWER_1500_NAC:
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, -2);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -260,18 +287,19 @@ static ssize_t psu_temp_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-    result = ((result & 0x7ff) * 1000) / 8;
-    break;
-  case MURATA_1500:
-    result = (result & 0x7ff) * 1000;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+      result = linear_convert(LINEAR_11, result, -3);
+      break;
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, 0);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -289,16 +317,17 @@ static ssize_t psu_fan_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result) / 1000;
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-  case MURATA_1500:
-    result = (result & 0x7ff) * 32;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL) / 1000;
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, 5) / 1000;
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -316,16 +345,17 @@ static ssize_t psu_power_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-  case MURATA_1500:
-    result = (result & 0x7ff) * 1000 * 2;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+    case MURATA_1500:
+      result = result = linear_convert(LINEAR_11, result, 1);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -343,18 +373,21 @@ static ssize_t psu_vstby_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-    result = ((result & 0x7ff) * 1000) / 64;
-    break;
-  case MURATA_1500:
-    result = ((result & 0x7ff) * 1000) / 128;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case LITEON_1500:
+      result = linear_convert(LINEAR_16, result, -9);
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+      result = result = linear_convert(LINEAR_11, result, -6);
+      break;
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, -7);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -372,20 +405,21 @@ static ssize_t psu_istby_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-    result = ((result & 0x7ff) * 1000) / 8;
-    break;
-  case BELPOWER_1500_NAC:
-    result = ((result & 0x7ff) * 1000) / 4;
-    break;
-  case MURATA_1500:
-    result = ((result & 0x7ff) * 1000) / 128;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case BELPOWER_1100_NA:
+      result = linear_convert(LINEAR_11, result, -3);
+      break;
+    case BELPOWER_1500_NAC:
+      result = linear_convert(LINEAR_11, result, -2);
+      break;
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, -7);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -403,18 +437,19 @@ static ssize_t psu_pstby_show(struct device *dev,
   }
 
   switch (model) {
-  case DELTA_1500:
-    result = linear_convert(result);
-    break;
-  case BELPOWER_1100_NA:
-  case BELPOWER_1500_NAC:
-    result = (result & 0x7ff) * 1000 * 2;
-    break;
-  case MURATA_1500:
-    result = ((result & 0x7ff) * 1000) / 32;
-    break;
-  default:
-    break;
+    case DELTA_1500:
+    case LITEON_1500:
+      result = linear_convert(LINEAR_11, result, NULL);
+      break;
+    case BELPOWER_1100_NA:
+    case BELPOWER_1500_NAC:
+      result = linear_convert(LINEAR_11, result, 1);
+      break;
+    case MURATA_1500:
+      result = linear_convert(LINEAR_11, result, -5);
+      break;
+    default:
+      break;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);

@@ -18,7 +18,7 @@
         "type" : "power_status"
       }
     },
-    "dc_nvme": {
+    "m2(.*)temp": {
       "attribute": {
         "type" : "power_status"
       }

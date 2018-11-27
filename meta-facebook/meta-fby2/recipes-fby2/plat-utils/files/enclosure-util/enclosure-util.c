@@ -119,8 +119,8 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
     wbuf[0] = 1 << (drv_num - 1);
     sprintf(stype_str, "Server Board");
   } else {  // SLOT_TYPE_GPV2
-    bus = (2 + (drv_num - 1)/2) * 2 + 1;
-    wbuf[0] = 1 << ((drv_num - 1)%2);
+    bus = (2 + drv_num/2) * 2 + 1;
+    wbuf[0] = 1 << (drv_num%2);
     sprintf(stype_str, "Glacier Point V2");
   }
 
@@ -194,22 +194,22 @@ read_gp_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
 
   // MUX
   switch (drv_num) {
-    case 1:
+    case 0:
       channel = MUX_CH_1;
       break;
-    case 2:
+    case 1:
       channel = MUX_CH_0;
       break;
-    case 3:
+    case 2:
       channel = MUX_CH_4;
       break;
-    case 4:
+    case 3:
       channel = MUX_CH_3;
       break;
-    case 5:
+    case 4:
       channel = MUX_CH_2;
       break;
-    case 6:
+    case 5:
       channel = MUX_CH_5;
       break;
     default:
@@ -325,7 +325,7 @@ int
 main(int argc, char **argv) {
   int ret;
   uint8_t slot_id, slot_type = 0xFF;
-  uint8_t i, drv_cnt = MAX_DRIVE_NUM;
+  uint8_t i, drv_start = 1, drv_end = MAX_DRIVE_NUM;
   char *end = NULL;
   int (*read_nvme_data)(uint8_t,uint8_t,uint8_t);
   struct sigaction sa;
@@ -350,13 +350,16 @@ main(int argc, char **argv) {
 
   slot_type = fby2_get_slot_type(slot_id);
   if (slot_type == SLOT_TYPE_SERVER) {
-    drv_cnt = MAX_DRIVE_NUM;
+    drv_start = 1;  // 1-based
+    drv_end = MAX_DRIVE_NUM;
     read_nvme_data = read_bic_nvme_data;
   } else if (slot_type == SLOT_TYPE_GP) {
-    drv_cnt = MAX_GP_DRIVE_NUM;
+    drv_start = 0;  // 0-based
+    drv_end = MAX_GP_DRIVE_NUM - 1;
     read_nvme_data = read_gp_nvme_data;
   } else if (slot_type == SLOT_TYPE_GPV2) {
-    drv_cnt = MAX_GPV2_DRIVE_NUM;
+    drv_start = 0;  // 0-based
+    drv_end = MAX_GPV2_DRIVE_NUM - 1;
     read_nvme_data = read_bic_nvme_data;
   } else {
     return -1;
@@ -376,7 +379,7 @@ main(int argc, char **argv) {
   if ((argc == 4) && !strcmp(argv[2], "--drive-status")) {
     if (!strcmp(argv[3], "all")) {
       ssd_monitor_enable(slot_id, slot_type, 0);
-      for (i = 1; i <= drv_cnt; i++) {
+      for (i = drv_start; i <= drv_end; i++) {
         read_nvme_data(slot_id, i, CMD_DRIVE_STATUS);
       }
       ssd_monitor_enable(slot_id, slot_type, 1);
@@ -384,7 +387,7 @@ main(int argc, char **argv) {
     else {
       errno = 0;
       ret = strtol(argv[3], &end, 0);
-      if (errno || *end || (ret < 1) || (ret > drv_cnt)) {
+      if (errno || *end || (ret < drv_start) || (ret > drv_end)) {
         print_usage_help();
         return -1;
       }
@@ -396,7 +399,7 @@ main(int argc, char **argv) {
   }
   else if ((argc == 3) && !strcmp(argv[2], "--drive-health")) {
     ssd_monitor_enable(slot_id, slot_type, 0);
-    for (i = 1; i <= drv_cnt; i++) {
+    for (i = drv_start; i <= drv_end; i++) {
       ret = read_nvme_data(slot_id, i, CMD_DRIVE_HEALTH);
       printf("M.2-%u: %s\n", i, (ret == 0)?"Normal":"Abnormal");
     }

@@ -106,6 +106,8 @@ def pcie_config(fru):
         config = "2x GP + 2x " + server_name
     elif ( result[0] == "0F" ):
         config = "2x CF + 2x " + server_name
+    elif ( result[0] == "10" ):
+        config = "2x GPv2 + 2x " + server_name
     else:
         config = "Unknown"
 

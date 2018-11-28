@@ -289,7 +289,15 @@ util_get_gpio_config(uint8_t slot_id) {
 
   // Read configuration of all bits
   for (i = 0;  i < gpio_cnt; i++) {
+#if defined(CONFIG_FBY2_GPV2)
+    if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+      ret = bic_get_gpio64_config(slot_id, i, &gpio_config);
+    } else {
+      ret = bic_get_gpio_config(slot_id, i, &gpio_config);
+    }
+#else
     ret = bic_get_gpio_config(slot_id, i, &gpio_config);
+#endif
     if (ret == -1) {
       continue;
     }
@@ -357,7 +365,15 @@ util_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t config) {
   }
 
   printf("slot %d: setting GPIO %d config to 0x%02x\n", slot_id, gpio, config);
+#if defined(CONFIG_FBY2_GPV2)
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+    ret = bic_set_gpio64_config(slot_id, gpio, (bic_gpio_config_t *)&config);
+  } else {
+    ret = bic_set_gpio_config(slot_id, gpio, (bic_gpio_config_t *)&config);
+  }
+#else
   ret = bic_set_gpio_config(slot_id, gpio, (bic_gpio_config_t *)&config);
+#endif
   if (ret) {
     printf("ERROR: bic_set_gpio_config returns %d\n", ret);
   }

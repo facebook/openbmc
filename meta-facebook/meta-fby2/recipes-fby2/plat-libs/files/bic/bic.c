@@ -553,6 +553,33 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
 }
 
 int
+bic_get_gpio64_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
+  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = 0;
+  uint64_t pin;
+  int ret;
+
+  pin = 1LL << gpio;
+
+  tbuf[3] = pin & 0xFF;
+  tbuf[4] = (pin >> 8) & 0xFF;
+  tbuf[5] = (pin >> 16) & 0xFF;
+  tbuf[6] = (pin >> 24) & 0xFF;
+  tbuf[7] = (pin >> 32) & 0xFF;
+  tbuf[8] = (pin >> 40) & 0xFF;
+  tbuf[9] = (pin >> 48) & 0xFF;
+  tbuf[10] = (pin >> 56) & 0xFF;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, 11, rbuf, &rlen);
+
+  // Ignore IANA ID
+  *(uint8_t *) gpio_config = rbuf[3];
+
+  return ret;
+}
+
+int
 bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
   uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
@@ -571,6 +598,31 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
   tbuf[9] = (*(uint8_t *) gpio_config) & 0x1F;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, 10, rbuf, &rlen);
+
+  return ret;
+}
+
+int
+bic_set_gpio64_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
+  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[4] = {0x00};
+  uint8_t rlen = 0;
+  uint64_t pin;
+  int ret;
+
+  pin = 1LL << gpio;
+
+  tbuf[3] = pin & 0xFF;
+  tbuf[4] = (pin >> 8) & 0xFF;
+  tbuf[5] = (pin >> 16) & 0xFF;
+  tbuf[6] = (pin >> 24) & 0xFF;
+  tbuf[7] = (pin >> 32) & 0xFF;
+  tbuf[8] = (pin >> 40) & 0xFF;
+  tbuf[9] = (pin >> 48) & 0xFF;
+  tbuf[10] = (pin >> 56) & 0xFF;
+  tbuf[11] = (*(uint8_t *) gpio_config) & 0x1F;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, 12, rbuf, &rlen);
 
   return ret;
 }

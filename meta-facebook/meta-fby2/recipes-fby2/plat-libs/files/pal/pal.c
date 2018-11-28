@@ -1522,6 +1522,10 @@ pal_hot_service_action(uint8_t slot_id) {
     ret = pal_slot_pair_12V_on(slot_id);
     if (0 != ret)
       printf("%s pal_slot_pair_12V_on failed for fru: %d\n", __func__, slot_id);
+  } else {
+    if (pal_is_device_pair(slot_id)) {
+      printf("fail to 12V-on fru%d, due to fru%d is doing hot service! \n", slot_id, pair_slot_id);
+    }
   }
 }
 

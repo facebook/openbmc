@@ -67,7 +67,7 @@ static struct timespec last_ejector_ts[MAX_NODES + 1];
 static uint8_t IsLatchOpenStart[MAX_NODES + 1] = {0};
 static void *latch_open_handler(void *ptr);
 static pthread_mutex_t latch_open_mutex[MAX_NODES + 1];
-static uint8_t dev_fru_complete[MAX_NUM_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
+static uint8_t dev_fru_complete[MAX_NODES + 1][MAX_NUM_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
 
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
@@ -119,6 +119,21 @@ slot_kv_st slot_kv_list[] = {
   {"slot%d_boot_order",  "0000000"},
   {"slot%d_cpu_ppin",          "0"},
   {"fru%d_restart_cause",      "3"},
+};
+
+static char *gpv2_m2_list[MAX_NUM_DEVS] = {
+  "m2a",
+  "m2b",
+  "m2c",
+  "m2d",
+  "m2e",
+  "m2f",
+  "m2g",
+  "m2h",
+  "m2i",
+  "m2j",
+  "m2k",
+  "m2l",
 };
 
 // Thread for delay event
@@ -234,13 +249,12 @@ hsc_alert_handler(void *arg) {
 
 static int
 fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
-  // Initialize Slot0's fruid
-  int ret=0;
-  int fru_size=0;
+  int ret;
+  int fru_size = 0;
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
 
-  if (fru_id == 0){
+  if (fru_id == 0) {
     sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
     sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
   } else {
@@ -260,29 +274,27 @@ fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
 
 static void *
 fru_cache_dump(void *arg) {
-
   uint8_t fru = *(uint8_t *) arg;
-  uint8_t self_test_result[2]={0};
-  char path[64] = {0};
-  char fruname[16];
+  uint8_t self_test_result[2] = {0};
+  char key[MAX_KEY_LEN];
+  char buf[MAX_VALUE_LEN];
   int ret;
   int retry;
-  int fd;
   uint8_t status = DEVICE_POWER_OFF;
   uint8_t type = DEV_TYPE_UNKNOWN;
   uint8_t dev_id;
   int max_retry = 3;
-  bool find_last_file = false;
+  int oldstate;
   fruid_info_t fruid;
 
-  // Usually the pthread cancel state are enable by default but
-  // here we explicitly would like to enable them
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
   // Check BIC Self Test Result
   do {
-    ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result);
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+    ret = bic_get_self_test_result(fru, self_test_result);
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
     if (ret == 0) {
       syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
       break;
@@ -293,83 +305,101 @@ fru_cache_dump(void *arg) {
   sleep(2); //wait for BIC poll at least one cycle
 
   // Get GPV2 devices' FRU
-  for (dev_id = 1;dev_id <= MAX_NUM_DEVS; dev_id++) {
-
-    if (dev_fru_complete[dev_id] != DEV_FRU_NOT_COMPLETE)
+  for (dev_id = 1; dev_id <= MAX_NUM_DEVS; dev_id++) {
+    if (dev_fru_complete[fru][dev_id] != DEV_FRU_NOT_COMPLETE)
       continue;
 
     //check for power status
-    ret = pal_get_device_power(fru,dev_id,&status,&type);
-    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u type=%u\n", fru, dev_id, status, type);
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+    ret = pal_get_device_power(fru, dev_id, &status, &type);
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u type=%u", fru, dev_id, status, type);
 
     if (ret == 0) {
       if (status == DEVICE_POWER_ON) {
         if (type == DEV_TYPE_POC) {
           retry = 0;
           do {
-            if (fruid_cache_init(fru,dev_id) == 0)
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_cache_init(fru, dev_id);
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+
+            if (ret == 0)
               break;
 
             retry++;
             sleep(1);
           } while (retry < max_retry);
 
-          if (retry == max_retry)
+          if (retry >= max_retry) {
             syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id);
-          else {
-            pal_get_dev_fruid_path(fru, dev_id, path);
+          } else {
+            pal_get_dev_fruid_path(fru, dev_id, buf);
             //check file's checksum
-            ret = fruid_parse(path, &fruid);
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_parse(buf, &fruid);
             if (ret != 0) { // Fail
               syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id);
             } else { // Success
               free_fruid_info(&fruid);
-              dev_fru_complete[dev_id] = DEV_FRU_COMPLETE;
+              dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
               syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id);
             }
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
           }
         } else { // SSD or unknown
-          syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU\n", fru,dev_id);
-          dev_fru_complete[dev_id] = DEV_FRU_IGNORE;
+          syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU", fru, dev_id);
+          dev_fru_complete[fru][dev_id] = DEV_FRU_IGNORE;
         }
-      } else { // Power OFF
-        syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power off\n", fru,dev_id);
       }
-    } else { // Device Status Unknown
-      syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status\n", fru,dev_id);
-    }
 
+      sprintf(key, "slot%u_%s_pres", fru, gpv2_m2_list[dev_id-1]);
+      sprintf(buf, "%u", status);
+      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+      if (kv_set(key, buf, 0, 0) < 0) {
+        syslog(LOG_WARNING, "fru_cache_dump: kv_set Slot%u Dev%d present status failed", fru, dev_id);
+      }
+      pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+    } else { // Device Status Unknown
+      syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id);
+    }
   }
+
   t_fru_cache[fru-1].is_running = 0;
   syslog(LOG_INFO, "%s: FRU %d cache is finished.", __func__, fru);
+
+  pthread_detach(pthread_self());
+  pthread_exit(0);
 }
 
 int
 fru_cahe_init(uint8_t fru) {
   int ret;
+  uint8_t idx;
 
-  if (fru == FRU_SLOT2 || fru == FRU_SLOT4)
+  if (fru != FRU_SLOT1 && fru != FRU_SLOT3) {
     return -1;
+  }
+  idx = fru - 1;
 
   // If yes, kill that thread and start a new one
-  if (t_fru_cache[fru-1].is_running) {
-    ret = pthread_cancel(t_fru_cache[fru-1].pt);
+  if (t_fru_cache[idx].is_running) {
+    ret = pthread_cancel(t_fru_cache[idx].pt);
     if (ret == ESRCH) {
       syslog(LOG_INFO, "%s: No dump FRU cache pthread exists", __func__);
     } else {
-      pthread_join(t_fru_cache[fru-1].pt, NULL);
+      pthread_join(t_fru_cache[idx].pt, NULL);
       syslog(LOG_INFO, "%s: Previous dump FRU cache thread is cancelled", __func__);
     }
   }
 
   // Start a thread to generate the FRU
-  t_fru_cache[fru-1].fru = fru;
-  if (pthread_create(&(t_fru_cache[fru-1].pt), NULL, fru_cache_dump, (void*) &t_fru_cache[fru-1].fru) < 0) {
-    syslog(LOG_WARNING, "%s: pthread_create for FRU %d failed\n", __func__, fru);
+  t_fru_cache[idx].fru = fru;
+  if (pthread_create(&t_fru_cache[idx].pt, NULL, fru_cache_dump, (void *)&t_fru_cache[idx].fru) < 0) {
+    syslog(LOG_WARNING, "%s: pthread_create for FRU %d failed", __func__, fru);
     return -1;
   }
-  t_fru_cache[fru-1].is_running = 1;
-
+  t_fru_cache[idx].is_running = 1;
   syslog(LOG_INFO, "%s: FRU %d cache is being generated.", __func__, fru);
 
   return 0;
@@ -437,8 +467,9 @@ static void gpio_event_handle(gpio_poll_st *gp)
           pthread_cancel(latch_open_tid[slot_id]);
         }
         //Create thread for latch open detect
-        if (pthread_create(&latch_open_tid[slot_id], NULL, latch_open_handler, (void*)&slot_id) < 0) {
-          syslog(LOG_WARNING, "[%s] Create latch_open_handler thread failed for slot%u\n",__func__, slot_id);
+        value = slot_id;
+        if (pthread_create(&latch_open_tid[slot_id], NULL, latch_open_handler, (void *)value) < 0) {
+          syslog(LOG_WARNING, "[%s] Create latch_open_handler thread failed for slot%u", __func__, slot_id);
           pthread_mutex_unlock(&latch_open_mutex[slot_id]);
           return;
         }
@@ -486,11 +517,11 @@ static void gpio_event_handle(gpio_poll_st *gp)
             pthread_cancel(hsvc_action_tid[slot_id]);
           }
 
-          if ( IsLatchOpenStart[hsvc_info->slot_id] ){
-            pthread_cancel(latch_open_tid[hsvc_info->slot_id]);
-            pthread_mutex_lock(&latch_open_mutex[hsvc_info->slot_id]);
-            IsLatchOpenStart[hsvc_info->slot_id] = false;
-            pthread_mutex_unlock(&latch_open_mutex[hsvc_info->slot_id]);
+          if (IsLatchOpenStart[slot_id]) {
+            pthread_cancel(latch_open_tid[slot_id]);
+            pthread_mutex_lock(&latch_open_mutex[slot_id]);
+            IsLatchOpenStart[slot_id] = false;
+            pthread_mutex_unlock(&latch_open_mutex[slot_id]);
           }
 
           //Create thread for hsvc event detect
@@ -563,14 +594,16 @@ static void gpio_event_handle(gpio_poll_st *gp)
 
 static void *
 latch_open_handler(void *ptr) {
-  uint8_t slot_id = *(uint8_t *) ptr;
+  uint8_t slot_id = (int)ptr;
   uint8_t pair_slot_id;
+  uint8_t slot_12v = 1;
   int ret;
-  uint8_t value;
+  int value;
   char path_slot[128];
   char path_pair_slot[128];
   int pair_set_type;
   char vpath[80] = {0};
+
   pthread_detach(pthread_self());
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -607,10 +640,10 @@ latch_open_handler(void *ptr) {
       break;
   }
 
-  ret = pal_is_server_12v_on(slot_id, &value);
+  ret = pal_is_server_12v_on(slot_id, &slot_12v);
   if (ret < 0)
     syslog(LOG_WARNING, "%s : pal_is_server_12v_on failed for slot: %u", __func__, slot_id);
-  if (value) {
+  if (slot_12v) {
     sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
     read_device(vpath, &value);
 
@@ -641,14 +674,12 @@ hsvc_event_handler(void *ptr) {
   char sys_config_path[80] = {0};
   char cmd[128] = {0};
   char slotrcpath[80] = {0};
-  char hslotpid[80] = {0};
   char slot_kv[80] = {0};
   int i = 0, slot_type;
   uint8_t server_type;
   char event_log[80] = {0};
   hot_service_info *hsvc_info = (hot_service_info *)ptr;
   pthread_detach(pthread_self());
-
 
   switch(hsvc_info->action)
   {
@@ -763,15 +794,10 @@ hsvc_event_handler(void *ptr) {
           sprintf(slotrcpath, SV_TYPE_RECORD_FILE, hsvc_info->slot_id);
           sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
           system(cmd);
-        } else if ( SLOT_TYPE_GPV2) {
-          for (i=1;i<=MAX_NUM_DEVS;i++)
-            dev_fru_complete[i] = DEV_FRU_NOT_COMPLETE;
+        } else if (slot_type == SLOT_TYPE_GPV2) {
+          for (i=1; i<=MAX_NUM_DEVS; i++)
+            dev_fru_complete[hsvc_info->slot_id][i] = DEV_FRU_NOT_COMPLETE;
         }
-
-        // Remove pid_file
-        memset(cmd, 0, sizeof(cmd));
-        sprintf(cmd,"rm -f %s",hslotpid);
-        system(cmd);
 
         /* Check whether the system is 12V off or on */
         ret = pal_is_server_12v_on(hsvc_info->slot_id, &status);

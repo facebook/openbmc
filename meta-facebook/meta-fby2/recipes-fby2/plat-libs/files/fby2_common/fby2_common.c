@@ -126,29 +126,29 @@ fby2_common_dev_id(char *str, uint8_t *dev) {
 
   if (!strcmp(str, "all")) {
     *dev = 0;
-  } else if (!strcmp(str, "device1")) {
+  } else if (!strcmp(str, "device0")) {
     *dev = 1;
-  } else if (!strcmp(str, "device2")) {
+  } else if (!strcmp(str, "device1")) {
     *dev = 2;
-  } else if (!strcmp(str, "device3")) {
+  } else if (!strcmp(str, "device2")) {
     *dev = 3;
-  } else if (!strcmp(str, "device4")) {
+  } else if (!strcmp(str, "device3")) {
     *dev = 4;
-  } else if (!strcmp(str, "device5")) {
+  } else if (!strcmp(str, "device4")) {
     *dev = 5;
-  } else if (!strcmp(str, "device6")) {
+  } else if (!strcmp(str, "device5")) {
     *dev = 6;
-  } else if (!strcmp(str, "device7")) {
+  } else if (!strcmp(str, "device6")) {
     *dev = 7;
-  } else if (!strcmp(str, "device8")) {
+  } else if (!strcmp(str, "device7")) {
     *dev = 8;
-  } else if (!strcmp(str, "device9")) {
+  } else if (!strcmp(str, "device8")) {
     *dev = 9;
-  } else if (!strcmp(str, "device10")) {
+  } else if (!strcmp(str, "device9")) {
     *dev = 10;
-  } else if (!strcmp(str, "device11")) {
+  } else if (!strcmp(str, "device10")) {
     *dev = 11;
-  } else if (!strcmp(str, "device12")) {
+  } else if (!strcmp(str, "device11")) {
     *dev = 12;
   } else {
 #ifdef DEBUG

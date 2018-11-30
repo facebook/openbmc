@@ -141,7 +141,7 @@ const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 #ifdef CONFIG_FBY2_GPV2
-const char pal_dev_list[] = "all, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11, device12";
+const char pal_dev_list[] = "all, device0, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 #endif
 
@@ -2443,7 +2443,7 @@ int
 pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   int ret;
   uint8_t status, type;
-  
+
   if (slot_id != 1 && slot_id != 3) {
     return -1;
   }
@@ -3272,15 +3272,26 @@ pal_get_fru_id(char *str, uint8_t *fru) {
 }
 
 int
-pal_get_dev_id(char *str, uint8_t *fru) {
+pal_get_dev_id(char *str, uint8_t *dev) {
 
-  return fby2_common_dev_id(str, fru);
+  return fby2_common_dev_id(str, dev);
 }
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
 
   return fby2_common_fru_name(fru, name);
+}
+
+int
+pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+{
+  int ret = fby2_get_fruid_name(fru, name);
+  if (ret < 0)
+    return ret;
+
+  sprintf(name, "%s Device %u", name, dev-1);
+  return 0;
 }
 
 int

@@ -27,8 +27,8 @@ target=${3:?Please specify target hostname or \"[ip::v6]\" as third argument.}
 checksum_steps=("$dir/check_image.py" --checksum "$checksums")
 checksum_steps+=(--append-new-checksums checksums.json)
 
-options=(-o LogLevel=error -o StrictHostKeyChecking=no)
-options+=(-o UserKnownHostsFile=/dev/null)
+options=(-o "LogLevel=error" -o "StrictHostKeyChecking=no")
+options+=(-o "UserKnownHostsFile=/dev/null")
 sshpass=(sshpass -p0penBmc)
 
 files=($dir/{virtualcat,partition,system,improve_system}.py checksums.json)

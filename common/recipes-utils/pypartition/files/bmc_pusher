@@ -20,25 +20,35 @@
 set -eux -o pipefail
 
 dir=$(dirname "$(realpath "$0")")
-image=${1:?Please specify image file as first argument.}
+image=${1:?Please specify image URL or file as first argument.}
 checksums=${2:?Please specify JSON checksum file as second argument.}
 target=${3:?Please specify target hostname or \"[ip::v6]\" as third argument.}
 
-"$dir/check_image.py" \
-  --checksum "$checksums" \
-  --append-new-checksums checksums.json \
-  "$image"
+checksum_steps=("$dir/check_image.py" --checksum "$checksums")
+checksum_steps+=(--append-new-checksums checksums.json)
 
 options=(-o LogLevel=error -o StrictHostKeyChecking=no)
 options+=(-o UserKnownHostsFile=/dev/null)
 sshpass=(sshpass -p0penBmc)
 
-files=($dir/{virtualcat,partition,system,improve_system}.py)
-files+=($image checksums.json)
-"${sshpass[@]}" scp "${options[@]}" "${files[@]}" "root@$target:/tmp/"
+files=($dir/{virtualcat,partition,system,improve_system}.py checksums.json)
 
 upgrade_steps=(/tmp/improve_system.py --checksums /tmp/checksums.json)
-upgrade_steps+=(/tmp/$(basename "$image"))
+
+if [[ $image == http* ]]; then
+  download=$(mktemp)
+  curl -s "$image" -o "$download"
+  "${checksum_steps[@]}" "$download"
+  rm "$download"
+  upgrade_steps+=("$image")
+else
+  "${checksum_steps[@]}" "$image"
+  files+=($image)
+  upgrade_steps+=(/tmp/$(basename "$image"))
+fi
+
+"${sshpass[@]}" scp "${options[@]}" "${files[@]}" "root@$target:/tmp/"
+
 rc=0
 "${sshpass[@]}" ssh "${options[@]}" "root@$target" "${upgrade_steps[@]}" ||
   rc=$?

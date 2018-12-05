@@ -15,14 +15,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-inherit python3native
+inherit python3native distutils3
 
 SUMMARY = "Check U-Boot partitions"
 DESCRIPTION = "Read, verify, and potentially modify U-Boot (firmware \
 environment, legacy) partitions within image files or Memory Technology \
 Devices."
 SECTION = "base"
-PR = "r2"
+PR = "r3"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://partition.py;beginline=3;endline=16;\
 md5=0b1ee7d6f844d472fa306b2fee2167e0"
@@ -30,6 +30,7 @@ md5=0b1ee7d6f844d472fa306b2fee2167e0"
 SRC_URI = "file://check_image.py \
            file://improve_system.py \
            file://partition.py \
+           file://setup.py \
            file://system.py \
            file://test_improve_system.py \
            file://test_partition.py \

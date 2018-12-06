@@ -226,12 +226,15 @@ if __name__ == "__main__":
     cmd_bmc = "sshpass -p 0penBmc ssh -tt root@{} "
     util = unitTestUtil.UnitTestUtil()
     try:
-        args = util.Argparser(['json', '--headnode', 'hostnameBMC', 'hostnameMS', '--verbose'],
-                              [str, None, str, str, None],
-                              ['a json file', 'a host name for the headnode', 'a hostname for BMC',
-                              'a hostname for the Micro server',
-                              'output all steps from test with mode options: DEBUG, INFO, WARNING, ERROR'],
-                              [False, False, True, False, False])
+        args = util.Argparser(['json', '--headnode', 'hostnameBMC', 'hostnameMS', '--verbose', '--skip_scp'],
+                              [str, None, str, str, None, None],
+                              ['Test json file',
+                               'Hostname for headnode',
+                               'Hostname for BMC',
+                               'Hostname for  host',
+                               'Debug option: DEBUG, INFO, WARNING, ERROR',
+                               'Skip copying tests to target. If set user should have copied tests manually. Usage "--skip_scp True" '],
+                              [False, False, True, False, False, False])
         hostnameBMC = ""
         headnodeName = ""
         json = args.json
@@ -263,15 +266,17 @@ if __name__ == "__main__":
         # login to host
         ssh = pxssh.pxssh()
         if HEADNODE is False:
-            # scp directory
-            util.scp(path, hostnameBMC, True, pexpect)
+            if args.skip_scp is None:
+                # scp directory
+                util.scp(path, hostnameBMC, True, pexpect)
             # login to host
             util.Login(hostnameBMC, ssh)
             ssh.sendline('cd /tmp/tests/common')
             ssh.prompt()
         else:
-            util.scp_through_proxy(path, headnodeName, hostnameBMC,
-                                   True, pexpect)
+            if args.skip_scp is None:
+                util.scp_through_proxy(path, headnodeName, hostnameBMC,
+                                    True, pexpect)
 
         # run tests
         if "cmmComponentPresenceTest.py" in data:

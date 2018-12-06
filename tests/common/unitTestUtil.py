@@ -151,12 +151,13 @@ class UnitTestUtil:
         """
         dest = 'root@[' + hostname + ']:/tmp'
         password = '0penBmc'
+        possible_expects = ['password:', pexpect.EOF]
         if Multiple:
             child = pexpect.spawn('scp -r ' + path + ' ' + dest)
         else:
             child = pexpect.spawn('scp ' + path + ' ' + dest)
-        auth = child.expect(['password:', pexpect.EOF])
-        if not auth:
+        rc = child.expect(possible_expects, timeout=120)
+        if rc == 0: # asked for password
             child.sendline(password)
             child.expect(pexpect.EOF)
         child.close()

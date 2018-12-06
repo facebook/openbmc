@@ -53,34 +53,12 @@
 "pfe1100-i2c-7-59":
 {
   "vin":"no",
-  "vout1":"no",
-  "vout2":"no",
-  "fan1":"no",
-  "temp1":"no",
-  "temp2":"no",
-  "temp3":"no",
-  "pin":"no",
-  "pout1":"no",
-  "pout2":"no",
-  "iin":"no",
-  "iout1":"no",
-  "iout2":"no"
+  "vout1":"no"
 },
 "pfe1100-i2c-7-5a":
 {
   "vin":"no",
-  "vout1":"no",
-  "vout2":"no",
-  "fan1":"no",
-  "temp1":"no",
-  "temp2":"no",
-  "temp3":"no",
-  "pin":"no",
-  "pout1":"no",
-  "pout2":"no",
-  "iin":"no",
-  "iout1":"no",
-  "iout2":"no"
+  "vout1":"no"
 },
 "tmp75-i2c-3-48":
 {

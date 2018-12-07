@@ -32,22 +32,6 @@
 {
   "LC402 QSFP Temp": "yes"
 },
-"pfe3000-i2c-27-10":
-{
-  "temp3": "yes",
-  "pout1": "yes",
-  "pin": "yes",
-  "temp2": "yes",
-  "vin": "yes",
-  "temp1": "yes",
-  "fan1": "yes",
-  "vout2": "yes",
-  "vout1": "yes",
-  "pout2": "yes",
-  "iout1": "yes",
-  "iout2": "yes",
-  "iin": "yes"
-},
 "tmp75-i2c-161-48":
 {
   "SCM-FC4 Inlet Temp": "yes"
@@ -100,11 +84,6 @@
 {
   "LC302 Switch Temp": "yes"
 },
-"pfe3000-i2c-25-10":
-{
-  "vin": "yes",
-  "vout1": "yes"
-},
 "tmp75-i2c-65-48":
 {
   "SCM-LC2 Inlet Temp": "yes"
@@ -116,11 +95,6 @@
 "tmp75-i2c-58-4b":
 {
   "LC201 QSFP Temp": "yes"
-},
-"pfe3000-i2c-26-10":
-{
-  "vin": "yes",
-  "vout1": "yes"
 },
 "tmp75-i2c-106-4a":
 {
@@ -194,22 +168,6 @@
 "tmp75-i2c-114-49":
 {
   "SCM-FC1 Outlet Temp": "yes"
-},
-"pfe3000-i2c-24-10":
-{
-  "temp3": "yes",
-  "pout1": "yes",
-  "pin": "yes",
-  "temp2": "yes",
-  "vin": "yes",
-  "temp1": "yes",
-  "fan1": "yes",
-  "vout2": "yes",
-  "vout1": "yes",
-  "pout2": "yes",
-  "iout1": "yes",
-  "iout2": "yes",
-  "iin": "yes"
 },
 "tmp75-i2c-146-49":
 {
@@ -309,17 +267,6 @@
 "tmp75-i2c-129-48":
 {
   "SCM-FC2 Inlet Temp": "yes"
-},
-"ast_adc-isa-0000":
-{
-  "XP1R15V": "yes",
-  "XP5V": "yes",
-  "VCC XP5V": "yes",
-  "XP2R5V": "yes",
-  "XP12V uServer": "yes",
-  "XP12V": "yes",
-  "XP1R2V": "yes",
-  "XP3R3V": "yes"
 },
 "tmp75-i2c-122-48":
 {

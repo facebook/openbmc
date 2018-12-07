@@ -52,7 +52,7 @@ def slotidTest(data, result, endpoint):
         item = item.encode()
         if item in result:
             return
-    print("Expected one of {} in response={}",
+    logger.debug("Expected one of {} in response={}".
           format(data['endpoints'][endpoint], result))
     print("Rest-api test [FAILED]")
     sys.exit(1)
@@ -71,7 +71,6 @@ def restapiTest(data, host, logger):
     for endpoint in data['endpoints']:
         cmd = curl_cmd.format(host, endpoint)
         logger.debug("Executing cmd={}".format(cmd))
-        print("Executing cmd={}".format(cmd))
 
         try:
             f = subprocess.Popen(cmd,
@@ -85,11 +84,11 @@ def restapiTest(data, host, logger):
             for item in data['endpoints'][endpoint]:
                 item = item.encode()
                 if item not in result:
-                    print("Expected {} in response={}", format(item, result))
+                    logger.debug("Expected {} in response={}".format(item, result))
                     print("Rest-api test [FAILED]")
                     sys.exit(1)
-        except Exception:
-            print("Rest-api test [FAILED]")
+        except Exception as e:
+            print("Rest-api test [FAILED] with exception={}".format(e))
             sys.exit(1)
     print("Rest-api test [PASSED]")
     sys.exit(0)

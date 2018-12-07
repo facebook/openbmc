@@ -3651,7 +3651,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   char key[MAX_KEY_LEN];
   char fru_name[32];
-  int ret;
+  int ret , delay = 500;
   uint8_t prsnt = 0;
 
   pal_get_fru_name(fru, fru_name);
@@ -3671,9 +3671,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   switch(fru) {
     case FRU_SCM:
       ret = scm_sensor_read(sensor_num, value);
+      if (sensor_num == SCM_SENSOR_INLET_REMOTE_TEMP) {
+        delay = 100;
+      }
       break;
     case FRU_SMB:
       ret = smb_sensor_read(sensor_num, value);
+      if (sensor_num == SMB_SENSOR_TH3_DIE_TEMP1 ||
+          sensor_num == SMB_SENSOR_TH3_DIE_TEMP2 ||
+          (sensor_num >= SMB_SENSOR_FAN1_FRONT_TACH &&
+           sensor_num <= SMB_SENSOR_FAN8_REAR_TACH)) {
+        delay = 100;
+      }
       break;
     case FRU_PIM1:
     case FRU_PIM2:
@@ -3684,6 +3693,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_PIM7:
     case FRU_PIM8:
       ret = pim_sensor_read(sensor_num, value);
+      if (sensor_num >= PIM1_SENSOR_QSFP_TEMP &&
+          sensor_num <= PIM8_SENSOR_QSFP_TEMP) {
+        delay = 100;
+      }
       break;
     case FRU_PSU1:
     case FRU_PSU2:
@@ -3698,6 +3711,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   if (ret == READING_NA || ret == -1) {
     return READING_NA;
   }
+  msleep(delay);
 
   return 0;
 }
@@ -5650,7 +5664,7 @@ scm_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
       *value = 30;
       break;
     default:
-      *value = 10;
+      *value = 30;
       break;
   }
 }

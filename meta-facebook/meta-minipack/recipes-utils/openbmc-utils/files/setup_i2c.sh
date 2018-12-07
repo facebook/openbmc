@@ -187,3 +187,9 @@ for bus in ${BUS}; do
     i2c_device_add $bus 0x53 24c64     # 4DD
     i2c_device_add $bus 0x56 24c64     # 16Q
 done
+
+# # Bus 86 94 102 110 118 126 134 142  # PIM1 ~ PIM8 MAX34461
+BUS="86 94 102 110 118 126 134 142"
+for bus in ${BUS}; do
+    i2c_device_add $bus 0x74 max34461
+done

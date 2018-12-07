@@ -10,7 +10,7 @@
 # for more details.
 #
 
-obj-m := ir3595.o isl68127.o psu_driver.o
+obj-m := ir3595.o isl68127.o max34461.o psu_driver.o
 
 ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 

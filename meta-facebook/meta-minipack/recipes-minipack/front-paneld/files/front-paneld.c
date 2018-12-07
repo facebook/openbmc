@@ -42,48 +42,17 @@
 #define ADM1278_ADDR 0x10
 #define LM75_1_ADDR 0x48
 #define LM75_2_ADDR 0x4b
-#define MAX34461_ADDR 0x74
-#define FPGA_16Q_ADDR 0x60
-#define FPGA_4DD_ADDR 0x61
 
 #define INTERVAL_MAX  5
-
-static int
-i2c_open(uint8_t bus, uint8_t addr) {
-  int fd = -1;
-  int rc = -1;
-  char fn[32];
-
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
-  fd = open(fn, O_RDWR);
-
-  if (fd == -1) {
-    syslog(LOG_WARNING,
-            "Failed to open i2c device %s, errno=%d", fn, errno);
-    return -1;
-  }
-
-  rc = ioctl(fd, I2C_SLAVE_FORCE, addr);
-  if (rc < 0) {
-    syslog(LOG_WARNING,
-            "Failed to open slave @ address 0x%x, errno=%d", addr, errno);
-    close(fd);
-    return -1;
-  }
-
-  return fd;
-}
 
 static int
 pim_driver_add(uint8_t num) {
   int ret = 0;
   uint8_t bus = ((num - 1) * 8) + 80;
 
-  sleep(5); /* Sleep to avoid mount max34461 fail. */
   ret += pal_add_i2c_device((bus + 2), LM75_1_ADDR, "tmp75");
   ret += pal_add_i2c_device((bus + 3), LM75_2_ADDR, "tmp75");
   ret += pal_add_i2c_device((bus + 4), ADM1278_ADDR, "adm1278");
-  ret += pal_add_i2c_device((bus + 6), MAX34461_ADDR, "max34461");
 
   return ret;
 }
@@ -96,40 +65,8 @@ pim_driver_del(uint8_t num) {
   ret += pal_del_i2c_device((bus + 2), LM75_1_ADDR);
   ret += pal_del_i2c_device((bus + 3), LM75_2_ADDR);
   ret += pal_del_i2c_device((bus + 4), ADM1278_ADDR);
-  ret += pal_del_i2c_device((bus + 6), MAX34461_ADDR);
 
   return ret;
-}
-
-static int
-set_pim_slot_id(uint8_t num) {
-  int ret = -1, fd = -1, type;
-  uint8_t bus = ((num - 1) * 8) + 80;
-  uint8_t fru = num + 2;
-
-  type = pal_get_pim_type_from_file(fru);
-  if (type == PIM_TYPE_16Q) {
-    fd = i2c_open(bus, FPGA_16Q_ADDR);
-  } else if (type == PIM_TYPE_4DD) {
-    fd = i2c_open(bus, FPGA_4DD_ADDR);
-  } else if (type == PIM_TYPE_UNPLUG) {
-    return 0;
-  } else {
-    return -1;
-  }
-
-  if (fd < 0) {
-    close(fd);
-    return -1;
-  }
-  ret = i2c_smbus_write_byte_data(fd, 0x03, num);
-  close(fd);
-
-  if (ret) {
-    return -1;
-  }
-
-  return 0;
 }
 
 // Thread for monitoring scm plug
@@ -208,7 +145,7 @@ pim_monitor_handler(void *unused){
           syslog(LOG_WARNING, "PIM %d is plugged in.", num);
           ret = pim_driver_add(num);
           if(ret){
-            syslog(LOG_WARNING, "MAX34461 of PIM %d is not ready "
+            syslog(LOG_WARNING, "PIM %d is not ready "
                                   "or sensor cannot be mounted.", num);
           }
 
@@ -262,11 +199,6 @@ pim_monitor_handler(void *unused){
         if (interval[num] == 0) {
           interval[num] = INTERVAL_MAX;
           pal_set_pim_sts_led(fru);
-          ret = set_pim_slot_id(num);
-          if (ret) {
-            syslog(LOG_WARNING,
-                    "Cannot set slot id into FPGA register of PIM %d" ,num);
-          }
         } else {
           interval[num]--;
         }

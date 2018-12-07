@@ -135,3 +135,6 @@ Subsystem	sftp	/usr/libexec/sftp-server
 #	ForceCommand cvs server
 
 AuthenticationMethods publickey password
+
+# https://en.wikipedia.org/wiki/Differentiated_services#Commonly_used_DSCP_values
+IPQoS af31 af12

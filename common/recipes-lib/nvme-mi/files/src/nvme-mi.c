@@ -267,7 +267,7 @@ nvme_sflgs_decode(uint8_t value, t_status_flags *status_flag_decoding) {
   sprintf(status_flag_decoding->self.value, "0x%02X", value);
 
   sprintf(status_flag_decoding->read_complete.key, "SMBUS block read complete");
-  sprintf(status_flag_decoding->read_complete.value, (value & 0x80)?"OK":"FAIL");
+  sprintf(status_flag_decoding->read_complete.value, (value & 0x80)?"OK":"No");
 
   sprintf(status_flag_decoding->ready.key, "Drive Ready");
   sprintf(status_flag_decoding->ready.value, (value & 0x40)?"Not ready":"Ready");

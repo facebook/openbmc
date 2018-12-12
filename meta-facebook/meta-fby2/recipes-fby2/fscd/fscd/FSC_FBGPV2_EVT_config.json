@@ -1,5 +1,5 @@
 {
-  "version": "fbgpv2-evt-r01",
+  "version": "fbgpv2-evt-r02",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -138,8 +138,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [ 68, 20 ],
-        [ 70, 50 ],
+        [ 20, 50 ],
         [ 74, 70 ]
       ]
     }

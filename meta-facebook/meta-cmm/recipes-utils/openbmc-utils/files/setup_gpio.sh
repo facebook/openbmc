@@ -48,12 +48,55 @@ setup_i2c_gpios() {
     done
 }
 
+#
+# Explicitly disable other functions so the pins function as gpio.
+# NOTE: the function is only needed in kernel 4.1: pinctrl is handled
+# in device tree in kernel 4.18 and future versions.
+#
+pinctrl_request_gpios() {
+    # GPIOM0|M1|M2|M3
+    # SCU84[24|25|26|27] must be 0 to disable UART2 function pins.
+    for bit in 24 25 26 27; do
+        devmem_clear_bit $(scu_addr 84) $bit
+    done
+
+    # GPIOF0
+    # SCU90[30] must be 0 to disable LPC LHAD0 function.
+    # SCU80[24] must be 0 to disable UART4 NCTS function.
+    devmem_clear_bit $(scu_addr 90) 30
+    devmem_clear_bit $(scu_addr 80) 24
+}
+
+#
+# Test if the pins are functions as gpio pins.
+#
+pinctrl_check_gpios() {
+    # GPIOM0|M1|M2|M3
+    # SCU84[24|25|26|27] must be 0 to disable UART2 function pins.
+    for bit in 24 25 26 27; do
+        if devmem_test_bit $(scu_addr 84) $bit; then
+            echo "pinctrl error: GPIOM# pins are claimed by UART2 functions"
+        fi
+    done
+
+    # GPIOF0
+    # SCU90[30] must be 0 to disable LPC LHAD0 function.
+    # SCU80[24] must be 0 to disable UART4 NCTS function.
+    if devmem_test_bit $(scu_addr 90) 30; then
+        echo "pinctrl error: GPIOF0 pin is claimed by LPC function"
+    fi
+    if devmem_test_bit $(scu_addr 80) 24; then
+        echo "pinctrl error: GPIOF0 pin is claimed by UART4 function"
+    fi
+}
+
 # The gpio pins managed by aspeed gpio controller always start
 # from 0 in kernel 4.1, but it's dynamically allocated in kernel
 # 4.17, thus we need to read the base from sysfs.
 KERNEL_VERSION=`uname -r`
 if [[ ${KERNEL_VERSION} == 4.1.* ]]; then
     ASPEED_GPIO_BASE=0
+    pinctrl_request_gpios
 else
     ASPEED_GPIOCHIP=$(gpiochip_lookup_by_label 1e780000.gpio)
     ASPEED_GPIO_BASE=$(gpiochip_get_base ${ASPEED_GPIOCHIP})
@@ -63,15 +106,12 @@ else
     fi
 fi
 
+pinctrl_check_gpios
+
 # GPIOM0: BMC_CPLD_TMS
 # GPIOM1: BMC_CPLD_TDI
 # GPIOM2: BMC_CPLD_TCK
 # GPIOM3: BMC_CPLD_TDO
-# SCU84[24|25|26|27] must be 0
-devmem_clear_bit $(scu_addr 84) 24
-devmem_clear_bit $(scu_addr 84) 25
-devmem_clear_bit $(scu_addr 84) 26
-devmem_clear_bit $(scu_addr 84) 27
 IDX=0
 SYMLINKS="BMC_CPLD_TMS BMC_CPLD_TDI BMC_CPLD_TCK BMC_CPLD_TDO"
 for LINK_NAME in ${SYMLINKS}; do
@@ -82,9 +122,6 @@ for LINK_NAME in ${SYMLINKS}; do
 done
 
 # GPIOF0: CPLD_JTAG_SEL (needs to be low)
-# SCU90[30] must 0 adn SCU80[24] must be 0
-devmem_clear_bit $(scu_addr 90) 30
-devmem_clear_bit $(scu_addr 80) 24
 OFFSET=$(gpio_name2value F0)
 PIN=$((ASPEED_GPIO_BASE + OFFSET))
 gpio_export ${PIN} CPLD_JTAG_SEL

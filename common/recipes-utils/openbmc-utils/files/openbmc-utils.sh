@@ -35,6 +35,28 @@ devmem_clear_bit() {
     $DEVMEM $addr 32 $val
 }
 
+#
+# Test if the given bit is set in register <addr>
+# $1 - register address
+# $2 - bit position
+#
+devmem_test_bit() {
+    local addr=$1
+    local bitpos=$2
+    local val
+
+    val=$($DEVMEM $addr)
+    val=$(((val >> $bitpos) & 0x1))
+
+    if [ $val -eq 1 ]; then
+        # 0 for true
+        return 0
+    else
+        # 1 for false
+        return 1
+    fi
+}
+
 source "/usr/local/bin/shell-utils.sh"
 source "/usr/local/bin/i2c-utils.sh"
 source "/usr/local/bin/gpio-utils.sh"

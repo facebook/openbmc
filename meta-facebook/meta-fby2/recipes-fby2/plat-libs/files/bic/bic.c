@@ -2335,7 +2335,7 @@ bic_get_sdr_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info) {
 }
 
 static int
-_get_sdr_rsv(uint8_t slot_id, uint16_t *rsv) {
+_get_sdr_rsv(uint8_t slot_id, uint8_t *rsv) {
   int ret;
   uint8_t rlen = 0;
 
@@ -2764,6 +2764,19 @@ bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis) {
 
   tbuf[3] = dis;  // 1: disable sensor monitor; 0: enable sensor monitor
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DISABLE_SEN_MON, tbuf, 4, rbuf, &rlen);
+
+  return ret;
+}
+
+int
+bic_send_jtag_instruction(uint8_t slot_id, uint8_t dev_id, uint8_t *rbuf, uint8_t ir) {
+  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = dev_id;  // 0-based
+  tbuf[4] = ir;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, 0x39, tbuf, 5, rbuf, &rlen);
 
   return ret;
 }

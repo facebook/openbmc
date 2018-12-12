@@ -512,6 +512,7 @@ int force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
 
 int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
 int bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis);
+int bic_send_jtag_instruction(uint8_t slot_id, uint8_t dev_id, uint8_t *rbuf, uint8_t ir);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -57,6 +57,9 @@ long double cmd_profile[NUM_SLOTS][CMD_PROFILE_NUM]={0};
 static const char *option_list[] = {
   "--check_status",
   "--get_dev_id",
+#if defined(CONFIG_FBY2_GPV2)
+  "--read_jtag_id [dev]",
+#endif
   "--get_gpio",
   "--set_gpio [gpio] [val]",
   "--get_gpio_config",
@@ -136,6 +139,21 @@ util_get_device_id(uint8_t slot_id) {
   printf("Manufacturer ID: 0x%X:0x%X:0x%X\n", id.mfg_id[2], id.mfg_id[1], id.mfg_id[0]);
   printf("Product ID: 0x%X:0x%X\n", id.prod_id[1], id.prod_id[0]);
   printf("Aux. FW Rev: 0x%X:0x%X:0x%X:0x%X\n", id.aux_fw_rev[0], id.aux_fw_rev[1],id.aux_fw_rev[2],id.aux_fw_rev[3]);
+
+  return ret;
+}
+
+static int
+util_read_jtag_id(uint8_t slot_id, uint8_t dev_id) {
+  int ret = 0;
+  uint8_t idcode[16] = {0};
+
+  ret = bic_send_jtag_instruction(slot_id, dev_id, idcode, 0x06);  // read IDCODE
+  if (ret) {
+    printf("util_get_device_id: bic_send_jtag_instruction returns %d\n", ret);
+    return ret;
+  }
+  printf("IDCODE: 0x%02X%02X%02X%02X\n", idcode[6], idcode[5], idcode[4], idcode[3]);
 
   return ret;
 }
@@ -532,7 +550,7 @@ util_perf_test(uint8_t slot_id, int loopCount) {
 
     ret = bic_get_dev_id(slot_id, &id);
     if (ret) {
-      printf("util_get_device_id: bic_get_dev_id returns %d, loop=%d\n", ret, i);
+      printf("util_perf_test: bic_get_dev_id returns %d, loop=%d\n", ret, i);
       return ret;
     }
 
@@ -659,7 +677,7 @@ process_file(uint8_t slot_id, char *path) {
 // TODO: Make it as User selectable tests to run
 int
 main(int argc, char **argv) {
-  uint8_t slot_id;
+  uint8_t slot_id, dev_id;
   uint8_t config;
   int ret = 0;
 
@@ -683,6 +701,15 @@ main(int argc, char **argv) {
     ret = util_check_status(slot_id);
   } else if (!strcmp(argv[2], "--get_dev_id")) {
     ret = util_get_device_id(slot_id);
+  } else if (!strcmp(argv[2], "--read_jtag_id")) {
+    if (argc < 4) {
+      goto err_exit;
+    }
+    dev_id = atoi(argv[3]);
+    if (dev_id > 11) {
+      goto err_exit;
+    }
+    ret = util_read_jtag_id(slot_id, dev_id);
   } else if (!strcmp(argv[2], "--get_gpio")) {
     util_get_gpio(slot_id);
   } else if (!strcmp(argv[2], "--set_gpio")) {

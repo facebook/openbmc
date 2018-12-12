@@ -160,7 +160,7 @@ size_t ep_gpio_pin_cnt = sizeof(ep_gpio_pin_list)/sizeof(uint8_t);
 
 // List of GPV2 GPIO pins to be monitored
 const uint8_t gpv2_gpio_pin_list[] = {
-  GPV2_BMC_HB_LED_N,
+  GPV2_BIC_HB_LED_N,
   GPV2_XDP_BIC_TRST,
   GPV2_I2C_PESW_MULTI_CONFIG_ADDR0_R,
   GPV2_I2C_PESW_MULTI_CONFIG_ADDR1_R,
@@ -359,7 +359,7 @@ const char *ep_gpio_pin_name[] = {
 
 // GPV2 GPIO name
 const char *gpv2_gpio_pin_name[] = {
-  "GPV2_BMC_HB_LED_N",
+  "GPV2_BIC_HB_LED_N",
   "GPV2_XDP_BIC_TRST",
   "GPV2_I2C_PESW_MULTI_CONFIG_ADDR0_R",
   "GPV2_I2C_PESW_MULTI_CONFIG_ADDR1_R",

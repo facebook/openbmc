@@ -225,14 +225,14 @@ dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
     case PWR_STATUS:
       ret = pal_get_device_power(fru, dev_id, &status, &type);
       if (ret < 0) {
-        syslog(LOG_WARNING, "power_util: pal_get_device_power failed for fru %u dev %u\n", fru, dev_id);
+        syslog(LOG_WARNING, "power_util: pal_get_device_power failed for fru %u dev %u\n", fru, dev_id-1);
         return ret;
       }
-      printf("Power status for fru %u dev %u : %s\n", fru, dev_id, status?"ON":"OFF");
+      printf("Power status for fru %u dev %u : %s\n", fru, dev_id-1, status?"ON":"OFF");
 
       break;
     case PWR_OFF:
-      printf("Powering fru %u dev %u to OFF state...\n", fru, dev_id);
+      printf("Powering fru %u dev %u to OFF state...\n", fru, dev_id-1);
 
       ret = pal_set_device_power(fru, dev_id, SERVER_POWER_OFF);
       if (ret < 0) {
@@ -240,20 +240,20 @@ dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
           " fru %u", fru);
         return ret;
       } else if (ret == 1) {
-        printf("fru %u dev %u is already powered OFF...\n", fru, dev_id);
+        printf("fru %u dev %u is already powered OFF...\n", fru, dev_id-1);
         return 0;
       } else {
-        syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d DEV: %u", fru, dev_id);
+        syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d DEV: %u", fru, dev_id-1);
       }
       break;
 
     case PWR_ON:
 
-      printf("Powering fru %u dev %u to ON state...\n", fru, dev_id);
+      printf("Powering fru %u dev %u to ON state...\n", fru, dev_id-1);
 
       ret = pal_set_device_power(fru, dev_id, SERVER_POWER_ON);
       if (ret == 1) {
-        printf("fru %u dev %u is already powered ON...\n", fru, dev_id);
+        printf("fru %u dev %u is already powered ON...\n", fru, dev_id-1);
         return 0;
       } else if (ret == -2) {  //check if fru is not ready
         syslog(LOG_WARNING, "power_util: pal_set_device_power failed for"
@@ -265,21 +265,21 @@ dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
          sleep(3);
          ret = pal_get_device_power(fru, dev_id, &status, &type);
          if ((ret >= 0) && (status == SERVER_POWER_ON)) {
-           syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %u DEV: %u", fru, dev_id);
+           syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %u DEV: %u", fru, dev_id-1);
            break;
          }
          ret = pal_set_device_power(fru, dev_id, SERVER_POWER_ON);
       }
       if (ret < 0 || status != SERVER_POWER_ON) {
         syslog(LOG_WARNING, "power_util: pal_set_device_power failed for"
-          " for fru %u dev %u with status=%u", fru, dev_id, status);
+          " for fru %u dev %u with status=%u", fru, dev_id-1, status);
         return ret;
       }
 
       break;
 
     case PWR_CYCLE:
-      printf("Power cycling fru %u dev %u...\n", fru, dev_id);
+      printf("Power cycling fru %u dev %u...\n", fru, dev_id-1);
 
       ret = pal_set_device_power(fru, dev_id, SERVER_POWER_CYCLE);
       if (ret < 0) {
@@ -287,7 +287,7 @@ dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
           " fru %u", fru);
         return ret;
       } else {
-        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d DEV: %u", fru, dev_id);
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d DEV: %u", fru, dev_id-1);
       }
       break;
 
@@ -664,7 +664,7 @@ main(int argc, char **argv) {
   } else if (dev_id != DEV_ALL) {
     ret = dev_power_util(fru, dev_id, opt);
     if (ret < 0) {
-      printf("ERROR: power-util fru[%d] dev[%d] [%s] failed\n", fru, dev_id, option_list[opt]);
+      printf("ERROR: power-util fru[%d] dev[%d] [%s] failed\n", fru, dev_id-1, option_list[opt]);
     }
   }
 

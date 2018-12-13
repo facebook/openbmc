@@ -27,8 +27,8 @@ S = "${WORKDIR}"
 
 CXXFLAGS += "-D__TEST__ "
 LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -ldl -lgtest -lgmock "
-DEPENDS += "jansson dtc zlib openssl dtc-native gtest-native gmock-native "
-RDEPENDS_${PN} += "jansson zlib openssl gtest-native gmock-native "
+DEPENDS += "jansson dtc-native zlib openssl-native dtc-native gtest-native "
+RDEPENDS_${PN} += "jansson zlib openssl-native gtest-native "
 
 do_install() {
   install -d ${D}${bindir}

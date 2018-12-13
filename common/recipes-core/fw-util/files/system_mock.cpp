@@ -23,14 +23,23 @@ int System::runcmd(const string &cmd)
   return FW_STATUS_SUCCESS;
 }
 
-bool System::vboot_hardware_enforce(void)
+int System::vboot_support_status(void)
 {
   const char *env = std::getenv("FWUTIL_HWENFORCE");
   if (env) {
-    return true;
+    return VBOOT_HW_ENFORCE;
   }
-  return false;
+  env = std::getenv("FWUTIL_SWENFORCE");
+  if (env) {
+    return VBOOT_SW_ENFORCE;
+  }
+  env = std::getenv("FWUTIL_NOENFORCE");
+  if (env) {
+    return VBOOT_NO_ENFORCE;
+  }
+  return VBOOT_NO_ENFORCE;
 }
+
 bool System::get_mtd_name(string name, string &dev)
 {
   map<string, string> mtd_map = {

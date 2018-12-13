@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <openbmc/pal.h>
+#include <openbmc/vbs.h>
 #include "fw-util.h"
 
 #define PAGE_SIZE                     0x1000
@@ -30,31 +31,16 @@ int System::runcmd(const string &cmd)
   return FW_STATUS_FAILURE;
 }
 
-bool System::vboot_hardware_enforce(void)
+int System::vboot_support_status(void)
 {
-  int mem_fd;
-  uint8_t *vboot_base;
-  uint8_t hw_enforce_flag;
-
-  mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-  if (mem_fd < 0) {
-    cerr << "Error opening /dev/mem" << endl;
-    return false;
-  }
-
-  vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, VERIFIED_BOOT_STRUCT_BASE);
-  if (!vboot_base) {
-    cerr << "Error mapping VERIFIED_BOOT_STRUCT_BASE" << endl;
-    close(mem_fd);
-    return false;
-  }
-
-  hw_enforce_flag = VERIFIED_BOOT_HARDWARE_ENFORCE(vboot_base);
-
-  munmap(vboot_base, PAGE_SIZE);
-  close(mem_fd);
-
-  return hw_enforce_flag == 1 ? true : false;
+  struct vbs *v = vboot_status();
+  if (!v)
+    return VBOOT_NO_SUPPORT;
+  if (v->hardware_enforce)
+    return VBOOT_HW_ENFORCE;
+  if (v->software_enforce)
+    return VBOOT_SW_ENFORCE;
+  return VBOOT_NO_ENFORCE;
 }
 
 bool System::get_mtd_name(string name, string &dev)

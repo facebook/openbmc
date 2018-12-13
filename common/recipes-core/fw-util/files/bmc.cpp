@@ -120,7 +120,7 @@ int BmcComponent::print_version()
     fp = popen(cmd, "r");
     if (fp) {
       char line[256];
-      char min[32];
+      char min[64];
       while (fgets(line, sizeof(line), fp)) {
         int ret;
         ret = sscanf(line, "U-Boot 2016.07%*[ ]%[^ \n]%*[ ](%*[^)])\n", min);
@@ -148,10 +148,11 @@ class SystemConfig {
       dual_flash = false;
     }
     if (dual_flash) {
-      if (system.get_mtd_name("romx")) {
+      int vboot = system.vboot_support_status();
+      if (vboot != VBOOT_NO_SUPPORT)  {
         // If verified boot is enabled, we should
         // have the romx partition
-        if (system.vboot_hardware_enforce()) {
+        if (vboot == VBOOT_HW_ENFORCE) {
           // Locked down, Update from a 64k offset.
           static BmcComponent bmc("bmc", "bmc", system, "flash1rw", "u-boot", BMC_RW_OFFSET, ROMX_SIZE);
           // Locked down, Allow getting version of ROM, but do not allow
@@ -165,10 +166,10 @@ class SystemConfig {
         }
       } else {
         // non-verified-boot. BMC boots off of flash0.
-        static BmcComponent bmc("bmc", "bmc", system, "flash0", "u-boot");
+        static BmcComponent bmc("bmc", "bmc", system, "flash0", "rom");
         // Dual flash supported, but not in verified boot format.
         // Allow flashing the second flash. Read version from u-boot partition.
-        static BmcComponent bmcalt("bmc", "flash1", system, "flash1", "u-boot");
+        static BmcComponent bmcalt("bmc", "altbmc", system, "flash1", "romx");
       }
       // Verified boot supported and in dual-flash mode.
     } else {

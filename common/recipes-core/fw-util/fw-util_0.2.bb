@@ -34,9 +34,9 @@ SRC_URI =+ "file://Makefile \
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -ldl "
-DEPENDS += "jansson libpal dtc zlib openssl "
-RDEPENDS_${PN} += "jansson libpal zlib openssl "
+LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl "
+DEPENDS += "jansson libpal dtc zlib openssl libvbs "
+RDEPENDS_${PN} += "jansson libpal zlib openssl libvbs "
 
 do_install() {
   install -d ${D}${bindir}

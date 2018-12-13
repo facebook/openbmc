@@ -53,6 +53,13 @@ class AliasComponent : public Component {
     int print_version();
 };
 
+enum {
+  VBOOT_NO_SUPPORT,
+  VBOOT_NO_ENFORCE,
+  VBOOT_SW_ENFORCE,
+  VBOOT_HW_ENFORCE
+};
+
 class System {
   public:
     std::ostream &output;
@@ -62,7 +69,7 @@ class System {
     System(std::ostream &out, std::ostream &err): output(out), error(err) {}
 
     virtual int runcmd(const std::string &cmd);
-    virtual bool vboot_hardware_enforce();
+    virtual int vboot_support_status();
     virtual bool get_mtd_name(std::string name, std::string &dev);
     bool get_mtd_name(std::string name) {
       std::string unused;

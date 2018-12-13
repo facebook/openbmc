@@ -52,6 +52,7 @@ wedge_power_off_asic() {
     # It is not exact power off.
     # Instead, the ASIC is kept in reset in this case.
     echo 1 > $SCD_TH3_RST_ON_SYSFS
+    sleep 1
     echo 1 > $SCD_TH3_PCI_RST_ON_SYSFS
 }
 
@@ -64,15 +65,18 @@ wedge_power_on_asic() {
 
 wedge_power_on_board() {
     # Order matters here
-    echo 1 > $SCD_FULL_POWER_SYSFS
+    echo 1 > $SUP_PWR_ON_SYSFS
+    sleep 1
+    wedge_power_off_asic
+    sleep 1
     wedge_power_on_asic
     sleep 1
-    echo 1 > $SUP_PWR_ON_SYSFS
 }
 
 wedge_power_off_board() {
     # Order matters here
-    echo 0 > $SUP_PWR_ON_SYSFS
     wedge_power_off_asic
+    sleep 1
+    echo 0 > $SUP_PWR_ON_SYSFS
     # we leave SCD full power on in this case
 }

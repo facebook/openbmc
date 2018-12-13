@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-inherit python3native distutils3
+inherit python3unittest distutils3
 
 SUMMARY = "Check U-Boot partitions"
 DESCRIPTION = "Read, verify, and potentially modify U-Boot (firmware \
@@ -47,8 +47,3 @@ do_lint() {
   shellcheck bmc_pusher
 }
 addtask do_lint after do_build
-
-do_unit_test() {
-  python3 -m unittest discover
-}
-addtask do_unit_test after do_build

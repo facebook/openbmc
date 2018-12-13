@@ -9145,3 +9145,18 @@ bool pal_is_m2_prsnt(char *slot_name, char *sensor_name)
   close(fd);
   return true;
 }
+
+int
+pal_get_sensor_util_timeout(uint8_t fru) {
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      return 10;
+    case FRU_SPB:
+    case FRU_NIC:
+    default:
+      return 4;
+  }
+}

@@ -346,6 +346,7 @@ int pal_get_tpm_physical_presence(uint8_t slot);
 int pal_create_TPMTimer(int fru);
 int pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
 void pal_specific_plat_fan_check(bool status);
+int pal_get_sensor_util_timeout(uint8_t fru);
 #ifdef __cplusplus
 }
 #endif

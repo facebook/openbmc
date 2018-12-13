@@ -2303,3 +2303,8 @@ pal_specific_plat_fan_check(bool status)
 {
   return;
 }
+
+int __attribute__((weak))
+pal_get_sensor_util_timeout(uint8_t fru) {
+  return 4;
+}

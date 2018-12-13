@@ -414,9 +414,9 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool for
   struct timespec timeout;
   get_sensor_reading_struct data;
 
-  //Setup 4 seconds timeout for each fru get_sensor_reading
+  //Setup timeout for each fru get_sensor_reading
   memset(&timeout, 0, sizeof(timeout));
-  timeout.tv_sec = 4;
+  timeout.tv_sec = pal_get_sensor_util_timeout(fru);
 
   if (fru == AGGREGATE_SENSOR_FRU_ID) {
     size_t cnt, i;

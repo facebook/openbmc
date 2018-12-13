@@ -259,6 +259,7 @@ int pal_get_tpm_physical_presence(uint8_t slot);
 int pal_create_TPMTimer(int fru);
 int pal_set_tpm_timeout(uint8_t slot, int timeout);
 int pal_set_tpm_physical_presence_reset(uint8_t slot, uint8_t reset);
+int pal_get_sensor_util_timeout(uint8_t fru);
 #ifdef __cplusplus
 } // extern "C"
 #endif

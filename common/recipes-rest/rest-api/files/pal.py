@@ -90,7 +90,7 @@ def pal_get_bic_status(slot_id):
         return 0
     plat_name = pal_get_platform_name()
     if 'FBTTN' in plat_name:
-        fru = ''
+        fru = 'server'
     elif 'FBY2' in plat_name or 'Yosemite' in plat_name:
         fru = 'slot'+str(slot_id)
     elif 'minipack' in plat_name:

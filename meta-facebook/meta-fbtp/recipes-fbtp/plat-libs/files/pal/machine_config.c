@@ -74,6 +74,7 @@ static struct conf_s configurations[] = {
   {"SS_6", "JBOG", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_RETIMER, CARD_RETIMER, CARD_ABSENT, 0}},
   {"SS_7", "Type 3 with Ava", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_AVA, CARD_AVA, CARD_ABSENT, 0}},
   {"SS_8", "Type 9 with HBA", {0, SINGLE_SIDE, 2, 8, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_HBA, CARD_HBA, CARD_ABSENT, 0}},
+  {"SS_9", "Type 6 with Ava (top slot)", {0, SINGLE_SIDE, 2, 8, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_AVA, CARD_ABSENT, 0}},
   {"DS_0", "DS compute", {0, DOUBLE_SIDE, 2, 12, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
   {"DS_1", "DS compute with boot drive", {0, DOUBLE_SIDE, 2, 12, 1, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},
   {"DS_2", "DS memory without boot-drive", {0, DOUBLE_SIDE, 2, 24, 0, 0, RISER_2SLOT, 0, CARD_NIC, CARD_ABSENT, CARD_ABSENT, CARD_ABSENT, 0}},

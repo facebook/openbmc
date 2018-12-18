@@ -352,6 +352,7 @@ gpio_monitor_poll(void *ptr) {
       }
 
       // 12V-off
+      gpios[PWRGD_COREPWR].status = 0;
       if (gpios[FM_BIOS_POST_COMPT_N].status) {
         gpios[FM_BIOS_POST_COMPT_N].status = 0;
         pal_set_fru_post(fru,0);

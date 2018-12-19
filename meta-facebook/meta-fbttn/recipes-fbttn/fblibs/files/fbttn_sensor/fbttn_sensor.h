@@ -295,7 +295,7 @@ extern size_t iom_t5_non_stby_sensor_cnt;
 
 extern size_t iom_t7_non_stby_sensor_cnt;
 
-int fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value, uint8_t status);
+int fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value, uint8_t status, char *key);
 int fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int fbttn_sensor_sdr_path(uint8_t fru, char *path);

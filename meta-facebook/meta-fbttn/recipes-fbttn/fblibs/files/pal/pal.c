@@ -1596,11 +1596,11 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   }
 }
 
-int pal_sensor_check(uint8_t fru, uint8_t sensor_num) {
+bool pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num) {
   if (fru == FRU_DPB || fru == FRU_SCC) {
-      pal_expander_sensor_check(fru, sensor_num);
+      return false;
   }
-  return PAL_EOK;
+  return true;
 }
 
 int
@@ -1643,7 +1643,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   // Check for the power status
   ret = pal_get_server_power(FRU_SLOT1, &status);
   if (ret == 0) {
-    ret = fbttn_sensor_read(fru, sensor_num, value, status);
+    ret = fbttn_sensor_read(fru, sensor_num, value, status, key);
     if (ret != 0) {
       if (ret < 0) {
         if (fru == FRU_IOM || fru == FRU_DPB || fru == FRU_SCC || fru == FRU_NIC) {

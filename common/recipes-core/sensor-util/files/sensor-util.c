@@ -234,7 +234,7 @@ get_sensor_reading(void *sensor_data) {
     }
 
     usleep(50);
-    if (true == sensor_info->force)
+    if ((false == pal_sensor_is_cached(sensor_info->fru, snr_num)) || (true == sensor_info->force))
       ret = sensor_raw_read(sensor_info->fru, snr_num, &fvalue);
     else
       ret = sensor_cache_read(sensor_info->fru, snr_num, &fvalue);

@@ -231,8 +231,6 @@ sensor_cache_read(uint8_t fru, uint8_t sensor_num, float *value)
   char str[MAX_VALUE_LEN];
   int retry = 0;
 
-  pal_sensor_check(fru, sensor_num);
-
   if (sensor_key_get(fru, sensor_num, key))
     return ERR_UNKNOWN_FRU;
   for (retry = 0; retry < CACHE_READ_RETRY; retry++) {
@@ -568,10 +566,10 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr)
   return PAL_EOK;
 }
 
-int __attribute__((weak))
-pal_sensor_check(uint8_t fru, uint8_t sensor_num)
+bool __attribute__((weak))
+pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num)
 {
-  return PAL_EOK;
+  return true;
 }
 
 int __attribute__((weak))

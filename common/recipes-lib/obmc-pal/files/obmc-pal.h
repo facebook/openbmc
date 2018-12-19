@@ -253,7 +253,7 @@ int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_fruid_write(uint8_t slot, char *path);
 int pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path);
 int pal_get_fru_devtty(uint8_t fru, char *devtty);
-int pal_sensor_check(uint8_t fru, uint8_t sensor_num);
+bool pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);

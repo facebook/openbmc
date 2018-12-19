@@ -33,6 +33,9 @@
 #include <linux/netlink.h>
 #include <openbmc/pal.h>
 #include <openbmc/ncsi.h>
+#include <openbmc/pldm.h>
+#include <openbmc/pldm_base.h>
+#include <openbmc/pldm_fw_update.h>
 
 #define noDEBUG   /* debug printfs */
 
@@ -90,10 +93,9 @@ send_nl_msg(NCSI_NL_MSG_T *nl_msg)
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
 
-  printf("Sending NC-SI command\n");
   ret = sendmsg(sock_fd,&msg,0);
   if (ret == -1) {
-    printf("Error: errno=%d\n", errno);
+    printf("Sending NC-SI command error: errno=%d\n", errno);
   }
 
   /* Read message from kernel */
@@ -109,7 +111,6 @@ close_and_exit:
   return 0;
 }
 
-
 static void
 showUsage(void) {
   printf("Usage: ncsi-util [options] <cmd> \n\n");
@@ -117,6 +118,7 @@ showUsage(void) {
   printf("       -n netdev      Specifies the net device to send command to [default=\"eth0\"]\n");
   printf("       -c channel     Specifies the NC-SI channel on the net device [default=0]\n");
   printf("       -S             show adapter statistics\n");
+  printf("       -p [file]      Parse and display PLDM package information\n");
   printf("Sample: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
 }
@@ -139,7 +141,7 @@ main(int argc, char **argv) {
     return -1;
   }
   memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-  while ((argflag = getopt(argc, (char **)argv, "hSn:c:?")) != -1)
+  while ((argflag = getopt(argc, (char **)argv, "p:hSn:c:?")) != -1)
   {
     switch(argflag) {
     case 'n':
@@ -159,6 +161,10 @@ main(int argc, char **argv) {
     case 'S':
            fshowethstats = 1;
            break;
+    case 'p':
+           printf ("Input file: \"%s\"\n", optarg);
+           pldm_parse_fw_pkg(optarg);
+           goto free_exit;
     case 'h':
     default :
             goto free_exit;

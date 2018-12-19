@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2018-present Facebook. All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 #ifndef _NCSI_H_
 #define _NCSI_H_
 
@@ -45,6 +63,15 @@
 #define NCSI_GET_CONTROLLER_PACKET_STATISTICS    0x18
 #define NCSI_GET_NCSI_STATISTICS                 0x19
 #define NCSI_GET_NCSI_PASS_THROUGH_STATISTICS    0x1a
+
+// NCSI OEM commands
+#define NCSI_OEM_CMD                             0x50
+
+// NCSI PLDM commands
+#define NCSI_PLDM_REQUEST                        0x51
+#define NCSI_QUERY_PENDING_NC_PLDM_REQ           0x56
+#define NCSI_SEND_NC_PLDM_REPLY                  0x57
+
 
 #define NUM_NCSI_CDMS 27
 extern const char *ncsi_cmd_string[NUM_NCSI_CDMS];

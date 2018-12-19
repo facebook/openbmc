@@ -52,6 +52,8 @@ IMAGE_INSTALL += " \
   ncsid \
   vboot-utils \
   enclosure-util \
+  libncsi \
+  libpldm \
   "
 
 IMAGE_FEATURES += " \

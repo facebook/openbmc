@@ -55,6 +55,7 @@ IMAGE_INSTALL += " \
   vboot-utils \
   sensordump \
   enclosure-util \
+  libpldm \
   "
 
 IMAGE_FEATURES += " \

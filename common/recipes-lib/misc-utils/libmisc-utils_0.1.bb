@@ -26,6 +26,7 @@ LIC_FILES_CHKSUM = "file://misc-utils.h;beginline=4;endline=16;md5=da35978751a9d
 SRC_URI = "file://Makefile \
            file://file-utils.c \
            file://path-utils.c \
+           file://plat-utils.c \
            file://str-utils.c \
            file://misc-utils.h \
            "

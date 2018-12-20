@@ -26,6 +26,24 @@ extern "C" {
 #include <unistd.h>
 #include <stdbool.h>
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
+#endif
+
+typedef enum {
+	CPU_MODEL_INVALID = -1,
+	CPU_MODEL_ARM_V5,
+	CPU_MODEL_ARM_V6,
+	CPU_MODEL_MAX,
+} cpu_model_t;
+
+typedef enum {
+	SOC_MODEL_INVALID = -1,
+	SOC_MODEL_ASPEED_G4,
+	SOC_MODEL_ASPEED_G5,
+	SOC_MODEL_MAX,
+} soc_model_t;
+
 /*
  * String utility functions.
  */
@@ -50,6 +68,12 @@ bool path_exists(const char *path);
 bool path_isfile(const char *path);
 bool path_isdir(const char *path);
 bool path_islink(const char *path);
+
+/*
+ * Platform utility functions.
+ */
+cpu_model_t get_cpu_model(void);
+soc_model_t get_soc_model(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

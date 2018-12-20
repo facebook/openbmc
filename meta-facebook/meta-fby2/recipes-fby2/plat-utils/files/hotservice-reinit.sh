@@ -141,6 +141,9 @@ case $OPTION in
       /usr/local/bin/check_slot_type.sh $SLOT
 
       # Remove Service for new device/server
+      # REST API
+      sv stop restapi
+
       # Sensor
       sv stop sensord
       rm -rf /tmp/cache_store/$SLOT*
@@ -184,8 +187,7 @@ case $OPTION in
       sv start sensord
 
       echo "restart rest-api for $SLOT $OPTION"
-      ps | grep -v 'grep' | grep 'rest.py' |awk '{print $1}'| xargs kill
-      sh /usr/local/fbpackages/rest-api/setup-rest-api.sh
+      sv start restapi
 
       if [ $(is_date_synced) == "0" ]; then
         /usr/local/bin/sync_date.sh

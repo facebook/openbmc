@@ -136,21 +136,21 @@ activate_hsvc(uint8_t slot_id) {
   if (0 == ret) {
     printf("SLED is ready to be pulled out for hot-service now\n");
   } else {
-    printf("Fail to turn slot%d to 12V-off\n",slot_id);
+    printf("Fail to turn slot%d to 12V-off\n", runoff_id);
     return -1;
   }
 
-  sprintf(key, "slot%d_por_cfg", slot_id);
+  sprintf(key, "slot%d_por_cfg", runoff_id);
   if (pal_get_key_value(key, cvalue) == 0) {
     if (!memcmp(cvalue, "lps",  strlen("lps"))) {
-      ret = pal_set_last_pwr_state(slot_id, "on");
+      ret = pal_set_last_pwr_state(runoff_id, "on");
       if (ret < 0) {
         printf("Failed to set slot power status to on during Hot-service\n");
         return ret;
       }
     }
   } else {
-    printf("Failed to get slot %d power policy\n", slot_id);
+    printf("Failed to get slot %d power policy\n", runoff_id);
     return -1;
   }
 

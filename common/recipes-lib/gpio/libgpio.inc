@@ -15,15 +15,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "GPIO Access Library v0.1"
-DESCRIPTION = "GPIO library for applications running on openbmc kernel 4.1"
+SECTION = "base"
+PR = "r1"
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://gpio.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://gpio.c \
-           file://gpio.h \
-           file://gpio_name.c \
-           file://Makefile \
-          "
+S = "${WORKDIR}"
 
-DEPENDS += "liblog"
+do_install() {
+    install -d ${D}${libdir}
+    install -m 0644 libgpio.so ${D}${libdir}/libgpio.so
 
-include libgpio.inc
+    install -d ${D}${includedir}/openbmc
+    install -m 0644 gpio.h ${D}${includedir}/openbmc/gpio.h
+}
+
+FILES_${PN} = "${libdir}/libgpio.so"
+FILES_${PN}-dev = "${includedir}/openbmc/gpio.h"

@@ -196,7 +196,7 @@ size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0...7";
-uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 1, 1, 1, 1};
+uint8_t fanid2pwmid_mapping[] = {1, 1, 0, 0, 0, 0, 1, 1};
 
 static uint8_t bios_default_setting_timer_flag = 0;
 static uint8_t otp_server_12v_off_flag = 0;
@@ -2620,8 +2620,8 @@ int
 pal_get_fan_speed(uint8_t fan, int *rpm) {
   int ret;
   float value;
-  // Redirect fan to sensor
-  ret = sensor_cache_read(FRU_DPB, DPB_SENSOR_FAN1_FRONT + fan , &value);
+  // Fan value have to be fetch real value from DPB, so have to use pal_sensor_read_raw to force updating cache value
+  ret = pal_sensor_read_raw(FRU_DPB, DPB_SENSOR_FAN1_FRONT + fan , &value);
 
   if (ret == 0)
     *rpm = (int) value;

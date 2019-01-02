@@ -9163,7 +9163,7 @@ bool pal_is_m2_prsnt(char *slot_name, char *sensor_name)
   index = pal_fsc_get_target_snr(sensor_name, fsc_m2_list, fsc_m2_list_size);
 
   if (index < 0)
-    return false;
+    return true;
 
   sprintf(path, SYS_CONFIG_PATH "fru%d_m2_%d_info", runoff_id, fsc_m2_list[index].offset);
   fd = open(path, O_RDONLY);

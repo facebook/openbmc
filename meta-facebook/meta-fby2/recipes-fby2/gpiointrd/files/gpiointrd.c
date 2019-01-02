@@ -410,10 +410,9 @@ fru_cahe_init(uint8_t fru) {
 static void gpio_event_handle(gpio_poll_st *gp)
 {
   char cmd[128] = {0};
-  int ret=-1;
   uint8_t slot_id;
+  uint8_t slot_12v = 1;
   int value;
-  int status;
   char vpath[80] = {0};
   char locstr[MAX_VALUE_LEN];
   static bool prsnt_assert[MAX_NODES + 1]={0};
@@ -575,8 +574,12 @@ static void gpio_event_handle(gpio_poll_st *gp)
     if (gp->value == 1) { // low to high
       syslog(LOG_WARNING, "[%s] slot%d power enable pin on", __func__,slot_id);
 #if defined(CONFIG_FBY2_GPV2)
-      if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2)
-        fru_cahe_init(slot_id);
+      if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+        if (pal_is_server_12v_on(slot_id, &slot_12v))
+          syslog(LOG_WARNING, "%s : pal_is_server_12v_on failed for slot: %u", __func__, slot_id);
+        if (slot_12v)
+          fru_cahe_init(slot_id);
+      }
 #endif
     } else { // high to low
       syslog(LOG_WARNING, "[%s] slot%d power enable pin off", __func__,slot_id);

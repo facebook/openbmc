@@ -94,6 +94,7 @@
 #define HOTSERVICE_SCRPIT "/usr/local/bin/hotservice-reinit.sh"
 #define HOTSERVICE_FILE "/tmp/slot%d_reinit"
 #define HOTSERVICE_PID  "/tmp/hotservice_reinit.pid"
+#define HOTSERVICE_BLOCK "/tmp/slot%d_reinit_block"
 
 #define FRUID_SIZE        256
 #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
@@ -1274,7 +1275,7 @@ _check_slot_12v_en_time(uint8_t slot_id) {
 
 static int
 pal_slot_pair_12V_on(uint8_t slot_id) {
-  uint8_t pair_slot_id;
+  uint8_t pair_slot_id, dc_slot_id;
   int pair_set_type=-1;
   uint8_t status=0;
   char vpath[80]={0};
@@ -1285,13 +1286,6 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
 #if defined(CONFIG_FBY2_EP)
   uint8_t server_type;
 #endif
-
-  if (0 == slot_id%2)
-    pair_slot_id = slot_id - 1;
-  else {
-    pair_slot_id = slot_id;
-    pwr_slot = slot_id + 1;
-  }
 
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
@@ -1370,8 +1364,17 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
      case TYPE_CF_A_SV:
      case TYPE_GP_A_SV:
      case TYPE_GPV2_A_SV:
+       if (0 == slot_id%2) {
+         dc_slot_id = slot_id - 1;
+         pair_slot_id = dc_slot_id;
+       } else {
+         dc_slot_id = slot_id;
+         pwr_slot = slot_id + 1;
+         pair_slot_id = pwr_slot;
+       }
+
        /* Check whether the system is 12V off or on */
-       ret = pal_is_server_12v_on(pair_slot_id, &status);
+       ret = pal_is_server_12v_on(dc_slot_id, &status);
        if (ret < 0) {
          syslog(LOG_ERR, "pal_slot_pair_12V_on: pal_is_server_12v_on failed");
          return -1;
@@ -1379,15 +1382,16 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
 
        // Need to 12V-on pair slot
        if (!status) {
-         _set_slot_12v_en_time(pair_slot_id);
-         sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
+         _set_slot_12v_en_time(dc_slot_id);
+         sprintf(vpath, GPIO_VAL, gpio_12v[dc_slot_id]);
          if (write_device(vpath, "1")) {
            return -1;
          }
+         pal_set_hsvc_ongoing(dc_slot_id, 0, 1);
 
          msleep(300);
        }
-       pal_baseboard_clock_control(pair_slot_id, "0");
+       pal_baseboard_clock_control(dc_slot_id, "0");
 
        // Check whether the system is 12V off or on
        if (pal_is_server_12v_on(pwr_slot, &status) < 0) {
@@ -1400,6 +1404,14 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          if (write_device(vpath, "1")) {
            return -1;
          }
+         pal_set_hsvc_ongoing(pwr_slot, 0, 1);
+       }
+
+       sprintf(vpath, HOTSERVICE_BLOCK, pair_slot_id);
+       if (access(vpath, F_OK) == 0) {
+         unlink(vpath);
+         sprintf(vpath, "%s slot%u start", HOTSERVICE_SCRPIT, pair_slot_id);
+         system(vpath);
        }
 
        // Check BIC Self Test Result
@@ -1494,9 +1506,10 @@ pal_set_hsvc_ongoing(uint8_t slot_id, uint8_t status, uint8_t ident) {
   return 0;
 }
 
-static void
+static int
 pal_hot_service_action(uint8_t slot_id) {
   uint8_t pair_slot_id;
+  uint8_t block_12v;
   char cmd[128];
   char hspath[80], vpath[80];
   int ret;
@@ -1505,6 +1518,8 @@ pal_hot_service_action(uint8_t slot_id) {
     pair_slot_id = slot_id - 1;
   else
     pair_slot_id = slot_id + 1;
+
+  block_12v = (pal_is_device_pair(slot_id) && pal_is_hsvc_ongoing(pair_slot_id));
 
   // Re-init system configuration
   sprintf(hspath, HOTSERVICE_FILE, slot_id);
@@ -1515,9 +1530,18 @@ pal_hot_service_action(uint8_t slot_id) {
       syslog(LOG_ERR, "%s: write_device failed", __func__);
     }
 
-    sprintf(cmd, "rm -rf %s", hspath);
+    sleep(2);
+
+    sprintf(cmd, "/usr/local/bin/check_slot_type.sh slot%u", slot_id);
     system(cmd);
-    sprintf(cmd, "%s slot%u start", HOTSERVICE_SCRPIT, slot_id);
+
+    unlink(hspath);
+    block_12v = (pal_is_device_pair(slot_id) && pal_is_hsvc_ongoing(pair_slot_id));
+    if (!block_12v) {
+      sprintf(cmd, "%s slot%u start", HOTSERVICE_SCRPIT, slot_id);
+    } else {
+      sprintf(cmd, "touch "HOTSERVICE_BLOCK, slot_id);
+    }
     system(cmd);
 
     if (0 != pal_fruid_init(slot_id)) {
@@ -1526,6 +1550,15 @@ pal_hot_service_action(uint8_t slot_id) {
 
     pal_system_config_check(slot_id);
     pal_set_hsvc_ongoing(slot_id, 0, 1);
+  }
+
+  if (block_12v) {
+    syslog(LOG_CRIT, "12V-on blocked due to pair slot is in hot-service, FRU: %d", slot_id);
+    sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
+    if (write_device(vpath, "0")) {
+      syslog(LOG_ERR, "%s: write_device failed", __func__);
+    }
+    return -1;
   }
 
   // Check if pair slot is swap
@@ -1539,6 +1572,8 @@ pal_hot_service_action(uint8_t slot_id) {
       printf("fail to 12V-on fru%d, due to fru%d is doing hot service! \n", slot_id, pair_slot_id);
     }
   }
+
+  return 0;
 }
 
 // Turn off 12V for the server in given slot
@@ -1752,26 +1787,27 @@ server_12v_on(uint8_t slot_id) {
   uint8_t server_type, config;
 #endif
 
+  if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
+
   // Check if another hotservice-reinit.sh instance of slotX is running
   while(1) {
     pid_file = open(HOTSERVICE_PID, O_CREAT | O_RDWR, 0666);
     rc = flock(pid_file, LOCK_EX);
     if (rc) {
-      printf("slot%d is waitting\n",slot_id);
+      printf("slot%d is waitting\n", slot_id);
       sleep(1);
     } else {
       break;
     }
   }
 
-  if (slot_id < 1 || slot_id > 4) {
-    return -1;
-  }
-
   ret = pal_is_fru_prsnt(slot_id, &slot_prsnt);
-  if (ret < 0)
-  {
+  if (ret < 0) {
     printf("%s pal_is_fru_prsnt failed for fru: %d\n", __func__, slot_id);
+    flock(pid_file, LOCK_UN);
+    close(pid_file);
     return -1;
   }
 
@@ -1782,9 +1818,12 @@ server_12v_on(uint8_t slot_id) {
     return -1;
   }
 
-  pal_hot_service_action(slot_id);
-  rc = flock(pid_file, LOCK_UN);
+  ret = pal_hot_service_action(slot_id);
+  flock(pid_file, LOCK_UN);
   close(pid_file);
+  if (ret < 0) {
+    return -1;
+  }
 
   if (!pal_is_valid_pair(slot_id, &pair_set_type)) {
     return -1;
@@ -1793,8 +1832,10 @@ server_12v_on(uint8_t slot_id) {
   if (!pal_is_device_pair(slot_id)) {  // Write 12V on
     _set_slot_12v_en_time(slot_id);
     sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-    if (write_device(vpath, "1"))
+    if (write_device(vpath, "1")) {
       return -1;
+    }
+    pal_set_hsvc_ongoing(slot_id, 0, 1);
   }
 
   sleep(2); // Wait for latch pin stable

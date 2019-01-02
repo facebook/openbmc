@@ -48,6 +48,7 @@
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_VER_STR "F09_"
 #define Y2_BIOS_VER_STR "YMV2"
+#define GPV2_BIOS_VER_STR "F09B"
 
 #define BIC_UPDATE_RETRIES 12
 #define BIC_UPDATE_TIMEOUT 500
@@ -1710,7 +1711,9 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   end = BIOS_VER_REGION_SIZE - (sizeof(ver_sig) + strlen(BIOS_VER_STR));
   for (i = 0; i < end; i++) {
     if (!memcmp(buf+i, ver_sig, sizeof(ver_sig))) {
-      if (memcmp(buf+i+sizeof(ver_sig), BIOS_VER_STR, strlen(BIOS_VER_STR)) && memcmp(buf+i+sizeof(ver_sig), Y2_BIOS_VER_STR, strlen(Y2_BIOS_VER_STR))) {
+      if (memcmp(buf+i+sizeof(ver_sig), BIOS_VER_STR, strlen(BIOS_VER_STR))
+      && memcmp(buf+i+sizeof(ver_sig), Y2_BIOS_VER_STR, strlen(Y2_BIOS_VER_STR))
+      && memcmp(buf+i+sizeof(ver_sig), GPV2_BIOS_VER_STR, strlen(GPV2_BIOS_VER_STR))){
         i = end;
       }
       break;

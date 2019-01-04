@@ -30,12 +30,17 @@
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
+#include <arpa/inet.h>
 #include "fruid.h"
 #include <facebook/fby2_common.h>
 #include <facebook/fby2_fruid.h>
 #include <openbmc/pal.h>
+#include <openbmc/ncsi.h>
 
 #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
 #define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"
@@ -47,30 +52,6 @@
 
 #define FRUID_SIZE        256
 
-static int
-plat_get_ipmb_bus_id(uint8_t slot_id) {
-  int bus_id;
-
-  switch(slot_id) {
-  case FRU_SLOT1:
-    bus_id = IPMB_BUS_SLOT1;
-    break;
-  case FRU_SLOT2:
-    bus_id = IPMB_BUS_SLOT2;
-    break;
-  case FRU_SLOT3:
-    bus_id = IPMB_BUS_SLOT3;
-    break;
-  case FRU_SLOT4:
-    bus_id = IPMB_BUS_SLOT4;
-    break;
-  default:
-    bus_id = -1;
-    break;
-  }
-
-  return bus_id;
-}
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -81,7 +62,7 @@ plat_get_ipmb_bus_id(uint8_t slot_id) {
  * returns 0 on successful copy
  * returns non-zero on file operation errors
  */
-int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
+static int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 
   int eeprom;
   int bin;
@@ -127,6 +108,97 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   return 0;
 }
 
+static int get_ncsi_vid(void) {
+  int sock_fd, ret = 0;
+  int req_msg_size = offsetof(NCSI_NL_MSG_T, msg_payload);
+  int msg_size = sizeof(NCSI_NL_RSP_T);
+  struct sockaddr_nl src_addr, dest_addr;
+  struct nlmsghdr *nlh = NULL;
+  struct iovec iov;
+  struct msghdr msg;
+  NCSI_NL_MSG_T *nl_msg;
+  NCSI_NL_RSP_T *rcv_buf;
+  NCSI_Response_Packet *resp;
+
+  /* open NETLINK socket to send message to kernel */
+  sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
+  if (sock_fd < 0)  {
+    syslog(LOG_ERR, "get_ncsi_vid: failed to allocate socket");
+    return -1;
+  }
+
+  memset(&src_addr, 0, sizeof(src_addr));
+  src_addr.nl_family = AF_NETLINK;
+  src_addr.nl_pid = getpid();
+  if (bind(sock_fd, (struct sockaddr *)&src_addr, sizeof(src_addr)) == -1)
+  {
+    syslog(LOG_ERR, "get_ncsi_vid: failed to bind socket, errno=0x%x", errno);
+    ret = -1;
+    goto close_and_exit;
+  }
+
+  memset(&dest_addr, 0, sizeof(dest_addr));
+  dest_addr.nl_family = AF_NETLINK;
+  dest_addr.nl_pid = 0; /* For Linux Kernel */
+  dest_addr.nl_groups = 0; /* unicast */
+
+  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
+  if (!nlh) {
+    syslog(LOG_ERR, "get_ncsi_vid: failed to allocate message buffer");
+    ret = -1;
+    goto close_and_exit;
+  }
+  memset(nlh, 0, NLMSG_SPACE(msg_size));
+  nlh->nlmsg_len = NLMSG_SPACE(req_msg_size);
+  nlh->nlmsg_pid = getpid();
+  nlh->nlmsg_flags = 0;
+
+  nl_msg = (NCSI_NL_MSG_T *)NLMSG_DATA(nlh);
+  sprintf(nl_msg->dev_name, "eth0");
+  nl_msg->channel_id = 0;
+  nl_msg->cmd = NCSI_GET_VERSION_ID;
+  nl_msg->payload_length = 0;
+
+  iov.iov_base = (void *)nlh;
+  iov.iov_len = nlh->nlmsg_len;
+
+  memset(&msg, 0, sizeof(msg));
+  msg.msg_name = (void *)&dest_addr;
+  msg.msg_namelen = sizeof(dest_addr);
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+  ret = sendmsg(sock_fd, &msg, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "get_ncsi_vid: failed to send msg, errno=%d", errno);
+    goto close_and_exit;
+  }
+
+  /* Read message from kernel */
+  iov.iov_len = NLMSG_SPACE(msg_size);
+  ret = recvmsg(sock_fd, &msg, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "get_ncsi_vid: failed to receive msg, errno=%d", errno);
+    goto close_and_exit;
+  }
+  rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
+  resp = (NCSI_Response_Packet *)rcv_buf->msg_payload;
+  if (ntohs(resp->Response_Code) == RESP_COMMAND_COMPLETED) {
+    if (access("/tmp/cache_store", F_OK) == -1) {
+      mkdir("/tmp/cache_store", 0777);
+    }
+    handle_get_version_id(resp);
+  }
+
+close_and_exit:
+  if (nlh) {
+    free(nlh);
+  }
+  close(sock_fd);
+
+  return ret;
+}
+
 int plat_fruid_init(void) {
 
   int ret = -1;
@@ -162,6 +234,7 @@ int plat_fruid_init(void) {
         ret = copy_eeprom_to_bin(EEPROM_SPB, BIN_SPB);
         break;
       case FRU_NIC:
+        get_ncsi_vid();
         if (fby2_get_nic_mfgid() == MFG_BROADCOM) {
           ret = pal_read_nic_fruid(BIN_NIC, 256);
           break;

@@ -25,7 +25,7 @@
 
 #define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
 
-static int
+int
 plat_get_ipmb_bus_id(uint8_t slot_id) {
   int bus_id;
 

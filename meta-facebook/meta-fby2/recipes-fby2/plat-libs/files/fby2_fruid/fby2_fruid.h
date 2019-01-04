@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 
+int plat_get_ipmb_bus_id(uint8_t slot_id);
 uint32_t fby2_get_nic_mfgid(void);
 int fby2_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path);
 int fby2_get_fruid_eeprom_path(uint8_t fru, char *path);

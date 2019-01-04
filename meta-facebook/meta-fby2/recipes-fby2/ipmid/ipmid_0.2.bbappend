@@ -15,11 +15,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = " libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid libfby2-sensor"
-RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libfby2-fruid libbic libfby2-sensor"
+DEPENDS_append = " libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid libfby2-sensor libncsi"
+RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libfby2-fruid libbic libfby2-sensor libncsi"
 
 CFLAGS += " -lfby2_fruid "
-LDFLAGS += " -lipmb -lbic -lgpio -lfby2_sensor"
+LDFLAGS += " -lipmb -lbic -lgpio -lfby2_sensor -lncsi"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \

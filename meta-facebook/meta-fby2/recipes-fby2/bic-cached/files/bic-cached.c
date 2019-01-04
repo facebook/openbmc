@@ -39,8 +39,8 @@
 #define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
 
-#define MAX_RETRY 180         // 1 s * 180 = 3 mins
-#define MAX_RETRY_CNT 9000    // A senond can run about 50 times, 3 mins = 180 * 50
+#define MAX_RETRY 6           // 180 secs = 1500 * 6
+#define MAX_RETRY_CNT 1500    // A senond can run about 50 times, 30 secs = 30 * 50
 
 int
 fruid_cache_init(uint8_t slot_id) {
@@ -65,7 +65,7 @@ fruid_cache_init(uint8_t slot_id) {
 
 int
 sdr_cache_init(uint8_t slot_id) {
-  int ret;
+  int ret = 0, rc;
   int fd;
   int retry = 0;
   uint8_t rlen;
@@ -95,11 +95,11 @@ sdr_cache_init(uint8_t slot_id) {
     return ret;
   }
 
-  ret = pal_flock_retry(fd);
-  if (ret == -1) {
+  rc = pal_flock_retry(fd);
+  if (rc == -1) {
    syslog(LOG_WARNING, "%s: failed to flock on %s", __func__, path);
    close(fd);
-   return ret;
+   return rc;
   }
 
   retry = 0;
@@ -122,15 +122,15 @@ sdr_cache_init(uint8_t slot_id) {
     }
     retry++;
   } while (retry < MAX_RETRY_CNT);
-  if (retry == MAX_RETRY_CNT) {   // if exceed 3 mins, exit this step
-    syslog(LOG_CRIT, "Fail on getting Slot%u SDR via BIC", slot_id);
+  if (retry == MAX_RETRY_CNT) {   // if exceed 30 secs, exit this step
+    syslog(LOG_WARNING, "Fail on getting Slot%u SDR via BIC", slot_id);
   }
 
-  ret = pal_unflock_retry(fd);
-  if (ret == -1) {
+  rc = pal_unflock_retry(fd);
+  if (rc == -1) {
    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
    close(fd);
-   return ret;
+   return rc;
   }
 
   close(fd);

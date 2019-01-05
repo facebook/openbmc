@@ -2539,29 +2539,52 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
     case SERVER_POWER_ON:
       if (status == SERVER_POWER_ON)
         return 1;
-      else
-        return bic_set_dev_power_status(slot_id, dev_id, 1);
+      else {
+        ret = bic_set_dev_power_status(slot_id, dev_id, 1);
+        if (ret == 0) {
+          pal_set_m2_prsnt(slot_id, dev_id, 1);
+        }
+        return ret;
+      }
       break;
 
     case SERVER_POWER_OFF:
       if (status == SERVER_POWER_OFF)
         return 1;
-      else
-        return bic_set_dev_power_status(slot_id, dev_id, 2);
+      else {
+        ret = bic_set_dev_power_status(slot_id, dev_id, 2);
+        if (ret == 0) {
+          pal_set_m2_prsnt(slot_id, dev_id, 0);
+        }
+        return ret;
+      }
       break;
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
-        if (bic_set_dev_power_status(slot_id, dev_id, 2))
-          return -1;
+
+        ret = bic_set_dev_power_status(slot_id, dev_id, 2);
+        if (ret == 0) {
+          pal_set_m2_prsnt(slot_id, dev_id, 0);
+        } else {
+          return ret;
+        }
 
         sleep(DELAY_POWER_CYCLE);
 
-        return bic_set_dev_power_status(slot_id, dev_id, 1);
+        ret = bic_set_dev_power_status(slot_id, dev_id, 1);
+        if (ret == 0) {
+          pal_set_m2_prsnt(slot_id, dev_id, 1);
+        }
+        return ret;
 
       } else if (status == SERVER_POWER_OFF) {
 
-        return (bic_set_dev_power_status(slot_id, dev_id, 1));
+        ret = bic_set_dev_power_status(slot_id, dev_id, 1);
+        if (ret == 0) {
+          pal_set_m2_prsnt(slot_id, dev_id, 1);
+        }
+        return ret;
       }
       break;
 
@@ -9120,6 +9143,22 @@ int pal_fsc_get_target_snr(const char *sname, struct fsc_monitor *fsc_m2_list, i
   }
 
   return PAL_ENOTSUP;
+}
+
+int
+pal_set_m2_prsnt(uint8_t slot_id, uint8_t dev_id, uint8_t present) {
+  if(fby2_get_slot_type(slot_id)==SLOT_TYPE_GPV2) {
+    char key[MAX_KEY_LEN] = {0};
+    char str[MAX_VALUE_LEN] = {0};
+    if (dev_id < 1 || dev_id > MAX_NUM_DEVS)
+      return -1;
+    //slot: 1 dev_id: 1 -> slot1_m2a_pres
+    snprintf(key,MAX_KEY_LEN, "slot%u_m2%c_pres", slot_id, 'a'+dev_id-1);
+    snprintf(str,MAX_VALUE_LEN, "%d",present);
+    syslog(LOG_WARNING, "%s: set %s to %s.", __func__, key, str);
+    return kv_set(key, str, 0, 0);
+  }
+  return -1;
 }
 
 bool pal_is_m2_prsnt(char *slot_name, char *sensor_name)

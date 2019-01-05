@@ -1023,16 +1023,6 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
     }
   }
 
-  if (fby2_get_slot_type(pair_slot_id) == SLOT_TYPE_GPV2) {
-    for (int dev_id=1;dev_id<=MAX_NUM_DEVS;dev_id++) {
-      ret = pal_set_device_power(pair_slot_id, dev_id, SERVER_POWER_OFF);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "slot%d dev%d off failed",pair_slot_id,dev_id);
-      }
-    }
-    msleep(600);
-  }
-
   sprintf(vpath, GPIO_VAL, gpio_power[slot_id]);
 
   if (write_device(vpath, "1")) {
@@ -1624,25 +1614,6 @@ server_12v_off(uint8_t slot_id) {
            runoff_id = pair_slot_id;
            break;
      }
-     if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
-      for (int dev_id=1;dev_id<=MAX_NUM_DEVS;dev_id++) {
-        ret = pal_set_device_power(slot_id, dev_id, SERVER_POWER_OFF);
-        if (ret < 0) {
-          syslog(LOG_WARNING, "slot%d dev%d off failed",slot_id,dev_id);
-        }
-      }
-      msleep(600);
-     }
-  } else {
-    if (fby2_get_slot_type(pair_slot_id) == SLOT_TYPE_GPV2) {
-      for (int dev_id=1;dev_id<=MAX_NUM_DEVS;dev_id++) {
-        ret = pal_set_device_power(pair_slot_id, dev_id, SERVER_POWER_OFF);
-        if (ret < 0) {
-          syslog(LOG_WARNING, "slot%d dev%d off failed",pair_slot_id,dev_id);
-        }
-      }
-      msleep(600);
-    }
   }
 
   sprintf(vpath, GPIO_VAL, gpio_12v[runoff_id]);

@@ -161,7 +161,13 @@ static void *m_hbled_output = NULL;
 
 static int ignore_thresh = 0;
 static uint8_t fscd_watchdog_counter = 0;
-static long post_end_counter = -1;
+
+enum {
+  POST_END_COUNTER_IGNORE_LOG  = -2,
+  POST_END_COUNTER_SHOW_LOG = -1,
+};
+
+static long post_end_counter = POST_END_COUNTER_IGNORE_LOG;
 
 typedef struct {
   uint16_t flag;
@@ -3722,7 +3728,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
                 // fscd not start yet or fscd hangs up at the first run
                 syslog(LOG_WARNING, "fscd not start yet or fscd hangs up at the first run");
                 current_counter = 0;
-                post_end_counter = -1;
+                post_end_counter = POST_END_COUNTER_SHOW_LOG;
                 // fscd watchdog counter update
                 fscd_watchdog_counter = 1;
               } else {
@@ -3803,7 +3809,9 @@ pal_check_fscd_watchdog() {
   long counter = pal_get_fscd_counter();
   if ((post_end_counter < 0) && counter) {
     //fscd start working after post end
-    syslog(LOG_WARNING, "fscd start working after POST end");
+    if (post_end_counter == POST_END_COUNTER_SHOW_LOG) {
+      syslog(LOG_WARNING, "fscd start working after POST end");
+    }
     post_end_counter = counter;
   }
 }
@@ -5744,8 +5752,10 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
    int ret;
    float value;
 
-   // Redirect FAN to sensor cache
+   // Read sensor cache
    ret = sensor_cache_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
+   if (ret != 0) // Read sensor value
+      ret = sensor_raw_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
 
    if (0 == ret)
       *rpm = (int) value;

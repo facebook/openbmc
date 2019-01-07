@@ -276,10 +276,10 @@ def setup_board_tolerance_gpio(board_tolerance_gpio_table,
     for gpio in board_tolerance_gpio_table:
         if not (gpio.gpio).startswith('GPIO'):
             continue
-        gpio_val = openbmc_gpio.gpio_name2value(gpio.gpio)
-        offset = int(gpio_val / 32)
-        phy_addr = board_gpioOffsetDic[str(offset)]
-        bit = gpio_val % 32
+        offset = openbmc_gpio.gpio_name_to_offset(gpio.gpio)
+        group_index = int(offset / 32)
+        phy_addr = board_gpioOffsetDic[str(group_index)]
+        bit = offset % 32
         # config the devmem and write through to the hw
         reg = soc_get_tolerance_reg(phy_addr)
         reg.set_bit(bit)
@@ -291,11 +291,11 @@ def setup_board_tolerance_gpio(board_tolerance_gpio_table,
         # export gpio
     for gpio in board_tolerance_gpio_table:
         openbmc_gpio.gpio_export(gpio.gpio, gpio.shadow)
-        def_val = openbmc_gpio.gpio_get(gpio.gpio, change_direction=False)
+        def_val = openbmc_gpio.gpio_get_value(gpio.gpio, change_direction=False)
         if def_val == 1:
-            openbmc_gpio.gpio_set(gpio.gpio, 1)
+            openbmc_gpio.gpio_set_value(gpio.gpio, 1)
         else:
-            openbmc_gpio.gpio_set(gpio.gpio, 0)
+            openbmc_gpio.gpio_set_value(gpio.gpio, 0)
 
 
 def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
@@ -327,8 +327,8 @@ def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
         if gpio.value == GPIO_INPUT:
             continue
         elif gpio.value == GPIO_OUT_HIGH:
-            openbmc_gpio.gpio_set(gpio.gpio, 1)
+            openbmc_gpio.gpio_set_value(gpio.gpio, 1)
         elif gpio.value == GPIO_OUT_LOW:
-            openbmc_gpio.gpio_set(gpio.gpio, 0)
+            openbmc_gpio.gpio_set_value(gpio.gpio, 0)
         else:
             raise Exception('Invalid value "%s"' % gpio.value)

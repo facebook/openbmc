@@ -83,8 +83,8 @@ def get_func(args):
 def info_func(args):
     res = openbmc_gpio.gpio_info(args.gpio)
     print('GPIO info for %s:' % args.gpio)
-    print('Path: %s\nShadow: %s\nDirection: %s\nValue: %s'
-          % (res['path'], res['shadow'], res['direction'], res['value']))
+    print('Shadow: %s\nDirection: %s\nValue: %s'
+          % (res['shadow'], res['direction'], res['value']))
 
 
 def main():

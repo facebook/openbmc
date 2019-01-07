@@ -43,16 +43,16 @@ def wedge_board_rev(soc_gpio_table, board_gpio_rev_table):
     # Setup to read revision
     setup_board_gpio(soc_gpio_table, board_gpio_rev_table)
     # Read the gpio values
-    v0 = openbmc_gpio.gpio_get('BOARD_REV_ID0')
-    v1 = openbmc_gpio.gpio_get('BOARD_REV_ID1')
-    v2 = openbmc_gpio.gpio_get('BOARD_REV_ID2')
+    v0 = openbmc_gpio.gpio_get_value('BOARD_REV_ID0')
+    v1 = openbmc_gpio.gpio_get_value('BOARD_REV_ID1')
+    v2 = openbmc_gpio.gpio_get_value('BOARD_REV_ID2')
     return ((v2 << 2) | (v1 << 1) | v0)
 
 
 def main():
     print('Setting up GPIOs ... ', end='')
     sys.stdout.flush()
-    openbmc_gpio.setup_shadow()
+    openbmc_gpio.gpio_shadow_init()
     version = wedge_board_rev(soc_gpio_table,board_gpio_rev_table)
     # In order to satisy/unsatisfy conditions in setup_board_gpio()
     # modify the registers

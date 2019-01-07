@@ -24,144 +24,161 @@ import logging
 import os
 import string
 import shutil
+import subprocess
+
+_GPIO_SHADOW_DIR = '/tmp/gpionames'
+_GPIO_CHIP_ASPEED = 'aspeed-gpio'
 
 
-_gpio_shadow = '/tmp/gpionames'
+def _run_gpiocli(gpio_cmd,
+                 chip=None, name=None, offset=None, shadow=None,
+                 gpio_args=None):
+    """Run gpiocli command with supplied options/arguments.
+    """
+    shell_cmd = "/usr/local/bin/gpiocli"
+    if shadow:
+        shell_cmd += ' --shadow %s' % shadow
+    if chip:
+        shell_cmd += ' --chip %s' % chip
+    if name:
+        shell_cmd += ' --pin-name %s' % name.upper()
+    if offset:
+        shell_cmd += ' --pin-offset %s' % str(offset)
+    shell_cmd += ' %s' % gpio_cmd
+    if gpio_args:
+        shell_cmd += ' %s' % str(gpio_args)
+
+    proc = subprocess.Popen(shell_cmd,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    out, err = proc.communicate()
+    if len(err) != 0:
+        raise Exception(err)
+    return out.decode("utf-8")
 
 
-def setup_shadow(shadow=None):
-    global _gpio_shadow
-    if os.path.exists(_gpio_shadow):
-        shutil.rmtree(_gpio_shadow)
-    if shadow is not None:
-        _gpio_shadow = shadow
-    if not os.path.exists(_gpio_shadow):
-        os.makedirs(_gpio_shadow)
+def gpio_shadow_init(shadow_dir=None):
+    """Set up shadow root directory if it doesn't exist.
+    """
+    global _GPIO_SHADOW_DIR
+
+    if os.path.exists(_GPIO_SHADOW_DIR):
+        shutil.rmtree(_GPIO_SHADOW_DIR)
+
+    if shadow_dir:
+        _GPIO_SHADOW_DIR = shadow_dir
+    if not os.path.exists(_GPIO_SHADOW_DIR):
+        os.makedirs(_GPIO_SHADOW_DIR)
 
 
-def gpio_name2value(name):
-    name = str(name).lower()
-    if name.startswith('gpio'):
-        name = name[4:]
-    try:
-        return int(name)
-    except:
-        # it is not just value, try treat it as name like 'A0'
-        pass
-    val = 0
-    try:
-        if len(name) != 2 and len(name) != 3:
-            raise
-        for idx in range(0, len(name)):
-            ch = name[idx]
-            if ch in string.ascii_lowercase:
-                # letter cannot be the last character
-                if idx == len(name) - 1:
-                    raise
-                tmp = ord(ch) - ord('a') + 1
-                val = val * 26 + tmp
-            elif ch in string.digits:
-                # digit must be the last character
-                if idx != len(name) - 1:
-                    raise
-                # the digit must be 0-7
-                tmp = ord(ch) - ord('0')
-                if tmp > 7:
-                    raise
-                # 'A4' is value 4
-                if val > 0:
-                    val -= 1
-                val = val * 8 + tmp
-            else:
-                raise
-    except:
-        logging.exception('Invalid GPIO name "%s"' % name)
-    return val
+def gpio_export(name, shadow, chip=_GPIO_CHIP_ASPEED):
+    """Export control of the gpio pin to user space.
+    """
+    if shadow is None:
+        shadow = '%s_%s' %  (chip, name)
+    shadowdir = os.path.join(_GPIO_SHADOW_DIR, shadow)
+    if os.path.exists(shadowdir):
+        raise Exception('Shadow "%s" exists already' % shadowdir)
+
+    print("exporting gpio (%s, %s), shadow=%s" % (chip, name, shadow))
+    _run_gpiocli('export', name=name, chip=chip, shadow=shadow)
 
 
-def gpio_dir(name, check_shadow=True):
-    GPIODIR_FMT = '/sys/class/gpio/gpio{gpio}'
-    if check_shadow:
-        shadowdir = os.path.join(_gpio_shadow, name)
-        if os.path.isdir(shadowdir):
-            return shadowdir
-    val = gpio_name2value(name)
-    return GPIODIR_FMT.format(gpio=val)
+def _shadow_exists(name):
+    """Check if the shadow file exists.
+    """
+    path = os.path.join(_GPIO_SHADOW_DIR, name)
+    if os.path.islink(path):
+        return True
+    else:
+        return False
+
+def gpio_name_to_offset(name, chip=_GPIO_CHIP_ASPEED):
+    """Map gpio pin name to offset within the gpio chip.
+    """
+    out = _run_gpiocli('map-name-to-offset', name=name, chip=chip)
+
+    # "gpiocli" command output format: "<chip>,<name>, offset=<offset>"
+    last_line = out.splitlines()[-1]
+    offset = last_line.split('=')[1]
+    return int(offset.strip())
 
 
-def gpio_get_shadow(name):
-    path = gpio_dir(name, check_shadow=False)
-    for child in os.listdir(_gpio_shadow):
-        try:
-            child = os.path.join(_gpio_shadow, child)
-            if os.readlink(child) == path:
-                return child
-        except:
-            pass
-    return None
+def gpio_get_direction(name, chip=_GPIO_CHIP_ASPEED):
+    """Get direction of the given gpio pin. The <name> argument could
+       be pin name (such as GPIOA0) or shadow name.
+    """
+    if _shadow_exists(name):
+        out = _run_gpiocli('get-direction', shadow=name)
+    else:
+        out = _run_gpiocli('get-direction', chip=chip, name=name)
+
+    # "gpiocli" command output format: "direction=in/out"
+    last_line = out.splitlines()[-1];
+    direction = last_line.split('=')[1]
+    return direction.strip()
 
 
-def gpio_export(name, shadow=None):
-    GPIOEXPORT = '/sys/class/gpio/export'
-    if shadow is not None or shadow != '':
-        shadowdir = os.path.join(_gpio_shadow, shadow)
-        if os.path.exists(shadowdir):
-            raise Exception('Shadow "%s" exists already' % shadowdir)
-        old_shadow = gpio_get_shadow(name)
-        if old_shadow is not None:
-            raise Exception('Shadow "%s" already exists for %s'
-                            % (old_shadow, name))
-
-    val = gpio_name2value(name)
-    try:
-        with open(GPIOEXPORT, 'w') as f:
-            f.write('%d\n' % val)
-    except:
-        # in case the GPIO has been exported already
-        pass
-    if shadow is not None:
-        gpiodir = gpio_dir(val, check_shadow=False)
-        os.symlink(gpiodir, shadowdir)
+def gpio_set_direction(name, direction, chip=_GPIO_CHIP_ASPEED):
+    """Update direction of the given gpio pin. The <name> argument could
+       be pin name (such as GPIOA0) or shadow name.
+    """
+    if _shadow_exists(name):
+        _run_gpiocli('set-direction', gpio_args=direction, shadow=name)
+    else:
+        _run_gpiocli('set-direction', gpio_args=direction,
+                     chip=chip, name=name)
 
 
-def gpio_get(name, change_direction=True):
-    path = gpio_dir(name)
+def gpio_get_value(name, chip=_GPIO_CHIP_ASPEED, change_direction=True):
+    """Get the current value of the given gpio pin. The <name> argument
+       could be pin name (such as GPIOA0) or shadow name.
+       The pin direction will be explicitly updated to <in> unless callers
+       say no (for example, callers already set direction to <in>).
+    """
     if change_direction:
-        with open(os.path.join(path, 'direction'), 'w') as f:
-            f.write('in\n')
-    with open(os.path.join(path, 'value'), 'r') as f:
-        val = int(f.read().rstrip('\n'))
-    return val
+        gpio_set_direction(name, 'in')
+
+    if _shadow_exists(name):
+        out = _run_gpiocli('get-value', shadow=name)
+    else:
+        out = _run_gpiocli('get-value', chip=chip, name=name)
+
+    # "gpiocli" command output format: "value=0/1"
+    last_line = out.splitlines()[-1]
+    value = last_line.split('=')[1]
+    return int(value.strip())
 
 
-def gpio_set(name, value, change_direction=True):
-    path = gpio_dir(name)
+def gpio_set_value(name, value, chip=_GPIO_CHIP_ASPEED, change_direction=True):
+    """Update the value of the given gpio pin. The <name> argument could
+       be pin name (such as GPIOA0) or shadow name.
+       The pin direction will be explicitly updated to <out> unless callers
+       say no (for example, callers already set direction to <out>).
+    """
     if change_direction:
-        with open(os.path.join(path, 'direction'), 'w') as df:
-            df.write('%s\n' %("high" if value else "low"))
-            df.close()
+        gpio_set_direction(name, 'out')
+
+    if _shadow_exists(name):
+        _run_gpiocli('set-value', gpio_args=str(value), shadow=name)
+    else:
+        _run_gpiocli('set-value', gpio_args=str(value),
+                     chip=chip, name=name)
 
 
-def gpio_info(name):
+def gpio_info(name, chip=_GPIO_CHIP_ASPEED):
     res = {}
-    # first check if name is shadow
-    path = None
-    shadow = os.path.join(_gpio_shadow, name)
-    if os.path.exists(shadow):
-        if not os.path.islink(shadow) or not os.path.isdir(shadow):
-            raise Exception('Path "%s" is not a valid shadow path' % shadow)
-        path = os.readlink(shadow)
+
+    if _shadow_exists(name):
+        res['shadow'] = name
     else:
-        path = gpio_dir(name, check_shadow=False)
-        shadow = gpio_get_shadow(name)
-    res['path'] = path
-    res['shadow'] = shadow
-    if os.path.isdir(path):
-        with open(os.path.join(path, 'direction'), 'r') as f:
-            res['direction'] = f.read().rstrip('\n')
-        with open(os.path.join(path, 'value'), 'r') as f:
-            res['value'] = int(f.read().rstrip('\n'))
+        res['shadow'] = None
+
+    res['direction'] = gpio_get_direction(name, chip=chip)
+    if res['direction'] == 'out':
+       res['value'] = gpio_get_value(name, chip=chip)
     else:
-        res['direction'] = None
-        res['value'] = None
+       res['value'] = None
+
     return res

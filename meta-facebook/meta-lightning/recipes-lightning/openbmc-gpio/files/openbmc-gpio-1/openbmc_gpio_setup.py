@@ -89,7 +89,7 @@ def set_register():
 def main():
     print('Setting up GPIOs ... ', end='')
     sys.stdout.flush()
-    openbmc_gpio.setup_shadow()
+    openbmc_gpio.gpio_shadow_init()
 
     setup_board_gpio(soc_gpio_table, board_gpio_table)
     setup_board_gpio(soc_passthrough_gpio_table, board_passthrough_gpio_table)

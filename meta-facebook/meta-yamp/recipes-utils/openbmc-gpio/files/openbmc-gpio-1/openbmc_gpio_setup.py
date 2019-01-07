@@ -33,7 +33,7 @@ def yamp_board_rev(soc_gpio_table, board_gpio_rev_table):
 def main():
     print('Setting up GPIOs ... ', end='')
     sys.stdout.flush()
-    openbmc_gpio.setup_shadow()
+    openbmc_gpio.gpio_shadow_init()
     version = yamp_board_rev(soc_gpio_table,board_gpio_rev_table)
     # In order to satisy/unsatisfy conditions in setup_board_gpio()
     # modify the registers

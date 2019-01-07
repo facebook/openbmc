@@ -32,7 +32,7 @@ import sys
 def main():
     print('Setting up GPIOs ... ', end='')
     sys.stdout.flush()
-    openbmc_gpio.setup_shadow()
+    openbmc_gpio.gpio_shadow_init()
 
     setup_board_gpio(soc_gpio_table, board_gpio_table)
     print('Done')

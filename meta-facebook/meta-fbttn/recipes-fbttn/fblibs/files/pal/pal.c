@@ -19,7 +19,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _GNU_SOURCE
 #include <stdio.h>
+#include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
@@ -253,20 +255,6 @@ struct power_coeff {
   float ein;
   float coeff;
 };
-/* Quanta BMC correction table */
-struct power_coeff power_table[] = {
-  {51.0,  0.98},
-  {115.0, 0.9775},
-  {178.0, 0.9755},
-  {228.0, 0.979},
-  {290.0, 0.98},
-  {353.0, 0.977},
-  {427.0, 0.977},
-  {476.0, 0.9765},
-  {526.0, 0.9745},
-  {598.0, 0.9745},
-  {0.0,   0.0}
-};
 
 /* IPMI SEL: System Firmware Error string table */
 struct system_fw_progress {
@@ -328,36 +316,6 @@ struct system_fw_progress system_fw_hang_or_progress[] = {
 #define NVME_SMART_WARNING_MASK_BIT 0x1F // Check bit 0~4
 
 #define MAX_SERIAL_NUM 20
-
-/* Adjust power value */
-static void
-power_value_adjust(float *value)
-{
-    float x0, x1, y0, y1, x;
-    int i;
-    x = *value;
-    x0 = power_table[0].ein;
-    y0 = power_table[0].coeff;
-    if (x0 > *value) {
-      *value = x * y0;
-      return;
-    }
-    for (i = 0; power_table[i].ein > 0.0; i++) {
-       if (*value < power_table[i].ein)
-         break;
-      x0 = power_table[i].ein;
-      y0 = power_table[i].coeff;
-    }
-    if (power_table[i].ein <= 0.0) {
-      *value = x * y0;
-      return;
-    }
-   //if value is bwtween x0 and x1, use linear interpolation method.
-   x1 = power_table[i].ein;
-   y1 = power_table[i].coeff;
-   *value = (y0 + (((y1 - y0)/(x1 - x0)) * (x - x0))) * x;
-   return;
-}
 
 // Helper Functions
 int
@@ -441,7 +399,6 @@ write_device(const char *device, const char *value) {
 
 static int
 pal_key_check(char *key) {
-  int ret;
   int i;
 
   i = 0;
@@ -565,7 +522,6 @@ server_power_on(uint8_t slot_id) {
   int val = 0;
   int loop = 0;
   int max_retry = 5;
-  int pid_file;
 
   // Check if another instance is running
   if (pal_powering_on_flag(slot_id) < 0) {
@@ -585,7 +541,7 @@ server_power_on(uint8_t slot_id) {
     msleep(10);
     // Max retry case
     if (loop == (max_retry-1)) {
-      syslog(LOG_CRIT, "%s(): Fail to enable GPIO_IOM_FULL_PWR_EN after %d tries.\n", __func__, val, max_retry);
+      syslog(LOG_CRIT, "%s(): Fail to enable GPIO_IOM_FULL_PWR_EN after %d tries.\n", __func__, max_retry);
       pal_rm_powering_on_flag(slot_id);
       return -1;
     }
@@ -614,7 +570,6 @@ server_power_on(uint8_t slot_id) {
 static int
 server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   char vpath[64] = {0};
-  char vpath_board_ver[64] = {0};
   uint8_t status;
   int retry = 0;
   int iom_board_id = BOARD_MP;
@@ -726,15 +681,6 @@ server_12v_off(uint8_t slot_id) {
   return 0;
 }
 
-// Debug Card's UART and BMC/SoL port share UART port and need to enable only
-// one TXD i.e. either BMC's TXD or Debug Port's TXD.
-static int
-control_sol_txd(uint8_t fru) {
-  #if 0
-  // BMC IO1 <-> UART1 don't need to rout
-  #endif
-  return 0;
-}
 // Display the given POST code using GPIO port
 static int
 pal_post_display(uint8_t status) {
@@ -872,7 +818,7 @@ pal_get_num_slots(uint8_t *num) {
 int
 pal_is_scc_prsnt() {
 
-  int val = 0;
+  uint8_t val = 0;
   int ret = 0;
   int sku = 0;
   int gpio_num;
@@ -907,8 +853,6 @@ pal_is_scc_prsnt() {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  int val;
-  char path[64] = {0};
 
   switch (fru) {
     case FRU_SLOT1:
@@ -962,7 +906,7 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
 int
 pal_is_bic_ready(uint8_t slot_id, uint8_t *status) {
 
-  int val = 0;
+  uint8_t val = 0;
   int ret = 0;
 
   ret = get_gpio_value(GPIO_BIC_READY_N, &val);
@@ -982,7 +926,6 @@ pal_is_bic_ready(uint8_t slot_id, uint8_t *status) {
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   uint8_t ctrl_status, val;
-  char path[64] = {0};
 
   switch (fru) {
     case FRU_SLOT1:
@@ -1049,7 +992,7 @@ int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
   int iom_board_id = BOARD_MP;
-  int gpio_perst_val = 0;
+  uint8_t gpio_perst_val = 0;
   char value[MAX_VALUE_LEN] = { 0 };
   bic_gpio_t gpio;
 
@@ -1176,11 +1119,12 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       }
       break;
     case SERVER_GRACEFUL_SHUTDOWN:
-      if (status == SERVER_POWER_OFF)
+      if (status == SERVER_POWER_OFF) {
         return 1;
-      else
+      } else {
         gs_flag = true;
         return server_power_off(slot_id, gs_flag, cycle_flag);
+      }
       break;
 
     case SERVER_12V_ON:
@@ -1245,8 +1189,7 @@ pal_get_uart_sel_pos(uint8_t *pos) {
 // Return the Front panel's debug card Power Button status
 int
 pal_get_dbg_pwr_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val = 0;
+  uint8_t val = 0;
   int ret = 0;
 
   ret = get_gpio_value(GPIO_DEBUG_PWR_BTN_N, &val);
@@ -1266,8 +1209,7 @@ pal_get_dbg_pwr_btn(uint8_t *status) {
 // Return the front panel's debug card Reset Button status
 int
 pal_get_dbg_rst_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val = 0;
+  uint8_t val = 0;
   int ret = 0;
 
   ret = get_gpio_value(GPIO_DEBUG_RST_BTN_N, &val);
@@ -1287,8 +1229,7 @@ pal_get_dbg_rst_btn(uint8_t *status) {
 // Return the Front panel Power Button
 int
 pal_get_pwr_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val = 0;
+  uint8_t val = 0;
   int ret = 0;
 
   ret = get_gpio_value(GPIO_PWR_BTN, &val);
@@ -1308,8 +1249,7 @@ pal_get_pwr_btn(uint8_t *status) {
 // Return the front panel's Reset Button status
 int
 pal_get_rst_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val = 0;
+  uint8_t val = 0;
   int ret = 0;
 
   ret = get_gpio_value(GPIO_RST_BTN, &val);
@@ -1417,7 +1357,6 @@ pal_switch_usb_mux(uint8_t slot) {
 int
 pal_post_enable(uint8_t slot) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -1446,7 +1385,6 @@ pal_post_enable(uint8_t slot) {
 int
 pal_post_disable(uint8_t slot) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -1471,7 +1409,6 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
   int ret;
   uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t len;
-  int i;
 
   ret = bic_get_post_buf(slot, buf, &len);
   if (ret) {
@@ -1487,7 +1424,6 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
 // Handle the received post code, for now display it on debug card
 int
 pal_post_handle(uint8_t slot, uint8_t status) {
-  uint8_t prsnt, pos;
   int ret;
 
   // Only allow front-paneld to control
@@ -1870,14 +1806,13 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
 
 void
 pal_dump_key_value(void) {
-  int i;
-  int ret;
+  int i = 0;
 
   char value[MAX_VALUE_LEN] = {0x0};
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value, NULL, KV_FPERSIST) < 0) {
+    if (kv_get(key_list[i], value, NULL, KV_FPERSIST) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -1935,13 +1870,13 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
       sprintf(state, "on");
       return 0;
   }
+  return -1;
 }
 
 int
 pal_get_sys_guid(uint8_t slot, char *guid) {
-  int ret;
 
-  return bic_get_sys_guid(slot, guid);
+  return bic_get_sys_guid(slot, (uint8_t *)guid);
 }
 
 int
@@ -2103,6 +2038,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
       valid = false;
     }
   }
+  return 0;
 }
 
 static int
@@ -2115,7 +2051,6 @@ int
 pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
 
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
@@ -2176,15 +2111,14 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   bool parsed;
   uint8_t snr_type = sel[10];
   uint8_t snr_num = sel[11];
-  char *event_data = &sel[10];
-  char *ed = &event_data[3];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
   char temp_log[512] = {0};
   char err_str[512] = {0};
-  uint8_t temp;
   uint8_t sen_type = event_data[0];
   uint8_t event_type = sel[12] & 0x7F;
   uint8_t event_dir = sel[12] & 0x80;
-  uint8_t chn_num, dimm_num, map_of_dimm_num;
+  uint8_t map_of_dimm_num;
 
   parsed = false;
   strcpy(error_log, "");
@@ -2285,8 +2219,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
           // Bit[2:0]: DIMM number    (Range: 0-7)
           if (((ed[1] & 0xC) >> 2) == 0x0) {
             /* All Info Valid */
-            chn_num = (ed[2] & 0x18) >> 3;
-            dimm_num = ed[2] & 0x7;
+            // uint8_t chn_num = (ed[2] & 0x18) >> 3;
+            // uint8_t dimm_num = ed[2] & 0x7;
             map_of_dimm_num = ed[2];
 
             /* If critical SEL logging is available, do it */
@@ -2539,17 +2473,6 @@ pal_get_fan_name(uint8_t num, char *name) {
 }
 
 static int
-read_fan_value(const int fan, const char *device, int *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR,device_name);
-  return read_device(full_name, value);
-}
-
-static int
 write_fan_value(const int fan, const char *device, const int value) {
   char full_name[LARGEST_DEVICE_NAME];
   char device_name[LARGEST_DEVICE_NAME];
@@ -2577,7 +2500,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
   // For 0%, turn off the PWM entirely
   if (unit == 0) {
-    write_fan_value(fan, "pwm%d_en", 0);
+    ret = write_fan_value(fan, "pwm%d_en", 0);
     if (ret < 0) {
       syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
       return -1;
@@ -2637,7 +2560,7 @@ pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%d", ts.tv_sec);
+  sprintf(tstr, "%ld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -3026,7 +2949,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
   timestamp = atoi(cvalue);
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%d", ts.tv_sec);
+  sprintf(tstr, "%ld", ts.tv_sec);
   current_time = atoi(tstr);
 
   //set 1 sec tolerance for Firsr Sensor Number, to avoid updating all FRU sensor when interval around 4.9999 second
@@ -3069,7 +2992,7 @@ int pal_expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
     if (timestamp_flag) {
       //update timestamp after Updated Expander sensor
       clock_gettime(CLOCK_REALTIME, &ts);
-      sprintf(tstr, "%d", ts.tv_sec);
+      sprintf(tstr, "%ld", ts.tv_sec);
       pal_set_edb_value(key, tstr);
     }
   }
@@ -3088,7 +3011,6 @@ pal_exp_dpb_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cn
   float value;
   char units[64];
   int offset = 0; //sensor overload offset
-  int sku = 0;
 
   if (second_transaction)
     offset = MAX_EXP_IPMB_SENSOR_COUNT;
@@ -3551,11 +3473,9 @@ pal_oem_bitmap(uint8_t* in_error,uint8_t* data) {
     {
       if(((in_error[ii] >> kk)&0x01) == 1)
       {
-        if( (data + ret) == NULL)
-          return ret;
-          NUM = ii*8 + kk;
-          *(data + ret) = NUM;
-          ret++;
+        NUM = ii*8 + kk;
+        *(data + ret) = NUM;
+        ret++;
       }
     }
   }
@@ -3563,7 +3483,7 @@ pal_oem_bitmap(uint8_t* in_error,uint8_t* data) {
 }
 
 int
-pal_get_error_code(uint8_t* data, uint8_t* error_count) {
+pal_get_error_code(uint8_t data[MAX_ERROR_CODES], uint8_t* error_count) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t rlen = 0;
@@ -3596,7 +3516,7 @@ pal_get_error_code(uint8_t* data, uint8_t* error_count) {
   }
   else {
     lockf(fileno(fp),F_LOCK,0L);
-    while (fscanf(fp, "%X", error+count) != EOF && count!=32) {
+    while (fscanf(fp, "%hhX", error+count) != EOF && count!=32) {
       count++;
     }
     lockf(fileno(fp),F_ULOCK,0L);
@@ -3606,7 +3526,7 @@ pal_get_error_code(uint8_t* data, uint8_t* error_count) {
   //Expander Error Code 0~99; BMC Error Code 100~255
   memcpy(error, exp_error, rlen - 1); //Not the last one (12th)
   error[12] = ((error[12] & 0xF0) + (exp_error[12] & 0xF));
-  memset(data,256,0);
+  memset(data, 0, MAX_ERROR_CODES);
   *error_count = pal_oem_bitmap(error, data);
   return 0;
 }
@@ -3683,6 +3603,7 @@ pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_le
   fprintf(fp, "\n");
   lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
+  return 0;
 }
 
 int
@@ -3700,12 +3621,13 @@ pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_l
   }
   lockf(fileno(fp),F_LOCK,0L);
 
-  while (fscanf(fp, "%X", boot_list+count) != EOF) {
+  while (fscanf(fp, "%hhX", boot_list+count) != EOF) {
       count++;
   }
   *list_length = count;
   lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
+  return 0;
 }
 
 int
@@ -3727,9 +3649,10 @@ pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
 
   lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
+  return 0;
 }
 
-int pal_clear_bios_default_setting_timer_handler(){
+void *pal_clear_bios_default_setting_timer_handler(void *unused){
   uint8_t default_setting;
 
   bios_default_setting_timer_flag = 0;
@@ -3741,6 +3664,7 @@ int pal_clear_bios_default_setting_timer_handler(){
     default_setting = 0;
     pal_set_bios_restores_default_setting(1, &default_setting);
   }
+  return NULL;
 }
 
 int
@@ -3773,6 +3697,7 @@ pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
     else
       bios_default_setting_timer_flag = 1;
   }
+  return 0;
 }
 
 int
@@ -3789,10 +3714,11 @@ pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
   }
   lockf(fileno(fp),F_LOCK,0L);
 
-  fscanf(fp, "%X", default_setting);
+  fscanf(fp, "%hhX", default_setting);
 
   lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
+  return 0;
 }
 
 int
@@ -3817,6 +3743,7 @@ pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
 
   lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
+  return 0;
 }
 
 int
@@ -3835,11 +3762,12 @@ pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
   lockf(fileno(fp),F_LOCK,0L);
 
   for(i = 0; i < 4; i++) {
-    fscanf(fp, "%X", last_boot_time+i);
+    fscanf(fp, "%hhX", last_boot_time+i);
   }
 
   lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
+  return 0;
 }
 
 int
@@ -3856,10 +3784,11 @@ pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
   }
   lockf(fileno(fp),F_LOCK,0L);
 
-  fscanf(fp, "%X", fixed_boot_device);
+  fscanf(fp, "%hhX", fixed_boot_device);
 
   lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
+  return 0;
 }
 
 unsigned char option_offset[] = {0,1,2,3,4,6,11,20,37,164};
@@ -4122,7 +4051,6 @@ pal_get_fw_update_flag(void) {
 //To control iom led to yellow or blue color
 uint8_t
 pal_iom_led_control(uint8_t color) {
-  int ret = 0;
 
   switch(color) {
     case IOM_LED_OFF:
@@ -4217,7 +4145,7 @@ get_gpio_value(int gpio_num, uint8_t *value){
 
 int
 pal_get_iom_board_id (void) {
-  int gpio_board_rev_val[3] = {0};
+  uint8_t gpio_board_rev_val[3] = {0};
   int iom_board_id = BOARD_MP;
   int ret = 0;
 
@@ -4424,9 +4352,8 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     int ret;
     int completion_code = CC_UNSPECIFIED_ERROR;
     uint8_t netfn, cmd, select;
-    uint8_t tlen, rlen;
+    uint8_t tlen;
     uint8_t tbuf[256] = {0x00};
-    uint8_t rbuf[256] = {0x00};
     uint8_t status;
 
     if (slot != FRU_SLOT1) {

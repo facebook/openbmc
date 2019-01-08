@@ -129,7 +129,7 @@ debug_card_handler() {
   int index = 0, ret, timer = 0;
   uint8_t uart_selection = HAND_SW_BMC;
   int CURT = 0;
-  static uint8_t error[255], count_ret = 0, count_cur = 0;
+  static uint8_t error[MAX_ERROR_CODES], count_ret = 0, count_cur = 0;
   static uint8_t code = 0; // BIOS post code or BMC/Expander error code
   uint8_t buffer[MAX_IPMB_RES_LEN], buf_len;
   uint8_t status;

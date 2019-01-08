@@ -106,7 +106,7 @@ get_hdd_status(int hdd_number) {
 
 void 
 show_error_code() {
-  uint8_t error[256], count = 0;
+  uint8_t error[MAX_ERROR_CODES], count = 0;
   int i;
 
   pal_get_error_code(error, &count);

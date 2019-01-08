@@ -8,4 +8,3 @@ DEPENDS += "libbic libexp libmctp libfbttn-common libfbttn-fruid libfbttn-sensor
 RDEPENDS_${PN} += "libbic libexp libmctp libfbttn-common libfbttn-fruid libfbttn-sensor libnvme-mi"
 LDFLAGS += " -lbic -lexp -lmctp -lfbttn_common -lfbttn_fruid -lfbttn_sensor -lnvme-mi"
 CFLAGS += " -DCONFIG_FBTTN=1"
-PAL_WARNINGS_AS_ERRORS = "no"

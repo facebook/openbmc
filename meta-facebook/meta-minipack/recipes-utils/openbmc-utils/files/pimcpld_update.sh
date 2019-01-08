@@ -30,17 +30,20 @@ if [ $# -ne 2 ]; then
     usage
     exit -1
 fi
+UNIT=$1
+IMAGE="$2"
 
-if [ "$1" -le 0 ] || [ "$1" -ge 9 ]; then
-    echo "PIM$1: not a valid PIM Unit"
+if [ "${UNIT}" -le 0 ] || [ "${UNIT}" -ge 9 ]; then
+    echo "PIM #${UNIT}: not a valid PIM Unit"
     exit -1
 fi
 
 source /usr/local/bin/openbmc-utils.sh
 
-img="$2"
-PINS=(483 484 485 486)
-BUS=$((($1 - 1) * 8 + 85 ))
+PIN_OFFSETS=(3 4 5 6)
+SHADOWS=(BMC_PIM${UNIT}_CPLD_TCK BMC_PIM${UNIT}_CPLD_TMS \
+         BMC_PIM${UNIT}_CPLD_TDO BMC_PIM${UNIT}_CPLD_TDI)
+BUS=$(((${UNIT} - 1) * 8 + 85 ))
 PCA9534=`i2cdetect -y ${BUS} 0x26 0x26 | grep "\-\-"` > /dev/null
 
 # PIM1 -> BUS 85 ; PIM2 -> BUS 93 ; PIM3 -> BUS 101; PIM4 -> BUS 109
@@ -48,7 +51,7 @@ PCA9534=`i2cdetect -y ${BUS} 0x26 0x26 | grep "\-\-"` > /dev/null
 pca9534_gpio_add()
 {
     if [ "${PCA9534}" != "" ]; then
-        echo "PIM$1 not insert or PCA9534 fail!"
+        echo "PIM #${UNIT} not insert or PCA9534 fail!"
         exit -1
     fi
 
@@ -56,7 +59,7 @@ pca9534_gpio_add()
     usleep 100000
 
     for i in {0..3}; do
-        echo "${PINS[i]}" > /sys/class/gpio/export
+        gpio_export_by_offset ${BUS}-0026 ${PIN_OFFSETS[i]} ${SHADOWS[i]}
     done
 }
 
@@ -67,7 +70,7 @@ pca9534_gpio_delete()
     fi
 
     for i in {0..3}; do
-        echo "${PINS[i]}" > /sys/class/gpio/unexport
+        gpio_unexport ${SHADOWS[i]}
     done
 
     i2c_device_delete ${BUS} 0x26
@@ -77,11 +80,15 @@ pca9534_gpio_delete()
 trap pca9534_gpio_delete INT TERM QUIT EXIT
 
 # export pca9534 GPIO to connect BMC to PIM CPLD pins
-pca9534_gpio_add $1
+pca9534_gpio_add ${UNIT}
 
 echo 1 > /tmp/pimcpld_update
 
-ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms ${PINS[1]} --tdo ${PINS[2]} --tdi ${PINS[3]} --tck ${PINS[0]}
+ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${IMAGE}" \
+    --tms ${SHADOWS[1]} \
+    --tdo ${SHADOWS[2]} \
+    --tdi ${SHADOWS[3]} \
+    --tck ${SHADOWS[0]}
 result=$?
 # 1 is returned upon upgrade success
 if [ $result -eq 1 ]; then

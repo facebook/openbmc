@@ -6,7 +6,7 @@ add_library(cpldupdate_dll_gpio SHARED
 )
 
 target_link_libraries(cpldupdate_dll_gpio
-  -lgpio
+  -lgpio-ctrl
 )
 
 install(TARGETS cpldupdate_dll_gpio DESTINATION lib)

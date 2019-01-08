@@ -29,8 +29,8 @@ S = "${WORKDIR}/lib/gpio"
 
 inherit cmake
 
-DEPENDS += "libcpldupdate-dll-helper libgpio"
-RDEPENDS_${PN} += "libgpio"
+DEPENDS += "libcpldupdate-dll-helper libgpio-ctrl"
+RDEPENDS_${PN} += "libgpio-ctrl"
 
 # The shared library is used used as package instead of -dev
 FILES_SOLIBSDEV = ""

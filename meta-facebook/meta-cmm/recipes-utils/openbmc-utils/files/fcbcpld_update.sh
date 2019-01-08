@@ -25,24 +25,17 @@ if [ $# -ne 2 ]; then
     exit -1
 fi
 
-declare -A fcb_gpio_map
-fcb1_gpiochip=$(gpiochip_lookup_by_i2c_path "172-0022")
-fcb2_gpiochip=$(gpiochip_lookup_by_i2c_path "180-0022")
-fcb3_gpiochip=$(gpiochip_lookup_by_i2c_path "188-0022")
-fcb4_gpiochip=$(gpiochip_lookup_by_i2c_path "196-0022")
-fcb_gpio_map[fcb1]=$(gpiochip_get_base ${fcb1_gpiochip})
-fcb_gpio_map[fcb2]=$(gpiochip_get_base ${fcb2_gpiochip})
-fcb_gpio_map[fcb3]=$(gpiochip_get_base ${fcb3_gpiochip})
-fcb_gpio_map[fcb4]=$(gpiochip_get_base ${fcb4_gpiochip})
-
-card="${1,,}"
-img="$2"
-
-base=${fcb_gpio_map[$card]}
-
-if [ -z "$base" ]; then
+# Convert card string to upper case
+card="${1^^}"
+if [ ${card} != "FCB1" && ${card} != "FCB2" && \
+     ${card} != "FCB3" && ${card} != "FCB4" ]; then
     echo "${1} is not a correct FCB card name."
     exit -1
 fi
+img="$2"
 
-ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" --tms ${base} --tck $((base+1)) --tdi $((base+2)) --tdo $((base+3))
+ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" \
+    --tms ${card}_CPLD_TMS \
+    --tck ${card}_CPLD_TCK \
+    --tdi ${card}_CPLD_TDI \
+    --tdo ${card}_CPLD_TDO

@@ -54,8 +54,11 @@ fi
 
 interface="$1"
 img="$3"
-JTAG_PINS=(480 481 482 483)
-HITLESS_PIN=487
+
+CPLD_PIN_OFFSETS=(0 1 2 3)
+CPLD_SHADOWS=(BMC_PDB_CPLD_TDO BMC_PDB_CPLD_TDI BMC_PDB_CPLD_TMS BMC_PDB_CPLD_TCK)
+HITLESS_OFFSET=7
+HITLESS_SHADOW=BMC_PDB_HITLESS
 PCA9534=`i2cdetect -y ${IO_BUS} 0x21 0x21 | grep "\-\-"` > /dev/null
 
 pca9534_gpio_add()
@@ -68,11 +71,12 @@ pca9534_gpio_add()
     i2c_device_add ${IO_BUS} 0x21 pca9534
     usleep 100000
 
-    echo "${HITLESS_PIN}" > /sys/class/gpio/export
-    gpio_set ${HITLESS_PIN} 0
+    gpio_export_by_offset ${IO_BUS}-0021 ${HITLESS_OFFSET} ${HITLESS_SHADOW}
+    gpio_set ${HITLESS_SHADOW} 0
+
     if [ "$interface" = "jtag" ]; then
         for i in {0..3}; do
-            echo "${JTAG_PINS[i]}" > /sys/class/gpio/export
+            gpio_export_by_offset ${IO_BUS}-0021 ${CPLD_PIN_OFFSETS[i]} ${CPLD_SHADOWS[i]}
         done
     fi
 }
@@ -83,11 +87,12 @@ pca9534_gpio_delete()
         exit -1
     fi
 
-    gpio_set ${HITLESS_PIN} 1
-    echo "${HITLESS_PIN}" > /sys/class/gpio/unexport
+    gpio_set ${HITLESS_SHADOW} 1
+    gpio_unexport ${HITLESS_SHADOW}
+
     if [ "$interface" = "jtag" ]; then
         for i in {0..3}; do
-            echo "${JTAG_PINS[i]}" > /sys/class/gpio/unexport
+            gpio_unexport ${CPLD_SHADOWS[i]}
         done
     fi
 
@@ -105,8 +110,8 @@ pca9534_gpio_add $2
 
 if [ "$interface" = "jtag" ]; then
     ispvm dll /usr/lib/libcpldupdate_dll_gpio.so "${img}" \
-              --tms ${JTAG_PINS[2]} --tdo ${JTAG_PINS[0]} \
-              --tdi ${JTAG_PINS[1]} --tck ${JTAG_PINS[3]}
+              --tms ${CPLD_SHADOWS[2]} --tdo ${CPLD_SHADOWS[0]} \
+              --tdi ${CPLD_SHADOWS[1]} --tck ${CPLD_SHADOWS[3]}
     result=$?
     sleep 1
     # 1 is returned upon upgrade success

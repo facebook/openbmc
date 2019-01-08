@@ -19,38 +19,71 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <openbmc/cpldupdate_dll.h>
-#include <openbmc/gpio.h>
+#include <openbmc/libgpio.h>
 
 struct gpio_ctx {
-  gpio_st gpio[CPLDUPDATE_PIN_MAX];
+  gpio_desc_t* gpio_desc[CPLDUPDATE_PIN_MAX];
   int gpio_init_done[CPLDUPDATE_PIN_MAX];
 };
 
-void cpldupdate_dll_free(void *ctx) {
-  struct gpio_ctx *gctx = (struct gpio_ctx *)ctx;
+void cpldupdate_dll_free(void *ctx)
+{
   int i;
+  struct gpio_ctx *gctx;
 
-  if (!gctx) {
-    return;
-  }
+  if (ctx != NULL) {
+    gctx = (struct gpio_ctx *)ctx;
 
-  for (i = 0; i < CPLDUPDATE_PIN_MAX; i++) {
-    if (gctx->gpio_init_done[i]) {
-      gpio_close(&gctx->gpio[i]);
+    for (i = 0; i < CPLDUPDATE_PIN_MAX; i++) {
+      if (gctx->gpio_init_done[i])
+        gpio_close(gctx->gpio_desc[i]);
     }
+    free(gctx);
   }
-  free(gctx);
 }
 
-int cpldupdate_dll_init(int argc, const char *const argv[], void **ctx) {
-  int rc = 0;
-  int i = 0;
-  int gpio_num;
-  int init_total = 0;
+static cpldupdate_pin_en cpldupdate_match_pin(const char *opt_str)
+{
+  int i;
+  static struct {
+    cpldupdate_pin_en pin;
+    const char *opt;
+  } cpldupdate_opt_table[] = {
+    {CPLDUPDATE_PIN_TDI, "--tdi"},
+    {CPLDUPDATE_PIN_TDO, "--tdo"},
+    {CPLDUPDATE_PIN_TMS, "--tms"},
+    {CPLDUPDATE_PIN_TCK, "--tck"},
+    /* This is the last entry. */
+    {-1, NULL},
+  };
+
+  for (i = 0; cpldupdate_opt_table[i].opt != NULL; i++) {
+    if (strcasecmp(opt_str, cpldupdate_opt_table[i].opt) == 0)
+      return cpldupdate_opt_table[i].pin;
+  }
+
+  return -1;
+}
+
+int cpldupdate_dll_init(int argc, const char *const argv[], void **ctx)
+{
+  int i, rc, total;
+  const char *shadow;
   cpldupdate_pin_en pin;
-  struct gpio_ctx *new_ctx = NULL;
+  struct gpio_ctx *new_ctx;
+  struct {
+     cpldupdate_pin_en pin;
+     gpio_direction_t direction;
+  } pin_directions[] = {
+    {CPLDUPDATE_PIN_TDI, GPIO_DIRECTION_OUT},
+    {CPLDUPDATE_PIN_TDO, GPIO_DIRECTION_IN},
+    {CPLDUPDATE_PIN_TMS, GPIO_DIRECTION_OUT},
+    {CPLDUPDATE_PIN_TCK, GPIO_DIRECTION_OUT},
+    {-1, GPIO_DIRECTION_INVALID},
+  };
 
   new_ctx = calloc(sizeof(*new_ctx), 1);
   if (!new_ctx) {
@@ -58,86 +91,92 @@ int cpldupdate_dll_init(int argc, const char *const argv[], void **ctx) {
     goto err_out;
   }
 
-  /* parse */
-  for (i = 0; i < argc - 1; ) {
-    pin = -1;
-    if (!strcasecmp(argv[i], "--tdi")) {
-      pin = CPLDUPDATE_PIN_TDI;
-    } else if (!strcasecmp(argv[i], "--tdo")) {
-      pin = CPLDUPDATE_PIN_TDO;
-    } else if (!strcasecmp(argv[i], "--tms")) {
-      pin = CPLDUPDATE_PIN_TMS;
-    } else if (!strcasecmp(argv[i], "--tck")) {
-      pin = CPLDUPDATE_PIN_TCK;
-    }
+  /* parse command line arguments. */
+  for (i = total = 0; i < argc - 1; i++) {
+    pin = cpldupdate_match_pin(argv[i]);
     if (pin == -1) {
-      /* unknown option, skip */
-      i++;
-      continue;
+      continue; /* skip unknown option */
     }
-    gpio_num = atoi(argv[i + 1]);
-    i += 2;
-    rc = gpio_open(&new_ctx->gpio[pin], gpio_num);
-    if (rc) {
+
+    i++;
+    shadow = argv[i];
+    new_ctx->gpio_desc[pin] = gpio_open_by_shadow(shadow);
+    if (new_ctx->gpio_desc[pin] == NULL) {
+      rc = errno;
       goto err_out;
     }
     new_ctx->gpio_init_done[pin] = 1;
-    init_total ++;
+    total++;
   }
 
-  if (init_total != CPLDUPDATE_PIN_MAX) {
+  if (total != CPLDUPDATE_PIN_MAX) {
     /* not all pins are specified */
     rc = EINVAL;
     goto err_out;
   }
 
   /* prepare the directions */
-  if (gpio_change_direction(&new_ctx->gpio[CPLDUPDATE_PIN_TDI],
-                            GPIO_DIRECTION_OUT) ||
-      gpio_change_direction(&new_ctx->gpio[CPLDUPDATE_PIN_TDO],
-                            GPIO_DIRECTION_IN) ||
-      gpio_change_direction(&new_ctx->gpio[CPLDUPDATE_PIN_TMS],
-                            GPIO_DIRECTION_OUT) ||
-      gpio_change_direction(&new_ctx->gpio[CPLDUPDATE_PIN_TCK],
-                            GPIO_DIRECTION_OUT)) {
-    rc = EFAULT;
-    goto err_out;
+  for (i = 0; pin_directions[i].pin != -1; i++) {
+    pin = pin_directions[i].pin;
+    if (gpio_set_direction(new_ctx->gpio_desc[pin],
+                           pin_directions[i].direction) != 0) {
+      rc = errno;
+      goto err_out;
+    }
   }
 
   *ctx = new_ctx;
   return 0;
 
- err_out:
+err_out:
   cpldupdate_dll_free(new_ctx);
   return rc;
 }
 
-int cpldupdate_dll_write_pin(void *ctx, cpldupdate_pin_en pin,
-                             cpldupdate_pin_value_en value) {
+int cpldupdate_dll_write_pin(void *ctx,
+                             cpldupdate_pin_en pin,
+                             cpldupdate_pin_value_en value)
+{
+  gpio_value_t g_value;
   struct gpio_ctx *gctx = (struct gpio_ctx *)ctx;
 
-  if (!gctx || pin >= CPLDUPDATE_PIN_MAX) {
+  if (gctx == NULL ||
+      pin < 0 ||
+      pin >= CPLDUPDATE_PIN_MAX ||
+      gctx->gpio_init_done[pin] == 0) {
     return EINVAL;
   }
 
-  gpio_write(&gctx->gpio[pin],
-             (value == CPLDUPDATE_PIN_VALUE_LOW)
-             ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
+  assert(gctx->gpio_desc[pin] != NULL);
+  g_value = (value == CPLDUPDATE_PIN_VALUE_LOW ?
+             GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
+  if (gpio_set_value(gctx->gpio_desc[pin], g_value) != 0)
+    return errno;
+
   return 0;
 }
 
-int cpldupdate_dll_read_pin(void *ctx, cpldupdate_pin_en pin,
-                            cpldupdate_pin_value_en *value) {
+int cpldupdate_dll_read_pin(void *ctx,
+                            cpldupdate_pin_en pin,
+                            cpldupdate_pin_value_en *value)
+{
+  gpio_value_t g_value;
   struct gpio_ctx *gctx = (struct gpio_ctx *)ctx;
-  gpio_value_en v;
 
-  if (!gctx || pin >= CPLDUPDATE_PIN_MAX || !value) {
+  if (gctx == NULL ||
+      value == NULL ||
+      pin < 0 ||
+      pin >= CPLDUPDATE_PIN_MAX ||
+      gctx->gpio_init_done[pin] == 0) {
     return EINVAL;
   }
 
-  v = gpio_read(&gctx->gpio[pin]);
-  *value = (v == GPIO_VALUE_LOW)
-    ? CPLDUPDATE_PIN_VALUE_LOW : CPLDUPDATE_PIN_VALUE_HIGH;
+  assert(gctx->gpio_desc[pin] != NULL);
+  if (gpio_get_value(gctx->gpio_desc[pin], &g_value) != 0)
+    return errno;
+
+  *value = (g_value == GPIO_VALUE_LOW ?
+            CPLDUPDATE_PIN_VALUE_LOW : CPLDUPDATE_PIN_VALUE_HIGH);
 
   return 0;
 }

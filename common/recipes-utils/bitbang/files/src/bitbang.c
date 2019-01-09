@@ -45,7 +45,7 @@ struct bitbang_handle {
 
 void bitbang_init_default(bitbang_init_st *init)
 {
-  memset(init, sizeof(*init), 0);
+  memset(init, 0, sizeof(*init));
   init->bbi_clk_start = BITBANG_PIN_HIGH;
   init->bbi_data_out = BITBANG_CLK_EDGE_FALLING;
   init->bbi_data_in = BITBANG_CLK_EDGE_RISING;

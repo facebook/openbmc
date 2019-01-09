@@ -217,7 +217,7 @@ int main(int argc, char* const argv[])
   }
 
   /* open all gpio */
-  memset(&ctx, sizeof(ctx), 0);
+  memset(&ctx, 0, sizeof(ctx));
   gpio_init_default(&ctx.m_mdc);
   gpio_init_default(&ctx.m_mdio);
   if (gpio_open(&ctx.m_mdc, mdc) || gpio_open(&ctx.m_mdio, mdio)) {
@@ -283,7 +283,7 @@ int main(int argc, char* const argv[])
     n_bits += 2 + 2 + 5 + 5;
   }
 
-  memset(&io, sizeof(io), 0);
+  memset(&io, 0, sizeof(io));
   io.bbio_out_bits = n_bits;
   io.bbio_dout = buf;
   io.bbio_in_bits = 0;
@@ -299,7 +299,7 @@ int main(int argc, char* const argv[])
     /* first, change the MDIO to input */
     gpio_change_direction(&ctx.m_mdio, GPIO_DIRECTION_IN);
     /* then, run the clock for read */
-    memset(&io, sizeof(io), 0);
+    memset(&io, 0, sizeof(io));
     io.bbio_out_bits = 0;
     io.bbio_dout = NULL;;
     io.bbio_in_bits = 18;

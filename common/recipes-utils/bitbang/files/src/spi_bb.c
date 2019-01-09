@@ -100,7 +100,7 @@ int main(int argc, char * const argv[])
   int rc = 0;
   int binary = 0;
 
-  memset(&ctx, sizeof(ctx), 0);
+  memset(&ctx, 0, sizeof(ctx));
   gpio_init_default(&ctx.sc_clk);
   gpio_init_default(&ctx.sc_mosi);
   gpio_init_default(&ctx.sc_miso);
@@ -262,7 +262,7 @@ int main(int argc, char * const argv[])
                           ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW));
   }
 
-  memset(&io, sizeof(io), 0);
+  memset(&io, 0, sizeof(io));
   io.bbio_in_bits = read_bits;
   io.bbio_din = read_buf;
   io.bbio_out_bits = write_bits;

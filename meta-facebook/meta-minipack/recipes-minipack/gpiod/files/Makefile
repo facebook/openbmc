@@ -17,7 +17,7 @@
 
 all: gpiod
 
-sensord: gpiod.c
+gpiod: gpiod.c
 	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -pthread -lm -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean

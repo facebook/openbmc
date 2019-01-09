@@ -21,6 +21,7 @@
  */
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
@@ -38,6 +39,9 @@
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
+#include <openbmc/ncsi.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -7264,15 +7268,88 @@ pal_get_status(void) {
   return data;
 }
 
+int
+pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rcv_buf)
+{
+  int sock_fd, ret;
+  struct sockaddr_nl src_addr, dest_addr;
+  struct nlmsghdr *nlh = NULL;
+  struct iovec iov;
+  struct msghdr msg;
+  int msg_size = sizeof(NCSI_NL_MSG_T);
+
+  /* msg response from kernel */
+  memset(&msg, 0, sizeof(msg));
+
+  /* open NETLINK socket to send message to kernel */
+  sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
+  if(sock_fd < 0)  {
+    syslog(LOG_ERR, "%s Error: failed to allocate socket", __func__);
+    return -1;
+  }
+
+  memset(&src_addr, 0, sizeof(src_addr));
+  src_addr.nl_family = AF_NETLINK;
+  src_addr.nl_pid = getpid(); /* self pid */
+
+  bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr));
+  memset(&dest_addr, 0, sizeof(dest_addr));
+  dest_addr.nl_family = AF_NETLINK;
+  dest_addr.nl_pid = 0; /* For Linux Kernel */
+  dest_addr.nl_groups = 0; /* unicast */
+
+  nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
+  if (!nlh) {
+    syslog(LOG_ERR, "%s Error, failed to allocate message buffer", __func__);
+    goto close_and_exit;
+  }
+  memset(nlh, 0, NLMSG_SPACE(msg_size));
+  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
+  nlh->nlmsg_pid = getpid();
+  nlh->nlmsg_flags = 0;
+
+  /* the actual NC-SI command from user */
+  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
+
+  iov.iov_base = (void *)nlh;
+  iov.iov_len = nlh->nlmsg_len;
+  msg.msg_name = (void *)&dest_addr;
+  msg.msg_namelen = sizeof(dest_addr);
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+  ret = sendmsg(sock_fd,&msg,0);
+  if (ret == -1) {
+    syslog(LOG_ERR, "%s Error: errno=%d",__func__ ,errno);
+  }
+
+  /* Read message from kernel */
+  recvmsg(sock_fd, &msg, 0);
+  memcpy(rcv_buf, (NCSI_NL_RSP_T *)NLMSG_DATA(nlh), sizeof(NCSI_NL_RSP_T));
+
+  free(nlh);
+close_and_exit:
+  close(sock_fd);
+
+  return 0;
+}
+
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
   int ret;
   int completion_code=CC_UNSPECIFIED_ERROR;
   uint8_t netfn, cmd, select;
-  uint8_t tlen, rlen;
+  int8_t tlen, rlen;
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t status;
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rcv_buf = NULL;
+  uint8_t channel = 0;
+  uint8_t netdev = 0;
+  uint8_t netenable = 0;
+  char sendcmd[128] = {0};  
+  int i;
 
   *res_len = 0;
 
@@ -7298,46 +7375,137 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
   }
 
   select = req_data[0];
-  netfn = req_data[1];
-  cmd = req_data[2];
-  tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
 
-  if (tlen < 0)
-    return completion_code;
+  switch (select) {
+    case BYPASS_BIC:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
 
-  if (0 == select) { //BIC
-    // Bypass command to Bridge IC
-    if (tlen != 0) {
-      ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
-    } else {
-      ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
-    }
+      netfn = req_data[1];
+      cmd = req_data[2];
 
-    if (0 == ret)
+      // Bypass command to Bridge IC
+      if (tlen != 0) {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
+      } else {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
+      }
+
+      if (0 == ret) {
+        completion_code = CC_SUCCESS;
+      }
+      break;
+    case BYPASS_ME:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netfn = req_data[1];
+      cmd = req_data[2];
+
+      tlen += 2;
+      memcpy(tbuf, &req_data[1], tlen);
+      tbuf[0] = tbuf[0] << 2;
+
+      // Bypass command to ME
+      ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
+      if (0 == ret) {
+        completion_code = rbuf[0];
+        memcpy(&res_data[0], &rbuf[1], (rlen - 1));
+        *res_len = rlen - 1;
+      }
+      break;
+    case BYPASS_IMC:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netfn = req_data[1];
+      cmd = req_data[2];
+
+      tlen += 2;
+      memcpy(tbuf, &req_data[1], tlen);
+      tbuf[0] = tbuf[0] << 2;
+
+      // Bypass command to IMC
+      ret = bic_imc_xmit(slot, tbuf, tlen, rbuf, &rlen);
+      if (0 == ret) {
+        completion_code = rbuf[0];
+        memcpy(&res_data[0], &rbuf[1], (rlen - 1));
+        *res_len = rlen - 1;
+      }
+      break;
+    case BYPASS_NCSI:
+      tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netdev = req_data[1];
+      channel = req_data[2];
+      cmd = req_data[3];
+
+      msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+      rcv_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
+
+      if (!msg || !rcv_buf) {
+        syslog(LOG_ERR, "%s Error: failed buffer allocation", __func__);
+        break;
+      }
+      memset(msg, 0, sizeof(NCSI_NL_MSG_T));
+      memset(msg, 0, sizeof(NCSI_NL_RSP_T));
+
+      sprintf(msg->dev_name, "eth%d", netdev);
+      msg->channel_id = channel;
+      msg->cmd = cmd;
+      msg->payload_length = tlen;
+
+      for (i=0; i<msg->payload_length; i++) {
+        msg->msg_payload[i] = req_data[4+i];
+      }
+
+      pal_send_nl_msg(msg, rcv_buf);
+      
+      memcpy(&res_data[0], &rcv_buf->msg_payload[0], rcv_buf->payload_length);
+      *res_len = rcv_buf->payload_length;
+
+      free(msg);
+      free(rcv_buf);
       completion_code = CC_SUCCESS;
+      break;
+    case BYPASS_NETWORK:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), netdev, netenable
+      if (tlen != 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
 
-  } else if (1 == select) { //ME
-    tlen += 2;
-    memcpy(tbuf, &req_data[1], tlen);
-    tbuf[0] = tbuf[0] << 2;
-    // Bypass command to ME
-    ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
-    if (0 == ret) {
-       completion_code = rbuf[0];
-       memcpy(&res_data[0], &rbuf[1], (rlen - 1));
-       *res_len = rlen - 1;
-    }
-  } else if (2 == select) { //IMC
-    tlen += 2;
-    memcpy(tbuf, &req_data[1], tlen);
-    tbuf[0] = tbuf[0] << 2;
-    // Bypass command to IMC
-    ret = bic_imc_xmit(slot, tbuf, tlen, rbuf, &rlen);
-    if (0 == ret) {
-       completion_code = rbuf[0];
-       memcpy(&res_data[0], &rbuf[1], (rlen - 1));
-       *res_len = rlen - 1;
-    }
+      netdev = req_data[1];
+      netenable = req_data[2];
+
+      if (netenable) {
+        if (netenable > 1) {
+          completion_code = CC_INVALID_PARAM;
+          break;
+        }
+
+        sprintf(sendcmd, "ifup eth%d", netdev);
+      } else {
+        sprintf(sendcmd, "ifdown eth%d", netdev);
+      }
+      system(sendcmd);
+      completion_code = CC_SUCCESS;
+      break;
+    default:
+      return completion_code;
   }
 
   return completion_code;

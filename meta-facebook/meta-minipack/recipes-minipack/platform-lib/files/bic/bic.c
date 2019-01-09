@@ -965,7 +965,7 @@ update_done:
   ret = 0;
 
   // Restore the I2C bus clock to 1M.
-  system("devmem 0x1e78a044 w 0xfff77300");
+  system("devmem 0x1e78a044 w 0xfff55301");
 
   // Restart ipmbd daemon
   sleep(1);

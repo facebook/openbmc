@@ -55,8 +55,6 @@ void gpio_init_default(gpio_st *g) {
   g->gs_fd = -1;
 }
 
-
-
 int gpio_open(gpio_st *g, int gpio)
 {
   char buf[128];
@@ -74,7 +72,7 @@ int gpio_open(gpio_st *g, int gpio)
   return 0;
 }
 
-void gpio_close(gpio_st *g)
+void gpio_close_legacy(gpio_st *g)
 {
   if (g && g->gs_fd != -1) {
     close(g->gs_fd);
@@ -247,7 +245,7 @@ int gpio_export(int gpio)
   return rc;
 }
 
-int gpio_unexport(int gpio)
+int gpio_unexport_legacy(int gpio)
 {
   char buf[128] = {0};
   int fd = -1;
@@ -294,7 +292,7 @@ int gpio_set(int gpio, gpio_value_en val)
   return val == read_val ? 0 : -1;
 }
 
-int gpio_poll_open(gpio_poll_st *gpios, int count)
+int gpio_poll_open_legacy(gpio_poll_st *gpios, int count)
 {
   int i = 0;
   int rc = 0;
@@ -357,7 +355,7 @@ static void *gpio_poll_pin(void *arg)
   pthread_exit(&rc);
 }
 
-int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
+int gpio_poll_legacy(gpio_poll_st *gpios, int count, int timeout)
 {
   pthread_t thread_ids[count];
   int ret;
@@ -388,7 +386,7 @@ int gpio_poll(gpio_poll_st *gpios, int count, int timeout)
   return 0;
 }
 
-int gpio_poll_close(gpio_poll_st *gpios, int count)
+int gpio_poll_close_legacy(gpio_poll_st *gpios, int count)
 {
   int i = 0;
 

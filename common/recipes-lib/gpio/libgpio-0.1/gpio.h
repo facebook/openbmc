@@ -58,8 +58,9 @@ struct gpio_poll_s {
 };
 
 /* Operations for extended gpio operations */
+void gpio_init_default(gpio_st *g);
 int gpio_open(gpio_st* g, int gpio);
-void gpio_close(gpio_st *g);
+void gpio_close_legacy(gpio_st *g);
 gpio_value_en gpio_read(gpio_st *g);
 void gpio_write(gpio_st *g, gpio_value_en v);
 int gpio_change_direction(gpio_st *g, gpio_direction_en dir);
@@ -76,10 +77,24 @@ int gpio_num(char *str);
 char *gpio_name(int gpio, char *str);
 
 int gpio_export(int gpio);
-int gpio_unexport(int gpio);
-int gpio_poll_open(gpio_poll_st *gpios, int count);
-int gpio_poll(gpio_poll_st *gpios, int count, int timeout);
-int gpio_poll_close(gpio_poll_st *gpios, int count);
+int gpio_unexport_legacy(int gpio);
+int gpio_poll_open_legacy(gpio_poll_st *gpios, int count);
+int gpio_poll_legacy(gpio_poll_st *gpios, int count, int timeout);
+int gpio_poll_close_legacy(gpio_poll_st *gpios, int count);
+
+/*
+ * Given "libgpio" and "libgpio-ctrl" may co-exist in openbmc, we need
+ * to make sure the two libraries export different symbols: this is to
+ * avoid symbol resolution conflicts if some applications are linked
+ * directly/indirectly with both libraries, for example:
+ * App-A --> libX -> libgpio
+ * App-A --> libY -> libgpio-ctrl
+ */
+#define gpio_close(g)		gpio_close_legacy(g)
+#define gpio_unexport(g)	gpio_unexport_legacy(g)
+#define gpio_poll_open(g, cnt)	gpio_poll_open_legacy(g, cnt)
+#define gpio_poll_close(g, cnt)	gpio_poll_close_legacy(g, cnt)
+#define gpio_poll(g, cnt, time)	gpio_poll_legacy(g, cnt, time)
 
 #ifdef __cplusplus
 } // extern "C"

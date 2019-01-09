@@ -207,7 +207,7 @@ static int gcli_cmd_get_value(struct gcli_cmd_args *args)
 		goto error;
 	}
 
-	printf("gpio value: %d\n", (int)value);
+	printf("gpio_value=%d\n", (int)value);
 	return 0;
 
 error:
@@ -262,7 +262,7 @@ static int gcli_cmd_get_direction(struct gcli_cmd_args *args)
 		goto error;
 	}
 
-	printf("gpio direction: %s\n",
+	printf("gpio_direction=%s\n",
 		dir == GPIO_DIRECTION_IN ? "in" : "out");
 	return 0;
 
@@ -363,7 +363,7 @@ static int gcli_cmd_get_edge(struct gcli_cmd_args *args)
 		goto error;
 	}
 
-	printf("gpio edge: %s\n", gpio_edge_val_to_str(edge));
+	printf("gpio_edge=%s\n", gpio_edge_val_to_str(edge));
 	return 0;
 
 error:
@@ -401,6 +401,35 @@ static int gcli_cmd_set_edge(struct gcli_cmd_args *args)
 error:
 	gpio_close(gdesc);
 	return -1;
+}
+
+static int gcli_cmd_pin_name_to_offset(struct gcli_cmd_args *args)
+{
+	int offset;
+	gpiochip_desc_t *gcdesc;
+
+	if (!IS_VALID_CHIP_NAME_PAIR(args)) {
+		GCLI_ERR("(chip, name) pair is required for %s command\n",
+			 args->gpio_cmd);
+		return -1;
+	}
+
+	gcdesc = gpiochip_lookup(args->gpio_pin.chip);
+	if (gcdesc == NULL) {
+		GCLI_ERR("failed to locate gpio chip %s\n",
+			 args->gpio_pin.chip);
+		return -1;
+	}
+
+	offset = gpiochip_pin_name_to_offset(gcdesc, args->gpio_pin.name);
+	if (offset < 0) {
+		GCLI_ERR("failed to map (%s, %s) to offset: %s\n",
+			 CHIP_NAME_PAIR(args), strerror(errno));
+		return -1;
+	}
+
+	printf("(%s, %s), offset=%d\n", CHIP_NAME_PAIR(args), offset);
+	return 0;
 }
 
 static struct gcli_cmd_info gcli_cmds[] = {
@@ -449,6 +478,12 @@ static struct gcli_cmd_info gcli_cmds[] = {
 		"set the edge of the given gpio pin",
 		gcli_cmd_set_edge,
 	},
+	{
+		"map-name-to-offset",
+		"translate pin name to offset within the gpio chip",
+		gcli_cmd_pin_name_to_offset,
+	},
+
 	/* This is the last entry. */
 	{
 		NULL,

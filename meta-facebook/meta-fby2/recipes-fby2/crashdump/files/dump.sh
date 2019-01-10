@@ -59,18 +59,34 @@ function PCI_Config_Addr {
 }
 
 function print_bus_device {
+  MAX_FUN=0
+  MAX_DEV=0
+  BUS=$(printf "0x%02x" $1)
+  if [ "$BUS" == "0x17" ] || [ "$BUS" == "0x65" ]; then
+    MAX_FUN=1
+  elif [ "$BUS" == "0x18" ]; then
+    MAX_DEV=7
+  elif [ "$BUS" == "0x66" ]; then
+    MAX_DEV=3
+  fi
   BUSM=$(($1 >> 4))
   BUSL=$((($1 & 0xF) << 4))
-  for DEV in {0..0..1}; do
+  for (( DEV=0; DEV<=$MAX_DEV; DEV++ )); do
     DEVM=$((DEV >> 1))
     DEVL=$(((DEV & 0x1) << 3))
-    for (( FUN=0; FUN<=0; FUN++ )); do
-      printf "echo \"BUS 0x%02x, Dev 0x%02x, Fun 0x%02x, Reg: 0x100 ~ 0x137\"\n" $1 $DEV $FUN
+    for (( FUN=0; FUN<=$MAX_FUN; FUN++ )); do
+      printf "echo \"BUS 0x%02x, Dev 0x%02x, Fun 0x%02x, Reg: 0x100 ~ 0x147\"\n" $1 $DEV $FUN
       BYTE1=$(((DEVL | FUN) << 4 | 0x1))
       BYTE2=$((BUSL | DEVM))
-      for REG in {0..52..4}; do
+      for REG in {0..68..4}; do
         printf "0x30 0x06 0x05 0x61 0x00 0x%02x 0x%02x 0x%02x 0x0%x\n" $REG $BYTE1 $BYTE2 $BUSM
       done
+      if [ "$BUS" == "0x18" ] || [ "$BUS" == "0x66" ]; then
+        printf "echo \"BUS 0x%02x, Dev 0x%02x, Fun 0x%02x, Reg: 0x1B0 ~ 0x1BB\"\n" $1 $DEV $FUN
+        for REG in {176..184..4}; do
+          printf "0x30 0x06 0x05 0x61 0x00 0x%02x 0x%02x 0x%02x 0x0%x\n" $REG $BYTE1 $BYTE2 $BUSM
+        done
+      fi
     done
   done
 }

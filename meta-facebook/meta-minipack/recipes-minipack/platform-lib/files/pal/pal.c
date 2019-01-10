@@ -697,84 +697,32 @@ pal_del_i2c_device(uint8_t bus, uint8_t addr) {
 
 int
 pal_get_pim_type(uint8_t fru) {
-  int ret = -1;
+  int retry = 10, ret = -1, val;
+  char path[LARGEST_DEVICE_NAME + 1];
+  uint8_t bus = ((fru - FRU_PIM1) * 8) + 80;
 
-  switch(fru) {
-    case FRU_PIM1:
-      if (!pal_detect_i2c_device(80, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(80, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    case FRU_PIM2:
-      if (!pal_detect_i2c_device(88, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(88, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    case FRU_PIM3:
-      if (!pal_detect_i2c_device(96, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(96, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    case FRU_PIM4:
-      if (!pal_detect_i2c_device(104, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(104, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    case FRU_PIM5:
-      if (!pal_detect_i2c_device(112, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(112, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    case FRU_PIM6:
-      if (!pal_detect_i2c_device(120, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(120, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    case FRU_PIM7:
-      if (!pal_detect_i2c_device(128, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(128, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    case FRU_PIM8:
-      if (!pal_detect_i2c_device(136, 0x60)) {
-        ret = PIM_TYPE_16Q;
-      } else if (!pal_detect_i2c_device(136, 0x61)) {
-        ret = PIM_TYPE_4DD;
-      } else {
-        ret = -1;
-      }
-      break;
-    default:
-      return -1;
+  snprintf(path, LARGEST_DEVICE_NAME,
+           "/sys/class/i2c-adapter/i2c-%d/%d-0060/board_ver", bus, bus);
+
+  while ((ret = read_device(path, &val)) != 0 && retry--) {
+    msleep(500);
   }
+  if (ret) {
+    return -1;
+  }
+
+#if DEBUG
+  syslog(LOG_WARNING, "[%s] val: 0x%x", __func__, val);
+#endif
+
+  if (val == 0x0) {
+    ret = PIM_TYPE_16Q;
+  } else if (val == 0x10) {
+    ret = PIM_TYPE_4DD;
+  } else {
+    return -1;
+  }
+
   return ret;
 }
 
@@ -2949,7 +2897,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM1_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM1_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(1), value);
+      ret = read_attr(PIM1_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM1_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM1_HSC_DEVICE, 1, value);
@@ -3015,7 +2963,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM2_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM2_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(2), value);
+      ret = read_attr(PIM2_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM2_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM2_HSC_DEVICE, 1, value);
@@ -3081,7 +3029,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM3_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM3_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(3), value);
+      ret = read_attr(PIM3_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM3_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM3_HSC_DEVICE, 1, value);
@@ -3147,7 +3095,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM4_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM4_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(4), value);
+      ret = read_attr(PIM4_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM4_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM4_HSC_DEVICE, 1, value);
@@ -3213,7 +3161,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM5_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM5_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(5), value);
+      ret = read_attr(PIM5_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM5_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM5_HSC_DEVICE, 1, value);
@@ -3279,7 +3227,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM6_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM6_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(6), value);
+      ret = read_attr(PIM6_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM6_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM6_HSC_DEVICE, 1, value);
@@ -3345,7 +3293,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM7_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM7_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(7), value);
+      ret = read_attr(PIM7_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM7_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM7_HSC_DEVICE, 1, value);
@@ -3411,7 +3359,7 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(PIM8_TEMP2_DEVICE, TEMP(1), value);
       break;
     case PIM8_SENSOR_QSFP_TEMP:
-      ret = read_attr(SMB_IOB_DEVICE, TEMP(8), value);
+      ret = read_attr(PIM8_DOM_DEVICE, TEMP(1), value);
       break;
     case PIM8_SENSOR_HSC_VOLT:
       ret = read_hsc_volt(PIM8_HSC_DEVICE, 1, value);
@@ -5456,39 +5404,17 @@ get_sensor_desc(uint8_t fru, uint8_t snr_num) {
 static int
 _set_pim_sts_led(uint8_t fru, uint8_t color)
 {
-  int dev, ret, type;
-  char device_name[20];
-  
-  snprintf(device_name, 20,"/dev/i2c-%d", 80+((fru-3)*8));
-  dev = open(device_name, O_RDWR);
-  if(dev < 0) {
-    syslog(LOG_ERR, "%s: open() failed\n", __func__);
-    return -1;
-  }
+  char path[LARGEST_DEVICE_NAME];
+  uint8_t bus = 80 + ((fru - 3) * 8);
 
-  type = pal_get_pim_type_from_file(fru);
+  snprintf(path, LARGEST_DEVICE_NAME,
+           "/sys/class/i2c-adapter/i2c-%d/%d-0060/system_led", bus, bus);
 
-  if (type == PIM_TYPE_16Q) {
-    ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_PIM16Q);
-  } else if (type == PIM_TYPE_4DD) {
-    ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_PIM4DD);
-  } else if (type == PIM_TYPE_UNPLUG){
-    return 0;
-  } else {
-    ret = -1;
-  }
-
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: Cannot get PIM%d type\n", __func__, fru - 3);
-    close(dev);
-    return -1;
-  }
   if(color == FPGA_STS_CLR_BLUE)
-    i2c_smbus_write_byte_data(dev, FPGA_STS_LED_REG, FPGA_STS_CLR_BLUE);
+    write_device(path, "1");
   else if(color == FPGA_STS_CLR_YELLOW)
-    i2c_smbus_write_byte_data(dev, FPGA_STS_LED_REG, FPGA_STS_CLR_YELLOW);
+    write_device(path, "0");
 
-  close(dev);
   return 0;
 }
 

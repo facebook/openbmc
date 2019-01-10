@@ -39,6 +39,7 @@ SRC_URI += "file://board-utils.sh \
             file://setup_i2c.sh \
             file://setup_mgmt.sh \
             file://setup_pcie_repeater.sh \
+            file://setup_qsfp.sh \
             file://seutil \
             file://smbcpld_update.sh \
             file://sol.sh \
@@ -66,6 +67,7 @@ OPENBMC_UTILS_FILES += " \
     set_sled.sh \
     setup_mgmt.sh \
     setup_pcie_repeater.sh \
+    setup_qsfp.sh \
     seutil \
     smbcpld_update.sh \
     sol.sh \

@@ -23,10 +23,10 @@ echo "------IOBFPGA------"
 iob_ver=`head -n 1 /sys/class/i2c-adapter/i2c-13/13-0035/fpga_ver 2> /dev/null`
 iob_sub_ver=`head -n 1 /sys/class/i2c-adapter/i2c-13/13-0035/fpga_sub_ver 2> /dev/null`
 
-if [ $? -eq 1 ]; then
-    echo "IOBFPGA is not detected"
-else
+if [ $? -eq 0 ]; then
     echo "IOBFPGA: $(($iob_ver)).$(($iob_sub_ver))"
+else
+    echo "IOBFPGA is not detected"
 fi
 
 num=1
@@ -35,21 +35,19 @@ BUS="80 88 96 104 112 120 128 136"
 echo "------DOMFPGA------"
 
 for bus in ${BUS}; do
-    pim_16q=`i2cdetect -y $bus 0x60 0x60 | grep "\-\-" 2> /dev/null`
-    pim_4dd=`i2cdetect -y $bus 0x61 0x61 | grep "\-\-" 2> /dev/null`
+    pim_type=`head -n1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/board_ver 2> /dev/null`
 
     echo "PIM $num:"
-
-    if [ "${pim_16q}" != "" ] && [ "${pim_4dd}" != "" ]; then
-        echo "DOMFPGA is not detected or PIM $num is not inserted"
-    elif [ "${pim_16q}" == "" ] && [ "${pim_4dd}" != "" ]; then
-        dom_16q_ver=$(i2cget -f -y ${bus} 0x60 0x01)
-        dom_16q_sub_ver=$(i2cget -f -y ${bus} 0x60 0x02)
-        echo "16Q DOMFPGA: $(($dom_16q_ver)).$(($dom_16q_sub_ver))"
+    if [ "${pim_type}" == "0x0" ]; then
+        dom_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_ver 2> /dev/null`
+        dom_sub_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_sub_ver 2> /dev/null`
+        echo "16Q DOMFPGA: $(($dom_ver)).$(($dom_sub_ver))"
+    elif [ "${pim_type}" == "0x10" ]; then
+        dom_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_ver 2> /dev/null`
+        dom_sub_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_sub_ver 2> /dev/null`
+        echo "4DD DOMFPGA: $(($dom_ver)).$(($dom_sub_ver))"
     else
-        dom_4dd_ver=$(i2cget -f -y ${bus} 0x61 0x01)
-        dom_4dd_sub_ver=$(i2cget -f -y ${bus} 0x61 0x02)
-        echo "4DD DOMFPGA: $(($dom_4dd_ver)).$(($dom_4dd_sub_ver))"
+        echo "DOMFPGA is not detected or PIM $num is not inserted"
     fi
 
     num=$(($num+1))

@@ -77,9 +77,6 @@ if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
     bulk_create_i2c_mux
 fi
 
-# # Bus 5
-i2c_device_add 5 0x33 com_e_driver     # COM-e
-
 # # Bus 2
 i2c_device_add 2 0x35 scmcpld          # SCMCPLD
 
@@ -192,4 +189,10 @@ done
 BUS="86 94 102 110 118 126 134 142"
 for bus in ${BUS}; do
     i2c_device_add $bus 0x74 max34461
+done
+
+# # Bus 80 88 96 104 112 120 128 136  # PIM1 ~ PIM8 DOMFPGA
+BUS="80 88 96 104 112 120 128 136"
+for bus in ${BUS}; do
+    i2c_device_add $bus 0x60 domfpga
 done

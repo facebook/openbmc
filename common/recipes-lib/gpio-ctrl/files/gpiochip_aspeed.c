@@ -27,7 +27,7 @@
 #include "gpio_int.h"
 
 #define BASE_ALPHABET		('Z' - 'A' + 1)
-#define ALPHABET_DIGIT(c)	((c) - 'A')
+#define ALPHABET_DIGIT(c)	((c) - 'A' + 1)
 
 /*
  * Valid aspeed gpio pin name format "GPIO<group><offset>". The <group>
@@ -64,14 +64,19 @@ static int ast_gpio_name_to_offset(gpiochip_desc_t *gcdesc,
 	max_groups = (gcdesc->ngpio + AST_GPIO_GROUP_SIZE - 1) /
 		      AST_GPIO_GROUP_SIZE;
 	for (group = 0; isupper(*ptr); ptr++) {
-		group = group * BASE_ALPHABET +
-			ALPHABET_DIGIT(*ptr);
-		if (group >= max_groups) {
+		group = group * BASE_ALPHABET + ALPHABET_DIGIT(*ptr);
+		if ((group - 1) >= max_groups) {
 			GLOG_ERR("unable to parse gpio name <%s>: %s\n",
 				 name, "gpio group exceeds limit");
 			return -1;
 		}
 	}
+
+	/*
+	 * 'A' is parsed as 1 in 26-based number convertion, but its
+	 * offset is 0. That's why "group--" is needed.
+	 */
+	group--;
 
 	/* parse group offset field */
 	if (strlen(ptr) != 1 || *ptr < '0' || *ptr > '7') {

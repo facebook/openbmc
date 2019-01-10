@@ -23,6 +23,7 @@ LOGFILE="/var/log/mTerm_$1.log"
 
 function show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [ device0 | device1 | ... device11 ] (baud rate)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
 
@@ -61,6 +62,33 @@ if [ $# -gt 1 ]; then
   if [[ "$2" == "--history" ]]; then
     cat $LOGFILE 2>/dev/null
     exit 0
+  fi
+
+  if [ "${2:0:6}" == "device" ]; then
+    dev_num=${2:6}
+    if [ "$(echo $dev_num | awk '{print($1<0 || $1>11)?"1":"0"}')" != "0" ]; then
+      show_usage
+      exit -1
+    fi
+
+    if [ $# -gt 2 ]; then
+      baud=$3
+    else
+      baud=57600
+    fi
+
+    /bin/stty -F /dev/ttyS$SLOT_NUM $baud >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      show_usage
+      exit -1
+    fi
+
+    /usr/bin/bic-util $SLOT 0xe0 0x04 0x15 0xa0 0x00 0 0 0 0 0x78 0 0 0 0 0 0 0 $((dev_num<<3)) 0 0 0 >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      /bin/stty -F /dev/ttyS$SLOT_NUM 57600 >/dev/null 2>&1
+      show_usage
+      exit -1
+    fi
   else
     show_usage
     exit -1

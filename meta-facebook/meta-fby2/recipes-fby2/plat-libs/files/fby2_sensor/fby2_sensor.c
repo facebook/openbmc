@@ -124,6 +124,41 @@ const uint8_t bic_neg_reading_sensor_support_list[] = {
   BIC_SENSOR_VNN_PCH_VR_CURR,
 };
 
+#ifdef CONFIG_FBY2_GPV2
+const uint8_t bic_gpv2_neg_reading_sensor_support_list[] = {
+  GPV2_SENSOR_INLET_TEMP,
+  GPV2_SENSOR_OUTLET_TEMP,
+  GPV2_SENSOR_PCIE_SW_TEMP,
+  // VR
+  GPV2_SENSOR_3V3_VR_Temp,
+  GPV2_SENSOR_0V92_VR_Temp,
+  //M.2 A
+  GPV2_SENSOR_M2A_Temp,
+  //M.2 B
+  GPV2_SENSOR_M2B_Temp,
+  //M.2 C
+  GPV2_SENSOR_M2C_Temp,
+  //M.2 D
+  GPV2_SENSOR_M2D_Temp,
+  //M.2 E
+  GPV2_SENSOR_M2E_Temp,
+  //M.2 F
+  GPV2_SENSOR_M2F_Temp,
+  //M.2 G
+  GPV2_SENSOR_M2G_Temp,
+  //M.2 H
+  GPV2_SENSOR_M2H_Temp,
+  //M.2 I
+  GPV2_SENSOR_M2I_Temp,
+  //M.2 J
+  GPV2_SENSOR_M2J_Temp,
+  //M.2 K
+  GPV2_SENSOR_M2K_Temp,
+  //M.2 L
+  GPV2_SENSOR_M2L_Temp,
+};
+#endif
+
 const uint8_t bic_sdr_accuracy_sensor_support_list[] = {
   BIC_SENSOR_VCCIN_VR_POUT,
   BIC_SENSOR_INA230_POWER,
@@ -1393,11 +1428,24 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   }
 
   if (*(float *) value > MAX_POS_READING_MARGIN) {     //Negative reading handle
-    for(i=0;i<sizeof(bic_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
-      if (sensor_num == bic_neg_reading_sensor_support_list[i]) {
-        * (float *) value -= (float) THERMAL_CONSTANT;
+    if (slot_type == SLOT_TYPE_SERVER) { //Server
+      if (server_type == SERVER_TYPE_TL) {
+        for(i=0;i<sizeof(bic_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
+          if (sensor_num == bic_neg_reading_sensor_support_list[i]) {
+            * (float *) value -= (float) THERMAL_CONSTANT;
+          }
+        }
       }
     }
+#ifdef CONFIG_FBY2_GPV2
+    else if (slot_type == SLOT_TYPE_GPV2) {
+      for(i=0;i<sizeof(bic_gpv2_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
+        if (sensor_num == bic_gpv2_neg_reading_sensor_support_list[i]) {
+          * (float *) value -= (float) THERMAL_CONSTANT;
+        }
+      }
+    }
+#endif
   }
 
   return 0;

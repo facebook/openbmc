@@ -57,15 +57,15 @@ print_usage_help(void) {
 }
 
 // Test to Get device ID
-static void
+static int
 util_get_device_id(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   ipmi_dev_id_t id = {0};
 
   ret = bic_get_dev_id(slot_id, &id);
   if (ret) {
     printf("util_get_device_id: bic_get_dev_id returns %d\n", ret);
-    return;
+    return ret;
   }
 
   // Print response
@@ -77,31 +77,20 @@ util_get_device_id(uint8_t slot_id) {
   printf("Manufacturer ID: 0x%X:0x%X:0x%X\n", id.mfg_id[2], id.mfg_id[1], id.mfg_id[0]);
   printf("Product ID: 0x%X:0x%X\n", id.prod_id[1], id.prod_id[0]);
   printf("Aux. FW Rev: 0x%X:0x%X:0x%X:0x%X\n", id.aux_fw_rev[0], id.aux_fw_rev[1],id.aux_fw_rev[2],id.aux_fw_rev[3]);
-}
 
-static void
-util_get_fw_ver(uint8_t slot_id) {
-  int i, j;
-  uint8_t buf[16] = {0};
-  for (i = 1; i <= 8; i++) {
-    (void) bic_get_fw_ver(slot_id, i, buf);
-    printf("version of comp: %d is", i);
-    for (j = 0; j < 10; j++)
-      printf("%02X:", buf[j]);
-    printf("\n");
-  }
+  return ret;
 }
 
 // Tests for reading GPIO values and configuration
-static void
+static int
 util_get_gpio(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   bic_gpio_t gpio = {0};
 
   ret = bic_get_gpio(slot_id, &gpio);
   if (ret) {
     printf("util_get_gpio: bic_get_gpio returns %d\n", ret);
-    return;
+    return ret;
   }
 
   bic_gpio_u *t = (bic_gpio_u*) &gpio;
@@ -133,16 +122,17 @@ util_get_gpio(uint8_t slot_id) {
   printf("BMC_READY_N: %d\n", t->bits.bmc_ready_n);
   printf("BMC_COM_SW_N: %d\n", t->bits.bmc_com_sw_n);
   printf("rsvd: %d\n", t->bits.rsvd);
+
+  return ret;
 }
 
-static void
+static int
 util_get_gpio_config(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   int i;
   bic_gpio_config_t gpio_config = {0};
   bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
   char gpio_name[32];
-
 
   // Read configuration of all bits
   for (i = 0;  i < gpio_pin_cnt; i++) {
@@ -166,33 +156,31 @@ util_get_gpio_config(uint8_t slot_id) {
       printf("Trigger, Edge: %s\n", "Reserved");
     }
   }
+  return ret;
 }
 
-static void
+static int
 util_get_config(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
   ret = bic_get_config(slot_id, &config);
   if (ret) {
     printf("util_get_config: bic_get_config failed\n");
-    return;
+    return ret;
   }
 
   printf("SoL Enabled:  %s\n", t->bits.sol ? "Enabled" : "Disabled");
   printf("POST Enabled: %s\n", t->bits.post ? "Enabled" : "Disabled");
+  return ret;
 }
 
-static void
-util_set_config(uint8_t slot_id, uint8_t status) {
-
-}
 
 // Test to get the POST buffer
-static void
+static int
 util_get_post_buf(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t len;
   int i;
@@ -200,7 +188,7 @@ util_get_post_buf(uint8_t slot_id) {
   ret = bic_get_post_buf(slot_id, buf, &len);
   if (ret) {
     printf("util_get_post_buf: bic_get_post_buf returns %d\n", ret);
-    return;
+    return ret;
   }
 
   printf("util_get_post_buf: returns %d bytes\n", len);
@@ -211,30 +199,13 @@ util_get_post_buf(uint8_t slot_id) {
     printf("%02X ", buf[i]);
   }
   printf("\n");
+  return ret;
 }
 
-// Tests to read FRUID of Monolake Server
-static void
-util_get_fruid_info(uint8_t slot_id) {
-  int ret;
 
-  ipmi_fruid_info_t info = {0};
-
-  ret = bic_get_fruid_info(slot_id, 0, &info);
-  if (ret) {
-    printf("util_get_fruid_info: bic_get_fruid_info returns %d\n", ret);
-    return;
-  }
-
-  printf("FRUID info for 1S Slot..\n");
-
-  printf("FRUID Size: %d\n", (info.size_msb << 8) + (info.size_lsb));
-  printf("Accessed as : %s\n", (info.bytes_words)?"Words":"Bytes");
-}
-
-static void
+static int
 util_read_fruid(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   int fru_size = 0;
 
   char path[64] = {0};
@@ -243,97 +214,14 @@ util_read_fruid(uint8_t slot_id) {
   ret = bic_read_fruid(slot_id, 0, path, &fru_size);
   if (ret) {
     printf("util_read_fruid: bic_read_fruid returns %d, fru_size: %d\n", ret, fru_size);
-    return;
   }
+  return ret;
 }
 
-// Tests to read SEL from Monolake Server
-static void
-util_get_sel_info(uint8_t slot_id) {
-  int ret;
 
-  ipmi_sel_sdr_info_t info;
-
-  ret = bic_get_sel_info(slot_id, &info);
-  if (ret) {
-    printf("util_get_sel_info:bic_get_sel_info returns %d\n", ret);
-    return;
-  }
-
-  printf("SEL info for 1S Slot is..\n");
-
-  printf("version: 0x%X\n", info.ver);
-  printf("Record Count: 0x%X\n", info.rec_count);
-  printf("Free Space: 0x%X\n", info.free_space);
-  printf("Recent Add TS: 0x%X:0x%X:0x%X:0x%X\n", info.add_ts[3], info.add_ts[2], info.add_ts[1], info.add_ts[0]);
-  printf("Recent Erase TS: 0x%X:0x%X:0x%X:0x%X\n", info.erase_ts[3], info.erase_ts[2], info.erase_ts[1], info.erase_ts[0]);
-  printf("Operation Support: 0x%X\n", info.oper);
-}
-
-static void
-util_get_sel(uint8_t slot_id) {
-  int ret;
-  int i;
-  uint8_t rlen;
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-
-  ipmi_sel_sdr_req_t req;
-  ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
-
-  req.rsv_id = 0;
-  req.rec_id = 0;
-  req.offset = 0;
-  req.nbytes = BYTES_ENTIRE_RECORD;
-
-  while (1) {
-    ret = bic_get_sel(slot_id, &req, res, &rlen);
-    if (ret) {
-      printf("util_get_sel:bic_get_sel returns %d\n", ret);
-      continue;
-    }
-
-    printf("SEL for rec_id %d\n", req.rec_id);
-    printf("Next Record ID is %d\n", res->next_rec_id);
-    printf("Record contents are..\n");
-    for (i = 0;  i < rlen-2; i++) { // First 2 bytes are next_rec_id
-      printf("0x%X:", res->data[i]);
-    }
-    printf("\n");
-
-    req.rec_id = res->next_rec_id;
-    if (req.rec_id == LAST_RECORD_ID) {
-      printf("This record is LAST record\n");
-      break;
-    }
-  }
-}
-
-// Tests to read SDR records from Monolake Servers
-static void
-util_get_sdr_info(uint8_t slot_id) {
-  int ret;
-
-  ipmi_sel_sdr_info_t info;
-
-  ret = bic_get_sdr_info(slot_id, &info);
-  if (ret) {
-    printf("util_get_sdr_info:bic_get_sdr_info returns %d\n", ret);
-    return;
-  }
-
-  printf("SDR info for 1S Slot is..\n");
-
-  printf("version: 0x%X\n", info.ver);
-  printf("Record Count: 0x%X\n", info.rec_count);
-  printf("Free Space: 0x%X\n", info.free_space);
-  printf("Recent Add TS: 0x%X:0x%X:0x%X:0x%X\n", info.add_ts[3], info.add_ts[2], info.add_ts[1], info.add_ts[0]);
-  printf("Recent Erase TS: 0x%X:0x%X:0x%X:0x%X\n", info.erase_ts[3], info.erase_ts[2], info.erase_ts[1], info.erase_ts[0]);
-  printf("Operation Support: 0x%X\n", info.oper);
-}
-
-static void
+static int
 util_get_sdr(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
 
@@ -352,7 +240,7 @@ util_get_sdr(uint8_t slot_id) {
       continue;
     }
 
-    sdr_full_t *sdr = (sdr_full_t*)(res->data);
+    sdr_full_t *sdr = (sdr_full_t *)res->data;
 
     printf("type: %d, ", sdr->type);
     printf("sensor_num: %d, ", sdr->sensor_num);
@@ -371,12 +259,14 @@ util_get_sdr(uint8_t slot_id) {
       break;
     }
   }
+
+  return ret;
 }
 
 // Test to read all Sensors from Monolake Server
-static void
+static int
 util_read_sensor(uint8_t slot_id) {
-  int ret;
+  int ret = 0;
   int i;
   ipmi_sensor_reading_t sensor;
 
@@ -389,7 +279,9 @@ util_read_sensor(uint8_t slot_id) {
     printf("sensor#%d: value: 0x%X, flags: 0x%X, status: 0x%X, ext_status: 0x%X\n",
             i, sensor.value, sensor.flags, sensor.status, sensor.ext_status);
   }
+  return ret;
 }
+
 
 static int
 process_command(uint8_t slot_id, int argc, char **argv) {
@@ -426,10 +318,12 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   return 0;
 }
 
+
 // TODO: Make it as User selectable tests to run
 int
 main(int argc, char **argv) {
   uint8_t slot_id;
+  int ret = 0;
 
   if (argc < 3) {
     goto err_exit;
@@ -448,28 +342,28 @@ main(int argc, char **argv) {
   }
 
   if (!strcmp(argv[2], "--get_dev_id")) {
-    util_get_device_id(slot_id);
+    ret = util_get_device_id(slot_id);
   } else if (!strcmp(argv[2], "--get_gpio")) {
-    util_get_gpio(slot_id);
+    ret = util_get_gpio(slot_id);
   } else if (!strcmp(argv[2], "--get_gpio_config")) {
-    util_get_gpio_config(slot_id);
+    ret = util_get_gpio_config(slot_id);
   } else if (!strcmp(argv[2], "--get_config")) {
-    util_get_config(slot_id);
+    ret = util_get_config(slot_id);
   } else if (!strcmp(argv[2], "--get_post_code")) {
-    util_get_post_buf(slot_id);
+    ret = util_get_post_buf(slot_id);
   } else if (!strcmp(argv[2], "--read_fruid")) {
-    util_read_fruid(slot_id);
+    ret = util_read_fruid(slot_id);
   } else if (!strcmp(argv[2], "--get_sdr")) {
-    util_get_sdr(slot_id);
+    ret = util_get_sdr(slot_id);
   } else if (!strcmp(argv[2], "--read_sensor")) {
-    util_read_sensor(slot_id);
+    ret = util_read_sensor(slot_id);
   } else if (argc >= 4) {
     return process_command(slot_id, (argc - 2), (argv + 2));
   } else {
     goto err_exit;
   }
 
-  return 0;
+  return ret;
 
 err_exit:
   print_usage_help();

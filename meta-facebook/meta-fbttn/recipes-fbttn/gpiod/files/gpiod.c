@@ -35,11 +35,6 @@
 #include <facebook/bic.h>
 #include <facebook/fbttn_gpio.h>
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
-
 #define MAX_NUM_SLOTS       1
 #define POLLING_INTERVAL    500
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"

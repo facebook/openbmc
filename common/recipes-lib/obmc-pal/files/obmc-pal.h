@@ -32,11 +32,11 @@ extern "C" {
 #define BIT(value, index) ((value >> index) & 1)
 #endif // BIT
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
-#define SETMASK(y)          (1 << y)
+#define SETBIT(x, y)        (x | (1ULL << y))
+#define GETBIT(x, y)        ((x & (1ULL << y)) > y)
+#define CLEARBIT(x, y)      (x & (~(1ULL << y)))
+#define GETMASK(y)          (1ULL << y)
+#define SETMASK(y)          (1ULL << y)
 
 // for threshold-util
 #define THRESHOLD_PATH     "/tmp/thresh-cache"

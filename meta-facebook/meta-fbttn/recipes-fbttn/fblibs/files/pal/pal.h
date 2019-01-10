@@ -46,11 +46,6 @@ extern "C" {
 
 #define SERVER_PWR_ON_LOCK "/var/run/server%d_power_on.lock"
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
-
 #define MAX_NODES 4
 
 #define MAX_ERROR_CODES 256

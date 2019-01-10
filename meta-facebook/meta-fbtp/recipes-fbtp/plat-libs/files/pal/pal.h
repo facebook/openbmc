@@ -38,11 +38,6 @@ extern "C" {
 #define FRU_STATUS_GOOD   1
 #define FRU_STATUS_BAD    0
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
-
 #define MAX_NODES 4
 
 #define MAX_NUM_FRUS 5

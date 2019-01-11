@@ -2358,13 +2358,21 @@ bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
   uint16_t m = 0, b = 0;
   sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
   sdr_full_t *sdr;
+  char cvalue[MAX_VALUE_LEN] = {0};
 
-  while ((ret = bic_sensor_sdr_init(fru, sinfo)) == ERR_NOT_READY &&
-    retry++ < MAX_RETRIES_SDR_INIT) {
-    sleep(1);
+
+  ret = kv_get(SCM_INIT_THRESH_STATUS, cvalue, NULL, 0);
+  if (!strncmp(cvalue, "done", sizeof("done"))) {
+    ret = bic_sensor_sdr_init(fru, sinfo);
+  } else {
+    while ((ret = bic_sensor_sdr_init(fru, sinfo)) == ERR_NOT_READY &&
+      retry++ < MAX_SDR_THRESH_RETRY) {
+      sleep(1);
+    }
   }
+
   if (ret < 0) {
-    syslog(LOG_WARNING, "bic_get_sdr_thresh_val: failed for fru: %d", fru);
+    syslog(LOG_CRIT, "BIC threshold value can't get");
     return -1;
   }
   sdr = &sinfo[snr_num].sdr;
@@ -5176,12 +5184,18 @@ sensor_thresh_array_init(uint8_t fru) {
       scm_sensor_threshold[SCM_SENSOR_HSC_CURR][UCR_THRESH] = 10;
       scm_sensor_threshold[SCM_SENSOR_HSC_POWER][UCR_THRESH] = 100;
       for (i = scm_sensor_cnt; i < scm_all_sensor_cnt; i++) {
-        for (j = 1; j <= MAX_SENSOR_THRESHOLD + 1; j++) {
+        for (j = 1; j <= MAX_SENSOR_THRESHOLD; j++) {
           if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[i], j, &fvalue)){
             scm_sensor_threshold[scm_all_sensor_list[i]][j] = fvalue;
+          } else {
+            /* Error case, if get BIC data retry more than 30 times(30s),
+             * it means BIC get wrong, skip init BIC threshold value */
+            goto scm_thresh_done;
           }
         }
       }
+scm_thresh_done:
+      kv_set(SCM_INIT_THRESH_STATUS, "done", 0, 0);
       break;
     case FRU_SMB:
       smb_sensor_threshold[SMB_SENSOR_1220_VMON1][UCR_THRESH] = 4.32;

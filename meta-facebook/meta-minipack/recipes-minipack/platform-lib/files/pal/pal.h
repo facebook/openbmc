@@ -53,6 +53,7 @@ extern "C" {
 #define SMB_MAC_CPLD_ROV "mac_cpld_rov%d"
 #define SMB_MAC_CPLD_ROV_NUM 8
 #define SCM_PRSNT_STATUS "scm_presnt_status"
+#define SCM_INIT_THRESH_STATUS "scm_init_thresh-status"
 #define PIM_PRSNT_STATUS "pim_fpga_cpld_%d_prsnt_n_status"
 #define FAN_PRSNT_STATUS "fantray%d_present"
 #define PSU_L_PRSNT_STATUS "psu_L%d_present_L"
@@ -152,7 +153,7 @@ extern "C" {
 #define GPIO_POSTCODE_7     "/tmp/gpionames/GPIOH7/%s"
 #define GPIO_SCM_USB_PRSNT  "/tmp/gpionames/SCM_USB_PRSNT/%s"
 
-#define MAX_RETRIES_SDR_INIT  30
+#define MAX_SDR_THRESH_RETRY 30
 #define MAX_READ_RETRY 10
 #define DELAY_POWER_OFF 5
 #define DELAY_POWER_CYCLE 10

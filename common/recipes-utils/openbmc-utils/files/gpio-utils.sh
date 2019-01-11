@@ -18,6 +18,7 @@
 GPIODIR="/sys/class/gpio"
 GPIOEXPORT="$GPIODIR/export"
 SHADOW_GPIO=/tmp/gpionames
+GPIOCLI_CMD=/usr/local/bin/gpiocli
 
 gpio_dir() {
     echo "$GPIODIR/gpio$1"
@@ -77,6 +78,31 @@ gpio_export() {
         fi
         ln -s $dir $SHADOW_GPIO/$2
     fi
+}
+
+gpio_export_by_name() {
+    local chip=$1
+    local name=$2
+    local shadow=$3
+
+    echo "exporting gpio (${chip}, ${name}), shadow=${shadow}"
+    $GPIOCLI_CMD --chip ${chip} --pin-name ${name} --shadow ${shadow} export
+}
+
+gpio_export_by_offset() {
+    local chip=$1
+    local offset=$2
+    local shadow=$3
+
+    echo "exporting gpio (${chip}, ${offset}), shadow=${shadow}"
+    $GPIOCLI_CMD --chip ${chip} --pin-offset ${offset} --shadow ${shadow} export
+}
+
+gpio_unexport() {
+    local shadow=$1
+
+    echo "unexporting gpio ${shadow}"
+    $GPIOCLI_CMD --shadow ${shadow} unexport
 }
 
 gpio_set() {

@@ -608,6 +608,12 @@ enum {
 
 enum
 {
+  PSU_ACOK_DOWN = 0,
+  PSU_ACOK_UP = 1
+};
+
+enum
+{
   SLED_CLR_BLUE = 0x3,
   SLED_CLR_YELLOW = 0x4,
   SLED_CLR_RED = 0x6,

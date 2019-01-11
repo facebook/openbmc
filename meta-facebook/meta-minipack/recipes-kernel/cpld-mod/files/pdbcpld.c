@@ -107,6 +107,20 @@ static const i2c_dev_attr_st pdbcpld_attr_table[] = {
     0x11, 1, 1,
   },
   {
+    "psu1_pwr_ok",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x11, 2, 1,
+  },
+  {
+    "psu2_pwr_ok",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x11, 3, 1,
+  },
+  {
     "timer_base_10ms",
     "Timer base 10ms",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -164,7 +178,7 @@ static const i2c_dev_attr_st pdbcpld_attr_table[] = {
     "1: Update the 0x21 TIMER_COUNTER_SETTING",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x22, 1, 1,
+    0x23, 1, 1,
   },
 };
 

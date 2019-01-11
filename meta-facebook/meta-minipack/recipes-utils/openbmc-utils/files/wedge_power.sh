@@ -187,6 +187,8 @@ do_config_reset_timer() {
         echo $wake_t > $PWR_R_TIMER_COUNTER_SETTING_SYSFS
         echo 1 > $PWR_L_TIMER_COUNTER_SETTING_UPDATE_SYSFS
         echo 1 > $PWR_R_TIMER_COUNTER_SETTING_UPDATE_SYSFS
+        echo 0 > $PWR_L_TIMER_COUNTER_SETTING_UPDATE_SYSFS
+        echo 0 > $PWR_R_TIMER_COUNTER_SETTING_UPDATE_SYSFS
     fi
 }
 

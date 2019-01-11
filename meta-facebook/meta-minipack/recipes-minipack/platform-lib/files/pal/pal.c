@@ -3434,9 +3434,84 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
 }
 
 static int
-psu_sensor_read(uint8_t sensor_num, float *value) {
+psu_init_acok_key(uint8_t fru) {
+  uint8_t psu_num = fru - 10;
+  char key[MAX_KEY_LEN + 1];
 
+  snprintf(key, MAX_KEY_LEN, "psu%d_acok_state", psu_num);
+  kv_set(key, "1", 0, KV_FCREATE);
+
+  return 0;
+}
+
+static int
+psu_acok_log(uint8_t fru, uint8_t curr_state) {
+  uint8_t psu_num = fru - 10;
+  int ret, old_state;
+  char key[MAX_KEY_LEN + 1];
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, MAX_KEY_LEN, "psu%d_acok_state", psu_num);
+  ret = kv_get(key, cvalue, NULL, 0);
+  if (ret < 0) {
+    return ret;
+  }
+
+  old_state = atoi(cvalue);
+
+  if (curr_state != old_state) {
+    if (curr_state == PSU_ACOK_UP) {
+      pal_update_ts_sled();
+      syslog(LOG_CRIT, "DEASSERT: PSU%d AC OK state - AC power up - FRU: %d",
+             psu_num, fru);
+      kv_set(key, "1", 0, 0);
+    } else {
+      pal_update_ts_sled();
+      syslog(LOG_CRIT, "ASSERT: PSU%d AC OK state - AC power down - FRU: %d",
+             psu_num, fru);
+      kv_set(key, "0", 0, 0);
+    }
+  }
+
+  return 0;
+}
+
+static int
+psu_acok_check(uint8_t fru) {
+  int val;
+  char path[LARGEST_DEVICE_NAME + 1];
+
+  if (fru == FRU_PSU1) {
+    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_L2_input_ok");
+  } else if (fru == FRU_PSU2) {
+    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_L1_input_ok");
+  } else if (fru == FRU_PSU3) {
+    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_R2_input_ok");
+  } else if (fru == FRU_PSU4) {
+    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_R1_input_ok");
+  }
+
+  if (read_device(path, &val)) {
+    syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
+    return 0;
+  }
+  if (!val) {
+    return READING_NA;
+  }
+
+  return val;
+}
+
+static int
+psu_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
+
+  ret = psu_acok_check(fru);
+  if (ret == READING_NA) {
+    psu_acok_log(fru, PSU_ACOK_DOWN);
+    goto psu_out;
+  }
+  psu_acok_log(fru, PSU_ACOK_UP);
 
   switch(sensor_num) {
     case PSU1_SENSOR_IN_VOLT:
@@ -3599,6 +3674,8 @@ psu_sensor_read(uint8_t sensor_num, float *value) {
       ret = READING_NA;
       break;
   }
+
+psu_out:
   return ret;
 }
 
@@ -3658,7 +3735,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_PSU2:
     case FRU_PSU3:
     case FRU_PSU4:
-      ret = psu_sensor_read(sensor_num, value);
+      ret = psu_sensor_read(fru, sensor_num, value);
       break;
     default:
       return -1;
@@ -6605,6 +6682,7 @@ pal_set_def_key_value(void) {
 int
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   pal_set_def_key_value();
+  psu_init_acok_key(fru);
   return 0;
 }
 

@@ -1,5 +1,13 @@
 max([
   SCM_INLET_REMOTE_TEMP(scm:scm_inlet_remote_temp),
   TH3_DIE_TEMP1(smb:th3_die_temp1),
-  TH3_DIE_TEMP2(smb:th3_die_temp2)
+  TH3_DIE_TEMP2(smb:th3_die_temp2),
+  PIM1_QSFP_TEMP(pim1:pim1_qsfp_temp),
+  PIM2_QSFP_TEMP(pim2:pim2_qsfp_temp),
+  PIM3_QSFP_TEMP(pim3:pim3_qsfp_temp),
+  PIM4_QSFP_TEMP(pim4:pim4_qsfp_temp),
+  PIM5_QSFP_TEMP(pim5:pim5_qsfp_temp),
+  PIM6_QSFP_TEMP(pim6:pim6_qsfp_temp),
+  PIM7_QSFP_TEMP(pim7:pim7_qsfp_temp),
+  PIM8_QSFP_TEMP(pim8:pim8_qsfp_temp)
 ])

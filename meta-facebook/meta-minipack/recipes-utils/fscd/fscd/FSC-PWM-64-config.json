@@ -99,6 +99,190 @@
         [100, 24],
         [105, 32]
       ]
+    },
+    "PIM1_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
+    },
+    "PIM2_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
+    },
+    "PIM3_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
+    },
+    "PIM4_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
+    },
+    "PIM5_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
+    },
+    "PIM6_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
+    },
+    "PIM7_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
+    },
+    "PIM8_QSFP_TEMP": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "read_limit": {
+        "invalid":{
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_warning"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 16],
+        [45, 16],
+        [50, 18],
+        [52, 22],
+        [54, 28],
+        [56, 32]
+      ]
     }
   },
   "fans": {

@@ -7,4 +7,3 @@ SRC_URI += "file://pal.c \
 DEPENDS += "libbic libminilaketb-common libminilaketb-fruid libminilaketb-sensor"
 RDEPENDS_${PN} += "libbic libminilaketb-common libminilaketb-fruid libminilaketb-sensor"
 LDFLAGS += " -lbic -lminilaketb_common -lminilaketb_fruid -lminilaketb_sensor"
-PAL_WARNINGS_AS_ERRORS = "no"

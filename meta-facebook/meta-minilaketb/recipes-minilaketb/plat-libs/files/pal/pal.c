@@ -157,8 +157,6 @@ typedef struct {
 
 static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
-static uint8_t otp_server_12v_off_flag[MAX_NODES+1] = {0};
-
 char * key_list[] = {
 "server_pcie_port_config",
 "pwr_server1_last_state",
@@ -390,7 +388,6 @@ write_device(const char *device, const char *value) {
 static int
 pal_key_check(char *key) {
 
-  int ret;
   int i;
 
   i = 0;
@@ -612,7 +609,8 @@ power_on_server_physically(uint8_t slot_id){
   return 0;
 }
 
-
+#ifdef SUPPORT_WRITE_GMAC0
+// Disable unused function till its need arises.
 #define MAX_POWER_PREP_RETRY_CNT    3
 static int
 write_gmac0_value(const char *device_name, const int value) {
@@ -637,12 +635,12 @@ write_gmac0_value(const char *device_name, const int value) {
 
   return err;
 }
+#endif
 
 
 // Power On the server in a given slot
 static int
 server_power_on(uint8_t slot_id) {
-  char vpath[64] = {0};
   int loop = 0;
   int max_retry = 5;
   int val = 0;
@@ -828,13 +826,10 @@ int
 pal_system_config_check(uint8_t slot_id) {
   char vpath[80] = {0};
   char cmd[80] = {0};
-  int ret=-1;
-  uint8_t value;
   int slot_type = -1;
   int last_slot_type = -1;
   char slot_str[80] = {0};
   char last_slot_str[80] = {0};
-  uint8_t server_type = 0xFF;
 
   // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   slot_type = minilaketb_get_slot_type(slot_id);
@@ -896,9 +891,7 @@ pal_system_config_check(uint8_t slot_id) {
 static int
 server_12v_on(uint8_t slot_id) {
   char vpath[64] = {0};
-  char cmd[128] = {0};
   int ret=-1;
-  uint8_t value;
   uint8_t slot_prsnt, slot_latch;
   int rc, pid_file;
   int retry = MAX_BIC_CHECK_RETRY;
@@ -1143,8 +1136,6 @@ pal_is_test_board() {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  int val, val_prim, val_ext;
-  char path[64] = {0};
 
   switch (fru) {
     case FRU_SLOT1:
@@ -1321,7 +1312,6 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   int ret;
   uint8_t status;
   bool gs_flag = false;
-  uint8_t server_type = 0xFF;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
@@ -1399,11 +1389,12 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
-      if (status == SERVER_POWER_OFF)
+      if (status == SERVER_POWER_OFF) {
         return 1;
-      else
+      } else {
         gs_flag = true;
         return server_power_off(slot_id, gs_flag);
+      }
       break;
 
     case SERVER_12V_ON:
@@ -1744,7 +1735,6 @@ uart_exit:
 int
 pal_post_enable(uint8_t slot) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -1774,7 +1764,6 @@ pal_post_enable(uint8_t slot) {
 int
 pal_post_disable(uint8_t slot) {
   int ret;
-  int i;
   bic_config_t config = {0};
   bic_config_u *t = (bic_config_u *) &config;
 
@@ -1799,7 +1788,6 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
   int ret;
   uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t len;
-  int i;
 
   ret = bic_get_post_buf(slot, buf, &len);
   if (ret) {
@@ -1875,9 +1863,6 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-
-  int ret = -1;
-  uint8_t server_type = 0xFF;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2089,7 +2074,6 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
   uint8_t val;
   int ret;
-  uint8_t server_type = 0xFF;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2231,14 +2215,14 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
 
 void
 pal_dump_key_value(void) {
-  int i;
+  int i = 0;
   int ret;
 
   char value[MAX_VALUE_LEN] = {0x0};
 
   while (strcmp(key_list[i], LAST_KEY)) {
     printf("%s:", key_list[i]);
-    if (ret = kv_get(key_list[i], value, NULL, KV_FPERSIST) < 0) {
+    if ((ret = kv_get(key_list[i], value, NULL, KV_FPERSIST)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);
@@ -2288,15 +2272,14 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
       sprintf(state, "on");
       return 0;
   }
+  return -1;
 }
 
 // Write GUID into EEPROM
 static int
 pal_set_guid(uint16_t offset, char *guid) {
   int fd = 0;
-  uint64_t tmp[GUID_SIZE];
   ssize_t bytes_wr;
-  int i = 0;
 
   errno = 0;
 
@@ -2335,7 +2318,6 @@ err_exit:
 static int
 pal_get_guid(uint16_t offset, char *guid) {
   int fd = 0;
-  uint64_t tmp[GUID_SIZE];
   ssize_t bytes_rd;
 
   errno = 0;
@@ -2447,8 +2429,6 @@ pal_populate_guid(uint8_t *guid, char *str) {
 
 int
 pal_set_sys_guid(uint8_t slot, char *str) {
-  int ret;
-  int i=0;
   uint8_t guid[GUID_SIZE] = {0x00};
 
   pal_populate_guid(guid, str);
@@ -2458,9 +2438,8 @@ pal_set_sys_guid(uint8_t slot, char *str) {
 
 int
 pal_get_sys_guid(uint8_t slot, char *guid) {
-  int ret;
 
-  return bic_get_sys_guid(slot, guid);
+  return bic_get_sys_guid(slot, (uint8_t *)guid);
 }
 
 int
@@ -2680,6 +2659,7 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
         _print_sensor_discrete_log( fru, snr_num, snr_name, GETBIT(n_val, 4), "FRB3");
     }
   }
+  return 0;
 }
 
 static int
@@ -2733,8 +2713,6 @@ int
 pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
   uint8_t snr_type = sel[10];
   uint8_t snr_num = sel[11];
-  uint8_t server_type = 0xFF;
-  int ret = -1;
 
   // If SNR_TYPE is OS_BOOT, sensor name is OS
   switch (snr_type) {
@@ -3005,17 +2983,6 @@ pal_get_fan_name(uint8_t num, char *name) {
 }
 
 static int
-read_fan_value(const int fan, const char *device, int *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR,device_name);
-  return read_device(full_name, value);
-}
-
-static int
 write_fan_value(const int fan, const char *device, const int value) {
   char full_name[LARGEST_DEVICE_NAME];
   char device_name[LARGEST_DEVICE_NAME];
@@ -3043,7 +3010,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
 
   // For 0%, turn off the PWM entirely
   if (unit == 0) {
-    write_fan_value(fan, "pwm%d_en", 0);
+    ret = write_fan_value(fan, "pwm%d_en", 0);
     if (ret < 0) {
       syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
       return -1;
@@ -3104,7 +3071,7 @@ pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%d", ts.tv_sec);
+  sprintf(tstr, "%ld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -3351,12 +3318,12 @@ int
 pal_set_dev_guid(uint8_t slot, char *guid) {
       pal_populate_guid(g_dev_guid, guid);
 
-      return pal_set_guid(OFFSET_DEV_GUID, g_dev_guid);
+      return pal_set_guid(OFFSET_DEV_GUID, (char *)g_dev_guid);
 }
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {
-      pal_get_guid(OFFSET_DEV_GUID, g_dev_guid);
+      pal_get_guid(OFFSET_DEV_GUID, (char *)g_dev_guid);
       memcpy(guid, g_dev_guid, GUID_SIZE);
 
       return 0;
@@ -3545,7 +3512,7 @@ static void * sled_ac_cycle_handler(void *arg)
 int sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
 
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
-  int ret, slot_id = slot;
+  int ret;
   pthread_t tid;
 
   if (m_sled_ac_start != false) {
@@ -3888,7 +3855,7 @@ pal_get_status(void) {
   char str_server_por_cfg[64];
   char buff[MAX_VALUE_LEN];
   int policy = 3;
-  uint8_t status, data, ret;
+  uint8_t data;
 
   // Platform Power Policy
   memset(str_server_por_cfg, 0 , sizeof(char) * 64);
@@ -4040,7 +4007,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
       ts.tv_sec += 30;
 
       sprintf(key, "ocpdbg_lcd");
-      sprintf(value, "%d", ts.tv_sec);
+      sprintf(value, "%ld", ts.tv_sec);
       if (kv_set(key, value, 0, 0) < 0) {
         return -1;
       }

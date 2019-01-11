@@ -7,4 +7,3 @@ SRC_URI += "file://pal.c \
 DEPENDS += "libbic libfby2-common libfby2-fruid libfby2-sensor libncsi"
 RDEPENDS_${PN} += " libfby2-common libfby2-fruid libfby2-sensor libncsi"
 LDFLAGS += " -lbic -lfby2_common -lfby2_fruid -lfby2_sensor -lncsi"
-PAL_WARNINGS_AS_ERRORS = "no"

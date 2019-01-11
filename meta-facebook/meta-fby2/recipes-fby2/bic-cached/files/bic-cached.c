@@ -194,8 +194,8 @@ main (int argc, char * const argv[])
     if (fruid_cache_init(slot_id) == 0)
       break;
 
-      retry++;
-      sleep(1);
+    retry++;
+    sleep(1);
   } while (retry < max_retry);
 
   if (retry == max_retry)

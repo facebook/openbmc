@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2014-present Facebook. All Rights Reserved.
+ * Copyright 2018-present Facebook. All Rights Reserved.
  *
  * This file provides platform specific implementation of sensor information
  *
@@ -21,18 +21,20 @@
  */
 #include "sensor.h"
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
+#include <openbmc/pal.h>
 
 #define SENSOR_MGMT_MAX 1
 #define SENSOR_DISC_MAX 8
 #define SENSOR_THRESH_MAX 1
 #define SENSOR_OEM_MAX 1
 
-#define BMC_SLAVE_ADDR 0x20
+#define SENSOR_BMC_SLAVE_ADDR 0x20
 
 typedef struct {
   unsigned char num;
@@ -60,12 +62,31 @@ static sensor_disc_info_t g_sensor_disc = {0};
 static sensor_thresh_info_t g_sensor_thresh = {0};
 static sensor_oem_info_t g_sensor_oem = {0};
 
+// Returns the platform name and num chars in it
+static int get_sensor_platform_name(char *str)
+{
+  int ret;
+  char c;
+  if (pal_get_platform_name(str)) {
+    strcpy(str, "OPENBMC ");
+    return strlen(str);
+  }
+  strcat(str, "-BMC ");
+  ret = strlen(str);
+  while ((c = *str) != '\0') {
+    *str++ = toupper(c);
+  }
+  return ret;
+}
+
 static void
 populate_mgmt_sensors(void) {
+  char platform_name[64] = {0};
   sensor_mgmt_t sensor = {0};
+  int plat_len;
 
-  // Add record for the AST2100 BMC
-  sensor.slave_addr = BMC_SLAVE_ADDR;
+  // Add record for the AST2520 BMC
+  sensor.slave_addr = SENSOR_BMC_SLAVE_ADDR;
   sensor.chan_no = 0x0; // Primary BMC controller
 
   // Init Agent = false
@@ -75,9 +96,10 @@ populate_mgmt_sensors(void) {
   sensor.dev_caps = 0x0F;
 
   // Device ID string
-  // Type - 0xC0: ASCII, Length - 0x09
-  sensor.str_type_len = 0xC0 + 0x09;
-  strncpy(sensor.str, "Yosemite-BMC", 0x09);
+  // Type - 0xC0: ASCII, Length - <num chars>
+  plat_len = get_sensor_platform_name(platform_name);
+  sensor.str_type_len = 0xC0 + plat_len;
+  strncpy(sensor.str, platform_name, plat_len);
 
   // Add this sensor to the global table
   if (g_sensor_mgmt.num >= SENSOR_MGMT_MAX) {
@@ -102,7 +124,7 @@ populate_disc_sensors(void) {
   // EntitiyId# 0xD0, EntityInst# 0x00
   // Sensor Type# Chassis 0x18
   // Event Read/Type# OEM 0x70
-  sensor.owner= BMC_SLAVE_ADDR;
+  sensor.owner= SENSOR_BMC_SLAVE_ADDR;
   sensor.lun = 0x00;
   sensor.sensor_num = 0x10;
 
@@ -139,7 +161,7 @@ populate_disc_sensors(void) {
   // EntitiyId# 0xD0, EntityInst# 0x02
   // Sensor Type# OEM: 0xC0
   // Event Read/Type# Sensor Specific: 0x6F
-  sensor.owner= BMC_SLAVE_ADDR;
+  sensor.owner= SENSOR_BMC_SLAVE_ADDR;
   sensor.lun = 0x00;
   sensor.sensor_num = 0x5F;
 
@@ -180,7 +202,7 @@ populate_disc_sensors(void) {
   // EntitiyId# 0xD0, EntityInst# 0x03
   // Sensor Type# WDT2: 0x23
   // Event Read/Type# Sensor Specific: 0x6F
-  sensor.owner= BMC_SLAVE_ADDR;
+  sensor.owner= SENSOR_BMC_SLAVE_ADDR;
   sensor.lun = 0x00;
   sensor.sensor_num = 0x60;
 
@@ -221,7 +243,7 @@ populate_disc_sensors(void) {
   // EntitiyId# 0x15, EntityInst# 0x00
   // Sensor Type# OEM: 0xC8
   // Event Read/Type# Sensor Specific: 0x6F
-  sensor.owner= BMC_SLAVE_ADDR;
+  sensor.owner= SENSOR_BMC_SLAVE_ADDR;
   sensor.lun = 0x00;
   sensor.sensor_num = 0x70;
 
@@ -258,7 +280,7 @@ populate_disc_sensors(void) {
   // EntitiyId# 0xD0, EntityInst# 0x05
   // Sensor Type# OEM 0xC6
   // Event Read/Type# Sensor Specific 6Fh
-  sensor.owner= BMC_SLAVE_ADDR;
+  sensor.owner= SENSOR_BMC_SLAVE_ADDR;
   sensor.lun = 0x00;
   sensor.sensor_num = 0xB3;
 
@@ -299,7 +321,7 @@ populate_disc_sensors(void) {
   // EntitiyId# 0x35, EntityInst# 0x00
   // Sensor Type# OEM 0xC7
   // Event Read/Type# Sensor Specific 6Fh
-  sensor.owner= BMC_SLAVE_ADDR;
+  sensor.owner= SENSOR_BMC_SLAVE_ADDR;
   sensor.lun = 0x00;
   sensor.sensor_num = 0xED;
 

@@ -28,6 +28,7 @@ CFLAGS += "-Wall -Werror "
 SRC_URI = "file://Makefile \
            file://ipmid.c \
            file://lan.c \
+           file://sensor.c \
            file://timestamp.c \
            file://timestamp.h \
            file://sel.c \

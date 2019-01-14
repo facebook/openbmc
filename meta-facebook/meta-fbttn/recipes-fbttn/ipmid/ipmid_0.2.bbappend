@@ -22,7 +22,6 @@ LDFLAGS_append = "-lfruid -lipmb -lgpio"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \
            file://run-ipmid.sh \
-           file://sensor.c \
            file://fruid.c \
           "
 

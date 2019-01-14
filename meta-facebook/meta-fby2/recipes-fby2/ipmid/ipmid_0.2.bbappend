@@ -23,7 +23,6 @@ LDFLAGS += " -lipmb -lbic -lgpio -lfby2_sensor -lncsi"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \
-           file://sensor.c \
            file://fruid.c \
            file://run-ipmid.sh \
           "

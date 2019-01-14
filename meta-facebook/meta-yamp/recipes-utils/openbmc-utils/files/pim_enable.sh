@@ -33,23 +33,23 @@ pca_addr=20
 create_pim_gpio() {
   local base lc
   lc=$1
-  base=$2
+  chip=$2
 
   if [ -e LC${lc}_STATUS_GREEN_L ]; then
       # already created GPIOs for such pim
       return
   fi
 
-  gpio_export $((base + 1)) LC${lc}_DPM_POWER_UP
-  gpio_export $((base + 4)) LC${lc}_SCD_RESET_L
-  gpio_export $((base + 5)) LC${lc}_SCD_CONFIG_L
-  gpio_export $((base + 6)) LC${lc}_SATELLITE_PROG
-  gpio_export $((base + 7)) LC${lc}_LC_PWR_CYC
-  gpio_export $((base + 8)) LC${lc}_BAB_SYS_RESET_L
-  gpio_export $((base + 8 + 5)) LC${lc}_FAST_JTAG_EN
-  gpio_export $((base + 8 + 6)) LC${lc}_STATUS_RED_L
-  gpio_export $((base + 8 + 7)) LC${lc}_STATUS_GREEN_L
-  logger pim_enable: registered PIM${lc} with GPIO base $base
+  gpio_export_by_offset ${chip} 1 LC${lc}_DPM_POWER_UP
+  gpio_export_by_offset ${chip} 4 LC${lc}_SCD_RESET_L
+  gpio_export_by_offset ${chip} 5 LC${lc}_SCD_CONFIG_L
+  gpio_export_by_offset ${chip} 6 LC${lc}_SATELLITE_PROG
+  gpio_export_by_offset ${chip} 7 LC${lc}_LC_PWR_CYC
+  gpio_export_by_offset ${chip} 8 LC${lc}_BAB_SYS_RESET_L
+  gpio_export_by_offset ${chip} $((8 + 5)) LC${lc}_FAST_JTAG_EN
+  gpio_export_by_offset ${chip} $((8 + 6)) LC${lc}_STATUS_RED_L
+  gpio_export_by_offset ${chip} $((8 + 7)) LC${lc}_STATUS_GREEN_L
+  logger pim_enable: registered PIM${lc} with GPIO chip ${chip}
 }
 
 power_on_pim() {
@@ -107,12 +107,8 @@ while true; do
          fi
          # Check if device was probed and driver was installed
          if [ -e $drv_path/gpio ]; then
-            base=`cat $drv_path/gpio/gpiochip*/base 2>/dev/null`
-            # Base should be at least bigger than 100, do quick check
-            if [ $base -gt 100 ]; then
-               create_pim_gpio $((i+1)) $base
-               pim_found[$i]=1
-            fi
+           create_pim_gpio $((i+1)) ${pim_addr}
+           pim_found[$i]=1
          fi
       fi
     fi

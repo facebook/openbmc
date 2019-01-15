@@ -34,7 +34,7 @@ extern "C" {
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-pal.h>
+#include <openbmc/pal.h>
 #include <openbmc/fruid.h>
 
 #define ERR_PRINT(fmt, args...) \
@@ -73,7 +73,7 @@ extern "C" {
 #define BELPOWER_MODEL      "PFE1500-12-054NACS457"
 
 /* define for MURATA PSU */
-#define MURATA_MODEL        "D1U54P-W-1500-12-HC4TC"
+#define MURATA_MODEL        "D1U54P-W-1500-12-HC4TC-AF"
 
 typedef struct _i2c_info_t {
   int fd;
@@ -138,6 +138,12 @@ typedef struct _delta_hdr_t {
   uint8_t compatibility;
 } delta_hdr_t;
 
+typedef struct _murata_hdr_t {
+  uint8_t boot_addr;
+  uint8_t uc;
+  uint8_t unlock[4];
+} murata_hdr_t;
+
 enum {
   STOP,
   START
@@ -146,6 +152,7 @@ enum {
 enum {
   DELTA_1500,
   BELPOWER_1500_NAC,
+  MURATA_1500,
   UNKNOWN
 };
 

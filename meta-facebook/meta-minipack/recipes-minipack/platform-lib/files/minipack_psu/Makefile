@@ -17,6 +17,8 @@
 
 lib: libminipack-psu.so
 
+CFLAGS += -Wall -Werror
+
 libminipack-psu.so: minipack-psu.c
 	$(CC) $(CFLAGS) -fPIC -c -o minipack-psu.o minipack-psu.c
 	$(CC) -shared -o libminipack-psu.so minipack-psu.o -lc $(LDFLAGS)

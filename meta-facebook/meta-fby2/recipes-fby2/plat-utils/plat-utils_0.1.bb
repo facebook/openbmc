@@ -36,6 +36,7 @@ SRC_URI = "file://ast-functions \
            file://rc.local \
            file://src \
            file://COPYING \
+           file://check_ocp_nic.sh \
            file://check_slot_type.sh \
            file://setup-platform.sh \
            file://hotservice-reinit.sh \
@@ -56,7 +57,7 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py fby2_power.sh power_util.py \
-  check_slot_type.sh hotservice-reinit.sh check_server_type.sh time-sync.sh sync_date.sh \
+  check_ocp_nic.sh check_slot_type.sh hotservice-reinit.sh check_server_type.sh time-sync.sh sync_date.sh \
   cpld-dump.sh dump_cpld_ep.sh dump_cpld_rc.sh sboot-cpld-dump.sh"
 
 DEPENDS_append = "update-rc.d-native"

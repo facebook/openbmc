@@ -44,7 +44,6 @@
 
 #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
 #define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"
-#define EEPROM_NIC      "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom"
 
 #define BIN_SPB         "/tmp/fruid_spb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"
@@ -235,11 +234,7 @@ int plat_fruid_init(void) {
         break;
       case FRU_NIC:
         get_ncsi_vid();
-        if (fby2_get_nic_mfgid() == MFG_BROADCOM) {
-          ret = pal_read_nic_fruid(BIN_NIC, 256);
-          break;
-        }
-        ret = copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC);
+        ret = pal_read_nic_fruid(BIN_NIC, 256);
         break;
       default:
         break;

@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -3450,8 +3451,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 int
-pal_read_nic_fruid(const char *path, int size) {  // for 1-byte offset length
+pal_read_nic_fruid(const char *path, int size) {
   uint8_t wbuf[8], rbuf[32];
+  uint8_t offs_len, addr;
+  char *bus;
   int offset, count;
   int fd = -1, dev = -1, ret = -1;
 
@@ -3460,15 +3463,30 @@ pal_read_nic_fruid(const char *path, int size) {  // for 1-byte offset length
     goto error_exit;
   }
 
-  dev = open("/dev/i2c-12", O_RDWR);
+  if (pal_is_ocp30_nic()) {
+    bus = "/dev/i2c-11";
+    addr = 0xA0;
+    offs_len = 2;
+  } else {
+    bus = "/dev/i2c-12";
+    addr = 0xA2;
+    offs_len = (fby2_get_nic_mfgid() == MFG_BROADCOM) ? 1 : 2;
+  }
+
+  dev = open(bus, O_RDWR);
   if (dev < 0) {
     goto error_exit;
   }
 
   // Read chunks of FRUID binary data in a loop
   for (offset = 0; offset < size; offset += 8) {
-    wbuf[0] = offset;
-    ret = i2c_rdwr_msg_transfer(dev, 0xA2, wbuf, 1, rbuf, 8);
+    if (offs_len == 2) {
+      wbuf[0] = offset >> 8;
+      wbuf[1] = offset;
+    } else {
+      wbuf[0] = offset;
+    }
+    ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, offs_len, rbuf, 8);
     if (ret) {
       break;
     }
@@ -3493,8 +3511,10 @@ error_exit:
 }
 
 static int
-_write_nic_fruid(const char *path) {  // for 1-byte offset length
+_write_nic_fruid(const char *path) {
   uint8_t wbuf[32];
+  uint8_t offs_len, addr;
+  char *bus;
   int offset, count;
   int fd = -1, dev = -1, ret = -1;
 
@@ -3503,7 +3523,17 @@ _write_nic_fruid(const char *path) {  // for 1-byte offset length
     goto error_exit;
   }
 
-  dev = open("/dev/i2c-12", O_RDWR);
+  if (pal_is_ocp30_nic()) {
+    bus = "/dev/i2c-11";
+    addr = 0xA0;
+    offs_len = 2;
+  } else {
+    bus = "/dev/i2c-12";
+    addr = 0xA2;
+    offs_len = (fby2_get_nic_mfgid() == MFG_BROADCOM) ? 1 : 2;
+  }
+
+  dev = open(bus, O_RDWR);
   if (dev < 0) {
     goto error_exit;
   }
@@ -3511,13 +3541,18 @@ _write_nic_fruid(const char *path) {  // for 1-byte offset length
   // Write chunks of FRUID binary data in a loop
   offset = 0;
   while (1) {
-    count = read(fd, &wbuf[1], 8);
+    count = read(fd, &wbuf[offs_len], 8);
     if (count <= 0) {
       break;
     }
 
-    wbuf[0] = offset;
-    ret = i2c_rdwr_msg_transfer(dev, 0xA2, wbuf, count+1, NULL, 0);
+    if (offs_len == 2) {
+      wbuf[0] = offset >> 8;
+      wbuf[1] = offset;
+    } else {
+      wbuf[0] = offset;
+    }
+    ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, count+offs_len, NULL, 0);
     if (ret) {
       break;
     }
@@ -4858,7 +4893,7 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
       parsed = true;
       break;
     case BIC_RC_SENSOR_THROTTLE_STATUS:
-      strcpy(error_log, ""); 
+      strcpy(error_log, "");
       switch (ed[0]) {
         case 0x00:
           strcat(error_log, "INA230_Throttle");
@@ -4870,7 +4905,7 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, "DDR3_Event_Throttle");
           break;
         case 0x03:
-          strcat(error_log, "DDR4_Event_Throttle"); 
+          strcat(error_log, "DDR4_Event_Throttle");
           break;
         case 0x04:
           strcat(error_log, "DDR5_Event_Throttle");
@@ -4895,7 +4930,7 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
           break;
         default:
           strcat(error_log, "Unknown");
-          break;      
+          break;
       }
       parsed = true;
       break;
@@ -6697,7 +6732,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
         }
 #endif
       } else if (slot_type == SLOT_TYPE_GPV2) {
-#if defined(CONFIG_FBY2_GPV2) 
+#if defined(CONFIG_FBY2_GPV2)
         switch (snr_num) {
           case GPV2_SENSOR_P12V_BIC_SCALED:
           case GPV2_SENSOR_P3V3_STBY_BIC_SCALED:
@@ -6969,7 +7004,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
         }
 #endif
       } else if (slot_type == SLOT_TYPE_GPV2) {
-#if defined(CONFIG_FBY2_GPV2) 
+#if defined(CONFIG_FBY2_GPV2)
         switch (snr_num) {
           case GPV2_SENSOR_P12V_BIC_SCALED:
           case GPV2_SENSOR_P3V3_STBY_BIC_SCALED:
@@ -7325,7 +7360,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
   uint8_t channel = 0;
   uint8_t netdev = 0;
   uint8_t netenable = 0;
-  char sendcmd[128] = {0};  
+  char sendcmd[128] = {0};
   int i;
 
   *res_len = 0;
@@ -7450,7 +7485,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       }
 
       pal_send_nl_msg(msg, rcv_buf);
-      
+
       memcpy(&res_data[0], &rcv_buf->msg_payload[0], rcv_buf->payload_length);
       *res_len = rcv_buf->payload_length;
 
@@ -9243,9 +9278,9 @@ void
 pal_specific_plat_fan_check(bool status)
 {
   uint8_t is_sled_out = 1;
-  if (pal_get_fan_latch(&is_sled_out) != 0) 
+  if (pal_get_fan_latch(&is_sled_out) != 0)
     syslog(LOG_WARNING, "%s: Get SLED status in/out failed", __func__);
- 
+
   if(is_sled_out == 0)
     printf("Sled Fan Latch Open: False\n");
   else
@@ -9372,4 +9407,26 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     default:
       return 4;
   }
+}
+
+int
+pal_is_ocp30_nic(void) {
+  int prsnt_a = 0, prsnt_b = 0;
+  char path[64];
+
+  sprintf(path, GPIO_VAL, GPIO_MEZZ_PRSNTA2_N);
+  if (read_device(path, &prsnt_a)) {
+    return 0;
+  }
+
+  sprintf(path, GPIO_VAL, GPIO_MEZZ_PRSNTB2_N);
+  if (read_device(path, &prsnt_b)) {
+    return 0;
+  }
+
+  if ((prsnt_a == 0) && (prsnt_b == 1)) {
+    return 1;
+  }
+
+  return 0;
 }

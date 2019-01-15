@@ -144,6 +144,8 @@ typedef struct {
 #define GPIO_CLK_BUFF2_PWR_EN_N            73
 #define GPIO_VGA_SW0                       74
 #define GPIO_VGA_SW1                       75
+#define GPIO_MEZZ_PRSNTA2_N                88
+#define GPIO_MEZZ_PRSNTB2_N                89
 #define GPIO_PWR1_LED                      96
 #define GPIO_PWR2_LED                      97
 #define GPIO_PWR3_LED                      98

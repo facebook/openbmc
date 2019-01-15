@@ -18,8 +18,26 @@
 # Boston, MA 02110-1301 USA
 #
 
-# Check OCP NIC
-sh /usr/local/bin/check_ocp_nic.sh > /dev/NULL
+. /usr/local/fbpackages/utils/ast-functions
 
-# Get and Set slot type
-sh /usr/local/bin/check_slot_type.sh > /dev/NULL
+gpio_set F4 1
+gpio_set F5 1
+
+if [[ $(gpio_get_val L0) == "0" && $(gpio_get_val L1) == "1" ]]; then
+  val=0
+  for i in {1..3}; do
+    val=$(i2cget -y -f 12 0x20 0 b)
+    val=$((val & 0x0f))
+    [ $val -eq 15 ] && break
+    usleep 100000
+  done
+
+  if [ $val -ne 15 ]; then
+    i2cset -y -f 12 0x20 6 0xffff w
+    i2cset -y -f 12 0x20 2 0xffff w
+    usleep 200000
+    i2cset -y -f 12 0x20 6 0xfe b
+    sleep 1
+    i2cset -y -f 12 0x20 6 0xfc b
+  fi
+fi

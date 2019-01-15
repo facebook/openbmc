@@ -139,10 +139,7 @@ fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
       sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
       break;
     case FRU_NIC:
-      if (fby2_get_nic_mfgid() == MFG_BROADCOM) {
-        return -1;
-      }
-      sprintf(path, "/sys/class/i2c-adapter/i2c-12/12-0051/eeprom");
+      return -1;
       break;
     default:
 #ifdef DEBUG

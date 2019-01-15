@@ -17,13 +17,7 @@ LDFLAGS += " -lkv -lipmi -lipmb"
 SOURCES = "pal.c"
 HEADERS = "pal.h"
 
-PAL_WARNINGS_AS_ERRORS ?= "yes"
-
-def get_cflags(d):
-  if d.getVar('PAL_WARNINGS_AS_ERRORS', True) == "yes":
-    return "-Wall -Werror -fPIC"
-  return "-fPIC"
-CFLAGS += '${@get_cflags(d)}'
+CFLAGS += "-Wall -Werror -fPIC"
 
 S = "${WORKDIR}"
 

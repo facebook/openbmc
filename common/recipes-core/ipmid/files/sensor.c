@@ -119,6 +119,7 @@ populate_disc_sensors(void) {
 
   sensor_disc_t sensor = {0};
 
+#ifdef SENSOR_DISCRETE_US_STATUS
   // Sensor uS Status
   // Sensor# 0x10
   // EntitiyId# 0xD0, EntityInst# 0x00
@@ -155,6 +156,9 @@ populate_disc_sensors(void) {
   memcpy(&g_sensor_disc.sensor[g_sensor_disc.num], &sensor, sizeof(sensor_disc_t));
 
   g_sensor_disc.num++;
+#endif
+
+#ifdef SENSOR_DISCRETE_SEL_STATUS
 
   // Sensor SEL Status
   // Sensor# 0x5F
@@ -195,8 +199,9 @@ populate_disc_sensors(void) {
   memcpy(&g_sensor_disc.sensor[g_sensor_disc.num], &sensor, sizeof(sensor_disc_t));
 
   g_sensor_disc.num++;
+#endif
 
-
+#ifdef SENSOR_DISCRETE_WDT
   // Sensor WDT
   // Sensor# 0x60
   // EntitiyId# 0xD0, EntityInst# 0x03
@@ -236,8 +241,9 @@ populate_disc_sensors(void) {
   memcpy(&g_sensor_disc.sensor[g_sensor_disc.num], &sensor, sizeof(sensor_disc_t));
 
   g_sensor_disc.num++;
+#endif
 
-
+#ifdef SENSOR_DISCRETE_PWR_STATUS
   // Sensor Chassis Pwr Sts
   // Sensor# 0x70
   // EntitiyId# 0x15, EntityInst# 0x00
@@ -274,7 +280,9 @@ populate_disc_sensors(void) {
   memcpy(&g_sensor_disc.sensor[g_sensor_disc.num], &sensor, sizeof(sensor_disc_t));
 
   g_sensor_disc.num++;
+#endif
 
+#ifdef SENSOR_DISCRETE_DIMM_HOT
   // Sensor CPU DIMM Hot
   // Sensor# 0xB3
   // EntitiyId# 0xD0, EntityInst# 0x05
@@ -311,6 +319,9 @@ populate_disc_sensors(void) {
   memcpy(&g_sensor_disc.sensor[g_sensor_disc.num], &sensor, sizeof(sensor_disc_t));
 
   g_sensor_disc.num++;
+#endif
+
+#ifdef SENSOR_DISCRETE_PMBUS_STATUS
 
   // Sensor PMBus Status Word Low
   // Sensor PMBus Status Word High
@@ -352,6 +363,7 @@ populate_disc_sensors(void) {
   memcpy(&g_sensor_disc.sensor[g_sensor_disc.num], &sensor, sizeof(sensor_disc_t));
 
   g_sensor_disc.num++;
+#endif
 
   return;
 }

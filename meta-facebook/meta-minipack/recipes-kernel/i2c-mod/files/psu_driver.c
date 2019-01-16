@@ -117,14 +117,18 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
   int value = -1;
   int count = 10;
   int ret = -1;
-  u8 block[I2C_SMBUS_BLOCK_MAX + 1];
+  u8 length, model_chr;
 
   mutex_lock(&data->idd_lock);
 
-  ret = i2c_smbus_read_block_data(client, PMBUS_MFR_MODEL, block);
-  msleep(PSU_DELAY);
+  /*
+   * If read block length byte > 32, it will cause kernel panic.
+   * Using read word to replace read block to identifer PSU model.
+   */
+  ret = i2c_smbus_read_word_data(client, PMBUS_MFR_MODEL);
+  length = ret & 0xff;
 
-  if (ret < 0 || block[0] == NULL || block[0] == '\n') {
+  if (ret < 0 || length > 32) {
     PSU_DEBUG("Failed to read Manufacturer Model\n");
   } else {
     while((value < 0 || value == 0xffff) && count--) {
@@ -140,15 +144,21 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
     return -1;
   }
 
-  if (!strncmp(block, "ECD55020006", 11)) {
+  model_chr = (ret >> 8) & 0xff;
+  if (length == 11 && model_chr == 'E') {
+    /* PSU model name: ECD55020006 */
     model = DELTA_1500;
-  } else if (!strncmp(block, "PS-2152-5L", 10)) {
+  } else if (length == 10 && model_chr == 'P') {
+    /* PSU model name: PS-2152-5L */
     model = LITEON_1500;
-  } else if (!strncmp(block, "PFE1100-12-054NA", 16)) {
+  } else if (length == 16 && model_chr == 'P') {
+    /* PSU model name: PFE1100-12-054NA */
     model = BELPOWER_1100_NA;
-  } else if (!strncmp(block, "PFE1500-12-054NAC", 17)) {
+  } else if ((length == 17 || length == 21) && model_chr == 'P') {
+    /* PSU model name: PFE1500-12-054NACS457 */
     model = BELPOWER_1500_NAC;
-  } else if (!strncmp(block, "D1U54P-W-1500-12-HC4TC", 22)) {
+  } else if ((length == 22 || length == 25) && model_chr == 'D') {
+    /* PSU model name: D1U54P-W-1500-12-HC4TC-AF */
     model = MURATA_1500;
   } else {
     model = UNKNOWN;

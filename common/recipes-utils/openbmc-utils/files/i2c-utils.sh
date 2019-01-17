@@ -204,3 +204,11 @@ i2c_check_driver_binding() {
     fi
     echo "${sum_info}: ${err_info}"
 }
+
+#
+# Return the given i2c device's absolute sysfs path.
+#
+i2c_device_sysfs_abspath() {
+    local i2c_dev=$1
+    echo "${SYSFS_I2C_DEVICES}/${i2c_dev}"
+}

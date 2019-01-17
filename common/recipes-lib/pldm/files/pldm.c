@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <openbmc/ncsi.h>
 #include "pldm_base.h"
@@ -44,12 +45,13 @@
   #define DBG_PRINT(fmt, args...)
 #endif
 
-
-static uint8_t pldm_iid = 0; // technically only 5 bits as per DSP0240 v1.0.0
-
+// global PLDM control & configuration variables
+static uint8_t  gPldm_iid = 0; // technically only 5 bits as per DSP0240 v1.0.0
+static uint32_t gPldm_transfer_size = PLDM_MAX_XFER_SIZE;
+static uint8_t  gPldm_max_transfer_cnt = PLDM_MAX_XFER_CNT;
 
 /* PLDM Firmware Update command name*/
-const char *pldm_cmd_string[NUM_PLDM_UPDATE_CDMS] = {
+const char *pldm_fw_cmd_string[NUM_PLDM_UPDATE_CDMS] = {
   "CMD_REQUEST_UPDATE",
   "CMD_GET_PACKAGE_DATA",
   "CMD_GET_DEVICE_METADATA",
@@ -66,7 +68,40 @@ const char *pldm_cmd_string[NUM_PLDM_UPDATE_CDMS] = {
   "CMD_CANCEL_UPDATE",
 };
 
-/* PLDM Firmware Update command name*/
+/* PLDM base completion code */
+const char *pldm_base_cc_string[6] = {
+    "SUCCESS",
+    "ERROR",
+    "ERROR_INVALID_DATA",
+    "ERROR_INVALID_LENGTH",
+    "ERROR_NOT_READY",
+    "ERROR_UNSUPPORTED_PLDM_CMD",
+};
+
+
+/* PLDM Firmware completion code*/
+const char *pldm_update_cmd_cc_string[NUM_FW_UPDATE_CC] = {
+  "NOT_IN_UPDATE_MODE",
+  "ALREADY_IN_UPDATE_MODE",
+  "DATA_OUT_OF_RANGE",
+  "INVALID_TRANSFER_LENTH",
+  "INVALID_STATE_FOR_CMD",
+  "INCOMPLETE_UPDATE",
+  "BUSY_IN_BACKGROUND",
+  "CANCEL_PENDING",
+  "COMMAND_NOT_EXPECTED",
+  "RETRY_REQUEST_FW_DATA",
+  "UNABLE_TO_INITIATE_UPDATE",
+  "ACTIVATION_NOT_REQUIRED",
+  "SELF_CONTAINED_ACTIVATION_NOT_PEMITTED",
+  "NO_DEVICE_METADATA",
+  "RETRY_REQUEST_UPDATE",
+  "NO_PACKAGE_DATA",
+  "INVALID_DATA_TRANSFER_HANDLE",
+  "INVALID_TRANSFER_OPERATION_FLAG",
+};
+
+/* PLDM component class name*/
 const char *pldm_comp_class_name[NUM_COMP_CLASS] = {
   "C_CLASS_UNKNOWN",
   "C_CLASS_OTHER",
@@ -85,7 +120,7 @@ const char *pldm_comp_class_name[NUM_COMP_CLASS] = {
 };
 
 
-/* PLDM Firmware Update command name*/
+/* PLDM firmware string type*/
 const char *pldm_str_type_name[NUM_PLDM_FW_STR_TYPES] = {
   "UNKNOWN",
   "ASCII",
@@ -107,6 +142,32 @@ pldm_str_type_to_name(fwStrType strType)
 
 
 const char *
+pldm_fw_cmd_to_name(PldmFWCmds cmd)
+{
+  if (cmd < CMD_REQUEST_UPDATE ||
+      cmd > CMD_CANCEL_UPDATE  ||
+      pldm_fw_cmd_string[cmd - CMD_REQUEST_UPDATE] == NULL) {
+      return "unknown_pldm_fw_cmd";
+  }
+  return pldm_fw_cmd_string[cmd - CMD_REQUEST_UPDATE];
+}
+
+
+const char *
+pldm_fw_cmd_cc_to_name(uint8_t comp_code)
+{
+  if ((comp_code <= CC_ERR_UNSUPPORTED_PLDM_CMD) &&
+      pldm_base_cc_string[comp_code] != NULL) {
+      return pldm_base_cc_string[comp_code];
+  } else if (comp_code < CC_FW_UPDATE_BASE ||
+      comp_code > CC_INVALID_TRANSFER_OPERATION_FLAG  ||
+      pldm_update_cmd_cc_string[comp_code - CC_FW_UPDATE_BASE] == NULL) {
+      return "unknown_completion code";
+  }
+  return pldm_update_cmd_cc_string[comp_code - CC_FW_UPDATE_BASE];
+}
+
+const char *
 pldm_comp_class_to_name(PldmComponentClass compClass)
 {
   if (compClass < 0 || compClass >= NUM_COMP_CLASS  ||
@@ -118,38 +179,173 @@ pldm_comp_class_to_name(PldmComponentClass compClass)
 
 void dbgPrintCdb(pldm_cmd_req *cdb)
 {
-  DBG_PRINT("%s, common=0x%x, payload:\n", __FUNCTION__, cdb->common);
-  for (int i=0; i<cdb->payload_size; ++i)
-    DBG_PRINT("0x%x ", cdb->payload[i]);
+  int i = 0;
+  DBG_PRINT("%s\n   common:  ", __FUNCTION__);
+  for (i=0; i<3; ++i)
+    DBG_PRINT("%02x", cdb->common[i]);
+  DBG_PRINT("\n   payload: ");
+  for (i=0; i<cdb->payload_size; ++i) {
+    DBG_PRINT("%02x", cdb->payload[i]);
+    if ((i%4 == 3) && (i%15 != 0))
+      DBG_PRINT(" ");
+    if (i%16 == 15)
+      DBG_PRINT("\n            ");
+  }
   DBG_PRINT("\n");
+
+  DBG_PRINT("\n   iid=%d, cmd=0x%x (%s)\n\n",
+             (cdb->common[0]) & 0x1f,
+             cdb->common[2],
+             pldm_fw_cmd_to_name(cdb->common[2]));
 }
 
 
-uint32_t genCommonFields(PldmFWCmds cmd)
+void genReqCommonFields(PldmFWCmds cmd, uint8_t *common)
 {
-  uint32_t ret;
-  uint8_t iid = pldm_iid++;
-  ret =   (PLDM_CM_RQ | ((iid<<24) & PLDM_CM_IID_MASK))
-        | (PLDM_TYPE_FIRMWARE_UPDATE << 16)
-        | ((cmd << 8) & PLDM_CM_CMD_MASK);
-  return ret;
+  uint8_t iid = 0;
+
+  gPldm_iid = (gPldm_iid + 1) & 0x1f;;
+  iid = gPldm_iid;
+
+  common[0] = 0x80 | (iid & 0x1f);
+  common[1] = PLDM_TYPE_FIRMWARE_UPDATE;
+  common[2] = cmd;
 }
 
 
-int pldmRequestUpdateOp()
+
+// Given a PLDM package pointed by pFwPkgHdr
+// Generate command cdb for PLDM  RequestUpdate command (Type 0x05, cmd 0x10)
+void pldmCreateReqUpdateCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, pldm_cmd_req *pPldmCdb)
 {
-  pldm_cmd_req cdb;
-  PLDM_RequestUpdate_t *pCmd = (PLDM_RequestUpdate_t *)&(cdb.payload);
+  PLDM_RequestUpdate_t *pCmdPayload = (PLDM_RequestUpdate_t *)&(pPldmCdb->payload);
 
-  cdb.common = genCommonFields(CMD_REQUEST_UPDATE);
-  cdb.payload_size = sizeof(PLDM_RequestUpdate_t);
-  pCmd->maxTransferSize = 256;
-  pCmd->numComponents = 1;
-  pCmd->maxOutstandingTransferRequests = 1;
+  printf("\n\nCMD_REQUEST_UPDATE\n");
 
-  dbgPrintCdb(&cdb);
-  return 0;
+  genReqCommonFields(CMD_REQUEST_UPDATE, &(pPldmCdb->common[0]));
+
+
+  pCmdPayload->maxTransferSize = gPldm_transfer_size;
+  pCmdPayload->numComponents = pFwPkgHdr->componentImageCnt;
+  pCmdPayload->maxOutstandingTransferRequests = gPldm_max_transfer_cnt;
+  pCmdPayload->packageDataLength =
+     pFwPkgHdr->pDevIdRecs[0]->pRecords->fwDevPkgDataLength;
+
+  pCmdPayload->componentImageSetVersionStringType =
+     pFwPkgHdr->pDevIdRecs[0]->pRecords->compImgSetVersionStringType;
+
+  pCmdPayload->componentImageSetVersionStringLength =
+     pFwPkgHdr->pDevIdRecs[0]->pRecords->compImgSetVersionStringLength;
+
+  if (pCmdPayload->componentImageSetVersionStringLength > MAX_VERSION_STRING_LEN)
+  {
+    pCmdPayload->componentImageSetVersionStringLength = MAX_VERSION_STRING_LEN;
+    syslog(LOG_ERR, "%s version length(%d) exceeds max (%d)",
+        __FUNCTION__, pCmdPayload->componentImageSetVersionStringLength,
+        MAX_VERSION_STRING_LEN);
+  }
+
+  memcpy(pCmdPayload->componentImageSetVersionString,
+         pFwPkgHdr->pDevIdRecs[0]->versionString,
+         pCmdPayload->componentImageSetVersionStringLength);
+
+  pPldmCdb->payload_size = PLDM_COMMON_REQ_LEN +
+      offsetof(PLDM_RequestUpdate_t, componentImageSetVersionString) +
+      pCmdPayload->componentImageSetVersionStringLength;
+
+  dbgPrintCdb(pPldmCdb);
+  return;
 }
+
+
+// Given:
+//    1. a PLDM package pointed by pFwPkgHdr
+//    2. component index within PLDM package
+// Generate command cdb for PLDM  Pass Component Table command (Type 0x05, cmd 0x11)
+void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
+                            pldm_cmd_req *pPldmCdb)
+{
+  PLDM_PassComponentTable_t *pCmdPayload =
+      (PLDM_PassComponentTable_t *)&(pPldmCdb->payload);
+  pldm_component_img_info_t *pCompImgInfo = pFwPkgHdr->pCompImgInfo[compIdx];
+
+  printf("\n\nCMD_PASS_COMPONENT_TABLE\n");
+
+  genReqCommonFields(CMD_PASS_COMPONENT_TABLE, &(pPldmCdb->common[0]));
+
+  pCmdPayload->transferFlag = TFLAG_STATRT_END;  // only support 1 pass for now
+  pCmdPayload->class = pCompImgInfo->class;
+  pCmdPayload->id = pCompImgInfo->id;
+  pCmdPayload->classIndex = 0;  // TBD - needs to query for this from NIC
+  pCmdPayload->compStamp = pCompImgInfo->compStamp;
+  pCmdPayload->versionStringType = pCompImgInfo->versionStringType;
+  pCmdPayload->versionStringLength = pCompImgInfo->versionStringLength;
+  if (pCmdPayload->versionStringLength > MAX_VERSION_STRING_LEN) {
+    pCmdPayload->versionStringLength = MAX_VERSION_STRING_LEN;
+    syslog(LOG_ERR, "%s version length(%d) exceeds max (%d)",
+        __FUNCTION__, pCmdPayload->versionStringLength, MAX_VERSION_STRING_LEN);
+  }
+  memcpy(pCmdPayload->versionString, pCompImgInfo->versionString,
+         pCmdPayload->versionStringLength);
+
+  pPldmCdb->payload_size = PLDM_COMMON_REQ_LEN +
+        offsetof(PLDM_PassComponentTable_t, versionString) +
+        pCmdPayload->versionStringLength;
+
+  dbgPrintCdb(pPldmCdb);
+}
+
+
+
+void pldmCreateUpdateComponentCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
+                                  pldm_cmd_req *pPldmCdb)
+{
+  PLDM_UpdateComponent_t *pCmdPayload =
+      (PLDM_UpdateComponent_t *)&(pPldmCdb->payload);
+  pldm_component_img_info_t *pCompImgInfo = pFwPkgHdr->pCompImgInfo[compIdx];
+
+  printf("\n\nCMD_UPDATE_COMPONENT\n");
+
+  genReqCommonFields(CMD_UPDATE_COMPONENT, &(pPldmCdb->common[0]));
+
+  pCmdPayload->class = pCompImgInfo->class;
+  pCmdPayload->id = pCompImgInfo->id;
+  pCmdPayload->classIndex = 0;  // TBD - needs to query for this from NIC
+  pCmdPayload->compStamp = pCompImgInfo->compStamp;
+  pCmdPayload->compSize = pCompImgInfo->size;
+  pCmdPayload->updateOptions = pCompImgInfo->options;
+  pCmdPayload->versionStringType = pCompImgInfo->versionStringType;
+  pCmdPayload->versionStringLength  = pCompImgInfo->versionStringLength;
+
+  if (pCmdPayload->versionStringLength > MAX_VERSION_STRING_LEN) {
+    pCmdPayload->versionStringLength = MAX_VERSION_STRING_LEN;
+    syslog(LOG_ERR, "%s version length(%d) exceeds max (%d)",
+        __FUNCTION__, pCmdPayload->versionStringLength, MAX_VERSION_STRING_LEN);
+  }
+  memcpy(pCmdPayload->versionString, pCompImgInfo->versionString,
+         pCmdPayload->versionStringLength);
+
+  pPldmCdb->payload_size = PLDM_COMMON_REQ_LEN +
+        offsetof(PLDM_UpdateComponent_t, versionString) +
+        pCmdPayload->versionStringLength;
+
+  dbgPrintCdb(pPldmCdb);
+}
+
+
+void pldmCreateActivateFirmwareCmd(pldm_cmd_req *pPldmCdb)
+{
+  PLDM_ActivateFirmware_t *pCmdPayload =
+      (PLDM_ActivateFirmware_t *)&(pPldmCdb->payload);
+
+  printf("\n\nCMD_ACTIVATE_FIRMWARE\n");
+
+  genReqCommonFields(CMD_ACTIVATE_FIRMWARE, &(pPldmCdb->common[0]));
+  pCmdPayload->selfContainedActivationRequest = 0; // no self activation
+  pPldmCdb->payload_size = PLDM_COMMON_REQ_LEN +
+        sizeof(PLDM_ActivateFirmware_t);
+}
+
 
 // helper function to check if a given UUID is a PLDM FW Package
 int isPldmFwUuid(char *uuid)
@@ -285,9 +481,6 @@ init_pkg_hdr_info(char *path, pldm_fw_pkg_hdr_t** pFwPkgHdr, int *pOffset)
   FILE *fp;
   int rcnt, size;
   struct stat buf;
-  // temp buffer to store hdr info
-  pldm_fw_pkg_hdr_info_t hdr_info;
-
 
   // Open the file exclusively for read
   fp = fopen(path, "r");
@@ -300,16 +493,6 @@ init_pkg_hdr_info(char *path, pldm_fw_pkg_hdr_t** pFwPkgHdr, int *pOffset)
   size = buf.st_size;
   printf("size of file is %d bytes\n", size);
 
-  // read partial hdr info, enough to  check pkg uuid and get total header size
-  rcnt = fread(&hdr_info, 1, offsetof(pldm_fw_pkg_hdr_info_t, versionString), fp);
-  DBG_PRINT("Read hdr_info, read  %d bytes\n", rcnt);
-  if (rcnt < offsetof(pldm_fw_pkg_hdr_info_t, versionString)) {
-    printf("ERROR: hdr read, rcnt(%d) < %d", rcnt,
-           offsetof(pldm_fw_pkg_hdr_info_t, versionString));
-    fclose(fp);
-    return -1;
-  }
-
   // allocate pointer structure to access fw pkg header
   *pFwPkgHdr = (pldm_fw_pkg_hdr_t *)calloc(1, sizeof(pldm_fw_pkg_hdr_t));
   if (!(*pFwPkgHdr)) {
@@ -319,19 +502,19 @@ init_pkg_hdr_info(char *path, pldm_fw_pkg_hdr_t** pFwPkgHdr, int *pOffset)
   }
 
   // allocate actual buffer to store fw package header
-  (*pFwPkgHdr)->rawHdrBuf = (unsigned char *)calloc(1, hdr_info.headerSize);
+  (*pFwPkgHdr)->rawHdrBuf = (unsigned char *)calloc(1, size);
   if (!(*pFwPkgHdr)->rawHdrBuf) {
-    printf("ERROR: rawHdrBuf malloc failed, size %d\n", hdr_info.headerSize);
+    printf("ERROR: rawHdrBuf malloc failed, size %d\n", size);
     fclose(fp);
     return -1;
   }
 
   // Move the file pointer to the start and read the entire package header
   fseek(fp, 0, SEEK_SET);
-  rcnt = fread((*pFwPkgHdr)->rawHdrBuf, 1, hdr_info.headerSize, fp);
-  if (rcnt < hdr_info.headerSize) {
+  rcnt = fread((*pFwPkgHdr)->rawHdrBuf, 1, size, fp);
+  if (rcnt < size) {
     printf("ERROR: rawHdrBuf read, rcnt(%d) < %d", rcnt,
-           hdr_info.headerSize);
+           size);
     fclose(fp);
     return -1;
   }
@@ -475,11 +658,11 @@ init_component_img_info(pldm_fw_pkg_hdr_t* pFwPkgHdr, int *pOffset)
 
 
 // free up all pointers allocated in pldm_fw_pkg_hdr_t *pFwPkgHdr
-int
+void
 free_pldm_pkg_data(pldm_fw_pkg_hdr_t **pFwPkgHdr)
 {
   if ((!pFwPkgHdr) || (!(*pFwPkgHdr)))
-    return 0;
+    return;
 
   if ((*pFwPkgHdr)->pDevIdRecs) {
     for (int i=0; i<(*pFwPkgHdr)->devIdRecordCnt; ++i) {
@@ -502,12 +685,12 @@ free_pldm_pkg_data(pldm_fw_pkg_hdr_t **pFwPkgHdr)
     free((*pFwPkgHdr)->rawHdrBuf);
   }
   free(*pFwPkgHdr);
-  return 0;
+  return;
 }
 
 
 
-int
+pldm_fw_pkg_hdr_t *
 pldm_parse_fw_pkg(char *path) {
   int ret = 0;
   int offset = 0;
@@ -547,8 +730,167 @@ pldm_parse_fw_pkg(char *path) {
             pFwPkgHdr->phdrInfo->headerSize, offset);
   }
 
+
+  return pFwPkgHdr;
+
 error_exit:
   if (pFwPkgHdr)
     free_pldm_pkg_data(&pFwPkgHdr);
+  return 0;
+}
+
+static
+int handlePldmReqFwData(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pldmRes)
+{
+  PLDM_RequestFWData_t *pReqDataCmd = (PLDM_RequestFWData_t *)pCmd->payload;
+  // for now assumes  it's always component 0
+  unsigned char *pComponent =
+       (unsigned char*)(pkgHdr->rawHdrBuf + pkgHdr->pCompImgInfo[0]->locationOffset);
+  uint32_t componentSize = pkgHdr->pCompImgInfo[0]->size;
+
+  // calculate how much FW data is left to transfer and if any padding is needed
+  int compBytesLeft = componentSize - pReqDataCmd->offset;
+  int numPaddingNeeded = pReqDataCmd->length > compBytesLeft ?
+                   (pReqDataCmd->length - compBytesLeft) : 0;
+
+
+
+  printf("%s offset = 0x%x, length = 0x%x, compBytesLeft=%d, numPadding=%d\n",
+         __FUNCTION__, pReqDataCmd->offset, pReqDataCmd->length, compBytesLeft,
+         numPaddingNeeded);
+  memcpy(pldmRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  pldmRes->common[3] = CC_SUCCESS;  // hard code success for now, need to check length in the future
+
+
+  if (numPaddingNeeded > 0) {
+    printf("%s %d bytes padding added\n", __FUNCTION__, numPaddingNeeded);
+    memcpy(pldmRes->response, pComponent + pReqDataCmd->offset, compBytesLeft);
+    memset(pldmRes->response + compBytesLeft, 0, numPaddingNeeded);
+  } else {
+    memcpy(pldmRes->response, pComponent + pReqDataCmd->offset, pReqDataCmd->length);
+  }
+  pldmRes->resp_size = PLDM_COMMON_RES_LEN + pReqDataCmd->length;
+
+  return 0;
+}
+
+static
+int handlePldmFwTransferComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
+{
+  PLDM_TransferComplete_t *pReqDataCmd = (PLDM_TransferComplete_t *)pCmd->payload;
+  int ret = 0;
+
+  if (pReqDataCmd->transferResult != 0) {
+    printf("Error, transfer failed, err=%d\n", pReqDataCmd->transferResult);
+    ret = -1;
+  }
+
+  memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  pRes->common[3] = CC_SUCCESS;
+  pRes->resp_size = PLDM_COMMON_RES_LEN;
   return ret;
+}
+
+
+static
+int handlePldmVerifyComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
+{
+  PLDM_VerifyComplete_t *pReqDataCmd = (PLDM_VerifyComplete_t *)pCmd->payload;
+  int ret = 0;
+
+  if (pReqDataCmd->verifyResult != 0) {
+    printf("Error, firmware verify failed, err=0x%x\n", pReqDataCmd->verifyResult);
+    ret = -1;
+  }
+
+  memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  pRes->common[3] = CC_SUCCESS;
+  pRes->resp_size = PLDM_COMMON_RES_LEN;
+  return ret;
+}
+
+static
+int handlePldmFwApplyComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
+{
+  PLDM_ApplyComplete_t *pReqDataCmd = (PLDM_ApplyComplete_t *)pCmd->payload;
+  int ret = 0;
+  if (pReqDataCmd->applyResult != 0) {
+    printf("Error, firmware apply failed, err=%d\n", pReqDataCmd->applyResult);
+    ret = -1;
+  }
+
+  printf("Apply result = 0x%x, compActivationMethodsModification=0x%x\n",
+          pReqDataCmd->applyResult, pReqDataCmd->compActivationMethodsModification);
+
+  memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  pRes->common[3] = CC_SUCCESS;
+  pRes->resp_size = PLDM_COMMON_RES_LEN;
+  return ret;
+}
+
+int pldmCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pRes)
+{
+  int cmd = pCmd->common[2];
+  int ret = 0;
+
+  // need to check cmd validity
+  switch (cmd) {
+    case CMD_REQUEST_FIRMWARE_DATA:
+      ret = handlePldmReqFwData(pkgHdr, pCmd, pRes);
+      break;
+    case CMD_TRANSFER_COMPLETE:
+      printf("handle CMD_TRANSFER_COMPLETE\n");
+      dbgPrintCdb(pCmd);
+      ret = handlePldmFwTransferComplete(pCmd, pRes);
+      break;
+    case CMD_VERIFY_COMPLETE:
+      printf("handle CMD_VERIFY_COMPLETE\n");
+      dbgPrintCdb(pCmd);
+      ret = handlePldmVerifyComplete(pCmd, pRes);
+      break;
+    case CMD_APPLY_COMPLETE:
+      printf("handle CMD_APPLY_COMPLETE\n");
+      dbgPrintCdb(pCmd);
+      ret = handlePldmFwApplyComplete(pCmd, pRes);
+      break;
+    default:
+      printf("unkown cmd %d\n",cmd);
+      dbgPrintCdb(pCmd);
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+
+// takes NCSI cmd 0x56 response and returns
+// PLDM opcode
+int ncsiDecodePldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pldmReq)
+{
+  // NCSI response contains at least 4 bytes of Reason code and
+  //   Response code.
+  if (nl_resp->hdr.payload_length <= 4) {
+    // empty response, no PLDM payload
+    return -1;
+  }
+
+  pldmReq->payload_size = nl_resp->hdr.payload_length - 4; // accout for response and reason code
+  memcpy((char *)&(pldmReq->common[0]), (char *)&(nl_resp->msg_payload[4]),
+         pldmReq->payload_size);
+
+  // PLDM cmd byte is the 3rd byte of PLDM header
+  return pldmReq->common[2];
+}
+
+int ncsiDecodePldmCompCode(NCSI_NL_RSP_T *nl_resp)
+{
+  // NCSI response contains at least 4 bytes of Reason code and
+  //   Response code.  PLDM response contains at least 4 bytes header
+  if (nl_resp->hdr.payload_length < 8) {
+    // empty response, no PLDM payload/or payload incomplete
+    return -1;
+  }
+
+  // Completion Code is in 4th byte of PLDM header
+  return nl_resp->msg_payload[7];
 }

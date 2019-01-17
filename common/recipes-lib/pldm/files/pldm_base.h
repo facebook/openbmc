@@ -40,5 +40,8 @@
 #define PLDM_CM_CMD_MASK       0x0000ff00
 #define PLDM_CM_COMP_MASK      0x000000ff
 
+#define PLDM_COMMON_REQ_LEN   3  // 3 bytes common field for PLDM requests
+#define PLDM_COMMON_RES_LEN   4  // 4 bytes for PLDM Responses
+
 typedef  struct timestamp104 { uint8_t x[13]; } timestamp104;
 #endif

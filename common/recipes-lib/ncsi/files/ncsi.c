@@ -204,11 +204,24 @@ check_ncsi_status(void)
 const char *
 ncsi_cmd_type_to_name(int cmd)
 {
-  if (cmd < 0 || cmd >= NUM_NCSI_CDMS  ||
-         ncsi_cmd_string[cmd] == NULL) {
-      return "unknown_ncsi_cmd";
+  switch (cmd) {
+    case NCSI_OEM_CMD:
+      return "NCSI_OEM_CMD";
+    case NCSI_PLDM_REQUEST:
+      return "SEND_PLDM_REQUEST";
+    case NCSI_QUERY_PENDING_NC_PLDM_REQ:
+      return "QUERY_PENDING_NC_PLDM_REQ";
+    case NCSI_SEND_NC_PLDM_REPLY:
+      return "SEND_NC_PLDM_REPLY";
+    default:
+      if ((cmd < 0) ||
+          (cmd >= NUM_NCSI_CDMS) ||
+          (ncsi_cmd_string[cmd] == NULL)) {
+        return "unknown_ncsi_cmd";
+      } else {
+        return ncsi_cmd_string[cmd];
+      }
   }
-  return ncsi_cmd_string[cmd];
 }
 
 void
@@ -216,7 +229,7 @@ print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
 {
   uint8_t *pbuf = rcv_buf->msg_payload;
   int i = 0;
-  int cmd = rcv_buf->cmd;
+  int cmd = rcv_buf->hdr.cmd;
 
   printf("NC-SI Command Response:\n");
   printf("cmd: %s(0x%x)\n", ncsi_cmd_type_to_name(cmd), cmd);
@@ -233,7 +246,8 @@ print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
     print_passthrough_stats(rcv_buf);
     break;
   default:
-    for (i = 4; i < rcv_buf->payload_length; ++i) {
+    printf("Payload length = %d\n",rcv_buf->hdr.payload_length);
+    for (i = 4; i < rcv_buf->hdr.payload_length; ++i) {
   		if (i && !(i%4))
   			printf("\n%d: ", 16+i);
       printf("0x%02x ", rcv_buf->msg_payload[i]);
@@ -424,6 +438,30 @@ handle_get_version_id(NCSI_Response_Packet *resp)
     }
   }
   close(fd);
+
+  return 0;
+}
+
+
+
+
+int
+create_ncsi_ctrl_pkt(NCSI_NL_MSG_T *nl_msg, uint8_t ch, uint8_t cmd,
+                     uint16_t payload_len, unsigned char *payload) {
+  sprintf(nl_msg->dev_name, "eth0");
+  nl_msg->channel_id = ch;
+  nl_msg->cmd = cmd;
+  nl_msg->payload_length = payload_len;
+
+  if (payload_len > NCSI_MAX_PAYLOAD) {
+    syslog(LOG_ERR, "%s payload length(%d) exceeds threshold(%d), cmd=0x%02x",
+           __FUNCTION__, payload_len, NCSI_MAX_PAYLOAD, cmd);
+    return -1;
+  }
+
+  if (payload) {
+    memcpy(&(nl_msg->msg_payload[0]), payload, payload_len);
+  }
 
   return 0;
 }

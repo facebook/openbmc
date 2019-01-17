@@ -37,6 +37,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <stddef.h>
 #include "pal.h"
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
@@ -45,6 +46,7 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>
+
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -129,6 +131,11 @@
 #define TPM_Timeout 600
 
 #define CHUNK_OF_CRS_HEADER_LEN 2
+
+#ifndef max
+#define max(a, b) ((a) > (b)) ? (a) : (b)
+#endif
+
 
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
@@ -7288,10 +7295,8 @@ pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rcv_buf)
   struct nlmsghdr *nlh = NULL;
   struct iovec iov;
   struct msghdr msg;
-  int msg_size = sizeof(NCSI_NL_MSG_T);
-
-  /* msg response from kernel */
-  memset(&msg, 0, sizeof(msg));
+  int req_msg_size = offsetof(NCSI_NL_MSG_T, msg_payload) + nl_msg->payload_length;
+  int msg_size = max(sizeof(NCSI_NL_RSP_T), req_msg_size);
 
   /* open NETLINK socket to send message to kernel */
   sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
@@ -7316,15 +7321,17 @@ pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rcv_buf)
     goto close_and_exit;
   }
   memset(nlh, 0, NLMSG_SPACE(msg_size));
-  nlh->nlmsg_len = NLMSG_SPACE(msg_size);
+  nlh->nlmsg_len = NLMSG_SPACE(req_msg_size);
   nlh->nlmsg_pid = getpid();
   nlh->nlmsg_flags = 0;
 
   /* the actual NC-SI command from user */
-  memcpy(NLMSG_DATA(nlh), nl_msg, msg_size);
+  memcpy(NLMSG_DATA(nlh), nl_msg, req_msg_size);
 
   iov.iov_base = (void *)nlh;
   iov.iov_len = nlh->nlmsg_len;
+
+  memset(&msg, 0, sizeof(msg));
   msg.msg_name = (void *)&dest_addr;
   msg.msg_namelen = sizeof(dest_addr);
   msg.msg_iov = &iov;
@@ -7336,6 +7343,7 @@ pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rcv_buf)
   }
 
   /* Read message from kernel */
+  iov.iov_len = NLMSG_SPACE(msg_size);
   recvmsg(sock_fd, &msg, 0);
   memcpy(rcv_buf, (NCSI_NL_RSP_T *)NLMSG_DATA(nlh), sizeof(NCSI_NL_RSP_T));
 
@@ -7486,8 +7494,8 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 
       pal_send_nl_msg(msg, rcv_buf);
 
-      memcpy(&res_data[0], &rcv_buf->msg_payload[0], rcv_buf->payload_length);
-      *res_len = rcv_buf->payload_length;
+      memcpy(&res_data[0], &rcv_buf->msg_payload[0], rcv_buf->hdr.payload_length);
+      *res_len = rcv_buf->hdr.payload_length;
 
       free(msg);
       free(rcv_buf);

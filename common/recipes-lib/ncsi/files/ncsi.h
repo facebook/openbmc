@@ -24,8 +24,8 @@
 
 
 
-#define MAX_PAYLOAD 128 /* maximum payload size*/
-#define MAX_RESPONSE_PAYLOAD 256 /* maximum payload size*/
+#define NCSI_MAX_PAYLOAD 1088 /* maximum payload size*/
+#define NCSI_MAX_RESPONSE 1024 /* maximum payload size*/
 
 // NCSI Reset time. NCSI Spec specfies NIC to finish reset within 2second max,
 // here we add an extra 1 sec to provide extra buffer
@@ -82,15 +82,20 @@ typedef struct ncsi_nl_msg_t {
   char dev_name[10];
   unsigned char channel_id;
   unsigned char cmd;
-  unsigned char payload_length;
-  unsigned char msg_payload[MAX_PAYLOAD];
+  uint16_t payload_length;
+  unsigned char msg_payload[NCSI_MAX_PAYLOAD];
 } NCSI_NL_MSG_T;
 
+
+typedef struct ncsi_nl_rsp_hdr_t {
+  uint8_t cmd;
+  uint16_t payload_length;
+} __attribute__((packed)) NCSI_NL_RSP_HDR_T;
+
 typedef struct ncsi_nl_response {
-  unsigned char cmd;
-  unsigned char payload_length;
-  unsigned char msg_payload[MAX_RESPONSE_PAYLOAD];
-} NCSI_NL_RSP_T;
+  NCSI_NL_RSP_HDR_T hdr;
+  unsigned char msg_payload[NCSI_MAX_RESPONSE];
+} __attribute__((packed)) NCSI_NL_RSP_T;
 
 
 
@@ -253,6 +258,9 @@ void print_ncsi_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf);
 int handle_get_link_status(NCSI_Response_Packet *resp);
 int handle_get_version_id(NCSI_Response_Packet *resp);
+
+int create_ncsi_ctrl_pkt(NCSI_NL_MSG_T *nl_msg, uint8_t ch, uint8_t cmd,
+                     uint16_t payload_len, unsigned char *payload);
 
 
 #endif

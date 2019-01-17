@@ -71,12 +71,13 @@ static struct timespec last_config_ts;
 
 
 static int
-prepare_ncsi_req_msg(struct msghdr *msg, uint8_t ch, uint8_t cmd) {
+prepare_ncsi_req_msg(struct msghdr *msg, uint8_t ch, uint8_t cmd,
+                     uint16_t payload_len, unsigned char *payload) {
   struct sockaddr_nl *dest_addr = NULL;
   struct nlmsghdr *nlh = NULL;
   NCSI_NL_MSG_T *nl_msg = NULL;
   struct iovec *iov;
-  int msg_size = sizeof(NCSI_NL_MSG_T);
+  int msg_size = offsetof(NCSI_NL_MSG_T, msg_payload) + payload_len;
 
   dest_addr = (struct sockaddr_nl *)malloc(sizeof(struct sockaddr_nl));
   if (!dest_addr) {
@@ -99,10 +100,8 @@ prepare_ncsi_req_msg(struct msghdr *msg, uint8_t ch, uint8_t cmd) {
   nlh->nlmsg_flags = 0;
 
   nl_msg = (NCSI_NL_MSG_T *)NLMSG_DATA(nlh);
-  sprintf(nl_msg->dev_name, "eth0");
-  nl_msg->channel_id = ch;
-  nl_msg->cmd = cmd;
-  nl_msg->payload_length = 0;
+
+  create_ncsi_ctrl_pkt(nl_msg, ch, cmd, payload_len, payload);
 
   iov = (struct iovec *)malloc(sizeof(struct iovec));
   if (!iov) {
@@ -163,7 +162,7 @@ send_registration_msg(nl_sfd_t *sfd)
     return ret;
   };
 
-  ret = prepare_ncsi_req_msg(&msg, REG_AEN_CH, REG_AEN_CMD);
+  ret = prepare_ncsi_req_msg(&msg, REG_AEN_CH, REG_AEN_CMD, 0, NULL);
   if (ret) {
     syslog(LOG_ERR, "send_registration_msg: prepare message failed");
     return ret;
@@ -185,7 +184,7 @@ send_registration_msg(nl_sfd_t *sfd)
 static int
 process_NCSI_resp(NCSI_NL_RSP_T *buf)
 {
-  unsigned char cmd = buf->cmd;
+  unsigned char cmd = buf->hdr.cmd;
   NCSI_Response_Packet *resp = (NCSI_Response_Packet *)buf->msg_payload;
   unsigned short cmd_response_code = ntohs(resp->Response_Code);
   unsigned short cmd_reason_code   = ntohs(resp->Reason_Code);
@@ -246,7 +245,7 @@ ncsi_rx_handler(void *sfd) {
   int sock_fd = ((nl_sfd_t *)sfd)->fd;
   struct msghdr msg;
   struct iovec iov;
-  int msg_size = sizeof(NCSI_NL_MSG_T);
+  int msg_size = sizeof(NCSI_NL_RSP_T);
   struct nlmsghdr *nlh = NULL;
   int ret = 0;
 
@@ -280,7 +279,7 @@ ncsi_rx_handler(void *sfd) {
     rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
     if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
       syslog(LOG_NOTICE, "rx: aen packet rcvd, pl_len=%d, type=0x%x",
-              rcv_buf->payload_length,
+              rcv_buf->hdr.payload_length,
               rcv_buf->msg_payload[offsetof(AEN_Packet, AEN_Type)]);
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
     } else {
@@ -311,8 +310,8 @@ ncsi_tx_handler(void *sfd) {
   memset(&lsts_msg, 0, sizeof(lsts_msg));
   memset(&vid_msg, 0, sizeof(vid_msg));
 
-  prepare_ncsi_req_msg(&lsts_msg, 0, NCSI_GET_LINK_STATUS);
-  prepare_ncsi_req_msg(&vid_msg, 0, NCSI_GET_VERSION_ID);
+  prepare_ncsi_req_msg(&lsts_msg, 0, NCSI_GET_LINK_STATUS, 0, NULL);
+  prepare_ncsi_req_msg(&vid_msg, 0, NCSI_GET_VERSION_ID, 0, NULL);
 
   while (1) {
     /* send "Get Link status" message to NIC  */

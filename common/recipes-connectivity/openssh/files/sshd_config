@@ -110,7 +110,6 @@ AuthorizedPrincipalsCommand /etc/ssh/auth_principals.sh
 #PrintLastLog yes
 #TCPKeepAlive yes
 #UseLogin no
-UsePrivilegeSeparation sandbox # Default for new installations.
 #PermitUserEnvironment no
 Compression no
 ClientAliveInterval 900

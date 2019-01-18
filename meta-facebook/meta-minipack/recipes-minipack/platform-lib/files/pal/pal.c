@@ -629,30 +629,60 @@ write_device(const char *device, const char *value) {
 }
 
 int
-pal_detect_i2c_device(uint8_t bus, uint8_t addr) {
+pal_detect_i2c_device(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t force) {
 
   int fd = -1, rc = -1;
   char fn[32];
+  uint32_t funcs;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
   if (fd == -1) {
     syslog(LOG_WARNING, "Failed to open i2c device %s", fn);
-    return -1;
+    return I2C_BUS_ERROR;
   }
 
-  rc = ioctl(fd, I2C_SLAVE_FORCE, addr);
-  if (rc < 0) {
-    syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
+  if (ioctl(fd, I2C_FUNCS, &funcs) < 0) {
+    syslog(LOG_WARNING, "Failed to get %s functionality matrix", fn);
     close(fd);
-    return -1;
+    return I2C_FUNC_ERROR;
   }
 
-  rc = i2c_smbus_read_byte(fd);
+  if (force) {
+    if (ioctl(fd, I2C_SLAVE_FORCE, addr)) {
+      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
+      close(fd);
+      return I2C_DEVICE_ERROR;
+    }
+   } else {
+    if (ioctl(fd, I2C_SLAVE, addr) < 0) {
+      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
+      close(fd);
+      return I2c_DRIVER_EXIST;
+    }
+  }
+
+  /* Probe this address */
+  switch (mode) {
+    case MODE_QUICK:
+      /* This is known to corrupt the Atmel AT24RF08 EEPROM */
+      rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
+      break;
+    case MODE_READ:
+      /* This is known to lock SMBus on various
+         write-only chips (mainly clock chips) */
+      rc = i2c_smbus_read_byte(fd);
+      break;
+    default:
+      if ((addr >= 0x30 && addr <= 0x37) || (addr >= 0x50 && addr <= 0x5F))
+        rc = i2c_smbus_read_byte(fd);
+      else
+        rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
+  }
   close(fd);
 
   if (rc < 0) {
-    return -1;
+    return I2C_DEVICE_ERROR;
   } else {
     return 0;
   }

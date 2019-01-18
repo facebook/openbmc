@@ -641,6 +641,19 @@ enum {
   PIM_TYPE_NONE = 3
 };
 
+enum {
+  MODE_AUTO	= 0,
+  MODE_QUICK = 1,
+  MODE_READ = 2
+};
+
+enum {
+  I2C_BUS_ERROR	= -1,
+  I2C_FUNC_ERROR	= 1,
+  I2C_DEVICE_ERROR = 2,
+  I2c_DRIVER_EXIST = 3
+};
+
 int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 int pal_get_plat_sku_id(void);
@@ -679,7 +692,7 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
 void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
-int pal_detect_i2c_device(uint8_t bus_num, uint8_t addr);
+int pal_detect_i2c_device(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t force);
 int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
 int pal_del_i2c_device(uint8_t bus, uint8_t addr);
 int pal_get_pim_type(uint8_t fru);

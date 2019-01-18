@@ -20,7 +20,7 @@
 
 import subprocess
 
-CMD='/sys/class/i2c-adapter/i2c-12/12-003e/cpld_usb2112a_brdg_rst'
+CMD='/sys/bus/i2c/devices/12-003e/cpld_usb2112a_brdg_rst'
 # Endpoint for resetting usb-to-i2c device t9591420
 def set_usb2i2c():
     p = subprocess.Popen('echo 0 > ' + CMD + \

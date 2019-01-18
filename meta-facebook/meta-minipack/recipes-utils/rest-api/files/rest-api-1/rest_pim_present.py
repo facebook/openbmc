@@ -27,7 +27,7 @@ MAX_PIM_NUM = 8
 
 # Use PIM FPGA to detect pim present
 def is_pim_present(pim_no):
-    smbcpld = '/sys/class/i2c-adapter/i2c-12/12-003e'
+    smbcpld = '/sys/bus/i2c/devices/12-003e'
     pim_prsnt = '{:s}/pim_fpga_cpld_{:d}_prsnt_n_status'.format(smbcpld, pim_no)
     try:
         with open(pim_prsnt, 'r') as f:

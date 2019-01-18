@@ -54,7 +54,11 @@ static int max34461_vol_show(struct device *dev,
   u8 page = dev_attr->ida_bit_offset;
 
   mutex_lock(&data->idd_lock);
-  i2c_smbus_write_byte_data(client, MAX34461_PAGE_REG, page);
+  if (i2c_smbus_write_byte_data(client, MAX34461_PAGE_REG, page) < 0) {
+    mutex_unlock(&data->idd_lock);
+    MAX34461_DEBUG("I2C write error\n");
+    return -1;
+  }
   msleep(MAX34461_DELAY);
 
   while((value < 0 || value == 0xffff) && count--) {

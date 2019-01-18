@@ -18,38 +18,43 @@
 # Boston, MA 02110-1301 USA
 #
 
+. /usr/local/bin/openbmc-utils.sh
+
+dump_fpga_version() {
+    local fpga_dir=$1
+    local fpga_name=$2
+
+    fpga_ver=`head -n 1 ${fpga_dir}/fpga_ver 2> /dev/null`
+    if [ $? -ne 0 ]; then
+        echo "${fpga_name} is not detected"
+        return
+    fi
+    fpga_sub_ver=`head -n 1 ${fpga_dir}/fpga_sub_ver 2> /dev/null`
+    if [ $? -ne 0 ]; then
+        echo "${fpga_name} is not detected"
+        return
+    fi
+
+    echo "${fpga_name}: $(($fpga_ver)).$(($fpga_sub_ver))"
+}
 
 echo "------IOBFPGA------"
-iob_ver=`head -n 1 /sys/class/i2c-adapter/i2c-13/13-0035/fpga_ver 2> /dev/null`
-iob_sub_ver=`head -n 1 /sys/class/i2c-adapter/i2c-13/13-0035/fpga_sub_ver 2> /dev/null`
-
-if [ $? -eq 0 ]; then
-    echo "IOBFPGA: $(($iob_ver)).$(($iob_sub_ver))"
-else
-    echo "IOBFPGA is not detected"
-fi
-
-num=1
-BUS="80 88 96 104 112 120 128 136"
+dump_fpga_version ${IOBFPGA_SYSFS_DIR} "IOBFPGA"
 
 echo "------DOMFPGA------"
-
-for bus in ${BUS}; do
-    pim_type=`head -n1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/board_ver 2> /dev/null`
+for num in $(seq 8); do
+    pim_var_name="PIM${num}_DOMFPGA_SYSFS_DIR"
+    pim_fpga_dir=${!pim_var_name}
 
     echo "PIM $num:"
+
+    pim_type=`head -n1 ${pim_fpga_dir}/board_ver 2> /dev/null`
     if [ "${pim_type}" == "0x0" ]; then
-        dom_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_ver 2> /dev/null`
-        dom_sub_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_sub_ver 2> /dev/null`
-        echo "16Q DOMFPGA: $(($dom_ver)).$(($dom_sub_ver))"
+        dump_fpga_version ${pim_fpga_dir} "16Q_DOMPFGA"
     elif [ "${pim_type}" == "0x10" ]; then
-        dom_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_ver 2> /dev/null`
-        dom_sub_ver=`head -n 1 /sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/fpga_sub_ver 2> /dev/null`
-        echo "4DD DOMFPGA: $(($dom_ver)).$(($dom_sub_ver))"
+        dump_fpga_version ${pim_fpga_dir} "4DD_DOMPFGA"
     else
         echo "DOMFPGA is not detected or PIM $num is not inserted"
     fi
-
-    num=$(($num+1))
     usleep 50000
 done

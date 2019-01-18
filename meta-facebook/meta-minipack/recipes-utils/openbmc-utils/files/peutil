@@ -12,17 +12,21 @@
 # for more details.
 #
 
+. /usr/local/bin/openbmc-utils.sh
+
 usage() {
     echo "Usage $0 [1..8]"
 }
 
 dump_eeprom() {
-    weutil /sys/class/i2c-adapter/i2c-${1}/${1}-00${2:2:3}/eeprom
+    local i2c_path=$(i2c_device_sysfs_abspath ${1}-00${2:2:3})
+    weutil ${i2c_path}/eeprom
     return $?
 }
 
 is_i2cdev_exist() {
-    weutil /sys/class/i2c-adapter/i2c-${1}/${1}-00${2:2:3}/eeprom &> /dev/null
+    local i2c_path=$(i2c_device_sysfs_abspath ${1}-00${2:2:3})
+    weutil ${i2c_path}/eeprom &> /dev/null
     echo $?
 }
 

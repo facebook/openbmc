@@ -22,12 +22,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 source /usr/local/bin/openbmc-utils.sh
 
-SMB_DIR='/sys/class/i2c-adapter/i2c-12/12-003e/'
-SCM_CMD=$SMB_DIR'scm_presnt_status'
-PIM_CMD=$SMB_DIR'*prsnt_n_status'
-FAN_T_CMD='/sys/class/i2c-dev/i2c-64/device/64-0033/'
-FAN_B_CMD='/sys/class/i2c-dev/i2c-72/device/72-0033/'
-
+SCM_CMD=$SMBCPLD_SYSFS_DIR'/scm_presnt_status'
+PIM_CMD=$SMBCPLD_SYSFS_DIR'/*prsnt_n_status'
 
 function usage
 {
@@ -77,11 +73,11 @@ function get_fan_presence
     while [ $num -le 4 ]; do
         count=$(((${num} * 2 ) - 1))
         key='fan'$count
-        file=$FAN_T_CMD'fantray'$num'_present'
+        file=$TOP_FCMCPLD_SYSFS_DIR'/fantray'$num'_present'
         get_presence $file $key
         count=$((${num} * 2 ))
         key='fan'$count
-        file=$FAN_B_CMD'fantray'$num'_present'
+        file=$BOTTOM_FCMCPLD_SYSFS_DIR'/fantray'$num'_present'
         get_presence $file $key
         (( num++ ))
         (( count++ ))
@@ -94,13 +90,13 @@ function get_psu_presence
     for i in {2..1}; do
         count=$((3 - ${i}))
         key='psu'$count
-        file=$SMB_DIR'psu_L'${i}'_present_L'
+        file=$SMBCPLD_SYSFS_DIR'/psu_L'${i}'_present_L'
         get_presence $file $key
     done
     for i in {2..1}; do
         count=$((5 - ${i}))
         key='psu'$count
-        file=$SMB_DIR'psu_R'${i}'_present_L'
+        file=$SMBCPLD_SYSFS_DIR'/psu_R'${i}'_present_L'
         get_presence $file $key
     done
 }

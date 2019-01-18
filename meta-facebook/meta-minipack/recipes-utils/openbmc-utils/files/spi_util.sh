@@ -1,11 +1,11 @@
 #!/bin/sh
 
+. /usr/local/bin/openbmc-utils.sh
+
 pca9534_ee_sel=0x22
 pca9534_spi_sel=0x26
 output_reg=0x1
 mode_reg=0x3
-SMB_CPLD="/sys/class/i2c-adapter/i2c-12/12-003e"
-SCM_CPLD="/sys/class/i2c-adapter/i2c-2/2-0035"
 debug=0
 m95m02_page_size=256
 m95m02_page_count=1024
@@ -276,17 +276,17 @@ function erase_spi1_dev(){
 }
 
 function get_smb_cpld_spi_1b(){
-    b0=`cat $SMB_CPLD/spi_1_b0`
-    b1=`cat $SMB_CPLD/spi_1_b1`
-    b2=`cat $SMB_CPLD/spi_1_b2`
+    b0=`cat $SMBCPLD_SYSFS_DIR/spi_1_b0`
+    b1=`cat $SMBCPLD_SYSFS_DIR/spi_1_b1`
+    b2=`cat $SMBCPLD_SYSFS_DIR/spi_1_b2`
     echo "spi_1b [ $b2 $b1 $b0 ]"
 }
 
 function set_smb_cpld_spi_1b(){
     if [ $# = 3 ]; then
-        echo $3 > $SMB_CPLD/spi_1_b0
-        echo $2 > $SMB_CPLD/spi_1_b1
-        echo $1 > $SMB_CPLD/spi_1_b2
+        echo $3 > $SMBCPLD_SYSFS_DIR/spi_1_b0
+        echo $2 > $SMBCPLD_SYSFS_DIR/spi_1_b1
+        echo $1 > $SMBCPLD_SYSFS_DIR/spi_1_b2
     else
         echo "Set SPI1 BIT FAILED"
     fi
@@ -299,24 +299,24 @@ function config_spi1_pin_and_path(){
         "BACKUP_BIOS")
             set_spi1_to_spi
             set_smb_cpld_spi_1b 0 1 1
-            echo 0 > $SCM_CPLD/iso_spi_en
-            echo 0 > $SCM_CPLD/com_spi_oe_n
-            echo 1 > $SCM_CPLD/com_spi_sel
+            echo 0 > $SCMCPLD_SYSFS_DIR/iso_spi_en
+            echo 0 > $SCMCPLD_SYSFS_DIR/com_spi_oe_n
+            echo 1 > $SCMCPLD_SYSFS_DIR/com_spi_sel
         ;;
         "IOB_FPGA_FLASH")
             set_spi1_to_spi
             set_smb_cpld_spi_1b 0 0 0
-            echo 1 > $SMB_CPLD/fpga_spi_mux_sel
+            echo 1 > $SMBCPLD_SYSFS_DIR/fpga_spi_mux_sel
         ;;
         "TH3_FLASH")
             set_spi1_to_spi
             set_smb_cpld_spi_1b 0 0 1
-            echo 1 > $SMB_CPLD/th3_spi_mux_sel
+            echo 1 > $SMBCPLD_SYSFS_DIR/th3_spi_mux_sel
         ;;
         "BCM5396_EE")
             set_spi1_to_gpio
             set_smb_cpld_spi_1b 0 1 0
-            echo 1 > $SMB_CPLD/cpld_bcm5396_mux_sel
+            echo 1 > $SMBCPLD_SYSFS_DIR/cpld_bcm5396_mux_sel
             gpio_set BMC_BCM5396_MUX_SEL 1
         ;;
         *)
@@ -339,19 +339,19 @@ function config_spi2_pin_and_path(){
 }
 
 function get_smb_cpld_spi_2b(){
-    b0=`cat $SMB_CPLD/spi_2_b0`
-    b1=`cat $SMB_CPLD/spi_2_b1`
-    b2=`cat $SMB_CPLD/spi_2_b2`
-    b3=`cat $SMB_CPLD/spi_2_b3`
+    b0=`cat $SMBCPLD_SYSFS_DIR/spi_2_b0`
+    b1=`cat $SMBCPLD_SYSFS_DIR/spi_2_b1`
+    b2=`cat $SMBCPLD_SYSFS_DIR/spi_2_b2`
+    b3=`cat $SMBCPLD_SYSFS_DIR/spi_2_b3`
     echo "spi_2b [ $b3 $b2 $b1 $b0 ]"
 }
 
 function set_smb_cpld_spi_2b(){
     if [ $# = 4 ]; then
-        echo $4 > $SMB_CPLD/spi_2_b0
-        echo $3 > $SMB_CPLD/spi_2_b1
-        echo $2 > $SMB_CPLD/spi_2_b2
-        echo $1 > $SMB_CPLD/spi_2_b3
+        echo $4 > $SMBCPLD_SYSFS_DIR/spi_2_b0
+        echo $3 > $SMBCPLD_SYSFS_DIR/spi_2_b1
+        echo $2 > $SMBCPLD_SYSFS_DIR/spi_2_b2
+        echo $1 > $SMBCPLD_SYSFS_DIR/spi_2_b3
     else
         echo "Set SPI2 BIT FAILED"
     fi
@@ -627,10 +627,10 @@ function operate_spi2_dev(){
 
 function cleanup_spi(){
     #echo "Caught Signal: reset spi selecth"
-    echo 0 > $SMB_CPLD/fpga_spi_mux_sel
-    echo 0 > $SMB_CPLD/th3_spi_mux_sel
-    echo 0 > $SMB_CPLD/cpld_bcm5396_mux_sel
-    echo 0 > $SCM_CPLD/com_spi_sel
+    echo 0 > $SMBCPLD_SYSFS_DIR/fpga_spi_mux_sel
+    echo 0 > $SMBCPLD_SYSFS_DIR/th3_spi_mux_sel
+    echo 0 > $SMBCPLD_SYSFS_DIR/cpld_bcm5396_mux_sel
+    echo 0 > $SCMCPLD_SYSFS_DIR/com_spi_sel
 
     for i in {1..8}
     do

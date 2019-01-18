@@ -48,7 +48,8 @@ fi
 if [ "$1" == "reset" ]; then
     echo -n "Reset QSFP ... "
     for bus in ${FPGA_BUS}; do
-        reset="/sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/qsfp_reset"
+        i2c_path=$(i2c_device_sysfs_abspath ${bus}-0060)
+        reset="${i2c_path}/qsfp_reset"
         echo 0xffff > "${reset}"
         usleep 1000
         echo 0x0 > "${reset}"
@@ -57,7 +58,8 @@ if [ "$1" == "reset" ]; then
 elif [ "$1" == "data" ]; then
     echo -n "DOM data collection "$3" ... "
     for bus in ${FPGA_BUS}; do
-        config="/sys/class/i2c-adapter/i2c-${bus}/${bus}-0060/dom_ctrl_config"
+        i2c_path=$(i2c_device_sysfs_abspath ${bus}-0060)
+        config="${i2c_path}/dom_ctrl_config"
         if [ "$3" == "enable" ]; then
             echo 0x5000001 > "${config}"
         elif [ "$3" == "disable" ]; then

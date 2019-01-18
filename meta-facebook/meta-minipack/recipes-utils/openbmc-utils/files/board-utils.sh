@@ -1,7 +1,28 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
-SCMCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-2/2-0035"
-SMBCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-12/12-003e"
+#
+# I2C paths of CPLDs
+#
+SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 2-0035)
+SMBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-003e)
+TOP_FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 64-0033)
+BOTTOM_FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 72-0033)
+LEFT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 55-0060)
+RIGHT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 63-0060)
+
+#
+# I2C paths of FPGAs
+#
+IOBFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 13-0035)
+PIM1_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 80-0060)
+PIM2_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 88-0060)
+PIM3_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 96-0060)
+PIM4_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 104-0060)
+PIM5_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 112-0060)
+PIM6_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 120-0060)
+PIM7_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 128-0060)
+PIM8_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 136-0060)
+
 PWR_USRV_SYSFS="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
 PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/cpld_mac_reset_n"
 

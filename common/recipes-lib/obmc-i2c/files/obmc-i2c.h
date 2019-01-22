@@ -64,6 +64,17 @@ extern "C" {
 
 #define _I2C_MIN(a, b)		(((a) <= (b)) ? (a) : (b))
 
+/***********************************************************
+ * I2C sysfs paths.
+ **********************************************************/
+
+#define I2C_SYSFS_DEVICES		"/sys/bus/i2c/devices"
+#define I2C_SYSFS_DRIVERS		"/sys/bus/i2c/drivers"
+#define I2C_SYSFS_BUS_DIR(num)		I2C_SYSFS_DEVICES"/i2c-"#num
+#define I2C_SYSFS_DEV_DIR(dev)		I2C_SYSFS_DEVICES"/"#dev
+#define I2C_SYSFS_DEV_ENTRY(dev, ent)	I2C_SYSFS_DEVICES"/"#dev"/"#ent
+
+
 static inline __s32 i2c_smbus_access(int file, char read_write, __u8 command,
 				     int size, union i2c_smbus_data *data)
 {

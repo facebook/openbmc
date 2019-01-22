@@ -120,8 +120,6 @@ do_on() {
         fi
     fi
 
-    # reset TH
-    reset_brcm.sh
     # power on sequence
     do_on_com_e
     ret=$?
@@ -239,8 +237,6 @@ do_reset() {
             echo "Use '$prog on' to power the microserver on"
             return -1
         fi
-        # reset TH first
-        reset_brcm.sh
         echo -n "Power reset microserver ..."
         echo 0 > $PWR_USRV_RST_SYSFS
         sleep 1

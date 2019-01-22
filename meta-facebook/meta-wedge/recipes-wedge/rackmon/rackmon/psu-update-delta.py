@@ -9,11 +9,15 @@ import sys
 import argparse
 import traceback
 import json
+import time
 from binascii import hexlify
 from tempfile import mkstemp
+from contextlib import ExitStack
 
 import hexfile
 
+
+transcript_file = None
 
 def auto_int(x):
     return int(x, 0)
@@ -31,6 +35,8 @@ parser.add_argument('--statusfile', default=None,
                     help="Write status to JSON file during process")
 parser.add_argument('--rmfwfile', action='store_true',
                     help="Delete FW file after update completes")
+parser.add_argument('--transcript', action='store_true',
+                    help="Write modbus commands and replies to modbus-transcript.log")
 parser.add_argument('file', help="firmware file")
 
 status = {
@@ -114,7 +120,13 @@ def resume_monitoring():
         print("Unknown response resuming monitoring: %d" % res_n)
 
 
+def tprint(s):
+    if transcript_file:
+        print(s, file=transcript_file)
+
+
 def modbuscmd(raw_cmd, expected=0, timeout=0):
+    tprint('-> {}'.format(bh(raw_cmd)))
     COMMAND_TYPE_RAW_MODBUS = 1
     send_command = struct.pack("@HxxHHL",
                                COMMAND_TYPE_RAW_MODBUS,
@@ -128,11 +140,14 @@ def modbuscmd(raw_cmd, expected=0, timeout=0):
     if resp_len == 0:
         (error, ) = struct.unpack("@H", result[2:4])
         if error == 4:
+            tprint('<- timeout')
             raise ModbusTimeout()
         if error == 5:
+            tprint('<- crc check failure')
             raise ModbusCRCFail()
         print("Unknown modbus error: " + str(error))
         raise ModbusUnknownError()
+    tprint('<- {}'.format(bh(result[2:])))
     return result[2:resp_len]
 
 
@@ -192,7 +207,7 @@ def send_key(addr, key):
 
 def delta_seccalckey(challenge):
     (seed, ) = struct.unpack(">L", challenge)
-    for i in range(32):
+    for _ in range(32):
         if seed & 1 != 0:
             seed = seed ^ 0xc758a5b6
         seed = (seed >> 1) & 0x7fffffff
@@ -216,7 +231,24 @@ def set_write_address(psu_addr, flash_addr):
 def write_data(addr, data):
     assert(len(data) == 8)
     command = struct.pack(">BBB", addr, 0x2b, 0x65) + data
-    response = modbuscmd(command, expected=13, timeout=3000)
+    try:
+        response = modbuscmd(command, expected=13, timeout=3000)
+    except ModbusCRCFail:
+        # This is not ideal, but upgrades in some Delta racks never complete
+        # without it.
+        # Suspicion is that we occasionally get replies from more than one unit
+        # when we send a write (another unit's address byte is contained in our
+        # request. It should look for silence before the start of a message,
+        # but may not be perfect at that. It won't be in bootloader mode, so
+        # will just send an error response, but that will be enough to collide
+        # with and corrupt the real response we want to read. The content of
+        # that response is only needed as an acknowledgement our request was
+        # seen, so when this happens, rather than bail on the whole upgrade,
+        # just assume that our write went through and send the next block, but
+        # give some grace time for good measure.
+        print('CRC check failure reading reply, continuing anyway...')
+        time.sleep(1.0)
+        return
     expected = struct.pack(">B", addr) +\
         b"\x2b\x73\xf0\xaa\xff\xff\xff\xff\xff\xff"
     if response != expected:
@@ -283,6 +315,11 @@ def update_psu(addr, filename):
     pause_monitoring()
     status_state('parsing_fw_file')
     fwimg = hexfile.load(filename)
+    status_state('pre_handshake_reset')
+    # This brings us back to the top of the bootloader state machine if we were
+    # in bootloader, and should do nothing otherwise
+    reset_psu(addr)
+    time.sleep(5.0)
     status_state('bootloader_handshake')
     enter_bootloader(addr)
     start_programming(addr)
@@ -301,24 +338,31 @@ def update_psu(addr, filename):
 
 def main():
     args = parser.parse_args()
-    global statuspath
-    statuspath = args.statusfile
-    print("statusfile %s" % statuspath)
-    try:
-        update_psu(args.addr, args.file)
-    except Exception as e:
-        print("Firmware update failed")
-        global status
-        status['exception'] = traceback.format_exc()
-        status_state('failed')
+    with ExitStack() as stack:
+        global statuspath
+        global transcript_file
+        statuspath = args.statusfile
+        if args.transcript:
+            transcript_file = stack.enter_context(
+                open('modbus-transcript.log', 'w')
+            )
+        print("statusfile %s" % statuspath)
+        try:
+            update_psu(args.addr, args.file)
+        except Exception as e:
+            print("Firmware update failed")
+            traceback.print_exc()
+            global status
+            status['exception'] = traceback.format_exc()
+            status_state('failed')
+            resume_monitoring()
+            if args.rmfwfile:
+                os.remove(args.file)
+            sys.exit(1)
         resume_monitoring()
         if args.rmfwfile:
             os.remove(args.file)
-        sys.exit(1)
-    resume_monitoring()
-    if args.rmfwfile:
-        os.remove(args.file)
-    sys.exit(0)
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

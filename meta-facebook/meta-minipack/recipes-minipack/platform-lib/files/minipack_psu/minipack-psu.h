@@ -43,10 +43,10 @@ extern "C" {
 #define msleep(n) usleep(n*1000)
 #define POW2(x) (1 << (x))
 
-#define PSU1_EEPROM  "/sys/class/i2c-adapter/i2c-49/49-0051/eeprom"
-#define PSU2_EEPROM  "/sys/class/i2c-adapter/i2c-48/48-0050/eeprom"
-#define PSU3_EEPROM  "/sys/class/i2c-adapter/i2c-57/57-0051/eeprom"
-#define PSU4_EEPROM  "/sys/class/i2c-adapter/i2c-56/56-0050/eeprom"
+#define PSU1_EEPROM  I2C_SYSFS_DEV_ENTRY(49-0051, eeprom)
+#define PSU2_EEPROM  I2C_SYSFS_DEV_ENTRY(48-0050, eeprom)
+#define PSU3_EEPROM  I2C_SYSFS_DEV_ENTRY(57-0051, eeprom)
+#define PSU4_EEPROM  I2C_SYSFS_DEV_ENTRY(56-0050, eeprom)
 
 /* define for DELTA PSU */
 #define DELTA_MODEL         "ECD55020006"

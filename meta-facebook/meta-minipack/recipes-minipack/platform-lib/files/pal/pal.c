@@ -732,7 +732,7 @@ pal_get_pim_type(uint8_t fru) {
   uint8_t bus = ((fru - FRU_PIM1) * 8) + 80;
 
   snprintf(path, LARGEST_DEVICE_NAME,
-           "/sys/class/i2c-adapter/i2c-%d/%d-0060/board_ver", bus, bus);
+           I2C_SYSFS_DEVICES"/%d-0060/board_ver", bus);
 
   while ((ret = read_device(path, &val)) != 0 && retry--) {
     msleep(500);
@@ -1285,7 +1285,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       *status = 1;
       return 0;
     case FRU_SCM:
-      snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, SCM_PRSNT_STATUS);
+      snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, SCM_PRSNT_STATUS);
       break;
     case FRU_PIM1:
     case FRU_PIM2:
@@ -1295,37 +1295,39 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_PIM6:
     case FRU_PIM7:
     case FRU_PIM8:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PIM_PRSNT_STATUS);
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - 2);
       break;
     case FRU_PSU1:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PSU_L_PRSNT_STATUS);
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_L_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, 2);
       break;
     case FRU_PSU2:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PSU_L_PRSNT_STATUS);
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_L_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, 1);
       break;
     case FRU_PSU3:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PSU_R_PRSNT_STATUS);
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_R_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, 2);
       break;
     case FRU_PSU4:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PSU_R_PRSNT_STATUS);
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_R_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, 1);
       break;
     case FRU_FAN1:
     case FRU_FAN3:
     case FRU_FAN5:
     case FRU_FAN7:
-      snprintf(tmp, LARGEST_DEVICE_NAME, FCM_T_SYSFS, FAN_PRSNT_STATUS);
+      snprintf(tmp, LARGEST_DEVICE_NAME,
+               TOP_FCMCPLD_PATH_FMT, FAN_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, ((fru - 14) / 2) + 1);
       break;
     case FRU_FAN2:
     case FRU_FAN4:
     case FRU_FAN6:
     case FRU_FAN8:
-      snprintf(tmp, LARGEST_DEVICE_NAME, FCM_B_SYSFS, FAN_PRSNT_STATUS);
+      snprintf(tmp, LARGEST_DEVICE_NAME,
+               BOTTOM_FCMCPLD_PATH_FMT, FAN_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, (fru - 14) / 2);
       break;
     default:
@@ -1927,14 +1929,12 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 
 int
 pal_set_com_pwr_btn_n(char *status) {
-  char path[64];
   int ret;
-  sprintf(path, SCM_SYSFS, COM_PWR_BTN_N);
 
-  ret = write_device(path, status);
+  ret = write_device(SCM_COM_PWR_BTN_N, status);
   if (ret) {
 #ifdef DEBUG
-  syslog(LOG_WARNING, "write_device failed for %s\n", path);
+  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_COM_PWR_BTN_N);
 #endif
     return -1;
   }
@@ -2702,7 +2702,7 @@ cor_th3_volt(void) {
   char str[32];
   char tmp[LARGEST_DEVICE_NAME];
   char path[LARGEST_DEVICE_NAME + 1];
-  snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, SMB_MAC_CPLD_ROV);
+  snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, SMB_MAC_CPLD_ROV);
 
   for(i = SMB_MAC_CPLD_ROV_NUM - 1; i >= 0; i--) {
     snprintf(path, LARGEST_DEVICE_NAME, tmp, i);
@@ -2852,19 +2852,19 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_ISL_DEVICE,  CURR(1), value);
       break;
     case SMB_SENSOR_FCM_T_HSC_CURR:
-      hsc_rsense_init(HSC_FCM_T, FCM_T_SYSFS);
+      hsc_rsense_init(HSC_FCM_T, TOP_FCMCPLD_PATH_FMT);
       ret = read_hsc_curr(SMB_FCM_T_HSC_DEVICE, hsc_rsense[HSC_FCM_T], value);
       break;
     case SMB_SENSOR_FCM_B_HSC_CURR:
-      hsc_rsense_init(HSC_FCM_B, FCM_B_SYSFS);
+      hsc_rsense_init(HSC_FCM_B, BOTTOM_FCMCPLD_PATH_FMT);
       ret = read_hsc_curr(SMB_FCM_B_HSC_DEVICE, hsc_rsense[HSC_FCM_B], value);
       break;
     case SMB_SENSOR_FCM_T_HSC_POWER:
-      hsc_rsense_init(HSC_FCM_T, FCM_T_SYSFS);
+      hsc_rsense_init(HSC_FCM_T, TOP_FCMCPLD_PATH_FMT);
       ret = read_hsc_power(SMB_FCM_T_HSC_DEVICE, hsc_rsense[HSC_FCM_T], value);
       break;
     case SMB_SENSOR_FCM_B_HSC_POWER:
-      hsc_rsense_init(HSC_FCM_B, FCM_B_SYSFS);
+      hsc_rsense_init(HSC_FCM_B, BOTTOM_FCMCPLD_PATH_FMT);
       ret = read_hsc_power(SMB_FCM_B_HSC_DEVICE, hsc_rsense[HSC_FCM_B], value);
       break;
     case SMB_SENSOR_FAN1_FRONT_TACH:
@@ -3512,13 +3512,13 @@ psu_acok_check(uint8_t fru) {
   char path[LARGEST_DEVICE_NAME + 1];
 
   if (fru == FRU_PSU1) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_L2_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_L2_input_ok");
   } else if (fru == FRU_PSU2) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_L1_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_L1_input_ok");
   } else if (fru == FRU_PSU3) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_R2_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_R2_input_ok");
   } else if (fru == FRU_PSU4) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "psu_R1_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_R1_input_ok");
   }
 
   if (read_device(path, &val)) {
@@ -5509,7 +5509,7 @@ _set_pim_sts_led(uint8_t fru, uint8_t color)
   uint8_t bus = 80 + ((fru - 3) * 8);
 
   snprintf(path, LARGEST_DEVICE_NAME,
-           "/sys/class/i2c-adapter/i2c-%d/%d-0060/system_led", bus, bus);
+           I2C_SYSFS_DEVICES"/%d-0060/system_led", bus);
 
   if(color == FPGA_STS_CLR_BLUE)
     write_device(path, "1");
@@ -6651,19 +6651,17 @@ void set_smb_led(int brd_rev)
 int
 pal_light_scm_led(uint8_t led_color)
 {
-  char path[64];
   int ret;
   char *val;
-  sprintf(path, SCM_SYSFS, SYS_LED_COLOR);
   
   if(led_color == SCM_LED_BLUE)
     val = "0";
   else
     val = "1";
-  ret = write_device(path, val);
+  ret = write_device(SCM_SYS_LED_COLOR, val);
   if (ret) {
 #ifdef DEBUG
-  syslog(LOG_WARNING, "write_device failed for %s\n", path);
+  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_SYS_LED_COLOR);
 #endif
     return -1;
   }

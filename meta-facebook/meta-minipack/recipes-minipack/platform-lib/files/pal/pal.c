@@ -3741,9 +3741,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_SMB:
       ret = smb_sensor_read(sensor_num, value);
       if (sensor_num == SMB_SENSOR_TH3_DIE_TEMP1 ||
-          sensor_num == SMB_SENSOR_TH3_DIE_TEMP2 ||
-          (sensor_num >= SMB_SENSOR_FAN1_FRONT_TACH &&
-           sensor_num <= SMB_SENSOR_FAN8_REAR_TACH)) {
+          sensor_num == SMB_SENSOR_TH3_DIE_TEMP2) {
         delay = 100;
       }
       break;

@@ -174,9 +174,14 @@ def get_vboot_enforcement():
         mtd_info = proc_mtd.read()
     if ('romx' not in mtd_info):
         return support
-    vboot_util_output = subprocess.check_output(
-        ['/usr/local/bin/vboot-util']
-    ).decode()
+    # vboot-util on Tioga Pass 1 v1.9 (and possibly other versions) is a shell
+    # script without a shebang line. Without bash added it raises
+    # OSError(errno.NOEXEC, 'Exec format error').
+    command = ['/usr/local/bin/vboot-util']
+    with open(command[0], 'rb') as vboot_util_binary_or_script:
+        if vboot_util_binary_or_script.read(4) != b'\x7fELF':
+            command.insert(0, 'bash')
+    vboot_util_output = subprocess.check_output(command).decode()
     if ('Flags software_enforce:  0x01' in vboot_util_output):
         support ='software-enforce'
         if 'Flags hardware_enforce:  0x01' in vboot_util_output:

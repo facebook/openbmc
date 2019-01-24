@@ -4343,6 +4343,10 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   char str[MAX_VALUE_LEN] = {0};
   char tstr[4] = {0};
 
+  if (!pal_is_slot_server(slot)) {
+    return -1;
+  }
+
   sprintf(key, "sysfw_ver_slot%d", (int) slot);
 
   ret = pal_get_key_value(key, str);
@@ -7227,7 +7231,9 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
         break;
     }
   } else {
-    pal_get_sysfw_ver(fru, res);
+    if (pal_get_sysfw_ver(fru, res)) {
+      return -1;
+    }
     *res_len = SIZE_SYSFW_VER;
   }
 

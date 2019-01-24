@@ -802,6 +802,10 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
   if (text == NULL)
     return -1;
 
+  if (!pal_is_slot_server(slot)) {
+    return -1;
+  }
+
 #if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   if (bic_get_server_type(slot, &server_type)) {
     return -1;

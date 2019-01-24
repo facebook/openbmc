@@ -18,10 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-fcm_b_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver \
-           2> /dev/null`
-fcm_t_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver \
-           2> /dev/null`
+. /usr/local/bin/openbmc-utils.sh
+
+fcm_b_ver=`head -n1 ${BOTTOM_FCMCPLD_SYSFS_DIR}/cpld_ver 2> /dev/null`
+fcm_t_ver=`head -n1 ${TOP_FCMCPLD_SYSFS_DIR}/cpld_ver 2> /dev/null`
 
 usage() {
     echo "Usage: $0 <PERCENT (0..100)> <Fan Unit (1..8)> " >&2
@@ -68,7 +68,7 @@ cnt=1
 
 for bus in ${BUS}; do
     for unit in ${FAN_UNIT}; do
-        pwm="/sys/class/i2c-dev/i2c-${bus}/device/${bus}-0033/fantray${unit}_pwm"
+        pwm="$(i2c_device_sysfs_abspath ${bus}-0033)/fantray${unit}_pwm"
         echo "$step" > "${pwm}"
 
     if [ "$#" -eq 1 ]; then

@@ -18,10 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-fcm_b_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver \
-           2> /dev/null`
-fcm_t_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver \
-           2> /dev/null`
+. /usr/local/bin/openbmc-utils.sh
+
+fcm_b_ver=`head -n1 ${BOTTOM_FCMCPLD_SYSFS_DIR}/cpld_ver 2> /dev/null`
+fcm_t_ver=`head -n1 ${TOP_FCMCPLD_SYSFS_DIR}/cpld_ver 2> /dev/null`
 
 usage() {
     echo "Usage: $0 [Fan Unit (1..8)]" >&2
@@ -31,7 +31,7 @@ usage() {
 # Bottom FCM (BUS=72) PWM 1 ~ 4 control Fantray 2 4 6 8
 show_pwm()
 {
-    pwm="/sys/class/i2c-dev/i2c-$1/device/$1-0033/fantray$2_pwm"
+    pwm="$(i2c_device_sysfs_abspath $1-0033)/fantray$2_pwm"
     val=$(cat $pwm | head -n 1)
 
     if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
@@ -43,8 +43,8 @@ show_pwm()
 
 show_rpm()
 {
-    front_rpm="/sys/class/i2c-dev/i2c-$1/device/$1-0033/fan$((($2 * 2 - 1)))_input"
-    rear_rpm="/sys/class/i2c-dev/i2c-$1/device/$1-0033/fan$((($2 * 2)))_input"
+    front_rpm="$(i2c_device_sysfs_abspath $1-0033)/fan$((($2 * 2 - 1)))_input"
+    rear_rpm="$(i2c_device_sysfs_abspath $1-0033)/fan$((($2 * 2)))_input"
     echo "$(cat $front_rpm), $(cat $rear_rpm)"
 }
 

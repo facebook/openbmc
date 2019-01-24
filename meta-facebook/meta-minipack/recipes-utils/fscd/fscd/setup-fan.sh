@@ -27,16 +27,17 @@
 # Short-Description: Set fan speed
 ### END INIT INFO
 
+. /usr/local/bin/openbmc-utils.sh
 . /usr/local/fbpackages/utils/ast-functions
 
 default_fsc_config="/etc/fsc-config.json"
-fcm_b_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_ver \
+fcm_b_ver=`head -n1 ${BOTTOM_FCMCPLD_SYSFS_DIR}/cpld_ver \
            2> /dev/null`
-fcm_b_sub_ver=`head -n1 /sys/class/i2c-adapter/i2c-72/72-0033/cpld_sub_ver \
+fcm_b_sub_ver=`head -n1 ${BOTTOM_FCMCPLD_SYSFS_DIR}/cpld_sub_ver \
            2> /dev/null`
-fcm_t_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_ver \
+fcm_t_ver=`head -n1 ${TOP_FCMCPLD_SYSFS_DIR}/cpld_ver \
            2> /dev/null`
-fcm_t_sub_ver=`head -n1 /sys/class/i2c-adapter/i2c-64/64-0033/cpld_sub_ver \
+fcm_t_sub_ver=`head -n1 ${TOP_FCMCPLD_SYSFS_DIR}/cpld_sub_ver \
            2> /dev/null`
 fcm_b_maj=`echo $fcm_b_ver | awk '{printf "%d", $1;}'`
 fcm_b_min=`echo $fcm_b_sub_ver | awk '{printf "%d", $1;}'`

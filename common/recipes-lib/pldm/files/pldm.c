@@ -159,6 +159,8 @@ pldm_fw_cmd_cc_to_name(uint8_t comp_code)
   if ((comp_code <= CC_ERR_UNSUPPORTED_PLDM_CMD) &&
       pldm_base_cc_string[comp_code] != NULL) {
       return pldm_base_cc_string[comp_code];
+  } else if (comp_code == CC_INVALID_PLDM_TYPE) {
+      return "ERROR_INVALID_PLDM_TYPE";
   } else if (comp_code < CC_FW_UPDATE_BASE ||
       comp_code > CC_INVALID_TRANSFER_OPERATION_FLAG  ||
       pldm_update_cmd_cc_string[comp_code - CC_FW_UPDATE_BASE] == NULL) {

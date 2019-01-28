@@ -28,6 +28,7 @@
 
 #define EEPROM_READ     0x1
 #define EEPROM_WRITE    0x2
+#define FRU_MODIFY      0x3
 #define FRUID_SIZE      512
 
 #ifdef CUSTOM_FRU_LIST
@@ -145,10 +146,72 @@ print_usage() {
     printf("Usage: fruid-util [ %s ] [ %s ]\n"
       "Usage: fruid-util [ %s ] [ %s ] [--dump | --write ] <file>\n",
       pal_fru_list_print_t, pal_dev_list_print_t, pal_fru_list_rw_t, pal_dev_list_rw_t);
+    printf("Usage: fruid-util [ %s ] [ %s ] [ --modify ] [ --field ] [ \"data\" ] <file>\n",
+      pal_fru_list_rw_t, pal_dev_list_rw_t);
+    printf("       [field] : CPN  (Chassis Part Number)\n"
+           "                       e.g., fruid-util fru1 --modify --CPN \"xxxxx\" xxx.bin\n" 
+           "                 CSN  (Chassis Serial Number)\n"
+           "                 CCD1 (Chassis Custom Data 1)\n"
+           "                 CCD2 (Chassis Custom Data 2)\n"
+           "                 CCD3 (Chassis Custom Data 3)\n"
+           "                 CCD4 (Chassis Custom Data 4)\n"
+           "                 BMD  (Board Mfg Date)\n"   
+           "                       e.g., fruid-util fru1 --modify --BMD \"$( date +%%s -d \"2018-01-01 17:00:00\" )\" xxx.bin\n"
+           "                 BM   (Board Mfg)\n"
+           "                 BP   (Board Product Number)\n"
+           "                 BSN  (Board Serial Number)\n"
+           "                 BPN  (Board Part Number)\n"
+           "                 BFI  (Board FRU ID)\n"
+           "                 BCD1 (Board Custom Data 1)\n"
+           "                 BCD2 (Board Custom Data 2)\n"
+           "                 BCD3 (Board Custom Data 3)\n"
+           "                 BCD4 (Board Custom Data 4)\n"
+           "                 PM   (Product Manufacturer)\n"
+           "                 PN   (Product Name)\n"
+           "                 PPN  (Product Part Number)\n"
+           "                 PV   (Product Version)\n"
+           "                 PSN  (Product Serial Number)\n"
+           "                 PAT  (Product Asset Tag)\n"
+           "                 PFI  (Product FRU ID)\n"
+           "                 PCD1 (Product Custom Data 1)\n"
+           "                 PCD2 (Product Custom Data 2)\n"
+           "                 PCD3 (Product Custom Data 3)\n"
+           "                 PCD3 (Product Custom Data 4)\n");
   } else {
     printf("Usage: fruid-util [ %s ]\n"
       "Usage: fruid-util [ %s ] [--dump | --write ] <file>\n",
       pal_fru_list_print_t, pal_fru_list_rw_t);
+    printf("Usage: fruid-util [ %s ] [ --modify ] [ --field ] [ \"data\" ] <file>\n",
+      pal_fru_list_rw_t);
+    printf("       [field] : CPN  (Chassis Part Number)\n"
+           "                       e.g., fruid-util fru1 --modify --CPN \"xxxxx\" xxx.bin\n"
+           "                 CSN  (Chassis Serial Number)\n"
+           "                 CCD1 (Chassis Custom Data 1)\n"
+           "                 CCD2 (Chassis Custom Data 2)\n"
+           "                 CCD3 (Chassis Custom Data 3)\n"
+           "                 CCD4 (Chassis Custom Data 4)\n"
+           "                 BMD  (Board Mfg Date)\n"
+           "                       e.g., fruid-util fru1 --modify --BMD \"$( date +%%s -d \"2018-01-01 17:00:00\" )\" xxx.bin\n"
+           "                 BM   (Board Manufacturer)\n"
+           "                 BP   (Board Product Number)\n"
+           "                 BSN  (Board Serial Number)\n"
+           "                 BPN  (Board Part Number)\n"
+           "                 BFI  (Board FRU ID)\n"
+           "                 BCD1 (Board Custom Data 1)\n"
+           "                 BCD2 (Board Custom Data 2)\n"
+           "                 BCD3 (Board Custom Data 3)\n"
+           "                 BCD4 (Board Custom Data 4)\n"
+           "                 PM   (Product Manufacturer)\n"
+           "                 PN   (Product Name)\n"
+           "                 PPN  (Product Part Number)\n"
+           "                 PV   (Product Version)\n"
+           "                 PSN  (Product Serial Number)\n"
+           "                 PAT  (Product Asset Tag)\n"
+           "                 PFI  (Product FRU ID)\n"
+           "                 PCD1 (Product Custom Data 1)\n"
+           "                 PCD2 (Product Custom Data 2)\n"
+           "                 PCD3 (Product Custom Data 3)\n"
+           "                 PCD3 (Product Custom Data 4)\n");
   }
   exit(-1);
 }
@@ -197,6 +260,12 @@ int main(int argc, char * argv[]) {
       printf("Cannot dump/write FRUID for %s\n", argv[1]);
       print_usage();
     }
+  } else if (argc == 6 || argc == 7) {
+    exist = strstr(pal_fru_list_rw_t, argv[1]);
+    if (exist == NULL) {
+      printf("Cannot modify FRUID for %s\n", argv[1]);
+      print_usage();
+    }
   } else {
     print_usage();
   }
@@ -209,7 +278,7 @@ int main(int argc, char * argv[]) {
   pal_get_num_devs(fru,&num_devs);
 
   //Check if the input device is valid
-  if (argc == 3 || argc == 5) {
+  if (argc == 3 || argc == 5 || argc == 7) {
     ret = pal_get_dev_id(argv[2], &dev_id);
     if (ret < 0) {
       print_usage();
@@ -224,12 +293,20 @@ int main(int argc, char * argv[]) {
           printf("Cannot read FRUID for %s %s\n", argv[1], argv[2]);
           print_usage();
         }
-      } else {
+      } else if (argc == 5){
         if (pal_dev_list_rw_t == NULL)
           print_usage();
         exist = strstr(pal_dev_list_rw_t, argv[2]);
         if (exist == NULL) {
           printf("Cannot dump/write FRUID for %s %s\n", argv[1], argv[2]);
+          print_usage();
+        }
+      } else {
+        if (pal_dev_list_rw_t == NULL)
+          print_usage();
+        exist = strstr(pal_dev_list_rw_t, argv[2]);
+        if (exist == NULL) {
+          printf("Cannot modify FRUID for %s %s\n", argv[1], argv[2]);
           print_usage();
         }
       }
@@ -247,6 +324,16 @@ int main(int argc, char * argv[]) {
       file_path = argv[argc-1];
     } else if (!strcmp(argv[argc-2], "--write")) {
       rw = EEPROM_WRITE;
+      file_path = argv[argc-1];
+    } else {
+      print_usage();
+    }
+  }
+
+  //Check modify options
+  if (argc == 6 || argc == 7) {
+    if (!strcmp(argv[argc-4], "--modify")) {
+      rw = FRU_MODIFY;
       file_path = argv[argc-1];
     } else {
       print_usage();
@@ -414,6 +501,43 @@ int main(int argc, char * argv[]) {
       close(fd_newbin);
       close(fd_tmpbin);
 
+    } else if (rw == FRU_MODIFY) {
+      /* FRUID BINARY MODIFY */
+      
+      if(access(file_path, F_OK) == -1) {  //copy current FRU bin file to specified bin file
+        fd_tmpbin = open(path, O_RDONLY);
+        if (fd_tmpbin == -1) {
+          syslog(LOG_ERR, "Unable to open the %s file: %s", path, strerror(errno));
+          return errno;
+        }
+
+        fd_newbin = open(file_path, O_WRONLY | O_CREAT, 0644);
+        if (fd_newbin == -1) {
+          syslog(LOG_ERR, "Unable to create %s file: %s", file_path, strerror(errno));
+          return errno;
+        }
+
+        ret = copy_file(fd_newbin, fd_tmpbin, FRUID_SIZE);
+        if (ret < 0) {
+          syslog(LOG_ERR, "copy: write to %s file failed: %s",
+              file_path, strerror(errno));
+          return ret;
+        }
+
+        close(fd_newbin);
+        close(fd_tmpbin);
+      } else {
+        memset(path, 0, sizeof(path));
+        sprintf(path, "%s", file_path);
+      }
+
+      ret = fruid_modify(path, file_path, argv[argc-3], argv[argc-2]);
+      if(ret < 0){
+        printf("Fail to modify %s FRU\n", name);  
+        return ret;
+      }
+
+      get_fruid_info(fru, file_path, name);
     } else {
       /* FRUID PRINT ONE FRU */
 
@@ -430,7 +554,6 @@ int main(int argc, char * argv[]) {
         }
       }
     }
-
   } else if (fru == 0) {
 
     /* FRUID PRINT ALL FRUs */

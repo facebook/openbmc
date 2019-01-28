@@ -43,6 +43,10 @@ const char * ascii_6bit[4] = {
   "PQRSTUVWXYZ[\\]^_"
 };
 
+const int field_chassis_opt_size = sizeof(fruid_field_chassis_opt) / sizeof(fruid_field_chassis_opt[0]);
+const int field_board_opt_size = sizeof(fruid_field_board_opt) / sizeof(fruid_field_board_opt[0]);
+const int field_product_opt_size = sizeof(fruid_field_product_opt) / sizeof(fruid_field_product_opt[0]);
+
 /*
  * calculate_time - calculate time from the unix time stamp stored
  *
@@ -819,5 +823,726 @@ int fruid_parse_eeprom(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fr
     free_fruid_info(fruid);
   }
 
+  return ret;
+}
+
+/* Get fru content from eeprom dump*/
+static 
+int get_fruid_content(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fruid, fruid_header_t * fruid_header, fruid_eeprom_t * fruid_eeprom, fruid_area_chassis_t * fruid_chassis,
+                      fruid_area_board_t * fruid_board, fruid_area_product_t * fruid_product)
+{
+  int ret = 0;
+
+  /* Parse the common header data */
+  ret = parse_fruid_header(eeprom, fruid_header);
+  if (ret) {
+    return ret;
+  }
+
+  /* Calculate all the area offsets */
+  set_fruid_eeprom_offsets(eeprom, fruid_header, fruid_eeprom);
+
+  init_fruid_info(fruid);
+
+  /* If Chassis area is present, parse it */
+  if (fruid_eeprom->chassis) {
+    ret = parse_fruid_area_chassis(fruid_eeprom->chassis, fruid_chassis);
+    if (!ret) {
+      fruid->chassis.flag = 1;
+      fruid->chassis.type_str = fruid_chassis->type_str;
+      fruid->chassis.part = fruid_chassis->part;
+      fruid->chassis.serial = fruid_chassis->serial;
+      fruid->chassis.custom1 = fruid_chassis->custom1;
+      fruid->chassis.custom2 = fruid_chassis->custom2;
+      fruid->chassis.custom3 = fruid_chassis->custom3;
+      fruid->chassis.custom4 = fruid_chassis->custom4;
+    } else {
+      free_fruid_info(fruid);
+      return ret;
+    }
+  }
+
+  /* If Board area is present, parse it */
+  if (fruid_eeprom->board) {
+    ret = parse_fruid_area_board(fruid_eeprom->board, fruid_board);
+    if (!ret) {
+      fruid->board.flag = 1;
+      fruid->board.mfg_time_str = fruid_board->mfg_time_str;
+      fruid->board.mfg = fruid_board->mfg;
+      fruid->board.name = fruid_board->name;
+      fruid->board.serial = fruid_board->serial;
+      fruid->board.part = fruid_board->part;
+      fruid->board.fruid = fruid_board->fruid;
+      fruid->board.custom1 = fruid_board->custom1;
+      fruid->board.custom2 = fruid_board->custom2;
+      fruid->board.custom3 = fruid_board->custom3;
+      fruid->board.custom4 = fruid_board->custom4;
+    } else {
+      free_fruid_info(fruid);
+      return ret;
+    }
+  }
+
+  /* If Product area is present, parse it */
+  if (fruid_eeprom->product) {
+    ret = parse_fruid_area_product(fruid_eeprom->product, fruid_product);
+    if (!ret) {
+      fruid->product.flag = 1;
+      fruid->product.mfg = fruid_product->mfg;
+      fruid->product.name = fruid_product->name;
+      fruid->product.part = fruid_product->part;
+      fruid->product.version = fruid_product->version;
+      fruid->product.serial = fruid_product->serial;
+      fruid->product.asset_tag = fruid_product->asset_tag;
+      fruid->product.fruid = fruid_product->fruid;
+      fruid->product.custom1 = fruid_product->custom1;
+      fruid->product.custom2 = fruid_product->custom2;
+      fruid->product.custom3 = fruid_product->custom3;
+      fruid->product.custom4 = fruid_product->custom4;
+    } else {
+      free_fruid_info(fruid);
+      return ret;
+    }
+  }
+
+  return ret;
+}
+
+static
+void copy_chassis_info(fruid_field_t *fruid_field, fruid_eeprom_t *fruid_eeprom, fruid_area_chassis_t *fruid_chassis, int *order) {
+  int index = 0;
+  uint8_t *chassis;
+  int i = *order;
+
+  /* If Chassis area is present, copy it */
+  if (fruid_eeprom->chassis) {
+    index = 3;                                                      // Byte0 : Chassis Info Area Format Version, Byte1 : Chassis Info Area Length, Byte2 : Chassis Type
+    chassis = fruid_eeprom->chassis;
+    fruid_field[i].field = fruid_field_chassis_opt[i - *order];     // Byte3 : Chassis Part Number
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_chassis->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+    fruid_field[i].offset = chassis + index;
+    fruid_field[i].type_length = FIELD_LEN(chassis[index]);
+    index += FIELD_LEN(chassis[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_chassis_opt[i - *order];     // Chassis Serial Number
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_chassis->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+    fruid_field[i].offset = chassis + index;
+    fruid_field[i].type_length = FIELD_LEN(chassis[index]);
+    index += FIELD_LEN(chassis[index]) + 1;
+    i++;
+
+    if (chassis[index] == NO_MORE_DATA_BYTE) {                      // Chassis Custom Data 1
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_chassis->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].offset = chassis + index;
+      fruid_field[i].type_length = FIELD_LEN(chassis[index]);
+      index += FIELD_LEN(chassis[index]) + 1;
+      i++;
+    }
+    if (chassis[index] == NO_MORE_DATA_BYTE) {                      // Chassis Custom Data 2
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_chassis->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].offset = chassis + index;
+      fruid_field[i].type_length = FIELD_LEN(chassis[index]);
+      index += FIELD_LEN(chassis[index]) + 1;
+      i++;
+    }
+    if (chassis[index] == NO_MORE_DATA_BYTE) {                      // Chassis Custom Data 3
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_chassis->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].offset = chassis + index;
+      fruid_field[i].type_length = FIELD_LEN(chassis[index]);
+      index += FIELD_LEN(chassis[index]) + 1;
+      i++;
+    }
+    if (chassis[index] == NO_MORE_DATA_BYTE) {                      // Chassis Custom Data 4
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_chassis->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+      fruid_field[i].offset = chassis + index;
+      fruid_field[i].type_length = FIELD_LEN(chassis[index]);
+      index += FIELD_LEN(chassis[index]) + 1;
+      i++;
+    }
+  } else {
+    for(i = 0; i < field_chassis_opt_size; i++) {
+      fruid_field[i].field = fruid_field_chassis_opt[i - *order];
+      fruid_field[i].flag = 0;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_CHASSIS;
+    }
+  }
+
+  *order = i;
+  return;
+}
+
+static
+void copy_board_info(fruid_field_t *fruid_field, fruid_eeprom_t *fruid_eeprom, fruid_area_board_t *fruid_board, int *order) {
+  int index = 0;
+  uint8_t *board;
+  int i = *order;
+
+  /* If Board area is present, copy it */
+  if (fruid_eeprom->board) {
+    index = 3;                                                  // Byte0 : Board Area Format Version, Byte1 : Board Area Length, Byte2 : Language Code
+    board = fruid_eeprom->board;                          
+    fruid_field[i].field = fruid_field_board_opt[i - *order];   // Byte3 : Mfg. Date/Time
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_board->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+    fruid_field[i].offset = board + index;
+    fruid_field[i].type_length = 3;                             // 3 bytes for Mfg. Date/Time
+    index += fruid_field[i].type_length;
+    i++;
+
+    fruid_field[i].field = fruid_field_board_opt[i - *order];   // Board Manufacturer
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_board->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+    fruid_field[i].offset = board + index;
+    fruid_field[i].type_length = FIELD_LEN(board[index]);
+    index += FIELD_LEN(board[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_board_opt[i - *order];   // Board Product Name
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_board->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+    fruid_field[i].offset = board + index;
+    fruid_field[i].type_length = FIELD_LEN(board[index]);
+    index += FIELD_LEN(board[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_board_opt[i - *order];   // Board Serial Number
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_board->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+    fruid_field[i].offset = board + index;
+    fruid_field[i].type_length = FIELD_LEN(board[index]);
+    index += FIELD_LEN(board[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_board_opt[i - *order];   // Board Part Number
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_board->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+    fruid_field[i].offset = board + index;
+    fruid_field[i].type_length = FIELD_LEN(board[index]);
+    index += FIELD_LEN(board[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_board_opt[i - *order];   // FRU File ID
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_board->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+    fruid_field[i].offset = board + index;
+    fruid_field[i].type_length = FIELD_LEN(board[index]);
+    index += FIELD_LEN(board[index]) + 1;
+    i++;
+
+    if (board[index] == NO_MORE_DATA_BYTE) {                    // Board Custom Data 1
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_board->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].offset = board + index;
+      fruid_field[i].type_length = FIELD_LEN(board[index]);
+      index += FIELD_LEN(board[index]) + 1;
+      i++;
+    }
+    if (board[index] == NO_MORE_DATA_BYTE) {                    // Board Custom Data 2
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_board->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].offset = board + index;
+      fruid_field[i].type_length = FIELD_LEN(board[index]);
+      index += FIELD_LEN(board[index]) + 1;
+      i++;
+    }
+    if (board[index] == NO_MORE_DATA_BYTE) {                    // Board Custom Data 3
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_board->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].offset = board + index;
+      fruid_field[i].type_length = FIELD_LEN(board[index]);
+      index += FIELD_LEN(board[index]) + 1;
+      i++;
+    }
+    if (board[index] == NO_MORE_DATA_BYTE) {                    // Board Custom Data 4
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_board->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+      fruid_field[i].offset = board + index;
+      fruid_field[i].type_length = FIELD_LEN(board[index]);
+      index += FIELD_LEN(board[index]) + 1;
+      i++;
+    }
+  } else {
+    for(i = 0; i < field_board_opt_size; i++) {
+      fruid_field[i].field = fruid_field_board_opt[i - *order];
+      fruid_field[i].flag = 0;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_BOARD;
+    }
+  }
+
+  *order = i;
+  return;
+}
+
+static
+void copy_product_info(fruid_field_t *fruid_field, fruid_eeprom_t *fruid_eeprom, fruid_area_product_t *fruid_product, int *order) {
+  int index = 0;
+  uint8_t *product;
+  int i = *order;
+
+  /* If Product area is present, copy it */
+  if (fruid_eeprom->product) {
+    index = 3;                                                   // Byte0 : Product Area Format Version, Byte1 : Product Area Length, Byte2 : Language Code
+    product = fruid_eeprom->product;
+    fruid_field[i].field = fruid_field_product_opt[i - *order];  // Byte3 : Manufacturer Name
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_product->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+    fruid_field[i].offset = product + index;
+    fruid_field[i].type_length = FIELD_LEN(product[index]);                     
+    index += FIELD_LEN(product[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_product_opt[i - *order];  // Product Name
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_product->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+    fruid_field[i].offset = product + index;
+    fruid_field[i].type_length = FIELD_LEN(product[index]);
+    index += FIELD_LEN(product[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_product_opt[i - *order];  // Product Part/Model Number
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_product->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+    fruid_field[i].offset = product + index;
+    fruid_field[i].type_length = FIELD_LEN(product[index]);
+    index += FIELD_LEN(product[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_product_opt[i - *order];  // Product Version
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_product->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+    fruid_field[i].offset = product + index;
+    fruid_field[i].type_length = FIELD_LEN(product[index]);
+    index += FIELD_LEN(product[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_product_opt[i - *order];  // Product Serial Number
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_product->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+    fruid_field[i].offset = product + index;
+    fruid_field[i].type_length = FIELD_LEN(product[index]);
+    index += FIELD_LEN(product[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_product_opt[i - *order];  // Asset Tag
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_product->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+    fruid_field[i].offset = product + index;
+    fruid_field[i].type_length = FIELD_LEN(product[index]);
+    index += FIELD_LEN(product[index]) + 1;
+    i++;
+
+    fruid_field[i].field = fruid_field_product_opt[i - *order];  // FRU File ID
+    fruid_field[i].flag = 1;
+    fruid_field[i].area_length = fruid_product->area_len;
+    fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+    fruid_field[i].offset = product + index;
+    fruid_field[i].type_length = FIELD_LEN(product[index]);
+    index += FIELD_LEN(product[index]) + 1;
+    i++;
+
+    if (product[index] == NO_MORE_DATA_BYTE) {                   // Product Custom Data 1
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_product->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].offset = product + index;
+      fruid_field[i].type_length = FIELD_LEN(product[index]);
+      index += FIELD_LEN(product[index]) + 1;
+      i++;
+    }
+    if (product[index] == NO_MORE_DATA_BYTE) {                   // Product Custom Data 2
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_product->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].offset = product + index;
+      fruid_field[i].type_length = FIELD_LEN(product[index]);
+      index += FIELD_LEN(product[index]) + 1;
+      i++;
+    }
+    if (product[index] == NO_MORE_DATA_BYTE) {                   // Product Custom Data 3
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_product->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].offset = product + index;
+      fruid_field[i].type_length = FIELD_LEN(product[index]);
+      index += FIELD_LEN(product[index]) + 1;
+      i++;
+    }
+    if (product[index] == NO_MORE_DATA_BYTE) {                   // Product Custom Data 4
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].type_length = 0;
+      i++;
+    } else {
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 1;
+      fruid_field[i].area_length = fruid_product->area_len;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT;
+      fruid_field[i].offset = product + index;
+      fruid_field[i].type_length = FIELD_LEN(product[index]);
+      index += FIELD_LEN(product[index]) + 1;
+      i++;
+    }
+  } else {
+    for(i = 0; i < field_product_opt_size; i++) {
+      fruid_field[i].field = fruid_field_product_opt[i - *order];
+      fruid_field[i].flag = 0;
+      fruid_field[i].area_type = FRUID_OFFSET_AREA_PRODUCT; 
+    }
+  }
+
+  *order = i;
+  return;
+}
+
+static
+void copy_fru_info(fruid_field_t *fruid_field, fruid_eeprom_t * fruid_eeprom, fruid_area_chassis_t * fruid_chassis,
+                   fruid_area_board_t * fruid_board, fruid_area_product_t * fruid_product)
+{
+  int order = 0;
+
+  copy_chassis_info(fruid_field, fruid_eeprom, fruid_chassis, &order);
+  copy_board_info(fruid_field, fruid_eeprom, fruid_board, &order);
+  copy_product_info(fruid_field, fruid_eeprom, fruid_product, &order);
+
+  return; 
+}
+
+static 
+char *extract_content(const char *content, char *tmp_str) {
+  int i = 0, j = 0;
+  
+  while(content[i] != '\0') {
+    if(content[i] != '\"') {
+      tmp_str[j++] = content[i];  
+    }
+    i++;
+  }
+  tmp_str[j] = '\0';
+
+  return tmp_str;
+}
+
+static 
+int calculate_chksum(fruid_field_t * fruid_field, fruid_eeprom_t * fruid_eeprom) {
+  uint8_t *start_offset;
+  int i;
+  uint8_t chksum = 0;
+  int ret;
+
+  switch(fruid_field->area_type) {
+    case FRUID_OFFSET_AREA_CHASSIS:
+      start_offset = fruid_eeprom->chassis;
+      break;
+    case FRUID_OFFSET_AREA_BOARD:
+      start_offset = fruid_eeprom->board;
+      break;
+    case FRUID_OFFSET_AREA_PRODUCT:
+      start_offset = fruid_eeprom->product;
+      break;
+    default:
+      return -1;
+  }
+
+  for (i = 0; i < fruid_field->area_length - 1; i++) {
+    chksum += start_offset[i];
+  }
+
+  /* Zero checksum calculation */
+  chksum = ~(chksum) + 1;
+
+  /* Update new checksum */
+  start_offset[fruid_field->area_length - 1] = chksum; 
+
+  ret = verify_chksum((uint8_t *) start_offset, fruid_field->area_length, start_offset[fruid_field->area_length - 1]);
+      
+  return ret;
+}
+
+static
+int set_mfg_time(fruid_field_t * fruid_field, char * set_time) {
+  uint32_t time_value; 
+  uint32_t datetime;
+  time_t ipmi_time;
+  char *ptr = NULL;
+
+  if (!strcmp(set_time, "")) {   //Invalid time setting
+    return -1;
+  }
+
+  strtol(set_time, &ptr, 10);
+
+  if(strcmp(ptr, "")) {       //Invalid time setting
+    return -1;
+  }
+
+  time_value = (uint32_t)atoi(set_time);
+   
+  ipmi_time = UNIX_TIMESTAMP_1996;
+
+  datetime = (time_value - ipmi_time) / 60;
+
+  *(fruid_field->offset) = (datetime & 0xFF);
+  *(fruid_field->offset + 1) = ((datetime >> 8) & 0xFF);
+  *(fruid_field->offset + 2) = ((datetime >> 16) & 0xFF);
+
+  return 0;
+}
+
+int fruid_modify(const char * cur_bin, const char * new_bin, const char * field, const char * content)
+{
+  int fruid_len, ret;
+  FILE *fruid_fd;
+  uint8_t *eeprom;
+  int total_field_opt_size = field_chassis_opt_size + field_board_opt_size + field_product_opt_size;
+  fruid_info_t fruid;
+  fruid_field_t fruid_field[total_field_opt_size];
+  int index;
+  int target = -1;
+  char tmp_str[256];
+  char *tmp_content = NULL;
+  char *area_str = NULL;
+  int content_len;
+  
+  /* Initial all the required fruid structures */
+  fruid_header_t fruid_header;
+  fruid_eeprom_t fruid_eeprom;
+  fruid_area_chassis_t fruid_chassis;
+  fruid_area_board_t fruid_board;
+  fruid_area_product_t fruid_product;
+
+  /* Reset parser return value */
+  ret = 0;
+
+  /* Open the FRUID binary file */
+  fruid_fd = fopen(cur_bin, "rb");
+  if (!fruid_fd) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "%s: unable to open the file %s", __func__, cur_bin);
+#endif
+    return ENOENT;
+  }
+
+  /* Get the size of the binary file */
+  fseek(fruid_fd, 0, SEEK_END);
+  fruid_len = (uint32_t) ftell(fruid_fd);
+
+  fseek(fruid_fd, 0, SEEK_SET);
+
+  eeprom = (uint8_t *) malloc(fruid_len);
+  if (!eeprom) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "%s: malloc: memory allocation failed", __func__);
+#endif
+    return ENOMEM;
+  }
+
+  /* Read the binary file */
+  fread(eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+
+  /* Close the FRUID binary file */
+  fclose(fruid_fd);
+
+  /* Get current fru content*/
+  memset(&fruid_header, 0, sizeof(fruid_header_t));
+  memset(&fruid_eeprom, 0, sizeof(fruid_eeprom_t));
+
+  ret = get_fruid_content(eeprom, fruid_len, &fruid, &fruid_header, &fruid_eeprom, &fruid_chassis, &fruid_board, &fruid_product);
+  if (ret) {
+    return ret;
+  }
+
+  copy_fru_info(fruid_field, &fruid_eeprom, &fruid_chassis, &fruid_board, &fruid_product);
+
+  for(index = 0; index < total_field_opt_size; index++) {
+    if (!strcmp(field, fruid_field[index].field)) {
+      target = index;
+      break;
+    }
+  }
+  if (target == -1) {
+    printf("Parameter \"%s\" is invalid!\n", field);
+    ret = -1;
+    goto error_exit;
+  }
+
+  switch(fruid_field[target].area_type) {
+    case FRUID_OFFSET_AREA_CHASSIS:
+      area_str = "Chassis";
+      break;
+    case FRUID_OFFSET_AREA_BOARD:
+      area_str = "Board";
+      break;
+    case FRUID_OFFSET_AREA_PRODUCT:
+      area_str = "Product";
+      break;
+    default:
+      area_str = "Unknown";
+      break;
+  }
+
+  if (fruid_field[target].flag == 0) {           //Check if area is present   
+    printf("Area %s is disabled!\n", area_str);
+    ret = -1;
+    goto error_exit;
+  }
+
+  tmp_content = extract_content(content, tmp_str);
+  content_len = strlen(tmp_content);
+
+  if(!strcmp(fruid_field[target].field, "--BMD")) {
+    if(set_mfg_time(&fruid_field[target], tmp_content) < 0) {
+      ret = -1;
+      goto error_exit;
+    }
+  } else {
+    if (fruid_field[target].type_length == 0) {    //Check if field is not used
+      printf("Field %s is not used!\n", fruid_field[target].field);
+      ret = -1;
+      goto error_exit;
+    }
+
+    if(content_len > fruid_field[target].type_length) {  //Check if input length of specified field exceeds predefined field length
+      printf("Exceed field length of %s!\n", fruid_field[target].field);
+      ret = -1;
+      goto error_exit;
+    }
+
+    memset(fruid_field[target].offset + 1, 0, fruid_field[target].type_length);
+    memcpy(fruid_field[target].offset + 1, tmp_content, content_len);
+  }
+
+  ret = calculate_chksum(&fruid_field[target], &fruid_eeprom);
+  if (ret < 0) {
+    printf("Update checksum fail!\n");
+    goto error_exit;
+  }
+
+  /* Open the FRUID binary file */
+  fruid_fd = fopen(new_bin, "wb");
+  if (!fruid_fd) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "%s: unable to open the file %s", __func__, new_bin);
+#endif
+    return ENOENT;
+  }
+
+  /* Read the binary file */
+  fwrite(eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+
+  /* Close the FRUID binary file */
+  fclose(fruid_fd);
+ 
+error_exit:
+  /* Free the eeprom malloced memory */
+  free(eeprom);
+  /* Free the malloced memory for the fruid information */
+  free_fruid_info(&fruid);
   return ret;
 }

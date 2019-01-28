@@ -164,6 +164,16 @@ typedef struct fruid_eeprom_t {
   uint8_t * multirecord;
 } fruid_eeprom_t;
 
+/* To hold the different field info. */
+typedef struct fruid_field_t {
+  const char * field;
+  char * offset;
+  uint8_t flag;
+  uint8_t area_length;
+  uint8_t type_length;
+  uint8_t area_type;
+} fruid_field_t;
+
 /* List of all the Chassis types. */
 const char * fruid_chassis_type [] = {
   "Other",                    /* 0x01 */
@@ -200,9 +210,46 @@ const char * fruid_chassis_type [] = {
   "Detachable"                /* 0x20 */
 };
 
+const char * fruid_field_chassis_opt[] = {
+  "--CPN", 
+  "--CSN", 
+  "--CCD1", 
+  "--CCD2", 
+  "--CCD3", 
+  "--CCD4", 
+};
+
+const char * fruid_field_board_opt[] = {
+  "--BMD",
+  "--BM",
+  "--BP",
+  "--BSN",
+  "--BPN",
+  "--BFI",
+  "--BCD1",
+  "--BCD2",
+  "--BCD3",
+  "--BCD4",
+};
+
+const char * fruid_field_product_opt[] = {
+  "--PM",
+  "--PN",
+  "--PPN",
+  "--PV",
+  "--PSN",
+  "--PAT",
+  "--PFI",
+  "--PCD1",
+  "--PCD2",
+  "--PCD3",
+  "--PCD4"
+};
+
 int fruid_parse(const char * bin, fruid_info_t * fruid);
 int fruid_parse_eeprom(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fruid);
 void free_fruid_info(fruid_info_t * fruid);
+int fruid_modify(const char * cur_bin, const char * new_bin, const char * field, const char * content);
 
 #ifdef __cplusplus
 }

@@ -10,7 +10,6 @@ DISTRO_OVERRIDES=(
   meta-cmm:krogoth
   meta-fby2:krogoth
   meta-galaxy100:krogoth
-  meta-lightning:krogoth
   meta-minilaketb:krogoth
   meta-minipack:krogoth
   meta-wedge:krogoth

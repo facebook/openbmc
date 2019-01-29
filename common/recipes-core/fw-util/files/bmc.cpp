@@ -166,10 +166,10 @@ class SystemConfig {
         }
       } else {
         // non-verified-boot. BMC boots off of flash0.
-        static BmcComponent bmc("bmc", "bmc", system, "flash0", "rom");
+        static BmcComponent bmc("bmc", "bmc", system, "flash0", "u-boot");
         // Dual flash supported, but not in verified boot format.
         // Allow flashing the second flash. Read version from u-boot partition.
-        static BmcComponent bmcalt("bmc", "altbmc", system, "flash1", "romx");
+        static BmcComponent bmcalt("bmc", "altbmc", system, "flash1", "u-bootx");
       }
       // Verified boot supported and in dual-flash mode.
     } else {

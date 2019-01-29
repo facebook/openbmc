@@ -142,6 +142,32 @@ void print_pldm_cmd_status(NCSI_NL_RSP_T *nl_resp)
 }
 
 
+// sends nl_msg containing PLDM command across NCSI interface and
+//  and returns response
+// Returns -1 if error occurs
+int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
+{
+  NCSI_NL_RSP_T *nl_resp;
+  int ret = 0;
+
+  if (!nl_msg)
+    return -1;
+
+  nl_resp = send_nl_msg(nl_msg);
+
+  if (!nl_resp) {
+    return -1;
+  }
+
+  // debug prints
+  print_pldm_cmd_status(nl_resp);
+  ret = ncsiDecodePldmCompCode(nl_resp);
+
+  free(nl_resp);
+
+  return ret;
+}
+
 int pldm_test(char *path)
 {
   NCSI_NL_MSG_T *nl_msg = NULL;
@@ -179,11 +205,9 @@ int pldm_test(char *path)
     goto free_exit;
   }
 
-  nl_resp = send_nl_msg(nl_msg);
-  if (!nl_resp) {
+  if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
     goto free_exit;
   }
-  print_pldm_cmd_status(nl_resp);
 
   for (i=0; i<pkgHdr->componentImageCnt; ++i) {
     memset(&pldmReq, 0, sizeof(pldm_cmd_req));
@@ -195,11 +219,9 @@ int pldm_test(char *path)
     if (ret) {
       goto free_exit;
     }
-    nl_resp = send_nl_msg(nl_msg);
-    if (!nl_resp) {
+    if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
       goto free_exit;
     }
-    print_pldm_cmd_status(nl_resp);
   }
 
 
@@ -214,11 +236,9 @@ int pldm_test(char *path)
     if (ret) {
       goto free_exit;
     }
-    nl_resp = send_nl_msg(nl_msg);
-    if (!nl_resp) {
+    if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
       goto free_exit;
     }
-    print_pldm_cmd_status(nl_resp);
   }
 
   // FW data transfer
@@ -226,7 +246,7 @@ int pldm_test(char *path)
   int idleCnt = 0;
   int pldmCmd = 0;
   while (idleCnt < 70) {
-    printf("\n04 QueryPendingNcPldmRequestOp, loop=%d\n", loopCount);
+//    printf("\n04 QueryPendingNcPldmRequestOp, loop=%d\n", loopCount);
     ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_QUERY_PENDING_NC_PLDM_REQ, 0, NULL);
     if (ret) {
       goto free_exit;
@@ -238,9 +258,10 @@ int pldm_test(char *path)
     print_pldm_cmd_status(nl_resp);
 
     pldmCmd = ncsiDecodePldmCmd(nl_resp, &pldmReq);
+    free(nl_resp);
 
     if (pldmCmd == -1) {
-      printf("No pending command, loop %d\n", idleCnt);
+  //    printf("No pending command, loop %d\n", idleCnt);
       msleep(200); // wait some time and try again
       idleCnt++;
       continue;
@@ -265,6 +286,7 @@ int pldm_test(char *path)
         goto free_exit;
       }
       //print_ncsi_resp(nl_resp);
+      free(nl_resp);
       if ((pldmCmd == CMD_APPLY_COMPLETE) || (cmdStatus == -1))
         break;
     } else {
@@ -282,11 +304,9 @@ int pldm_test(char *path)
   if (ret) {
     goto free_exit;
   }
-  nl_resp = send_nl_msg(nl_msg);
-  if (!nl_resp) {
+  if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
     goto free_exit;
   }
-  print_ncsi_resp(nl_resp);
 
 free_exit:
   if (pkgHdr)
@@ -380,7 +400,7 @@ main(int argc, char **argv) {
     case 'p':
             printf ("Input file: \"%s\"\n", optarg);
             pldm_test(optarg);
-            goto free_exit;
+            goto ok_exit;
     case 'h':
     default :
             goto free_exit;
@@ -429,6 +449,7 @@ main(int argc, char **argv) {
     goto free_exit;
   }
 
+ok_exit:
   free(msg);
   if (rsp)
     free(rsp);

@@ -9,7 +9,6 @@ declare -a DISTRO_OVERRIDES
 DISTRO_OVERRIDES=(
   meta-cmm:krogoth
   meta-fby2:krogoth
-  meta-fbttn:krogoth
   meta-galaxy100:krogoth
   meta-lightning:krogoth
   meta-minilaketb:krogoth

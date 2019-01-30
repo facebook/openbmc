@@ -161,14 +161,12 @@ size_t ep_gpio_pin_cnt = sizeof(ep_gpio_pin_list)/sizeof(uint8_t);
 // List of GPV2 GPIO pins to be monitored
 const uint8_t gpv2_gpio_pin_list[] = {
   GPV2_BIC_HB_LED_N,
-  GPV2_XDP_BIC_TRST,
   GPV2_I2C_PESW_MULTI_CONFIG_ADDR0_R,
   GPV2_I2C_PESW_MULTI_CONFIG_ADDR1_R,
   GPV2_I2C_PESW_MULTI_CONFIG_ADDR2_R,
   GPV2_I2C_PESW_MULTI_CONFIG_ADDR3_R,
   GPV2_I2C_PESW_MULTI_CONFIG_ADDR4_R,
-  GPV2_SMB_BMC_ALRT_N,
-  GPV2_SMB_INA230_ALERT_N,
+  GPV2_SMB_BIC_3V3SB_READY_N_R,
   GPV2_P3V3_M2A_EN,
   GPV2_P3V3_M2B_EN,
   GPV2_P3V3_M2C_EN,
@@ -181,7 +179,6 @@ const uint8_t gpv2_gpio_pin_list[] = {
   GPV2_P3V3_M2J_EN,
   GPV2_P3V3_M2K_EN,
   GPV2_P3V3_M2L_EN,
-  GPV2_PWRGD_P3V3_M2_ALL_R,
   GPV2_PWRGD_P3V3_M2A,
   GPV2_PWRGD_P3V3_M2B,
   GPV2_PWRGD_P3V3_M2C,
@@ -224,6 +221,9 @@ const uint8_t gpv2_gpio_pin_list[] = {
   GPV2_FM_BIC_DU_M2K_EN_R,
   GPV2_FM_BIC_DU_M2L_EN_R,
   GPV2_FM_POWER_EN,
+  GPV2_BIC_BOARD_ID_0,
+  GPV2_BIC_BOARD_ID_1,
+  GPV2_BIC_BOARD_ID_2,
 };
 size_t gpv2_gpio_pin_cnt = sizeof(gpv2_gpio_pin_list)/sizeof(uint8_t);
 
@@ -360,14 +360,12 @@ const char *ep_gpio_pin_name[] = {
 // GPV2 GPIO name
 const char *gpv2_gpio_pin_name[] = {
   "GPV2_BIC_HB_LED_N",
-  "GPV2_XDP_BIC_TRST",
   "GPV2_I2C_PESW_MULTI_CONFIG_ADDR0_R",
   "GPV2_I2C_PESW_MULTI_CONFIG_ADDR1_R",
   "GPV2_I2C_PESW_MULTI_CONFIG_ADDR2_R",
   "GPV2_I2C_PESW_MULTI_CONFIG_ADDR3_R",
   "GPV2_I2C_PESW_MULTI_CONFIG_ADDR4_R",
-  "GPV2_SMB_BMC_ALRT_N",
-  "GPV2_SMB_INA230_ALERT_N",
+  "GPV2_SMB_BIC_3V3SB_READY_N_R",
   "GPV2_P3V3_M2A_EN",
   "GPV2_P3V3_M2B_EN",
   "GPV2_P3V3_M2C_EN",
@@ -380,7 +378,6 @@ const char *gpv2_gpio_pin_name[] = {
   "GPV2_P3V3_M2J_EN",
   "GPV2_P3V3_M2K_EN",
   "GPV2_P3V3_M2L_EN",
-  "GPV2_PWRGD_P3V3_M2_ALL_R",
   "GPV2_PWRGD_P3V3_M2A",
   "GPV2_PWRGD_P3V3_M2B",
   "GPV2_PWRGD_P3V3_M2C",
@@ -423,6 +420,9 @@ const char *gpv2_gpio_pin_name[] = {
   "GPV2_FM_BIC_DU_M2K_EN_R",
   "GPV2_FM_BIC_DU_M2L_EN_R",
   "GPV2_FM_POWER_EN",
+  "GPV2_BIC_BOARD_ID_0",
+  "GPV2_BIC_BOARD_ID_1",
+  "GPV2_BIC_BOARD_ID_2",
 };
 
 int

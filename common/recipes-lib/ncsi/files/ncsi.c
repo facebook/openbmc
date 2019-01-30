@@ -35,6 +35,24 @@
 
 #define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
 
+// NCSI response code string
+const char *ncsi_resp_string[RESP_MAX] = {
+  "COMMAND_COMPLETED",
+  "COMMAND_FAILED",
+  "COMMAND_UNAVAILABLE",
+  "COMMAND_UNSUPPORTED",
+};
+
+// NCSI reason code string
+const char *ncsi_reason_string[NUM_NCSI_REASON_CODE] = {
+  "NO_ERROR",
+  "INTF_INIT_REQD",
+  "PARAM_INVALID",
+  "CHANNEL_NOT_RDY",
+  "PKG_NOT_RDY",
+  "INVALID_PAYLOAD_LEN",
+  "UNKNOWN_CMD_TYPE",
+};
 
 // NCSI command name
 const char *ncsi_cmd_string[NUM_NCSI_CDMS] = {
@@ -224,16 +242,59 @@ ncsi_cmd_type_to_name(int cmd)
   }
 }
 
-void
-print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
+const char *
+ncsi_cc_resp_name(int cc_resp)
+{
+  if ((cc_resp < 0) ||
+      (cc_resp >= RESP_MAX) ||
+      (ncsi_resp_string[cc_resp] == NULL)) {
+    return "unknown_response";
+  } else {
+    return ncsi_resp_string[cc_resp];
+  }
+}
+
+
+const char *
+ncsi_cc_reson_name(int cc_reason)
+{
+  switch (cc_reason) {
+    case REASON_UNKNOWN_CMD_TYPE:
+      return "UNKNOWN_CMD_TYPE";
+    default:
+      if ((cc_reason < 0) ||
+          (cc_reason >= NUM_NCSI_REASON_CODE) ||
+          (ncsi_reason_string[cc_reason] == NULL)) {
+        return "unknown_reason";
+      } else {
+        return ncsi_reason_string[cc_reason];
+      }
+  }
+}
+
+void print_ncsi_completion_codes(NCSI_NL_RSP_T *rcv_buf)
 {
   uint8_t *pbuf = rcv_buf->msg_payload;
-  int i = 0;
   int cmd = rcv_buf->hdr.cmd;
+  int cc_resp = (pbuf[0]<<8)+pbuf[1];
+  int cc_reason = (pbuf[2]<<8)+pbuf[3];
 
   printf("NC-SI Command Response:\n");
   printf("cmd: %s(0x%x)\n", ncsi_cmd_type_to_name(cmd), cmd);
-  printf("Response Code: 0x%04x  Reason Code: 0x%04x\n", (pbuf[0]<<8)+pbuf[1], (pbuf[2]<<8)+pbuf[3]);
+  printf("Response: %s(0x%04x)  Reason: %s(0x%04x)\n",
+          ncsi_cc_resp_name(cc_resp), cc_resp,
+          ncsi_cc_reson_name(cc_reason), cc_reason);
+
+  return;
+}
+
+void
+print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
+{
+  int i = 0;
+  int cmd = rcv_buf->hdr.cmd;
+
+  print_ncsi_completion_codes(rcv_buf);
 
   switch (cmd) {
   case NCSI_GET_CONTROLLER_PACKET_STATISTICS:

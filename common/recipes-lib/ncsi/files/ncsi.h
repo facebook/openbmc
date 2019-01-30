@@ -154,11 +154,16 @@ typedef struct {
 } __attribute__((packed)) Get_Version_ID_Response;
 
 
-#define RESP_COMMAND_COMPLETED   0x0000
-#define RESP_COMMAND_FAILED      0x0001
-#define RESP_COMMAND_UNAVAILABLE 0x0002
-#define RESP_COMMAND_UNSUPPORTED 0x0003
+enum {
+  RESP_COMMAND_COMPLETED = 0,
+  RESP_COMMAND_FAILED,
+  RESP_COMMAND_UNAVAILABLE,
+  RESP_COMMAND_UNSUPPORTED,
+  RESP_MAX, /* max number of response code. */
+};
 
+
+#define NUM_NCSI_REASON_CODE             7
 #define REASON_NO_ERROR             0x0000
 #define REASON_INTF_INIT_REQD       0x0001
 #define REASON_PARAM_INVALID        0x0002

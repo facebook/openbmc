@@ -330,9 +330,15 @@ showUsage(void) {
   printf("       -c channel     Specifies the NC-SI channel on the net device [default=0]\n");
   printf("       -S             show adapter statistics\n");
   printf("       -p [file]      Parse and display PLDM package information\n");
-  printf("       -s [n]         socket test\n");
-  printf("Sample: \n");
+  printf("       -s [n]         socket test\n\n");
+  printf("Sample debug commands: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
+  printf("       ncsi-util 0x8   (AEN Enable)\n");
+  printf("       ncsi-util 0xa   (Get Link Status) \n");
+  printf("       ncsi-util 0x15  (Get Version ID) \n");
+  printf("       ncsi-util 0x16  (Get Capabilities) \n");
+  printf("       ncsi-util 0x17  (Get Parameters) \n");
+  printf("       ncsi-util 0x18/0x19/0x1a (Get Controller Packet/NC-SI/Pass-through statistics)\n\n");
 }
 
 int

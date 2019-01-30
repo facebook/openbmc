@@ -7,7 +7,6 @@ else
 fi
 declare -a DISTRO_OVERRIDES
 DISTRO_OVERRIDES=(
-  meta-cmm:krogoth
   meta-fby2:krogoth
   meta-galaxy100:krogoth
   meta-minilaketb:krogoth

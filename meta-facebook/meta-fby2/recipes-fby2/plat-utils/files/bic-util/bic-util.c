@@ -26,6 +26,7 @@
 #include <syslog.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <ctype.h>
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
 #include <facebook/fby2_sensor.h>
@@ -602,6 +603,28 @@ util_bic_reset(uint8_t slot_id) {
   return ret;
 }
 
+static int
+util_is_numeric(char **argv) {
+  int j = 0;
+  int len = 0;
+  for (int i = 0; i < 2; i++) { //check netFn cmd
+    len = strlen(argv[i]);
+    if (len > 2 && argv[i][0] == '0' && (argv[i][1] == 'x' || argv[i][1] == 'X')) {
+      j=2;
+      for (; j < len; j++) {
+        if (!isxdigit(argv[i][j]))
+          return 0;
+      }
+    } else {
+      j=0;
+      for (; j < len; j++) {
+        if (!isdigit(argv[i][j]))
+          return 0;
+      }
+    }
+  }
+  return 1;
+}
 
 static int
 process_command(uint8_t slot_id, int argc, char **argv) {
@@ -751,7 +774,11 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[2], "--reset")) {
     ret = util_bic_reset(slot_id);
   } else if (argc >= 4) {
-    return process_command(slot_id, (argc - 2), (argv + 2));
+    if (util_is_numeric(argv + 2)) {
+      return process_command(slot_id, (argc - 2), (argv + 2));
+    } else {
+      goto err_exit;
+    }
   } else {
     goto err_exit;
   }

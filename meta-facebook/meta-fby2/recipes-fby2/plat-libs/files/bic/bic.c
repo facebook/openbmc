@@ -34,6 +34,7 @@
 #include "bic.h"
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/misc-utils.h>
 
 #define FRUID_READ_COUNT_MAX 0x30
 #define FRUID_WRITE_COUNT_MAX 0x30
@@ -50,8 +51,10 @@
 #define Y2_BIOS_VER_STR "YMV2"
 #define GPV2_BIOS_VER_STR "F09B"
 
+#define BIC_SIGN_SIZE 32
 #define BIC_UPDATE_RETRIES 12
 #define BIC_UPDATE_TIMEOUT 500
+#define GPV2_BIC_PLAT_STR "F09B"
 
 #define BIC_FLASH_START 0x8000
 #define BIC_PKT_MAX 252
@@ -70,6 +73,7 @@
 
 #define IMC_VER_SIZE 8
 
+#define SLOT_FILE "/tmp/slot%d.bin"
 #define SERVER_TYPE_FILE "/tmp/server_type%d.bin"
 
 #define RC_BIOS_SIG_OFFSET 0x3F00000
@@ -688,7 +692,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   uint8_t server_type = 0xFF;
 
   if (comp == FW_ME) {
-    ret = fby2_get_server_type(slot_id, &server_type);
+    ret = bic_get_server_type(slot_id, &server_type);
     if (ret) {
       syslog(LOG_ERR, "%s, Get server type failed for slot%u", __func__, slot_id);
       return -1;
@@ -867,341 +871,60 @@ bic_send:
   return ret;
 }
 
-int
-force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
-#define MAX_CMD_LEN 100
+static int
+check_bic_image(uint8_t slot_id, int fd, long size) {
+  int offs, rcnt;
+  uint8_t slot_type;
+  uint8_t buf[64];
+  const uint8_t hdr_common[] = {0x01,0x00,0x4c,0x1c,0x00,0x53,0x4e,0x4f,0x57,0x46,0x4c,0x41,0x4b,0x45};
+  char *plat_str = NULL;
 
-  int fd;
-  int ifd = -1;
-  char cmd[MAX_CMD_LEN] = {0};
-  struct stat buf;
-  int size;
-  uint8_t tbuf[256] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tcount;
-  uint8_t rcount;
-  volatile int xcount;
-  int i = 0;
-  int ret = -1, rc;
-  uint8_t xbuf[256] = {0};
-  uint32_t offset = 0, last_offset = 0, dsize;
-  struct rlimit mqlim;
-  uint8_t done = 0;
-
-  if (!bic_is_slot_12v_on(slot_id)) {
-    return -2;
+  if (size < BIC_SIGN_SIZE) {
+    return -1;
   }
 
-  if (is_bic_ready(slot_id)) {
-    printf("Not support in BIC normal mode\n");
-    return -2;
-  }
-
-  printf("updating fw on slot %d:\n", slot_id);
-
-  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
-
-  // Open the file exclusively for read
-  fd = open(path, O_RDONLY, 0666);
-  if (fd < 0) {
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
-    goto error_exit2;
-  }
-
-  fstat(fd, &buf);
-  size = buf.st_size;
-  printf("size of file is %d bytes\n", size);
-  dsize = size/20;
-
-  // Open the i2c driver
-  ifd = i2c_open(get_ipmb_bus_id(slot_id));
-  if (ifd < 0) {
-    printf("ifd error\n");
-    goto error_exit2;
-  }
-
-  // Kill ipmb daemon for this slot
-  sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
-  printf("stop ipmbd for slot %x..\n", slot_id);
-
-  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
-  // So reduce I2C bus clock speed which is a workaround for BIC update.
-  switch(slot_id)
-  {
-     case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF77304");
-       break;
-     case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF77304");
-       break;
-     case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF77304");
-       break;
-     case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF77304");
-       break;
-     default:
-       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
-       goto error_exit;
-       break;
-  }
-  sleep(1);
-  printf("Stopped ipmbd for this slot %x..\n",slot_id);
-
-  mqlim.rlim_cur = RLIM_INFINITY;
-  mqlim.rlim_max = RLIM_INFINITY;
-  if (setrlimit(RLIMIT_MSGQUEUE, &mqlim) < 0) {
-    goto error_exit;
-  }
-
-  // Start Bridge IC update(0x21)
-
-  tbuf[0] = CMD_DOWNLOAD_SIZE;
-  tbuf[1] = 0x00; //Checksum, will fill later
-
-  tbuf[2] = BIC_CMD_DOWNLOAD;
-
-  // update flash address: 0x8000
-  tbuf[3] = (BIC_FLASH_START >> 24) & 0xff;
-  tbuf[4] = (BIC_FLASH_START >> 16) & 0xff;
-  tbuf[5] = (BIC_FLASH_START >> 8) & 0xff;
-  tbuf[6] = (BIC_FLASH_START) & 0xff;
-
-  // image size
-  tbuf[7] = (size >> 24) & 0xff;
-  tbuf[8] = (size >> 16) & 0xff;
-  tbuf[9] = (size >> 8) & 0xff;
-  tbuf[10] = (size) & 0xff;
-
-  // calcualte checksum for data portion
-  for (i = 2; i < CMD_DOWNLOAD_SIZE; i++) {
-    tbuf[1] += tbuf[i];
-  }
-
-  tcount = CMD_DOWNLOAD_SIZE;
-
-  rcount = 0;
-
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (rc) {
-    printf("i2c_io failed download\n");
-    goto error_exit;
-  }
-
-  //delay for download command process ---
-  msleep(500);
-  tcount = 0;
-  rcount = 2;
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (rc) {
-    printf("i2c_io failed download ack\n");
-    goto error_exit;
-  }
-
-  if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
-    printf("download response: %x:%x\n", rbuf[0], rbuf[1]);
-    goto error_exit;
-  }
-
-  // Loop to send all the image data
-  while (1) {
-    // Get Status
-    tbuf[0] = CMD_STATUS_SIZE;
-    tbuf[1] = BIC_CMD_STATUS;// checksum same as data
-    tbuf[2] = BIC_CMD_STATUS;
-
-    tcount = CMD_STATUS_SIZE;
-    rcount = 0;
-
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      printf("i2c_io failed get status\n");
-      goto error_exit;
-    }
-
-    tcount = 0;
-    rcount = 5;
-
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      printf("i2c_io failed get status ack\n");
-      goto error_exit;
-    }
-
-    if (rbuf[0] != 0x00 ||
-        rbuf[1] != 0xcc ||
-        rbuf[2] != 0x03 ||
-        rbuf[3] != 0x40 ||
-        rbuf[4] != 0x40) {
-      printf("status resp: %x:%x:%x:%x:%x", rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4]);
-      goto error_exit;
-    }
-
-    // Send ACK ---
-    tbuf[0] = 0xcc;
-    tcount = 1;
-    rcount = 0;
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      printf("i2c_io failed send ack\n");
-      goto error_exit;
-    }
-
-    // send next packet
-
-    xcount = read(fd, xbuf, BIC_PKT_MAX);
-    if (xcount <= 0) {
-#ifdef DEBUG
-      printf("read returns %d\n", xcount);
-#endif
+  slot_type = bic_get_slot_type(slot_id);
+  switch (slot_type) {
+    case SLOT_TYPE_GPV2:
+      plat_str = GPV2_BIC_PLAT_STR;
       break;
+    default:
+      return 0;
+  }
+
+  offs = size - BIC_SIGN_SIZE;
+  if (lseek(fd, offs, SEEK_SET) != (off_t)offs) {
+    syslog(LOG_ERR, "%s: lseek to %d failed", __func__, offs);
+    return -1;
+  }
+
+  offs = 0;
+  while (offs < BIC_SIGN_SIZE) {
+    rcnt = file_read_bytes(fd, (buf + offs), BIC_SIGN_SIZE);
+    if (rcnt <= 0) {
+      syslog(LOG_ERR, "%s: unexpected rcnt: %d", __func__, rcnt);
+      return -1;
     }
-#ifdef DEBUG
-    printf("read returns %d bytes\n", xcount);
-#endif
-
-    offset += xcount;
-    if((last_offset + dsize) <= offset) {
-       printf("updated bic: %d %%\n", offset/dsize*5);
-       last_offset += dsize;
-    }
-
-    tbuf[0] = xcount + 3;
-    tbuf[1] = BIC_CMD_DATA;
-    tbuf[2] = BIC_CMD_DATA;
-    memcpy(&tbuf[3], xbuf, xcount);
-
-    for (i = 0; i < xcount; i++) {
-      tbuf[1] += xbuf[i];
-    }
-
-    tcount = tbuf[0];
-    rcount = 0;
-
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      printf("i2c_io error send data\n");
-      goto error_exit;
-    }
-
-    msleep(10);
-    tcount = 0;
-    rcount = 2;
-
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      printf("i2c_io error send data ack\n");
-      goto error_exit;
-    }
-
-    if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
-      printf("data error: %x:%x\n", rbuf[0], rbuf[1]);
-      goto error_exit;
-    }
-  }
-  msleep(500);
-
-  // Run the new image
-  tbuf[0] = CMD_RUN_SIZE;
-  tbuf[1] = 0x00; //checksum
-  tbuf[2] = BIC_CMD_RUN;
-  tbuf[3] = (BIC_FLASH_START >> 24) & 0xff;
-  tbuf[4] = (BIC_FLASH_START >> 16) & 0xff;
-  tbuf[5] = (BIC_FLASH_START >> 8) & 0xff;
-  tbuf[6] = (BIC_FLASH_START) & 0xff;
-
-  for (i = 2; i < CMD_RUN_SIZE; i++) {
-    tbuf[1] += tbuf[i];
+    offs += rcnt;
   }
 
-  tcount = CMD_RUN_SIZE;
-  rcount = 0;
-
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (rc) {
-    printf("i2c_io failed run\n");
-    goto error_exit;
+  if (memcmp(buf, hdr_common, sizeof(hdr_common))) {
+    return -1;
   }
 
-  tcount = 0;
-  rcount = 2;
-
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (rc) {
-    printf("i2c_io failed run ack\n");
-    goto error_exit;
+  if (memcmp(buf+sizeof(hdr_common), plat_str, strlen(plat_str)+1)) {
+    return -1;
   }
 
-  if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
-    printf("run response: %x:%x\n", rbuf[0], rbuf[1]);
-    goto error_exit;
+  if ((offs = lseek(fd, 0, SEEK_SET))) {
+    syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offs, errno);
+    return -1;
   }
-  msleep(500);
-
-  // Wait for SMB_BMC_3v3SB_ALRT_N
-  for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
-    if (is_bic_ready(slot_id))
-      break;
-
-    msleep(BIC_UPDATE_TIMEOUT);
-  }
-  if (i == BIC_UPDATE_RETRIES) {
-    printf("bic is NOT ready\n");
-    goto error_exit;
-  }
-
-  ret = 0;
-  done = 1;
-
-error_exit:
-  // Restore the I2C bus clock to 1M.
-  switch(slot_id)
-  {
-     case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF5E700");
-       break;
-     case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF5E700");
-       break;
-     case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF5E700");
-       break;
-     case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF5E700");
-       break;
-     default:
-       syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
-       break;
-  }
-
-  // Restart ipmbd daemon
-  sleep(1);
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
-
-error_exit2:
-  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", slot_id);
-  if (fd > 0) {
-    close(fd);
-  }
-
-  if (ifd > 0) {
-     close(ifd);
-  }
-
-  if(done == 1) {    //update successfully
-    memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached %d &", slot_id);   //retrieve SDR data after BIC FW update
-    system(cmd);
-  }
-
-  return ret;
+  return 0;
 }
 
 static int
-_update_bic_main(uint8_t slot_id, char *path) {
+_update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
 #define MAX_CMD_LEN 100
 
   int fd;
@@ -1234,6 +957,11 @@ _update_bic_main(uint8_t slot_id, char *path) {
   size = buf.st_size;
   printf("size of file is %d bytes\n", size);
   dsize = size/20;
+
+  if (!force && check_bic_image(slot_id, fd, size)) {
+    printf("invalid BIC file!\n");
+    goto error_exit2;
+  }
 
   // Open the i2c driver
   ifd = i2c_open(get_ipmb_bus_id(slot_id));
@@ -1549,7 +1277,7 @@ error_exit2:
      close(ifd);
   }
 
-  if(done == 1) {    //update successfully
+  if (done == 1) {    //update successfully
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached %d &", slot_id);   //retrieve SDR data after BIC FW update
     system(cmd);
@@ -1563,6 +1291,7 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
   uint8_t buf[32];
   uint8_t hdr_tl[] = {0x00,0x01,0x4c,0x1c,0x00,0x46,0x30,0x39};
   uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
+  int offs;
 #if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   int ret;
   uint8_t server_type = 0xFF;
@@ -1587,7 +1316,11 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
   if (size < 16)
     return -1;
 
-  lseek(fd, 1, SEEK_SET);
+  offs = 1;
+  if (lseek(fd, offs, SEEK_SET) != (off_t)offs) {
+    syslog(LOG_ERR, "%s: lseek to %d failed", __func__, offs);
+    return -1;
+  }
 
   if (read(fd, buf, hdr_size) != hdr_size)
     return -1;
@@ -1595,7 +1328,10 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
   if (memcmp(buf, hdr, hdr_size))
     return -1;
 
-  lseek(fd, 0, SEEK_SET);
+  if ((offs = lseek(fd, 0, SEEK_SET))) {
+    syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offs, errno);
+    return -1;
+  }
   return 0;
 }
 
@@ -1604,6 +1340,7 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
   uint8_t buf[32];
   uint8_t hdr_tl[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
   uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
+  int offs;
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
   int ret;
   uint8_t server_type = 0xFF;
@@ -1634,7 +1371,10 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
   if (memcmp(buf, hdr, hdr_size))
     return -1;
 
-  lseek(fd, 0, SEEK_SET);
+  if ((offs = lseek(fd, 0, SEEK_SET))) {
+    syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offs, errno);
+    return -1;
+  }
   return 0;
 }
 
@@ -1664,7 +1404,7 @@ check_bios_image_rc(uint8_t slot_id, int fd, long size) {
 
 static int
 check_bios_image(uint8_t slot_id, int fd, long size) {
-  int i, rcnt, end;
+  int offs, rcnt, end;
   uint8_t *buf;
   uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
 #if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
@@ -1696,34 +1436,46 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
     return -1;
   }
 
-  lseek(fd, (size - BIOS_VER_REGION_SIZE), SEEK_SET);
-  i = 0;
-  while (i < BIOS_VER_REGION_SIZE) {
-    rcnt = read(fd, (buf + i), BIOS_ERASE_PKT_SIZE);
-    if ((rcnt < 0) && (errno != EINTR)) {
+  offs = size - BIOS_VER_REGION_SIZE;
+  if (lseek(fd, offs, SEEK_SET) != (off_t)offs) {
+    syslog(LOG_ERR, "%s: lseek to %d failed", __func__, offs);
+    return -1;
+  }
+
+  offs = 0;
+  while (offs < BIOS_VER_REGION_SIZE) {
+    rcnt = read(fd, (buf + offs), BIOS_ERASE_PKT_SIZE);
+    if (rcnt <= 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      syslog(LOG_ERR, "check_bios_image: unexpected rcnt: %d", rcnt);
       free(buf);
       return -1;
     }
-    i += rcnt;
+    offs += rcnt;
   }
 
   end = BIOS_VER_REGION_SIZE - (sizeof(ver_sig) + strlen(BIOS_VER_STR));
-  for (i = 0; i < end; i++) {
-    if (!memcmp(buf+i, ver_sig, sizeof(ver_sig))) {
-      if (memcmp(buf+i+sizeof(ver_sig), BIOS_VER_STR, strlen(BIOS_VER_STR))
-      && memcmp(buf+i+sizeof(ver_sig), Y2_BIOS_VER_STR, strlen(Y2_BIOS_VER_STR))
-      && memcmp(buf+i+sizeof(ver_sig), GPV2_BIOS_VER_STR, strlen(GPV2_BIOS_VER_STR))){
-        i = end;
+  for (offs = 0; offs < end; offs++) {
+    if (!memcmp(buf+offs, ver_sig, sizeof(ver_sig))) {
+      if (memcmp(buf+offs+sizeof(ver_sig), BIOS_VER_STR, strlen(BIOS_VER_STR))
+      && memcmp(buf+offs+sizeof(ver_sig), Y2_BIOS_VER_STR, strlen(Y2_BIOS_VER_STR))
+      && memcmp(buf+offs+sizeof(ver_sig), GPV2_BIOS_VER_STR, strlen(GPV2_BIOS_VER_STR))){
+        offs = end;
       }
       break;
     }
   }
   free(buf);
 
-  if (i >= end)
+  if (offs >= end)
     return -1;
 
-  lseek(fd, 0, SEEK_SET);
+  if ((offs = lseek(fd, 0, SEEK_SET))) {
+    syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offs, errno);
+    return -1;
+  }
   return 0;
 }
 
@@ -1777,8 +1529,10 @@ verify_bios_image(uint8_t slot_id, int fd, long size) {
     return -1;
   }
 
-  lseek(fd, 0, SEEK_SET);
-  offset = 0;
+  if ((offset = lseek(fd, 0, SEEK_SET))) {
+    syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offset, errno);
+    return -1;
+  }
   while (1) {
     count = read(fd, tbuf, BIOS_VERIFY_PKT_SIZE);
     if (count <= 0) {
@@ -1885,7 +1639,7 @@ error_exit:
 }
 
 int
-bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
+bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   int ret = -1, rc;
   uint32_t offset;
   volatile uint16_t count, read_count;
@@ -1897,7 +1651,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   printf("updating fw on slot %d:\n", slot_id);
   // Handle Bridge IC firmware separately as the process differs significantly from others
   if (comp == UPDATE_BIC) {
-    return  _update_bic_main(slot_id, path);
+    return _update_bic_main(slot_id, path, force);
   }
 
   uint32_t dsize, last_offset;
@@ -1914,9 +1668,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
   stat(path, &st);
   if (comp == UPDATE_BIOS) {
-    if (check_bios_image(slot_id, fd, st.st_size) < 0) {
+    if (!force && check_bios_image(slot_id, fd, st.st_size)) {
       printf("invalid BIOS file!\n");
-      lseek(fd, 0, SEEK_SET);
       goto error_exit;
     }
     syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
@@ -2048,6 +1801,11 @@ error_exit:
   }
 
   return ret;
+}
+
+int
+bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  return bic_update_firmware(slot_id, comp, path, 0);
 }
 
 int
@@ -2616,6 +2374,26 @@ me_recovery(uint8_t slot_id, uint8_t command) {
 }
 
 int
+bic_get_slot_type(uint8_t fru) {
+  int type = 3;   //set default to 3(Empty Slot)
+  int retry = 3;
+  char key[MAX_KEY_LEN] = {0};
+
+  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4))
+    return type;
+
+  snprintf(key, sizeof(key), SLOT_FILE, fru);
+  do {
+    if (read_device(key, &type) == 0)
+      break;
+    syslog(LOG_WARNING,"bic_get_slot_type failed");
+    msleep(10);
+  } while (--retry);
+
+  return type;
+}
+
+int
 bic_get_server_type(uint8_t fru, uint8_t *type) {
   int ret;
   int retries = 3;
@@ -2633,13 +2411,13 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
   do {
     if (read_device(key, &server_type) == 0)
       break;
-    syslog(LOG_WARNING,"fby2_get_server_type failed");
+    syslog(LOG_WARNING,"bic_get_server_type failed");
     msleep(10);
   } while (--retries);
 
   if (retries == 0) {
     retries = 3;
-    do{
+    do {
       ret = bic_get_dev_id(fru, &id);
       if (!ret) {
         // Use product ID to identify the server type

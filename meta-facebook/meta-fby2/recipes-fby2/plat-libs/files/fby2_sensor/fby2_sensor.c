@@ -85,7 +85,6 @@
 #define LAST_REC_ID 0xFFFF
 
 #define FBY2_SDR_PATH "/tmp/sdr_%s.bin"
-#define SLOT_FILE "/tmp/slot%d.bin"
 
 #define TOTAL_M2_CH_ON_GP 6
 #define MAX_POS_READING_MARGIN 127
@@ -1665,23 +1664,7 @@ is_server_prsnt(uint8_t fru) {
  */
 int
 fby2_get_slot_type(uint8_t fru) {
-  int type = 3;   //set default to 3(Empty Slot)
-  int retry = 3;
-  char key[MAX_KEY_LEN] = {0};
-
-  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4))
-    return type;
-
-  sprintf(key, SLOT_FILE, fru);
-  do {
-    if (read_device(key, &type) == 0)
-      break;
-    syslog(LOG_WARNING,"fby2_get_slot_type failed");
-    retry++;
-    msleep(10);
-  } while (--retry);
-
-  return type;
+  return bic_get_slot_type(fru);
 }
 
 /* Get the units for the sensor */

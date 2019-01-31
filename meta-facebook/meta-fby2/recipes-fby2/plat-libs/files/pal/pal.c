@@ -9285,7 +9285,7 @@ pal_create_TPMTimer(int fru) {
 
 int
 pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
-  return force_update_bic_fw(slot_id, comp, path);
+  return bic_update_firmware(slot_id, comp, path, 1);
 }
 
 void

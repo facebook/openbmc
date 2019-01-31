@@ -9,7 +9,11 @@ LIC_FILES_CHKSUM = "file://bic.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 
 SRC_URI = "file://bic \
           "
-DEPENDS += "libfby2-common libipmi libipmb libkv plat-utils obmc-i2c "
+LDFLAGS += " -lmisc-utils"
+
+DEPENDS += "libmisc-utils libfby2-common libipmi libipmb libkv plat-utils obmc-i2c "
+RDEPENDS_${PN} += " libmisc-utils"
+DEPENDS_append = " libmisc-utils"
 
 S = "${WORKDIR}/bic"
 

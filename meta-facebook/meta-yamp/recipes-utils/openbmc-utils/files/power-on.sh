@@ -29,8 +29,19 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-wedge_power_on_board
+# Power-on script now includes TH3 toggle.That is, when BMC is booting up
+# while TH3 is already running, it should not blindly toggle reset TH3.
+# Otherwise (if we blindly toggle reset TH3), BMC upgrade will become 
+# disruptive upgrade. Therefore we will run board power up sequence only 
+# if CPU is currently turned off.
+if wedge_is_us_on; then
+    echo "uServer is already up. Skipping board power-on sequence"
+else
+    echo "uServer is not up. Running board power-on sequence"
+    wedge_power_on_board
+fi
 
+# Now, double check if power is on, and do forced power up ad needed.
 echo -n "Checking microserver power status ... "
 if wedge_is_us_on; then
     echo "on"
@@ -42,6 +53,7 @@ fi
 
 if [ $on -eq 0 ]; then
     # Power on now
+    echo "uServer still not up. Running forced power-up sequence"
     wedge_power.sh on -f
 fi
 

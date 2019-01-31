@@ -16,9 +16,18 @@ class PcieSwitchComponent : public Component {
   Server server;
   public:
   PcieSwitchComponent(string fru, string comp, uint8_t _slot_id)
-    : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
+    : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {
+    if (fby2_get_slot_type(_slot_id) != SLOT_TYPE_GPV2) {
+      (*fru_list)[fru].erase(comp);
+      if ((*fru_list)[fru].size() == 0) {
+        fru_list->erase(fru);
+      }
+    }
+  }
+
   int print_version() {
     uint8_t ver[32] = {0};
+
     if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2)
       return -1;
 

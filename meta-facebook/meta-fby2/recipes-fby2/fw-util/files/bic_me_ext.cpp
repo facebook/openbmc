@@ -13,7 +13,14 @@ class MeExtComponent : public MeComponent {
   Server server;
   public:
     MeExtComponent(string fru, string comp, uint8_t _slot_id)
-      : MeComponent(fru, comp, _slot_id), slot_id(_slot_id), server(_slot_id, fru) {}
+      : MeComponent(fru, comp, _slot_id), slot_id(_slot_id), server(_slot_id, fru) {
+      if (!pal_is_slot_server(_slot_id)) {
+        (*fru_list)[fru].erase(comp);
+        if ((*fru_list)[fru].size() == 0) {
+          fru_list->erase(fru);
+        }
+      }
+    }
     int print_version();
 };
 

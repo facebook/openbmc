@@ -13,13 +13,17 @@ class VrComponent : public Component {
   Server server;
   public:
   VrComponent(string fru, string comp, uint8_t _slot_id)
-    : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
+    : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {
+    if (!pal_is_slot_server(_slot_id)) {
+      (*fru_list)[fru].erase(comp);
+      if ((*fru_list)[fru].size() == 0) {
+        fru_list->erase(fru);
+      }
+    }
+  }
+
   int print_version() {
     uint8_t ver[32] = {0};
-    if (fby2_get_slot_type(slot_id) != SLOT_TYPE_SERVER) {
-      //GPV2 not support yet
-      return 0;
-    }
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
     int ret;
     uint8_t server_type = 0xFF;

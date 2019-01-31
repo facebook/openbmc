@@ -83,7 +83,7 @@ if [ $# -gt 1 ]; then
       exit -1
     fi
 
-    /usr/bin/bic-util $SLOT 0xe0 0x04 0x15 0xa0 0x00 0 0 0 0 0x78 0 0 0 0 0 0 0 $((dev_num<<3)) 0 0 0 >/dev/null 2>&1
+    /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 $dev_num >/dev/null 2>&1
     if [ $? -ne 0 ]; then
       /bin/stty -F /dev/ttyS$SLOT_NUM 57600 >/dev/null 2>&1
       show_usage

@@ -148,7 +148,6 @@ const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRS
 const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
 const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
-const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N};
 
@@ -2334,8 +2333,7 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
-  int ret, val;
-  char value[MAX_VALUE_LEN];
+  int ret;
   bic_gpio_t gpio;
   uint8_t retry = MAX_READ_RETRY;
 
@@ -2353,12 +2351,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   }
 
   if (!pal_is_slot_server(slot_id)) {
-    sprintf(value, GPIO_VAL, gpio_power_en[slot_id]);
-    if (!read_device(value, &val)) {
-      *status = (val == 0x1) ? SERVER_POWER_ON : SERVER_POWER_OFF;
-    } else {
-      *status = SERVER_POWER_OFF;
-    }
+    *status = bic_is_slot_power_en(slot_id) ? SERVER_POWER_ON : SERVER_POWER_OFF;
     return 0;
   }
 
@@ -2373,16 +2366,8 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   if (ret) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
     syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
-        " reading the kv_store for last power state  for fru %d", slot_id);
-    memset(value, 0, MAX_VALUE_LEN);
-    pal_get_last_pwr_state(slot_id, value);
-    if (!(strcmp(value, "off"))) {
-      *status = SERVER_POWER_OFF;
-    } else if (!(strcmp(value, "on"))) {
-      *status = SERVER_POWER_ON;
-    } else {
-      return ret;
-    }
+        " reading the SLOT%u_POWER_EN for fru %u", slot_id, slot_id);
+    *status = bic_is_slot_power_en(slot_id) ? SERVER_POWER_ON : SERVER_POWER_OFF;
     return 0;
   }
 

@@ -326,7 +326,7 @@ ncsi_tx_handler(void *sfd) {
       syslog(LOG_ERR, "tx: failed to send vid_msg, status ret = %d, errno=%d\n", ret, errno);
     }
 
-    ret = check_ncsi_status();
+    ret = check_valid_mac_addr();
     if (ret == NCSI_IF_REINIT) {
       send_registration_msg(sfd);
       enable_aens();

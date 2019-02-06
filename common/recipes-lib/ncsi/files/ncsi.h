@@ -181,6 +181,41 @@ typedef struct {
 	unsigned char   Payload_Data[128];
 } __attribute__((packed)) NCSI_Response_Packet;
 
+typedef struct {
+  uint32_t capabilities_flags;
+  uint32_t broadcast_packet_filter_capabilities;
+  uint32_t multicast_packet_filter_capabilities;
+  uint32_t buffering_capabilities;
+  uint32_t aen_control_support;
+  uint8_t  unicast_filter_cnt;
+  uint8_t  multicast_filter_cnt;
+  uint8_t  mixed_filter_cnt;
+  uint8_t  vlan_filter_cnt;
+  uint8_t  channel_cnt;
+  uint8_t  vlan_mode_support;
+  uint16_t reserved;
+} __attribute__((packed)) NCSI_Get_Capabilities_Response;
+
+
+typedef struct {
+  uint8_t  mac_addr_flags;
+  uint16_t reserved0;
+  uint8_t  mac_addr_cnt;
+  uint16_t vlan_tag_flags;
+  uint8_t  reserved1;
+  uint8_t  vlan_tag_cnt;
+  uint32_t link_settings;
+  uint32_t broadcast_packet_filter_settings;
+  uint32_t configuration_flags;
+  uint16_t reserved2;
+  uint8_t  flow_ctrl_enable;
+  uint8_t  vlan_mode;
+  uint32_t aen_control;
+  uint32_t mac_1;
+  uint32_t mac_2;
+  uint32_t mac_3;
+} __attribute__((packed)) NCSI_Get_Parameters_Response;
+
 
 typedef struct {
   uint32_t counters_cleared_from_last_read_MSB;
@@ -256,8 +291,12 @@ int ncsi_init_if(int);
 void handle_ncsi_config(int delay);
 int getMacAddr(int *values);
 int checkValidMacAddr(int *value);
-int check_ncsi_status(void);
+int check_valid_mac_addr(void);
+int get_cmd_status(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf);
+int ncsi_response_handler(NCSI_NL_RSP_T *rcv_buf);
+void print_get_capabilities(NCSI_NL_RSP_T *rcv_buf);
+void print_get_parameters(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_controller_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf);

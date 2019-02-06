@@ -182,7 +182,7 @@ checkValidMacAddr(int *value) {
 //     1 - generic Error
 //     NCSI_IF_REINIT - NCSI reinited, restart required
 int
-check_ncsi_status(void)
+check_valid_mac_addr(void)
 {
   int values[6] = {0};
   int ret = 0;
@@ -288,6 +288,17 @@ void print_ncsi_completion_codes(NCSI_NL_RSP_T *rcv_buf)
   return;
 }
 
+
+int
+get_cmd_status(NCSI_NL_RSP_T *rcv_buf)
+{
+  uint8_t *pbuf = rcv_buf->msg_payload;
+  int cc_resp = (pbuf[0]<<8)+pbuf[1];
+
+  return (cc_resp);
+}
+
+
 void
 print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
 {
@@ -295,8 +306,18 @@ print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
   int cmd = rcv_buf->hdr.cmd;
 
   print_ncsi_completion_codes(rcv_buf);
+  if (get_cmd_status(rcv_buf) != RESP_COMMAND_COMPLETED)
+  {
+    return;
+  }
 
   switch (cmd) {
+  case NCSI_GET_CAPABILITIES:
+    print_get_capabilities(rcv_buf);
+    break;
+  case NCSI_GET_PARAMETERS:
+    print_get_parameters(rcv_buf);
+    break;
   case NCSI_GET_CONTROLLER_PACKET_STATISTICS:
     print_ncsi_controller_stats(rcv_buf);
     break;
@@ -318,6 +339,84 @@ print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
   }
 
   return;
+}
+
+
+
+void
+print_get_capabilities(NCSI_NL_RSP_T *rcv_buf)
+{
+  unsigned char *pbuf = rcv_buf->msg_payload;
+  NCSI_Get_Capabilities_Response *pResp =
+    (NCSI_Get_Capabilities_Response *)((NCSI_Response_Packet *)(pbuf))->Payload_Data;
+
+  printf("\nGet Capabilities response\n");
+  printf("  capabilities_flags = 0x%x\n", ntohl(pResp->capabilities_flags));
+  printf("  broadcast_packet_filter_capabilities = 0x%x\n", ntohl(pResp->broadcast_packet_filter_capabilities));
+  printf("  multicast_packet_filter_capabilities = 0x%x\n", ntohl(pResp->multicast_packet_filter_capabilities));
+  printf("  buffering_capabilities = 0x%x\n", ntohl(pResp->buffering_capabilities));
+  printf("  aen_control_support = 0x%x\n", ntohl(pResp->aen_control_support));
+  printf("  unicast_filter_cnt = %d\n", pResp->unicast_filter_cnt);
+  printf("  multicast_filter_cnt = %d\n", pResp->multicast_filter_cnt);
+  printf("  mixed_filter_cnt = %d\n", pResp->mixed_filter_cnt);
+  printf("  vlan_filter_cnt = %d\n", pResp->vlan_filter_cnt);
+  printf("  channel_cnt = %d\n", pResp->channel_cnt);
+  printf("  vlan_mode_support = %d\n", pResp->vlan_mode_support);
+}
+
+void
+print_get_parameters(NCSI_NL_RSP_T *rcv_buf)
+{
+  unsigned char *pbuf = rcv_buf->msg_payload;
+  NCSI_Get_Parameters_Response *pResp =
+    (NCSI_Get_Parameters_Response *)((NCSI_Response_Packet *)(pbuf))->Payload_Data;
+
+  printf("\nGet Parameters response\n");
+  printf("  mac_addr_flags = 0x%x\n", pResp->mac_addr_flags);
+  printf("  mac_addr_cnt = %d\n", pResp->mac_addr_cnt);
+  printf("  vlan_tag_flags = 0x%x\n", ntohs(pResp->vlan_tag_flags));
+  printf("  vlan_tag_cnt = %d\n", pResp->vlan_tag_cnt);
+  printf("  link_settings = 0x%x\n", ntohl(pResp->link_settings));
+  printf("  broadcast_packet_filter_settings = 0x%x\n", ntohl(pResp->broadcast_packet_filter_settings));
+  printf("  configuration_flags = 0x%x\n", ntohl(pResp->configuration_flags));
+  printf("  flow_ctrl_enable = %d\n", pResp->flow_ctrl_enable);
+  printf("  vlan_mode = %d\n", pResp->vlan_mode);
+  printf("  aen_control = 0x%x\n", ntohl(pResp->aen_control));
+  printf("  mac_1 = 0x%x\n", ntohl(pResp->mac_1));
+  printf("  mac_2 = 0x%x\n", ntohl(pResp->mac_2));
+  printf("  mac_3 = 0x%x\n", ntohl(pResp->mac_3));
+}
+
+
+int
+ncsi_response_handler(NCSI_NL_RSP_T *rcv_buf)
+{
+  int cmd = rcv_buf->hdr.cmd;
+  int ret = 0;
+
+  if (get_cmd_status(rcv_buf) != RESP_COMMAND_COMPLETED)
+  {
+    print_ncsi_completion_codes(rcv_buf);
+    return -1;
+  }
+
+  switch (cmd) {
+  // TBD
+  case NCSI_GET_CAPABILITIES:
+    break;
+  case NCSI_GET_PARAMETERS:
+    break;
+
+  // for these commands, just print the response for now
+  case NCSI_GET_CONTROLLER_PACKET_STATISTICS:
+  case NCSI_GET_NCSI_STATISTICS:
+  case NCSI_GET_NCSI_PASS_THROUGH_STATISTICS:
+  default:
+    print_ncsi_resp(rcv_buf);
+    ret = 0;
+  }
+
+  return ret;
 }
 
 

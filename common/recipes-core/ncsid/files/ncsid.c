@@ -278,9 +278,6 @@ ncsi_rx_handler(void *sfd) {
     recvmsg(sock_fd, &msg, 0);
     rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
     if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
-      syslog(LOG_NOTICE, "rx: aen packet rcvd, pl_len=%d, type=0x%x",
-              rcv_buf->hdr.payload_length,
-              rcv_buf->msg_payload[offsetof(AEN_Packet, AEN_Type)]);
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
     } else {
       ret = process_NCSI_resp(rcv_buf);

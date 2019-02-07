@@ -110,8 +110,7 @@ process_NCSI_AEN(AEN_Packet *buf)
 
   buf->Payload_Length = ntohs(buf->Payload_Length);
 
-  i = sprintf(logbuf, "NCSI AEN rcvd: ch=%d pLen=%d type=0x%x",
-         buf->Channel_ID, buf->Payload_Length, buf->AEN_Type);
+  i = sprintf(logbuf, "NIC Event: ");
 
   if (buf->AEN_Type < AEN_TYPE_OEM) {
     // DMTF standard AENs
@@ -148,7 +147,7 @@ process_NCSI_AEN(AEN_Packet *buf)
         break;
 
       default:
-        i += sprintf(logbuf + i, ", Unknown AEN Type");
+        i += sprintf(logbuf + i, ", Unknown AEN Type %d", buf->AEN_Type);
     }
   } else {
     // OEM AENs
@@ -156,12 +155,12 @@ process_NCSI_AEN(AEN_Packet *buf)
               ntohs(buf->Optional_AEN_Data[1]);
 
     if (manu_id == BCM_IANA) {
-      unsigned char aen_iid = buf->Reserved_4[0];
-      i += sprintf(logbuf + i, " iid=0x%02x", aen_iid);
+      //unsigned char aen_iid = buf->Reserved_4[0];
+      //i += sprintf(logbuf + i, " iid=0x%02x", aen_iid);
       switch (buf->AEN_Type) {
         case NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR:
           log_level = LOG_CRIT;
-          i += sprintf(logbuf + i, ", BCM Host Err");
+          i += sprintf(logbuf + i, ", BCM Host Error");
           //host_err_event_num = ntohs(buf->Optional_AEN_Data[3])&0xFF;
           host_err_type = ntohs(buf->Optional_AEN_Data[4])>>8;
           host_err_len  = ntohs(buf->Optional_AEN_Data[4])&0xFF;
@@ -178,11 +177,12 @@ process_NCSI_AEN(AEN_Packet *buf)
 
         case NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED:
           log_level = LOG_CRIT;
-          i += sprintf(logbuf + i, ", BCM Reset Required");
+          i += sprintf(logbuf + i, ", BCM NIC Reset Required");
           req_rst_type = ntohs(buf->Optional_AEN_Data[3])&0xFF;
           i += sprintf(logbuf + i, ", ResetType=0x%02x", req_rst_type);
-          break;
 
+          //syslog(LOG_CRIT, "FRU: %d BCM NIC ERR, NIC reset required, (Type %x)", FRU_NIC, ntohs(buf->Optional_AEN_Data[3]));
+          break;
        case NCSI_AEN_TYPE_OEM_BCM_HOST_DECOMMISSIONED:
           log_level = LOG_CRIT;
           i += sprintf(logbuf + i, ", BCM Host Decommissioned");
@@ -197,7 +197,7 @@ process_NCSI_AEN(AEN_Packet *buf)
 
         default:
           log_level = LOG_CRIT;
-          i += sprintf(logbuf + i, ", Unknown BCM AEN Type");
+          i += sprintf(logbuf + i, ", Unknown BCM AEN Type %d", buf->AEN_Type);
       }
     } else {
       log_level = LOG_WARNING;

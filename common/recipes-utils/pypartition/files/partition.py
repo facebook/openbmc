@@ -313,8 +313,8 @@ class DeviceTreePartition(Partition):
     FDT_NOP = 4
     FDT_END = 9
     recognized_hexadecimals = [
-        b'#address-cells', b'data-size', b'data-position', b'load',
-        b'entry', b'hashed-strings', b'value',
+        b'#address-cells', b'data-address', b'data-position', b'data-size',
+        b'load', b'entry', b'hashed-strings', b'value',
     ]
     recognized_strings = [
         b'algo', b'arch', b'compression', b'default', b'description',

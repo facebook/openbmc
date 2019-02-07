@@ -48,7 +48,7 @@ typedef struct _sensor_info_t {
 } sensor_info_t;
 
 typedef struct {
-  int8_t *dimm_location_file;
+  const char *dimm_location_file;
   uint8_t dimm_sensor_num;
 } rc_dimm_location_info;
 

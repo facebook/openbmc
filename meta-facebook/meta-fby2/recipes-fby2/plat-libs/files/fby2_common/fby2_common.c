@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <math.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -41,6 +42,15 @@
 
 #define SBOOT_CPLDDUMP_BIN       "/usr/local/bin/sboot-cpld-dump.sh"
 #define SBOOT_CPLDDUMP_PID       "/var/run/sbootcplddump%d.pid"
+
+#define PTHREAD_SET_CANCEL_ENABLE() do {                                          \
+  if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {                 \
+    syslog(LOG_CRIT, "%s: pthread_setcancelstate failed: %d\n", __func__, errno); \
+  }                                                                               \
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0) {            \
+    syslog(LOG_CRIT, "%s: pthread_setcanceltype failed: %d\n", __func__, errno);  \
+  }                                                                               \
+} while(0)
 
 struct threadinfo {
   uint8_t is_running;
@@ -187,13 +197,11 @@ generate_dump(void *arg) {
   char cmd[128];
   char fname[128];
   char fruname[16];
-  int rc;
   bool ierr;
 
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
-  rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  rc = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+  PTHREAD_SET_CANCEL_ENABLE();
 
   fby2_common_fru_name(fru, fruname);
 
@@ -216,6 +224,7 @@ generate_dump(void *arg) {
     sprintf(cmd, "/usr/local/bin/power-util %s reset", fruname);
     system(cmd);
   }
+  pthread_exit(NULL);
 }
 
 static void *
@@ -225,12 +234,10 @@ second_dwr_dump(void *arg) {
   char cmd[128];
   char fname[128];
   char fruname[16];
-  int rc;
 
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
-  rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  rc = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+  PTHREAD_SET_CANCEL_ENABLE();
 
   fby2_common_fru_name(fru, fruname);
 
@@ -250,6 +257,7 @@ second_dwr_dump(void *arg) {
 
   t_dump[fru-1].is_running = 0;
 
+  pthread_exit(NULL);
 }
 
 int
@@ -380,12 +388,10 @@ generate_cpld_dump(void *arg) {
   char cmd[128];
   char fname[128];
   char fruname[16];
-  int rc;
 
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
-  rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  rc = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+  PTHREAD_SET_CANCEL_ENABLE();
 
   fby2_common_fru_name(fru, fruname);
 
@@ -404,6 +410,7 @@ generate_cpld_dump(void *arg) {
 
   t_cpld_dump[fru-1].is_running = 0;
 
+  pthread_exit(NULL);
 }
 
 void *
@@ -413,12 +420,10 @@ generate_sboot_cpld_dump(void *arg) {
   char cmd[128];
   char fname[128];
   char fruname[16];
-  int rc;
 
   // Usually the pthread cancel state are enable by default but
   // here we explicitly would like to enable them
-  rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  rc = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+  PTHREAD_SET_CANCEL_ENABLE();
 
   fby2_common_fru_name(fru, fruname);
 
@@ -437,6 +442,7 @@ generate_sboot_cpld_dump(void *arg) {
 
   t_sboot_cpld_dump[fru-1].is_running = 0;
 
+  pthread_exit(NULL);
 }
 
 int

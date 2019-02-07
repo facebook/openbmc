@@ -17,6 +17,8 @@
 
 lib: libfby2_fruid.so
 
+CFLAGS += -Wall -Werror
+
 libfby2_fruid.so: fby2_fruid.c
 	$(CC) $(CFLAGS) -fPIC -c -o fby2_fruid.o fby2_fruid.c
 	$(CC) -lfby2_common -lfby2_sensor -shared -o libfby2_fruid.so fby2_fruid.o -lc $(LDFLAGS)

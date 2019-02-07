@@ -921,7 +921,7 @@ get_current_dir(const char *device, char *dir_name) {
 
   ret = pclose(fp);
   if(-1 == ret)
-     syslog(LOG_ERR, "$s pclose() fail ", __func__);
+     syslog(LOG_ERR, "%s: pclose() fail ", __func__);
 
   // Remove the newline character at the end
   size = strlen(dir_name);
@@ -1670,8 +1670,6 @@ fby2_get_slot_type(uint8_t fru) {
 /* Get the units for the sensor */
 int
 fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
-  uint8_t op, modifier;
-  sensor_info_t *sinfo;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1685,7 +1683,7 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
            if (is_server_prsnt(fru) && (fby2_sdr_init(fru) != 0)) {
               return -1;
            }
-           sprintf(units, "");
+           strcpy(units, "");
            break;
          case SLOT_TYPE_CF:
            switch(sensor_num) {
@@ -1741,7 +1739,7 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           sprintf(units, "RPM");
           break;
         case SP_SENSOR_AIR_FLOW:
-          sprintf(units, "");
+          strcpy(units, "");
           break;
         case SP_SENSOR_P5V:
           sprintf(units, "Volts");
@@ -1873,12 +1871,12 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
               break;
 #endif
             default:
-              sprintf(name, "");
+              strcpy(name, "");
               return -1;
           }
           break;
         case SLOT_TYPE_GPV2:
-          sprintf(name, "");
+          strcpy(name, "");
           break;
         case SLOT_TYPE_CF:
           switch(sensor_num) {
@@ -1895,7 +1893,7 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
               sprintf(name, "DC_CF_INA230_POWER");
               break;
             default:
-              sprintf(name, "");
+              strcpy(name, "");
               break;
           }
           break;
@@ -1932,7 +1930,7 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
               sprintf(name, "DC_NVMe6_CTEMP");
               break;
             default:
-              sprintf(name, "");
+              strcpy(name, "");
               break;
           }
           break;
@@ -2058,14 +2056,10 @@ check_gp_m2_monior(uint8_t slot_id) {
 int
 fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
-  float volt;
-  float curr;
   int ret;
   bool discrete;
   int i;
   char path[LARGEST_DEVICE_NAME];
-  uint8_t status;
-  uint8_t server_type = 0xFF;
 
   switch (fru) {
     case FRU_SLOT1:
@@ -2089,30 +2083,33 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
           i = 0;
 #if defined(CONFIG_FBY2_RC)
-          ret = fby2_get_server_type(fru, &server_type);
-          if (ret) {
-            syslog(LOG_ERR, "%s, Get server type failed", __func__);
-          }
-          switch (server_type) {
-            case SERVER_TYPE_RC:
-              while (i < bic_rc_discrete_cnt) {
-                if (sensor_num == bic_rc_discrete_list[i++]) {
-                  discrete = true;
-                  break;
+          {
+            uint8_t server_type = 0xFF;
+            ret = fby2_get_server_type(fru, &server_type);
+            if (ret) {
+              syslog(LOG_ERR, "%s, Get server type failed", __func__);
+            }
+            switch (server_type) {
+              case SERVER_TYPE_RC:
+                while (i < bic_rc_discrete_cnt) {
+                  if (sensor_num == bic_rc_discrete_list[i++]) {
+                    discrete = true;
+                    break;
+                  }
                 }
-              }
-              break;
-            case SERVER_TYPE_TL:
-              while (i < bic_discrete_cnt) {
-                if (sensor_num == bic_discrete_list[i++]) {
-                  discrete = true;
-                  break;
+                break;
+              case SERVER_TYPE_TL:
+                while (i < bic_discrete_cnt) {
+                  if (sensor_num == bic_discrete_list[i++]) {
+                    discrete = true;
+                    break;
+                  }
                 }
-              }
-              break;
-            default:
-              syslog(LOG_ERR, "%s, Undefined server type", __func__);
-              return -1;
+                break;
+              default:
+                syslog(LOG_ERR, "%s, Undefined server type", __func__);
+                return -1;
+            }
           }
 #else
           while (i < bic_discrete_cnt) {
@@ -2292,6 +2289,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
   }
+  return -1;
 }
 
 static int

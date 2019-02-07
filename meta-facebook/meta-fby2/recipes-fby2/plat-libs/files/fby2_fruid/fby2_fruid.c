@@ -115,7 +115,6 @@ fby2_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
 
 int
 fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
-  char fname[16] = {0};
 
   switch(fru) {
     case FRU_SLOT1:

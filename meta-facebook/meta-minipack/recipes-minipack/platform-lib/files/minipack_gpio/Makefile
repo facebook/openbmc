@@ -19,7 +19,7 @@ lib: libminipack_gpio.so
 
 libminipack_gpio.so: minipack_gpio.c
 	$(CC) $(CFLAGS) -fPIC -c -o minipack_gpio.o minipack_gpio.c
-	$(CC) -shared -o libminipack_gpio.so minipack_gpio.o -lc
+	$(CC) -shared -o libminipack_gpio.so minipack_gpio.o $(LDFLAGS) -lc
 
 .PHONY: clean
 

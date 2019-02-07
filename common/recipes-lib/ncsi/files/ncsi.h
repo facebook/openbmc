@@ -31,6 +31,9 @@
 // here we add an extra 1 sec to provide extra buffer
 #define NCSI_RESET_TIMEOUT  3
 
+// NIC manufacturer IANAs
+#define BCM_IANA                                         0x0000113D
+#define MLX_IANA                                         0x00008119
 
 
 
@@ -178,7 +181,7 @@ typedef struct {
 /* end of NC-SI header */
 	unsigned short  Response_Code;
 	unsigned short  Reason_Code;
-	unsigned char   Payload_Data[128];
+	unsigned char   Payload_Data[512];
 } __attribute__((packed)) NCSI_Response_Packet;
 
 typedef struct {
@@ -292,6 +295,7 @@ void handle_ncsi_config(int delay);
 int getMacAddr(int *values);
 int checkValidMacAddr(int *value);
 int check_valid_mac_addr(void);
+const char * ncsi_cmd_type_to_name(int cmd);
 int get_cmd_status(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf);
 int ncsi_response_handler(NCSI_NL_RSP_T *rcv_buf);

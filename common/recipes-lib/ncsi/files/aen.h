@@ -12,15 +12,40 @@
 #define AEN_TYPE_PENDING_PLDM_REQUEST         0x71
 #define AEN_TYPE_OEM                          0x80
 
-/* BCM-specific  OEM AEN definitions */
-#define BCM_IANA                                         0x0000113D
-#define BCM_HOST_ERR_TYPE_UNGRACEFUL_HOST_SHUTDOWN             0x01
+/* Broadcom-specific  OEM AEN definitions */
 #define NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR                       0x80
+#define BCM_HOST_ERR_TYPE_UNGRACEFUL_HOST_SHUTDOWN             0x01
 #define NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED                   0x81
 #define NCSI_AEN_TYPE_OEM_BCM_HOST_DECOMMISSIONED              0x82
 #define MAX_AEN_DATA_IN_SHORT                   16
 
+/* Mellanox-specific  OEM AEN definitions */
+// TBD
 
+#define AEN_CTRL_STD_STARTING_BIT   0
+#define AEN_CTRL_OEM_STARTING_BIT   16
+
+// default set of AENs to enable
+#define AEN_ENABLE_DEFAULT \
+   ( (1<<AEN_TYPE_LINK_STATUS_CHANGE) | \
+     (1<<AEN_TYPE_CONFIGURATION_REQUIRED) | \
+     (1<<AEN_TYPE_HOST_NC_DRIVER_STATUS_CHANGE) \
+   )
+
+
+// set of AENs to enable for Broadcom NICs
+#define AEN_ENABLE_MASK_BCM \
+   (  AEN_ENABLE_DEFAULT | \
+		  /* Broadcom OEM AENs */ \
+     ((1<<(NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR - AEN_TYPE_OEM)) | \
+		  (1<<(NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED - AEN_TYPE_OEM)) |  \
+		  (1<<(NCSI_AEN_TYPE_OEM_BCM_HOST_DECOMMISSIONED - AEN_TYPE_OEM))) << AEN_CTRL_OEM_STARTING_BIT \
+	 )
+
+// set of AENs to enable for Mellanox NICs
+#define AEN_ENABLE_MASK_MLX \
+   (  AEN_ENABLE_DEFAULT \
+	 )
 
 typedef struct {
 /* Ethernet Header */
@@ -49,7 +74,7 @@ typedef struct {
 
 
 int is_aen_packet(AEN_Packet *buf);
-void enable_aens(void);
+void enable_aens(uint32_t enable_mask);
 int process_NCSI_AEN(AEN_Packet *buf);
 
 #endif

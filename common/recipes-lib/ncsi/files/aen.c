@@ -43,7 +43,7 @@ is_aen_packet(AEN_Packet *buf)
 
 // enable platform-specific AENs
 void
-enable_aens(void) {
+enable_aens(uint32_t enable_mask) {
   char cmd[64] = {0};
 
   memset(cmd, 0, sizeof(cmd));
@@ -181,7 +181,8 @@ process_NCSI_AEN(AEN_Packet *buf)
           req_rst_type = ntohs(buf->Optional_AEN_Data[3])&0xFF;
           i += sprintf(logbuf + i, ", ResetType=0x%02x", req_rst_type);
 
-          //syslog(LOG_CRIT, "FRU: %d BCM NIC ERR, NIC reset required, (Type %x)", FRU_NIC, ntohs(buf->Optional_AEN_Data[3]));
+          //syslog(LOG_CRIT, "FRU: %d BCM NIC ERR, NIC reset required, (Type %x)",
+          //       FRU_NIC, ntohs(buf->Optional_AEN_Data[3]));
           break;
        case NCSI_AEN_TYPE_OEM_BCM_HOST_DECOMMISSIONED:
           log_level = LOG_CRIT;
@@ -189,9 +190,12 @@ process_NCSI_AEN(AEN_Packet *buf)
           i += sprintf(logbuf + i, ", HostId=0x%x",
                ntohs(buf->Optional_AEN_Data[3]));
 
-
+          // hack: to ensure this is picked up by machinechecker,  broadcast this
+          // error message to all FRUs since machinechecker runs on host and only
+          // check for its own FRU
           for (int k=0; k<7; ++k)
-              syslog(LOG_CRIT, "FRU: %d BCM NIC ERR, Host Decommissioned, Host %x", k, ntohs(buf->Optional_AEN_Data[3]));
+              syslog(LOG_CRIT, "FRU: %d BCM NIC ERR, Host Decommissioned, Host %x",
+                     k, ntohs(buf->Optional_AEN_Data[3]));
 
           break;
 

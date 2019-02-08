@@ -20,9 +20,10 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <openbmc/gpio.h>
-#include <openbmc/log.h>
 
 #include "bitbang.h"
 

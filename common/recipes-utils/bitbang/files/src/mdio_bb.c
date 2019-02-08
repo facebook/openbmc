@@ -20,8 +20,10 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <arpa/inet.h>
 
-#include <openbmc/log.h>
 #include <openbmc/gpio.h>
 
 #include "bitbang.h"

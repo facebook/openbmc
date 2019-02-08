@@ -58,7 +58,7 @@ bitbang_handle_st* bitbang_open(const bitbang_init_st *init)
 
   if (!init || !init->bbi_pin_f
       || !init->bbi_freq || init->bbi_freq > BITBANG_FREQ_MAX) {
-    LOG_ERR(EINVAL, "Invalid init structure");
+    OBMC_ERROR(EINVAL, "Invalid init structure");
     return NULL;
   }
 
@@ -70,7 +70,7 @@ bitbang_handle_st* bitbang_open(const bitbang_init_st *init)
   hdl->bbh_init = *init;
   hdl->bbh_half_clk = NANOSEC_IN_SEC / init->bbi_freq / 2;
 
-  LOG_DBG("Bitbang open with initial %s, data out at %s, data in at %s, "
+  OBMC_DEBUG("Bitbang open with initial %s, data out at %s, data in at %s, "
           "freq at %uHz, half clk %uns",
           (init->bbi_clk_start == BITBANG_PIN_LOW) ? "LOW" : "HIGH",
           (init->bbi_data_out == BITBANG_CLK_EDGE_RISING)
@@ -133,7 +133,7 @@ static int sleep_ns(uint32_t clk)
   }
   if (rc == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to sleep %u nanoseconds", clk);
+    OBMC_ERROR(rc, "Failed to sleep %u nanoseconds", clk);
   }
   return rc;
 }
@@ -161,20 +161,20 @@ int bitbang_io(const bitbang_handle_st *hdl, bitbang_io_st *io)
   if ((io->bbio_in_bits == 0 && io->bbio_din)
       || (io->bbio_in_bits > 0 && !io->bbio_din)) {
     rc = EINVAL;
-    LOG_ERR(rc, "Incorrect in bits and in buffer");
+    OBMC_ERROR(rc, "Incorrect in bits and in buffer");
     goto out;
   }
 
   if ((io->bbio_out_bits == 0 && io->bbio_dout)
       || (io->bbio_out_bits > 0 && !io->bbio_dout)) {
     rc = EINVAL;
-    LOG_ERR(rc, "Incorrect out bits and out buffer");
+    OBMC_ERROR(rc, "Incorrect out bits and out buffer");
     goto out;
   }
 
   if (io->bbio_in_bits == 0 && io->bbio_out_bits == 0) {
     rc = EINVAL;
-    LOG_ERR(rc, "Both in and out bits are 0");
+    OBMC_ERROR(rc, "Both in and out bits are 0");
     goto out;
   }
 

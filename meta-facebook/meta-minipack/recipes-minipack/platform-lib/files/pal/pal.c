@@ -1830,7 +1830,7 @@ post_exit:
 // Handle the received post code, for now display it on debug card
 int
 pal_post_handle(uint8_t slot, uint8_t status) {
-  uint8_t prsnt;
+  uint8_t prsnt, pos;
   int ret;
 
   // Check for debug card presence
@@ -1842,6 +1842,23 @@ pal_post_handle(uint8_t slot, uint8_t status) {
   // No debug card present, return
   if (!prsnt) {
     return 0;
+  }
+
+  // Get the hand switch position
+  ret = pal_get_hand_sw(&pos);
+  if (ret) {
+    return ret;
+  }
+
+  /* If the give server is not selected, return */
+  if (pos != HAND_SW_SERVER) {
+    return 0;
+  }
+
+  /* Enable POST codes for SCM slot */
+  ret = pal_post_enable(slot);
+  if (ret) {
+    return ret;
   }
 
   // Display the post code in the debug card
@@ -1931,10 +1948,10 @@ int
 pal_set_com_pwr_btn_n(char *status) {
   int ret;
 
-  ret = write_device(SCM_COM_PWR_BTN_N, status);
+  ret = write_device(SCM_COM_PWR_BTN, status);
   if (ret) {
 #ifdef DEBUG
-  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_COM_PWR_BTN_N);
+  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_COM_PWR_BTN);
 #endif
     return -1;
   }
@@ -1942,14 +1959,57 @@ pal_set_com_pwr_btn_n(char *status) {
   return 0;
 }
 
+static bool
+is_server_on(void) {
+  int ret;
+  uint8_t status;
+  ret = pal_get_server_power(FRU_SCM, &status);
+  if (ret) {
+    return false;
+  }
+
+  if (status == SERVER_POWER_ON) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 // Power On the server
 static int
 server_power_on(uint8_t slot_id) {
-  int ret;
+  int ret, val;
+  char path[LARGEST_DEVICE_NAME + 1];
 
-  ret = run_command("/usr/local/bin/wedge_power.sh on");
-  if (ret)
-    return -1;
+  snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, COM_PWR_ENBLE);
+  ret = read_device(path, &val);
+  if (ret || val) {
+    if (pal_set_com_pwr_btn_n("1")) {
+      return -1;
+    }
+
+    if (pal_set_com_pwr_btn_n("0")) {
+      return -1;
+    }
+    sleep(1);
+
+    if (pal_set_com_pwr_btn_n("1")) {
+      return -1;
+    }
+    /* Wait for server power good ready */
+    sleep(1);
+
+    if (!is_server_on()) {
+      return -1;
+    }
+  } else {
+    ret = write_device(path, "1");
+    if (ret) {
+      syslog(LOG_WARNING, "%s: Power on is failed", __func__);
+      return -1;
+    }
+  }
+
   return 0;
 }
 
@@ -1957,14 +2017,27 @@ server_power_on(uint8_t slot_id) {
 static int
 server_power_off(uint8_t slot_id, bool gs_flag) {
   int ret;
+  char path[LARGEST_DEVICE_NAME + 1];
 
-  ret = pal_set_com_pwr_btn_n("0");
-  if (ret)
-    return -1;
-  sleep(DELAY_POWER_OFF);
-  ret = pal_set_com_pwr_btn_n("1");
-  if (ret)
-    return -1;
+  if (gs_flag) {
+    ret = pal_set_com_pwr_btn_n("0");
+    if (ret) {
+      return -1;
+    }
+    sleep(DELAY_GRACEFUL_SHUTDOWN);
+
+    ret = pal_set_com_pwr_btn_n("1");
+    if (ret) {
+      return -1;
+    }
+  } else {
+    snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, COM_PWR_ENBLE);
+    ret = write_device(path, "0");
+    if (ret) {
+      syslog(LOG_WARNING, "%s: Power off is failed",__func__);
+      return -1;
+    }
+  }
 
   return 0;
 }
@@ -2053,15 +2126,20 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
         ret = pal_set_rst_btn(slot_id, 0);
-        if (ret < 0)
+        if (ret < 0) {
+          syslog(LOG_CRIT, "Micro-server can't power reset");
           return ret;
+        }
         msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
         ret = pal_set_rst_btn(slot_id, 1);
-        if (ret < 0)
+        if (ret < 0) {
+          syslog(LOG_CRIT, "Micro-server in reset state, "
+                           "can't go back to normal state");
           return ret;
+        }
       } else if (status == SERVER_POWER_OFF) {
-        printf("Ignore to execute power reset action when the \
-                power status of server is off\n");
+          syslog(LOG_CRIT, "Micro-server power status is off, "
+                            "ignore power reset action");
         return -2;
       }
       break;
@@ -2080,22 +2158,6 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   }
 
   return 0;
-}
-
-static bool
-is_server_on(void) {
-  int ret;
-  uint8_t status;
-  ret = pal_get_server_power(FRU_SCM, &status);
-  if (ret) {
-    return false;
-  }
-
-  if (status == SERVER_POWER_ON) {
-    return true;
-  } else {
-    return false;
-  }
 }
 
 static int
@@ -6993,4 +7055,178 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
   }
   // Otherwise, translate it based on snr_num
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+/* Read the Front Panel Hand Switch and return the position */
+int
+pal_get_hand_sw_physically(uint8_t *pos) {
+  char path[LARGEST_DEVICE_NAME + 1];
+  int loc;
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_UART_SEL5, "value");
+  if (read_device(path, &loc)) {
+    return -1;
+  }
+  *pos = loc;
+
+  return 0;
+}
+
+int
+pal_get_hand_sw(uint8_t *pos) {
+  char value[MAX_VALUE_LEN];
+  uint8_t loc;
+  int ret;
+
+  ret = kv_get("scm_hand_sw", value, NULL, 0);
+  if (!ret) {
+    loc = atoi(value);
+    if (loc > HAND_SW_BMC) {
+      return pal_get_hand_sw_physically(pos);
+    }
+    *pos = loc;
+
+    return 0;
+  }
+
+  return pal_get_hand_sw_physically(pos);
+}
+
+/* Return the Front Panel Power Button */
+int
+pal_get_dbg_pwr_btn(uint8_t *status) {
+  int val;
+
+  if (read_device(SCM_DBG_PWR_BTN, &val)) {
+    return -1;
+  }
+
+  if (val) {
+    *status = 0;
+  } else {
+    *status = 1;
+  }
+
+  return 0;
+}
+
+/* Return the Debug Card Reset Button status */
+int
+pal_get_dbg_rst_btn(uint8_t *status) {
+  int val;
+
+  if (read_device(SCM_DBG_RST_BTN, &val)) {
+    return -1;
+  }
+
+  if (val) {
+    *status = 1; /* RST BTN status pressed */
+  } else {
+    *status = 0; /* RST BTN status clear */
+  }
+
+  return 0;
+}
+
+/* Clear Debug Card Reset Button status */
+int
+pal_clr_dbg_rst_btn() {
+  if (write_device(SCM_DBG_RST_BTN_CLR, "0")) {
+    syslog(LOG_ERR, "Reset button status not clear");
+    return -1;
+  }
+  msleep(5);
+
+  if (write_device(SCM_DBG_RST_BTN_CLR, "1")) {
+    syslog(LOG_ERR, "Reset button status can't recover to normal");
+    return -2;
+  }
+
+  return 0;
+}
+
+/* Update the Reset button input to the server at given slot */
+int
+pal_set_rst_btn(uint8_t slot, uint8_t status) {
+  char *val;
+
+  if (slot != FRU_SCM) {
+    return -1;
+  }
+
+  if (status) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  if (write_device(SCM_COM_RST_BTN, val)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+/* Return the Debug Card UART Sel Button status */
+int
+pal_get_dbg_uart_btn(uint8_t *status) {
+  int val;
+
+  if (read_device(SCM_DBG_UART_BTN, &val)) {
+    return -1;
+  }
+
+  if (val) {
+    *status = 1; /* UART BTN status pressed */
+  } else {
+    *status = 0; /* UART BTN status clear */
+  }
+
+  return 0;
+}
+
+/* Clear Debug Card UART Sel Button status */
+int
+pal_clr_dbg_uart_btn() {
+  if (write_device(SCM_DBG_UART_BTN_CLR, "0")) {
+    syslog(LOG_ERR, "UART Sel button status not clear");
+    return -1;
+  }
+  msleep(5);
+
+  if (write_device(path, "1")) {
+    syslog(LOG_ERR, "UART Sel button status can't recover to normal");
+    return -2;
+  }
+
+  return 0;
+}
+
+/* Switch the UART mux to userver or BMC */
+int
+pal_switch_uart_mux(uint8_t slot) {
+  char path[LARGEST_DEVICE_NAME + 1];
+  char *val;
+  uint8_t prsnt;
+
+  if (pal_is_debug_card_prsnt(&prsnt)) {
+    return -1;
+  }
+
+  /* Refer the UART select table in schematic */
+  if (slot == HAND_SW_SERVER) {
+    val = "0";
+  } else {
+    val = "1";
+  }
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_UART_SEL5, "value");
+  if (write_device(path, val)) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_switch_uart_mux: write_device fail: %s\n", path);
+#endif
+    return -1;
+  }
+
+  return 0;
 }

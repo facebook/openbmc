@@ -46,9 +46,15 @@ extern "C" {
 
 #define MINIPACK_SDR_PATH "/tmp/sdr_%s.bin"
 
-#define COM_PWR_BTN_N "com_pwr_btn_n"
-#define SCM_COM_PWR_BTN_N I2C_SYSFS_DEV_ENTRY(2-0035, com_pwr_btn_n)
-#define SCM_SYS_LED_COLOR I2C_SYSFS_DEV_ENTRY(2-0035, sys_led_color)
+#define SCM_COM_PWR_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, com_pwr_btn_n)
+#define SCM_COM_PWR_ENBLE    I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_enable)
+#define SCM_COM_RST_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, iso_com_rst_n)
+#define SCM_DBG_UART_BTN     I2C_SYSFS_DEV_ENTRY(2-0035, scm_uart_switch_n)
+#define SCM_DBG_UART_BTN_CLR I2C_SYSFS_DEV_ENTRY(2-0035, scm_uart_switch_n_clr)
+#define SCM_DBG_PWR_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, scm_pwr_btn_n)
+#define SCM_DBG_RST_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, scm_debug_rst_btn_n)
+#define SCM_DBG_RST_BTN_CLR  I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_enable)
+#define SCM_SYS_LED_COLOR    I2C_SYSFS_DEV_ENTRY(2-0035, sys_led_color)
 
 #define SMB_MAC_CPLD_ROV "mac_cpld_rov%d"
 #define SMB_MAC_CPLD_ROV_NUM 8
@@ -151,11 +157,13 @@ extern "C" {
 #define GPIO_POSTCODE_6     "/tmp/gpionames/GPIOH6/%s"
 #define GPIO_POSTCODE_7     "/tmp/gpionames/GPIOH7/%s"
 #define GPIO_SCM_USB_PRSNT  "/tmp/gpionames/SCM_USB_PRSNT/%s"
+#define GPIO_BMC_UART_SEL5  "/tmp/gpionames/BMC_UART_SEL5/%s"
 
 #define MAX_SDR_THRESH_RETRY 30
 #define MAX_READ_RETRY 10
 #define DELAY_POWER_OFF 5
 #define DELAY_POWER_CYCLE 10
+#define DELAY_GRACEFUL_SHUTDOWN 1
 
 #define MAX_POS_READING_MARGIN 127
 #define LARGEST_DEVICE_NAME 128
@@ -653,6 +661,11 @@ enum {
   I2c_DRIVER_EXIST = 3
 };
 
+enum {
+  HAND_SW_SERVER = 0,
+  HAND_SW_BMC = 1
+};
+
 int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 int pal_get_plat_sku_id(void);
@@ -716,6 +729,15 @@ void pal_set_pim_sts_led(uint8_t fru);
 int pal_set_def_key_value(void);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int minipack_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
+int pal_get_hand_sw_physically(uint8_t *pos);
+int pal_get_hand_sw(uint8_t *pos);
+int pal_get_dbg_pwr_btn(uint8_t *status);
+int pal_get_dbg_rst_btn(uint8_t *status);
+int pal_clr_dbg_rst_btn();
+int pal_set_rst_btn(uint8_t slot, uint8_t status);
+int pal_get_dbg_uart_btn(uint8_t *status);
+int pal_clr_dbg_uart_btn();
+int pal_switch_uart_mux(uint8_t slot);
 #ifdef __cplusplus
 } // extern "C"
 #endif

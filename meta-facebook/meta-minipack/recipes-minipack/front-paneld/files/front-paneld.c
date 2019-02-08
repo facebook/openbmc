@@ -50,6 +50,8 @@
 
 #define INTERVAL_MAX  5
 
+static uint8_t m_pos = 0xff;
+
 static void
 pim_device_detect_log(uint8_t num, uint8_t bus, uint8_t addr,
                       char* device, int state) {
@@ -176,6 +178,15 @@ pim_thresh_init(uint8_t fru) {
   return 0;
 }
 
+static int
+get_handsw_pos(uint8_t *pos) {
+  if (m_pos > HAND_SW_BMC)
+    return -1;
+
+  *pos = m_pos;
+  return 0;
+}
+
 // Thread for monitoring scm plug
 static void *
 scm_monitor_handler(void *unused) {
@@ -217,7 +228,7 @@ scm_monitor_handler(void *unused) {
     }
 scm_mon_out:
     prev = curr;
-      sleep(1);
+    sleep(1);
   }
   return 0;
 }
@@ -384,13 +395,44 @@ debug_card_handler(void *unused) {
   int prev = -1;
   int ret;
   uint8_t prsnt = 0;
-  uint8_t lpc;
-
-  while (1) {
+  uint8_t prev_phy_pos = 0xff, pos, btn;
+  char str[8];
  
+  /* Clear Debug Card uart sel button at the first time */
+  pal_clr_dbg_uart_btn();
+
+   while (1) {
+    ret = pal_get_hand_sw_physically(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    if (pos == prev_phy_pos) {
+      goto get_hand_sw_cache;
+    }
+
+    msleep(10);
+    ret = pal_get_hand_sw_physically(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    prev_phy_pos = pos;
+    snprintf(str, sizeof(str), "%u", pos);
+    ret = kv_set("scm_hand_sw", str, 0, 0);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+get_hand_sw_cache:
+    ret = pal_get_hand_sw(&pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+    m_pos = pos;
+
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
-
     if (ret) {
       goto debug_card_out;
     }
@@ -406,35 +448,157 @@ debug_card_handler(void *unused) {
         syslog(LOG_WARNING, "Debug Card Insertion\n");
       }
     }
+    prev = curr;
 
-    // If Debug Card is present
-    if (curr) {
-
-      // Enable POST codes for scm slot
-      ret = pal_post_enable(IPMB_BUS);
-      if (ret) {
-        goto debug_card_done;
-      }
-
-      // Get last post code and display it
-      ret = pal_post_get_last(IPMB_BUS, &lpc);
-      if (ret) {
-        goto debug_card_done;
-      }
-
-      ret = pal_post_handle(IPMB_BUS, lpc);
-      if (ret) {
-        goto debug_card_out;
-      }
+    ret = pal_get_dbg_uart_btn(&btn);
+    if (ret) {
+      goto debug_card_out;
     }
 
-debug_card_done:
-    prev = curr;
+    if (btn) {
+      syslog(LOG_CRIT, "UART Sel Button pressed");
+      /* Toggle the UART position */
+      pal_switch_uart_mux(!pos);
+      /* Clear Debug Card uart sel button */
+      pal_clr_dbg_uart_btn();
+    }
 debug_card_out:
     if (curr == 1)
       msleep(500);
     else
       sleep(1);
+  }
+
+  return 0;
+}
+
+/* Thread to handle Power Button to power on/off userver */
+static void *
+pwr_btn_handler(void *unused) {
+  int ret, i;
+  uint8_t pos, btn;
+  uint8_t cmd = 0;
+  uint8_t power;
+  bool release_flag = true;
+
+  while (1) {
+    /* Check the position of hand switch */
+    ret = get_handsw_pos(&pos);
+    if (ret || pos == HAND_SW_BMC) {
+      sleep(1);
+      continue;
+    }
+
+    /* Check if Debug Card power button is pressed */
+    ret = pal_get_dbg_pwr_btn(&btn);
+    if (ret || !btn) {
+      if (false == release_flag) {
+        release_flag = true;
+      }
+      goto pwr_btn_out;
+    }
+
+    if (false == release_flag) {
+      goto pwr_btn_out;
+    }
+    release_flag = false;
+    syslog(LOG_WARNING, "Power Button Pressed");
+
+    /* Wait for the button to be released */
+    for (i = 0; i < BTN_POWER_OFF; i++) {
+      ret = pal_get_dbg_pwr_btn(&btn);
+      if (ret || btn ) {
+        msleep(100);
+        continue;
+      }
+      release_flag = true;
+      syslog(LOG_WARNING, "Power Button Released");
+      break;
+    }
+
+    /* Get the current power state (on or off) */
+    if (pos == HAND_SW_SERVER) {
+      ret = pal_get_server_power(FRU_SCM, &power);
+      if (ret) {
+        goto pwr_btn_out;
+      }
+      /* Set power command should reverse of current power state */
+      cmd = !power;
+    }
+
+    /* To determine long button press */
+    if (i >= BTN_POWER_OFF) {
+      /* if long press (>4s) and hand-switch position == bmc, then initiate
+         sled-cycle */
+      if (pos == HAND_SW_BMC) {
+        /* minipack do nothing here. */
+      } else {
+        pal_update_ts_sled();
+        syslog(LOG_CRIT, "Power Button Long Press");
+      }
+    } else {
+      /* Current state is ON and it is not a long press,
+         graceful shutdown userver */
+      if (power == SERVER_POWER_ON) {
+        cmd = SERVER_GRACEFUL_SHUTDOWN;
+      }
+      pal_update_ts_sled();
+      syslog(LOG_CRIT, "Power Button Press");
+    }
+
+    if (pos == HAND_SW_SERVER) {
+      if (cmd == SERVER_POWER_ON) {
+        pal_set_restart_cause(pos, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+      }
+      ret = pal_set_server_power(FRU_SCM, cmd);
+      if (!ret) {
+        if (cmd == SERVER_POWER_ON) {
+          syslog(LOG_CRIT, "Successfully power on micro-server");
+        } else if (cmd == SERVER_POWER_OFF) {
+          syslog(LOG_CRIT, "Successfully power off micro-server");
+        } else if (cmd == SERVER_GRACEFUL_SHUTDOWN) {
+          syslog(LOG_CRIT, "Successfully graceful shutdown micro-server");
+        }
+      }
+    }
+pwr_btn_out:
+    msleep(100);
+  }
+
+  return 0;
+}
+
+/* Thread to handle Reset Button to reset userver */
+static void *
+rst_btn_handler(void *unused) {
+  int ret;
+  uint8_t pos, btn;
+
+  /* Clear Debug Card reset button at the first time */
+  pal_clr_dbg_rst_btn();
+
+  while (1) {
+    /* Check the position of hand switch
+     * and if reset button is pressed */
+    if (get_handsw_pos(&pos) || pal_get_dbg_rst_btn(&btn)) {
+      goto rst_btn_out;
+    }
+
+    if (pos == HAND_SW_BMC && btn) {
+      pal_clr_dbg_rst_btn();
+    } else if (pos == HAND_SW_SERVER && btn) {
+      syslog(LOG_CRIT, "Reset Button pressed");
+      pal_update_ts_sled();
+      /* Reset userver */
+      ret = pal_set_server_power(FRU_SCM, SERVER_POWER_RESET);
+      if (!ret) {
+        syslog(LOG_CRIT, "Successfully power reset micro-server");
+      }
+      /* Clear Debug Card reset button status */
+      pal_clr_dbg_rst_btn();
+    }
+rst_btn_out:
+    msleep(500);
   }
 
   return 0;
@@ -446,9 +610,12 @@ main (int argc, char * const argv[]) {
   pthread_t tid_pim_monitor;
   pthread_t tid_debug_card;
   pthread_t tid_simLED_monitor;
+  pthread_t tid_pwr_btn;
+  pthread_t tid_rst_btn;
   int rc;
   int pid_file;
   int brd_rev;
+
   signal(SIGTERM, exithandler);
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -458,7 +625,7 @@ main (int argc, char * const argv[]) {
       exit(-1);
     }
   } else {
-   openlog("front-paneld", LOG_CONS, LOG_DAEMON);
+    openlog("front-paneld", LOG_CONS, LOG_DAEMON);
   }
 
   if (pal_get_board_rev(&brd_rev)) {
@@ -484,10 +651,22 @@ main (int argc, char * const argv[]) {
 
   if (brd_rev != BOARD_REV_EVTA) {
     if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) != 0) {
-        syslog(LOG_WARNING, "pthread_create for debug card error\n");
-        exit(1);
+      syslog(LOG_WARNING, "pthread_create for debug card error\n");
+      exit(1);
+    }
+
+    if (pthread_create(&tid_pwr_btn, NULL, pwr_btn_handler, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for power button error\n");
+      exit(1);
+    }
+
+    if (pthread_create(&tid_rst_btn, NULL, rst_btn_handler, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for reset button error\n");
+      exit(1);
     }
     pthread_join(tid_debug_card, NULL);
+    pthread_join(tid_pwr_btn, NULL);
+    pthread_join(tid_rst_btn, NULL);
   }
 
   pthread_join(tid_scm_monitor, NULL);

@@ -225,7 +225,7 @@ static int fbw_parse_buffer(
   fbw_copy_uint16(&magic, &cur, FBW_EEPROM_F_MAGIC);
   if (magic != 0xfbfb) {
     rc = EFAULT;
-    LOG_ERR(rc, "Unexpected magic word 0x%x", magic);
+    OBMC_ERROR(rc, "Unexpected magic word 0x%x", magic);
     goto out;
   }
 
@@ -236,7 +236,7 @@ static int fbw_parse_buffer(
       (eeprom->fbw_version != FBW_EEPROM_VERSION2) &&
       (eeprom->fbw_version != FBW_EEPROM_VERSION3)) {
     rc = EFAULT;
-    LOG_ERR(rc, "Unsupported version number %u", eeprom->fbw_version);
+    OBMC_ERROR(rc, "Unsupported version number %u", eeprom->fbw_version);
     goto out;
   } else {
     if (eeprom->fbw_version == FBW_EEPROM_VERSION0) {
@@ -255,7 +255,7 @@ static int fbw_parse_buffer(
   crc8 = fbw_crc8_buf(buf, crc_len);
   if (crc8 != 0) {
     rc = EFAULT;
-    LOG_ERR(rc, "CRC check failed");
+    OBMC_ERROR(rc, "CRC check failed");
     goto out;
   }
 
@@ -397,7 +397,7 @@ int wedge_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom)
   fin = fopen(fn, "r");
   if (fin == NULL) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", FBW_EEPROM_FILE);
+    OBMC_ERROR(rc, "Failed to open %s", FBW_EEPROM_FILE);
     goto out;
   }
 
@@ -405,14 +405,14 @@ int wedge_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom)
   rc = fseek(fin, 0, SEEK_END);
   if (rc) {
     rc = errno;
-    LOG_ERR(rc, "Failed to seek to the end of %s", FBW_EEPROM_FILE);
+    OBMC_ERROR(rc, "Failed to seek to the end of %s", FBW_EEPROM_FILE);
     goto out;
   }
 
   len = ftell(fin);
   if (len < FBW_EEPROM_SIZE) {
     rc = ENOSPC;
-    LOG_ERR(rc, "File '%s' is too small (%u < %u)", FBW_EEPROM_FILE,
+    OBMC_ERROR(rc, "File '%s' is too small (%u < %u)", FBW_EEPROM_FILE,
             len, FBW_EEPROM_SIZE);
     goto out;
   }
@@ -422,7 +422,7 @@ int wedge_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom)
 
   rc = fread(buf, 1, sizeof(buf), fin);
   if (rc < sizeof(buf)) {
-    LOG_ERR(ENOSPC, "Failed to complete the read. Only got %d", rc);
+    OBMC_ERROR(ENOSPC, "Failed to complete the read. Only got %d", rc);
     rc = ENOSPC;
     goto out;
   }

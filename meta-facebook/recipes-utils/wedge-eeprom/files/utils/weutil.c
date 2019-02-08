@@ -20,7 +20,6 @@
 #include <stdio.h>
 
 #include <facebook/wedge_eeprom.h>
-#include <openbmc/log.h>
 
 /*
  * Following fruid info translates to thrift structures in Fboss

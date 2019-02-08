@@ -81,6 +81,7 @@ static int
 prepare_ncsi_req_msg(struct msghdr *msg, uint8_t ch, uint8_t cmd,
                      uint16_t payload_len, unsigned char *payload,
                      uint16_t response_len) {
+
   struct sockaddr_nl *dest_addr = NULL;
   struct nlmsghdr *nlh = NULL;
   NCSI_NL_MSG_T *nl_msg = NULL;
@@ -295,7 +296,8 @@ init_version_data(Get_Version_ID_Response *buf)
 
 static int
 send_cmd_and_get_resp(nl_sfd_t *sfd, uint8_t ncsi_cmd,
-                           NCSI_Response_Packet *resp_buf)
+                      uint16_t payload_len, unsigned char *payload,
+                      NCSI_Response_Packet *resp_buf)
 {
   struct sockaddr_nl src_addr;
   struct msghdr msg;
@@ -315,7 +317,7 @@ send_cmd_and_get_resp(nl_sfd_t *sfd, uint8_t ncsi_cmd,
     return -1;
   };
 
-  ret = prepare_ncsi_req_msg(&msg, 0, ncsi_cmd, 0, NULL,
+  ret = prepare_ncsi_req_msg(&msg, 0, ncsi_cmd, payload_len, payload,
                              sizeof(NCSI_NL_RSP_T));
   if (ret) {
     syslog(LOG_ERR, "send_cmd(0x%x): prepare message failed", ncsi_cmd);
@@ -351,7 +353,8 @@ send_cmd_and_get_resp(nl_sfd_t *sfd, uint8_t ncsi_cmd,
     goto free_exit;
   }
 
-  memcpy(resp_buf, rcv_buf->msg_payload, sizeof(NCSI_Response_Packet));
+  if (resp_buf)
+    memcpy(resp_buf, rcv_buf->msg_payload, sizeof(NCSI_Response_Packet));
 
 free_exit:
   free_ncsi_req_msg(&msg);
@@ -380,7 +383,7 @@ init_nic_config(nl_sfd_t *sfd)
   }
 
   // get NIC CAPABILITY
-  ret = send_cmd_and_get_resp(sfd, NCSI_GET_CAPABILITIES, resp_buf);
+  ret = send_cmd_and_get_resp(sfd, NCSI_GET_CAPABILITIES, 0, NULL, resp_buf);
   if (ret < 0) {
     syslog(LOG_ERR, "init_nic_config: failed to send cmd (0x%x)",
            NCSI_GET_CAPABILITIES);
@@ -391,7 +394,7 @@ init_nic_config(nl_sfd_t *sfd)
 
 
   // get NIC Manufacturer and firmware version
-  ret = send_cmd_and_get_resp(sfd, NCSI_GET_VERSION_ID, resp_buf);
+  ret = send_cmd_and_get_resp(sfd, NCSI_GET_VERSION_ID,  0, NULL, resp_buf);
   if (ret < 0) {
     syslog(LOG_ERR, "init_nic_config: failed to send cmd (0x%x)",
            NCSI_GET_VERSION_ID);
@@ -457,6 +460,9 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
       case NCSI_GET_VERSION_ID:
         ret = handle_get_version_id(resp);
         break;
+      case NCSI_AEN_ENABLE:
+        // ignore the response from this command, as it contains no payload
+        break;
 
       // TBD: handle other command response here
       default:
@@ -466,6 +472,29 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
     }
   }
   return ret;
+}
+
+
+// enable platform-specific AENs
+void
+enable_aens(void *sfd, uint32_t aen_enable_mask) {
+#define PAYLOAD_SIZE 8
+  int ret = 0;
+  unsigned char payload[PAYLOAD_SIZE]  = {0};
+
+  syslog(LOG_INFO, "enable aens: mask=0x%x", aen_enable_mask);
+
+  // convert to network byte order
+  aen_enable_mask = htonl(aen_enable_mask);
+
+  memcpy(&(payload[4]), &aen_enable_mask, sizeof(uint32_t));
+
+  ret = send_cmd_and_get_resp(sfd, NCSI_AEN_ENABLE, PAYLOAD_SIZE, payload, NULL);
+  if (ret < 0) {
+    syslog(LOG_ERR, "enable_aens: failed to enable AEN");
+  }
+
+  return;
 }
 
 
@@ -515,7 +544,7 @@ ncsi_rx_handler(void *sfd) {
 
     if (ret == NCSI_IF_REINIT) {
       send_registration_msg(sfd);
-      enable_aens(aen_enable_mask);
+      enable_aens(sfd, aen_enable_mask);
     }
   }
 
@@ -557,7 +586,7 @@ ncsi_tx_handler(void *sfd) {
     ret = check_valid_mac_addr();
     if (ret == NCSI_IF_REINIT) {
       send_registration_msg(sfd);
-      enable_aens(aen_enable_mask);
+      enable_aens(sfd, aen_enable_mask);
     }
     sleep(NIC_STATUS_SAMPLING_DELAY);
   }
@@ -617,7 +646,7 @@ ncsi_aen_handler(void *unused) {
   }
 
   // enable platform-specific AENs
-  enable_aens(aen_enable_mask);
+  enable_aens(sfd, aen_enable_mask);
 
   pthread_join(tid_rx, NULL);
   pthread_join(tid_tx, NULL);

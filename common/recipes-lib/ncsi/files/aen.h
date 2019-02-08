@@ -74,7 +74,7 @@ typedef struct {
 
 
 int is_aen_packet(AEN_Packet *buf);
-void enable_aens(uint32_t enable_mask);
+void enable_default_aens();
 int process_NCSI_AEN(AEN_Packet *buf);
 
 #endif

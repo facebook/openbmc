@@ -43,7 +43,7 @@ is_aen_packet(AEN_Packet *buf)
 
 // enable platform-specific AENs
 void
-enable_aens(uint32_t enable_mask) {
+enable_default_aens() {
   char cmd[64] = {0};
 
   memset(cmd, 0, sizeof(cmd));

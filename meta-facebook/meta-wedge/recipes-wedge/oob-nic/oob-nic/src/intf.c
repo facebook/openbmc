@@ -66,12 +66,12 @@ static int oob_intf_set_mac(oob_intf *intf, const uint8_t mac[6]) {
   rc = rtnl_talk(&intf->oi_rth, &req.n, 0, 0, NULL);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to set mac to interface %s @ index %d",
+    OBMC_ERROR(rc, "Failed to set mac to interface %s @ index %d",
             intf->oi_name, intf->oi_ifidx);
     return -rc;
   }
 
-  LOG_INFO("Set interface %s @ index %d mac to %x:%x:%x:%x:%x:%x",
+  OBMC_INFO("Set interface %s @ index %d mac to %x:%x:%x:%x:%x:%x",
            intf->oi_name, intf->oi_ifidx,
            intf->oi_mac[0], intf->oi_mac[1], intf->oi_mac[2],
            intf->oi_mac[3], intf->oi_mac[4], intf->oi_mac[5]);
@@ -98,12 +98,12 @@ static int oob_intf_bring_up(oob_intf *intf) {
   rc = rtnl_talk(&intf->oi_rth, &req.n, 0, 0, NULL);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to bring up interface %s @ index %d",
+    OBMC_ERROR(rc, "Failed to bring up interface %s @ index %d",
             intf->oi_name, intf->oi_ifidx);
     return -rc;
   }
 
-  LOG_INFO("Brought up interface %s @ index %d", intf->oi_name, intf->oi_ifidx);
+  OBMC_INFO("Brought up interface %s @ index %d", intf->oi_name, intf->oi_ifidx);
 
   return 0;
 }
@@ -118,7 +118,7 @@ oob_intf* oob_intf_create(const char *name, const uint8_t mac[6]) {
 #define _CHECK_RC(fmt, ...) do {                \
   if (rc < 0) {                                 \
     rc = errno;                                 \
-    LOG_ERR(rc, fmt, ##__VA_ARGS__);            \
+    OBMC_ERROR(rc, fmt, ##__VA_ARGS__);            \
     goto err_out;                               \
   }                                             \
 } while(0)
@@ -126,7 +126,7 @@ oob_intf* oob_intf_create(const char *name, const uint8_t mac[6]) {
   intf = malloc(sizeof(*intf));
   if (!intf) {
     rc = ENOMEM;
-    LOG_ERR(rc, "Failed to allocate memory for interface");
+    OBMC_ERROR(rc, "Failed to allocate memory for interface");
     goto err_out;
   }
   memset(intf, 0, sizeof(*intf));
@@ -181,7 +181,7 @@ oob_intf* oob_intf_create(const char *name, const uint8_t mac[6]) {
   _CHECK_RC("Failed to make the tap interface %s persistent", intf->oi_name);
 #endif
 
-  LOG_INFO("Create/attach to tap interface %s @ fd %d, index %d",
+  OBMC_INFO("Create/attach to tap interface %s @ fd %d, index %d",
            intf->oi_name, intf->oi_fd, intf->oi_ifidx);
 
   //oob_intf_bring_up(intf);
@@ -212,7 +212,7 @@ int oob_intf_receive(const oob_intf *intf, char *buf, int len) {
   if (rc < 0) {
     rc = errno;
     if (rc != EAGAIN) {
-      LOG_ERR(rc, "Failed to read on interface fd %d", intf->oi_fd);
+      OBMC_ERROR(rc, "Failed to read on interface fd %d", intf->oi_fd);
       return -rc;
     } else {
       /* nothing is available */
@@ -225,11 +225,11 @@ int oob_intf_receive(const oob_intf *intf, char *buf, int len) {
   } else if (rc > len) {
     // The pkt is larger than the buffer. We don't have complete packet.
     // It shall not happen unless the MTU is mis-match. Drop the packet.
-    LOG_ERR(ENOSPC, "Received a too large packet (%d bytes > %d) from the "
+    OBMC_ERROR(ENOSPC, "Received a too large packet (%d bytes > %d) from the "
             "tap interface. Drop it...", rc, len);
     return -ENOSPC;
   } else {
-    LOG_VER("Recv a packet of %d bytes from %s", rc, intf->oi_name);
+    OBMC_DEBUG("Recv a packet of %d bytes from %s", rc, intf->oi_name);
     return rc;
   }
 }
@@ -241,14 +241,14 @@ int oob_intf_send(const oob_intf *intf, const char *buf, int len) {
   } while (rc == -1 && errno == EINTR);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to send on interface fd %d", intf->oi_fd);
+    OBMC_ERROR(rc, "Failed to send on interface fd %d", intf->oi_fd);
     return -rc;
   } else if (rc < len) {
-    LOG_ERR(EIO, "Failed to send the full packet (%d bytes > %d) for fd %d",
+    OBMC_ERROR(EIO, "Failed to send the full packet (%d bytes > %d) for fd %d",
             len, rc, intf->oi_fd);
     return -EIO;
   } else {
-    LOG_VER("Sent a packet of %d bytes to %s", rc, intf->oi_name);
+    OBMC_DEBUG("Sent a packet of %d bytes to %s", rc, intf->oi_name);
     return rc;
   }
 }

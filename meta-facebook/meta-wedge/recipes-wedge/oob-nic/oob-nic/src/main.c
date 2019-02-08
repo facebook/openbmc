@@ -55,7 +55,7 @@ static void io_loop(oob_nic *nic, oob_intf *intf, const uint8_t mac[6]) {
     n_fds = select(fd + 1, &rfds, NULL, NULL, &timeout);
     if (n_fds < 0) {
       rc = errno;
-      LOG_ERR(rc, "Failed to select");
+      OBMC_ERROR(rc, "Failed to select");
       continue;
     }
 
@@ -86,7 +86,7 @@ static void io_loop(oob_nic *nic, oob_intf *intf, const uint8_t mac[6]) {
       while(oob_nic_get_status(nic, &sts)) {
         usleep(1000);
       }
-      LOG_INFO("Failed to receive packets for %d times. NIC status is "
+      OBMC_INFO("Failed to receive packets for %d times. NIC status is "
                "%x.%x", NO_RCV_CHECK_THRESHOLD, sts.ons_byte1, sts.ons_byte2);
       /*
        * if the NIC went through initialization, or not set force up, need to
@@ -137,7 +137,7 @@ int main(int argc, const char **argv) {
      * use as OOB MAC.
      */
     if (eeprom.fbw_mac_size > 128) {
-      LOG_ERR(EFAULT, "Extended MAC size (%d) is too large.",
+      OBMC_ERROR(EFAULT, "Extended MAC size (%d) is too large.",
               eeprom.fbw_mac_size);
       carry = 128;
     } else {
@@ -159,7 +159,7 @@ int main(int argc, const char **argv) {
     }
 
     if (carry < adj) {
-      LOG_ERR(EFAULT, "Invalid extended MAC size: %d", eeprom.fbw_mac_size);
+      OBMC_ERROR(EFAULT, "Invalid extended MAC size: %d", eeprom.fbw_mac_size);
     } else {
       carry -= adj;
       memcpy(mac, eeprom.fbw_mac_base, sizeof(mac));
@@ -184,7 +184,7 @@ int main(int argc, const char **argv) {
     mac[5]++;
   }
 
-  LOG_INFO("Retrieve MAC %x:%x:%x:%x:%x:%x from %s",
+  OBMC_INFO("Retrieve MAC %x:%x:%x:%x:%x:%x from %s",
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
            (from_eeprom) ? "EEPROM" : "NIC");
 

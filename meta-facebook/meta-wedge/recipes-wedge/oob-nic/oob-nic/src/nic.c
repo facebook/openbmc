@@ -92,7 +92,7 @@ oob_nic* oob_nic_open(int bus, uint8_t addr) {
 
   /* address must be 7 bits maximum */
   if ((addr & 0x80)) {
-    LOG_ERR(EINVAL, "Address 0x%x has the 8th bit", addr);
+    OBMC_ERROR(EINVAL, "Address 0x%x has the 8th bit", addr);
     return NULL;
   }
 
@@ -107,14 +107,14 @@ oob_nic* oob_nic_open(int bus, uint8_t addr) {
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   dev->on_file = open(fn, O_RDWR);
   if (dev->on_file == -1) {
-    LOG_ERR(errno, "Failed to open i2c device %s", fn);
+    OBMC_ERROR(errno, "Failed to open i2c device %s", fn);
     goto err_out;
   }
 
   /* assign the device address */
   rc = ioctl(dev->on_file, I2C_SLAVE, dev->on_addr);
   if (rc < 0) {
-    LOG_ERR(errno, "Failed to open slave @ address 0x%x", dev->on_addr);
+    OBMC_ERROR(errno, "Failed to open slave @ address 0x%x", dev->on_addr);
     goto err_out;
   }
 
@@ -142,26 +142,26 @@ int oob_nic_get_mac(oob_nic *dev, uint8_t mac[6]) {
   rc = i2c_smbus_read_block_data(dev->on_file, NIC_READ_MAC_CMD, buf);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to get MAC on %d-%x",
+    OBMC_ERROR(rc, "Failed to get MAC on %d-%x",
             dev->on_bus, dev->on_addr);
     return -rc;
   }
 
   if (rc != NIC_READ_MAC_RES_LEN) {
-    LOG_ERR(EFAULT, "Unexpected response len (%d) for get MAC on %d-%x",
+    OBMC_ERROR(EFAULT, "Unexpected response len (%d) for get MAC on %d-%x",
             rc, dev->on_bus, dev->on_addr);
     return -EFAULT;
   }
 
   if (buf[0] != NIC_READ_MAC_RES_OPT) {
-    LOG_ERR(EFAULT, "Unexpected response opt code (0x%x) get MAC on %d-%x",
+    OBMC_ERROR(EFAULT, "Unexpected response opt code (0x%x) get MAC on %d-%x",
             buf[0], dev->on_bus, dev->on_addr);
     return -EFAULT;
   }
 
   memcpy(mac, &buf[1], 6);
 
-  LOG_DBG("Get MAC on %d-%x: %x:%x:%x:%x:%x:%x", dev->on_bus, dev->on_addr,
+  OBMC_DEBUG("Get MAC on %d-%x: %x:%x:%x:%x:%x:%x", dev->on_bus, dev->on_addr,
           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   return 0;
 }
@@ -173,19 +173,19 @@ int oob_nic_get_status(oob_nic *dev, oob_nic_status *status) {
   rc = i2c_smbus_read_block_data(dev->on_file, NIC_READ_STATUS_CMD, buf);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to get status on %d-%x",
+    OBMC_ERROR(rc, "Failed to get status on %d-%x",
             dev->on_bus, dev->on_addr);
     return -rc;
   }
 
   if (rc != NIC_READ_STATUS_RES_LEN) {
-    LOG_ERR(EFAULT, "Unexpected response len (%d) for get status on %d-%x",
+    OBMC_ERROR(EFAULT, "Unexpected response len (%d) for get status on %d-%x",
             rc, dev->on_bus, dev->on_addr);
     return -EFAULT;
   }
 
   if (buf[0] != NIC_READ_STATUS_RES_OPT) {
-    LOG_ERR(EFAULT, "Unexpected response opt code (0x%x) get status on %d-%x",
+    OBMC_ERROR(EFAULT, "Unexpected response opt code (0x%x) get status on %d-%x",
             buf[0], dev->on_bus, dev->on_addr);
     return -EFAULT;
   }
@@ -194,7 +194,7 @@ int oob_nic_get_status(oob_nic *dev, oob_nic_status *status) {
   status->ons_byte1 = buf[1];
   status->ons_byte2 = buf[2];
 
-  LOG_VER("Get status on %d-%x: byte1:0x%x byte2:0x%x",
+  OBMC_DEBUG("Get status on %d-%x: byte1:0x%x byte2:0x%x",
           dev->on_bus, dev->on_addr,
           status->ons_byte1, status->ons_byte2);
   return 0;
@@ -226,12 +226,12 @@ int oob_nic_receive(oob_nic *dev, uint8_t *buf, int len) {
     rc = i2c_smbus_read_block_large_data(dev->on_file, NIC_READ_PKT_CMD, pkt);
     if (rc < 0) {
       rc = errno;
-      LOG_ERR(rc, "Failed to get packet on %d-%x",
+      OBMC_ERROR(rc, "Failed to get packet on %d-%x",
               dev->on_bus, dev->on_addr);
       goto err_out;
     }
     if (rc > I2C_SMBUS_BLOCK_LARGE_MAX) {
-      LOG_ERR(EFAULT, "Too large i2c block (%d) received on %d-%x",
+      OBMC_ERROR(EFAULT, "Too large i2c block (%d) received on %d-%x",
               rc, dev->on_bus, dev->on_addr);
       rc = EFAULT;
       goto err_out;
@@ -241,7 +241,7 @@ int oob_nic_receive(oob_nic *dev, uint8_t *buf, int len) {
     case NIC_READ_PKT_RES_FIRST_OPT:
       if (!expect_first) {
         rc = EFAULT;
-        LOG_ERR(rc, "Received more than one buffer with FIRST set");
+        OBMC_ERROR(rc, "Received more than one buffer with FIRST set");
         goto err_out;
       }
       expect_first = 0;
@@ -251,7 +251,7 @@ int oob_nic_receive(oob_nic *dev, uint8_t *buf, int len) {
     case NIC_READ_PKT_RES_MIDDLE_OPT:
       if (expect_first) {
         rc = EFAULT;
-        LOG_ERR(rc, "Received MIDDLE before getting FIRST");
+        OBMC_ERROR(rc, "Received MIDDLE before getting FIRST");
         goto err_out;
       }
       _COPY_DATA(rc - 1, &pkt[1]);
@@ -260,11 +260,11 @@ int oob_nic_receive(oob_nic *dev, uint8_t *buf, int len) {
     case NIC_READ_PKT_RES_LAST_OPT:
       if (expect_first) {
         rc = EFAULT;
-        LOG_ERR(rc, "Received LAST before getting FIRST");
+        OBMC_ERROR(rc, "Received LAST before getting FIRST");
         goto err_out;
       }
       if (rc != NIC_READ_PKT_RES_LAST_LEN) {
-        LOG_ERR(EFAULT, "Expect %d bytes (got %d) for LAST segement",
+        OBMC_ERROR(EFAULT, "Expect %d bytes (got %d) for LAST segement",
                 NIC_READ_PKT_RES_LAST_LEN, rc);
         rc = EFAULT;
         goto err_out;
@@ -275,19 +275,19 @@ int oob_nic_receive(oob_nic *dev, uint8_t *buf, int len) {
       /* that means no pkt available */
       if (!expect_first) {
         rc = EFAULT;
-        LOG_ERR(rc, "Received STATUS in the middle of packet");
+        OBMC_ERROR(rc, "Received STATUS in the middle of packet");
         goto err_out;
       }
-      //LOG_VER("Received STATUS when receiving the packet");
+      //OBMC_DEBUG("Received STATUS when receiving the packet");
       return 0;
     default:
       rc = EFAULT;
-      LOG_ERR(rc, "Unexpected opt code 0x%x", opt);
+      OBMC_ERROR(rc, "Unexpected opt code 0x%x", opt);
       goto err_out;
     }
   } while (opt != NIC_READ_PKT_RES_LAST_OPT);
 
-  LOG_VER("Received a packet with %d bytes in %d fragments", copied, n_frags);
+  OBMC_DEBUG("Received a packet with %d bytes in %d fragments", copied, n_frags);
   return copied;
 
  err_out:
@@ -306,7 +306,7 @@ int oob_nic_send(oob_nic *dev, const uint8_t *data, int len) {
 
   if (len <= 0 || len > NIC_PKT_SIZE_MAX) {
     rc = EINVAL;
-    LOG_ERR(rc, "Invalid packet length %d", len);
+    OBMC_ERROR(rc, "Invalid packet length %d", len);
     return -rc;
   }
 
@@ -335,7 +335,7 @@ int oob_nic_send(oob_nic *dev, const uint8_t *data, int len) {
                                           to_send, data + has_sent);
     if (rc < 0) {
       rc = errno;
-      LOG_ERR(rc, "Failed to sent packet with cmd 0x%x, has_sent=%d "
+      OBMC_ERROR(rc, "Failed to sent packet with cmd 0x%x, has_sent=%d "
               "to_send=%d", cmd, has_sent, to_send);
       return -rc;
     }
@@ -345,7 +345,7 @@ int oob_nic_send(oob_nic *dev, const uint8_t *data, int len) {
     n_frags++;
   }
 
-  LOG_VER("Sent a packet with %d bytes in %d fragments", has_sent, n_frags);
+  OBMC_DEBUG("Sent a packet with %d bytes in %d fragments", has_sent, n_frags);
 
   return has_sent;
 }
@@ -355,7 +355,7 @@ static int oob_nic_set_mng_ctrl(oob_nic *dev, const uint8_t *data, int len) {
 
   if (len <= 0) {
     rc = EINVAL;
-    LOG_ERR(rc, "Invalid data length: %d", len);
+    OBMC_ERROR(rc, "Invalid data length: %d", len);
     return -rc;
   }
 
@@ -363,7 +363,7 @@ static int oob_nic_set_mng_ctrl(oob_nic *dev, const uint8_t *data, int len) {
                                   len, data);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to send management control command for parameter # %d",
+    OBMC_ERROR(rc, "Failed to send management control command for parameter # %d",
             data[0]);
     return -rc;
   }
@@ -378,7 +378,7 @@ static int oob_nic_set_force_up(oob_nic *dev, int enable) {
   cmd[1] = enable
     ? NIC_MNG_CTRL_KEEP_LINK_UP_ENABLE : NIC_MNG_CTRL_KEEP_LINK_UP_DISABLE;
 
-  LOG_DBG("Turn %s link force up", enable ? "on" : "off");
+  OBMC_DEBUG("Turn %s link force up", enable ? "on" : "off");
   return oob_nic_set_mng_ctrl(dev, cmd, sizeof(cmd));
 }
 
@@ -420,7 +420,7 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
                                   cmd - buf, buf);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to set MAC filter");
+    OBMC_ERROR(rc, "Failed to set MAC filter");
     return -rc;
   }
 
@@ -455,7 +455,7 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
                                   cmd - buf, buf);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to set MAC filter to MDEF 0");
+    OBMC_ERROR(rc, "Failed to set MAC filter to MDEF 0");
     return -rc;
   }
 
@@ -470,7 +470,7 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
                                   cmd - buf, buf);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to program EtherType0 to match LLDP");
+    OBMC_ERROR(rc, "Failed to program EtherType0 to match LLDP");
     return -rc;
   }
 
@@ -497,7 +497,7 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
                                   cmd - buf, buf);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to set ARP and ND filter to MDEF 1");
+    OBMC_ERROR(rc, "Failed to set ARP and ND filter to MDEF 1");
     return -rc;
   }
 
@@ -511,7 +511,7 @@ static int oob_nic_setup_filters(oob_nic *dev, const uint8_t mac[6]) {
                                   cmd - buf, buf);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to enabled management only filter");
+    OBMC_ERROR(rc, "Failed to enabled management only filter");
     return -rc;
   }
 
@@ -540,10 +540,10 @@ int oob_nic_start(oob_nic *dev, const uint8_t mac[6]) {
                                   1, &cmd);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to start receive function");
+    OBMC_ERROR(rc, "Failed to start receive function");
     return -rc;
   }
-  LOG_DBG("Started receive function");
+  OBMC_DEBUG("Started receive function");
   return 0;
 }
 
@@ -556,9 +556,9 @@ int oob_nic_stop(oob_nic *dev) {
                                   1, &ctrl);
   if (rc < 0) {
     rc = errno;
-    LOG_ERR(rc, "Failed to stop receive function");
+    OBMC_ERROR(rc, "Failed to stop receive function");
     return -rc;
   }
-  LOG_DBG("Stopped receive function");
+  OBMC_DEBUG("Stopped receive function");
   return 0;
 }

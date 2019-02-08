@@ -95,13 +95,13 @@ static int i2c_open() {
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", g_bus);
   fd = open(fn, O_RDWR);
   if (fd == -1) {
-    LOG_ERR(errno, "Failed to open i2c device %s", fn);
+    OBMC_ERROR(errno, "Failed to open i2c device %s", fn);
     return -1;
   }
 
   rc = ioctl(fd, I2C_SLAVE, g_slave_addr);
   if (rc < 0) {
-    LOG_ERR(errno, "Failed to open slave @ address 0x%x", g_slave_addr);
+    OBMC_ERROR(errno, "Failed to open slave @ address 0x%x", g_slave_addr);
     close(fd);
   }
 
@@ -149,7 +149,7 @@ static int i2c_io(int fd) {
 
   rc = ioctl(fd, I2C_RDWR, &data);
   if (rc < 0) {
-    LOG_ERR(errno, "Failed to do raw io");
+    OBMC_ERROR(errno, "Failed to do raw io");
     return -1;
   }
 

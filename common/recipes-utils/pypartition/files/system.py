@@ -392,32 +392,42 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
     ))
     with VirtualCat(images_or_mtds) as vc:
         partitions = get_partitions(vc, checksums, logger)
+
+    # TODO populate valid env partition at build time
+    # TODO learn to validate data0 partition
+    unvalidated_partitions = ['env', 'data0']  # type: List[str]
+
+    # Ignore invalid checksum for u-boot when in hardware enforcement is
+    # currently on. For two reasons:
+    # 1) When in hardware-enforcement, the U-Boot partition of the mostly
+    #    writeable flash1 partition isn't executed during boot. (The only
+    #    exception we can think of is a misconfiguration of the watchdog
+    #    alternate boot source. It's mostly there just to keep the flash0 and
+    #    flash1 images symmetric.
+    #
+    # 2) get_partitions() doesn't yet properly split the first 84k of SPL/ROM
+    #    U-Boot and KEK from the next 300k of Recovery U-Boot. Whitelisting all
+    #    of those combinations would be annoying.
+    if get_vboot_enforcement() == 'hardware-enforce':
+        unvalidated_partitions.append('u-boot')
+
     last = None  # type: Optional[Partition]
     for current in partitions:
-        # TODO populate valid env partition at build time
-        # TODO learn to validate data0 partition
-
-        # Ignore invalid checksum for u-boot when in hardware
-        # enforcement is currently on. For two reasons:
-        # 1) When in hardware-enforcement, the u-boot partition
-        #    is not executed during boot. It is there just to keep
-        #    a symmetric image between flash0 and flash1. Hence
-        #    checking provides no value.
-        # 2) Since only SPL (first 64k) of flash1 is write-protected,
-        #    and the way we work around this during flashing, makes
-        #    white-listing very painful (We would need to whitelist all
-        #    combinations of 84k+300K) with no return on investment due
-        #    to point (1).
-        if (not current.valid and current.name not in ['env', 'data0'] and
-                (current.name not in ['u-boot'] or
-                    get_vboot_enforcement() != 'hardware-enforce')):
+        if (
+            not current.valid and
+            current.name not in unvalidated_partitions
+        ):
             message = 'Exiting due to invalid {} partition (details above).'
             logger.error(message.format(current))
             sys.exit(1)
+
+        # If the partition table has gaps, we need to fix how we generate it,
+        # in get_partitions() or elsewhere.
         if last is not None and last.end() != current.partition_offset:
             logger.error('{} does not begin at 0x{:x}'.format(current,
                                                               last.end()))
             sys.exit(1)
+
         last = current
     return partitions
 

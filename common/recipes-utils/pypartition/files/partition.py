@@ -412,7 +412,7 @@ class DeviceTreePartition(Partition):
         return (name, value)
 
     def __init__(self, sizes, offset, name, images, logger):
-        # type: (int, List<int>, str, VirtualCat, object) -> None
+        # type: (int, List[int], str, VirtualCat, object) -> None
         self.name = name
         self.partition_offset = offset
         self.valid = True
@@ -498,7 +498,7 @@ class DeviceTreePartition(Partition):
                     expected
                 ))
             else:
-                logger.info('{} checksums match.'.format(name))
+                logger.info('{} checksum matches.'.format(name))
 
         used_size = images.open_file.tell() - self.partition_offset
         for sz in sizes:

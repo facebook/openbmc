@@ -5,7 +5,7 @@ SRC_URI += "file://init \
             file://link-local-addr-any-interface.patch \
            "
 
-PR .= ".2"
+PR .= ".3"
 
 do_configure_append() {
   sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" sshd_config
@@ -22,7 +22,7 @@ fakeroot do_install_certificates() {
       ${AUTH_PRINCIPALS_ROOT} ${D}${sysconfdir}/ssh/auth_principals_root
   fi
   if [ -f "${AUTH_PRINCIPALS_CMD}" ]; then
-    install -m 0644 \
+    install \
       ${AUTH_PRINCIPALS_CMD} ${D}${sysconfdir}/ssh/auth_principals.sh
   fi
   if [ -f "${TRUSTED_CA}" ]; then

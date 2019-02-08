@@ -64,7 +64,7 @@ int gpio_open(gpio_st *g, int gpio)
   rc = open(buf, O_RDWR);
   if (rc == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", buf);
+    OBMC_ERROR(rc, "Failed to open %s", buf);
     return -rc;
   }
   g->gs_fd = rc;
@@ -87,7 +87,7 @@ gpio_value_en gpio_read(gpio_st *g)
   lseek(g->gs_fd, 0, SEEK_SET);
   read(g->gs_fd, buf, sizeof(buf));
   v = atoi(buf) ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
-  LOG_VER("read gpio=%d value=%d %d", g->gs_gpio, atoi(buf), v);
+  OBMC_DEBUG("read gpio=%d value=%d %d", g->gs_gpio, atoi(buf), v);
   return v;
 }
 
@@ -95,7 +95,7 @@ void gpio_write(gpio_st *g, gpio_value_en v)
 {
   lseek(g->gs_fd, 0, SEEK_SET);
   write(g->gs_fd, (v == GPIO_VALUE_HIGH) ? "1" : "0", 1);
-  LOG_VER("write gpio=%d value=%d", g->gs_gpio, v);
+  OBMC_DEBUG("write gpio=%d value=%d", g->gs_gpio, v);
 }
 
 int gpio_change_direction(gpio_st *g, gpio_direction_en dir)
@@ -109,14 +109,14 @@ int gpio_change_direction(gpio_st *g, gpio_direction_en dir)
   fd = open(buf, O_WRONLY);
   if (fd == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", buf);
+    OBMC_ERROR(rc, "Failed to open %s", buf);
     return -rc;
   }
 
   val = (dir == GPIO_DIRECTION_IN) ? "in" : "out";
   write(fd, val, strlen(val));
 
-  LOG_VER("change gpio=%d direction=%s", g->gs_gpio, val);
+  OBMC_DEBUG("change gpio=%d direction=%s", g->gs_gpio, val);
 
   if (fd != -1) {
     close(fd);
@@ -134,7 +134,7 @@ int gpio_current_direction(gpio_st *g, gpio_direction_en *dir)
   fd = open(buf, O_RDONLY);
   if (fd == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", buf);
+    OBMC_ERROR(rc, "Failed to open %s", buf);
     return -rc;
   }
 
@@ -162,7 +162,7 @@ int gpio_change_edge(gpio_st *g, gpio_edge_en edge)
   fd = open(buf, O_WRONLY);
   if (fd == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", buf);
+    OBMC_ERROR(rc, "Failed to open %s", buf);
     return -rc;
   }
 
@@ -180,7 +180,7 @@ int gpio_change_edge(gpio_st *g, gpio_edge_en edge)
     snprintf(str, sizeof(str), "both");
     break;
   default:
-    LOG_ERR(rc, "gpio_change_edge: Wrong Option %d", edge);
+    OBMC_ERROR(rc, "gpio_change_edge: Wrong Option %d", edge);
     goto edge_exit;
   }
 
@@ -201,7 +201,7 @@ int gpio_current_edge(gpio_st *g, gpio_edge_en *edge)
   fd = open(buf, O_RDONLY);
   if (fd == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", buf);
+    OBMC_ERROR(rc, "Failed to open %s", buf);
     return -rc;
   }
 
@@ -234,7 +234,7 @@ int gpio_export(int gpio)
   fd = open(buf, O_WRONLY);
   if (fd == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", buf);
+    OBMC_ERROR(rc, "Failed to open %s", buf);
     return -rc;
   }
 
@@ -256,7 +256,7 @@ int gpio_unexport_legacy(int gpio)
   fd = open(buf, O_WRONLY);
   if (fd == -1) {
     rc = errno;
-    LOG_ERR(rc, "Failed to open %s", buf);
+    OBMC_ERROR(rc, "Failed to open %s", buf);
     return -rc;
   }
 
@@ -309,7 +309,7 @@ int gpio_poll_open_legacy(gpio_poll_st *gpios, int count)
     gpio_export(gpios[i].gs.gs_gpio);
     if (gpio_open(&gpios[i].gs, gpios[i].gs.gs_gpio)) {
         rc = errno;
-        LOG_ERR(rc, "gpio_open for %d failed!", gpios[i].gs.gs_gpio);
+        OBMC_ERROR(rc, "gpio_open for %d failed!", gpios[i].gs.gs_gpio);
         continue;
      }
      gpio_change_direction(&gpios[i].gs,  GPIO_DIRECTION_IN);
@@ -336,13 +336,13 @@ static void *gpio_poll_pin(void *arg)
         continue;
       } else {
         rc = -errno;
-        LOG_ERR(rc, "gpio_poll: %s poll() fails\n", gpios[0].desc);
+        OBMC_ERROR(rc, "gpio_poll: %s poll() fails\n", gpios[0].desc);
         pthread_exit(&rc);
       }
     }
 
     if (rc == 0) {
-      LOG_ERR(rc, "gpio_poll: %s poll() timeout\n", gpios[0].desc);
+      OBMC_ERROR(rc, "gpio_poll: %s poll() timeout\n", gpios[0].desc);
       pthread_exit(&rc);
     }
 
@@ -372,14 +372,14 @@ int gpio_poll_legacy(gpio_poll_st *gpios, int count, int timeout)
   for ( i = 0; i < count; i++) {
     // TODO pass timeout value into thread
     if ((ret = pthread_create(&thread_ids[i], &attr, gpio_poll_pin, &gpios[i])) < 0) {
-      LOG_ERR(ret, "pthread_create failed for %s\n", gpios[i].desc);
+      OBMC_ERROR(ret, "pthread_create failed for %s\n", gpios[i].desc);
       return ret;
     }
   }
 
   for ( i = 0; i < count; i++) {
     if ((ret = pthread_join(thread_ids[i], NULL) < 0)) {
-      LOG_ERR(ret, "pthread_join failed for %s\n", gpios[i].desc);
+      OBMC_ERROR(ret, "pthread_join failed for %s\n", gpios[i].desc);
     }
   }
 

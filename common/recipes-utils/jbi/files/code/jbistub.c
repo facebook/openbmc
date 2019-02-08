@@ -268,8 +268,9 @@ int initialize_jtag_gpios()
 
   jbi_delay(1);
 
-  LOG_DBG("Opened TCK(GPIO %d), TMS(GPIO %d), TDI(GPIO %d), and TDO(GPIO %d)",
-          g_tck, g_tms, g_tdi, g_tdo);
+  OBMC_DEBUG("Opened TCK(GPIO %d), TMS(GPIO %d), "
+             "TDI(GPIO %d), and TDO(GPIO %d)",
+             g_tck, g_tms, g_tdi, g_tdo);
 
   return 0;
 }
@@ -300,7 +301,8 @@ int jbi_jtag_io(int tms, int tdi, int read_tdo)
   /* do falling edge clocking */
   gpio_write(&g_gpio_tck, GPIO_VALUE_LOW);
 
-  LOG_VER("tms=%d tdi=%d do_read=%d tdo=%d", tms, tdi, read_tdo, tdo);
+  OBMC_DEBUG("tms=%d tdi=%d do_read=%d tdo=%d",
+             tms, tdi, read_tdo, tdo);
 
   return tdo;
 }

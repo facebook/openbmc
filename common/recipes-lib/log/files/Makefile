@@ -1,4 +1,4 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,26 +15,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "OpenBMC logging library"
-DESCRIPTION = "Macros and functions for logging control"
-SECTION = "dev"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://log.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
+lib: liblog.so
 
-S = "${WORKDIR}"
-SRC_URI += "file://log.h \
-            file://log.c \
-            file://Makefile \
-           "
+C_SRCS := $(wildcard *.c)
+C_OBJS := ${C_SRCS:.c=.o}
 
-do_install() {
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 log.h ${D}${includedir}/openbmc/log.h
+CFLAGS += -Wall -Werror -fPIC
 
-    install -d ${D}${libdir}
-    install -m 0644 liblog.so ${D}${libdir}/liblog.so
-}
+liblog.so: $(C_OBJS)
+	$(CC) -shared -o liblog.so $^ -lc $(LDFLAGS)
 
-FILES_${PN} = "${libdir}/liblog.so"
-FILES_${PN}-dev = "${includedir}/openbmc/log.h"
+$(C_SRCS:.c=.d):%.d:%.c
+	$(CC) $(CFLAGS) $< >$@
+
+.PHONY: clean
+
+clean:
+	rm -rf *.o liblog.so

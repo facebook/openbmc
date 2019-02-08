@@ -482,13 +482,28 @@ class DeviceTreePartition(Partition):
         for name, properties in tree[b'images'].items():
             assert(properties[b'hash@1'][b'algo'] == b'sha256')
             expected = properties[b'hash@1'][b'value'].decode()
-            if b'data-size' in properties and b'data-position' in properties:
-                # The data is at a fixed offset, seek to it to compute
-                # the checksum and seek back to the current location.
-                data_pos = int(properties[b'data-position'], 16)
+            external = False
+            if b'data-size' in properties:
+                if b'data-address' in properties:
+                    # The data is at an offset relative to the start of the
+                    # file or device.
+                    external = True
+                    data_pos = int(properties[b'data-address'], 16)
+                elif b'data-position' in properties:
+                    # The data is at an offset relative to the start of this
+                    # partition.
+                    data_pos = self.partition_offset + \
+                        int(properties[b'data-position'], 16)
+                else:
+                    raise InvalidPartitionException(
+                        'data-address or data-position property missing'
+                    )
                 data_len = int(properties[b'data-size'], 16)
                 curr_tell = images.open_file.tell()
-                images.open_file.seek(self.partition_offset + data_pos)
+                # Seek to the location of the data (which is in a different
+                # partition) to compute the checksum. Then seek back to the
+                # current location.
+                images.open_file.seek(data_pos)
                 sha256sum = hashlib.sha256()
                 images.read_with_callback(data_len, sha256sum.update)
                 properties[b'data'] = sha256sum.hexdigest()
@@ -501,6 +516,12 @@ class DeviceTreePartition(Partition):
                 ))
             else:
                 logger.info('{} checksum matches.'.format(name))
+                if external:
+                    if '@' in name:
+                        simple_name = name.split('@')[0]
+                    else:
+                        simple_name = name
+                    self.valid_external_partitions.append(str(simple_name))
 
         used_size = images.open_file.tell() - self.partition_offset
         for sz in sizes:

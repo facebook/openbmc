@@ -71,6 +71,7 @@ class Partition(object):
     def __init__(self, partition_size, partition_offset, name, images, logger):
         # type: (Optional[int], int, str, VirtualCat, object) -> None
         self.valid = True
+        self.valid_external_partitions = []  # type: List[str]
         self.partition_size = partition_size  # type: Optional[int]
         self.partition_offset = partition_offset
         self.name = name
@@ -416,6 +417,7 @@ class DeviceTreePartition(Partition):
         self.name = name
         self.partition_offset = offset
         self.valid = True
+        self.valid_external_partitions = []  # type: List[str]
 
         raw_header = images.verified_read(self.header_size)
         parsed_header = dict(zip(self.header_fields, struct.unpack(

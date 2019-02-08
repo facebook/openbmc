@@ -393,6 +393,16 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
     with VirtualCat(images_or_mtds) as vc:
         partitions = get_partitions(vc, checksums, logger)
 
+    # The U-Boot checksum may have been validated while processing the main
+    # FIT.
+    covered_partitions = []  # type: List[str]
+    for image_tree in partitions:
+        for covered_partition in image_tree.valid_external_partitions:
+            covered_partitions.append(covered_partition)
+            logger.info('{} covered by checksum in {}.'.format(
+                covered_partition, image_tree
+            ))
+
     # TODO populate valid env partition at build time
     # TODO learn to validate data0 partition
     unvalidated_partitions = ['env', 'data0']  # type: List[str]
@@ -415,6 +425,7 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
     for current in partitions:
         if (
             not current.valid and
+            current.name not in covered_partitions and
             current.name not in unvalidated_partitions
         ):
             message = 'Exiting due to invalid {} partition (details above).'

@@ -50,9 +50,9 @@ for num in $(seq 8); do
 
     pim_type=`head -n1 ${pim_fpga_dir}/board_ver 2> /dev/null`
     if [ "${pim_type}" == "0x0" ]; then
-        dump_fpga_version ${pim_fpga_dir} "16Q_DOMPFGA"
+        dump_fpga_version ${pim_fpga_dir} "16Q DOMFPGA"
     elif [ "${pim_type}" == "0x10" ]; then
-        dump_fpga_version ${pim_fpga_dir} "4DD_DOMPFGA"
+        dump_fpga_version ${pim_fpga_dir} "4DD DOMFPGA"
     else
         echo "DOMFPGA is not detected or PIM $num is not inserted"
     fi

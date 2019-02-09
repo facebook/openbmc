@@ -1423,7 +1423,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 void
-pal_update_ts_sled()
+pal_update_ts_sled(void)
 {
   char key[MAX_KEY_LEN];
 char tstr[MAX_VALUE_LEN] = {0};
@@ -1963,26 +1963,21 @@ static bool
 is_server_on(void) {
   int ret;
   uint8_t status;
+
   ret = pal_get_server_power(FRU_SCM, &status);
-  if (ret) {
+  if (ret || status != SERVER_POWER_ON) {
     return false;
   }
 
-  if (status == SERVER_POWER_ON) {
-    return true;
-  } else {
-    return false;
-  }
+  return true;
 }
 
 // Power On the server
 static int
-server_power_on(uint8_t slot_id) {
+server_power_on(void) {
   int ret, val;
-  char path[LARGEST_DEVICE_NAME + 1];
 
-  snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, COM_PWR_ENBLE);
-  ret = read_device(path, &val);
+  ret = read_device(SCM_COM_PWR_ENBLE, &val);
   if (ret || val) {
     if (pal_set_com_pwr_btn_n("1")) {
       return -1;
@@ -2003,7 +1998,7 @@ server_power_on(uint8_t slot_id) {
       return -1;
     }
   } else {
-    ret = write_device(path, "1");
+    ret = write_device(SCM_COM_PWR_ENBLE, "1");
     if (ret) {
       syslog(LOG_WARNING, "%s: Power on is failed", __func__);
       return -1;
@@ -2015,9 +2010,8 @@ server_power_on(uint8_t slot_id) {
 
 // Power Off the server in given slot
 static int
-server_power_off(uint8_t slot_id, bool gs_flag) {
+server_power_off(bool gs_flag) {
   int ret;
-  char path[LARGEST_DEVICE_NAME + 1];
 
   if (gs_flag) {
     ret = pal_set_com_pwr_btn_n("0");
@@ -2031,8 +2025,7 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
       return -1;
     }
   } else {
-    snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, COM_PWR_ENBLE);
-    ret = write_device(path, "0");
+    ret = write_device(SCM_COM_PWR_ENBLE, "0");
     if (ret) {
       syslog(LOG_WARNING, "%s: Power off is failed",__func__);
       return -1;
@@ -2098,28 +2091,28 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       if (status == SERVER_POWER_ON)
         return 1;
       else
-        return server_power_on(slot_id);
+        return server_power_on();
       break;
 
     case SERVER_POWER_OFF:
       if (status == SERVER_POWER_OFF)
         return 1;
       else
-        return server_power_off(slot_id, gs_flag);
+        return server_power_off(gs_flag);
       break;
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
-        if (server_power_off(slot_id, gs_flag))
+        if (server_power_off(gs_flag))
           return -1;
 
         sleep(DELAY_POWER_CYCLE);
 
-        return server_power_on(slot_id);
+        return server_power_on();
 
       } else if (status == SERVER_POWER_OFF) {
 
-        return (server_power_on(slot_id));
+        return (server_power_on());
       }
       break;
 
@@ -2149,7 +2142,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         return 1;
       } else {
         gs_flag = true;
-        return server_power_off(slot_id, gs_flag);
+        return server_power_off(gs_flag);
       }
       break;
 
@@ -2193,13 +2186,15 @@ read_attr(const char *device, const char *attr, float *value) {
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
-  // Get current working directory
-  if (get_current_dir(device, dir_name)) {
-    return -1;
+  if (strstr(device, "hwmon*") != NULL) {
+    /* Get current working directory */
+    if (get_current_dir(device, dir_name)) {
+      return -1;
+    }
+    snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, attr);
+  } else {
+    snprintf(full_name, sizeof(full_name), "%s/%s", device, attr);
   }
-
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
 
   if (read_device(full_name, &tmp)) {
     return -1;
@@ -2213,19 +2208,17 @@ read_attr(const char *device, const char *attr, float *value) {
 static int
 read_hsc_attr(const char *device,
               const char* attr, float r_sense, float *value) {
-  char full_dir_name[LARGEST_DEVICE_NAME];
+  char full_name[LARGEST_DEVICE_NAME + 1];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
   // Get current working directory
-  if (get_current_dir(device, dir_name))
-  {
+  if (get_current_dir(device, dir_name)){
     return -1;
   }
-  snprintf(
-      full_dir_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+  snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, attr);
 
-  if (read_device(full_dir_name, &tmp)) {
+  if (read_device(full_name, &tmp)) {
     return -1;
   }
 
@@ -2252,17 +2245,11 @@ read_hsc_power(const char *device, float r_sense, float *value) {
 static int
 read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
   char device_name[11];
   int tmp;
 
-  /* Get current working directory */
-  if (get_current_dir(device, dir_name)) {
-    return -1;
-  }
-
   snprintf(device_name, 11, "fan%d_input", fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, device_name);
+  snprintf(full_name, sizeof(full_name), "%s/%s", device, device_name);
   if (read_device(full_name, &tmp)) {
     return -1;
   }
@@ -2275,17 +2262,11 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
 static int
 read_fan_rpm(const char *device, uint8_t fan, int *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
   char device_name[11];
   int tmp;
 
-  /* Get current working directory */
-  if (get_current_dir(device, dir_name)) {
-    return -1;
-  }
-
   snprintf(device_name, 11, "fan%d_input", fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, device_name);
+  snprintf(full_name, sizeof(full_name), "%s/%s", device, device_name);
   if (read_device(full_name, &tmp)) {
     return -1;
   }
@@ -5335,8 +5316,6 @@ sensor_thresh_array_init(uint8_t fru) {
   int i = 0, j;
   float fvalue;
 
-  pim_thresh_array_init(fru);
-
   if (init_done[fru])
     return;
 
@@ -5478,6 +5457,16 @@ scm_thresh_done:
       psu_sensor_threshold[PSU1_SENSOR_TEMP1+(i*0x0d)][UCR_THRESH] = 60;
       psu_sensor_threshold[PSU1_SENSOR_TEMP2+(i*0x0d)][UCR_THRESH] = 80;
       psu_sensor_threshold[PSU1_SENSOR_TEMP3+(i*0x0d)][UCR_THRESH] = 95;
+      break;
+    case FRU_PIM1:
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+      pim_thresh_array_init(fru);
       break;
   }
   init_done[fru] = true;
@@ -7063,7 +7052,7 @@ pal_get_hand_sw_physically(uint8_t *pos) {
   char path[LARGEST_DEVICE_NAME + 1];
   int loc;
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_UART_SEL5, "value");
+  snprintf(path, sizeof(path), GPIO_BMC_UART_SEL5, "value");
   if (read_device(path, &loc)) {
     return -1;
   }
@@ -7194,7 +7183,7 @@ pal_clr_dbg_uart_btn() {
   }
   msleep(5);
 
-  if (write_device(path, "1")) {
+  if (write_device(SCM_DBG_UART_BTN_CLR, "1")) {
     syslog(LOG_ERR, "UART Sel button status can't recover to normal");
     return -2;
   }
@@ -7220,7 +7209,7 @@ pal_switch_uart_mux(uint8_t slot) {
     val = "1";
   }
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_UART_SEL5, "value");
+  snprintf(path, sizeof(path), GPIO_BMC_UART_SEL5, "value");
   if (write_device(path, val)) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "pal_switch_uart_mux: write_device fail: %s\n", path);

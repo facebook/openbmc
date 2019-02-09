@@ -53,7 +53,7 @@ extern "C" {
 #define SCM_DBG_UART_BTN_CLR I2C_SYSFS_DEV_ENTRY(2-0035, scm_uart_switch_n_clr)
 #define SCM_DBG_PWR_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, scm_pwr_btn_n)
 #define SCM_DBG_RST_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, scm_debug_rst_btn_n)
-#define SCM_DBG_RST_BTN_CLR  I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_enable)
+#define SCM_DBG_RST_BTN_CLR  I2C_SYSFS_DEV_ENTRY(2-0035, scm_debug_rst_btn_n_clr)
 #define SCM_SYS_LED_COLOR    I2C_SYSFS_DEV_ENTRY(2-0035, sys_led_color)
 
 #define SMB_MAC_CPLD_ROV "mac_cpld_rov%d"
@@ -697,7 +697,7 @@ int pal_get_board_rev(int *rev);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 bool pal_is_fw_update_ongoing(uint8_t fru);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
-void pal_update_ts_sled();
+void pal_update_ts_sled(void);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value);
@@ -733,10 +733,10 @@ int pal_get_hand_sw_physically(uint8_t *pos);
 int pal_get_hand_sw(uint8_t *pos);
 int pal_get_dbg_pwr_btn(uint8_t *status);
 int pal_get_dbg_rst_btn(uint8_t *status);
-int pal_clr_dbg_rst_btn();
+int pal_clr_dbg_rst_btn(void);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_get_dbg_uart_btn(uint8_t *status);
-int pal_clr_dbg_uart_btn();
+int pal_clr_dbg_uart_btn(void);
 int pal_switch_uart_mux(uint8_t slot);
 #ifdef __cplusplus
 } // extern "C"

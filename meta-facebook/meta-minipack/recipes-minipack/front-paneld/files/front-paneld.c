@@ -50,7 +50,16 @@
 
 #define INTERVAL_MAX  5
 
+#define FW_UPDATE_ONGOING 1
+#define CRASHDUMP_ONGOING 2
+
+/*
+ * Record current debug card UART position,
+ * position value will be accessed in debug_card_handler,
+ * pwr_btn_handler and rst_btn_handler.
+ */
 static uint8_t m_pos = 0xff;
+static pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void
 pim_device_detect_log(uint8_t num, uint8_t bus, uint8_t addr,
@@ -141,7 +150,7 @@ pim_thresh_init_file_check(uint8_t fru) {
   char fpath[64];
 
   pal_get_fru_name(fru, fru_name);
-  snprintf(fpath, 64, INIT_THRESHOLD_BIN, fru_name);
+  snprintf(fpath, sizeof(fpath), INIT_THRESHOLD_BIN, fru_name);
 
   return access(INIT_THRESHOLD_BIN, F_OK);
 }
@@ -184,6 +193,19 @@ get_handsw_pos(uint8_t *pos) {
     return -1;
 
   *pos = m_pos;
+  return 0;
+}
+
+static int
+is_btn_blocked(uint8_t fru) {
+
+  if (pal_is_fw_update_ongoing(fru)) {
+      return FW_UPDATE_ONGOING;
+  }
+  if (pal_is_crashdump_ongoing(fru)) {
+      return CRASHDUMP_ONGOING;
+  }
+
   return 0;
 }
 
@@ -429,7 +451,9 @@ get_hand_sw_cache:
     if (ret) {
       goto debug_card_out;
     }
+    pthread_mutex_lock(&pos_mutex);
     m_pos = pos;
+    pthread_mutex_unlock(&pos_mutex);
 
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
@@ -483,7 +507,9 @@ pwr_btn_handler(void *unused) {
 
   while (1) {
     /* Check the position of hand switch */
+    pthread_mutex_lock(&pos_mutex);
     ret = get_handsw_pos(&pos);
+    pthread_mutex_unlock(&pos_mutex);
     if (ret || pos == HAND_SW_BMC) {
       sleep(1);
       continue;
@@ -514,6 +540,20 @@ pwr_btn_handler(void *unused) {
       release_flag = true;
       syslog(LOG_WARNING, "Power Button Released");
       break;
+    }
+
+    if ((ret = is_btn_blocked(FRU_SCM))) {
+      switch (ret) {
+        case FW_UPDATE_ONGOING:
+          syslog(LOG_CRIT,
+                 "Power Button blocked due to SCM FW update is ongoing");
+          break;
+        case CRASHDUMP_ONGOING:
+          syslog(LOG_CRIT,
+                 "Power Button blocked due to SCM crashdump is ongoing");
+          break;
+      }
+      goto pwr_btn_out;
     }
 
     /* Get the current power state (on or off) */
@@ -580,13 +620,30 @@ rst_btn_handler(void *unused) {
   while (1) {
     /* Check the position of hand switch
      * and if reset button is pressed */
-    if (get_handsw_pos(&pos) || pal_get_dbg_rst_btn(&btn)) {
+    pthread_mutex_lock(&pos_mutex);
+    ret = get_handsw_pos(&pos);
+    pthread_mutex_unlock(&pos_mutex);
+    if (ret || pal_get_dbg_rst_btn(&btn)) {
       goto rst_btn_out;
     }
 
     if (pos == HAND_SW_BMC && btn) {
       pal_clr_dbg_rst_btn();
     } else if (pos == HAND_SW_SERVER && btn) {
+      if ((ret = is_btn_blocked(FRU_SCM))) {
+        switch (ret) {
+          case FW_UPDATE_ONGOING:
+            syslog(LOG_CRIT,
+                   "Reset Button blocked due to SCM FW update is ongoing");
+            break;
+          case CRASHDUMP_ONGOING:
+            syslog(LOG_CRIT,
+                   "Reset Button blocked due to SCM crashdump is ongoing");
+            break;
+        }
+        pal_clr_dbg_rst_btn();
+        goto rst_btn_out;
+      }
       syslog(LOG_CRIT, "Reset Button pressed");
       pal_update_ts_sled();
       /* Reset userver */
@@ -633,35 +690,44 @@ main (int argc, char * const argv[]) {
     exit(-1);
   }
 
-  if (pthread_create(&tid_scm_monitor, NULL, scm_monitor_handler, NULL) != 0) {
-    syslog(LOG_WARNING, "pthread_create for scm monitor error\n");
+  if ((rc = pthread_create(&tid_scm_monitor, NULL,
+                           scm_monitor_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create scm monitor thread: %s",
+           strerror(rc));
     exit(1);
   }
-  
-  if (pthread_create(&tid_pim_monitor, NULL, pim_monitor_handler, NULL) != 0) {
-    syslog(LOG_WARNING, "pthread_create for pim monitor error\n");
+
+  if ((rc = pthread_create(&tid_pim_monitor, NULL,
+                          pim_monitor_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create pim monitor thread: %s",
+           strerror(rc));
     exit(1);
   }
-  
-  if (pthread_create(&tid_simLED_monitor, NULL, simLED_monitor_handler, NULL) 
-	  != 0) {
-    syslog(LOG_WARNING, "pthread_create for simLED monitor error\n");
+
+  if ((rc = pthread_create(&tid_simLED_monitor, NULL,
+                          simLED_monitor_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create simLED monitor thread: %s",
+           strerror(rc));
     exit(1);
   }
 
   if (brd_rev != BOARD_REV_EVTA) {
-    if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) != 0) {
-      syslog(LOG_WARNING, "pthread_create for debug card error\n");
+    if ((rc = pthread_create(&tid_debug_card, NULL,
+                             debug_card_handler, NULL))) {
+      syslog(LOG_WARNING, "failed to create debug card thread: %s",
+             strerror(rc));
       exit(1);
     }
 
-    if (pthread_create(&tid_pwr_btn, NULL, pwr_btn_handler, NULL) < 0) {
-      syslog(LOG_WARNING, "pthread_create for power button error\n");
+    if ((rc = pthread_create(&tid_pwr_btn, NULL, pwr_btn_handler, NULL))) {
+      syslog(LOG_WARNING, "failed to create power button thread: %s",
+             strerror(rc));
       exit(1);
     }
 
-    if (pthread_create(&tid_rst_btn, NULL, rst_btn_handler, NULL) < 0) {
-      syslog(LOG_WARNING, "pthread_create for reset button error\n");
+    if ((rc = pthread_create(&tid_rst_btn, NULL, rst_btn_handler, NULL))) {
+      syslog(LOG_WARNING, "failed to create reset button thread: %s",
+             strerror(rc));
       exit(1);
     }
     pthread_join(tid_debug_card, NULL);

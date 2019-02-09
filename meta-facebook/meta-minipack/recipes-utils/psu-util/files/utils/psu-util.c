@@ -90,7 +90,7 @@ main(int argc, const char *argv[]) {
     ret = get_blackbox_info(psu_num, argv[3]);
   }
   else if (!strcmp(argv[2], "--get_eeprom_info")) {
-    ret = get_eeprom_info(psu_num, argv[3]);
+    ret = get_eeprom_info(psu_num);
   }
   else if (!strcmp(argv[2], "--update") && argv[3] != NULL) {
     ret = do_update_psu(psu_num, argv[3], argv[4]);

@@ -121,28 +121,21 @@ sensord_operation(uint8_t num, uint8_t action) {
 /*
  * PMBus Linear-11 Data Format
  * X = Y*2^N
+ * X is the "real world" value;
+ * Y is an 11 bit, two's complement integer;
+ * N is a 5 bit, two's complement integer.
  */
 static float
 linear_convert(uint8_t value[]) {
   uint16_t data = (value[1] << 8) | value[0];
   int y = 0, n = 0;
   float x = 0;
-  uint8_t msb_y = (data >> 10) & 0x1;
-  uint8_t msb_n = (data >> 15) & 0x1;
+  uint8_t sign_y = (data >> 10) & 0x1;
+  uint8_t sign_n = (data >> 15) & 0x1;
 
-  if (msb_y) {
-    y = (~data & 0x3ff) + 1;
-  } else {
-    y = data & 0x3ff;
-  }
-
-  if (msb_n) {
-    n = (~(data >> 11) & 0xf) + 1;
-    x = (float) y / POW2(n);
-  } else {
-    n = ((data >> 11) & 0xf);
-    x = (float) y * POW2(n);
-  }
+  y = sign_y ? -1 * ((~data & 0x3ff) + 1) : data & 0x3ff;
+  n = sign_n ? -1 * ((~(data >> 11) & 0xf) + 1) : (data >> 11) & 0xf;
+  x = (float) y * pow(2, n);
 
   return x;
 }
@@ -209,16 +202,17 @@ static int
 check_psu_status(uint8_t num, uint8_t reg) {
   uint8_t byte;
 
-  byte = i2c_smbus_read_word_data(psu[num].fd, reg);
+  byte = i2c_smbus_read_byte_data(psu[num].fd, reg);
 
   if (byte > 32) {
-    return -1;
+    return byte;
   }
 
   return 0;
 }
 
-uint8_t pec_calc(uint8_t incrc, uint8_t indata) {
+uint8_t
+pec_calc(uint8_t incrc, uint8_t indata) {
   uint8_t i, crc8;
 
   crc8 = incrc ^ indata;
@@ -236,7 +230,7 @@ uint8_t pec_calc(uint8_t incrc, uint8_t indata) {
 
 static int
 delta_img_hdr_parse(const char *file_path) {
-  int i;
+  int i, ret;
   int fd_file = -1;
   int index = 0;
   uint8_t hdr_buf[DELTA_HDR_LENGTH];
@@ -248,19 +242,20 @@ delta_img_hdr_parse(const char *file_path) {
   }
   if (read(fd_file, hdr_buf, DELTA_HDR_LENGTH) < 0) {
     ERR_PRINT("delta_img_hdr_parse()");
+    close(fd_file);
     return -1;
   }
 
   delta_hdr.crc[0] = hdr_buf[index++];
   delta_hdr.crc[1] = hdr_buf[index++];
-  delta_hdr.page_start = hdr_buf[index++] << 8;
-  delta_hdr.page_start |= hdr_buf[index++];
-  delta_hdr.page_end = hdr_buf[index++] << 8;
-  delta_hdr.page_end |= hdr_buf[index++];
-  delta_hdr.byte_per_blk = hdr_buf[index++] << 8;
-  delta_hdr.byte_per_blk |= hdr_buf[index++];
-  delta_hdr.blk_per_page = hdr_buf[index++] << 8;
-  delta_hdr.blk_per_page |= hdr_buf[index++];
+  delta_hdr.page_start = hdr_buf[index++];
+  delta_hdr.page_start |= hdr_buf[index++] << 8;
+  delta_hdr.page_end = hdr_buf[index++];
+  delta_hdr.page_end |= hdr_buf[index++] << 8;
+  delta_hdr.byte_per_blk = hdr_buf[index++];
+  delta_hdr.byte_per_blk |= hdr_buf[index++] << 8;
+  delta_hdr.blk_per_page = hdr_buf[index++];
+  delta_hdr.blk_per_page |= hdr_buf[index++] << 8;
   delta_hdr.uc = hdr_buf[index++];
   delta_hdr.app_fw_major = hdr_buf[index++];
   delta_hdr.app_fw_minor = hdr_buf[index++];
@@ -274,53 +269,64 @@ delta_img_hdr_parse(const char *file_path) {
   delta_hdr.compatibility = hdr_buf[index];
 
   if (!strncmp((char *)delta_hdr.fw_id, DELTA_MODEL, strlen(DELTA_MODEL))) {
+    ret = DELTA_1500;
     printf("Vendor: Delta\n");
-    printf("Model: %s\n", delta_hdr.fw_id);
-    printf("HW Compatibility: %d\n", delta_hdr.compatibility);
-    if (delta_hdr.uc == 0x10) {
-      printf("MCU: primary\n");
-    } else if (delta_hdr.uc == 0x20) {
-      printf("MCU: secondary\n");
-    } else {
-      printf("MCU: unknown number 0x%x\n", delta_hdr.uc);
-      return -1;
-    }
-    printf("Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
-    return DELTA_1500;
+  } else if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL, strlen(LITEON_MODEL))) {
+    ret = LITEON_1500;
+    printf("Vendor: Liteon\n");
   } else {
     printf("Get Image Header Fail!\n");
+    close(fd_file);
     return -1;
   }
+
+  printf("Model: %s\n", delta_hdr.fw_id);
+  printf("HW Compatibility: %d\n", delta_hdr.compatibility);
+  if (delta_hdr.uc == 0x10) {
+    printf("MCU: primary\n");
+  } else if (delta_hdr.uc == 0x20) {
+    printf("MCU: secondary\n");
+  } else {
+    printf("MCU: unknown number 0x%x\n", delta_hdr.uc);
+    ret = -1;
+  }
+  printf("Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
+  close(fd_file);
+
+  return ret;
 }
 
 static int
 delta_unlock_upgrade(uint8_t num) {
-  uint8_t block[I2C_SMBUS_BLOCK_MAX] =
-          {delta_hdr.uc, delta_hdr.fw_id[10], delta_hdr.fw_id[9],
-                         delta_hdr.fw_id[8], delta_hdr.fw_id[7],
-                         delta_hdr.fw_id[6], delta_hdr.fw_id[5],
-                         delta_hdr.fw_id[4], delta_hdr.fw_id[3],
-                         delta_hdr.fw_id[2], delta_hdr.fw_id[1],
-                         delta_hdr.fw_id[0], delta_hdr.compatibility};
+  uint8_t i, j;
+  uint8_t block[delta_hdr.fw_id_len + 2];
 
-  printf("-- Unlock Upgrade --\n");
+  block[0] = delta_hdr.uc;
+  block[delta_hdr.fw_id_len + 1] = delta_hdr.compatibility;
+
+  for (i = 1, j = delta_hdr.fw_id_len-1; i <= delta_hdr.fw_id_len; i++, j--) {
+    block[i] = delta_hdr.fw_id[j];
+  }
+
   i2c_smbus_write_block_data(psu[num].fd, UNLOCK_UPGRADE,
-                                 13, block);
+                                 sizeof(block), block);
   return 0;
 }
 
 static int
-delta_boot_flag(uint8_t num, uint16_t mode) {
+delta_boot_flag(uint8_t num, uint16_t mode, uint8_t op) {
   uint16_t word = (mode << 8) | delta_hdr.uc;
 
-  if (mode == BOOT_MODE) {
-    printf("-- Bootloader Mode --\n");
+  if (op == WRITE) {
+    if (mode == BOOT_MODE) {
+      printf("-- Bootloader Mode --\n");
+    } else {
+      printf("-- Reset PSU --\n");
+    }
+    return i2c_smbus_write_word_data(psu[num].fd, BOOT_FLAG, word);
   } else {
-    printf("-- Reset PSU --\n");
+    return i2c_smbus_read_byte_data(psu[num].fd, BOOT_FLAG);
   }
-  i2c_smbus_write_word_data(psu[num].fd, BOOT_FLAG, word);
-
-  return 0;
 }
 
 static int
@@ -329,15 +335,10 @@ delta_fw_transmit(uint8_t num, const char *path) {
   int fw_len = 0;
   int block_total = 0;
   int byte_index = 0;
-  int fw_block = (delta_hdr.uc == 0x10)
-                 ? DELTA_PRI_NUM_OF_BLOCK * DELTA_PRI_NUM_OF_PAGE
-                 : DELTA_SEC_NUM_OF_BLOCK * DELTA_SEC_NUM_OF_PAGE;
-  uint8_t page_num_lo = (delta_hdr.uc == 0x10) ? DELTA_PRI_PAGE_START
-                                               : DELTA_SEC_PAGE_START;
-  uint8_t block_size = (delta_hdr.uc == 0x10) ? DELTA_PRI_NUM_OF_BLOCK
-                                              : DELTA_SEC_NUM_OF_BLOCK;
-  uint8_t page_num_max = (delta_hdr.uc == 0x10) ? DELTA_PRI_PAGE_END
-                                                : DELTA_SEC_PAGE_END;
+  uint16_t page_num_lo = delta_hdr.page_start;
+  uint16_t block_size = delta_hdr.blk_per_page;
+  uint16_t page_num_max = delta_hdr.page_end;
+  uint32_t fw_block = block_size * (page_num_max - page_num_lo + 1);
   uint8_t block[I2C_SMBUS_BLOCK_MAX] = {0};
   uint8_t fw_buf[16];
 
@@ -371,9 +372,9 @@ delta_fw_transmit(uint8_t num, const char *path) {
       i2c_smbus_write_block_data(psu[num].fd, DATA_TO_RAM,
                                       19, block);
       if (delta_hdr.uc == 0x10) {
-        msleep(60);
+        msleep(25);
       } else if (delta_hdr.uc == 0x20) {
-        msleep(10);
+        msleep(5);
       }
 
       block[1]++;
@@ -382,6 +383,12 @@ delta_fw_transmit(uint8_t num, const char *path) {
       byte_index = byte_index + 16;
       printf("-- (%d/%d) (%d%%/100%%) --\r",
                   block_total, fw_block, (100 * block_total) / fw_block);
+#ifdef DEBUG
+      if (delta_boot_flag(num, BOOT_MODE, READ) & 0x20) {
+        printf("-- FW transmission error --\n");
+        return -1;
+      }
+#endif
     } else {
       block[1] = page_num_lo;
       block[2] = 0;
@@ -402,40 +409,86 @@ delta_fw_transmit(uint8_t num, const char *path) {
 
 static int
 delta_crc_transmit(uint8_t num) {
-  uint8_t block[I2C_SMBUS_BLOCK_MAX] =
-                     {delta_hdr.uc, delta_hdr.crc[0], delta_hdr.crc[1]};
+  uint8_t block[] = {delta_hdr.uc, delta_hdr.crc[0], delta_hdr.crc[1]};
 
   printf("-- Transmit CRC --\n");
-  i2c_smbus_write_block_data(psu[num].fd, CRC_CHECK, 3, block);
+  i2c_smbus_write_block_data(psu[num].fd, CRC_CHECK, sizeof(block), block);
 
   return 0;
 }
 
 static int
-update_delta_psu(uint8_t num, const char *file_path) {
-  if (delta_img_hdr_parse(file_path) == DELTA_1500) {
+update_delta_psu(uint8_t num, const char *file_path,
+                 uint8_t model, const char *vendor) {
+  int ret = -1;
+
+  ret = delta_img_hdr_parse(file_path);
+  if (vendor == NULL) {
+    if (ret != model) {
+      printf("PSU and image doesn't match!\n");
+      return UPDATE_SKIP;
+    }
+  }
+  if (ret == DELTA_1500 || ret == LITEON_1500) {
+    if (delta_hdr.byte_per_blk != 16) {
+      printf("Image block size invalid!\n");
+      return UPDATE_SKIP;
+    }
+
     if (ioctl(psu[num].fd, I2C_PEC, 1) < 0) {
       ERR_PRINT("delta_img_hdr_parse()");
-      return -1;
+      return UPDATE_SKIP;
     }
+
     delta_unlock_upgrade(num);
     msleep(20);
-    delta_boot_flag(num, BOOT_MODE);
+    delta_boot_flag(num, BOOT_MODE, WRITE);
     msleep(2500);
-    delta_fw_transmit(num, file_path);
+#ifdef DEBUG
+    ret = delta_boot_flag(num, BOOT_MODE, READ) & 0xf;
+    if ((delta_hdr.uc == 0x10 && ret != 0x0c) ||
+        (delta_hdr.uc == 0x20 && ret != 0x0d)) {
+      printf("-- Set Bootloader Mode Error --\n");
+      return -1;
+    }
+#endif
+    if (delta_fw_transmit(num, file_path)) {
+      return -1;
+    }
+
     delta_crc_transmit(num);
     msleep(1500);
-    delta_boot_flag(num, NORMAL_MODE);
+    delta_boot_flag(num, NORMAL_MODE, WRITE);
 
     if (delta_hdr.uc == 0x10) {
       msleep(4000);
     } else if (delta_hdr.uc == 0x20) {
       msleep(2000);
     }
+#ifdef DEBUG
+    ret = delta_boot_flag(num, BOOT_MODE, READ);
+    if ((ret & 0x7) == 0x4) {
+      if (ret & 0x80) {
+        printf("-- Primary FW Identifier Error --\n");
+        return -1;
+      } else if (ret & 0x40) {
+        printf("-- Primary CRC16 Application Checksum Wrong --\n");
+        return -1;
+      }
+    } else if ((ret & 0x7) == 0x5) {
+      if (ret & 0x80) {
+        printf("-- Secondary FW Identifier Error --\n");
+        return -1;
+      } else if (ret & 0x40) {
+        printf("-- Secondary CRC16 Application Checksum Wrong --\n");
+        return -1;
+      }
+    }
+#endif
     printf("-- Upgrade Done --\n");
     return 0;
   } else {
-    return -1;
+    return UPDATE_SKIP;
   };
 }
 
@@ -464,9 +517,9 @@ belpower_img_hdr_parse(const char *file_path) {
     }
     hdr_str[j] = '\0';
   }
-  if (!strncmp(((char *)hdr_str)+8, BELPOWER_MODEL, 16)) {
+  if (!strncmp(((char *)hdr_str)+8, BEL_MODEL, 16)) {
     printf("Vendor: Belpower\n");
-    printf("Model: %s\n", BELPOWER_MODEL);
+    printf("Model: %s\n", BEL_MODEL);
     return BELPOWER_1500_NAC;
   } else {
     printf("Get Image Header Fail!\n");
@@ -633,7 +686,7 @@ update_belpower_psu(uint8_t num, const char *file_path) {
   if (belpower_img_hdr_parse(file_path) == BELPOWER_1500_NAC) {
     ret = belpower_fw_transmit(num, file_path);
   } else {
-    return -1;
+    return UPDATE_SKIP;
   };
 
   return ret;
@@ -738,7 +791,7 @@ murata_bootload_mode(uint8_t num) {
   ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
                                     block, sizeof(block), NULL, 0);
 
-   return ret;
+  return ret;
 }
 
 static int
@@ -784,17 +837,17 @@ murata_fw_transmit(uint8_t num, const char *file_path) {
   uint8_t byte_buf[128];
   uint8_t block[I2C_SMBUS_BLOCK_MAX] = {0xfa, 0x44};
 
-  /* When entering bootloader mode, Murata PSU PMBUS address change to 0x60 */
-  fd = i2c_open(psu[num].bus, murata_hdr.boot_addr);
-  if (fd < 0) {
-    ERR_PRINT("Fail to open i2c");
+  fp = fopen(file_path, "rb");
+  if (fp == NULL) {
+    ERR_PRINT("murata_fw_transmit()");
     return -1;
   }
   file_line_total = check_file_line_cnt(file_path);
 
-  fp = fopen(file_path, "rb");
-  if (fp == NULL) {
-    ERR_PRINT("murata_fw_transmit()");
+  /* When entering bootloader mode, Murata PSU PMBUS address change to 0x60 */
+  fd = i2c_open(psu[num].bus, murata_hdr.boot_addr);
+  if (fd < 0) {
+    ERR_PRINT("Fail to open i2c");
     return -1;
   }
 
@@ -859,7 +912,7 @@ update_murata_psu(uint8_t num, const char *file_path) {
     sleep(1);
     ret = murata_fw_transmit(num, file_path);
   } else {
-    return -1;
+    return UPDATE_SKIP;
   };
 
   return ret;
@@ -877,7 +930,7 @@ get_mfr_model(uint8_t num, uint8_t *block) {
   uint8_t psu_num = num + 1;
 
   if (check_psu_status(num, pmbus[MFR_MODEL].reg)) {
-    printf("PSU%d Status Fail\n", psu_num);
+    printf("PSU%d get status fail!\n", psu_num);
     return -1;
   }
 
@@ -903,7 +956,8 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
   g_fd = psu[num].fd;
   if (psu[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
-    return -1;
+    ret = UPDATE_SKIP;
+    goto update_exit;
   }
 
   sensord_operation(num, STOP);
@@ -911,37 +965,43 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
     ret = get_mfr_model(num, block);
     if (ret < 0) {
       printf("Cannot Get PSU Model\n");
-      return -1;
+      ret = UPDATE_SKIP;
+      goto update_exit;
     }
 
     if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL))) {
-      ret = update_delta_psu(num, file_path);
-    } else if (!strncmp((char *)block, BELPOWER_MODEL,
-                                       strlen(BELPOWER_MODEL))) {
+      ret = update_delta_psu(num, file_path, DELTA_1500, vendor);
+    } else if (!strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
+      ret = update_delta_psu(num, file_path, LITEON_1500, vendor);
+    } else if (!strncmp((char *)block, BEL_MODEL, strlen(BEL_MODEL))) {
       ret = update_belpower_psu(num, file_path);
     } else if (!strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL))) {
       ret = update_murata_psu(num, file_path);
     } else {
       printf("Unsupported device: %s\n", block);
-      return -1;
+      ret = UPDATE_SKIP;
     }
   } else {
     if (!strncasecmp(vendor, "delta", strlen("delta"))) {
-      ret = update_delta_psu(num, file_path);
+      ret = update_delta_psu(num, file_path, DELTA_1500, vendor);
+    } else if (!strncasecmp(vendor, "liteon", strlen("liteon"))){
+      ret = update_delta_psu(num, file_path, LITEON_1500, vendor);
     } else if (!strncasecmp(vendor, "belpower", strlen("belpower"))) {
       ret = update_belpower_psu(num, file_path);
     } else if (!strncasecmp(vendor, "murata", strlen("murata"))) {
       ret = update_murata_psu(num ,file_path);
     } else {
       printf("Unsupported vendor: %s\n", vendor);
-      return -1;
+      ret = UPDATE_SKIP;
     }
   }
 
-  if (ret == 0) {
+update_exit:
+  if (ret == 0 || ret == UPDATE_SKIP) {
     sensord_operation(num, START);
   }
   close(psu[num].fd);
+  run_command("rm /var/run/psu-util.pid");
 
   return ret;
 }
@@ -1008,58 +1068,28 @@ print_fruid_info(fruid_info_t *fruid, uint8_t num) {
 
 /* Populate and print fruid_info by parsing the fru's binary dump */
 int
-get_eeprom_info(uint8_t num, const char *tpye) {
+get_eeprom_info(uint8_t num) {
   int ret = -1;
   char eeprom[16];
   fruid_info_t fruid;
-  uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
 
-  psu[num].fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
-  g_fd = psu[num].fd;
-  if (psu[num].fd < 0) {
-    ERR_PRINT("Fail to open i2c");
-    return -1;
-  }
-
-  if (tpye == NULL) {
-    if (get_mfr_model(num, block)) {
-      close(psu[num].fd);
-      return -1;
-    }
-    close(psu[num].fd);
-
-    if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL))) {
-      snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
-    } else if (!strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL)) ||
-             !strncmp((char *)block, BELPOWER_MODEL, strlen(BELPOWER_MODEL))) {
-      snprintf(eeprom, sizeof(eeprom), "%s", "24c02");
-    } else {
-      printf("Unsupported device or device is not ready\n");
-      return -1;
-    }
-  } else {
-    if (!strncasecmp(tpye, "24c64", strlen("24c64"))) {
-      snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
-    } else if (!strncasecmp(tpye, "24c02", strlen("24c02"))) {
-      snprintf(eeprom, sizeof(eeprom), "%s", "24c02");
-    } else {
-      printf("Unsupported eeprom type: %s\n", tpye);
-      return -1;
-    }
-  }
+  snprintf(eeprom, sizeof(eeprom), "%s", "24c02");
   pal_add_i2c_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
-
   ret = fruid_parse(psu[num].eeprom_file, &fruid);
-
   pal_del_i2c_device(psu[num].bus, psu[num].eeprom_addr);
 
   if (ret) {
-    printf("Failed print EEPROM info!\n");
-    return -1;
-  } else {
-    print_fruid_info(&fruid, num);
-    free_fruid_info(&fruid);
+    snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
+    pal_add_i2c_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
+    ret = fruid_parse(psu[num].eeprom_file, &fruid);
+    pal_del_i2c_device(psu[num].bus, psu[num].eeprom_addr);
+    if (ret) {
+      printf("Failed print EEPROM info!\n");
+      return -1;
+    }
   }
+  print_fruid_info(&fruid, num);
+  free_fruid_info(&fruid);
 
   return 0;
 }
@@ -1086,7 +1116,8 @@ get_psu_info(uint8_t num) {
     return -1;
   }
 
-  if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL))) {
+  if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL)) ||
+      !strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
     size = OPTN_TIME_PRESENT;
   } else {
     size = STATUS_FAN;
@@ -1188,8 +1219,10 @@ get_blackbox_info(uint8_t num, const char *option) {
     return -1;
   }
 
-  if (strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL))) {
+  if (strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL)) &&
+      strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
     printf("PSU%d not support blackbox!\n", psu_num);
+    close(psu[num].fd);
     return -1;
   }
 
@@ -1199,6 +1232,7 @@ get_blackbox_info(uint8_t num, const char *option) {
                                     read_cmd, 3, byte_buf, 42);
       if (ret) {
         printf("PSU%d blackbox page %d read fail!\n", psu_num, read_cmd[2]);
+        close(psu[num].fd);
         return -1;
       }
       memcpy(&blackbox, byte_buf, 42);
@@ -1262,10 +1296,12 @@ get_blackbox_info(uint8_t num, const char *option) {
                                          clear_cmd, 3, NULL, 0);
     if (ret) {
       printf("PSU%d blackbox clear fail!\n", psu_num);
+      close(psu[num].fd);
       return -1;
     }
   } else {
     printf("Invalid option!\n");
+    close(psu[num].fd);
     return -1;
   }
   close(psu[num].fd);

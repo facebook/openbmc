@@ -41,12 +41,13 @@ extern "C" {
         fprintf(stderr, fmt ": %s\n", ##args, strerror(errno));
 
 #define msleep(n) usleep(n*1000)
-#define POW2(x) (1 << (x))
 
 #define PSU1_EEPROM  I2C_SYSFS_DEV_ENTRY(49-0051, eeprom)
 #define PSU2_EEPROM  I2C_SYSFS_DEV_ENTRY(48-0050, eeprom)
 #define PSU3_EEPROM  I2C_SYSFS_DEV_ENTRY(57-0051, eeprom)
 #define PSU4_EEPROM  I2C_SYSFS_DEV_ENTRY(56-0050, eeprom)
+
+#define UPDATE_SKIP 10
 
 /* define for DELTA PSU */
 #define DELTA_MODEL         "ECD55020006"
@@ -60,17 +61,11 @@ extern "C" {
 #define NORMAL_MODE         0x00
 #define BOOT_MODE           0x01
 
-#define DELTA_PRI_NUM_OF_BLOCK    32
-#define DELTA_PRI_NUM_OF_PAGE     44
-#define DELTA_PRI_PAGE_START      16
-#define DELTA_PRI_PAGE_END        59
-#define DELTA_SEC_NUM_OF_BLOCK    16
-#define DELTA_SEC_NUM_OF_PAGE     232
-#define DELTA_SEC_PAGE_START      48
-#define DELTA_SEC_PAGE_END        279
+/* define for LITEON PSU */
+#define LITEON_MODEL        "PS-2152-5L"
 
 /* define for BELPOWER PSU */
-#define BELPOWER_MODEL      "PFE1500-12-054NACS457"
+#define BEL_MODEL           "PFE1500-12-054NACS457"
 
 /* define for MURATA PSU */
 #define MURATA_MODEL        "D1U54P-W-1500-12-HC4TC-AF"
@@ -150,7 +145,13 @@ enum {
 };
 
 enum {
+  READ,
+  WRITE
+};
+
+enum {
   DELTA_1500,
+  LITEON_1500,
   BELPOWER_1500_NAC,
   MURATA_1500,
   UNKNOWN
@@ -181,7 +182,7 @@ enum {
 int is_psu_prsnt(uint8_t num, uint8_t *status);
 int get_mfr_model(uint8_t num, uint8_t *block);
 int do_update_psu(uint8_t num, const char *file, const char *vendor);
-int get_eeprom_info(uint8_t mum, const char *tpye);
+int get_eeprom_info(uint8_t mum);
 int get_psu_info(uint8_t num);
 int get_blackbox_info(uint8_t num, const char *option);
 

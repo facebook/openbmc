@@ -1658,8 +1658,6 @@ static const i2c_dev_attr_st smbcpld_attr_table[] = {
   },
 };
 
-static i2c_dev_data_st smbcpld_data;
-
 /*
  * SMBCPLD i2c addresses.
  */
@@ -1689,13 +1687,23 @@ static int smbcpld_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
   int n_attrs = sizeof(smbcpld_attr_table) / sizeof(smbcpld_attr_table[0]);
-  return i2c_dev_sysfs_data_init(client, &smbcpld_data,
+  struct device *dev = &client->dev;
+  i2c_dev_data_st *data;
+
+  data = devm_kzalloc(dev, sizeof(i2c_dev_data_st), GFP_KERNEL);
+  if (!data) {
+    return -ENOMEM;
+  }
+
+  return i2c_dev_sysfs_data_init(client, data,
                                  smbcpld_attr_table, n_attrs);
 }
 
 static int smbcpld_remove(struct i2c_client *client)
 {
-  i2c_dev_sysfs_data_clean(client, &smbcpld_data);
+  i2c_dev_data_st *data = i2c_get_clientdata(client);
+  i2c_dev_sysfs_data_clean(client, data);
+
   return 0;
 }
 

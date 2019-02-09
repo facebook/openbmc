@@ -559,7 +559,6 @@ static const i2c_dev_attr_st psu_attr_table[] = {
   },
 };
 
-static i2c_dev_data_st psu_data;
 
 /*
  * psu i2c addresses.
@@ -590,14 +589,23 @@ static int psu_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
   int n_attrs = sizeof(psu_attr_table) / sizeof(psu_attr_table[0]);
+  struct device *dev = &client->dev;
+  i2c_dev_data_st *data;
 
-  return i2c_dev_sysfs_data_init(client, &psu_data,
+  data = devm_kzalloc(dev, sizeof(i2c_dev_data_st), GFP_KERNEL);
+  if (!data) {
+    return -ENOMEM;
+  }
+
+  return i2c_dev_sysfs_data_init(client, data,
                                  psu_attr_table, n_attrs);
 }
 
 static int psu_remove(struct i2c_client *client)
 {
-  i2c_dev_sysfs_data_clean(client, &psu_data);
+  i2c_dev_data_st *data = i2c_get_clientdata(client);
+  i2c_dev_sysfs_data_clean(client, data);
+
   return 0;
 }
 

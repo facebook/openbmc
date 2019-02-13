@@ -7278,8 +7278,8 @@ pal_get_status(void) {
   return data;
 }
 
-int
-pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rcv_buf)
+NCSI_NL_RSP_T *
+pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg)
 {
   int sock_fd, ret;
   struct sockaddr_nl src_addr, dest_addr;
@@ -7289,11 +7289,14 @@ pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rcv_buf)
   int req_msg_size = offsetof(NCSI_NL_MSG_T, msg_payload) + nl_msg->payload_length;
   int msg_size = max(sizeof(NCSI_NL_RSP_T), req_msg_size);
 
+  /* msg response from kernel */
+  NCSI_NL_RSP_T *rcv_buf, *ret_buf = NULL;
+
   /* open NETLINK socket to send message to kernel */
   sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
   if(sock_fd < 0)  {
     syslog(LOG_ERR, "%s Error: failed to allocate socket", __func__);
-    return -1;
+    return NULL;
   }
 
   memset(&src_addr, 0, sizeof(src_addr));
@@ -7331,18 +7334,28 @@ pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rcv_buf)
   ret = sendmsg(sock_fd,&msg,0);
   if (ret == -1) {
     syslog(LOG_ERR, "%s Error: errno=%d",__func__ ,errno);
+    goto free_and_exit;
   }
 
   /* Read message from kernel */
   iov.iov_len = NLMSG_SPACE(msg_size);
   recvmsg(sock_fd, &msg, 0);
-  memcpy(rcv_buf, (NCSI_NL_RSP_T *)NLMSG_DATA(nlh), sizeof(NCSI_NL_RSP_T));
+  rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
+  unsigned int response_size = sizeof(NCSI_NL_RSP_HDR_T) + rcv_buf->hdr.payload_length;
 
+  ret_buf = (NCSI_NL_RSP_T *)malloc(response_size);
+  if (!ret_buf) {
+    syslog(LOG_ERR, "%s Error, failed to allocate response buffer (%d)\n",__func__ ,response_size);
+    goto free_and_exit;
+  }
+  memcpy(ret_buf, rcv_buf, response_size);
+
+free_and_exit:
   free(nlh);
 close_and_exit:
   close(sock_fd);
 
-  return 0;
+  return ret_buf;
 }
 
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34
@@ -7355,7 +7368,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
   uint8_t rbuf[256] = {0x00};
   uint8_t status;
   NCSI_NL_MSG_T *msg = NULL;
-  NCSI_NL_RSP_T *rcv_buf = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
   uint8_t channel = 0;
   uint8_t netdev = 0;
   uint8_t netenable = 0;
@@ -7465,14 +7478,12 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       cmd = req_data[3];
 
       msg = calloc(1, sizeof(NCSI_NL_MSG_T));
-      rcv_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
-
-      if (!msg || !rcv_buf) {
-        syslog(LOG_ERR, "%s Error: failed buffer allocation", __func__);
+      if (!msg) {
+        syslog(LOG_ERR, "%s Error: failed msg buffer allocation", __func__);
         break;
       }
+
       memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-      memset(msg, 0, sizeof(NCSI_NL_RSP_T));
 
       sprintf(msg->dev_name, "eth%d", netdev);
       msg->channel_id = channel;
@@ -7483,14 +7494,19 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
         msg->msg_payload[i] = req_data[4+i];
       }
 
-      pal_send_nl_msg(msg, rcv_buf);
-
-      memcpy(&res_data[0], &rcv_buf->msg_payload[0], rcv_buf->hdr.payload_length);
-      *res_len = rcv_buf->hdr.payload_length;
+      rsp = pal_send_nl_msg(msg);
+      if (rsp) {
+        memcpy(&res_data[0], &rsp->msg_payload[0], rsp->hdr.payload_length);
+        *res_len = rsp->hdr.payload_length;
+        completion_code = CC_SUCCESS;
+      } else {
+        completion_code = CC_UNSPECIFIED_ERROR; 
+      }
 
       free(msg);
-      free(rcv_buf);
-      completion_code = CC_SUCCESS;
+      if (rsp)
+        free(rsp);
+
       break;
     case BYPASS_NETWORK:
       tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), netdev, netenable

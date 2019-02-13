@@ -46,16 +46,16 @@ usleep 50000
 dump_cpld_version ${SCMCPLD_SYSFS_DIR} "SCMCPLD"
 usleep 50000
 
-dump_cpld_version ${TOP_FCMCPLD_SYSFS_DIR} "Top_FCMCPLD"
+dump_cpld_version ${TOP_FCMCPLD_SYSFS_DIR} "Top FCMCPLD"
 usleep 50000
 
-dump_cpld_version ${BOTTOM_FCMCPLD_SYSFS_DIR} "Bottom_FCMCPLD"
+dump_cpld_version ${BOTTOM_FCMCPLD_SYSFS_DIR} "Bottom FCMCPLD"
 usleep 50000
 
 board_rev=$(wedge_board_rev)
 if [ $board_rev -ne 4 ]; then
-    dump_cpld_version ${LEFT_PDBCPLD_SYSFS_DIR} "Left_PDBCPLD"
+    dump_cpld_version ${LEFT_PDBCPLD_SYSFS_DIR} "Left PDBCPLD"
     usleep 50000
 
-    dump_cpld_version ${RIGHT_PDBCPLD_SYSFS_DIR} "Right_PDBCPLD"
+    dump_cpld_version ${RIGHT_PDBCPLD_SYSFS_DIR} "Right PDBCPLD"
 fi

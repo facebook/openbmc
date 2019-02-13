@@ -130,6 +130,16 @@ close_and_exit:
   return ret_buf;
 }
 
+void print_pldm_response(NCSI_NL_RSP_T *nl_resp)
+{
+  int i;
+  printf("PLDM Payload\n");
+  for (i = 8; i < nl_resp->hdr.payload_length; ++i)
+    printf("0x%x ", nl_resp->msg_payload[i]);
+  printf("\n");
+}
+
+
 void print_pldm_cmd_status(NCSI_NL_RSP_T *nl_resp)
 {
   // Debug code to print complete NC-SI payload
@@ -447,10 +457,18 @@ main(int argc, char **argv) {
 
   rsp = send_nl_msg(msg);
   if (rsp) {
-    if (msg->cmd == NCSI_PLDM_REQUEST)
-      print_pldm_cmd_status(rsp);
-    else
+    if (msg->cmd == NCSI_PLDM_REQUEST) {
+
+      if (get_cmd_status(rsp) != RESP_COMMAND_COMPLETED) {
+        // command failed, likely due to device not supporting PLDM over NCSI
+        print_ncsi_completion_codes(rsp);
+      } else {
+        print_pldm_cmd_status(rsp);
+        print_pldm_response(rsp);
+      }
+    } else {
       print_ncsi_resp(rsp);
+    }
   } else {
     goto free_exit;
   }

@@ -296,6 +296,7 @@ int getMacAddr(int *values);
 int checkValidMacAddr(int *value);
 int check_valid_mac_addr(void);
 const char * ncsi_cmd_type_to_name(int cmd);
+void print_ncsi_completion_codes(NCSI_NL_RSP_T *rcv_buf);
 int get_cmd_status(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf);
 int ncsi_response_handler(NCSI_NL_RSP_T *rcv_buf);

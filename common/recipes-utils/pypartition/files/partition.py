@@ -517,11 +517,10 @@ class DeviceTreePartition(Partition):
             else:
                 logger.info('{} checksum matches.'.format(name))
                 if external:
-                    if '@' in name:
-                        simple_name = name.split('@')[0]
-                    else:
-                        simple_name = name
-                    self.valid_external_partitions.append(str(simple_name))
+                    simple_name = name.decode()
+                    if '@' in simple_name:
+                        simple_name = simple_name.split('@')[0]
+                    self.valid_external_partitions.append(simple_name)
 
         used_size = images.open_file.tell() - self.partition_offset
         for sz in sizes:

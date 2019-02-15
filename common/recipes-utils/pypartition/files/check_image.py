@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Intended to compatible with both Python 2.7 and Python 3.x.
 
 # Copyright 2017-present Facebook. All Rights Reserved.
@@ -23,9 +23,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import division
 
-import SimpleHTTPServer
-import SocketServer
-import json
 import os
 import socket
 import sys
@@ -33,8 +30,14 @@ import system
 import textwrap
 import virtualcat
 
+try:
+    import http.server as http_server
+    import socketserver
+except ImportError:
+    import SimpleHTTPServer as http_server
+    import SocketServer as socketserver
 
-class V6TCPServer(SocketServer.TCPServer):
+class V6TCPServer(socketserver.TCPServer):
     address_family = socket.AF_INET6
 
 
@@ -79,7 +82,7 @@ def check_image(logger):
         directory = os.path.dirname(args.image)
         logger.info('Changing directory to {}.'.format(directory))
         os.chdir(directory)
-        Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+        Handler = http_server.SimpleHTTPRequestHandler
         logger.info("Serving HTTP on port {}".format(args.port))
         httpd = V6TCPServer(('::', args.port), Handler)
         httpd.serve_forever()

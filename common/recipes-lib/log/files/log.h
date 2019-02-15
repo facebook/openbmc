@@ -29,6 +29,13 @@ extern "C" {
 #include <syslog.h>
 
 /*
+ * Logging options to control message format.
+ */
+#define OBMC_LOG_FMT_IDENT	0x10
+#define OBMC_LOG_FMT_TIMESTAMP	0x20
+#define OBMC_LOG_FMT_MASK	(OBMC_LOG_FMT_IDENT | OBMC_LOG_FMT_TIMESTAMP)
+
+/*
  * This library uses log priorities defined in <syslog.h>.
  */
 #define IS_VALID_LOG_PRIO(p) (((p) >= LOG_EMERG) && ((p) <= LOG_DEBUG))
@@ -47,9 +54,10 @@ extern "C" {
 #endif /* OBMC_DEBUG_ENABLED */
 
 /*
- * Initializes the logging facility. Logging messages will be prefixed
- * with <ident> (normally program name), and <min_prio> defines the
- * minimum priority of messages to be logged.
+ * Initializes the logging facility. <ident> (normally program name) is
+ * used to tell who prints the logs, and <min_prio> defines the minimum
+ * priority of messages to be logged. <options> control whether messages
+ * will be prefixed with timestamp and <ident>.
  *
  * Note:
  *   - although it is allowed to call obmc_log_by_prio() even though
@@ -63,7 +71,7 @@ extern "C" {
  * Returns:
  *     0 for success, and -1 on failures.
  */
-extern int obmc_log_init(const char *ident, int min_prio);
+extern int obmc_log_init(const char *ident, int min_prio, int options);
 
 /*
  * Release all the resources of the logging utility.

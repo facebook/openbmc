@@ -75,7 +75,7 @@ static struct obmclog_desc my_ldesc = {
         .log_devices = LOG_DEV_STD_STREAM,
 };
 
-int obmc_log_init(const char *ident, int min_prio)
+int obmc_log_init(const char *ident, int min_prio, int options)
 {
 	if (ident == NULL || !IS_VALID_LOG_PRIO(min_prio)) {
 		errno = EINVAL;
@@ -89,7 +89,8 @@ int obmc_log_init(const char *ident, int min_prio)
 	strncpy(my_ldesc.ident, ident, sizeof(my_ldesc.ident));
 	my_ldesc.min_prio = min_prio;
 	my_ldesc.log_devices = LOG_DEV_STD_STREAM;
-	my_ldesc.priv_flags = LOG_FLAG_CONFIGURED;
+	my_ldesc.priv_flags = (LOG_FLAG_CONFIGURED |
+			       (options & OBMC_LOG_FMT_MASK));
 	return 0;
 }
 
@@ -113,22 +114,22 @@ static void format_log_message(char *buf,
 			       const char *fmt,
 			       va_list vargs)
 {
-	time_t t_now;
-	struct tm *tm_now;
 	int len, offset = 0;
 
 	/* Add time stamp. */
-	t_now = time(NULL);
-	tm_now = localtime(&t_now);
-	if (tm_now != NULL) {
-		len = strftime(buf, size, "%D %T ", tm_now);
-		assert(len != 0); /* 'len == 0' means buffer overflow */
-		offset += len;
-		size -= len;
+	if (my_ldesc.priv_flags & OBMC_LOG_FMT_TIMESTAMP) {
+		time_t t_now = time(NULL);
+		struct tm *tm_now = localtime(&t_now);
+		if (tm_now != NULL) {
+			len = strftime(buf, size, "%D %T ", tm_now);
+			assert(len != 0); /* no buffer overflow */
+			offset += len;
+			size -= len;
+		}
 	}
 
 	/* Add message ident. */
-	if (size > 0) {
+	if ((my_ldesc.priv_flags & OBMC_LOG_FMT_IDENT) && (size > 0)) {
 		len = snprintf(&buf[offset], size,
 			       "%s: ", my_ldesc.ident);
 		offset += len;
@@ -321,7 +322,8 @@ int main(int argc, char **argv)
 	DUMP_TEST_MESSAGES();
 #undef MSG_PREFIX
 
-	if (obmc_log_init("logtest", LOG_INFO) != 0) {
+	if (obmc_log_init("logtest", LOG_INFO,
+			  OBMC_LOG_FMT_IDENT | OBMC_LOG_FMT_TIMESTAMP) != 0) {
 		perror("obmc_log_init failed");
 		return -1;
 	}

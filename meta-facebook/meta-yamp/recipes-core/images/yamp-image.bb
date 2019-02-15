@@ -14,7 +14,6 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
   ast-mdio \
-  bitbang \
   flashrom \
   lldp-util \
   mterm \

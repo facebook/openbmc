@@ -58,11 +58,6 @@
       "OpenBMC Version",
       "Reset Reason",
       "Uptime"
-    ],
-    "/api/sys/modbus_registers":[
-      "crc_fails",
-      "timeouts",
-      "ranges"
     ]
   }
 }

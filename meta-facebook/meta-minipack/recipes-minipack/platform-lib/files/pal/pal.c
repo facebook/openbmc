@@ -519,6 +519,9 @@ char * key_list[] = {
 "psu2_sensor_health",
 "psu3_sensor_health",
 "psu4_sensor_health",
+"server_boot_order",
+"server_restart_cause",
+"server_cpu_ppin",
 /* Add more Keys here */
 LAST_KEY /* This is the last key of the list */
 };
@@ -543,6 +546,9 @@ char * def_val_list[] = {
   "1", /* psu2_sensor_health */
   "1", /* psu3_sensor_health */
   "1", /* psu4_sensor_health */
+  "0000000", /* scm_boot_order */
+  "3", /* scm_restart_cause */
+  "0", /* scm_cpu_ppin */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -7218,4 +7224,117 @@ pal_switch_uart_mux(uint8_t slot) {
   }
 
   return 0;
+}
+
+int
+pal_get_boot_order(uint8_t slot, uint8_t *req_data,
+                   uint8_t *boot, uint8_t *res_len) {
+  int ret, msb, lsb, i, j = 0;
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4];
+
+  ret = pal_get_key_value("server_boot_order", str);
+  if (ret) {
+    *res_len = 0;
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    snprintf(tstr, sizeof(tstr), "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    snprintf(tstr, sizeof(tstr), "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    boot[j++] = (msb << 4) | lsb;
+  }
+  *res_len = SIZE_BOOT_ORDER;
+
+  return 0;
+}
+
+int
+pal_set_boot_order(uint8_t slot, uint8_t *boot,
+                   uint8_t *res_data, uint8_t *res_len) {
+  int i, j, network_dev = 0;
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10];
+  enum {
+    BOOT_DEVICE_IPV4 = 0x1,
+    BOOT_DEVICE_IPV6 = 0x9,
+  };
+
+  *res_len = 0;
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    if (i > 0) {  // byte[0] is boot mode, byte[1:5] are boot order
+      for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
+        if (boot[i] == boot[j])
+          return CC_INVALID_PARAM;
+      }
+
+      // If bit[2:0] is 001b (Network), bit[3] is IPv4/IPv6 order
+      // bit[3]=0b: IPv4 first
+      // bit[3]=1b: IPv6 first
+      if ((boot[i] == BOOT_DEVICE_IPV4) || (boot[i] == BOOT_DEVICE_IPV6))
+        network_dev++;
+    }
+
+    snprintf(tstr, 3, "%02x", boot[i]);
+    strncat(str, tstr, 3);
+  }
+
+  // not allow having more than 1 network boot device in the boot order
+  if (network_dev > 1)
+    return CC_INVALID_PARAM;
+
+  return pal_set_key_value("server_boot_order", str);
+}
+
+int
+pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause) {
+  char value[MAX_VALUE_LEN] = {0};
+  unsigned int cause;
+
+  if (kv_get("server_restart_cause", value, NULL, KV_FPERSIST)) {
+    return -1;
+  }
+  if(sscanf(value, "%u", &cause) != 1) {
+    return -1;
+  }
+  *restart_cause = cause;
+
+  return 0;
+}
+
+int
+pal_set_restart_cause(uint8_t slot, uint8_t restart_cause) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(value, "%d", restart_cause);
+  if (kv_set("server_restart_cause", value, 0, KV_FPERSIST)) {
+    return -1;
+  }
+  return 0;
+}
+
+int
+pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len,
+                  uint8_t *res_data, uint8_t *res_len) {
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10];
+  int i;
+  int completion_code = CC_UNSPECIFIED_ERROR;
+  *res_len = 0;
+
+  for (i = 0; i < SIZE_CPU_PPIN; i++) {
+    snprintf(tstr, sizeof(tstr), "%02x", req_data[i]);
+    strcat(str, tstr);
+  }
+
+  if (pal_set_key_value("server_cpu_ppin", str) != 0)
+    return completion_code;
+
+  completion_code = CC_SUCCESS;
+
+  return completion_code;
 }

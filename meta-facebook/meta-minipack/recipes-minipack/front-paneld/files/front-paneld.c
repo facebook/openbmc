@@ -587,13 +587,11 @@ pwr_btn_handler(void *unused) {
     }
 
     if (pos == HAND_SW_SERVER) {
-      if (cmd == SERVER_POWER_ON) {
-        pal_set_restart_cause(pos, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
-      }
       ret = pal_set_server_power(FRU_SCM, cmd);
       if (!ret) {
         if (cmd == SERVER_POWER_ON) {
           syslog(LOG_CRIT, "Successfully power on micro-server");
+          pal_set_restart_cause(pos, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
         } else if (cmd == SERVER_POWER_OFF) {
           syslog(LOG_CRIT, "Successfully power off micro-server");
         } else if (cmd == SERVER_GRACEFUL_SHUTDOWN) {
@@ -650,6 +648,7 @@ rst_btn_handler(void *unused) {
       ret = pal_set_server_power(FRU_SCM, SERVER_POWER_RESET);
       if (!ret) {
         syslog(LOG_CRIT, "Successfully power reset micro-server");
+        pal_set_restart_cause(pos, RESTART_CAUSE_RESET_PUSH_BUTTON);
       }
       /* Clear Debug Card reset button status */
       pal_clr_dbg_rst_btn();

@@ -44,6 +44,12 @@ int plat_get_syscfg_text(uint8_t fru, char *syscfg)
   return -1;
 }
 
+int
+plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
+{
+  return -1;
+}
+
 int plat_get_extra_sysinfo(uint8_t fru, char *info)
 {
   return -1;

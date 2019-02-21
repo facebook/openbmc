@@ -820,6 +820,22 @@ udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, 
     frame_info.append(&frame_info, "MCU_ver:", 0);
     frame_info.append(&frame_info, ESC_MCU_RUN_VER, 1);
 
+    // Extra FW Version
+    pres_dev = line_buff;
+    if (plat_get_etra_fw_version(pos, pres_dev) == 0) {
+      pres_dev = strtok(pres_dev, delim);
+      if (pres_dev) {
+        do {
+          frame_info.append(&frame_info, pres_dev, 0);
+          if ((pres_dev = strtok(NULL, delim)) != NULL) {
+            frame_info.append(&frame_info, pres_dev, 1);
+          } else {
+            break;
+          }
+        } while ((pres_dev = strtok(NULL, delim)) != NULL);
+      }
+    }
+
     // Sys config present device
     pres_dev = line_buff;
     if (plat_get_syscfg_text(pos, pres_dev) == 0) {

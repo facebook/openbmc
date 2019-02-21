@@ -58,6 +58,8 @@ int plat_get_board_id(char *id);
 /* Return the system configuration for the FRU.  */
 int plat_get_syscfg_text(uint8_t fru, char *syscfg);
 
+int plat_get_etra_fw_version(uint8_t slot_id, char *fw_text);
+
 /* Returns the extra information for the given FRU */
 int plat_get_extra_sysinfo(uint8_t fru, char *info);
 

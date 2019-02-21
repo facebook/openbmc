@@ -569,7 +569,7 @@ int plat_get_me_status(uint8_t fru, char *status)
   char buf[256];
   unsigned char rlen;
   int ret;
- 
+
   buf[0] = NETFN_APP_REQ << 2;
   buf[1] = CMD_APP_GET_DEVICE_ID;
   ret = bic_me_xmit(fru, (uint8_t *)buf, 2, (uint8_t *)buf, &rlen);
@@ -591,6 +591,11 @@ int plat_get_board_id(char *id)
 }
 
 int plat_get_syscfg_text(uint8_t slot, char *text)
+{
+  return -1;
+}
+
+int plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
 {
   return -1;
 }

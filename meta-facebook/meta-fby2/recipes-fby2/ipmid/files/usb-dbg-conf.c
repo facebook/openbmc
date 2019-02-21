@@ -784,6 +784,54 @@ int plat_get_board_id(char *id)
   return 0;
 }
 
+int plat_get_etra_fw_version(uint8_t slot_id, char *text)
+{
+  char entry[MAX_VALUE_LEN];
+  uint8_t ver[32] = {0};
+
+  if (text == NULL)
+    return -1;
+
+  // Clear string buffer
+  text[0] = '\0';
+
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+    //Bridge-IC Version
+    if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
+      strcat(text,"BIC_ver:\nNA\n");
+    } else {
+      sprintf(entry,"BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+      strcat(text, entry);
+    }
+
+    // Print Bridge-IC Bootloader Version
+    if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
+      strcat(text,"BICbl_ver:\nNA\n");
+    } else {
+      sprintf(entry,"BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
+      strcat(text, entry);
+    }
+
+    //CPLD Version
+    if (bic_get_fw_ver(slot_id, FW_CPLD, ver)) {
+      strcat(text,"CPLD_ver:\nNA\n");
+    } else {
+      sprintf(entry,"CPLD_ver:\n0x%02x\n", ver[0]);
+      strcat(text, entry);
+    }
+
+    //PCIE switch Version
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH, ver)){
+      strcat(text,"PCIE_SW_ver:\nNA\n");
+    } else {
+      sprintf(entry,"PCIE_SW_ver:\n0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+      strcat(text, entry);
+    }
+  }
+
+  return 0;
+}
+
 int plat_get_syscfg_text(uint8_t slot, char *text)
 {
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
@@ -836,9 +884,12 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
   // Processor#
   snprintf(key, sizeof(key), "%sfru%u_cpu0_product_name", key_prefix, slot);
   if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 26) {
-    // Read 4 bytes Processor#
-    snprintf(&entry[slen], 5, "%s", &value[22]);
-    entry[(slen += 4)] = 0;
+    // Read 3rd String#
+    char *delim = " ", *pch;
+    pch = strtok(value, delim);
+    pch = strtok(NULL, delim);
+    pch = strtok(NULL, delim);
+    slen += sprintf(&entry[slen], "%s", pch);
   }
 
   // Frequency & Core Number

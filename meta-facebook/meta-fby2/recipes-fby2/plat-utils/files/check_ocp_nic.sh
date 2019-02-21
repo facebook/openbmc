@@ -27,17 +27,23 @@ if [[ $(gpio_get_val L0) == "0" && $(gpio_get_val L1) == "1" ]]; then
   val=0
   for i in {1..3}; do
     val=$(i2cget -y -f 12 0x20 0 b)
-    val=$((val & 0x0f))
-    [ $val -eq 15 ] && break
+    val=$((val & 0x07))  # NIC_AUX_POWER_EN=1,NIC_MAIN_POWER_EN=1,NIC_PWRGOOD=1
+    [ $val -eq 7 ] && break
     usleep 100000
   done
 
-  if [ $val -ne 15 ]; then
+  if [ $val -ne 7 ]; then
     i2cset -y -f 12 0x20 6 0xffff w
     i2cset -y -f 12 0x20 2 0xffff w
     usleep 200000
-    i2cset -y -f 12 0x20 6 0xfe b
+    i2cset -y -f 12 0x20 6 0xfe b  # NIC_AUX_POWER_EN=1
+    for i in {1..10}; do  # wait for NIC_PWRGOOD=1
+      val=$(i2cget -y -f 12 0x20 0 b)
+      val=$((val & 0x05))
+      [ $val -eq 5 ] && break
+      usleep 100000
+    done
+    i2cset -y -f 12 0x20 6 0xfc b  # NIC_MAIN_POWER_EN=1
     sleep 1
-    i2cset -y -f 12 0x20 6 0xfc b
   fi
 fi

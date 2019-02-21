@@ -61,32 +61,46 @@ extern "C" {
 /*
  * Type declarations.
  */
+#define GPIO_VALUE_TYPES					\
+	GPIO_DEF(GPIO_VALUE_LOW, "low"),			\
+	GPIO_DEF(GPIO_VALUE_HIGH, "high")
+
+#define GPIO_DIRECTION_TYPES					\
+	GPIO_DEF(GPIO_DIRECTION_IN, "in"),			\
+	GPIO_DEF(GPIO_DIRECTION_OUT, "out")
+
+#define GPIO_EDGE_TYPES						\
+	GPIO_DEF(GPIO_EDGE_NONE, "none"),			\
+	GPIO_DEF(GPIO_EDGE_RISING, "rising"),			\
+	GPIO_DEF(GPIO_EDGE_FALLING, "falling"),			\
+	GPIO_DEF(GPIO_EDGE_BOTH, "both")
+
+#define GPIO_DEF(type, str)			type
 typedef enum {
 	GPIO_VALUE_INVALID = -1,
-	GPIO_VALUE_LOW = 0,
-	GPIO_VALUE_HIGH = 1,
+	GPIO_VALUE_TYPES,
 	GPIO_VALUE_MAX,
 } gpio_value_t;
-#define IS_VALID_GPIO_VALUE(v)	((v) == GPIO_VALUE_LOW || \
-				 (v) == GPIO_VALUE_HIGH)
 
 typedef enum {
 	GPIO_DIRECTION_INVALID = -1,
-	GPIO_DIRECTION_IN,
-	GPIO_DIRECTION_OUT,
+	GPIO_DIRECTION_TYPES,
+	GPIO_DIRECTION_MAX,
 } gpio_direction_t;
-#define IS_VALID_GPIO_DIRECTION(d)	((d) == GPIO_DIRECTION_IN || \
-					 (d) == GPIO_DIRECTION_OUT)
 
 typedef enum {
 	GPIO_EDGE_INVALID = -1,
-	GPIO_EDGE_NONE,
-	GPIO_EDGE_RISING,
-	GPIO_EDGE_FALLING,
-	GPIO_EDGE_BOTH,
+	GPIO_EDGE_TYPES,
+	GPIO_EDGE_MAX,
 } gpio_edge_t;
-#define IS_VALID_GPIO_EDGE(e)	((e) >= GPIO_EDGE_NONE && \
-				 (e) <= GPIO_EDGE_BOTH)
+#undef GPIO_DEF
+
+#define IS_VALID_GPIO_VALUE(v)		((v) > GPIO_VALUE_INVALID && \
+					 (v) < GPIO_VALUE_MAX)
+#define IS_VALID_GPIO_DIRECTION(d)	((d) > GPIO_DIRECTION_INVALID && \
+					 (d) < GPIO_DIRECTION_MAX)
+#define IS_VALID_GPIO_EDGE(e)		((e) > GPIO_EDGE_INVALID && \
+					 (e) < GPIO_EDGE_MAX)
 
 typedef struct gpio_desc gpio_desc_t;
 typedef struct gpiochip_desc gpiochip_desc_t;
@@ -157,6 +171,16 @@ int gpio_get_direction(gpio_desc_t *gdesc, gpio_direction_t *dir);
 int gpio_set_direction(gpio_desc_t *gdesc, gpio_direction_t dir);
 int gpio_get_edge(gpio_desc_t *gdesc, gpio_edge_t *edge);
 int gpio_set_edge(gpio_desc_t *gdesc, gpio_edge_t edge);
+
+/*
+ * Functions to map between gpio value/direction/edge types and strings.
+ */
+const char* gpio_value_type_to_str(gpio_value_t val);
+gpio_value_t gpio_value_str_to_type(const char *val_str);
+const char* gpio_direction_type_to_str(gpio_direction_t dir);
+gpio_direction_t gpio_direction_str_to_type(const char *dir_str);
+const char* gpio_edge_type_to_str(gpio_edge_t edge);
+gpio_edge_t gpio_edge_str_to_type(const char *edge_str);
 
 /*
  * Function to setup gpio pins for gpio_poll() call.

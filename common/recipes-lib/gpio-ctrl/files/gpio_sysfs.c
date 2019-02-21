@@ -278,7 +278,7 @@ static int sysfs_gpio_get_value(gpio_desc_t *gdesc, gpio_value_t *value)
 
 static int sysfs_gpio_set_value(gpio_desc_t *gdesc, gpio_value_t value)
 {
-	char *data;
+	const char *data;
 	char pathname[PATH_MAX];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
@@ -292,13 +292,14 @@ static int sysfs_gpio_set_value(gpio_desc_t *gdesc, gpio_value_t value)
 	return gsysfs_write_str(pathname, GPIO_VALUE_FD(gdesc), data);
 }
 
-int sysfs_gpio_get_direction(gpio_desc_t *gdesc, gpio_direction_t *dir)
+int sysfs_gpio_get_direction(gpio_desc_t *gdesc, gpio_direction_t *out_dir)
 {
+	gpio_direction_t dir;
 	char pathname[PATH_MAX];
 	char buf[GPIO_SYSFS_IO_BUF_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
-	assert(dir != NULL);
+	assert(out_dir != NULL);
 
 	gsysfs_direction_abspath(pathname, sizeof(pathname),
 				 gdesc->pin_num);
@@ -309,22 +310,20 @@ int sysfs_gpio_get_direction(gpio_desc_t *gdesc, gpio_direction_t *dir)
 			    buf, sizeof(buf)) != 0)
 		return -1;
 
-	if (strcmp(buf, "in") == 0) {
-		*dir = GPIO_DIRECTION_IN;
-	} else if (strcmp(buf, "out") == 0) {
-		*dir = GPIO_DIRECTION_OUT;
-	} else {
-		GLOG_ERR("unable to parse gpio direction <%s>>\n", buf);
+	dir = gpio_direction_str_to_type(buf);
+	if (dir == GPIO_DIRECTION_INVALID) {
+		GLOG_ERR("unable to parse gpio direction <%s>\n", buf);
 		errno = EPROTO;
 		return -1;
 	}
 
+	*out_dir = dir;
 	return 0;
 }
 
 int sysfs_gpio_set_direction(gpio_desc_t *gdesc, gpio_direction_t dir)
 {
-	char *data;
+	const char *data;
 	char pathname[PATH_MAX];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
@@ -335,55 +334,18 @@ int sysfs_gpio_set_direction(gpio_desc_t *gdesc, gpio_direction_t dir)
 	if (gsysfs_setup_fd(pathname, &GPIO_DIRECTION_FD(gdesc)) != 0)
 		return -1;
 
-	data = (dir == GPIO_DIRECTION_IN ? "in" : "out");
+	data = gpio_direction_type_to_str(dir);
 	return gsysfs_write_str(pathname, GPIO_DIRECTION_FD(gdesc), data);
 }
 
-static struct {
-	gpio_edge_t val;
-	const char *str;
-} gsysfs_edge_types[] = {
-	{GPIO_EDGE_NONE,	"none"},
-	{GPIO_EDGE_RISING,	"rising"},
-	{GPIO_EDGE_FALLING,	"falling"},
-	{GPIO_EDGE_BOTH,	"both"},
-
-	/* This is the last entry */
-	{GPIO_EDGE_INVALID,	NULL},
-};
-
-static const char* gsysfs_edge_val_to_str(gpio_edge_t edge)
+static int sysfs_gpio_get_edge(gpio_desc_t *gdesc, gpio_edge_t *out_edge)
 {
-	int i;
-
-	for (i = 0; gsysfs_edge_types[i].str != NULL; i++) {
-		if (gsysfs_edge_types[i].val == edge)
-			return gsysfs_edge_types[i].str;
-	}
-
-	return "";
-}
-
-static gpio_edge_t gsysfs_edge_str_to_val(const char *str)
-{
-	int i;
-
-	for (i = 0; gsysfs_edge_types[i].str != NULL; i++) {
-		if (strcmp(str, gsysfs_edge_types[i].str) == 0)
-			return gsysfs_edge_types[i].val;
-	}
-
-	return GPIO_EDGE_INVALID;
-}
-
-static int sysfs_gpio_get_edge(gpio_desc_t *gdesc, gpio_edge_t *edge)
-{
-	gpio_edge_t val;
+	gpio_edge_t edge;
 	char pathname[PATH_MAX];
 	char buf[GPIO_SYSFS_IO_BUF_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
-	assert(edge != NULL);
+	assert(out_edge != NULL);
 
 	gsysfs_edge_abspath(pathname, sizeof(pathname), gdesc->pin_num);
 	if (gsysfs_setup_fd(pathname, &GPIO_EDGE_FD(gdesc)) != 0)
@@ -393,13 +355,14 @@ static int sysfs_gpio_get_edge(gpio_desc_t *gdesc, gpio_edge_t *edge)
 			    buf, sizeof(buf)) != 0)
 		return -1;
 
-	val = gsysfs_edge_str_to_val(buf);
-	if (val == GPIO_EDGE_INVALID) {
+	edge = gpio_edge_str_to_type(buf);
+	if (edge == GPIO_EDGE_INVALID) {
+		GLOG_ERR("unable to parse gpio edge <%s>\n", buf);
 		errno = EPROTO;
 		return -1;
 	}
 
-	*edge = val;
+	*out_edge = edge;
 	return 0;
 }
 
@@ -415,7 +378,7 @@ static int sysfs_gpio_set_edge(gpio_desc_t *gdesc, gpio_edge_t edge)
 	if (gsysfs_setup_fd(pathname, &GPIO_EDGE_FD(gdesc)) != 0)
 		return -1;
 
-	data = gsysfs_edge_val_to_str(edge);
+	data = gpio_edge_type_to_str(edge);
 	return gsysfs_write_str(pathname, GPIO_EDGE_FD(gdesc), data);
 }
 

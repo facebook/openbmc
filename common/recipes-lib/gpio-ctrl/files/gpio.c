@@ -31,6 +31,88 @@
 
 #include "gpio_int.h"
 
+/*
+ * Global variables.
+ */
+#define GPIO_DEF(type, str)		[type] = str
+static const char* g_value_str[GPIO_VALUE_MAX] = {
+	GPIO_VALUE_TYPES
+};
+
+static const char* g_direction_str[GPIO_DIRECTION_MAX] = {
+	GPIO_DIRECTION_TYPES,
+};
+
+static const char* g_edge_str[GPIO_EDGE_MAX] = {
+	GPIO_EDGE_TYPES,
+};
+#undef GPIO_DEF
+
+const char* gpio_value_type_to_str(gpio_value_t val)
+{
+	if (IS_VALID_GPIO_VALUE(val))
+		return g_value_str[val];
+
+	return "";
+}
+
+gpio_value_t gpio_value_str_to_type(const char *val_str)
+{
+	int i;
+
+	if (val_str == NULL)
+		return GPIO_VALUE_INVALID;
+
+	for (i = 0; i < ARRAY_SIZE(g_value_str); i++)
+		if (strcmp(val_str, g_value_str[i]) == 0)
+			return i;
+
+	return GPIO_VALUE_INVALID;
+}
+
+const char* gpio_direction_type_to_str(gpio_direction_t dir)
+{
+	if (IS_VALID_GPIO_DIRECTION(dir))
+		return g_direction_str[dir];
+
+	return "";
+}
+
+gpio_direction_t gpio_direction_str_to_type(const char *dir_str)
+{
+	int i;
+
+	if (dir_str == NULL)
+		return GPIO_DIRECTION_INVALID;
+
+	for (i = 0; i < ARRAY_SIZE(g_direction_str); i++)
+		if (strcmp(dir_str, g_direction_str[i]) == 0)
+			return i;
+
+	return GPIO_DIRECTION_INVALID;
+}
+
+const char* gpio_edge_type_to_str(gpio_edge_t edge)
+{
+	if (IS_VALID_GPIO_EDGE(edge))
+		return g_edge_str[edge];
+
+	return "";
+}
+
+gpio_edge_t gpio_edge_str_to_type(const char *edge_str)
+{
+	int i;
+
+	if (edge_str == NULL)
+		return GPIO_EDGE_INVALID;
+
+	for (i = 0; i < ARRAY_SIZE(g_edge_str); i++)
+		if (strcmp(edge_str, g_edge_str[i]) == 0)
+			return i;
+
+	return GPIO_EDGE_INVALID;
+}
 
 /*
  * Internal helper functions.

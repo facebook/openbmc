@@ -1389,7 +1389,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   }
 
   // y = (mx + b * 10^b_exp) * 10^r_exp
-  uint8_t x;
+  int x;
   uint8_t m_lsb, m_msb;
   uint16_t m = 0;
   uint8_t b_lsb, b_msb;
@@ -1420,18 +1420,16 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
 
   //printf("m:%d, x:%d, b:%d, b_exp:%d, r_exp:%d\n", m, x, b, b_exp, r_exp);
 
-  * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
-
-  if ((sensor_num == BIC_SENSOR_SOC_THERM_MARGIN) && (* (float *) value > 0)) {
-   * (float *) value -= (float) THERMAL_CONSTANT;
+  if ((slot_type == SLOT_TYPE_SERVER) && (sensor_num == BIC_SENSOR_SOC_THERM_MARGIN) && (x > 0)) {
+    x -= THERMAL_CONSTANT;
   }
 
-  if (*(float *) value > MAX_POS_READING_MARGIN) {     //Negative reading handle
+  if (x > MAX_POS_READING_MARGIN) {     //Negative reading handle
     if (slot_type == SLOT_TYPE_SERVER) { //Server
       if (server_type == SERVER_TYPE_TL) {
         for(i=0;i<sizeof(bic_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
           if (sensor_num == bic_neg_reading_sensor_support_list[i]) {
-            * (float *) value -= (float) THERMAL_CONSTANT;
+            x -= THERMAL_CONSTANT;
           }
         }
       }
@@ -1440,12 +1438,14 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     else if (slot_type == SLOT_TYPE_GPV2) {
       for(i=0;i<sizeof(bic_gpv2_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
         if (sensor_num == bic_gpv2_neg_reading_sensor_support_list[i]) {
-          * (float *) value -= (float) THERMAL_CONSTANT;
+          x -= THERMAL_CONSTANT;
         }
       }
     }
 #endif
   }
+
+  * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
 
   return 0;
 }

@@ -62,6 +62,8 @@ def get_sensors():
         key=adata[0].strip()
         value=adata[3].strip()
         try:
+            if (value == "NA"):
+                value = 0
             value = float(value)
             if (value >= 0.0):
                 sresult[key] = str(value)

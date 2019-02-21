@@ -5207,6 +5207,9 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
         case 0x06:
           strcat(error_log, "MB_Throttle");
           break;
+        case 0x07:
+          strcat(error_log, "Platform_Reset");
+          break;
         default:
           strcat(error_log, "Unknown");
           break;

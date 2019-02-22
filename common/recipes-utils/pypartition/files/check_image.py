@@ -29,6 +29,7 @@ import sys
 import system
 import textwrap
 import virtualcat
+import json
 
 try:
     import http.server as http_server
@@ -39,7 +40,6 @@ except ImportError:
 
 class V6TCPServer(socketserver.TCPServer):
     address_family = socket.AF_INET6
-
 
 def check_image(logger):
     # type: (logging.Logger) -> None
@@ -58,7 +58,7 @@ def check_image(logger):
         sys.exit(1)
 
     if args.append_new_checksums:
-        checksums.append('PLACEHOLDER')
+        list(checksums).append('PLACEHOLDER')
 
     partitions = system.get_valid_partitions(
         [virtualcat.ImageFile(args.image)], checksums, logger

@@ -263,7 +263,7 @@ static int gcli_cmd_get_direction(struct gcli_cmd_args *args)
 	}
 
 	printf("gpio_direction=%s\n",
-		dir == GPIO_DIRECTION_IN ? "in" : "out");
+		gpio_direction_type_to_str(dir));
 	return 0;
 
 error:
@@ -281,14 +281,13 @@ static int gcli_cmd_set_direction(struct gcli_cmd_args *args)
 			 args->gpio_cmd);
 		return -1;
 	}
-	if (strcmp(args->gpio_value, "in") == 0) {
-		dir = GPIO_DIRECTION_IN;
-	} else if (strcmp(args->gpio_value, "out") == 0) {
-		dir = GPIO_DIRECTION_OUT;
-	} else {
+	dir = gpio_direction_str_to_type(args->gpio_value);
+	if (dir == GPIO_DIRECTION_INVALID) {
 		GCLI_ERR("invalid direction %s: "
-			 "valid input is 'in' or 'out'\n",
-			 args->gpio_value);
+			 "valid inputs are '%s' or '%s'\n",
+			 args->gpio_value,
+			 gpio_direction_type_to_str(GPIO_DIRECTION_IN),
+			 gpio_direction_type_to_str(GPIO_DIRECTION_OUT));
 		return -1;
 	}
 
@@ -309,45 +308,6 @@ error:
 	return -1;
 }
 
-static struct {
-	gpio_edge_t val;
-	const char *str;
-} gpio_edge_types[] = {
-	{GPIO_EDGE_NONE,	"none"},
-	{GPIO_EDGE_RISING,	"rising"},
-	{GPIO_EDGE_FALLING,	"falling"},
-	{GPIO_EDGE_BOTH,	"both"},
-	{GPIO_EDGE_INVALID,	NULL},
-};
-
-static const char* gpio_edge_val_to_str(gpio_edge_t edge)
-{
-	int i;
-
-	for (i = 0; gpio_edge_types[i].str != NULL; i++) {
-		if (gpio_edge_types[i].val == edge)
-			return gpio_edge_types[i].str;
-	}
-
-	return "invalid-gpio-edge";
-}
-
-static gpio_edge_t gpio_edge_str_to_val(const char *str)
-{
-	int i;
-
-	for (i = 0; gpio_edge_types[i].str != NULL; i++) {
-		if (strcmp(str, gpio_edge_types[i].str) == 0)
-			return gpio_edge_types[i].val;
-	}
-
-	GCLI_ERR("Invalid gpio edge %s: valid types are: \n", str);
-	for (i = 0; gpio_edge_types[i].str != NULL; i++)
-		GCLI_ERR("    %s\n", gpio_edge_types[i].str);
-	
-	return GPIO_EDGE_INVALID;
-}
-
 static int gcli_cmd_get_edge(struct gcli_cmd_args *args)
 {
 	gpio_desc_t *gdesc;
@@ -363,7 +323,7 @@ static int gcli_cmd_get_edge(struct gcli_cmd_args *args)
 		goto error;
 	}
 
-	printf("gpio_edge=%s\n", gpio_edge_val_to_str(edge));
+	printf("gpio_edge=%s\n", gpio_edge_type_to_str(edge));
 	return 0;
 
 error:
@@ -382,9 +342,17 @@ static int gcli_cmd_set_edge(struct gcli_cmd_args *args)
 		return -1;
 	}
 
-	edge = gpio_edge_str_to_val(args->gpio_value);
-	if (edge == GPIO_EDGE_INVALID)
+	edge = gpio_edge_str_to_type(args->gpio_value);
+	if (edge == GPIO_EDGE_INVALID) {
+		GCLI_ERR("invalid edge %s: "
+			 "valid inputs are '%s', '%s', '%s' or '%s'\n",
+			 args->gpio_value,
+			 gpio_edge_type_to_str(GPIO_EDGE_NONE),
+			 gpio_edge_type_to_str(GPIO_EDGE_RISING),
+			 gpio_edge_type_to_str(GPIO_EDGE_FALLING),
+			 gpio_edge_type_to_str(GPIO_EDGE_BOTH));
 		return -1;
+	}
 
 	gdesc = gcli_open_pin(args);
 	if (gdesc == NULL)

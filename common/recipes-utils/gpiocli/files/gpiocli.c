@@ -371,6 +371,39 @@ error:
 	return -1;
 }
 
+static int gcli_cmd_set_init_value(struct gcli_cmd_args *args)
+{
+	int input;
+	gpio_desc_t *gdesc;
+	gpio_value_t value;
+
+	if (args->gpio_value == NULL) {
+		GCLI_ERR("gpio value is required for %s command\n",
+			 args->gpio_cmd);
+		return -1;
+	}
+
+	gdesc = gcli_open_pin(args);
+	if (gdesc == NULL)
+		return -1;
+
+	input = (int)strtol(args->gpio_value, NULL, 0);
+	value = (input ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+	GCLI_DEBUG("set gpio pin to 'out' with initial value to %d\n",
+		   (int)value);
+	if (gpio_set_init_value(gdesc, value) != 0) {
+		GCLI_ERR("failed to set gpio initial value: %s\n",
+			 strerror(errno));
+		goto error;
+	}
+
+	return 0;
+
+error:
+	gpio_close(gdesc);
+	return -1;
+}
+
 static int gcli_cmd_pin_name_to_offset(struct gcli_cmd_args *args)
 {
 	int offset;
@@ -445,6 +478,11 @@ static struct gcli_cmd_info gcli_cmds[] = {
 		"set-edge",
 		"set the edge of the given gpio pin",
 		gcli_cmd_set_edge,
+	},
+	{
+		"set-init-value",
+		"set the pin direction to 'out' with given initial value",
+		gcli_cmd_set_init_value,
 	},
 	{
 		"map-name-to-offset",

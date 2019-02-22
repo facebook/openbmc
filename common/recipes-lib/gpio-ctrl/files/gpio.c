@@ -489,6 +489,16 @@ int gpio_set_edge(gpio_desc_t *gdesc, gpio_edge_t edge)
 	return GPIO_OPS()->set_pin_edge(gdesc, edge);
 }
 
+int gpio_set_init_value(gpio_desc_t *gdesc, gpio_value_t value)
+{
+	if (!IS_VALID_GPIO_DESC(gdesc) || !IS_VALID_GPIO_VALUE(value)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	return GPIO_OPS()->set_pin_init_value(gdesc, value);
+}
+
 /*
  * FIXME function not implemented.
  */

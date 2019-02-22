@@ -173,6 +173,14 @@ int gpio_get_edge(gpio_desc_t *gdesc, gpio_edge_t *edge);
 int gpio_set_edge(gpio_desc_t *gdesc, gpio_edge_t edge);
 
 /*
+ * Sets the gpio pin to output with given initial value atomically.
+ *
+ * Return:
+ *   0 for success, or -1 on failures.
+ */
+int gpio_set_init_value(gpio_desc_t *gdesc, gpio_value_t value);
+
+/*
  * Functions to map between gpio value/direction/edge types and strings.
  */
 const char* gpio_value_type_to_str(gpio_value_t val);

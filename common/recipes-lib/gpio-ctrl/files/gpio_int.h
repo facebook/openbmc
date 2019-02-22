@@ -130,6 +130,7 @@ struct gpio_backend_ops {
 	int (*set_pin_direction)(gpio_desc_t *gdesc, gpio_direction_t dir);
 	int (*get_pin_edge)(gpio_desc_t *gdesc, gpio_edge_t *edge);
 	int (*set_pin_edge)(gpio_desc_t *gdesc, gpio_edge_t edge);
+	int (*set_pin_init_value)(gpio_desc_t *gdesc, gpio_value_t value);
 
 	/*
 	 * Function to enumerate gpio chips.

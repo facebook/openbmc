@@ -382,6 +382,28 @@ static int sysfs_gpio_set_edge(gpio_desc_t *gdesc, gpio_edge_t edge)
 	return gsysfs_write_str(pathname, GPIO_EDGE_FD(gdesc), data);
 }
 
+static int sysfs_gpio_set_init_value(gpio_desc_t *gdesc, gpio_value_t value)
+{
+	const char *data;
+	char pathname[PATH_MAX];
+
+	assert(IS_VALID_GPIO_DESC(gdesc));
+	assert(IS_VALID_GPIO_VALUE(value));
+
+	gsysfs_direction_abspath(pathname, sizeof(pathname),
+				 gdesc->pin_num);
+	if (gsysfs_setup_fd(pathname, &GPIO_DIRECTION_FD(gdesc)) != 0)
+		return -1;
+
+	/*
+	 * Documentation/gpio/sysfs.txt: To ensure glitch free operation,
+	 * values "low" and "high" may be written to "direction" node to
+	 * configure the GPIO as an output with that initial value.
+	 */
+	data = gpio_value_type_to_str(value);
+	return gsysfs_write_str(pathname, GPIO_DIRECTION_FD(gdesc), data);
+}
+
 static char* gsysfs_chip_read_device(char *buf,
 				     size_t size,
 				     const char *chip_dir)
@@ -589,6 +611,7 @@ struct gpio_backend_ops gpio_sysfs_ops = {
 	.set_pin_direction = sysfs_gpio_set_direction,
 	.get_pin_edge = sysfs_gpio_get_edge,
 	.set_pin_edge = sysfs_gpio_set_edge,
+	.set_pin_init_value = sysfs_gpio_set_init_value,
 
 	.chip_enumerate = sysfs_gpiochip_enumerate,
 };

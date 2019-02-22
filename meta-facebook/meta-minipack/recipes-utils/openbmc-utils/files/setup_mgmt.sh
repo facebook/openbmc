@@ -24,6 +24,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 SFP_AUTO_DETECT="${SCMCPLD_SYSFS_DIR}/sfp_auto_detect"
 COM_E_PWRGD=`head -n 1 ${SCMCPLD_SYSFS_DIR}/pwrgd_pch_pwrok`
+TX_DISABLE="${SCMCPLD_SYSFS_DIR}/tx_disable"
 
 usage(){
     program=`basename "$0"`
@@ -83,6 +84,7 @@ elif [ "$1" == "combo" ]; then
     ast-mdio.py --mac 1 --phy 0x9 write 0x1e 0x23e
     ast-mdio.py --mac 1 --phy 0x9 write 0x1f 0x7ae2
     echo 1 > $SFP_AUTO_DETECT
+    echo 0 > $TX_DISABLE
     echo "Done!"
 elif [ "$1" == "all" ]; then
     echo "Wait a few minutes to setup management port..."
@@ -117,6 +119,7 @@ elif [ "$1" == "all" ]; then
     ast-mdio.py --mac 1 --phy 0x9 write 0x1e 0x23e
     ast-mdio.py --mac 1 --phy 0x9 write 0x1f 0x7ae2
     echo 1 > $SFP_AUTO_DETECT
+    echo 0 > $TX_DISABLE
 else
     usage
     exit -1

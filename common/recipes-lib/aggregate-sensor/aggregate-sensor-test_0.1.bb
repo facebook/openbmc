@@ -39,7 +39,7 @@ SRC_URI = "file://test/Makefile \
           "
 S = "${WORKDIR}/test"
 
-DEPENDS += " jansson libsdr-native libpal-native libkv-native "
+DEPENDS += " jansson libsdr-native libpal-native libkv-native cmock-native "
 RDEPENDS_${PN} += "jansson "
 
 do_install() {

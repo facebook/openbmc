@@ -152,6 +152,7 @@ int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_hand_sw_physically(uint8_t *pos);
 int pal_get_hand_sw(uint8_t *pos);
+int pal_get_usb_sw(uint8_t *pos);
 int pal_enable_usb_mux(uint8_t state);
 int pal_switch_vga_mux(uint8_t slot);
 int pal_switch_usb_mux(uint8_t slot);

@@ -32,6 +32,7 @@
 static void
 print_usage_help(void) {
   printf("Usage: fpc-util <slot1|slot2|slot3|slot4> --usb\n");
+  printf("       fpc-util --usb --reset\n");
   printf("       fpc-util <slot1|slot2|slot3|slot4|sled> --identify <on/off>\n");
 }
 
@@ -39,6 +40,7 @@ int
 main(int argc, char **argv) {
 
   uint8_t slot_id;
+  uint8_t pos;
   char tstr[64] = {0};
 
   if (argc < 3) {
@@ -55,6 +57,17 @@ main(int argc, char **argv) {
     slot_id = 4;
   } else if (!strcmp(argv[1] , "sled")) {
     slot_id = 0;
+  } else if (!strcmp(argv[1] , "--usb")) {
+    if (!strcmp(argv[2], "--reset")) {
+      if (pal_get_hand_sw_physically(&pos)) {
+        goto err_exit;
+      }
+      printf("fpc-util: switching USB channel to knob position\n");
+      return pal_switch_usb_mux(pos);
+    }
+    else {
+      goto err_exit;
+    }
   } else {
     goto err_exit;
   }

@@ -2805,6 +2805,26 @@ pal_get_hand_sw(uint8_t *pos) {
   return pal_get_hand_sw_physically(pos);
 }
 
+int
+pal_get_usb_sw(uint8_t *pos) {
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t loc;
+  int ret;
+
+  ret = kv_get("spb_usb_sw", value, NULL, 0);
+  if (!ret) {
+    loc = atoi(value);
+    if ((loc > HAND_SW_BMC) || (loc < HAND_SW_SERVER1)) {
+      return pal_get_hand_sw(pos);
+    }
+
+    *pos = loc;
+    return 0;
+  }
+
+  return pal_get_hand_sw(pos);
+}
+
 // Return the Front panel Power Button
 int
 pal_get_pwr_btn(uint8_t *status) {
@@ -3058,7 +3078,8 @@ int
 pal_switch_usb_mux(uint8_t slot) {
   char *gpio_sw0, *gpio_sw1;
   char path[64] = {0};
-  uint8_t status;
+  char loc_str[8];
+  uint8_t status, usb_off = 0;
 
   // Based on the USB mux table in Schematics
   switch(slot) {
@@ -3079,20 +3100,17 @@ pal_switch_usb_mux(uint8_t slot) {
     gpio_sw1 = "1";
     break;
   case HAND_SW_BMC:
+    snprintf(loc_str, sizeof(loc_str), "%u", slot);
+    kv_set("spb_usb_sw", loc_str, 0, 0);
     // Disable the USB MUX
-    if (set_usb_mux(USB_MUX_OFF) < 0)
-      return -1;
-    else
-      return 0;
+    return set_usb_mux(USB_MUX_OFF);
   default:
     return 0;
   }
 
   if (!pal_is_slot_server(slot) || (!pal_get_server_power(slot, &status) && (status != SERVER_POWER_ON))) {
-    if (set_usb_mux(USB_MUX_OFF) < 0) {
-      return -1;
-    }
-    return 0;
+    set_usb_mux(USB_MUX_OFF);
+    usb_off = 1;
   }
 
   sprintf(path, GPIO_VAL, GPIO_USB_SW0);
@@ -3111,9 +3129,13 @@ pal_switch_usb_mux(uint8_t slot) {
     return -1;
   }
 
+  snprintf(loc_str, sizeof(loc_str), "%u", slot);
+  kv_set("spb_usb_sw", loc_str, 0, 0);
+
   // Enable the USB MUX
-  if (set_usb_mux(USB_MUX_ON) < 0)
-    return -1;
+  if (!usb_off) {
+    return set_usb_mux(USB_MUX_ON);
+  }
 
   return 0;
 }

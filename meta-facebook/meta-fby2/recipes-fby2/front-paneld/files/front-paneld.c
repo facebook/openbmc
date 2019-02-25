@@ -87,7 +87,7 @@ debug_card_handler() {
   int prev = -1;
   int ret;
   uint8_t prsnt = 0;
-  uint8_t pos;
+  uint8_t pos, usb_pos;
   uint8_t prev_pos = 0xff, prev_phy_pos = 0xff;
   uint8_t lpc;
   uint8_t status;
@@ -138,8 +138,13 @@ get_hand_sw_cache:
     }
 
 debug_card_prs:
-    if (pos <= MAX_NUM_SLOTS) {
-      if (!pal_is_slot_server(pos) || (!pal_get_server_power(pos, &status) && (status != SERVER_POWER_ON))) {
+    ret = pal_get_usb_sw(&usb_pos);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    if (usb_pos <= MAX_NUM_SLOTS) {
+      if (!pal_is_slot_server(usb_pos) || (!pal_get_server_power(usb_pos, &status) && (status != SERVER_POWER_ON))) {
         pal_enable_usb_mux(USB_MUX_OFF);
       } else {
         pal_enable_usb_mux(USB_MUX_ON);

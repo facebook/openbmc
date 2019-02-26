@@ -9,7 +9,6 @@ class Server {
     Server(uint8_t slot_id, std::string fru) : _slot_id(slot_id), fru_name(fru) {}
     // Throws exception if not
     void ready();
-    void fready();
 };
 
 #endif

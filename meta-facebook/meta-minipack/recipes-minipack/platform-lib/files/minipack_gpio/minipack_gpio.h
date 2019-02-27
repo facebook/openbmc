@@ -26,11 +26,10 @@ extern "C" {
 #include <facebook/bic.h>
 
 extern const uint8_t gpio_pin_list[];
-extern const char *gpio_pin_name[];
 extern const uint32_t gpio_ass_val;
 extern size_t gpio_pin_cnt;
 
-int minipack_get_gpio_name(uint8_t gpio, char *name);
+const char* minipack_gpio_type_to_name(uint8_t gpio);
 
 #ifdef __cplusplus
 } // extern "C"

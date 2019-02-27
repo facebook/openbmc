@@ -62,51 +62,17 @@ const uint8_t gpio_pin_list[] = {
 size_t gpio_pin_cnt = sizeof(gpio_pin_list)/sizeof(uint8_t);
 const uint32_t gpio_ass_val = 0x0 | (1 << FM_CPLD_FIVR_FAULT);
 
-const char *gpio_pin_name[] = {
-  "XDP_CPU_SYSPWROK",
-  "PWRGD_PCH_PWROK",
-  "PVDDR_VRHOT_N",
-  "PVCCIN_VRHOT_N",
-  "FM_FAST_PROCHOT_N",
-  "PCHHOT_CPU_N",
-  "FM_CPLD_CPU_DIMM_EVENT_CO_N",
-  "FM_CPLD_BDXDE_THERMTRIP_N",
-  "THERMTRIP_PCH_N",
-  "FM_CPLD_FIVR_FAULT",
-  "FM_BDXDE_CATERR_LVT3_N",
-  "FM_BDXDE_ERR2_LVT3_N",
-  "FM_BDXDE_ERR1_LVT3_N",
-  "FM_BDXDE_ERR0_LVT3_N",
-  "SLP_S4_N",
-  "FM_NMI_EVENT_BMC_N",
-  "FM_SMI_BMC_N",
-  "RST_PLTRST_BMC_N",
-  "FP_RST_BTN_BUF_N",
-  "BMC_RST_BTN_OUT_N",
-  "FM_BDE_POST_CMPLT_N",
-  "FM_BDXDE_SLP3_N",
-  "FM_PWR_LED_N",
-  "PWRGD_PVCCIN",
-  "SVR_ID0",
-  "SVR_ID1",
-  "SVR_ID2",
-  "SVR_ID3",
-  "BMC_READY_N",
-  "BMC_COM_SW_N",
-  "RESERVED_30",
-  "RESERVED_31"
+#define BIC_GPIO_DEF(type, name)  [type] = name
+static const char *gpio_pin_names[BIC_GPIO_MAX] = {
+  BIC_GPIO_LIST,
 };
+#undef BIC_GPIO_DEF
 
-int
-minipack_get_gpio_name(uint8_t gpio, char *name) {
+const char* minipack_gpio_type_to_name(uint8_t gpio) {
 
-  if (gpio < 0 || gpio > MAX_GPIO_PINS) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "minipack_get_gpio_name: Wrong gpio pin %u", gpio);
-#endif
-    return -1;
+  if ((gpio < BIC_GPIO_MAX) && (gpio_pin_names[gpio] != NULL)) {
+    return gpio_pin_names[gpio];
   }
 
-  sprintf(name, "%s", gpio_pin_name[gpio]);
-  return 0;
+  return "";
 }

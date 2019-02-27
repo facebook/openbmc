@@ -35,6 +35,11 @@ ROM_UBOOT_LOADADDRESS ?= "0x28084000"
 #   For kernel and rootfs: 16384
 #   For kernel only: 2690
 FLASH_SIZE ?= "16384"
+UBOOT_MAX_SIZE = "389120"
+FIT_MAX_SIZE = "28442624"
+RECOVERY_MAX_SIZE = "303104"
+SIGNED_UBOOT_MAX_SIZE = "393216"
+SPL_MAX_SIZE = "86016"
 
 UBOOT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-${MACHINE}.${UBOOT_SUFFIX}"
 FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/fit-${MACHINE}.its"
@@ -86,8 +91,18 @@ flash_image_generate() {
         FLASH_UBOOT_OFFSET=512
         FLASH_FIT_OFFSET=896
 
+        if [ $(stat -c%s ${UBOOT_RECOVERY_SOURCE}) -gt ${RECOVERY_MAX_SIZE} ]; then
+            echo "Recovery is too large to fit in the partition"
+            return 1
+        fi
+
         # Write the recovery U-Boot.
         dd if=${UBOOT_RECOVERY_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_RECOVERY_OFFSET} conv=notrunc
+
+        if [ $(stat -c%s ${UBOOT_FIT_DESTINATION}) -gt ${SIGNED_UBOOT_MAX_SIZE} ]; then
+            echo "Signed u-boot FIT too large to fit into partition"
+            return 1
+        fi
 
         # Write an intermediate FIT containing only U-Boot.
         dd if=${UBOOT_FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
@@ -96,13 +111,27 @@ flash_image_generate() {
         FLASH_UBOOT_OFFSET=0
         FLASH_FIT_OFFSET=512
 
+        if [ $(stat -c%s ${UBOOT_SOURCE}) -gt ${SIGNED_UBOOT_MAX_SIZE} ]; then
+            echo "Signed U-boot is too large to fit into partition"
+            return 1
+        fi
         # Write U-Boot directly to the start of the flash.
         dd if=${UBOOT_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
+    fi
+
+
+    if [ $(stat -c%s ${FIT_DESTINATION}) -gt ${FIT_MAX_SIZE} ]; then
+        echo "FIT is too large to fit into its partition"
+        return 1
     fi
 
     dd if=${FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc
 
     if [ "x${VERIFIED_BOOT}" != "x" ] ; then
+      if [ $(stat -c%s ${UBOOT_SPL_SOURCE}) -gt ${SPL_MAX_SIZE} ]; then
+          echo "SPL is too large to fit into the partition"
+          return 1
+      fi
       dd if=${UBOOT_SPL_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=0 conv=notrunc
     fi
 

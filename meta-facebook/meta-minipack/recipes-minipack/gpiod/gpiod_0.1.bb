@@ -33,6 +33,7 @@ S = "${WORKDIR}"
 binfiles = "gpiod \
            "
 
+CFLAGS += " -Werror "
 LDFLAGS += " -lbic -lminipack_gpio -lpal "
 
 DEPENDS += " libbic libminipack-gpio libpal update-rc.d-native"

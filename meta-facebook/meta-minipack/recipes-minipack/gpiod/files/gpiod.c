@@ -68,79 +68,6 @@ get_struct_gpio_pin(uint8_t fru) {
   return gpios;
 }
 
-static int
-enable_gpio_intr_config(uint8_t fru, uint8_t gpio) {
-  int ret;
-
-  bic_gpio_config_t cfg = {0};
-  bic_gpio_config_t verify_cfg = {0};
-
-
-  ret =  bic_get_gpio_config(fru, gpio, &cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: bic_get_gpio_config failed"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  cfg.ie = 1;
-
-  ret = bic_set_gpio_config(fru, gpio, &cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: bic_set_gpio_config failed"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  ret =  bic_get_gpio_config(fru, gpio, &verify_cfg);
-  if (ret < 0) {
-    syslog(LOG_ERR, "enable_gpio_intr_config: verification bic_get_gpio_config"
-        "for slot_id: %u, gpio pin: %u", fru, gpio);
-    return -1;
-  }
-
-  if (verify_cfg.ie != cfg.ie) {
-    syslog(LOG_WARNING, "Slot_id: %u,Interrupt enabling FAILED for GPIO pin# %d",
-        fru, gpio);
-    return -1;
-  }
-
-  return 0;
-}
-
-/* Enable the interrupt mode for all the gpio sensors */
-static void
-enable_gpio_intr(uint8_t fru) {
-
-  int i, ret;
-  gpio_pin_t *gpios;
-
-  gpios = get_struct_gpio_pin(fru);
-  if (gpios == NULL) {
-    syslog(LOG_WARNING, "enable_gpio_intr: get_struct_gpio_pin failed.");
-    return;
-  }
-
-  for (i = 0; i < gpio_pin_cnt; i++) {
-
-    gpios[i].flag = 0;
-
-    ret = enable_gpio_intr_config(fru, gpio_pin_list[i]);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "enable_gpio_intr: Slot: %d, Pin %d interrupt enabling"
-          " failed", fru, gpio_pin_list[i]);
-      syslog(LOG_WARNING, "enable_gpio_intr: Disable check for Slot %d, Pin %d",
-          fru, gpio_pin_list[i]);
-    } else {
-      gpios[i].flag = 1;
-#ifdef DEBUG
-      syslog(LOG_WARNING, "enable_gpio_intr: Enabled check for Slot: %d, Pin %d",
-          fru, gpio_pin_list[i]);
-#endif /* DEBUG */
-    }
-  }
-}
-
 static void
 populate_gpio_pins(uint8_t fru) {
 
@@ -150,7 +77,6 @@ populate_gpio_pins(uint8_t fru) {
 
   gpios = get_struct_gpio_pin(fru);
   if (gpios == NULL) {
-    syslog(LOG_WARNING, "populate_gpio_pins: get_struct_gpio_pin failed.");
     return;
   }
 
@@ -181,9 +107,6 @@ gpio_monitor_poll() {
   uint32_t revised_pins, n_pin_val, o_pin_val[MAX_NUM_SLOTS] = {0};
   gpio_pin_t *gpios;
   char pwr_state[MAX_VALUE_LEN];
-  char path[128];
-
-  uint32_t status;
   bic_gpio_t gpio = {0};
 
   // Inform BIOS that BMC is ready
@@ -192,45 +115,22 @@ gpio_monitor_poll() {
   ret = bic_get_gpio(IPMB_BUS, &gpio);
   if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for "
-      " fru %u", IPMB_BUS);
+    syslog(LOG_WARNING, "%s: bic_get_gpio failed for fru %u",
+           __func__, IPMB_BUS);
 #endif
-    goto end;
+    return -1;
   }
 
   gpios = get_struct_gpio_pin(IPMB_BUS);
   if  (gpios == NULL) {
-    syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-        " IPMB_BUS %u", IPMB_BUS);
-    goto end;
+    return -1;
   }
 
-  memcpy(&status, (uint8_t *) &gpio, sizeof(status));
-
-  for (i = 0; i < BIC_GPIO_MAX; i++) {
-
-    if (gpios[i].flag == 0)
-      continue;
-
-    gpios[i].status = GETBIT(status, i);
-
-    if (gpios[i].status)
-      o_pin_val[0] = SETBIT(o_pin_val[0], i);
-  }
-  
   pal_light_scm_led(SCM_LED_AMBER);
   o_pin_val[0] = 0;
 
   /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
   while(1) {
-
-    gpios = get_struct_gpio_pin(IPMB_BUS);
-    if  (gpios == NULL) {
-      syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for"
-          " fru %u", IPMB_BUS);
-      continue;
-    }
-
     memset(pwr_state, 0, MAX_VALUE_LEN);
     pal_get_last_pwr_state(FRU_SCM, pwr_state);
 
@@ -273,8 +173,7 @@ gpio_monitor_poll() {
     usleep(DELAY_GPIOD_READ);
   } /* while loop */
 
-end:
-  return;
+  return 0; /* never reached */
 } /* function definition*/
 
 /* Spawns a pthread for each fru to monitor all the sensors on it */
@@ -285,7 +184,7 @@ run_gpiod() {
 
 int
 main(int argc, void **argv) {
-  int dev, rc, pid_file;
+  int rc, pid_file;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);

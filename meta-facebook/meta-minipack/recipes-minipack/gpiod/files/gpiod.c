@@ -48,7 +48,7 @@ typedef struct {
   char name[32];
 } gpio_pin_t;
 
-static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
+static gpio_pin_t gpio_slot1[BIC_GPIO_MAX] = {0};
 
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
 static gpio_pin_t *
@@ -145,6 +145,7 @@ static void
 populate_gpio_pins(uint8_t fru) {
 
   int i, ret;
+  const char *name;
   gpio_pin_t *gpios;
 
   gpios = get_struct_gpio_pin(fru);
@@ -156,12 +157,12 @@ populate_gpio_pins(uint8_t fru) {
   // Only monitor the PWRGD_COREPWR pin
   gpios[PWRGOOD_CPU].flag = 1;
 
-  for (i = 0; i < MAX_GPIO_PINS; i++) {
+  for (i = 0; i < BIC_GPIO_MAX; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GETBIT(gpio_ass_val, i);
-      ret = minipack_get_gpio_name(i, gpios[i].name);
-      if (ret < 0)
-        continue;
+      name = minipack_gpio_type_to_name(i);
+      if (name[0] != '\0')
+        strncpy(gpios[i].name, name, sizeof(gpios[i].name));
     }
   }
 }
@@ -206,7 +207,7 @@ gpio_monitor_poll() {
 
   memcpy(&status, (uint8_t *) &gpio, sizeof(status));
 
-  for (i = 0; i < MAX_GPIO_PINS; i++) {
+  for (i = 0; i < BIC_GPIO_MAX; i++) {
 
     if (gpios[i].flag == 0)
       continue;
@@ -245,7 +246,7 @@ gpio_monitor_poll() {
 
     revised_pins = (n_pin_val ^ o_pin_val[0]);
 
-    for (i = 0; i < MAX_GPIO_PINS; i++) {
+    for (i = 0; i < BIC_GPIO_MAX; i++) {
       if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
         gpios[i].status = GETBIT(n_pin_val, i);
 

@@ -221,7 +221,6 @@ util_get_gpio_config(uint8_t slot_id) {
   int i;
   bic_gpio_config_t gpio_config = {0};
   bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
-  char gpio_name[32];
 
 
   // Read configuration of all bits
@@ -231,8 +230,8 @@ util_get_gpio_config(uint8_t slot_id) {
       continue;
     }
 
-    minipack_get_gpio_name(i, gpio_name);
-    printf("gpio_config for pin#%d (%s):\n", i, gpio_pin_name[i]);
+    printf("gpio_config for pin#%d (%s):\n",
+           i, minipack_gpio_type_to_name(i));
     printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
     printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
     printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");

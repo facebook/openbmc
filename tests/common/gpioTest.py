@@ -28,6 +28,8 @@ import logging
 import os
 import time
 
+_GPIO_SHADOW_ROOT = '/tmp/gpionames'
+
 def read_data(path):
     handle = open(path, "r")
     data = handle.readline().rstrip()
@@ -41,28 +43,23 @@ def gpio_test(data):
     given a json of gpios and expected values, check that all of the gpios
     exist and its values
     """
+    errors = 0
     for gpioname, v in data['gpios'].items():
-        gpio_path = "/tmp/gpionames/" + str(gpioname)
+        gpio_path = os.path.join(_GPIO_SHADOW_ROOT, str(gpioname))
         if not os.path.exists(gpio_path):
             print("GPIO test : Missing GPIO={} [FAILED]".format(gpioname))
-            sys.exit(1)
-        else:
-            logger.debug("GPIO name={} present".format(gpioname))
-            checker = [
-                "active_low",
-                "direction",
-                "edge",
-                "value"
-            ]
-            for item in checker:
-                vpath = gpio_path + "/" + item
-                rdata = read_data(vpath)
-                jdata = v[item]
-                if rdata not in jdata:
-                    print("GPIO test : Incorrect {} for GPIO={} [FAILED]".format(item, gpioname))
-                    sys.exit(1)
-    print("GPIO test [PASSED]")
-    sys.exit(0)
+            errors += 1
+            continue
+        
+        logger.debug("GPIO name={} present".format(gpioname))
+        for item, jdata in v.items():
+            rdata = read_data(os.path.join(gpio_path, str(item)))
+            if rdata not in jdata:
+                print("GPIO test : Incorrect {} for GPIO={} [FAILED]".format(item, gpioname))
+                errors += 1
+
+    if errors != 0:
+        raise Exception('total %d errors found' % errors)
 
 if __name__ == "__main__":
     """
@@ -83,4 +80,7 @@ if __name__ == "__main__":
     except Exception as e:
         print("GPIO test [FAILED]")
         print("Error code returned: " + str(e))
-    sys.exit(1)
+        sys.exit(1)
+
+    print("GPIO test [PASSED]")
+    sys.exit(0)

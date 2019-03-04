@@ -25,8 +25,7 @@ from utils.cit_logger import Logger
 class BaseEepromTest(unittest.TestCase):
 
     def setUp(self):
-        Logger.start()
-        Logger.info("Starting cit logging for " + __name__)
+        Logger.start(name=__name__)
         self.eeprom_cmd = None
         self.eeprom_info = None
         pass
@@ -58,7 +57,7 @@ class BaseEepromTest(unittest.TestCase):
 class CommonEepromTest(BaseEepromTest):
 
     def log_check(self, name):
-        Logger.info("Running test " + name)
+        Logger.log_testname(name)
         self.set_eeprom_cmd()
         if not self.eeprom_info:
             self.eeprom_info = self.run_eeprom_cmd()

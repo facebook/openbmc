@@ -1,5 +1,25 @@
-import unittest
+#!/usr/bin/env python
+#
+# Copyright 2018-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
 from common.base_interface_test import CommonInterfaceTest
+from utils.cit_logger import Logger
 
 class InterfaceTest(CommonInterfaceTest):
 
@@ -8,10 +28,6 @@ class InterfaceTest(CommonInterfaceTest):
         Tests eth0 v6 interface
         '''
         self.set_ifname("usb0")
-        self.log_check(name=__name__)
+        Logger.log_testname(name=__name__)
         self.assertEqual(self.ping_v6(), 0,
                          'Ping test for usb0 v6 failed')
-
-# if __name__ == '__main__':
-#     test_suite = unittest.TestLoader().loadTestsFromTestCase('InterfaceTest')
-#     unittest.TextTestRunner().run(test_suite)

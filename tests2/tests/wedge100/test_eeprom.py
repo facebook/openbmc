@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-import unittest
 from common.base_eeprom_test import CommonEepromTest
 
 class EepromTest(CommonEepromTest):
@@ -31,7 +30,3 @@ class EepromTest(CommonEepromTest):
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ['WEDGE100']
-
-# if __name__ == '__main__':
-#     test_suite = unittest.TestLoader().loadTestsFromTestCase('EepromTest')
-#     unittest.TextTestRunner().run(test_suite)

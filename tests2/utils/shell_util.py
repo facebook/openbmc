@@ -22,8 +22,7 @@ import subprocess
 
 def run_shell_cmd(cmd=None):
     if not cmd:
-        print("Failed to run command cmd not set")
-        return
+        raise Exception("cmd not set")
     try:
         f = subprocess.Popen(cmd,
                              shell=True,
@@ -35,5 +34,5 @@ def run_shell_cmd(cmd=None):
             raise Exception(err + " [FAILED]")
         info = data.decode('utf-8')
     except:
-        print("Failed to run command = %s".format(cmd))
+        raise Exception("Failed to run command = {}".format(cmd))
     return info

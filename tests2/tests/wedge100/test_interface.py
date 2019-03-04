@@ -12,6 +12,6 @@ class InterfaceTest(CommonInterfaceTest):
         self.assertEqual(self.ping_v6(), 0,
                          'Ping test for usb0 v6 failed')
 
-if __name__ == '__main__':
-    test_suite = unittest.TestLoader().loadTestsFromTestCase('InterfaceTest')
-    unittest.TextTestRunner().run(test_suite)
+# if __name__ == '__main__':
+#     test_suite = unittest.TestLoader().loadTestsFromTestCase('InterfaceTest')
+#     unittest.TextTestRunner().run(test_suite)

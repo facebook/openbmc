@@ -29,6 +29,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #
 i2c_mux_add_sync 7 0x70 pca9548 15
 
+# Bus 2
+i2c_device_add 2 0x3a pwr1014a
+
 # Bus 3
 i2c_device_add 3 0x48 tmp75
 i2c_device_add 3 0x49 tmp75

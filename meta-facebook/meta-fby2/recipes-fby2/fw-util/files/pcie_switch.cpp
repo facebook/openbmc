@@ -43,7 +43,14 @@ class PcieSwitchComponent : public Component {
     if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2)
       return FW_STATUS_NOT_SUPPORTED;
 
-    return FW_STATUS_NOT_SUPPORTED;
+    int ret = 0;
+    try {
+      server.ready();
+      ret = bic_update_fw(slot_id, UPDATE_PCIE_SWITCH, (char *)image.c_str());
+    } catch(string err) {
+      ret = FW_STATUS_NOT_SUPPORTED;
+    }
+    return ret;
   }
 };
 

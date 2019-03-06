@@ -79,6 +79,9 @@
 #define RC_BIOS_SIG_OFFSET 0x3F00000
 #define RC_BIOS_IMAGE_SIZE (64*1024*1024)
 
+#define MAX_FW_PCIE_SWITCH_BLOCK_SIZE 1008
+#define LAST_FW_PCIE_SWITCH_TRUNK_SIZE (1008%224)
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -818,6 +821,117 @@ bic_send:
     sleep(1);
     printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\
            \n",    slot_id, target, offset, len);
+    goto bic_send;
+  }
+
+  return ret;
+}
+
+// Update firmware for various components
+static int
+_update_pcie_sw_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, u_int32_t image_len, uint8_t *buf) {
+  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret;
+  int retries = 3;
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = target;
+
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >> 8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+
+  tbuf[10] = (image_len) & 0xFF;
+  tbuf[11] = (image_len >> 8) & 0xFF;
+  tbuf[12] = (image_len >> 16) & 0xFF;
+  tbuf[13] = (image_len >> 24) & 0xFF;
+
+  memcpy(&tbuf[14], buf, len);
+
+  tlen = len + 14;
+
+bic_send:
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen);
+  if ((ret) && (retries--)) {
+    sleep(1);
+    printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\
+           \n",    slot_id, target, offset, len);
+    goto bic_send;
+  }
+
+  return ret;
+}
+
+// Get PCIE switch update status
+static int
+_get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+  int retries = 3;
+
+  tbuf[3] = 0x01;
+
+bic_send:
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen);
+  if ((ret) && (retries--)) {
+    sleep(1);
+    syslog(LOG_ERR,"_get_pcie_sw_update_status: slot: %d, retrying..\n", slot_id);
+    goto bic_send;
+  }
+
+  // Ignore IANA ID
+  memcpy(status, &rbuf[3], 2);
+
+  return ret;
+}
+
+// Reset PCIE switch update status
+static int
+_reset_pcie_sw_update_status(uint8_t slot_id) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+  int retries = 3;
+
+  tbuf[3] = 0x00;
+
+bic_send:
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen);
+  if ((ret) && (retries--)) {
+    sleep(1);
+    printf("_reset_pcie_sw_update_status: slot: %d, retrying..\n", slot_id);
+    goto bic_send;
+  }
+
+  return ret;
+}
+
+// Terminate PCIE switch update
+static int
+_terminate_pcie_sw_update(uint8_t slot_id) {
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+  int retries = 3;
+
+  tbuf[3] = 0x02;
+
+bic_send:
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen);
+  if ((ret) && (retries--)) {
+    sleep(1);
+    printf("_terminate_pcie_sw_update: slot: %d, retrying..\n", slot_id);
     goto bic_send;
   }
 
@@ -1654,7 +1768,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     return _update_bic_main(slot_id, path, force);
   }
 
-  uint32_t dsize, last_offset;
+  uint32_t dsize, last_offset, block_offset;
   struct stat st;
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
@@ -1681,6 +1795,15 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     }
     syslog(LOG_CRIT, "Update VR: update vr firmware on slot %d\n", slot_id);
     dsize = st.st_size/5;
+  } else if (comp == UPDATE_PCIE_SWITCH) {
+    if (_reset_pcie_sw_update_status(slot_id) != 0) {
+      goto error_exit;
+    }
+    syslog(LOG_CRIT, "Update PCIE SWITCH: update pcie_sw firmware on slot %d\n", slot_id);
+    if (st.st_size/100 < 100)
+      dsize = st.st_size;
+    else
+      dsize = st.st_size/100;
   } else {
     if ((comp == UPDATE_CPLD) && (check_cpld_image(slot_id, fd, st.st_size) < 0)) {
       printf("invalid CPLD file!\n");
@@ -1699,11 +1822,27 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   // Write chunks of binary data in a loop
   offset = 0;
   last_offset = 0;
+  block_offset = 0;// for pcie switch update
   i = 1;
+  int last_tunk_pcie_sw_flag = 0;
   while (1) {
     // For BIOS, send packets in blocks of 64K
     if (comp == UPDATE_BIOS && ((offset+IPMB_WRITE_COUNT_MAX) > (i * BIOS_ERASE_PKT_SIZE))) {
       read_count = (i * BIOS_ERASE_PKT_SIZE) - offset;
+      i++;
+    } else if (comp == UPDATE_PCIE_SWITCH) {
+      if (i%5 == 0) {
+        //last trunk at a block
+        read_count = ((offset + LAST_FW_PCIE_SWITCH_TRUNK_SIZE) <= st.st_size) ? LAST_FW_PCIE_SWITCH_TRUNK_SIZE : (st.st_size - offset);
+        last_tunk_pcie_sw_flag = 1;
+      } else {
+        last_tunk_pcie_sw_flag = ((offset + IPMB_WRITE_COUNT_MAX) < st.st_size) ? 0 : 1;
+        if (last_tunk_pcie_sw_flag) {
+          read_count = st.st_size - offset;
+        } else {
+          read_count = IPMB_WRITE_COUNT_MAX;
+        }
+      }
       i++;
     } else {
       read_count = IPMB_WRITE_COUNT_MAX;
@@ -1711,19 +1850,31 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
 
     // Read from file
     count = read(fd, buf, read_count);
-    if (count <= 0) {
+    if (count <= 0 || count > read_count) {
       break;
     }
 
-    // For non-BIOS update, the last packet is indicated by extra flag
-    if ((comp != UPDATE_BIOS) && ((offset + count) >= st.st_size)) {
+    if (comp == UPDATE_PCIE_SWITCH){
+      // For PCIE switch update, the last trunk of a block is indicated by extra flag
+      if (last_tunk_pcie_sw_flag) {
+        target = comp | 0x80;
+      } else {
+        target = comp;
+      }
+    } else if ((comp != UPDATE_BIOS) && ((offset + count) >= st.st_size)) {
+      // For non-BIOS update, the last packet is indicated by extra flag
       target = comp | 0x80;
     } else {
       target = comp;
     }
 
-    // Send data to Bridge-IC
-    rc = _update_fw(slot_id, target, offset, count, buf);
+    if (comp == UPDATE_PCIE_SWITCH) {
+      rc = _update_pcie_sw_fw(slot_id, target, block_offset, count, st.st_size, buf);
+    } else {
+      // Send data to Bridge-IC
+      rc = _update_fw(slot_id, target, offset, count, buf);
+    }
+
     if (rc) {
       goto error_exit;
     }
@@ -1742,12 +1893,47 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
          case UPDATE_VR:
            printf("\rupdated vr: %d %%", offset/dsize*20);
            break;
+         case UPDATE_PCIE_SWITCH:
+           if (st.st_size/100 < 100)
+             printf("\rupdated pcie switch: %d %%", offset/dsize*100);
+           else
+             printf("\rupdated pcie switch: %d %%", offset/dsize);
+           break;
          default:
            printf("\rupdated bic boot loader: %d %%", offset/dsize*5);
            break;
        }
        fflush(stdout);
        last_offset += dsize;
+    }
+
+    //wait for writing  to pcie switch
+    if (comp == UPDATE_PCIE_SWITCH && (target & 0x80) ) {
+      uint8_t status[2] = {0};
+      int j = 0;
+      block_offset = offset; //update block offset
+      for (j=0;j<30;j++) {
+        rc = _get_pcie_sw_update_status(slot_id,status);
+        if (rc) {
+          goto error_exit;
+        }
+        if (status[1] == FW_PCIE_SWITCH_STAT_IDLE || status[1] == FW_PCIE_SWITCH_STAT_INPROGRESS) {
+          //do nothing
+        } else if (status[1] == FW_PCIE_SWITCH_STAT_DONE) {
+          break;
+        } else {
+          _terminate_pcie_sw_update(slot_id);
+          goto error_exit;
+        }
+        msleep(100);
+      }
+      if (j == 30) {
+        _terminate_pcie_sw_update(slot_id);
+        goto error_exit;
+      }
+      if (offset == st.st_size) {
+        _terminate_pcie_sw_update(slot_id);
+      }
     }
   }
 
@@ -1794,6 +1980,9 @@ error_exit:
       break;
     case UPDATE_BIC_BOOTLOADER:
       syslog(LOG_CRIT, "Update BIC BL: updating bic bootloader firmware is exiting on slot %d\n", slot_id);
+      break;
+    case UPDATE_PCIE_SWITCH:
+      syslog(LOG_CRIT, "Update PCIE SWITCH: updating pcie switch firmware is exiting on slot %d\n", slot_id);
       break;
   }
   if (fd > 0 ) {

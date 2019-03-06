@@ -32,3 +32,14 @@ def pal_get_fru_list():
 
 def pal_log_clear(fru):
     lpal_hndl.pal_log_clear(fru.encode('ascii'))
+
+def pal_get_pair_fru(fru):
+    if lpal_hndl is None:
+        return 0
+    pair_fru = c_ubyte()
+    p_pair_fru = pointer(pair_fru)
+    ret = lpal_hndl.pal_get_pair_fru(fru, p_pair_fru)
+    if ret:
+        return pair_fru.value
+    else:
+        return None

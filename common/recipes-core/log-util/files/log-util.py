@@ -187,6 +187,8 @@ def log_main():
 
         # Print cmd
         if cmd == cmdlist[0]:
+            fru_id = int(frulist.index(fru))
+            pair_fru = pal_get_pair_fru(fru_id)
 
             for log in syslog:
                 # log eg: 2017 Nov 21 21:46:09 rtptest1413-oob.prn3.facebook.com user.crit fbttn-c279551: power-util: SERVER_POWER_CYCLE successful for FRU: 1
@@ -216,8 +218,13 @@ def log_main():
                             print (log)
                         continue
 
-                if fru != 'all' and fru != fruname:
-                    continue
+                if pair_fru != None and pair_fru != 0:
+                    pair_fruname = frulist[int(pair_fru)]
+                    if fru != 'all' and fru != fruname and pair_fruname != fruname:
+                        continue
+                else:
+                    if fru != 'all' and fru != fruname:
+                        continue
 
                 if re.search(r'log-util:', log):
                     if optional_arg is None:

@@ -9470,3 +9470,23 @@ pal_is_ocp30_nic(void) {
 
   return 0;
 }
+
+bool
+pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru) {
+
+  if(pal_is_device_pair(slot_id))
+  {
+    if (slot_id == FRU_SLOT2) {
+      *pair_fru = FRU_SLOT1;
+      return true;
+    }
+
+    if (slot_id == FRU_SLOT4) {
+      *pair_fru = FRU_SLOT3;
+      return true;
+    }
+  }
+
+  *pair_fru = 0;
+  return false;
+}

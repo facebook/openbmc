@@ -568,7 +568,7 @@ int
 main(int argc, char **argv) {
 
   int ret = 0;
-  uint8_t fru;
+  uint8_t fru, pair_fru;
   int num;
   bool threshold;
   bool history;
@@ -606,6 +606,9 @@ main(int argc, char **argv) {
       ret |= print_sensor(fru, num, history, threshold, force, history_clear, period);
     }
     ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, history, threshold, false, history_clear, period);
+  } else if (pal_get_pair_fru(fru, &pair_fru)) {
+    ret = print_sensor(fru, num, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, history_clear, period);
+    ret = print_sensor(pair_fru, num, history, threshold, pair_fru == AGGREGATE_SENSOR_FRU_ID ? false : force, history_clear, period);
   } else {
     ret = print_sensor(fru, num, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, history_clear, period);
   }

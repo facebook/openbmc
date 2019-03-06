@@ -2308,3 +2308,9 @@ int __attribute__((weak))
 pal_get_sensor_util_timeout(uint8_t fru) {
   return 4;
 }
+
+bool __attribute__((weak))
+pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru)
+{
+  return false;
+}

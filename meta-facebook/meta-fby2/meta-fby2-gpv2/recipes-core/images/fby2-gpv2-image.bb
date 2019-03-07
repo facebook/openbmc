@@ -54,6 +54,7 @@ IMAGE_INSTALL += " \
   enclosure-util \
   libncsi \
   libpldm \
+  nvme-util \
   "
 
 IMAGE_FEATURES += " \

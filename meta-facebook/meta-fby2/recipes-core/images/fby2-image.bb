@@ -56,6 +56,7 @@ IMAGE_INSTALL += " \
   sensordump \
   enclosure-util \
   libpldm \
+  nvme-util \
   "
 
 IMAGE_FEATURES += " \

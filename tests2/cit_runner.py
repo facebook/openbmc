@@ -6,7 +6,7 @@ BMC_START_DIR = '/usr/local/bin/tests2/tests/'
 class RunTest:
 
     def __init__(self):
-        self.testrunner = unittest.TextTestRunner()
+        self.testrunner = unittest.TextTestRunner(verbosity=2)
         self.testloader = unittest.defaultTestLoader
 
     def get_single_test(self, test_path):
@@ -16,7 +16,7 @@ class RunTest:
         """
         test_path example - tests.wedge100.test_eeprom.EepromTest.test_odm_pcb
         """
-        self.testrunner.run(self.get_single_test(test_path))
+        return self.testrunner.run(self.get_single_test(test_path))
 
     def get_multiple_tests(self, test_paths):
         return self.testloader.loadTestsFromNames(test_paths)
@@ -92,10 +92,11 @@ if __name__ == '__main__':
    args = arg_parser()
 
    if args.run_test:
-       RunTest().run_single_test(args.run_test)
+       test_result = RunTest().run_single_test(args.run_test)
+       rc = 0 if test_result.wasSuccessful() else 1
+       exit(rc)
    elif args.platform:
        test_paths = Tests(args.platform, args.start_dir).get_all_platform_tests()
-
        if args.list_tests:
            for item in test_paths:
                print(item)

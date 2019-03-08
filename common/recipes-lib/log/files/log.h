@@ -43,6 +43,7 @@ extern "C" {
 /*
  * Macros for frequently used log priorities.
  */
+#define OBMC_CRIT(fmt, args...) obmc_log_by_prio(LOG_CRIT, fmt, ##args)
 #define OBMC_ERROR(err, fmt, args...)	\
 	obmc_log_by_prio(LOG_ERR, fmt ": %s", ##args, strerror(err))
 #define OBMC_WARN(fmt, args...) obmc_log_by_prio(LOG_WARNING, fmt, ##args)

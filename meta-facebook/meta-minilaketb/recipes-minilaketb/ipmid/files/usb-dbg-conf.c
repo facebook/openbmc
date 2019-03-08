@@ -552,3 +552,8 @@ int plat_get_extra_sysinfo(uint8_t slot, char *info)
 
   return 0;
 }
+
+int plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
+{
+  return -1;
+}

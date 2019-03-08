@@ -50,11 +50,6 @@ enum {
   FRU_MB = 1,
 };
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

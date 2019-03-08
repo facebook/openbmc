@@ -40,11 +40,6 @@ extern "C" {
 #define THERMAL_CONSTANT      255
 #define ERR_NOT_READY         -2
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 // Sensors under Bridge IC
 enum {
   BIC_SENSOR_MB_OUTLET_TEMP = 0x01,

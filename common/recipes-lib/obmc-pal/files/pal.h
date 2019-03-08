@@ -26,11 +26,5 @@
  * to that platform. if it can be common, please move it to
  * obmc-pal.h */
 
-/* TODO Move to obmc-sensor.h or obmc-pal.h */
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 #endif
 

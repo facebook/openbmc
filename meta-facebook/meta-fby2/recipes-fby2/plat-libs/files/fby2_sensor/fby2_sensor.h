@@ -42,11 +42,6 @@ extern "C" {
 
 #define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 typedef struct {
   const char *dimm_location_file;
   uint8_t dimm_sensor_num;

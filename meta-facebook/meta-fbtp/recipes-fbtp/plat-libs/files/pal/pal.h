@@ -286,11 +286,6 @@ enum {
   BOOT_DEVICE_RESERVED = 0xff,
 };
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);

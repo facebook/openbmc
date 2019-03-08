@@ -40,11 +40,6 @@ extern "C" {
 #define ERR_NOT_READY         -2
 #define EER_READ_NA           -3
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 enum{ //sync Minilake BIC spec 0.03
     BIC_SENSOR_MB_OUTLET_TEMP = 0x01,
     BIC_SENSOR_MB_INLET_TEMP = 0x07,

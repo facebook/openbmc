@@ -49,11 +49,6 @@ extern "C" {
 
 #define NUM_SSD 15
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 // Sensors under PEB
 enum {
   PEB_SENSOR_ADC_P12V = 0x42,

@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <sys/file.h>
 #include <stdbool.h>
+#include <openbmc/ipmi.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +69,11 @@ typedef struct {
   uint32_t poll_interval; // poll interval for each fru's sensor
 
 } thresh_sensor_t;
+
+typedef struct _sensor_info_t {
+  bool valid;
+  sdr_full_t sdr;
+} sensor_info_t;
 
 enum {
   SENSORD_MODE_TESTING = 0x01,

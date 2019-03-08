@@ -15,15 +15,16 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libipmi libipmb libfruid update-rc.d-native"
+DEPENDS += "libipmi libipmb libfruid update-rc.d-native"
 RDEPENDS_${PN} += "libipmi libfruid libipmb "
-LDFLAGS_append = "-lfruid -lipmb"
+LDFLAGS += "-lfruid -lipmb"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \
            file://run-ipmid.sh \
            file://fruid.c \
-           file://Makefile \
+           file://BBV.c \
+           file://usb-dbg-conf.c \
           "
 
 S = "${WORKDIR}"
@@ -48,6 +49,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

@@ -34,10 +34,10 @@ binfiles = "gpiod \
            "
 
 CFLAGS += " -Werror "
-LDFLAGS += " -lbic -lminipack_gpio -lpal "
+LDFLAGS += " -lbic -lminipack_gpio -lpal -llog "
 
-DEPENDS += " libbic libminipack-gpio libpal update-rc.d-native"
-RDEPENDS_${PN} += " libbic libminipack-gpio libpal "
+DEPENDS += " libbic libminipack-gpio libpal liblog update-rc.d-native"
+RDEPENDS_${PN} += " libbic libminipack-gpio libpal liblog "
 
 pkgdir = "gpiod"
 

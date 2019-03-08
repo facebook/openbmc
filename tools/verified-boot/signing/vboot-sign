@@ -63,7 +63,7 @@ if [ "$HELP" == "YES" ]; then
 fi
 
 POKY_DIR=$(dirname $POKY_BUILD)
-SIGN_SCRIPT_HOME=$POKY_DIR/tests/verified-boot/signing
+SIGN_SCRIPT_HOME=$POKY_DIR/tools/verified-boot/signing
 CURRENT_DIR=`pwd`
 IMAGES_DIR=$POKY_BUILD/tmp/deploy/images
 if [ ! -d $IMAGES_DIR ]; then

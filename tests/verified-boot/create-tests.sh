@@ -10,7 +10,7 @@
 set -e
 
 SOURCE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SCRIPTS="$SOURCE/signing"
+SCRIPTS="$SOURCE/../tools/signing"
 
 # Option parsing.
 if [ "$#" -lt 3 ]; then

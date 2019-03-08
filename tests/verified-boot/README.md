@@ -4,7 +4,7 @@ This is a set of integration tests for Open BMC's verified-boot built using U-Bo
 
 ### Signing example
 
-The scripts in `./signing` can be used to sign the firmware.
+The scripts in `tools/signing` can be used to sign the firmware.
 
 Requirements:
 - Ubuntu: `sudo apt install python-pip && sudo pip install -U pip && sudo pip install jinja2 pycrypto`
@@ -29,9 +29,9 @@ openssl genrsa -F4 -out /tmp/subordinate/subordinate.key 4096
 openssl rsa -in /tmp/subordinate/subordinate.key -pubout > /tmp/subordinate/subordinate.pub
 ```
 
-From the `signing` directory:
+From the `tools/signing` directory:
 ```sh
-cd ./signing
+cd tools/signing
 ```
 
 Create the ROM's key-enrollment-key (KEK) compiled DTB:

@@ -27,6 +27,7 @@
 #include <getopt.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <openbmc/kv.h>
 #include <openbmc/pal.h>
 
 #define POWER_ON_STR        "on"

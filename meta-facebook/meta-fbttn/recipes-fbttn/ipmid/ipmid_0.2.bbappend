@@ -16,18 +16,19 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += "libipmi libfruid update-rc.d-native libsdr libgpio"
-RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio"
-LDFLAGS_append = "-lfruid -lipmb -lgpio"
+RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libbic"
+LDFLAGS += "-lfruid -lipmb -lgpio -lbic"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \
            file://run-ipmid.sh \
            file://fruid.c \
+           file://usb-dbg-conf.c \
           "
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_FBTTN "
+CFLAGS += " -DCONFIG_FBTTN "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

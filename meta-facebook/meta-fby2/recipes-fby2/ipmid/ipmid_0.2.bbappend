@@ -15,21 +15,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = " libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid libfby2-sensor libncsi"
+DEPENDS += " libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid libfby2-sensor libncsi"
 RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libfby2-fruid libbic libfby2-sensor libncsi"
 
-CFLAGS += " -lfby2_fruid "
-LDFLAGS += " -lipmb -lbic -lgpio -lfby2_sensor -lncsi"
+CFLAGS += "-DCONFIG_FBY2"
+LDFLAGS += " -lipmb -lbic -lgpio -lfby2_sensor -lncsi -lfby2_fruid"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://setup-ipmid.sh \
            file://fruid.c \
+           file://usb-dbg-conf.c \
            file://run-ipmid.sh \
           "
 
 S = "${WORKDIR}"
-
-CFLAGS_prepend = " -DCONFIG_FBY2 "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -51,6 +50,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

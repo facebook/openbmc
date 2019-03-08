@@ -34,6 +34,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-sensor.h>
 #include <sys/reboot.h>

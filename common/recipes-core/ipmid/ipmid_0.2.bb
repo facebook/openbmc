@@ -39,16 +39,44 @@ SRC_URI = "file://Makefile \
            file://sdr.h \
            file://sensor.h \
            file://fruid.h \
+           file://fruid.c \
            file://usb-dbg.c \
            file://usb-dbg.h \
            file://usb-dbg-conf.c \
            file://usb-dbg-conf.h \
            file://BBV.c \
            file://BBV.h \
+           file://run-ipmid.sh \
+           file://setup-ipmid.sh \
           "
 
-DEPENDS += " libpal libsdr libfruid libipc "
-RDEPENDS_${PN} += " libpal libsdr libfruid libipc "
+S = "${WORKDIR}"
+
+do_install() {
+  dst="${D}/usr/local/fbpackages/${pkgdir}"
+  bin="${D}/usr/local/bin"
+  install -d $dst
+  install -d $bin
+  install -m 755 ipmid ${dst}/ipmid
+  ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/ipmid
+  install -d ${D}${sysconfdir}/ipmid
+  install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
+  install -m 755 run-ipmid.sh ${D}${sysconfdir}/sv/ipmid/run
+  update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
+}
+
+FBPACKAGEDIR = "${prefix}/local/fbpackages"
+
+FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
+
+
+
+DEPENDS += " libpal libsdr libkv libfruid libipc obmc-i2c libipmi libipmb libfruid update-rc.d-native"
+RDEPENDS_${PN} += " libpal libsdr libfruid libipc libkv libipmi libipmb libfruid "
 
 binfiles = "ipmid"
 

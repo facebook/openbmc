@@ -19,32 +19,6 @@ DEPENDS += " libipmi libfruid update-rc.d-native"
 RDEPENDS_${PN} += "libipmi libfruid"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://setup-ipmid.sh \
-           file://fruid.c \
-           file://run-ipmid.sh \
+SRC_URI += "file://fruid.c \
           "
-
-S = "${WORKDIR}"
-
 CFLAGS += " -DCONFIG_YOSEMITE "
-
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  install -m 755 ipmid ${dst}/ipmid
-  ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -d ${D}${sysconfdir}/sv
-  install -d ${D}${sysconfdir}/sv/ipmid
-  install -d ${D}${sysconfdir}/ipmid
-  install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
-  install -m 755 run-ipmid.sh ${D}${sysconfdir}/sv/ipmid/run
-  update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
-}
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-
-FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "

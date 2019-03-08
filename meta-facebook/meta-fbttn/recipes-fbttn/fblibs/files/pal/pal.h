@@ -38,9 +38,6 @@ extern "C" {
 
 #define MAX_NUM_FAN     2
 
-#define FRU_STATUS_GOOD   1
-#define FRU_STATUS_BAD    0
-
 #define BIC_READY 0           // BIC ready: 0; BIC NOT ready: 1
 #define BIC_NOT_READY 1
 

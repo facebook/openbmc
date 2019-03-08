@@ -194,9 +194,6 @@ extern "C" {
 #define TH3_VOL_MAX 927
 #define TH3_VOL_MIN 750
 
-#define FRU_STATUS_GOOD   1
-#define FRU_STATUS_BAD    0
-
 #define I2C_ADDR_SIM_LED 0x20
 #define I2C_ADDR_PIM16Q 0x60
 #define I2C_ADDR_PIM4DD 0x61

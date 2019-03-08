@@ -36,9 +36,6 @@ extern "C" {
 #define MAX_NUM_FAN     2
 #define MAX_DATA_NUM    2000
 
-#define FRU_STATUS_GOOD   1
-#define FRU_STATUS_BAD    0
-
 #define MAX_NODES 4
 
 extern char * key_list[];

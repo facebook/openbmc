@@ -36,9 +36,6 @@ extern "C" {
 #define MAX_KEY_LEN     64
 #define MAX_NUM_FAN     2
 
-#define FRU_STATUS_GOOD   1
-#define FRU_STATUS_BAD    0
-
 #define MAX_NODES 4
 #define MAX_NUM_DEVS 12
 

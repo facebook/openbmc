@@ -76,6 +76,11 @@ typedef struct _sensor_info_t {
 } sensor_info_t;
 
 enum {
+  FRU_STATUS_BAD = 0,
+  FRU_STATUS_GOOD = 1,
+};
+
+enum {
   SENSORD_MODE_TESTING = 0x01,
   SENSORD_MODE_NORMAL  = 0x0F,
 };

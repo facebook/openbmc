@@ -90,9 +90,9 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, JtagStates tap_state)
 //
 STATUS JTAG_get_tap_state(JTAG_Handler* state, JtagStates* tap_state)
 {
-    if (state == NULL || tap_state == NULL)
+    if (state == NULL || tap_state == NULL || state->active_chain == NULL)
         return ST_ERR;
-    *tap_state = state->tap_state;
+    *tap_state = state->active_chain->tap_state;
     return ST_OK;
 }
 
@@ -131,7 +131,7 @@ STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck)
     return ST_OK;
 }
 
-STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain);
+STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain)
 {
     if (state == NULL)
         return ST_ERR;

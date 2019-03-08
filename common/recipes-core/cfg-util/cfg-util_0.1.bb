@@ -13,7 +13,7 @@ S = "${WORKDIR}"
 
 LDFLAGS =+ " -lpal "
 
-DEPENDS =+ " libpal "
+DEPENDS =+ " libpal libkv "
 
 binfiles = "cfg-util"
 

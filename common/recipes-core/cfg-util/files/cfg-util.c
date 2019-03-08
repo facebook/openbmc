@@ -27,6 +27,7 @@
 #include <sys/reboot.h>
 #include <syslog.h>
 #include <sys/mman.h>
+#include <openbmc/kv.h>
 
 #define PAGE_SIZE                     0x1000
 #define AST_SRAM_BMC_REBOOT_BASE      0x1E721000

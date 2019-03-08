@@ -14,23 +14,12 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-
-SUMMARY = "ipmi daemon for Minipack"
-DESCRIPTION = "ipmi daemon for Minipack, uses LPC bus"
-SECTION = "base"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
-
-LDFLAGS_append = " -lwedge_eeprom"
-
-DEPENDS_append = " libwedge-eeprom libipmi libfruid libsdr update-rc.d-native"
+LDFLAGS += " -lwedge_eeprom"
+DEPENDS += " libwedge-eeprom libipmi libfruid libsdr update-rc.d-native"
 RDEPENDS_${PN} += "libipmi libkv libwedge-eeprom"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://Makefile \
-            file://ipmid.c \
-            file://setup-ipmid.sh \
+SRC_URI += "file://setup-ipmid.sh \
             file://run-ipmid.sh \
             file://fruid.c \
            "

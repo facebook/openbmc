@@ -12,7 +12,7 @@ DISTRO_OVERRIDES=(
   meta-minilaketb:krogoth
   meta-minipack:krogoth
   meta-wedge:krogoth
-  meta-wedge100:krogoth
+  meta-wedge100:rocko
   meta-yamp:krogoth
 )
 

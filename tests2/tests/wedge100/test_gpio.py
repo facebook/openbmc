@@ -18,27 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-import re
-from utils.cit_logger import Logger
+from common.base_gpio_test import BaseGpioTest
+from tests.wedge100.test_data.gpio.gpio import GPIOS
 
-def mac_verify(mac):
-    '''
-    Helper method to verify if a MAC address is properly formatted
-    '''
-    if re.match("[0-9a-f]{2}([:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$",
-                mac.lower()):
-        return True
-    return False
+class GpioTest(BaseGpioTest):
 
-def read_data_from_filepath(path):
-    '''
-    Helper method to read file from a file
-    '''
-    try:
-        handle = open(path, "r")
-        data = handle.readline().rstrip()
-        handle.close()
-        Logger.debug("Reading path={} data={}".format(path, data))
-        return data
-    except Exception:
-        raise("Failed to read path={}".format(path))
+    def set_gpios(self):
+        self.gpios = GPIOS

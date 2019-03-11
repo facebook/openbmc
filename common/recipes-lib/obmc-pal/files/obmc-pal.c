@@ -780,6 +780,10 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
             sprintf(temp_log, ", BMC Failed (Self Test Fail)");
             strcat(error_log, temp_log);
             break;
+          case 0xA10A:
+            sprintf(temp_log, ", System Firmware Corruption Detected");
+            strcat(error_log, temp_log);
+            break;
           default:
             break;
         }

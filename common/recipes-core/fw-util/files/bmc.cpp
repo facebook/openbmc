@@ -7,18 +7,21 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <sys/mman.h>
+#include <syslog.h>
 #include "bmc.h"
 
 using namespace std;
 
 #define BMC_RW_OFFSET               (64 * 1024)
 #define ROMX_SIZE                   (84 * 1024)
+
 int BmcComponent::update(string image_path)
 {
   string dev;
   int ret;
   string flash_image = image_path;
   stringstream cmd_str;
+
   if (_mtd_name == "") {
     // Upgrade not supported
     return FW_STATUS_NOT_SUPPORTED;
@@ -33,6 +36,9 @@ int BmcComponent::update(string image_path)
     system.error << "Failed to get device for " << _mtd_name << endl;
     return FW_STATUS_FAILURE;
   }
+
+  syslog(LOG_CRIT, "BMC fw upgrade initiated");
+
   system.output << "Flashing to device: " << dev << endl;
   if (_skip_offset > 0 || _writable_offset > 0) {
     flash_image = image_path + "-tmp";
@@ -97,6 +103,36 @@ int BmcComponent::update(string image_path)
     // this is a temp. file, remove it.
     remove(flash_image.c_str());
   }
+
+  // If flashcp cmd was successful, keep historical info that BMC fw was upgraded
+  if (ret == 0) {
+    char vers[128] = "NA";
+    string mtd;
+
+    // Obtain the version of BMC fw. Note: Very similar to BmcComponent::print_version() without system.output calls
+    if (system.get_mtd_name(_vers_mtd, mtd)) {
+      char cmd[128];
+      FILE *fp;
+      sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd.c_str());
+      fp = popen(cmd, "r");
+      if (fp) {
+        char line[256];
+        char min[64];
+        while (fgets(line, sizeof(line), fp)) {
+          int ret;
+          ret = sscanf(line, "U-Boot 2016.07%*[ ]%[^ \n]%*[ ](%*[^)])\n", min);
+          if (ret == 1) {
+            sprintf(vers, "%s", min);
+            break;
+          }
+        }
+        pclose(fp);
+      }
+    }
+
+    syslog(LOG_CRIT, "BMC fw upgrade completed. Version: %s", vers);
+  }
+
   return ret;
 }
 

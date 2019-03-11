@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 board_routes = [
-    '/api/sys/usb2i2c_reset',
+    #'/api/sys/usb2i2c_reset',
     '/api/sys/i2cflush',
     '/api/sys/modbus_registers',
 ]

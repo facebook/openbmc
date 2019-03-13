@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import os
 import unittest
 
 
@@ -28,6 +29,7 @@ class RunTest:
 
 
 class Tests:
+
     # For python unittest the way discovery works is that common imported tests
     # are imported but we dont run them and rely on platform to drive tests.
     # By default all tests in base classes cannot be run , hence "common"
@@ -94,10 +96,59 @@ class Tests:
         return self.formatted_tests_set
 
 
+def set_external(args):
+    """
+    Tests that trigger from outside BMC need Hostname information to BMC and userver
+    """
+    if args.host:
+        os.environ["TEST_HOSTNAME"] = args.host
+        # If user gave a hostname, determine oob name from it and set it.
+        if "." in args.host:
+            index = args.host.index(".")
+            os.environ["TEST_BMC_HOSTNAME"] = (
+                args.host[:index] + "-oob" + args.host[index:]
+            )
+
+    if args.bmc_host:
+        os.environ["TEST_BMC_HOSTNAME"] = args.bmc_host
+
+
+def get_tests(platform, start_dir, pattern=None):
+    if pattern:
+        return Tests(platform, start_dir, pattern).get_all_platform_tests()
+    return Tests(platform, start_dir).get_all_platform_tests()
+
+
+def clean_on_exit(returncode):
+    # Resetting hostname
+    os.environ["TEST_HOSTNAME"] = ""
+    os.environ["TEST_BMC_HOSTNAME"] = ""
+    exit(returncode)
+
+
 def arg_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--list-tests", action="store_true", help="List all available tests"
+    cit_description = """
+    CIT supports running following classes of tests:
+
+    Running tests on target BMC: test pattern "test_*"
+    Running tests on target BMC & CPU from outside BMC: test pattern "external_*"
+    Running stress tests on target BMC: test pattern "stress_*"
+
+    Usage Examples:
+    On devserver:
+    List tests : python cit_runner.py --platform wedge100 --list-tests --start-dir tests/
+    List tests that need to connect to BMC: python cit_runner.py --platform wedge100 --list-tests --start-dir tests/ --external --host "NAME"
+    Run tests that need to connect to BMC: python cit_runner.py --platform wedge100 --start-dir tests/ --external --host "NAME"
+    Run single/test that need connect to BMC: python cit_runner.py --run-test "path" --external --host "NAME"
+
+    On BMC:
+    List tests : python cit_runner.py --platform wedge100 --list-tests
+    Run tests : python cit_runner.py --platform wedge100
+    Run single test/module : python cit_runner.py --run-test "path"
+    """
+
+    parser = argparse.ArgumentParser(
+        epilog=cit_description, formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     parser.add_argument(
@@ -124,6 +175,10 @@ def arg_parser():
     )
 
     parser.add_argument(
+        "--list-tests", action="store_true", help="List all available tests"
+    )
+
+    parser.add_argument(
         "--start-dir",
         help="Path for where test discovery should start \
                         default: /usr/local/bin/tests2/tests/",
@@ -131,29 +186,56 @@ def arg_parser():
     )
 
     parser.add_argument("--stress", help="run all stress tests", action="store_true")
+    parser.add_argument(
+        "--external",
+        help="Run tests from outside BMC, these are tests that have \
+                        pattern external_test*.py, require --host to be set",
+        action="store_true",
+        default=False,
+    )  # find better way to represent this ?
+
+    parser.add_argument(
+        "--host",
+        help="Used for running tests\
+                        external to BMC and interacting with BMC and main CPU (ONLY) \
+                        example: hostname/ip of main CPU",
+    )
+
+    parser.add_argument(
+        "--bmc-host",
+        help="Used for running tests\
+                        external to BMC and interacting with BMC and main CPU (ONLY) \
+                        example: hostname/ip of BMC",
+    )
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = arg_parser()
+    pattern = None
+
+    if args.external:
+        pattern = "external*.py"
+        set_external(args)
+
+    if args.stress:
+        pattern = "stress*.py"
 
     if args.run_test:
         test_result = RunTest().run_single_test(args.run_test)
         rc = 0 if test_result.wasSuccessful() else 1
-        exit(rc)
-    elif args.platform:
-        if args.stress:
-            test_paths = Tests(
-                args.platform, args.start_dir, "stress*.py"
-            ).get_all_platform_tests()
-        else:
-            test_paths = Tests(args.platform, args.start_dir).get_all_platform_tests()
-        if args.list_tests:
-            for item in test_paths:
-                print(item)
-        else:
-            RunTest().run_multiple_tests(test_paths)
-    else:
-        print("Platform name needed")
-        exit(1)
+        clean_on_exit(rc)
+
+    if not args.platform:
+        print("Platform needed to run tests, pass --platform arg. Exiting..")
+        clean_on_exit(1)
+
+    test_paths = get_tests(args.platform, args.start_dir, pattern=pattern)
+    if args.list_tests:
+        for item in test_paths:
+            print(item)
+        clean_on_exit(0)
+
+    RunTest().run_multiple_tests(test_paths)
+    clean_on_exit(0)

@@ -1,8 +1,9 @@
 CITv2 is based on Python unittest framework that can help standardize test decisions.
 
+--------------------------------------------------------------------------
 How to use it ?
--------------------------------------
-1) Load your BMC image on target that supports python unittest
+--------------------------------------------------------------------------
+1) Load BMC image on target that supports python unittest
 2) SCP the whole tests2 folder to target /usr/local/bin
 3) To invoke tests, use the runner:
 # python cit_runner.py --help
@@ -38,3 +39,61 @@ Example 4:
 python cit_runner.py --list-tests --start-dir <name>
 > Useful to integrate the tool with external tools that only need to get the
 tests lists without access to target BMC
+
+--------------------------------------------------------------------------
+Code structure:
+--------------------------------------------------------------------------
+
+tests2---common (Contains the core part of tests and all base classes)
+|
+---------utils (Utilities used by tests , example shell etc)
+|
+---------tools (Tools used to generate data for tests from BMC example, GPIOS, i2c device tree)
+|
+---------tests
+          |
+          --------<platform> (Contains tests specific to a platform and data that drives base tests)
+          |
+          --------galaxy100
+          |
+          --------yamp
+          |
+          --------minipack
+
+--------------------------------------------------------------------------
+Types of Tests:
+--------------------------------------------------------------------------
+Tests are classified based on where they run and how they interact with BMC.
+Currently tool supports the following:
+1) Tests that directly run on BMC: This class of tests do not depend on
+interfacing with main CPU
+2) Tests that run outside BMC on like a external dev system: This class of tests
+can interact with both BMC and main CPU. These tests can interact with BMC to
+collect state example: power cycle tests, SoL tests etc
+3) Stress tests: Similar to 1) and 2). These tests are meant to take longer time to
+run, since they stress the SW module. Example: rest server
+
+Following sections describe how to add new tests for the above types
+
+Adding a new test that can directly run on BMC:
+--------------------------------------------------------------------------
+Tests get autodiscovered by the cit_runner , as long as test file name is test_*.py
+To add new test
+
+tests2---common ---> add base_XXX_test.py (Define tests in the class as test_XXX methods)
+|
+---------tests
+          |
+          --------<platform> ---> add test_XXX.py (Define tests in the class as test_XXX methods)
+
+
+Adding a new test that run outside BMC like a external dev system:
+--------------------------------------------------------------------------
+Tests get autodiscovered by cit_runner , as long as test file name is test_*.py
+To add new test
+
+tests2---common ---> add base_XXX_test.py (Define tests in the class as test_external_XXX methods)
+|
+---------tests
+          |
+          --------<platform> ---> add external_test_XXX.py (Define tests in the class as test_external_XXX methods)

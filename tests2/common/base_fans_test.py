@@ -62,6 +62,7 @@ class BaseFansTest(unittest.TestCase):
         self.assertNotEqual(self.start_fan_ctrl_cmd, None, "Kill Fan Controller cmd not set")
         for cmd in self.start_fan_ctrl_cmd:
             run_shell_cmd(cmd)
+        time.sleep(10)  # allow time for fans to be properly set
 
     @abstractmethod
     def fan_read(self):

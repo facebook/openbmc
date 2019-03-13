@@ -22,7 +22,7 @@ FILE=/etc/us_pseudo_tty
 TTY=/dev/ttyS0
 
 mTerm_server_running() {
-  pid=$(ps | grep -v grep | grep '/usr/local/bin/mTerm_server' -m 1 |
+  pid=$(ps w | grep -v grep | grep '/usr/local/bin/mTerm_server' -m 1 |
       awk '{print $1}')
   if [ $pid ] ; then
     return 0

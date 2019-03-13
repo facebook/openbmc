@@ -753,6 +753,8 @@ pal_get_pim_type(uint8_t fru) {
 
   if (val == 0x0) {
     ret = PIM_TYPE_16Q;
+  } else if (val == 0xf0) {
+    ret = PIM_TYPE_16O;
   } else if (val == 0x10) {
     ret = PIM_TYPE_4DD;
   } else {
@@ -792,6 +794,8 @@ pal_get_pim_type_from_file(uint8_t fru) {
 
   if (!strncmp(type, "16q", sizeof("16q"))) {
     return PIM_TYPE_16Q;
+  } else if (!strncmp(type, "16o", sizeof("16o"))) {
+    return PIM_TYPE_16O;
   } else if (!strncmp(type, "4dd", sizeof("4dd"))) {
     return PIM_TYPE_4DD;
   } else if (!strncmp(type, "unplug", sizeof("unplug"))) {
@@ -815,7 +819,7 @@ pim_thresh_array_init(uint8_t fru) {
     case FRU_PIM6:
     case FRU_PIM7:
     case FRU_PIM8:
-      i = fru - 3;
+      i = fru - FRU_PIM1;
       pim_sensor_threshold[PIM1_SENSOR_TEMP1+(i*0x15)][UCR_THRESH] = 70;
       pim_sensor_threshold[PIM1_SENSOR_TEMP2+(i*0x15)][UCR_THRESH] = 80;
       pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 58;
@@ -858,6 +862,39 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT15+(i*0x15)][LCR_THRESH] = 0.75;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][UCR_THRESH] = 1.944;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][LCR_THRESH] = 1.656;
+      } else if (type == PIM_TYPE_16O) {
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][UCR_THRESH] = 5.25;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][LCR_THRESH] = 4.75;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT2+(i*0x15)][UCR_THRESH] = 3.465;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT2+(i*0x15)][LCR_THRESH] = 3.135;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT3+(i*0x15)][UCR_THRESH] = 1.89;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT3+(i*0x15)][LCR_THRESH] = 1.71;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT4+(i*0x15)][UCR_THRESH] = 1.155;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT4+(i*0x15)][LCR_THRESH] = 1.045;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT5+(i*0x15)][UCR_THRESH] = 0.84;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT5+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT6+(i*0x15)][UCR_THRESH] = 0.84;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT6+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT7+(i*0x15)][UCR_THRESH] = 0.84;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT7+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT8+(i*0x15)][UCR_THRESH] = 0.84;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT8+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT9+(i*0x15)][UCR_THRESH] = 0.84;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT9+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT10+(i*0x15)][UCR_THRESH] = 3.465;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT10+(i*0x15)][LCR_THRESH] = 3.135;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT11+(i*0x15)][UCR_THRESH] = 2.625;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT11+(i*0x15)][LCR_THRESH] = 2.375;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT12+(i*0x15)][UCR_THRESH] = 1.89;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT12+(i*0x15)][LCR_THRESH] = 1.71;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT13+(i*0x15)][UCR_THRESH] = 100;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT13+(i*0x15)][LCR_THRESH] = -100;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT14+(i*0x15)][UCR_THRESH] = 100;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT14+(i*0x15)][LCR_THRESH] = -100;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT15+(i*0x15)][UCR_THRESH] = 100;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT15+(i*0x15)][LCR_THRESH] = -100;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][UCR_THRESH] = 100;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][LCR_THRESH] = -100;
       } else if (type == PIM_TYPE_4DD) {
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][UCR_THRESH] = 0.82;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][LCR_THRESH] = 0.56;
@@ -2972,9 +3009,9 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
 }
 
 static int
-pim_sensor_read(uint8_t sensor_num, float *value) {
-
+pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
+  int type = pal_get_pim_type_from_file(fru);
 
   switch(sensor_num) {
     case PIM1_SENSOR_TEMP1:
@@ -2997,9 +3034,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM1_SENSOR_34461_VOLT1:
       ret = read_attr(PIM1_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM1_SENSOR_34461_VOLT2:
       ret = read_attr(PIM1_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM1_SENSOR_34461_VOLT3:
       ret = read_attr(PIM1_34461_DEVICE, VOLT(3), value);
@@ -3024,9 +3063,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM1_SENSOR_34461_VOLT10:
       ret = read_attr(PIM1_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM1_SENSOR_34461_VOLT11:
       ret = read_attr(PIM1_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM1_SENSOR_34461_VOLT12:
       ret = read_attr(PIM1_34461_DEVICE, VOLT(12), value);
@@ -3063,9 +3104,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM2_SENSOR_34461_VOLT1:
       ret = read_attr(PIM2_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM2_SENSOR_34461_VOLT2:
       ret = read_attr(PIM2_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM2_SENSOR_34461_VOLT3:
       ret = read_attr(PIM2_34461_DEVICE, VOLT(3), value);
@@ -3090,9 +3133,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM2_SENSOR_34461_VOLT10:
       ret = read_attr(PIM2_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM2_SENSOR_34461_VOLT11:
       ret = read_attr(PIM2_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM2_SENSOR_34461_VOLT12:
       ret = read_attr(PIM2_34461_DEVICE, VOLT(12), value);
@@ -3129,9 +3174,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM3_SENSOR_34461_VOLT1:
       ret = read_attr(PIM3_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM3_SENSOR_34461_VOLT2:
       ret = read_attr(PIM3_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM3_SENSOR_34461_VOLT3:
       ret = read_attr(PIM3_34461_DEVICE, VOLT(3), value);
@@ -3156,9 +3203,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM3_SENSOR_34461_VOLT10:
       ret = read_attr(PIM3_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM3_SENSOR_34461_VOLT11:
       ret = read_attr(PIM3_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM3_SENSOR_34461_VOLT12:
       ret = read_attr(PIM3_34461_DEVICE, VOLT(12), value);
@@ -3195,9 +3244,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM4_SENSOR_34461_VOLT1:
       ret = read_attr(PIM4_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM4_SENSOR_34461_VOLT2:
       ret = read_attr(PIM4_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM4_SENSOR_34461_VOLT3:
       ret = read_attr(PIM4_34461_DEVICE, VOLT(3), value);
@@ -3222,9 +3273,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM4_SENSOR_34461_VOLT10:
       ret = read_attr(PIM4_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM4_SENSOR_34461_VOLT11:
       ret = read_attr(PIM4_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM4_SENSOR_34461_VOLT12:
       ret = read_attr(PIM4_34461_DEVICE, VOLT(12), value);
@@ -3261,9 +3314,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM5_SENSOR_34461_VOLT1:
       ret = read_attr(PIM5_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM5_SENSOR_34461_VOLT2:
       ret = read_attr(PIM5_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM5_SENSOR_34461_VOLT3:
       ret = read_attr(PIM5_34461_DEVICE, VOLT(3), value);
@@ -3288,9 +3343,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM5_SENSOR_34461_VOLT10:
       ret = read_attr(PIM5_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM5_SENSOR_34461_VOLT11:
       ret = read_attr(PIM5_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM5_SENSOR_34461_VOLT12:
       ret = read_attr(PIM5_34461_DEVICE, VOLT(12), value);
@@ -3327,9 +3384,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM6_SENSOR_34461_VOLT1:
       ret = read_attr(PIM6_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM6_SENSOR_34461_VOLT2:
       ret = read_attr(PIM6_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM6_SENSOR_34461_VOLT3:
       ret = read_attr(PIM6_34461_DEVICE, VOLT(3), value);
@@ -3354,9 +3413,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM6_SENSOR_34461_VOLT10:
       ret = read_attr(PIM6_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM6_SENSOR_34461_VOLT11:
       ret = read_attr(PIM6_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM6_SENSOR_34461_VOLT12:
       ret = read_attr(PIM6_34461_DEVICE, VOLT(12), value);
@@ -3393,9 +3454,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM7_SENSOR_34461_VOLT1:
       ret = read_attr(PIM7_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM7_SENSOR_34461_VOLT2:
       ret = read_attr(PIM7_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM7_SENSOR_34461_VOLT3:
       ret = read_attr(PIM7_34461_DEVICE, VOLT(3), value);
@@ -3420,9 +3483,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM7_SENSOR_34461_VOLT10:
       ret = read_attr(PIM7_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM7_SENSOR_34461_VOLT11:
       ret = read_attr(PIM7_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM7_SENSOR_34461_VOLT12:
       ret = read_attr(PIM7_34461_DEVICE, VOLT(12), value);
@@ -3459,9 +3524,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM8_SENSOR_34461_VOLT1:
       ret = read_attr(PIM8_34461_DEVICE, VOLT(1), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 4;
       break;
     case PIM8_SENSOR_34461_VOLT2:
       ret = read_attr(PIM8_34461_DEVICE, VOLT(2), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM8_SENSOR_34461_VOLT3:
       ret = read_attr(PIM8_34461_DEVICE, VOLT(3), value);
@@ -3486,9 +3553,11 @@ pim_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PIM8_SENSOR_34461_VOLT10:
       ret = read_attr(PIM8_34461_DEVICE, VOLT(10), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM8_SENSOR_34461_VOLT11:
       ret = read_attr(PIM8_34461_DEVICE, VOLT(11), value);
+      if(type == PIM_TYPE_16O)  *value = *value * 2;
       break;
     case PIM8_SENSOR_34461_VOLT12:
       ret = read_attr(PIM8_34461_DEVICE, VOLT(12), value);
@@ -3802,7 +3871,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_PIM6:
     case FRU_PIM7:
     case FRU_PIM8:
-      ret = pim_sensor_read(sensor_num, value);
+      ret = pim_sensor_read(fru, sensor_num, value);
       if (sensor_num >= PIM1_SENSOR_QSFP_TEMP &&
           sensor_num <= PIM8_SENSOR_QSFP_TEMP) {
         delay = 100;

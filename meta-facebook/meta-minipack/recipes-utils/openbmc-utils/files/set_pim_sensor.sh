@@ -27,7 +27,7 @@ usage(){
     echo "     $program all <Operation>"
     echo "     $program <PIM> <Operation>"
     echo "     <PIM>: 1 ~ 8"
-    echo "     <Operation>: load / unload / id"
+    echo "     <Operation>: load / unload"
 }
 
 if [ $# -ne 2 ]; then
@@ -65,37 +65,19 @@ elif [ "$2" == "load" ]; then
     #Thus, we sleep 5 seconds to be on the save side.
     sleep 5
     for bus in ${FPGA_BUS}; do
-
         i2c_device_add $(($bus + 4)) 0x10 adm1278 2> /dev/null
-        i2c_device_add $(($bus + 6)) 0x74 max34461 2> /dev/null
         i2c_device_add $(($bus + 2)) 0x48 tmp75 2> /dev/null
         i2c_device_add $(($bus + 3)) 0x4b tmp75 2> /dev/null
-        
-    done
 
-elif [ "$2" == "id" ]; then
-    for bus in ${FPGA_BUS}; do
-        pim_16q=`i2cdetect -y $bus 0x60 0x60 | grep "\-\-"` > /dev/null
-        pim_4dd=`i2cdetect -y $bus 0x61 0x61 | grep "\-\-"` > /dev/null
-        slot=$(($(($(($bus - 80)) / 8)) + 1))
-        if [ "${pim_16q}" != "" ] && [ "${pim_4dd}" != "" ]; then
-            if [ "$1" == "all" ]; then
-                continue
-            else
-                exit -1
-            fi
-        elif [ "${pim_16q}" == "" ] && [ "${pim_4dd}" != "" ]; then
-            ret=`i2cget -y -f $bus 0x60 0x03` 2> /dev/null
-            #set PIM number into DOM FPGA 0x03 register.
-            if [[ "$ret" -ne "0x0$slot" ]]; then
-                i2cset -f -y $bus 0x60 0x03 $1
-            fi
+        pim_type=`head -n1 /sys/bus/i2c/devices/$bus-0060/board_ver 2> /dev/null`
+        if [ "${pim_type}" == "0x0" ]; then   #PIM16Q
+            i2c_device_add $(($bus + 6)) 0x74 max34461 2> /dev/null
+        elif [ "${pim_type}" == "0xf0" ]; then #PIM16O
+            i2c_device_add $(($bus + 6)) 0x74 max34460 2> /dev/null
+        elif [ "${pim_type}" == "0x10" ]; then #PIM4DD
+            i2c_device_add $(($bus + 6)) 0x74 max34461 2> /dev/null
         else
-            ret=`i2cget -y -f $bus 0x61 0x03` 2> /dev/null
-            #set PIM number into DOM FPGA 0x03 register.
-            if [[ "$ret" -ne "0x0$slot" ]]; then
-                i2cset -f -y $bus 0x61 0x03 $1
-            fi
+            echo "DOMFPGA is not detected or PIM $num is not inserted"
         fi
     done
 else

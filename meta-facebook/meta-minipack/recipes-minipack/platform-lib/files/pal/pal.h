@@ -636,8 +636,9 @@ enum
 enum {
   PIM_TYPE_UNPLUG = 0,
   PIM_TYPE_16Q = 1,
-  PIM_TYPE_4DD = 2,
-  PIM_TYPE_NONE = 3
+  PIM_TYPE_16O = 2,
+  PIM_TYPE_4DD = 3,
+  PIM_TYPE_NONE = 4
 };
 
 enum {

@@ -75,7 +75,7 @@ static int max34461_vol_show(struct device *dev,
   return scnprintf(buf, PAGE_SIZE, "%d\n", value);
 }
 
-static const i2c_dev_attr_st max34461_attr_table[] = {
+static const i2c_dev_attr_st max3446x_attr_table[] = {
   {
     "in1_input",
     NULL,
@@ -198,12 +198,19 @@ static const unsigned short normal_i2c[] = {
 };
 
 enum {
+  MAX34460_CHAN_NUM = 12,
+  MAX34461_CHAN_NUM = 16
+};
+
+enum {
   MAX34461,
+  MAX34460,
 };
 
 /* max34461 id */
 static const struct i2c_device_id max34461_id[] = {
   {"max34461", MAX34461},
+  {"max34460", MAX34460},
   { },
 };
 MODULE_DEVICE_TABLE(i2c, max34461_id);
@@ -222,7 +229,7 @@ static int max34461_detect(struct i2c_client *client,
 static int max34461_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
-  int n_attrs = sizeof(max34461_attr_table) / sizeof(max34461_attr_table[0]);
+  int n_attrs;
   struct device *dev = &client->dev;
   i2c_dev_data_st *data;
 
@@ -231,8 +238,14 @@ static int max34461_probe(struct i2c_client *client,
     return -ENOMEM;
   }
 
+  if (id->driver_data == MAX34460) {
+    n_attrs = MAX34460_CHAN_NUM; /* 12 channel voltage monitor */
+  } else if (id->driver_data == MAX3441) {
+    n_attrs = MAX34461_CHAN_NUM; /* 16 channel voltage monitor */
+  }
+
   return i2c_dev_sysfs_data_init(client, data,
-                                 max34461_attr_table, n_attrs);
+                                 max3446x_attr_table, n_attrs);
 }
 
 static int max34461_remove(struct i2c_client *client)

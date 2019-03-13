@@ -185,12 +185,6 @@ for bus in ${BUS}; do
     i2c_device_add $bus 0x56 24c64     # 16Q
 done
 
-# # Bus 86 94 102 110 118 126 134 142  # PIM1 ~ PIM8 MAX34461
-BUS="86 94 102 110 118 126 134 142"
-for bus in ${BUS}; do
-    i2c_device_add $bus 0x74 max34461
-done
-
 # # Bus 80 88 96 104 112 120 128 136  # PIM1 ~ PIM8 DOMFPGA
 BUS="80 88 96 104 112 120 128 136"
 for bus in ${BUS}; do

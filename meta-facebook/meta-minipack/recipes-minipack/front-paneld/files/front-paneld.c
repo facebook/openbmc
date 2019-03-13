@@ -31,6 +31,7 @@
 #include <sys/un.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <linux/limits.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
@@ -40,6 +41,8 @@
 
 #define TMP75_NAME    "tmp75"
 #define ADM1278_NAME  "adm1278"
+#define MAX34460_NAME "max34460"
+#define MAX34461_NAME "max34461"
 
 #define BTN_MAX_SAMPLES   200
 #define BTN_POWER_OFF     40
@@ -47,6 +50,8 @@
 #define ADM1278_ADDR 0x10
 #define TMP75_1_ADDR 0x48
 #define TMP75_2_ADDR 0x4b
+#define MAX34460_ADDR 0x74
+#define MAX34461_ADDR 0x74
 
 #define INTERVAL_MAX  5
 
@@ -81,8 +86,10 @@ pim_device_detect_log(uint8_t num, uint8_t bus, uint8_t addr,
 }
 
 static void
-pim_driver_add(uint8_t num) {
+pim_driver_add(uint8_t num, uint8_t pim_type) {
   int state;
+  char max3446x_name[NAME_MAX] = {0};
+  uint8_t max3446x_addr = 0;
   uint8_t bus = ((num - 1) * 8) + 80;
 
   state = pal_detect_i2c_device(bus+2, TMP75_1_ADDR, MODE_AUTO, 0);
@@ -119,11 +126,33 @@ pim_driver_add(uint8_t num) {
                        num, bus+4, ADM1278_ADDR, ADM1278_NAME);
     }
   }
+  sleep(1);
+
+  if (pim_type == PIM_TYPE_16Q || pim_type == PIM_TYPE_4DD) {
+    max3446x_addr = MAX34461_ADDR;
+    strncpy(max3446x_name, MAX34461_NAME, sizeof(max3446x_name));
+  } else if (pim_type == PIM_TYPE_16O) {
+    max3446x_addr = MAX34460_ADDR;
+    strncpy(max3446x_name, MAX34460_NAME, sizeof(max3446x_name));
+  }
+
+  state = pal_detect_i2c_device(bus+6, max3446x_addr, MODE_AUTO, 0);
+  if (state) {
+    pim_device_detect_log(num, bus+6, max3446x_addr, max3446x_name, state);
+  } else {
+    if (pal_add_i2c_device(bus+6, max3446x_addr, max3446x_name)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                       num, bus+6, max3446x_addr, max3446x_name);
+    }
+  }
 }
 
 static void
-pim_driver_del(uint8_t num) {
+pim_driver_del(uint8_t num, uint8_t pim_type) {
   uint8_t bus = ((num - 1) * 8) + 80;
+  uint8_t max3446x_addr = 0;
+  char max3446x_name[NAME_MAX] = {0};
 
   if (pal_del_i2c_device(bus+2, TMP75_1_ADDR)) {
     syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
@@ -142,6 +171,19 @@ pim_driver_del(uint8_t num) {
                       "driver cannot delete.",
                       num, bus+4, ADM1278_ADDR, ADM1278_NAME);
   }
+
+  if (pim_type == PIM_TYPE_16Q || pim_type == PIM_TYPE_4DD) {
+    max3446x_addr = MAX34461_ADDR;
+    strncpy(max3446x_name, MAX34461_NAME, sizeof(max3446x_name));
+  } else if (pim_type == PIM_TYPE_16O ) {
+    max3446x_addr = MAX34460_ADDR;
+    strncpy(max3446x_name, MAX34460_NAME, sizeof(max3446x_name));
+  }
+  if (pal_del_i2c_device(bus+6, max3446x_addr)) {
+    syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                      "driver cannot delete.",
+                      num, bus+6, max3446x_addr, max3446x_name);
+  }
 }
 
 static int
@@ -152,7 +194,7 @@ pim_thresh_init_file_check(uint8_t fru) {
   pal_get_fru_name(fru, fru_name);
   snprintf(fpath, sizeof(fpath), INIT_THRESHOLD_BIN, fru_name);
 
-  return access(INIT_THRESHOLD_BIN, F_OK);
+  return access(fpath, F_OK);
 }
 
 int
@@ -284,8 +326,8 @@ pim_monitor_handler(void *unused) {
       if (prsnt != prsnt_ori) {
         if (prsnt) {
           syslog(LOG_WARNING, "PIM %d is plugged in.", num);
-          pim_driver_add(num);
           pim_type = pal_get_pim_type(fru);
+          pim_driver_add(num, pim_type);
           if (pim_type != pim_type_old[num]) {
             if (pim_type == PIM_TYPE_16Q) {
               if (!pal_set_pim_type_to_file(fru, "16q")) {
@@ -294,6 +336,14 @@ pim_monitor_handler(void *unused) {
               } else {
                 syslog(LOG_WARNING,
                        "pal_set_pim_type_to_file: PIM %d set 16Q failed", num);
+              }
+            } else if (pim_type == PIM_TYPE_16O) {
+              if (!pal_set_pim_type_to_file(fru, "16o")) {
+                syslog(LOG_INFO, "PIM %d type is 16O", num);
+                pim_type_old[num] = PIM_TYPE_16O;
+              } else {
+                syslog(LOG_WARNING,
+                       "pal_set_pim_type_to_file: PIM %d set 16O failed", num);
               }
             } else if (pim_type == PIM_TYPE_4DD) {
               if (!pal_set_pim_type_to_file(fru, "4dd")) {
@@ -325,9 +375,9 @@ pim_monitor_handler(void *unused) {
           }
         } else {
           syslog(LOG_WARNING, "PIM %d is unplugged.", num);
-          pim_type_old[num] = PIM_TYPE_UNPLUG;
           pal_clear_thresh_value(fru);
-          pim_driver_del(num);
+          pim_driver_del(num, pim_type_old[num]);
+          pim_type_old[num] = PIM_TYPE_UNPLUG;
           if (pal_set_pim_type_to_file(fru, "unplug")) {
             syslog(LOG_WARNING,
                     "pal_set_pim_type_to_file: PIM %d set unplug failed", num);

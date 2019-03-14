@@ -1,0 +1,4 @@
+LINUX_VERSION_EXTENSION = "-fbal"
+
+COMPATIBLE_MACHINE = "angelslanding"
+

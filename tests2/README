@@ -1,0 +1,40 @@
+CITv2 is based on Python unittest framework that can help standardize test decisions.
+
+How to use it ?
+-------------------------------------
+1) Load your BMC image on target that supports python unittest
+2) SCP the whole tests2 folder to target /usr/local/bin
+3) To invoke tests, use the runner:
+# python cit_runner.py --help
+usage: cit_runner.py [-h] [--list-tests] [--platform {wedge,wedge100}]
+                     [--run-test RUN_TEST] [--start-dir START_DIR]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --list-tests          List all available tests
+  --platform {wedge, wedge100}
+                        Run all tests in platform by platform name
+  --run-test RUN_TEST   Path to run a single test. Example:
+                        tests.wedge100.test_eeprom.EepromTest.test_odm_pcb
+  --start-dir START_DIR
+                        Path for where test discovery should start default:
+                        /usr/local/bin/tests2/tests/
+
+Example 1:
+python cit_runner.py --platform wedge100
+> Will execute all tests that are supported for the platform
+
+Example 2:
+python cit_runner.py --platform wedge100 --list-tests
+> Will only list all tests that are supported on a platform
+
+Example 3:
+python cit_runner.py --run-test <name>
+> Will only run the test defined in "name"
+> This option enables user to run a single test or even tests defined in a module.
+> Running tests in a module is powerful to validate a whole feature , example fscd
+
+Example 4:
+python cit_runner.py --list-tests --start-dir <name>
+> Useful to integrate the tool with external tools that only need to get the
+tests lists without access to target BMC

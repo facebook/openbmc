@@ -135,6 +135,11 @@ flash_image_generate() {
       dd if=${UBOOT_SPL_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=0 conv=notrunc
     fi
 
+    # Generate MD5sums and store in image.
+    echo "{\"$(dd if=${FLASH_IMAGE_DESTINATION} bs=1k count=380 2> /dev/null | md5sum | awk '{print $1}')\": \"Built: $(date)\"}" > ./tmp.md5
+    dd if=./tmp.md5 of=${FLASH_IMAGE_DESTINATION} bs=1k count=4 seek=380 conv=notrunc
+    rm -f ./tmp.md5
+
     ln -sf ${FLASH_IMAGE} ${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}
     ln -sf ${FIT} ${DEPLOY_DIR_IMAGE}/${FIT_LINK}
 }

@@ -24,4 +24,5 @@ def setup_board_routes(app):
     app.router.add_get(board_routes[1], bhandler.rest_piminfo_hdl)
     app.router.add_get(board_routes[2], bhandler.rest_fruid_scm_hdl)
     app.router.add_get(board_routes[3], bhandler.rest_pimserial_hdl)
+    app.router.add_get(board_routes[4], bhandler.rest_seutil_hdl)
 

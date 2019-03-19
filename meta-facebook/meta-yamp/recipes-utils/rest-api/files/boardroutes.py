@@ -20,4 +20,5 @@ board_routes = [
     '/api/sys/piminfo',
     '/api/sys/fruid_scm',
     '/api/sys/pimserial',
+    '/api/sys/mb/seutil',
 ]

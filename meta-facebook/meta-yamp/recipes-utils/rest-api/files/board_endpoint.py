@@ -24,6 +24,7 @@ import rest_fruid_scm
 import rest_pim_present
 import rest_piminfo
 import rest_pimserial
+import rest_seutil
 class boardApp_Handler:
     # Handler for sys/mb/fruid/scm resource endpoint
     async def rest_fruid_scm_hdl(self, request):
@@ -40,3 +41,9 @@ class boardApp_Handler:
     # Handler for sys/pim_serial resource endpoint
     async def rest_pimserial_hdl(self,request):
         return web.json_response(rest_pimserial.get_pimserial())
+
+    # Handler for sys/mb/seutil resource endpoint
+    async def rest_seutil_hdl(self, request):
+        return web.json_response(
+            rest_seutil.get_seutil(), dumps=dumps_bytestr,
+    )

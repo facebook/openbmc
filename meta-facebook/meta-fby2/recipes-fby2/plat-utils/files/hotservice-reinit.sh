@@ -129,7 +129,7 @@ SLOT_BUS=$(get_slot_bus $SLOT_NUM)
 case $OPTION in
     start)
       if [ $(is_server_prsnt $SLOT_NUM) == 0 ]; then
-         exit 1
+        exit 1
       fi
       echo "start to re-init for slot$SLOT_NUM insertion"
 
@@ -162,18 +162,16 @@ case $OPTION in
       sleep 3
 
       # Restart Service for new device/server
-      echo "restart mTerm for $SLOT $OPTION"
-      if [[ $(is_server_prsnt $SLOT_NUM) == "1" && $(get_slot_type $SLOT_NUM) == "0" ]] ; then
-         sv start mTerm$SLOT_NUM
-      fi
-
-      echo "restart ipmbd for $SLOT $OPTION"
       if [[ $(is_server_prsnt $SLOT_NUM) == "1" ]]; then
-         if [[ $(get_slot_type $SLOT_NUM) == "0" || $(get_slot_type $SLOT_NUM) == "4" ]]; then
-           sv start ipmbd_$SLOT_BUS
-           rm -rf /tmp/fruid_$SLOT*
-           /usr/local/bin/bic-cached $SLOT_NUM > /dev/null 2>&1 &
-         fi
+        if [[ $(get_slot_type $SLOT_NUM) == "0" || $(get_slot_type $SLOT_NUM) == "4" ]]; then
+          echo "restart mTerm for $SLOT $OPTION"
+          sv start mTerm$SLOT_NUM
+
+          echo "restart ipmbd for $SLOT $OPTION"
+          sv start ipmbd_$SLOT_BUS
+          rm -rf /tmp/fruid_$SLOT*
+          /usr/local/bin/bic-cached -s $SLOT_NUM > /dev/null 2>&1 &
+        fi
       fi
 
       # Server Type recognition restart

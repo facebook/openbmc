@@ -1420,7 +1420,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        while (retry > 0) {
          ret = bic_get_self_test_result(pwr_slot, self_test_result);
          if (ret == 0) {
-           syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
+           syslog(LOG_INFO, "bic_get_self_test_result of slot%u: %X %X", pwr_slot, self_test_result[0], self_test_result[1]);
            break;
          }
          retry--;
@@ -1842,6 +1842,11 @@ server_12v_on(uint8_t slot_id) {
     }
   }
 
+  if (pal_is_slot_support_update(slot_id)) {
+    snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", slot_id);  // retrieve FRU data
+    system(vpath);
+  }
+
   if (pal_is_device_pair(slot_id)) {
     if (0 == slot_id%2)
       pair_slot_id = slot_id - 1;
@@ -1859,6 +1864,11 @@ server_12v_on(uint8_t slot_id) {
         server_12v_off(pair_slot_id);
         return -1;
       }
+    }
+
+    if (pal_is_slot_support_update(pair_slot_id)) {
+      snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", pair_slot_id);  // retrieve FRU data
+      system(vpath);
     }
   }
 

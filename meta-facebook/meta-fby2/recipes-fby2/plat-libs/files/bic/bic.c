@@ -36,8 +36,9 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
 
-#define FRUID_READ_COUNT_MAX 0x30
-#define FRUID_WRITE_COUNT_MAX 0x30
+#define FRUID_READ_COUNT_MAX 0x20
+#define FRUID_WRITE_COUNT_MAX 0x20
+#define FRUID_SIZE 256
 #define IPMB_READ_COUNT_MAX 224
 #define IPMB_WRITE_COUNT_MAX 224
 #define BIOS_ERASE_PKT_SIZE (64*1024)
@@ -2126,7 +2127,10 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size)
   }
 
   // Indicates the size of the FRUID
-  nread = (info.size_msb << 6) + (info.size_lsb);
+  nread = (info.size_msb << 8) | info.size_lsb;
+  if (nread > FRUID_SIZE) {
+    nread = FRUID_SIZE;
+  }
   *fru_size = nread;
   if (*fru_size == 0)
      goto error_exit;

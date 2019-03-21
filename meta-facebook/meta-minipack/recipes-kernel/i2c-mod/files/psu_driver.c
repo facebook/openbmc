@@ -84,7 +84,7 @@ static int linear_convert(int type, int value, int n)
     data_y = msb_y ? -1 * ((~value & 0x3ff) + 1)
                    : value & 0x3ff;
 
-    if (n != NULL) {
+    if (n != 0) {
       value_x = (n < 0) ? (data_y * 1000) / POW2(abs(n))
                         : (data_y * 1000) * POW2(n);
     } else {
@@ -99,7 +99,7 @@ static int linear_convert(int type, int value, int n)
       }
     }
   } else {
-    if (n != NULL) {
+    if (n != 0) {
       value_x = (n < 0) ? (value * 1000) / POW2(abs(n))
                         : (value * 1000) * POW2(n);
     }
@@ -181,7 +181,7 @@ static ssize_t psu_vin_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:
@@ -209,7 +209,7 @@ static ssize_t psu_iin_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:
@@ -238,7 +238,7 @@ static ssize_t psu_vout_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case LITEON_1500:
       result = linear_convert(LINEAR_16, result, -9);
@@ -269,7 +269,7 @@ static ssize_t psu_iout_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
       result = linear_convert(LINEAR_11, result, -3);
@@ -299,7 +299,7 @@ static ssize_t psu_temp_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:
@@ -329,7 +329,7 @@ static ssize_t psu_fan_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL) / 1000;
+      result = linear_convert(LINEAR_11, result, 0) / 1000;
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:
@@ -357,7 +357,7 @@ static ssize_t psu_power_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:
@@ -384,7 +384,7 @@ static ssize_t psu_vstby_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case LITEON_1500:
       result = linear_convert(LINEAR_16, result, -9);
@@ -417,7 +417,7 @@ static ssize_t psu_istby_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
       result = linear_convert(LINEAR_11, result, -3);
@@ -449,7 +449,7 @@ static ssize_t psu_pstby_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:

@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# Copyright 2019-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+. /usr/local/bin/openbmc-utils.sh
+
+declare -a LINECARDS
+LINECARDS=(
+  1:LC1
+  2:LC2
+  3:LC3
+  4:LC4
+  5:LC5
+  6:LC6
+  7:LC7
+  8:LC8
+)
+
+usage() {
+    echo "Usage $0 [1..8]"
+}
+
+show_pim_fruid() {
+    for key in ${LINECARDS[*]}; do
+        pim_no=${key%%:*}
+        linecard_no=${key##*:}
+        if [ "${pim_no}" = "${1}" ]; then
+          weutil "${linecard_no}"
+          exit 1
+         fi
+    done
+  unset pim_no linecard_no
+}
+
+if [ "$#" -ne 1 ]; then
+    usage
+    exit 1
+fi
+
+num="${1}"
+if [ "${num}" -ge 1 ] && [ "${num}" -le 8 ];then
+    show_pim_fruid "${num}"
+else
+    usage
+    exit 1
+fi

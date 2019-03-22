@@ -34,6 +34,7 @@ SRC_URI += "file://bios_util.sh \
             file://yamp_bios.layout \
             file://showtech.sh \
             file://seutil \
+            file://peutil \ 
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -49,6 +50,7 @@ OPENBMC_UTILS_FILES += " \
     pim_enable.sh \
     showtech.sh \
     seutil \
+    peutil \
     "
 
 DEPENDS_append = " update-rc.d-native"

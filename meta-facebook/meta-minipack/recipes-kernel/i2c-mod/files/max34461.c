@@ -240,7 +240,7 @@ static int max34461_probe(struct i2c_client *client,
 
   if (id->driver_data == MAX34460) {
     n_attrs = MAX34460_CHAN_NUM; /* 12 channel voltage monitor */
-  } else if (id->driver_data == MAX3441) {
+  } else if (id->driver_data == MAX34461) {
     n_attrs = MAX34461_CHAN_NUM; /* 16 channel voltage monitor */
   }
 

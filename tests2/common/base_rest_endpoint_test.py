@@ -20,9 +20,9 @@
 import unittest
 import os
 import json
+import urllib
 from abc import abstractmethod
 from utils.cit_logger import Logger
-import urllib.request, urllib.error, urllib.parse
 
 
 class BaseRestEndpointTest(unittest.TestCase):

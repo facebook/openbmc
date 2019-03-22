@@ -23,7 +23,7 @@ import syslog
 import re
 import os
 
-pcard_vin_hwmon = "/sys/class/i2c-adapter/i2c-7/7-006f/hwmon/hwmon*/in1_input"
+pcard_vin_hwmon = "/sys/bus/i2c/devices/7-006f/hwmon/hwmon*/in1_input"
 pcard_vin = None
 
 mux_bus = 7
@@ -57,7 +57,6 @@ def pcard_read(inp):
             val = int(f.read())
             return val
     except Exception as e:
-        syslog.syslog(syslog.LOG_WARNING, "Reading ltc failed with exception e={}".format(e))
         return None
 
 

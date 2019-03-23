@@ -20,7 +20,15 @@
 import unittest
 import os
 import json
-import urllib
+try:
+    # For Python 3+
+    from urllib.request import urlopen
+    from urllib.error import HTTPError
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
+    from urllib2 import HTTPError
+
 from abc import abstractmethod
 from utils.cit_logger import Logger
 
@@ -45,7 +53,7 @@ class BaseRestEndpointTest(unittest.TestCase):
         Logger.info("Executing cmd={}".format(cmd))
         try:
             # Send request to REST service to see if it's alive
-            handle = urllib.request.urlopen(cmd)
+            handle = urlopen(cmd)
             data = handle.read()
             Logger.info("REST request returned data={}".format(data.decode('utf-8')))
             return data.decode('utf-8')
@@ -56,11 +64,11 @@ class BaseRestEndpointTest(unittest.TestCase):
         '''
         Test if REST server return 404 code when url is not accessible
         '''
-        with self.assertRaises(urllib.error.HTTPError):
+        with self.assertRaises(HTTPError):
             test_endpointname = "/api/sys/testing"
             cmd = BaseRestEndpointTest.CURL_CMD6.format(test_endpointname)
             Logger.info("Executing cmd={}".format(cmd))
-            urllib.request.urlopen(cmd)
+            urlopen(cmd)
 
     def verify_endpoint_resource(self, endpointname, resources):
         '''
@@ -70,7 +78,7 @@ class BaseRestEndpointTest(unittest.TestCase):
             with self.subTest(item=item):
                 new_endpoint = endpointname + "/" + item
                 cmd = BaseRestEndpointTest.CURL_CMD6.format(new_endpoint)
-                handle = urllib.request.urlopen(cmd)
+                handle = urlopen(cmd)
                 self.assertIn(handle.getcode(), [200, 202])
 
 

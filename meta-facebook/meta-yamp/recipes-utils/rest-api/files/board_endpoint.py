@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+import re
 from aiohttp import web
 from rest_utils import get_endpoints
 from rest_utils import dumps_bytestr
@@ -25,6 +27,7 @@ import rest_pim_present
 import rest_piminfo
 import rest_pimserial
 import rest_seutil
+import rest_peutil
 class boardApp_Handler:
     # Handler for sys/mb/fruid/scm resource endpoint
     async def rest_fruid_scm_hdl(self, request):
@@ -47,3 +50,10 @@ class boardApp_Handler:
         return web.json_response(
             rest_seutil.get_seutil(), dumps=dumps_bytestr,
     )
+    # Handler for sys/mb/pim$/peutil resource endpoint
+    async def rest_peutil_hdl(self, request):
+        path = request.rel_url.path
+        pim = re.search(r"pim(\d)", path).group(1)
+        return web.json_response(
+            rest_peutil.get_peutil(pim), dumps=dumps_bytestr,
+        )

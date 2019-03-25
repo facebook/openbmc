@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python3
 #
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
@@ -17,9 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
-
-#!/usr/bin/env python3
 
 import subprocess
 

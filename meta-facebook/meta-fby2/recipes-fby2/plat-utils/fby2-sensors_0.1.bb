@@ -16,7 +16,7 @@ do_install() {
     install -m 0755 fby2-sensors ${D}${bindir}/fby2-sensors
 }
 
-DEPENDS += "libfby2-sensor"
-RDEPENDS_${PN} += "libfby2-sensor"
+DEPENDS += "libfby2-common libfby2-sensor"
+RDEPENDS_${PN} += "libfby2-common libfby2-sensor"
 
 FILES_${PN} = "${bindir}"

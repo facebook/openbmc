@@ -47,8 +47,8 @@ extern "C" {
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
-extern const char pal_pwm_list[];
-extern const char pal_tach_list[];
+extern char pal_pwm_list[];
+extern char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 extern const char pal_dev_list[];
@@ -92,6 +92,8 @@ enum {
 enum {
   FAN_0 = 0,
   FAN_1,
+  FAN_2,
+  FAN_3,
 };
 
 enum {

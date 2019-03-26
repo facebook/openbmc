@@ -28,12 +28,18 @@
 #include <facebook/bic.h>
 #include <openbmc/ipmi.h>
 #include <facebook/fby2_sensor.h>
+#include <facebook/fby2_common.h>
 
 int
 main(int argc, char **argv) {
   int value;
   float fvalue;
   uint8_t slot_id;
+  int spb_type;
+  int fan_type;
+
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
 
   slot_id = atoi(argv[1]);
 
@@ -59,6 +65,20 @@ main(int argc, char **argv) {
     printf("fby2_sensor_read failed: SP_SENSOR_FAN1_TACH\n");
   } else {
   	printf("SP_SENSOR_FAN1_TACH: %d rpm\n", value);
+  }
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) { // YV2.50 Dual R FAN
+    if (fby2_sensor_read(slot_id, SP_SENSOR_FAN2_TACH, &value)) {
+      printf("fby2_sensor_read failed: SP_SENSOR_FAN2_TACH\n");
+    } else {
+          printf("SP_SENSOR_FAN2_TACH: %d rpm\n", value);
+    }
+
+    if (fby2_sensor_read(slot_id, SP_SENSOR_FAN3_TACH, &value)) {
+      printf("fby2_sensor_read failed: SP_SENSOR_FAN3_TACH\n");
+    } else {
+          printf("SP_SENSOR_FAN3_TACH: %d rpm\n", value);
+    }
   }
 
   if (fby2_sensor_read(slot_id, SP_SENSOR_P5V, &fvalue)) {

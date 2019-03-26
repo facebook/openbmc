@@ -357,6 +357,36 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_HSC_PEAK_PIN,
 };
 
+// List of SPB sensors to be monitored (YV2.50 Dual FAN)
+const uint8_t spb_sensor_dual_r_fan_list[] = {
+  SP_SENSOR_INLET_TEMP,
+  SP_SENSOR_OUTLET_TEMP,
+  //SP_SENSOR_MEZZ_TEMP
+  SP_SENSOR_FAN0_TACH,
+  SP_SENSOR_FAN1_TACH,
+  SP_SENSOR_FAN2_TACH,
+  SP_SENSOR_FAN3_TACH,
+  //SP_SENSOR_AIR_FLOW,
+  SP_SENSOR_P5V,
+  SP_SENSOR_P12V,
+  SP_SENSOR_P3V3_STBY,
+  SP_SENSOR_P12V_SLOT1,
+  SP_SENSOR_P12V_SLOT2,
+  SP_SENSOR_P12V_SLOT3,
+  SP_SENSOR_P12V_SLOT4,
+  SP_SENSOR_P3V3,
+  SP_SENSOR_P1V15_BMC_STBY,
+  SP_SENSOR_P1V2_BMC_STBY,
+  SP_SENSOR_P2V5_BMC_STBY,
+  SP_P1V8_STBY,
+  SP_SENSOR_HSC_IN_VOLT,
+  SP_SENSOR_HSC_OUT_CURR,
+  SP_SENSOR_HSC_TEMP,
+  SP_SENSOR_HSC_IN_POWER,
+  SP_SENSOR_HSC_PEAK_IOUT,
+  SP_SENSOR_HSC_PEAK_PIN,
+};
+
 const uint8_t dc_sensor_list[] = {
   DC_SENSOR_OUTLET_TEMP,
   DC_SENSOR_INLET_TEMP,
@@ -510,18 +540,48 @@ float dc_cf_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 static void
 sensor_thresh_array_init() {
   static bool init_done = false;
+  int spb_type;
+  int fan_type;
 
   if (init_done)
     return;
 
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type(); 
+
   spb_sensor_threshold[SP_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   spb_sensor_threshold[SP_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
-  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
-  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
-  spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
-  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
-  spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+
+  if (spb_type == TYPE_SPB_YV250) { // YV2.50
+    if (fan_type == TYPE_DUAL_R_FAN) {
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+      spb_sensor_threshold[SP_SENSOR_FAN2_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN2_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN2_TACH][LCR_THRESH] = 500;
+      spb_sensor_threshold[SP_SENSOR_FAN3_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN3_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN3_TACH][LCR_THRESH] = 500;
+    } else {
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+    }
+  } else { // YV2
+    spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
+    spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
+    spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
+    spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
+    spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
+    spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+  }
   //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
   spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.5;
   spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.5;
@@ -596,6 +656,7 @@ size_t bic_ep_discrete_cnt = sizeof(bic_ep_discrete_list)/sizeof(uint8_t);
 #endif
 
 size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
+size_t spb_dual_r_fan_sensor_cnt = sizeof(spb_sensor_dual_r_fan_list)/sizeof(uint8_t);
 
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 
@@ -610,6 +671,8 @@ size_t gpv2_sensor_cnt = sizeof(gpv2_sensor_list)/sizeof(uint8_t);
 enum {
   FAN0 = 0,
   FAN1,
+  FAN2,
+  FAN3,
 };
 
 enum {
@@ -1738,6 +1801,12 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case SP_SENSOR_FAN1_TACH:
           sprintf(units, "RPM");
           break;
+        case SP_SENSOR_FAN2_TACH:
+          sprintf(units, "RPM");
+          break;
+        case SP_SENSOR_FAN3_TACH:
+          sprintf(units, "RPM");
+          break;
         case SP_SENSOR_AIR_FLOW:
           strcpy(units, "");
           break;
@@ -1952,6 +2021,12 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case SP_SENSOR_FAN1_TACH:
           sprintf(name, "SP_FAN1_TACH");
+          break;
+        case SP_SENSOR_FAN2_TACH:
+          sprintf(name, "SP_FAN2_TACH");
+          break;
+        case SP_SENSOR_FAN3_TACH:
+          sprintf(name, "SP_FAN3_TACH");
           break;
         case SP_SENSOR_AIR_FLOW:
           sprintf(name, "SP_AIR_FLOW");
@@ -2238,6 +2313,10 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_fan_value(FAN0, FAN_TACH_RPM, (float*) value);
         case SP_SENSOR_FAN1_TACH:
           return read_fan_value(FAN1, FAN_TACH_RPM, (float*) value);
+        case SP_SENSOR_FAN2_TACH:
+          return read_fan_value(FAN2, FAN_TACH_RPM, (float*) value);
+        case SP_SENSOR_FAN3_TACH:
+          return read_fan_value(FAN3, FAN_TACH_RPM, (float*) value);
 
         // Various Voltages
         case SP_SENSOR_P5V:

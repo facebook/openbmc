@@ -161,8 +161,8 @@ const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
-const char pal_pwm_list[] = "0, 1";
-const char pal_tach_list[] = "0, 1";
+char pal_pwm_list[16] = "0, 1";
+char pal_tach_list[16] = "0, 1";
 
 uint8_t g_dev_guid[GUID_SIZE] = {0};
 
@@ -861,6 +861,54 @@ int pal_fruid_init(uint8_t slot_id) {
   return ret;
 }
 
+char *
+pal_get_pwn_list(void) {
+  int spb_type;
+  spb_type = fby2_common_get_spb_type();
+  if (spb_type == TYPE_SPB_YV250) {
+    strncpy(pal_pwm_list, "0, 1, 2, 3", 16);
+  } else {
+    strncpy(pal_pwm_list, "0, 1", 16);
+  }
+  return pal_pwm_list;
+}
+
+char *
+pal_get_tach_list(void) {
+  int spb_type;
+  spb_type = fby2_common_get_spb_type();
+  if (spb_type == TYPE_SPB_YV250) {
+    strncpy(pal_tach_list, "0, 1, 2, 3", 16);
+  } else {
+    strncpy(pal_tach_list, "0, 1", 16);
+  }
+  return pal_tach_list;
+}
+
+int
+pal_get_pwm_cnt(void) {
+  int spb_type;
+  spb_type = fby2_common_get_spb_type();
+  if (spb_type == TYPE_SPB_YV250) {
+    pal_pwm_cnt = 4;
+  } else {
+    pal_pwm_cnt = 2;
+  }
+  return pal_pwm_cnt;
+}
+
+int
+pal_get_tach_cnt(void) {
+  int spb_type;
+  spb_type = fby2_common_get_spb_type();
+  if (spb_type == TYPE_SPB_YV250) {
+     pal_tach_cnt = 4;
+  } else {
+    pal_tach_cnt = 2;
+  }
+  return pal_tach_cnt;
+}
+
 int
 pal_get_pair_slot_type(uint8_t fru) {
   int type,type2;
@@ -1089,12 +1137,14 @@ pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
   char v2path[64] = {0};
   char v3path[64] = {0};
   uint8_t rev;
+  int spb_type;
 
+  spb_type = fby2_common_get_spb_type();
   rev = _get_spb_rev();
   switch(slot_id) {
     case FRU_SLOT1:
     case FRU_SLOT2:
-      if (rev < SPB_REV_PVT) {
+      if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
         sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_0_R_N);
         sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_1_R_N);
       }
@@ -1102,7 +1152,7 @@ pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
       break;
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (rev < SPB_REV_PVT) {
+      if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
         sprintf(v1path, GPIO_VAL, GPIO_PE_BUFF_OE_2_R_N);
         sprintf(v2path, GPIO_VAL, GPIO_PE_BUFF_OE_3_R_N);
       }
@@ -3392,6 +3442,8 @@ pal_get_fru_sdr_path(uint8_t fru, char *path) {
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+  int spb_type;
+  int fan_type;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -3457,8 +3509,21 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       }
       break;
     case FRU_SPB:
-      *sensor_list = (uint8_t *) spb_sensor_list;
-      *cnt = spb_sensor_cnt;
+      spb_type = fby2_common_get_spb_type();
+      fan_type = fby2_common_get_fan_type();
+
+      if (spb_type == TYPE_SPB_YV250) { // YV2.50
+        if (fan_type == TYPE_DUAL_R_FAN) { // Dual R FAN
+          *sensor_list = (uint8_t *) spb_sensor_dual_r_fan_list;
+          *cnt = spb_dual_r_fan_sensor_cnt;
+        } else { // Single FAN
+          *sensor_list = (uint8_t *) spb_sensor_list;
+          *cnt = spb_sensor_cnt;
+        }
+      } else { // YV2
+        *sensor_list = (uint8_t *) spb_sensor_list;
+        *cnt = spb_sensor_cnt;
+      }
       break;
     case FRU_NIC:
       *sensor_list = (uint8_t *) nic_sensor_list;
@@ -3747,7 +3812,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           return -1;
         }
       }
-      if ((sensor_num == SP_SENSOR_FAN0_TACH) || (sensor_num == SP_SENSOR_FAN1_TACH)) {
+      if ((sensor_num == SP_SENSOR_FAN0_TACH) || (sensor_num == SP_SENSOR_FAN1_TACH) || (sensor_num == SP_SENSOR_FAN2_TACH) || (sensor_num == SP_SENSOR_FAN3_TACH)) {
         uint8_t is_sled_out = 1;
 
         if (pal_get_fan_latch(&is_sled_out) != 0) {
@@ -3866,7 +3931,7 @@ pal_check_fscd_watchdog() {
 int
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
   if (fru== FRU_SPB) {
-    if ((snr_num == SP_SENSOR_FAN0_TACH) || (snr_num == SP_SENSOR_FAN1_TACH)) {
+    if ((snr_num == SP_SENSOR_FAN0_TACH) || (snr_num == SP_SENSOR_FAN1_TACH) || (snr_num == SP_SENSOR_FAN2_TACH) || (snr_num == SP_SENSOR_FAN3_TACH)) {
       if (thresh == UNC_THRESH) {
         if (ignore_thresh) {
           return 1;
@@ -3948,7 +4013,7 @@ pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
       if (!val || !_check_slot_12v_en_time(slot_id)) {
         *flag = GETMASK(SENSOR_VALID);
       }
-    } else if (( snr_num == SP_SENSOR_FAN0_TACH ) || ( snr_num == SP_SENSOR_FAN1_TACH )) {
+    } else if (( snr_num == SP_SENSOR_FAN0_TACH ) || ( snr_num == SP_SENSOR_FAN1_TACH ) || (snr_num == SP_SENSOR_FAN2_TACH) || (snr_num == SP_SENSOR_FAN3_TACH)) {
       // Check POST status
       int ret = pal_get_ignore_thresh(&ignore_thresh);
       if ((ret == 0) && ignore_thresh) {
@@ -5714,6 +5779,14 @@ pal_get_fan_name(uint8_t num, char *name) {
       sprintf(name, "Fan 1");
       break;
 
+    case FAN_2:
+      sprintf(name, "Fan 2");
+      break;
+
+    case FAN_3:
+      sprintf(name, "Fan 3");
+      break;
+
     default:
       return -1;
   }
@@ -5738,8 +5811,11 @@ int
 pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   int unit;
   int ret;
+  int pwm_cnt = 0;
 
-  if (fan >= pal_pwm_cnt) {
+  pwm_cnt = pal_get_pwm_cnt();
+
+  if (fan >= pwm_cnt) {
     syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
     return -1;
   }
@@ -5876,8 +5952,10 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   char device_name[LARGEST_DEVICE_NAME] = {0};
   int val = 0;
   int pwm_enable = 0;
+  int pwm_cnt = 0;
 
-  if(fan_num < 0 || fan_num >= pal_pwm_cnt) {
+  pwm_cnt = pal_get_pwm_cnt();
+  if(fan_num < 0 || fan_num >= pwm_cnt) {
     syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
     return -1;
   }
@@ -6435,6 +6513,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   uint8_t pcie_conf = 0x00;
   uint8_t *data = res_data;
   int pair_set_type;
+  int spb_type = -1;
 
   pair_set_type = pal_get_pair_slot_type(slot);
   switch (pair_set_type) {
@@ -6445,11 +6524,16 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
       pcie_conf = 0x01;
       break;
     case TYPE_GPV2_A_SV:
-      pcie_conf = 0x010;
+      pcie_conf = 0x10;
       break;
     default:
       pcie_conf = 0x00;
       break;
+  }
+
+  spb_type = fby2_common_get_spb_type();
+  if (spb_type == TYPE_SPB_YV250) {
+     pcie_conf = 0x11;
   }
 
   *data++ = pcie_conf;
@@ -6842,6 +6926,12 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
         case SP_SENSOR_FAN1_TACH:
           sprintf(crisel, "Fan1 %s %.0fRPM - ASSERT", thresh_name, val);
           break;
+        case SP_SENSOR_FAN2_TACH:
+          sprintf(crisel, "Fan2 %s %.0fRPM - ASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_FAN3_TACH:
+          sprintf(crisel, "Fan3 %s %.0fRPM - ASSERT", thresh_name, val);
+          break;
         case SP_SENSOR_P1V15_BMC_STBY:
           sprintf(crisel, "SP_P1V15_STBY %s %.2fV - ASSERT", thresh_name, val);
           break;
@@ -7113,6 +7203,12 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
           break;
         case SP_SENSOR_FAN1_TACH:
           sprintf(crisel, "Fan1 %s %.0fRPM - DEASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_FAN2_TACH:
+          sprintf(crisel, "Fan2 %s %.0fRPM - ASSERT", thresh_name, val);
+          break;
+        case SP_SENSOR_FAN3_TACH:
+          sprintf(crisel, "Fan3 %s %.0fRPM - ASSERT", thresh_name, val);
           break;
         case SP_SENSOR_P1V15_BMC_STBY:
           sprintf(crisel, "SP_P1V15_STBY %s %.2fV - DEASSERT", thresh_name, val);

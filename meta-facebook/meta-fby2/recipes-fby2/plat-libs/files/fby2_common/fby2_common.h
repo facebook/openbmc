@@ -69,6 +69,16 @@ enum {
 };
 
 enum {
+  TYPE_SPB_YV2     = 0,
+  TYPE_SPB_YV250   = 1,
+};
+
+enum {
+  TYPE_DUAL_R_FAN     = 0,
+  TYPE_SINGLE_FAN   = 1,
+};
+
+enum {
   TYPE_SV_A_SV     = 0,
   TYPE_CF_A_SV     = 1,
   TYPE_GP_A_SV     = 2,
@@ -135,6 +145,8 @@ typedef struct {
 #define GPIO_POSTCODE_1                    49
 #define GPIO_POSTCODE_2                    50
 #define GPIO_POSTCODE_3                    51
+#define GPIO_DUAL_FAN_DETECT               54
+#define GPIO_YV250_USB_OCP_UART_SWITCH_N   55 // YV2.50
 #define GPIO_FAN_LATCH_DETECT              61
 #define GPIO_SLOT1_POWER_EN                64
 #define GPIO_SLOT2_POWER_EN                65
@@ -154,6 +166,7 @@ typedef struct {
 #define GPIO_I2C_SLOT2_ALERT_N            107
 #define GPIO_I2C_SLOT3_ALERT_N            108
 #define GPIO_I2C_SLOT4_ALERT_N            109
+#define GPIO_UART_SEL                     115 // YV2
 #define GPIO_P12V_STBY_SLOT1_EN           116
 #define GPIO_P12V_STBY_SLOT2_EN           117
 #define GPIO_P12V_STBY_SLOT3_EN           118
@@ -213,7 +226,8 @@ int fby2_common_set_ierr(uint8_t fru, bool value);
 int fby2_common_get_ierr(uint8_t fru, bool *value);
 int fby2_common_cpld_dump(uint8_t fru);
 int fby2_common_sboot_cpld_dump(uint8_t fru);
-
+int fby2_common_get_spb_type(void);
+int fby2_common_get_fan_type(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

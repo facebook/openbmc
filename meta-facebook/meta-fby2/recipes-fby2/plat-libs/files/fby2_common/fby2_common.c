@@ -43,6 +43,8 @@
 #define SBOOT_CPLDDUMP_BIN       "/usr/local/bin/sboot-cpld-dump.sh"
 #define SBOOT_CPLDDUMP_PID       "/var/run/sbootcplddump%d.pid"
 
+#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
+
 #define PTHREAD_SET_CANCEL_ENABLE() do {                                          \
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {                 \
     syslog(LOG_CRIT, "%s: pthread_setcancelstate failed: %d\n", __func__, errno); \
@@ -188,6 +190,58 @@ trigger_hpr(uint8_t fru) {
   }
 
   return 0;
+}
+
+static int
+read_device(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return err;
+  }
+
+  rc = fscanf(fp, "%d", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+int
+fby2_common_get_spb_type() {
+   int spb_type;
+   char path[64] = {0};
+
+   sprintf(path, GPIO_VAL, GPIO_BOARD_ID);
+   if (read_device(path, &spb_type)) {
+      return -1;
+   }
+
+   return spb_type;
+}
+
+int
+fby2_common_get_fan_type() {
+   int fan_type;
+   char path[64] = {0};
+
+   sprintf(path, GPIO_VAL, GPIO_DUAL_FAN_DETECT);
+   if (read_device(path, &fan_type)) {
+      return -1;
+   }
+
+   return fan_type;
 }
 
 static void *

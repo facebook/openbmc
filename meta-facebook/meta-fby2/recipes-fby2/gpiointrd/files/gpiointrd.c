@@ -556,7 +556,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
        }
     }
   } // End of GPIO_SLOT1/2/3/4_PRSNT_B_N, GPIO_SLOT1/2/3/4_PRSNT_N
-  else if (gp->gs.gs_gpio == gpio_num("GPIOO3")) {
+  else if (gp->gs.gs_gpio == gpio_num("GPIOO3") || gp->gs.gs_gpio == gpio_num("GPIOG7")) {
     if (pal_get_hand_sw(&slot_id)) {
       slot_id = HAND_SW_BMC;
     }
@@ -826,6 +826,7 @@ hsvc_event_handler(void *ptr) {
   pthread_exit(0);
 }
 
+// YV2
 static gpio_poll_st g_gpios[] = {
   // {{gpio, fd}, edge, gpioValue, call-back function, GPIO description}
   {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOH5",  "GPIO_FAN_LATCH_DETECT"},
@@ -849,7 +850,33 @@ static gpio_poll_st g_gpios[] = {
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPION7",  "GPIO_SMB_HOTSWAP_ALERT_N"},
 };
 
+// YV2.50
+static gpio_poll_st g_gpios_yv250[] = {
+  // {{gpio, fd}, edge, gpioValue, call-back function, GPIO description}
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOH5",  "GPIO_FAN_LATCH_DETECT"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP0",  "GPIO_SLOT1_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP1",  "GPIO_SLOT2_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP2",  "GPIO_SLOT3_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOP3",  "GPIO_SLOT4_EJECTOR_LATCH_DETECT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ0",  "GPIO_SLOT1_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ1",  "GPIO_SLOT2_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ2",  "GPIO_SLOT3_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOZ3",  "GPIO_SLOT4_PRSNT_B_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA0", "GPIO_SLOT1_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA1", "GPIO_SLOT2_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA2", "GPIO_SLOT3_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_BOTH,    0, gpio_event_handle, "GPIOAA3", "GPIO_SLOT4_PRSNT_N"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOG7",  "GPIO_YV2_USB_OCP_UART_SWITCH_N"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI0",  "GPIO_SLOT1_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI1",  "GPIO_SLOT2_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI2",  "GPIO_SLOT3_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOI3",  "GPIO_SLOT4_POWER_EN"},
+  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPION7",  "GPIO_SMB_HOTSWAP_ALERT_N"},
+};
+
+
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
+static int g_count_yv250 = sizeof(g_gpios_yv250) / sizeof(gpio_poll_st);
 
 static def_chk_info def_gpio_chk[] = {
   // { default value, gpio name, gpio num, log }
@@ -948,6 +975,7 @@ main(int argc, void **argv) {
   int dev, rc, pid_file;
   uint8_t status = 0;
   int i;
+  int spb_type;
 
   for(i=1 ;i<MAX_NODES + 1; i++)
   {
@@ -960,6 +988,7 @@ main(int argc, void **argv) {
 
   slot_latch_check();
 
+  spb_type = fby2_common_get_spb_type();
   pid_file = open("/var/run/gpiointrd.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
   if(rc) {
@@ -971,9 +1000,15 @@ main(int argc, void **argv) {
     openlog("gpiointrd", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiointrd: daemon started");
 
-    gpio_poll_open(g_gpios, g_count);
-    gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
-    gpio_poll_close(g_gpios, g_count);
+    if (spb_type == TYPE_SPB_YV250) {
+      gpio_poll_open(g_gpios_yv250, g_count_yv250);
+      gpio_poll(g_gpios_yv250, g_count_yv250, POLL_TIMEOUT);
+      gpio_poll_close(g_gpios_yv250, g_count_yv250);
+    } else {
+      gpio_poll_open(g_gpios, g_count);
+      gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
+      gpio_poll_close(g_gpios, g_count);
+    }
   }
 
   for(i=1; i<MAX_NODES + 1; i++)

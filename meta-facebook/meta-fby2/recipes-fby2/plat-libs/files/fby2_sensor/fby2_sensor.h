@@ -230,6 +230,8 @@ enum {
   SP_SENSOR_MEZZ_TEMP = 0x82,
   SP_SENSOR_FAN0_TACH = 0x46,
   SP_SENSOR_FAN1_TACH = 0x47,
+  SP_SENSOR_FAN2_TACH = 0x48,
+  SP_SENSOR_FAN3_TACH = 0x49,
   SP_SENSOR_AIR_FLOW = 0x4A,
   SP_SENSOR_P5V = 0xE0,
   SP_SENSOR_P12V = 0xE1,
@@ -421,6 +423,8 @@ extern const uint8_t dc_cf_sensor_list[];
 
 extern const uint8_t spb_sensor_list[];
 
+extern const uint8_t spb_sensor_dual_r_fan_list[];
+
 extern const uint8_t nic_sensor_list[];
 
 #ifdef CONFIG_FBY2_GPV2
@@ -445,6 +449,8 @@ extern size_t bic_rc_discrete_cnt;
 extern size_t bic_discrete_cnt;
 
 extern size_t spb_sensor_cnt;
+
+extern size_t spb_dual_r_fan_sensor_cnt;
 
 extern size_t nic_sensor_cnt;
 

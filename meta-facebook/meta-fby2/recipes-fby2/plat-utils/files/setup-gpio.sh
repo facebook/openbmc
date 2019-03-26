@@ -212,12 +212,6 @@ devmem_clear_bit $(scu_addr 80) 19
 
 gpio_export E3
 
-# Enable GPIOY3: BoardId(Yosemite or Test system)
-devmem_clear_bit $(scu_addr a4) 11
-devmem_clear_bit $(scu_addr 94) 11
-
-gpio_export Y3
-
 # Power LED for Slot#2:
 # To use GPIOM0 (96), SCU90[4], SCU90[5], and SCU84[24] must be 0
 devmem_clear_bit $(scu_addr 90) 4
@@ -332,6 +326,13 @@ gpio_set G2 0
 devmem_clear_bit $(scu_addr 84) 3
 
 gpio_set G3 0
+
+# DUAL FAN DETECT: GPIOG6 (54)
+# To use GPIOG6, SCU84[7] and SCU94[12]  must be 0
+devmem_clear_bit $(scu_addr 84) 7
+devmem_clear_bit $(scu_addr 94) 12
+
+gpio_export G6
 
 # LED_POSTCODE_4: GPIOP4 (124)
 gpio_set P4 0

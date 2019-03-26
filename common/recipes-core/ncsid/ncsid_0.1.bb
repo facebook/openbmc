@@ -15,11 +15,11 @@ SRC_URI = "file://Makefile \
           "
 
 S = "${WORKDIR}"
-DEPENDS =+ " update-rc.d-native libpal libncsi"
+DEPENDS =+ " update-rc.d-native libpal libncsi libpldm"
 
 binfiles = "ncsid"
 
-CFLAGS += " -lncsi"
+CFLAGS += " -lncsi -lpldm"
 
 pkgdir = "ncsid"
 
@@ -42,9 +42,9 @@ do_install() {
   update-rc.d -r ${D} setup-ncsid.sh start 91 5 .
 }
 
-DEPENDS += "libpal libncsi"
+DEPENDS += "libpal libncsi libpldm"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} = "libpal libncsi"
+RDEPENDS_${PN} = "libpal libncsi libpldm"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

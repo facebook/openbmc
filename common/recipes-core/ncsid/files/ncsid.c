@@ -46,7 +46,10 @@
 #include <time.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/aen.h>
-
+#include <openbmc/pldm.h>
+#include <openbmc/pldm_base.h>
+#include <openbmc/pldm_fw_update.h>
+#include <inttypes.h>
 //#define DEBUG 0
 
 // special  channel/cmd  used for register AEN handler with kernel
@@ -297,7 +300,7 @@ init_version_data(Get_Version_ID_Response *buf)
 static int
 send_cmd_and_get_resp(nl_sfd_t *sfd, uint8_t ncsi_cmd,
                       uint16_t payload_len, unsigned char *payload,
-                      NCSI_Response_Packet *resp_buf)
+                      NCSI_NL_RSP_T *resp_buf)
 {
   struct sockaddr_nl src_addr;
   struct msghdr msg;
@@ -354,12 +357,72 @@ send_cmd_and_get_resp(nl_sfd_t *sfd, uint8_t ncsi_cmd,
   }
 
   if (resp_buf)
-    memcpy(resp_buf, rcv_buf->msg_payload, sizeof(NCSI_Response_Packet));
+    memcpy(resp_buf, rcv_buf, sizeof(NCSI_NL_RSP_T));
 
 free_exit:
   free_ncsi_req_msg(&msg);
   return ret;
 }
+
+
+// do_pldm_discovery
+//
+// Queries NIC to discover its PLDM capabilities, including
+//    1. PLDM types supported,
+//    2. supported version for each PLDM type
+static int
+do_pldm_discovery(nl_sfd_t *sfd, NCSI_NL_RSP_T *resp_buf)
+{
+  pldm_cmd_req pldmReq = {0};
+  int pldmStatus = 0;
+  uint64_t pldmType = 0;
+  pldm_ver_t pldm_version = {0};
+  int ret = 0;
+  int i = 0;
+
+  pldmCreateGetPldmTypesCmd(&pldmReq);
+  ret = send_cmd_and_get_resp(sfd, NCSI_PLDM_REQUEST,  PLDM_COMMON_REQ_LEN,
+                              (unsigned char *)&(pldmReq.common), resp_buf);
+  if (ret < 0) {
+    syslog(LOG_ERR, "do_pldm_discovery: failed PLDM Discovery");
+    return ret;
+  }
+
+  pldmStatus = ncsiDecodePldmCompCode(resp_buf);
+  syslog(LOG_INFO, "PLDM discovery status= %d(%s)",
+         pldmStatus, pldm_fw_cmd_cc_to_name(pldmStatus));
+  if (pldmStatus == CC_SUCCESS) {
+    pldmType = pldmHandleGetPldmTypesResp((PLDM_GetPldmTypes_Response_t *)&(resp_buf->msg_payload[7]));
+  }
+  syslog(LOG_CRIT, "PLDM type spported = 0x%" PRIx64, pldmType);
+
+  // Query  version for each supported type
+  for (i = 0; i<PLDM_RSV; ++i) {
+    if (((1<<i) & pldmType) == 0) {
+       // this type is not supported
+       continue;
+    }
+
+    pldmCreateGetVersionCmd(i, &pldmReq);
+    ret = send_cmd_and_get_resp(sfd, NCSI_PLDM_REQUEST,
+            (PLDM_COMMON_REQ_LEN + sizeof(PLDM_GetPldmVersion_t)),
+            (unsigned char *)&(pldmReq.common), resp_buf);
+    if (ret < 0) {
+      syslog(LOG_ERR, "do_pldm_discovery: failed get PLDM (%d) version", i);
+      return ret;
+    }
+    pldmStatus = ncsiDecodePldmCompCode(resp_buf);
+    if (pldmStatus == CC_SUCCESS) {
+      pldmHandleGetVersionResp((PLDM_GetPldmVersion_Response_t *)&(resp_buf->msg_payload[7]),
+                                         &pldm_version);
+    }
+    syslog(LOG_CRIT, "    PLDM type %d version = %d.%d.%d.%d", i,
+             pldm_version.major, pldm_version.minor, pldm_version.update,
+             pldm_version.alpha);
+  }
+  return 0;
+}
+
 
 // Configure NIC
 //
@@ -370,15 +433,17 @@ free_exit:
 //         1a. initialize global gNicCapability  with NIC capabilities
 //  2. determine NIC manufacturer and FW versions
 //  3. Enable AEN based on NIC capability
+//  4. Discovery NIC's PLDM capabilities
 static int
 init_nic_config(nl_sfd_t *sfd)
 {
-  NCSI_Response_Packet *resp_buf = calloc(1, sizeof(NCSI_Response_Packet));
+  NCSI_NL_RSP_T *resp_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
+  NCSI_Response_Packet* pNcsiResp;
   int ret = 0;
 
   if (!resp_buf) {
     syslog(LOG_ERR, "init_nic_config: failed to allocate resp buffer (%d)",
-           sizeof(NCSI_Response_Packet));
+           sizeof(NCSI_NL_RSP_T));
     return -1;
   }
 
@@ -390,7 +455,8 @@ init_nic_config(nl_sfd_t *sfd)
     ret = -1;
     goto free_exit;
   }
-  init_gNicCapability((NCSI_Get_Capabilities_Response*)((NCSI_Response_Packet *)(resp_buf))->Payload_Data);
+  pNcsiResp = (NCSI_Response_Packet*)(resp_buf->msg_payload);
+  init_gNicCapability((NCSI_Get_Capabilities_Response*)(pNcsiResp->Payload_Data));
 
 
   // get NIC Manufacturer and firmware version
@@ -401,11 +467,17 @@ init_nic_config(nl_sfd_t *sfd)
     ret = -1;
     goto free_exit;
   }
-  init_version_data((Get_Version_ID_Response*)((NCSI_Response_Packet *)(resp_buf))->Payload_Data);
+  pNcsiResp = (NCSI_Response_Packet*)(resp_buf->msg_payload);
+  init_version_data((Get_Version_ID_Response*)(pNcsiResp->Payload_Data));
 
   aen_enable_mask &= gNicCapability.aen_control_support;
   syslog(LOG_CRIT, "NIC AEN Supported: 0x%x, AEN Enable Mask=0x%x",
           gNicCapability.aen_control_support, aen_enable_mask);
+
+
+  // PLDM discovery
+  do_pldm_discovery(sfd, resp_buf);
+  // PLDM support is optional, so ignore return value for now
 
 free_exit:
   if (resp_buf)

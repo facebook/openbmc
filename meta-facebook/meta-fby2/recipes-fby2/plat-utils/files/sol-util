@@ -20,6 +20,7 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 LOGFILE="/var/log/mTerm_$1.log"
+LOGFILE_B="/var/log/mTerm_$1_backup.log"
 
 function show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
@@ -60,7 +61,7 @@ fi
 
 if [ $# -gt 1 ]; then
   if [[ "$2" == "--history" ]]; then
-    cat $LOGFILE 2>/dev/null
+    cat $LOGFILE_B $LOGFILE 2>/dev/null
     exit 0
   fi
 

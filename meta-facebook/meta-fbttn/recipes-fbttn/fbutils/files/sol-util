@@ -71,7 +71,8 @@ fi
 if [ $# -gt 1 ]; then
   if [[ "$2" == "--history" ]]; then
     LOGFILE="/var/log/mTerm_fbttn.log"
-    cat $LOGFILE 2>/dev/null
+    LOGFILE_B="/var/log/mTerm_fbttn_backup.log"
+    cat $LOGFILE_B $LOGFILE 2>/dev/null
     exit 0
   else
     usage

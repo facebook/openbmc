@@ -50,7 +50,9 @@ def sensor_util(fru='all', sensor_name='', sensor_id='', period='60', display=[]
     else:
         sensor_id_val = 0
     try:
-        out = subprocess.check_output(cmd).decode().splitlines()
+        output_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdoutput, erroroutput = output_handle.communicate(timeout=15)
+        out = stdoutput.decode().splitlines()
         sensors = {}
         if 'history' in display:
             # MB_CONN_P12V_INA230_PWR (0x9B) min = NA, average = NA, max = NA
@@ -137,6 +139,9 @@ def sensor_util(fru='all', sensor_name='', sensor_id='', period='60', display=[]
                     sensors[s_name] = snr
     except subprocess.CalledProcessError:
         print("Exception  received")
+    except subprocess.TimeoutExpired:
+        output_handle.kill()
+        print("TimeoutException received")
     return sensors
 
 

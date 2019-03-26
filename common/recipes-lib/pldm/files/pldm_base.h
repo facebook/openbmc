@@ -43,5 +43,60 @@
 #define PLDM_COMMON_REQ_LEN   3  // 3 bytes common field for PLDM requests
 #define PLDM_COMMON_RES_LEN   4  // 4 bytes for PLDM Responses
 
+// PLDM supported command type bitfields
+typedef enum pldm_types {
+  PLDM_MSG_CTRL    =  0,
+  PLDM_SMBIOS      =  1,
+  PLDM_MONITORING  =  2,
+  PLDM_BIOS_CTRL   =  3,
+  PLDM_FRUDATA     =  4,
+  PLDM_FW_UPDATE   =  5,
+  PLDM_RSV,
+} pldmTypes;
+
+
+
 typedef  struct timestamp104 { uint8_t x[13]; } timestamp104;
+
+typedef enum pldm_base_cmds {
+  CMD_SET_TID          = 0x1,
+  CMD_GET_TID          = 0x2,
+  CMD_GET_PLDM_VERSION = 0x3,
+  CMD_GET_PLDM_TYPES   = 0x4,
+  CMD_GET_PLDM_CMDS    = 0x05,
+} PldmBaseCmds;
+
+typedef struct pldm_versoin {
+  uint8_t major;
+  uint8_t minor;
+  uint8_t update;
+  uint8_t alpha;
+}  pldm_ver_t;
+
+#define PLDM_VERSION_SIZE  4
+
+
+// cdb for pldm base cmd 0x03 - get PLDM version
+typedef struct {
+  uint32_t dataTransferHandle;
+  uint8_t transferOperationFlag;
+  uint8_t pldmType;
+} __attribute__((packed)) PLDM_GetPldmVersion_t;
+
+// response for pldm base cmd 0x03 - get PLDM version
+typedef struct {
+  uint8_t completionCode;
+  uint32_t nextTransferHandle;
+  uint8_t transferFlag;
+  char version[PLDM_VERSION_SIZE];
+} __attribute__((packed)) PLDM_GetPldmVersion_Response_t;
+
+
+// response for pldm base cmd 0x04 - get PLDM types
+typedef struct {
+  uint8_t completionCode;
+  uint64_t supported_types;
+} __attribute__((packed)) PLDM_GetPldmTypes_Response_t;
+
+
 #endif

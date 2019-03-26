@@ -62,6 +62,13 @@ void pldmCreateUpdateComponentCmd (pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx
                                    pldm_cmd_req *pPldmCdb);
 void pldmCreateActivateFirmwareCmd(pldm_cmd_req *pPldmCdb);
 
+void pldmCreateGetVersionCmd(uint8_t pldmType, pldm_cmd_req *pPldmCdb);
+void pldmHandleGetVersionResp(PLDM_GetPldmVersion_Response_t *pPldmResp,
+                              pldm_ver_t *version);
+
+void pldmCreateGetPldmTypesCmd(pldm_cmd_req *pPldmCdb);
+uint64_t pldmHandleGetPldmTypesResp(PLDM_GetPldmTypes_Response_t *pPldmResp);
+
 int pldmCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pldmRes);
 int ncsiDecodePldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pCmd);
 int ncsiDecodePldmCompCode(NCSI_NL_RSP_T *nl_resp);

@@ -49,6 +49,7 @@
 static uint8_t  gPldm_iid = 0; // technically only 5 bits as per DSP0240 v1.0.0
 static uint32_t gPldm_transfer_size = PLDM_MAX_XFER_SIZE;
 static uint8_t  gPldm_max_transfer_cnt = PLDM_MAX_XFER_CNT;
+static uint64_t gPldm_supported_types = 0;
 
 /* PLDM Firmware Update command name*/
 const char *pldm_fw_cmd_string[NUM_PLDM_UPDATE_CDMS] = {
@@ -202,7 +203,7 @@ void dbgPrintCdb(pldm_cmd_req *cdb)
 }
 
 
-void genReqCommonFields(PldmFWCmds cmd, uint8_t *common)
+void genReqCommonFields(PldmType type, PldmFWCmds cmd, uint8_t *common)
 {
   uint8_t iid = 0;
 
@@ -210,7 +211,7 @@ void genReqCommonFields(PldmFWCmds cmd, uint8_t *common)
   iid = gPldm_iid;
 
   common[0] = 0x80 | (iid & 0x1f);
-  common[1] = PLDM_TYPE_FIRMWARE_UPDATE;
+  common[1] = type;
   common[2] = cmd;
 }
 
@@ -224,7 +225,7 @@ void pldmCreateReqUpdateCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, pldm_cmd_req *pPldmCdb
 
   printf("\n\nCMD_REQUEST_UPDATE\n");
 
-  genReqCommonFields(CMD_REQUEST_UPDATE, &(pPldmCdb->common[0]));
+  genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_REQUEST_UPDATE, &(pPldmCdb->common[0]));
 
 
   pCmdPayload->maxTransferSize = gPldm_transfer_size;
@@ -273,7 +274,7 @@ void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx
 
   printf("\n\nCMD_PASS_COMPONENT_TABLE\n");
 
-  genReqCommonFields(CMD_PASS_COMPONENT_TABLE, &(pPldmCdb->common[0]));
+  genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_PASS_COMPONENT_TABLE, &(pPldmCdb->common[0]));
 
   pCmdPayload->transferFlag = TFLAG_STATRT_END;  // only support 1 pass for now
   pCmdPayload->class = pCompImgInfo->class;
@@ -308,7 +309,7 @@ void pldmCreateUpdateComponentCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
 
   printf("\n\nCMD_UPDATE_COMPONENT\n");
 
-  genReqCommonFields(CMD_UPDATE_COMPONENT, &(pPldmCdb->common[0]));
+  genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_UPDATE_COMPONENT, &(pPldmCdb->common[0]));
 
   pCmdPayload->class = pCompImgInfo->class;
   pCmdPayload->id = pCompImgInfo->id;
@@ -342,7 +343,7 @@ void pldmCreateActivateFirmwareCmd(pldm_cmd_req *pPldmCdb)
 
   printf("\n\nCMD_ACTIVATE_FIRMWARE\n");
 
-  genReqCommonFields(CMD_ACTIVATE_FIRMWARE, &(pPldmCdb->common[0]));
+  genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_ACTIVATE_FIRMWARE, &(pPldmCdb->common[0]));
   pCmdPayload->selfContainedActivationRequest = 0; // no self activation
   pPldmCdb->payload_size = PLDM_COMMON_REQ_LEN +
         sizeof(PLDM_ActivateFirmware_t);
@@ -863,6 +864,75 @@ int pldmCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response 
   }
   return ret;
 }
+
+
+// PLDM Base commands
+
+// Cmd 0x 03 - get version
+void pldmCreateGetVersionCmd(uint8_t pldmType, pldm_cmd_req *pPldmCdb)
+{
+#define GET_NEXT_PART 0
+#define GET_FIRST_PART 1
+
+
+  PLDM_GetPldmVersion_t *pGetVersionCmd = (PLDM_GetPldmVersion_t *)pPldmCdb->payload;
+
+  memset(pPldmCdb, 0, sizeof(pldm_cmd_req));
+  genReqCommonFields(PLDM_TYPE_MSG_CTRL_AND_DISCOVERY, CMD_GET_PLDM_VERSION, &(pPldmCdb->common[0]));
+  pPldmCdb->payload_size = sizeof(PLDM_GetPldmVersion_t);
+  pGetVersionCmd->dataTransferHandle = 0;
+  pGetVersionCmd->transferOperationFlag = GET_FIRST_PART;
+  pGetVersionCmd->pldmType = pldmType;
+
+  dbgPrintCdb(pPldmCdb);
+  return;
+}
+
+// handle Cmd 0x04 (Get Supported Types) response
+void pldmHandleGetVersionResp(PLDM_GetPldmVersion_Response_t *pPldmResp,
+                              pldm_ver_t *version)
+{
+  if (pPldmResp->completionCode == CC_SUCCESS)
+  {
+    // version string encoding is 0xFaFbFcdd
+    // where
+    //    major version number:  a
+    //    minor version number:  b
+    //    update version number: c
+    //    alpha verision       : dd
+    version->major  = (int)(pPldmResp->version[3]) - 0xf0;
+    version->minor  = (int)(pPldmResp->version[2]) - 0xf0;
+    version->update = (int)(pPldmResp->version[1]) - 0xf0;
+    version->alpha  = (int)(pPldmResp->version[0]);
+  }
+  return;
+}
+
+
+// Cmd 0x04 - check supported types
+void pldmCreateGetPldmTypesCmd(pldm_cmd_req *pPldmCdb)
+{
+  memset(pPldmCdb, 0, sizeof(pldm_cmd_req));
+  genReqCommonFields(PLDM_TYPE_MSG_CTRL_AND_DISCOVERY, CMD_GET_PLDM_TYPES, &(pPldmCdb->common[0]));
+  pPldmCdb->payload_size = 0;
+  dbgPrintCdb(pPldmCdb);
+  return;
+}
+
+// handle Cmd 0x04 (Get Supported Types) response
+uint64_t pldmHandleGetPldmTypesResp(PLDM_GetPldmTypes_Response_t *pPldmResp)
+{
+  uint64_t ret = 0;
+  if (pPldmResp->completionCode == CC_SUCCESS)
+  {
+    gPldm_supported_types = pPldmResp->supported_types;
+    ret = gPldm_supported_types;
+  }
+  return ret;
+}
+
+
+
 
 
 // takes NCSI cmd 0x56 response and returns

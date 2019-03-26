@@ -37,6 +37,12 @@
 #define STRINGIFY(bw) _STRINGIFY(bw)
 #define MACHINE STRINGIFY(__MACHINE__)
 
+// PAL Variable
+size_t pal_pwm_cnt __attribute__((weak)) = 0;
+size_t pal_tach_cnt __attribute__((weak)) = 0;
+char pal_pwm_list[] __attribute__((weak)) = "";
+char pal_tach_list[] __attribute__((weak)) = "";
+
 // PAL functions
 int __attribute__((weak))
 pal_is_bmc_por(void)
@@ -2318,3 +2324,28 @@ pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru)
 {
   return false;
 }
+
+char * __attribute__((weak))
+pal_get_pwn_list(void) 
+{
+  return pal_pwm_list;
+}
+
+char * __attribute__((weak))
+pal_get_tach_list(void)
+{
+  return pal_tach_list;
+}
+
+int __attribute__((weak))
+pal_get_pwm_cnt(void) 
+{
+  return pal_pwm_cnt;
+}
+
+int __attribute__((weak))
+pal_get_tach_cnt(void)
+{
+  return pal_tach_cnt;
+}
+

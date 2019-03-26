@@ -51,8 +51,13 @@ enum {
 
 static void
 print_usage(void) {
-  printf("Usage: fan-util --set <[0..100] %%> < Fan# [%s] >\n", pal_pwm_list);
-  printf("       fan-util --get < Fan# [%s] >\n", pal_tach_list);
+  char pwm_list[16] = "";
+  char tach_list[16] = "";
+
+  strncpy(pwm_list, pal_get_pwn_list(),16);
+  strncpy(tach_list, pal_get_tach_list(),16);
+  printf("Usage: fan-util --set <[0..100] %%> < Fan# [%s] >\n", pwm_list);
+  printf("       fan-util --get < Fan# [%s] >\n", tach_list);
 }
 
 static int
@@ -224,11 +229,16 @@ main(int argc, char **argv) {
   int rpm = 0;
   char fan_name[32];
   bool manu_flag = false;
+  int pwm_cnt = 0;
+  int tach_cnt = 0;
 
   if (argc < 2 || argc > 4) {
     print_usage();
     return -1;
   }
+
+  pwm_cnt = pal_get_pwm_cnt();
+  tach_cnt = pal_get_tach_cnt();
 
   if ((!strcmp(argv[1], CMD_SET_FAN_STR)) && (argc == 3 || argc == 4)) {
 
@@ -241,7 +251,7 @@ main(int argc, char **argv) {
 
     // Get Fan Number, if mentioned
     if (argc == 4) {
-      if (parse_fan(argv[3], pal_pwm_cnt, &fan)) {
+      if (parse_fan(argv[3], pwm_cnt, &fan)) {
         print_usage();
         return -1;
       }
@@ -254,7 +264,7 @@ main(int argc, char **argv) {
 
     // Get Fan Number, if mentioned
     if (argc == 3) {
-      if (parse_fan(argv[2], pal_tach_cnt, &fan)) {
+      if (parse_fan(argv[2], tach_cnt, &fan)) {
         print_usage();
         return -1;
       }
@@ -268,7 +278,7 @@ main(int argc, char **argv) {
   if (cmd == CMD_SET_FAN) {
     // Set the Fan Speed.
     // If the fan num is not mentioned, set all fans to given pwm.
-    for (i = 0; i < pal_pwm_cnt; i++) {
+    for (i = 0; i < pwm_cnt; i++) {
 
       // Check if the fan number is mentioned.
       if (fan != ALL_FAN_NUM && fan != i)
@@ -285,7 +295,7 @@ main(int argc, char **argv) {
 
   } else if (cmd == CMD_GET_FAN) {
 
-    for (i = 0; i < pal_tach_cnt; i++) {
+    for (i = 0; i < tach_cnt; i++) {
 
       // Check if the fan number is mentioned.
       if (fan != ALL_FAN_NUM && fan != i)

@@ -359,6 +359,10 @@ int pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
 void pal_specific_plat_fan_check(bool status);
 int pal_get_sensor_util_timeout(uint8_t fru);
 bool pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru);
+char *pal_get_pwn_list(void);
+char *pal_get_tach_list(void);
+int pal_get_pwm_cnt(void);
+int pal_get_tach_cnt(void);
 #ifdef __cplusplus
 }
 #endif

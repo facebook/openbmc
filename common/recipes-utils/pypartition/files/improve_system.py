@@ -78,11 +78,14 @@ def improve_system(logger):
     reason = 'potentially applying a latent update'
     if args.image:
         image_file_name = args.image
-        if args.image.startswith('http'):
+        if args.image.startswith('https'):
+            cmd = ['curl', '-k', '-s', '-o', '/tmp/flash', args.image]
+            system.run_verbosely(cmd, logger)
+            image_file_name = '/tmp/flash'
+        elif args.image.startswith('http'):
+            cmd =  ['wget', '-q', '-O', '/tmp/flash', args.image]
+            system.run_verbosely(cmd, logger)
             # --continue might be cool but it doesn't seem to work.
-            system.run_verbosely(
-                ['wget', '-q', '-O', '/tmp/flash', args.image], logger
-            )
             image_file_name = '/tmp/flash'
 
         image_file = virtualcat.ImageFile(image_file_name)

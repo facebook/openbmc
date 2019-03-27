@@ -1,4 +1,6 @@
-# Copyright 2018-present Facebook. All Rights Reserved.
+#!/usr/bin/env python3
+#
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,20 +16,16 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-board_routes = [
-    '/api/sys/pim_present',
-    '/api/sys/piminfo',
-    '/api/sys/fruid_scm',
-    '/api/sys/pimserial',
-    '/api/sys/mb/seutil',
-    '/api/sys/mb/pim1/peutil',
-    '/api/sys/mb/pim2/peutil',
-    '/api/sys/mb/pim3/peutil',
-    '/api/sys/mb/pim4/peutil',
-    '/api/sys/mb/pim5/peutil',
-    '/api/sys/mb/pim6/peutil',
-    '/api/sys/mb/pim7/peutil',
-    '/api/sys/mb/pim8/peutil',
-    '/api/sys/scdinfo',
-]
+import json
+import re
+import subprocess
+from rest_fruid import get_fruid
+
+# Handler for SCD FRUID resource endpoint
+# In YAMP, SCD means switch card
+def get_scdinfo():
+    cmd = ['weutil', 'SCD']
+    fresult = get_fruid(cmd)
+    return fresult

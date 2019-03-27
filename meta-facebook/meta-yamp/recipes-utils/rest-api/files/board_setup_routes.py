@@ -33,4 +33,4 @@ def setup_board_routes(app):
     app.router.add_get(board_routes[10], bhandler.rest_peutil_hdl)
     app.router.add_get(board_routes[11], bhandler.rest_peutil_hdl)
     app.router.add_get(board_routes[12], bhandler.rest_peutil_hdl)
-
+    app.router.add_get(board_routes[13], bhandler.rest_scdinfo_hdl)

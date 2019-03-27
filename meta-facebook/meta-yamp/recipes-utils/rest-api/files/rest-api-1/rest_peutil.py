@@ -36,7 +36,7 @@ def get_peutil(pim: str) -> Dict:
 
 def _parse_peutil_data(data) -> Dict:
     result = {}
-    # need to remove the first info line from seutil
+    # need to remove the first info line from peutil
     adata = data.split('\n', 1)
     for sdata in adata[1].split('\n'):
         tdata = sdata.split(':', 1)

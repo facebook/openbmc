@@ -60,11 +60,17 @@ typedef struct fruid_area_chassis_t {
   uint8_t area_len;
   uint8_t type;
   char * type_str;
+  uint8_t part_type_len;
   char * part;
+  uint8_t serial_type_len;
   char * serial;
+  uint8_t custom1_type_len;
   char * custom1;
+  uint8_t custom2_type_len;
   char * custom2;
+  uint8_t custom3_type_len;
   char * custom3;
+  uint8_t custom4_type_len;
   char * custom4;
   uint8_t chksum;
 } fruid_area_chassis_t;
@@ -74,16 +80,25 @@ typedef struct fruid_area_board_t {
   uint8_t format_ver : 4;
   uint8_t area_len;
   uint8_t lang_code;
-  uint8_t mfg_time[3];
+  uint8_t * mfg_time;
   char * mfg_time_str;
+  uint8_t mfg_type_len;
   char * mfg;
+  uint8_t name_type_len;
   char * name;
+  uint8_t serial_type_len;
   char * serial;
+  uint8_t part_type_len;
   char * part;
+  uint8_t fruid_type_len;
   char * fruid;
+  uint8_t custom1_type_len;
   char * custom1;
+  uint8_t custom2_type_len;
   char * custom2;
+  uint8_t custom3_type_len;
   char * custom3;
+  uint8_t custom4_type_len;
   char * custom4;
   uint8_t chksum;
 } fruid_area_board_t;
@@ -93,16 +108,27 @@ typedef struct fruid_area_product_t {
   uint8_t format_ver : 4;
   uint8_t area_len;
   uint8_t lang_code;
+  uint8_t mfg_type_len;
   char * mfg;
+  uint8_t name_type_len;
   char * name;
+  uint8_t part_type_len;
   char * part;
+  uint8_t version_type_len;
   char * version;
+  uint8_t serial_type_len;
   char * serial;
+  uint8_t asset_tag_type_len;
   char * asset_tag;
+  uint8_t fruid_type_len;
   char * fruid;
+  uint8_t custom1_type_len;
   char * custom1;
+  uint8_t custom2_type_len;
   char * custom2;
+  uint8_t custom3_type_len;
   char * custom3;
+  uint8_t custom4_type_len;
   char * custom4;
   uint8_t chksum;
 } fruid_area_product_t;
@@ -118,40 +144,79 @@ typedef struct fruid_area_multirecord_t {
 typedef struct fruid_info_t {
   struct {
     uint8_t flag;
+    uint8_t format_ver : 4;
+    uint8_t area_len;
+    uint8_t type;
     char * type_str;
+    uint8_t part_type_len;
     char * part;
+    uint8_t serial_type_len;
     char * serial;
+    uint8_t custom1_type_len;
     char * custom1;
+    uint8_t custom2_type_len;
     char * custom2;
+    uint8_t custom3_type_len;
     char * custom3;
+    uint8_t custom4_type_len;
     char * custom4;
+    uint8_t chksum;
   } chassis;
   struct {
     uint8_t flag;
+    uint8_t format_ver : 4;
+    uint8_t area_len;
+    uint8_t lang_code;
+    uint8_t * mfg_time;
     char * mfg_time_str;
+    uint8_t mfg_type_len;
     char * mfg;
+    uint8_t name_type_len;
     char * name;
+    uint8_t serial_type_len;
     char * serial;
+    uint8_t part_type_len;
     char * part;
+    uint8_t fruid_type_len;
     char * fruid;
+    uint8_t custom1_type_len;
     char * custom1;
+    uint8_t custom2_type_len;
     char * custom2;
+    uint8_t custom3_type_len;
     char * custom3;
+    uint8_t custom4_type_len;
     char * custom4;
+    uint8_t chksum;
   } board;
   struct {
     uint8_t flag;
+    uint8_t format_ver : 4;
+    uint8_t area_len;
+    uint8_t lang_code;
+    uint8_t mfg_type_len;
     char * mfg;
+    uint8_t name_type_len;
     char * name;
+    uint8_t part_type_len;
     char * part;
+    uint8_t version_type_len;
     char * version;
+    uint8_t serial_type_len;
     char * serial;
+    uint8_t asset_tag_type_len;
     char * asset_tag;
+    uint8_t fruid_type_len;
     char * fruid;
+    uint8_t custom1_type_len;
     char * custom1;
+    uint8_t custom2_type_len;
     char * custom2;
+    uint8_t custom3_type_len;
     char * custom3;
+    uint8_t custom4_type_len;
     char * custom4;
+    uint8_t chksum;
   } product;
 } fruid_info_t;
 
@@ -163,16 +228,6 @@ typedef struct fruid_eeprom_t {
   uint8_t * product;
   uint8_t * multirecord;
 } fruid_eeprom_t;
-
-/* To hold the different field info. */
-typedef struct fruid_field_t {
-  const char * field;
-  char * offset;
-  uint8_t flag;
-  uint8_t area_length;
-  uint8_t type_length;
-  uint8_t area_type;
-} fruid_field_t;
 
 /* List of all the Chassis types. */
 const char * fruid_chassis_type [] = {
@@ -210,16 +265,13 @@ const char * fruid_chassis_type [] = {
   "Detachable"                /* 0x20 */
 };
 
-const char * fruid_field_chassis_opt[] = {
-  "--CPN", 
-  "--CSN", 
-  "--CCD1", 
-  "--CCD2", 
-  "--CCD3", 
-  "--CCD4", 
-};
-
-const char * fruid_field_board_opt[] = {
+const char * fruid_field_all_opt[] = {
+  "--CPN",
+  "--CSN",
+  "--CCD1",
+  "--CCD2",
+  "--CCD3",
+  "--CCD4",
   "--BMD",
   "--BM",
   "--BP",
@@ -230,9 +282,6 @@ const char * fruid_field_board_opt[] = {
   "--BCD2",
   "--BCD3",
   "--BCD4",
-};
-
-const char * fruid_field_product_opt[] = {
   "--PM",
   "--PN",
   "--PPN",
@@ -244,6 +293,42 @@ const char * fruid_field_product_opt[] = {
   "--PCD2",
   "--PCD3",
   "--PCD4"
+};
+
+enum {
+  MODIFY_AREA_CHASSIS,
+  MODIFY_AREA_BOARD,
+  MODIFY_AREA_PRODUCT
+};
+
+enum {
+  CPN,
+  CSN,
+  CCD1,
+  CCD2,
+  CCD3,
+  CCD4,
+  BMD,
+  BM,
+  BP,
+  BSN,
+  BPN,
+  BFI,
+  BCD1,
+  BCD2,
+  BCD3,
+  BCD4,
+  PM,
+  PN,
+  PPN,
+  PV,
+  PSN,
+  PAT,
+  PFI,
+  PCD1,
+  PCD2,
+  PCD3,
+  PCD4
 };
 
 int fruid_parse(const char * bin, fruid_info_t * fruid);

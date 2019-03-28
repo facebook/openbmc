@@ -721,11 +721,15 @@ main(int argc, char **argv) {
   }
 
   if (!strcmp(argv[2], "--check_status")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_check_status(slot_id);
   } else if (!strcmp(argv[2], "--get_dev_id")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_get_device_id(slot_id);
   } else if (!strcmp(argv[2], "--read_jtag_id")) {
-    if (argc < 4) {
+    if (argc != 4) {
       goto err_exit;
     }
     dev_id = atoi(argv[3]);
@@ -734,44 +738,56 @@ main(int argc, char **argv) {
     }
     ret = util_read_jtag_id(slot_id, dev_id);
   } else if (!strcmp(argv[2], "--get_gpio")) {
+    if (argc != 3)
+      goto err_exit;
     util_get_gpio(slot_id);
   } else if (!strcmp(argv[2], "--set_gpio")) {
-    if (argc < 5) {
+    if (argc != 5)
       goto err_exit;
-    }
     if (strcmp(argv[4] , "0") && strcmp(argv[4] , "1")) {
       goto err_exit;
     }
     util_set_gpio(slot_id, atoi(argv[3]), atoi(argv[4]));
   } else if (!strcmp(argv[2], "--get_gpio_config")) {
+    if (argc != 3)
+      goto err_exit;
     util_get_gpio_config(slot_id);
   } else if (!strcmp(argv[2], "--set_gpio_config")) {
-    if (argc < 5) {
+    if (argc != 5)
       goto err_exit;
-    }
     config = (uint8_t)strtol(argv[4], NULL, 0);
     ret = util_set_gpio_config(slot_id, atoi(argv[3]), config);
   } else if (!strcmp(argv[2], "--get_config")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_get_config(slot_id);
   } else if (!strcmp(argv[2], "--get_post_code")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_get_post_buf(slot_id);
   } else if (!strcmp(argv[2], "--read_fruid")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_read_fruid(slot_id);
   } else if (!strcmp(argv[2], "--get_sdr")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_get_sdr(slot_id);
   } else if (!strcmp(argv[2], "--read_sensor")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_read_sensor(slot_id);
   } else if (!strcmp(argv[2], "--perf_test")) {
-    if (argc < 4) {
+    if (argc != 4)
       goto err_exit;
-    }
     ret = util_perf_test(slot_id, atoi(argv[3]));
   } else if (!strcmp(argv[2], "--file")) {
-    if (argc < 4) {
+    if (argc != 4)
       goto err_exit;
-    }
     ret = process_file(slot_id, argv[3]);
   } else if (!strcmp(argv[2], "--reset")) {
+    if (argc != 3)
+      goto err_exit;
     ret = util_bic_reset(slot_id);
   } else if (argc >= 4) {
     if (util_is_numeric(argv + 2)) {

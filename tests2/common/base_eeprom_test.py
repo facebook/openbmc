@@ -75,7 +75,6 @@ class CommonEepromTest(BaseEepromTest):
         self.log_check(name=__name__)
         name = self.eeprom_info.split('Product Name')[1].split(': ')[1].split('\n')[0]
         # check all possible product name types
-        success = False
         for item in self.product_name:
             if item.lower() in name.lower():
                 found = True
@@ -119,7 +118,6 @@ class CommonEepromTest(BaseEepromTest):
         self.log_check(name=__name__)
         name = self.eeprom_info.split('Location on Fabric')[1].split(': ')[1].split('\n')[0]
         # check all possible product name types
-        success = False
         for item in self.location_on_fabric:
             if item.lower() in name.lower():
                 found = True

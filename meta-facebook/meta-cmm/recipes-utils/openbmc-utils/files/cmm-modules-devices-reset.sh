@@ -78,7 +78,7 @@ resetModuleDeviceAll(){
     done
     if [ ${module} != $1 ]; then
         echo "Unsupported Module entered or wrong command usage. To see list of supported modules/devices"
-        echo "Please source 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
+        echo "Please run 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
         echo "Command Usage is: <cmm-modules-devices-reset.sh><module_name>[Optional:which_device] or "
         echo "<cmm-modules-devices-reset.sh><module_name><all>"
     fi
@@ -113,7 +113,7 @@ resetModuleDevice(){
     done
     if  [ ${module} != $1 ] || [ ${device} != $2 ]; then 
         echo "Unsupported Module/Device entered or wrong command usage. To see list of supported modules/devices"
-        echo "Please source 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
+        echo "Please run 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
         echo "Command Usage is: <cmm-modules-devices-reset.sh><module_name>[Optional:which_device] or "
         echo "<cmm-modules-devices-reset.sh><module_name><all>"
     fi
@@ -140,7 +140,7 @@ viewModuleDevices(){
 if [ $# == 0 ]; then
       echo "please enter the module name."
       echo "If unsure what modules/devices are available"
-      echo "Please source 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
+      echo "Please run 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
 elif [ $# == 1 ]; then 
     if [ $1 = "view-modules-devices" ]; then
           viewModuleDevices

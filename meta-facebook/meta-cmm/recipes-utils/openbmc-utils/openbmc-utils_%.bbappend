@@ -34,6 +34,7 @@ SRC_URI += " \
     file://ceutil \
     file://system_monitor.sh \
     file://setup_system_monitor.sh \
+    file://cmm-modules-devices-reset.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -47,6 +48,7 @@ OPENBMC_UTILS_FILES += " \
     ceutil \
     system_monitor.sh \
     setup_system_monitor.sh \
+    cmm-modules-devices-reset.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

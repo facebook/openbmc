@@ -23,6 +23,7 @@ board_routes = [
     '/api/sys/pimserial',
     '/api/sys/firmware_info/pim',
     '/api/sys/firmware_info/scm',
+    '/api/sys/firmware_info/all',
     '/api/sys/mb/pim1/peutil',
     '/api/sys/mb/pim2/peutil',
     '/api/sys/mb/pim3/peutil',

@@ -33,7 +33,7 @@ import rest_firmware_info_pim
 import rest_firmware_info_scm
 import rest_peutil
 import rest_seutil
-
+import rest_fw_ver
 
 class boardApp_Handler:
     # Handler to reset usb-to-i2c
@@ -66,6 +66,12 @@ class boardApp_Handler:
     async def rest_firmware_info_scm_hdl(self, request):
         return web.json_response(
             rest_firmware_info_scm.get_firmware_info(), dumps=dumps_bytestr,
+        )
+
+    # Handler for sys/firmware_info/all resource endpoint
+    async def rest_firmware_info_all_hdl(self, request):
+        return web.json_response(
+            rest_fw_ver.get_all_fw_ver(), dumps=dumps_bytestr,
         )
 
     # Handler for sys/mb/pim$/peutil resource endpoint

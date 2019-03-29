@@ -2620,6 +2620,8 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
           *type = SERVER_TYPE_EP;
         } else if (id.prod_id[0] == 0x39 && id.prod_id[1] == 0x30) {
           *type = SERVER_TYPE_TL;
+        } else if (id.prod_id[0] == 0x44 && id.prod_id[1] == 0x4E) {
+          *type = SERVER_TYPE_ND;
         } else {
           *type = SERVER_TYPE_NONE;
         }

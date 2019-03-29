@@ -48,6 +48,8 @@ RC_PRODUCT_ID0=43
 RC_PRODUCT_ID1=52
 EP_PRODUCT_ID0=50
 EP_PRODUCT_ID1=45
+ND_PRODUCT_ID0=44
+ND_PRODUCT_ID1=4E
 
 max_retry=3
 
@@ -74,6 +76,9 @@ for (( i=0; i<${#SLOT[@]}; i++ )); do
         elif [[ "$product_id_l" == "$EP_PRODUCT_ID0" && "$product_id_h" == "$EP_PRODUCT_ID1" ]]; then
           #EP
           server_type=2
+        elif [[ "$product_id_l" == "$ND_PRODUCT_ID0" && "$product_id_h" == "$ND_PRODUCT_ID1" ]]; then
+          #ND
+          server_type=4
         else
           #unknown
           server_type=3

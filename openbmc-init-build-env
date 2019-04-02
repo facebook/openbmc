@@ -12,7 +12,6 @@ DISTRO_OVERRIDES=(
   meta-minipack:krogoth
   meta-wedge:krogoth
   meta-wedge100:rocko
-  meta-yamp:krogoth
 )
 
 platform="$1"

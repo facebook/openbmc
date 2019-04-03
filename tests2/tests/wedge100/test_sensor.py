@@ -76,7 +76,7 @@ class ComESensorTest(LmSensorsTest):
         value = result["Memory Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 30, delta=10,
+        self.assertAlmostEqual(float(value), 30, delta=20,
             msg="Memory Temp value is {} not within range".format(value))
 
     def test_com_e_sensor_data_CPU_Temp_range(self):
@@ -84,7 +84,7 @@ class ComESensorTest(LmSensorsTest):
         value = result["CPU Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 40, delta=10,
+        self.assertAlmostEqual(float(value), 40, delta=20,
             msg="CPU Temp value is {} not within range".format(value))
 
 

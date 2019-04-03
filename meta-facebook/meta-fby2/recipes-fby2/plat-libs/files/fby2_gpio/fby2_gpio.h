@@ -30,11 +30,13 @@ extern const char *gpio_pin_name[];
 extern const char *rc_gpio_pin_name[];
 extern const char *ep_gpio_pin_name[];
 extern const char *gpv2_gpio_pin_name[];
+extern const char *nd_gpio_pin_name[];
 extern const uint32_t gpio_ass_val;
 extern size_t gpio_pin_cnt;
 extern size_t rc_gpio_pin_cnt;
 extern size_t ep_gpio_pin_cnt;
 extern size_t gpv2_gpio_pin_cnt;
+extern size_t nd_gpio_pin_cnt;
 
 int fby2_get_gpio_name(uint8_t fru, uint8_t gpio, char *name);
 

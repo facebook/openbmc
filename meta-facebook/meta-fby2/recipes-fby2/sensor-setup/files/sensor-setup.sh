@@ -113,7 +113,7 @@ if [ $spb_type == "1" ]; then
    #
    i2cset -y -f 10 0x40 0xd4 0x3c1c w
    i2cset -y -f 10 0x40 0xd5 0x0400 w
-   i2cset -y -f 10 0x40 0xd8 0x0001 w
+   i2cset -y -f 10 0x40 0xd8 0x0003 w
 
    # calibrtion to get HSC to trigger 60A based on EE team input
    # 0xe18 = 3608 (dec)

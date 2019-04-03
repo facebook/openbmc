@@ -79,10 +79,16 @@ def improve_system(logger):
     if args.image:
         image_file_name = args.image
         if args.image.startswith('https'):
-            cmd = ['curl', '-k', '-s', '-o', '/tmp/flash', args.image]
-            system.run_verbosely(cmd, logger)
-            image_file_name = '/tmp/flash'
-        elif args.image.startswith('http'):
+            try:
+                cmd = ['curl', '-k', '-s', '-o', '/tmp/flash', args.image]
+                system.run_verbosely(cmd, logger)
+                image_file_name = '/tmp/flash'
+            except Exception:
+                # Python2 may throw OSError here, whereas Python3 may
+                # throw FileNotFoundError - common case is Exception.
+                args.image = args.image.replace('https', 'http')
+
+        if args.image.startswith('http:'):
             cmd =  ['wget', '-q', '-O', '/tmp/flash', args.image]
             system.run_verbosely(cmd, logger)
             # --continue might be cool but it doesn't seem to work.

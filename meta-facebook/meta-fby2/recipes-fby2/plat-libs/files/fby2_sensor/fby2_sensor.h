@@ -396,6 +396,62 @@ enum {
   GPV2_SENSOR_M2L_Temp = 0xF6,
 };
 
+// Sensors under Bridge IC (NORTHDOME)
+enum {
+  BIC_ND_SENSOR_MB_INLET_TEMP = 0x01,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_T = 0x02,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_T = 0x03,
+  BIC_ND_SENSOR_SOC_CPU0_TEMP = 0x05,
+  BIC_ND_SENSOR_MB_OUTLET_TEMP_T = 0x07,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_T = 0x0A,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_T = 0x0B,
+  BIC_ND_SENSOR_MB_OUTLET_TEMP_B = 0x0D,
+  BIC_ND_SENSOR_NVME1_CTEMP = 0x0E,
+  BIC_ND_SENSOR_SYSTEM_STATUS = 0x10, //Discrete
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_I = 0x20,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_I = 0x21,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_P = 0x22,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_I = 0x23,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_V = 0x24,
+  BIC_ND_SENSOR_INA260_POWER = 0x28,
+  BIC_ND_SENSOR_INA230_POWER = 0x29,
+  BIC_ND_SENSOR_INA230_VOLTAGE = 0x2A,
+  BIC_ND_SENSOR_POST_ERR = 0x2B, //Event-only
+  BIC_ND_SENSOR_INA260_VOLTAGE = 0x2E,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_P = 0x32,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_I = 0x33,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_V = 0x34,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_P = 0x39,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_P = 0x3A,
+  BIC_ND_SENSOR_PWR_THRESH_EVT = 0x3B, //Event-only
+  BIC_ND_SENSOR_MACHINE_CHK_ERR = 0x40, //Event-only
+  BIC_ND_SENSOR_PCIE_ERR = 0x41, //Event-only
+  BIC_ND_SENSOR_OTHER_IIO_ERR = 0x43, //Event-only
+  BIC_ND_SENSOR_PROCHOT_EXT = 0x51, //Event-only
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_V = 0x54,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_V = 0x55,
+  BIC_ND_SENSOR_POWER_ERR = 0x56, //Event-only
+  BIC_ND_SENSOR_MEMORY_ECC_ERROR = 0x63, //Event-only
+  BIC_ND_SENSOR_PROCESSOR_FAIL = 0x65, //Discrete
+  BIC_ND_SENSOR_SYS_BOOTING_STS = 0x7E, //Discrete
+  BIC_ND_SENSOR_VR_HOT = 0xB2, //Discrete
+  BIC_ND_SENSOR_CPU_DIMM_HOT = 0xB3, //Discrete
+  BIC_ND_SENSOR_SOC_DIMMA0_TEMP = 0xB4,
+  BIC_ND_SENSOR_SOC_DIMMC0_TEMP = 0xB5,
+  BIC_ND_SENSOR_SOC_DIMMD0_TEMP = 0xB6,
+  BIC_ND_SENSOR_SOC_DIMME0_TEMP = 0xB7,
+  BIC_ND_SENSOR_SOC_DIMMG0_TEMP = 0xB8,
+  BIC_ND_SENSOR_SOC_DIMMH0_TEMP = 0xB9,
+  BIC_ND_SENSOR_P3V3_MB = 0xD0,
+  BIC_ND_SENSOR_P12V_STBY_MB = 0xD2,
+  BIC_ND_SENSOR_PVDDCR_CPU = 0xD3,
+  BIC_ND_SENSOR_P3V3_STBY_MB = 0xD5,
+  BIC_ND_SENSOR_PVDDIO_EFGH = 0xD6,
+  BIC_ND_SENSOR_PV_BAT = 0xD7,
+  BIC_ND_SENSOR_PVDDIO_ABCD = 0xD8,
+  BIC_ND_SENSOR_PVDDCR_SOC = 0xD9,
+};
+
 enum {
   MUX_CH_0 = 0,
   MUX_CH_1 = 1,
@@ -431,6 +487,11 @@ extern const uint8_t nic_sensor_list[];
 extern const uint8_t gpv2_sensor_list[];
 #endif
 
+#ifdef CONFIG_FBY2_ND
+extern const uint8_t bic_nd_sensor_list[];
+extern const uint8_t bic_nd_discrete_list[];
+#endif
+
 //extern float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
 
 extern float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
@@ -458,6 +519,10 @@ extern size_t dc_cf_sensor_cnt;
 
 #ifdef CONFIG_FBY2_GPV2
 extern size_t gpv2_sensor_cnt;
+#endif
+
+#ifdef CONFIG_FBY2_ND
+extern size_t bic_nd_sensor_cnt;
 #endif
 
 int fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);

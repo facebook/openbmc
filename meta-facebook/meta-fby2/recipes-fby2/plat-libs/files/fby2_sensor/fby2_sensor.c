@@ -532,6 +532,60 @@ const uint8_t gpv2_sensor_list[] = {
 };
 #endif
 
+#ifdef CONFIG_FBY2_ND
+// List of BIC (ND) sensors to be monitored
+const uint8_t bic_nd_sensor_list[] = {
+  BIC_ND_SENSOR_MB_OUTLET_TEMP_T,
+  BIC_ND_SENSOR_MB_OUTLET_TEMP_B,
+  BIC_ND_SENSOR_MB_INLET_TEMP,
+  BIC_ND_SENSOR_NVME1_CTEMP,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_T,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_T,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_T,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_T,
+  BIC_ND_SENSOR_SOC_CPU0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMA0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMC0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMD0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMME0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMG0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMH0_TEMP,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_P,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_P,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_P,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_P,
+  BIC_ND_SENSOR_P3V3_MB,
+  BIC_ND_SENSOR_P12V_STBY_MB,
+  BIC_ND_SENSOR_PVDDCR_CPU,
+  BIC_ND_SENSOR_P3V3_STBY_MB,
+  BIC_ND_SENSOR_PV_BAT,
+  BIC_ND_SENSOR_PVDDIO_ABCD,
+  BIC_ND_SENSOR_PVDDIO_EFGH,
+  BIC_ND_SENSOR_PVDDCR_SOC,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_I,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_I,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_I,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_I,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_V,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_V,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_V,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_V,
+  BIC_ND_SENSOR_INA230_POWER,
+  BIC_ND_SENSOR_INA230_VOLTAGE,
+  BIC_ND_SENSOR_INA260_POWER,
+  BIC_ND_SENSOR_INA260_VOLTAGE,
+};
+
+const uint8_t bic_nd_discrete_list[] = {
+  /* ND Discrete sensors */
+  BIC_ND_SENSOR_SYSTEM_STATUS,
+  BIC_ND_SENSOR_PROCESSOR_FAIL,
+  BIC_ND_SENSOR_SYS_BOOTING_STS,
+  BIC_ND_SENSOR_CPU_DIMM_HOT,
+  BIC_ND_SENSOR_VR_HOT,
+};
+#endif
+
 float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float dc_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -666,6 +720,11 @@ size_t dc_cf_sensor_cnt = sizeof(dc_cf_sensor_list)/sizeof(uint8_t);
 
 #ifdef CONFIG_FBY2_GPV2
 size_t gpv2_sensor_cnt = sizeof(gpv2_sensor_list)/sizeof(uint8_t);
+#endif
+
+#ifdef CONFIG_FBY2_ND
+size_t bic_nd_sensor_cnt = sizeof(bic_nd_sensor_list)/sizeof(uint8_t);
+size_t bic_nd_discrete_cnt = sizeof(bic_nd_discrete_list)/sizeof(uint8_t);
 #endif
 
 enum {
@@ -835,6 +894,8 @@ fby2_get_server_type_directly(uint8_t fru, uint8_t *type) {
       *type = SERVER_TYPE_RC;
     } else if (id->prod_id[0] == 0x50 && id->prod_id[1] == 0x45) {
       *type = SERVER_TYPE_EP;
+    } else if (id->prod_id[0] == 0x44 && id->prod_id[1] == 0x4E) {
+      *type = SERVER_TYPE_ND;
     } else {
       *type = SERVER_TYPE_NONE;
     }
@@ -1285,10 +1346,11 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       syslog(LOG_ERR, "%s, Get server type failed", __func__);
     }
 
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
     switch(server_type){
       case SERVER_TYPE_EP:
       case SERVER_TYPE_RC:
+      case SERVER_TYPE_ND:
         break;
       case SERVER_TYPE_TL:
         for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {

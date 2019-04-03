@@ -3453,7 +3453,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER: {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
             uint8_t server_type = 0xFF;
             int ret = -1;
             ret = fby2_get_server_type(fru, &server_type);
@@ -3471,6 +3471,12 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
               case SERVER_TYPE_EP:
                 *sensor_list = (uint8_t *) bic_ep_sensor_list;
                 *cnt = bic_ep_sensor_cnt;
+                break;
+#endif
+#if defined(CONFIG_FBY2_ND)
+              case SERVER_TYPE_ND:
+                *sensor_list = (uint8_t *) bic_nd_sensor_list;
+                *cnt = bic_nd_sensor_cnt;
                 break;
 #endif
               case SERVER_TYPE_TL:

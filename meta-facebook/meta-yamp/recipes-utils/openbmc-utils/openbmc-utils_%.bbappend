@@ -75,10 +75,12 @@ do_install_board() {
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
-    # networking is done after rcS, any start level within rcS
-    # for mac fixup should work
+    # "eth0_mac_fixup.sh" needs to be executed after "networking start"
+    # (runlevel 5, order #1), but before "setup-dhc6.sh" (runlevel 5,
+    # order #3): this is to make sure ipv6 link-local address can be
+    # derivied from the correct MAC address.
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
-    update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
+    update-rc.d -r ${D} eth0_mac_fixup.sh start 2 2 3 4 5 .
 
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .

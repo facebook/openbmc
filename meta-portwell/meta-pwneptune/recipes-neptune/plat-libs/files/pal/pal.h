@@ -35,14 +35,6 @@ extern "C" {
 
 #define MAX_NUM_FAN     2
 
-#define FRU_STATUS_GOOD   1
-#define FRU_STATUS_BAD    0
-
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-#define GETMASK(y)          (1 << y)
-
 #define MAX_NODES 4
 
 #define MAX_NUM_FRUS 5
@@ -290,11 +282,6 @@ enum {
   BOOT_DEVICE_IPV6     = 0x9,
   BOOT_DEVICE_RESERVED = 0xff,
 };
-
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
 
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);

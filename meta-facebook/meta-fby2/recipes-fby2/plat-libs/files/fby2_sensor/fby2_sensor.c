@@ -580,9 +580,6 @@ const uint8_t bic_nd_discrete_list[] = {
   /* ND Discrete sensors */
   BIC_ND_SENSOR_SYSTEM_STATUS,
   BIC_ND_SENSOR_PROCESSOR_FAIL,
-  BIC_ND_SENSOR_SYS_BOOTING_STS,
-  BIC_ND_SENSOR_CPU_DIMM_HOT,
-  BIC_ND_SENSOR_VR_HOT,
 };
 #endif
 

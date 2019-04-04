@@ -4510,7 +4510,7 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_SLOT3:
     case FRU_SLOT4:
       if (pal_is_slot_server(fru)) {
-#if defined(CONFIG_FBY2_RC)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_ND)
         int ret = -1;
         uint8_t server_type = 0xFF;
         ret = fby2_get_server_type(fru, &server_type);
@@ -4524,6 +4524,10 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
             break;
           case SERVER_TYPE_TL:
             *sensor_list = (uint8_t *) bic_discrete_list;
+            *cnt = bic_discrete_cnt;
+            break;
+          case SERVER_TYPE_ND:
+            *sensor_list = (uint8_t *) bic_nd_discrete_list;
             *cnt = bic_discrete_cnt;
             break;
           default:

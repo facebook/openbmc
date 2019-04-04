@@ -47,7 +47,11 @@ else
   upgrade_steps+=(/tmp/$(basename "$image"))
 fi
 
-"${sshpass[@]}" scp "${options[@]}" "${files[@]}" "root@$target:/tmp/"
+if [[ $target =~ .*:.* ]]; then  
+  "${sshpass[@]}" scp "${options[@]}" "${files[@]}" "root@[$target]:/tmp/"
+else
+  "${sshpass[@]}" scp "${options[@]}" "${files[@]}" "root@$target:/tmp/"
+fi
 
 rc=0
 "${sshpass[@]}" ssh "${options[@]}" "root@$target" "${upgrade_steps[@]}" ||

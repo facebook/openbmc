@@ -19,4 +19,5 @@ RDEPENDS_${PN} += " \
   u-boot-fw-utils \
   wdtcli \
   gpiocli \
+  fw-util \
   "

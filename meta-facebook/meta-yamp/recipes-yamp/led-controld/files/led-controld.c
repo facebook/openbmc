@@ -161,7 +161,7 @@ bool yamp_update_psu_led(bool prev_psu_state)
     int psu_present = 0;
     int psu_input_ok = 0;
     yamp_read_cpld_reg(SCD_PREFIX, SCD_PSU_STATUS, &psu_status_reg);
-    for (iter = 1; iter < sizeof(expected_psu)/sizeof(int); iter++) {
+    for (iter = 0; iter < sizeof(expected_psu)/sizeof(int); iter++) {
         psu = expected_psu[iter] - 1; // 0-based in register definition
         this_psu_ok = true;
         psu_present = (psu_status_reg >> (SCD_PSU_PRESENT_BIT + psu)) & 0x1;

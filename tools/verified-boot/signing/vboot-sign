@@ -31,6 +31,10 @@ case $key in
     POKY_BUILD="$2"
     shift # past argument
     ;;
+    -i|--image)
+    IMAGE_PATH="$2"
+    shift
+    ;;
     -p|--python)
     PYTHON=$2
     shift;
@@ -74,6 +78,9 @@ IMAGE_NAME=$(ls $IMAGES_DIR)
 if [ "$IMAGE_NAME" == "" ]; then
   echo "Could not find any images in $IMAGE_DIR"
   exit -1;
+fi
+if [ "$IMAGE_PATH" == "" ]; then
+  IMAGE_PATH=$POKY_BUILD/tmp/deploy/images/$IMAGE_NAME/flash-${IMAGE_NAME}
 fi
 echo "POKY_BUILD=$POKY_BUILD"
 echo "POKY_DIR=$POKY_DIR"
@@ -124,8 +131,9 @@ $PYTHON ./fit-sign --mkimage $MKIMAGE \
                   --kek $KEYS/kek/kek.dtb \
                   --signed-subordinate $KEYS/subordinate/subordinate.dtb.signed \
                   --keydir $KEYS/subordinate \
-                  $POKY_BUILD/tmp/deploy/images/$IMAGE_NAME/flash-$IMAGE_NAME \
-                  $POKY_BUILD/tmp/deploy/images/$IMAGE_NAME/flash-${IMAGE_NAME}.signed
+                  --sign-os \
+                  $IMAGE_PATH \
+                  ${IMAGE_PATH}.signed
 # Go back
 cd $CURRENT_DIR
 

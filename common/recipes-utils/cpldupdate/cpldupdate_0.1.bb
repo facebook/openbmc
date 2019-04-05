@@ -34,4 +34,6 @@ do_install() {
 	install -m 0755 ispvm ${D}${bindir}/ispvm
 }
 
-DEPENDS += "libcpldupdate-dll-helper obmc-i2c"
+LDFLAGS += "-lobmc-i2c"
+DEPENDS += "libcpldupdate-dll-helper libobmc-i2c"
+RDEPENDS_${PN} += "libobmc-i2c"

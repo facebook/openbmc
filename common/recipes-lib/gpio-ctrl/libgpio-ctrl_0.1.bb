@@ -33,11 +33,10 @@ SRC_URI = "file://gpio.c \
           "
 
 CFLAGS += "-Wall -Werror "
-LDFLAGS += " -lmisc-utils -lpthread "
+LDFLAGS += " -lmisc-utils -lpthread -lobmc-i2c "
 
-DEPENDS += "libmisc-utils obmc-i2c"
-RDEPENDS_${PN} += " libmisc-utils"
-DEPENDS_append = " libmisc-utils"
+DEPENDS += "libmisc-utils libobmc-i2c"
+RDEPENDS_${PN} += " libmisc-utils libobmc-i2c"
 
 do_install() {
     install -d ${D}${libdir}

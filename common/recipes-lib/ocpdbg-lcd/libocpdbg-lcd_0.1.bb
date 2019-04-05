@@ -14,7 +14,8 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-DEPENDS = " libipmb libipmi obmc-i2c"
+LDFLAGS += " -lobmc-i2c"
+DEPENDS = " libipmb libipmi libobmc-i2c"
 
 do_install() {
 	  install -d ${D}${libdir}
@@ -26,4 +27,4 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libocpdbg-lcd.so"
 FILES_${PN}-dev = "${includedir}/openbmc/ocp-dbg-lcd.h"
-RDEPENDS_${PN} = "libipmb libipmi"
+RDEPENDS_${PN} = "libipmb libipmi libobmc-i2c"

@@ -18,26 +18,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef _OPENBMC_I2C_DEV_H_
-#define _OPENBMC_I2C_DEV_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
-/*
- * Include all the functions for smbus transactions.
- */
-#include <openbmc/smbus.h>
-
-/*
- * I2C sysfs related interfaces.
- */
-#define I2C_SYSFS_DEVICES		"/sys/bus/i2c/devices"
-#define I2C_SYSFS_DRIVERS		"/sys/bus/i2c/drivers"
-#define I2C_SYSFS_BUS_DIR(num)		I2C_SYSFS_DEVICES"/i2c-"#num
-#define I2C_SYSFS_DEV_DIR(dev)		I2C_SYSFS_DEVICES"/"#dev
-#define I2C_SYSFS_DEV_ENTRY(dev, ent)	I2C_SYSFS_DEVICES"/"#dev"/"#ent
+#define I2C_ADDR_10BIT_MASK	0xa000
 
 /*
  * Extract i2c bus and device address from sysfs path "<bus>-<addr>".
@@ -45,19 +32,43 @@ extern "C" {
  * Return:
  *   0 for success, and -1 on failures.
  */
-int i2c_sysfs_path_parse(const char *i2c_device, int *i2c_bus, int *i2c_addr);
+int i2c_sysfs_path_parse(const char *i2c_device,
+			 int *i2c_bus,
+			 int *i2c_addr)
+{
+	int bus, addr;
+	char *endptr;
 
-/*
- * Issue read/write transactions to the given i2c device.
- *
- * Return:
- *   0 for success, and -1 on failures.
- */
-int i2c_rdwr_msg_transfer(int file, __u8 addr, __u8 *tbuf, 
-			  __u8 tcount, __u8 *rbuf, __u8 rcount);
+	if (i2c_device == NULL)
+		goto error;
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+	/* parse bus field */
+	bus = (int)strtol(i2c_device, &endptr, 10);
+	if (bus < 0 || endptr == i2c_device || *endptr != '-')
+		goto error;
 
-#endif /* _OPENBMC_I2C_DEV_H_ */
+	/* parse address field */
+	endptr++;
+	if (strlen(endptr) != 4)
+		goto error;
+	addr = (int)strtol(endptr, NULL, 16);
+	if (addr < 0) {
+		goto error;
+	} else if (addr & I2C_ADDR_10BIT_MASK) {
+		addr &= (~I2C_ADDR_10BIT_MASK);
+		if (addr > 0x3ff)
+			goto error;	/* invalid 10-bit address */
+	} else if (addr == 0 || addr > 0x7f) {
+		goto error;		/* invalid 7-bit address */
+	}
+
+	if (i2c_bus != NULL)
+		*i2c_bus = bus;
+	if (i2c_addr != NULL)
+		*i2c_addr = addr;
+	return 0;
+
+error:
+	errno = EINVAL;
+	return -1;
+}

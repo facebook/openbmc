@@ -33,9 +33,6 @@ extern "C" {
 #include <unistd.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <openbmc/obmc-i2c.h>
-#include <openbmc/pal.h>
-#include <openbmc/fruid.h>
 
 #define ERR_PRINT(fmt, args...) \
         fprintf(stderr, fmt ": %s\n", ##args, strerror(errno));

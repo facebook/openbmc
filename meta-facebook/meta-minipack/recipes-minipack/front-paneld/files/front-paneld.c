@@ -36,7 +36,6 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
-#include <openbmc/obmc-i2c.h>
 #include <openbmc/sdr.h>
 
 #define TMP75_NAME    "tmp75"

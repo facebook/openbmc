@@ -35,6 +35,8 @@ do_install() {
   install -m 755 cpldupdate-i2c ${D}${bindir}/cpldupdate-i2c
 }
 
-DEPENDS += "obmc-i2c"
+LDFLAGS += "-lobmc-i2c"
+DEPENDS += "libobmc-i2c"
+RDEPENDS_${PN} += "libobmc-i2c"
 
 FILES_${PN} = "${bindir}"

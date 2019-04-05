@@ -17,6 +17,9 @@
  */
 
 #include <signal.h>
+#include <openbmc/obmc-i2c.h>
+#include <openbmc/pal.h>
+#include <openbmc/fruid.h>
 #include "minipack-psu.h"
 
 static delta_hdr_t delta_hdr;

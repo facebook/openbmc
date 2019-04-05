@@ -25,10 +25,10 @@ LIC_FILES_CHKSUM = "file://minipack-psu.c;beginline=4;endline=16;md5=da35978751a
 SRC_URI = "file://minipack_psu \
           "
 
-LDFLAGS = "-lfruid -lpal"
+LDFLAGS = "-lfruid -lpal -lobmc-i2c"
 
-DEPENDS += "libfruid libpal"
-RDEPENDS_${PN} += "libfruid libpal"
+DEPENDS += "libfruid libpal libobmc-i2c"
+RDEPENDS_${PN} += "libfruid libpal libobmc-i2c"
 
 S = "${WORKDIR}/minipack_psu"
 

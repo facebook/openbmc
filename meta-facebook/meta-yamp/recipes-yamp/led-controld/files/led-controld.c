@@ -111,9 +111,11 @@ bool yamp_update_fan_led(bool prev_fan_state, bool *prev_fan_ok)
         rc = yamp_read_sysfs(buf, &read_val);
         if (rc != 0) {
             this_fan_ok = false;
+            syslog(LOG_WARNING, "Fan %d is not present", fan);
         } else {
             if (read_val != 1) {
                 this_fan_ok = false;
+                syslog(LOG_WARNING, "Fan %d is not present", fan);
             } else {
                 // If fan is present, check rpm is over a minimum threshold
                 snprintf(buf, YAMP_BUFFER_SZ, "%sfan%d%s",
@@ -121,6 +123,8 @@ bool yamp_update_fan_led(bool prev_fan_state, bool *prev_fan_ok)
                 rc = yamp_read_sysfs(buf, &read_val);
                 if ((rc != 0) || (read_val < YAMP_FAN_RPM_MIN)) {
                     this_fan_ok = false;
+                    syslog(LOG_WARNING, "Fan %d running at %d is less than %d, the minimum threshold",
+                        fan, read_val, YAMP_FAN_RPM_MIN);
                 }
             }
         }
@@ -166,9 +170,12 @@ bool yamp_update_psu_led(bool prev_psu_state)
         this_psu_ok = true;
         psu_present = (psu_status_reg >> (SCD_PSU_PRESENT_BIT + psu)) & 0x1;
         psu_input_ok = (psu_status_reg >> (SCD_PSU_OK_BIT + psu)) & 0x1;
-        if ((psu_present != 1) || (psu_input_ok != 1))
+        if ((psu_present != 1) || (psu_input_ok != 1)){
            this_psu_ok = false;
-        if (!this_psu_ok) {
+           syslog(LOG_WARNING, "PSU %d is %s and the input is %s\n",expected_psu[iter],
+               psu_present ? "present" : "not present",
+               psu_input_ok ? "ok" : "not ok");
+        }if (!this_psu_ok) {
           all_psu_ok = false;
         }
 
@@ -243,6 +250,10 @@ bool yamp_update_sys_led(bool prev_sys_ok, bool psu_ok, bool fan_ok)
 
     if (!psu_ok || !fan_ok) {
       sys_ok = false;
+      if (!psu_ok)
+        syslog(LOG_WARNING, "psu error for updating sys led. See last psu details in this log for root cause");
+      else if (!fan_ok)
+        syslog(LOG_WARNING, "fan error for updating sys led. See last fan details in this log for root cause");
     } else {
       // If PSU and FAN are present, check if all LCs are present too
       for (lc = 1; lc <= YAMP_MAX_LC; lc++) {
@@ -258,6 +269,7 @@ bool yamp_update_sys_led(bool prev_sys_ok, bool psu_ok, bool fan_ok)
     if (is_upgrading || (prev_sys_ok != sys_ok)) {
         if (is_upgrading) {
           blink_on = 1;
+          syslog(LOG_INFO, "Yamp is upgrading\n");
         } else {
           blink_on = 0;
         }

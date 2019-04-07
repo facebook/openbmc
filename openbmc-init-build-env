@@ -10,7 +10,7 @@ DISTRO_OVERRIDES=(
   meta-galaxy100:krogoth
   meta-minilaketb:krogoth
   meta-minipack:krogoth
-  meta-wedge:krogoth
+  meta-wedge:rocko
   meta-wedge100:rocko
 )
 

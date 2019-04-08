@@ -26,7 +26,9 @@ LIC_FILES_CHKSUM = "file://lightning_flash.c;beginline=3;endline=15;md5=da359787
 SRC_URI = "file://lightning_flash \
           "
 
-DEPENDS += " liblightning-common obmc-i2c"
+LDFLAGS += "-lobmc-i2c"
+DEPENDS += " liblightning-common libobmc-i2c"
+RDEPENDS_${PN} += "libobmc-i2c"
 
 S = "${WORKDIR}/lightning_flash"
 

@@ -26,6 +26,8 @@ SRC_URI = "file://obmc-i2c.h \
            file://i2c_cdev.c \
            file://i2c_cdev.h \
            file://i2c_core.h \
+           file://i2c_mslave.c \
+           file://i2c_mslave.h \
            file://i2c_sysfs.c \
            file://i2c_sysfs.h \
            file://smbus.h \
@@ -33,6 +35,10 @@ SRC_URI = "file://obmc-i2c.h \
           "
 
 S = "${WORKDIR}"
+
+LDFLAGS += "-lmisc-utils -llog"
+DEPENDS += "libmisc-utils liblog"
+RDEPENDS_${PN} += "libmisc-utils liblog"
 
 #
 # Below are the public header files exported by "libobmc-i2c": Callers
@@ -44,6 +50,7 @@ I2C_HEADER_FILES = " \
     obmc-i2c.h \
     i2c_cdev.h \
     i2c_core.h \
+    i2c_mslave.h \
     i2c_sysfs.h \
     smbus.h \
 "

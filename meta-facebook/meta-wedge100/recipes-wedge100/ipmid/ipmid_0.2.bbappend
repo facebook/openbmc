@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 LDFLAGS += " -lwedge_eeprom"
-DEPENDS += "libwedge-eeprom libipmi obmc-i2c obmc-pal update-rc.d-native"
+DEPENDS += "libwedge-eeprom libipmi obmc-pal update-rc.d-native"
 RDEPENDS_${PN} += "libipmi libkv libwedge-eeprom"
 
 IPMI_FEATURE_FLAGS = "-DSENSOR_DISCRETE_SEL_STATUS -DSENSOR_DISCRETE_WDT"

@@ -16,6 +16,7 @@ do_install() {
     install -m 0755 nvme-util ${D}${bindir}/nvme-util
 }
 
-DEPENDS += " libbic libfby2-sensor libpal"
-RDEPENDS_${PN} += " libbic libfby2-sensor libpal"
+LDFLAGS += "-lobmc-i2c"
+DEPENDS += " libbic libfby2-sensor libpal libobmc-i2c"
+RDEPENDS_${PN} += " libbic libfby2-sensor libpal libobmc-i2c"
 FILES_${PN} = "${bindir}"

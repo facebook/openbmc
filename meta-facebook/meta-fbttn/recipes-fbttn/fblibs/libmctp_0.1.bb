@@ -10,7 +10,9 @@ LIC_FILES_CHKSUM = "file://mctp.c;beginline=8;endline=20;md5=da35978751a9d71b736
 SRC_URI = "file://mctp \
           "
 
-DEPENDS += "obmc-i2c "
+LDFLAGS += "-lobmc-i2c"
+DEPENDS += "libobmc-i2c "
+RDEPENDS_${PN} += "libobmc-i2c"
 
 S = "${WORKDIR}/mctp"
 

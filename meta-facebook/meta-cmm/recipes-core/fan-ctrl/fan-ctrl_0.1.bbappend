@@ -27,7 +27,7 @@ RDEPENDS_${PN} += " libwatchdog"
 
 CXXFLAGS_prepend = "-DCONFIG_GALAXY100 "
 
-DEPENDS_append = " update-rc.d-native obmc-i2c libwatchdog"
+DEPENDS_append = " update-rc.d-native libwatchdog"
 
 do_install_append() {
   install -d ${D}${sysconfdir}/init.d

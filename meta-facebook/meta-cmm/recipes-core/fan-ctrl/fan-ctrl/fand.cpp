@@ -60,7 +60,6 @@
 #include <dirent.h>
 #ifdef CONFIG_GALAXY100
 #include <fcntl.h>
-#include <openbmc/obmc-i2c.h>
 #endif
 #include <openbmc/watchdog.h>
 
@@ -190,7 +189,6 @@ struct galaxy100_fan_failed_control_stu {
   int alarm_level;
 };
 
-static int open_i2c_dev(int i2cbus, char *filename, size_t size);
 static int read_temp_sysfs(sensor_info_sysfs *sensor);
 static int read_critical_max_temp(void);
 static int read_alarm_max_temp(void);

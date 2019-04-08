@@ -6932,6 +6932,7 @@ pal_is_ava_card(uint8_t riser_slot)
 
   //Send I2C to AVA for FRU present check
   rcount = 1;
+  tcount = 0;
   val = i2c_rdwr_msg_transfer(fd, ava_fruid_addr, tbuf, tcount, rbuf, rcount);
   if( val < 0 ) {
     ret = false;

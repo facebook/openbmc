@@ -12,10 +12,10 @@ SRC_URI = "file://sensorsvcpal.c \
            file://CMakeLists.txt \
           "
 
-DEPENDS += "libkv plat-utils libipmi libipmb obmc-pal libme libvr"
+DEPENDS += "libkv plat-utils libipmi libipmb obmc-pal libme libvr libobmc-i2c"
 
 S = "${WORKDIR}"
 
-RDEPENDS_${PN} += " libkv libme libipmb libvr"
+RDEPENDS_${PN} += " libkv libme libipmb libvr libobmc-i2c"
 
 inherit cmake

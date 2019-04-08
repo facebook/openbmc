@@ -9,7 +9,9 @@ LIC_FILES_CHKSUM = "file://yosemite_sensor.c;beginline=8;endline=20;md5=da359787
 
 SRC_URI = "file://yosemite_sensor \
           "
-DEPENDS =+ " libipmi libipmb libbic libyosemite-common obmc-i2c obmc-pal "
+LDFLAGS += "-lobmc-i2c"
+DEPENDS =+ " libipmi libipmb libbic libyosemite-common libobmc-i2c obmc-pal "
+RDEPENDS_${PN} =+ " libobmc-i2c "
 
 S = "${WORKDIR}/yosemite_sensor"
 

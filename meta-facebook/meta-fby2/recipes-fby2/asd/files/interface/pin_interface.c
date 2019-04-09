@@ -183,7 +183,7 @@ int power_debug_assert(const int fru, const bool assert)
 // power_debug_assert  pin = "XDP_BIC_PWR_DEBUG_N",  xdp_bic_pwr_debug_n
 int power_debug_is_asserted(const int fru, bool* asserted)
 {
-    bic_gpio_t gpio;
+    uint8_t gpio;
     int ret;
 
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
@@ -191,10 +191,10 @@ int power_debug_is_asserted(const int fru, bool* asserted)
       return ST_ERR;
     }
 
-    ret = bic_get_gpio(fru, &gpio);
+    ret = bic_get_gpio_status(fru, XDP_BIC_PWR_DEBUG_N, &gpio);
     if (!ret) {
       /* active low */
-      *asserted = gpio.xdp_bic_pwr_debug_n == GPIO_VALUE_LOW ? true : false;
+      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
     }
 
 #ifdef FBY2_DEBUG
@@ -229,7 +229,7 @@ int preq_assert(const int fru, const bool assert)
 // preq pin = ""XDP_BIC_PREQ_N"", xdp_bic_preq_n
 int preq_is_asserted(const int fru, bool* asserted)
 {
-    bic_gpio_t gpio;
+    uint8_t gpio;
     int ret;
 
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
@@ -237,10 +237,10 @@ int preq_is_asserted(const int fru, bool* asserted)
       return ST_ERR;
     }
 
-    ret = bic_get_gpio(fru, &gpio);
+    ret = bic_get_gpio_status(fru, XDP_BIC_PREQ_N, &gpio);
     if (!ret) {
       /* active low */
-      *asserted = gpio.xdp_bic_preq_n == GPIO_VALUE_LOW ? true : false;
+      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
     }
 
 #ifdef FBY2_DEBUG
@@ -366,7 +366,7 @@ int platform_reset_is_event_triggered(const int fru, bool* triggered)
 // platform_reset pin = pltrst_n
 int platform_reset_is_asserted(const int fru, bool* asserted)
 {
-    bic_gpio_t gpio;
+    uint8_t gpio;
     int ret;
 
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
@@ -374,10 +374,10 @@ int platform_reset_is_asserted(const int fru, bool* asserted)
       return ST_ERR;
     }
 
-    ret = bic_get_gpio(fru, &gpio);
+    ret = bic_get_gpio_status(fru, PLTRST_N, &gpio);
     if (!ret) {
       /* active low */
-      *asserted = gpio.pltrst_n == GPIO_VALUE_LOW ? true : false;
+      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
     }
 
 #ifdef FBY2_DEBUG
@@ -413,7 +413,7 @@ int prdy_is_event_triggered(const int fru, bool* triggered)
 // pready pin = xdp_bic_prdy_n
 int prdy_is_asserted(const int fru, bool* asserted)
 {
-    bic_gpio_t gpio;
+    uint8_t gpio;
     int ret;
 
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
@@ -421,10 +421,10 @@ int prdy_is_asserted(const int fru, bool* asserted)
       return ST_ERR;
     }
 
-    ret = bic_get_gpio(fru, &gpio);
+    ret = bic_get_gpio_status(fru, XDP_BIC_PRDY_N, &gpio);
     if (!ret) {
       /* active low */
-      *asserted = gpio.xdp_bic_prdy_n == GPIO_VALUE_LOW ? true : false;
+      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
     } else {
       syslog(LOG_ERR, "%s: error getting GPIO. fru: %d", __FUNCTION__, fru);
     }
@@ -461,7 +461,7 @@ int xdp_present_is_event_triggered(const int fru, bool* triggered)
 // xdp present pin = XDP_PRSNT_IN_N, xdp_prsnt_in_n
 int xdp_present_is_asserted(const int fru, bool* asserted)
 {
-    bic_gpio_t gpio;
+    uint8_t gpio;
     int ret;
 
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
@@ -469,10 +469,10 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
       return ST_ERR;
     }
 
-    ret = bic_get_gpio(fru, &gpio);
+    ret = bic_get_gpio_status(fru, XDP_PRSNT_IN_N, &gpio);
     if (!ret) {
       /* active low */
-      *asserted = gpio.xdp_prsnt_in_n == GPIO_VALUE_LOW ? true : false;
+      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
     } else {
       syslog(LOG_ERR, "%s: error getting GPIO. fru: %d", __FUNCTION__, fru);
     }

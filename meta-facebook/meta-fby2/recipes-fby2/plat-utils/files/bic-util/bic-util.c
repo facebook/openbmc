@@ -214,7 +214,8 @@ _get_gpio_cnt_name(uint8_t slot_id, uint8_t *gpio_cnt, char ***gpio_name) {
 static int
 util_get_gpio(uint8_t slot_id) {
   int ret = 0;
-  uint8_t i, group, shift, gpio[8] = {0};
+  uint8_t i;
+  bic_gpio_t gpio = {0};
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
   uint8_t gpio_cnt;
   char **gpio_name;
@@ -226,7 +227,7 @@ util_get_gpio(uint8_t slot_id) {
   }
 
   // Get GPIO value
-  ret = bic_get_gpio_raw(slot_id, gpio);
+  ret = bic_get_gpio(slot_id, &gpio);
   if (ret) {
     printf("util_get_gpio: bic_get_gpio returns %d\n", ret);
     return ret;
@@ -234,13 +235,11 @@ util_get_gpio(uint8_t slot_id) {
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_cnt; i++) {
-    group = i/8;
-    shift = i%8;
-    printf("%d %s: %d\n",i , gpio_name[i], (gpio[group] >> shift) & 0x01);
+    printf("%d %s: %d\n",i , gpio_name[i], (int)((gpio.gpio >> i) & 0x01));
   }
 
 #else
-  ret = bic_get_gpio_raw(slot_id, gpio);
+  ret = bic_get_gpio(slot_id, &gpio);
   if (ret) {
     printf("util_get_gpio: bic_get_gpio returns %d\n", ret);
     return ret;
@@ -248,9 +247,7 @@ util_get_gpio(uint8_t slot_id) {
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    group = i/8;
-    shift = i%8;
-    printf("%d %s: %d\n",i , gpio_pin_name[i], (gpio[group] >> shift) & 0x01);
+    printf("%d %s: %d\n",i , gpio_pin_name[i], (int)((gpio.gpio >> i) & 0x01));
   }
 #endif
   return ret;

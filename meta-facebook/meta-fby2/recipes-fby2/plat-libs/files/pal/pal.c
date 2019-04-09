@@ -944,7 +944,7 @@ power_on_server_physically(uint8_t slot_id){
   char vpath[64] = {0};
   uint8_t ret = -1;
   uint8_t retry = MAX_READ_RETRY;
-  bic_gpio_t gpio;
+  uint8_t gpio;
 
   syslog(LOG_WARNING, "%s is on going for slot%d\n",__func__,slot_id);
 
@@ -967,7 +967,7 @@ power_on_server_physically(uint8_t slot_id){
   sleep(2);
 
   while (retry) {
-    ret = bic_get_gpio(slot_id, &gpio);
+    ret = bic_get_gpio_status(slot_id, PWRGD_COREPWR, &gpio);
     if (!ret) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "%s: Get response successfully for slot%d\n",__func__,slot_id);
@@ -986,7 +986,7 @@ power_on_server_physically(uint8_t slot_id){
   }
 
   // Check power status
-  if (!gpio.pwrgood_cpu) {
+  if (!gpio) {
     syslog(LOG_WARNING, "%s: Power on is failed for slot%d\n",__func__,slot_id);
     return -1;
   }
@@ -2394,7 +2394,7 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
-  bic_gpio_t gpio;
+  uint8_t gpio;
   uint8_t retry = MAX_READ_RETRY;
 
   /* Check whether the system is 12V off or on */
@@ -2417,7 +2417,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 
   /* If 12V-on, check if the CPU is turned on or not */
   while (retry) {
-    ret = bic_get_gpio(slot_id, &gpio);
+    ret = bic_get_gpio_status(slot_id, PWRGD_COREPWR, &gpio);
     if (!ret)
       break;
     msleep(50);
@@ -2431,7 +2431,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
     return 0;
   }
 
-  if (gpio.pwrgood_cpu) {
+  if (gpio) {
     *status = SERVER_POWER_ON;
   } else {
     *status = SERVER_POWER_OFF;

@@ -451,29 +451,33 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
   uint8_t rlen = 0;
   int ret;
 
+  // Ensure the reserved bits are set to 0.
+  memset(gpio, 0, sizeof(*gpio));
+
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen);
+  if (ret != 0 || rlen < 3)
+    return -1;
+
+  rlen -= 3;
+  if (rlen > sizeof(bic_gpio_t))
+    rlen = sizeof(bic_gpio_t);
 
   // Ignore first 3 bytes of IANA ID
-  memcpy((uint8_t*) gpio, &rbuf[3], 6);
+  memcpy((uint8_t*) gpio, &rbuf[3], rlen);
 
   return ret;
 }
 
 int
-bic_get_gpio_raw(uint8_t slot_id, uint8_t *gpio) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
-  uint8_t rbuf[12] = {0x00};
-  uint8_t rlen = 0;
-  int ret;
-
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen);
-
-  // Ignore first 3 bytes of IANA ID
-  memcpy((uint8_t*) gpio, &rbuf[3], 8);
-
-  return ret;
+bic_get_gpio_status(uint8_t slot_id, uint8_t pin, uint8_t *status)
+{
+  bic_gpio_t gpio;
+  if (bic_get_gpio(slot_id, &gpio)) {
+    return -1;
+  }
+  *status = (uint8_t)((gpio.gpio >> pin) & 1);
+  return 0;
 }
-
 
 int
 bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {

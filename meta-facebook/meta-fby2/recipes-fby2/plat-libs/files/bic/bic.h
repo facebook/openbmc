@@ -354,137 +354,10 @@ enum {
   RESTORE_FACTORY_DEFAULT,
 };
 
-// Bridge IC Spec
+/* Generic GPIO configuration */
 typedef struct _bic_gpio_t {
-  uint32_t pwrgood_cpu:1;
-  uint32_t pwrgd_pch_pwrok:1;
-  uint32_t pvddr_ab_vrhot_n:1;
-  uint32_t pvddr_de_vrhot_n:1;
-  uint32_t pvccin_vrhot_n:1;
-  uint32_t fm_throttle_n:1;
-  uint32_t fm_pch_bmc_thermtrip_n:1;
-  uint32_t h_memhot_co_n:1;
-  uint32_t fm_cpu0_thermtrip_lvt3_n:1;
-  uint32_t cpld_pch_thermtrip:1;
-  uint32_t fm_cpld_fivr_fault:1;
-  uint32_t fm_cpu_caterr_n:1;
-  uint32_t fm_cpu_error2:1;
-  uint32_t fm_cpu_error1:1;
-  uint32_t fm_cpu_error0:1;
-  uint32_t fm_slp4_n:1;
-  uint32_t fm_nmi_event_bmc_n:1;
-  uint32_t fm_smi_bmc_n:1;
-  uint32_t pltrst_n:1;
-  uint32_t fp_rst_btn_n:1;
-  uint32_t rst_btn_bmc_out_n:1;
-  uint32_t fm_bios_post_compt_n:1;
-  uint32_t fm_slp3_n:1;
-  uint32_t pwrgd_pvccin:1;
-  uint32_t fm_backup_bios_sel_n:1;
-  uint32_t fm_ejector_latch_detect_n:1;
-  uint32_t bmc_reset:1;
-  uint32_t fm_jtag_bic_tck_mux_sel_n:1;
-  uint32_t bmc_ready_n:1;
-  uint32_t bmc_com_sw_n:1;
-  uint32_t rst_i2c_mux_n:1;
-  uint32_t xdp_bic_preq_n:1;
-  uint32_t xdp_bic_trst:1;
-  uint32_t fm_sys_throttle_lvc3:1;
-  uint32_t xdp_bic_prdy_n:1;
-  uint32_t xdp_prsnt_in_n:1;
-  uint32_t xdp_prsnt_out_n:1;
-  uint32_t xdp_bic_pwr_debug_n:1;
-  uint32_t fm_bic_jtag_sel_n:1;
-  uint32_t fm_pcie_bmc_relink_n:1;
-  uint32_t fm_disable_pch_vr:1;
-  uint32_t fm_bic_rst_rtcrst:1;
-  uint32_t fm_bic_me_rcvr:1;
-  uint32_t rst_rsmrst_pch_n:1;
-  uint32_t rsvd:20;
+  uint64_t gpio;
 } bic_gpio_t;
-
-// RC gpio
-typedef struct _bic_rc_gpio_t {
-  uint32_t pwrgd_sys_pwrok:1;
-  uint32_t qdf_ps_hold_out:1;
-  uint32_t pvddq_510_vrhot_n_r1:1;
-  uint32_t pvddq_423_vrhot_n_r1:1;
-  uint32_t vr_i2c_sel:1;
-  uint32_t qdf_throttle_3p3_n:1;
-  uint32_t qdf_force_pmin:1;
-  uint32_t qdf_force_pstate:1;
-  uint32_t qdf_temptrip_n:1;
-  uint32_t fast_throttle:1;
-  uint32_t qdf_light_throttle_3p3_n:1;
-  uint32_t uefi_db_mode_n:1;
-  uint32_t qdf_ras_error_2:1;
-  uint32_t qdf_ras_error_1:1;
-  uint32_t qdf_ras_error_0:1;
-  uint32_t spi_mux_sel:1;
-  uint32_t qdf_nmi:1;
-  uint32_t qdf_smi:1;
-  uint32_t qdf_res_out_n_r:1;
-  uint32_t sys_buf_rst_n:1;
-  uint32_t sys_bic_rst_n:1;
-  uint32_t fm_bios_post_cmplt_n:1;
-  uint32_t imc_ready:1;
-  uint32_t pwrgd_ps_pwrok:1;
-  uint32_t fm_backup_bios_sel_n:1;
-  uint32_t t32_jtag_det:1;
-  uint32_t bb_bmc_rst_n:1;
-  uint32_t qdf_prsnt_0_n:1;
-  uint32_t qdf_prsnt_1_n:1;
-  uint32_t ejct_det_n:1;
-  uint32_t m2_i2c_mux_rst_n:1;
-  uint32_t bic_remote_srst_n:1;
-  uint32_t bic_db_trst_n:1;
-  uint32_t imc_boot_error:1;
-  uint32_t bic_rdy:1;
-  uint32_t qdf_prochot_n:1;
-  uint32_t pwr_bic_btn_n:1;
-  uint32_t pwr_btn_buf_n:1;
-  uint32_t pmf_reboot_req_n:1;
-  uint32_t bic_bb_i2c_alert:1;
-} bic_rc_gpio_t;
-
-// EP gpio
-typedef struct _bic_ep_gpio_t {
-  uint32_t pwrgood_cpu:1;
-  uint32_t pwrgd_sys_pwrok:1;
-  uint32_t pwrgd_ps_pwrok_pld:1;
-  uint32_t pvccin_vrhot_n:1;
-  uint32_t h_memhot_co_n:1;
-  uint32_t fm_cpld_bic_thermtrip_n:1;
-  uint32_t fm_cpu_error_2:1;
-  uint32_t fm_cpu_error_1:1;
-  uint32_t fm_cpu_error_0:1;
-  uint32_t fm_nmi_event_bmc_n:1;
-  uint32_t fm_crash_dump_m3_n:1;
-  uint32_t fp_rst_btn_n:1;
-  uint32_t fp_rst_btn_out_n:1;
-  uint32_t fm_bios_post_compt_n:1;
-  uint32_t fm_backup_bios_sel_n:1;
-  uint32_t fm_ejector_latch_detect_n:1;
-  uint32_t bmc_reset:1;
-  uint32_t fm_smi_bmc_n:1;
-  uint32_t pltrst_n:1;
-  uint32_t tmp_alert:1;
-  uint32_t rst_i2c_mux_n:1;
-  uint32_t xdp_bic_trst:1;
-  uint32_t smb_bmc_alert_n:1;
-  uint32_t fm_cpld_bic_m3_hb:1;
-  uint32_t irq_mem_soc_vrhot_n:1;
-  uint32_t fm_crash_dump_v8_n:1;
-  uint32_t fm_m3_err_n:1;
-  uint32_t fm_cpu_caterr_lvt3_n:1;
-  uint32_t bmc_ready_n:1;
-  uint32_t bmc_com_sw_n:1;
-  uint32_t bmc_hb_led_n:1;
-  uint32_t fm_vr_fault_n:1;
-  uint32_t irq_cpld_bic_prochot_n:1;
-  uint32_t fm_smb_vr_soc_mux_en:1;
-  uint32_t rsvd:6;
-} bic_ep_gpio_t;
 
 typedef struct _bic_gpio_config_t {
   uint8_t dir:1;
@@ -523,7 +396,7 @@ int bic_set_bic_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status);
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
-int bic_get_gpio_raw(uint8_t slot_id, uint8_t *gpio);
+int bic_get_gpio_status(uint8_t slot_id, uint8_t pin, uint8_t *status);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_set_gpio64(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);

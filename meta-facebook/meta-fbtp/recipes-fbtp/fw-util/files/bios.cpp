@@ -9,7 +9,10 @@ class BiosComponent : public Component {
     BiosComponent(string fru, string comp)
       : Component(fru, comp) {}
     int update(string image) {
-      return bios_program(FRU_MB, image.c_str());
+      return bios_program(FRU_MB, image.c_str(), true);
+    }
+    int fupdate(string image) {
+      return bios_program(FRU_MB, image.c_str(), false);
     }
     int print_version() {
       char ver[128] = {0};

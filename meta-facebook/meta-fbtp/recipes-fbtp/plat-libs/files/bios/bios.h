@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 int bios_get_ver(uint8_t slot_id, char *ver);
-int bios_program(uint8_t slot_id, const char *file);
+int bios_program(uint8_t slot_id, const char *file, bool check);
 
 #ifdef __cplusplus
 } // extern "C"

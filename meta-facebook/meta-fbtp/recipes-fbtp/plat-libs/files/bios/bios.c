@@ -156,7 +156,7 @@ int bios_get_ver(uint8_t slot_id, char *ver)
   return 0;
 }
 
-int bios_program(uint8_t slot_id, const char *file)
+int bios_program(uint8_t slot_id, const char *file, bool check)
 {
   int exit_code;
   char cmd[80];
@@ -168,7 +168,7 @@ int bios_program(uint8_t slot_id, const char *file)
     return -1;
   }
 
-  if(validate_bios_image(file)) {
+  if(check == true && validate_bios_image(file)) {
     printf("ERROR: Invalid image: %s\n", file);
     return -1;
   }

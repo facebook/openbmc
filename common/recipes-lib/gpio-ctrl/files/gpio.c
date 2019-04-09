@@ -21,9 +21,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <poll.h>
+#include <pthread.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <assert.h>
 #include <libgen.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -499,30 +501,177 @@ int gpio_set_init_value(gpio_desc_t *gdesc, gpio_value_t value)
 	return GPIO_OPS()->set_pin_init_value(gdesc, value);
 }
 
-/*
- * FIXME function not implemented.
- */
 gpiopoll_desc_t* gpio_poll_open(struct gpiopoll_config *config,
 				size_t num_config)
 {
-	errno = ENOTSUP;
+	int i;
+	gpiopoll_desc_t *ret;
+
+	ret = calloc(1, sizeof(gpiopoll_desc_t));
+	if (!ret) {
+		return NULL;
+	}
+	ret->num_pins = num_config;
+	ret->pins = calloc(num_config, sizeof(ret->pins[0]));
+	if (!ret->pins) {
+		goto err_pins_alloc_bail;
+	}
+	for (i = 0; i < num_config; i++) {
+		gpiopoll_pin_t *desc = &ret->pins[i];
+		desc->handler_started = false;
+		desc->cfg = config[i];
+		if (config[i].handler == NULL || config[i].shadow[0] == '\0') {
+			GLOG_ERR("Incorrect configuration at index: %d\n", i);
+			goto err_bail;
+		}
+		desc->gpio = gpio_open_by_shadow(desc->cfg.shadow);
+		if (!desc->gpio) {
+			GLOG_ERR("Failed to open GPIO by shadow: %s <%s>\n",
+				 desc->cfg.shadow, strerror(errno));
+			goto err_bail;
+		}
+		if (gpio_set_direction(desc->gpio, GPIO_DIRECTION_IN)) {
+			GLOG_ERR("Failed to set direction of GPIO: %s <%s>\n",
+				 desc->cfg.shadow, strerror(errno));
+			goto err_bail;
+		}
+		if (gpio_set_edge(desc->gpio, desc->cfg.edge)) {
+			GLOG_ERR("Failed to set edge on GPIO: %s <%s>\n",
+				 desc->cfg.shadow, strerror(errno));
+			goto err_bail;
+		}
+		if (gpio_get_value(desc->gpio, &desc->last_value)) {
+			GLOG_ERR("Failed to get value of GPIO: %s <%s>\n",
+				 desc->cfg.shadow, strerror(errno));
+			goto err_bail;
+		}
+		desc->curr_value = desc->last_value;
+		if (desc->cfg.init_value) {
+			desc->cfg.init_value(desc, desc->curr_value);
+		}
+	}
+	return ret;
+err_bail:
+	for (i = 0; i < num_config; i++) {
+		gpiopoll_pin_t *desc = &ret->pins[i];
+		if (desc->gpio)
+			gpio_close(desc->gpio);
+	}
+	free(ret->pins);
+err_pins_alloc_bail:
+	free(ret);
 	return NULL;
 }
 
-/*
- * FIXME function not implemented.
- */
 int gpio_poll_close(gpiopoll_desc_t *gpdesc)
 {
-	errno = ENOTSUP;
-	return -1;
+	int i;
+
+	if (!gpdesc || !gpdesc->pins) {
+		return -1;
+	}
+
+	for (i = 0; i < gpdesc->num_pins; i++) {
+		gpiopoll_pin_t *desc = &gpdesc->pins[i];
+		if (desc->handler_started) {
+			int rc = pthread_cancel(desc->tid);
+			if(rc != 0) {
+				GLOG_ERR("Kill of thread failed for GPIO: %s <%s>\n",
+					 desc->cfg.shadow, strerror(rc));
+			}
+			desc->handler_started = false;
+		}
+		if (gpio_close(desc->gpio)) {
+			GLOG_ERR("Close failed for GPIO: %s <%s>\n",
+				 desc->cfg.shadow, strerror(errno));
+		}
+	}
+	free(gpdesc->pins);
+	free(gpdesc);
+	return 0;
 }
 
-/*
- * FIXME function not implemented.
- */
+static void *gpio_poll_handler(void *priv)
+{
+	gpiopoll_pin_t *desc = (gpiopoll_pin_t *)priv;
+	int rc;
+
+	assert(GPIO_OPS()->poll_pin != NULL);
+
+	while (1) {
+		rc = GPIO_OPS()->poll_pin(desc->gpio, desc->timeout);
+		if (rc < 0) {
+			GLOG_ERR("Wait failed with rc=%d for GPIO: %s <%s>\n",
+				 rc, desc->cfg.shadow, strerror(errno));
+			break;
+		}
+		desc->last_value = desc->curr_value;
+		if (gpio_get_value(desc->gpio, &desc->curr_value)) {
+			GLOG_ERR("Getting current value failed for GPIO: %s <%s>\n",
+				 desc->cfg.shadow, strerror(errno));
+			break;
+		}
+		desc->cfg.handler(desc, desc->last_value, desc->curr_value);
+	}
+	return NULL;
+}
+
 int gpio_poll(gpiopoll_desc_t *gpdesc, int timeout)
 {
-	errno = ENOTSUP;
-	return -1;
+	int i;
+
+	if (!gpdesc || !gpdesc->pins) {
+		return -1;
+	}
+
+	for (i = 0; i < gpdesc->num_pins; i++) {
+		int rc;
+		gpiopoll_pin_t *desc = &gpdesc->pins[i];
+		assert(desc->handler_started == false);
+		desc->timeout = timeout;
+		rc = pthread_create(&desc->tid, NULL, gpio_poll_handler, desc);
+		if (rc) {
+			GLOG_ERR("Create of handler thread failed for GPIO: %s <%s>\n",
+				 desc->cfg.shadow, strerror(rc));
+			if (gpio_close(desc->gpio)) {
+				GLOG_ERR("Close failed for GPIO: %s <%s>\n",
+					 desc->cfg.shadow, strerror(errno));
+			}
+			continue;
+		}
+		desc->handler_started = true;
+	}
+
+	for (i = 0; i < gpdesc->num_pins; i++) {
+		int rc;
+		void *res;
+		gpiopoll_pin_t *desc = &gpdesc->pins[i];
+		if (!desc->handler_started) {
+			continue;
+		}
+		rc = pthread_join(desc->tid, &res);
+		if (rc != 0) {
+			GLOG_ERR("Pthread_join fialed for %s <%s>\n",
+				 desc->cfg.shadow, strerror(rc));
+		} else if (res == PTHREAD_CANCELED) {
+			GLOG_ERR("Potential race condition between close and poll");
+		}
+	}
+	return 0;
+}
+
+const struct gpiopoll_config *gpio_poll_get_config(gpiopoll_pin_t *gpdesc)
+{
+	if (!gpdesc) {
+		return NULL;
+	}
+	return &gpdesc->cfg;
+}
+
+gpio_desc_t *gpio_poll_get_descriptor(gpiopoll_pin_t *gpdesc)
+{
+	if (!gpdesc) {
+		return NULL;
+	}
+	return gpdesc->gpio;
 }

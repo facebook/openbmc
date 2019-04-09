@@ -33,7 +33,7 @@ SRC_URI = "file://gpio.c \
           "
 
 CFLAGS += "-Wall -Werror "
-LDFLAGS += " -lmisc-utils"
+LDFLAGS += " -lmisc-utils -lpthread "
 
 DEPENDS += "libmisc-utils obmc-i2c"
 RDEPENDS_${PN} += " libmisc-utils"

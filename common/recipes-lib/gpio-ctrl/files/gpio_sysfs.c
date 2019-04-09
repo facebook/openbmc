@@ -23,6 +23,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <poll.h>
 #include <fcntl.h>
 #include <libgen.h>
 #include <dirent.h>
@@ -598,6 +599,35 @@ static int sysfs_gpiochip_enumerate(gpiochip_desc_t *chips, size_t size)
 	return i;
 }
 
+static int sysfs_gpio_poll(gpio_desc_t *gdesc, int timeout)
+{
+	struct pollfd fdset = {0};
+	int rc;
+
+	assert(IS_VALID_GPIO_DESC(gdesc));
+	if (GPIO_EDGE_FD(gdesc) < 0) {
+		GLOG_WARN("Potential bug. waiting without defining edge");
+	}
+	fdset.fd = GPIO_VALUE_FD(gdesc);
+	fdset.events = POLLPRI;
+	fdset.revents = 0;
+	do {
+		rc = poll(&fdset, 1, timeout);
+	} while (rc < 0 && errno == EINTR);
+	if (rc < 0) {
+		GLOG_ERR("poll() returned error: %s\n", strerror(errno));
+		return -1;
+	}
+	if (rc == 0) {
+		return -ETIMEDOUT;
+	}
+	if (!(fdset.revents & POLLPRI)) {
+		GLOG_ERR("poll() returned without POLLPRI");
+		return -1;
+	}
+	return 0;
+}
+
 struct gpio_backend_ops gpio_sysfs_ops = {
 	.export_pin = sysfs_gpio_export,
 	.unexport_pin = sysfs_gpio_unexport,
@@ -612,6 +642,7 @@ struct gpio_backend_ops gpio_sysfs_ops = {
 	.get_pin_edge = sysfs_gpio_get_edge,
 	.set_pin_edge = sysfs_gpio_set_edge,
 	.set_pin_init_value = sysfs_gpio_set_init_value,
+	.poll_pin = sysfs_gpio_poll,
 
 	.chip_enumerate = sysfs_gpiochip_enumerate,
 };

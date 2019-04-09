@@ -104,12 +104,25 @@ typedef enum {
 
 typedef struct gpio_desc gpio_desc_t;
 typedef struct gpiochip_desc gpiochip_desc_t;
+typedef struct gpiopoll_pin_desc gpiopoll_pin_t;
 typedef struct gpiopoll_desc gpiopoll_desc_t;
 
 struct gpiopoll_config {
+	/* Name of the GPIO shadow */
 	char shadow[NAME_MAX];
+
+	/* Short description. Useful only for debugging */
+	char description[NAME_MAX];
+
+	/* Edge of GPIO pin to listen on */
 	gpio_edge_t edge;
-	void (*handler)(gpiopoll_desc_t *gpdesc);
+
+	/* Called everytime the specified edge transition occurs */
+	void (*handler)(gpiopoll_pin_t *gpdesc, gpio_value_t last_value, gpio_value_t curr_value);
+
+	/* (optional) Called once during creation. This allows the user
+	 * to set the state machine at the initial value of the given GPIO */
+	void (*init_value)(gpiopoll_pin_t *gpdesc, gpio_value_t value);
 };
 
 /*
@@ -194,7 +207,7 @@ gpio_edge_t gpio_edge_str_to_type(const char *edge_str);
  * Function to setup gpio pins for gpio_poll() call.
  *
  * Return:
- *   Pointer to the opaque gpio poll descriptor which is used by
+ *   Pointer to the array of opaque gpio poll descriptor which is used by
  *   "gpio_poll" function.
  */
 gpiopoll_desc_t* gpio_poll_open(struct gpiopoll_config *config,
@@ -216,6 +229,29 @@ int gpio_poll_close(gpiopoll_desc_t *gpdesc);
  *   0 for success, and -1 on failures.
  */
 int gpio_poll(gpiopoll_desc_t *gpdesc, int timeout);
+
+/* 
+ * Function to retrieve the configuration of the GPIO pin described
+ * by the poll descriptor. Typical use would be to call from the
+ * handler.
+ *
+ * Return:
+ *   pointer to the config structure on success, NULL on failure.
+ * Note:
+ *   Caller must make no assumption on the pointer lifetime/scope.
+ */
+const struct gpiopoll_config *gpio_poll_get_config(gpiopoll_pin_t *gpdesc);
+
+/* 
+ * Function to retrieve the GPIO descriptor of the GPIO poin.
+ *
+ * Return:
+ *   pointer to the gpio descriptor on success. NULL on failure.
+ * Note:
+ *   Returned descriptor is valid only for the duration of gpdesc
+ *   which may go out of scope after the handler returns.
+ */
+gpio_desc_t *gpio_poll_get_descriptor(gpiopoll_pin_t *gpdesc);
 
 /*
  * gpio chip related functions.

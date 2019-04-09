@@ -31,6 +31,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <syslog.h>
+#include <pthread.h>
 #include <linux/limits.h>
 
 #include "libgpio.h"
@@ -46,6 +47,7 @@
 #endif /* OBMC_GPIO_DEBUG */
 #define GLOG_INFO(fmt, args...)		syslog(LOG_INFO, fmt, ##args)
 #define GLOG_ERR(fmt, args...)		syslog(LOG_ERR, fmt, ##args)
+#define GLOG_WARN(fmt, args...) 	syslog(LOG_WARNING, fmt, ##args)
 
 /*
  * Types of gpio chips supported by this library.
@@ -99,7 +101,19 @@ struct gpiochip_desc {
 };
 
 
+struct gpiopoll_pin_desc {
+	bool         handler_started;
+	struct gpiopoll_config cfg;
+	gpio_value_t last_value;
+	gpio_value_t curr_value;
+	pthread_t    tid;
+	gpio_desc_t  *gpio;
+	int          timeout;
+};
+
 struct gpiopoll_desc {
+	int num_pins;
+	gpiopoll_pin_t *pins;
 };
 
 /*
@@ -131,6 +145,7 @@ struct gpio_backend_ops {
 	int (*get_pin_edge)(gpio_desc_t *gdesc, gpio_edge_t *edge);
 	int (*set_pin_edge)(gpio_desc_t *gdesc, gpio_edge_t edge);
 	int (*set_pin_init_value)(gpio_desc_t *gdesc, gpio_value_t value);
+	int (*poll_pin)(gpio_desc_t *gdesc, int timeout);
 
 	/*
 	 * Function to enumerate gpio chips.

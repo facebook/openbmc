@@ -1,0 +1,16 @@
+{
+    "_README_WHAT_IS_THIS_DIFF_": "This diff is temporary, and will be replaced once the \"convert-pull-request-to-internal-diff\" sandcastle job finishes. For more details, see https:\/\/fburl.com\/pr-import-on-sandcastle",
+    "@nocommit": "This temporary diff should not be landed.",
+    "repository": {
+        "fbid": 495086647335482,
+        "name": "facebookexternal\/openbmc.wiwynn"
+    },
+    "pull_request": {
+        "fbid": 350094375608717,
+        "number": 751,
+        "name": "fbtp: Make the BMC JTAG controller become the slave after asd test",
+        "author": "MattWiW",
+        "initiator": "amithash"
+    },
+    "head_sha": "ef90f741969b963f638d391a579d30b9c5e79463"
+}

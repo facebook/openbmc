@@ -33,10 +33,6 @@ if [ $# != 1 ]; then
     usage $0
 fi
 
-# S: GPIOAA2()??
-gpio=AA2
-
-
 if [ $1 = "on" ]; then
     val=0
 elif [ $1 = "off" ]; then
@@ -45,4 +41,4 @@ else
     usage $0
 fi
 
-gpio_set $gpio $val
+gpio_set SERVER_POWER_LED $val

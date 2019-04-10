@@ -38,6 +38,7 @@ S = "${WORKDIR}"
 binfiles = "power_led.sh sync_date.sh sol-util \
   "
 
+RDEPENDS_${PN} += "gpiocli"
 DEPENDS_append = "update-rc.d-native"
 
 do_install() {

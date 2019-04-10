@@ -155,6 +155,7 @@ void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t
 void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_add_cri_sel(char *str);
+int pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
 
 #ifdef __cplusplus
 } // extern "C"

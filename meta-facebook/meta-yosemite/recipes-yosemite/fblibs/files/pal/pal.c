@@ -2806,3 +2806,10 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
 int pal_get_plat_sku_id(void){
   return 0; // Yosemite V1
 }
+
+int
+pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  return bic_update_firmware(slot_id, comp, path, 1);
+}
+
+

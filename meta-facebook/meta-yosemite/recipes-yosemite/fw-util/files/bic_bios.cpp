@@ -15,7 +15,24 @@ int BiosComponent::update(string image) {
   try {
     server.ready();
     pal_set_server_power(slot_id, SERVER_POWER_OFF);
-    ret = bic_update_fw(slot_id, UPDATE_BIOS, (char *)image.c_str());
+    ret = bic_update_firmware(slot_id, UPDATE_BIOS, (char *)image.c_str(), 0);
+    sleep(1);
+    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+    sleep(5);
+    pal_set_server_power(slot_id, SERVER_POWER_ON);
+  } catch(string err) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  return ret;
+}
+
+int BiosComponent::fupdate(string image) {
+  int ret;
+
+  try {
+    server.ready();
+    pal_set_server_power(slot_id, SERVER_POWER_OFF);
+    ret = bic_update_firmware(slot_id, UPDATE_BIOS, (char *)image.c_str(), 1);
     sleep(1);
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);

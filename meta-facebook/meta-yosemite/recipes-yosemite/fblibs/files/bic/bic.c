@@ -1064,7 +1064,7 @@ check_bios_image(int fd, long size) {
 }
 
 int
-bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
+bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   int ret = -1, rc;
   uint32_t offset;
   volatile uint16_t count, read_count;
@@ -1097,7 +1097,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
   stat(path, &st);
   if (comp == UPDATE_BIOS) {
-    if (check_bios_image(fd, st.st_size) < 0) {
+    if (!force && check_bios_image(fd, st.st_size) < 0) {
       printf("invalid BIOS file!\n");
       goto error_exit;
     }
@@ -1235,6 +1235,11 @@ error_exit:
   set_fw_update_ongoing(slot_id, 0);
 
   return ret;
+}
+
+int
+bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
+  return bic_update_firmware(slot_id, comp, path, 0);
 }
 
 int

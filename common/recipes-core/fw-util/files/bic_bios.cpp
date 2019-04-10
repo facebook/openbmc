@@ -33,7 +33,7 @@ int BiosComponent::update(string image) {
       cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
       return -1;
     }
- 
+
     me_recovery(slot_id, RECOVERY_MODE);
     sleep(1);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, (char *)image.c_str());
@@ -45,6 +45,10 @@ int BiosComponent::update(string image) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
+}
+
+int BiosComponent::fupdate(string image) {
+  return FW_STATUS_NOT_SUPPORTED;
 }
 
 int BiosComponent::print_version() {

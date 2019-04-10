@@ -11,6 +11,7 @@ class BiosComponent : public Component {
     BiosComponent(std::string fru, std::string comp, uint8_t _slot_id)
       : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
     int update(std::string image);
+    int fupdate(std::string image);
     int print_version();
 };
 

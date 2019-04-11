@@ -1,4 +1,5 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
+
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -26,6 +27,7 @@ SRC_URI += " \
     file://rest-api-1/rest_seutil.py \
     file://rest-api-1/rest_peutil.py \
     file://rest-api-1/rest_scdinfo.py \
+    file://rest-api-1/rest_fw_ver.py \
 "
 
 binfiles1 += " \
@@ -37,4 +39,5 @@ binfiles1 += " \
     rest_seutil.py \
     rest_peutil.py \
     rest_scdinfo.py \
+    rest_fw_ver.py \
 "

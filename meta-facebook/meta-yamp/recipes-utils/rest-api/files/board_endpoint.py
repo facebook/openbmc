@@ -29,6 +29,9 @@ import rest_pimserial
 import rest_seutil
 import rest_peutil
 import rest_scdinfo
+
+import rest_fw_ver
+
 class boardApp_Handler:
     # Handler for sys/mb/fruid/scm resource endpoint
     async def rest_fruid_scm_hdl(self, request):
@@ -63,3 +66,7 @@ class boardApp_Handler:
         return web.json_response(
             rest_peutil.get_peutil(pim), dumps=dumps_bytestr,
         )
+
+    async def rest_firmware_info_all_hdl(self, request):
+        fws = await rest_fw_ver.get_all_fw_ver()
+        return web.json_response(fws, dumps=dumps_bytestr)

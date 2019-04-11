@@ -289,7 +289,7 @@ STATUS JTAG_deinitialize(JTAG_Handler* state)
     if (state == NULL)
         return ST_ERR;
 
-    STATUS result = JTAG_set_cntlr_mode(state, JTAGDriverState_Master);
+    STATUS result = JTAG_set_cntlr_mode(state, JTAGDriverState_Slave);
     if (result != ST_OK) {
         syslog(LOG_ERR, "Failed to set JTAG mode to slave.");
     }

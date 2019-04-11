@@ -6,6 +6,17 @@ typedef enum jtag_xfer_mode {
 	SW_MODE
 } xfer_mode;
 
+
+typedef enum {
+    JTAGDriverState_Master = 0,
+    JTAGDriverState_Slave
+} JTAGDriverState;
+
+struct controller_mode_param {
+    xfer_mode        mode;        // Hardware or software mode
+    unsigned int     controller_mode;
+};
+
 struct runtest_idle {
 	xfer_mode 	mode;		//0 :HW mode, 1: SW mode
 	unsigned char 	reset;		//Test Logic Reset
@@ -36,6 +47,7 @@ struct sdr_xfer {
 #define AST_JTAG_IOCSDR		_IOWR(JTAGIOC_BASE, 2, struct sdr_xfer)
 #define AST_JTAG_SIOCFREQ	_IOW(JTAGIOC_BASE, 3, unsigned int)
 #define AST_JTAG_GIOCFREQ	_IOR(JTAGIOC_BASE, 4, unsigned int)
+#define AST_JTAG_SLAVECONTLR      _IOW( JTAGIOC_BASE, 8, struct controller_mode_param)
 
 /******************************************************************************************************************/
 extern int ast_jtag_open(void);

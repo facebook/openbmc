@@ -40,17 +40,42 @@ int jtag_fd = -1;
 /*				AST JTAG LIB					*/
 int ast_jtag_open(void)
 {
+        struct controller_mode_param params = {0};
+        int retval;
+
+        params.mode = mode;
+        params.controller_mode = JTAGDriverState_Master;
+
 	jtag_fd = open("/dev/ast-jtag", O_RDWR);
 	if(jtag_fd == -1) {
 		perror("Can't open /dev/ast-jtag, please install driver!! \n");
 		return -1;
 	}
 
+        retval = ioctl(jtag_fd, AST_JTAG_SLAVECONTLR, &params);
+        if ( retval == -1 )
+        {
+            perror("Failed to set JTAG mode to master.!\n");
+            return -1;
+        }
+
 	return 0;
 }
 
 void ast_jtag_close(void)
 {
+        struct controller_mode_param params = {0};
+        int retval;
+
+        params.mode = mode;
+        params.controller_mode = JTAGDriverState_Slave;
+
+        retval = ioctl(jtag_fd, AST_JTAG_SLAVECONTLR, &params);
+        if ( retval == -1 )
+        {
+            perror("Failed to set JTAG mode to slave.!\n");
+        }
+
 	close(jtag_fd);
 }
 

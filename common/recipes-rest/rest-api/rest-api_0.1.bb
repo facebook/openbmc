@@ -37,7 +37,6 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://node_bmc.py \
            file://vboot.py \
            file://rest-api-1/run_rest \
-           file://rest-api-1/run_watchdog \
            file://rest.cfg \
            file://rest-api-1/rest_bmc.py \
            file://rest-api-1/rest_fruid.py \
@@ -111,8 +110,6 @@ do_install() {
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/restapi
   install -m 755 run_rest ${D}${sysconfdir}/sv/restapi/run
-  install -d ${D}${sysconfdir}/sv/restwatchdog
-  install -m 755 run_watchdog ${D}${sysconfdir}/sv/restwatchdog/run
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg

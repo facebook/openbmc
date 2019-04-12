@@ -28,7 +28,5 @@
 ### END INIT INFO
 
 runsv /etc/sv/restapi >/dev/null 2>&1 &
-runsv /etc/sv/restwatchdog >/dev/null 2>&1 &
 
 sv "$1" restapi
-sv "$1" restwatchdog

@@ -85,7 +85,7 @@ do_install() {
 }
 
 pkgdir = "rest-api"
-RDEPENDS_${PN} += "libpal"
+RDEPENDS_${PN} += "libpal python3-core"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

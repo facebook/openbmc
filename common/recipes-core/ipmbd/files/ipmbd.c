@@ -61,44 +61,63 @@
 #include <semaphore.h>
 #include <poll.h>
 #include <assert.h>
+#include <getopt.h>
 #include <linux/limits.h>
+#include <openbmc/log.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/ipc.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 
-//#define DEBUG 0
+/*
+ * IPMB packet sizes.
+ */
+#define IPMB_PKT_MIN_SIZE 6
+#define IPMB_PKT_MAX_SIZE 300
 
-#define MAX_BYTES 300
+/*
+ * I2C transaction retry parameters.
+ */
+#define I2C_RETRIES_MAX   15
+#define I2C_RETRY_DELAY   20 /* unit: millisecond */
 
 /*
  * Message queue definitions.
  */
+#define MQ_DESC_INVALID         ((mqd_t)-1)
 #define MQ_IPMB_REQ             "/mq_ipmb_req"
 #define MQ_IPMB_RES             "/mq_ipmb_res"
-#define MQ_MAX_MSG_SIZE         MAX_BYTES
 #define MQ_MAX_NUM_MSGS         256
-#define MQ_DESC_INVALID         ((mqd_t)-1)
 #define MQ_DFT_FLAGS            (O_RDONLY | O_CREAT)
 #define MQ_DFT_MODES            (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
-#define MQ_DFT_ATTR_INITIALIZER { \
-  .mq_flags = 0,                  \
-  .mq_maxmsg = MQ_MAX_NUM_MSGS,   \
-  .mq_msgsize = MQ_MAX_MSG_SIZE,  \
-  .mq_curmsgs = 0,                \
+#define MQ_DFT_ATTR_INITIALIZER {  \
+  .mq_flags = 0,                   \
+  .mq_maxmsg = MQ_MAX_NUM_MSGS,    \
+  .mq_msgsize = IPMB_PKT_MAX_SIZE, \
+  .mq_curmsgs = 0,                 \
 }
 
 #define SEQ_NUM_MAX 64
 
-#define I2C_RETRIES_MAX 15
-#define I2C_RETRY_DELAY 20 /* unit: millisecond */
-
-#define IPMB_PKT_MIN_SIZE 6
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
 #endif /* ARRAY_SIZE */
+
+#define IPMBD_RX_THREAD  "rx_handler"
+#define IPMBD_REQ_THREAD "req_handler"
+#define IPMBD_RES_THREAD "res_handler"
+#define IPMBD_SVC_THREAD "svc_handler"
+#define __VERBOSE(fmt, args...)       \
+  do {                                \
+    if (ipmbd_config.verbose_enabled) \
+      OBMC_INFO(fmt, ##args);         \
+  } while (0)
+#define IPMBD_VERBOSE(fmt, args...) __VERBOSE(fmt, ##args)
+#define RX_VERBOSE(fmt, args...)  __VERBOSE(IPMBD_RX_THREAD ": " fmt, ##args)
+#define REQ_VERBOSE(fmt, args...) __VERBOSE(IPMBD_REQ_THREAD ": " fmt, ##args)
+#define RES_VERBOSE(fmt, args...) __VERBOSE(IPMBD_RES_THREAD ": " fmt, ##args)
+#define SVC_VERBOSE(fmt, args...) __VERBOSE(IPMBD_SVC_THREAD ": " fmt, ##args)
 
 // Structure for sequence number and buffer
 typedef struct {
@@ -121,14 +140,41 @@ static struct {
 
 static pthread_mutex_t i2c_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int g_bus_id = 0; // store the i2c bus ID for debug print
-static int g_payload_id = 1; // Store the payload ID we need to use
-static int bic_up_flag = 0;
+static struct {
+  int bus_id;
+  int payload_id;
+
+  /* global flags */
+  unsigned int bic_update_enabled:1;
+  unsigned int verbose_enabled:1;
+} ipmbd_config = {
+  .bus_id = -1,
+  .payload_id = -1,
+};
+
+/*
+ * Name format: ipmbd_<bus-id>. Mainly for logging purpose.
+ */
+static char ipmbd_name[NAME_MAX];
+
+static void
+ipmbd_name_init(int bus_num)
+{
+  snprintf(ipmbd_name, sizeof(ipmbd_name), "ipmbd_%d", bus_num);
+}
 
 static char*
-mq_name_gen(char *buf, size_t size, const char *prefix, uint8_t bus)
+i2c_chardev_path(char *buf, size_t size, int bus_num)
 {
-  snprintf(buf, size, "%s_%u", prefix, bus);
+  snprintf(buf, size, "/dev/i2c-%d", bus_num);
+  return buf;
+}
+
+
+static char*
+ipc_name_gen(char *buf, size_t size, const char *prefix, int bus_num)
+{
+  snprintf(buf, size, "%s_%d", prefix, bus_num);
   return buf;
 }
 
@@ -146,7 +192,6 @@ calc_cksum(uint8_t *buf, uint8_t len) {
 }
 
 static void ipmb_seq_buf_init(void) {
-  // Initialize ipmb_seq_buf structure
   int i;
   for (i = 0; i < ARRAY_SIZE(ipmb_seq_buf.seq); i++) {
     ipmb_seq_buf.seq[i].in_use = false;
@@ -161,7 +206,7 @@ static int seq_put(uint8_t seq, uint8_t *buf, uint8_t len)
   seq_buf_t *s;
   int rc = -1;
 
-  if (seq >= SEQ_NUM_MAX) {
+  if (seq >= ARRAY_SIZE(ipmb_seq_buf.seq)) {
     return -1;
   }
   // Check if the response is being waited for
@@ -191,7 +236,7 @@ seq_get_new(unsigned char *resp) {
   // Search for unused sequence number
   index = ipmb_seq_buf.curr_seq;
   do {
-    if (ipmb_seq_buf.seq[index].in_use == false) {
+    if (!ipmb_seq_buf.seq[index].in_use) {
       // Found it!
       ret = index;
       ipmb_seq_buf.seq[index].in_use = true;
@@ -200,14 +245,14 @@ seq_get_new(unsigned char *resp) {
       break;
     }
 
-    if (++index == SEQ_NUM_MAX) {
+    if (++index == ARRAY_SIZE(ipmb_seq_buf.seq)) {
       index = 0;
     }
   } while (index != ipmb_seq_buf.curr_seq);
 
   // Update the current seq num
   if (ret >= 0) {
-    if (++index == SEQ_NUM_MAX) {
+    if (++index == ARRAY_SIZE(ipmb_seq_buf.seq)) {
       index = 0;
     }
     ipmb_seq_buf.curr_seq = index;
@@ -219,23 +264,21 @@ seq_get_new(unsigned char *resp) {
 }
 
 static int
-ipmb_open_satellite(uint8_t bus_num) {
-  int fd;
+ipmb_open_satellite(int bus_num) {
+  int fd, rc;
   char fn[32];
-  int rc;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%u", bus_num);
+  i2c_chardev_path(fn, sizeof(fn), bus_num);
   fd = open(fn, O_RDWR);
   if (fd == -1) {
-    syslog(LOG_WARNING, "Failed to open i2c device %s: %s",
-           fn, strerror(errno));
+    OBMC_ERROR(errno, "Failed to open i2c device %s", fn);
     return -1;
   }
 
   rc = ioctl(fd, I2C_SLAVE, BRIDGE_SLAVE_ADDR);
   if (rc < 0) {
-    syslog(LOG_WARNING, "Failed to open slave @ address %#x: %s",
-           BRIDGE_SLAVE_ADDR, strerror(errno));
+    OBMC_ERROR(errno, "Failed to open slave @ address %#x",
+               BRIDGE_SLAVE_ADDR);
     close(fd);
     return -1;
   }
@@ -248,7 +291,7 @@ ipmb_write_satellite(int fd, uint8_t *buf, uint16_t len) {
   struct i2c_rdwr_ioctl_data data;
   struct i2c_msg msg;
   int rc;
-  int i;
+  int i = 0;
 
   memset(&msg, 0, sizeof(msg));
 
@@ -261,40 +304,31 @@ ipmb_write_satellite(int fd, uint8_t *buf, uint16_t len) {
   data.nmsgs = 1;
 
   pthread_mutex_lock(&i2c_mutex);
-
-  for (i = 0; i < I2C_RETRIES_MAX; i++) {
-    rc = ioctl(fd, I2C_RDWR, &data);
-    if (rc < 0) {
-      msleep(I2C_RETRY_DELAY);
-      continue;
-    } else {
-      break;
-    }
+  while ((rc = ioctl(fd, I2C_RDWR, &data)) < 0 &&
+         ++i < I2C_RETRIES_MAX) {
+    msleep(I2C_RETRY_DELAY);
   }
-
   if (rc < 0) {
-    syslog(LOG_WARNING, "bus: %d, Failed to do raw io", g_bus_id);
+    OBMC_ERROR(errno, "Failed to send %u bytes to device @%#x",
+               len, msg.addr);
   }
-
   pthread_mutex_unlock(&i2c_mutex);
 
   return (rc < 0 ? -1 : 0);
 }
 
 static int
-ipmb_open_bmc(uint8_t bus_num) {
+ipmb_open_bmc(int bus_num) {
   int fd;
   char fn[32];
-  int rc;
   struct i2c_rdwr_ioctl_data data;
   struct i2c_msg msg;
-  uint8_t read_bytes[MAX_BYTES] = { 0 };
+  uint8_t read_bytes[IPMB_PKT_MAX_SIZE];
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus_num);
+  i2c_chardev_path(fn, sizeof(fn), bus_num);
   fd = open(fn, O_RDWR);
   if (fd == -1) {
-    syslog(LOG_WARNING, "Failed to open i2c device %s: %s",
-           fn, strerror(errno));
+    OBMC_ERROR(errno, "Failed to open i2c device %s", fn);
     return -1;
   }
 
@@ -309,11 +343,11 @@ ipmb_open_bmc(uint8_t bus_num) {
   data.msgs = &msg;
   data.nmsgs = 1;
 
-  rc = ioctl(fd, I2C_SLAVE_RDWR, &data);
-  if (rc < 0) {
-    syslog(LOG_WARNING, "Failed to open slave @ address %#x: %s",
-           BMC_SLAVE_ADDR, strerror(errno));
+  if (ioctl(fd, I2C_SLAVE_RDWR, &data) < 0) {
+    OBMC_ERROR(errno, "Failed to enable slave @ address %#x",
+               BMC_SLAVE_ADDR);
     close(fd);
+    fd = -1;
   }
 
   return fd;
@@ -329,7 +363,7 @@ ipmb_read_bmc(int fd, uint8_t *buf, uint8_t *len) {
 
   msg.addr = BMC_SLAVE_ADDR;
   msg.flags = 0;
-  msg.len = MAX_BYTES;
+  msg.len = IPMB_PKT_MAX_SIZE;
   msg.buf = buf;
 
   data.msgs = &msg;
@@ -348,7 +382,7 @@ ipmb_read_bmc(int fd, uint8_t *buf, uint8_t *len) {
 // Thread to handle new requests
 static void*
 ipmb_req_handler(void *args) {
-  uint8_t bus_num = *((uint8_t*)args);
+  int bus_num = *((int*)args);
   mqd_t mq;
   int i, fd;
   uint8_t rlen = 0;
@@ -356,19 +390,21 @@ ipmb_req_handler(void *args) {
   char mq_name_req[NAME_MAX];
 
   //Buffers for IPMB transport
-  uint8_t rxbuf[MQ_MAX_MSG_SIZE] = {0};
-  uint8_t txbuf[MQ_MAX_MSG_SIZE] = {0};
+  uint8_t rxbuf[IPMB_PKT_MAX_SIZE] = {0};
+  uint8_t txbuf[IPMB_PKT_MAX_SIZE] = {0};
   ipmb_req_t *p_ipmb_req = (ipmb_req_t*)rxbuf;
   ipmb_res_t *p_ipmb_res = (ipmb_res_t*)txbuf;
 
   //Buffers for IPMI Stack
-  uint8_t rbuf[MQ_MAX_MSG_SIZE] = {0};
-  uint8_t tbuf[MQ_MAX_MSG_SIZE] = {0};
+  uint8_t rbuf[IPMB_PKT_MAX_SIZE] = {0};
+  uint8_t tbuf[IPMB_PKT_MAX_SIZE] = {0};
   ipmi_mn_req_t *p_ipmi_mn_req = (ipmi_mn_req_t*)rbuf;
   ipmi_res_t *p_ipmi_res = (ipmi_res_t*)tbuf;
 
+  REQ_VERBOSE("thread starts execution");
+
   // Open Queue to receive requests
-  mq_name_gen(mq_name_req, sizeof(mq_name_req), MQ_IPMB_REQ, bus_num);
+  ipc_name_gen(mq_name_req, sizeof(mq_name_req), MQ_IPMB_REQ, bus_num);
   mq = mq_open(mq_name_req, O_RDONLY);
   if (mq == MQ_DESC_INVALID) {
     return NULL;
@@ -377,19 +413,19 @@ ipmb_req_handler(void *args) {
   // Open the i2c bus for sending response
   fd = ipmb_open_satellite(bus_num);
   if (fd < 0) {
-    syslog(LOG_WARNING, "ipmb_open_satellite failure\n");
     mq_close(mq);
     return NULL;
   }
 
   // Loop to process incoming requests
   while (1) {
-    if ((rlen = mq_receive(mq, (char *)rxbuf, MQ_MAX_MSG_SIZE, NULL)) <= 0) {
+    if ((rlen = mq_receive(mq, (char *)rxbuf, IPMB_PKT_MAX_SIZE, NULL)) <= 0) {
       sleep(1);
       continue;
     }
+    REQ_VERBOSE("received %d bytes from message queue", rlen);
 
-    pal_ipmb_processing(g_bus_id, rxbuf, rlen);
+    pal_ipmb_processing(bus_num, rxbuf, rlen);
 
 #ifdef DEBUG
     syslog(LOG_WARNING, "Received Request of %d bytes\n", rlen);
@@ -399,7 +435,7 @@ ipmb_req_handler(void *args) {
 #endif
 
     // Create IPMI request from IPMB data
-    p_ipmi_mn_req->payload_id = g_payload_id;
+    p_ipmi_mn_req->payload_id = (unsigned char)ipmbd_config.payload_id;
     p_ipmi_mn_req->netfn_lun = p_ipmb_req->netfn_lun;
     p_ipmi_mn_req->cmd = p_ipmb_req->cmd;
 
@@ -450,35 +486,38 @@ ipmb_req_handler(void *args) {
      // Send response back
      ipmb_write_satellite(fd, txbuf, tlen+IPMB_HDR_SIZE);
 
-     pal_ipmb_finished(g_bus_id, txbuf, tlen+IPMB_HDR_SIZE);
+     pal_ipmb_finished(bus_num, txbuf, tlen+IPMB_HDR_SIZE);
   }
 }
 
 // Thread to handle the incoming responses
 static void*
 ipmb_res_handler(void *args) {
-  uint8_t bus_num = *((uint8_t*)args);
-  uint8_t buf[MQ_MAX_MSG_SIZE] = { 0 };
+  int bus_num = *((int*)args);
+  uint8_t buf[IPMB_PKT_MAX_SIZE] = { 0 };
   uint8_t len = 0;
   mqd_t mq;
   ipmb_res_t *p_res;
   uint8_t index;
   char mq_name_res[NAME_MAX];
 
+  RES_VERBOSE("thread starts execution");
+
   // Open the message queue
-  mq_name_gen(mq_name_res, sizeof(mq_name_res), MQ_IPMB_RES, bus_num);
+  ipc_name_gen(mq_name_res, sizeof(mq_name_res), MQ_IPMB_RES, bus_num);
   mq = mq_open(mq_name_res, O_RDONLY);
   if (mq == MQ_DESC_INVALID) {
-    syslog(LOG_WARNING, "mq_open fails\n");
+    OBMC_ERROR(errno, "failed to open message queue %s", mq_name_res);
     return NULL;
   }
 
   // Loop to wait for incomng response messages
   while (1) {
-    if ((len = mq_receive(mq, (char *)buf, MQ_MAX_MSG_SIZE, NULL)) <= 0) {
+    if ((len = mq_receive(mq, (char *)buf, IPMB_PKT_MAX_SIZE, NULL)) <= 0) {
       sleep(1);
       continue;
     }
+    RES_VERBOSE("received %d bytes from message queue", len);
 
     p_res = (ipmb_res_t *) buf;
 
@@ -487,7 +526,8 @@ ipmb_res_handler(void *args) {
 
     if (seq_put(index, buf, len)) {
       // Either the IPMB packet is corrupted or arrived late after client exits
-      syslog(LOG_WARNING, "bus: %d, WRONG packet received with seq#%d\n", g_bus_id, index);
+      OBMC_WARN("%s: WRONG packet received with seq #%d\n",
+                IPMBD_RES_THREAD, index);
     }
 
 #ifdef DEBUG
@@ -503,56 +543,61 @@ ipmb_res_handler(void *args) {
 // Thread to receive the IPMB messages over i2c bus as a slave
 static void*
 ipmb_rx_handler(void *args) {
-  uint8_t bus_num = *((uint8_t*)args);
-  int fd, ret;
-  uint8_t len;
-  uint8_t tlun;
-  uint8_t buf[MAX_BYTES] = { 0 };
+  int fd = -1;
   mqd_t mq_req = MQ_DESC_INVALID;
   mqd_t mq_res = MQ_DESC_INVALID;
-  ipmb_req_t *p_req;
-  struct timespec req;
-  char mq_name_req[NAME_MAX];
-  char mq_name_res[NAME_MAX];
-  uint8_t tbuf[MAX_BYTES] = { 0 };
-  uint8_t fbyte;
+  struct timespec req = {
+    .tv_sec = 0,
+    .tv_nsec = 10000000, //10mSec
+  };
+  char mq_name_req[NAME_MAX], mq_name_res[NAME_MAX];
   struct pollfd ufds[1];
+  int bus_num = *((int*)args);
 
-  // Setup wait time
-  req.tv_sec = 0;
-  req.tv_nsec = 10000000;//10mSec
+  RX_VERBOSE("thread starts execution");
 
   // Open the i2c bus as a slave
   fd = ipmb_open_bmc(bus_num);
   if (fd < 0) {
-    syslog(LOG_WARNING, "ipmb_open_bmc fails\n");
     goto cleanup;
   }
+  RX_VERBOSE("opened bmc i2c-%d controller as slave, fd=%d",
+             bus_num, fd);
 
   // Open the message queues for post processing
-  mq_name_gen(mq_name_req, sizeof(mq_name_req), MQ_IPMB_REQ, bus_num);
+  ipc_name_gen(mq_name_req, sizeof(mq_name_req), MQ_IPMB_REQ, bus_num);
   mq_req = mq_open(mq_name_req, O_WRONLY);
   if (mq_req == MQ_DESC_INVALID) {
-    syslog(LOG_WARNING, "mq_open req fails\n");
+    OBMC_ERROR(errno, "%s: failed to open message queue %s",
+               IPMBD_RX_THREAD, mq_name_req);
     goto cleanup;
   }
+  RX_VERBOSE("message queue %s opened", mq_name_req);
 
-  mq_name_gen(mq_name_res, sizeof(mq_name_res), MQ_IPMB_RES, bus_num);
+  ipc_name_gen(mq_name_res, sizeof(mq_name_res), MQ_IPMB_RES, bus_num);
   mq_res = mq_open(mq_name_res, O_WRONLY);
   if (mq_res == MQ_DESC_INVALID) {
-    syslog(LOG_WARNING, "mq_open res fails\n");
+    OBMC_ERROR(errno, "%s: failed to open message queue %s",
+               IPMBD_RX_THREAD, mq_name_res);
     goto cleanup;
   }
+  RX_VERBOSE("message queue %s opened", mq_name_res);
 
   ufds[0].fd= fd;
   ufds[0].events = POLLIN;
   // Loop that retrieves messages
   while (1) {
+    int ret;
+    ipmb_req_t *p_req;
+    uint8_t len, tlun, fbyte;
+    uint8_t buf[IPMB_PKT_MAX_SIZE], tbuf[IPMB_PKT_MAX_SIZE];
+
     // Read messages from i2c driver
     if (ipmb_read_bmc(fd, buf, &len) < 0) {
       poll(ufds, 1, 10);
       continue;
     }
+    RX_VERBOSE("read %u bytes from ipmb bus %d", len, bus_num);
 
     // TODO: HACK: Due to i2cdriver issues, we are seeing two different type of packet corruptions
     // 1. The firstbyte(BMC's slave address) byte is same as second byte
@@ -562,7 +607,7 @@ ipmb_rx_handler(void *args) {
     // Verify the IPMB hdr cksum: first two bytes are hdr and 3-rd byte cksum
 
     if (len < IPMB_PKT_MIN_SIZE) {
-      syslog(LOG_WARNING, "bus: %d, IPMB Packet invalid size %d", g_bus_id, len);
+      OBMC_WARN("%s: IPMB Packet invalid size %d", IPMBD_RX_THREAD, len);
       continue;
     }
 
@@ -588,30 +633,33 @@ ipmb_rx_handler(void *args) {
           len++;
           // Check if the above hacks corrected the header
           if (buf[2] != calc_cksum(buf,2)) {
-            syslog(LOG_WARNING, "bus: %d, IPMB Header cksum error after correcting slave address\n", g_bus_id);
+            OBMC_WARN("%s: IPMB Header cksum error after fixup",
+                      IPMBD_RX_THREAD);
             continue;
           }
         }
       } else {
-          syslog(LOG_WARNING, "bus: %d, IPMB Header cksum does not match\n", g_bus_id);
+          OBMC_WARN("%s: IPMB Header cksum does not match", IPMBD_RX_THREAD);
           continue;
       }
     }
 
     // Verify the IPMB data cksum: data starts from 4-th byte
     if (buf[len-1] != calc_cksum(&buf[3], len-4)) {
-      syslog(LOG_WARNING, "bus: %d, IPMB Data cksum does not match\n", g_bus_id);
+      OBMC_WARN("%s: IPMB Data cksum does not match\n", IPMBD_RX_THREAD);
       continue;
     }
 
     // Check if the messages is request or response
     // Even NetFn: Request, Odd NetFn: Response
     // Post message to approriate Queue for further processing
-    p_req = (ipmb_req_t*) buf;
+    p_req = (ipmb_req_t*)buf;
     tlun = p_req->netfn_lun >> LUN_OFFSET;
     if (tlun % 2) {
+      RX_VERBOSE("sending packet to %s", mq_name_res);
       ret = mq_timedsend(mq_res, (char *)buf, len, 0, &req);
     } else {
+      RX_VERBOSE("sending packet to %s", mq_name_req);
       ret = mq_timedsend(mq_req, (char *)buf, len, 0, &req);
     }
     if (ret != 0) {
@@ -622,15 +670,15 @@ ipmb_rx_handler(void *args) {
   }
 
 cleanup:
-  if (fd > 0) {
-    close (fd);
+  if (fd >= 0) {
+    close(fd);
   }
 
-  if (mq_req > 0) {
+  if (mq_req != MQ_DESC_INVALID) {
     mq_close(mq_req);
   }
 
-  if (mq_res > 0) {
+  if (mq_res != MQ_DESC_INVALID) {
     mq_close(mq_req);
   }
   return NULL;
@@ -672,7 +720,7 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
 
   request[req_len-1] = ZERO_CKSUM_CONST - request[req_len-1];
 
-  if (pal_ipmb_processing(g_bus_id, request, req_len)) {
+  if (pal_ipmb_processing(ipmbd_config.bus_id, request, req_len)) {
     goto ipmb_handle_out;
   }
 
@@ -688,7 +736,7 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
 
   ret = sem_timedwait(&ipmb_seq_buf.seq[index].seq_sem, &ts);
   if (ret == -1) {
-    syslog(LOG_DEBUG, "bus: %d, No response for sequence number: %d\n", g_bus_id, index);
+    IPMBD_VERBOSE("No response for sequence number: %d\n", index);
     *res_len = 0;
   }
 
@@ -701,7 +749,7 @@ ipmb_handle_out:
   ipmb_seq_buf.seq[index].p_buf = NULL;
   pthread_mutex_unlock(&ipmb_seq_buf.seq_mutex);
 
-  pal_ipmb_finished(g_bus_id, request, *res_len);
+  pal_ipmb_finished(ipmbd_config.bus_id, request, *res_len);
 
   return;
 }
@@ -719,21 +767,24 @@ conn_handler(client_t *cli) {
   size_t req_len = MAX_IPMB_RES_LEN;
   unsigned char res_len;
 
+  SVC_VERBOSE("entering svc handler");
   if (ipc_recv_req(cli, req_buf, &req_len, TIMEOUT_IPMB)) {
-    syslog(LOG_WARNING, "ipmbd: recv() failed\n");
+    OBMC_ERROR(errno, "%s: ipc_recv_req() failed", IPMBD_SVC_THREAD);
     return -1;
   }
 
-  if(bic_up_flag){
-    if(!((req_buf[1] == 0xe0) && (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE))){
+  if(ipmbd_config.bic_update_enabled) {
+    if(!((req_buf[1] == 0xe0) &&
+        (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE))) {
       return -1;
-	  }
+    }
   }
 
-  ipmb_handle(svc->i2c_fd, req_buf, (unsigned short)req_len, res_buf, &res_len);
+  ipmb_handle(svc->i2c_fd, req_buf,
+              (unsigned short)req_len, res_buf, &res_len);
 
   if(ipc_send_resp(cli, res_buf, res_len) != 0) {
-    syslog(LOG_WARNING, "ipmbd: send() failed!\n");
+    OBMC_ERROR(errno, "%s: ipc_send_resp() failed", IPMBD_SVC_THREAD);
     return -1;
   }
   return 0;
@@ -742,37 +793,103 @@ conn_handler(client_t *cli) {
 
 // Thread to receive the IPMB lib messages from various apps
 static int
-start_ipmb_lib_handler(uint8_t bus_num) {
+start_ipmb_lib_handler(int bus_num) {
   char sock_path[64];
   struct ipmb_svc_cookie *svc = calloc(1, sizeof(*svc));
   if (!svc) {
+    OBMC_ERROR(errno, "failed to allocate svc cookie");
     return -1;
   }
 
   // Open the i2c bus for sending request
   svc->i2c_fd = ipmb_open_satellite(bus_num);
   if (svc->i2c_fd < 0) {
-    syslog(LOG_WARNING, "ipmb_open_satellite failure\n");
     free(svc);
     return -1;
   }
 
-  snprintf(sock_path, sizeof(sock_path), "%s_%d", SOCK_PATH_IPMB, bus_num);
+  ipc_name_gen(sock_path, sizeof(sock_path), SOCK_PATH_IPMB, bus_num);
   if (ipc_start_svc(sock_path, conn_handler, SEQ_NUM_MAX, svc, NULL)) {
+    OBMC_ERROR(errno, "failed to start svc thread");
     free(svc);
     return -1;
   }
+
+  return 0;
+}
+
+static void
+dump_usage(const char *prog_name)
+{
+  int i;
+  struct {
+    const char *opt;
+    const char *desc;
+  } options[] = {
+    {"-h|--help", "print this help message"},
+    {"-v|--verbose", "enable verbose logging"},
+    {"-u|--enable-bic-update", "enable/allow bic update"},
+    {NULL, NULL},
+  };
+
+  printf("Usage: %s [options] <bus-id> <payload-id>\n", prog_name);
+  for (i = 0; options[i].opt != NULL; i++) {
+    printf("    %-24s - %s\n", options[i].opt, options[i].desc);
+  }
+}
+
+static int
+parse_cmdline_args(int argc, char* const argv[])
+{
+  struct option long_opts[] = {
+    {"help",              no_argument, NULL, 'h'},
+    {"verbose",           no_argument, NULL, 'v'},
+    {"enable-bic-update", no_argument, NULL, 'u'},
+    {NULL,               0,           NULL, 0},
+  };
+
+  while (1) {
+    int opt_index = 0;
+    int ret = getopt_long(argc, argv, "hvu", long_opts, &opt_index);
+    if (ret == -1)
+      break; /* end of arguments */
+
+    switch (ret) {
+    case 'h':
+      dump_usage(argv[0]);
+      exit(0);
+
+    case 'v':
+      ipmbd_config.verbose_enabled = true;
+      break;
+
+    case 'u':
+      ipmbd_config.bic_update_enabled = true;
+      break;
+
+    default:
+      return -1;
+    }
+  } /* while */
+
+  if ((optind + 1) >= argc) {
+    fprintf(stderr, "Error: <bus-id> and/or <payload-id> is missing!\n\n");
+    dump_usage(argv[0]);
+    return -1;
+  }
+  ipmbd_config.bus_id = (int)strtoul(argv[optind], NULL, 0);
+  ipmbd_config.payload_id = (int)strtoul(argv[optind + 1], NULL, 0);
+
   return 0;
 }
 
 int
 main(int argc, char * const argv[]) {
+  int i, rc = 0;
   mqd_t mqd_req = MQ_DESC_INVALID;
   mqd_t mqd_res = MQ_DESC_INVALID;
   struct mq_attr attr = MQ_DFT_ATTR_INITIALIZER;
-  char mq_name_req[NAME_MAX];
-  char mq_name_res[NAME_MAX];
-  int i, rc = 0;
+  char mq_name_req[NAME_MAX], mq_name_res[NAME_MAX];
   struct {
     const char *name;
     void* (*handler)(void *args);
@@ -780,78 +897,99 @@ main(int argc, char * const argv[]) {
     pthread_t tid;
   } ipmb_threads[3] = {
     {
-      .name = "ipmb_rx_handler",
+      .name = IPMBD_RX_THREAD,
       .handler = ipmb_rx_handler,
       .initialized = false,
     },
     {
-      .name = "ipmb_req_handler",
+      .name = IPMBD_REQ_THREAD,
       .handler = ipmb_req_handler,
       .initialized = false,
     },
     {
-      .name = "ipmb_res_handler",
+      .name = IPMBD_RES_THREAD,
       .handler = ipmb_res_handler,
       .initialized = false,
     },
   };
 
-  if (argc < 3) {
-    syslog(LOG_WARNING, "ipmbd: Usage: ipmbd <bus#> <payload#> [bicup = allow bic updates]");
-    exit(1);
+  /*
+   * Parse command line arguments.
+   */
+  if (parse_cmdline_args(argc, argv) != 0) {
+    return -1;
+  }
+  ipmbd_name_init(ipmbd_config.bus_id);
+
+  /*
+   * Initializing logging facility.
+   */
+  rc = obmc_log_init(ipmbd_name, LOG_INFO, 0);
+  if (rc != 0) {
+    fprintf(stderr, "%s: failed to initialize logger: %s\n",
+            ipmbd_name, strerror(errno));
+    return -1;
+  }
+  rc = obmc_log_set_syslog(0, LOG_DAEMON);
+  if (rc != 0) {
+    fprintf(stderr, "%s: failed to setup syslog: %s\n",
+            ipmbd_name, strerror(errno));
+    return -1;
+  }
+  obmc_log_unset_std_stream();
+  if (ipmbd_config.verbose_enabled) {
+    obmc_log_set_prio(LOG_DEBUG); /* ignore errors */
   }
 
-  g_bus_id = (uint8_t)strtoul(argv[1], NULL, 0);
+  OBMC_INFO("%s started: bus#:%d, payload#:%d",
+            ipmbd_name, ipmbd_config.bus_id, ipmbd_config.payload_id);
 
-  g_payload_id = (uint8_t)strtoul(argv[2], NULL, 0);
-
-  syslog(LOG_WARNING, "ipmbd: bus#:%d payload#:%u\n", g_bus_id, g_payload_id);
-
-  if( (argc >= 4) && !(strcmp(argv[3] ,"bicup")) ){
-    bic_up_flag = 1;
-  } else {
-    bic_up_flag = 0;
-  }
-
-  mq_name_gen(mq_name_req, sizeof(mq_name_req), MQ_IPMB_REQ, g_bus_id);
-  mq_name_gen(mq_name_res, sizeof(mq_name_res), MQ_IPMB_RES, g_bus_id);
-
-  // Remove the MQ if exists
+  /*
+   * Initialize message queues.
+   */
+  ipc_name_gen(mq_name_req, sizeof(mq_name_req),
+               MQ_IPMB_REQ, ipmbd_config.bus_id);
   mq_unlink(mq_name_req);
   mqd_req = mq_open(mq_name_req, MQ_DFT_FLAGS, MQ_DFT_MODES, &attr);
-  if (mqd_req == (mqd_t) -1) {
+  if (mqd_req == MQ_DESC_INVALID) {
     rc = errno;
-    syslog(LOG_WARNING, "ipmbd: mq_open request failed errno:%d\n", rc);
+    OBMC_ERROR(rc, "failed to open message queue %s", mq_name_req);
     goto cleanup;
   }
+  IPMBD_VERBOSE("message queue %s created", mq_name_req);
 
-  // Remove the MQ if exists
+  ipc_name_gen(mq_name_res, sizeof(mq_name_res),
+               MQ_IPMB_RES, ipmbd_config.bus_id);
   mq_unlink(mq_name_res);
   mqd_res = mq_open(mq_name_res, MQ_DFT_FLAGS, MQ_DFT_MODES, &attr);
-  if (mqd_res == (mqd_t) -1) {
+  if (mqd_res == MQ_DESC_INVALID) {
     rc = errno;
-    syslog(LOG_WARNING, "ipmbd: mq_open response failed errno: %d\n", rc);
+    OBMC_ERROR(rc, "failed to open message queue %s", mq_name_res);
     goto cleanup;
   }
+  IPMBD_VERBOSE("message queue %s created", mq_name_res);
 
   ipmb_seq_buf_init();
+  IPMBD_VERBOSE("sequence buffer initialized");
 
   for (i = 0; i < ARRAY_SIZE(ipmb_threads); i++) {
+    IPMBD_VERBOSE("creating thread %s", ipmb_threads[i].name);
     rc = pthread_create(&ipmb_threads[i].tid, NULL,
-                        ipmb_threads[i].handler, &g_bus_id);
+                        ipmb_threads[i].handler, &ipmbd_config.bus_id);
     if (rc != 0) {
-      syslog(LOG_WARNING, "ipmbd: failed to create %s thread: %s\n",
-             ipmb_threads[i].name, strerror(rc));
+      OBMC_ERROR(rc, "ipmbd: failed to create %s thread: %s\n",
+                 ipmb_threads[i].name, strerror(rc));
       goto cleanup;
     }
     ipmb_threads[i].initialized = true;
   }
 
   // Create thread to receive ipmb library requests from apps
-  if (start_ipmb_lib_handler(g_bus_id) < 0) {
-    syslog(LOG_WARNING, "ipmbd: pthread_create failed\n");
+  if (start_ipmb_lib_handler(ipmbd_config.bus_id) < 0) {
+    rc = errno;
     goto cleanup;
   }
+  IPMBD_VERBOSE("ipmb lib handler started successfully");
 
 cleanup:
   for (i = ARRAY_SIZE(ipmb_threads) - 1; i >= 0; i--) {
@@ -871,5 +1009,5 @@ cleanup:
     mq_unlink(mq_name_req);
   }
 
-  return 0;
+  return rc;
 }

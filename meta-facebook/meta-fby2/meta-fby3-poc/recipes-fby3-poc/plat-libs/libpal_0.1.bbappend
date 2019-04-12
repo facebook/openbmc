@@ -14,7 +14,11 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
-SRC_URI  += "file://bic \
-            "
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal/:"
+
+SRC_URI += "file://pal.c \
+            file://pal.h \
+           "
+
 CFLAGS_prepend = " -DCONFIG_FBY3_POC "

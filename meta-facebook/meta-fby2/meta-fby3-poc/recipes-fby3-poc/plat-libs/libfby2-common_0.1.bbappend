@@ -14,7 +14,10 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
-SRC_URI  += "file://bic \
+
+SRC_URI  += "file://fby2_common \
             "
+
 CFLAGS_prepend = " -DCONFIG_FBY3_POC "

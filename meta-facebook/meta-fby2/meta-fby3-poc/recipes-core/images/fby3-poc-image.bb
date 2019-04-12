@@ -26,17 +26,13 @@ IMAGE_INSTALL += " \
   bic-cached \
   bic-util \
   ncsi-util \
-  fby2-sensors \
   sensor-util \
   sensor-mon \
-  gpiod \
-  gpiointrd \
   front-paneld \
   power-util \
   mterm\
   cfg-util \
   fw-util \
-  hsvc-util \
   fpc-util \
   me-util \
   crashdump \
@@ -46,8 +42,6 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   ipmi-util \
   guid-util \
-  asd \
-  asd-test \
   bios-util \
   threshold-util \
   ncsid \

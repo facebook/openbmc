@@ -1,4 +1,4 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,7 +14,16 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
-SRC_URI  += "file://bic \
-            "
-CFLAGS_prepend = " -DCONFIG_FBY3_POC "
+
+lib: libfby2_gpio.so
+
+CFLAGS += -Wall -Werror
+
+libfby2_gpio.so: fby2_gpio.c
+	$(CC) $(CFLAGS) -fPIC -c -o fby2_gpio.o fby2_gpio.c
+	$(CC) -shared -o libfby2_gpio.so fby2_gpio.o -lc $(LDFLAGS)
+
+.PHONY: clean
+
+clean:
+	rm -rf *.o libfby2_gpio.so

@@ -15,6 +15,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
-SRC_URI  += "file://bic \
+SRC_URI  += "file://fby2_sensor \
             "
 CFLAGS_prepend = " -DCONFIG_FBY3_POC "

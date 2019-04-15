@@ -75,7 +75,7 @@ def arg_parser():
 
     parser.add_argument('--platform',
                         help="Run all tests in platform by platform name",
-                        choices=['wedge', 'wedge100', 'galaxy100', 'cmm'])
+                        choices=['wedge', 'wedge100', 'galaxy100', 'cmm', 'minipack'])
 
     parser.add_argument('--run-test',
                         help="Path to run a single test. Example: \

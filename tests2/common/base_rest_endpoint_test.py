@@ -81,6 +81,22 @@ class BaseRestEndpointTest(unittest.TestCase):
                 handle = urlopen(cmd)
                 self.assertIn(handle.getcode(), [200, 202])
 
+    def verify_endpoint_attributes(self, endpointname, attributes):
+        '''
+        Verify if attributes are present in endpoint response
+        '''
+        self.assertNotEqual(attributes, None,
+            "{} endpoint attributes not set".format(endpointname))
+        info = self.get_from_endpoint(endpointname)
+        for attrib in attributes:
+            with self.subTest(attrib=attrib):
+                self.assertIn(attrib, info)
+        if 'Resources' in info:
+            dict_info = json.loads(info)
+            self.verify_endpoint_resource(
+                endpointname=endpointname,
+                resources=dict_info['Resources']
+            )
 
 class CommonRestEndpointTest(BaseRestEndpointTest):
     '''
@@ -102,26 +118,50 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     MTERM_ENDPOINT = "/api/sys/mTerm_status"
     BMC_ENDPOINT = "/api/sys/bmc"
 
+    # Attrbutes for common endpoints
+    MB_ATTRIBUTES = [
+        "fruid"
+    ]
+    FRUID_ATTRIBUTES = [
+        "Assembled At",
+        "Local MAC",
+        "Product Asset Tag",
+        "Product Name"
+    ]
+
+    BMC_ATTRIBUTES = [
+        "At-Scale-Debug Running",
+        "CPU Usage",
+        "Description",
+        "MAC Addr",
+        "Memory Usage",
+        "OpenBMC Version",
+        "SPI0 Vendor",
+        "SPI1 Vendor",
+        "TPM FW version",
+        "TPM TCG version",
+        "Reset Reason",
+        "Uptime",
+        "kernel version",
+        "load-1",
+        "load-15",
+        "load-5",
+        "open-fds",
+        "u-boot version",
+        "vboot"
+    ]
     # /api
-    @abstractmethod
     def set_endpoint_api_attributes(self):
-        self.endpoint_api_attrb = None
-        pass
+        self.endpoint_api_attrb = [
+            "sys"
+        ]
 
     def test_endpoint_api(self):
         self.set_endpoint_api_attributes()
-        self.assertNotEqual(self.endpoint_api_attrb, None,
-            "/api endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.API_ENDPOINT)
-        for attrib in self.endpoint_api_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.API_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.API_ENDPOINT,
+            self.endpoint_api_attrb
+        )
 
     # /api/sys
     @abstractmethod
@@ -131,18 +171,10 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
 
     def test_endpoint_api_sys(self):
         self.set_endpoint_sys_attributes()
-        self.assertNotEqual(self.endpoint_sys_attrb, None,
-            "/api/sys endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.SYS_ENDPOINT)
-        for attrib in self.endpoint_sys_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.SYS_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.SYS_ENDPOINT,
+            self.endpoint_sys_attrb
+        )
 
     # /api/sys/sensors
     @abstractmethod
@@ -152,39 +184,21 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
 
     def test_endpoint_api_sys_sensors(self):
         self.set_endpoint_sensors_attributes()
-        self.assertNotEqual(self.endpoint_sensors_attrb, None,
-            "/api/sys/sensors endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.SENSORS_ENDPOINT)
-        for attrib in self.endpoint_sensors_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.SENSORS_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.SENSORS_ENDPOINT,
+            self.endpoint_sensors_attrb
+        )
 
     # "/api/sys/mb"
-    @abstractmethod
     def set_endpoint_mb_attributes(self):
-        self.endpoint_mb_attrb = None
-        pass
+        self.endpoint_mb_attrb = self.MB_ATTRIBUTES
 
     def test_endpoint_api_sys_mb(self):
         self.set_endpoint_mb_attributes()
-        self.assertNotEqual(self.endpoint_mb_attrb, None,
-            "/api/sys/mb endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.MB_ENDPOINT)
-        for attrib in self.endpoint_mb_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.MB_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.MB_ENDPOINT,
+            self.endpoint_mb_attrb
+        )
 
     # "/api/sys/server"
     @abstractmethod
@@ -194,82 +208,46 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
 
     def test_endpoint_api_sys_server(self):
         self.set_endpoint_server_attributes()
-        self.assertNotEqual(self.endpoint_server_attrb, None,
-            "/api/sys/server endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.SERVER_ENDPOINT)
-        for attrib in self.endpoint_server_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.SERVER_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.SERVER_ENDPOINT,
+            self.endpoint_server_attrb
+        )
 
     # "/api/sys/mb/fruid"
-    @abstractmethod
     def set_endpoint_fruid_attributes(self):
-        self.endpoint_fruid_attrb = None
-        pass
+        self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES
 
     def test_endpoint_api_sys_mb_fruid(self):
         self.set_endpoint_fruid_attributes()
-        self.assertNotEqual(self.endpoint_fruid_attrb, None,
-            "/api/sys/mb/fruid endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.FRUID_ENDPOINT)
-        for attrib in self.endpoint_fruid_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.FRUID_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.FRUID_ENDPOINT,
+            self.endpoint_fruid_attrb
+        )
 
     # "/api/sys/mTerm_status"
-    @abstractmethod
     def set_endpoint_mterm_attributes(self):
-        self.endpoint_mterm_attrb = None
-        pass
+        self.endpoint_mterm_attrb = [
+            "Running"
+        ]
 
     def test_endpoint_api_sys_mterm(self):
         self.set_endpoint_mterm_attributes()
-        self.assertNotEqual(self.endpoint_mterm_attrb, None,
-            "/api/sys/mTerm_status endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.MTERM_ENDPOINT)
-        for attrib in self.endpoint_mterm_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.MTERM_ENDPOINT,
-                resources=dict_info['Resources']
-            )
-
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.MTERM_ENDPOINT,
+            self.endpoint_mterm_attrb
+        )
 
     # "/api/sys/bmc"
-    @abstractmethod
     def set_endpoint_bmc_attributes(self):
-        self.endpoint_bmc_attrb = None
+        self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
         pass
 
     def test_endpoint_api_sys_bmc(self):
         self.set_endpoint_bmc_attributes()
-        self.assertNotEqual(self.endpoint_bmc_attrb, None,
-            "/api/sys/bmc endpoint attributes not set")
-        info = self.get_from_endpoint(CommonRestEndpointTest.BMC_ENDPOINT)
-        for attrib in self.endpoint_bmc_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=CommonRestEndpointTest.BMC_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            CommonRestEndpointTest.BMC_ENDPOINT,
+            self.endpoint_bmc_attrb
+        )
 
 
 class FbossRestEndpointTest(CommonRestEndpointTest):
@@ -277,47 +255,35 @@ class FbossRestEndpointTest(CommonRestEndpointTest):
     Class captures endpoints common for Fboss network gear
     '''
 
+    # Common Fboss endpoints
     FC_PRESENT_ENDPOINT = "/api/sys/fc_present"
     SLOT_ID_ENDPOINT = "/api/sys/slotid"
 
+    #Atributes
+
     # "/api/sys/fc_present"
-    @abstractmethod
     def set_endpoint_fc_present_attributes(self):
-        self.endpoint_fc_present_attrb = None
-        pass
+        self.endpoint_fc_present_attrb = [
+            "Not Applicable"
+        ]
 
     def test_endpoint_api_sys_fc_present(self):
         self.set_endpoint_fc_present_attributes()
-        self.assertNotEqual(self.endpoint_fc_present_attrb, None,
-            "/api/sys/fc_present endpoint attributes not set")
-        info = self.get_from_endpoint(FbossRestEndpointTest.FC_PRESENT_ENDPOINT)
-        for attrib in self.endpoint_fc_present_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=FbossRestEndpointTest.FC_PRESENT_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            FbossRestEndpointTest.FC_PRESENT_ENDPOINT,
+            self.endpoint_fc_present_attrb
+        )
 
     # "/api/sys/slotid"
-    @abstractmethod
     def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = None
-        pass
+        self.endpoint_slotid_attrb = [
+            "0"
+        ]
+
 
     def test_endpoint_api_sys_slotid(self):
         self.set_endpoint_slotid_attributes()
-        self.assertNotEqual(self.endpoint_slotid_attrb, None,
-            "/api/sys/slotid endpoint attributes not set")
-        info = self.get_from_endpoint(FbossRestEndpointTest.SLOT_ID_ENDPOINT)
-        for attrib in self.endpoint_slotid_attrb:
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if 'Resources' in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=FbossRestEndpointTest.SLOT_ID_ENDPOINT,
-                resources=dict_info['Resources']
-            )
+        self.verify_endpoint_attributes(
+            FbossRestEndpointTest.SLOT_ID_ENDPOINT,
+            self.endpoint_slotid_attrb
+        )

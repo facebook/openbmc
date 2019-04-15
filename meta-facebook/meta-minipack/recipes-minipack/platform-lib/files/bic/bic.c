@@ -717,7 +717,7 @@ prepare_update_bic(uint8_t slot_id, int ifd, int size) {
   uint8_t rcount;
 
   /* Kill ipmb daemon for this slot */
-  sprintf(cmd, "sv stop ipmbd");
+  sprintf(cmd, "sv stop ipmbd_0");
   system(cmd);
   printf("stop ipmbd\n");
 
@@ -737,7 +737,8 @@ prepare_update_bic(uint8_t slot_id, int ifd, int size) {
 
   /* Kill ipmb daemon "bicup" for this slot */
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "killall ipmbd");
+  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd 0' |awk '{print $1}' "
+               "| xargs kill");
   system(cmd);
   printf("stop ipmbd for minilake\n", slot_id);
 
@@ -996,7 +997,7 @@ update_done:
   // Restart ipmbd daemon
   sleep(1);
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "sv start ipmbd");
+  sprintf(cmd, "sv start ipmbd_0");
   system(cmd);
 
 error_exit:

@@ -44,7 +44,9 @@ extern "C" {
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define KV_PATH "/mnt/data/kv_store/%s"
 
+
 #define MINIPACK_SDR_PATH "/tmp/sdr_%s.bin"
+#define MINIPACK_FRU_PATH "/tmp/fruid_%s.bin"
 
 #define SCM_COM_PWR_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, com_pwr_btn_n)
 #define SCM_COM_PWR_ENBLE    I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_enable)
@@ -736,6 +738,9 @@ int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *
 int pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause);
 int pal_set_restart_cause(uint8_t slot, uint8_t restart_cause);
 int pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_fruid_path(uint8_t fru, char *path);
+int pal_ipmb_processing(int bus, void *buf, uint16_t size);
+bool pal_is_mcu_working(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

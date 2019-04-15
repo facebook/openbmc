@@ -37,6 +37,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <linux/limits.h>
 #include "pal.h"
 #include <math.h>
 #include <facebook/bic.h>
@@ -54,6 +55,20 @@ struct threadinfo {
   uint8_t fru;
   pthread_t pt;
 };
+
+typedef struct {
+  uint16_t flag;
+  float ucr;
+  float unc;
+  float unr;
+  float lcr;
+  float lnc;
+  float lnr;
+  float pos_hyst;
+  float neg_hyst;
+  int curr_st;
+  char name[32];
+} _sensor_thresh_t;
 
 static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
@@ -1519,71 +1534,78 @@ pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
   uint8_t diff = o_val ^ n_val;
 
   if (GETBIT(diff, 0)) {
-    switch(snr_num) {
-      case BIC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SOC_Thermal_Trip");
-        valid = true;
-
-        sprintf(crisel, "%s - %s,FRU:%u",
-                        name, GETBIT(n_val, 0)?"ASSERT":"DEASSERT", fru);
-        pal_add_cri_sel(crisel);
-        break;
-      case BIC_SENSOR_VR_HOT:
-        sprintf(name, "SOC_VR_Hot");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name,
-                                      GETBIT(n_val, 0), name);
-      valid = false;
+    if (fru == FRU_SCM) {
+      switch(snr_num) {
+        case BIC_SENSOR_SYSTEM_STATUS:
+          snprintf(name, sizeof(name), "SOC_Thermal_Trip");
+          valid = true;
+          snprintf(crisel, sizeof(crisel), "%s - %s,FRU:%u",
+                          name, GETBIT(n_val, 0)?"ASSERT":"DEASSERT", fru);
+          pal_add_cri_sel(crisel);
+          break;
+        case BIC_SENSOR_VR_HOT:
+          snprintf(name, sizeof(name), "SOC_VR_Hot");
+          valid = true;
+          break;
+      }
+      if (valid) {
+        _print_sensor_discrete_log(fru, snr_num, snr_name,
+                                        GETBIT(n_val, 0), name);
+        valid = false;
+      }
     }
   }
 
   if (GETBIT(diff, 1)) {
-    switch(snr_num) {
-      case BIC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SOC_FIVR_Fault");
-        valid = true;
-        break;
-      case BIC_SENSOR_VR_HOT:
-        sprintf(name, "SOC_DIMM_AB_VR_Hot");
-        valid = true;
-        break;
-      case BIC_SENSOR_CPU_DIMM_HOT:
-        sprintf(name, "SOC_MEMHOT");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name,
-                                      GETBIT(n_val, 1), name);
-      valid = false;
+    if (fru == FRU_SCM) {
+      switch(snr_num) {
+        case BIC_SENSOR_SYSTEM_STATUS:
+          snprintf(name, sizeof(name), "SOC_FIVR_Fault");
+          valid = true;
+          break;
+        case BIC_SENSOR_VR_HOT:
+          snprintf(name, sizeof(name), "SOC_DIMM_AB_VR_Hot");
+          valid = true;
+          break;
+        case BIC_SENSOR_CPU_DIMM_HOT:
+          snprintf(name, sizeof(name), "SOC_MEMHOT");
+          valid = true;
+          break;
+      }
+      if (valid) {
+        _print_sensor_discrete_log(fru, snr_num, snr_name,
+                                        GETBIT(n_val, 1), name);
+        valid = false;
+      }
     }
   }
 
   if (GETBIT(diff, 2)) {
-    switch(snr_num) {
-      case BIC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "SYS_Throttle");
-        valid = true;
-        break;
-      case BIC_SENSOR_VR_HOT:
-        sprintf(name, "SOC_DIMM_DE_VR_Hot");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name,
-                                      GETBIT(n_val, 2), name);
-      valid = false;
+    if (fru == FRU_SCM) {
+      switch(snr_num) {
+        case BIC_SENSOR_SYSTEM_STATUS:
+          snprintf(name, sizeof(name), "SYS_Throttle");
+          valid = true;
+          break;
+        case BIC_SENSOR_VR_HOT:
+          snprintf(name, sizeof(name), "SOC_DIMM_DE_VR_Hot");
+          valid = true;
+          break;
+      }
+      if (valid) {
+        _print_sensor_discrete_log(fru, snr_num, snr_name,
+                                        GETBIT(n_val, 2), name);
+        valid = false;
+      }
     }
   }
 
   if (GETBIT(diff, 4)) {
-    if (snr_num == BIC_SENSOR_PROC_FAIL) {
-        _print_sensor_discrete_log(fru, snr_num, snr_name,
-                                        GETBIT(n_val, 4), "FRB3");
+    if (fru == FRU_SCM) {
+      if (snr_num == BIC_SENSOR_PROC_FAIL) {
+          _print_sensor_discrete_log(fru, snr_num, snr_name,
+                                          GETBIT(n_val, 4), "FRB3");
+      }
     }
   }
 
@@ -2472,16 +2494,14 @@ bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
   int8_t b_exp, r_exp;
   uint8_t x, m_lsb, m_msb, b_lsb, b_msb, thresh_val;
   uint16_t m = 0, b = 0;
-  sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
   sdr_full_t *sdr;
   char cvalue[MAX_VALUE_LEN] = {0};
 
-
   ret = kv_get(SCM_INIT_THRESH_STATUS, cvalue, NULL, 0);
   if (!strncmp(cvalue, "done", sizeof("done"))) {
-    ret = bic_sensor_sdr_init(fru, sinfo);
+    ret = bic_sdr_init(fru);
   } else {
-    while ((ret = bic_sensor_sdr_init(fru, sinfo)) == ERR_NOT_READY &&
+    while ((ret = bic_sdr_init(fru)) == ERR_NOT_READY &&
       retry++ < MAX_SDR_THRESH_RETRY) {
       sleep(1);
     }
@@ -2491,7 +2511,7 @@ bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
     syslog(LOG_CRIT, "BIC threshold value can't get");
     return -1;
   }
-  sdr = &sinfo[snr_num].sdr;
+  sdr = &g_sinfo[fru-1][snr_num].sdr;
 
   switch (thresh) {
     case UCR_THRESH:
@@ -5698,23 +5718,55 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num,
       exit(-1);
   }
 
-  switch(snr_num) {
-    case BIC_SENSOR_P3V3_MB:
-    case BIC_SENSOR_P12V_MB:
-    case BIC_SENSOR_P1V05_PCH:
-    case BIC_SENSOR_P3V3_STBY_MB:
-    case BIC_SENSOR_PV_BAT:
-    case BIC_SENSOR_PVDDR:
-    case BIC_SENSOR_VCCIN_VR_VOL:
-    case BIC_SENSOR_VDDR_VR_VOL:
-    case BIC_SENSOR_P1V05MIX_VR_VOL:
-    case BIC_SENSOR_INA230_VOL:
-      snr_desc = get_sensor_desc(fru, snr_num);
-      sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u",
-                      snr_desc->name, thresh_name, val, fru);
+  switch (fru) {
+    case FRU_SCM:
+      switch(snr_num) {
+        case SCM_SENSOR_INLET_REMOTE_TEMP:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          snprintf(crisel, sizeof(crisel), "%s %s %.2fV - ASSERT,FRU:%u",
+                          snr_desc->name, thresh_name, val, fru);
+          break;
+        default:
+          return;
+      }
       break;
-    default:
-      return;
+    case FRU_SMB:
+      switch(snr_num) {
+        case SMB_SENSOR_TH3_DIE_TEMP1:
+        case SMB_SENSOR_TH3_DIE_TEMP2:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          snprintf(crisel, sizeof(crisel), "%s %s %.2fV - ASSERT,FRU:%u",
+                          snr_desc->name, thresh_name, val, fru);
+          break;
+        default:
+          return;
+      }
+      break;
+    case FRU_PIM1:
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+      switch(snr_num) {
+        case PIM1_SENSOR_QSFP_TEMP:
+        case PIM2_SENSOR_QSFP_TEMP:
+        case PIM3_SENSOR_QSFP_TEMP:
+        case PIM4_SENSOR_QSFP_TEMP:
+        case PIM5_SENSOR_QSFP_TEMP:
+        case PIM6_SENSOR_QSFP_TEMP:
+        case PIM7_SENSOR_QSFP_TEMP:
+        case PIM8_SENSOR_QSFP_TEMP:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          snprintf(crisel, sizeof(crisel), "%s %s %.2fV - ASSERT,FRU:%u",
+                          snr_desc->name, thresh_name, val, fru);
+          break;
+        default:
+          return;
+      }
+      break;
   }
   pal_add_cri_sel(crisel);
   return;
@@ -5754,22 +5806,45 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num,
   switch (fru) {
     case FRU_SCM:
       switch (snr_num) {
-        case BIC_SENSOR_SOC_TEMP:
-          sprintf(crisel, "SOC Temp %s %.0fC - DEASSERT,FRU:%u",
-                          thresh_name, val, fru);
-          break;
-        case BIC_SENSOR_P3V3_MB:
-        case BIC_SENSOR_P12V_MB:
-        case BIC_SENSOR_P1V05_PCH:
-        case BIC_SENSOR_P3V3_STBY_MB:
-        case BIC_SENSOR_PV_BAT:
-        case BIC_SENSOR_PVDDR:
-        case BIC_SENSOR_VCCIN_VR_VOL:
-        case BIC_SENSOR_VDDR_VR_VOL:
-        case BIC_SENSOR_P1V05MIX_VR_VOL:
-        case BIC_SENSOR_INA230_VOL:
+        case SCM_SENSOR_INLET_REMOTE_TEMP:
           snr_desc = get_sensor_desc(FRU_SCM, snr_num);
-          sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u",
+          snprintf(crisel, sizeof(crisel), "%s %s %.2fV - DEASSERT,FRU:%u",
+                          snr_desc->name, thresh_name, val, fru);
+          break;
+        default:
+          return;
+      }
+    case FRU_SMB:
+      switch(snr_num) {
+        case SMB_SENSOR_TH3_DIE_TEMP1:
+        case SMB_SENSOR_TH3_DIE_TEMP2:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          snprintf(crisel, sizeof(crisel), "%s %s %.2fV - DEASSERT,FRU:%u",
+                          snr_desc->name, thresh_name, val, fru);
+          break;
+        default:
+          return;
+      }
+      break;
+    case FRU_PIM1:
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+      switch(snr_num) {
+        case PIM1_SENSOR_QSFP_TEMP:
+        case PIM2_SENSOR_QSFP_TEMP:
+        case PIM3_SENSOR_QSFP_TEMP:
+        case PIM4_SENSOR_QSFP_TEMP:
+        case PIM5_SENSOR_QSFP_TEMP:
+        case PIM6_SENSOR_QSFP_TEMP:
+        case PIM7_SENSOR_QSFP_TEMP:
+        case PIM8_SENSOR_QSFP_TEMP:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          snprintf(crisel, sizeof(crisel), "%s %s %.2fV - ASSERT,FRU:%u",
                           snr_desc->name, thresh_name, val, fru);
           break;
         default:
@@ -6815,6 +6890,13 @@ pal_set_def_key_value(void) {
 
 int
 pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+  _sensor_thresh_t *psnr = (_sensor_thresh_t *)snr;
+  sensor_desc_t *snr_desc;
+
+  snr_desc = get_sensor_desc(fru, snr_num);
+  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+
   pal_set_def_key_value();
   psu_init_acok_key(fru);
   return 0;
@@ -7406,4 +7488,57 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len,
   completion_code = CC_SUCCESS;
 
   return completion_code;
+}
+
+int
+pal_get_fruid_path(uint8_t fru, char *path) {
+  if (fru != FRU_SCM)
+    return -1;
+
+  sprintf(path, MINIPACK_FRU_PATH, "scm");
+
+  return 0;
+}
+
+int
+pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+
+  if ((bus == 4) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (ts.tv_sec >= (last_time + 5)) {
+      last_time = ts.tv_sec;
+      ts.tv_sec += 30;
+
+      snprintf(key, sizeof(key), "ocpdbg_lcd");
+      snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+      if (kv_set(key, value, 0, 0) < 0) {
+        return -1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+bool
+pal_is_mcu_working(void) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  snprintf(key, sizeof(key), "ocpdbg_lcd");
+  if (kv_get(key, value, NULL, 0)) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec) {
+     return true;
+  }
+
+  return false;
 }

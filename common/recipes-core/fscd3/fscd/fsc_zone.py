@@ -120,7 +120,9 @@ class Zone:
 
         for v in self.expr_meta['ext_vars']:
             sensor_valid_flag = 1
-            board, sname = v.split(":")
+            sdata = v.split(":")
+            board = sdata[0]
+            sname = sdata[1]
             if self.sensor_valid_check != None:
                 for check_name in self.sensor_valid_check:
                     if re.match(check_name, sname, re.IGNORECASE) != None:

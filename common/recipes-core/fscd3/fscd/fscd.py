@@ -171,8 +171,14 @@ class Fscd(object):
                 (expr, inf) = fsc_expr.make_eval_tree(source,
                                                       self.profiles)
                 for name in inf['ext_vars']:
-                    board, sname = name.split(':')
+                    sdata = name.split(':')
+                    board = sdata[0]
+                    sname = sdata[1]
+                    if board not in self.machine.frus:
+                        self.machine.nums[board] = []
                     self.machine.frus.add(board)
+                    if len(sdata) == 3:
+                        self.machine.nums[board].append(sdata[2])
 
                 zone = Zone(data['pwm_output'], expr, inf, self.transitional,
                             counter, self.boost, self.sensor_fail, self.sensor_valid_check, self.fail_sensor_type,

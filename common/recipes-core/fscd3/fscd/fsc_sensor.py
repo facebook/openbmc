@@ -151,6 +151,7 @@ class FscSensorSourceUtil(FscSensorBase):
         There are two kinds of sensors temperature and fans. Following
         are the util usages:
         sensor util: 'util <fru name>' Reads all sensors from a specific fru
+                     'util <fru name> <sensor number>' Reads sensor from a specific fru number
         fan util: 'util' Reads all fan speeds
 
         Arguments:
@@ -161,7 +162,12 @@ class FscSensorSourceUtil(FscSensorBase):
         '''
         cmd = self.read_source
         if 'fru' in kwargs:
-            cmd = cmd + " " + kwargs['fru']
+            if 'num' in kwargs and len(kwargs['num']):
+                cmd = ''
+                for num in kwargs['num']:
+                    cmd += self.read_source + " " + kwargs['fru'] + " " + num + ";"
+            else:
+                cmd = cmd + " " + kwargs['fru']
         Logger.debug("Reading data with cmd=%s" % cmd)
         data = ''
         try:

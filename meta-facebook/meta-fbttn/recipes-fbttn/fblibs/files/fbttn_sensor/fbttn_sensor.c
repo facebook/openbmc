@@ -1790,6 +1790,11 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value, uint8_t status, 
         syslog(LOG_WARNING, "%s: pal_get_edb_value failed for fru %d, sensor number: 0x%x", __func__, fru, sensor_num);
         return ret;
       }
+
+      if (strncmp(cvalue, sizeof(cvalue), "NA") == 0) {
+        return READING_NA;
+      }
+
       *(float *) value = atof(cvalue);
       return ret;
       break;

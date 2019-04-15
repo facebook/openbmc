@@ -309,9 +309,10 @@ pim_monitor_handler(void *unused) {
   uint8_t pim_type;
   uint8_t pim_type_old[10] = {PIM_TYPE_UNPLUG};
   uint8_t interval[10];
-  bool thresh_first = true;
+  bool thresh_first[10];
 
   memset(interval, INTERVAL_MAX, sizeof(interval));
+  memset(thresh_first, true, sizeof(thresh_first));
   while (1) {
     for (fru = FRU_PIM1; fru <= FRU_PIM8; fru++) {
       ret = pal_is_fru_prsnt(fru, &prsnt);
@@ -363,8 +364,8 @@ pim_monitor_handler(void *unused) {
                       "pal_set_pim_type_to_file: PIM %d set none failed", num);
               }
             }
-            if (thresh_first == true) {
-              thresh_first = false;
+            if (thresh_first[num] == true) {
+              thresh_first[num] = false;
             } else {
               if (pim_thresh_init_file_check(fru)) {
                 pim_thresh_init(fru);

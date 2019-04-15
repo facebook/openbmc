@@ -307,7 +307,9 @@ static ssize_t qsfp_temp_show(struct device *dev,
 static const i2c_dev_attr_st domfpga_attr_table[] = {
   {
     "device_id",
-    "Minipack DOM FPGA ID should be 0xa3",
+    "Minipack PIM-16Q DOM FPGA ID should be 0xa3\n"
+    "Minipack PIM-4DD DOM FPGA ID should be 0xa4\n"
+    "Minipack PIM-16O DOM FPGA ID should be 0xa5",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x00, 0, 8,
@@ -328,7 +330,10 @@ static const i2c_dev_attr_st domfpga_attr_table[] = {
   },
   {
     "board_ver",
-    "Board ID Register. Data is from board strapping resistor",
+    "Board ID Register. Data is from board strapping resistor\n"
+    "PIM-16Q is 0x0\n"
+    "PIM-4DD is 0x10\n"
+    "PIM-16O is 0xf0",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x03, 0, 8,

@@ -50,3 +50,5 @@ echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
 if [ ! -f "/mnt/data/kv_store/server_por_cfg" ]; then
     /usr/bin/kv set server_por_cfg on persistent
 fi
+
+/usr/bin/kv set smb_board_rev $board_rev

@@ -58,6 +58,7 @@ extern "C" {
 #define SCM_DBG_RST_BTN_CLR  I2C_SYSFS_DEV_ENTRY(2-0035, scm_debug_rst_btn_n_clr)
 #define SCM_SYS_LED_COLOR    I2C_SYSFS_DEV_ENTRY(2-0035, sys_led_color)
 
+#define SMB_BOARD_REV "smb_board_rev"
 #define SMB_MAC_CPLD_ROV "mac_cpld_rov%d"
 #define SMB_MAC_CPLD_ROV_NUM 8
 #define SCM_PRSNT_STATUS "scm_presnt_status"

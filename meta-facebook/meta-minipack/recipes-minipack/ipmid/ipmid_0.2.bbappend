@@ -14,9 +14,9 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-LDFLAGS += " -lwedge_eeprom"
-DEPENDS += " libwedge-eeprom libipmi libfruid libsdr update-rc.d-native"
-RDEPENDS_${PN} += "libipmi libkv libwedge-eeprom"
+LDFLAGS += " -lwedge_eeprom -lbic"
+DEPENDS += " libwedge-eeprom libipmi libfruid libsdr libbic update-rc.d-native"
+RDEPENDS_${PN} += "libipmi libkv libwedge-eeprom libbic"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \

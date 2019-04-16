@@ -27,10 +27,19 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <facebook/bic.h>
-#include <facebook/minipack_gpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/fruid.h>
 #include <fcntl.h>
+
+#ifdef PLATFORM_MINIPACK
+#include <facebook/minipack_gpio.h>
+#define platform_gpio_type_to_name minipack_gpio_type_to_name
+#endif
+
+#ifdef PLATFORM_WEDGE400
+#include <facebook/wedge400_gpio.h>
+#define platform_gpio_type_to_name wedge400_gpio_type_to_name
+#endif
 
 #define LAST_RECORD_ID 0xFFFF
 #define MAX_SENSOR_NUM 0xFF
@@ -231,7 +240,7 @@ util_get_gpio_config(uint8_t slot_id) {
     }
 
     printf("gpio_config for pin#%d (%s):\n",
-           i, minipack_gpio_type_to_name(i));
+           i, platform_gpio_type_to_name(i));
     printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
     printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
     printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");

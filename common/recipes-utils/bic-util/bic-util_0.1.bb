@@ -1,7 +1,7 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
 SUMMARY = "Bridge IC Utility"
-DESCRIPTION = "Util for checking with Bridge IC on Minipack"
+DESCRIPTION = "Util for checking with Bridge IC"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
@@ -12,15 +12,15 @@ SRC_URI = "file://bic-util \
 
 S = "${WORKDIR}/bic-util"
 
-CFLAGS += " -lbic -lipmi -lipmb -lminipack_gpio -lfruid"
+CFLAGS += " -lbic -lipmi -lipmb -lfruid"
 
 
 do_install() {
-	  install -d ${D}${bindir}
+    install -d ${D}${bindir}
     install -m 0755 bic-util ${D}${bindir}/bic-util
 }
 
-DEPENDS += "libbic libipmi libipmb libminipack-gpio libfruid"
-RDEPENDS_${PN} += "libbic libipmi libipmb libminipack-gpio libfruid"
+DEPENDS += "libbic libipmi libipmb libfruid"
+RDEPENDS_${PN} += "libbic libipmi libipmb libfruid"
 
 FILES_${PN} = "${bindir}"

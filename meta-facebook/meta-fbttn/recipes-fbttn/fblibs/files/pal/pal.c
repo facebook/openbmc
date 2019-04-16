@@ -2049,16 +2049,85 @@ pal_store_crashdump(uint8_t fru) {
 
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
-
+  uint8_t snr_type = event_data[0];
+  uint8_t *ed = &event_data[3];
   char key[MAX_KEY_LEN] = {0};
+  bool is_err_server_sel = true;
 
-  /* For every SEL event received from the BIC, set the critical LED on */
+  /* For every SEL event received from the BIC except the below, set the critical LED on
+  1. OS_BOOT: (1) Base OS/Hypervisor Installation started
+              (2) Base OS/Hypervisor Installation completed
+  2. CATERR_B: Cause of Time change - <"NTP" | "Host RTL" | "Set SEL time cmd" | "Set SEL time UTC offset cmd" | "Unknown"> - 
+               <"First" | "Second"> Time
+  3. ME_POWER_STATE: RUNNING
+  4. SPS_FW_HEALTH: (1) Flash state information
+                    (2) Direct Flash update
+                    (3) Auto-configuration finished
+                    (4) CPU Debug Capability Disabled
+  5. PWR_THRESH_EVT: Limit Not Exceeded
+  6. HPR_WARNING: (1) Infinite Time
+                  (2) <Time> minutes
+  */
   switch(fru) {
     case FRU_SLOT1:
+      switch (snr_type) {
+        case OS_BOOT:
+          switch (ed[0] & 0xF) {
+            case 0x07: // Base OS/Hypervisor Installation started
+            case 0x08: // Base OS/Hypervisor Installation completed
+              is_err_server_sel = false;
+              break;
+          }
+          break;
+      }
+
       switch(snr_num) {
         case CATERR_B:
           pal_store_crashdump(fru);
-        }
+          break;
+
+        case SYSTEM_EVENT:
+          if (ed[0] == 0xE5) {
+            /* Cause of Time change - <"NTP" | "Host RTL" | "Set SEL time cmd" | "Set SEL time UTC offset cmd" | "Unknown"> - 
+            <"First" | "Second"> Time */
+            is_err_server_sel = false;
+          }
+          break;
+
+        case ME_POWER_STATE:
+          switch (ed[0]) {
+            case 0:  // RUNNING
+              is_err_server_sel = false;
+              break;
+          }
+          break;
+
+        case SPS_FW_HEALTH:
+          if ((ed[0] & 0x0F) == 0x00) {
+            switch (ed[1]) {
+              case 0x03:  // Flash state information
+              case 0x06:  // Direct Flash update
+              case 0x0F:  // Auto-configuration finished
+              case 0x12:  // CPU Debug Capability Disabled
+                is_err_server_sel = false;
+                break;
+            }
+          }
+          break;
+
+        case PWR_THRESH_EVT:
+          if (ed[0]  == 0x00) {  // Limit Not Exceeded
+            is_err_server_sel = false;
+          }
+          break;
+
+        case HPR_WARNING:
+          if (ed[2]  == 0x01) {  // "Infinite Time" or "<Time> minutes"
+            is_err_server_sel = false;
+          }
+          break;
+      }
+
       sprintf(key, "slot%d_sel_error", fru);
       break;
 
@@ -2078,8 +2147,13 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       return -1;
   }
 
-  /* Write the value "0" which means FRU_STATUS_BAD */
-  return pal_set_key_value(key, "0");
+  /* Write the value "0" which means FRU_STATUS_BAD.
+     If this server SEL is non-error SEL, skip setting the error code for the server */
+  if (is_err_server_sel == true) {
+    return pal_set_key_value(key, "0");
+  } else {
+    return 0;
+  }
 }
 
 int

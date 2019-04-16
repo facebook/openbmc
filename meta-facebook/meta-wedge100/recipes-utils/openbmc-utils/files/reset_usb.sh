@@ -20,18 +20,12 @@
 
 . /usr/local/bin/openbmc-utils.sh
 
-function reset_to_mux
-{
-  local num=0 val=$1
-  while [ $num -lt 4 ]; do
-    CMD="${SYSCPLD_SYSFS_DIR}/i2c_mux${num}_rst_n"
-    echo $val > $CMD
-    (( num++ ))
-  done
-}
+echo -n "Reset USB Switch ... "
 
-echo -n "Reset QSFP i2c-mux ... "
-reset_to_mux 0                  # write 0 to put mux into reset
-usleep 50000
-reset_to_mux 1                  # write 1 to bring mux out of reset
+file="${SYSCPLD_SYSFS_DIR}/usb_hub_rst_n"
+
+echo 0 > $file                  # write 0 to put hub into reset
+sleep 1
+echo 1 > $file                  # write 1 to bring hub out of reset
+
 echo "Done"

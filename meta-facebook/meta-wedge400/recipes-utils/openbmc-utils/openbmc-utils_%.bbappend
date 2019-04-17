@@ -25,12 +25,26 @@ SRC_URI += "file://disable_watchdog.sh \
             file://setup_i2c.sh \
             file://setup_mgmt.sh \
             file://setup_pcie_repeater.sh \
+            file://board-utils.sh \
+            file://cpld_ver.sh \
+            file://reset_brcm.sh \
+            file://set_sled.sh \
+            file://sol.sh \
+            file://us_console.sh \
+            file://wedge_us_mac.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     setup_mgmt.sh \
     setup_pcie_repeater.sh \
+    board-utils.sh \
+    cpld_ver.sh \
+    reset_brcm.sh \
+    set_sled.sh \
+    sol.sh \
+    us_console.sh \
+    wedge_us_mac.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

@@ -1791,7 +1791,7 @@ fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value, uint8_t status, 
         return ret;
       }
 
-      if (strncmp(cvalue, sizeof(cvalue), "NA") == 0) {
+      if (strncmp(cvalue, "NA", sizeof(cvalue)) == 0) {
         return READING_NA;
       }
 

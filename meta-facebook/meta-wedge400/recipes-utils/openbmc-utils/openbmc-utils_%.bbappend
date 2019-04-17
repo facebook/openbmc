@@ -34,6 +34,10 @@ SRC_URI += "file://disable_watchdog.sh \
             file://wedge_us_mac.sh \
             file://power-on.sh \
             file://wedge_power.sh \
+            file://fcmcpld_update.sh \
+            file://pwrcpld_update.sh \
+            file://scmcpld_update.sh \
+            file://smbcpld_update.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -48,6 +52,10 @@ OPENBMC_UTILS_FILES += " \
     us_console.sh \
     wedge_us_mac.sh \
     wedge_power.sh \
+    fcmcpld_update.sh \
+    pwrcpld_update.sh \
+    scmcpld_update.sh \
+    smbcpld_update.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

@@ -32,6 +32,8 @@ SRC_URI += "file://disable_watchdog.sh \
             file://sol.sh \
             file://us_console.sh \
             file://wedge_us_mac.sh \
+            file://power-on.sh \
+            file://wedge_power.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -45,6 +47,7 @@ OPENBMC_UTILS_FILES += " \
     sol.sh \
     us_console.sh \
     wedge_us_mac.sh \
+    wedge_power.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -63,6 +66,9 @@ do_install_board() {
     update-rc.d -r ${D} mount_data0.sh start 03 S .
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
+
+    install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+    update-rc.d -r ${D} power-on.sh start 85 S .
 
     # the script to setup EMMC
     install -m 0755 ${WORKDIR}/setup_emmc.sh ${D}${sysconfdir}/init.d/setup_emmc.sh

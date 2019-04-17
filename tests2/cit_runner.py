@@ -28,6 +28,17 @@ class RunTest:
 
 
 class Tests:
+    # For python unittest the way discovery works is that common imported tests
+    # are imported but we dont run them and rely on platform to drive tests.
+    # By default all tests in base classes cannot be run , hence "common"
+    IGNORE_TEST_PATTERN_MAP = {
+        "default": ["common"],
+        "yamp": [
+            "common",
+            "minipack",
+        ],  # So yamp can import minipack tests and run them only one time
+    }
+
     def __init__(self, platform, start_dir=BMC_START_DIR):
         self.platform = platform
         self.tests_set = []
@@ -38,13 +49,23 @@ class Tests:
         suite = unittest.defaultTestLoader.discover(self.start_dir)
         return suite
 
+    def filter_based_on_pattern(self, test_string):
+        if self.platform in self.IGNORE_TEST_PATTERN_MAP.keys():
+            ignore_list = self.IGNORE_TEST_PATTERN_MAP[self.platform]
+        else:
+            ignore_list = self.IGNORE_TEST_PATTERN_MAP["default"]
+
+        for item in ignore_list:
+            if item in test_string:
+                return ""
+        return test_string
+
     def get_tests(self, suite):
         if hasattr(suite, "__iter__"):
             for item in suite:
                 self.get_tests(item)
         else:
-            if "common" not in str(suite):
-                self.tests_set.append(str(suite))
+            self.tests_set.append(self.filter_based_on_pattern(str(suite)))
         return self.tests_set
 
     def format_into_test_path(self, testitem):
@@ -63,6 +84,8 @@ class Tests:
         'tests.wedge100.test_eeprom.EepromTest.test_odm_pcb'
         """
         for testitem in self.get_tests(self.discover_tests()):
+            if not testitem:
+                continue
             prefix = "tests." + self.platform + "."
             self.formatted_tests_set.append(
                 prefix + self.format_into_test_path(testitem)
@@ -90,6 +113,7 @@ def arg_parser():
             "yosemite",
             "lightning",
             "fbttn",
+            "yamp",
         ],
     )
     parser.add_argument(

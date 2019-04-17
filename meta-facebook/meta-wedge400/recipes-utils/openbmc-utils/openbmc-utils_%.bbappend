@@ -38,6 +38,7 @@ SRC_URI += "file://disable_watchdog.sh \
             file://pwrcpld_update.sh \
             file://scmcpld_update.sh \
             file://smbcpld_update.sh \
+            file://spi_util.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -56,6 +57,7 @@ OPENBMC_UTILS_FILES += " \
     pwrcpld_update.sh \
     scmcpld_update.sh \
     smbcpld_update.sh \
+    spi_util.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

@@ -77,7 +77,6 @@ def arg_parser():
     parser.add_argument('--platform',
                         help="Run all tests in platform by platform name",
                         choices=['wedge', 'wedge100', 'galaxy100', 'cmm', 'minipack', 'fbtp', 'fby2', 'yosemite', 'lightning', 'fbttn'])
-
     parser.add_argument('--run-test',
                         help="Path to run a single test. Example: \
                         tests.wedge100.test_eeprom.EepromTest.test_odm_pcb")

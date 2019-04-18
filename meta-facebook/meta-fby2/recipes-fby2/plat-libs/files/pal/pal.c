@@ -1167,7 +1167,7 @@ pal_baseboard_clock_control(uint8_t slot_id, char *ctrl) {
       return -1;
   }
 
-  if (rev < SPB_REV_PVT) {
+  if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
     if (write_device(v1path, ctrl) || write_device(v2path, ctrl))
       return -1;
   }

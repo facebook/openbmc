@@ -97,13 +97,41 @@ config_adc 13    0  1000 0
 config_adc 14    0  1000 0
 config_adc 15    0  1000 0
 
-# ADM1278 Configuration
-# Enable GPIOY3: BoardId(Yosemite V2 or Yosemite V2.50)
+# Barseboard Yosemite V2 & Yosemite V2.50
+# Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0]
+# Test board PoC       1       0         0         0
+# Test board EVT       1       0         0         1
+# YV2 PoC              0       0         0         0
+# YV2 EVT              0       0         0         1
+# YV2 DVT              0       0         1         0
+# YV2 PVT              0       0         1         1
+# YV2.50               1       1         X         X
+
+# Enable GPIOY3: BoardId (Yosemite V2 or Yosemite V2.50)
 devmem_clear_bit $(scu_addr a4) 11
 devmem_clear_bit $(scu_addr 94) 11
 gpio_export Y3
 
-spb_type=`cat /sys/class/gpio/gpio195/value`
+# Set up to read the board revision pins, GPIOY0, Y1, Y2
+devmem_clear_scu70_bit 19
+devmem_clear_bit $(scu_addr a4) 8
+devmem_clear_bit $(scu_addr a4) 9
+devmem_clear_bit $(scu_addr a4) 10
+
+gpio_export Y0
+gpio_export Y1
+gpio_export Y2
+
+board_id=`cat /sys/class/gpio/gpio195/value`
+rev_id2=`cat /sys/class/gpio/gpio194/value`
+
+if [[ $board_id == "1" && $rev_id2 == "1" ]]; then
+   spb_type=1
+else
+   spb_type=0
+fi
+
+# ADM1278 Configuration
 if [ $spb_type == "1" ]; then
    # Yosemite V2.50 Platform
    # Clear PEAK_PIN & PEAK_IOUT register

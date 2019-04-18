@@ -33,6 +33,8 @@
 #include <openbmc/kv.h>
 #include "fby2_common.h"
 
+#define BIT(value, index) ((value >> index) & 1)
+
 #define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
 #define CRASHDUMP_PID       "/var/run/autodump%d.pid"
@@ -44,6 +46,7 @@
 #define SBOOT_CPLDDUMP_PID       "/var/run/sbootcplddump%d.pid"
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
+#define SPB_REV_FILE "/tmp/spb_rev"
 
 #define PTHREAD_SET_CANCEL_ENABLE() do {                                          \
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {                 \
@@ -218,14 +221,48 @@ read_device(const char *device, int *value) {
   }
 }
 
+static uint8_t
+_get_spb_rev(void) {
+  int rev;
+
+  if (read_device(SPB_REV_FILE, &rev)) {
+    printf("Get spb revision failed\n");
+    return -1;
+  }
+
+  return rev;
+}
+
+/* Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0]
+   Test board PoC       1       0         0         0
+   Test board EVT       1       0         0         1
+   YV2 PoC              0       0         0         0
+   YV2 EVT              0       0         0         1
+   YV2 DVT              0       0         1         0
+   YV2 PVT              0       0         1         1
+   YV2.50               1       1         X         X
+*/
 int
 fby2_common_get_spb_type() {
    int spb_type;
+   int board_id;
+   uint8_t rev;
    char path[64] = {0};
 
+   memset(path, 0, sizeof(path));
+   // Board_ID
    sprintf(path, GPIO_VAL, GPIO_BOARD_ID);
-   if (read_device(path, &spb_type)) {
+   if (read_device(path, &board_id)) {
       return -1;
+   }
+
+   // Rev_ID
+   rev = _get_spb_rev();
+
+   if (1 == board_id && BIT(rev, 2)) {
+     spb_type = TYPE_SPB_YV250;
+   } else {
+     spb_type = TYPE_SPB_YV2;
    }
 
    return spb_type;

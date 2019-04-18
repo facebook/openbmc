@@ -43,16 +43,6 @@
 
 echo "Set up GPIO pins....."
 
-# Set up to read the board revision pins, Y0, Y1, Y2
-devmem_clear_scu70_bit 19
-devmem_clear_bit $(scu_addr a4) 8
-devmem_clear_bit $(scu_addr a4) 9
-devmem_clear_bit $(scu_addr a4) 10
-
-gpio_export Y0
-gpio_export Y1
-gpio_export Y2
-
 # SLOT1_PRSNT_N, GPIOAA0 (208)
 # GPIOAA0(208): SCU90[31], SCUA4[24] shall be 0
 devmem_clear_bit $(scu_addr 90) 31

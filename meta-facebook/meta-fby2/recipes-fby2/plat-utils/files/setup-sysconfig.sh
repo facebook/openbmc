@@ -5,7 +5,7 @@ echo -n "Setup System Configuration .."
 
 . /usr/local/fbpackages/utils/ast-functions
 
-SPB_REV=$(($(($(($(gpio_get_val Y2) + $(gpio_get_val Y1))) * 2)) + $(gpio_get_val Y0)))
+SPB_REV=$(($(($(($(gpio_get_val Y2) * 4)) + $(($(gpio_get_val Y1) * 2)))) + $(gpio_get_val Y0)))
 echo $SPB_REV > /tmp/spb_rev
 
 if [ $(is_server_prsnt 2) == "1" ] ; then

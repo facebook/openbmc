@@ -52,7 +52,13 @@ echo 95 > $PWM_DIR/pwm_type_m_unit
 # Fan 3: PWM 0, Tacho3
 
 fan_num=0
-spb_type=`cat /sys/class/gpio/gpio195/value`
+board_id=`cat /sys/class/gpio/gpio195/value`
+rev_id2=`cat /sys/class/gpio/gpio194/value`
+if [[ $board_id == "1" && $rev_id2 == "1" ]]; then
+   spb_type=1
+else
+   spb_type=0
+fi
 fan_type=`cat /sys/class/gpio/gpio54/value`
 if [[ $spb_type == "1" && $fan_type == "0" ]]; then
     # 0 base

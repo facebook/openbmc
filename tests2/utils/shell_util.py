@@ -20,6 +20,12 @@
 
 import subprocess
 
+def run_cmd(cmd=None):
+    if not cmd:
+        raise Exception("cmd not set")
+    info = subprocess.check_output(cmd).decode('utf-8')
+    return info
+
 def run_shell_cmd(cmd=None):
     if not cmd:
         raise Exception("cmd not set")

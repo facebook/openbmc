@@ -4,8 +4,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <openbmc/pal.h>
-#include <openbmc/sdr.h>
-#include <openbmc/gpio.h>
 #include <openbmc/obmc-sensor.h>
 #include <facebook/bic.h>
 

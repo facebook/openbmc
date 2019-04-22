@@ -57,6 +57,9 @@ if [ $(get_slot_type $SLOT_NUM) == "1" ] || [ $(get_slot_type $SLOT_NUM) == "2" 
 elif [ $(get_slot_type $SLOT_NUM) == "3" ]; then
   echo "Should not execute sol-util since $SLOT is empty"
   exit 1
+elif [ $(get_slot_type $SLOT_NUM) == "4" ]; then
+  # enable UART buffer via BIC GPIO
+  /usr/bin/bic-util $SLOT 0xe0 0x3b 0x15 0xa0 0x00 0x01
 fi
 
 if [ $# -gt 1 ]; then

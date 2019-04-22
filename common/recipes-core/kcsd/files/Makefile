@@ -4,7 +4,7 @@ all: kcsd
 CFLAGS += -Wall -Werror
 
 kcsd: kcsd.o
-	$(CC) $(CFLAGS) -pthread -lrt -lipmi -lgpio -std=gnu99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lrt -lipmi -lgpio-ctrl -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -43,8 +43,8 @@ ACTION="$1"
 case "$ACTION" in
   start)
     echo -n "Starting $DESC: "
-    $DAEMON 2 145 > /dev/null 2>&1 &
-    $DAEMON 1 145 > /dev/null 2>&1 &
+    $DAEMON 2 BMC_READY_N > /dev/null 2>&1 &
+    $DAEMON 1 BMC_READY_N > /dev/null 2>&1 &
     echo "$NAME."
     ;;
   stop)
@@ -56,8 +56,8 @@ case "$ACTION" in
     echo -n "Restarting $DESC: "
     start-stop-daemon --stop --quiet --exec $DAEMON
     sleep 1
-    $DAEMON 2 145 > /dev/null 2>&1 &
-    $DAEMON 1 145 > /dev/null 2>&1 &
+    $DAEMON 2 BMC_READY_N > /dev/null 2>&1 &
+    $DAEMON 1 BMC_READY_N > /dev/null 2>&1 &
     echo "$NAME."
     ;;
   status)

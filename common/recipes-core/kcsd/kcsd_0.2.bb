@@ -13,7 +13,7 @@ SRC_URI = "file://Makefile \
           "
 
 S = "${WORKDIR}"
-DEPENDS += "libipmi libgpio libipmb update-rc.d-native"
+DEPENDS += "libipmi libgpio-ctrl libipmb update-rc.d-native"
 
 binfiles = "kcsd"
 
@@ -36,7 +36,7 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/kcsd ${prefix}/local/bin ${sysconfdir} "
 
-RDEPENDS_${PN} = "libipmi libgpio"
+RDEPENDS_${PN} = "libipmi libgpio-ctrl"
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

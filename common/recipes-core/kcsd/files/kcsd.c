@@ -59,15 +59,15 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <signal.h>
-#include <openbmc/gpio.h>
+#include <openbmc/libgpio.h>
 #include "openbmc/ipmi.h"
 #include <time.h>
 
 //#define DEBUG
-
+#define DEFAULT_BMC_READY_GPIO_SHADOW  "BMC_READY_N"
 uint8_t req_buf[256];
 uint8_t res_buf[300];
-uint8_t fm_bmc_ready_n = 145;
+gpio_desc_t *bmc_ready_n = NULL;
 int kcs_fd;
 
 #define TOUCH(path) \
@@ -152,14 +152,11 @@ bool is_add_sel_req(uint8_t *buff)
 
 void set_bmc_ready(bool ready)
 {
-  gpio_st gpio;
-  gpio_open(&gpio, fm_bmc_ready_n);
   /* Active low */
   if (ready)
-    gpio_write(&gpio, GPIO_VALUE_LOW);
+    gpio_set_value(bmc_ready_n, GPIO_VALUE_LOW);
   else
-    gpio_write(&gpio, GPIO_VALUE_HIGH);
-  gpio_close(&gpio);
+    gpio_set_value(bmc_ready_n, GPIO_VALUE_HIGH);
 }
 
 void *handle_add_sel(void *unused)
@@ -303,13 +300,20 @@ main(int argc, char * const argv[]) {
   pthread_t add_sel_tid;
   char cmd[256], device[256];
   uint8_t kcs_channel_num = 2;
+  const char *bmc_ready_n_shadow;
 
   daemon(1, 0);
   openlog("kcsd", LOG_CONS, LOG_DAEMON);
 
   if (argc > 2) {
     kcs_channel_num = (uint8_t)strtoul(argv[1], NULL, 0);
-    fm_bmc_ready_n = (uint8_t)strtoul(argv[2], NULL, 0);
+    bmc_ready_n_shadow = argv[2];
+  } else {
+    bmc_ready_n_shadow = DEFAULT_BMC_READY_GPIO_SHADOW;
+  }
+  bmc_ready_n = gpio_open_by_shadow(bmc_ready_n_shadow);
+  if (!bmc_ready_n) {
+    syslog(LOG_WARNING, "BMC Ready PIN not open");
   }
   sprintf(cmd, "echo 1 > /sys/devices/platform/ast-kcs.%d/enable", kcs_channel_num);
   system(cmd);

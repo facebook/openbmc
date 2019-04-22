@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+#
+# Copyright 2019-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+from common.base_rest_endpoint_test import FbossRestEndpointTest
+
+class RestEndpointTest(FbossRestEndpointTest):
+    '''
+    Input data to the test needs to be a list like below.
+    User can choose to sends these lists from jsons too.
+    '''
+
+    # /api/sys
+    def set_endpoint_sys_attributes(self):
+        self.endpoint_sys_attrb = [
+            "psu_update",
+            "gpios",
+            "mb",
+            "fc_present",
+            "modbus_registers",
+            "server",
+            "slotid",
+            "mTerm_status",
+            "sensors",
+            "bmc"
+        ]
+
+    # /api/sys/sensors
+    def set_endpoint_sensors_attributes(self):
+        self.endpoint_sensors_attrb = [
+             "ast_pwm-isa-0000",
+             "ncp4200-i2c-1-60",
+             "ncp4200-i2c-2-60",
+             "tmp75-i2c-3-48",
+             "tmp75-i2c-3-49",
+             "tmp75-i2c-3-4a",
+             "fb_panther_plus-i2c-4-40",
+             "max127-i2c-6-28",
+             "pfe1100-i2c-7-59",
+             "pfe1100-i2c-7-5a",
+             "ncp4200-i2c-8-60",
+             "ast_adc-isa-0000",
+             "adm1278-i2c-12-10"
+        ]
+
+    # "/api/sys/mb"
+    def set_endpoint_mb_attributes(self):
+        self.endpoint_mb_attrb = self.MB_ATTRIBUTES
+
+    # "/api/sys/server"
+    def set_endpoint_server_attributes(self):
+        self.endpoint_server_attrb = [
+            "BIC_ok",
+            "status"
+        ]
+
+    # "/api/sys/mb/fruid"
+    def set_endpoint_fruid_attributes(self):
+        self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES
+
+    # "/api/sys/bmc"
+    def set_endpoint_bmc_attributes(self):
+        self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
+
+    # "/api/sys/slotid"
+    def set_endpoint_slotid_attributes(self):
+        self.endpoint_slotid_attrb = [
+            "16"
+        ]

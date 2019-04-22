@@ -1,5 +1,5 @@
 {
-  "version": "fbgpv2-evt-r02",
+  "version": "fbgpv2-evt-r03",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -18,7 +18,7 @@
         "type" : "power_status"
       }
     },
-    "m2(.*)temp": {
+    "temp_dev(.*)": {
       "attribute": {
         "type" : "power_status"
       }

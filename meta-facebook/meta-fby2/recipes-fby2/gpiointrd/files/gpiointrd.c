@@ -121,21 +121,6 @@ slot_kv_st slot_kv_list[] = {
   {"fru%d_restart_cause",      "3"},
 };
 
-static char *gpv2_m2_list[MAX_NUM_DEVS] = {
-  "m2a",
-  "m2b",
-  "m2c",
-  "m2d",
-  "m2e",
-  "m2f",
-  "m2g",
-  "m2h",
-  "m2i",
-  "m2j",
-  "m2k",
-  "m2l",
-};
-
 // Thread for delay event
 static void *
 delay_log(void *arg)
@@ -353,7 +338,7 @@ fru_cache_dump(void *arg) {
         }
       }
 
-      sprintf(key, "slot%u_%s_pres", fru, gpv2_m2_list[dev_id-1]);
+      sprintf(key, "slot%u_dev%u_pres", fru, dev_id-1);
       sprintf(buf, "%u", status);
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
       if (kv_set(key, buf, 0, 0) < 0) {

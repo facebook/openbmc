@@ -6867,54 +6867,54 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
           // VR
           case GPV2_SENSOR_3V3_VR_Vol:
           case GPV2_SENSOR_0V92_VR_Vol:
-          //M.2 A
-          case GPV2_SENSOR_M2A_INA231_VOL:
-          case GPV2_SENSOR_M2A_FPGA_VOL:
-          case GPV2_SENSOR_M2A_DDR_VOL:
-          //M.2 B
-          case GPV2_SENSOR_M2B_INA231_VOL:
-          case GPV2_SENSOR_M2B_FPGA_VOL:
-          case GPV2_SENSOR_M2B_DDR_VOL:
-          //M.2 C
-          case GPV2_SENSOR_M2C_INA231_VOL:
-          case GPV2_SENSOR_M2C_FPGA_VOL:
-          case GPV2_SENSOR_M2C_DDR_VOL:
-          //M.2 D
-          case GPV2_SENSOR_M2D_INA231_VOL:
-          case GPV2_SENSOR_M2D_FPGA_VOL:
-          case GPV2_SENSOR_M2D_DDR_VOL:
-          //M.2 E
-          case GPV2_SENSOR_M2E_INA231_VOL:
-          case GPV2_SENSOR_M2E_FPGA_VOL:
-          case GPV2_SENSOR_M2E_DDR_VOL:
-          //M.2 F
-          case GPV2_SENSOR_M2F_INA231_VOL:
-          case GPV2_SENSOR_M2F_FPGA_VOL:
-          case GPV2_SENSOR_M2F_DDR_VOL:
-          //M.2 G
-          case GPV2_SENSOR_M2G_INA231_VOL:
-          case GPV2_SENSOR_M2G_FPGA_VOL:
-          case GPV2_SENSOR_M2G_DDR_VOL:
-          //M.2 H
-          case GPV2_SENSOR_M2H_INA231_VOL:
-          case GPV2_SENSOR_M2H_FPGA_VOL:
-          case GPV2_SENSOR_M2H_DDR_VOL:
-          //M.2 I
-          case GPV2_SENSOR_M2I_INA231_VOL:
-          case GPV2_SENSOR_M2I_FPGA_VOL:
-          case GPV2_SENSOR_M2I_DDR_VOL:
-          //M.2 J
-          case GPV2_SENSOR_M2J_INA231_VOL:
-          case GPV2_SENSOR_M2J_FPGA_VOL:
-          case GPV2_SENSOR_M2J_DDR_VOL:
-          //M.2 K
-          case GPV2_SENSOR_M2K_INA231_VOL:
-          case GPV2_SENSOR_M2K_FPGA_VOL:
-          case GPV2_SENSOR_M2K_DDR_VOL:
-          //M.2 L
-          case GPV2_SENSOR_M2L_INA231_VOL:
-          case GPV2_SENSOR_M2L_FPGA_VOL:
-          case GPV2_SENSOR_M2L_DDR_VOL:
+          //M.2 0
+          case GPV2_SENSOR_DEV0_INA231_VOL:
+          case GPV2_SENSOR_DEV0_FPGA_VOL:
+          case GPV2_SENSOR_DEV0_DDR_VOL:
+          //M.2 1
+          case GPV2_SENSOR_DEV1_INA231_VOL:
+          case GPV2_SENSOR_DEV1_FPGA_VOL:
+          case GPV2_SENSOR_DEV1_DDR_VOL:
+          //M.2 2
+          case GPV2_SENSOR_DEV2_INA231_VOL:
+          case GPV2_SENSOR_DEV2_FPGA_VOL:
+          case GPV2_SENSOR_DEV2_DDR_VOL:
+          //M.2 3
+          case GPV2_SENSOR_DEV3_INA231_VOL:
+          case GPV2_SENSOR_DEV3_FPGA_VOL:
+          case GPV2_SENSOR_DEV3_DDR_VOL:
+          //M.2 4
+          case GPV2_SENSOR_DEV4_INA231_VOL:
+          case GPV2_SENSOR_DEV4_FPGA_VOL:
+          case GPV2_SENSOR_DEV4_DDR_VOL:
+          //M.2 5
+          case GPV2_SENSOR_DEV5_INA231_VOL:
+          case GPV2_SENSOR_DEV5_FPGA_VOL:
+          case GPV2_SENSOR_DEV5_DDR_VOL:
+          //M.2 6
+          case GPV2_SENSOR_DEV6_INA231_VOL:
+          case GPV2_SENSOR_DEV6_FPGA_VOL:
+          case GPV2_SENSOR_DEV6_DDR_VOL:
+          //M.2 7
+          case GPV2_SENSOR_DEV7_INA231_VOL:
+          case GPV2_SENSOR_DEV7_FPGA_VOL:
+          case GPV2_SENSOR_DEV7_DDR_VOL:
+          //M.2 8
+          case GPV2_SENSOR_DEV8_INA231_VOL:
+          case GPV2_SENSOR_DEV8_FPGA_VOL:
+          case GPV2_SENSOR_DEV8_DDR_VOL:
+          //M.2 9
+          case GPV2_SENSOR_DEV9_INA231_VOL:
+          case GPV2_SENSOR_DEV9_FPGA_VOL:
+          case GPV2_SENSOR_DEV9_DDR_VOL:
+          //M.2 10
+          case GPV2_SENSOR_DEV10_INA231_VOL:
+          case GPV2_SENSOR_DEV10_FPGA_VOL:
+          case GPV2_SENSOR_DEV10_DDR_VOL:
+          //M.2 11
+          case GPV2_SENSOR_DEV11_INA231_VOL:
+          case GPV2_SENSOR_DEV11_FPGA_VOL:
+          case GPV2_SENSOR_DEV11_DDR_VOL:
             snr_desc = get_sensor_desc(fru, snr_num);
             sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
             break;
@@ -7145,54 +7145,54 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
           // VR
           case GPV2_SENSOR_3V3_VR_Vol:
           case GPV2_SENSOR_0V92_VR_Vol:
-          //M.2 A
-          case GPV2_SENSOR_M2A_INA231_VOL:
-          case GPV2_SENSOR_M2A_FPGA_VOL:
-          case GPV2_SENSOR_M2A_DDR_VOL:
-          //M.2 B
-          case GPV2_SENSOR_M2B_INA231_VOL:
-          case GPV2_SENSOR_M2B_FPGA_VOL:
-          case GPV2_SENSOR_M2B_DDR_VOL:
-          //M.2 C
-          case GPV2_SENSOR_M2C_INA231_VOL:
-          case GPV2_SENSOR_M2C_FPGA_VOL:
-          case GPV2_SENSOR_M2C_DDR_VOL:
-          //M.2 D
-          case GPV2_SENSOR_M2D_INA231_VOL:
-          case GPV2_SENSOR_M2D_FPGA_VOL:
-          case GPV2_SENSOR_M2D_DDR_VOL:
-          //M.2 E
-          case GPV2_SENSOR_M2E_INA231_VOL:
-          case GPV2_SENSOR_M2E_FPGA_VOL:
-          case GPV2_SENSOR_M2E_DDR_VOL:
-          //M.2 F
-          case GPV2_SENSOR_M2F_INA231_VOL:
-          case GPV2_SENSOR_M2F_FPGA_VOL:
-          case GPV2_SENSOR_M2F_DDR_VOL:
-          //M.2 G
-          case GPV2_SENSOR_M2G_INA231_VOL:
-          case GPV2_SENSOR_M2G_FPGA_VOL:
-          case GPV2_SENSOR_M2G_DDR_VOL:
-          //M.2 H
-          case GPV2_SENSOR_M2H_INA231_VOL:
-          case GPV2_SENSOR_M2H_FPGA_VOL:
-          case GPV2_SENSOR_M2H_DDR_VOL:
-          //M.2 I
-          case GPV2_SENSOR_M2I_INA231_VOL:
-          case GPV2_SENSOR_M2I_FPGA_VOL:
-          case GPV2_SENSOR_M2I_DDR_VOL:
-          //M.2 J
-          case GPV2_SENSOR_M2J_INA231_VOL:
-          case GPV2_SENSOR_M2J_FPGA_VOL:
-          case GPV2_SENSOR_M2J_DDR_VOL:
-          //M.2 K
-          case GPV2_SENSOR_M2K_INA231_VOL:
-          case GPV2_SENSOR_M2K_FPGA_VOL:
-          case GPV2_SENSOR_M2K_DDR_VOL:
-          //M.2 L
-          case GPV2_SENSOR_M2L_INA231_VOL:
-          case GPV2_SENSOR_M2L_FPGA_VOL:
-          case GPV2_SENSOR_M2L_DDR_VOL:
+          //M.2 0
+          case GPV2_SENSOR_DEV0_INA231_VOL:
+          case GPV2_SENSOR_DEV0_FPGA_VOL:
+          case GPV2_SENSOR_DEV0_DDR_VOL:
+          //M.2 1
+          case GPV2_SENSOR_DEV1_INA231_VOL:
+          case GPV2_SENSOR_DEV1_FPGA_VOL:
+          case GPV2_SENSOR_DEV1_DDR_VOL:
+          //M.2 2
+          case GPV2_SENSOR_DEV2_INA231_VOL:
+          case GPV2_SENSOR_DEV2_FPGA_VOL:
+          case GPV2_SENSOR_DEV2_DDR_VOL:
+          //M.2 3
+          case GPV2_SENSOR_DEV3_INA231_VOL:
+          case GPV2_SENSOR_DEV3_FPGA_VOL:
+          case GPV2_SENSOR_DEV3_DDR_VOL:
+          //M.2 4
+          case GPV2_SENSOR_DEV4_INA231_VOL:
+          case GPV2_SENSOR_DEV4_FPGA_VOL:
+          case GPV2_SENSOR_DEV4_DDR_VOL:
+          //M.2 5
+          case GPV2_SENSOR_DEV5_INA231_VOL:
+          case GPV2_SENSOR_DEV5_FPGA_VOL:
+          case GPV2_SENSOR_DEV5_DDR_VOL:
+          //M.2 6
+          case GPV2_SENSOR_DEV6_INA231_VOL:
+          case GPV2_SENSOR_DEV6_FPGA_VOL:
+          case GPV2_SENSOR_DEV6_DDR_VOL:
+          //M.2 7
+          case GPV2_SENSOR_DEV7_INA231_VOL:
+          case GPV2_SENSOR_DEV7_FPGA_VOL:
+          case GPV2_SENSOR_DEV7_DDR_VOL:
+          //M.2 8
+          case GPV2_SENSOR_DEV8_INA231_VOL:
+          case GPV2_SENSOR_DEV8_FPGA_VOL:
+          case GPV2_SENSOR_DEV8_DDR_VOL:
+          //M.2 9
+          case GPV2_SENSOR_DEV9_INA231_VOL:
+          case GPV2_SENSOR_DEV9_FPGA_VOL:
+          case GPV2_SENSOR_DEV9_DDR_VOL:
+          //M.2 10
+          case GPV2_SENSOR_DEV10_INA231_VOL:
+          case GPV2_SENSOR_DEV10_FPGA_VOL:
+          case GPV2_SENSOR_DEV10_DDR_VOL:
+          //M.2 11
+          case GPV2_SENSOR_DEV11_INA231_VOL:
+          case GPV2_SENSOR_DEV11_FPGA_VOL:
+          case GPV2_SENSOR_DEV11_DDR_VOL:
             snr_desc = get_sensor_desc(fru, snr_num);
             sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
             break;
@@ -9466,8 +9466,8 @@ pal_set_m2_prsnt(uint8_t slot_id, uint8_t dev_id, uint8_t present) {
     char str[MAX_VALUE_LEN] = {0};
     if (dev_id < 1 || dev_id > MAX_NUM_DEVS)
       return -1;
-    //slot: 1 dev_id: 1 -> slot1_m2a_pres
-    snprintf(key,MAX_KEY_LEN, "slot%u_m2%c_pres", slot_id, 'a'+dev_id-1);
+    //slot: 1 dev_id: 1 -> slot1_dev0_pres
+    snprintf(key,MAX_KEY_LEN, "slot%u_dev%u_pres", slot_id, dev_id-1);
     snprintf(str,MAX_VALUE_LEN, "%d",present);
     syslog(LOG_WARNING, "%s: set %s to %s.", __func__, key, str);
     return kv_set(key, str, 0, 0);
@@ -9488,6 +9488,7 @@ bool pal_is_m2_prsnt(char *slot_name, char *sensor_name)
   char value[MAX_VALUE_LEN] = {0};
   uint8_t m2_present_status;
   uint8_t read_byte = 1;
+  int len;
 
   ret = pal_get_fru_id(slot_name, &slot_id);
   if(ret){
@@ -9512,8 +9513,16 @@ bool pal_is_m2_prsnt(char *slot_name, char *sensor_name)
       runoff_id = slot_id + 1;
       break;
     case SLOT_TYPE_GPV2:
-      sprintf(path, "slot%u_xxx_pres", slot_id);
-      memcpy(path+6, sensor_name, 3);
+      len = strlen(sensor_name);
+      if (len == 9) {
+        sprintf(path, "slot%u_xxxx_pres", slot_id);
+        memcpy(path+6, sensor_name+5, 4);
+      } else if (len == 10){
+        sprintf(path, "slot%u_xxxxx_pres", slot_id);
+        memcpy(path+6, sensor_name+5, 5);
+      } else {
+        return false;
+      }
       if (kv_get(path, value, NULL, 0) == 0) {
         if (atoi(value))
           return true;

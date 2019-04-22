@@ -71,8 +71,8 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t reg, int rlen, int 
   int ret = 0;
   uint8_t bus;
   char stype_str[32] = {0};
-  uint8_t wbuf[64] = {0x00};
-  uint8_t rbuf[64] = {0x00};
+  uint8_t wbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
   int i, retry = 2;
   int wlen = 1;
 
@@ -91,6 +91,7 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t reg, int rlen, int 
   // MUX
   ret = bic_master_write_read(slot_id, bus, 0xe2, wbuf, 1, rbuf, 0);
   if (ret != 0) {
+    printf("nvme-util fail to switch mux\n");
     syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
     return ret;
   }
@@ -114,6 +115,11 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t reg, int rlen, int 
   }
 
   if (ret != 0) {
+    if (rlen) {
+      printf("nvme-util fail to read\n");
+    } else {
+      printf("nvme-util fail to write\n");
+    }
     syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
     return ret;
   }
@@ -170,6 +176,7 @@ read_gp_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t reg, int rlen, int a
   device = (slot_id == 1) ? I2C_DEV_GP_1 : I2C_DEV_GP_3;
   ret = fby2_mux_control(device, I2C_GP_MUX_ADDR, channel);
   if (ret != 0) {
+     printf("nvme-util fail to switch mux\n");
      syslog(LOG_DEBUG, "%s: fby2_mux_control failed", __func__);
      return ret;
   }
@@ -201,6 +208,11 @@ read_gp_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t reg, int rlen, int a
   close(fd);
 
   if (ret != 0) {
+    if (rlen) {
+      printf("nvme-util fail to read\n");
+    } else {
+      printf("nvme-util fail to write\n");
+    }
     syslog(LOG_DEBUG, "%s(): i2c_rdwr_msg_transfer failed", __func__);
     return ret;
   }

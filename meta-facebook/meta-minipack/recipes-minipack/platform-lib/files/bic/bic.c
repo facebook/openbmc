@@ -724,18 +724,18 @@ prepare_update_bic(uint8_t slot_id, int ifd, int size) {
   sleep(1);
   printf("Stopped ipmbd for this slot\n");
 
-  /* Restart ipmb daemon with "bicup" for bic update */
+  /* Restart ipmb daemon with "-u|--enable-bic-update" for bic update */
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd 0 1 bicup > /dev/null 2>&1 &");
+  sprintf(cmd, "/usr/local/bin/ipmbd -u 0 1 > /dev/null 2>&1 &");
   system(cmd);
-  printf("start ipmbd bicup for minilake\n");
+  printf("start ipmbd -u for minilake\n");
 
   sleep(2);
 
   /* Enable Bridge-IC update */
   _enable_bic_update(slot_id);
 
-  /* Kill ipmb daemon "bicup" for this slot */
+  /* Kill ipmb daemon "--enable-bic-update" for this slot */
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd 0' |awk '{print $1}' "
                "| xargs kill");

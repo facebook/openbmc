@@ -296,12 +296,6 @@ const char * fruid_field_all_opt[] = {
 };
 
 enum {
-  MODIFY_AREA_CHASSIS,
-  MODIFY_AREA_BOARD,
-  MODIFY_AREA_PRODUCT
-};
-
-enum {
   CPN,
   CSN,
   CCD1,

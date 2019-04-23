@@ -1009,7 +1009,6 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   int target = -1;
   char *tmp_content = NULL;
   int content_len;
-  int modify_area;
   int new_fruid_len;
   uint8_t type_length;
 
@@ -1052,7 +1051,7 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   free(old_eeprom);
 
   if (ret) {
-    printf("Failed to parse FRU!\n", field);
+    printf("Failed to parse FRU!\n");
     return -1;
   } 
 
@@ -1072,19 +1071,16 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
       printf("Chassis Area is invalid!\n");
       return -1;
     }
-    modify_area = MODIFY_AREA_CHASSIS;
   } else if (target <= BCD4) {
     if (fruid.board.flag != 1) {
       printf("Board Area is invalid!\n");
       return -1;
     }
-    modify_area = MODIFY_AREA_BOARD;
   } else {
     if (fruid.product.flag != 1) {
       printf("Product Area is invalid!\n");
       return -1;
     }
-    modify_area = MODIFY_AREA_PRODUCT;
   }
 
   tmp_content = extract_content(content);
@@ -1334,22 +1330,20 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     i += len;
 
   chasis_chksum:
-    if (eeprom[i-1] != NO_MORE_DATA_BYTE)
+    if (eeprom[i - 1] != NO_MORE_DATA_BYTE) {
       eeprom[i++] = NO_MORE_DATA_BYTE;
-    i += (7 - (i%8));
-    if (modify_area != MODIFY_AREA_CHASSIS) {
-      eeprom[start + 1] = fruid.chassis.area_len / FRUID_AREA_LEN_MULTIPLIER;
-      eeprom[i] = fruid.chassis.chksum;
-    } else {
-      fruid.chassis.area_len = i-start+1;
-      eeprom[start + 1] = fruid.chassis.area_len / FRUID_AREA_LEN_MULTIPLIER;
-      ret = calculate_chksum(&eeprom[start], fruid.chassis.area_len);
-      if (ret < 0) {
-        printf("Update chassis checksum fail!\n");
-        goto error_exit;
-      }
+    }
+    i += (7 - (i % 8));
+    fruid.chassis.area_len = i - start + 1;
+    eeprom[start + 1] = fruid.chassis.area_len / FRUID_AREA_LEN_MULTIPLIER;
+    ret = calculate_chksum(&eeprom[start], fruid.chassis.area_len);
+    if (ret < 0) {
+      printf("Update chassis checksum fail!\n");
+      goto error_exit;
     }
     i++;
+  } else {
+    fruid.chassis.area_len = 0;
   }
 
   // board area
@@ -1416,22 +1410,20 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     i += len;
 
   board_chksum:
-    if (eeprom[i-1] != NO_MORE_DATA_BYTE)
+    if (eeprom[i - 1] != NO_MORE_DATA_BYTE) {
       eeprom[i++] = NO_MORE_DATA_BYTE;
-    i += (7 - (i%8));
-    if (modify_area != MODIFY_AREA_BOARD) {
-      eeprom[start + 1] = fruid.board.area_len / FRUID_AREA_LEN_MULTIPLIER;
-      eeprom[i] = fruid.board.chksum;
-    } else {
-      fruid.board.area_len = i-start+1;
-      eeprom[start + 1] = fruid.board.area_len / FRUID_AREA_LEN_MULTIPLIER;
-      ret = calculate_chksum(&eeprom[start], fruid.board.area_len);
-      if (ret < 0) {
-        printf("Update board checksum fail!\n");
-        goto error_exit;
-      }
+    }
+    i += (7 - (i % 8));
+    fruid.board.area_len = i - start + 1;
+    eeprom[start + 1] = fruid.board.area_len / FRUID_AREA_LEN_MULTIPLIER;
+    ret = calculate_chksum(&eeprom[start], fruid.board.area_len);
+    if (ret < 0) {
+      printf("Update board checksum fail!\n");
+      goto error_exit;
     }
     i++;
+  } else {
+    fruid.board.area_len = 0;
   }
 
   // product area
@@ -1505,22 +1497,20 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     i += len;
 
   product_chksum:
-    if (eeprom[i-1] != NO_MORE_DATA_BYTE)
+    if (eeprom[i - 1] != NO_MORE_DATA_BYTE) {
       eeprom[i++] = NO_MORE_DATA_BYTE;
-    i += (7 - (i%8));
-    if (modify_area != MODIFY_AREA_PRODUCT) {
-      eeprom[start + 1] = fruid.product.area_len / FRUID_AREA_LEN_MULTIPLIER;
-      eeprom[i] = fruid.product.chksum;
-    } else {
-      fruid.product.area_len = i-start+1;
-      eeprom[start + 1] = fruid.product.area_len / FRUID_AREA_LEN_MULTIPLIER;
-      ret = calculate_chksum(&eeprom[start], fruid.product.area_len);
-      if (ret < 0) {
-        printf("Update product checksum fail!\n");
-        goto error_exit;
-      }
+    }
+    i += (7 - (i % 8));
+    fruid.product.area_len = i - start + 1;
+    eeprom[start + 1] = fruid.product.area_len / FRUID_AREA_LEN_MULTIPLIER;
+    ret = calculate_chksum(&eeprom[start], fruid.product.area_len);
+    if (ret < 0) {
+      printf("Update product checksum fail!\n");
+      goto error_exit;
     }
     i++;
+  } else {
+    fruid.product.area_len = 0;
   }
 
   // update header

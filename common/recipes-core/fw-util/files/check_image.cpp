@@ -190,7 +190,7 @@ class FITChecker : public Checker {
       if (nodep < 0) {
         return false;
       }
-      return valid_nodes == num_nodes ? true : false;
+      return valid_nodes >= num_nodes ? true : false;
     }
 };
 

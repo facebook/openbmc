@@ -659,11 +659,11 @@ _update_bic_main(uint8_t slot_id, char *path) {
   system("devmem 0x1e78a104 w 0xFFF77304");
   sleep(1);
 
-  // Restart ipmb daemon with "bicup" for bic update
+  // Restart ipmb daemon with "-u|--enable-bic-update" for bic update
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd %d %d bicup > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
+  sprintf(cmd, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
   system(cmd);
-  printf("start ipmbd bicup for this slot %x..\n",slot_id);
+  printf("start ipmbd -u for this slot %x..\n",slot_id);
   sleep(1);
 
   // Enable Bridge-IC update
@@ -671,7 +671,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
       _enable_bic_update(slot_id);
   }
 
-  // Kill ipmb daemon "bicup" for this slot
+  // Kill ipmb daemon "--enable-bic-update" for this slot
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
   system(cmd);

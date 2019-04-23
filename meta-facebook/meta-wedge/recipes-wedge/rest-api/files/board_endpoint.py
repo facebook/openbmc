@@ -27,8 +27,8 @@ class boardApp_Handler:
 
     # Disable the endpoint in BMC until we root cause cp2112 issues.
     # Handler to reset usb-to-i2c
-    async def rest_usb2i2c_reset_hdl(self,request):
-        return rest_usb2i2c_reset.set_usb2i2c()
+    #async def rest_usb2i2c_reset_hdl(self,request):
+        #return rest_usb2i2c_reset.set_usb2i2c()
 
     # Handler for Modbus_registers resource endpoint
     async def helper_modbus_registers_hdl(self,request):

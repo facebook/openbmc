@@ -498,7 +498,7 @@ static void chip_desc_init(gpiochip_desc_t *gcdesc,
 		strncpy(gcdesc->chip_type, GPIO_CHIP_ASPEED_SOC,
 			sizeof(gcdesc->chip_type));
 		gcdesc->ops = &aspeed_gpiochip_ops;
-	} else if (i2c_sysfs_path_parse(dev_name, NULL, NULL) == 0) {
+	} else if (i2c_sysfs_is_valid_suid(dev_name)) {
 		strncpy(gcdesc->chip_type, GPIO_CHIP_I2C_EXPANDER,
 			sizeof(gcdesc->chip_type));
 	}

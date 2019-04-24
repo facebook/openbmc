@@ -24,8 +24,10 @@ LIC_FILES_CHKSUM = "file://obmc-i2c.h;beginline=7;endline=19;md5=da35978751a9d71
 
 SRC_URI = "file://obmc-i2c.h \
            file://smbus.h \
+           file://i2c_core.h \
            file://i2c_raw.c \
            file://i2c_sysfs.c \
+           file://i2c_sysfs.h \
            file://Makefile \
           "
 
@@ -37,8 +39,11 @@ do_install() {
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 smbus.h ${D}${includedir}/openbmc/smbus.h
+    install -m 0644 i2c_core.h ${D}${includedir}/openbmc/i2c_core.h
+    install -m 0644 i2c_sysfs.h ${D}${includedir}/openbmc/i2c_sysfs.h
     install -m 0644 obmc-i2c.h ${D}${includedir}/openbmc/obmc-i2c.h
 }
 
 FILES_${PN} = "${libdir}/libobmc-i2c.so"
-FILES_${PN}-dev = "${includedir}/openbmc/smbus.h ${includedir}/openbmc/obmc-i2c.h"
+FILES_${PN}-dev = "${includedir}/openbmc/obmc-i2c.h"
+FILES_${PN}-dev += "${includedir}/openbmc/smbus.h ${includedir}/openbmc/i2c_core.h ${includedir}/openbmc/i2c_sysfs.h"

@@ -18,6 +18,29 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
+/*
+ * "obmc-i2c" Library - Naming Guidelines
+ *
+ *   - I2C Master
+ *     The device which initiates a transfer, generates clock signals and
+ *     terminates a transfer.
+ *     Although people frequently use "i2c-bus/host-adapter" refer to an
+ *     i2c master, "master" is preferred over "adapter" in the library.
+ *
+ *   - I2C Slave
+ *     The device addressed by a master.
+ *     Try to avoid using "i2c-device" to refer to an i2c slave, because
+ *     technically i2c master is also a device.
+ *
+ *   - I2C Master-Slave
+ *     It refers to i2c slave functionality of an i2c master in the library.
+ *
+ *   - I2C sysfs Slave UID
+ *     It refers to "<bus>-<addr>" format sysfs node for an i2c slave. For
+ *     example, "8-0070".
+ */
+
 #ifndef _OPENBMC_I2C_DEV_H_
 #define _OPENBMC_I2C_DEV_H_
 
@@ -25,36 +48,9 @@
 extern "C" {
 #endif
 
-/*
- * Include all the functions for smbus transactions.
- */
 #include <openbmc/smbus.h>
-
-/*
- * I2C sysfs related interfaces.
- */
-#define I2C_SYSFS_DEVICES		"/sys/bus/i2c/devices"
-#define I2C_SYSFS_DRIVERS		"/sys/bus/i2c/drivers"
-#define I2C_SYSFS_BUS_DIR(num)		I2C_SYSFS_DEVICES"/i2c-"#num
-#define I2C_SYSFS_DEV_DIR(dev)		I2C_SYSFS_DEVICES"/"#dev
-#define I2C_SYSFS_DEV_ENTRY(dev, ent)	I2C_SYSFS_DEVICES"/"#dev"/"#ent
-
-/*
- * Extract i2c bus and device address from sysfs path "<bus>-<addr>".
- *
- * Return:
- *   0 for success, and -1 on failures.
- */
-int i2c_sysfs_path_parse(const char *i2c_device, int *i2c_bus, int *i2c_addr);
-
-/*
- * Issue read/write transactions to the given i2c device.
- *
- * Return:
- *   0 for success, and -1 on failures.
- */
-int i2c_rdwr_msg_transfer(int file, __u8 addr, __u8 *tbuf, 
-			  __u8 tcount, __u8 *rbuf, __u8 rcount);
+#include <openbmc/i2c_core.h>
+#include <openbmc/i2c_sysfs.h>
 
 #ifdef __cplusplus
 } // extern "C"

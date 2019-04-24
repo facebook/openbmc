@@ -25,6 +25,7 @@ SRC_URI += " file://board_endpoint.py \
              file://rest-api-1/rest_firmware.py \
              file://rest-api-1/rest_chassis_eeprom.py \
              file://rest-api-1/rest_chassis_all_serial_and_location.py \
+             file://rest-api-1/rest_server.py \ 
           "
 
 binfiles1 += "backpack_cards.py \
@@ -32,6 +33,7 @@ binfiles1 += "backpack_cards.py \
               rest_firmware.py \
               rest_chassis_eeprom.py \
               rest_chassis_all_serial_and_location.py \
+              rest_server.py \
              "
 
 binfiles += "board_endpoint.py \

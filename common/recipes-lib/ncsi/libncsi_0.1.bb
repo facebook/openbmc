@@ -16,6 +16,9 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
+DEPENDS =+ " libkv"
+CFLAGS += "  -lkv"
+
 do_install() {
 	  install -d ${D}${libdir}
     install -m 0644 libncsi.so ${D}${libdir}/libncsi.so
@@ -24,6 +27,9 @@ do_install() {
     install -m 0644 ncsi.h ${D}${includedir}/openbmc/ncsi.h
     install -m 0644 aen.h ${D}${includedir}/openbmc/aen.h
 }
+
+DEPENDS += "libkv"
+RDEPENDS_${PN} = "libkv"
 
 FILES_${PN} = "${libdir}/libncsi.so"
 FILES_${PN}-dev = "${includedir}/openbmc/*"

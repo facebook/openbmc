@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include <openbmc/kv.h>
 #include "aen.h"
 
 
@@ -54,6 +55,28 @@ enable_default_aens() {
 }
 
 
+// generic function to print AEN payload to syslog
+void log_aen_payload(AEN_Packet *buf, unsigned char log_level) {
+  char logbuf[512];
+  int nleft = sizeof(logbuf);
+  int nwrite = 0;
+  int i = 0;
+  int j = 0;
+  syslog(log_level, "log_aen_payload");
+  nwrite = snprintf(logbuf, nleft, "AEN type 0x%02x, payload:", buf->AEN_Type);
+  i += nwrite;
+  nleft -= nwrite;
+
+  for (j=0; j<buf->Payload_Length; ++j) {
+    nwrite = snprintf(logbuf + i, nleft, "0x%04x ", ntohs(buf->Optional_AEN_Data[j]));
+    i += nwrite;
+    nleft -= nwrite;
+  }
+
+  syslog(log_level, "%s", logbuf);
+
+  return;
+}
 
 // return values
 //     0 - success
@@ -69,6 +92,7 @@ process_NCSI_AEN(AEN_Packet *buf)
   char logbuf[512];
   unsigned char log_level = LOG_NOTICE;
   int i=0;
+  int ret = 0;
 
 #ifdef DEBUG
   // print AEN packet content
@@ -148,15 +172,23 @@ process_NCSI_AEN(AEN_Packet *buf)
 
       default:
         i += sprintf(logbuf + i, ", Unknown AEN Type %d", buf->AEN_Type);
+        log_aen_payload(buf, LOG_WARNING);
     }
   } else {
     // OEM AENs
-    manu_id = ntohs(buf->Optional_AEN_Data[0]) << 16 |
-              ntohs(buf->Optional_AEN_Data[1]);
 
+    char nic_vendor_iana[MAX_VALUE_LEN] = {0};
+    ret = kv_get("nic_vendor", nic_vendor_iana, NULL, KV_FPERSIST);
+
+    if (!ret) {
+      // https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers
+      manu_id = strtol(nic_vendor_iana, NULL, 10);
+    } else {
+      // if kv_get fails, attempt to manually decode Vendor ID from AEN raw data
+      manu_id = ntohs(buf->Optional_AEN_Data[0]) << 16 |
+                ntohs(buf->Optional_AEN_Data[1]);
+    }
     if (manu_id == BCM_IANA) {
-      //unsigned char aen_iid = buf->Reserved_4[0];
-      //i += sprintf(logbuf + i, " iid=0x%02x", aen_iid);
       switch (buf->AEN_Type) {
         case NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR:
           log_level = LOG_CRIT;
@@ -200,12 +232,22 @@ process_NCSI_AEN(AEN_Packet *buf)
           break;
 
         default:
-          log_level = LOG_CRIT;
-          i += sprintf(logbuf + i, ", Unknown BCM AEN Type %d", buf->AEN_Type);
+          log_level = LOG_WARNING;
+          i += sprintf(logbuf + i, ", Unknown BCM AEN Type 0x%x", buf->AEN_Type);
+          log_aen_payload(buf, log_level);
+      }
+    } else if (manu_id == MLX_IANA) {
+      switch (buf->AEN_Type) {
+        default:
+          log_level = LOG_WARNING;
+          i += sprintf(logbuf + i, ", Unknown MLX AEN Type 0x%x", buf->AEN_Type);
+          log_aen_payload(buf, log_level);
       }
     } else {
       log_level = LOG_WARNING;
-      i += sprintf(logbuf + i, ", Unknown OEM AEN, IANA=0x%lx", manu_id);
+      i += sprintf(logbuf + i, ", Unknown OEM AEN, IANA=0x%lx, Type=0x%x", manu_id,
+                   buf->AEN_Type);
+      log_aen_payload(buf, log_level);
     }
   }
   syslog(log_level, "%s", logbuf);

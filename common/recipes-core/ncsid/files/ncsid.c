@@ -44,6 +44,7 @@
 #include <stddef.h>
 #include <openbmc/obmc-pal.h>
 #include <time.h>
+#include <openbmc/kv.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/aen.h>
 #include <openbmc/pldm.h>
@@ -266,9 +267,11 @@ init_version_data(Get_Version_ID_Response *buf)
 {
   char logbuf[256];
   char version[32]={0};
+  char iana_str[32] = {0};
   int i = 0;
   int nleft = sizeof(logbuf);
   int nwrite = 0;
+  int ret = 0;
 
   vendor_IANA = ntohl(buf->IANA);
 
@@ -291,6 +294,12 @@ init_version_data(Get_Version_ID_Response *buf)
   i += nwrite;
   nleft -= nwrite;
   nwrite = snprintf(logbuf+i, nleft, "%s ", version);
+
+  // store vendor IANA in kv_store
+  snprintf(iana_str, sizeof(iana_str), "%d", vendor_IANA);
+  if ((ret = kv_set("nic_vendor", iana_str, 0, KV_FPERSIST | KV_FCREATE)) < 0) {
+    syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+  }
 
   syslog(LOG_INFO, "%s", logbuf);
 }

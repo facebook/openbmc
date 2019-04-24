@@ -1,0 +1,53 @@
+language: c
+
+cache:
+  directories:
+  - ${HOME}/sstate-cache
+
+addons:
+  apt:
+    update: true
+    packages:
+    - build-essential
+    - wget
+    - diffstat
+    - chrpath
+    - texinfo
+    - bzip2
+    - libthread-queue-perl
+
+env:
+  global:
+  - CACHE="${HOME}/sstate-cache"
+  - CACHE_URI="https://s3-us-west-2.amazonaws.com/openbmc-sstate"
+
+before_install:
+  - ./sync_yocto.sh
+
+matrix:
+  include:
+    - env: BOARD=fbtp
+    - env: BOARD=wedge100
+    - env: BOARD=yosemite
+    - env: BOARD=fbttn
+    - env: BOARD=galaxy100
+    - env: BOARD=cmm
+    - env: BOARD=lightning
+    - env: BOARD=fby2
+    - env: BOARD=wedge
+
+script:
+  # This is how we seed the shared-state cache.
+  # It is a small hack to allow builds to finish within 50 minutes.
+  # Start a powerful machine and build all images using the same sstate serially.
+  # cd $CACHE && tar czf ../sstate-cache.tgz .; and then upload to S3.
+  # Within TravisCI each machine will then maintain a unique cache.
+  - if [ ! -f ${CACHE}/.seed ]; then wget ${CACHE_URI}/sstate-cache.tgz; tar -xzf sstate-cache.tgz -C ${CACHE}; fi
+  - if [ -f sstate-cache.tgz ]; then rm sstate-cache.tgz; fi
+  - touch ${CACHE}/.seed
+
+  # Build the image.
+  - source ./openbmc-init-build-env meta-facebook/meta-${BOARD} build-${BOARD}
+  - echo "SSTATE_DIR = \"${CACHE}\"" >> ./conf/local.conf
+  - bitbake ${BOARD}-image
+

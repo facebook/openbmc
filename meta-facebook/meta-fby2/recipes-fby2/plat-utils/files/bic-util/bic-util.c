@@ -296,7 +296,6 @@ util_get_gpio_config(uint8_t slot_id) {
   int ret = 0;
   int i;
   bic_gpio_config_t gpio_config = {0};
-  bic_gpio_config_u *t = (bic_gpio_config_u *) &gpio_config;
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
   uint8_t gpio_cnt;
   char **gpio_name;
@@ -323,14 +322,14 @@ util_get_gpio_config(uint8_t slot_id) {
     }
 
     printf("gpio_config for pin#%d (%s):\n", i, gpio_name[i]);
-    printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
-    printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
-    printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");
-    if (t->bits.trig == 0x0) {
+    printf("Direction: %s", gpio_config.dir?"Output,":"Input, ");
+    printf(" Interrupt: %s", gpio_config.ie?"Enabled, ":"Disabled,");
+    printf(" Trigger: %s", gpio_config.edge?"Level ":"Edge ");
+    if (gpio_config.trig == 0x0) {
       printf("Trigger,  Edge: %s\n", "Falling Edge");
-    } else if (t->bits.trig == 0x1) {
+    } else if (gpio_config.trig == 0x1) {
       printf("Trigger,  Edge: %s\n", "Rising Edge");
-    } else if (t->bits.trig == 0x2) {
+    } else if (gpio_config.trig == 0x2) {
       printf("Trigger,  Edge: %s\n", "Both Edges");
     } else  {
       printf("Trigger, Edge: %s\n", "Reserved");
@@ -346,14 +345,14 @@ util_get_gpio_config(uint8_t slot_id) {
     }
 
     printf("gpio_config for pin#%d (%s):\n", i, gpio_pin_name[i]);
-    printf("Direction: %s", t->bits.dir?"Output,":"Input, ");
-    printf(" Interrupt: %s", t->bits.ie?"Enabled, ":"Disabled,");
-    printf(" Trigger: %s", t->bits.edge?"Level ":"Edge ");
-    if (t->bits.trig == 0x0) {
+    printf("Direction: %s", gpio_config.dir?"Output,":"Input, ");
+    printf(" Interrupt: %s", gpio_config.ie?"Enabled, ":"Disabled,");
+    printf(" Trigger: %s", gpio_config.edge?"Level ":"Edge ");
+    if (gpio_config.trig == 0x0) {
       printf("Trigger,  Edge: %s\n", "Falling Edge");
-    } else if (t->bits.trig == 0x1) {
+    } else if (gpio_config.trig == 0x1) {
       printf("Trigger,  Edge: %s\n", "Rising Edge");
-    } else if (t->bits.trig == 0x2) {
+    } else if (gpio_config.trig == 0x2) {
       printf("Trigger,  Edge: %s\n", "Both Edges");
     } else  {
       printf("Trigger, Edge: %s\n", "Reserved");
@@ -404,7 +403,6 @@ static int
 util_get_config(uint8_t slot_id) {
   int ret = 0;
   bic_config_t config = {0};
-  bic_config_u *t = (bic_config_u *) &config;
 
   ret = bic_get_config(slot_id, &config);
   if (ret) {
@@ -412,8 +410,8 @@ util_get_config(uint8_t slot_id) {
     return ret;
   }
 
-  printf("SoL Enabled:  %s\n", t->bits.sol ? "Enabled" : "Disabled");
-  printf("POST Enabled: %s\n", t->bits.post ? "Enabled" : "Disabled");
+  printf("SoL Enabled:  %s\n", config.sol ? "Enabled" : "Disabled");
+  printf("POST Enabled: %s\n", config.post ? "Enabled" : "Disabled");
   return ret;
 }
 

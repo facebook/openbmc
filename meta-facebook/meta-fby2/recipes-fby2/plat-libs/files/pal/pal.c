@@ -3298,7 +3298,6 @@ int
 pal_post_enable(uint8_t slot) {
   int ret;
   bic_config_t config = {0};
-  bic_config_u *t = (bic_config_u *) &config;
 
   ret = bic_get_config(slot, &config);
   if (ret) {
@@ -3308,8 +3307,8 @@ pal_post_enable(uint8_t slot) {
     return ret;
   }
 
-  if (0 == t->bits.post) {
-    t->bits.post = 1;
+  if (0 == config.post) {
+    config.post = 1;
     ret = bic_set_config(slot, &config);
     if (ret) {
 #ifdef DEBUG
@@ -3327,14 +3326,13 @@ int
 pal_post_disable(uint8_t slot) {
   int ret;
   bic_config_t config = {0};
-  bic_config_u *t = (bic_config_u *) &config;
 
   ret = bic_get_config(slot, &config);
   if (ret) {
     return ret;
   }
 
-  t->bits.post = 0;
+  config.post = 0;
 
   ret = bic_set_config(slot, &config);
   if (ret) {

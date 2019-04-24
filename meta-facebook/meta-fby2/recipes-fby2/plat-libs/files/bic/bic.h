@@ -360,27 +360,27 @@ typedef struct _bic_gpio_t {
 } bic_gpio_t;
 
 typedef struct _bic_gpio_config_t {
-  uint8_t dir:1;
-  uint8_t ie:1;
-  uint8_t edge:1;
-  uint8_t trig:2;
+  union {
+    struct {
+      uint8_t dir:1;
+      uint8_t ie:1;
+      uint8_t edge:1;
+      uint8_t trig:2;
+    };
+    uint8_t config;
+  };
 } bic_gpio_config_t;
 
-typedef union _bic_gpio_config_u {
-  uint8_t config;
-  bic_gpio_config_t bits;
-} bic_gpio_config_u;
-
 typedef struct _bic_config_t {
-  uint8_t sol:1;
-  uint8_t post:1;
-  uint8_t rsvd:6;
+  union {
+    struct {
+      uint8_t sol:1;
+      uint8_t post:1;
+      uint8_t rsvd:6;
+    };
+    uint8_t config;
+  };
 } bic_config_t;
-
-typedef union _bic_config_u {
-  uint8_t config;
-  bic_config_t bits;
-} bic_config_u;
 
 int bic_is_slot_12v_on(uint8_t slot_id);
 uint8_t is_bic_ready(uint8_t slot_id);

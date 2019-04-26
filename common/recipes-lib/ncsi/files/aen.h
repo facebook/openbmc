@@ -12,15 +12,22 @@
 #define AEN_TYPE_PENDING_PLDM_REQUEST         0x71
 #define AEN_TYPE_OEM                          0x80
 
+#define MAX_AEN_DATA_IN_SHORT                   16
+
+
 /* Broadcom-specific  OEM AEN definitions */
 #define NCSI_AEN_TYPE_OEM_BCM_HOST_ERROR                       0x80
 #define BCM_HOST_ERR_TYPE_UNGRACEFUL_HOST_SHUTDOWN             0x01
 #define NCSI_AEN_TYPE_OEM_BCM_RESET_REQUIRED                   0x81
 #define NCSI_AEN_TYPE_OEM_BCM_HOST_DECOMMISSIONED              0x82
-#define MAX_AEN_DATA_IN_SHORT                   16
 
 /* Mellanox-specific  OEM AEN definitions */
-// TBD
+#define NCSI_AEN_TYPE_OEM_MLX_THERMAL_EVENT                    0x80
+#define NCSI_AEN_TYPE_OEM_MLX_HIGH_MODULE_CURRENT              0x81
+#define NCSI_AEN_TYPE_OEM_MLX_DEVICE_SELF_RESET                0x82
+
+
+
 
 #define AEN_CTRL_STD_STARTING_BIT   0
 #define AEN_CTRL_OEM_STARTING_BIT   16

@@ -238,6 +238,17 @@ process_NCSI_AEN(AEN_Packet *buf)
       }
     } else if (manu_id == MLX_IANA) {
       switch (buf->AEN_Type) {
+        case NCSI_AEN_TYPE_OEM_MLX_THERMAL_EVENT:
+          i += sprintf(logbuf + i, ", MLX thermal event detected");
+          log_aen_payload(buf, log_level);
+          break;
+        case NCSI_AEN_TYPE_OEM_MLX_HIGH_MODULE_CURRENT:
+          i += sprintf(logbuf + i, ", MLX high module current detected");
+          break;
+        case NCSI_AEN_TYPE_OEM_MLX_DEVICE_SELF_RESET:
+          log_level = LOG_CRIT;
+          i += sprintf(logbuf + i, ", MLX Device Self Reset detected");
+          break;
         default:
           log_level = LOG_WARNING;
           i += sprintf(logbuf + i, ", Unknown MLX AEN Type 0x%x", buf->AEN_Type);

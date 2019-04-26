@@ -44,29 +44,6 @@ extern "C" {
 #include <linux/i2c-dev.h>
 
 /***********************************************************
- * I2C Addendum
- **********************************************************/
-
-/* Addendum flags to be used for the 'flags' field of 
- * struct i2c_msg */
-#define I2C_CLIENT_PEC		0x0004	/* Use Packet error checking */
-#define I2C_S_EN		0x2000	/* Slave mode enable */
-#define I2C_S_ALT		0x2001	/* Slave issue slt */
-
-/* Addendum I2C functionality */
-#define I2C_FUNC_SMBUS_HWPEC_CALC I2C_FUNC_SMBUS_PEC /* Hardware PEC support */
-
-/***********************************************************
- * I2C-DEV Addendum
- **********************************************************/
-
-/* Additional ioctl commands for /dev/i2c-X */
-#define I2C_SLAVE_RD		0x0710 /* Slave Read */
-#define I2C_SLAVE_WR		0x0711 /* Slave /Write */
-#define I2C_SLAVE_RDWR		0x0712 /* Slave Read/Write */
-#define I2C_BUS_STATUS		0x0799 /* Get Bus Status */
-
-/***********************************************************
  * I2C-DEV Helper functions
  **********************************************************/
 

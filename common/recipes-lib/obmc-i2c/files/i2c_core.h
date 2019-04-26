@@ -30,7 +30,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <linux/types.h>
 
 /*
  * I2C address definitions (from kernel drivers/i2c/i2c-core-base.c).
@@ -62,15 +61,6 @@ i2c_addr_is_valid(uint16_t addr)
 
 	return true;
 }
-
-/*
- * Issue read/write transactions to the given i2c device.
- *
- * Return:
- *   0 for success, and -1 on failures.
- */
-int i2c_rdwr_msg_transfer(int file, __u8 addr, __u8 *tbuf,
-			  __u8 tcount, __u8 *rbuf, __u8 rcount);
 
 #ifdef __cplusplus
 } // extern "C"

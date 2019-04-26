@@ -21,11 +21,50 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/ioctl.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#include <linux/limits.h>
+
+#include "i2c_cdev.h"
+
+char* i2c_cdev_master_abspath(char *buf, size_t size, int bus)
+{
+	snprintf(buf, size, "/dev/i2c-%d", bus);
+	return buf;
+}
+
+int i2c_cdev_slave_open(int bus, uint16_t addr)
+{
+	int fd;
+	char cdev_path[PATH_MAX];
+
+	i2c_cdev_master_abspath(cdev_path, sizeof(cdev_path), bus);
+	fd = open(cdev_path, O_RDWR);
+	if (fd < 0)
+		return -1;
+
+	if (ioctl(fd, I2C_SLAVE, addr) < 0) {
+		int save_errno = errno;
+		close(fd); /* ignore errors */
+		errno = save_errno;
+		return -1;
+	}
+
+	return fd;
+}
+
+int i2c_cdev_slave_close(int fd)
+{
+	return close(fd);
+}
 
 int i2c_rdwr_msg_transfer(int file, __u8 addr, __u8 *tbuf, 
 			  __u8 tcount, __u8 *rbuf, __u8 rcount)

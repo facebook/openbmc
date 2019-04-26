@@ -48,9 +48,18 @@
 extern "C" {
 #endif
 
-#include <openbmc/smbus.h>
+/*
+ * XXX "i2c_cdev.h" needs to be included before "smbus.h", because
+ * i2c_smbus_status() refers to "I2C_BUS_STATUS" which is defined in
+ * "i2c_cdev.h".
+ * Given i2c_smbus_status() is not part of "i2c-tools" package, and it
+ * only works in kernel 4.1, we should consider deleting the function
+ * later.
+ */
+#include <openbmc/i2c_cdev.h>
 #include <openbmc/i2c_core.h>
 #include <openbmc/i2c_sysfs.h>
+#include <openbmc/smbus.h>
 
 #ifdef __cplusplus
 } // extern "C"

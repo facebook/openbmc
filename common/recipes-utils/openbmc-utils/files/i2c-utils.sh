@@ -48,6 +48,19 @@ i2c_device_delete() {
 }
 
 #
+# Create message-queue i2c slave backend for the given i2c master.
+# $1 - i2c bus number
+# $2 - slave device address
+#
+i2c_mslave_add() {
+    local bus=$1
+    local addr=$2
+
+    addr=$((addr | 0x1000))
+    i2c_device_add $bus $addr slave-mqueue
+}
+
+#
 # instantiate an i2c-mux device and wait untill all its child buses
 # are initialized before the function returns.
 # $1 - parent bus number

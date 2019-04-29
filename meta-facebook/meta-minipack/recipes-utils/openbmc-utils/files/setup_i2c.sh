@@ -75,6 +75,10 @@ bulk_create_i2c_mux() {
 KERNEL_VERSION=`uname -r`
 if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
     bulk_create_i2c_mux
+
+    # Create i2c slave backend on bus 0 and 4.
+    i2c_mslave_add 0 0x10
+    i2c_mslave_add 4 0x10
 fi
 
 # # Bus 2

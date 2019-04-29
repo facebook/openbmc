@@ -8,7 +8,7 @@ from typing import Dict
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
-# Handler for sys/firmware_info/pim resource endpoint
+# Handler for sys/firmware_info_scm resource endpoint
 def get_firmware_info() -> Dict:
     return {"Information": get_cpld_info_data(), "Actions": [], "Resources": []}
 

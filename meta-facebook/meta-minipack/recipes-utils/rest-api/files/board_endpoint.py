@@ -56,25 +56,25 @@ class boardApp_Handler:
     async def rest_pimserial_hdl(self,request):
         return web.json_response(rest_pimserial.get_pimserial())
 
-    # Handler for sys/firmware_info/pim resource endpoint
+    # Handler for sys/firmware_info_pim resource endpoint
     async def rest_firmware_info_pim_hdl(self, request):
         return web.json_response(
             rest_firmware_info_pim.get_firmware_info(), dumps=dumps_bytestr,
         )
 
-    # Handler for sys/firmware_info/scm resource endpoint
+    # Handler for sys/firmware_info_scm resource endpoint
     async def rest_firmware_info_scm_hdl(self, request):
         return web.json_response(
             rest_firmware_info_scm.get_firmware_info(), dumps=dumps_bytestr,
         )
 
-    # Handler for sys/firmware_info/all resource endpoint
+    # Handler for sys/firmware_info_all resource endpoint
     async def rest_firmware_info_all_hdl(self, request):
         return web.json_response(
             rest_fw_ver.get_all_fw_ver(), dumps=dumps_bytestr,
         )
 
-    # Handler for sys/mb/pim$/peutil resource endpoint
+        # Handler for sys/mb/pim$ resource endpoint
     async def rest_peutil_hdl(self, request):
         path = request.rel_url.path
         pim = re.search(r"pim(\d)", path).group(1)

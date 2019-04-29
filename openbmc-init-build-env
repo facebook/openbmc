@@ -6,9 +6,10 @@ else
   echo "WARNING: distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
 fi
 declare -a DISTRO_OVERRIDES
-DISTRO_OVERRIDES=(
-  meta-minilaketb:krogoth
-)
+# Add overrides here on a per-platform basis.
+#DISTRO_OVERRIDES=(
+#  meta-fbtp:thud
+#)
 
 platform="$1"
 _distro="${DISTRO_DEFAULT}"

@@ -9,7 +9,8 @@ LIC_FILES_CHKSUM = "file://minilaketb_sensor.c;beginline=8;endline=20;md5=da3597
 
 SRC_URI = "file://minilaketb_sensor \
           "
-DEPENDS =+ " libipmi libipmb libbic libminilaketb-common plat-utils obmc-i2c libnvme-mi obmc-pal "
+LDFLAGS += "-lobmc-i2c"
+DEPENDS =+ " libipmi libipmb libbic libminilaketb-common plat-utils libobmc-i2c libnvme-mi obmc-pal "
 
 S = "${WORKDIR}/minilaketb_sensor"
 
@@ -24,4 +25,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libminilaketb_sensor.so"
 FILES_${PN}-dev = "${includedir}/facebook/minilaketb_sensor.h"
 
-RDEPENDS_${PN} += " libnvme-mi minilaketb-sensors "
+RDEPENDS_${PN} += " libnvme-mi minilaketb-sensors libobmc-i2c"

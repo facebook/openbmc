@@ -737,7 +737,7 @@ prepare_update_bic(uint8_t slot_id, int ifd, int size) {
 
   /* Kill ipmb daemon "--enable-bic-update" for this slot */
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd 0' |awk '{print $1}' "
+  sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd -u 0' |awk '{print $1}' "
                "| xargs kill");
   system(cmd);
   printf("stop ipmbd for minilake\n", slot_id);

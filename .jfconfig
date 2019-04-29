@@ -16,7 +16,8 @@
     },
     "capabilities": {
       "vcs": "openbmc-git",
-      "type": "lego-yocto",
+      "type": "lego",
+      "tenant": "openbmc"
     },
     "description": "Yocto diff listener",
     "tags": ["openbmc_git"]

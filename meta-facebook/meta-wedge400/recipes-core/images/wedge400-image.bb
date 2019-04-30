@@ -13,6 +13,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
+  ipmbd \
   "
 IMAGE_FEATURES += " \
   ssh-server-openssh \

@@ -25,7 +25,8 @@ LOGGER_CONF = {
     'disable_existing_loggers': False,
     'formatters': {
         'default': {
-            'format': '%(message)s'
+            'format': '%(asctime)s %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
         },
     },
     'handlers': {

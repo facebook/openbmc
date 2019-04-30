@@ -164,14 +164,6 @@ ipmbd_name_init(int bus_num)
 }
 
 static char*
-i2c_chardev_path(char *buf, size_t size, int bus_num)
-{
-  snprintf(buf, size, "/dev/i2c-%d", bus_num);
-  return buf;
-}
-
-
-static char*
 ipc_name_gen(char *buf, size_t size, const char *prefix, int bus_num)
 {
   snprintf(buf, size, "%s_%d", prefix, bus_num);
@@ -264,29 +256,6 @@ seq_get_new(unsigned char *resp) {
 }
 
 static int
-ipmb_open_satellite(int bus_num) {
-  int fd, rc;
-  char fn[32];
-
-  i2c_chardev_path(fn, sizeof(fn), bus_num);
-  fd = open(fn, O_RDWR);
-  if (fd == -1) {
-    OBMC_ERROR(errno, "Failed to open i2c device %s", fn);
-    return -1;
-  }
-
-  rc = ioctl(fd, I2C_SLAVE, BRIDGE_SLAVE_ADDR);
-  if (rc < 0) {
-    OBMC_ERROR(errno, "Failed to open slave @ address %#x",
-               BRIDGE_SLAVE_ADDR);
-    close(fd);
-    return -1;
-  }
-
-  return fd;
-}
-
-static int
 ipmb_write_satellite(int fd, uint8_t *buf, uint16_t len) {
   struct i2c_rdwr_ioctl_data data;
   struct i2c_msg msg;
@@ -315,68 +284,6 @@ ipmb_write_satellite(int fd, uint8_t *buf, uint16_t len) {
   pthread_mutex_unlock(&i2c_mutex);
 
   return (rc < 0 ? -1 : 0);
-}
-
-static int
-ipmb_open_bmc(int bus_num) {
-  int fd;
-  char fn[32];
-  struct i2c_rdwr_ioctl_data data;
-  struct i2c_msg msg;
-  uint8_t read_bytes[IPMB_PKT_MAX_SIZE];
-
-  i2c_chardev_path(fn, sizeof(fn), bus_num);
-  fd = open(fn, O_RDWR);
-  if (fd == -1) {
-    OBMC_ERROR(errno, "Failed to open i2c device %s", fn);
-    return -1;
-  }
-
-  memset(&msg, 0, sizeof(msg));
-
-  msg.addr = BMC_SLAVE_ADDR;
-  msg.flags = I2C_S_EN;
-  msg.len = 1;
-  msg.buf = read_bytes;
-  msg.buf[0] = 1;
-
-  data.msgs = &msg;
-  data.nmsgs = 1;
-
-  if (ioctl(fd, I2C_SLAVE_RDWR, &data) < 0) {
-    OBMC_ERROR(errno, "Failed to enable slave @ address %#x",
-               BMC_SLAVE_ADDR);
-    close(fd);
-    fd = -1;
-  }
-
-  return fd;
-}
-
-static int
-ipmb_read_bmc(int fd, uint8_t *buf, uint8_t *len) {
-  struct i2c_rdwr_ioctl_data data;
-  struct i2c_msg msg;
-  int rc;
-
-  memset(&msg, 0, sizeof(msg));
-
-  msg.addr = BMC_SLAVE_ADDR;
-  msg.flags = 0;
-  msg.len = IPMB_PKT_MAX_SIZE;
-  msg.buf = buf;
-
-  data.msgs = &msg;
-  data.nmsgs = 1;
-
-  rc = ioctl(fd, I2C_SLAVE_RDWR, &data);
-  if (rc < 0) {
-    return -1;
-  }
-
-  *len = msg.len;
-
-  return 0;
 }
 
 // Thread to handle new requests
@@ -411,11 +318,12 @@ ipmb_req_handler(void *args) {
   }
 
   // Open the i2c bus for sending response
-  fd = ipmb_open_satellite(bus_num);
+  fd = i2c_cdev_slave_open(bus_num, BRIDGE_SLAVE_ADDR);
   if (fd < 0) {
     mq_close(mq);
     return NULL;
   }
+  REQ_VERBOSE("bic opened successfully, fd=%d", fd);
 
   // Loop to process incoming requests
   while (1) {
@@ -543,7 +451,7 @@ ipmb_res_handler(void *args) {
 // Thread to receive the IPMB messages over i2c bus as a slave
 static void*
 ipmb_rx_handler(void *args) {
-  int fd = -1;
+  i2c_mslave_t *bmc_slave;
   mqd_t mq_req = MQ_DESC_INVALID;
   mqd_t mq_res = MQ_DESC_INVALID;
   struct timespec req = {
@@ -551,18 +459,19 @@ ipmb_rx_handler(void *args) {
     .tv_nsec = 10000000, //10mSec
   };
   char mq_name_req[NAME_MAX], mq_name_res[NAME_MAX];
-  struct pollfd ufds[1];
   int bus_num = *((int*)args);
 
   RX_VERBOSE("thread starts execution");
 
   // Open the i2c bus as a slave
-  fd = ipmb_open_bmc(bus_num);
-  if (fd < 0) {
+  bmc_slave = i2c_mslave_open(bus_num, BMC_SLAVE_ADDR);
+  if (bmc_slave == NULL) {
+    OBMC_ERROR(errno, "%s: failed to open bmc as slave",
+               IPMBD_RX_THREAD);
     goto cleanup;
   }
-  RX_VERBOSE("opened bmc i2c-%d controller as slave, fd=%d",
-             bus_num, fd);
+  RX_VERBOSE("opened bmc i2c-%d master as slave successfully",
+             bus_num);
 
   // Open the message queues for post processing
   ipc_name_gen(mq_name_req, sizeof(mq_name_req), MQ_IPMB_REQ, bus_num);
@@ -583,8 +492,6 @@ ipmb_rx_handler(void *args) {
   }
   RX_VERBOSE("message queue %s opened", mq_name_res);
 
-  ufds[0].fd= fd;
-  ufds[0].events = POLLIN;
   // Loop that retrieves messages
   while (1) {
     int ret;
@@ -593,10 +500,12 @@ ipmb_rx_handler(void *args) {
     uint8_t buf[IPMB_PKT_MAX_SIZE], tbuf[IPMB_PKT_MAX_SIZE];
 
     // Read messages from i2c driver
-    if (ipmb_read_bmc(fd, buf, &len) < 0) {
-      poll(ufds, 1, 10);
+    ret = i2c_mslave_read(bmc_slave, buf, sizeof(buf));
+    if (ret <= 0) {
+      i2c_mslave_poll(bmc_slave, 10);
       continue;
     }
+    len = (uint8_t)ret;
     RX_VERBOSE("read %u bytes from ipmb bus %d", len, bus_num);
 
     // TODO: HACK: Due to i2cdriver issues, we are seeing two different type of packet corruptions
@@ -670,8 +579,8 @@ ipmb_rx_handler(void *args) {
   }
 
 cleanup:
-  if (fd >= 0) {
-    close(fd);
+  if (bmc_slave != NULL) {
+    i2c_mslave_close(bmc_slave);
   }
 
   if (mq_req != MQ_DESC_INVALID) {
@@ -802,11 +711,12 @@ start_ipmb_lib_handler(int bus_num) {
   }
 
   // Open the i2c bus for sending request
-  svc->i2c_fd = ipmb_open_satellite(bus_num);
+  svc->i2c_fd = i2c_cdev_slave_open(bus_num, BRIDGE_SLAVE_ADDR);
   if (svc->i2c_fd < 0) {
     free(svc);
     return -1;
   }
+  IPMBD_VERBOSE("bic opened successfully, fd=%d", svc->i2c_fd);
 
   ipc_name_gen(sock_path, sizeof(sock_path), SOCK_PATH_IPMB, bus_num);
   if (ipc_start_svc(sock_path, conn_handler, SEQ_NUM_MAX, svc, NULL)) {
@@ -879,6 +789,7 @@ parse_cmdline_args(int argc, char* const argv[])
   }
   ipmbd_config.bus_id = (int)strtoul(argv[optind], NULL, 0);
   ipmbd_config.payload_id = (int)strtoul(argv[optind + 1], NULL, 0);
+  ipmbd_name_init(ipmbd_config.bus_id);
 
   return 0;
 }
@@ -919,7 +830,6 @@ main(int argc, char * const argv[]) {
   if (parse_cmdline_args(argc, argv) != 0) {
     return -1;
   }
-  ipmbd_name_init(ipmbd_config.bus_id);
 
   /*
    * Initializing logging facility.

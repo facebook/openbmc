@@ -97,6 +97,10 @@ fby2_common_fru_name(uint8_t fru, char *str) {
       sprintf(str, "nic");
       break;
 
+    case FRU_BMC:
+      sprintf(str, "bmc");
+      break;
+
     default:
 #ifdef DEBUG
       syslog(LOG_WARNING, "fby2_common_fru_id: Wrong fru id");

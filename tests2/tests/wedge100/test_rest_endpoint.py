@@ -45,7 +45,8 @@ class RestEndpointTest(FbossRestEndpointTest):
             "slotid",
             "mTerm_status",
             "sensors",
-            "bmc"
+            "bmc",
+            "firmware_info"
         ]
 
     # /api/sys/sensors
@@ -124,4 +125,16 @@ class RestEndpointTest(FbossRestEndpointTest):
     def set_endpoint_slotid_attributes(self):
         self.endpoint_slotid_attrb = [
             "0"
+        ]
+
+    # "/api/sys/firmware_info"
+    def set_endpoint_firmware_info_attributes(self):
+        self.endpoint_firmware_info_attrb = [
+            "all"
+        ]
+
+    def set_endpoint_firmware_info_all_attributes(self):
+        # TODO: what if this changes?
+        self.endpoint_firmware_info_all_attrb = [
+            "6.101"
         ]

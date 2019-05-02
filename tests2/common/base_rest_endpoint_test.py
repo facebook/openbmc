@@ -258,6 +258,7 @@ class FbossRestEndpointTest(CommonRestEndpointTest):
     # Common Fboss endpoints
     FC_PRESENT_ENDPOINT = "/api/sys/fc_present"
     SLOT_ID_ENDPOINT = "/api/sys/slotid"
+    FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/all"
 
     #Atributes
 
@@ -287,3 +288,12 @@ class FbossRestEndpointTest(CommonRestEndpointTest):
             FbossRestEndpointTest.SLOT_ID_ENDPOINT,
             self.endpoint_slotid_attrb
         )
+
+    def test_endpoint_api_sys_firmware_info_all(self):
+        self.set_endpoint_firmware_info_all_attributes()
+        self.assertNotEqual(self.endpoint_firmware_info_all_attrb, None)
+        info = self.get_from_endpoint(
+            FbossRestEndpointTest.FIRMWARE_INFO_ENDPOINT
+        )
+        # If we get any JSON object I'm happy for the time being
+        self.assertTrue(json.loads(info))

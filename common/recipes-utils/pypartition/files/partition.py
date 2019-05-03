@@ -73,6 +73,9 @@ class Partition(object):
         self.valid = True
         self.valid_external_partitions = []  # type: List[str]
         self.partition_size = partition_size  # type: Optional[int]
+        self.read_size = 0 # type: Optional[int]
+        self.checksums_data = bytes() # type: Optional[bytes]
+        self.partition_data_size = partition_size # type: Optional[int]
         self.partition_offset = partition_offset
         self.name = name
         self.data_size = partition_size
@@ -105,17 +108,50 @@ class ExternalChecksumPartition(Partition):
     '''
     UBootMagics = [0x130000ea, 0xb80000ea, 0xbe0000ea, 0xf0000ea]
 
+    UBootChecksumsPartitionSize = (1024 * 4)
+
     def initialize(self):
         # type: () -> None
+        # Images build of late has the checksum stored as json
+        # appended to the u-boot partition (Utilizing the last
+        # 4KB). Assume this for now (We will test this assumption
+        # in the finalize phase and work around if that is not the
+        # case -- Possible for images build without this change)
+        self.partition_data_size -= self.UBootChecksumsPartitionSize
+        self.read_size = 0
         self.md5sum = hashlib.md5()
+        self.checksums_data = bytes()
 
     def update(self, data):
         # type: (bytes) -> None
-        self.md5sum.update(data)
+        if (self.read_size < self.partition_data_size):
+            check_size = len(data)
+            if (check_size > self.partition_data_size - self.read_size):
+                check_size = self.partition_data_size - self.read_size
+            self.md5sum.update(data[0:check_size])
+            self.read_size += check_size
+            self.checksums_data += data[check_size:]
+        else:
+            self.checksums_data += data
+
 
     def finalize(self):
         # type: () -> None
-        if self.md5sum.hexdigest() not in self.checksums:
+
+        checksums_data = self.checksums_data.decode()
+
+        # There might be white space appended to the partition data.
+        # Strip this to make json.loads() happy.
+        json_str = checksums_data.strip('\0\n\r')
+        checksums = list(self.checksums)
+        try:
+            json_data = list(json.loads(json_str).keys())
+            checksums += json_data
+            self.logger.info("U-Boot partition appended with MD5 checksums")
+        except ValueError:
+            self.md5sum.update(self.checksums_data)
+
+        if self.md5sum.hexdigest() not in checksums:
             if 'PLACEHOLDER' in self.checksums:
                 self.checksums.remove('PLACEHOLDER')
                 self.checksums.append(self.md5sum.hexdigest())
@@ -126,7 +162,7 @@ class ExternalChecksumPartition(Partition):
                 self.valid = False
                 self.logger.error(
                     '{} md5sum {} not in {}.'.format(
-                        self, self.md5sum.hexdigest(), self.checksums
+                        self, self.md5sum.hexdigest(), checksums
                     )
                 )
         else:

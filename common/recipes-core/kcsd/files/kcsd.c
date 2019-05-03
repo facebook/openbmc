@@ -315,15 +315,21 @@ main(int argc, char * const argv[]) {
   if (!bmc_ready_n) {
     syslog(LOG_WARNING, "BMC Ready PIN not open");
   }
-  sprintf(cmd, "echo 1 > /sys/devices/platform/ast-kcs.%d/enable", kcs_channel_num);
-  system(cmd);
 
-  sprintf(device, "/dev/ast-kcs.%d", kcs_channel_num);
+  sprintf(device, "/dev/ipmi-kcs%d", kcs_channel_num+1);  // 1-based channel number
   kcs_fd = open(device, O_RDWR);
-  if (!kcs_fd) {
-    syslog(LOG_WARNING, "kcsd: can not open kcs device\n");
-    exit(-1);
+  if (kcs_fd < 0) {
+    sprintf(cmd, "echo 1 > /sys/devices/platform/ast-kcs.%d/enable", kcs_channel_num);
+    system(cmd);
+
+    sprintf(device, "/dev/ast-kcs.%d", kcs_channel_num);
+    kcs_fd = open(device, O_RDWR);
+    if (kcs_fd < 0) {
+      syslog(LOG_WARNING, "kcsd: can not open kcs device");
+      exit(-1);
+    }
   }
+  syslog(LOG_INFO, "opened %s", device);
 
   sleep(1);
 

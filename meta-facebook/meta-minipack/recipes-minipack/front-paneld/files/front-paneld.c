@@ -392,6 +392,7 @@ pim_monitor_handler(void *unused) {
         if (interval[num] == 0) {
           interval[num] = INTERVAL_MAX;
           pal_set_pim_sts_led(fru);
+          msleep(50);
         } else {
           interval[num]--;
         }
@@ -416,18 +417,18 @@ static void *
 simLED_monitor_handler(void *unused) {
   int brd_rev;
   uint8_t sys_ug = 0, fan_ug = 0, psu_ug = 0, smb_ug = 0;
-  uint8_t interval[4];
+  uint8_t interval[5];
 
   memset(interval, INTERVAL_MAX, sizeof(interval));
   pal_get_board_rev(&brd_rev);
   init_led();
   while(1) {
     sleep(1);
-    pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
     if (sys_ug == 0) {
       if (interval[0] == 0) {
         interval[0] = INTERVAL_MAX;
         set_sys_led(brd_rev);
+        msleep(50);
       } else {
         interval[0]--;
       }
@@ -436,6 +437,7 @@ simLED_monitor_handler(void *unused) {
       if (interval[1] == 0) {
         interval[1] = INTERVAL_MAX;
         set_fan_led(brd_rev);
+        msleep(50);
       } else {
         interval[1]--;
       }
@@ -444,6 +446,7 @@ simLED_monitor_handler(void *unused) {
       if (interval[2] == 0) {
         interval[2] = INTERVAL_MAX;
         set_psu_led(brd_rev);
+        msleep(50);
       } else {
         interval[2]--;
       }
@@ -452,8 +455,20 @@ simLED_monitor_handler(void *unused) {
       if (interval[3] == 0) {
         interval[3] = INTERVAL_MAX;
         set_smb_led(brd_rev);
+        msleep(50);
       } else {
         interval[3]--;
+      }
+    }
+
+    if (sys_ug || fan_ug || psu_ug || smb_ug) {
+      pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
+    } else {
+      if (interval[4] == 0) {
+        interval[4] = INTERVAL_MAX;
+        pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
+      } else {
+        interval[4]--;
       }
     }
   }

@@ -864,9 +864,17 @@ int pal_fruid_init(uint8_t slot_id) {
 char *
 pal_get_pwn_list(void) {
   int spb_type;
+  int fan_type;
+
   spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+  
   if (spb_type == TYPE_SPB_YV250) {
-    strncpy(pal_pwm_list, "0, 1, 2, 3", 16);
+    if (fan_type == TYPE_DUAL_R_FAN) {
+      strncpy(pal_pwm_list, "0, 2, 1, 3", 16);
+    } else {
+      strncpy(pal_pwm_list, "0, 1", 16);
+    }
   } else {
     strncpy(pal_pwm_list, "0, 1", 16);
   }
@@ -876,9 +884,17 @@ pal_get_pwn_list(void) {
 char *
 pal_get_tach_list(void) {
   int spb_type;
+  int fan_type;
+
   spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+
   if (spb_type == TYPE_SPB_YV250) {
-    strncpy(pal_tach_list, "0, 1, 2, 3", 16);
+    if (fan_type == TYPE_DUAL_R_FAN) {
+      strncpy(pal_tach_list, "0, 2, 1, 3", 16);
+    } else {
+      strncpy(pal_tach_list, "0, 1", 16);
+    }
   } else {
     strncpy(pal_tach_list, "0, 1", 16);
   }
@@ -888,8 +904,12 @@ pal_get_tach_list(void) {
 int
 pal_get_pwm_cnt(void) {
   int spb_type;
+  int fan_type;
+
   spb_type = fby2_common_get_spb_type();
-  if (spb_type == TYPE_SPB_YV250) {
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
     pal_pwm_cnt = 4;
   } else {
     pal_pwm_cnt = 2;
@@ -900,9 +920,13 @@ pal_get_pwm_cnt(void) {
 int
 pal_get_tach_cnt(void) {
   int spb_type;
+  int fan_type;
+
   spb_type = fby2_common_get_spb_type();
-  if (spb_type == TYPE_SPB_YV250) {
-     pal_tach_cnt = 4;
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    pal_tach_cnt = 4;
   } else {
     pal_tach_cnt = 2;
   }
@@ -5776,8 +5800,31 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
 
 int
 pal_get_fan_name(uint8_t num, char *name) {
+  int spb_type;
+  int fan_type;
+  uint8_t fan_num = num;
 
-  switch(num) {
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    switch (num) {
+      case 0:
+        fan_num = 0;
+        break;
+      case 1:
+        fan_num = 2;
+        break;
+      case 2:
+        fan_num = 1;
+        break;
+      case 3:
+        fan_num = 3;
+        break;
+    }
+  }
+
+  switch(fan_num) {
 
     case FAN_0:
       sprintf(name, "Fan 0");
@@ -5820,12 +5867,30 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   int unit;
   int ret;
   int pwm_cnt = 0;
+  int spb_type;
+  int fan_type;
 
   pwm_cnt = pal_get_pwm_cnt();
 
   if (fan >= pwm_cnt) {
     syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
     return -1;
+  }
+
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    switch (fan) {
+      case 0:
+      case 2:
+        fan = 0;
+        break;
+      case 1:
+      case 3:
+        fan = 1;
+        break;
+    }
   }
 
   // Convert the percentage to our 1/96th unit.
@@ -5879,8 +5944,9 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 
    // Read sensor cache
    ret = sensor_cache_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
-   if (ret != 0) // Read sensor value
+   if (ret != 0)  // Read sensor value
       ret = sensor_raw_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
+   
 
    if (0 == ret)
       *rpm = (int) value;
@@ -5961,11 +6027,29 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   int val = 0;
   int pwm_enable = 0;
   int pwm_cnt = 0;
+  int spb_type;
+  int fan_type;
 
   pwm_cnt = pal_get_pwm_cnt();
   if(fan_num < 0 || fan_num >= pwm_cnt) {
     syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
     return -1;
+  }
+
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    switch (fan_num) {
+      case 0:
+      case 2:
+        fan_num = 0;
+        break;
+      case 1:
+      case 3:
+        fan_num = 1;
+        break;
+    }
   }
 
 // Need check pwmX_en to determine the PWM is 0 or 100.

@@ -363,8 +363,8 @@ const uint8_t spb_sensor_dual_r_fan_list[] = {
   SP_SENSOR_OUTLET_TEMP,
   //SP_SENSOR_MEZZ_TEMP
   SP_SENSOR_FAN0_TACH,
-  SP_SENSOR_FAN1_TACH,
   SP_SENSOR_FAN2_TACH,
+  SP_SENSOR_FAN1_TACH,
   SP_SENSOR_FAN3_TACH,
   //SP_SENSOR_AIR_FLOW,
   SP_SENSOR_P5V,
@@ -608,12 +608,12 @@ sensor_thresh_array_init() {
       spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
       spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
       spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
-      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
-      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
       spb_sensor_threshold[SP_SENSOR_FAN2_TACH][UCR_THRESH] = 11500;
       spb_sensor_threshold[SP_SENSOR_FAN2_TACH][UNC_THRESH] = 8500;
       spb_sensor_threshold[SP_SENSOR_FAN2_TACH][LCR_THRESH] = 500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
       spb_sensor_threshold[SP_SENSOR_FAN3_TACH][UCR_THRESH] = 11500;
       spb_sensor_threshold[SP_SENSOR_FAN3_TACH][UNC_THRESH] = 8500;
       spb_sensor_threshold[SP_SENSOR_FAN3_TACH][LCR_THRESH] = 500;
@@ -2194,6 +2194,8 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   bool discrete;
   int i;
   char path[LARGEST_DEVICE_NAME];
+  int spb_type;
+  int fan_type;
 
   switch (fru) {
     case FRU_SLOT1:
@@ -2359,6 +2361,15 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
     case FRU_SPB:
+      spb_type = fby2_common_get_spb_type();
+      fan_type = fby2_common_get_fan_type();
+
+      if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_SINGLE_FAN) {
+        if (sensor_num == SP_SENSOR_FAN0_TACH || sensor_num == SP_SENSOR_FAN1_TACH) {
+          sensor_num = sensor_num + 2;
+        }
+      }
+
       switch(sensor_num) {
 
         // Inlet, Outlet Temp

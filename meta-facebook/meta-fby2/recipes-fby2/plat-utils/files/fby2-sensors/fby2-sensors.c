@@ -55,29 +55,56 @@ main(int argc, char **argv) {
   	printf("SP_SENSOR_OUTLET_TEMP: %.2f C\n", fvalue);
   }
 
-  if (fby2_sensor_read(slot_id, SP_SENSOR_FAN0_TACH, &value)) {
-    printf("fby2_sensor_read failed: SP_SENSOR_FAN0_TACH\n");
-  } else {
-  	printf("SP_SENSOR_FAN0_TACH: %d rpm\n", value);
-  }
+  if (spb_type == TYPE_SPB_YV250) {
+    if (fan_type == TYPE_DUAL_R_FAN) { // YV2.50 Dual R FAN
+      if (fby2_sensor_read(slot_id, SP_SENSOR_FAN0_TACH, &value)) {
+        printf("fby2_sensor_read failed: SP_SENSOR_FAN0_TACH\n");
+      } else {
+        printf("SP_SENSOR_FAN0_TACH: %d rpm\n", value);
+      }
 
-  if (fby2_sensor_read(slot_id, SP_SENSOR_FAN1_TACH, &value)) {
-    printf("fby2_sensor_read failed: SP_SENSOR_FAN1_TACH\n");
-  } else {
-  	printf("SP_SENSOR_FAN1_TACH: %d rpm\n", value);
-  }
+      if (fby2_sensor_read(slot_id, SP_SENSOR_FAN1_TACH, &value)) {
+        printf("fby2_sensor_read failed: SP_SENSOR_FAN1_TACH\n");
+      } else {
+        printf("SP_SENSOR_FAN1_TACH: %d rpm\n", value);
+      }
 
-  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) { // YV2.50 Dual R FAN
-    if (fby2_sensor_read(slot_id, SP_SENSOR_FAN2_TACH, &value)) {
-      printf("fby2_sensor_read failed: SP_SENSOR_FAN2_TACH\n");
+      if (fby2_sensor_read(slot_id, SP_SENSOR_FAN2_TACH, &value)) {
+        printf("fby2_sensor_read failed: SP_SENSOR_FAN2_TACH\n");
+      } else {
+        printf("SP_SENSOR_FAN2_TACH: %d rpm\n", value);
+      }
+
+      if (fby2_sensor_read(slot_id, SP_SENSOR_FAN3_TACH, &value)) {
+        printf("fby2_sensor_read failed: SP_SENSOR_FAN3_TACH\n");
+      } else {
+        printf("SP_SENSOR_FAN3_TACH: %d rpm\n", value);
+      }
+    } else { // YV2.50 Single R FAN
+      // Workaround for FAN consistence
+      if (fby2_sensor_read(slot_id, SP_SENSOR_FAN2_TACH, &value)) {
+        printf("fby2_sensor_read failed: SP_SENSOR_FAN2_TACH\n");
+      } else {
+        printf("SP_SENSOR_FAN0_TACH: %d rpm\n", value);
+      }
+
+      if (fby2_sensor_read(slot_id, SP_SENSOR_FAN3_TACH, &value)) {
+        printf("fby2_sensor_read failed: SP_SENSOR_FAN3_TACH\n");
+      } else {
+        printf("SP_SENSOR_FAN1_TACH: %d rpm\n", value);
+      }
+    }
+  } else { // YV2
+    if (fby2_sensor_read(slot_id, SP_SENSOR_FAN0_TACH, &value)) {
+      printf("fby2_sensor_read failed: SP_SENSOR_FAN0_TACH\n");
     } else {
-          printf("SP_SENSOR_FAN2_TACH: %d rpm\n", value);
+      printf("SP_SENSOR_FAN0_TACH: %d rpm\n", value);
     }
 
-    if (fby2_sensor_read(slot_id, SP_SENSOR_FAN3_TACH, &value)) {
-      printf("fby2_sensor_read failed: SP_SENSOR_FAN3_TACH\n");
+    if (fby2_sensor_read(slot_id, SP_SENSOR_FAN1_TACH, &value)) {
+      printf("fby2_sensor_read failed: SP_SENSOR_FAN1_TACH\n");
     } else {
-          printf("SP_SENSOR_FAN3_TACH: %d rpm\n", value);
+      printf("SP_SENSOR_FAN1_TACH: %d rpm\n", value);
     }
   }
 

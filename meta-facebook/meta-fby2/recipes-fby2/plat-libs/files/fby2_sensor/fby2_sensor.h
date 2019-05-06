@@ -511,6 +511,8 @@ extern size_t bic_discrete_cnt;
 
 extern size_t spb_sensor_cnt;
 
+extern size_t spb_single_r_fan_sensor_cnt;
+
 extern size_t spb_dual_r_fan_sensor_cnt;
 
 extern size_t nic_sensor_cnt;

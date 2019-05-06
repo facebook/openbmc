@@ -1709,71 +1709,6 @@ pal_post_get_last(uint8_t slot, uint8_t *status) {
   return 0;
 }
 
-static int
-pal_set_post_gpio_out(void) {
-  char path[LARGEST_DEVICE_NAME + 1];
-  int ret;
-  char *val = "out";
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_0, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_1, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_2, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_3, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_4, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_5, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_6, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_7, "direction");
-  ret = write_device(path, val);
-  if (ret) {
-    goto post_exit;
-  }
-
-  post_exit:
-  if (ret) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "write_device failed for %s\n", path);
-#endif
-    return -1;
-  } else {
-    return 0;
-  }
-}
-
 // Display the given POST code using GPIO port
 static int
 pal_post_display(uint8_t status) {
@@ -1784,11 +1719,6 @@ pal_post_display(uint8_t status) {
 #ifdef DEBUG
   syslog(LOG_WARNING, "pal_post_display: status is %d\n", status);
 #endif
-
-  ret = pal_set_post_gpio_out();
-  if (ret) {
-    return -1;
-  }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_0, "value");
   if (BIT(status, 0)) {

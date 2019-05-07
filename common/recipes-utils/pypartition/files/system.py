@@ -140,7 +140,7 @@ def get_checksums_args(description):
     checksum_help += 'md5sums to image descriptions'
     append_help = 'append unrecognized checksums to those from CHECKSUMS and '
     append_help += 'write the result to this file'
-    parser.add_argument('--checksums', help=checksum_help, required=True,
+    parser.add_argument('--checksums', help=checksum_help,
                         type=argparse.FileType('r'))
     if is_openbmc():
         parser.add_argument('--dry-run', action='store_true')
@@ -152,7 +152,10 @@ def get_checksums_args(description):
 
     args = parser.parse_args()
 
-    checksums = json.load(args.checksums).keys()
+    if args.checksums:
+        checksums = json.load(args.checksums).keys()
+    else:
+        checksums = []
 
     return (checksums, args)
 

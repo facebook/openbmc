@@ -436,98 +436,50 @@ const uint8_t gpv2_sensor_list[] = {
   //M.2 0
   GPV2_SENSOR_DEV0_INA231_PW,
   GPV2_SENSOR_DEV0_INA231_VOL,
-  GPV2_SENSOR_DEV0_FPGA_PW,
-  GPV2_SENSOR_DEV0_FPGA_VOL,
-  GPV2_SENSOR_DEV0_DDR_PW,
-  GPV2_SENSOR_DEV0_DDR_VOL,
   GPV2_SENSOR_DEV0_Temp,
   //M.2 1
   GPV2_SENSOR_DEV1_INA231_PW,
   GPV2_SENSOR_DEV1_INA231_VOL,
-  GPV2_SENSOR_DEV1_FPGA_PW,
-  GPV2_SENSOR_DEV1_FPGA_VOL,
-  GPV2_SENSOR_DEV1_DDR_PW,
-  GPV2_SENSOR_DEV1_DDR_VOL,
   GPV2_SENSOR_DEV1_Temp,
   //M.2 2
   GPV2_SENSOR_DEV2_INA231_PW,
   GPV2_SENSOR_DEV2_INA231_VOL,
-  GPV2_SENSOR_DEV2_FPGA_PW,
-  GPV2_SENSOR_DEV2_FPGA_VOL,
-  GPV2_SENSOR_DEV2_DDR_PW,
-  GPV2_SENSOR_DEV2_DDR_VOL,
   GPV2_SENSOR_DEV2_Temp,
   //M.2 3
   GPV2_SENSOR_DEV3_INA231_PW,
   GPV2_SENSOR_DEV3_INA231_VOL,
-  GPV2_SENSOR_DEV3_FPGA_PW,
-  GPV2_SENSOR_DEV3_FPGA_VOL,
-  GPV2_SENSOR_DEV3_DDR_PW,
-  GPV2_SENSOR_DEV3_DDR_VOL,
   GPV2_SENSOR_DEV3_Temp,
   //M.2 4
   GPV2_SENSOR_DEV4_INA231_PW,
   GPV2_SENSOR_DEV4_INA231_VOL,
-  GPV2_SENSOR_DEV4_FPGA_PW,
-  GPV2_SENSOR_DEV4_FPGA_VOL,
-  GPV2_SENSOR_DEV4_DDR_PW,
-  GPV2_SENSOR_DEV4_DDR_VOL,
   GPV2_SENSOR_DEV4_Temp,
   //M.2 5
   GPV2_SENSOR_DEV5_INA231_PW,
   GPV2_SENSOR_DEV5_INA231_VOL,
-  GPV2_SENSOR_DEV5_FPGA_PW,
-  GPV2_SENSOR_DEV5_FPGA_VOL,
-  GPV2_SENSOR_DEV5_DDR_PW,
-  GPV2_SENSOR_DEV5_DDR_VOL,
   GPV2_SENSOR_DEV5_Temp,
   //M.2 6
   GPV2_SENSOR_DEV6_INA231_PW,
   GPV2_SENSOR_DEV6_INA231_VOL,
-  GPV2_SENSOR_DEV6_FPGA_PW,
-  GPV2_SENSOR_DEV6_FPGA_VOL,
-  GPV2_SENSOR_DEV6_DDR_PW,
-  GPV2_SENSOR_DEV6_DDR_VOL,
   GPV2_SENSOR_DEV6_Temp,
   //M.2 7
   GPV2_SENSOR_DEV7_INA231_PW,
   GPV2_SENSOR_DEV7_INA231_VOL,
-  GPV2_SENSOR_DEV7_FPGA_PW,
-  GPV2_SENSOR_DEV7_FPGA_VOL,
-  GPV2_SENSOR_DEV7_DDR_PW,
-  GPV2_SENSOR_DEV7_DDR_VOL,
   GPV2_SENSOR_DEV7_Temp,
   //M.2 8
   GPV2_SENSOR_DEV8_INA231_PW,
   GPV2_SENSOR_DEV8_INA231_VOL,
-  GPV2_SENSOR_DEV8_FPGA_PW,
-  GPV2_SENSOR_DEV8_FPGA_VOL,
-  GPV2_SENSOR_DEV8_DDR_PW,
-  GPV2_SENSOR_DEV8_DDR_VOL,
   GPV2_SENSOR_DEV8_Temp,
   //M.2 9
   GPV2_SENSOR_DEV9_INA231_PW,
   GPV2_SENSOR_DEV9_INA231_VOL,
-  GPV2_SENSOR_DEV9_FPGA_PW,
-  GPV2_SENSOR_DEV9_FPGA_VOL,
-  GPV2_SENSOR_DEV9_DDR_PW,
-  GPV2_SENSOR_DEV9_DDR_VOL,
   GPV2_SENSOR_DEV9_Temp,
   //M.2 10
   GPV2_SENSOR_DEV10_INA231_PW,
   GPV2_SENSOR_DEV10_INA231_VOL,
-  GPV2_SENSOR_DEV10_FPGA_PW,
-  GPV2_SENSOR_DEV10_FPGA_VOL,
-  GPV2_SENSOR_DEV10_DDR_PW,
-  GPV2_SENSOR_DEV10_DDR_VOL,
   GPV2_SENSOR_DEV10_Temp,
   //M.2 11
   GPV2_SENSOR_DEV11_INA231_PW,
   GPV2_SENSOR_DEV11_INA231_VOL,
-  GPV2_SENSOR_DEV11_FPGA_PW,
-  GPV2_SENSOR_DEV11_FPGA_VOL,
-  GPV2_SENSOR_DEV11_DDR_PW,
-  GPV2_SENSOR_DEV11_DDR_VOL,
   GPV2_SENSOR_DEV11_Temp,
 };
 #endif
@@ -1458,6 +1410,8 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       int num = 0;
       ipmi_device_sensor_t sdata = {0};
       ipmi_device_sensor_reading_t *dev_sensor = (ipmi_device_sensor_reading_t *) rbuf;
+      uint16_t exist_flag = 0;
+
       ret = bic_read_device_sensors(fru, dev_id, dev_sensor,&rlen);
 
       if (ret) {
@@ -1475,10 +1429,20 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       for (i=0;i<num;i++) {
         sdata = dev_sensor->data[i];
         dev_sensor_num = sdata.sensor_num;
+        exist_flag |= (1 << (dev_sensor_num & 0xf));
         g_sread[fru-1][dev_sensor_num].value = sdata.value;
         g_sread[fru-1][dev_sensor_num].flags = sdata.flags;
         g_sread[fru-1][dev_sensor_num].status = sdata.status;
         g_sread[fru-1][dev_sensor_num].ext_status = sdata.ext_status;
+      }
+
+
+      // set NA if device sensor doesn't get from BIC
+      // for example, BMC sensor list has sensor removed from newer BIC
+      for (i=sensor_num; i < (sensor_num + MAX_NUM_DEV_SENSORS); i++) {
+        if (exist_flag & (1 << (i & 0xf)))
+          continue;
+        g_sread[fru-1][i].flags = BIC_SENSOR_READ_NA;
       }
     }
   }

@@ -6961,52 +6961,28 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
           case GPV2_SENSOR_0V92_VR_Vol:
           //M.2 0
           case GPV2_SENSOR_DEV0_INA231_VOL:
-          case GPV2_SENSOR_DEV0_FPGA_VOL:
-          case GPV2_SENSOR_DEV0_DDR_VOL:
           //M.2 1
           case GPV2_SENSOR_DEV1_INA231_VOL:
-          case GPV2_SENSOR_DEV1_FPGA_VOL:
-          case GPV2_SENSOR_DEV1_DDR_VOL:
           //M.2 2
           case GPV2_SENSOR_DEV2_INA231_VOL:
-          case GPV2_SENSOR_DEV2_FPGA_VOL:
-          case GPV2_SENSOR_DEV2_DDR_VOL:
           //M.2 3
           case GPV2_SENSOR_DEV3_INA231_VOL:
-          case GPV2_SENSOR_DEV3_FPGA_VOL:
-          case GPV2_SENSOR_DEV3_DDR_VOL:
           //M.2 4
           case GPV2_SENSOR_DEV4_INA231_VOL:
-          case GPV2_SENSOR_DEV4_FPGA_VOL:
-          case GPV2_SENSOR_DEV4_DDR_VOL:
           //M.2 5
           case GPV2_SENSOR_DEV5_INA231_VOL:
-          case GPV2_SENSOR_DEV5_FPGA_VOL:
-          case GPV2_SENSOR_DEV5_DDR_VOL:
           //M.2 6
           case GPV2_SENSOR_DEV6_INA231_VOL:
-          case GPV2_SENSOR_DEV6_FPGA_VOL:
-          case GPV2_SENSOR_DEV6_DDR_VOL:
           //M.2 7
           case GPV2_SENSOR_DEV7_INA231_VOL:
-          case GPV2_SENSOR_DEV7_FPGA_VOL:
-          case GPV2_SENSOR_DEV7_DDR_VOL:
           //M.2 8
           case GPV2_SENSOR_DEV8_INA231_VOL:
-          case GPV2_SENSOR_DEV8_FPGA_VOL:
-          case GPV2_SENSOR_DEV8_DDR_VOL:
           //M.2 9
           case GPV2_SENSOR_DEV9_INA231_VOL:
-          case GPV2_SENSOR_DEV9_FPGA_VOL:
-          case GPV2_SENSOR_DEV9_DDR_VOL:
           //M.2 10
           case GPV2_SENSOR_DEV10_INA231_VOL:
-          case GPV2_SENSOR_DEV10_FPGA_VOL:
-          case GPV2_SENSOR_DEV10_DDR_VOL:
           //M.2 11
           case GPV2_SENSOR_DEV11_INA231_VOL:
-          case GPV2_SENSOR_DEV11_FPGA_VOL:
-          case GPV2_SENSOR_DEV11_DDR_VOL:
             snr_desc = get_sensor_desc(fru, snr_num);
             sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
             break;
@@ -7239,52 +7215,28 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
           case GPV2_SENSOR_0V92_VR_Vol:
           //M.2 0
           case GPV2_SENSOR_DEV0_INA231_VOL:
-          case GPV2_SENSOR_DEV0_FPGA_VOL:
-          case GPV2_SENSOR_DEV0_DDR_VOL:
           //M.2 1
           case GPV2_SENSOR_DEV1_INA231_VOL:
-          case GPV2_SENSOR_DEV1_FPGA_VOL:
-          case GPV2_SENSOR_DEV1_DDR_VOL:
           //M.2 2
           case GPV2_SENSOR_DEV2_INA231_VOL:
-          case GPV2_SENSOR_DEV2_FPGA_VOL:
-          case GPV2_SENSOR_DEV2_DDR_VOL:
           //M.2 3
           case GPV2_SENSOR_DEV3_INA231_VOL:
-          case GPV2_SENSOR_DEV3_FPGA_VOL:
-          case GPV2_SENSOR_DEV3_DDR_VOL:
           //M.2 4
           case GPV2_SENSOR_DEV4_INA231_VOL:
-          case GPV2_SENSOR_DEV4_FPGA_VOL:
-          case GPV2_SENSOR_DEV4_DDR_VOL:
           //M.2 5
           case GPV2_SENSOR_DEV5_INA231_VOL:
-          case GPV2_SENSOR_DEV5_FPGA_VOL:
-          case GPV2_SENSOR_DEV5_DDR_VOL:
           //M.2 6
           case GPV2_SENSOR_DEV6_INA231_VOL:
-          case GPV2_SENSOR_DEV6_FPGA_VOL:
-          case GPV2_SENSOR_DEV6_DDR_VOL:
           //M.2 7
           case GPV2_SENSOR_DEV7_INA231_VOL:
-          case GPV2_SENSOR_DEV7_FPGA_VOL:
-          case GPV2_SENSOR_DEV7_DDR_VOL:
           //M.2 8
           case GPV2_SENSOR_DEV8_INA231_VOL:
-          case GPV2_SENSOR_DEV8_FPGA_VOL:
-          case GPV2_SENSOR_DEV8_DDR_VOL:
           //M.2 9
           case GPV2_SENSOR_DEV9_INA231_VOL:
-          case GPV2_SENSOR_DEV9_FPGA_VOL:
-          case GPV2_SENSOR_DEV9_DDR_VOL:
           //M.2 10
           case GPV2_SENSOR_DEV10_INA231_VOL:
-          case GPV2_SENSOR_DEV10_FPGA_VOL:
-          case GPV2_SENSOR_DEV10_DDR_VOL:
           //M.2 11
           case GPV2_SENSOR_DEV11_INA231_VOL:
-          case GPV2_SENSOR_DEV11_FPGA_VOL:
-          case GPV2_SENSOR_DEV11_DDR_VOL:
             snr_desc = get_sensor_desc(fru, snr_num);
             sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
             break;

@@ -3,16 +3,24 @@
     "submit",
   ],
   "sandcastle_job_specs": [{
-    "alias": "openbmc-sandcastle",
+    "alias": "openbmc-sandcastle-determinator",
     "command": "SandcastleUniversalCommand",
     "args": {
-      "name": "openbmc-ci",
+      "name": "openbmc-ci-determinator",
       "oncall": "openbmc",
-      "steps": [{
-        "name": "openbmc-ci-determinator",
+      "steps": [
+        {
+          "name": "openbmc-ci-build-determinator",
           "shell": "facebook/sandcastle/job.py diff",
           "determinator": true,
-      }],
+        },
+        {
+          "name": "openbmc-cit-determinator",
+          "shell": "facebook/netcastle/job.py cit-diff",
+          "determinator": true,
+        },
+
+      ],
     },
     "capabilities": {
       "vcs": "openbmc-git",

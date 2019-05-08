@@ -4914,6 +4914,11 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
             case 0x00:  // don't care sensor number 00h
               return 0;
+
+            case BIC_SENSOR_SYSTEM_STATUS:
+              if ((event_data[3] & 0x0F) == 0x07) // Platform_Reset
+                return 0;
+              break;
           }
           break;
         default:
@@ -4928,6 +4933,11 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
         case 0x00:  // don't care sensor number 00h
           return 0;
+
+        case BIC_SENSOR_SYSTEM_STATUS:
+          if ((event_data[3] & 0x0F) == 0x07) // Platform_Reset
+            return 0;
+          break;
       }
 #endif
       sprintf(key, "slot%d_sel_error", fru);

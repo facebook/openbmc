@@ -7995,6 +7995,43 @@ pal_is_cplddump_ongoing_system(void) {
 }
 
 bool
+pal_is_fw_update_ongoing(uint8_t fruid) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t pair_fruid;
+  bool is_fruid_update = false, is_pair_fruid_update = false;
+  struct timespec ts;
+
+  if (0 == fruid%2)
+    pair_fruid = fruid - 1;
+  else
+    pair_fruid = fruid + 1;
+
+  sprintf(key, "fru%d_fwupd", fruid);
+  if (kv_get(key, value, NULL, 0) == 0) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (strtoul(value, NULL, 10) > ts.tv_sec)
+      is_fruid_update = true;
+  }
+
+  switch(pal_get_pair_slot_type(fruid)) {
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
+      // check pair slot
+      sprintf(key, "fru%d_fwupd", pair_fruid);
+      if (kv_get(key, value, NULL, 0) == 0) {
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        if (strtoul(value, NULL, 10) > ts.tv_sec)
+          is_pair_fruid_update = true;
+      }
+      break;
+  }
+
+  return (is_fruid_update || is_pair_fruid_update);
+}
+
+bool
 pal_is_fw_update_ongoing_system(void) {
   uint8_t i;
 

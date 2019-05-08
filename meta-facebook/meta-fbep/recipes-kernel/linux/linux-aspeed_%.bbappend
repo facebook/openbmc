@@ -1,0 +1,4 @@
+LINUX_VERSION_EXTENSION = "-fbep"
+
+COMPATIBLE_MACHINE = "emeraldpools"
+

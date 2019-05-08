@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -24,17 +24,16 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 board_rev=$(wedge_board_rev)
 
-smb_ver=$(cat $(i2c_device_sysfs_abspath 12-003e/cpld_ver) | head -n 1)
-smb_sub_ver=$(cat $(i2c_device_sysfs_abspath 12-003e/cpld_sub_ver) | head -n 1)
-pwr_ver=$(cat $(i2c_device_sysfs_abspath 31-003e/cpld_ver) | head -n 1)
-pwr_sub_ver=$(cat $(i2c_device_sysfs_abspath 31-003e/cpld_sub_ver) | head -n 1)
-scm_ver=$(cat $(i2c_device_sysfs_abspath 2-003e/cpld_ver) | head -n 1)
-scm_sub_ver=$(cat $(i2c_device_sysfs_abspath 2-003e/cpld_sub_ver) | head -n 1)
-fcb_ver=$(cat $(i2c_device_sysfs_abspath 32-003e/cpld_ver) | head -n 1)
-fcb_sub_ver=$(cat $(i2c_device_sysfs_abspath 32-003e/cpld_sub_ver) | head -n 1)
+smb_ver=$(cat $SMBCPLD_SYSFS_DIR/cpld_ver | head -n 1)
+smb_sub_ver=$(cat $SMBCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
+pwr_ver=$(cat $PWRCPLD_SYSFS_DIR/cpld_ver | head -n 1)
+pwr_sub_ver=$(cat $PWRCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
+scm_ver=$(cat $SCMCPLD_SYSFS_DIR/cpld_ver | head -n 1)
+scm_sub_ver=$(cat $SCMCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
+fcm_ver=$(cat $FCMCPLD_SYSFS_DIR/cpld_ver | head -n 1)
+fcm_sub_ver=$(cat $FCMCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
 
 echo "SMB_SYSCPLD: $(($smb_ver)).$(($smb_sub_ver))"
 echo "SMB_PWRCPLD: $(($pwr_ver)).$(($pwr_sub_ver))"
 echo "SCMCPLD: $(($scm_ver)).$(($scm_sub_ver))"
-echo "FCBCPLD: $(($fcb_ver)).$(($fcb_sub_ver))"
-
+echo "FCMCPLD: $(($fcm_ver)).$(($fcm_sub_ver))"

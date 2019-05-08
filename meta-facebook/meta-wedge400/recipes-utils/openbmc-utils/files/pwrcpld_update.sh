@@ -27,6 +27,13 @@ img="$1"
 
 source /usr/local/bin/openbmc-utils.sh
 
+KERNEL_VERSION=`uname -r`
+if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
+    DLL_PATH=/usr/lib/libcpldupdate_dll_jtag.so
+else
+    DLL_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
+fi
+
 enable_jtag_chain(){
     gpio_set BMC_JTAG_MUX_IN        1
     gpio_set PWR_CPLD_JTAG_EN_N     0
@@ -60,7 +67,7 @@ trap 'rm -rf /tmp/pwrcpld_update' INT TERM QUIT EXIT
 echo 1 > /tmp/pwrcpld_update
 
 enable_jtag_chain
-ispvm -f 1000 dll /usr/lib/libcpldupdate_dll_ast_jtag.so "${img}"
+ispvm -f 1000 dll $DLL_PATH "${img}"
 result=$?
 disable_jtag_chain
 

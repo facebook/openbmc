@@ -1,9 +1,36 @@
+#!/bin/bash
+#
 # Copyright 2019-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
 . /usr/local/bin/openbmc-utils.sh
 
-SCMCPLD_SYSFS_DIR="$(i2c_device_sysfs_abspath 2-003e)"
-SMBCPLD_SYSFS_DIR="$(i2c_device_sysfs_abspath 12-003e)"
+SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 2-003e)
+SMBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-003e)
+if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
+    PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 29-003e)
+    FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 30-003e)
+else
+    PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 31-003e)
+    FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 32-003e)
+fi
 PWR_USRV_SYSFS="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
+PWR_USRV_FORCE_OFF="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_force_off"
 PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/mac_reset_n"
 
 wedge_iso_buf_enable() {
@@ -17,10 +44,12 @@ wedge_iso_buf_disable() {
 }
 
 wedge_is_us_on() {
-    local val
+    local val0 val1
 
-    val=$(cat $PWR_USRV_SYSFS 2> /dev/null | head -n 1)
-    if [ "$val" == "0x1" ]; then
+    val0=$(cat $PWR_USRV_SYSFS 2> /dev/null | head -n 1)
+    val1=$(cat $PWR_USRV_FORCE_OFF 2> /dev/null | head -n 1)
+    
+    if [ "$val0" == "0x1" ] && [ "$val1" == "0x1" ] ; then
         return 0            # powered on
     else
         return 1

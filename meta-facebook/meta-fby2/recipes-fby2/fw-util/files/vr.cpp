@@ -25,8 +25,28 @@ class VrComponent : public Component {
 
   int print_version() {
     uint8_t ver[32] = {0};
-    if (fby2_get_slot_type(slot_id) != SLOT_TYPE_SERVER) {
-      //GPV2 not support yet
+    if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+      try {
+        server.ready();
+        // Print 3V3_VR VR Version
+        if (bic_get_fw_ver(slot_id, FW_3V3_VR, ver)){
+          printf("3V3 VR Version: NA\n");
+        }
+        else {
+          printf("3V3 VR Version: 0x%02x\n", ver[0]);
+        }
+
+        // Print 3V3_VR VR Version
+        if (bic_get_fw_ver(slot_id, FW_0V92, ver)){
+          printf("0V92 VR Version: NA\n");
+        }
+        else {
+          printf("0V92 VR Version: 0x%02x\n", ver[0]);
+        }
+      } catch (string err) {
+        printf("3V3 VR Version: NA (%s)\n", err.c_str());
+        printf("0V92 VR Version: NA (%s)\n", err.c_str());
+      }
       return 0;
     }
 #if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)

@@ -325,6 +325,8 @@ enum {
 
 // GPv2
 enum {
+  FW_3V3_VR = 5,
+  FW_0V92 = 6,
   FW_PCIE_SWITCH = 7,
 };
 

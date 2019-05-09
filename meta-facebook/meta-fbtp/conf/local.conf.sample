@@ -4,6 +4,8 @@
 
 # Machine Selection
 MACHINE ??= "fbtp"
+# select the following machine for using new u-boot
+# MACHINE ??= "fbtp-ubu"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

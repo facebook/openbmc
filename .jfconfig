@@ -16,7 +16,7 @@
         },
         {
           "name": "openbmc-cit-determinator",
-          "shell": "facebook/netcastle/job.py cit-diff",
+          "shell": "facebook/sandcastle/job.py cit-diff",
           "determinator": true,
         },
 

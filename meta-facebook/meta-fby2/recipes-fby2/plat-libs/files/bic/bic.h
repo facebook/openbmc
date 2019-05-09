@@ -449,6 +449,7 @@ int get_imc_version(uint8_t slot, uint8_t *ver);
 int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
 int bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis);
 int bic_send_jtag_instruction(uint8_t slot_id, uint8_t dev_id, uint8_t *rbuf, uint8_t ir);
+int bic_get_debug_mode(uint8_t slot_id, uint8_t *debug_mode);
 
 #ifdef __cplusplus
 } // extern "C"

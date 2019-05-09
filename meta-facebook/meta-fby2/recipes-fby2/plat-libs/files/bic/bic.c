@@ -2748,3 +2748,22 @@ bic_send_jtag_instruction(uint8_t slot_id, uint8_t dev_id, uint8_t *rbuf, uint8_
 
   return ret;
 }
+
+int
+bic_get_debug_mode(uint8_t slot_id, uint8_t *debug_mode) {
+  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0}; // IANA ID
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = 1; // 0: write 1: read
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, 0x3C, tbuf, 4, rbuf, &rlen);
+
+  if ((ret == 0) && (rlen == 4)){
+    *debug_mode = rbuf[3];
+  } else {
+    ret = -1;
+  }
+
+  return ret;
+}

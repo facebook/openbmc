@@ -132,6 +132,8 @@
 
 #define CHUNK_OF_CRS_HEADER_LEN 2
 
+#define NON_DEBUG_MODE 0xff
+
 #ifndef max
 #define max(a, b) ((a) > (b)) ? (a) : (b)
 #endif
@@ -2566,6 +2568,7 @@ int
 pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   int ret;
   uint8_t status, type;
+  uint8_t debug_mode = NON_DEBUG_MODE;
 
   if (slot_id != 1 && slot_id != 3) {
     return -1;
@@ -2580,9 +2583,12 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
     return -1;
   }
 
+  if (bic_get_debug_mode(slot_id, &debug_mode))
+    debug_mode = NON_DEBUG_MODE;
+
   switch(cmd) {
     case SERVER_POWER_ON:
-      if (status == SERVER_POWER_ON)
+      if ((status == SERVER_POWER_ON) && (debug_mode == NON_DEBUG_MODE))
         return 1;
       else {
         ret = bic_set_dev_power_status(slot_id, dev_id, 1);
@@ -2594,7 +2600,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
       break;
 
     case SERVER_POWER_OFF:
-      if (status == SERVER_POWER_OFF)
+      if ((status == SERVER_POWER_OFF) && (debug_mode == NON_DEBUG_MODE))
         return 1;
       else {
         ret = bic_set_dev_power_status(slot_id, dev_id, 2);

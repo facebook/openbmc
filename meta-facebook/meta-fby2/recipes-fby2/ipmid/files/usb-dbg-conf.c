@@ -562,7 +562,42 @@ static sensor_desc_t cri_sensor[] =
 static char *dimm_label_tl[8] = {"A0", "A1", "B0", "B1", "D0", "D1", "E0", "E1"};
 static int dlabel_count_tl = sizeof(dimm_label_tl) / sizeof(dimm_label_tl[0]);
 
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
+static sensor_desc_t cri_sensor_spb[] =
+{
+  {"HSC_PWR:"     , SP_SENSOR_HSC_IN_POWER     , "W"   , FRU_SPB, 1},
+  {"HSC_VOL:"     , SP_SENSOR_HSC_IN_VOLT      , "V"   , FRU_SPB, 2},
+  {"FAN0:"        , SP_SENSOR_FAN0_TACH        , "RPM" , FRU_SPB, 0},
+  {"FAN1:"        , SP_SENSOR_FAN1_TACH        , "RPM" , FRU_SPB, 0},
+  {"SP_INLET:"    , SP_SENSOR_INLET_TEMP       , "C"   , FRU_SPB, 0},
+};
+
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2)
+static sensor_desc_t cri_sensor_gpv2[] =
+{
+  {"INLET_TEMP:"      , GPV2_SENSOR_INLET_TEMP       , "C"   , FRU_ALL, 0},
+  {"OUTLET_TEMP:"     , GPV2_SENSOR_OUTLET_TEMP      , "C"   , FRU_ALL, 0},
+  {"PCIE_SW_TEMP:"    , GPV2_SENSOR_PCIE_SW_TEMP     , "C"   , FRU_ALL, 0},
+  {"3V3_VR_TEMP:"     , GPV2_SENSOR_3V3_VR_Temp      , "C"   , FRU_ALL, 0},
+  {"0V92_VR_TEMP:"    , GPV2_SENSOR_0V92_VR_Temp     , "C"   , FRU_ALL, 0},
+  {"HSC_PWR:"         , SP_SENSOR_HSC_IN_POWER       , "W"   , FRU_SPB, 1},
+  {"HSC_VOL:"         , SP_SENSOR_HSC_IN_VOLT        , "V"   , FRU_SPB, 2},
+  {"FAN0:"            , SP_SENSOR_FAN0_TACH          , "RPM" , FRU_SPB, 0},
+  {"FAN1:"            , SP_SENSOR_FAN1_TACH          , "RPM" , FRU_SPB, 0},
+  {"SP_INLET:"        , SP_SENSOR_INLET_TEMP         , "C"   , FRU_SPB, 0},
+  {"TEMP_DEV0:"       , GPV2_SENSOR_DEV0_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV1:"       , GPV2_SENSOR_DEV1_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV2:"       , GPV2_SENSOR_DEV2_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV3:"       , GPV2_SENSOR_DEV3_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV4:"       , GPV2_SENSOR_DEV4_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV5:"       , GPV2_SENSOR_DEV5_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV6:"       , GPV2_SENSOR_DEV6_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV7:"       , GPV2_SENSOR_DEV7_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV8:"       , GPV2_SENSOR_DEV8_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV9:"       , GPV2_SENSOR_DEV9_Temp        , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV10:"      , GPV2_SENSOR_DEV10_Temp       , "C"   , FRU_ALL, 0},
+  {"TEMP_DEV11:"      , GPV2_SENSOR_DEV11_Temp       , "C"   , FRU_ALL, 0},
+};
+
 static sensor_desc_t cri_sensor_rc[] =
 {
   {"SOC_TEMP_DIODE:"  , BIC_RC_SENSOR_SOC_TEMP_DIODE , "C"   , FRU_ALL, 0},
@@ -582,9 +617,6 @@ static sensor_desc_t cri_sensor_rc[] =
   {"DIMMD_TEMP:"      , BIC_RC_SENSOR_SOC_DIMMD_TEMP , "C"   , FRU_ALL, 0},
 };
 
-static char *dimm_label_rc[4] = {"B", "A", "C", "D"};
-static int dlabel_count_rc = sizeof(dimm_label_rc) / sizeof(dimm_label_rc[0]);
-
 static sensor_desc_t cri_sensor_ep[] =
 {
   {"SOC_TEMP:"    , BIC_EP_SENSOR_SOC_TEMP        , "C"   , FRU_ALL, 0},
@@ -600,6 +632,12 @@ static sensor_desc_t cri_sensor_ep[] =
   {"DIMMC_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMC_TEMP  , "C"   , FRU_ALL, 0},
   {"DIMMD_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMD_TEMP  , "C"   , FRU_ALL, 0},
 };
+
+#endif
+
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
+static char *dimm_label_rc[4] = {"B", "A", "C", "D"};
+static int dlabel_count_rc = sizeof(dimm_label_rc) / sizeof(dimm_label_rc[0]);
 
 static char *dimm_label_ep[4] = {"A", "B", "C", "D"};
 static int dlabel_count_ep = sizeof(dimm_label_ep) / sizeof(dimm_label_ep[0]);
@@ -693,7 +731,7 @@ int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2)
   uint8_t server_type = 0xFF;
 #endif
 
@@ -701,38 +739,53 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
     return -1;
   }
 
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
-  if(fru == FRU_ALL) {
-    *desc = cri_sensor;
-    *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
-    return 0;
-  }
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2)
 
-  if (bic_get_server_type(fru, &server_type)) {
-    return -1;
-  }
+  switch (bic_get_slot_type(fru)) {
+    case SLOT_TYPE_SERVER:
+      if (bic_get_server_type(fru, &server_type)) {
+        return -1;
+      }
 
-  switch (server_type) {
-    case SERVER_TYPE_EP:
-      *desc = cri_sensor_ep;
-      *desc_count = sizeof(cri_sensor_ep) / sizeof(cri_sensor_ep[0]);
+      switch (server_type) {
+        case SERVER_TYPE_EP:
+          *desc = cri_sensor_ep;
+          *desc_count = sizeof(cri_sensor_ep) / sizeof(cri_sensor_ep[0]);
+          break;
+        case SERVER_TYPE_RC:
+          *desc = cri_sensor_rc;
+          *desc_count = sizeof(cri_sensor_rc) / sizeof(cri_sensor_rc[0]);
+          break;
+        case SERVER_TYPE_TL:
+          *desc = cri_sensor;
+          *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+          break;
+        default:
+          *desc = cri_sensor;
+          *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+          break;
+      }
       break;
-    case SERVER_TYPE_RC:
-      *desc = cri_sensor_rc;
-      *desc_count = sizeof(cri_sensor_rc) / sizeof(cri_sensor_rc[0]);
-      break;
-    case SERVER_TYPE_TL:
-      *desc = cri_sensor;
-      *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+    case SLOT_TYPE_GPV2:
+      *desc = cri_sensor_gpv2;
+      *desc_count = sizeof(cri_sensor_gpv2) / sizeof(cri_sensor_gpv2[0]);
       break;
     default:
-      *desc = cri_sensor;
-      *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+      *desc = cri_sensor_spb;
+      *desc_count = sizeof(cri_sensor_spb) / sizeof(cri_sensor_spb[0]);
       break;
   }
 #else
-  *desc = cri_sensor;
-  *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+  switch (bic_get_slot_type(fru)) {
+    case SLOT_TYPE_SERVER:
+      *desc = cri_sensor;
+      *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+      break;
+    default:  // CF GP NULL SPB
+      *desc = cri_sensor_spb;
+      *desc_count = sizeof(cri_sensor_spb) / sizeof(cri_sensor_spb[0]);
+      break;
+  }
 #endif
 
   return 0;

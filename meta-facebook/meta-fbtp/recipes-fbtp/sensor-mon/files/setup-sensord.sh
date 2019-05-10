@@ -33,7 +33,7 @@
 echo "Get MB FW version... "
 /usr/bin/fw-util mb --version > /dev/null
 
-if [ $(cat /sys/class/gpio/gpio120/value) == "0" ]; then
+if [ "$(gpio_get FM_BOARD_SKU_ID0)" = "0" ]; then
   ln -s /etc/sensor-correction-sku0-conf.json /etc/sensor-correction-conf.json
 else
   ln -s /etc/sensor-correction-sku1-conf.json /etc/sensor-correction-conf.json

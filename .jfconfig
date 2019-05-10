@@ -1,14 +1,32 @@
 {
   "capabilities": [
     "submit",
+    "sandcastle",
   ],
+  "postponed_linters": {
+    "determinator-lint": [
+      {
+        "type": "any_regex_matches",
+        "value": [
+          "^.*$"
+        ]
+      }
+    ]
+  }, 
   "sandcastle_job_specs": [{
     "alias": "openbmc-sandcastle-determinator",
     "command": "SandcastleUniversalCommand",
     "args": {
       "name": "openbmc-ci-determinator",
       "oncall": "openbmc",
+      "async_lint": true,
       "steps": [
+        {
+          "name": "Async lint",
+          "shell": "arc lint --never-apply-patches --output json",
+          "report_lint": "determinator-lint",
+          "parser": "cat"
+        },
         {
           "name": "openbmc-ci-build-determinator",
           "shell": "facebook/sandcastle/job.py diff",

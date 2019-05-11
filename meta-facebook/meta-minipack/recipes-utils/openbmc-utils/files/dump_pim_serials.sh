@@ -18,12 +18,18 @@
 # Boston, MA 02110-1301 USA
 #
 
+. /usr/local/bin/openbmc-utils.sh
+
 for index in 1 2 3 4 5 6 7 8
 do
-    if [ ! -f /tmp/pim${index}_serial.txt ]; then
+    pim_path=${SMBCPLD_SYSFS_DIR}/pim_fpga_cpld_${index}_prsnt_n_status
+    pim_prsnt=$(cat $pim_path 2> /dev/null | head -n 1)
+    
+    #pimserial cache file doesn't exist, but pim is present
+    if [ ! -f /tmp/pim${index}_serial.txt ] && [ "${pim_prsnt}" == 0x0 ]; then
         /usr/local/bin/peutil $index |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim${index}_serial.txt
     fi
-    serial=`cat /tmp/pim${index}_serial.txt`
+    serial=$(cat /tmp/pim${index}_serial.txt)
     echo PIM${index} : ${serial}
 done
 

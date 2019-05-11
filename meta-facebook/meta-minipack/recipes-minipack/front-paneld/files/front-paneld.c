@@ -296,6 +296,24 @@ scm_mon_out:
   return 0;
 }
 
+//clear the pimserial cache in /tmp
+static void
+clear_pimserial_cache(int pim){
+  char pimserial_file[PATH_MAX];
+  int ret;
+
+  snprintf(pimserial_file, sizeof(pimserial_file),"/tmp/pim%d_serial.txt", pim);
+  if (!access(pimserial_file, F_OK)) {
+    syslog(LOG_INFO, "found %s", pimserial_file);
+    ret = unlink(pimserial_file);
+    if(ret != 0){
+      syslog(LOG_CRIT, "deleting  %s failed with errno %s", pimserial_file, strerror(errno));
+    }else{
+      syslog(LOG_INFO, "%s has been deleted", pimserial_file);
+    }
+  }
+}
+
 // Thread for monitoring pim plug
 static void *
 pim_monitor_handler(void *unused) {
@@ -375,6 +393,7 @@ pim_monitor_handler(void *unused) {
           }
         } else {
           syslog(LOG_WARNING, "PIM %d is unplugged.", num);
+          clear_pimserial_cache(fru - 2);
           pal_clear_thresh_value(fru);
           pim_driver_del(num, pim_type_old[num]);
           pim_type_old[num] = PIM_TYPE_UNPLUG;
@@ -484,7 +503,7 @@ debug_card_handler(void *unused) {
   uint8_t prsnt = 0;
   uint8_t prev_phy_pos = 0xff, pos, btn;
   char str[8];
- 
+
   /* Clear Debug Card uart sel button at the first time */
   pal_clr_dbg_uart_btn();
 

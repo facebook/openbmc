@@ -76,6 +76,22 @@ power_on_pim() {
   logger pim_enbale: powered on PIM${lc}
 }
 
+#clear pimserial endpoint cache if pim doesn't exist but the pimserial file does.
+clear_pimserial_cache(){
+  for i in "${pim_list[@]}"
+  do
+    pimserial_number="${1}"
+    pimserial_path="$SCDCPLD_SYSFS_DIR/lc${pimserial_number}_prsnt_sta"
+    pimserial_present="$(cat ${pimserial_path} 2> /dev/null | head -n 1)"
+    pimserial_cache_path=/tmp/pim${pimserial_number}_serial.txt
+    
+    if [ "${pimserial_present}" == 0x0 ] && [ -f "${pimserial_cache_path}" ]; then
+      #pim device doesn't exist but pimserial cache txt file exist, so remove it.
+      rm -rf "${pimserial_cache_path}"
+    fi
+  done
+}
+
 while true; do
   # 1. For any uncovered PIM, try to discover
   for i in ${pim_list[@]}
@@ -119,7 +135,13 @@ while true; do
     if [ "${pim_found[$i]}" -eq "1" ]; then
        power_on_pim $((i + 1))
     fi
+    
+    #clear pimserial endpoint cache
+    clear_pimserial_cache $((i+1))
+
+
   done
-  # Sleep 10 seconds until the next loop
-  sleep 10
+  # Sleep 5 seconds until the next loop.
+  # reduce to 5 seconds for faster scan.
+  sleep 5
 done

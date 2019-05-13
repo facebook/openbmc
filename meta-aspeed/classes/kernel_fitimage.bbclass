@@ -91,7 +91,7 @@ flash_image_generate() {
         FLASH_UBOOT_OFFSET=512
         FLASH_FIT_OFFSET=896
 
-        if [ $(stat -c%s ${UBOOT_RECOVERY_SOURCE}) -gt ${RECOVERY_MAX_SIZE} ]; then
+        if [ $(stat -L -c%s ${UBOOT_RECOVERY_SOURCE}) -gt ${RECOVERY_MAX_SIZE} ]; then
             echo "Recovery is too large to fit in the partition"
             return 1
         fi
@@ -99,7 +99,7 @@ flash_image_generate() {
         # Write the recovery U-Boot.
         dd if=${UBOOT_RECOVERY_SOURCE} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_RECOVERY_OFFSET} conv=notrunc
 
-        if [ $(stat -c%s ${UBOOT_FIT_DESTINATION}) -gt ${SIGNED_UBOOT_MAX_SIZE} ]; then
+        if [ $(stat -L -c%s ${UBOOT_FIT_DESTINATION}) -gt ${SIGNED_UBOOT_MAX_SIZE} ]; then
             echo "Signed u-boot FIT too large to fit into partition"
             return 1
         fi
@@ -111,7 +111,7 @@ flash_image_generate() {
         FLASH_UBOOT_OFFSET=0
         FLASH_FIT_OFFSET=512
 
-        if [ $(stat -c%s ${UBOOT_SOURCE}) -gt ${SIGNED_UBOOT_MAX_SIZE} ]; then
+        if [ $(stat -L -c%s ${UBOOT_SOURCE}) -gt ${SIGNED_UBOOT_MAX_SIZE} ]; then
             echo "Signed U-boot is too large to fit into partition"
             return 1
         fi
@@ -120,7 +120,7 @@ flash_image_generate() {
     fi
 
 
-    if [ $(stat -c%s ${FIT_DESTINATION}) -gt ${FIT_MAX_SIZE} ]; then
+    if [ $(stat -L -c%s ${FIT_DESTINATION}) -gt ${FIT_MAX_SIZE} ]; then
         echo "FIT is too large to fit into its partition"
         return 1
     fi
@@ -128,7 +128,7 @@ flash_image_generate() {
     dd if=${FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_FIT_OFFSET} conv=notrunc
 
     if [ "x${VERIFIED_BOOT}" != "x" ] ; then
-      if [ $(stat -c%s ${UBOOT_SPL_SOURCE}) -gt ${SPL_MAX_SIZE} ]; then
+      if [ $(stat -L -c%s ${UBOOT_SPL_SOURCE}) -gt ${SPL_MAX_SIZE} ]; then
           echo "SPL is too large to fit into the partition"
           return 1
       fi

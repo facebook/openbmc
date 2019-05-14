@@ -17,16 +17,34 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
+import unittest
 from common.base_eeprom_test import CommonEepromTest
+from utils.cit_logger import Logger
+
 
 class EepromTest(CommonEepromTest):
-
+    _FABRIC_CARD_NAMES = [
+        'GALAXY-FC',
+        'GALAXY-FAB'
+    ]
+    _LC_CARD_NAMES = [
+        'GALAXY-LC'
+    ]
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ['/usr/bin/weutil']
 
     def set_product_name(self):
-        self.product_name = ['GALAXY-LC', 'GALAXY-FC']
+        self.product_name = self._FABRIC_CARD_NAMES + self._LC_CARD_NAMES
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ['RIGHT', 'LEFT']
+
+    def test_location_on_fabric(self):
+        found, name =  self.is_found_product_name()
+        for item in self._FABRIC_CARD_NAMES:
+            if item.lower() in name:
+                # FABRIC card have no location set in the chassis
+                # proabably because they are all at the back
+                Logger.info("On Fabric card skipping test")
+                return unittest.skip("Skipping test on Fabric card")
+        super().test_location_on_fabric()

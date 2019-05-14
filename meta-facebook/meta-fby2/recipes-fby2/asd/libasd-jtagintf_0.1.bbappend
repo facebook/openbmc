@@ -3,6 +3,6 @@ FILESEXTRAPATHS_append := "${THISDIR}/files:"
 SRC_URI += "file://interface/SoftwareJTAGHandler.c \
            "
 
-CFLAGS += " -lbic -lipmi -lipmb -lbic -lfby2_gpio  "
-
-DEPENDS += "libbic libfby2-gpio"
+LDFLAGS += " -lbic -lipmi -lipmb -lbic -lfby2_gpio -lgpio -lpal"
+DEPENDS += "libbic libfby2-gpio libgpio libpal libipmi libipmb"
+RDEPENDS_${PN} += "libbic libfby2-gpio libgpio libpal libipmi libipmb"

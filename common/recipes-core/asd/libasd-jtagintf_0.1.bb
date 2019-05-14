@@ -13,8 +13,6 @@ SRC_URI = "file://interface/SoftwareJTAGHandler.c \
            file://interface/Makefile \
            "
 
-DEPENDS += "libgpio libpal"
-
 S = "${WORKDIR}/interface"
 
 do_install() {
@@ -28,4 +26,3 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libasd-jtagintf.so"
 FILES_${PN}-dev = "${includedir}/asd"
-RDEPENDS_${PN} = "libgpio libpal"

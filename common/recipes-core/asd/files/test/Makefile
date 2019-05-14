@@ -1,7 +1,7 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 all: asd-test
 
-LDFLAGS += -lpthread -lgpio -lasd-jtagintf
+LDFLAGS += -lpthread -lasd-jtagintf
 CFLAGS += -Wall -Werror
 
 asd-test: jtagtest.o

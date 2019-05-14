@@ -1,0 +1,5 @@
+max([
+  SCM_INLET_REMOTE_TEMP(scm:scm_inlet_remote_temp),
+  TH3_DIE_TEMP1(smb:th3_die_temp1),
+  TH3_DIE_TEMP2(smb:th3_die_temp2)
+])

@@ -80,6 +80,15 @@ loc_map_ep = {
     'd': "_dimm3_location"
 }
 
+loc_map_nd = {
+    'a': "_dimm0_location",
+    'c': "_dimm1_location",
+    'd': "_dimm2_location",
+    'e': "_dimm3_location",
+    'g': "_dimm4_location",
+    'h': "_dimm5_location"
+}
+
 def board_fan_actions(fan, action='None'):
     '''
     Override the method to define fan specific actions like:
@@ -190,6 +199,14 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             elif int(server_type) == 2:       #EP Server
                                 # check DIMM present
                                 with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map_ep[sname[8:9]], "rb") as f:
+                                    dimm_sts = f.read(1)
+                                if dimm_sts[0] != 1:
+                                    return 0
+                                else:
+                                    return 1
+                            elif int(server_type) == 4:       #ND Server
+                                # check DIMM present
+                                with open("/mnt/data/kv_store/sys_config/"+fru_map[board]['name']+loc_map_nd[sname[8:9]], "rb") as f:
                                     dimm_sts = f.read(1)
                                 if dimm_sts[0] != 1:
                                     return 0

@@ -61,7 +61,7 @@ class serverNode(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         ret = pal_server_action(self.num, data["action"], self.fru_name)
         if ret == -2:
             res = 'Should not execute power on/off/graceful_shutdown/cycle/reset on device card'

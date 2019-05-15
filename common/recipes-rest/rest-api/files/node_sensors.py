@@ -172,7 +172,7 @@ class sensorsNode(node):
             period = param['history-period']
         return sensor_util(self.name, snr_name, snr_id, period, display)
 
-    def doAction(self, info):
+    def doAction(self, info, param={}):
         snr = ''
         if 'id' in info:
             snr = info['id']

@@ -40,7 +40,7 @@ class pebNode(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         if data["action"] == "identify-on":
             cmd = '/usr/bin/fpc-util --identify on'
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()

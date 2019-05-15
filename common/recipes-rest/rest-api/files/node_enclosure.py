@@ -127,7 +127,7 @@ class enclosure_hdd_status_Node(node):
 
         return result
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         result = {}
 
         if (data["action"].isdigit()) and (int(data["action"]) >= 0) and (int(data["action"]) < 36):

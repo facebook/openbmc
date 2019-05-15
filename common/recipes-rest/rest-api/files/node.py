@@ -38,5 +38,5 @@ class node:
     def getActions(self):
         return self.actions
 
-    def doAction(self, action):
+    def doAction(self, action, param={}):
         result = { "result": 'failure', "reason": 'not supported'}

@@ -42,7 +42,7 @@ class logsNode(node):
         data = data.decode()
         return json.loads(data)
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         if data["action"] != "clear":
             res = 'failure'
         else:

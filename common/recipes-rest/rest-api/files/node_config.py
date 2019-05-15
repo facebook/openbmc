@@ -52,7 +52,7 @@ class configNode(node):
             result = {"status": "unsupported"}
         return result
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         res = "failure"
         if "update" not in data:
             return {"result": "parameter-error"}

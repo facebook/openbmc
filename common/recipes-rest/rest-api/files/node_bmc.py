@@ -211,7 +211,7 @@ class bmcNode(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         Popen('sleep 1; /sbin/reboot', shell=True, stdout=PIPE)
         return {"result": "success"}
 

@@ -98,7 +98,7 @@ class bios_boot_mode_node(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         if data["action"] == "set" and len(data) == 2:
             cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order set --boot_mode ' + data["mode"]
             data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
@@ -140,7 +140,7 @@ class bios_clear_cmos_node(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         if data["action"] == "enable":
             cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order enable --clear_CMOS'
             data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
@@ -191,7 +191,7 @@ class bios_force_boot_setup_node(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         if data["action"] == "enable":
             cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order enable --force_boot_BIOS_setup'
             data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
@@ -246,7 +246,7 @@ class bios_boot_order_node(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         if data["action"] == "set" and len(data) == 6:
             cmd = '/usr/local/bin/bios-util ' + self.name + ' --boot_order set --boot_order ' \
             + data["1st"] + " " + data["2nd"] + " " + data["3rd"] + " " + data["4th"] + " " + data["5th"]
@@ -407,7 +407,7 @@ class bios_pcie_port_config_node(node):
 
         return info
 
-    def doAction(self, data):
+    def doAction(self, data, param={}):
         if data["action"] == "enable" and len(data) == 2:
             cmd = '/usr/local/bin/bios-util ' + self.name + ' --pcie_port_config enable --' + data["pcie_dev"]
             data = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)

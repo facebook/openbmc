@@ -157,13 +157,14 @@ def gpio_set_value(name, value, chip=_GPIO_CHIP_ASPEED, change_direction=True):
        The pin direction will be explicitly updated to <out> unless callers
        say no (for example, callers already set direction to <out>).
     """
+    cmd = 'set-value'
     if change_direction:
-        gpio_set_direction(name, 'out')
+        cmd = 'set-init-value'
 
     if _shadow_exists(name):
-        _run_gpiocli('set-value', gpio_args=str(value), shadow=name)
+        _run_gpiocli(cmd, gpio_args=str(value), shadow=name)
     else:
-        _run_gpiocli('set-value', gpio_args=str(value),
+        _run_gpiocli(cmd, gpio_args=str(value),
                      chip=chip, name=name)
 
 

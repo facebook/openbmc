@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_AIRFLOW",
+      "units": "CFM",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "fan1_front_rpm": {
+            "fru":       2,
+            "sensor_id": 42
+          },
+          "fan1_rear_rpm": {
+            "fru":       2,
+            "sensor_id": 43
+          },
+          "fan2_front_rpm": {
+            "fru":       2,
+            "sensor_id": 44
+          },
+          "fan2_rear_rpm": {
+            "fru":       2,
+            "sensor_id": 45
+          },
+          "fan3_front_rpm": {
+            "fru":       2,
+            "sensor_id": 46
+          },
+          "fan3_rear_rpm": {
+            "fru":       2,
+            "sensor_id": 47
+          },
+          "fan4_front_rpm": {
+            "fru":       2,
+            "sensor_id": 48
+          },
+          "fan4_rear_rpm": {
+            "fru":       2,
+            "sensor_id": 49
+          }
+        },
+        "linear_expressions": {
+          "Fan_CFM": "( ( ( fan1_front_rpm + fan1_rear_rpm + fan2_front_rpm + fan2_rear_rpm + fan3_front_rpm + fan3_rear_rpm + fan4_front_rpm + fan4_rear_rpm ) / 16 ) * 0.0455 ) - 29"
+        },
+        "condition": {
+          "key": "mb_system_conf",
+          "key_type": "persistent",
+          "default_expression": "Fan_CFM",
+          "value_map": {
+            "SS_D": "Fan_CFM"
+          }
+        }
+      }
+    }
+  ]
+}

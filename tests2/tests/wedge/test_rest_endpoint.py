@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
+import unittest
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 
 class RestEndpointTest(FbossRestEndpointTest):
@@ -83,3 +84,10 @@ class RestEndpointTest(FbossRestEndpointTest):
         self.endpoint_slotid_attrb = [
             "16"
         ]
+
+
+    # "/api/sys/firmware_info_all
+    @unittest.skip("Test not supported on platform")
+    def set_endpoint_firmware_info_all_attributes(self):
+        self.endpoint_firmware_info_all_attrb = None
+        pass

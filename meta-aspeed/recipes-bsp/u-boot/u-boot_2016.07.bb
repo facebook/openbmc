@@ -11,7 +11,7 @@ DEPENDS += "dtc-native bc-native"
 SRCBRANCH = "openbmc/helium/v2016.07"
 SRCREV = "AUTOINC"
 
-SRC_URI = "git://github.com/theopolis/u-boot.git;branch=${SRCBRANCH};protocol=https \
+SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};protocol=https \
            file://fw_env.config \
            file://fw_env.config.full \
           "

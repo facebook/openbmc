@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <syslog.h>
+#include <stdlib.h>
 #include <openbmc/vbs.h>
 
 bool get_mtd_name(char* mtd_name)
@@ -42,24 +43,28 @@ bool get_rom_ver(char *buf)
 
   char cmd[128];
   FILE *fp;
-  sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd_name);
+  snprintf(cmd, sizeof(cmd),
+      "strings %s | grep -E 'U-Boot 20[[:digit:]]{2}\\.[[:digit:]]{2}'", mtd_name);
   fp = popen(cmd, "r");
   if (!fp) {
     return false;
   }
 
   char line[256];
-  char ver[64];
+  char *ver = 0;
   bool found = false;
   while (fgets(line, sizeof(line), fp)) {
     int ret;
-    ret = sscanf(line, "U-Boot 2016.07%*[ ]%[^ \n]%*[ ](%*[^)])\n", ver);
+    ret = sscanf(line, "U-Boot 20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
     if (ret == 1) {
       sprintf(buf, "%s", ver);
       found = true;
       break;
     }
   }
+  if (ver)
+    free(ver);
+
   pclose(fp);
   return found;
 }

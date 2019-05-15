@@ -106,39 +106,49 @@ int BmcComponent::update(string image_path)
 
   // If flashcp cmd was successful, keep historical info that BMC fw was upgraded
   if (ret == 0) {
-    char vers[128] = "NA";
-    string mtd;
-
-    // Obtain the version of BMC fw. Note: Very similar to BmcComponent::print_version() without system.output calls
-    if (system.get_mtd_name(_vers_mtd, mtd)) {
-      char cmd[128];
-      FILE *fp;
-      sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd.c_str());
-      fp = popen(cmd, "r");
-      if (fp) {
-        char line[256];
-        char min[64];
-        while (fgets(line, sizeof(line), fp)) {
-          int ret;
-          ret = sscanf(line, "U-Boot 2016.07%*[ ]%[^ \n]%*[ ](%*[^)])\n", min);
-          if (ret == 1) {
-            sprintf(vers, "%s", min);
-            break;
-          }
-        }
-        pclose(fp);
-      }
-    }
-
-    syslog(LOG_CRIT, "BMC fw upgrade completed. Version: %s", vers);
+    syslog(LOG_CRIT, "BMC fw upgrade completed. Version: %s", get_bmc_version().c_str());
   }
 
   return ret;
 }
 
+std::string BmcComponent::get_bmc_version()
+{
+  // parsering the image to get the version string
+  std::string bmc_ver = "NA";
+  std::string mtd;
+  char cmd[128];
+  FILE *fp;
+
+  if (!system.get_mtd_name(_vers_mtd, mtd)) {
+    return bmc_ver;
+  }
+
+  snprintf(cmd, sizeof(cmd),
+      "strings %s | grep -E 'U-Boot 20[[:digit:]]{2}\\.[[:digit:]]{2}'", mtd.c_str());
+  fp = popen(cmd, "r");
+  if (fp) {
+    char line[256];
+    char *ver = 0;
+    while (fgets(line, sizeof(line), fp)) {
+      int ret;
+      ret = sscanf(line, "U-Boot 20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
+      if (1 == ret) {
+        bmc_ver = ver;
+        break;
+      }
+    }
+    if (ver) {
+       free(ver);
+    }
+    pclose(fp);
+  }
+
+  return bmc_ver;
+}
+
 int BmcComponent::print_version()
 {
-  char vers[128] = "NA";
   string mtd;
 
   string comp = _component;
@@ -149,26 +159,7 @@ int BmcComponent::print_version()
     return FW_STATUS_SUCCESS;
   }
 
-  if (system.get_mtd_name(_vers_mtd, mtd)) {
-    char cmd[128];
-    FILE *fp;
-    sprintf(cmd, "strings %s | grep 'U-Boot 2016.07'", mtd.c_str());
-    fp = popen(cmd, "r");
-    if (fp) {
-      char line[256];
-      char min[64];
-      while (fgets(line, sizeof(line), fp)) {
-        int ret;
-        ret = sscanf(line, "U-Boot 2016.07%*[ ]%[^ \n]%*[ ](%*[^)])\n", min);
-        if (ret == 1) {
-          sprintf(vers, "%s", min);
-          break;
-        }
-      }
-      pclose(fp);
-    }
-  }
-  system.output << comp << " Version: " << string(vers) << endl;
+  system.output << comp << " Version: " << get_bmc_version() << endl;
   return FW_STATUS_SUCCESS;
 }
 

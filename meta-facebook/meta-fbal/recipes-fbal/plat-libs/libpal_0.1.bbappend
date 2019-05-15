@@ -4,6 +4,6 @@ SRC_URI += "file://pal.c \
             file://pal.h \
             "
 
-DEPENDS += ""
-RDEPENDS_${PN} += ""
-LDFLAGS += ""
+DEPENDS += " libgpio-ctrl"
+RDEPENDS_${PN} += " libgpio-ctrl"
+LDFLAGS += "-lgpio-ctrl"

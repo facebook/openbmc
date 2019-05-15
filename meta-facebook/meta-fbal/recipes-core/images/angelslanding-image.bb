@@ -11,6 +11,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
   openbmc-utils \
+  plat-utils \
   fscd \
   fan-util \
   power-util \

@@ -42,6 +42,9 @@ SRC_URI = "file://Makefile \
            file://rackmond.py \
            file://psu-update-delta.py \
            file://psu-update-bel.py \
+           file://psu-update-artesyn.py \
+           file://pyrmd.py \
+           file://srec.py \
            file://hexfile.py \
           "
 
@@ -54,7 +57,10 @@ binfiles = "modbuscmd \
             rackmonctl \
             psu-update-delta.py \
             psu-update-bel.py \
+            psu-update-artesyn.py \
             hexfile.py \
+            pyrmd.py \
+            srec.py \
            "
 
 #otherfiles = "README"

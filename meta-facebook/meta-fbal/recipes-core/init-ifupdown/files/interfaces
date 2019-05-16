@@ -1,0 +1,14 @@
+# The loopback interface
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet manual
+  up dhclient -d -pf /var/run/dhclient.eth0.pid eth0 > /dev/null 2>&1 &
+
+auto usb0
+iface usb0 inet6 static
+  address fe80::1
+  netmask 64
+  pre-up sysctl -w net.ipv6.conf.usb0.autoconf=0
+  pre-up sysctl -w net.ipv6.conf.usb0.router_solicitations=0

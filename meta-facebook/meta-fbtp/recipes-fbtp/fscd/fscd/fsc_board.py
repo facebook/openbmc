@@ -17,7 +17,7 @@
 #
 from fsc_util import Logger
 from ctypes import *
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, check_output
 
 lpal_hndl = CDLL("libpal.so")
 
@@ -91,10 +91,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
             return int(is_snr_valid)
 
         elif attribute['type'] == "gpio":
-            cmd = "cat /sys/class/gpio/gpio%s/value" % attribute['number']
-            data=''
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-            if int(data) == 0:
+            cmd = ['gpiocli', 'get-value', '--shadow', attribute['shadow']]
+            data = check_output(cmd).decode().split('=')
+            if int(data[1]) == 0:
                 return 1
             else:
                 return 0

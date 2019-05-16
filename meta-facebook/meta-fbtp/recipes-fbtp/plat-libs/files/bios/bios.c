@@ -31,9 +31,8 @@
 #include <string.h>
 
 #include <openbmc/pal.h>
-#include <openbmc/gpio.h>
+#include <openbmc/libgpio.h>
 
-#define GPIO_BMC_CTRL        109
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_ERASE_PKT_SIZE  (64*1024)
 #define BIOS_FRU_ID          (1)
@@ -158,10 +157,10 @@ int bios_get_ver(uint8_t slot_id, char *ver)
 
 int bios_program(uint8_t slot_id, const char *file, bool check)
 {
-  int exit_code;
+  int exit_code = -1;
   char cmd[80];
   char mtddev[32];
-  gpio_st bmc_ctrl_pin;
+  gpio_desc_t *desc;
 
   if (slot_id != FRU_MB) {
     printf("ERROR: Slot does not support BIOS upgrade\n");
@@ -177,26 +176,37 @@ int bios_program(uint8_t slot_id, const char *file, bool check)
   pal_set_fw_update_ongoing(FRU_MB, 60*15);
   system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
   sleep(1);
-  gpio_export(GPIO_BMC_CTRL);
-  gpio_open(&bmc_ctrl_pin,  GPIO_BMC_CTRL);
-  gpio_change_direction(&bmc_ctrl_pin, GPIO_DIRECTION_OUT);
-  gpio_write(&bmc_ctrl_pin, GPIO_VALUE_HIGH);
 
+  if (gpio_export_by_name(GPIO_CHIP_ASPEED, "GPION5", "BMC_BIOS_FLASH_CTRL")) {
+    printf("ERROR: Export of SPI-Switch GPIO failed\n");
+    goto bail_export;
+  }
+  desc = gpio_open_by_shadow("BMC_BIOS_FLASH_CTRL");
+  if (!desc) {
+    printf("ERROR: Opening SPI-Switch GPIO failed\n");
+    goto bail_open;
+  }
+  if (gpio_set_direction(desc, GPIO_DIRECTION_OUT) ||
+      gpio_set_value(desc, GPIO_VALUE_HIGH)) {
+    printf("ERROR: Switching BIOS to BMC failed\n");
+    goto switch_bail;
+  }
   system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/bind");
-  exit_code = 0;
   if (!get_bios_mtd_name(mtddev)) {
     printf("ERROR: Could not get MTD device for the BIOS!\n");
-    pal_set_fw_update_ongoing(FRU_MB, 0);
-    return -1;
+    goto mtd_bail;
   }
   snprintf(cmd, sizeof(cmd), "flashcp -v %s %s", file, mtddev);
   exit_code = system(cmd);
   exit_code = exit_code == -1 ? 127 : WEXITSTATUS(exit_code);
-
+mtd_bail:
   system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind");
-  gpio_write(&bmc_ctrl_pin, GPIO_VALUE_LOW);
-  gpio_close(&bmc_ctrl_pin);
-  gpio_unexport(GPIO_BMC_CTRL);
+switch_bail:
+  gpio_set_value(desc, GPIO_VALUE_LOW);
+  gpio_close(desc);
+bail_open:
+  gpio_unexport("BMC_BIOS_FLASH_CTRL");
+bail_export:
   sleep(1);
   pal_PBO();
   sleep(10);

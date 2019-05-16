@@ -9,7 +9,9 @@ LIC_FILES_CHKSUM = "file://bios.c;beginline=8;endline=20;md5=da35978751a9d71b736
 
 SRC_URI = "file://bios \
           "
-DEPENDS += "libpal libgpio"
+DEPENDS += "libpal libgpio-ctrl"
+RDEPENDS_${PN} += "libpal libgpio-ctrl"
+LDFLAGS += "-lgpio-ctrl"
 
 S = "${WORKDIR}/bios"
 

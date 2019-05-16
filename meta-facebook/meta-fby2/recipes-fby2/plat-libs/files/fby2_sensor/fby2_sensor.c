@@ -546,12 +546,14 @@ sensor_thresh_array_init() {
   static bool init_done = false;
   int spb_type;
   int fan_type;
+  int fan_config;
 
   if (init_done)
     return;
 
   spb_type = fby2_common_get_spb_type();
-  fan_type = fby2_common_get_fan_type(); 
+  fan_type = fby2_common_get_fan_type();
+  fan_config = fby2_common_get_fan_config();
 
   spb_sensor_threshold[SP_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   spb_sensor_threshold[SP_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
@@ -579,12 +581,21 @@ sensor_thresh_array_init() {
       spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
     }
   } else { // YV2
-    spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
-    spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
-    spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-    spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
-    spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
-    spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+    if(fan_config == TYPE_15K_FAN) {
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 17000;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 12000;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 17000;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 12000;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+    } else {
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
+      spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
+    }
   }
   //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
   spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.5;

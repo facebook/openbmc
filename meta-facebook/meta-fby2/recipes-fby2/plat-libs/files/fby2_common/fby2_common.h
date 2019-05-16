@@ -79,6 +79,11 @@ enum {
 };
 
 enum {
+  TYPE_10K_FAN   = 0,
+  TYPE_15K_FAN   = 1,
+};
+
+enum {
   TYPE_SV_A_SV     = 0,
   TYPE_CF_A_SV     = 1,
   TYPE_GP_A_SV     = 2,
@@ -228,6 +233,7 @@ int fby2_common_cpld_dump(uint8_t fru);
 int fby2_common_sboot_cpld_dump(uint8_t fru);
 int fby2_common_get_spb_type(void);
 int fby2_common_get_fan_type(void);
+int fby2_common_get_fan_config(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

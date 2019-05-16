@@ -48,6 +48,8 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define SPB_REV_FILE "/tmp/spb_rev"
 
+#define FAN_CONFIG_FILE "/tmp/fan_config"
+
 #define PTHREAD_SET_CANCEL_ENABLE() do {                                          \
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {                 \
     syslog(LOG_CRIT, "%s: pthread_setcancelstate failed: %d\n", __func__, errno); \
@@ -628,4 +630,18 @@ fby2_common_sboot_cpld_dump(uint8_t fru) {
   syslog(LOG_INFO, "fby2_common_sboot_cpld_dump: CPLD dump for slow boot for FRU: %d is being generated.", fru);
 
   return 0;
+}
+
+int
+fby2_common_get_fan_config(void) {
+  FILE *fp;
+  int type = 0;
+
+  fp = fopen(FAN_CONFIG_FILE, "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &type);
+    fclose(fp);
+  }
+
+  return (type)?TYPE_15K_FAN:TYPE_10K_FAN;
 }

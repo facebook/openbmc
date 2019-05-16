@@ -5257,6 +5257,84 @@ pal_parse_sel_ep(uint8_t fru, uint8_t *sel, char *error_log)
 }
 #endif
 
+#if defined(CONFIG_FBY2_ND)
+int
+pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  bool parsed = false;
+  error_log[0] = '\0';
+
+  switch(snr_num) {
+    case PROCHOT_EXT:
+      //Just show event raw data for now
+      parsed = true;
+      break;
+    case BIC_ND_SENSOR_SYSTEM_STATUS:
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_Thermal_Trip");
+          break;
+        case 0x02:
+          strcat(error_log, "SYS_Throttle");
+          break;
+        case 0x03:
+          strcat(error_log, "PCH_Thermal_Trip");
+          break;
+        case 0x04:
+          strcat(error_log, "FM_Throttle");
+          break;
+        case 0x05:
+          strcat(error_log, "FM_FAST_Throttle");
+          break;
+        case 0x06:
+          strcat(error_log, "INA230_Power");
+          break;
+        case 0x07:
+          strcat(error_log, "Platform_Reset");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+    case BIC_ND_SENSOR_VR_HOT:
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_VR_Hot");
+          break;
+        case 0x01:
+          strcat(error_log, "SOC_DIMM_ABCD_VR_Hot");
+          break;
+        case 0x02:
+          strcat(error_log, "SOC_DIMM_EFGH_VR_Hot");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+  }
+
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+}
+#endif
+
 int
 pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 {
@@ -5399,7 +5477,7 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
   int ret = -1;
   uint8_t server_type = 0xFF;
 
@@ -5424,6 +5502,11 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 #if defined(CONFIG_FBY2_EP)
     case SERVER_TYPE_EP:
       pal_parse_sel_ep(fru, sel, error_log);
+      break;
+#endif
+#if defined(CONFIG_FBY2_ND)
+    case SERVER_TYPE_ND:
+      pal_parse_sel_nd(fru, sel, error_log);
       break;
 #endif
     case SERVER_TYPE_TL:

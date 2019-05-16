@@ -28,7 +28,7 @@
 #include "mTerm_helper.h"
 #include "tty_helper.h"
 
-static char g_fru[10];
+static char g_fru[16];
 
 void setFru(char *dev) {
     strncpy(g_fru, dev, sizeof(g_fru));

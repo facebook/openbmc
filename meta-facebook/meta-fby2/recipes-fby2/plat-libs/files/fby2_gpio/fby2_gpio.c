@@ -276,6 +276,7 @@ const uint8_t nd_gpio_pin_list[] = {
   ND_FM_PWR_LED_N,
   ND_FM_FAULT_LED_N,
   ND_FM_BIC_READ_SPD,
+  ND_FM_CPU_CATERR_N,
 };
 size_t nd_gpio_pin_cnt = sizeof(nd_gpio_pin_list)/sizeof(uint8_t);
 
@@ -525,7 +526,8 @@ const char *nd_gpio_pin_name[] = {
   "ND_RST_RSMRST_P0_BUF_N",
   "ND_FM_PWR_LED_N",
   "ND_FM_FAULT_LED_N",
-  "ND_FM_BIC_READ_SPD"
+  "ND_FM_BIC_READ_SPD",
+  "ND_FM_CPU_CATERR_N",
 };
 
 int

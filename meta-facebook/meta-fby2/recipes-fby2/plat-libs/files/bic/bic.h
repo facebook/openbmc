@@ -279,6 +279,7 @@ enum {
   ND_FM_PWR_LED_N,
   ND_FM_FAULT_LED_N,
   ND_FM_BIC_READ_SPD,
+  ND_FM_CPU_CATERR_N,
 };
 
 // Server type

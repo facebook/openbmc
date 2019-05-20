@@ -2303,6 +2303,69 @@ oem_q_get_drive_info(unsigned char *request, unsigned char req_len, unsigned cha
 }
 
 static void
+oem_q_set_smu_psp_ver(unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  char payload[100] = {0};
+
+  if (req_len < 8)
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  if( (req->data[4] & 0x0f) == 0x01)
+    sprintf(key, "sys_config/fru%d_psp_ver", req->payload_id);
+  else if ((req->data[4] & 0x0f) == 0x02)
+    sprintf(key, "sys_config/fru%d_smu_ver", req->payload_id);
+
+  memcpy(payload, &req->data[5], req_len - 8);
+  if(kv_set(key, payload, req_len - 8, KV_FPERSIST)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+static void
+oem_q_get_smu_psp_ver(unsigned char *request, unsigned char req_len, unsigned char *response,
+       unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  size_t ret = 0;
+
+  if (req_len < 5)
+  {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    *res_len = 0;
+    return;
+  }
+
+  if( (req->data[4] & 0x0f) == 0x01)
+    sprintf(key, "sys_config/fru%d_psp_ver", req->payload_id);
+  else if ((req->data[4] & 0x0f) == 0x02)
+    sprintf(key, "sys_config/fru%d_smu_ver", req->payload_id);
+
+  if(kv_get(key, (char *)res->data, &ret, KV_FPERSIST) < 0) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+  *res_len = (unsigned char)ret;
+}
+
+static void
 oem_set_boot_order(unsigned char *request, unsigned char req_len,
                    unsigned char *response, unsigned char *res_len)
 {
@@ -3322,6 +3385,12 @@ ipmi_handle_oem_q (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_Q_GET_DRIVE_INFO:
       oem_q_get_drive_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_SET_SMU_PSP_VER:
+      oem_q_set_smu_psp_ver (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_GET_SMU_PSP_VER:
+      oem_q_get_smu_psp_ver (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

@@ -71,9 +71,9 @@ typedef struct _ipmb_res_t {
   uint8_t data[];
 } ipmb_res_t;
 
-void lib_ipmb_handle(unsigned char bus_id,
-                  unsigned char *request, unsigned short req_len,
-                  unsigned char *response, unsigned char *res_len);
+int lib_ipmb_handle(unsigned char bus_id,
+                    unsigned char *request, unsigned short req_len,
+                    unsigned char *response, unsigned char *res_len);
 
 /*
  * ipmb_send():

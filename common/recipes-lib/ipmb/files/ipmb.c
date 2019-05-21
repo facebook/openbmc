@@ -90,7 +90,7 @@ ipmb_txb()
 /*
  * Function to handle IPMB messages
  */
-void
+int
 lib_ipmb_handle(unsigned char bus_id,
             unsigned char *request, unsigned short req_len,
             unsigned char *response, unsigned char *res_len) {
@@ -100,9 +100,13 @@ lib_ipmb_handle(unsigned char bus_id,
 
   sprintf(sock_path, "%s_%d", SOCK_PATH_IPMB, bus_id);
 
-  if (ipc_send_req(sock_path, request, (size_t)req_len, response, &resp_len, TIMEOUT_IPMB) == 0) {
-    *res_len = (unsigned char)resp_len;
+  if (ipc_send_req(sock_path, request, (size_t)req_len, response,
+                   &resp_len, TIMEOUT_IPMB) != 0) {
+    return -1;
   }
+
+  *res_len = (unsigned char)resp_len;
+  return 0;
 }
 
 int

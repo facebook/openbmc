@@ -103,9 +103,10 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
-
-  if (rlen == 0) {
+  if (lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen) != 0) {
+    return -1;
+  } else if (rlen == 0) {
+    errno = EPROTO;
 #ifdef DEBUG
     syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received\n");
 #endif
@@ -114,8 +115,8 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   // Handle IPMB response
   res  = (ipmb_res_t*) rbuf;
-
   if (res->cc) {
+    errno = EBADMSG;
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
 #endif
@@ -150,9 +151,10 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio,
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, 
                          CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
-
-  // Ignore IANA ID
-  *(uint8_t *) gpio_config = rbuf[3];
+  if (ret == 0) {
+    // Ignore IANA ID
+    *(uint8_t *) gpio_config = rbuf[3];
+  }
 
   return ret;
 }
@@ -167,9 +169,10 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, 
                          CMD_OEM_1S_GET_GPIO, tbuf, 0x03, rbuf, &rlen);
-
-  // Ignore first 3 bytes of IANA ID
-  memcpy((uint8_t*) gpio, &rbuf[3], 4);
+  if (ret == 0) {
+    // Ignore first 3 bytes of IANA ID
+    memcpy((uint8_t*) gpio, &rbuf[3], 4);
+  }
 
   return ret;
 }
@@ -196,6 +199,7 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
 
   // Check for boundary conditions
   if (gpio > GPIO_MAX) {
+    errno = EINVAL;
     return -1;
   }
 
@@ -248,8 +252,10 @@ bic_get_config(uint8_t slot_id, bic_config_t *cfg) {
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_CONFIG,
               tbuf, 0x03, rbuf, &rlen);
-  // Ignore IANA ID
-  *(uint8_t *) cfg = rbuf[3];
+  if (ret == 0) {
+    // Ignore IANA ID
+    *(uint8_t *) cfg = rbuf[3];
+  }
 
   return ret;
 }
@@ -279,11 +285,11 @@ bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len) {
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF,
                          tbuf, 0x03, rbuf, &rlen);
-
-  //Ignore IANA ID
-  memcpy(buf, &rbuf[3], rlen-3);
-
-  *len = rlen - 3;
+  if (ret == 0) {
+    //Ignore IANA ID
+    memcpy(buf, &rbuf[3], rlen-3);
+    *len = rlen - 3;
+  }
 
   return ret;
 }

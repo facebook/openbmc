@@ -52,6 +52,7 @@ IMAGE_INSTALL += " \
   threshold-util \
   ncsid \
   vboot-utils \
+  slot-util \
   "
 
 IMAGE_FEATURES += " \

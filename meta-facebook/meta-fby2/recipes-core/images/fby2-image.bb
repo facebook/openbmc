@@ -58,6 +58,7 @@ IMAGE_INSTALL += " \
   libpldm \
   nvme-util \
   snapshot-util \
+  slot-util \
   "
 
 IMAGE_FEATURES += " \

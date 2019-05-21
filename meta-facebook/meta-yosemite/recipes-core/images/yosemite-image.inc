@@ -47,6 +47,7 @@ IMAGE_INSTALL += " \
   ncsi-util \
   ncsid \
   libpldm \
+  slot-util \
   "
 
 IMAGE_FEATURES += " \

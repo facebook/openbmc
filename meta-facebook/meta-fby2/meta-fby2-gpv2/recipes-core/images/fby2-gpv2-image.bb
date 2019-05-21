@@ -55,6 +55,7 @@ IMAGE_INSTALL += " \
   libncsi \
   libpldm \
   nvme-util \
+  slot-util \
   "
 
 IMAGE_FEATURES += " \

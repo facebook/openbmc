@@ -1,0 +1,493 @@
+/*
+ * snapshot-util
+ *
+ * Copyright 2015-present Facebook. All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <syslog.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <openbmc/pal.h>
+
+#define MAX_REC_NUM 3
+#define MAX_RI_NUM  2
+#define MAX_MFI_NUM 1
+#define BLOCK_SIZE  16
+
+#define TYPE_RMA 0
+#define TYPE_MFG 1
+
+#define IH_SIZE        0x20  // Info Header
+#define RIH_MAGIC_TAG  "/@RMA_ss"
+#define MFIH_MAGIC_TAG "/@MFG_ss"
+
+#define MAX_REASON_DESC 1024
+
+#define TMP_SS_PATH   "/tmp/_snapshot"
+#define TMP_LOG_FILE  TMP_SS_PATH"/log.txt"
+#define TMP_POST_FILE TMP_SS_PATH"/postcode.txt"
+#define TMP_TARBALL   TMP_SS_PATH"/ss.tgz"
+
+#define FRUID_PATH "/tmp/fruid_slot%u.bin"
+#define OEM_REC_TYPE 0xFA
+
+#define EEPROM_BUS  3     // i2c_1
+#define EEPROM_ADDR 0xA2  // 8-bit address
+
+
+typedef struct _info_hdr {
+  uint8_t magic_tag[8];
+  uint16_t version;
+  uint16_t checksum;
+  int size;
+} info_hdr;
+
+typedef struct _info_rec {
+  uint16_t offset;
+  uint16_t size;
+} info_rec;
+
+static info_rec m_info_rec[MAX_REC_NUM] = {
+  {0x0400, 0x0C00},
+  {0x1000, 0x0C00},
+  {0x1C00, 0x0C00}
+};
+
+
+static void
+print_usage_help(void) {
+  printf("Usage: snapshot-util [fru] --set <type> <reason_file>\n");
+  printf("       snapshot-util [fru] --get <type> <info_num> <dump_file>\n");
+  printf("       snapshot-util [fru] --clear <type> <info_num>\n\n");
+  printf("       [fru]: slot1, slot2, slot3, slot4\n");
+  printf("       <type>:\n");
+  printf("         --rma  RMA information\n");
+  printf("         --mfg  MFG failure information\n");
+  printf("       <info_num>: 1 ~ 2 for RMA information; 1 for MFG failure information\n");
+}
+
+static int
+check_info_rec(uint8_t slot_id) {
+  uint8_t buf[256], sum, cnt, idx, i;
+  FILE *fp;
+  info_rec rec[MAX_REC_NUM];
+
+  snprintf((char *)buf, sizeof(buf), FRUID_PATH, slot_id);
+  fp = fopen((char *)buf, "rb");
+  if (fp == NULL) {
+    syslog(LOG_ERR, "unable to get the %s fp %s", (char *)buf, strerror(errno));
+    return errno;
+  }
+
+  if (fread(buf, 1, 8, fp) != 8) {
+    syslog(LOG_ERR, "read common header failed %s", strerror(errno));
+    fclose(fp);
+    return errno;
+  }
+
+  sum = 0;
+  for (i = 0; i < 8; i++) {
+    sum += buf[i];
+  }
+  if (sum != 0x00) {
+    syslog(LOG_ERR, "invalid common header");
+    fclose(fp);
+    return -1;
+  }
+
+  if (!buf[5]) {
+    fclose(fp);
+    return 0;
+  }
+
+  fseek(fp, buf[5]*8, SEEK_SET);
+  for (idx = 0; idx < MAX_REC_NUM; idx++) {
+    if (fread(buf, 1, 5, fp) != 5) {
+      syslog(LOG_ERR, "read multi-record header failed %s", strerror(errno));
+      break;
+    }
+
+    sum = 0;
+    for (i = 0; i < 5; i++) {
+      sum += buf[i];
+    }
+    if (sum != 0x00) {
+      syslog(LOG_ERR, "invalid multi-record header");
+      break;
+    }
+
+    if (buf[0] != OEM_REC_TYPE) {
+      break;
+    }
+
+    cnt = buf[2];
+    if (fread(&buf[5], 1, cnt, fp) != cnt) {
+      syslog(LOG_ERR, "read multi-record failed %s", strerror(errno));
+      break;
+    }
+
+    sum = buf[3];
+    cnt += 5;
+    for (i = 5; i < cnt; i++) {
+      sum += buf[i];
+    }
+    if (sum != 0x00) {
+      syslog(LOG_ERR, "invalid multi-record");
+      break;
+    }
+
+    memcpy(&rec[idx], &buf[5], 4);
+  }
+  fclose(fp);
+
+  if (idx >= MAX_REC_NUM) {
+    for (i = 0; i < MAX_REC_NUM; i++) {
+      m_info_rec[i].offset = rec[i].offset;
+      m_info_rec[i].size = rec[i].size;
+      syslog(LOG_INFO, "info_rec[%u]: offset=0x%04x, size=0x%04x", i, m_info_rec[i].offset, m_info_rec[i].size);
+    }
+  }
+
+  return 0;
+}
+
+static int
+is_ih_exist(uint8_t slot_id, uint8_t info_type, uint8_t idx, uint16_t *checksum, int *fsize) {
+  uint8_t wbuf[32], rbuf[64];
+  char *magic_tag;
+  int ret, offset;
+  info_hdr *ih;
+
+  if (info_type == TYPE_MFG) {
+    idx = MAX_RI_NUM;
+    magic_tag = MFIH_MAGIC_TAG;
+  } else {
+    magic_tag = RIH_MAGIC_TAG;
+  }
+
+  offset = m_info_rec[idx].offset;
+  wbuf[0] = (offset >> 8) & 0xFF;
+  wbuf[1] = offset & 0xFF;
+  ret = bic_master_write_read(slot_id, EEPROM_BUS, EEPROM_ADDR, wbuf, 2, rbuf, BLOCK_SIZE);
+  if (ret != 0) {
+    printf("read failed 0x%x, len = %d\n", offset, BLOCK_SIZE);
+    return 0;
+  }
+
+  ih = (info_hdr *)rbuf;
+  if (!memcmp(ih->magic_tag, magic_tag, 8) && (ih->version == 0x01)) {
+    if (checksum) {
+      memcpy(checksum, &ih->checksum, 2);
+    }
+
+    if (fsize) {
+      memcpy(fsize, &ih->size, 4);
+    }
+    return 1;
+  }
+
+  return 0;
+}
+
+static int
+util_store_snapshot(uint8_t slot_id, uint8_t info_type, char *reason_file) {
+  uint8_t wbuf[64], rbuf[64], ih_buf[IH_SIZE], ih_offs, idx, max_idx;
+  uint16_t sum;
+  char cmd[256], *magic_tag;
+  int ret, fsize, offset, len, i;
+  info_hdr *ih = (info_hdr *)ih_buf;
+  struct stat st;
+  FILE *fp;
+
+  if (stat(reason_file, &st) != 0) {
+    printf("unable to access %s\n", reason_file);
+    return -1;
+  }
+
+  if (st.st_size > MAX_REASON_DESC) {
+    printf("%s is too large\n", reason_file);
+    return -1;
+  }
+
+  max_idx = (info_type == TYPE_MFG) ? MAX_MFI_NUM : MAX_RI_NUM;
+  for (idx = 0; idx < max_idx; idx++) {
+    if (is_ih_exist(slot_id, info_type, idx, NULL, NULL) != 1)
+      break;
+  }
+  if (idx >= max_idx) {
+    printf("all Info areas are occupied\n");
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd), "rm -rf %s", TMP_SS_PATH);
+  system(cmd);
+  mkdir(TMP_SS_PATH, 0755);
+
+  snprintf(cmd, sizeof(cmd), "cp %s %s/", reason_file, TMP_SS_PATH);
+  system(cmd);
+
+  printf("Getting logs...\n");
+  snprintf(cmd, sizeof(cmd), "/usr/local/bin/log-util all --print | egrep '(slot%u|spb|nic|all)' | /usr/bin/tail -n 50 > %s",
+           slot_id, TMP_LOG_FILE);
+  system(cmd);
+
+  printf("Getting POST codes...\n");
+  snprintf(cmd, sizeof(cmd), "/usr/bin/bic-util slot%u --get_post_code > %s", slot_id, TMP_POST_FILE);
+  system(cmd);
+
+  chdir(TMP_SS_PATH);
+  snprintf(cmd, sizeof(cmd), "tar czf %s ./*", TMP_TARBALL);
+  system(cmd);
+
+  fp = fopen(TMP_TARBALL, "rb");
+  if (fp == NULL) {
+    printf("unable to get the %s fp %s\n", TMP_TARBALL, strerror(errno));
+    return errno;
+  }
+
+  if (info_type == TYPE_MFG) {
+    idx = MAX_RI_NUM;
+    magic_tag = MFIH_MAGIC_TAG;
+  } else {
+    magic_tag = RIH_MAGIC_TAG;
+  }
+
+  fseek(fp, 0L, SEEK_END);
+  fsize = ftell(fp);
+  printf("File Size: %d\n", fsize);
+  if ((fsize + IH_SIZE) > m_info_rec[idx].size) {
+    printf("file is too large\n");
+    fclose(fp);
+    return -1;
+  }
+  printf("Storing to EEPROM...\n");
+
+  sum = 0;
+  rewind(fp);
+  offset = m_info_rec[idx].offset + IH_SIZE;
+  while ((len = fread(&wbuf[2], 1, BLOCK_SIZE, fp)) > 0) {
+    wbuf[0] = (offset >> 8) & 0xFF;
+    wbuf[1] = offset & 0xFF;
+    ret = bic_master_write_read(slot_id, EEPROM_BUS, EEPROM_ADDR, wbuf, 2+len, rbuf, 0);
+    if (ret != 0) {
+      printf("write failed 0x%x, len = %d\n", offset, len);
+      fclose(fp);
+      return ret;
+    }
+
+    for (i = 0; i < len; i++) {
+      sum += wbuf[i+2];
+    }
+
+    offset += len;
+    msleep(10);
+  }
+  fclose(fp);
+
+  memset(ih_buf, 0x00, IH_SIZE);
+  memcpy(ih->magic_tag, magic_tag, 8);
+  ih->version = 0x01;
+  ih->checksum = sum;
+  ih->size = fsize;
+
+  offset = m_info_rec[idx].offset;
+  ih_offs = 0;
+  fsize = IH_SIZE;
+  while (fsize > 0) {
+    if (ih_offs) {
+      msleep(10);
+    }
+
+    wbuf[0] = (offset >> 8) & 0xFF;
+    wbuf[1] = offset & 0xFF;
+    len = (fsize > BLOCK_SIZE) ? BLOCK_SIZE : fsize;
+    memcpy(&wbuf[2], &ih_buf[ih_offs], len);
+    ret = bic_master_write_read(slot_id, EEPROM_BUS, EEPROM_ADDR, wbuf, 2+len, rbuf, 0);
+    if (ret != 0) {
+      printf("write failed 0x%x, len = %d\n", offset, len);
+      fclose(fp);
+      return ret;
+    }
+
+    offset += len;
+    ih_offs += len;
+    fsize -= len;
+  }
+
+  return 0;
+}
+
+static int
+util_dump_snapshot(uint8_t slot_id, uint8_t info_type, uint8_t idx, char *dump_file) {
+  FILE *fp;
+  uint8_t wbuf[32], rbuf[64];
+  uint16_t checksum = 0, sum;
+  int ret, fsize = 0, offset, len, i;
+
+  if (is_ih_exist(slot_id, info_type, idx, &checksum, &fsize) != 1) {
+    printf("no data to read\n");
+    return -1;
+  }
+
+  printf("Filename: %s\n", dump_file);
+  printf("File Size: %d\n", fsize);
+
+  fp = fopen(dump_file, "wb");
+  if (fp == NULL) {
+    printf("unable to get the %s fp %s\n", dump_file, strerror(errno));
+    return errno;
+  }
+  printf("Dumping from EEPROM...\n");
+
+  sum = 0;
+  offset = m_info_rec[idx].offset + IH_SIZE;
+  while (fsize > 0) {
+    len = (fsize > BLOCK_SIZE) ? BLOCK_SIZE : fsize;
+    wbuf[0] = (offset >> 8) & 0xFF;
+    wbuf[1] = offset & 0xFF;
+    ret = bic_master_write_read(slot_id, EEPROM_BUS, EEPROM_ADDR, wbuf, 2, rbuf, len);
+    if (ret != 0) {
+      printf("read failed 0x%x, len = %d\n", offset, len);
+      fclose(fp);
+      return ret;
+    }
+
+    if ((ret = fwrite(rbuf, 1, len, fp)) != len) {
+      printf("write file failed 0x%x, len = (%d / %d)\n", offset, ret, len);
+      fclose(fp);
+      return ret;
+    }
+
+    for (i = 0; i < len; i++) {
+      sum += rbuf[i];
+    }
+
+    offset += len;
+    fsize -= len;
+  }
+  fclose(fp);
+
+  if (checksum != sum) {
+    printf("mismatched checksum, 0x%04x / 0x%04x\n", checksum, sum);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+util_clear_snapshot(uint8_t slot_id, uint8_t idx) {
+  uint8_t wbuf[64], rbuf[64], ih_buf[IH_SIZE], ih_offs;
+  int ret, fsize, offset, len;
+
+  memset(ih_buf, 0xff, IH_SIZE);
+  offset = m_info_rec[idx].offset;
+  ih_offs = 0;
+  fsize = IH_SIZE;
+  while (fsize > 0) {
+    if (ih_offs) {
+      msleep(10);
+    }
+
+    wbuf[0] = (offset >> 8) & 0xFF;
+    wbuf[1] = offset & 0xFF;
+    len = (fsize > BLOCK_SIZE) ? BLOCK_SIZE : fsize;
+    memcpy(&wbuf[2], &ih_buf[ih_offs], len);
+    ret = bic_master_write_read(slot_id, EEPROM_BUS, EEPROM_ADDR, wbuf, 2+len, rbuf, 0);
+    if (ret != 0) {
+      printf("write failed 0x%x, len = %d\n", offset, len);
+      return ret;
+    }
+
+    offset += len;
+    ih_offs += len;
+    fsize -= len;
+  }
+
+  return 0;
+}
+
+int
+main(int argc, char **argv) {
+  uint8_t slot_id, info_type;
+  int ret = 0, idx, max_idx;
+
+  if (argc < 5) {
+    goto err_exit;
+  }
+
+  if (!strcmp(argv[1], "slot1")) {
+    slot_id = 1;
+  } else if (!strcmp(argv[1] , "slot2")) {
+    slot_id = 2;
+  } else if (!strcmp(argv[1] , "slot3")) {
+    slot_id = 3;
+  } else if (!strcmp(argv[1] , "slot4")) {
+    slot_id = 4;
+  } else {
+    goto err_exit;
+  }
+
+  if (!strcmp(argv[3], "--rma")) {
+    info_type = TYPE_RMA;
+    max_idx = MAX_RI_NUM;
+  } else if (!strcmp(argv[3], "--mfg")) {
+    info_type = TYPE_MFG;
+    max_idx = MAX_MFI_NUM;
+  } else {
+    goto err_exit;
+  }
+
+  check_info_rec(slot_id);
+
+  if (!strcmp(argv[2], "--set")) {
+    ret = util_store_snapshot(slot_id, info_type, argv[4]);
+  } else if (!strcmp(argv[2], "--get")) {
+    if (argc < 6) {
+      goto err_exit;
+    }
+
+    idx = atoi(argv[4]);
+    if ((idx < 1) || (idx > max_idx)) {
+      goto err_exit;
+    }
+
+    idx = (info_type == TYPE_MFG) ? MAX_RI_NUM : (idx-1);
+    ret = util_dump_snapshot(slot_id, info_type, idx, argv[5]);
+  } else if (!strcmp(argv[2], "--clear")) {
+    idx = atoi(argv[4]);
+    if ((idx < 1) || (idx > max_idx)) {
+      goto err_exit;
+    }
+
+    idx = (info_type == TYPE_MFG) ? MAX_RI_NUM : (idx-1);
+    ret = util_clear_snapshot(slot_id, idx);
+  } else {
+    goto err_exit;
+  }
+
+  printf("%s\n", (!ret) ? "Finished" : "Failed");
+  return ret;
+
+err_exit:
+  print_usage_help();
+  return -1;
+}

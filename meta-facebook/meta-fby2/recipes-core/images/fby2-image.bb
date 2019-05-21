@@ -57,6 +57,7 @@ IMAGE_INSTALL += " \
   enclosure-util \
   libpldm \
   nvme-util \
+  snapshot-util \
   "
 
 IMAGE_FEATURES += " \

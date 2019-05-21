@@ -56,6 +56,13 @@
 #define WAIT_CLIENT_RETRIES 5
 #define ACCEPT_RECOVER_RETRIES 5
 
+#define SAVE_ERRNO_RUN(exp)  \
+  do {                       \
+    int saved_errno = errno; \
+    exp;                     \
+    errno = saved_errno;     \
+  } while (0)
+
 struct service_s {
   ipc_handle_req_t handle_req;
   client_t base_cli;
@@ -77,60 +84,59 @@ static void set_sock_timeout(int sock, int timeout)
   }
 }
 
-int ipc_send_req(const char *endpoint, uint8_t *req, size_t req_len, uint8_t *resp, size_t *resp_len, int timeout)
+int ipc_send_req(const char *endpoint, uint8_t *req, size_t req_len,
+                 uint8_t *resp, size_t *resp_len, int timeout)
 {
   struct sockaddr_un remote;
-  int s;
-  int len;
-  int ret = -1;
-  int r;
+  int len, retry, sockfd;
   size_t max_resp;
 
   if (!req || !req_len || !resp || !resp_len || !*resp_len) {
     DEBUG("%s(%s) bad parameters passed", __func__, endpoint);
+    errno = EINVAL;
     return -1;
   }
 
-  max_resp = *resp_len;
 
-  if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+  if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
     DEBUG("%s(%s) failed to create socket (%s)", __func__, endpoint, strerror(errno));
     return -1;
   }
 
-  set_sock_timeout(s, timeout);
+  set_sock_timeout(sockfd, timeout);
 
   remote.sun_family = AF_UNIX;
   sprintf(remote.sun_path, "/tmp/%s", endpoint);
   len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
-  if (connect(s, (struct sockaddr *)&remote, len) == -1) {
+  if (connect(sockfd, (struct sockaddr *)&remote, len) == -1) {
     DEBUG("%s(%s) failed to connect (%s)", __func__, endpoint, strerror(errno));
-    goto close_bail;
+    goto error;
   }
   
-  if (send(s, req, req_len, 0) != req_len) {
+  if (send(sockfd, req, req_len, 0) != req_len) {
     DEBUG("%s(%s) failed to send (%s)", __func__, endpoint, strerror(errno));
-    goto close_bail;
+    goto error;
   }
 
-  for (r = 0; r < MAX_RETRIES; r++) {
-    int rx_len = recv(s, resp, max_resp, 0);
-    if (rx_len >= 0) {
-      ret = 0;
-      *resp_len = rx_len;
-      break;
-    }
-    if (rx_len < 0 && errno != EINTR) {
+  max_resp = *resp_len;
+  while ((len = recv(sockfd, resp, max_resp, 0)) < 0) {
+    if ((errno != EINTR && errno != EWOULDBLOCK) ||
+        (retry++ >= MAX_RETRIES)) {
       DEBUG("%s(%s) failed to recv (%s)", __func__, endpoint, strerror(errno));
-      break;
+      goto error;
     }
     DEBUG("%s(%s) recv interrupted (%s)", __func__, endpoint, strerror(errno));
     usleep(20 * 1000);
   }
-close_bail:
-  close(s);
-  return ret;
+  *resp_len = len;
+
+  close(sockfd);
+  return 0;
+
+error:
+  SAVE_ERRNO_RUN(close(sockfd));
+  return -1;
 }
 
 int ipc_recv_req(client_t *cli, uint8_t *req, size_t *req_len, int timeout)

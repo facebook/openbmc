@@ -55,11 +55,30 @@ def improve_system(logger):
 
     (full_flash_mtds, all_mtds) = system.get_mtds()
 
-    free_memory = system.free_kibibytes()
-    logger.info('{} KiB free memory.'.format(free_memory))
-    # As of August 2017, sample image files are 15 to 22 MiB. Make sure there
+    [total_memory_kb, free_memory_kb] = system.get_mem_info()
+    logger.info('{} KiB total memory, {} KiB free memory.'.
+                format(total_memory_kb, free_memory_kb))
+
+    reboot_threshold_pct = system.get_healthd_reboot_threshold()
+    reboot_threshold_kb = ((100 - reboot_threshold_pct)/100) * total_memory_kb
+
+    # As of May 2019, sample image files are 17 to 23 MiB. Make sure there
     # is space for them and a few flashing related processes.
-    if system.free_kibibytes() < 60 * 1024:
+    max_openbmc_img_size = 23
+    openbmc_img_size_kb  = max_openbmc_img_size * 1024
+    # in the case of no reboot treshold, use a default limit
+    default_threshold    = 60 * 1024
+
+    # for low memory remediation - ensure downloading BMC image will NOT trigger
+    # healthd reboot
+    min_memory_needed = max(default_threshold, openbmc_img_size_kb + reboot_threshold_kb)
+    logger.info('Healthd reboot threshold at {}%  ({} KiB)'.
+                format(reboot_threshold_pct, reboot_threshold_kb))
+    logger.info('Minimum memory needed for update is {} KiB'.
+                format(min_memory_needed))
+    if free_memory_kb < min_memory_needed:
+        logger.info('Free memory ({} KiB) < minimum required memory ({} KiB), reboot needed'.
+                    format(free_memory_kb, min_memory_needed))
         if full_flash_mtds != []:
             [system.get_valid_partitions([full_flash], checksums, logger)
              for full_flash in full_flash_mtds]

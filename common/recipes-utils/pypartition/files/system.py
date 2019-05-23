@@ -160,14 +160,39 @@ def get_checksums_args(description):
     return (checksums, args)
 
 
-def free_kibibytes():
-    # type: () -> int
-    proc_meminfo_regex = re.compile(
+# healthd config specifies a mem utlization threshold (e.g. 80%, 95%)
+#  that will trigger system reboot,
+# Scan healthd config and returns this value
+def get_healthd_reboot_threshold():
+    # type: () -> [int]
+    try:
+        with open('/etc/healthd-config.json') as conf:
+            d = json.load(conf)
+        for t in d['bmc_mem_utilization']['threshold']:
+            if 'reboot' in t['action']:
+                return t['value']
+        # if no reboot threshold found, returns 100%
+        return 100
+    # If /etc/healthd-config.json does not exist, Python 2 raises plain
+    # IOError. Python 3 raises FileNotFoundError but that's a sub-class of
+    # IOError.
+    except IOError:
+        return 100
+
+
+def get_mem_info():
+    # type: () -> [int, int]
+    proc_memfree_regex = re.compile(
         '^MemFree: +([0-9]+) kB$', re.MULTILINE
     )
+    proc_memtotal_regex = re.compile(
+        '^MemTotal: +([0-9]+) kB$', re.MULTILINE
+    )
     with open('/proc/meminfo', 'r') as proc_meminfo:
-        return int(proc_meminfo_regex.findall(proc_meminfo.read())[0])
-
+        meminfo = proc_meminfo.read()
+        memTotal = int(proc_memtotal_regex.findall(meminfo)[0])
+        memFree = int(proc_memfree_regex.findall(meminfo)[0])
+        return [memTotal, memFree]
 
 def get_vboot_enforcement():
     support = 'none'

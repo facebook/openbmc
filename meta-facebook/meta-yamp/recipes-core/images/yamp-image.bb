@@ -23,4 +23,5 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   fscd \
   led-controld \
+  spatula \
   "

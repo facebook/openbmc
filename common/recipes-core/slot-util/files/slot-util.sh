@@ -44,10 +44,10 @@ bmc_mac_dec="$( printf "%d\\n" "0x$(sed s/://g "/sys/class/net/eth0/address")")"
 host_table=$(ip -r neigh show dev eth0 | grep -iE 'com|edu|gov|org' | sort -k 3)
 
 # calculate expected MAC address for each slot, convert it back to hex str
-slot1_mac=$(printf "%x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-slot2_mac=$(printf "%x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-slot3_mac=$(printf "%x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-slot4_mac=$(printf "%x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
 
 # match host name to each slot based on MAC address
 # shellcheck disable=SC2034

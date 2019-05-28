@@ -14,12 +14,10 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import phymemory
+
 
 _soc_reg_map = {}
 
@@ -27,10 +25,11 @@ _soc_reg_map = {}
 class SCUReg(phymemory.PhyMemory):
     SCU_REG_MAX = 0x1A4
     SCU_ADDR_BASE = 0x1E6E2000
+
     def __init__(self, reg):
         assert 0 <= reg <= self.SCU_REG_MAX
         self.reg = reg
-        super(SCUReg, self).__init__(self.SCU_ADDR_BASE + reg, 'SCU%X' % reg)
+        super(SCUReg, self).__init__(self.SCU_ADDR_BASE + reg, "SCU%X" % reg)
 
 
 def soc_get_register(addr):

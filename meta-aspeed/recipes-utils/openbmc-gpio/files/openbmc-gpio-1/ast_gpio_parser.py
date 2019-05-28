@@ -15,10 +15,7 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
 import csv
@@ -26,22 +23,24 @@ import logging
 import re
 import sys
 
-FUNC_SYMBOL = 'Function'
-AND_SYMBOL = 'And'
-OR_SYMBOL = 'Or'
-BE_SYMBOL = 'BitsEqual'
-BNE_SYMBOL = 'BitsNotEqual'
+
+FUNC_SYMBOL = "Function"
+AND_SYMBOL = "And"
+OR_SYMBOL = "Or"
+BE_SYMBOL = "BitsEqual"
+BNE_SYMBOL = "BitsNotEqual"
 
 
 class CsvReader:
-    '''
+    """
     A class for parsing the CSV files containing the pin mapping data.
-    '''
+    """
+
     def __init__(self, path):
         self.path = path
 
-        fileobj = open(path, 'r')
-        self.reader = csv.reader(fileobj, delimiter=b',', quotechar=b'"')
+        fileobj = open(path, "r")
+        self.reader = csv.reader(fileobj, delimiter=b",", quotechar=b'"')
 
     def next(self):
         try:
@@ -57,22 +56,22 @@ class Expression(object):
 
     def parse(self):
         # Strap[4,1:0]=100
-        m = re.match('([^\[]+)\[(.+)\](!*=)([01]+)', self.exp)
+        m = re.match("([^\[]+)\[(.+)\](!*=)([01]+)", self.exp)
         # ('Strap', '4,1:0', '=', '100')
         try:
             if len(m.groups()) != 4:
                 raise
-            scuname  = m.group(1)
-            if scuname.lower() == 'strap':
+            scuname = m.group(1)
+            if scuname.lower() == "strap":
                 scu = 0x70
-            elif scuname.startswith('SCU'):
+            elif scuname.startswith("SCU"):
                 scu = int(scuname[3:], 16)
 
             bits = []
-            for bit in m.group(2).split(','):
-                if ':' in bit:
+            for bit in m.group(2).split(","):
+                if ":" in bit:
                     # it is a range
-                    s, _, e = bit.partition(':')
+                    s, _, e = bit.partition(":")
                     ss = int(s)
                     ee = int(e)
                     if ss < ee:
@@ -83,30 +82,29 @@ class Expression(object):
                         bits += range(ee, ss + 1)
                 else:
                     bits += [int(bit)]
-            if m.group(3) == '!=':
+            if m.group(3) == "!=":
                 cond = BNE_SYMBOL
             else:
                 cond = BE_SYMBOL
             value = int(m.group(4), 2)
-            return '%s(0x%x, %s, 0x%x)' \
-                % (cond, scu, sorted(bits, reverse=True), value)
+            return "%s(0x%x, %s, 0x%x)" % (cond, scu, sorted(bits, reverse=True), value)
         except Exception as e:
             logging.exception('Failed to parse expression "%s"', self.exp)
 
 
 class Conditions(object):
     def __init__(self, cond):
-        self.cond = re.sub('\s+', '', cond)
+        self.cond = re.sub("\s+", "", cond)
 
     def _next_condition_pos(self, cur):
         for idx in range(cur, len(self.cond)):
             c = self.cond[idx]
-            if c == '&' or c == '|':
+            if c == "&" or c == "|":
                 return idx
         return -1
 
     def _get_expression(self, exp):
-        if exp == '':
+        if exp == "":
             return None
         return Expression(exp).parse()
 
@@ -117,11 +115,11 @@ class Conditions(object):
             return self._get_expression(self.cond[idx:])
 
         prev = self._get_expression(self.cond[idx:next_idx])
-        if self.cond[next_idx] == '&':
+        if self.cond[next_idx] == "&":
             cond = AND_SYMBOL
         else:
             cond = OR_SYMBOL
-        return '%s(%s, %s)' % (cond, prev, self._parse(next_idx + 1))
+        return "%s(%s, %s)" % (cond, prev, self._parse(next_idx + 1))
 
     def parse(self):
         return self._parse(0)
@@ -138,25 +136,25 @@ class AstGPIO(object):
         return Conditions(cond).parse()
 
     def _parse_funcs(self, parts):
-        func_fmt = FUNC_SYMBOL + '(\'{func}\', {cond})'
+        func_fmt = FUNC_SYMBOL + "('{func}', {cond})"
         if len(parts) < 1:
             return []
         # Unable to process SIORD
-        if 'SIORD' in ' '.join(parts):
-            logging.warning('Unable to process SIORD. Ignore')
+        if "SIORD" in " ".join(parts):
+            logging.warning("Unable to process SIORD. Ignore")
             return []
-        if 'GFX064' in ' '.join(parts):
-            logging.warning('Unable to process GFX064. Ignore')
+        if "GFX064" in " ".join(parts):
+            logging.warning("Unable to process GFX064. Ignore")
             return []
-        if 'LHCR0' in ' '.join(parts):
-            logging.warning('Unable to process LHCR0. Ignore')
+        if "LHCR0" in " ".join(parts):
+            logging.warning("Unable to process LHCR0. Ignore")
             return []
         func = parts[0]
-        if func == '':
+        if func == "":
             # nothing after
             return []
-        if func == '-':
-            func = 'UNDEFINED%d' % self.undefined_func
+        if func == "-":
+            func = "UNDEFINED%d" % self.undefined_func
             self.undefined_func += 1
         assert func not in self.functions
         self.functions.add(func)
@@ -164,8 +162,7 @@ class AstGPIO(object):
             # just has the function name, the last function
             return [func_fmt.format(func=func, cond=None)]
         cond = self._parse_conditions(parts[1])
-        return [func_fmt.format(func=func, cond=cond)] \
-            + self._parse_funcs(parts[2:])
+        return [func_fmt.format(func=func, cond=cond)] + self._parse_funcs(parts[2:])
 
     def parse(self):
         while True:
@@ -173,7 +170,7 @@ class AstGPIO(object):
             if line is None:
                 break
 
-            logging.debug('Parsing line: %s' % line)
+            logging.debug("Parsing line: %s" % line)
 
             # V21,ROMA24,SCU88[28]=1 & SCU94[1]=0,VPOR6,SCU88[28]=1 & SCU94[1]=1,GPIOR4
             pin = line[0]
@@ -181,7 +178,7 @@ class AstGPIO(object):
                 # empty line
                 continue
             funcs = self._parse_funcs(line[1:])
-            logging.debug('%s: %s' % (pin, funcs))
+            logging.debug("%s: %s" % (pin, funcs))
             assert pin not in self.pins
             self.pins[pin] = funcs
 
@@ -190,16 +187,18 @@ class AstGPIO(object):
             if len(self.pins[pin]) == 0:
                 logging.warning('Pin "%s" has no function defined. Skip' % pin)
                 continue
-            out.write('    \'%s\': [\n        %s\n    ],\n'
-                      % (pin, ',\n        '.join(self.pins[pin])))
+            out.write(
+                "    '%s': [\n        %s\n    ],\n"
+                % (pin, ",\n        ".join(self.pins[pin]))
+            )
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('data', help='The GPIO data file')
+    ap.add_argument("data", help="The GPIO data file")
     args = ap.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s: %(message)s")
 
     gpio = AstGPIO(CsvReader(args.data))
     gpio.parse()

@@ -503,23 +503,38 @@ power_value_adjust(const struct power_coeff *table, float *value) {
 
 typedef struct _inlet_corr_t {
   uint8_t duty;
-  int8_t delta_t;
+  float delta_t;
 } inlet_corr_t;
 
 static inlet_corr_t g_ict[] = {
   // Inlet Sensor:
   // duty cycle vs delta_t
-  { 10, 2 },
-  { 16, 1 },
-  { 38, 0 },
+  { 10, 2.0 },
+  { 16, 1.0 },
+  { 38, 0.0 },
 };
 
 static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 
+static inlet_corr_t g_ict_gpv2[] = {
+  // duty cycle vs delta_t
+  { 10, 3.0 },
+  { 16, 2.5 },
+  { 20, 2.0 },
+  { 24, 1.5 },
+  { 26, 1.0 },
+  { 36, 0.5 },
+  { 42, 0.0 },
+};
+
+static uint8_t g_ict_gpv2_count = sizeof(g_ict_gpv2)/sizeof(inlet_corr_t);
+
 static void apply_inlet_correction(float *value) {
-  static int8_t dt = 0;
-  int i;
+  static float dt = 0;
   uint8_t pwm[2] = {0};
+  uint8_t ict_cnt;
+  int i;
+  inlet_corr_t *ict;
 
   // Get PWM value
   if (pal_get_pwm_value(0, &pwm[0]) || pal_get_pwm_value(1, &pwm[1])) {
@@ -527,13 +542,21 @@ static void apply_inlet_correction(float *value) {
     *value -= dt;
     return;
   }
-  pwm[0] = (pwm[0] + pwm[1]) /2;
+  pwm[0] = (pwm[0] + pwm[1]) / 2;
+
+  if ((fby2_get_slot_type(FRU_SLOT1) != SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) != SLOT_TYPE_GPV2)) {
+    ict = g_ict;
+    ict_cnt = g_ict_count;
+  } else {
+    ict = g_ict_gpv2;
+    ict_cnt = g_ict_gpv2_count;
+  }
 
   // Scan through the correction table to get correction value for given PWM
-  dt=g_ict[0].delta_t;
-  for (i=0; i< g_ict_count; i++) {
-    if (pwm[0] >= g_ict[i].duty)
-      dt = g_ict[i].delta_t;
+  dt = ict[0].delta_t;
+  for (i = 1; i < ict_cnt; i++) {
+    if (pwm[0] >= ict[i].duty)
+      dt = ict[i].delta_t;
     else
       break;
   }

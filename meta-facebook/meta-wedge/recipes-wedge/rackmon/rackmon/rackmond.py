@@ -1,14 +1,14 @@
-import struct
+import os
+import os.path
 import socket
-import os, os.path
+import struct
 import subprocess
 import time
 
+
 def configure_rackmond(reglist, verify_configure=False):
     COMMAND_TYPE_SET_CONFIG = 2
-    config_command = struct.pack("@HxxH",
-            COMMAND_TYPE_SET_CONFIG,
-            len(reglist))
+    config_command = struct.pack("@HxxH", COMMAND_TYPE_SET_CONFIG, len(reglist))
     for r in reglist:
         keep = 1
         if "keep" in r:
@@ -34,16 +34,16 @@ def configure_rackmond(reglist, verify_configure=False):
 
     # Internal function to check if rackmond is configured
     def check_if_rackmond_configured():
-        configured = False;
-        cmd = [ "/usr/local/bin/rackmonstatus" ]
+        configured = False
+        cmd = ["/usr/local/bin/rackmonstatus"]
         try:
             # If it's configured, it will display a message
             # containing "Monitored PSUs'.
             # Otherwise, the command will either fail to
             # execute, or some message with "Unconfigured"
             # will be printed out.
-            o =subprocess.check_output(cmd)
-            if 'Monitored PSUs' in o.decode():
+            o = subprocess.check_output(cmd)
+            if "Monitored PSUs" in o.decode():
                 configured = True
         except Exceptions as e:
             configured = False

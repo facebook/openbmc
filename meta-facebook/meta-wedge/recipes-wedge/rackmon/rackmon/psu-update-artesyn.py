@@ -9,12 +9,12 @@ import json
 import os
 import pickle
 import struct
+import subprocess
 import sys
 from contextlib import contextmanager
 
 import pyrmd
 import srec
-import subprocess
 from pyrmd import modbuscmd, read_register, transcript
 
 
@@ -306,10 +306,10 @@ def suppress_monitoring():
     and resume on exit, including exits due to exception
     """
     try:
-        subprocess.check_output(['rackmonctl', 'pause'])
+        subprocess.check_output(["rackmonctl", "pause"])
         yield
     finally:
-        subprocess.check_output(['rackmonctl', 'resume'])
+        subprocess.check_output(["rackmonctl", "resume"])
 
 
 def main():

@@ -1,43 +1,44 @@
 #!/usr/bin/python3
 
-import sys
+import argparse
+import json
 import os
 import socket
-from collections import namedtuple
 import struct
-import traceback
-import argparse
+import sys
 import time
-import json
+import traceback
 from binascii import hexlify, unhexlify
+from collections import namedtuple
 
 
 def bh(bs):
-    return hexlify(bs).decode('utf-8')
+    return hexlify(bs).decode("utf-8")
 
 
-status = {
-    'pid': os.getpid(),
-    'state': 'started'
-}
+status = {"pid": os.getpid(), "state": "started"}
+
 
 def auto_int(x):
     return int(x, 0)
 
+
 delay = 0
 pct_done = 0
-bel_logline = ''
+bel_logline = ""
 log_clear = False
+
+
 def bel_log(s):
     global pct_done
     global bel_logline
     global log_clear
-    if log_clear and s != '':
-        bel_logline = ''
+    if log_clear and s != "":
+        bel_logline = ""
         if sys.stdout.isatty():
-            sys.stdout.write('\n')
+            sys.stdout.write("\n")
         log_clear = False
-    if s.find('\n') != -1:
+    if s.find("\n") != -1:
         bel_logline += s.strip()
         status_state(bel_logline)
         log_clear = True
@@ -45,41 +46,48 @@ def bel_log(s):
         bel_logline += s
         status_state(bel_logline)
     if sys.stdout.isatty():
-        sys.stdout.write('\r[%d%%] %s' % (pct_done, bel_logline))
+        sys.stdout.write("\r[%d%%] %s" % (pct_done, bel_logline))
         sys.stdout.flush()
     else:
-        print('[%d%%] %s' % (pct_done, bel_logline.strip()))
+        print("[%d%%] %s" % (pct_done, bel_logline.strip()))
+
 
 def bprint(s):
-    bel_log(s + '\n')
+    bel_log(s + "\n")
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--addr', type=auto_int, required=True,
-                    help="PSU Modbus Address")
-parser.add_argument('--statusfile', default=None,
-                    help="Write status to JSON file during process")
-parser.add_argument('--rmfwfile', action='store_true',
-                    help="Delete FW file after update completes")
-parser.add_argument('file', help="firmware file")
+parser.add_argument("--addr", type=auto_int, required=True, help="PSU Modbus Address")
+parser.add_argument(
+    "--statusfile", default=None, help="Write status to JSON file during process"
+)
+parser.add_argument(
+    "--rmfwfile", action="store_true", help="Delete FW file after update completes"
+)
+parser.add_argument("file", help="firmware file")
 
 
 statuspath = None
+
 
 def write_status():
     global status
     if statuspath is None:
         return
-    tmppath = statuspath + '~'
-    with open(tmppath, 'w') as tfh:
+    tmppath = statuspath + "~"
+    with open(tmppath, "w") as tfh:
         tfh.write(json.dumps(status))
     os.rename(tmppath, statuspath)
 
+
 def status_state(state):
     global status
-    status['state'] = state
+    status["state"] = state
     write_status()
 
-BelCommand = namedtuple('BelCommand', ['type', 'data'])
+
+BelCommand = namedtuple("BelCommand", ["type", "data"])
+
 
 class ModbusTimeout(Exception):
     pass
@@ -112,13 +120,14 @@ def rackmon_command(cmd):
                 break
             replydata.append(data)
         client.close()
-    return b''.join(replydata)
+    return b"".join(replydata)
+
 
 def pause_monitoring():
     COMMAND_TYPE_PAUSE_MONITORING = 0x04
     command = struct.pack("@Hxx", COMMAND_TYPE_PAUSE_MONITORING)
     result = rackmon_command(command)
-    (res_n, ) = struct.unpack("@B", result)
+    (res_n,) = struct.unpack("@B", result)
     if res_n == 1:
         bprint("Monitoring was already paused when tried to pause")
     elif res_n == 0:
@@ -131,7 +140,7 @@ def resume_monitoring():
     COMMAND_TYPE_START_MONITORING = 0x05
     command = struct.pack("@Hxx", COMMAND_TYPE_START_MONITORING)
     result = rackmon_command(command)
-    (res_n, ) = struct.unpack("@B", result)
+    (res_n,) = struct.unpack("@B", result)
     if res_n == 1:
         bprint("Monitoring was already running when tried to resume")
     elif res_n == 0:
@@ -142,17 +151,16 @@ def resume_monitoring():
 
 def modbuscmd(raw_cmd, expected=0, timeout=0):
     COMMAND_TYPE_RAW_MODBUS = 1
-    send_command = struct.pack("@HxxHHL",
-                               COMMAND_TYPE_RAW_MODBUS,
-                               len(raw_cmd),
-                               expected,
-                               timeout) + raw_cmd
+    send_command = (
+        struct.pack("@HxxHHL", COMMAND_TYPE_RAW_MODBUS, len(raw_cmd), expected, timeout)
+        + raw_cmd
+    )
     result = rackmon_command(send_command)
     if len(result) == 0:
         raise ModbusUnknownError()
     (resp_len,) = struct.unpack("@H", result[:2])
     if resp_len == 0:
-        (error, ) = struct.unpack("@H", result[2:4])
+        (error,) = struct.unpack("@H", result[2:4])
         if error == 4:
             raise ModbusTimeout()
         if error == 5:
@@ -162,39 +170,47 @@ def modbuscmd(raw_cmd, expected=0, timeout=0):
     return result[2:resp_len]
 
 
-last_rx = ''
-address = ''
+last_rx = ""
+address = ""
 rx_failed = False
+
 
 def do_dump(cmd):
     bprint(str(cmd))
 
+
 def do_log(cmd):
-    bel_log(cmd.data.decode('utf-8'))
+    bel_log(cmd.data.decode("utf-8"))
+
 
 def do_progress(cmd):
     global pct_done, status
-    (progress, ) = struct.unpack('B', cmd.data)
+    (progress,) = struct.unpack("B", cmd.data)
     pct_done = progress
-    status['flash_progress_percent'] = progress
-    bel_log('')
+    status["flash_progress_percent"] = progress
+    bel_log("")
+
 
 def read_timeout(cmd):
-    (ms, ) = struct.unpack('<H', cmd.data)
+    (ms,) = struct.unpack("<H", cmd.data)
     return ms
+
 
 def do_timeout(cmd):
     global delay
-    (ms, ) = struct.unpack('<H', cmd.data)
+    (ms,) = struct.unpack("<H", cmd.data)
     delay = ms
 
-WriteCommand = namedtuple('WriteCommand', ['tx', 'rx', 'timeout'])
+
+WriteCommand = namedtuple("WriteCommand", ["tx", "rx", "timeout"])
+
+
 def read_wcmd(cmd):
-    (txsz, rxsz) = struct.unpack('<BB',cmd.data[:2])
+    (txsz, rxsz) = struct.unpack("<BB", cmd.data[:2])
     txsz = txsz
     rxsz = rxsz
     txdata = cmd.data[3:][:txsz]
-    rxdata = cmd.data[txsz+3:][:rxsz]
+    rxdata = cmd.data[txsz + 3 :][:rxsz]
     # these include sent/received CRCs, which we want to remove
     # as they will be calculated and checked by rackmond
     if txdata:
@@ -202,6 +218,7 @@ def read_wcmd(cmd):
     if rxdata:
         rxdata = rxdata[:-2]
     return WriteCommand(txdata, rxdata, 0)
+
 
 def do_write(cmd):
     global last_rx
@@ -235,42 +252,49 @@ def do_write(cmd):
             # remove incoming address byte
             last_rx = modbuscmd(mcmd, expected=expected, timeout=timeout)[1:]
             t2 = time.clock()
-            spent = (t2 - t1)
+            spent = t2 - t1
         except ModbusTimeout:
-            last_rx = b''
-            bprint('No response from cmd: ' + bh(mcmd))
+            last_rx = b""
+            bprint("No response from cmd: " + bh(mcmd))
     left = spent - (delay / 1000.0)
     if len(rxdata) > 0:
         if rxdata != last_rx:
             global rx_failed
-            bprint('Expected response: %s, len: %d' % (bh(rxdata), expected))
-            bprint('  Actual response: ' + bh(last_rx))
-            bprint('timeout,spent,left: %d, %d, %d' % (timeout, spent * 1000, left * 1000))
+            bprint("Expected response: %s, len: %d" % (bh(rxdata), expected))
+            bprint("  Actual response: " + bh(last_rx))
+            bprint(
+                "timeout,spent,left: %d, %d, %d" % (timeout, spent * 1000, left * 1000)
+            )
             rx_failed = True
     if left > 0:
         time.sleep(left)
 
+
 class BelCommandError(Exception):
     pass
+
 
 def do_error(cmd):
     global rx_failed
     if rx_failed:
-        bel_log(cmd.data.decode('utf-8'))
+        bel_log(cmd.data.decode("utf-8"))
         raise BelCommandError()
 
+
 cmdfuns = {
-        'H': do_dump,
-        'W': do_write,
-        'T': do_timeout,
-        'X': do_error,
-        'L': do_log,
-        'P': do_progress,
-        'M': do_dump
+    "H": do_dump,
+    "W": do_write,
+    "T": do_timeout,
+    "X": do_error,
+    "L": do_log,
+    "P": do_progress,
+    "M": do_dump,
 }
+
 
 def belcmd(cmd):
     cmdfuns[cmd.type](cmd)
+
 
 def main():
     args = parser.parse_args()
@@ -298,16 +322,16 @@ def main():
     # (P)rogress -- set progress percent to given value,
     # (M) MD5 code (checksum of the entire script, excluding this line)
     try:
-        bprint('Reading FW script...')
-        with open(args.file, 'r') as f:
+        bprint("Reading FW script...")
+        with open(args.file, "r") as f:
             for line in f:
                 line = line.strip()
                 # convert hex to bytes leave off check digit
                 cmd = BelCommand(line[0], unhexlify(line[1:][:-2]))
-                if cmd.type == 'W':
+                if cmd.type == "W":
                     cmd = BelCommand(cmd.type, read_wcmd(cmd))
                 cmds.append(cmd)
-        bprint('Coalescing TX/RX commands...')
+        bprint("Coalescing TX/RX commands...")
         olen = len(cmds)
         # Combine TWW / TWTW sequences (write,wait,read) into single write and
         # read with timeout commands so that the response/timeout handling can
@@ -316,36 +340,40 @@ def main():
         # python is quite slow on the BMC.
         while len(cmds) > 0:
             cmd = cmds.pop(0)
-            if cmds and \
-               cmd.type == 'T' \
-               and read_timeout(cmd) > 0 \
-               and cmds[0].type == 'W' \
-               and cmds[0].data.rx == b'':
+            if (
+                cmds
+                and cmd.type == "T"
+                and read_timeout(cmd) > 0
+                and cmds[0].type == "W"
+                and cmds[0].data.rx == b""
+            ):
                 wcmd = cmds.pop(0)
                 tx = wcmd.data.tx
                 timeout = read_timeout(cmd)
-                rx = b''
-                if cmds and cmds[0].type == 'T' and read_timeout(cmds[0]) == 0:
+                rx = b""
+                if cmds and cmds[0].type == "T" and read_timeout(cmds[0]) == 0:
                     cmds.pop(0)
-                if cmds and cmds[0].type == 'W' and cmds[0].data.tx == b'':
+                if cmds and cmds[0].type == "W" and cmds[0].data.tx == b"":
                     rx = cmds.pop(0).data.rx
-                cmd = BelCommand('W', WriteCommand(tx, rx, timeout))
+                cmd = BelCommand("W", WriteCommand(tx, rx, timeout))
             script.append(cmd)
-        bprint('Reduced by %d cmds.' % (olen - len(script)))
+        bprint("Reduced by %d cmds." % (olen - len(script)))
         pause_monitoring()
         for cmd in script:
             belcmd(cmd)
     except Exception as e:
         bprint("Update failed")
         resume_monitoring()
-        status['exception'] = traceback.format_exc()
-        status_state('failed')
+        status["exception"] = traceback.format_exc()
+        status_state("failed")
         traceback.print_exc()
         sys.exit(1)
     resume_monitoring()
-    status_state('done')
+    status_state("done")
     if args.rmfwfile:
         os.remove(args.file)
-    print('\nDone')
+    print("\nDone")
+
+
 if __name__ == "__main__":
     main()

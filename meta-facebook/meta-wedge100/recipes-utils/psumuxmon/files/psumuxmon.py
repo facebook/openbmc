@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import subprocess
-import time
-import syslog
-import re
 import os
+import re
+import subprocess
+import syslog
+import time
+
 
 pcard_vin_hwmon = "/sys/bus/i2c/devices/7-006f/hwmon/hwmon*/in1_input"
 pcard_vin = None
@@ -38,11 +39,15 @@ def get_hwmon_source():
         construct_hwmon_path = result[0] + "hwmon"
         x = None
         for x in os.listdir(construct_hwmon_path):
-            if x.startswith('hwmon'):
-                construct_hwmon_path = construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+            if x.startswith("hwmon"):
+                construct_hwmon_path = (
+                    construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+                )
                 if os.path.exists(construct_hwmon_path):
                     pcard_vin = construct_hwmon_path
-                    syslog.syslog(syslog.LOG_INFO, "Reading ltc pcard_vin={}".format(pcard_vin))
+                    syslog.syslog(
+                        syslog.LOG_INFO, "Reading ltc pcard_vin={}".format(pcard_vin)
+                    )
                     return pcard_vin
 
 
@@ -53,7 +58,7 @@ def pcard_read(inp):
         # time
         if not inp:
             inp = get_hwmon_source()
-        with open(inp, 'r') as f:
+        with open(inp, "r") as f:
             val = int(f.read())
             return val
     except Exception as e:
@@ -80,21 +85,29 @@ def main():
             if vin:
                 live_channels.append(ch)
         if len(live_channels) == 0:
-            syslog.syslog(syslog.LOG_WARNING, "No ltc4151 (passthrough card voltage monitor) detected")
+            syslog.syslog(
+                syslog.LOG_WARNING,
+                "No ltc4151 (passthrough card voltage monitor) detected",
+            )
             pcard_channel = None
         if len(live_channels) == 1:
             ch = live_channels[0]
             if pcard_channel is None:
-                syslog.syslog(syslog.LOG_INFO, "Passsthrough card ltc4151 detected on mux channel %d" % (ch,))
+                syslog.syslog(
+                    syslog.LOG_INFO,
+                    "Passsthrough card ltc4151 detected on mux channel %d" % (ch,),
+                )
                 pcard_channel = ch
                 set_mux_channel(pcard_channel)
         if len(live_channels) == 2:
             for ch in live_channels:
                 if pcard_channel != ch:
                     pcard_channel = ch
-            syslog.syslog(syslog.LOG_INFO,
-                    "ltc4151 detected on both mux channels, on channel %d for next %d seconds..." \
-                    % (pcard_channel, check_interval))
+            syslog.syslog(
+                syslog.LOG_INFO,
+                "ltc4151 detected on both mux channels, on channel %d for next %d seconds..."
+                % (pcard_channel, check_interval),
+            )
             set_mux_channel(pcard_channel)
         time.sleep(check_interval)
 

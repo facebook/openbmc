@@ -21,11 +21,13 @@
 import json
 import re
 import subprocess
+
 from rest_fruid import get_fruid
+
 
 # Handler for SCM FRUID resource endpoint
 def get_fruid_scm():
-    scm_eeprom = '/sys/class/i2c-dev/i2c-18/device/18-0052/eeprom'
-    cmd = ['weutil', scm_eeprom]
+    scm_eeprom = "/sys/class/i2c-dev/i2c-18/device/18-0052/eeprom"
+    cmd = ["weutil", scm_eeprom]
     fresult = get_fruid(cmd)
     return fresult

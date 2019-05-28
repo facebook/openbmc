@@ -22,30 +22,34 @@
 import os
 from subprocess import *
 
+
 # Handler for SOL resource endpoint
 def sol_action(data):
-    if data["action"] == 'stop':
-        (ret, _) = Popen('ps | grep -v grep | grep sol.sh | awk \'{print $1}\'', \
-                    shell=True, stdout=PIPE).communicate()
+    if data["action"] == "stop":
+        (ret, _) = Popen(
+            "ps | grep -v grep | grep sol.sh | awk '{print $1}'",
+            shell=True,
+            stdout=PIPE,
+        ).communicate()
         ret = ret.decode()
-        adata = ret.split('\n')
-        if adata[0] != '':
-            cmd = 'kill -9 ' + adata[0] + ' 2>/dev/null'
-            Popen(cmd, \
-                         shell=True, stdout=PIPE).communicate()
-        (ret, _) = Popen('ps | grep -v grep | grep microcom | awk \'{print $1}\'', \
-                    shell=True, stdout=PIPE).communicate()
+        adata = ret.split("\n")
+        if adata[0] != "":
+            cmd = "kill -9 " + adata[0] + " 2>/dev/null"
+            Popen(cmd, shell=True, stdout=PIPE).communicate()
+        (ret, _) = Popen(
+            "ps | grep -v grep | grep microcom | awk '{print $1}'",
+            shell=True,
+            stdout=PIPE,
+        ).communicate()
         ret = ret.decode()
-        adata = ret.split('\n')
-        if adata[0] != '':
-            cmd = 'kill -9 ' + adata[0] + ' 2>/dev/null'
-            Popen(cmd, \
-                        shell=True, stdout=PIPE).communicate()
-        Popen('rm /var/lock/LCK..ttyS1', \
-                    shell=True, stdout=PIPE).communicate()
+        adata = ret.split("\n")
+        if adata[0] != "":
+            cmd = "kill -9 " + adata[0] + " 2>/dev/null"
+            Popen(cmd, shell=True, stdout=PIPE).communicate()
+        Popen("rm /var/lock/LCK..ttyS1", shell=True, stdout=PIPE).communicate()
 
-        result = { "result": "success"}
+        result = {"result": "success"}
     else:
-        result = { "result": "fail"}
+        result = {"result": "fail"}
 
     return result

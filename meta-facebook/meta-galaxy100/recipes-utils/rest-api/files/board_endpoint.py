@@ -17,15 +17,16 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from aiohttp import web
-import rest_fruid_scm
 import rest_chassis_eeprom
+import rest_firmware
+import rest_fruid_scm
+import rest_i2cflush
 import rest_seutil
 import rest_sol
 import rest_usb2i2c_reset
-import rest_firmware
-import rest_i2cflush
+from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
+
 
 class boardApp_Handler:
 
@@ -35,7 +36,9 @@ class boardApp_Handler:
 
     # Handler for sys/mb/seutil resource endpoint
     async def rest_chassis_eeprom_hdl(self, request):
-        return web.json_response(rest_chassis_eeprom.get_chassis_eeprom(), dumps=dumps_bytestr)
+        return web.json_response(
+            rest_chassis_eeprom.get_chassis_eeprom(), dumps=dumps_bytestr
+        )
 
     # Handler for sys/mb/seutil resource endpoint
     async def rest_seutil_hdl(self, request):

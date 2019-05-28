@@ -22,23 +22,25 @@ import json
 import re
 import subprocess
 
+
 MAX_PIM_NUM = 8
 
 
 # Use PIM FPGA to detect pim present
 def is_pim_present(pim_no):
-    smbcpld = '/sys/bus/i2c/devices/12-003e'
-    pim_prsnt = '{:s}/pim_fpga_cpld_{:d}_prsnt_n_status'.format(smbcpld, pim_no)
+    smbcpld = "/sys/bus/i2c/devices/12-003e"
+    pim_prsnt = "{:s}/pim_fpga_cpld_{:d}_prsnt_n_status".format(smbcpld, pim_no)
     try:
-        with open(pim_prsnt, 'r') as f:
+        with open(pim_prsnt, "r") as f:
             val = f.read()
-            val = val.split('\n', 1)
-            if val[0] == '0x1':
+            val = val.split("\n", 1)
+            if val[0] == "0x1":
                 return 0
-            if val[0] == '0x0':
+            if val[0] == "0x0":
                 return 1
     except:
         return None
+
 
 def get_pim_present():
     state = {}
@@ -50,9 +52,5 @@ def get_pim_present():
         else:
             state[pim_slot] = "Removed"
 
-    result = {
-                "Information": state,
-                "Actions": [],
-                "Resources": [],
-             }
+    result = {"Information": state, "Actions": [], "Resources": []}
     return result

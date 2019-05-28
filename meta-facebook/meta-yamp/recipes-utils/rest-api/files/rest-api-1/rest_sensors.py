@@ -22,62 +22,59 @@ import json
 import re
 import subprocess
 import syslog
+
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
 # Handler for sensors resource endpoint
 def get_sensors():
     result = []
-    proc = subprocess.Popen(['sensors'],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = subprocess.Popen(["sensors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         data = data.decode()
     except proc.TimeoutError as ex:
         data = ex.output
-        data = data.decode();
+        data = data.decode()
         err = ex.error
 
-    data = re.sub('\(.+?\)', '', data)
-    for edata in data.split('\n\n'):
-        adata = edata.split('\n', 1)
+    data = re.sub("\(.+?\)", "", data)
+    for edata in data.split("\n\n"):
+        adata = edata.split("\n", 1)
         sresult = {}
-        if (len(adata) < 2):
-            break;
-        sresult['name'] = adata[0]
-        for sdata in adata[1].split('\n'):
-            tdata = sdata.split(':')
-            if (len(tdata) < 2):
+        if len(adata) < 2:
+            break
+        sresult["name"] = adata[0]
+        for sdata in adata[1].split("\n"):
+            tdata = sdata.split(":")
+            if len(tdata) < 2:
                 continue
             store_key = tdata[0].strip()
             store_value = tdata[1].strip()
-            if store_value == 'N/A':
-                if 'PSU' in store_key or 'FAN' in store_key:
+            if store_value == "N/A":
+                if "PSU" in store_key or "FAN" in store_key:
                     # Here, unit doesn't matter,
                     # as it will be chopped out
-                    store_value = '0'
+                    store_value = "0"
             sresult[store_key] = store_value
         result.append(sresult)
 
-    fresult = {
-                "Information": result,
-                "Actions": [],
-                "Resources": [],
-              }
+    fresult = {"Information": result, "Actions": [], "Resources": []}
     return fresult
+
 
 # Handler for sensors-full resource endpoint
 
-name_adapter_re = re.compile('(\S+)\nAdapter:\s*(\S.*?)\s*\n')
-label_re = re.compile('(\S.*):\n')
-value_re = re.compile('\s+(\S.*?):\s*(\S.*?)\s*\n')
-skipline_re = re.compile('.*\n?')
+name_adapter_re = re.compile("(\S+)\nAdapter:\s*(\S.*?)\s*\n")
+label_re = re.compile("(\S.*):\n")
+value_re = re.compile("\s+(\S.*?):\s*(\S.*?)\s*\n")
+skipline_re = re.compile(".*\n?")
+
 
 def get_sensors_full():
-    proc = subprocess.Popen(['sensors', '-u'],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        ["sensors", "-u"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     except proc.TimeoutError as ex:
@@ -105,7 +102,7 @@ def get_sensors_full():
     result = []
     pos = 0
     while pos < len(data):
-        if data[pos] == '\n':
+        if data[pos] == "\n":
             pos += 1
             continue
 
@@ -117,8 +114,8 @@ def get_sensors_full():
             # bad input, skip a line and try again
             pos = skipline_re.match(data, pos).end()
             continue
-        sresult['name'] = m.group(1)
-        sresult['adapter'] = m.group(2)
+        sresult["name"] = m.group(1)
+        sresult["adapter"] = m.group(2)
         pos = m.end()
 
         # match the sensors
@@ -140,11 +137,11 @@ def get_sensors_full():
                 # For Fan and PSU value, change N/A with 0, so
                 # as to trigger alarms
                 store_value = m.group(2)
-                if store_value == 'N/A':
-                    if 'PSU' in m.group(1) or 'FAN' in m.group(2):
-                    # Here, unit doesn't matter,
-                    # as it will be chopped out
-                        store_value = '0 V'
+                if store_value == "N/A":
+                    if "PSU" in m.group(1) or "FAN" in m.group(2):
+                        # Here, unit doesn't matter,
+                        # as it will be chopped out
+                        store_value = "0 V"
                 values[m.group(1)] = store_value
                 pos = m.end()
 
@@ -152,9 +149,5 @@ def get_sensors_full():
                 sresult[label] = values
 
         result.append(sresult)
-    fresult = {
-                "Information": result,
-                "Actions": [],
-                "Resources": [],
-              }
+    fresult = {"Information": result, "Actions": [], "Resources": []}
     return fresult

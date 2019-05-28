@@ -25,8 +25,10 @@
 
 import itertools
 
-def short(msb,lsb):
-    return (msb<<8) | lsb
+
+def short(msb, lsb):
+    return (msb << 8) | lsb
+
 
 class HexFile(object):
     def __init__(self, segments):
@@ -42,7 +44,7 @@ class HexFile(object):
             if address in segment:
                 return segment[val]
 
-        raise IndexError('No segment contains address 0x%x' % address)
+        raise IndexError("No segment contains address 0x%x" % address)
 
     def __len__(self):
         return sum(map(len, self.segments))
@@ -69,26 +71,26 @@ class HexFile(object):
         for line in lines:
             lineno += 1
             line = line.strip()
-            if not line.startswith(':'):
+            if not line.startswith(":"):
                 continue
 
             if end_of_file:
                 raise Exception("Record found after end of file on line %d" % lineno)
 
-            bytes = [int(line[i:i+2], 16) for i in range(1,len(line), 2)]
+            bytes = [int(line[i : i + 2], 16) for i in range(1, len(line), 2)]
             byte_count = bytes[0]
             address = short(*bytes[1:3])
             record_type = bytes[3]
             checksum = bytes[-1]
             data = bytes[4:-1]
-            computed_checksum = ((1 << 8)-(sum(bytes[:-1]) & 0xff)) & 0xff
+            computed_checksum = ((1 << 8) - (sum(bytes[:-1]) & 0xFF)) & 0xFF
 
-            if(computed_checksum != checksum):
+            if computed_checksum != checksum:
                 raise Exception("Record checksum doesn't match on line %d" % lineno)
 
             if record_type == 0:
                 if byte_count == len(data):
-                    current_address = (address | extended_linear_address)
+                    current_address = address | extended_linear_address
                     have_segment = False
                     for segment in segments:
                         if segment.end_address == current_address:
@@ -98,12 +100,18 @@ class HexFile(object):
                     if not have_segment:
                         segments.append(Segment(current_address, data))
                 else:
-                    raise Exception("Data record reported size does not match actual size on line %d" % lineno)
+                    raise Exception(
+                        "Data record reported size does not match actual size on line %d"
+                        % lineno
+                    )
             elif record_type == 1:
                 end_of_file = True
             elif record_type == 4:
                 if byte_count != 2 or len(data) != 2:
-                    raise Exception("Byte count misreported in extended linear address record on line %d" % lineno)
+                    raise Exception(
+                        "Byte count misreported in extended linear address record on line %d"
+                        % lineno
+                    )
                 extended_linear_address = short(*data) << 16
 
             else:
@@ -113,29 +121,36 @@ class HexFile(object):
     def pretty_string(self, stride=16):
         retval = []
         for segment in self.segments:
-            retval.append('Segment @ 0x%08x (%d bytes)' % (segment.start_address, segment.size))
+            retval.append(
+                "Segment @ 0x%08x (%d bytes)" % (segment.start_address, segment.size)
+            )
             retval.append(segment.pretty_string(stride=stride))
-            retval.append('')
-        return '\n'.join(retval)
+            retval.append("")
+        return "\n".join(retval)
+
 
 def load(filename):
     return HexFile.load(filename)
 
+
 class Segment(object):
-    def __init__(self, start_address, data = None):
+    def __init__(self, start_address, data=None):
         self.start_address = start_address
         self.data = data or []
 
     def pretty_string(self, stride=16):
         retval = []
         addresses = self.addresses
-        ranges = [addresses[i:i+stride] for i in range(0, self.size, stride)]
+        ranges = [addresses[i : i + stride] for i in range(0, self.size, stride)]
         for r in ranges:
-            retval.append('%08x ' % r[0] + ' '.join(['%02x' % self[addr] for addr in r]))
-        return '\n'.join(retval)
+            retval.append(
+                "%08x " % r[0] + " ".join(["%02x" % self[addr] for addr in r])
+            )
+        return "\n".join(retval)
 
     def __str__(self):
-        return '<%d byte segment @ 0x%08x>' % (self.size, self.start_address)
+        return "<%d byte segment @ 0x%08x>" % (self.size, self.start_address)
+
     def __repr__(self):
         return str(self)
 
@@ -152,16 +167,20 @@ class Segment(object):
 
     def __getitem__(self, address):
         if isinstance(address, slice):
-            if address.start not in self or address.stop-1 not in self:
-                raise IndexError('Address out of range for this segment')
+            if address.start not in self or address.stop - 1 not in self:
+                raise IndexError("Address out of range for this segment")
             else:
-                d = self.data[address.start-self.start_address:address.stop-self.start_address:address.step]
+                d = self.data[
+                    address.start
+                    - self.start_address : address.stop
+                    - self.start_address : address.step
+                ]
                 start_address = address.start + self.start_address
                 return Segment(start_address, d)
         else:
             if not address in self:
                 raise IndexError("Address 0x%x is not in this segment" % address)
-            return self.data[address-self.start_address]
+            return self.data[address - self.start_address]
 
     @property
     def addresses(self):

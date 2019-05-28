@@ -21,19 +21,32 @@
 import json
 import re
 import subprocess
+
 from rest_utils import DEFAULT_TIMEOUT_SEC
+
 
 # Handler for getting PIM info
 
-pimserial_re = re.compile('\s*(\S.*) : (\S.*)')
+pimserial_re = re.compile("\s*(\S.*) : (\S.*)")
+
 
 def prepare_pimserial():
-    pim_serial = { 'PIM1':'NA', 'PIM2':'NA', 'PIM3':'NA', 'PIM4':'NA',
-                 'PIM5':'NA', 'PIM6':'NA', 'PIM7':'NA', 'PIM8':'NA' }
+    pim_serial = {
+        "PIM1": "NA",
+        "PIM2": "NA",
+        "PIM3": "NA",
+        "PIM4": "NA",
+        "PIM5": "NA",
+        "PIM6": "NA",
+        "PIM7": "NA",
+        "PIM8": "NA",
+    }
     current_pim = 0
-    proc = subprocess.Popen(['/usr/local/bin/dump_pim_serials.sh', '-u'],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        ["/usr/local/bin/dump_pim_serials.sh", "-u"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         for text_line in data.decode().splitlines():
@@ -42,16 +55,13 @@ def prepare_pimserial():
             if m:
                 pim_serial[m.group(1)] = m.group(2)
     except Exception as ex:
-            pass
+        pass
 
     return pim_serial
+
 
 def get_pimserial():
     result = {}
     pim_serial = prepare_pimserial()
-    fresult = {
-                "Information": pim_serial,
-                "Actions": [],
-                "Resources": [],
-              }
+    fresult = {"Information": pim_serial, "Actions": [], "Resources": []}
     return fresult

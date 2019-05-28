@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import re
 import subprocess
-
+from asyncio.subprocess import PIPE, create_subprocess_exec
 from typing import Dict
+
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
-from asyncio.subprocess import PIPE, create_subprocess_exec
 
 def _parse_all_fpga_ver(data) -> Dict:
     """Example output:
@@ -53,4 +53,4 @@ async def get_all_fw_ver() -> Dict:
     proc = await create_subprocess_exec(cmd, stdout=PIPE)
     data, _ = await proc.communicate()
     await proc.wait()
-    return _parse_all_fpga_ver(data.decode(errors='ignore'))
+    return _parse_all_fpga_ver(data.decode(errors="ignore"))

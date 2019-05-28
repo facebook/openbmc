@@ -24,10 +24,10 @@ from openbmc_gpio_table import BoardGPIO
 # Manual modification will be overridden!!!
 
 board_gpio_table_p1 = [
-    BoardGPIO('GPIOB0', 'TPM_RST_N'),
-    BoardGPIO('GPIOB1', 'TPM_INTR'),
-    BoardGPIO('GPIOB3', 'BMC_eMMC_RST_N'),
-    BoardGPIO('GPIOL0', 'BIOS_SEL'),
-    BoardGPIO('GPIOL2', 'SUP_PWR_ON'),
-    BoardGPIO('GPIOL3', 'CPLD_JTAG_SEL_L'),
+    BoardGPIO("GPIOB0", "TPM_RST_N"),
+    BoardGPIO("GPIOB1", "TPM_INTR"),
+    BoardGPIO("GPIOB3", "BMC_eMMC_RST_N"),
+    BoardGPIO("GPIOL0", "BIOS_SEL"),
+    BoardGPIO("GPIOL2", "SUP_PWR_ON"),
+    BoardGPIO("GPIOL3", "CPLD_JTAG_SEL_L"),
 ]

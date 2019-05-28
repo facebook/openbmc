@@ -17,13 +17,14 @@
 
 from openbmc_gpio_table import BoardGPIO
 
+
 # The following table is generated using:
 # python wedge100_gpio_parser.py data/wedge100-BMC-gpio.csv
 # DO NOT MODIFY THE TABLE!!!
 # Manual modification will be overridden!!!
 
 board_gpio_rev_table = [
-    BoardGPIO('GPIOY0', 'BOARD_REV_ID0'),
-    BoardGPIO('GPIOY1', 'BOARD_REV_ID1'),
-    BoardGPIO('GPIOY2', 'BOARD_REV_ID2'),
+    BoardGPIO("GPIOY0", "BOARD_REV_ID0"),
+    BoardGPIO("GPIOY1", "BOARD_REV_ID1"),
+    BoardGPIO("GPIOY2", "BOARD_REV_ID2"),
 ]

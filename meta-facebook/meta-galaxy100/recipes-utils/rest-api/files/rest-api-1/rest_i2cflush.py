@@ -20,20 +20,23 @@
 
 import subprocess
 
+
 # Endpoint for performing i2cflush to recover cp2112 on galaxy100100
 
 
 def i2cflush():
-    p = subprocess.Popen(['galaxy100_cp2112_i2c_flush.sh'],
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        ["galaxy100_cp2112_i2c_flush.sh"],
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     out, err = p.communicate()
     rc = p.returncode
 
     if rc < 0:
-        status = ' failed with returncode = ' + str(rc) + ' and error ' + err
+        status = " failed with returncode = " + str(rc) + " and error " + err
     else:
-        status = ' done '
+        status = " done "
 
-    return {"status": 'i2c flush' + status}
+    return {"status": "i2c flush" + status}

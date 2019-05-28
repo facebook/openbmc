@@ -20,14 +20,13 @@
 
 import re
 
-from aiohttp import web
-
-from rest_utils import dumps_bytestr
-
-import rest_usb2i2c_reset
-import rest_seutil
 import rest_firmware_info
 import rest_presence
+import rest_seutil
+import rest_usb2i2c_reset
+from aiohttp import web
+from rest_utils import dumps_bytestr
+
 
 class boardApp_Handler:
     # Handler to reset usb-to-i2c
@@ -41,42 +40,39 @@ class boardApp_Handler:
     # Handler for sys/firmware_info resource endpoint
     async def rest_firmware_info_hdl(self, request):
         return web.json_response(
-            rest_firmware_info.get_firmware_info(), dumps=dumps_bytestr,
+            rest_firmware_info.get_firmware_info(), dumps=dumps_bytestr
         )
 
     # Handler for sys/firmware_info/cpld resource endpoint
     async def rest_firmware_info_cpld_hdl(self, request):
         return web.json_response(
-            rest_firmware_info.get_firmware_info_cpld(), dumps=dumps_bytestr,
+            rest_firmware_info.get_firmware_info_cpld(), dumps=dumps_bytestr
         )
 
     # Handler for sys/firmware_info/fpga resource endpoint
     async def rest_firmware_info_fpga_hdl(self, request):
         return web.json_response(
-            rest_firmware_info.get_firmware_info_fpga(), dumps=dumps_bytestr,
+            rest_firmware_info.get_firmware_info_fpga(), dumps=dumps_bytestr
         )
 
     # Handler for sys/presence resource endpoint
     async def rest_presence_hdl(self, request):
-        return web.json_response(
-            rest_presence.get_presence_info(), dumps=dumps_bytestr,
-        )
+        return web.json_response(rest_presence.get_presence_info(), dumps=dumps_bytestr)
 
     # Handler for sys/presence/scm resource endpoint
     async def rest_presence_scm_hdl(self, request):
         return web.json_response(
-            rest_presence.get_presence_info_scm(), dumps=dumps_bytestr,
+            rest_presence.get_presence_info_scm(), dumps=dumps_bytestr
         )
 
     # Handler for sys/presence/fan resource endpoint
     async def rest_presence_fan_hdl(self, request):
         return web.json_response(
-            rest_presence.get_presence_info_fan(), dumps=dumps_bytestr,
+            rest_presence.get_presence_info_fan(), dumps=dumps_bytestr
         )
 
     # Handler for sys/presence/psu resource endpoint
     async def rest_presence_psu_hdl(self, request):
         return web.json_response(
-            rest_presence.get_presence_info_psu(), dumps=dumps_bytestr,
+            rest_presence.get_presence_info_psu(), dumps=dumps_bytestr
         )
-

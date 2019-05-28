@@ -17,17 +17,29 @@
 # Boston, MA 02110-1301 USA
 #
 
-from argparse import ArgumentParser
-from at93c46 import AT93C46, AT93C46SPI
 import sys
+from argparse import ArgumentParser
+
+from at93c46 import AT93C46, AT93C46SPI
+
 
 def get_raw(args):
-    return AT93C46SPI(args.bus_width, args.cs, args.clk, args.mosi, args.miso,
-                      args.verbose)
+    return AT93C46SPI(
+        args.bus_width, args.cs, args.clk, args.mosi, args.miso, args.verbose
+    )
+
 
 def get_chip(args):
-    return AT93C46(args.bus_width, args.cs, args.clk, args.mosi, args.miso,
-                   args.byte_swap, args.verbose)
+    return AT93C46(
+        args.bus_width,
+        args.cs,
+        args.clk,
+        args.mosi,
+        args.miso,
+        args.byte_swap,
+        args.verbose,
+    )
+
 
 def access_parser(ap):
     # Default, based on currenct HW configuration
@@ -36,28 +48,45 @@ def access_parser(ap):
     SPI_MOSI_DEFAULT = 70
     SPI_MISO_DEFAULT = 71
 
-    spi_group = ap.add_argument_group('SPI Access')
-    spi_group.add_argument('--cs', type=int, default=SPI_CS_DEFAULT,
-                           help='The GPIO number for SPI CS pin (default: %s)'
-                           % SPI_CS_DEFAULT)
-    spi_group.add_argument('--clk', type=int, default=SPI_CLK_DEFAULT,
-                           help='The GPIO number for SPI CLK pin (default: %s)'
-                           % SPI_CLK_DEFAULT)
-    spi_group.add_argument('--mosi', type=int, default=SPI_MOSI_DEFAULT,
-                           help='The GPIO number for SPI MOSI pin (default: %s)'
-                           % SPI_MOSI_DEFAULT)
-    spi_group.add_argument('--miso', type=int, default=SPI_MISO_DEFAULT,
-                           help='The GPIO number for SPI MISO pin (default: %s)'
-                           % SPI_MISO_DEFAULT)
+    spi_group = ap.add_argument_group("SPI Access")
+    spi_group.add_argument(
+        "--cs",
+        type=int,
+        default=SPI_CS_DEFAULT,
+        help="The GPIO number for SPI CS pin (default: %s)" % SPI_CS_DEFAULT,
+    )
+    spi_group.add_argument(
+        "--clk",
+        type=int,
+        default=SPI_CLK_DEFAULT,
+        help="The GPIO number for SPI CLK pin (default: %s)" % SPI_CLK_DEFAULT,
+    )
+    spi_group.add_argument(
+        "--mosi",
+        type=int,
+        default=SPI_MOSI_DEFAULT,
+        help="The GPIO number for SPI MOSI pin (default: %s)" % SPI_MOSI_DEFAULT,
+    )
+    spi_group.add_argument(
+        "--miso",
+        type=int,
+        default=SPI_MISO_DEFAULT,
+        help="The GPIO number for SPI MISO pin (default: %s)" % SPI_MISO_DEFAULT,
+    )
+
 
 def bus_width_parser(ap):
     # Default, based on currenct HW configuration
     AT83C46_BUS_WIDTH = 16
 
-    bus_group = ap.add_argument_group('Bus Width')
-    bus_group.add_argument('--bus-width', type=int, default=AT83C46_BUS_WIDTH,
-                           help='The configured bus width (default: %s)'
-                           % AT83C46_BUS_WIDTH)
+    bus_group = ap.add_argument_group("Bus Width")
+    bus_group.add_argument(
+        "--bus-width",
+        type=int,
+        default=AT83C46_BUS_WIDTH,
+        help="The configured bus width (default: %s)" % AT83C46_BUS_WIDTH,
+    )
+
 
 def read_raw(args):
     raw = get_raw(args)
@@ -71,6 +100,7 @@ def read_raw(args):
         else:
             print("0x{:02X}".format(val))
 
+
 def write_raw(args):
     if args.value[:2] == "0x":
         value = int(args.value, 16)
@@ -83,30 +113,36 @@ def write_raw(args):
     raw.write(args.address, value)
     raw.ewds()
 
+
 def erase_raw(args):
     raw = get_raw(args)
     raw.ewen()
     raw.erase(args.address)
     raw.ewds()
 
+
 def raw_subparser(subparsers):
-    raw_parser = subparsers.add_parser('raw', help='Raw memory access')
+    raw_parser = subparsers.add_parser("raw", help="Raw memory access")
     raw_sub = raw_parser.add_subparsers()
 
-    read_parser = raw_sub.add_parser('read', help='Read a single memory address')
-    read_parser.add_argument('address', type=int, help='The memory address')
-    read_parser.add_argument('--int', action='store_true',
-                             help='Display output as an integer')
+    read_parser = raw_sub.add_parser("read", help="Read a single memory address")
+    read_parser.add_argument("address", type=int, help="The memory address")
+    read_parser.add_argument(
+        "--int", action="store_true", help="Display output as an integer"
+    )
     read_parser.set_defaults(func=read_raw)
 
-    write_parser = raw_sub.add_parser('write', help='Write a single memory address')
-    write_parser.add_argument('address', type=int, help='The memory address')
-    write_parser.add_argument('value', type=str, help='The value to write, either integer or hex')
+    write_parser = raw_sub.add_parser("write", help="Write a single memory address")
+    write_parser.add_argument("address", type=int, help="The memory address")
+    write_parser.add_argument(
+        "value", type=str, help="The value to write, either integer or hex"
+    )
     write_parser.set_defaults(func=write_raw)
 
-    erase_parser = raw_sub.add_parser('erase', help='Erase a single memory address')
-    erase_parser.add_argument('address', type=int, help='The memory address')
+    erase_parser = raw_sub.add_parser("erase", help="Erase a single memory address")
+    erase_parser.add_argument("address", type=int, help="The memory address")
     erase_parser.set_defaults(func=erase_raw)
+
 
 def read_chip(args):
     chip = get_chip(args)
@@ -117,6 +153,7 @@ def read_chip(args):
     else:
         fp = open(args.file, "wb")
         fp.write(data)
+
 
 def write_chip(args):
     chip = get_chip(args)
@@ -131,54 +168,72 @@ def write_chip(args):
     if args.length is not None:
         # Make sure length is correct
         if len(data) < args.length:
-            data = data + '\x00' * (args.length - len(data))
+            data = data + "\x00" * (args.length - len(data))
         if len(data) > args.length:
-            data = data[:args.length]
+            data = data[: args.length]
 
     chip.write(data, args.start)
+
 
 def erase_chip(args):
     chip = get_chip(args)
     chip.erase(args.start, args.length)
 
+
 def chip_subparser(subparsers):
-    chip_parser = subparsers.add_parser('chip', help='Chip-level access')
+    chip_parser = subparsers.add_parser("chip", help="Chip-level access")
     chip_sub = chip_parser.add_subparsers()
 
-    read_parser = chip_sub.add_parser('read', help='Read from the chip')
-    read_parser.add_argument('--start', type=int,
-                             help='The memory address to start at (default: 0)')
-    read_parser.add_argument('--length', type=int,
-                             help='The number of bytes to read (default: whole chip)')
-    read_parser.add_argument('--file', type=str,
-                             help='File to operate on (default: stdout)')
-    read_parser.add_argument('--byte-swap', action='store_true',
-                             help='Byte swap values for 16-bit reads/writes')
+    read_parser = chip_sub.add_parser("read", help="Read from the chip")
+    read_parser.add_argument(
+        "--start", type=int, help="The memory address to start at (default: 0)"
+    )
+    read_parser.add_argument(
+        "--length", type=int, help="The number of bytes to read (default: whole chip)"
+    )
+    read_parser.add_argument(
+        "--file", type=str, help="File to operate on (default: stdout)"
+    )
+    read_parser.add_argument(
+        "--byte-swap",
+        action="store_true",
+        help="Byte swap values for 16-bit reads/writes",
+    )
     read_parser.set_defaults(func=read_chip)
 
-    write_parser = chip_sub.add_parser('write', help='Write to the chip')
-    write_parser.add_argument('--start', type=int,
-                              help='The memory address to start at (default: 0)')
-    write_parser.add_argument('--length', type=int,
-                              help='The number of bytes to write (default: file length)')
-    write_parser.add_argument('--file', type=str,
-                              help='File to operate on (default: stdin)')
-    write_parser.add_argument('--byte-swap', action='store_true',
-                              help='Byte swap values for 16-bit reads/writes')
+    write_parser = chip_sub.add_parser("write", help="Write to the chip")
+    write_parser.add_argument(
+        "--start", type=int, help="The memory address to start at (default: 0)"
+    )
+    write_parser.add_argument(
+        "--length", type=int, help="The number of bytes to write (default: file length)"
+    )
+    write_parser.add_argument(
+        "--file", type=str, help="File to operate on (default: stdin)"
+    )
+    write_parser.add_argument(
+        "--byte-swap",
+        action="store_true",
+        help="Byte swap values for 16-bit reads/writes",
+    )
     write_parser.set_defaults(func=write_chip)
 
-    erase_parser = chip_sub.add_parser('erase', help='Erase the chip')
-    erase_parser.add_argument('--start', type=int,
-                              help='The memory address to start at (default: 0)')
-    erase_parser.add_argument('--length', type=int,
-                              help='The number of bytes to erase (default: whole chip)')
+    erase_parser = chip_sub.add_parser("erase", help="Erase the chip")
+    erase_parser.add_argument(
+        "--start", type=int, help="The memory address to start at (default: 0)"
+    )
+    erase_parser.add_argument(
+        "--length", type=int, help="The number of bytes to erase (default: whole chip)"
+    )
     erase_parser.set_defaults(func=erase_chip)
+
 
 if __name__ == "__main__":
     # General arguments
     ap = ArgumentParser()
-    ap.add_argument('--verbose', action='store_true',
-                    help='Print verbose debugging information')
+    ap.add_argument(
+        "--verbose", action="store_true", help="Print verbose debugging information"
+    )
 
     # SPI and bus width arguments
     access_parser(ap)

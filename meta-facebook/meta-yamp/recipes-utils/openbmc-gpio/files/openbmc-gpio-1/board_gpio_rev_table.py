@@ -17,10 +17,10 @@
 
 from openbmc_gpio_table import BoardGPIO
 
+
 # The following table is generated using:
 # python minipack_gpio_parser.py data/minipack-BMC-gpio.csv
 # DO NOT MODIFY THE TABLE!!!
 # Manual modification will be overridden!!!
 
-board_gpio_rev_table = [
-]
+board_gpio_rev_table = []

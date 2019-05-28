@@ -15,47 +15,47 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from fsc_util import Logger
-from subprocess import Popen, PIPE
 import time
+from subprocess import PIPE, Popen
+
+from fsc_util import Logger
 
 
-def board_fan_actions(fan, action='None'):
-    '''
+def board_fan_actions(fan, action="None"):
+    """
     Override the method to define fan specific actions like:
     - handling dead fan
     - handling fan led
-    '''
+    """
     if "led" in action:
         set_fan_led(fan.label, color=action)
     else:
-        Logger.warn("%s needs action %s" % (fan.label, str(action),))
+        Logger.warn("%s needs action %s" % (fan.label, str(action)))
     pass
 
 
-def board_host_actions(action='None', cause='None'):
-    '''
+def board_host_actions(action="None", cause="None"):
+    """
     Override the method to define fan specific actions like:
     - handling host power off
     - alarming/syslogging criticals
-    '''
+    """
     if "host_shutdown" in action:
         Logger.crit("Host is shutdown due to cause %s" % (str(cause),))
         return host_shutdown()
-    Logger.warn("Host needs action '%s' and cause '%s'" %
-                (str(action), str(cause),))
+    Logger.warn("Host needs action '%s' and cause '%s'" % (str(action), str(cause)))
     pass
 
 
-def board_callout(callout='None', **kwargs):
-    '''
+def board_callout(callout="None", **kwargs):
+    """
     Override this method for defining board specific callouts:
     - Exmaple chassis intrusion
-    '''
-    if 'init_fans' in callout:
+    """
+    if "init_fans" in callout:
         boost = 100
-        if 'boost' in kwargs:
-            boost = kwargs['boost']
+        if "boost" in kwargs:
+            boost = kwargs["boost"]
         Logger.info("FSC init fans to boost=%s " % str(boost))
         return set_all_pwm(boost)
     else:
@@ -65,11 +65,12 @@ def board_callout(callout='None', **kwargs):
 
 def set_all_pwm(boost):
     # script will take care of conversion
-    cmd = ('/usr/local/bin/set_fan_speed.sh %d' % (boost))
+    cmd = "/usr/local/bin/set_fan_speed.sh %d" % (boost)
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return response
 
-def set_fan_led(fan, color='led_blue'):
+
+def set_fan_led(fan, color="led_blue"):
     FAN_LED_BLUE = "0x1"
     FAN_LED_RED = "0x2"
 
@@ -81,26 +82,27 @@ def set_fan_led(fan, color='led_blue'):
     FAN_LED = "/sys/bus/i2c/drivers/fcbcpld/30-003e/"
     fan = fan / 2
 
-    fan_key = 'fan%d_led_ctrl' % fan
+    fan_key = "fan%d_led_ctrl" % fan
     if "red" in color:
-        cmd = ('echo ' + FAN_LED_RED + ' > ' + FAN_LED + fan_key)
+        cmd = "echo " + FAN_LED_RED + " > " + FAN_LED + fan_key
     elif "blue" in color:
-        cmd = ('echo ' + FAN_LED_BLUE + ' > ' + FAN_LED + fan_key)
+        cmd = "echo " + FAN_LED_BLUE + " > " + FAN_LED + fan_key
     else:
         return 0  # error
     # Logger.debug("Using cmd=%s for led" % str(cmd))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return 0
 
+
 def host_shutdown():
     MAIN_POWER = "/sys/bus/i2c/drivers/smb_syscpld/12-003e/cpld_in_p1220"
     USERVER_POWER = "/sys/bus/i2c/drivers/scmcpld/2-003e/com_exp_pwr_enable"
 
-    cmd = 'echo 0 > ' + USERVER_POWER
+    cmd = "echo 0 > " + USERVER_POWER
     Logger.info("host_shutdown() executing {}".format(cmd))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     time.sleep(5)
-    cmd = 'echo 0 > ' + MAIN_POWER
+    cmd = "echo 0 > " + MAIN_POWER
     Logger.info("host_shutdown() executing {}".format(cmd))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return response

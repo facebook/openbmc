@@ -21,26 +21,24 @@
 import os
 
 
-EEPROMS = {
-    'CMM': '/sys/class/i2c-dev/i2c-6/device/6-0051/eeprom',
-}
+EEPROMS = {"CMM": "/sys/class/i2c-dev/i2c-6/device/6-0051/eeprom"}
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     for name, path in list(EEPROMS.items()):
-        print('Fixing %s EEPROM at %s...' % (name, path))
+        print("Fixing %s EEPROM at %s..." % (name, path))
         if not os.path.isfile(path):
-            print('%s does not exist. Skip' % path)
+            print("%s does not exist. Skip" % path)
             continue
         try:
-            with open(path, 'rb+') as f:
+            with open(path, "rb+") as f:
                 # fix the version #
                 f.seek(2)
                 v = f.read(1)
-                if v == b'\x02':
-                    print('%s EEPROM has been fixed. Skip' % name)
+                if v == b"\x02":
+                    print("%s EEPROM has been fixed. Skip" % name)
                     continue
                 f.seek(2)
-                f.write(b'\x02')
-            print('%s EEPROM is fixed' % name)
+                f.write(b"\x02")
+            print("%s EEPROM is fixed" % name)
         except Exception:
-            print('Failed to fix %s EEPROM' % name)
+            print("Failed to fix %s EEPROM" % name)

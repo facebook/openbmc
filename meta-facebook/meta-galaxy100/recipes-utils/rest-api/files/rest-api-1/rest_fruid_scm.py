@@ -16,11 +16,11 @@ import eeprom_utils
 
 
 def get_fruid_scm():
-    weutil_data = eeprom_utils.get_eeprom_data('weutil')
-    seutil_data = eeprom_utils.get_eeprom_data('seutil')
+    weutil_data = eeprom_utils.get_eeprom_data("weutil")
+    seutil_data = eeprom_utils.get_eeprom_data("seutil")
 
     # Get location and BMC SN info from weutil, put in seutil data
-    seutil_data['Location on Fabric'] = weutil_data['Location on Fabric']
-    seutil_data['BMC Serial'] = weutil_data['Product Serial Number']
+    seutil_data["Location on Fabric"] = weutil_data["Location on Fabric"]
+    seutil_data["BMC Serial"] = weutil_data["Product Serial Number"]
 
     return seutil_data

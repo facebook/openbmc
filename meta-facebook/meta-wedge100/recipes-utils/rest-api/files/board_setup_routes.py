@@ -18,9 +18,10 @@
 from board_endpoint import boardApp_Handler
 from boardroutes import *
 
+
 def setup_board_routes(app):
     bhandler = boardApp_Handler()
-    #app.router.add_get(board_routes[0], bhandler.rest_usb2i2c_reset_hdl)
+    # app.router.add_get(board_routes[0], bhandler.rest_usb2i2c_reset_hdl)
     app.router.add_get(board_routes[0], bhandler.rest_i2cflush_hdl)
     app.router.add_get(board_routes[1], bhandler.helper_modbus_registers_hdl)
     app.router.add_get(board_routes[2], bhandler.rest_firmware_info_hdl)

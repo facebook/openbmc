@@ -21,9 +21,10 @@
 import subprocess
 from subprocess import Popen
 
+
 # Handler for sensors resource endpoint
 def get_modbus_registers():
-    p = Popen('/usr/local/bin/rackmondata', stdout=subprocess.PIPE)
+    p = Popen("/usr/local/bin/rackmondata", stdout=subprocess.PIPE)
     out, err = p.communicate()
     out = out.decode()
     return out

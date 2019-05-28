@@ -2,7 +2,6 @@
 
 import re
 import subprocess
-
 from typing import Dict
 
 from rest_utils import DEFAULT_TIMEOUT_SEC
@@ -29,5 +28,5 @@ def get_fpga_ver_data() -> Dict:
     cmd = ["/usr/local/bin/fpga_ver.sh"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-    data = data.decode(errors='ignore')
+    data = data.decode(errors="ignore")
     return _parse_fpga_ver_data(data)

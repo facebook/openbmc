@@ -17,4 +17,4 @@ import rest_fruid
 
 # Handler for FRUID resource endpoint
 def get_seutil():
-    return rest_fruid.get_fruid(cmd=['seutil'])
+    return rest_fruid.get_fruid(cmd=["seutil"])

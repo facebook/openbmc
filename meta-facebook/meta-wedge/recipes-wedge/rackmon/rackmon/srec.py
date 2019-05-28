@@ -10,9 +10,9 @@ Slices always take *byte* addresses even if the image was
 parsed with the address_scale option.
 """
 import binascii
-from typing import Iterable
 import pickle
 import pickletools
+from typing import Iterable
 
 
 def hx(bs):
@@ -20,11 +20,10 @@ def hx(bs):
 
 
 def schecksum(bs):
-    return (sum(bs, 0) & 0xff) ^ 0xff
+    return (sum(bs, 0) & 0xFF) ^ 0xFF
 
 
 class Section:
-
     def __init__(self, offset: int) -> None:
         self.start = offset
         self.data = bytearray()
@@ -56,7 +55,6 @@ class SRecord:
 
 
 class Image:
-
     def __init__(self):
         self.sections = []
 
@@ -90,7 +88,7 @@ class Image:
                 raise Exception(
                     "requested range {:x}, {:x} past end of image".format(pos, k.stop)
                 )
-            add = section[pos:k.stop]
+            add = section[pos : k.stop]
             result.extend(add)
         return result
 
@@ -130,7 +128,7 @@ def parse(path, address_scale=1):
                 stype = int(line[1])
                 recdata = binascii.a2b_hex(line[2:])
                 reclen = recdata[0]
-                rec = recdata[1:1 + reclen]
+                rec = recdata[1 : 1 + reclen]
                 if stype == 0:
                     # Header
                     continue

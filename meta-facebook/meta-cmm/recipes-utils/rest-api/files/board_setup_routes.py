@@ -20,10 +20,10 @@
 from board_endpoint import boardApp_Handler
 from boardroutes import *
 
+
 def setup_board_routes(app):
     bhandler = boardApp_Handler()
     app.router.add_get(board_routes[0], bhandler.rest_comp_presence)
     app.router.add_get(board_routes[1], bhandler.rest_firmware_info)
     app.router.add_get(board_routes[2], bhandler.rest_chassis_eeprom_hdl)
     app.router.add_get(board_routes[3], bhandler.rest_all_serial_and_location_hdl)
-

@@ -18,8 +18,8 @@
 # Boston, MA 02110-130
 
 board_routes = [
-    '/api/sys/component_presence',
-    '/api/sys/firmware_info',
-    '/api/sys/mb/chassis_eeprom',
-    '/api/sys/mb/chassis_all_serial_and_location',
+    "/api/sys/component_presence",
+    "/api/sys/firmware_info",
+    "/api/sys/mb/chassis_eeprom",
+    "/api/sys/mb/chassis_all_serial_and_location",
 ]

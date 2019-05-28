@@ -18,18 +18,19 @@ import re
 import sys
 
 
-GPIO_SYMBOL = 'BoardGPIO'
+GPIO_SYMBOL = "BoardGPIO"
 
 
 class CsvReader:
-    '''
+    """
     A class for parsing the CSV files containing the board GPIO config
-    '''
+    """
+
     def __init__(self, path):
         self.path = path
 
-        fileobj = open(path, 'r')
-        self.reader = csv.reader(fileobj, delimiter=',', quotechar='"')
+        fileobj = open(path, "r")
+        self.reader = csv.reader(fileobj, delimiter=",", quotechar='"')
 
     def __next__(self):
         try:
@@ -51,15 +52,15 @@ class WedgeGPIO(object):
             if line is None:
                 break
 
-            logging.debug('Parsing line: %s' % line)
+            logging.debug("Parsing line: %s" % line)
 
             if len(line) < 4:
                 logging.error('No enough fields in "%s". Skip!' % line)
                 continue
 
             gpio = None
-            for part in line[1].split('_'):
-                if part.startswith('GPIO'):
+            for part in line[1].split("_"):
+                if part.startswith("GPIO"):
                     gpio = part
                     break
             if gpio is None:
@@ -73,16 +74,15 @@ class WedgeGPIO(object):
 
     def print(self, out):
         for gpio in sorted(self.gpios):
-            out.write('    %s(\'%s\', \'%s\'),\n'
-                      % (GPIO_SYMBOL, gpio, self.gpios[gpio]))
+            out.write("    %s('%s', '%s'),\n" % (GPIO_SYMBOL, gpio, self.gpios[gpio]))
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('data', help='The GPIO data file')
+    ap.add_argument("data", help="The GPIO data file")
     args = ap.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s: %(message)s")
 
     gpio = WedgeGPIO(CsvReader(args.data))
     gpio.parse()

@@ -20,9 +20,10 @@
 from common_endpoint import commonApp_Handler
 from rest_utils import *
 
+
 def setup_common_routes(app):
     chandler = commonApp_Handler()
-    app.router.add_get(common_routes[0],chandler.rest_api)
+    app.router.add_get(common_routes[0], chandler.rest_api)
     app.router.add_get(common_routes[1], chandler.rest_sys)
     app.router.add_get(common_routes[2], chandler.rest_mb_sys)
     app.router.add_get(common_routes[3], chandler.rest_fruid_pim_hdl)

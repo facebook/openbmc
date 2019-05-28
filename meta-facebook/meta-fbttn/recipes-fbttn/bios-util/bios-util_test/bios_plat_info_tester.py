@@ -1,8 +1,10 @@
 # Copyright 2004-present Facebook. All Rights Reserved.
 
-from bios_plat_info import *
-from bios_base_tester import captured_output
 import unittest
+
+from bios_base_tester import captured_output
+from bios_plat_info import *
+
 
 TEST_PLAT_INFO_RESULT = "./test-data/test-plat-info-sku"
 TEST_PCIE_CONFIG_RESULT = "./test-data/test-pcie-config-sku"
@@ -11,12 +13,13 @@ TEST_PCIE_CONFIG_RESULT = "./test-data/test-pcie-config-sku"
 class BiosUtilPlatInfoUnitTest(unittest.TestCase):
     # Following are plat_info option related tests:
 
-    '''
+    """
     Test Platform Info response data is match in expectation
-    '''
+    """
+
     def test_bios_plat_info(self, sku, cmd):
         if os.path.isfile(TEST_PLAT_INFO_RESULT + str(sku)):
-            plat_info_result = open(TEST_PLAT_INFO_RESULT + str(sku), 'r')
+            plat_info_result = open(TEST_PLAT_INFO_RESULT + str(sku), "r")
         else:
             plat_info_result = "\n"
 
@@ -25,7 +28,7 @@ class BiosUtilPlatInfoUnitTest(unittest.TestCase):
         output = out.getvalue().strip()
         self.assertEqual(output, plat_info_result.read().strip())
 
-    def test_bios_plat_info_sku1(self):        
+    def test_bios_plat_info_sku1(self):
         # SKU 1
         # [1]   Presense: Present
         # [0]   Non Test Board
@@ -60,15 +63,17 @@ class BiosUtilPlatInfoUnitTest(unittest.TestCase):
 
         self.test_bios_plat_info(4, 0x44)
 
-class BiosUtilPcieConfigUnitTest(unittest.TestCase):
-	# Following are pcie_config option related tests:
 
-    '''
+class BiosUtilPcieConfigUnitTest(unittest.TestCase):
+    # Following are pcie_config option related tests:
+
+    """
     Test PCIe config response data is match in expectation
-    '''
+    """
+
     def test_bios_pcie_config(self, sku, result):
         if os.path.isfile(TEST_PCIE_CONFIG_RESULT + str(sku)):
-            plat_info_result = open(TEST_PCIE_CONFIG_RESULT + str(sku), 'r')
+            plat_info_result = open(TEST_PCIE_CONFIG_RESULT + str(sku), "r")
         else:
             plat_info_result = "\n"
 
@@ -94,6 +99,3 @@ class BiosUtilPcieConfigUnitTest(unittest.TestCase):
         # SKU 4: Unknown
         result = ["00"]
         self.test_bios_pcie_config(4, result)
-
-
-

@@ -21,11 +21,13 @@
 import json
 import re
 import subprocess
+
 from rest_fruid import get_fruid
+
 
 # Handler for SCD FRUID resource endpoint
 # In YAMP, SCD means switch card
 def get_scdinfo():
-    cmd = ['weutil', 'SCD']
+    cmd = ["weutil", "SCD"]
     fresult = get_fruid(cmd)
     return fresult

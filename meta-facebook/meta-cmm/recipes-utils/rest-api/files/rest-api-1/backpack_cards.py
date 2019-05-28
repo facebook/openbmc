@@ -21,9 +21,9 @@
 
 
 class CardType:
-    LC = 'lc'
-    FC = 'fc'
-    CMM = 'cmm'
+    LC = "lc"
+    FC = "fc"
+    CMM = "cmm"
 
 
 class BmcCard:
@@ -33,18 +33,24 @@ class BmcCard:
         self.has_scm = card_type in [CardType.LC, CardType.FC]
 
     def link_local_addr(self):
-        return 'fe80::{}:1%eth0.4088'.format(self.addr_hextet)
+        return "fe80::{}:1%eth0.4088".format(self.addr_hextet)
 
     def __repr__(self):
-        return '{}-{}'.format(self.card_type, self.addr_hextet)
+        return "{}-{}".format(self.card_type, self.addr_hextet)
 
 
 BACKPACK_ALL_CARDS = [
-    BmcCard(CardType.LC, '101'), BmcCard(CardType.LC, '102'),
-    BmcCard(CardType.LC, '201'), BmcCard(CardType.LC, '202'),
-    BmcCard(CardType.LC, '301'), BmcCard(CardType.LC, '302'),
-    BmcCard(CardType.LC, '401'), BmcCard(CardType.LC, '402'),
-    BmcCard(CardType.FC, '1'), BmcCard(CardType.FC, '2'),
-    BmcCard(CardType.FC, '3'), BmcCard(CardType.FC, '4'),
-    BmcCard(CardType.CMM, 'c1')
+    BmcCard(CardType.LC, "101"),
+    BmcCard(CardType.LC, "102"),
+    BmcCard(CardType.LC, "201"),
+    BmcCard(CardType.LC, "202"),
+    BmcCard(CardType.LC, "301"),
+    BmcCard(CardType.LC, "302"),
+    BmcCard(CardType.LC, "401"),
+    BmcCard(CardType.LC, "402"),
+    BmcCard(CardType.FC, "1"),
+    BmcCard(CardType.FC, "2"),
+    BmcCard(CardType.FC, "3"),
+    BmcCard(CardType.FC, "4"),
+    BmcCard(CardType.CMM, "c1"),
 ]

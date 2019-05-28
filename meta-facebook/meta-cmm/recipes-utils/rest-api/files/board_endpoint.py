@@ -17,14 +17,16 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from aiohttp import web
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+import rest_chassis_all_serial_and_location
+import rest_chassis_eeprom
 import rest_component_presence
 import rest_firmware
-import rest_chassis_eeprom
-import rest_chassis_all_serial_and_location
+from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
-from concurrent.futures import ThreadPoolExecutor
+
 
 # A separate decorator for board specific API function
 # Note that we use different executor stored in different
@@ -34,11 +36,13 @@ def board_force_async(func):
         loop = asyncio.get_event_loop()
         # As we separated *arts into (self, *args) pair, we need to
         # write "self" again, as the first argument before *args
-        result = await loop.run_in_executor(self.board_executor, func,
-                                            self, *args,
-                                            **kwargs)
+        result = await loop.run_in_executor(
+            self.board_executor, func, self, *args, **kwargs
+        )
         return result
+
     return func_wrapper
+
 
 # Method implementation using the decorator
 class boardApp_Handler:
@@ -49,38 +53,40 @@ class boardApp_Handler:
         self.board_executor = ThreadPoolExecutor(5)
 
     # Handler to fetch component presence
-    def helper_rest_comp_presence(self,request):
-        return web.json_response(rest_component_presence.get_presence(),
-                                 dumps=dumps_bytestr)
+    def helper_rest_comp_presence(self, request):
+        return web.json_response(
+            rest_component_presence.get_presence(), dumps=dumps_bytestr
+        )
 
     @board_force_async
-    def rest_comp_presence(self,request):
+    def rest_comp_presence(self, request):
         return self.helper_rest_comp_presence(request)
 
     # Handler to fetch firmware_info
-    def helper_rest_firmware_info(self,request):
-        return web.json_response(rest_firmware.get_firmware_info(),
-                                 dumps=dumps_bytestr)
+    def helper_rest_firmware_info(self, request):
+        return web.json_response(rest_firmware.get_firmware_info(), dumps=dumps_bytestr)
 
     @board_force_async
-    def rest_firmware_info(self,request):
+    def rest_firmware_info(self, request):
         return self.helper_rest_firmware_info(request)
 
     # Handler to fetch chassis eeprom
-    def helper_rest_chassis_eeprom_hdl(self,request):
-        return web.json_response(rest_chassis_eeprom.get_chassis_eeprom(),
-                                 dumps=dumps_bytestr)
+    def helper_rest_chassis_eeprom_hdl(self, request):
+        return web.json_response(
+            rest_chassis_eeprom.get_chassis_eeprom(), dumps=dumps_bytestr
+        )
 
     @board_force_async
-    def rest_chassis_eeprom_hdl(self,request):
+    def rest_chassis_eeprom_hdl(self, request):
         return self.helper_rest_chassis_eeprom_hdl(request)
 
     # Handler to fetch SN and location for each card on chassis
-    def helper_rest_all_serial_and_location_hdl(self,request):
-        return web.json_response(rest_chassis_all_serial_and_location.\
-                                 get_all_serials_and_locations(), \
-                                 dumps=dumps_bytestr)
+    def helper_rest_all_serial_and_location_hdl(self, request):
+        return web.json_response(
+            rest_chassis_all_serial_and_location.get_all_serials_and_locations(),
+            dumps=dumps_bytestr,
+        )
 
     @board_force_async
-    def rest_all_serial_and_location_hdl(self,request):
+    def rest_all_serial_and_location_hdl(self, request):
         return self.helper_rest_all_serial_and_location_hdl(request)

@@ -21,11 +21,13 @@
 import json
 import re
 import subprocess
+
 from rest_fruid import get_fruid
+
 
 # Handler for SCM FRUID resource endpoint
 # In YAMP, SUP is equivalent to SCM
 def get_fruid_scm():
-    cmd = ['weutil', 'SUP']
+    cmd = ["weutil", "SUP"]
     fresult = get_fruid(cmd)
     return fresult

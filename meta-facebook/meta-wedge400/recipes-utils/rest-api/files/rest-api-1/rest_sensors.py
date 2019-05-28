@@ -21,7 +21,10 @@
 import json
 import re
 import subprocess
+
 from rest_utils import DEFAULT_TIMEOUT_SEC
+
+
 #
 # "SENSORS" REST API handler for Wedge400
 #
@@ -36,45 +39,44 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 #
 def get_sensors():
     result = []
-    proc = subprocess.Popen(['/usr/local/bin/sensor-util', 'all'],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        ["/usr/local/bin/sensor-util", "all"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         data = data.decode()
     except proc.TimeoutError as ex:
         data = ex.output
-        data = data.decode();
+        data = data.decode()
         err = ex.error
 
     # We flatten all key value pair into one level
     # We keep the JSON format compatible with other
     # FBOSS chassis, to make bmc_proxy happy
     sresult = {}
-    sresult['name'] = 'util'
-    sresult['Adapter'] = 'util'
-    for edata in data.split('\n'):
+    sresult["name"] = "util"
+    sresult["Adapter"] = "util"
+    for edata in data.split("\n"):
         # Per each line
         adata = edata.split()
         # For each key value pair
-        if (len(adata) < 4):
+        if len(adata) < 4:
             continue
-        key=adata[0].strip()
-        value=adata[3].strip()
+        key = adata[0].strip()
+        value = adata[3].strip()
         try:
             value = float(value)
-            if (value >= 0.0):
+            if value >= 0.0:
                 sresult[key] = str(value)
         except Exception:
             pass
     result.append(sresult)
 
-    fresult = {
-                "Information": result,
-                "Actions": [],
-                "Resources": [],
-              }
+    fresult = {"Information": result, "Actions": [], "Resources": []}
     return fresult
+
 
 # This function doesn't seem to be actively used, but I will leave it
 # here for any future compatibility issue if any

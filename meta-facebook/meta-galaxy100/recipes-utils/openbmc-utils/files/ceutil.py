@@ -24,24 +24,31 @@ import subprocess
 
 def _ceutil():
     proc = subprocess.Popen(
-        ['/usr/bin/wget', '--timeout', '5', '-q', '-O', '-',
-        'http://[fe80::c1:1%eth0.4088]:8080/api/sys/mb/chassis_eeprom'],
+        [
+            "/usr/bin/wget",
+            "--timeout",
+            "5",
+            "-q",
+            "-O",
+            "-",
+            "http://[fe80::c1:1%eth0.4088]:8080/api/sys/mb/chassis_eeprom",
+        ],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
     )
     try:
         data, err = proc.communicate()
         data = data.decode()
         err = err.decode()
         if proc.returncode:
-           raise Exception('Command failed, returncode: {}'.format(proc.returncode))
+            raise Exception("Command failed, returncode: {}".format(proc.returncode))
     except Exception as e:
-        print('Error getting chassis eeprom from CMM {}'.format(e))
+        print("Error getting chassis eeprom from CMM {}".format(e))
         raise
 
     for key, val in list(json.loads(data).items()):
-        print('{}: {}'.format(key, val))
+        print("{}: {}".format(key, val))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _ceutil()

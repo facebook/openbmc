@@ -15,15 +15,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from fsc_util import Logger
-from subprocess import Popen, PIPE
 import time
+from subprocess import PIPE, Popen
+
+from fsc_util import Logger
+
 
 # Overrides the functions that need to do HW dependent
 # actions, such as LED control, PWM full boost and
 # emergency shutdown
 
-def yamp_set_fan_led(fan, color='led_blue'):
+
+def yamp_set_fan_led(fan, color="led_blue"):
     # YAMP LED has only green and LED
     # So, blue (fan good) will turn on green
     FCM_CPLD = "/sys/bus/i2c/drivers/fancpld/13-0060/"
@@ -33,7 +36,7 @@ def yamp_set_fan_led(fan, color='led_blue'):
             break
         fan = int(fan)
         if fan > 5 or fan < 1:
-            break;
+            break
         # 1 means off
         green_value = 1
         red_value = 1
@@ -57,26 +60,29 @@ def yamp_set_fan_led(fan, color='led_blue'):
         response2 = Popen(cmd_red, shell=True, stdout=PIPE).stdout.read()
     return 0
 
-def board_fan_actions(fan, action='None'):
+
+def board_fan_actions(fan, action="None"):
     if "led" in action:
         yamp_set_fan_led(fan.label, color=action)
     else:
-        Logger.warn("fscd: %s has no action %s" % (fan.label, str(action),))
+        Logger.warn("fscd: %s has no action %s" % (fan.label, str(action)))
     pass
+
 
 def yamp_set_all_pwm(boost):
     # The script name is same as Minipack.
     # Note that, the argument to this script is in range [0,100]
     # and the script will scale the value to [0,255]
-    cmd = ('/usr/local/bin/set_fan_speed.sh %d' % (boost))
+    cmd = "/usr/local/bin/set_fan_speed.sh %d" % (boost)
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return response
 
-def board_callout(callout='None', **kwargs):
-    if 'init_fans' in callout:
+
+def board_callout(callout="None", **kwargs):
+    if "init_fans" in callout:
         boost = 100
-        if 'boost' in kwargs:
-            boost = kwargs['boost']
+        if "boost" in kwargs:
+            boost = kwargs["boost"]
         Logger.info("FSC init fans to boost=%s " % str(boost))
         return yamp_set_all_pwm(boost)
     else:
@@ -93,6 +99,8 @@ def yamp_force_run_cmd(cmd_str):
     except Exception as e:
         pass
     return 0
+
+
 def yamp_host_shutdown():
     # Do the best effort by :
     # 1. Turn off CPU
@@ -106,11 +114,11 @@ def yamp_host_shutdown():
     SCD_OFF = "echo 0 > " + SCD_POWER_REG
     # First, turn off most of the switch board
     Logger.info("host_shutdown() executing {}".format(SCD_OFF))
-    yamp_force_run_cmd(SCD_OFF);
+    yamp_force_run_cmd(SCD_OFF)
     time.sleep(3)
     # Then, turn off X86 CPU
     Logger.info("host_shutdown() executing {}".format(CPU_OFF))
-    yamp_force_run_cmd(CPU_OFF);
+    yamp_force_run_cmd(CPU_OFF)
 
     # Until FSCD is proven to be very stable on most versions of FSCD,
     # we will only turn off SCD and BMC, but not PSUs.
@@ -118,11 +126,10 @@ def yamp_host_shutdown():
 
     return 0
 
-def board_host_actions(action='None', cause='None'):
+
+def board_host_actions(action="None", cause="None"):
     if "host_shutdown" in action:
         Logger.crit("Host is shutdown due to cause %s" % (str(cause),))
         return yamp_host_shutdown()
-    Logger.warn("Host needs action '%s' and cause '%s'" %
-                (str(action), str(cause),))
+    Logger.warn("Host needs action '%s' and cause '%s'" % (str(action), str(cause)))
     pass
-

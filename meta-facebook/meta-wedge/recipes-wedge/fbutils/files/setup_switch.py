@@ -25,21 +25,23 @@
 
 from bcm5396 import Bcm5396
 
+
 MDC_GPIO = 6
 MDIO_GPIO = 7
 
 INTERNAL_VLAN = 4088
-DEFAULT_VLAN=4090
+DEFAULT_VLAN = 4090
 
 INTERNAL_PORTS = [3, 10, 1, 11, 0, 8, 2, 9, 4, 12, 14, 13]
-FRONT_PORT=5
+FRONT_PORT = 5
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     bcm = Bcm5396(Bcm5396.MDIO_ACCESS, mdc=MDC_GPIO, mdio=MDIO_GPIO)
     # create default VLAN including internal ports and front panel
     # port (un-tagged)
-    bcm.add_vlan(DEFAULT_VLAN, INTERNAL_PORTS + [FRONT_PORT],
-                  INTERNAL_PORTS + [FRONT_PORT], 0)
+    bcm.add_vlan(
+        DEFAULT_VLAN, INTERNAL_PORTS + [FRONT_PORT], INTERNAL_PORTS + [FRONT_PORT], 0
+    )
     # set ingress vlan for internal ports and front panel port to default vlan
     for port in INTERNAL_PORTS + [FRONT_PORT]:
         bcm.vlan_set_port_default(port, DEFAULT_VLAN, 0)

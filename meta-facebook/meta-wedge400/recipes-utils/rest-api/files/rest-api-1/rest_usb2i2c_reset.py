@@ -20,21 +20,26 @@
 
 import subprocess
 
-CMD='/sys/bus/i2c/devices/12-003e/cpld_usb2112a_brdg_rst'
+
+CMD = "/sys/bus/i2c/devices/12-003e/cpld_usb2112a_brdg_rst"
 # Endpoint for resetting usb-to-i2c device t9591420
 def set_usb2i2c():
-    p = subprocess.Popen('echo 0 > ' + CMD + \
-                         '&& usleep 50000 && \
-                         echo 1 > ' + CMD,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        "echo 0 > "
+        + CMD
+        + "&& usleep 50000 && \
+                         echo 1 > "
+        + CMD,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     out, err = p.communicate()
     rc = p.returncode
 
     if rc < 0:
-        status = ' failed with returncode = ' + str(rc) + ' and error ' + err
+        status = " failed with returncode = " + str(rc) + " and error " + err
     else:
-        status = ' done '
+        status = " done "
 
-    return { "status" : 'usb to i2c device reset' + status }
+    return {"status": "usb to i2c device reset" + status}

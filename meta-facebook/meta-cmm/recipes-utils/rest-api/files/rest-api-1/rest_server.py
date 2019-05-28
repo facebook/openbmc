@@ -21,17 +21,19 @@
 import os
 from subprocess import *
 
+
 # Handler for uServer resource endpoint
 def get_server():
     result = {
-                "Information": { "Status": "Not Applicable" },
-                "Actions": [],
-                "Resources": [],
-             }
+        "Information": {"Status": "Not Applicable"},
+        "Actions": [],
+        "Resources": [],
+    }
 
     return result
 
+
 def server_action(data):
-    result = { "result": "Not Applicable", "reason": "Server not supported in CMM"}
+    result = {"result": "Not Applicable", "reason": "Server not supported in CMM"}
 
     return result

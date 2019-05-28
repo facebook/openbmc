@@ -16,9 +16,9 @@ import eeprom_utils
 
 
 def get_chassis_eeprom():
-    return eeprom_utils.get_eeprom_data('/usr/local/bin/ceutil')
+    return eeprom_utils.get_eeprom_data("/usr/local/bin/ceutil")
 
 
 # For ease of debugging
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(get_chassis_eeprom())

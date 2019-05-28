@@ -21,21 +21,24 @@
 import json
 import re
 import subprocess
+
 from rest_utils import DEFAULT_TIMEOUT_SEC
+
 
 # Handler for getting PIM info
 
-pim_number_re = re.compile('\s*PIM (\S.*):')
-fpga_not_found_re = re.compile('\s*DOMFPGA is not detected')
-fpga_type_re = re.compile('\s*(\S.*) DOMFPGA: (\S.*)')
+pim_number_re = re.compile("\s*PIM (\S.*):")
+fpga_not_found_re = re.compile("\s*DOMFPGA is not detected")
+fpga_type_re = re.compile("\s*(\S.*) DOMFPGA: (\S.*)")
+
 
 def prepare_piminfo():
-    pim_type = {str(i): 'NA' for i in range(1, 9)}
-    pim_fpga_ver = {str(i): 'NA' for i in range(1, 9)}
+    pim_type = {str(i): "NA" for i in range(1, 9)}
+    pim_fpga_ver = {str(i): "NA" for i in range(1, 9)}
     current_pim = 0
     try:
         stdout = subprocess.check_output(
-            ['/usr/local/bin/fpga_ver.sh', '-u'], timeout=DEFAULT_TIMEOUT_SEC
+            ["/usr/local/bin/fpga_ver.sh", "-u"], timeout=DEFAULT_TIMEOUT_SEC
         )
         for text_line in stdout.decode().splitlines():
             # Check if this line shows PIM slot number
@@ -47,35 +50,33 @@ def prepare_piminfo():
                 pim_type[current_pim] = m.group(1)
                 pim_fpga_ver[current_pim] = m.group(2)
     except Exception as ex:
-            pass
+        pass
 
     return pim_type, pim_fpga_ver
 
+
 def prepare_pimver():
-    pim_ver = {str(i): 'NA' for i in range(1, 9)}
+    pim_ver = {str(i): "NA" for i in range(1, 9)}
     for pim in pim_ver:
         stdout = subprocess.check_output(
-            ['/usr/local/bin/peutil', pim], timeout=DEFAULT_TIMEOUT_SEC
+            ["/usr/local/bin/peutil", pim], timeout=DEFAULT_TIMEOUT_SEC
         )
         for line in stdout.decode().splitlines():
-            if 'Version' in line:
-                _, version = line.split(':')
+            if "Version" in line:
+                _, version = line.split(":")
                 pim_ver[pim] = version.strip()
     return pim_ver
+
 
 def get_piminfo():
     result = {}
     pim_type, pim_fpga_ver = prepare_piminfo()
     pim_ver = prepare_pimver()
-    for pim_number in range(1,9):
-            result['PIM'+str(pim_number)] = {
-                    "type": pim_type[str(pim_number)],
-                    "fpga_ver": pim_fpga_ver[str(pim_number)],
-                    "ver": pim_ver[str(pim_number)],
-                 }
-    fresult = {
-        "Information": result,
-        "Actions": [],
-        "Resources": [],
-      }
+    for pim_number in range(1, 9):
+        result["PIM" + str(pim_number)] = {
+            "type": pim_type[str(pim_number)],
+            "fpga_ver": pim_fpga_ver[str(pim_number)],
+            "ver": pim_ver[str(pim_number)],
+        }
+    fresult = {"Information": result, "Actions": [], "Resources": []}
     return fresult

@@ -4,8 +4,8 @@ Modbus/rackmond library + Standalone tool to view current power/current
 readings
 """
 import asyncio
-import struct
 import contextlib
+import struct
 import time
 
 
@@ -29,9 +29,9 @@ def log(*args, **kwargs):
     if modbuslog:
         t = time.time() - logstart
         if all(args):
-            pfx = '[{:4.02f}]'.format(t)
+            pfx = "[{:4.02f}]".format(t)
         else:
-            pfx = ''
+            pfx = ""
         print(pfx, *args, file=modbuslog, **kwargs)
 
 
@@ -99,7 +99,6 @@ def conv_ascii(bs):
 
 
 def conv_fixed(n):
-
     def convert(bs):
         return int.from_bytes(bs, byteorder="big") / (2 ** n)
 
@@ -110,12 +109,11 @@ REGISTERS = [
     Register("model", 0x0, 8, conv_ascii, 120),
     Register("fw", 0x38, 4, conv_ascii, 120),
     Register("power", 0x96, convert=conv_fixed(3)),
-    Register("current", 0x8c, convert=conv_fixed(6)),
+    Register("current", 0x8C, convert=conv_fixed(6)),
 ]
 
 
 class PSU:
-
     def __init__(self, addr, rescan=120):
         self.addr = addr
         self.readings = {}
@@ -157,7 +155,7 @@ class PSU:
 
 
 async def modelscan():
-    addrs = [0xa4, 0xa5, 0xa6, 0xb4, 0xb5, 0xb6]
+    addrs = [0xA4, 0xA5, 0xA6, 0xB4, 0xB5, 0xB6]
     psus = [PSU(a) for a in addrs]
     cols = [reg.name for reg in REGISTERS]
     widths = {}

@@ -15,7 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-board_py_modules=[
-    'board_gpio_table_p1',
-    'board_gpio_rev_table',
-]
+board_py_modules = ["board_gpio_table_p1", "board_gpio_rev_table"]

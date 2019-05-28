@@ -14,16 +14,14 @@
 import subprocess
 import syslog
 
-SCM_CPLD_PATH = '/usr/local/bin/scm_cpld_rev.sh'
-SYS_CPLD_VERSION = '/usr/local/bin/cpld_rev.sh'
-QSFP_CPLD_VERSION = '/usr/local/bin/qsfp_cpld_ver.sh'
+
+SCM_CPLD_PATH = "/usr/local/bin/scm_cpld_rev.sh"
+SYS_CPLD_VERSION = "/usr/local/bin/cpld_rev.sh"
+QSFP_CPLD_VERSION = "/usr/local/bin/qsfp_cpld_ver.sh"
 
 
 def _firmware_json(ver, sub_ver, int_base=16):
-    return {
-        'version': int(ver, int_base),
-        'sub_version': int(sub_ver, int_base)
-    }
+    return {"version": int(ver, int_base), "sub_version": int(sub_ver, int_base)}
 
 
 def _get_qsfp_cpld_info(cmd):
@@ -31,10 +29,9 @@ def _get_qsfp_cpld_info(cmd):
     try:
         data = subprocess.check_output([cmd])
         data = data.decode()
-        ver, sub_ver = data.split(',')
+        ver, sub_ver = data.split(",")
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, 'Error getting CPLD versions : {}'
-                      .format(e))
+        syslog.syslog(syslog.LOG_ERR, "Error getting CPLD versions : {}".format(e))
 
     return _firmware_json(ver, sub_ver)
 
@@ -44,20 +41,20 @@ def _get_cpld_info(cmd):
     try:
         data = subprocess.check_output([cmd])
         data = data.decode()
-        ver, sub_ver = data.split('.')
+        ver, sub_ver = data.split(".")
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, 'Error getting CPLD versions : {}'
-                      .format(e))
+        syslog.syslog(syslog.LOG_ERR, "Error getting CPLD versions : {}".format(e))
 
     return _firmware_json(ver, sub_ver, int_base=10)
 
+
 def get_firmware_info():
     return {
-        'SYS_CPLD': _get_cpld_info(cmd=SYS_CPLD_VERSION),
-        'SCM_CPLD': _get_cpld_info(cmd=SCM_CPLD_PATH),
-        'QSFP_CPLD': _get_qsfp_cpld_info(cmd=QSFP_CPLD_VERSION)
+        "SYS_CPLD": _get_cpld_info(cmd=SYS_CPLD_VERSION),
+        "SCM_CPLD": _get_cpld_info(cmd=SCM_CPLD_PATH),
+        "QSFP_CPLD": _get_qsfp_cpld_info(cmd=QSFP_CPLD_VERSION),
     }
 
 
-if __name__ == '__main__':
-    print('{}'.format(get_firmware_info()))
+if __name__ == "__main__":
+    print("{}".format(get_firmware_info()))

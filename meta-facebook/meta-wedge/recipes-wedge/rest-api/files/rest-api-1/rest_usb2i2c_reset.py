@@ -20,22 +20,25 @@
 
 import subprocess
 
+
 # Endpoint for resetting usb-to-i2c device t9591420
 def set_usb2i2c():
-    p = subprocess.Popen('source /usr/local/fbpackages/utils/ast-functions;'
-                         'gpio_set USB_BRDG_RST 0 && usleep 50000 && \
-                         gpio_set USB_BRDG_RST 1',
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        "source /usr/local/fbpackages/utils/ast-functions;"
+        "gpio_set USB_BRDG_RST 0 && usleep 50000 && \
+                         gpio_set USB_BRDG_RST 1",
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     out, err = p.communicate()
     err = err.decode()
     out = out.decode()
     rc = p.returncode
 
     if rc < 0:
-        status = ' failed with returncode = ' + str(rc) + ' and error ' + err
+        status = " failed with returncode = " + str(rc) + " and error " + err
     else:
-        status = ' done '
+        status = " done "
 
-    return { "status" : 'usb to i2c device reset' + status }
+    return {"status": "usb to i2c device reset" + status}

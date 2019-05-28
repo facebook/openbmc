@@ -20,27 +20,43 @@
 
 import re
 import subprocess
-
 from typing import Dict
 
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
+
 # Handler for sys/presence resource endpoint
 def get_presence_info_scm() -> Dict:
-    return {"Information": get_presence_info_data('scm'), "Actions": [], "Resources": []}
+    return {
+        "Information": get_presence_info_data("scm"),
+        "Actions": [],
+        "Resources": [],
+    }
+
 
 def get_presence_info_fan() -> Dict:
-    return {"Information": get_presence_info_data('fan'), "Actions": [], "Resources": []}
+    return {
+        "Information": get_presence_info_data("fan"),
+        "Actions": [],
+        "Resources": [],
+    }
+
 
 def get_presence_info_psu() -> Dict:
-    return {"Information": get_presence_info_data('psu'), "Actions": [], "Resources": []}
+    return {
+        "Information": get_presence_info_data("psu"),
+        "Actions": [],
+        "Resources": [],
+    }
+
 
 def get_presence_info() -> Dict:
     result = []
-    devices = ['scm', 'fan', 'psu']
+    devices = ["scm", "fan", "psu"]
     for dev in devices:
         result.append(get_presence_info_data(dev))
     return {"Information": result, "Actions": [], "Resources": devices}
+
 
 def _parse_presence_info_data(data) -> Dict:
     result = {}
@@ -50,9 +66,10 @@ def _parse_presence_info_data(data) -> Dict:
         result[dev] = presence_status
     return result
 
+
 def get_presence_info_data(dev) -> Dict:
     cmd = ["/usr/local/bin/presence_util.sh", dev]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-    data = data.decode(errors='ignore')
+    data = data.decode(errors="ignore")
     return _parse_presence_info_data(data)

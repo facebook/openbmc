@@ -20,20 +20,19 @@
 
 import re
 
-from aiohttp import web
-
-from rest_utils import dumps_bytestr
-
-import rest_usb2i2c_reset
+import rest_firmware_info_pim
+import rest_firmware_info_scm
 import rest_fruid_scm
+import rest_fw_ver
+import rest_peutil
 import rest_pim_present
 import rest_piminfo
 import rest_pimserial
-import rest_firmware_info_pim
-import rest_firmware_info_scm
-import rest_peutil
 import rest_seutil
-import rest_fw_ver
+import rest_usb2i2c_reset
+from aiohttp import web
+from rest_utils import dumps_bytestr
+
 
 class boardApp_Handler:
     # Handler to reset usb-to-i2c
@@ -46,44 +45,41 @@ class boardApp_Handler:
 
     # Handler for sys/pim_present resource endpoint
     async def rest_pim_present_hdl(self, request):
-        return web.json_response(rest_pim_present.get_pim_present(), dumps=dumps_bytestr)
+        return web.json_response(
+            rest_pim_present.get_pim_present(), dumps=dumps_bytestr
+        )
 
     # Handler for sys/piminfo resource endpoint
-    async def rest_piminfo_hdl(self,request):
+    async def rest_piminfo_hdl(self, request):
         return web.json_response(rest_piminfo.get_piminfo())
 
     # Handler for sys/pim_serial resource endpoint
-    async def rest_pimserial_hdl(self,request):
+    async def rest_pimserial_hdl(self, request):
         return web.json_response(rest_pimserial.get_pimserial())
 
     # Handler for sys/firmware_info_pim resource endpoint
     async def rest_firmware_info_pim_hdl(self, request):
         return web.json_response(
-            rest_firmware_info_pim.get_firmware_info(), dumps=dumps_bytestr,
+            rest_firmware_info_pim.get_firmware_info(), dumps=dumps_bytestr
         )
 
     # Handler for sys/firmware_info_scm resource endpoint
     async def rest_firmware_info_scm_hdl(self, request):
         return web.json_response(
-            rest_firmware_info_scm.get_firmware_info(), dumps=dumps_bytestr,
+            rest_firmware_info_scm.get_firmware_info(), dumps=dumps_bytestr
         )
 
     # Handler for sys/firmware_info_all resource endpoint
     async def rest_firmware_info_all_hdl(self, request):
-        return web.json_response(
-            rest_fw_ver.get_all_fw_ver(), dumps=dumps_bytestr,
-        )
+        return web.json_response(rest_fw_ver.get_all_fw_ver(), dumps=dumps_bytestr)
 
         # Handler for sys/mb/pim$ resource endpoint
+
     async def rest_peutil_hdl(self, request):
         path = request.rel_url.path
         pim = re.search(r"pim(\d)", path).group(1)
-        return web.json_response(
-            rest_peutil.get_peutil(pim), dumps=dumps_bytestr,
-        )
+        return web.json_response(rest_peutil.get_peutil(pim), dumps=dumps_bytestr)
 
     # Handler for sys/mb/seutil resource endpoint
     async def rest_seutil_hdl(self, request):
-        return web.json_response(
-            rest_seutil.get_seutil(), dumps=dumps_bytestr,
-        )
+        return web.json_response(rest_seutil.get_seutil(), dumps=dumps_bytestr)

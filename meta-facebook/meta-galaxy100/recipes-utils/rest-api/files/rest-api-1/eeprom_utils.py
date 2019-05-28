@@ -13,29 +13,29 @@
 #
 
 import subprocess
+
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
+
 def _parse_eeprom_data(output):
-  eeprom_data = {}
+    eeprom_data = {}
 
-  for line in output.splitlines():
-    parts = line.split(':', 1)
-    if len(parts) != 2:
-      # This generally shouldn't happen, but it's possible there was some
-      # error message logged on the console in the middle of the w|seutil
-      # output.
-      continue
-    key = parts[0].strip()
-    value = parts[1].strip()
-    eeprom_data[key] = value
+    for line in output.splitlines():
+        parts = line.split(":", 1)
+        if len(parts) != 2:
+            # This generally shouldn't happen, but it's possible there was some
+            # error message logged on the console in the middle of the w|seutil
+            # output.
+            continue
+        key = parts[0].strip()
+        value = parts[1].strip()
+        eeprom_data[key] = value
 
-  return eeprom_data
+    return eeprom_data
 
 
 def get_eeprom_data(util):
-  proc = subprocess.Popen([util],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE)
-  data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-  data = data.decode()
-  return _parse_eeprom_data(data)
+    proc = subprocess.Popen([util], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+    data = data.decode()
+    return _parse_eeprom_data(data)

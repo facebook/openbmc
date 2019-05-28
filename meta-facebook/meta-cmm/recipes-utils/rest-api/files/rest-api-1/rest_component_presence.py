@@ -18,31 +18,29 @@
 # Boston, MA 02110-1301 USA
 #
 
-import subprocess
 import re
+import subprocess
 
 
 def get_presence():
     result = {}
-    p = subprocess.Popen(['/usr/local/bin/presence_util.sh'],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        ["/usr/local/bin/presence_util.sh"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     data, err = p.communicate()
     data = data.decode()
     rc = p.returncode
 
     if rc < 0:
-        result = ' failed with returncode = ' + str(rc) + ' and error ' + err
+        result = " failed with returncode = " + str(rc) + " and error " + err
     else:
-        data = re.sub('\(.+?\)', '', data)
-        for edata in data.split('\n'):
-            tdata = edata.split(':')
-            if (len(tdata) < 2):
+        data = re.sub("\(.+?\)", "", data)
+        for edata in data.split("\n"):
+            tdata = edata.split(":")
+            if len(tdata) < 2:
                 continue
             result[tdata[0].strip()] = tdata[1].strip()
-    fresult = {
-                "Information": result,
-                "Actions": [],
-                "Resources": [],
-              }
+    fresult = {"Information": result, "Actions": [], "Resources": []}
     return fresult

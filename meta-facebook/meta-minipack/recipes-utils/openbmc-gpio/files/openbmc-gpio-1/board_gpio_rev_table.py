@@ -17,13 +17,14 @@
 
 from openbmc_gpio_table import BoardGPIO
 
+
 # The following table is generated using:
 # python minipack_gpio_parser.py data/minipack-BMC-gpio.csv
 # DO NOT MODIFY THE TABLE!!!
 # Manual modification will be overridden!!!
 
 board_gpio_rev_table = [
-    BoardGPIO('GPIOG4', 'BMC_CPLD_BOARD_REV_ID0'),
-    BoardGPIO('GPIOG5', 'BMC_CPLD_BOARD_REV_ID1'),
-    BoardGPIO('GPIOG6', 'BMC_CPLD_BOARD_REV_ID2'),
+    BoardGPIO("GPIOG4", "BMC_CPLD_BOARD_REV_ID0"),
+    BoardGPIO("GPIOG5", "BMC_CPLD_BOARD_REV_ID1"),
+    BoardGPIO("GPIOG6", "BMC_CPLD_BOARD_REV_ID2"),
 ]

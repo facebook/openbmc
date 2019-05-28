@@ -14,10 +14,7 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from openbmc_gpio_table import BoardGPIO
 
@@ -28,8 +25,8 @@ from openbmc_gpio_table import BoardGPIO
 # Manual modification will be overridden!!!
 
 board_passthrough_gpio_table = [
-    BoardGPIO('SPICK', 'SPICK'),
-    BoardGPIO('SPICS0#', 'SPICS0_N'),
-    BoardGPIO('SPIDI', 'SPIDI'),
-    BoardGPIO('SPIDO', 'SPIDO'),
+    BoardGPIO("SPICK", "SPICK"),
+    BoardGPIO("SPICS0#", "SPICS0_N"),
+    BoardGPIO("SPIDI", "SPIDI"),
+    BoardGPIO("SPIDO", "SPIDO"),
 ]

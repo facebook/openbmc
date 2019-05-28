@@ -5717,6 +5717,8 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num,
           return;
       }
       break;
+    default:
+      return;
   }
   pal_add_cri_sel(crisel);
   return;
@@ -5801,6 +5803,8 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num,
           return;
       }
       break;
+    default:
+      return;
   }
   pal_add_cri_sel(crisel);
   return;

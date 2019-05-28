@@ -16,17 +16,15 @@
 # Boston, MA 02110-1301 USA
 
 # Intended to compatible with both Python 2.7 and Python 3.x.
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
-
-from virtualcat import VirtualCat
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import binascii
 import hashlib
 import json
 import struct
+
+from virtualcat import VirtualCat
+
 
 # The typing module isn't installed on BMCs as of 2017-06-18 but it's only
 # needed when running mypy on a developer's machine.
@@ -41,12 +39,13 @@ class InvalidPartitionException(Exception):
 
 
 class Partition(object):
-    '''
+    """
     Base partition class. We expect subclasses to implement specialized
     versions of the initialize, update, and finalize methods. Currently used
     for the "data0" partition because we let its contents vary arbitrarily
     (although we would ideally check its jffs2 filesystem integrity).
-    '''
+    """
+
     def initialize(self):
         # type: () -> None
         self.length = 0
@@ -59,11 +58,13 @@ class Partition(object):
         # type: () -> None
         if self.length != self.partition_size:
             self.valid = False
-            self.logger.warning('Read {} of {} expected bytes from {}.'.format(
-                self.length, self.partition_size, self
-            ))
+            self.logger.warning(
+                "Read {} of {} expected bytes from {}.".format(
+                    self.length, self.partition_size, self
+                )
+            )
         else:
-            self.logger.info('{} readable.'.format(self))
+            self.logger.info("{} readable.".format(self))
 
     # This initializer will be called by all subclasses, so all subclass
     # overridden logic and types must be encapsulated in the above checksum
@@ -73,9 +74,9 @@ class Partition(object):
         self.valid = True
         self.valid_external_partitions = []  # type: List[str]
         self.partition_size = partition_size  # type: Optional[int]
-        self.read_size = 0 # type: Optional[int]
-        self.checksums_data = bytes() # type: Optional[bytes]
-        self.partition_data_size = partition_size # type: Optional[int]
+        self.read_size = 0  # type: Optional[int]
+        self.checksums_data = bytes()  # type: Optional[bytes]
+        self.partition_data_size = partition_size  # type: Optional[int]
         self.partition_offset = partition_offset
         self.name = name
         self.data_size = partition_size
@@ -87,12 +88,10 @@ class Partition(object):
     def __str__(self):
         # type: () -> str
         if self.partition_size is None:
-            size = '0x???????'
+            size = "0x???????"
         else:
-            size = '0x{:07x}'.format(self.partition_size)
-        return '{}@0x{:07x}({})'.format(
-            size, self.partition_offset, self.name
-        )
+            size = "0x{:07x}".format(self.partition_size)
+        return "{}@0x{:07x}({})".format(size, self.partition_offset, self.name)
 
     def end(self):
         # type: () -> int
@@ -100,15 +99,16 @@ class Partition(object):
 
 
 class ExternalChecksumPartition(Partition):
-    '''
+    """
     Calculates an md5sum for the whole partition and considers it valid if the
     computed checksum matches any of the reference checksums. Currently used
     for the "u-boot" partition because it does not yet contain any built-in
     checksum.
-    '''
-    UBootMagics = [0x130000ea, 0xb80000ea, 0xbe0000ea, 0xf0000ea]
+    """
 
-    UBootChecksumsPartitionSize = (1024 * 4)
+    UBootMagics = [0x130000EA, 0xB80000EA, 0xBE0000EA, 0xF0000EA]
+
+    UBootChecksumsPartitionSize = 1024 * 4
 
     def initialize(self):
         # type: () -> None
@@ -124,16 +124,15 @@ class ExternalChecksumPartition(Partition):
 
     def update(self, data):
         # type: (bytes) -> None
-        if (self.read_size < self.partition_data_size):
+        if self.read_size < self.partition_data_size:
             check_size = len(data)
-            if (check_size > self.partition_data_size - self.read_size):
+            if check_size > self.partition_data_size - self.read_size:
                 check_size = self.partition_data_size - self.read_size
             self.md5sum.update(data[0:check_size])
             self.read_size += check_size
             self.checksums_data += data[check_size:]
         else:
             self.checksums_data += data
-
 
     def finalize(self):
         # type: () -> None
@@ -142,7 +141,7 @@ class ExternalChecksumPartition(Partition):
 
         # There might be white space appended to the partition data.
         # Strip this to make json.loads() happy.
-        json_str = checksums_data.strip('\0\n\r')
+        json_str = checksums_data.strip("\0\n\r")
         checksums = list(self.checksums)
         try:
             json_data = list(json.loads(json_str).keys())
@@ -152,21 +151,21 @@ class ExternalChecksumPartition(Partition):
             self.md5sum.update(self.checksums_data)
 
         if self.md5sum.hexdigest() not in checksums:
-            if 'PLACEHOLDER' in self.checksums:
-                self.checksums.remove('PLACEHOLDER')
+            if "PLACEHOLDER" in self.checksums:
+                self.checksums.remove("PLACEHOLDER")
                 self.checksums.append(self.md5sum.hexdigest())
-                self.logger.info('{} md5sum {} added.'.format(
-                    self, self.md5sum.hexdigest()
-                ))
+                self.logger.info(
+                    "{} md5sum {} added.".format(self, self.md5sum.hexdigest())
+                )
             else:
                 self.valid = False
                 self.logger.error(
-                    '{} md5sum {} not in {}.'.format(
+                    "{} md5sum {} not in {}.".format(
                         self, self.md5sum.hexdigest(), checksums
                     )
                 )
         else:
-            self.logger.info('{} has known good md5sum.'.format(self))
+            self.logger.info("{} has known good md5sum.".format(self))
 
     def __init__(self, size, offset, name, images, checksums, logger):
         # type: (int, int, str, VirtualCat, List[str], object) -> None
@@ -175,74 +174,69 @@ class ExternalChecksumPartition(Partition):
 
 
 class EnvironmentPartition(Partition):
-    '''
+    """
     Base class for CRC32 checksummed partitions. The header class variables
     (overridden by subclasses) describe a 32 bit checksum for the partition of
     externally described size. Used for the "env" partition.
-    '''
-    header_format = b'<I'
+    """
+
+    header_format = b"<I"
     header_size = struct.calcsize(header_format)
-    header_fields = ['data_crc32']
+    header_fields = ["data_crc32"]
 
     def initialize(self):
         # type: () -> None
         self.data_crc32 = 0
         if self.partition_size is None:
-            raise InvalidPartitionException('Unknown partition size')
+            raise InvalidPartitionException("Unknown partition size")
         self.data_size = self.partition_size - self.header_size
 
     def update(self, data):
         # type: (bytes) -> None
-        self.data_crc32 = binascii.crc32(data, self.data_crc32) & 0xffffffff
+        self.data_crc32 = binascii.crc32(data, self.data_crc32) & 0xFFFFFFFF
 
     def finalize(self):
         # type: () -> None
-        if self.data_crc32 != self.parsed_header['data_crc32']:
+        if self.data_crc32 != self.parsed_header["data_crc32"]:
             self.valid = False
-            if (
-                self.parsed_header['data_crc32'] == 0 and
-                self.data_crc32 == 0x8b2a7ae8
-            ):
-                self.logger.info('{} zeroed out.'.format(self))
+            if self.parsed_header["data_crc32"] == 0 and self.data_crc32 == 0x8B2A7AE8:
+                self.logger.info("{} zeroed out.".format(self))
             else:
-                message = '{} data crc32 0x{:08x} != expected 0x{:08x}.'
-                self.logger.error(message.format(
-                        self, self.data_crc32, self.parsed_header['data_crc32']
-                ))
+                message = "{} data crc32 0x{:08x} != expected 0x{:08x}."
+                self.logger.error(
+                    message.format(
+                        self, self.data_crc32, self.parsed_header["data_crc32"]
+                    )
+                )
         else:
-            self.logger.info('{} has valid data crc32.'.format(self))
+            self.logger.info("{} has valid data crc32.".format(self))
 
     def __init__(self, size, offset, name, images, logger):
         # type: (Optional[int], int, str, VirtualCat, object) -> None
         raw_header = images.verified_read(self.header_size)
-        self.parsed_header = dict(zip(self.header_fields, struct.unpack(
-            self.header_format, raw_header
-        )))
+        self.parsed_header = dict(
+            zip(self.header_fields, struct.unpack(self.header_format, raw_header))
+        )
         self.info_strings = []
         for (key, value) in self.parsed_header.items():
-            if (
-                key == 'magic' or key.endswith('_address') or
-                key.endswith('_crc32')
-            ):
-                value_string = '0x{:08x}'.format(value)
+            if key == "magic" or key.endswith("_address") or key.endswith("_crc32"):
+                value_string = "0x{:08x}".format(value)
             # Null-delimited bytes to space-delimited str, merging delimiters
             elif isinstance(value, bytes):
-                value_string = ' '.join(
-                    [b.decode() for b in value.split(b'\x00') if b]
-                )
-            elif key.endswith('_time'):
+                value_string = " ".join([b.decode() for b in value.split(b"\x00") if b])
+            elif key.endswith("_time"):
                 # Not ISO date because T25745701
                 value_string = value
             else:
                 value_string = str(value)
-            self.info_strings.append('{}: {}'.format(key, value_string))
+            self.info_strings.append("{}: {}".format(key, value_string))
         # TODO use enum names
-        logger.info(', '.join(self.info_strings))
+        logger.info(", ".join(self.info_strings))
         Partition.__init__(self, size, offset, name, images, logger)
 
 
 class LegacyUBootPartition(EnvironmentPartition):
-    '''
+    """
     Partition class which parses a (legacy) U-Boot header. The data region
     begins at the end of the header and ends where the size field in the header
     indicates. Used for "kernel" and "rootfs" partitions. Calls
@@ -251,42 +245,53 @@ class LegacyUBootPartition(EnvironmentPartition):
     smallest to largest) of potential partition sizes as a parameter and
     populates the corresponding property with the first one that the data fits
     inside.
-    '''
-    header_fields = ['magic', 'header_crc32', 'creation_time', 'data_size',
-                     'load_address', 'entry_address', 'data_crc32', 'os',
-                     'cpu_architecture', 'image_type', 'compression_type',
-                     'name']
-    header_format = b'>7I4B32s'
+    """
+
+    header_fields = [
+        "magic",
+        "header_crc32",
+        "creation_time",
+        "data_size",
+        "load_address",
+        "entry_address",
+        "data_crc32",
+        "os",
+        "cpu_architecture",
+        "image_type",
+        "compression_type",
+        "name",
+    ]
+    header_format = b">7I4B32s"
     header_size = struct.calcsize(header_format)
     magic = 0x27051956
 
     def initialize(self):
         # type: () -> None
-        if self.parsed_header['magic'] != LegacyUBootPartition.magic:
+        if self.parsed_header["magic"] != LegacyUBootPartition.magic:
             self.valid = False
-            message = '{} header magic 0x{:08x} != expected 0x{:08x}.'
-            self.logger.error(message.format(
-                    self.name,
-                    self.parsed_header['magic'],
-                    LegacyUBootPartition.magic
-            ))
+            message = "{} header magic 0x{:08x} != expected 0x{:08x}."
+            self.logger.error(
+                message.format(
+                    self.name, self.parsed_header["magic"], LegacyUBootPartition.magic
+                )
+            )
         values = []  # type: List[Any]
         for field in self.header_fields:
-            if field == 'header_crc32':
+            if field == "header_crc32":
                 values.append(0)
             else:
                 values.append(self.parsed_header[field])
         modified_header = struct.pack(self.header_format, *values)
-        header_crc32 = binascii.crc32(modified_header, 0) & 0xffffffff
-        if header_crc32 != self.parsed_header['header_crc32']:
+        header_crc32 = binascii.crc32(modified_header, 0) & 0xFFFFFFFF
+        if header_crc32 != self.parsed_header["header_crc32"]:
             self.valid = False
             self.logger.error(
-                '{} header crc32 0x{:08x} != expected 0x{:08x}.'.format(
-                    self, header_crc32, self.parsed_header['header_crc32']
+                "{} header crc32 0x{:08x} != expected 0x{:08x}.".format(
+                    self, header_crc32, self.parsed_header["header_crc32"]
                 )
             )
         self.data_crc32 = 0
-        self.data_size = self.parsed_header['data_size']
+        self.data_size = self.parsed_header["data_size"]
         self.total_size = self.header_size + self.data_size
         for size in self.sizes:
             if size >= self.total_size:
@@ -295,10 +300,10 @@ class LegacyUBootPartition(EnvironmentPartition):
         else:
             self.valid = False
             self.logger.warning(
-                'Size 0x{:x} of {} greater than possibilities [{}].'.format(
+                "Size 0x{:x} of {} greater than possibilities [{}].".format(
                     self.total_size,
                     self,
-                    ', '.join(['0x{:x}'.format(s) for s in self.sizes])
+                    ", ".join(["0x{:x}".format(s) for s in self.sizes]),
                 )
             )
 
@@ -312,7 +317,7 @@ class LegacyUBootPartition(EnvironmentPartition):
         if grow_until is None:
             return
 
-        sizes_to_check = self.sizes[self.sizes.index(self.partition_size):]
+        sizes_to_check = self.sizes[self.sizes.index(self.partition_size) :]
         for size in sizes_to_check:
             images.seek_within_current_file(size - self.partition_size)
             self.partition_size = size
@@ -320,47 +325,74 @@ class LegacyUBootPartition(EnvironmentPartition):
                 return
 
         self.valid = False
-        sizes_to_check_string = ' or '.join(
-            ['0x{:x}'.format(s) for s in sizes_to_check]
+        sizes_to_check_string = " or ".join(
+            ["0x{:x}".format(s) for s in sizes_to_check]
         )
         self.logger.warning(
-            'Could not find magic 0x{:x} after {}.'.format(
+            "Could not find magic 0x{:x} after {}.".format(
                 grow_until, sizes_to_check_string
             )
         )
 
 
 class DeviceTreePartition(Partition):
-    '''
+    """
     Partition class which parses a device tree / flattened image tree header.
     Both the beginning and end of the data region are determined from fields in
     the header. Used for "kernel" and "rootfs" partitions.
-    '''
+    """
+
     header_fields = [
-        'magic', 'total_size', 'structure_block_offset', 'strings_block_offset',
-        'memory_reservation_map_offset', 'version', 'last_compatible_version',
-        'boot_cpu', 'strings_block_size', 'structure_block_size'
+        "magic",
+        "total_size",
+        "structure_block_offset",
+        "strings_block_offset",
+        "memory_reservation_map_offset",
+        "version",
+        "last_compatible_version",
+        "boot_cpu",
+        "strings_block_size",
+        "structure_block_size",
     ]
-    header_format = b'>%dI' % len(header_fields)
+    header_format = b">%dI" % len(header_fields)
     header_size = struct.calcsize(header_format)
-    magic = 0xd00dfeed
+    magic = 0xD00DFEED
     FDT_BEGIN_NODE = 1
     FDT_END_NODE = 2
     FDT_PROP = 3
     FDT_NOP = 4
     FDT_END = 9
     recognized_hexadecimals = [
-        b'#address-cells', b'data-address', b'data-position', b'data-size',
-        b'load', b'entry', b'hashed-strings', b'value',
+        b"#address-cells",
+        b"data-address",
+        b"data-position",
+        b"data-size",
+        b"load",
+        b"entry",
+        b"hashed-strings",
+        b"value",
     ]
     recognized_strings = [
-        b'algo', b'arch', b'compression', b'default', b'description',
-        b'firmware', b'hashed-nodes', b'kernel', b'key-name-hint', b'os',
-        b'ramdisk', b'sign-images', b'signer-name', b'signer-version',
-        b'type', b'fdt',
+        b"algo",
+        b"arch",
+        b"compression",
+        b"default",
+        b"description",
+        b"firmware",
+        b"hashed-nodes",
+        b"kernel",
+        b"key-name-hint",
+        b"os",
+        b"ramdisk",
+        b"sign-images",
+        b"signer-name",
+        b"signer-version",
+        b"type",
+        b"fdt",
     ]
-    unrecognized_string_message = \
+    unrecognized_string_message = (
         'Attempting to parse unrecognized {}-byte property "{}" as string.'
+    )
 
     @staticmethod
     def align(images):
@@ -371,8 +403,8 @@ class DeviceTreePartition(Partition):
     @staticmethod
     def next_data(images, length, data_type):
         # type: (VirtualCat, int, str) -> List[Any]
-        fmt = b'>%d%s' % (length // struct.calcsize(data_type), data_type)
-        assert(length == struct.calcsize(fmt))
+        fmt = b">%d%s" % (length // struct.calcsize(data_type), data_type)
+        assert length == struct.calcsize(fmt)
         start = images.open_file.tell()
         data = struct.unpack(fmt, images.verified_read(length))
         end = images.open_file.tell()
@@ -382,22 +414,22 @@ class DeviceTreePartition(Partition):
     @staticmethod
     def next_datum(images, length, datum_type):
         data = DeviceTreePartition.next_data(images, length, datum_type)
-        assert(len(data) == 1)
+        assert len(data) == 1
         return data[0]
 
     @staticmethod
     def dict_from_node(images, strings, logger):
         # type: (VirtualCat, bytes, object) -> Dict[bytes, Any]]
-        node_name = ''
+        node_name = ""
         tree = {}
         while True:
-            token = DeviceTreePartition.next_datum(images, 4, b'I')
+            token = DeviceTreePartition.next_datum(images, 4, b"I")
 
             if token == DeviceTreePartition.FDT_BEGIN_NODE:
-                node_name = DeviceTreePartition.next_datum(images, 4, b's')
-                while node_name.find(b'\x00') < 0:
-                    node_name += DeviceTreePartition.next_datum(images, 4, b's')
-                node_name = node_name.rstrip(b'\x00')
+                node_name = DeviceTreePartition.next_datum(images, 4, b"s")
+                while node_name.find(b"\x00") < 0:
+                    node_name += DeviceTreePartition.next_datum(images, 4, b"s")
+                node_name = node_name.rstrip(b"\x00")
                 tree[node_name] = DeviceTreePartition.dict_from_node(
                     images, strings, logger
                 )
@@ -411,32 +443,31 @@ class DeviceTreePartition(Partition):
             elif token == DeviceTreePartition.FDT_NOP:
                 pass
             elif token == DeviceTreePartition.FDT_END:
-                raise InvalidPartitionException('FDT_END before FDT_END_NODE')
+                raise InvalidPartitionException("FDT_END before FDT_END_NODE")
             else:
-                raise InvalidPartitionException('Unsupported token {}'.format(
-                    token
-                    ))
+                raise InvalidPartitionException("Unsupported token {}".format(token))
 
     @staticmethod
     def property_name_value(images, strings, logger):
         # type: (VirtualCat, bytes, object) -> (bytes, bytes)
-        length = DeviceTreePartition.next_datum(images, 4, b'I')
-        offset = DeviceTreePartition.next_datum(images, 4, b'I')
-        name = strings[offset:strings.index(b'\x00', offset)]
-        if name == b'timestamp':
+        length = DeviceTreePartition.next_datum(images, 4, b"I")
+        offset = DeviceTreePartition.next_datum(images, 4, b"I")
+        name = strings[offset : strings.index(b"\x00", offset)]
+        if name == b"timestamp":
             # Not ISO date because T25745701
-            value = DeviceTreePartition.next_datum(images, length, b'I')
-        elif name == b'data':
+            value = DeviceTreePartition.next_datum(images, length, b"I")
+        elif name == b"data":
             sha256sum = hashlib.sha256()
             images.read_with_callback(length, sha256sum.update)
             value = sha256sum.hexdigest()
             DeviceTreePartition.align(images)
         elif name in DeviceTreePartition.recognized_hexadecimals:
-            separator = b'' if name == b'value' else b' '
+            separator = b"" if name == b"value" else b" "
             value = separator.join(
-                [b'%08x' % datum for datum in DeviceTreePartition.next_data(
-                    images, length, b'I'
-                )]
+                [
+                    b"%08x" % datum
+                    for datum in DeviceTreePartition.next_data(images, length, b"I")
+                ]
             )
         else:
             if name not in DeviceTreePartition.recognized_strings:
@@ -445,7 +476,7 @@ class DeviceTreePartition(Partition):
                         length, name.decode()
                     )
                 )
-            value = DeviceTreePartition.next_datum(images, length, b's').rstrip(b'\x00')
+            value = DeviceTreePartition.next_datum(images, length, b"s").rstrip(b"\x00")
         return (name, value)
 
     def __init__(self, sizes, offset, name, images, logger):
@@ -456,85 +487,79 @@ class DeviceTreePartition(Partition):
         self.valid_external_partitions = []  # type: List[str]
 
         raw_header = images.verified_read(self.header_size)
-        parsed_header = dict(zip(self.header_fields, struct.unpack(
-            self.header_format, raw_header
-        )))
+        parsed_header = dict(
+            zip(self.header_fields, struct.unpack(self.header_format, raw_header))
+        )
 
         info_strings = []
         for (key, value) in parsed_header.items():
-            if (
-                key == 'magic' or key.endswith('_size') or
-                key.endswith('_offset')
-            ):
-                value_string = '0x{:08x}'.format(value)
+            if key == "magic" or key.endswith("_size") or key.endswith("_offset"):
+                value_string = "0x{:08x}".format(value)
             else:
                 value_string = str(value)
-            info_strings.append('{}: {}'.format(key, value_string))
-        logger.info(', '.join(info_strings))
+            info_strings.append("{}: {}".format(key, value_string))
+        logger.info(", ".join(info_strings))
 
-        if parsed_header['magic'] != DeviceTreePartition.magic:
+        if parsed_header["magic"] != DeviceTreePartition.magic:
             self.valid = False
-            message = '{} header magic 0x{:08x} != expected 0x{:08x}.'
-            logger.error(message.format(
-                name, parsed_header['magic'], DeviceTreePartition.magic
-            ))
+            message = "{} header magic 0x{:08x} != expected 0x{:08x}."
+            logger.error(
+                message.format(name, parsed_header["magic"], DeviceTreePartition.magic)
+            )
 
-        if parsed_header['total_size'] > sizes[-1]:
+        if parsed_header["total_size"] > sizes[-1]:
             self.valid = False
-            message = '{} size 0x{:08x} > expected 0x{:08x}.'
-            logger.error(message.format(
-                name, parsed_header['total_size'], sizes[-1]
-            ))
+            message = "{} size 0x{:08x} > expected 0x{:08x}."
+            logger.error(message.format(name, parsed_header["total_size"], sizes[-1]))
 
         # Skip over memory reservation and structure blocks to strings block.
         images.seek_within_current_file(
-            parsed_header['strings_block_offset'] - self.header_size
+            parsed_header["strings_block_offset"] - self.header_size
         )
-        strings = images.verified_read(parsed_header['strings_block_size'])
+        strings = images.verified_read(parsed_header["strings_block_size"])
 
         # Now go back to structure block.
         distance = (
-            parsed_header['structure_block_offset'] -
-            parsed_header['strings_block_offset'] -
-            parsed_header['strings_block_size']
+            parsed_header["structure_block_offset"]
+            - parsed_header["strings_block_offset"]
+            - parsed_header["strings_block_size"]
         )
         images.seek_within_current_file(distance)
 
-        null = b'\x00\x00\x00\x00'
+        null = b"\x00\x00\x00\x00"
         if (
-            DeviceTreePartition.next_datum(images, 4, b'I') != 1 or
-            DeviceTreePartition.next_datum(images, 4, b's') != null
+            DeviceTreePartition.next_datum(images, 4, b"I") != 1
+            or DeviceTreePartition.next_datum(images, 4, b"s") != null
         ):
-            raise InvalidPartitionException(
-                'Problem with first FDT_BEGIN_NODE.'
-            )
+            raise InvalidPartitionException("Problem with first FDT_BEGIN_NODE.")
 
         tree = DeviceTreePartition.dict_from_node(images, strings, logger)
         logger.info(tree)
 
-        if DeviceTreePartition.next_datum(images, 4, b'I') != 9:
-            raise InvalidPartitionException('Problem with FDT_END.')
+        if DeviceTreePartition.next_datum(images, 4, b"I") != 9:
+            raise InvalidPartitionException("Problem with FDT_END.")
 
-        for name, properties in tree[b'images'].items():
-            assert(properties[b'hash@1'][b'algo'] == b'sha256')
-            expected = properties[b'hash@1'][b'value'].decode()
+        for name, properties in tree[b"images"].items():
+            assert properties[b"hash@1"][b"algo"] == b"sha256"
+            expected = properties[b"hash@1"][b"value"].decode()
             external = False
-            if b'data-size' in properties:
-                if b'data-address' in properties:
+            if b"data-size" in properties:
+                if b"data-address" in properties:
                     # The data is at an offset relative to the start of the
                     # file or device.
                     external = True
-                    data_pos = int(properties[b'data-address'], 16)
-                elif b'data-position' in properties:
+                    data_pos = int(properties[b"data-address"], 16)
+                elif b"data-position" in properties:
                     # The data is at an offset relative to the start of this
                     # partition.
-                    data_pos = self.partition_offset + \
-                        int(properties[b'data-position'], 16)
+                    data_pos = self.partition_offset + int(
+                        properties[b"data-position"], 16
+                    )
                 else:
                     raise InvalidPartitionException(
-                        'data-address or data-position property missing'
+                        "data-address or data-position property missing"
                     )
-                data_len = int(properties[b'data-size'], 16)
+                data_len = int(properties[b"data-size"], 16)
                 curr_tell = images.open_file.tell()
                 # Seek to the location of the data (which is in a different
                 # partition) to compute the checksum. Then seek back to the
@@ -542,33 +567,37 @@ class DeviceTreePartition(Partition):
                 images.open_file.seek(data_pos)
                 sha256sum = hashlib.sha256()
                 images.read_with_callback(data_len, sha256sum.update)
-                properties[b'data'] = sha256sum.hexdigest()
+                properties[b"data"] = sha256sum.hexdigest()
                 images.open_file.seek(curr_tell)
-            if properties[b'data'] != expected:
+            if properties[b"data"] != expected:
                 self.valid = False
-                logger.error('{} {} {} != {}.'.format(
-                    name, properties[b'hash@1'][b'algo'], properties[b'data'],
-                    expected
-                ))
+                logger.error(
+                    "{} {} {} != {}.".format(
+                        name,
+                        properties[b"hash@1"][b"algo"],
+                        properties[b"data"],
+                        expected,
+                    )
+                )
             else:
-                logger.info('{} checksum matches.'.format(name))
+                logger.info("{} checksum matches.".format(name))
                 if external:
                     simple_name = name.decode()
-                    if '@' in simple_name:
-                        simple_name = simple_name.split('@')[0]
+                    if "@" in simple_name:
+                        simple_name = simple_name.split("@")[0]
                     self.valid_external_partitions.append(simple_name)
 
         used_size = images.open_file.tell() - self.partition_offset
         for sz in sizes:
-            if (used_size < sz):
-                self.partition_size = sz;
+            if used_size < sz:
+                self.partition_size = sz
                 break
 
         # Go to end of partition.
         images.seek_within_current_file(
-                self.partition_size -
-                parsed_header['structure_block_offset'] -
-                parsed_header['structure_block_size']
+            self.partition_size
+            - parsed_header["structure_block_offset"]
+            - parsed_header["structure_block_size"]
         )
 
-        logger.info('{} has valid checksums.'.format(self))
+        logger.info("{} has valid checksums.".format(self))

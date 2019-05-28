@@ -19,17 +19,15 @@
 #
 
 
-from subprocess import Popen, PIPE
 import re
+from subprocess import PIPE, Popen
+
 from node_bmc import get_node_bmc
+
 
 # Handler for BMC resource endpoint
 def get_bmc():
     bmc_node = get_node_bmc()
     info = bmc_node.getInformation()
-    result = {
-                "Information": info,
-                "Actions": [],
-                "Resources": [],
-             }
+    result = {"Information": info, "Actions": [], "Resources": []}
     return result

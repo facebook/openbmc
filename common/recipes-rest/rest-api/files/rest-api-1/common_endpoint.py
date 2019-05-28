@@ -17,30 +17,35 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import asyncio
 import json
+from concurrent.futures import ThreadPoolExecutor
+
+import rest_bmc
+import rest_fcpresent
 import rest_fruid
 import rest_fruid_pim
-import rest_server
-import rest_sensors
-import rest_bmc
 import rest_gpios
-import rest_slotid
-import rest_psu_update
-import rest_fcpresent
 import rest_mTerm
-import asyncio
+import rest_psu_update
+import rest_sensors
+import rest_server
+import rest_slotid
 from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
-from concurrent.futures import ThreadPoolExecutor
+
 
 def common_force_async(func):
     async def func_wrapper(self, *args, **kwargs):
         # Convert the possibly blocking helper function into async
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(self.common_executor, \
-                                            func, self, *args, **kwargs)
+        result = await loop.run_in_executor(
+            self.common_executor, func, self, *args, **kwargs
+        )
         return result
+
     return func_wrapper
+
 
 class commonApp_Handler:
 
@@ -81,7 +86,7 @@ class commonApp_Handler:
                 "version": "v0.1",
             },
             "Actions": [],
-            "Resources": get_endpoints('/api')
+            "Resources": get_endpoints("/api"),
         }
         return web.json_response(result, dumps=dumps_bytestr)
 
@@ -90,28 +95,24 @@ class commonApp_Handler:
         return self.helper_rest_api(request)
 
     # Handler for root resource endpoint
-    def helper_rest_sys(self,request):
+    def helper_rest_sys(self, request):
         result = {
-            "Information": {
-                "Description": "Wedge System",
-            },
+            "Information": {"Description": "Wedge System"},
             "Actions": [],
-            "Resources": get_endpoints('/api/sys')
+            "Resources": get_endpoints("/api/sys"),
         }
         return web.json_response(result, dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_sys(self,request):
+    def rest_sys(self, request):
         return self.helper_rest_sys(request)
 
     # Handler for sys/mb resource endpoint
     def helper_rest_mb_sys(self, request):
         result = {
-            "Information": {
-                "Description": "System Motherboard",
-            },
+            "Information": {"Description": "System Motherboard"},
             "Actions": [],
-            "Resources": get_endpoints('/api/sys/mb')
+            "Resources": get_endpoints("/api/sys/mb"),
         }
         return web.json_response(result, dumps=dumps_bytestr)
 
@@ -120,100 +121,100 @@ class commonApp_Handler:
         return self.helper_rest_mb_sys(request)
 
     # Handler for sys/mb/fruid resource endpoint
-    def helper_rest_fruid_hdl(self,request):
+    def helper_rest_fruid_hdl(self, request):
         return web.json_response(rest_fruid.get_fruid(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_fruid_hdl(self,request):
+    def rest_fruid_hdl(self, request):
         return self.helper_rest_fruid_hdl(request)
 
     # Handler for sys/mb/fruid resource endpoint
-    def helper_rest_fruid_pim_hdl(self,request):
+    def helper_rest_fruid_pim_hdl(self, request):
         return web.json_response(rest_fruid_pim.get_fruid(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_fruid_pim_hdl(self,request):
+    def rest_fruid_pim_hdl(self, request):
         return self.helper_rest_fruid_pim_hdl(request)
 
     # Handler for sys/bmc resource endpoint
-    def helper_rest_bmc_hdl(self,request):
+    def helper_rest_bmc_hdl(self, request):
         result = rest_bmc.get_bmc()
         return web.json_response(result, dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_bmc_hdl(self,request):
+    def rest_bmc_hdl(self, request):
         return self.helper_rest_bmc_hdl(request)
 
     # Handler for sys/server resource endpoint
-    def helper_rest_server_hdl(self,request):
+    def helper_rest_server_hdl(self, request):
         return web.json_response(rest_server.get_server(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_server_hdl(self,request):
+    def rest_server_hdl(self, request):
         return self.helper_rest_server_hdl(request)
 
     # Handler for uServer resource endpoint
-    def helper_rest_server_act_hdl(self,request):
+    def helper_rest_server_act_hdl(self, request):
         data = self.get_data_from_generator(request.json())
         return web.json_response(rest_server.server_action(data), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_server_act_hdl(self,request):
+    def rest_server_act_hdl(self, request):
         return self.helper_rest_server_act_hdl(request)
 
     # Handler for sensors resource endpoint
-    def helper_rest_sensors_hdl(self,request):
+    def helper_rest_sensors_hdl(self, request):
         return web.json_response(rest_sensors.get_sensors(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_sensors_hdl(self,request):
+    def rest_sensors_hdl(self, request):
         return self.helper_rest_sensors_hdl(request)
 
     # Handler for gpios resource endpoint
-    def helper_rest_gpios_hdl(self,request):
+    def helper_rest_gpios_hdl(self, request):
         return web.json_response(rest_gpios.get_gpios(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_gpios_hdl(self,request):
+    def rest_gpios_hdl(self, request):
         return self.helper_rest_gpios_hdl(request)
 
     # Handler for peer FC presence resource endpoint
-    def helper_rest_fcpresent_hdl(self,request):
+    def helper_rest_fcpresent_hdl(self, request):
         return web.json_response(rest_fcpresent.get_fcpresent(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_fcpresent_hdl(self,request):
+    def rest_fcpresent_hdl(self, request):
         return self.helper_rest_fcpresent_hdl(request)
 
     # Handler for psu_update resource endpoint
-    def helper_psu_update_hdl(self,request):
+    def helper_psu_update_hdl(self, request):
         return web.json_response(rest_psu_update.get_jobs(), dumps=dumps_bytestr)
 
     @common_force_async
-    def psu_update_hdl(self,request):
+    def psu_update_hdl(self, request):
         return self.helper_psu_update_hdl(request)
 
     # Handler for psu_update resource action
-    def helper_psu_update_hdl_post(self,request):
+    def helper_psu_update_hdl_post(self, request):
         data = self.get_data_from_generator(request.json())
         return web.json_response(rest_psu_update.begin_job(data), dumps=dumps_bytestr)
 
     @common_force_async
-    def psu_update_hdl_post(self,request):
+    def psu_update_hdl_post(self, request):
         return self.helper_psu_update_hdl_post(request)
 
     # Handler for get slotid from endpoint
-    def helper_rest_slotid_hdl(self,request):
+    def helper_rest_slotid_hdl(self, request):
         return web.json_response(rest_slotid.get_slotid(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_slotid_hdl(self,request):
+    def rest_slotid_hdl(self, request):
         return self.helper_rest_slotid_hdl(request)
 
     # Handler for mTerm status
-    def helper_rest_mTerm_status(self,request):
+    def helper_rest_mTerm_status(self, request):
         return web.json_response(rest_mTerm.get_mTerm_status(), dumps=dumps_bytestr)
 
     @common_force_async
-    def rest_mTerm_status(self,request):
+    def rest_mTerm_status(self, request):
         return self.helper_rest_mTerm_status(request)

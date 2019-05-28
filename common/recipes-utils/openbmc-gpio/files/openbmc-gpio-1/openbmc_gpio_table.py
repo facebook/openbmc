@@ -15,29 +15,28 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-from soc_gpio import soc_get_register, soc_get_tolerance_reg
-
-import openbmc_gpio
 import logging
-import phymemory
 import os
 import sys
 
+import openbmc_gpio
+import phymemory
+from soc_gpio import soc_get_register, soc_get_tolerance_reg
+
 
 class NotSmartEnoughException(Exception):
-    '''There are few cases the code cannot make good decision on how to configure
+    """There are few cases the code cannot make good decision on how to configure
     the registers automatically. In such cases, this exception is thrown.
-    '''
+    """
+
     pass
 
 
 class ConfigUnknownFunction(Exception):
-    '''Unknown function to configure exception'''
+    """Unknown function to configure exception"""
+
     pass
 
 
@@ -48,15 +47,17 @@ class BitsEqual(object):
         self.value = value
 
     def __str__(self):
-        return '%s[%s]==0x%x' \
-            % (str(soc_get_register(self.register)), self.bits, self.value)
+        return "%s[%s]==0x%x" % (
+            str(soc_get_register(self.register)),
+            self.bits,
+            self.value,
+        )
 
     def get_registers(self):
         return set([self.register])
 
     def check(self):
-        return soc_get_register(self.register).bits_value(self.bits) \
-            == self.value
+        return soc_get_register(self.register).bits_value(self.bits) == self.value
 
     def satisfy(self, **kwargs):
         if BitsEqual.check(self):
@@ -85,8 +86,11 @@ class BitsEqual(object):
 
 class BitsNotEqual(BitsEqual):
     def __str__(self):
-        return '%s[%s]!=0x%x' \
-            % (str(soc_get_register(self.register)), self.bits, self.value)
+        return "%s[%s]!=0x%x" % (
+            str(soc_get_register(self.register)),
+            self.bits,
+            self.value,
+        )
 
     def check(self):
         return not BitsEqual.check(self)
@@ -107,12 +111,12 @@ class AndOrBase(object):
         return self.left.get_registers() | self.right.get_registers()
 
     def check(self):
-        raise Exception('This method must be implemented in subclass')
+        raise Exception("This method must be implemented in subclass")
 
 
 class And(AndOrBase):
     def __str__(self):
-        return 'AND(%s, %s)' % (str(self.left), str(self.right))
+        return "AND(%s, %s)" % (str(self.left), str(self.right))
 
     def check(self):
         return self.left.check() and self.right.check()
@@ -126,12 +130,12 @@ class And(AndOrBase):
     def unsatisfy(self, **kwargs):
         if not self.check():
             return
-        raise NotSmartEnoughException('Not able to unsatisfy an AND condition')
+        raise NotSmartEnoughException("Not able to unsatisfy an AND condition")
 
 
 class Or(AndOrBase):
     def __str__(self):
-        return 'OR(%s, %s)' % (str(self.left), str(self.right))
+        return "OR(%s, %s)" % (str(self.left), str(self.right))
 
     def check(self):
         return self.left.check() or self.right.check()
@@ -139,7 +143,7 @@ class Or(AndOrBase):
     def satisfy(self, **kwargs):
         if self.check():
             return
-        raise NotSmartEnoughException('Not able to satisfy an OR condition')
+        raise NotSmartEnoughException("Not able to satisfy an OR condition")
 
     def unsatisfy(self, **kwargs):
         if not self.check():
@@ -154,7 +158,7 @@ class Function(object):
         self.condition = condition
 
     def __str__(self):
-        return 'Function(\'%s\', %s)' % (self.name, str(self.condition))
+        return "Function('%s', %s)" % (self.name, str(self.condition))
 
 
 class SocGPIOTable(object):
@@ -171,7 +175,7 @@ class SocGPIOTable(object):
         for pin, funcs in self.soc_gpio_table.items():
             for func in funcs:
                 assert func.name not in self.functions
-                self.functions[func.name.split('/')[0]] = pin
+                self.functions[func.name.split("/")[0]] = pin
                 if func.condition is not None:
                     self.registers |= func.condition.get_registers()
 
@@ -214,18 +218,18 @@ class SocGPIOTable(object):
         all_funcs = []
         for func in funcs:
             cond = func.condition
-            all_funcs.append('%s:%s' % (func.name, str(cond)))
+            all_funcs.append("%s:%s" % (func.name, str(cond)))
             if active_func is None and (cond is None or cond.check()):
                 active_func = func.name
 
         if active_func is None:
-            logging.error('Pin "%s" has no function set up. '
-                          'All possibile functions are %s.'
-                          % (pin, ', '.join(all_funcs)))
-            return ('', '')
+            logging.error(
+                'Pin "%s" has no function set up. '
+                "All possibile functions are %s." % (pin, ", ".join(all_funcs))
+            )
+            return ("", "")
         else:
-            desc = '%s => %s, functions: %s' \
-                % (pin, active_func, ', '.join(all_funcs))
+            desc = "%s => %s, functions: %s" % (pin, active_func, ", ".join(all_funcs))
             return (active_func, desc)
 
     def dump_pin(self, pin, out=sys.stdout, refresh=False):
@@ -233,7 +237,7 @@ class SocGPIOTable(object):
             raise Exception('"%s" is not a valid pin' % pin)
 
         _, desc = self._get_one_pin(pin, refresh)
-        out.write('%s\n' % desc)
+        out.write("%s\n" % desc)
 
     def dump_function(self, func_name, out=sys.stdout, refresh=False):
         if func_name not in self.functions:
@@ -255,13 +259,14 @@ class SocGPIOTable(object):
         all = []
         for pin in self.soc_gpio_table:
             active, _ = self._get_one_pin(pin, False)
-            all.append(active.split('/')[0])
+            all.append(active.split("/")[0])
         return all
 
 
-GPIO_INPUT = 'input'
-GPIO_OUT_HIGH = 'high'
-GPIO_OUT_LOW = 'low'
+GPIO_INPUT = "input"
+GPIO_OUT_HIGH = "high"
+GPIO_OUT_LOW = "low"
+
 
 class BoardGPIO(object):
     def __init__(self, gpio, shadow, value=GPIO_INPUT):
@@ -269,12 +274,14 @@ class BoardGPIO(object):
         self.shadow = shadow
         self.value = value
 
-def setup_board_tolerance_gpio(board_tolerance_gpio_table,
-                               board_gpioOffsetDic, validate=True):
+
+def setup_board_tolerance_gpio(
+    board_tolerance_gpio_table, board_gpioOffsetDic, validate=True
+):
     gpio_configured = []
     regs = []
     for gpio in board_tolerance_gpio_table:
-        if not (gpio.gpio).startswith('GPIO'):
+        if not (gpio.gpio).startswith("GPIO"):
             continue
         offset = openbmc_gpio.gpio_name_to_offset(gpio.gpio)
         group_index = int(offset / 32)
@@ -309,8 +316,10 @@ def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
             # not multiple-function GPIO pin
             pass
         except NotSmartEnoughException as e:
-            logging.error('Failed to configure "%s" for "%s": %s'
-                          % (gpio.gpio, gpio.shadow, str(e)))
+            logging.error(
+                'Failed to configure "%s" for "%s": %s'
+                % (gpio.gpio, gpio.shadow, str(e))
+            )
 
     soc.write_to_hw()
 
@@ -321,7 +330,7 @@ def setup_board_gpio(soc_gpio_table, board_gpio_table, validate=True):
                 raise Exception('Failed to configure function "%s"' % gpio)
 
     for gpio in board_gpio_table:
-        if not (gpio.gpio).startswith('GPIO'):
+        if not (gpio.gpio).startswith("GPIO"):
             continue
         openbmc_gpio.gpio_export(gpio.gpio, gpio.shadow)
         if gpio.value == GPIO_INPUT:

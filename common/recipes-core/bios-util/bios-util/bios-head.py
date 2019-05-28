@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-import sys
-import re
 import os.path
-from subprocess import Popen, PIPE
+import re
+import sys
 from ctypes import *
+from subprocess import PIPE, Popen
+
 from bios_board import *
 from lib_pal import *
 
@@ -19,12 +20,12 @@ def bios_main():
             print("Getting fru list failed!")
             return
         frulist_s = frulist_c.value.decode()
-        frulist = re.split(r',\s', frulist_s)
+        frulist = re.split(r",\s", frulist_s)
         for fruname in frulist:
             fru = pal_get_fru_id(fruname)
             if fru >= 0:
                 if pal_is_slot_server(fru) == True:
-                    print ("%s:" % (fruname))
+                    print("%s:" % (fruname))
                     bios_main_fru(fru, command)
     else:
         fru = pal_get_fru_id(fruname)
@@ -36,7 +37,8 @@ def bios_main():
             return
         bios_main_fru(fru, command)
 
-if ( __name__ == '__main__' ):
+
+if __name__ == "__main__":
     bios_usage_check = check_bios_util()
     if bios_usage_check.valid is True:
         bios_main()

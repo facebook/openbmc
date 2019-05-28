@@ -21,12 +21,10 @@
 from node import node
 from pal import *
 
+
 def get_node_api():
 
     name = pal_get_platform_name()
-    info = {
-        "Description": name + " RESTful API Entry",
-        "version": "v0.2",
-        }
+    info = {"Description": name + " RESTful API Entry", "version": "v0.2"}
 
     return node(info)

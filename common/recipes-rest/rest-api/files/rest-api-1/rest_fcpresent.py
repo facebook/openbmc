@@ -18,15 +18,17 @@
 # Boston, MA 02110-1301 USA
 #
 
-from rest_helper import read_gpio_sysfs, get_wedge_slot
+from rest_helper import get_wedge_slot, read_gpio_sysfs
+
 
 def is_mon_fc_present():
     # read monitored PEER FC : GPIOU7 =  GPIO167
-    if (read_gpio_sysfs(167) == 1):
-        return 0 #removed
-    elif (read_gpio_sysfs(167) == 0):
-        return 1 #present
+    if read_gpio_sysfs(167) == 1:
+        return 0  # removed
+    elif read_gpio_sysfs(167) == 0:
+        return 1  # present
     return None
+
 
 def get_fcpresent():
     slot = get_wedge_slot()
@@ -35,30 +37,30 @@ def get_fcpresent():
 
     # FC101 top (101,102)
     # FC201 bottom (201,202)
-    if ((slot == 101) or (slot == 102)):
+    if (slot == 101) or (slot == 102):
         mon_slot = slot + FC_CARD_BASE
 
-    if ((slot == 201) or (slot == 202)):
+    if (slot == 201) or (slot == 202):
         mon_slot = slot - FC_CARD_BASE
 
-    if ( mon_slot ):
+    if mon_slot:
         if is_mon_fc_present() == None:
-            status = 'Not Applicable' # gpio read failed
+            status = "Not Applicable"  # gpio read failed
         elif is_mon_fc_present():
             status = "Present"
         else:
             status = "Removed"
     else:
-        status = 'Not Applicable' # If this was a LC
+        status = "Not Applicable"  # If this was a LC
 
     result = {
-                "Information": {
-                    "Slotid": slot,
-                    "Monitored Slotid": mon_slot,
-                    "Status": status,
-                    "Description" : "Slotid indicates monitored slotid's status"
-                },
-                "Actions": [],
-                "Resources": [],
-             }
+        "Information": {
+            "Slotid": slot,
+            "Monitored Slotid": mon_slot,
+            "Status": status,
+            "Description": "Slotid indicates monitored slotid's status",
+        },
+        "Actions": [],
+        "Resources": [],
+    }
     return result

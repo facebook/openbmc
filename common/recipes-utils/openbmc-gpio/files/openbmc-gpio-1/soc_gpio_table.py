@@ -19,5 +19,4 @@
 # please double check the configuration of your image to define the correct
 # SoC GPIO table to be used for your board.
 
-soc_gpio_table = {
-}
+soc_gpio_table = {}

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
+from kv import kv_get
 from node import node
 from pal import *
-from kv import kv_get
+
 
 class flashNode(node):
-    def __init__(self, name = None, info = None, actions = None):
+    def __init__(self, name=None, info=None, actions=None):
         self.name = name
 
         if info == None:
@@ -19,21 +20,19 @@ class flashNode(node):
 
     def getInformation(self, param={}):
         # Get vendor name
-        vendor_name=" "
-        data = kv_get('ssd_vendor')
-        vendor_name = data.strip('\n')
+        vendor_name = " "
+        data = kv_get("ssd_vendor")
+        vendor_name = data.strip("\n")
 
         # Get flash type
-        flash_type=" "
-        data = kv_get('ssd_sku_info')
-        flash_type = data.strip('\n')
+        flash_type = " "
+        data = kv_get("ssd_sku_info")
+        flash_type = data.strip("\n")
 
-        info = {
-                "flash type":flash_type,
-                "vendor name":vendor_name,
-        }
+        info = {"flash type": flash_type, "vendor name": vendor_name}
 
         return info
+
 
 def get_node_flash():
     return flashNode()

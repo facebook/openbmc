@@ -20,8 +20,9 @@
 from node import node
 from pal import *
 
+
 class mezzNode(node):
-    def __init__(self, info = None, actions = None):
+    def __init__(self, info=None, actions=None):
         if info == None:
             self.info = {}
         else:
@@ -32,10 +33,9 @@ class mezzNode(node):
         else:
             self.actions = actions
 
+
 def get_node_mezz():
     name = pal_get_platform_name()
-    info = {
-            "Description": name + " Mezzanine Card",
-           }
+    info = {"Description": name + " Mezzanine Card"}
 
     return mezzNode(info)

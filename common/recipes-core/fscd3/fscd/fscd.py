@@ -19,56 +19,53 @@
 #
 import json
 import os.path
-import fsc_expr
-import time
-import sys
 import signal
-import traceback
 import subprocess
+import sys
+import time
+import traceback
 
-from fsc_util import Logger, clamp
-from fsc_profile import profile_constructor, Sensor
-from fsc_zone import Zone, Fan
+import fsc_expr
 from fsc_bmcmachine import BMCMachine
-from fsc_board import board_fan_actions, board_host_actions, board_callout
+from fsc_board import board_callout, board_fan_actions, board_host_actions
+from fsc_profile import Sensor, profile_constructor
 from fsc_sensor import FscSensorSourceUtil
+from fsc_util import Logger, clamp
+from fsc_zone import Fan, Zone
 
-RECORD_DIR = '/tmp/cache_store/'
-SENSOR_FAIL_RECORD_DIR = '/tmp/sensorfail_record/'
-FAN_FAIL_RECORD_DIR = '/tmp/fanfail_record/'
-RAMFS_CONFIG = '/etc/fsc-config.json'
-CONFIG_DIR = '/etc/fsc'
+
+RECORD_DIR = "/tmp/cache_store/"
+SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
+FAN_FAIL_RECORD_DIR = "/tmp/fanfail_record/"
+RAMFS_CONFIG = "/etc/fsc-config.json"
+CONFIG_DIR = "/etc/fsc"
 # Enable the following for testing only
-#RAMFS_CONFIG = '/tmp/fsc-config.json'
-#CONFIG_DIR = '/tmp'
+# RAMFS_CONFIG = '/tmp/fsc-config.json'
+# CONFIG_DIR = '/tmp'
 DEFAULT_INIT_BOOST = 100
 DEFAULT_INIT_TRANSITIONAL = 70
-WDTCLI_CMD = '/usr/local/bin/wdtcli'
+WDTCLI_CMD = "/usr/local/bin/wdtcli"
 
-fan_mode = {
-    'normal_mode': 0,
-    'trans_mode': 1,
-    'boost_mode': 2
-}
+fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2}
+
 
 def kick_watchdog():
     """kick the watchdog device.
     """
-    f = subprocess.Popen(WDTCLI_CMD + ' kick',
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    f = subprocess.Popen(
+        WDTCLI_CMD + " kick", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     info, err = f.communicate()
     if len(err) != 0:
         Logger.error("failed to kick watchdog device")
 
+
 def stop_watchdog():
     """kick the watchdog device.
     """
-    f = subprocess.Popen(WDTCLI_CMD + ' stop',
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    f = subprocess.Popen(
+        WDTCLI_CMD + " stop", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     info, err = f.communicate()
     if len(err) != 0:
         Logger.error("failed to kick watchdog device")
@@ -77,12 +74,13 @@ def stop_watchdog():
 class Fscd(object):
 
     DEFAULT_BOOST = 100
-    DEFAULT_BOOST_TYPE = 'default'
+    DEFAULT_BOOST_TYPE = "default"
     DEFAULT_TRANSITIONAL = 70
     DEFAULT_RAMP_RATE = 10
 
-    def __init__(self, config=RAMFS_CONFIG, zone_config=CONFIG_DIR,
-                 log_level='warning'):
+    def __init__(
+        self, config=RAMFS_CONFIG, zone_config=CONFIG_DIR, log_level="warning"
+    ):
         Logger.start("fscd", log_level)
         Logger.info("Starting fscd")
         self.zone_config = zone_config
@@ -103,75 +101,75 @@ class Fscd(object):
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
         if os.path.isfile(fsc_config):
-            Logger.info("Started, reading configuration from %s" %
-                        (fsc_config))
-            with open(fsc_config, 'r') as f:
+            Logger.info("Started, reading configuration from %s" % (fsc_config))
+            with open(fsc_config, "r") as f:
                 return json.load(f)
 
     def get_config_params(self):
-        self.transitional = self.fsc_config['pwm_transition_value']
-        self.boost = self.fsc_config['pwm_boost_value']
-        if 'boost' in self.fsc_config and 'fan_fail' in self.fsc_config['boost']:
-                self.fan_fail = self.fsc_config['boost']['fan_fail']
-        if 'boost' in self.fsc_config and 'progressive' in self.fsc_config['boost']:
-                if self.fsc_config['boost']['progressive']:
-                    self.boost_type = 'progressive'
-        if 'fan_dead_boost' in self.fsc_config:
-            self.fan_dead_boost = self.fsc_config['fan_dead_boost']
+        self.transitional = self.fsc_config["pwm_transition_value"]
+        self.boost = self.fsc_config["pwm_boost_value"]
+        if "boost" in self.fsc_config and "fan_fail" in self.fsc_config["boost"]:
+            self.fan_fail = self.fsc_config["boost"]["fan_fail"]
+        if "boost" in self.fsc_config and "progressive" in self.fsc_config["boost"]:
+            if self.fsc_config["boost"]["progressive"]:
+                self.boost_type = "progressive"
+        if "fan_dead_boost" in self.fsc_config:
+            self.fan_dead_boost = self.fsc_config["fan_dead_boost"]
             self.all_fan_fail_counter = 0
-        if 'boost' in self.fsc_config and 'sensor_fail' in self.fsc_config['boost']:
-                self.sensor_fail = self.fsc_config['boost']['sensor_fail']
-                if self.sensor_fail:
-                    if 'fail_sensor_type' in self.fsc_config:
-                        self.fail_sensor_type = self.fsc_config['fail_sensor_type']
-                    if 'ssd_progressive_algorithm' in self.fsc_config:
-                        self.ssd_progressive_algorithm = self.fsc_config['ssd_progressive_algorithm']
-        if 'sensor_valid_check' in self.fsc_config:
-            self.sensor_valid_check = self.fsc_config['sensor_valid_check']
-        self.watchdog = self.fsc_config['watchdog']
-        if 'fanpower' in self.fsc_config:
-            self.fanpower = self.fsc_config['fanpower']
+        if "boost" in self.fsc_config and "sensor_fail" in self.fsc_config["boost"]:
+            self.sensor_fail = self.fsc_config["boost"]["sensor_fail"]
+            if self.sensor_fail:
+                if "fail_sensor_type" in self.fsc_config:
+                    self.fail_sensor_type = self.fsc_config["fail_sensor_type"]
+                if "ssd_progressive_algorithm" in self.fsc_config:
+                    self.ssd_progressive_algorithm = self.fsc_config[
+                        "ssd_progressive_algorithm"
+                    ]
+        if "sensor_valid_check" in self.fsc_config:
+            self.sensor_valid_check = self.fsc_config["sensor_valid_check"]
+        self.watchdog = self.fsc_config["watchdog"]
+        if "fanpower" in self.fsc_config:
+            self.fanpower = self.fsc_config["fanpower"]
         else:
             self.fanpower = False
-        if 'chassis_intrusion' in self.fsc_config:
-            self.chassis_intrusion = self.fsc_config['chassis_intrusion']
+        if "chassis_intrusion" in self.fsc_config:
+            self.chassis_intrusion = self.fsc_config["chassis_intrusion"]
         else:
             self.chassis_intrusion = False
-        if 'ramp_rate' in self.fsc_config:
-            self.ramp_rate = self.fsc_config['ramp_rate']
+        if "ramp_rate" in self.fsc_config:
+            self.ramp_rate = self.fsc_config["ramp_rate"]
         if self.watchdog:
             Logger.info("watchdog pinging enabled")
             kick_watchdog()
-        self.interval = self.fsc_config['sample_interval_ms'] / 1000.0
-        if 'fan_recovery_time' in self.fsc_config:
-            self.fan_recovery_time = self.fsc_config['fan_recovery_time']
+        self.interval = self.fsc_config["sample_interval_ms"] / 1000.0
+        if "fan_recovery_time" in self.fsc_config:
+            self.fan_recovery_time = self.fsc_config["fan_recovery_time"]
 
     def build_profiles(self):
         self.sensors = {}
         self.profiles = {}
 
-        for name, pdata in list(self.fsc_config['profiles'].items()):
+        for name, pdata in list(self.fsc_config["profiles"].items()):
             self.sensors[name] = Sensor(name, pdata)
             self.profiles[name] = profile_constructor(pdata)
 
     def build_fans(self):
         self.fans = {}
-        for name, pdata in list(self.fsc_config['fans'].items()):
+        for name, pdata in list(self.fsc_config["fans"].items()):
             self.fans[name] = Fan(name, pdata)
 
     def build_zones(self):
         self.zones = []
         counter = 0
-        for name, data in list(self.fsc_config['zones'].items()):
-            filename = data['expr_file']
-            with open(os.path.join(self.zone_config, filename), 'r') as exf:
+        for name, data in list(self.fsc_config["zones"].items()):
+            filename = data["expr_file"]
+            with open(os.path.join(self.zone_config, filename), "r") as exf:
                 source = exf.read()
                 Logger.info("Compiling FSC expression for zone:")
                 Logger.info(source)
-                (expr, inf) = fsc_expr.make_eval_tree(source,
-                                                      self.profiles)
-                for name in inf['ext_vars']:
-                    sdata = name.split(':')
+                (expr, inf) = fsc_expr.make_eval_tree(source, self.profiles)
+                for name in inf["ext_vars"]:
+                    sdata = name.split(":")
                     board = sdata[0]
                     sname = sdata[1]
                     if board not in self.machine.frus:
@@ -180,9 +178,18 @@ class Fscd(object):
                     if len(sdata) == 3:
                         self.machine.nums[board].append(sdata[2])
 
-                zone = Zone(data['pwm_output'], expr, inf, self.transitional,
-                            counter, self.boost, self.sensor_fail, self.sensor_valid_check, self.fail_sensor_type,
-                            self.ssd_progressive_algorithm)
+                zone = Zone(
+                    data["pwm_output"],
+                    expr,
+                    inf,
+                    self.transitional,
+                    counter,
+                    self.boost,
+                    self.sensor_fail,
+                    self.sensor_valid_check,
+                    self.fail_sensor_type,
+                    self.ssd_progressive_algorithm,
+                )
                 counter += 1
                 self.zones.append(zone)
 
@@ -190,84 +197,128 @@ class Fscd(object):
         self.machine = BMCMachine()
 
     def fsc_fan_action(self, fan, action):
-        '''
+        """
         Method invokes board actions for a fan.
-        '''
-        if 'dead' in action:
-            board_fan_actions(fan, action='dead')
-            board_fan_actions(fan, action='led_red')
-        if 'recover' in action:
-            board_fan_actions(fan, action='recover')
-            board_fan_actions(fan, action='led_blue')
+        """
+        if "dead" in action:
+            board_fan_actions(fan, action="dead")
+            board_fan_actions(fan, action="led_red")
+        if "recover" in action:
+            board_fan_actions(fan, action="recover")
+            board_fan_actions(fan, action="led_blue")
 
     def fsc_host_action(self, action, cause):
-        if 'host_shutdown' in action:
-            board_host_actions(action='host_shutdown', cause=cause)
-            #board_fan_actions(fan, action='led_blue')
+        if "host_shutdown" in action:
+            board_host_actions(action="host_shutdown", cause=cause)
+            # board_fan_actions(fan, action='led_blue')
 
     def fsc_set_all_fan_led(self, color):
         for fan, _value in list(self.fans.items()):
             board_fan_actions(self.fans[fan], action=color)
 
     def fsc_safe_guards(self, sensors_tuples):
-        '''
+        """
         Method defines safe guards for fsc.
         Examples: Triggers board action when sensor temp read reaches limits
         configured in json
-        '''
+        """
         for fru in self.machine.frus:
             for sensor, tuple in list(sensors_tuples[fru].items()):
-                if tuple.name in self.fsc_config['profiles']:
-                    if 'read_limit' in self.fsc_config['profiles'][tuple.name]:
+                if tuple.name in self.fsc_config["profiles"]:
+                    if "read_limit" in self.fsc_config["profiles"][tuple.name]:
                         # If temperature read exceeds accpetable temperature reading
-                        if 'valid' in self.fsc_config['profiles'][tuple.name]['read_limit']:
-                            valid_table = self.fsc_config['profiles'][tuple.name]['read_limit']['valid']
-                            valid_read_limit = valid_table['limit']
-                            valid_read_action = valid_table['action']
-                            if isinstance(self.sensors[tuple.name].source, FscSensorSourceUtil):
+                        if (
+                            "valid"
+                            in self.fsc_config["profiles"][tuple.name]["read_limit"]
+                        ):
+                            valid_table = self.fsc_config["profiles"][tuple.name][
+                                "read_limit"
+                            ]["valid"]
+                            valid_read_limit = valid_table["limit"]
+                            valid_read_action = valid_table["action"]
+                            if isinstance(
+                                self.sensors[tuple.name].source, FscSensorSourceUtil
+                            ):
                                 if tuple.value == None:
-                                    self.sensors[tuple.name].source.read_source_fail_counter += 1
+                                    self.sensors[
+                                        tuple.name
+                                    ].source.read_source_fail_counter += 1
                                 else:
-                                    self.sensors[tuple.name].source.read_source_fail_counter = 0
+                                    self.sensors[
+                                        tuple.name
+                                    ].source.read_source_fail_counter = 0
                                     if tuple.value > valid_read_limit:
-                                        reason = sensor + '(v=' + str(tuple.value) + \
-                                            ') limit(t=' + str(valid_read_limit) + \
-                                            ') reached'
-                                        self.fsc_host_action(action=valid_read_action,
-                                                            cause=reason)
+                                        reason = (
+                                            sensor
+                                            + "(v="
+                                            + str(tuple.value)
+                                            + ") limit(t="
+                                            + str(valid_read_limit)
+                                            + ") reached"
+                                        )
+                                        self.fsc_host_action(
+                                            action=valid_read_action, cause=reason
+                                        )
                             else:
                                 if tuple.value > valid_read_limit:
-                                    reason = sensor + '(v=' + str(tuple.value) + \
-                                        ') limit(t=' + str(valid_read_limit) + \
-                                        ') reached'
-                                    self.fsc_host_action(action=valid_read_action,
-                                                        cause=reason)
+                                    reason = (
+                                        sensor
+                                        + "(v="
+                                        + str(tuple.value)
+                                        + ") limit(t="
+                                        + str(valid_read_limit)
+                                        + ") reached"
+                                    )
+                                    self.fsc_host_action(
+                                        action=valid_read_action, cause=reason
+                                    )
 
                         # If temperature read fails
-                        if 'invalid' in self.fsc_config['profiles'][tuple.name]['read_limit']:
-                            invalid_table = self.fsc_config['profiles'][tuple.name]['read_limit']['invalid']
-                            invalid_read_th = invalid_table['threshold']
-                            invalid_read_action = invalid_table['action']
-                            if isinstance(self.sensors[tuple.name].source, FscSensorSourceUtil):
-                                read_fail_counter = self.sensors[tuple.name].source.read_source_fail_counter
+                        if (
+                            "invalid"
+                            in self.fsc_config["profiles"][tuple.name]["read_limit"]
+                        ):
+                            invalid_table = self.fsc_config["profiles"][tuple.name][
+                                "read_limit"
+                            ]["invalid"]
+                            invalid_read_th = invalid_table["threshold"]
+                            invalid_read_action = invalid_table["action"]
+                            if isinstance(
+                                self.sensors[tuple.name].source, FscSensorSourceUtil
+                            ):
+                                read_fail_counter = self.sensors[
+                                    tuple.name
+                                ].source.read_source_fail_counter
                                 if read_fail_counter >= invalid_read_th:
-                                    reason = sensor + '(value=' + str(tuple.value) + \
-                                            ') failed to read ' + \
-                                            str(read_fail_counter) + ' times'
-                                    self.fsc_host_action(action=invalid_read_action,
-                                                        cause=reason)
+                                    reason = (
+                                        sensor
+                                        + "(value="
+                                        + str(tuple.value)
+                                        + ") failed to read "
+                                        + str(read_fail_counter)
+                                        + " times"
+                                    )
+                                    self.fsc_host_action(
+                                        action=invalid_read_action, cause=reason
+                                    )
                             else:
                                 if tuple.read_fail_counter >= invalid_read_th:
-                                    reason = sensor + '(value=' + str(tuple.value) + \
-                                            ') failed to read ' + \
-                                            str(tuple.read_fail_counter) + ' times'
-                                    self.fsc_host_action(action=invalid_read_action,
-                                                        cause=reason)
+                                    reason = (
+                                        sensor
+                                        + "(value="
+                                        + str(tuple.value)
+                                        + ") failed to read "
+                                        + str(tuple.read_fail_counter)
+                                        + " times"
+                                    )
+                                    self.fsc_host_action(
+                                        action=invalid_read_action, cause=reason
+                                    )
 
     def update_dead_fans(self, dead_fans):
-        '''
+        """
         Check for dead and recovered fans
-        '''
+        """
         last_dead_fans = dead_fans.copy()
         speeds = self.machine.read_fans(self.fans)
         print("\x1b[2J\x1b[H")
@@ -275,9 +326,9 @@ class Fscd(object):
 
         for fan, rpms in list(speeds.items()):
             Logger.info("%s speed: %d RPM" % (fan.label, rpms))
-            if rpms < self.fsc_config['min_rpm']:
+            if rpms < self.fsc_config["min_rpm"]:
                 dead_fans.add(fan)
-                self.fsc_fan_action(fan, action='dead')
+                self.fsc_fan_action(fan, action="dead")
             else:
                 dead_fans.discard(fan)
 
@@ -290,15 +341,13 @@ class Fscd(object):
                 Logger.crit("%d fans failed" % (len(dead_fans),))
             for dead_fan in dead_fans:
                 if self.fanpower:
-                    Logger.warn("%s dead, %d RPM" % (dead_fan.label,
-                                speeds[dead_fan]))
+                    Logger.warn("%s dead, %d RPM" % (dead_fan.label, speeds[dead_fan]))
                 else:
-                    Logger.crit("%s dead, %d RPM" % (dead_fan.label,
-                                speeds[dead_fan]))
+                    Logger.crit("%s dead, %d RPM" % (dead_fan.label, speeds[dead_fan]))
                 Logger.usbdbg("%s fail" % (dead_fan.label))
-                fan_fail_record_path = FAN_FAIL_RECORD_DIR + '%s' % (dead_fan.label)
+                fan_fail_record_path = FAN_FAIL_RECORD_DIR + "%s" % (dead_fan.label)
                 if not os.path.isfile(fan_fail_record_path):
-                    fan_fail_record = open(fan_fail_record_path, 'w')
+                    fan_fail_record = open(fan_fail_record_path, "w")
                     fan_fail_record.close()
         for fan in recovered_fans:
             if self.fanpower:
@@ -306,8 +355,8 @@ class Fscd(object):
             else:
                 Logger.crit("%s has recovered" % (fan.label,))
             Logger.usbdbg("%s recovered" % (fan.label))
-            self.fsc_fan_action(fan, action='recover')
-            fan_fail_record_path = FAN_FAIL_RECORD_DIR + '%s' % (fan.label)
+            self.fsc_fan_action(fan, action="recover")
+            fan_fail_record_path = FAN_FAIL_RECORD_DIR + "%s" % (fan.label)
             if os.path.isfile(fan_fail_record_path):
                 os.remove(fan_fail_record_path)
         return dead_fans
@@ -336,38 +385,39 @@ class Fscd(object):
             mode = 0
             chassis_intrusion_boost_flag = 0
             if self.chassis_intrusion:
-                self_tray_pull_out = board_callout(
-                    callout='chassis_intrusion')
+                self_tray_pull_out = board_callout(callout="chassis_intrusion")
                 if self_tray_pull_out == 1:
                     chassis_intrusion_boost_flag = 1
 
             if chassis_intrusion_boost_flag == 0:
                 pwmval = zone.run(sensors=sensors_tuples, dt=time_difference)
-                mode = zone.get_set_fan_mode(mode, action='read')
+                mode = zone.get_set_fan_mode(mode, action="read")
             else:
                 pwmval = self.boost
-                mode = fan_mode['boost_mode']
+                mode = fan_mode["boost_mode"]
 
             if self.fan_fail:
-                boost_record_path = RECORD_DIR + 'fan_fail_boost'
-                if self.boost_type == 'progressive' and self.fan_dead_boost:
+                boost_record_path = RECORD_DIR + "fan_fail_boost"
+                if self.boost_type == "progressive" and self.fan_dead_boost:
                     # Cases where we want to progressively bump PWMs
                     dead = len(dead_fans)
                     if dead > 0:
-                        Logger.info("Progressive mode: Failed fans: %s" %
-                              (', '.join([str(i.label) for i in dead_fans],)))
+                        Logger.info(
+                            "Progressive mode: Failed fans: %s"
+                            % (", ".join([str(i.label) for i in dead_fans]))
+                        )
                         for fan_count, rate in self.fan_dead_boost["data"]:
                             if dead <= fan_count:
                                 pwmval = clamp(pwmval + (dead * rate), 0, 100)
-                                mode = fan_mode['normal_mode']
+                                mode = fan_mode["normal_mode"]
                                 if os.path.isfile(boost_record_path):
                                     os.remove(boost_record_path)
                                 break
                         else:
                             pwmval = self.boost
-                            mode = fan_mode['boost_mode']
+                            mode = fan_mode["boost_mode"]
                             if not os.path.isfile(boost_record_path):
-                                fan_fail_boost_record = open(boost_record_path, 'w')
+                                fan_fail_boost_record = open(boost_record_path, "w")
                                 fan_fail_boost_record.close()
                     else:
                         if os.path.isfile(boost_record_path):
@@ -375,12 +425,14 @@ class Fscd(object):
                 else:
                     if dead_fans:
                         # If not progressive ,when there is 1 fan failed, boost all fans
-                        Logger.info("Failed fans: %s" % (
-                            ', '.join([str(i.label) for i in dead_fans],)))
+                        Logger.info(
+                            "Failed fans: %s"
+                            % (", ".join([str(i.label) for i in dead_fans]))
+                        )
                         pwmval = self.boost
-                        mode = fan_mode['boost_mode']
+                        mode = fan_mode["boost_mode"]
                         if not os.path.isfile(boost_record_path):
-                            fan_fail_boost_record = open(boost_record_path, 'w')
+                            fan_fail_boost_record = open(boost_record_path, "w")
                             fan_fail_boost_record.close()
                     else:
                         if os.path.isfile(boost_record_path):
@@ -389,15 +441,25 @@ class Fscd(object):
                         # If all the fans failed take action after a few cycles
                         if len(dead_fans) == len(self.fans):
                             self.all_fan_fail_counter = self.all_fan_fail_counter + 1
-                            Logger.warn("Currently all fans failed for {} cycles".format(self.all_fan_fail_counter))
-                            if self.fan_dead_boost["threshold"] and self.fan_dead_boost["action"]:
-                                if self.all_fan_fail_counter >= self.fan_dead_boost["threshold"]:
+                            Logger.warn(
+                                "Currently all fans failed for {} cycles".format(
+                                    self.all_fan_fail_counter
+                                )
+                            )
+                            if (
+                                self.fan_dead_boost["threshold"]
+                                and self.fan_dead_boost["action"]
+                            ):
+                                if (
+                                    self.all_fan_fail_counter
+                                    >= self.fan_dead_boost["threshold"]
+                                ):
                                     self.fsc_host_action(
                                         action=self.fan_dead_boost["action"],
                                         cause="All fans are bad for more than "
-                                              + str(self.fan_dead_boost["threshold"])
-                                              + " cycles"
-                                        )
+                                        + str(self.fan_dead_boost["threshold"])
+                                        + " cycles",
+                                    )
                         else:
                             # If atleast 1 fan is working reset the counter
                             self.all_fan_fail_counter = 0
@@ -409,19 +471,18 @@ class Fscd(object):
                     pwmval = zone.last_pwm + self.ramp_rate
             zone.last_pwm = pwmval
 
-            if hasattr(zone.pwm_output, '__iter__'):
+            if hasattr(zone.pwm_output, "__iter__"):
                 for output in zone.pwm_output:
-                    self.machine.set_pwm(self.fans.get(
-                        str(output)), pwmval)
+                    self.machine.set_pwm(self.fans.get(str(output)), pwmval)
             else:
                 self.machine.set_pwm(self.fans[zone.pwm_output], pwmval)
 
-            zone.get_set_fan_mode(mode, action='write')
+            zone.get_set_fan_mode(mode, action="write")
 
     def builder(self):
-        '''
+        """
         Method to extract from json and build all internal data staructures
-        '''
+        """
         # Build a bmc machine object - read/write sensors
         self.build_machine()
         # Extract everything from json
@@ -434,18 +495,18 @@ class Fscd(object):
         Logger.info("Including sensors from: " + ", ".join(self.machine.frus))
 
     def get_fan_power_status(self):
-        '''
+        """
         Method invokes board action to determine fan power status.
         If not applicable returns True.
-        '''
-        if board_callout(callout='read_power'):
+        """
+        if board_callout(callout="read_power"):
             return True
         return False
 
     def fail_record_dir(self):
-        '''
+        """
         Create directory to store which sensors and fans failed
-        '''
+        """
 
         if not os.path.isdir(RECORD_DIR):
             os.mkdir(RECORD_DIR)
@@ -467,10 +528,10 @@ class Fscd(object):
         self.fail_record_dir()
 
         self.machine.set_all_pwm(self.fans, self.transitional)
-        self.fsc_set_all_fan_led(color='led_blue')
+        self.fsc_set_all_fan_led(color="led_blue")
 
-        mode = fan_mode['trans_mode']
-        self.zones[0].get_set_fan_mode(mode, action='write')
+        mode = fan_mode["trans_mode"]
+        self.zones[0].get_set_fan_mode(mode, action="write")
 
         last = time.time()
         dead_fans = set()
@@ -506,12 +567,12 @@ class Fscd(object):
 
 def handle_term(signum, frame):
     global wdfile
-    board_callout(callout='init_fans', boost=DEFAULT_INIT_TRANSITIONAL)
+    board_callout(callout="init_fans", boost=DEFAULT_INIT_TRANSITIONAL)
     Logger.warn("killed by signal %d" % (signum,))
     if signum == signal.SIGQUIT and wdfile:
         Logger.info("Killed with SIGQUIT - stopping watchdog.")
         stop_watchdog()
-    sys.exit('killed')
+    sys.exit("killed")
 
 
 if __name__ == "__main__":
@@ -522,13 +583,13 @@ if __name__ == "__main__":
         if len(sys.argv) > 1:
             llevel = sys.argv[1]
         else:
-            llevel = 'warning'
+            llevel = "warning"
         fscd = Fscd(log_level=llevel)
         fscd.run()
     except Exception:
-        board_callout(callout='init_fans', boost=DEFAULT_INIT_TRANSITIONAL)
+        board_callout(callout="init_fans", boost=DEFAULT_INIT_TRANSITIONAL)
         (etype, e) = sys.exc_info()[:2]
         Logger.crit("failed, exception: " + str(etype))
         traceback.print_exc()
-        for line in traceback.format_exc().split('\n'):
+        for line in traceback.format_exc().split("\n"):
             Logger.crit(line)

@@ -17,29 +17,27 @@
 #
 import re
 from collections import namedtuple
-from fsc_sensor import FscSensorSourceUtil, FscSensorSourceSysfs
+
+from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
 from fsc_util import Logger
 
+
 SensorValue = namedtuple(
-                'SensorValue',
-                ['id',
-                 'name',
-                 'value',
-                 'unit',
-                 'status',
-                 'read_fail_counter'])
+    "SensorValue", ["id", "name", "value", "unit", "status", "read_fail_counter"]
+)
 
 
 class BMCMachine(object):
-    '''
+    """
     A container class that can perform sensor read and write.
-    '''
+    """
+
     def __init__(self):
         self.frus = set()
         self.nums = {}
 
     def read_sensors(self, sensor_sources):
-        '''
+        """
         Method to read all sensors
 
         Arguments:
@@ -47,14 +45,14 @@ class BMCMachine(object):
 
         Returns:
             SensorValue tuples
-        '''
+        """
         sensors = {}
         for fru in self.frus:
             sensors[fru] = get_sensor_tuples(fru, self.nums[fru], sensor_sources)
         return sensors
 
     def read_fans(self, fans):
-        '''
+        """
         Method to read all fans speeds
 
         Arguments:
@@ -62,22 +60,20 @@ class BMCMachine(object):
 
         Returns:
             Fan speeds set
-        '''
+        """
         Logger.debug("Read all fan speeds")
         result = {}
         for key, value in list(fans.items()):
             if isinstance(value.source, FscSensorSourceUtil):
-                result[fans[key]] = parse_fan_util(
-                    fans[key].source.read())
+                result[fans[key]] = parse_fan_util(fans[key].source.read())
             elif isinstance(fans[key].source, FscSensorSourceSysfs):
-                result[fans[key]] = parse_fan_sysfs(
-                                    fans[key].source.read())
+                result[fans[key]] = parse_fan_sysfs(fans[key].source.read())
             else:
                 Logger.crit("Unknown source type")
         return result
 
     def set_pwm(self, fan, pct):
-        '''
+        """
         Method to set fan pwm
 
         Arguments:
@@ -86,12 +82,12 @@ class BMCMachine(object):
 
         Returns:
             N/A
-        '''
+        """
         Logger.debug("Set pwm %d to %d" % (int(fan.source.name), pct))
         fan.source.write(pct)
 
     def set_all_pwm(self, fans, pct):
-        '''
+        """
         Method to set all fans pwm
 
         Arguments:
@@ -100,14 +96,14 @@ class BMCMachine(object):
 
         Returns:
             N/A
-        '''
+        """
         Logger.debug("Set all pwm to %d" % (pct))
         for key, _value in list(fans.items()):
             self.set_pwm(fans[key], pct)
 
 
 def get_sensor_tuples(fru_name, sensor_num, sensor_sources):
-    '''
+    """
     Method to walk through each of the sensor sources to build the tuples
     of the form 'SensorValue'
 
@@ -116,18 +112,20 @@ def get_sensor_tuples(fru_name, sensor_num, sensor_sources):
         sensor_sources: Set of all sensor souces from fsc config
     Returns:
         SensorValue tuples
-    '''
+    """
     result = {}
     for key, value in list(sensor_sources.items()):
         if isinstance(value.source, FscSensorSourceUtil):
             result = parse_all_sensors_util(
-                sensor_sources[key].source.read(fru=fru_name, num=sensor_num))
+                sensor_sources[key].source.read(fru=fru_name, num=sensor_num)
+            )
             break  # Hack: util reads all sensors
         elif isinstance(sensor_sources.get(key).source, FscSensorSourceSysfs):
             symbolized_key, tuple = get_sensor_tuple_sysfs(
-                                        key,
-                                        sensor_sources[key].source.read(),
-                                        sensor_sources[key].source.read_source_fail_counter)
+                key,
+                sensor_sources[key].source.read(),
+                sensor_sources[key].source.read_source_fail_counter,
+            )
             result[symbolized_key] = tuple
         else:
             Logger.crit("Unknown source type")
@@ -135,7 +133,7 @@ def get_sensor_tuples(fru_name, sensor_num, sensor_sources):
 
 
 def get_sensor_tuple_sysfs(key, sensor_data, read_fail_counter=0):
-    '''
+    """
     Build a sensor tuple from sensor key and data read
 
     Arguments:
@@ -143,31 +141,28 @@ def get_sensor_tuple_sysfs(key, sensor_data, read_fail_counter=0):
 
     Returns:
         SensorValue tuple
-    '''
+    """
     if sensor_data:
-        data = int(sensor_data.split('\n')[-2]) / 1000
+        data = int(sensor_data.split("\n")[-2]) / 1000
     else:
         data = -1
 
-    return(symbolize_sensorname_sysfs(key),
-           SensorValue(None,
-                       str(key),
-                       data,
-                       None,
-                       None,
-                       read_fail_counter))
+    return (
+        symbolize_sensorname_sysfs(key),
+        SensorValue(None, str(key), data, None, None, read_fail_counter),
+    )
 
 
 def symbolize_sensorname_sysfs(name):
-    '''
+    """
     Helper method to normalize the sensor name
     Eg : userver -> userver_temp
-    '''
-    return name.split('_')[1] + "_temp"
+    """
+    return name.split("_")[1] + "_temp"
 
 
 def parse_all_sensors_util(sensor_data):
-    '''
+    """
     Parses all sensors data from util
 
     Arguments:
@@ -175,10 +170,10 @@ def parse_all_sensors_util(sensor_data):
 
     Returns:
         SensorValue tuples
-    '''
+    """
     result = {}
 
-    sdata = sensor_data.split('\n')
+    sdata = sensor_data.split("\n")
     for line in sdata:
         # skip lines with " or startin with FRU
         if line.find("bic_read_sensor_wrapper") != -1:
@@ -193,14 +188,11 @@ def parse_all_sensors_util(sensor_data):
                 value = None
                 status = m.group(4)
                 symname = symbolize_sensorname(name)
-                result[symname] = SensorValue(sid,
-                                              name,
-                                              value,
-                                              None,
-                                              status,
-                                              0)
+                result[symname] = SensorValue(sid, name, value, None, status, 0)
                 continue
-            m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line)
+            m = re.match(
+                r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line
+            )
             if m is not None:
                 sid = int(m.group(2), 16)
                 name = m.group(1).strip()
@@ -213,14 +205,15 @@ def parse_all_sensors_util(sensor_data):
 
 
 def symbolize_sensorname(name):
-    '''
+    """
     Helper method to normalize the sensor name
     Eg : SOC Therm Margin -> soc_therm_margin
-    '''
+    """
     return name.lower().replace(" ", "_")
 
+
 def parse_fan_sysfs(sensor_data):
-    '''
+    """
     Parse the data read from sysfs and return the PWM
 
     Arguments:
@@ -228,7 +221,7 @@ def parse_fan_sysfs(sensor_data):
 
     Returns:
         PWM
-    '''
+    """
     if sensor_data:
         return int(sensor_data)
     else:
@@ -236,7 +229,7 @@ def parse_fan_sysfs(sensor_data):
 
 
 def parse_fan_util(fan_data):
-    '''
+    """
     Parses fan data from util
 
     Arguments:
@@ -244,8 +237,8 @@ def parse_fan_util(fan_data):
 
     Returns:
         Fan speeds set
-    '''
-    sdata = fan_data.split('\n')
+    """
+    sdata = fan_data.split("\n")
     for line in sdata:
         m = re.match(r"Fan .*\sSpeed:\s+(\d+)\s", line)
         if m is not None:

@@ -19,5 +19,4 @@
 # please double check the configuration of your image to define the correct
 # PassThrough GPIO table to be used for your board.
 
-board_passthrough_gpio_table = [
-]
+board_passthrough_gpio_table = []

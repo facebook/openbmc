@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-import sys
 import os.path
-from subprocess import Popen, PIPE
+import sys
+from subprocess import PIPE, Popen
+
 from bios_ipmi_util import *
 
 

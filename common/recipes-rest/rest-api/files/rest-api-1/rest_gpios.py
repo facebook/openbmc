@@ -21,21 +21,27 @@
 from rest_fruid import get_fruid
 from rest_helper import read_gpio_sysfs
 
+
 WEDGES = ["Wedge-AC-F", "Wedge-DC-F"]
 
+
 def read_wedge_back_ports():
-    bhinfo = { "port_1": { "pin_1": read_gpio_sysfs(120),
-                           "pin_2": read_gpio_sysfs(121),
-                           "pin_3": read_gpio_sysfs(122),
-                           "pin_4": read_gpio_sysfs(123)
-                           },
-               "port_2": { "pin_1": read_gpio_sysfs(124),
-                           "pin_2": read_gpio_sysfs(125),
-                           "pin_3": read_gpio_sysfs(126),
-                           "pin_4": read_gpio_sysfs(52)
-                           }
-               }
+    bhinfo = {
+        "port_1": {
+            "pin_1": read_gpio_sysfs(120),
+            "pin_2": read_gpio_sysfs(121),
+            "pin_3": read_gpio_sysfs(122),
+            "pin_4": read_gpio_sysfs(123),
+        },
+        "port_2": {
+            "pin_1": read_gpio_sysfs(124),
+            "pin_2": read_gpio_sysfs(125),
+            "pin_3": read_gpio_sysfs(126),
+            "pin_4": read_gpio_sysfs(52),
+        },
+    }
     return bhinfo
+
 
 def get_gpios():
     fruinfo = get_fruid()

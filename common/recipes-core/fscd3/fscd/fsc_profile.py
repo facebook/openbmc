@@ -16,22 +16,22 @@
 # Boston, MA 02110-1301 USA
 #
 from fsc_control import PID, TTable
-from fsc_util import Logger
 from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
+from fsc_util import Logger
 
 
 class Sensor(object):
     def __init__(self, sensor_name, pTable):
         try:
-            if 'read_source' in pTable:
-                if 'sysfs' in pTable['read_source']:
+            if "read_source" in pTable:
+                if "sysfs" in pTable["read_source"]:
                     self.source = FscSensorSourceSysfs(
-                        name=sensor_name,
-                        read_source=pTable['read_source']['sysfs'])
-                if 'util' in pTable['read_source']:
+                        name=sensor_name, read_source=pTable["read_source"]["sysfs"]
+                    )
+                if "util" in pTable["read_source"]:
                     self.source = FscSensorSourceUtil(
-                        name=sensor_name,
-                        read_source=pTable['read_source']['util'])
+                        name=sensor_name, read_source=pTable["read_source"]["util"]
+                    )
         except Exception:
             Logger.error("Unknown Sensor source type")
 
@@ -41,20 +41,22 @@ def profile_constructor(data):
 
 
 def make_controller(pTable):
-    if pTable['type'] == 'linear':
+    if pTable["type"] == "linear":
         controller = TTable(
-                pTable['data'],
-                pTable.get('negative_hysteresis', 0),
-                pTable.get('positive_hysteresis', 0))
+            pTable["data"],
+            pTable.get("negative_hysteresis", 0),
+            pTable.get("positive_hysteresis", 0),
+        )
         return controller
-    if pTable['type'] == 'pid':
+    if pTable["type"] == "pid":
         controller = PID(
-            pTable['setpoint'],
-            pTable['kp'],
-            pTable['ki'],
-            pTable['kd'],
-            pTable['negative_hysteresis'],
-            pTable['positive_hysteresis'])
+            pTable["setpoint"],
+            pTable["kp"],
+            pTable["ki"],
+            pTable["kd"],
+            pTable["negative_hysteresis"],
+            pTable["positive_hysteresis"],
+        )
         return controller
-    err = "Don't understand profile type '%s'" % (pTable['type'])
+    err = "Don't understand profile type '%s'" % (pTable["type"])
     Logger.error(err)

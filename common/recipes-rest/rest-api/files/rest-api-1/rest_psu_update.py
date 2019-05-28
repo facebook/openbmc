@@ -18,20 +18,26 @@
 # Boston, MA 02110-1301 USA
 #
 
-import subprocess
-from subprocess import Popen
+import json
 import os
 import os.path
-import json
+import subprocess
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
-import urllib.request, urllib.error, urllib.parse
+from subprocess import Popen
 from tempfile import mkstemp
+
 from aiohttp import web
 
 
-UPDATE_JOB_DIR = '/var/rackmond/update_jobs'
-UPDATERS = {'delta': '/usr/local/bin/psu-update-delta.py',
-            'belpower': '/usr/local/bin/psu-update-bel.py'}
+UPDATE_JOB_DIR = "/var/rackmond/update_jobs"
+UPDATERS = {
+    "delta": "/usr/local/bin/psu-update-delta.py",
+    "belpower": "/usr/local/bin/psu-update-bel.py",
+}
+
 
 def get_jobs():
     jobs = []
@@ -39,14 +45,17 @@ def get_jobs():
         os.makedirs(UPDATE_JOB_DIR)
     for f in os.listdir(UPDATE_JOB_DIR):
         fullpath = os.path.join(UPDATE_JOB_DIR, f)
-        if f.endswith('.json') and os.path.isfile(fullpath):
-            with open(fullpath, 'r') as fh:
+        if f.endswith(".json") and os.path.isfile(fullpath):
+            with open(fullpath, "r") as fh:
                 jdata = json.load(fh)
-                jdata['job_id'] = os.path.splitext(f)[0]
+                jdata["job_id"] = os.path.splitext(f)[0]
                 jobs.append(jdata)
-    return {'jobs': jobs}
+    return {"jobs": jobs}
+
 
 updater_process = None
+
+
 def begin_job(jobdesc):
     global updater_process
     if updater_process is not None:
@@ -54,35 +63,38 @@ def begin_job(jobdesc):
             # Update complete
             updater_process = None
         else:
-            error_body = {'error': 'update_already_running',
-                    'pid': updater_process.pid }
+            error_body = {"error": "update_already_running", "pid": updater_process.pid}
             raise web.HTTPConflict(body=error_body)
     job_id = str(uuid.uuid1())
     (fwfd, fwfilepath) = mkstemp()
     if not os.path.exists(UPDATE_JOB_DIR):
         os.makedirs(UPDATE_JOB_DIR)
-    statusfilepath = os.path.join(UPDATE_JOB_DIR, str(job_id) + '.json')
-    status = {'pid': 0,
-              'state': 'fetching' }
-    with open(statusfilepath, 'wb') as sfh:
+    statusfilepath = os.path.join(UPDATE_JOB_DIR, str(job_id) + ".json")
+    status = {"pid": 0, "state": "fetching"}
+    with open(statusfilepath, "wb") as sfh:
         sfh.write(json.dumps(status))
     try:
-        fwdata = urllib.request.urlopen(jobdesc['fw_url'])
-        with os.fdopen(fwfd, 'wb') as fwfile:
+        fwdata = urllib.request.urlopen(jobdesc["fw_url"])
+        with os.fdopen(fwfd, "wb") as fwfile:
             fwfile.write(fwdata.read())
             fwfile.flush()
     except:
         os.remove(statusfilepath)
         raise
 
-    updater = UPDATERS[jobdesc.get('updater', 'delta')]
-    updater_process = Popen([updater,
-               '--addr', str(jobdesc['address']),
-               '--statusfile', statusfilepath,
-               '--rmfwfile',
-               fwfilepath])
-    status = {'pid': updater_process.pid,
-              'state': 'starting' }
-    with open(statusfilepath, 'wb') as sfh:
+    updater = UPDATERS[jobdesc.get("updater", "delta")]
+    updater_process = Popen(
+        [
+            updater,
+            "--addr",
+            str(jobdesc["address"]),
+            "--statusfile",
+            statusfilepath,
+            "--rmfwfile",
+            fwfilepath,
+        ]
+    )
+    status = {"pid": updater_process.pid, "state": "starting"}
+    with open(statusfilepath, "wb") as sfh:
         sfh.write(json.dumps(status))
-    return {'job_id': job_id, 'pid': updater_process.pid}
+    return {"job_id": job_id, "pid": updater_process.pid}

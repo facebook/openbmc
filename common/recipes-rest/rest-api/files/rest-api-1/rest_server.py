@@ -22,12 +22,13 @@
 import os
 from subprocess import *
 
+
 # return value
 #  1 - bic okay
 #  0 - bic error
 #  2 - not present
 def get_bic_status():
-    cmd = ['/usr/bin/bic-util', 'scm', '--get_dev_id']
+    cmd = ["/usr/bin/bic-util", "scm", "--get_dev_id"]
     try:
         ret = check_output(cmd).decode()
 
@@ -36,63 +37,70 @@ def get_bic_status():
         else:
             return 1
     except (OSError, IOError):
-        return 2   # cmd not found, i.e. no BIC on this platform
-    except(CalledProcessError):
+        return 2  # cmd not found, i.e. no BIC on this platform
+    except (CalledProcessError):
         return 0  # bic-util returns error
 
 
 # Handler for uServer resource endpoint
 def get_server():
-    (ret, _) = Popen('/usr/local/bin/wedge_power.sh status', \
-                     shell=True, stdout=PIPE).communicate()
+    (ret, _) = Popen(
+        "/usr/local/bin/wedge_power.sh status", shell=True, stdout=PIPE
+    ).communicate()
     ret = ret.decode()
     status = ret.rsplit()[-1]
 
     bic_status = get_bic_status()
 
     result = {
-                "Information": { "status": status, "BIC_ok" : bic_status },
-                "Actions": ["power-on", "power-off", "power-reset"],
-                "Resources": [],
-             }
+        "Information": {"status": status, "BIC_ok": bic_status},
+        "Actions": ["power-on", "power-off", "power-reset"],
+        "Resources": [],
+    }
 
     return result
 
+
 def server_action(data):
-    if data["action"] == 'power-on':
-        (ret, _) = Popen('/usr/local/bin/wedge_power.sh status', \
-                         shell=True, stdout=PIPE).communicate()
+    if data["action"] == "power-on":
+        (ret, _) = Popen(
+            "/usr/local/bin/wedge_power.sh status", shell=True, stdout=PIPE
+        ).communicate()
         ret = ret.decode()
         status = ret.rsplit()[-1]
-        if status == 'on':
-            res = 'failure'
-            reason = 'already on'
+        if status == "on":
+            res = "failure"
+            reason = "already on"
         else:
-            (ret, _) = Popen('/usr/local/bin/wedge_power.sh on', \
-			shell=True, stdout=PIPE).communicate()
+            (ret, _) = Popen(
+                "/usr/local/bin/wedge_power.sh on", shell=True, stdout=PIPE
+            ).communicate()
             res = "success"
-    elif data["action"] == 'power-off':
-        (ret, _) = Popen('/usr/local/bin/wedge_power.sh off', \
-			 shell=True, stdout=PIPE).communicate()
+    elif data["action"] == "power-off":
+        (ret, _) = Popen(
+            "/usr/local/bin/wedge_power.sh off", shell=True, stdout=PIPE
+        ).communicate()
         res = "success"
-    elif data["action"] == 'power-reset':
-        (ret, _) = Popen('/usr/local/bin/wedge_power.sh reset', \
-			 shell=True, stdout=PIPE).communicate()
+    elif data["action"] == "power-reset":
+        (ret, _) = Popen(
+            "/usr/local/bin/wedge_power.sh reset", shell=True, stdout=PIPE
+        ).communicate()
         res = "success"
-    elif data["action"] == '12V-cycle':
+    elif data["action"] == "12V-cycle":
         # This will shut off the board immediately so will never
         # actually return success. Could try to background this
         # process or something to be able to return properly.
-        (ret, _) = Popen('/usr/local/bin/wedge_power.sh reset -s', \
-			 shell=True, stdout=PIPE).communicate()
+        (ret, _) = Popen(
+            "/usr/local/bin/wedge_power.sh reset -s", shell=True, stdout=PIPE
+        ).communicate()
         res = "success"
     else:
-        res = 'failure'
-        reason = 'invalid action'
+        res = "failure"
+        reason = "invalid action"
 
-    if res == 'failure':
-        result = { "result": res, "reason": reason}
+    if res == "failure":
+        result = {"result": res, "reason": reason}
     else:
-        result = { "result": res }
+        result = {"result": res}
 
     return result

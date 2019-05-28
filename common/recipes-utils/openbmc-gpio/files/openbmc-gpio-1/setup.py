@@ -18,20 +18,24 @@
 
 
 from distutils.core import setup
+
 from setup_board import board_py_modules
 
+
 setup(
-    name = 'openbmc-gpio',
-    version = '1.0',
-    description = 'OpenBMC GPIO utilities',
-    author = 'Tian Fang',
-    author_email = 'tfang@fb.com',
-    license = 'GPLv2',
-    py_modules=['openbmc_gpio',
-                'openbmc_gpio_table',
-                'phymemory',
-                'soc_gpio',
-                'soc_gpio_table',
-                'board_gpio_table', ]
-                + board_py_modules ,
+    name="openbmc-gpio",
+    version="1.0",
+    description="OpenBMC GPIO utilities",
+    author="Tian Fang",
+    author_email="tfang@fb.com",
+    license="GPLv2",
+    py_modules=[
+        "openbmc_gpio",
+        "openbmc_gpio_table",
+        "phymemory",
+        "soc_gpio",
+        "soc_gpio_table",
+        "board_gpio_table",
+    ]
+    + board_py_modules,
 )

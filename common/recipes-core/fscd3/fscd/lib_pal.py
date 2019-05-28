@@ -1,5 +1,6 @@
-from ctypes import *
 import subprocess
+from ctypes import *
+
 
 lpal_hndl = CDLL("libpal.so")
 
@@ -11,12 +12,14 @@ def pal_fan_dead_handle(fan):
     else:
         return ret
 
+
 def pal_fan_recovered_handle(fan):
     ret = lpal_hndl.pal_fan_recovered_handle(fan)
     if ret:
         return None
     else:
         return ret
+
 
 def pal_fan_chassis_intrusion_handle():
     self_tray_pull_out = c_uint(1)

@@ -3,11 +3,10 @@
 from node import node
 from pal import *
 
+
 def get_node_iom():
     name = pal_get_platform_name()
 
-    info = {
-            "Description": name + " IO Module",
-    }
+    info = {"Description": name + " IO Module"}
 
     return node(info)

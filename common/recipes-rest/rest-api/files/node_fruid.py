@@ -19,10 +19,12 @@
 #
 
 from subprocess import *
+
 from node import node
 
+
 class fruidNode(node):
-    def __init__(self, name, info = None, actions = None):
+    def __init__(self, name, info=None, actions=None):
         self.name = name
 
         if info == None:
@@ -36,10 +38,10 @@ class fruidNode(node):
 
     def getInformation(self, param={}):
         result = {}
-        cmd = '/usr/local/bin/fruid-util ' + self.name
+        cmd = "/usr/local/bin/fruid-util " + self.name
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         data = data.decode()
-        sdata = data.split('\n')
+        sdata = data.split("\n")
         for line in sdata:
             # skip lines with --- or startin with FRU
             if line.startswith("FRU"):
@@ -47,13 +49,14 @@ class fruidNode(node):
             if line.startswith("-----"):
                 continue
 
-            kv = line.split(':', 1)
-            if (len(kv) < 2):
+            kv = line.split(":", 1)
+            if len(kv) < 2:
                 continue
 
             result[kv[0].strip()] = kv[1].strip()
 
         return result
+
 
 def get_node_fruid(name):
     return fruidNode(name)

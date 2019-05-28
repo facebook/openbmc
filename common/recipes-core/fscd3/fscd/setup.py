@@ -18,19 +18,22 @@
 
 from distutils.core import setup
 
+
 setup(
-    name='fscd',
-    version='1.0',
-    description='OpenBMC FSCD Utility',
-    license='GPLv2',
-    scripts=['fscd.py'],
-    py_modules=['fsc_bmcmachine',
-                'fsc_control',
-                'fsc_expr',
-                'fsc_parser',
-                'fsc_profile',
-                'fsc_sensor',
-                'fsc_util',
-                'fsc_zone',
-                'fsc_board']
+    name="fscd",
+    version="1.0",
+    description="OpenBMC FSCD Utility",
+    license="GPLv2",
+    scripts=["fscd.py"],
+    py_modules=[
+        "fsc_bmcmachine",
+        "fsc_control",
+        "fsc_expr",
+        "fsc_parser",
+        "fsc_profile",
+        "fsc_sensor",
+        "fsc_util",
+        "fsc_zone",
+        "fsc_board",
+    ],
 )

@@ -18,30 +18,30 @@
 from fsc_util import Logger
 
 
-def board_fan_actions(fan, action='None'):
-    '''
+def board_fan_actions(fan, action="None"):
+    """
     Override the method to define fan specific actions like:
     - handling dead fan
     - handling fan led
-    '''
-    Logger.warn("%s needs action %s" % (fan.label, str(action),))
+    """
+    Logger.warn("%s needs action %s" % (fan.label, str(action)))
     pass
 
 
-def board_host_actions(action='None', cause='None'):
-    '''
+def board_host_actions(action="None", cause="None"):
+    """
     Override the method to define fan specific actions like:
     - handling host power off
     - alarming/syslogging criticals
-    '''
-    Logger.warn("Host needs action %s and cause %s" % (str(action),str(cause),))
+    """
+    Logger.warn("Host needs action %s and cause %s" % (str(action), str(cause)))
     pass
 
 
-def board_callout(callout='None', **kwargs):
-    '''
+def board_callout(callout="None", **kwargs):
+    """
     Override this method for defining board specific callouts:
     - Exmaple chassis intrusion
-    '''
+    """
     Logger.warn("Need to perform callout action %s" % callout)
     pass

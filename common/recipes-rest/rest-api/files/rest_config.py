@@ -26,10 +26,12 @@ def parse_config(configpath):
     RestConfig.read(configpath)
 
     return {
-        'ports': RestConfig.get('listen', 'port', fallback='8080').split(','),
-        'ssl_ports': list(filter(None, RestConfig.get('listen', 'ssl_port', fallback='').split(','))),
-        'logfile': RestConfig.get('logging', 'filename', fallback='/tmp/rest.log'),
-        'writable': RestConfig.getboolean('access', 'write', fallback=False),
-        'ssl_certificate': RestConfig.get('ssl', 'certificate', fallback=None),
-        'ssl_key': RestConfig.get('ssl', 'key', fallback=None),
+        "ports": RestConfig.get("listen", "port", fallback="8080").split(","),
+        "ssl_ports": list(
+            filter(None, RestConfig.get("listen", "ssl_port", fallback="").split(","))
+        ),
+        "logfile": RestConfig.get("logging", "filename", fallback="/tmp/rest.log"),
+        "writable": RestConfig.getboolean("access", "write", fallback=False),
+        "ssl_certificate": RestConfig.get("ssl", "certificate", fallback=None),
+        "ssl_key": RestConfig.get("ssl", "key", fallback=None),
     }

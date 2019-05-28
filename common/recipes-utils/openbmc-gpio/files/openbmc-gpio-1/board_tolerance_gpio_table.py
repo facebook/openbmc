@@ -19,5 +19,4 @@
 # please double check the configuration of your image to define the correct
 # Tolerance GPIO table to be used for your board.
 
-board_tolerance_gpio_table = [
-]
+board_tolerance_gpio_table = []

@@ -18,38 +18,40 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import *
 import json
-import ssl
-import socket
 import os
+import socket
+import ssl
+from ctypes import *
+
 from node_api import get_node_api
-from node_sled import get_node_sled
 from node_bmc import get_node_bmc
-from node_sensors import get_node_sensors
-from node_logs import get_node_logs
 from node_fans import get_node_fans
+from node_logs import get_node_logs
+from node_sensors import get_node_sensors
+from node_sled import get_node_sled
 from tree import tree
+
 
 def init_common_tree():
 
     # Create /api end point as root node
-    r_api = tree("api", data = get_node_api())
+    r_api = tree("api", data=get_node_api())
 
     # /api/bmc end point
-    r_temp = tree("bmc", data = get_node_bmc())
+    r_temp = tree("bmc", data=get_node_bmc())
     r_api.addChild(r_temp)
 
     # /api/sensors end point
-    r_temp = tree("sensors", data = get_node_sensors("all"))
+    r_temp = tree("sensors", data=get_node_sensors("all"))
     r_api.addChild(r_temp)
 
     # /api/logs end point
-    r_temp = tree("logs", data = get_node_logs("all"))
+    r_temp = tree("logs", data=get_node_logs("all"))
     r_api.addChild(r_temp)
 
     # /api/fans end point
-    r_temp = tree("fans", data = get_node_fans())
+    r_temp = tree("fans", data=get_node_fans())
     r_api.addChild(r_temp)
 
     return r_api

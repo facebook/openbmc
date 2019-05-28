@@ -20,31 +20,32 @@
 
 # aiohttp has access logs and error logs enabled by default. So, only the configuration file is needed to get the desired log output.
 
-from aiohttp import web
 import asyncio
 import getopt
-from common_setup_routes import setup_common_routes
-from board_setup_routes import setup_board_routes
 import logging
 import logging.config
-import ssl
 import os.path
-import syslog
+import ssl
 import sys
+import syslog
+
+from aiohttp import web
+from board_setup_routes import setup_board_routes
+from common_setup_routes import setup_common_routes
 from rest_config import parse_config
 
 
-configpath = '/etc/rest.cfg'
+configpath = "/etc/rest.cfg"
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"hc:",["config="])
+    opts, args = getopt.getopt(sys.argv[1:], "hc:", ["config="])
 except getopt.GetoptError:
-    print('rest.py -c <config_file>')
+    print("rest.py -c <config_file>")
     sys.exit(2)
 
 for opt, arg in opts:
-    if opt == '-h':
-        print('rest.py -c <config_file>')
+    if opt == "-h":
+        print("rest.py -c <config_file>")
         sys.exit()
     elif opt in ("-c", "--config"):
         configpath = arg
@@ -53,31 +54,23 @@ config = parse_config(configpath)
 
 
 LOGGER_CONF = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'default': {
-            'format': '%(message)s'
-        },
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"default": {"format": "%(message)s"}},
+    "handlers": {
+        "file_handler": {
+            "level": "INFO",
+            "formatter": "default",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": config["logfile"],
+            "maxBytes": 1048576,
+            "backupCount": 3,
+            "encoding": "utf8",
+        }
     },
-    'handlers': {
-        'file_handler': {
-            'level': 'INFO',
-            'formatter': 'default',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': config["logfile"],
-            'maxBytes': 1048576,
-            'backupCount': 3,
-            'encoding': 'utf8'
-        },
+    "loggers": {
+        "": {"handlers": ["file_handler"], "level": "DEBUG", "propagate": True}
     },
-    'loggers': {
-        '': {
-            'handlers': ['file_handler'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    }
 }
 logging.config.dictConfig(LOGGER_CONF)
 
@@ -91,29 +84,21 @@ setup_board_routes(app)
 loop = asyncio.get_event_loop()
 handler = app.make_handler()
 
-servers.extend(
-    [
-        loop.create_server(handler, '*', port)
-        for port in config["ports"]
-    ]
-)
+servers.extend([loop.create_server(handler, "*", port) for port in config["ports"]])
 
-if (config['ssl_certificate'] and os.path.isfile(config["ssl_certificate"])):
+if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(
-        certfile=config['ssl_certificate'],
-        keyfile=config['ssl_key'],  # May be None
+        certfile=config["ssl_certificate"], keyfile=config["ssl_key"]  # May be None
     )
     servers.extend(
         [
-            loop.create_server(handler, '*', port, ssl=ssl_context)
+            loop.create_server(handler, "*", port, ssl=ssl_context)
             for port in config["ssl_ports"]
         ]
     )
 
-srv = loop.run_until_complete(
-    asyncio.gather(*servers, loop=loop)
-)
+srv = loop.run_until_complete(asyncio.gather(*servers, loop=loop))
 try:
     loop.run_forever()
 except KeyboardInterrupt:

@@ -19,5 +19,4 @@
 # please double check the configuration of your image to define the correct
 # GPIO table to be used for your board.
 
-board_gpio_table = [
-]
+board_gpio_table = []

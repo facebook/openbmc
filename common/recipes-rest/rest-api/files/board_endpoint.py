@@ -19,4 +19,3 @@
 #
 
 # Platform layer will replace this file with board specific routes
-

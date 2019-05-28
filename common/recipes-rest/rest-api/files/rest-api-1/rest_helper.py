@@ -19,25 +19,29 @@
 #
 import subprocess
 
-def read_gpio_sysfs(gpio):    
+
+def read_gpio_sysfs(gpio):
     try:
-        with open('/sys/class/gpio/gpio%d/value' % gpio, 'r') as f:
+        with open("/sys/class/gpio/gpio%d/value" % gpio, "r") as f:
             val_string = f.read()
-            if val_string == '1\n':
+            if val_string == "1\n":
                 return 1
-            if val_string == '0\n':
+            if val_string == "0\n":
                 return 0
     except:
         return None
 
+
 def get_wedge_slot():
-    p = subprocess.Popen('source /usr/local/bin/openbmc-utils.sh;'
-                         'wedge_slot_id $(wedge_board_type)',
-                         shell=True, stdout=subprocess.PIPE)
+    p = subprocess.Popen(
+        "source /usr/local/bin/openbmc-utils.sh;" "wedge_slot_id $(wedge_board_type)",
+        shell=True,
+        stdout=subprocess.PIPE,
+    )
     out, err = p.communicate()
     out = out.decode()
     try:
-        slot = int(out.strip('\n'))
+        slot = int(out.strip("\n"))
     except:
         slot = 0
     return slot

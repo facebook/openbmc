@@ -15,5 +15,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+
 def soc_get_register(addr):
-    raise Exception('Virtual function. Not implemented')
+    raise Exception("Virtual function. Not implemented")

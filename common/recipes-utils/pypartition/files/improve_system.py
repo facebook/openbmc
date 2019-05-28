@@ -32,12 +32,11 @@ import virtualcat
 def improve_system(logger):
     # type: (object) -> None
     if not system.is_openbmc():
-        logger.error('{} must be run from an OpenBMC system.'.format(
-            sys.argv[0]
-        ))
+        logger.error("{} must be run from an OpenBMC system.".format(sys.argv[0]))
         sys.exit(1)
 
-    description = textwrap.dedent('''\
+    description = textwrap.dedent(
+        """\
         Leave the OpenBMC system better than we found it, by performing one or
         more of the following actions: fetching an image file, validating the
         checksums of the partitions inside an image file, copying the image
@@ -46,72 +45,87 @@ def improve_system(logger):
 
         The current logic is reboot-happy. If you want to validate the
         checksums of the partitions on flash without rebooting, use
-        --dry-run.''')
+        --dry-run."""
+    )
     (checksums, args) = system.get_checksums_args(description)
 
     # Don't let things like dropped SSH connections interrupt.
-    [signal.signal(s, signal.SIG_IGN) for s in
-     [signal.SIGHUP, signal.SIGINT, signal.SIGTERM]]
+    [
+        signal.signal(s, signal.SIG_IGN)
+        for s in [signal.SIGHUP, signal.SIGINT, signal.SIGTERM]
+    ]
 
     (full_flash_mtds, all_mtds) = system.get_mtds()
 
     [total_memory_kb, free_memory_kb] = system.get_mem_info()
-    logger.info('{} KiB total memory, {} KiB free memory.'.
-                format(total_memory_kb, free_memory_kb))
+    logger.info(
+        "{} KiB total memory, {} KiB free memory.".format(
+            total_memory_kb, free_memory_kb
+        )
+    )
 
     reboot_threshold_pct = system.get_healthd_reboot_threshold()
-    reboot_threshold_kb = ((100 - reboot_threshold_pct)/100) * total_memory_kb
+    reboot_threshold_kb = ((100 - reboot_threshold_pct) / 100) * total_memory_kb
 
     # As of May 2019, sample image files are 17 to 23 MiB. Make sure there
     # is space for them and a few flashing related processes.
     max_openbmc_img_size = 23
-    openbmc_img_size_kb  = max_openbmc_img_size * 1024
+    openbmc_img_size_kb = max_openbmc_img_size * 1024
     # in the case of no reboot treshold, use a default limit
-    default_threshold    = 60 * 1024
+    default_threshold = 60 * 1024
 
     # for low memory remediation - ensure downloading BMC image will NOT trigger
     # healthd reboot
-    min_memory_needed = max(default_threshold, openbmc_img_size_kb + reboot_threshold_kb)
-    logger.info('Healthd reboot threshold at {}%  ({} KiB)'.
-                format(reboot_threshold_pct, reboot_threshold_kb))
-    logger.info('Minimum memory needed for update is {} KiB'.
-                format(min_memory_needed))
+    min_memory_needed = max(
+        default_threshold, openbmc_img_size_kb + reboot_threshold_kb
+    )
+    logger.info(
+        "Healthd reboot threshold at {}%  ({} KiB)".format(
+            reboot_threshold_pct, reboot_threshold_kb
+        )
+    )
+    logger.info("Minimum memory needed for update is {} KiB".format(min_memory_needed))
     if free_memory_kb < min_memory_needed:
-        logger.info('Free memory ({} KiB) < minimum required memory ({} KiB), reboot needed'.
-                    format(free_memory_kb, min_memory_needed))
+        logger.info(
+            "Free memory ({} KiB) < minimum required memory ({} KiB), reboot needed".format(
+                free_memory_kb, min_memory_needed
+            )
+        )
         if full_flash_mtds != []:
-            [system.get_valid_partitions([full_flash], checksums, logger)
-             for full_flash in full_flash_mtds]
+            [
+                system.get_valid_partitions([full_flash], checksums, logger)
+                for full_flash in full_flash_mtds
+            ]
         else:
             system.get_valid_partitions(all_mtds, checksums, logger)
-        system.reboot(args.dry_run, 'remediating low free memory', logger)
+        system.reboot(args.dry_run, "remediating low free memory", logger)
 
     if full_flash_mtds == []:
         partitions = system.get_valid_partitions(all_mtds, checksums, logger)
-        mtdparts = 'mtdparts={}:{},-@0(flash0)'.format(
-            'spi0.0', ','.join(map(str, partitions))
+        mtdparts = "mtdparts={}:{},-@0(flash0)".format(
+            "spi0.0", ",".join(map(str, partitions))
         )
         system.append_to_kernel_parameters(args.dry_run, mtdparts, logger)
-        system.reboot(args.dry_run, 'changing kernel parameters', logger)
+        system.reboot(args.dry_run, "changing kernel parameters", logger)
 
-    reason = 'potentially applying a latent update'
+    reason = "potentially applying a latent update"
     if args.image:
         image_file_name = args.image
-        if args.image.startswith('https'):
+        if args.image.startswith("https"):
             try:
-                cmd = ['curl', '-k', '-s', '-o', '/tmp/flash', args.image]
+                cmd = ["curl", "-k", "-s", "-o", "/tmp/flash", args.image]
                 system.run_verbosely(cmd, logger)
-                image_file_name = '/tmp/flash'
+                image_file_name = "/tmp/flash"
             except Exception:
                 # Python2 may throw OSError here, whereas Python3 may
                 # throw FileNotFoundError - common case is Exception.
-                args.image = args.image.replace('https', 'http')
+                args.image = args.image.replace("https", "http")
 
-        if args.image.startswith('http:'):
-            cmd =  ['wget', '-q', '-O', '/tmp/flash', args.image]
+        if args.image.startswith("http:"):
+            cmd = ["wget", "-q", "-O", "/tmp/flash", args.image]
             system.run_verbosely(cmd, logger)
             # --continue might be cool but it doesn't seem to work.
-            image_file_name = '/tmp/flash'
+            image_file_name = "/tmp/flash"
 
         image_file = virtualcat.ImageFile(image_file_name)
         system.get_valid_partitions([image_file], checksums, logger)
@@ -135,16 +149,18 @@ def improve_system(logger):
         # flash and potentially other systems. To avoid over-optimizing for
         # what should be a temporary condition, just reboot and reuse the
         # existing no full flash logic.
-        reason = 'applying an update'
+        reason = "applying an update"
 
-    [system.get_valid_partitions([full_flash], checksums, logger)
-     for full_flash in full_flash_mtds]
+    [
+        system.get_valid_partitions([full_flash], checksums, logger)
+        for full_flash in full_flash_mtds
+    ]
     system.reboot(args.dry_run, reason, logger)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = system.get_logger()
     try:
         improve_system(logger)
     except Exception:
-        logger.exception('Unhandled exception raised.')
+        logger.exception("Unhandled exception raised.")

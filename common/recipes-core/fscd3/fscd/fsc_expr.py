@@ -1,7 +1,7 @@
 import fsc_parser
 
 
-class InfixNode():
+class InfixNode:
     def __init__(self, op, lhs, rhs):
         self.op = op
         self.lhs = lhs
@@ -20,7 +20,7 @@ class InfixNode():
         return str(self.lhs) + " " + str(self.op) + " " + str(self.rhs)
 
 
-class ListNode():
+class ListNode:
     def __init__(self, inners):
         self.inners = inners
 
@@ -31,13 +31,13 @@ class ListNode():
         evals = [i.dbgeval(ctx) for i in self.inners]
         fvs = [fv for (fv, dt) in evals]
         dts = [dt for (fv, dt) in evals]
-        return (fvs, "[\n " + ",\n " .join(dts) + "]")
+        return (fvs, "[\n " + ",\n ".join(dts) + "]")
 
     def __str__(self):
         return "[" + ", ".join([str(i) for i in self.inners]) + "]"
 
 
-class BindNode():
+class BindNode:
     def __init__(self, name, bindnode, innernode):
         self.name = name
         self.bindnode = bindnode
@@ -56,13 +56,10 @@ class BindNode():
         return (ifv, "{}[{}] = {};\n{}".format(self.name, bfv, bdt, idt))
 
     def __str__(self):
-        return "{} = {};\n{}".format(
-            self.name,
-            str(self.bindnode),
-            str(self.innernode))
+        return "{} = {};\n{}".format(self.name, str(self.bindnode), str(self.innernode))
 
 
-class IdentNode():
+class IdentNode:
     def __init__(self, name):
         self.name = name
 
@@ -77,7 +74,7 @@ class IdentNode():
         return self.name
 
 
-class ConstNode():
+class ConstNode:
     def __init__(self, value):
         self.value = value
 
@@ -91,7 +88,7 @@ class ConstNode():
         return str(self.value)
 
 
-class ApplyNode():
+class ApplyNode:
     def __init__(self, name, op, inner):
         self.name = name
         self.op = op
@@ -103,7 +100,7 @@ class ApplyNode():
     def dbgeval(self, ctx):
         (iv, it) = self.inner.dbgeval(ctx)
         ft = self.name
-        if hasattr(self.op, 'dbgapply'):
+        if hasattr(self.op, "dbgapply"):
             (fv, ft) = self.op.dbgapply(iv, ctx)
         else:
             fv = self.op.apply(iv, ctx)
@@ -115,33 +112,30 @@ class ApplyNode():
 
 def make_infix_node(ast_node, info, profiles):
     op = None
-    if ast_node['op'] == '+':
+    if ast_node["op"] == "+":
         op = Sum()
 
-    if ast_node['op'] == '-':
+    if ast_node["op"] == "-":
         op = Sub()
 
-    if ast_node['op'] == '*':
+    if ast_node["op"] == "*":
         op = Mul()
 
-    if ast_node['op'] == '/':
+    if ast_node["op"] == "/":
         op = Div()
 
     if not op:
-        raise InvalidExpression("Bad infix operator: %s" % (ast_node['op'],))
-    lhs_e = make_eval_node(ast_node['left'], info, profiles)
-    rhs_e = make_eval_node(ast_node['right'], info, profiles)
+        raise InvalidExpression("Bad infix operator: %s" % (ast_node["op"],))
+    lhs_e = make_eval_node(ast_node["left"], info, profiles)
+    rhs_e = make_eval_node(ast_node["right"], info, profiles)
     node = InfixNode(op, lhs_e, rhs_e)
     return node
 
 
 def make_apply_node(ast_node, info, profiles):
-    name = ast_node['name']
-    inner_e = make_eval_node(ast_node['inner'], info, profiles)
-    applies = {
-        'hold': Hold,
-        'max': Max,
-    }
+    name = ast_node["name"]
+    inner_e = make_eval_node(ast_node["inner"], info, profiles)
+    applies = {"hold": Hold, "max": Max}
     constructor = applies.get(name)
     if constructor:
         op = constructor()
@@ -149,52 +143,51 @@ def make_apply_node(ast_node, info, profiles):
         # check for profile?
         if name not in profiles:
             raise InvalidExpression(
-                    "Not a built-in function or profile name: '%s'"
-                    % (ast_node['name'],))
+                "Not a built-in function or profile name: '%s'" % (ast_node["name"],)
+            )
         controller = profiles[name]()
         op = ApplyProfile(name, controller)
     return ApplyNode(name, op, inner_e)
 
 
 def make_ident_node(ast_node, info, profiles):
-    info['ext_vars'].add(ast_node['name'])
-    return IdentNode(ast_node['name'])
+    info["ext_vars"].add(ast_node["name"])
+    return IdentNode(ast_node["name"])
 
 
 def make_bind_node(ast_node, info, profiles):
-    name = ast_node['name']
-    bindnode = make_eval_node(ast_node['bound'], info, profiles)
-    innernode = make_eval_node(ast_node['inner'], info, profiles)
-    if name in info['ext_vars']:
-        info['ext_vars'].remove(name)
+    name = ast_node["name"]
+    bindnode = make_eval_node(ast_node["bound"], info, profiles)
+    innernode = make_eval_node(ast_node["inner"], info, profiles)
+    if name in info["ext_vars"]:
+        info["ext_vars"].remove(name)
     return BindNode(name, bindnode, innernode)
 
 
 def make_const_node(ast_node, info, profiles):
-    return ConstNode(ast_node['value'])
+    return ConstNode(ast_node["value"])
 
 
 def make_list_node(ast_node, info, profiles):
-    return ListNode([make_eval_node(n, info, profiles)
-                    for n in ast_node['content']])
+    return ListNode([make_eval_node(n, info, profiles) for n in ast_node["content"]])
 
 
 def make_eval_node(ast_node, info, profiles):
     makers = {
-        'infix': make_infix_node,
-        'apply': make_apply_node,
-        'ident': make_ident_node,
-        'bind': make_bind_node,
-        'list': make_list_node,
-        'const': make_const_node,
+        "infix": make_infix_node,
+        "apply": make_apply_node,
+        "ident": make_ident_node,
+        "bind": make_bind_node,
+        "list": make_list_node,
+        "const": make_const_node,
     }
-    maker = makers.get(ast_node['type'])
+    maker = makers.get(ast_node["type"])
     return maker(ast_node, info, profiles)
 
 
 def make_eval_tree(source, profiles):
     root_ast_node = fsc_parser.parse_expr(source)
-    info = {'profiles': set(), 'ext_vars': set()}
+    info = {"profiles": set(), "ext_vars": set()}
     eval_root = make_eval_node(root_ast_node, info, profiles)
     return (eval_root, info)
 
@@ -203,8 +196,9 @@ class InvalidExpression(Exception):
     pass
 
 
-class Hold():
+class Hold:
     """If no data is available, returns last known sample"""
+
     def __init__(self):
         self.last = None
 
@@ -219,8 +213,9 @@ class Hold():
             return self.last
 
 
-class Max():
+class Max:
     identity = 0
+
     def apply(self, inp, ctx):
         m = None
         for i in inp:
@@ -231,18 +226,18 @@ class Max():
         return m
 
 
-class ApplyProfile():
+class ApplyProfile:
     def __init__(self, profile, controller):
         self.profile = profile
         self.controller = controller
 
     def apply(self, inp, ctx):
         if inp is not None:
-            out = self.controller.run(inp, ctx['dt'])
+            out = self.controller.run(inp, ctx["dt"])
             return out
 
 
-class Sum():
+class Sum:
     identity = 0
 
     def apply(self, in_l, in_r):
@@ -254,11 +249,12 @@ class Sum():
             return in_l
 
     def __str__(self):
-        return '+'
+        return "+"
 
 
-class Sub():
+class Sub:
     identity = 0
+
     def apply(self, in_l, in_r):
         if in_l is not None and in_r is not None:
             return in_l - in_r
@@ -268,11 +264,12 @@ class Sub():
             return in_l
 
     def __str__(self):
-        return '-'
+        return "-"
 
 
-class Mul():
+class Mul:
     identity = 0
+
     def apply(self, in_l, in_r):
         if in_l is not None and in_r is not None:
             return in_l * in_r
@@ -282,10 +279,12 @@ class Mul():
             return in_l
 
     def __str__(self):
-        return '*'
+        return "*"
 
-class Div():
+
+class Div:
     identity = 0
+
     def apply(self, in_l, in_r):
         if in_l is not None and in_r is not None:
             if in_r != 0:
@@ -298,4 +297,4 @@ class Div():
             return in_l
 
     def __str__(self):
-        return '/'
+        return "/"

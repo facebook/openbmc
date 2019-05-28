@@ -13,14 +13,15 @@
 #
 
 import subprocess
+
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
 def _parse_eeprom_data(output):
     eeprom_data = {}
-    output = output.decode('utf8')
+    output = output.decode("utf8")
     for line in output.splitlines():
-        parts = line.split(':', 1)
+        parts = line.split(":", 1)
         if len(parts) != 2:
             # This generally shouldn't happen, but it's possible there was some
             # error message logged on the console in the middle of the w|seutil
@@ -33,8 +34,6 @@ def _parse_eeprom_data(output):
 
 
 def get_eeprom_data(util):
-    proc = subprocess.Popen([util],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = subprocess.Popen([util], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     return _parse_eeprom_data(data)

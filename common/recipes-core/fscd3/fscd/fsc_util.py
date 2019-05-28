@@ -16,46 +16,41 @@
 # Boston, MA 02110-1301 USA
 #
 
-import syslog
 import logging
 import logging.config
+import syslog
+
 
 LOGGER_CONF = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'default': {
-            'format': '%(asctime)s %(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {"format": "%(asctime)s %(message)s", "datefmt": "%Y-%m-%d %H:%M:%S"}
     },
-    'handlers': {
-        'file_handler': {
-            'level': 'INFO',
-            'formatter': 'default',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/fscd.log',
-            'maxBytes': 100000,
-            'backupCount': 1,
-            'encoding': 'utf8'
-        },
+    "handlers": {
+        "file_handler": {
+            "level": "INFO",
+            "formatter": "default",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "/var/log/fscd.log",
+            "maxBytes": 100000,
+            "backupCount": 1,
+            "encoding": "utf8",
+        }
     },
-    'loggers': {
-        '': {
-            'handlers': ['file_handler'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    }
+    "loggers": {
+        "": {"handlers": ["file_handler"], "level": "DEBUG", "propagate": True}
+    },
 }
 
 LOG_MAP = {
-        'debug': syslog.LOG_DEBUG,
-        'info': syslog.LOG_INFO,
-        'warning': syslog.LOG_WARNING,
-        'error': syslog.LOG_ERR,
-        'critical': syslog.LOG_CRIT
-        }
+    "debug": syslog.LOG_DEBUG,
+    "info": syslog.LOG_INFO,
+    "warning": syslog.LOG_WARNING,
+    "error": syslog.LOG_ERR,
+    "critical": syslog.LOG_CRIT,
+}
+
 
 def clamp(v, minv, maxv):
     if v <= minv:
@@ -66,7 +61,6 @@ def clamp(v, minv, maxv):
 
 
 class Logger(object):
-
     @staticmethod
     def info(msg):
         # print("INFO: " + msg)

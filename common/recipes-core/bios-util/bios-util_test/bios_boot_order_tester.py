@@ -1,16 +1,18 @@
 # Copyright 2004-present Facebook. All Rights Reserved.
 
+import unittest
+
+from bios_base_tester import captured_output
 from bios_board import bios_main_fru
 from bios_boot_order import *
-from bios_base_tester import captured_output
-import unittest
+
 
 class BiosUtilBootOrderUnitTest(unittest.TestCase):
     # Following are boot_order option related tests:
 
-    '''
+    """
     Test Boot order response data is match in expectation
-    '''
+    """
     # ===== Get===== #
     # boot_mode
     def test_get_bios_boot_mode(self):
@@ -29,7 +31,7 @@ class BiosUtilBootOrderUnitTest(unittest.TestCase):
 
     # clear_CMOS
     def test_get_bios_clear_cmos(self):
-        
+
         get_boot_order_result = [0x1, 0x0, 0x9, 0x2, 0x3, 0x4]
         with captured_output() as (out, err):
             do_boot_order_action("get", "--clear_CMOS", "", get_boot_order_result)
@@ -43,26 +45,33 @@ class BiosUtilBootOrderUnitTest(unittest.TestCase):
         self.assertEqual(output, "Clear CMOS Function: Enabled")
 
     # force_boot_BIOS_setup
-    def test_get_bios_force_boot_BIOS_setup(self):        
+    def test_get_bios_force_boot_BIOS_setup(self):
         get_boot_order_result = [0x1, 0x0, 0x9, 0x2, 0x3, 0x4]
         with captured_output() as (out, err):
-            do_boot_order_action("get", "--force_boot_BIOS_setup", "", get_boot_order_result)
+            do_boot_order_action(
+                "get", "--force_boot_BIOS_setup", "", get_boot_order_result
+            )
         output = out.getvalue().strip()
         self.assertEqual(output, "Force Boot to BIOS Setup Function: Disabled")
 
         get_boot_order_result = [0x85, 0x0, 0x9, 0x2, 0x3, 0x4]
         with captured_output() as (out, err):
-            do_boot_order_action("get", "--force_boot_BIOS_setup", "", get_boot_order_result)
+            do_boot_order_action(
+                "get", "--force_boot_BIOS_setup", "", get_boot_order_result
+            )
         output = out.getvalue().strip()
         self.assertEqual(output, "Force Boot to BIOS Setup Function: Enabled")
 
     # boot_order
-    def test_get_bios_boot_order(self):        
+    def test_get_bios_boot_order(self):
         get_boot_order_result = [0x1, 0x0, 0x9, 0x2, 0x3, 0x4]
-        with captured_output() as (out, err):            
+        with captured_output() as (out, err):
             do_boot_order_action("get", "--boot_order", "", get_boot_order_result)
         output = out.getvalue().strip()
-        self.assertEqual(output, "Boot Order: USB Device, IPv6 Network, SATA HDD, SATA-CDROM, Other Removable Device")
+        self.assertEqual(
+            output,
+            "Boot Order: USB Device, IPv6 Network, SATA HDD, SATA-CDROM, Other Removable Device",
+        )
 
     # ===== Enable ===== #
     # clear_CMOS
@@ -95,7 +104,7 @@ class BiosUtilBootOrderUnitTest(unittest.TestCase):
         actual_result = get_boot_order_req_data(data, boot_flags_valid)
 
         self.assertEqual(actual_result, expect_result)
-    
+
     # force_boot_BIOS_setup
     def test_disable_force_boot_BIOS_setup(self):
         actual_result = [""]
@@ -103,7 +112,7 @@ class BiosUtilBootOrderUnitTest(unittest.TestCase):
         expect_result = [0x5, 0x0, 0x9, 0x2, 0x3, 0x4]
         boot_flags_valid = 0
         actual_result = get_boot_order_req_data(data, boot_flags_valid)
-        
+
         self.assertEqual(actual_result, expect_result)
 
     # boot_order
@@ -113,7 +122,7 @@ class BiosUtilBootOrderUnitTest(unittest.TestCase):
         expect_result = [0x1, 0x0, 0x9, 0x2, 0x3, 0x4]
         boot_flags_valid = 0
         actual_result = get_boot_order_req_data(data, boot_flags_valid)
-        
+
         self.assertEqual(actual_result, expect_result)
 
     # ===== Set ===== #
@@ -160,4 +169,7 @@ class BiosUtilBootOrderUnitTest(unittest.TestCase):
         with captured_output() as (out, err):
             do_boot_order_action("get", "--boot_order", "", data)
         output = out.getvalue().strip()
-        self.assertEqual(output, "Boot Order: USB Device, IPv4 Network, SATA HDD, SATA-CDROM, Other Removable Device")
+        self.assertEqual(
+            output,
+            "Boot Order: USB Device, IPv4 Network, SATA HDD, SATA-CDROM, Other Removable Device",
+        )

@@ -12,12 +12,13 @@
 
 from distutils.core import setup
 
+
 setup(
-    name='pypartition',
-    version='1.0',
-    url='https://github.com/facebook/openbmc',
-    description='Tool for checking and updating OpenBMC images.',
-    license='GPLv2',
-    scripts=['check_image.py', 'improve_system.py'],
-    py_modules=['partition', 'system', 'virtualcat']
+    name="pypartition",
+    version="1.0",
+    url="https://github.com/facebook/openbmc",
+    description="Tool for checking and updating OpenBMC images.",
+    license="GPLv2",
+    scripts=["check_image.py", "improve_system.py"],
+    py_modules=["partition", "system", "virtualcat"],
 )

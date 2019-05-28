@@ -2,6 +2,7 @@
 
 import unittest
 
+
 class BiosUtilPlatInfoUnitTest(unittest.TestCase):
     # Following are plat_info option related tests:
     @unittest.skip("skip to check platform info")

@@ -20,6 +20,7 @@
 
 from rest_helper import get_wedge_slot
 
+
 def get_slotid():
     slot = get_wedge_slot()
-    return { 'slotid' : slot }
+    return {"slotid": slot}

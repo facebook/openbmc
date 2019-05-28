@@ -2,6 +2,7 @@
 
 import unittest
 
+
 class BiosUtilPciePortConfigUnitTest(unittest.TestCase):
     # Following are pcie_port_config option related tests:
     @unittest.skip("skip to check PCIe port config")

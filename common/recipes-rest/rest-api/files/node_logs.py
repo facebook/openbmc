@@ -20,10 +20,12 @@
 import json
 import re
 from subprocess import *
+
 from node import node
 
+
 class logsNode(node):
-    def __init__(self, name, info = None, actions = None):
+    def __init__(self, name, info=None, actions=None):
         self.name = name
 
         if info == None:
@@ -37,26 +39,27 @@ class logsNode(node):
 
     def getInformation(self, param={}):
         linfo = []
-        cmd = '/usr/local/bin/log-util ' + self.name +' --print'+' --json'
+        cmd = "/usr/local/bin/log-util " + self.name + " --print" + " --json"
         data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         data = data.decode()
         return json.loads(data)
 
     def doAction(self, data, param={}):
         if data["action"] != "clear":
-            res = 'failure'
+            res = "failure"
         else:
-            cmd = '/usr/local/bin/log-util ' + self.name +' --clear'
+            cmd = "/usr/local/bin/log-util " + self.name + " --clear"
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
             data = data.decode()
-            if data.startswith( 'Usage' ):
-                res = 'failure'
+            if data.startswith("Usage"):
+                res = "failure"
             else:
-                res = 'success'
-        result = { "result": res }
+                res = "success"
+        result = {"result": res}
 
         return result
 
+
 def get_node_logs(name):
-    actions = [ "clear" ]
-    return logsNode(name = name, actions = actions)
+    actions = ["clear"]
+    return logsNode(name=name, actions=actions)

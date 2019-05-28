@@ -1,34 +1,38 @@
 # Copyright 2004-present Facebook. All Rights Reserved.
 
-import unittest
-import os
-import sys
 import inspect
 import logging
+import os
+import sys
 import time
 import traceback
+import unittest
+
+from fscd import Fscd
+
 
 # Inorder for unittests to know the location of fscd here is way for it.
 # Ideally if yocto has a framework to integrate these unit tests this wouldnt
 # be needed.
-cmd_folder = (os.path.realpath(os.path.abspath(os.path.split(
-    inspect.getfile(inspect.currentframe()))[0]))).rstrip("_test")
+cmd_folder = (
+    os.path.realpath(
+        os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])
+    )
+).rstrip("_test")
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-from fscd import Fscd
 
 TEST_CONFIG = "./test-data/config-example-test.json"
 TEST_ZONE = "./test-data/"
 
 
 class BaseFscdUnitTest(unittest.TestCase):
-
     def setUp(self):
-        '''
+        """
         Defines instructions that will be executed before each test
         method.
-        '''
+        """
         # Unfortunately in python 2.6.28 setUp and tearDown get called
         # for each test. in python 2.7 and 3 there are different methods at
         # class level that will avoid running them for each test.
@@ -38,10 +42,10 @@ class BaseFscdUnitTest(unittest.TestCase):
         logging.disable(logging.CRITICAL)
 
     def tearDown(self):
-        '''
+        """
         Defines instructions that will be executed after each test
         method.
-        '''
+        """
         pass
 
     def define_fscd(self, config=TEST_CONFIG, zone_config=TEST_ZONE):
@@ -56,7 +60,6 @@ class BaseFscdUnitTest(unittest.TestCase):
 
 
 class Result(unittest.TestResult):
-
     def startTest(self, test):
         self.startTime = time.time()
         super(Result, self).startTest(test)
@@ -64,21 +67,26 @@ class Result(unittest.TestResult):
     def addSuccess(self, test):
         elapsed = time.time() - self.startTime
         super(Result, self).addSuccess(test)
-        print(('\033[32mPASS\033[0m %s (%.3fs)' % (test.id(), elapsed)))
+        print(("\033[32mPASS\033[0m %s (%.3fs)" % (test.id(), elapsed)))
 
     def addSkip(self, test, reason):
         elapsed = time.time() - self.startTime
         super(Result, self).addSkip(test, reason)
-        print(('\033[33mSKIP\033[0m %s (%.3fs) %s' %
-              (test.id(), elapsed, reason)))
+        print(("\033[33mSKIP\033[0m %s (%.3fs) %s" % (test.id(), elapsed, reason)))
 
     def __printFail(self, test, err):
         elapsed = time.time() - self.startTime
         t, val, trace = err
-        print(('\033[31mFAIL\033[0m %s (%.3fs)\n%s' % (
-            test.id(),
-            elapsed,
-            ''.join(traceback.format_exception(t, val, trace)))))
+        print(
+            (
+                "\033[31mFAIL\033[0m %s (%.3fs)\n%s"
+                % (
+                    test.id(),
+                    elapsed,
+                    "".join(traceback.format_exception(t, val, trace)),
+                )
+            )
+        )
 
     def addFailure(self, test, err):
         self.__printFail(test, err)

@@ -1,28 +1,34 @@
 # Copyright 2004-present Facebook. All Rights Reserved.
 
-from bios_board import *
-from bios_boot_order import *
-from bios_base_tester import captured_output
-from bios_base_tester import TEST_BIOS_UTIL_CONFIG
-from bios_base_tester import TEST_BIOS_UTIL_DEFAULT_CONFIG
 import unittest
 
-TEST_BIOS_UTIL_USAGE_ALL = './test-data/test-usage-all'
-TEST_BIOS_UTIL_USAGE_BOOT_ORDER_ALL = './test-data/test-usage-boot-order-all'
-TEST_BIOS_UTIL_USAGE_BOOT_ORDER_SET = './test-data/test-usage-boot-order-set'
-TEST_BIOS_UTIL_USAGE_BOOT_ORDER_GET = './test-data/test-usage-boot-order-get'
-TEST_BIOS_UTIL_USAGE_BOOT_ORDER_ENABLE = './test-data/test-usage-boot-order-enable'
-TEST_BIOS_UTIL_USAGE_BOOT_ORDER_DIABLE = './test-data/test-usage-boot-order-disable'
+from bios_base_tester import (
+    TEST_BIOS_UTIL_CONFIG,
+    TEST_BIOS_UTIL_DEFAULT_CONFIG,
+    captured_output,
+)
+from bios_board import *
+from bios_boot_order import *
+
+
+TEST_BIOS_UTIL_USAGE_ALL = "./test-data/test-usage-all"
+TEST_BIOS_UTIL_USAGE_BOOT_ORDER_ALL = "./test-data/test-usage-boot-order-all"
+TEST_BIOS_UTIL_USAGE_BOOT_ORDER_SET = "./test-data/test-usage-boot-order-set"
+TEST_BIOS_UTIL_USAGE_BOOT_ORDER_GET = "./test-data/test-usage-boot-order-get"
+TEST_BIOS_UTIL_USAGE_BOOT_ORDER_ENABLE = "./test-data/test-usage-boot-order-enable"
+TEST_BIOS_UTIL_USAGE_BOOT_ORDER_DIABLE = "./test-data/test-usage-boot-order-disable"
+
 
 def test_check_biosutil_usage(self, argv, test_result_file):
-        with captured_output() as (out, err):
-            check_bios_util(TEST_BIOS_UTIL_CONFIG, TEST_BIOS_UTIL_DEFAULT_CONFIG, argv)
-        output = out.getvalue().strip()
+    with captured_output() as (out, err):
+        check_bios_util(TEST_BIOS_UTIL_CONFIG, TEST_BIOS_UTIL_DEFAULT_CONFIG, argv)
+    output = out.getvalue().strip()
 
-        usage_expected_result = open(test_result_file, 'r').read().strip()
-        #print(usage_expected_result)  # Reserved for debugging
+    usage_expected_result = open(test_result_file, "r").read().strip()
+    # print(usage_expected_result)  # Reserved for debugging
 
-        self.assertEqual(output, usage_expected_result)        
+    self.assertEqual(output, usage_expected_result)
+
 
 class BiosUtilUsageUnitTest(unittest.TestCase):
     def test_biosutil_usage_all(self):

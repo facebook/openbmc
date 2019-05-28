@@ -20,8 +20,9 @@
 
 # Class Definition for Resource
 
+
 class node:
-    def __init__(self, info = None, actions = None):
+    def __init__(self, info=None, actions=None):
         if info == None:
             self.info = {}
         else:
@@ -39,4 +40,4 @@ class node:
         return self.actions
 
     def doAction(self, action, param={}):
-        result = { "result": 'failure', "reason": 'not supported'}
+        result = {"result": "failure", "reason": "not supported"}

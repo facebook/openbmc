@@ -5327,13 +5327,16 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
     case BIC_ND_SENSOR_VR_HOT:
       switch (ed[0] & 0x0F) {
         case 0x00:
-          strcat(error_log, "SOC_VR_Hot");
+          strcat(error_log, "CPU_VR_Hot");
           break;
         case 0x01:
           strcat(error_log, "SOC_DIMM_ABCD_VR_Hot");
           break;
         case 0x02:
           strcat(error_log, "SOC_DIMM_EFGH_VR_Hot");
+          break;
+        case 0x03:
+          strcat(error_log, "SOC_VR_Hot");
           break;
         default:
           strcat(error_log, "Unknown");

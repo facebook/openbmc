@@ -18,14 +18,16 @@
 # Boston, MA 02110-1301 USA
 #
 import unittest
+
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 from tests.cmm.test_data.sensors.sensors import SENSORS
 
+
 class RestEndpointTest(FbossRestEndpointTest):
-    '''
+    """
     Input data to the test needs to be a list like below.
     User can choose to sends these lists from jsons too.
-    '''
+    """
 
     # /api/sys
     def set_endpoint_sys_attributes(self):
@@ -39,7 +41,7 @@ class RestEndpointTest(FbossRestEndpointTest):
             "slotid",
             "mTerm_status",
             "sensors",
-            "bmc"
+            "bmc",
         ]
 
     # /api/sys/sensors
@@ -51,10 +53,10 @@ class RestEndpointTest(FbossRestEndpointTest):
         self.endpoint_mb_attrb = [
             "fruid",
             "chassis_eeprom",
-            "chassis_all_serial_and_location"
+            "chassis_all_serial_and_location",
         ]
 
-    #"/api/sys/server"
+    # "/api/sys/server"
     @unittest.skip("Test not supported on platform")
     def set_endpoint_server_attributes(self):
         self.endpoint_server_attrb = None
@@ -67,4 +69,3 @@ class RestEndpointTest(FbossRestEndpointTest):
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):
         self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
-

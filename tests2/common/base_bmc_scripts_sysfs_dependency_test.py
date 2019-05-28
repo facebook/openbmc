@@ -17,12 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
 import os
+import unittest
+
 from utils.cit_logger import Logger
 
-class BaseBmcShellScriptsSysfsDependencyTest(unittest.TestCase):
 
+class BaseBmcShellScriptsSysfsDependencyTest(unittest.TestCase):
     def setUp(self):
         Logger.start(name=__name__)
 
@@ -30,12 +31,12 @@ class BaseBmcShellScriptsSysfsDependencyTest(unittest.TestCase):
         Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
-
     def verify_if_path_exists(self, set):
-        '''
+        """
         input: 'set' is a set of sysfs paths
-        '''
+        """
         for path in set:
             with self.subTest(path=path):
-                self.assertTrue(os.path.exists(path),
-                    "{} sysfs path doesnt exist".format(path))
+                self.assertTrue(
+                    os.path.exists(path), "{} sysfs path doesnt exist".format(path)
+                )

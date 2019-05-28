@@ -20,13 +20,13 @@
 
 import unittest
 from abc import abstractmethod
-from utils.shell_util import run_shell_cmd
+
 from utils.cit_logger import Logger
+from utils.shell_util import run_shell_cmd
 from utils.test_utils import mac_verify
 
 
 class BaseHostMacTest(unittest.TestCase):
-
     def setUp(self):
         Logger.start(name=__name__)
         self.host_mac_cmd = None
@@ -44,13 +44,18 @@ class BaseHostMacTest(unittest.TestCase):
         self.assertNotEqual(self.host_mac_cmd, None, "Host MAC command not set")
         Logger.info("Executing cmd={}".format(self.host_mac_cmd))
         info = run_shell_cmd(cmd=self.host_mac_cmd)
-        self.assertTrue(mac_verify(info), "Host MAC is incorrectly formatted to \
-                        {}".format(info))
+        self.assertTrue(
+            mac_verify(info),
+            "Host MAC is incorrectly formatted to \
+                        {}".format(
+                info
+            ),
+        )
 
     def test_host_mac_zero_test(self):
         self.set_host_mac()
         self.assertNotEqual(self.host_mac_cmd, None, "Host MAC command not set")
         Logger.info("Executing cmd={}".format(self.host_mac_cmd))
         info = run_shell_cmd(cmd=self.host_mac_cmd)
-        zero_mac = '00:00:00:00:00:00'
+        zero_mac = "00:00:00:00:00:00"
         self.assertNotEqual(info, zero_mac, "Host MAC is zeros {}".format(info))

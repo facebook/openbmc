@@ -20,7 +20,7 @@
 
 from common.base_host_mac_test import BaseHostMacTest
 
-class HostMacTest(BaseHostMacTest):
 
+class HostMacTest(BaseHostMacTest):
     def set_host_mac(self):
-        self.host_mac_cmd = ['/usr/local/bin/wedge_us_mac.sh']
+        self.host_mac_cmd = ["/usr/local/bin/wedge_us_mac.sh"]

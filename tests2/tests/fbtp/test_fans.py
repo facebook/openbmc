@@ -21,16 +21,15 @@
 from common.base_fans_test import CommonFanUtilBasedFansTest
 from utils.cit_logger import Logger
 
-class FansTest(CommonFanUtilBasedFansTest):
 
+class FansTest(CommonFanUtilBasedFansTest):
     def setUp(self):
         self.start_logging(__name__)
         self.fans = [0, 1]
         self.pwms = [0, 1]
-        self.kill_fan_ctrl_cmd = ['/usr/bin/sv stop fscd']
-        self.start_fan_ctrl_cmd = ['/usr/bin/sv start fscd']
+        self.kill_fan_ctrl_cmd = ["/usr/bin/sv stop fscd"]
+        self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
 
     def tearDown(self):
         self.kill_fan_controller()
         self.start_fan_controller()
-

@@ -20,8 +20,8 @@
 
 from common.base_kernel_abi_test import BaseKernelABITest
 
-class KernelABITest(BaseKernelABITest):
 
+class KernelABITest(BaseKernelABITest):
     def set_platform_specific_paths(self):
         self.platform_dep_list = []
         pass

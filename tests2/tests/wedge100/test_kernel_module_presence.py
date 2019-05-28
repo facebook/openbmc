@@ -20,27 +20,27 @@
 
 from common.base_kernel_module_presence_test import BaseKernelModulePresenceTest
 
-class KernelModulePresenceTest(BaseKernelModulePresenceTest):
 
+class KernelModulePresenceTest(BaseKernelModulePresenceTest):
     def set_kmods(self):
         self.expected_kmod = [
-              "usb_f_acm",
-              "usb_f_ecm",
-              "g_cdc",
-              "u_ether",
-              "pmbus",
-              "lm75",
-              "tpm",
-              "syscpld",
-              "fancpld",
-              "com_e_driver",
-              "ltc4151",
-              "pmbus",
-              "pfe1100",
-              "at24",
-              "i2c_mux_pca954x",
-              "tpm_i2c_infineon",
-              "pwr1014a",
-              "pmbus_core",
-              "spidev"
+            "usb_f_acm",
+            "usb_f_ecm",
+            "g_cdc",
+            "u_ether",
+            "pmbus",
+            "lm75",
+            "tpm",
+            "syscpld",
+            "fancpld",
+            "com_e_driver",
+            "ltc4151",
+            "pmbus",
+            "pfe1100",
+            "at24",
+            "i2c_mux_pca954x",
+            "tpm_i2c_infineon",
+            "pwr1014a",
+            "pmbus_core",
+            "spidev",
         ]

@@ -21,13 +21,12 @@
 from common.base_interface_test import CommonInterfaceTest
 from utils.cit_logger import Logger
 
-class InterfaceTest(CommonInterfaceTest):
 
+class InterfaceTest(CommonInterfaceTest):
     def test_usb0_v6_interface(self):
-        '''
+        """
         Tests eth0 v6 interface
-        '''
+        """
         self.set_ifname("usb0")
         Logger.log_testname(name=__name__)
-        self.assertEqual(self.ping_v6(), 0,
-                         'Ping test for usb0 v6 failed')
+        self.assertEqual(self.ping_v6(), 0, "Ping test for usb0 v6 failed")

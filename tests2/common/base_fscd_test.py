@@ -17,20 +17,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
 import os
 import time
+import unittest
 from abc import abstractmethod
-from utils.shell_util import run_shell_cmd
+
 from utils.cit_logger import Logger
+from utils.shell_util import run_shell_cmd
 
 
 class BaseFscdTest(unittest.TestCase):
-
     def setUp(self, config=None, test_data_path=None):
-        '''
+        """
         Series of tests that are driven by changing the temperature sensors
-        '''
+        """
         Logger.start(name=self._testMethodName)
         self.assertNotEqual(config, None, "FSC TEST config needs to be set")
         self.assertNotEqual(test_data_path, None, "FSC TEST data path needs to be set")
@@ -39,8 +39,9 @@ class BaseFscdTest(unittest.TestCase):
         run_shell_cmd("cp /etc/fsc-config.json /etc/fsc-config.json.orig")
         # Copy test config to fsc-config and restart fsc
 
-        run_shell_cmd("cp {}/{} /etc/fsc-config.json".
-                           format(test_data_path, str(config)))
+        run_shell_cmd(
+            "cp {}/{} /etc/fsc-config.json".format(test_data_path, str(config))
+        )
         self.restart_fscd()
 
     def tearDown(self):
@@ -55,14 +56,14 @@ class BaseFscdTest(unittest.TestCase):
 
     @abstractmethod
     def power_host_on(self):
-        '''
+        """
         Method to power on host
-        '''
+        """
         pass
 
     @abstractmethod
     def is_host_on(self):
-        '''
+        """
         Method to test if host power is on
-        '''
+        """
         pass

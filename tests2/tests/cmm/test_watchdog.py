@@ -20,10 +20,10 @@
 
 from common.base_watchdog_test import WatchdogTest
 
-class WatchdogTest(WatchdogTest):
 
+class WatchdogTest(WatchdogTest):
     def set_kill_watchdog_daemon_cmd(self):
-        self.kill_watchdog_daemon_cmd = ['/usr/bin/killall fand']
+        self.kill_watchdog_daemon_cmd = ["/usr/bin/killall fand"]
 
     def set_start_watchdog_daemon_cmd(self):
-        self.start_watchdog_daemon_cmd = ['/bin/sh /etc/init.d/setup-fan.sh']
+        self.start_watchdog_daemon_cmd = ["/bin/sh /etc/init.d/setup-fan.sh"]

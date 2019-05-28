@@ -17,16 +17,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
 import os
+import unittest
 from abc import abstractmethod
-from utils.shell_util import run_shell_cmd
+
 from utils.cit_logger import Logger
+from utils.shell_util import run_shell_cmd
 
 
 class BaseGpioTest(unittest.TestCase):
 
-    GPIO_SHADOW_ROOT = '/tmp/gpionames'
+    GPIO_SHADOW_ROOT = "/tmp/gpionames"
 
     def setUp(self):
         Logger.start(name=__name__)
@@ -47,13 +48,15 @@ class BaseGpioTest(unittest.TestCase):
         Logger.info("GPIO name={} present".format(gpioname))
         for item, value in attributes.items():
             path = os.path.join(gpio_path, str(item))
-            self.assertTrue(os.path.exists(path),
-                "GPIO attribute missing={} attribute={}".format(gpioname, str(item)))
+            self.assertTrue(
+                os.path.exists(path),
+                "GPIO attribute missing={} attribute={}".format(gpioname, str(item)),
+            )
 
     def test_gpios(self):
-        '''
+        """
         Python's subTest will run the test 'gpio_shadow_path' for every gpio
-        '''
+        """
         self.set_gpios()
         self.assertNotEqual(self.gpios, None, "GPIOs data not set")
 

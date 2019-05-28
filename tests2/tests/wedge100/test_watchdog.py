@@ -20,10 +20,10 @@
 
 from common.base_watchdog_test import WatchdogTest
 
-class WatchdogTest(WatchdogTest):
 
+class WatchdogTest(WatchdogTest):
     def set_kill_watchdog_daemon_cmd(self):
-        self.kill_watchdog_daemon_cmd = ['/usr/bin/sv stop fscd']
+        self.kill_watchdog_daemon_cmd = ["/usr/bin/sv stop fscd"]
 
     def set_start_watchdog_daemon_cmd(self):
-        self.start_watchdog_daemon_cmd = ['/usr/bin/sv start fscd']
+        self.start_watchdog_daemon_cmd = ["/usr/bin/sv start fscd"]

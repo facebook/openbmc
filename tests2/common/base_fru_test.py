@@ -19,12 +19,12 @@
 #
 import unittest
 from abc import abstractmethod
-from utils.shell_util import run_cmd
+
 from utils.cit_logger import Logger
+from utils.shell_util import run_cmd
 
 
 class BaseFruTest(unittest.TestCase):
-
     def setUp(self):
         Logger.start(name=__name__)
         self.fru_cmd = None

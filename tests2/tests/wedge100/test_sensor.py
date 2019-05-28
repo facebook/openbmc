@@ -17,24 +17,27 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
-import time
 import re
+import time
+import unittest
+
+from common.base_sensor_test import LmSensorsTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from common.base_sensor_test import LmSensorsTest
 
-#Note: Fancpld covered under fans_test ; LTC driver covered under psumuxmon
+
+# Note: Fancpld covered under fans_test ; LTC driver covered under psumuxmon
+
 
 class ComESensorTest(LmSensorsTest):
     COM_E_DRIVER = [
-          "CPU Vcore",
-          "+3V Voltage",
-          "+5V Voltage",
-          "+12V Voltage",
-          "VDIMM Voltage",
-          "Memory Temp",
-          "CPU Temp"
+        "CPU Vcore",
+        "+3V Voltage",
+        "+5V Voltage",
+        "+12V Voltage",
+        "VDIMM Voltage",
+        "Memory Temp",
+        "CPU Temp",
     ]
 
     def set_sensors_cmd(self):
@@ -44,59 +47,82 @@ class ComESensorTest(LmSensorsTest):
         result = self.get_parsed_result()
         for key in ComESensorTest.COM_E_DRIVER:
             with self.subTest(key=key):
-                self.assertIn(key, result.keys(),
-                    "Missing key {} in com_e_driver data".format(key))
+                self.assertIn(
+                    key,
+                    result.keys(),
+                    "Missing key {} in com_e_driver data".format(key),
+                )
 
     def test_com_e_sensor_data_3V_Voltage_range(self):
         result = self.get_parsed_result()
         value = result["+3V Voltage"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" V")[0]
-        self.assertAlmostEqual(float(value), 3, delta=1,
-            msg="+3V Voltage value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            3,
+            delta=1,
+            msg="+3V Voltage value is {} not within range".format(value),
+        )
 
     def test_com_e_sensor_data_5V_Voltage_range(self):
         result = self.get_parsed_result()
         value = result["+5V Voltage"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" V")[0]
-        self.assertAlmostEqual(float(value), 5, delta=1,
-            msg="+5V Voltage value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            5,
+            delta=1,
+            msg="+5V Voltage value is {} not within range".format(value),
+        )
 
     def test_com_e_sensor_data_12V_Voltage_range(self):
         result = self.get_parsed_result()
         value = result["+12V Voltage"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" V")[0]
-        self.assertAlmostEqual(float(value), 12, delta=1,
-            msg="+12V Voltage value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            12,
+            delta=1,
+            msg="+12V Voltage value is {} not within range".format(value),
+        )
 
     def test_com_e_sensor_data_Memory_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Memory Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 30, delta=20,
-            msg="Memory Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            30,
+            delta=20,
+            msg="Memory Temp value is {} not within range".format(value),
+        )
 
     def test_com_e_sensor_data_CPU_Temp_range(self):
         result = self.get_parsed_result()
         value = result["CPU Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 40, delta=20,
-            msg="CPU Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            40,
+            delta=20,
+            msg="CPU Temp value is {} not within range".format(value),
+        )
 
 
 class Tmp75SensorTest(LmSensorsTest):
     TMP75_SENSORS = [
-          "Outlet Middle Temp",
-          "Inlet Middle Temp",
-          "Switch Temp",
-          "Inlet Left Temp",
-          "Inlet Right Temp",
-          "Outlet Right Temp",
-          "Outlet Left Temp"
+        "Outlet Middle Temp",
+        "Inlet Middle Temp",
+        "Switch Temp",
+        "Inlet Left Temp",
+        "Inlet Right Temp",
+        "Outlet Right Temp",
+        "Outlet Left Temp",
     ]
 
     def set_sensors_cmd(self):
@@ -106,61 +132,90 @@ class Tmp75SensorTest(LmSensorsTest):
         result = self.get_parsed_result()
         for key in Tmp75SensorTest.TMP75_SENSORS:
             with self.subTest(key=key):
-                self.assertIn(key, result.keys(),
-                    "Missing key {} in tmp75 data".format(key))
+                self.assertIn(
+                    key, result.keys(), "Missing key {} in tmp75 data".format(key)
+                )
 
     def test_tmp75_sensor_Outlet_Middle_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Outlet Middle Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 25, delta=10,
-            msg="Outlet Middle Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            25,
+            delta=10,
+            msg="Outlet Middle Temp value is {} not within range".format(value),
+        )
 
     def test_tmp75_sensor_Inlet_Middle_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Inlet Middle Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 25, delta=10,
-            msg="Inlet Middle Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            25,
+            delta=10,
+            msg="Inlet Middle Temp value is {} not within range".format(value),
+        )
 
     def test_tmp75_sensor_Switch_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Switch Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 35, delta=10,
-            msg="Switch Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            35,
+            delta=10,
+            msg="Switch Temp value is {} not within range".format(value),
+        )
 
     def test_tmp75_sensor_Inlet_Left_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Inlet Left Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 25, delta=10,
-            msg="Inlet Left Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            25,
+            delta=10,
+            msg="Inlet Left Temp value is {} not within range".format(value),
+        )
 
     def test_tmp75_sensor_Inlet_Right_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Inlet Right Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 25, delta=10,
-            msg="Inlet Right Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            25,
+            delta=10,
+            msg="Inlet Right Temp value is {} not within range".format(value),
+        )
 
     def test_tmp75_sensor_Outlet_Right_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Outlet Right Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 25, delta=10,
-            msg="Outlet Right Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            25,
+            delta=10,
+            msg="Outlet Right Temp value is {} not within range".format(value),
+        )
 
     def test_tmp75_sensor_Outlet_Left_Temp_range(self):
         result = self.get_parsed_result()
         value = result["Outlet Left Temp"]
         # '+12.23 V' extract 12.23 form it
         value = value.split("+")[1].split(" C")[0]
-        self.assertAlmostEqual(float(value), 25, delta=10,
-            msg="Outlet Left Temp value is {} not within range".format(value))
+        self.assertAlmostEqual(
+            float(value),
+            25,
+            delta=10,
+            msg="Outlet Left Temp value is {} not within range".format(value),
+        )

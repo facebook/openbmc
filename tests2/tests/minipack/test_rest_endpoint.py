@@ -23,10 +23,11 @@ from tests.minipack.test_data.sensors.sensors import SENSORS
 
 
 class RestEndpointTest(FbossRestEndpointTest):
-    '''
+    """
     Input data to the test needs to be a list like below.
     User can choose to sends these lists from jsons too.
-    '''
+    """
+
     FRUID_SCM_ENDPOINT = "/api/sys/fruid_scm"
     PIM_PRESENT_ENDPOINT = "/api/sys/pim_present"
     MB_SEUTIL_ENDPOINT = "/api/sys/mb/seutil"
@@ -50,7 +51,7 @@ class RestEndpointTest(FbossRestEndpointTest):
             "usb2i2c_reset",
             "pimserial",
             "server",
-            "gpios"
+            "gpios",
         ]
 
     # /api/sys/sensors
@@ -73,16 +74,11 @@ class RestEndpointTest(FbossRestEndpointTest):
 
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):
-        self.endpoint_server_attrb = [
-            "BIC_ok",
-            "status"
-        ]
+        self.endpoint_server_attrb = ["BIC_ok", "status"]
 
     # "/api/sys/slotid"
     def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = [
-            "1"
-        ]
+        self.endpoint_slotid_attrb = ["1"]
 
     # "/api/sys/fruid_scm"
     def set_endpoint_fruid_scm_attributes(self):
@@ -91,8 +87,7 @@ class RestEndpointTest(FbossRestEndpointTest):
     def test_endpoint_api_sys_fruid_scm(self):
         self.set_endpoint_fruid_scm_attributes()
         self.verify_endpoint_attributes(
-            RestEndpointTest.FRUID_SCM_ENDPOINT,
-            self.endpoint_fruid_scm_attrb
+            RestEndpointTest.FRUID_SCM_ENDPOINT, self.endpoint_fruid_scm_attrb
         )
 
     # "/api/sys/pim_present"
@@ -105,14 +100,13 @@ class RestEndpointTest(FbossRestEndpointTest):
             "pim5",
             "pim6",
             "pim7",
-            "pim8"
+            "pim8",
         ]
 
     def test_endpoint_api_sys_pim_present(self):
         self.set_endpoint_pim_presence_attributes()
         self.verify_endpoint_attributes(
-            RestEndpointTest.PIM_PRESENT_ENDPOINT,
-            self.endpoint_pim_presence
+            RestEndpointTest.PIM_PRESENT_ENDPOINT, self.endpoint_pim_presence
         )
 
     # "/api/sys/piminfo"
@@ -131,8 +125,7 @@ class RestEndpointTest(FbossRestEndpointTest):
     def test_endpoint_api_sys_piminfo(self):
         self.set_endpoint_piminfo_attributes()
         self.verify_endpoint_attributes(
-            RestEndpointTest.PIM_INFO_ENDPOINT,
-            self.endpoint_piminfo_attrb
+            RestEndpointTest.PIM_INFO_ENDPOINT, self.endpoint_piminfo_attrb
         )
 
     # "/api/sys/pimserial"
@@ -140,7 +133,7 @@ class RestEndpointTest(FbossRestEndpointTest):
         self.set_endpoint_piminfo_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.PIM_SERIAL_ENDPOINT,
-            self.endpoint_piminfo_attrb # same keys as piminfo
+            self.endpoint_piminfo_attrb,  # same keys as piminfo
         )
 
     # "/api/sys/mb/seutil"
@@ -150,6 +143,5 @@ class RestEndpointTest(FbossRestEndpointTest):
     def test_endpoint_api_sys_mb_seutil_fruid(self):
         self.set_endpoint_seutil_fruid_attributes()
         self.verify_endpoint_attributes(
-            RestEndpointTest.MB_SEUTIL_ENDPOINT,
-            self.endpoint_seutil_fruid_attrb
+            RestEndpointTest.MB_SEUTIL_ENDPOINT, self.endpoint_seutil_fruid_attrb
         )

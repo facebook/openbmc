@@ -20,118 +20,124 @@
 
 from common.base_eeprom_test import CommonEepromTest
 
+
 class EepromTest(CommonEepromTest):
     """
     Test for weutil
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/bin/weutil']
+        self.eeprom_cmd = ["/usr/bin/weutil"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-SMB']
+        self.product_name = ["MINIPACK-SMB"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-SMB']
+        self.location_on_fabric = ["MINIPACK-SMB"]
+
 
 class SCMEepromTest(CommonEepromTest):
     """
     Test for seutil
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/seutil']
+        self.eeprom_cmd = ["/usr/local/bin/seutil"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-SCM']
+        self.product_name = ["MINIPACK-SCM"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-SCM']
+        self.location_on_fabric = ["MINIPACK-SCM"]
+
 
 class PIM1EepromTest(CommonEepromTest):
     """
     Test for peutil 1
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 1']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 1"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]
+
 
 class PIM2EepromTest(CommonEepromTest):
-
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 2']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 2"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]
+
 
 class PIM3EepromTest(CommonEepromTest):
-
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 3']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 3"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]
+
 
 class PIM4EepromTest(CommonEepromTest):
-
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 4']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 4"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]
+
 
 class PIM5EepromTest(CommonEepromTest):
-
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 5']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 5"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]
+
 
 class PIM6EepromTest(CommonEepromTest):
-
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 6']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 6"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]
+
 
 class PIM7EepromTest(CommonEepromTest):
-
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 7']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 7"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]
+
 
 class PIM8EepromTest(CommonEepromTest):
-
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/peutil 8']
+        self.eeprom_cmd = ["/usr/local/bin/peutil 8"]
 
     def set_product_name(self):
-        self.product_name = ['MINIPACK-PIM16Q']
+        self.product_name = ["MINIPACK-PIM16Q"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['MINIPACK-PIM16Q']
+        self.location_on_fabric = ["MINIPACK-PIM16Q"]

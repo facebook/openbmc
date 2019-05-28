@@ -20,18 +20,18 @@
 
 from common.base_process_running_test import BaseProcessRunningTest
 
-class ProcessRunningTest(BaseProcessRunningTest):
 
+class ProcessRunningTest(BaseProcessRunningTest):
     def set_processes(self):
         self.expected_process = [
-              "/var/run/dhclient.eth0.pid",
-              "/var/run/dhclient6.eth0.pid",
-              "rest.py",
-              "rsyslogd",
-              "watchdogd",
-              "sshd",
-              "crond",
-              "system_monitor.sh",
-              "/var/run/ntpd.pid",
-              "fand",
+            "/var/run/dhclient.eth0.pid",
+            "/var/run/dhclient6.eth0.pid",
+            "rest.py",
+            "rsyslogd",
+            "watchdogd",
+            "sshd",
+            "crond",
+            "system_monitor.sh",
+            "/var/run/ntpd.pid",
+            "fand",
         ]

@@ -20,12 +20,12 @@
 
 import unittest
 from abc import abstractmethod
-from utils.shell_util import run_shell_cmd
+
 from utils.cit_logger import Logger
+from utils.shell_util import run_shell_cmd
 
 
 class BaseProcessRunningTest(unittest.TestCase):
-
     def setUp(self):
         Logger.start(name=__name__)
         self.process_cmd = None
@@ -36,7 +36,7 @@ class BaseProcessRunningTest(unittest.TestCase):
         pass
 
     def set_process_cmd(self):
-        self.process_cmd = ['ps']
+        self.process_cmd = ["ps"]
 
     @abstractmethod
     def set_processes(self):
@@ -44,7 +44,9 @@ class BaseProcessRunningTest(unittest.TestCase):
 
     def get_installed_processes(self):
         self.set_process_cmd()
-        self.assertNotEqual(self.process_cmd, None, "Command to get processes is not set")
+        self.assertNotEqual(
+            self.process_cmd, None, "Command to get processes is not set"
+        )
         Logger.info("Executing cmd={}".format(self.process_cmd))
         info = run_shell_cmd(cmd=self.process_cmd)
         return info
@@ -52,10 +54,10 @@ class BaseProcessRunningTest(unittest.TestCase):
     def test_installed_processes(self):
         self.set_processes()
         info = self.get_installed_processes()
-        self.assertNotEqual(self.expected_process, None,
-            "Expected set of processes data not set")
+        self.assertNotEqual(
+            self.expected_process, None, "Expected set of processes data not set"
+        )
 
         for process in self.expected_process:
             with self.subTest(process=process):
-                self.assertIn(process, info,
-                    "Process {} not running".format(process))
+                self.assertIn(process, info, "Process {} not running".format(process))

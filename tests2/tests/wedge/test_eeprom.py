@@ -20,13 +20,13 @@
 
 from common.base_eeprom_test import CommonEepromTest
 
-class EepromTest(CommonEepromTest):
 
+class EepromTest(CommonEepromTest):
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/bin/weutil']
+        self.eeprom_cmd = ["/usr/bin/weutil"]
 
     def set_product_name(self):
-        self.product_name = ['Wedge']
+        self.product_name = ["Wedge"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['WEDGE']
+        self.location_on_fabric = ["WEDGE"]

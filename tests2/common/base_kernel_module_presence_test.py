@@ -20,12 +20,12 @@
 
 import unittest
 from abc import abstractmethod
-from utils.shell_util import run_shell_cmd
+
 from utils.cit_logger import Logger
+from utils.shell_util import run_shell_cmd
 
 
 class BaseKernelModulePresenceTest(unittest.TestCase):
-
     def setUp(self):
         Logger.start(name=__name__)
         self.kmod_cmd = None
@@ -37,7 +37,7 @@ class BaseKernelModulePresenceTest(unittest.TestCase):
         pass
 
     def set_kmod_cmd(self):
-        self.kmod_cmd = ['lsmod']
+        self.kmod_cmd = ["lsmod"]
 
     @abstractmethod
     def set_kmods(self):
@@ -53,10 +53,10 @@ class BaseKernelModulePresenceTest(unittest.TestCase):
     def test_installed_kmods(self):
         self.set_kmods()
         info = self.get_installed_kmods()
-        self.assertNotEqual(self.expected_kmod, None,
-            "Expected set of kmods data not set")
+        self.assertNotEqual(
+            self.expected_kmod, None, "Expected set of kmods data not set"
+        )
 
         for kmod in self.expected_kmod:
             with self.subTest(kmod=kmod):
-                self.assertIn(kmod, info,
-                    "Kernel module {} not installed".format(kmod))
+                self.assertIn(kmod, info, "Kernel module {} not installed".format(kmod))

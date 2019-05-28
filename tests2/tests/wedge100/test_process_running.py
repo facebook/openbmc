@@ -20,16 +20,16 @@
 
 from common.base_process_running_test import BaseProcessRunningTest
 
-class ProcessRunningTest(BaseProcessRunningTest):
 
+class ProcessRunningTest(BaseProcessRunningTest):
     def set_processes(self):
         self.expected_process = [
-              "spatula_wrapper.py",
-              "fscd",
-              "psumuxmon",
-              "rackmond",
-              "/var/run/dhclient.eth0.pid",
-              "/var/run/dhclient6.eth0.pid",
-              "rest.py",
-              "mTerm_server"
+            "spatula_wrapper.py",
+            "fscd",
+            "psumuxmon",
+            "rackmond",
+            "/var/run/dhclient.eth0.pid",
+            "/var/run/dhclient6.eth0.pid",
+            "rest.py",
+            "mTerm_server",
         ]

@@ -19,21 +19,23 @@
 #
 
 import re
+
 from utils.cit_logger import Logger
 
+
 def mac_verify(mac):
-    '''
+    """
     Helper method to verify if a MAC address is properly formatted
-    '''
-    if re.match("[0-9a-f]{2}([:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$",
-                mac.lower()):
+    """
+    if re.match("[0-9a-f]{2}([:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", mac.lower()):
         return True
     return False
 
+
 def read_data_from_filepath(path):
-    '''
+    """
     Helper method to read file from a file
-    '''
+    """
     try:
         handle = open(path, "r")
         data = handle.readline().rstrip()
@@ -41,4 +43,4 @@ def read_data_from_filepath(path):
         Logger.debug("Reading path={} data={}".format(path, data))
         return data
     except Exception:
-        raise("Failed to read path={}".format(path))
+        raise ("Failed to read path={}".format(path))

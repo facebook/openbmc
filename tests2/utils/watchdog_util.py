@@ -19,46 +19,48 @@
 #
 
 from time import sleep
+
 from utils.shell_util import run_shell_cmd
 
 
 class WatchdogUtils:
     """Watchdog utility functions.
     """
-    _DEVMEM_CMD = '/sbin/devmem'
-    _WDT1_CTRL_REG = '0x1E78500C'
-    _WDT1_STATUS_REG = '0x1E785000'
-    _WDTCLI_CMD = '/usr/local/bin/wdtcli'
+
+    _DEVMEM_CMD = "/sbin/devmem"
+    _WDT1_CTRL_REG = "0x1E78500C"
+    _WDT1_STATUS_REG = "0x1E785000"
+    _WDTCLI_CMD = "/usr/local/bin/wdtcli"
 
     def start_watchdog(self):
         """Start the watchdog.
         """
-        cmd = self._WDTCLI_CMD + ' start'
+        cmd = self._WDTCLI_CMD + " start"
         run_shell_cmd(cmd)
 
     def stop_watchdog(self):
         """Stop the watchdog.
         """
-        cmd = self._WDTCLI_CMD + ' stop'
+        cmd = self._WDTCLI_CMD + " stop"
         run_shell_cmd(cmd)
 
     def kick_watchdog(self):
         """Kick the watchdog.
         """
-        cmd = self._WDTCLI_CMD + ' kick'
+        cmd = self._WDTCLI_CMD + " kick"
         run_shell_cmd(cmd)
 
     def _read_ctrl_register(self):
         """Read watchdog control register.
         """
-        cmd = self._DEVMEM_CMD + ' ' + self._WDT1_CTRL_REG
+        cmd = self._DEVMEM_CMD + " " + self._WDT1_CTRL_REG
         cmd_out = run_shell_cmd(cmd)
         return int(cmd_out, 16)
 
     def _read_status_register(self):
         """Read watchdog status register.
         """
-        cmd = self._DEVMEM_CMD + ' ' + self._WDT1_STATUS_REG
+        cmd = self._DEVMEM_CMD + " " + self._WDT1_STATUS_REG
         cmd_out = run_shell_cmd(cmd)
         return int(cmd_out, 16)
 

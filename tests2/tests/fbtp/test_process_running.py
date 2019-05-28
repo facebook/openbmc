@@ -20,25 +20,25 @@
 
 from common.base_process_running_test import BaseProcessRunningTest
 
-class ProcessRunningTest(BaseProcessRunningTest):
 
+class ProcessRunningTest(BaseProcessRunningTest):
     def set_processes(self):
         self.expected_process = [
-              "fscd",
-              "sshd",
-              "dhclient -6 -d -D LL -pf /var/run/dhclient6.eth0.pid eth0",
-              "mTerm_server",
-              "sensord",
-              "healthd",
-              "gpiod",
-              "ntpd",
-              "ipmid",
-              "ncsid",
-              "front-paneld",
-              "rest.py",
-              "/usr/local/bin/ipmbd 1 1",
-              "/usr/local/bin/ipmbd 4 1",
-              "/usr/local/bin/ipmbd 9 1",
-              "/usr/local/bin/kcsd 2",
-              "/usr/local/bin/kcsd 1",
+            "fscd",
+            "sshd",
+            "dhclient -6 -d -D LL -pf /var/run/dhclient6.eth0.pid eth0",
+            "mTerm_server",
+            "sensord",
+            "healthd",
+            "gpiod",
+            "ntpd",
+            "ipmid",
+            "ncsid",
+            "front-paneld",
+            "rest.py",
+            "/usr/local/bin/ipmbd 1 1",
+            "/usr/local/bin/ipmbd 4 1",
+            "/usr/local/bin/ipmbd 9 1",
+            "/usr/local/bin/kcsd 2",
+            "/usr/local/bin/kcsd 1",
         ]

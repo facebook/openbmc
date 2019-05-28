@@ -20,25 +20,26 @@
 
 import subprocess
 
+
 def run_cmd(cmd=None):
     if not cmd:
         raise Exception("cmd not set")
-    info = subprocess.check_output(cmd).decode('utf-8')
+    info = subprocess.check_output(cmd).decode("utf-8")
     return info
+
 
 def run_shell_cmd(cmd=None):
     if not cmd:
         raise Exception("cmd not set")
     try:
-        f = subprocess.Popen(cmd,
-                             shell=True,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        f = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         data, err = f.communicate()
-        err = err.decode('utf-8')
+        err = err.decode("utf-8")
         if len(err) > 0:
             raise Exception(err + " [FAILED]")
-        info = data.decode('utf-8')
+        info = data.decode("utf-8")
     except:
         raise Exception("Failed to run command = {}".format(cmd))
     return info

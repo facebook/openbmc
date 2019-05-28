@@ -19,13 +19,15 @@
 #
 
 import unittest
+
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 
+
 class RestEndpointTest(FbossRestEndpointTest):
-    '''
+    """
     Input data to the test needs to be a list like below.
     User can choose to sends these lists from jsons too.
-    '''
+    """
 
     # /api/sys
     def set_endpoint_sys_attributes(self):
@@ -39,25 +41,25 @@ class RestEndpointTest(FbossRestEndpointTest):
             "slotid",
             "mTerm_status",
             "sensors",
-            "bmc"
+            "bmc",
         ]
 
     # /api/sys/sensors
     def set_endpoint_sensors_attributes(self):
         self.endpoint_sensors_attrb = [
-             "ast_pwm-isa-0000",
-             "ncp4200-i2c-1-60",
-             "ncp4200-i2c-2-60",
-             "tmp75-i2c-3-48",
-             "tmp75-i2c-3-49",
-             "tmp75-i2c-3-4a",
-             "fb_panther_plus-i2c-4-40",
-             "max127-i2c-6-28",
-             "pfe1100-i2c-7-59",
-             "pfe1100-i2c-7-5a",
-             "ncp4200-i2c-8-60",
-             "ast_adc-isa-0000",
-             "adm1278-i2c-12-10"
+            "ast_pwm-isa-0000",
+            "ncp4200-i2c-1-60",
+            "ncp4200-i2c-2-60",
+            "tmp75-i2c-3-48",
+            "tmp75-i2c-3-49",
+            "tmp75-i2c-3-4a",
+            "fb_panther_plus-i2c-4-40",
+            "max127-i2c-6-28",
+            "pfe1100-i2c-7-59",
+            "pfe1100-i2c-7-5a",
+            "ncp4200-i2c-8-60",
+            "ast_adc-isa-0000",
+            "adm1278-i2c-12-10",
         ]
 
     # "/api/sys/mb"
@@ -66,10 +68,7 @@ class RestEndpointTest(FbossRestEndpointTest):
 
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):
-        self.endpoint_server_attrb = [
-            "BIC_ok",
-            "status"
-        ]
+        self.endpoint_server_attrb = ["BIC_ok", "status"]
 
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):
@@ -81,10 +80,7 @@ class RestEndpointTest(FbossRestEndpointTest):
 
     # "/api/sys/slotid"
     def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = [
-            "16"
-        ]
-
+        self.endpoint_slotid_attrb = ["16"]
 
     # "/api/sys/firmware_info_all
     @unittest.skip("Test not supported on platform")

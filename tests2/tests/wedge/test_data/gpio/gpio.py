@@ -19,35 +19,14 @@
 #
 
 GPIOS = {
-            "RESET_SEQ0": {
-                "active_low": "0",
-                "direction": "in",
-                "edge": "none",
-                "value": "0"
-            },
-            "RESET_SEQ1": {
-                "active_low": "0",
-                "direction": "in",
-                "edge": "none",
-                "value": "1"
-            },
-            "T2_POWER_UP": {
-                "active_low": "0",
-                "direction": "in",
-                "edge": "none",
-                "value": "0"
-            },
-            "T2_RESET_N": {
-                "active_low": "0",
-                "direction": "in",
-                "edge": "none",
-                "value": "1"
-            },
-            "USB_BRDG_RST": {
-                "active_low": "0",
-                "direction": "in",
-                "edge": "none",
-                "value": "1"
-            }
-
-        }
+    "RESET_SEQ0": {"active_low": "0", "direction": "in", "edge": "none", "value": "0"},
+    "RESET_SEQ1": {"active_low": "0", "direction": "in", "edge": "none", "value": "1"},
+    "T2_POWER_UP": {"active_low": "0", "direction": "in", "edge": "none", "value": "0"},
+    "T2_RESET_N": {"active_low": "0", "direction": "in", "edge": "none", "value": "1"},
+    "USB_BRDG_RST": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "value": "1",
+    },
+}

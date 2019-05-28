@@ -21,7 +21,7 @@
 from common.base_gpio_test import BaseGpioTest
 from tests.wedge.test_data.gpio.gpio import GPIOS
 
-class GpioTest(BaseGpioTest):
 
+class GpioTest(BaseGpioTest):
     def set_gpios(self):
         self.gpios = GPIOS

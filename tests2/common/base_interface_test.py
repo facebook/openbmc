@@ -18,12 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 
-import unittest
 import subprocess
+import unittest
+
 from utils.cit_logger import Logger
 
-class BaseInterfaceTest(unittest.TestCase):
 
+class BaseInterfaceTest(unittest.TestCase):
     def setUp(self):
         Logger.start(name=__name__)
         pass
@@ -38,13 +39,17 @@ class BaseInterfaceTest(unittest.TestCase):
         """
         Get IPv4 address of a given interface
         """
-        f = subprocess.Popen(['ip', 'addr', 'show', self.ifname.encode('utf-8')],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        f = subprocess.Popen(
+            ["ip", "addr", "show", self.ifname.encode("utf-8")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         out, err = f.communicate()
-        if (len(out) == 0 or len(err) != 0):
-            raise Exception("Device " + self.ifname.encode('utf-8') + " does not exist [FAILED]")
-        out = out.decode('utf-8')
+        if len(out) == 0 or len(err) != 0:
+            raise Exception(
+                "Device " + self.ifname.encode("utf-8") + " does not exist [FAILED]"
+            )
+        out = out.decode("utf-8")
         ipv4 = out.split("inet ")[1].split("/")[0]
         Logger.debug("Got ip address for " + str(self.ifname))
         return ipv4
@@ -53,18 +58,24 @@ class BaseInterfaceTest(unittest.TestCase):
         """
         Get IPv6 address of a given interface
         """
-        f = subprocess.Popen(['ip', 'addr', 'show', self.ifname.encode('utf-8')],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        f = subprocess.Popen(
+            ["ip", "addr", "show", self.ifname.encode("utf-8")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         out, err = f.communicate()
-        self.assertNotEqual(len(out), 0, "Device " + str(self.ifname) + " does not exist [FAILED]")
-        self.assertEqual(len(err), 0, "Device " + str(self.ifname) + " does not exist [FAILED]")
+        self.assertNotEqual(
+            len(out), 0, "Device " + str(self.ifname) + " does not exist [FAILED]"
+        )
+        self.assertEqual(
+            len(err), 0, "Device " + str(self.ifname) + " does not exist [FAILED]"
+        )
 
-        if (len(out) == 0 or len(err) != 0):
+        if len(out) == 0 or len(err) != 0:
             Logger.error("Device " + str(self.ifname) + " does not exist [FAILED]")
             return 1
             # raise Exception("Device " + self.ifname.encode('utf-8') + " does not exist [FAILED]")
-        out = out.decode('utf-8')
+        out = out.decode("utf-8")
         ipv6 = out.split("inet6 ")[1].split("/")[0]
         Logger.debug("Got ip address for " + str(self.ifname))
         return ipv6
@@ -73,9 +84,9 @@ class BaseInterfaceTest(unittest.TestCase):
         self.assertNotEqual(cmd, None, "run_ping cmd not set")
         if cmd != "":
             Logger.debug("Executing: " + str(cmd))
-            f = subprocess.Popen(cmd, shell=True,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+            f = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
             err = f.communicate()[1]
             if len(err) > 0:
                 raise Exception(err)
@@ -94,21 +105,18 @@ class BaseInterfaceTest(unittest.TestCase):
 
 
 class CommonInterfaceTest(BaseInterfaceTest):
-
     def test_eth0_v4_interface(self):
-        '''
+        """
         Tests eth0 v4 interface
-        '''
+        """
         self.set_ifname("eth0")
         Logger.log_testname(name=__name__)
-        self.assertEqual(self.ping_v4(), 0,
-                         'Ping test for %s v4 failed'.format("eth0"))
+        self.assertEqual(self.ping_v4(), 0, "Ping test for %s v4 failed".format("eth0"))
 
     def test_eth0_v6_interface(self):
-        '''
+        """
         Tests eth0 v6 interface
-        '''
+        """
         self.set_ifname("eth0")
         Logger.log_testname(name=__name__)
-        self.assertEqual(self.ping_v6(), 0,
-                         'Ping test for eth0 v6 failed')
+        self.assertEqual(self.ping_v6(), 0, "Ping test for eth0 v6 failed")

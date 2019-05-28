@@ -19,37 +19,29 @@
 import logging
 import logging.config
 
+
 LOGGER_CONF = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'default': {
-            'format': '%(message)s'
-        },
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"default": {"format": "%(message)s"}},
+    "handlers": {
+        "file_handler": {
+            "level": "INFO",
+            "formatter": "default",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "/tmp/cit.log",
+            "maxBytes": 100000,
+            "backupCount": 1,
+            "encoding": "utf8",
+        }
     },
-    'handlers': {
-        'file_handler': {
-            'level': 'INFO',
-            'formatter': 'default',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/tmp/cit.log',
-            'maxBytes': 100000,
-            'backupCount': 1,
-            'encoding': 'utf8'
-        },
+    "loggers": {
+        "": {"handlers": ["file_handler"], "level": "DEBUG", "propagate": True}
     },
-    'loggers': {
-        '': {
-            'handlers': ['file_handler'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    }
 }
 
 
 class Logger(object):
-
     @staticmethod
     def info(msg):
         logging.info(msg)

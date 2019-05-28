@@ -22,15 +22,14 @@ from common.base_rest_endpoint_test import FbossRestEndpointTest
 
 
 class RestEndpointTest(FbossRestEndpointTest):
-    '''
+    """
     Input data to the test needs to be a list like below.
     User can choose to sends these lists from jsons too.
-    '''
+    """
+
     # /api
     def set_endpoint_api_attributes(self):
-        self.endpoint_api_attrb = [
-            "sys"
-        ]
+        self.endpoint_api_attrb = ["sys"]
 
     # /api/sys
     def set_endpoint_sys_attributes(self):
@@ -46,36 +45,31 @@ class RestEndpointTest(FbossRestEndpointTest):
             "mTerm_status",
             "sensors",
             "bmc",
-            "firmware_info"
+            "firmware_info",
         ]
 
     # /api/sys/sensors
     def set_endpoint_sensors_attributes(self):
         self.endpoint_sensors_attrb = [
-             "tmp75-i2c-3-48",
-             "tmp75-i2c-3-49",
-             "tmp75-i2c-3-4a",
-             "tmp75-i2c-3-4b",
-             "tmp75-i2c-3-4c",
-             "fancpld-i2c-8-33",
-             "com_e_driver-i2c-4-33",
-             "ltc4151-i2c-7-6f",
-             "tmp75-i2c-8-48",
-             "tmp75-i2c-8-49"
+            "tmp75-i2c-3-48",
+            "tmp75-i2c-3-49",
+            "tmp75-i2c-3-4a",
+            "tmp75-i2c-3-4b",
+            "tmp75-i2c-3-4c",
+            "fancpld-i2c-8-33",
+            "com_e_driver-i2c-4-33",
+            "ltc4151-i2c-7-6f",
+            "tmp75-i2c-8-48",
+            "tmp75-i2c-8-49",
         ]
 
     # "/api/sys/mb"
     def set_endpoint_mb_attributes(self):
-        self.endpoint_mb_attrb = [
-            "fruid"
-        ]
+        self.endpoint_mb_attrb = ["fruid"]
 
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):
-        self.endpoint_server_attrb = [
-            "BIC_ok",
-            "status"
-        ]
+        self.endpoint_server_attrb = ["BIC_ok", "status"]
 
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):
@@ -83,14 +77,12 @@ class RestEndpointTest(FbossRestEndpointTest):
             "Assembled At",
             "Local MAC",
             "Product Asset Tag",
-            "Product Name"
+            "Product Name",
         ]
 
     # "/api/sys/mTerm_status"
     def set_endpoint_mterm_attributes(self):
-        self.endpoint_mterm_attrb = [
-            "Running"
-        ]
+        self.endpoint_mterm_attrb = ["Running"]
 
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):
@@ -113,28 +105,20 @@ class RestEndpointTest(FbossRestEndpointTest):
             "load-5",
             "open-fds",
             "u-boot version",
-            "vboot"
+            "vboot",
         ]
 
     def set_endpoint_fc_present_attributes(self):
-        self.endpoint_fc_present_attrb = [
-            "Not Applicable"
-        ]
+        self.endpoint_fc_present_attrb = ["Not Applicable"]
 
     # "/api/sys/slotid"
     def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = [
-            "0"
-        ]
+        self.endpoint_slotid_attrb = ["0"]
 
     # "/api/sys/firmware_info"
     def set_endpoint_firmware_info_attributes(self):
-        self.endpoint_firmware_info_attrb = [
-            "all"
-        ]
+        self.endpoint_firmware_info_attrb = ["all"]
 
     def set_endpoint_firmware_info_all_attributes(self):
         # TODO: what if this changes?
-        self.endpoint_firmware_info_all_attrb = [
-            "6.101"
-        ]
+        self.endpoint_firmware_info_all_attrb = ["6.101"]

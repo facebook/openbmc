@@ -18,11 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 
+import argparse
 import os
 import sys
-import argparse
 
-_GPIO_SHADOW_DIR = '/tmp/gpionames'
+
+_GPIO_SHADOW_DIR = "/tmp/gpionames"
+
 
 class Log_Simple:
     def __init__(self, verbose=False):
@@ -34,6 +36,7 @@ class Log_Simple:
 
     def info(self, message):
         print(message)
+
 
 def read_pin_info(pin_dir):
     pin_info = {}
@@ -48,6 +51,7 @@ def read_pin_info(pin_dir):
 
     return pin_info
 
+
 def load_gpio_list(logger, pin_details=False):
     gpio_info = {}
     for filename in os.listdir(_GPIO_SHADOW_DIR):
@@ -55,7 +59,7 @@ def load_gpio_list(logger, pin_details=False):
         if not os.path.islink(pathname):
             continue
 
-        logger.verbose('parsing gpio pin %s' % filename)
+        logger.verbose("parsing gpio pin %s" % filename)
         if pin_details:
             pin_info = read_pin_info(pathname)
         else:
@@ -64,10 +68,11 @@ def load_gpio_list(logger, pin_details=False):
 
     return gpio_info
 
-def dump_gpio_py_format(gpio_info, filename, logger):
-    logger.verbose('writing gpio info to %s..' % filename)
 
-    with open(filename, 'w') as fp:
+def dump_gpio_py_format(gpio_info, filename, logger):
+    logger.verbose("writing gpio info to %s.." % filename)
+
+    with open(filename, "w") as fp:
         fp.write("plat_gpio_list = {\n")
         for pin_name, pin_info in gpio_info.items():
             fp.write("    '%s': {\n" % pin_name)
@@ -76,10 +81,11 @@ def dump_gpio_py_format(gpio_info, filename, logger):
             fp.write("    },\n")
         fp.write("}\n")
 
-def dump_gpio_json_format(gpio_info, filename, logger):
-    logger.verbose('writing gpio info to %s..' % filename)
 
-    with open(filename, 'w') as fp:
+def dump_gpio_json_format(gpio_info, filename, logger):
+    logger.verbose("writing gpio info to %s.." % filename)
+
+    with open(filename, "w") as fp:
         fp.write("{\n")
         for pin_name, pin_info in gpio_info.items():
             fp.write("    '%s': {\n" % pin_name)
@@ -88,19 +94,36 @@ def dump_gpio_json_format(gpio_info, filename, logger):
             fp.write("    },\n")
         fp.write("}\n")
 
+
 def dump_summary(gpio_info, logger):
     total = len(gpio_info.keys())
-    logger.info('Total %d gpio pins exported' % total)
+    logger.info("Total %d gpio pins exported" % total)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", action="store_true",
-            default=False, help="increase output verbosity")
-    parser.add_argument("-d", "--pin-details", action="store_true",
-            default=False, help="read details of each gpio pin")
-    parser.add_argument("-j", "--json-format", action="store_true",
-            default=False, help="generate gpio info in json format")
-    parser.add_argument('outfile', action="store")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="increase output verbosity",
+    )
+    parser.add_argument(
+        "-d",
+        "--pin-details",
+        action="store_true",
+        default=False,
+        help="read details of each gpio pin",
+    )
+    parser.add_argument(
+        "-j",
+        "--json-format",
+        action="store_true",
+        default=False,
+        help="generate gpio info in json format",
+    )
+    parser.add_argument("outfile", action="store")
     args = parser.parse_args()
 
     logger = Log_Simple(verbose=args.verbose)
@@ -108,11 +131,10 @@ if __name__ == "__main__":
     gpio_info = load_gpio_list(logger, pin_details=args.pin_details)
 
     if args.json_format:
-      dump_gpio_json_format(gpio_info, args.outfile, logger)
+        dump_gpio_json_format(gpio_info, args.outfile, logger)
     else:
-      dump_gpio_py_format(gpio_info, args.outfile, logger)
+        dump_gpio_py_format(gpio_info, args.outfile, logger)
 
     dump_summary(gpio_info, logger)
-    logger.info('Commmand completed successfully!')
+    logger.info("Commmand completed successfully!")
     sys.exit(0)
-

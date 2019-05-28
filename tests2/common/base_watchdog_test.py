@@ -18,14 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 import unittest
-from time import sleep
 from abc import abstractmethod
+from time import sleep
+
 from utils.cit_logger import Logger
-from utils.watchdog_util import WatchdogUtils
 from utils.shell_util import run_shell_cmd
+from utils.watchdog_util import WatchdogUtils
+
 
 class WatchdogTest(unittest.TestCase):
-
     def setUp(self):
         Logger.start(name=__name__)
         self.wdtUtils = WatchdogUtils()
@@ -37,18 +38,20 @@ class WatchdogTest(unittest.TestCase):
         if not self.wdtUtils.watchdog_is_running():
             raise Exception("watchdog is not enabled after bmc bootup")
 
-
     def tearDown(self):
         #
         # Step 6: restore watchdog-kicking daemon process.
         #
         Logger.info("Restoring watchdog-kicking process")
         self.set_start_watchdog_daemon_cmd()
-        self.assertNotEqual(self.start_watchdog_daemon_cmd, None,
-            "Starting watchdog daemon controller cmd not set")
+        self.assertNotEqual(
+            self.start_watchdog_daemon_cmd,
+            None,
+            "Starting watchdog daemon controller cmd not set",
+        )
         for cmd in self.start_watchdog_daemon_cmd:
             run_shell_cmd(cmd)
-        sleep(10) # wait before daemon started back
+        sleep(10)  # wait before daemon started back
 
     @abstractmethod
     def set_kill_watchdog_daemon_cmd(self):
@@ -59,43 +62,51 @@ class WatchdogTest(unittest.TestCase):
         pass
 
     def kill_watchdog_daemon(self):
-        '''
+        """
         Helper method to kill watchdog daemon: FSCD, fand, healthd
-        '''
+        """
         self.set_kill_watchdog_daemon_cmd()
-        self.assertNotEqual(self.kill_watchdog_daemon_cmd, None,
-            "Kill watchdog daemon controller cmd not set")
+        self.assertNotEqual(
+            self.kill_watchdog_daemon_cmd,
+            None,
+            "Kill watchdog daemon controller cmd not set",
+        )
         Logger.info("killing watchdog-kicking daemon processes")
         for cmd in self.kill_watchdog_daemon_cmd:
             run_shell_cmd(cmd)
 
     def test_watchdog_start_stop(self):
-        '''
+        """
         Test if watchdog is configured properly on bmc.
-        '''
+        """
         #
         # Step 2: kill the program which is responsible for kicking watchdog,
         # and make sure watchdog is not stopped when the program exit.
         #
         self.kill_watchdog_daemon()
-        self.assertTrue(self.wdtUtils.watchdog_is_running(check_counter=True),
-                "watchdog is stopped when daemon process exit")
+        self.assertTrue(
+            self.wdtUtils.watchdog_is_running(check_counter=True),
+            "watchdog is stopped when daemon process exit",
+        )
 
         #
         # Step 3: check if watchdog can be stopped.
         #
         Logger.info("Testing if watchdog can be stopped")
         self.wdtUtils.stop_watchdog()
-        self.assertFalse(self.wdtUtils.watchdog_is_running(),
-                "watchdog cannot be stopped")
+        self.assertFalse(
+            self.wdtUtils.watchdog_is_running(), "watchdog cannot be stopped"
+        )
 
         #
         # Step 4: check if watchdog can be started.
         #
         Logger.info("Testing if watchdog can be started")
         self.wdtUtils.start_watchdog()
-        self.assertTrue(self.wdtUtils.watchdog_is_running(check_counter=True),
-                "watchdog cannot be started")
+        self.assertTrue(
+            self.wdtUtils.watchdog_is_running(check_counter=True),
+            "watchdog cannot be started",
+        )
 
     def test_watchdog_kick(self):
         self.kill_watchdog_daemon()
@@ -108,8 +119,13 @@ class WatchdogTest(unittest.TestCase):
         Logger.info("testing if watchdog can be kicked properly")
         for i in range(iterations):
             self.wdtUtils.kick_watchdog()
-            Logger.info('[%d/%d] watchdog kicked. Sleeping for %d seconds' %
-                         (i, iterations, interval))
+            Logger.info(
+                "[%d/%d] watchdog kicked. Sleeping for %d seconds"
+                % (i, iterations, interval)
+            )
             sleep(interval)
-        self.assertEqual(i, iterations-1,
-                "Failed to kick watchdog for {} iterations".format(iterations))
+        self.assertEqual(
+            i,
+            iterations - 1,
+            "Failed to kick watchdog for {} iterations".format(iterations),
+        )

@@ -17,14 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
 import os
 import re
-from utils.shell_util import run_shell_cmd
+import unittest
+
 from utils.cit_logger import Logger
+from utils.shell_util import run_shell_cmd
+
 
 class PsumuxmonTest(unittest.TestCase):
-
     def setUp(self):
         Logger.start(name=__name__)
 
@@ -44,8 +45,10 @@ class PsumuxmonTest(unittest.TestCase):
             construct_hwmon_path = result[0] + "hwmon"
             x = None
             for x in os.listdir(construct_hwmon_path):
-                if x.startswith('hwmon'):
-                    construct_hwmon_path = construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+                if x.startswith("hwmon"):
+                    construct_hwmon_path = (
+                        construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+                    )
                     return construct_hwmon_path
         return None
 
@@ -53,5 +56,7 @@ class PsumuxmonTest(unittest.TestCase):
         # Based on lab device deployment, sensor data might not be accessible.
         # Verify that path exists
         cmd = "/sys/bus/i2c/devices/7-006f/hwmon/hwmon*/in1_input"
-        self.assertTrue(os.path.exists(self.get_ltc_hwmon_path(cmd)),
-            "psumuxmon LTC sensor path accessible")
+        self.assertTrue(
+            os.path.exists(self.get_ltc_hwmon_path(cmd)),
+            "psumuxmon LTC sensor path accessible",
+        )

@@ -20,9 +20,10 @@
 
 import os
 
+
 class I2cSysfsUtils:
-    _I2C_DEVICE_SYSFS_ROOT = '/sys/bus/i2c/devices'
-    _I2C_DRIVER_SYSFS_ROOT = '/sys/bus/i2c/drivers'
+    _I2C_DEVICE_SYSFS_ROOT = "/sys/bus/i2c/devices"
+    _I2C_DRIVER_SYSFS_ROOT = "/sys/bus/i2c/drivers"
 
     @classmethod
     def i2c_driver_dir(cls):
@@ -45,7 +46,7 @@ class I2cSysfsUtils:
         """Check if the filename follows i2c device format:
            <bus>-<addr>.
         """
-        pos = filename.find('-')
+        pos = filename.find("-")
         if pos < 0:
             return False
 
@@ -55,7 +56,7 @@ class I2cSysfsUtils:
 
         # I2C device part is in hex format.
         try:
-            int(filename[pos + 1:], 16)
+            int(filename[pos + 1 :], 16)
         except:
             return False
 
@@ -65,19 +66,19 @@ class I2cSysfsUtils:
     def is_i2c_bus_entry(cls, filename):
         """Check if the filename follows i2c driver format.
         """
-        return filename.startswith('i2c-')
+        return filename.startswith("i2c-")
 
     @classmethod
     def i2c_device_get_driver(cls, device):
         """Get driver name of the given i2c device.
         """
-        driver_name = ''
+        driver_name = ""
 
         device_dir = cls.i2c_device_abspath(device)
         if not os.path.isdir(device_dir):
-            return ''
+            return ""
         for entry in os.listdir(device_dir):
-            if entry == 'driver':
+            if entry == "driver":
                 driver_path = os.path.join(device_dir, entry)
                 if os.path.islink(driver_path):
                     target = os.readlink(driver_path)
@@ -87,14 +88,14 @@ class I2cSysfsUtils:
 
     @classmethod
     def i2c_device_get_name(cls, device):
-        device_name = ''
+        device_name = ""
 
         device_dir = cls.i2c_device_abspath(device)
-        name_file = os.path.join(device_dir, 'name')
+        name_file = os.path.join(device_dir, "name")
         if not os.path.exists(name_file):
-            return ''
+            return ""
 
-        with open(name_file, 'r') as fp:
+        with open(name_file, "r") as fp:
             lines = fp.readlines()
             if lines:
                 device_name = lines[-1].strip()

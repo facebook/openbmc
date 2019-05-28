@@ -23,35 +23,34 @@
 # may be caused by kernel upgrade, defconfig update, and etc.
 #
 
-import unittest
 import os
+import unittest
+
 from utils.cit_logger import Logger
 
-class BaseKernelABITest(unittest.TestCase):
 
+class BaseKernelABITest(unittest.TestCase):
     def setUp(self):
         Logger.start(name=__name__)
         # sysfs dependency list
         self.sysfs_dep_list = [
-            '/sys/devices',
-            '/sys/class/hwmon',
-            '/sys/class/gpio',
-            '/sys/class/gpio/export',
-            '/sys/bus/i2c/devices',
-            '/sys/bus/i2c/drivers',
+            "/sys/devices",
+            "/sys/class/hwmon",
+            "/sys/class/gpio",
+            "/sys/class/gpio/export",
+            "/sys/bus/i2c/devices",
+            "/sys/bus/i2c/drivers",
         ]
         # devfs dependency list
         self.devfs_dep_list = [
-            '/dev/mem',
-            '/dev/watchdog',
-            '/dev/mtd0',
-            '/dev/mtdblock0',
-            '/dev/ttyS0',
+            "/dev/mem",
+            "/dev/watchdog",
+            "/dev/mtd0",
+            "/dev/mtdblock0",
+            "/dev/ttyS0",
         ]
         # procfs dependency list
-        self.procfs_dep_list = [
-            '/proc/mtd',
-        ]
+        self.procfs_dep_list = ["/proc/mtd"]
         pass
 
     def tearDown(self):
@@ -64,11 +63,14 @@ class BaseKernelABITest(unittest.TestCase):
 
     def test_kernel_path_exists(self):
         self.set_platform_specific_paths()
-        all_files = self.sysfs_dep_list + \
-                    self.devfs_dep_list + \
-                    self.procfs_dep_list + \
-                    self.platform_dep_list
+        all_files = (
+            self.sysfs_dep_list
+            + self.devfs_dep_list
+            + self.procfs_dep_list
+            + self.platform_dep_list
+        )
         for pathname in all_files:
             with self.subTest(pathname=pathname):
-                self.assertTrue(os.path.exists(pathname),
-                    "Filepath {} not present".format(pathname))
+                self.assertTrue(
+                    os.path.exists(pathname), "Filepath {} not present".format(pathname)
+                )

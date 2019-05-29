@@ -6991,6 +6991,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   char thresh_name[8];
   sensor_desc_t *snr_desc;
   int slot_type = SLOT_TYPE_NULL;
+  uint8_t server_type = 0xFF;
 
   switch (thresh) {
     case UNR_THRESH:
@@ -7023,46 +7024,20 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case FRU_SLOT4:
       slot_type = fby2_get_slot_type(fru);
       if (slot_type == SLOT_TYPE_SERVER) {
-#if defined(CONFIG_FBY2_RC)
-        int ret;
-        uint8_t server_type = 0xFF;
-        ret = fby2_get_server_type(fru, &server_type);
-        if (ret) {
+        if (fby2_get_server_type(fru, &server_type) != 0) {
           return;
         }
         switch (server_type) {
+#if defined(CONFIG_FBY2_RC)
           case SERVER_TYPE_RC:
             pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name);
             break;
+#endif
           case SERVER_TYPE_TL:
             pal_sensor_assert_handle_tl(fru, snr_num, val, thresh_name);
             break;
         }
         return;
-#else
-        switch (snr_num) {
-          case BIC_SENSOR_P3V3_MB:
-          case BIC_SENSOR_P12V_MB:
-          case BIC_SENSOR_P1V05_PCH:
-          case BIC_SENSOR_P3V3_STBY_MB:
-          case BIC_SENSOR_PV_BAT:
-          case BIC_SENSOR_PVDDR_AB:
-          case BIC_SENSOR_PVDDR_DE:
-          case BIC_SENSOR_PVNN_PCH:
-          case BIC_SENSOR_VCCIN_VR_VOL:
-          case BIC_SENSOR_VCCIO_VR_VOL:
-          case BIC_SENSOR_1V05_PCH_VR_VOL:
-          case BIC_SENSOR_VDDR_AB_VR_VOL:
-          case BIC_SENSOR_VDDR_DE_VR_VOL:
-          case BIC_SENSOR_VCCSA_VR_VOL:
-          case BIC_SENSOR_INA230_VOL:
-            snr_desc = get_sensor_desc(fru, snr_num);
-            sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
-            break;
-          default:
-            return;
-        }
-#endif
       } else if (slot_type == SLOT_TYPE_GPV2) {
 #if defined(CONFIG_FBY2_GPV2)
         switch (snr_num) {
@@ -7245,6 +7220,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   char thresh_name[8];
   sensor_desc_t *snr_desc;
   int slot_type = SLOT_TYPE_NULL;
+  uint8_t server_type = 0xFF;
 
   switch (thresh) {
     case UNR_THRESH:
@@ -7277,46 +7253,20 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case FRU_SLOT4:
       slot_type = fby2_get_slot_type(fru);
       if (slot_type == SLOT_TYPE_SERVER) {
-#if defined(CONFIG_FBY2_RC)
-        int ret;
-        uint8_t server_type = 0xFF;
-        ret = fby2_get_server_type(fru, &server_type);
-        if (ret) {
+        if (fby2_get_server_type(fru, &server_type) != 0) {
           return;
         }
         switch (server_type) {
+#if defined(CONFIG_FBY2_RC)
           case SERVER_TYPE_RC:
             pal_sensor_deassert_handle_rc(fru, snr_num, val, thresh_name);
             break;
+#endif
           case SERVER_TYPE_TL:
             pal_sensor_deassert_handle_tl(fru, snr_num, val, thresh_name);
             break;
         }
         return;
-#else
-        switch (snr_num) {
-          case BIC_SENSOR_P3V3_MB:
-          case BIC_SENSOR_P12V_MB:
-          case BIC_SENSOR_P1V05_PCH:
-          case BIC_SENSOR_P3V3_STBY_MB:
-          case BIC_SENSOR_PV_BAT:
-          case BIC_SENSOR_PVDDR_AB:
-          case BIC_SENSOR_PVDDR_DE:
-          case BIC_SENSOR_PVNN_PCH:
-          case BIC_SENSOR_VCCIN_VR_VOL:
-          case BIC_SENSOR_VCCIO_VR_VOL:
-          case BIC_SENSOR_1V05_PCH_VR_VOL:
-          case BIC_SENSOR_VDDR_AB_VR_VOL:
-          case BIC_SENSOR_VDDR_DE_VR_VOL:
-          case BIC_SENSOR_VCCSA_VR_VOL:
-          case BIC_SENSOR_INA230_VOL:
-            snr_desc = get_sensor_desc(fru, snr_num);
-            sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
-            break;
-          default:
-            return;
-        }
-#endif
       } else if (slot_type == SLOT_TYPE_GPV2) {
 #if defined(CONFIG_FBY2_GPV2)
         switch (snr_num) {

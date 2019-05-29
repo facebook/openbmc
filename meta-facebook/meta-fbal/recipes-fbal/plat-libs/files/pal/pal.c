@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <time.h>
 #include "pal.h"
+#include <stdlib.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 
@@ -632,4 +633,57 @@ pal_update_ts_sled()
   sprintf(key, "timestamp_sled");
 
   pal_set_key_value(key, tstr);
+}
+
+
+int
+pal_get_fruid_path(uint8_t fru, char *path) {
+  char fname[16] = {0};
+
+  switch(fru) {
+  case FRU_MB:
+    sprintf(fname, "mb");
+    break;
+  default:
+    return -1;
+  }
+
+  sprintf(path, "/tmp/fruid_%s.bin", fname);
+
+  return 0;
+}
+
+int
+pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
+  switch(fru) {
+  case FRU_MB:
+    sprintf(path, FRU_EEPROM_MB);
+    break;
+  default:
+    return -1;
+  }
+
+  return 0;
+}
+
+
+
+int
+pal_get_fruid_name(uint8_t fru, char *name) {
+  switch(fru) {
+  case FRU_MB:
+    sprintf(name, "Mother Board");
+    break;
+
+  default:
+    return -1;
+  }
+  return 0;
+}
+
+int
+pal_is_fru_ready(uint8_t fru, uint8_t *status) {
+  *status = 1;
+
+  return 0;
 }

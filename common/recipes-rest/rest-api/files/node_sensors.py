@@ -25,11 +25,46 @@ import subprocess
 
 from node import node
 
-
-def sensor_util_history_clear(fru="all", sensor_id=""):
-    cmd = ["/usr/local/bin/sensor-util", fru, "--history-clear"]
-    if sensor_id != "":
+def sensor_util_history_clear(fru='all', sensor_id='', sensor_name=''):
+    cmd = ['/usr/local/bin/sensor-util', fru, '--history-clear']
+    if sensor_id != '':
         cmd += [sensor_id]
+    if sensor_name != '':
+        cmd_util = ['/usr/local/bin/sensor-util', fru]
+        sensors = []
+        try:
+            output_handle = subprocess.Popen(cmd_util, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdoutput, erroroutput = output_handle.communicate(timeout=15)
+            out = stdoutput.decode().splitlines()
+            sensors = {}
+            rx = re.compile(r'(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)\s+\|\s+\((\S+)\)(.*)$')
+            rx_na = re.compile(r'(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(\S+)\s+\|\s+\((\S+)\)')
+            for line in out:
+                m_val = rx.match(line)
+                m_na = rx_na.match(line)
+                if m_val:
+                    s_name = m_val.group(1)
+                    s_id   = m_val.group(2)
+                    s_val  = m_val.group(3)
+                    s_unit = m_val.group(4)
+                    s_status=m_val.group(5)
+                elif m_na:
+                    s_name = m_na.group(1)
+                    s_id   = m_na.group(2)
+                    s_val  = m_na.group(3)
+                    s_unit = "na"
+                    s_status=m_na.group(4)
+                else:
+                    continue
+
+                if ((sensor_name != '' and sensor_name.lower() == s_name.lower())):
+                    snr_num = "0x" + str(s_id)
+                    cmd += [snr_num]
+        except subprocess.CalledProcessError:
+            print("Exception  received")
+        except subprocess.TimeoutExpired:
+            output_handle.kill()
+            print("TimeoutException received")
     try:
         subprocess.check_call(cmd)
         return {"result": "success"}
@@ -180,10 +215,13 @@ class sensorsNode(node):
         return sensor_util(self.name, snr_name, snr_id, period, display)
 
     def doAction(self, info, param={}):
-        snr = ""
-        if "id" in info:
-            snr = info["id"]
-        return sensor_util_history_clear(self.name, snr)
+        snr_name = ''
+        snr = ''
+        if 'name' in param:
+            snr_name = param['name']
+        if 'id' in info:
+            snr = info['id']
+        return sensor_util_history_clear(self.name, snr, snr_name)
 
 
 def get_node_sensors(name):

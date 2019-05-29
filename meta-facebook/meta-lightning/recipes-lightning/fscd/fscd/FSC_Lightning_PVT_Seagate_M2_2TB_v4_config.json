@@ -1,4 +1,5 @@
 {
+  "version": "Lightning_PVT_Seagate_M2_2TB_v4",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,

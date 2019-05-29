@@ -331,6 +331,15 @@ enum {
   FW_PCIE_SWITCH = 7,
 };
 
+// ND
+enum {
+  FW_BOOTLOADER = 3,
+  FW_PVDDCR_CPU_VR = 4,
+  FW_PVDDCR_SOC_VR = 5,
+  FW_PVDDIO_ABCD_VR = 6,
+  FW_PVDDIO_EFGH_VR = 7,
+};
+
 enum {
   UPDATE_BIOS = 0,
   UPDATE_CPLD,

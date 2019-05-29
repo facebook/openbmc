@@ -26,7 +26,26 @@ class MeExtComponent : public MeComponent {
 
 int MeExtComponent::print_version() {
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_SERVER) {
-    MeComponent::print_version();
+#ifdef CONFIG_FBY2_ND  
+    int ret;
+    uint8_t server_type = 0xFF;
+    ret = fby2_get_server_type(slot_id, &server_type);
+    if (ret)
+      return 0;
+
+    switch (server_type) {
+      case SERVER_TYPE_ND:
+        break;
+      case SERVER_TYPE_TL:
+        MeComponent::print_version();
+        break;
+      default:
+        break;
+    }
+#else
+  MeComponent::print_version();
+#endif
+    
   }
   return 0;
 }

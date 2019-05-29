@@ -61,10 +61,33 @@ int BicFwBlComponent::update(string image) {
 
 int BicFwBlComponent::print_version() {
   uint8_t ver[32];
+  uint8_t comp;
   try {
     server.ready();
+#ifdef CONFIG_FBY2_ND
+  int ret;
+  uint8_t server_type = 0xFF;
+
+  ret = bic_get_server_type(slot_id, &server_type);
+  if (ret) {
+    throw "BIC get server type failed";
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_ND:
+      comp = FW_BOOTLOADER;
+      break;
+    case SERVER_TYPE_TL:
+    default:
+      comp = FW_BIC_BOOTLOADER;
+      break;
+  }
+#else
+  comp = FW_BIC_BOOTLOADER;
+#endif
+
     // Print Bridge-IC Bootloader Version
-    if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
+    if (bic_get_fw_ver(slot_id, comp, ver)) {
       printf("Bridge-IC Bootloader Version: NA\n");
     }
     else {

@@ -195,7 +195,7 @@ class VrComponent : public Component {
           }
 
           if (bic_get_fw_ver(slot_id, FW_PVDDCR_SOC_VR, ver)) {
-            printf("PVDDCR_SOC VR Version: NA\n";
+            printf("PVDDCR_SOC VR Version: NA\n");
           } else {
             printf(
                 "PVDDCR_SOC VR Version: 0x%02x%02x, 0x%02x%02x\n",
@@ -217,7 +217,7 @@ class VrComponent : public Component {
           }
 
           if (bic_get_fw_ver(slot_id, FW_PVDDIO_EFGH_VR, ver)) {
-            printf("PVDDIO_EFGH VR Version: NA\n";
+            printf("PVDDIO_EFGH VR Version: NA\n");
           } else {
             printf(
                 "PVDDIO_EFGH VR Version: 0x%02x%02x, 0x%02x%02x\n",

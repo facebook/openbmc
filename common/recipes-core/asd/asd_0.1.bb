@@ -10,8 +10,8 @@ LIC_FILES_CHKSUM = "file://socket_main.c;beginline=4;endline=25;md5=4d3dd6a70786
 SRC_URI = "file://daemon \
           "
 
-DEPENDS += "libasd-jtagintf"
-RDEPENDS_${PN} += "libasd-jtagintf"
+DEPENDS += "libasd-jtagintf libpal"
+RDEPENDS_${PN} += "libasd-jtagintf libpal"
 
 S = "${WORKDIR}/daemon"
 

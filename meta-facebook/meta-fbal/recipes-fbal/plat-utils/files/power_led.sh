@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,14 +18,27 @@
 # Boston, MA 02110-1301 USA
 #
 
-connect_uart2_3() {
-  local val
-  val=$(/sbin/devmem 0x1e78909c)
-  val=$((val & 0xFE07FFFF))
-  val=$((val | 0x01A00000))
-  /sbin/devmem 0x1e78909c 32 $val
+usage() {
+    echo "Usage: $1 <on | off>"
+    exit -1
 }
 
-connect_uart2_3
+. /usr/local/fbpackages/utils/ast-functions
 
-exec /usr/local/bin/mTerm_server angelslanding /dev/ttyS3
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+set -e
+
+if [ $# != 1 ]; then
+    usage $0
+fi
+
+if [ $1 = "on" ]; then
+    val=0
+elif [ $1 = "off" ]; then
+    val=1
+else
+    usage $0
+fi
+
+gpio_set SERVER_POWER_LED $val

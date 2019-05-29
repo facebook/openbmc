@@ -31,10 +31,12 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 
+#define FBAL_PLATFORM_NAME "angelslanding"
 #define LAST_KEY "last_key"
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
+#define GPIO_POWER_LED "SERVER_POWER_LED"
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
 
 #define DELAY_GRACEFUL_SHUTDOWN 1
@@ -99,6 +101,17 @@ pal_key_index(char *key) {
   syslog(LOG_WARNING, "pal_key_index: invalid key - %s", key);
 #endif
   return -1;
+}
+
+int
+pal_get_key_value(char *key, char *value) {
+  int index;
+
+  // Check is key is defined and valid
+  if ((index = pal_key_index(key)) < 0)
+    return -1;
+
+  return kv_get(key, value, NULL, KV_FPERSIST);
 }
 
 int
@@ -309,6 +322,13 @@ error:
 }
 
 int
+pal_get_platform_name(char *name) {
+  strcpy(name, FBAL_PLATFORM_NAME);
+
+  return 0;
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   *status = 0;
 
@@ -335,7 +355,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
 
-  if ( fru != FRU_MB)
+  if (fru != FRU_MB)
     return -1;
 
   gdesc = gpio_open_by_shadow(GPIO_POWER_GOOD);
@@ -458,6 +478,30 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
   }
 
   gdesc = gpio_open_by_shadow(GPIO_POWER_RESET);
+  if (gdesc == NULL)
+    return -1;
+
+  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
+  ret = gpio_set_value(gdesc, val);
+  if (ret != 0)
+    goto error;
+
+error:
+  gpio_close(gdesc);
+  return ret;
+}
+
+// Update the Identification LED for the given fru with the status
+int
+pal_set_id_led(uint8_t fru, uint8_t status) {
+  int ret;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  if (fru != FRU_MB)
+    return -1;
+
+  gdesc = gpio_open_by_shadow(GPIO_POWER_LED);
   if (gdesc == NULL)
     return -1;
 

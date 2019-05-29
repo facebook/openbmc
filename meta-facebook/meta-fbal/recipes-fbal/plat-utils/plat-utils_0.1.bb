@@ -22,6 +22,8 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
+           file://sol-util \
+           file://power_led.sh \
            file://setup-gpio.sh \
            file://COPYING \
           "
@@ -30,6 +32,10 @@ pkgdir = "utils"
 
 S = "${WORKDIR}"
 
+binfiles = "power_led.sh sol-util \
+           "
+
+RDEPENDS_${PN} += "gpiocli"
 DEPENDS_append = "update-rc.d-native"
 
 do_install() {

@@ -59,6 +59,14 @@ devmem_clear_bit $(scu_addr 94) 11
 
 gpio_export PWRGD_SYS_PWROK GPIOY2
 
+# Power LED for Server:
+gpio_export SERVER_POWER_LED GPIOE7  # Confirm Shadow name
+gpio_set SERVER_POWER_LED 1
+
+# FM_BMC_READY_N: GPIOG3 (51)
+gpio_export FM_BMC_READY_N GPIOG3
+gpio_set FM_BMC_READY_N 1
+
 # FP_BMC_RST_BTN_N
 devmem_clear_bit $(scu_addr 80) 16
 gpio_export FP_BMC_RST_BTN_N GPIOE0

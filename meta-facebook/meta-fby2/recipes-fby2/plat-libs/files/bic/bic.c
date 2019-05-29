@@ -1461,10 +1461,11 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
   uint8_t hdr_tl[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
   uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
   int offs;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
   int ret;
   uint8_t server_type = 0xFF;
   uint8_t hdr_ep[] = {0x01,0x00,0x4c,0x1c,0x00,0xe1,0x2b,0xc0,0x43,0x46,0x30,0x39,0x41};
+  uint8_t hdr_nd[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39,0x43};
 
   ret = bic_get_server_type(slot_id, &server_type);
   if (ret) {
@@ -1478,6 +1479,10 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
     case SERVER_TYPE_EP:
       hdr = hdr_ep;
       hdr_size = sizeof(hdr_ep);
+      break;
+    case SERVER_TYPE_ND:
+      hdr = hdr_nd;
+      hdr_size = sizeof(hdr_nd);
       break;
   }
 #endif

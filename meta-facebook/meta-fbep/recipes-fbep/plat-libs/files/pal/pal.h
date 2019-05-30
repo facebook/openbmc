@@ -39,6 +39,12 @@ extern const char pal_server_list[];
 enum {
   FAN_0 = 0,
   FAN_1,
+  FAN_2,
+  FAN_3,
+  FAN_4,
+  FAN_5,
+  FAN_6,
+  FAN_7,
 };
 
 enum {
@@ -53,6 +59,11 @@ enum {
 enum {
   MB_SENSOR_TBD,
 };
+
+int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
+int pal_get_fan_speed(uint8_t fan, int *rpm);
+int pal_get_fan_name(uint8_t num, char *name);
+int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 
 #ifdef __cplusplus
 } // extern "C"

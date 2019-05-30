@@ -211,7 +211,7 @@ print_usage() {
            "                 PCD1 (Product Custom Data 1)\n"
            "                 PCD2 (Product Custom Data 2)\n"
            "                 PCD3 (Product Custom Data 3)\n"
-           "                 PCD3 (Product Custom Data 4)\n");
+           "                 PCD4 (Product Custom Data 4)\n");
   }
   exit(-1);
 }

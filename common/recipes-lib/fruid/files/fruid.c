@@ -1183,7 +1183,7 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
       alter_field_content(&fruid.board.fruid,tmp_content);
       break;
     case BCD1:
-      fruid.chassis.custom1_type_len = type_length;
+      fruid.board.custom1_type_len = type_length;
       alter_field_content(&fruid.board.custom1,tmp_content);
       break;
     case BCD2:

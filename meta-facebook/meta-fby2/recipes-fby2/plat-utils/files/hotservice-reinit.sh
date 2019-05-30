@@ -131,6 +131,7 @@ case $OPTION in
       if [ $(is_server_prsnt $SLOT_NUM) == 0 ]; then
         exit 1
       fi
+      logger -p user.crit "Start to re-init for slot$SLOT_NUM insertion"
       echo "start to re-init for slot$SLOT_NUM insertion"
 
       # Delay 1 second for slot_type voltage ready
@@ -191,6 +192,7 @@ case $OPTION in
         /usr/local/bin/sync_date.sh
       fi
 
+      logger -p user.crit "Finish re-init for slot$SLOT_NUM insertion"
       ;;
     *)
       N=${0##*/}

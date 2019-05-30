@@ -701,6 +701,7 @@ int
 main(int argc, char **argv) {
   uint8_t slot_id, dev_id;
   uint8_t config;
+  int gpio;
   int ret = 0;
 
   if (argc < 3) {
@@ -746,7 +747,12 @@ main(int argc, char **argv) {
     if (strcmp(argv[4] , "0") && strcmp(argv[4] , "1")) {
       goto err_exit;
     }
-    util_set_gpio(slot_id, atoi(argv[3]), atoi(argv[4]));
+    gpio = atoi(argv[3]);
+    if (gpio > 0xFF || gpio < 0) {
+      printf("slot %d: invalid GPIO pin number %d\n", slot_id, gpio);
+      return -1;
+    }
+    util_set_gpio(slot_id, gpio, atoi(argv[4]));
   } else if (!strcmp(argv[2], "--get_gpio_config")) {
     if (argc != 3)
       goto err_exit;
@@ -755,7 +761,12 @@ main(int argc, char **argv) {
     if (argc != 5)
       goto err_exit;
     config = (uint8_t)strtol(argv[4], NULL, 0);
-    ret = util_set_gpio_config(slot_id, atoi(argv[3]), config);
+    gpio = atoi(argv[3]);
+    if (gpio > 0xFF || gpio < 0) {
+      printf("slot %d: invalid GPIO pin number %d\n", slot_id, gpio);
+      return -1;
+    }
+    ret = util_set_gpio_config(slot_id, gpio, config);
   } else if (!strcmp(argv[2], "--get_config")) {
     if (argc != 3)
       goto err_exit;

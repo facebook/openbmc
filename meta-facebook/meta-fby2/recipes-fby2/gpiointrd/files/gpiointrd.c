@@ -712,6 +712,14 @@ hsvc_event_handler(void *ptr) {
           }
         }
 
+        // resart sensord
+        sprintf(cmd, "sv stop sensord");
+        system(cmd);
+        sprintf(cmd, "rm -rf /tmp/cache_store/slot%d*", hsvc_info->slot_id);
+        system(cmd);
+        sprintf(cmd, "sv start sensord");
+        system(cmd);
+
         // Remove post flag file when board has been removed
         sprintf(postpath, POST_FLAG_FILE, hsvc_info->slot_id);
         memset(cmd, 0, sizeof(cmd));

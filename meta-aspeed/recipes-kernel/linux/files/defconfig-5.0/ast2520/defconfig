@@ -2852,7 +2852,12 @@ CONFIG_FSI_SBEFIFO=y
 CONFIG_FSI_OCC=y
 # CONFIG_SIOX is not set
 # CONFIG_SLIMBUS is not set
-# CONFIG_PECI is not set
+CONFIG_PECI=y
+
+#
+# PECI Hardware Bus support
+#
+CONFIG_PECI_ASPEED=m
 
 #
 # File systems

@@ -596,8 +596,6 @@ latch_open_handler(void *ptr) {
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-  sleep(2);
-
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
     case TYPE_CF_A_SV:

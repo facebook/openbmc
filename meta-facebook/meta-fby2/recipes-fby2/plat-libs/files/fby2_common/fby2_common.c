@@ -186,6 +186,7 @@ trigger_hpr(uint8_t fru) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
+#ifndef CONFIG_FBY2_ND
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -197,7 +198,7 @@ trigger_hpr(uint8_t fru) {
       }
       return 1;
   }
-
+#endif
   return 0;
 }
 

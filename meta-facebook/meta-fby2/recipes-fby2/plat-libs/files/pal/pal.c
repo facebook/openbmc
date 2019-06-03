@@ -4900,7 +4900,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
     case FRU_SLOT3:
     case FRU_SLOT4:
     {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
       int ret;
       uint8_t server_type = 0xFF;
       ret = fby2_get_server_type(fru, &server_type);
@@ -4909,6 +4909,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       }
 
       switch (server_type) {
+#if defined(CONFIG_FBY2_RC)
         case SERVER_TYPE_RC:
           switch(snr_num) {
             case BIC_RC_SENSOR_POWER_ERR:
@@ -4923,6 +4924,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
               return 0;
           }
           break;
+#endif
 #if defined(CONFIG_FBY2_EP)
         case SERVER_TYPE_EP:
           switch(snr_num) {
@@ -4930,6 +4932,14 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
               pal_store_cpld_dump(fru);
               break;
 
+            case 0x00:  // don't care sensor number 00h
+              return 0;
+          }
+          break;
+#endif
+#if defined(CONFIG_FBY2_ND)
+        case SERVER_TYPE_ND:
+          switch(snr_num) {
             case 0x00:  // don't care sensor number 00h
               return 0;
           }
@@ -7811,7 +7821,9 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
     bool ierr = false;
     int ret = fby2_common_get_ierr(slot, &ierr);
     if ((ret == 0) && ierr) {
+#ifndef CONFIG_FBY2_ND
       fby2_common_crashdump(slot, false, true);
+#endif
     }
     fby2_common_set_ierr(slot,false);
   }

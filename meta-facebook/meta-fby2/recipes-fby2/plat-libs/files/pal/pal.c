@@ -5577,6 +5577,25 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
   return 0;
 }
 
+void
+pal_add_cri_sel(char *str)
+{
+  static bool chk_sled_off_log = true;
+
+  if (chk_sled_off_log) {
+    if (access("/tmp/cache_store/sled_off_checked", F_OK) == 0) {
+      chk_sled_off_log = false;
+    } else {
+      if (!pal_is_bmc_por() || !strncmp("BMC AC lost", str, strlen("BMC AC lost"))) {
+        kv_set("sled_off_checked", "1", 0, 0);
+        chk_sled_off_log = false;
+      }
+    }
+  }
+
+  syslog(LOG_LOCAL0 | LOG_ERR, "%s", str);
+}
+
 int
 pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
@@ -6092,9 +6111,23 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 void
 pal_update_ts_sled()
 {
+  static bool chk_sled_off_log = true;
   char key[MAX_KEY_LEN] = {0};
   char tstr[MAX_VALUE_LEN] = {0};
   struct timespec ts;
+
+  if (chk_sled_off_log) {
+    if (access("/tmp/cache_store/sled_off_checked", F_OK) == 0) {
+      chk_sled_off_log = false;
+    } else {
+      if (!pal_is_bmc_por()) {
+        kv_set("sled_off_checked", "1", 0, 0);
+        chk_sled_off_log = false;
+      } else {
+        return;
+      }
+    }
+  }
 
   clock_gettime(CLOCK_REALTIME, &ts);
   sprintf(tstr, "%ld", ts.tv_sec);

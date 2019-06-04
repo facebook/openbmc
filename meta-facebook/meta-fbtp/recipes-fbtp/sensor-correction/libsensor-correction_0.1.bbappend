@@ -19,7 +19,9 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://sensor-correction-sku0-conf.json \
             file://sensor-correction-sku1-conf.json \
+            file://sensor-correction-sku1-diode-conf.json \
            "
 SENSOR_CORR_CONFIG = "sensor-correction-sku0-conf.json \
                       sensor-correction-sku1-conf.json \
+                      sensor-correction-sku1-diode-conf.json \
                      "

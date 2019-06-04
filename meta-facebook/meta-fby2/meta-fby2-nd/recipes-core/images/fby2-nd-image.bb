@@ -53,6 +53,7 @@ IMAGE_INSTALL += " \
   ncsid \
   vboot-utils \
   slot-util \
+  snapshot-util \
   "
 
 IMAGE_FEATURES += " \

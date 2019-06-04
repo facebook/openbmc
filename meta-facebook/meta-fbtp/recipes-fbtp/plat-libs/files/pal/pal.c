@@ -341,6 +341,7 @@ static void init_mux_data_riser_mux(void) {
     pthread_mutexattr_init(&mutex_attr);
     pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutexattr_setrobust(&mutex_attr, PTHREAD_MUTEX_ROBUST);
     pthread_mutex_init(&riser_mux.shm->mutex, &mutex_attr);
     pthread_condattr_init(&cond_attr);
     pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
@@ -376,6 +377,34 @@ static struct mux_shm *mux_get_shm(struct mux *mux) {
   return mux->shm;
 }
 
+static void shm_lock(struct mux_shm *shm)
+{
+  int rc = pthread_mutex_lock(&shm->mutex);
+  if (rc == EOWNERDEAD) {
+    syslog(LOG_WARNING, "Trying to recover riser mutex due to dead-owner\n");
+    rc = pthread_mutex_consistent(&shm->mutex);
+    if (rc != 0) {
+      syslog(LOG_ERR, "Failed to recover riser mutex after dead-owner: %s\n", strerror(rc));
+    } else {
+      // Switch to defaults.
+      shm->locked = 0;
+      shm->using_num = 0;
+      shm->expiration = 0;
+      shm->chan = 0xff;
+      syslog(LOG_ERR, "Successfully recovered riser mutex after a dead-owner");
+      // Let any other "expired" user's lease expire.
+      sleep(1);
+    }
+  } else if (rc != 0) {
+    syslog(LOG_ERR, "Failed to lock riser mux: %s\n", strerror(rc));
+  }
+}
+
+static void shm_unlock(struct mux_shm *shm)
+{
+  pthread_mutex_unlock(&shm->mutex);
+}
+
 /*
  * Release the mux
  */
@@ -385,23 +414,23 @@ static int mux_release (struct mux *mux)
   int ret = 0;
   uint8_t old_chan;
 
-  pthread_mutex_lock(&shm->mutex);
+  shm_lock(shm);
   old_chan = shm->chan;
   if (shm->chan != shm->ipmb_chan) {
     ret = pal_control_mux(mux->bus_fd, mux->addr, shm->ipmb_chan);
   }
   shm->chan = shm->ipmb_chan;
-  pthread_mutex_unlock(&shm->mutex);
+  shm_unlock(shm);
 
   //send online command out side of mutex
   if(old_chan != shm->ipmb_chan) {
     if(pal_is_BBV_prsnt())
       notify_BBV_ipmb_offline_online(1,0);
   }
-  pthread_mutex_lock(&shm->mutex);
+  shm_lock(shm);
   shm->locked = 0;
   pthread_cond_broadcast(&shm->unlock);
-  pthread_mutex_unlock(&shm->mutex);
+  shm_unlock(shm);
 
   return ret;
 }
@@ -417,7 +446,7 @@ static int mux_using (struct mux *mux)
   clock_gettime(CLOCK_REALTIME, &to);
   to.tv_sec += mux->wait_time;
 
-  pthread_mutex_lock(&shm->mutex);
+  shm_lock(shm);
   if (shm->locked == 1 && time(NULL) > shm->expiration) {
     mux_release(mux);
   }
@@ -435,7 +464,7 @@ static int mux_using (struct mux *mux)
   }
 
   shm->using_num++;
-  pthread_mutex_unlock(&shm->mutex);
+  shm_unlock(shm);
 
   return ret;
 }
@@ -445,11 +474,11 @@ static int mux_using (struct mux *mux)
 static int mux_finish (struct mux *mux)
 {
   struct mux_shm *shm = mux_get_shm(mux);
-  pthread_mutex_lock(&shm->mutex);
+  shm_lock(shm);
   if (shm->using_num > 0)
     shm->using_num--;
   pthread_cond_broadcast(&shm->free);
-  pthread_mutex_unlock(&shm->mutex);
+  shm_unlock(shm);
   return 0;
 }
 /*
@@ -465,7 +494,7 @@ static int mux_lock (struct mux *mux, int chan, int lease_time)
   clock_gettime(CLOCK_REALTIME, &to);
   to.tv_sec += mux->wait_time;
 
-  pthread_mutex_lock(&shm->mutex);
+  shm_lock(shm);
   if (shm->locked == 1 && time(NULL) > shm->expiration) {
     mux_release(mux);
   }
@@ -475,13 +504,13 @@ static int mux_lock (struct mux *mux, int chan, int lease_time)
     if (shm->locked == 0) {
       shm->expiration = time(NULL) + lease_time;
       shm->locked = 1;
-      pthread_mutex_unlock(&shm->mutex);
+      shm_unlock(shm);
       //send offline command out side of mutex
       if(shm->ipmb_chan != chan) {
         if(pal_is_BBV_prsnt())
           notify_BBV_ipmb_offline_online(0,mux->wait_time);
       }
-      pthread_mutex_lock(&shm->mutex);
+      shm_lock(shm);
       shm->chan = chan;
       ret = 0;
       break;
@@ -520,7 +549,7 @@ static int mux_lock (struct mux *mux, int chan, int lease_time)
       pthread_cond_broadcast(&shm->unlock);
     }
   }
-  pthread_mutex_unlock(&shm->mutex);
+  shm_unlock(shm);
 
   return ret;
 }

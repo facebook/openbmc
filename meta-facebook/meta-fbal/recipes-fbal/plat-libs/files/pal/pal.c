@@ -687,3 +687,27 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
   return 0;
 }
+
+
+int
+pal_channel_to_bus(int channel) {
+  switch (channel) {
+    case 0:
+      return 0; // USB (LCD Debug Board)
+    case 1:
+      return 5; // ME 
+    case 2:
+      return 2; // Slave BMC
+    case 3:
+      return 6; // CM 
+    case 9:
+      return 8; // Riser (Big Basin)
+  }
+
+  // Debug purpose, map to real bus number
+  if (channel & 0x80) {
+    return (channel & 0x7f);
+  }
+
+  return channel;
+}

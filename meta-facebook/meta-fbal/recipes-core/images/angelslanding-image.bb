@@ -38,6 +38,8 @@ IMAGE_INSTALL += " \
   ncsi-util \
   ncsid \
   libpldm \
+  ipmbd\
+  ipmb-util\
   "
 
 IMAGE_FEATURES += " \

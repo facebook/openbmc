@@ -70,3 +70,15 @@ gpio_set FM_BMC_READY_N 1
 # FP_BMC_RST_BTN_N
 devmem_clear_bit $(scu_addr 80) 16
 gpio_export FP_BMC_RST_BTN_N GPIOE0
+
+
+# FM_BLADE_ID_0_R
+gpio_export FM_BLADE_ID_0 GPIOP6
+
+
+# FM_BLADE_ID_1_R
+gpio_export FM_BLADE_ID_1 GPIOP7
+
+
+
+ 

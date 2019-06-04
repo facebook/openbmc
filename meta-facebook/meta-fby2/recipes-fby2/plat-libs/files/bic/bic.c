@@ -2514,6 +2514,8 @@ Response
 */
 int
 me_recovery(uint8_t slot_id, uint8_t command) {
+  //ND system does not have me
+#ifndef CONFIG_FBY2_ND
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;
@@ -2586,6 +2588,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
     syslog(LOG_CRIT, "%s: Restore Factory Default failed..., retried: %d", __func__,  retry);
     return -1;
   }
+#endif
   return 0;
 }
 

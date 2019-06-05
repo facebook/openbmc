@@ -1219,10 +1219,11 @@ storage_get_fruid_data(unsigned char *request, unsigned char *response,
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
 
+  int fru_id = req->data[0];
   int offset = req->data[1] + (req->data[2] << 8);
   int count = req->data[3];
 
-  int ret = plat_fruid_data(req->payload_id, offset, count, &(res->data[1]));
+  int ret = plat_fruid_data(req->payload_id, fru_id, offset, count, &(res->data[1]));
   if (ret) {
     res->cc = CC_UNSPECIFIED_ERROR;
   } else {

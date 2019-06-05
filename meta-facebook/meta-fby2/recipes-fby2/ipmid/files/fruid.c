@@ -48,6 +48,12 @@
 #define BIN_SPB         "/tmp/fruid_spb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"
 #define BIN_SLOT        "/tmp/fruid_slot%d.bin"
+#define BIN_DEV         "/tmp/fruid_slot%d_dev%d.bin"
+
+#define FRU_ID_SERVER 0
+#define FRU_ID_SPB 1
+#define FRU_ID_NIC 2
+#define FRU_ID_PAIR_DEV 3
 
 #define FRUID_SIZE        256
 
@@ -261,13 +267,54 @@ int plat_fruid_size(unsigned char payload_id) {
   return buf.st_size;
 }
 
-int plat_fruid_data(unsigned char payload_id, int offset, int count, unsigned char *data) {
+int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, unsigned char *data) {
   char fpath[64] = {0};
   int fd;
   int ret;
 
-  // Fill the file path for a given slot
-  sprintf(fpath, BIN_SLOT, payload_id);
+  if (fru_id == FRU_ID_SERVER) {
+    // Fill the file path for a given slot
+    sprintf(fpath, BIN_SLOT, payload_id);
+  } else if (fru_id == FRU_ID_SPB) {
+    // Fill the file path for spb
+    sprintf(fpath, BIN_SPB);
+  } else if (fru_id == FRU_ID_NIC) {
+    // Fill the file path for nic
+    sprintf(fpath, BIN_NIC);
+  } else {
+    unsigned char pair_payload_id;
+
+    // Check pair slot
+    if (0 == payload_id%2)
+      pair_payload_id = payload_id - 1;
+    else
+      pair_payload_id = payload_id + 1;
+
+    switch(pal_get_pair_slot_type(payload_id)) {
+      case TYPE_CF_A_SV:
+      case TYPE_GP_A_SV:
+        if (fru_id == FRU_ID_PAIR_DEV) {
+          // Fill the file path for a given slot
+          sprintf(fpath, BIN_SLOT, pair_payload_id);
+        } else {
+          return -1;
+        }
+        break;
+      case TYPE_GPV2_A_SV:
+        if (fru_id == FRU_ID_PAIR_DEV) {
+          // Fill the file path for a given slot
+          sprintf(fpath, BIN_SLOT, pair_payload_id);
+        } else if (fru_id > FRU_ID_PAIR_DEV && fru_id < 16) {
+          // Fill the file path for a given device
+          sprintf(fpath, BIN_DEV, pair_payload_id, (fru_id-3) );
+        } else {
+          return -1;
+        }
+        break;
+      default:
+        return -1;
+    }
+  }
 
   // open file for read purpose
   fd = open(fpath, O_RDONLY);

@@ -123,7 +123,7 @@ int plat_fruid_size(unsigned char payload_id) {
   return 0;
 }
 
-int plat_fruid_data(unsigned char payload_id, int offset, int count, unsigned char *data) {
+int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, unsigned char *data) {
   /* TODO: Not supported yet */
   return 0;
 }

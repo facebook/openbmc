@@ -131,7 +131,7 @@ int plat_fruid_size(unsigned char payload_id) {
   return MINIPACK_FRUID_SIZE;
 }
 
-int plat_fruid_data(unsigned char payload_id, int offset, int count, unsigned char *data) {
+int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, unsigned char *data) {
   // There is only one SCM / COMe in Minipack, so we ignore payload_id
   if ((offset + count) > MINIPACK_FRUID_SIZE) {
     return -1;

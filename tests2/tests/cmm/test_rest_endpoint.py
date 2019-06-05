@@ -69,3 +69,9 @@ class RestEndpointTest(FbossRestEndpointTest):
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):
         self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
+
+    # "/api/sys/firmware_info_all
+    @unittest.skip("Test not supported on platform")
+    def set_endpoint_firmware_info_all_attributes(self):
+        self.endpoint_firmware_info_all_attrb = None
+        pass

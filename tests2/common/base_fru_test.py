@@ -26,13 +26,14 @@ from utils.shell_util import run_cmd
 
 class BaseFruTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         self.fru_cmd = None
         self.fru_info = None
         self.fru_fields = None
         pass
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     @abstractmethod
@@ -61,7 +62,7 @@ class CommonFruTest(BaseFruTest):
             self.fru_info = self.run_fru_cmd()
 
     def test_fru_fields(self):
-        self.log_check(name=__name__)
+        self.log_check(name=self._testMethodName)
         self.set_fru_fields()
         for fru_field in self.fru_fields:
             self.assertIn(fru_field, self.fru_info)

@@ -249,7 +249,7 @@ fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
 
   ret = bic_read_fruid(slot_id, fru_id, fruid_temp_path, &fru_size);
   if (ret) {
-    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid slot%d dev=%d returns %d, fru_size: %d\n", slot_id, fru_id, ret, fru_size);
+    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid slot%d dev=%d returns %d, fru_size: %d\n", slot_id, fru_id-1, ret, fru_size);
   }
 
   rename(fruid_temp_path, fruid_path);
@@ -298,43 +298,38 @@ fru_cache_dump(void *arg) {
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
     ret = pal_get_device_power(fru, dev_id, &status, &type);
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u type=%u", fru, dev_id, status, type);
+    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u type=%u", fru, dev_id-1, status, type);
 
     if (ret == 0) {
       if (status == DEVICE_POWER_ON) {
-        if (type == DEV_TYPE_POC) {
-          retry = 0;
-          do {
-            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-            ret = fruid_cache_init(fru, dev_id);
-            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+        retry = 0;
+        while (1) {
+          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+          ret = fruid_cache_init(fru, dev_id);
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+          retry++;
 
-            if (ret == 0)
-              break;
+          if ((ret == 0) || (retry == max_retry))
+            break;
 
-            retry++;
-            sleep(1);
-          } while (retry < max_retry);
+          msleep(50);
+        }
 
-          if (retry >= max_retry) {
-            syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id);
-          } else {
-            pal_get_dev_fruid_path(fru, dev_id, buf);
-            //check file's checksum
-            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-            ret = fruid_parse(buf, &fruid);
-            if (ret != 0) { // Fail
-              syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id);
-            } else { // Success
-              free_fruid_info(&fruid);
-              dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
-              syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id);
-            }
-            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+        if (retry >= max_retry) {
+          syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
+        } else {
+          pal_get_dev_fruid_path(fru, dev_id, buf);
+          //check file's checksum
+          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+          ret = fruid_parse(buf, &fruid);
+          if (ret != 0) { // Fail
+            syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
+          } else { // Success
+            free_fruid_info(&fruid);
+            dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
+            syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
           }
-        } else { // SSD or unknown
-          syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU", fru, dev_id);
-          dev_fru_complete[fru][dev_id] = DEV_FRU_IGNORE;
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
         }
       }
 
@@ -342,11 +337,11 @@ fru_cache_dump(void *arg) {
       sprintf(buf, "%u", status);
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
       if (kv_set(key, buf, 0, 0) < 0) {
-        syslog(LOG_WARNING, "fru_cache_dump: kv_set Slot%u Dev%d present status failed", fru, dev_id);
+        syslog(LOG_WARNING, "fru_cache_dump: kv_set Slot%u Dev%d present status failed", fru, dev_id-1);
       }
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
     } else { // Device Status Unknown
-      syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id);
+      syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id-1);
     }
   }
 
@@ -596,8 +591,6 @@ latch_open_handler(void *ptr) {
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-  sleep(2);
-
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
     case TYPE_CF_A_SV:
@@ -713,6 +706,14 @@ hsvc_event_handler(void *ptr) {
             syslog(LOG_WARNING, "%s pal_set_def_key_value: kv_set failed. %d", __func__, ret);
           }
         }
+
+        // resart sensord
+        sprintf(cmd, "sv stop sensord");
+        system(cmd);
+        sprintf(cmd, "rm -rf /tmp/cache_store/slot%d*", hsvc_info->slot_id);
+        system(cmd);
+        sprintf(cmd, "sv start sensord");
+        system(cmd);
 
         // Remove post flag file when board has been removed
         sprintf(postpath, POST_FLAG_FILE, hsvc_info->slot_id);

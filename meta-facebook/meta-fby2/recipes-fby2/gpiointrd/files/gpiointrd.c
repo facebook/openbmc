@@ -268,7 +268,7 @@ fru_cache_dump(void *arg) {
   uint8_t status = DEVICE_POWER_OFF;
   uint8_t type = DEV_TYPE_UNKNOWN;
   uint8_t dev_id;
-  int max_retry = 3;
+  const int max_retry = 3;
   int oldstate;
   fruid_info_t fruid;
 
@@ -596,6 +596,8 @@ latch_open_handler(void *ptr) {
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
+  sleep(2);
+
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
     case TYPE_CF_A_SV:
@@ -711,14 +713,6 @@ hsvc_event_handler(void *ptr) {
             syslog(LOG_WARNING, "%s pal_set_def_key_value: kv_set failed. %d", __func__, ret);
           }
         }
-
-        // resart sensord
-        sprintf(cmd, "sv stop sensord");
-        system(cmd);
-        sprintf(cmd, "rm -rf /tmp/cache_store/slot%d*", hsvc_info->slot_id);
-        system(cmd);
-        sprintf(cmd, "sv start sensord");
-        system(cmd);
 
         // Remove post flag file when board has been removed
         sprintf(postpath, POST_FLAG_FILE, hsvc_info->slot_id);

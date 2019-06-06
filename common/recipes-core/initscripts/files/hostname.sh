@@ -17,7 +17,7 @@ set_hostname() {
   # Set hostname
   hostname $name
   # Reload/Restart any services needing the updated hostname
-  /etc/init.d/syslog reload
+  /etc/init.d/syslog restart
 }
 
 update_hostname() {

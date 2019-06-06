@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "heartbeat": {
+    "interval": 500
+  },
+  "bmc_cpu_utilization" : {
+    "enabled": true,
+    "window_size": 120,
+    "monitor_interval": 1,
+    "threshold": [
+      {
+        "value": 85.0,
+        "hysteresis" : 5.0,
+        "action": ["log-warning", "bmc-error-trigger"]
+      }
+    ]
+  },
+  "bmc_mem_utilization" : {
+    "enabled": true,
+    "enable_panic_on_oom": true,
+    "window_size": 120,
+    "monitor_interval": 1,
+    "threshold": [
+      {
+        "value": 70.0,
+        "hysteresis" : 5.0,
+        "action": ["log-warning", "bmc-error-trigger"]
+      },
+      {
+        "value": 95.0,
+        "hysteresis" : 5.0,
+        "action": ["log-critical", "bmc-error-trigger", "reboot"]
+      }
+    ]
+  },
+  "i2c": {
+    "enabled": false,
+    "busses": [0,1,2,3,4,5,6,7,8,13]
+  },
+  "nm_monitor": {
+    "enabled": false,
+    "monitor_interval": 1,
+    "retry_threshold": 10
+  },
+  "verified_boot": {
+    "enabled": false
+  },
+  "bmc_timestamp": {
+    "enabled": true
+  }
+}

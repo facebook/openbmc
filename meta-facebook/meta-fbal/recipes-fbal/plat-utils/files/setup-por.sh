@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -16,29 +16,16 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-usage() {
-    echo "Usage: $1 <on | off>"
-    exit -1
-}
-
+### BEGIN INIT INFO
+# Provides:          setup-por
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Power on Server
+### END INIT INFO
 . /usr/local/fbpackages/utils/ast-functions
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin
+store_clear_por
 
-set -e
-
-if [ $# != 1 ]; then
-    usage $0
-fi
-
-if [ $1 = "on" ]; then
-    val=0
-elif [ $1 = "off" ]; then
-    val=1
-else
-    usage $0
-fi
-
-gpio_set SERVER_POWER_LED $val

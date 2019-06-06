@@ -23,8 +23,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
            file://sol-util \
-           file://power_led.sh \
            file://setup-gpio.sh \
+           file://setup-por.sh \
            file://COPYING \
           "
 
@@ -32,7 +32,7 @@ pkgdir = "utils"
 
 S = "${WORKDIR}"
 
-binfiles = "power_led.sh sol-util \
+binfiles = "sol-util \
            "
 
 RDEPENDS_${PN} += "gpiocli"
@@ -52,9 +52,10 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  # the script to mount /mnt/data
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
+  update-rc.d -r ${D} setup-por.sh start 70 S .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

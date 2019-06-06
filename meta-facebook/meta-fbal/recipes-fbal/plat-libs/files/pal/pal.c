@@ -37,7 +37,7 @@
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
-#define GPIO_POWER_LED "SERVER_POWER_LED"
+#define GPIO_LOCATE_LED "FP_LOCATE_LED"
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
 
 #define DELAY_GRACEFUL_SHUTDOWN 1
@@ -252,6 +252,20 @@ key_func_ntp (int event, void *arg)
   return 0;
 }
 
+int
+pal_is_bmc_por(void) {
+  FILE *fp;
+  int por = 0;
+
+  fp = fopen("/tmp/ast_por", "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &por);
+    fclose(fp);
+  }
+
+  return (por)?1:0;
+}
+
 // Power On the server in a given slot
 static int
 server_power_on(void) {
@@ -458,11 +472,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 int
 pal_sled_cycle(void) {
   // Send command to HSC power cycle
-  // Single Side
   system("i2cset -y 7 0x11 0xd9 c &> /dev/null");
-
-  // Double Side
-  system("i2cset -y 7 0x45 0xd9 c &> /dev/null");
 
   return 0;
 }
@@ -502,7 +512,7 @@ pal_set_id_led(uint8_t fru, uint8_t status) {
   if (fru != FRU_MB)
     return -1;
 
-  gdesc = gpio_open_by_shadow(GPIO_POWER_LED);
+  gdesc = gpio_open_by_shadow(GPIO_LOCATE_LED);
   if (gdesc == NULL)
     return -1;
 
@@ -666,8 +676,6 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   return 0;
 }
 
-
-
 int
 pal_get_fruid_name(uint8_t fru, char *name) {
   switch(fru) {
@@ -688,18 +696,17 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   return 0;
 }
 
-
 int
 pal_channel_to_bus(int channel) {
   switch (channel) {
     case 0:
       return 0; // USB (LCD Debug Board)
     case 1:
-      return 5; // ME 
+      return 5; // ME
     case 2:
       return 2; // Slave BMC
     case 3:
-      return 6; // CM 
+      return 6; // CM
     case 9:
       return 8; // Riser (Big Basin)
   }

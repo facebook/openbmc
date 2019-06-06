@@ -43,44 +43,43 @@
 
 echo "Set up GPIO pins....."
 
-# Set up BMC ready pin
-# GPIOA0-BMC_READY_R (pin number 0)
+# GPIOA0-BMC_READY_R
 devmem_clear_bit $(scu_addr 80) 0
-gpio_set A0 0
+gpio_export BMC_READY_R GPIOA0
+gpio_set BMC_READY_R 1
 
-# Set up hotswap alert pin
-# GPIOA1-SMB_HOTSWAP_ALERT_N (pin number 1)
+# GPIOA1-SMB_HOTSWAP_BMC_ALERT_N_R
 devmem_clear_bit $(scu_addr 80) 1
-gpio_export A1
+gpio_export SMB_HOTSWAP_BMC_ALERT_N_R GPIOA1
 
-# Set up hsc fault pin
-# GPIOA2-FM_HSC_FAULT_N (pin number 2)
+# GPIOA2-FM_HSC_BMC_FAULT_N_R 
 devmem_clear_bit $(scu_addr 80) 15
-gpio_export A2
+gpio_export FM_HSC_BMC_FAULT_N_R GPIOA2
 
-# Set up an alert pin for a server board
-# GPIOB0-SMB_SLOT1_CPLD_BIC_ALERT_N (pin number 8)
-# GPIOB1-SMB_SLOT2_CPLD_BIC_ALERT_N (pin number 9)
-# GPIOB2-SMB_SLOT3_CPLD_BIC_ALERT_N (pin number 10)
-# GPIOB3-SMB_SLOT4_CPLD_BIC_ALERT_N (pin number 11)
-gpio_export B0
-gpio_export B1
-gpio_export B2
-gpio_export B3
+# GPIOA3-FM_NIC_WAKE_BMC_N
+devmem_clear_bit $(scu_addr 80) 3
+gpio_export FM_NIC_WAKE_BMC_N GPIOA3
 
-# Set up a present pin for a server board
-# GPIOB4-PRSNT_MB_SLOT1_BB_N (pin number 12)
-# GPIOB5-PRSNT_MB_SLOT2_BB_N (pin number 13)
-# GPIOB6-PRSNT_MB_SLOT3_BB_N (pin number 14)
-# GPIOB7-PRSNT_MB_SLOT4_BB_N (pin number 15)
+# GPIOB0-SMB_BMC_SLOT1_ALT_N
+# GPIOB1-SMB_BMC_SLOT2_ALT_N
+# GPIOB2-SMB_BMC_SLOT3_ALT_N
+# GPIOB3-SMB_BMC_SLOT4_ALT_N
+gpio_export SMB_BMC_SLOT1_ALT_N GPIOB0
+gpio_export SMB_BMC_SLOT2_ALT_N GPIOB1
+gpio_export SMB_BMC_SLOT3_ALT_N GPIOB2
+gpio_export SMB_BMC_SLOT4_ALT_N GPIOB3
+
+# GPIOB4-PRSNT_MB_BMC_SLOT1_BB_N
+# GPIOB5-PRSNT_MB_BMC_SLOT2_BB_N
+# GPIOB6-PRSNT_MB_BMC_SLOT3_BB_N
+# GPIOB7-PRSNT_MB_BMC_SLOT4_BB_N
 devmem_clear_bit $(scu_addr 80) 13
 devmem_clear_bit $(scu_addr 80) 14
-gpio_export B4
-gpio_export B5
-gpio_export B6
-gpio_export B7
+gpio_export PRSNT_MB_BMC_SLOT1_BB_N GPIOB4
+gpio_export PRSNT_MB_BMC_SLOT2_BB_N GPIOB5
+gpio_export PRSNT_MB_BMC_SLOT3_BB_N GPIOB6
+gpio_export PRSNT_MB_BMC_SLOT4_BB_N GPIOB7
 
-# Set up a EMMC SD pin
 # GPIOD0-EMMC_SD2CLK_R1  (function pin)
 # GPIOD1-EMMC_SD2CMD_R1  (function pin)
 # GPIOD2-EMMC_SD2DAT0_R1 (function pin)
@@ -91,196 +90,212 @@ gpio_export B7
 # GPIOD7-SD2WPT_N (function pin)
 devmem_set_bit $(scu_addr 90) 1
 
-# Set up a pin for detecting NIC Adapter Card type
-# GPIOE0-ADAPTER_CARD_TYPE_1 (pin number 32)
-# GPIOE1-ADAPTER_CARD_TYPE_2 (pin number 33)
-# GPIOE2-ADAPTER_CARD_TYPE_3 (pin number 34)
+# GPIOE0-ADAPTER_CARD_TYPE_BMC_1 
+# GPIOE1-ADAPTER_CARD_TYPE_BMC_2
+# GPIOE2-ADAPTER_CARD_TYPE_BMC_3
 devmem_clear_bit $(scu_addr 80) 16
 devmem_clear_bit $(scu_addr 80) 17
 devmem_clear_bit $(scu_addr 80) 18
 devmem_clear_bit $(scu_addr 8C) 12
 devmem_clear_bit $(scu_addr 8C) 13
-gpio_export E0
-gpio_export E1
-gpio_export E2
+gpio_export ADAPTER_CARD_TYPE_BMC_1 GPIOE0
+gpio_export ADAPTER_CARD_TYPE_BMC_2 GPIOE1
+gpio_export ADAPTER_CARD_TYPE_BMC_3 GPIOE2
 
-# Set up a pin to check if the sled AC cycle is occured
-# GPIOE3-ADAPTER_BUTTON_BMC_N (pin number 35)
+# GPIOE3-ADAPTER_BUTTON_BMC_CO_N_R
 devmem_clear_bit $(scu_addr 80) 19
-gpio_export E3
+gpio_export ADAPTER_BUTTON_BMC_CO_N_R GPIOE3
 
-# Set up a pin for the alert from temperature
-# GPIOE4-SMB_TEMP_ALERT_N (pin number 36)
+# GPIOE4-RST_BMC_USB_HUB_N_R
 devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
-gpio_export E4
+gpio_export RST_BMC_USB_HUB_N_R GPIOE4
+gpio_set RST_BMC_USB_HUB_N_R 0
 
-# Set up a pin for enabling hsc
-# GPIOF0-HSC_CPLD_SLOT1_EN_R (pin number 40)
-# GPIOF1-HSC_CPLD_SLOT2_EN_R (pin number 41)
-# GPIOF2-HSC_CPLD_SLOT3_EN_R (pin number 42)
-# GPIOF3-HSC_CPLD_SLOT4_EN_R (pin number 43)
+# GPIOE5-EMMC_RST_N_R
+devmem_clear_bit $(scu_addr 80) 21
+gpio_export EMMC_RST_N_R GPIOE5
+gpio_set EMMC_RST_N_R 0
+
+# GPIOF0-HSC_BMC_SLOT1_EN_R
+# GPIOF1-HSC_BMC_SLOT2_EN_R
+# GPIOF2-HSC_BMC_SLOT3_EN_R
+# GPIOF3-HSC_BMC_SLOT4_EN_R
 devmem_clear_bit $(scu_addr 80) 24
 devmem_clear_bit $(scu_addr 80) 25
 devmem_clear_bit $(scu_addr 80) 26
 devmem_clear_bit $(scu_addr 80) 27
 devmem_clear_bit $(scu_addr 90) 30
-gpio_set F0 0
-gpio_set F1 0
-gpio_set F2 0
-gpio_set F3 0
+gpio_export HSC_BMC_SLOT1_EN_R GPIOF0 
+gpio_export HSC_BMC_SLOT2_EN_R GPIOF1 
+gpio_export HSC_BMC_SLOT3_EN_R GPIOF2 
+gpio_export HSC_BMC_SLOT4_EN_R GPIOF3 
+gpio_set HSC_BMC_SLOT1_EN_R 0
+gpio_set HSC_BMC_SLOT2_EN_R 0
+gpio_set HSC_BMC_SLOT3_EN_R 0
+gpio_set HSC_BMC_SLOT4_EN_R 0
 
-# Set up the primary pin for reseting NIC
-# GPIOF4-SMB_RST_PRIMARY_CPLD_N_R (pin number 44)
+# GPIOF4-SMB_RST_PRIMARY_BMC_N_R
 devmem_clear_bit $(scu_addr 80) 28
-gpio_set F4 1
+gpio_export SMB_RST_PRIMARY_BMC_N_R GPIOF4 
+gpio_set SMB_RST_PRIMARY_BMC_N_R 1
 
-# Set up to read the board revision pins
-# GPIOG0-BOARD_REV_ID0 (pin number 48)
-# GPIOG1-BOARD_REV_ID0 (pin number 49)
-# GPIOG2-BOARD_REV_ID0 (pin number 50)
+# GPIOG0-DISABLE_BMC_FAN_2_N_R
 devmem_clear_bit $(scu_addr 84) 0
+gpio_export DISABLE_BMC_FAN_2_N_R GPIOG0
+gpio_set DISABLE_BMC_FAN_2_N_R 1
+
+# GPIOG1-DISABLE_BMC_FAN_3_N_R
 devmem_clear_bit $(scu_addr 84) 1
+gpio_export DISABLE_BMC_FAN_3_N_R GPIOG1
+gpio_set DISABLE_BMC_FAN_3_N_R 1
+
+# GPIOG2-NIC_ADAPTER_CARD_PRSNT_BMC_1_N_R
 devmem_clear_bit $(scu_addr 84) 2
-gpio_export G0
-gpio_export G1
-gpio_export G2
+gpio_export NIC_ADAPTER_CARD_PRSNT_BMC_1_N_R GPIOG2
 
-# Set up the secondary pin for reseting NIC
-# GPIOG3-SMB_RST_SECONDARY_CPLD_N_R (pin number 51)
+# GPIOG3-SMB_RST_SECONDARY_BMC_N_R
 devmem_clear_bit $(scu_addr 84) 3
-gpio_set G3 1
+gpio_export SMB_RST_SECONDARY_BMC_N_R GPIOG3
+gpio_set SMB_RST_SECONDARY_BMC_N_R 1
 
-# Set up a pin for NIC/CPLD UART
-# GPIOH6-UART_NIC_CPLD_TX_R (function pin)
-# GPIOH7-UART_NIC_CPLD_RX (function pin)
+# GPIOH6-UART_NIC_TX_R (function pin)
+# GPIOH7-UART_NIC_RX (function pin)
 devmem_clear_bit $(scu_addr 90) 6
 devmem_set_bit $(scu_addr 90) 7
 
-
-# Set up a pin for enabling the variable resistor 
-# GPIOG4-SLOT1_HSC_SET_CPLD_EN_R (pin number 52)
-# GPIOG5-SLOT2_HSC_SET_CPLD_EN_R (pin number 53)
-# GPIOG6-SLOT3_HSC_SET_CPLD_EN_R (pin number 54)
-# GPIOG7-SLOT4_HSC_SET_CPLD_EN_R (pin number 55)
-devmem_clear_bit $(scu_addr 94) 12
-devmem_clear_bit $(scu_addr 84) 4
-devmem_clear_bit $(scu_addr 84) 5
-devmem_clear_bit $(scu_addr 84) 6
-devmem_clear_bit $(scu_addr 84) 7
-gpio_set G4 0
-gpio_set G5 0
-gpio_set G6 0
-gpio_set G7 0
-
-
-# Set up a pin for power good
-# GPIOJ0-PWROK_STBY_BMC_SLOT1 (pin number 72)
-# GPIOJ1-PWROK_STBY_BMC_SLOT2 (pin number 73)
-# GPIOJ2-PWROK_STBY_BMC_SLOT3 (pin number 74)
-# GPIOJ3-PWROK_STBY_BMC_SLOT4 (pin number 75)
-devmem_clear_bit $(scu_addr 84) 8
-devmem_clear_bit $(scu_addr 84) 9
-devmem_clear_bit $(scu_addr 84) 10
-devmem_clear_bit $(scu_addr 84) 11
-gpio_export J0
-gpio_export J1
-gpio_export J2
-gpio_export J3
-
-# Set up a pin for receiving the PCIE reset signal from a slot
-# GPIOJ4-RST_PCIE_RESET_SLOT1_N (pin number 76)
-# GPIOJ5-RST_PCIE_RESET_SLOT2_N (pin number 77)
-# GPIOJ6-RST_PCIE_RESET_SLOT3_N (pin number 78)
-# GPIOJ7-RST_PCIE_RESET_SLOT4_N (pin number 79)
+# GPIOJ4-RST_PCIE_RESET_SLOT1_N
+# GPIOJ5-RST_PCIE_RESET_SLOT2_N
+# GPIOJ6-RST_PCIE_RESET_SLOT3_N
+# GPIOJ7-RST_PCIE_RESET_SLOT4_N
 devmem_clear_bit $(scu_addr 84) 12
 devmem_clear_bit $(scu_addr 84) 13
 devmem_clear_bit $(scu_addr 84) 14
 devmem_clear_bit $(scu_addr 84) 15
 devmem_clear_bit $(scu_addr 94) 8
 devmem_clear_bit $(scu_addr 94) 9
-gpio_export J4
-gpio_export J5
-gpio_export J6
-gpio_export J7
+gpio_export RST_PCIE_RESET_SLOT1_N GPIOJ4
+gpio_export RST_PCIE_RESET_SLOT2_N GPIOJ5
+gpio_export RST_PCIE_RESET_SLOT3_N GPIOJ6
+gpio_export RST_PCIE_RESET_SLOT4_N GPIOJ7
 
-# Set up a pin for controlling server board power status
-# GPIOL0-AC_ON_OFF_BTN_SLOT1_N (pin number 88)
-# GPIOL1-AC_ON_OFF_BTN_SLOT2_N (pin number 89)
-# GPIOL2-AC_ON_OFF_BTN_SLOT3_N (pin number 90)
-# GPIOL3-AC_ON_OFF_BTN_SLOT4_N (pin number 91)
+# GPIOL0-AC_ON_OFF_BTN_SLOT1_N
+# GPIOL1-AC_ON_OFF_BTN_BMC_SLOT2_N_R
+# GPIOL2-AC_ON_OFF_BTN_SLOT3_N
+# GPIOL3-AC_ON_OFF_BTN_BMC_SLOT4_N_R
 devmem_clear_bit $(scu_addr 84) 16
 devmem_clear_bit $(scu_addr 84) 17
 devmem_clear_bit $(scu_addr 84) 18
 devmem_clear_bit $(scu_addr 84) 19
-gpio_set L0 1
-gpio_set L1 1
-gpio_set L2 1
-gpio_set L3 1
+gpio_export AC_ON_OFF_BTN_SLOT1_N GPIOL0
+gpio_export AC_ON_OFF_BTN_BMC_SLOT2_N_R GPIOL1
+gpio_export AC_ON_OFF_BTN_SLOT3_N GPIOL2
+gpio_export AC_ON_OFF_BTN_BMC_SLOT4_N_R GPIOL3
 
-# Set up a pin to check if HSC Fast Prochot is enabled
-# GPIOL4-FAST_PROCHOT_N (pin number 92)
+# GPIOL4-FAST_PROCHOT_BMC_N_R
 devmem_clear_bit $(scu_addr 84) 20
-gpio_export L4
+gpio_export FAST_PROCHOT_BMC_N_R GPIOL4
 
-# Set up a pin for enabling the USB power switch by BMC 
-# GPIOL5-USB_CPLD_EN_N_R (pin number 93)
+# GPIOL5-USB_CPLD_EN_N_R
 devmem_clear_bit $(scu_addr 84) 21
-gpio_set L5 0
+gpio_export USB_BMC_EN_N_R GPIOL5
+gpio_set USB_BMC_EN_N_R 0
 
-# Set up a pin for receiving the HSC fault from a slot
-# GPIOM0-HS0_FAULT_SLOT1_N (pin number 96)
-# GPIOM1-HS0_FAULT_SLOT2_N (pin number 97)
-# GPIOM2-HS0_FAULT_SLOT3_N (pin number 98)
-# GPIOM3-HS0_FAULT_SLOT4_N (pin number 99)
+# GPIOM0-HSC_FAULT_SLOT1_N
+# GPIOM1-HSC_FAULT_BMC_SLOT2_N_R
+# GPIOM2-HSC_FAULT_SLOT3_N
+# GPIOM3-HSC_FAULT_BMC_SLOT4_N_R
 devmem_clear_bit $(scu_addr 84) 24
 devmem_clear_bit $(scu_addr 84) 25
 devmem_clear_bit $(scu_addr 84) 26
 devmem_clear_bit $(scu_addr 84) 27
-gpio_export M0
-gpio_export M1
-gpio_export M2
-gpio_export M3
+gpio_export HSC_FAULT_SLOT1_N GPIOM0
+gpio_export HSC_FAULT_BMC_SLOT2_N_R GPIOM1
+gpio_export HSC_FAULT_SLOT3_N GPIOM2
+gpio_export HSC_FAULT_BMC_SLOT4_N_R GPIOM3
 
-# Set up a pin to read NIC Card ID
-# GPIOM4-FM_BB_CPLD_SLOT_ID0_R (pin number 100)
-# GPIOM5-FM_BB_CPLD_SLOT_ID1_R (pin number 101)
+# GPIOM4-FM_PWRBRK_PRIMARY_R
+# GPIOM5-FM_PWRBRK_SECONDARY_R
 devmem_clear_bit $(scu_addr 84) 28
 devmem_clear_bit $(scu_addr 84) 29
-gpio_export M4
-gpio_export M5
+gpio_export FM_PWRBRK_PRIMARY_R GPIOM4
+gpio_set FM_PWRBRK_PRIMARY_R 0
 
-# Set up a pin for enabling USB OC protect
-# GPIOQ6-USB_OC_N (pin number 134)
+gpio_export FM_PWRBRK_SECONDARY_R GPIOM5
+gpio_set FM_PWRBRK_SECONDARY_R 0
+
+# GPION4-DUAL_FAN0_DETECT_BMC_N_R
+# GPION5-DUAL_FAN1_DETECT_BMC_N_R
+devmem_clear_bit $(scu_addr 88) 4
+devmem_clear_bit $(scu_addr 88) 5
+gpio_export DUAL_FAN0_DETECT_BMC_N_R GPION4
+gpio_export DUAL_FAN1_DETECT_BMC_N_R GPION5
+
+# GPION6-DISABLE_BMC_FAN_0_N_R
+devmem_clear_bit $(scu_addr 88) 6
+gpio_export DISABLE_BMC_FAN_0_N_R GPION6
+gpio_set DISABLE_BMC_FAN_0_N_R 1
+
+# GPION7-DISABLE_BMC_FAN_1_N_R
+devmem_clear_bit $(scu_addr 88) 7
+gpio_export DISABLE_BMC_FAN_1_N_R GPION7
+gpio_set DISABLE_BMC_FAN_1_N_R 1
+
+# GPIOQ6-USB_OC_N
 devmem_clear_bit $(scu_addr 2C) 1
-gpio_export Q6
+gpio_export USB_OC_N GPIOQ6
 
-# Set up a pin to detect TPM present
-# GPIOQ7-FM_BMC_TPM_PRSNT_N (pin number 135)
+# GPIOQ7-FM_BMC_TPM_PRSNT_N
 devmem_clear_bit $(scu_addr 2C) 29
-gpio_export Q7
+gpio_export FM_BMC_TPM_PRSNT_N GPIOQ7
 
-# Set up a pin to check NIC Card power good
-# GPIOAB0-PWRGD_NIC_BMC (pin number 216)
+# GPIOS0-PWROK_STBY_BMC_SLOT1
+# GPIOS1-PWROK_STBY_BMC_SLOT2
+# GPIOS2-PWROK_STBY_BMC_SLOT3
+# GPIOS3-PWROK_STBY_BMC_SLOT4
+devmem_clear_bit $(scu_addr 8C) 0
+devmem_clear_bit $(scu_addr 8C) 1
+devmem_clear_bit $(scu_addr 8C) 2
+devmem_clear_bit $(scu_addr 8C) 3
+gpio_export PWROK_STBY_BMC_SLOT1 GPIOS0
+gpio_export PWROK_STBY_BMC_SLOT2 GPIOS1
+gpio_export PWROK_STBY_BMC_SLOT3 GPIOS2
+gpio_export PWROK_STBY_BMC_SLOT4 GPIOS3
+
+# GPIOZ0-FM_BMC_SLOT1_ISOLATED_EN_R
+# GPIOZ1-FM_BMC_SLOT2_ISOLATED_EN_R
+# GPIOZ2-FM_BMC_SLOT3_ISOLATED_EN_R
+# GPIOZ3-FM_BMC_SLOT4_ISOLATED_EN_R
+devmem_clear_bit $(scu_addr A4) 16
+devmem_clear_bit $(scu_addr A4) 17
+devmem_clear_bit $(scu_addr A4) 18
+devmem_clear_bit $(scu_addr A4) 19
+gpio_export FM_BMC_SLOT1_ISOLATED_EN_R GPIOZ0
+gpio_export FM_BMC_SLOT2_ISOLATED_EN_R GPIOZ1
+gpio_export FM_BMC_SLOT3_ISOLATED_EN_R GPIOZ2
+gpio_export FM_BMC_SLOT4_ISOLATED_EN_R GPIOZ3
+gpio_set FM_BMC_SLOT1_ISOLATED_EN_R 0
+gpio_set FM_BMC_SLOT2_ISOLATED_EN_R 0
+gpio_set FM_BMC_SLOT3_ISOLATED_EN_R 0
+gpio_set FM_BMC_SLOT4_ISOLATED_EN_R 0
+
+# GPIOAB0-PWRGD_NIC_BMC
 devmem_clear_bit $(scu_addr A8) 0
-gpio_export AB0
+gpio_export PWRGD_NIC_BMC GPIOAB0
 
-# Set up a pin to detect OCP debug card present
-# GPIOAB1-OCP_DEBUG_PRSNT_N (pin number 217)
+# GPIOAB1-OCP_DEBUG_BMC_PRSNT_N
 devmem_clear_bit $(scu_addr A8) 1
-gpio_export AB1
+gpio_export OCP_DEBUG_BMC_PRSNT_N GPIOAB1
 
-# Set up a pin to clean CMOS on a slot
-# GPIOAC0-CMOS_CLEAR_SLOT1_R (pin number 220)
-# GPIOAC1-CMOS_CLEAR_SLOT2_R (pin number 221)
-# GPIOAC2-CMOS_CLEAR_SLOT3_R (pin number 222)
-# GPIOAC3-CMOS_CLEAR_SLOT4_R (pin number 223)
-devmem_clear_scu70_bit 25
-devmem_clear_bit $(scu_addr AC) 0
-devmem_clear_bit $(scu_addr AC) 1
-devmem_clear_bit $(scu_addr AC) 2
-devmem_clear_bit $(scu_addr AC) 3
-gpio_export AC0
-gpio_export AC1
-gpio_export AC2
-gpio_export AC3
+# GPIOAC4-SMB_FAN_INA_BMC_ALERT_N_R
+# GPIOAC5-SMB_TEMP_INLET_ALERT_BMC_N_R
+# GPIOAC6-SMB_TEMP_OUTLET_ALERT_BMC_N_R
+# GPIOAC7-FM_BMC_BIC_DETECT_N
+devmem_clear_bit $(scu_addr AC) 4
+devmem_clear_bit $(scu_addr AC) 5
+devmem_clear_bit $(scu_addr AC) 6
+devmem_clear_bit $(scu_addr AC) 7
+gpio_export SMB_FAN_INA_BMC_ALERT_N_R GPIOAC4
+gpio_export SMB_TEMP_INLET_ALERT_BMC_N_R GPIOAC5
+gpio_export SMB_TEMP_OUTLET_ALERT_BMC_N_R GPIOAC6
+gpio_export FM_BMC_BIC_DETECT_N GPIOAC7

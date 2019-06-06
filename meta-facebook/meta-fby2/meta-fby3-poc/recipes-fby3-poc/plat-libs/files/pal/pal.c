@@ -1783,7 +1783,7 @@ pal_is_debug_card_prsnt(uint8_t *status) {
   int val;
   char path[64] = {0};
 
-  sprintf(path, GPIO_VAL, GPIOAB1_OCP_DEBUG_PRSNT_N);
+  sprintf(path, GPIO_VAL, GPIOAB1_OCP_DEBUG_BMC_PRSNT_N);
 
   if (read_device(path, &val)) {
     return -1;
@@ -5006,7 +5006,7 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
   case BIC_MODE_NORMAL:
     // Bridge IC entered normal mode
     // Inform BIOS that BMC is ready
-    bic_set_gpio(fru, GPIOA0_BMC_READY_N, 0);
+    bic_set_gpio(fru, GPIOA0_BMC_READY_R, 0);
     break;
   case BIC_MODE_UPDATE:
     // Bridge IC entered update mode
@@ -5303,10 +5303,10 @@ int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
   int BOARD_REV_ID0, BOARD_REV_ID1, BOARD_REV_ID2;
-  char path[64] = {0};
+  //char path[64] = {0};
   unsigned char *data = res_data;
   int completion_code = CC_UNSPECIFIED_ERROR;
-
+#if 0
   sprintf(path, GPIO_VAL, GPIOG0_BOARD_REV_ID0);
   if (read_device(path, &BOARD_REV_ID0)) {
     *res_len = 0;
@@ -5324,7 +5324,12 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
     *res_len = 0;
     return completion_code;
   }
-
+#endif
+  //for poc stage, there are no board rev id pins.
+  //We will return 0 for the time being.
+  BOARD_REV_ID2 = 0;
+  BOARD_REV_ID1 = 0;
+  BOARD_REV_ID0 = 0;
   *data++ = 0x0;
   *data++ = (BOARD_REV_ID2 << 2) | (BOARD_REV_ID1 << 1) | BOARD_REV_ID0;
   *data++ = 0x0;

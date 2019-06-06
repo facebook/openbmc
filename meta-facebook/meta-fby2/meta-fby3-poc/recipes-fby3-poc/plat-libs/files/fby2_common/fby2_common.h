@@ -67,6 +67,35 @@ enum {
   TYPE_SPB_YV250   = 1,
 };
 
+//The definition of the type are used in fruid
+//which is the common code
+enum {
+  TYPE_SV_A_SV     = 0,
+  TYPE_CF_A_SV     = 1,
+  TYPE_GP_A_SV     = 2,
+  TYPE_NULL_A_SV   = 3,
+  TYPE_GPV2_A_SV   = 4,
+  TYPE_SV_A_CF     = 16,
+  TYPE_CF_A_CF     = 17,
+  TYPE_GP_A_CF     = 18,
+  TYPE_NULL_A_CF   = 19,
+  TYPE_GPV2_A_CF   = 20,
+  TYPE_SV_A_GP     = 32,
+  TYPE_CF_A_GP     = 33,
+  TYPE_GP_A_GP     = 34,
+  TYPE_NULL_A_GP   = 35,
+  TYPE_GPV2_A_GP   = 36,
+  TYPE_SV_A_NULL   = 48,
+  TYPE_CF_A_NULL   = 49,
+  TYPE_GP_A_NULL   = 50,
+  TYPE_GPV2_A_NULL = 52,
+  TYPE_SV_A_GPV2   = 64,
+  TYPE_CF_A_GPV2   = 65,
+  TYPE_GP_A_GPV2   = 66,
+  TYPE_NULL_A_GPV2 = 67,
+  TYPE_GPV2_A_GPV2 = 68,
+};
+
 typedef struct {
   char slot_key[32];
   char slot_def_val[32];
@@ -81,104 +110,119 @@ typedef struct {
 } ipmi_accuracy_sensor_reading_t;
 
 //GPIO definition
-#define MAX_SPB_GPIO_NUM                  256
+#define MAX_SPB_GPIO_NUM 256
+#define GPIO_RSVD_VAL 255
 
-#define GPIOA0_BMC_READY_N                  0
-#define GPIOA1_SMB_HOTSWAP_ALERT_N          1
-#define GPIOB0_SMB_SLOT1_CPLD_BIC_ALERT_N   8
-#define GPIOB1_SMB_SLOT2_CPLD_BIC_ALERT_N   9
-#define GPIOB2_SMB_SLOT3_CPLD_BIC_ALERT_N  10
-#define GPIOB3_SMB_SLOT4_CPLD_BIC_ALERT_N  11
-#define GPIOB4_PRSNT_MB_SLOT1_BB_N         12
-#define GPIOB5_PRSNT_MB_SLOT2_BB_N         13
-#define GPIOB6_PRSNT_MB_SLOT3_BB_N         14
-#define GPIOB7_PRSNT_MB_SLOT4_BB_N         15
-#define GPIOE0_ADAPTER_CARD_TYPE_1         32
-#define GPIOE1_ADAPTER_CARD_TYPE_2         33
-#define GPIOE2_ADAPTER_CARD_TYPE_3         34
-#define GPIOE3_ADAPTER_BUTTON_BMC_N        35
-#define GPIOF0_HSC_CPLD_SLOT1_EN_R         40
-#define GPIOF1_HSC_CPLD_SLOT2_EN_R         41
-#define GPIOF2_HSC_CPLD_SLOT3_EN_R         42
-#define GPIOF3_HSC_CPLD_SLOT4_EN_R         43
-#define GPIOF4_SMB_RST_PRIMARY_CPLD_N_R    44
-#define GPIOG0_BOARD_REV_ID0               48
-#define GPIOG1_BOARD_REV_ID1               49
-#define GPIOG2_BOARD_REV_ID2               50
-#define GPIOG3_SMB_RST_SECONDARY_CPLD_N_R  51
-#define GPIOG4_SLOT1_HSC_SET_CPLD_EN_R     52
-#define GPIOG5_SLOT2_HSC_SET_CPLD_EN_R     53
-#define GPIOG6_SLOT3_HSC_SET_CPLD_EN_R     54
-#define GPIOG7_SLOT4_HSC_SET_CPLD_EN_R     55
-#define GPIOJ0_PWROK_STBY_BMC_SLOT1        72
-#define GPIOJ1_PWROK_STBY_BMC_SLOT2        73
-#define GPIOJ2_PWROK_STBY_BMC_SLOT3        74
-#define GPIOJ3_PWROK_STBY_BMC_SLOT4        75
-#define GPIOJ4_RST_PCIE_RESET_SLOT1_N      76
-#define GPIOJ5_RST_PCIE_RESET_SLOT2_N      77
-#define GPIOJ6_RST_PCIE_RESET_SLOT3_N      78
-#define GPIOJ7_RST_PCIE_RESET_SLOT4_N      79
-#define GPIOL0_AC_ON_OFF_BTN_SLOT1_N       88
-#define GPIOL1_AC_ON_OFF_BTN_SLOT2_N       89
-#define GPIOL2_AC_ON_OFF_BTN_SLOT3_N       90
-#define GPIOL3_AC_ON_OFF_BTN_SLOT4_N       91
-#define GPIOL4_FAST_PROCHOT_N              92
-#define GPIOL5_USB_CPLD_EN_N_R             93
-#define GPIOM0_HS0_FAULT_SLOT1_N           96
-#define GPIOM1_HS0_FAULT_SLOT2_N           97
-#define GPIOM2_HS0_FAULT_SLOT3_N           98
-#define GPIOM3_HS0_FAULT_SLOT4_N           99
-#define GPIOM4_FM_BB_CPLD_SLOT_ID0_R      100
-#define GPIOM5_FM_BB_CPLD_SLOT_ID1_R      101
-#define GPIOAB0_PWRGD_NIC_BMC             216
-#define GPIOAB1_OCP_DEBUG_PRSNT_N         217
-#define GPIOAB2_RST_BMC_WDRST1_R          218
-#define GPIOAB3_RST_BMC_WDRST2_R          219
-#define GPIOAC0_CMOS_CLEAR_SLOT1_R        220
-#define GPIOAC1_CMOS_CLEAR_SLOT2_R        221
-#define GPIOAC2_CMOS_CLEAR_SLOT3_R        222
-#define GPIOAC3_CMOS_CLEAR_SLOT4_R        223
+#define GPIOA0_BMC_READY_R                       0
+#define GPIOA1_SMB_HOTSWAP_BMC_ALERT_N_R         1
+#define GPIOA2_FM_HSC_BMC_FAULT_N_R              2
+#define GPIOA3_FM_NIC_WAKE_BMC_N                 3
+#define GPIOB0_SMB_BMC_SLOT1_ALT_N               8
+#define GPIOB1_SMB_BMC_SLOT2_ALT_N               9
+#define GPIOB2_SMB_BMC_SLOT3_ALT_N              10
+#define GPIOB3_SMB_BMC_SLOT4_ALT_N              11
+#define GPIOB4_PRSNT_MB_BMC_SLOT1_BB_N          12
+#define GPIOB5_PRSNT_MB_BMC_SLOT2_BB_N          13
+#define GPIOB6_PRSNT_MB_BMC_SLOT3_BB_N          14
+#define GPIOB7_PRSNT_MB_BMC_SLOT4_BB_N          15
+#define GPIOE0_ADAPTER_CARD_TYPE_BMC_1          32
+#define GPIOE1_ADAPTER_CARD_TYPE_BMC_2          33
+#define GPIOE2_ADAPTER_CARD_TYPE_BMC_3          34
+#define GPIOE3_ADAPTER_BUTTON_BMC_CO_N_R        35
+#define GPIOE4_RST_BMC_USB_HUB_N_R              36
+#define GPIOE5_EMMC_RST_N_R                     37
+#define GPIOF0_HSC_BMC_SLOT1_EN_R               40
+#define GPIOF1_HSC_BMC_SLOT2_EN_R               41
+#define GPIOF2_HSC_BMC_SLOT3_EN_R               42
+#define GPIOF3_HSC_BMC_SLOT4_EN_R               43
+#define GPIOF4_SMB_RST_PRIMARY_BMC_N_R          44
+#define GPIOG0_DISABLE_BMC_FAN_2_N_R            48
+#define GPIOG1_DISABLE_BMC_FAN_3_N_R            49
+#define GPIOG2_NIC_ADAPTER_CARD_PRSNT_BMC_1_N_R 50
+#define GPIOG3_SMB_RST_SECONDARY_BMC_N_R        51
+#define GPIOG4_SLOT1_HSC_SET_CPLD_EN_RSVD       GPIO_RSVD_VAL
+#define GPIOG5_SLOT2_HSC_SET_CPLD_EN_RSVD       GPIO_RSVD_VAL
+#define GPIOG6_SLOT3_HSC_SET_CPLD_EN_RSVD       GPIO_RSVD_VAL
+#define GPIOG7_SLOT4_HSC_SET_CPLD_EN_RSVD       GPIO_RSVD_VAL
+#define GPIOJ4_RST_PCIE_RESET_SLOT1_N           76
+#define GPIOJ5_RST_PCIE_RESET_SLOT2_N           77
+#define GPIOJ6_RST_PCIE_RESET_SLOT3_N           78
+#define GPIOJ7_RST_PCIE_RESET_SLOT4_N           79
+#define GPIOL0_AC_ON_OFF_BTN_SLOT1_N            88
+#define GPIOL1_AC_ON_OFF_BTN_BMC_SLOT2_N_R      89
+#define GPIOL2_AC_ON_OFF_BTN_SLOT3_N            90
+#define GPIOL3_AC_ON_OFF_BTN_BMC_SLOT4_N_R      91
+#define GPIOL4_FAST_PROCHOT_BMC_N_R             92
+#define GPIOL5_USB_BMC_EN_N_R                   93
+#define GPIOM0_HSC_FAULT_SLOT1_N                96
+#define GPIOM1_HSC_FAULT_BMC_SLOT2_N_R          97
+#define GPIOM2_HSC_FAULT_SLOT3_N                98
+#define GPIOM3_HSC_FAULT_BMC_SLOT4_N_R          99
+#define GPIOM4_FM_PWRBRK_PRIMARY_R              100
+#define GPIOM5_FM_PWRBRK_SECONDARY_R            101
+#define GPION4_DUAL_FAN0_DETECT_BMC_N_R         108
+#define GPION5_DUAL_FAN1_DETECT_BMC_N_R         109
+#define GPION6_DISABLE_BMC_FAN_0_N_R            110
+#define GPION7_DISABLE_BMC_FAN_1_N_R            111
+#define GPIOQ6_USB_OC_N                         134
+#define GPIOQ7_FM_BMC_TPM_PRSNT_N               135
+#define GPIOS0_PWROK_STBY_BMC_SLOT1             144
+#define GPIOS1_PWROK_STBY_BMC_SLOT2             145
+#define GPIOS2_PWROK_STBY_BMC_SLOT3             146
+#define GPIOS3_PWROK_STBY_BMC_SLOT4             147
+#define GPIOZ0_FM_BMC_SLOT1_ISOLATED_EN_R       200
+#define GPIOZ1_FM_BMC_SLOT2_ISOLATED_EN_R       201
+#define GPIOZ2_FM_BMC_SLOT3_ISOLATED_EN_R       202
+#define GPIOZ3_FM_BMC_SLOT4_ISOLATED_EN_R       203
+#define GPIOAB0_PWRGD_NIC_BMC                   216
+#define GPIOAB1_OCP_DEBUG_BMC_PRSNT_N           217
+#define GPIOAB2_RST_BMC_WDRST1_R                218
+#define GPIOAB3_RST_BMC_WDRST2_R                219
+#define GPIOAC4_SMB_FAN_INA_BMC_ALERT_N_R       224
+#define GPIOAC5_SMB_TEMP_INLET_ALERT_BMC_N_R    225
+#define GPIOAC6_SMB_TEMP_OUTLET_ALERT_BMC_N_R   226
+#define GPIOAC7_FM_BMC_BIC_DETECT_N             227
 
-#define GPIO_BOARD_ID GPIOG0_BOARD_REV_ID0
+#define GPIO_BOARD_ID GPIO_RSVD_VAL
 
 const static uint8_t gpio_server_resistor_en[] =
 { 0,
-  GPIOG4_SLOT1_HSC_SET_CPLD_EN_R,
-  GPIOG5_SLOT2_HSC_SET_CPLD_EN_R,
-  GPIOG6_SLOT3_HSC_SET_CPLD_EN_R,
-  GPIOG7_SLOT4_HSC_SET_CPLD_EN_R
+  GPIOG4_SLOT1_HSC_SET_CPLD_EN_RSVD,
+  GPIOG5_SLOT2_HSC_SET_CPLD_EN_RSVD,
+  GPIOG6_SLOT3_HSC_SET_CPLD_EN_RSVD,
+  GPIOG7_SLOT4_HSC_SET_CPLD_EN_RSVD
 };
 
 const static uint8_t gpio_server_prsnt[] =
 { 0,
-  GPIOB4_PRSNT_MB_SLOT1_BB_N,
-  GPIOB5_PRSNT_MB_SLOT2_BB_N,
-  GPIOB6_PRSNT_MB_SLOT3_BB_N,
-  GPIOB7_PRSNT_MB_SLOT4_BB_N
+  GPIOB4_PRSNT_MB_BMC_SLOT1_BB_N,
+  GPIOB5_PRSNT_MB_BMC_SLOT2_BB_N,
+  GPIOB6_PRSNT_MB_BMC_SLOT3_BB_N,
+  GPIOB7_PRSNT_MB_BMC_SLOT4_BB_N
 };
 
 const static uint8_t gpio_bic_ready[] =
 { 0,
-  GPIOB0_SMB_SLOT1_CPLD_BIC_ALERT_N,
-  GPIOB1_SMB_SLOT2_CPLD_BIC_ALERT_N,
-  GPIOB2_SMB_SLOT3_CPLD_BIC_ALERT_N,
-  GPIOB3_SMB_SLOT4_CPLD_BIC_ALERT_N
+  GPIOB0_SMB_BMC_SLOT1_ALT_N,
+  GPIOB1_SMB_BMC_SLOT2_ALT_N,
+  GPIOB2_SMB_BMC_SLOT3_ALT_N,
+  GPIOB3_SMB_BMC_SLOT4_ALT_N
 };
 
 const static uint8_t gpio_server_stby_power_en[] =
 { 0,
-  GPIOF0_HSC_CPLD_SLOT1_EN_R,
-  GPIOF1_HSC_CPLD_SLOT2_EN_R,
-  GPIOF2_HSC_CPLD_SLOT3_EN_R,
-  GPIOF3_HSC_CPLD_SLOT4_EN_R
+  GPIOF0_HSC_BMC_SLOT1_EN_R,
+  GPIOF1_HSC_BMC_SLOT2_EN_R,
+  GPIOF2_HSC_BMC_SLOT3_EN_R,
+  GPIOF3_HSC_BMC_SLOT4_EN_R
 };
 
 const static uint8_t gpio_server_power_sts[] =
 { 0,
-  GPIOJ0_PWROK_STBY_BMC_SLOT1,
-  GPIOJ1_PWROK_STBY_BMC_SLOT2,
-  GPIOJ2_PWROK_STBY_BMC_SLOT3,
-  GPIOJ3_PWROK_STBY_BMC_SLOT4
+  GPIOS0_PWROK_STBY_BMC_SLOT1,
+  GPIOS1_PWROK_STBY_BMC_SLOT2,
+  GPIOS2_PWROK_STBY_BMC_SLOT3,
+  GPIOS3_PWROK_STBY_BMC_SLOT4
 };
 
 #define MAX_KEY_LEN       64

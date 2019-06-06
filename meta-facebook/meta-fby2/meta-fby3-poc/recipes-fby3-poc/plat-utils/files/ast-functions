@@ -1,8 +1,7 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
-
-. /usr/bin/kv
-
 DEVMEM=/sbin/devmem
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+ASPEEDCHIP="aspeed-gpio"
 
 devmem_set_bit() {
     local addr
@@ -37,103 +36,24 @@ lpc_addr() {
     echo $((0x1E789000 + 0x$1))
 }
 
-#GPIO Controller, Base Address = 0x1E78_0000
-gpio_addr() {
-    echo $((0x1E780000 + 0x$1))
-}
-
-GPIODIR="/sys/class/gpio"
-GPIOEXPORT="$GPIODIR/export"
-
-gpio_dir() {
-    echo "$GPIODIR/gpio$1"
-}
-
-gpio_name2value() {
-    local first remaining base val
-    remaining=$1
-    val=0
-    while [ -n "$remaining" ]; do
-        first=${remaining:0:1}
-        case "$first" in
-            [[:lower:]])
-                base=$(printf "%d" "'$first'")
-                base=$((base - 96))
-                val=$((val * 26 + base))
-                ;;
-            [[:upper:]])
-                base=$(printf "%d" "'$first'")
-                base=$((base - 64))
-                val=$((val * 26 + base))
-                ;;
-            *)
-                if [ $val -gt 0 ]; then
-                    val=$((val-1))
-                fi
-                val=$((val * 8 + $remaining))
-                break
-                ;;
-        esac
-        remaining=${remaining:1}
-    done
-    echo "$val"
-}
-
 gpio_export() {
-    local gpio
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-}
-
-gpio_export_out() {
-    local gpio
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-        echo out > ${dir}/direction
-    fi
-}
-
-pca9555_gpio_export() {
-    local gpio
-    gpio=$1
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
+  local name shadow
+  shadow=$1
+  name=$2
+  $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name $name --shadow $shadow
 }
 
 gpio_set() {
-    local gpio
-    local val
-    gpio=$(gpio_name2value $1)
-    val=$2
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-
-    if [ $val == 1 ]; then
-      echo high > ${dir}/direction
-    else
-      echo low > ${dir}/direction
-    fi
+  local shadow val
+  shadow=$1
+  val=$2
+  $GPIOCLI_CMD set-init-value --shadow $shadow $val
 }
 
 gpio_get() {
-    local gpio
-    local val
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-    echo in > ${dir}/direction
-    cat ${dir}/value
+  local shadow
+  shadow=$1
+  $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
 }
 
 # Store and Clear POR bit
@@ -170,16 +90,16 @@ is_server_prsnt() {
 
   case $1 in
     1)
-      prsnt=$(gpio_get B4)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT1_BB_N)
       ;;
     2)
-      prsnt=$(gpio_get B5)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT2_BB_N)
       ;;
     3)
-      prsnt=$(gpio_get B6)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT3_BB_N)
       ;;
     4)
-      prsnt=$(gpio_get B7)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT4_BB_N)
       ;;
     *)
       prsnt="1"
@@ -219,6 +139,9 @@ get_slot_type() {
     type=3
   fi
 
+  #Return 00 always.
+  #For now, we use the present to check if server existed
+  type=0
   echo $type
 }
 
@@ -243,16 +166,16 @@ is_bic_ready() {
 
   case $1 in
    1)
-    ready=$(gpio_get B0)
+    ready=$(gpio_get SMB_BMC_SLOT1_ALT_N)
     ;;
    2)
-    ready=$(gpio_get B1)
+    ready=$(gpio_get SMB_BMC_SLOT2_ALT_N)
     ;;
    3)
-    ready=$(gpio_get B2)
+    ready=$(gpio_get SMB_BMC_SLOT3_ALT_N)
     ;;
    4)
-    ready=$(gpio_get B3)
+    ready=$(gpio_get SMB_BMC_SLOT4_ALT_N)
     ;;
    *)
     ready="1"
@@ -266,39 +189,18 @@ is_bic_ready() {
   fi
 }
 
-fby3_is_server_on() {
+# Check to see if slot 12v is on or not
+is_slot_12v_on() {
   local pwr_sts
 
-  case $1 in
-   1)
-    pwr_sts=$(gpio_get J0)
-    ;;
-   2)
-    pwr_sts=$(gpio_get J1)
-    ;;
-   3)
-    pwr_sts=$(gpio_get J2)
-    ;;
-   4)
-    pwr_sts=$(gpio_get J3)
-    ;;
-   *)
-    pwr_sts="0"
-    ;;
-  esac
+  #always return 1 since the pins are not defined for now
+  pwr_sts="1"
 
-  echo $pwr_sts
-}
-
-gpio_get_val() {
-    local gpio
-    local val
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-    cat ${dir}/value
+  if [ $pwr_sts == "1" ]; then
+    echo 1
+  else
+    echo 0
+  fi
 }
 
 get_slot_bus() {
@@ -338,35 +240,6 @@ i2c_add_device() {
       DEV_NAME=$3
 
       echo $DEV_NAME $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/new_device
-}
-
-# Check to see if slot 12v is on or not
-is_slot_12v_on() {
-  local pwr_sts
-
-  case $1 in
-   1)
-    pwr_sts=$(gpio_get J0)
-    ;;
-   2)
-    pwr_sts=$(gpio_get J1)
-    ;;
-   3)
-    pwr_sts=$(gpio_get J2)
-    ;;
-   4)
-    pwr_sts=$(gpio_get J3)
-    ;;
-   *)
-    pwr_sts="0"
-    ;;
-  esac
-
-  if [ $pwr_sts == "1" ]; then
-    echo 1
-  else
-    echo 0
-  fi
 }
 
 # Check to see if BMC time synced

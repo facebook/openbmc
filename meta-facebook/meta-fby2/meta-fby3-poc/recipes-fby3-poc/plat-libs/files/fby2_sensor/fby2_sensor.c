@@ -1134,17 +1134,11 @@ is_server_prsnt(uint8_t fru) {
   char path[64] = {0};
 
   switch(fru) {
-  case 1:
-    server_prsnt_pin = GPIOB4_PRSNT_MB_SLOT1_BB_N;
-    break;
-  case 2:
-    server_prsnt_pin = GPIOB5_PRSNT_MB_SLOT2_BB_N;
-    break;
-  case 3:
-    server_prsnt_pin = GPIOB6_PRSNT_MB_SLOT3_BB_N;
-    break;
-  case 4:
-    server_prsnt_pin = GPIOB7_PRSNT_MB_SLOT4_BB_N;
+  case FRU_SLOT1:
+  case FRU_SLOT2:
+  case FRU_SLOT3:
+  case FRU_SLOT4:
+    server_prsnt_pin = gpio_server_prsnt[fru];
     break;
   default:
     return 0;

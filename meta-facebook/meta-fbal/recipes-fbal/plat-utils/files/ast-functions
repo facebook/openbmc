@@ -21,6 +21,12 @@ devmem_clear_bit() {
     $DEVMEM $addr 32 $val
 }
 
+devmem_clear_scu70_bit() {
+    local val
+    val=$((0x1 << $1))
+    $DEVMEM 0x1E6E207C 32 $val
+}
+
 scu_addr() {
     echo $((0x1E6E2000 + 0x$1))
 }

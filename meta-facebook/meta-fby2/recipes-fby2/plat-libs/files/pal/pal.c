@@ -9705,12 +9705,12 @@ bool pal_is_m2_prsnt(char *slot_name, char *sensor_name)
       break;
     case SLOT_TYPE_GPV2:
       len = strlen(sensor_name);
-      if (len == 9) {
+      if (len == 14) {
         sprintf(path, "slot%u_xxxx_pres", slot_id);
-        memcpy(path+6, sensor_name+5, 4);
-      } else if (len == 10){
+        memcpy(path+6, sensor_name+10, 4);
+      } else if (len == 15){
         sprintf(path, "slot%u_xxxxx_pres", slot_id);
-        memcpy(path+6, sensor_name+5, 5);
+        memcpy(path+6, sensor_name+10, 5);
       } else {
         return false;
       }

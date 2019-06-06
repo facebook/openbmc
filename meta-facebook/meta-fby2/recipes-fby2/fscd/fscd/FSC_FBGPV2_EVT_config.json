@@ -17,11 +17,6 @@
       "attribute": {
         "type" : "power_status"
       }
-    },
-    "temp_dev(.*)": {
-      "attribute": {
-        "type" : "power_status"
-      }
     }
   },
   "watchdog": false,

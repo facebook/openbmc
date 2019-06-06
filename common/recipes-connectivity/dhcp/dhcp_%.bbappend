@@ -9,7 +9,7 @@ def dhcp_patches(d):
     if distro == 'fido' or distro == 'krogoth':
         return "file://dhclinet_ipv6_addr_missing.patch \
                "
-    elif distro == 'rocko':
+    elif distro == 'rocko' or distro == 'warrior':
         return "file://fix-the-error-on-chmod-chown-when-running-dhclient-script.patch \
                "
     else:

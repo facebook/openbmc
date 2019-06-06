@@ -28,7 +28,7 @@ from utils.shell_util import run_shell_cmd
 
 class BaseFansTest(unittest.TestCase):
     def setUp(self):
-        self.start_logging(__name__)
+        Logger.start(name=self._testMethodName)
         self.read_fans_cmd = None
         self.write_fans_cmd = None
         self.kill_fan_ctrl_cmd = None
@@ -37,10 +37,8 @@ class BaseFansTest(unittest.TestCase):
         self.pwms = None
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
-
-    def start_logging(self, name):
-        Logger.start(name)
 
     @abstractmethod
     def get_fan_speed(self):

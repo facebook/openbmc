@@ -40,9 +40,10 @@ class BaseRestEndpointTest(unittest.TestCase):
     CURL_CMD6 = "http://localhost:8080{}"
 
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     @abstractmethod
@@ -60,7 +61,11 @@ class BaseRestEndpointTest(unittest.TestCase):
             Logger.info("REST request returned data={}".format(data.decode("utf-8")))
             return data.decode("utf-8")
         except Exception as ex:
-            raise ("Failed to perform REST request for cmd={}".format(cmd))
+            raise (
+                "Failed to perform REST request for cmd={}, Exception={}".format(
+                    cmd, ex
+                )
+            )
 
     def test_server_httperror_code_404(self):
         """

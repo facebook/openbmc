@@ -27,7 +27,7 @@ from utils.shell_util import run_shell_cmd
 
 class PsumuxmonTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
@@ -39,7 +39,6 @@ class PsumuxmonTest(unittest.TestCase):
         self.assertIn("run", data, "psumuxmon process not running")
 
     def get_ltc_hwmon_path(self, path):
-        pcard_vin = None
         result = re.split("hwmon", path)
         if os.path.isdir(result[0]):
             construct_hwmon_path = result[0] + "hwmon"

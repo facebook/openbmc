@@ -25,7 +25,7 @@ from utils.cit_logger import Logger
 
 class BaseBmcShellScriptsSysfsDependencyTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))

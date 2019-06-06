@@ -28,5 +28,5 @@ class InterfaceTest(CommonInterfaceTest):
         Tests eth0 v6 interface
         """
         self.set_ifname("usb0")
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertEqual(self.ping_v6(), 0, "Ping test for usb0 v6 failed")

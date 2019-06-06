@@ -26,7 +26,7 @@ from utils.cit_logger import Logger
 
 class FansTest(CommonShellBasedFansTest):
     def setUp(self):
-        self.start_logging(__name__)
+        Logger.start(name=self._testMethodName)
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
         self.kill_fan_ctrl_cmd = [
@@ -36,6 +36,7 @@ class FansTest(CommonShellBasedFansTest):
         self.start_fan_ctrl_cmd = ["sh /etc/init.d/setup-fan.sh"]
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         self.kill_fan_controller()
         self.start_fan_controller()
 
@@ -43,7 +44,7 @@ class FansTest(CommonShellBasedFansTest):
         """
         Test if all fan dump is returning sane data
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         data = self.get_fan_speed()
         Logger.info("Fans dump:\n" + data)
@@ -53,7 +54,7 @@ class FansTest(CommonShellBasedFansTest):
         """
          For each fan read and test speed
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         super().fan_read(fan=0)
 
@@ -61,7 +62,7 @@ class FansTest(CommonShellBasedFansTest):
         """
          For each fan read and test speed
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         super().fan_read(fan=1)
 
@@ -69,7 +70,7 @@ class FansTest(CommonShellBasedFansTest):
         """
          For each fan read and test speed
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         super().fan_read(fan=2)
 
@@ -77,7 +78,7 @@ class FansTest(CommonShellBasedFansTest):
         """
          For each fan read and test speed
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         super().fan_read(fan=3)
 

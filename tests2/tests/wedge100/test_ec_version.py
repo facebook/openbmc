@@ -31,7 +31,7 @@ class EcVersionTest(unittest.TestCase):
             "version": "/sys/bus/i2c/devices/i2c-4/4-0033/version",
             "date": "/sys/bus/i2c/devices/i2c-4/4-0033/date",
         }
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
@@ -57,5 +57,6 @@ class EcVersionTest(unittest.TestCase):
         for key, path in self.ec_version_paths.items():
             with self.subTest(path=path):
                 self.assertTrue(
-                    os.path.exists(path), "EC Version i2c sysfs path doesnt exist"
+                    os.path.exists(path),
+                    "EC Version i2c sysfs path doesnt exist. Key = {}".format(key),
                 )

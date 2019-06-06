@@ -28,7 +28,7 @@ from utils.watchdog_util import WatchdogUtils
 
 class WatchdogTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         self.wdtUtils = WatchdogUtils()
         self.kill_watchdog_daemon_cmd = None
         self.start_watchdog_daemon_cmd = None
@@ -42,6 +42,7 @@ class WatchdogTest(unittest.TestCase):
         #
         # Step 6: restore watchdog-kicking daemon process.
         #
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         Logger.info("Restoring watchdog-kicking process")
         self.set_start_watchdog_daemon_cmd()
         self.assertNotEqual(

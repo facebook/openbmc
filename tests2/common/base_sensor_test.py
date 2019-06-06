@@ -30,15 +30,13 @@ class BaseSensorsTest(unittest.TestCase):
         """
         For now the scope if for sensors exposed from lm sensors
         """
-        self.start_logging(__name__)
+        Logger.start(name=self._testMethodName)
         self.sensors_cmd = None
         self.parsed_result = None
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
-
-    def start_logging(self, name):
-        Logger.start(name)
 
     @abstractmethod
     def set_sensors_cmd(self):

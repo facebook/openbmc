@@ -31,7 +31,7 @@ from utils.cit_logger import Logger
 
 class BaseKernelABITest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         # sysfs dependency list
         self.sysfs_dep_list = [
             "/sys/devices",

@@ -30,10 +30,11 @@ class BaseGpioTest(unittest.TestCase):
     GPIO_SHADOW_ROOT = "/tmp/gpionames"
 
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         self.gpios = None
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     @abstractmethod
@@ -46,7 +47,7 @@ class BaseGpioTest(unittest.TestCase):
         self.assertTrue(os.path.exists(gpio_path), "GPIO missing={}".format(gpioname))
 
         Logger.info("GPIO name={} present".format(gpioname))
-        for item, value in attributes.items():
+        for item, _value in attributes.items():
             path = os.path.join(gpio_path, str(item))
             self.assertTrue(
                 os.path.exists(path),

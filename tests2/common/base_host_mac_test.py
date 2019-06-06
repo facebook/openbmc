@@ -28,11 +28,12 @@ from utils.test_utils import mac_verify
 
 class BaseHostMacTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         self.host_mac_cmd = None
         pass
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     @abstractmethod

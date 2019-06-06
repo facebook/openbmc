@@ -32,7 +32,7 @@ class SysCpldRevisionTest(unittest.TestCase):
             "/sys/bus/i2c/devices/i2c-12/12-0031/cpld_rev",
             "/sys/bus/i2c/devices/i2c-12/12-0031/cpld_sub_rev",
         ]
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))

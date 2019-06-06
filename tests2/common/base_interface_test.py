@@ -26,10 +26,11 @@ from utils.cit_logger import Logger
 
 class BaseInterfaceTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         pass
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     def set_ifname(self, ifname):
@@ -110,7 +111,7 @@ class CommonInterfaceTest(BaseInterfaceTest):
         Tests eth0 v4 interface
         """
         self.set_ifname("eth0")
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(name=self._testMethodName)
         self.assertEqual(self.ping_v4(), 0, "Ping test for %s v4 failed".format("eth0"))
 
     def test_eth0_v6_interface(self):
@@ -118,5 +119,5 @@ class CommonInterfaceTest(BaseInterfaceTest):
         Tests eth0 v6 interface
         """
         self.set_ifname("eth0")
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(name=self._testMethodName)
         self.assertEqual(self.ping_v6(), 0, "Ping test for eth0 v6 failed")

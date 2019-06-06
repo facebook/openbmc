@@ -27,13 +27,14 @@ from utils.shell_util import run_shell_cmd
 
 class BaseKernelModulePresenceTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         self.kmod_cmd = None
         self.expected_kmod = None
         self.new_kmods = None
         pass
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     def set_kmod_cmd(self):

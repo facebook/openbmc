@@ -27,12 +27,13 @@ from utils.shell_util import run_shell_cmd
 
 class BaseProcessRunningTest(unittest.TestCase):
     def setUp(self):
-        Logger.start(name=__name__)
+        Logger.start(name=self._testMethodName)
         self.process_cmd = None
         self.expected_process = None
         pass
 
     def tearDown(self):
+        Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     def set_process_cmd(self):

@@ -21,6 +21,7 @@
 . /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+exitCode=0
 
 dump_cpld_version() {
     local cpld_dir=$1
@@ -29,15 +30,17 @@ dump_cpld_version() {
     cpld_ver=`head -n 1 ${cpld_dir}/cpld_ver 2> /dev/null`
     if [ $? -ne 0 ]; then
         echo "${cpld_name} is not detected"
-        return
+        exitCode=1
     fi
     cpld_sub_ver=`head -n 1 ${cpld_dir}/cpld_sub_ver 2> /dev/null`
     if [ $? -ne 0 ]; then
         echo "${cpld_name} is not detected"
-        return
+        exitCode=1
     fi
-
-    echo "${cpld_name}: $(($cpld_ver)).$(($cpld_sub_ver))"
+    
+    if [ "$exitCode" -eq 0 ]; then 
+      echo "${cpld_name}: $(($cpld_ver)).$(($cpld_sub_ver))"
+    fi
 }
 
 dump_cpld_version ${SMBCPLD_SYSFS_DIR} "SMBCPLD"
@@ -58,4 +61,9 @@ if [ $board_rev -ne 4 ]; then
     usleep 50000
 
     dump_cpld_version ${RIGHT_PDBCPLD_SYSFS_DIR} "Right PDBCPLD"
+fi
+
+if [ "$exitCode" -ne 0 ]; then
+  echo "since all the CPLDs didn't succeed with the  name listed above... so exiting"
+  exit 1
 fi

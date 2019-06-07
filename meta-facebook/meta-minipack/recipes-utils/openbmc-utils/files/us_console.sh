@@ -42,4 +42,4 @@ fi
 # To enable GPIOS5, SCU8C[5] must be 0
 devmem_clear_bit $(scu_addr 8C) 5
 
-gpio_set 149 $VALUE
+gpio_set_value BMC_UART_SEL5 "$VALUE"

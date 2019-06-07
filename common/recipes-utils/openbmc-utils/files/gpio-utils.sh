@@ -138,6 +138,31 @@ gpio_get() {
 }
 
 #
+# Set gpio pin with the given value.
+# $1 - GPIO pin shadow name
+# $2 - GPIO value
+#
+gpio_set_value() {
+    local shadow="$1"
+    local value="$2"
+
+    "${GPIOCLI_CMD}" --shadow "${shadow}" set-init-value "${value}"
+}
+
+#
+# Get value of the given gpio pin.
+# $1 - GPIO pin shadow name
+#
+gpio_get_value() {
+    local shadow="$1"
+
+    val=$("${GPIOCLI_CMD}" --shadow "${shadow}" get-value)
+    if [ "$?" == "0" ]; then
+        echo "${val}" | cut -d'=' -f2
+    fi
+}
+
+#
 # Lookup sysfs "gpiochip###" directory based on chip label.
 # $1 - gpiochip label
 #

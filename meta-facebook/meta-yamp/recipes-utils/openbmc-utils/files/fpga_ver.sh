@@ -22,6 +22,7 @@ source /usr/local/bin/openbmc-utils.sh
 
 maj_ver="cpld_ver_major"
 min_ver="cpld_ver_minor"
+exitCode=0
 
 echo "------SUP-FPGA------"
 
@@ -50,9 +51,16 @@ else
       val1=$(head -n 1 $SCDCPLD_SYSFS_DIR/$pim_maj_ver_file)
       val2=$(head -n 1 $SCDCPLD_SYSFS_DIR/$pim_min_ver_file)
       if [ "$((val1))" -eq 255 ]; then
-        echo "PIM $pim : NOT_DETECTED"
+        # Print all the PIM status then exit
+        echo "PIM $pim: NOT DETECTED"
+        exitCode=1
       else
         echo "PIM $pim : $((val1)).$((val2))"
       fi
     done
+fi
+
+if [ "$exitCode" -ne 0 ]; then
+    echo "Since all the PIMs detection didn't succeed as listed above... exiting"
+    exit 1
 fi

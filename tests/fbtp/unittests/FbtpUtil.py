@@ -29,7 +29,7 @@ try:
     currentPath = os.getcwd()
     commonPath = currentPath.replace('fbtp/unittests', 'common')
     sys.path.insert(0, commonPath)
-except Exception:
+except OSError:
     pass
 import BaseUtil
 

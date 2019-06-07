@@ -124,14 +124,9 @@ def isp_enter(target):
 
 
 def isp_data(target, data, seqbytes):
-    cmd = struct.pack("BBB", ISP_FLASH_DATA, 0x00, target.boot_type)
+    cmd = struct.pack("BB", ISP_FLASH_DATA, len(data) + 2)
     cmd += seqbytes
-    if target.adp:
-        cmd += hdlc_crc(
-            struct.pack("BBBB", ADP_UPDATE_BLOCK, 0x00, target.adp, len(data)) + data
-        )
-    else:
-        cmd += struct.pack("B", len(data)) + data
+    cmd += data
     return cmd
 
 
@@ -210,7 +205,15 @@ async def get_status(addr: int):
     return res
 
 
-async def send_target(addr: int, image: srec.Image, target: ArtesynTarget):
+class ArtesynError(Exception):
+    def __init__(self, *args, resp=b""):
+        super().__init__(self, *args)
+        self.resp = resp
+
+
+async def send_target(
+    addr: int, image: srec.Image, target: ArtesynTarget, prev_sent: int, total_data: int
+):
     data = image[target.begin : target.end]
     print("Flashing {} on {:x}".format(target.name, addr))
     n_chunks = len(data) // PACKET_SIZE
@@ -221,7 +224,6 @@ async def send_target(addr: int, image: srec.Image, target: ArtesynTarget):
     rlen = 0
     seq = target.startseq
     for n in range(n_chunks):
-        seq += 1
         chunk = data[n * PACKET_SIZE : (n + 1) * PACKET_SIZE]
         if len(chunk) < PACKET_SIZE:
             chunk += b"\xff" * (PACKET_SIZE - len(chunk))
@@ -236,10 +238,27 @@ async def send_target(addr: int, image: srec.Image, target: ArtesynTarget):
         )
         rlen = len(resp)
         sent += PACKET_SIZE
-        sl.update("Flashing {}... {:.2%} \r".format(target.name, sent / len(data)))
-        status_state("Flashing {}... {:.2%} \r".format(target.name, sent / len(data)))
-        status["flash_progress_percent"] = 100 * (sent / len(data))
+        if resp[0] == 0xC5:
+            # error
+            raise ArtesynError("Error response: {}".format(resp), resp=resp)
+        if resp[0] == 0x45:
+            if resp[4] == 0x00 or resp[4] == 0x0A:
+                seq += 1
+            else:
+                raise ArtesynError("Block sequence error: {}".format(resp), resp=resp)
+        sl.update(
+            "Flashing {}... {:.2%} \r".format(
+                target.name, (sent + prev_sent) / total_data
+            )
+        )
+        status_state(
+            "Flashing {}... {:.2%} \r".format(
+                target.name, (sent + prev_sent) / total_data
+            )
+        )
+        status["flash_progress_percent"] = 100 * (sent + prev_sent) / total_data
     sl.done("Flashed {}".format(target.name))
+    return sent
 
 
 async def fw_revision(addr):
@@ -254,12 +273,15 @@ async def aupd(addr, image, targetnames):
     except pyrmd.ModbusTimeout:
         print("timed out.")
     entered = []
+    total_data = 0
+    total_sent = 0
     try:
         for name in targetnames:
             status_state("flashing target {}".format(name))
             target = targets[name]
             entered.append(name)
             enter_tries = 3
+            total_data += target.end - target.begin
             while True:
                 try:
                     result = await request(addr, isp_enter(target), timeout=3000)
@@ -284,7 +306,7 @@ async def aupd(addr, image, targetnames):
             print("ISP enter: {}".format(name))
         for name in reversed(targetnames):
             target = targets[name]
-            await send_target(addr, image, target)
+            total_sent += await send_target(addr, image, target, total_sent, total_data)
     finally:
         for name in reversed(entered):
             target = targets[name]

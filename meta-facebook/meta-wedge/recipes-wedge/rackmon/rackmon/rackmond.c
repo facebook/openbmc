@@ -17,6 +17,7 @@
 #include <syslog.h>
 #include <signal.h>
 #include <linux/serial.h>
+#include <sched.h>
 
 #define MAX_ACTIVE_ADDRS 24
 #define REGISTER_PSU_STATUS 0x68
@@ -440,6 +441,7 @@ int fetch_monitored_data() {
       uint16_t regs[i->len];
       int err = read_registers(&world.rs485,
           world.modbus_timeout, addr, i->begin, i->len, regs);
+      sched_yield();
       if (err) {
         if (err != READ_ERROR_RESPONSE) {
           log("Error %d reading %02x registers at %02x from %02x\n",

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import subprocess
 import sys
 from ctypes import *
 
